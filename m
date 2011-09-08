@@ -1,41 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755932Ab1IHXwn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 19:52:43 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:42424 "EHLO
+	id S1756503Ab1IHXww (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 19:52:52 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:57089 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756375Ab1IHXwg (ORCPT
+	by vger.kernel.org with ESMTP id S1756247Ab1IHXwq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 19:52:36 -0400
-Date: Thu, 8 Sep 2011 16:52:01 -0700
+	Thu, 8 Sep 2011 19:52:46 -0400
+Date: Thu, 8 Sep 2011 16:52:39 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Vasiliy Kulikov <segoon@openwall.com>, Tejun Heo <tj@kernel.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>, containers@lists.osdl.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Nathan Lynch <ntl@pobox.com>, kernel-hardening@lists.openwall.com,
-        Oren Laadan <orenl@cs.columbia.edu>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>,
-        Glauber Costa <glommer@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: [patch 2/2] fs, proc: Introduce the /proc/<pid>/map_files/
- directory v6
-Message-Id: <20110908165201.59e82c71.akpm@linux-foundation.org>
-In-Reply-To: <20110908060405.GH28162@sun>
-References: <20110906165144.GJ18425@mtj.dyndns.org>
-	<20110906172952.GA28055@albatros>
-	<20110906173341.GM18425@mtj.dyndns.org>
-	<20110907112301.GA12157@albatros>
-	<20110907215329.GB28162@sun>
-	<20110907151323.613e62e7.akpm@linux-foundation.org>
-	<20110907224234.GD28162@sun>
-	<20110907155332.beda7d3d.akpm@linux-foundation.org>
-	<20110908054826.GF28162@sun>
-	<20110908055025.GG28162@sun>
-	<20110908060405.GH28162@sun>
+To: Jason Baron <jbaron@redhat.com>
+Cc: gregkh@suse.de, joe@perches.com, jim.cromie@gmail.com, bvanassche@acm.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] dynamic_debug: use a single printk() to emit msgs
+Message-Id: <20110908165239.120f25c5.akpm@linux-foundation.org>
+In-Reply-To: <c106d5b6978b550e3a98b5425cc2ba00b090c9eb.1314725877.git.jbaron@redhat.com>
+References: <cover.1314725877.git.jbaron@redhat.com>
+	<c106d5b6978b550e3a98b5425cc2ba00b090c9eb.1314725877.git.jbaron@redhat.com>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -44,113 +25,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Sep 2011 10:04:05 +0400
-Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+On Tue, 30 Aug 2011 14:28:50 -0400
+Jason Baron <jbaron@redhat.com> wrote:
 
-> fs, proc: Introduce the /proc/<pid>/map_files/ directory v11
-
-Ho hum, I've pretty much run out of excuses to avoid merging this.
-
-except...
-
-We don't really want to bloat fs/proc/base.o by 4k until all the other
-things which support c/r are mergeable and we know that the whole
-project is actually useful.  When will we be at this stage?
-
-<looks at the warning>
-
-fs/proc/base.c: In function 'proc_map_files_instantiate':
-fs/proc/base.c:2348: warning: assignment from incompatible pointer type
-
-err, that code will crash at runtime and it isn't trivial to fix. 
-How could this happen?
-
->
+> We were using KERN_CONT to combine msgs with their prefix. However,
+> KERN_CONT is not smp safe, in the sense that it can interleave messages.
+> This interleaving can result in printks coming out at the wrong loglevel.
+> With the high frequency of printks, that dynamic debug can produce, this
+> is not desirable.
+> 
+> Thus, make dynamic_emit_prefix(), fill a char buf[64], instead
+> of doing a printk directly. If we enable printing out of
+> function, module, line, or pid info, they are placed in this
+> 64 byte buffer. In my testing 64 bytes was enough size to fulfill
+> all requests. Even if its not, we can match up the printk itself
+> to see where its from, so to me this is no big deal.
+> 
 > ...
 >
-> +				if (fa)
-> +					flex_array_free(fa);
->
-> ...
->
-> +		if (fa)
-> +			flex_array_free(fa);
+> +#define LEFT(wrote) ((PREFIX_SIZE - wrote) > 0) ? (PREFIX_SIZE - wrote) : 0
 
-I think I'll do this:
+This macro will misbehave if passed an expression with side effects and
+is rather ugly and didn't actually need to be implemented as a macro at
+all.
 
-From: Andrew Morton <akpm@linux-foundation.org>
+This?
 
-Lots of callers are avoiding passing NULL into flex_array_free().  Move
-the check into flex_array_free() in the usual fashion.
-
-Cc: Stephen Smalley <sds@tycho.nsa.gov>
-Cc: James Morris <jmorris@namei.org>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- fs/proc/base.c                 |    6 ++----
- lib/flex_array.c               |    2 ++
- security/selinux/ss/policydb.c |    9 +++------
- 3 files changed, 7 insertions(+), 10 deletions(-)
-
-diff -puN lib/flex_array.c~lib-flex_arrayc-accept-null-arg-to-flex_array_free lib/flex_array.c
---- a/lib/flex_array.c~lib-flex_arrayc-accept-null-arg-to-flex_array_free
-+++ a/lib/flex_array.c
-@@ -142,6 +142,8 @@ EXPORT_SYMBOL(flex_array_free_parts);
- 
- void flex_array_free(struct flex_array *fa)
- {
-+	if (!fa)
-+		return;
- 	flex_array_free_parts(fa);
- 	kfree(fa);
+--- a/lib/dynamic_debug.c~dynamic_debug-use-a-single-printk-to-emit-messages-fix
++++ a/lib/dynamic_debug.c
+@@ -423,31 +423,39 @@ static int ddebug_exec_query(char *query
  }
-diff -puN fs/proc/base.c~lib-flex_arrayc-accept-null-arg-to-flex_array_free fs/proc/base.c
---- a/fs/proc/base.c~lib-flex_arrayc-accept-null-arg-to-flex_array_free
-+++ a/fs/proc/base.c
-@@ -2514,8 +2514,7 @@ static int proc_map_files_readdir(struct
- 			fa = flex_array_alloc(sizeof(info), nr_files, GFP_KERNEL);
- 			if (!fa || flex_array_prealloc(fa, 0, nr_files, GFP_KERNEL)) {
- 				ret = -ENOMEM;
--				if (fa)
--					flex_array_free(fa);
-+				flex_array_free(fa);
- 				up_read(&mm->mmap_sem);
- 				mmput(mm);
- 				goto out;
-@@ -2556,8 +2555,7 @@ static int proc_map_files_readdir(struct
- 			p = flex_array_get(fa, i);
- 			fput(p->file);
- 		}
--		if (fa)
--			flex_array_free(fa);
-+		flex_array_free(fa);
- 		mmput(mm);
- 	}
- 	}
-diff -puN security/selinux/ss/policydb.c~lib-flex_arrayc-accept-null-arg-to-flex_array_free security/selinux/ss/policydb.c
---- a/security/selinux/ss/policydb.c~lib-flex_arrayc-accept-null-arg-to-flex_array_free
-+++ a/security/selinux/ss/policydb.c
-@@ -769,16 +769,13 @@ void policydb_destroy(struct policydb *p
- 		hashtab_destroy(p->symtab[i].table);
- 	}
  
--	for (i = 0; i < SYM_NUM; i++) {
--		if (p->sym_val_to_name[i])
--			flex_array_free(p->sym_val_to_name[i]);
--	}
-+	for (i = 0; i < SYM_NUM; i++)
-+		flex_array_free(p->sym_val_to_name[i]);
+ #define PREFIX_SIZE 64
+-#define LEFT(wrote) ((PREFIX_SIZE - wrote) > 0) ? (PREFIX_SIZE - wrote) : 0
++
++static int remaining(int wrote)
++{
++	if (PREFIX_SIZE - wrote > 0)
++		return PREFIX_SIZE - wrote;
++	return 0;
++}
  
- 	kfree(p->class_val_to_struct);
- 	kfree(p->role_val_to_struct);
- 	kfree(p->user_val_to_struct);
--	if (p->type_val_to_struct_array)
--		flex_array_free(p->type_val_to_struct_array);
-+	flex_array_free(p->type_val_to_struct_array);
+ static char *dynamic_emit_prefix(const struct _ddebug *desc, char *buf)
+ {
+ 	int pos_after_tid;
+ 	int pos = 0;
  
- 	avtab_destroy(&p->te_avtab);
+-	pos += snprintf(buf + pos, LEFT(pos), "%s", KERN_DEBUG);
++	pos += snprintf(buf + pos, remaining(pos), "%s", KERN_DEBUG);
+ 	if (desc->flags & _DPRINTK_FLAGS_INCL_TID) {
+ 		if (in_interrupt())
+-			pos += snprintf(buf + pos, LEFT(pos), "%s ",
++			pos += snprintf(buf + pos, remaining(pos), "%s ",
+ 						"<intr>");
+ 		else
+-			pos += snprintf(buf + pos, LEFT(pos), "[%d] ",
++			pos += snprintf(buf + pos, remaining(pos), "[%d] ",
+ 						task_pid_vnr(current));
+ 	}
+ 	pos_after_tid = pos;
+ 	if (desc->flags & _DPRINTK_FLAGS_INCL_MODNAME)
+-		pos += snprintf(buf + pos, LEFT(pos), "%s:", desc->modname);
++		pos += snprintf(buf + pos, remaining(pos), "%s:",
++					desc->modname);
+ 	if (desc->flags & _DPRINTK_FLAGS_INCL_FUNCNAME)
+-		pos += snprintf(buf + pos, LEFT(pos), "%s:", desc->function);
++		pos += snprintf(buf + pos, remaining(pos), "%s:",
++					desc->function);
+ 	if (desc->flags & _DPRINTK_FLAGS_INCL_LINENO)
+-		pos += snprintf(buf + pos, LEFT(pos), "%d:", desc->lineno);
++		pos += snprintf(buf + pos, remaining(pos), "%d:", desc->lineno);
+ 	if (pos - pos_after_tid)
+-		pos += snprintf(buf + pos, LEFT(pos), " ");
++		pos += snprintf(buf + pos, remaining(pos), " ");
+ 	if (pos >= PREFIX_SIZE)
+ 		buf[PREFIX_SIZE - 1] = '\0';
  
 _
 
