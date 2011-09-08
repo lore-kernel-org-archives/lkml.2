@@ -1,68 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932529Ab1IHJ1P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 05:27:15 -0400
-Received: from mga03.intel.com ([143.182.124.21]:62810 "EHLO mga03.intel.com"
+	id S932544Ab1IHJbJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 05:31:09 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:42726 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752659Ab1IHJ1O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 05:27:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,349,1312182000"; 
-   d="scan'208";a="46709886"
-Message-ID: <4E688A00.6090704@linux.intel.com>
-Date: Thu, 08 Sep 2011 17:25:20 +0800
-From: Minskey Guo <chaohong_guo@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+	id S932493Ab1IHJbI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 05:31:08 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: agruen@kernel.org, akpm@linux-foundation.org, dhowells@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V6 09/26] vfs: Add delete child and delete self permission flags
+In-Reply-To: <20110907203916.GE8074@fieldses.org>
+References: <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1315243548-18664-10-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20110907203916.GE8074@fieldses.org>
+User-Agent: Notmuch/0.5-318-g52e4ded (http://notmuchmail.org) Emacs/23.2.1 (x86_64-pc-linux-gnu)
+Date: Thu, 08 Sep 2011 15:00:58 +0530
+Message-ID: <87ipp35qjx.fsf@skywalker.in.ibm.com>
 MIME-Version: 1.0
-To: "Luck, Tony" <tony.luck@intel.com>
-CC: Chen Gong <gong.chen@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@amd64.org>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Subject: Re: [PATCH 5/5] mce: recover from "action required" errors reported
- in data path in usermode
-References: <4e5eb50721061dbb1b@agluck-desktop.sc.intel.com> <4E6709B2.7020401@linux.intel.com> <4E683108.8020000@linux.intel.com> <987664A83D2D224EAE907B061CE93D5301EA9704CD@orsmsx505.amr.corp.intel.com>
-In-Reply-To: <987664A83D2D224EAE907B061CE93D5301EA9704CD@orsmsx505.amr.corp.intel.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/08/2011 01:16 PM, Luck, Tony wrote:
->>     __memory_failure() handling calls  some routines, such
->> as  is_free_buddy_page(),  which needs to acquire the spin
->> lock,  zone->lock. How can we guarantee that other CPUs
->> haven't acquired the lock when receiving #mc broadcast
->> and entering #mc handlers ?
-> By the time I call __memory_failure() - the other cpus have
-> been released from mce handler - so they are back executing
-> normal code.
-Oh, yes,  I just realized that mce_end() released other
-cpus. So, printk/lock is not an issue here.
+On Wed, 7 Sep 2011 16:39:16 -0400, "J. Bruce Fields" <bfields@fieldses.org> wrote:
+> On Mon, Sep 05, 2011 at 10:55:31PM +0530, Aneesh Kumar K.V wrote:
+> > From: Andreas Gruenbacher <agruen@kernel.org>
+> > 
+> > Normally, deleting a file requires write access to the parent directory.
+> > Some permission models use a different permission on the parent
+> > directory to indicate delete access.  In addition, a process can have
+> > per-file delete access even without delete access on the parent
+> > directory.
+> > 
+> > Introduce two new inode_permission() mask flags and use them in
+> > may_delete()
+> > 
+> > Signed-off-by: Andreas Gruenbacher <agruen@kernel.org>
+> > Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> > ---
+> >  fs/namei.c         |   41 +++++++++++++++++++++++++++--------------
+> >  include/linux/fs.h |    2 ++
+> >  2 files changed, 29 insertions(+), 14 deletions(-)
+> > 
+> > diff --git a/fs/namei.c b/fs/namei.c
+> > index d52a4cd..eacb530 100644
+> > --- a/fs/namei.c
+> > +++ b/fs/namei.c
+> > @@ -337,7 +337,7 @@ static inline int do_inode_permission(struct inode *inode, int mask)
+> >   * are used for other things.
+> >   *
+> >   * When checking for MAY_APPEND, MAY_CREATE_FILE, MAY_CREATE_DIR,
+> > - * MAY_WRITE must also be set in @mask.
+> > + * MAY_DELETE_CHILD, MAY_DELETE_SELF, MAY_WRITE must also be set in @mask.
+> >   */
+> >  int inode_permission(struct inode *inode, int mask)
+> >  {
+> > @@ -1862,7 +1862,7 @@ static inline int check_sticky(struct inode *dir, struct inode *inode)
+> >  		return 0;
+> >  
+> >  other_userns:
+> > -	return !ns_capable(inode_userns(inode), CAP_FOWNER);
+> > +	return 1;
+> >  }
+> >  
+> >  /*
+> > @@ -1884,30 +1884,43 @@ other_userns:
+> >   * 10. We don't allow removal of NFS sillyrenamed files; it's handled by
+> >   *     nfs_async_unlink().
+> >   */
+> > -static int may_delete(struct inode *dir,struct dentry *victim,int isdir)
+> > +static int may_delete(struct inode *dir, struct dentry *victim,
+> > +		      int isdir, int replace)
+> >  {
+> > -	int error;
+> > +	int mask, error, is_sticky;
+> > +	struct inode *inode = victim->d_inode;
+> >  
+> > -	if (!victim->d_inode)
+> > +	if (!inode)
+> >  		return -ENOENT;
+> >  
+> >  	BUG_ON(victim->d_parent->d_inode != dir);
+> >  	audit_inode_child(victim, dir);
+> >  
+> > -	error = inode_permission(dir, MAY_WRITE | MAY_EXEC);
+> > +	mask = MAY_WRITE | MAY_EXEC | MAY_DELETE_CHILD;
+> > +	if (replace)
+> > +		mask |= S_ISDIR(inode->i_mode) ?
+> > +			MAY_CREATE_DIR : MAY_CREATE_FILE;
+> 
+> I'm having trouble understanding this next bit:
+> 
+> > +	is_sticky = check_sticky(dir, inode);
+> > +	error = inode_permission(dir, mask);
+> > +	if ((error || is_sticky) && IS_RICHACL(inode) &&
+> > +	    !inode_permission(dir, mask & ~(MAY_WRITE | MAY_DELETE_CHILD)) &&
+> > +	    !inode_permission(inode, MAY_DELETE_SELF))
+> > +		error = 0;
+> 
+> OK, so we can ignore the lack of write or delete permissions on the
+> parent if we have delete_self permissions on the child.  I guess that's
+> right.
+> 
+> Why the "|| is_sticky" above?
+> 
+> Is there some less complicated why to write this?
+
+we removed the ns_capable check out of check_sticky, because we don't
+want to do capability check when richacl allows access. We also want to
+make sure that even if mode bits allow access (inode_permission(dir, mask))
+if sticky bit is set we do additional check.
 
 
-> But Chen Gong's earlier comments made me look again at entry_64.S
-> code - ane I realized that I missed seeing code in the return
-> path from do_machine_check() that switched from MCE stack to
-> regular kernel stack before processing TIF_MCE_NOTIFY.
->
-> I may go back and re-visit a path that I looked at to change
-> do_machine_check from "void" return to "unsigned long" and have
-> it return the address for the "AR" case and "0" otherwise.
-> Then we could switch out of machine check stack to non-mce
-> context to call __memory_failure().  When I looked at this
-> before the entry_64.S path looked plausible. The 32-bit
-> path looked to be painful (too many macros in entry_32.S)
->
-Why do you plan to switch out of machine check stack while
-call __memory_failure() in do_machine_check(),  what's the
-benefits ?
-
-thanks
--minskey
-
-
-> -Tony
-> N�����r��y���b�X��ǧv�^�)޺{.n�+����{����zX����ܨ}���Ơz�&j:+v�������zZ+��+zf���h���~����i���z��w���?����&�)ߢf��^jǫy�m��@A�a���0��h��i
-
+-aneesh
