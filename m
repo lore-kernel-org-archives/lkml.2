@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759999Ab1IIUre (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 16:47:34 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:44763 "EHLO
-	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759970Ab1IIUr1 (ORCPT
+	id S933565Ab1IIUrn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 16:47:43 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:11033 "EHLO
+	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759970Ab1IIUrk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 16:47:27 -0400
-X-Sasl-enc: bnuIvvNmvbuPwsCYXkBDFA23JxeqKvTntbWzU+MTfIcL 1315601246
-Date: Fri, 9 Sep 2011 13:41:32 -0700
-From: Greg KH <greg@kroah.com>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, Haiyang Zhang <haiyangz@microsoft.com>
-Subject: Re: [PATCH 06/25] Staging: hv: storvsc: Use the driver_data to
- identify ide
-Message-ID: <20110909204132.GE19127@kroah.com>
-References: <1315491843-9513-1-git-send-email-kys@microsoft.com>
- <1315491876-9554-1-git-send-email-kys@microsoft.com>
- <1315491876-9554-6-git-send-email-kys@microsoft.com>
+	Fri, 9 Sep 2011 16:47:40 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-4.tower-160.messagelabs.com!1315598554!34066405!227
+X-Originating-IP: [216.166.12.98]
+X-StarScan-Version: 6.3.6; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] aes_glue.c: quiet sparse noise about symbol not declared
+Date: Fri, 9 Sep 2011 13:47:02 -0700
+User-Agent: KMail/1.9.9
+CC: <linux-crypto@vger.kernel.org>, <x86@kernel.org>,
+        <herbert@gondor.hengli.com.au>, <davem@davemloft.net>,
+        <tglx@linutronix.de>, <mingo@redhat.com>, <hpa@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <1315491876-9554-6-git-send-email-kys@microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-ID: <201109091347.03199.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 08, 2011 at 07:24:17AM -0700, K. Y. Srinivasan wrote:
-> Use the driver_data to identify ide devices in storvsc_probe().
-> 
-> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> ---
->  drivers/staging/hv/storvsc_drv.c |   13 +++++--------
->  1 files changed, 5 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-> index fff1e5b..e2c63e5 100644
-> --- a/drivers/staging/hv/storvsc_drv.c
-> +++ b/drivers/staging/hv/storvsc_drv.c
-> @@ -1366,10 +1366,12 @@ static struct scsi_host_template scsi_driver = {
->  static const struct hv_vmbus_device_id id_table[] = {
->  	/* SCSI guid */
->  	{ VMBUS_DEVICE(0xd9, 0x63, 0x61, 0xba, 0xa1, 0x04, 0x29, 0x4d,
-> -		       0xb6, 0x05, 0x72, 0xe2, 0xff, 0xb1, 0xdc, 0x7f) },
-> +		       0xb6, 0x05, 0x72, 0xe2, 0xff, 0xb1, 0xdc, 0x7f)
-> +	  .driver_data = 0 },
+Include <asm/aes.h> to pick up the declarations for crypto_aes_encrypt_x86
+and crypto_aes_decrypt_x86 to quiet the sparse noise:
 
-What does 0 mean?  That's the "default" here, right?
+warning: symbol 'crypto_aes_encrypt_x86' was not declared. Should it be static?
+warning: symbol 'crypto_aes_decrypt_x86' was not declared. Should it be static?
 
->  	/* IDE guid */
->  	{ VMBUS_DEVICE(0x32, 0x26, 0x41, 0x32, 0xcb, 0x86, 0xa2, 0x44,
-> -		       0x9b, 0x5c, 0x50, 0xd1, 0x41, 0x73, 0x54, 0xf5) },
-> +		       0x9b, 0x5c, 0x50, 0xd1, 0x41, 0x73, 0x54, 0xf5)
-> +	  .driver_data = 1 },
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+"David S. Miller" <davem@davemloft.net>
+Thomas Gleixner <tglx@linutronix.de>
+Ingo Molnar <mingo@redhat.com>
+"H. Peter Anvin" <hpa@zytor.com>
 
-What does 1 mean?
+---
 
-And yes, I can guess, but please, will you really remember this in 2
-years?
-
-enums are your friend...
-
-PLEASE make your code easier to maintain for the person who has to come
-clean it up after you, which is usually yourself so you are only making
-your own life easier.
-
-greg k-h
+diff --git a/arch/x86/crypto/aes_glue.c b/arch/x86/crypto/aes_glue.c
+index bdce3ee..8efcf42 100644
+--- a/arch/x86/crypto/aes_glue.c
++++ b/arch/x86/crypto/aes_glue.c
+@@ -5,6 +5,7 @@
+ 
+ #include <linux/module.h>
+ #include <crypto/aes.h>
++#include <asm/aes.h>
+ 
+ asmlinkage void aes_enc_blk(struct crypto_aes_ctx *ctx, u8 *out, const u8 *in);
+ asmlinkage void aes_dec_blk(struct crypto_aes_ctx *ctx, u8 *out, const u8 *in);
