@@ -1,67 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758732Ab1IIKcL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 06:32:11 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:45987 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758411Ab1IIKcJ convert rfc822-to-8bit (ORCPT
+	id S933304Ab1IIKe0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 06:34:26 -0400
+Received: from mail-ew0-f52.google.com ([209.85.215.52]:62412 "EHLO
+	mail-ew0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758329Ab1IIKeY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 06:32:09 -0400
+	Fri, 9 Sep 2011 06:34:24 -0400
+X-Greylist: delayed 852 seconds by postgrey-1.27 at vger.kernel.org; Fri, 09 Sep 2011 06:34:24 EDT
+Message-ID: <4E69E675.1010809@gmail.com>
+Date: Fri, 09 Sep 2011 12:12:05 +0200
+From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
 MIME-Version: 1.0
-In-Reply-To: <1315540963.11939.12.camel@Joe-Laptop>
-References: <cover.1314725877.git.jbaron@redhat.com> <94c0e3275b0bf7d2cad8e7909da1482a867e7bc6.1314725877.git.jbaron@redhat.com>
- <20110908165230.a7505321.akpm@linux-foundation.org> <1315534396.11939.10.camel@Joe-Laptop>
- <20110908204200.6cf7abc2.akpm@linux-foundation.org> <1315540963.11939.12.camel@Joe-Laptop>
-From: Bart Van Assche <bvanassche@acm.org>
-Date: Fri, 9 Sep 2011 12:31:49 +0200
-X-Google-Sender-Auth: zj3IO0gv60AozDLX4xYuz2fKamQ
-Message-ID: <CAO+b5-oOHXEhnA+zpwA9GR7k1TX3Wn6XuOdc3TB4MPNiSpskiw@mail.gmail.com>
-Subject: Re: [PATCH 1/4] dynamic_debug: consolidate repetitive struct _ddebug
- descriptor definitions
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jason Baron <jbaron@redhat.com>,
-        gregkh@suse.de, jim.cromie@gmail.com, linux-kernel@vger.kernel.org
+To: Borislav Petkov <bp@alien8.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Borislav Petkov <bp@amd64.org>,
+        "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
+        Ingo Molnar <mingo@elte.hu>, melwyn lobo <linux.melwyn@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: x86 memcpy performance
+References: <CAHSGOutFRcXWtn9d2zwLbkQG==kwPEUZh-ZigKS5AnMN6ty2-w@mail.gmail.com> <20110812195220.GA29051@elte.hu> <20110814095910.GA18809@liondog.tnic> <6296.1313462075@turing-police.cc.vt.edu> <20110816121604.GA29251@aftab> <4E5FA18A.7010205@gmail.com> <CA+55aFz1RRY6KcqVVZ9tBH7PDXfBwkZ1AhJcSHPABLXMkNJCOA@mail.gmail.com> <20110908083551.GA5646@liondog.tnic> <4E689FC5.8010005@gmail.com> <20110909081407.GA29251@liondog.tnic>
+In-Reply-To: <20110909081407.GA29251@liondog.tnic>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 9, 2011 at 6:02 AM, Joe Perches <joe@perches.com> wrote:
-> On Thu, 2011-09-08 at 20:42 -0700, Andrew Morton wrote:
-> > On Thu, 08 Sep 2011 19:13:16 -0700 Joe Perches <joe@perches.com> wrote:
-> > > On Thu, 2011-09-08 at 16:52 -0700, Andrew Morton wrote:
-> > > > On Tue, 30 Aug 2011 14:28:41 -0400
-> > > > Jason Baron <jbaron@redhat.com> wrote:
-> > > > > Replace the repetitive struct _ddebug descriptor definitions with
-> > > > > a new DECLARE_DYNAMIC_DEBUG_META_DATA(name, fmt) macro.
-> > > > > +#define DECLARE_DYNAMIC_DEBUG_METADATA(name, fmt)              \
-> > > > > +       static struct _ddebug __used __aligned(8)               \
-> > > > > +       __attribute__((section("__verbose"))) name = {          \
-> > > > > +               .modname = KBUILD_MODNAME,                      \
-> > > > > +               .function = __func__,                           \
-> > > > > +               .filename = __FILE__,                           \
-> > > > > +               .format = (fmt),                                \
-> > > > > +               .lineno = __LINE__,                             \
-> > > > > +               .flags =  _DPRINTK_FLAGS_DEFAULT,               \
-> > > > > +               .enabled = false,                               \
-> > > > > +       }
-> > > > <anal>That macro implements a definition, not a declaration</anal>
-> > > Andrew, that's not quite true
-> > It's precisely true.
-> Not according to the c99 standard section 6.7
+Hey,
 
-Have you read that paragraph ? This is what I found in paragraph 6.7,
-which confirms Andrews interpretation:
+On 09/09/2011 10:14 AM, Borislav Petkov wrote:
+> On Thu, Sep 08, 2011 at 12:58:13PM +0200, Maarten Lankhorst wrote:
+>> I have changed your sse memcpy to test various alignments with
+>> source/destination offsets instead of random, from that you can
+>> see that you don't really get a speedup at all. It seems to be more
+>> a case of 'kernel memcpy is significantly slower with some alignments',
+>> than 'avx memcpy is just that much faster'.
+>>
+>> For example 3754 with src misalignment 4 and target misalignment 20
+>> takes 1185 units on avx memcpy, but 1480 units with kernel memcpy
+> Right, so the idea is to check whether with the bigger buffer sizes
+> (and misaligned, although this should not be that often the case in
+> the kernel) the SSE version would outperform a "rep movs" with ucode
+> optimizations not kicking in.
+>
+> With your version modified back to SSE memcpy (don't have an AVX box
+> right now) I get on an AMD F10h:
+>
+> ...
+> 16384(12/40)    4756.24         7867.74         1.654192552
+> 16384(40/12)    5067.81         6068.71         1.197500008
+> 16384(12/44)    4341.3          8474.96         1.952172387
+> 16384(44/12)    4277.13         7107.64         1.661777347
+> 16384(12/48)    4989.16         7964.54         1.596369011
+> 16384(48/12)    4644.94         6499.5          1.399264281
+> ...
+>
+> which looks like pretty nice numbers to me. I can't say whether there
+> ever is 16K buffer we copy in the kernel but if there were... But <16K
+> buffers also show up to 1.5x speedup. So I'd say it's a uarch thing.
+> As I said, best it would be to put it in the kernel and run a bunch of
+> benchmarks...
+I think for bigger memcpy's it might make sense to demand stricter
+alignment. What are your numbers for (0/0) ? In my case it seems
+that kernel memcpy is always faster for that. In fact, it seems
+src&63 == dst&63 is generally faster with kernel memcpy.
 
-<quote>
-A declaration speciﬁes the interpretation and attributes of a set of
-identiﬁers. A deﬁnition of an identiﬁer is a declaration for that
-identiﬁer that:
-- for an object, causes storage to be reserved for that object;
-- for a function, includes the function body;
-- for an enumeration constant or typedef name, is the (only)
-declaration of the identiﬁer.
-</quote>
+Patching my tree to WARN_ON_ONCE for when this condition isn't true, I get the following warnings:
 
-Bart.
+WARNING: at arch/x86/kernel/head64.c:49 x86_64_start_reservations+0x3b/0x18d()
+WARNING: at arch/x86/kernel/head64.c:52 x86_64_start_reservations+0xcb/0x18d()
+WARNING: at arch/x86/kernel/e820.c:1077 setup_memory_map+0x3b/0x72()
+WARNING: at kernel/fork.c:938 copy_process+0x148f/0x1550()
+WARNING: at arch/x86/vdso/vdso32-setup.c:306 sysenter_setup+0xd4/0x301()
+WARNING: at mm/util.c:72 kmemdup+0x75/0x80()
+WARNING: at fs/btrfs/disk-io.c:1742 open_ctree+0x1ab5/0x1bb0()
+WARNING: at fs/btrfs/disk-io.c:1744 open_ctree+0x1b35/0x1bb0()
+WARNING: at fs/btrfs/extent_io.c:3634 write_extent_buffer+0x209/0x240()
+WARNING: at fs/exec.c:1002 flush_old_exec+0x6c3/0x750()
+WARNING: at fs/btrfs/extent_io.c:3496 read_extent_buffer+0x1b1/0x1e0()
+WARNING: at kernel/module.c:2585 load_module+0x1933/0x1c30()
+WARNING: at fs/btrfs/extent_io.c:3748 memcpy_extent_buffer+0x2aa/0x2f0()
+WARNING: at fs/btrfs/disk-io.c:2276 write_dev_supers+0x34e/0x360()
+WARNING: at lib/swiotlb.c:367 swiotlb_bounce+0xc6/0xe0()
+WARNING: at fs/btrfs/transaction.c:1387 btrfs_commit_transaction+0x867/0x8a0()
+WARNING: at drivers/tty/serial/serial_core.c:527 uart_write+0x14a/0x160()
+WARNING: at mm/memory.c:3830 __access_remote_vm+0x251/0x270()
+
+The most persistent one appears to be the btrfs' *_extent_buffer,
+it gets the most warnings on my system. Apart from that on my
+system there's not much to gain, since the alignment is already
+close to optimal.
+
+My ext4 /home doesn't throw warnings, so I'd gain the most
+by figuring out if I could improve btrfs/extent_io.c in some way.
+The patch for triggering those warnings is below, change to WARN_ON
+if you want to see which one happens the most for you.
+
+I was pleasantly surprised though.
+
+>> The modified testcase is attached, I did some optimizations in avx
+>> memcpy, but I fear I may be missing something, when I tried to put it
+>> in the kernel, it complained about sata errors I never had before,
+>> so I immediately went for the power button to prevent more errors,
+>> fortunately it only corrupted some kernel object files, and btrfs
+>> threw checksum errors. :)
+> Well, your version should do something similar to what _mmx_memcpy does:
+> save FPU state and not execute in IRQ context.
+>
+>> All in all I think testing in userspace is safer, you might want to
+>> run it on an idle cpu with schedtool, with a high fifo priority, and
+>> set cpufreq governor to performance.
+> No, you need a generic system with default settings - otherwise it is
+> blatant benchmark lying :-)
+
+diff --git a/arch/x86/include/asm/string_64.h b/arch/x86/include/asm/string_64.h
+index 19e2c46..77180bb 100644
+--- a/arch/x86/include/asm/string_64.h
++++ b/arch/x86/include/asm/string_64.h
+@@ -30,6 +30,14 @@ static __always_inline void *__inline_memcpy(void *to, const void *from, size_t
+ #ifndef CONFIG_KMEMCHECK
+ #if (__GNUC__ == 4 && __GNUC_MINOR__ >= 3) || __GNUC__ > 4
+ extern void *memcpy(void *to, const void *from, size_t len);
++#define memcpy(dst, src, len)					\
++({								\
++	size_t __len = (len);					\
++	const void *__src = (src);				\
++	void *__dst = (dst);					\
++	WARN_ON_ONCE(__len > 1024 && (((long)__src & 63) != ((long)__dst & 63))); \
++	memcpy(__dst, __src, __len);				\
++})
+ #else
+ extern void *__memcpy(void *to, const void *from, size_t len);
+ #define memcpy(dst, src, len)					\
+
+
