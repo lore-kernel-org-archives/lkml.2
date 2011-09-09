@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759307Ab1IIO4k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 10:56:40 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:46931 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759256Ab1IIO4h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 10:56:37 -0400
-From: Keshava Munegowda <keshava_mgowda@ti.com>
-To: <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: Keshava Munegowda <keshava_mgowda@ti.com>, <balbi@ti.com>,
-        <gadiyar@ti.com>, <sameo@linux.intel.com>, <parthab@india.ti.com>,
-        <tony@atomide.com>, <khilman@ti.com>, <b-cousson@ti.com>,
-        <paul@pwsan.com>, <johnstul@us.ibm.com>, <vishwanath.bs@ti.com>,
-        Keshava Munegowda <Keshava_mgowda@ti.com>
-Subject: [PATCH 0/2] arm: omap: usb: enable I/O wakeups of ehci and ohci hwmods
-Date: Fri, 9 Sep 2011 20:22:45 +0530
-Message-ID: <1315579967-24945-1-git-send-email-keshava_mgowda@ti.com>
-X-Mailer: git-send-email 1.6.0.4
+	id S1758645Ab1IIPAf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 11:00:35 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:39397 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756680Ab1IIPAd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Sep 2011 11:00:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <CAF1ivSZ6WdcNGMEDVZ0V+3PzZGb6cGYCVvdzzZGjB_RAeLAomg@mail.gmail.com>
+References: <20110909163825.f56274af231038ee31a735f6@canb.auug.org.au>
+	<CAF1ivSZ6WdcNGMEDVZ0V+3PzZGb6cGYCVvdzzZGjB_RAeLAomg@mail.gmail.com>
+Date: Fri, 9 Sep 2011 17:00:32 +0200
+X-Google-Sender-Auth: giU6ZVDzVi-_-litihy7qHHxd3E
+Message-ID: <CAMuHMdXLQbt4CzvfxcOz1BXLW+a2xfhOa1gZt4bkCZpzNgjQvA@mail.gmail.com>
+Subject: Re: linux-next: Tree for Sept 9
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Lin Ming <mlin@ss.pku.edu.cn>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Keshava Munegowda <Keshava_mgowda@ti.com>
+On Fri, Sep 9, 2011 at 16:27, Lin Ming <mlin@ss.pku.edu.cn> wrote:
+> On Fri, Sep 9, 2011 at 2:38 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>> With master.kernel.org down, there is not much change from September 1
+>> and the actual release will be delayed until master returns.  I will
+   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>> still do the overnight builds, though.
+>>
+>
+> Hi, Stephen
+>
+> git.kernel.org is still down, then where can I pull -next tree?
 
-For ehci and ohci hwmods,
-the omap3 and omap4 I/O wakeup capablity is enabled.
-In case of system global suspend, The ehci/ohci device 
-connection/disconnection and remote wakeup wakesup the system.
+Nowhere, cfr. above.
 
-This patch series is based on
-1. 	I/O pads initialization to ehci and ohci hwmod
-2.      Runtime PM support of usbhs of omap3 and omap4
-       These patches are avilable at branch kmg-usbhs-pm
-       code repository : git://gitorious.org/~kmg/mirrors/kmg-usbhs-pm.git
-3.      Kevin's pm branch
+Gr{oetje,eeting}s,
 
+                        Geert
 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-Keshava Munegowda (1):
-  arm: omap: usb: enable I/O wakeups of ehci and ohci hwmods of omap3
-
-Kishon Vijay Abraham (1):
-  arm: omap: usb: enable I/O wakeups of ehci and ohci hwmods of omap4
-
- arch/arm/mach-omap2/usb-host.c |  172 +++++++++++++++++++++++++++++++++-------
- 1 files changed, 144 insertions(+), 28 deletions(-)
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
