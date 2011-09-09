@@ -1,61 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756760Ab1IIARz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 20:17:55 -0400
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:60649 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756429Ab1IIARx (ORCPT
+	id S1756798Ab1IIASM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 20:18:12 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:37316 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756429Ab1IIASJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 20:17:53 -0400
-Message-ID: <4E68F72F.70305@xenotime.net>
-Date: Thu, 08 Sep 2011 10:11:11 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	Thu, 8 Sep 2011 20:18:09 -0400
+Message-ID: <4E695B3D.7060804@hp.com>
+Date: Thu, 08 Sep 2011 17:18:05 -0700
+From: Rick Jones <rick.jones2@hp.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Lightning/1.0b2 Thunderbird/3.1.13
 MIME-Version: 1.0
-To: Richard Purdie <richard.purdie@linuxfoundation.org>
-CC: Bryan Wu <bryan.wu@canonical.com>, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, linus.walleij@linaro.org,
-        akpm <akpm@linux-foundation.org>
-Subject: Re: [PATCH 2/2] Documentation: leds-class: fix a typo
-References: <1315249786-15387-1-git-send-email-bryan.wu@canonical.com>	 <1315249786-15387-2-git-send-email-bryan.wu@canonical.com> <1315252366.1243.22.camel@ted>
-In-Reply-To: <1315252366.1243.22.camel@ted>
-Content-Type: text/plain; charset=UTF-8
+To: Glauber Costa <glommer@parallels.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, netdev@vger.kernel.org, xemul@parallels.com,
+        "David S. Miller" <davem@davemloft.net>,
+        Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH] per-cgroup tcp buffer limitation
+References: <1315276556-10970-1-git-send-email-glommer@parallels.com>
+In-Reply-To: <1315276556-10970-1-git-send-email-glommer@parallels.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/11 12:52, Richard Purdie wrote:
-> On Tue, 2011-09-06 at 03:09 +0800, Bryan Wu wrote:
->> Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
-> 
-> Acked-by: Richard Purdie <rchard.purdie@linuxfoundation.org>
+On 09/05/2011 07:35 PM, Glauber Costa wrote:
+> To test for any performance impacts of this patch, I used netperf's
+> TCP_RR benchmark on localhost, so we can have both recv and snd in action.
+>
+> Command line used was ./src/netperf -t TCP_RR -H localhost, and the
+> results:
+>
+> Without the patch
+> =================
+>
+> Socket Size   Request  Resp.   Elapsed  Trans.
+> Send   Recv   Size     Size    Time     Rate
+> bytes  Bytes  bytes    bytes   secs.    per sec
+>
+> 16384  87380  1        1       10.00    26996.35
+> 16384  87380
+>
+> With the patch
+> ===============
+>
+> Local /Remote
+> Socket Size   Request  Resp.   Elapsed  Trans.
+> Send   Recv   Size     Size    Time     Rate
+> bytes  Bytes  bytes    bytes   secs.    per sec
+>
+> 16384  87380  1        1       10.00    27291.86
+> 16384  87380
 
-Applied, thanks.
-
->> ---
->>  Documentation/leds/leds-class.txt |    4 ++--
->>  1 files changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/Documentation/leds/leds-class.txt b/Documentation/leds/leds-class.txt
->> index 4996586..79699c2 100644
->> --- a/Documentation/leds/leds-class.txt
->> +++ b/Documentation/leds/leds-class.txt
->> @@ -61,8 +61,8 @@ Hardware accelerated blink of LEDs
->>  Some LEDs can be programmed to blink without any CPU interaction. To
->>  support this feature, a LED driver can optionally implement the
->>  blink_set() function (see <linux/leds.h>). To set an LED to blinking,
->> -however, it is better to use use the API function led_blink_set(),
->> -as it will check and implement software fallback if necessary.
->> +however, it is better to use the API function led_blink_set(), as it
->> +will check and implement software fallback if necessary.
->>  
->>  To turn off blinking again, use the API function led_brightness_set()
->>  as that will not just set the LED brightness but also stop any software
+Comment about netperf TCP_RR - it can often have > 1% variability, so it 
+would be a Good Idea (tm) to either run it multiple times in a row, or 
+rely on the confidence intervals functionality.  Here, for example, is 
+an invoking of netperf using confidence intervals and the recently 
+added, related output selectors.  The options request that netperf be 
+99% confident that the width of the confidence interval is 1%, and it 
+should run at least 3 but no more than 30 (those are both the high and 
+low limits respectively) iterations of the test.
 
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+raj@tardy:~/netperf2_trunk$ src/netperf -t TCP_RR -i 30,3 -I 99,1 -- -k 
+throughput,confidence_level,confidence_interval,confidence_iteration,throughput_confid
+MIGRATED TCP REQUEST/RESPONSE TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET 
+to localhost.localdomain (127.0.0.1) port 0 AF_INET : +/-0.500% @ 99% 
+conf.  : histogram : first burst 0
+THROUGHPUT=55555.94
+CONFIDENCE_LEVEL=99
+CONFIDENCE_INTERVAL=1.000000
+CONFIDENCE_ITERATION=26
+THROUGHPUT_CONFID=0.984
+
+it took 26 iterations for netperf to be 99% confident the interval width 
+was < 1% .  Here is a "several times in a row" for the sake of completeness:
+
+raj@tardy:~/netperf2_trunk$ HDR="-P 1";for i in `seq 1 10`; do netperf 
+-t TCP_RR $HDR -B "iteration $i" -- -o result_brand,throughput; HDR="-P 
+0"; done
+MIGRATED TCP REQUEST/RESPONSE TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET 
+to localhost.localdomain (127.0.0.1) port 0 AF_INET : first burst 0
+Result Tag,Throughput
+"iteration 1",55768.37
+"iteration 2",55949.97
+"iteration 3",55653.36
+"iteration 4",55994.65
+"iteration 5",54712.42
+"iteration 6",55285.27
+"iteration 7",55638.65
+"iteration 8",55135.56
+"iteration 9",56275.87
+"iteration 10",55607.66
+
+That way one can have greater confidence that one isn't accidentally 
+comparing the trough of one configuration with the peak of another.
+
+happy benchmarking,
+
+rick jones
+
+PS - while it may not really matter for loopback testing, where 
+presumably 99 times out of 10 a single core will run at saturation, when 
+running TCP_RR over a "real" network, including CPU utilization to get 
+the differences in service demand is another Good Idea (tm) - 
+particularly in the face of interrupt coalescing.
