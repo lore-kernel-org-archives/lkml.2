@@ -1,53 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759937Ab1IIUrH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 16:47:07 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:42997 "EHLO
+	id S1759961Ab1IIUrY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 16:47:24 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:41585 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759922Ab1IIUrE (ORCPT
+	by vger.kernel.org with ESMTP id S1759922Ab1IIUrV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 16:47:04 -0400
-X-Sasl-enc: TkUQvL8zXbODmgvLhB7fE9LX+XAIdzniIbmGvV+AUyYM 1315601223
-Date: Fri, 9 Sep 2011 13:30:19 -0700
+	Fri, 9 Sep 2011 16:47:21 -0400
+X-Sasl-enc: k1AWOX92Ebc+iPfuWWviP4gMHKOR8uk24OellGcZ1b8B 1315601240
+Date: Fri, 9 Sep 2011 13:34:47 -0700
 From: Greg KH <greg@kroah.com>
-To: Nitin Gupta <ngupta@vflare.org>
-Cc: Jerome Marchand <jmarchan@redhat.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Linux Driver Project <devel@linuxdriverproject.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/5 resend] Fix sparse warnings
-Message-ID: <20110909203019.GA19140@kroah.com>
-References: <1315445357-14338-1-git-send-email-ngupta@vflare.org>
- <1315445357-14338-2-git-send-email-ngupta@vflare.org>
- <4E6A4AA7.5050004@vflare.org>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: gregkh@suse.de, devel@driverdev.osuosl.org, dan.magenheimer@oracle.com,
+        cascardo@holoscopio.com, linux-kernel@vger.kernel.org,
+        dave@linux.vnet.ibm.com, linux-mm@kvack.org, brking@linux.vnet.ibm.com,
+        rcj@linux.vnet.ibm.com, ngupta@vflare.org
+Subject: Re: [PATCH v2 0/3] staging: zcache: xcfmalloc support
+Message-ID: <20110909203447.GB19127@kroah.com>
+References: <1315404547-20075-1-git-send-email-sjenning@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E6A4AA7.5050004@vflare.org>
+In-Reply-To: <1315404547-20075-1-git-send-email-sjenning@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 09, 2011 at 01:19:35PM -0400, Nitin Gupta wrote:
-> Fixes sparse warning:
-> zram_drv.c:666:6: warning: symbol 'zram_slot_free_notify' was not
-> declared. Should it be static?
+On Wed, Sep 07, 2011 at 09:09:04AM -0500, Seth Jennings wrote:
+> Changelog:
+> v2: fix bug in find_remove_block()
+>     fix whitespace warning at EOF
 > 
-> Also, max_zpage_size is now size_t just to be consistent with data-type
-> of other variables maintaining sizes of various kinds.
-> 
-> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
-> ---
->  drivers/staging/zram/zram_drv.c |    3 ++-
->  drivers/staging/zram/zram_drv.h |    2 +-
->  2 files changed, 3 insertions(+), 2 deletions(-)
+> This patchset introduces a new memory allocator for persistent
+> pages for zcache.  The current allocator is xvmalloc.  xvmalloc
+> has two notable limitations:
+> * High (up to 50%) external fragmentation on allocation sets > PAGE_SIZE/2
+> * No compaction support which reduces page reclaimation
 
-Close, but can you please resend the series with a proper Subject: line
-that shows what subsystem/driver this is for?  I explained how to do
-this properly in a prior email.
+I need some acks from other zcache developers before I can accept this.
 
-thanks,
+{hint...}
 
-greg k-h
