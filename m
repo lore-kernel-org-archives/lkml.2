@@ -1,39 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933909Ab1IIUtD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 16:49:03 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:46052 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933838Ab1IIUtA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 16:49:00 -0400
-Date: Fri, 9 Sep 2011 22:48:54 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Cc: Jesper Andersen <jespera@diku.dk>, Hauke Mehrtens <hauke@hauke-m.de>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: Backporting the Linux kernel, for good - was: Re: semantic patch
- inference
-In-Reply-To: <CAB=NE6U0ks9CobukO04=bZpnkm3Yw+Pf7keVPsP-hv1NyJZ_Xw@mail.gmail.com>
-Message-ID: <Pine.LNX.4.64.1109092245170.9242@ask.diku.dk>
-References: <CAB=NE6U0ks9CobukO04=bZpnkm3Yw+Pf7keVPsP-hv1NyJZ_Xw@mail.gmail.com>
+	id S1759948Ab1IIUrW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 16:47:22 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:33046 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759927Ab1IIUrG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Sep 2011 16:47:06 -0400
+X-Sasl-enc: mXRJIcwjYzKb67v/ynQhnWeMujWL5EUuGkcTpQeq59eZ 1315601225
+Date: Fri, 9 Sep 2011 13:32:28 -0700
+From: Greg KH <greg@kroah.com>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, Haiyang Zhang <haiyangz@microsoft.com>
+Subject: Re: [PATCH 1/1] Staging: hv: Integrate the time source driver with
+ Hyper-V detection code
+Message-ID: <20110909203228.GA19127@kroah.com>
+References: <1315434310-4827-1-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1315434310-4827-1-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for your email.  It made me realize that there was one thing that I
-didn't understand at all.  If the patches are only intended to apply to
-linux-next, that makes the problem quite a bit simpler.  I guess that the
-patch that spdiff will receive will already contain the appropriate #ifs,
-so we don't have to be concerned about them.  We just add them in as is.
+On Wed, Sep 07, 2011 at 03:25:10PM -0700, K. Y. Srinivasan wrote:
+> The Hyper-V timesource driver is best integrated with Hyper-V detection code
+> since: (a) Linux guests running on Hyper-V need this timesource and (b)
+> by integrating with Hyper-V detection, we could significantly  minimize the
+> code in the timesource driver.
+> 
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 
-There was also the question about one or multiple types of changes.  I
-think this is not a problem, but Jesper should confirm.  If a patch contains
-two changes and one can be generalized and the other one cannot for some
-reason, does spdiff give up on the whole thing, or does it do what it can?
+Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-Overall, the whole thing seems to be doable :)
-
-julia
