@@ -1,58 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933944Ab1IIU6V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 16:58:21 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:3487 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933413Ab1IIU6U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 16:58:20 -0400
-Message-ID: <4E6A7DE2.7000808@parallels.com>
-Date: Sat, 10 Sep 2011 00:58:10 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S933718Ab1IIVCK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 17:02:10 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:61611 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933345Ab1IIVCI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Sep 2011 17:02:08 -0400
 MIME-Version: 1.0
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-CC: Jeff Layton <jlayton@redhat.com>,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "davem@davemloft.net" <davem@davemloft.net>
-Subject: Re: [PATCH v2 3/5] SUNRPC: make RPC service dependable on rpcbind
- clients creation
-References: <20110909115146.13697.71682.stgit@localhost6.localdomain6>	 <20110909120844.13697.48102.stgit@localhost6.localdomain6>	 <20110909100745.7e2e8bf9@corrin.poochiereds.net>	 <4E6A41D4.6090001@parallels.com>	 <1315593874.17611.19.camel@lade.trondhjem.org>	 <20110909150104.5a83c60d@tlielax.poochiereds.net> <1315596308.17611.46.camel@lade.trondhjem.org>
-In-Reply-To: <1315596308.17611.46.camel@lade.trondhjem.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAMe9rOo2JdzerzfTAFER8rZEOGZkp6HxstdT4_3_s0x6UwTPow@mail.gmail.com>
+References: <4E582577.2060805@zytor.com>
+	<3634139.5BAXH7nXYb@wuerfel>
+	<CAMe9rOrU0wcrRxPoTRcmVRd+2hDwjCta_73Ji-MMiRRXR-3ndw@mail.gmail.com>
+	<2722845.TegCUU4bu0@wuerfel>
+	<CAMe9rOo2JdzerzfTAFER8rZEOGZkp6HxstdT4_3_s0x6UwTPow@mail.gmail.com>
+Date: Fri, 9 Sep 2011 14:02:07 -0700
+Message-ID: <CAMe9rOphmkxPSMqRbr4kYtS=Xg1jqk93sXOh7rXw3azJ8MsjCA@mail.gmail.com>
+Subject: Re: RFD: x32 ABI system call numbers
+From: "H.J. Lu" <hjl.tools@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Valdis.Kletnieks@vt.edu,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Richard Kuo <rkuo@codeaurora.org>, Mark Salter <msalter@redhat.com>,
+        Jonas Bonn <jonas@southpole.se>, Tobias Klauser <tklauser@distanz.ch>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Isn't the problem that Stanislav is trying to solve that we need to be
-> able to register and unregister RPC services to the correct rpcbind
-> server, depending on which net namespace we are in?
-> 
-> My understanding is that the current code will register everything to
-> whatever rpcbind server is running in the init net namespace because
-> that's what rpcb_create_local() uses.
-> 
-> My suggestion is to use a struct pernet_operations to detect when a net
-> namespace is being created or destroyed, so that the rpcbind client code
-> knows when to create or destroy a connection to the server that is
-> running in that namespace.
+On Mon, Sep 5, 2011 at 8:11 AM, H.J. Lu <hjl.tools@gmail.com> wrote:
+> On Mon, Sep 5, 2011 at 12:48 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+>> On Sunday 04 September 2011 15:13:18 H.J. Lu wrote:
+>>> On Sun, Sep 4, 2011 at 2:41 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+>>> > On Sunday 04 September 2011 14:25:53 H.J. Lu wrote:
+>>> >> >> >> #define __NR_x32_recvfrom
+>>> >> >> >> #define __NR_x32_sendmsg
+>>> >> >> >> #define __NR_x32_recvmsg
+>>> >> >> >> #define __NR_x32_recvmmsg
+>>> >> >> >> #define __NR_x32_sendmmsg
+>>> >> >> >
+>>> >> >> > These today use the MSG_CMSG_COMPAT flag to distinguish native and compat
+>>> >> >> > calls. Do you plan to have another flag here to handle cmsg time values?
+>>> >> >>
+>>> >> >> I am using x86-32 calls for them.
+>>> >> >
+>>> >> > But isn't that broken? These all pass u64 or time_t values at some point.
+>>> >> >
+>>> >>
+>>> >> time_t isn't a problem since time_t/timeval/timespec are identical for
+>>> >> x32 and x86-64.  As for u64, I added NATIVE_LONG_TYPE, which is
+>>> >> defined as long long for x32,  and use it instead of long in types for
+>>> >> 64bit system calls.
+>>> >
+>>> > Sorry, I misread you as saying you use the compat syscalls for these.
+>>> > If you use the native 64 bit syscalls, you have the opposite problem:
+>>> > Some network protocols (e.g. netlink or rxrpc) use other data structures
+>>> > that require conversion, e.g. 'long' members that x32 will get wrong.
+>>>
+>>> For those, I use x86-32 calls.
+>>
+>> So to ask again, what do you plan to do about SCM_TIMESTAMP*?
+>>
+>
+> I added MSG_CMSG_COMPAT64 and new compat system calls with
+> 64bit timespec/val to support it.  See the enclosed patch.
+>
 
-The problem is that the client has a reference on transport, the transport gets
-a socket and the socket holds the net namesace and thus we will not receive the
-net->exit event with this approach.
+I decided to define
 
-Another option is to break the client's socket reference and kill the rpcb client
-on netns stop (i.e. as you propose), but in that case we have another problem - 
-how to destroy _other_ clients (not rpc bind ones) when the net namespace stops.
+#define COMPAT_USE_64BIT_TIME \
+  ((task_pt_regs(current)->orig_ax & __X32_SYSCALL_BIT) != 0)
 
-If you prefer either way just let us know, we'll fix the patches.
+instead of adding MSG_CMSG_COMPAT64.  It can be used to check
+64bit time_t, timespec and timeval in any system calls.
 
-> Cheers
->   Trond
-
+-- 
+H.J.
