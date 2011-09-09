@@ -1,112 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759790Ab1IITYP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 15:24:15 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:39155 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759534Ab1IITYN convert rfc822-to-8bit (ORCPT
+	id S1759891Ab1IITZk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 15:25:40 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:33475 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759693Ab1IITZj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 15:24:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAO+b5-oOHXEhnA+zpwA9GR7k1TX3Wn6XuOdc3TB4MPNiSpskiw@mail.gmail.com>
-References: <cover.1314725877.git.jbaron@redhat.com> <94c0e3275b0bf7d2cad8e7909da1482a867e7bc6.1314725877.git.jbaron@redhat.com>
- <20110908165230.a7505321.akpm@linux-foundation.org> <1315534396.11939.10.camel@Joe-Laptop>
- <20110908204200.6cf7abc2.akpm@linux-foundation.org> <1315540963.11939.12.camel@Joe-Laptop>
- <CAO+b5-oOHXEhnA+zpwA9GR7k1TX3Wn6XuOdc3TB4MPNiSpskiw@mail.gmail.com>
-From: Jim Cromie <jim.cromie@gmail.com>
-Date: Fri, 9 Sep 2011 13:23:43 -0600
-Message-ID: <CAJfuBxx=r_P7em_naUN_c96A++V4v6nfd8B_V2dppRag-z_qwg@mail.gmail.com>
-Subject: Re: [PATCH 1/4] dynamic_debug: consolidate repetitive struct _ddebug
- descriptor definitions
-To: Jason Baron <jbaron@redhat.com>
-Cc: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>,
-        gregkh@suse.de, Bart Van Assche <bvanassche@acm.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Fri, 9 Sep 2011 15:25:39 -0400
+X-IronPort-AV: E=Sophos;i="4.68,357,1312182000"; 
+   d="scan'208";a="580388296"
+Subject: Re: [PATCH v2 3/5] SUNRPC: make RPC service dependable on rpcbind
+ clients creation
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "davem@davemloft.net" <davem@davemloft.net>
+Date: Fri, 09 Sep 2011 15:25:08 -0400
+In-Reply-To: <20110909150104.5a83c60d@tlielax.poochiereds.net>
+References: <20110909115146.13697.71682.stgit@localhost6.localdomain6>
+	 <20110909120844.13697.48102.stgit@localhost6.localdomain6>
+	 <20110909100745.7e2e8bf9@corrin.poochiereds.net>
+	 <4E6A41D4.6090001@parallels.com>
+	 <1315593874.17611.19.camel@lade.trondhjem.org>
+	 <20110909150104.5a83c60d@tlielax.poochiereds.net>
+Organization: NetApp Inc
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Message-ID: <1315596308.17611.46.camel@lade.trondhjem.org>
+Mime-Version: 1.0
+X-OriginalArrivalTime: 09 Sep 2011 19:25:09.0768 (UTC) FILETIME=[305C0880:01CC6F26]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 9, 2011 at 4:31 AM, Bart Van Assche <bvanassche@acm.org> wrote:
-> On Fri, Sep 9, 2011 at 6:02 AM, Joe Perches <joe@perches.com> wrote:
->> On Thu, 2011-09-08 at 20:42 -0700, Andrew Morton wrote:
->> > On Thu, 08 Sep 2011 19:13:16 -0700 Joe Perches <joe@perches.com> wrote:
->> > > On Thu, 2011-09-08 at 16:52 -0700, Andrew Morton wrote:
->> > > > On Tue, 30 Aug 2011 14:28:41 -0400
->> > > > Jason Baron <jbaron@redhat.com> wrote:
->> > > > > Replace the repetitive struct _ddebug descriptor definitions with
->> > > > > a new DECLARE_DYNAMIC_DEBUG_META_DATA(name, fmt) macro.
->> > > > > +#define DECLARE_DYNAMIC_DEBUG_METADATA(name, fmt)              \
->> > > > > +       static struct _ddebug __used __aligned(8)               \
->> > > > > +       __attribute__((section("__verbose"))) name = {          \
->> > > > > +               .modname = KBUILD_MODNAME,                      \
->> > > > > +               .function = __func__,                           \
->> > > > > +               .filename = __FILE__,                           \
->> > > > > +               .format = (fmt),                                \
->> > > > > +               .lineno = __LINE__,                             \
->> > > > > +               .flags =  _DPRINTK_FLAGS_DEFAULT,               \
->> > > > > +               .enabled = false,                               \
->> > > > > +       }
->> > > > <anal>That macro implements a definition, not a declaration</anal>
->> > > Andrew, that's not quite true
->> > It's precisely true.
->> Not according to the c99 standard section 6.7
->
-> Have you read that paragraph ? This is what I found in paragraph 6.7,
-> which confirms Andrews interpretation:
->
-> <quote>
-> A declaration speciﬁes the interpretation and attributes of a set of
-> identiﬁers. A deﬁnition of an identiﬁer is a declaration for that
-> identiﬁer that:
-> - for an object, causes storage to be reserved for that object;
-> - for a function, includes the function body;
-> - for an enumeration constant or typedef name, is the (only)
-> declaration of the identiﬁer.
-> </quote>
->
-> Bart.
->
+On Fri, 2011-09-09 at 15:01 -0400, Jeff Layton wrote: 
+> On Fri, 09 Sep 2011 14:44:34 -0400
+> Trond Myklebust <Trond.Myklebust@netapp.com> wrote:
+> 
+> > On Fri, 2011-09-09 at 20:41 +0400, Stanislav Kinsbursky wrote: 
+> > > 09.09.2011 18:07, Jeff Layton пишет:
+> > > > On Fri, 09 Sep 2011 16:08:44 +0400
+> > > > Stanislav Kinsbursky<skinsbursky@parallels.com>  wrote:
+> > > >
+> > > >> Create rcbind clients or increase rpcbind users counter during RPC service
+> > > >> creation and decrease this counter (and possibly destroy those clients) on RPC
+> > > >> service destruction.
+> > > >>
+> > > >> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
+> > > >>
+> > > >> ---
+> > > >>   include/linux/sunrpc/clnt.h |    2 ++
+> > > >>   net/sunrpc/rpcb_clnt.c      |    2 +-
+> > > >>   net/sunrpc/svc.c            |   13 +++++++++++--
+> > > >>   3 files changed, 14 insertions(+), 3 deletions(-)
+> > > >>
+> > > >> diff --git a/include/linux/sunrpc/clnt.h b/include/linux/sunrpc/clnt.h
+> > > >> index db7bcaf..65a8115 100644
+> > > >> --- a/include/linux/sunrpc/clnt.h
+> > > >> +++ b/include/linux/sunrpc/clnt.h
+> > > >> @@ -135,10 +135,12 @@ void		rpc_shutdown_client(struct rpc_clnt *);
+> > > >>   void		rpc_release_client(struct rpc_clnt *);
+> > > >>   void		rpc_task_release_client(struct rpc_task *);
+> > > >>
+> > > >> +int		rpcb_create_local(void);
+> > > >>   int		rpcb_register(u32, u32, int, unsigned short);
+> > > >>   int		rpcb_v4_register(const u32 program, const u32 version,
+> > > >>   				 const struct sockaddr *address,
+> > > >>   				 const char *netid);
+> > > >> +void		rpcb_put_local(void);
+> > > >>   void		rpcb_getport_async(struct rpc_task *);
+> > > >>
+> > > >>   void		rpc_call_start(struct rpc_task *);
+> > > >> diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
+> > > >> index b4cc0f1..437ec60 100644
+> > > >> --- a/net/sunrpc/rpcb_clnt.c
+> > > >> +++ b/net/sunrpc/rpcb_clnt.c
+> > > >> @@ -318,7 +318,7 @@ out:
+> > > >>    * Returns zero on success, otherwise a negative errno value
+> > > >>    * is returned.
+> > > >>    */
+> > > >> -static int rpcb_create_local(void)
+> > > >> +int rpcb_create_local(void)
+> > > >>   {
+> > > >>   	static DEFINE_MUTEX(rpcb_create_local_mutex);
+> > > >>   	int result = 0;
+> > > >> diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
+> > > >> index 6a69a11..9095c0e 100644
+> > > >> --- a/net/sunrpc/svc.c
+> > > >> +++ b/net/sunrpc/svc.c
+> > > >> @@ -367,8 +367,11 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
+> > > >>   	unsigned int xdrsize;
+> > > >>   	unsigned int i;
+> > > >>
+> > > >> -	if (!(serv = kzalloc(sizeof(*serv), GFP_KERNEL)))
+> > > >> +	if (rpcb_create_local()<  0)
+> > > >>   		return NULL;
+> > > >> +
+> > > >> +	if (!(serv = kzalloc(sizeof(*serv), GFP_KERNEL)))
+> > > >> +		goto out_err;
+> > > >>   	serv->sv_name      = prog->pg_name;
+> > > >>   	serv->sv_program   = prog;
+> > > >>   	serv->sv_nrthreads = 1;
+> > > >> @@ -403,7 +406,7 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
+> > > >>   			GFP_KERNEL);
+> > > >>   	if (!serv->sv_pools) {
+> > > >>   		kfree(serv);
+> > > >> -		return NULL;
+> > > >> +		goto out_err;
+> > > >>   	}
+> > > >>
+> > > >>   	for (i = 0; i<  serv->sv_nrpools; i++) {
+> > > >> @@ -423,6 +426,10 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
+> > > >>   	svc_unregister(serv);
+> > > >>
+> > > >>   	return serv;
+> > > >> +
+> > > >> +out_err:
+> > > >> +	rpcb_put_local();
+> > > >> +	return NULL;
+> > > >>   }
+> > > >>
+> > > >>   struct svc_serv *
+> > > >> @@ -491,6 +498,8 @@ svc_destroy(struct svc_serv *serv)
+> > > >>   	svc_unregister(serv);
+> > > >>   	kfree(serv->sv_pools);
+> > > >>   	kfree(serv);
+> > > >> +
+> > > >> +	rpcb_put_local();
+> > > >>   }
+> > > >>   EXPORT_SYMBOL_GPL(svc_destroy);
+> > > >>
+> > > >>
+> > > >
+> > > > I don't get it -- what's the advantage of creating rpcbind clients in
+> > > > __svc_create vs. the old way of creating them just before we plan to
+> > > > use them?
+> > > >
+> > > 
+> > > The main problem here is not in creation, but in destroying those clients.
+> > > Now rpcbind clients are created during rpcb_register(). I.e. once per every family, program version and so on.
+> > > But can be unregistered for all protocol families by one call. So it's impossible to put reference counting for those clients in the place, where they are created now.
+> > 
+> > Could we perhaps set up a 'struct pernet_operations' to create a
+> > destructor for them?
+> > 
+> 
+> An even easier idea might be to just not take a reference to the
+> rpcbind client for svc_programs that have vs_hidden set on every
+> version.
 
+Isn't the problem that Stanislav is trying to solve that we need to be
+able to register and unregister RPC services to the correct rpcbind
+server, depending on which net namespace we are in?
 
-I hesitate to churn this more (I have patchset to go on top of all this) but
+My understanding is that the current code will register everything to
+whatever rpcbind server is running in the init net namespace because
+that's what rpcb_create_local() uses.
 
-Id like to see an INIT_DYNAMIC_DEBUG_METADATA,
-along with ability to expose the descriptor.
+My suggestion is to use a struct pernet_operations to detect when a net
+namespace is being created or destroyed, so that the rpcbind client code
+knows when to create or destroy a connection to the server that is
+running in that namespace.
 
-This would support pr_dbg_cont(), by letting it see/reuse
-the same descriptor that controls the pr_debug that started
-the multi-call message.  While this defeats the "atomicity"
-of buffering the entire message before calling printk,
-it does so only for the actual uses of KERN_CONT.
+Cheers
+  Trond
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-It also allows for "lite" usage of dynamic-debug,
-including 1..few descriptor per file or module to control all debug printing.
-As outlined, this "lite" usage is determined by the coder,
-it would be cool if it were more configurable than that,
-but I dont see how that would work atm.
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
-
-Now that the worms have escaped the can, one other thought:
-	unsigned int lineno:24;
-allows for insanely large files.  The largest in the tree is 29k,
-16 bits would cover all files likely to be accepted in the future.
-Even allowing for never-to-be-submitted machine-generated code,
-Id think 18 bits would suffice.  ~250k lines should be enough ;-)
-
-Given that my patchset adds flags-filtering
-( echo mt+p > $CONTROL )
-The availability of user-flags, which do nothing but mark callsites,
-has some value - user can mark arbitrary sets of callsites,
-then enable/disable them as a group or subgroup:
-
-echo function foo +x > $CONTROL
-...
-echo x+p > $CONTROL
-echo y-p > $CONTROL
-echo z+p > $CONTROL
-echo yz-p > $CONTROL
-
-Since since it works with module/file/function filtering, 3-4 user
-flags should be plenty.
