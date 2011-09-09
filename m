@@ -1,64 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933686Ab1IILE6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 07:04:58 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:44412 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933391Ab1IILEz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 07:04:55 -0400
-Subject: [PATCH v2] ALSA: aoa: Remove obsolete cleanup for clientdata
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Johannes Berg <johannes@sipsolutions.net>,
-        Wolfram Sang <w.sang@pengutronix.de>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 09 Sep 2011 19:04:45 +0800
-Message-ID: <1315566285.2453.1.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S933316Ab1IIK5a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 06:57:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45595 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758715Ab1IIK52 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Sep 2011 06:57:28 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 00/14] Swap-over-NBD without deadlocking v6
+Date: Fri,  9 Sep 2011 11:57:11 +0100
+Message-Id: <1315565845-16857-1-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The i2c core will clear the clientdata pointer automatically.
-We don't have to set the `data' field to NULL in remove() or
-if probe() failed anymore.
+Changelog since V5
+  o Rebase to 3.1-rc5
 
-Also remove a unneeded NULL checking for kfree.
+Changelog since V4
+  o Update comment clarifying what protocols can be used		(Michal)
+  o Rebase to 3.0-rc3
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
-Reviewed-by: Wolfram Sang <w.sang@pengutronix.de>
----
- sound/aoa/codecs/onyx.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+Changelog since V3
+  o Propogate pfmemalloc from packet fragment pages to skb		(Neil)
+  o Rebase to 3.0-rc2
 
-diff --git a/sound/aoa/codecs/onyx.c b/sound/aoa/codecs/onyx.c
-index 3687a6c..762af68 100644
---- a/sound/aoa/codecs/onyx.c
-+++ b/sound/aoa/codecs/onyx.c
-@@ -1067,7 +1067,6 @@ static int onyx_i2c_probe(struct i2c_client *client,
- 	printk(KERN_DEBUG PFX "created and attached onyx instance\n");
- 	return 0;
-  fail:
--	i2c_set_clientdata(client, NULL);
- 	kfree(onyx);
- 	return -ENODEV;
- }
-@@ -1112,8 +1111,7 @@ static int onyx_i2c_remove(struct i2c_client *client)
- 
- 	aoa_codec_unregister(&onyx->codec);
- 	of_node_put(onyx->codec.node);
--	if (onyx->codec_info)
--		kfree(onyx->codec_info);
-+	kfree(onyx->codec_info);
- 	kfree(onyx);
- 	return 0;
- }
+Changelog since V2
+  o Document that __GFP_NOMEMALLOC overrides __GFP_MEMALLOC		(Neil)
+  o Use wait_event_interruptible					(Neil)
+  o Use !! when casting to bool to avoid any possibilitity of type
+    truncation								(Neil)
+  o Nicer logic when using skb_pfmemalloc_protocol			(Neil)
+
+Changelog since V1
+  o Rebase on top of mmotm
+  o Use atomic_t for memalloc_socks		(David Miller)
+  o Remove use of sk_memalloc_socks in vmscan	(Neil Brown)
+  o Check throttle within prepare_to_wait	(Neil Brown)
+  o Add statistics on throttling instead of printk
+
+When a user or administrator requires swap for their application, they
+create a swap partition and file, format it with mkswap and activate
+it with swapon. Swap over the network is considered as an option in
+diskless systems. The two likely scenarios are when blade servers
+are used as part of a cluster where the form factor or maintenance
+costs do not allow the use of disks and thin clients.
+
+The Linux Terminal Server Project recommends the use of the
+Network Block Device (NBD) for swap according to the manual at
+https://sourceforge.net/projects/ltsp/files/Docs-Admin-Guide/LTSPManual.pdf/download
+.  There is also documentation and tutorials
+on how to setup swap over NBD at places like
+https://help.ubuntu.com/community/UbuntuLTSP/EnableNBDSWAP .  The
+nbd-client also documents the use of NBD as swap. Despite this, the
+fact is that a machine using NBD for swap can deadlock within minutes
+if swap is used intensively. This patch series addresses the problem.
+
+The core issue is that network block devices do not use mempools
+like normal block devices do. As the host cannot control where they
+receive packets from, they cannot reliably work out in advance how
+much memory they might need.
+
+Some years ago, Peter Ziljstra developed a series of patches that
+supported swap over an NFS that some distributions are carrying in
+their kernels. This patch series borrows very heavily from Peter's
+work to support swapping over NBD as a pre-requisite to supporting
+swap-over-NFS. The bulk of the complexity is concerned with preserving
+memory that is allocated from the PFMEMALLOC reserves for use by the
+network layer which is needed for both NBD and NFS.
+
+Patch 1 serialises access to min_free_kbytes. It's not strictly needed
+	by this series but as the series cares about watermarks in
+	general, it's a harmless fix. It could be merged independently.
+
+Patch 2 adds knowledge of the PFMEMALLOC reserves to SLAB and SLUB to
+	preserve access to pages allocated under low memory situations
+	to callers that are freeying memory.
+
+Patch 3 introduces __GFP_MEMALLOC to allow access to the PFMEMALLOC
+	reserves without setting PFMEMALLOC.
+
+Patch 4 opens the possibility for softirqs to use PFMEMALLOC reserves
+	for later use by network packet processing.
+
+Patch 5 ignores memory policies when ALLOC_NO_WATERMARKS is set.
+
+Patches 6-10 allows network processing to use PFMEMALLOC reserves when
+	the socket has been marked as being used by the VM to clean
+	pages. If packets are received and stored in pages that were
+	allocated under low-memory situations and are unrelated to
+	the VM, the packets are dropped.
+
+Patch 11 is a micro-optimisation to avoid a function call in the
+	common case.
+
+Patch 12 tags NBD sockets as being SOCK_MEMALLOC so they can use
+	PFMEMALLOC if necessary.
+
+Patch 13 notes that it is still possible for the PFMEMALLOC reserve
+	to be depleted. To prevent this, direct reclaimers get
+	throttled on a waitqueue if 50% of the PFMEMALLOC reserves are
+	depleted.  It is expected that kswapd and the direct reclaimers
+	already running will clean enough pages for the low watermark
+	to be reached and the throttled processes are woken up.
+
+Patch 14 adds a statistic to track how often processes get throttled
+
+Some basic performance testing was run using kernel builds, netperf
+on loopback for UDP and TCP, hackbench (pipes and sockets), iozone
+and sysbench. Each of them were expected to use the sl*b allocators
+reasonably heavily but there did not appear to be significant
+performance variances. Here is the results from netperf using
+slab as an example
+
+NETPERF UDP
+      64   237.47 ( 0.00%)    237.34 (-0.05%) 
+     128   472.69 ( 0.00%)    465.96 (-1.44%) 
+     256   926.82 ( 0.00%)    948.40 ( 2.28%) 
+    1024  3260.08 ( 0.00%)   3266.50 ( 0.20%) 
+    2048  5535.11 ( 0.00%)   5453.55 (-1.50%) 
+    3312  7496.60 ( 0.00%)*  7574.44 ( 1.03%) 
+             1.12%             1.00%        
+    4096  8266.35 ( 0.00%)*  8240.06 (-0.32%)*
+             1.18%             1.49%        
+    8192 11026.01 ( 0.00%)  11010.44 (-0.14%) 
+   16384 14653.98 ( 0.00%)  14666.97 ( 0.09%) 
+MMTests Statistics: duration
+User/Sys Time Running Test (seconds)       2156.64   1873.27
+Total Elapsed Time (seconds)               2570.09   2234.10
+
+NETPERF TCP
+                   netperf-tcp       tcp-swapnbd
+                  vanilla-slab         v4r3-slab
+      64  1250.76 ( 0.00%)   1256.52 ( 0.46%) 
+     128  2290.70 ( 0.00%)   2336.43 ( 1.96%) 
+     256  3668.42 ( 0.00%)   3751.17 ( 2.21%) 
+    1024  7214.33 ( 0.00%)   7237.23 ( 0.32%) 
+    2048  8230.01 ( 0.00%)   8280.02 ( 0.60%) 
+    3312  8634.95 ( 0.00%)   8758.62 ( 1.41%) 
+    4096  8851.18 ( 0.00%)   9045.88 ( 2.15%) 
+    8192 10067.59 ( 0.00%)  10263.30 ( 1.91%) 
+   16384 11523.26 ( 0.00%)  11654.78 ( 1.13%) 
+MMTests Statistics: duration
+User/Sys Time Running Test (seconds)       1450.23    1389.8
+Total Elapsed Time (seconds)               1450.41   1390.35
+
+Here is the equivalent test for SLUB
+
+                   netperf-udp       udp-swapnbd
+                  vanilla-slub         v4r3-slub
+      64   235.33 ( 0.00%)    237.80 ( 1.04%) 
+     128   465.92 ( 0.00%)    469.98 ( 0.86%) 
+     256   907.16 ( 0.00%)    907.58 ( 0.05%) 
+    1024  3240.25 ( 0.00%)   3255.56 ( 0.47%) 
+    2048  5564.87 ( 0.00%)   5446.46 (-2.17%) 
+    3312  7427.65 ( 0.00%)*  7650.00 ( 2.91%) 
+             1.33%             1.00%        
+    4096  8004.51 ( 0.00%)*  8132.79 ( 1.58%)*
+             1.05%             1.21%        
+    8192 11079.60 ( 0.00%)  10927.09 (-1.40%) 
+   16384 14737.38 ( 0.00%)  15019.50 ( 1.88%) 
+MMTests Statistics: duration
+User/Sys Time Running Test (seconds)       2056.21   2160.38
+Total Elapsed Time (seconds)               2426.09   2498.16
+
+NETPERF TCP
+                   netperf-tcp       tcp-swapnbd
+                  vanilla-slub         v4r3-slub
+      64  1251.64 ( 0.00%)   1262.89 ( 0.89%) 
+     128  2289.88 ( 0.00%)   2332.94 ( 1.85%) 
+     256  3654.34 ( 0.00%)   3736.48 ( 2.20%) 
+    1024  7192.47 ( 0.00%)   7286.96 ( 1.30%) 
+    2048  8243.55 ( 0.00%)   8291.50 ( 0.58%) 
+    3312  8664.16 ( 0.00%)   8799.88 ( 1.54%) 
+    4096  8869.13 ( 0.00%)   9018.12 ( 1.65%) 
+    8192 10009.53 ( 0.00%)  10214.26 ( 2.00%) 
+   16384 11470.78 ( 0.00%)  11685.20 ( 1.83%) 
+MMTests Statistics: duration
+User/Sys Time Running Test (seconds)       1368.28   1511.81
+Total Elapsed Time (seconds)               1370.33   1510.42
+
+Time to completion varied a lot but this can happen with netperf as
+it tries to find results within a sufficiently high confidence. There
+were some small gains and losses but they are close to the variances
+seen between kernel releases.
+
+For testing swap-over-NBD, a machine was booted with 2G of RAM with a
+swapfile backed by NBD. 8*NUM_CPU processes were started that create
+anonymous memory mappings and read them linearly in a loop. The total
+size of the mappings were 4*PHYSICAL_MEMORY to use swap heavily under
+memory pressure. Without the patches, the machine locks up within
+minutes and runs to completion with them applied.
+
+ drivers/block/nbd.c             |    7 +-
+ include/linux/gfp.h             |   13 ++-
+ include/linux/mm_types.h        |    9 ++
+ include/linux/mmzone.h          |    1 +
+ include/linux/sched.h           |    7 +
+ include/linux/skbuff.h          |   21 +++-
+ include/linux/slub_def.h        |    1 +
+ include/linux/vm_event_item.h   |    1 +
+ include/net/sock.h              |   19 +++
+ include/trace/events/gfpflags.h |    1 +
+ kernel/softirq.c                |    3 +
+ mm/page_alloc.c                 |   57 +++++++--
+ mm/slab.c                       |  240 +++++++++++++++++++++++++++++++++------
+ mm/slub.c                       |   35 +++++-
+ mm/vmscan.c                     |   55 +++++++++
+ mm/vmstat.c                     |    1 +
+ net/core/dev.c                  |   48 +++++++-
+ net/core/filter.c               |    8 ++
+ net/core/skbuff.c               |   95 +++++++++++++---
+ net/core/sock.c                 |   42 +++++++
+ net/ipv4/tcp.c                  |    3 +-
+ net/ipv4/tcp_output.c           |   13 +-
+ net/ipv6/tcp_ipv6.c             |   12 ++-
+ 23 files changed, 606 insertions(+), 86 deletions(-)
+
 -- 
-1.7.4.1
-
-
+1.7.3.4
 
