@@ -1,78 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758480Ab1IIGYl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 02:24:41 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:41613 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758438Ab1IIGYk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 02:24:40 -0400
-From: Denys Vlasenko <vda.linux@googlemail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Subject: [PATCH 1/2] ptrace: don't modify flags on PTRACE_SETOPTIONS failure
-Date: Fri, 9 Sep 2011 08:24:37 +0200
-User-Agent: KMail/1.8.2
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        dvlasenk@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>
-References: <201109090822.30063.vda.linux@googlemail.com>
-In-Reply-To: <201109090822.30063.vda.linux@googlemail.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201109090824.37366.vda.linux@googlemail.com>
+	id S1758505Ab1IIG03 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 02:26:29 -0400
+Received: from ozlabs.org ([203.10.76.45]:50565 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758455Ab1IIG00 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Sep 2011 02:26:26 -0400
+From: Michael Neuling <michael.neuling@au1.ibm.com>
+To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        Paul Mackerras <paulus@samba.org>
+Subject: Re: [PATCH] perf events, powerpc: Add POWER7 stalled-cycles-frontend/backend events
+In-reply-to: <4E69AFCF.3040404@linux.vnet.ibm.com>
+References: <4E5C6A7D.2010909@linux.vnet.ibm.com> <25545.1315532289@neuling.org> <4E69AFCF.3040404@linux.vnet.ibm.com>
+Comments: In-reply-to Anshuman Khandual <khandual@linux.vnet.ibm.com>
+   message dated "Fri, 09 Sep 2011 11:48:55 +0530."
+X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.2.1
+Date: Fri, 09 Sep 2011 16:26:21 +1000
+Message-ID: <4880.1315549581@neuling.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ptrace: don't modify flags on PTRACE_SETOPTIONS failure
+In message <4E69AFCF.3040404@linux.vnet.ibm.com> you wrote:
+> On Friday 09 September 2011 07:08 AM, Michael Neuling wrote:
+> >> perf events, powerpc: Add POWER7 stalled-cycles-frontend/backend events
+> >>
+> >> 	Extent the POWER7 PMU driver with definitions
+> >> 	for generic front-end and back-end stall events.
+> > 
+> > Anshuman,
+> > 
+> > Can you explain what these P7 events actually are and how they relate to
+> > Ingo's original comment on this in
+> > 8f62242246351b5a4bc0c1f00c0c7003edea128a
+> > 
+> >     Both events limit performance: most front end stalls tend to be
+> >     caused by branch misprediction or instruction fetch cachemisses,
+> >     backend stalls can be caused by various resource shortages or
+> >     inefficient instruction scheduling.
+> > 
+> As explained in Ingo's original comment, the exact definitions of the
+> stall events are very much processor specific as different things mean
+> different in their respective instruction pipeline. These two Power7
+> raw events are the closest approximation to the concept detailed in
+> Ingo's comment.
+> >>
+> >> Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+> >>
+> >> diff --git a/arch/powerpc/kernel/power7-pmu.c b/arch/powerpc/kernel/power7
+-pmu.c
+> >> index 593740f..e5d2844 100644
+> >> --- a/arch/powerpc/kernel/power7-pmu.c
+> >> +++ b/arch/powerpc/kernel/power7-pmu.c
+> >> @@ -297,6 +297,8 @@ static void power7_disable_pmc(unsigned int pmc, unsig
+ned long mmcr[])
+> >>  
+> >>  static int power7_generic_events[] = {
+> >>  	[PERF_COUNT_HW_CPU_CYCLES] = 0x1e,
+> >> +	[PERF_COUNT_HW_STALLED_CYCLES_FRONTEND] = 0x100f8, /* GCT_NOSLOT_CYC */
+> > 
+> > eg. Is this Global Completion Table (GCT) empty?
+> Yes, it means cycles when the Global Completion Table has no slots from this thread
+> > 
+> >> + [PERF_COUNT_HW_STALLED_CYCLES_BACKEND] = 0x4000a, /* CMPLU_STALL
+*/
+> > 
+> > eg. Is this instruction completion stall?
+> Yes, it means no groups completed and GCT not empty
 
-On ptrace(PTRACE_SETOPTIONS, pid, 0, <opts>), we used to set
-those option bits which are known, and then fail with -EINVAL
-if there are some unknown bits in <opts>.
+I agree, I think they match what Ingo is trying to achieve.
 
-This in inconsistent with typical error handling, which
-does not change any state if input is invalid.
+Can you add these descriptions to the patch and resubmit please?
 
-This patch changes PTRACE_SETOPTIONS behavior so that
-in this case, we return -EINVAL and don't change any bits
-in task->ptrace.
+If you can find similar events for power4/5/5+/6 that would be great too
+submit too.  
 
-It's very unlikely that there is userspace code in the wild which
-will be affected by this change: it should have the form
+FWIW, the patch compiles and runs for me.  
 
-    ptrace(PTRACE_SETOPTIONS, pid, 0, PTRACE_O_BOGUSOPT)
-
-where PTRACE_O_BOGUSOPT is a constant unknown to the kernel.
-But kernel headers, naturally, don't contain any
-PTRACE_O_BOGUSOPTs, thus the only way userspace can use one
-if it defines one itself. I can't see why anyone would do such
-a thing deliberately.
-
-Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
----
-
-diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index 9de3ecf..02df3c1 100644
---- a/kernel/ptrace.c
-+++ b/kernel/ptrace.c
-@@ -509,6 +509,9 @@ int ptrace_writedata(struct task_struct *tsk, char __user *src, unsigned long ds
- 
- static int ptrace_setoptions(struct task_struct *child, unsigned long data)
- {
-+	if (data & ~(unsigned long)PTRACE_O_MASK)
-+		return -EINVAL;
-+
- 	child->ptrace &= ~PT_TRACE_MASK;
- 
- 	if (data & PTRACE_O_TRACESYSGOOD)
-@@ -532,7 +535,7 @@ static int ptrace_setoptions(struct task_struct *child, unsigned long data)
- 	if (data & PTRACE_O_TRACEEXIT)
- 		child->ptrace |= PT_TRACE_EXIT;
- 
--	return (data & ~PTRACE_O_MASK) ? -EINVAL : 0;
-+	return 0;
- }
- 
- static int ptrace_getsiginfo(struct task_struct *child, siginfo_t *info)
+Mikey
