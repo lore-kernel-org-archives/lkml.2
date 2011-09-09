@@ -1,41 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933960Ab1IIMqv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 08:46:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58127 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933950Ab1IIMqt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 08:46:49 -0400
-Message-ID: <4E6A0AB7.80800@suse.cz>
-Date: Fri, 09 Sep 2011 14:46:47 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+	id S933867Ab1IIMsU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 08:48:20 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:34261
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933423Ab1IIMsS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Sep 2011 08:48:18 -0400
+Date: Fri, 9 Sep 2011 08:48:13 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Hin-Tak Leung <htl10@users.sourceforge.net>,
+        Christoph Hellwig <hch@tuxera.com>, Pavel Ivanov <paivanof@gmail.com>,
+        linux-fsdevel@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Kernel 3.1.0-rc4 oops when connecting iPod
+Message-ID: <20110909124813.GB29337@infradead.org>
+References: <20110907175952.GC23829@thinkpad-t410>
+ <1315451581.92826.YahooMailClassic@web29509.mail.ird.yahoo.com>
+ <20110908162303.GA18435@ubuntu-NB505>
 MIME-Version: 1.0
-To: crquan@gmail.com
-Cc: linux-kbuild@vger.kernel.org, Arnaud Lacombe <lacombar@gmail.com>,
-        Sam Ravnborg <sam@ravnborg.org>, Nir Tzachar <nir.tzachar@gmail.com>,
-        Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org,
-        c.rq541@comcast.net
-Subject: Re: [PATCH V3 5/5] scripts/kconfig/nconf: add KEY_HOME / KEY_END
- for dialog_inputbox
-References: <CAH5vBdKxbaKDrA2gAj5CoDYShN+5dnfu6Bmd=4+oV-XmnYQnFA@mail.gmail.com> <1314899542-5848-1-git-send-email-crquan@gmail.com> <1314899542-5848-2-git-send-email-crquan@gmail.com> <1314899542-5848-3-git-send-email-crquan@gmail.com> <1314899542-5848-4-git-send-email-crquan@gmail.com> <1314899542-5848-5-git-send-email-crquan@gmail.com>
-In-Reply-To: <1314899542-5848-5-git-send-email-crquan@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110908162303.GA18435@ubuntu-NB505>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1.9.2011 19:52, crquan@gmail.com wrote:
-> From: Cheng Renquan <crquan@gmail.com>
+On Thu, Sep 08, 2011 at 09:23:04AM -0700, Seth Forshee wrote:
+> That was my patch submission :)
 > 
-> to make it easier to locate begin/end when editing long strings;
-> 
-> Signed-off-by: Cheng Renquan <crquan@gmail.com>
-> Acked By: Nir Tzachar <nir.tzachar@gmail.com>
-> --
+> Christoph, does that work for you, or would you like me to send the
+> patch in a separate email?
 
-Applied all five to kbuild-2.6.git#kconfig.
-
-Michal
-
+The submission is fine.  I'll try to find a QA setup to test it properly
+and will send it on to Linus afterwards.
