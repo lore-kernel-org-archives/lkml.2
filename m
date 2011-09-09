@@ -1,43 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759523Ab1IIRMd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 13:12:33 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:60276 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759407Ab1IIRMc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 13:12:32 -0400
-Date: Fri, 9 Sep 2011 10:11:58 -0700
-From: Dan Carpenter <error27@gmail.com>
-To: Nitin Gupta <ngupta@vflare.org>
-Cc: Harvey Harrison <harvey.harrison@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Linux Driver Project <devel@linuxdriverproject.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>
-Subject: Re: [PATCH 1/5] Fix sparse warnings
-Message-ID: <20110909171158.GH17041@mwanda>
-References: <1315445357-14338-1-git-send-email-ngupta@vflare.org>
- <1315445357-14338-2-git-send-email-ngupta@vflare.org>
- <4E687A33.1080401@redhat.com>
- <4E68DBA5.6010307@vflare.org>
- <CAHLZz10jm4Wewxe=MAVqcq22Zoe2aTAtgsOhx7Xdq0OUz_cwgA@mail.gmail.com>
- <4E6A4641.9090606@vflare.org>
+	id S1759538Ab1IIRWB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 13:22:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15576 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758459Ab1IIRWA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Sep 2011 13:22:00 -0400
+Date: Fri, 9 Sep 2011 19:18:32 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Pedro Alves <pedro@codesourcery.com>
+Cc: Denys Vlasenko <dvlasenk@redhat.com>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org,
+        Denys Vlasenko <vda.linux@googlemail.com>
+Subject: Re: [PATCH v3] Make PTRACE_SEIZE set ptrace options specified in
+	'data'
+Message-ID: <20110909171832.GA26810@redhat.com>
+References: <1315506333.18043.49.camel@dhcp-25-63.brq.redhat.com> <201109091415.33503.pedro@codesourcery.com> <1315587343.5036.6.camel@dhcp-25-63.brq.redhat.com> <201109091809.57272.pedro@codesourcery.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E6A4641.9090606@vflare.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201109091809.57272.pedro@codesourcery.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just resend the whole patch.
+On 09/09, Pedro Alves wrote:
+>
+> WTH?  I'm talking about _not forcing the tracee to stop_.
 
-When you're applying patches from mutt normally you have a macro set
-up to automatically run git-am.  Under your system maintainers have
-to manually fix your patch and it breaks the work flow.
+The patch is trivial.
 
-regards,
-dan carpenter
+And personally I agree, this looks like a cleanup to me.
+
+Oleg.
+
+--- x/include/linux/ptrace.h
++++ x/include/linux/ptrace.h
+@@ -199,7 +199,8 @@ static inline void ptrace_event(int even
+ 		ptrace_notify((event << 8) | SIGTRAP);
+ 	} else if (event == PTRACE_EVENT_EXEC && unlikely(current->ptrace)) {
+ 		/* legacy EXEC report via SIGTRAP */
+-		send_sig(SIGTRAP, current, 0);
++		if (!(current->ptrace & PT_SEIZED))
++			send_sig(SIGTRAP, current, 0);
+ 	}
+ }
+ 
+
