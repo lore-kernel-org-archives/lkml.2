@@ -1,79 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758917Ab1IINPl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 09:15:41 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:55992 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758899Ab1IINPi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 09:15:38 -0400
-From: Pedro Alves <pedro@codesourcery.com>
-Organization: CodeSourcery
-To: Denys Vlasenko <dvlasenk@redhat.com>
-Subject: Re: [PATCH v3] Make PTRACE_SEIZE set ptrace options specified in 'data'
-Date: Fri, 9 Sep 2011 14:15:33 +0100
-User-Agent: KMail/1.13.6 (Linux/2.6.38-11-generic; KDE/4.7.0; x86_64; ; )
-Cc: Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org,
-        Denys Vlasenko <vda.linux@googlemail.com>
-References: <1315506333.18043.49.camel@dhcp-25-63.brq.redhat.com> <201109091212.59889.pedro@codesourcery.com> <1315571337.4127.3.camel@dhcp-25-63.brq.redhat.com>
-In-Reply-To: <1315571337.4127.3.camel@dhcp-25-63.brq.redhat.com>
+	id S1758936Ab1IINP6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 09:15:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60362 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758899Ab1IINP4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Sep 2011 09:15:56 -0400
+Date: Fri, 9 Sep 2011 14:15:50 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        Linux-NFS <linux-nfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Neil Brown <neilb@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 03/10] mm: Add support for a filesystem to control swap
+ files
+Message-ID: <20110909131550.GV14369@suse.de>
+References: <1315566054-17209-1-git-send-email-mgorman@suse.de>
+ <1315566054-17209-4-git-send-email-mgorman@suse.de>
+ <20110909130007.GA11810@infradead.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201109091415.33503.pedro@codesourcery.com>
-X-OriginalArrivalTime: 09 Sep 2011 13:15:36.0138 (UTC) FILETIME=[8FD89AA0:01CC6EF2]
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20110909130007.GA11810@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 09 September 2011 13:28:55, Denys Vlasenko wrote:
-> On Fri, 2011-09-09 at 12:12 +0100, Pedro Alves wrote:
-> > On Thursday 08 September 2011 19:22:04, Denys Vlasenko wrote:
-> > > Make PTRACE_SEIZE set ptrace options specified in 'data' parameter
-> > >     
-> > > This can be used to close a few corner cases in strace where we get
-> > > unwanted racy behavior after attach, but before we have a chance
-> > > to set options (the notorious post-execve SIGTRAP comes to mind),
+On Fri, Sep 09, 2011 at 09:00:08AM -0400, Christoph Hellwig wrote:
+> On Fri, Sep 09, 2011 at 12:00:47PM +0100, Mel Gorman wrote:
+> > Currently swapfiles are managed entirely by the core VM by using
+> > ->bmap to allocate space and write to the blocks directly. This
+> > patch adds address_space_operations methods that allow a filesystem
+> > to optionally control the swapfile.
 > > 
-> > I'm still confused on why you're raising the SIGTRAP argument.  Did you see
-> > 
-> >  https://lkml.org/lkml/2011/9/8/7
-> > 
-> > From previous discussions, I understood that PTRACE_SEIZE _always_
-> > disables
-> > the post-execve SIGTRAP, so I don't believe that race actually exists.
-> > Or is that not the case?
+> >   int swap_activate(struct file *);
+> >   int swap_deactivate(struct file *);
+> >   int swap_writepage(struct file *, struct page *, struct writeback_control *);
+> >   int swap_readpage(struct file *, struct page *);
 > 
+> Just as the last two dozen times this came up:
 > 
-> I believe it is not the case. And I object to making it the case.
+> NAK
+> 
+> The right fix is to add a filesystem method to support direct-I/O on
+> arbitrary kernel pages, instead of letting the wap abstraction leak into
+> the filesystem.
 
-Well, if you'll remember, back in <https://lkml.org/lkml/2011/5/19/704> I
-raised this exact problem with that pesky racy post-execve SIGTRAP showing
-through on SEIZE, and Tejun a few replies later mentioned that the SIGTRAP
-was to be removed on SEIZE.   I'm sure it was said before even, but I'm
-not finding the emails now.
+Ok.
 
-> My sense of taste says the approach "you need to use SEIZE to affect
-> feature <foo>" for various unrelated <foo> makes ptrace API ugly.
+I confess I haven't investigated this direction at
+all yet.  Is it correct that your previous objection was
+http://linux.derkeiler.com/Mailing-Lists/Kernel/2009-10/msg00455.html
+and the direct-IO patchset you were thinking of was
+http://copilotco.com/mail-archives/linux-kernel.2009/msg87176.html ?
 
-Yes, very much agreed!
-
-> Especially that in this case, we already have a method in API
-> to suppress post-execve SIGTRAP.
-
-Right, but we end up with no way to make the tracee _not ever
-stop_ at execve if the tracer wants to, like you can make
-the tracee not ever stop on forks or syscalls, by not enabling
-the corresponding PTRACE_O_FOO or not PTRACE_SYSCALL.  Not
-specifying PTRACE_O_TRACEEXEC coupled with `SEIZE not stopping
-tracees for that magic SIGTRAP' got you that.  In a way, it looked to
-me to make the API a bit less ugly.  That said I'm not seeing GDB
-_not_ using PTRACE_O_TRACEEXEC...
-
-Anyway, could you please check (or Tejun please confirm)
-that that magic SIGTRAP is really still there on SEIZE?
+If so, are you suggesting that instead of swap_readpage and
+swap_writepage I look into what is required for swap to use ->readpage
+method and ->direct_IO aops?
 
 -- 
-Pedro Alves
+Mel Gorman
+SUSE Labs
