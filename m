@@ -1,137 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933084Ab1III4l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 04:56:41 -0400
-Received: from mail.ss.pku.edu.cn ([211.101.48.138]:46689 "EHLO
-	mail.ss.pku.edu.cn" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933041Ab1III4j convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 04:56:39 -0400
+	id S932943Ab1III6J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 04:58:09 -0400
+Received: from mx1.fusionio.com ([66.114.96.30]:56122 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933037Ab1III6H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Sep 2011 04:58:07 -0400
+X-ASG-Debug-ID: 1315558685-03d6a5396cbb380001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4E69D519.8070802@fusionio.com>
+Date: Fri, 9 Sep 2011 10:58:01 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-In-Reply-To: <20110901154936.26e35821@notabene.brown>
-References: <20110831162211.2a1fe3fb@notabene.brown>
-	<20110901033056.GA22050@localhost>
-	<20110901154936.26e35821@notabene.brown>
-Date: Fri, 9 Sep 2011 16:56:30 +0800
-Message-ID: <CAF1ivSaTP27UnU3jf+ETDNV3j7FCekBRTZL8LvDSKj6UVcUJww@mail.gmail.com>
-Subject: Re: md related oops triggered in bdev_inode_switch_bdi
-From: Lin Ming <mlin@ss.pku.edu.cn>
-To: NeilBrown <neilb@suse.de>
-Cc: Wu Fengguang <fengguang.wu@intel.com>, Christoph Hellwig <hch@lst.de>,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Christoph Hellwig <hch@infradead.org>
+CC: "Sam Bradshaw (sbradshaw)" <sbradshaw@micron.com>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jeff Garzik <jgarzik@pobox.com>,
+        "jmoyer@redhat.com" <jmoyer@redhat.com>,
+        "Asai Thambi Samymuthu Pattrayasamy (asamymuthupa) [CONTRACTOR]" 
+	<asamymuthupa@micron.com>
+Subject: Re: [PATCH v4] drivers/block/mtip32xx: Adding new driver mtip32xx
+References: <22A973199D2C2F46933448F6E7990A3002C80026@ntxboimbx31.micron.com> <4E44E782.7090309@fusionio.com> <2A9BE4FF6209B644B6F8EB62DE6AEA1E07663ED4@ntxfrembx01.micron.com> <20110909085433.GA9593@infradead.org>
+X-ASG-Orig-Subj: Re: [PATCH v4] drivers/block/mtip32xx: Adding new driver mtip32xx
+In-Reply-To: <20110909085433.GA9593@infradead.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: UNKNOWN[10.101.1.21]
+X-Barracuda-Start-Time: 1315558685
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
+X-Barracuda-Spam-Score: -2.02
+X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.74010
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 1, 2011 at 1:49 PM, NeilBrown <neilb@suse.de> wrote:
-> On Thu, 1 Sep 2011 11:30:56 +0800 Wu Fengguang <fengguang.wu@intel.com> wrote:
->
->> Hi Neil,
->>
->> > Subject: [PATCH] Avoid dereferencing a 'request_queue' after last close.
->>
->> Reviewed-by: Wu Fengguang <fengguang.wu@intel.com>
->
-> Thanks.
->
->
->>
->> with comments below.
->>
->> > --- a/fs/block_dev.c
->> > +++ b/fs/block_dev.c
->> > @@ -1430,6 +1430,12 @@ static int __blkdev_put(struct block_device *bdev, fmode_t mode, int for_part)
->> >             sync_blockdev(bdev);
->> >             kill_bdev(bdev);
->> >     }
->> > +   if (!bdev->bd_openers)
->> > +           /* ->release can cause the old bdi to disappear,
->> > +            * so must switch it out first
->> > +            */
->> > +           bdev_inode_switch_bdi(bdev->bd_inode,
->> > +                                   &default_backing_dev_info);
->> >     if (bdev->bd_contains == bdev) {
->> >             if (disk->fops->release)
->> >                     ret = disk->fops->release(disk, mode);
->>
->> The bdev_inode_switch_bdi() call can be further moved into the
->> previous if block, like this:
->>
->>         if (!--bdev->bd_openers) {
->>                 WARN_ON_ONCE(bdev->bd_holders);
->>                 sync_blockdev(bdev);
->>                 kill_bdev(bdev);
->> +
->> +               /* ->release can cause the old bdi to disappear,
->> +                * so must switch it out first
->> +                */
->> +               bdev_inode_switch_bdi(bdev->bd_inode,
->> +                                       &default_backing_dev_info);
->>         }
->
-> Yes, and obvious improvement now that you have pointed it out - thanks.
->
->
->>
->> Then it's obvious that kill_bdev() will truncate all inode pages
->> and there won't be further interactions with dirty writes.
->>
->> Although there are dozens of disk->fops->release functions, however
->> it's very unlikely they need to access some inode on top of the disk
->> (which is illogical thing).
->>
->> So I don't see any problems. It makes sense to push it to next for
->> broader test ASAP. Will you do it, or me?
->
-> I've just push it into my for-next.  If I heard nothing else by mid next week
-> I'll push it to Linus
+On 2011-09-09 10:54, Christoph Hellwig wrote:
+> On Mon, Aug 22, 2011 at 02:28:11PM -0700, Sam Bradshaw (sbradshaw) wrote:
+>> New patch for mtip32xx driver based on feedback from
+>> Jens Axboe, Christoph Hellwig, and Alan Cox.
+> 
+> A few comments that need addressing:
+> 
+>  - the ioctl handler always returns 0 for the BLKFLSBUF ioctl, without
+>    doing anything.  Given that the ioctl is supposed to flush all kinds
+>    of higher level cached data this is a serious data integrity issue.
+>    It must simply do the default -ENOTTY return for it and let the block
+>    layer do the right thing.
+>  - handling of REQ_FUA / REQ_FLUSH requests is completely broken.
+>    There is a weird barrier flag to mtip_hw_submit_io which set the
+>    hwardware FUA bit if the FLUSH bit is set on a request.
+>    Please take a look at how this should be handled, the
+>    Documentation/block/writeback_cache_control.txt file is the canonical
+>    resource.  Implementing your driver at the make_request layer
+>    unfortunately means you will have to do all the hard work yourself.
+>  - also the call to blk_queue_flush(queue, 0); from ->make_request for
+>    a non-data request is completely wrong.
 
-Just FYI,
-this patch also fixes below bug which can be reproduced by unplug the
-usb disk before umount.
+I noticed both of these flush/fua problems too and have fixed them up.
 
-BUG blkdev_queue: Poison overwritten
------------------------------------------------------------------------------
+>  - the 64-bit case in fill_command_sg will blow up on big endian
+>    systems, please use your current 32-bit case unconditionally
+>  - mtip_block_getgeo should just use sector_div instead of the ifdef
+>    mess.
+>  - please check the driver using sparse, and most importantly the
+>    optional endianess checking pass of it.  Currently the driver
+>    uses plain unsigned int and similar types for little endian
+>    hardware structures.  Take a look at Documentation/sparse.txt
+>    on how to use it.
+>  - the mtip_check_surprise_removal check should be unconditional, not
+>    under #ifdef CONFIG_HOTPLUG
 
-INFO: 0xffff880106640308-0xffff880106640309. First byte 0x6c instead of 0x6b
-INFO: Allocated in blk_alloc_queue_node+0x1f/0x1a9 age=5794 cpu=0 pid=3449
-        __slab_alloc+0x503/0x56e
-        kmem_cache_alloc_node+0x61/0x18e
-        blk_alloc_queue_node+0x1f/0x1a9
-        blk_init_queue_node+0x24/0x61
-        blk_init_queue+0xc/0xe
-        __scsi_alloc_queue+0x21/0x145
-        scsi_alloc_queue+0x18/0x64
-        scsi_alloc_sdev+0x1bb/0x282
-        scsi_probe_and_add_lun+0x13b/0xb6a
-        __scsi_scan_target+0xc5/0x60c
-        scsi_scan_channel+0x58/0x80
-        scsi_scan_host_selected+0xed/0x136
-        do_scsi_scan_host+0x6b/0x70
-        scsi_scan_host+0x1a0/0x1c5
-        usb_stor_scan_thread+0x16d/0x17b
-        kthread+0x7d/0x85
-INFO: Freed in blk_release_queue+0x60/0x65 age=2267 cpu=1 pid=3484
-        __slab_free+0x2c/0x30d
-        kmem_cache_free+0xbc/0x127
-        blk_release_queue+0x60/0x65
-        kobject_release+0x51/0x67
-        kref_put+0x43/0x4d
-        kobject_put+0x47/0x4b
-        blk_put_queue+0x10/0x12
-        scsi_device_dev_release_usercontext+0xbf/0x10a
-        execute_in_process_context+0x2a/0x61
-        scsi_device_dev_release+0x17/0x19
-        device_release+0x49/0x7e
-        kobject_release+0x51/0x67
-        kref_put+0x43/0x4d
-        kobject_put+0x47/0x4b
-        put_device+0x12/0x14
-        scsi_device_put+0x3d/0x42
+In general, the dependency on HOTPLUG_PCI_PCIE is odd as well.
 
-Thanks,
-Lin Ming
+>  - Given that the driver has a single c implementation file all symbols
+>    should be marked static, and there should be no prototypes in the
+>    header
+
+Sam, would be nice if you could send in patches for the other bugs that
+Christoph have pointed out. I already found and fixed the flush parts.
+
+-- 
+Jens Axboe
+
