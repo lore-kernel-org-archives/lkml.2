@@ -1,112 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759164Ab1IIOVl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 10:21:41 -0400
-Received: from mail.ss.pku.edu.cn ([211.101.48.138]:35449 "EHLO
-	mail.ss.pku.edu.cn" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759150Ab1IIOVk convert rfc822-to-8bit (ORCPT
+	id S1759190Ab1IIOWI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 10:22:08 -0400
+Received: from eagle.jhcloos.com ([207.210.242.212]:54896 "EHLO
+	eagle.jhcloos.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759179Ab1IIOWH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 10:21:40 -0400
+	Fri, 9 Sep 2011 10:22:07 -0400
+X-Greylist: delayed 444 seconds by postgrey-1.27 at vger.kernel.org; Fri, 09 Sep 2011 10:22:07 EDT
+From: James Cloos <cloos@jhcloos.com>
+To: linux-kernel@vger.kernel.org
+Subject: [3.1-r5] x86 build warning in =?utf-8?Q?=E2=80=98arch=5Fprepare?=
+ =?utf-8?Q?=5Fkprobe=E2=80=99=3A?=
+User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/24.0.50 (gnu/linux)
+Face: iVBORw0KGgoAAAANSUhEUgAAABAAAAAQAgMAAABinRfyAAAACVBMVEX///8ZGXBQKKnCrDQ3
+ AAAAJElEQVQImWNgQAAXzwQg4SKASgAlXIEEiwsSIYBEcLaAtMEAADJnB+kKcKioAAAAAElFTkSu
+ QmCC
+Copyright: Copyright 2011 James Cloos
+OpenPGP: ED7DAEA6; url=http://jhcloos.com/public_key/0xED7DAEA6.asc
+OpenPGP-Fingerprint: E9E9 F828 61A4 6EA9 0F2B  63E7 997A 9F17 ED7D AEA6
+Date: Fri, 09 Sep 2011 10:12:32 -0400
+Message-ID: <m31uvpvm6v.fsf@jhcloos.com>
 MIME-Version: 1.0
-In-Reply-To: <20110907143006.0d0922dd.akpm@linux-foundation.org>
-References: <20110824130238.GA24543@janus>
-	<20110902011058.c5bad476.akpm@linux-foundation.org>
-	<20110905123813.GA29763@janus>
-	<CAF1ivSYui_=tHbxHiy15a9wfiphHcpoY+J1MmAJ=dMQsAfEVLw@mail.gmail.com>
-	<1315320518.4235.3.camel@hp6530s>
-	<20110907102425.GA3423@janus>
-	<1315398979.2938.0.camel@hp6530s>
-	<20110907143006.0d0922dd.akpm@linux-foundation.org>
-Date: Fri, 9 Sep 2011 22:21:36 +0800
-Message-ID: <CAF1ivSbWFahCM79uBD24yA2+KwRV=RC-n=E8ev4nLCUyFVeaEQ@mail.gmail.com>
-Subject: Re: 3.0.3 kernel BUG at kernel/timer.c:1035
-From: Lin Ming <mlin@ss.pku.edu.cn>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Lin Ming <ming.m.lin@intel.com>,
-        Frank van Maarseveen <frankvm@frankvm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 8, 2011 at 5:30 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Wed, 07 Sep 2011 20:36:19 +0800
-> Lin Ming <ming.m.lin@intel.com> wrote:
->
->> On Wed, 2011-09-07 at 18:24 +0800, Frank van Maarseveen wrote:
->> > On Tue, Sep 06, 2011 at 10:48:38PM +0800, Lin Ming wrote:
->> > > Does below patch help?
->> > >
->> > > >From a98b874437f871d5ecc3f6fe409b2b474b1f2731 Mon Sep 17 00:00:00 2001
->> > > From: Lin Ming <ming.m.lin@intel.com>
->> > > Date: Tue, 6 Sep 2011 22:45:43 +0800
->> > > Subject: [PATCH] block: delete bdi writeback wakup_timer in blk_cleanup_queue()
->> > >
->> > > Signed-off-by: Lin Ming <ming.m.lin@intel.com>
->> > > ---
->> > >  block/blk-core.c |    1 +
->> > >  1 files changed, 1 insertions(+), 0 deletions(-)
->> > >
->> > > diff --git a/block/blk-core.c b/block/blk-core.c
->> > > index 90e1ffd..22529a3 100644
->> > > --- a/block/blk-core.c
->> > > +++ b/block/blk-core.c
->> > > @@ -363,6 +363,7 @@ void blk_cleanup_queue(struct request_queue *q)
->> > >   blk_sync_queue(q);
->> > >
->> > >   del_timer_sync(&q->backing_dev_info.laptop_mode_wb_timer);
->> > > + del_timer_sync(&q->backing_dev_info.wb.wakeup_timer);
->> > >   mutex_lock(&q->sysfs_lock);
->> > >   queue_flag_set_unlocked(QUEUE_FLAG_DEAD, q);
->> > >   mutex_unlock(&q->sysfs_lock);
->> > > --
->> > > 1.7.2.3
->> > >
->> >
->> > No, bug still present. Stack trace is the same and I double checked that
->> > it was the new kernel (this time with a lot more debug enabled).
->>
->> Thanks for test.
->> I'll try to reproduce this bug.
->
-> Probably this will "fix" it:
+gcc-4.6.1 warns:
 
-Frank,
+In file included from include/linux/bitops.h:22:0,
+                 from include/linux/kernel.h:17,
+                 from /usr/src/lugabout-github/arch/x86/include/asm/percpu.h:44,
+                 from /usr/src/lugabout-github/arch/x86/include/asm/current.h:5,
+                 from /usr/src/lugabout-github/arch/x86/include/asm/processor.h:15,
+                 from /usr/src/lugabout-github/arch/x86/include/asm/atomic.h:6,
+                 from include/linux/atomic.h:4,
+                 from include/linux/mutex.h:18,
+                 from include/linux/notifier.h:13,
+                 from include/linux/kprobes.h:34,
+                 from arch/x86/kernel/kprobes.c:43:
+/usr/src/lugabout-github/arch/x86/include/asm/bitops.h: In function â€˜arch_prepare_kprobeâ€™:
+/usr/src/lugabout-github/arch/x86/include/asm/bitops.h:319:2: warning: use of memory input without lvalue in asm operand 1 is deprecated [enabled by default]
 
-Does Andrew's patch help?
-
-Lin Ming
-
->
-> --- a/block/blk-sysfs.c~a
-> +++ a/block/blk-sysfs.c
-> @@ -4,6 +4,7 @@
->  #include <linux/kernel.h>
->  #include <linux/slab.h>
->  #include <linux/module.h>
-> +#include <linux/timer.h>
->  #include <linux/bio.h>
->  #include <linux/blkdev.h>
->  #include <linux/blktrace_api.h>
-> @@ -486,7 +487,7 @@ static void blk_release_queue(struct kob
->                __blk_queue_free_tags(q);
->
->        blk_trace_shutdown(q);
-> -
-> +       del_timer_sync(&q->backing_dev_info.wb.wakeup_timer);
->        bdi_destroy(&q->backing_dev_info);
->        kmem_cache_free(blk_requestq_cachep, q);
->  }
-> _
->
-> Jens, can you please take a look at this regression?
-> blk_release_queue() is freeing a pending timer.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+-JimC
+-- 
+James Cloos <cloos@jhcloos.com>         OpenPGP: 1024D/ED7DAEA6
