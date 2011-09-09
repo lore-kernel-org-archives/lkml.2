@@ -1,68 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932707Ab1IIC3j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 22:29:39 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:54727 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757691Ab1IIC3g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 22:29:36 -0400
-Date: Thu, 8 Sep 2011 10:16:51 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Paul Menage <menage@google.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tim Pepper <lnxninja@linux.vnet.ibm.com>
-Subject: Re: [PATCH 08/32] nohz: Move nohz load balancer selection into
- idle logic
-Message-ID: <20110908171651.GI2671@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
- <1313423549-27093-9-git-send-email-fweisbec@gmail.com>
- <1314629117.2816.79.camel@twins>
- <20110908140851.GC6222@somewhere>
+	id S932685Ab1IICgA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 22:36:00 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:58424 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757691Ab1IICf5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 22:35:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110908140851.GC6222@somewhere>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 11090902-6078-0000-0000-000000827E17
+In-Reply-To: <1315518676.6638.6.camel@vkoul-mobl4>
+References: <1315374075-15479-1-git-send-email-Baohua.Song@csr.com>
+ <438BB0150E931F4B9CE701519A4463010871804A46@bgsmsx502.gar.corp.intel.com>
+ <CAGsJ_4x4S+8d3xS+QTrjDpoxcHo3p7qArd7yFr=+h1vxSRvEpA@mail.gmail.com>
+ <438BB0150E931F4B9CE701519A4463010871804A48@bgsmsx502.gar.corp.intel.com>
+ <CAGsJ_4yeovNP=6CKTafbxrBTrYQ42B9yvAOM8gM_bYqD6mTnUw@mail.gmail.com>
+ <CABb+yY1=P=D3GFFxMOUM0a2yWCiAHNqwVU0a--t+pJnUhqKHKA@mail.gmail.com>
+ <CABb+yY3F+DMn2SxeO0chjpiMBkgLvSK5EVYMdhQsfQoZNZ4_7Q@mail.gmail.com>
+ <CAGsJ_4xDh6c5=Uhw9zO34XeY5UNC=fLuRubryks6NOv3T5_kCQ@mail.gmail.com> <1315518676.6638.6.camel@vkoul-mobl4>
+From: Barry Song <21cnbao@gmail.com>
+Date: Fri, 9 Sep 2011 10:35:36 +0800
+Message-ID: <CAGsJ_4zQ0H99w4vDkFG2DtA561e0oPjKVgEZb1kBkGab=c-OAw@mail.gmail.com>
+Subject: Re: [PATCH] dmaengine: add CSR SiRFprimaII DMAC driver
+To: Vinod Koul <vkoul@infradead.org>
+Cc: vinod.koul@intel.com, Jassi Brar <jassisinghbrar@gmail.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "workgroup.linux@csr.com" <workgroup.linux@csr.com>,
+        "rongjun.ying@csr.com" <rongjun.ying@csr.com>,
+        "Baohua.Song@csr.com" <Baohua.Song@csr.com>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 08, 2011 at 04:08:54PM +0200, Frederic Weisbecker wrote:
-> On Mon, Aug 29, 2011 at 04:45:17PM +0200, Peter Zijlstra wrote:
-> > On Mon, 2011-08-15 at 17:52 +0200, Frederic Weisbecker wrote:
-> > > We want the nohz load balancer to be an idle CPU, thus
-> > > move that selection to strict dyntick idle logic.
-> > 
-> > Again, the important part is missing, why is this correct?
-> > 
-> > I'm not at all convinced this is correct, suppose all your cpus (except
-> > the system CPU, which we'll assume has many tasks) are busy running 1
-> > task. Then two of them get an extra task, now if those two happen to be
-> > SMT siblings you want the load-balancer to pull on task out from the SMT
-> > pair, however nobody is pulling since nobody is idle.
-> > 
-> > AFAICT this breaks stuff and the ILB needs some serious attention in
-> > order to fix this.
-> 
-> Right, we have the support for trigger_load_balance() in scheduler_tick()
-> that is still missing.
-> 
-> What about using that CPU that has to stay awake with a periodic tick
-> to handle jiffies? We could force that CPU to be the idle load balancer.
-> The problem is perhaps to find the right frequency for doing that because
-> we have all the rq to handle.
+2011/9/9 Vinod Koul <vkoul@infradead.org>:
+> On Thu, 2011-09-08 at 14:36 +0800, Barry Song wrote:
+>> 2011/9/8 Jassi Brar <jassisinghbrar@gmail.com>:
+>> > On Thu, Sep 8, 2011 at 8:47 AM, Jassi Brar <jassisinghbrar@gmail.com> wrote:
+>> >> On Thu, Sep 8, 2011 at 7:42 AM, Barry Song <21cnbao@gmail.com> wrote:
+>> >>
+>> >>>>> it is much different with primacell based DMA like pl080, pl330.
+>> >>>>> prima2 has a self-defined DMAC IP. basically it is a 2D mode dma with
+>> >>>>> two scales X and Y and direct way to start and stop DMA.
+>> >>>>> every channel has fixed function to serve only one perpheral. so you
+>> >>>>> find we have a filter id.
+>> >>>> okay, what do you mean by 2D mode? Is it similar to what TI folks, Linus
+>> >>>> W and Jassi Brar posted RFC's on?
+>> >>>
+>> >>> In SiRFprimaII 2-D DMA, the system memory space is interpreted
+>> >>> as a 2-D layout instead of a linear 1-D layout. More specifically, the
+>> >>> system memory can be considered as
+>> >>> multiple data lines. The length of the data line is determined by the
+>> >>> user-selected DMA_WIDTH register.
+>> >>> The user can specify a data window that the user wants to access using
+>> >>> four parameters:
+>> >>> ■ Start address
+>> >>> ■ X length
+>> >>> ■ Y length
+>> >>> ■ Width
+>> >>>
+>> >>> The idea of a 2-D DMA is shown in figure 2d-dma.png attached.
+>> >>>
+>> >>> If you specifies the Y length as 0 or the X length equals to the DMA
+>> >>> width, then this 2-D DMA reduces to
+>> >>> 1-D. If the user configures the X length greater than the DMA width,
+>> >>> then the extra data is wrapped around
+>> >>> to the next data line, this may corrupt the DMA transfer for
+>> >>> multiple-line 2-D DMA. If this is a 1-D DMA, then
+>> >>> there is no issue. The attached diagram 2d-dma2.png shows the
+>> >>> wrap-around of the extra data in case the X length
+>> >>> greater than DMA width.
+>> >>
+>> >> Sorry, the role of DMA_WIDTH is not clear to me yet.
+>> >> In which case the user _must_ set {xlen > width} ?
+>> >>
+>> > Perhaps 2d-dma.PNG is inaccurate - it shouldn't depict any deltaX.
+>> > Doesn't xlen and width always start together ? If no, please don't read ahead.
+>> >
+>> > According to figures, {xlen > width} is to be set _only_ when a transfer
+>> > is divided into _exactly_ two chunks separated by gap _exactly_
+>> > equal to length of the second chunk (an extremely rare case).
+>>
+>> Sorry i didn't list related full information in datasheet in my early reply.
+>> we don't have the case of xlen > dma_width.
+> What is intended usage of the 2D dma?
 
-If this CPU can also be the RCU grace-period advancer of last resort,
-that would make it easier to arrive at an improved RCU_FAST_NO_HZ.
+two cases:
+1. continuous DMA:
+xlen = DMA_WIDTH
+2. interleaved DMA:
+xlen < DMA_WIDTH
 
-							Thanx, Paul
+2 is for dma video/image or something like that.  For example, you
+might only copy 1/9 of a nine-square grid by it.
 
+>
+> In first diagram you sent, x length is first block length to transfer
+> and (dma_width - x_len) is length to skip, right?
+
+(dma_width - x_len) is length to skip
+
+>
+> So what is the second diagram about? Is this juts a case when notion of
+> xlen > dma_width? How much you transfer and how much you skip?
+
+Actually, there is no real case for xlen > dma_width. this picture is
+only explaining what will happen if we set xlen > dma_width.
+when xlen > dma_width, for every line, dma will transfer only
+dma_width. Then the extra data is wrapped around
+to the next data line, it will corrupt the DMA transfer for
+multiple-line 2-D DMA since the extra data will overlap with the real
+next line.
+
+if we set ylen to 0, the DMA becomes 1D, the wrap-around of the extra
+data has no issue nobody will overlap with it.
+
+>
+> --
+> ~Vinod Koul
+> Intel Corp.
+>
+>
+
+-barry
