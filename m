@@ -1,73 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759448Ab1IIQco (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 12:32:44 -0400
-Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:58007 "EHLO
-	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754759Ab1IIQcm convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 12:32:42 -0400
+	id S1759462Ab1IIQdo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 12:33:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8709 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759451Ab1IIQdm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Sep 2011 12:33:42 -0400
+Date: Fri, 9 Sep 2011 18:30:21 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Pedro Alves <pedro@codesourcery.com>
+Cc: Denys Vlasenko <dvlasenk@redhat.com>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org,
+        Denys Vlasenko <vda.linux@googlemail.com>
+Subject: Re: [PATCH v3] Make PTRACE_SEIZE set ptrace options specified in
+	'data'
+Message-ID: <20110909163021.GD23271@redhat.com>
+References: <1315506333.18043.49.camel@dhcp-25-63.brq.redhat.com> <201109091212.59889.pedro@codesourcery.com> <1315571337.4127.3.camel@dhcp-25-63.brq.redhat.com> <201109091415.33503.pedro@codesourcery.com>
 MIME-Version: 1.0
-In-Reply-To: <1314255697-15411-1-git-send-email-keshava_mgowda@ti.com>
-References: <1314255697-15411-1-git-send-email-keshava_mgowda@ti.com>
-Date: Fri, 9 Sep 2011 22:02:39 +0530
-Message-ID: <CAP05o4KGqbX6KzZjjpXEfyNk5RzYkgKRkn+P9GYvxLA9pgLOxg@mail.gmail.com>
-Subject: Re: [PATCH 0/5 v8] mfd: omap: usb: Runtime PM support for EHCI and
- OHCI drivers
-From: "Munegowda, Keshava" <keshava_mgowda@ti.com>
-To: b-cousson@ti.com
-Cc: Keshava Munegowda <keshava_mgowda@ti.com>, balbi@ti.com, gadiyar@ti.com,
-        sameo@linux.intel.com, parthab@india.ti.com, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201109091415.33503.pedro@codesourcery.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 25, 2011 at 12:31 PM, Keshava Munegowda
-<keshava_mgowda@ti.com> wrote:
-> From: Keshava Munegowda <Keshava_mgowda@ti.com>
+On 09/09, Pedro Alves wrote:
 >
-> The Hwmod structures and Runtime PM features are implemented
-> For EHCI and OHCI drivers of OMAP3 and OMAP4.
-> The global suspend/resume of EHCI and OHCI
-> is validated on OMAP3430 sdp board with these patches.
->
-> these patches are rebased to kevin's pm branch and
-> usbhs latest mainline kernel patches
->
-> TODO:
->   - Adding pad configurations to Hwmods
->   - Aggressive clock cutting in usb bus suspends
->   - Remote Wakeup implementation using irq-chaining
->
->
-> Benoit Cousson (1):
->  arm: omap: usb: ehci and ohci hwmod structures for omap4
->
-> Keshava Munegowda (4):
->  arm: omap: usb: ehci and ohci hwmod structures for omap3
->  arm: omap: usb: register hwmods of usbhs
->  arm: omap: usb: device name change for the clk names of usbhs
->  mfd: omap: usb: Runtime PM support
->
->  arch/arm/mach-omap2/clock3xxx_data.c       |   26 +-
->  arch/arm/mach-omap2/clock44xx_data.c       |   10 +-
->  arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |  281 +++++++++++
->  arch/arm/mach-omap2/omap_hwmod_44xx_data.c |  247 ++++++++++
->  arch/arm/mach-omap2/usb-host.c             |  114 ++---
->  arch/arm/plat-omap/include/plat/usb.h      |    3 -
->  drivers/mfd/omap-usb-host.c                |  733 +++++++++++-----------------
->  drivers/usb/host/ehci-omap.c               |   17 +-
->  drivers/usb/host/ohci-omap3.c              |   18 +-
->  9 files changed, 891 insertions(+), 558 deletions(-)
->
->
+> Right, but we end up with no way to make the tracee _not ever
+> stop_ at execve if the tracer wants to, like you can make
+> the tracee not ever stop on forks or syscalls, by not enabling
+> the corresponding PTRACE_O_FOO or not PTRACE_SYSCALL.  Not
+> specifying PTRACE_O_TRACEEXEC coupled with `SEIZE not stopping
+> tracees for that magic SIGTRAP' got you that.  In a way, it looked to
+> me to make the API a bit less ugly.
 
-Hi Benoit Cousson
-                   please ack this series; I am waiting for your ack
-to lineup this USBHS runtime pm adaptions.
+Agreed, perhaps we should do this.
 
-regards
-keshava
+> Anyway, could you please check (or Tejun please confirm)
+> that that magic SIGTRAP is really still there on SEIZE?
+
+It is.
+
+Oleg.
+
