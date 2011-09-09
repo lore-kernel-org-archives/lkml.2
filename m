@@ -1,74 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934011Ab1IIXKG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 19:10:06 -0400
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:46429 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759098Ab1IIXKF (ORCPT
+	id S933994Ab1IIXMa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 19:12:30 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:33249 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759932Ab1IIXM3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 19:10:05 -0400
-Message-ID: <e7392891fba13321668f533c6a0d637b.squirrel@webmail.greenhost.nl>
-In-Reply-To: <20110909162606.GC23271@redhat.com>
-References: <1315500802.18043.45.camel@dhcp-25-63.brq.redhat.com>
-    <20110909001853.GA29319@htj.dyndns.org>
-    <201109090754.50272.vda.linux@googlemail.com>
-    <93a9bd6624aa6a991d688bfaba766a91.squirrel@webmail.greenhost.nl>
-    <20110909162606.GC23271@redhat.com>
-Date: Sat, 10 Sep 2011 01:09:58 +0200
-Subject: Re: Why I want PTRACE_O_TRACESTOP option
-From: "Indan Zupancic" <indan@nul.nu>
-To: "Oleg Nesterov" <oleg@redhat.com>
-Cc: "Denys Vlasenko" <vda.linux@googlemail.com>, "Tejun Heo" <tj@kernel.org>,
-        "Denys Vlasenko" <dvlasenk@redhat.com>, linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.22
+	Fri, 9 Sep 2011 19:12:29 -0400
+X-Sasl-enc: X9GziWnzemCOjssW1YyEfMnoIorLO3WFXk0s3NB/SPyh 1315609948
+Date: Fri, 9 Sep 2011 16:09:25 -0700
+From: Greg KH <greg@kroah.com>
+To: Nitin Gupta <ngupta@vflare.org>
+Cc: Jerome Marchand <jmarchan@redhat.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Linux Driver Project <devel@linuxdriverproject.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/5] zram: Kernel config option for number of devices
+Message-ID: <20110909230925.GA23699@kroah.com>
+References: <1315609264-13632-1-git-send-email-ngupta@vflare.org>
+ <1315609264-13632-3-git-send-email-ngupta@vflare.org>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 0.0
-X-Scan-Signature: e462de357cb394d64966911c06262bc8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1315609264-13632-3-git-send-email-ngupta@vflare.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, September 9, 2011 18:26, Oleg Nesterov wrote:
-> On 09/09, Indan Zupancic wrote:
->>
->> It is very useful to set options atomically at SEIZE time.
->
-> Nobody argues with this.
->
->> Another important reason to make PTRACE_O_TRACESTOP an option is
->> because not everyone uses SEIZE: Users using PTRACE_TRACEME can't
->> set this option at all.
->
-> Yes. This was already discussed, PTRACE_TRACEME obviously doesn't
-> work if you need the new features. So far it was decided TRACEME
-> should be avoided,
+On Fri, Sep 09, 2011 at 07:01:01PM -0400, Nitin Gupta wrote:
+> Allows configuring default number of zram devices
+> as kernel config option. User can override this
+> value using 'num_devices' module parameter.
 
-How do you want to attach/seize a just forked child without races
-in a less ugly way than with TRACEME?
-
-> but perhaps we can add SEIZE_ME. And, unlike
-> TRACEME it should probably stop immediately to simplify the
-> synchronization with parent. Afaik, any user of TRACEME does
-> something like kill(getpid(), SIGSTOP), this doesn't look very
-> good.
-
-I let the child send a SIGTERM to itself, so if anything goes wrong
-it terminates. It's only needed because you have to set options.
-
->
-> But personally I'd prefer to avoid SEIZE_ME.
-
-Me too. There is no need for it if PTRACE_O_TRACESTOP exists.
-
-Alternatively, if you do want to add it, just allow PTRACE_SEIZE
-with zero/own PID to achieve the same.
-
-Greetings,
-
-Indan
+Ick, another config value, is this really needed?  Why can't we rely on
+the module parameter instead?
 
 
+> 
+> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
+> ---
+>  drivers/staging/zram/Kconfig    |    9 +++++++++
+>  drivers/staging/zram/zram_drv.c |   13 ++++++++-----
+>  2 files changed, 17 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/staging/zram/Kconfig b/drivers/staging/zram/Kconfig
+> index 3bec4db..ca31cb3 100644
+> --- a/drivers/staging/zram/Kconfig
+> +++ b/drivers/staging/zram/Kconfig
+> @@ -21,6 +21,15 @@ config ZRAM
+>  	  See zram.txt for more information.
+>  	  Project home: http://compcache.googlecode.com/
+>  
+> +config ZRAM_NUM_DEVICES
+> +	int "Default number of zram devices"
+> +	depends on ZRAM
+> +	range 1 32
+> +	default 1
+> +	help
+> +	  Select default number of zram devices. You can override this value
+> +	  using 'num_devices' module parameter.
+> +
+>  config ZRAM_DEBUG
+>  	bool "Compressed RAM block device debug support"
+>  	depends on ZRAM
+> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+> index 03ec5a2..55f2c0e 100644
+> --- a/drivers/staging/zram/zram_drv.c
+> +++ b/drivers/staging/zram/zram_drv.c
+> @@ -781,6 +781,14 @@ static int __init zram_init(void)
+>  {
+>  	int ret, dev_id;
+>  
+> +	/*
+> +	 * Module parameter not specified by user. Use default
+> +	 * value as defined during kernel config.
+> +	 */
+> +	if (num_devices == 0) {
+> +		num_devices = CONFIG_ZRAM_NUM_DEVICES;
+> +	}
+
+Wrong coding style, which, for some odd reason, checkpatch doesn't
+catch.  Please remove the braces.
+
+thanks,
+
+greg k-h
