@@ -1,68 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933983Ab1IIXJh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 19:09:37 -0400
-Received: from mail127.messagelabs.com ([216.82.250.115]:12720 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759098Ab1IIXJg (ORCPT
+	id S934011Ab1IIXKG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 19:10:06 -0400
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:46429 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759098Ab1IIXKF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 19:09:36 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-3.tower-127.messagelabs.com!1315609775!31061392!1
-X-Originating-IP: [216.166.12.32]
-X-StarScan-Version: 6.3.6; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] arch/x86/mm/init_32.c: quiet sparse noise; local functions should be static
-Date: Fri, 9 Sep 2011 16:09:23 -0700
-User-Agent: KMail/1.9.9
-CC: <x86@kernel.org>, <tglx@linutronix.de>, <mingo@redhat.com>,
-        <hpa@zytor.com>, <tj@kernel.org>, <yinghai@kernel.org>, <bp@alien8.de>
+	Fri, 9 Sep 2011 19:10:05 -0400
+Message-ID: <e7392891fba13321668f533c6a0d637b.squirrel@webmail.greenhost.nl>
+In-Reply-To: <20110909162606.GC23271@redhat.com>
+References: <1315500802.18043.45.camel@dhcp-25-63.brq.redhat.com>
+    <20110909001853.GA29319@htj.dyndns.org>
+    <201109090754.50272.vda.linux@googlemail.com>
+    <93a9bd6624aa6a991d688bfaba766a91.squirrel@webmail.greenhost.nl>
+    <20110909162606.GC23271@redhat.com>
+Date: Sat, 10 Sep 2011 01:09:58 +0200
+Subject: Re: Why I want PTRACE_O_TRACESTOP option
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Oleg Nesterov" <oleg@redhat.com>
+Cc: "Denys Vlasenko" <vda.linux@googlemail.com>, "Tejun Heo" <tj@kernel.org>,
+        "Denys Vlasenko" <dvlasenk@redhat.com>, linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201109091609.23433.hartleys@visionengravers.com>
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.0
+X-Scan-Signature: e462de357cb394d64966911c06262bc8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Local functions should be marked static.  This quiets the following
-sparse noise:
+On Fri, September 9, 2011 18:26, Oleg Nesterov wrote:
+> On 09/09, Indan Zupancic wrote:
+>>
+>> It is very useful to set options atomically at SEIZE time.
+>
+> Nobody argues with this.
+>
+>> Another important reason to make PTRACE_O_TRACESTOP an option is
+>> because not everyone uses SEIZE: Users using PTRACE_TRACEME can't
+>> set this option at all.
+>
+> Yes. This was already discussed, PTRACE_TRACEME obviously doesn't
+> work if you need the new features. So far it was decided TRACEME
+> should be avoided,
 
-warning: symbol 'lowmem_pfn_init' was not declared. Should it be static?
-warning: symbol 'highmem_pfn_init' was not declared. Should it be static?
+How do you want to attach/seize a just forked child without races
+in a less ugly way than with TRACEME?
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers,com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Borislav Petkov <bp@alien8.de> 
+> but perhaps we can add SEIZE_ME. And, unlike
+> TRACEME it should probably stop immediately to simplify the
+> synchronization with parent. Afaik, any user of TRACEME does
+> something like kill(getpid(), SIGSTOP), this doesn't look very
+> good.
 
----
+I let the child send a SIGTERM to itself, so if anything goes wrong
+it terminates. It's only needed because you have to set options.
 
-diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
-index 29f7c6d..cc56c76 100644
---- a/arch/x86/mm/init_32.c
-+++ b/arch/x86/mm/init_32.c
-@@ -560,7 +560,7 @@ early_param("highmem", parse_highmem);
-  * artificially via the highmem=x boot parameter then create
-  * it:
-  */
--void __init lowmem_pfn_init(void)
-+static void __init lowmem_pfn_init(void)
- {
- 	/* max_low_pfn is 0, we already have early_res support */
- 	max_low_pfn = max_pfn;
-@@ -596,7 +596,7 @@ void __init lowmem_pfn_init(void)
-  * We have more RAM than fits into lowmem - we try to put it into
-  * highmem, also taking the highmem=x boot parameter into account:
-  */
--void __init highmem_pfn_init(void)
-+static void __init highmem_pfn_init(void)
- {
- 	max_low_pfn = MAXMEM_PFN;
- 
+>
+> But personally I'd prefer to avoid SEIZE_ME.
+
+Me too. There is no need for it if PTRACE_O_TRACESTOP exists.
+
+Alternatively, if you do want to add it, just allow PTRACE_SEIZE
+with zero/own PID to achieve the same.
+
+Greetings,
+
+Indan
+
+
