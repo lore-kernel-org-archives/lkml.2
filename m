@@ -1,257 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759066Ab1IINns (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 09:43:48 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:46591 "EHLO
-	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758807Ab1IINnr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 09:43:47 -0400
-X-SpamScore: -7
-X-BigFish: VPS-7(zzc85fh146fK1432N98dKzz1202h1082kzz8275eha1495iz32i668h839h34h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-FB-SS: 13,
-X-WSS-ID: 0LR9CQT-02-18C-02
-X-M-MSG: 
-Date: Fri, 9 Sep 2011 15:42:33 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
-        Ingo Molnar <mingo@elte.hu>, melwyn lobo <linux.melwyn@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: x86 memcpy performance
-Message-ID: <20110909134233.GA1147@gere.osrc.amd.com>
-References: <20110814095910.GA18809@liondog.tnic>
- <6296.1313462075@turing-police.cc.vt.edu>
- <20110816121604.GA29251@aftab>
- <4E5FA18A.7010205@gmail.com>
- <CA+55aFz1RRY6KcqVVZ9tBH7PDXfBwkZ1AhJcSHPABLXMkNJCOA@mail.gmail.com>
- <20110908083551.GA5646@liondog.tnic>
- <4E689FC5.8010005@gmail.com>
- <20110909081407.GA29251@liondog.tnic>
- <4E69E675.1010809@gmail.com>
- <4E69F71D.3030905@gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="3lcZGd9BuhuYXNfi"
-Content-Disposition: inline
-In-Reply-To: <4E69F71D.3030905@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	id S1759085Ab1IINnz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 09:43:55 -0400
+Received: from lo.gmane.org ([80.91.229.12]:54647 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759071Ab1IINnx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Sep 2011 09:43:53 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Frederik Himpe <fhimpe@telenet.be>
+Subject: Re: e1000e: NIC not working (after resume?)
+Date: Fri, 9 Sep 2011 13:43:37 +0000 (UTC)
+Message-ID: <j4d569$ndo$2@dough.gmane.org>
+References: <j4d428$ndo$1@dough.gmane.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: artipc9.vub.ac.be
+User-Agent: Pan/0.133 (House of Butterflies)
+Cc: e1000-devel@lists.sourceforge.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---3lcZGd9BuhuYXNfi
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
+[Crossposting to e1000 mailing list]
 
-On Fri, Sep 09, 2011 at 01:23:09PM +0200, Maarten Lankhorst wrote:
-> This specific one happened far more than any of the other memcpy usages, and
-> ignoring the check when destination is page aligned, most of them are gone.
-> 
-> In short: I don't think I can get a speedup by using avx memcpy in-kernel.
-> 
-> YMMV, if it does speed up for you, I'd love to see concrete numbers. And not only worst
-> case, but for the common aligned cases too. Or some concrete numbers that misaligned
-> happens a lot for you.
+I have a Dell Latitude E6400 which has a network card supported by the 
+e1000e driver. Often (I think after a suspend/resume cycle), the network 
+card does not work at all: the NIC is correctly seen by ifconfig, but 
+running ethtool just returns: "No such device". dhclient -v gives the 
+impression that it's correctly sending out DHCPDISCOVER packets on the 
+NIC, but a tcpdump running on the same machine does not see any packets 
+going out.
 
-Actually,
+I'm using Debian's 3.0.0-3 kernel (corresponding with Linux 3.0.3).
 
-assuming alignment matters, I'd need to redo the trace_printk run I did
-initially on buffer sizes:
+Full lspci, .config and dmesg output at
+http://artipc10.vub.ac.be/~frederik/e1000e/
 
-http://marc.info/?l=linux-kernel&m=131331602309340 (kernel_build.sizes attached)
+Here is some relevant summary.
 
-to get a more sensible grasp on the alignment of kernel buffers along
-with their sizes and to see whether we're doing a lot of unaligned large
-buffer copies in the kernel. I seriously doubt that, though, we should
-be doing everything pagewise anyway so...
+How can I find out what is going wrong?
 
-Concerning numbers, I ran your version again and sorted the output by
-speedup. The highest scores are:
+# ifconfig eth0
+eth0      Link encap:Ethernet  HWaddr 00:21:70:e1:bb:4c  
+          UP BROADCAST PROMISC MULTICAST  MTU:1500  Metric:1
+          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:1000 
+          RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
+          Interrupt:22 Memory:f6ae0000-f6b00000 
 
-30037(12/44)	5566.4		12797.2		2.299011642
-28672(12/44)	5512.97		12588.7		2.283467991
-30037(28/60)	5610.34		12732.7		2.269502799
-27852(12/44)	5398.36		12242.4		2.267803859
-30037(4/36)	5585.02		12598.6		2.25578257
-28672(28/60)	5499.11		12317.5		2.239914033
-27852(28/60)	5349.78		11918.9		2.227919527
-27852(20/52)	5335.92		11750.7		2.202186795
-24576(12/44)	4991.37		10987.2		2.201247446
 
-and this is pretty cool. Here are the (0/0) cases:
+# ethtool eth0
+Settings for eth0:
+Cannot get device settings: No such device
+Cannot get wake-on-lan settings: No such device
+Cannot get message level: No such device
+Cannot get link status: No such device
+No data available
 
-8192(0/0)       2627.82         3038.43         1.156255766
-12288(0/0)      3116.62         3675.98         1.179475031
-13926(0/0)      3330.04         4077.08         1.224334839
-14336(0/0)      3377.95         4067.24         1.204055286
-15018(0/0)      3465.3          4215.3          1.216430725
-16384(0/0)      3623.33         4442.38         1.226050715
-24576(0/0)      4629.53         6021.81         1.300737559
-27852(0/0)      5026.69         6619.26         1.316823133
-28672(0/0)      5157.73         6831.39         1.324495749
-30037(0/0)      5322.01         6978.36         1.3112261
+# lspci -vvnn
+00:19.0 Ethernet controller [0200]: Intel Corporation 82567LM Gigabit Network Connection [8086:10f5] (rev 03)
+        Subsystem: Dell Device [1028:0233]
+        Control: I/O- Mem- BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR+ FastB2B- DisINTx-
+        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+        Interrupt: pin A routed to IRQ 22
+        Region 0: Memory at f6ae0000 (32-bit, non-prefetchable) [disabled] [size=128K]
+        Region 1: Memory at f6adb000 (32-bit, non-prefetchable) [disabled] [size=4K]
+        Region 2: I/O ports at efe0 [disabled] [size=32]
+        Capabilities: [c8] Power Management version 2
+                Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
+                Status: D3 NoSoftRst- PME-Enable+ DSel=0 DScale=1 PME+
+        Capabilities: [d0] MSI: Enable- Count=1/1 Maskable- 64bit+
+                Address: 00000000fee0300c  Data: 4182
+        Capabilities: [e0] PCI Advanced Features
+                AFCap: TP+ FLR+
+                AFCtrl: FLR-
+                AFStatus: TP-
+        Kernel driver in use: e1000e
 
-It is not 2x anymore but still.
 
-Anyway, looking at the buffer sizes, they're rather ridiculous and even
-if we get them in some workload, they won't repeat n times per second to
-be relevant. So we'll see...
+# dmesg | grep -E "e1000e|eth0"
+[    1.027437] e1000e: Intel(R) PRO/1000 Network Driver - 1.3.10-k2
+[    1.027441] e1000e: Copyright(c) 1999 - 2011 Intel Corporation.
+[    1.027480] e1000e 0000:00:19.0: PCI INT A -> GSI 22 (level, low) -> IRQ 22
+[    1.027491] e1000e 0000:00:19.0: setting latency timer to 64
+[    1.027605] e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
+[    1.231440] e1000e 0000:00:19.0: eth0: (PCI Express:2.5GT/s:Width x1) 00:21:70:e1:bb:4c
+[    1.231444] e1000e 0000:00:19.0: eth0: Intel(R) PRO/1000 Network Connection
+[    1.231470] e1000e 0000:00:19.0: eth0: MAC: 7, PHY: 8, PBA No: 1004FF-0FF
+[   22.896268] e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
+[   22.952097] e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
+[   22.954132] ADDRCONF(NETDEV_UP): eth0: link is not ready
+[   24.504903] e1000e: eth0 NIC Link is Up 100 Mbps Full Duplex, Flow Control: Rx/Tx
+[   24.506413] e1000e 0000:00:19.0: eth0: 10/100 speed: disabling TSO
+[   24.508402] ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
+[   34.788022] eth0: no IPv6 routers present
+[   41.444922] e1000e: eth0 NIC Link is Up 100 Mbps Full Duplex, Flow Control: Rx/Tx
+[   41.446325] e1000e 0000:00:19.0: eth0: 10/100 speed: disabling TSO
+[25136.918393] e1000e 0000:00:19.0: PME# enabled
+[25142.488050] e1000e 0000:00:19.0: BAR 0: set to [mem 0xf6ae0000-0xf6afffff] (PCI address [0xf6ae0000-0xf6afffff])
+[25142.488058] e1000e 0000:00:19.0: BAR 1: set to [mem 0xf6adb000-0xf6adbfff] (PCI address [0xf6adb000-0xf6adbfff])
+[25142.488066] e1000e 0000:00:19.0: BAR 2: set to [io  0xefe0-0xefff] (PCI address [0xefe0-0xefff])
+[25142.488085] e1000e 0000:00:19.0: restoring config space at offset 0xf (was 0x100, writing 0x10a)
+[25142.488110] e1000e 0000:00:19.0: restoring config space at offset 0x1 (was 0x100000, writing 0x100107)
+[25142.488167] e1000e 0000:00:19.0: PME# disabled
+[25142.510966] e1000e 0000:00:19.0: PCI INT A disabled
+[25142.510971] e1000e 0000:00:19.0: PME# enabled
+[25143.468668] e1000e 0000:00:19.0: restoring config space at offset 0xf (was 0x100, writing 0x10a)
+[25143.468689] e1000e 0000:00:19.0: restoring config space at offset 0x6 (was 0x1, writing 0xefe1)
+[25143.468696] e1000e 0000:00:19.0: restoring config space at offset 0x5 (was 0x0, writing 0xf6adb000)
+[25143.468703] e1000e 0000:00:19.0: restoring config space at offset 0x4 (was 0x0, writing 0xf6ae0000)
+[25143.468713] e1000e 0000:00:19.0: restoring config space at offset 0x1 (was 0x100000, writing 0x100107)
+[25143.471149] e1000e 0000:00:19.0: PME# disabled
+[25143.471277] e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
+[25145.276441] e1000e 0000:00:19.0: PME# enabled
+[25146.082051] e1000e 0000:00:19.0: BAR 0: set to [mem 0xf6ae0000-0xf6afffff] (PCI address [0xf6ae0000-0xf6afffff])
+[25146.082076] e1000e 0000:00:19.0: BAR 1: set to [mem 0xf6adb000-0xf6adbfff] (PCI address [0xf6adb000-0xf6adbfff])
+[25146.082090] e1000e 0000:00:19.0: BAR 2: set to [io  0xefe0-0xefff] (PCI address [0xefe0-0xefff])
+[25146.082126] e1000e 0000:00:19.0: restoring config space at offset 0xf (was 0x100, writing 0x10a)
+[25146.082169] e1000e 0000:00:19.0: restoring config space at offset 0x1 (was 0x100000, writing 0x100107)
+[25146.082280] e1000e 0000:00:19.0: PME# disabled
+[25146.176605] e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
+[25146.232228] e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
+[25146.234003] ADDRCONF(NETDEV_UP): eth0: link is not ready
+[25147.328875] e1000e 0000:00:19.0: PME# enabled
+[26261.896126] e1000e 0000:00:19.0: BAR 0: set to [mem 0xf6ae0000-0xf6afffff] (PCI address [0xf6ae0000-0xf6afffff])
+[26261.896140] e1000e 0000:00:19.0: BAR 1: set to [mem 0xf6adb000-0xf6adbfff] (PCI address [0xf6adb000-0xf6adbfff])
+[26261.896149] e1000e 0000:00:19.0: BAR 2: set to [io  0xefe0-0xefff] (PCI address [0xefe0-0xefff])
+[26261.896169] e1000e 0000:00:19.0: restoring config space at offset 0xf (was 0x100, writing 0x10a)
+[26261.896196] e1000e 0000:00:19.0: restoring config space at offset 0x1 (was 0x100000, writing 0x100107)
+[26261.896241] e1000e 0000:00:19.0: PME# disabled
+[26261.896316] e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
+[26261.972148] e1000e 0000:00:19.0: PME# enabled
+[26268.192160] e1000e 0000:00:19.0: BAR 0: set to [mem 0xf6ae0000-0xf6afffff] (PCI address [0xf6ae0000-0xf6afffff])
+[26268.192168] e1000e 0000:00:19.0: BAR 1: set to [mem 0xf6adb000-0xf6adbfff] (PCI address [0xf6adb000-0xf6adbfff])
+[26268.192175] e1000e 0000:00:19.0: BAR 2: set to [io  0xefe0-0xefff] (PCI address [0xefe0-0xefff])
+[26268.192194] e1000e 0000:00:19.0: restoring config space at offset 0xf (was 0x100, writing 0x10a)
+[26268.192219] e1000e 0000:00:19.0: restoring config space at offset 0x1 (was 0x100000, writing 0x100107)
+[26268.192274] e1000e 0000:00:19.0: PME# disabled
+[26268.213875] e1000e 0000:00:19.0: PME# enabled
+[26269.172481] e1000e 0000:00:19.0: restoring config space at offset 0xf (was 0x100, writing 0x10a)
+[26269.172497] e1000e 0000:00:19.0: restoring config space at offset 0x6 (was 0x1, writing 0xefe1)
+[26269.172502] e1000e 0000:00:19.0: restoring config space at offset 0x5 (was 0x0, writing 0xf6adb000)
+[26269.172507] e1000e 0000:00:19.0: restoring config space at offset 0x4 (was 0x0, writing 0xf6ae0000)
+[26269.172515] e1000e 0000:00:19.0: restoring config space at offset 0x1 (was 0x100000, writing 0x100107)
+[26269.174262] e1000e 0000:00:19.0: PME# disabled
+[26269.174339] e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
+[26272.384806] e1000e 0000:00:19.0: PME# enabled
+[26274.688310] e1000e 0000:00:19.0: eth0: Error reading PHY register
+[26275.482490] e1000e 0000:00:19.0: eth0: Error reading PHY register
+[26276.277343] e1000e 0000:00:19.0: eth0: Error reading PHY register
+[26277.075194] e1000e 0000:00:19.0: eth0: Error reading PHY register
+[26277.870807] e1000e 0000:00:19.0: eth0: Error reading PHY register
+[26278.667881] e1000e 0000:00:19.0: eth0: Error reading PHY register
+[26279.463492] e1000e 0000:00:19.0: eth0: Error reading PHY register
+[26280.258982] e1000e 0000:00:19.0: eth0: Error reading PHY register
+[26281.056598] e1000e 0000:00:19.0: eth0: Error reading PHY register
+[26281.855386] e1000e 0000:00:19.0: eth0: Error reading PHY register
+[26282.649838] e1000e 0000:00:19.0: eth0: Error reading PHY register
+[26283.445674] e1000e 0000:00:19.0: eth0: Error reading PHY register
+[26289.848036] e1000e 0000:00:19.0: BAR 0: set to [mem 0xf6ae0000-0xf6afffff] (PCI address [0xf6ae0000-0xf6afffff])
+[26289.848044] e1000e 0000:00:19.0: BAR 1: set to [mem 0xf6adb000-0xf6adbfff] (PCI address [0xf6adb000-0xf6adbfff])
+[26289.848050] e1000e 0000:00:19.0: BAR 2: set to [io  0xefe0-0xefff] (PCI address [0xefe0-0xefff])
+[26289.848067] e1000e 0000:00:19.0: restoring config space at offset 0xf (was 0x100, writing 0x10a)
+[26289.848090] e1000e 0000:00:19.0: restoring config space at offset 0x1 (was 0x100000, writing 0x100107)
+[26289.848146] e1000e 0000:00:19.0: PME# disabled
+[26289.940279] e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
+[26289.996092] e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
+[26289.996761] ADDRCONF(NETDEV_UP): eth0: link is not ready
+[26291.088343] e1000e 0000:00:19.0: PME# enabled
+[26900.272077] e1000e 0000:00:19.0: BAR 0: set to [mem 0xf6ae0000-0xf6afffff] (PCI address [0xf6ae0000-0xf6afffff])
+[26900.272096] e1000e 0000:00:19.0: BAR 1: set to [mem 0xf6adb000-0xf6adbfff] (PCI address [0xf6adb000-0xf6adbfff])
+[26900.272111] e1000e 0000:00:19.0: BAR 2: set to [io  0xefe0-0xefff] (PCI address [0xefe0-0xefff])
+[26900.272142] e1000e 0000:00:19.0: restoring config space at offset 0xf (was 0x100, writing 0x10a)
+[26900.272180] e1000e 0000:00:19.0: restoring config space at offset 0x1 (was 0x100000, writing 0x100107)
+[26900.272250] e1000e 0000:00:19.0: PME# disabled
+[26900.272379] e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
+[26900.274426] e1000e 0000:00:19.0: eth0: MAC Wakeup cause - Link Status Change
+[26905.560584] e1000e: Intel(R) PRO/1000 Network Driver - 1.3.10-k2
+[26905.560591] e1000e: Copyright(c) 1999 - 2011 Intel Corporation.
+[26905.560650] e1000e 0000:00:19.0: PCI INT A -> GSI 22 (level, low) -> IRQ 22
+[26905.560665] e1000e 0000:00:19.0: setting latency timer to 64
+[26905.560836] e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
+[26905.744547] e1000e 0000:00:19.0: eth0: (PCI Express:2.5GT/s:Width x1) 00:21:70:e1:bb:4c
+[26905.744552] e1000e 0000:00:19.0: eth0: Intel(R) PRO/1000 Network Connection
+[26905.744581] e1000e 0000:00:19.0: eth0: MAC: 7, PHY: 8, PBA No: 1004FF-0FF
+[26905.744594] e1000e 0000:00:19.0: PME# enabled
+[26905.880141] e1000e 0000:00:19.0: BAR 0: set to [mem 0xf6ae0000-0xf6afffff] (PCI address [0xf6ae0000-0xf6afffff])
+[26905.880149] e1000e 0000:00:19.0: BAR 1: set to [mem 0xf6adb000-0xf6adbfff] (PCI address [0xf6adb000-0xf6adbfff])
+[26905.880155] e1000e 0000:00:19.0: BAR 2: set to [io  0xefe0-0xefff] (PCI address [0xefe0-0xefff])
+[26905.880172] e1000e 0000:00:19.0: restoring config space at offset 0xf (was 0x100, writing 0x10a)
+[26905.880194] e1000e 0000:00:19.0: restoring config space at offset 0x1 (was 0x100000, writing 0x100107)
+[26905.880247] e1000e 0000:00:19.0: PME# disabled
+[26905.968320] e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
+[26906.024395] e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
+[26906.025907] ADDRCONF(NETDEV_UP): eth0: link is not ready
+[26907.112415] e1000e 0000:00:19.0: PME# enabled
+[27308.975856] device eth0 entered promiscuous mode
+[27326.414382] device eth0 left promiscuous mode
+[27336.815362] device eth0 entered promiscuous mode
 
-Thanks.
+* Right after start up: machine is in docking station, network is working 
+fine.
+* At 25136: resume machine, not in docking station, no network cable 
+plugged in, so network connection was not tested.
+* At 26261: resume machine, in docking station, network cable plugged in, 
+but network connection is not working
+* At 26900: rmmod e1000e && modprobe e1000e: network still not working
 
 -- 
-Regards/Gruss,
-Boris.
+Frederik Himpe
 
---3lcZGd9BuhuYXNfi
-Content-Type: text/plain; charset="us-ascii"; name="kernel_build.sizes"
-Content-Disposition: attachment; filename="kernel_build.sizes"
-Content-Description: kernel_build.sizes
 
-Bytes	Count
-=====	=====
-0	5447
-1	3850
-2	16255
-3	11113
-4	68870
-5	4256
-6	30433
-7	19188
-8	50490
-9	5999
-10	78275
-11	5628
-12	6870
-13	7371
-14	4742
-15	4911
-16	143835
-17	14096
-18	1573
-19	13603
-20	424321
-21	741
-22	584
-23	450
-24	472
-25	685
-26	367
-27	365
-28	333
-29	301
-30	300
-31	269
-32	489
-33	272
-34	266
-35	220
-36	239
-37	209
-38	249
-39	235
-40	207
-41	181
-42	150
-43	98
-44	194
-45	66
-46	62
-47	52
-48	67226
-49	138
-50	171
-51	26
-52	20
-53	12
-54	15
-55	4
-56	13
-57	8
-58	6
-59	6
-60	115
-61	10
-62	5
-63	12
-64	67353
-65	6
-66	2363
-67	9
-68	11
-69	6
-70	5
-71	6
-72	10
-73	4
-74	9
-75	8
-76	4
-77	6
-78	3
-79	4
-80	3
-81	4
-82	4
-83	4
-84	4
-85	8
-86	6
-87	2
-88	3
-89	2
-90	2
-91	1
-92	9
-93	1
-94	2
-96	2
-97	2
-98	3
-100	2
-102	1
-104	1
-105	1
-106	1
-107	2
-109	1
-110	1
-111	1
-112	1
-113	2
-115	2
-117	1
-118	1
-119	1
-120	14
-127	1
-128	1
-130	1
-131	2
-134	2
-137	1
-144	100092
-149	1
-151	1
-153	1
-158	1
-185	1
-217	4
-224	3
-225	3
-227	3
-244	1
-254	5
-255	13
-256	21708
-512	21746
-848	12907
-1920	36536
-2048	21708
 
---3lcZGd9BuhuYXNfi--
