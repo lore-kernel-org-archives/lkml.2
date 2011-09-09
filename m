@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933952Ab1IIVNd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 17:13:33 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:52192 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933505Ab1IIVNc (ORCPT
+	id S1759852Ab1IIVOW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 17:14:22 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:53509 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752190Ab1IIVOU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 17:13:32 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Linas Vepstas (Code Aurora)" <linas@codeaurora.org>
-Cc: Richard Kuo <rkuo@codeaurora.org>, linux-arch@vger.kernel.org,
-        linux-hexagon@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch v3 24/36] Hexagon: Provide basic implementation and/or stubs for I/O routines.
-Date: Fri, 09 Sep 2011 23:13:12 +0200
-Message-ID: <1883807.RYWKjfNqKd@wuerfel>
-User-Agent: KMail/4.7.0  (Linux/3.0.0-rc1nosema+; KDE/4.7.0; x86_64; ; )
-In-Reply-To: <20110909191412.GB2034@codeaurora.org>
-References: <20110909010847.294039464@codeaurora.org> <20110909010916.993872033@codeaurora.org> <20110909191412.GB2034@codeaurora.org>
+	Fri, 9 Sep 2011 17:14:20 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:ZZ1KdIVHMmHQR/OovnbboDWTGuwZtTI4Ge9D/Dny75y
- mxMDiAIRIUzZ5W5K7FboN4Q/Pi9TpU4XqZTSecwO84w6sYsJOQ
- TnmjNqzgTZospaVtkuis26SMiyN8wDFDfzmWMfzvCxHEC2kZa/
- lFjzlvGGAaO7Up5xehn2tZ3X4aIC95NE0/JvmQ0dKAjkzKmEta
- EQlMuKv3a/2TkjOe5QeOEiwi6t+9GKIdaXDdcA004aYtTg0Qyn
- eN1Mb2MH3GBnhe97zjiDaxljBuLSzSVD99HqbREbAzNx9ZusZJ
- HqE0OfwIuoNp84DaYg3mD7/jUxT07QUceY7230n40dGrgLJn1M
- 9IXq8SBYa5qWg/6AHqQs=
+In-Reply-To: <Pine.LNX.4.64.1109092245170.9242@ask.diku.dk>
+References: <CAB=NE6U0ks9CobukO04=bZpnkm3Yw+Pf7keVPsP-hv1NyJZ_Xw@mail.gmail.com>
+ <Pine.LNX.4.64.1109092245170.9242@ask.diku.dk>
+From: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Date: Fri, 9 Sep 2011 14:13:59 -0700
+Message-ID: <CAB=NE6VVaAgyaEX0iTuuj=r1-Vsi5TgAyCj4+3J=QerrJTWs_Q@mail.gmail.com>
+Subject: Re: Backporting the Linux kernel, for good - was: Re: semantic patch inference
+To: Julia Lawall <julia@diku.dk>
+Cc: Jesper Andersen <jespera@diku.dk>, Hauke Mehrtens <hauke@hauke-m.de>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 09 September 2011 14:14:13 Linas Vepstas wrote:
-> On Thu, Sep 08, 2011 at 08:09:11PM -0500, Richard Kuo wrote:
-> > +     asm volatile(
-> > +             "memb(%0) = %1;"
-> > +             :
-> > +             : "r" (addr), "r" (data)
-> > +     );
-> 
-> I'm kind-of vague on this, but I think that this also needs a
-> : "memory" at the end (to indicate that the asm snippet clobbers
-> memory), as otherwise the compiler may be tempted to reorder
-> these around other memory accesses. That is, the "volatile"
-> keyword is not enough (well, I'm not sure...), but I think
-> "volatile" only prevents the compiler from optimizing these
-> away completely, but is not enough to prevent unwanted
-> re-ordering.
+On Fri, Sep 9, 2011 at 1:48 PM, Julia Lawall <julia@diku.dk> wrote:
+> Thanks for your email.  It made me realize that there was one thing that I
+> didn't understand at all.  If the patches are only intended to apply to
+> linux-next, that makes the problem quite a bit simpler.
 
-Yes, absolutely correct. Specifically, this is required for the
-case where you first store values into regular memory and then
-use the writel() to trigger a DMA operation. Without the memory
-clobber, the dma may read from memory before the CPU has accessed
-it in case the store gets scheduled after the writel by the compiler.
+Awesome, and yes the patches/ are only targeted at applying onto
+linux-next.git. When Linus decides to merge and out 3.x-rc1 I simply
+then set $GIT_TREE to $HOME/linux-2.6-allstable/ and run the script to
+suck code from there and apply patches from there.Turns out that
+because the effort was done on linux-next and because linux-next will
+look very much like what Linus ends up merging the patches/ will still
+apply. So what I do then is simply create a branch for that target
+stable kernel and keep refreshing the patches for that stable kernel
+on that branch -- while the master branch keeps chugging along with
+linux-next.
 
-	Arnd
+> I guess that the patch that spdiff will receive will already contain the
+> appropriate #ifs, so we don't have to be concerned about them.
+
+That is correct.
+
+> We just add them in as is.
+
+I do not follow, add what?
+
+> There was also the question about one or multiple types of changes.  I
+> think this is not a problem, but Jesper should confirm.  If a patch contains
+> two changes and one can be generalized and the other one cannot for some
+> reason, does spdiff give up on the whole thing, or does it do what it can?
+>
+> Overall, the whole thing seems to be doable :)
+
+Wow. I'm thrilled, so say the least.
+
+  Luis
