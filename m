@@ -1,61 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759422Ab1IIQZd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 12:25:33 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:45735 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755350Ab1IIQZc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 12:25:32 -0400
-Date: Fri, 9 Sep 2011 12:25:24 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Steve Grubb <sgrubb@redhat.com>
-Cc: Sandy Harris <sandyinchina@gmail.com>, Neil Horman <nhorman@redhat.com>,
-        Tomas Mraz <tmraz@redhat.com>, Sasha Levin <levinsasha928@gmail.com>,
-        Jarod Wilson <jarod@redhat.com>, linux-crypto@vger.kernel.org,
-        Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert.xu@redhat.com>,
-        Stephan Mueller <stephan.mueller@atsec.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] random: add blocking facility to urandom
-Message-ID: <20110909162524.GA3818@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Steve Grubb <sgrubb@redhat.com>,
-	Sandy Harris <sandyinchina@gmail.com>,
-	Neil Horman <nhorman@redhat.com>, Tomas Mraz <tmraz@redhat.com>,
-	Sasha Levin <levinsasha928@gmail.com>,
-	Jarod Wilson <jarod@redhat.com>, linux-crypto@vger.kernel.org,
-	Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert.xu@redhat.com>,
-	Stephan Mueller <stephan.mueller@atsec.com>,
-	lkml <linux-kernel@vger.kernel.org>
-References: <1314974248-1511-1-git-send-email-jarod@redhat.com>
- <201109080911.12921.sgrubb@redhat.com>
- <CACXcFmnnMLHq2VE35i4QK4wNePXHJc6T73VQNTmJo7WEz34DaQ@mail.gmail.com>
- <201109090904.18321.sgrubb@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201109090904.18321.sgrubb@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+	id S1759425Ab1IIQYu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 12:24:50 -0400
+Received: from casper.infradead.org ([85.118.1.10]:36523 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759284Ab1IIQYs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Sep 2011 12:24:48 -0400
+Subject: Re: [PATCH] dmaengine: add CSR SiRFprimaII DMAC driver
+From: Vinod Koul <vkoul@infradead.org>
+To: Barry Song <21cnbao@gmail.com>
+Cc: vinod.koul@intel.com, "arnd@arndb.de" <arnd@arndb.de>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "workgroup.linux@csr.com" <workgroup.linux@csr.com>,
+        "rongjun.ying@csr.com" <rongjun.ying@csr.com>,
+        "Baohua.Song@csr.com" <Baohua.Song@csr.com>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <CAGsJ_4zaOwHvViuh=nKhvxw3irnE9mXaG_FAKLp_a__XpdXtSA@mail.gmail.com>
+References: <1315374075-15479-1-git-send-email-Baohua.Song@csr.com>
+	 <438BB0150E931F4B9CE701519A4463010871804A46@bgsmsx502.gar.corp.intel.com>
+	 <CAGsJ_4x4S+8d3xS+QTrjDpoxcHo3p7qArd7yFr=+h1vxSRvEpA@mail.gmail.com>
+	 <438BB0150E931F4B9CE701519A4463010871804A48@bgsmsx502.gar.corp.intel.com>
+	 <CAGsJ_4yeovNP=6CKTafbxrBTrYQ42B9yvAOM8gM_bYqD6mTnUw@mail.gmail.com>
+	 <CABb+yY1=P=D3GFFxMOUM0a2yWCiAHNqwVU0a--t+pJnUhqKHKA@mail.gmail.com>
+	 <CABb+yY3F+DMn2SxeO0chjpiMBkgLvSK5EVYMdhQsfQoZNZ4_7Q@mail.gmail.com>
+	 <CAGsJ_4xDh6c5=Uhw9zO34XeY5UNC=fLuRubryks6NOv3T5_kCQ@mail.gmail.com>
+	 <1315518676.6638.6.camel@vkoul-mobl4>
+	 <CAGsJ_4zQ0H99w4vDkFG2DtA561e0oPjKVgEZb1kBkGab=c-OAw@mail.gmail.com>
+	 <CAGsJ_4zaOwHvViuh=nKhvxw3irnE9mXaG_FAKLp_a__XpdXtSA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Intel Corp
+Date: Fri, 09 Sep 2011 21:55:08 +0530
+Message-ID: <1315585508.30522.3.camel@vkoul-mobl4>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 09, 2011 at 09:04:17AM -0400, Steve Grubb wrote: But what
-> I was trying to say is that we can't depend on these supplemental
-> hardware devices like TPM because we don't have access to the
-> proprietary technical details that would be necessary to supplement
-> the analysis. And when it comes to TPM chips, I bet each chip has
-> different details and entropy sources and entropy estimations and
-> rates. Those details we can't get at, so we can't solve the problem
-> by including that hardware. That is the point I was trying to
-> make. :)
+On Fri, 2011-09-09 at 10:52 +0800, Barry Song wrote:
+> >
+> > Actually, there is no real case for xlen > dma_width. this picture is
+> > only explaining what will happen if we set xlen > dma_width.
+> > when xlen > dma_width, for every line, dma will transfer only
+> > dma_width. Then the extra data is wrapped around
+> > to the next data line, it will corrupt the DMA transfer for
+> > multiple-line 2-D DMA since the extra data will overlap with the real
+> > next line.
+> >
+> > if we set ylen to 0, the DMA becomes 1D, the wrap-around of the extra
+> > data has no issue nobody will overlap with it.
+> >
+> 
+> For example, if we set xlen = 7, dma_width =4, ylen > 0
+> then dma will happen like:
+> 0~6
+> 4~10
+> 8~14
+> 12~18
+> ....
+Is there a real world use case of this??
 
-Let's be clear that _we_ which Steve is referring to is Red Hat's
-attempt to get a BSI certification so they can make $$$.  It has
-nothing to do with security, except indirectly, and in my opinion,
-breaking application by causing network daemons to suddenly lock up
-randomly just so that Red Hat can make more $$$ is not a good reason
-to push a incompatible behavioural change into /dev/random.
+> 
+> But for ylen=0, it has no issue. there is no next line to overlap with
+> the extra data.
+> 
+> in case we set xlen = 0, something funny will happen:
+> i will copy the same memory again and again(ylen+1 times).
 
-   	  	       		   	       - Ted
+
+-- 
+~Vinod Koul
+Intel Corp.
+
