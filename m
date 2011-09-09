@@ -1,111 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758519Ab1IIG1P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 02:27:15 -0400
-Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:35968 "EHLO
-	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758401Ab1IIG1M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 02:27:12 -0400
-Message-ID: <4E69B1B6.2080604@ti.com>
-Date: Fri, 09 Sep 2011 11:57:02 +0530
-From: Santosh <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	id S1758514Ab1IIG3Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 02:29:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57721 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758401Ab1IIG3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Sep 2011 02:29:21 -0400
+Date: Fri, 9 Sep 2011 08:28:55 +0200
+From: Johannes Weiner <jweiner@redhat.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ying Han <yinghan@google.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <bsingharora@gmail.com>, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm: memcg: close race between charge and putback
+Message-ID: <20110909062855.GA10972@redhat.com>
+References: <1315467622-9520-1-git-send-email-jweiner@redhat.com>
+ <20110908173042.4a6f8ac0.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110908085404.GA1316@redhat.com>
+ <20110908181901.1d488d73.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110908093316.GB1316@redhat.com>
+ <20110908184221.feb2dab6.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110908095349.GC1316@redhat.com>
+ <20110909092853.7aac8544.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Kevin Hilman <khilman@ti.com>
-CC: Colin Cross <ccross@android.com>, rjw@sisk.pl, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 2/5] cpu_pm: call notifiers during suspend
-References: <1315060755-4613-1-git-send-email-santosh.shilimkar@ti.com>	<1315060755-4613-3-git-send-email-santosh.shilimkar@ti.com>	<87k49knmrw.fsf@ti.com> <4E684F90.7010809@ti.com>	<87wrdjku9h.fsf@ti.com>	<CAMbhsRQvft4dqhAc4j_bXDR8018zeoSRXuWC6bS-d8rA0PgOyA@mail.gmail.com> <87ehzqbvvh.fsf@ti.com>
-In-Reply-To: <87ehzqbvvh.fsf@ti.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110909092853.7aac8544.kamezawa.hiroyu@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 09 September 2011 02:21 AM, Kevin Hilman wrote:
-> Colin Cross<ccross@android.com>  writes:
->
->> On Thu, Sep 8, 2011 at 7:01 AM, Kevin Hilman<khilman@ti.com>  wrote:
->>> Santosh<santosh.shilimkar@ti.com>  writes:
->>>
->>>> On Thursday 08 September 2011 01:32 AM, Kevin Hilman wrote:
->>>>> Santosh Shilimkar<santosh.shilimkar@ti.com>    writes:
->>>>>
->>>>>> From: Colin Cross<ccross@android.com>
-[...]
+On Fri, Sep 09, 2011 at 09:28:53AM +0900, KAMEZAWA Hiroyuki wrote:
+> On Thu, 8 Sep 2011 11:53:49 +0200
+> Johannes Weiner <jweiner@redhat.com> wrote:
+> 
+> > On Thu, Sep 08, 2011 at 06:42:21PM +0900, KAMEZAWA Hiroyuki wrote:
+> > > On Thu, 8 Sep 2011 11:33:16 +0200
+> > > Johannes Weiner <jweiner@redhat.com> wrote:
+> > > 
+> > > > On Thu, Sep 08, 2011 at 06:19:01PM +0900, KAMEZAWA Hiroyuki wrote:
+> > > > > On Thu, 8 Sep 2011 10:54:04 +0200
+> > > > > Johannes Weiner <jweiner@redhat.com> wrote:
+> > > > > 
+> > > > > > On Thu, Sep 08, 2011 at 05:30:42PM +0900, KAMEZAWA Hiroyuki wrote:
+> > > > > > > On Thu,  8 Sep 2011 09:40:22 +0200
+> > > > > > > Johannes Weiner <jweiner@redhat.com> wrote:
+> > > > > > > 
+> > > > > > > > There is a potential race between a thread charging a page and another
+> > > > > > > > thread putting it back to the LRU list:
+> > > > > > > > 
+> > > > > > > > charge:                         putback:
+> > > > > > > > SetPageCgroupUsed               SetPageLRU
+> > > > > > > > PageLRU && add to memcg LRU     PageCgroupUsed && add to memcg LRU
+> > > > > > > > 
+> > > > > > > 
+> > > > > > > I assumed that all pages are charged before added to LRU.
+> > > > > > > (i.e. event happens in charge->lru_lock->putback order.)
+> > > > > > > 
+> > > > > > > But hmm, this assumption may be bad for maintainance.
+> > > > > > > Do you find a code which adds pages to LRU before charge ?
+> > > > > > > 
+> > > > > > > Hmm, if there are codes which recharge the page to other memcg,
+> > > > > > > it will cause bug and my assumption may be harmful.
+> > > > > > 
+> > > > > > Swap slots are read optimistically into swapcache and put to the LRU,
+> > > > > > then charged upon fault.  
+> > > > > 
+> > > > > Yes, then swap charge removes page from LRU before charge.
+> > > > > IIUC, it needed to do so because page->mem_cgroup may be replaced.
+> > > > 
+> > > > But only from the memcg LRU.  It's still on the global per-zone LRU,
+> > > > so reclaim could isolate/putback it during the charge.  And then
+> > > > 
+> > > > > > > > charge:                         putback:
+> > > > > > > > SetPageCgroupUsed               SetPageLRU
+> > > > > > > > PageLRU && add to memcg LRU     PageCgroupUsed && add to memcg LRU
+> > > > 
+> > > > applies.
+> > > 
+> > > Hmm, in this case, I thought memcg puts back the page to its LRU by itself
+> > > under lru_loc after charge and the race was hidden.
+> > 
+> > But it locklessly checks PageLRU and bails if it's cleared and that is
+> 
+> I think PageLRU check is done under zone->lru_lock.
 
->>
->> These notifiers are designed for drivers that are tightly coupled to
->> the cpu, and shared across multiple architectures (mostly GIC and
->> VFP).
->
-> That is certainly the initial intended usage, and I understand that
-> design, but they are useful for much more.
->
-> Specifically, consider devices whose power transitions need to be
-> tightly coupled with the CPU, but are in different power domains.
-> Notifiers for these devices may need to be coordinated with
-> platform-specific events.
->
-> Also, it's not only about context save for off-mode.  Some of these
-> tightly-coupled devices have other work to do besides context
-> save/restore, and CPU PM notifiers are useful there.  A dumb example off
-> the top of my head: pins (e.g. GPIOs), that need to be mux'd into safe
-> mode to avoid glitches when coming back from off.  (admittedly, this is
-> broken HW, but we all know broken HW is part of life.)
->
->> In practice, all of these devices are off in every suspend
->> state, because nobody leaves the CPU on in suspend.
->
-> Sure, but you might leave other power domains on (or in retention)
-> during suspend, and these domains might contain some of the devices
-> whose power transitions are coupled with CPU transitions and thus using
-> CPU PM notifiers.
->
-> Also, so far we've only talked about suspend, but the CPU (and other
-> power domains) might also go off during idle.  The approach in $SUBJECT
-> patch addresses suspend but not idle, which means it's up to
-> platform-specific code to trigger the notifiers for idle.  I think it
-> should be the same for suspend.
->
->> The (next_state == OFF) api you refer to would have to be something
->> architecture specific, since the power state handling is very
->> different on every platform, so it's not something that would ever be
->> included in drivers that I imagined would be using these notifiers.
->
-> Sure, but you created something so useful that it can be used in other
-> areas than you initially imagined. :)   Thanks!
->
-> I wouldn't imagine arch-specific being used in those generic drivers
-> either, but in addition to the drivers you imagined, I'm already trying
-> to the notifiers in drivers that are platform-specific.  I only imagine
-> using the "next state" type of checking in platform-specific code, not
-> in generic ones.
->
-> Note however that I'm certainly not arguing that the notifiers should
-> not be called in suspend.  I'm only arguing that it should be up to
-> platform-specific code when to call them because of possible
-> platform-specific pre-requisites in platform-specific notifier
-> callbacks.
->
-> IMO, there are 2 options.
->
-> 1) leave it up to platform-specific code when to trigger the notifiers
->     for *both* suspend and idle PM transitions
->
-> 2) trigger the notifiers in arch-independent code for both suspend and
->     idle *but* provide a way that platform-specific code can disable
->     them in favor of using platform-specific trigger points.
->
-> If most platforms really don't care, then maybe (2) would be the
-> better approach.  That's fine with me as long as there's a way to
-> disable them so platform-specific ones can be used.
->
-I think, we should keep the notifiers simple and option 1 the one
-thing we should consider. It's just easy to take care of IDLE and
-suspend together.
+Yes, but only if a preliminary, lockless check observed PageLRU being
+set:
 
-Regards
-Santosh
+static void mem_cgroup_lru_add_after_commit(struct page *page)
+{
+        unsigned long flags;
+        struct zone *zone = page_zone(page);
+        struct page_cgroup *pc = lookup_page_cgroup(page);
+        /*
+         * putback:                             charge:
+         * SetPageLRU                           SetPageCgroupUsed
+         * smp_mb                               smp_mb
+         * PageCgroupUsed && add to memcg LRU   PageLRU && add to memcg LRU
+         *
+         * Ensure that one of the two sides adds the page to the memcg
+         * LRU during a race.
+         */
+        smp_mb();
+        /* taking care of that the page is added to LRU while we commit it */
+        if (likely(!PageLRU(page)))
+                return;
+        spin_lock_irqsave(&zone->lru_lock, flags);
+        /* link when the page is linked to LRU but page_cgroup isn't */
+        if (PageLRU(page) && !PageCgroupAcctLRU(pc))
+                mem_cgroup_add_lru_list(page, page_lru(page));
+        spin_unlock_irqrestore(&zone->lru_lock, flags);
+}
+
+Without the barriers, the preliminary check may see !PageLRU while a
+racing putback observed !PageCgroupUsed and nobody will add the page
+to the memcg-LRU.
+
+> > the problem: it's not guaranteed that PageLRU is observed on the
+> > charging CPU when the putback side bailed because of PageCgroupUsed.
+> > 
+> zone->lru_lock is no help ?
+
+Removing the preliminary check is not an option.  This is the path for
+regular file cache and the common case is !PageLRU.  We do not want to
+acquire the lock in estimated 99.999% of the cases.
