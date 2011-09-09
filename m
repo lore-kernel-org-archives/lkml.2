@@ -1,41 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757817Ab1IIBLJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 21:11:09 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:6446 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757765Ab1IIBLF (ORCPT
+	id S932193Ab1IIBL1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 21:11:27 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:41661 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932088Ab1IIBLQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 21:11:05 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6463"; a="116679199"
-Message-Id: <20110909010915.831213239@codeaurora.org>
+	Thu, 8 Sep 2011 21:11:16 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6463"; a="116864702"
+Message-Id: <20110909010915.923530082@codeaurora.org>
 User-Agent: quilt/0.48-1
-Date: Thu, 08 Sep 2011 20:08:59 -0500
+Date: Thu, 08 Sep 2011 20:09:00 -0500
 From: Richard Kuo <rkuo@codeaurora.org>
 To: linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Cc: Linas Vepstas <linas@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>
-Subject: [patch v3 12/36] Hexagon: Export ksyms defined in assembly files.
+Subject: [patch v3 13/36] Hexagon: Support dynamic module loading.
 References: <20110909010847.294039464@codeaurora.org>
-Content-Disposition: inline; filename=ksyms.diff
+Content-Disposition: inline; filename=module.diff
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+Modules should be compiled as ordinary .o's; shared objects are not
+supported.
+
+Deleted module functions that already have generic equivalents.
 
 Signed-off-by: Linas Vepstas <linas@codeaurora.org>
 Acked-by: Arnd Bergmann <arnd@arndb.de>
 
 ---
- arch/hexagon/kernel/hexagon_ksyms.c |   42 ++++++++++++++++++++++++++++++++++++
- 1 file changed, 42 insertions(+)
+ arch/hexagon/kernel/module.c |  162 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 162 insertions(+)
 
-Index: linux-hexagon-kernel/arch/hexagon/kernel/hexagon_ksyms.c
+Index: linux-hexagon-kernel/arch/hexagon/kernel/module.c
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/kernel/hexagon_ksyms.c	2011-09-07 13:00:31.040646956 -0500
-@@ -0,0 +1,42 @@
++++ linux-hexagon-kernel/arch/hexagon/kernel/module.c	2011-09-07 13:00:31.090647031 -0500
+@@ -0,0 +1,162 @@
 +/*
-+ * Export of symbols defined in assembly files and/or libgcc.
++ * Kernel module loader for Hexagon
 + *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
@@ -54,28 +59,148 @@ Index: linux-hexagon-kernel/arch/hexagon/kernel/hexagon_ksyms.c
 + * 02110-1301, USA.
 + */
 +
-+#include <asm/hexagon_vm.h>
-+#include <asm/uaccess.h>
++#include <asm/module.h>
++#include <linux/elf.h>
++#include <linux/module.h>
++#include <linux/moduleloader.h>
++#include <linux/vmalloc.h>
 +
-+EXPORT_SYMBOL(__copy_from_user_hexagon);
-+EXPORT_SYMBOL(__copy_to_user_hexagon);
-+EXPORT_SYMBOL(__vmgetie);
-+EXPORT_SYMBOL(__vmsetie);
-+EXPORT_SYMBOL(memcpy);
-+EXPORT_SYMBOL(memset);
++#if 0
++#define DEBUGP printk
++#else
++#define DEBUGP(fmt , ...)
++#endif
 +
-+#define DECLARE_EXPORT(name)     \
-+	extern void name(void); EXPORT_SYMBOL(name)
++/*
++ * module_frob_arch_sections - tweak got/plt sections.
++ * @hdr - pointer to elf header
++ * @sechdrs - pointer to elf load section headers
++ * @secstrings - symbol names
++ * @mod - pointer to module
++ */
++int module_frob_arch_sections(Elf_Ehdr *hdr, Elf_Shdr *sechdrs,
++				char *secstrings,
++				struct module *mod)
++{
++	unsigned int i;
++	int found = 0;
 +
-+/* Symbols found in libgcc that assorted kernel modules need */
-+DECLARE_EXPORT(__hexagon_memcpy_likely_aligned_min32bytes_mult8bytes);
++	/* Look for .plt and/or .got.plt and/or .init.plt sections */
++	for (i = 0; i < hdr->e_shnum; i++) {
++		DEBUGP("Section %d is %s\n", i,
++		       secstrings + sechdrs[i].sh_name);
++		if (strcmp(secstrings + sechdrs[i].sh_name, ".plt") == 0)
++			found = i+1;
++		if (strcmp(secstrings + sechdrs[i].sh_name, ".got.plt") == 0)
++			found = i+1;
++		if (strcmp(secstrings + sechdrs[i].sh_name, ".rela.plt") == 0)
++			found = i+1;
++	}
 +
-+DECLARE_EXPORT(__hexagon_divsi3);
-+DECLARE_EXPORT(__hexagon_modsi3);
-+DECLARE_EXPORT(__hexagon_udivsi3);
-+DECLARE_EXPORT(__hexagon_umodsi3);
++	/* At this time, we don't support modules comiled with -shared */
++	if (found) {
++		printk(KERN_WARNING
++			"Module '%s' contains unexpected .plt/.got sections.\n",
++			mod->name);
++		/*  return -ENOEXEC;  */
++	}
 +
++	return 0;
++}
 +
++/*
++ * apply_relocate_add - perform rela relocations.
++ * @sechdrs - pointer to section headers
++ * @strtab - some sort of start address?
++ * @symindex - symbol index offset or something?
++ * @relsec - address to relocate to?
++ * @module - pointer to module
++ *
++ * Perform rela relocations.
++ */
++int apply_relocate_add(Elf_Shdr *sechdrs, const char *strtab,
++			unsigned int symindex, unsigned int relsec,
++			struct module *module)
++{
++	unsigned int i;
++	Elf32_Sym *sym;
++	uint32_t *location;
++	uint32_t value;
++	unsigned int nrelocs = sechdrs[relsec].sh_size / sizeof(Elf32_Rela);
++	Elf32_Rela *rela = (void *)sechdrs[relsec].sh_addr;
++	Elf32_Word sym_info = sechdrs[relsec].sh_info;
++	Elf32_Sym *sym_base = (Elf32_Sym *) sechdrs[symindex].sh_addr;
++	void *loc_base = (void *) sechdrs[sym_info].sh_addr;
++
++	DEBUGP("Applying relocations in section %u to section %u base=%p\n",
++	       relsec, sym_info, loc_base);
++
++	for (i = 0; i < nrelocs; i++) {
++
++		/* Symbol to relocate */
++		sym = sym_base + ELF32_R_SYM(rela[i].r_info);
++
++		/* Where to make the change */
++		location = loc_base + rela[i].r_offset;
++
++		/* `Everything is relative'. */
++		value = sym->st_value + rela[i].r_addend;
++
++		DEBUGP("%d: value=%08x loc=%p reloc=%d symbol=%s\n",
++		       i, value, location, ELF32_R_TYPE(rela[i].r_info),
++		       sym->st_name ?
++		       &strtab[sym->st_name] : "(anonymous)");
++
++		switch (ELF32_R_TYPE(rela[i].r_info)) {
++		case R_HEXAGON_B22_PCREL: {
++			int dist = (int)(value - (uint32_t)location);
++			if ((dist < -0x00800000) ||
++			    (dist >= 0x00800000)) {
++				printk(KERN_ERR
++				       "%s: %s: %08x=%08x-%08x %s\n",
++				       module->name,
++				       "R_HEXAGON_B22_PCREL reloc out of range",
++				       dist, value, (uint32_t)location,
++				       sym->st_name ?
++				       &strtab[sym->st_name] : "(anonymous)");
++				return -ENOEXEC;
++			}
++			DEBUGP("B22_PCREL contents: %08X.\n", *location);
++			*location &= ~0x01ff3fff;
++			*location |= 0x00003fff & dist;
++			*location |= 0x01ff0000 & (dist<<2);
++			DEBUGP("Contents after reloc: %08x\n", *location);
++			break;
++		}
++		case R_HEXAGON_HI16:
++			value = (value>>16) & 0xffff;
++			/* fallthrough */
++		case R_HEXAGON_LO16:
++			*location &= ~0x00c03fff;
++			*location |= value & 0x3fff;
++			*location |= (value & 0xc000) << 8;
++			break;
++		case R_HEXAGON_32:
++			*location = value;
++			break;
++		case R_HEXAGON_32_PCREL:
++			*location = value - (uint32_t)location;
++			break;
++		case R_HEXAGON_PLT_B22_PCREL:
++		case R_HEXAGON_GOTOFF_LO16:
++		case R_HEXAGON_GOTOFF_HI16:
++			printk(KERN_ERR "%s: GOT/PLT relocations unsupported\n",
++			       module->name);
++			return -ENOEXEC;
++		default:
++			printk(KERN_ERR "%s: unknown relocation: %u\n",
++			       module->name,
++			       ELF32_R_TYPE(rela[i].r_info));
++			return -ENOEXEC;
++		}
++	}
++	return 0;
++}
 
 --
 
