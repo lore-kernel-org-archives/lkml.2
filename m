@@ -1,100 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756688Ab1IIACU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 20:02:20 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:42146 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756522Ab1IIACS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 20:02:18 -0400
-Message-ID: <4E695784.7020303@gmail.com>
-Date: Fri, 09 Sep 2011 10:02:12 +1000
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Lightning/1.0b2 Thunderbird/3.1.13
+	id S1756753Ab1IIADR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 20:03:17 -0400
+Received: from void.printf.net ([89.145.121.20]:41704 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756522Ab1IIADO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 20:03:14 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
+Subject: [GIT PULL] MMC fixes for 3.1-rc6
+Date: Thu, 08 Sep 2011 20:03:04 -0400
+Message-ID: <m27h5i4m6f.fsf@bob.laptop.org>
+User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Mark Salter <msalter@redhat.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Pass correct length to strnlen_user in fs/exec.c
-References: <4E680EBC.4000804@gmail.com> <20110908165213.6ebd844f.akpm@linux-foundation.org>
-In-Reply-To: <20110908165213.6ebd844f.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/11 09:52, Andrew Morton wrote:
-> On Thu, 08 Sep 2011 10:39:24 +1000
-> Ryan Mallon <rmallon@gmail.com> wrote:
->
->> Replace valid_arg_len function in fs/exec.c with max_arg_len function
->> and pass the correct length to strnlen_user.
->>
->> --- a/fs/exec.c
->> +++ b/fs/exec.c
->> @@ -296,9 +296,9 @@ err:
->>  	return err;
->>  }
->>  
->> -static bool valid_arg_len(struct linux_binprm *bprm, long len)
->> +static long max_arg_len(struct linux_binprm *bprm)
->>  {
->> -	return len <= MAX_ARG_STRLEN;
->> +	return MAX_ARG_STRLEN;
->>  }
->>  
->>  #else
->> @@ -354,9 +354,9 @@ static int __bprm_mm_init(struct linux_binprm *bprm)
->>  	return 0;
->>  }
->>  
->> -static bool valid_arg_len(struct linux_binprm *bprm, long len)
->> +static long max_arg_len(struct linux_binprm *bprm)
->>  {
->> -	return len <= bprm->p;
->> +	return bprm->p;
->>  }
->>  
->>  #endif /* CONFIG_MMU */
->> @@ -474,18 +474,19 @@ static int copy_strings(int argc, struct user_arg_ptr argv,
->>  		const char __user *str;
->>  		int len;
->>  		unsigned long pos;
->> +		long max_len = max_arg_len(bprm);
->>  
->>  		ret = -EFAULT;
->>  		str = get_user_arg_ptr(argv, argc);
->>  		if (IS_ERR(str))
->>  			goto out;
->>  
->> -		len = strnlen_user(str, MAX_ARG_STRLEN);
->> -		if (!len || len > MAX_ARG_STRLEN)
->> +		len = strnlen_user(str, max_len);
->> +		if (!len)
->>  			goto out;
->>  
->>  		ret = -E2BIG;
->> -		if (!valid_arg_len(bprm, len))
->> +		if (len > max_len)
->>  			goto out;
->>  
->>  		/* We're going to work our way backwords. */
-> I'm struggling to find a reason to merge this - it churns code around
-> rather pointlessly?
->
-That's fine. I originally went looking after a discussion with Mark
-about the weird strnlen_user semantics  and this usage looked incorrect
-to me because it wasn't obviously checking >= MAX_ARG_STRLEN.
+Hi Linus,
 
-The rework I think makes it a bit more clear and passes the correct max
-length to strnlen_user. Its a bit odd to pass MAX_ARG_STRLEN and then
-check if it is longer than bprm->len, and I guess assumes that bprm->len
-is less than MAX_ARG_STRLEN.
+Please pull from:
 
-Feel free to drop the patch if you think it is just churn.
+  git://dev.laptop.org/users/cjb/mmc for-linus
 
-~Ryan
+to receive small regression fixes for MMC.  These have been tested in
+linux-next, and there are no merge conflicts.  Thanks.
 
 
+The following changes since commit fcb8ce5cfe30ca9ca5c9a79cdfe26d1993e65e0c:
+
+  Linux 3.1-rc3 (2011-08-22 11:42:53 -0700)
+
+are available in the git repository at:
+  git://dev.laptop.org/users/cjb/mmc for-linus
+
+Girish K S (1):
+      mmc: sdhci-s3c: Fix mmc card I/O problem
+
+Mika Westerberg (3):
+      mmc: rename mmc_host_clk_{ungate|gate} to mmc_host_clk_{hold|release}
+      mmc: core: prevent aggressive clock gating racing with ios updates
+      mmc: core: use non-reentrant workqueue for clock gating
+
+Shawn Guo (1):
+      mmc: sdhci-esdhc-imx: add missing inclusion of linux/module.h
+
+Simon Horman (1):
+      mmc: sdhi: initialise mmc_data->flags before use
+
+Subhash Jadavani (1):
+      mmc: sd: UHS-I bus speed should be set last in UHS initialization
+
+ drivers/mmc/core/core.c            |   35 ++++++++++++++--
+ drivers/mmc/core/host.c            |   12 +++---
+ drivers/mmc/core/host.h            |    8 ++--
+ drivers/mmc/core/sd.c              |   81 +++++++++++++++++++++++------------
+ drivers/mmc/host/sdhci-esdhc-imx.c |    1 +
+ drivers/mmc/host/sdhci-s3c.c       |    2 +
+ drivers/mmc/host/sh_mobile_sdhi.c  |    4 +-
+ 7 files changed, 99 insertions(+), 44 deletions(-)
+
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
