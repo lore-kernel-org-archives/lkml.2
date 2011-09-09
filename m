@@ -1,61 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759491Ab1IIRAy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 13:00:54 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:37823 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758985Ab1IIRAx (ORCPT
+	id S1759495Ab1IIRDR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 13:03:17 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:39083 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758560Ab1IIRDQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 13:00:53 -0400
-Message-ID: <4E6A4641.9090606@vflare.org>
-Date: Fri, 09 Sep 2011 13:00:49 -0400
-From: Nitin Gupta <ngupta@vflare.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
+	Fri, 9 Sep 2011 13:03:16 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:date:
+	message-id:subject:from:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=AHeimtlFPecyMoiV7JASa9ZVcnakSZFWzF/QKjmmwMBIsTbxccS3VT5u9XBLRBBkz
+	29uXh3svm4YTCmGzYX4Jg==
 MIME-Version: 1.0
-To: Harvey Harrison <harvey.harrison@gmail.com>
-CC: Jerome Marchand <jmarchan@redhat.com>, Greg KH <greg@kroah.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Linux Driver Project <devel@linuxdriverproject.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/5] Fix sparse warnings
-References: <1315445357-14338-1-git-send-email-ngupta@vflare.org> <1315445357-14338-2-git-send-email-ngupta@vflare.org> <4E687A33.1080401@redhat.com> <4E68DBA5.6010307@vflare.org> <CAHLZz10jm4Wewxe=MAVqcq22Zoe2aTAtgsOhx7Xdq0OUz_cwgA@mail.gmail.com>
-In-Reply-To: <CAHLZz10jm4Wewxe=MAVqcq22Zoe2aTAtgsOhx7Xdq0OUz_cwgA@mail.gmail.com>
+In-Reply-To: <4cc1af3c.8ee7d80a.5a28.ffff868e@mx.google.com>
+References: <4cc1af3c.8ee7d80a.5a28.ffff868e@mx.google.com>
+Date: Fri, 9 Sep 2011 19:03:12 +0200
+Message-ID: <CABPqkBTvz+WCDCknMn4wzr8LU__N199qaPqKH43q6EHadDKQSg@mail.gmail.com>
+Subject: Re: [PATCH] perf: fix issue with binaries using 16-bytes buildids (v2)
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: acme@redhat.com, peterz@infradead.org, mingo@elte.hu
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id p89H3R8q032276
 
-On 09/08/2011 01:32 PM, Harvey Harrison wrote:
+Arnaldo,
 
-> On Thu, Sep 8, 2011 at 8:13 AM, Nitin Gupta <ngupta@vflare.org> wrote:
->> On 09/08/2011 04:17 AM, Jerome Marchand wrote:
->>
->> Since it just fixes couple of trivial sparse warnings,
->> I though no description is necessary? Anyways, here is
->> the description if needed for patch process:
->>
->> Fixed some sparse warnings by making zram_slot_free_notify()
->> static and max_zpage_size as size_t.
->>
-> 
-> Please just paste the exact sparse warnings you fixed with this patch,
-> then it will be more
-> understandable _why_ you made the above changes.
-> 
+To my surprise, this patch from Last October is STILL not in.
+People are reporting issues with perf related to md5 buildids..
 
 
-
-new description:
-
-Fixes sparse warning:
-zram_drv.c:666:6: warning: symbol 'zram_slot_free_notify' was not
-declared. Should it be static?
-
-Also, max_zpage_size is now size_t just to be consistent with data-type
-of other variables maintaining sizes of various kinds.
-
-Thanks,
-Nitin
-
+On Fri, Oct 22, 2010 at 5:25 PM, Stephane Eranian <eranian@google.com> wrote:
+> Buildid can vary in size. According to the man page of ld, buildid can
+> be 160 bits (sha1) or 128 bits (md5, uuid). Perf assumes buildid size
+> of 20 bytes (160 bits) regardless. When dealing with md5 buildids, it
+> would thus read more than needed and that would cause mismatches and
+> samples without symbols.
+>
+> This patch fixes this by taking into account the actual buildid size
+> as encoded int he section header. The leftover bytes are also cleared.
+>
+> This second version fixes a minor issue with the memset() base position.
+>
+> Signed-off-by: Stephane Eranian <eranian@google.com>
+>
+> ---
+>
+> diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+> index b39f499..b4fdb91 100644
+> --- a/tools/perf/util/symbol.c
+> +++ b/tools/perf/util/symbol.c
+> @@ -1027,8 +1027,7 @@ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
+>        if (self->has_build_id) {
+>                u8 build_id[BUILD_ID_SIZE];
+>
+> -               if (elf_read_build_id(elf, build_id,
+> -                                     BUILD_ID_SIZE) != BUILD_ID_SIZE)
+> +               if (elf_read_build_id(elf, build_id, BUILD_ID_SIZE) < 0)
+>                        goto out_elf_end;
+>
+>                if (!dso__build_id_equal(self, build_id))
+> @@ -1287,8 +1286,8 @@ static int elf_read_build_id(Elf *elf, void *bf, size_t size)
+>        ptr = data->d_buf;
+>        while (ptr < (data->d_buf + data->d_size)) {
+>                GElf_Nhdr *nhdr = ptr;
+> -               int namesz = NOTE_ALIGN(nhdr->n_namesz),
+> -                   descsz = NOTE_ALIGN(nhdr->n_descsz);
+> +               size_t namesz = NOTE_ALIGN(nhdr->n_namesz),
+> +                      descsz = NOTE_ALIGN(nhdr->n_descsz);
+>                const char *name;
+>
+>                ptr += sizeof(*nhdr);
+> @@ -1297,8 +1296,10 @@ static int elf_read_build_id(Elf *elf, void *bf, size_t size)
+>                if (nhdr->n_type == NT_GNU_BUILD_ID &&
+>                    nhdr->n_namesz == sizeof("GNU")) {
+>                        if (memcmp(name, "GNU", sizeof("GNU")) == 0) {
+> -                               memcpy(bf, ptr, BUILD_ID_SIZE);
+> -                               err = BUILD_ID_SIZE;
+> +                               size_t sz = min(size, descsz);
+> +                               memcpy(bf, ptr, sz);
+> +                               memset(bf + sz, 0, size - sz);
+> +                               err = descsz;
+>                                break;
+>                        }
+>                }
+> @@ -1350,7 +1351,7 @@ int sysfs__read_build_id(const char *filename, void *build_id, size_t size)
+>        while (1) {
+>                char bf[BUFSIZ];
+>                GElf_Nhdr nhdr;
+> -               int namesz, descsz;
+> +               size_t namesz, descsz;
+>
+>                if (read(fd, &nhdr, sizeof(nhdr)) != sizeof(nhdr))
+>                        break;
+> @@ -1359,15 +1360,16 @@ int sysfs__read_build_id(const char *filename, void *build_id, size_t size)
+>                descsz = NOTE_ALIGN(nhdr.n_descsz);
+>                if (nhdr.n_type == NT_GNU_BUILD_ID &&
+>                    nhdr.n_namesz == sizeof("GNU")) {
+> -                       if (read(fd, bf, namesz) != namesz)
+> +                       if (read(fd, bf, namesz) != (ssize_t)namesz)
+>                                break;
+>                        if (memcmp(bf, "GNU", sizeof("GNU")) == 0) {
+> -                               if (read(fd, build_id,
+> -                                   BUILD_ID_SIZE) == BUILD_ID_SIZE) {
+> +                               size_t sz = min(descsz, size);
+> +                               if (read(fd, build_id, sz) == (ssize_t)sz) {
+> +                                       memset(build_id + sz, 0, size - sz);
+>                                        err = 0;
+>                                        break;
+>                                }
+> -                       } else if (read(fd, bf, descsz) != descsz)
+> +                       } else if (read(fd, bf, descsz) != (ssize_t)descsz)
+>                                break;
+>                } else {
+>                        int n = namesz + descsz;
+>
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
