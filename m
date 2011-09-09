@@ -1,68 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758936Ab1IINP6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 09:15:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60362 "EHLO mx2.suse.de"
+	id S933715Ab1IINRT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 09:17:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60469 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758899Ab1IINP4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 09:15:56 -0400
-Date: Fri, 9 Sep 2011 14:15:50 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        Linux-NFS <linux-nfs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Neil Brown <neilb@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 03/10] mm: Add support for a filesystem to control swap
- files
-Message-ID: <20110909131550.GV14369@suse.de>
-References: <1315566054-17209-1-git-send-email-mgorman@suse.de>
- <1315566054-17209-4-git-send-email-mgorman@suse.de>
- <20110909130007.GA11810@infradead.org>
+	id S1758941Ab1IINRS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Sep 2011 09:17:18 -0400
+Message-ID: <4E6A11DD.3060705@suse.cz>
+Date: Fri, 09 Sep 2011 15:17:17 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20110909130007.GA11810@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Shakthi Kannan <shakthimaan@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: CRC calculation in Module.symvers
+References: <CABG-yt0t0sgAvcDDLhjyNFGpY22tL0CtDvXV9+CxYJMf0MdVfA@mail.gmail.com> <4E67699E.80208@suse.cz> <CABG-yt030LAdqbRySzs8sj0Ajwst_c8RHf7yOyG9Eihh6mmf+w@mail.gmail.com>
+In-Reply-To: <CABG-yt030LAdqbRySzs8sj0Ajwst_c8RHf7yOyG9Eihh6mmf+w@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 09, 2011 at 09:00:08AM -0400, Christoph Hellwig wrote:
-> On Fri, Sep 09, 2011 at 12:00:47PM +0100, Mel Gorman wrote:
-> > Currently swapfiles are managed entirely by the core VM by using
-> > ->bmap to allocate space and write to the blocks directly. This
-> > patch adds address_space_operations methods that allow a filesystem
-> > to optionally control the swapfile.
-> > 
-> >   int swap_activate(struct file *);
-> >   int swap_deactivate(struct file *);
-> >   int swap_writepage(struct file *, struct page *, struct writeback_control *);
-> >   int swap_readpage(struct file *, struct page *);
+On 9.9.2011 06:50, Shakthi Kannan wrote:
+> --- On Wed, Sep 7, 2011 at 6:24 PM, Michal Marek <mmarek@suse.cz> wrote:
+> ---
+> | And if you copy
+> | the commandline without the >/dev/null redirection, you'll see the
+> | calculated checksums on standard output.
+> \--
 > 
-> Just as the last two dozen times this came up:
-> 
-> NAK
-> 
-> The right fix is to add a filesystem method to support direct-I/O on
-> arbitrary kernel pages, instead of letting the wap abstraction leak into
-> the filesystem.
+> Sorry, I didn't understand. Can you elaborate on what needs to be done here?
 
-Ok.
+Copy the gcc ... | genksyms ... commandline printed by make V=1
+crypto/api.symtypes.
 
-I confess I haven't investigated this direction at
-all yet.  Is it correct that your previous objection was
-http://linux.derkeiler.com/Mailing-Lists/Kernel/2009-10/msg00455.html
-and the direct-IO patchset you were thinking of was
-http://copilotco.com/mail-archives/linux-kernel.2009/msg87176.html ?
-
-If so, are you suggesting that instead of swap_readpage and
-swap_writepage I look into what is required for swap to use ->readpage
-method and ->direct_IO aops?
-
--- 
-Mel Gorman
-SUSE Labs
+Michal
