@@ -1,59 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758957Ab1IINZA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 09:25:00 -0400
-Received: from www.linutronix.de ([62.245.132.108]:49206 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758559Ab1IINY5 (ORCPT
+	id S1758987Ab1IIN0N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 09:26:13 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:55125 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758973Ab1IIN0L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 09:24:57 -0400
-Date: Fri, 9 Sep 2011 15:24:54 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Richard Kuo <rkuo@codeaurora.org>
-cc: linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Linas Vepstas <linas@codeaurora.org>
-Subject: Re: [patch v3 21/36] Hexagon: Add SMP support
-In-Reply-To: <20110909010916.709728186@codeaurora.org>
-Message-ID: <alpine.LFD.2.02.1109091517420.2723@ionos>
-References: <20110909010847.294039464@codeaurora.org> <20110909010916.709728186@codeaurora.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 9 Sep 2011 09:26:11 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+From: Maciek Borzecki <maciek.borzecki@gmail.com>
+Date: Fri, 9 Sep 2011 15:25:50 +0200
+Message-ID: <CALGyLaiXhtceaJxni9ttjMfzx6K326_CVccJiifAhXfNszdgsg@mail.gmail.com>
+Subject: pselect semantics - no EINTR with pending signals
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Sep 2011, Richard Kuo wrote:
+I'm running a deamon application, which listens on a number of
+sockets, and occasionally spawns gzip to compress some data. It does
+happen so, that pselect is used for mutliplexing IO. It also doest
+happen so that on one of the fds there is always data to be read (just
+a peculiarity of the application, a lot of clients are constantly
+writing to a datagram socket and once the daemon is started there is
+always data to be read).
+That's more less how the code goes:
+int main(..)
+{
+    sigset_t blockset;
+    sigset_t oldset;
+    ...
+    signal(SIGCHLD, ...);
+    sigemptyset(&blockset);
+    sigaddset(&blockset, SIGCHLD);
+    sigprocmask(SIG_SETMASK, &blockset, &oldset);
+    ...
 
-> +	/*  Set the memory struct  */
-> +	atomic_inc(&init_mm.mm_count);
-> +	current->active_mm = &init_mm;
-> +
-> +	cpu = smp_processor_id();
-> +
-> +	setup_irq(BASE_IPI_IRQ + cpu, &ipi_intdesc);
-> +
-> +	/*  Register the clock_event dummy  */
-> +	setup_percpu_clockdev();
-> +
-> +	printk(KERN_INFO "%s cpu %d\n", __func__, current_thread_info()->cpu);
-> +
-> +	local_irq_enable();
-> +	set_cpu_online(cpu, true);
+    while (1)
+    {
+        int ret = pselect(maxfd, fdset, NULL, NULL, NULL, &oldset);
+        /* ret is always > 0 */
 
-This wants to be:
+        {
+            sigset_t pendset;
+            sigpending(&pendset);
+            /* apparenty SIGCHLD is present in pending set */
+        }
+    }
+}
 
-     	set_cpu_online(cpu, true);
-        while (!cpumask_test_cpu(cpu, cpu_active_mask))
-                cpu_relax();
-	local_irq_enable();
+What happens is that once a child is spawned, and exists emitting a
+SIGCHLD, the signal remains in the pending set. It can only be
+determined that the signal was raised by looking at the pending mask.
+It is also the case, that SIGCHLD is present in pending set before
+entering pselect at some point. However none of the signal handlers
+are called.
+I looked 2.6.39 do_pselect and it seems that the signal handlers would
+only be delivered once core_sys_select returns ERESTARTNOHAND, however
+since there is always something to be read on the fds, core_sys_select
+always returns value > 0. In that case set_restore_sigmask is never
+called, and TIF_SIGPENDING is never set.
+So it seems that there is no chance of having the signals delivered
+unless pselect blocks waiting for I/O
 
-See x86/kernel/smpboot.c and 
-http://lists.arm.linux.org.uk/lurker/message/20110908.215756.a2ffbe5f.en.html
+Now, I'm not sure about the semantics of pselect. I'm not saying that
+the current version is right or wrong, but raising a question if this
+is really expected (and it did happen to be quite unexpected for me).
 
-Thanks,
-
-	tglx
+--
+Maciek Borzecki
