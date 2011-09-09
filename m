@@ -1,101 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932753Ab1IIClj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 22:41:39 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37792 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932548Ab1IIClh (ORCPT
+	id S1752492Ab1IICsI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 22:48:08 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40434 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751175Ab1IICsC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 22:41:37 -0400
-Subject: Re: Bug#640964: linux-image-3.1.0-rc4-486: BUG() triggered on XO-1
- hardware
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Andres Salomon <dilinger@queued.net>, 640964@bugs.debian.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Date: Fri, 09 Sep 2011 03:41:19 +0100
-In-Reply-To: <20110908174625.1b97223a@queued.net>
-References: <20110908174625.1b97223a@queued.net>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-FU6VNydLw5GmUKfv5dcA"
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1315536091.23168.77.camel@deadeye>
+	Thu, 8 Sep 2011 22:48:02 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 9 Sep 2011 11:47:20 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, netdev@vger.kernel.org, xemul@parallels.com,
+        "David S. Miller" <davem@davemloft.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH v2 1/9] per-netns ipv4 sysctl_tcp_mem
+Message-Id: <20110909114720.f050c520.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1315369399-3073-2-git-send-email-glommer@parallels.com>
+References: <1315369399-3073-1-git-send-email-glommer@parallels.com>
+	<1315369399-3073-2-git-send-email-glommer@parallels.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed,  7 Sep 2011 01:23:11 -0300
+Glauber Costa <glommer@parallels.com> wrote:
 
---=-FU6VNydLw5GmUKfv5dcA
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> This patch allows each namespace to independently set up
+> its levels for tcp memory pressure thresholds. This patch
+> alone does not buy much: we need to make this values
+> per group of process somehow. This is achieved in the
+> patches that follows in this patchset.
+> 
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> CC: David S. Miller <davem@davemloft.net>
+> CC: Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>
+> CC: Eric W. Biederman <ebiederm@xmission.com>
 
-On Thu, 2011-09-08 at 17:46 -0700, Andres Salomon wrote:
-> Package: linux-image-3.1.0-rc4-486
-> Version: 3.1.0~rc4-1~experimental.1
-> Severity: normal
->=20
-> During boot on an OLPC XO-1, I encounter the following problem.  I
-> believe it's the statement BUG_ON(a->cpuid >=3D NCAPINTS*32), though I'm
-> not staring at an exact copy of linux-2.6 source.
-[...]
 
-Agreed.
+Hmm, it may be better to post this patch as independent one.
 
-Variable a is in the EBX register, value 0xc143c668.  Looking at a dump
-of this kernel image, the __alt_instructions array starts with:
+I'm not familiar with this area...but try review ;)
 
- c143c638 7e51bcff 1c050000 1a000503 7d51bcff  ~Q..........}Q..
- c143c648 13050000 1a000503 6653bcff 0a050000  ........fS......
- c143c658 19000503 00000000 ce55bcff 00000000  .........U......
- c143c668 9a000200 cf55bcff f1040000 e4000303  .....U..........
- ...
+> ---
+>  include/net/netns/ipv4.h   |    1 +
+>  include/net/tcp.h          |    1 -
+>  net/ipv4/sysctl_net_ipv4.c |   51 +++++++++++++++++++++++++++++++++++++------
+>  net/ipv4/tcp.c             |   13 +++-------
+>  4 files changed, 49 insertions(+), 17 deletions(-)
+> 
+> diff --git a/include/net/netns/ipv4.h b/include/net/netns/ipv4.h
+> index d786b4f..bbd023a 100644
+> --- a/include/net/netns/ipv4.h
+> +++ b/include/net/netns/ipv4.h
+> @@ -55,6 +55,7 @@ struct netns_ipv4 {
+>  	int current_rt_cache_rebuild_count;
+>  
+>  	unsigned int sysctl_ping_group_range[2];
+> +	long sysctl_tcp_mem[3];
+>  
+>  	atomic_t rt_genid;
+>  	atomic_t dev_addr_genid;
 
-Converting back to C structures:
+Hmm, in original placement, sysctl_tcp_mem[] was on __read_mostly
+area. Doesn't this placement cause many cache invalidations ?
 
-/* instr_offset, repl_offset, cpuid, instrlen, replacementlen */
-{ 0xffbc517e, 0x0000051c, 0x001a, 0x05, 0x03 },
-{ 0xffbc517d, 0x00000513, 0x001a, 0x05, 0x03 },
-{ 0xffbc5366, 0x0000050a, 0x0019, 0x05, 0x03 },
-{ 0x00000000, 0xffbc55ce, 0x0000, 0x00, 0x00 },
-{ 0x0002009a, 0xffbc55cf, 0x04f1, 0x00, 0x00 },
-...
 
-Oops, we have 4 bytes of zeroes between what should be elements 2 and 3.
-That results in __alt_instructions[4].cpuid =3D=3D 0x04f1 which trips the
-BUG check.  This is nothing OLPC-specific; it's going to happen on any
-machine trying to boot this image.
 
-So the question is, where does that padding come from?
+> diff --git a/include/net/tcp.h b/include/net/tcp.h
+> index 149a415..6bfdd9b 100644
+> --- a/include/net/tcp.h
+> +++ b/include/net/tcp.h
+> @@ -230,7 +230,6 @@ extern int sysctl_tcp_fack;
+>  extern int sysctl_tcp_reordering;
+>  extern int sysctl_tcp_ecn;
+>  extern int sysctl_tcp_dsack;
+> -extern long sysctl_tcp_mem[3];
+>  extern int sysctl_tcp_wmem[3];
+>  extern int sysctl_tcp_rmem[3];
+>  extern int sysctl_tcp_app_win;
+> diff --git a/net/ipv4/sysctl_net_ipv4.c b/net/ipv4/sysctl_net_ipv4.c
+> index 69fd720..0d74b9d 100644
+> --- a/net/ipv4/sysctl_net_ipv4.c
+> +++ b/net/ipv4/sysctl_net_ipv4.c
+> @@ -14,6 +14,7 @@
+>  #include <linux/init.h>
+>  #include <linux/slab.h>
+>  #include <linux/nsproxy.h>
+> +#include <linux/swap.h>
+>  #include <net/snmp.h>
+>  #include <net/icmp.h>
+>  #include <net/ip.h>
+> @@ -174,6 +175,36 @@ static int proc_allowed_congestion_control(ctl_table *ctl,
+>  	return ret;
+>  }
+>  
+> +static int ipv4_tcp_mem(ctl_table *ctl, int write,
+> +			   void __user *buffer, size_t *lenp,
+> +			   loff_t *ppos)
+> +{
+> +	int ret;
+> +	unsigned long vec[3];
+> +	struct net *net = current->nsproxy->net_ns;
+> +	int i;
+> +
+> +	ctl_table tmp = {
+> +		.data = &vec,
+> +		.maxlen = sizeof(vec),
+> +		.mode = ctl->mode,
+> +	};
+> +
+> +	if (!write) {
+> +		ctl->data = &net->ipv4.sysctl_tcp_mem;
+> +		return proc_doulongvec_minmax(ctl, write, buffer, lenp, ppos);
+> +	}
+> +
+> +	ret = proc_doulongvec_minmax(&tmp, write, buffer, lenp, ppos);
+> +	if (ret)
+> +		return ret;
+> +
+> +	for (i = 0; i < 3; i++)
+> +		net->ipv4.sysctl_tcp_mem[i] = vec[i];
+> +
+> +	return 0;
+> +}
+> +
+>  static struct ctl_table ipv4_table[] = {
+>  	{
+>  		.procname	= "tcp_timestamps",
+> @@ -433,13 +464,6 @@ static struct ctl_table ipv4_table[] = {
+>  		.proc_handler	= proc_dointvec
+>  	},
+>  	{
+> -		.procname	= "tcp_mem",
+> -		.data		= &sysctl_tcp_mem,
+> -		.maxlen		= sizeof(sysctl_tcp_mem),
+> -		.mode		= 0644,
+> -		.proc_handler	= proc_doulongvec_minmax
+> -	},
+> -	{
+>  		.procname	= "tcp_wmem",
+>  		.data		= &sysctl_tcp_wmem,
+>  		.maxlen		= sizeof(sysctl_tcp_wmem),
+> @@ -721,6 +745,12 @@ static struct ctl_table ipv4_net_table[] = {
+>  		.mode		= 0644,
+>  		.proc_handler	= ipv4_ping_group_range,
+>  	},
+> +	{
+> +		.procname	= "tcp_mem",
+> +		.maxlen		= sizeof(init_net.ipv4.sysctl_tcp_mem),
+> +		.mode		= 0644,
+> +		.proc_handler	= ipv4_tcp_mem,
+> +	},
+>  	{ }
+>  };
+>  
 
-Ben.
 
---=20
-Ben Hutchings
-I say we take off; nuke the site from orbit.  It's the only way to be sure.
 
---=-FU6VNydLw5GmUKfv5dcA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+> @@ -734,6 +764,7 @@ EXPORT_SYMBOL_GPL(net_ipv4_ctl_path);
+>  static __net_init int ipv4_sysctl_init_net(struct net *net)
+>  {
+>  	struct ctl_table *table;
+> +	unsigned long limit;
+>  
+>  	table = ipv4_net_table;
+>  	if (!net_eq(net, &init_net)) {
+> @@ -769,6 +800,12 @@ static __net_init int ipv4_sysctl_init_net(struct net *net)
+>  
+>  	net->ipv4.sysctl_rt_cache_rebuild_count = 4;
+>  
+> +	limit = nr_free_buffer_pages() / 8;
+> +	limit = max(limit, 128UL);
+> +	net->ipv4.sysctl_tcp_mem[0] = limit / 4 * 3;
+> +	net->ipv4.sysctl_tcp_mem[1] = limit;
+> +	net->ipv4.sysctl_tcp_mem[2] = net->ipv4.sysctl_tcp_mem[0] * 2;
+> +
+>  	net->ipv4.ipv4_hdr = register_net_sysctl_table(net,
+>  			net_ipv4_ctl_path, table);
+>  	if (net->ipv4.ipv4_hdr == NULL)
+> diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+> index 46febca..f06df24 100644
+> --- a/net/ipv4/tcp.c
+> +++ b/net/ipv4/tcp.c
+> @@ -266,6 +266,7 @@
+>  #include <linux/crypto.h>
+>  #include <linux/time.h>
+>  #include <linux/slab.h>
+> +#include <linux/nsproxy.h>
+>  
+>  #include <net/icmp.h>
+>  #include <net/tcp.h>
+> @@ -282,11 +283,9 @@ int sysctl_tcp_fin_timeout __read_mostly = TCP_FIN_TIMEOUT;
+>  struct percpu_counter tcp_orphan_count;
+>  EXPORT_SYMBOL_GPL(tcp_orphan_count);
+>  
+> -long sysctl_tcp_mem[3] __read_mostly;
+>  int sysctl_tcp_wmem[3] __read_mostly;
+>  int sysctl_tcp_rmem[3] __read_mostly;
+>  
+> -EXPORT_SYMBOL(sysctl_tcp_mem);
+>  EXPORT_SYMBOL(sysctl_tcp_rmem);
+>  EXPORT_SYMBOL(sysctl_tcp_wmem);
+>  
+> @@ -3277,14 +3276,10 @@ void __init tcp_init(void)
+>  	sysctl_tcp_max_orphans = cnt / 2;
+>  	sysctl_max_syn_backlog = max(128, cnt / 256);
+>  
+> -	limit = nr_free_buffer_pages() / 8;
+> -	limit = max(limit, 128UL);
+> -	sysctl_tcp_mem[0] = limit / 4 * 3;
+> -	sysctl_tcp_mem[1] = limit;
+> -	sysctl_tcp_mem[2] = sysctl_tcp_mem[0] * 2;
+> -
+>  	/* Set per-socket limits to no more than 1/128 the pressure threshold */
+> -	limit = ((unsigned long)sysctl_tcp_mem[1]) << (PAGE_SHIFT - 7);
+> +	limit = (unsigned long)init_net.ipv4.sysctl_tcp_mem[1];
+> +	limit <<= (PAGE_SHIFT - 7);
+> +
 
-iQIVAwUATml8z+e/yOyVhhEJAQoC4BAAmiB/t6lVOzryrW5sOgDT17rnT2T7AIJD
-xZqEN+QRkA3VZfck0LYewJr8fMFokGazPC+xKWQsyQ49cqLHBjtX18ssW9e5SCQc
-lorzMK5yQMO+oE/7hDxdz5ewq33qjDRnwW6HuXhFTLAHGr4Y11HaO+70CecHib4s
-wjQGL1+wvkR82ZyL3bOHv7XtVkbcZiiAtp+7KWxZA2z3FYDREF4yGrmzlrymXbuI
-VBj8RO9/+iE1xTJ+9T4wi15YvTBG7Uu+SWVsSIa5MIszQtgATTHc9Gn1VJqVyjU8
-lAPBGZfnRZeDU/f+Kw8QrE3BywMfd18EzSe8d07uW2kcrMUbf5ve0ktgi3QVy2lX
-AAWsHXs20I6Ra6YHbQrzU9y7f3eZCrFbOmEvI3gx31JeH0GDKzt59aBKJjhyClAe
-icH4WGFgPEEHH1brtVePLc/Jd1DzJvRVQq4cX/Kqn7jWFX7Meb0tk23xwmuPfllP
-sLY5FKmZUEn1CbYIEBd0QjJrfjnKO4in3PQ5RF8YO+9+/OIUyH/c2QA7BsThVC+L
-pRyr73yQS10isMF2owDuTO4g6HC3JfhFBsa/AlAH3pe9Pf5UB9PiBhmPWKx5sB5F
-75cNAdW3tyQXrC/A93dk48lwqqAW7qk/sEhqcB9v67cSQ5WApZ93lLTtNsEILcpl
-Nmqi08F75W0=
-=M5Bt
------END PGP SIGNATURE-----
+I'm not sure but...why defined as 'long'  ?
 
---=-FU6VNydLw5GmUKfv5dcA--
+
+
+BTW, when I grep,
+
+tcp_input.c:        atomic_long_read(&tcp_memory_allocated) < sysctl_tcp_mem[0])
+tcp_input.c:    if (atomic_long_read(&tcp_memory_allocated) >= sysctl_tcp_mem[0])
+
+Don't you need to change this ?
+
+
+
+Thanks,
+-Kame
+
+
+
+
+
+
+
