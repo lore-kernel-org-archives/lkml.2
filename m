@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758556Ab1IIIEH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 04:04:07 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:49323 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758491Ab1IIIED (ORCPT
+	id S1758562Ab1IIIF0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 04:05:26 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:41985 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758461Ab1IIIFV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 04:04:03 -0400
-Date: Fri, 9 Sep 2011 10:04:00 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>,
-        linux-pcmcia@lists.infradead.org,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        Tejun Heo <tj@kernel.org>, Joe Perches <joe@perches.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>, tglx@linutronix.de,
-        mingo@elte.hu
-Subject: Re: [PATCH 47/62] pcmcia: irq: Remove IRQF_DISABLED
-Message-ID: <20110909080400.GE1912@pengutronix.de>
-References: <1315383059-3673-1-git-send-email-yong.zhang0@gmail.com>
- <1315383059-3673-48-git-send-email-yong.zhang0@gmail.com>
+	Fri, 9 Sep 2011 04:05:21 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="RpqchZ26BWispMcB"
-Content-Disposition: inline
-In-Reply-To: <1315383059-3673-48-git-send-email-yong.zhang0@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+From: Harshada Sangale <sweets21777@gmail.com>
+Date: Fri, 9 Sep 2011 13:35:00 +0530
+Message-ID: <CABoV-Et_dC4KkDnw+TBxd-DV1gR8VS1VaYm45BOFYLVmCLkwSQ@mail.gmail.com>
+Subject: Running in some issues to get LIO-Target Up
+To: linux-kernel@vger.kernel.org
+Cc: KQ-Prasad Joshi <prasadjoshi124@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---RpqchZ26BWispMcB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I am trying to get LIO-target up for Rhel machine.Refered to the link below:
+http://www.stephenwagner.com/?p=242
 
-On Wed, Sep 07, 2011 at 04:10:44PM +0800, Yong Zhang wrote:
-> This flag is a NOOP and can be removed now.
->=20
-> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+Compiled the kernel and installed the lio.
+[root@ganesh-Studio-1558-relVM target]# modprobe target_core_mod
 
-Acked-by: Wolfram Sang <w.sang@pengutronix.de>
+Inserted the module. But running in some issues
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
---RpqchZ26BWispMcB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
+[root@ganesh-Studio-1558-relVM ~]# tcm_node
+bash: /usr/sbin/tcm_node: Permission denied
+[root@ganesh-Studio-1558-relVM ~]# lio_node
+bash: /usr/sbin/lio_node: Permission denied
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
 
-iEYEARECAAYFAk5pyHAACgkQD27XaX1/VRvgZgCcC3uZk2kb/pnRz85dL35AOJiW
-eucAn3om1aPWfBLAekfct0lIkOzvO4DC
-=bbuB
------END PGP SIGNATURE-----
+[root@ganesh-Studio-1558-relVM ~]# python /usr/sbin/tcm_node
+Traceback (most recent call last):
+  File "/usr/sbin/tcm_node", line 739, in <module>
+    main()
+  File "/usr/sbin/tcm_node", line 715, in main
+    parser = OptionParser(version=tcm_version())
+  File "/usr/sbin/tcm_node", line 603, in tcm_version
+    return tcm_read("/sys/kernel/config/target/version").strip()
+  File "/usr/sbin/tcm_node", line 26, in tcm_read
+    with open(filename) as f:
+IOError: [Errno 2] No such file or directory:
+'/sys/kernel/config/target/version'
 
---RpqchZ26BWispMcB--
+Can any one please let me know where am I going wrong?
+
+
+-- 
+Harshada Sangale
+MCA@PUCSD
+9689187388
