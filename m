@@ -1,54 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759241Ab1IIO35 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 10:29:57 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:57820 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751148Ab1IIO34 (ORCPT
+	id S1759267Ab1IIOdv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 10:33:51 -0400
+Received: from www.linutronix.de ([62.245.132.108]:51458 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758961Ab1IIOdt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 10:29:56 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: James Cloos <cloos@jhcloos.com>
-Subject: Re: found __[us]{8,16,32,64} type without #include <linux/types.h>
-Date: Fri, 9 Sep 2011 16:29:52 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-mm@vger.kernel.org, dri-devel@lists.freedesktop.org
-References: <m3vct1u75k.fsf@jhcloos.com>
-In-Reply-To: <m3vct1u75k.fsf@jhcloos.com>
+	Fri, 9 Sep 2011 10:33:49 -0400
+Date: Fri, 9 Sep 2011 16:33:47 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Mark Salter <msalter@redhat.com>
+cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        ming.lei@canonical.com, stern@rowland.harvard.edu
+Subject: Re: [PATCH 11/24] C6X: interrupt handling
+In-Reply-To: <1314826019-22330-12-git-send-email-msalter@redhat.com>
+Message-ID: <alpine.LFD.2.02.1109091619350.2723@ionos>
+References: <1314826019-22330-1-git-send-email-msalter@redhat.com> <1314826019-22330-12-git-send-email-msalter@redhat.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201109091629.52879.arnd@arndb.de>
-X-Provags-ID: V02:K0:BlX2dsLaOJ8IkxbuNmNVADOoPA4cHmGSAr4LXJK02IU
- 8S+MScP4aLU995iOXXYR7jc3mvRLSxLNLCYETtERbW6zmiCUWr
- m7mfQtYY8pyHojZmXnM7r1uolNSetMOlaGuhOJVWGW2wso/xcc
- f+/cWTzt6elj/D3Rsi3eoKG4KTvRr2bPWNP4GU+klJgKeb/yQy
- KTklj3IfT72JrkYqRh/fxxO5o3BmNZ2H7oEIxRbJb5J4/wfuFn
- /9yW9v0rSfytC8x1BaOkjXXd3BnrryMq240et4kncGH0KPJwVM
- 5+CY6XugBVb1BlzSRJIehCxGgyb4omS4QB1zN+lHIcd+spkEZz
- XHAGV7gWjEYXFbEhB/7A=
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 09 September 2011, James Cloos wrote:
-> All noticed while compiling 3.1-r5:
-> 
-> linux/usr/include/drm/drm_mode.h:85: found __[us]{8,16,32,64} type without #include <linux/types.h>
-> linux/usr/include/drm/i915_drm.h:120: found __[us]{8,16,32,64} type without #include <linux/types.h>
-> linux/usr/include/drm/mga_drm.h:260: found __[us]{8,16,32,64} type without #include <linux/types.h>
-> linux/usr/include/drm/radeon_drm.h:758: found __[us]{8,16,32,64} type without #include <linux/types.h>
-> linux/usr/include/drm/via_drm.h:117: found __[us]{8,16,32,64} type without #include <linux/types.h>
+On Wed, 31 Aug 2011, Mark Salter wrote:
 
-This has been around for a long time, I think. I agree that we should do
-something about it, but I think we're still looking for a solution that
-makes everyone happy.
+> + *
+> + *  Large parts taken directly from powerpc.
 
-The script only checks for direct inclusions of types.h, while the drm headers
-get it from drm.h. One solution would be to make the script smart enough
-to evaluate all indirect header inclusions as well. A more hacky workaround
-would be to just treat "drm.h" the same as <linux/types.h>.
+Is it really necessary to copy that stuff instead of generalizing it ?
+I guess that's mostly about the reverse map & Co.
 
-	Arnd
+> +
+> +static spinlock_t core_irq_lock;
+
+  raw_spinlock_t please
+
+> +static void mask_core_irq(struct irq_data *data)
+> +{
+> +	unsigned int prio = data->irq;
+> +	unsigned long flags;
+> +
+> +	BUG_ON(prio < 4 || prio >= NR_PRIORITY_IRQS);
+> +
+> +	spin_lock_irqsave(&core_irq_lock, flags);
+
+The chip functions are called with interrupts disabled, so
+raw_spin_lock() is sufficient
+
+> +/*
+> + * IRQ controller and virtual interrupts
+> + */
+
+How different is this from PPC ? Looks fairly familiar to me :)
+
+> +struct megamod_pic {
+> +	struct irq_host	*irqhost;
+> +	struct megamod_regs __iomem *regs;
+> +	spinlock_t lock;
+
+  raw_spinlock_t please
+
+> +
+> +	/* hw mux mapping */
+> +	unsigned int output_to_irq[NR_MUX_OUTPUTS];
+> +};
+> +
+> +static struct megamod_pic *mm_pic;
+> +
+> +struct megamod_cascade_data {
+> +	struct megamod_pic *pic;
+> +	int index;
+> +};
+> +
+> +static struct megamod_cascade_data cascade_data[NR_COMBINERS];
+> +
+> +static void mask_megamod(struct irq_data *data)
+> +{
+> +	struct megamod_pic *pic = irq_data_get_irq_chip_data(data);
+> +	irq_hw_number_t src = irqd_to_hwirq(data);
+> +	unsigned long flags;
+> +	u32 __iomem *evtmask = &pic->regs->evtmask[src / 32];
+> +
+> +	spin_lock_irqsave(&pic->lock, flags);
+
+  raw_spin_lock() is sufficient
+
+> +	soc_writel(soc_readl(evtmask) | (1 << (src & 31)), evtmask);
+> +	spin_unlock_irqrestore(&pic->lock, flags);
+> +}
+> +
+
+> +static void megamod_irq_cascade(unsigned int irq, struct irq_desc *desc)
+> +{
+> +	struct irq_chip *chip = irq_desc_get_chip(desc);
+> +	struct irq_data *idata = irq_desc_get_irq_data(desc);
+> +	struct megamod_cascade_data *cascade;
+> +	struct megamod_pic *pic;
+> +	u32 events;
+> +	int n, idx;
+> +
+> +	cascade = irq_desc_get_handler_data(desc);
+> +
+> +	pic = cascade->pic;
+> +
+> +	raw_spin_lock(&desc->lock);
+> +
+> +	chip->irq_mask(idata);
+
+This runs with interrupts disabled, so why the lock, mask and the
+inprogress fiddling? That interrupt cannot be reentered and it is not
+controlled by disable_irq/enable_irq and better not subject to
+free_irq, so why do you need this?
+
+Thanks,
+
+	tglx
