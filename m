@@ -1,101 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932727Ab1IICig (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 22:38:36 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:46387 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757691Ab1IICic (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 22:38:32 -0400
-Subject: Re: [PATCH 2/8] mm: alloc_contig_freed_pages() added
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org, Michal Nazarewicz <mina86@mina86.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ankita Garg <ankita@in.ibm.com>,
-        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
-        Arnd Bergmann <arnd@arndb.de>, Jesse Barker <jesse.barker@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Shariq Hasnain <shariq.hasnain@linaro.org>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>
-In-Reply-To: <1313764064-9747-3-git-send-email-m.szyprowski@samsung.com>
-References: <1313764064-9747-1-git-send-email-m.szyprowski@samsung.com>
-	 <1313764064-9747-3-git-send-email-m.szyprowski@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 08 Sep 2011 11:05:52 -0700
-Message-ID: <1315505152.3114.9.camel@nimitz>
+	id S932753Ab1IIClj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 22:41:39 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37792 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932548Ab1IIClh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 22:41:37 -0400
+Subject: Re: Bug#640964: linux-image-3.1.0-rc4-486: BUG() triggered on XO-1
+ hardware
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Andres Salomon <dilinger@queued.net>, 640964@bugs.debian.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 09 Sep 2011 03:41:19 +0100
+In-Reply-To: <20110908174625.1b97223a@queued.net>
+References: <20110908174625.1b97223a@queued.net>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-FU6VNydLw5GmUKfv5dcA"
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1315536091.23168.77.camel@deadeye>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-08-19 at 16:27 +0200, Marek Szyprowski wrote:
-> +unsigned long alloc_contig_freed_pages(unsigned long start, unsigned long end,
-> +				       gfp_t flag)
-> +{
-> +	unsigned long pfn = start, count;
-> +	struct page *page;
-> +	struct zone *zone;
-> +	int order;
-> +
-> +	VM_BUG_ON(!pfn_valid(start));
-> +	zone = page_zone(pfn_to_page(start));
 
-This implies that start->end are entirely contained in a single zone.
-What enforces that?  If some higher layer enforces that, I think we
-probably need at least a VM_BUG_ON() in here and a comment about who
-enforces it.
+--=-FU6VNydLw5GmUKfv5dcA
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> +	spin_lock_irq(&zone->lock);
-> +
-> +	page = pfn_to_page(pfn);
-> +	for (;;) {
-> +		VM_BUG_ON(page_count(page) || !PageBuddy(page));
-> +		list_del(&page->lru);
-> +		order = page_order(page);
-> +		zone->free_area[order].nr_free--;
-> +		rmv_page_order(page);
-> +		__mod_zone_page_state(zone, NR_FREE_PAGES, -(1UL << order));
-> +		pfn  += 1 << order;
-> +		if (pfn >= end)
-> +			break;
-> +		VM_BUG_ON(!pfn_valid(pfn));
-> +		page += 1 << order;
-> +	}
+On Thu, 2011-09-08 at 17:46 -0700, Andres Salomon wrote:
+> Package: linux-image-3.1.0-rc4-486
+> Version: 3.1.0~rc4-1~experimental.1
+> Severity: normal
+>=20
+> During boot on an OLPC XO-1, I encounter the following problem.  I
+> believe it's the statement BUG_ON(a->cpuid >=3D NCAPINTS*32), though I'm
+> not staring at an exact copy of linux-2.6 source.
+[...]
 
-This 'struct page *'++ stuff is OK, but only for small, aligned areas.
-For at least some of the sparsemem modes (non-VMEMMAP), you could walk
-off of the end of the section_mem_map[] when you cross a MAX_ORDER
-boundary.  I'd feel a little bit more comfortable if pfn_to_page() was
-being done each time, or only occasionally when you cross a section
-boundary.
+Agreed.
 
-This may not apply to what ARM is doing today, but it shouldn't be too
-difficult to fix up, or to document what's going on.
+Variable a is in the EBX register, value 0xc143c668.  Looking at a dump
+of this kernel image, the __alt_instructions array starts with:
 
-> +	spin_unlock_irq(&zone->lock);
-> +
-> +	/* After this, pages in the range can be freed one be one */
-> +	page = pfn_to_page(start);
-> +	for (count = pfn - start; count; --count, ++page)
-> +		prep_new_page(page, 0, flag);
-> +
-> +	return pfn;
-> +}
-> +
-> +void free_contig_pages(struct page *page, int nr_pages)
-> +{
-> +	for (; nr_pages; --nr_pages, ++page)
-> +		__free_page(page);
-> +}
+ c143c638 7e51bcff 1c050000 1a000503 7d51bcff  ~Q..........}Q..
+ c143c648 13050000 1a000503 6653bcff 0a050000  ........fS......
+ c143c658 19000503 00000000 ce55bcff 00000000  .........U......
+ c143c668 9a000200 cf55bcff f1040000 e4000303  .....U..........
+ ...
 
-The same thing about 'struct page' pointer math goes here.
+Converting back to C structures:
 
--- Dave
+/* instr_offset, repl_offset, cpuid, instrlen, replacementlen */
+{ 0xffbc517e, 0x0000051c, 0x001a, 0x05, 0x03 },
+{ 0xffbc517d, 0x00000513, 0x001a, 0x05, 0x03 },
+{ 0xffbc5366, 0x0000050a, 0x0019, 0x05, 0x03 },
+{ 0x00000000, 0xffbc55ce, 0x0000, 0x00, 0x00 },
+{ 0x0002009a, 0xffbc55cf, 0x04f1, 0x00, 0x00 },
+...
 
+Oops, we have 4 bytes of zeroes between what should be elements 2 and 3.
+That results in __alt_instructions[4].cpuid =3D=3D 0x04f1 which trips the
+BUG check.  This is nothing OLPC-specific; it's going to happen on any
+machine trying to boot this image.
+
+So the question is, where does that padding come from?
+
+Ben.
+
+--=20
+Ben Hutchings
+I say we take off; nuke the site from orbit.  It's the only way to be sure.
+
+--=-FU6VNydLw5GmUKfv5dcA
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIVAwUATml8z+e/yOyVhhEJAQoC4BAAmiB/t6lVOzryrW5sOgDT17rnT2T7AIJD
+xZqEN+QRkA3VZfck0LYewJr8fMFokGazPC+xKWQsyQ49cqLHBjtX18ssW9e5SCQc
+lorzMK5yQMO+oE/7hDxdz5ewq33qjDRnwW6HuXhFTLAHGr4Y11HaO+70CecHib4s
+wjQGL1+wvkR82ZyL3bOHv7XtVkbcZiiAtp+7KWxZA2z3FYDREF4yGrmzlrymXbuI
+VBj8RO9/+iE1xTJ+9T4wi15YvTBG7Uu+SWVsSIa5MIszQtgATTHc9Gn1VJqVyjU8
+lAPBGZfnRZeDU/f+Kw8QrE3BywMfd18EzSe8d07uW2kcrMUbf5ve0ktgi3QVy2lX
+AAWsHXs20I6Ra6YHbQrzU9y7f3eZCrFbOmEvI3gx31JeH0GDKzt59aBKJjhyClAe
+icH4WGFgPEEHH1brtVePLc/Jd1DzJvRVQq4cX/Kqn7jWFX7Meb0tk23xwmuPfllP
+sLY5FKmZUEn1CbYIEBd0QjJrfjnKO4in3PQ5RF8YO+9+/OIUyH/c2QA7BsThVC+L
+pRyr73yQS10isMF2owDuTO4g6HC3JfhFBsa/AlAH3pe9Pf5UB9PiBhmPWKx5sB5F
+75cNAdW3tyQXrC/A93dk48lwqqAW7qk/sEhqcB9v67cSQ5WApZ93lLTtNsEILcpl
+Nmqi08F75W0=
+=M5Bt
+-----END PGP SIGNATURE-----
+
+--=-FU6VNydLw5GmUKfv5dcA--
