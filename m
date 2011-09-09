@@ -1,165 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933489Ab1IILAw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 07:00:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45607 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933323Ab1IIK5a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 06:57:30 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 03/14] mm: Introduce __GFP_MEMALLOC to allow access to emergency reserves
-Date: Fri,  9 Sep 2011 11:57:14 +0100
-Message-Id: <1315565845-16857-4-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1315565845-16857-1-git-send-email-mgorman@suse.de>
-References: <1315565845-16857-1-git-send-email-mgorman@suse.de>
+	id S933674Ab1IILEg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 07:04:36 -0400
+Received: from mailout01.t-online.de ([194.25.134.80]:37353 "EHLO
+	mailout01.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933391Ab1IILEb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Sep 2011 07:04:31 -0400
+Message-ID: <4E69F2B5.7090007@t-online.de>
+Date: Fri, 09 Sep 2011 13:04:21 +0200
+From: Knut Petersen <Knut_Petersen@t-online.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; de; rv:1.9.2.20) Gecko/20110804 SUSE/3.1.12 Thunderbird/3.1.12
+MIME-Version: 1.0
+To: Chris Wilson <chris@chris-wilson.co.uk>
+CC: intel-gfx <intel-gfx@lists.freedesktop.org>, linux-kernel@vger.kernel.org
+Subject: [BUG] page table and page allocation problems in 3.1.0-rc5-main+
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 8bit
+X-ID: E2REfcZQZh6hhQu9vqq1P694ZkYpHGIzNs7hEsEiQSqe6u0jvwJ+AYLqPDjwVclwNj
+X-TOI-MSGID: b28e0540-edc4-4e79-ac43-ad1fd29f79d3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__GFP_MEMALLOC will allow the allocation to disregard the watermarks,
-much like PF_MEMALLOC. It allows one to pass along the memalloc state
-in object related allocation flags as opposed to task related flags,
-such as sk->sk_allocation. This removes the need for ALLOC_PFMEMALLOC
-as callers using __GFP_MEMALLOC can get the ALLOC_NO_WATERMARK flag
-which is now enough to identify allocations related to page reclaim.
+Hi Chris!
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- include/linux/gfp.h             |   10 ++++++++--
- include/linux/mm_types.h        |    2 +-
- include/trace/events/gfpflags.h |    1 +
- mm/page_alloc.c                 |   14 ++++++--------
- mm/slab.c                       |    2 +-
- 5 files changed, 17 insertions(+), 12 deletions(-)
+hardware
+=======
+Aopen i915GMm-hfs, 1.86GHz Pentium M (Dothan), 2GB RAM
 
-diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-index 3a76faf..38acdc7 100644
---- a/include/linux/gfp.h
-+++ b/include/linux/gfp.h
-@@ -23,6 +23,7 @@ struct vm_area_struct;
- #define ___GFP_REPEAT		0x400u
- #define ___GFP_NOFAIL		0x800u
- #define ___GFP_NORETRY		0x1000u
-+#define ___GFP_MEMALLOC		0x2000u
- #define ___GFP_COMP		0x4000u
- #define ___GFP_ZERO		0x8000u
- #define ___GFP_NOMEMALLOC	0x10000u
-@@ -75,9 +76,14 @@ struct vm_area_struct;
- #define __GFP_REPEAT	((__force gfp_t)___GFP_REPEAT)	/* See above */
- #define __GFP_NOFAIL	((__force gfp_t)___GFP_NOFAIL)	/* See above */
- #define __GFP_NORETRY	((__force gfp_t)___GFP_NORETRY) /* See above */
-+#define __GFP_MEMALLOC	((__force gfp_t)___GFP_MEMALLOC)/* Allow access to emergency reserves */
- #define __GFP_COMP	((__force gfp_t)___GFP_COMP)	/* Add compound page metadata */
- #define __GFP_ZERO	((__force gfp_t)___GFP_ZERO)	/* Return zeroed page on success */
--#define __GFP_NOMEMALLOC ((__force gfp_t)___GFP_NOMEMALLOC) /* Don't use emergency reserves */
-+#define __GFP_NOMEMALLOC ((__force gfp_t)___GFP_NOMEMALLOC) /* Don't use emergency reserves.
-+							 * This takes precedence over the
-+							 * __GFP_MEMALLOC flag if both are
-+							 * set
-+							 */
- #define __GFP_HARDWALL   ((__force gfp_t)___GFP_HARDWALL) /* Enforce hardwall cpuset memory allocs */
- #define __GFP_THISNODE	((__force gfp_t)___GFP_THISNODE)/* No fallback, no policies */
- #define __GFP_RECLAIMABLE ((__force gfp_t)___GFP_RECLAIMABLE) /* Page is reclaimable */
-@@ -127,7 +133,7 @@ struct vm_area_struct;
- /* Control page allocator reclaim behavior */
- #define GFP_RECLAIM_MASK (__GFP_WAIT|__GFP_HIGH|__GFP_IO|__GFP_FS|\
- 			__GFP_NOWARN|__GFP_REPEAT|__GFP_NOFAIL|\
--			__GFP_NORETRY|__GFP_NOMEMALLOC)
-+			__GFP_NORETRY|__GFP_MEMALLOC|__GFP_NOMEMALLOC)
- 
- /* Control slab gfp mask during early boot */
- #define GFP_BOOT_MASK (__GFP_BITS_MASK & ~(__GFP_WAIT|__GFP_IO|__GFP_FS))
-diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index 3716e9f..0be3d43 100644
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -54,7 +54,7 @@ struct page {
- 			pgoff_t index;		/* Our offset within mapping. */
- 			void *freelist;		/* slub first free object */
- 			bool pfmemalloc;	/* If set by the page allocator,
--						 * ALLOC_PFMEMALLOC was set
-+						 * ALLOC_NO_WATERMARKS was set
- 						 * and the low watermark was not
- 						 * met implying that the system
- 						 * is under some pressure. The
-diff --git a/include/trace/events/gfpflags.h b/include/trace/events/gfpflags.h
-index 9fe3a366..d6fd8e5 100644
---- a/include/trace/events/gfpflags.h
-+++ b/include/trace/events/gfpflags.h
-@@ -30,6 +30,7 @@
- 	{(unsigned long)__GFP_COMP,		"GFP_COMP"},		\
- 	{(unsigned long)__GFP_ZERO,		"GFP_ZERO"},		\
- 	{(unsigned long)__GFP_NOMEMALLOC,	"GFP_NOMEMALLOC"},	\
-+	{(unsigned long)__GFP_MEMALLOC,		"GFP_MEMALLOC"},	\
- 	{(unsigned long)__GFP_HARDWALL,		"GFP_HARDWALL"},	\
- 	{(unsigned long)__GFP_THISNODE,		"GFP_THISNODE"},	\
- 	{(unsigned long)__GFP_RECLAIMABLE,	"GFP_RECLAIMABLE"},	\
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 561cb61..03fd18c 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1369,7 +1369,6 @@ failed:
- #define ALLOC_HARDER		0x10 /* try to alloc harder */
- #define ALLOC_HIGH		0x20 /* __GFP_HIGH set */
- #define ALLOC_CPUSET		0x40 /* check for correct cpuset */
--#define ALLOC_PFMEMALLOC	0x80 /* Caller has PF_MEMALLOC set */
- 
- #ifdef CONFIG_FAIL_PAGE_ALLOC
- 
-@@ -2058,11 +2057,10 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
- 	} else if (unlikely(rt_task(current)) && !in_interrupt())
- 		alloc_flags |= ALLOC_HARDER;
- 
--	if ((current->flags & PF_MEMALLOC) ||
--			unlikely(test_thread_flag(TIF_MEMDIE))) {
--		alloc_flags |= ALLOC_PFMEMALLOC;
--
--		if (likely(!(gfp_mask & __GFP_NOMEMALLOC)) && !in_interrupt())
-+	if (likely(!(gfp_mask & __GFP_NOMEMALLOC))) {
-+		if (gfp_mask & __GFP_MEMALLOC)
-+			alloc_flags |= ALLOC_NO_WATERMARKS;
-+		else if (likely(!(gfp_mask & __GFP_NOMEMALLOC)) && !in_interrupt())
- 			alloc_flags |= ALLOC_NO_WATERMARKS;
- 	}
- 
-@@ -2071,7 +2069,7 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
- 
- bool gfp_pfmemalloc_allowed(gfp_t gfp_mask)
- {
--	return !!(gfp_to_alloc_flags(gfp_mask) & ALLOC_PFMEMALLOC);
-+	return !!(gfp_to_alloc_flags(gfp_mask) & ALLOC_NO_WATERMARKS);
- }
- 
- static inline struct page *
-@@ -2253,7 +2251,7 @@ got_pg:
- 	 * steps that will free more memory. The caller should avoid the
- 	 * page being used for !PFMEMALLOC purposes.
- 	 */
--	page->pfmemalloc = !!(alloc_flags & ALLOC_PFMEMALLOC);
-+	page->pfmemalloc = !!(alloc_flags & ALLOC_NO_WATERMARKS);
- 
- 	return page;
- }
-diff --git a/mm/slab.c b/mm/slab.c
-index 1dd03e0..25f69ec 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -3031,7 +3031,7 @@ static int cache_grow(struct kmem_cache *cachep,
- 	if (!slabp)
- 		goto opps1;
- 
--	/* Record if ALLOC_PFMEMALLOC was set when allocating the slab */
-+	/* Record if ALLOC_NO_WATERMARKS was set when allocating the slab */
- 	if (pfmemalloc) {
- 		struct array_cache *ac = cpu_cache_get(cachep);
- 		slabp->pfmemalloc = true;
--- 
-1.7.3.4
+software:
+=======
+openSuSE 11.4
+
+kernel, 3.1.0-rc5-main+ (kernel 3.0.4 seems to be ok)
+
+X.Org X Server 1.11.0
+Release Date: 2011-08-26
+[    74.225] X Protocol Version 11, Revision 0
+[    74.225] Build Operating System: Linux 3.0.4-main i686
+[    74.225] Current Operating System: Linux golem 3.1.0-rc5-main+ #15 PREEMPT Thu Sep 8 15:45:51 CEST 2011 i686
+[    74.225] Kernel command line: root=/dev/sdb5 acpi_enforce_resources=lax drm.debug=0 5
+[    74.225] Build Date: 08 September 2011  04:40:24PM
+
+
+dmesg
+=====
+
+[54760.775797] [drm] capturing error event; look for more information in /debug/dri/0/i915_error_state
+[54760.776010] render error detected, EIR: 0x00000010
+[54760.776010] page table error
+[54760.776010]   PGTBL_ER: 0x00000010
+[54760.776010] [drm:i915_report_and_clear_eir] *ERROR* EIR stuck: 0x00000010, masking
+[54760.776010] render error detected, EIR: 0x00000010
+[54760.776010] page table error
+[54760.776010]   PGTBL_ER: 0x00000010
+
+i915_error_state
+=============
+
+cat /sys/kernel/debug/dri/0/i915_error_state does not work and tells we are out of memory:
+
+cat: /sys/kernel/debug/dri/0/i915_error_state: Nicht genügend Hauptspeicher verfügbar
+
+dmesg again
+==========
+
+After a failed read of i915_error_state dmesg has additional information:
+
+[65622.108515] cat: page allocation failure: order:8, mode:0xd0
+[65622.108521] Pid: 27871, comm: cat Not tainted 3.1.0-rc5-main+ #15
+[65622.108524] Call Trace:
+[65622.108536]  [<c043291e>] ? printk+0xf/0x11
+[65622.108544]  [<c0170c67>] warn_alloc_failed+0xb0/0xc2
+[65622.108549]  [<c0172cc3>] __alloc_pages_nodemask+0x47e/0x4a8
+[65622.108558]  [<c018ed57>] cache_alloc_refill+0x25b/0x411
+[65622.108564]  [<c018ef89>] __kmalloc+0x7c/0xc5
+[65622.108569]  [<c01a86de>] seq_read+0x1be/0x31b
+[65622.108575]  [<c019129e>] ? rw_verify_area+0xc4/0xe7
+[65622.108580]  [<c019165c>] vfs_read+0x8a/0x11e
+[65622.108584]  [<c01a8520>] ? seq_lseek+0x134/0x134
+[65622.108589]  [<c019172b>] sys_read+0x3b/0x60
+[65622.108595]  [<c0438f8c>] sysenter_do_call+0x12/0x32
+[65622.108599] Mem-Info:
+[65622.108601] DMA per-cpu:
+[65622.108604] CPU    0: hi:    0, btch:   1 usd:   0
+[65622.108606] Normal per-cpu:
+[65622.108609] CPU    0: hi:  186, btch:  31 usd:   0
+[65622.108612] HighMem per-cpu:
+[65622.108614] CPU    0: hi:  186, btch:  31 usd:   0
+[65622.108620] active_anon:70036 inactive_anon:39146 isolated_anon:0
+[65622.108622]  active_file:144252 inactive_file:145043 isolated_file:0
+[65622.108623]  unevictable:0 dirty:4 writeback:80 unstable:0
+[65622.108625]  free:71350 slab_reclaimable:34317 slab_unreclaimable:6780
+[65622.108626]  mapped:22764 shmem:28737 pagetables:1231 bounce:0
+[65622.108635] DMA free:5240kB min:64kB low:80kB high:96kB active_anon:0kB inactive_anon:0kB active_file:0kB inactive_file:0kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:15804kB mlocked:0kB dirty:0kB writeback:0kB mapped:0kB shmem:0kB slab_reclaimable:144kB slab_unreclaimable:12kB 
+kernel_stack:0kB pagetables:0kB unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? yes
+[65622.108642] lowmem_reserve[]: 0 865 2008 2008
+[65622.108655] Normal free:232876kB min:3728kB low:4660kB high:5592kB active_anon:15320kB inactive_anon:17680kB active_file:221016kB inactive_file:216960kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:885944kB mlocked:0kB dirty:16kB writeback:0kB mapped:4808kB shmem:12836kB 
+slab_reclaimable:137124kB slab_unreclaimable:27108kB kernel_stack:2368kB pagetables:204kB unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
+[65622.108663] lowmem_reserve[]: 0 0 9143 9143
+[65622.108675] HighMem free:47284kB min:512kB low:1740kB high:2972kB active_anon:264824kB inactive_anon:138904kB active_file:355992kB inactive_file:363212kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:1170376kB mlocked:0kB dirty:0kB writeback:320kB mapped:86248kB shmem:102112kB 
+slab_reclaimable:0kB slab_unreclaimable:0kB kernel_stack:0kB pagetables:4720kB unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
+[65622.108682] lowmem_reserve[]: 0 0 0 0
+[65622.108689] DMA: 26*4kB 22*8kB 24*16kB 21*32kB 19*64kB 11*128kB 3*256kB 1*512kB 0*1024kB 0*2048kB 0*4096kB = 5240kB
+[65622.108705] Normal: 17087*4kB 6900*8kB 1877*16kB 830*32kB 380*64kB 152*128kB 33*256kB 1*512kB 0*1024kB 0*2048kB 0*4096kB = 232876kB
+[65622.108722] HighMem: 917*4kB 578*8kB 859*16kB 395*32kB 133*64kB 24*128kB 4*256kB 0*512kB 0*1024kB 0*2048kB 0*4096kB = 47284kB
+[65622.108738] 321480 total pagecache pages
+[65622.108740] 3448 pages in swap cache
+[65622.108743] Swap cache stats: add 23966, delete 20518, find 4198/4697
+[65622.108746] Free swap  = 5146764kB
+[65622.108748] Total swap = 5164888kB
+[65622.137455] 522208 pages RAM
+[65622.137459] 294898 pages HighMem
+[65622.137462] 7053 pages reserved
+[65622.137464] 321488 pages shared
+[65622.137466] 250040 pages non-shared
+
+cu,
+  knut
+
 
