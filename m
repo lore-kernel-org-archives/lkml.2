@@ -1,250 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752492Ab1IICsI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 22:48:08 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40434 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751175Ab1IICsC (ORCPT
+	id S1752994Ab1IICxB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 22:53:01 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:44241 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751861Ab1IICxA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 22:48:02 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 9 Sep 2011 11:47:20 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        containers@lists.osdl.org, netdev@vger.kernel.org, xemul@parallels.com,
-        "David S. Miller" <davem@davemloft.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH v2 1/9] per-netns ipv4 sysctl_tcp_mem
-Message-Id: <20110909114720.f050c520.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1315369399-3073-2-git-send-email-glommer@parallels.com>
-References: <1315369399-3073-1-git-send-email-glommer@parallels.com>
-	<1315369399-3073-2-git-send-email-glommer@parallels.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 8 Sep 2011 22:53:00 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAGsJ_4zQ0H99w4vDkFG2DtA561e0oPjKVgEZb1kBkGab=c-OAw@mail.gmail.com>
+References: <1315374075-15479-1-git-send-email-Baohua.Song@csr.com>
+ <438BB0150E931F4B9CE701519A4463010871804A46@bgsmsx502.gar.corp.intel.com>
+ <CAGsJ_4x4S+8d3xS+QTrjDpoxcHo3p7qArd7yFr=+h1vxSRvEpA@mail.gmail.com>
+ <438BB0150E931F4B9CE701519A4463010871804A48@bgsmsx502.gar.corp.intel.com>
+ <CAGsJ_4yeovNP=6CKTafbxrBTrYQ42B9yvAOM8gM_bYqD6mTnUw@mail.gmail.com>
+ <CABb+yY1=P=D3GFFxMOUM0a2yWCiAHNqwVU0a--t+pJnUhqKHKA@mail.gmail.com>
+ <CABb+yY3F+DMn2SxeO0chjpiMBkgLvSK5EVYMdhQsfQoZNZ4_7Q@mail.gmail.com>
+ <CAGsJ_4xDh6c5=Uhw9zO34XeY5UNC=fLuRubryks6NOv3T5_kCQ@mail.gmail.com>
+ <1315518676.6638.6.camel@vkoul-mobl4> <CAGsJ_4zQ0H99w4vDkFG2DtA561e0oPjKVgEZb1kBkGab=c-OAw@mail.gmail.com>
+From: Barry Song <21cnbao@gmail.com>
+Date: Fri, 9 Sep 2011 10:52:38 +0800
+Message-ID: <CAGsJ_4zaOwHvViuh=nKhvxw3irnE9mXaG_FAKLp_a__XpdXtSA@mail.gmail.com>
+Subject: Re: [PATCH] dmaengine: add CSR SiRFprimaII DMAC driver
+To: Vinod Koul <vkoul@infradead.org>
+Cc: vinod.koul@intel.com, Jassi Brar <jassisinghbrar@gmail.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "workgroup.linux@csr.com" <workgroup.linux@csr.com>,
+        "rongjun.ying@csr.com" <rongjun.ying@csr.com>,
+        "Baohua.Song@csr.com" <Baohua.Song@csr.com>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  7 Sep 2011 01:23:11 -0300
-Glauber Costa <glommer@parallels.com> wrote:
+2011/9/9 Barry Song <21cnbao@gmail.com>:
+> 2011/9/9 Vinod Koul <vkoul@infradead.org>:
+>> On Thu, 2011-09-08 at 14:36 +0800, Barry Song wrote:
+>>> 2011/9/8 Jassi Brar <jassisinghbrar@gmail.com>:
+>>> > On Thu, Sep 8, 2011 at 8:47 AM, Jassi Brar <jassisinghbrar@gmail.com> wrote:
+>>> >> On Thu, Sep 8, 2011 at 7:42 AM, Barry Song <21cnbao@gmail.com> wrote:
+>>> >>
+>>> >>>>> it is much different with primacell based DMA like pl080, pl330.
+>>> >>>>> prima2 has a self-defined DMAC IP. basically it is a 2D mode dma with
+>>> >>>>> two scales X and Y and direct way to start and stop DMA.
+>>> >>>>> every channel has fixed function to serve only one perpheral. so you
+>>> >>>>> find we have a filter id.
+>>> >>>> okay, what do you mean by 2D mode? Is it similar to what TI folks, Linus
+>>> >>>> W and Jassi Brar posted RFC's on?
+>>> >>>
+>>> >>> In SiRFprimaII 2-D DMA, the system memory space is interpreted
+>>> >>> as a 2-D layout instead of a linear 1-D layout. More specifically, the
+>>> >>> system memory can be considered as
+>>> >>> multiple data lines. The length of the data line is determined by the
+>>> >>> user-selected DMA_WIDTH register.
+>>> >>> The user can specify a data window that the user wants to access using
+>>> >>> four parameters:
+>>> >>> ■ Start address
+>>> >>> ■ X length
+>>> >>> ■ Y length
+>>> >>> ■ Width
+>>> >>>
+>>> >>> The idea of a 2-D DMA is shown in figure 2d-dma.png attached.
+>>> >>>
+>>> >>> If you specifies the Y length as 0 or the X length equals to the DMA
+>>> >>> width, then this 2-D DMA reduces to
+>>> >>> 1-D. If the user configures the X length greater than the DMA width,
+>>> >>> then the extra data is wrapped around
+>>> >>> to the next data line, this may corrupt the DMA transfer for
+>>> >>> multiple-line 2-D DMA. If this is a 1-D DMA, then
+>>> >>> there is no issue. The attached diagram 2d-dma2.png shows the
+>>> >>> wrap-around of the extra data in case the X length
+>>> >>> greater than DMA width.
+>>> >>
+>>> >> Sorry, the role of DMA_WIDTH is not clear to me yet.
+>>> >> In which case the user _must_ set {xlen > width} ?
+>>> >>
+>>> > Perhaps 2d-dma.PNG is inaccurate - it shouldn't depict any deltaX.
+>>> > Doesn't xlen and width always start together ? If no, please don't read ahead.
+>>> >
+>>> > According to figures, {xlen > width} is to be set _only_ when a transfer
+>>> > is divided into _exactly_ two chunks separated by gap _exactly_
+>>> > equal to length of the second chunk (an extremely rare case).
+>>>
+>>> Sorry i didn't list related full information in datasheet in my early reply.
+>>> we don't have the case of xlen > dma_width.
+>> What is intended usage of the 2D dma?
+>
+> two cases:
+> 1. continuous DMA:
+> xlen = DMA_WIDTH
+> 2. interleaved DMA:
+> xlen < DMA_WIDTH
+>
+> 2 is for dma video/image or something like that.  For example, you
+> might only copy 1/9 of a nine-square grid by it.
+>
+>>
+>> In first diagram you sent, x length is first block length to transfer
+>> and (dma_width - x_len) is length to skip, right?
+>
+> (dma_width - x_len) is length to skip
+>
+>>
+>> So what is the second diagram about? Is this juts a case when notion of
+>> xlen > dma_width? How much you transfer and how much you skip?
+>
+> Actually, there is no real case for xlen > dma_width. this picture is
+> only explaining what will happen if we set xlen > dma_width.
+> when xlen > dma_width, for every line, dma will transfer only
+> dma_width. Then the extra data is wrapped around
+> to the next data line, it will corrupt the DMA transfer for
+> multiple-line 2-D DMA since the extra data will overlap with the real
+> next line.
+>
+> if we set ylen to 0, the DMA becomes 1D, the wrap-around of the extra
+> data has no issue nobody will overlap with it.
+>
 
-> This patch allows each namespace to independently set up
-> its levels for tcp memory pressure thresholds. This patch
-> alone does not buy much: we need to make this values
-> per group of process somehow. This is achieved in the
-> patches that follows in this patchset.
-> 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> CC: David S. Miller <davem@davemloft.net>
-> CC: Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>
-> CC: Eric W. Biederman <ebiederm@xmission.com>
+For example, if we set xlen = 7, dma_width =4, ylen > 0
+then dma will happen like:
+0~6
+4~10
+8~14
+12~18
+....
 
+But for ylen=0, it has no issue. there is no next line to overlap with
+the extra data.
 
-Hmm, it may be better to post this patch as independent one.
+in case we set xlen = 0, something funny will happen:
+i will copy the same memory again and again(ylen+1 times).
 
-I'm not familiar with this area...but try review ;)
-
-> ---
->  include/net/netns/ipv4.h   |    1 +
->  include/net/tcp.h          |    1 -
->  net/ipv4/sysctl_net_ipv4.c |   51 +++++++++++++++++++++++++++++++++++++------
->  net/ipv4/tcp.c             |   13 +++-------
->  4 files changed, 49 insertions(+), 17 deletions(-)
-> 
-> diff --git a/include/net/netns/ipv4.h b/include/net/netns/ipv4.h
-> index d786b4f..bbd023a 100644
-> --- a/include/net/netns/ipv4.h
-> +++ b/include/net/netns/ipv4.h
-> @@ -55,6 +55,7 @@ struct netns_ipv4 {
->  	int current_rt_cache_rebuild_count;
->  
->  	unsigned int sysctl_ping_group_range[2];
-> +	long sysctl_tcp_mem[3];
->  
->  	atomic_t rt_genid;
->  	atomic_t dev_addr_genid;
-
-Hmm, in original placement, sysctl_tcp_mem[] was on __read_mostly
-area. Doesn't this placement cause many cache invalidations ?
-
-
-
-> diff --git a/include/net/tcp.h b/include/net/tcp.h
-> index 149a415..6bfdd9b 100644
-> --- a/include/net/tcp.h
-> +++ b/include/net/tcp.h
-> @@ -230,7 +230,6 @@ extern int sysctl_tcp_fack;
->  extern int sysctl_tcp_reordering;
->  extern int sysctl_tcp_ecn;
->  extern int sysctl_tcp_dsack;
-> -extern long sysctl_tcp_mem[3];
->  extern int sysctl_tcp_wmem[3];
->  extern int sysctl_tcp_rmem[3];
->  extern int sysctl_tcp_app_win;
-> diff --git a/net/ipv4/sysctl_net_ipv4.c b/net/ipv4/sysctl_net_ipv4.c
-> index 69fd720..0d74b9d 100644
-> --- a/net/ipv4/sysctl_net_ipv4.c
-> +++ b/net/ipv4/sysctl_net_ipv4.c
-> @@ -14,6 +14,7 @@
->  #include <linux/init.h>
->  #include <linux/slab.h>
->  #include <linux/nsproxy.h>
-> +#include <linux/swap.h>
->  #include <net/snmp.h>
->  #include <net/icmp.h>
->  #include <net/ip.h>
-> @@ -174,6 +175,36 @@ static int proc_allowed_congestion_control(ctl_table *ctl,
->  	return ret;
->  }
->  
-> +static int ipv4_tcp_mem(ctl_table *ctl, int write,
-> +			   void __user *buffer, size_t *lenp,
-> +			   loff_t *ppos)
-> +{
-> +	int ret;
-> +	unsigned long vec[3];
-> +	struct net *net = current->nsproxy->net_ns;
-> +	int i;
-> +
-> +	ctl_table tmp = {
-> +		.data = &vec,
-> +		.maxlen = sizeof(vec),
-> +		.mode = ctl->mode,
-> +	};
-> +
-> +	if (!write) {
-> +		ctl->data = &net->ipv4.sysctl_tcp_mem;
-> +		return proc_doulongvec_minmax(ctl, write, buffer, lenp, ppos);
-> +	}
-> +
-> +	ret = proc_doulongvec_minmax(&tmp, write, buffer, lenp, ppos);
-> +	if (ret)
-> +		return ret;
-> +
-> +	for (i = 0; i < 3; i++)
-> +		net->ipv4.sysctl_tcp_mem[i] = vec[i];
-> +
-> +	return 0;
-> +}
-> +
->  static struct ctl_table ipv4_table[] = {
->  	{
->  		.procname	= "tcp_timestamps",
-> @@ -433,13 +464,6 @@ static struct ctl_table ipv4_table[] = {
->  		.proc_handler	= proc_dointvec
->  	},
->  	{
-> -		.procname	= "tcp_mem",
-> -		.data		= &sysctl_tcp_mem,
-> -		.maxlen		= sizeof(sysctl_tcp_mem),
-> -		.mode		= 0644,
-> -		.proc_handler	= proc_doulongvec_minmax
-> -	},
-> -	{
->  		.procname	= "tcp_wmem",
->  		.data		= &sysctl_tcp_wmem,
->  		.maxlen		= sizeof(sysctl_tcp_wmem),
-> @@ -721,6 +745,12 @@ static struct ctl_table ipv4_net_table[] = {
->  		.mode		= 0644,
->  		.proc_handler	= ipv4_ping_group_range,
->  	},
-> +	{
-> +		.procname	= "tcp_mem",
-> +		.maxlen		= sizeof(init_net.ipv4.sysctl_tcp_mem),
-> +		.mode		= 0644,
-> +		.proc_handler	= ipv4_tcp_mem,
-> +	},
->  	{ }
->  };
->  
-
-
-
-
-> @@ -734,6 +764,7 @@ EXPORT_SYMBOL_GPL(net_ipv4_ctl_path);
->  static __net_init int ipv4_sysctl_init_net(struct net *net)
->  {
->  	struct ctl_table *table;
-> +	unsigned long limit;
->  
->  	table = ipv4_net_table;
->  	if (!net_eq(net, &init_net)) {
-> @@ -769,6 +800,12 @@ static __net_init int ipv4_sysctl_init_net(struct net *net)
->  
->  	net->ipv4.sysctl_rt_cache_rebuild_count = 4;
->  
-> +	limit = nr_free_buffer_pages() / 8;
-> +	limit = max(limit, 128UL);
-> +	net->ipv4.sysctl_tcp_mem[0] = limit / 4 * 3;
-> +	net->ipv4.sysctl_tcp_mem[1] = limit;
-> +	net->ipv4.sysctl_tcp_mem[2] = net->ipv4.sysctl_tcp_mem[0] * 2;
-> +
->  	net->ipv4.ipv4_hdr = register_net_sysctl_table(net,
->  			net_ipv4_ctl_path, table);
->  	if (net->ipv4.ipv4_hdr == NULL)
-> diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-> index 46febca..f06df24 100644
-> --- a/net/ipv4/tcp.c
-> +++ b/net/ipv4/tcp.c
-> @@ -266,6 +266,7 @@
->  #include <linux/crypto.h>
->  #include <linux/time.h>
->  #include <linux/slab.h>
-> +#include <linux/nsproxy.h>
->  
->  #include <net/icmp.h>
->  #include <net/tcp.h>
-> @@ -282,11 +283,9 @@ int sysctl_tcp_fin_timeout __read_mostly = TCP_FIN_TIMEOUT;
->  struct percpu_counter tcp_orphan_count;
->  EXPORT_SYMBOL_GPL(tcp_orphan_count);
->  
-> -long sysctl_tcp_mem[3] __read_mostly;
->  int sysctl_tcp_wmem[3] __read_mostly;
->  int sysctl_tcp_rmem[3] __read_mostly;
->  
-> -EXPORT_SYMBOL(sysctl_tcp_mem);
->  EXPORT_SYMBOL(sysctl_tcp_rmem);
->  EXPORT_SYMBOL(sysctl_tcp_wmem);
->  
-> @@ -3277,14 +3276,10 @@ void __init tcp_init(void)
->  	sysctl_tcp_max_orphans = cnt / 2;
->  	sysctl_max_syn_backlog = max(128, cnt / 256);
->  
-> -	limit = nr_free_buffer_pages() / 8;
-> -	limit = max(limit, 128UL);
-> -	sysctl_tcp_mem[0] = limit / 4 * 3;
-> -	sysctl_tcp_mem[1] = limit;
-> -	sysctl_tcp_mem[2] = sysctl_tcp_mem[0] * 2;
-> -
->  	/* Set per-socket limits to no more than 1/128 the pressure threshold */
-> -	limit = ((unsigned long)sysctl_tcp_mem[1]) << (PAGE_SHIFT - 7);
-> +	limit = (unsigned long)init_net.ipv4.sysctl_tcp_mem[1];
-> +	limit <<= (PAGE_SHIFT - 7);
-> +
-
-I'm not sure but...why defined as 'long'  ?
-
-
-
-BTW, when I grep,
-
-tcp_input.c:        atomic_long_read(&tcp_memory_allocated) < sysctl_tcp_mem[0])
-tcp_input.c:    if (atomic_long_read(&tcp_memory_allocated) >= sysctl_tcp_mem[0])
-
-Don't you need to change this ?
-
-
-
-Thanks,
--Kame
-
-
-
-
-
-
-
+-barry
