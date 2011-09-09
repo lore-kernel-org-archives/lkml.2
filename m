@@ -1,45 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933699Ab1IILNI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 07:13:08 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:36204 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933516Ab1IILNG (ORCPT
+	id S1758761Ab1IILQa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 07:16:30 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:48974 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758712Ab1IILQ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 07:13:06 -0400
-From: Pedro Alves <pedro@codesourcery.com>
-Organization: CodeSourcery
-To: Denys Vlasenko <dvlasenk@redhat.com>
-Subject: Re: [PATCH v3] Make PTRACE_SEIZE set ptrace options specified in 'data'
-Date: Fri, 9 Sep 2011 12:12:59 +0100
-User-Agent: KMail/1.13.6 (Linux/2.6.38-11-generic; KDE/4.7.0; x86_64; ; )
-Cc: Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org,
-        Denys Vlasenko <vda.linux@googlemail.com>
-References: <1315506333.18043.49.camel@dhcp-25-63.brq.redhat.com>
-In-Reply-To: <1315506333.18043.49.camel@dhcp-25-63.brq.redhat.com>
+	Fri, 9 Sep 2011 07:16:29 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201109091212.59889.pedro@codesourcery.com>
-X-OriginalArrivalTime: 09 Sep 2011 11:13:02.0528 (UTC) FILETIME=[70C0C400:01CC6EE1]
+In-Reply-To: <CAF5Aa4O5SmmjJUviGkPCTH3iGm3kh71X7G2o6ZeTUP3q6aX+qQ@mail.gmail.com>
+References: <CAF5Aa4Mp9oN-rgSwoXXrV7ymYj0JTMVZhj+emzY9DNoBMEnr=A@mail.gmail.com>
+	<CAF5Aa4MfPu2sVTnTh-eeFHScW9ttobVd4_XV6Ygs9asN8yY=bw@mail.gmail.com>
+	<CAF5Aa4O5SmmjJUviGkPCTH3iGm3kh71X7G2o6ZeTUP3q6aX+qQ@mail.gmail.com>
+Date: Fri, 9 Sep 2011 16:46:29 +0530
+Message-ID: <CAF5Aa4Njsi_KQHJLTO4e5T0JeKFm7NgOeadywBVjkLCy=C+zOA@mail.gmail.com>
+Subject: hw rng
+From: jyothi v <jyos.v.s@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 08 September 2011 19:22:04, Denys Vlasenko wrote:
-> Make PTRACE_SEIZE set ptrace options specified in 'data' parameter
->     
-> This can be used to close a few corner cases in strace where we get
-> unwanted racy behavior after attach, but before we have a chance
-> to set options (the notorious post-execve SIGTRAP comes to mind),
+Hi,
+Linux provides hardware random registry.
+I would like to know how is it useful.
+Is there any RNG system calls/APIs for generating random numbers at
+Linux user space?
+If I need random data at user space application, what should I do?
 
-I'm still confused on why you're raising the SIGTRAP argument.  Did you see
-
- https://lkml.org/lkml/2011/9/8/7
-
-?
-
--- 
-Pedro Alves
+thanks in advance,
+jyothi
