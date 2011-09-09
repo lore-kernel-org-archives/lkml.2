@@ -1,55 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758799Ab1IIM3J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 08:29:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57013 "EHLO mx1.redhat.com"
+	id S1758813Ab1IIMa7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 08:30:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56696 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758784Ab1IIM3I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 08:29:08 -0400
-Subject: Re: [PATCH v3] Make PTRACE_SEIZE set ptrace options specified in
- 'data'
-From: Denys Vlasenko <dvlasenk@redhat.com>
-To: Pedro Alves <pedro@codesourcery.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org,
-        Denys Vlasenko <vda.linux@googlemail.com>
-Date: Fri, 09 Sep 2011 14:28:55 +0200
-In-Reply-To: <201109091212.59889.pedro@codesourcery.com>
-References: <1315506333.18043.49.camel@dhcp-25-63.brq.redhat.com>
-	 <201109091212.59889.pedro@codesourcery.com>
-Content-Type: text/plain; charset="UTF-8"
+	id S1757198Ab1IIMa6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Sep 2011 08:30:58 -0400
+Message-ID: <4E6A0700.9030401@suse.cz>
+Date: Fri, 09 Sep 2011 14:30:56 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+MIME-Version: 1.0
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC] Kbuild: allow code re-use across different directories
+References: <1313800642-32418-1-git-send-email-lacombar@gmail.com>
+In-Reply-To: <1313800642-32418-1-git-send-email-lacombar@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-2
 Content-Transfer-Encoding: 7bit
-Message-ID: <1315571337.4127.3.camel@dhcp-25-63.brq.redhat.com>
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-09-09 at 12:12 +0100, Pedro Alves wrote:
-> On Thursday 08 September 2011 19:22:04, Denys Vlasenko wrote:
-> > Make PTRACE_SEIZE set ptrace options specified in 'data' parameter
-> >     
-> > This can be used to close a few corner cases in strace where we get
-> > unwanted racy behavior after attach, but before we have a chance
-> > to set options (the notorious post-execve SIGTRAP comes to mind),
+On 20.8.2011 02:37, Arnaud Lacombe wrote:
+> Hi folks,
 > 
-> I'm still confused on why you're raising the SIGTRAP argument.  Did you see
+> The attached patch modify Kbuild to allow to directly re-use code in multiple
+> directory without having to go through a copy. Technically, it changes Kbuild to
+> use by default the VPATH feature of GNU make and provides accessors for Makefile
+> to change it indirectly.
 > 
->  https://lkml.org/lkml/2011/9/8/7
+> Considering:
 > 
-> From previous discussions, I understood that PTRACE_SEIZE _always_
-> disables
-> the post-execve SIGTRAP, so I don't believe that race actually exists.
-> Or is that not the case?
+> arch/foo/lib:
+> fancy.c
+> 
+> We want to be able to build it with -DPANTS=32 in the kernel, but the
+> bootloader requires -DPANTS_SIZE=30.
+> 
+> Currently we would do, either:
+> 
+> arch/foo/lib/Makefile
+> LDFLAGS_fancy.o := -DPANTS=32
+> obj-y += fancy.o
+> 
+> and, either:
+> 
+> arch/foo/boot/Makefile:
+> LDFLAGS_fancy.o := -DPANTS=30
+> obj-y += fancy.o
+> $(obj)/fancy.c: $(srctree)/arch/foo/lib/fancy.c
+> 	$(call cmd,shipped)
+> 
+> or
+> 
+> arch/foo/boot/Makefile:
+> LDFLAGS_fancy.o := -DPANTS=30
+> obj-y += fancy.o
+> $(obj)/fancy.o: $(srctree)/arch/foo/lib/fancy.c
+> 	$(call cmd,cc_c_o)
+> 
+> The former implies an extra copy of the source file, the latter expose Kbuild
+> internal function.
+> 
+> With the attached patch, we would do:
+> 
+> arch/foo/boot/Makefile:
+> LDFLAGS_fancy.o := -DPANTS=30
+> obj-y += fancy.o
+> vpath-y += $(srctree)/arch/foo/lib
+> 
+> and let GNU make do the job.
 
+I like this. The only issue I can think of right now, is that if you add
+a large directory to vpath-y, then it would be easy to accidentally
+reuse more files from that directory than intended. But that could be
+easily prevented by isolating those reusable source files.
 
-I believe it is not the case. And I object to making it the case.
-My sense of taste says the approach "you need to use SEIZE to affect
-feature <foo>" for various unrelated <foo> makes ptrace API ugly.
-Especially that in this case, we already have a method in API
-to suppress post-execve SIGTRAP.
-
--- 
-vda
-
-
+Michal
