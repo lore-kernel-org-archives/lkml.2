@@ -1,86 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759769Ab1IIScP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 14:32:15 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:38866 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759754Ab1IIScK (ORCPT
+	id S933045Ab1IISnk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 14:43:40 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:49670 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759438Ab1IISnj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 14:32:10 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org
-Cc: xen-devel@lists.xensource.com, JBeulich@novell.com,
-        jeremy.fitzhardinge@citrix.com, axboe@kernel.dk,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, stable@kernel.org
-Subject: [PATCH 3/3] xen-blkfront: If no barrier or flush is supported, use invalid operation.
-Date: Fri,  9 Sep 2011 14:31:00 -0400
-Message-Id: <1315593060-20031-3-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1315593060-20031-1-git-send-email-konrad.wilk@oracle.com>
-References: <1315593060-20031-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4E6A5B80.006A:SCFMA922111,ss=1,re=-4.000,fgs=0
+	Fri, 9 Sep 2011 14:43:39 -0400
+MIME-Version: 1.0
+X-Originating-IP: [75.247.211.172]
+In-Reply-To: <20110909173455.GH2435@linux.vnet.ibm.com>
+References: <20110906180015.GA2560@linux.vnet.ibm.com>
+	<1315332049-2604-48-git-send-email-paulmck@linux.vnet.ibm.com>
+	<CAOesGMi--W6TCUMZzF07-Zep9Ta3tBJWZcG+5imEK_Hza0y9Jg@mail.gmail.com>
+	<20110909173455.GH2435@linux.vnet.ibm.com>
+Date: Fri, 9 Sep 2011 11:43:38 -0700
+Message-ID: <CAOesGMj4WssrZQEWs09F45s16Bxv7F1q6Qv_4FZG3+rW2sddNg@mail.gmail.com>
+Subject: Re: [PATCH tip/core/rcu 48/55] powerpc: strengthen
+ value-returning-atomics memory barriers
+From: Olof Johansson <olof@lixom.net>
+To: paulmck@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, patches@linaro.org, anton@samba.org,
+        benh@kernel.crashing.org, paulus@samba.org, linuxppc-dev@ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By default we would set the info->flush_op=0, and zero maps
-to BLKIF_OP_READ request code. So if the backend did not support
-either barrier ('feature-barrier') or flush ('feature-flush-cache')
-we would end up using that opcode for the flush/barrier request, meaning
-we actually do a READ request. Fortunatly for us, __generic_make_request
-checks q->flush_flags and realizes that we don't do FLUSH and removes
-the REQ_FLUSH | REQ_FUA so we never end up issuing a READ request
-for a flush request. However, other third party implementations of
-__make_request might not be so smart, so lets fix this up.
+On Fri, Sep 9, 2011 at 10:34 AM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> On Fri, Sep 09, 2011 at 10:23:33AM -0700, Olof Johansson wrote:
+>> [+linuxppc-dev]
+>>
+>> On Tue, Sep 6, 2011 at 11:00 AM, Paul E. McKenney
+>> <paulmck@linux.vnet.ibm.com> wrote:
+>> > The trailing isync/lwsync in PowerPC value-returning atomics needs
+>> > to be a sync in order to provide the required ordering properties.
+>> > The leading lwsync/eieio can remain, as the remainder of the required
+>> > ordering guarantees are provided by the atomic instructions: Any
+>> > reordering will cause the stwcx to fail, which will result in a retry.
+>>
+>> Admittedly, my powerpc barrier memory is starting to fade, but isn't
+>> isync sufficient here? It will make sure all instructions before it
+>> have retired, and will restart any speculative/issued instructions
+>> beyond it.
+>>
+>> lwsync not being sufficient makes sense since a load can overtake it.
+>
+> As I understand it, although isync waits for the prior stwcx to execute,
+> it does not guarantee that the corresponding store is visible to all
+> processors before any following loads.
 
-CC: stable@kernel.org
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/block/xen-blkfront.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+Ah yes, combined with brushing up on the semantics in
+memory-barriers.txt, this sounds reasonable to me.
 
-diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
-index e205d91..c4aa9da 100644
---- a/drivers/block/xen-blkfront.c
-+++ b/drivers/block/xen-blkfront.c
-@@ -97,7 +97,7 @@ struct blkfront_info
- 	struct blk_shadow shadow[BLK_RING_SIZE];
- 	unsigned long shadow_free;
- 	unsigned int feature_flush;
--	unsigned int flush_op;
-+	int flush_op;
- 	unsigned int feature_discard;
- 	unsigned int discard_granularity;
- 	unsigned int discard_alignment;
-@@ -774,7 +774,7 @@ static irqreturn_t blkif_interrupt(int irq, void *dev_id)
- 				if (error == -EOPNOTSUPP)
- 					error = 0;
- 				info->feature_flush = 0;
--				info->flush_op = 0;
-+				info->flush_op = -1; /* 0 is BLKIF_OP_READ */
- 				xlvbd_flush(info);
- 			}
- 			/* fall through */
-@@ -1207,7 +1207,7 @@ static void blkfront_connect(struct blkfront_info *info)
- 	}
- 
- 	info->feature_flush = 0;
--	info->flush_op = 0;
-+	info->flush_op = -1; /* 0 is BLKIF_OP_READ */
- 
- 	err = xenbus_gather(XBT_NIL, info->xbdev->otherend,
- 			    "feature-barrier", "%d", &barrier,
-@@ -1234,7 +1234,7 @@ static void blkfront_connect(struct blkfront_info *info)
- 	if (!err && flush)
- 		info->flush_op = BLKIF_OP_FLUSH_DISKCACHE;
- 
--	if (info->flush_op)
-+	if (info->flush_op > 0)
- 		info->feature_flush = REQ_FLUSH | REQ_FUA;
- 
- 	err = xenbus_gather(XBT_NIL, info->xbdev->otherend,
--- 
-1.7.4.1
+>> > diff --git a/arch/powerpc/include/asm/synch.h b/arch/powerpc/include/asm/synch.h
+>> > index d7cab44..4d97fbe 100644
+>> > --- a/arch/powerpc/include/asm/synch.h
+>> > +++ b/arch/powerpc/include/asm/synch.h
+>> > @@ -37,11 +37,7 @@ static inline void isync(void)
+>> >  #endif
+>> >
+>> >  #ifdef CONFIG_SMP
+>> > -#define __PPC_ACQUIRE_BARRIER                          \
+>> > -       START_LWSYNC_SECTION(97);                       \
+>> > -       isync;                                          \
+>> > -       MAKE_LWSYNC_SECTION_ENTRY(97, __lwsync_fixup);
+>> > -#define PPC_ACQUIRE_BARRIER    "\n" stringify_in_c(__PPC_ACQUIRE_BARRIER)
+>> > +#define PPC_ACQUIRE_BARRIER    "\n" stringify_in_c(sync;)
+>>
+>> This can just be done as "\n\tsync\n" instead of the stringify stuff.
+>
+> That does sound a bit more straightforward, now that you mention it.  ;-)
 
+With that change, I'm:
+
+Acked-by: Olof Johansson <olof@lixom.net>
+
+But at least Ben or Anton should sign off on it too.
+
+
+-Olof
