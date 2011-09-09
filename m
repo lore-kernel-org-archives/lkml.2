@@ -1,124 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758259Ab1IIBPl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 21:15:41 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:31150 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932201Ab1IIBL3 (ORCPT
+	id S1758274Ab1IIBQQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 21:16:16 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:55252 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932153Ab1IIBL0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 21:11:29 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6463"; a="116679218"
-Message-Id: <20110909010916.422373448@codeaurora.org>
+	Thu, 8 Sep 2011 21:11:26 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6463"; a="116864722"
+Message-Id: <20110909010916.616586936@codeaurora.org>
 User-Agent: quilt/0.48-1
-Date: Thu, 08 Sep 2011 20:09:05 -0500
+Date: Thu, 08 Sep 2011 20:09:07 -0500
 From: Richard Kuo <rkuo@codeaurora.org>
 To: linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [patch v3 18/36] Hexagon: Add time and timer functions
+Cc: Linas Vepstas <linas@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>
+Subject: [patch v3 20/36] Hexagon: Provide basic debugging and system trap support.
 References: <20110909010847.294039464@codeaurora.org>
-Content-Disposition: inline; filename=timer.diff
+Content-Disposition: inline; filename=traps.diff
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cleaned up iomem and register declarations, unnecessary
-SMP ifdefs, cpu_relax() in udelay.
-
-Platform stuff is in development; platform defines will be cleaned up.
-
 Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
+Signed-off-by: Linas Vepstas <linas@codeaurora.org>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 
 ---
- arch/hexagon/include/asm/time.h       |   29 +++
- arch/hexagon/include/asm/timer-regs.h |   39 ++++
- arch/hexagon/kernel/time.c            |  275 ++++++++++++++++++++++++++++++++++
- 3 files changed, 343 insertions(+)
+ arch/hexagon/include/asm/traps.h |   29 +++
+ arch/hexagon/kernel/traps.c      |  356 +++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 385 insertions(+)
 
-Index: linux-hexagon-kernel/arch/hexagon/include/asm/time.h
+Index: linux-hexagon-kernel/arch/hexagon/kernel/traps.c
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/include/asm/time.h	2011-09-07 13:00:30.970646848 -0500
-@@ -0,0 +1,29 @@
++++ linux-hexagon-kernel/arch/hexagon/kernel/traps.c	2011-09-03 20:14:59.694981307 -0500
+@@ -0,0 +1,356 @@
 +/*
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#ifndef ASM_TIME_H
-+#define ASM_TIME_H
-+
-+extern cycles_t        pcycle_freq_mhz;
-+extern cycles_t        thread_freq_mhz;
-+extern cycles_t        sleep_clk_freq;
-+
-+void setup_percpu_clockdev(void);
-+void ipi_timer(void);
-+
-+#endif
-Index: linux-hexagon-kernel/arch/hexagon/include/asm/timer-regs.h
-===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/include/asm/timer-regs.h	2011-09-07 13:00:30.970646848 -0500
-@@ -0,0 +1,39 @@
-+/*
-+ * Timer support for Hexagon
-+ *
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#ifndef _ASM_TIMER_REGS_H
-+#define _ASM_TIMER_REGS_H
-+
-+/*  This stuff should go into a platform specific file  */
-+#define TCX0_CLK_RATE		19200
-+#define TIMER_ENABLE		0
-+#define TIMER_CLR_ON_MATCH	1
-+
-+/*
-+ * 8x50 HDD Specs 5-8.  Simulator co-sim not fixed until
-+ * release 1.1, and then it's "adjustable" and probably not defaulted.
-+ */
-+#define RTOS_TIMER_INT		3
-+#ifdef CONFIG_HEXAGON_COMET
-+#define RTOS_TIMER_REGS_ADDR	0xAB000000UL
-+#endif
-+#define SLEEP_CLK_RATE		32000
-+
-+#endif
-Index: linux-hexagon-kernel/arch/hexagon/kernel/time.c
-===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/kernel/time.c	2011-09-07 13:00:31.160647137 -0500
-@@ -0,0 +1,275 @@
-+/*
-+ * Time related functions for Hexagon architecture
++ * Kernel traps/events for Hexagon processor
 + *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
@@ -138,260 +57,375 @@ Index: linux-hexagon-kernel/arch/hexagon/kernel/time.c
 + */
 +
 +#include <linux/init.h>
-+#include <linux/clockchips.h>
-+#include <linux/clocksource.h>
-+#include <linux/interrupt.h>
-+#include <linux/err.h>
-+#include <linux/platform_device.h>
-+#include <linux/ioport.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/of_irq.h>
++#include <linux/sched.h>
++#include <linux/module.h>
++#include <linux/kallsyms.h>
++#include <linux/kdebug.h>
++#include <linux/syscalls.h>
++#include <linux/signal.h>
++#include <linux/tracehook.h>
++#include <asm/traps.h>
++#include <asm/vm_fault.h>
++#include <asm/syscall.h>
++#include <asm/registers.h>
++#include <asm/unistd.h>
++#ifdef CONFIG_KGDB
++# include <linux/kgdb.h>
++#endif
 +
-+#include <asm/timer-regs.h>
-+#include <asm/hexagon_vm.h>
++#define TRAP_SYSCALL	1
++#define TRAP_DEBUG	0xdb
 +
-+/*
-+ * For the clocksource we need:
-+ *	pcycle frequency (600MHz)
-+ * For the loops_per_jiffy we need:
-+ *	thread/cpu frequency (100MHz)
-+ * And for the timer, we need:
-+ *	sleep clock rate
-+ */
-+
-+cycles_t	pcycle_freq_mhz;
-+cycles_t	thread_freq_mhz;
-+cycles_t	sleep_clk_freq;
-+
-+static struct resource rtos_timer_resources[] = {
-+	{
-+		.start	= RTOS_TIMER_REGS_ADDR,
-+		.end	= RTOS_TIMER_REGS_ADDR+PAGE_SIZE-1,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+};
-+
-+static struct platform_device rtos_timer_device = {
-+	.name		= "rtos_timer",
-+	.id		= -1,
-+	.num_resources	= ARRAY_SIZE(rtos_timer_resources),
-+	.resource	= rtos_timer_resources,
-+};
-+
-+/*  A lot of this stuff should move into a platform specific section.  */
-+struct adsp_hw_timer_struct {
-+	u32 match;   /*  Match value  */
-+	u32 count;
-+	u32 enable;  /*  [1] - CLR_ON_MATCH_EN, [0] - EN  */
-+	u32 clear;   /*  one-shot register that clears the count  */
-+};
-+
-+/*  Look for "TCX0" for related constants.  */
-+static __iomem struct adsp_hw_timer_struct *rtos_timer;
-+
-+void debug_adsp_timers(void)
++void __init trap_init(void)
 +{
-+	printk(KERN_INFO "rtos_timer->match=0x%08x\n", rtos_timer->match);
-+	printk(KERN_INFO "rtos_timer->count=%d\n", rtos_timer->count);
-+	printk(KERN_INFO "rtos_timer->enable=%d\n", rtos_timer->enable);
-+	printk(KERN_INFO "rtos_timer->clear=%d\n", rtos_timer->clear);
 +}
 +
-+static cycle_t timer_get_cycles(struct clocksource *cs)
++#ifdef CONFIG_GENERIC_BUG
++/* Maybe should resemble arch/sh/kernel/traps.c ?? */
++int is_valid_bugaddr(unsigned long addr)
 +{
-+	return (cycle_t) __vmgettime();
++	return 1;
++}
++#endif /* CONFIG_GENERIC_BUG */
++
++void show_stack(struct task_struct *task, unsigned long *fp)
++{
++	int kstack_depth_to_print = 20;
++	unsigned long offset, size;
++	const char *name = NULL;
++	unsigned long *newfp;
++	unsigned long ip;
++	char tmpstr[128];
++	char *modname;
++	int i;
++
++	if (task == NULL)
++		task = current;
++
++	if (fp == NULL) {
++		if (task == current) {
++			asm("%0 = r30" : "=r" (fp));
++		} else {
++			fp = (unsigned long *)
++			     ((struct hexagon_switch_stack *)
++			     task->thread.switch_sp)->fp;
++		}
++	}
++
++	printk(KERN_INFO "CPU#%d, %s/%d, Call Trace:\n",
++	       raw_smp_processor_id(), current->comm,
++	       task_pid_nr(current));
++	for (i = 0; i < kstack_depth_to_print; i++) {
++		if (0 /* Check irq stack at some point */)
++			printk(KERN_INFO " <EOI> ");
++		else if (((long) fp & (THREAD_SIZE-1)) == 0)
++			break;
++
++		newfp = (unsigned long *) *fp;
++
++		ip = *(unsigned long *)((char *)fp + sizeof(unsigned long));
++		name = kallsyms_lookup(ip, &size, &offset, &modname, tmpstr);
++
++		printk(KERN_INFO "[%p] 0x%lx: %s + 0x%lx", fp, ip, name,
++			offset);
++		if (modname)
++			printk(KERN_CONT " [%s] ", modname);
++		if (i == 0)
++			printk(KERN_CONT " (unreliable)");
++		printk(KERN_CONT "\n");
++
++		/* If newfp isn't larger, we're tracing garbage */
++		if (newfp > fp)
++			fp = newfp;
++		else
++			break;
++	}
 +}
 +
-+static struct clocksource hexagon_clocksource = {
-+	.name		= "pcycles",
-+	.rating		= 250,
-+	.shift		= 16,
-+	.read		= timer_get_cycles,
-+	.mask		= CLOCKSOURCE_MASK(64),
-+	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
-+};
-+
-+static int set_next_event(unsigned long delta, struct clock_event_device *evt)
++void dump_state(struct pt_regs *regs)
 +{
-+	/*  Assuming the timer will be disabled when we enter here.  */
-+	rtos_timer->clear = 1;
-+	rtos_timer->clear = 0;
++	show_regs(regs);
++	show_stack(current, &regs->r30);
++}
 +
-+	/*  Does this need massaging?  */
-+	rtos_timer->match = delta;
-+	rtos_timer->enable = 1 << TIMER_ENABLE;
++void dump_stack(void)
++{
++	show_stack(current, NULL);
++}
++EXPORT_SYMBOL(dump_stack);
++
++int die(const char *str, struct pt_regs *regs, long err)
++{
++	static struct {
++		spinlock_t lock;
++		int counter;
++	} die = {
++		.lock = __SPIN_LOCK_UNLOCKED(die.lock),
++		.counter = 0
++	};
++
++	spin_lock_irq(&die.lock);
++	bust_spinlocks(1);
++	printk(KERN_INFO "%s[#%d]:\n", str, ++die.counter);
++
++	if (notify_die(DIE_OOPS, str, regs, err, pt_cause(regs), SIGSEGV) ==
++	    NOTIFY_STOP)
++		return 1;
++
++	print_modules();
++	dump_state(regs);
++
++	do_exit(err);
 +	return 0;
 +}
 +
-+/*
-+ * Sets the mode (periodic, shutdown, oneshot, etc) of a timer.
-+ */
-+static void set_mode(enum clock_event_mode mode,
-+	struct clock_event_device *evt)
++int die_if_kernel(char *str, struct pt_regs *regs, long err)
 +{
-+	switch (mode) {
-+	case CLOCK_EVT_MODE_SHUTDOWN:
-+		/* XXX implement me */
++	if (!user_mode(regs))
++		return die(str, regs, err);
++	else
++		return 0;
++}
++
++/*
++ * It's not clear that misaligned fetches are ever recoverable.
++ */
++static void misaligned_instruction(struct pt_regs *regs)
++{
++	die_if_kernel("Misaligned Instruction", regs, 0);
++	force_sig(SIGBUS, current);
++}
++
++/*
++ * Misaligned loads and stores, on the other hand, can be
++ * emulated, and probably should be, some day.  But for now
++ * they will be considered fatal.
++ */
++static void misaligned_data_load(struct pt_regs *regs)
++{
++	die_if_kernel("Misaligned Data Load", regs, 0);
++	force_sig(SIGBUS, current);
++}
++
++static void misaligned_data_store(struct pt_regs *regs)
++{
++	die_if_kernel("Misaligned Data Store", regs, 0);
++	force_sig(SIGBUS, current);
++}
++
++static void illegal_instruction(struct pt_regs *regs)
++{
++	die_if_kernel("Illegal Instruction", regs, 0);
++	force_sig(SIGILL, current);
++}
++
++/*
++ * Precise bus errors may be recoverable with a a retry,
++ * but for now, treat them as irrecoverable.
++ */
++static void precise_bus_error(struct pt_regs *regs)
++{
++	die_if_kernel("Precise Bus Error", regs, 0);
++	force_sig(SIGBUS, current);
++}
++
++/*
++ * If anything is to be done here other than panic,
++ * it will probably be complex and migrate to another
++ * source module.  For now, just die.
++ */
++static void cache_error(struct pt_regs *regs)
++{
++	die("Cache Error", regs, 0);
++}
++
++/*
++ * General exception handler
++ */
++void do_genex(struct pt_regs *regs)
++{
++
++	/*
++	 * Decode Cause and Dispatch
++	 */
++	switch (pt_cause(regs)) {
++	case HVM_GE_C_XPROT:
++	case HVM_GE_C_XUSER:
++		execute_protection_fault(regs);
++		break;
++	case HVM_GE_C_RPROT:
++	case HVM_GE_C_RUSER:
++		read_protection_fault(regs);
++		break;
++	case HVM_GE_C_WPROT:
++	case HVM_GE_C_WUSER:
++		write_protection_fault(regs);
++		break;
++	case HVM_GE_C_XMAL:
++		misaligned_instruction(regs);
++		break;
++	case HVM_GE_C_RMAL:
++		misaligned_data_load(regs);
++		break;
++	case HVM_GE_C_WMAL:
++		misaligned_data_store(regs);
++		break;
++	case HVM_GE_C_INVI:
++	case HVM_GE_C_PRIVI:
++		illegal_instruction(regs);
++		break;
++	case HVM_GE_C_BUS:
++		precise_bus_error(regs);
++		break;
++	case HVM_GE_C_CACHE:
++		cache_error(regs);
++		break;
 +	default:
++		/* Halt and catch fire */
++		panic("Unrecognized exception 0x%lx\n", pt_cause(regs));
 +		break;
 +	}
 +}
 +
-+#ifdef CONFIG_SMP
-+/*  Broadcast mechanism  */
-+static void broadcast(const struct cpumask *mask)
++/* Indirect system call dispatch */
++long sys_syscall(void)
 +{
-+	send_ipi(mask, IPI_TIMER);
++	printk(KERN_ERR "sys_syscall invoked!\n");
++	return -ENOSYS;
 +}
++
++void do_trap0(struct pt_regs *regs)
++{
++	unsigned long syscallret = 0;
++	syscall_fn syscall;
++
++	switch (pt_cause(regs)) {
++	case TRAP_SYSCALL:
++		/* System call is trap0 #1 */
++
++		/* allow strace to catch syscall args  */
++		if (unlikely(test_thread_flag(TIF_SYSCALL_TRACE) &&
++			tracehook_report_syscall_entry(regs)))
++			return;  /*  return -ENOSYS somewhere?  */
++
++		/* Interrupts should be re-enabled for syscall processing */
++		__vmsetie(VM_INT_ENABLE);
++
++		/*
++		 * System call number is in r6, arguments in r0..r5.
++		 * Fortunately, no Linux syscall has more than 6 arguments,
++		 * and Hexagon ABI passes first 6 arguments in registers.
++		 * 64-bit arguments are passed in odd/even register pairs.
++		 * Fortunately, we have no system calls that take more
++		 * than three arguments with more than one 64-bit value.
++		 * Should that change, we'd need to redesign to copy
++		 * between user and kernel stacks.
++		 */
++		regs->syscall_nr = regs->r06;
++
++		/*
++		 * GPR R0 carries the first parameter, and is also used
++		 * to report the return value.  We need a backup of
++		 * the user's value in case we need to do a late restart
++		 * of the system call.
++		 */
++		regs->restart_r0 = regs->r00;
++
++		if ((unsigned long) regs->syscall_nr >= __NR_syscalls) {
++			regs->r00 = -1;
++		} else {
++			syscall = (syscall_fn)
++				  (sys_call_table[regs->syscall_nr]);
++			syscallret = syscall(regs->r00, regs->r01,
++				   regs->r02, regs->r03,
++				   regs->r04, regs->r05);
++		}
++
++		/*
++		 * If it was a sigreturn system call, don't overwrite
++		 * r0 value in stack frame with return value.
++		 *
++		 * __NR_sigreturn doesn't seem to exist in new unistd.h
++		 */
++
++		if (regs->syscall_nr != __NR_rt_sigreturn)
++			regs->r00 = syscallret;
++
++		/* allow strace to get the syscall return state  */
++		if (unlikely(test_thread_flag(TIF_SYSCALL_TRACE)))
++			tracehook_report_syscall_exit(regs, 0);
++
++		break;
++	case TRAP_DEBUG:
++		/* Trap0 0xdb is debug breakpoint */
++		if (user_mode(regs)) {
++			struct siginfo info;
++
++			info.si_signo = SIGTRAP;
++			info.si_errno = 0;
++			/*
++			 * Some architecures add some per-thread state
++			 * to distinguish between breakpoint traps and
++			 * trace traps.  We may want to do that, and
++			 * set the si_code value appropriately, or we
++			 * may want to use a different trap0 flavor.
++			 */
++			info.si_code = TRAP_BRKPT;
++			info.si_addr = (void __user *) pt_elr(regs);
++			send_sig_info(SIGTRAP, &info, current);
++		} else {
++#ifdef CONFIG_KGDB
++			kgdb_handle_exception(pt_cause(regs), SIGTRAP,
++					      TRAP_BRKPT, regs);
 +#endif
-+
-+static struct clock_event_device hexagon_clockevent_dev = {
-+	.name		= "clockevent",
-+	.features	= CLOCK_EVT_FEAT_ONESHOT,
-+	.rating		= 400,
-+	.shift		= 32,
-+	.irq		= RTOS_TIMER_INT,
-+	.set_next_event = set_next_event,
-+	.set_mode	= set_mode,
-+#ifdef CONFIG_SMP
-+	.broadcast	= broadcast,
-+#endif
-+};
-+
-+#ifdef CONFIG_SMP
-+static DEFINE_PER_CPU(struct clock_event_device, clock_events);
-+
-+void setup_percpu_clockdev(void)
-+{
-+	int cpu = smp_processor_id();
-+	struct clock_event_device *ce_dev = &hexagon_clockevent_dev;
-+	struct clock_event_device *dummy_clock_dev =
-+		&per_cpu(clock_events, cpu);
-+
-+	memcpy(dummy_clock_dev, ce_dev, sizeof(*dummy_clock_dev));
-+	INIT_LIST_HEAD(&dummy_clock_dev->list);
-+
-+	dummy_clock_dev->features = CLOCK_EVT_FEAT_DUMMY;
-+	dummy_clock_dev->cpumask = cpumask_of(cpu);
-+	dummy_clock_dev->mode = CLOCK_EVT_MODE_UNUSED;
-+
-+	clockevents_register_device(dummy_clock_dev);
-+}
-+
-+/*  Called from smp.c for each CPU's timer ipi call  */
-+void ipi_timer(void)
-+{
-+	int cpu = smp_processor_id();
-+	struct clock_event_device *ce_dev = &hexagon_clockevent_dev;
-+
-+	ce_dev = &per_cpu(clock_events, cpu);
-+	ce_dev->event_handler(ce_dev);
-+}
-+#endif /* CONFIG_SMP */
-+
-+static irqreturn_t timer_interrupt(int irq, void *devid)
-+{
-+	struct clock_event_device *ce_dev = &hexagon_clockevent_dev;
-+
-+	rtos_timer->enable = 0;
-+	ce_dev->event_handler(ce_dev);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+/*  This should also be pulled from devtree  */
-+static struct irqaction rtos_timer_intdesc = {
-+	.handler = timer_interrupt,
-+	.flags = IRQF_DISABLED | IRQF_TIMER | IRQF_TRIGGER_RISING,
-+	.name = "rtos_timer"
-+};
-+
-+void clocksource_debug(struct clocksource *cs)
-+{
-+	printk(KERN_DEBUG "cs->mult=0x%08x\n", cs->mult);
-+	printk(KERN_DEBUG "cs->shift=%d\n", cs->shift);
-+}
-+
-+void clockevent_debug(struct clock_event_device *ce)
-+{
-+	printk(KERN_DEBUG "ce->mult=0x%08x\n", ce->mult);
-+	printk(KERN_DEBUG "ce->shift=%d\n", ce->shift);
-+}
-+
-+/*
-+ * time_init_deferred - called by start_kernel to set up timer/clock source
-+ *
-+ * Install the IRQ handler for the clock, setup timers.
-+ * This is done late, as that way, we can use ioremap().
-+ *
-+ * This runs just before the delay loop is calibrated, and
-+ * is used for delay calibration.
-+ */
-+void __init time_init_deferred(void)
-+{
-+	struct resource *resource = NULL;
-+	struct clock_event_device *ce_dev = &hexagon_clockevent_dev;
-+	struct device_node *dn;
-+	struct resource r;
-+	int err;
-+
-+	ce_dev->cpumask = cpu_all_mask;
-+
-+	if (!resource)
-+		resource = rtos_timer_device.resource;
-+
-+	/*  ioremap here means this has to run later, after paging init  */
-+	rtos_timer = ioremap(resource->start, resource->end
-+		- resource->start + 1);
-+
-+	if (!rtos_timer) {
-+		release_mem_region(resource->start, resource->end
-+			- resource->start + 1);
++		}
++		break;
 +	}
-+	/*  Change to clocksource_register_khz in newer kernels  */
-+	clocksource_register_khz(&hexagon_clocksource, pcycle_freq_mhz * 1000);
-+	clocksource_debug(&hexagon_clocksource);
-+
-+	/*  Note: the sim generic RTOS clock is apparently really 18750Hz  */
-+
-+	/*
-+	 * Last arg is some guaranteed seconds for which the conversion will
-+	 * work without overflow.
-+	 */
-+	clockevents_calc_mult_shift(ce_dev, sleep_clk_freq, 4);
-+
-+	ce_dev->max_delta_ns = clockevent_delta2ns(0x7fffffff, ce_dev);
-+	ce_dev->min_delta_ns = clockevent_delta2ns(0xf, ce_dev);
-+
-+#ifdef CONFIG_SMP
-+	setup_percpu_clockdev();
-+#endif
-+
-+	clockevents_register_device(ce_dev);
-+	setup_irq(ce_dev->irq, &rtos_timer_intdesc);
-+}
-+
-+void __init time_init(void)
-+{
-+	late_time_init = time_init_deferred;
++	/* Ignore other trap0 codes for now, especially 0 (Angel calls) */
 +}
 +
 +/*
-+ * This could become parametric or perhaps even computed at run-time,
-+ * but for now we take the observed simulator jitter.
++ * Machine check exception handler
 + */
-+static long long fudgefactor = 350;  /* Maybe lower if kernel optimized. */
-+
-+void __udelay(unsigned long usecs)
++void do_machcheck(struct pt_regs *regs)
 +{
-+	unsigned long long start = __vmgettime();
-+	unsigned long long finish = (pcycle_freq_mhz * usecs) - fudgefactor;
-+
-+	while ((__vmgettime() - start) < finish)
-+		cpu_relax(); /*  not sure how this improves readability  */
++	/* Halt and catch fire */
++	__vmstop();
 +}
-+EXPORT_SYMBOL(__udelay);
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/traps.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/include/asm/traps.h	2011-09-03 20:14:59.694981307 -0500
+@@ -0,0 +1,29 @@
++/*
++ * Trap support for Hexagon
++ *
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#ifndef _ASM_HEXAGON_TRAPS_H
++#define _ASM_HEXAGON_TRAPS_H
++
++#include <asm/registers.h>
++
++extern int die(const char *str, struct pt_regs *regs, long err);
++extern int die_if_kernel(char *str, struct pt_regs *regs, long err);
++
++#endif /* _ASM_HEXAGON_TRAPS_H */
 
 --
 
