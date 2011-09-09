@@ -1,44 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759961Ab1IIUrY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 16:47:24 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:41585 "EHLO
+	id S1759987Ab1IIUrc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 16:47:32 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:37197 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759922Ab1IIUrV (ORCPT
+	by vger.kernel.org with ESMTP id S1759922Ab1IIUr3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 16:47:21 -0400
-X-Sasl-enc: k1AWOX92Ebc+iPfuWWviP4gMHKOR8uk24OellGcZ1b8B 1315601240
-Date: Fri, 9 Sep 2011 13:34:47 -0700
+	Fri, 9 Sep 2011 16:47:29 -0400
+X-Sasl-enc: mdjN5LnBd8cGVN4lLk6aDaeatgiXHUt8zBFXXc6GKAM+ 1315601248
+Date: Fri, 9 Sep 2011 13:42:40 -0700
 From: Greg KH <greg@kroah.com>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: gregkh@suse.de, devel@driverdev.osuosl.org, dan.magenheimer@oracle.com,
-        cascardo@holoscopio.com, linux-kernel@vger.kernel.org,
-        dave@linux.vnet.ibm.com, linux-mm@kvack.org, brking@linux.vnet.ibm.com,
-        rcj@linux.vnet.ibm.com, ngupta@vflare.org
-Subject: Re: [PATCH v2 0/3] staging: zcache: xcfmalloc support
-Message-ID: <20110909203447.GB19127@kroah.com>
-References: <1315404547-20075-1-git-send-email-sjenning@linux.vnet.ibm.com>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, Haiyang Zhang <haiyangz@microsoft.com>
+Subject: Re: [PATCH 09/25] Staging: hv: util: Perform some service specific
+ de-initialization in util_remove()
+Message-ID: <20110909204240.GF19127@kroah.com>
+References: <1315491843-9513-1-git-send-email-kys@microsoft.com>
+ <1315491876-9554-1-git-send-email-kys@microsoft.com>
+ <1315491876-9554-9-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1315404547-20075-1-git-send-email-sjenning@linux.vnet.ibm.com>
+In-Reply-To: <1315491876-9554-9-git-send-email-kys@microsoft.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 07, 2011 at 09:09:04AM -0500, Seth Jennings wrote:
-> Changelog:
-> v2: fix bug in find_remove_block()
->     fix whitespace warning at EOF
+On Thu, Sep 08, 2011 at 07:24:20AM -0700, K. Y. Srinivasan wrote:
+> In preparation for modifying the util driver to fully conform to the
+> Linux Driver Model, perform some service specific de-initialization in
+> util_remove() as opposed to in exit_hyperv_utils() as is currently done.
 > 
-> This patchset introduces a new memory allocator for persistent
-> pages for zcache.  The current allocator is xvmalloc.  xvmalloc
-> has two notable limitations:
-> * High (up to 50%) external fragmentation on allocation sets > PAGE_SIZE/2
-> * No compaction support which reduces page reclaimation
+> 
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> ---
+>  drivers/staging/hv/hv_util.c |   29 ++++++++++++++++++++++++-----
+>  1 files changed, 24 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/staging/hv/hv_util.c b/drivers/staging/hv/hv_util.c
+> index b86128a..2475ab2 100644
+> --- a/drivers/staging/hv/hv_util.c
+> +++ b/drivers/staging/hv/hv_util.c
+> @@ -291,6 +291,30 @@ error:
+>  static int util_remove(struct hv_device *dev,
+>  			const struct hv_vmbus_device_id *dev_id)
+>  {
+> +	int service = dev_id->driver_data;
+> +
+> +	switch (service) {
+> +	case HV_SHUTDOWN:
+> +		kfree(shut_txf_buf);
+> +		break;
 
-I need some acks from other zcache developers before I can accept this.
+This switch and "static" pointers you need to free aren't needed at all
+if you do this code logic correctly (i.e. a per-device buffer.)
 
-{hint...}
+{sigh}
 
+I'm stopping reviewing now, this is making me grumpy, someone owes me a
+bunch of beer...
+
+greg k-h
