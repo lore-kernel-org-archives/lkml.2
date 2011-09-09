@@ -1,93 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933899Ab1IIMnl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 08:43:41 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:2757 "EHLO sjogate2.atmel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933296Ab1IIMnk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 08:43:40 -0400
-Message-ID: <4E6A09D0.40800@atmel.com>
-Date: Fri, 09 Sep 2011 14:42:56 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
+	id S933929Ab1IIMpC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 08:45:02 -0400
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:37729 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933296Ab1IIMpB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Sep 2011 08:45:01 -0400
+Message-ID: <2d14558326f860dea54093d31d1ba12f.squirrel@webmail.greenhost.nl>
+In-Reply-To: <201109090824.37366.vda.linux@googlemail.com>
+References: <201109090822.30063.vda.linux@googlemail.com>
+    <201109090824.37366.vda.linux@googlemail.com>
+Date: Fri, 9 Sep 2011 14:44:57 +0200
+Subject: Re: [PATCH 1/2] ptrace: don't modify flags on PTRACE_SETOPTIONS
+ failure
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Denys Vlasenko" <vda.linux@googlemail.com>
+Cc: "Oleg Nesterov" <oleg@redhat.com>, "Tejun Heo" <tj@kernel.org>,
+        linux-kernel@vger.kernel.org, dvlasenk@redhat.com,
+        "Linus Torvalds" <torvalds@linux-foundation.org>
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Josef Holzmayr <holzmayr@rsi-elektrotechnik.de>,
-        Nico Erfurth <ne@erfurth.eu>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>
-Subject: [GIT PULL] at91: changes for next
-X-Enigmail-Version: 1.3.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.0
+X-Scan-Signature: 12f61b0c8dc8dcc8c992b8e1fde77987
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+Hello,
 
-Can you please pull the following changes since commit ddf28352b80c86754a6424e3a61e8bdf9213b3c7:
+On Fri, September 9, 2011 08:24, Denys Vlasenko wrote:
+> It's very unlikely that there is userspace code in the wild which
+> will be affected by this change: it should have the form
+>
+>     ptrace(PTRACE_SETOPTIONS, pid, 0, PTRACE_O_BOGUSOPT)
+>
+> where PTRACE_O_BOGUSOPT is a constant unknown to the kernel.
+> But kernel headers, naturally, don't contain any
+> PTRACE_O_BOGUSOPTs, thus the only way userspace can use one
+> if it defines one itself. I can't see why anyone would do such
+> a thing deliberately.
 
-  Linux 3.1-rc5 (2011-09-04 15:45:10 -0700)
+The only realistic case is when a program compiled on a newer
+kernel is run on an older kernel, when it does things like
 
-They are available in the git repository at:
-  git://github.com/at91linux/linux-at91.git  at91-next
+#ifndef PTRACE_O_TRACEFORK
+	opts |= PTRACE_O_TRACEFORK;
+#endif
 
-They have been present on linux-arm-kernel for some time and where recently added in linux-next.
-Stephen resolved some trivial conflicts relatives to the removal of a board file (Cf:
-https://lkml.org/lkml/2011/9/9/96 ).
+and happened to work on older kernels because it didn't check
+the return value.
 
-A series by Thomas is touching the USB subsystem: ohci-at91.c but as most of changes are in the at91 directory, it makes more sense to take them in arm-soc.
+With the current options the program has to change its behaviour
+depending whether the options are available or not, so no problems
+should happen in practice, because if a program counts on any
+options that didn't exist before, it won't work anyway.
 
+Code that cares about backward compatibility will check at runtime
+if the PTRACE_SETOPTIONS fails, and do a new one without the unknown
+options.
 
-Jean-Christophe PLAGNIOL-VILLARD (2):
-      at91: USB-A9G20 C01 & C11 board support
-      at91: ohci-at91: always provide all the clocks
+So it's best to fix this behaviour before introducing new options
+that are harmless if the setting of them fails.
 
-Josef Holzmayr (1):
-      at91: add support for RSIs EWS board
+Greetings,
 
-Nico Erfurth (1):
-      at91: merge board USB-A9260 and USB-A9263 together
+Indan
 
-Thomas Petazzoni (3):
-      at91: ohci-at91: add vbus_pin_inverted platform attribute
-      at91: at91-ohci: support overcurrent notification
-      at91: at91-ohci: configure overcurrent pins as input GPIOs
-
- arch/arm/mach-at91/Kconfig               |   13 +
- arch/arm/mach-at91/Makefile              |    6 +-
- arch/arm/mach-at91/at91cap9.c            |    2 +
- arch/arm/mach-at91/at91cap9_devices.c    |    6 +
- arch/arm/mach-at91/at91rm9200.c          |    2 +
- arch/arm/mach-at91/at91rm9200_devices.c  |    8 +
- arch/arm/mach-at91/at91sam9260.c         |    2 +
- arch/arm/mach-at91/at91sam9260_devices.c |    8 +
- arch/arm/mach-at91/at91sam9261.c         |   29 ++-
- arch/arm/mach-at91/at91sam9261_devices.c |    8 +
- arch/arm/mach-at91/at91sam9263.c         |    2 +
- arch/arm/mach-at91/at91sam9263_devices.c |    6 +
- arch/arm/mach-at91/at91sam9g45.c         |    2 +
- arch/arm/mach-at91/at91sam9g45_devices.c |    6 +
- arch/arm/mach-at91/board-rsi-ews.c       |  233 ++++++++++++++++++
- arch/arm/mach-at91/board-usb-a9260.c     |  230 ------------------
- arch/arm/mach-at91/board-usb-a9263.c     |  246 -------------------
- arch/arm/mach-at91/board-usb-a926x.c     |  383 ++++++++++++++++++++++++++++++
- arch/arm/mach-at91/include/mach/board.h  |    5 +
- arch/arm/mach-at91/include/mach/timex.h  |    5 +
- drivers/usb/host/ohci-at91.c             |  239 +++++++++++++++++--
- 21 files changed, 930 insertions(+), 511 deletions(-)
- create mode 100644 arch/arm/mach-at91/board-rsi-ews.c
- delete mode 100644 arch/arm/mach-at91/board-usb-a9260.c
- delete mode 100644 arch/arm/mach-at91/board-usb-a9263.c
- create mode 100644 arch/arm/mach-at91/board-usb-a926x.c
-
-Thanks, bye,
--- 
-Nicolas Ferre
 
