@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757794Ab1IIBby (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 21:31:54 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:62696 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932310Ab1IIBbw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 21:31:52 -0400
-Date: Fri, 9 Sep 2011 09:31:43 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Clemens Ladisch <clemens@ladisch.de>
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Jiri Kosina <jkosina@suse.cz>, Andreas Mohr <andi@lisas.de>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Julia Lawall <julia@diku.dk>, Ondrej Zary <linux@rainbow-software.org>,
-        Dan Carpenter <error27@gmail.com>, Joe Perches <joe@perches.com>,
-        alsa-devel@alsa-project.org
-Subject: Re: [RFC] [PATCH 02/62] mpu401:snd_mpu401_uart_new(): split semantic
- of irq_flags
-Message-ID: <20110909013143.GB18249@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <1315383059-3673-1-git-send-email-yong.zhang0@gmail.com>
- <1315383059-3673-3-git-send-email-yong.zhang0@gmail.com>
- <4E689E9A.8000407@ladisch.de>
- <20110908133700.GB2310@zhy>
- <4E68CA15.8000504@ladisch.de>
- <20110908144519.GB3069@zhy>
- <4E69253F.3090705@ladisch.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <4E69253F.3090705@ladisch.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758183Ab1IIBeQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 21:34:16 -0400
+Received: from mx01.ctc-g.co.jp ([131.248.58.1]:63632 "EHLO mx.ctc.ctc-g.co.jp"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757637Ab1IIBeN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 21:34:13 -0400
+Date: Fri, 09 Sep 2011 10:33:58 +0900
+From: "Jun.Kondo" <jun.kondo@ctc-g.co.jp>
+Subject: Re: [omega-g1:11110] Re: [PATCH] net: configurable sysctl parameter
+ "net.core.tcp_lowat" for sk_stream_min_wspace()
+In-reply-to: <20110824.220016.781758659534965980.davem@davemloft.net>
+To: David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, omega-g1@ctc-g.co.jp, notsuki@redhat.com,
+        motokazu.kozaki@hp.com, htaira@redhat.com, netdev@vger.kernel.org,
+        tomohiko.takahashi@ctc-g.co.jp, kotaro.sakai@ctc-g.co.jp,
+        ken.sugawara@ctc-g.co.jp
+Reply-to: jun.kondo@ctc-g.co.jp
+Message-id: <4E696D06.3000003@ctc-g.co.jp>
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-post-Received: by post01.ctc-g.co.jp (CTC-GN 2006/10/01) id 42D1D76D6;	Fri,
+ 9 Sep 2011 10:33:58 +0900 (JST)
+X-vs: by localhost.is01.ctc-g.co.jp (CTC-GN mail 2009/02/01) id 1F9855BEE8;
+	Fri,  9 Sep 2011 10:33:58 +0900 (JST)
+X-vs: by is01.ctc-g.co.jp (CTC-GN mail 2009/02/01) id 141835BC2B;	Fri,
+ 9 Sep 2011 10:33:58 +0900 (JST)
+References: <4E51A3F0.5010500@ctc-g.co.jp>
+ <20110822.113544.28950168095176936.davem@davemloft.net>
+ <4E55D3C2.40308@ctc-g.co.jp>
+ <20110824.220016.781758659534965980.davem@davemloft.net>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.2; ja; rv:1.9.2.12)
+ Gecko/20101027 Thunderbird/3.1.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 08, 2011 at 10:27:43PM +0200, Clemens Ladisch wrote:
-> Yong Zhang wrote:
-> > On Thu, Sep 08, 2011 at 03:58:45PM +0200, Clemens Ladisch wrote:
-> > > ...
-> > > Here, "no interrupt" and "already reserved" actually mean the same thing,
-> > > i.e., that the interrupt handling is the responsibility of some other
-> > > driver.
-> 
-> Sorry, after checking the code, I've realized that my description was
-> wrong.  irq_flags==0 ("already reserved") means that snd_mpu401_uart_new
-> should not try to allocate the interrupt, while irq==-1 ("no interrupt")
-> means that the device never issues mpu401 interrupts, so that the mpu401
-> code must use a timer to poll the device.
-> 
-> I'll write a patch that changes this function so that irq<0 means
-> "already reserved", and that "no interrupt" gets another bit in the
-> info_flags parameter.
+The client of this system is cellular phone, and the
+status of the communication line with a client varies
+widely according to its place or congestion situation.
 
-Sounds good.
+In terms of the line speed, it can be around 9Mbps
+when it is fast, but 8kbps when it is slow.
 
-So my patch will be based on yours; or if you have other plan,
-how about let's take this patch as a temporary workaroud?
+Requirement from customer is to provide stable service
+in both situation.
 
-Anyway, you decide it :)
+- In normal situation, acquire large default transmission
+   buffer value, and ensure high throughput from the
+   beginning of tcp connection
 
-Thanks,
-Yong
+- On the other hand, even when the connection has low
+   throughput, such as low rate streaming, transmit data
+   without timeout
+
+However, when the throughput is low, it takes much time
+for the transmission buffer to be freed, and timeout
+will occur during that period.
+
+Of course, the connection will not be disconnected when
+the timeout of application is extended, but end user
+would not wait patiently as long as 1 minute.
+Therefore, we do not want to extend the timeout value.
+
+By making the threshold, which makes write possible after
+the buffer is blocked once, configurable, and set it to a
+small value, it will be possible to return data to client
+without making timeout occur.
+
+So, we think the issue can be solved with this
+modification.
+
+
