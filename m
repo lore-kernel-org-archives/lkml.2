@@ -1,48 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932193Ab1IIBL1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 21:11:27 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:41661 "EHLO
+	id S1757759Ab1IIBLB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 21:11:01 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:55798 "EHLO
 	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932088Ab1IIBLQ (ORCPT
+	with ESMTP id S1757609Ab1IIBKv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 21:11:16 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6463"; a="116864702"
-Message-Id: <20110909010915.923530082@codeaurora.org>
+	Thu, 8 Sep 2011 21:10:51 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6463"; a="116864664"
+Message-Id: <20110909010914.982607751@codeaurora.org>
 User-Agent: quilt/0.48-1
-Date: Thu, 08 Sep 2011 20:09:00 -0500
+Date: Thu, 08 Sep 2011 20:08:50 -0500
 From: Richard Kuo <rkuo@codeaurora.org>
 To: linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Cc: Linas Vepstas <linas@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>
-Subject: [patch v3 13/36] Hexagon: Support dynamic module loading.
+Cc: Arnd Bergmann <arnd@arndb.de>
+Subject: [patch v3 03/36] Hexagon: Add bitops support
 References: <20110909010847.294039464@codeaurora.org>
-Content-Disposition: inline; filename=module.diff
+Content-Disposition: inline; filename=bitops.diff
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Modules should be compiled as ordinary .o's; shared objects are not
-supported.
+Merged sub-files into bitops.h; fixed return types and volatiles.
 
-Deleted module functions that already have generic equivalents.
-
-Signed-off-by: Linas Vepstas <linas@codeaurora.org>
+Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
 Acked-by: Arnd Bergmann <arnd@arndb.de>
 
 ---
- arch/hexagon/kernel/module.c |  162 +++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 162 insertions(+)
+ arch/hexagon/include/asm/bitops.h |  301 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 301 insertions(+)
 
-Index: linux-hexagon-kernel/arch/hexagon/kernel/module.c
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/bitops.h
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/kernel/module.c	2011-09-07 13:00:31.090647031 -0500
-@@ -0,0 +1,162 @@
++++ linux-hexagon-kernel/arch/hexagon/include/asm/bitops.h	2011-09-03 20:14:59.504980775 -0500
+@@ -0,0 +1,301 @@
 +/*
-+ * Kernel module loader for Hexagon
++ * Bit operations for the Hexagon architecture
 + *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 and
@@ -59,148 +57,286 @@ Index: linux-hexagon-kernel/arch/hexagon/kernel/module.c
 + * 02110-1301, USA.
 + */
 +
-+#include <asm/module.h>
-+#include <linux/elf.h>
-+#include <linux/module.h>
-+#include <linux/moduleloader.h>
-+#include <linux/vmalloc.h>
++#ifndef _ASM_BITOPS_H
++#define _ASM_BITOPS_H
 +
-+#if 0
-+#define DEBUGP printk
-+#else
-+#define DEBUGP(fmt , ...)
-+#endif
++#include <linux/compiler.h>
++#include <asm/byteorder.h>
++#include <asm/system.h>
++#include <asm/atomic.h>
 +
-+/*
-+ * module_frob_arch_sections - tweak got/plt sections.
-+ * @hdr - pointer to elf header
-+ * @sechdrs - pointer to elf load section headers
-+ * @secstrings - symbol names
-+ * @mod - pointer to module
-+ */
-+int module_frob_arch_sections(Elf_Ehdr *hdr, Elf_Shdr *sechdrs,
-+				char *secstrings,
-+				struct module *mod)
-+{
-+	unsigned int i;
-+	int found = 0;
++#ifdef __KERNEL__
 +
-+	/* Look for .plt and/or .got.plt and/or .init.plt sections */
-+	for (i = 0; i < hdr->e_shnum; i++) {
-+		DEBUGP("Section %d is %s\n", i,
-+		       secstrings + sechdrs[i].sh_name);
-+		if (strcmp(secstrings + sechdrs[i].sh_name, ".plt") == 0)
-+			found = i+1;
-+		if (strcmp(secstrings + sechdrs[i].sh_name, ".got.plt") == 0)
-+			found = i+1;
-+		if (strcmp(secstrings + sechdrs[i].sh_name, ".rela.plt") == 0)
-+			found = i+1;
-+	}
-+
-+	/* At this time, we don't support modules comiled with -shared */
-+	if (found) {
-+		printk(KERN_WARNING
-+			"Module '%s' contains unexpected .plt/.got sections.\n",
-+			mod->name);
-+		/*  return -ENOEXEC;  */
-+	}
-+
-+	return 0;
-+}
++#define smp_mb__before_clear_bit()	barrier()
++#define smp_mb__after_clear_bit()	barrier()
 +
 +/*
-+ * apply_relocate_add - perform rela relocations.
-+ * @sechdrs - pointer to section headers
-+ * @strtab - some sort of start address?
-+ * @symindex - symbol index offset or something?
-+ * @relsec - address to relocate to?
-+ * @module - pointer to module
++ * The offset calculations for these are based on BITS_PER_LONG == 32
++ * (i.e. I get to shift by #5-2 (32 bits per long, 4 bytes per access),
++ * mask by 0x0000001F)
 + *
-+ * Perform rela relocations.
++ * Typically, R10 is clobbered for address, R11 bit nr, and R12 is temp
 + */
-+int apply_relocate_add(Elf_Shdr *sechdrs, const char *strtab,
-+			unsigned int symindex, unsigned int relsec,
-+			struct module *module)
++
++/**
++ * test_and_clear_bit - clear a bit and return its old value
++ * @nr:  bit number to clear
++ * @addr:  pointer to memory
++ */
++static inline int test_and_clear_bit(int nr, volatile void *addr)
 +{
-+	unsigned int i;
-+	Elf32_Sym *sym;
-+	uint32_t *location;
-+	uint32_t value;
-+	unsigned int nrelocs = sechdrs[relsec].sh_size / sizeof(Elf32_Rela);
-+	Elf32_Rela *rela = (void *)sechdrs[relsec].sh_addr;
-+	Elf32_Word sym_info = sechdrs[relsec].sh_info;
-+	Elf32_Sym *sym_base = (Elf32_Sym *) sechdrs[symindex].sh_addr;
-+	void *loc_base = (void *) sechdrs[sym_info].sh_addr;
++	int oldval;
 +
-+	DEBUGP("Applying relocations in section %u to section %u base=%p\n",
-+	       relsec, sym_info, loc_base);
++	__asm__ __volatile__ (
++	"	{R10 = %1; R11 = asr(%2,#5); }\n"
++	"	{R10 += asl(R11,#2); R11 = and(%2,#0x1f)}\n"
++	"1:	R12 = memw_locked(R10);\n"
++	"	{ P0 = tstbit(R12,R11); R12 = clrbit(R12,R11); }\n"
++	"	memw_locked(R10,P1) = R12;\n"
++	"	{if !P1 jump 1b; %0 = mux(P0,#1,#0);}\n"
++	: "=&r" (oldval)
++	: "r" (addr), "r" (nr)
++	: "r10", "r11", "r12", "p0", "p1", "memory"
++	);
 +
-+	for (i = 0; i < nrelocs; i++) {
-+
-+		/* Symbol to relocate */
-+		sym = sym_base + ELF32_R_SYM(rela[i].r_info);
-+
-+		/* Where to make the change */
-+		location = loc_base + rela[i].r_offset;
-+
-+		/* `Everything is relative'. */
-+		value = sym->st_value + rela[i].r_addend;
-+
-+		DEBUGP("%d: value=%08x loc=%p reloc=%d symbol=%s\n",
-+		       i, value, location, ELF32_R_TYPE(rela[i].r_info),
-+		       sym->st_name ?
-+		       &strtab[sym->st_name] : "(anonymous)");
-+
-+		switch (ELF32_R_TYPE(rela[i].r_info)) {
-+		case R_HEXAGON_B22_PCREL: {
-+			int dist = (int)(value - (uint32_t)location);
-+			if ((dist < -0x00800000) ||
-+			    (dist >= 0x00800000)) {
-+				printk(KERN_ERR
-+				       "%s: %s: %08x=%08x-%08x %s\n",
-+				       module->name,
-+				       "R_HEXAGON_B22_PCREL reloc out of range",
-+				       dist, value, (uint32_t)location,
-+				       sym->st_name ?
-+				       &strtab[sym->st_name] : "(anonymous)");
-+				return -ENOEXEC;
-+			}
-+			DEBUGP("B22_PCREL contents: %08X.\n", *location);
-+			*location &= ~0x01ff3fff;
-+			*location |= 0x00003fff & dist;
-+			*location |= 0x01ff0000 & (dist<<2);
-+			DEBUGP("Contents after reloc: %08x\n", *location);
-+			break;
-+		}
-+		case R_HEXAGON_HI16:
-+			value = (value>>16) & 0xffff;
-+			/* fallthrough */
-+		case R_HEXAGON_LO16:
-+			*location &= ~0x00c03fff;
-+			*location |= value & 0x3fff;
-+			*location |= (value & 0xc000) << 8;
-+			break;
-+		case R_HEXAGON_32:
-+			*location = value;
-+			break;
-+		case R_HEXAGON_32_PCREL:
-+			*location = value - (uint32_t)location;
-+			break;
-+		case R_HEXAGON_PLT_B22_PCREL:
-+		case R_HEXAGON_GOTOFF_LO16:
-+		case R_HEXAGON_GOTOFF_HI16:
-+			printk(KERN_ERR "%s: GOT/PLT relocations unsupported\n",
-+			       module->name);
-+			return -ENOEXEC;
-+		default:
-+			printk(KERN_ERR "%s: unknown relocation: %u\n",
-+			       module->name,
-+			       ELF32_R_TYPE(rela[i].r_info));
-+			return -ENOEXEC;
-+		}
-+	}
-+	return 0;
++	return oldval;
 +}
++
++/**
++ * test_and_set_bit - set a bit and return its old value
++ * @nr:  bit number to set
++ * @addr:  pointer to memory
++ */
++static inline int test_and_set_bit(int nr, volatile void *addr)
++{
++	int oldval;
++
++	__asm__ __volatile__ (
++	"	{R10 = %1; R11 = asr(%2,#5); }\n"
++	"	{R10 += asl(R11,#2); R11 = and(%2,#0x1f)}\n"
++	"1:	R12 = memw_locked(R10);\n"
++	"	{ P0 = tstbit(R12,R11); R12 = setbit(R12,R11); }\n"
++	"	memw_locked(R10,P1) = R12;\n"
++	"	{if !P1 jump 1b; %0 = mux(P0,#1,#0);}\n"
++	: "=&r" (oldval)
++	: "r" (addr), "r" (nr)
++	: "r10", "r11", "r12", "p0", "p1", "memory"
++	);
++
++
++	return oldval;
++
++}
++
++/**
++ * test_and_change_bit - toggle a bit and return its old value
++ * @nr:  bit number to set
++ * @addr:  pointer to memory
++ */
++static inline int test_and_change_bit(int nr, volatile void *addr)
++{
++	int oldval;
++
++	__asm__ __volatile__ (
++	"	{R10 = %1; R11 = asr(%2,#5); }\n"
++	"	{R10 += asl(R11,#2); R11 = and(%2,#0x1f)}\n"
++	"1:	R12 = memw_locked(R10);\n"
++	"	{ P0 = tstbit(R12,R11); R12 = togglebit(R12,R11); }\n"
++	"	memw_locked(R10,P1) = R12;\n"
++	"	{if !P1 jump 1b; %0 = mux(P0,#1,#0);}\n"
++	: "=&r" (oldval)
++	: "r" (addr), "r" (nr)
++	: "r10", "r11", "r12", "p0", "p1", "memory"
++	);
++
++	return oldval;
++
++}
++
++/*
++ * Atomic, but doesn't care about the return value.
++ * Rewrite later to save a cycle or two.
++ */
++
++static inline void clear_bit(int nr, volatile void *addr)
++{
++	test_and_clear_bit(nr, addr);
++}
++
++static inline void set_bit(int nr, volatile void *addr)
++{
++	test_and_set_bit(nr, addr);
++}
++
++static inline void change_bit(int nr, volatile void *addr)
++{
++	test_and_change_bit(nr, addr);
++}
++
++
++/*
++ * These are allowed to be non-atomic.  In fact the generic flavors are
++ * in non-atomic.h.  Would it be better to use intrinsics for this?
++ *
++ * OK, writes in our architecture do not invalidate LL/SC, so this has to
++ * be atomic, particularly for things like slab_lock and slab_unlock.
++ *
++ */
++static inline void __clear_bit(int nr, volatile unsigned long *addr)
++{
++	test_and_clear_bit(nr, addr);
++}
++
++static inline void __set_bit(int nr, volatile unsigned long *addr)
++{
++	test_and_set_bit(nr, addr);
++}
++
++static inline void __change_bit(int nr, volatile unsigned long *addr)
++{
++	test_and_change_bit(nr, addr);
++}
++
++/*  Apparently, at least some of these are allowed to be non-atomic  */
++static inline int __test_and_clear_bit(int nr, volatile unsigned long *addr)
++{
++	return test_and_clear_bit(nr, addr);
++}
++
++static inline int __test_and_set_bit(int nr, volatile unsigned long *addr)
++{
++	return test_and_set_bit(nr, addr);
++}
++
++static inline int __test_and_change_bit(int nr, volatile unsigned long *addr)
++{
++	return test_and_change_bit(nr, addr);
++}
++
++static inline int __test_bit(int nr, const volatile unsigned long *addr)
++{
++	int retval;
++
++	asm volatile(
++	"{P0 = tstbit(%1,%2); if (P0.new) %0 = #1; if (!P0.new) %0 = #0;}\n"
++	: "=&r" (retval)
++	: "r" (addr[BIT_WORD(nr)]), "r" (nr % BITS_PER_LONG)
++	: "p0"
++	);
++
++	return retval;
++}
++
++#define test_bit(nr, addr) __test_bit(nr, addr)
++
++/*
++ * ffz - find first zero in word.
++ * @word: The word to search
++ *
++ * Undefined if no zero exists, so code should check against ~0UL first.
++ */
++static inline long ffz(int x)
++{
++	int r;
++
++	asm("%0 = ct1(%1);\n"
++		: "=&r" (r)
++		: "r" (x));
++	return r;
++}
++
++/*
++ * fls - find last (most-significant) bit set
++ * @x: the word to search
++ *
++ * This is defined the same way as ffs.
++ * Note fls(0) = 0, fls(1) = 1, fls(0x80000000) = 32.
++ */
++static inline long fls(int x)
++{
++	int r;
++
++	asm("{ %0 = cl0(%1);}\n"
++		"%0 = sub(#32,%0);\n"
++		: "=&r" (r)
++		: "r" (x)
++		: "p0");
++
++	return r;
++}
++
++/*
++ * ffs - find first bit set
++ * @x: the word to search
++ *
++ * This is defined the same way as
++ * the libc and compiler builtin ffs routines, therefore
++ * differs in spirit from the above ffz (man ffs).
++ */
++static inline long ffs(int x)
++{
++	int r;
++
++	asm("{ P0 = cmp.eq(%1,#0); %0 = ct0(%1);}\n"
++		"{ if P0 %0 = #0; if !P0 %0 = add(%0,#1);}\n"
++		: "=&r" (r)
++		: "r" (x)
++		: "p0");
++
++	return r;
++}
++
++/*
++ * __ffs - find first bit in word.
++ * @word: The word to search
++ *
++ * Undefined if no bit exists, so code should check against 0 first.
++ *
++ * bits_per_long assumed to be 32
++ * numbering starts at 0 I think (instead of 1 like ffs)
++ */
++static inline unsigned long __ffs(unsigned long word)
++{
++	int num;
++
++	asm("%0 = ct0(%1);\n"
++		: "=&r" (num)
++		: "r" (word));
++
++	return num;
++}
++
++/*
++ * __fls - find last (most-significant) set bit in a long word
++ * @word: the word to search
++ *
++ * Undefined if no set bit exists, so code should check against 0 first.
++ * bits_per_long assumed to be 32
++ */
++static inline unsigned long __fls(unsigned long word)
++{
++	int num;
++
++	asm("%0 = cl0(%1);\n"
++		"%0 = sub(#31,%0);\n"
++		: "=&r" (num)
++		: "r" (word));
++
++	return num;
++}
++
++#include <asm-generic/bitops/lock.h>
++#include <asm-generic/bitops/find.h>
++
++#include <asm-generic/bitops/fls64.h>
++#include <asm-generic/bitops/sched.h>
++#include <asm-generic/bitops/hweight.h>
++
++#include <asm-generic/bitops/le.h>
++#include <asm-generic/bitops/ext2-atomic.h>
++
++#endif /* __KERNEL__ */
++#endif
 
 --
 
