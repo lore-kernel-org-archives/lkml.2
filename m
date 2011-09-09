@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933125Ab1IIRoO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 13:44:14 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:52017 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932908Ab1IIRoM (ORCPT
+	id S1759548Ab1IIRwI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 13:52:08 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:56184 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757745Ab1IIRwH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 13:44:12 -0400
-Message-ID: <4E6A4AA7.5050004@vflare.org>
-Date: Fri, 09 Sep 2011 13:19:35 -0400
-From: Nitin Gupta <ngupta@vflare.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
+	Fri, 9 Sep 2011 13:52:07 -0400
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Jerome Marchand <jmarchan@redhat.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Linux Driver Project <devel@linuxdriverproject.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/5 resend] Fix sparse warnings
-References: <1315445357-14338-1-git-send-email-ngupta@vflare.org> <1315445357-14338-2-git-send-email-ngupta@vflare.org>
-In-Reply-To: <1315445357-14338-2-git-send-email-ngupta@vflare.org>
+X-Originating-IP: [75.210.169.68]
+In-Reply-To: <1315332049-2604-48-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20110906180015.GA2560@linux.vnet.ibm.com>
+	<1315332049-2604-48-git-send-email-paulmck@linux.vnet.ibm.com>
+Date: Fri, 9 Sep 2011 10:23:33 -0700
+Message-ID: <CAOesGMi--W6TCUMZzF07-Zep9Ta3tBJWZcG+5imEK_Hza0y9Jg@mail.gmail.com>
+Subject: Re: [PATCH tip/core/rcu 48/55] powerpc: strengthen
+ value-returning-atomics memory barriers
+From: Olof Johansson <olof@lixom.net>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, patches@linaro.org, anton@samba.org,
+        benh@kernel.crashing.org, paulus@samba.org, linuxppc-dev@ozlabs.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes sparse warning:
-zram_drv.c:666:6: warning: symbol 'zram_slot_free_notify' was not
-declared. Should it be static?
+[+linuxppc-dev]
 
-Also, max_zpage_size is now size_t just to be consistent with data-type
-of other variables maintaining sizes of various kinds.
+On Tue, Sep 6, 2011 at 11:00 AM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> The trailing isync/lwsync in PowerPC value-returning atomics needs
+> to be a sync in order to provide the required ordering properties.
+> The leading lwsync/eieio can remain, as the remainder of the required
+> ordering guarantees are provided by the atomic instructions: Any
+> reordering will cause the stwcx to fail, which will result in a retry.
 
-Signed-off-by: Nitin Gupta <ngupta@vflare.org>
----
- drivers/staging/zram/zram_drv.c |    3 ++-
- drivers/staging/zram/zram_drv.h |    2 +-
- 2 files changed, 3 insertions(+), 2 deletions(-)
+Admittedly, my powerpc barrier memory is starting to fade, but isn't
+isync sufficient here? It will make sure all instructions before it
+have retired, and will restart any speculative/issued instructions
+beyond it.
 
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index d70ec1a..03ec5a2 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -684,7 +684,8 @@ fail:
- 	return ret;
- }
- 
--void zram_slot_free_notify(struct block_device *bdev, unsigned long index)
-+static void zram_slot_free_notify(struct block_device *bdev,
-+				unsigned long index)
- {
- 	struct zram *zram;
- 
-diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
-index abe5221..70ce886 100644
---- a/drivers/staging/zram/zram_drv.h
-+++ b/drivers/staging/zram/zram_drv.h
-@@ -47,7 +47,7 @@ static const unsigned default_disksize_perc_ram = 25;
-  * Pages that compress to size greater than this are stored
-  * uncompressed in memory.
-  */
--static const unsigned max_zpage_size = PAGE_SIZE / 4 * 3;
-+static const size_t max_zpage_size = PAGE_SIZE / 4 * 3;
- 
- /*
-  * NOTE: max_zpage_size must be less than or equal to:
--- 
-1.7.6
+lwsync not being sufficient makes sense since a load can overtake it.
 
+> diff --git a/arch/powerpc/include/asm/synch.h b/arch/powerpc/include/asm/synch.h
+> index d7cab44..4d97fbe 100644
+> --- a/arch/powerpc/include/asm/synch.h
+> +++ b/arch/powerpc/include/asm/synch.h
+> @@ -37,11 +37,7 @@ static inline void isync(void)
+>  #endif
+>
+>  #ifdef CONFIG_SMP
+> -#define __PPC_ACQUIRE_BARRIER                          \
+> -       START_LWSYNC_SECTION(97);                       \
+> -       isync;                                          \
+> -       MAKE_LWSYNC_SECTION_ENTRY(97, __lwsync_fixup);
+> -#define PPC_ACQUIRE_BARRIER    "\n" stringify_in_c(__PPC_ACQUIRE_BARRIER)
+> +#define PPC_ACQUIRE_BARRIER    "\n" stringify_in_c(sync;)
+
+This can just be done as "\n\tsync\n" instead of the stringify stuff.
+
+
+-Olof
