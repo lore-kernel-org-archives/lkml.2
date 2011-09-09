@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933329Ab1IIK17 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 06:27:59 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:47860 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933316Ab1IIK1z (ORCPT
+	id S1758722Ab1IIKbD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 06:31:03 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:39430 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758329Ab1IIKbA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 06:27:55 -0400
-Date: Fri, 9 Sep 2011 20:27:44 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: dedekind1@gmail.com, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Nico Erfurth <ne@erfurth.eu>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: Re: linux-next: manual merge of the l2-mtd tree with the at91 tree
-Message-Id: <20110909202744.48dea6e29c1902afe367cc64@canb.auug.org.au>
-In-Reply-To: <4E69E21F.5070701@atmel.com>
-References: <20110909132920.3696fbb6c1b90cded9727d30@canb.auug.org.au>
-	<1315550734.7905.14.camel@sauron>
-	<20110909164539.bae897109d3de0e67f0db69a@canb.auug.org.au>
-	<4E69E21F.5070701@atmel.com>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__9_Sep_2011_20_27_44_+1000_+znZOHhrYtT.kgDg"
+	Fri, 9 Sep 2011 06:31:00 -0400
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "Greg KH" <gregkh@suse.de>,
+        "Klaus Schwarzkopf" <schwarzkopf@sensortherm.de>
+Cc: balbi@ti.com, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb: add new usb gadget for ACM and mass storage
+References: <1315506287-31368-1-git-send-email-schwarzkopf@sensortherm.de>
+ <20110908191146.GA8552@suse.de> <4E69D032.4050807@sensortherm.de>
+Date: Fri, 09 Sep 2011 12:30:57 +0200
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.v1jd5vfp3l0zgt@mnazarewicz-glaptop>
+In-Reply-To: <4E69D032.4050807@sensortherm.de>
+User-Agent: Opera Mail/11.51 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__9_Sep_2011_20_27_44_+1000_+znZOHhrYtT.kgDg
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> Am 08.09.2011 21:11, schrieb Greg KH:
+>> Do you really mean "any later version"?
 
-Hi Nicolas,
+On Fri, 09 Sep 2011 10:37:06 +0200, Klaus Schwarzkopf  
+<schwarzkopf@sensortherm.de> wrote:
+> The acm_ms.c file is heavly based on the cdc2.c file with this  
+> paragraph. Can i change this without breaking the license?
 
-On Fri, 09 Sep 2011 11:53:35 +0200 Nicolas Ferre <nicolas.ferre@atmel.com> =
-wrote:
+Probably yes, since you're adding your copyright and you can say that
+your changes are GPLv2 only and therefore in practice the whole file
+becomes GPLv2 only.
+
+If anyone cares about my interpretation and opinion, Greg did not ask
+you to change it but rather whether you really mean “any later version”. ;)
+
+>> These two paragraphs are not needed, and the address is a very bad idea
+>> to include in any file as it changes over time and I don't think you
+>> want to keep up with the address location of the FSF for the next 40+
+>> years.
+
+> OK, i remove this lines.
 >
-> So, as I am not so used to this kind of situation, I wonder if I need
-> to included those two patches from Russell's and Artem's git trees in
-> our at91-next one or if I only carry on with current patch series
-> until Linus merges all this himself?
+> Can i remove this lines in all files of the directory drivers/usb/gadget?
 
-Just carry on, the conflicts will be fixed up When Linus merges your tree.
+If you do, submit it as separate patch. :)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+> +#define CDC_VENDOR_NUM	0x1d6b	/* Linux Foundation */
+> +#define CDC_PRODUCT_NUM	0x0106	/* CDC Composite: ACM + MS*/
+>
+> I used the next free device ID from http://www.linux-usb.org/usb.ids, is  
+> this ok?
 
---Signature=_Fri__9_Sep_2011_20_27_44_+1000_+znZOHhrYtT.kgDg
-Content-Type: application/pgp-signature
+IIRC, Greg is maintaining lists of IDs, so you need to ask him nicely for
+one. ;)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOaeogAAoJEDMEi1NhKgbsVagIAJlbxJqUQnjUgvGM6CkYYzrc
-SqTNblGZWdwmFmwgmDc5dVGadxcMb6uLBOU7OWgEbymGEMUoMWZ5nYgmig0J1Pct
-c4E+qRrHd5QPGxMJCRgbzYS7QoHcJ/qc/XOMGwK3iFFewzf1YaVTshvwejzLX2Tu
-R6Wsk/vNFCM0J6YQMdtVb0wdbIpQ90Er+HILFmVf0bo4B7m5lzSL1Z1UQhsqOyQF
-hsiv3hM8LzxD4Bv/iWsbp5PGQJ1tNOzGpeBrhmSPwHboxdQE3hdpsfQAJGSZkB7u
-H4B8gkRnstjNIzpeCuqEcrAgnWQJL2JqCZUHQlRx3ImyMDn0NZ44125nsq+qZPQ=
-=s+vV
------END PGP SIGNATURE-----
-
---Signature=_Fri__9_Sep_2011_20_27_44_+1000_+znZOHhrYtT.kgDg--
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
+ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
