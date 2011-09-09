@@ -1,79 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758880Ab1IINAu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 09:00:50 -0400
-Received: from mail-vw0-f43.google.com ([209.85.212.43]:43373 "EHLO
-	mail-vw0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758817Ab1IINAs convert rfc822-to-8bit (ORCPT
+	id S1758893Ab1IINBc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 09:01:32 -0400
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:52010 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758817Ab1IINBa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 09:00:48 -0400
+	Fri, 9 Sep 2011 09:01:30 -0400
+Message-ID: <661eb210adc223ac1eb80777df48b226.squirrel@webmail.greenhost.nl>
+In-Reply-To: <93a9bd6624aa6a991d688bfaba766a91.squirrel@webmail.greenhost.nl>
+References: <1315500802.18043.45.camel@dhcp-25-63.brq.redhat.com>
+    <20110909001853.GA29319@htj.dyndns.org>
+    <201109090754.50272.vda.linux@googlemail.com>
+    <93a9bd6624aa6a991d688bfaba766a91.squirrel@webmail.greenhost.nl>
+Date: Fri, 9 Sep 2011 15:01:28 +0200
+Subject: Re: Why I want PTRACE_O_TRACESTOP option
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Indan Zupancic" <indan@nul.nu>
+Cc: "Denys Vlasenko" <vda.linux@googlemail.com>, "Tejun Heo" <tj@kernel.org>,
+        "Denys Vlasenko" <dvlasenk@redhat.com>,
+        "Oleg Nesterov" <oleg@redhat.com>, linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-In-Reply-To: <CAOULuOax5OX-oZKBdEuBGVQaSX55sQY8tbKAPD-WFKEr7fRNtQ@mail.gmail.com>
-References: <CAC9WiBg8ecC0oborzCH=0oaok2FK7QvZhV_UNAxFPkVJ+wFP=Q@mail.gmail.com>
-	<CAOULuOb41-TZuN=kj6whg_wn4cw3k01K3aHJ_X9Ha4iTD3ainw@mail.gmail.com>
-	<CAC9WiBhbXN86sFPBp9Q8tP6ZPUxMZHsi0fFs1T=Y+1FfGusGxQ@mail.gmail.com>
-	<CAOULuOax5OX-oZKBdEuBGVQaSX55sQY8tbKAPD-WFKEr7fRNtQ@mail.gmail.com>
-Date: Fri, 9 Sep 2011 15:00:47 +0200
-Message-ID: <CAC9WiBiWsxCqnGUMHUKKWrLp+XLxOf=+53XLFmaYOeOQWDFSeA@mail.gmail.com>
-Subject: Re: Some issues/regression when upgrading to 3.1-rc5
-From: Francis Moreau <francis.moro@gmail.com>
-To: Parag Warudkar <parag.lkml@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.0
+X-Scan-Signature: 1fac81774939798d1cdb19633eb460de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 7, 2011 at 1:58 PM, Parag Warudkar <parag.lkml@gmail.com> wrote:
-> Hi
+On Fri, September 9, 2011 14:26, Indan Zupancic wrote:
+> Hello,
 >
-> On Wed, Sep 7, 2011 at 2:51 AM, Francis Moreau <francis.moro@gmail.com> wrote:
->> Hello,
+> On Fri, September 9, 2011 07:54, Denys Vlasenko wrote:
+>> On Friday 09 September 2011 02:18, Tejun Heo wrote:
+>>> Hello, Denys.
+>>>
+>>> On Thu, Sep 08, 2011 at 06:50:01PM +0200, Denys Vlasenko wrote:
+>>> > Consider what will happen when a next ptrace fix will require
+>>> > a way to change ptrace API at runtime. A new option will likely
+>>> > be introduced, say, PTRACE_O_TRACEPONY, with next available
+>>> > bit position 7, and perhaps some new event will be generated,
+>>> > PTRACE_EVENT_PONY, with value.... yes, it can't be 7,
+>>> > PTRACE_EVENT_STOP took it. So it will probably be 8.
+>>>
+>>> Then, just give it the next matching number.
 >>
->> On Wed, Sep 7, 2011 at 12:24 AM, Parag Warudkar <parag.lkml@gmail.com> wrote:
->>> On Tue, Sep 6, 2011 at 5:15 PM, Francis Moreau <francis.moro@gmail.com> wrote:
->>>>
->>>> [   13.335961] cfg80211: Calling CRDA to update world regulatory domain
->>>> [   13.386127] b43-phy0: Broadcom 4313 WLAN found (core revision 24)
->>>> [   13.510112] bcma: PLL enable timeout
->>>> [   13.510125] b43-phy0 ERROR: FOUND UNSUPPORTED PHY (Analog 10, Type
->>>> 8, Revision 1)
->>>> [   13.510148] b43: probe of bcma0:0 failed with error -95
->>>> [   13.510194] Broadcom 43xx driver loaded [ Features: PMNLS,
->>>> Firmware-ID: FW13 ]
+>> My point is that previously, ptrace behavior was modified by setting
+>> options. Why don't we use this mechanism? Why we invent a different
+>> wheel? Ptrace is ugly as-is, why complicate it even further?
+>>
+>> The argument was that SETOPTIONS wasn't suitable for modifying
+>> attach behavior, but this is fixed by "set options on SEIZE"
+>> patch. I don't see why we can't use options mechanist to affect
+>> group-stop behavior now.
 >
->>
->> unloading b43/bcma and loading brcmsmac doesn't help. Looks like the
->> latter doesn't support my card anymore.
->>
->> From dmesg:
->>
->> [ 3828.183927] brcmsmac: module is from the staging directory, the
->> quality is unknown, you have been warned.
->>
->> and that's it.
+> I totally agree with Denys here.
 >
-> 4313 is supported in brcmsmac - are you sure the firmware is at the
-> right place and getting loaded?
-
-Ok the issue was that I need to unload b43 _and_ bcma before loading brcmsmac.
-
-> I recall for example having to deal with firmware in kernel specific
-> directory - /lib/`uname -r`/firmware for example which means you will
-> need to copy the firmware to new kernel specific directory.
+> It is very useful to set options atomically at SEIZE time. Having
+> SEIZE set some hidden option implicitly only makes things more
+> confusing and harder to explain what SEIZE does. Please apply Denys'
+> SEIZE API improvements.
 >
-> Secondly try to make sure b43/bcma are blacklisted and never loaded at all.
->
+> Another important reason to make PTRACE_O_TRACESTOP an option is
+> because not everyone uses SEIZE: Users using PTRACE_TRACEME can't
+> set this option at all. For those PTRACE_O_TRACESTOP is needed.
+> Using PTRACE_TRACEME is the common case for both strace and gdb.
 
-Well IMHO, there's a probleme here: b43/bcma claims some devices
-(notably 4313) which is marked as broken ! Well that's not quite
-exact, actually it's the phy dev used with the 4313 which is marked as
-broken, see CONFIG_B43_PHY_LCN in drivers/net/wireless/b43/Kconfig.
+PTRACE_O_TRACESTOP only makes sense if it also affects auto-attach
+SIGSTOPS, of course. I don't know if it does. It probably should.
 
-I posted an email on linux-wireless mailing list but haven't got any
-answer so far.
+Indan
 
-Thanks
--- 
-Francis
+
