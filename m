@@ -1,47 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758215Ab1IIBPg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 21:15:36 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:30784 "EHLO
+	id S1758259Ab1IIBPl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 21:15:41 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:31150 "EHLO
 	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932212Ab1IIBLa (ORCPT
+	with ESMTP id S932201Ab1IIBL3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 21:11:30 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6463"; a="116679232"
-Message-Id: <20110909010916.801809244@codeaurora.org>
+	Thu, 8 Sep 2011 21:11:29 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6463"; a="116679218"
+Message-Id: <20110909010916.422373448@codeaurora.org>
 User-Agent: quilt/0.48-1
-Date: Thu, 08 Sep 2011 20:09:09 -0500
+Date: Thu, 08 Sep 2011 20:09:05 -0500
 From: Richard Kuo <rkuo@codeaurora.org>
 To: linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [patch v3 22/36] Hexagon: Add locking types and functions
+Subject: [patch v3 18/36] Hexagon: Add time and timer functions
 References: <20110909010847.294039464@codeaurora.org>
-Content-Disposition: inline; filename=rwsem-spin.diff
+Content-Disposition: inline; filename=timer.diff
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moved rwsem to asm-generic.  Will submit a subsequent patch for PPC
-use it from the new location.
+Cleaned up iomem and register declarations, unnecessary
+SMP ifdefs, cpu_relax() in udelay.
+
+Platform stuff is in development; platform defines will be cleaned up.
 
 Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
 
 ---
- arch/hexagon/include/asm/spinlock.h       |  186 ++++++++++++++++++++++++++++++
- arch/hexagon/include/asm/spinlock_types.h |   42 ++++++
- include/asm-generic/rwsem.h               |  132 +++++++++++++++++++++
- 3 files changed, 360 insertions(+)
+ arch/hexagon/include/asm/time.h       |   29 +++
+ arch/hexagon/include/asm/timer-regs.h |   39 ++++
+ arch/hexagon/kernel/time.c            |  275 ++++++++++++++++++++++++++++++++++
+ 3 files changed, 343 insertions(+)
 
-Index: linux-hexagon-kernel/arch/hexagon/include/asm/spinlock.h
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/time.h
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/include/asm/spinlock.h	2011-09-03 20:14:59.714981363 -0500
-@@ -0,0 +1,186 @@
++++ linux-hexagon-kernel/arch/hexagon/include/asm/time.h	2011-09-07 13:00:30.970646848 -0500
+@@ -0,0 +1,29 @@
 +/*
-+ * Spinlock support for the Hexagon architecture
-+ *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 and
@@ -58,178 +57,24 @@ Index: linux-hexagon-kernel/arch/hexagon/include/asm/spinlock.h
 + * 02110-1301, USA.
 + */
 +
-+#ifndef _ASM_SPINLOCK_H
-+#define _ASM_SPINLOCK_H
++#ifndef ASM_TIME_H
++#define ASM_TIME_H
 +
-+#include <asm/irqflags.h>
++extern cycles_t        pcycle_freq_mhz;
++extern cycles_t        thread_freq_mhz;
++extern cycles_t        sleep_clk_freq;
 +
-+/*
-+ * This file is pulled in for SMP builds.
-+ * Really need to check all the barrier stuff for "true" SMP
-+ */
-+
-+/*
-+ * Read locks:
-+ * - load the lock value
-+ * - increment it
-+ * - if the lock value is still negative, go back and try again.
-+ * - unsuccessful store is unsuccessful.  Go back and try again.  Loser.
-+ * - successful store new lock value if positive -> lock acquired
-+ */
-+static inline void arch_read_lock(arch_rwlock_t *lock)
-+{
-+	__asm__ __volatile__(
-+		"1:	R6 = memw_locked(%0);\n"
-+		"	{ P3 = cmp.ge(R6,#0); R6 = add(R6,#1);}\n"
-+		"	{ if !P3 jump 1b; }\n"
-+		"	memw_locked(%0,P3) = R6;\n"
-+		"	{ if !P3 jump 1b; }\n"
-+		:
-+		: "r" (&lock->lock)
-+		: "memory", "r6", "p3"
-+	);
-+
-+}
-+
-+static inline void arch_read_unlock(arch_rwlock_t *lock)
-+{
-+	__asm__ __volatile__(
-+		"1:	R6 = memw_locked(%0);\n"
-+		"	R6 = add(R6,#-1);\n"
-+		"	memw_locked(%0,P3) = R6\n"
-+		"	if !P3 jump 1b;\n"
-+		:
-+		: "r" (&lock->lock)
-+		: "memory", "r6", "p3"
-+	);
-+
-+}
-+
-+/*  I think this returns 0 on fail, 1 on success.  */
-+static inline int arch_read_trylock(arch_rwlock_t *lock)
-+{
-+	int temp;
-+	__asm__ __volatile__(
-+		"	R6 = memw_locked(%1);\n"
-+		"	{ %0 = #0; P3 = cmp.ge(R6,#0); R6 = add(R6,#1);}\n"
-+		"	{ if !P3 jump 1f; }\n"
-+		"	memw_locked(%1,P3) = R6;\n"
-+		"	{ %0 = P3 }\n"
-+		"1:\n"
-+		: "=&r" (temp)
-+		: "r" (&lock->lock)
-+		: "memory", "r6", "p3"
-+	);
-+	return temp;
-+}
-+
-+static inline int arch_read_can_lock(arch_rwlock_t *rwlock)
-+{
-+	return rwlock->lock == 0;
-+}
-+
-+static inline int arch_write_can_lock(arch_rwlock_t *rwlock)
-+{
-+	return rwlock->lock == 0;
-+}
-+
-+/*  Stuffs a -1 in the lock value?  */
-+static inline void arch_write_lock(arch_rwlock_t *lock)
-+{
-+	__asm__ __volatile__(
-+		"1:	R6 = memw_locked(%0)\n"
-+		"	{ P3 = cmp.eq(R6,#0);  R6 = #-1;}\n"
-+		"	{ if !P3 jump 1b; }\n"
-+		"	memw_locked(%0,P3) = R6;\n"
-+		"	{ if !P3 jump 1b; }\n"
-+		:
-+		: "r" (&lock->lock)
-+		: "memory", "r6", "p3"
-+	);
-+}
-+
-+
-+static inline int arch_write_trylock(arch_rwlock_t *lock)
-+{
-+	int temp;
-+	__asm__ __volatile__(
-+		"	R6 = memw_locked(%1)\n"
-+		"	{ %0 = #0; P3 = cmp.eq(R6,#0);  R6 = #-1;}\n"
-+		"	{ if !P3 jump 1f; }\n"
-+		"	memw_locked(%1,P3) = R6;\n"
-+		"	%0 = P3;\n"
-+		"1:\n"
-+		: "=&r" (temp)
-+		: "r" (&lock->lock)
-+		: "memory", "r6", "p3"
-+	);
-+	return temp;
-+
-+}
-+
-+static inline void arch_write_unlock(arch_rwlock_t *lock)
-+{
-+	smp_mb();
-+	lock->lock = 0;
-+}
-+
-+static inline void arch_spin_lock(arch_spinlock_t *lock)
-+{
-+	__asm__ __volatile__(
-+		"1:	R6 = memw_locked(%0);\n"
-+		"	P3 = cmp.eq(R6,#0);\n"
-+		"	{ if !P3 jump 1b; R6 = #1; }\n"
-+		"	memw_locked(%0,P3) = R6;\n"
-+		"	{ if !P3 jump 1b; }\n"
-+		:
-+		: "r" (&lock->lock)
-+		: "memory", "r6", "p3"
-+	);
-+
-+}
-+
-+static inline void arch_spin_unlock(arch_spinlock_t *lock)
-+{
-+	smp_mb();
-+	lock->lock = 0;
-+}
-+
-+static inline unsigned int arch_spin_trylock(arch_spinlock_t *lock)
-+{
-+	int temp;
-+	__asm__ __volatile__(
-+		"	R6 = memw_locked(%1);\n"
-+		"	P3 = cmp.eq(R6,#0);\n"
-+		"	{ if !P3 jump 1f; R6 = #1; %0 = #0; }\n"
-+		"	memw_locked(%1,P3) = R6;\n"
-+		"	%0 = P3;\n"
-+		"1:\n"
-+		: "=&r" (temp)
-+		: "r" (&lock->lock)
-+		: "memory", "r6", "p3"
-+	);
-+	return temp;
-+}
-+
-+/*
-+ * SMP spinlocks are intended to allow only a single CPU at the lock
-+ */
-+#define arch_spin_lock_flags(lock, flags) arch_spin_lock(lock)
-+#define arch_spin_unlock_wait(lock) \
-+	do {while (arch_spin_is_locked(lock)) cpu_relax(); } while (0)
-+#define arch_spin_is_locked(x) ((x)->lock != 0)
-+
-+#define arch_read_lock_flags(lock, flags) arch_read_lock(lock)
-+#define arch_write_lock_flags(lock, flags) arch_write_lock(lock)
++void setup_percpu_clockdev(void);
++void ipi_timer(void);
 +
 +#endif
-Index: linux-hexagon-kernel/arch/hexagon/include/asm/spinlock_types.h
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/timer-regs.h
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/include/asm/spinlock_types.h	2011-09-03 20:14:59.714981363 -0500
-@@ -0,0 +1,42 @@
++++ linux-hexagon-kernel/arch/hexagon/include/asm/timer-regs.h	2011-09-07 13:00:30.970646848 -0500
+@@ -0,0 +1,39 @@
 +/*
-+ * Spinlock support for the Hexagon architecture
++ * Timer support for Hexagon
 + *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
@@ -248,165 +93,305 @@ Index: linux-hexagon-kernel/arch/hexagon/include/asm/spinlock_types.h
 + * 02110-1301, USA.
 + */
 +
-+#ifndef _ASM_SPINLOCK_TYPES_H
-+#define _ASM_SPINLOCK_TYPES_H
++#ifndef _ASM_TIMER_REGS_H
++#define _ASM_TIMER_REGS_H
 +
-+#include <linux/version.h>
++/*  This stuff should go into a platform specific file  */
++#define TCX0_CLK_RATE		19200
++#define TIMER_ENABLE		0
++#define TIMER_CLR_ON_MATCH	1
 +
-+#ifndef __LINUX_SPINLOCK_TYPES_H
-+# error "please don't include this file directly"
++/*
++ * 8x50 HDD Specs 5-8.  Simulator co-sim not fixed until
++ * release 1.1, and then it's "adjustable" and probably not defaulted.
++ */
++#define RTOS_TIMER_INT		3
++#ifdef CONFIG_HEXAGON_COMET
++#define RTOS_TIMER_REGS_ADDR	0xAB000000UL
 +#endif
-+
-+typedef struct {
-+	volatile unsigned int lock;
-+} arch_spinlock_t;
-+
-+#define __ARCH_SPIN_LOCK_UNLOCKED	{ 0 }
-+
-+typedef struct {
-+	volatile unsigned int lock;
-+} arch_rwlock_t;
-+
-+#define __ARCH_RW_LOCK_UNLOCKED		{ 0 }
++#define SLEEP_CLK_RATE		32000
 +
 +#endif
-Index: linux-hexagon-kernel/include/asm-generic/rwsem.h
+Index: linux-hexagon-kernel/arch/hexagon/kernel/time.c
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/include/asm-generic/rwsem.h	2011-09-07 13:00:37.190656296 -0500
-@@ -0,0 +1,132 @@
-+#ifndef _ASM_POWERPC_RWSEM_H
-+#define _ASM_POWERPC_RWSEM_H
-+
-+#ifndef _LINUX_RWSEM_H
-+#error "Please don't include <asm/rwsem.h> directly, use <linux/rwsem.h> instead."
-+#endif
-+
-+#ifdef __KERNEL__
-+
++++ linux-hexagon-kernel/arch/hexagon/kernel/time.c	2011-09-07 13:00:31.160647137 -0500
+@@ -0,0 +1,275 @@
 +/*
-+ * R/W semaphores for PPC using the stuff in lib/rwsem.c.
-+ * Adapted largely from include/asm-i386/rwsem.h
-+ * by Paul Mackerras <paulus@samba.org>.
++ * Time related functions for Hexagon architecture
++ *
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
 + */
 +
-+/*
-+ * the semaphore definition
-+ */
-+#ifdef CONFIG_PPC64
-+# define RWSEM_ACTIVE_MASK		0xffffffffL
-+#else
-+# define RWSEM_ACTIVE_MASK		0x0000ffffL
-+#endif
++#include <linux/init.h>
++#include <linux/clockchips.h>
++#include <linux/clocksource.h>
++#include <linux/interrupt.h>
++#include <linux/err.h>
++#include <linux/platform_device.h>
++#include <linux/ioport.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/of_irq.h>
 +
-+#define RWSEM_UNLOCKED_VALUE		0x00000000L
-+#define RWSEM_ACTIVE_BIAS		0x00000001L
-+#define RWSEM_WAITING_BIAS		(-RWSEM_ACTIVE_MASK-1)
-+#define RWSEM_ACTIVE_READ_BIAS		RWSEM_ACTIVE_BIAS
-+#define RWSEM_ACTIVE_WRITE_BIAS		(RWSEM_WAITING_BIAS + RWSEM_ACTIVE_BIAS)
++#include <asm/timer-regs.h>
++#include <asm/hexagon_vm.h>
 +
 +/*
-+ * lock for reading
++ * For the clocksource we need:
++ *	pcycle frequency (600MHz)
++ * For the loops_per_jiffy we need:
++ *	thread/cpu frequency (100MHz)
++ * And for the timer, we need:
++ *	sleep clock rate
 + */
-+static inline void __down_read(struct rw_semaphore *sem)
++
++cycles_t	pcycle_freq_mhz;
++cycles_t	thread_freq_mhz;
++cycles_t	sleep_clk_freq;
++
++static struct resource rtos_timer_resources[] = {
++	{
++		.start	= RTOS_TIMER_REGS_ADDR,
++		.end	= RTOS_TIMER_REGS_ADDR+PAGE_SIZE-1,
++		.flags	= IORESOURCE_MEM,
++	},
++};
++
++static struct platform_device rtos_timer_device = {
++	.name		= "rtos_timer",
++	.id		= -1,
++	.num_resources	= ARRAY_SIZE(rtos_timer_resources),
++	.resource	= rtos_timer_resources,
++};
++
++/*  A lot of this stuff should move into a platform specific section.  */
++struct adsp_hw_timer_struct {
++	u32 match;   /*  Match value  */
++	u32 count;
++	u32 enable;  /*  [1] - CLR_ON_MATCH_EN, [0] - EN  */
++	u32 clear;   /*  one-shot register that clears the count  */
++};
++
++/*  Look for "TCX0" for related constants.  */
++static __iomem struct adsp_hw_timer_struct *rtos_timer;
++
++void debug_adsp_timers(void)
 +{
-+	if (unlikely(atomic_long_inc_return((atomic_long_t *)&sem->count) <= 0))
-+		rwsem_down_read_failed(sem);
++	printk(KERN_INFO "rtos_timer->match=0x%08x\n", rtos_timer->match);
++	printk(KERN_INFO "rtos_timer->count=%d\n", rtos_timer->count);
++	printk(KERN_INFO "rtos_timer->enable=%d\n", rtos_timer->enable);
++	printk(KERN_INFO "rtos_timer->clear=%d\n", rtos_timer->clear);
 +}
 +
-+static inline int __down_read_trylock(struct rw_semaphore *sem)
++static cycle_t timer_get_cycles(struct clocksource *cs)
 +{
-+	long tmp;
++	return (cycle_t) __vmgettime();
++}
 +
-+	while ((tmp = sem->count) >= 0) {
-+		if (tmp == cmpxchg(&sem->count, tmp,
-+				   tmp + RWSEM_ACTIVE_READ_BIAS)) {
-+			return 1;
-+		}
-+	}
++static struct clocksource hexagon_clocksource = {
++	.name		= "pcycles",
++	.rating		= 250,
++	.shift		= 16,
++	.read		= timer_get_cycles,
++	.mask		= CLOCKSOURCE_MASK(64),
++	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
++};
++
++static int set_next_event(unsigned long delta, struct clock_event_device *evt)
++{
++	/*  Assuming the timer will be disabled when we enter here.  */
++	rtos_timer->clear = 1;
++	rtos_timer->clear = 0;
++
++	/*  Does this need massaging?  */
++	rtos_timer->match = delta;
++	rtos_timer->enable = 1 << TIMER_ENABLE;
 +	return 0;
 +}
 +
 +/*
-+ * lock for writing
++ * Sets the mode (periodic, shutdown, oneshot, etc) of a timer.
 + */
-+static inline void __down_write_nested(struct rw_semaphore *sem, int subclass)
++static void set_mode(enum clock_event_mode mode,
++	struct clock_event_device *evt)
 +{
-+	long tmp;
-+
-+	tmp = atomic_long_add_return(RWSEM_ACTIVE_WRITE_BIAS,
-+				     (atomic_long_t *)&sem->count);
-+	if (unlikely(tmp != RWSEM_ACTIVE_WRITE_BIAS))
-+		rwsem_down_write_failed(sem);
++	switch (mode) {
++	case CLOCK_EVT_MODE_SHUTDOWN:
++		/* XXX implement me */
++	default:
++		break;
++	}
 +}
 +
-+static inline void __down_write(struct rw_semaphore *sem)
++#ifdef CONFIG_SMP
++/*  Broadcast mechanism  */
++static void broadcast(const struct cpumask *mask)
 +{
-+	__down_write_nested(sem, 0);
++	send_ipi(mask, IPI_TIMER);
++}
++#endif
++
++static struct clock_event_device hexagon_clockevent_dev = {
++	.name		= "clockevent",
++	.features	= CLOCK_EVT_FEAT_ONESHOT,
++	.rating		= 400,
++	.shift		= 32,
++	.irq		= RTOS_TIMER_INT,
++	.set_next_event = set_next_event,
++	.set_mode	= set_mode,
++#ifdef CONFIG_SMP
++	.broadcast	= broadcast,
++#endif
++};
++
++#ifdef CONFIG_SMP
++static DEFINE_PER_CPU(struct clock_event_device, clock_events);
++
++void setup_percpu_clockdev(void)
++{
++	int cpu = smp_processor_id();
++	struct clock_event_device *ce_dev = &hexagon_clockevent_dev;
++	struct clock_event_device *dummy_clock_dev =
++		&per_cpu(clock_events, cpu);
++
++	memcpy(dummy_clock_dev, ce_dev, sizeof(*dummy_clock_dev));
++	INIT_LIST_HEAD(&dummy_clock_dev->list);
++
++	dummy_clock_dev->features = CLOCK_EVT_FEAT_DUMMY;
++	dummy_clock_dev->cpumask = cpumask_of(cpu);
++	dummy_clock_dev->mode = CLOCK_EVT_MODE_UNUSED;
++
++	clockevents_register_device(dummy_clock_dev);
 +}
 +
-+static inline int __down_write_trylock(struct rw_semaphore *sem)
++/*  Called from smp.c for each CPU's timer ipi call  */
++void ipi_timer(void)
 +{
-+	long tmp;
++	int cpu = smp_processor_id();
++	struct clock_event_device *ce_dev = &hexagon_clockevent_dev;
 +
-+	tmp = cmpxchg(&sem->count, RWSEM_UNLOCKED_VALUE,
-+		      RWSEM_ACTIVE_WRITE_BIAS);
-+	return tmp == RWSEM_UNLOCKED_VALUE;
++	ce_dev = &per_cpu(clock_events, cpu);
++	ce_dev->event_handler(ce_dev);
++}
++#endif /* CONFIG_SMP */
++
++static irqreturn_t timer_interrupt(int irq, void *devid)
++{
++	struct clock_event_device *ce_dev = &hexagon_clockevent_dev;
++
++	rtos_timer->enable = 0;
++	ce_dev->event_handler(ce_dev);
++
++	return IRQ_HANDLED;
++}
++
++/*  This should also be pulled from devtree  */
++static struct irqaction rtos_timer_intdesc = {
++	.handler = timer_interrupt,
++	.flags = IRQF_DISABLED | IRQF_TIMER | IRQF_TRIGGER_RISING,
++	.name = "rtos_timer"
++};
++
++void clocksource_debug(struct clocksource *cs)
++{
++	printk(KERN_DEBUG "cs->mult=0x%08x\n", cs->mult);
++	printk(KERN_DEBUG "cs->shift=%d\n", cs->shift);
++}
++
++void clockevent_debug(struct clock_event_device *ce)
++{
++	printk(KERN_DEBUG "ce->mult=0x%08x\n", ce->mult);
++	printk(KERN_DEBUG "ce->shift=%d\n", ce->shift);
 +}
 +
 +/*
-+ * unlock after reading
++ * time_init_deferred - called by start_kernel to set up timer/clock source
++ *
++ * Install the IRQ handler for the clock, setup timers.
++ * This is done late, as that way, we can use ioremap().
++ *
++ * This runs just before the delay loop is calibrated, and
++ * is used for delay calibration.
 + */
-+static inline void __up_read(struct rw_semaphore *sem)
++void __init time_init_deferred(void)
 +{
-+	long tmp;
++	struct resource *resource = NULL;
++	struct clock_event_device *ce_dev = &hexagon_clockevent_dev;
++	struct device_node *dn;
++	struct resource r;
++	int err;
 +
-+	tmp = atomic_long_dec_return((atomic_long_t *)&sem->count);
-+	if (unlikely(tmp < -1 && (tmp & RWSEM_ACTIVE_MASK) == 0))
-+		rwsem_wake(sem);
++	ce_dev->cpumask = cpu_all_mask;
++
++	if (!resource)
++		resource = rtos_timer_device.resource;
++
++	/*  ioremap here means this has to run later, after paging init  */
++	rtos_timer = ioremap(resource->start, resource->end
++		- resource->start + 1);
++
++	if (!rtos_timer) {
++		release_mem_region(resource->start, resource->end
++			- resource->start + 1);
++	}
++	/*  Change to clocksource_register_khz in newer kernels  */
++	clocksource_register_khz(&hexagon_clocksource, pcycle_freq_mhz * 1000);
++	clocksource_debug(&hexagon_clocksource);
++
++	/*  Note: the sim generic RTOS clock is apparently really 18750Hz  */
++
++	/*
++	 * Last arg is some guaranteed seconds for which the conversion will
++	 * work without overflow.
++	 */
++	clockevents_calc_mult_shift(ce_dev, sleep_clk_freq, 4);
++
++	ce_dev->max_delta_ns = clockevent_delta2ns(0x7fffffff, ce_dev);
++	ce_dev->min_delta_ns = clockevent_delta2ns(0xf, ce_dev);
++
++#ifdef CONFIG_SMP
++	setup_percpu_clockdev();
++#endif
++
++	clockevents_register_device(ce_dev);
++	setup_irq(ce_dev->irq, &rtos_timer_intdesc);
++}
++
++void __init time_init(void)
++{
++	late_time_init = time_init_deferred;
 +}
 +
 +/*
-+ * unlock after writing
++ * This could become parametric or perhaps even computed at run-time,
++ * but for now we take the observed simulator jitter.
 + */
-+static inline void __up_write(struct rw_semaphore *sem)
++static long long fudgefactor = 350;  /* Maybe lower if kernel optimized. */
++
++void __udelay(unsigned long usecs)
 +{
-+	if (unlikely(atomic_long_sub_return(RWSEM_ACTIVE_WRITE_BIAS,
-+				 (atomic_long_t *)&sem->count) < 0))
-+		rwsem_wake(sem);
++	unsigned long long start = __vmgettime();
++	unsigned long long finish = (pcycle_freq_mhz * usecs) - fudgefactor;
++
++	while ((__vmgettime() - start) < finish)
++		cpu_relax(); /*  not sure how this improves readability  */
 +}
-+
-+/*
-+ * implement atomic add functionality
-+ */
-+static inline void rwsem_atomic_add(long delta, struct rw_semaphore *sem)
-+{
-+	atomic_long_add(delta, (atomic_long_t *)&sem->count);
-+}
-+
-+/*
-+ * downgrade write lock to read lock
-+ */
-+static inline void __downgrade_write(struct rw_semaphore *sem)
-+{
-+	long tmp;
-+
-+	tmp = atomic_long_add_return(-RWSEM_WAITING_BIAS,
-+				     (atomic_long_t *)&sem->count);
-+	if (tmp < 0)
-+		rwsem_downgrade_wake(sem);
-+}
-+
-+/*
-+ * implement exchange and add functionality
-+ */
-+static inline long rwsem_atomic_update(long delta, struct rw_semaphore *sem)
-+{
-+	return atomic_long_add_return(delta, (atomic_long_t *)&sem->count);
-+}
-+
-+#endif	/* __KERNEL__ */
-+#endif	/* _ASM_POWERPC_RWSEM_H */
++EXPORT_SYMBOL(__udelay);
 
 --
 
