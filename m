@@ -1,70 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757522Ab1IIAsB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 20:48:01 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36977 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757143Ab1IIAsA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 20:48:00 -0400
-Date: Thu, 8 Sep 2011 09:23:04 -0700
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Hin-Tak Leung <htl10@users.sourceforge.net>,
-        Christoph Hellwig <hch@tuxera.com>
-Cc: Pavel Ivanov <paivanof@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Kernel 3.1.0-rc4 oops when connecting iPod
-Message-ID: <20110908162303.GA18435@ubuntu-NB505>
-Mail-Followup-To: Hin-Tak Leung <htl10@users.sourceforge.net>,
-	Christoph Hellwig <hch@tuxera.com>,
-	Pavel Ivanov <paivanof@gmail.com>, linux-fsdevel@vger.kernel.org,
-	linux-kernel <linux-kernel@vger.kernel.org>
-References: <20110907175952.GC23829@thinkpad-t410>
- <1315451581.92826.YahooMailClassic@web29509.mail.ird.yahoo.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1315451581.92826.YahooMailClassic@web29509.mail.ird.yahoo.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757436Ab1IIA51 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 20:57:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28125 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757256Ab1IIA50 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 20:57:26 -0400
+Subject: Re: [PATCH v3] libertas: prioritize usb8388_olpc.bin firmware on
+ OLPC machines
+From: Dan Williams <dcbw@redhat.com>
+To: Andres Salomon <dilinger@queued.net>
+Cc: linville@tuxdriver.com, libertas-dev@lists.infradead.org,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dsd@laptop.org, cjb@laptop.org
+Date: Thu, 08 Sep 2011 20:00:15 -0500
+In-Reply-To: <20110908173517.5b8c90be@queued.net>
+References: <20110908173517.5b8c90be@queued.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Message-ID: <1315530016.2327.1.camel@dcbw.foobar.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 08, 2011 at 04:13:01AM +0100, Hin-Tak Leung wrote:
-> --- On Wed, 7/9/11, Seth Forshee <seth.forshee@canonical.com> wrote:
+On Thu, 2011-09-08 at 17:35 -0700, Andres Salomon wrote:
+> Normally, the v9 firmware will be loaded if it's available.  However, on
+> OLPC XO-1 machines, the olpc-specific firmware supports extra functionality.
+> This makes the libertas driver attempt to load the custom firmware first
+> if the machine is an OLPC machine; if that fails (or it's not an OLPC
+> machine), fall back to attempting to load the other firmwares.
 > 
-> > Yes, that was definitely just an oversight. Has anyone
-> > provided a patch
-> > yet? If not I've pasted a patch below. Seems like a fix
-> > should be
-> > applied ASAP.
-> > 
-> > 
-> > From d27825b880028e9a45ba640d86c9e8101db0606b Mon Sep 17
-> > 00:00:00 2001
-> > From: Seth Forshee <seth.forshee@canonical.com>
-> > Date: Wed, 7 Sep 2011 10:38:35 -0700
-> > Subject: [PATCH] hfsplus: Fix kfree of wrong pointers in
-> > hfsplus_fill_super() error path
-> > 
-> > Commit 6596528 (hfsplus: ensure bio requests are not
-> > smaller than
-> > the hardware sectors) changed the pointers used for volume
-> > header
-> > allocations but failed to change the pointer freed in the
-> > error
-> > path of hfsplus_fill_super(). This patch fixes the
-> > problem.
-> > 
-> > Reported-by: Pavel Ivanov <paivanof@gmail.com>
-> > Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-> > Cc: <stable@kernel.org>
+> usb8388_olpc.bin is currently found in the linux-firmware repository.
 > 
-> Acked-by: Hin-Tak Leung <htl10@users.sourceforge.net>
-> 
-> Please go ahead and submit the patch.
+> Signed-off-by: Andres Salomon <dilinger@queued.net>
 
-That was my patch submission :)
+Acked-by: Dan Williams <dcbw@redhat.com>
 
-Christoph, does that work for you, or would you like me to send the
-patch in a separate email?
+> ---
+> v3: changed firmware path to include libertas/ subdirectory.
+> 
+> Since the last submission (v2), usb8388_olpc.bin has found its way into
+> wireless-firmware.  It'd be nice to get this into the next merge window.
+> 
+>  drivers/net/wireless/libertas/if_usb.c |   21 +++++++++++++++++++++
+>  1 files changed, 21 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/net/wireless/libertas/if_usb.c b/drivers/net/wireless/libertas/if_usb.c
+> index b5acc39..94f8f3e 100644
+> --- a/drivers/net/wireless/libertas/if_usb.c
+> +++ b/drivers/net/wireless/libertas/if_usb.c
+> @@ -973,6 +973,23 @@ static const struct {
+>  	{ MODEL_8682, "libertas/usb8682.bin" }
+>  };
+>  
+> +#ifdef CONFIG_OLPC
+> +
+> +static int try_olpc_fw(struct if_usb_card *cardp)
+> +{
+> +	int retval = -ENOENT;
+> +
+> +	/* try the OLPC firmware first; fall back to fw_table list */
+> +	if (machine_is_olpc() && cardp->model == MODEL_8388)
+> +		retval = request_firmware(&cardp->fw,
+> +				"libertas/usb8388_olpc.bin", &cardp->udev->dev);
+> +	return retval;
+> +}
+> +
+> +#else
+> +static int try_olpc_fw(struct if_usb_card *cardp) { return -ENOENT; }
+> +#endif /* !CONFIG_OLPC */
+> +
+>  static int get_fw(struct if_usb_card *cardp, const char *fwname)
+>  {
+>  	int i;
+> @@ -981,6 +998,10 @@ static int get_fw(struct if_usb_card *cardp, const char *fwname)
+>  	if (fwname)
+>  		return request_firmware(&cardp->fw, fwname, &cardp->udev->dev);
+>  
+> +	/* Handle OLPC firmware */
+> +	if (try_olpc_fw(cardp) == 0)
+> +		return 0;
+> +
+>  	/* Otherwise search for firmware to use */
+>  	for (i = 0; i < ARRAY_SIZE(fw_table); i++) {
+>  		if (fw_table[i].model != cardp->model)
+
+
