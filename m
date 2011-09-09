@@ -1,69 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754418Ab1IIXjK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 19:39:10 -0400
-Received: from mail209.messagelabs.com ([216.82.255.3]:17222 "EHLO
-	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751185Ab1IIXjG (ORCPT
+	id S1753772Ab1IIXkn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 19:40:43 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:45540 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751844Ab1IIXkl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 19:39:06 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-2.tower-209.messagelabs.com!1315611545!16026661!1
-X-Originating-IP: [216.166.12.99]
-X-StarScan-Version: 6.3.6; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] arch/x86/mm/numa.c: quiet sparse noise when CONFIG_X86_64 is not set
-Date: Fri, 9 Sep 2011 16:38:48 -0700
-User-Agent: KMail/1.9.9
-CC: <x86@kernel.org>, <tglx@linutronix.de>, <mingo@redhat.com>,
-        <hpa@zytor.com>, <tj@kernel.org>, <penberg@kernel.org>,
-        <yinghai@kernel.org>, <rientjes@google.com>
+	Fri, 9 Sep 2011 19:40:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201109091638.49186.hartleys@visionengravers.com>
+In-Reply-To: <1315585282.30522.1.camel@vkoul-mobl4>
+References: <1315374075-15479-1-git-send-email-Baohua.Song@csr.com>
+ <438BB0150E931F4B9CE701519A4463010871804A46@bgsmsx502.gar.corp.intel.com>
+ <CAGsJ_4x4S+8d3xS+QTrjDpoxcHo3p7qArd7yFr=+h1vxSRvEpA@mail.gmail.com>
+ <438BB0150E931F4B9CE701519A4463010871804A48@bgsmsx502.gar.corp.intel.com>
+ <CAGsJ_4yeovNP=6CKTafbxrBTrYQ42B9yvAOM8gM_bYqD6mTnUw@mail.gmail.com>
+ <CABb+yY1=P=D3GFFxMOUM0a2yWCiAHNqwVU0a--t+pJnUhqKHKA@mail.gmail.com>
+ <CABb+yY3F+DMn2SxeO0chjpiMBkgLvSK5EVYMdhQsfQoZNZ4_7Q@mail.gmail.com>
+ <1315518378.6638.2.camel@vkoul-mobl4> <CAGsJ_4xv9+=+=2b=i47P5V5sOQH-GyTMaESwbeHxu439Vx1gLA@mail.gmail.com>
+ <1315585282.30522.1.camel@vkoul-mobl4>
+From: Barry Song <21cnbao@gmail.com>
+Date: Sat, 10 Sep 2011 07:40:20 +0800
+Message-ID: <CAGsJ_4xs_vPqhK9mSo8o8E1HKmegNv9mJOQiTYPmLB4P1-ZoRg@mail.gmail.com>
+Subject: Re: [PATCH] dmaengine: add CSR SiRFprimaII DMAC driver
+To: Vinod Koul <vkoul@infradead.org>
+Cc: vinod.koul@intel.com, Jassi Brar <jassisinghbrar@gmail.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "workgroup.linux@csr.com" <workgroup.linux@csr.com>,
+        "rongjun.ying@csr.com" <rongjun.ying@csr.com>,
+        "Baohua.Song@csr.com" <Baohua.Song@csr.com>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If CONFIG_X86_64 is not set the function __node_distance is not declared in
-<asm/topology.h>. This results in the following sparse noise.
+2011/9/10 Vinod Koul <vkoul@infradead.org>:
+> On Fri, 2011-09-09 at 16:18 +0800, Barry Song wrote:
+>> 2011/9/9 Vinod Koul <vkoul@infradead.org>:
+>> > Looks like Jassi got a user for his proposed API. I am not sure whats
+>> > going on with TI folks, they never showed up here @LPC.
+>>
+>> yes, i can definitely be an user of Jassi's new generic api. it seems
+>> the api is just there for dma in 2d.
+>>
+>> Jassi prefer to use a transfer type instead of a control command.
+>> though we will not really change the interleaved setting for every
+>> transfer(it is more possible for one device, we will not change the
+>> xlen/ylen/dma_width setting in the whole life period), i do believe
+>> the transfer type is enough flexible for my possible applications to
+>> change xlen, ylen and dma_width in different transfers.
+>>
+>> as we know, interleaved DMA can also be used for audio driver. for
+>> some audio controllers, if there are n channels, it can't tranfer the
+>> whole audio frame to sound card by one dma channel, and it needs to
+>> tranfer every channel by separate dma. typically, we can define this
+>> kind of xfer to skip other n-1 channel.
+>>
+>> Jassi, you might think my reply as an ACK to "[PATCH] DMAEngine:
+>> Define generic transfer request api".
+> Great, can you two redo patch along with this driver as user of new
+> API :)
 
-warning: symbol '__node_distance' was not declared. Should it be static?
+ok. i'll send v2 using this new API.
 
-Fix this by putting an #ifdef around the function.
-
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: David Rientjes <rientjes@google.com>
-
----
-
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index fbeaaf4..11c60a7 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -455,6 +455,7 @@ void __init numa_set_distance(int from, int to, int distance)
- 	numa_distance[from * numa_distance_cnt + to] = distance;
- }
- 
-+#ifdef CONFIG_X86_64
- int __node_distance(int from, int to)
- {
- 	if (from >= numa_distance_cnt || to >= numa_distance_cnt)
-@@ -462,6 +463,7 @@ int __node_distance(int from, int to)
- 	return numa_distance[from * numa_distance_cnt + to];
- }
- EXPORT_SYMBOL(__node_distance);
-+#endif
- 
- /*
-  * Sanity check to catch more bad NUMA configurations (they are amazingly
+>
+> --
+> ~Vinod Koul
+> Intel Corp.
+>
+>
+-barry
