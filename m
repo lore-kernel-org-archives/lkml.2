@@ -1,45 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759278Ab1IIP3R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 11:29:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43734 "EHLO mx2.suse.de"
+	id S1755391Ab1IIPbt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 11:31:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59646 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759184Ab1IIP3P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 11:29:15 -0400
-Date: Fri, 9 Sep 2011 08:25:33 -0700
-From: Greg KH <gregkh@suse.de>
-To: Olaf Hering <olaf@aepfle.de>
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, virtualization@lists.osdl.org
-Subject: Re: [PATCH] Staging: hv: storvsc: advertise hv_storvsc instead of
- storvsc as driver name
-Message-ID: <20110909152533.GB26556@suse.de>
-References: <20110908162650.GA10699@aepfle.de>
- <20110909124533.GA23598@aepfle.de>
+	id S1753543Ab1IIPbs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Sep 2011 11:31:48 -0400
+Date: Fri, 9 Sep 2011 17:28:00 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        dvlasenk@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 0/2] Fixes and cleanups in PTRACE_SETOPTIONS
+Message-ID: <20110909152800.GA21892@redhat.com>
+References: <201109090822.30063.vda.linux@googlemail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110909124533.GA23598@aepfle.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201109090822.30063.vda.linux@googlemail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 09, 2011 at 02:45:33PM +0200, Olaf Hering wrote:
-> 
-> Signed-off-by: Olaf Hering <olaf@aepfle.de>
-> 
-> --- a/drivers/staging/hv/storvsc_drv.c
-> +++ b/drivers/staging/hv/storvsc_drv.c
-> @@ -42,6 +42,8 @@
->  
->  #include "hyperv.h"
->  
-> +#define MODULE_NAME "hv_storvsc"
+On 09/09, Denys Vlasenko wrote:
+>
+> This patchset has two changes.
+>
+> First patch makes ptrace(PTRACE_SETOPTIONS, pid, 0, <bogus value>)
+> to error out *without* changing any task->ptrace bits.
+>
+> Second patch is a cleanup: PTRACE_SETOPTIONS code
+> clears all option bits in task->ptrace, then sets bits one-by-one.
+> This is butt-ugly.
 
-No, just use KBUILD_MODNAME, it's already there and correct.  Care to
-fix this one, and your other patch, to use it instead?
+OK, thanks.
 
-thanks,
+I'll wait a bit to collect the possible acks, and apply.
 
-greg k-h
+Oleg.
+
