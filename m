@@ -1,73 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933367Ab1IIN1J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 09:27:09 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:34238 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758774Ab1IIN1G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 09:27:06 -0400
-Date: Fri, 9 Sep 2011 18:56:37 +0530
-From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Turner <pjt@google.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelianov <xemul@parallels.com>
-Subject: Re: CFS Bandwidth Control - Test results of cgroups tasks pinned vs
- unpinnede
-Message-ID: <20110909132637.GA8724@linux.vnet.ibm.com>
-Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-References: <20110608163234.GA23031@linux.vnet.ibm.com>
- <BANLkTim7a9uhH_K6sw4YdqWB6frT+HUqqQ@mail.gmail.com>
- <20110610181719.GA30330@linux.vnet.ibm.com>
- <BANLkTimE1b8HP-q4jgsv5jPD5S-dRoUi_g@mail.gmail.com>
- <20110615053716.GA390@linux.vnet.ibm.com>
- <BANLkTi=7S2qdVjbJkDja+GAoD=pNo2gPsTFZMFkB8NWWkO1JVQ@mail.gmail.com>
- <20110907152009.GA3868@linux.vnet.ibm.com>
- <1315423342.11101.25.camel@twins>
- <20110908151433.GB6587@linux.vnet.ibm.com>
- <1315571462.26517.9.camel@twins>
+	id S1759005Ab1IINa3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 09:30:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2240 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758781Ab1IINa1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Sep 2011 09:30:27 -0400
+Date: Fri, 9 Sep 2011 10:29:55 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: emunson@mgebm.net
+Cc: Anthony Liguori <anthony@codemonkey.ws>, avi@redhat.com,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, arnd@arndb.de,
+        riel@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, kvm-ppc@vger.kernel.org,
+        aliguori@us.ibm.com, raharper@us.ibm.com, kvm-ia64@vger.kernel.org,
+        Glauber Costa <glommer@gmail.com>
+Subject: Re: [PATCH 0/4] Avoid soft lockup message when KVM is stopped by host
+Message-ID: <20110909132955.GA19459@amt.cnet>
+References: <1314660435-23293-1-git-send-email-emunson@mgebm.net>
+ <20110830122630.GA19450@amt.cnet>
+ <4E5FDBDC.2030302@codemonkey.ws>
+ <6c387b0ab0b091253c1a1488dd625b94@mgebm.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1315571462.26517.9.camel@twins>
+In-Reply-To: <6c387b0ab0b091253c1a1488dd625b94@mgebm.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 11090913-3270-0000-0000-000000139677
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <a.p.zijlstra@chello.nl> [2011-09-09 14:31:02]:
+On Thu, Sep 01, 2011 at 02:27:49PM -0600, emunson@mgebm.net wrote:
+> On Thu, 01 Sep 2011 14:24:12 -0500, Anthony Liguori wrote:
+> >On 08/30/2011 07:26 AM, Marcelo Tosatti wrote:
+> >>On Mon, Aug 29, 2011 at 05:27:11PM -0600, Eric B Munson wrote:
+> >>>Currently, when qemu stops a guest kernel that guest will
+> >>>issue a soft lockup
+> >>>message when it resumes.  This set provides the ability for
+> >>>qemu to comminucate
+> >>>to the guest that it has been stopped.  When the guest hits
+> >>>the watchdog on
+> >>>resume it will check if it was suspended before issuing the
+> >>>warning.
+> >>>
+> >>>Eric B Munson (4):
+> >>>   Add flag to indicate that a vm was stopped by the host
+> >>>   Add functions to check if the host has stopped the vm
+> >>>   Add generic stubs for kvm stop check functions
+> >>>   Add check for suspended vm in softlockup detector
+> >>>
+> >>>  arch/x86/include/asm/pvclock-abi.h |    1 +
+> >>>  arch/x86/include/asm/pvclock.h     |    2 ++
+> >>>  arch/x86/kernel/kvmclock.c         |   14 ++++++++++++++
+> >>>  include/asm-generic/pvclock.h      |   14 ++++++++++++++
+> >>>  kernel/watchdog.c                  |   12 ++++++++++++
+> >>>  5 files changed, 43 insertions(+), 0 deletions(-)
+> >>>  create mode 100644 include/asm-generic/pvclock.h
+> >>>
+> >>>--
+> >>>1.7.4.1
+> >>
+> >>How is the host supposed to set this flag?
+> >>
+> >>As mentioned previously, if you save save/restore the offset
+> >>added to
+> >>kvmclock on stop/cont (and the TSC MSR, forgot to mention that), no
+> >>paravirt infrastructure is required. Which means the issue is
+> >>also fixed
+> >>for older guests.
+> >
+> >IIRC, the steal time patches have some logic that basically say:
+> >
+> >if there was steal time:
+> >   kick soft lockup detector
+> >
+> >I wonder if that serves this purpose provided that time spent in stop
+> >is accounted as steal time.  If it isn't, perhaps it should be?
 
-> > We have setup cgroups and their hard limits so that in theory they should
-> > consume the entire capacity available on machine, leading to 0% idle time.
-> > That's not what we see. A more detailed description of the setup and the problem
-> > is here:
-> > 
-> > https://lkml.org/lkml/2011/6/7/352
+Accounting "in userspace (qemu)" as stolen time is problematic. Think
+irqchip in userspace (halt emulation), excessive time spent in device
+emulation that would trigger genuine watchdog warnings.
+
+The latest patches from Glauber dropped this logic.
+
+
+> >
+> >Regards,
+> >
+> >Anthony Liguori
+> >
 > 
-> That's frigging irrelevant isn't it? A patch should contain its own
-> justification.
-
-Agreed my bad. I was (wrongly) setting the problem context by posting
-this in response to Paul's email where the problem was discussed.
-
-> > One
-> > possibility is to make the idle load balancer become aggressive in
-> > pulling tasks across sched-domain boundaries i.e when a CPU becomes idle
-> > (after a task got throttled) and invokes the idle load balancer, it
-> > should try "harder" at pulling a task from far-off cpus (across
-> > package/node boundaries)?
+> I could be missing it, but I don't see anywhere in the steal time
+> patches that kicks the watchdog.
 > 
-> How about we just live with it?
-
-I think we will, unless the load balancer can be improved (which seems unlikely 
-to me :-()
-
-- vatsa
-
+> Accounting stopped time as stolen time opens a possible problem when
+> the accounting (CPU power modification) part is turned on.  As a
+> process accumulates steal time its CPU power is increased.  If we
+> account stopped time as stolen, it will do strange things with CPU
+> power for that process.  I believe that it is for this reason that
+> patch 4 of Glauber's series explicitly states that halted time is
+> not stolen time.  Stolen time is only accumulated when a vCPU
+> actually has work to do.
+> 
+> Eric
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
