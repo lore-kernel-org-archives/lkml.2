@@ -1,50 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758116Ab1IIBPd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 21:15:33 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:53605 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932216Ab1IIBLb (ORCPT
+	id S1758215Ab1IIBPg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 21:15:36 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:30784 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932212Ab1IIBLa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 21:11:31 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6463"; a="116864787"
-Message-Id: <20110909010917.279812342@codeaurora.org>
+	Thu, 8 Sep 2011 21:11:30 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6463"; a="116679232"
+Message-Id: <20110909010916.801809244@codeaurora.org>
 User-Agent: quilt/0.48-1
-Date: Thu, 08 Sep 2011 20:09:14 -0500
+Date: Thu, 08 Sep 2011 20:09:09 -0500
 From: Richard Kuo <rkuo@codeaurora.org>
 To: linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Cc: Linas Vepstas <linas@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>
-Subject: [patch v3 27/36] Hexagon: Provide DMA implementation
+Subject: [patch v3 22/36] Hexagon: Add locking types and functions
 References: <20110909010847.294039464@codeaurora.org>
-Content-Disposition: inline; filename=dma.diff
+Content-Disposition: inline; filename=rwsem-spin.diff
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Basic DMA implementation for our architecture.
-
-Added sync_single_for_* routines; hexagon_map_page() still seems to be a
-convenient place to flush/invalidate.
-
+Moved rwsem to asm-generic.  Will submit a subsequent patch for PPC
+use it from the new location.
 
 Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
-Signed-off-by: Linas Vepstas <linas@codeaurora.org>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
 
 ---
- arch/hexagon/include/asm/dma-mapping.h |  101 +++++++++++++++
- arch/hexagon/include/asm/dma.h         |   29 ++++
- arch/hexagon/kernel/dma.c              |  220 +++++++++++++++++++++++++++++++++
- 3 files changed, 350 insertions(+)
+ arch/hexagon/include/asm/spinlock.h       |  186 ++++++++++++++++++++++++++++++
+ arch/hexagon/include/asm/spinlock_types.h |   42 ++++++
+ include/asm-generic/rwsem.h               |  132 +++++++++++++++++++++
+ 3 files changed, 360 insertions(+)
 
-Index: linux-hexagon-kernel/arch/hexagon/include/asm/dma.h
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/spinlock.h
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/include/asm/dma.h	2011-09-03 20:14:59.764981503 -0500
-@@ -0,0 +1,29 @@
++++ linux-hexagon-kernel/arch/hexagon/include/asm/spinlock.h	2011-09-03 20:14:59.714981363 -0500
+@@ -0,0 +1,186 @@
 +/*
++ * Spinlock support for the Hexagon architecture
++ *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 and
@@ -61,24 +58,178 @@ Index: linux-hexagon-kernel/arch/hexagon/include/asm/dma.h
 + * 02110-1301, USA.
 + */
 +
-+#ifndef _ASM_DMA_H
-+#define _ASM_DMA_H
++#ifndef _ASM_SPINLOCK_H
++#define _ASM_SPINLOCK_H
 +
-+#include <asm/io.h>
++#include <asm/irqflags.h>
 +
-+#define MAX_DMA_CHANNELS 1
-+#define MAX_DMA_ADDRESS  (PAGE_OFFSET)
++/*
++ * This file is pulled in for SMP builds.
++ * Really need to check all the barrier stuff for "true" SMP
++ */
 +
-+extern size_t hexagon_coherent_pool_size;
++/*
++ * Read locks:
++ * - load the lock value
++ * - increment it
++ * - if the lock value is still negative, go back and try again.
++ * - unsuccessful store is unsuccessful.  Go back and try again.  Loser.
++ * - successful store new lock value if positive -> lock acquired
++ */
++static inline void arch_read_lock(arch_rwlock_t *lock)
++{
++	__asm__ __volatile__(
++		"1:	R6 = memw_locked(%0);\n"
++		"	{ P3 = cmp.ge(R6,#0); R6 = add(R6,#1);}\n"
++		"	{ if !P3 jump 1b; }\n"
++		"	memw_locked(%0,P3) = R6;\n"
++		"	{ if !P3 jump 1b; }\n"
++		:
++		: "r" (&lock->lock)
++		: "memory", "r6", "p3"
++	);
++
++}
++
++static inline void arch_read_unlock(arch_rwlock_t *lock)
++{
++	__asm__ __volatile__(
++		"1:	R6 = memw_locked(%0);\n"
++		"	R6 = add(R6,#-1);\n"
++		"	memw_locked(%0,P3) = R6\n"
++		"	if !P3 jump 1b;\n"
++		:
++		: "r" (&lock->lock)
++		: "memory", "r6", "p3"
++	);
++
++}
++
++/*  I think this returns 0 on fail, 1 on success.  */
++static inline int arch_read_trylock(arch_rwlock_t *lock)
++{
++	int temp;
++	__asm__ __volatile__(
++		"	R6 = memw_locked(%1);\n"
++		"	{ %0 = #0; P3 = cmp.ge(R6,#0); R6 = add(R6,#1);}\n"
++		"	{ if !P3 jump 1f; }\n"
++		"	memw_locked(%1,P3) = R6;\n"
++		"	{ %0 = P3 }\n"
++		"1:\n"
++		: "=&r" (temp)
++		: "r" (&lock->lock)
++		: "memory", "r6", "p3"
++	);
++	return temp;
++}
++
++static inline int arch_read_can_lock(arch_rwlock_t *rwlock)
++{
++	return rwlock->lock == 0;
++}
++
++static inline int arch_write_can_lock(arch_rwlock_t *rwlock)
++{
++	return rwlock->lock == 0;
++}
++
++/*  Stuffs a -1 in the lock value?  */
++static inline void arch_write_lock(arch_rwlock_t *lock)
++{
++	__asm__ __volatile__(
++		"1:	R6 = memw_locked(%0)\n"
++		"	{ P3 = cmp.eq(R6,#0);  R6 = #-1;}\n"
++		"	{ if !P3 jump 1b; }\n"
++		"	memw_locked(%0,P3) = R6;\n"
++		"	{ if !P3 jump 1b; }\n"
++		:
++		: "r" (&lock->lock)
++		: "memory", "r6", "p3"
++	);
++}
++
++
++static inline int arch_write_trylock(arch_rwlock_t *lock)
++{
++	int temp;
++	__asm__ __volatile__(
++		"	R6 = memw_locked(%1)\n"
++		"	{ %0 = #0; P3 = cmp.eq(R6,#0);  R6 = #-1;}\n"
++		"	{ if !P3 jump 1f; }\n"
++		"	memw_locked(%1,P3) = R6;\n"
++		"	%0 = P3;\n"
++		"1:\n"
++		: "=&r" (temp)
++		: "r" (&lock->lock)
++		: "memory", "r6", "p3"
++	);
++	return temp;
++
++}
++
++static inline void arch_write_unlock(arch_rwlock_t *lock)
++{
++	smp_mb();
++	lock->lock = 0;
++}
++
++static inline void arch_spin_lock(arch_spinlock_t *lock)
++{
++	__asm__ __volatile__(
++		"1:	R6 = memw_locked(%0);\n"
++		"	P3 = cmp.eq(R6,#0);\n"
++		"	{ if !P3 jump 1b; R6 = #1; }\n"
++		"	memw_locked(%0,P3) = R6;\n"
++		"	{ if !P3 jump 1b; }\n"
++		:
++		: "r" (&lock->lock)
++		: "memory", "r6", "p3"
++	);
++
++}
++
++static inline void arch_spin_unlock(arch_spinlock_t *lock)
++{
++	smp_mb();
++	lock->lock = 0;
++}
++
++static inline unsigned int arch_spin_trylock(arch_spinlock_t *lock)
++{
++	int temp;
++	__asm__ __volatile__(
++		"	R6 = memw_locked(%1);\n"
++		"	P3 = cmp.eq(R6,#0);\n"
++		"	{ if !P3 jump 1f; R6 = #1; %0 = #0; }\n"
++		"	memw_locked(%1,P3) = R6;\n"
++		"	%0 = P3;\n"
++		"1:\n"
++		: "=&r" (temp)
++		: "r" (&lock->lock)
++		: "memory", "r6", "p3"
++	);
++	return temp;
++}
++
++/*
++ * SMP spinlocks are intended to allow only a single CPU at the lock
++ */
++#define arch_spin_lock_flags(lock, flags) arch_spin_lock(lock)
++#define arch_spin_unlock_wait(lock) \
++	do {while (arch_spin_is_locked(lock)) cpu_relax(); } while (0)
++#define arch_spin_is_locked(x) ((x)->lock != 0)
++
++#define arch_read_lock_flags(lock, flags) arch_read_lock(lock)
++#define arch_write_lock_flags(lock, flags) arch_write_lock(lock)
 +
 +#endif
-Index: linux-hexagon-kernel/arch/hexagon/include/asm/dma-mapping.h
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/spinlock_types.h
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/include/asm/dma-mapping.h	2011-09-03 20:14:59.764981503 -0500
-@@ -0,0 +1,101 @@
++++ linux-hexagon-kernel/arch/hexagon/include/asm/spinlock_types.h	2011-09-03 20:14:59.714981363 -0500
+@@ -0,0 +1,42 @@
 +/*
-+ * DMA operations for the Hexagon architecture
++ * Spinlock support for the Hexagon architecture
 + *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
@@ -97,312 +248,165 @@ Index: linux-hexagon-kernel/arch/hexagon/include/asm/dma-mapping.h
 + * 02110-1301, USA.
 + */
 +
-+#ifndef _ASM_DMA_MAPPING_H
-+#define _ASM_DMA_MAPPING_H
++#ifndef _ASM_SPINLOCK_TYPES_H
++#define _ASM_SPINLOCK_TYPES_H
 +
-+#include <linux/types.h>
-+#include <linux/cache.h>
-+#include <linux/mm.h>
-+#include <linux/scatterlist.h>
-+#include <linux/dma-mapping.h>
-+#include <linux/dma-debug.h>
-+#include <linux/dma-attrs.h>
-+#include <asm/io.h>
++#include <linux/version.h>
 +
-+struct device;
-+extern int bad_dma_address;
++#ifndef __LINUX_SPINLOCK_TYPES_H
++# error "please don't include this file directly"
++#endif
 +
-+extern struct dma_map_ops *dma_ops;
++typedef struct {
++	volatile unsigned int lock;
++} arch_spinlock_t;
 +
-+#define dma_alloc_noncoherent(d, s, h, f) dma_alloc_coherent(d, s, h, f)
-+#define dma_free_noncoherent(d, s, v, h) dma_free_coherent(d, s, v, h)
++#define __ARCH_SPIN_LOCK_UNLOCKED	{ 0 }
 +
-+static inline struct dma_map_ops *get_dma_ops(struct device *dev)
-+{
-+	if (unlikely(dev == NULL))
-+		return NULL;
++typedef struct {
++	volatile unsigned int lock;
++} arch_rwlock_t;
 +
-+	return dma_ops;
-+}
-+
-+extern int dma_supported(struct device *dev, u64 mask);
-+extern int dma_set_mask(struct device *dev, u64 mask);
-+extern int dma_is_consistent(struct device *dev, dma_addr_t dma_handle);
-+extern void dma_cache_sync(struct device *dev, void *vaddr, size_t size,
-+			   enum dma_data_direction direction);
-+
-+#include <asm-generic/dma-mapping-common.h>
-+
-+static inline bool dma_capable(struct device *dev, dma_addr_t addr, size_t size)
-+{
-+	if (!dev->dma_mask)
-+		return 0;
-+	return addr + size - 1 <= *dev->dma_mask;
-+}
-+
-+static inline int dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
-+{
-+	struct dma_map_ops *dma_ops = get_dma_ops(dev);
-+
-+	if (dma_ops->mapping_error)
-+		return dma_ops->mapping_error(dev, dma_addr);
-+
-+	return (dma_addr == bad_dma_address);
-+}
-+
-+static inline void *dma_alloc_coherent(struct device *dev, size_t size,
-+				       dma_addr_t *dma_handle, gfp_t flag)
-+{
-+	void *ret;
-+	struct dma_map_ops *ops = get_dma_ops(dev);
-+
-+	BUG_ON(!dma_ops);
-+
-+	ret = ops->alloc_coherent(dev, size, dma_handle, flag);
-+
-+	debug_dma_alloc_coherent(dev, size, *dma_handle, ret);
-+
-+	return ret;
-+}
-+
-+static inline void dma_free_coherent(struct device *dev, size_t size,
-+				     void *cpu_addr, dma_addr_t dma_handle)
-+{
-+	struct dma_map_ops *dma_ops = get_dma_ops(dev);
-+
-+	BUG_ON(!dma_ops);
-+
-+	dma_ops->free_coherent(dev, size, cpu_addr, dma_handle);
-+
-+	debug_dma_free_coherent(dev, size, cpu_addr, dma_handle);
-+}
++#define __ARCH_RW_LOCK_UNLOCKED		{ 0 }
 +
 +#endif
-Index: linux-hexagon-kernel/arch/hexagon/kernel/dma.c
+Index: linux-hexagon-kernel/include/asm-generic/rwsem.h
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/kernel/dma.c	2011-09-07 13:00:31.040646956 -0500
-@@ -0,0 +1,220 @@
++++ linux-hexagon-kernel/include/asm-generic/rwsem.h	2011-09-07 13:00:37.190656296 -0500
+@@ -0,0 +1,132 @@
++#ifndef _ASM_POWERPC_RWSEM_H
++#define _ASM_POWERPC_RWSEM_H
++
++#ifndef _LINUX_RWSEM_H
++#error "Please don't include <asm/rwsem.h> directly, use <linux/rwsem.h> instead."
++#endif
++
++#ifdef __KERNEL__
++
 +/*
-+ * DMA implementation for Hexagon
-+ *
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
++ * R/W semaphores for PPC using the stuff in lib/rwsem.c.
++ * Adapted largely from include/asm-i386/rwsem.h
++ * by Paul Mackerras <paulus@samba.org>.
 + */
 +
-+#include <linux/dma-mapping.h>
-+#include <linux/bootmem.h>
-+#include <linux/genalloc.h>
-+#include <asm/dma-mapping.h>
++/*
++ * the semaphore definition
++ */
++#ifdef CONFIG_PPC64
++# define RWSEM_ACTIVE_MASK		0xffffffffL
++#else
++# define RWSEM_ACTIVE_MASK		0x0000ffffL
++#endif
 +
-+struct dma_map_ops *dma_ops;
-+EXPORT_SYMBOL(dma_ops);
++#define RWSEM_UNLOCKED_VALUE		0x00000000L
++#define RWSEM_ACTIVE_BIAS		0x00000001L
++#define RWSEM_WAITING_BIAS		(-RWSEM_ACTIVE_MASK-1)
++#define RWSEM_ACTIVE_READ_BIAS		RWSEM_ACTIVE_BIAS
++#define RWSEM_ACTIVE_WRITE_BIAS		(RWSEM_WAITING_BIAS + RWSEM_ACTIVE_BIAS)
 +
-+int bad_dma_address;  /*  globals are automatically initialized to zero  */
-+
-+int dma_supported(struct device *dev, u64 mask)
++/*
++ * lock for reading
++ */
++static inline void __down_read(struct rw_semaphore *sem)
 +{
-+	if (mask == DMA_BIT_MASK(32))
-+		return 1;
-+	else
-+		return 0;
++	if (unlikely(atomic_long_inc_return((atomic_long_t *)&sem->count) <= 0))
++		rwsem_down_read_failed(sem);
 +}
-+EXPORT_SYMBOL(dma_supported);
 +
-+int dma_set_mask(struct device *dev, u64 mask)
++static inline int __down_read_trylock(struct rw_semaphore *sem)
 +{
-+	if (!dev->dma_mask || !dma_supported(dev, mask))
-+		return -EIO;
++	long tmp;
 +
-+	*dev->dma_mask = mask;
-+
++	while ((tmp = sem->count) >= 0) {
++		if (tmp == cmpxchg(&sem->count, tmp,
++				   tmp + RWSEM_ACTIVE_READ_BIAS)) {
++			return 1;
++		}
++	}
 +	return 0;
 +}
-+EXPORT_SYMBOL(dma_set_mask);
 +
-+static struct gen_pool *coherent_pool;
-+
-+
-+/* Allocates from a pool of uncached memory that was reserved at boot time */
-+
-+void *hexagon_dma_alloc_coherent(struct device *dev, size_t size,
-+				 dma_addr_t *dma_addr, gfp_t flag)
++/*
++ * lock for writing
++ */
++static inline void __down_write_nested(struct rw_semaphore *sem, int subclass)
 +{
-+	void *ret;
++	long tmp;
 +
-+	if (coherent_pool == NULL) {
-+		coherent_pool = gen_pool_create(PAGE_SHIFT, -1);
-+
-+		if (coherent_pool == NULL)
-+			panic("Can't create %s() memory pool!", __func__);
-+		else
-+			gen_pool_add(coherent_pool,
-+				(PAGE_OFFSET + (max_low_pfn << PAGE_SHIFT)),
-+				hexagon_coherent_pool_size, -1);
-+	}
-+
-+	ret = (void *) gen_pool_alloc(coherent_pool, size);
-+
-+	if (ret) {
-+		memset(ret, 0, size);
-+		*dma_addr = (dma_addr_t) (ret - PAGE_OFFSET);
-+	} else
-+		*dma_addr = ~0;
-+
-+	return ret;
++	tmp = atomic_long_add_return(RWSEM_ACTIVE_WRITE_BIAS,
++				     (atomic_long_t *)&sem->count);
++	if (unlikely(tmp != RWSEM_ACTIVE_WRITE_BIAS))
++		rwsem_down_write_failed(sem);
 +}
 +
-+static void hexagon_free_coherent(struct device *dev, size_t size, void *vaddr,
-+				  dma_addr_t dma_addr)
++static inline void __down_write(struct rw_semaphore *sem)
 +{
-+	gen_pool_free(coherent_pool, (unsigned long) vaddr, size);
++	__down_write_nested(sem, 0);
 +}
 +
-+static int check_addr(const char *name, struct device *hwdev,
-+		      dma_addr_t bus, size_t size)
++static inline int __down_write_trylock(struct rw_semaphore *sem)
 +{
-+	if (hwdev && hwdev->dma_mask && !dma_capable(hwdev, bus, size)) {
-+		if (*hwdev->dma_mask >= DMA_BIT_MASK(32))
-+			printk(KERN_ERR
-+				"%s: overflow %Lx+%zu of device mask %Lx\n",
-+				name, (long long)bus, size,
-+				(long long)*hwdev->dma_mask);
-+		return 0;
-+	}
-+	return 1;
-+}
++	long tmp;
 +
-+static int hexagon_map_sg(struct device *hwdev, struct scatterlist *sg,
-+			  int nents, enum dma_data_direction dir,
-+			  struct dma_attrs *attrs)
-+{
-+	struct scatterlist *s;
-+	int i;
-+
-+	WARN_ON(nents == 0 || sg[0].length == 0);
-+
-+	for_each_sg(sg, s, nents, i) {
-+		s->dma_address = sg_phys(s);
-+		if (!check_addr("map_sg", hwdev, s->dma_address, s->length))
-+			return 0;
-+
-+		s->dma_length = s->length;
-+
-+		flush_dcache_range(PAGE_OFFSET + s->dma_address,
-+				   PAGE_OFFSET + s->dma_address + s->length);
-+	}
-+
-+	return nents;
++	tmp = cmpxchg(&sem->count, RWSEM_UNLOCKED_VALUE,
++		      RWSEM_ACTIVE_WRITE_BIAS);
++	return tmp == RWSEM_UNLOCKED_VALUE;
 +}
 +
 +/*
-+ * address is virtual
++ * unlock after reading
 + */
-+static inline void dma_sync(void *addr, size_t size,
-+			    enum dma_data_direction dir)
++static inline void __up_read(struct rw_semaphore *sem)
 +{
-+	switch (dir) {
-+	case DMA_TO_DEVICE:
-+		hexagon_clean_dcache_range((unsigned long) addr,
-+		(unsigned long) addr + size);
-+		break;
-+	case DMA_FROM_DEVICE:
-+		hexagon_inv_dcache_range((unsigned long) addr,
-+		(unsigned long) addr + size);
-+		break;
-+	case DMA_BIDIRECTIONAL:
-+		flush_dcache_range((unsigned long) addr,
-+		(unsigned long) addr + size);
-+		break;
-+	default:
-+		BUG();
-+	}
++	long tmp;
++
++	tmp = atomic_long_dec_return((atomic_long_t *)&sem->count);
++	if (unlikely(tmp < -1 && (tmp & RWSEM_ACTIVE_MASK) == 0))
++		rwsem_wake(sem);
 +}
 +
-+static inline void *dma_addr_to_virt(dma_addr_t dma_addr)
-+{
-+	return phys_to_virt((unsigned long) dma_addr);
-+}
-+
-+/**
-+ * hexagon_map_page() - maps an address for device DMA
-+ * @dev:	pointer to DMA device
-+ * @page:	pointer to page struct of DMA memory
-+ * @offset:	offset within page
-+ * @size:	size of memory to map
-+ * @dir:	transfer direction
-+ * @attrs:	pointer to DMA attrs (not used)
-+ *
-+ * Called to map a memory address to a DMA address prior
-+ * to accesses to/from device.
-+ *
-+ * We don't particularly have many hoops to jump through
-+ * so far.  Straight translation between phys and virtual.
-+ *
-+ * DMA is not cache coherent so sync is necessary; this
-+ * seems to be a convenient place to do it.
-+ *
++/*
++ * unlock after writing
 + */
-+static dma_addr_t hexagon_map_page(struct device *dev, struct page *page,
-+				   unsigned long offset, size_t size,
-+				   enum dma_data_direction dir,
-+				   struct dma_attrs *attrs)
++static inline void __up_write(struct rw_semaphore *sem)
 +{
-+	dma_addr_t bus = page_to_phys(page) + offset;
-+	WARN_ON(size == 0);
-+
-+	if (!check_addr("map_single", dev, bus, size))
-+		return bad_dma_address;
-+
-+	dma_sync(dma_addr_to_virt(bus), size, dir);
-+
-+	return bus;
++	if (unlikely(atomic_long_sub_return(RWSEM_ACTIVE_WRITE_BIAS,
++				 (atomic_long_t *)&sem->count) < 0))
++		rwsem_wake(sem);
 +}
 +
-+static void hexagon_sync_single_for_cpu(struct device *dev,
-+					dma_addr_t dma_handle, size_t size,
-+					enum dma_data_direction dir)
++/*
++ * implement atomic add functionality
++ */
++static inline void rwsem_atomic_add(long delta, struct rw_semaphore *sem)
 +{
-+	dma_sync(dma_addr_to_virt(dma_handle), size, dir);
++	atomic_long_add(delta, (atomic_long_t *)&sem->count);
 +}
 +
-+static void hexagon_sync_single_for_device(struct device *dev,
-+					dma_addr_t dma_handle, size_t size,
-+					enum dma_data_direction dir)
++/*
++ * downgrade write lock to read lock
++ */
++static inline void __downgrade_write(struct rw_semaphore *sem)
 +{
-+	dma_sync(dma_addr_to_virt(dma_handle), size, dir);
++	long tmp;
++
++	tmp = atomic_long_add_return(-RWSEM_WAITING_BIAS,
++				     (atomic_long_t *)&sem->count);
++	if (tmp < 0)
++		rwsem_downgrade_wake(sem);
 +}
 +
-+struct dma_map_ops hexagon_dma_ops = {
-+	.alloc_coherent	= hexagon_dma_alloc_coherent,
-+	.free_coherent	= hexagon_free_coherent,
-+	.map_sg		= hexagon_map_sg,
-+	.map_page	= hexagon_map_page,
-+	.sync_single_for_cpu = hexagon_sync_single_for_cpu,
-+	.sync_single_for_device = hexagon_sync_single_for_device,
-+	.is_phys	= 1,
-+};
-+
-+void __init hexagon_dma_init(void)
++/*
++ * implement exchange and add functionality
++ */
++static inline long rwsem_atomic_update(long delta, struct rw_semaphore *sem)
 +{
-+	if (dma_ops)
-+		return;
-+
-+	dma_ops = &hexagon_dma_ops;
++	return atomic_long_add_return(delta, (atomic_long_t *)&sem->count);
 +}
++
++#endif	/* __KERNEL__ */
++#endif	/* _ASM_POWERPC_RWSEM_H */
 
 --
 
