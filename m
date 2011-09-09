@@ -1,82 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932864Ab1IIIj6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 04:39:58 -0400
-Received: from mga09.intel.com ([134.134.136.24]:25492 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932096Ab1IIIj5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 04:39:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="46572435"
-Subject: RE: [PATCH] slub Discard slab page only when node partials >
- minimum setting
-From: "Alex,Shi" <alex.shi@intel.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: "penberg@kernel.org" <penberg@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        "Li, Shaohua" <shaohua.li@intel.com>,
-        "Chen, Tim C" <tim.c.chen@intel.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-In-Reply-To: <alpine.DEB.2.00.1109081336320.14787@router.home>
-References: <1315188460.31737.5.camel@debian>
-	 <alpine.DEB.2.00.1109061914440.18646@router.home>
-	 <1315357399.31737.49.camel@debian>
-	 <alpine.DEB.2.00.1109062022100.20474@router.home>
-	 <4E671E5C.7010405@cs.helsinki.fi>
-	 <6E3BC7F7C9A4BF4286DD4C043110F30B5D00DA333C@shsmsx502.ccr.corp.intel.com>
-	 <alpine.DEB.2.00.1109071003240.9406@router.home>
-	 <1315442639.31737.224.camel@debian>
-	 <alpine.DEB.2.00.1109081336320.14787@router.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 09 Sep 2011 16:45:44 +0800
-Message-ID: <1315557944.31737.782.camel@debian>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S932898Ab1IIIkR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 04:40:17 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:56180 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932096Ab1IIIkM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Sep 2011 04:40:12 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Richard Kuo <rkuo@codeaurora.org>, Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch v3 00/36] Hexagon: Add support for Qualcomm Hexagon architecture
+Date: Fri, 09 Sep 2011 10:39:45 +0200
+Message-ID: <3067098.EfRYKETXVd@wuerfel>
+User-Agent: KMail/4.7.0  (Linux/3.0.0-rc1nosema+; KDE/4.7.0; x86_64; ; )
+In-Reply-To: <20110909010847.294039464@codeaurora.org>
+References: <20110909010847.294039464@codeaurora.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:Y9Kn1oygbNREdk8HY6B+fjNHaSoCxMXGlt/haLYKmca
+ VXiZAF3R6phljyHbggWKjlvSC2cKdHh7gYW7qRcLAHiNEYozqs
+ Z7w+qYTuLNfulJUdOElUAir3W8X4dib0QgXcpuZJHXIgCorHhf
+ NvqJkcST7YKosWqDakljLpKK11v52gTkIJrhGXx2DRAX0Ztv59
+ cTSPppsOpmyoXf3M1Gnf3vnntPdYoROkkaWxc3/xj3ErrdadqW
+ /Qv5U8HEmycxGAvzduZ4c09s8AkkixqIaa4dXG3XK/bxxd1p90
+ vlgVv99xPirauIT2vC6kK+7G3KBex9VU6SsQIV13Lu75d6Rn4z
+ U773bMuDF6v5px50TfYs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-09-09 at 02:37 +0800, Christoph Lameter wrote:
-> On Thu, 8 Sep 2011, Alex,Shi wrote:
+On Thursday 08 September 2011 20:08:47 Richard Kuo wrote:
+> This is the third version of the patchset to the Linux kernel to support
+> the Qualcomm Hexagon architecture.  These patches have been organized like
+> the last time, in a somewhat logically grouped fashion.
 > 
-> > BTW, some testing results for your PCP SLUB:
-> >
-> > for hackbench process testing:
-> > on WSM-EP, inc ~60%, NHM-EP inc ~25%
-> > on NHM-EX, inc ~200%, core2-EP, inc ~250%.
-> > on Tigerton-EX, inc 1900%, :)
+> A summary of changes from the last patchset:
+> * removed __delay
+> * cleaned up checksum header to pull generic one
+> * implemented vDSO so signal trampolines are no longer on stack
+> * fixed cpu_idle()
+> * removed init_IRQ() wrapper
+> * cleaned up (most of) the wrongness in time.c
+> * cleaned up smp.c to use more generic IPI handlers
+> * filled in ins/outs routines in IO and other misc cleanup
+> * removed redundant vunmap from ioremap
+> * removed more highmem cruft
+> * moved rwsem to asm-generic
+> * bonus ifdefs added to generic checksum.h
 > 
-> There is no minus on tigerton. I hope that is not a regression?
-
-Sorry for incorrect usage of '~'. I want use the '~60%' to express
-performance increased 'about' 60%, not '-60%'. This usage is unusual in
-English.
-
-> >
-> > for hackbench thread testing:
-> > on WSM-EP, no clear inc, NHM-EP no clear inc
-> > on NHM-EX, inc 10%, core2-EP, inc ~20%.
-> > on Tigertion-EX, inc 100%,
+> Also, I have been compiling with sparse and it seems to pass.
 > 
-> > for  netperf loopback testing, no clear performance change.
+> These patches are available on Code Aurora:
 > 
-> Hmmm... The sizes of the per cpu partial objects could be varied a bit to
-> see if more would make an impact.
+> https://www.codeaurora.org/patches/quic/hlk/hexagon-linux-20110908.tar.gz
+> 
+> Thanks again for everyone's feedback!
 
+Ok, very good.
 
-I find almost in one time my kbuilding. 
-size 384, was alloced in fastpath about 2900k times
-size 176, was alloced in fastpath about 1900k times
-size 192, was alloced in fastpath about 500k times
-anon_vma, was alloced in fastpath about 560k times 
-size 72, was alloced in fastpath about 600k times 
-size 512, 256, 128, was alloced in fastpath about more than 100k for
-each of them.
+I haven't checked if it's already in linux-next, since you said you first
+wanted to fix a few things. If it's not, please have Stephen add it now.
 
-I may give you objects size involved in my netperf testing later. 
-and which test case do you prefer to? If I have, I may collection data
-on them. 
+I wrote a small piece on the two new architectures for 3.2 in
+http://lwn.net/Articles/457635/ , I hope I got the facts right. 
 
+The ptrace interface is the only part that I'd ask you to definitely
+fix before the merge window, because of the impact to the user space
+ABI: We try to be strict about not breaking user-visible interfaces
+for any code that has been in an official kernel release. It's of course
+less important for a newly merged architecture when there are no existing
+users, but I think it's best to always enforce this rule.
+
+It would of course be very nice if you could get the board support based
+on device tree probing ready as well by the same time, but I don't see
+that as a show-stopper for inclusion.
+
+One small comment about the way that you send patches: The changelog part
+if each patch you send lists the changes that you have done since the first
+submission. This is indeed helpful for the purpose of the review, but it's
+not actually how you are supposed to use this. The body of the email
+should instead start with a 'changeset comment' that describes the changes
+made by the patch, followed by the 'Signed-off-by:' lines, and then after
+the '---' line you should write the text that does not become part of
+the permanent git history: the diffstat and any additional comments you have
+for reviewers including what has changed since last time.
+
+	Arnd
