@@ -1,69 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934040Ab1IIXCa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 19:02:30 -0400
-Received: from mail-vw0-f43.google.com ([209.85.212.43]:56761 "EHLO
-	mail-vw0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933980Ab1IIXBM (ORCPT
+	id S934009Ab1IIXDh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 19:03:37 -0400
+Received: from usindpps03.hds.com ([207.126.252.16]:38536 "EHLO
+	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933865Ab1IIXDf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 19:01:12 -0400
-From: Nitin Gupta <ngupta@vflare.org>
-To: Greg KH <greg@kroah.com>
-Cc: Jerome Marchand <jmarchan@redhat.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Linux Driver Project <devel@linuxdriverproject.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/5] zram: Fix sparse warnings
-Date: Fri,  9 Sep 2011 19:01:00 -0400
-Message-Id: <1315609264-13632-2-git-send-email-ngupta@vflare.org>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1315609264-13632-1-git-send-email-ngupta@vflare.org>
-References: <1315609264-13632-1-git-send-email-ngupta@vflare.org>
+	Fri, 9 Sep 2011 19:03:35 -0400
+From: Satoru Moriya <satoru.moriya@hds.com>
+To: Randy Dunlap <rdunlap@xenotime.net>, "riel@redhat.com" <riel@redhat.com>
+CC: Satoru Moriya <smoriya@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "lwoodman@redhat.com" <lwoodman@redhat.com>,
+        Seiji Aguchi <saguchi@redhat.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "hughd@google.com" <hughd@google.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
+Date: Fri, 9 Sep 2011 19:01:13 -0400
+Subject: Re: [PATCH -v2 -mm] add extra free kbytes tunable
+Thread-Topic: [PATCH -v2 -mm] add extra free kbytes tunable
+Thread-Index: AQHMb0ShXxav+ctD80C98iMKPReyCg==
+Message-ID: <65795E11DBF1E645A09CEC7EAEE94B9CAFE00218@USINDEVS02.corp.hds.com>
+Accept-Language: ja-JP, en-US
+Content-Language: ja-JP
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ja-JP, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=5 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
+ definitions=main-1109090284
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes sparse warning:
-zram_drv.c:666:6: warning: symbol 'zram_slot_free_notify' was not
-declared. Should it be static?
+On 09/01/2011 03:26 PM, Rik van Riel wrote:
 
-Also, max_zpage_size is now size_t just to be consistent with data-type
-of other variables maintaining sizes of various kinds.
+> @@ -5123,6 +5135,7 @@ static void setup_per_zone_lowmem_reserve(void)
+>  void setup_per_zone_wmarks(void)
+>  {
+>  	unsigned long pages_min = min_free_kbytes >> (PAGE_SHIFT - 10);
+> +	unsigned long pages_low = extra_free_kbytes >> (PAGE_SHIFT - 10);
 
-Signed-off-by: Nitin Gupta <ngupta@vflare.org>
----
- drivers/staging/zram/zram_drv.c |    3 ++-
- drivers/staging/zram/zram_drv.h |    2 +-
- 2 files changed, 3 insertions(+), 2 deletions(-)
+I think pages_extra is better name for this variable because pages_low is
+calculated like following.
 
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index d70ec1a..03ec5a2 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -684,7 +684,8 @@ fail:
- 	return ret;
- }
- 
--void zram_slot_free_notify(struct block_device *bdev, unsigned long index)
-+static void zram_slot_free_notify(struct block_device *bdev,
-+				unsigned long index)
- {
- 	struct zram *zram;
- 
-diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
-index abe5221..70ce886 100644
---- a/drivers/staging/zram/zram_drv.h
-+++ b/drivers/staging/zram/zram_drv.h
-@@ -47,7 +47,7 @@ static const unsigned default_disksize_perc_ram = 25;
-  * Pages that compress to size greater than this are stored
-  * uncompressed in memory.
-  */
--static const unsigned max_zpage_size = PAGE_SIZE / 4 * 3;
-+static const size_t max_zpage_size = PAGE_SIZE / 4 * 3;
- 
- /*
-  * NOTE: max_zpage_size must be less than or equal to:
--- 
-1.7.6
+pages_low = pages_min + "pages_extra" + (pages_min >> 2)
 
+>  	unsigned long lowmem_pages = 0;
+>  	struct zone *zone;
+>  	unsigned long flags;
+> @@ -5134,11 +5147,14 @@ void setup_per_zone_wmarks(void)
+>  	}
+>  
+>  	for_each_zone(zone) {
+> -		u64 tmp;
+> +		u64 min, low;
+
+Same as above.
+
+Thanks,
+Satoru
