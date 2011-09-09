@@ -1,268 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754121Ab1IIDMy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 23:12:54 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:33153 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752056Ab1IIDMw (ORCPT
+	id S1754752Ab1IIDNh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 23:13:37 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:54748 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752056Ab1IIDNd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 23:12:52 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 9 Sep 2011 12:12:06 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        containers@lists.osdl.org, netdev@vger.kernel.org, xemul@parallels.com,
-        "David S. Miller" <davem@davemloft.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH v2 6/9] per-cgroup tcp buffers control
-Message-Id: <20110909121206.e1d628d1.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1315369399-3073-7-git-send-email-glommer@parallels.com>
-References: <1315369399-3073-1-git-send-email-glommer@parallels.com>
-	<1315369399-3073-7-git-send-email-glommer@parallels.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 8 Sep 2011 23:13:33 -0400
+Date: Fri, 9 Sep 2011 11:13:23 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: werner <w.landgraf@ru.ru>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: 3.1-rc5 dont boot
+Message-ID: <20110909031323.GE18249@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <web-603681984@zbackend1.aha.ru>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <web-603681984@zbackend1.aha.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  7 Sep 2011 01:23:16 -0300
-Glauber Costa <glommer@parallels.com> wrote:
+On Thu, Sep 08, 2011 at 05:54:09PM -0400, werner wrote:
+> Thank you.
+> At the moment, kernel.org don't open here. And by google for "git
+> cherry-pick b4ca46e4e82a" I dont find it somewhere else. Perhaps you
+> could e-mail me the patch. Then I apply it, and recompile -rc1 and
+> try to boot again with that.
 
-> With all the infrastructure in place, this patch implements
-> per-cgroup control for tcp memory pressure handling.
-> 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> CC: David S. Miller <davem@davemloft.net>
-> CC: Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>
-> CC: Eric W. Biederman <ebiederm@xmission.com>
+Fortunately it residents on my local PC
 
-Hmm, then, kmem_cgroup.c is just a caller of plugins implemented
-by other components ?
+---
+commit b4ca46e4e82a0a5976fe5eab85be585d75f8202f
+Author: Andy Lutomirski <luto@mit.edu>
+Date:   Thu Aug 25 16:10:33 2011 -0400
 
-> ---
->  include/linux/kmem_cgroup.h |    7 ++++
->  include/net/sock.h          |   10 ++++++-
->  mm/kmem_cgroup.c            |   10 ++++++-
->  net/core/sock.c             |   18 +++++++++++
->  net/ipv4/tcp.c              |   67 +++++++++++++++++++++++++++++++++++++-----
->  5 files changed, 102 insertions(+), 10 deletions(-)
-> 
-> diff --git a/include/linux/kmem_cgroup.h b/include/linux/kmem_cgroup.h
-> index d983ba8..89ad0a1 100644
-> --- a/include/linux/kmem_cgroup.h
-> +++ b/include/linux/kmem_cgroup.h
-> @@ -23,6 +23,13 @@
->  struct kmem_cgroup {
->  	struct cgroup_subsys_state css;
->  	struct kmem_cgroup *parent;
-> +
-> +#ifdef CONFIG_INET
-> +	int tcp_memory_pressure;
-> +	atomic_long_t tcp_memory_allocated;
-> +	struct percpu_counter tcp_sockets_allocated;
-> +	long tcp_prot_mem[3];
-> +#endif
->  };
+    x86-32: Fix boot with CONFIG_X86_INVD_BUG
+    
+    entry_32.S contained a hardcoded alternative instruction entry, and the
+    format changed in commit 59e97e4d6fbc ("x86: Make alternative
+    instruction pointers relative").
+    
+    Replace the hardcoded entry with the altinstruction_entry macro.  This
+    fixes the 32-bit boot with CONFIG_X86_INVD_BUG=y.
+    
+    Reported-and-tested-by: Arnaud Lacombe <lacombar@gmail.com>
+    Signed-off-by: Andy Lutomirski <luto@mit.edu>
+    Cc: Peter Anvin <hpa@zytor.com>
+    Cc: Ingo Molnar <mingo@elte.hu>
+    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 
-I think you should place 'read-mostly' values carefully.
-
-
->  
-> diff --git a/include/net/sock.h b/include/net/sock.h
-> index ab65640..91424e3 100644
-> --- a/include/net/sock.h
-> +++ b/include/net/sock.h
-> @@ -64,6 +64,7 @@
->  #include <net/dst.h>
->  #include <net/checksum.h>
->  
-> +int sockets_populate(struct cgroup_subsys *ss, struct cgroup *cgrp);
->  /*
->   * This structure really needs to be cleaned up.
->   * Most of it is for TCP, and not used by any of
-> @@ -814,7 +815,14 @@ struct proto {
->  	int			*(*memory_pressure)(struct kmem_cgroup *sg);
->  	/* Pointer to the per-cgroup version of the the sysctl_mem field */
->  	long			*(*prot_mem)(struct kmem_cgroup *sg);
-> -
-> +	/*
-> +	 * cgroup specific initialization function. Called once for all
-> +	 * protocols that implement it, from cgroups populate function.
-> +	 * This function has to setup any files the protocol want to
-> +	 * appear in the kmem cgroup filesystem.
-> +	 */
-> +	int			(*init_cgroup)(struct cgroup *cgrp,
-> +					       struct cgroup_subsys *ss);
->  	int			*sysctl_wmem;
->  	int			*sysctl_rmem;
->  	int			max_header;
-> diff --git a/mm/kmem_cgroup.c b/mm/kmem_cgroup.c
-> index 7950e69..5e53d66 100644
-> --- a/mm/kmem_cgroup.c
-> +++ b/mm/kmem_cgroup.c
-> @@ -17,16 +17,24 @@
->  #include <linux/cgroup.h>
->  #include <linux/slab.h>
->  #include <linux/kmem_cgroup.h>
-> +#include <net/sock.h>
->  
->  static int kmem_populate(struct cgroup_subsys *ss, struct cgroup *cgrp)
->  {
-> -	return 0;
-> +	int ret = 0;
-> +#ifdef CONFIG_NET
-> +	ret = sockets_populate(ss, cgrp);
-> +#endif
-
-CONFIG_INET ?
-
-> +	return ret;
->  }
->  
->  static void
->  kmem_destroy(struct cgroup_subsys *ss, struct cgroup *cgrp)
->  {
->  	struct kmem_cgroup *cg = kcg_from_cgroup(cgrp);
-> +#ifdef CONFIG_INET
-> +	percpu_counter_destroy(&cg->tcp_sockets_allocated);
-> +#endif
->  	kfree(cg);
->  }
->  
-> diff --git a/net/core/sock.c b/net/core/sock.c
-> index ead9c02..9d833cf 100644
-> --- a/net/core/sock.c
-> +++ b/net/core/sock.c
-> @@ -134,6 +134,24 @@
->  #include <net/tcp.h>
->  #endif
->  
-> +static DEFINE_RWLOCK(proto_list_lock);
-> +static LIST_HEAD(proto_list);
-> +
-> +int sockets_populate(struct cgroup_subsys *ss, struct cgroup *cgrp)
-> +{
-> +	struct proto *proto;
-> +	int ret = 0;
-> +
-> +	read_lock(&proto_list_lock);
-> +	list_for_each_entry(proto, &proto_list, node) {
-> +		if (proto->init_cgroup)
-> +			ret |= proto->init_cgroup(cgrp, ss);
-> +	}
-> +	read_unlock(&proto_list_lock);
-> +
-> +	return ret;
-> +}
-
-Hmm, I don't understand this part but...
-
-	ret |= ...
-
-and no 'undo'  ? If no 'undo', ->init_cgroup() should success
-always and no return value is required. 
-
-
-
-
-
-> +
->  /*
->   * Each address family might have different locking rules, so we have
->   * one slock key per address family:
-> diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-> index 76f03ed..0725dc4 100644
-> --- a/net/ipv4/tcp.c
-> +++ b/net/ipv4/tcp.c
-> @@ -289,13 +289,6 @@ int sysctl_tcp_rmem[3] __read_mostly;
->  EXPORT_SYMBOL(sysctl_tcp_rmem);
->  EXPORT_SYMBOL(sysctl_tcp_wmem);
->  
-> -atomic_long_t tcp_memory_allocated;	/* Current allocated memory. */
-> -
-> -/*
-> - * Current number of TCP sockets.
-> - */
-> -struct percpu_counter tcp_sockets_allocated;
-> -
->  /*
->   * TCP splice context
->   */
-> @@ -305,13 +298,68 @@ struct tcp_splice_state {
->  	unsigned int flags;
->  };
->  
-> +#ifdef CONFIG_CGROUP_KMEM
->  /*
->   * Pressure flag: try to collapse.
->   * Technical note: it is used by multiple contexts non atomically.
->   * All the __sk_mem_schedule() is of this nature: accounting
->   * is strict, actions are advisory and have some latency.
->   */
-> -int tcp_memory_pressure __read_mostly;
-> +void tcp_enter_memory_pressure(struct sock *sk)
-> +{
-> +	struct kmem_cgroup *sg = sk->sk_cgrp;
-> +	if (!sg->tcp_memory_pressure) {
-> +		NET_INC_STATS(sock_net(sk), LINUX_MIB_TCPMEMORYPRESSURES);
-> +		sg->tcp_memory_pressure = 1;
-> +	}
-> +}
-> +
-> +long *tcp_sysctl_mem(struct kmem_cgroup *sg)
-> +{
-> +	return sg->tcp_prot_mem;
-> +}
-> +
-> +atomic_long_t *memory_allocated_tcp(struct kmem_cgroup *sg)
-> +{
-> +	return &(sg->tcp_memory_allocated);
-> +}
-> +
-> +int tcp_init_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss)
-> +{
-> +	struct kmem_cgroup *sg = kcg_from_cgroup(cgrp);
-> +	unsigned long limit;
-> +	struct net *net = current->nsproxy->net_ns;
-> +
-> +	sg->tcp_memory_pressure = 0;
-> +	atomic_long_set(&sg->tcp_memory_allocated, 0);
-> +	percpu_counter_init(&sg->tcp_sockets_allocated, 0);
-> +
-> +	limit = nr_free_buffer_pages() / 8;
-> +	limit = max(limit, 128UL);
-> +
-> +	sg->tcp_prot_mem[0] = net->ipv4.sysctl_tcp_mem[0];
-> +	sg->tcp_prot_mem[1] = net->ipv4.sysctl_tcp_mem[1];
-> +	sg->tcp_prot_mem[2] = net->ipv4.sysctl_tcp_mem[2];
-> +
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL(tcp_init_cgroup);
-> +
-> +int *memory_pressure_tcp(struct kmem_cgroup *sg)
-> +{
-> +	return &sg->tcp_memory_pressure;
-> +}
-> +
-> +struct percpu_counter *sockets_allocated_tcp(struct kmem_cgroup *sg)
-> +{
-> +	return &sg->tcp_sockets_allocated;
-> +}
-> +#else
-> +
-> +/* Current number of TCP sockets. */
-> +struct percpu_counter tcp_sockets_allocated;
-> +atomic_long_t tcp_memory_allocated;	/* Current allocated memory. */
-> +int tcp_memory_pressure;
->  
-
-you dropped __read_mostly.
-
-Thanks,
--kame
-
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index 5c1a9197..f3f6f53 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -54,6 +54,7 @@
+ #include <asm/ftrace.h>
+ #include <asm/irq_vectors.h>
+ #include <asm/cpufeature.h>
++#include <asm/alternative-asm.h>
+ 
+ /* Avoid __ASSEMBLER__'ifying <linux/audit.h> just for this.  */
+ #include <linux/elf-em.h>
+@@ -873,12 +874,7 @@ ENTRY(simd_coprocessor_error)
+ 661:	pushl_cfi $do_general_protection
+ 662:
+ .section .altinstructions,"a"
+-	.balign 4
+-	.long 661b
+-	.long 663f
+-	.word X86_FEATURE_XMM
+-	.byte 662b-661b
+-	.byte 664f-663f
++	altinstruction_entry 661b, 663f, X86_FEATURE_XMM, 662b-661b, 664f-663f
+ .previous
+ .section .altinstr_replacement,"ax"
+ 663:	pushl $do_simd_coprocessor_error
