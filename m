@@ -1,81 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759028Ab1IINd2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 09:33:28 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:63559 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759015Ab1IINd0 (ORCPT
+	id S1759043Ab1IINgU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 09:36:20 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:56480
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753319Ab1IINgT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 09:33:26 -0400
-Date: Fri, 9 Sep 2011 15:33:20 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Paul Menage <paul@paulmenage.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, Tim Hockin <thockin@hockin.org>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 08/12] cgroups: Pull up res counter charge failure
- interpretation to caller
-Message-ID: <20110909133316.GB14072@somewhere.redhat.com>
-References: <1315267986-28937-1-git-send-email-fweisbec@gmail.com>
- <1315267986-28937-9-git-send-email-fweisbec@gmail.com>
- <20110906152650.a2f33bbd.akpm@linux-foundation.org>
+	Fri, 9 Sep 2011 09:36:19 -0400
+Date: Fri, 9 Sep 2011 09:36:12 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Christoph Hellwig <hch@infradead.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        Linux-NFS <linux-nfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Neil Brown <neilb@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 03/10] mm: Add support for a filesystem to control swap
+ files
+Message-ID: <20110909133611.GB8155@infradead.org>
+References: <1315566054-17209-1-git-send-email-mgorman@suse.de>
+ <1315566054-17209-4-git-send-email-mgorman@suse.de>
+ <20110909130007.GA11810@infradead.org>
+ <20110909131550.GV14369@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110906152650.a2f33bbd.akpm@linux-foundation.org>
+In-Reply-To: <20110909131550.GV14369@suse.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 06, 2011 at 03:26:50PM -0700, Andrew Morton wrote:
-> On Tue,  6 Sep 2011 02:13:02 +0200
-> Frederic Weisbecker <fweisbec@gmail.com> wrote:
+On Fri, Sep 09, 2011 at 02:15:50PM +0100, Mel Gorman wrote:
 > 
-> > res_counter_charge() always returns -ENOMEM when the limit is reached
-> > and the charge thus can't happen.
-> > 
-> > However it's up to the caller to interpret this failure and return
-> > the appropriate error value. The task counter subsystem will need
-> > to report the user that a fork() has been cancelled because of some
-> > limit reached, not because we are too short on memory.
-> > 
-> > Fix this by returning -1 when res_counter_charge() fails.
-> > 
-> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > Cc: Paul Menage <paul@paulmenage.org>
-> > Cc: Li Zefan <lizf@cn.fujitsu.com>
-> > Cc: Johannes Weiner <hannes@cmpxchg.org>
-> > Cc: Aditya Kali <adityakali@google.com>
-> > Cc: Oleg Nesterov <oleg@redhat.com>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: Kay Sievers <kay.sievers@vrfy.org>
-> > Cc: Tim Hockin <thockin@hockin.org>
-> > Cc: Tejun Heo <tj@kernel.org>
-> > ---
-> >  kernel/res_counter.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/kernel/res_counter.c b/kernel/res_counter.c
-> > index 4aaa790..45fa6fb 100644
-> > --- a/kernel/res_counter.c
-> > +++ b/kernel/res_counter.c
-> > @@ -26,7 +26,7 @@ int res_counter_charge_locked(struct res_counter *counter, unsigned long val)
-> >  {
-> >  	if (counter->usage + val > counter->limit) {
-> >  		counter->failcnt++;
-> > -		return -ENOMEM;
-> > +		return -1;
-> >  	}
-> >  
-> >  	counter->usage += val;
-> 
-> This also affects the return value of your new and undocumented
-> res_counter_charge_until().
-> 
-> That's a bit of a hand-grenade which could lead to system calls
-> returning -1 (ie: EPERM) to userspace.
+> I confess I haven't investigated this direction at
+> all yet.  Is it correct that your previous objection was
+> http://linux.derkeiler.com/Mailing-Lists/Kernel/2009-10/msg00455.html
+> and the direct-IO patchset you were thinking of was
+> http://copilotco.com/mail-archives/linux-kernel.2009/msg87176.html ?
 
-Right. What about making it a boolean?
+Yes.
+
+> If so, are you suggesting that instead of swap_readpage and
+> swap_writepage I look into what is required for swap to use ->readpage
+> method and ->direct_IO aops?
+
+The equivalent of ->direct_IO should be used for both reads and writes.
+
