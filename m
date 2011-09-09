@@ -1,157 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933309Ab1IISop (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 14:44:45 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:22306 "EHLO mx2.netapp.com"
+	id S933364Ab1IISq5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 14:46:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58472 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933104Ab1IISon convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 14:44:43 -0400
-X-IronPort-AV: E=Sophos;i="4.68,357,1312182000"; 
-   d="scan'208";a="580375071"
-Subject: Re: [PATCH v2 3/5] SUNRPC: make RPC service dependable on rpcbind
- clients creation
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: Jeff Layton <jlayton@redhat.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "davem@davemloft.net" <davem@davemloft.net>
-Date: Fri, 09 Sep 2011 14:44:34 -0400
-In-Reply-To: <4E6A41D4.6090001@parallels.com>
-References: <20110909115146.13697.71682.stgit@localhost6.localdomain6>
-		<20110909120844.13697.48102.stgit@localhost6.localdomain6>
-	 <20110909100745.7e2e8bf9@corrin.poochiereds.net>
-	 <4E6A41D4.6090001@parallels.com>
-Organization: NetApp Inc
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Message-ID: <1315593874.17611.19.camel@lade.trondhjem.org>
-Mime-Version: 1.0
-X-OriginalArrivalTime: 09 Sep 2011 18:44:39.0740 (UTC) FILETIME=[87F32FC0:01CC6F20]
+	id S933104Ab1IISq4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Sep 2011 14:46:56 -0400
+Date: Fri, 9 Sep 2011 11:43:54 -0700
+From: Greg KH <gregkh@suse.de>
+To: Michal Nazarewicz <mina86@mina86.com>
+Cc: Klaus Schwarzkopf <schwarzkopf@sensortherm.de>, balbi@ti.com,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb: add new usb gadget for ACM and mass storage
+Message-ID: <20110909184354.GA30278@suse.de>
+References: <1315506287-31368-1-git-send-email-schwarzkopf@sensortherm.de>
+ <20110908191146.GA8552@suse.de>
+ <op.v1jdo3g53l0zgt@mnazarewicz-glaptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <op.v1jdo3g53l0zgt@mnazarewicz-glaptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-09-09 at 20:41 +0400, Stanislav Kinsbursky wrote: 
-> 09.09.2011 18:07, Jeff Layton пишет:
-> > On Fri, 09 Sep 2011 16:08:44 +0400
-> > Stanislav Kinsbursky<skinsbursky@parallels.com>  wrote:
-> >
-> >> Create rcbind clients or increase rpcbind users counter during RPC service
-> >> creation and decrease this counter (and possibly destroy those clients) on RPC
-> >> service destruction.
-> >>
-> >> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
-> >>
-> >> ---
-> >>   include/linux/sunrpc/clnt.h |    2 ++
-> >>   net/sunrpc/rpcb_clnt.c      |    2 +-
-> >>   net/sunrpc/svc.c            |   13 +++++++++++--
-> >>   3 files changed, 14 insertions(+), 3 deletions(-)
-> >>
-> >> diff --git a/include/linux/sunrpc/clnt.h b/include/linux/sunrpc/clnt.h
-> >> index db7bcaf..65a8115 100644
-> >> --- a/include/linux/sunrpc/clnt.h
-> >> +++ b/include/linux/sunrpc/clnt.h
-> >> @@ -135,10 +135,12 @@ void		rpc_shutdown_client(struct rpc_clnt *);
-> >>   void		rpc_release_client(struct rpc_clnt *);
-> >>   void		rpc_task_release_client(struct rpc_task *);
-> >>
-> >> +int		rpcb_create_local(void);
-> >>   int		rpcb_register(u32, u32, int, unsigned short);
-> >>   int		rpcb_v4_register(const u32 program, const u32 version,
-> >>   				 const struct sockaddr *address,
-> >>   				 const char *netid);
-> >> +void		rpcb_put_local(void);
-> >>   void		rpcb_getport_async(struct rpc_task *);
-> >>
-> >>   void		rpc_call_start(struct rpc_task *);
-> >> diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
-> >> index b4cc0f1..437ec60 100644
-> >> --- a/net/sunrpc/rpcb_clnt.c
-> >> +++ b/net/sunrpc/rpcb_clnt.c
-> >> @@ -318,7 +318,7 @@ out:
-> >>    * Returns zero on success, otherwise a negative errno value
-> >>    * is returned.
-> >>    */
-> >> -static int rpcb_create_local(void)
-> >> +int rpcb_create_local(void)
-> >>   {
-> >>   	static DEFINE_MUTEX(rpcb_create_local_mutex);
-> >>   	int result = 0;
-> >> diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
-> >> index 6a69a11..9095c0e 100644
-> >> --- a/net/sunrpc/svc.c
-> >> +++ b/net/sunrpc/svc.c
-> >> @@ -367,8 +367,11 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
-> >>   	unsigned int xdrsize;
-> >>   	unsigned int i;
-> >>
-> >> -	if (!(serv = kzalloc(sizeof(*serv), GFP_KERNEL)))
-> >> +	if (rpcb_create_local()<  0)
-> >>   		return NULL;
-> >> +
-> >> +	if (!(serv = kzalloc(sizeof(*serv), GFP_KERNEL)))
-> >> +		goto out_err;
-> >>   	serv->sv_name      = prog->pg_name;
-> >>   	serv->sv_program   = prog;
-> >>   	serv->sv_nrthreads = 1;
-> >> @@ -403,7 +406,7 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
-> >>   			GFP_KERNEL);
-> >>   	if (!serv->sv_pools) {
-> >>   		kfree(serv);
-> >> -		return NULL;
-> >> +		goto out_err;
-> >>   	}
-> >>
-> >>   	for (i = 0; i<  serv->sv_nrpools; i++) {
-> >> @@ -423,6 +426,10 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
-> >>   	svc_unregister(serv);
-> >>
-> >>   	return serv;
-> >> +
-> >> +out_err:
-> >> +	rpcb_put_local();
-> >> +	return NULL;
-> >>   }
-> >>
-> >>   struct svc_serv *
-> >> @@ -491,6 +498,8 @@ svc_destroy(struct svc_serv *serv)
-> >>   	svc_unregister(serv);
-> >>   	kfree(serv->sv_pools);
-> >>   	kfree(serv);
-> >> +
-> >> +	rpcb_put_local();
-> >>   }
-> >>   EXPORT_SYMBOL_GPL(svc_destroy);
-> >>
-> >>
-> >
-> > I don't get it -- what's the advantage of creating rpcbind clients in
-> > __svc_create vs. the old way of creating them just before we plan to
-> > use them?
-> >
+On Fri, Sep 09, 2011 at 12:20:53PM +0200, Michal Nazarewicz wrote:
+> >On Thu, Sep 08, 2011 at 08:24:47PM +0200, Klaus Schwarzkopf wrote:
+> >>This driver provides two functions in one configuration:
+> >>a mass storage, and a CDC ACM (serial port) link.
+> >>Heavily based on multi.c and cdc2.c
 > 
-> The main problem here is not in creation, but in destroying those clients.
-> Now rpcbind clients are created during rpcb_register(). I.e. once per every family, program version and so on.
-> But can be unregistered for all protocol families by one call. So it's impossible to put reference counting for those clients in the place, where they are created now.
+> On Thu, 08 Sep 2011 21:11:46 +0200, Greg KH <gregkh@suse.de> wrote:
+> >I thought the "composite" framework make it so that drivers like this
+> >were no longer needed.  Or am I mistaken somehow?
+> 
+> No.  Composite framework only makes it relatively simple to create such
+> gadgets, but one still needs some glue that binds all the functions into
+> a single gadget.
 
-Could we perhaps set up a 'struct pernet_operations' to create a
-destructor for them?
+Ah, so this is that glue?
 
-Cheers
-  Trond
+> This seems like both a blessing and a curse (which I haven't realise when
+> I was creating g_multi) since with n functions implemented one can easily
+> came up with 2^n gadgets.
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
+So we can expect more patches like this adding all of the possible
+permutations of the different gadget devices?
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+If so, ick, I thought that the work that was done was to prevent this
+from happening, oh well :(
 
+greg k-h
