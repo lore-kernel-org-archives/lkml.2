@@ -1,39 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933910Ab1IINFE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 09:05:04 -0400
-Received: from www.linutronix.de ([62.245.132.108]:53798 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758772Ab1IINFA (ORCPT
+	id S933796Ab1IINFD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 09:05:03 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:57730 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758770Ab1IINFA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 9 Sep 2011 09:05:00 -0400
-Date: Fri, 9 Sep 2011 15:04:58 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Richard Kuo <rkuo@codeaurora.org>
-cc: linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [patch v3 17/36] Hexagon: Add interrupts
-In-Reply-To: <20110909010916.327107063@codeaurora.org>
-Message-ID: <alpine.LFD.2.02.1109091502571.2723@ionos>
-References: <20110909010847.294039464@codeaurora.org> <20110909010916.327107063@codeaurora.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <CAC9WiBiWsxCqnGUMHUKKWrLp+XLxOf=+53XLFmaYOeOQWDFSeA@mail.gmail.com>
+References: <CAC9WiBg8ecC0oborzCH=0oaok2FK7QvZhV_UNAxFPkVJ+wFP=Q@mail.gmail.com>
+	<CAOULuOb41-TZuN=kj6whg_wn4cw3k01K3aHJ_X9Ha4iTD3ainw@mail.gmail.com>
+	<CAC9WiBhbXN86sFPBp9Q8tP6ZPUxMZHsi0fFs1T=Y+1FfGusGxQ@mail.gmail.com>
+	<CAOULuOax5OX-oZKBdEuBGVQaSX55sQY8tbKAPD-WFKEr7fRNtQ@mail.gmail.com>
+	<CAC9WiBiWsxCqnGUMHUKKWrLp+XLxOf=+53XLFmaYOeOQWDFSeA@mail.gmail.com>
+Date: Fri, 9 Sep 2011 15:04:59 +0200
+Message-ID: <CAC9WiBgTwVeSDUbhg0=H2+WxpJwUriRWVJ3JLC9W2=v-1JnKeQ@mail.gmail.com>
+Subject: Re: Some issues/regression when upgrading to 3.1-rc5
+From: Francis Moreau <francis.moro@gmail.com>
+To: Parag Warudkar <parag.lkml@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Sep 2011, Richard Kuo wrote:
+On Fri, Sep 9, 2011 at 3:00 PM, Francis Moreau <francis.moro@gmail.com> wrote:
+> On Wed, Sep 7, 2011 at 1:58 PM, Parag Warudkar <parag.lkml@gmail.com> wrote:
+>> Hi
+>>
+>> On Wed, Sep 7, 2011 at 2:51 AM, Francis Moreau <francis.moro@gmail.com> wrote:
+>>> Hello,
+>>>
+>>> On Wed, Sep 7, 2011 at 12:24 AM, Parag Warudkar <parag.lkml@gmail.com> wrote:
+>>>> On Tue, Sep 6, 2011 at 5:15 PM, Francis Moreau <francis.moro@gmail.com> wrote:
+>>>>>
+>>>>> [   13.335961] cfg80211: Calling CRDA to update world regulatory domain
+>>>>> [   13.386127] b43-phy0: Broadcom 4313 WLAN found (core revision 24)
+>>>>> [   13.510112] bcma: PLL enable timeout
+>>>>> [   13.510125] b43-phy0 ERROR: FOUND UNSUPPORTED PHY (Analog 10, Type
+>>>>> 8, Revision 1)
+>>>>> [   13.510148] b43: probe of bcma0:0 failed with error -95
+>>>>> [   13.510194] Broadcom 43xx driver loaded [ Features: PMNLS,
+>>>>> Firmware-ID: FW13 ]
+>>
+>>>
+>>> unloading b43/bcma and loading brcmsmac doesn't help. Looks like the
+>>> latter doesn't support my card anymore.
+>>>
+>>> From dmesg:
+>>>
+>>> [ 3828.183927] brcmsmac: module is from the staging directory, the
+>>> quality is unknown, you have been warned.
+>>>
+>>> and that's it.
+>>
+>> 4313 is supported in brcmsmac - are you sure the firmware is at the
+>> right place and getting loaded?
+>
+> Ok the issue was that I need to unload b43 _and_ bcma before loading brcmsmac.
+>
+>> I recall for example having to deal with firmware in kernel specific
+>> directory - /lib/`uname -r`/firmware for example which means you will
+>> need to copy the firmware to new kernel specific directory.
+>>
+>> Secondly try to make sure b43/bcma are blacklisted and never loaded at all.
+>>
+>
+> Well IMHO, there's a probleme here: b43/bcma claims some devices
+> (notably 4313) which is marked as broken ! Well that's not quite
+> exact, actually it's the phy dev used with the 4313 which is marked as
+> broken, see CONFIG_B43_PHY_LCN in drivers/net/wireless/b43/Kconfig.
+>
+> I posted an email on linux-wireless mailing list but haven't got any
+> answer so far.
+>
 
-> Removed init_IRQ wrapper and fixed up some comments.
+In case you're interested:
 
-> +int show_interrupts(struct seq_file *p, void *v)
+http://permalink.gmane.org/gmane.linux.kernel.wireless.general/76859
 
-Please use the generic version of show_interrupts.
-
-Otherwise please add:
-
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+-- 
+Francis
