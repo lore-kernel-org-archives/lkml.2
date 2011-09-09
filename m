@@ -1,78 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758893Ab1IINBc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 09:01:32 -0400
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:52010 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758817Ab1IINBa (ORCPT
+	id S1758905Ab1IINCF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 09:02:05 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:49302 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758754Ab1IINCC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 09:01:30 -0400
-Message-ID: <661eb210adc223ac1eb80777df48b226.squirrel@webmail.greenhost.nl>
-In-Reply-To: <93a9bd6624aa6a991d688bfaba766a91.squirrel@webmail.greenhost.nl>
-References: <1315500802.18043.45.camel@dhcp-25-63.brq.redhat.com>
-    <20110909001853.GA29319@htj.dyndns.org>
-    <201109090754.50272.vda.linux@googlemail.com>
-    <93a9bd6624aa6a991d688bfaba766a91.squirrel@webmail.greenhost.nl>
-Date: Fri, 9 Sep 2011 15:01:28 +0200
-Subject: Re: Why I want PTRACE_O_TRACESTOP option
-From: "Indan Zupancic" <indan@nul.nu>
-To: "Indan Zupancic" <indan@nul.nu>
-Cc: "Denys Vlasenko" <vda.linux@googlemail.com>, "Tejun Heo" <tj@kernel.org>,
-        "Denys Vlasenko" <dvlasenk@redhat.com>,
-        "Oleg Nesterov" <oleg@redhat.com>, linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.22
+	Fri, 9 Sep 2011 09:02:02 -0400
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: balbi@ti.com, gregkh@suse.de,
+        "Klaus Schwarzkopf" <schwarzkopf@sensortherm.de>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb gadget: clean up files
+References: <1315572737-11991-1-git-send-email-schwarzkopf@sensortherm.de>
+Date: Fri, 09 Sep 2011 15:01:58 +0200
 MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 0.0
-X-Scan-Signature: 1fac81774939798d1cdb19633eb460de
+Content-Transfer-Encoding: 7bit
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.v1jk5kz13l0zgt@mnazarewicz-glaptop>
+In-Reply-To: <1315572737-11991-1-git-send-email-schwarzkopf@sensortherm.de>
+User-Agent: Opera Mail/11.51 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, September 9, 2011 14:26, Indan Zupancic wrote:
-> Hello,
->
-> On Fri, September 9, 2011 07:54, Denys Vlasenko wrote:
->> On Friday 09 September 2011 02:18, Tejun Heo wrote:
->>> Hello, Denys.
->>>
->>> On Thu, Sep 08, 2011 at 06:50:01PM +0200, Denys Vlasenko wrote:
->>> > Consider what will happen when a next ptrace fix will require
->>> > a way to change ptrace API at runtime. A new option will likely
->>> > be introduced, say, PTRACE_O_TRACEPONY, with next available
->>> > bit position 7, and perhaps some new event will be generated,
->>> > PTRACE_EVENT_PONY, with value.... yes, it can't be 7,
->>> > PTRACE_EVENT_STOP took it. So it will probably be 8.
->>>
->>> Then, just give it the next matching number.
->>
->> My point is that previously, ptrace behavior was modified by setting
->> options. Why don't we use this mechanism? Why we invent a different
->> wheel? Ptrace is ugly as-is, why complicate it even further?
->>
->> The argument was that SETOPTIONS wasn't suitable for modifying
->> attach behavior, but this is fixed by "set options on SEIZE"
->> patch. I don't see why we can't use options mechanist to affect
->> group-stop behavior now.
->
-> I totally agree with Denys here.
->
-> It is very useful to set options atomically at SEIZE time. Having
-> SEIZE set some hidden option implicitly only makes things more
-> confusing and harder to explain what SEIZE does. Please apply Denys'
-> SEIZE API improvements.
->
-> Another important reason to make PTRACE_O_TRACESTOP an option is
-> because not everyone uses SEIZE: Users using PTRACE_TRACEME can't
-> set this option at all. For those PTRACE_O_TRACESTOP is needed.
-> Using PTRACE_TRACEME is the common case for both strace and gdb.
+On Fri, 09 Sep 2011 14:52:17 +0200, Klaus Schwarzkopf  
+<schwarzkopf@sensortherm.de> wrote:
 
-PTRACE_O_TRACESTOP only makes sense if it also affects auto-attach
-SIGSTOPS, of course. I don't know if it does. It probably should.
+> remove the following two paragraphs:
+>
+> This program is distributed in the hope that it will be useful, but
+> WITHOUT ANY WARRANTY; without even the implied warranty of  
+> MERCHANTABILITY or
+> FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+> License for more details.
+>
+> You should have received a copy of the GNU General Public License along  
+> with
+> this program; if not, write to the Free Software Foundation, Inc.,59
+> Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-Indan
+I'd add some justification.  Ie. the fact that the address is no longer  
+valid.
 
+> Signed-off-by: Klaus Schwarzkopf <schwarzkopf@sensortherm.de>
 
+> diff --git a/drivers/usb/gadget/amd5536udc.c  
+> b/drivers/usb/gadget/amd5536udc.c
+> index 95e8138..e5802a0 100644
+> --- a/drivers/usb/gadget/amd5536udc.c
+> +++ b/drivers/usb/gadget/amd5536udc.c
+> @@ -9,14 +9,6 @@
+>   * the Free Software Foundation; either version 2 of the License, or
+>   * (at your option) any later version.
+>   *
+
+You've left the sole empty line.  Applies to some other files as well.
+
+> - * This program is distributed in the hope that it will be useful,
+> - * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> - * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> - * GNU General Public License for more details.
+> - *
+> - * You should have received a copy of the GNU General Public License
+> - * along with this program; if not, write to the Free Software
+> - * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA   
+> 02111-1307  USA
+>   */
+> /*
+
+> diff --git a/drivers/usb/gadget/epautoconf.c  
+> b/drivers/usb/gadget/epautoconf.c
+> index 9b7360f..cff842e 100644
+> --- a/drivers/usb/gadget/epautoconf.c
+> +++ b/drivers/usb/gadget/epautoconf.c
+> @@ -8,14 +8,7 @@
+>   * the Free Software Foundation; either version 2 of the License, or
+>   * (at your option) any later version.
+>   *
+> - * This program is distributed in the hope that it will be useful,
+> - * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> - * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> - * GNU General Public License for more details.
+> - *
+> - * You should have received a copy of the GNU General Public License
+> - * along with this program; if not, write to the Free Software
+> - * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA   
+> 02111-1307  USA
+> +
+
+Something fishy going on here.  Why empty line?
+
+>   *
+>   */
+
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
+ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
