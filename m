@@ -1,72 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933933Ab1IIMpp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 08:45:45 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.161]:55921 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933296Ab1IIMpo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 08:45:44 -0400
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFPjDQQEWgH
-X-RZG-CLASS-ID: mo00
-Date: Fri, 9 Sep 2011 14:45:33 +0200
-From: Olaf Hering <olaf@aepfle.de>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org
-Subject: [PATCH] Staging: hv: storvsc: advertise hv_storvsc instead of
- storvsc as driver name
-Message-ID: <20110909124533.GA23598@aepfle.de>
-References: <20110908162650.GA10699@aepfle.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20110908162650.GA10699@aepfle.de>
-User-Agent: Mutt/1.5.21.rev5535 (2011-07-01)
+	id S933947Ab1IIMql (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 08:46:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23737 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933296Ab1IIMqk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Sep 2011 08:46:40 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1315243548-18664-26-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1315243548-18664-26-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: dhowells@redhat.com, agruen@kernel.org, bfields@fieldses.org,
+        akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V6 25/26] ext4: Implement rich acl for ext4
+Date: Fri, 09 Sep 2011 13:45:58 +0100
+Message-ID: <25112.1315572358@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com> wrote:
 
-Signed-off-by: Olaf Hering <olaf@aepfle.de>
+> +	retval = ext4_set_richacl(handle, inode, acl);
+> +	ext4_journal_stop(handle);
+> +	if (retval == ENOSPC && ext4_should_retry_alloc(inode->i_sb, &retries))
+> +		goto retry;
 
---- a/drivers/staging/hv/storvsc_drv.c
-+++ b/drivers/staging/hv/storvsc_drv.c
-@@ -42,6 +42,8 @@
- 
- #include "hyperv.h"
- 
-+#define MODULE_NAME "hv_storvsc"
-+
- #define STORVSC_RING_BUFFER_SIZE			(20*PAGE_SIZE)
- static int storvsc_ringbuffer_size = STORVSC_RING_BUFFER_SIZE;
- 
-@@ -1164,7 +1166,7 @@ static void storvsc_command_completion(s
- 	if (scmnd->result) {
- 		if (scsi_normalize_sense(scmnd->sense_buffer,
- 				SCSI_SENSE_BUFFERSIZE, &sense_hdr))
--			scsi_print_sense_hdr("storvsc", &sense_hdr);
-+			scsi_print_sense_hdr(MODULE_NAME, &sense_hdr);
- 	}
- 
- 	scsi_set_resid(scmnd,
-@@ -1333,8 +1335,8 @@ static DEF_SCSI_QCMD(storvsc_queuecomman
- /* Scsi driver */
- static struct scsi_host_template scsi_driver = {
- 	.module	=		THIS_MODULE,
--	.name =			"hv_storvsc",
--	.proc_name =		"hv_storvsc",
-+	.name =			MODULE_NAME,
-+	.proc_name =		MODULE_NAME,
- 	.bios_param =		storvsc_get_chs,
- 	.queuecommand =		storvsc_queuecommand,
- 	.eh_host_reset_handler =	storvsc_host_reset_handler,
-@@ -1468,7 +1470,7 @@ err_out:
- /* The one and only one */
- 
- static struct hv_driver storvsc_drv = {
--	.name = "storvsc",
-+	.name = MODULE_NAME,
- 	.id_table = id_table,
- 	.probe = storvsc_probe,
- 	.remove = storvsc_remove,
+Should that be -ENOSPC?
+
+I do wonder, why does ext4 need to know about richacls at all?  Surely, as far
+as ext4 is concerned, they should be seen as xattrs?
+
+If ext4 needs a mark on disk to say it supports richacls, then why can't that
+simply be the presence or lack thereof of a richacl on the root dir?
+
+David
