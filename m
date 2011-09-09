@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933807Ab1IIMI6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 08:08:58 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:6609 "EHLO relay.sw.ru"
+	id S933886Ab1IIMJK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 08:09:10 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:47568 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933308Ab1IIMIz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 08:08:55 -0400
-Subject: [PATCH v2 3/5] SUNRPC: make RPC service dependable on rpcbind clients
-	creation
+	id S933308Ab1IIMJF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Sep 2011 08:09:05 -0400
+Subject: [PATCH v2 4/5] SUNRPC: remove rpcbind clients creation during service
+	registering
 To: Trond.Myklebust@netapp.com
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         bfields@fieldses.org, davem@davemloft.net
-Date: Fri, 09 Sep 2011 16:08:44 +0400
-Message-ID: <20110909120844.13697.48102.stgit@localhost6.localdomain6>
+Date: Fri, 09 Sep 2011 16:08:51 +0400
+Message-ID: <20110909120851.13697.56059.stgit@localhost6.localdomain6>
 In-Reply-To: <20110909115146.13697.71682.stgit@localhost6.localdomain6>
 References: <20110909115146.13697.71682.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
@@ -25,92 +25,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Create rcbind clients or increase rpcbind users counter during RPC service
-creation and decrease this counter (and possibly destroy those clients) on RPC
-service destruction.
+We don't need this code since rpcbind clients are creating during RPC service
+creation.
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
 ---
- include/linux/sunrpc/clnt.h |    2 ++
- net/sunrpc/rpcb_clnt.c      |    2 +-
- net/sunrpc/svc.c            |   13 +++++++++++--
- 3 files changed, 14 insertions(+), 3 deletions(-)
+ net/sunrpc/rpcb_clnt.c |    9 ---------
+ 1 files changed, 0 insertions(+), 9 deletions(-)
 
-diff --git a/include/linux/sunrpc/clnt.h b/include/linux/sunrpc/clnt.h
-index db7bcaf..65a8115 100644
---- a/include/linux/sunrpc/clnt.h
-+++ b/include/linux/sunrpc/clnt.h
-@@ -135,10 +135,12 @@ void		rpc_shutdown_client(struct rpc_clnt *);
- void		rpc_release_client(struct rpc_clnt *);
- void		rpc_task_release_client(struct rpc_task *);
- 
-+int		rpcb_create_local(void);
- int		rpcb_register(u32, u32, int, unsigned short);
- int		rpcb_v4_register(const u32 program, const u32 version,
- 				 const struct sockaddr *address,
- 				 const char *netid);
-+void		rpcb_put_local(void);
- void		rpcb_getport_async(struct rpc_task *);
- 
- void		rpc_call_start(struct rpc_task *);
 diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
-index b4cc0f1..437ec60 100644
+index 437ec60..f363efe 100644
 --- a/net/sunrpc/rpcb_clnt.c
 +++ b/net/sunrpc/rpcb_clnt.c
-@@ -318,7 +318,7 @@ out:
-  * Returns zero on success, otherwise a negative errno value
-  * is returned.
-  */
--static int rpcb_create_local(void)
-+int rpcb_create_local(void)
- {
- 	static DEFINE_MUTEX(rpcb_create_local_mutex);
- 	int result = 0;
-diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
-index 6a69a11..9095c0e 100644
---- a/net/sunrpc/svc.c
-+++ b/net/sunrpc/svc.c
-@@ -367,8 +367,11 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
- 	unsigned int xdrsize;
- 	unsigned int i;
+@@ -429,11 +429,6 @@ int rpcb_register(u32 prog, u32 vers, int prot, unsigned short port)
+ 	struct rpc_message msg = {
+ 		.rpc_argp	= &map,
+ 	};
+-	int error;
+-
+-	error = rpcb_create_local();
+-	if (error)
+-		return error;
  
--	if (!(serv = kzalloc(sizeof(*serv), GFP_KERNEL)))
-+	if (rpcb_create_local() < 0)
- 		return NULL;
-+
-+	if (!(serv = kzalloc(sizeof(*serv), GFP_KERNEL)))
-+		goto out_err;
- 	serv->sv_name      = prog->pg_name;
- 	serv->sv_program   = prog;
- 	serv->sv_nrthreads = 1;
-@@ -403,7 +406,7 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
- 			GFP_KERNEL);
- 	if (!serv->sv_pools) {
- 		kfree(serv);
--		return NULL;
-+		goto out_err;
- 	}
+ 	dprintk("RPC:       %sregistering (%u, %u, %d, %u) with local "
+ 			"rpcbind\n", (port ? "" : "un"),
+@@ -569,11 +564,7 @@ int rpcb_v4_register(const u32 program, const u32 version,
+ 	struct rpc_message msg = {
+ 		.rpc_argp	= &map,
+ 	};
+-	int error;
  
- 	for (i = 0; i < serv->sv_nrpools; i++) {
-@@ -423,6 +426,10 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
- 	svc_unregister(serv);
- 
- 	return serv;
-+
-+out_err:
-+	rpcb_put_local(); 
-+	return NULL;
- }
- 
- struct svc_serv *
-@@ -491,6 +498,8 @@ svc_destroy(struct svc_serv *serv)
- 	svc_unregister(serv);
- 	kfree(serv->sv_pools);
- 	kfree(serv);
-+
-+	rpcb_put_local();
- }
- EXPORT_SYMBOL_GPL(svc_destroy);
+-	error = rpcb_create_local();
+-	if (error)
+-		return error;
+ 	if (rpcb_local_clnt4 == NULL)
+ 		return -EPROTONOSUPPORT;
  
 
