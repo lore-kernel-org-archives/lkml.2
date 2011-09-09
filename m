@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757146Ab1IIAmJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 20:42:09 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:36533 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756771Ab1IIAmH convert rfc822-to-8bit (ORCPT
+	id S1757443Ab1IIAqY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 20:46:24 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:35311 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756514Ab1IIAqW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 20:42:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110908163742.GD3098@opensource.wolfsonmicro.com>
-References: <1315494354-17597-1-git-send-email-mans.rullgard@linaro.org>
-	<4E68DBF7.1030009@metafoo.de>
-	<CAG5Tg6XxGP1YhQ0zW3f=1EkZfAmb9vj3pBemeSazpH1_CZ3OzQ@mail.gmail.com>
-	<20110908163742.GD3098@opensource.wolfsonmicro.com>
-Date: Thu, 8 Sep 2011 18:36:43 +0100
-Message-ID: <CAG5Tg6XC8Kaw3iOH9GpTOpLH4qHWihC86gj2_f-W_+LgkeweBg@mail.gmail.com>
-Subject: Re: [alsa-devel] [PATCH] ASoC: omap: convert per-board modules to
- platform drivers
-From: Mans Rullgard <mans.rullgard@linaro.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Lars-Peter Clausen <lars@metafoo.de>, linux-omap@vger.kernel.org,
-        alsa-devel@alsa-project.org, Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>, linaro-dev@lists.linaro.org,
-        Liam Girdwood <lrg@ti.com>, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 8 Sep 2011 20:46:22 -0400
+Date: Thu, 8 Sep 2011 17:50:44 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jack Steiner <steiner@sgi.com>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH] UV2 - Bug fix for GRU global addresses
+Message-Id: <20110908175044.3d3ee451.akpm@linux-foundation.org>
+In-Reply-To: <20110909002916.GC11894@sgi.com>
+References: <20110908182413.GA10782@sgi.com>
+	<20110908165139.caa9ddef.akpm@linux-foundation.org>
+	<20110909002916.GC11894@sgi.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8 September 2011 17:37, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Thu, Sep 08, 2011 at 04:41:30PM +0100, Mans Rullgard wrote:
->> On 8 September 2011 16:15, Lars-Peter Clausen <lars@metafoo.de> wrote:
->
->> > Use different device driver names for different drivers.
->
->> I guess this worked by accident on my system.
->
->> Are there any other changes needed?
->
-> Check the N810 code - it looks like that driver should be taking
-> platform data to distinguish between the two models.  Possibly also rx51
-> though I only looked at the diff.  Also it should probably be grabbing
-> the clocks before it registers the card.
+On Thu, 8 Sep 2011 19:29:16 -0500 Jack Steiner <steiner@sgi.com> wrote:
 
-I don't see any what would need to distinguish models.  The current code
-is not doing anything like that.  If it should, that's a separate issue.
-Agree on the clocks for N810.
+> On Thu, Sep 08, 2011 at 04:51:39PM -0700, Andrew Morton wrote:
+> > (cc x86 maintainers)
+> > 
+> > On Thu, 8 Sep 2011 13:24:13 -0500
+> > Jack Steiner <steiner@sgi.com> wrote:
+> > 
+> > > This patch is a workaround for a UV2 hub bug that affects the format
+> > > of system global addresses.
+> > > 
+> > > The GRU API for UV2 was inadvertently broken by a hardware change. The
+> > > format of the physical address used for TLB dropins and for addresses used
+> > > with instructions running in unmapped mode has changed. This change was not
+> > > documented and became apparent only when diags failed running on system simulators.
+> > > 
+> > > For UV1, TLB and GRU instruction physical addresses are identical to socket
+> > > physical addresses (although high NASID bits must be OR'ed into the
+> > > address).
+> > > 
+> > > For UV2, socket physical addresses need to be converted. The NODE portion of
+> > > the physical address needs to be shifted so that the low bit is in bit 39 or
+> > > bit 40, depending on an MMR value.
+> > > 
+> > > It is not yet clear if this bug will be fixed in a silicon respin. If it
+> > > is fixed, the hub revision will be incremented & the workaround disabled.
+> > 
+> > It's unclear to me whether this patch should be merged into 3.1 and/or
+> > into 3.0.x and earlier?
+> 
+> 3.1 is fine. I can push directly to the distros.
 
--- 
-Mans Rullgard
-Multimedia
-mans.rullgard@linaro.org
+Don't do that.  It's better for a pile of reasons for this to come via
+kernel.org.
+
+Again, what is the case for backporting?
