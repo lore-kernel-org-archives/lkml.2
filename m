@@ -1,74 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759394Ab1IIQWy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 12:22:54 -0400
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:34320 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752869Ab1IIQWx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 12:22:53 -0400
-Message-ID: <1d564f4f4bec21945a4577fa0d84dc2e.squirrel@webmail.greenhost.nl>
-In-Reply-To: <1315573084.4127.6.camel@dhcp-25-63.brq.redhat.com>
-References: <201109090822.30063.vda.linux@googlemail.com>
-    <201109090824.37366.vda.linux@googlemail.com>
-    <2d14558326f860dea54093d31d1ba12f.squirrel@webmail.greenhost.nl>
-    <1315573084.4127.6.camel@dhcp-25-63.brq.redhat.com>
-Date: Fri, 9 Sep 2011 18:22:49 +0200
-Subject: Re: [PATCH 1/2] ptrace: don't modify flags on PTRACE_SETOPTIONS
- failure
-From: "Indan Zupancic" <indan@nul.nu>
-To: "Denys Vlasenko" <dvlasenk@redhat.com>
-Cc: "Denys Vlasenko" <vda.linux@googlemail.com>,
-        "Oleg Nesterov" <oleg@redhat.com>, "Tejun Heo" <tj@kernel.org>,
-        linux-kernel@vger.kernel.org,
-        "Linus Torvalds" <torvalds@linux-foundation.org>
-User-Agent: SquirrelMail/1.4.22
+	id S1759422Ab1IIQZd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 12:25:33 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:45735 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755350Ab1IIQZc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Sep 2011 12:25:32 -0400
+Date: Fri, 9 Sep 2011 12:25:24 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Steve Grubb <sgrubb@redhat.com>
+Cc: Sandy Harris <sandyinchina@gmail.com>, Neil Horman <nhorman@redhat.com>,
+        Tomas Mraz <tmraz@redhat.com>, Sasha Levin <levinsasha928@gmail.com>,
+        Jarod Wilson <jarod@redhat.com>, linux-crypto@vger.kernel.org,
+        Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert.xu@redhat.com>,
+        Stephan Mueller <stephan.mueller@atsec.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] random: add blocking facility to urandom
+Message-ID: <20110909162524.GA3818@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Steve Grubb <sgrubb@redhat.com>,
+	Sandy Harris <sandyinchina@gmail.com>,
+	Neil Horman <nhorman@redhat.com>, Tomas Mraz <tmraz@redhat.com>,
+	Sasha Levin <levinsasha928@gmail.com>,
+	Jarod Wilson <jarod@redhat.com>, linux-crypto@vger.kernel.org,
+	Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert.xu@redhat.com>,
+	Stephan Mueller <stephan.mueller@atsec.com>,
+	lkml <linux-kernel@vger.kernel.org>
+References: <1314974248-1511-1-git-send-email-jarod@redhat.com>
+ <201109080911.12921.sgrubb@redhat.com>
+ <CACXcFmnnMLHq2VE35i4QK4wNePXHJc6T73VQNTmJo7WEz34DaQ@mail.gmail.com>
+ <201109090904.18321.sgrubb@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 0.0
-X-Scan-Signature: 8b3222cd26cce149ddb9ffa05c4da76e
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201109090904.18321.sgrubb@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, September 9, 2011 14:58, Denys Vlasenko wrote:
-> On Fri, 2011-09-09 at 14:44 +0200, Indan Zupancic wrote:
->> Hello,
->>
->> On Fri, September 9, 2011 08:24, Denys Vlasenko wrote:
->> > It's very unlikely that there is userspace code in the wild which
->> > will be affected by this change: it should have the form
->> >
->> >     ptrace(PTRACE_SETOPTIONS, pid, 0, PTRACE_O_BOGUSOPT)
->> >
->> > where PTRACE_O_BOGUSOPT is a constant unknown to the kernel.
->> > But kernel headers, naturally, don't contain any
->> > PTRACE_O_BOGUSOPTs, thus the only way userspace can use one
->> > if it defines one itself. I can't see why anyone would do such
->> > a thing deliberately.
->>
->> The only realistic case is when a program compiled on a newer
->> kernel is run on an older kernel, when it does things like
->>
->> #ifndef PTRACE_O_TRACEFORK
->> 	opts |= PTRACE_O_TRACEFORK;
->> #endif
->>
->> and happened to work on older kernels because it didn't check
->> the return value.
->
-> Well, older kernels, of course, will have *old* behavior
-> of SETOPTIONS too! My patch will not magically propagate
-> back in time and change behavior of old kernels :)
+On Fri, Sep 09, 2011 at 09:04:17AM -0400, Steve Grubb wrote: But what
+> I was trying to say is that we can't depend on these supplemental
+> hardware devices like TPM because we don't have access to the
+> proprietary technical details that would be necessary to supplement
+> the analysis. And when it comes to TPM chips, I bet each chip has
+> different details and entropy sources and entropy estimations and
+> rates. Those details we can't get at, so we can't solve the problem
+> by including that hardware. That is the point I was trying to
+> make. :)
 
-In that case your patch should be allowed to magically propagate
-forward in time and change the behavior of future kernels.
+Let's be clear that _we_ which Steve is referring to is Red Hat's
+attempt to get a BSI certification so they can make $$$.  It has
+nothing to do with security, except indirectly, and in my opinion,
+breaking application by causing network daemons to suddenly lock up
+randomly just so that Red Hat can make more $$$ is not a good reason
+to push a incompatible behavioural change into /dev/random.
 
-Greetings,
-
-Indan
-
-
+   	  	       		   	       - Ted
