@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933859Ab1IIL45 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 07:56:57 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:58274 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933696Ab1IIL44 (ORCPT
+	id S1758787Ab1IIMAZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 08:00:25 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:47823 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758764Ab1IIMAY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 07:56:56 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: David Howells <dhowells@redhat.com>
-Cc: dhowells@redhat.com, agruen@kernel.org, bfields@fieldses.org,
-        akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V6 09/26] vfs: Add delete child and delete self permission flags
-In-Reply-To: <22928.1315563126@redhat.com>
-References: <1315243548-18664-10-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <22928.1315563126@redhat.com>
-User-Agent: Notmuch/0.5-318-g52e4ded (http://notmuchmail.org) Emacs/23.2.1 (x86_64-pc-linux-gnu)
-Date: Fri, 09 Sep 2011 17:25:34 +0530
-Message-ID: <87fwk63p6x.fsf@skywalker.in.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-x-cbid: 11090911-7282-0000-0000-0000014E8EF3
+	Fri, 9 Sep 2011 08:00:24 -0400
+Subject: Re: [PATCHv3] UBI: new module ubiblk: block layer on top of UBI
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: david.wagner@free-electrons.com
+Cc: linux-mtd <linux-mtd@lists.infradead.org>,
+        linux-embedded <linux-embedded@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, Tim Bird <tim.bird@am.sony.com>,
+        David Woodhouse <dwmw2@infradead.org>, Arnd Bergmann <arnd@arndb.de>
+Date: Fri, 09 Sep 2011 15:02:45 +0300
+In-Reply-To: <1315569206.7905.41.camel@sauron>
+References: <1308922482-14967-1-git-send-email-david.wagner@free-electrons.com>
+	 <1315280704.19067.14.camel@sauron> <1315282208.19067.24.camel@sauron>
+	 <201109081726.00769.arnd@arndb.de> <1315569206.7905.41.camel@sauron>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1315569770.7905.45.camel@sauron>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 09 Sep 2011 11:12:06 +0100, David Howells <dhowells@redhat.com> wrote:
-> Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com> wrote:
+On Fri, 2011-09-09 at 14:53 +0300, Artem Bityutskiy wrote:
+> David, I am really busy and now, I suggest you to think about this. I'd
+> so far stick to the own ubiblk cdev approach, and would
+> analyse/prototype the approach of using UBI cdev for this. I provided
+> some concerns above. Also, think about race conditions like:
 > 
-> > +	if ((error || is_sticky) && IS_RICHACL(inode) &&
-> > +	    !inode_permission(dir, mask & ~(MAY_WRITE | MAY_DELETE_CHILD)) &&
-> > +	    !inode_permission(inode, MAY_DELETE_SELF))
-> > +		error = 0;
-> 
-> This might be easier to follow if you used == 0 rather than !.  The problem
-> with ! is that it looks like:
-> 
-> 	not_have inode_permission.
-> 
-> I guess this is just one of the fun consequences of having 0 (false) meaning
-> okay.
-> 
+> 1. Someone
 
-Updated to do == 0 check
+Sorry, I wonted to talk about situations when someone opens an ubiblk
+device while the underlying UBI volume is being removed, but then though
+this is trivial and forgot to erase the last sentence.
 
--aneesh
+Anyway, I suggest the following algorithm:
+
+1. Stick with the own cdev approach - the driver becomes very simple
+   in this case - we review it.
+2. Once it is ready, or in parallel, you can play with the second
+   approach and if you find it solid/nice, you can then provide a
+   new version and/or the delta.
+
+The idea is that on step 1 we review/deal with other things, without
+being blocked by the ioctl stuff.
+
+-- 
+Best Regards,
+Artem Bityutskiy
 
