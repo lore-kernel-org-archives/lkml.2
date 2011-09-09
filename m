@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758844Ab1IIM6S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 08:58:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12269 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758817Ab1IIM6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 08:58:17 -0400
-Subject: Re: [PATCH 1/2] ptrace: don't modify flags on PTRACE_SETOPTIONS
- failure
-From: Denys Vlasenko <dvlasenk@redhat.com>
-To: Indan Zupancic <indan@nul.nu>
-Cc: Denys Vlasenko <vda.linux@googlemail.com>, Oleg Nesterov <oleg@redhat.com>,
-        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 09 Sep 2011 14:58:02 +0200
-In-Reply-To: <2d14558326f860dea54093d31d1ba12f.squirrel@webmail.greenhost.nl>
-References: <201109090822.30063.vda.linux@googlemail.com>
-	 <201109090824.37366.vda.linux@googlemail.com>
-	 <2d14558326f860dea54093d31d1ba12f.squirrel@webmail.greenhost.nl>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Message-ID: <1315573084.4127.6.camel@dhcp-25-63.brq.redhat.com>
-Mime-Version: 1.0
+	id S1758863Ab1IINAT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 09:00:19 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:35139
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758817Ab1IINAS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Sep 2011 09:00:18 -0400
+Date: Fri, 9 Sep 2011 09:00:08 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        Linux-NFS <linux-nfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Neil Brown <neilb@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 03/10] mm: Add support for a filesystem to control swap
+ files
+Message-ID: <20110909130007.GA11810@infradead.org>
+References: <1315566054-17209-1-git-send-email-mgorman@suse.de>
+ <1315566054-17209-4-git-send-email-mgorman@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1315566054-17209-4-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-09-09 at 14:44 +0200, Indan Zupancic wrote:
-> Hello,
+On Fri, Sep 09, 2011 at 12:00:47PM +0100, Mel Gorman wrote:
+> Currently swapfiles are managed entirely by the core VM by using
+> ->bmap to allocate space and write to the blocks directly. This
+> patch adds address_space_operations methods that allow a filesystem
+> to optionally control the swapfile.
 > 
-> On Fri, September 9, 2011 08:24, Denys Vlasenko wrote:
-> > It's very unlikely that there is userspace code in the wild which
-> > will be affected by this change: it should have the form
-> >
-> >     ptrace(PTRACE_SETOPTIONS, pid, 0, PTRACE_O_BOGUSOPT)
-> >
-> > where PTRACE_O_BOGUSOPT is a constant unknown to the kernel.
-> > But kernel headers, naturally, don't contain any
-> > PTRACE_O_BOGUSOPTs, thus the only way userspace can use one
-> > if it defines one itself. I can't see why anyone would do such
-> > a thing deliberately.
-> 
-> The only realistic case is when a program compiled on a newer
-> kernel is run on an older kernel, when it does things like
-> 
-> #ifndef PTRACE_O_TRACEFORK
-> 	opts |= PTRACE_O_TRACEFORK;
-> #endif
-> 
-> and happened to work on older kernels because it didn't check
-> the return value.
+>   int swap_activate(struct file *);
+>   int swap_deactivate(struct file *);
+>   int swap_writepage(struct file *, struct page *, struct writeback_control *);
+>   int swap_readpage(struct file *, struct page *);
 
-Well, older kernels, of course, will have *old* behavior
-of SETOPTIONS too! My patch will not magically propagate
-back in time and change behavior of old kernels :)
+Just as the last two dozen times this came up:
 
--- 
-vda
+NAK
 
-
+The right fix is to add a filesystem method to support direct-I/O on
+arbitrary kernel pages, instead of letting the wap abstraction leak into
+the filesystem.
