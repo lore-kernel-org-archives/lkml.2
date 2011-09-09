@@ -1,61 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757598Ab1IIBU6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 21:20:58 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:42634 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757289Ab1IIBUz (ORCPT
+	id S1758028Ab1IIBWL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 21:22:11 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:56250 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757512Ab1IIBWI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 21:20:55 -0400
-Date: Fri, 9 Sep 2011 11:20:42 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Russell King <rmk@arm.linux.org.uk>
-Subject: linux-next: manual merge of the at91 tree with the arm tree
-Message-Id: <20110909112042.0949282e1e38b8c68bb00b9b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__9_Sep_2011_11_20_42_+1000_S6=upm1JFxNRWJ9n"
+	Thu, 8 Sep 2011 21:22:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.00.1109081617440.20358@xanadu.home>
+References: <1313800642-32418-1-git-send-email-lacombar@gmail.com>
+	<alpine.LFD.2.00.1109071437400.20358@xanadu.home>
+	<CACqU3MVF8XSdKi0PeZF5SFaH9i2HPqCjkMqccyb83x4V_1Vs1g@mail.gmail.com>
+	<alpine.LFD.2.00.1109071554480.20358@xanadu.home>
+	<CACqU3MXcksYxdV_=OR40fPeZzu1ygr-Qs79TV6kfn0DpbXhjuA@mail.gmail.com>
+	<alpine.LFD.2.00.1109081617440.20358@xanadu.home>
+Date: Thu, 8 Sep 2011 21:22:05 -0400
+Message-ID: <CACqU3MV0PW=Cp3Px2Jjs3SSOBbQSSA7P=a1RNy4x9jKEB-VEiA@mail.gmail.com>
+Subject: Re: [RFC] Kbuild: allow code re-use across different directories
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Nicolas Pitre <nico@fluxnic.net>
+Cc: linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__9_Sep_2011_11_20_42_+1000_S6=upm1JFxNRWJ9n
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-Hi all,
+On Thu, Sep 8, 2011 at 4:33 PM, Nicolas Pitre <nico@fluxnic.net> wrote:
+> On Thu, 8 Sep 2011, Arnaud Lacombe wrote:
+>
+>> you missed:
+>>
+>>  # Make sure files are removed during clean
+>> -extra-y       += piggy.gzip piggy.lzo piggy.lzma lib1funcs.S
+>> +extra-y       += piggy.gzip piggy.lzo piggy.lzma
+>>
+>> This confused make.
+>
+> Well... that was suttle.
+>
+he, welcome to make(1) world :)
 
-Today's linux-next merge of the at91 tree got a conflict in
-arch/arm/mach-at91/board-usb-a9260.c between commit 2f8163baada3 ("ARM:
-gpio: convert includes of mach/gpio.h and asm/gpio.h to linux/gpio.h")
-from the arm tree and commit 6939fd49787e ("at91: merge board USB-A9260
-and USB-A9263 together") from the at91 tree.
+> So yes, your patch may certainly be useful to a couple cases, and it
+> works fine for this lib1func.S.
+>
+> It doesn't help me much in the following situation though.  What I
+> actually want to achieve is to compile arch/arm/boot/compressed/fdt_rw.o
+> from scripts/dtc/libfdt/fdt_rw.c, however I want it to include my local
+> version of libfdt_env.h rather than scripts/dtc/libfdt/libfdt_env.h.  I
+> still haven't found a way to convince gcc to do that.
+>
+The only choice you have in gcc, is to use -I-, to construct:
 
-The latter removes the file modified by the former, so I did thet.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+ $(CROSS_COMPILE)gcc -I$(srctree)/arch/arm/boot/compressed -I- [...]
 
---Signature=_Fri__9_Sep_2011_11_20_42_+1000_S6=upm1JFxNRWJ9n
-Content-Type: application/pgp-signature
+however, it's been marked as deprecated, but still usable as of today
+snapshot of 4.7.0. Its replacement, -iquote, do not provide this
+functionnality, that is to override the source file origin directory
+as search directory for #include "...".
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+ - Arnaud
 
-iQEcBAEBAgAGBQJOaWnqAAoJEDMEi1NhKgbsf0MIAJ3aPqkEj1DZHogeWaMlJCMX
-o77DKSf6+Y67ztx7VocYXJBQKeJzcNlgVnnOwO1Pbw0ujkmYWKQzpGh904pGPcJz
-rPG1VpvxJRMksqS+gO3nM8omtWsBS9F12bBDfYsynxSMoWDjOK17qUjhGe7QiSAE
-WZ6GE3Mbg65Wpgh2j/rK46yaJZqX0oslTdlXocjLpVlMTgF+4dRIco/SuTmV4ed0
-7aIK9t4OUkCPbA2rIhFd2KueiKs48KOrLP8jm/SJ2wKRDQgJw7iiRV8PvTpKX8J2
-uC2lg7M714BfPPraIOk+mOrDr6M+QVRIZVF5i0y1LjJJRNjwEmtqW+OAU4B09CU=
-=3U28
------END PGP SIGNATURE-----
 
---Signature=_Fri__9_Sep_2011_11_20_42_+1000_S6=upm1JFxNRWJ9n--
+> Nicolas
+>
