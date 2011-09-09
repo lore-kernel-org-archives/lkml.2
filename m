@@ -1,43 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757759Ab1IIBLB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 21:11:01 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:55798 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757609Ab1IIBKv (ORCPT
+	id S932126Ab1IIBLR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 21:11:17 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:65123 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757823Ab1IIBLL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 21:10:51 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6463"; a="116864664"
-Message-Id: <20110909010914.982607751@codeaurora.org>
+	Thu, 8 Sep 2011 21:11:11 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6463"; a="116679206"
+Message-Id: <20110909010916.235688102@codeaurora.org>
 User-Agent: quilt/0.48-1
-Date: Thu, 08 Sep 2011 20:08:50 -0500
+Date: Thu, 08 Sep 2011 20:09:03 -0500
 From: Richard Kuo <rkuo@codeaurora.org>
 To: linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Cc: Arnd Bergmann <arnd@arndb.de>
-Subject: [patch v3 03/36] Hexagon: Add bitops support
+Subject: [patch v3 16/36] Hexagon: Add startup code
 References: <20110909010847.294039464@codeaurora.org>
-Content-Disposition: inline; filename=bitops.diff
+Content-Disposition: inline; filename=startup.diff
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-Merged sub-files into bitops.h; fixed return types and volatiles.
 
 Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
 Acked-by: Arnd Bergmann <arnd@arndb.de>
 
 ---
- arch/hexagon/include/asm/bitops.h |  301 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 301 insertions(+)
+ arch/hexagon/kernel/head.S  |  162 ++++++++++++++++++++++++++++++++++++++++++++
+ arch/hexagon/kernel/reset.c |   38 ++++++++++
+ arch/hexagon/kernel/setup.c |  145 +++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 345 insertions(+)
 
-Index: linux-hexagon-kernel/arch/hexagon/include/asm/bitops.h
+Index: linux-hexagon-kernel/arch/hexagon/kernel/head.S
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/include/asm/bitops.h	2011-09-03 20:14:59.504980775 -0500
-@@ -0,0 +1,301 @@
++++ linux-hexagon-kernel/arch/hexagon/kernel/head.S	2011-09-07 13:00:31.040646956 -0500
+@@ -0,0 +1,162 @@
 +/*
-+ * Bit operations for the Hexagon architecture
++ * Early kernel startup code for Hexagon
 + *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
@@ -57,286 +57,340 @@ Index: linux-hexagon-kernel/arch/hexagon/include/asm/bitops.h
 + * 02110-1301, USA.
 + */
 +
-+#ifndef _ASM_BITOPS_H
-+#define _ASM_BITOPS_H
++#include <linux/linkage.h>
++#include <linux/init.h>
++#include <asm/asm-offsets.h>
++#include <asm/mem-layout.h>
++#include <asm/vm_mmu.h>
++#include <asm/page.h>
 +
-+#include <linux/compiler.h>
-+#include <asm/byteorder.h>
-+#include <asm/system.h>
-+#include <asm/atomic.h>
++       	__INIT
++ENTRY(stext)
++	/*
++	 * VMM will already have set up true vector page, MMU, etc.
++	 * To set up initial kernel identity map, we have to pass
++	 * the VMM a pointer to some canonical page tables. In
++	 * this implementation, we're assuming that we've got
++	 * them precompiled. Generate value in R24, as we'll need
++	 * it again shortly.
++	 */
++	r24.L = #LO(swapper_pg_dir)
++	r24.H = #HI(swapper_pg_dir)
 +
-+#ifdef __KERNEL__
++	/*
++	 * Symbol is kernel segment address, but we need
++	 * the logical/physical address.
++	 */
++	r24 = asl(r24, #2)
++	r24 = lsr(r24, #2)
 +
-+#define smp_mb__before_clear_bit()	barrier()
-+#define smp_mb__after_clear_bit()	barrier()
++	r0 = r24
 +
++	/*
++	 * Initialize a 16MB PTE to make the virtual and physical
++	 * addresses where the kernel was loaded be identical.
++	 */
++#define PTE_BITS ( __HVM_PTE_R | __HVM_PTE_W | __HVM_PTE_X	\
++		  | __HEXAGON_C_WB_L2 << 6			\
++		  | __HVM_PDE_S_4MB)
++
++	r1 = pc
++	r2.H = #0xffc0
++	r2.L = #0x0000
++	r1 = and(r1,r2)		/* round PC to 4MB boundary	*/
++	r2 = lsr(r1, #22)	/* 4MB page number		*/
++	r2 = asl(r2, #2)	/* times sizeof(PTE) (4bytes)	*/
++	r0 = add(r0,r2)		/* r0 = address of correct PTE	*/
++	r2 = #PTE_BITS
++	r1 = add(r1,r2)		/* r1 = 4MB PTE for the first entry	*/
++	r2.h = #0x0040
++	r2.l = #0x0000		/* 4MB	*/
++	memw(r0 ++ #4) = r1
++	r1 = add(r1, r2)
++	memw(r0 ++ #4) = r1
++
++	r0 = r24
++
++	/*
++	 * The subroutine wrapper around the virtual instruction touches
++	 * no memory, so we should be able to use it even here.
++	 */
++	call	__vmnewmap;
++
++	/*  Jump into virtual address range.  */
++
++	r31.h = #hi(__head_s_vaddr_target)
++	r31.l = #lo(__head_s_vaddr_target)
++	jumpr r31
++
++	/*  Insert trippy space effects.  */
++
++__head_s_vaddr_target:
++	/*
++	 * Tear down VA=PA translation now that we are running
++	 * in the desgnated kernel segments.
++	 */
++	r0 = #__HVM_PDE_S_INVALID
++	r1 = r24
++	loop0(1f,#0x100)
++1:
++	{
++		memw(R1 ++ #4) = R0
++	}:endloop0
++
++	r0 = r24
++	call __vmnewmap
++
++	/*  Go ahead and install the trap0 return so angel calls work  */
++	r0.h = #hi(_K_provisional_vec)
++	r0.l = #lo(_K_provisional_vec)
++	call __vmsetvec
++
++	/*
++	 * OK, at this point we should start to be much more careful,
++	 * we're going to enter C code and start touching memory
++	 * in all sorts of places.
++	 * This means:
++	 *      SGP needs to be OK
++	 *	Need to lock shared resources
++	 *	A bunch of other things that will cause
++	 * 	all kinds of painful bugs
++	 */
++
++	/*
++	 * Stack pointer should be pointed at the init task's
++	 * thread stack, which should have been declared in arch/init_task.c.
++	 * So uhhhhh...
++	 * It's accessible via the init_thread_union, which is a union
++	 * of a thread_info struct and a stack; of course, the top
++	 * of the stack is not for you.  The end of the stack
++	 * is simply init_thread_union + THREAD_SIZE.
++	 */
++
++	{r29.H = #HI(init_thread_union); r0.H = #HI(_THREAD_SIZE); }
++	{r29.L = #LO(init_thread_union); r0.L = #LO(_THREAD_SIZE); }
++
++	/*  initialize the register used to point to current_thread_info */
++	/*  Fixme:  THREADINFO_REG can't be R2 because of that memset thing. */
++	{r29 = add(r29,r0); THREADINFO_REG = r29; }
++
++	/*  Hack:  zero bss; */
++	{ r0.L = #LO(__bss_start);  r1 = #0; r2.l = #LO(__bss_stop); }
++	{ r0.H = #HI(__bss_start);           r2.h = #HI(__bss_stop); }
++
++	r2 = sub(r2,r0);
++	call memset;
++
++	/* Time to make the doughnuts.   */
++	call start_kernel
++
++	/*
++	 * Should not reach here.
++	 */
++1:
++	jump 1b
++
++.p2align PAGE_SHIFT
++ENTRY(external_cmdline_buffer)
++        .fill _PAGE_SIZE,1,0
++
++.data
++.p2align PAGE_SHIFT
++ENTRY(empty_zero_page)
++        .fill _PAGE_SIZE,1,0
+Index: linux-hexagon-kernel/arch/hexagon/kernel/reset.c
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/kernel/reset.c	2011-09-03 20:14:59.644981167 -0500
+@@ -0,0 +1,38 @@
 +/*
-+ * The offset calculations for these are based on BITS_PER_LONG == 32
-+ * (i.e. I get to shift by #5-2 (32 bits per long, 4 bytes per access),
-+ * mask by 0x0000001F)
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
-+ * Typically, R10 is clobbered for address, R11 bit nr, and R12 is temp
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
 + */
 +
-+/**
-+ * test_and_clear_bit - clear a bit and return its old value
-+ * @nr:  bit number to clear
-+ * @addr:  pointer to memory
-+ */
-+static inline int test_and_clear_bit(int nr, volatile void *addr)
++#include <linux/smp.h>
++#include <asm/hexagon_vm.h>
++
++void machine_power_off(void)
 +{
-+	int oldval;
-+
-+	__asm__ __volatile__ (
-+	"	{R10 = %1; R11 = asr(%2,#5); }\n"
-+	"	{R10 += asl(R11,#2); R11 = and(%2,#0x1f)}\n"
-+	"1:	R12 = memw_locked(R10);\n"
-+	"	{ P0 = tstbit(R12,R11); R12 = clrbit(R12,R11); }\n"
-+	"	memw_locked(R10,P1) = R12;\n"
-+	"	{if !P1 jump 1b; %0 = mux(P0,#1,#0);}\n"
-+	: "=&r" (oldval)
-+	: "r" (addr), "r" (nr)
-+	: "r10", "r11", "r12", "p0", "p1", "memory"
-+	);
-+
-+	return oldval;
++	smp_send_stop();
++	__vmstop();
 +}
 +
-+/**
-+ * test_and_set_bit - set a bit and return its old value
-+ * @nr:  bit number to set
-+ * @addr:  pointer to memory
-+ */
-+static inline int test_and_set_bit(int nr, volatile void *addr)
++void machine_halt(void)
 +{
-+	int oldval;
-+
-+	__asm__ __volatile__ (
-+	"	{R10 = %1; R11 = asr(%2,#5); }\n"
-+	"	{R10 += asl(R11,#2); R11 = and(%2,#0x1f)}\n"
-+	"1:	R12 = memw_locked(R10);\n"
-+	"	{ P0 = tstbit(R12,R11); R12 = setbit(R12,R11); }\n"
-+	"	memw_locked(R10,P1) = R12;\n"
-+	"	{if !P1 jump 1b; %0 = mux(P0,#1,#0);}\n"
-+	: "=&r" (oldval)
-+	: "r" (addr), "r" (nr)
-+	: "r10", "r11", "r12", "p0", "p1", "memory"
-+	);
-+
-+
-+	return oldval;
-+
 +}
 +
-+/**
-+ * test_and_change_bit - toggle a bit and return its old value
-+ * @nr:  bit number to set
-+ * @addr:  pointer to memory
-+ */
-+static inline int test_and_change_bit(int nr, volatile void *addr)
++void machine_restart(char *cmd)
 +{
-+	int oldval;
-+
-+	__asm__ __volatile__ (
-+	"	{R10 = %1; R11 = asr(%2,#5); }\n"
-+	"	{R10 += asl(R11,#2); R11 = and(%2,#0x1f)}\n"
-+	"1:	R12 = memw_locked(R10);\n"
-+	"	{ P0 = tstbit(R12,R11); R12 = togglebit(R12,R11); }\n"
-+	"	memw_locked(R10,P1) = R12;\n"
-+	"	{if !P1 jump 1b; %0 = mux(P0,#1,#0);}\n"
-+	: "=&r" (oldval)
-+	: "r" (addr), "r" (nr)
-+	: "r10", "r11", "r12", "p0", "p1", "memory"
-+	);
-+
-+	return oldval;
-+
 +}
 +
++void pm_power_off(void)
++{
++}
+Index: linux-hexagon-kernel/arch/hexagon/kernel/setup.c
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/kernel/setup.c	2011-09-07 13:00:31.120647076 -0500
+@@ -0,0 +1,145 @@
 +/*
-+ * Atomic, but doesn't care about the return value.
-+ * Rewrite later to save a cycle or two.
++ * Arch related setup for Hexagon
++ *
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
 + */
 +
-+static inline void clear_bit(int nr, volatile void *addr)
-+{
-+	test_and_clear_bit(nr, addr);
-+}
-+
-+static inline void set_bit(int nr, volatile void *addr)
-+{
-+	test_and_set_bit(nr, addr);
-+}
-+
-+static inline void change_bit(int nr, volatile void *addr)
-+{
-+	test_and_change_bit(nr, addr);
-+}
-+
-+
-+/*
-+ * These are allowed to be non-atomic.  In fact the generic flavors are
-+ * in non-atomic.h.  Would it be better to use intrinsics for this?
-+ *
-+ * OK, writes in our architecture do not invalidate LL/SC, so this has to
-+ * be atomic, particularly for things like slab_lock and slab_unlock.
-+ *
-+ */
-+static inline void __clear_bit(int nr, volatile unsigned long *addr)
-+{
-+	test_and_clear_bit(nr, addr);
-+}
-+
-+static inline void __set_bit(int nr, volatile unsigned long *addr)
-+{
-+	test_and_set_bit(nr, addr);
-+}
-+
-+static inline void __change_bit(int nr, volatile unsigned long *addr)
-+{
-+	test_and_change_bit(nr, addr);
-+}
-+
-+/*  Apparently, at least some of these are allowed to be non-atomic  */
-+static inline int __test_and_clear_bit(int nr, volatile unsigned long *addr)
-+{
-+	return test_and_clear_bit(nr, addr);
-+}
-+
-+static inline int __test_and_set_bit(int nr, volatile unsigned long *addr)
-+{
-+	return test_and_set_bit(nr, addr);
-+}
-+
-+static inline int __test_and_change_bit(int nr, volatile unsigned long *addr)
-+{
-+	return test_and_change_bit(nr, addr);
-+}
-+
-+static inline int __test_bit(int nr, const volatile unsigned long *addr)
-+{
-+	int retval;
-+
-+	asm volatile(
-+	"{P0 = tstbit(%1,%2); if (P0.new) %0 = #1; if (!P0.new) %0 = #0;}\n"
-+	: "=&r" (retval)
-+	: "r" (addr[BIT_WORD(nr)]), "r" (nr % BITS_PER_LONG)
-+	: "p0"
-+	);
-+
-+	return retval;
-+}
-+
-+#define test_bit(nr, addr) __test_bit(nr, addr)
-+
-+/*
-+ * ffz - find first zero in word.
-+ * @word: The word to search
-+ *
-+ * Undefined if no zero exists, so code should check against ~0UL first.
-+ */
-+static inline long ffz(int x)
-+{
-+	int r;
-+
-+	asm("%0 = ct1(%1);\n"
-+		: "=&r" (r)
-+		: "r" (x));
-+	return r;
-+}
-+
-+/*
-+ * fls - find last (most-significant) bit set
-+ * @x: the word to search
-+ *
-+ * This is defined the same way as ffs.
-+ * Note fls(0) = 0, fls(1) = 1, fls(0x80000000) = 32.
-+ */
-+static inline long fls(int x)
-+{
-+	int r;
-+
-+	asm("{ %0 = cl0(%1);}\n"
-+		"%0 = sub(#32,%0);\n"
-+		: "=&r" (r)
-+		: "r" (x)
-+		: "p0");
-+
-+	return r;
-+}
-+
-+/*
-+ * ffs - find first bit set
-+ * @x: the word to search
-+ *
-+ * This is defined the same way as
-+ * the libc and compiler builtin ffs routines, therefore
-+ * differs in spirit from the above ffz (man ffs).
-+ */
-+static inline long ffs(int x)
-+{
-+	int r;
-+
-+	asm("{ P0 = cmp.eq(%1,#0); %0 = ct0(%1);}\n"
-+		"{ if P0 %0 = #0; if !P0 %0 = add(%0,#1);}\n"
-+		: "=&r" (r)
-+		: "r" (x)
-+		: "p0");
-+
-+	return r;
-+}
-+
-+/*
-+ * __ffs - find first bit in word.
-+ * @word: The word to search
-+ *
-+ * Undefined if no bit exists, so code should check against 0 first.
-+ *
-+ * bits_per_long assumed to be 32
-+ * numbering starts at 0 I think (instead of 1 like ffs)
-+ */
-+static inline unsigned long __ffs(unsigned long word)
-+{
-+	int num;
-+
-+	asm("%0 = ct0(%1);\n"
-+		: "=&r" (num)
-+		: "r" (word));
-+
-+	return num;
-+}
-+
-+/*
-+ * __fls - find last (most-significant) set bit in a long word
-+ * @word: the word to search
-+ *
-+ * Undefined if no set bit exists, so code should check against 0 first.
-+ * bits_per_long assumed to be 32
-+ */
-+static inline unsigned long __fls(unsigned long word)
-+{
-+	int num;
-+
-+	asm("%0 = cl0(%1);\n"
-+		"%0 = sub(#31,%0);\n"
-+		: "=&r" (num)
-+		: "r" (word));
-+
-+	return num;
-+}
-+
-+#include <asm-generic/bitops/lock.h>
-+#include <asm-generic/bitops/find.h>
-+
-+#include <asm-generic/bitops/fls64.h>
-+#include <asm-generic/bitops/sched.h>
-+#include <asm-generic/bitops/hweight.h>
-+
-+#include <asm-generic/bitops/le.h>
-+#include <asm-generic/bitops/ext2-atomic.h>
-+
-+#endif /* __KERNEL__ */
++#include <linux/init.h>
++#include <linux/bootmem.h>
++#include <linux/mmzone.h>
++#include <linux/mm.h>
++#include <linux/seq_file.h>
++#include <linux/console.h>
++#include <linux/of_fdt.h>
++#include <asm/io.h>
++#include <asm/sections.h>
++#include <asm/setup.h>
++#include <asm/processor.h>
++#include <asm/hexagon_vm.h>
++#include <asm/vm_mmu.h>
++#include <asm/time.h>
++#ifdef CONFIG_OF
++#include <asm/prom.h>
 +#endif
++
++char cmd_line[COMMAND_LINE_SIZE];
++static char default_command_line[COMMAND_LINE_SIZE] __initdata = CONFIG_CMDLINE;
++
++int on_simulator;
++
++void __cpuinit calibrate_delay(void)
++{
++	loops_per_jiffy = thread_freq_mhz * 1000000 / HZ;
++}
++
++/*
++ * setup_arch -  high level architectural setup routine
++ * @cmdline_p: pointer to pointer to command-line arguments
++ */
++
++void __init setup_arch(char **cmdline_p)
++{
++	char *p = &external_cmdline_buffer;
++
++	/*
++	 * These will eventually be pulled in via either some hypervisor
++	 * or devicetree description.  Hardwiring for now.
++	 */
++	pcycle_freq_mhz = 600;
++	thread_freq_mhz = 100;
++	sleep_clk_freq = 32000;
++
++	/*
++	 * Set up event bindings to handle exceptions and interrupts.
++	 */
++	__vmsetvec(_K_VM_event_vector);
++
++	/*
++	 * Simulator has a few differences from the hardware.
++	 * For now, check uninitialized-but-mapped memory
++	 * prior to invoking setup_arch_memory().
++	 */
++	if (*(int *)((unsigned long)_end + 8) == 0x1f1f1f1f)
++		on_simulator = 1;
++	else
++		on_simulator = 0;
++
++	if (p[0] != '\0')
++		strlcpy(boot_command_line, p, COMMAND_LINE_SIZE);
++	else
++		strlcpy(boot_command_line, default_command_line,
++			COMMAND_LINE_SIZE);
++
++	/*
++	 * boot_command_line and the value set up by setup_arch
++	 * are both picked up by the init code. If no reason to
++	 * make them different, pass the same pointer back.
++	 */
++	strlcpy(cmd_line, boot_command_line, COMMAND_LINE_SIZE);
++	*cmdline_p = cmd_line;
++
++	parse_early_param();
++
++	setup_arch_memory();
++
++#ifdef CONFIG_SMP
++	smp_start_cpus();
++#endif
++}
++
++/*
++ * Functions for dumping CPU info via /proc
++ * Probably should move to kernel/proc.c or something.
++ */
++static void *c_start(struct seq_file *m, loff_t *pos)
++{
++	return *pos < nr_cpu_ids ? (void *)((unsigned long) *pos + 1) : NULL;
++}
++
++static void *c_next(struct seq_file *m, void *v, loff_t *pos)
++{
++	++*pos;
++	return c_start(m, pos);
++}
++
++static void c_stop(struct seq_file *m, void *v)
++{
++}
++
++/*
++ * Eventually this will dump information about
++ * CPU properties like ISA level, TLB size, etc.
++ */
++static int show_cpuinfo(struct seq_file *m, void *v)
++{
++	int cpu = (unsigned long) v - 1;
++
++	seq_printf(m, "processor\t: %d\n", cpu);
++	seq_printf(m, "model name\t: Hexagon Virtual Machine\n");
++	seq_printf(m, "BogoMips\t: %lu.%02lu\n",
++		(loops_per_jiffy * HZ) / 500000,
++		((loops_per_jiffy * HZ) / 5000) % 100);
++	seq_printf(m, "\n");
++	return 0;
++}
++
++const struct seq_operations cpuinfo_op = {
++	.start  = &c_start,
++	.next   = &c_next,
++	.stop   = &c_stop,
++	.show   = &show_cpuinfo,
++};
 
 --
 
