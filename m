@@ -1,49 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759377Ab1IIQP3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 12:15:29 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:51789 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758642Ab1IIQP1 (ORCPT
+	id S1759411Ab1IIQQJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 12:16:09 -0400
+Received: from mail-gw0-f42.google.com ([74.125.83.42]:40642 "EHLO
+	mail-gw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759386Ab1IIQQG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 12:15:27 -0400
-Date: Fri, 9 Sep 2011 09:15:19 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Daniel Kurtz <djkurtz@chromium.org>
-Cc: Henrik Rydberg <rydberg@euromail.se>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        olofj@chromium.org, chris@cnpbagwell.com
-Subject: Re: [PATCH 4/9 v5] Input: synaptics - add image sensor support
-Message-ID: <20110909161519.GA13555@core.coreip.homeip.net>
-References: <1314011163-19098-1-git-send-email-djkurtz@chromium.org>
- <1314011163-19098-5-git-send-email-djkurtz@chromium.org>
- <4E52C252.9060904@canonical.com>
- <201108221405.15767.dmitry.torokhov@gmail.com>
- <20110823211510.GA17729@polaris.bitmath.org>
- <CAGS+omDuwL9pC6GJ_DzB02CBSQE2BwGW=p3xrTbY2hTd1S16uA@mail.gmail.com>
+	Fri, 9 Sep 2011 12:16:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGS+omDuwL9pC6GJ_DzB02CBSQE2BwGW=p3xrTbY2hTd1S16uA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4E6A075C.1050102@suse.cz>
+References: <1313800642-32418-1-git-send-email-lacombar@gmail.com>
+	<alpine.LFD.2.00.1109071437400.20358@xanadu.home>
+	<CACqU3MVF8XSdKi0PeZF5SFaH9i2HPqCjkMqccyb83x4V_1Vs1g@mail.gmail.com>
+	<alpine.LFD.2.00.1109071554480.20358@xanadu.home>
+	<CACqU3MXcksYxdV_=OR40fPeZzu1ygr-Qs79TV6kfn0DpbXhjuA@mail.gmail.com>
+	<alpine.LFD.2.00.1109081617440.20358@xanadu.home>
+	<CACqU3MV0PW=Cp3Px2Jjs3SSOBbQSSA7P=a1RNy4x9jKEB-VEiA@mail.gmail.com>
+	<4E6A075C.1050102@suse.cz>
+Date: Fri, 9 Sep 2011 12:16:03 -0400
+Message-ID: <CACqU3MVoQ_hkvEoOkyAd2Ceg9xt4M-=up-avzE2yDqp6ND5suw@mail.gmail.com>
+Subject: Re: [RFC] Kbuild: allow code re-use across different directories
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Nicolas Pitre <nico@fluxnic.net>, linux-kbuild@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+Hi,
 
-On Fri, Sep 09, 2011 at 10:11:27PM +0800, Daniel Kurtz wrote:
-> Hi Dmitry,
-> 
-> Hope your house move went well.
-> Any idea when this patchset will be applied?
-> 
+On Fri, Sep 9, 2011 at 8:32 AM, Michal Marek <mmarek@suse.cz> wrote:
+> On 9.9.2011 03:22, Arnaud Lacombe wrote:
+>> Hi,
+>>
+>> On Thu, Sep 8, 2011 at 4:33 PM, Nicolas Pitre <nico@fluxnic.net> wrote:
+>>> On Thu, 8 Sep 2011, Arnaud Lacombe wrote:
+>>>
+>>>> you missed:
+>>>>
+>>>>  # Make sure files are removed during clean
+>>>> -extra-y       += piggy.gzip piggy.lzo piggy.lzma lib1funcs.S
+>>>> +extra-y       += piggy.gzip piggy.lzo piggy.lzma
+>>>>
+>>>> This confused make.
+>>>
+>>> Well... that was suttle.
+>>>
+>> he, welcome to make(1) world :)
+>>
+>>> So yes, your patch may certainly be useful to a couple cases, and it
+>>> works fine for this lib1func.S.
+>>>
+>>> It doesn't help me much in the following situation though.  What I
+>>> actually want to achieve is to compile arch/arm/boot/compressed/fdt_rw.o
+>>> from scripts/dtc/libfdt/fdt_rw.c, however I want it to include my local
+>>> version of libfdt_env.h rather than scripts/dtc/libfdt/libfdt_env.h.  I
+>>> still haven't found a way to convince gcc to do that.
+>>>
+>> The only choice you have in gcc, is to use -I-, to construct:
+>>
+>>  $(CROSS_COMPILE)gcc -I$(srctree)/arch/arm/boot/compressed -I- [...]
+>>
+>> however, it's been marked as deprecated, but still usable as of today
+>> snapshot of 4.7.0. Its replacement, -iquote, do not provide this
+>> functionnality, that is to override the source file origin directory
+>> as search directory for #include "...".
+>
+> Or you modify libfdt to support -DLIBFDT_ENV=libfdt_arm.h or similar.
+>
+If dtc has to be modified, let's just get rid of that #include "..."
+in favor of #include <...>. We will gain full control of search path,
+and it will be cleaner than this awful LIBFTD_ENV construct.
 
-The patchset is in my queue for 3.2 (and I might have even pushed it to
-my public tree) but since kernel.org is down you can't see it, sorry.
+ - Arnaud
 
-Thanks.
-
--- 
-Dmitry
+> Michal
+>
