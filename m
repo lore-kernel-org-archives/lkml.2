@@ -1,65 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933450Ab1IIUN1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 16:13:27 -0400
-Received: from peace.netnation.com ([204.174.223.2]:44051 "EHLO
-	peace.netnation.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933265Ab1IIUN0 (ORCPT
+	id S933529Ab1IIUPY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 16:15:24 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:52436 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933265Ab1IIUPW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 16:13:26 -0400
-Date: Fri, 9 Sep 2011 13:13:24 -0700
-From: Simon Kirby <sim@hostway.ca>
-To: drbd-dev@lists.linbit.com, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: [Drbd-dev] [3.1-rc4] XFS+DRBD hangs
-Message-ID: <20110909201324.GD6195@hostway.ca>
-References: <20110907221505.GC21603@hostway.ca> <20110908151305.GJ14243@barkeeper1-xen.linbit> <20110908174324.GA8043@hostway.ca>
+	Fri, 9 Sep 2011 16:15:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110908174324.GA8043@hostway.ca>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110909010916.525482401@codeaurora.org>
+References: <20110909010847.294039464@codeaurora.org>
+	<20110909010916.525482401@codeaurora.org>
+Date: Fri, 9 Sep 2011 22:15:20 +0200
+Message-ID: <CACM3HyGvJQABO3Hi6e+yH+Xoi+S+fctGrH3w4Jm7=zqtnPTXTQ@mail.gmail.com>
+Subject: Re: [patch v3 19/36] Hexagon: Add ptrace support
+From: Jonas Bonn <jonas.bonn@gmail.com>
+To: Richard Kuo <rkuo@codeaurora.org>
+Cc: linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Linas Vepstas <linas@codeaurora.org>,
+        arnd@arndb.de
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 08, 2011 at 10:43:24AM -0700, Simon Kirby wrote:
+On 9 September 2011 03:09, Richard Kuo <rkuo@codeaurora.org> wrote:
+> +long arch_ptrace(struct task_struct *child, long request,
+> +                unsigned long addr, unsigned long data)
+> +{
+> +       void __user *udata = (void __user *) data;
+> +
+> +       switch (request) {
+> +       case PTRACE_POKETEXT:   /* write the word at location addr. */
+> +       case PTRACE_POKEDATA:
+> +               return generic_ptrace_pokedata(child, addr, data);
+> +       case PTRACE_POKEUSR:    /* write register specified by addr. */
+> +               return ptrace_pokeusr(child, addr, data);
+> +       case PTRACE_GETREGS:
+> +               return copy_regset_to_user(child, &hexagon_user_view,
+> +                                          REGSET_GPR, 0,
+> +                                          sizeof(struct user_regs_struct),
+> +                                          udata);
+> +       case PTRACE_SETREGS:
+> +               return copy_regset_from_user(child, &hexagon_user_view,
+> +                                            REGSET_GPR, 0,
+> +                                            sizeof(struct user_regs_struct),
+> +                                            udata);
+> +       default:
+> +               return ptrace_request(child, request, addr, data);
+> +       }
+> +
+> +       return 0;
+> +}
+>
 
-> On Thu, Sep 08, 2011 at 05:13:05PM +0200, Lars Ellenberg wrote:
-> 
-> > Sorry for double posting on drbd-dev, I managed to strip the other lists from Cc.
-> > 
-> > > We upgraded from 2.6.36 which seemed to have a page leak (file pages left
-> > > on the LRU) and so would eventually perform very poorly. 2.6.37 and
-> > > 2.6.38 seemed to have some unix socket issue that caused heartbeat to
-> > > wedge. Shall we enable lock debugging or something here?
-> > 
-> > That could help us understand that stack trace.
-> > 
-> > It looks like cpu 1 blocks in
-> > 
-> > > [ 1532.427149]  [<ffffffff8103d512>] ? try_to_wake_up+0xc2/0x270
-> > > [ 1532.427149]  <<EOE>>  <IRQ>  [<ffffffff8103d6cd>] default_wake_function+0xd/0x10
-> > 
-> > Which does not make sense to me at all.
-> 
-> Well, good news, I think.. I believe this may be related to
-> "PCI: Set PCI-E Max Payload Size on fabric", added by b03e7495a862b02829.
-> 3.1-rc5 is running now with a patch to basically disable those changes,
-> and has been stable for 12 hours. It usually hung in a few minutes
-> before.
-> 
-> The XFS peoples say it was very likely not 58d84c4ee0389ddeb86238d5 which
-> is the only other thing that changed between these versions that seems to
-> be at all in the hang path.
-> 
-> Also, when the thing hangs, it stops pinging immediately, and with the
-> PCI-E max payload thing active, the device that raises a bus error is
-> actually the PCI-E to PCI-X bridge chip used to support the BCM5708 NICs,
-> so that all seems related.
+I think that... other than for compatibility with legacy userspace
+code, you shouldn't need any of these cases other than the 'default'.
 
-Except that I accidentally git reset out the patch, and so it's been
-running unmodified 79016f648872549392d232cd648bd02298c2d2bb (past -rc5),
-and still hasn't crashed, so I guess it _was_ the XFS changes, or
-something else. Boggle. In any event, it's still running well. :)
+PTRACE_GETREGS is replaced by PTRACE_GETREGSET and this is handled in
+generic code.  POKETEXT, POKEDATA are handled in the generic code.
+POKEUSR can also be done via the SETREGSET mechanism.
 
-Simon-
+That said, I don't think gdbserver has been updated to use
+GETREGSET/SETREGSET.  This is a bit like the uClibc/glibc issue,
+though... somebody just needs to do the work to make userspace work
+with the new, "clean" kernel interface.
+
+Given all that, you shouldn't need to export pt_regs to userspace
+either.  You already have a user_regs_struct which is userspace's view
+of the process registers.  For OpenRISC we made pt_regs a kernel
+private structure, giving us the freedom to change the stack layout of
+the registers in the future while providing a stable view for
+userspace.  I would suggest doing the same here.
+
+If you do decide to make pt_regs private, you'll need to change your
+struct sigcontext to use user_regs_struct, as well.
+
+/Jonas
