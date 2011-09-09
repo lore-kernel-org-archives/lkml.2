@@ -1,148 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933283Ab1IIKFG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 06:05:06 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:42052 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933167Ab1IIKFE (ORCPT
+	id S933255Ab1IIKFn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 06:05:43 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:37672 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933080Ab1IIKFl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 06:05:04 -0400
-Message-ID: <4E69E4BF.3030402@atmel.com>
-Date: Fri, 09 Sep 2011 12:04:47 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
+	Fri, 9 Sep 2011 06:05:41 -0400
+Date: Fri, 9 Sep 2011 12:05:40 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Johannes Berg <johannes@sipsolutions.net>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org
+Subject: Re: [PATCH 1/2] ALSA: aoa: Remove obsolete cleanup for clientdata
+Message-ID: <20110909100540.GJ1912@pengutronix.de>
+References: <1315561784.2831.0.camel@phoenix>
 MIME-Version: 1.0
-To: Josh Wu <josh.wu@atmel.com>, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org
-CC: Guennadi Liakhovetski <g.liakhovetski@gmx.de>, plagnioj@jcrosoft.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] [media] at91: add code to initialize and manage the
- ISI_MCK for Atmel ISI driver.
-References: <1315288601-22384-1-git-send-email-josh.wu@atmel.com> <Pine.LNX.4.64.1109060803590.14818@axis700.grange>
-In-Reply-To: <Pine.LNX.4.64.1109060803590.14818@axis700.grange>
-X-Enigmail-Version: 1.3.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="bWEb1MG/o7IKOlQF"
+Content-Disposition: inline
+In-Reply-To: <1315561784.2831.0.camel@phoenix>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 06/09/2011 08:54, Guennadi Liakhovetski :
-> On Tue, 6 Sep 2011, Josh Wu wrote:
-> 
->> This patch enable the configuration for ISI_MCK, which is provided by programmable clock.
->>
->> Signed-off-by: Josh Wu <josh.wu@atmel.com>
->> ---
->>  drivers/media/video/atmel-isi.c |   60 ++++++++++++++++++++++++++++++++++++++-
->>  include/media/atmel-isi.h       |    4 ++
->>  2 files changed, 63 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/media/video/atmel-isi.c b/drivers/media/video/atmel-isi.c
 
-[..]
+--bWEb1MG/o7IKOlQF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->>  /* -----------------------------------------------------------------------*/
->> +/* Initialize ISI_MCK clock, called by atmel_isi_probe() function */
->> +static int initialize_mck(struct platform_device *pdev,
->> +			struct atmel_isi *isi)
->> +{
->> +	struct device *dev = &pdev->dev;
->> +	struct isi_platform_data *pdata = dev->platform_data;
->> +	struct clk *pck_parent;
->> +	int ret;
->> +
->> +	if (!strlen(pdata->pck_name) || !strlen(pdata->pck_parent_name))
->> +		return -EINVAL;
->> +
->> +	/* ISI_MCK is provided by PCK clock */
->> +	isi->mck = clk_get(dev, pdata->pck_name);
-> 
-> I think, it's still not what Russell meant. Look at 
-> drivers/mmc/host/atmel-mci.c:
-> 
-> 	host->mck = clk_get(&pdev->dev, "mci_clk");
-> 
-> and in arch/arm/mach-at91/at91sam9g45.c they've got
-> 
-> 	CLKDEV_CON_DEV_ID("mci_clk", "atmel_mci.0", &mmc0_clk),
-> 	CLKDEV_CON_DEV_ID("mci_clk", "atmel_mci.1", &mmc1_clk),
-> 
-> where
-> 
-> #define CLKDEV_CON_DEV_ID(_con_id, _dev_id, _clk)	\
-> 	{						\
-> 		.con_id = _con_id,			\
-> 		.dev_id = _dev_id,			\
-> 		.clk = _clk,				\
-> 	}
-> 
-> I.e., in the device driver (mmc in this case) you only use the (platform) 
-> device instance, whose dev_name(dev) is then matched against one of clock 
-> lookups above, and a connection ID, which is used in case your device is 
-> using more than one clock. In the ISI case, your pck1 clock, that you seem 
-> to need here, doesn't have a clock lookup object, so, you might have to 
-> add one, and then use its connection ID.
-> 
->> +	if (IS_ERR(isi->mck)) {
->> +		dev_err(dev, "Failed to get PCK: %s\n", pdata->pck_name);
->> +		return PTR_ERR(isi->mck);
->> +	}
->> +
->> +	pck_parent = clk_get(dev, pdata->pck_parent_name);
->> +	if (IS_ERR(pck_parent)) {
->> +		ret = PTR_ERR(pck_parent);
->> +		dev_err(dev, "Failed to get PCK parent: %s\n",
->> +				pdata->pck_parent_name);
->> +		goto err_init_mck;
->> +	}
->> +
->> +	ret = clk_set_parent(isi->mck, pck_parent);
-> 
-> I'm not entirely sure on this one, but as we had a similar situation with 
-> clocks, we decided to extablish the clock hierarchy in the board code, and 
-> only deal with the actual device clocks in the driver itself. I.e., we 
-> moved all clk_set_parent() and setting up the parent clock into the board. 
-> And I do think, this makes more sense, than doing this in the driver, not 
-> all users of this driver will need to manage the parent clock, right?
+On Fri, Sep 09, 2011 at 05:49:44PM +0800, Axel Lin wrote:
+> The i2c core will clear the clientdata pointer automatically.
+> We don't have to set the `data' field to NULL in remove() or
+> if probe() failed anymore.
+>=20
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-Exactly.
+Reviewed-by: Wolfram Sang <w.sang@pengutronix.de>
 
-Josh, for the two comments by Guennadi above, you can take
-sound/soc/atmel/sam9g20_wm8731.c
-as an example of using PCK and parent clocks. You will also find how to
-use named clocks and how to set the programmable clocks rate...
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
->> +	clk_put(pck_parent);
->> +	if (ret)
->> +		goto err_init_mck;
->> +
->> +	ret = clk_set_rate(isi->mck, pdata->isi_mck_hz);
->> +	if (ret < 0)
->> +		goto err_init_mck;
->> +
->> +	return 0;
->> +
->> +err_init_mck:
->> +	clk_put(isi->mck);
->> +	return ret;
->> +}
->> +
->>  static int __devexit atmel_isi_remove(struct platform_device *pdev)
->>  {
->>  	struct soc_camera_host *soc_host = to_soc_camera_host(&pdev->dev);
->> @@ -897,6 +948,7 @@ static int __devexit atmel_isi_remove(struct platform_device *pdev)
->>  			isi->fb_descriptors_phys);
->>  
->>  	iounmap(isi->regs);
->> +	clk_put(isi->mck);
->>  	clk_put(isi->pclk);
->>  	kfree(isi);
+--bWEb1MG/o7IKOlQF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
-[..]
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-Best regards,
--- 
-Nicolas Ferre
+iEYEARECAAYFAk5p5PQACgkQD27XaX1/VRtV2wCeMwUZIlQBEnfmsfKZgbz+6H/a
+ipQAn0ivB/xLvRMgbtLBSZcIQcnH3bWz
+=dfHY
+-----END PGP SIGNATURE-----
 
+--bWEb1MG/o7IKOlQF--
