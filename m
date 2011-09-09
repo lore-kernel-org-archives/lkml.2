@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933397Ab1IIK5j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 06:57:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45661 "EHLO mx2.suse.de"
+	id S933447Ab1IIK6Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 06:58:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45684 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933376Ab1IIK5h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 06:57:37 -0400
+	id S933274Ab1IIK5k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Sep 2011 06:57:40 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
         David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 10/14] netvm: Set PF_MEMALLOC as appropriate during SKB processing
-Date: Fri,  9 Sep 2011 11:57:21 +0100
-Message-Id: <1315565845-16857-11-git-send-email-mgorman@suse.de>
+Subject: [PATCH 14/14] mm: Account for the number of times direct reclaimers get throttled
+Date: Fri,  9 Sep 2011 11:57:25 +0100
+Message-Id: <1315565845-16857-15-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1315565845-16857-1-git-send-email-mgorman@suse.de>
 References: <1315565845-16857-1-git-send-email-mgorman@suse.de>
@@ -22,183 +22,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to make sure pfmemalloc packets receive all memory
-needed to proceed, ensure processing of pfmemalloc SKBs happens
-under PF_MEMALLOC. This is limited to a subset of protocols that
-are expected to be used for writing to swap. Taps are not allowed to
-use PF_MEMALLOC as these are expected to communicate with userspace
-processes which could be paged out.
+Under significant pressure when writing back to network-backed storage,
+direct reclaimers may get throttled. This is expected to be a
+short-lived event and the processes get woken up again but processes do
+get stalled. This patch counts how many times such stalling occurs. It's
+up to the administrator whether to reduce these stalls by increasing
+min_free_kbytes.
 
-[a.p.zijlstra@chello.nl: Ideas taken from various patches]
-[jslaby@suse.cz: Lock imbalance fix]
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/net/sock.h |    5 +++++
- net/core/dev.c     |   48 ++++++++++++++++++++++++++++++++++++++++++++----
- net/core/sock.c    |   16 ++++++++++++++++
- 3 files changed, 65 insertions(+), 4 deletions(-)
+ include/linux/vm_event_item.h |    1 +
+ mm/vmscan.c                   |    1 +
+ mm/vmstat.c                   |    1 +
+ 3 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/include/net/sock.h b/include/net/sock.h
-index cf3f102..09813fc 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -669,8 +669,13 @@ static inline __must_check int sk_add_backlog(struct sock *sk, struct sk_buff *s
- 	return 0;
- }
- 
-+extern int __sk_backlog_rcv(struct sock *sk, struct sk_buff *skb);
-+
- static inline int sk_backlog_rcv(struct sock *sk, struct sk_buff *skb)
- {
-+	if (skb_pfmemalloc(skb))
-+		return __sk_backlog_rcv(sk, skb);
-+
- 	return sk->sk_backlog_rcv(sk, skb);
- }
- 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 17d67b5..6f9dc92 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -3099,6 +3099,23 @@ void netdev_rx_handler_unregister(struct net_device *dev)
- }
- EXPORT_SYMBOL_GPL(netdev_rx_handler_unregister);
- 
-+/*
-+ * Limit the use of PFMEMALLOC reserves to those protocols that implement
-+ * the special handling of PFMEMALLOC skbs.
-+ */
-+static bool skb_pfmemalloc_protocol(struct sk_buff *skb)
-+{
-+	switch (skb->protocol) {
-+	case __constant_htons(ETH_P_ARP):
-+	case __constant_htons(ETH_P_IP):
-+	case __constant_htons(ETH_P_IPV6):
-+	case __constant_htons(ETH_P_8021Q):
-+		return true;
-+	default:
-+		return false;
-+	}
-+}
-+
- static int __netif_receive_skb(struct sk_buff *skb)
- {
- 	struct packet_type *ptype, *pt_prev;
-@@ -3108,15 +3125,28 @@ static int __netif_receive_skb(struct sk_buff *skb)
- 	bool deliver_exact = false;
- 	int ret = NET_RX_DROP;
- 	__be16 type;
-+	unsigned long pflags = current->flags;
- 
- 	if (!netdev_tstamp_prequeue)
- 		net_timestamp_check(skb);
- 
- 	trace_netif_receive_skb(skb);
- 
-+	/*
-+	 * PFMEMALLOC skbs are special, they should
-+	 * - be delivered to SOCK_MEMALLOC sockets only
-+	 * - stay away from userspace
-+	 * - have bounded memory usage
-+	 *
-+	 * Use PF_MEMALLOC as this saves us from propagating the allocation
-+	 * context down to all allocation sites.
-+	 */
-+	if (skb_pfmemalloc(skb))
-+		current->flags |= PF_MEMALLOC;
-+
- 	/* if we've gotten here through NAPI, check netpoll */
- 	if (netpoll_receive_skb(skb))
--		return NET_RX_DROP;
-+		goto out;
- 
- 	if (!skb->skb_iif)
- 		skb->skb_iif = skb->dev->ifindex;
-@@ -3147,6 +3177,9 @@ another_round:
- 	}
+diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
+index 03b90cdc..652e5f3 100644
+--- a/include/linux/vm_event_item.h
++++ b/include/linux/vm_event_item.h
+@@ -29,6 +29,7 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
+ 		FOR_ALL_ZONES(PGSTEAL),
+ 		FOR_ALL_ZONES(PGSCAN_KSWAPD),
+ 		FOR_ALL_ZONES(PGSCAN_DIRECT),
++		PGSCAN_DIRECT_THROTTLE,
+ #ifdef CONFIG_NUMA
+ 		PGSCAN_ZONE_RECLAIM_FAILED,
  #endif
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index ddf2be0..4ac5a28 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2271,6 +2271,7 @@ static void throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
+ 		return;
  
-+	if (skb_pfmemalloc(skb))
-+		goto skip_taps;
-+
- 	list_for_each_entry_rcu(ptype, &ptype_all, list) {
- 		if (!ptype->dev || ptype->dev == skb->dev) {
- 			if (pt_prev)
-@@ -3155,13 +3188,17 @@ another_round:
- 		}
- 	}
- 
-+skip_taps:
- #ifdef CONFIG_NET_CLS_ACT
- 	skb = handle_ing(skb, &pt_prev, &ret, orig_dev);
- 	if (!skb)
--		goto out;
-+		goto unlock;
- ncls:
- #endif
- 
-+	if (skb_pfmemalloc(skb) && !skb_pfmemalloc_protocol(skb))
-+		goto drop;
-+
- 	rx_handler = rcu_dereference(skb->dev->rx_handler);
- 	if (rx_handler) {
- 		if (pt_prev) {
-@@ -3170,7 +3207,7 @@ ncls:
- 		}
- 		switch (rx_handler(&skb)) {
- 		case RX_HANDLER_CONSUMED:
--			goto out;
-+			goto unlock;
- 		case RX_HANDLER_ANOTHER:
- 			goto another_round;
- 		case RX_HANDLER_EXACT:
-@@ -3212,6 +3249,7 @@ ncls:
- 	if (pt_prev) {
- 		ret = pt_prev->func(skb, skb->dev, pt_prev, orig_dev);
- 	} else {
-+drop:
- 		atomic_long_inc(&skb->dev->rx_dropped);
- 		kfree_skb(skb);
- 		/* Jamal, now you will not able to escape explaining
-@@ -3220,8 +3258,10 @@ ncls:
- 		ret = NET_RX_DROP;
- 	}
- 
--out:
-+unlock:
- 	rcu_read_unlock();
-+out:
-+	tsk_restore_flags(current, pflags, PF_MEMALLOC);
- 	return ret;
+ 	/* Throttle */
++	count_vm_event(PGSCAN_DIRECT_THROTTLE);
+ 	wait_event_killable(zone->zone_pgdat->pfmemalloc_wait,
+ 		pfmemalloc_watermark_ok(zone->zone_pgdat, high_zoneidx));
  }
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index 20c18b7..0ab4a3d 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -740,6 +740,7 @@ const char * const vmstat_text[] = {
+ 	TEXTS_FOR_ZONES("pgsteal")
+ 	TEXTS_FOR_ZONES("pgscan_kswapd")
+ 	TEXTS_FOR_ZONES("pgscan_direct")
++	"pgscan_direct_throttle",
  
-diff --git a/net/core/sock.c b/net/core/sock.c
-index 07e1292..0f28a9b 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -247,6 +247,22 @@ void sk_clear_memalloc(struct sock *sk)
- }
- EXPORT_SYMBOL_GPL(sk_clear_memalloc);
- 
-+int __sk_backlog_rcv(struct sock *sk, struct sk_buff *skb)
-+{
-+	int ret;
-+	unsigned long pflags = current->flags;
-+
-+	/* these should have been dropped before queueing */
-+	BUG_ON(!sock_flag(sk, SOCK_MEMALLOC));
-+
-+	current->flags |= PF_MEMALLOC;
-+	ret = sk->sk_backlog_rcv(sk, skb);
-+	tsk_restore_flags(current, pflags, PF_MEMALLOC);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL(__sk_backlog_rcv);
-+
- #if defined(CONFIG_CGROUPS) && !defined(CONFIG_NET_CLS_CGROUP)
- int net_cls_subsys_id = -1;
- EXPORT_SYMBOL_GPL(net_cls_subsys_id);
+ #ifdef CONFIG_NUMA
+ 	"zone_reclaim_failed",
 -- 
 1.7.3.4
 
