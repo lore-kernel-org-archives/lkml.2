@@ -1,76 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753772Ab1IIXkn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 19:40:43 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:45540 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751844Ab1IIXkl (ORCPT
+	id S1753853Ab1IIXlx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 19:41:53 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:52071 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751391Ab1IIXlw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 19:40:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <1315585282.30522.1.camel@vkoul-mobl4>
-References: <1315374075-15479-1-git-send-email-Baohua.Song@csr.com>
- <438BB0150E931F4B9CE701519A4463010871804A46@bgsmsx502.gar.corp.intel.com>
- <CAGsJ_4x4S+8d3xS+QTrjDpoxcHo3p7qArd7yFr=+h1vxSRvEpA@mail.gmail.com>
- <438BB0150E931F4B9CE701519A4463010871804A48@bgsmsx502.gar.corp.intel.com>
- <CAGsJ_4yeovNP=6CKTafbxrBTrYQ42B9yvAOM8gM_bYqD6mTnUw@mail.gmail.com>
- <CABb+yY1=P=D3GFFxMOUM0a2yWCiAHNqwVU0a--t+pJnUhqKHKA@mail.gmail.com>
- <CABb+yY3F+DMn2SxeO0chjpiMBkgLvSK5EVYMdhQsfQoZNZ4_7Q@mail.gmail.com>
- <1315518378.6638.2.camel@vkoul-mobl4> <CAGsJ_4xv9+=+=2b=i47P5V5sOQH-GyTMaESwbeHxu439Vx1gLA@mail.gmail.com>
- <1315585282.30522.1.camel@vkoul-mobl4>
-From: Barry Song <21cnbao@gmail.com>
-Date: Sat, 10 Sep 2011 07:40:20 +0800
-Message-ID: <CAGsJ_4xs_vPqhK9mSo8o8E1HKmegNv9mJOQiTYPmLB4P1-ZoRg@mail.gmail.com>
-Subject: Re: [PATCH] dmaengine: add CSR SiRFprimaII DMAC driver
-To: Vinod Koul <vkoul@infradead.org>
-Cc: vinod.koul@intel.com, Jassi Brar <jassisinghbrar@gmail.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "workgroup.linux@csr.com" <workgroup.linux@csr.com>,
-        "rongjun.ying@csr.com" <rongjun.ying@csr.com>,
-        "Baohua.Song@csr.com" <Baohua.Song@csr.com>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 9 Sep 2011 19:41:52 -0400
+Date: Fri, 9 Sep 2011 16:41:30 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Arjan van de Ven <arjan@infradead.org>
+Cc: Vladimir Zapolskiy <vz@mleia.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] sched: share task comm length value to userspace
+Message-Id: <20110909164130.3bc63ff7.akpm@linux-foundation.org>
+In-Reply-To: <20110905133903.76cd3a61@infradead.org>
+References: <1315247881-31597-1-git-send-email-vz@mleia.com>
+	<20110905124726.28b24db4@infradead.org>
+	<4E652E41.1030308@mleia.com>
+	<20110905133903.76cd3a61@infradead.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/9/10 Vinod Koul <vkoul@infradead.org>:
-> On Fri, 2011-09-09 at 16:18 +0800, Barry Song wrote:
->> 2011/9/9 Vinod Koul <vkoul@infradead.org>:
->> > Looks like Jassi got a user for his proposed API. I am not sure whats
->> > going on with TI folks, they never showed up here @LPC.
->>
->> yes, i can definitely be an user of Jassi's new generic api. it seems
->> the api is just there for dma in 2d.
->>
->> Jassi prefer to use a transfer type instead of a control command.
->> though we will not really change the interleaved setting for every
->> transfer(it is more possible for one device, we will not change the
->> xlen/ylen/dma_width setting in the whole life period), i do believe
->> the transfer type is enough flexible for my possible applications to
->> change xlen, ylen and dma_width in different transfers.
->>
->> as we know, interleaved DMA can also be used for audio driver. for
->> some audio controllers, if there are n channels, it can't tranfer the
->> whole audio frame to sound card by one dma channel, and it needs to
->> tranfer every channel by separate dma. typically, we can define this
->> kind of xfer to skip other n-1 channel.
->>
->> Jassi, you might think my reply as an ACK to "[PATCH] DMAEngine:
->> Define generic transfer request api".
-> Great, can you two redo patch along with this driver as user of new
-> API :)
+On Mon, 5 Sep 2011 13:39:03 -0700
+Arjan van de Ven <arjan@infradead.org> wrote:
 
-ok. i'll send v2 using this new API.
+> On Mon, 05 Sep 2011 23:17:05 +0300
+> Vladimir Zapolskiy <vz@mleia.com> wrote:
+> 
+> > but eventually having that value in
+> > userspace is really desirable. However in assumption that this value
+> > is preserved fixed and won't be changed in reasonable perspective,
+> > the presented approach becomes the most evident and simple.
+> 
+> yeah if it would never change, your change would be the most simple.
+> but I really don't want to pin that thing down....
+> 
+> > 
+> > >
+> > > If we need to export this, we should export it in /proc or /sys
+> > > somewhere as a dynamic value.....
+> > >
+> > Let's do it in a proper way. What's the common practice to export
+> > such limit values? I suppose via /proc/sys/kernel, please correct me,
+> > if I'm wrong.
+> 
+> that or /sys/kernel
+> 
+> personally I like /proc/sys/kernel for this kind of thing more, but...
+> ... others might disagree.
+> 
 
->
-> --
-> ~Vinod Koul
-> Intel Corp.
->
->
--barry
+Run this:
+
+#include <sys/prctl.h>
+#include <errno.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+main()
+{
+	char comm[512];
+	int len;
+
+	memset(comm, 0, sizeof(comm));
+	for (len = 1; len < sizeof(comm) - 1; len++) {
+		char comm2[512];
+	
+		comm[len - 1] = 'a';
+		if (prctl(PR_SET_NAME, (unsigned long)comm, 0, 0, 0) < 0) {
+			fprintf(stderr, "PR_SET_NAME failed with: %s\n",
+					strerror(errno));
+			exit(1);
+		}
+		if (prctl(PR_GET_NAME, (unsigned long)comm2, 0, 0, 0) < 0) {
+			fprintf(stderr, "PR_SET_NAME failed with: %s\n",
+					strerror(errno));
+			exit(1);
+		}
+		if (strlen(comm2) != len) {
+			printf("%d\n", len);
+			break;
+		}
+	}
+	exit(0);
+}
+			
+
+once per boot, echoing the result into /etc/sizeof-comm.  Sell resulting
+package to all vendors ;)
+
+
