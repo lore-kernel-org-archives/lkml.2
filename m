@@ -1,45 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932135Ab1IIQbD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 12:31:03 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46060 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758537Ab1IIQbA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 12:31:00 -0400
-Date: Fri, 9 Sep 2011 09:30:57 -0700
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-Cc: linux-kernel@vger.kernel.org, Michael.Hennerich@analog.com,
-        linux-iio@vger.kernel.org
-Subject: Re: [PATCH 1/2] regmap: Support half writes and padding between
- register and value.
-Message-ID: <20110909163057.GA4070@opensource.wolfsonmicro.com>
-References: <1315490964-25718-1-git-send-email-jic23@cam.ac.uk>
- <1315490964-25718-2-git-send-email-jic23@cam.ac.uk>
- <20110908162715.GB3098@opensource.wolfsonmicro.com>
- <4E69E019.6060601@cam.ac.uk>
- <20110909161418.GB3515@opensource.wolfsonmicro.com>
- <4E6A3F09.5000307@cam.ac.uk>
+	id S1759448Ab1IIQco (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 12:32:44 -0400
+Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:58007 "EHLO
+	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754759Ab1IIQcm convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Sep 2011 12:32:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E6A3F09.5000307@cam.ac.uk>
-X-Cookie: Your present plans will be successful.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1314255697-15411-1-git-send-email-keshava_mgowda@ti.com>
+References: <1314255697-15411-1-git-send-email-keshava_mgowda@ti.com>
+Date: Fri, 9 Sep 2011 22:02:39 +0530
+Message-ID: <CAP05o4KGqbX6KzZjjpXEfyNk5RzYkgKRkn+P9GYvxLA9pgLOxg@mail.gmail.com>
+Subject: Re: [PATCH 0/5 v8] mfd: omap: usb: Runtime PM support for EHCI and
+ OHCI drivers
+From: "Munegowda, Keshava" <keshava_mgowda@ti.com>
+To: b-cousson@ti.com
+Cc: Keshava Munegowda <keshava_mgowda@ti.com>, balbi@ti.com, gadiyar@ti.com,
+        sameo@linux.intel.com, parthab@india.ti.com, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 09, 2011 at 05:30:01PM +0100, Jonathan Cameron wrote:
-> On 09/09/11 17:14, Mark Brown wrote:
+On Thu, Aug 25, 2011 at 12:31 PM, Keshava Munegowda
+<keshava_mgowda@ti.com> wrote:
+> From: Keshava Munegowda <Keshava_mgowda@ti.com>
+>
+> The Hwmod structures and Runtime PM features are implemented
+> For EHCI and OHCI drivers of OMAP3 and OMAP4.
+> The global suspend/resume of EHCI and OHCI
+> is validated on OMAP3430 sdp board with these patches.
+>
+> these patches are rebased to kevin's pm branch and
+> usbhs latest mainline kernel patches
+>
+> TODO:
+>   - Adding pad configurations to Hwmods
+>   - Aggressive clock cutting in usb bus suspends
+>   - Remote Wakeup implementation using irq-chaining
+>
+>
+> Benoit Cousson (1):
+>  arm: omap: usb: ehci and ohci hwmod structures for omap4
+>
+> Keshava Munegowda (4):
+>  arm: omap: usb: ehci and ohci hwmod structures for omap3
+>  arm: omap: usb: register hwmods of usbhs
+>  arm: omap: usb: device name change for the clk names of usbhs
+>  mfd: omap: usb: Runtime PM support
+>
+>  arch/arm/mach-omap2/clock3xxx_data.c       |   26 +-
+>  arch/arm/mach-omap2/clock44xx_data.c       |   10 +-
+>  arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |  281 +++++++++++
+>  arch/arm/mach-omap2/omap_hwmod_44xx_data.c |  247 ++++++++++
+>  arch/arm/mach-omap2/usb-host.c             |  114 ++---
+>  arch/arm/plat-omap/include/plat/usb.h      |    3 -
+>  drivers/mfd/omap-usb-host.c                |  733 +++++++++++-----------------
+>  drivers/usb/host/ehci-omap.c               |   17 +-
+>  drivers/usb/host/ohci-omap3.c              |   18 +-
+>  9 files changed, 891 insertions(+), 558 deletions(-)
+>
+>
 
-> > Some devices apparently use an entire byte or word with a magic flag in
-> > it to distinguish reads and writes.  These end up looking like 16 bit
-> > registers with only the lower 8 bits actually used in the current code.
+Hi Benoit Cousson
+                   please ack this series; I am waiting for your ack
+to lineup this USBHS runtime pm adaptions.
 
-> Ah, fair enough there is a use case.  Can we add this as an additional patch
-> when needed?
-
-Yes, of course.  Only consideration is that the current option needs to
-be clearly named to avoid colliding with such an addition.
+regards
+keshava
