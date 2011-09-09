@@ -1,67 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756883Ab1IIGqH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 02:46:07 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:57848 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753695Ab1IIGqB (ORCPT
+	id S1757029Ab1IIGtR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 02:49:17 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:45309 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753562Ab1IIGtO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 02:46:01 -0400
-Date: Fri, 9 Sep 2011 16:45:39 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: dedekind1@gmail.com
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Nico Erfurth <ne@erfurth.eu>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: Re: linux-next: manual merge of the l2-mtd tree with the at91 tree
-Message-Id: <20110909164539.bae897109d3de0e67f0db69a@canb.auug.org.au>
-In-Reply-To: <1315550734.7905.14.camel@sauron>
-References: <20110909132920.3696fbb6c1b90cded9727d30@canb.auug.org.au>
-	<1315550734.7905.14.camel@sauron>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+	Fri, 9 Sep 2011 02:49:14 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 9 Sep 2011 15:48:20 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Johannes Weiner <jweiner@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ying Han <yinghan@google.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <bsingharora@gmail.com>, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm: memcg: close race between charge and putback
+Message-Id: <20110909154820.96b75cb3.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110909062855.GA10972@redhat.com>
+References: <1315467622-9520-1-git-send-email-jweiner@redhat.com>
+	<20110908173042.4a6f8ac0.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110908085404.GA1316@redhat.com>
+	<20110908181901.1d488d73.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110908093316.GB1316@redhat.com>
+	<20110908184221.feb2dab6.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110908095349.GC1316@redhat.com>
+	<20110909092853.7aac8544.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110909062855.GA10972@redhat.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__9_Sep_2011_16_45_39_+1000_uVxBOIFzIxVPP9Lh"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__9_Sep_2011_16_45_39_+1000_uVxBOIFzIxVPP9Lh
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, 9 Sep 2011 08:28:55 +0200
+Johannes Weiner <jweiner@redhat.com> wrote:
 
-Hi Artem,
+> On Fri, Sep 09, 2011 at 09:28:53AM +0900, KAMEZAWA Hiroyuki wrote:
+> > On Thu, 8 Sep 2011 11:53:49 +0200
+> > Johannes Weiner <jweiner@redhat.com> wrote:
+> > 
+> > > On Thu, Sep 08, 2011 at 06:42:21PM +0900, KAMEZAWA Hiroyuki wrote:
+> > > > On Thu, 8 Sep 2011 11:33:16 +0200
+> > > > Johannes Weiner <jweiner@redhat.com> wrote:
+> > > > 
+> > > > > On Thu, Sep 08, 2011 at 06:19:01PM +0900, KAMEZAWA Hiroyuki wrote:
+> > > > > > On Thu, 8 Sep 2011 10:54:04 +0200
+> > > > > > Johannes Weiner <jweiner@redhat.com> wrote:
+> > > > > > 
+> > > > > > > On Thu, Sep 08, 2011 at 05:30:42PM +0900, KAMEZAWA Hiroyuki wrote:
+> > > > > > > > On Thu,  8 Sep 2011 09:40:22 +0200
+> > > > > > > > Johannes Weiner <jweiner@redhat.com> wrote:
+> > > > > > > > 
+> > > > > > > > > There is a potential race between a thread charging a page and another
+> > > > > > > > > thread putting it back to the LRU list:
+> > > > > > > > > 
+> > > > > > > > > charge:                         putback:
+> > > > > > > > > SetPageCgroupUsed               SetPageLRU
+> > > > > > > > > PageLRU && add to memcg LRU     PageCgroupUsed && add to memcg LRU
+> > > > > > > > > 
+> > > > > > > > 
+> > > > > > > > I assumed that all pages are charged before added to LRU.
+> > > > > > > > (i.e. event happens in charge->lru_lock->putback order.)
+> > > > > > > > 
+> > > > > > > > But hmm, this assumption may be bad for maintainance.
+> > > > > > > > Do you find a code which adds pages to LRU before charge ?
+> > > > > > > > 
+> > > > > > > > Hmm, if there are codes which recharge the page to other memcg,
+> > > > > > > > it will cause bug and my assumption may be harmful.
+> > > > > > > 
+> > > > > > > Swap slots are read optimistically into swapcache and put to the LRU,
+> > > > > > > then charged upon fault.  
+> > > > > > 
+> > > > > > Yes, then swap charge removes page from LRU before charge.
+> > > > > > IIUC, it needed to do so because page->mem_cgroup may be replaced.
+> > > > > 
+> > > > > But only from the memcg LRU.  It's still on the global per-zone LRU,
+> > > > > so reclaim could isolate/putback it during the charge.  And then
+> > > > > 
+> > > > > > > > > charge:                         putback:
+> > > > > > > > > SetPageCgroupUsed               SetPageLRU
+> > > > > > > > > PageLRU && add to memcg LRU     PageCgroupUsed && add to memcg LRU
+> > > > > 
+> > > > > applies.
+> > > > 
+> > > > Hmm, in this case, I thought memcg puts back the page to its LRU by itself
+> > > > under lru_loc after charge and the race was hidden.
+> > > 
+> > > But it locklessly checks PageLRU and bails if it's cleared and that is
+> > 
+> > I think PageLRU check is done under zone->lru_lock.
+> 
+> Yes, but only if a preliminary, lockless check observed PageLRU being
+> set:
+> 
+> static void mem_cgroup_lru_add_after_commit(struct page *page)
+> {
+>         unsigned long flags;
+>         struct zone *zone = page_zone(page);
+>         struct page_cgroup *pc = lookup_page_cgroup(page);
+>         /*
+>          * putback:                             charge:
+>          * SetPageLRU                           SetPageCgroupUsed
+>          * smp_mb                               smp_mb
+>          * PageCgroupUsed && add to memcg LRU   PageLRU && add to memcg LRU
+>          *
+>          * Ensure that one of the two sides adds the page to the memcg
+>          * LRU during a race.
+>          */
+>         smp_mb();
+>         /* taking care of that the page is added to LRU while we commit it */
+>         if (likely(!PageLRU(page)))
+>                 return;
+>         spin_lock_irqsave(&zone->lru_lock, flags);
+>         /* link when the page is linked to LRU but page_cgroup isn't */
+>         if (PageLRU(page) && !PageCgroupAcctLRU(pc))
+>                 mem_cgroup_add_lru_list(page, page_lru(page));
+>         spin_unlock_irqrestore(&zone->lru_lock, flags);
+> }
+> 
+> Without the barriers, the preliminary check may see !PageLRU while a
+> racing putback observed !PageCgroupUsed and nobody will add the page
+> to the memcg-LRU.
+> 
 
-On Fri, 09 Sep 2011 09:45:28 +0300 Artem Bityutskiy <dedekind1@gmail.com> w=
-rote:
->
-> OK, thanks, I guess you'll carry this modification so far, we'll need to
-> take care of the conflict when merging.
+Ok, thank you for clarification. I understand the point.
 
-Yep, no worries.
+Thanks,
+-Kame
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Fri__9_Sep_2011_16_45_39_+1000_uVxBOIFzIxVPP9Lh
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOabYTAAoJEDMEi1NhKgbswdIH/24lau92ady72wzxP9epgDPB
-UKghbf8+vVPYkxBeERn9NuRg+Ez6iNjgrPSRjfrKkz24cj6VSfpYeOoBY4usU21C
-XOVlWqun22eT/33TKxtk7T9q/d8auiT0M6aiIndML8TNSy9TIt/btPdiJtMN3mKf
-desUYOItMFewWWIeZh0HMPqUlpke3QmTzlTvXXntU6wPqDRVRVgEdJezhVPSAosp
-bDkkGzBJ8pFCWG/ni1pLq8783XmcILnPtLB+LSQrInMpJMcTXqAQ8xJ17YzdxX5c
-SfQUqwZfDmkKjHnJiAVGKjiyXwus146OBwi8ZY6D1of+0L14Po6WgiQjh90G1J4=
-=Sn3K
------END PGP SIGNATURE-----
-
---Signature=_Fri__9_Sep_2011_16_45_39_+1000_uVxBOIFzIxVPP9Lh--
