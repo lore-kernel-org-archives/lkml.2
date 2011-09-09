@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933355Ab1IIUDQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 16:03:16 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:36932 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932890Ab1IIUDP (ORCPT
+	id S933450Ab1IIUN1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 16:13:27 -0400
+Received: from peace.netnation.com ([204.174.223.2]:44051 "EHLO
+	peace.netnation.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933265Ab1IIUN0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 16:03:15 -0400
-From: Denys Vlasenko <vda.linux@googlemail.com>
-To: Pedro Alves <pedro@codesourcery.com>
-Subject: Re: [PATCH v3] Make PTRACE_SEIZE set ptrace options specified in 'data'
-Date: Fri, 9 Sep 2011 22:03:10 +0200
-User-Agent: KMail/1.8.2
-Cc: Denys Vlasenko <dvlasenk@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-References: <1315506333.18043.49.camel@dhcp-25-63.brq.redhat.com> <1315587343.5036.6.camel@dhcp-25-63.brq.redhat.com> <201109091809.57272.pedro@codesourcery.com>
-In-Reply-To: <201109091809.57272.pedro@codesourcery.com>
+	Fri, 9 Sep 2011 16:13:26 -0400
+Date: Fri, 9 Sep 2011 13:13:24 -0700
+From: Simon Kirby <sim@hostway.ca>
+To: drbd-dev@lists.linbit.com, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: [Drbd-dev] [3.1-rc4] XFS+DRBD hangs
+Message-ID: <20110909201324.GD6195@hostway.ca>
+References: <20110907221505.GC21603@hostway.ca> <20110908151305.GJ14243@barkeeper1-xen.linbit> <20110908174324.GA8043@hostway.ca>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201109092203.10062.vda.linux@googlemail.com>
+In-Reply-To: <20110908174324.GA8043@hostway.ca>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 09 September 2011 19:09, Pedro Alves wrote:
-> > This would be a _very_ minor improvement, so tiny it's not worth
-> > bothering with. Let me show you the real-world code (part of strace
-> > source) which skips over unneeded PTRACE_EVENT_EXEC:
-> > 
-> >                 if ((status >> 16) != 0)
-> >                         /* Ptrace event (we ignore all of them for now) */
-> >                         goto restart_tracee_with_sig_0;
-> > 
-> > Yes. That is all.
-> > It probably compiles into just two assembly instructions.
+On Thu, Sep 08, 2011 at 10:43:24AM -0700, Simon Kirby wrote:
+
+> On Thu, Sep 08, 2011 at 05:13:05PM +0200, Lars Ellenberg wrote:
 > 
-> WTH?  I'm talking about _not forcing the tracee to stop_.  Let
-> me repeat.  NOT FORCING THE TRACEE TO STOP.
+> > Sorry for double posting on drbd-dev, I managed to strip the other lists from Cc.
+> > 
+> > > We upgraded from 2.6.36 which seemed to have a page leak (file pages left
+> > > on the LRU) and so would eventually perform very poorly. 2.6.37 and
+> > > 2.6.38 seemed to have some unix socket issue that caused heartbeat to
+> > > wedge. Shall we enable lock debugging or something here?
+> > 
+> > That could help us understand that stack trace.
+> > 
+> > It looks like cpu 1 blocks in
+> > 
+> > > [ 1532.427149]  [<ffffffff8103d512>] ? try_to_wake_up+0xc2/0x270
+> > > [ 1532.427149]  <<EOE>>  <IRQ>  [<ffffffff8103d6cd>] default_wake_function+0xd/0x10
+> > 
+> > Which does not make sense to me at all.
+> 
+> Well, good news, I think.. I believe this may be related to
+> "PCI: Set PCI-E Max Payload Size on fabric", added by b03e7495a862b02829.
+> 3.1-rc5 is running now with a patch to basically disable those changes,
+> and has been stable for 12 hours. It usually hung in a few minutes
+> before.
+> 
+> The XFS peoples say it was very likely not 58d84c4ee0389ddeb86238d5 which
+> is the only other thing that changed between these versions that seems to
+> be at all in the hang path.
+> 
+> Also, when the thing hangs, it stops pinging immediately, and with the
+> PCI-E max payload thing active, the device that raises a bus error is
+> actually the PCI-E to PCI-X bridge chip used to support the BCM5708 NICs,
+> so that all seems related.
 
-No need to shout.
+Except that I accidentally git reset out the patch, and so it's been
+running unmodified 79016f648872549392d232cd648bd02298c2d2bb (past -rc5),
+and still hasn't crashed, so I guess it _was_ the XFS changes, or
+something else. Boggle. In any event, it's still running well. :)
 
-execve is such a rare syscall the one extra stop on it is not
-going to be a problem.
-
-> And about not needing to handle the magic unadorned SIGTRAP.
-> The magic unadorned post-exec SIGTRAP does not have `status & 0xff00'
-> set, it is not a ptrace event!
-
-What SIGTRAP? With PTRACE_O_TRACEEXEC, there is no SIGTRAP.
-
-> If we don't disable the magic SIGTRAP, there's no way for a
-> tracer to do a very non-invasive SEIZE, say, a GDB mode that
-> only cares to let the tracer run free to catch SIGSEGVs
-> in some child, while later on during the run, the user remembers
-> to set a breakpoint.  At that point the tracer needs to catch
-> exec events, so it'd enable TRACE_O_EVENTEXEC.  Getting rid of
-> the SIGTRAP gets rid of the spurious stops when TRACE_O_EVENTEXEC
-> is not enabled.
-
-This part I don't understand.
-
-(btw, PTRACE_O_TRACEEXEC, not TRACE_O_EVENTEXEC).
-
--- 
-vda
+Simon-
