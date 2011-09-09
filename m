@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933481Ab1IIMIe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 08:08:34 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:34527 "EHLO relay.sw.ru"
+	id S933743Ab1IIMIv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 08:08:51 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:33563 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933308Ab1IIMId (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 08:08:33 -0400
-Subject: [PATCH v2 0/5] SUNRPC: make rpcbind clients allocated and destroyed
-	dynamically
+	id S933308Ab1IIMIs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Sep 2011 08:08:48 -0400
+Subject: [PATCH v2 2/5] SUNRPC: use rpcbind reference counting helpers
 To: Trond.Myklebust@netapp.com
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         bfields@fieldses.org, davem@davemloft.net
-Date: Fri, 09 Sep 2011 16:08:20 +0400
-Message-ID: <20110909115146.13697.71682.stgit@localhost6.localdomain6>
+Date: Fri, 09 Sep 2011 16:08:36 +0400
+Message-ID: <20110909120836.13697.24968.stgit@localhost6.localdomain6>
+In-Reply-To: <20110909115146.13697.71682.stgit@localhost6.localdomain6>
+References: <20110909115146.13697.71682.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -23,37 +24,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v2:
-1) rebased to v3.1-rc4 (against branch
-git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git)
-2) Patch 3/5 (SUNRPC: make RPC service dependable on rpcbind clients creation)
-fixed: added rpcb_put_local() call in case of svc_serv creation failure.
+All is simple: we just increase users counter if rpcbind clients has been
+created already. Otherwise we create them and set users counter to 1.
 
-This patch is required for further RPC layer virtualization, because rpcbind
-clients have to be per network namespace.
-To achive this, we have to untie network namespace from rpcbind clients sockets.
-The idea of this patch set is to make rpcbind clients non-static. I.e. rpcbind
-clients will be created during first RPC service creation, and destroyed when
-last RPC service is stopped.
-With this patch set rpcbind clients can be virtualized easely.
-
-The following series consists of:
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
 ---
+ net/sunrpc/rpcb_clnt.c |   12 ++++--------
+ 1 files changed, 4 insertions(+), 8 deletions(-)
 
-Stanislav Kinsbursky (5):
-      SUNRPC: introduce helpers for reference counted rpcbind clients
-      SUNRPC: use rpcbind reference counting helpers
-      SUNRPC: make RPC service dependable on rpcbind clients creation
-      SUNRPC: remove rpcbind clients creation during service registering
-      SUNRPC: remove rpcbind clients destruction on module cleanup
+diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
+index c84e6a3..b4cc0f1 100644
+--- a/net/sunrpc/rpcb_clnt.c
++++ b/net/sunrpc/rpcb_clnt.c
+@@ -256,9 +256,7 @@ static int rpcb_create_local_unix(void)
+ 		clnt4 = NULL;
+ 	}
+ 
+-	/* Protected by rpcb_create_local_mutex */
+-	rpcb_local_clnt = clnt;
+-	rpcb_local_clnt4 = clnt4;
++	rpcb_set_local(clnt, clnt4);
+ 
+ out:
+ 	return result;
+@@ -310,9 +308,7 @@ static int rpcb_create_local_net(void)
+ 		clnt4 = NULL;
+ 	}
+ 
+-	/* Protected by rpcb_create_local_mutex */
+-	rpcb_local_clnt = clnt;
+-	rpcb_local_clnt4 = clnt4;
++	rpcb_set_local(clnt, clnt4);
+ 
+ out:
+ 	return result;
+@@ -327,11 +323,11 @@ static int rpcb_create_local(void)
+ 	static DEFINE_MUTEX(rpcb_create_local_mutex);
+ 	int result = 0;
+ 
+-	if (rpcb_local_clnt)
++	if (rpcb_get_local())
+ 		return result;
+ 
+ 	mutex_lock(&rpcb_create_local_mutex);
+-	if (rpcb_local_clnt)
++	if (rpcb_get_local())
+ 		goto out;
+ 
+ 	if (rpcb_create_local_unix() != 0)
 
-
- include/linux/sunrpc/clnt.h |    2 +
- net/sunrpc/rpcb_clnt.c      |   86 ++++++++++++++++++++++++++++---------------
- net/sunrpc/sunrpc_syms.c    |    3 --
- net/sunrpc/svc.c            |   13 ++++++-
- 4 files changed, 69 insertions(+), 35 deletions(-)
-
--- 
-Signature
