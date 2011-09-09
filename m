@@ -1,110 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756798Ab1IIASM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 20:18:12 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:37316 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756429Ab1IIASJ (ORCPT
+	id S1756812Ab1IIATC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 20:19:02 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:33701 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756429Ab1IIATA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 20:18:09 -0400
-Message-ID: <4E695B3D.7060804@hp.com>
-Date: Thu, 08 Sep 2011 17:18:05 -0700
-From: Rick Jones <rick.jones2@hp.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Lightning/1.0b2 Thunderbird/3.1.13
+	Thu, 8 Sep 2011 20:19:00 -0400
+Date: Fri, 9 Sep 2011 09:18:53 +0900
+From: Tejun Heo <tj@kernel.org>
+To: Denys Vlasenko <dvlasenk@redhat.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        Denys Vlasenko <vda.linux@googlemail.com>
+Subject: Re: Why I want PTRACE_O_TRACESTOP option
+Message-ID: <20110909001853.GA29319@htj.dyndns.org>
+References: <1315500802.18043.45.camel@dhcp-25-63.brq.redhat.com>
 MIME-Version: 1.0
-To: Glauber Costa <glommer@parallels.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        containers@lists.osdl.org, netdev@vger.kernel.org, xemul@parallels.com,
-        "David S. Miller" <davem@davemloft.net>,
-        Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH] per-cgroup tcp buffer limitation
-References: <1315276556-10970-1-git-send-email-glommer@parallels.com>
-In-Reply-To: <1315276556-10970-1-git-send-email-glommer@parallels.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1315500802.18043.45.camel@dhcp-25-63.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2011 07:35 PM, Glauber Costa wrote:
-> To test for any performance impacts of this patch, I used netperf's
-> TCP_RR benchmark on localhost, so we can have both recv and snd in action.
->
-> Command line used was ./src/netperf -t TCP_RR -H localhost, and the
-> results:
->
-> Without the patch
-> =================
->
-> Socket Size   Request  Resp.   Elapsed  Trans.
-> Send   Recv   Size     Size    Time     Rate
-> bytes  Bytes  bytes    bytes   secs.    per sec
->
-> 16384  87380  1        1       10.00    26996.35
-> 16384  87380
->
-> With the patch
-> ===============
->
-> Local /Remote
-> Socket Size   Request  Resp.   Elapsed  Trans.
-> Send   Recv   Size     Size    Time     Rate
-> bytes  Bytes  bytes    bytes   secs.    per sec
->
-> 16384  87380  1        1       10.00    27291.86
-> 16384  87380
+Hello, Denys.
 
-Comment about netperf TCP_RR - it can often have > 1% variability, so it 
-would be a Good Idea (tm) to either run it multiple times in a row, or 
-rely on the confidence intervals functionality.  Here, for example, is 
-an invoking of netperf using confidence intervals and the recently 
-added, related output selectors.  The options request that netperf be 
-99% confident that the width of the confidence interval is 1%, and it 
-should run at least 3 but no more than 30 (those are both the high and 
-low limits respectively) iterations of the test.
+On Thu, Sep 08, 2011 at 06:50:01PM +0200, Denys Vlasenko wrote:
+> Consider what will happen when a next ptrace fix will require
+> a way to change ptrace API at runtime. A new option will likely
+> be introduced, say, PTRACE_O_TRACEPONY, with next available
+> bit position 7, and perhaps some new event will be generated,
+> PTRACE_EVENT_PONY, with value.... yes, it can't be 7,
+> PTRACE_EVENT_STOP took it. So it will probably be 8.
 
+Then, just give it the next matching number.
 
-raj@tardy:~/netperf2_trunk$ src/netperf -t TCP_RR -i 30,3 -I 99,1 -- -k 
-throughput,confidence_level,confidence_interval,confidence_iteration,throughput_confid
-MIGRATED TCP REQUEST/RESPONSE TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET 
-to localhost.localdomain (127.0.0.1) port 0 AF_INET : +/-0.500% @ 99% 
-conf.  : histogram : first burst 0
-THROUGHPUT=55555.94
-CONFIDENCE_LEVEL=99
-CONFIDENCE_INTERVAL=1.000000
-CONFIDENCE_ITERATION=26
-THROUGHPUT_CONFID=0.984
+If options naturally happen to match the events, that's a nice
+coincidence.  If the real life requirement deviates from the beautiful
+one-to-one mapping, then, so be it.  No, the magical contiguous one to
+one mapping isn't the most important design concern.
 
-it took 26 iterations for netperf to be 99% confident the interval width 
-was < 1% .  Here is a "several times in a row" for the sake of completeness:
+To me, the rationale presented here almost argues against
+PTRACE_O_TRACESTOP.  :(
 
-raj@tardy:~/netperf2_trunk$ HDR="-P 1";for i in `seq 1 10`; do netperf 
--t TCP_RR $HDR -B "iteration $i" -- -o result_brand,throughput; HDR="-P 
-0"; done
-MIGRATED TCP REQUEST/RESPONSE TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET 
-to localhost.localdomain (127.0.0.1) port 0 AF_INET : first burst 0
-Result Tag,Throughput
-"iteration 1",55768.37
-"iteration 2",55949.97
-"iteration 3",55653.36
-"iteration 4",55994.65
-"iteration 5",54712.42
-"iteration 6",55285.27
-"iteration 7",55638.65
-"iteration 8",55135.56
-"iteration 9",56275.87
-"iteration 10",55607.66
+Thanks.
 
-That way one can have greater confidence that one isn't accidentally 
-comparing the trough of one configuration with the peak of another.
-
-happy benchmarking,
-
-rick jones
-
-PS - while it may not really matter for loopback testing, where 
-presumably 99 times out of 10 a single core will run at saturation, when 
-running TCP_RR over a "real" network, including CPU utilization to get 
-the differences in service demand is another Good Idea (tm) - 
-particularly in the face of interrupt coalescing.
+-- 
+tejun
