@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932740Ab1IIFpm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 01:45:42 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:49085 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755783Ab1IIFpj (ORCPT
+	id S1758419Ab1IIFy4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 01:54:56 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:54003 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758329Ab1IIFyx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 01:45:39 -0400
+	Fri, 9 Sep 2011 01:54:53 -0400
 From: Denys Vlasenko <vda.linux@googlemail.com>
 To: Tejun Heo <tj@kernel.org>
 Subject: Re: Why I want PTRACE_O_TRACESTOP option
-Date: Fri, 9 Sep 2011 07:45:35 +0200
+Date: Fri, 9 Sep 2011 07:54:50 +0200
 User-Agent: KMail/1.8.2
 Cc: Denys Vlasenko <dvlasenk@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
         linux-kernel@vger.kernel.org
@@ -21,7 +21,7 @@ Content-Type: text/plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Message-Id: <201109090745.35040.vda.linux@googlemail.com>
+Message-Id: <201109090754.50272.vda.linux@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -38,17 +38,15 @@ On Friday 09 September 2011 02:18, Tejun Heo wrote:
 > > PTRACE_EVENT_STOP took it. So it will probably be 8.
 > 
 > Then, just give it the next matching number.
-> 
-> If options naturally happen to match the events, that's a nice
-> coincidence.  If the real life requirement deviates from the beautiful
-> one-to-one mapping, then, so be it.  No, the magical contiguous one to
-> one mapping isn't the most important design concern.
-> 
-> To me, the rationale presented here almost argues against
-> PTRACE_O_TRACESTOP.  :(
 
-How about changing PTRACE_EVENT_STOP value to, say, 255 then,
-in order to move it away from (option,event) area?
+My point is that previously, ptrace behavior was modified by setting
+options. Why don't we use this mechanism? Why we invent a different
+wheel? Ptrace is ugly as-is, why complicate it even further?
+
+The argument was that SETOPTIONS wasn't suitable for modifying
+attach behavior, but this is fixed by "set options on SEIZE"
+patch. I don't see why we can't use options mechanist to affect
+group-stop behavior now.
 
 -- 
 vda
