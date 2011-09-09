@@ -1,52 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759898Ab1IITaR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 15:30:17 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52898 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759244Ab1IITaP (ORCPT
+	id S933208Ab1IITpM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 15:45:12 -0400
+Received: from peace.netnation.com ([204.174.223.2]:33022 "EHLO
+	peace.netnation.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932486Ab1IITpK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 15:30:15 -0400
-Date: Fri, 9 Sep 2011 12:30:11 -0700
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>, alsa-devel@alsa-project.org,
-        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Jassi Brar <jassisinghbrar@gmail.com>, linux-kernel@vger.kernel.org,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Jarkko Nikula <jhnikula@gmail.com>, linaro-dev@lists.linaro.org,
-        linux-omap@vger.kernel.org, Mans Rullgard <mans.rullgard@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2] ASoC: omap: convert per-board modules to platform
- drivers
-Message-ID: <20110909193010.GA2993@opensource.wolfsonmicro.com>
-References: <CAG5Tg6UOuztenNid1=YbH9a4ZH5MqV4YhohG+r9R+7F=zXs=CQ@mail.gmail.com>
- <3110288.bQbb0H2ME1@wuerfel>
- <1315520956.4126.3.camel@finisterre.wolfsonmicro.main>
- <20110908223720.GA21469@n2100.arm.linux.org.uk>
- <20110908224731.GB5201@opensource.wolfsonmicro.com>
- <20110908230102.GB21469@n2100.arm.linux.org.uk>
- <20110908235903.GA6370@opensource.wolfsonmicro.com>
- <20110909094156.GE6918@n2100.arm.linux.org.uk>
- <20110909161151.GA3515@opensource.wolfsonmicro.com>
- <20110909190134.GA14520@n2100.arm.linux.org.uk>
+	Fri, 9 Sep 2011 15:45:10 -0400
+Date: Fri, 9 Sep 2011 12:45:10 -0700
+From: Simon Kirby <sim@hostway.ca>
+To: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [3.1-rc4] NFSv3 client hang
+Message-ID: <20110909194509.GB6195@hostway.ca>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110909190134.GA14520@n2100.arm.linux.org.uk>
-X-Cookie: Long life is in store for you.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 09, 2011 at 08:01:35PM +0100, Russell King - ARM Linux wrote:
+The 3.1-rc4 NFSv3 client hung on another box (separate from the other one
+which Oopsed in vfs_rmdir() with similar workload). This build was also
+of 9e79e3e9dd9672b37ac9412e9a926714306551fe (slightly past 3.1-rc4), and
+"git log 9e79e3e9dd96.. fs/nfs net/sunrpc" is empty.
 
-> Well, with DT, there won't be any 'board type' anymore.  There won't be
-> any 'machine_is_xxx()' to sort it out anymore.  Using DT, all that will
-> be history - it's all got to be sorted out by either devices or device
-> properties.
+All mounts to one server IP have hung, while all other mounts work fine.
+I ran "cd /proc/sys/sunrpc; echo 255 > rpc_debug; echo 255 > nfs_debug"
+for a while, then kill -9'd all D-state processes to simplify the
+debugging, and was left with one that was not interruptible:
 
-There is a board type - there's a root compatible property for the board
-which fulfils this purpose - so the situation with and without device
-tree is essentially the same.
+28612 D    /usr/local/apache2/bin/http sleep_on_page
+# cat /proc/28612/stack
+[<ffffffff810bdf49>] sleep_on_page+0x9/0x10
+[<ffffffff810bdf34>] __lock_page+0x64/0x70
+[<ffffffff8112a9e5>] __generic_file_splice_read+0x2d5/0x500
+[<ffffffff8112ac5a>] generic_file_splice_read+0x4a/0x90
+[<ffffffff812030e5>] nfs_file_splice_read+0x85/0xd0
+[<ffffffff81128fb2>] do_splice_to+0x72/0xa0
+[<ffffffff811297e4>] splice_direct_to_actor+0xc4/0x1d0
+[<ffffffff81129942>] do_splice_direct+0x52/0x70
+[<ffffffff81100096>] do_sendfile+0x166/0x1d0
+[<ffffffff81100185>] sys_sendfile64+0x85/0xb0
+[<ffffffff816af57b>] system_call_fastpath+0x16/0x1b
+[<ffffffffffffffff>] 0xffffffffffffffff
+
+echo 1 > /proc/sys/sunrpc/rpc_debug emits:
+
+-pid- flgs status -client- --rqstp- -timeout ---ops--
+37163 0001    -11 ffff8802251bca00   (null)        0 ffffffff816e4110 nfsv3 READ a:call_reserveresult q:xprt_sending
+
+tcpdump to this server shows absolutely no packets to the server IP for
+several minutes. netstat shows the socket in CLOSE_WAIT:
+
+# netstat -tan|grep 2049
+tcp        0      0 10.10.52.50:806         10.10.52.230:2049       CLOSE_WAIT
+
+This is the only port-2049 socket that still exists.
+rpcinfo -p 10.10.52.230, -t 10.10.52.230 lockmgr, etc., all show the
+server seems fine. rpciod is sleeping in rescuer_thread, and nothing
+else is in D state.
+
+mount opts were "rw,hard,intr,tcp,timeo=300,retrans=2,vers=3"
+
+Running another "df" on the mountpoint with rpc_debug = 255 shows:
+
+-pid- flgs status -client- --rqstp- -timeout ---ops--
+37163 0001    -11 ffff8802251bca00   (null)        0 ffffffff816e4110 nfsv3 READ a:call_reserveresult q:xprt_sending
+RPC:       looking up Generic cred
+NFS call  access
+RPC:       new task initialized, procpid 30679
+RPC:       allocated task ffff880030c17a00
+RPC: 37133 __rpc_execute flags=0x80
+RPC: 37133 call_start nfs3 proc ACCESS (sync)
+RPC: 37133 call_reserve (status 0)
+RPC: 37133 failed to lock transport ffff880223d0a000
+RPC: 37133 sleep_on(queue "xprt_sending" time 4489651610)
+RPC: 37133 added to queue ffff880223d0a178 "xprt_sending"
+RPC: 37133 sync task going to sleep
+
+So something is not closing the old transport socket here?
+
+Simon-
