@@ -1,86 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932372Ab1IIBQm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 21:16:42 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:50881 "EHLO
+	id S932245Ab1IIBQh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 21:16:37 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:41661 "EHLO
 	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932132Ab1IIBLV (ORCPT
+	with ESMTP id S932135Ab1IIBLV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 8 Sep 2011 21:11:21 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6463"; a="116864711"
-Message-Id: <20110909010916.327107063@codeaurora.org>
+X-IronPort-AV: E=McAfee;i="5400,1158,6463"; a="116864709"
+Message-Id: <20110909010916.116264885@codeaurora.org>
 User-Agent: quilt/0.48-1
-Date: Thu, 08 Sep 2011 20:09:04 -0500
+Date: Thu, 08 Sep 2011 20:09:02 -0500
 From: Richard Kuo <rkuo@codeaurora.org>
 To: linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Cc: Arnd Bergmann <arnd@arndb.de>
-Subject: [patch v3 17/36] Hexagon: Add interrupts
+Subject: [patch v3 15/36] Hexagon: Add init_task and process functions
 References: <20110909010847.294039464@codeaurora.org>
-Content-Disposition: inline; filename=interrupts.diff
+Content-Disposition: inline; filename=init-task.diff
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed init_IRQ wrapper and fixed up some comments.
+Fixed potential race-to-sleep condition in cpu_idle() and calling schedule
+with irq's disabled.  I still have to have that extra enable/disbale in the
+while() loop else the interrupt never gets serviced, and thus need_resched()
+will always be false.
+
+If called with interrupts disabled, our __vmwait() actually just returns
+without servicing it.
+
 
 Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
 Acked-by: Arnd Bergmann <arnd@arndb.de>
 
 ---
- arch/hexagon/include/asm/irq.h |   36 ++++++++++++++++
- arch/hexagon/kernel/irq.c      |   67 ++++++++++++++++++++++++++++++
- arch/hexagon/kernel/irq_cpu.c  |   90 +++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 193 insertions(+)
+ arch/hexagon/kernel/init_task.c |   54 +++++++
+ arch/hexagon/kernel/process.c   |  279 ++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 333 insertions(+)
 
-Index: linux-hexagon-kernel/arch/hexagon/include/asm/irq.h
+Index: linux-hexagon-kernel/arch/hexagon/kernel/init_task.c
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/include/asm/irq.h	2011-09-07 13:00:30.930646788 -0500
-@@ -0,0 +1,36 @@
++++ linux-hexagon-kernel/arch/hexagon/kernel/init_task.c	2011-09-03 20:14:59.634981139 -0500
+@@ -0,0 +1,54 @@
 +/*
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#ifndef _ASM_IRQ_H_
-+#define _ASM_IRQ_H_
-+
-+/* Number of first-level interrupts associated with the CPU core. */
-+#define HEXAGON_CPUINTS 32
-+
-+/*
-+ * Must define NR_IRQS before including <asm-generic/irq.h>
-+ * 64 == the two SIRC's, 176 == the two gpio's
-+ *
-+ * IRQ configuration is still in flux; defining this to a comfortably
-+ * large number.
-+ */
-+#define NR_IRQS 512
-+
-+#include <asm-generic/irq.h>
-+
-+#endif
-Index: linux-hexagon-kernel/arch/hexagon/kernel/irq.c
-===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/kernel/irq.c	2011-09-07 13:00:31.060646986 -0500
-@@ -0,0 +1,67 @@
-+/*
-+ * Interrupt support for Hexagon
++ * Init task definition
 + *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
@@ -99,147 +64,323 @@ Index: linux-hexagon-kernel/arch/hexagon/kernel/irq.c
 + * 02110-1301, USA.
 + */
 +
-+#include <linux/init.h>
-+#include <linux/delay.h>
-+#include <linux/kernel_stat.h>
-+#include <linux/interrupt.h>
-+#include <linux/seq_file.h>
-+#include <linux/version.h>
++#include <linux/mm.h>
++#include <linux/module.h>
++#include <linux/sched.h>
++#include <linux/init_task.h>
++#include <linux/fs.h>
++#include <linux/mqueue.h>
++#include <asm/thread_info.h>
++#include <asm/uaccess.h>
++#include <asm/pgtable.h>
 +
-+int show_interrupts(struct seq_file *p, void *v)
++static struct signal_struct init_signals = INIT_SIGNALS(init_signals);
++static struct sighand_struct init_sighand = INIT_SIGHAND(init_sighand);
++
++/*
++ * Initial thread structure.
++ *
++ * We need to make sure that this is 8192-byte aligned due to the
++ * way process stacks are handled. This is done by making sure
++ * the linker maps this in the .text segment right after head.S,
++ * and making head.S ensure the proper alignment.
++ */
++union thread_union init_thread_union
++	__attribute__((__section__(".data.init_task"),
++		__aligned__(THREAD_SIZE))) = {
++			INIT_THREAD_INFO(init_task)
++		};
++
++/*
++ * Initial task structure.
++ *
++ * All other task structs will be allocated on slabs in fork.c
++ */
++struct task_struct init_task = INIT_TASK(init_task);
++EXPORT_SYMBOL(init_task);
+Index: linux-hexagon-kernel/arch/hexagon/kernel/process.c
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/kernel/process.c	2011-09-03 20:14:59.634981139 -0500
+@@ -0,0 +1,279 @@
++/*
++ * Process creation support for Hexagon
++ *
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#include <linux/sched.h>
++#include <linux/types.h>
++#include <linux/module.h>
++#include <linux/tick.h>
++#include <linux/uaccess.h>
++#include <linux/slab.h>
++
++/*
++ * Kernel thread creation.  The desired kernel function is "wrapped"
++ * in the kernel_thread_helper function, which does cleanup
++ * afterwards.
++ */
++static void __noreturn kernel_thread_helper(void *arg, int (*fn)(void *))
 +{
-+	int i = *(loff_t *)v, cpu;
-+	struct irqaction *action;
-+	unsigned long flags;
++	do_exit(fn(arg));
++}
 +
-+	if (i == 0) {
-+		seq_puts(p, "           ");
-+		for_each_online_cpu(cpu)
-+			seq_printf(p, "CPU%d       ", cpu);
-+		seq_putc(p, '\n');
-+	}
++int kernel_thread(int (*fn)(void *), void *arg, unsigned long flags)
++{
++	struct pt_regs regs;
 +
-+	if (i < NR_IRQS) {
-+		struct irq_desc *desc = irq_to_desc(i);
++	memset(&regs, 0, sizeof(regs));
++	/*
++	 * Yes, we're exploting illicit knowledge of the ABI here.
++	 */
++	regs.r00 = (unsigned long) arg;
++	regs.r01 = (unsigned long) fn;
++	pt_set_elr(&regs, (unsigned long)kernel_thread_helper);
++	pt_set_kmode(&regs);
 +
-+		raw_spin_lock_irqsave(&desc->lock, flags);
++	return do_fork(flags|CLONE_VM|CLONE_UNTRACED, 0, &regs, 0, NULL, NULL);
++}
++EXPORT_SYMBOL(kernel_thread);
 +
-+		action = irq_desc[i].action;
-+		if (action) {
-+			seq_printf(p, "%3d: ", i);
-+			for_each_online_cpu(cpu) {
-+				seq_printf(p, "%10u ", kstat_irqs_cpu(i, cpu));
-+			}
-+			seq_printf(p, " %8s",
-+				   irq_desc_get_chip(&irq_desc[i])->name ?
-+				   : "-");
-+			seq_printf(p, "  %s", action->name);
-+			for (action = action->next; action;
-+			     action = action->next) {
-+				seq_printf(p, ", %s", action->name);
-+			}
++/*
++ * Program thread launch.  Often defined as a macro in processor.h,
++ * but we're shooting for a small footprint and it's not an inner-loop
++ * performance-critical operation.
++ *
++ * The Hexagon ABI specifies that R28 is zero'ed before program launch,
++ * so that gets automatically done here.  If we ever stop doing that here,
++ * we'll probably want to define the ELF_PLAT_INIT macro.
++ */
++void start_thread(struct pt_regs *regs, unsigned long pc, unsigned long sp)
++{
++	/* Set to run with user-mode data segmentation */
++	set_fs(USER_DS);
++	/* We want to zero all data-containing registers. Is this overkill? */
++	memset(regs, 0, sizeof(*regs));
++	/* We might want to also zero all Processor registers here */
++	pt_set_usermode(regs);
++	pt_set_elr(regs, pc);
++	pt_set_rte_sp(regs, sp);
++}
 +
-+			seq_putc(p, '\n');
++/*
++ *  Spin, or better still, do a hardware or VM wait instruction
++ *  If hardware or VM offer wait termination even though interrupts
++ *  are disabled.
++ */
++static void default_idle(void)
++{
++	__vmwait();
++}
++
++void (*idle_sleep)(void) = default_idle;
++
++void cpu_idle(void)
++{
++	while (1) {
++		tick_nohz_stop_sched_tick(1);
++		local_irq_disable();
++		while (!need_resched()) {
++			idle_sleep();
++			/*  interrupts wake us up, but aren't serviced  */
++			local_irq_enable();	/* service interrupt   */
++			local_irq_disable();
 +		}
-+		raw_spin_unlock_irqrestore(&desc->lock, flags);
++		local_irq_enable();
++		tick_nohz_restart_sched_tick();
++		schedule();
 +	}
-+
-+	return 0;
 +}
-Index: linux-hexagon-kernel/arch/hexagon/kernel/irq_cpu.c
-===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/kernel/irq_cpu.c	2011-09-07 13:00:31.080647016 -0500
-@@ -0,0 +1,90 @@
++
 +/*
-+ * First-level interrupt controller model for Hexagon.
-+ *
-+ * Copyright (c) 2010-2011 Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
++ *  Return saved PC of a blocked thread
 + */
-+
-+#include <linux/interrupt.h>
-+#include <asm/irq.h>
-+#include <asm/hexagon_vm.h>
-+
-+static void mask_irq(struct irq_data *data)
-+{
-+	__vmintop_locdis((long) data->irq);
-+}
-+
-+static void mask_irq_num(unsigned int irq)
-+{
-+	__vmintop_locdis((long) irq);
-+}
-+
-+static void unmask_irq(struct irq_data *data)
-+{
-+	__vmintop_locen((long) data->irq);
-+}
-+
-+/*  This is actually all we need for handle_fasteoi_irq  */
-+static void eoi_irq(struct irq_data *data)
-+{
-+	__vmintop_globen((long) data->irq);
-+}
-+
-+/* Power mamangement wake call. We don't need this, however,
-+ * if this is absent, then an -ENXIO error is returned to the
-+ * msm_serial driver, and it fails to correctly initialize.
-+ * This is a bug in the msm_serial driver, but, for now, we
-+ * work around it here, by providing this bogus handler.
-+ * XXX FIXME!!! remove this when msm_serial is fixed.
-+ */
-+static int set_wake(struct irq_data *data, unsigned int on)
++unsigned long thread_saved_pc(struct task_struct *tsk)
 +{
 +	return 0;
 +}
 +
-+static struct irq_chip hexagon_irq_chip = {
-+	.name		= "HEXAGON",
-+	.irq_mask	= mask_irq,
-+	.irq_unmask	= unmask_irq,
-+	.irq_set_wake	= set_wake,
-+	.irq_eoi	= eoi_irq
-+};
-+
-+/**
-+ * The hexagon core comes with a first-level interrupt controller
-+ * with 32 total possible interrupts.  When the core is embedded
-+ * into different systems/platforms, it is typically wrapped by
-+ * macro cells that provide one or more second-level interrupt
-+ * controllers that are cascaded into one or more of the first-level
-+ * interrupts handled here. The precise wiring of these other
-+ * irqs varies from platform to platform, and are set up & configured
-+ * in the platform-specific files.
-+ *
-+ * The first-level interrupt controller is wrapped by the VM, which
-+ * virtualizes the interrupt controller for us.  It provides a very
-+ * simple, fast & efficient API, and so the fasteoi handler is
-+ * appropriate for this case.
++/*
++ * Copy architecture-specific thread state
 + */
-+void __init init_IRQ(void)
++int copy_thread(unsigned long clone_flags, unsigned long usp,
++		unsigned long unused, struct task_struct *p,
++		struct pt_regs *regs)
 +{
-+	int irq;
++	struct thread_info *ti = task_thread_info(p);
++	struct hexagon_switch_stack *ss;
++	struct pt_regs *childregs;
++	asmlinkage void ret_from_fork(void);
 +
-+	for (irq = 0; irq < HEXAGON_CPUINTS; irq++) {
-+		mask_irq_num(irq);
-+		irq_set_chip_and_handler(irq, &hexagon_irq_chip,
-+						 handle_fasteoi_irq);
++	childregs = (struct pt_regs *) (((unsigned long) ti + THREAD_SIZE) -
++					sizeof(*childregs));
++
++	memcpy(childregs, regs, sizeof(*childregs));
++	ti->regs = childregs;
++
++	/*
++	 * Establish kernel stack pointer and initial PC for new thread
++	 */
++	ss = (struct hexagon_switch_stack *) ((unsigned long) childregs -
++						    sizeof(*ss));
++	ss->lr = (unsigned long)ret_from_fork;
++	p->thread.switch_sp = ss;
++
++	/* If User mode thread, set pt_reg stack pointer as per parameter */
++	if (user_mode(childregs)) {
++		pt_set_rte_sp(childregs, usp);
++
++		/* Child sees zero return value */
++		childregs->r00 = 0;
++
++		/*
++		 * The clone syscall has the C signature:
++		 * int [r0] clone(int flags [r0],
++		 *           void *child_frame [r1],
++		 *           void *parent_tid [r2],
++		 *           void *child_tid [r3],
++		 *           void *thread_control_block [r4]);
++		 * ugp is used to provide TLS support.
++		 */
++		if (clone_flags & CLONE_SETTLS)
++			childregs->ugp = childregs->r04;
++
++		/*
++		 * Parent sees new pid -- not necessary, not even possible at
++		 * this point in the fork process
++		 * Might also want to set things like ti->addr_limit
++		 */
++	} else {
++		/*
++		 * If kernel thread, resume stack is kernel stack base.
++		 * Note that this is pointer arithmetic on pt_regs *
++		 */
++		pt_set_rte_sp(childregs, (unsigned long)(childregs + 1));
++		/*
++		 * We need the current thread_info fast path pointer
++		 * set up in pt_regs.  The register to be used is
++		 * parametric for assembler code, but the mechanism
++		 * doesn't drop neatly into C.  Needs to be fixed.
++		 */
++		childregs->THREADINFO_REG = (unsigned long) ti;
 +	}
++
++	/*
++	 * thread_info pointer is pulled out of task_struct "stack"
++	 * field on switch_to.
++	 */
++	p->stack = (void *)ti;
++
++	return 0;
++}
++
++/*
++ * Release any architecture-specific resources locked by thread
++ */
++void release_thread(struct task_struct *dead_task)
++{
++}
++
++/*
++ * Free any architecture-specific thread data structures, etc.
++ */
++void exit_thread(void)
++{
++}
++
++/*
++ * Some archs flush debug and FPU info here
++ */
++void flush_thread(void)
++{
++}
++
++/*
++ * The "wait channel" terminology is archaic, but what we want
++ * is an identification of the point at which the scheduler
++ * was invoked by a blocked thread.
++ */
++unsigned long get_wchan(struct task_struct *p)
++{
++	unsigned long fp, pc;
++	unsigned long stack_page;
++	int count = 0;
++	if (!p || p == current || p->state == TASK_RUNNING)
++		return 0;
++
++	stack_page = (unsigned long)task_stack_page(p);
++	fp = ((struct hexagon_switch_stack *)p->thread.switch_sp)->fp;
++	do {
++		if (fp < (stack_page + sizeof(struct thread_info)) ||
++			fp >= (THREAD_SIZE - 8 + stack_page))
++			return 0;
++		pc = ((unsigned long *)fp)[1];
++		if (!in_sched_functions(pc))
++			return pc;
++		fp = *(unsigned long *) fp;
++	} while (count++ < 16);
++
++	return 0;
++}
++
++/*
++ * Borrowed from PowerPC -- basically allow smaller kernel stacks if we
++ * go crazy with the page sizes.
++ */
++#if THREAD_SHIFT < PAGE_SHIFT
++
++static struct kmem_cache *thread_info_cache;
++
++struct thread_info *alloc_thread_info_node(struct task_struct *tsk, int node)
++{
++	struct thread_info *ti;
++
++	ti = kmem_cache_alloc_node(thread_info_cache, GFP_KERNEL, node);
++	if (unlikely(ti == NULL))
++		return NULL;
++#ifdef CONFIG_DEBUG_STACK_USAGE
++	memset(ti, 0, THREAD_SIZE);
++#endif
++	return ti;
++}
++
++void free_thread_info(struct thread_info *ti)
++{
++	kmem_cache_free(thread_info_cache, ti);
++}
++
++/*  Weak symbol; called by init/main.c  */
++
++void thread_info_cache_init(void)
++{
++	thread_info_cache = kmem_cache_create("thread_info", THREAD_SIZE,
++					      THREAD_SIZE, 0, NULL);
++	BUG_ON(thread_info_cache == NULL);
++}
++
++#endif /* THREAD_SHIFT < PAGE_SHIFT */
++
++/*
++ * Required placeholder.
++ */
++int dump_fpu(struct pt_regs *regs, elf_fpregset_t *fpu)
++{
++	return 0;
 +}
 
 --
