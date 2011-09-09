@@ -1,85 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933796Ab1IINFD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 09:05:03 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:57730 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758770Ab1IINFA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 09:05:00 -0400
+	id S1758875Ab1IINKa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 09:10:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59982 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758781Ab1IINK3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Sep 2011 09:10:29 -0400
+Message-ID: <4E6A1044.5010206@suse.cz>
+Date: Fri, 09 Sep 2011 15:10:28 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-In-Reply-To: <CAC9WiBiWsxCqnGUMHUKKWrLp+XLxOf=+53XLFmaYOeOQWDFSeA@mail.gmail.com>
-References: <CAC9WiBg8ecC0oborzCH=0oaok2FK7QvZhV_UNAxFPkVJ+wFP=Q@mail.gmail.com>
-	<CAOULuOb41-TZuN=kj6whg_wn4cw3k01K3aHJ_X9Ha4iTD3ainw@mail.gmail.com>
-	<CAC9WiBhbXN86sFPBp9Q8tP6ZPUxMZHsi0fFs1T=Y+1FfGusGxQ@mail.gmail.com>
-	<CAOULuOax5OX-oZKBdEuBGVQaSX55sQY8tbKAPD-WFKEr7fRNtQ@mail.gmail.com>
-	<CAC9WiBiWsxCqnGUMHUKKWrLp+XLxOf=+53XLFmaYOeOQWDFSeA@mail.gmail.com>
-Date: Fri, 9 Sep 2011 15:04:59 +0200
-Message-ID: <CAC9WiBgTwVeSDUbhg0=H2+WxpJwUriRWVJ3JLC9W2=v-1JnKeQ@mail.gmail.com>
-Subject: Re: Some issues/regression when upgrading to 3.1-rc5
-From: Francis Moreau <francis.moro@gmail.com>
-To: Parag Warudkar <parag.lkml@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: linux-kbuild <linux-kbuild@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: temporary kbuild git tree
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 9, 2011 at 3:00 PM, Francis Moreau <francis.moro@gmail.com> wrote:
-> On Wed, Sep 7, 2011 at 1:58 PM, Parag Warudkar <parag.lkml@gmail.com> wrote:
->> Hi
->>
->> On Wed, Sep 7, 2011 at 2:51 AM, Francis Moreau <francis.moro@gmail.com> wrote:
->>> Hello,
->>>
->>> On Wed, Sep 7, 2011 at 12:24 AM, Parag Warudkar <parag.lkml@gmail.com> wrote:
->>>> On Tue, Sep 6, 2011 at 5:15 PM, Francis Moreau <francis.moro@gmail.com> wrote:
->>>>>
->>>>> [   13.335961] cfg80211: Calling CRDA to update world regulatory domain
->>>>> [   13.386127] b43-phy0: Broadcom 4313 WLAN found (core revision 24)
->>>>> [   13.510112] bcma: PLL enable timeout
->>>>> [   13.510125] b43-phy0 ERROR: FOUND UNSUPPORTED PHY (Analog 10, Type
->>>>> 8, Revision 1)
->>>>> [   13.510148] b43: probe of bcma0:0 failed with error -95
->>>>> [   13.510194] Broadcom 43xx driver loaded [ Features: PMNLS,
->>>>> Firmware-ID: FW13 ]
->>
->>>
->>> unloading b43/bcma and loading brcmsmac doesn't help. Looks like the
->>> latter doesn't support my card anymore.
->>>
->>> From dmesg:
->>>
->>> [ 3828.183927] brcmsmac: module is from the staging directory, the
->>> quality is unknown, you have been warned.
->>>
->>> and that's it.
->>
->> 4313 is supported in brcmsmac - are you sure the firmware is at the
->> right place and getting loaded?
->
-> Ok the issue was that I need to unload b43 _and_ bcma before loading brcmsmac.
->
->> I recall for example having to deal with firmware in kernel specific
->> directory - /lib/`uname -r`/firmware for example which means you will
->> need to copy the firmware to new kernel specific directory.
->>
->> Secondly try to make sure b43/bcma are blacklisted and never loaded at all.
->>
->
-> Well IMHO, there's a probleme here: b43/bcma claims some devices
-> (notably 4313) which is marked as broken ! Well that's not quite
-> exact, actually it's the phy dev used with the 4313 which is marked as
-> broken, see CONFIG_B43_PHY_LCN in drivers/net/wireless/b43/Kconfig.
->
-> I posted an email on linux-wireless mailing list but haven't got any
-> answer so far.
->
+Hi,
 
-In case you're interested:
+while hera is still down, I pushed the current kbuild bits to
+http://repo.or.cz/w/linux-kbuild.git.
 
-http://permalink.gmane.org/gmane.linux.kernel.wireless.general/76859
-
--- 
-Francis
+Michal
