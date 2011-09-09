@@ -1,229 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759557Ab1IIRhF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 13:37:05 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:51827 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759356Ab1IIRhD convert rfc822-to-8bit (ORCPT
+	id S1759569Ab1IIRla (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 13:41:30 -0400
+Received: from mail-vw0-f43.google.com ([209.85.212.43]:56896 "EHLO
+	mail-vw0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750958Ab1IIRl3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 13:37:03 -0400
+	Fri, 9 Sep 2011 13:41:29 -0400
 MIME-Version: 1.0
-In-Reply-To: <j4d569$ndo$2@dough.gmane.org>
-References: <j4d428$ndo$1@dough.gmane.org>
-	<j4d569$ndo$2@dough.gmane.org>
-Date: Fri, 9 Sep 2011 10:28:43 -0700
-Message-ID: <CAEuXFEz5si7tOxcpkmnVTuHovOm=8c+eXHGp+CtGNj9b=VjLeA@mail.gmail.com>
-Subject: Re: [E1000-devel] e1000e: NIC not working (after resume?)
-From: Jesse Brandeburg <jesse.brandeburg@gmail.com>
-To: Frederik Himpe <fhimpe@telenet.be>
-Cc: e1000-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+In-Reply-To: <CANejiEUTjZbxesiKFzGE4a9rs-GQfq1ekzaDAv34pMGrEQAUcg@mail.gmail.com>
+References: <1313768318-7960-1-git-send-email-maxim.patlasov@gmail.com>
+	<1313768318-7960-2-git-send-email-maxim.patlasov@gmail.com>
+	<CANejiEWadFK9GdXSwKgzNoj1Da_4QTUidTp-6FGkBtZwhbKvfw@mail.gmail.com>
+	<CA+X1aCRSADrUB+YVJ9j5u+VgGn=8fKw7A1eVVzPtODg+hK-B-w@mail.gmail.com>
+	<CANejiEX=S8tyPDhAjm84+9xBNt08Q0mjWHjqh-kFqL4H1ME-RA@mail.gmail.com>
+	<CA+X1aCSMb9CTpoHWv=UiMg-mHkB2ssmKRACtbDofWG=QSxXOdg@mail.gmail.com>
+	<CANejiEV7UfEHEMwokKwE+Pwqn_HRUT0_9wHakhOYj8r0roGYuw@mail.gmail.com>
+	<CA+X1aCR6Rptj_7bKf7O7TJ8a9z7AH0vXL90XAgY=+054WegsgQ@mail.gmail.com>
+	<CANejiEUTjZbxesiKFzGE4a9rs-GQfq1ekzaDAv34pMGrEQAUcg@mail.gmail.com>
+Date: Fri, 9 Sep 2011 21:41:28 +0400
+Message-ID: <CA+X1aCQhUALGLrtjSzdHonQ1WdPgVMPa7kW2Yi0UFqBwD0Vv6w@mail.gmail.com>
+Subject: Re: [PATCH 1/1] CFQ: fix handling 'deep' cfqq
+From: Maxim Patlasov <maxim.patlasov@gmail.com>
+To: Shaohua Li <shli@kernel.org>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 9, 2011 at 6:43 AM, Frederik Himpe <fhimpe@telenet.be> wrote:
-> [Crossposting to e1000 mailing list]
->
-> I have a Dell Latitude E6400 which has a network card supported by the
-> e1000e driver. Often (I think after a suspend/resume cycle), the network
-> card does not work at all: the NIC is correctly seen by ifconfig, but
-> running ethtool just returns: "No such device". dhclient -v gives the
-> impression that it's correctly sending out DHCPDISCOVER packets on the
-> NIC, but a tcpdump running on the same machine does not see any packets
-> going out.
->
-> I'm using Debian's 3.0.0-3 kernel (corresponding with Linux 3.0.3).
->
-> Full lspci, .config and dmesg output at
-> http://artipc10.vub.ac.be/~frederik/e1000e/
->
-> Here is some relevant summary.
->
-> How can I find out what is going wrong?
->
-> # ifconfig eth0
-> eth0      Link encap:Ethernet  HWaddr 00:21:70:e1:bb:4c
->          UP BROADCAST PROMISC MULTICAST  MTU:1500  Metric:1
->          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
->          TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
->          collisions:0 txqueuelen:1000
->          RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
->          Interrupt:22 Memory:f6ae0000-f6b00000
->
->
-> # ethtool eth0
-> Settings for eth0:
-> Cannot get device settings: No such device
-> Cannot get wake-on-lan settings: No such device
-> Cannot get message level: No such device
-> Cannot get link status: No such device
-> No data available
->
-> # lspci -vvnn
-> 00:19.0 Ethernet controller [0200]: Intel Corporation 82567LM Gigabit Network Connection [8086:10f5] (rev 03)
->        Subsystem: Dell Device [1028:0233]
->        Control: I/O- Mem- BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR+ FastB2B- DisINTx-
->        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
->        Interrupt: pin A routed to IRQ 22
->        Region 0: Memory at f6ae0000 (32-bit, non-prefetchable) [disabled] [size=128K]
->        Region 1: Memory at f6adb000 (32-bit, non-prefetchable) [disabled] [size=4K]
->        Region 2: I/O ports at efe0 [disabled] [size=32]
->        Capabilities: [c8] Power Management version 2
->                Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
->                Status: D3 NoSoftRst- PME-Enable+ DSel=0 DScale=1 PME+
+Shaohua,
 
-The above is why nothing seems to work right.  The kernel runtime
-power management thinks there is no link on the port, and so is
-putting the port into D3.  We need to make sure that our driver wakes
-the device to read link state (the problem is that wake from D3, plus
-time to get link can take ~4 seconds).
+> So the key problem here is how to detect if a device is fast. Doing
+> the detection
+> in the dispatch stage always can't give us correct result. A fast device really
+> should be requests can be finished in short time. So I have something attached.
+> In my environment, a hard disk is detected slow and a ssd is detected fast, but
+> I haven't run any benchmark so far. How do you think about it?
 
->        Capabilities: [d0] MSI: Enable- Count=1/1 Maskable- 64bit+
->                Address: 00000000fee0300c  Data: 4182
->        Capabilities: [e0] PCI Advanced Features
->                AFCap: TP+ FLR+
->                AFCtrl: FLR-
->                AFStatus: TP-
->        Kernel driver in use: e1000e
->
->
-> # dmesg | grep -E "e1000e|eth0"
-> [    1.027437] e1000e: Intel(R) PRO/1000 Network Driver - 1.3.10-k2
-> [    1.027441] e1000e: Copyright(c) 1999 - 2011 Intel Corporation.
-> [    1.027480] e1000e 0000:00:19.0: PCI INT A -> GSI 22 (level, low) -> IRQ 22
-> [    1.027491] e1000e 0000:00:19.0: setting latency timer to 64
-> [    1.027605] e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
-> [    1.231440] e1000e 0000:00:19.0: eth0: (PCI Express:2.5GT/s:Width x1) 00:21:70:e1:bb:4c
-> [    1.231444] e1000e 0000:00:19.0: eth0: Intel(R) PRO/1000 Network Connection
-> [    1.231470] e1000e 0000:00:19.0: eth0: MAC: 7, PHY: 8, PBA No: 1004FF-0FF
-> [   22.896268] e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
-> [   22.952097] e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
-> [   22.954132] ADDRCONF(NETDEV_UP): eth0: link is not ready
-> [   24.504903] e1000e: eth0 NIC Link is Up 100 Mbps Full Duplex, Flow Control: Rx/Tx
-> [   24.506413] e1000e 0000:00:19.0: eth0: 10/100 speed: disabling TSO
-> [   24.508402] ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
-> [   34.788022] eth0: no IPv6 routers present
-> [   41.444922] e1000e: eth0 NIC Link is Up 100 Mbps Full Duplex, Flow Control: Rx/Tx
-> [   41.446325] e1000e 0000:00:19.0: eth0: 10/100 speed: disabling TSO
-> [25136.918393] e1000e 0000:00:19.0: PME# enabled
-> [25142.488050] e1000e 0000:00:19.0: BAR 0: set to [mem 0xf6ae0000-0xf6afffff] (PCI address [0xf6ae0000-0xf6afffff])
-> [25142.488058] e1000e 0000:00:19.0: BAR 1: set to [mem 0xf6adb000-0xf6adbfff] (PCI address [0xf6adb000-0xf6adbfff])
-> [25142.488066] e1000e 0000:00:19.0: BAR 2: set to [io  0xefe0-0xefff] (PCI address [0xefe0-0xefff])
-> [25142.488085] e1000e 0000:00:19.0: restoring config space at offset 0xf (was 0x100, writing 0x10a)
-> [25142.488110] e1000e 0000:00:19.0: restoring config space at offset 0x1 (was 0x100000, writing 0x100107)
-> [25142.488167] e1000e 0000:00:19.0: PME# disabled
-> [25142.510966] e1000e 0000:00:19.0: PCI INT A disabled
-> [25142.510971] e1000e 0000:00:19.0: PME# enabled
-> [25143.468668] e1000e 0000:00:19.0: restoring config space at offset 0xf (was 0x100, writing 0x10a)
-> [25143.468689] e1000e 0000:00:19.0: restoring config space at offset 0x6 (was 0x1, writing 0xefe1)
-> [25143.468696] e1000e 0000:00:19.0: restoring config space at offset 0x5 (was 0x0, writing 0xf6adb000)
-> [25143.468703] e1000e 0000:00:19.0: restoring config space at offset 0x4 (was 0x0, writing 0xf6ae0000)
-> [25143.468713] e1000e 0000:00:19.0: restoring config space at offset 0x1 (was 0x100000, writing 0x100107)
-> [25143.471149] e1000e 0000:00:19.0: PME# disabled
-> [25143.471277] e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
-> [25145.276441] e1000e 0000:00:19.0: PME# enabled
-> [25146.082051] e1000e 0000:00:19.0: BAR 0: set to [mem 0xf6ae0000-0xf6afffff] (PCI address [0xf6ae0000-0xf6afffff])
-> [25146.082076] e1000e 0000:00:19.0: BAR 1: set to [mem 0xf6adb000-0xf6adbfff] (PCI address [0xf6adb000-0xf6adbfff])
-> [25146.082090] e1000e 0000:00:19.0: BAR 2: set to [io  0xefe0-0xefff] (PCI address [0xefe0-0xefff])
-> [25146.082126] e1000e 0000:00:19.0: restoring config space at offset 0xf (was 0x100, writing 0x10a)
-> [25146.082169] e1000e 0000:00:19.0: restoring config space at offset 0x1 (was 0x100000, writing 0x100107)
-> [25146.082280] e1000e 0000:00:19.0: PME# disabled
-> [25146.176605] e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
-> [25146.232228] e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
-> [25146.234003] ADDRCONF(NETDEV_UP): eth0: link is not ready
-> [25147.328875] e1000e 0000:00:19.0: PME# enabled
-> [26261.896126] e1000e 0000:00:19.0: BAR 0: set to [mem 0xf6ae0000-0xf6afffff] (PCI address [0xf6ae0000-0xf6afffff])
-> [26261.896140] e1000e 0000:00:19.0: BAR 1: set to [mem 0xf6adb000-0xf6adbfff] (PCI address [0xf6adb000-0xf6adbfff])
-> [26261.896149] e1000e 0000:00:19.0: BAR 2: set to [io  0xefe0-0xefff] (PCI address [0xefe0-0xefff])
-> [26261.896169] e1000e 0000:00:19.0: restoring config space at offset 0xf (was 0x100, writing 0x10a)
-> [26261.896196] e1000e 0000:00:19.0: restoring config space at offset 0x1 (was 0x100000, writing 0x100107)
-> [26261.896241] e1000e 0000:00:19.0: PME# disabled
-> [26261.896316] e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
-> [26261.972148] e1000e 0000:00:19.0: PME# enabled
-> [26268.192160] e1000e 0000:00:19.0: BAR 0: set to [mem 0xf6ae0000-0xf6afffff] (PCI address [0xf6ae0000-0xf6afffff])
-> [26268.192168] e1000e 0000:00:19.0: BAR 1: set to [mem 0xf6adb000-0xf6adbfff] (PCI address [0xf6adb000-0xf6adbfff])
-> [26268.192175] e1000e 0000:00:19.0: BAR 2: set to [io  0xefe0-0xefff] (PCI address [0xefe0-0xefff])
-> [26268.192194] e1000e 0000:00:19.0: restoring config space at offset 0xf (was 0x100, writing 0x10a)
-> [26268.192219] e1000e 0000:00:19.0: restoring config space at offset 0x1 (was 0x100000, writing 0x100107)
-> [26268.192274] e1000e 0000:00:19.0: PME# disabled
-> [26268.213875] e1000e 0000:00:19.0: PME# enabled
-> [26269.172481] e1000e 0000:00:19.0: restoring config space at offset 0xf (was 0x100, writing 0x10a)
-> [26269.172497] e1000e 0000:00:19.0: restoring config space at offset 0x6 (was 0x1, writing 0xefe1)
-> [26269.172502] e1000e 0000:00:19.0: restoring config space at offset 0x5 (was 0x0, writing 0xf6adb000)
-> [26269.172507] e1000e 0000:00:19.0: restoring config space at offset 0x4 (was 0x0, writing 0xf6ae0000)
-> [26269.172515] e1000e 0000:00:19.0: restoring config space at offset 0x1 (was 0x100000, writing 0x100107)
-> [26269.174262] e1000e 0000:00:19.0: PME# disabled
-> [26269.174339] e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
-> [26272.384806] e1000e 0000:00:19.0: PME# enabled
-> [26274.688310] e1000e 0000:00:19.0: eth0: Error reading PHY register
-> [26275.482490] e1000e 0000:00:19.0: eth0: Error reading PHY register
-> [26276.277343] e1000e 0000:00:19.0: eth0: Error reading PHY register
-> [26277.075194] e1000e 0000:00:19.0: eth0: Error reading PHY register
-> [26277.870807] e1000e 0000:00:19.0: eth0: Error reading PHY register
-> [26278.667881] e1000e 0000:00:19.0: eth0: Error reading PHY register
-> [26279.463492] e1000e 0000:00:19.0: eth0: Error reading PHY register
-> [26280.258982] e1000e 0000:00:19.0: eth0: Error reading PHY register
-> [26281.056598] e1000e 0000:00:19.0: eth0: Error reading PHY register
-> [26281.855386] e1000e 0000:00:19.0: eth0: Error reading PHY register
-> [26282.649838] e1000e 0000:00:19.0: eth0: Error reading PHY register
-> [26283.445674] e1000e 0000:00:19.0: eth0: Error reading PHY register
-> [26289.848036] e1000e 0000:00:19.0: BAR 0: set to [mem 0xf6ae0000-0xf6afffff] (PCI address [0xf6ae0000-0xf6afffff])
-> [26289.848044] e1000e 0000:00:19.0: BAR 1: set to [mem 0xf6adb000-0xf6adbfff] (PCI address [0xf6adb000-0xf6adbfff])
-> [26289.848050] e1000e 0000:00:19.0: BAR 2: set to [io  0xefe0-0xefff] (PCI address [0xefe0-0xefff])
-> [26289.848067] e1000e 0000:00:19.0: restoring config space at offset 0xf (was 0x100, writing 0x10a)
-> [26289.848090] e1000e 0000:00:19.0: restoring config space at offset 0x1 (was 0x100000, writing 0x100107)
-> [26289.848146] e1000e 0000:00:19.0: PME# disabled
-> [26289.940279] e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
-> [26289.996092] e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
-> [26289.996761] ADDRCONF(NETDEV_UP): eth0: link is not ready
-> [26291.088343] e1000e 0000:00:19.0: PME# enabled
-> [26900.272077] e1000e 0000:00:19.0: BAR 0: set to [mem 0xf6ae0000-0xf6afffff] (PCI address [0xf6ae0000-0xf6afffff])
-> [26900.272096] e1000e 0000:00:19.0: BAR 1: set to [mem 0xf6adb000-0xf6adbfff] (PCI address [0xf6adb000-0xf6adbfff])
-> [26900.272111] e1000e 0000:00:19.0: BAR 2: set to [io  0xefe0-0xefff] (PCI address [0xefe0-0xefff])
-> [26900.272142] e1000e 0000:00:19.0: restoring config space at offset 0xf (was 0x100, writing 0x10a)
-> [26900.272180] e1000e 0000:00:19.0: restoring config space at offset 0x1 (was 0x100000, writing 0x100107)
-> [26900.272250] e1000e 0000:00:19.0: PME# disabled
-> [26900.272379] e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
-> [26900.274426] e1000e 0000:00:19.0: eth0: MAC Wakeup cause - Link Status Change
-> [26905.560584] e1000e: Intel(R) PRO/1000 Network Driver - 1.3.10-k2
-> [26905.560591] e1000e: Copyright(c) 1999 - 2011 Intel Corporation.
-> [26905.560650] e1000e 0000:00:19.0: PCI INT A -> GSI 22 (level, low) -> IRQ 22
-> [26905.560665] e1000e 0000:00:19.0: setting latency timer to 64
-> [26905.560836] e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
-> [26905.744547] e1000e 0000:00:19.0: eth0: (PCI Express:2.5GT/s:Width x1) 00:21:70:e1:bb:4c
-> [26905.744552] e1000e 0000:00:19.0: eth0: Intel(R) PRO/1000 Network Connection
-> [26905.744581] e1000e 0000:00:19.0: eth0: MAC: 7, PHY: 8, PBA No: 1004FF-0FF
-> [26905.744594] e1000e 0000:00:19.0: PME# enabled
-> [26905.880141] e1000e 0000:00:19.0: BAR 0: set to [mem 0xf6ae0000-0xf6afffff] (PCI address [0xf6ae0000-0xf6afffff])
-> [26905.880149] e1000e 0000:00:19.0: BAR 1: set to [mem 0xf6adb000-0xf6adbfff] (PCI address [0xf6adb000-0xf6adbfff])
-> [26905.880155] e1000e 0000:00:19.0: BAR 2: set to [io  0xefe0-0xefff] (PCI address [0xefe0-0xefff])
-> [26905.880172] e1000e 0000:00:19.0: restoring config space at offset 0xf (was 0x100, writing 0x10a)
-> [26905.880194] e1000e 0000:00:19.0: restoring config space at offset 0x1 (was 0x100000, writing 0x100107)
-> [26905.880247] e1000e 0000:00:19.0: PME# disabled
-> [26905.968320] e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
-> [26906.024395] e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
-> [26906.025907] ADDRCONF(NETDEV_UP): eth0: link is not ready
-> [26907.112415] e1000e 0000:00:19.0: PME# enabled
-> [27308.975856] device eth0 entered promiscuous mode
-> [27326.414382] device eth0 left promiscuous mode
-> [27336.815362] device eth0 entered promiscuous mode
->
-> * Right after start up: machine is in docking station, network is working
-> fine.
-> * At 25136: resume machine, not in docking station, no network cable
-> plugged in, so network connection was not tested.
-> * At 26261: resume machine, in docking station, network cable plugged in,
-> but network connection is not working
+Thanks for the patch, I'll test it in several h/w configurations soon
+and let you know about results.
 
-but was the light blinking or solid? (link light) or was it just out.
+As a first thought that comes to mind, this patch would hardly meet
+needs of h/w raids. Every particular hdd may be not very fast, but
+being assembled in RAID-0, it's still very beneficial to submit many
+requests in a row. That's why I made estimation in the dispatch stage:
+if hdd (or h/w raid) is regularly able to drain deep queue quite fast,
+we should claim it as 'fast' and avoid idling if possible.
 
-> * At 26900: rmmod e1000e && modprobe e1000e: network still not working
-
-it almost sounds like something in the docking station is not quite
-waking successfully.  If the device is in D3, the wake signal was
-either missed by the system, or never asserted.  If you unplug the
-link and plug it back in, with the driver loaded and it reporting D3
-(should go to PME+ and then D0 once cable is plugged in ) does it
-help?
+Thanks,
+Maxim
