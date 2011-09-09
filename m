@@ -1,115 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759138Ab1IIOTN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 10:19:13 -0400
-Received: from www.linutronix.de ([62.245.132.108]:34065 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751348Ab1IIOTL (ORCPT
+	id S1759164Ab1IIOVl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 10:21:41 -0400
+Received: from mail.ss.pku.edu.cn ([211.101.48.138]:35449 "EHLO
+	mail.ss.pku.edu.cn" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759150Ab1IIOVk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 10:19:11 -0400
-Date: Fri, 9 Sep 2011 16:19:09 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Mark Salter <msalter@redhat.com>
-cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        ming.lei@canonical.com, stern@rowland.harvard.edu
-Subject: Re: [PATCH 10/24] C6X: time management
-In-Reply-To: <1314826019-22330-11-git-send-email-msalter@redhat.com>
-Message-ID: <alpine.LFD.2.02.1109091612150.2723@ionos>
-References: <1314826019-22330-1-git-send-email-msalter@redhat.com> <1314826019-22330-11-git-send-email-msalter@redhat.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 9 Sep 2011 10:21:40 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <20110907143006.0d0922dd.akpm@linux-foundation.org>
+References: <20110824130238.GA24543@janus>
+	<20110902011058.c5bad476.akpm@linux-foundation.org>
+	<20110905123813.GA29763@janus>
+	<CAF1ivSYui_=tHbxHiy15a9wfiphHcpoY+J1MmAJ=dMQsAfEVLw@mail.gmail.com>
+	<1315320518.4235.3.camel@hp6530s>
+	<20110907102425.GA3423@janus>
+	<1315398979.2938.0.camel@hp6530s>
+	<20110907143006.0d0922dd.akpm@linux-foundation.org>
+Date: Fri, 9 Sep 2011 22:21:36 +0800
+Message-ID: <CAF1ivSbWFahCM79uBD24yA2+KwRV=RC-n=E8ev4nLCUyFVeaEQ@mail.gmail.com>
+Subject: Re: 3.0.3 kernel BUG at kernel/timer.c:1035
+From: Lin Ming <mlin@ss.pku.edu.cn>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Lin Ming <ming.m.lin@intel.com>,
+        Frank van Maarseveen <frankvm@frankvm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 31 Aug 2011, Mark Salter wrote:
-> +static int next_event(unsigned long delta,
-> +		      struct clock_event_device *evt)
-> +{
-> +	soc_writel(soc_readl(&timer->tcr) & ~TCR_ENAMODELO_MASK, &timer->tcr);
-> +	soc_writel(delta - 1, &timer->prdlo);
-> +	soc_writel(0, &timer->cntlo);
-> +	soc_writel(soc_readl(&timer->tcr) | TCR_ENAMODELO_ONCE, &timer->tcr);
-> +
-> +	return 0;
-> +}
-> +
-> +static void set_clock_mode(enum clock_event_mode mode,
-> +			   struct clock_event_device *evt)
-> +{
-> +}
-> +
-> +static void event_handler(struct clock_event_device *dev)
-> +{
-> +}
+On Thu, Sep 8, 2011 at 5:30 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Wed, 07 Sep 2011 20:36:19 +0800
+> Lin Ming <ming.m.lin@intel.com> wrote:
+>
+>> On Wed, 2011-09-07 at 18:24 +0800, Frank van Maarseveen wrote:
+>> > On Tue, Sep 06, 2011 at 10:48:38PM +0800, Lin Ming wrote:
+>> > > Does below patch help?
+>> > >
+>> > > >From a98b874437f871d5ecc3f6fe409b2b474b1f2731 Mon Sep 17 00:00:00 2001
+>> > > From: Lin Ming <ming.m.lin@intel.com>
+>> > > Date: Tue, 6 Sep 2011 22:45:43 +0800
+>> > > Subject: [PATCH] block: delete bdi writeback wakup_timer in blk_cleanup_queue()
+>> > >
+>> > > Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+>> > > ---
+>> > >  block/blk-core.c |    1 +
+>> > >  1 files changed, 1 insertions(+), 0 deletions(-)
+>> > >
+>> > > diff --git a/block/blk-core.c b/block/blk-core.c
+>> > > index 90e1ffd..22529a3 100644
+>> > > --- a/block/blk-core.c
+>> > > +++ b/block/blk-core.c
+>> > > @@ -363,6 +363,7 @@ void blk_cleanup_queue(struct request_queue *q)
+>> > >   blk_sync_queue(q);
+>> > >
+>> > >   del_timer_sync(&q->backing_dev_info.laptop_mode_wb_timer);
+>> > > + del_timer_sync(&q->backing_dev_info.wb.wakeup_timer);
+>> > >   mutex_lock(&q->sysfs_lock);
+>> > >   queue_flag_set_unlocked(QUEUE_FLAG_DEAD, q);
+>> > >   mutex_unlock(&q->sysfs_lock);
+>> > > --
+>> > > 1.7.2.3
+>> > >
+>> >
+>> > No, bug still present. Stack trace is the same and I double checked that
+>> > it was the new kernel (this time with a lot more debug enabled).
+>>
+>> Thanks for test.
+>> I'll try to reproduce this bug.
+>
+> Probably this will "fix" it:
 
-You don't need a handler function. The core code sets one for you.
+Frank,
 
-> +static irqreturn_t timer_interrupt(int irq, void *dev_id)
-> +{
-> +	struct clock_event_device *cd = &t64_clockevent_device;
-> +
-> +	cd->event_handler(cd);
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +
-> +void __init timer64_init(void)
-> +{
-> +	struct clock_event_device *cd = &t64_clockevent_device;
- ...
-> +	cd->name	= "TIMER64_EVT32_TIMER";
-> +	cd->features	= CLOCK_EVT_FEAT_ONESHOT;
+Does Andrew's patch help?
 
-Please move those into a static initializer of t64_clockevent_device.
+Lin Ming
 
-> +	/* Calculate the min / max delta */
-> +	/* Find a shift value */
-> +	for (shift = 32; shift > 0; shift--) {
-> +		temp = (u64)(c6x_core_freq / TIMER_DIVISOR);
-> +		temp <<=  shift;
-> +
-> +		do_div(temp, NSEC_PER_SEC);
-> +		if ((temp >> 32) == 0)
-> +			break;
-> +	}
-> +	cd->shift = shift;
-> +	cd->mult = (u32) temp;
-
-  clockevents_calc_mult_shift() please
-
-> +	cd->rating		= 200;
-> +	cd->set_mode		= set_clock_mode;
-
-  static initializer
-
-> +	cd->event_handler	= event_handler;
-
-  Please drop
-
-> +	cd->set_next_event	= next_event;
-
-  static initializer
-
-> +	cd->cpumask		= cpumask_of(smp_processor_id());
-> +
-> +	clockevents_register_device(cd);
-> +
-> +	/* Set handler */
-> +	if (cd->irq != NO_IRQ)
-
-How does a timer device work w/o interrupt ?
-
-> +		request_irq(cd->irq, timer_interrupt,
-> +			    IRQF_DISABLED | IRQF_TIMER, "timer", NULL);
-
-  Please drop IRQF_DISABLED it's about to vanish.
-
-Thanks,
-
-	tglx
+>
+> --- a/block/blk-sysfs.c~a
+> +++ a/block/blk-sysfs.c
+> @@ -4,6 +4,7 @@
+>  #include <linux/kernel.h>
+>  #include <linux/slab.h>
+>  #include <linux/module.h>
+> +#include <linux/timer.h>
+>  #include <linux/bio.h>
+>  #include <linux/blkdev.h>
+>  #include <linux/blktrace_api.h>
+> @@ -486,7 +487,7 @@ static void blk_release_queue(struct kob
+>                __blk_queue_free_tags(q);
+>
+>        blk_trace_shutdown(q);
+> -
+> +       del_timer_sync(&q->backing_dev_info.wb.wakeup_timer);
+>        bdi_destroy(&q->backing_dev_info);
+>        kmem_cache_free(blk_requestq_cachep, q);
+>  }
+> _
+>
+> Jens, can you please take a look at this regression?
+> blk_release_queue() is freeing a pending timer.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
