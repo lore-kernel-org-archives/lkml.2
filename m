@@ -1,69 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933139Ab1IIJIL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 05:08:11 -0400
-Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:48396 "EHLO
-	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933090Ab1IIJIK (ORCPT
+	id S933155Ab1IIJRF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 05:17:05 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:45672 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932922Ab1IIJRD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 05:08:10 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4E69D968.2020100@cam.ac.uk>
-Date: Fri, 09 Sep 2011 10:16:24 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110901 Thunderbird/6.0
+	Fri, 9 Sep 2011 05:17:03 -0400
+Message-ID: <4E69D989.20807@petalogix.com>
+Date: Fri, 09 Sep 2011 11:16:57 +0200
+From: Michal Simek <michal.simek@petalogix.com>
+Reply-To: michal.simek@petalogix.com
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: Donggeun Kim <dg77.kim@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, akpm@linux-foundation.org, jic23@cam.ac.kr,
-        kyungmin.park@samsung.com
-Subject: Re: [PATCH v2] misc: Add driver for GP2AP002 proximity/ambient light
- sensor
-References: <1315556546-7445-1-git-send-email-dg77.kim@samsung.com> <20110909083134.GA21835@suse.de>
-In-Reply-To: <20110909083134.GA21835@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Eli Billauer <eli@billauer.co.il>
+CC: LKML <linux-kernel@vger.kernel.org>, monstr@monstr.eu
+Subject: Re: [PATCH] arch/microblaze: Added sync method support for DMA  and
+ made refinements
+References: <4E60A276.7010903@billauer.co.il> <4E60CCE9.5050900@monstr.eu> <4E60F270.4020208@billauer.co.il>
+In-Reply-To: <4E60F270.4020208@billauer.co.il>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/11 09:31, Greg KH wrote:
-> On Fri, Sep 09, 2011 at 05:22:26PM +0900, Donggeun Kim wrote:
->> SHARP GP2AP002 is proximity and ambient light sensor.
->> This patch supports it.
->>
->> Signed-off-by: Donggeun Kim <dg77.kim@samsung.com>
->> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->> ---
->> Changes for v2
->>   - changed to expose lux
->>   - changed request_irq to request_threaded_irq function
->>   - added sysfs_notify function call
+Eli Billauer wrote:
+> Michal Simek wrote:
 > 
-> Why?  You should never do that unless you _really_ know what you are
-> doing.
-My bad.  I suggested it was a better bet than doing a uevent to act
-as a data ready notifier...
+>>
+>> DMA_TO_DEVICE is fine - data has to be flushed.
+>>
+>> For DMA_FROM_DEVICE you expect that allocated space will contains data 
+>> from device.
+>> Which means if you flush them, they will be rewritten by DMA in the 
+>> next step.
+>> Which means that IMHO you can invalidate them which is faster than 
+>> flushing.
+> The flushing is only necessary when a certain memory region is written 
+> to, not flushed, and then allocated for DMA from device. This is not 
+> what drivers usually do, but it's nevertheless legal to do so. Maybe it 
+> can also happen as a result of memory being freed but not flushed, and 
+> then allocated as a DMA buffer. So this flushing prevents, at most, an 
+> extremely rare problem. I don't expect to see something go wrong right 
+> away in the lack of this flush.
 
-Greg, for future reference can you clarify why it's a bad idea or
-give a reference (if it's been clarified elsewhere and I missed it!)
+I prefer to fix the real problems. If you can't see any real problem,
+please do not fix theoretical one. I am open to accept your comments
+that it is safer to use flush. Look at my second email and add it to 3rd patch.
+
 > 
+> In light of this, I can't see why flushing would be slower than 
+> invalidation, if the cache lines aren't expected to be dirty except for 
+> very rare conditions.
+
+If they are not dirty, flushing/invalidation time should be the same.
+But if they are, invalidation is faster.
+
+
 > 
->>   - cleaned up code
->>
->>  Documentation/misc-devices/gp2ap002    |   44 +++
->>  drivers/misc/Kconfig                   |   10 +
->>  drivers/misc/Makefile                  |    1 +
->>  drivers/misc/gp2ap002.c                |  488 ++++++++++++++++++++++++++++++++
->>  include/linux/platform_data/gp2ap002.h |   69 +++++
-> 
-> 
-> Shouldn't this be an iio driver instead of some random misc driver with
-> an undocumented sysfs file (hint, use Documentation/ABI for documenting
-> stuff...) ?
-Would certainly be welcome in IIO. We have a couple of similar sensors in there already.
-I'm just aware some people/firms are really anti having
-their drivers in staging (because the subsystem is there rather than because of issues
-in the driver.
+> As for invalidation of a dirty cache line: Looking at the Microblaze 
+> reference manual's description of the wdc instruction, I'm under the 
+> impression that each cache line has two flags: Valid and Dirty, as they 
+> appear in the pseudocode. I'm not on the clear about what happens if a 
+> dirty cache line is invalidated. It would make sense to clear both 
+> flags. It also makes sense to write the data back to the RAM in this 
+> case. But I really don't know what's actually implemented.
+
+AFAIK if a dirty cache line is invalidated data is just removed from flash
+and there is not and you do invalidation - CPU using cache lines(on BE) and writing
+data to memory. There could be a lot of stall cycles.
+
+Thanks,
+Michal
+
+
+
+
+-- 
+Michal Simek, Ing. (M.Eng)
+PetaLogix - Linux Solutions for a Reconfigurable World
+w: www.petalogix.com p: +61-7-30090663,+42-0-721842854 f: +61-7-30090663
