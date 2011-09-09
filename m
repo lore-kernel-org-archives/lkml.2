@@ -1,66 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758442Ab1IIGHn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 02:07:43 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:62291 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758383Ab1IIGHk convert rfc822-to-8bit (ORCPT
+	id S1758460Ab1IIGTL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 02:19:11 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:57206 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758437Ab1IIGTG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 02:07:40 -0400
-Date: Fri, 9 Sep 2011 14:07:25 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: "Nallasellan, Singaravelan" <singaravelan.nallasellan@intel.com>
-Cc: Arjan van de Ven <arjan@infradead.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Player Thread is not woken after period elapsed
-Message-ID: <20110909060725.GA21124@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <3CA6C6D9F70D314CA34352990B57DA1507C420F147@bgsmsx502.gar.corp.intel.com>
- <20110905105253.2787b91f@infradead.org>
- <3CA6C6D9F70D314CA34352990B57DA1507C420F15C@bgsmsx502.gar.corp.intel.com>
- <20110905112225.72b46ac9@infradead.org>
- <3CA6C6D9F70D314CA34352990B57DA1507C4275D58@bgsmsx502.gar.corp.intel.com>
- <20110906200614.57a99d3d@infradead.org>
- <3CA6C6D9F70D314CA34352990B57DA1507C42767FA@bgsmsx502.gar.corp.intel.com>
- <20110908021327.GA8890@zhy>
- <20110908072948.GB11124@zhy>
- <3CA6C6D9F70D314CA34352990B57DA1507C42C3CA5@bgsmsx502.gar.corp.intel.com>
+	Fri, 9 Sep 2011 02:19:06 -0400
+Message-ID: <4E69AFCF.3040404@linux.vnet.ibm.com>
+Date: Fri, 09 Sep 2011 11:48:55 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <3CA6C6D9F70D314CA34352990B57DA1507C42C3CA5@bgsmsx502.gar.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Michael Neuling <michael.neuling@au1.ibm.com>
+CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        Paul Mackerras <paulus@samba.org>
+Subject: Re: [PATCH] perf events, powerpc: Add POWER7 stalled-cycles-frontend/backend
+ events
+References: <4E5C6A7D.2010909@linux.vnet.ibm.com> <25545.1315532289@neuling.org>
+In-Reply-To: <25545.1315532289@neuling.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 08, 2011 at 03:15:38PM +0530, Nallasellan, Singaravelan wrote:
-> > > > Further investigation of this issue shows that the thread is in running state
+On Friday 09 September 2011 07:08 AM, Michael Neuling wrote:
+>> perf events, powerpc: Add POWER7 stalled-cycles-frontend/backend events
+>>
+>> 	Extent the POWER7 PMU driver with definitions
+>> 	for generic front-end and back-end stall events.
+> 
+> Anshuman,
+> 
+> Can you explain what these P7 events actually are and how they relate to
+> Ingo's original comment on this in
+> 8f62242246351b5a4bc0c1f00c0c7003edea128a
+> 
+>     Both events limit performance: most front end stalls tend to be
+>     caused by branch misprediction or instruction fetch cachemisses,
+>     backend stalls can be caused by various resource shortages or
+>     inefficient instruction scheduling.
+> 
+As explained in Ingo's original comment, the exact definitions of the stall 
+events are very much processor specific as different things mean different in
+their respective instruction pipeline. These two Power7 raw events are the closest 
+approximation to the concept detailed in Ingo's comment.    
+>>
+>> Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+>>
+>> diff --git a/arch/powerpc/kernel/power7-pmu.c b/arch/powerpc/kernel/power7-pmu.c
+>> index 593740f..e5d2844 100644
+>> --- a/arch/powerpc/kernel/power7-pmu.c
+>> +++ b/arch/powerpc/kernel/power7-pmu.c
+>> @@ -297,6 +297,8 @@ static void power7_disable_pmc(unsigned int pmc, unsigned long mmcr[])
+>>  
+>>  static int power7_generic_events[] = {
+>>  	[PERF_COUNT_HW_CPU_CYCLES] = 0x1e,
+>> +	[PERF_COUNT_HW_STALLED_CYCLES_FRONTEND] = 0x100f8, /* GCT_NOSLOT_CYC */
+> 
+> eg. Is this Global Completion Table (GCT) empty?
+Yes, it means cycles when the Global Completion Table has no slots from this thread
+> 
+>> +	[PERF_COUNT_HW_STALLED_CYCLES_BACKEND] = 0x4000a,  /* CMPLU_STALL */
+> 
+> eg. Is this instruction completion stall?
+Yes, it means no groups completed and GCT not empty
+> 
+> Mikey
+> 
+>>  	[PERF_COUNT_HW_INSTRUCTIONS] = 2,
+>>  	[PERF_COUNT_HW_CACHE_REFERENCES] = 0xc880,	/* LD_REF_L1_LSU*/
+>>  	[PERF_COUNT_HW_CACHE_MISSES] = 0x400f0,		/* LD_MISS_L1	*/
+>>
+>> -- 
+>> Anshuman Khandual 
+>>
+>>
+>> _______________________________________________
+>> Linuxppc-dev mailing list
+>> Linuxppc-dev@lists.ozlabs.org
+>> https://lists.ozlabs.org/listinfo/linuxppc-dev
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-Hmm, how do you detect it?
-
-> > and it is not scheduled. I am not sure how I will go about debugging this issue.
-> > Any pointer would help.
-
-Could 'cat /proc/sched_debug' give some useful info?
-
-And BTW, have you tried CONFIG_DETECT_SOFTLOCKUP = y?
-
-Thanks,
-Yong
-
-
-> > >
-> > > Could you confirm if [commit f26f9af Sched: fix skip_clock_update
-> > > optimization] residents in your kernel?
-> I applied this patch manually. I still see the issue.
-> > 
-> > And commit da7a735e51f9622eb3e1672594d4a41da01d7e4f
-> > http://marc.info/?l=linux-kernel&m=129527509622696&w=2
-> This is already applied.
-> ��칻�&�~�&���+-��ݶ��w��˛���m�b��dz�ޖ)���w*jg��������ݢj/���z�ޖ��2�ޙ���&�)ߡ�a�����G���h��j:+v���w�٥>W����i�axPj�m����-�+��d�_
 
 -- 
-Only stand for myself
+Anshuman Khandual 
+LTC India 
+
