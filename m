@@ -1,44 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758567Ab1IIIH3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 04:07:29 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:55938 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758461Ab1IIIHZ (ORCPT
+	id S1758586Ab1IIIHs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 04:07:48 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:37471 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758461Ab1IIIHn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 04:07:25 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Richard Kuo <rkuo@codeaurora.org>
-Cc: linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch v3 08/36] Hexagon: Add delay functions
-Date: Fri, 09 Sep 2011 10:07:05 +0200
-Message-ID: <7440179.BsgeraFyS5@wuerfel>
-User-Agent: KMail/4.7.0  (Linux/3.0.0-rc1nosema+; KDE/4.7.0; x86_64; ; )
-In-Reply-To: <20110909010915.450346603@codeaurora.org>
-References: <20110909010847.294039464@codeaurora.org> <20110909010915.450346603@codeaurora.org>
+	Fri, 9 Sep 2011 04:07:43 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:fYDSwZPHAlz+Fa2uPrqO2OlWUn0+bi72RX99pFj4kar
- Rqa6SieCBHTcgGb8+C76Vm7SQEzV5WqAfI38i2dznRYEh7SJPk
- uSV3RX4NgclFuA9j0k5nEy0Epbcr7HRXky+VxNB9NXjRhxE7dO
- z9rTM9dmTZv3PciGyHYDXtKnp25Fq0KaFyioo46P7YApCup3bi
- 9+QLrJ4D7Gg9zZgpFa4vc32ajgmSKP6th5brU5wIxDENcrzvZS
- P3HmhmvGTVNDkiTVp61hkmzICAlY0vWqatmqsmD80vsSrysRw5
- 9UXrP0rbaFIhYXJ0tPIFZOLEBCAJwMHgvnlmVPB8EQXs91cT3E
- YWJbrQotsRSEBEfRcusE=
+In-Reply-To: <20110909.033059.1003880300402282986.davem@davemloft.net>
+References: <CAD+1EGM8MAghUp_aSwFza-vBD+vY+Xs3RZX=+CNk4MynHQvQWA@mail.gmail.com>
+	<20110909.033059.1003880300402282986.davem@davemloft.net>
+Date: Fri, 9 Sep 2011 16:07:41 +0800
+Message-ID: <CAD+1EGPpecMYGxDk+qpQVzxnLN0TdriDaT8xVM-yTPEzjvzaDg@mail.gmail.com>
+Subject: Re: [Oops kernel website]Something wrong with our kernel website
+From: harryxiyou <harryxiyou@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, greg@kroah.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 08 September 2011 20:08:55 Richard Kuo wrote:
-> Added read_current_timer elsewhere.
-> 
-> udelay is based off of __vmgettime() which returns processor ticks.
-> 
-> Removed __delay and CONFIG_GENERIC_CALIBRATE_DELAY.
-> 
-> Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
+On Fri, Sep 9, 2011 at 3:30 PM, David Miller <davem@davemloft.net> wrote:
+> From: harryxiyou <harryxiyou@gmail.com>
+> Date: Fri, 9 Sep 2011 15:27:08 +0800
+>
+>> Hi all,
+>> These days, when i surfed our kernel website(kernel.org) for source codes and
+>> the git website(git.kernel.org), something wrong happened like following:
+>> "Maintenance
+>> Down for maintenance"
+>> I don't know why?
+>
+> kernel.org was compromised and has been down while forensics are being
+> run on the systems and they are being reinstalled.
+>
+> There have been many articles about this event, for example:
+>
+> http://lwn.net/Articles/457142/
+>
+I see. Thanks for your help.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+
+-- 
+Thanks.
+Best Regards.
+Harry Wei.
+Do what u like!
