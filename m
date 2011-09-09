@@ -1,52 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933015Ab1IIIsL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 04:48:11 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:36072 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932827Ab1IIIsI (ORCPT
+	id S933000Ab1IIIwg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 04:52:36 -0400
+Received: from charybdis-ext.suse.de ([195.135.221.2]:58460 "EHLO
+	nat.nue.novell.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932827Ab1IIIwf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 04:48:08 -0400
+	Fri, 9 Sep 2011 04:52:35 -0400
+X-Greylist: delayed 1200 seconds by postgrey-1.27 at vger.kernel.org; Fri, 09 Sep 2011 04:52:34 EDT
+From: Anders Johansson <ajohansson@suse.de>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] elevator use after free
+Date: Fri, 09 Sep 2011 10:32:26 +0200
+Message-ID: <2829897.yZgTmxoDjA@grindwal>
+Organization: SUSE LINUX GmbH
+User-Agent: KMail/4.7.0 (Linux/2.6.37.6-0.7-desktop; KDE/4.7.0; x86_64; ; )
 MIME-Version: 1.0
-In-Reply-To: <20110908235903.GA6370@opensource.wolfsonmicro.com>
-References: <1315503297-8365-1-git-send-email-mans.rullgard@linaro.org>
-	<CABb+yY0b607kDSGU+trycqQuvGMhC-zpHcv20wjgmEcaK7dz8Q@mail.gmail.com>
-	<CAG5Tg6UOuztenNid1=YbH9a4ZH5MqV4YhohG+r9R+7F=zXs=CQ@mail.gmail.com>
-	<3110288.bQbb0H2ME1@wuerfel>
-	<1315520956.4126.3.camel@finisterre.wolfsonmicro.main>
-	<20110908223720.GA21469@n2100.arm.linux.org.uk>
-	<20110908224731.GB5201@opensource.wolfsonmicro.com>
-	<20110908230102.GB21469@n2100.arm.linux.org.uk>
-	<20110908235903.GA6370@opensource.wolfsonmicro.com>
-Date: Fri, 9 Sep 2011 14:18:07 +0530
-Message-ID: <CAJe_Zhd=-vpQ0oZ2fU0=yjO53pcBPw=xCFCtXotb+J4HAF4dpA@mail.gmail.com>
-Subject: Re: [PATCH v2] ASoC: omap: convert per-board modules to platform drivers
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        alsa-devel@alsa-project.org, linaro-dev@lists.linaro.org,
-        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
-        Jassi Brar <jassisinghbrar@gmail.com>, linux-kernel@vger.kernel.org,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Jarkko Nikula <jhnikula@gmail.com>, linux-omap@vger.kernel.org,
-        Liam Girdwood <lrg@ti.com>, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/mixed; boundary="nextPart1872851.qoI9RvSFTJ"
+Content-Transfer-Encoding: 7Bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 September 2011 05:29, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> Jassi's suggestion was that we should have some magic to
-> automatically generate defaults for the relevant device registrations to
-> sidestep these issues.
-Perhaps there is some misunderstanding.... no witchcraft is involved here.
-To be clear, I suggested moving platform_device definition and registration
-from 12 board files to some common platform file and use machine_is_xxx()
-to assign names of those platform devices. Btw, omap_init_audio() is already
-called from an arch_initcall.
-Also please note that currently there's no platform_data needed to be passed.
-If that requirement arise in future, an optional set_asoc_platdata(void *pdata)
-could be defined beside platform_device creation.
-While the idea is not absolutely good, imho, it's certainly an improvement
-over this patch. Or am I overlooking something ?
+
+--nextPart1872851.qoI9RvSFTJ
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+
+Hi,
+
+Attached is a patch for a crash we have seen where an elevator is used after 
+it has been killed.
+
+Reply with me in cc. please, I'm not subscribed
+
+Thanks,
+
+Anders
+--nextPart1872851.qoI9RvSFTJ
+Content-Disposition: attachment; filename="elevator-dont-use-dead-elv"
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="UTF-8"; name="elevator-dont-use-dead-elv"
+
+If a device disappears, the elevator may in some cases be used
+after free, similar to 0a58e077eb600d1efd7e54ad9926a75a39d7f8ae
+
+Several crashes were seen with the trace
+
+[<ffffffff80196657>] elv_drain_elevator+0x17/0x60
+[<ffffffff80197009>] elv_insert+0x129/0x260
+[<ffffffff80198323>] blk_insert_cloned_request+0x53/0x70
+[<ffffffffa018c62f>] dm_dispatch_request+0x2f/0x60 [dm_mod]
+[<ffffffffa014c0b0>] dispatch_queued_ios+0x110/0x150 [dm_multipath]
+[<ffffffff800530b3>] run_workqueue+0xa3/0x1f0
+[<ffffffff80053296>] worker_thread+0x96/0x110
+[<ffffffff80056946>] kthread+0x96/0xa0
+[<ffffffff80007f0a>] child_rip+0xa/0x20
+
+This patch adds more tests to ensure a dead queue isn't used
+
+Signed-off-by: Anders Johansson <ajohansson@suse.com>
+
+diff -upr a/block/elevator.c b/block/elevator.c
+--- a/block/elevator.c	2011-08-24 18:44:20.000000000 +0200
++++ b/block/elevator.c	2011-09-05 15:04:08.000000000 +0200
+@@ -622,7 +622,7 @@ void elv_drain_elevator(struct request_q
+  */
+ void elv_quiesce_start(struct request_queue *q)
+ {
+-	if (!q->elevator)
++	if (!q->elevator || test_bit(QUEUE_FLAG_DEAD, &q->queue_flags))
+ 		return;
+ 
+ 	queue_flag_set(QUEUE_FLAG_ELVSWITCH, q);
+@@ -649,6 +649,9 @@ void elv_insert(struct request_qu
+ {
+ 	trace_block_rq_insert(q, rq);
+ 
++	if(test_bit(QUEUE_FLAG_DEAD, &q->queue_flags))
++		return;
++
+ 	rq->q = q;
+ 
+ 	if (rq->cmd_flags & REQ_SOFTBARRIER) {
+
+--nextPart1872851.qoI9RvSFTJ--
+
