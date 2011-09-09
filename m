@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933845Ab1IILzz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 07:55:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52427 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933622Ab1IILzy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 07:55:54 -0400
-Message-ID: <4E69FEC9.2080204@suse.cz>
-Date: Fri, 09 Sep 2011 13:55:53 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+	id S933859Ab1IIL45 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 07:56:57 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:58274 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933696Ab1IIL44 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Sep 2011 07:56:56 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: dhowells@redhat.com, agruen@kernel.org, bfields@fieldses.org,
+        akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V6 09/26] vfs: Add delete child and delete self permission flags
+In-Reply-To: <22928.1315563126@redhat.com>
+References: <1315243548-18664-10-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <22928.1315563126@redhat.com>
+User-Agent: Notmuch/0.5-318-g52e4ded (http://notmuchmail.org) Emacs/23.2.1 (x86_64-pc-linux-gnu)
+Date: Fri, 09 Sep 2011 17:25:34 +0530
+Message-ID: <87fwk63p6x.fsf@skywalker.in.ibm.com>
 MIME-Version: 1.0
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Kbuild: append missing-syscalls to the default target
- list
-References: <1314234210-11090-1-git-send-email-lacombar@gmail.com>
-In-Reply-To: <1314234210-11090-1-git-send-email-lacombar@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+x-cbid: 11090911-7282-0000-0000-0000014E8EF3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25.8.2011 03:03, Arnaud Lacombe wrote:
-> This avoid an extra make invocation on `prepare0'.
+On Fri, 09 Sep 2011 11:12:06 +0100, David Howells <dhowells@redhat.com> wrote:
+> Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com> wrote:
 > 
-> Signed-off-by: Arnaud Lacombe <lacombar@gmail.com>
-> ---
->  Kbuild   |    4 +++-
->  Makefile |    1 -
->  2 files changed, 3 insertions(+), 2 deletions(-)
+> > +	if ((error || is_sticky) && IS_RICHACL(inode) &&
+> > +	    !inode_permission(dir, mask & ~(MAY_WRITE | MAY_DELETE_CHILD)) &&
+> > +	    !inode_permission(inode, MAY_DELETE_SELF))
+> > +		error = 0;
 > 
-> diff --git a/Kbuild b/Kbuild
-> index 2114113..1a2eb32 100644
-> --- a/Kbuild
-> +++ b/Kbuild
-> @@ -88,10 +88,12 @@ $(obj)/$(offsets-file): arch/$(SRCARCH)/kernel/asm-offsets.s Kbuild
->  # 3) Check for missing system calls
->  #
->  
-> +always += missing-syscalls
-> +targets += missing-syscalls
-> +
->  quiet_cmd_syscalls = CALL    $<
->        cmd_syscalls = $(CONFIG_SHELL) $< $(CC) $(c_flags)
+> This might be easier to follow if you used == 0 rather than !.  The problem
+> with ! is that it looks like:
+> 
+> 	not_have inode_permission.
+> 
+> I guess this is just one of the fun consequences of having 0 (false) meaning
+> okay.
+> 
 
-checksyscalls.sh needs to depend on generated/asm-offsets.h, otherwise a
-parallel build will fail.
+Updated to do == 0 check
 
-Michal
+-aneesh
 
