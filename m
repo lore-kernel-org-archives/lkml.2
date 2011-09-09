@@ -1,112 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759985Ab1IIXBS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 19:01:18 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:62137 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933974Ab1IIXBQ (ORCPT
+	id S1760021Ab1IIXBm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 19:01:42 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:56931 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759931Ab1IIXBj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 19:01:16 -0400
-From: Nitin Gupta <ngupta@vflare.org>
-To: Greg KH <greg@kroah.com>
-Cc: Jerome Marchand <jmarchan@redhat.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Linux Driver Project <devel@linuxdriverproject.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 4/5] zram: Simplify zram disk resizing interface
-Date: Fri,  9 Sep 2011 19:01:03 -0400
-Message-Id: <1315609264-13632-5-git-send-email-ngupta@vflare.org>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1315609264-13632-1-git-send-email-ngupta@vflare.org>
-References: <1315609264-13632-1-git-send-email-ngupta@vflare.org>
+	Fri, 9 Sep 2011 19:01:39 -0400
+Date: Fri, 9 Sep 2011 19:00:53 -0400
+From: Thomas Tuttle <ttuttle@chromium.org>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: Tejun Heo <tj@kernel.org>
+Subject: [PATCH v2] workqueue: lock cwq access in drain_workqueue
+Message-ID: <20110909230053.GA28394@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110909152222.GA14705@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also remove unnecessary messages.
+Take cwq->gcwq->lock to avoid racing between drain_workqueue checking
+to make sure the workqueues are empty and cwq_dec_nr_in_flight
+decrementing and then incrementing nr_active when it activates a
+delayed work.
 
-Signed-off-by: Nitin Gupta <ngupta@vflare.org>
-Reviewed-by: Jerome Marchand <jmarchan@redhat.com>
+We discovered this when a corner case in one of our drivers resulted in
+us trying to destroy a workqueue in which the remaining work would
+always requeue itself again in the same workqueue.  We would hit this
+race condition and trip the BUG_ON on workqueue.c:3080.
+
+Signed-off-by: Thomas Tuttle <ttuttle@chromium.org>
 ---
- drivers/staging/zram/zram_drv.c |   42 +++++++++++---------------------------
- 1 files changed, 12 insertions(+), 30 deletions(-)
+Updated to use bool instead of int (d'oh), and CCed maintainer.
 
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index b2e29dd..b1c4abd 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -104,33 +104,16 @@ static int page_zero_filled(void *ptr)
- 	return 1;
- }
+ kernel/workqueue.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 25fb1b0..0c2e585 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -2412,8 +2412,14 @@ reflush:
  
--static void zram_set_disksize(struct zram *zram, size_t totalram_bytes)
-+static u64 zram_default_disksize_bytes(void)
- {
--	if (!zram->disksize) {
--		pr_info(
--		"disk size not provided. You can use disksize_kb module "
--		"param to specify size.\nUsing default: (%u%% of RAM).\n",
--		default_disksize_perc_ram
--		);
--		zram->disksize = default_disksize_perc_ram *
--					(totalram_bytes / 100);
--	}
--
--	if (zram->disksize > 2 * (totalram_bytes)) {
--		pr_info(
--		"There is little point creating a zram of greater than "
--		"twice the size of memory since we expect a 2:1 compression "
--		"ratio. Note that zram uses about 0.1%% of the size of "
--		"the disk when not in use so a huge zram is "
--		"wasteful.\n"
--		"\tMemory Size: %zu kB\n"
--		"\tSize you selected: %llu kB\n"
--		"Continuing anyway ...\n",
--		totalram_bytes >> 10, zram->disksize
--		);
--	}
--
--	zram->disksize &= PAGE_MASK;
-+	return ((totalram_pages << PAGE_SHIFT) *
-+		default_disksize_perc_ram / 100) & PAGE_MASK;
-+}
+ 	for_each_cwq_cpu(cpu, wq) {
+ 		struct cpu_workqueue_struct *cwq = get_cwq(cpu, wq);
++		bool cwq_flushed;
+ 
+-		if (!cwq->nr_active && list_empty(&cwq->delayed_works))
++		spin_lock_irq(&cwq->gcwq->lock);
++		cwq_flushed = !cwq->nr_active
++			      && list_empty(&cwq->delayed_works);
++		spin_unlock_irq(&cwq->gcwq->lock);
 +
-+static void zram_set_disksize(struct zram *zram, u64 size_bytes)
-+{
-+	zram->disksize = size_bytes;
-+	set_capacity(zram->disk, size_bytes >> SECTOR_SHIFT);
- }
++		if (cwq_flushed)
+ 			continue;
  
- static void zram_free_page(struct zram *zram, size_t index)
-@@ -632,7 +615,8 @@ int zram_init_device(struct zram *zram)
- 		return 0;
- 	}
- 
--	zram_set_disksize(zram, totalram_pages << PAGE_SHIFT);
-+	if (!zram->disksize)
-+		zram_set_disksize(zram, zram_default_disksize_bytes());
- 
- 	zram->compress_workmem = kzalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
- 	if (!zram->compress_workmem) {
-@@ -658,8 +642,6 @@ int zram_init_device(struct zram *zram)
- 		goto fail;
- 	}
- 
--	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
--
- 	/* zram devices sort of resembles non-rotational disks */
- 	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, zram->disk->queue);
- 
-@@ -736,7 +718,7 @@ static int create_device(struct zram *zram, int device_id)
- 	snprintf(zram->disk->disk_name, 16, "zram%d", device_id);
- 
- 	/* Actual capacity set using syfs (/sys/block/zram<id>/disksize */
--	set_capacity(zram->disk, 0);
-+	zram_set_disksize(zram, 0);
- 
- 	/*
- 	 * To ensure that we always get PAGE_SIZE aligned
+ 		if (++flush_cnt == 10 ||
 -- 
-1.7.6
-
+1.7.3.1
