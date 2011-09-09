@@ -1,180 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759891Ab1IITZk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 15:25:40 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:33475 "EHLO mx2.netapp.com"
+	id S1759912Ab1IITa1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 15:30:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64879 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759693Ab1IITZj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 15:25:39 -0400
-X-IronPort-AV: E=Sophos;i="4.68,357,1312182000"; 
-   d="scan'208";a="580388296"
-Subject: Re: [PATCH v2 3/5] SUNRPC: make RPC service dependable on rpcbind
- clients creation
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "davem@davemloft.net" <davem@davemloft.net>
-Date: Fri, 09 Sep 2011 15:25:08 -0400
-In-Reply-To: <20110909150104.5a83c60d@tlielax.poochiereds.net>
-References: <20110909115146.13697.71682.stgit@localhost6.localdomain6>
-	 <20110909120844.13697.48102.stgit@localhost6.localdomain6>
-	 <20110909100745.7e2e8bf9@corrin.poochiereds.net>
-	 <4E6A41D4.6090001@parallels.com>
-	 <1315593874.17611.19.camel@lade.trondhjem.org>
-	 <20110909150104.5a83c60d@tlielax.poochiereds.net>
-Organization: NetApp Inc
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Message-ID: <1315596308.17611.46.camel@lade.trondhjem.org>
-Mime-Version: 1.0
-X-OriginalArrivalTime: 09 Sep 2011 19:25:09.0768 (UTC) FILETIME=[305C0880:01CC6F26]
+	id S1759852Ab1IITaY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Sep 2011 15:30:24 -0400
+Date: Fri, 9 Sep 2011 15:30:08 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>,
+        Huang Ying <ying.huang@intel.com>
+Cc: ebiederm@xmission.com, mahesh@linux.vnet.ibm.com, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
+Subject: Re: [RFC][patch 1/2] kdump: Add infrastructure for unmapping
+ crashkernel memory
+Message-ID: <20110909193008.GE15748@redhat.com>
+References: <20110908132609.177038405@linux.vnet.ibm.com>
+ <20110908132652.189920773@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110908132652.189920773@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-09-09 at 15:01 -0400, Jeff Layton wrote: 
-> On Fri, 09 Sep 2011 14:44:34 -0400
-> Trond Myklebust <Trond.Myklebust@netapp.com> wrote:
+On Thu, Sep 08, 2011 at 03:26:10PM +0200, Michael Holzheu wrote:
+> From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 > 
-> > On Fri, 2011-09-09 at 20:41 +0400, Stanislav Kinsbursky wrote: 
-> > > 09.09.2011 18:07, Jeff Layton пишет:
-> > > > On Fri, 09 Sep 2011 16:08:44 +0400
-> > > > Stanislav Kinsbursky<skinsbursky@parallels.com>  wrote:
-> > > >
-> > > >> Create rcbind clients or increase rpcbind users counter during RPC service
-> > > >> creation and decrease this counter (and possibly destroy those clients) on RPC
-> > > >> service destruction.
-> > > >>
-> > > >> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
-> > > >>
-> > > >> ---
-> > > >>   include/linux/sunrpc/clnt.h |    2 ++
-> > > >>   net/sunrpc/rpcb_clnt.c      |    2 +-
-> > > >>   net/sunrpc/svc.c            |   13 +++++++++++--
-> > > >>   3 files changed, 14 insertions(+), 3 deletions(-)
-> > > >>
-> > > >> diff --git a/include/linux/sunrpc/clnt.h b/include/linux/sunrpc/clnt.h
-> > > >> index db7bcaf..65a8115 100644
-> > > >> --- a/include/linux/sunrpc/clnt.h
-> > > >> +++ b/include/linux/sunrpc/clnt.h
-> > > >> @@ -135,10 +135,12 @@ void		rpc_shutdown_client(struct rpc_clnt *);
-> > > >>   void		rpc_release_client(struct rpc_clnt *);
-> > > >>   void		rpc_task_release_client(struct rpc_task *);
-> > > >>
-> > > >> +int		rpcb_create_local(void);
-> > > >>   int		rpcb_register(u32, u32, int, unsigned short);
-> > > >>   int		rpcb_v4_register(const u32 program, const u32 version,
-> > > >>   				 const struct sockaddr *address,
-> > > >>   				 const char *netid);
-> > > >> +void		rpcb_put_local(void);
-> > > >>   void		rpcb_getport_async(struct rpc_task *);
-> > > >>
-> > > >>   void		rpc_call_start(struct rpc_task *);
-> > > >> diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
-> > > >> index b4cc0f1..437ec60 100644
-> > > >> --- a/net/sunrpc/rpcb_clnt.c
-> > > >> +++ b/net/sunrpc/rpcb_clnt.c
-> > > >> @@ -318,7 +318,7 @@ out:
-> > > >>    * Returns zero on success, otherwise a negative errno value
-> > > >>    * is returned.
-> > > >>    */
-> > > >> -static int rpcb_create_local(void)
-> > > >> +int rpcb_create_local(void)
-> > > >>   {
-> > > >>   	static DEFINE_MUTEX(rpcb_create_local_mutex);
-> > > >>   	int result = 0;
-> > > >> diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
-> > > >> index 6a69a11..9095c0e 100644
-> > > >> --- a/net/sunrpc/svc.c
-> > > >> +++ b/net/sunrpc/svc.c
-> > > >> @@ -367,8 +367,11 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
-> > > >>   	unsigned int xdrsize;
-> > > >>   	unsigned int i;
-> > > >>
-> > > >> -	if (!(serv = kzalloc(sizeof(*serv), GFP_KERNEL)))
-> > > >> +	if (rpcb_create_local()<  0)
-> > > >>   		return NULL;
-> > > >> +
-> > > >> +	if (!(serv = kzalloc(sizeof(*serv), GFP_KERNEL)))
-> > > >> +		goto out_err;
-> > > >>   	serv->sv_name      = prog->pg_name;
-> > > >>   	serv->sv_program   = prog;
-> > > >>   	serv->sv_nrthreads = 1;
-> > > >> @@ -403,7 +406,7 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
-> > > >>   			GFP_KERNEL);
-> > > >>   	if (!serv->sv_pools) {
-> > > >>   		kfree(serv);
-> > > >> -		return NULL;
-> > > >> +		goto out_err;
-> > > >>   	}
-> > > >>
-> > > >>   	for (i = 0; i<  serv->sv_nrpools; i++) {
-> > > >> @@ -423,6 +426,10 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
-> > > >>   	svc_unregister(serv);
-> > > >>
-> > > >>   	return serv;
-> > > >> +
-> > > >> +out_err:
-> > > >> +	rpcb_put_local();
-> > > >> +	return NULL;
-> > > >>   }
-> > > >>
-> > > >>   struct svc_serv *
-> > > >> @@ -491,6 +498,8 @@ svc_destroy(struct svc_serv *serv)
-> > > >>   	svc_unregister(serv);
-> > > >>   	kfree(serv->sv_pools);
-> > > >>   	kfree(serv);
-> > > >> +
-> > > >> +	rpcb_put_local();
-> > > >>   }
-> > > >>   EXPORT_SYMBOL_GPL(svc_destroy);
-> > > >>
-> > > >>
-> > > >
-> > > > I don't get it -- what's the advantage of creating rpcbind clients in
-> > > > __svc_create vs. the old way of creating them just before we plan to
-> > > > use them?
-> > > >
-> > > 
-> > > The main problem here is not in creation, but in destroying those clients.
-> > > Now rpcbind clients are created during rpcb_register(). I.e. once per every family, program version and so on.
-> > > But can be unregistered for all protocol families by one call. So it's impossible to put reference counting for those clients in the place, where they are created now.
-> > 
-> > Could we perhaps set up a 'struct pernet_operations' to create a
-> > destructor for them?
-> > 
+> This patch introduces a mechanism that allows architecture backends to
+> remove page tables for the crashkernel memory. This can protect the loaded
+> kdump kernel from being overwritten by broken kernel code.
+> A new function crash_map_pages() is added that can be implemented by
+> architecture code. This function has the following syntax:
 > 
-> An even easier idea might be to just not take a reference to the
-> rpcbind client for svc_programs that have vs_hidden set on every
-> version.
+> void crash_map_pages(int enable);
 
-Isn't the problem that Stanislav is trying to solve that we need to be
-able to register and unregister RPC services to the correct rpcbind
-server, depending on which net namespace we are in?
+CCing Huang Ying. I am not sure if preserve context thing will be impacted
+by this in anyway.
 
-My understanding is that the current code will register everything to
-whatever rpcbind server is running in the init net namespace because
-that's what rpcb_create_local() uses.
+Hyuang,
 
-My suggestion is to use a struct pernet_operations to detect when a net
-namespace is being created or destroyed, so that the rpcbind client code
-knows when to create or destroy a connection to the server that is
-running in that namespace.
+While I am looking at x86 code, I had a question. gitblame tells you
+changed that code last, so here I go.
 
-Cheers
-  Trond
--- 
-Trond Myklebust
-Linux NFS client maintainer
+What is init_transition_pgtable() and why do we need it. I see that 
+init_pgtable() sets up identity mapped page table from 0 to max_pfn.
+Code running in control page (identity_mapped onwards) will make use
+of identity mapped page tables. Then I see that init_transition_pgtable()
+goes ahead and seems to be modifying identity mapped page tables to
+map address relocate_kernel to control code physical address. Why
+do we have to do that?
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+Thanks
+Vivek
 
+> 
+> "enable" can be 0 for removing or 1 for adding page tables.  The function is
+> called before and after the crashkernel segments are loaded. It is also
+> called in crash_shrink_memory() to create new page tables when the
+> crashkernel memory size is reduced.
+> 
+> To support architectures that have large pages this patch also introduces
+> a new define KEXEC_CRASH_MEM_ALIGN. The crashkernel start and size must 
+> always be aligned with KEXEC_CRASH_MEM_ALIGN.
+> 
+> Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+> ---
+>  include/linux/kexec.h |    5 +++++
+>  kernel/kexec.c        |   16 ++++++++++++++--
+>  2 files changed, 19 insertions(+), 2 deletions(-)
+> 
+> --- a/include/linux/kexec.h
+> +++ b/include/linux/kexec.h
+> @@ -37,6 +37,10 @@
+>  #define KEXEC_CRASH_CONTROL_MEMORY_LIMIT KEXEC_CONTROL_MEMORY_LIMIT
+>  #endif
+>  
+> +#ifndef KEXEC_CRASH_MEM_ALIGN
+> +#define KEXEC_CRASH_MEM_ALIGN PAGE_SIZE
+> +#endif
+> +
+>  #define KEXEC_NOTE_HEAD_BYTES ALIGN(sizeof(struct elf_note), 4)
+>  #define KEXEC_CORE_NOTE_NAME "CORE"
+>  #define KEXEC_CORE_NOTE_NAME_BYTES ALIGN(sizeof(KEXEC_CORE_NOTE_NAME), 4)
+> @@ -133,6 +137,7 @@ extern void crash_kexec(struct pt_regs *
+>  int kexec_should_crash(struct task_struct *);
+>  void crash_save_cpu(struct pt_regs *regs, int cpu);
+>  void crash_save_vmcoreinfo(void);
+> +void crash_map_pages(int enable);
+>  void arch_crash_save_vmcoreinfo(void);
+>  void vmcoreinfo_append_str(const char *fmt, ...)
+>  	__attribute__ ((format (printf, 1, 2)));
+> --- a/kernel/kexec.c
+> +++ b/kernel/kexec.c
+> @@ -999,6 +999,7 @@ SYSCALL_DEFINE4(kexec_load, unsigned lon
+>  			kimage_free(xchg(&kexec_crash_image, NULL));
+>  			result = kimage_crash_alloc(&image, entry,
+>  						     nr_segments, segments);
+> +			crash_map_pages(1);
+>  		}
+>  		if (result)
+>  			goto out;
+> @@ -1015,6 +1016,8 @@ SYSCALL_DEFINE4(kexec_load, unsigned lon
+>  				goto out;
+>  		}
+>  		kimage_terminate(image);
+> +		if (flags & KEXEC_ON_CRASH)
+> +			crash_map_pages(0);
+>  	}
+>  	/* Install the new kernel, and  Uninstall the old */
+>  	image = xchg(dest_image, image);
+> @@ -1026,6 +1029,13 @@ out:
+>  	return result;
+>  }
+>  
+> +/*
+> + * provide an empty default implementation here -- architecture
+> + * code may override this
+> + */
+> +void __weak crash_map_pages(int enable)
+> +{}
+> +
+>  #ifdef CONFIG_COMPAT
+>  asmlinkage long compat_sys_kexec_load(unsigned long entry,
+>  				unsigned long nr_segments,
+> @@ -1134,14 +1144,16 @@ int crash_shrink_memory(unsigned long ne
+>  		goto unlock;
+>  	}
+>  
+> -	start = roundup(start, PAGE_SIZE);
+> -	end = roundup(start + new_size, PAGE_SIZE);
+> +	start = roundup(start, KEXEC_CRASH_MEM_ALIGN);
+> +	end = roundup(start + new_size, KEXEC_CRASH_MEM_ALIGN);
+>  
+> +	crash_map_pages(1);
+>  	crash_free_reserved_phys_range(end, crashk_res.end);
+>  
+>  	if ((start == end) && (crashk_res.parent != NULL))
+>  		release_resource(&crashk_res);
+>  	crashk_res.end = end - 1;
+> +	crash_map_pages(0);
+>  
+>  unlock:
+>  	mutex_unlock(&kexec_mutex);
