@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933976Ab1IIVSU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 17:18:20 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:24978 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758767Ab1IIVST (ORCPT
+	id S933987Ab1IIVV4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 17:21:56 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:30700 "EHLO
+	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933668Ab1IIVVz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 17:18:19 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6464"; a="117203664"
-Date: Fri, 9 Sep 2011 16:18:08 -0500
-From: "Linas Vepstas (Code Aurora)" <linas@codeaurora.org>
-To: Jonas Bonn <jonas.bonn@gmail.com>
-Cc: Richard Kuo <rkuo@codeaurora.org>, linux-arch@vger.kernel.org,
-        linux-hexagon@vger.kernel.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de
-Subject: Re: [patch v3 19/36] Hexagon: Add ptrace support
-Message-ID: <20110909211808.GA3150@codeaurora.org>
-References: <20110909010847.294039464@codeaurora.org>
- <20110909010916.525482401@codeaurora.org>
- <CACM3HyGvJQABO3Hi6e+yH+Xoi+S+fctGrH3w4Jm7=zqtnPTXTQ@mail.gmail.com>
+	Fri, 9 Sep 2011 17:21:55 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-10.tower-160.messagelabs.com!1315600120!34068741!427
+X-Originating-IP: [216.166.12.180]
+X-StarScan-Version: 6.3.6; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] e820.c: quiet sparse noise about plain integer as NULL pointer
+Date: Fri, 9 Sep 2011 14:20:52 -0700
+User-Agent: KMail/1.9.9
+CC: <x86@kernel.org>, <tglx@linutronix.de>, <mingo@redhat.com>,
+        <hpa@zytor.com>, <akpm@linux-foundation.org>, <kamal@canonical.com>,
+        <paul.gortmaker@windriver.com>, <mditto@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <CACM3HyGvJQABO3Hi6e+yH+Xoi+S+fctGrH3w4Jm7=zqtnPTXTQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Message-ID: <201109091420.52593.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 09, 2011 at 10:15:20PM +0200, Jonas Bonn wrote:
-> 
-> That said, I don't think gdbserver has been updated to use
-> GETREGSET/SETREGSET.  This is a bit like the uClibc/glibc issue,
+The last parameter to sort() is a pointer to the function used to swap
+items.  This parameter should be NULL, not 0, when not used.  This quiets
+the following sparse warning:
 
-Some dumb questions then: I notice that a few arches declare
-struct user_regs_struct in glibc, most of the others in the
-kernel.  If I were to make pt_regs completely kernel-private,
-then I really do need to have struct user_regs_struct declared
-the kernel headers, right? 
+warning: Using plain integer as NULL pointer
 
-Putting a printk into case PTRACE_POKEUSR seemed to show that
-gdb was using this (and was somehow mis-numbering the registers
-... sigh.) Are you saying that the default should handle this?
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Kamal Mostafa <kamal@canonical.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Mike Ditto <mditto@google.com>
 
---linas
+---
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+index f655f80..d6bd853 100644
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -296,7 +296,7 @@ int __init sanitize_e820_map(struct e820entry *biosmap, int max_nr_map,
+ 	chg_nr = chgidx;
+ 
+ 	/* sort change-point list by memory addresses (low -> high) */
+-	sort(change_point, chg_nr, sizeof *change_point, cpcompare, 0);
++	sort(change_point, chg_nr, sizeof *change_point, cpcompare, NULL);
+ 
+ 	/* create a new bios memory map, removing overlaps */
+ 	overlap_entries = 0;	 /* number of entries in the overlap table */
