@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759607Ab1IIS0t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 14:26:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57609 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752387Ab1IIS0r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 14:26:47 -0400
-Date: Fri, 9 Sep 2011 09:28:13 -0700
-From: Greg KH <gregkh@suse.de>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-Cc: Donggeun Kim <dg77.kim@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, akpm@linux-foundation.org, jic23@cam.ac.kr,
-        kyungmin.park@samsung.com
-Subject: Re: [PATCH v2] misc: Add driver for GP2AP002 proximity/ambient light
- sensor
-Message-ID: <20110909162813.GA28470@suse.de>
-References: <1315556546-7445-1-git-send-email-dg77.kim@samsung.com>
- <20110909083134.GA21835@suse.de>
- <4E69D968.2020100@cam.ac.uk>
+	id S1759637Ab1IIS1o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 14:27:44 -0400
+Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:57504 "EHLO
+	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759547Ab1IIS1n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Sep 2011 14:27:43 -0400
+From: Kevin Hilman <khilman@ti.com>
+To: Keshava Munegowda <keshava_mgowda@ti.com>
+Cc: <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <balbi@ti.com>, <gadiyar@ti.com>,
+        <sameo@linux.intel.com>, <parthab@india.ti.com>, <tony@atomide.com>,
+        <b-cousson@ti.com>, <paul@pwsan.com>, <johnstul@us.ibm.com>,
+        <vishwanath.bs@ti.com>, Kishon Vijay Abraham <kishon@ti.com>
+Subject: Re: [PATCH 1/2] arm: omap: usb: enable I/O wakeups of ehci and ohci hwmods of omap4
+Organization: Texas Instruments, Inc.
+References: <1315579967-24945-1-git-send-email-keshava_mgowda@ti.com>
+	<1315579967-24945-2-git-send-email-keshava_mgowda@ti.com>
+Date: Fri, 09 Sep 2011 11:27:37 -0700
+In-Reply-To: <1315579967-24945-2-git-send-email-keshava_mgowda@ti.com>
+	(Keshava Munegowda's message of "Fri, 9 Sep 2011 20:22:46 +0530")
+Message-ID: <87mxedwoyu.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E69D968.2020100@cam.ac.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 09, 2011 at 10:16:24AM +0100, Jonathan Cameron wrote:
-> On 09/09/11 09:31, Greg KH wrote:
-> > On Fri, Sep 09, 2011 at 05:22:26PM +0900, Donggeun Kim wrote:
-> >> SHARP GP2AP002 is proximity and ambient light sensor.
-> >> This patch supports it.
-> >>
-> >> Signed-off-by: Donggeun Kim <dg77.kim@samsung.com>
-> >> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> >> ---
-> >> Changes for v2
-> >>   - changed to expose lux
-> >>   - changed request_irq to request_threaded_irq function
-> >>   - added sysfs_notify function call
-> > 
-> > Why?  You should never do that unless you _really_ know what you are
-> > doing.
-> My bad.  I suggested it was a better bet than doing a uevent to act
-> as a data ready notifier...
-> 
-> Greg, for future reference can you clarify why it's a bad idea or
-> give a reference (if it's been clarified elsewhere and I missed it!)
+Keshava Munegowda <keshava_mgowda@ti.com> writes:
 
-uevents are not for general "this sensor changed" type events.  They are
-for "large" events like "your laptop got docked, your disk got removed,
-etc."
+> From: Kishon Vijay Abraham <kishon@ti.com>
+>
+> For ehci and ohci hwmods, the omap4 I/O wakeup capablity is enabled.
+> for ehci in phy mode,
+> 	- the DAT0 and DIR I/O pad is set as wakeup capable
+> for ohci in serial mode
+> 	- usbb*_mm_rxdp is set as I/O wakeup for 6 pin serial mode
+> 	- usbb*_mm_rxrcv is set as I/O wakeup for 4 pin serial mode
+> 	- usbb*_mm_txen is set as I/O wakeup for 3 pin serial mode
+> 	- usbb*_mm_txdat is set as I/O wakeup for 2 pin serial mode
+>
+> Signed-off-by: Kishon Vijay Abraham <kishon@ti.com>
+> Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
 
-They can be very "heavy" so don't use them lightly,
+What if the end user doesn't want this device to be a wakeup source?
 
-greg k-h
+Currently, the IO pad wakeup for these pins is enabled unconditionally.
+While having it enabled as a wakeup source by default is fine, it should
+not generate wakeups if the user has disable them by doing:
+
+    $ echo disabled > /sys/devices/.../power/wakeup
+
+IOW, whether wakeups are enabled or not should depend on the driver
+checking device_may_wakeup()
+
+Kevin
