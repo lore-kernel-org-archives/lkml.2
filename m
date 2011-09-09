@@ -1,89 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933045Ab1IISnk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 14:43:40 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:49670 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759438Ab1IISnj convert rfc822-to-8bit (ORCPT
+	id S933309Ab1IISop (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 14:44:45 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:22306 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933104Ab1IISon convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 14:43:39 -0400
-MIME-Version: 1.0
-X-Originating-IP: [75.247.211.172]
-In-Reply-To: <20110909173455.GH2435@linux.vnet.ibm.com>
-References: <20110906180015.GA2560@linux.vnet.ibm.com>
-	<1315332049-2604-48-git-send-email-paulmck@linux.vnet.ibm.com>
-	<CAOesGMi--W6TCUMZzF07-Zep9Ta3tBJWZcG+5imEK_Hza0y9Jg@mail.gmail.com>
-	<20110909173455.GH2435@linux.vnet.ibm.com>
-Date: Fri, 9 Sep 2011 11:43:38 -0700
-Message-ID: <CAOesGMj4WssrZQEWs09F45s16Bxv7F1q6Qv_4FZG3+rW2sddNg@mail.gmail.com>
-Subject: Re: [PATCH tip/core/rcu 48/55] powerpc: strengthen
- value-returning-atomics memory barriers
-From: Olof Johansson <olof@lixom.net>
-To: paulmck@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, patches@linaro.org, anton@samba.org,
-        benh@kernel.crashing.org, paulus@samba.org, linuxppc-dev@ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 9 Sep 2011 14:44:43 -0400
+X-IronPort-AV: E=Sophos;i="4.68,357,1312182000"; 
+   d="scan'208";a="580375071"
+Subject: Re: [PATCH v2 3/5] SUNRPC: make RPC service dependable on rpcbind
+ clients creation
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: Jeff Layton <jlayton@redhat.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "davem@davemloft.net" <davem@davemloft.net>
+Date: Fri, 09 Sep 2011 14:44:34 -0400
+In-Reply-To: <4E6A41D4.6090001@parallels.com>
+References: <20110909115146.13697.71682.stgit@localhost6.localdomain6>
+		<20110909120844.13697.48102.stgit@localhost6.localdomain6>
+	 <20110909100745.7e2e8bf9@corrin.poochiereds.net>
+	 <4E6A41D4.6090001@parallels.com>
+Organization: NetApp Inc
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Message-ID: <1315593874.17611.19.camel@lade.trondhjem.org>
+Mime-Version: 1.0
+X-OriginalArrivalTime: 09 Sep 2011 18:44:39.0740 (UTC) FILETIME=[87F32FC0:01CC6F20]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 9, 2011 at 10:34 AM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Fri, Sep 09, 2011 at 10:23:33AM -0700, Olof Johansson wrote:
->> [+linuxppc-dev]
->>
->> On Tue, Sep 6, 2011 at 11:00 AM, Paul E. McKenney
->> <paulmck@linux.vnet.ibm.com> wrote:
->> > The trailing isync/lwsync in PowerPC value-returning atomics needs
->> > to be a sync in order to provide the required ordering properties.
->> > The leading lwsync/eieio can remain, as the remainder of the required
->> > ordering guarantees are provided by the atomic instructions: Any
->> > reordering will cause the stwcx to fail, which will result in a retry.
->>
->> Admittedly, my powerpc barrier memory is starting to fade, but isn't
->> isync sufficient here? It will make sure all instructions before it
->> have retired, and will restart any speculative/issued instructions
->> beyond it.
->>
->> lwsync not being sufficient makes sense since a load can overtake it.
->
-> As I understand it, although isync waits for the prior stwcx to execute,
-> it does not guarantee that the corresponding store is visible to all
-> processors before any following loads.
+On Fri, 2011-09-09 at 20:41 +0400, Stanislav Kinsbursky wrote: 
+> 09.09.2011 18:07, Jeff Layton Ð¿Ð¸ÑˆÐµÑ‚:
+> > On Fri, 09 Sep 2011 16:08:44 +0400
+> > Stanislav Kinsbursky<skinsbursky@parallels.com>  wrote:
+> >
+> >> Create rcbind clients or increase rpcbind users counter during RPC service
+> >> creation and decrease this counter (and possibly destroy those clients) on RPC
+> >> service destruction.
+> >>
+> >> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
+> >>
+> >> ---
+> >>   include/linux/sunrpc/clnt.h |    2 ++
+> >>   net/sunrpc/rpcb_clnt.c      |    2 +-
+> >>   net/sunrpc/svc.c            |   13 +++++++++++--
+> >>   3 files changed, 14 insertions(+), 3 deletions(-)
+> >>
+> >> diff --git a/include/linux/sunrpc/clnt.h b/include/linux/sunrpc/clnt.h
+> >> index db7bcaf..65a8115 100644
+> >> --- a/include/linux/sunrpc/clnt.h
+> >> +++ b/include/linux/sunrpc/clnt.h
+> >> @@ -135,10 +135,12 @@ void		rpc_shutdown_client(struct rpc_clnt *);
+> >>   void		rpc_release_client(struct rpc_clnt *);
+> >>   void		rpc_task_release_client(struct rpc_task *);
+> >>
+> >> +int		rpcb_create_local(void);
+> >>   int		rpcb_register(u32, u32, int, unsigned short);
+> >>   int		rpcb_v4_register(const u32 program, const u32 version,
+> >>   				 const struct sockaddr *address,
+> >>   				 const char *netid);
+> >> +void		rpcb_put_local(void);
+> >>   void		rpcb_getport_async(struct rpc_task *);
+> >>
+> >>   void		rpc_call_start(struct rpc_task *);
+> >> diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
+> >> index b4cc0f1..437ec60 100644
+> >> --- a/net/sunrpc/rpcb_clnt.c
+> >> +++ b/net/sunrpc/rpcb_clnt.c
+> >> @@ -318,7 +318,7 @@ out:
+> >>    * Returns zero on success, otherwise a negative errno value
+> >>    * is returned.
+> >>    */
+> >> -static int rpcb_create_local(void)
+> >> +int rpcb_create_local(void)
+> >>   {
+> >>   	static DEFINE_MUTEX(rpcb_create_local_mutex);
+> >>   	int result = 0;
+> >> diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
+> >> index 6a69a11..9095c0e 100644
+> >> --- a/net/sunrpc/svc.c
+> >> +++ b/net/sunrpc/svc.c
+> >> @@ -367,8 +367,11 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
+> >>   	unsigned int xdrsize;
+> >>   	unsigned int i;
+> >>
+> >> -	if (!(serv = kzalloc(sizeof(*serv), GFP_KERNEL)))
+> >> +	if (rpcb_create_local()<  0)
+> >>   		return NULL;
+> >> +
+> >> +	if (!(serv = kzalloc(sizeof(*serv), GFP_KERNEL)))
+> >> +		goto out_err;
+> >>   	serv->sv_name      = prog->pg_name;
+> >>   	serv->sv_program   = prog;
+> >>   	serv->sv_nrthreads = 1;
+> >> @@ -403,7 +406,7 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
+> >>   			GFP_KERNEL);
+> >>   	if (!serv->sv_pools) {
+> >>   		kfree(serv);
+> >> -		return NULL;
+> >> +		goto out_err;
+> >>   	}
+> >>
+> >>   	for (i = 0; i<  serv->sv_nrpools; i++) {
+> >> @@ -423,6 +426,10 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
+> >>   	svc_unregister(serv);
+> >>
+> >>   	return serv;
+> >> +
+> >> +out_err:
+> >> +	rpcb_put_local();
+> >> +	return NULL;
+> >>   }
+> >>
+> >>   struct svc_serv *
+> >> @@ -491,6 +498,8 @@ svc_destroy(struct svc_serv *serv)
+> >>   	svc_unregister(serv);
+> >>   	kfree(serv->sv_pools);
+> >>   	kfree(serv);
+> >> +
+> >> +	rpcb_put_local();
+> >>   }
+> >>   EXPORT_SYMBOL_GPL(svc_destroy);
+> >>
+> >>
+> >
+> > I don't get it -- what's the advantage of creating rpcbind clients in
+> > __svc_create vs. the old way of creating them just before we plan to
+> > use them?
+> >
+> 
+> The main problem here is not in creation, but in destroying those clients.
+> Now rpcbind clients are created during rpcb_register(). I.e. once per every family, program version and so on.
+> But can be unregistered for all protocol families by one call. So it's impossible to put reference counting for those clients in the place, where they are created now.
 
-Ah yes, combined with brushing up on the semantics in
-memory-barriers.txt, this sounds reasonable to me.
+Could we perhaps set up a 'struct pernet_operations' to create a
+destructor for them?
 
->> > diff --git a/arch/powerpc/include/asm/synch.h b/arch/powerpc/include/asm/synch.h
->> > index d7cab44..4d97fbe 100644
->> > --- a/arch/powerpc/include/asm/synch.h
->> > +++ b/arch/powerpc/include/asm/synch.h
->> > @@ -37,11 +37,7 @@ static inline void isync(void)
->> >  #endif
->> >
->> >  #ifdef CONFIG_SMP
->> > -#define __PPC_ACQUIRE_BARRIER                          \
->> > -       START_LWSYNC_SECTION(97);                       \
->> > -       isync;                                          \
->> > -       MAKE_LWSYNC_SECTION_ENTRY(97, __lwsync_fixup);
->> > -#define PPC_ACQUIRE_BARRIER    "\n" stringify_in_c(__PPC_ACQUIRE_BARRIER)
->> > +#define PPC_ACQUIRE_BARRIER    "\n" stringify_in_c(sync;)
->>
->> This can just be done as "\n\tsync\n" instead of the stringify stuff.
->
-> That does sound a bit more straightforward, now that you mention it.  ;-)
+Cheers
+  Trond
 
-With that change, I'm:
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-Acked-by: Olof Johansson <olof@lixom.net>
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
-But at least Ben or Anton should sign off on it too.
-
-
--Olof
