@@ -1,55 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757003Ab1IIA3U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 20:29:20 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:52155 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756771Ab1IIA3S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 20:29:18 -0400
-Date: Thu, 8 Sep 2011 19:29:16 -0500
-From: Jack Steiner <steiner@sgi.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH] UV2 - Bug fix for GRU global addresses
-Message-ID: <20110909002916.GC11894@sgi.com>
-References: <20110908182413.GA10782@sgi.com> <20110908165139.caa9ddef.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110908165139.caa9ddef.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1757055Ab1IIA3l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 20:29:41 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:55338 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756771Ab1IIA3j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 20:29:39 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 9 Sep 2011 09:28:53 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Johannes Weiner <jweiner@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ying Han <yinghan@google.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <bsingharora@gmail.com>, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm: memcg: close race between charge and putback
+Message-Id: <20110909092853.7aac8544.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110908095349.GC1316@redhat.com>
+References: <1315467622-9520-1-git-send-email-jweiner@redhat.com>
+	<20110908173042.4a6f8ac0.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110908085404.GA1316@redhat.com>
+	<20110908181901.1d488d73.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110908093316.GB1316@redhat.com>
+	<20110908184221.feb2dab6.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110908095349.GC1316@redhat.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 08, 2011 at 04:51:39PM -0700, Andrew Morton wrote:
-> (cc x86 maintainers)
-> 
-> On Thu, 8 Sep 2011 13:24:13 -0500
-> Jack Steiner <steiner@sgi.com> wrote:
-> 
-> > This patch is a workaround for a UV2 hub bug that affects the format
-> > of system global addresses.
-> > 
-> > The GRU API for UV2 was inadvertently broken by a hardware change. The
-> > format of the physical address used for TLB dropins and for addresses used
-> > with instructions running in unmapped mode has changed. This change was not
-> > documented and became apparent only when diags failed running on system simulators.
-> > 
-> > For UV1, TLB and GRU instruction physical addresses are identical to socket
-> > physical addresses (although high NASID bits must be OR'ed into the
-> > address).
-> > 
-> > For UV2, socket physical addresses need to be converted. The NODE portion of
-> > the physical address needs to be shifted so that the low bit is in bit 39 or
-> > bit 40, depending on an MMR value.
-> > 
-> > It is not yet clear if this bug will be fixed in a silicon respin. If it
-> > is fixed, the hub revision will be incremented & the workaround disabled.
-> 
-> It's unclear to me whether this patch should be merged into 3.1 and/or
-> into 3.0.x and earlier?
+On Thu, 8 Sep 2011 11:53:49 +0200
+Johannes Weiner <jweiner@redhat.com> wrote:
 
-3.1 is fine. I can push directly to the distros.
+> On Thu, Sep 08, 2011 at 06:42:21PM +0900, KAMEZAWA Hiroyuki wrote:
+> > On Thu, 8 Sep 2011 11:33:16 +0200
+> > Johannes Weiner <jweiner@redhat.com> wrote:
+> > 
+> > > On Thu, Sep 08, 2011 at 06:19:01PM +0900, KAMEZAWA Hiroyuki wrote:
+> > > > On Thu, 8 Sep 2011 10:54:04 +0200
+> > > > Johannes Weiner <jweiner@redhat.com> wrote:
+> > > > 
+> > > > > On Thu, Sep 08, 2011 at 05:30:42PM +0900, KAMEZAWA Hiroyuki wrote:
+> > > > > > On Thu,  8 Sep 2011 09:40:22 +0200
+> > > > > > Johannes Weiner <jweiner@redhat.com> wrote:
+> > > > > > 
+> > > > > > > There is a potential race between a thread charging a page and another
+> > > > > > > thread putting it back to the LRU list:
+> > > > > > > 
+> > > > > > > charge:                         putback:
+> > > > > > > SetPageCgroupUsed               SetPageLRU
+> > > > > > > PageLRU && add to memcg LRU     PageCgroupUsed && add to memcg LRU
+> > > > > > > 
+> > > > > > 
+> > > > > > I assumed that all pages are charged before added to LRU.
+> > > > > > (i.e. event happens in charge->lru_lock->putback order.)
+> > > > > > 
+> > > > > > But hmm, this assumption may be bad for maintainance.
+> > > > > > Do you find a code which adds pages to LRU before charge ?
+> > > > > > 
+> > > > > > Hmm, if there are codes which recharge the page to other memcg,
+> > > > > > it will cause bug and my assumption may be harmful.
+> > > > > 
+> > > > > Swap slots are read optimistically into swapcache and put to the LRU,
+> > > > > then charged upon fault.  
+> > > > 
+> > > > Yes, then swap charge removes page from LRU before charge.
+> > > > IIUC, it needed to do so because page->mem_cgroup may be replaced.
+> > > 
+> > > But only from the memcg LRU.  It's still on the global per-zone LRU,
+> > > so reclaim could isolate/putback it during the charge.  And then
+> > > 
+> > > > > > > charge:                         putback:
+> > > > > > > SetPageCgroupUsed               SetPageLRU
+> > > > > > > PageLRU && add to memcg LRU     PageCgroupUsed && add to memcg LRU
+> > > 
+> > > applies.
+> > 
+> > Hmm, in this case, I thought memcg puts back the page to its LRU by itself
+> > under lru_loc after charge and the race was hidden.
+> 
+> But it locklessly checks PageLRU and bails if it's cleared and that is
 
---- jack
+I think PageLRU check is done under zone->lru_lock. 
+
+> the problem: it's not guaranteed that PageLRU is observed on the
+> charging CPU when the putback side bailed because of PageCgroupUsed.
+> 
+zone->lru_lock is no help ?
+
+> My barrier puts this in order and makes sure one of the two succeeds.
+> 
+Thanks,
+-Kame
+
