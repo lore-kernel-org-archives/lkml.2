@@ -1,74 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932332Ab1IIBiM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 21:38:12 -0400
-Received: from ozlabs.org ([203.10.76.45]:35492 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757661Ab1IIBiK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 21:38:10 -0400
-From: Michael Neuling <michael.neuling@au1.ibm.com>
-To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH] perf events, powerpc: Add POWER7 stalled-cycles-frontend/backend events
-In-reply-to: <4E5C6A7D.2010909@linux.vnet.ibm.com>
-References: <4E5C6A7D.2010909@linux.vnet.ibm.com>
-Comments: In-reply-to Anshuman Khandual <khandual@linux.vnet.ibm.com>
-   message dated "Tue, 30 Aug 2011 10:13:41 +0530."
-X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.2.1
-Date: Fri, 09 Sep 2011 11:38:09 +1000
-Message-ID: <25545.1315532289@neuling.org>
+	id S932421Ab1IIBi3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 21:38:29 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:53038 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758115Ab1IIBi0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 21:38:26 -0400
+Date: Fri, 9 Sep 2011 09:38:18 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Subject: Re: [PATCH 61/62] Documentation: irq: Change documents related to
+ IRQF_DISABLED
+Message-ID: <20110909013818.GC18249@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <1315383059-3673-1-git-send-email-yong.zhang0@gmail.com>
+ <1315383059-3673-62-git-send-email-yong.zhang0@gmail.com>
+ <4E6935D9.1040104@xenotime.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4E6935D9.1040104@xenotime.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> perf events, powerpc: Add POWER7 stalled-cycles-frontend/backend events
+On Thu, Sep 08, 2011 at 02:38:33PM -0700, Randy Dunlap wrote:
+> On 09/07/11 01:10, Yong Zhang wrote:
+> > IRQF_DISABLED is a NOOP now, place where suggest to use this
+> > flag also doesn't make sense anymore.
+> > 
+> > Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+> > ---
+> >  Documentation/PCI/MSI-HOWTO.txt  |   21 ---------------------
+> >  Documentation/scsi/ncr53c8xx.txt |    4 +++-
+> >  Documentation/scsi/tmscsim.txt   |    4 ++--
+> >  3 files changed, 5 insertions(+), 24 deletions(-)
 > 
-> 	Extent the POWER7 PMU driver with definitions
-> 	for generic front-end and back-end stall events.
+> > diff --git a/Documentation/scsi/ncr53c8xx.txt b/Documentation/scsi/ncr53c8xx.txt
+> > index cda5f8f..654b34c 100644
+> > --- a/Documentation/scsi/ncr53c8xx.txt
+> > +++ b/Documentation/scsi/ncr53c8xx.txt
+> > @@ -786,7 +786,9 @@ port address 0x1400.
+> >          irqm:1     same as initial settings (assumed BIOS settings)
+> >          irqm:2     always totem pole
+> >          irqm:0x10  driver will not use IRQF_SHARED flag when requesting irq
+> > -        irqm:0x20  driver will not use IRQF_DISABLED flag when requesting irq
+> > +        irqm:0x20  driver will not use IRQF_DISABLED(Does not make sense
+> > +		   anymore since genirq will keep irq disabled and the flag
+> 
+>                              will not use IRQF_DISABLED (does not make sense
+>                    any more
 
-Anshuman,
-
-Can you explain what these P7 events actually are and how they relate to
-Ingo's original comment on this in
-8f62242246351b5a4bc0c1f00c0c7003edea128a
-
-    Both events limit performance: most front end stalls tend to be
-    caused by branch misprediction or instruction fetch cachemisses,
-    backend stalls can be caused by various resource shortages or
-    inefficient instruction scheduling.
+Updated.
 
 > 
-> Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-> 
-> diff --git a/arch/powerpc/kernel/power7-pmu.c b/arch/powerpc/kernel/power7-pmu.c
-> index 593740f..e5d2844 100644
-> --- a/arch/powerpc/kernel/power7-pmu.c
-> +++ b/arch/powerpc/kernel/power7-pmu.c
-> @@ -297,6 +297,8 @@ static void power7_disable_pmc(unsigned int pmc, unsigned long mmcr[])
->  
->  static int power7_generic_events[] = {
->  	[PERF_COUNT_HW_CPU_CYCLES] = 0x1e,
-> +	[PERF_COUNT_HW_STALLED_CYCLES_FRONTEND] = 0x100f8, /* GCT_NOSLOT_CYC */
+> > +		   is dead from linux-2.6.36) flag when requesting irq
 
-eg. Is this Global Completion Table (GCT) empty?
+			Ah, should be linux-2.6.35 here.
 
-> +	[PERF_COUNT_HW_STALLED_CYCLES_BACKEND] = 0x4000a,  /* CMPLU_STALL */
+> >  
+> >      (Bits 0x10 and 0x20 can be combined with hardware irq mode option)
+> >  
+> > diff --git a/Documentation/scsi/tmscsim.txt b/Documentation/scsi/tmscsim.txt
+> > index 61c0531..45cfd63 100644
+> > --- a/Documentation/scsi/tmscsim.txt
+> > +++ b/Documentation/scsi/tmscsim.txt
+> > @@ -108,8 +108,8 @@ MHz PCI bus works for me, though, but I don't recommend using higher clocks
+> >  than the 33.33 MHz being in the PCI spec.
+> >  
+> >  If you want to share the IRQ with another device and the driver refuses to
+> > -do so, you might succeed with changing the DC390_IRQ type in tmscsim.c to 
+> > -IRQF_SHARED | IRQF_DISABLED.
+> > +do so,  you should find out what's the mismatch between the shared irqs,
+> 
+>    do so, you should                                                  IRQs,
 
-eg. Is this instruction completion stall?
+Updated.
 
-Mikey
+Thanks Randy.
 
->  	[PERF_COUNT_HW_INSTRUCTIONS] = 2,
->  	[PERF_COUNT_HW_CACHE_REFERENCES] = 0xc880,	/* LD_REF_L1_LSU*/
->  	[PERF_COUNT_HW_CACHE_MISSES] = 0x400f0,		/* LD_MISS_L1	*/
-> 
-> -- 
-> Anshuman Khandual 
-> 
-> 
-> _______________________________________________
-> Linuxppc-dev mailing list
-> Linuxppc-dev@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/linuxppc-dev
-> 
+	Yong
