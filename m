@@ -1,51 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758696Ab1IIJm2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 05:42:28 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:50635 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753406Ab1IIJm1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 05:42:27 -0400
-Date: Fri, 9 Sep 2011 10:41:56 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, alsa-devel@alsa-project.org,
-        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Jassi Brar <jassisinghbrar@gmail.com>, linux-kernel@vger.kernel.org,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Jarkko Nikula <jhnikula@gmail.com>, linaro-dev@lists.linaro.org,
-        linux-omap@vger.kernel.org, Mans Rullgard <mans.rullgard@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2] ASoC: omap: convert per-board modules to platform
-	drivers
-Message-ID: <20110909094156.GE6918@n2100.arm.linux.org.uk>
-References: <1315503297-8365-1-git-send-email-mans.rullgard@linaro.org> <CABb+yY0b607kDSGU+trycqQuvGMhC-zpHcv20wjgmEcaK7dz8Q@mail.gmail.com> <CAG5Tg6UOuztenNid1=YbH9a4ZH5MqV4YhohG+r9R+7F=zXs=CQ@mail.gmail.com> <3110288.bQbb0H2ME1@wuerfel> <1315520956.4126.3.camel@finisterre.wolfsonmicro.main> <20110908223720.GA21469@n2100.arm.linux.org.uk> <20110908224731.GB5201@opensource.wolfsonmicro.com> <20110908230102.GB21469@n2100.arm.linux.org.uk> <20110908235903.GA6370@opensource.wolfsonmicro.com>
+	id S933210Ab1IIJqT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 05:46:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37929 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758667Ab1IIJqR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Sep 2011 05:46:17 -0400
+Message-ID: <4E69E067.8080302@suse.cz>
+Date: Fri, 09 Sep 2011 11:46:15 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110908235903.GA6370@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Peter Foley <pefoley2@verizon.net>
+Cc: Arnaud Lacombe <lacombar@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Kbuild Mailing List <linux-kbuild@vger.kernel.org>,
+        rdunlap@xenotime.net
+Subject: Re: [PATCH v2] kconfig.h fix extraneous dependencies
+References: <alpine.LNX.2.00.1107311812460.62769@linux> <CACqU3MWfOg+ZhUGAovWsds48Y37i7GRk7qSxWvt7-JmLMBcmgg@mail.gmail.com> <alpine.LNX.2.00.1107312055360.20006@linux> <4E3670BF.6000709@suse.cz> <alpine.LNX.2.00.1108010945280.3043@linux>
+In-Reply-To: <alpine.LNX.2.00.1108010945280.3043@linux>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 08, 2011 at 04:59:04PM -0700, Mark Brown wrote:
-> On Fri, Sep 09, 2011 at 12:01:02AM +0100, Russell King - ARM Linux wrote:
-> > On Thu, Sep 08, 2011 at 03:47:31PM -0700, Mark Brown wrote:
+On 1.8.2011 15:51, Peter Foley wrote:
+> The introduction of include/linux/kconfig.h created 3 extraneous 
+> dependencies:
+> include/config/.h 
+> include/config/h.h 
+> include/config/foo.h 
 > 
-> > > What will happen for device tree is that there will be a device in the
-> > > device tree for the ASoC board.
+> Fix this by excluding kconfig.h from fixdep calculations.
 > 
-> > Sounds like you just solved the machine_is_xxx() problem in ASoC land too
-> > there.  If you're _already_ going for separate devices to describe the
-> > ASoC stuff on the board, then there's no reason that couldn't have already
-> > been done to eliminate the machine_is_xxx() usage in ASoC - rather than
-> > complaining about machine_is_xxx() not being a very good solution.
-> 
-> The problem is that someone has to manually go and add the device to
-> every board that needs one and people find that tedious and slightly
-> inelegant
+> Signed-off-by: Peter Foley <pefoley2@verizon.net>
 
-Sheesh.  So now you're arguing against your statement above?  Please
-stop wasting my time.
+Applied to kbuild-2.6.git#kbuild.
+
+Michal
