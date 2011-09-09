@@ -1,47 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757314Ab1IIBLj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 21:11:39 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:50881 "EHLO
+	id S1758087Ab1IIBNZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 21:13:25 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:3886 "EHLO
 	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932171Ab1IIBL1 (ORCPT
+	with ESMTP id S932322Ab1IIBLj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 21:11:27 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6463"; a="116864723"
-Message-Id: <20110909010916.709728186@codeaurora.org>
+	Thu, 8 Sep 2011 21:11:39 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6463"; a="116864874"
+Message-Id: <20110909010917.669829257@codeaurora.org>
 User-Agent: quilt/0.48-1
-Date: Thu, 08 Sep 2011 20:09:08 -0500
+Date: Thu, 08 Sep 2011 20:09:18 -0500
 From: Richard Kuo <rkuo@codeaurora.org>
 To: linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Cc: Linas Vepstas <linas@codeaurora.org>
-Subject: [patch v3 21/36] Hexagon: Add SMP support
+Cc: Linas Vepstas <linas@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>
+Subject: [patch v3 31/36] Hexagon: kgdb support files
 References: <20110909010847.294039464@codeaurora.org>
-Content-Disposition: inline; filename=smp.diff
+Content-Disposition: inline; filename=kgdb.diff
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changed smp.c to use generic IPI handler functions.
-
-Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
 Signed-off-by: Linas Vepstas <linas@codeaurora.org>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 
 ---
- arch/hexagon/include/asm/smp.h |   44 ++++++
- arch/hexagon/kernel/smp.c      |  282 +++++++++++++++++++++++++++++++++++++++++
- arch/hexagon/kernel/topology.c |   52 +++++++
- 3 files changed, 378 insertions(+)
+ arch/hexagon/include/asm/kgdb.h |   39 ++++++
+ arch/hexagon/kernel/kgdb.c      |  241 ++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 280 insertions(+)
 
-Index: linux-hexagon-kernel/arch/hexagon/include/asm/smp.h
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/kgdb.h
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/include/asm/smp.h	2011-09-07 13:01:00.480691689 -0500
-@@ -0,0 +1,44 @@
++++ linux-hexagon-kernel/arch/hexagon/include/asm/kgdb.h	2011-09-03 20:14:59.814981643 -0500
+@@ -0,0 +1,39 @@
 +/*
-+ * SMP definitions for the Hexagon architecture
++ * arch/hexagon/include/asm/kgdb.h - Hexagon KGDB Support
 + *
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 and
@@ -58,374 +55,271 @@ Index: linux-hexagon-kernel/arch/hexagon/include/asm/smp.h
 + * 02110-1301, USA.
 + */
 +
-+#ifndef __ASM_SMP_H
-+#define __ASM_SMP_H
++#ifndef __HEXAGON_KGDB_H__
++#define __HEXAGON_KGDB_H__
 +
-+#include <linux/cpumask.h>
++#define BREAK_INSTR_SIZE 4
++#define CACHE_FLUSH_IS_SAFE   1
++#define BUFMAX       ((NUMREGBYTES * 2) + 512)
 +
-+#define raw_smp_processor_id() (current_thread_info()->cpu)
++static inline void arch_kgdb_breakpoint(void)
++{
++	asm("trap0(#0xDB)");
++}
 +
-+enum ipi_message_type {
-+	IPI_NOP = 0,
-+	IPI_RESCHEDULE = 1,
-+	IPI_CALL_FUNC,
-+	IPI_CALL_FUNC_SINGLE,
-+	IPI_CPU_STOP,
-+	IPI_TIMER,
++/* Registers:
++ * 32 gpr + sa0/1 + lc0/1 + m0/1 + gp + ugp + pred + pc = 42 total.
++ */
++#define NUMREGBYTES  (42*4)
++#define DBG_MAX_REG_NUM 42
++
++#endif /* __HEXAGON_KGDB_H__ */
+Index: linux-hexagon-kernel/arch/hexagon/kernel/kgdb.c
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/kernel/kgdb.c	2011-09-03 20:14:59.814981643 -0500
+@@ -0,0 +1,241 @@
++/*
++ * arch/hexagon/kernel/kgdb.c - Hexagon KGDB Support
++ *
++ * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#include <linux/kdebug.h>
++#include <linux/kgdb.h>
++
++/* All registers are 4 bytes, for now */
++#define GDB_SIZEOF_REG 4
++
++/* The register names are used during printing of the regs;
++ * Keep these at three letters to pretty-print. */
++struct dbg_reg_def_t dbg_reg_def[DBG_MAX_REG_NUM] = {
++	{ " r0", GDB_SIZEOF_REG, offsetof(struct pt_regs, r00)},
++	{ " r1", GDB_SIZEOF_REG, offsetof(struct pt_regs, r01)},
++	{ " r2", GDB_SIZEOF_REG, offsetof(struct pt_regs, r02)},
++	{ " r3", GDB_SIZEOF_REG, offsetof(struct pt_regs, r03)},
++	{ " r4", GDB_SIZEOF_REG, offsetof(struct pt_regs, r04)},
++	{ " r5", GDB_SIZEOF_REG, offsetof(struct pt_regs, r05)},
++	{ " r6", GDB_SIZEOF_REG, offsetof(struct pt_regs, r06)},
++	{ " r7", GDB_SIZEOF_REG, offsetof(struct pt_regs, r07)},
++	{ " r8", GDB_SIZEOF_REG, offsetof(struct pt_regs, r08)},
++	{ " r9", GDB_SIZEOF_REG, offsetof(struct pt_regs, r09)},
++	{ "r10", GDB_SIZEOF_REG, offsetof(struct pt_regs, r10)},
++	{ "r11", GDB_SIZEOF_REG, offsetof(struct pt_regs, r11)},
++	{ "r12", GDB_SIZEOF_REG, offsetof(struct pt_regs, r12)},
++	{ "r13", GDB_SIZEOF_REG, offsetof(struct pt_regs, r13)},
++	{ "r14", GDB_SIZEOF_REG, offsetof(struct pt_regs, r14)},
++	{ "r15", GDB_SIZEOF_REG, offsetof(struct pt_regs, r15)},
++	{ "r16", GDB_SIZEOF_REG, offsetof(struct pt_regs, r16)},
++	{ "r17", GDB_SIZEOF_REG, offsetof(struct pt_regs, r17)},
++	{ "r18", GDB_SIZEOF_REG, offsetof(struct pt_regs, r18)},
++	{ "r19", GDB_SIZEOF_REG, offsetof(struct pt_regs, r19)},
++	{ "r20", GDB_SIZEOF_REG, offsetof(struct pt_regs, r20)},
++	{ "r21", GDB_SIZEOF_REG, offsetof(struct pt_regs, r21)},
++	{ "r22", GDB_SIZEOF_REG, offsetof(struct pt_regs, r22)},
++	{ "r23", GDB_SIZEOF_REG, offsetof(struct pt_regs, r23)},
++	{ "r24", GDB_SIZEOF_REG, offsetof(struct pt_regs, r24)},
++	{ "r25", GDB_SIZEOF_REG, offsetof(struct pt_regs, r25)},
++	{ "r26", GDB_SIZEOF_REG, offsetof(struct pt_regs, r26)},
++	{ "r27", GDB_SIZEOF_REG, offsetof(struct pt_regs, r27)},
++	{ "r28", GDB_SIZEOF_REG, offsetof(struct pt_regs, r28)},
++	{ "r29", GDB_SIZEOF_REG, offsetof(struct pt_regs, r29)},
++	{ "r30", GDB_SIZEOF_REG, offsetof(struct pt_regs, r30)},
++	{ "r31", GDB_SIZEOF_REG, offsetof(struct pt_regs, r31)},
++
++	{ "usr", GDB_SIZEOF_REG, offsetof(struct pt_regs, usr)},
++	{ "preds", GDB_SIZEOF_REG, offsetof(struct pt_regs, preds)},
++	{ " m0", GDB_SIZEOF_REG, offsetof(struct pt_regs, m0)},
++	{ " m1", GDB_SIZEOF_REG, offsetof(struct pt_regs, m1)},
++	{ "sa0", GDB_SIZEOF_REG, offsetof(struct pt_regs, sa0)},
++	{ "sa1", GDB_SIZEOF_REG, offsetof(struct pt_regs, sa1)},
++	{ "lc0", GDB_SIZEOF_REG, offsetof(struct pt_regs, lc0)},
++	{ "lc1", GDB_SIZEOF_REG, offsetof(struct pt_regs, lc1)},
++	{ " gp", GDB_SIZEOF_REG, offsetof(struct pt_regs, gp)},
++	{ "ugp", GDB_SIZEOF_REG, offsetof(struct pt_regs, ugp)},
 +};
 +
-+extern void send_ipi(const struct cpumask *cpumask, enum ipi_message_type msg);
-+extern void smp_start_cpus(void);
-+extern void arch_send_call_function_single_ipi(int cpu);
-+extern void arch_send_call_function_ipi_mask(const struct cpumask *mask);
++struct kgdb_arch arch_kgdb_ops = {
++	/* trap0(#0xDB) 0x0cdb0054 */
++	.gdb_bpt_instr = {0x54, 0x00, 0xdb, 0x0c},
++};
 +
-+extern void smp_vm_unmask_irq(void *info);
++char *dbg_get_reg(int regno, void *mem, struct pt_regs *regs)
++{
++	if (regno >= DBG_MAX_REG_NUM || regno < 0)
++		return NULL;
 +
++	*((unsigned long *) mem) = *((unsigned long *) ((void *)regs +
++		dbg_reg_def[regno].offset));
++
++	return dbg_reg_def[regno].name;
++}
++
++int dbg_set_reg(int regno, void *mem, struct pt_regs *regs)
++{
++	if (regno >= DBG_MAX_REG_NUM || regno < 0)
++		return -EINVAL;
++
++	*((unsigned long *) ((void *)regs + dbg_reg_def[regno].offset)) =
++		*((unsigned long *) mem);
++
++	return 0;
++}
++
++void kgdb_arch_set_pc(struct pt_regs *regs, unsigned long pc)
++{
++	instruction_pointer(regs) = pc;
++}
++
++#ifdef CONFIG_SMP
++
++/**
++ * kgdb_roundup_cpus - Get other CPUs into a holding pattern
++ * @flags: Current IRQ state
++ *
++ * On SMP systems, we need to get the attention of the other CPUs
++ * and get them be in a known state.  This should do what is needed
++ * to get the other CPUs to call kgdb_wait(). Note that on some arches,
++ * the NMI approach is not used for rounding up all the CPUs. For example,
++ * in case of MIPS, smp_call_function() is used to roundup CPUs. In
++ * this case, we have to make sure that interrupts are enabled before
++ * calling smp_call_function(). The argument to this function is
++ * the flags that will be used when restoring the interrupts. There is
++ * local_irq_save() call before kgdb_roundup_cpus().
++ *
++ * On non-SMP systems, this is not called.
++ */
++
++static void hexagon_kgdb_nmi_hook(void *ignored)
++{
++	kgdb_nmicallback(raw_smp_processor_id(), get_irq_regs());
++}
++
++void kgdb_roundup_cpus(unsigned long flags)
++{
++	smp_call_function(hexagon_kgdb_nmi_hook, NULL, 0);
++}
 +#endif
-Index: linux-hexagon-kernel/arch/hexagon/kernel/smp.c
-===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/kernel/smp.c	2011-09-07 13:01:00.500691719 -0500
-@@ -0,0 +1,282 @@
-+/*
-+ * SMP support for Hexagon
-+ *
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
 +
-+#include <linux/err.h>
-+#include <linux/errno.h>
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
-+#include <linux/module.h>
-+#include <linux/percpu.h>
-+#include <linux/sched.h>
-+#include <linux/smp.h>
-+#include <linux/spinlock.h>
 +
-+#include <asm/system.h>  /*  xchg  */
-+#include <asm/time.h>    /*  timer_interrupt  */
-+#include <asm/hexagon_vm.h>
-+
-+#define BASE_IPI_IRQ 26
-+
-+/*
-+ * cpu_possible_map needs to be filled out prior to setup_per_cpu_areas
-+ * (which is prior to any of our smp_prepare_cpu crap), in order to set
-+ * up the...  per_cpu areas.
-+ */
-+
-+struct ipi_data {
-+	spinlock_t lock;
-+	unsigned long ipi_count;
-+	unsigned long bits;
-+};
-+
-+static DEFINE_PER_CPU(struct ipi_data, ipi_data) = {
-+	.lock = __SPIN_LOCK_UNLOCKED(ipi_data.lock)
-+};
-+
-+static inline void __handle_ipi(unsigned long *ops, struct ipi_data *ipi,
-+				int cpu)
++/*  Not yet working  */
++void sleeping_thread_to_gdb_regs(unsigned long *gdb_regs,
++				 struct task_struct *task)
 +{
-+	do {
-+		unsigned long msg = ffz(~*ops);
++	struct pt_regs *thread_regs;
 +
-+		*ops &= ~(1 << msg);
++	if (task == NULL)
++		return;
 +
-+		switch (msg) {
-+		case IPI_TIMER:
-+			ipi_timer();
-+			break;
++	/* Initialize to zero */
++	memset(gdb_regs, 0, NUMREGBYTES);
 +
-+		case IPI_CALL_FUNC:
-+			generic_smp_call_function_interrupt();
-+			break;
-+
-+		case IPI_CALL_FUNC_SINGLE:
-+			generic_smp_call_function_single_interrupt();
-+			break;
-+
-+		case IPI_CPU_STOP:
-+			/*
-+			 * call vmstop()
-+			 */
-+			__vmstop();
-+			break;
-+
-+		case IPI_RESCHEDULE:
-+			/*
-+			 * need to revisit our exit path; see comments for
-+			 * scheduler_ipi()
-+			 */
-+			scheduler_ipi();
-+			break;
-+		}
-+	} while (*ops);
++	/* Otherwise, we have only some registers from switch_to() */
++	thread_regs = task_pt_regs(task);
++	gdb_regs[0] = thread_regs->r00;
 +}
 +
-+/*  Used for IPI call from other CPU's to unmask int  */
-+void smp_vm_unmask_irq(void *info)
-+{
-+	__vmintop_locen((long) info);
-+}
-+
-+
-+/*
-+ * This is based on Alpha's IPI stuff.
-+ * Supposed to take (int, void*) as args now.
-+ * Specifically, first arg is irq, second is the irq_desc.
++/**
++ * kgdb_arch_handle_exception - Handle architecture specific GDB packets.
++ * @vector: The error vector of the exception that happened.
++ * @signo: The signal number of the exception that happened.
++ * @err_code: The error code of the exception that happened.
++ * @remcom_in_buffer: The buffer of the packet we have read.
++ * @remcom_out_buffer: The buffer of %BUFMAX bytes to write a packet into.
++ * @regs: The &struct pt_regs of the current process.
++ *
++ * This function MUST handle the 'c' and 's' command packets,
++ * as well packets to set / remove a hardware breakpoint, if used.
++ * If there are additional packets which the hardware needs to handle,
++ * they are handled here.  The code should return -1 if it wants to
++ * process more packets, and a %0 or %1 if it wants to exit from the
++ * kgdb callback.
++ *
++ * Not yet working.
 + */
-+
-+irqreturn_t handle_ipi(int irq, void *desc)
++int kgdb_arch_handle_exception(int vector, int signo, int err_code,
++			       char *remcom_in_buffer, char *remcom_out_buffer,
++			       struct pt_regs *linux_regs)
 +{
-+	int cpu = smp_processor_id();
-+	struct ipi_data *ipi = &per_cpu(ipi_data, cpu);
-+	unsigned long ops;
-+
-+	while ((ops = xchg(&ipi->bits, 0)) != 0)
-+		__handle_ipi(&ops, ipi, cpu);
-+	return IRQ_HANDLED;
++	switch (remcom_in_buffer[0]) {
++	case 's':
++	case 'c':
++		return 0;
++	}
++	/* Stay in the debugger. */
++	return -1;
 +}
 +
-+void send_ipi(const struct cpumask *cpumask, enum ipi_message_type msg)
++static int __kgdb_notify(struct die_args *args, unsigned long cmd)
++{
++	struct pt_regs *regs = args->regs;
++#if 0
++	ret = kgdb_handle_exception(args->trapnr & 0xff, args->signr, args->err,
++				    regs);
++	if (ret)
++		return NOTIFY_DONE;
++#endif
++	return NOTIFY_STOP;
++}
++
++static int
++kgdb_notify(struct notifier_block *self, unsigned long cmd, void *ptr)
 +{
 +	unsigned long flags;
-+	unsigned long cpu;
-+	unsigned long retval;
++	int ret;
 +
 +	local_irq_save(flags);
-+
-+	for_each_cpu(cpu, cpumask) {
-+		struct ipi_data *ipi = &per_cpu(ipi_data, cpu);
-+
-+		spin_lock(&ipi->lock);
-+		ipi->bits |= 1 << msg;  /*  one bit per message  */
-+		spin_unlock(&ipi->lock);
-+
-+		retval = __vmintop_post(BASE_IPI_IRQ+cpu);
-+		if (retval != 0) {
-+			printk(KERN_ERR "interrupt %ld not configured?\n",
-+				BASE_IPI_IRQ+cpu);
-+		}
-+	}
-+
++	ret = __kgdb_notify(ptr, cmd);
 +	local_irq_restore(flags);
++
++	return ret;
 +}
 +
-+static struct irqaction ipi_intdesc = {
-+	.handler = handle_ipi,
-+	.flags = IRQF_DISABLED | IRQF_TRIGGER_RISING,
-+	.name = "ipi_handler"
-+};
-+
-+void __init smp_prepare_boot_cpu(void)
-+{
-+}
-+
-+/*
-+ * interrupts should already be disabled from the VM
-+ * SP should already be correct; need to set THREADINFO_REG
-+ * to point to current thread info
-+ */
-+
-+void __cpuinit start_secondary(void)
-+{
-+	unsigned int cpu;
-+	unsigned long thread_ptr;
-+
-+	/*  Calculate thread_info pointer from stack pointer  */
-+	__asm__ __volatile__(
-+		"%0 = SP;\n"
-+		: "=r" (thread_ptr)
-+	);
-+
-+	thread_ptr = thread_ptr & ~(THREAD_SIZE-1);
-+
-+	__asm__ __volatile__(
-+		QUOTED_THREADINFO_REG " = %0;\n"
-+		:
-+		: "r" (thread_ptr)
-+	);
-+
-+	/*  Set the memory struct  */
-+	atomic_inc(&init_mm.mm_count);
-+	current->active_mm = &init_mm;
-+
-+	cpu = smp_processor_id();
-+
-+	setup_irq(BASE_IPI_IRQ + cpu, &ipi_intdesc);
-+
-+	/*  Register the clock_event dummy  */
-+	setup_percpu_clockdev();
-+
-+	printk(KERN_INFO "%s cpu %d\n", __func__, current_thread_info()->cpu);
-+
-+	local_irq_enable();
-+	set_cpu_online(cpu, true);
-+	cpu_idle();
-+}
-+
-+
-+/*
-+ * called once for each present cpu
-+ * apparently starts up the CPU and then
-+ * maintains control until "cpu_online(cpu)" is set.
-+ */
-+
-+int __cpuinit __cpu_up(unsigned int cpu)
-+{
-+	struct task_struct *idle;
-+	struct thread_info *thread;
-+	void *stack_start;
-+
-+	/*  Create new init task for the CPU  */
-+	idle = fork_idle(cpu);
-+	if (IS_ERR(idle))
-+		panic(KERN_ERR "fork_idle failed\n");
-+
-+	thread = (struct thread_info *)idle->stack;
-+	thread->cpu = cpu;
-+
-+	/*  Boot to the head.  */
-+	stack_start =  ((void *) thread) + THREAD_SIZE;
-+	__vmstart(start_secondary, stack_start);
-+
-+	while (!cpu_isset(cpu, cpu_online_map))
-+		barrier();
-+
-+	return 0;
-+}
-+
-+void __init smp_cpus_done(unsigned int max_cpus)
-+{
-+}
-+
-+void __init smp_prepare_cpus(unsigned int max_cpus)
-+{
-+	int i;
++static struct notifier_block kgdb_notifier = {
++	.notifier_call = kgdb_notify,
 +
 +	/*
-+	 * should eventually have some sort of machine
-+	 * descriptor that has this stuff
++	 * Lowest-prio notifier priority, we want to be notified last:
 +	 */
++	.priority = -INT_MAX,
++};
 +
-+	/*  Right now, let's just fake it. */
-+	for (i = 0; i < max_cpus; i++)
-+		cpu_set(i, cpu_present_map);
-+
-+	/*  Also need to register the interrupts for IPI  */
-+	if (max_cpus > 1)
-+		setup_irq(BASE_IPI_IRQ, &ipi_intdesc);
-+}
-+
-+void smp_send_reschedule(int cpu)
-+{
-+	send_ipi(cpumask_of(cpu), IPI_RESCHEDULE);
-+}
-+
-+void smp_send_stop(void)
-+{
-+	struct cpumask targets;
-+	cpumask_copy(&targets, cpu_online_mask);
-+	cpumask_clear_cpu(smp_processor_id(), &targets);
-+	send_ipi(&targets, IPI_CPU_STOP);
-+}
-+
-+void arch_send_call_function_single_ipi(int cpu)
-+{
-+	send_ipi(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
-+}
-+
-+void arch_send_call_function_ipi_mask(const struct cpumask *mask)
-+{
-+	send_ipi(mask, IPI_CALL_FUNC);
-+}
-+
-+int setup_profiling_timer(unsigned int multiplier)
-+{
-+	return -EINVAL;
-+}
-+
-+void smp_start_cpus(void)
-+{
-+	int i;
-+
-+	for (i = 0; i < NR_CPUS; i++)
-+		cpu_set(i, cpu_possible_map);
-+}
-Index: linux-hexagon-kernel/arch/hexagon/kernel/topology.c
-===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/kernel/topology.c	2011-09-03 20:14:59.704981335 -0500
-@@ -0,0 +1,52 @@
-+/*
-+ * CPU topology for Hexagon
++/**
++ * kgdb_arch_init - Perform any architecture specific initalization.
 + *
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
++ * This function will handle the initalization of any architecture
++ * specific callbacks.
 + */
-+
-+#include <linux/cpu.h>
-+#include <linux/cpumask.h>
-+#include <linux/init.h>
-+#include <linux/node.h>
-+#include <linux/nodemask.h>
-+#include <linux/percpu.h>
-+
-+/*  Swiped from MIPS.  */
-+
-+static DEFINE_PER_CPU(struct cpu, cpu_devices);
-+
-+static int __init topology_init(void)
++int kgdb_arch_init(void)
 +{
-+	int i, ret;
-+
-+	for_each_present_cpu(i) {
-+
-+		/*
-+		 * register_cpu takes a per_cpu pointer and
-+		 * just points it at another per_cpu struct...
-+		 */
-+
-+		ret = register_cpu(&per_cpu(cpu_devices, i), i);
-+		if (ret)
-+			printk(KERN_WARNING "topology_init: register_cpu %d "
-+			       "failed (%d)\n", i, ret);
-+	}
-+
-+	return 0;
++	return register_die_notifier(&kgdb_notifier);
 +}
 +
-+subsys_initcall(topology_init);
++/**
++ * kgdb_arch_exit - Perform any architecture specific uninitalization.
++ *
++ * This function will handle the uninitalization of any architecture
++ * specific callbacks, for dynamic registration and unregistration.
++ */
++void kgdb_arch_exit(void)
++{
++	unregister_die_notifier(&kgdb_notifier);
++}
++
 
 --
 
