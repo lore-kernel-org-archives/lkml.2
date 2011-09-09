@@ -1,59 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756684Ab1IIAAN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 20:00:13 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:52959 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756475Ab1IIAAJ (ORCPT
+	id S1756688Ab1IIACU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 20:02:20 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:42146 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756522Ab1IIACS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 20:00:09 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Subject: Re: [PATCH 17/62] powerpc: irq: Remove IRQF_DISABLED
-Date: Thu, 8 Sep 2011 18:41:28 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Geoff Levand <geoff@infradead.org>,
-        Milton Miller <miltonm@bga.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Scott Wood <scottwood@freescale.com>,
-        Meador Inge <meador_inge@mentor.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        linuxppc-dev@lists.ozlabs.org, cbe-oss-dev@lists.ozlabs.org
-References: <1315383059-3673-1-git-send-email-yong.zhang0@gmail.com> <1315383059-3673-18-git-send-email-yong.zhang0@gmail.com>
-In-Reply-To: <1315383059-3673-18-git-send-email-yong.zhang0@gmail.com>
+	Thu, 8 Sep 2011 20:02:18 -0400
+Message-ID: <4E695784.7020303@gmail.com>
+Date: Fri, 09 Sep 2011 10:02:12 +1000
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Lightning/1.0b2 Thunderbird/3.1.13
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Mark Salter <msalter@redhat.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Pass correct length to strnlen_user in fs/exec.c
+References: <4E680EBC.4000804@gmail.com> <20110908165213.6ebd844f.akpm@linux-foundation.org>
+In-Reply-To: <20110908165213.6ebd844f.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201109081841.28487.arnd@arndb.de>
-X-Provags-ID: V02:K0:NSuiID5y6Zvw0rX7uWXq3YUX/Xpq2FgqEMHwkQToka5
- Q/VPKEkxk1MsmI0rlndpZNlsJf+GGSUeghlS8r0l5+mclZ3ba4
- kJo7Qhi4a83ermfGhmyHZOWRescahN6ckYzSJFbs3S+EnnOa3r
- gm1tofaWmIkap8odwJCOqmL1K8v05vWlk2n6CZiOOHK5feinxU
- N3dYBd3YYSX0+Sd0NO4PuJkXSsk1hq6ERmo6cQZOEwBzy2VJVB
- vKGHiLwgOYqqHlqOKWLeeqpG0DW0U53Rf0BpsX864VP/0KjLqE
- 9JxxDfnM6OvsHiqRE//iqyf1oIEG+KC7LRh3BxqnwzfuWujS0l
- KMS6cPUAkmrBLF1+X7YM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 07 September 2011, Yong Zhang wrote:
-> 
-> This flag is a NOOP and can be removed now.
-> 
-> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-> ---
->  arch/powerpc/include/asm/floppy.h              |    4 ++--
->  arch/powerpc/include/asm/xics.h                |    4 ++--
->  arch/powerpc/kernel/smp.c                      |    2 +-
->  arch/powerpc/platforms/cell/beat.c             |    2 +-
->  arch/powerpc/platforms/cell/celleb_scc_pciex.c |    2 +-
->  arch/powerpc/platforms/cell/iommu.c            |    3 +--
->  arch/powerpc/platforms/cell/pmu.c              |    2 +-
->  arch/powerpc/platforms/cell/spu_base.c         |    9 +++------
+On 09/09/11 09:52, Andrew Morton wrote:
+> On Thu, 08 Sep 2011 10:39:24 +1000
+> Ryan Mallon <rmallon@gmail.com> wrote:
+>
+>> Replace valid_arg_len function in fs/exec.c with max_arg_len function
+>> and pass the correct length to strnlen_user.
+>>
+>> --- a/fs/exec.c
+>> +++ b/fs/exec.c
+>> @@ -296,9 +296,9 @@ err:
+>>  	return err;
+>>  }
+>>  
+>> -static bool valid_arg_len(struct linux_binprm *bprm, long len)
+>> +static long max_arg_len(struct linux_binprm *bprm)
+>>  {
+>> -	return len <= MAX_ARG_STRLEN;
+>> +	return MAX_ARG_STRLEN;
+>>  }
+>>  
+>>  #else
+>> @@ -354,9 +354,9 @@ static int __bprm_mm_init(struct linux_binprm *bprm)
+>>  	return 0;
+>>  }
+>>  
+>> -static bool valid_arg_len(struct linux_binprm *bprm, long len)
+>> +static long max_arg_len(struct linux_binprm *bprm)
+>>  {
+>> -	return len <= bprm->p;
+>> +	return bprm->p;
+>>  }
+>>  
+>>  #endif /* CONFIG_MMU */
+>> @@ -474,18 +474,19 @@ static int copy_strings(int argc, struct user_arg_ptr argv,
+>>  		const char __user *str;
+>>  		int len;
+>>  		unsigned long pos;
+>> +		long max_len = max_arg_len(bprm);
+>>  
+>>  		ret = -EFAULT;
+>>  		str = get_user_arg_ptr(argv, argc);
+>>  		if (IS_ERR(str))
+>>  			goto out;
+>>  
+>> -		len = strnlen_user(str, MAX_ARG_STRLEN);
+>> -		if (!len || len > MAX_ARG_STRLEN)
+>> +		len = strnlen_user(str, max_len);
+>> +		if (!len)
+>>  			goto out;
+>>  
+>>  		ret = -E2BIG;
+>> -		if (!valid_arg_len(bprm, len))
+>> +		if (len > max_len)
+>>  			goto out;
+>>  
+>>  		/* We're going to work our way backwords. */
+> I'm struggling to find a reason to merge this - it churns code around
+> rather pointlessly?
+>
+That's fine. I originally went looking after a discussion with Mark
+about the weird strnlen_user semantics  and this usage looked incorrect
+to me because it wasn't obviously checking >= MAX_ARG_STRLEN.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+The rework I think makes it a bit more clear and passes the correct max
+length to strnlen_user. Its a bit odd to pass MAX_ARG_STRLEN and then
+check if it is longer than bprm->len, and I guess assumes that bprm->len
+is less than MAX_ARG_STRLEN.
+
+Feel free to drop the patch if you think it is just churn.
+
+~Ryan
+
+
