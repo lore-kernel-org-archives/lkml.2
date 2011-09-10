@@ -1,90 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933532Ab1IJPhv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Sep 2011 11:37:51 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:54945 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753220Ab1IJPht (ORCPT
+	id S1759537Ab1IJPno (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Sep 2011 11:43:44 -0400
+Received: from smtp-outbound.smandes.com.ar ([201.220.160.56]:49442 "EHLO
+	smtp-outbound.smandes.com.ar" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754606Ab1IJPnm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Sep 2011 11:37:49 -0400
-Message-ID: <4E6B82DB.50803@gmail.com>
-Date: Sat, 10 Sep 2011 17:31:39 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
+	Sat, 10 Sep 2011 11:43:42 -0400
+X-Greylist: delayed 1051 seconds by postgrey-1.27 at vger.kernel.org; Sat, 10 Sep 2011 11:43:42 EDT
+X-ASG-Debug-ID: 1315668365-024a8c09612b9a30001-xx1T2L
+X-Barracuda-Envelope-From: orientacionvocacional@smandes.com.ar
+X-Barracuda-Apparent-Source-IP: 201.220.160.6
+Message-ID: <a4c76a6d15d8c63828d8d16a844d78fd.squirrel@www.cotesma.com.ar>
+Date: Sat, 10 Sep 2011 12:32:01 -0300
+Subject: Request...2011/09/10
+From: "Lee    Chang" <orientacionvocacional@smandes.com.ar>
+X-ASG-Orig-Subj: Request...2011/09/10
+Reply-To: changl2060@yahoo.co.uk
+User-Agent: SquirrelMail/1.4.20-2.fc11
 MIME-Version: 1.0
-To: Linux FS Devel <linux-fsdevel@vger.kernel.org>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH, RFC] xip: use i_mutex for xip_file_fault
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Barracuda-Connect: margarita.smandes.com.ar[201.220.160.6]
+X-Barracuda-Start-Time: 1315668365
+X-Barracuda-URL: http://201.220.160.56:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 1.41
+X-Barracuda-Spam-Status: No, SCORE=1.41 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.5 tests=BSF_SC7_SA298e, MISSING_HEADERS, TO_CC_NONE
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.74128
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	1.21 MISSING_HEADERS        Missing To: header
+	0.00 TO_CC_NONE             No To: or Cc: header
+	0.20 BSF_SC7_SA298e         Custom Rule SA298e
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marco Stornelli <marco.stornelli@gmail.com>
 
-There aren't sufficient sync points for a fs for xip operations. In 
-particular for the mmap case. It can be not sufficient to lock/unlock 
-to do some operation inside get_xip_mem callback. For xip_file_read 
-it's really easy to write a fs specific wrapper, xip_file_write hold 
-i_mutex so no problem. With this patch we can avoid concurrent truncate 
-operation and xip mmap.
 
-Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
----
 
---- filemap_xip.c.orig	2011-09-10 17:16:56.000000000 +0200
-+++ filemap_xip.c	2011-09-10 17:19:25.000000000 +0200
-@@ -230,6 +230,7 @@ static int xip_file_fault(struct vm_area
- 	int error;
- 
- 	/* XXX: are VM_FAULT_ codes OK? */
-+	mutex_lock(&inode->i_mutex);
- again:
- 	size = (i_size_read(inode) + PAGE_CACHE_SIZE - 1) >> PAGE_CACHE_SHIFT;
- 	if (vmf->pgoff >= size)
-@@ -239,8 +240,10 @@ again:
- 						&xip_mem, &xip_pfn);
- 	if (likely(!error))
- 		goto found;
--	if (error != -ENODATA)
-+	if (error != -ENODATA) {
-+		mutex_unlock(&inode->i_mutex);
- 		return VM_FAULT_OOM;
-+	}
- 
- 	/* sparse block */
- 	if ((vma->vm_flags & (VM_WRITE | VM_MAYWRITE)) &&
-@@ -253,17 +256,22 @@ again:
- 		error = mapping->a_ops->get_xip_mem(mapping, vmf->pgoff, 1,
- 							&xip_mem, &xip_pfn);
- 		mutex_unlock(&xip_sparse_mutex);
--		if (error)
-+		if (error) {
-+			mutex_unlock(&inode->i_mutex);
- 			return VM_FAULT_SIGBUS;
-+		}
- 		/* unmap sparse mappings at pgoff from all other vmas */
- 		__xip_unmap(mapping, vmf->pgoff);
- 
- found:
- 		err = vm_insert_mixed(vma, (unsigned long)vmf->virtual_address,
- 							xip_pfn);
--		if (err == -ENOMEM)
-+		if (err == -ENOMEM) {
-+			mutex_unlock(&inode->i_mutex);
- 			return VM_FAULT_OOM;
-+		}
- 		BUG_ON(err);
-+		mutex_unlock(&inode->i_mutex);
- 		return VM_FAULT_NOPAGE;
- 	} else {
- 		int err, ret = VM_FAULT_OOM;
-@@ -292,6 +300,7 @@ found:
- out:
- 		write_seqcount_end(&xip_sparse_seq);
- 		mutex_unlock(&xip_sparse_mutex);
-+		mutex_unlock(&inode->i_mutex);
- 
- 		return ret;
- 	}
+Good Day,
+
+My Name is Mr. Lee Chang and I am an Asian merchant base here in England.I
+have a huge portfollio of dying wishes i'd like to fulfill through your
+assistance if you are willing and sincere,Life all comes down to a few
+moments. This is one of them.kindly contact me for further details.
+
+Thanks for your time.
+
+
+Mr. Lee Chang.
+
