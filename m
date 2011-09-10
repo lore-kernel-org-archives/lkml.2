@@ -1,65 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753650Ab1IJFlh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Sep 2011 01:41:37 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:40944 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751537Ab1IJFlg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Sep 2011 01:41:36 -0400
-Subject: Re: [PATCH 1/2] staging: et131x: Fix checkpatch whitespace warnings
-From: Joe Perches <joe@perches.com>
-To: Mark Einon <mark.einon@gmail.com>
-Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        o.hartmann@telovital.com
-Date: Fri, 09 Sep 2011 22:41:35 -0700
-In-Reply-To: <1315050547-4781-1-git-send-email-mark.einon@gmail.com>
-References: <1315050547-4781-1-git-send-email-mark.einon@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.1.91- 
+	id S1754034Ab1IJFxN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Sep 2011 01:53:13 -0400
+Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:39346 "EHLO
+	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751190Ab1IJFxM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Sep 2011 01:53:12 -0400
+Message-ID: <4E6AFB3E.3020902@ti.com>
+Date: Sat, 10 Sep 2011 11:23:02 +0530
+From: Santosh <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: Kevin Hilman <khilman@ti.com>
+CC: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org, rjw@sisk.pl, ccross@android.com
+Subject: Re: [PATCH v2 0/5] CPU PM notifiers
+References: <1315060755-4613-1-git-send-email-santosh.shilimkar@ti.com> <87ty8ly4rp.fsf@ti.com>
+In-Reply-To: <87ty8ly4rp.fsf@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-ID: <1315633296.23777.32.camel@Joe-Laptop>
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-09-03 at 12:49 +0100, Mark Einon wrote:
-> Some of my previous hacking attempts have not been following the rules.
-> All fixes either lines > 80 chars or whitespace corrections (spaces->tabs etc).
-[]
-> diff --git a/drivers/staging/et131x/et1310_mac.c b/drivers/staging/et131x/et1310_mac.c
-> index ab85cb3..36f2168 100644
-> --- a/drivers/staging/et131x/et1310_mac.c
-> +++ b/drivers/staging/et131x/et1310_mac.c
-> @@ -191,7 +191,8 @@ void et1310_config_mac_regs2(struct et131x_adapter *adapter)
->  	cfg1 |= CFG1_RX_ENABLE | CFG1_TX_ENABLE | CFG1_TX_FLOW;
->  	/* Initialize loop back to off */
->  	cfg1 &= ~(CFG1_LOOPBACK | CFG1_RX_FLOW);
-> -	if (adapter->flowcontrol == FLOW_RXONLY || adapter->flowcontrol == FLOW_BOTH)
-> +	if (adapter->flowcontrol == FLOW_RXONLY ||
-> +				adapter->flowcontrol == FLOW_BOTH)
+On Friday 09 September 2011 11:30 PM, Kevin Hilman wrote:
+> Santosh Shilimkar<santosh.shilimkar@ti.com>  writes:
+>
+> [...]
+>
+>> This patch set tries to address concerns with platform pm code
+>> calling into the driver for every block in the Cortex A9s
+>> during idle, hotplug, and suspend.  The first patch adds cpu pm
+>> notifiers that can be called by platform code, the second uses
+>> the notifier to save and restore the GIC state, and the third
+>> saves the VFP state.
+>>
+>> The notifiers are used for two types of events, CPU PM events and
+>> CPU cluster PM events.  CPU PM events are used to save and restore
+>> per-cpu context when a single CPU is preparing to enter or has
+>> just exited a low power state.  For example, the VFP saves the
+>> last thread context, and the GIC saves banked CPU registers.
+>>
+>> CPU cluster events are used after all the CPUs in a power domain
+>> have been prepared for the low power state.  The GIC uses these
+>> events to save global register state.
+>
+> Stepping back from my earlier objections, I think I had a fundamental
+> misunderstanding about what these notifiers should be used for.
+>
+> The current assumptions/goals seem to be
+>
+> 1) used only for devices in the same power domain as the CPU (cluster)
+> 2) use only for one specific power state of the CPU (cluster): off.
+>
+> For awhile now, we've been discussing how to better coordinate CPU PM
+> transitions (CPUidle) with non-CPU PM transitions (runtime PM) for
+> devices that are tightly coupled to the CPU, but not necessarily in the
+> same powerdomain.
+>
+> I was assuming (and hoping) that CPU PM notifiers could be used to do
+> that, but the more I think about it, I don't think we can achieve the
+> current CPU PM goals and the coordination with runtime PM with this
+> series.
+>
+> I think it's more likely that we'll need to do some work with Rafael's
+> new PM domains to make that work correctly.
+>
+> So, I'll retract my objections to this series, and feel free to add
+>
+> Reviewed-by: Kevin Hilman<khilman@ti.com>
+>
+Will add.
+Thanks for the review Kevin.
 
-Especially in cases like this, it helps readability
-to align to open parenthesis like:
+Regards
+Santosh
 
-	if (adapter->flowcontrol == FLOW_RXONLY ||
-	    adapter->flowcontrol == FLOW_BOTH)
-
-[]
-> @@ -641,7 +641,8 @@ static inline void free_send_packet(struct et131x_adapter *adapter,
->  		 * they point to
->  		 */
->  		do {
-> -			desc = (struct tx_desc *)(adapter->tx_ring.tx_desc_ring +
-> +			desc = (struct tx_desc *)
-> +				    (adapter->tx_ring.tx_desc_ring +
->  						INDEX10(tcb->index_start));
-
-Isn't this an unnecessary cast?
-Perhaps it's better as:
-
-			u32 i10 = INDEX10(tcb->index_start);
-
-			desc = &adapter->tx_ring.tx_desc_ring[i10];
-
+Regards
 
