@@ -1,65 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753963Ab1IJFzn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Sep 2011 01:55:43 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:62758 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751190Ab1IJFzm convert rfc822-to-8bit (ORCPT
+	id S1754422Ab1IJGMZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Sep 2011 02:12:25 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:51577 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751592Ab1IJGMY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Sep 2011 01:55:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <1315630153.2606.24.camel@edumazet-laptop>
-References: <CAAJw_Zv9LaOut6+aQWki_-nCngEEfh-OVqF4rsUwb-LPfLk8Ug@mail.gmail.com>
-	<CAAJw_ZvP6m=3T0YoYq6VJdOKMxzm3fDcdJoDY8wqqDV8GZB+Dg@mail.gmail.com>
-	<1315290313.2565.0.camel@edumazet-laptop>
-	<CAAJw_ZvTX374XDZEi_rFAL=797au_7J9gfuDVz-h9o-+Zp_f4w@mail.gmail.com>
-	<CA+55aFyGQuPh0W7aEtng1NM1q3Vg6HAT83eiNk+fRFUjpsXPCg@mail.gmail.com>
-	<1315630153.2606.24.camel@edumazet-laptop>
-Date: Sat, 10 Sep 2011 13:55:42 +0800
-Message-ID: <CAAJw_Zt7dWh_=DHOevxmudyS8wzn7dY4NJozwCMW0kpJGcaBSQ@mail.gmail.com>
-Subject: Re: linux-3.1-0-rc4 bus error ... MPS configured higher than maximum
- supported by the device. If a bus issue occurs, try running with pci=pcie_bus_safe.
-From: Jeff Chua <jeff.chua.linux@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, Jordan_Hargrave@dell.com,
-        Jon Mason <mason@myri.com>, Jesse Barnes <jbarnes@virtuousgeek.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sat, 10 Sep 2011 02:12:24 -0400
+X-Sasl-enc: 4q01kDBikzUIgk9ckbMSzWOjeLw23fRn5z7LopLJ3l9J 1315635143
+Subject: Re: [PATCH] autofs4/root.c: quiet sparse noise
+From: Ian Kent <raven@themaw.net>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, autofs@linux.kernel.org
+In-Reply-To: <201109091717.02975.hartleys@visionengravers.com>
+References: <201109091717.02975.hartleys@visionengravers.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 10 Sep 2011 14:12:18 +0800
+Message-ID: <1315635138.3171.1.camel@perseus.themaw.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 10, 2011 at 12:49 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> Le vendredi 09 septembre 2011 à 19:55 -0700, Linus Torvalds a écrit :
->> On Tue, Sep 6, 2011 at 1:39 AM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
->> >
->> > Thanks. I saw that. And the system nearly got trashed even though I've
->> > no hpsa. Grub went into rescue mode after reboot, and I had to rebuild
->> > the grub boot sector.
->> >
->> > Now, it's all ok with pcie_aspm=force and pci=pcie_bus_safe.
->>
->> Jeff, Eric,
->>   Is the current -git state ok for you guys? I just pushed out commit
->> ed2888e906b5 ("PCI: Remove MRRS modification from MPS setting code")
->> which should default to safe pcie behavior.
->>
->> I just wanted to verify that that was all sufficient for this thread..
->>
->
-> Hi Linus
->
-> I pulled your last changes, and did some tests on my HP BL460c G6,
-> including several stress sessions (make -j128 and various benches)
->
-> So far, everything seems fine, thanks.
+On Fri, 2011-09-09 at 17:17 -0700, H Hartley Sweeten wrote:
+> The function autofs4_d_manage is prototyped as a static function.
+> Add static to the function to quiet the sparse noise:
+> 
+> warning: symbol 'autofs4_d_manage' was not declared. Should it be static?
+> 
+> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+> Cc: Ian Kent <raven@themaw.net>
 
-Couldn't pulled anything for the past few days. Still stuck at commit
-9e79e3e9dd9672b37ac9412e9a926714306551fe.
+Thought I had done that in the original series ....
+Acked-by: Ian Kent <raven@themaw.net>
 
-fatal: Unable to look up git.kernel.org (port 9418) (Name or service not known)
-failed
+> 
+> ---
+> 
+> diff --git a/fs/autofs4/root.c b/fs/autofs4/root.c
+> index f55ae23..366a9f2 100644
+> --- a/fs/autofs4/root.c
+> +++ b/fs/autofs4/root.c
+> @@ -427,7 +427,7 @@ done:
+>  	return NULL;
+>  }
+>  
+> -int autofs4_d_manage(struct dentry *dentry, bool rcu_walk)
+> +static int autofs4_d_manage(struct dentry *dentry, bool rcu_walk)
+>  {
+>  	struct autofs_sb_info *sbi = autofs4_sbi(dentry->d_sb);
+>  
 
 
-Jeff
