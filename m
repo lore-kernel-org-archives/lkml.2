@@ -1,69 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756671Ab1IJBR1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 21:17:27 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:45967 "EHLO
-	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756132Ab1IJBRZ (ORCPT
+	id S1756888Ab1IJCBZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 22:01:25 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:41373 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755977Ab1IJCBY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 21:17:25 -0400
-X-Sasl-enc: tN0HAAwIIRK1IIwWSDedm3KgcY4UQEJ3EtFAP5w1OS1T 1315617445
-Date: Fri, 9 Sep 2011 22:17:21 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: jyothi v <jyos.v.s@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: hw rng
-Message-ID: <20110910011720.GA10111@khazad-dum.debian.net>
-References: <CAF5Aa4NMjB6H0g=reJKW2xPUg=M_x5vc5DbdhzvXcnznKvePFw@mail.gmail.com>
+	Fri, 9 Sep 2011 22:01:24 -0400
+Date: Sat, 10 Sep 2011 10:01:10 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Greg Ungerer <gerg@snapgear.com>, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, mingo@elte.hu, Sam Creasey <sammy@sammy.net>,
+        Greg Ungerer <gerg@uclinux.org>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        linux-m68k@vger.kernel.org
+Subject: Re: [PATCH 12/62] m64k: irq: Remove IRQF_DISABLED
+Message-ID: <20110910020110.GA8696@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <1315383059-3673-1-git-send-email-yong.zhang0@gmail.com>
+ <1315383059-3673-13-git-send-email-yong.zhang0@gmail.com>
+ <4E683413.6010009@snapgear.com>
+ <CAMuHMdVopb8wkUa5rn48_Zp4y33HaXUr0-BGE6N-6p2PAt=hag@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAF5Aa4NMjB6H0g=reJKW2xPUg=M_x5vc5DbdhzvXcnznKvePFw@mail.gmail.com>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
+In-Reply-To: <CAMuHMdVopb8wkUa5rn48_Zp4y33HaXUr0-BGE6N-6p2PAt=hag@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 09 Sep 2011, jyothi v wrote:
-> Linux provides hardware random registry.
-> I would like to know how is it useful.
+On Fri, Sep 09, 2011 at 05:05:15PM +0200, Geert Uytterhoeven wrote:
+> On Thu, Sep 8, 2011 at 05:18, Greg Ungerer <gerg@snapgear.com> wrote:
+> > On 07/09/11 18:10, Yong Zhang wrote:
+> >>
+> >> This flag is a NOOP and can be removed now.
+> >>
+> >> Signed-off-by: Yong Zhang<yong.zhang0@gmail.com>
+> >
+> > Looks ok to me:
+> >
+> > Acked-by: Greg Ungerer <gerg@uclinux.org>
+> 
+> Except for the subject, it's m68k, not m64k ;-)
 
-You use something like this:
-http://packages.debian.org/search?keywords=rng-tools
+Sorry for the typo.
 
-to deal with the entropy from the TRNG (/dev/hw_random) and feed it back to
-the kernel, so that it becomes available to the rest of the system (the
-kernel itself, and any normal randomness users that get it from /dev/random
-and /dev/urandom).
+> 
+> Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> 
+> Sorry, I missed the introductary email [0/62].
 
-Some hardware RNGs don't use /dev/hw_random, and require specific userspace
-drivers instead of rng-tools.
+I sent it out, but seems it didn't reach LKML due to the compromise
+of kernel.org.
 
-> Is there any RNG system calls/APIs for generating random numbers at
-> Linux user space?
+> But do you expect the individual
+> maintainers to take these patches, or are you just collecting Acks?
 
-There are some book-keeping ioctl() for /dev/random, which stuff like
-rng-tools needs to use to feed entropy back to the kernel and to gauge the
-amount of entropy the kernel has. 
+Quoted from Thomas's reply to Ralf (MIPS):
+[ We can hold off the "remove the define" patch until 3.2-rc1 and push
+it along with everything which hasn't been merged until then.
 
-But to _read_ random data, you just do direct reads from /dev/random or
-/dev/urandom.
+Alternatively I can pick the whole MIPS bunch as well. I let Ralf
+decide. ]
 
-> If I need random data at user space application, what should I do?
+So the same rule here, you can decide it :)
 
-Read it from /dev/urandom if your userspace application would rather receive
-the output of a kernel-shielded CRNG when system entropy is low instead of
-blocking.  Otherwise, read it from /dev/random, which will block when system
-entropy is too low to service the read request.
-
-And get something like this if you will need too much high-quality random
-data, or will need high-quality random data from a system that doesn't have
-much keyboard and disk activity: http://www.entropykey.co.uk/
-
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+Thanks,
+Yong
