@@ -1,44 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758424Ab1IJC4d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 22:56:33 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:45551 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757267Ab1IJC4c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 22:56:32 -0400
+	id S1758596Ab1IJDM7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 23:12:59 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:37678 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756524Ab1IJDM6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Sep 2011 23:12:58 -0400
+Date: Sat, 10 Sep 2011 05:12:51 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: Jesper Andersen <jespera@diku.dk>
+Cc: "Luis R. Rodriguez" <mcgrof@gmail.com>, Hauke Mehrtens <hauke@hauke-m.de>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: Backporting the Linux kernel, for good - was: Re: semantic patch
+ inference
+In-Reply-To: <CA+RMdsmEJRv8i81o_GD6o7Bn0MpQJMidghTnt3f-QEeU6V6eNQ@mail.gmail.com>
+Message-ID: <Pine.LNX.4.64.1109100512190.14019@ask.diku.dk>
+References: <CAB=NE6U0ks9CobukO04=bZpnkm3Yw+Pf7keVPsP-hv1NyJZ_Xw@mail.gmail.com>
+ <Pine.LNX.4.64.1109092245170.9242@ask.diku.dk>
+ <CA+RMdsmEJRv8i81o_GD6o7Bn0MpQJMidghTnt3f-QEeU6V6eNQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAAJw_ZvTX374XDZEi_rFAL=797au_7J9gfuDVz-h9o-+Zp_f4w@mail.gmail.com>
-References: <CAAJw_Zv9LaOut6+aQWki_-nCngEEfh-OVqF4rsUwb-LPfLk8Ug@mail.gmail.com>
- <CAAJw_ZvP6m=3T0YoYq6VJdOKMxzm3fDcdJoDY8wqqDV8GZB+Dg@mail.gmail.com>
- <1315290313.2565.0.camel@edumazet-laptop> <CAAJw_ZvTX374XDZEi_rFAL=797au_7J9gfuDVz-h9o-+Zp_f4w@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 9 Sep 2011 19:55:38 -0700
-Message-ID: <CA+55aFyGQuPh0W7aEtng1NM1q3Vg6HAT83eiNk+fRFUjpsXPCg@mail.gmail.com>
-Subject: Re: linux-3.1-0-rc4 bus error ... MPS configured higher than maximum
- supported by the device. If a bus issue occurs, try running with pci=pcie_bus_safe.
-To: Jeff Chua <jeff.chua.linux@gmail.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
-        Jordan_Hargrave@dell.com, Jon Mason <mason@myri.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 6, 2011 at 1:39 AM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
->
-> Thanks. I saw that. And the system nearly got trashed even though I've
-> no hpsa. Grub went into rescue mode after reboot, and I had to rebuild
-> the grub boot sector.
->
-> Now, it's all ok with pcie_aspm=force and pci=pcie_bus_safe.
+On Sat, 10 Sep 2011, Jesper Andersen wrote:
 
-Jeff, Eric,
-  Is the current -git state ok for you guys? I just pushed out commit
-ed2888e906b5 ("PCI: Remove MRRS modification from MPS setting code")
-which should default to safe pcie behavior.
+> I'm in Singapore now and will head for Denmark tomorrow so I can't promise
+> very instant reponses.
+> 
+> I haven't read the full thread just yet, but I just wanted to clarify one
+> thing:
+> 
+> On Saturday, September 10, 2011, Julia Lawall wrote:
+> >
+> > There was also the question about one or multiple types of changes.  I
+> > think this is not a problem, but Jesper should confirm.  If a patch
+> > contains
+> > two changes and one can be generalized and the other one cannot for some
+> > reason, does spdiff give up on the whole thing, or does it do what it can?
+> >
+> >
+> It's a little difficult to answer this precisely, so let me instead give an
+> example and then you can say in what way my example falls short of what you
+> thought of.
+> 
+> Suppose we have two functions that changed:
+> 
+> f1=
+> void foo() {
+>   bar(x->dev);
+>   foz(117);
+> }
+> 
+> f2=
+> void goo() {
+>   if(b) bar(y->dev);
+> }
+> 
+> 
+> And the new versions are:
+> 
+> f1'=
+> void foo() {
+>   bar(x);
+>   foz(117, 42);
+> }
+> 
+> f2'=
+> void goo() {
+>   if(b) bar(y);
+> }
+> 
+> In this example there are basically three changes:
+> 
+> x->dev becomes x
+> y->dev becomes y
+> foz(117) becomes foz(117', 42)
+> 
+> In this case spdiff will find: (I just ran it to be sure)
+> @@
+> expression X0;
+> @@
+> - bar(X0->dev);
+> + bar(X0);
+> 
+> So the one ungeneralizable change was simply not included. Does this cover
+> your question Julia?
 
-I just wanted to verify that that was all sufficient for this thread..
+That seems good.  But perhaps the user would like to know about the 
+elements that were not generalizable as well.
 
-                      Linus
+julia
