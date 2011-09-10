@@ -1,65 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933607Ab1IJRR7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Sep 2011 13:17:59 -0400
-Received: from christianhoffmann.info ([88.175.101.52]:44602 "EHLO
-	christianhoffmann.info" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933553Ab1IJRR7 (ORCPT
+	id S933623Ab1IJRVg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Sep 2011 13:21:36 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:41397 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933379Ab1IJRVf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Sep 2011 13:17:59 -0400
-Message-ID: <4E6B9BC1.4060000@christianhoffmann.info>
-Date: Sat, 10 Sep 2011 19:17:53 +0200
-From: Christian Hoffmann <email@christianhoffmann.info>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: Josh Boyer <jwboyer@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: scheduling while atomic: swapper/0/0x10000002
-References: <4E6B6624.1000406@christianhoffmann.info> <CA+5PVA4nRVN0cia9R49=T5xy1inxQLSjDcv1yn4+UFppufRiYA@mail.gmail.com>
-In-Reply-To: <CA+5PVA4nRVN0cia9R49=T5xy1inxQLSjDcv1yn4+UFppufRiYA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sat, 10 Sep 2011 13:21:35 -0400
+From: Wanlong Gao <wanlong.gao@gmail.com>
+To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Cc: davem@davemloft.net, eric.dumazet@gmail.com, omarapazanadi@gmail.com,
+        Gao feng <gaofeng@cn.fujitsu.com>
+Subject: [PATCH] fib:fix BUG_ON in fib_nl_newrule when add new fib rule
+Date: Sun, 11 Sep 2011 01:19:10 +0800
+Message-Id: <1315675150-3012-1-git-send-email-wanlong.gao@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2011 06:44 PM, Josh Boyer wrote:
-> On Sat, Sep 10, 2011 at 9:29 AM, Christian Hoffmann
-> <email@christianhoffmann.info>  wrote:
->> Hi,
->>
->> I can see the following bug report in the kernel 3.1 rc5 dmesg:
->>
->> [    0.000008] BUG: scheduling while atomic: swapper/0/0x10000002
->> [    0.000012] Modules linked in:
->> [    0.000015] Pid: 0, comm: swapper Not tainted 3.1.0-rc5-ch+ #2
->> [    0.000017] Call Trace:
->> [    0.000024]  [<ffffffff81052cb6>] __schedule_bug+0x66/0x70
->> [    0.000028]  [<ffffffff8160329d>] schedule+0x99d/0x9b0
->> [    0.000032]  [<ffffffff81cf22b5>] ? pidmap_init+0x9f/0xdf
->> [    0.000035]  [<ffffffff8105cc7a>] __cond_resched+0x2a/0x40
->> [    0.000038]  [<ffffffff81603541>] _cond_resched+0x31/0x40
->> [    0.000041]  [<ffffffff8115fb63>] kmem_cache_alloc_trace+0x53/0x160
->> [    0.000043]  [<ffffffff81cf22b5>] pidmap_init+0x9f/0xdf
->> [    0.000046]  [<ffffffff81cd9b8a>] start_kernel+0x333/0x3c8
->> [    0.000049]  [<ffffffff81cd9347>] x86_64_start_reservations+0x132/0x136
->> [    0.000051]  [<ffffffff81cd944c>] x86_64_start_kernel+0x101/0x110
->
-> Paul McKenney has a patch that solves this oops.  You can find it here:
->
-> http://marc.info/?l=linux-kernel&m=131537669921538&w=2
->
-> We had discussed getting this into 3.1, but apparently that didn't
-> happen (yet?).  I thought it had been sent upstream with my tested-by,
-> but I don't see it included in Linus' tree.
+From: Gao feng <gaofeng@cn.fujitsu.com>
 
-Hi,
+add new fib rule can cause BUG_ON
+the reproduce shell is
 
-the patch up there doesn't seem to apply cleanly to 3.1 rc5, as it 
-misses the rename done in "[PATCH tip/core/rcu 23/55] rcu: Simplify 
-quiescent-state accounting" 
-(http://marc.info/?l=linux-kernel&m=131537654621392&w=2).
+#ip rule add pref 38
+#ip rule add pref 38
+#ip rule add to 192.168.3.0/24 goto 38
+#ip rule del pref 38
+#ip rule add to 192.168.3.0/24 goto 38
+#ip rule add pref 38
 
-Kind regards,
-Chris
+then the BUG_ON will happen
+add a var unresolved in struct fib_rule
+and use it to identify whether this rule is unresolved
+
+Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+---
+ include/net/fib_rules.h |    1 +
+ net/core/fib_rules.c    |    5 ++++-
+ 2 files changed, 5 insertions(+), 1 deletions(-)
+
+diff --git a/include/net/fib_rules.h b/include/net/fib_rules.h
+index 075f1e3..e4bae01 100644
+--- a/include/net/fib_rules.h
++++ b/include/net/fib_rules.h
+@@ -19,6 +19,7 @@ struct fib_rule {
+ 	u32			flags;
+ 	u32			table;
+ 	u8			action;
++	u8			unresolved;
+ 	u32			target;
+ 	struct fib_rule __rcu	*ctarget;
+ 	char			iifname[IFNAMSIZ];
+diff --git a/net/core/fib_rules.c b/net/core/fib_rules.c
+index e7ab0c0..aa20560 100644
+--- a/net/core/fib_rules.c
++++ b/net/core/fib_rules.c
+@@ -384,9 +384,11 @@ static int fib_nl_newrule(struct sk_buff *skb, struct nlmsghdr* nlh, void *arg)
+ 		 */
+ 		list_for_each_entry(r, &ops->rules_list, list) {
+ 			if (r->action == FR_ACT_GOTO &&
+-			    r->target == rule->pref) {
++			    r->target == rule->pref &&
++			    r->unresolved) {
+ 				BUG_ON(rtnl_dereference(r->ctarget) != NULL);
+ 				rcu_assign_pointer(r->ctarget, rule);
++				r->unresolved = 0;
+ 				if (--ops->unresolved_rules == 0)
+ 					break;
+ 			}
+@@ -488,6 +490,7 @@ static int fib_nl_delrule(struct sk_buff *skb, struct nlmsghdr* nlh, void *arg)
+ 			list_for_each_entry(tmp, &ops->rules_list, list) {
+ 				if (rtnl_dereference(tmp->ctarget) == rule) {
+ 					rcu_assign_pointer(tmp->ctarget, NULL);
++					tmp->unresolved = 1;
+ 					ops->unresolved_rules++;
+ 				}
+ 			}
+-- 
+1.7.6
+
