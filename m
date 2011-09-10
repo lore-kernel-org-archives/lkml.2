@@ -1,69 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755554Ab1IJAnL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 20:43:11 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:60908 "EHLO
+	id S1756193Ab1IJApw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 20:45:52 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:51622 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755269Ab1IJAm5 (ORCPT
+	by vger.kernel.org with ESMTP id S1755890Ab1IJApv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 20:42:57 -0400
-X-Sasl-enc: TJtgdfB0XrEAMOlzraQbTYDDjpmdpOGmsiws+qPtZeR3 1315615376
-Date: Fri, 9 Sep 2011 17:42:38 -0700
+	Fri, 9 Sep 2011 20:45:51 -0400
+X-Sasl-enc: KDdHyfKnlYD3XZSjRdY/SH99/U8wFYDa4QNpvQT70Z31 1315615549
+Date: Fri, 9 Sep 2011 17:45:41 -0700
 From: Greg KH <greg@kroah.com>
 To: Nitin Gupta <ngupta@vflare.org>
 Cc: Jerome Marchand <jmarchan@redhat.com>,
         Pekka Enberg <penberg@cs.helsinki.fi>,
         Robert Jennings <rcj@linux.vnet.ibm.com>,
         Linux Driver Project <devel@linuxdriverproject.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/5] zram: Set initial disksize to some default value
-Message-ID: <20110910004238.GB27110@kroah.com>
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Noah Watkins <noahwatkins@gmail.com>
+Subject: Re: [PATCH 3/5] zram: Make gobal variables use unique names
+Message-ID: <20110910004541.GA27375@kroah.com>
 References: <1315609264-13632-1-git-send-email-ngupta@vflare.org>
- <1315609264-13632-6-git-send-email-ngupta@vflare.org>
- <20110909231209.GB24604@kroah.com>
- <4E6AACF0.2080907@vflare.org>
+ <1315609264-13632-4-git-send-email-ngupta@vflare.org>
+ <20110909231028.GA24587@kroah.com>
+ <4E6AB0EA.9090505@vflare.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E6AACF0.2080907@vflare.org>
+In-Reply-To: <4E6AB0EA.9090505@vflare.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 09, 2011 at 08:18:56PM -0400, Nitin Gupta wrote:
-> On 09/09/2011 07:12 PM, Greg KH wrote:
+On Fri, Sep 09, 2011 at 08:35:54PM -0400, Nitin Gupta wrote:
+> On 09/09/2011 07:10 PM, Greg KH wrote:
 > 
-> > On Fri, Sep 09, 2011 at 07:01:04PM -0400, Nitin Gupta wrote:
-> >> Currently, we set initial disksize as 0, which forces
-> >> user to write some value to corresponding zram device's
-> >> sysfs node, before the device can be used. Now, we avoid
-> >> this step by providing some default size initially.
+> > On Fri, Sep 09, 2011 at 07:01:02PM -0400, Nitin Gupta wrote:
+> >> Global variables 'num_devices' and 'devices' are too
+> >> general to be global. This patch switches the name to
+> >> be "zram_devices".
 > >>
-> >> To change the disksize, user must:
-> >>  - Reset disk.
-> >> 	Ex: echo 1 > /sys/block/zram0/reset
-> >> (NOTE: disksize is set to the default value after reset)
-> >>
-> >>  - Set new disksize.
-> >> 	Ex: echo $((256*1024*1024)) > /sys/block/zram0/disksize
+> >> Signed-off-by: Noah Watkins <noahwatkins@gmail.com>
+> >> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
 > > 
-> > So, what tools just broke with this change?
-> > 
-> > And where is the sysfs file documentation change that should go along
-> > with this?
+> > I've already applied this patch, right?
 > > 
 > 
 > 
-> This change does not change any sysfs names or behavior, so does not
-> break any scripts that assume the current behavior. I also verified that
-> sysfs documentation (ABI/testing/sysfs-block-zram) need not be changed
-> and same with drivers/staging/zram/zram.txt.
+> I just checked another (staging-next) tree which is sync'ed more
+> recently and yes this patch has been applied.  Since git.kernel.org
+> seems to be down I couldn't see this change on my working tree.
+> 
+> However, that previous change actually also renamed module parameter
+> name 'num_devices' to 'zram_num_devices' which does not make much sense
+> since the boot parameter would now be 'zram.zram_num_devices='.  All
+> that's needed is to rename that global variable to some less generic
+> name but the boot/command line parameter name should be retained as
+> 'zram.num_devices=' which is what this new patch does.
+> 
+> So, would it possible for you to back-out that original change and apply
+> this change instead. Or, should I send a new patch series that "fixes"
+> that previous change?
 
-Huh, you just said the behavior changed as described in your comment
-above.  You said the user no longer has to do a step to accomplish
-something.  What happens if they do do that after this patch?
+Send a patch that "fixes" it.
 
-confused,
+thanks,
 
 greg k-h
