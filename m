@@ -1,107 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755634Ab1IJAS1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 20:18:27 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51259 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753308Ab1IJAS0 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 20:18:26 -0400
+	id S1756035Ab1IJAS7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 20:18:59 -0400
+Received: from mail-qw0-f42.google.com ([209.85.216.42]:60519 "EHLO
+	mail-qw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755782Ab1IJAS6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Sep 2011 20:18:58 -0400
+Message-ID: <4E6AACF0.2080907@vflare.org>
+Date: Fri, 09 Sep 2011 20:18:56 -0400
+From: Nitin Gupta <ngupta@vflare.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
 MIME-Version: 1.0
-In-Reply-To: <1315518078-30619-2-git-send-email-mason@myri.com>
-References: <1315518078-30619-2-git-send-email-mason@myri.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 9 Sep 2011 17:18:01 -0700
-Message-ID: <CA+55aFxhb1f6X4GO=+ZK1AUtmApPnLSP=JYGktQe1jsL7onX7A@mail.gmail.com>
-Subject: Re: [PATCH 1/2] Fix pointer dereference before call to pcie_bus_configure_settings
-To: Jon Mason <mason@myri.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, Shyam Iyer <shyam.iyer.t@gmail.com>,
-        Shyam Iyer <shyam_iyer@dell.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>
+To: Greg KH <greg@kroah.com>
+CC: Jerome Marchand <jmarchan@redhat.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Linux Driver Project <devel@linuxdriverproject.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/5] zram: Set initial disksize to some default value
+References: <1315609264-13632-1-git-send-email-ngupta@vflare.org> <1315609264-13632-6-git-send-email-ngupta@vflare.org> <20110909231209.GB24604@kroah.com>
+In-Reply-To: <20110909231209.GB24604@kroah.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jon Mason,
- I just noticed that you had just an "Acked-by:" on this one. It
-really should be a "Signed-off-by:" since it's passing through you.
-Can I get that?
+On 09/09/2011 07:12 PM, Greg KH wrote:
 
-Also, the commit message is a bit unclear. "introduces a few issues"?
-Can you guys elaborate on details? Oopses? Not being able to find
-devices? What?
+> On Fri, Sep 09, 2011 at 07:01:04PM -0400, Nitin Gupta wrote:
+>> Currently, we set initial disksize as 0, which forces
+>> user to write some value to corresponding zram device's
+>> sysfs node, before the device can be used. Now, we avoid
+>> this step by providing some default size initially.
+>>
+>> To change the disksize, user must:
+>>  - Reset disk.
+>> 	Ex: echo 1 > /sys/block/zram0/reset
+>> (NOTE: disksize is set to the default value after reset)
+>>
+>>  - Set new disksize.
+>> 	Ex: echo $((256*1024*1024)) > /sys/block/zram0/disksize
+> 
+> So, what tools just broke with this change?
+> 
+> And where is the sysfs file documentation change that should go along
+> with this?
+> 
 
-                       Linus
 
-On Thu, Sep 8, 2011 at 2:41 PM, Jon Mason <mason@myri.com> wrote:
-> From: Shyam Iyer <shyam.iyer.t@gmail.com>
->
-> Commit b03e7495a862b028294f59fc87286d6d78ee7fa1 introduces a few issues by dereferencing bus->self in the call to pcie_bus_configure_settings.
->
-> This fixes it by checking existence of bus->self before dereferencing it.
->
-> Reported-by: Stanislaw Gruszka <sgruszka@redhat.com>
-> Signed-off-by: Shyam Iyer <shyam_iyer@dell.com>
-> Acked-by: Jon Mason <mason@myri.com>
-> ---
->  arch/x86/pci/acpi.c              |    9 +++++++--
->  drivers/pci/hotplug/pcihp_slot.c |    4 +++-
->  drivers/pci/probe.c              |    3 ---
->  3 files changed, 10 insertions(+), 6 deletions(-)
->
-> diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
-> index c953302..039d913 100644
-> --- a/arch/x86/pci/acpi.c
-> +++ b/arch/x86/pci/acpi.c
-> @@ -365,8 +365,13 @@ struct pci_bus * __devinit pci_acpi_scan_root(struct acpi_pci_root *root)
->         */
->        if (bus) {
->                struct pci_bus *child;
-> -               list_for_each_entry(child, &bus->children, node)
-> -                       pcie_bus_configure_settings(child, child->self->pcie_mpss);
-> +               list_for_each_entry(child, &bus->children, node) {
-> +                       struct pci_dev *self = child->self;
-> +                       if (!self)
-> +                               continue;
-> +
-> +                       pcie_bus_configure_settings(child, self->pcie_mpss);
-> +               }
->        }
->
->        if (!bus)
-> diff --git a/drivers/pci/hotplug/pcihp_slot.c b/drivers/pci/hotplug/pcihp_slot.c
-> index 753b21a..3ffd9c1 100644
-> --- a/drivers/pci/hotplug/pcihp_slot.c
-> +++ b/drivers/pci/hotplug/pcihp_slot.c
-> @@ -169,7 +169,9 @@ void pci_configure_slot(struct pci_dev *dev)
->                        (dev->class >> 8) == PCI_CLASS_BRIDGE_PCI)))
->                return;
->
-> -       pcie_bus_configure_settings(dev->bus, dev->bus->self->pcie_mpss);
-> +       if (dev->bus && dev->bus->self)
-> +               pcie_bus_configure_settings(dev->bus,
-> +                                           dev->bus->self->pcie_mpss);
->
->        memset(&hpp, 0, sizeof(hpp));
->        ret = pci_get_hp_params(dev, &hpp);
-> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> index 8473727..0820fc1 100644
-> --- a/drivers/pci/probe.c
-> +++ b/drivers/pci/probe.c
-> @@ -1456,9 +1456,6 @@ void pcie_bus_configure_settings(struct pci_bus *bus, u8 mpss)
->  {
->        u8 smpss = mpss;
->
-> -       if (!bus->self)
-> -               return;
-> -
->        if (!pci_is_pcie(bus->self))
->                return;
->
-> --
-> 1.7.6
->
->
+This change does not change any sysfs names or behavior, so does not
+break any scripts that assume the current behavior. I also verified that
+sysfs documentation (ABI/testing/sysfs-block-zram) need not be changed
+and same with drivers/staging/zram/zram.txt.
+
+PS: zram_set_disksize() change (patch 1/5) also does not break any
+documentation.
+
+Thanks,
+Nitin
+
+
+
+
