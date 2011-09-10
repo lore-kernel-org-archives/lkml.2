@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758922Ab1IJJNA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Sep 2011 05:13:00 -0400
-Received: from www.linutronix.de ([62.245.132.108]:54549 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751687Ab1IJJM6 (ORCPT
+	id S1758949Ab1IJJTA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Sep 2011 05:19:00 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:56422 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757621Ab1IJJS7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Sep 2011 05:12:58 -0400
-Date: Sat, 10 Sep 2011 11:12:56 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-cc: linux-rt-users <linux-rt-users@vger.kernel.org>
-Subject: [ANNOUNCE] 3.0.4-rt13
-Message-ID: <alpine.LFD.2.02.1109101052340.2723@ionos>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Sat, 10 Sep 2011 05:18:59 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <20110910085546.GV23283@sweaglesw.org>
+References: <20110910085546.GV23283@sweaglesw.org>
+Date: Sat, 10 Sep 2011 11:18:57 +0200
+X-Google-Sender-Auth: KNJpV-qjVdL54jbh514rJ6liy7Q
+Message-ID: <CAMuHMdXv3Rfn-T6=14tya82a_W4WLReSkNW8Y7ChevwvcdcSvA@mail.gmail.com>
+Subject: Re: [PATCH] logo: Change regular 224-color tux logo to something more
+ appropriate for Linux 3.1
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: djwong@djwong.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, josh@joshtriplett.org,
+        Linux Fbdev development list <linux-fbdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear RT Folks,
+On Sat, Sep 10, 2011 at 10:55,  <djwong@djwong.org> wrote:
+> For Linux 3.1, I thought we could change the 224-color framebuffer logo to
+> something more apropos given the version number.  As the patch is quite large,
+> I'm only inlining the changelog. 8)
+>
+> See http://djwong.org/docs/31-tuxlogo.patch for too-large-for-lkml patch,
+> http://djwong.org/docs/31-tuxlogo.png  for a PNG logo, or
 
-I'm pleased to announce the 3.0.4-rt13 release.
+Nice try!
 
-Changes versus 3.0.2-rt11
+> http://djwong.org/docs/31-tuxlogo-screen.png for a screenshot.
 
-  * Migrate disable cure (Mike, Peter)
+How come the text is corrupting the logo during scrolling?
 
-  * ARM smpboot fix
-  
-  * Printk debug (Peter)
+> Singed-off-by: Darrick J. Wong <djwong@djwong.org>
+> ---
+>
+>  drivers/video/logo/logo_linux_clut224.ppm |39322 ++++++++++++++++++++++++++++-
+>  1 files changed, 37720 insertions(+), 1602 deletions(-)
 
-  * Ftrace: workaround the waitqueue issue
+This really needs to go through linux-fbdev (CCed).
 
-Patch against 3.0.4 can be found here:
+Gr{oetje,eeting}s,
 
-  https://tglx.de/~tglx/rt/patch-3.0.4-rt13.patch.gz
+                        Geert
 
-The split quilt queue is available at:
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-  https://tglx.de/~tglx/rt/patches-3.0.4-rt13.tar.gz
-
-For those who don't have 3.0.4 around:
-
-  git://tesla.tglx.de/git/linux-2.6-tip rt/3.0
-  
-  https://tglx.de/~tglx/rt/patch-3.0.4.gz
-
-Thanks,
-
-	tglx
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
