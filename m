@@ -1,50 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932908Ab1IJOLE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Sep 2011 10:11:04 -0400
-Received: from mail.wdtv.com ([66.118.69.84]:38397 "EHLO mail.wdtv.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932201Ab1IJOLB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Sep 2011 10:11:01 -0400
-X-Greylist: delayed 440 seconds by postgrey-1.27 at vger.kernel.org; Sat, 10 Sep 2011 10:11:01 EDT
-From: Gene Heskett <gene.heskett@gmail.com>
-To: Lin Ming <mlin@ss.pku.edu.cn>
-Subject: Re: [PATCH] logo: Change regular 224-color tux logo to something more appropriate for Linux 3.1
-Date: Sat, 10 Sep 2011 10:03:38 -0400
-User-Agent: KMail/1.13.7 (Linux/2.6.38.8-pclos3.pae.bfs; KDE/4.6.5; i686; ; )
-Cc: djwong@djwong.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, josh@joshtriplett.org
-References: <20110910085546.GV23283@sweaglesw.org> <CAF1ivSbWg4+wO6sj+6w5CtG=KsF89mhHkop1FY+JF6D9cwzoUw@mail.gmail.com>
-In-Reply-To: <CAF1ivSbWg4+wO6sj+6w5CtG=KsF89mhHkop1FY+JF6D9cwzoUw@mail.gmail.com>
+	id S932960Ab1IJOQS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Sep 2011 10:16:18 -0400
+Received: from mail3.microsoft.com ([131.107.115.214]:3585 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932201Ab1IJOQQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Sep 2011 10:16:16 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <greg@kroah.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: RE: [PATCH 18/25] Staging: hv: storvsc: Eliminate the usage of ext
+ field in struct  hv_device
+Thread-Topic: [PATCH 18/25] Staging: hv: storvsc: Eliminate the usage of ext
+ field in struct  hv_device
+Thread-Index: AQHMbjARQYMNjgM550iKe9fLrUtEVZVF+5yAgACvKsA=
+Date: Sat, 10 Sep 2011 14:16:14 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E048081DC4A1@TK5EX14MBXC128.redmond.corp.microsoft.com>
+References: <1315491843-9513-1-git-send-email-kys@microsoft.com>
+ <1315491876-9554-1-git-send-email-kys@microsoft.com>
+ <1315491876-9554-18-git-send-email-kys@microsoft.com>
+ <20110909204451.GH19127@kroah.com>
+In-Reply-To: <20110909204451.GH19127@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.32]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="windows-1256"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201109101003.38935.gene.heskett@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, September 10, 2011, Lin Ming wrote:
->On Sat, Sep 10, 2011 at 4:55 PM,  <djwong@djwong.org> wrote:
->> For Linux 3.1, I thought we could change the 224-color framebuffer logo
->> to something more apropos given the version number.  As the patch is
->> quite large, I'm only inlining the changelog. 8)
->> 
->> See http://djwong.org/docs/31-tuxlogo.patch for too-large-for-lkml
->> patch, http://djwong.org/docs/31-tuxlogo.png  for a PNG logo, or
->
->Funny, does it look like Win98's logo?
 
-Yes, entirely too much of an imitation.  I will not contaminate my Linux 
-install with it.
 
-Cheers, gene
--- 
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-My web page: <http://204.111.66.235:85/gene/>
-"The human brain is like an enormous fish -- it is flat and slimy and
-has gills through which it can see."
-		-- Monty Python
+> -----Original Message-----
+> From: Greg KH [mailto:greg@kroah.com]
+> Sent: Friday, September 09, 2011 4:45 PM
+> To: KY Srinivasan
+> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang
+> Subject: Re: [PATCH 18/25] Staging: hv: storvsc: Eliminate the usage of ext field in
+> struct hv_device
+> 
+> On Thu, Sep 08, 2011 at 07:24:29AM -0700, K. Y. Srinivasan wrote:
+> > Now, eliminate the usage of ext field in struct  hv_device for storvsc driver.
+> > We do this by registering pointer to struct storvsc_device as the driver
+> > specific data and eliminating the current usage of driver specific data to
+> > save and retrieve the pointer to struct Scsi_Host.
+> > Additionally, all access to the driver specific data is through
+> > the vmbus wrapper functions.
+> >
+> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > ---
+> >  drivers/staging/hv/storvsc_drv.c |   24 +++++++++++++++---------
+> >  1 files changed, 15 insertions(+), 9 deletions(-)
+> >
+> > diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
+> > index 57c1035..98d47cd 100644
+> > --- a/drivers/staging/hv/storvsc_drv.c
+> > +++ b/drivers/staging/hv/storvsc_drv.c
+> > @@ -266,6 +266,7 @@ struct storvsc_device {
+> >  	bool	 destroy;
+> >  	bool	 drain_notify;
+> >  	atomic_t num_outstanding_req;
+> > +	struct Scsi_Host *host;
+> 
+> You are properly reference counting this pointer, right?
+
+The scsi_host_alloc() which we use to allocate the host structure, gives us
+the needed reference.
+> 
+> > @@ -306,7 +307,8 @@ static inline struct storvsc_device
+> *get_out_stor_device(
+> >  {
+> >  	struct storvsc_device *stor_device;
+> >
+> > -	stor_device = (struct storvsc_device *)device->ext;
+> > +	stor_device =
+> > +		(struct storvsc_device *)hv_get_drvdata(device);
+> 
+> Casting is not needed at all.
+> 
+> > @@ -1366,7 +1371,8 @@ static int storvsc_probe(struct hv_device *device,
+> >  	stor_device->destroy = false;
+> >  	init_waitqueue_head(&stor_device->waiting_to_drain);
+> >  	stor_device->device = device;
+> > -	device->ext = stor_device;
+> > +	stor_device->host = host;
+> > +	hv_set_drvdata(device, stor_device);
+> 
+> Lookie there, no reference count incremented, right?  Or did I miss it
+> somewhere else?
+
+We are stashing the pointer to a structure on which we already have a reference
+(that was established at the point of allocating the host).
+
+Regards,
+
+K. Y
