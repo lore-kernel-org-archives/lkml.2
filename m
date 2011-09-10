@@ -1,78 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933685Ab1IJRfh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Sep 2011 13:35:37 -0400
-Received: from postina.fi.infn.it ([192.84.145.62]:54932 "EHLO
-	postina.fi.infn.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933553Ab1IJRfg convert rfc822-to-8bit (ORCPT
+	id S933780Ab1IJSI4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Sep 2011 14:08:56 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:46079
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933733Ab1IJSIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Sep 2011 13:35:36 -0400
-X-Greylist: delayed 493 seconds by postgrey-1.27 at vger.kernel.org; Sat, 10 Sep 2011 13:35:36 EDT
-Message-ID: <20110910192712.of5plz8a9wkwsosg@mercurio.fi.infn.it>
-Date: Sat, 10 Sep 2011 19:27:12 +0200
-From: "Barr. Peters Smith" <Barr.Peters_smith1@yahoo.com>
-Reply-to: Barr.Peters_smith2@yahoo.com
-To: undisclosed-recipients:;
-Subject: Dearest Friend! My proposal!
+	Sat, 10 Sep 2011 14:08:55 -0400
+Date: Sat, 10 Sep 2011 14:08:49 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        JBeulich@novell.com, jeremy.fitzhardinge@citrix.com, axboe@kernel.dk
+Subject: Re: [PATCH 1/3] xen/blk[front|back]: Use the full FLUSH | FUA
+ instead of just FLUSH.
+Message-ID: <20110910180849.GA6621@infradead.org>
+References: <1315593060-20031-1-git-send-email-konrad.wilk@oracle.com>
+ <1315593060-20031-2-git-send-email-konrad.wilk@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII;
-	DelSp=Yes	format=flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 7BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.3)
+In-Reply-To: <1315593060-20031-2-git-send-email-konrad.wilk@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
--- 
-Dear Mr/Mrs,
+On Fri, Sep 09, 2011 at 02:30:59PM -0400, Konrad Rzeszutek Wilk wrote:
+> During a FLUSH we can pass sector number that we want to
+> have flushed - which is what FUA requests are.
 
-Thank you for your reply. Please and please reply me on my private email:
-barr.peters_smith2@yahoo.com for it to get to me
+No, that is not the case.
 
-What I meant in short is that I work for the Ziraat Bankasi Bank of Turkey as
-the present External Auditor.
-
-And so just last week, I discovered a very large sum of money belonging to a
-late customer of the bank.
-
-This account has been dormant for a very long time since 1999 (12years  
-now). The
-Investigation and personally research I have conducted shows that he  
-died along
-his entire family in a fatal plane crash 12years ago and has left nobody to
-benefit the funds totaling 11.3 Million GBP.
-
-So I contacted you having found your email address and am proposing if  
-you will
-be interested to stand in as the next-of-kin. I have all the legal  
-documents to
-put you forward as the sole beneficiary of the funds, being a barrister at
-law.As well all files purporting to the funds in the bank are in my possession
-so you do not have even one little  cause to worry about.
-
-All you have to compensate me with will come as your personal will. I am not
-going to task you. If I can not see any one to stand in, then my bank  
-will send
-the money to the bank treasury as unclaimed funds.
-
-Looking to receive from you with these details to proceed.
-
-Full Name.....................
-Sex...........................
-Age.......................
-Occupation....................
-Mobile No.....................
-Email Address.......
-Residential Contact...........
-Marital Status................
-Region...............
-State and Nationality.........
-
-With kind regards, Call me on:+44-70-4573-9682. Email me on:
-barr.peters_smith2@yahoo.com if you want your email to get to me.
-
-Barr. Peters Smith
-
-
+REQ_FLUSH without data		-> pure flush
+REQ_FLUSH with data		-> preflush plus write
+REQ_FUA				-> write and ranged postflush
 
