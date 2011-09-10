@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934146Ab1IJXHu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Sep 2011 19:07:50 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:47600 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934120Ab1IJXHs (ORCPT
+	id S1752673Ab1IJXci (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Sep 2011 19:32:38 -0400
+Received: from mail-gw0-f42.google.com ([74.125.83.42]:41995 "EHLO
+	mail-gw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750765Ab1IJXch (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Sep 2011 19:07:48 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: djwong@djwong.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, josh@joshtriplett.org
-Subject: Re: [PATCH] logo: Change regular 224-color tux logo to something more appropriate for Linux 3.1
-In-Reply-To: Your message of "Sat, 10 Sep 2011 01:55:47 PDT."
-             <20110910085546.GV23283@sweaglesw.org>
-From: Valdis.Kletnieks@vt.edu
-References: <20110910085546.GV23283@sweaglesw.org>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1315695992_28234P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Sat, 10 Sep 2011 19:06:32 -0400
-Message-ID: <114033.1315695992@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020203.4E6BED81.00B8,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Sat, 10 Sep 2011 19:32:37 -0400
+Date: Sun, 11 Sep 2011 08:32:29 +0900
+From: Tejun Heo <tj@kernel.org>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        dvlasenk@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 1/2] ptrace: don't modify flags on PTRACE_SETOPTIONS
+ failure
+Message-ID: <20110910233229.GB29319@htj.dyndns.org>
+References: <201109090822.30063.vda.linux@googlemail.com>
+ <201109090824.37366.vda.linux@googlemail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201109090824.37366.vda.linux@googlemail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1315695992_28234P
-Content-Type: text/plain; charset=us-ascii
+On Fri, Sep 09, 2011 at 08:24:37AM +0200, Denys Vlasenko wrote:
+> ptrace: don't modify flags on PTRACE_SETOPTIONS failure
+> 
+> On ptrace(PTRACE_SETOPTIONS, pid, 0, <opts>), we used to set
+> those option bits which are known, and then fail with -EINVAL
+> if there are some unknown bits in <opts>.
+> 
+> This in inconsistent with typical error handling, which
+> does not change any state if input is invalid.
+> 
+> This patch changes PTRACE_SETOPTIONS behavior so that
+> in this case, we return -EINVAL and don't change any bits
+> in task->ptrace.
+> 
+> It's very unlikely that there is userspace code in the wild which
+> will be affected by this change: it should have the form
+> 
+>     ptrace(PTRACE_SETOPTIONS, pid, 0, PTRACE_O_BOGUSOPT)
+> 
+> where PTRACE_O_BOGUSOPT is a constant unknown to the kernel.
+> But kernel headers, naturally, don't contain any
+> PTRACE_O_BOGUSOPTs, thus the only way userspace can use one
+> if it defines one itself. I can't see why anyone would do such
+> a thing deliberately.
+> 
+> Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
 
-On Sat, 10 Sep 2011 01:55:47 PDT, djwong@djwong.org said:
-> For Linux 3.1, I thought we could change the 224-color framebuffer logo to
-> something more apropos given the version number.  As the patch is quite large,
-> I'm only inlining the changelog. 8)
+Acked-by: Tejun Heo <tj@kernel.org>
 
-You're welcome to provide a screenshot on a 32-core or 64-core system. :)
+Thanks.
 
-(Now, if you had  a nice 24-bit-deep color Tux around the same size as the current one.. ;)
-
-
---==_Exmh_1315695992_28234P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFOa+14cC3lWbTT17ARAp2CAKD30lD/4T/telU81vl+PGiCnXroPQCg8A7m
-bAKNm/Acrsm+woi5jYeFx8c=
-=8uJ1
------END PGP SIGNATURE-----
-
---==_Exmh_1315695992_28234P--
-
+-- 
+tejun
