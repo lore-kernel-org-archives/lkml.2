@@ -1,81 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754034Ab1IJFxN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Sep 2011 01:53:13 -0400
-Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:39346 "EHLO
-	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751190Ab1IJFxM (ORCPT
+	id S1753963Ab1IJFzn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Sep 2011 01:55:43 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:62758 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751190Ab1IJFzm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Sep 2011 01:53:12 -0400
-Message-ID: <4E6AFB3E.3020902@ti.com>
-Date: Sat, 10 Sep 2011 11:23:02 +0530
-From: Santosh <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	Sat, 10 Sep 2011 01:55:42 -0400
 MIME-Version: 1.0
-To: Kevin Hilman <khilman@ti.com>
-CC: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, rjw@sisk.pl, ccross@android.com
-Subject: Re: [PATCH v2 0/5] CPU PM notifiers
-References: <1315060755-4613-1-git-send-email-santosh.shilimkar@ti.com> <87ty8ly4rp.fsf@ti.com>
-In-Reply-To: <87ty8ly4rp.fsf@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1315630153.2606.24.camel@edumazet-laptop>
+References: <CAAJw_Zv9LaOut6+aQWki_-nCngEEfh-OVqF4rsUwb-LPfLk8Ug@mail.gmail.com>
+	<CAAJw_ZvP6m=3T0YoYq6VJdOKMxzm3fDcdJoDY8wqqDV8GZB+Dg@mail.gmail.com>
+	<1315290313.2565.0.camel@edumazet-laptop>
+	<CAAJw_ZvTX374XDZEi_rFAL=797au_7J9gfuDVz-h9o-+Zp_f4w@mail.gmail.com>
+	<CA+55aFyGQuPh0W7aEtng1NM1q3Vg6HAT83eiNk+fRFUjpsXPCg@mail.gmail.com>
+	<1315630153.2606.24.camel@edumazet-laptop>
+Date: Sat, 10 Sep 2011 13:55:42 +0800
+Message-ID: <CAAJw_Zt7dWh_=DHOevxmudyS8wzn7dY4NJozwCMW0kpJGcaBSQ@mail.gmail.com>
+Subject: Re: linux-3.1-0-rc4 bus error ... MPS configured higher than maximum
+ supported by the device. If a bus issue occurs, try running with pci=pcie_bus_safe.
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: lkml <linux-kernel@vger.kernel.org>, Jordan_Hargrave@dell.com,
+        Jon Mason <mason@myri.com>, Jesse Barnes <jbarnes@virtuousgeek.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 09 September 2011 11:30 PM, Kevin Hilman wrote:
-> Santosh Shilimkar<santosh.shilimkar@ti.com>  writes:
->
-> [...]
->
->> This patch set tries to address concerns with platform pm code
->> calling into the driver for every block in the Cortex A9s
->> during idle, hotplug, and suspend.  The first patch adds cpu pm
->> notifiers that can be called by platform code, the second uses
->> the notifier to save and restore the GIC state, and the third
->> saves the VFP state.
+On Sat, Sep 10, 2011 at 12:49 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> Le vendredi 09 septembre 2011 à 19:55 -0700, Linus Torvalds a écrit :
+>> On Tue, Sep 6, 2011 at 1:39 AM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
+>> >
+>> > Thanks. I saw that. And the system nearly got trashed even though I've
+>> > no hpsa. Grub went into rescue mode after reboot, and I had to rebuild
+>> > the grub boot sector.
+>> >
+>> > Now, it's all ok with pcie_aspm=force and pci=pcie_bus_safe.
 >>
->> The notifiers are used for two types of events, CPU PM events and
->> CPU cluster PM events.  CPU PM events are used to save and restore
->> per-cpu context when a single CPU is preparing to enter or has
->> just exited a low power state.  For example, the VFP saves the
->> last thread context, and the GIC saves banked CPU registers.
+>> Jeff, Eric,
+>>   Is the current -git state ok for you guys? I just pushed out commit
+>> ed2888e906b5 ("PCI: Remove MRRS modification from MPS setting code")
+>> which should default to safe pcie behavior.
 >>
->> CPU cluster events are used after all the CPUs in a power domain
->> have been prepared for the low power state.  The GIC uses these
->> events to save global register state.
+>> I just wanted to verify that that was all sufficient for this thread..
+>>
 >
-> Stepping back from my earlier objections, I think I had a fundamental
-> misunderstanding about what these notifiers should be used for.
+> Hi Linus
 >
-> The current assumptions/goals seem to be
+> I pulled your last changes, and did some tests on my HP BL460c G6,
+> including several stress sessions (make -j128 and various benches)
 >
-> 1) used only for devices in the same power domain as the CPU (cluster)
-> 2) use only for one specific power state of the CPU (cluster): off.
->
-> For awhile now, we've been discussing how to better coordinate CPU PM
-> transitions (CPUidle) with non-CPU PM transitions (runtime PM) for
-> devices that are tightly coupled to the CPU, but not necessarily in the
-> same powerdomain.
->
-> I was assuming (and hoping) that CPU PM notifiers could be used to do
-> that, but the more I think about it, I don't think we can achieve the
-> current CPU PM goals and the coordination with runtime PM with this
-> series.
->
-> I think it's more likely that we'll need to do some work with Rafael's
-> new PM domains to make that work correctly.
->
-> So, I'll retract my objections to this series, and feel free to add
->
-> Reviewed-by: Kevin Hilman<khilman@ti.com>
->
-Will add.
-Thanks for the review Kevin.
+> So far, everything seems fine, thanks.
 
-Regards
-Santosh
+Couldn't pulled anything for the past few days. Still stuck at commit
+9e79e3e9dd9672b37ac9412e9a926714306551fe.
 
-Regards
+fatal: Unable to look up git.kernel.org (port 9418) (Name or service not known)
+failed
 
+
+Jeff
