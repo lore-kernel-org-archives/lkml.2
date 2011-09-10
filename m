@@ -1,38 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759636Ab1IJP4m (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Sep 2011 11:56:42 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:35422 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751969Ab1IJP4l (ORCPT
+	id S933555Ab1IJQei (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Sep 2011 12:34:38 -0400
+Received: from mail-gw0-f42.google.com ([74.125.83.42]:48849 "EHLO
+	mail-gw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933370Ab1IJQeg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Sep 2011 11:56:41 -0400
-Date: Sat, 10 Sep 2011 16:56:39 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Marco Stornelli <marco.stornelli@gmail.com>
-Cc: Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH, RFC] xip: use i_mutex for xip_file_fault
-Message-ID: <20110910155639.GY2203@ZenIV.linux.org.uk>
-References: <4E6B82DB.50803@gmail.com>
+	Sat, 10 Sep 2011 12:34:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E6B82DB.50803@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110910052207.GA4807@mwanda>
+References: <1315050547-4781-1-git-send-email-mark.einon@gmail.com>
+	<20110910052207.GA4807@mwanda>
+Date: Sat, 10 Sep 2011 17:34:36 +0100
+Message-ID: <CANK3SE1tTX=1jCCAE6r6SGuagQKo88KDM0oE4wem+VkZeOA=PQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] staging: et131x: Fix checkpatch whitespace warnings
+From: Mark Einon <mark.einon@gmail.com>
+To: Dan Carpenter <error27@gmail.com>
+Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        o.hartmann@telovital.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 10, 2011 at 05:31:39PM +0200, Marco Stornelli wrote:
-> From: Marco Stornelli <marco.stornelli@gmail.com>
-> 
-> There aren't sufficient sync points for a fs for xip operations. In 
-> particular for the mmap case. It can be not sufficient to lock/unlock 
-> to do some operation inside get_xip_mem callback. For xip_file_read 
-> it's really easy to write a fs specific wrapper, xip_file_write hold 
-> i_mutex so no problem. With this patch we can avoid concurrent truncate 
-> operation and xip mmap.
+On 10 September 2011 06:22, Dan Carpenter <error27@gmail.com> wrote:
+> On Sat, Sep 03, 2011 at 12:49:06PM +0100, Mark Einon wrote:
+>> --- a/drivers/staging/et131x/et131x_netdev.c
+>> +++ b/drivers/staging/et131x/et131x_netdev.c
+>> @@ -408,7 +408,7 @@ void et131x_tx_timeout(struct net_device *netdev)
+>>       unsigned long flags;
+>>
+>>       /* If the device is closed, ignore the timeout */
+>> -     if (~(adapter->flags & fMP_ADAPTER_INTERRUPT_IN_USE));
+>> +     if (~(adapter->flags & fMP_ADAPTER_INTERRUPT_IN_USE))
+>>               return;
+>>
+>
+> You fixed a bug here.  That's not mentioned in the commit message.
+> Why would you want to keep that a secret?  Also it should go in a
+> separate commit.
 
-Umm...  I really don't like that; what's going to happen if you have a file
-mmapped and do write() to that file from address in that mapping?
+Oh yes, i did, didn't I? I must have forgot that was there.
+
+Thanks for the spot.
+
+Would you like it in a different patch?
+
+
+Cheers,
+
+ Mark
