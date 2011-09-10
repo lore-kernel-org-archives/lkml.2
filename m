@@ -1,120 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759768Ab1IJQmE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Sep 2011 12:42:04 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:47172 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759457Ab1IJQmB (ORCPT
+	id S1759747Ab1IJQoU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Sep 2011 12:44:20 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:39965 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759461Ab1IJQoT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Sep 2011 12:42:01 -0400
-Date: Sat, 10 Sep 2011 20:41:34 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: kernel-hardening@lists.openwall.com,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [RFC PATCH 2/2] mm: restrict access to /proc/slabinfo
-Message-ID: <20110910164134.GA2442@albatros>
-References: <20110910164001.GA2342@albatros>
+	Sat, 10 Sep 2011 12:44:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110910164001.GA2342@albatros>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4E6B6624.1000406@christianhoffmann.info>
+References: <4E6B6624.1000406@christianhoffmann.info>
+Date: Sat, 10 Sep 2011 12:44:17 -0400
+Message-ID: <CA+5PVA4nRVN0cia9R49=T5xy1inxQLSjDcv1yn4+UFppufRiYA@mail.gmail.com>
+Subject: Re: scheduling while atomic: swapper/0/0x10000002
+From: Josh Boyer <jwboyer@gmail.com>
+To: Christian Hoffmann <email@christianhoffmann.info>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Historically /proc/slabinfo has 0444 permissions and is accessible to
-the world.  slabinfo contains rather private information related both to
-the kernel and userspace tasks.  Depending on the situation, it might
-reveal either private information per se or information useful to make
-another targeted attack.  Some examples of what can be learned by
-reading/watching for /proc/slabinfo entries:
+On Sat, Sep 10, 2011 at 9:29 AM, Christian Hoffmann
+<email@christianhoffmann.info> wrote:
+> Hi,
+>
+> I can see the following bug report in the kernel 3.1 rc5 dmesg:
+>
+> [    0.000008] BUG: scheduling while atomic: swapper/0/0x10000002
+> [    0.000012] Modules linked in:
+> [    0.000015] Pid: 0, comm: swapper Not tainted 3.1.0-rc5-ch+ #2
+> [    0.000017] Call Trace:
+> [    0.000024]  [<ffffffff81052cb6>] __schedule_bug+0x66/0x70
+> [    0.000028]  [<ffffffff8160329d>] schedule+0x99d/0x9b0
+> [    0.000032]  [<ffffffff81cf22b5>] ? pidmap_init+0x9f/0xdf
+> [    0.000035]  [<ffffffff8105cc7a>] __cond_resched+0x2a/0x40
+> [    0.000038]  [<ffffffff81603541>] _cond_resched+0x31/0x40
+> [    0.000041]  [<ffffffff8115fb63>] kmem_cache_alloc_trace+0x53/0x160
+> [    0.000043]  [<ffffffff81cf22b5>] pidmap_init+0x9f/0xdf
+> [    0.000046]  [<ffffffff81cd9b8a>] start_kernel+0x333/0x3c8
+> [    0.000049]  [<ffffffff81cd9347>] x86_64_start_reservations+0x132/0x136
+> [    0.000051]  [<ffffffff81cd944c>] x86_64_start_kernel+0x101/0x110
 
-1) dentry (and different *inode*) number might reveal other processes fs
-activity.  The number of dentry "active objects" doesn't strictly show
-file count opened/touched by a process, however, there is a good
-correlation between them.  The patch "proc: force dcache drop on
-unauthorized access" relies on the privacy of dentry count.
+Paul McKenney has a patch that solves this oops.  You can find it here:
 
-2) different inode entries might reveal the same information as (1), but
-these are more fine granted counters.  If a filesystem is mounted in a
-private mount point (or even a private namespace) and fs type differs from
-other mounted fs types, fs activity in this mount point/namespace is
-revealed.  If there is a single ecryptfs mount point, the whole fs
-activity of a single user is revealed.  Number of files in ecryptfs
-mount point is a private information per se.
+http://marc.info/?l=linux-kernel&m=131537669921538&w=2
 
-3) fuse_* reveals number of files / fs activity of a user in a user
-private mount point.  It is approx. the same severity as ecryptfs
-infoleak in (2).
+We had discussed getting this into 3.1, but apparently that didn't
+happen (yet?).  I thought it had been sent upstream with my tested-by,
+but I don't see it included in Linus' tree.
 
-4) sysfs_dir_cache similar to (2) reveals devices' addition/removal,
-which can be otherwise hidden by "chmod 0700 /sys/".  With 0444 slabinfo
-the precise number of sysfs files is known to the world.
-
-5) buffer_head might reveal some kernel activity.  With other
-information leaks an attacker might identify what specific kernel
-routines generate buffer_head activity.
-
-6) *kmalloc* infoleaks are very situational.  Attacker should watch for
-the specific kmalloc size entry and filter the noise related to the unrelated
-kernel activity.  If an attacker has relatively silent victim system, he
-might get rather precise counters.
-
-Additional information sources might significantly increase the slabinfo
-infoleak benefits.  E.g. if an attacker knows that the processes
-activity on the system is very low (only core daemons like syslog and
-cron), he may run setxid binaries / trigger local daemon activity /
-trigger network services activity / await sporadic cron jobs activity
-/ etc. and get rather precise counters for fs and network activity of
-these privileged tasks, which is unknown otherwise.
-
-
-Also hiding slabinfo is a one step to complicate exploitation of kernel
-heap overflows (and possibly, other bugs).  The related discussion:
-
-http://thread.gmane.org/gmane.linux.kernel/1108378
-
-
-World readable slabinfo simplifies kernel developers' job of debugging
-kernel bugs (e.g. memleaks), but I believe it does more harm than
-benefits.  For most users 0444 slabinfo is an unreasonable attack vector.
-
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
----
- mm/slab.c |    3 ++-
- mm/slub.c |    2 +-
- 2 files changed, 3 insertions(+), 2 deletions(-)
-
---
-diff --git a/mm/slab.c b/mm/slab.c
-index 6d90a09..560ffd0 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -4584,7 +4584,8 @@ static const struct file_operations proc_slabstats_operations = {
- 
- static int __init slab_proc_init(void)
- {
--	proc_create("slabinfo",S_IWUSR|S_IRUGO,NULL,&proc_slabinfo_operations);
-+	proc_create("slabinfo", S_IWUSR | S_IRUSR, NULL,
-+		    &proc_slabinfo_operations);
- #ifdef CONFIG_DEBUG_SLAB_LEAK
- 	proc_create("slab_allocators", 0, NULL, &proc_slabstats_operations);
- #endif
-diff --git a/mm/slub.c b/mm/slub.c
-index 9f662d7..f440fc7 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -5257,7 +5257,7 @@ static const struct file_operations proc_slabinfo_operations = {
- 
- static int __init slab_proc_init(void)
- {
--	proc_create("slabinfo", S_IRUGO, NULL, &proc_slabinfo_operations);
-+	proc_create("slabinfo", S_IRUSR, NULL, &proc_slabinfo_operations);
- 	return 0;
- }
- module_init(slab_proc_init);
+josh
