@@ -1,47 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758689Ab1IJHeA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Sep 2011 03:34:00 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:44636 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758551Ab1IJHd7 (ORCPT
+	id S1758637Ab1IJH56 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Sep 2011 03:57:58 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:64807 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757848Ab1IJH55 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Sep 2011 03:33:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAGsJ_4xv9+=+=2b=i47P5V5sOQH-GyTMaESwbeHxu439Vx1gLA@mail.gmail.com>
-References: <1315374075-15479-1-git-send-email-Baohua.Song@csr.com>
-	<438BB0150E931F4B9CE701519A4463010871804A46@bgsmsx502.gar.corp.intel.com>
-	<CAGsJ_4x4S+8d3xS+QTrjDpoxcHo3p7qArd7yFr=+h1vxSRvEpA@mail.gmail.com>
-	<438BB0150E931F4B9CE701519A4463010871804A48@bgsmsx502.gar.corp.intel.com>
-	<CAGsJ_4yeovNP=6CKTafbxrBTrYQ42B9yvAOM8gM_bYqD6mTnUw@mail.gmail.com>
-	<CABb+yY1=P=D3GFFxMOUM0a2yWCiAHNqwVU0a--t+pJnUhqKHKA@mail.gmail.com>
-	<CABb+yY3F+DMn2SxeO0chjpiMBkgLvSK5EVYMdhQsfQoZNZ4_7Q@mail.gmail.com>
-	<1315518378.6638.2.camel@vkoul-mobl4>
-	<CAGsJ_4xv9+=+=2b=i47P5V5sOQH-GyTMaESwbeHxu439Vx1gLA@mail.gmail.com>
-Date: Sat, 10 Sep 2011 13:03:58 +0530
-Message-ID: <CAJe_ZhcW4smy8oDRyYw8RB7SJjXjRT8MwPRprcaR4OfSGKHP-A@mail.gmail.com>
-Subject: Re: [PATCH] dmaengine: add CSR SiRFprimaII DMAC driver
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: Barry Song <21cnbao@gmail.com>
-Cc: Vinod Koul <vkoul@infradead.org>, "arnd@arndb.de" <arnd@arndb.de>,
-        vinod.koul@intel.com,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "workgroup.linux@csr.com" <workgroup.linux@csr.com>,
-        "rongjun.ying@csr.com" <rongjun.ying@csr.com>,
-        "Baohua.Song@csr.com" <Baohua.Song@csr.com>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 10 Sep 2011 03:57:57 -0400
+Subject: Re: linux-3.1-0-rc4 bus error ... MPS configured higher than
+ maximum supported by the device. If a bus issue occurs, try running with
+ pci=pcie_bus_safe.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jeff Chua <jeff.chua.linux@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>, Jordan_Hargrave@dell.com,
+        Jon Mason <mason@myri.com>, Jesse Barnes <jbarnes@virtuousgeek.org>
+In-Reply-To: <CAAJw_Zt7dWh_=DHOevxmudyS8wzn7dY4NJozwCMW0kpJGcaBSQ@mail.gmail.com>
+References: <CAAJw_Zv9LaOut6+aQWki_-nCngEEfh-OVqF4rsUwb-LPfLk8Ug@mail.gmail.com>
+	 <CAAJw_ZvP6m=3T0YoYq6VJdOKMxzm3fDcdJoDY8wqqDV8GZB+Dg@mail.gmail.com>
+	 <1315290313.2565.0.camel@edumazet-laptop>
+	 <CAAJw_ZvTX374XDZEi_rFAL=797au_7J9gfuDVz-h9o-+Zp_f4w@mail.gmail.com>
+	 <CA+55aFyGQuPh0W7aEtng1NM1q3Vg6HAT83eiNk+fRFUjpsXPCg@mail.gmail.com>
+	 <1315630153.2606.24.camel@edumazet-laptop>
+	 <CAAJw_Zt7dWh_=DHOevxmudyS8wzn7dY4NJozwCMW0kpJGcaBSQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 10 Sep 2011 09:57:50 +0200
+Message-ID: <1315641470.2606.26.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 September 2011 13:48, Barry Song <21cnbao@gmail.com> wrote:
+Le samedi 10 septembre 2011 à 13:55 +0800, Jeff Chua a écrit :
+> On Sat, Sep 10, 2011 at 12:49 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> > Le vendredi 09 septembre 2011 à 19:55 -0700, Linus Torvalds a écrit :
+> >> On Tue, Sep 6, 2011 at 1:39 AM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
+> >> >
+> >> > Thanks. I saw that. And the system nearly got trashed even though I've
+> >> > no hpsa. Grub went into rescue mode after reboot, and I had to rebuild
+> >> > the grub boot sector.
+> >> >
+> >> > Now, it's all ok with pcie_aspm=force and pci=pcie_bus_safe.
+> >>
+> >> Jeff, Eric,
+> >>   Is the current -git state ok for you guys? I just pushed out commit
+> >> ed2888e906b5 ("PCI: Remove MRRS modification from MPS setting code")
+> >> which should default to safe pcie behavior.
+> >>
+> >> I just wanted to verify that that was all sufficient for this thread..
+> >>
+> >
+> > Hi Linus
+> >
+> > I pulled your last changes, and did some tests on my HP BL460c G6,
+> > including several stress sessions (make -j128 and various benches)
+> >
+> > So far, everything seems fine, thanks.
+> 
+> Couldn't pulled anything for the past few days. Still stuck at commit
+> 9e79e3e9dd9672b37ac9412e9a926714306551fe.
+> 
+> fatal: Unable to look up git.kernel.org (port 9418) (Name or service not known)
+> failed
+> 
+> 
 
-> Jassi, you might think my reply as an ACK to "[PATCH] DMAEngine:
-> Define generic transfer request api".
+Hmm, you probably miss something ;)
 
-Thanks, but could you please formally ACK the patch in it's own thread?
+
+http://lwn.net/Articles/457142/
+
+git pull https://github.com/torvalds/linux.git
+
+
+
