@@ -1,75 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759556Ab1IJQkV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Sep 2011 12:40:21 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:54121 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759298Ab1IJQkU convert rfc822-to-8bit (ORCPT
+	id S1759702Ab1IJQkb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Sep 2011 12:40:31 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:59483 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759298Ab1IJQk0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Sep 2011 12:40:20 -0400
+	Sat, 10 Sep 2011 12:40:26 -0400
+Date: Sat, 10 Sep 2011 20:40:01 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: kernel-hardening@lists.openwall.com,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        linux-kernel@vger.kernel.org
+Subject: [RFC PATCH 1/2] proc: force dcache drop on unauthorized access
+Message-ID: <20110910164001.GA2342@albatros>
 MIME-Version: 1.0
-In-Reply-To: <1315633296.23777.32.camel@Joe-Laptop>
-References: <1315050547-4781-1-git-send-email-mark.einon@gmail.com>
-	<1315633296.23777.32.camel@Joe-Laptop>
-Date: Sat, 10 Sep 2011 17:40:19 +0100
-Message-ID: <CANK3SE3KoWrz5B2EdhC01kW2f_GJrUK1HxxxcYiecb+8J1tscQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] staging: et131x: Fix checkpatch whitespace warnings
-From: Mark Einon <mark.einon@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        o.hartmann@telovital.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10 September 2011 06:41, Joe Perches <joe@perches.com> wrote:
-> On Sat, 2011-09-03 at 12:49 +0100, Mark Einon wrote:
->> Some of my previous hacking attempts have not been following the rules.
->> All fixes either lines > 80 chars or whitespace corrections (spaces->tabs etc).
-> []
->> diff --git a/drivers/staging/et131x/et1310_mac.c b/drivers/staging/et131x/et1310_mac.c
->> index ab85cb3..36f2168 100644
->> --- a/drivers/staging/et131x/et1310_mac.c
->> +++ b/drivers/staging/et131x/et1310_mac.c
->> @@ -191,7 +191,8 @@ void et1310_config_mac_regs2(struct et131x_adapter *adapter)
->>       cfg1 |= CFG1_RX_ENABLE | CFG1_TX_ENABLE | CFG1_TX_FLOW;
->>       /* Initialize loop back to off */
->>       cfg1 &= ~(CFG1_LOOPBACK | CFG1_RX_FLOW);
->> -     if (adapter->flowcontrol == FLOW_RXONLY || adapter->flowcontrol == FLOW_BOTH)
->> +     if (adapter->flowcontrol == FLOW_RXONLY ||
->> +                             adapter->flowcontrol == FLOW_BOTH)
->
-> Especially in cases like this, it helps readability
-> to align to open parenthesis like:
->
->        if (adapter->flowcontrol == FLOW_RXONLY ||
->            adapter->flowcontrol == FLOW_BOTH)
->
+The patch "proc: fix races against execve() of /proc/PID/fd**" is still
+a partial fix for a setxid problem.  link(2) is a yet another way to
+identify whether a specific fd is opened by a privileged process.  By
+calling link(2) against /proc/PID/fd/* an attacker may identify whether
+the fd number is valid for PID by analysing link(2) return code.
 
-Thanks, noted. I'll bear it in mind for next time...
+Both getattr() and link() can be used by the attacker iff the dentry is
+present in the dcache.  In this case ->lookup() is not called and the
+only way to check ptrace permissions is either operation handler or
+->revalidate().  The easiest solution to prevent any unauthorized access
+to /proc/PID/fd*/ files is to force the dentry drop on each unauthorized
+access attempt.
 
-> []
->> @@ -641,7 +641,8 @@ static inline void free_send_packet(struct et131x_adapter *adapter,
->>                * they point to
->>                */
->>               do {
->> -                     desc = (struct tx_desc *)(adapter->tx_ring.tx_desc_ring +
->> +                     desc = (struct tx_desc *)
->> +                                 (adapter->tx_ring.tx_desc_ring +
->>                                               INDEX10(tcb->index_start));
->
-> Isn't this an unnecessary cast?
-> Perhaps it's better as:
->
->                        u32 i10 = INDEX10(tcb->index_start);
->
->                        desc = &adapter->tx_ring.tx_desc_ring[i10];
+If an attacker keeps opened fd of /proc/PID/fd/ and dcache contains
+a specific dentry for some /proc/PID/fd/XXX, any future attemp to use the
+dentry by the attacker would lead to the dentry drop as a result of a
+failed ptrace check in ->revalidate().  Then the attacker cannot spawn a
+dentry for the specific fd number because of ptrace check in ->lookup().
 
-That sounds like a good idea. I'll add it to the list when I go
-through the tx/rx code for the driver.
+The dentry drop can be still observed by an attacker by analysing
+information from /proc/slabinfo, which is addressed in the successive
+patch.
 
-Cheers,
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+---
+ fs/proc/base.c |   42 ++++++------------------------------------
+ 1 files changed, 6 insertions(+), 36 deletions(-)
 
-Mark
+--
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index d44c701..8b72293 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -1665,46 +1665,12 @@ out:
+ 	return error;
+ }
+ 
+-static int proc_pid_fd_link_getattr(struct vfsmount *mnt, struct dentry *dentry,
+-		struct kstat *stat)
+-{
+-	struct inode *inode = dentry->d_inode;
+-	struct task_struct *task = get_proc_task(inode);
+-	int rc;
+-
+-	if (task == NULL)
+-		return -ESRCH;
+-
+-	rc = -EACCES;
+-	if (lock_trace(task))
+-		goto out_task;
+-
+-	generic_fillattr(inode, stat);
+-	unlock_trace(task);
+-	rc = 0;
+-out_task:
+-	put_task_struct(task);
+-	return rc;
+-}
+-
+ static const struct inode_operations proc_pid_link_inode_operations = {
+ 	.readlink	= proc_pid_readlink,
+ 	.follow_link	= proc_pid_follow_link,
+ 	.setattr	= proc_setattr,
+ };
+ 
+-static const struct inode_operations proc_fdinfo_link_inode_operations = {
+-	.setattr	= proc_setattr,
+-	.getattr	= proc_pid_fd_link_getattr,
+-};
+-
+-static const struct inode_operations proc_fd_link_inode_operations = {
+-	.readlink	= proc_pid_readlink,
+-	.follow_link	= proc_pid_follow_link,
+-	.setattr	= proc_setattr,
+-	.getattr	= proc_pid_fd_link_getattr,
+-};
+-
+ 
+ /* building an inode */
+ 
+@@ -2013,6 +1979,11 @@ static int tid_fd_revalidate(struct dentry *dentry, struct nameidata *nd)
+ 	task = get_proc_task(inode);
+ 	fd = proc_fd(inode);
+ 
++	if (!ptrace_may_access(task, PTRACE_MODE_READ)) {
++		put_task_struct(task);
++		task = NULL;
++	}
++
+ 	if (task) {
+ 		files = get_files_struct(task);
+ 		if (files) {
+@@ -2085,7 +2056,7 @@ static struct dentry *proc_fd_instantiate(struct inode *dir,
+ 	spin_unlock(&files->file_lock);
+ 	put_files_struct(files);
+ 
+-	inode->i_op = &proc_fd_link_inode_operations;
++	inode->i_op = &proc_pid_link_inode_operations;
+ 	inode->i_size = 64;
+ 	ei->op.proc_get_link = proc_fd_link;
+ 	d_set_d_op(dentry, &tid_fd_dentry_operations);
+@@ -2267,7 +2238,6 @@ static struct dentry *proc_fdinfo_instantiate(struct inode *dir,
+ 	ei->fd = fd;
+ 	inode->i_mode = S_IFREG | S_IRUSR;
+ 	inode->i_fop = &proc_fdinfo_file_operations;
+-	inode->i_op = &proc_fdinfo_link_inode_operations;
+ 	d_set_d_op(dentry, &tid_fd_dentry_operations);
+ 	d_add(dentry, inode);
+ 	/* Close the race of the process dying before we return the dentry */
