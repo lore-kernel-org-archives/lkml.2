@@ -1,28 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758835Ab1IJIrP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Sep 2011 04:47:15 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:34697 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758539Ab1IJIrO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Sep 2011 04:47:14 -0400
+	id S1758892Ab1IJJAy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Sep 2011 05:00:54 -0400
+Received: from www.covariable.com ([216.129.123.154]:58760 "EHLO sweaglesw.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751903Ab1IJJAx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Sep 2011 05:00:53 -0400
+X-Greylist: delayed 306 seconds by postgrey-1.27 at vger.kernel.org; Sat, 10 Sep 2011 05:00:53 EDT
+Date: Sat, 10 Sep 2011 01:55:47 -0700
+From: djwong@djwong.org
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, josh@joshtriplett.org
+Subject: [PATCH] logo: Change regular 224-color tux logo to something more
+ appropriate for Linux 3.1
+Message-ID: <20110910085546.GV23283@sweaglesw.org>
 MIME-Version: 1.0
-Date: Sat, 10 Sep 2011 09:47:09 +0100
-Message-ID: <CAAMvbhHbL_dJNxF8WNvhniCBgowf1_yt79BEVbhNX=JZUPLNuQ@mail.gmail.com>
-Subject: kernel.org down
-From: James Courtier-Dutton <james.dutton@gmail.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+For Linux 3.1, I thought we could change the 224-color framebuffer logo to
+something more apropos given the version number.  As the patch is quite large,
+I'm only inlining the changelog. 8)
 
-Any ideas as to how long kernel.org will be down?
-I am trying to get at some of the git repositories there were there.
+See http://djwong.org/docs/31-tuxlogo.patch for too-large-for-lkml patch,
+http://djwong.org/docs/31-tuxlogo.png  for a PNG logo, or
+http://djwong.org/docs/31-tuxlogo-screen.png for a screenshot.
 
-Kind Regards
+Singed-off-by: Darrick J. Wong <djwong@djwong.org>
+---
 
-James
+ drivers/video/logo/logo_linux_clut224.ppm |39322 ++++++++++++++++++++++++++++-
+ 1 files changed, 37720 insertions(+), 1602 deletions(-)
+
