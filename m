@@ -1,69 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756193Ab1IJApw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 20:45:52 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:51622 "EHLO
-	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755890Ab1IJApv (ORCPT
+	id S1756575Ab1IJArc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 20:47:32 -0400
+Received: from mail209.messagelabs.com ([216.82.255.3]:55646 "EHLO
+	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756093Ab1IJArb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 20:45:51 -0400
-X-Sasl-enc: KDdHyfKnlYD3XZSjRdY/SH99/U8wFYDa4QNpvQT70Z31 1315615549
-Date: Fri, 9 Sep 2011 17:45:41 -0700
-From: Greg KH <greg@kroah.com>
-To: Nitin Gupta <ngupta@vflare.org>
-Cc: Jerome Marchand <jmarchan@redhat.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Linux Driver Project <devel@linuxdriverproject.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Noah Watkins <noahwatkins@gmail.com>
-Subject: Re: [PATCH 3/5] zram: Make gobal variables use unique names
-Message-ID: <20110910004541.GA27375@kroah.com>
-References: <1315609264-13632-1-git-send-email-ngupta@vflare.org>
- <1315609264-13632-4-git-send-email-ngupta@vflare.org>
- <20110909231028.GA24587@kroah.com>
- <4E6AB0EA.9090505@vflare.org>
+	Fri, 9 Sep 2011 20:47:31 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-14.tower-209.messagelabs.com!1315615650!16021855!1
+X-Originating-IP: [216.166.12.98]
+X-StarScan-Version: 6.3.6; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: question: attribute 'require_context'
+Date: Fri, 9 Sep 2011 17:47:18 -0700
+User-Agent: KMail/1.9.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <4E6AB0EA.9090505@vflare.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-ID: <201109091747.18525.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 09, 2011 at 08:35:54PM -0400, Nitin Gupta wrote:
-> On 09/09/2011 07:10 PM, Greg KH wrote:
-> 
-> > On Fri, Sep 09, 2011 at 07:01:02PM -0400, Nitin Gupta wrote:
-> >> Global variables 'num_devices' and 'devices' are too
-> >> general to be global. This patch switches the name to
-> >> be "zram_devices".
-> >>
-> >> Signed-off-by: Noah Watkins <noahwatkins@gmail.com>
-> >> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
-> > 
-> > I've already applied this patch, right?
-> > 
-> 
-> 
-> I just checked another (staging-next) tree which is sync'ed more
-> recently and yes this patch has been applied.  Since git.kernel.org
-> seems to be down I couldn't see this change on my working tree.
-> 
-> However, that previous change actually also renamed module parameter
-> name 'num_devices' to 'zram_num_devices' which does not make much sense
-> since the boot parameter would now be 'zram.zram_num_devices='.  All
-> that's needed is to rename that global variable to some less generic
-> name but the boot/command line parameter name should be retained as
-> 'zram.num_devices=' which is what this new patch does.
-> 
-> So, would it possible for you to back-out that original change and apply
-> this change instead. Or, should I send a new patch series that "fixes"
-> that previous change?
+Hello all,
 
-Send a patch that "fixes" it.
+I'm trying to do an allyesconfig build of the kernel on an old debian box
+with gcc version, gcc (Debian 4.3.2-1.1) 4.3.2. Everything goes fine until
+the DRBD device driver gets compiled. At that point I get a bunch of
+error messages like this:
 
-thanks,
+drivers/block/drbd/drbd_int.h:974:39 error: attribute 'require_context': unknown attribute
 
-greg k-h
+It looks like this is due to the following:
+
+#ifdef __CHECKER__
+# define __protected_by(x)       __attribute__((require_context(x,1,999,"rdwr")))
+# define __protected_read_by(x)  __attribute__((require_context(x,1,999,"read")))
+# define __protected_write_by(x) __attribute__((require_context(x,1,999,"write")))
+# define __must_hold(x)       __attribute__((context(x,1,1), require_context(x,1,999,"call")))
+#else
+# define __protected_by(x)
+# define __protected_read_by(x)
+# define __protected_write_by(x)
+# define __must_hold(x)
+#endif
+
+Is the require_context attribute something found in a later version of gcc?
+
+Thanks,
+Hartley
