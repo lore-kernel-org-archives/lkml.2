@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758483Ab1IJHdn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Sep 2011 03:33:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60453 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754923Ab1IJHdm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Sep 2011 03:33:42 -0400
-Date: Sat, 10 Sep 2011 17:33:20 +1000
-From: NeilBrown <neilb@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux RAID <linux-raid@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Pim Zandbergen <P.Zandbergen@macroscoop.nl>,
-        Bruno Wolff III <bruno@wolff.to>,
-        Wu Fengguang <fengguang.wu@intel.com>, Christoph Hellwig <hch@lst.de>,
-        Hugh Dickins <hughd@google.com>
-Subject: [PULL REQUEST] more md fixes for 3.1
-Message-ID: <20110910173320.3e62bea0@notabene.brown>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1758689Ab1IJHeA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Sep 2011 03:34:00 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:44636 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758551Ab1IJHd7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Sep 2011 03:33:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAGsJ_4xv9+=+=2b=i47P5V5sOQH-GyTMaESwbeHxu439Vx1gLA@mail.gmail.com>
+References: <1315374075-15479-1-git-send-email-Baohua.Song@csr.com>
+	<438BB0150E931F4B9CE701519A4463010871804A46@bgsmsx502.gar.corp.intel.com>
+	<CAGsJ_4x4S+8d3xS+QTrjDpoxcHo3p7qArd7yFr=+h1vxSRvEpA@mail.gmail.com>
+	<438BB0150E931F4B9CE701519A4463010871804A48@bgsmsx502.gar.corp.intel.com>
+	<CAGsJ_4yeovNP=6CKTafbxrBTrYQ42B9yvAOM8gM_bYqD6mTnUw@mail.gmail.com>
+	<CABb+yY1=P=D3GFFxMOUM0a2yWCiAHNqwVU0a--t+pJnUhqKHKA@mail.gmail.com>
+	<CABb+yY3F+DMn2SxeO0chjpiMBkgLvSK5EVYMdhQsfQoZNZ4_7Q@mail.gmail.com>
+	<1315518378.6638.2.camel@vkoul-mobl4>
+	<CAGsJ_4xv9+=+=2b=i47P5V5sOQH-GyTMaESwbeHxu439Vx1gLA@mail.gmail.com>
+Date: Sat, 10 Sep 2011 13:03:58 +0530
+Message-ID: <CAJe_ZhcW4smy8oDRyYw8RB7SJjXjRT8MwPRprcaR4OfSGKHP-A@mail.gmail.com>
+Subject: Re: [PATCH] dmaengine: add CSR SiRFprimaII DMAC driver
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: Barry Song <21cnbao@gmail.com>
+Cc: Vinod Koul <vkoul@infradead.org>, "arnd@arndb.de" <arnd@arndb.de>,
+        vinod.koul@intel.com,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "workgroup.linux@csr.com" <workgroup.linux@csr.com>,
+        "rongjun.ying@csr.com" <rongjun.ying@csr.com>,
+        "Baohua.Song@csr.com" <Baohua.Song@csr.com>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 9 September 2011 13:48, Barry Song <21cnbao@gmail.com> wrote:
 
-Hi Linus, 
- a few more little fixes for md for 3.1
- One is not in md code but is triggered by md.
- one is a minor fix needed to prepare for the next
- one fixed a bug introduced in 3.1
- last is a longer standing bug which is cc:ed to stable.
+> Jassi, you might think my reply as an ACK to "[PATCH] DMAEngine:
+> Define generic transfer request api".
 
-Thanks,
-NeilBrown
-
-
-
-The following changes since commit ddf28352b80c86754a6424e3a61e8bdf9213b3c7:
-
-  Linux 3.1-rc5 (2011-09-04 15:45:10 -0700)
-
-are available in the git repository at:
-  git://neil.brown.name/md for-linus
-
-NeilBrown (4):
-      Avoid dereferencing a 'request_queue' after last close.
-      md/raid10: unify handling of write completion.
-      md/raid1,10: Remove use-after-free bug in make_request.
-      md: Fix handling for devices from 2TB to 4TB in 0.90 metadata.
-
- drivers/md/md.c     |   12 ++++++++++--
- drivers/md/raid1.c  |   14 +++++++++-----
- drivers/md/raid10.c |   47 ++++++++++++++++++++++++-----------------------
- fs/block_dev.c      |    7 +++++--
- 4 files changed, 48 insertions(+), 32 deletions(-)
+Thanks, but could you please formally ACK the patch in it's own thread?
