@@ -1,26 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754281Ab1IIXuN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 19:50:13 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:36828 "EHLO
+	id S1754799Ab1IJAAb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 20:00:31 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:37179 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751943Ab1IIXuM (ORCPT
+	by vger.kernel.org with ESMTP id S1753249Ab1IJAAa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 19:50:12 -0400
-Date: Fri, 9 Sep 2011 16:49:59 -0700
+	Fri, 9 Sep 2011 20:00:30 -0400
+Date: Fri, 9 Sep 2011 17:00:27 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
-To: Arjan van de Ven <arjan@infradead.org>, Vladimir Zapolskiy <vz@mleia.com>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] sched: share task comm length value to userspace
-Message-Id: <20110909164959.237a8612.akpm@linux-foundation.org>
-In-Reply-To: <20110909164130.3bc63ff7.akpm@linux-foundation.org>
-References: <1315247881-31597-1-git-send-email-vz@mleia.com>
-	<20110905124726.28b24db4@infradead.org>
-	<4E652E41.1030308@mleia.com>
-	<20110905133903.76cd3a61@infradead.org>
-	<20110909164130.3bc63ff7.akpm@linux-foundation.org>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        lkml <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: Re: [PATCH -next] drivers/net: Makefile, fix netconsole link order
+Message-Id: <20110909170027.c4bf6151.akpm@linux-foundation.org>
+In-Reply-To: <1315298129.16061.24.camel@snb>
+References: <1315298129.16061.24.camel@snb>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -29,21 +25,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 Sep 2011 16:41:30 -0700
-Andrew Morton <akpm@linux-foundation.org> wrote:
+On Tue, 06 Sep 2011 16:35:29 +0800
+Lin Ming <ming.m.lin@intel.com> wrote:
 
-> 		if (prctl(PR_GET_NAME, (unsigned long)comm2, 0, 0, 0) < 0) {
+> Commit 88491d8(drivers/net: Kconfig & Makefile cleanup) causes a
+> regression that netconsole does not work if netconsole and network
+> device driver are build into kernel, because netconsole is linked before
+> network device driver.
+> 
+> Fixes it by moving netconsole.o after network device driver.
+> 
+> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> ---
+>  drivers/net/Makefile |    7 ++++++-
+>  1 files changed, 6 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/net/Makefile b/drivers/net/Makefile
+> index fa877cd..ec15311 100644
+> --- a/drivers/net/Makefile
+> +++ b/drivers/net/Makefile
+> @@ -14,7 +14,6 @@ obj-$(CONFIG_MACVTAP) += macvtap.o
+>  obj-$(CONFIG_MII) += mii.o
+>  obj-$(CONFIG_MDIO) += mdio.o
+>  obj-$(CONFIG_NET) += Space.o loopback.o
+> -obj-$(CONFIG_NETCONSOLE) += netconsole.o
+>  obj-$(CONFIG_PHYLIB) += phy/
+>  obj-$(CONFIG_RIONET) += rionet.o
+>  obj-$(CONFIG_TUN) += tun.o
+> @@ -66,3 +65,9 @@ obj-$(CONFIG_USB_USBNET)        += usb/
+>  obj-$(CONFIG_USB_ZD1201)        += usb/
+>  obj-$(CONFIG_USB_IPHETH)        += usb/
+>  obj-$(CONFIG_USB_CDC_PHONET)   += usb/
+> +
+> +#
+> +# If netconsole and network device driver are build-in,
+> +# netconsole must be linked after network device driver
+> +#
+> +obj-$(CONFIG_NETCONSOLE) += netconsole.o
 
-Actually, if we were ever to increase sizeof(task_struct.comm),
-existing code which does
-
-	char comm[16];
-	prctl(PR_GET_NAME, comm, ...)
-
-will get its stack scribbled on.
-
-So we _could_ increase it, but we'd need to retain the old 16-char
-interfaces and add new prctl() modes.  And if we did that, we'd design
-them in such a way that userspace wouldn't need to assume a fixed
-size..
+It would be preferable to fix this with initcall ordering.  Perhaps by
+switching init_netconsole() to subsys_initcall.
 
