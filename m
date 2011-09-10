@@ -1,102 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757521Ab1IJCPv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Sep 2011 22:15:51 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:44231 "EHLO
+	id S1757947Ab1IJCle (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Sep 2011 22:41:34 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:50820 "EHLO
 	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755977Ab1IJCPu (ORCPT
+	with ESMTP id S1751924Ab1IJCld (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Sep 2011 22:15:50 -0400
-Message-ID: <4E6AC853.9010307@vflare.org>
-Date: Fri, 09 Sep 2011 22:15:47 -0400
+	Fri, 9 Sep 2011 22:41:33 -0400
+Message-ID: <4E6ACE5B.9040401@vflare.org>
+Date: Fri, 09 Sep 2011 22:41:31 -0400
 From: Nitin Gupta <ngupta@vflare.org>
 User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
 MIME-Version: 1.0
 To: Greg KH <greg@kroah.com>
-CC: Jerome Marchand <jmarchan@redhat.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Linux Driver Project <devel@linuxdriverproject.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5] zram: Kernel config option for number of devices
-References: <1315609264-13632-1-git-send-email-ngupta@vflare.org> <1315609264-13632-3-git-send-email-ngupta@vflare.org> <20110909230925.GA23699@kroah.com>
-In-Reply-To: <20110909230925.GA23699@kroah.com>
+CC: Seth Jennings <sjenning@linux.vnet.ibm.com>, gregkh@suse.de,
+        devel@driverdev.osuosl.org, dan.magenheimer@oracle.com,
+        cascardo@holoscopio.com, linux-kernel@vger.kernel.org,
+        dave@linux.vnet.ibm.com, linux-mm@kvack.org, brking@linux.vnet.ibm.com,
+        rcj@linux.vnet.ibm.com
+Subject: Re: [PATCH v2 0/3] staging: zcache: xcfmalloc support
+References: <1315404547-20075-1-git-send-email-sjenning@linux.vnet.ibm.com> <20110909203447.GB19127@kroah.com>
+In-Reply-To: <20110909203447.GB19127@kroah.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/2011 07:09 PM, Greg KH wrote:
+On 09/09/2011 04:34 PM, Greg KH wrote:
 
-> On Fri, Sep 09, 2011 at 07:01:01PM -0400, Nitin Gupta wrote:
->> Allows configuring default number of zram devices
->> as kernel config option. User can override this
->> value using 'num_devices' module parameter.
-> 
-> Ick, another config value, is this really needed?  Why can't we rely on
-> the module parameter instead?
-> 
-> 
-
-
-It is just an added convenience for users that tend to always use more
-than one device. So, a distribution may set it to say 4 and users won't
-have to go through any documentation just to create an additional zram
-device.
-
-This also makes its behavior similar to the usual ramdisk which also
-accepts default number of ramdisks (BLK_DEV_RAM_COUNT) as kconfig option.
-
+> On Wed, Sep 07, 2011 at 09:09:04AM -0500, Seth Jennings wrote:
+>> Changelog:
+>> v2: fix bug in find_remove_block()
+>>     fix whitespace warning at EOF
 >>
->> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
->> ---
->>  drivers/staging/zram/Kconfig    |    9 +++++++++
->>  drivers/staging/zram/zram_drv.c |   13 ++++++++-----
->>  2 files changed, 17 insertions(+), 5 deletions(-)
->>
->> diff --git a/drivers/staging/zram/Kconfig b/drivers/staging/zram/Kconfig
->> index 3bec4db..ca31cb3 100644
->> --- a/drivers/staging/zram/Kconfig
->> +++ b/drivers/staging/zram/Kconfig
->> @@ -21,6 +21,15 @@ config ZRAM
->>  	  See zram.txt for more information.
->>  	  Project home: http://compcache.googlecode.com/
->>  
->> +config ZRAM_NUM_DEVICES
->> +	int "Default number of zram devices"
->> +	depends on ZRAM
->> +	range 1 32
->> +	default 1
->> +	help
->> +	  Select default number of zram devices. You can override this value
->> +	  using 'num_devices' module parameter.
->> +
->>  config ZRAM_DEBUG
->>  	bool "Compressed RAM block device debug support"
->>  	depends on ZRAM
->> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
->> index 03ec5a2..55f2c0e 100644
->> --- a/drivers/staging/zram/zram_drv.c
->> +++ b/drivers/staging/zram/zram_drv.c
->> @@ -781,6 +781,14 @@ static int __init zram_init(void)
->>  {
->>  	int ret, dev_id;
->>  
->> +	/*
->> +	 * Module parameter not specified by user. Use default
->> +	 * value as defined during kernel config.
->> +	 */
->> +	if (num_devices == 0) {
->> +		num_devices = CONFIG_ZRAM_NUM_DEVICES;
->> +	}
+>> This patchset introduces a new memory allocator for persistent
+>> pages for zcache.  The current allocator is xvmalloc.  xvmalloc
+>> has two notable limitations:
+>> * High (up to 50%) external fragmentation on allocation sets > PAGE_SIZE/2
+>> * No compaction support which reduces page reclaimation
 > 
-> Wrong coding style, which, for some odd reason, checkpatch doesn't
-> catch.  Please remove the braces.
+> I need some acks from other zcache developers before I can accept this.
 > 
 
+First, thanks for this new allocator; xvmalloc badly needed a replacement :)
 
-Ok, will correct this.
+I went through xcfmalloc in detail and would be posting detailed
+comments tomorrow.  In general, it seems to be quite similar to the
+"chunk based" allocator used in initial implementation of "compcache" --
+please see section 2.3.1 in this paper:
+http://www.linuxsymposium.org/archives/OLS/Reprints-2007/briglia-Reprint.pdf
+
+I'm really looking forward to a slab based allocator as I mentioned in
+the initial mail:
+http://permalink.gmane.org/gmane.linux.kernel.mm/65467
+
+With the current design xcfmalloc suffers from issues similar to the
+allocator described in the paper:
+ - High metadata overhead
+ - Difficult implementation of compaction
+ - Need for extra memcpy()s  etc.
+
+With slab based approach, we can almost eliminate any metadata overhead,
+remove any free chunk merging logic, simplify compaction and so on.
 
 Thanks,
 Nitin
