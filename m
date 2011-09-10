@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932960Ab1IJOQS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Sep 2011 10:16:18 -0400
-Received: from mail3.microsoft.com ([131.107.115.214]:3585 "EHLO
+	id S933075Ab1IJOWY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Sep 2011 10:22:24 -0400
+Received: from smtp.microsoft.com ([131.107.115.215]:24937 "EHLO
 	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932201Ab1IJOQQ convert rfc822-to-8bit (ORCPT
+	with ESMTP id S932201Ab1IJOWX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Sep 2011 10:16:16 -0400
+	Sat, 10 Sep 2011 10:22:23 -0400
 From: KY Srinivasan <kys@microsoft.com>
 To: Greg KH <greg@kroah.com>
 CC: "gregkh@suse.de" <gregkh@suse.de>,
@@ -14,18 +14,18 @@ CC: "gregkh@suse.de" <gregkh@suse.de>,
         "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
         "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
         Haiyang Zhang <haiyangz@microsoft.com>
-Subject: RE: [PATCH 18/25] Staging: hv: storvsc: Eliminate the usage of ext
- field in struct  hv_device
-Thread-Topic: [PATCH 18/25] Staging: hv: storvsc: Eliminate the usage of ext
- field in struct  hv_device
-Thread-Index: AQHMbjARQYMNjgM550iKe9fLrUtEVZVF+5yAgACvKsA=
-Date: Sat, 10 Sep 2011 14:16:14 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E048081DC4A1@TK5EX14MBXC128.redmond.corp.microsoft.com>
+Subject: RE: [PATCH 10/25] Staging: hv: vmbus: Return proper error code in
+ vmbus_remove()
+Thread-Topic: [PATCH 10/25] Staging: hv: vmbus: Return proper error code in
+ vmbus_remove()
+Thread-Index: AQHMbjAU595ywkxixESd2JJsXOcWvpVF+yOAgACx6dA=
+Date: Sat, 10 Sep 2011 14:22:22 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E048081DC4B3@TK5EX14MBXC128.redmond.corp.microsoft.com>
 References: <1315491843-9513-1-git-send-email-kys@microsoft.com>
  <1315491876-9554-1-git-send-email-kys@microsoft.com>
- <1315491876-9554-18-git-send-email-kys@microsoft.com>
- <20110909204451.GH19127@kroah.com>
-In-Reply-To: <20110909204451.GH19127@kroah.com>
+ <1315491876-9554-10-git-send-email-kys@microsoft.com>
+ <20110909204309.GG19127@kroah.com>
+In-Reply-To: <20110909204309.GG19127@kroah.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -42,67 +42,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 > -----Original Message-----
 > From: Greg KH [mailto:greg@kroah.com]
-> Sent: Friday, September 09, 2011 4:45 PM
+> Sent: Friday, September 09, 2011 4:43 PM
 > To: KY Srinivasan
 > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
 > devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang
-> Subject: Re: [PATCH 18/25] Staging: hv: storvsc: Eliminate the usage of ext field in
-> struct hv_device
+> Subject: Re: [PATCH 10/25] Staging: hv: vmbus: Return proper error code in
+> vmbus_remove()
 > 
-> On Thu, Sep 08, 2011 at 07:24:29AM -0700, K. Y. Srinivasan wrote:
-> > Now, eliminate the usage of ext field in struct  hv_device for storvsc driver.
-> > We do this by registering pointer to struct storvsc_device as the driver
-> > specific data and eliminating the current usage of driver specific data to
-> > save and retrieve the pointer to struct Scsi_Host.
-> > Additionally, all access to the driver specific data is through
-> > the vmbus wrapper functions.
+> On Thu, Sep 08, 2011 at 07:24:21AM -0700, K. Y. Srinivasan wrote:
+> > Return proper error code in vmbus_remove().
 > >
 > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 > > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 > > ---
-> >  drivers/staging/hv/storvsc_drv.c |   24 +++++++++++++++---------
-> >  1 files changed, 15 insertions(+), 9 deletions(-)
+> >  drivers/staging/hv/vmbus_drv.c |    4 ++--
+> >  1 files changed, 2 insertions(+), 2 deletions(-)
 > >
-> > diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-> > index 57c1035..98d47cd 100644
-> > --- a/drivers/staging/hv/storvsc_drv.c
-> > +++ b/drivers/staging/hv/storvsc_drv.c
-> > @@ -266,6 +266,7 @@ struct storvsc_device {
-> >  	bool	 destroy;
-> >  	bool	 drain_notify;
-> >  	atomic_t num_outstanding_req;
-> > +	struct Scsi_Host *host;
-> 
-> You are properly reference counting this pointer, right?
-
-The scsi_host_alloc() which we use to allocate the host structure, gives us
-the needed reference.
-> 
-> > @@ -306,7 +307,8 @@ static inline struct storvsc_device
-> *get_out_stor_device(
+> > diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
+> > index b9aeb76..95d33a4 100644
+> > --- a/drivers/staging/hv/vmbus_drv.c
+> > +++ b/drivers/staging/hv/vmbus_drv.c
+> > @@ -325,7 +325,7 @@ static int vmbus_probe(struct device *child_device)
+> >   */
+> >  static int vmbus_remove(struct device *child_device)
 > >  {
-> >  	struct storvsc_device *stor_device;
-> >
-> > -	stor_device = (struct storvsc_device *)device->ext;
-> > +	stor_device =
-> > +		(struct storvsc_device *)hv_get_drvdata(device);
+> > -	int ret;
+> > +	int ret = 0;
 > 
-> Casting is not needed at all.
+> As remove functions can't fail, why return anything at all?
 > 
-> > @@ -1366,7 +1371,8 @@ static int storvsc_probe(struct hv_device *device,
-> >  	stor_device->destroy = false;
-> >  	init_waitqueue_head(&stor_device->waiting_to_drain);
-> >  	stor_device->device = device;
-> > -	device->ext = stor_device;
-> > +	stor_device->host = host;
-> > +	hv_set_drvdata(device, stor_device);
-> 
-> Lookie there, no reference count incremented, right?  Or did I miss it
-> somewhere else?
+> Doesn't make sense, please fix.
 
-We are stashing the pointer to a structure on which we already have a reference
-(that was established at the point of allocating the host).
+Greg,
+
+Looking at the struct bus_type, the remove function is not a void function.
+I was just fixing something that was broken in this function.
 
 Regards,
 
 K. Y
+
