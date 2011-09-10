@@ -1,86 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933244Ab1IJOvx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Sep 2011 10:51:53 -0400
-Received: from mail-qw0-f42.google.com ([209.85.216.42]:35761 "EHLO
-	mail-qw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932863Ab1IJOvw (ORCPT
+	id S933394Ab1IJOyf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Sep 2011 10:54:35 -0400
+Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:32141
+	"EHLO DB3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933092Ab1IJOyc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Sep 2011 10:51:52 -0400
-Message-ID: <4E6B7985.5080709@vflare.org>
-Date: Sat, 10 Sep 2011 10:51:49 -0400
-From: Nitin Gupta <ngupta@vflare.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
+	Sat, 10 Sep 2011 10:54:32 -0400
+X-SpamScore: 1
+X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h839h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LRBAQN-02-22O-02
+X-M-MSG: 
+From: Robert Richter <robert.richter@amd.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Robert Richter <robert.richter@amd.com>
+Subject: [PATCH 1/2] perf, x86: Implement event scheduler helper functions
+Date: Sat, 10 Sep 2011 16:49:02 +0200
+Message-ID: <1315666143-7106-2-git-send-email-robert.richter@amd.com>
+X-Mailer: git-send-email 1.7.6.1
+In-Reply-To: <1315666143-7106-1-git-send-email-robert.richter@amd.com>
+References: <1315666143-7106-1-git-send-email-robert.richter@amd.com>
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Jerome Marchand <jmarchan@redhat.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Linux Driver Project <devel@linuxdriverproject.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/5] zram: Set initial disksize to some default value
-References: <1315609264-13632-1-git-send-email-ngupta@vflare.org> <1315609264-13632-6-git-send-email-ngupta@vflare.org> <20110909231209.GB24604@kroah.com> <4E6AACF0.2080907@vflare.org> <20110910004238.GB27110@kroah.com>
-In-Reply-To: <20110910004238.GB27110@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/2011 08:42 PM, Greg KH wrote:
+This patch introduces x86 perf scheduler code helper functions. We
+need this to later add more complex functionality to support
+overlapping counter constraints (next patch).
 
-> On Fri, Sep 09, 2011 at 08:18:56PM -0400, Nitin Gupta wrote:
->> On 09/09/2011 07:12 PM, Greg KH wrote:
->>
->>> On Fri, Sep 09, 2011 at 07:01:04PM -0400, Nitin Gupta wrote:
->>>> Currently, we set initial disksize as 0, which forces
->>>> user to write some value to corresponding zram device's
->>>> sysfs node, before the device can be used. Now, we avoid
->>>> this step by providing some default size initially.
->>>>
->>>> To change the disksize, user must:
->>>>  - Reset disk.
->>>> 	Ex: echo 1 > /sys/block/zram0/reset
->>>> (NOTE: disksize is set to the default value after reset)
->>>>
->>>>  - Set new disksize.
->>>> 	Ex: echo $((256*1024*1024)) > /sys/block/zram0/disksize
->>>
->>> So, what tools just broke with this change?
->>>
->>> And where is the sysfs file documentation change that should go along
->>> with this?
->>>
->>
->>
->> This change does not change any sysfs names or behavior, so does not
->> break any scripts that assume the current behavior. I also verified that
->> sysfs documentation (ABI/testing/sysfs-block-zram) need not be changed
->> and same with drivers/staging/zram/zram.txt.
-> 
-> Huh, you just said the behavior changed as described in your comment
-> above.  You said the user no longer has to do a step to accomplish
-> something.  What happens if they do do that after this patch?
-> 
+The algorithm is modified so that the range of weight values is now
+generated from the constraints. There shouldn't be other functional
+changes.
+
+With the helper functions the scheduler is controlled. There are
+functions to initialize, traverse the event list, find unused counters
+etc. The scheduler keeps its own state.
+
+Cc: Stephane Eranian <eranian@google.com>
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+---
+ arch/x86/kernel/cpu/perf_event.c |  158 +++++++++++++++++++++++++-------------
+ 1 files changed, 105 insertions(+), 53 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 594d425..44ec767 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -790,18 +790,118 @@ static inline int is_x86_event(struct perf_event *event)
+ 	return event->pmu == &pmu;
+ }
+ 
++struct sched_state {
++	int	weight;
++	int	event;
++	int	counter;
++	int	unassigned;
++	unsigned long used[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
++};
++
++struct perf_sched {
++	int			max_weight;
++	int			max_events;
++	struct event_constraint	**constraints;
++	struct sched_state	state;
++};
++
++static void perf_sched_init(struct perf_sched *sched, struct event_constraint **c,
++			    int num, int wmin, int wmax)
++{
++	memset(sched, 0, sizeof(*sched));
++	sched->max_events	= num;
++	sched->max_weight	= wmax;
++	sched->constraints	= c;
++
++	sched->state.weight	= wmin;
++	sched->state.unassigned	= num;
++}
++
++static struct sched_state *perf_sched_find_counter(struct perf_sched *sched)
++{
++	struct event_constraint *c;
++	int idx;
++
++	if (!sched->state.unassigned)
++		return NULL;
++
++	c = sched->constraints[sched->state.event];
++
++	idx = sched->state.counter;
++	/* for each bit in idxmsk starting from idx */
++	while (idx < X86_PMC_IDX_MAX) {
++		idx = find_next_bit(c->idxmsk, X86_PMC_IDX_MAX, idx);
++		if (idx == X86_PMC_IDX_MAX)
++			break;
++		if (!__test_and_set_bit(idx, sched->state.used))
++			break;
++		idx++;
++	}
++	sched->state.counter = idx;
++
++	if (idx >= X86_PMC_IDX_MAX)
++		return NULL;
++
++	return &sched->state;
++}
++
++static int perf_sched_next_event(struct perf_sched *sched)
++{
++	struct event_constraint *c;
++
++	if (!sched->state.unassigned || !--sched->state.unassigned)
++		return 0;
++
++	do {
++		/* next event */
++		sched->state.event++;
++		if (sched->state.event >= sched->max_events) {
++			/* next weight */
++			sched->state.event = 0;
++			sched->state.weight++;
++			if (sched->state.weight > sched->max_weight)
++				return 0;
++		}
++		c = sched->constraints[sched->state.event];
++	} while (c->weight != sched->state.weight);
++
++	sched->state.counter = 0;	/* start with first counter */
++
++	return 1;
++}
++
++static int perf_assign_events(struct event_constraint **constraints, int n,
++			      int wmin, int wmax, int *assign)
++{
++	struct perf_sched sched;
++	struct sched_state *state;
++
++	perf_sched_init(&sched, constraints, n, wmin, wmax);
++	do {
++		state = perf_sched_find_counter(&sched);
++		if (!state)
++			break;	/* failed */
++		if (assign)
++			assign[state->event] = state->counter;
++	} while (perf_sched_next_event(&sched));
++
++	return sched.state.unassigned;
++}
++
+ static int x86_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign)
+ {
+ 	struct event_constraint *c, *constraints[X86_PMC_IDX_MAX];
+ 	unsigned long used_mask[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
+-	int i, j, w, wmax, num = 0;
++	int i, wmin, wmax, num = 0;
+ 	struct hw_perf_event *hwc;
+ 
+ 	bitmap_zero(used_mask, X86_PMC_IDX_MAX);
+ 
+-	for (i = 0; i < n; i++) {
++	for (i = 0, wmin = X86_PMC_IDX_MAX, wmax = 0; i < n; i++) {
+ 		c = x86_pmu.get_event_constraints(cpuc, cpuc->event_list[i]);
+ 		constraints[i] = c;
++		wmin = min(wmin, c->weight);
++		wmax = max(wmax, c->weight);
+ 	}
+ 
+ 	/*
+@@ -827,59 +927,11 @@ static int x86_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign)
+ 		if (assign)
+ 			assign[i] = hwc->idx;
+ 	}
+-	if (i == n)
+-		goto done;
+ 
+-	/*
+-	 * begin slow path
+-	 */
++	/* slow path */
++	if (i != n)
++		num = perf_assign_events(constraints, n, wmin, wmax, assign);
+ 
+-	bitmap_zero(used_mask, X86_PMC_IDX_MAX);
+-
+-	/*
+-	 * weight = number of possible counters
+-	 *
+-	 * 1    = most constrained, only works on one counter
+-	 * wmax = least constrained, works on any counter
+-	 *
+-	 * assign events to counters starting with most
+-	 * constrained events.
+-	 */
+-	wmax = x86_pmu.num_counters;
+-
+-	/*
+-	 * when fixed event counters are present,
+-	 * wmax is incremented by 1 to account
+-	 * for one more choice
+-	 */
+-	if (x86_pmu.num_counters_fixed)
+-		wmax++;
+-
+-	for (w = 1, num = n; num && w <= wmax; w++) {
+-		/* for each event */
+-		for (i = 0; num && i < n; i++) {
+-			c = constraints[i];
+-			hwc = &cpuc->event_list[i]->hw;
+-
+-			if (c->weight != w)
+-				continue;
+-
+-			for_each_set_bit(j, c->idxmsk, X86_PMC_IDX_MAX) {
+-				if (!test_bit(j, used_mask))
+-					break;
+-			}
+-
+-			if (j == X86_PMC_IDX_MAX)
+-				break;
+-
+-			__set_bit(j, used_mask);
+-
+-			if (assign)
+-				assign[i] = j;
+-			num--;
+-		}
+-	}
+-done:
+ 	/*
+ 	 * scheduling failed or is just a simulation,
+ 	 * free resources if necessary
+-- 
+1.7.6.1
 
 
-The current documentation states that:
-
-  "" (from drivers/staging/zram/zram.txt)
-2) Set Disksize (Optional):
-        Set disk size by writing the value to sysfs node 'disksize'
-        (in bytes). If disksize is not given, default value of 25%
-        of RAM is used.
-  ""
-
-So existing code did not correctly implement this behavior -- user had
-to set a disksize for zram to be usable. With this patch, the code now
-behaves exactly as described in documentation. So, we now avoid the
-extra step of setting a disksize as documented.  The user can still, of
-course, set another disk value if needed.
-
-So, in summary, no documentation changes are required with this change.
-I will also add this explanation in changelog when submitting v4 patches.
-
-Thanks,
-Nitin
