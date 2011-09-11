@@ -1,165 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760093Ab1IKNk6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Sep 2011 09:40:58 -0400
-Received: from vm4.telegraphics.com.au ([98.124.60.149]:42917 "EHLO
-	vps4.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754498Ab1IKNk5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Sep 2011 09:40:57 -0400
-Date: Sun, 11 Sep 2011 23:40:50 +1000 (EST)
-From: Finn Thain <fthain@telegraphics.com.au>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 07/28] m68k/irq: Switch irq_chip methods to "struct
- irq_data *data"
-In-Reply-To: <1315742394-16036-8-git-send-email-geert@linux-m68k.org>
-Message-ID: <alpine.LNX.2.00.1109112327500.2286@nippy.intranet>
-References: <1315742394-16036-1-git-send-email-geert@linux-m68k.org> <1315742394-16036-8-git-send-email-geert@linux-m68k.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1760083Ab1IKNqL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Sep 2011 09:46:11 -0400
+Received: from nm7-vm0.bullet.mail.ird.yahoo.com ([77.238.189.222]:29107 "HELO
+	nm7-vm0.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754077Ab1IKNqK convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Sep 2011 09:46:10 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 751775.81558.bm@omp1007.mail.ird.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.co.uk;
+  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=Otk3hhCFLxH7mAwtzlbTNoOCxLP1TB3GTQOahtyr08/FDu6tm0DF6lfNH2QlJ2ka3M8rT0+tDVLXsqV2oS0zmGznvqYie1sjiRRljnubTEK8pSvmB6HCMJiu9t/lz68G1negtscIM55+yuE2ItRyVI0mFavijv7DHlsIFwWHCyk=;
+X-YMail-OSG: yCGS894VM1lVNkO8A.ZBJMIim7qHVNMzfsY6jZp4BzK5Lsg
+ MuhPnSLHIJuYpOR0JhfnK1lYYZYrbueJVBNR0KvElnDGbhwQtWAjo97SK.RW
+ _EAsgjVzZmbvbm552rUA2hFq_n7wrHC8xD.G.Rgg_EAtDteINh2x6E7dadAf
+ z8AIDqVLfpJL3lnt651JbQHM8Da29vhAiFE7OKhFt7Vig9rBpNcQO.3RfQXQ
+ 5Nlj0nEiSrWRtWNpwrLMW.KFYbs4CKURyaUWfFuv80TUs2p14IKC7nQPuUBg
+ BPD8MXEzDsNIOVXBPuRSUy9n.PrV1kZbPV66IXATrhR127lCAeQHPstPg3ld
+ 3MsVulLpEg7GsaHnlu0uuUCaxO7IT9wsX82KSMb3X.ILQ8w6aKmniS8misig
+ INqXqSbSrkTeiQrH77xE-
+X-Mailer: YahooMailClassic/14.0.5 YahooMailWebService/0.8.113.315625
+Message-ID: <1315748768.65310.YahooMailClassic@web29513.mail.ird.yahoo.com>
+Date: Sun, 11 Sep 2011 14:46:08 +0100 (BST)
+From: Hin-Tak Leung <hintak_leung@yahoo.co.uk>
+Subject: Re: Kernel 3.1.0-rc4 oops when connecting iPod
+To: Pavel Ivanov <paivanof@gmail.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@tuxera.com>
+In-Reply-To: <CAG1a4rt5wLihR-ZkUD78WRbHk39xWP0ypJzMe4K5G1O-k12-MQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--- On Sun, 11/9/11, Pavel Ivanov <paivanof@gmail.com> wrote:
 
-On Sun, 11 Sep 2011, Geert Uytterhoeven wrote:
+> How about the following patch?
+> 
+> 
+> Subject: [PATCH] hfsplus: Allow to mount filesystem with
+> block size
+> greater than PAGE_SIZE
+> 
+> Commit c6d5f5fa (hfsplus: lift the 2TB size limit) added
+> call to
+> generic_check_addressable() but used the system's internal
+> block size
+> which can be larger than PAGE_SIZE and will cause
+> generic_check_addressable() to return -EINVAL in this case.
+> This
+> results in impossibility to mount file systems with such
+> block sizes.
+> To fix it we have to use block size understandable by
+> generic_check_addressable() and adjust number of blocks
+> accordingly.
+> 
+> Signed-off-by: Pavel Ivanov <paivanof@gmail.com>
+> Cc: <stable@kernel.org>
+> ---
+> 
+> diff --git a/fs/hfsplus/super.c b/fs/hfsplus/super.c
+> index c106ca2..26ac5a5 100644
+> --- a/fs/hfsplus/super.c
+> +++ b/fs/hfsplus/super.c
+> @@ -399,8 +399,17 @@ static int hfsplus_fill_super(struct
+> super_block
+> *sb, void *data, int silent)
+>      if (!sbi->rsrc_clump_blocks)
+>         
+> sbi->rsrc_clump_blocks = 1;
+> 
+> -    err =
+> generic_check_addressable(sbi->alloc_blksz_shift,
+> -           
+>        
+> sbi->total_blocks);
+> +    /*
+> +     * Check that filesystem data
+> can be addressed by sector_t. Obvious way
+> +     * to do that is to call
+> generic_check_addressable with alloc_blksz_shift
+> +     * and total_blocks as
+> parameters. But alloc_blksz_shift can be greater
+> +     * than PAGE_SIZE_SHIFT and
+> in this case it won't be accepted by
+> +     * generic_check_addressable.
+> s_blocksize_bits will always be accepted
+> +     * and difference between it
+> and alloc_blksz_shift will be always in
+> +     * fs_shift.
+> +     */
+> +    err =
+> generic_check_addressable(sb->s_blocksize_bits,
+> +           
+> (u64)sbi->total_blocks << sbi->fs_shift);
+>      if (err) {
+>          printk(KERN_ERR
+> "hfs: filesystem size too large.\n");
+>          goto out_free_vhdr;
 
-> diff --git a/arch/m68k/mac/macints.c b/arch/m68k/mac/macints.c
-> index ffa1b3f..3cee6d2 100644
-> --- a/arch/m68k/mac/macints.c
-> +++ b/arch/m68k/mac/macints.c
-> @@ -193,10 +193,20 @@ irqreturn_t mac_debug_handler(int, void *);
->  void mac_enable_irq(unsigned int irq);
->  void mac_disable_irq(unsigned int irq);
->  
-> +static void mac_irq_enable(struct irq_data *data)
-> +{
-> +	mac_enable_irq(data->irq);
-> +}
-> +
-> +static void mac_irq_disable(struct irq_data *data)
-> +{
-> +	mac_disable_irq(data->irq);
-> +}
-> +
->  static struct irq_chip mac_irq_chip = {
->  	.name		= "mac",
-> -	.irq_enable	= mac_enable_irq,
-> -	.irq_disable	= mac_disable_irq,
-> +	.irq_enable	= mac_irq_enable,
-> +	.irq_disable	= mac_irq_disable,
->  };
->  
->  void __init mac_init_IRQ(void)
+Why is the u64 needed? If it is needed, it probably means sbi->total_blocks should have been u64 in the first place.
 
-
-I wrote a patch (below) to remove these wrapper functions from the 
-m68k-genirq branch. What do you think of it? (Perhaps fold it into the 
-patch above?)
-
-Signed-off-by: Finn Thain <fthain@telegraphics.com.au>
-
-Index: linux-m68k/arch/m68k/mac/baboon.c
-===================================================================
---- linux-m68k.orig/arch/m68k/mac/baboon.c	2011-08-27 22:52:44.000000000 +1000
-+++ linux-m68k/arch/m68k/mac/baboon.c	2011-08-27 22:53:10.000000000 +1000
-@@ -23,9 +23,6 @@
- 
- /* #define DEBUG_IRQS */
- 
--extern void mac_enable_irq(unsigned int);
--extern void mac_disable_irq(unsigned int);
--
- int baboon_present;
- static volatile struct baboon *baboon;
- static unsigned char baboon_disabled;
-@@ -152,7 +149,7 @@ void baboon_irq_enable(int irq)
- 
- 	baboon_disabled &= ~(1 << irq_idx);
- 	if (!baboon_disabled)
--		mac_enable_irq(IRQ_NUBUS_C);
-+		mac_irq_enable(irq_get_irq_data(IRQ_NUBUS_C));
- }
- 
- void baboon_irq_disable(int irq)
-@@ -165,7 +162,7 @@ void baboon_irq_disable(int irq)
- 
- 	baboon_disabled |= 1 << irq_idx;
- 	if (baboon_disabled)
--		mac_disable_irq(IRQ_NUBUS_C);
-+		mac_irq_disable(irq_get_irq_data(IRQ_NUBUS_C));
- }
- 
- void baboon_irq_clear(int irq)
-Index: linux-m68k/arch/m68k/mac/macints.c
-===================================================================
---- linux-m68k.orig/arch/m68k/mac/macints.c	2011-08-27 22:52:44.000000000 +1000
-+++ linux-m68k/arch/m68k/mac/macints.c	2011-08-27 22:52:58.000000000 +1000
-@@ -190,19 +190,6 @@ irqreturn_t mac_debug_handler(int, void
- 
- /* #define DEBUG_MACINTS */
- 
--void mac_enable_irq(unsigned int irq);
--void mac_disable_irq(unsigned int irq);
--
--static void mac_irq_enable(struct irq_data *data)
--{
--	mac_enable_irq(data->irq);
--}
--
--static void mac_irq_disable(struct irq_data *data)
--{
--	mac_disable_irq(data->irq);
--}
--
- static struct irq_chip mac_irq_chip = {
- 	.name		= "mac",
- 	.irq_enable	= mac_irq_enable,
-@@ -250,16 +237,17 @@ void __init mac_init_IRQ(void)
- }
- 
- /*
-- *  mac_enable_irq - enable an interrupt source
-- * mac_disable_irq - disable an interrupt source
-+ *  mac_irq_enable - enable an interrupt source
-+ * mac_irq_disable - disable an interrupt source
-  *   mac_clear_irq - clears a pending interrupt
-- * mac_pending_irq - Returns the pending status of an IRQ (nonzero = pending)
-+ * mac_irq_pending - returns the pending status of an IRQ (nonzero = pending)
-  *
-  * These routines are just dispatchers to the VIA/OSS/PSC routines.
-  */
- 
--void mac_enable_irq(unsigned int irq)
-+void mac_irq_enable(struct irq_data *data)
- {
-+	int irq = data->irq;
- 	int irq_src = IRQ_SRC(irq);
- 
- 	switch(irq_src) {
-@@ -292,8 +280,9 @@ void mac_enable_irq(unsigned int irq)
- 	}
- }
- 
--void mac_disable_irq(unsigned int irq)
-+void mac_irq_disable(struct irq_data *data)
- {
-+	int irq = data->irq;
- 	int irq_src = IRQ_SRC(irq);
- 
- 	switch(irq_src) {
-Index: linux-m68k/arch/m68k/include/asm/macintosh.h
-===================================================================
---- linux-m68k.orig/arch/m68k/include/asm/macintosh.h	2011-08-27 22:52:44.000000000 +1000
-+++ linux-m68k/arch/m68k/include/asm/macintosh.h	2011-08-27 22:52:58.000000000 +1000
-@@ -12,6 +12,8 @@ extern void mac_reset(void);
- extern void mac_poweroff(void);
- extern void mac_init_IRQ(void);
- extern int mac_irq_pending(unsigned int);
-+extern void mac_irq_enable(struct irq_data *data);
-+extern void mac_irq_disable(struct irq_data *data);
- 
- /*
-  *	Floppy driver magic hook - probably shouldn't be here
