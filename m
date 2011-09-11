@@ -1,45 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760036Ab1IKKgJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Sep 2011 06:36:09 -0400
-Received: from mail.free-electrons.com ([88.190.12.23]:59457 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754020Ab1IKKgH (ORCPT
+	id S1760017Ab1IKKyM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Sep 2011 06:54:12 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:59692 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754020Ab1IKKyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Sep 2011 06:36:07 -0400
-Message-ID: <4E6C8F09.4060806@free-electrons.com>
-Date: Sun, 11 Sep 2011 12:35:53 +0200
-From: David Wagner <david.wagner@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.15) Gecko/20110402 Icedove/3.1.9
+	Sun, 11 Sep 2011 06:54:11 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: temporary move of linux-arm-soc.git to git.linaro.org
+Date: Sun, 11 Sep 2011 12:53:42 +0200
+Message-ID: <10788526.YaHEPOob56@wuerfel>
+User-Agent: KMail/4.7.0  (Linux/3.0.0-rc1nosema+; KDE/4.7.0; x86_64; ; )
 MIME-Version: 1.0
-To: dedekind1@gmail.com
-CC: Arnd Bergmann <arnd@arndb.de>, linux-mtd <linux-mtd@lists.infradead.org>,
-        linux-embedded <linux-embedded@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, Tim Bird <tim.bird@am.sony.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCHv3] UBI: new module ubiblk: block layer on top of UBI
-References: <1308922482-14967-1-git-send-email-david.wagner@free-electrons.com>		 <1315280704.19067.14.camel@sauron> <1315282208.19067.24.camel@sauron>		 <201109081726.00769.arnd@arndb.de> <1315569206.7905.41.camel@sauron>	 <4E6A25B1.8070400@free-electrons.com> <1315736297.18731.1.camel@sauron>
-In-Reply-To: <1315736297.18731.1.camel@sauron>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:ADhrBLrLvUXFg4SZqSWcYtjJfWiVUgJCYe/G1Q/VNiL
+ XlVr2GH4GtM07BaHvtBkFHNKULpZQVWJ8dFXw+Pg/LdY0TDikP
+ d0zEaZ/iOhMyqPO082tfY/RQa2UCMlQPIG9N9VoW9ngZmzlNEe
+ C92N6oEQY/j+8o2y2blKJhxca2NZakClggsHoo1GvzKmFkQKCd
+ DRiUvqR0cKl+LN+xFw0PMze9SB2RpA4/qoO5iQVaZGgNFPTqsD
+ C2Js3UEVecjvwBn4FsMeHho4m8RXPGWVGz+EPQJEzu3euZNdFQ
+ 1PqLYIJNjTuEzOexiRvo5XzxtvWBEvICNQ6jgeTI17T34keq4N
+ UH0q95tD6umG80hrZPIw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/09/2011 12:18, Artem Bityutskiy wrote:
-> On Fri, 2011-09-09 at 16:41 +0200, David Wagner wrote:
->>> 1. Stick with the own cdev approach - the driver becomes very simple
->>>     in this case - we review it.
->>
->> This is the way it's implemented in v4, right ?
->
-> Yes, but I though I sent you some feed back with minor things as well as
-> with major issue related to race condigions: you should keep the UBI
-> volume open as long as your block device is referenced, to prevent the
-> UBI volume from being removed.
->
+Hi Stephen,
 
-Ah, yes, of course.  I made these changes and will send them monday.
+The URL of the arm-soc tree is now 
+git://git.linaro.org/people/arnd/arm-soc.git for as long as the kernel.org
+infrastructure remains down.
 
-Regards,
-David.
+Please try to change the linux-next URL. If there are too many conflicts
+(not unusual, I fear), just tell me which other trees I need to resolve
+them with.
+
+	Arnd
