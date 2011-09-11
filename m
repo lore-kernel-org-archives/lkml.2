@@ -1,119 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752623Ab1IKHMn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Sep 2011 03:12:43 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:57260 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752099Ab1IKHMl (ORCPT
+	id S1752730Ab1IKIBU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Sep 2011 04:01:20 -0400
+Received: from nm9-vm0.bullet.mail.ukl.yahoo.com ([217.146.183.240]:25889 "HELO
+	nm9-vm0.bullet.mail.ukl.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752428Ab1IKIBT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Sep 2011 03:12:41 -0400
-Subject: Re: [PATCH] fib:fix BUG_ON in fib_nl_newrule when add new fib rule
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Wanlong Gao <wanlong.gao@gmail.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, davem@davemloft.net,
-        omarapazanadi@gmail.com, Gao feng <gaofeng@cn.fujitsu.com>
-In-Reply-To: <1315675150-3012-1-git-send-email-wanlong.gao@gmail.com>
-References: <1315675150-3012-1-git-send-email-wanlong.gao@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 11 Sep 2011 09:12:35 +0200
-Message-ID: <1315725155.2606.33.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	Sun, 11 Sep 2011 04:01:19 -0400
+X-Yahoo-Newman-Id: 833365.21089.bm@smtp143.mail.ukl.yahoo.com
+Message-ID: <833365.21089.bm@smtp143.mail.ukl.yahoo.com>
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: xwkH2pEVM1nYb6awk.txgjjGo_C8QAJ4Av3UFkb3oQ_aEcI
+ baUGsRnesrT0WhpMsXAIRGm4hawUADj6XpF9Wu0S.4EQgss0pF13exUSK0ma
+ XoGJEysMYIohOnu7IEQjBKZ3aqKB7JkHqFkoLPhpsU6qql452V39mH77I64o
+ sTxv7htiTrIhgCl2yC.22MQL3GGgFklQTZRTT6YHmiNhcK82xrNxjlPVz1dW
+ g5j4Nh6QVa_RlcYLYR31WhjXQFp_ArcRVQCPaEKyxeN8O1BEfCeMYCgWgHVR
+ JIbJ7q6CW.d44hQ7rR_NzjJL8V4rIA8tklTN27h615M4GjrPdouz4dI.ioNf
+ c9TBsMqGifA--
+X-Yahoo-SMTP: 52DyHS.swBCyhD37KIkSYnKkDs48
+Date: Sun, 11 Sep 2011 16:01:14 +0800
+From: "Vjnr" <dickowmn@yahoo.ie>
+To: "linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: Dwaeimq Awaeimq RgkXkos Kg GdBnrvz Quycgko Uxbfjnrv
+X-Mailer: Foxmail 6, 10, 201, 20 [cn]
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="gb2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id p8B81hw6005814
 
-Le dimanche 11 septembre 2011 Ã  01:19 +0800, Wanlong Gao a Ã©crit :
-> From: Gao feng <gaofeng@cn.fujitsu.com>
-> 
-> add new fib rule can cause BUG_ON
-> the reproduce shell is
-> 
-> #ip rule add pref 38
-> #ip rule add pref 38
-> #ip rule add to 192.168.3.0/24 goto 38
-> #ip rule del pref 38
-> #ip rule add to 192.168.3.0/24 goto 38
-> #ip rule add pref 38
-> 
-> then the BUG_ON will happen
-> add a var unresolved in struct fib_rule
-> and use it to identify whether this rule is unresolved
-> 
-> Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
-> ---
->  include/net/fib_rules.h |    1 +
->  net/core/fib_rules.c    |    5 ++++-
->  2 files changed, 5 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/net/fib_rules.h b/include/net/fib_rules.h
-> index 075f1e3..e4bae01 100644
-> --- a/include/net/fib_rules.h
-> +++ b/include/net/fib_rules.h
-> @@ -19,6 +19,7 @@ struct fib_rule {
->  	u32			flags;
->  	u32			table;
->  	u8			action;
-> +	u8			unresolved;
->  	u32			target;
->  	struct fib_rule __rcu	*ctarget;
->  	char			iifname[IFNAMSIZ];
-> diff --git a/net/core/fib_rules.c b/net/core/fib_rules.c
-> index e7ab0c0..aa20560 100644
-> --- a/net/core/fib_rules.c
-> +++ b/net/core/fib_rules.c
-> @@ -384,9 +384,11 @@ static int fib_nl_newrule(struct sk_buff *skb, struct nlmsghdr* nlh, void *arg)
->  		 */
->  		list_for_each_entry(r, &ops->rules_list, list) {
->  			if (r->action == FR_ACT_GOTO &&
-> -			    r->target == rule->pref) {
-> +			    r->target == rule->pref &&
-> +			    r->unresolved) {
->  				BUG_ON(rtnl_dereference(r->ctarget) != NULL);
->  				rcu_assign_pointer(r->ctarget, rule);
-> +				r->unresolved = 0;
->  				if (--ops->unresolved_rules == 0)
->  					break;
->  			}
-> @@ -488,6 +490,7 @@ static int fib_nl_delrule(struct sk_buff *skb, struct nlmsghdr* nlh, void *arg)
->  			list_for_each_entry(tmp, &ops->rules_list, list) {
->  				if (rtnl_dereference(tmp->ctarget) == rule) {
->  					rcu_assign_pointer(tmp->ctarget, NULL);
-> +					tmp->unresolved = 1;
->  					ops->unresolved_rules++;
->  				}
->  			}
+ƒ»İ´úé_¸÷î·ş„Õ˜I¼°ÉÌ˜I/°l/Æ±£¬
 
-Hmm, good catch, but you add 'unresolved' field but dont init it
-correctly to 1 in all cases.
+¸÷ÖÖÆ±¾İ¿ÉÉÏÍø²éÑ¯»òò×Cáá¸¶¿î£¡
 
-Following will break :
-
-ip rule add pref 100
-ip rule add to 192.168.3.0/24 goto 200
-ip rule add pref 200
-
-Normally, we should have 
-
-unresolved = (ctarget == NULL);
-
-What about following patch instead ?
-
-diff --git a/net/core/fib_rules.c b/net/core/fib_rules.c
-index e7ab0c0..3231b46 100644
---- a/net/core/fib_rules.c
-+++ b/net/core/fib_rules.c
-@@ -384,8 +384,8 @@ static int fib_nl_newrule(struct sk_buff *skb, struct nlmsghdr* nlh, void *arg)
- 		 */
- 		list_for_each_entry(r, &ops->rules_list, list) {
- 			if (r->action == FR_ACT_GOTO &&
--			    r->target == rule->pref) {
--				BUG_ON(rtnl_dereference(r->ctarget) != NULL);
-+			    r->target == rule->pref &&
-+			    rtnl_dereference(r->ctarget) == NULL) {
- 				rcu_assign_pointer(r->ctarget, rule);
- 				if (--ops->unresolved_rules == 0)
- 					break;
-
-
+   ÁªÏµ:135018 32328ÍõÉúÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
