@@ -1,52 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752365Ab1IKDav (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Sep 2011 23:30:51 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:49601 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751857Ab1IKDau (ORCPT
+	id S1759960Ab1IKDcs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Sep 2011 23:32:48 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:38228 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752009Ab1IKDcq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Sep 2011 23:30:50 -0400
-Date: Sun, 11 Sep 2011 12:30:42 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Thomas Tuttle <ttuttle@chromium.org>
-Cc: lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3] workqueue: lock cwq access in drain_workqueue
-Message-ID: <20110911033042.GN29319@htj.dyndns.org>
-References: <20110909152222.GA14705@google.com>
- <20110909230053.GA28394@google.com>
- <20110911013549.GI29319@htj.dyndns.org>
- <20110911032641.GA22325@google.com>
+	Sat, 10 Sep 2011 23:32:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110911032641.GA22325@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110908162303.GA18435@ubuntu-NB505>
+References: <20110907175952.GC23829@thinkpad-t410> <1315451581.92826.YahooMailClassic@web29509.mail.ird.yahoo.com>
+ <20110908162303.GA18435@ubuntu-NB505>
+From: Pavel Ivanov <paivanof@gmail.com>
+Date: Sat, 10 Sep 2011 23:32:15 -0400
+Message-ID: <CAG1a4rvfajX8BwbL39UP5PYcwMLi_GETS3psq7cZv48UvZv0Ng@mail.gmail.com>
+Subject: Re: Kernel 3.1.0-rc4 oops when connecting iPod
+To: Hin-Tak Leung <htl10@users.sourceforge.net>,
+        Christoph Hellwig <hch@tuxera.com>, Pavel Ivanov <paivanof@gmail.com>,
+        linux-fsdevel@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Seth Forshee <seth.forshee@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, Sep 8, 2011 at 12:23 PM, Seth Forshee
+<seth.forshee@canonical.com> wrote:
+> On Thu, Sep 08, 2011 at 04:13:01AM +0100, Hin-Tak Leung wrote:
+>> --- On Wed, 7/9/11, Seth Forshee <seth.forshee@canonical.com> wrote:
+>>
+>> > Yes, that was definitely just an oversight. Has anyone
+>> > provided a patch
+>> > yet? If not I've pasted a patch below. Seems like a fix
+>> > should be
+>> > applied ASAP.
+>> >
+>> >
+>> > From d27825b880028e9a45ba640d86c9e8101db0606b Mon Sep 17
+>> > 00:00:00 2001
+>> > From: Seth Forshee <seth.forshee@canonical.com>
+>> > Date: Wed, 7 Sep 2011 10:38:35 -0700
+>> > Subject: [PATCH] hfsplus: Fix kfree of wrong pointers in
+>> > hfsplus_fill_super() error path
+>> >
+>> > Commit 6596528 (hfsplus: ensure bio requests are not
+>> > smaller than
+>> > the hardware sectors) changed the pointers used for volume
+>> > header
+>> > allocations but failed to change the pointer freed in the
+>> > error
+>> > path of hfsplus_fill_super(). This patch fixes the
+>> > problem.
+>> >
+>> > Reported-by: Pavel Ivanov <paivanof@gmail.com>
+>> > Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+>> > Cc: <stable@kernel.org>
+>>
+>> Acked-by: Hin-Tak Leung <htl10@users.sourceforge.net>
+>>
+>> Please go ahead and submit the patch.
+>
+> That was my patch submission :)
+>
+> Christoph, does that work for you, or would you like me to send the
+> patch in a separate email?
 
-On Sat, Sep 10, 2011 at 11:26:41PM -0400, Thomas Tuttle wrote:
-> Take cwq->gcwq->lock to avoid racing between drain_workqueue checking
-> to make sure the workqueues are empty and cwq_dec_nr_in_flight
-> decrementing and then incrementing nr_active when it activates a
-> delayed work.
-> 
-> We discovered this when a corner case in one of our drivers resulted in
-> us trying to destroy a workqueue in which the remaining work would
-> always requeue itself again in the same workqueue.  We would hit this
-> race condition and trip the BUG_ON on workqueue.c:3080.
-> 
-> Signed-off-by: Thomas Tuttle <ttuttle@chromium.org>
+Seth, Christoph,
 
-  Acked-by: Tejun Heo <tj@kernel.org>
+I've just found another wrong pointers freeing. The following patch
+should fix it.
 
-Can you please also add "Cc: stable@kernel.org" and send it to Andrew
-Morton <akpm@linux-foundation.org>?
 
-Thank you very much.
 
--- 
-tejun
+Subject: [PATCH] hfsplus: Fix kfree of wrong pointers in
+hfsplus_read_wrapper() error path
+
+Commit 6596528 (hfsplus: ensure bio requests are not smaller than
+the hardware sectors) changed the pointers used for volume header
+allocations but failed to change the pointer freed in the error
+path of hfsplus_read_wrapper(). This patch fixes the problem.
+
+Signed-off-by: Pavel Ivanov <paivanof@gmail.com>
+Cc: <stable@kernel.org>
+---
+
+diff --git a/fs/hfsplus/wrapper.c b/fs/hfsplus/wrapper.c
+index 10e515a..7daf4b8 100644
+--- a/fs/hfsplus/wrapper.c
++++ b/fs/hfsplus/wrapper.c
+@@ -272,9 +272,9 @@ reread:
+ 	return 0;
+
+ out_free_backup_vhdr:
+-	kfree(sbi->s_backup_vhdr);
++	kfree(sbi->s_backup_vhdr_buf);
+ out_free_vhdr:
+-	kfree(sbi->s_vhdr);
++	kfree(sbi->s_vhdr_buf);
+ out:
+ 	return error;
+ }
+--
