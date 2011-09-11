@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760209Ab1IKMFt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Sep 2011 08:05:49 -0400
-Received: from jacques.telenet-ops.be ([195.130.132.50]:38281 "EHLO
-	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760101Ab1IKMAD (ORCPT
+	id S1760117Ab1IKMFq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Sep 2011 08:05:46 -0400
+Received: from gerard.telenet-ops.be ([195.130.132.48]:55891 "EHLO
+	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760103Ab1IKMAE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Sep 2011 08:00:03 -0400
+	Sun, 11 Sep 2011 08:00:04 -0400
 From: Geert Uytterhoeven <geert@linux-m68k.org>
 To: linux-m68k@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH 16/28] m68k/amiga: Refactor amiints.c
-Date: Sun, 11 Sep 2011 13:59:42 +0200
-Message-Id: <1315742394-16036-17-git-send-email-geert@linux-m68k.org>
+Subject: [PATCH 09/28] m68k/irq: Extract irq_set_chip()
+Date: Sun, 11 Sep 2011 13:59:35 +0200
+Message-Id: <1315742394-16036-10-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1315742394-16036-1-git-send-email-geert@linux-m68k.org>
 References: <1315742394-16036-1-git-send-email-geert@linux-m68k.org>
@@ -20,141 +20,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  - Remove filename in comments,
-  - Reorder functions so we no longer need forward declarations.
-
 Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
 ---
-v2: Added this changeset
----
- arch/m68k/amiga/amiints.c |   98 +++++++++++++++++++++-----------------------
- 1 files changed, 47 insertions(+), 51 deletions(-)
+ arch/m68k/kernel/ints.c |   12 +++++++++---
+ 1 files changed, 9 insertions(+), 3 deletions(-)
 
-diff --git a/arch/m68k/amiga/amiints.c b/arch/m68k/amiga/amiints.c
-index e5f3033..c8f9eac 100644
---- a/arch/m68k/amiga/amiints.c
-+++ b/arch/m68k/amiga/amiints.c
-@@ -1,5 +1,5 @@
- /*
-- * linux/arch/m68k/amiga/amiints.c -- Amiga Linux interrupt handling code
-+ * Amiga Linux interrupt handling code
-  *
-  * This file is subject to the terms and conditions of the GNU General Public
-  * License.  See the file COPYING in the main directory of this archive
-@@ -16,56 +16,6 @@
- #include <asm/amigaints.h>
- #include <asm/amipcmcia.h>
+diff --git a/arch/m68k/kernel/ints.c b/arch/m68k/kernel/ints.c
+index e68a3bd..4f9868e 100644
+--- a/arch/m68k/kernel/ints.c
++++ b/arch/m68k/kernel/ints.c
+@@ -55,6 +55,12 @@ static struct irq_data *irq_list[NR_IRQS];
+ static struct irq_chip *irq_chip[NR_IRQS];
+ static int irq_depth[NR_IRQS];
  
--static void amiga_irq_enable(struct irq_data *data);
--static void amiga_irq_disable(struct irq_data *data);
--static irqreturn_t ami_int1(int irq, void *dev_id);
--static irqreturn_t ami_int3(int irq, void *dev_id);
--static irqreturn_t ami_int4(int irq, void *dev_id);
--static irqreturn_t ami_int5(int irq, void *dev_id);
--
--static struct irq_chip amiga_irq_chip = {
--	.name		= "amiga",
--	.irq_enable	= amiga_irq_enable,
--	.irq_disable	= amiga_irq_disable,
--};
--
--/*
-- * void amiga_init_IRQ(void)
-- *
-- * Parameters:	None
-- *
-- * Returns:	Nothing
-- *
-- * This function should be called during kernel startup to initialize
-- * the amiga IRQ handling routines.
-- */
--
--void __init amiga_init_IRQ(void)
--{
--	if (request_irq(IRQ_AUTO_1, ami_int1, 0, "int1", NULL))
--		pr_err("Couldn't register int%d\n", 1);
--	if (request_irq(IRQ_AUTO_3, ami_int3, 0, "int3", NULL))
--		pr_err("Couldn't register int%d\n", 3);
--	if (request_irq(IRQ_AUTO_4, ami_int4, 0, "int4", NULL))
--		pr_err("Couldn't register int%d\n", 4);
--	if (request_irq(IRQ_AUTO_5, ami_int5, 0, "int5", NULL))
--		pr_err("Couldn't register int%d\n", 5);
--
--	m68k_setup_irq_controller(&amiga_irq_chip, handle_simple_irq, IRQ_USER,
--				  AMI_STD_IRQS);
--
--	/* turn off PCMCIA interrupts */
--	if (AMIGAHW_PRESENT(PCMCIA))
--		gayle.inten = GAYLE_IRQ_IDE;
--
--	/* turn off all interrupts and enable the master interrupt bit */
--	amiga_custom.intena = 0x7fff;
--	amiga_custom.intreq = 0x7fff;
--	amiga_custom.intena = IF_SETCLR | IF_INTEN;
--
--	cia_init_IRQ(&ciaa_base);
--	cia_init_IRQ(&ciab_base);
--}
- 
- /*
-  * Enable/disable a particular machine specific interrupt source.
-@@ -84,6 +34,13 @@ static void amiga_irq_disable(struct irq_data *data)
- 	amiga_custom.intena = 1 << (data->irq - IRQ_USER);
- }
- 
-+static struct irq_chip amiga_irq_chip = {
-+	.name		= "amiga",
-+	.irq_enable	= amiga_irq_enable,
-+	.irq_disable	= amiga_irq_disable,
-+};
-+
-+
- /*
-  * The builtin Amiga hardware interrupt handlers.
-  */
-@@ -183,3 +140,42 @@ static irqreturn_t ami_int5(int irq, void *dev_id)
- 	}
- 	return IRQ_HANDLED;
- }
-+
-+
-+/*
-+ * void amiga_init_IRQ(void)
-+ *
-+ * Parameters:	None
-+ *
-+ * Returns:	Nothing
-+ *
-+ * This function should be called during kernel startup to initialize
-+ * the amiga IRQ handling routines.
-+ */
-+
-+void __init amiga_init_IRQ(void)
++static inline int irq_set_chip(unsigned int irq, struct irq_chip *chip)
 +{
-+	if (request_irq(IRQ_AUTO_1, ami_int1, 0, "int1", NULL))
-+		pr_err("Couldn't register int%d\n", 1);
-+	if (request_irq(IRQ_AUTO_3, ami_int3, 0, "int3", NULL))
-+		pr_err("Couldn't register int%d\n", 3);
-+	if (request_irq(IRQ_AUTO_4, ami_int4, 0, "int4", NULL))
-+		pr_err("Couldn't register int%d\n", 4);
-+	if (request_irq(IRQ_AUTO_5, ami_int5, 0, "int5", NULL))
-+		pr_err("Couldn't register int%d\n", 5);
-+
-+	m68k_setup_irq_controller(&amiga_irq_chip, handle_simple_irq, IRQ_USER,
-+				  AMI_STD_IRQS);
-+
-+	/* turn off PCMCIA interrupts */
-+	if (AMIGAHW_PRESENT(PCMCIA))
-+		gayle.inten = GAYLE_IRQ_IDE;
-+
-+	/* turn off all interrupts and enable the master interrupt bit */
-+	amiga_custom.intena = 0x7fff;
-+	amiga_custom.intreq = 0x7fff;
-+	amiga_custom.intena = IF_SETCLR | IF_INTEN;
-+
-+	cia_init_IRQ(&ciaa_base);
-+	cia_init_IRQ(&ciab_base);
++	irq_chip[irq] = chip;
++	return 0;
 +}
++
+ static int m68k_first_user_vec;
+ 
+ static struct irq_chip auto_irq_chip = {
+@@ -94,7 +100,7 @@ void __init init_IRQ(void)
+ 	}
+ 
+ 	for (i = IRQ_AUTO_1; i <= IRQ_AUTO_7; i++)
+-		irq_chip[i] = &auto_irq_chip;
++		irq_set_chip(i, &auto_irq_chip);
+ 
+ 	mach_init_IRQ();
+ }
+@@ -134,7 +140,7 @@ void __init m68k_setup_user_interrupt(unsigned int vec, unsigned int cnt,
+ 	BUG_ON(IRQ_USER + cnt > NR_IRQS);
+ 	m68k_first_user_vec = vec;
+ 	for (i = 0; i < cnt; i++)
+-		irq_chip[IRQ_USER + i] = &user_irq_chip;
++		irq_set_chip(IRQ_USER + i, &user_irq_chip);
+ 	*user_irqvec_fixup = vec - IRQ_USER;
+ 	if (handler)
+ 		*user_irqhandler_fixup = (u32)handler;
+@@ -157,7 +163,7 @@ void m68k_setup_irq_chip(struct irq_chip *contr, unsigned int irq,
+ 	int i;
+ 
+ 	for (i = 0; i < cnt; i++)
+-		irq_chip[irq + i] = contr;
++		irq_set_chip(irq + i, contr);
+ }
+ 
+ struct irq_data *new_irq_node(void)
 -- 
 1.7.0.4
 
