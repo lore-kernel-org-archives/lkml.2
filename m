@@ -1,80 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752882Ab1IKIMT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Sep 2011 04:12:19 -0400
-Received: from mail.southpole.se ([193.12.106.18]:42545 "EHLO
-	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752545Ab1IKIMR (ORCPT
+	id S1753083Ab1IKIbW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Sep 2011 04:31:22 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:42573 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752546Ab1IKIbT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Sep 2011 04:12:17 -0400
-Subject: [GIT PULL] OpenRISC fixes for 3.1
-From: Jonas Bonn <jonas@southpole.se>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Date: Sun, 11 Sep 2011 10:11:31 +0200
-Organization: South Pole Consulting AB
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-uQFFrK2dHWAA4Sr7BA2D"
-X-Mailer: Evolution 3.1.91- 
-Message-ID: <1315728695.4656.8.camel@satguru>
-Mime-Version: 1.0
-X-Assp-Client-SSL: yes
+	Sun, 11 Sep 2011 04:31:19 -0400
+Message-ID: <4E6C705F.8010101@gmail.com>
+Date: Sun, 11 Sep 2011 10:25:03 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
+MIME-Version: 1.0
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH, RFC] xip: use i_mutex for xip_file_fault
+References: <4E6B82DB.50803@gmail.com> <20110910155639.GY2203@ZenIV.linux.org.uk>
+In-Reply-To: <20110910155639.GY2203@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Il 10/09/2011 17:56, Al Viro ha scritto:
+> On Sat, Sep 10, 2011 at 05:31:39PM +0200, Marco Stornelli wrote:
+>> From: Marco Stornelli<marco.stornelli@gmail.com>
+>>
+>> There aren't sufficient sync points for a fs for xip operations. In
+>> particular for the mmap case. It can be not sufficient to lock/unlock
+>> to do some operation inside get_xip_mem callback. For xip_file_read
+>> it's really easy to write a fs specific wrapper, xip_file_write hold
+>> i_mutex so no problem. With this patch we can avoid concurrent truncate
+>> operation and xip mmap.
+>
+> Umm...  I really don't like that; what's going to happen if you have a file
+> mmapped and do write() to that file from address in that mapping?
+>
 
+Nothing strange. There is a serialization of the operations. Maybe I 
+don't understand the point here.
 
---=-uQFFrK2dHWAA4Sr7BA2D
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
-
-Hi Linus,
-
-Could you please pull these two fixes that I'd like
-to get into 3.1?
-
--- one missed patch to remove the usage of pt_regs in
-   struct sigcontext... needed for uClibc to build
--- one to add some missed DMA ops... needed for some
-   yet to be submitted drivers to build
-
-Thanks,
-Jonas
-
-The following changes since commit
-93ee7a9340d64f20295aacc3fb6a22b759323280:
-
-  Linux 3.1-rc2 (2011-08-14 15:09:08 -0700)
-
-are available in the git repository at:
-  git://openrisc.net/~jonas/linux for-linus
-
-
-Jonas Bonn (2):
-      openrisc: don't use pt_regs in struct sigcontext
-      Add missing DMA ops
-
- arch/openrisc/include/asm/dma-mapping.h |   59
-+++++++++++++++++++++++++++++-
- arch/openrisc/include/asm/sigcontext.h  |    7 +---
- arch/openrisc/kernel/dma.c              |   28 ++++++++++++++-
- arch/openrisc/kernel/signal.c           |   29 ++++++---------
- 4 files changed, 96 insertions(+), 27 deletions(-)
-
-
---=-uQFFrK2dHWAA4Sr7BA2D
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAk5sbTMACgkQ70gcjN2673PV0gCfVQO0y7z/vneak0qBYviTfMKa
-jIwAn25nSqFxPogzPrqUBvS0oo0hGX8W
-=k67K
------END PGP SIGNATURE-----
-
---=-uQFFrK2dHWAA4Sr7BA2D--
-
+Marco
