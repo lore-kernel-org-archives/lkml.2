@@ -1,144 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932906Ab1IKTn0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Sep 2011 15:43:26 -0400
-Received: from mxout2.netvision.net.il ([194.90.9.21]:39845 "EHLO
+	id S933862Ab1IKTne (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Sep 2011 15:43:34 -0400
+Received: from mxout2.netvision.net.il ([194.90.9.21]:39853 "EHLO
 	mxout2.netvision.net.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760386Ab1IKTnZ (ORCPT
+	with ESMTP id S933328Ab1IKTnb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Sep 2011 15:43:25 -0400
+	Sun, 11 Sep 2011 15:43:31 -0400
 Content-transfer-encoding: 7BIT
 From: Eli Billauer <eli.billauer@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: monstr@monstr.eu, Eli Billauer <eli.billauer@gmail.com>
-Subject: [PATCH 1/3] microblaze: Moved __dma_sync() to dma-mapping.h
-Date: Sun, 11 Sep 2011 22:43:06 +0300
-Message-id: <1315770188-17550-1-git-send-email-eli.billauer@gmail.com>
+Subject: [PATCH 2/3] microblaze: Added DMA sync operations
+Date: Sun, 11 Sep 2011 22:43:07 +0300
+Message-id: <1315770188-17550-2-git-send-email-eli.billauer@gmail.com>
 X-Mailer: git-send-email 1.7.2.3
+In-reply-to: <1315770188-17550-1-git-send-email-eli.billauer@gmail.com>
+References: <1315770188-17550-1-git-send-email-eli.billauer@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__dma_sync_page() was replaced by __dma_sync(), and parameters of calls to
-the new function were adjusted to match __dma_sync()'s format.
+Added support gor dma_direct_sync_single_for_*() and dma_direct_sync_sg_for_*()
 
 Signed-off-by: Eli Billauer <eli.billauer@gmail.com>
 ---
- arch/microblaze/include/asm/dma-mapping.h |   20 ++++++++++++++++++--
- arch/microblaze/kernel/dma.c              |   22 +++-------------------
- 2 files changed, 21 insertions(+), 21 deletions(-)
+ arch/microblaze/kernel/dma.c |   60 ++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 60 insertions(+), 0 deletions(-)
 
-diff --git a/arch/microblaze/include/asm/dma-mapping.h b/arch/microblaze/include/asm/dma-mapping.h
-index 8fbb0ec..cddeca5 100644
---- a/arch/microblaze/include/asm/dma-mapping.h
-+++ b/arch/microblaze/include/asm/dma-mapping.h
-@@ -28,12 +28,12 @@
- #include <linux/dma-attrs.h>
- #include <asm/io.h>
- #include <asm-generic/dma-coherent.h>
-+#include <asm/cacheflush.h>
- 
- #define DMA_ERROR_CODE		(~(dma_addr_t)0x0)
- 
- #define __dma_alloc_coherent(dev, gfp, size, handle)	NULL
- #define __dma_free_coherent(size, addr)		((void)0)
--#define __dma_sync(addr, size, rw)		((void)0)
- 
- static inline unsigned long device_to_mask(struct device *dev)
- {
-@@ -95,6 +95,22 @@ static inline int dma_set_mask(struct device *dev, u64 dma_mask)
- 
- #include <asm-generic/dma-mapping-common.h>
- 
-+static inline void __dma_sync(unsigned long paddr,
-+			      size_t size, enum dma_data_direction direction)
-+{
-+	switch (direction) {
-+	case DMA_TO_DEVICE:
-+	case DMA_BIDIRECTIONAL:
-+		flush_dcache_range(paddr, paddr + size);
-+		break;
-+	case DMA_FROM_DEVICE:
-+		invalidate_dcache_range(paddr, paddr + size);
-+		break;
-+	default:
-+		BUG();
-+	}
-+}
-+
- static inline int dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
- {
- 	struct dma_map_ops *ops = get_dma_ops(dev);
-@@ -135,7 +151,7 @@ static inline void dma_cache_sync(struct device *dev, void *vaddr, size_t size,
- 		enum dma_data_direction direction)
- {
- 	BUG_ON(direction == DMA_NONE);
--	__dma_sync(vaddr, size, (int)direction);
-+	__dma_sync(virt_to_phys(vaddr), size, (int)direction);
- }
- 
- #endif	/* _ASM_MICROBLAZE_DMA_MAPPING_H */
 diff --git a/arch/microblaze/kernel/dma.c b/arch/microblaze/kernel/dma.c
-index 393e6b2..595130b 100644
+index 595130b..e06ddad 100644
 --- a/arch/microblaze/kernel/dma.c
 +++ b/arch/microblaze/kernel/dma.c
-@@ -11,7 +11,6 @@
- #include <linux/gfp.h>
- #include <linux/dma-debug.h>
- #include <asm/bug.h>
--#include <asm/cacheflush.h>
- 
- /*
-  * Generic direct DMA implementation
-@@ -21,21 +20,6 @@
-  * can set archdata.dma_data to an unsigned long holding the offset. By
-  * default the offset is PCI_DRAM_OFFSET.
-  */
--static inline void __dma_sync_page(unsigned long paddr, unsigned long offset,
--				size_t size, enum dma_data_direction direction)
--{
--	switch (direction) {
--	case DMA_TO_DEVICE:
--	case DMA_BIDIRECTIONAL:
--		flush_dcache_range(paddr + offset, paddr + offset + size);
--		break;
--	case DMA_FROM_DEVICE:
--		invalidate_dcache_range(paddr + offset, paddr + offset + size);
--		break;
--	default:
--		BUG();
--	}
--}
- 
- static unsigned long get_dma_direct_offset(struct device *dev)
- {
-@@ -91,7 +75,7 @@ static int dma_direct_map_sg(struct device *dev, struct scatterlist *sgl,
- 	/* FIXME this part of code is untested */
- 	for_each_sg(sgl, sg, nents, i) {
- 		sg->dma_address = sg_phys(sg) + get_dma_direct_offset(dev);
--		__dma_sync_page(page_to_phys(sg_page(sg)), sg->offset,
-+		__dma_sync(page_to_phys(sg_page(sg)) + sg->offset,
- 							sg->length, direction);
- 	}
- 
-@@ -116,7 +100,7 @@ static inline dma_addr_t dma_direct_map_page(struct device *dev,
- 					     enum dma_data_direction direction,
- 					     struct dma_attrs *attrs)
- {
--	__dma_sync_page(page_to_phys(page), offset, size, direction);
-+	__dma_sync(page_to_phys(page) + offset, size, direction);
- 	return page_to_phys(page) + offset + get_dma_direct_offset(dev);
+@@ -118,6 +118,62 @@ static inline void dma_direct_unmap_page(struct device *dev,
+ 	__dma_sync(dma_address, size, direction);
  }
  
-@@ -131,7 +115,7 @@ static inline void dma_direct_unmap_page(struct device *dev,
-  * phys_to_virt is here because in __dma_sync_page is __virt_to_phys and
-  * dma_address is physical address
-  */
--	__dma_sync_page(dma_address, 0 , size, direction);
-+	__dma_sync(dma_address, size, direction);
- }
- 
++static inline void
++dma_direct_sync_single_for_cpu(struct device *dev,
++			       dma_addr_t dma_handle, size_t size,
++			       enum dma_data_direction direction)
++{
++	/*
++	 *  It's pointless to flush the cache as the memory segment
++	 *  is given to the CPU
++	 */
++
++	if (direction == DMA_FROM_DEVICE)
++		__dma_sync(dma_handle, size, direction);
++}
++
++static inline void
++dma_direct_sync_single_for_device(struct device *dev,
++				  dma_addr_t dma_handle, size_t size,
++				  enum dma_data_direction direction)
++{
++	/*
++	 *  It's pointless to invalidate the cache if the device isn't
++	 *  supposed to write to the relevant region
++	 */
++
++	if (direction == DMA_TO_DEVICE)
++		__dma_sync(dma_handle, size, direction);
++}
++
++static inline void
++dma_direct_sync_sg_for_cpu(struct device *dev,
++			   struct scatterlist *sgl, int nents,
++			   enum dma_data_direction direction)
++{
++	struct scatterlist *sg;
++	int i;
++
++	/* FIXME this part of code is untested */
++	if (direction == DMA_FROM_DEVICE)
++		for_each_sg(sgl, sg, nents, i)
++			__dma_sync(sg->dma_address, sg->length, direction);
++}
++
++static inline void
++dma_direct_sync_sg_for_device(struct device *dev,
++			      struct scatterlist *sgl, int nents,
++			      enum dma_data_direction direction)
++{
++	struct scatterlist *sg;
++	int i;
++
++	/* FIXME this part of code is untested */
++	if (direction == DMA_TO_DEVICE)
++		for_each_sg(sgl, sg, nents, i)
++			__dma_sync(sg->dma_address, sg->length, direction);
++}
++
  struct dma_map_ops dma_direct_ops = {
+ 	.alloc_coherent	= dma_direct_alloc_coherent,
+ 	.free_coherent	= dma_direct_free_coherent,
+@@ -126,6 +182,10 @@ struct dma_map_ops dma_direct_ops = {
+ 	.dma_supported	= dma_direct_dma_supported,
+ 	.map_page	= dma_direct_map_page,
+ 	.unmap_page	= dma_direct_unmap_page,
++	.sync_single_for_cpu		= dma_direct_sync_single_for_cpu,
++	.sync_single_for_device		= dma_direct_sync_single_for_device,
++	.sync_sg_for_cpu		= dma_direct_sync_sg_for_cpu,
++	.sync_sg_for_device		= dma_direct_sync_sg_for_device,
+ };
+ EXPORT_SYMBOL(dma_direct_ops);
+ 
 -- 
 1.7.2.3
 
