@@ -1,59 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760275Ab1IKQDs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Sep 2011 12:03:48 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:40676 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754935Ab1IKQDq (ORCPT
+	id S1760280Ab1IKQTb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Sep 2011 12:19:31 -0400
+Received: from mta02.eastlink.ca ([24.224.136.13]:44939 "EHLO
+	mta02.eastlink.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754962Ab1IKQTa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Sep 2011 12:03:46 -0400
-Message-ID: <4E6CDA70.5080205@gmail.com>
-Date: Sun, 11 Sep 2011 17:57:36 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
-MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH, RFC] xip: use i_mutex for xip_file_fault
-References: <4E6B82DB.50803@gmail.com> <20110910155639.GY2203@ZenIV.linux.org.uk> <4E6C705F.8010101@gmail.com> <20110911111504.GA2203@ZenIV.linux.org.uk> <20110911112552.GB2203@ZenIV.linux.org.uk>
-In-Reply-To: <20110911112552.GB2203@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sun, 11 Sep 2011 12:19:30 -0400
+X-Greylist: delayed 1823 seconds by postgrey-1.27 at vger.kernel.org; Sun, 11 Sep 2011 12:19:30 EDT
+Date: Sun, 11 Sep 2011 11:48:34 -0400
+From: Tom Rice <info@winner.net>
+Subject: FILE FOR CLAIM
+X-Originating-IP: 72.44.90.77
+To: undisclosed-recipients:;
+Reply-to: clammicro_soft20@9.cn
+Message-id: <1315756114.4e6cd852e5c3f@webmail.xcelco.on.ca>
+MIME-version: 1.0
+Content-type: text/plain; CHARSET=US-ASCII
+Content-transfer-encoding: 7BIT
+X-CMAE-Score: 0
+X-CMAE-Analysis: v=2.0 cv=A4wXz9qG c=1 sm=1 a=SBmU0yMpgWqrCa2koySiSQ==:17
+	a=lEoHcFWEolUA:10 a=QHDRP5DDOhIA:10 a=u1hryzO3UgwA:10 a=03BE8P92kNoA:10
+	a=8nJEP1OIZ-IA:10 a=39p8lM4sMCddkKZC39UA:9 a=wPNLvfGTeEIA:10	a=tMs7L8FSASsA:10
+ a=H74sq46YGBEA:10 a=eJYakdKMyWymzOaG:21	a=11ECSM9a53eVVGnp:21
+ a=ZjIqTmGINkQKjhCx/60B3Q==:117
+User-Agent: Internet Messaging Program (IMP) 3.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-Il 11/09/2011 13:25, Al Viro ha scritto:
-> On Sun, Sep 11, 2011 at 12:15:04PM +0100, Al Viro wrote:
->
->> write() grabs ->i_mutex on the file it's going to write to.  It uses
->> copy_from_user() while holding ->i_mutex; that can end up calling ->fault().
->> If your data comes from the same file mmapped in your address space, you
->> have xip_write_fault() called while you are in xip_file_write() and *already*
->> are holding ->i_mutex on the same inode.  With your patch it will, AFAICS,
->> cheerfully deadlock.
->
-> Oh, wait...  You are only doing that to write side of pagefault?  That's
-> better, but not much:
->
-> thread 1: mmap the file, modify mapping
-> thread 2: write() to file
->
-> The former will do xip_write_fault() while holding ->mmap_sem.
-> The latter will do copy_from_user() from xip_file_write(), getting
-> pagefaults while holding ->i_mutex.
->
-> Note that we are grabbing ->mmap_sem and ->i_mutex in opposite orders.
-> I.e. that will deadlock on you - all you need is threads sharing the
-> address space.
->
-
-Ok, thank you very much for the on-line debug :) So i_mutex is not a 
-good lock to use in this situation. It was a common sync point, but it 
-has some collateral effect on the write path that we must avoid. At this 
-point, what can be a good strategy? Any opinion is welcome.
-
-Marco
+You have Won (500,000.00 Britain  pounds, In the MICRO SOFT FREE LOTTO PROMOTION
+2010/2011.send,Full name,Country,Address,Telephone Number,Occupation,Sex,to
+Dr.Tom Rice Email:clammicro_soft20@9.cn
