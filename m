@@ -1,37 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760429Ab1IKVi4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Sep 2011 17:38:56 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:50173 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754734Ab1IKViz (ORCPT
+	id S1760425Ab1IKVto (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Sep 2011 17:49:44 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:38675 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754734Ab1IKVtn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Sep 2011 17:38:55 -0400
+	Sun, 11 Sep 2011 17:49:43 -0400
+Date: Sun, 11 Sep 2011 17:49:40 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Michael Elizabeth Chastain <mec@shout.net>, linux-kernel@vger.kernel.org
+Cc: ltt-dev@lists.casi.polymtl.ca
+Subject: [PATCH 3.1] ioctl: register LTTng ioctl
+Message-ID: <20110911214940.GA2275@Krystal>
 MIME-Version: 1.0
-In-Reply-To: <1315383059-3673-53-git-send-email-yong.zhang0@gmail.com>
-References: <1315383059-3673-1-git-send-email-yong.zhang0@gmail.com>
-	<1315383059-3673-53-git-send-email-yong.zhang0@gmail.com>
-Date: Sun, 11 Sep 2011 23:38:54 +0200
-Message-ID: <CACRpkdYP5Sf5eOdHQ59aZLdJmm7KynrOyaj=diM7sP4gssz+JA@mail.gmail.com>
-Subject: Re: [PATCH 52/62] rtc: irq: Remove IRQF_DISABLED
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Alessandro Zummo <a.zummo@towertech.it>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Wan ZongShun <mcuos.com@gmail.com>, rtc-linux@googlegroups.com,
-        tglx@linutronix.de, Guan Xuetao <gxt@mprc.pku.edu.cn>, mingo@elte.hu,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 17:47:43 up 292 days,  2:50,  4 users,  load average: 0.00, 0.00,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 7, 2011 at 10:10 AM, Yong Zhang <yong.zhang0@gmail.com> wrote:
-> This flag is a NOOP and can be removed now.
->
-> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+The LTTng 2.0 kernel tracer (stand-alone module package, available at
+http://lttng.org) uses the 0xF6 ioctl range for tracer control and
+transport operations.
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: Michael Elizabeth Chastain <mec@shout.net>
+---
+ Documentation/ioctl/ioctl-number.txt |    2 ++
+ 1 file changed, 2 insertions(+)
 
-Thanks,
-Linus Walleij
+Index: linux/Documentation/ioctl/ioctl-number.txt
+===================================================================
+--- linux.orig/Documentation/ioctl/ioctl-number.txt
++++ linux/Documentation/ioctl/ioctl-number.txt
+@@ -319,4 +319,6 @@ Code  Seq#(hex)	Include File		Comments
+ 					<mailto:thomas@winischhofer.net>
+ 0xF4	00-1F	video/mbxfb.h		mbxfb
+ 					<mailto:raph@8d.com>
++0xF6	all	LTTng			Linux Trace Toolkit Next Generation
++					<mailto:mathieu.desnoyers@efficios.com>
+ 0xFD	all	linux/dm-ioctl.h
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
