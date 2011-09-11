@@ -1,42 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754962Ab1IKSch (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Sep 2011 14:32:37 -0400
-Received: from mail-vw0-f43.google.com ([209.85.212.43]:52622 "EHLO
+	id S1760302Ab1IKSdP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Sep 2011 14:33:15 -0400
+Received: from mail-vw0-f43.google.com ([209.85.212.43]:55893 "EHLO
 	mail-vw0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752954Ab1IKScg (ORCPT
+	with ESMTP id S1753832Ab1IKSdP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Sep 2011 14:32:36 -0400
+	Sun, 11 Sep 2011 14:33:15 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110911070910.GB6361@sucs.org>
+In-Reply-To: <yunbousl9f5.fsf@aiko.keithp.com>
 References: <CAC9WiBjoO50H5ZQEShbdZ=64ZXz6Q-OdD+VSD-YrBry3hvdJJQ@mail.gmail.com>
 	<yunbousl9f5.fsf@aiko.keithp.com>
-	<CAC9WiBgaaCydvzmNgxyqYnuzH-32hhexu7TNJUai1VEnowDcCQ@mail.gmail.com>
-	<20110911070910.GB6361@sucs.org>
-Date: Sun, 11 Sep 2011 20:32:35 +0200
-Message-ID: <CAC9WiBg-u0Mf_M0QrpEjnsWybHfTDB=KJfkJb41DpSonrgxK5w@mail.gmail.com>
+Date: Sun, 11 Sep 2011 20:33:14 +0200
+Message-ID: <CAC9WiBgn2cr7zY8_9j7SEwQ+rPye9s3cM+Ex4WUxam78qAZhRQ@mail.gmail.com>
 Subject: Re: 3.1-rc5 is the worst
 From: Francis Moreau <francis.moro@gmail.com>
-To: Sitsofe Wheeler <sitsofe@yahoo.com>
-Cc: Keith Packard <keithp@keithp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+To: Keith Packard <keithp@keithp.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 11, 2011 at 9:09 AM, Sitsofe Wheeler <sitsofe@yahoo.com> wrote:
-> On Sat, Sep 10, 2011 at 09:42:39PM +0200, Francis Moreau wrote:
->>
->> of course I'm having hard time to reproduce now :)
->>
->> Any idea how can I force the screen to sleep ?
+On Sat, Sep 10, 2011 at 5:11 PM, Keith Packard <keithp@keithp.com> wrote:
+> On Sat, 10 Sep 2011 11:57:06 +0200, Francis Moreau <francis.moro@gmail.com> wrote:
 >
-> sleep 2; xset dpms force off
+>> 3/ video: Intel Corporation Core Processor Integrated Graphics
+>> Controller (rev 18) drived by 'i915': sometime after resuming or after
+>> leaving the black screensaver, the screen seems to be frozen and I
+>> need to switch to tty1 and switch back to the graphic screen in order
+>> to make the screen refreshed again.
+>
+> Can you try disabling fbc and see if this helps?
+>
+> i915.i915_enable_fbc=0
+>
+> We've gotten a few minor regression reports that this fixes; we're
+> working on isolating the cause if possible.
 >
 
-Ok thanks !
+Ok this seems to fix the issue.
 
 -- 
 Francis
