@@ -1,45 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753083Ab1IKIbW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Sep 2011 04:31:22 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:42573 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752546Ab1IKIbT (ORCPT
+	id S1753243Ab1IKIhP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Sep 2011 04:37:15 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:52674 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752961Ab1IKIhN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Sep 2011 04:31:19 -0400
-Message-ID: <4E6C705F.8010101@gmail.com>
-Date: Sun, 11 Sep 2011 10:25:03 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
-MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH, RFC] xip: use i_mutex for xip_file_fault
-References: <4E6B82DB.50803@gmail.com> <20110910155639.GY2203@ZenIV.linux.org.uk>
-In-Reply-To: <20110910155639.GY2203@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Sun, 11 Sep 2011 04:37:13 -0400
+Date: Sun, 11 Sep 2011 09:36:25 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Greg KH <gregkh@suse.de>
+Cc: Klaus Schwarzkopf <schwarzkopf@sensortherm.de>, mina86@mina86.com,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] usb: clean up FSF boilerplate text
+Message-ID: <20110911093625.325b9ea4@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110911004420.GA3413@suse.de>
+References: <1315686255-12892-1-git-send-email-schwarzkopf@sensortherm.de>
+	<20110910221045.04953572@lxorguk.ukuu.org.uk>
+	<20110911004420.GA3413@suse.de>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 10/09/2011 17:56, Al Viro ha scritto:
-> On Sat, Sep 10, 2011 at 05:31:39PM +0200, Marco Stornelli wrote:
->> From: Marco Stornelli<marco.stornelli@gmail.com>
->>
->> There aren't sufficient sync points for a fs for xip operations. In
->> particular for the mmap case. It can be not sufficient to lock/unlock
->> to do some operation inside get_xip_mem callback. For xip_file_read
->> it's really easy to write a fs specific wrapper, xip_file_write hold
->> i_mutex so no problem. With this patch we can avoid concurrent truncate
->> operation and xip mmap.
->
-> Umm...  I really don't like that; what's going to happen if you have a file
-> mmapped and do write() to that file from address in that mapping?
->
+On Sun, 11 Sep 2011 02:44:20 +0200
+Greg KH <gregkh@suse.de> wrote:
 
-Nothing strange. There is a serialization of the operations. Maybe I 
-don't understand the point here.
+> On Sat, Sep 10, 2011 at 10:10:45PM +0100, Alan Cox wrote:
+> > On Sat, 10 Sep 2011 22:24:15 +0200
+> > Klaus Schwarzkopf <schwarzkopf@sensortherm.de> wrote:
+> > 
+> > >     remove the following two paragraphs:
+> > 
+> > NAK this for anything containing my copyright. NAK the one about warranty
+> > and liability because its incredibly important, although of course if
+> > you'd like to take personal liability...
+> 
+> Odd, I was told that if you have the "this is covered under the GPLv2"
+> then that's all that is needed for a single file in a larger body of
+> work, like the kernel.
 
-Marco
+People regularly take files out of the kernel or display only one of
+them. However it's a legal question which means changing it needs the
+approval of the right subspecies ....
+
+You may be right, but it should go past the appropriate expert for the
+change, just like anything else.
+
+> But you do agree about the address paragraph being able to be removed,
+> right?
+
+<wears parrot outfit>
+That is a legal question. I am not a lawyer. Please discuss with Intel
+before removing any disclaimers other license material.
+</>
+
+Sqwark!
+
+Alan
+--
+"Pieces of seven, pieces of seven"   (parroty error)
