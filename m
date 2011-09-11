@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754284Ab1IKLJj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Sep 2011 07:09:39 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:36304 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754033Ab1IKLJh (ORCPT
+	id S1760051Ab1IKLKV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Sep 2011 07:10:21 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:41222 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754033Ab1IKLKT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Sep 2011 07:09:37 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>, rtitmuss@logitech.com,
-        ogay@logitech.com, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Nestor Lopez Casado <nlopezcasad@logitech.com>
-Subject: Re: [PATCH v4] HID: Add full support for Logitech Unifying receivers
-In-Reply-To: Your message of "Sun, 11 Sep 2011 10:48:12 +0200."
-             <alpine.LNX.2.00.1109111040370.13109@pobox.suse.cz>
-From: Valdis.Kletnieks@vt.edu
-References: <1315638713-3731-1-git-send-email-benjamin.tissoires@gmail.com>
-            <alpine.LNX.2.00.1109111040370.13109@pobox.suse.cz>
+	Sun, 11 Sep 2011 07:10:19 -0400
+Date: Sun, 11 Sep 2011 21:10:02 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: temporary move of linux-arm-soc.git to git.linaro.org
+Message-Id: <20110911211002.604f4e64af72cf479b5a1f76@canb.auug.org.au>
+In-Reply-To: <10788526.YaHEPOob56@wuerfel>
+References: <10788526.YaHEPOob56@wuerfel>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1315739314_28234P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Sun, 11 Sep 2011 07:08:34 -0400
-Message-ID: <131594.1315739314@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020205.4E6C96B6.00CE,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Sun__11_Sep_2011_21_10_02_+1000_CcafVoh=FpHP=D=U"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1315739314_28234P
-Content-Type: text/plain; charset=us-ascii
+--Signature=_Sun__11_Sep_2011_21_10_02_+1000_CcafVoh=FpHP=D=U
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Sun, 11 Sep 2011 10:48:12 +0200, Jiri Kosina said:
-> On Sat, 10 Sep 2011, Benjamin Tissoires wrote:
+Hi Arnd,
 
-> > + * Should you need to contact me, the author, you can do so by e-mail send
-> > + * your message to Nestor Lopez Casado <xnlopez at gmail com>
-> 
-> As the file is not copyrighted by a single person, but a company instead, 
-> perhaps this paragraph should rather be removed?
+On Sun, 11 Sep 2011 12:53:42 +0200 Arnd Bergmann <arnd@arndb.de> wrote:
+>
+> The URL of the arm-soc tree is now=20
+> git://git.linaro.org/people/arnd/arm-soc.git for as long as the kernel.org
+> infrastructure remains down.
+>=20
+> Please try to change the linux-next URL. If there are too many conflicts
+> (not unusual, I fear), just tell me which other trees I need to resolve
+> them with.
 
-More correctly, these 2 lines should be a patch to MAINTAINERS.
+OK, will do.
 
---==_Exmh_1315739314_28234P
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Sun__11_Sep_2011_21_10_02_+1000_CcafVoh=FpHP=D=U
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
 
-iD8DBQFObJaycC3lWbTT17ARAqqoAJwNsUMcvGnhe5ouKCNwaxKiAb5n3wCfSQOI
-EIYGIVxrxCZ/5tq9EFUYgP4=
-=lG27
+iQEcBAEBAgAGBQJObJcKAAoJEDMEi1NhKgbsrckH/i0Z402aNsa4lpHfyWsV5WFT
+SMs2LR6ZEtrE2b7sG+pwcBq1LgGcjTBUcTrlZ+gZ5FrngzRcgBfhnf8bcc612EK8
+r2QJY/7Mx8QapfLZfwdAeCFul2llLPu8rGcPfa3fv3qCbBE37W3drksB9KVlW1+i
+x/6gr6FY0quM3/qWy600l1t9wj19ACwvEEUs+ixWbRxR0zXejayoBKTXXbqTGdSg
+8AmBHBYT+HKEG9+nttKH70c6j/uS7et6Y1zjoQxBIwS7Pc2PyaQ1Hr0gYiPj/X4s
+ZP7oQYLIyAjSQKb3DE556PehJeeX7+/UZTSK/SThOSBXWsj67vBjqkXLKSEWL1Y=
+=49Mp
 -----END PGP SIGNATURE-----
 
---==_Exmh_1315739314_28234P--
-
+--Signature=_Sun__11_Sep_2011_21_10_02_+1000_CcafVoh=FpHP=D=U--
