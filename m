@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760453Ab1IKV7H (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Sep 2011 17:59:07 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:51179 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1760415Ab1IKV7F (ORCPT
+	id S1760463Ab1IKWBs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Sep 2011 18:01:48 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:64170 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754734Ab1IKWBr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Sep 2011 17:59:05 -0400
-Date: Sun, 11 Sep 2011 17:59:04 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, ltt-dev@lists.casi.polymtl.ca
-Subject: [PATCH 3.1] ioctl: register LTTng ioctl
-Message-ID: <20110911215904.GA2368@Krystal>
+	Sun, 11 Sep 2011 18:01:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 17:55:41 up 292 days,  2:58,  4 users,  load average: 0.08, 0.04,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CADDb1s2hN0Pi336_gn_+HxJ+i4kd6Ce5XBOjEKoPzdovxVBt5g@mail.gmail.com>
+References: <CADDb1s1pLQMMipe-zoHM6u4C_ZmUm_r4rsYxfft9mFQ56+Wgaw@mail.gmail.com>
+ <CADDb1s2hN0Pi336_gn_+HxJ+i4kd6Ce5XBOjEKoPzdovxVBt5g@mail.gmail.com>
+From: Bryan Donlan <bdonlan@gmail.com>
+Date: Sun, 11 Sep 2011 18:01:06 -0400
+Message-ID: <CAF_S4t8pjpOhvNG+U-RUP1QerEJ1of7Me9smXvrFDiOQtzD_Vg@mail.gmail.com>
+Subject: Re: Issue with lazy umount and closing file descriptor in between
+To: Amit Sahrawat <amit.sahrawat83@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linkinjeon@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The LTTng 2.0 kernel tracer (stand-alone module package, available at
-http://lttng.org) uses the 0xF6 ioctl range for tracer control and
-transport operations.
+On Wed, Sep 7, 2011 at 12:37, Amit Sahrawat <amit.sahrawat83@gmail.com> wrote:
+> I know that lazy umount was designed keeping in mind that the
+> mountpoint is not accesible to all future I/O but for the ongoing I/O
+> it will continute to work. It is only after the I/O is finished that
+> the umount will actually occur. But this can be tricky at times
+> considering there are situations where the operation will continue to
+> be executed than what is expected duration, and you cannot unplug the
+> device during that period because there are chances of filesystem
+> corruption on doing so.
+> Is there anything which could be done in this context? because simply
+> reading the fd-table and closing fd's will not serve the purpose and
+> there is every chance of a OOPs occuring due to this closing.
+> Signalling from this point to the all the process's with open fd's on
+> that mountpoint to close fd i.e., handling needs to be done from the
+> user space applications...? Does this make sense
+>
+> Please through some insight into this. I am not looking for exact
+> solution it is just mere opinion's on this that can add to this.
 
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>
----
- Documentation/ioctl/ioctl-number.txt |    2 ++
- 1 file changed, 2 insertions(+)
+Essentially what you want here is a 'forced unmount' option.
 
-Index: linux/Documentation/ioctl/ioctl-number.txt
-===================================================================
---- linux.orig/Documentation/ioctl/ioctl-number.txt
-+++ linux/Documentation/ioctl/ioctl-number.txt
-@@ -319,4 +319,6 @@ Code  Seq#(hex)	Include File		Comments
- 					<mailto:thomas@winischhofer.net>
- 0xF4	00-1F	video/mbxfb.h		mbxfb
- 					<mailto:raph@8d.com>
-+0xF6	all	LTTng			Linux Trace Toolkit Next Generation
-+					<mailto:mathieu.desnoyers@efficios.com>
- 0xFD	all	linux/dm-ioctl.h
+It's difficult to do this directly in the existing VFS model; you'd
+need to essentially change the operations structure for all open
+files/inodes for that filesystem in a race-free manner, _and_ wait for
+any outstanding operations to complete. The VFS isn't really designed
+to support something like this. What you could try doing, however, is
+creating a wrapper filesystem - one that redirects all requests to an
+underlying filesystem, but supports an operation to:
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+1) Make all future requests fail with -EIO
+2) Invalidate any existing VMA mappings
+3) Wait for all outstanding requests to complete
+4) Unmount (ie, unreference) the underlying filesystem
+
+This will result in some overhead, of course, but would seem to be the
+safest route.
