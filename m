@@ -1,46 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760302Ab1IKSdP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Sep 2011 14:33:15 -0400
-Received: from mail-vw0-f43.google.com ([209.85.212.43]:55893 "EHLO
-	mail-vw0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753832Ab1IKSdP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Sep 2011 14:33:15 -0400
+	id S1760312Ab1IKSda (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Sep 2011 14:33:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39808 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753787Ab1IKSd2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Sep 2011 14:33:28 -0400
+Date: Sun, 11 Sep 2011 20:29:53 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, matthltc@us.ibm.com,
+        paul@paulmenage.org, containers@lists.linux-foundation.org,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] freezer: fix wait_event_freezable/__thaw_task races
+Message-ID: <20110911182953.GA22941@redhat.com>
+References: <20110905162012.GA4445@redhat.com> <20110906032846.GA18425@mtj.dyndns.org> <20110906151836.GA15568@redhat.com> <20110906152539.GA16899@redhat.com> <20110906155332.GF18425@mtj.dyndns.org> <20110907182156.GA13909@redhat.com> <20110907182217.GB13909@redhat.com> <20110908010530.GD3987@mtj.dyndns.org> <20110908175926.GA26986@redhat.com> <20110911015431.GK29319@htj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <yunbousl9f5.fsf@aiko.keithp.com>
-References: <CAC9WiBjoO50H5ZQEShbdZ=64ZXz6Q-OdD+VSD-YrBry3hvdJJQ@mail.gmail.com>
-	<yunbousl9f5.fsf@aiko.keithp.com>
-Date: Sun, 11 Sep 2011 20:33:14 +0200
-Message-ID: <CAC9WiBgn2cr7zY8_9j7SEwQ+rPye9s3cM+Ex4WUxam78qAZhRQ@mail.gmail.com>
-Subject: Re: 3.1-rc5 is the worst
-From: Francis Moreau <francis.moro@gmail.com>
-To: Keith Packard <keithp@keithp.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110911015431.GK29319@htj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 10, 2011 at 5:11 PM, Keith Packard <keithp@keithp.com> wrote:
-> On Sat, 10 Sep 2011 11:57:06 +0200, Francis Moreau <francis.moro@gmail.com> wrote:
->
->> 3/ video: Intel Corporation Core Processor Integrated Graphics
->> Controller (rev 18) drived by 'i915': sometime after resuming or after
->> leaving the black screensaver, the screen seems to be frozen and I
->> need to switch to tty1 and switch back to the graphic screen in order
->> to make the screen refreshed again.
->
-> Can you try disabling fbc and see if this helps?
->
-> i915.i915_enable_fbc=0
->
-> We've gotten a few minor regression reports that this fixes; we're
-> working on isolating the cause if possible.
->
+Hello,
 
-Ok this seems to fix the issue.
+On 09/11, Tejun Heo wrote:
+>
+> On Thu, Sep 08, 2011 at 07:59:26PM +0200, Oleg Nesterov wrote:
+>
+> > > Yeap, with freezable_with_signal gone, this looks correct & simpler to
+> > > me
+> >
+> > I don't really understand this... set_freezable_with_signal() has a
+> > lot of problems, yes... But even if it wasn't removed this fix makes
+> > sense anyway, afaics.
+> >
+> > If freezable_with_signal caller does wait_event_freezable_timeout(),
+> > __retval becomes -ERESTARTSYS after freeze_task(). The next iteration
+> > will return 0 with the KERN_ERR message from schedule_timeout().
+>
+> Hmmm... but with the change, if a kthread gets TIF_SIGPENDING from
+> freezer and then thawed, it would not enter try_to_freeze() and thus
+> won't clear TIF_SIGPENDING.
 
--- 
-Francis
+Ah yes, you are right, thanks. But once again, please note that in this
+case wait_event_freezable_timeout() is broken anyway.
+
+> > > but it would be nice if you can sprinkle some documentation while
+> > > at it. :)
+> >
+> > But they already have the comment ;) What can I add?
+>
+> Proper /** - */ comment w/ return value documentation? :P
+
+I already noticed a long ago you like the comments too much ;)
+
+OK, will do.
+
+Oleg.
+
