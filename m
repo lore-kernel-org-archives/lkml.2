@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755170Ab1IKQCa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Sep 2011 12:02:30 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48484 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754843Ab1IKQC3 (ORCPT
+	id S1760275Ab1IKQDs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Sep 2011 12:03:48 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:40676 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754935Ab1IKQDq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Sep 2011 12:02:29 -0400
-Subject: Re: [PATCH] dmaengine: add CSR SiRFprimaII DMAC driver
-From: Vinod Koul <vkoul@infradead.org>
-To: Barry Song <21cnbao@gmail.com>
-Cc: vinod.koul@intel.com, Jassi Brar <jassisinghbrar@gmail.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "workgroup.linux@csr.com" <workgroup.linux@csr.com>,
-        "rongjun.ying@csr.com" <rongjun.ying@csr.com>,
-        "Baohua.Song@csr.com" <Baohua.Song@csr.com>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-In-Reply-To: <CAGsJ_4xv9+=+=2b=i47P5V5sOQH-GyTMaESwbeHxu439Vx1gLA@mail.gmail.com>
-References: <1315374075-15479-1-git-send-email-Baohua.Song@csr.com>
-	 <438BB0150E931F4B9CE701519A4463010871804A46@bgsmsx502.gar.corp.intel.com>
-	 <CAGsJ_4x4S+8d3xS+QTrjDpoxcHo3p7qArd7yFr=+h1vxSRvEpA@mail.gmail.com>
-	 <438BB0150E931F4B9CE701519A4463010871804A48@bgsmsx502.gar.corp.intel.com>
-	 <CAGsJ_4yeovNP=6CKTafbxrBTrYQ42B9yvAOM8gM_bYqD6mTnUw@mail.gmail.com>
-	 <CABb+yY1=P=D3GFFxMOUM0a2yWCiAHNqwVU0a--t+pJnUhqKHKA@mail.gmail.com>
-	 <CABb+yY3F+DMn2SxeO0chjpiMBkgLvSK5EVYMdhQsfQoZNZ4_7Q@mail.gmail.com>
-	 <1315518378.6638.2.camel@vkoul-mobl4>
-	 <CAGsJ_4xv9+=+=2b=i47P5V5sOQH-GyTMaESwbeHxu439Vx1gLA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Intel Corp
-Date: Sun, 11 Sep 2011 21:32:46 +0530
-Message-ID: <1315756966.2246.3.camel@vkoul-mobl4>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	Sun, 11 Sep 2011 12:03:46 -0400
+Message-ID: <4E6CDA70.5080205@gmail.com>
+Date: Sun, 11 Sep 2011 17:57:36 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
+MIME-Version: 1.0
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH, RFC] xip: use i_mutex for xip_file_fault
+References: <4E6B82DB.50803@gmail.com> <20110910155639.GY2203@ZenIV.linux.org.uk> <4E6C705F.8010101@gmail.com> <20110911111504.GA2203@ZenIV.linux.org.uk> <20110911112552.GB2203@ZenIV.linux.org.uk>
+In-Reply-To: <20110911112552.GB2203@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-09-09 at 16:18 +0800, Barry Song wrote:
-> 2011/9/9 Vinod Koul <vkoul@infradead.org>:
-> > On Thu, 2011-09-08 at 10:55 +0530, Jassi Brar wrote:
-> >> On Thu, Sep 8, 2011 at 8:47 AM, Jassi Brar <jassisinghbrar@gmail.com> wrote:
-> Jassi prefer to use a transfer type instead of a control command.
-> though we will not really change the interleaved setting for every
-> transfer(it is more possible for one device, we will not change the
-> xlen/ylen/dma_width setting in the whole life period), i do believe
-> the transfer type is enough flexible for my possible applications to
-> change xlen, ylen and dma_width in different transfers.
-Is this usually the assumption or yours is a special case, how about
-your's Jassi? 
 
--- 
-~Vinod Koul
-Intel Corp.
 
+Il 11/09/2011 13:25, Al Viro ha scritto:
+> On Sun, Sep 11, 2011 at 12:15:04PM +0100, Al Viro wrote:
+>
+>> write() grabs ->i_mutex on the file it's going to write to.  It uses
+>> copy_from_user() while holding ->i_mutex; that can end up calling ->fault().
+>> If your data comes from the same file mmapped in your address space, you
+>> have xip_write_fault() called while you are in xip_file_write() and *already*
+>> are holding ->i_mutex on the same inode.  With your patch it will, AFAICS,
+>> cheerfully deadlock.
+>
+> Oh, wait...  You are only doing that to write side of pagefault?  That's
+> better, but not much:
+>
+> thread 1: mmap the file, modify mapping
+> thread 2: write() to file
+>
+> The former will do xip_write_fault() while holding ->mmap_sem.
+> The latter will do copy_from_user() from xip_file_write(), getting
+> pagefaults while holding ->i_mutex.
+>
+> Note that we are grabbing ->mmap_sem and ->i_mutex in opposite orders.
+> I.e. that will deadlock on you - all you need is threads sharing the
+> address space.
+>
+
+Ok, thank you very much for the on-line debug :) So i_mutex is not a 
+good lock to use in this situation. It was a common sync point, but it 
+has some collateral effect on the write path that we must avoid. At this 
+point, what can be a good strategy? Any opinion is welcome.
+
+Marco
