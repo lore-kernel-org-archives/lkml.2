@@ -1,72 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751073Ab1IKEUF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Sep 2011 00:20:05 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:46806 "EHLO
+	id S1751259Ab1IKEXm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Sep 2011 00:23:42 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:47183 "EHLO
 	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750754Ab1IKEUE (ORCPT
+	with ESMTP id S1750775Ab1IKEXl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Sep 2011 00:20:04 -0400
-Date: Sun, 11 Sep 2011 14:19:58 +1000
+	Sun, 11 Sep 2011 00:23:41 -0400
+Date: Sun, 11 Sep 2011 14:23:34 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: Arnaud Lacombe <lacombar@gmail.com>, Josh Boyer <jwboyer@gmail.com>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: no tree for Sept 6
-Message-Id: <20110911141958.8e404c8b943af1c73886cee5@canb.auug.org.au>
-In-Reply-To: <4E677AF5.7050903@infradead.org>
-References: <20110906164049.4dd3961cb82800b8d7cc8741@canb.auug.org.au>
-	<CACqU3MXcZ72eYNd=duPYdR_gOe-ejnHoLSMqK_ZU3y=MR2-0+A@mail.gmail.com>
-	<CA+5PVA7CETUa0i3U20ifz5YjXAywTGD2NEQt1GcJz1OwY_DtEg@mail.gmail.com>
-	<CACqU3MXQw4+QyBmCPcO8ZmYu0T6N+DStXBoa=JUv+ej6cWMTnw@mail.gmail.com>
-	<CA+5PVA7Oj9BNTA93m8-rj4a7Ze_N7m3mG0-+GLG1zUSG+ekqJQ@mail.gmail.com>
-	<CACqU3MW3w10LsZvyY4RNQ1-0TgrW39PaGeVnj78bk+p6c=1uFQ@mail.gmail.com>
-	<4E677AF5.7050903@infradead.org>
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree (tty
+ tree related)
+Message-Id: <20110911142334.8df995a097763cd10f780f00@canb.auug.org.au>
+In-Reply-To: <CACqU3MVbKJw5VVqnz+gfLDnQEDu9Lv4xV+7RvdD4ZbetGu79WQ@mail.gmail.com>
+References: <20110825161843.daf46b6b4023926fcfeec387@canb.auug.org.au>
+	<20110825140820.GA9126@kroah.com>
+	<4E56689D.3080202@freescale.com>
+	<20110826015111.49af16f792d5554fd931d230@canb.auug.org.au>
+	<CACqU3MUs_97=MuuKAjr-LeUT7kSRxtzSntwUeKeeH4n8s7SSGg@mail.gmail.com>
+	<20110826103932.1626f1c5542b660bcd1b24aa@canb.auug.org.au>
+	<CACqU3MVbKJw5VVqnz+gfLDnQEDu9Lv4xV+7RvdD4ZbetGu79WQ@mail.gmail.com>
 X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA1";
- boundary="Signature=_Sun__11_Sep_2011_14_19_58_+1000_.fBVBrAUl_029=xM"
+ boundary="Signature=_Sun__11_Sep_2011_14_23_34_+1000_Y9gQR26hReL/vtTt"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sun__11_Sep_2011_14_19_58_+1000_.fBVBrAUl_029=xM
+--Signature=_Sun__11_Sep_2011_14_23_34_+1000_Y9gQR26hReL/vtTt
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Mauro,
+Hi Arnaud,
 
-On Wed, 07 Sep 2011 11:08:53 -0300 Mauro Carvalho Chehab <mchehab@infradead=
-.org> wrote:
+On Fri, 26 Aug 2011 11:47:40 -0400 Arnaud Lacombe <lacombar@gmail.com> wrot=
+e:
 >
-> It seems that we need a backup plan. In my case, I could put the tree
-> for -next at infradead or at linuxtv, but that means to re-configure
-> everything at Stephen's side.
+> Couldn't all the error log be public, rotated over a 7 iteration
+> period ? That would be fair to everyone.
 
-That is not a big issue at all.  If you wish to move your tree, just let
-me know (preferably in a public manner to raise my confidence in its
-provenance - I am a bit more paranoid, now :-)).
+See http://kisskb.ellerman.id.au/linux-next (as stated in all my release
+emails).
 
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 http://www.canb.auug.org.au/~sfr/
 
---Signature=_Sun__11_Sep_2011_14_19_58_+1000_.fBVBrAUl_029=xM
+--Signature=_Sun__11_Sep_2011_14_23_34_+1000_Y9gQR26hReL/vtTt
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQEcBAEBAgAGBQJObDbuAAoJEDMEi1NhKgbsk9IH/iWLcLqbBB27Pi/m9A5VAtmz
-iKcZ9DEHyZGSilXEpRBXQ4O6RQhn5MRdMEmrW4/O1K8S343FEyIjpgLK09IbFaYy
-9InxXVmiPuo4Q4owo8RNoMOzET8lFTSjmkhrrbkEv9n6dPhqoNCzRHPags1ojo8z
-2XLp8xcGBUc8Th7IZHfNF9k2NYSzHvvci6MahVyV8i0oGYqBPRxUwp00omkzb/fo
-RDcoyEN22qEbIR9PjingZxRtjNYm+8e2d2Tvk8b7i4UWM2YgrlPgwTyeRwA7x6sA
-v+jM0ZXiUYXJIFfhLxlO7W0S3jbiyfiyUaSUQbUBROyhau0zZLY006msyl5ILBA=
-=yNx9
+iQEcBAEBAgAGBQJObDfGAAoJEDMEi1NhKgbsNL0H/jhtlluCKcxzhlZ3EIqoNBzM
+vbhxSvRJUtowUWaEUK+uNxr6K3WXpSLH8vcPPhaTo9v0GoC39qV/4pk76J2U9XuP
+UQkLFg6o51LQ0swn83wNW8qpEQC2Fi1qZjZ1hvl374DpGad9ikB/c9LP3oRgkh1l
+/8bXn/568WxWZUTkoYaPkiZOla9hrLu8BUZCv27L40ilR2BuVcbZoAEB8Q6boDRg
+nQVygiajReyuq7L/m0iZcyjT0Zni6I3wl1cd8LeFcIbCR1Hmub6rypfOoSPBNcsL
+/X2ojseAEHxcAB4muO4jhjPb/IPkjRhhpb9bmfes73CG+sJAvITR7eV4xXG4lK4=
+=lnZw
 -----END PGP SIGNATURE-----
 
---Signature=_Sun__11_Sep_2011_14_19_58_+1000_.fBVBrAUl_029=xM--
+--Signature=_Sun__11_Sep_2011_14_23_34_+1000_Y9gQR26hReL/vtTt--
