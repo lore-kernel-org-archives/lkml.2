@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760463Ab1IKWBs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Sep 2011 18:01:48 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:64170 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754734Ab1IKWBr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Sep 2011 18:01:47 -0400
+	id S1760473Ab1IKWRW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Sep 2011 18:17:22 -0400
+Received: from lucidpixels.com ([72.73.18.11]:46606 "EHLO lucidpixels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751793Ab1IKWRV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Sep 2011 18:17:21 -0400
+Date: Sun, 11 Sep 2011 18:17:20 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: linux-kernel@vger.kernel.org
+cc: Alan Piszcz <ap@solarrain.com>
+Subject: 3.0.1: pagevec_lookup+0x1d/0x30, SLAB issues?
+Message-ID: <alpine.DEB.2.02.1109111815520.19558@p34.internal.lan>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <CADDb1s2hN0Pi336_gn_+HxJ+i4kd6Ce5XBOjEKoPzdovxVBt5g@mail.gmail.com>
-References: <CADDb1s1pLQMMipe-zoHM6u4C_ZmUm_r4rsYxfft9mFQ56+Wgaw@mail.gmail.com>
- <CADDb1s2hN0Pi336_gn_+HxJ+i4kd6Ce5XBOjEKoPzdovxVBt5g@mail.gmail.com>
-From: Bryan Donlan <bdonlan@gmail.com>
-Date: Sun, 11 Sep 2011 18:01:06 -0400
-Message-ID: <CAF_S4t8pjpOhvNG+U-RUP1QerEJ1of7Me9smXvrFDiOQtzD_Vg@mail.gmail.com>
-Subject: Re: Issue with lazy umount and closing file descriptor in between
-To: Amit Sahrawat <amit.sahrawat83@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linkinjeon@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 7, 2011 at 12:37, Amit Sahrawat <amit.sahrawat83@gmail.com> wrote:
-> I know that lazy umount was designed keeping in mind that the
-> mountpoint is not accesible to all future I/O but for the ongoing I/O
-> it will continute to work. It is only after the I/O is finished that
-> the umount will actually occur. But this can be tricky at times
-> considering there are situations where the operation will continue to
-> be executed than what is expected duration, and you cannot unplug the
-> device during that period because there are chances of filesystem
-> corruption on doing so.
-> Is there anything which could be done in this context? because simply
-> reading the fd-table and closing fd's will not serve the purpose and
-> there is every chance of a OOPs occuring due to this closing.
-> Signalling from this point to the all the process's with open fd's on
-> that mountpoint to close fd i.e., handling needs to be done from the
-> user space applications...? Does this make sense
->
-> Please through some insight into this. I am not looking for exact
-> solution it is just mere opinion's on this that can add to this.
+Hi,
 
-Essentially what you want here is a 'forced unmount' option.
+With 3.0.1 now and all options compiled in and threadirqs removed, I get 
+the same error this user is seeing:
+http://www.gossamer-threads.com/lists/linux/kernel/1424997
 
-It's difficult to do this directly in the existing VFS model; you'd
-need to essentially change the operations structure for all open
-files/inodes for that filesystem in a race-free manner, _and_ wait for
-any outstanding operations to complete. The VFS isn't really designed
-to support something like this. What you could try doing, however, is
-creating a wrapper filesystem - one that redirects all requests to an
-underlying filesystem, but supports an operation to:
+E.g.,
 
-1) Make all future requests fail with -EIO
-2) Invalidate any existing VMA mappings
-3) Wait for all outstanding requests to complete
-4) Unmount (ie, unreference) the underlying filesystem
+Sep 11 17:48:26 p34 kernel: [25507.537996] Call Trace:
+Sep 11 17:48:26 p34 kernel: [25507.538000]  [<ffffffff8108538d>] pagevec_lookup+0x1d/0x30
+Sep 11 17:48:26 p34 kernel: [25507.538004]  [<ffffffff81085a8f>] invalidate_mapping_pages+0x5f/0x170
+Sep 11 17:48:26 p34 kernel: [25507.538009]  [<ffffffff810d0ba5>] shrink_icache_memory+0x2d5/0x320
+Sep 11 17:48:26 p34 kernel: [25507.538013]  [<ffffffff810868fd>] shrink_slab+0x11d/0x190
+Sep 11 17:48:26 p34 kernel: [25507.538016]  [<ffffffff81089562>] balance_pgdat+0x4f2/0x680
+Sep 11 17:48:26 p34 kernel: [25507.538020]  [<ffffffff810897a3>] kswapd+0xb3/0x250
+Sep 11 17:48:26 p34 kernel: [25507.538023]  [<ffffffff8104fd00>] ? abort_exclusive_wait+0xb0/0xb0
+Sep 11 17:48:26 p34 kernel: [25507.538027]  [<ffffffff810896f0>] ? balance_pgdat+0x680/0x680
+Sep 11 17:48:26 p34 kernel: [25507.538030]  [<ffffffff8104f2b7>] kthread+0x87/0x90
+Sep 11 17:48:26 p34 kernel: [25507.538034]  [<ffffffff8163bd94>] kernel_thread_helper+0x4/0x10
+Sep 11 17:48:26 p34 kernel: [25507.538038]  [<ffffffff8104f230>] ? kthread_flush_work_fn+0x10/0x10
+Sep 11 17:48:26 p34 kernel: [25507.538043]  [<ffffffff8163bd90>] ? gs_change+0xb/0xb
 
-This will result in some overhead, of course, but would seem to be the
-safest route.
+Does anyone know what could be causing this?
+
+Justin.
+
