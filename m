@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751358Ab1IKEuK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Sep 2011 00:50:10 -0400
-Received: from mail.play-mail.info ([211.47.140.228]:59521 "EHLO
-	play-mail.info" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750988Ab1IKEuJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Sep 2011 00:50:09 -0400
+	id S1751678Ab1IKFRy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Sep 2011 01:17:54 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:41234 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751050Ab1IKFRx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Sep 2011 01:17:53 -0400
+X-Sasl-enc: 7Iam+RqTXKnXoRRS679uQdZaNtERBk7QdbYP/mlv7XmG 1315718272
+Date: Sun, 11 Sep 2011 07:08:29 +0200
+From: Greg KH <greg@kroah.com>
+To: Anthony DeRobertis <aderobertis@metrics.net>
+Cc: Linux-kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: RFC: [PATCH] Add a sysfs entry queue/ignore_flushes.
+Message-ID: <20110911050829.GA15269@kroah.com>
+References: <4E6A783D.9040708@metrics.net>
 MIME-Version: 1.0
-Message-Id: <110911135008GU.23308@mail.play-mail.info>
-Date: Sun, 11 Sep 2011 13:50:08 +0900
-From: =?UTF-8?B?c2hpZnQ5ODc2NUBnbWFpbC5jb20=?= <shift98765@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: Text/Plain;charset="utf-8"
-Subject: =?UTF-8?B?44GU54Sh5rKZ5rGw44GX44Gm44GE44G+44GZ77yB44KG44GG44GT44Gn44GZ44CC?=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E6A783D.9040708@metrics.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id p8B4osib005321
 
-お久しぶりですね。お元気でしたか？
-シンガポールから帰国し、やっと連絡出来るようになりました。
+On Fri, Sep 09, 2011 at 04:34:05PM -0400, Anthony DeRobertis wrote:
+> I have an Oracle workload that ran quite fast under 2.6.32 due to mdraid
+> not supporting barriers. 2.6.33 slowed it down very substantially, and
+> its remains slow in 3.1. (Oracle is running on raw LVM logical volumes,
+> not filesystems, so ext4 barrier=0 doesn't help).
+> 
+> This patch adds a sysfs attribute to allow flush/fua to to turned off
+> (ignored) on a per-block-device basis. I have tested it on both a VM and
+> real hardware.
+> 
+> I'm not sure that queue_flags is the best place to put the bit, seems
+> like it may more logically go in flush_flags, but everything else is in
+> queue_flags.
+> 
+> I'm not subscribed, but will be looking for replies via list archives.
+> Feel free to CC me.
 
-とりあえず仮のメールアドレスを取ってきたので
-お返事はこちらにお願い出来ますか？
-shift98765@gmail.com
+If you add/remove/change sysfs attributes, you also need to do the same
+to Documentation/ABI.
 
-確かあの時私の携帯を教えていたと思うんですけど
-向こうで壊れてしまって今は仮のメールから送信しています。
+thanks,
 
-本来なら私がシンガポールにいる時にでも
-もっと自分の事をお話しておきたかったんですけど
-こんな形での連絡になって本当にごめんなさい。
-
-改めて簡単にですけど私のこと入れますね。
-
-３５歳、小さい会社ですけど役員をしています。
-シンガポールは仕事の関係で行ってました。
-去年までは年に何度も行き来していたのですが
-今回ある程度仕事は片付けてきたので
-しばらくはまたこっちで一人暮らしです。
-
-今回のシンガポールは私がマリンスポーツに出会った場所でもあり
-とても思い出深い土地でしたけど、
-やっぱり住み慣れた日本が一番ですね。
-
-それに向こうでは外食ばかりだったので
-趣味のお菓子作りもまたチャレンジしたいと思ってます。
-
-
-私のこと、もしかしてもう忘れられてしまったかもしれませんけど
-一度は離れたこの赤い糸、改めてたぐり寄せさせていただけないでしょうか？
-
-今度はもう途中で海外に行ったりすることもありませんから
-あの時聞けなかった貴方のこと、教えて欲しいです。
-
-確かざっとは聞いてましたけどそれっきりでしたものね？
-お住まいとか年齢とか…お話出来る範囲でいいんです。
-今度はちゃんと手帳にメモしておきたいので
-お返事の中に書いておくっていただけたら嬉しいです。 ���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+greg k-h
