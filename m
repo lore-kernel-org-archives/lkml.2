@@ -1,50 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760395Ab1IKVgo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Sep 2011 17:36:44 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:59910 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755257Ab1IKVgk (ORCPT
+	id S1755091Ab1IKVg2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Sep 2011 17:36:28 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:43222 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754624Ab1IKVg1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Sep 2011 17:36:40 -0400
-Date: Mon, 12 Sep 2011 00:36:35 +0300
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: axboe@kernel.dk, jbottomley@parallels.com, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: 3.1.0-rc4: oops at elv_put_request()
-Message-ID: <20110911213634.GA3065@p183.telecom.by>
+	Sun, 11 Sep 2011 17:36:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1315383059-3673-37-git-send-email-yong.zhang0@gmail.com>
+References: <1315383059-3673-1-git-send-email-yong.zhang0@gmail.com>
+	<1315383059-3673-37-git-send-email-yong.zhang0@gmail.com>
+Date: Sun, 11 Sep 2011 23:36:25 +0200
+Message-ID: <CACRpkdbL2XOPu63r5=twSSs+TvPEvD9S8M7yYAcTP6HJ4MLvJg@mail.gmail.com>
+Subject: Re: [PATCH 36/62] i2c: irq: Remove IRQF_DISABLED
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Dave Airlie <airlied@linux.ie>,
+        linux-i2c@vger.kernel.org, Sonic Zhang <sonic.zhang@analog.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Joe Perches <joe@perches.com>,
+        mingo@elte.hu, "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
+        Alessandro Rubini <rubini@unipv.it>,
+        Nobuhiro Iwamatsu <iwamatsu@nigauri.org>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Magnus Damm <damm@opensource.se>, Simon Horman <horms@verge.net.au>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        tglx@linutronix.de, linux-arm-kernel@lists.infradead.org,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Jiri Kosina <jkosina@suse.cz>, Paul Mundt <lethal@linux-sh.org>,
+        STEricsson <STEricsson_nomadik_linux@list.st.com>,
+        uclinux-dist-devel@blackfin.uclinux.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Caught this one, there was no real load at the moment.
-FWIW, setup is ext4 over RAID-6 across 4 disks.
+On Wed, Sep 7, 2011 at 10:10 AM, Yong Zhang <yong.zhang0@gmail.com> wrote:
 
-	elv_put_request
-	__blk_put_request
-	blk_put_request
-	scsi_execute
-	scsi_execute_req
-	scsi_test_unit_ready
-	sd_check_events
-	disk_events_workfn
-	process_one_work
-	worker_thread
-	kthread
-	kernel_thread_helper
+> This flag is a NOOP and can be removed now.
+>
+> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
 
-$ addr2line -e vmlinux 0xffffffff811bcbbb
-block/elevator.c:772
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-   768	void elv_put_request(struct request_queue *q, struct request *rq)
-   769	{
-   770		struct elevator_queue *e = q->elevator;
-   771	
-   772	===>	if (e->ops->elevator_put_req_fn)	<===
-   773			e->ops->elevator_put_req_fn(rq);
-   774	}
+Yours,
+Linus Walleij
