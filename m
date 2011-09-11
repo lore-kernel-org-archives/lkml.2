@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754674Ab1IKUod (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Sep 2011 16:44:33 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:40756 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754128Ab1IKUoc (ORCPT
+	id S1754804Ab1IKVSG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Sep 2011 17:18:06 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:39483
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752291Ab1IKVSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Sep 2011 16:44:32 -0400
-Date: Sun, 11 Sep 2011 16:44:31 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Ming Lei <tom.leiming@gmail.com>
-cc: rjw@sisk.pl, <linux-pm@lists.linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] PM/runtime: handle ->runtime_suspend failure correctly
-In-Reply-To: <1315665442-4194-2-git-send-email-tom.leiming@gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1109111636410.21533-100000@netrider.rowland.org>
+	Sun, 11 Sep 2011 17:18:04 -0400
+Message-ID: <4E6D2588.3010009@infradead.org>
+Date: Sun, 11 Sep 2011 14:18:00 -0700
+From: Geoff Levand <geoff@infradead.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Christian Gmeiner <christian.gmeiner@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Linux as Bootloader
+References: <CAH9NwWfGA7jLWDZcN=DfGN5H2g=dt6U8SBxAX_wJAk6MKKfZAA@mail.gmail.com>
+In-Reply-To: <CAH9NwWfGA7jLWDZcN=DfGN5H2g=dt6U8SBxAX_wJAk6MKKfZAA@mail.gmail.com>
+X-Enigmail-Version: 1.1.2
+OpenPGP: id=2E141B16
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 10 Sep 2011 tom.leiming@gmail.com wrote:
+Hi Christian,
 
-> From: Ming Lei <tom.leiming@gmail.com>
-> 
-> If ->runtime_suspend returns -EAGAIN or -EBUSY, the device should
-> still be in ACTIVE state, so it is not needed to handle defered
-> resume and idle notification to its parent; if ->runtime_suspend
-> returns other fatal failure, it doesn't make sense to process defered
-> resume and send idle notification to its parent.
+On 09/05/2011 01:24 AM, Christian Gmeiner wrote:
+> I am using the linux kernel in combination with busybox and a separate
+> bootloader app to
+> startup a x86 based embedded device.
 
-> @@ -422,6 +425,9 @@ static int rpm_suspend(struct device *dev, int rpmflags)
->  	}
->  	wake_up_all(&dev->power.wait_queue);
->  
-> +	if (retval)
-> +		goto out;
-> +
->  	if (dev->power.deferred_resume) {
->  		rpm_resume(dev, 0);
->  		retval = -EAGAIN;
+Just FYI, Petitboot, a kexec base bootloader, does the same
+thing as what you have done.
 
-If there's a suspend failure, the deferred_resume flag gets turned off 
-anyway.  But skipping this test won't hurt, and skipping the parent 
-notification is a good idea.
+I'm now working on adding a twin GUI program and an x86 OpenWRT build.
 
-In fact, it might be even better to put a copy of the wake_up_all() in
-the "if (retval)" branch after the suspend callback and then go
-directly to out.  The "else" branch could then become part of the
-straight-through code, not indented.
+Current info is here:
 
-Alan Stern
+  http://www.kernel.org/pub/linux/kernel/people/geoff/petitboot/
+  http://git.kernel.org/?p=linux/kernel/git/geoff/petitboot.git
 
+Some old info is here:
+
+  http://www.kernel.org/pub/linux/kernel/people/geoff/cell/ps3-petitboot/
+  http://ozlabs.org/~jk/projects/petitboot/
+
+-Geoff
