@@ -1,66 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759305Ab1IKCFc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Sep 2011 22:05:32 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:39333 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758682Ab1IKCFa (ORCPT
+	id S1759634Ab1IKCGF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Sep 2011 22:06:05 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:45508 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758682Ab1IKCGD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Sep 2011 22:05:30 -0400
-Date: Sun, 11 Sep 2011 11:05:23 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Denys Vlasenko <vda.linux@googlemail.com>, linux-kernel@vger.kernel.org,
-        dvlasenk@redhat.com
-Subject: Re: [PATCH v2] Make PTRACE_SEIZE set ptrace options specified in
- 'data' parameter
-Message-ID: <20110911020523.GL29319@htj.dyndns.org>
-References: <201109072340.31460.vda.linux@googlemail.com>
- <20110908004438.GC3987@mtj.dyndns.org>
- <20110908181747.GA28120@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110908181747.GA28120@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 10 Sep 2011 22:06:03 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Sandy Harris <sandyinchina@gmail.com>
+Cc: Steve Grubb <sgrubb@redhat.com>, Neil Horman <nhorman@redhat.com>,
+        Tomas Mraz <tmraz@redhat.com>, Sasha Levin <levinsasha928@gmail.com>,
+        "Ted Ts'o" <tytso@mit.edu>, Jarod Wilson <jarod@redhat.com>,
+        linux-crypto@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert.xu@redhat.com>,
+        Stephan Mueller <stephan.mueller@atsec.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] random: add blocking facility to urandom
+In-Reply-To: Your message of "Fri, 09 Sep 2011 10:21:13 +0800."
+             <CACXcFmnnMLHq2VE35i4QK4wNePXHJc6T73VQNTmJo7WEz34DaQ@mail.gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <1314974248-1511-1-git-send-email-jarod@redhat.com> <1315464117.11199.51.camel@vespa.frost.loc> <20110908125234.GD13657@hmsreliant.think-freely.org> <201109080911.12921.sgrubb@redhat.com>
+            <CACXcFmnnMLHq2VE35i4QK4wNePXHJc6T73VQNTmJo7WEz34DaQ@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1315706745_28234P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Sat, 10 Sep 2011 22:05:46 -0400
+Message-ID: <118704.1315706746@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A02020B.4E6C1780.0002,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+--==_Exmh_1315706745_28234P
+Content-Type: text/plain; charset=us-ascii
 
-On Thu, Sep 08, 2011 at 08:17:47PM +0200, Oleg Nesterov wrote:
-> > There are places which assume ->ptrace is protected by siglock.
-> 
-> Really? Once again, I agree. But _afaics_ currently this is not strictly
-> needed. PT_PTRACED/PT_SEIZED should not go away under ->siglock, yes, but
-> it seems that it is fine to set them.
+On Fri, 09 Sep 2011 10:21:13 +0800, Sandy Harris said:
+> Barring a complete failure of SHA-1, an enemy who wants to
+> infer the state from outputs needs astronomically large amounts
+> of both data and effort.
 
-Hmmm.... I haven't checked each direction.  Maybe we don't strictly
-need it on setting it but I definitely was assuming that ->ptrace was
-protected by siglock while coding recent ptrace changes.  Can't the
-following happen?
+So let me get this straight - the movie-plot attack we're defending against is
+somebody readin literally gigabytes to terabytes (though I suspect realistic
+attacks will require peta/exabytes) of data from /dev/urandom, then performing
+all the data reduction needed to infer the state of enough of the entropy pool
+to infer all 160 bits of SHA-1 when only 80 bits are output...
 
-* ptracer seizes child, sets PT_PTRACED and then OR PT_SEIZED.
+*and* doing it all without taking *any* action that adds any entropy to the
+pool, and *also* ensuring that no other programs add any entropy via their
+actions before the reading and data reduction completes. (Hint - if the
+attacker can do this, you're already pwned and have bigger problems)
 
-* ptracee enters signal delivery path with group stop scheduled.
-  PT_PTRACED is visible and group stop is transformed into
-  JOBCTL_TRAP_STOP.
+/me thinks RedHat needs to start insisting on random drug testing for
+their security experts at BSI.  EIther that, or force BSI to share the
+really good stuff they've been smoking, or they need to learn how huge
+a number 2^160 *really* is....
 
-* ptracee enters do_jobct_trap().  PT_SEIZED is still not visible and
-  it takes the path for the old behavior.
 
-* ptracer SEIZE'd and expects PTRACE_EVENT_STOP but it gets the old
-  no-siginfo trap.
+--==_Exmh_1315706745_28234P
+Content-Type: application/pgp-signature
 
-> > and linking are protected by siglock
-> 
-> Hmm. Could you explain this? Why do want __ptrace_link under ->siglock ?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
-Because it's much simpler to assume that w/ siglock locked, everything
-including ->parent is set up properly w.r.t. ->ptrace.
+iD8DBQFObBd5cC3lWbTT17ARAiJDAKCfrzp7udA1haRF+OhRfyrjwLPcFwCfaI7M
+ObCuxyAWv2Ra4E0LvLriDTM=
+=4CR4
+-----END PGP SIGNATURE-----
 
-Thanks.
+--==_Exmh_1315706745_28234P--
 
--- 
-tejun
