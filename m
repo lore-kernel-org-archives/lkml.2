@@ -1,75 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759980Ab1IKDeW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Sep 2011 23:34:22 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:58867 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752009Ab1IKDeV (ORCPT
+	id S932338Ab1IKDfp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Sep 2011 23:35:45 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:49449 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752203Ab1IKDfo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Sep 2011 23:34:21 -0400
-Date: Sun, 11 Sep 2011 13:34:10 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Uwe =?UTF-8?B?S2xlaW5lLUvDtm5pZw==?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "Arnaud Patard (Rtp)" <arnaud.patard@rtp-net.org>
-Subject: Re: linux-next: manual merge of the i.MX tree with the arm-soc tree
-Message-Id: <20110911133410.a1de21cd74e0af9c9ee51549@canb.auug.org.au>
-In-Reply-To: <20110909064058.GF28816@pengutronix.de>
-References: <20110909114436.5afc4ef772143d90ce75c7c5@canb.auug.org.au>
-	<20110909064058.GF28816@pengutronix.de>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Sun__11_Sep_2011_13_34_10_+1000_R.Z_.YrfgRb8x59g"
+	Sat, 10 Sep 2011 23:35:44 -0400
+Date: Sun, 11 Sep 2011 12:35:36 +0900
+From: Tejun Heo <htejun@gmail.com>
+To: rjw@sisk.pl, paul@paulmenage.org, lizf@cn.fujitsu.com
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, fweisbec@gmail.com,
+        matthltc@us.ibm.com, akpm@linux-foundation.org,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCHSET cgroup] extend threadgroup locking
+Message-ID: <20110911033536.GO29319@htj.dyndns.org>
+References: <1315159280-25032-1-git-send-email-htejun@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1315159280-25032-1-git-send-email-htejun@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sun__11_Sep_2011_13_34_10_+1000_R.Z_.YrfgRb8x59g
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Sep 05, 2011 at 03:01:16AM +0900, Tejun Heo wrote:
+> Hello,
+> 
+> cgroup currently only blocks new threads from joining the target
+> threadgroup during migration, and on-going migration could race
+> against exec and exit leading to interesting problems - the symmetry
+> between various attach methods, task exiting during method execution,
+> ->exit() racing against attach methods, migrating task switching basic
+> properties during exec and so on.
+> 
+> This patchset extends threadgroup locking such that it covers all
+> operations which can alter the threadgroup - fork, exit and exec, and
+> update cgroup to take advantage of it.  rwsem read ops are added to
+> exit path but exec is excluded by grabbing the existing
+> cred_guard_mutex from threadgroup locking helper.
+> 
+> This makes threadgroup locking complete and resolves cgroup issues
+> stemming from the target taskset being unstable.
+> 
+> This patchset is on top of the current pm-freezer + "freezer: fixes &
+> simplifications" patchset and contains the following four patches.
+> Patch list and diffstat follow.
+> 
+> Thanks.
+> 
+>  [PATCH 1/4] cgroup: change locking order in attach_task_by_pid()
+>  [PATCH 2/4] threadgroup: rename signal->threadgroup_fork_lock to
+>  [PATCH 3/4] threadgroup: extend threadgroup_lock() to cover exit and
+>  [PATCH 4/4] cgroup: always lock threadgroup during migration
+> 
+>  include/linux/init_task.h |    9 ++----
+>  include/linux/sched.h     |   58 ++++++++++++++++++++++++++++---------------
+>  kernel/cgroup.c           |   62 +++++++++++++++++++++-------------------------
+>  kernel/exit.c             |   16 ++++++++---
+>  kernel/fork.c             |    8 ++---
+>  5 files changed, 88 insertions(+), 65 deletions(-)
 
-Hi Uwe,
+Oops, forgot to cc Oleg on this series.
 
-On Fri, 9 Sep 2011 08:40:58 +0200 Uwe Kleine-K=C3=B6nig <u.kleine-koenig@pe=
-ngutronix.de> wrote:
->
-> Do you prefer that conflicts like these are resolved before you get
-> them?
-> (I.e. I could have done
->=20
-> 	git merge -s ours $somecommitfromthearmsoctree
->=20
-> but I wasn't sure that this is a good idea and so decided to wait until
-> you write a mail about the conflict.)
+Oleg, this one definitely needs your review.  The original thread is...
 
-No, these small conflicts are not a problem, so just leave them to me and
-Arnd or Linus.
+  http://thread.gmane.org/gmane.linux.kernel/1187853/focus=1188347
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+If you want the series in mbox format, please let me know.
 
---Signature=_Sun__11_Sep_2011_13_34_10_+1000_R.Z_.YrfgRb8x59g
-Content-Type: application/pgp-signature
+Thanks.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJObCwyAAoJEDMEi1NhKgbs48IH/1HJJLmpEYpPfRBXCfZrXdDV
-WPJhwZrZ2CkslZqZx9qYaQmEP2YRZV2bjNOq9ECFsZEVUBs47QKlp8fqjb8PLh2L
-dugzpYyOvwZv6tjCdmpo98iudsD97wal8jXpkag+ZtFjUxsK2Y6ezhFA3htdpV8c
-/7YogBiBk8RTyngUizXwogOHo2Lh0biHE3+WGYiTxV6sjrOe8AWaGQfC0r9UwkYe
-ZJjhkr6xEAjaZ0gf9RLzBT46lDe16bnVh3yjhEXAO3QONo9Ma+D6Ih+gJbQiUzGt
-P88z6WhzwHFMGlg43/yn+jZhzLFkH/p/EnqlWMJIYomsBLvUB6Ea+qF2A/AhV/o=
-=lcRg
------END PGP SIGNATURE-----
-
---Signature=_Sun__11_Sep_2011_13_34_10_+1000_R.Z_.YrfgRb8x59g--
+-- 
+tejun
