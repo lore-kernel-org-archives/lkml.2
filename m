@@ -1,39 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755084Ab1IKA4i (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Sep 2011 20:56:38 -0400
-Received: from mta01.eastlink.ca ([24.224.136.30]:61033 "EHLO
-	mta01.eastlink.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753247Ab1IKA4g (ORCPT
+	id S1755591Ab1IKA6M (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Sep 2011 20:58:12 -0400
+Received: from mail-vw0-f43.google.com ([209.85.212.43]:40005 "EHLO
+	mail-vw0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753398Ab1IKA6K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Sep 2011 20:56:36 -0400
-X-Greylist: delayed 1803 seconds by postgrey-1.27 at vger.kernel.org; Sat, 10 Sep 2011 20:56:35 EDT
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; CHARSET=US-ASCII
-X-CMAE-Score: 0
-X-CMAE-Analysis: v=2.0 cv=bPht0ICZ c=1 sm=1 a=SBmU0yMpgWqrCa2koySiSQ==:17
-	a=MMSASh9c6WcA:10 a=QHDRP5DDOhIA:10 a=Ghvlo5z-HGEA:10 a=t-H16fvhPwUA:10
-	a=8nJEP1OIZ-IA:10 a=7o-eTzB5Y9X1mKIUfaUA:9 a=wPNLvfGTeEIA:10
-	a=SoHIWNmx6gGhzvVu:21 a=wW5WAol6zS3ow2Ij:21 a=/bLbuBD0lrv91xL1PDQKaA==:117
-Message-id: <1315700756.4e6c0014c3ce2@webmail.xcelco.on.ca>
-Date: Sat, 10 Sep 2011 20:25:56 -0400
-From: Western Union Center <westernunion@westernunion.com>
-Reply-to: westernunion.center2@yahoo.fr
-Subject: Western Union
-User-Agent: Internet Messaging Program (IMP) 3.2.5
-X-Originating-IP: 200.29.174.123
-To: undisclosed-recipients:;
+	Sat, 10 Sep 2011 20:58:10 -0400
+Date: Sun, 11 Sep 2011 09:58:04 +0900
+From: Tejun Heo <tj@kernel.org>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Denys Vlasenko <dvlasenk@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Why I want PTRACE_O_TRACESTOP option
+Message-ID: <20110911005804.GF29319@htj.dyndns.org>
+References: <1315500802.18043.45.camel@dhcp-25-63.brq.redhat.com>
+ <20110909001853.GA29319@htj.dyndns.org>
+ <201109090754.50272.vda.linux@googlemail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201109090754.50272.vda.linux@googlemail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Congrat your Email won you the sum of ($100,000.00 US Dollars) was won by your
-Email in the western union money transfer promo as one of our Customer you are
-to Send your
-Names,
-Sex,
-Age,
-Tel,
-Occupation
-Country,
+Hello, Denys.
+
+On Fri, Sep 09, 2011 at 07:54:50AM +0200, Denys Vlasenko wrote:
+> My point is that previously, ptrace behavior was modified by setting
+> options. Why don't we use this mechanism? Why we invent a different
+> wheel? Ptrace is ugly as-is, why complicate it even further?
+> 
+> The argument was that SETOPTIONS wasn't suitable for modifying
+> attach behavior, but this is fixed by "set options on SEIZE"
+> patch. I don't see why we can't use options mechanist to affect
+> group-stop behavior now.
+
+The argument was that there are other more difficult issues and the
+added benefit - superficial consistency - doesn't justify the
+necessary complexity, and it was repeated multiple times.
+
+Thanks.
+
+-- 
+tejun
