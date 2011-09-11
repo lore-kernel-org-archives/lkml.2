@@ -1,104 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759960Ab1IKDcs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Sep 2011 23:32:48 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:38228 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752009Ab1IKDcq (ORCPT
+	id S1759980Ab1IKDeW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Sep 2011 23:34:22 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:58867 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752009Ab1IKDeV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Sep 2011 23:32:46 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110908162303.GA18435@ubuntu-NB505>
-References: <20110907175952.GC23829@thinkpad-t410> <1315451581.92826.YahooMailClassic@web29509.mail.ird.yahoo.com>
- <20110908162303.GA18435@ubuntu-NB505>
-From: Pavel Ivanov <paivanof@gmail.com>
-Date: Sat, 10 Sep 2011 23:32:15 -0400
-Message-ID: <CAG1a4rvfajX8BwbL39UP5PYcwMLi_GETS3psq7cZv48UvZv0Ng@mail.gmail.com>
-Subject: Re: Kernel 3.1.0-rc4 oops when connecting iPod
-To: Hin-Tak Leung <htl10@users.sourceforge.net>,
-        Christoph Hellwig <hch@tuxera.com>, Pavel Ivanov <paivanof@gmail.com>,
-        linux-fsdevel@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Seth Forshee <seth.forshee@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 10 Sep 2011 23:34:21 -0400
+Date: Sun, 11 Sep 2011 13:34:10 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Uwe =?UTF-8?B?S2xlaW5lLUvDtm5pZw==?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "Arnaud Patard (Rtp)" <arnaud.patard@rtp-net.org>
+Subject: Re: linux-next: manual merge of the i.MX tree with the arm-soc tree
+Message-Id: <20110911133410.a1de21cd74e0af9c9ee51549@canb.auug.org.au>
+In-Reply-To: <20110909064058.GF28816@pengutronix.de>
+References: <20110909114436.5afc4ef772143d90ce75c7c5@canb.auug.org.au>
+	<20110909064058.GF28816@pengutronix.de>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Sun__11_Sep_2011_13_34_10_+1000_R.Z_.YrfgRb8x59g"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 8, 2011 at 12:23 PM, Seth Forshee
-<seth.forshee@canonical.com> wrote:
-> On Thu, Sep 08, 2011 at 04:13:01AM +0100, Hin-Tak Leung wrote:
->> --- On Wed, 7/9/11, Seth Forshee <seth.forshee@canonical.com> wrote:
->>
->> > Yes, that was definitely just an oversight. Has anyone
->> > provided a patch
->> > yet? If not I've pasted a patch below. Seems like a fix
->> > should be
->> > applied ASAP.
->> >
->> >
->> > From d27825b880028e9a45ba640d86c9e8101db0606b Mon Sep 17
->> > 00:00:00 2001
->> > From: Seth Forshee <seth.forshee@canonical.com>
->> > Date: Wed, 7 Sep 2011 10:38:35 -0700
->> > Subject: [PATCH] hfsplus: Fix kfree of wrong pointers in
->> > hfsplus_fill_super() error path
->> >
->> > Commit 6596528 (hfsplus: ensure bio requests are not
->> > smaller than
->> > the hardware sectors) changed the pointers used for volume
->> > header
->> > allocations but failed to change the pointer freed in the
->> > error
->> > path of hfsplus_fill_super(). This patch fixes the
->> > problem.
->> >
->> > Reported-by: Pavel Ivanov <paivanof@gmail.com>
->> > Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
->> > Cc: <stable@kernel.org>
->>
->> Acked-by: Hin-Tak Leung <htl10@users.sourceforge.net>
->>
->> Please go ahead and submit the patch.
+--Signature=_Sun__11_Sep_2011_13_34_10_+1000_R.Z_.YrfgRb8x59g
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi Uwe,
+
+On Fri, 9 Sep 2011 08:40:58 +0200 Uwe Kleine-K=C3=B6nig <u.kleine-koenig@pe=
+ngutronix.de> wrote:
 >
-> That was my patch submission :)
->
-> Christoph, does that work for you, or would you like me to send the
-> patch in a separate email?
+> Do you prefer that conflicts like these are resolved before you get
+> them?
+> (I.e. I could have done
+>=20
+> 	git merge -s ours $somecommitfromthearmsoctree
+>=20
+> but I wasn't sure that this is a good idea and so decided to wait until
+> you write a mail about the conflict.)
 
-Seth, Christoph,
+No, these small conflicts are not a problem, so just leave them to me and
+Arnd or Linus.
 
-I've just found another wrong pointers freeing. The following patch
-should fix it.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Sun__11_Sep_2011_13_34_10_+1000_R.Z_.YrfgRb8x59g
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Subject: [PATCH] hfsplus: Fix kfree of wrong pointers in
-hfsplus_read_wrapper() error path
+iQEcBAEBAgAGBQJObCwyAAoJEDMEi1NhKgbs48IH/1HJJLmpEYpPfRBXCfZrXdDV
+WPJhwZrZ2CkslZqZx9qYaQmEP2YRZV2bjNOq9ECFsZEVUBs47QKlp8fqjb8PLh2L
+dugzpYyOvwZv6tjCdmpo98iudsD97wal8jXpkag+ZtFjUxsK2Y6ezhFA3htdpV8c
+/7YogBiBk8RTyngUizXwogOHo2Lh0biHE3+WGYiTxV6sjrOe8AWaGQfC0r9UwkYe
+ZJjhkr6xEAjaZ0gf9RLzBT46lDe16bnVh3yjhEXAO3QONo9Ma+D6Ih+gJbQiUzGt
+P88z6WhzwHFMGlg43/yn+jZhzLFkH/p/EnqlWMJIYomsBLvUB6Ea+qF2A/AhV/o=
+=lcRg
+-----END PGP SIGNATURE-----
 
-Commit 6596528 (hfsplus: ensure bio requests are not smaller than
-the hardware sectors) changed the pointers used for volume header
-allocations but failed to change the pointer freed in the error
-path of hfsplus_read_wrapper(). This patch fixes the problem.
-
-Signed-off-by: Pavel Ivanov <paivanof@gmail.com>
-Cc: <stable@kernel.org>
----
-
-diff --git a/fs/hfsplus/wrapper.c b/fs/hfsplus/wrapper.c
-index 10e515a..7daf4b8 100644
---- a/fs/hfsplus/wrapper.c
-+++ b/fs/hfsplus/wrapper.c
-@@ -272,9 +272,9 @@ reread:
- 	return 0;
-
- out_free_backup_vhdr:
--	kfree(sbi->s_backup_vhdr);
-+	kfree(sbi->s_backup_vhdr_buf);
- out_free_vhdr:
--	kfree(sbi->s_vhdr);
-+	kfree(sbi->s_vhdr_buf);
- out:
- 	return error;
- }
---
+--Signature=_Sun__11_Sep_2011_13_34_10_+1000_R.Z_.YrfgRb8x59g--
