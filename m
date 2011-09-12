@@ -1,39 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752695Ab1ILRBr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 13:01:47 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:62205 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751200Ab1ILRBq convert rfc822-to-8bit (ORCPT
+	id S1752644Ab1ILRHL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 13:07:11 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:40989 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751206Ab1ILRHH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 13:01:46 -0400
+	Mon, 12 Sep 2011 13:07:07 -0400
+Date: Mon, 12 Sep 2011 18:06:57 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Jarod Wilson <jarod@redhat.com>
+Cc: "Ted Ts'o" <tytso@mit.edu>, Sasha Levin <levinsasha928@gmail.com>,
+        linux-crypto@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
+        Neil Horman <nhorman@redhat.com>, Herbert Xu <herbert.xu@redhat.com>,
+        Steve Grubb <sgrubb@redhat.com>,
+        Stephan Mueller <stephan.mueller@atsec.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] random: add blocking facility to urandom
+Message-ID: <20110912170657.GA10452@sirena.org.uk>
+References: <1314974248-1511-1-git-send-email-jarod@redhat.com>
+ <1315417137-12093-1-git-send-email-jarod@redhat.com>
+ <1315419179.3576.6.camel@lappy>
+ <4E67B75B.8010500@redhat.com>
+ <20110907192737.GD20571@thunk.org>
+ <4E6E1103.2000408@redhat.com>
 MIME-Version: 1.0
-X-Originating-IP: [46.116.113.217]
-In-Reply-To: <1315846684.31609.1.camel@Joe-Laptop>
-References: <1315846025-11453-1-git-send-email-ohad@wizery.com>
- <1315846025-11453-11-git-send-email-ohad@wizery.com> <1315846684.31609.1.camel@Joe-Laptop>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Mon, 12 Sep 2011 20:01:24 +0300
-Message-ID: <CAK=WgbYgxz=y5RkjhofP1Jhe3=c4iQ40PJKefLHGoqbfxBVrmA@mail.gmail.com>
-Subject: Re: [PATCH 10/10] hwspinlock: add MAINTAINERS entries
-To: Joe Perches <joe@perches.com>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Tony Lindgren <tony@atomide.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E6E1103.2000408@redhat.com>
+X-Cookie: Stay together, drag each other down.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 12, 2011 at 7:58 PM, Joe Perches <joe@perches.com> wrote:
->> +F:   Documentation/hwspinlock.h
->
-> F:      Documentation/hwspinlock.txt
+On Mon, Sep 12, 2011 at 10:02:43AM -0400, Jarod Wilson wrote:
+> Ted Ts'o wrote:
 
-thanks :)
+> >Yeah, but there are userspace programs that depend on urandom not
+> >blocking... so your proposed change would break them.
 
-> Maybe
-> F:      drivers/hwspinlock/hwspinlock_*
+> I'm already consigned to the fact this isn't going to fly, but I'm
+> still curious to know examples of programs that are going to break
+> here, for my own education. Its already possible for urandom reads
+> to fail as the code is now (-ERESTARTSYS and -EFAULT are possible),
+> so a sane program ought to already be handling error cases, though
+> not -EAGAIN, which this would add.
 
-ok, why not.
+It's not just a question of error handling existing, it's also about the
+expectations the system has for the behaviour of the file - if urandom
+is expected to always be able to return data an application is likely to
+rely on the fact that it's effectively non-blocking anyway and not bother
+setting non-blocking mode at all and so have no graceful handling for
+this.
