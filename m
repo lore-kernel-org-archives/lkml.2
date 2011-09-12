@@ -1,75 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757055Ab1ILO23 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 10:28:29 -0400
-Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:60420 "EHLO
-	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756808Ab1ILO22 (ORCPT
+	id S1757060Ab1ILOaj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 10:30:39 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33880 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756821Ab1ILOai (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 10:28:28 -0400
-From: Shawn Bohrer <sbohrer@rgmadvisors.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Shawn Bohrer <sbohrer@rgmadvisors.com>
-Subject: [PATCH] sched_rt: Migrate equal priority tasks to available CPUs
-Date: Mon, 12 Sep 2011 09:28:04 -0500
-Message-Id: <1315837684-18733-1-git-send-email-sbohrer@rgmadvisors.com>
-X-Mailer: git-send-email 1.7.6
+	Mon, 12 Sep 2011 10:30:38 -0400
+Date: Mon, 12 Sep 2011 16:30:36 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Mark Salter <msalter@redhat.com>
+cc: linux-kernel@vger.kernel.org, grant.likely@secretlab.ca
+Subject: Re: [PATCH 11/24] C6X: interrupt handling
+In-Reply-To: <1315837623.11280.14.camel@deneb.redhat.com>
+Message-ID: <alpine.LFD.2.02.1109121629450.2723@ionos>
+References: <1314826019-22330-1-git-send-email-msalter@redhat.com>  <1314826019-22330-12-git-send-email-msalter@redhat.com>  <alpine.LFD.2.02.1109091619350.2723@ionos> <1315837623.11280.14.camel@deneb.redhat.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 43fa5460fe60dea5c610490a1d263415419c60f6 "sched: Try not to
-migrate higher priority RT tasks" also introduced a change in behavior
-which keeps RT tasks on the same CPU if there is an equal priority RT
-task currently running even if there are empty CPUs available.  This can
-cause unnecessary wakeup latencies, and can prevent the scheduler from
-balancing all RT tasks across the available CPUs.
+On Mon, 12 Sep 2011, Mark Salter wrote:
 
-This change causes an RT task to search for a new CPU if an equal
-priority RT task is already running on wakeup.  Lower priority tasks
-will still have to wait on higher priority tasks, but the system should
-still balance out because there is always the possibility that if there
-are both a high and low priority RT tasks on a given CPU that the high
-priority task could wakeup while the low priority task is running and
-force it to search for a better runqueue.
+> On Fri, 2011-09-09 at 16:33 +0200, Thomas Gleixner wrote:
+> > On Wed, 31 Aug 2011, Mark Salter wrote:
+> > 
+> > > + *
+> > > + *  Large parts taken directly from powerpc.
+> > 
+> > Is it really necessary to copy that stuff instead of generalizing it ?
+> > I guess that's mostly about the reverse map & Co.
+> 
+> I have a patch that takes the code out of powerpc and puts in kernel/irq
+> where both powerpc and c6x can use it. That leaves us with two files in
+> kernel/irq trying to manage hw <--> virt mappings. So, some merging of
+> irqdomain.c and the former powerpc code is needed. I'm not sure how that
+> should go. At the moment, irqdomain doesn't support dynamic allocation
+> of irq_descs, so its not currently suitable for powerpc or c6x.
 
-Signed-off-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
----
- kernel/sched_rt.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
-index 10d0182..17f2319 100644
---- a/kernel/sched_rt.c
-+++ b/kernel/sched_rt.c
-@@ -1038,7 +1038,7 @@ select_task_rq_rt(struct task_struct *p, int sd_flag, int flags)
- 	 */
- 	if (curr && unlikely(rt_task(curr)) &&
- 	    (curr->rt.nr_cpus_allowed < 2 ||
--	     curr->prio < p->prio) &&
-+	     curr->prio <= p->prio) &&
- 	    (p->rt.nr_cpus_allowed > 1)) {
- 		int target = find_lowest_rq(p);
+Grant was working on that as well. You should talk to him.
  
-@@ -1569,7 +1569,7 @@ static void task_woken_rt(struct rq *rq, struct task_struct *p)
- 	    p->rt.nr_cpus_allowed > 1 &&
- 	    rt_task(rq->curr) &&
- 	    (rq->curr->rt.nr_cpus_allowed < 2 ||
--	     rq->curr->prio < p->prio))
-+	     rq->curr->prio <= p->prio))
- 		push_rt_tasks(rq);
- }
- 
--- 
-1.7.6
+> 
+> > > +/*
+> > > + * IRQ controller and virtual interrupts
+> > > + */
+> > 
+> > How different is this from PPC ? Looks fairly familiar to me :)
+> 
+> I had changed it in a few minor ways, but looking again, I probably
+> didn't need to change it at all. In the patch to generalize it, I
+> simply did s/NUM_ISA_INTERRUPTS/NR_IRQS_LEGACY/.
 
+Thanks,
 
-
----------------------------------------------------------------
-This email, along with any attachments, is confidential. If you 
-believe you received this message in error, please contact the 
-sender immediately and delete all copies of the message.  
-Thank you.
-
+	tglx
