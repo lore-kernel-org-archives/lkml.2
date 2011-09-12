@@ -1,76 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753577Ab1ILS2q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 14:28:46 -0400
-Received: from anhedonia.sammy.net ([174.143.180.86]:42341 "EHLO sammy.net"
+	id S1753698Ab1ILSaf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 14:30:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65024 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752791Ab1ILS2n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 14:28:43 -0400
-X-Greylist: delayed 2993 seconds by postgrey-1.27 at vger.kernel.org; Mon, 12 Sep 2011 14:28:43 EDT
-Date: Mon, 12 Sep 2011 13:38:44 -0400
-From: Sam Creasey <sammy@sammy.net>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sam Creasey <sammy@sammy.net>
-Subject: Re: [PATCH 24/28] m68k/sun3: Use the kstat_irqs_cpu() wrapper
-Message-ID: <20110912173843.GK32271@anhedonia>
-References: <1315742394-16036-1-git-send-email-geert@linux-m68k.org> <1315742394-16036-25-git-send-email-geert@linux-m68k.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1315742394-16036-25-git-send-email-geert@linux-m68k.org>
-User-Agent: Mutt/1.4.2.2i
+	id S1753386Ab1ILSac (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Sep 2011 14:30:32 -0400
+Message-ID: <4E6E4EBB.9010608@redhat.com>
+Date: Mon, 12 Sep 2011 14:26:03 -0400
+From: Jarod Wilson <jarod@redhat.com>
+User-Agent: Postbox 2.5.2 (Macintosh/20110804)
+MIME-Version: 1.0
+To: Valdis.Kletnieks@vt.edu
+CC: Sandy Harris <sandyinchina@gmail.com>, Steve Grubb <sgrubb@redhat.com>,
+        Neil Horman <nhorman@redhat.com>, Tomas Mraz <tmraz@redhat.com>,
+        Sasha Levin <levinsasha928@gmail.com>, "Ted Ts'o" <tytso@mit.edu>,
+        linux-crypto@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert.xu@redhat.com>,
+        Stephan Mueller <stephan.mueller@atsec.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] random: add blocking facility to urandom
+References: <1314974248-1511-1-git-send-email-jarod@redhat.com> <1315464117.11199.51.camel@vespa.frost.loc> <20110908125234.GD13657@hmsreliant.think-freely.org> <201109080911.12921.sgrubb@redhat.com> <CACXcFmnnMLHq2VE35i4QK4wNePXHJc6T73VQNTmJo7WEz34DaQ@mail.gmail.com> <118704.1315706746@turing-police.cc.vt.edu>            <4E6E0F43.6070307@redhat.com> <11721.1315846699@turing-police.cc.vt.edu>
+In-Reply-To: <11721.1315846699@turing-police.cc.vt.edu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Sam Creasey <sammy@sammy.net>
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Sam Creasey <sammy@sammy.net>
----
-v4: Added this changeset
----
- arch/m68k/sun3/sun3ints.c |   14 ++++++++++----
- 1 files changed, 10 insertions(+), 4 deletions(-)
+Valdis.Kletnieks@vt.edu wrote:
+> On Mon, 12 Sep 2011 09:55:15 EDT, Jarod Wilson said:
+>
+>> Well, previously, we were looking at simply improving random entropy
+>> contributions, but quoting Matt Mackall from here:
+>>
+>> http://www.mail-archive.com/linux-crypto@vger.kernel.org/msg05799.html
+>>
+>> 'I recommend you do some Google searches for "ssl timing attack" and
+>> "aes timing attack" to get a feel for the kind of seemingly impossible
+>> things that can be done and thereby recalibrate your scale of the
+>> impossible.'
+>
+> If you're referring to Dan Bernstein's 2005 paper on AES timing attacks
+> (http://cr.yp.to/antiforgery/cachetiming-20050414.pdf), note that it took
+> him on the order of 2*25 packets per byte of AES key - targeting a
+> dummy server intentionally designed to minimize noise.  Although he
+> correctly notes:
+>
+>       Of course, I wrote this server to minimize the amount of noise in the timings
+>    available to the client. However, adding noise does not stop the attack: the client
+>    simply averages over a larger number of samples, as in [7]. In particular, reducing
+>    the precision of the server's timestamps, or eliminating them from the server's
+>    responses, does not stop the attack: the client simply uses round-trip timings
+>    based on its local clock, and compensates for the increased noise by averaging
+>    over a larger number of samples.
+>
+> one has to remember that he's measuring average differences in processing
+> time on the order of single-digits of cycles - if any *real* processing was happening
+> it would only take a few cache line misses or an 'if' statement branching the
+> other way to almost totally drown out the AES computation.  (Personally,
+> I'm amazed that FreeBSD 4.8's kernel is predictable enough to do these
+> measurements - probably helps a *lot* that the server was otherwise idle -
+> if somebody else was getting a timeslice in between it would totally swamp
+> the numbers).
+>
+> Dan's reference [7] mentions specifically that RSA blinding (first implemented
+> by default all the way back in OpenSSL 0.9.7b) defeats that paper's timing
+> attack.
+>
+> If anything, those attacks are the best proof possible that the suggested
+> "fix" for /dev/urandom is a fool's errand - why would anybody bother trying to
+> figure out what the "next" data out of /dev/urandom is, when they can simply
+> wait for a few milliseconds and extract it out of whatever program read it? :)
 
-diff --git a/arch/m68k/sun3/sun3ints.c b/arch/m68k/sun3/sun3ints.c
-index 20ffee7..1273eb8 100644
---- a/arch/m68k/sun3/sun3ints.c
-+++ b/arch/m68k/sun3/sun3ints.c
-@@ -51,14 +51,19 @@ void sun3_disable_irq(unsigned int irq)
- 
- static irqreturn_t sun3_int7(int irq, void *dev_id)
- {
-+	unsigned int cnt;
-+
- 	*sun3_intreg |=  (1 << irq);
--	if (!(kstat_cpu(0).irqs[irq] % 2000))
--		sun3_leds(led_pattern[(kstat_cpu(0).irqs[irq] % 16000) / 2000]);
-+	cnt = kstat_irqs_cpu(irq, 0);
-+	if (!(cnt % 2000))
-+		sun3_leds(led_pattern[cnt % 16000 / 2000]);
- 	return IRQ_HANDLED;
- }
- 
- static irqreturn_t sun3_int5(int irq, void *dev_id)
- {
-+	unsigned int cnt;
-+
- #ifdef CONFIG_SUN3
- 	intersil_clear();
- #endif
-@@ -68,8 +73,9 @@ static irqreturn_t sun3_int5(int irq, void *dev_id)
- #endif
- 	xtime_update(1);
- 	update_process_times(user_mode(get_irq_regs()));
--        if (!(kstat_cpu(0).irqs[irq] % 20))
--                sun3_leds(led_pattern[(kstat_cpu(0).irqs[irq] % 160) / 20]);
-+	cnt = kstat_irqs_cpu(irq, 0);
-+	if (!(cnt % 20))
-+		sun3_leds(led_pattern[cnt % 160 / 20]);
- 	return IRQ_HANDLED;
- }
- 
+I'm not referring to anything in particular, I'm mostly referring to the 
+irony that one approach that was shot down was because, while not 
+exactly practical, its theoretically not impossible to figure out clock 
+sample entropy contributions, which might weaken the strength of the 
+entropy pool. Your argument is more or less directly opposed to the 
+reasoning the clock entropy patches were deemed unacceptable. :)
+
+Something to keep in mind: the whole impetus behind all this is 
+*government* crypto certification requirements. They're paranoid. And 
+something impractical at the individual level is less so at the 
+"determined, and willing to spend buckets of cash on resources, hostile 
+foreign government level. At least in the minds of some governments.
+
+Note also: I don't necessarily share said governments' sentiments, I'm 
+just tasked with trying to satisfy the requirements, and this was looked 
+at as a potential minimally-invasive solution. I still think paranoid 
+government-types would be fine with applications falling down if urandom 
+blocked, because that should *only* happen if the system is being 
+abused, but I understand the objections, so that idea is off the table.
+
+I'm likely going to look into Sasha's suggestion to do something via 
+CUSE next, followed by taking a long hard look at what's involved in 
+rewriting the entropy estimation logic such that clock-based entropy 
+would be acceptable.
+
 -- 
-1.7.0.4
+Jarod Wilson
+jarod@redhat.com
+
 
