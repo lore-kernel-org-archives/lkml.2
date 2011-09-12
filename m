@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755119Ab1ILVv6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 17:51:58 -0400
+	id S1755191Ab1ILVwB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 17:52:01 -0400
 Received: from mail-vw0-f52.google.com ([209.85.212.52]:38381 "EHLO
 	mail-vw0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754856Ab1ILVvz (ORCPT
+	with ESMTP id S1754856Ab1ILVv6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 17:51:55 -0400
+	Mon, 12 Sep 2011 17:51:58 -0400
 MIME-Version: 1.0
-Date: Mon, 12 Sep 2011 14:51:53 -0700
-Message-ID: <CAB2gnbXKGD5fBykQdNhgTjS4GZDchzFGxXqRuuLEMqALLO4_7w@mail.gmail.com>
-Subject: [PATCH 1/2] ceph: fix parse options memory leak
+Date: Mon, 12 Sep 2011 14:51:58 -0700
+Message-ID: <CAB2gnbXatCnom+SUwSxyQ0Wt9TBESzbPoiDw2As90OyUVngQOA@mail.gmail.com>
+Subject: [PATCH 2/2] ceph: fix ceph_monc_init memory leak
 From: Noah Watkins <noahwatkins@gmail.com>
 To: Sage Weil <sage@newdream.net>
 Cc: ceph-devel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
@@ -19,25 +19,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ceph_destroy_options does not free opt->mon_addr that
-is allocated in ceph_parse_options.
+failure clean up does not consider ceph_auth_init.
 
 Signed-off-by: Noah Watkins <noahwatkins@gmail.com>
 ---
- net/ceph/ceph_common.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ net/ceph/mon_client.c |   10 +++++++---
+ 1 files changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/net/ceph/ceph_common.c b/net/ceph/ceph_common.c
-index d4038ca..97f70e5 100644
---- a/net/ceph/ceph_common.c
-+++ b/net/ceph/ceph_common.c
-@@ -232,6 +232,7 @@ void ceph_destroy_options(struct ceph_options *opt)
- 		ceph_crypto_key_destroy(opt->key);
- 		kfree(opt->key);
- 	}
-+	kfree(opt->mon_addr);
- 	kfree(opt);
- }
- EXPORT_SYMBOL(ceph_destroy_options);
+diff --git a/net/ceph/mon_client.c b/net/ceph/mon_client.c
+index af2ef30..0b62dea 100644
+--- a/net/ceph/mon_client.c
++++ b/net/ceph/mon_client.c
+@@ -759,8 +759,10 @@ int ceph_monc_init(struct ceph_mon_client *monc,
+struct ceph_client *cl)
+ 	/* authentication */
+ 	monc->auth = ceph_auth_init(cl->options->name,
+ 				    cl->options->key);
+-	if (IS_ERR(monc->auth))
+-		return PTR_ERR(monc->auth);
++	if (IS_ERR(monc->auth)) {
++		err = PTR_ERR(monc->auth);
++		goto out_con;
++	}
+ 	monc->auth->want_keys =
+ 		CEPH_ENTITY_TYPE_AUTH | CEPH_ENTITY_TYPE_MON |
+ 		CEPH_ENTITY_TYPE_OSD | CEPH_ENTITY_TYPE_MDS;
+@@ -771,7 +773,7 @@ int ceph_monc_init(struct ceph_mon_client *monc,
+struct ceph_client *cl)
+ 				     sizeof(struct ceph_mon_subscribe_ack),
+ 				     GFP_NOFS, true);
+ 	if (!monc->m_subscribe_ack)
+-		goto out_con;
++		goto out_auth;
+
+ 	monc->m_subscribe = ceph_msg_new(CEPH_MSG_MON_SUBSCRIBE, 96, GFP_NOFS,
+ 					 true);
+@@ -809,6 +811,8 @@ out_subscribe:
+ 	ceph_msg_put(monc->m_subscribe);
+ out_subscribe_ack:
+ 	ceph_msg_put(monc->m_subscribe_ack);
++out_auth:
++	ceph_auth_destroy(monc->auth);
+ out_con:
+ 	monc->con->ops->put(monc->con);
+ out_monmap:
 -- 
 1.7.6.1
