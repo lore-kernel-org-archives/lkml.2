@@ -1,96 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756249Ab1ILXhV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 19:37:21 -0400
-Received: from claw.goop.org ([74.207.240.146]:34541 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755559Ab1ILXhT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 19:37:19 -0400
-Message-ID: <4E6E97AC.8020707@goop.org>
-Date: Mon, 12 Sep 2011 16:37:16 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1753783Ab1ILXid (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 19:38:33 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:38664 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756169Ab1ILXia (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Sep 2011 19:38:30 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6467"; a="118002047"
+Date: Mon, 12 Sep 2011 18:38:27 -0500
+From: Richard Kuo <rkuo@codeaurora.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Linas Vepstas <linas@codeaurora.org>
+Subject: Re: [patch v3 21/36] Hexagon: Add SMP support
+Message-ID: <20110912233827.GB6925@codeaurora.org>
+References: <20110909010847.294039464@codeaurora.org>
+ <20110909010916.709728186@codeaurora.org>
+ <1315752712.455.50.camel@pasglop>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Avi Kivity <avi@redhat.com>
-Subject: Re: [GIT PULL] Little bugfix to prevent recursion with tracing timestamps
-References: <4E6E92AB.5050504@goop.org>
-In-Reply-To: <4E6E92AB.5050504@goop.org>
-X-Enigmail-Version: 1.3.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1315752712.455.50.camel@pasglop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Sep 11, 2011 at 11:51:52AM -0300, Benjamin Herrenschmidt wrote:
+> And on the producer side, a spinlock for one or... that looks like wheel
+> re-inventing to me :-)
+> 
+> In fact your bit iteration loop also re-invents find_*_bit interfaces.
+> 
+> Any reason why you don't simply use bitops or atomics here ?
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA256
+No particular reason; just the way it turned out when I was getting things
+working.  I'll get them cleaned up.
 
-[ Sigh, for some reason that doesn't verify.  Let's see if this works.
-  Anyway, I pushed a signed tag "upstream-bugfix-for-linus" on that
-changeset. - J ]
 
-Hi Linus,
+> Also what is your memory model ? ordered or weakly ordered ? Do you need
+> some kind of memory barrier between setting ipi->bits and
+> __vmintop_post() ?
 
-When starting a PV kernel under Xen with full boot-time trace testing
-enabled, it crashes due to infinite recursion.  In principle it could
-happen at other times too (when just using preempt tracing perhaps?).
-This fixes it.
+Our model is ordered, so there's no need for a barrier there yet.
 
-BTW, I think this same problem also affects KVM.
-
-Erm, I'm not sure how to authenticate this github as being really from
-me; I'm signing the mail with my long-standing pgp key in the hope that
-it helps...  Also, the patch is self-evident.
 
 Thanks,
-    J
+Richard Kuo
 
-The following changes since commit b6fd41e29dea9c6753b1843a77e50433e6123bcb:
 
-  Linux 3.1-rc6 (2011-09-12 14:02:02 -0700)
+-- 
 
-are available in the git repository at:
-  git://github.com/jsgf/linux-xen.git upstream/bugfix
-
-Jeremy Fitzhardinge (1):
-      xen: use non-tracing preempt in xen_clocksource_read()
-
- arch/x86/xen/time.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
-index 5158c50..163b467 100644
-- - --- a/arch/x86/xen/time.c
-+++ b/arch/x86/xen/time.c
-@@ -168,9 +168,10 @@ cycle_t xen_clocksource_read(void)
-         struct pvclock_vcpu_time_info *src;
-     cycle_t ret;
- 
-- - -    src = &get_cpu_var(xen_vcpu)->time;
-+    preempt_disable_notrace();
-+    src = &__get_cpu_var(xen_vcpu)->time;
-     ret = pvclock_clocksource_read(src);
-- - -    put_cpu_var(xen_vcpu);
-+    preempt_enable_notrace();
-     return ret;
- }
- 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iQEkBAEBCAAGBQJObpesAAoJEAUkni6MUg7HMnAIP0bR68/akTif/RVfis0Cot/a
-ONlz5GsGGA7AlHfp/l/M8GZo5fUIC7Ja+EqTnpUWMNbubLoe5kALt5k/uQwADtoI
-cyvi5j2tlXDGDZOgQ900pQQYMBFVwaCm5XwSuDTbysPUx4v7E5Ha/RL2xapbuFnP
-txCyO62xx4EsKqkupM4qnTCBId6ksRNo9EVESxFzpJk/l0fabTLM98RigA1KJmdo
-+Rr+1SzfNnNQLLXG48EHITthfYaBOw9jyGanbe5i9Iw79J85vjI5V65TMlDztWaN
-kyUGiWD9f1i9ixCO31qhszdRire8c2N8hDTTN5z1919Gtlkq93Oj3F8zkUlbapyh
-tD4e8GObdA==
-=MA3l
------END PGP SIGNATURE-----
-
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
