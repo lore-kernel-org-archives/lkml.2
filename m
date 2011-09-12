@@ -1,51 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753570Ab1ILCS4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Sep 2011 22:18:56 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:44100 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751752Ab1ILCSy (ORCPT
+	id S1753940Ab1ILCsj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Sep 2011 22:48:39 -0400
+Received: from vm4.telegraphics.com.au ([98.124.60.149]:36133 "EHLO
+	vps4.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751999Ab1ILCsi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Sep 2011 22:18:54 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6466"; a="117466126"
-Message-ID: <4E6D6C0D.60100@codeaurora.org>
-Date: Sun, 11 Sep 2011 19:18:53 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
+	Sun, 11 Sep 2011 22:48:38 -0400
+Date: Mon, 12 Sep 2011 12:48:30 +1000 (EST)
+From: Finn Thain <fthain@telegraphics.com.au>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 07/28] m68k/irq: Switch irq_chip methods to "struct
+ irq_data *data"
+In-Reply-To: <CAMuHMdWri-LyhDN+z-WpJUkERekAwkD_F88VOtB9kEm_u=QzrA@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1109121204040.2525@nippy.intranet>
+References: <1315742394-16036-1-git-send-email-geert@linux-m68k.org> <1315742394-16036-8-git-send-email-geert@linux-m68k.org> <alpine.LNX.2.00.1109112327500.2286@nippy.intranet> <CAMuHMdWri-LyhDN+z-WpJUkERekAwkD_F88VOtB9kEm_u=QzrA@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Brown <davidb@codeaurora.org>,
-        Russell King <rmk@arm.linux.org.uk>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the arm tree
-References: <20110912120501.764336af05069fa23a371b5e@canb.auug.org.au>
-In-Reply-To: <20110912120501.764336af05069fa23a371b5e@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: MULTIPART/MIXED; BOUNDARY="-1463806400-566375710-1315793904=:2525"
+Content-ID: <alpine.LNX.2.00.1109121244090.2525@nippy.intranet>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/11 19:05, Stephen Rothwell wrote:
-> Hi Arnd,
->
-> Today's linux-next merge of the arm-soc tree got a conflict in
-> arch/arm/mach-msm/board-msm8x60.c between commit 9e775ad19f52 ("ARM:
-> 7012/1: Set proper TEXT_OFFSET for newer MSMs") from the arm tree and
-> commit 56e2d8a68803 ("ARM: msm: Add devicetree support for msm8660-surf")
-> from the arm-soc tree.
->
-> Just overlapping additions.  I fixed it up (see below) and can carry the
-> fix as necessary.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-The device tree machine description also needs to have the .fixup and
-.reserve callbacks added to it so that the device tree machines boot
-properly. Perhaps the soc tree needs to pull in Russell's tree at some
-point to resolve this subtle logical conflict or when the trees are
-merged together someone will need to do an evil merge and add the
-callbacks in the merge commit.
+---1463806400-566375710-1315793904=:2525
+Content-Type: TEXT/PLAIN; CHARSET=ISO-8859-15
+Content-Transfer-Encoding: QUOTED-PRINTABLE
+Content-ID: <alpine.LNX.2.00.1109121244091.2525@nippy.intranet>
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
+On Sun, 11 Sep 2011, Geert Uytterhoeven wrote:
+
+>=20
+> > @@ -152,7 +149,7 @@ void baboon_irq_enable(int irq)
+> >
+> > =A0 =A0 =A0 =A0baboon_disabled &=3D ~(1 << irq_idx);
+> > =A0 =A0 =A0 =A0if (!baboon_disabled)
+> > - =A0 =A0 =A0 =A0 =A0 =A0 =A0 mac_enable_irq(IRQ_NUBUS_C);
+> > + =A0 =A0 =A0 =A0 =A0 =A0 =A0 mac_irq_enable(irq_get_irq_data(IRQ_NUBUS=
+_C));
+>=20
+> irq_get_irq_data() is not available in the non-genirq case, so this=20
+> cleanup cannot be folded in patch 7, and has to wait until after patch=20
+> 27.
+
+Right, I forgot about that.
+
+>=20
+> I'll add it at the end of the series, OK?
+
+That's fine. Please go ahead and add my signed-off-by tag (or I can=20
+resubmit if you would prefer).
+
+Finn
+
+>=20
+> Gr{oetje,eeting}s,
+>=20
+> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 Geert
+---1463806400-566375710-1315793904=:2525--
