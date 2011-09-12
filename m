@@ -1,132 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755309Ab1ILLc2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 07:32:28 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33218 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754602Ab1ILLc1 (ORCPT
+	id S1755433Ab1ILLdf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 07:33:35 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:34505 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755338Ab1ILLdd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 07:32:27 -0400
-Date: Mon, 12 Sep 2011 13:32:23 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-cc: John Stultz <johnstul@us.ibm.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH] clocksource: Make watchdog reset lockless
-Message-ID: <alpine.LFD.2.02.1109121326280.2723@ionos>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Mon, 12 Sep 2011 07:33:33 -0400
+X-Sasl-enc: 44jtOXeeCa1bV0fohzhiQ9p1zYdDD99OhiBOdEEeYf1H 1315827212
+Date: Mon, 12 Sep 2011 13:33:08 +0200
+From: Greg KH <greg@kroah.com>
+To: Markus Rechberger <mrechberger@gmail.com>
+Cc: Oliver Neukum <oliver@neukum.org>, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Increase usbfs bulk buffer size
+Message-ID: <20110912113308.GA32396@kroah.com>
+References: <CA+O4pCKfWLP+ohfUVi811CRbmrb2FyoMwkmxxGJ1TF2kKtGDEA@mail.gmail.com>
+ <201108171914.52257.oliver@neukum.org>
+ <CA+O4pCK3vZjZwM0D7Q0gzsTZRJC1PfzYvoVmq-g2jJQ=uP_6ug@mail.gmail.com>
+ <201108190823.06638.oliver@neukum.org>
+ <CA+O4pCKteFZBT0UMetuk4-gsUf4wG3DXnOooW47GWD7o=dgpQQ@mail.gmail.com>
+ <CA+O4pC+gxbLaHDyAUB-ro1Z-jTGdMfey9yJht1Ux4jWhanKbkg@mail.gmail.com>
+ <CA+O4pCK5WE+fgYzMjpp2x54ePGivTdZnPRQdZ+BN6HAARYVU+g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+O4pCK5WE+fgYzMjpp2x54ePGivTdZnPRQdZ+BN6HAARYVU+g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KGDB needs to trylock watchdog_lock when trying to reset the
-clocksource watchdog after the system has been stopped to avoid a
-potential deadlock. When the trylock fails TSC usually becomes
-unstable.
+On Mon, Sep 12, 2011 at 12:18:02PM +0200, Markus Rechberger wrote:
+> Hi,
+> 
+> I'm a little bit curious why you guys are just ignoring this.
 
-We can be more clever by using an atomic counter and checking it in
-the clocksource_watchdog callback. We restart the watchdog whenever
-the counter is > 0 and only decrement the counter when we ran through
-a full update cycle.
+Because you seem to be ignoring the fact that changing this can cause
+problems on systems.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/time/clocksource.c |   38 ++++++++++++++++++--------------------
- 1 file changed, 18 insertions(+), 20 deletions(-)
+And because it really doesn't solve any problems, you are only pushing
+the processing to the kernel, when it can be done in userspace just as
+easily.
 
-Index: linux-2.6/kernel/time/clocksource.c
-===================================================================
---- linux-2.6.orig/kernel/time/clocksource.c
-+++ linux-2.6/kernel/time/clocksource.c
-@@ -186,6 +186,7 @@ static struct timer_list watchdog_timer;
- static DECLARE_WORK(watchdog_work, clocksource_watchdog_work);
- static DEFINE_SPINLOCK(watchdog_lock);
- static int watchdog_running;
-+static atomic_t watchdog_reset_pending;
- 
- static int clocksource_watchdog_kthread(void *data);
- static void __clocksource_change_rating(struct clocksource *cs, int rating);
-@@ -247,12 +248,14 @@ static void clocksource_watchdog(unsigne
- 	struct clocksource *cs;
- 	cycle_t csnow, wdnow;
- 	int64_t wd_nsec, cs_nsec;
--	int next_cpu;
-+	int next_cpu, reset_pending;
- 
- 	spin_lock(&watchdog_lock);
- 	if (!watchdog_running)
- 		goto out;
- 
-+	reset_pending = atomic_read(&watchdog_reset_pending);
-+
- 	list_for_each_entry(cs, &watchdog_list, wd_list) {
- 
- 		/* Clocksource already marked unstable? */
-@@ -268,7 +271,8 @@ static void clocksource_watchdog(unsigne
- 		local_irq_enable();
- 
- 		/* Clocksource initialized ? */
--		if (!(cs->flags & CLOCK_SOURCE_WATCHDOG)) {
-+		if (!(cs->flags & CLOCK_SOURCE_WATCHDOG) ||
-+		    atomic_read(&watchdog_reset_pending)) {
- 			cs->flags |= CLOCK_SOURCE_WATCHDOG;
- 			cs->wd_last = wdnow;
- 			cs->cs_last = csnow;
-@@ -283,8 +287,11 @@ static void clocksource_watchdog(unsigne
- 		cs->cs_last = csnow;
- 		cs->wd_last = wdnow;
- 
-+		if (atomic_read(&watchdog_reset_pending))
-+			continue;
-+
- 		/* Check the deviation from the watchdog clocksource. */
--		if (abs(cs_nsec - wd_nsec) > WATCHDOG_THRESHOLD) {
-+		if ((abs(cs_nsec - wd_nsec) > WATCHDOG_THRESHOLD)) {
- 			clocksource_unstable(cs, cs_nsec - wd_nsec);
- 			continue;
- 		}
-@@ -303,6 +310,13 @@ static void clocksource_watchdog(unsigne
- 	}
- 
- 	/*
-+	 * We only clear the watchdog_reset_pending, when we did a
-+	 * full cycle through all clocksources.
-+	 */
-+	if (reset_pending)
-+		atomic_dec(&watchdog_reset_pending);
-+
-+	/*
- 	 * Cycle through CPUs to check if the CPUs stay synchronized
- 	 * to each other.
- 	 */
-@@ -344,23 +358,7 @@ static inline void clocksource_reset_wat
- 
- static void clocksource_resume_watchdog(void)
- {
--	unsigned long flags;
--
--	/*
--	 * We use trylock here to avoid a potential dead lock when
--	 * kgdb calls this code after the kernel has been stopped with
--	 * watchdog_lock held. When watchdog_lock is held we just
--	 * return and accept, that the watchdog might trigger and mark
--	 * the monitored clock source (usually TSC) unstable.
--	 *
--	 * This does not affect the other caller clocksource_resume()
--	 * because at this point the kernel is UP, interrupts are
--	 * disabled and nothing can hold watchdog_lock.
--	 */
--	if (!spin_trylock_irqsave(&watchdog_lock, flags))
--		return;
--	clocksource_reset_watchdog();
--	spin_unlock_irqrestore(&watchdog_lock, flags);
-+	atomic_inc(&watchdog_reset_pending);
- }
- 
- static void clocksource_enqueue_watchdog(struct clocksource *cs)
+greg k-h
