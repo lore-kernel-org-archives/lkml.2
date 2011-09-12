@@ -1,52 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755921Ab1ILMtp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 08:49:45 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:37342 "EHLO
-	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755713Ab1ILMtn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 08:49:43 -0400
-X-Sasl-enc: 18GeQ93t8qvhOoJ6MoClg3Umjmf9/Ig6gpw6XFHN3Fcb 1315831783
-Date: Mon, 12 Sep 2011 14:49:17 +0200
-From: Greg KH <greg@kroah.com>
-To: Krzysztof Kanas <k.kanas@kelvatek.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Kernel  2.6.27.15  oops in PPP
-Message-ID: <20110912124917.GA16428@kroah.com>
-References: <4E6DCD36.6020104@kelvatek.com>
- <20110912113641.GA32603@kroah.com>
- <4E6DF7EC.8000206@kelvatek.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E6DF7EC.8000206@kelvatek.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755861Ab1ILNCq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 09:02:46 -0400
+Received: from smtp18.mail.ru ([94.100.176.155]:50051 "EHLO smtp18.mail.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754037Ab1ILNCp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Sep 2011 09:02:45 -0400
+From: Dmitry Artamonow <mad_soft@inbox.ru>
+To: Eric Miao <eric.y.miao@gmail.com>
+Cc: Philipp Zabel <philipp.zabel@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, Paul Parsons <lost.distance@yahoo.com>
+Subject: [RESEND][PATCH] pxa/hx4700: add platform device and I2C info for AK4641 codec
+Date: Mon, 12 Sep 2011 17:02:40 +0400
+Message-Id: <1315832560-1561-1-git-send-email-mad_soft@inbox.ru>
+X-Mailer: git-send-email 1.7.4.rc3
+X-Spam: Not detected
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 12, 2011 at 02:15:40PM +0200, Krzysztof Kanas wrote:
-> On 09/12/2011 01:36 PM, Greg KH wrote:
-> >On Mon, Sep 12, 2011 at 11:13:26AM +0200, Krzysztof Kanas wrote:
-> >>Hi I am tracing kernel oops in 2.6.27.15 on ARM(CONFIG_CPU_ARM926T=y).
-> >
-> >2.6.27.15 is quite old, why that version?  If you are stuck on 2.6.27,
-> >please use a newer stable version of it as odds are this is already
-> >resolved in one of the 40+ releases after yours (current one is
-> >2.6.27.57 I think.)
-> >
-> >thanks,
-> >
-> >greg k-h
-> >
-> Yes I am quite stuck with that version - I will try to get new
-> stable version and see If that goes well. Unfortunately I have to
-> make sure that all applications etc are still working with new
-> kernel.
+Also rename AK4641 power GPIOs to document the codec chip.
 
-There should not be _ANY_ user application change for stable kernel
-updates like you would be doing from 2.6.27.15 to 2.6.27.57 as we only
-accept bug fixes for stable kernel updates.
+Signed-off-by: Philipp Zabel <philipp.zabel@gmail.com>
+Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
+---
+ arch/arm/mach-pxa/hx4700.c              |   25 +++++++++++++++++++++++++
+ arch/arm/mach-pxa/include/mach/hx4700.h |    4 ++--
+ 2 files changed, 27 insertions(+), 2 deletions(-)
 
-greg k-h
+Most of the audio support for iPAQ hx4700 has been merged in 3.0, but
+this little patch with platform glue has been lost somehow and never applied.
+So here's resend - hope this time it'll be more lucky.
+
+Patch is against current Linus' tree (3.1-rc5+). Please ping me, if it needs
+rebasing on top of something else.
+
+diff --git a/arch/arm/mach-pxa/hx4700.c b/arch/arm/mach-pxa/hx4700.c
+index c748a47..b23b746 100644
+--- a/arch/arm/mach-pxa/hx4700.c
++++ b/arch/arm/mach-pxa/hx4700.c
+@@ -45,6 +45,7 @@
+ #include <mach/hx4700.h>
+ #include <mach/irda.h>
+ 
++#include <sound/ak4641.h>
+ #include <video/platform_lcd.h>
+ #include <video/w100fb.h>
+ 
+@@ -765,6 +766,28 @@ static struct i2c_board_info __initdata pi2c_board_info[] = {
+ };
+ 
+ /*
++ * Asahi Kasei AK4641 on I2C
++ */
++
++static struct ak4641_platform_data ak4641_info = {
++	.gpio_power = GPIO27_HX4700_AK4641_POWER,
++	.gpio_npdn  = GPIO109_HX4700_AK4641_nPDN,
++};
++
++static struct i2c_board_info i2c_board_info[] __initdata = {
++	{
++		I2C_BOARD_INFO("ak4641", 0x12),
++		.platform_data = &ak4641_info,
++	},
++};
++
++static struct platform_device audio = {
++	.name	= "hx4700-audio",
++	.id	= -1,
++};
++
++
++/*
+  * PCMCIA
+  */
+ 
+@@ -790,6 +813,7 @@ static struct platform_device *devices[] __initdata = {
+ 	&gpio_vbus,
+ 	&power_supply,
+ 	&strataflash,
++	&audio,
+ 	&pcmcia,
+ };
+ 
+@@ -827,6 +851,7 @@ static void __init hx4700_init(void)
+ 	pxa_set_ficp_info(&ficp_info);
+ 	pxa27x_set_i2c_power_info(NULL);
+ 	pxa_set_i2c_info(NULL);
++	i2c_register_board_info(0, ARRAY_AND_SIZE(i2c_board_info));
+ 	i2c_register_board_info(1, ARRAY_AND_SIZE(pi2c_board_info));
+ 	pxa2xx_set_spi_info(2, &pxa_ssp2_master_info);
+ 	spi_register_board_info(ARRAY_AND_SIZE(tsc2046_board_info));
+diff --git a/arch/arm/mach-pxa/include/mach/hx4700.h b/arch/arm/mach-pxa/include/mach/hx4700.h
+index 3740844..73cd586 100644
+--- a/arch/arm/mach-pxa/include/mach/hx4700.h
++++ b/arch/arm/mach-pxa/include/mach/hx4700.h
+@@ -29,7 +29,7 @@
+ #define GPIO14_HX4700_nWLAN_IRQ			14
+ #define GPIO18_HX4700_RDY			18
+ #define GPIO22_HX4700_LCD_RL			22
+-#define GPIO27_HX4700_CODEC_ON			27
++#define GPIO27_HX4700_AK4641_POWER		27
+ #define GPIO32_HX4700_RS232_ON			32
+ #define GPIO52_HX4700_CPU_nBATT_FAULT		52
+ #define GPIO58_HX4700_TSC2046_nPENIRQ		58
+@@ -67,7 +67,7 @@
+ #define GPIO105_HX4700_nIR_ON			105
+ #define GPIO106_HX4700_CPU_BT_nRESET		106
+ #define GPIO107_HX4700_SPK_nSD			107
+-#define GPIO109_HX4700_CODEC_nPDN		109
++#define GPIO109_HX4700_AK4641_nPDN		109
+ #define GPIO110_HX4700_LCD_LVDD_3V3_ON		110
+ #define GPIO111_HX4700_LCD_AVDD_3V3_ON		111
+ #define GPIO112_HX4700_LCD_N2V7_7V3_ON		112
+-- 
+1.7.5.1.300.gc565c
+
