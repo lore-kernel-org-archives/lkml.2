@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754224Ab1ILTx6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 15:53:58 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:41054 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753338Ab1ILTx5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 15:53:57 -0400
-Date: Mon, 12 Sep 2011 20:55:55 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes
-Message-ID: <alpine.DEB.2.00.1109122054380.25877@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754326Ab1ILUBb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 16:01:31 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:40222 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752081Ab1ILUB2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Sep 2011 16:01:28 -0400
+Date: Mon, 12 Sep 2011 14:01:25 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Mark Salter <msalter@redhat.com>, linux-kernel@vger.kernel.org,
+        Deepak Saxena <dsaxena@linaro.org>
+Subject: Re: [PATCH 11/24] C6X: interrupt handling
+Message-ID: <20110912200125.GE23345@ponder.secretlab.ca>
+References: <1314826019-22330-1-git-send-email-msalter@redhat.com>
+ <1314826019-22330-12-git-send-email-msalter@redhat.com>
+ <alpine.LFD.2.02.1109091619350.2723@ionos>
+ <1315837623.11280.14.camel@deneb.redhat.com>
+ <alpine.LFD.2.02.1109121629450.2723@ionos>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1109121629450.2723@ionos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Sep 12, 2011 at 04:30:36PM +0200, Thomas Gleixner wrote:
+> On Mon, 12 Sep 2011, Mark Salter wrote:
+> 
+> > On Fri, 2011-09-09 at 16:33 +0200, Thomas Gleixner wrote:
+> > > On Wed, 31 Aug 2011, Mark Salter wrote:
+> > > 
+> > > > + *
+> > > > + *  Large parts taken directly from powerpc.
+> > > 
+> > > Is it really necessary to copy that stuff instead of generalizing it ?
+> > > I guess that's mostly about the reverse map & Co.
+> > 
+> > I have a patch that takes the code out of powerpc and puts in kernel/irq
+> > where both powerpc and c6x can use it. That leaves us with two files in
+> > kernel/irq trying to manage hw <--> virt mappings. So, some merging of
+> > irqdomain.c and the former powerpc code is needed. I'm not sure how that
+> > should go. At the moment, irqdomain doesn't support dynamic allocation
+> > of irq_descs, so its not currently suitable for powerpc or c6x.
+> 
+> Grant was working on that as well. You should talk to him.
 
-Hi Linus,
+Yes, I've been working on it, but it isn't complete.  Summer hit and
+all my hacking time went to travel and being a father to my
+home-from-school children.  :-)
 
-more changes from my people.freedesktop.org tree, a major nouveau 
-regression fix, along with a radeon DP fix, and a silly core spare line 
-removal.
+I believe Deepak is getting an engineer assigned from Linaro to help me finish
+the work of migrating PowerPC to use irqdomain.c.  We talked about it
+last week at Linux Plumbers conference.
 
-Dave.
-
-The following changes since commit ddf28352b80c86754a6424e3a61e8bdf9213b3c7:
-
-  Linux 3.1-rc5 (2011-09-04 15:45:10 -0700)
-
-are available in the git repository at:
-  git://people.freedesktop.org/~airlied/linux.git drm-fixes
-
-Alex Deucher (1):
-      drm/radeon/kms: fix DP detect and EDID fetch for DP bridges
-
-Ben Skeggs (1):
-      drm/nouveau: fix oops on pre-semaphore hardware
-
-Dave Airlie (1):
-      Merge branch 'drm-nouveau-fixes' of git://anongit.freedesktop.org/git/nouveau/linux-2.6 into drm-test
-
-Emil Velikov (2):
-      drm/nv50/crtc: Bail out if FB is not bound to crtc
-      drm/nv04/crtc: Bail out if FB is not bound to crtc
-
-Lin Ming (1):
-      drm: Remove duplicate "return" statement
-
-Marcin Slusarz (2):
-      drm/nouveau: properly handle allocation failure in nouveau_sgdma_populate
-      drm/nouveau: fix nv04_sgdma_bind on non-"4kB pages" archs
-
- drivers/gpu/drm/drm_fb_helper.c            |    1 -
- drivers/gpu/drm/nouveau/nouveau_fence.c    |    3 +-
- drivers/gpu/drm/nouveau/nouveau_sgdma.c    |    7 ++++-
- drivers/gpu/drm/nouveau/nv04_crtc.c        |   15 ++++++++++-
- drivers/gpu/drm/nouveau/nv50_crtc.c        |   12 +++++++-
- drivers/gpu/drm/radeon/radeon_connectors.c |   37 ++++++++++++++++++----------
- drivers/gpu/drm/radeon/radeon_display.c    |   19 +++++++++-----
- 7 files changed, 66 insertions(+), 28 deletions(-)
+g.
