@@ -1,217 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755674Ab1ILQ57 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 12:57:59 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:55433 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752304Ab1ILQ55 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 12:57:57 -0400
-Message-ID: <4E6E39DD.2040102@parallels.com>
-Date: Mon, 12 Sep 2011 13:57:01 -0300
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
-MIME-Version: 1.0
-To: Paul Menage <paul@paulmenage.org>
-CC: Greg Thelen <gthelen@google.com>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>, <containers@lists.osdl.org>,
-        <netdev@vger.kernel.org>, <xemul@parallels.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Lennart Poettering <lennart@poettering.net>
-Subject: Re: [PATCH] per-cgroup tcp buffer limitation
-References: <1315276556-10970-1-git-send-email-glommer@parallels.com> <CAHH2K0aJxjinSu0Ek6jzsZ5dBmm5mEU-typuwYWYWEudF2F3Qg@mail.gmail.com> <4E664766.40200@parallels.com> <CAHH2K0YJA7vZZ3QNAf63TZOnWhsRUwfuZYfntBL4muZ0G_Vt2w@mail.gmail.com> <4E66A0A9.3060403@parallels.com> <CAHH2K0aq4s1_H-yY0kA3LhM00CCNNbJZyvyBoDD6rHC+qo_gNg@mail.gmail.com> <4E68484A.4000201@parallels.com> <CAHH2K0YcXMUfd1Zr=f5a4=X9cPPp8NZiuichFXaOo=kVp5rRJA@mail.gmail.com> <4E699341.9010606@parallels.com> <CALdu-PCrYPZx38o44ZyFrbQ6H39-vNPKey_Tpm4HRUNHNFMpyA@mail.gmail.com>
-In-Reply-To: <CALdu-PCrYPZx38o44ZyFrbQ6H39-vNPKey_Tpm4HRUNHNFMpyA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	id S1756266Ab1ILQ6q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 12:58:46 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:59649 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756241Ab1ILQ6n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Sep 2011 12:58:43 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Jarod Wilson <jarod@redhat.com>
+Cc: Sandy Harris <sandyinchina@gmail.com>, Steve Grubb <sgrubb@redhat.com>,
+        Neil Horman <nhorman@redhat.com>, Tomas Mraz <tmraz@redhat.com>,
+        Sasha Levin <levinsasha928@gmail.com>, "Ted Ts'o" <tytso@mit.edu>,
+        linux-crypto@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert.xu@redhat.com>,
+        Stephan Mueller <stephan.mueller@atsec.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] random: add blocking facility to urandom
+In-Reply-To: Your message of "Mon, 12 Sep 2011 09:55:15 EDT."
+             <4E6E0F43.6070307@redhat.com>
+From: Valdis.Kletnieks@vt.edu
+References: <1314974248-1511-1-git-send-email-jarod@redhat.com> <1315464117.11199.51.camel@vespa.frost.loc> <20110908125234.GD13657@hmsreliant.think-freely.org> <201109080911.12921.sgrubb@redhat.com> <CACXcFmnnMLHq2VE35i4QK4wNePXHJc6T73VQNTmJo7WEz34DaQ@mail.gmail.com> <118704.1315706746@turing-police.cc.vt.edu>
+            <4E6E0F43.6070307@redhat.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1315846699_2747P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [187.106.51.14]
+Date: Mon, 12 Sep 2011 12:58:19 -0400
+Message-ID: <11721.1315846699@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020205.4E6E3A33.0140,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/12/2011 02:03 AM, Paul Menage wrote:
-> On Thu, Sep 8, 2011 at 9:17 PM, Glauber Costa<glommer@parallels.com>  wrote:
->> On 09/08/2011 06:53 PM, Greg Thelen wrote:
->>>
->>> On Wed, Sep 7, 2011 at 9:44 PM, Glauber Costa<glommer@parallels.com>
->>>   wrote:
->>>
->>> Thanks for your ideas and patience.
->>
->> Likewise. It is turning out to be a very fruitful
->> discussion.
->>
->
-> This also got a fair bit of attention at LPC on Thursday - shame you
-> couldn't make it, but I hope you had no problems getting your visa!
+--==_Exmh_1315846699_2747P
+Content-Type: text/plain; charset=us-ascii
 
-Apart from the trip to the nearest consulate and 4 hours in a line, no 
-problems =) I can now legally enter the United States - so wait for me 
-next time!
+On Mon, 12 Sep 2011 09:55:15 EDT, Jarod Wilson said:
 
->
-> I definitely think that there was no consensus reached on unified
-> versus split charging - but I think that we can work around that and
-> keep everyone happy, see below.
+> Well, previously, we were looking at simply improving random entropy 
+> contributions, but quoting Matt Mackall from here:
+> 
+> http://www.mail-archive.com/linux-crypto@vger.kernel.org/msg05799.html
+> 
+> 'I recommend you do some Google searches for "ssl timing attack" and 
+> "aes timing attack" to get a feel for the kind of seemingly impossible 
+> things that can be done and thereby recalibrate your scale of the 
+> impossible.'
 
-I think at this point there is at least consensus that this could very 
-well live in memcg, right ?
->
->>
->> Risking being a bit polemic here, I think that when we do
->> containers, we have to view the kernel a little bit like a shared resource
->> that is not accounted to anybody. It is easy to account things like tcp
->> buffer, but who do you account page tables for shared pages to? Or pinned
->> dentries for shared filesystems ?
->
-> I'd say that if filesystems (or page tables) are shared between
-> containers / cgroups, then it's fair to do first-touch accounting. But
-> if a filesystem is shared between multiple processes in just one
-> container / cgroup then it should definitely be charged to that cgroup
-> (which you get automatically with first-touch accounting).
->
-> It might be reasonable to also allow the sysadmin to request a more
-> expensive form of accounting (probably either charge-all or
-> equal-share), if the code to support that didn't interfere with the
-> performance of the normal first-touch charging mechanism, or
-> complicate the code too much.
+If you're referring to Dan Bernstein's 2005 paper on AES timing attacks
+(http://cr.yp.to/antiforgery/cachetiming-20050414.pdf), note that it took
+him on the order of 2*25 packets per byte of AES key - targeting a
+dummy server intentionally designed to minimize noise.  Although he
+correctly notes: 
 
-I personally think equal share is a nightmare. But charge-all for shared 
-resources is quite acceptable even as a default if people are not 
-heavily concerned about precise accounting, in the sense that all 
-containers should sum up to one (well, I am not)
+     Of course, I wrote this server to minimize the amount of noise in the timings
+  available to the client. However, adding noise does not stop the attack: the client
+  simply averages over a larger number of samples, as in [7]. In particular, reducing
+  the precision of the server's timestamps, or eliminating them from the server's
+  responses, does not stop the attack: the client simply uses round-trip timings
+  based on its local clock, and compensates for the increased noise by averaging
+  over a larger number of samples.
 
-> On the subject of filesystems specifically, see Greg Thelen's proposal
-> for using bind mounts to account on a bind mount to a given cgroup -
-> that could apply to dentries, page tables and other kernel memory as
-> well as page cache.
+one has to remember that he's measuring average differences in processing
+time on the order of single-digits of cycles - if any *real* processing was happening
+it would only take a few cache line misses or an 'if' statement branching the
+other way to almost totally drown out the AES computation.  (Personally,
+I'm amazed that FreeBSD 4.8's kernel is predictable enough to do these
+measurements - probably helps a *lot* that the server was otherwise idle -
+if somebody else was getting a timeslice in between it would totally swamp
+the numbers).
 
-Care to point me to it ?
+Dan's reference [7] mentions specifically that RSA blinding (first implemented
+by default all the way back in OpenSSL 0.9.7b) defeats that paper's timing
+attack.
 
->> Good that it scares you, it should. OTOH, userspace being
->> able to set parameters to it, has nothing scary at all. A daemon in
->> userspace can detect that you need more kernel space memory , and
->> then - according to a policy you abide to - write to a file allowing
->> it more, or maybe not - according to that same policy. It is very
->> far away from "userspace driven reclaim".
->
-> It can do that, but it's a bit messy when all userspace really wants
-> to do is say "limit the total to X GB".
->
->
->> No, I don't necessarily feel that need. I just thought it was
->> cleaner to have entities with different purposes in different
->> cgroups. If moving it to the memory controller would help you in any
->> way, I can just do it. 80 % of this work is independent of where a
->> cgroup file lives.
->
-> My feeling is also that it's more appropriate for this to live in
-> memcg. While the ability to mount subsystems separately gives nice
-> flexibility, in the case of userspace versus kernel memory, I'm having
-> trouble envisaging a realistic situation where you'd want them mounted
-> on different hierarchies.
+If anything, those attacks are the best proof possible that the suggested
+"fix" for /dev/urandom is a fool's errand - why would anybody bother trying to
+figure out what the "next" data out of /dev/urandom is, when they can simply
+wait for a few milliseconds and extract it out of whatever program read it? :)
 
-Right.
->>   - kernel_memory_hard_limit.
->>   - kernel_memory_soft_limit.
->>
->> tcp memory would be the one defined in /proc, except if it is
->> greater than any of the limits. Instead of testing for memory
->> allocation against kmem.tcp_allocated_memory, we'd test it against
->> memcg.kmem_pinned_memory.
->>
->
-> This is definitely an improvement, but I'd say it's not enough. I
-> think we should consider something like:
-One step at a time =)
+--==_Exmh_1315846699_2747P
+Content-Type: application/pgp-signature
 
->
-> - a root cgroup file (memory.unified?) that controls whether memory
-> limits are unified or split.
-> - this file can only be modified when there are no memory cgroups
-> created (other than the root, which we shouldn't be charging, I think)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
-Okay.
+iD8DBQFObjorcC3lWbTT17ARAh+mAKC2so3DGa++bW/l4KQEttzwqnqDpwCgyErS
+ACm3OD4YQBar3G0rRQGM+Kw=
+=hi+7
+-----END PGP SIGNATURE-----
 
-> - the 'active' control determines whether (all) child cgroups will
-> have  memory.{limit,usage}_in_bytes files, or
-> memory.{kernel,user}_{limit,usage}_in_bytes files
-> - kernel memory will be charged either against 'kernel' or 'total'
-> depending on the value of unified
+--==_Exmh_1315846699_2747P--
 
-You mean for display/pressure purposes, right? Internally, I think once 
-we have kernel memory, we always charge it to kernel memory, regardless 
-of anything else. The value in unified field will only take place when 
-we need to grab this value.
-
-I don't personally see a reason for not having all files present at all 
-times.
-
-> - userspace memory will be charged either against 'user' or 'total'
->
-> That way the kernel doesn't force a unified or split decision on
-> anyone, with I think zero performance hit and not much extra code.
-
-Yes, I think not forcing it is not only an interesting way of settling 
-this, but also an interesting feature.
-
-> You could even take this a step further. The following is probably
-> straying into the realm of overly-flexible, but I'll throw it into the
-> discussion anyway:
->
-> - define counters for various types of memory (e.g. total, user,
-> kernel, network, tcp, pagetables, dentries, etc)
-
-Hummm, I like it, but I also fear that in the future we'll hit some 
-resource whose origin is hard to track... /me trying to think of such
-potential monster...
-
-It is overly flexible if we're exposing these counters and expecting the 
-user to do anything with them. It is perfectly fine if a single file, 
-when read, displays this information as statistics.
-
-
-> - document what kind of memory is potentially charged against each
-> counter. (e.g. TCP buffers would be potentially charged against 'tcp',
-> 'network', 'kernel' and 'total')
-
-That, I think, is overly flexible. I think what I said above makes sense 
-for very well defined entities such the slab. If we have something that 
-can be accounted to more to one general (kernel/user) and one specific 
-(slab) entity, we're getting too complex.
-
-> - have a memory.counters root cgroup file that allows the user to
-> specify which of the available counters are active. (only writeable
-> when no child cgroups, to avoid inconsistencies caused by changes
-> while memory is charged)
->
-> - default memory.counters to 'total'
->
-> - when memory.counters is updated, the memcg code builds the set of
-> targets for each chargeable entity. (e.g. if you enabled 'network' and
-> 'total', then we'd update the charge_tcp array to contain something
-> like {&network_counter,&total_counter, NULL })
->
-> - charging for an object (TCP allocation, pagecache page, pagetable,
-> dentry, etc) just involves (trying to) charge all the counters set up
-> in that object's array. Since these arrays will be immutable once
-> child cgroups are being charged, they should be fairly well predicted.
->
-> This would give complete flexibility to userspace on the policy for
-> charging and reporting without incurring performance overhead for
-> systems that didn't care about some particular counter. (And without
-> complicating the code too much, I think).
-
-While I do think it is overly complicated, I think that a sound use case 
-for this would bring it to the "complicated" realm only. It sounds like 
-a nice feature if there are users for it.
-
-Not only for containers - that tend to be generic in most cases - but 
-maybe people enclosing services in isolated cgroups can come up with 
-profiles that will, for instance, disallow or allow very little disk 
-activity on a network-profiled cgroup and vice versa.
-
-I am adding Lennart to this discussion, since if there is anyone crazy 
-enough to come up with an interesting use case for something strange, 
-it'll be systemd.
