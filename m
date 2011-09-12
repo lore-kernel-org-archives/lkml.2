@@ -1,157 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753171Ab1ILI0w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 04:26:52 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:51431 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751831Ab1ILI0u convert rfc822-to-8bit (ORCPT
+	id S1753375Ab1ILIc4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 04:32:56 -0400
+Received: from mail.ss.pku.edu.cn ([211.101.48.138]:54403 "EHLO
+	mail.ss.pku.edu.cn" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751735Ab1ILIcz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 04:26:50 -0400
+	Mon, 12 Sep 2011 04:32:55 -0400
 MIME-Version: 1.0
-In-Reply-To: <201108310020.26104.rjw@sisk.pl>
-References: <201108310017.03103.rjw@sisk.pl>
-	<201108310020.26104.rjw@sisk.pl>
-Date: Mon, 12 Sep 2011 16:26:49 +0800
-Message-ID: <CACVXFVPshpc-aVHGMYWkthffMRYLFh4BadnEAhf+eQ47CwWLZw@mail.gmail.com>
-Subject: Re: [PATCH 2/5] PM / Runtime: Do not run callbacks under lock for
- power.irq_safe set
-From: Ming Lei <tom.leiming@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, Kevin Hilman <khilman@ti.com>,
-        jean.pihet@newoldbits.com
+In-Reply-To: <alpine.DEB.2.02.1109120351470.16088@p34.internal.lan>
+References: <alpine.DEB.2.02.1109111815520.19558@p34.internal.lan>
+	<alpine.DEB.2.02.1109111837200.19558@p34.internal.lan>
+	<alpine.DEB.2.02.1109120351470.16088@p34.internal.lan>
+Date: Mon, 12 Sep 2011 16:32:47 +0800
+Message-ID: <CAF1ivSa8fFq6hemzJr6A_kgfNN4tOeEfD8kGfx==7JKV6M2hDg@mail.gmail.com>
+Subject: Re: 3.0.1: pagevec_lookup+0x1d/0x30, SLAB issues? [again w/DEBUG_VM &
+ SLAB_DEBUG enabled]
+From: Lin Ming <mlin@ss.pku.edu.cn>
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+Cc: linux-kernel@vger.kernel.org, Alan Piszcz <ap@solarrain.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Sep 12, 2011 at 3:52 PM, Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
+>
+>
+> On Sun, 11 Sep 2011, Justin Piszcz wrote:
+>
+>>
+>>
+>> On Sun, 11 Sep 2011, Justin Piszcz wrote:
+>>
+>>> Hi,
+>>>
+>>> With 3.0.1 now and all options compiled in and threadirqs removed, I get
+>>> the same error this user is seeing:
+>>> http://www.gossamer-threads.com/lists/linux/kernel/1424997
+>>>
+>>
+>> Hello Lin,
+>>
+>> I missed your mail (sender IP is in a CIDR blacklist), disabled &
+>> whitelisted for now:
+>> http://marc.info/?l=linux-kernel&m=131567477126674&w=2
+>>
+>> I've enabled this and I will post a new e-mail / output if it happens
+>> again with debug enabled for SLAB.
+>>
+>> Response to your e-mail:
+>>
+>>> Could you tell how to reproduce this?
+>>
+>> Running a lot of processes at the same time (memory/cpu+i/o)
+>>
+>>> And would you please turn on more debug options to capture more info?
+>>
+>> Yup, done now; however, I am using SLAB, not SLUB; so I've enabled:
+>>
+>> -> [*] Debug slab memory allocations -> [*]   Memory leak debugging -> [*]
+>> Debug VM
+>>
+>>> CONFIG_SLUB_DEBUG=y
+>>> CONFIG_SLUB_DEBUG_ON=y
+>>> CONFIG_DEBUG_VM=y
+>>
+>> Please let me know if there are any other options you think would be
+>> useful
+>> to enable or if this should be good, if it recurs again-- as noted above
+>> I will post an update.
+>>
+>> Justin.
+>>
+>
+> Hi,
+>
+> With the debug options enabled as mentioned above:
+>
+> [27336.007038] BUG: soft lockup - CPU#9 stuck for 22s! [kswapd1:1045]
+> [27336.007043] CPU 9 [27336.007047] Pid: 1045, comm: kswapd1 Not tainted
+> 3.0.1 #7 Supermicro X8DTH-i/6/iF/6F/X8DTH
+> [27336.007053] RIP: 0010:[<ffffffff8107a981>]  [<ffffffff8107a981>]
+> find_get_pages+0x61/0x150
+> [27336.007062] RSP: 0018:ffff880626783b50  EFLAGS: 00000246
+> [27336.007065] RAX: 0000000000000000 RBX: ffff880626783ba0 RCX:
+> 0000000000000000
+> [27336.007067] RDX: 0000000000000000 RSI: 000000000000000e RDI:
+> ffffea000f617890
+> [27336.007070] RBP: ffff880626783ba0 R08: 0000000000000000 R09:
+> 000000000000000a
+> [27336.007072] R10: 0000000000000009 R11: ffff8803badfde18 R12:
+> ffffffff816481ce
+> [27336.007075] R13: ffffffff810821cd R14: ffff880626783ad0 R15:
+> ffff88063fffbe00
+> [27336.007078] FS:  0000000000000000(0000) GS:ffff880c3fc60000(0000)
+> knlGS:0000000000000000
+> [27336.007081] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [27336.007084] CR2: 00007fbaef0fc000 CR3: 0000000001a43000 CR4:
+> 00000000000006e0
+> [27336.007086] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+> 0000000000000000
+> [27336.007089] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+> 0000000000000400
+> [27336.007092] Process kswapd1 (pid: 1045, threadinfo ffff880626782000, task
+> ffff880626d2a840)
+> [27336.007094] Stack:
+> [27336.007096]  ffff880c3fc6d520 0000000000000005 ffff880070743320
+> ffff880070743328
+> [27336.007103]  ffff880626783ba0 ffff880626783be0 000000000000041c
+> ffffffffffffffff
+> [27336.007108]  ffff880070743320 ffffea000f617820 ffff880626783bc0
+> ffffffff8108597d
+> [27336.007114] Call Trace:
+> [27336.007121]  [<ffffffff8108597d>] pagevec_lookup+0x1d/0x30
+> [27336.007125]  [<ffffffff8108607f>] invalidate_mapping_pages+0x5f/0x170
+> [27336.007132]  [<ffffffff810d37b5>] shrink_icache_memory+0x2d5/0x320
+> [27336.007139]  [<ffffffff81086f5d>] shrink_slab+0x11d/0x190
+> [27336.007144]  [<ffffffff81089d6a>] balance_pgdat+0x4fa/0x6a0
+> [27336.007148]  [<ffffffff81089fc3>] kswapd+0xb3/0x250
+> [27336.007153]  [<ffffffff8104fea0>] ? abort_exclusive_wait+0xb0/0xb0
+> [27336.007157]  [<ffffffff81089f10>] ? balance_pgdat+0x6a0/0x6a0
+> [27336.007160]  [<ffffffff8104f457>] kthread+0x87/0x90
+> [27336.007167]  [<ffffffff81648814>] kernel_thread_helper+0x4/0x10
+> [27336.007171]  [<ffffffff8104f3d0>] ? kthread_flush_work_fn+0x10/0x10
+> [27336.007175]  [<ffffffff81648810>] ? gs_change+0xb/0xb
+> [27336.007177] Code: 89 ea e8 33 95 22 00 85 c0 89 c6 0f 84 01 01 00 00 4d
+> 89 e7 31 c9 31 d2 66 90 49 8b 07 48 8b 38 48 85 ff 74 5b 40 f6 c7 01 75 7a
+> [27336.007198]  63 83 44 e0 ff ff a9 00 ff ff 07 0f 85 8d 00 00 00 44 8b 47
+> [27336.007209] Call Trace:
+> [27336.007213]  [<ffffffff8108597d>] pagevec_lookup+0x1d/0x30
+> [27336.007217]  [<ffffffff8108607f>] invalidate_mapping_pages+0x5f/0x170
+> [27336.007222]  [<ffffffff810d37b5>] shrink_icache_memory+0x2d5/0x320
+> [27336.007226]  [<ffffffff81086f5d>] shrink_slab+0x11d/0x190
+> [27336.007229]  [<ffffffff81089d6a>] balance_pgdat+0x4fa/0x6a0
+> [27336.007233]  [<ffffffff81089fc3>] kswapd+0xb3/0x250
+> [27336.007237]  [<ffffffff8104fea0>] ? abort_exclusive_wait+0xb0/0xb0
+> [27336.007241]  [<ffffffff81089f10>] ? balance_pgdat+0x6a0/0x6a0
+> [27336.007244]  [<ffffffff8104f457>] kthread+0x87/0x90
+> [27336.007248]  [<ffffffff81648814>] kernel_thread_helper+0x4/0x10
+> [27336.007252]  [<ffffffff8104f3d0>] ? kthread_flush_work_fn+0x10/0x10
+> [27336.007256]  [<ffffffff81648810>] ? gs_change+0xb/0xb
 
-On Wed, Aug 31, 2011 at 6:20 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> From: Rafael J. Wysocki <rjw@sisk.pl>
->
-> The rpm_suspend() and rpm_resume() routines execute subsystem or PM
-> domain callbacks under power.lock if power.irq_safe is set for the
-> given device.  This is inconsistent with that rpm_idle() does after
-> commit 02b2677 (PM / Runtime: Allow _put_sync() from
-> interrupts-disabled context) and is problematic for subsystems and PM
-> domains wanting to use power.lock for synchronization in their
-> runtime PM callbacks.  For this reason, make runtime PM core functions
-> always release power.lock before invoking subsystem or PM domain
+No more info got.
 
-If power.lock is released, the transition states(resuming or suspending)
-may be observed in rpm_suspend or rpm_resume, then tasks schedule
-will be produced in these two functions, so the functions below can't be
+Could you try to make a test case which can trigger this bug reliably?
+You may also try some benchmarks, for example, fio, ffsb, etc.
 
-      pm_runtime_suspend()
-      pm_runtime_autosuspend()
-      pm_runtime_resume()
-      pm_runtime_put_sync_suspend()
-      pm_runtime_put_sync_autosuspend()
+Lin Ming
 
-called in irq-off contexts safely even though irq_safe flag is set.
-
-> callbacks.
 >
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> ---
->  drivers/base/power/runtime.c |   50 ++++++++++++++++++++++++-------------------
->  1 file changed, 28 insertions(+), 22 deletions(-)
->
-> Index: linux/drivers/base/power/runtime.c
-> ===================================================================
-> --- linux.orig/drivers/base/power/runtime.c
-> +++ linux/drivers/base/power/runtime.c
-> @@ -155,6 +155,31 @@ static int rpm_check_suspend_allowed(str
->  }
->
->  /**
-> + * __rpm_callback - Run a given runtime PM callback for a given device.
-> + * @cb: Runtime PM callback to run.
-> + * @dev: Device to run the callback for.
-> + */
-> +static int __rpm_callback(int (*cb)(struct device *), struct device *dev)
-> +       __releases(&dev->power.lock) __acquires(&dev->power.lock)
-> +{
-> +       int retval;
-> +
-> +       if (dev->power.irq_safe)
-> +               spin_unlock(&dev->power.lock);
-> +       else
-> +               spin_unlock_irq(&dev->power.lock);
-> +
-> +       retval = cb(dev);
-> +
-> +       if (dev->power.irq_safe)
-> +               spin_lock(&dev->power.lock);
-> +       else
-> +               spin_lock_irq(&dev->power.lock);
-> +
-> +       return retval;
-> +}
-> +
-> +/**
->  * rpm_idle - Notify device bus type if the device can be suspended.
->  * @dev: Device to notify the bus type about.
->  * @rpmflags: Flag bits.
-> @@ -225,19 +250,8 @@ static int rpm_idle(struct device *dev,
->        else
->                callback = NULL;
->
-> -       if (callback) {
-> -               if (dev->power.irq_safe)
-> -                       spin_unlock(&dev->power.lock);
-> -               else
-> -                       spin_unlock_irq(&dev->power.lock);
-> -
-> -               callback(dev);
-> -
-> -               if (dev->power.irq_safe)
-> -                       spin_lock(&dev->power.lock);
-> -               else
-> -                       spin_lock_irq(&dev->power.lock);
-> -       }
-> +       if (callback)
-> +               __rpm_callback(callback, dev);
->
->        dev->power.idle_notification = false;
->        wake_up_all(&dev->power.wait_queue);
-> @@ -252,22 +266,14 @@ static int rpm_idle(struct device *dev,
->  * @dev: Device to run the callback for.
->  */
->  static int rpm_callback(int (*cb)(struct device *), struct device *dev)
-> -       __releases(&dev->power.lock) __acquires(&dev->power.lock)
->  {
->        int retval;
->
->        if (!cb)
->                return -ENOSYS;
->
-> -       if (dev->power.irq_safe) {
-> -               retval = cb(dev);
-> -       } else {
-> -               spin_unlock_irq(&dev->power.lock);
-> -
-> -               retval = cb(dev);
-> +       retval = __rpm_callback(cb, dev);
->
-> -               spin_lock_irq(&dev->power.lock);
-> -       }
->        dev->power.runtime_error = retval;
->        return retval != -EACCES ? retval : -EIO;
->  }
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
-
-
-thanks,
--- 
-Ming Lei
+> Justin.
