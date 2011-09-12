@@ -1,68 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755526Ab1ILWn5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 18:43:57 -0400
-Received: from fieldses.org ([174.143.236.118]:58575 "EHLO fieldses.org"
+	id S1755588Ab1ILXCt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 19:02:49 -0400
+Received: from shutemov.name ([188.40.19.243]:54569 "EHLO shutemov.name"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753689Ab1ILWnz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 18:43:55 -0400
-Date: Mon, 12 Sep 2011 18:43:51 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: Valdis.Kletnieks@vt.edu,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        agruen@kernel.org, akpm@linux-foundation.org, dhowells@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        LSM <linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH -V6 00/26] New ACL format for better NFSv4 acl
- interoperability
-Message-ID: <20110912224351.GC17483@fieldses.org>
-References: <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <4E655049.6060507@schaufler-ca.com>
- <108028.1315442771@turing-police.cc.vt.edu>
- <4E6E7ACC.8040003@schaufler-ca.com>
- <20110912222014.GA17483@fieldses.org>
- <4E6E89E0.4010406@schaufler-ca.com>
+	id S1753689Ab1ILXCr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Sep 2011 19:02:47 -0400
+Date: Tue, 13 Sep 2011 02:02:46 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Johannes Weiner <jweiner@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
+        Michal Hocko <mhocko@suse.cz>, Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 02/11] mm: vmscan: distinguish global reclaim from global
+ LRU scanning
+Message-ID: <20110912230246.GA20975@shutemov.name>
+References: <1315825048-3437-1-git-send-email-jweiner@redhat.com>
+ <1315825048-3437-3-git-send-email-jweiner@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E6E89E0.4010406@schaufler-ca.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1315825048-3437-3-git-send-email-jweiner@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 12, 2011 at 03:38:24PM -0700, Casey Schaufler wrote:
-> On 9/12/2011 3:20 PM, J. Bruce Fields wrote:
-> > On Mon, Sep 12, 2011 at 02:34:04PM -0700, Casey Schaufler wrote:
-> >> On 9/7/2011 5:46 PM, Valdis.Kletnieks@vt.edu wrote:
-> >>> On Mon, 05 Sep 2011 15:42:17 PDT, Casey Schaufler said:
-> >>>> On 9/5/2011 10:25 AM, Aneesh Kumar K.V wrote:
-> >>>>> The following set of patches implements VFS and ext4 changes needed to implement
-> >>>>> a new acl model for linux. Rich ACLs are an implementation of NFSv4 ACLs,
-> >>>>> extended by file( masks to fit into the standard POSIX file permission model.
-> >>>>> They are designed to work seamlessly locally as well as across the NFSv4 and
-> >>>>> CIFS/SMB2 network file system protocols.
-> >>>> POSIX ACLs predate the LSM and can't be done as an LSM due to
-> >>>> the interactions between mode bits and ACLs as defined by the
-> >>>> POSIX DRAFT specification.
-> > I don't know LSM so don't understand what you mean when you say that
-> > interactions between mode bits and ACLs would make an ACL model hard to
-> > implement as an LSM.
+On Mon, Sep 12, 2011 at 12:57:19PM +0200, Johannes Weiner wrote:
+> The traditional zone reclaim code is scanning the per-zone LRU lists
+> during direct reclaim and kswapd, and the per-zone per-memory cgroup
+> LRU lists when reclaiming on behalf of a memory cgroup limit.
 > 
-> POSIX ACLs require that the file permission bits change when
-> the ACL changes. This interaction violates the strict "additional
-> restriction" model of the LSM.
-
-Oh, OK.  Yes, rich ACLs are the same as POSIX ACLs in this respect.
-When you set an ACL the mode bits are reset to represent an "upper
-bound" on the permissions granted by the ACL.
-
---b.
-
-> > But in any case the rich acl/mode bit interactions are similar to the
-> > posix acl/mode bit interactions, so the same issue probably applies.
+> Subsequent patches will convert the traditional reclaim code to
+> reclaim exclusively from the per-memory cgroup LRU lists.  As a
+> result, using the predicate for which LRU list is scanned will no
+> longer be appropriate to tell global reclaim from limit reclaim.
 > 
-> It would help if you knew for sure and could explain the interaction
-> in sufficient detail to justify the position.
+> This patch adds a global_reclaim() predicate to tell direct/kswapd
+> reclaim from memory cgroup limit reclaim and substitutes it in all
+> places where currently scanning_global_lru() is used for that.
+> 
+> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+> ---
+>  mm/vmscan.c |   60 +++++++++++++++++++++++++++++++++++-----------------------
+>  1 files changed, 36 insertions(+), 24 deletions(-)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 7502726..354f125 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -153,9 +153,25 @@ static LIST_HEAD(shrinker_list);
+>  static DECLARE_RWSEM(shrinker_rwsem);
+>  
+>  #ifdef CONFIG_CGROUP_MEM_RES_CTLR
+> -#define scanning_global_lru(sc)	(!(sc)->mem_cgroup)
+> +static bool global_reclaim(struct scan_control *sc)
+> +{
+> +	return !sc->mem_cgroup;
+> +}
+> +
+> +static bool scanning_global_lru(struct scan_control *sc)
+> +{
+> +	return !sc->mem_cgroup;
+> +}
+>  #else
+> -#define scanning_global_lru(sc)	(1)
+> +static bool global_reclaim(struct scan_control *sc)
+> +{
+> +	return true;
+> +}
+> +
+> +static bool scanning_global_lru(struct scan_control *sc)
+> +{
+> +	return true;
+> +}
+>  #endif
+>  
+>  static struct zone_reclaim_stat *get_reclaim_stat(struct zone *zone,
+> @@ -1011,7 +1027,7 @@ keep_lumpy:
+>  	 * back off and wait for congestion to clear because further reclaim
+>  	 * will encounter the same problem
+>  	 */
+> -	if (nr_dirty && nr_dirty == nr_congested && scanning_global_lru(sc))
+> +	if (nr_dirty && nr_dirty == nr_congested && global_reclaim(sc))
+>  		zone_set_flag(zone, ZONE_CONGESTED);
+>  
+>  	free_page_list(&free_pages);
+> @@ -1330,7 +1346,7 @@ static int too_many_isolated(struct zone *zone, int file,
+>  	if (current_is_kswapd())
+>  		return 0;
+>  
+> -	if (!scanning_global_lru(sc))
+> +	if (!global_reclaim(sc))
+>  		return 0;
+>  
+>  	if (file) {
+> @@ -1508,6 +1524,12 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
+>  	if (scanning_global_lru(sc)) {
+>  		nr_taken = isolate_pages_global(nr_to_scan, &page_list,
+>  			&nr_scanned, sc->order, reclaim_mode, zone, 0, file);
+> +	} else {
+> +		nr_taken = mem_cgroup_isolate_pages(nr_to_scan, &page_list,
+> +			&nr_scanned, sc->order, reclaim_mode, zone,
+> +			sc->mem_cgroup, 0, file);
+> +	}
+
+Redundant braces.
+
+> +	if (global_reclaim(sc)) {
+>  		zone->pages_scanned += nr_scanned;
+>  		if (current_is_kswapd())
+>  			__count_zone_vm_events(PGSCAN_KSWAPD, zone,
+> @@ -1515,14 +1537,6 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
+>  		else
+>  			__count_zone_vm_events(PGSCAN_DIRECT, zone,
+>  					       nr_scanned);
+> -	} else {
+> -		nr_taken = mem_cgroup_isolate_pages(nr_to_scan, &page_list,
+> -			&nr_scanned, sc->order, reclaim_mode, zone,
+> -			sc->mem_cgroup, 0, file);
+> -		/*
+> -		 * mem_cgroup_isolate_pages() keeps track of
+> -		 * scanned pages on its own.
+> -		 */
+>  	}
+>  
+>  	if (nr_taken == 0) {
+> @@ -1647,18 +1661,16 @@ static void shrink_active_list(unsigned long nr_pages, struct zone *zone,
+>  						&pgscanned, sc->order,
+>  						reclaim_mode, zone,
+>  						1, file);
+> -		zone->pages_scanned += pgscanned;
+>  	} else {
+>  		nr_taken = mem_cgroup_isolate_pages(nr_pages, &l_hold,
+>  						&pgscanned, sc->order,
+>  						reclaim_mode, zone,
+>  						sc->mem_cgroup, 1, file);
+> -		/*
+> -		 * mem_cgroup_isolate_pages() keeps track of
+> -		 * scanned pages on its own.
+> -		 */
+>  	}
+
+Ditto.
+
+
+-- 
+ Kirill A. Shutemov
