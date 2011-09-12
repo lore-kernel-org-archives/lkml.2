@@ -1,119 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755801Ab1ILMtJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 08:49:09 -0400
-Received: from mga02.intel.com ([134.134.136.20]:48788 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754037Ab1ILMtH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 08:49:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="47475750"
-From: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
-To: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>,
-        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        "cbou@mail.ru" <cbou@mail.ru>
-CC: "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        =?ks_c_5601-1987?B?udqw5rnO?= <kyungmin.park@samsung.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        "R, Durgadoss" <durgadoss.r@intel.com>
-Date: Mon, 12 Sep 2011 18:18:21 +0530
-Subject: RE: RE: [PATCHv1 1/1] [Power Supply]: Fix error handling in
- max17042 fuel gauge
-Thread-Topic: RE: [PATCHv1 1/1] [Power Supply]: Fix error handling in
- max17042 fuel gauge
-Thread-Index: AcxtOsRnz/g5r7rjSFiRud9kKwPRzgBEs2mQAL8dnyA=
-Message-ID: <12D0C12AF19E15409D57F22566E88EF50975C6147C@bgsmsx501.gar.corp.intel.com>
-References: <14735031.596001315385240106.JavaMail.weblogic@epml15> 
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="ks_c_5601-1987"
+	id S1755921Ab1ILMtp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 08:49:45 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:37342 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755713Ab1ILMtn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Sep 2011 08:49:43 -0400
+X-Sasl-enc: 18GeQ93t8qvhOoJ6MoClg3Umjmf9/Ig6gpw6XFHN3Fcb 1315831783
+Date: Mon, 12 Sep 2011 14:49:17 +0200
+From: Greg KH <greg@kroah.com>
+To: Krzysztof Kanas <k.kanas@kelvatek.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Kernel  2.6.27.15  oops in PPP
+Message-ID: <20110912124917.GA16428@kroah.com>
+References: <4E6DCD36.6020104@kelvatek.com>
+ <20110912113641.GA32603@kroah.com>
+ <4E6DF7EC.8000206@kelvatek.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E6DF7EC.8000206@kelvatek.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id p8CCnNQl010725
 
-Hi Anton,
+On Mon, Sep 12, 2011 at 02:15:40PM +0200, Krzysztof Kanas wrote:
+> On 09/12/2011 01:36 PM, Greg KH wrote:
+> >On Mon, Sep 12, 2011 at 11:13:26AM +0200, Krzysztof Kanas wrote:
+> >>Hi I am tracing kernel oops in 2.6.27.15 on ARM(CONFIG_CPU_ARM926T=y).
+> >
+> >2.6.27.15 is quite old, why that version?  If you are stuck on 2.6.27,
+> >please use a newer stable version of it as odds are this is already
+> >resolved in one of the 40+ releases after yours (current one is
+> >2.6.27.57 I think.)
+> >
+> >thanks,
+> >
+> >greg k-h
+> >
+> Yes I am quite stuck with that version - I will try to get new
+> stable version and see If that goes well. Unfortunately I have to
+> make sure that all applications etc are still working with new
+> kernel.
 
-> -----Original Message-----
-> From: Pallala, Ramakrishna
-> Sent: Thursday, September 08, 2011 11:07 PM
-> To: myungjoo.ham@samsung.com; linux-kernel@vger.kernel.org; Anton Vorontsov
-> Cc: dwmw2@infradead.org; ¹Ú°æ¹Î; Wolfram Sang; R, Durgadoss
-> Subject: RE: RE: [PATCHv1 1/1] [Power Supply]: Fix error handling in max17042 fuel gauge
-> 
-> Hi Anton,
-> 
-> > -----Original Message-----
-> > From: MyungJoo Ham [mailto:myungjoo.ham@samsung.com]
-> > Sent: Wednesday, September 07, 2011 2:17 PM
-> > To: Pallala, Ramakrishna; linux-kernel@vger.kernel.org
-> > Cc: Anton Vorontsov; dwmw2@infradead.org; ¹Ú°æ¹Î; Wolfram Sang; R, Durgadoss
-> > Subject: Re: RE: [PATCHv1 1/1] [Power Supply]: Fix error handling in max17042 fuel
-> gauge
-> >
-> > Sender : Pallala, Ramakrishna<ramakrishna.pallala@intel.com> Date : 2011-09-07 17:30
-> > (GMT+09:00)
-> > > Hi MyungJoo,
-> > >
-> > > > -----Original Message-----
-> > > > From: MyungJoo Ham [mailto:myungjoo.ham@samsung.com]
-> > > > Sent: Monday, September 05, 2011 6:55 AM
-> > > > To: Pallala, Ramakrishna; linux-kernel@vger.kernel.org
-> > > > Cc: Anton Vorontsov; dwmw2@infradead.org; ¹Ú°æ¹Î; Wolfram Sang; R, Durgadoss
-> > > > Subject: Re: [PATCHv1 1/1] [Power Supply]: Fix error handling in max17042 fuel
-> gauge
-> > > >
-> > > > Sender : Ramakrishna Pallala<ramakrishna.pallala@intel.com> Date : 2011-09-02
-> 15:45
-> > > > (GMT+09:00)
-> > > > >
-> > > > > In max17042_get_property(...), the values returned by
-> > > > > max17042_read_reg are directly assigned to the variables,
-> > > > > even if the read results in an error.
-> > > > >
-> > > > > This patch checks for the return code from max17042_read_reg and
-> > > > > exits the function if there is any error.
-> > > > >
-> > > > > Signed-off-by: Ramakrishna Pallala
-> > > > > ---
-> > > > > drivers/power/max17042_battery.c |   85 ++++++++++++++++++++++++++------------
-> > > > > 1 files changed, 58 insertions(+), 27 deletions(-)
-> > > > >
-> > > >
-> > > > Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-> > >
-> > > Thanks for the Ack.
-> > > When can I expect the patch to be merged ?
-> > >
-> > > Thanks,
-> > > Ram
-> > >
-> >
-> > Hello Ram,
-> >
-> > Although I'd be so glad to be able to merge patches of MAX17042 (and
-> > MAX8997/8998/8952/8903/...?) by myself; however, I'm not a maintainer of MAX17042.
-> >
-> > I guess you need to wait for Anton.
-> >
-> > Cheers,
-> > MyungJoo
-> 
-> When can I expect the patch to be merged ?
-> 
-> Thanks,
-> Ram
+There should not be _ANY_ user application change for stable kernel
+updates like you would be doing from 2.6.27.15 to 2.6.27.57 as we only
+accept bug fixes for stable kernel updates.
 
-Please let me know your feedback on this patch.
-
-Thanks,
-Ram
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+greg k-h
