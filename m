@@ -1,50 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966Ab1ILIrf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 04:47:35 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:43921 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753438Ab1ILIre convert rfc822-to-8bit (ORCPT
+	id S1752626Ab1ILJEu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 05:04:50 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:54966 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750911Ab1ILJEt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 04:47:34 -0400
+	Mon, 12 Sep 2011 05:04:49 -0400
+Message-ID: <4E6DCAF5.50607@atmel.com>
+Date: Mon, 12 Sep 2011 11:03:49 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
 MIME-Version: 1.0
-In-Reply-To: <CAOPLpQdU8k2e2TN4mj+T9cPJnVTP_Js9q7YH6iqq1Z0_5NM4kQ@mail.gmail.com>
-References: <CALGyLaiXhtceaJxni9ttjMfzx6K326_CVccJiifAhXfNszdgsg@mail.gmail.com>
- <CAOPLpQdU8k2e2TN4mj+T9cPJnVTP_Js9q7YH6iqq1Z0_5NM4kQ@mail.gmail.com>
-From: Maciek Borzecki <maciek.borzecki@gmail.com>
-Date: Mon, 12 Sep 2011 10:47:13 +0200
-Message-ID: <CALGyLagJ1pL=4PBPTp-uzwAnTB_hrZuqW93xUd=45dOKpb3-GA@mail.gmail.com>
-Subject: Re: pselect semantics - no EINTR with pending signals
-To: Ulrich Drepper <drepper@gmail.com>
-Cc: linux-kernel@vger.kernel.org
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Josef Holzmayr <holzmayr@rsi-elektrotechnik.de>,
+        Nico Erfurth <ne@erfurth.eu>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>
+Subject: Re: [GIT PULL] at91: changes for next
+References: <4E6A09D0.40800@atmel.com> <201109102306.58340.arnd@arndb.de>
+In-Reply-To: <201109102306.58340.arnd@arndb.de>
+X-Enigmail-Version: 1.3.1
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 11, 2011 at 4:45 PM, Ulrich Drepper <drepper@gmail.com> wrote:
-> On Fri, Sep 9, 2011 at 09:25, Maciek Borzecki <maciek.borzecki@gmail.com> wrote:
->> Now, I'm not sure about the semantics of pselect. I'm not saying that
->> the current version is right or wrong, but raising a question if this
->> is really expected (and it did happen to be quite unexpected for me).
->
-> The standard says
->
->       If  sigmask  is not a null pointer, then the pselect() function
-> shall replace the signal mask of the
->       process by the set of signals pointed to by sigmask before
-> examining  the  descriptors,  and  shall
->       restore the signal mask of the process before returning.
->
-> The way I read this the kernel does have to give the signal a chance
-> to be delivered even if there are file descriptor ready for I/O.
-I do agree, otherwise the signal delivery gating functionality of
-pselect is not really useful.
+Le 10/09/2011 23:06, Arnd Bergmann :
+> On Friday 09 September 2011, Nicolas Ferre wrote:
+>> Can you please pull the following changes since commit ddf28352b80c86754a6424e3a61e8bdf9213b3c7:
+>>
+>>   Linux 3.1-rc5 (2011-09-04 15:45:10 -0700)
+>>
+>> They are available in the git repository at:
+>>   git://github.com/at91linux/linux-at91.git  at91-next
+>>
+>> They have been present on linux-arm-kernel for some time and where recently added in linux-next.
+>> Stephen resolved some trivial conflicts relatives to the removal of a board file (Cf:
+>> https://lkml.org/lkml/2011/9/9/96 ).
+>>
+>> A series by Thomas is touching the USB subsystem: ohci-at91.c but as most of changes are in the at91 directory, it makes more sense to take them in arm-soc.
+> 
+> Hi Nicolas,
+> 
+> I've resumed pulling patches and uploaded them to git.linaro.org while
+> master.kernel.org continues to be unavailable.
+> 
+> I've decided to split your branch into two separate branches 'board'
+> and 'devel' to better match the code from other soc trees in a way
+> that I can send forward to Linus. Please check that the split trees
+> actually make sense, and tell me if that's ok for you or if you would
+> prefer them split differently.
 
-I'd submit a patch, provided that current behavior is considered
-incorrect. Hopefully userspace would not be affected to the degree
-that things would get broken.
+I have checked and It is perfect for me.
 
---
-Maciek Borzecki
+Thanks a lot Arnd, bye,
+-- 
+Nicolas Ferre
+
