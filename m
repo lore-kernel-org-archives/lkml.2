@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753848Ab1ILGgf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 02:36:35 -0400
-Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:55714 "EHLO
-	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753321Ab1ILGgd convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 02:36:33 -0400
+	id S1753821Ab1ILG4e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 02:56:34 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:59087 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751532Ab1ILG4d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Sep 2011 02:56:33 -0400
+Date: Mon, 12 Sep 2011 01:56:18 -0500
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: trouble daemon <troubledaemon@gmail.com>
+Cc: linux-kernel@vger.kernel.org, aystarik@gmail.com, x86@kernel.org
+Subject: Re: Dell PowerEdge 4200 scsi, worked in 2.6.18, not in 2.6.26
+Message-ID: <20110912065618.GA23340@elie>
+References: <AANLkTim7_OzJfwbtk0fE5ScH8zZwZ_uJeo5pJFOhkHu_@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <87mxedwoyu.fsf@ti.com>
-References: <1315579967-24945-1-git-send-email-keshava_mgowda@ti.com>
-	<1315579967-24945-2-git-send-email-keshava_mgowda@ti.com>
-	<87mxedwoyu.fsf@ti.com>
-Date: Mon, 12 Sep 2011 12:06:31 +0530
-Message-ID: <CAP05o4+L=RtVr_653WRukwBtQX+8KyBNStmRjg7sk4tEoNY77w@mail.gmail.com>
-Subject: Re: [PATCH 1/2] arm: omap: usb: enable I/O wakeups of ehci and ohci
- hwmods of omap4
-From: "Munegowda, Keshava" <keshava_mgowda@ti.com>
-To: Kevin Hilman <khilman@ti.com>
-Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, balbi@ti.com, gadiyar@ti.com,
-        sameo@linux.intel.com, parthab@india.ti.com, tony@atomide.com,
-        b-cousson@ti.com, paul@pwsan.com, johnstul@us.ibm.com,
-        vishwanath.bs@ti.com, Kishon Vijay Abraham <kishon@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTim7_OzJfwbtk0fE5ScH8zZwZ_uJeo5pJFOhkHu_@mail.gmail.com>
+User-Agent: Mutt/1.5.21+46 (b01d63af6fea) (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 9, 2011 at 11:57 PM, Kevin Hilman <khilman@ti.com> wrote:
-> Keshava Munegowda <keshava_mgowda@ti.com> writes:
->
->> From: Kishon Vijay Abraham <kishon@ti.com>
->>
->> For ehci and ohci hwmods, the omap4 I/O wakeup capablity is enabled.
->> for ehci in phy mode,
->>       - the DAT0 and DIR I/O pad is set as wakeup capable
->> for ohci in serial mode
->>       - usbb*_mm_rxdp is set as I/O wakeup for 6 pin serial mode
->>       - usbb*_mm_rxrcv is set as I/O wakeup for 4 pin serial mode
->>       - usbb*_mm_txen is set as I/O wakeup for 3 pin serial mode
->>       - usbb*_mm_txdat is set as I/O wakeup for 2 pin serial mode
->>
->> Signed-off-by: Kishon Vijay Abraham <kishon@ti.com>
->> Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
->
-> What if the end user doesn't want this device to be a wakeup source?
->
-> Currently, the IO pad wakeup for these pins is enabled unconditionally.
-> While having it enabled as a wakeup source by default is fine, it should
-> not generate wakeups if the user has disable them by doing:
->
->    $ echo disabled > /sys/devices/.../power/wakeup
+(resending with a newer address for Alexey - sorry for the noise)
+Hi,
 
-OK, I will do this.
+trouble daemon wrote:
 
-keshava
+> I am using a pair of Dell PowerEdg 4200's that have been working with
+> debian since 2002 or so, 100% perfectly.
+[...]
+>   - 2.6.26 kernel that panics (latest unmodified debian kernel):
+> http://pastebin.ca/1886636
+>   - 2.6.18 kernel that works (latest unmodified debian kernel):
+> http://pastebin.ca/1886641
+
+pastebin.ca doesn't seem to exist any more, alas.
+
+[...]
+> Ben Hutchings wrote:
+
+>> Another option that may be worth trying is 'noapic'.
+>
+> Wow, that worked just fine actually on 2.6.26 stock kernel. Thanks a lot!
+[...]
+> f8924e770e048429ae13bfabe1ddad9bf1e64df7 is first bad commit
+> commit f8924e770e048429ae13bfabe1ddad9bf1e64df7
+> Author: Alexey Starikovskiy <astarikovskiy@suse.de>
+> Date:   Fri Apr 4 23:42:21 2008 +0400
+>
+>    x86: unify mp_bus_info
+[...]
+> I have verified that checking out the patch just before this one works
+> fine on the machines.
+
+Sorry we dropped the ball on this.  Dan, any news (e.g., do later
+kernels do any better)?  Alexey, any ideas for tracking this down?
+
+Thanks,
+Jonathan
