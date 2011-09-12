@@ -1,69 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754746Ab1ILUnm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 16:43:42 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:58191 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754525Ab1ILUnl (ORCPT
+	id S1754764Ab1ILUpi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 16:45:38 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:42083 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754525Ab1ILUph (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 16:43:41 -0400
-Date: Mon, 12 Sep 2011 14:43:39 -0600
+	Mon, 12 Sep 2011 16:45:37 -0400
+Date: Mon, 12 Sep 2011 14:45:34 -0600
 From: Grant Likely <grant.likely@secretlab.ca>
 To: Rhyland Klein <rklein@nvidia.com>
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
         linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/2 v2] power: bq20z75: Add Device Tree Binding
-Message-ID: <20110912204339.GH23345@ponder.secretlab.ca>
+Subject: Re: [PATCH 1/2 v2] power: bq20z75: devicetree init support
+Message-ID: <20110912204533.GI23345@ponder.secretlab.ca>
 References: <1315615669-8701-1-git-send-email-rklein@nvidia.com>
- <1315615669-8701-2-git-send-email-rklein@nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1315615669-8701-2-git-send-email-rklein@nvidia.com>
+In-Reply-To: <1315615669-8701-1-git-send-email-rklein@nvidia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 09, 2011 at 05:47:49PM -0700, Rhyland Klein wrote:
-> Adding the binding for the TI bq20z75 fuel gadge and the
-> bq20z75 driver.
+On Fri, Sep 09, 2011 at 05:47:48PM -0700, Rhyland Klein wrote:
+> Adding support to generate platform data when kernel is configured
+> through device tree.
 > 
 > Signed-off-by: Rhyland Klein <rklein@nvidia.com>
 > ---
->  .../bindings/power_supply/ti_bq20z75.txt           |   25 ++++++++++++++++++++
->  1 files changed, 25 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/power_supply/ti_bq20z75.txt
+> 	v2: Fixed typo in binding description
 > 
-> diff --git a/Documentation/devicetree/bindings/power_supply/ti_bq20z75.txt b/Documentation/devicetree/bindings/power_supply/ti_bq20z75.txt
-> new file mode 100644
-> index 0000000..3deccfe
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/power_supply/ti_bq20z75.txt
-> @@ -0,0 +1,25 @@
-> +TI bq20z75
-> +~~~~~~~~~~
+>  drivers/power/bq20z75.c |   73 +++++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 73 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/power/bq20z75.c b/drivers/power/bq20z75.c
+> index 9c5e5be..922f725 100644
+> --- a/drivers/power/bq20z75.c
+> +++ b/drivers/power/bq20z75.c
+> @@ -613,6 +613,76 @@ static void bq20z75_delayed_work(struct work_struct *work)
+>  	}
+>  }
+>  
+> +#if defined(CONFIG_OF)
+> +#include <linux/of_device.h>
+> +static const struct of_device_id bq20z75_dt_ids[] = {
+> +	{ .compatible = "ti,bq20z75" },
+> +	{ }
+> +};
+> +MODULE_DEVICE_TABLE(platform, bq20z75_dt_ids);
 > +
-> +Required properties :
-> + - compatible : "ti,bq20z75"
+> +static struct bq20z75_platform_data *bq20z75_of_populate_pdata(
+> +	struct i2c_client *client)
+> +{
+> +	const struct of_device_id *dtid;
+> +	struct device_node *of_node = client->dev.of_node;
+> +	struct bq20z75_platform_data *pdata = client->dev.platform_data;
+> +	int rc;
+> +	u32 prop;
 > +
-> +Optional properties :
-> + - i2c-retry-count : The number of times to retry i2c transactions on i2c
-> +   IO failure.
-> + - poll-retry-count : The number of times to try looking for new status
-> +   after an external change notification.
+> +	/* verify this driver matches this device */
+> +	dtid = of_match_device(bq20z75_dt_ids, &client->dev);
+> +	if (!dtid)
+> +		return NULL;
 
-Prefix custom properties with a vendor string.  ie. "ti,"
+Just the fact that of_node pointer is set means that a match was made
+against the table.  No need for calling of_match_device.
 
-> + - battery-detect : The GPIO which is used to detect battery presence.
-> + - battery-detect-present : The state of the GPIO when the battery is
-> +   present ( 0 or 1).
-
-Use the gpios binding here.  Should be encoded as a single property
-that uses the flags field for the polarity.  Something like:
-
-	battery-detect-gpios = <&gpio-controller 10 0>;
-
-g.
-
+> +
+> +	/* if platform data is set, honor it */
+> +	if (pdata)
+> +		return pdata;
+> +
+> +	/* first make sure at least one property is set, otherwise
+> +	 * it won't change behavior from running without pdata.
+> +	 */
+> +	if (!of_get_property(of_node, "i2c-retry-count", NULL) &&
+> +		!of_get_property(of_node, "poll-retry-count", NULL) &&
+> +		!of_get_property(of_node, "battery-detect", NULL) &&
+> +		!of_get_property(of_node, "battery-detect-present", NULL))
+> +		goto of_out;
+> +
+> +	pdata = devm_kzalloc(&client->dev, sizeof(struct bq20z75_platform_data),
+> +				GFP_KERNEL);
+> +	if (!pdata)
+> +		goto of_out;
+> +
+> +	rc = of_property_read_u32(of_node, "i2c-retry-count", &prop);
+> +	if (!rc)
+> +		pdata->i2c_retry_count = prop;
+> +
+> +	rc = of_property_read_u32(of_node, "battery-detect", &prop);
+> +	if (!rc)
+> +		pdata->battery_detect = prop;
+> +	else
+> +		pdata->battery_detect = -1; /*default is no gpio */
+> +
+> +	rc = of_property_read_u32(of_node, "battery-detect-present", &prop);
+> +	if (!rc)
+> +		pdata->battery_detect_present = prop;
+> +
+> +	rc = of_property_read_u32(of_node, "poll-retry-count", &prop);
+> +	if (!rc)
+> +		pdata->poll_retry_count = prop;
+> +
+> +of_out:
+> +	return pdata;
+> +}
+> +#else
+> +#define bq20z75_dt_ids NULL
+> +static struct bq20z75_platform_data *bq20z75_of_populate_pdata(
+> +	struct i2c_client *client)
+> +{
+> +	return NULL;
+> +}
+> +#endif
+> +
+>  static int __devinit bq20z75_probe(struct i2c_client *client,
+>  	const struct i2c_device_id *id)
+>  {
+> @@ -642,6 +712,8 @@ static int __devinit bq20z75_probe(struct i2c_client *client,
+>  	bq20z75_device->power_supply.external_power_changed =
+>  		bq20z75_external_power_changed;
+>  
+> +	pdata = bq20z75_of_populate_pdata(client);
+> +
+>  	if (pdata) {
+>  		bq20z75_device->gpio_detect =
+>  			gpio_is_valid(pdata->battery_detect);
+> @@ -775,6 +847,7 @@ static struct i2c_driver bq20z75_battery_driver = {
+>  	.id_table	= bq20z75_id,
+>  	.driver = {
+>  		.name	= "bq20z75-battery",
+> +		.of_match_table = bq20z75_dt_ids,
+>  	},
+>  };
+>  
+> -- 
+> 1.7.6
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
