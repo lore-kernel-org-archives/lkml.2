@@ -1,178 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758259Ab1ILPzM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 11:55:12 -0400
-Received: from mtagate1.uk.ibm.com ([194.196.100.161]:58227 "EHLO
-	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758069Ab1ILPzI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 11:55:08 -0400
-Subject: Re: [RFC][patch 1/2] kdump: Add infrastructure for unmapping
- crashkernel memory
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Reply-To: holzheu@linux.vnet.ibm.com
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: ebiederm@xmission.com, mahesh@linux.vnet.ibm.com, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
-In-Reply-To: <20110909182325.GD15748@redhat.com>
-References: <20110908132609.177038405@linux.vnet.ibm.com>
-	 <20110908132652.189920773@linux.vnet.ibm.com>
-	 <20110909182325.GD15748@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: IBM
-Date: Mon, 12 Sep 2011 17:55:02 +0200
-Message-ID: <1315842902.3602.9.camel@br98xy6r>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1758275Ab1ILP5c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 11:57:32 -0400
+Received: from nm11.bullet.mail.ird.yahoo.com ([77.238.189.64]:35638 "HELO
+	nm11.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1758069Ab1ILP5b convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Sep 2011 11:57:31 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 233858.48595.bm@omp1012.mail.ird.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.co.uk;
+  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=cRYQGd84sBXPbL4CI2ZPoJHFFsb7J5ZLhFFety2a98Q//EBG8bv/ECsJ/Z0KRLKLw0z/KVFPP3I56FlEeLoEX6mlGjY0n/kzIRfCCcFCIcfj1FGzf9vrj6ayt0qmVylSZycFLyYIJRBh5poSKxItmKj8Bhffu2EuI388K491SlM=;
+X-YMail-OSG: rtYrjlUVM1mdPXM7S0wlWP0Nwg_G96C_09YC3nN_Y9v2Fph
+ dEoO4DNyu7irkkhNkLMaaXLquBJ824_2sfZpDsUT55cRdofZ6yZA5FvzM.xM
+ gtE6k_iuHu5g04YagdEpNU66cpkmzUUbKebrI9X9OInDUDrewMb6XEonACWe
+ 2s5vC8et6PoCXEJb738n0cYLGTEvQnBqmznsoxJaLZrr0Ux_h9Fo2zZojCvi
+ i7MkIy0mYx_gdgCzFXV9SgTnF3FFC1Bf7jV4u9KwRTSwQQZ2YW4jM8rzyvn1
+ LkyHs.xnijBwGBvchiQIaklRT.ZcM1dDLaZ_l_L.2eVea2HFqHdpOuKmc8mK
+ 5IsL.T74gX37Ux1i9PqrneTjnlisF4_7hrsEpm6ErtqSGps_IM9gN0AU8m5W
+ KSpUN_2NPL_pjdpLdNlA-
+X-Mailer: YahooMailClassic/14.0.5 YahooMailWebService/0.8.113.315625
+Message-ID: <1315843050.34041.YahooMailClassic@web29505.mail.ird.yahoo.com>
+Date: Mon, 12 Sep 2011 16:57:30 +0100 (BST)
+From: Hin-Tak Leung <hintak_leung@yahoo.co.uk>
+Subject: Re: Kernel 3.1.0-rc4 oops when connecting iPod
+To: Christoph Hellwig <hch@infradead.org>, Pavel Ivanov <paivanof@gmail.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@tuxera.com>
+In-Reply-To: <CAG1a4rsuYVehnSCM3KxeYQ+g94nrivG1vfss=y8275E4D24qTg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Vivek,
+--- On Mon, 12/9/11, Pavel Ivanov <paivanof@gmail.com> wrote:
 
-On Fri, 2011-09-09 at 14:23 -0400, Vivek Goyal wrote:
-> On Thu, Sep 08, 2011 at 03:26:10PM +0200, Michael Holzheu wrote:
-> > From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-> > 
-> > This patch introduces a mechanism that allows architecture backends to
-> > remove page tables for the crashkernel memory. This can protect the loaded
-> > kdump kernel from being overwritten by broken kernel code.
-> > A new function crash_map_pages() is added that can be implemented by
-> > architecture code. This function has the following syntax:
+> On Mon, Sep 12, 2011 at 10:34 AM,
+> Christoph Hellwig <hch@infradead.org>
+> wrote:
+> > Does this patch fix your issues with large block
+> sizes?
 > 
-> I guess having separate functions for mapping and unmapping pages might
-> look cleaner. Because we are not passing a page range, so specifying
-> what pages we are talking about in function name might make it more
-> clear.
+> I'll be able to try it in the evening but meanwhile I have
+> some comments below.
 > 
-> crash_map_reserved_pages()
-> crash_unmap_reserved_pages().
+> >
+> >
+> > Index: linux-2.6/fs/hfsplus/super.c
+> >
+> ===================================================================
+> > --- linux-2.6.orig/fs/hfsplus/super.c   2011-09-12
+> 09:56:58.619988416 -0400
+> > +++ linux-2.6/fs/hfsplus/super.c        2011-09-12
+> 10:07:18.006651395 -0400
+> > @@ -344,6 +344,7 @@ static int
+> hfsplus_fill_super(struct sup
+> >        struct inode *root, *inode;
+> >        struct qstr str;
+> >        struct nls_table *nls = NULL;
+> > +       u64 last_fs_block, last_fs_page;
+> >        int err;
+> >
+> >        err = -EINVAL;
+> > @@ -399,9 +400,13 @@ static int
+> hfsplus_fill_super(struct sup
+> >        if (!sbi->rsrc_clump_blocks)
+> >                sbi->rsrc_clump_blocks = 1;
+> >
+> > -       err =
+> generic_check_addressable(sbi->alloc_blksz_shift,
+> > -                                  
+>     sbi->total_blocks);
+> > -       if (err) {
+> > +       err = -EFBIG;
+> > +       last_fs_block = sbi->total_blocks - 1;
+> > +       last_fs_page = (last_fs_block >>
+> sbi->alloc_blksz_shift) <<
+> > +                       PAGE_CACHE_SHIFT;
+> 
+> Did you mix left and right shifts here? Expression doesn't
+> make sense to me.
+> 
+> Also I have a little concern about consistency in using
+> PAGE_CACHE_SHIFT and PAGE_SHIFT. hfsplus_read_wrapper()
+> limits visible
+> block size to PAGE_SIZE, not PAGE_CACHE_SIZE. And although
+> now they
+> are equal comment in linux/pagemap.h clearly says that
+> PAGE_CACHE_SIZE
+> can be bigger than PAGE_SIZE. Is it something that should
+> be fixed in
+> hfsplus_read_wrapper() ?
+> 
+> > +
+> > +       if ((last_fs_block > (sector_t)(~0ULL)
+> >> (sbi->alloc_blksz_shift - 9)) ||
+> 
+> Maybe this 9 should be extracted from here and
+> generic_check_addressable() into some macro?
+> 
+> > +           (last_fs_page > (pgoff_t)(~0ULL)))
+> {
+> >                printk(KERN_ERR "hfs:
+> filesystem size too large.\n");
+> >                goto out_free_vhdr;
+> >        }
+> >
 
-Ok fine, no problem.
-
-> Secondly, what happens to the code which runs after crash (crash_kexec()).
-> Current x86 code assumes that reserved region is mapped at the time of
-> crash and does few things with control page there. 
-
-For s390, purgatory code can run in real mode. No page tables are
-required.
-
-> So this generic approach is not valid atleast for x86, because it does
-> not tackle the scenario about how to map reserved range again once 
-> kernel crashes. It will only work if there is assumption that after
-> a crash, we don't expect reserved range/pages to be mapped.
-
-All architectures that support unmapping of crashkernel memory have to
-deal with this problem somehow. Either remap the crashkernel memory in
-machine_kexec() again or be able to run in real mode.
-
-I adjusted that patch regarding your comment above. Will the following
-patch be ok for you?
----
-Subject: kdump: Add infrastructure for unmapping crashkernel memory
-
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-
-This patch introduces a mechanism that allows architecture backends to
-remove page tables for the crashkernel memory. This can protect the loaded
-kdump kernel from being overwritten by broken kernel code.  Two new
-functions crash_map_reserved_pages() and crash_unmap_reserved_pages() are
-added that can be implemented by architecture code.  The
-crash_map_reserved_pages() function is called before and
-crash_unmap_reserved_pages() after the crashkernel segments are loaded.  The
-functions are also called in crash_shrink_memory() to create/remove page
-tables when the crashkernel memory size is reduced.
-
-To support architectures that have large pages this patch also introduces
-a new define KEXEC_CRASH_MEM_ALIGN. The crashkernel start and size must 
-always be aligned with KEXEC_CRASH_MEM_ALIGN.
-
-Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
----
- include/linux/kexec.h |    6 ++++++
- kernel/kexec.c        |   21 +++++++++++++++++++--
- 2 files changed, 25 insertions(+), 2 deletions(-)
-
---- a/include/linux/kexec.h
-+++ b/include/linux/kexec.h
-@@ -37,6 +37,10 @@
- #define KEXEC_CRASH_CONTROL_MEMORY_LIMIT KEXEC_CONTROL_MEMORY_LIMIT
- #endif
- 
-+#ifndef KEXEC_CRASH_MEM_ALIGN
-+#define KEXEC_CRASH_MEM_ALIGN PAGE_SIZE
-+#endif
-+
- #define KEXEC_NOTE_HEAD_BYTES ALIGN(sizeof(struct elf_note), 4)
- #define KEXEC_CORE_NOTE_NAME "CORE"
- #define KEXEC_CORE_NOTE_NAME_BYTES ALIGN(sizeof(KEXEC_CORE_NOTE_NAME), 4)
-@@ -133,6 +137,8 @@ extern void crash_kexec(struct pt_regs *
- int kexec_should_crash(struct task_struct *);
- void crash_save_cpu(struct pt_regs *regs, int cpu);
- void crash_save_vmcoreinfo(void);
-+void crash_map_reserved_pages(void);
-+void crash_unmap_reserved_pages(void);
- void arch_crash_save_vmcoreinfo(void);
- void vmcoreinfo_append_str(const char *fmt, ...)
- 	__attribute__ ((format (printf, 1, 2)));
---- a/kernel/kexec.c
-+++ b/kernel/kexec.c
-@@ -999,6 +999,7 @@ SYSCALL_DEFINE4(kexec_load, unsigned lon
- 			kimage_free(xchg(&kexec_crash_image, NULL));
- 			result = kimage_crash_alloc(&image, entry,
- 						     nr_segments, segments);
-+			crash_map_reserved_pages();
- 		}
- 		if (result)
- 			goto out;
-@@ -1015,6 +1016,8 @@ SYSCALL_DEFINE4(kexec_load, unsigned lon
- 				goto out;
- 		}
- 		kimage_terminate(image);
-+		if (flags & KEXEC_ON_CRASH)
-+			crash_unmap_reserved_pages();
- 	}
- 	/* Install the new kernel, and  Uninstall the old */
- 	image = xchg(dest_image, image);
-@@ -1026,6 +1029,18 @@ out:
- 	return result;
- }
- 
-+/*
-+ * Add and remove page tables for crashkernel memory
-+ *
-+ * Provide an empty default implementation here -- architecture
-+ * code may override this
-+ */
-+void __weak crash_map_reserved_pages(void)
-+{}
-+
-+void __weak crash_unmap_reserved_pages(void)
-+{}
-+
- #ifdef CONFIG_COMPAT
- asmlinkage long compat_sys_kexec_load(unsigned long entry,
- 				unsigned long nr_segments,
-@@ -1134,14 +1149,16 @@ int crash_shrink_memory(unsigned long ne
- 		goto unlock;
- 	}
- 
--	start = roundup(start, PAGE_SIZE);
--	end = roundup(start + new_size, PAGE_SIZE);
-+	start = roundup(start, KEXEC_CRASH_MEM_ALIGN);
-+	end = roundup(start + new_size, KEXEC_CRASH_MEM_ALIGN);
- 
-+	crash_map_reserved_pages();
- 	crash_free_reserved_phys_range(end, crashk_res.end);
- 
- 	if ((start == end) && (crashk_res.parent != NULL))
- 		release_resource(&crashk_res);
- 	crashk_res.end = end - 1;
-+	crash_unmap_reserved_pages();
- 
- unlock:
- 	mutex_unlock(&kexec_mutex);
-
-
+I 2nd that this is kind of ugly. The literal "9". How about abstracting this logic out to say, hfs_check_addressable()?
