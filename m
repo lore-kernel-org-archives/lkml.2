@@ -1,66 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755841Ab1ILMiW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 08:38:22 -0400
-Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:56307
-	"EHLO AM1EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753771Ab1ILMiU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 08:38:20 -0400
-X-SpamScore: -18
-X-BigFish: VPS-18(zz1432N98dKzz1202hzz15d4Rz32i668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-FB-SS: 0,
-X-WSS-ID: 0LRETQB-02-BB7-02
-X-M-MSG: 
-Date: Mon, 12 Sep 2011 14:37:25 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Sethi Varun-B16395 <B16395@freescale.com>
-CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        David Brown <davidb@codeaurora.org>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 03/10] iommu/core: Add bus_type parameter to
- iommu_domain_alloc
-Message-ID: <20110912123725.GB11701@amd.com>
-References: <1315410113-26608-1-git-send-email-joerg.roedel@amd.com>
- <1315410113-26608-4-git-send-email-joerg.roedel@amd.com>
- <F1FD01C1EFCE15408DBF59462450B3BD1C463D@039-SN1MPN1-006.039d.mgd.msft.net>
+	id S1755777Ab1ILMpS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 08:45:18 -0400
+Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:38735 "EHLO
+	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753771Ab1ILMpQ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Sep 2011 08:45:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <F1FD01C1EFCE15408DBF59462450B3BD1C463D@039-SN1MPN1-006.039d.mgd.msft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+In-Reply-To: <20110912121255.GA2520@xps8300>
+References: <1315379772-8830-1-git-send-email-heikki.krogerus@linux.intel.com>
+	<20110912121255.GA2520@xps8300>
+Date: Mon, 12 Sep 2011 18:15:15 +0530
+Message-ID: <CAAe_U6LXt+f-xf7iO7xP6G7A3qZDnptQFJOHwS1UBeq0XTCyjg@mail.gmail.com>
+Subject: Re: [PATCHv4 00/19] First round in OTG rework
+From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Cc: Li Yang <leoli@freescale.com>,
+        Pavankumar Kondeti <pkondeti@codeaurora.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>, Felipe Balbi <balbi@ti.com>,
+        Greg KH <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Peter Chen <peter.chen@freescale.com>,
+        Lin Tony-B19295 <B19295@freescale.com>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 12, 2011 at 07:50:35AM -0400, Sethi Varun-B16395 wrote:
-> > -	kvm->arch.iommu_domain = iommu_domain_alloc();
-> > +	kvm->arch.iommu_domain = iommu_domain_alloc(&pci_bus_type);
-> 
-> Although it might require changes starting all the way from the qemu interface, but
-> it would certainly be nice if this could be made more extendable/generic in terms
-> of the bus_type usage. This interface would be used by us (Freescale )for direct
-> assignment of SOC devices sitting on the platform bus.
+Tested your patches in OMAP4 which has twl6030.
 
-Yeah, you are right on this one. Alex is working on a better and more
-generic solution for kvm device passthrough (vfio). This patch only
-changes the existing code which is pci-only, though.
+Tested-by: Kishon Vijay Abraham I <kishon@ti.com>
 
-	Joerg
-
--- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+On Mon, Sep 12, 2011 at 5:42 PM, Heikki Krogerus
+<heikki.krogerus@linux.intel.com> wrote:
+> Hi guys,
+>
+> On Wed, Sep 07, 2011 at 10:15:53AM +0300, Heikki Krogerus wrote:
+>> There were no comments in two weeks, so I'm dropping the RFC.
+>> Otherwise this is the same as the previous, no changes.
+>>
+>> Quick summary:
+>> This introduces struct usb_phy and struct usb_otg that
+>> replace struct otg_transceiver. The transceiver and phy
+>> members from struct otg_transceiver are left in struct
+>> usb_phy and otg specific members are moved to struct
+>> usb_otg.
+>>
+>> So the idea is simply to separate USB PHY handling from OTG.
+>>
+>> Heikki Krogerus (19):
+>>   usb: otg: Rename otg_transceiver to usb_phy
+>>   usb: otg: Rename usb_otg and usb_xceiv to usb_phy
+>>   usb: otg: Separate otg members from usb_phy
+>>   usb: otg: ab8500: Start using struct usb_otg
+>>   usb: otg: fsl: Start using struct usb_otg
+>>   usb: otg: gpio_vbus: Start using struct usb_otg
+>>   usb: otg: isp1301_omap: Start using struct usb_otg
+>>   usb: otg: msm: Start using struct usb_otg
+>>   usb: otg: langwell: Start using struct usb_otg
+>>   usb: otg: nop: Start using struct usb_otg
+>>   usb: otg: twl4030: Start using struct usb_otg
+>>   usb: otg: twl6030: Start using struct usb_otg
+>>   usb: otg: ulpi: Start using struct usb_otg
+>>   arm: imx: Start using struct usb_otg
+>>   usb: musb: Start using struct usb_otg
+>>   power_supply: Convert all users to new usb_phy
+>>   usb: Convert all users to new usb_phy
+>>   usb: otg: Remove OTG specific members from usb_phy
+>>   usb: otg: Convert all users to pass struct usb_otg for OTG functions
+>
+> You guys are maintainers of the tranceiver/otg drivers. Can you test
+> these and ACK the patch for your driver if you feel there is nothing
+> wrong with these? I would much appreciate.
+>
+> Thanks,
+>
+> --
+> heikki
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
