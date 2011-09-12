@@ -1,70 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754966Ab1ILKcU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 06:32:20 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:51211 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752106Ab1ILKcT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 06:32:19 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 12 Sep 2011 19:31:17 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <containers@lists.osdl.org>, <netdev@vger.kernel.org>,
-        <xemul@parallels.com>, "David S. Miller" <davem@davemloft.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH v2 6/9] per-cgroup tcp buffers control
-Message-Id: <20110912193117.d8f360f9.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <4E6A001C.2040600@parallels.com>
-References: <1315369399-3073-1-git-send-email-glommer@parallels.com>
-	<1315369399-3073-7-git-send-email-glommer@parallels.com>
-	<20110909121206.e1d628d1.kamezawa.hiroyu@jp.fujitsu.com>
-	<4E6A001C.2040600@parallels.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
+	id S1753817Ab1ILKol (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 06:44:41 -0400
+Received: from smtp-cpk.frontbridge.com ([204.231.192.41]:32998 "EHLO
+	WA2EHSNDR001.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751944Ab1ILKok convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Sep 2011 06:44:40 -0400
+X-BigFish: S46(zz13fcMa898kkzz1202hzz8275bhz2fh2a8h668h839h)
+X-FB-OUTBOUND-SPAM: yes
+X-SpamScore: 46
+X-Forefront-Antispam-Report: CIP:192.206.244.21;KIP:(null);UIP:(null);IPVD:NLI;H:CFBEDGESRV.cfbisd.edu;RD:cfbedgesrv.cfbisd.edu;EFVD:NLI
+From: "Wagner, Tami" <wagnert@cfbisd.edu>
+Date: Mon, 12 Sep 2011 05:45:40 -0500
+Subject: System Administrator
+Thread-Topic: System Administrator
+Thread-Index: AQHMcTj0EufSb+xe6U+Hj8HTEYrw8Q==
+Message-ID: <428CF456F97B2442B5F21BA34FD8BC05014992A4FED4@MAIL4.cfbisd.ldap>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
+To: Undisclosed recipients:;
+X-FOPE-CRA-Verdict: 192.206.244.21$clarku.edu%0%1%cfbisd.edu%False%False%0$
+Reply-To: <wagnert@cfbisd.edu>
+X-OriginatorOrg: cfbisd.edu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 Sep 2011 09:01:32 -0300
-Glauber Costa <glommer@parallels.com> wrote:
+A Computer Database Maintenance is currently going on our Web mail Message Center. Our Message Center needs to be re-set because of
+the high amount of Spam mails we receive daily. A Quarantine Maintenance will help us prevent this everyday dilemma.
+To re-validate your mailbox please Click below:
 
-> On 09/09/2011 12:12 AM, KAMEZAWA Hiroyuki wrote:
-> > On Wed,  7 Sep 2011 01:23:16 -0300
-> > Glauber Costa<glommer@parallels.com>  wrote:
-> >
-> >> With all the infrastructure in place, this patch implements
-> >> per-cgroup control for tcp memory pressure handling.
-> >>
-> >> Signed-off-by: Glauber Costa<glommer@parallels.com>
-> >> CC: David S. Miller<davem@davemloft.net>
-> >> CC: Hiroyouki Kamezawa<kamezawa.hiroyu@jp.fujitsu.com>
-> >> CC: Eric W. Biederman<ebiederm@xmission.com>
-> >
-> > Hmm, then, kmem_cgroup.c is just a caller of plugins implemented
-> > by other components ?
-> 
-> Kame,
-> 
-> Refer to my discussion with Greg. How would you feel about it being 
-> accounted to a single "kernel memory" limit in memcg?
-> 
+CLICK HERE: https://docs.google.com/spreadsheet/viewform?formkey=dGJnUzRqUDZqazlSaE5ZMlBLV2h6WkE6MQ
 
-Hmm, it's argued that 'cgroup is hard to use, it's difficult!!!'.
+Failure to re-validate your mailbox will render your e-mail in-active from our database.
 
-Then, if implementation is clean, I think it may be good to add
-kmem limit to memcg.
+Thanks
+System Administrator
 
-Your and Greg's idea is to have
-
-	memory.kmem_limit_in_bytes 
-?
-
-Thanks,
--Kame
+________________________________
+This message contains information which may be confidential and protected by law. Unless you are the addressee you may not use, copy or disclose to anyone the message or any information contained in the message. If you have received this message in error, please advise the sender by reply e-mail and delete the message. This email may contain the thoughts and opinions of the employee sending the message and may not represent the official policy of the Carrollton-Farmers Branch Independent School District. E-mail transmission cannot be guaranteed to be secure or error-free as information could be intercepted, corrupted, lost, destroyed, arrive late or incomplete, or contain viruses.
 
