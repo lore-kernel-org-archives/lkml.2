@@ -1,121 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755861Ab1ILNCq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 09:02:46 -0400
-Received: from smtp18.mail.ru ([94.100.176.155]:50051 "EHLO smtp18.mail.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754037Ab1ILNCp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 09:02:45 -0400
-From: Dmitry Artamonow <mad_soft@inbox.ru>
-To: Eric Miao <eric.y.miao@gmail.com>
-Cc: Philipp Zabel <philipp.zabel@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org, Paul Parsons <lost.distance@yahoo.com>
-Subject: [RESEND][PATCH] pxa/hx4700: add platform device and I2C info for AK4641 codec
-Date: Mon, 12 Sep 2011 17:02:40 +0400
-Message-Id: <1315832560-1561-1-git-send-email-mad_soft@inbox.ru>
-X-Mailer: git-send-email 1.7.4.rc3
-X-Spam: Not detected
-X-Mras: Ok
+	id S1755930Ab1ILNJW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 09:09:22 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:48486 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755711Ab1ILNJV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Sep 2011 09:09:21 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+X1aCQhUALGLrtjSzdHonQ1WdPgVMPa7kW2Yi0UFqBwD0Vv6w@mail.gmail.com>
+References: <1313768318-7960-1-git-send-email-maxim.patlasov@gmail.com>
+	<1313768318-7960-2-git-send-email-maxim.patlasov@gmail.com>
+	<CANejiEWadFK9GdXSwKgzNoj1Da_4QTUidTp-6FGkBtZwhbKvfw@mail.gmail.com>
+	<CA+X1aCRSADrUB+YVJ9j5u+VgGn=8fKw7A1eVVzPtODg+hK-B-w@mail.gmail.com>
+	<CANejiEX=S8tyPDhAjm84+9xBNt08Q0mjWHjqh-kFqL4H1ME-RA@mail.gmail.com>
+	<CA+X1aCSMb9CTpoHWv=UiMg-mHkB2ssmKRACtbDofWG=QSxXOdg@mail.gmail.com>
+	<CANejiEV7UfEHEMwokKwE+Pwqn_HRUT0_9wHakhOYj8r0roGYuw@mail.gmail.com>
+	<CA+X1aCR6Rptj_7bKf7O7TJ8a9z7AH0vXL90XAgY=+054WegsgQ@mail.gmail.com>
+	<CANejiEUTjZbxesiKFzGE4a9rs-GQfq1ekzaDAv34pMGrEQAUcg@mail.gmail.com>
+	<CA+X1aCQhUALGLrtjSzdHonQ1WdPgVMPa7kW2Yi0UFqBwD0Vv6w@mail.gmail.com>
+Date: Mon, 12 Sep 2011 17:09:20 +0400
+Message-ID: <CA+X1aCSPPoHjOyVpTgZ+NFySLiEK6hLM5boCVFaTTYBcQnYS1g@mail.gmail.com>
+Subject: Re: [PATCH 1/1] CFQ: fix handling 'deep' cfqq
+From: Maxim Patlasov <maxim.patlasov@gmail.com>
+To: Shaohua Li <shli@kernel.org>
+Cc: shaohua.li@intel.com, axboe@kernel.dk, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also rename AK4641 power GPIOs to document the codec chip.
+Shaohua,
 
-Signed-off-by: Philipp Zabel <philipp.zabel@gmail.com>
-Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
----
- arch/arm/mach-pxa/hx4700.c              |   25 +++++++++++++++++++++++++
- arch/arm/mach-pxa/include/mach/hx4700.h |    4 ++--
- 2 files changed, 27 insertions(+), 2 deletions(-)
+>> So the key problem here is how to detect if a device is fast. Doing
+>> the detection
+>> in the dispatch stage always can't give us correct result. A fast device really
+>> should be requests can be finished in short time. So I have something attached.
+>> In my environment, a hard disk is detected slow and a ssd is detected fast, but
+>> I haven't run any benchmark so far. How do you think about it?
+>
+> Thanks for the patch, I'll test it in several h/w configurations soon
+> and let you know about results.
 
-Most of the audio support for iPAQ hx4700 has been merged in 3.0, but
-this little patch with platform glue has been lost somehow and never applied.
-So here's resend - hope this time it'll be more lucky.
+1. Single slow disk (ST3200826AS). Eight instances of aio-stress, cmd-line:
 
-Patch is against current Linus' tree (3.1-rc5+). Please ping me, if it needs
-rebasing on top of something else.
+# aio-stress -a 4 -b 4 -c 1 -r 4 -O -o 0 -t 1 -d 1 -i 1 -s 16 f1_$I
+f2_$I f3_$I f4_$I
 
-diff --git a/arch/arm/mach-pxa/hx4700.c b/arch/arm/mach-pxa/hx4700.c
-index c748a47..b23b746 100644
---- a/arch/arm/mach-pxa/hx4700.c
-+++ b/arch/arm/mach-pxa/hx4700.c
-@@ -45,6 +45,7 @@
- #include <mach/hx4700.h>
- #include <mach/irda.h>
- 
-+#include <sound/ak4641.h>
- #include <video/platform_lcd.h>
- #include <video/w100fb.h>
- 
-@@ -765,6 +766,28 @@ static struct i2c_board_info __initdata pi2c_board_info[] = {
- };
- 
- /*
-+ * Asahi Kasei AK4641 on I2C
-+ */
-+
-+static struct ak4641_platform_data ak4641_info = {
-+	.gpio_power = GPIO27_HX4700_AK4641_POWER,
-+	.gpio_npdn  = GPIO109_HX4700_AK4641_nPDN,
-+};
-+
-+static struct i2c_board_info i2c_board_info[] __initdata = {
-+	{
-+		I2C_BOARD_INFO("ak4641", 0x12),
-+		.platform_data = &ak4641_info,
-+	},
-+};
-+
-+static struct platform_device audio = {
-+	.name	= "hx4700-audio",
-+	.id	= -1,
-+};
-+
-+
-+/*
-  * PCMCIA
-  */
- 
-@@ -790,6 +813,7 @@ static struct platform_device *devices[] __initdata = {
- 	&gpio_vbus,
- 	&power_supply,
- 	&strataflash,
-+	&audio,
- 	&pcmcia,
- };
- 
-@@ -827,6 +851,7 @@ static void __init hx4700_init(void)
- 	pxa_set_ficp_info(&ficp_info);
- 	pxa27x_set_i2c_power_info(NULL);
- 	pxa_set_i2c_info(NULL);
-+	i2c_register_board_info(0, ARRAY_AND_SIZE(i2c_board_info));
- 	i2c_register_board_info(1, ARRAY_AND_SIZE(pi2c_board_info));
- 	pxa2xx_set_spi_info(2, &pxa_ssp2_master_info);
- 	spi_register_board_info(ARRAY_AND_SIZE(tsc2046_board_info));
-diff --git a/arch/arm/mach-pxa/include/mach/hx4700.h b/arch/arm/mach-pxa/include/mach/hx4700.h
-index 3740844..73cd586 100644
---- a/arch/arm/mach-pxa/include/mach/hx4700.h
-+++ b/arch/arm/mach-pxa/include/mach/hx4700.h
-@@ -29,7 +29,7 @@
- #define GPIO14_HX4700_nWLAN_IRQ			14
- #define GPIO18_HX4700_RDY			18
- #define GPIO22_HX4700_LCD_RL			22
--#define GPIO27_HX4700_CODEC_ON			27
-+#define GPIO27_HX4700_AK4641_POWER		27
- #define GPIO32_HX4700_RS232_ON			32
- #define GPIO52_HX4700_CPU_nBATT_FAULT		52
- #define GPIO58_HX4700_TSC2046_nPENIRQ		58
-@@ -67,7 +67,7 @@
- #define GPIO105_HX4700_nIR_ON			105
- #define GPIO106_HX4700_CPU_BT_nRESET		106
- #define GPIO107_HX4700_SPK_nSD			107
--#define GPIO109_HX4700_CODEC_nPDN		109
-+#define GPIO109_HX4700_AK4641_nPDN		109
- #define GPIO110_HX4700_LCD_LVDD_3V3_ON		110
- #define GPIO111_HX4700_LCD_AVDD_3V3_ON		111
- #define GPIO112_HX4700_LCD_N2V7_7V3_ON		112
--- 
-1.7.5.1.300.gc565c
+Aggreagate throughput:
 
+Pristine 3.1.0-rc5 (CFQ): 3.77 MB/s
+Pristine 3.1.0-rc5 (noop): 2.63 MB/s
+Pristine 3.1.0-rc5 (CFQ, slice_idle=0): 2.81 MB/s
+3.1.0-rc5 + my patch (CFQ): 5.76 MB/s
+3.1.0-rc5 + your patch (CFQ): 5.61 MB/s
+
+2. Four modern disks (WD1003FBYX) assembled in RAID-0 (Adaptec
+AAC-RAID (rev 09) 256Mb RAM). Eight instances of aio-stress with
+think-time 1msec:
+
+> --- aio-stress-orig.c	2011-08-16 17:00:04.000000000 -0400
+> +++ aio-stress.c	2011-08-18 14:49:31.000000000 -0400
+> @@ -884,6 +884,7 @@ static int run_active_list(struct thread
+>      }
+>      if (num_built) {
+>  	ret = run_built(t, num_built, t->iocbs);
+> +	usleep(1000);
+>  	if (ret < 0) {
+>  	    fprintf(stderr, "error %d on run_built\n", ret);
+>  	    exit(1);
+
+Cmd-line:
+
+# aio-stress -a 4 -b 4 -c 1 -r 4 -O -o 0 -t 1 -d 1 -i 1 f1_$I f2_$I f3_$I f4_$I
+
+Aggreagate throughput:
+
+Pristine 3.1.0-rc5 (CFQ): 63.67 MB/s
+Pristine 3.1.0-rc5 (noop): 100.8 MB/s
+Pristine 3.1.0-rc5 (CFQ, slice_idle=0): 105.63 MB/s
+3.1.0-rc5 + my patch (CFQ): 105.59 MB/s
+3.1.0-rc5 + your patch (CFQ): 14.36 MB/s
+
+So, to meet needs of striped raids, it's not enough to measure service
+time of separate requests. We need somehow to measure whether given
+hdd/raid is able to service many requests simultaneously in an
+effective way.
+
+Thanks,
+Maxim
