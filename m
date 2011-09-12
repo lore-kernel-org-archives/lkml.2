@@ -1,93 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757547Ab1ILOv2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 10:51:28 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:39815 "EHLO
-	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757163Ab1ILOv1 (ORCPT
+	id S1757637Ab1ILOwO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 10:52:14 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:44326 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757163Ab1ILOwN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 10:51:27 -0400
-X-Sasl-enc: 1YtbCvEh7Lh8+GfDn3hgBlM2dT5377ryjgu1VQ59WbQs 1315839086
-Date: Mon, 12 Sep 2011 16:50:17 +0200
-From: Greg KH <greg@kroah.com>
-To: Arvydas Sidorenko <asido4@gmail.com>
-Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] drivers/staging/crystalhd/: cleanup typedefs
-Message-ID: <20110912145017.GB25347@kroah.com>
-References: <1315500369-11204-1-git-send-email-asido4@gmail.com>
- <1315500369-11204-2-git-send-email-asido4@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1315500369-11204-2-git-send-email-asido4@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 12 Sep 2011 10:52:13 -0400
+Subject: Re: [PATCH] EFI: Do not use __pa() to get the physical address of
+ an ioremapped memory range
+From: Matt Fleming <matt@console-pimps.org>
+To: huang ying <huang.ying.caritas@gmail.com>
+Cc: Zhang Rui <rui.zhang@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, x86@kernel.org
+In-Reply-To: <CAC=cRTOzcgm+3kHGcZrHs=9Q3cs5z6vmBqb1Bn+2qcvcSZ-2Xg@mail.gmail.com>
+References: <1314860114.32522.3.camel@rui> <1314864889.13161.4.camel@rui>
+	 <1314880125.8038.39.camel@mfleming-mobl1.ger.corp.intel.com>
+	 <CAC=cRTOzcgm+3kHGcZrHs=9Q3cs5z6vmBqb1Bn+2qcvcSZ-2Xg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 12 Sep 2011 15:52:10 +0100
+Message-ID: <1315839130.3466.6.camel@mfleming-mobl1.ger.corp.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 08, 2011 at 06:46:09PM +0200, Arvydas Sidorenko wrote:
-> Cleans the typedef declarations in bc_dts_types.h file. Most of them aren't
-> used. The ones are used are 'uint32_t' and similar ones, but I don't see the
-> point of them since they are declared in stdint.h, unless some sort of embeded
-> systems don't have it (no experience with it).
-> So simply removing them doesn't cause any compilation errors or warnings on
-> my laptop.
+On Fri, 2011-09-02 at 13:12 +0800, huang ying wrote: 
+> On Thu, Sep 1, 2011 at 8:28 PM, Matt Fleming <matt@console-pimps.org> wrote:
+> >
+> > Hmm.. does anyone know why we ioremap_cache() the memory on
+> > CONFIG_X86_32 instead of ioremap_nocache()? In the case of
+> > EFI_MEMORY_MAPPED_IO the memory really needs to be uncached. Then if
+> > we've ioremap'd the memory we should skip set_memory_uc() altogether,
+> > no?
 > 
-> Signed-off-by: Arvydas Sidorenko <asido4@gmail.com>
-> ---
->  drivers/staging/crystalhd/bc_dts_types.h |   41 +-----------------------------
->  1 files changed, 1 insertions(+), 40 deletions(-)
-> 
-> diff --git a/drivers/staging/crystalhd/bc_dts_types.h b/drivers/staging/crystalhd/bc_dts_types.h
-> index d2131e7..42d7cfd 100644
-> --- a/drivers/staging/crystalhd/bc_dts_types.h
-> +++ b/drivers/staging/crystalhd/bc_dts_types.h
-> @@ -29,29 +29,8 @@
->  #include <stdint.h>
->  #endif
->  
-> -#ifndef PVOID
-> -typedef void	*PVOID;
-> -#endif
-> -
-> -#ifndef BOOL
-> -typedef int	BOOL;
-> -#endif
-> -
->  #if defined(__KERNEL__) || defined(__LINUX_USER__)
->  
-> -#ifdef __LINUX_USER__	/* Don't include these for KERNEL */
-> -typedef uint32_t	ULONG;
-> -typedef int32_t		LONG;
-> -typedef void		*HANDLE;
-> -#ifndef VOID
-> -typedef void		VOID;
-> -#endif
-> -typedef void		*LPVOID;
-> -typedef uint32_t	DWORD;
-> -typedef uint32_t	UINT32;
-> -typedef uint32_t	*LPDWORD;
-> -typedef unsigned char	*PUCHAR;
-> -
->  #ifndef TRUE
->  	#define TRUE		1
->  #endif
+> Because whether the mapping should be cached is determined by md->attr
+> instead of md->type.  And besides UC, we may add WC, etc support.
 
-You can drop this too, right?
+Confused.
 
-> @@ -70,28 +49,10 @@ typedef unsigned char	*PUCHAR;
->  #else
->  
->  #ifndef uint64_t
-> -typedef struct _uint64_t {
-> +struct _uint64_t {
->  	uint32_t low_dw;
->  	uint32_t hi_dw;
->  } uint64_t;
->  #endif
+The CONFIG_X86_64 version of efi_ioremap() looks like this,
 
-This whole thing should also be removed.
+void __iomem *__init efi_ioremap(unsigned long phys_addr, unsigned long size,
+                                 u32 type)
+{
+        unsigned long last_map_pfn;
 
-Care to redo this?
+        if (type == EFI_MEMORY_MAPPED_IO)
+                return ioremap(phys_addr, size);
 
-greg k-h
+Which uses md->type to figure out if we should call ioremap(), which on
+x86 is #define'd to ioremap_nocache(). CONFIG_X86_32 doesn't do this,
+but it looks to me like it should.
+
+Zhang, I agree that calling __pa() on an ioremap()'d region is bogus,
+but I don't understand why no one is seeing this crash on x86-64. Is it
+something to do with the x86-64 memory map layout such that __pa() works
+on an ioremap()'d address?
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
+
