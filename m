@@ -1,45 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758108Ab1ILP1s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 11:27:48 -0400
-Received: from eagle.jhcloos.com ([207.210.242.212]:38527 "EHLO
-	eagle.jhcloos.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758028Ab1ILP1q (ORCPT
+	id S1758165Ab1ILP2N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 11:28:13 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:53353
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757929Ab1ILP2M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 11:27:46 -0400
-From: James Cloos <cloos@jhcloos.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: found __[us]{8,16,32,64} type without #include <linux/types.h>
-In-Reply-To: <201109091629.52879.arnd@arndb.de> (Arnd Bergmann's message of
-	"Fri, 9 Sep 2011 16:29:52 +0200")
-References: <m3vct1u75k.fsf@jhcloos.com> <201109091629.52879.arnd@arndb.de>
-User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/24.0.50 (gnu/linux)
-Face: iVBORw0KGgoAAAANSUhEUgAAABAAAAAQAgMAAABinRfyAAAACVBMVEX///8ZGXBQKKnCrDQ3
- AAAAJElEQVQImWNgQAAXzwQg4SKASgAlXIEEiwsSIYBEcLaAtMEAADJnB+kKcKioAAAAAElFTkSu
- QmCC
-Copyright: Copyright 2011 James Cloos
-OpenPGP: ED7DAEA6; url=http://jhcloos.com/public_key/0xED7DAEA6.asc
-OpenPGP-Fingerprint: E9E9 F828 61A4 6EA9 0F2B  63E7 997A 9F17 ED7D AEA6
-Date: Mon, 12 Sep 2011 11:27:03 -0400
-Message-ID: <m3zki9wzkw.fsf@jhcloos.com>
+	Mon, 12 Sep 2011 11:28:12 -0400
+Date: Mon, 12 Sep 2011 11:28:11 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Seth Forshee <seth.forshee@canonical.com>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Pavel Ivanov <paivanof@gmail.com>,
+        Hin-Tak Leung <htl10@users.sourceforge.net>
+Subject: Re: [PATCH] hfsplus: Fix kfree of wrong vhdr pointers
+Message-ID: <20110912152811.GA9437@infradead.org>
+References: <CAG1a4rubbzvOE3KoGmc_9svS-UFX8gzuE=3TnVYfGAeXCJpLYw@mail.gmail.com>
+ <1315841227-24535-1-git-send-email-seth.forshee@canonical.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1315841227-24535-1-git-send-email-seth.forshee@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "AB" == Arnd Bergmann <arnd@arndb.de> writes:
+On Mon, Sep 12, 2011 at 10:27:07AM -0500, Seth Forshee wrote:
+> Commit 6596528 (hfsplus: ensure bio requests are not smaller than
+> the hardware sectors) changed the pointers used for volume header
+> allocations, but a couple of spots are still freeing the old
+> pointers. This patch fixes the problem.
 
-AB> The script only checks for direct inclusions of types.h, while the
-AB> drm headers get it from drm.h.
+I've already respun the patch to include your Pavel's additional
+fixes.  Just waiting to sort out the size checking issue, and then
+I will send both things on to Linus.
 
-I see.  It had been quite some time since I last did a make 1>/dev/null,
-long enough that I hadn't noticed that message before.
-
-It is good to know that it is a false positive.
-
--JimC
--- 
-James Cloos <cloos@jhcloos.com>         OpenPGP: 1024D/ED7DAEA6
