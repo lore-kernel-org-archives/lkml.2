@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755229Ab1ILK60 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 06:58:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32924 "EHLO mx1.redhat.com"
+	id S1755319Ab1ILK6c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 06:58:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55709 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755193Ab1ILK6W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 06:58:22 -0400
+	id S1754026Ab1ILK63 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Sep 2011 06:58:29 -0400
 From: Johannes Weiner <jweiner@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
@@ -16,182 +16,85 @@ Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Minchan Kim <minchan.kim@gmail.com>,
         Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: [patch 04/11] mm: memcg: per-priority per-zone hierarchy scan generations
-Date: Mon, 12 Sep 2011 12:57:21 +0200
-Message-Id: <1315825048-3437-5-git-send-email-jweiner@redhat.com>
+Subject: [patch 06/11] mm: memcg: remove optimization of keeping the root_mem_cgroup LRU lists empty
+Date: Mon, 12 Sep 2011 12:57:23 +0200
+Message-Id: <1315825048-3437-7-git-send-email-jweiner@redhat.com>
 In-Reply-To: <1315825048-3437-1-git-send-email-jweiner@redhat.com>
 References: <1315825048-3437-1-git-send-email-jweiner@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Memory cgroup limit reclaim currently picks one memory cgroup out of
-the target hierarchy, remembers it as the last scanned child, and
-reclaims all zones in it with decreasing priority levels.
+root_mem_cgroup, lacking a configurable limit, was never subject to
+limit reclaim, so the pages charged to it could be kept off its LRU
+lists.  They would be found on the global per-zone LRU lists upon
+physical memory pressure and it made sense to avoid uselessly linking
+them to both lists.
 
-The new hierarchy reclaim code will pick memory cgroups from the same
-hierarchy concurrently from different zones and priority levels, it
-becomes necessary that hierarchy roots not only remember the last
-scanned child, but do so for each zone and priority level.
+The global per-zone LRU lists are about to go away on memcg-enabled
+kernels, with all pages being exclusively linked to their respective
+per-memcg LRU lists.  As a result, pages of the root_mem_cgroup must
+also be linked to its LRU lists again.
 
-Furthermore, detecting full hierarchy round-trips reliably will become
-crucial, so instead of counting on one iterator site seeing a certain
-memory cgroup twice, use a generation counter that is increased every
-time the child with the highest ID has been visited.
+The overhead is temporary until the double-LRU scheme is going away
+completely.
 
 Signed-off-by: Johannes Weiner <jweiner@redhat.com>
 ---
- mm/memcontrol.c |   60 +++++++++++++++++++++++++++++++++++++++---------------
- 1 files changed, 43 insertions(+), 17 deletions(-)
+ mm/memcontrol.c |   12 ++----------
+ 1 files changed, 2 insertions(+), 10 deletions(-)
 
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 912c7c7..f4b404e 100644
+index 413e1f8..518f640 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -121,6 +121,11 @@ struct mem_cgroup_stat_cpu {
- 	unsigned long targets[MEM_CGROUP_NTARGETS];
- };
- 
-+struct mem_cgroup_iter_state {
-+	int position;
-+	unsigned int generation;
-+};
-+
- /*
-  * per-zone information in memory controller.
-  */
-@@ -131,6 +136,8 @@ struct mem_cgroup_per_zone {
- 	struct list_head	lists[NR_LRU_LISTS];
- 	unsigned long		count[NR_LRU_LISTS];
- 
-+	struct mem_cgroup_iter_state iter_state[DEF_PRIORITY + 1];
-+
- 	struct zone_reclaim_stat reclaim_stat;
- 	struct rb_node		tree_node;	/* RB tree node */
- 	unsigned long long	usage_in_excess;/* Set to the value by which */
-@@ -231,11 +238,6 @@ struct mem_cgroup {
- 	 * per zone LRU lists.
- 	 */
- 	struct mem_cgroup_lru_info info;
--	/*
--	 * While reclaiming in a hierarchy, we cache the last child we
--	 * reclaimed from.
--	 */
--	int last_scanned_child;
- 	int last_scanned_node;
- #if MAX_NUMNODES > 1
- 	nodemask_t	scan_nodes;
-@@ -781,9 +783,15 @@ struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm)
- 	return memcg;
+@@ -956,8 +956,6 @@ void mem_cgroup_del_lru_list(struct page *page, enum lru_list lru)
+ 	mz = page_cgroup_zoneinfo(pc->mem_cgroup, page);
+ 	/* huge page split is done under lru_lock. so, we have no races. */
+ 	MEM_CGROUP_ZSTAT(mz, lru) -= 1 << compound_order(page);
+-	if (mem_cgroup_is_root(pc->mem_cgroup))
+-		return;
+ 	VM_BUG_ON(list_empty(&pc->lru));
+ 	list_del_init(&pc->lru);
  }
+@@ -982,13 +980,11 @@ void mem_cgroup_rotate_reclaimable_page(struct page *page)
+ 		return;
  
-+struct mem_cgroup_iter {
-+	struct zone *zone;
-+	int priority;
-+	unsigned int generation;
-+};
-+
- static struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
- 					  struct mem_cgroup *prev,
--					  bool remember)
-+					  struct mem_cgroup_iter *iter)
- {
- 	struct mem_cgroup *mem = NULL;
- 	int id = 0;
-@@ -791,7 +799,7 @@ static struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
- 	if (!root)
- 		root = root_mem_cgroup;
+ 	pc = lookup_page_cgroup(page);
+-	/* unused or root page is not rotated. */
++	/* unused page is not rotated. */
+ 	if (!PageCgroupUsed(pc))
+ 		return;
+ 	/* Ensure pc->mem_cgroup is visible after reading PCG_USED. */
+ 	smp_rmb();
+-	if (mem_cgroup_is_root(pc->mem_cgroup))
+-		return;
+ 	mz = page_cgroup_zoneinfo(pc->mem_cgroup, page);
+ 	list_move_tail(&pc->lru, &mz->lists[lru]);
+ }
+@@ -1002,13 +998,11 @@ void mem_cgroup_rotate_lru_list(struct page *page, enum lru_list lru)
+ 		return;
  
--	if (prev && !remember)
-+	if (prev && !iter)
- 		id = css_id(&prev->css);
- 
- 	if (prev && prev != root)
-@@ -804,10 +812,20 @@ static struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
- 	}
- 
- 	while (!mem) {
-+		struct mem_cgroup_iter_state *uninitialized_var(is);
- 		struct cgroup_subsys_state *css;
- 
--		if (remember)
--			id = root->last_scanned_child;
-+		if (iter) {
-+			int nid = zone_to_nid(iter->zone);
-+			int zid = zone_idx(iter->zone);
-+			struct mem_cgroup_per_zone *mz;
-+
-+			mz = mem_cgroup_zoneinfo(root, nid, zid);
-+			is = &mz->iter_state[iter->priority];
-+			if (prev && iter->generation != is->generation)
-+				return NULL;
-+			id = is->position;
-+		}
- 
- 		rcu_read_lock();
- 		css = css_get_next(&mem_cgroup_subsys, id + 1, &root->css, &id);
-@@ -818,8 +836,13 @@ static struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
- 			id = 0;
- 		rcu_read_unlock();
- 
--		if (remember)
--			root->last_scanned_child = id;
-+		if (iter) {
-+			is->position = id;
-+			if (!css)
-+				is->generation++;
-+			else if (!prev && mem)
-+				iter->generation = is->generation;
-+		}
- 
- 		if (prev && !css)
- 			return NULL;
-@@ -842,14 +865,14 @@ static void mem_cgroup_iter_break(struct mem_cgroup *root,
-  * be used for reference counting.
-  */
- #define for_each_mem_cgroup_tree(iter, root)		\
--	for (iter = mem_cgroup_iter(root, NULL, false);	\
-+	for (iter = mem_cgroup_iter(root, NULL, NULL);	\
- 	     iter != NULL;				\
--	     iter = mem_cgroup_iter(root, iter, false))
-+	     iter = mem_cgroup_iter(root, iter, NULL))
- 
- #define for_each_mem_cgroup(iter)			\
--	for (iter = mem_cgroup_iter(NULL, NULL, false);	\
-+	for (iter = mem_cgroup_iter(NULL, NULL, NULL);	\
- 	     iter != NULL;				\
--	     iter = mem_cgroup_iter(NULL, iter, false))
-+	     iter = mem_cgroup_iter(NULL, iter, NULL))
- 
- static inline bool mem_cgroup_is_root(struct mem_cgroup *memcg)
- {
-@@ -1619,6 +1642,10 @@ static int mem_cgroup_hierarchical_reclaim(struct mem_cgroup *root_memcg,
- 	bool check_soft = reclaim_options & MEM_CGROUP_RECLAIM_SOFT;
- 	unsigned long excess;
- 	unsigned long nr_scanned;
-+	struct mem_cgroup_iter iter = {
-+		.zone = zone,
-+		.priority = 0,
-+	};
- 
- 	excess = res_counter_soft_limit_excess(&root_memcg->res) >> PAGE_SHIFT;
- 
-@@ -1627,7 +1654,7 @@ static int mem_cgroup_hierarchical_reclaim(struct mem_cgroup *root_memcg,
- 		noswap = true;
- 
- 	while (1) {
--		victim = mem_cgroup_iter(root_memcg, victim, true);
-+		victim = mem_cgroup_iter(root_memcg, victim, &iter);
- 		if (!victim) {
- 			loop++;
- 			/*
-@@ -4878,7 +4905,6 @@ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
- 		res_counter_init(&memcg->res, NULL);
- 		res_counter_init(&memcg->memsw, NULL);
- 	}
--	memcg->last_scanned_child = 0;
- 	memcg->last_scanned_node = MAX_NUMNODES;
- 	INIT_LIST_HEAD(&memcg->oom_notify);
+ 	pc = lookup_page_cgroup(page);
+-	/* unused or root page is not rotated. */
++	/* unused page is not rotated. */
+ 	if (!PageCgroupUsed(pc))
+ 		return;
+ 	/* Ensure pc->mem_cgroup is visible after reading PCG_USED. */
+ 	smp_rmb();
+-	if (mem_cgroup_is_root(pc->mem_cgroup))
+-		return;
+ 	mz = page_cgroup_zoneinfo(pc->mem_cgroup, page);
+ 	list_move(&pc->lru, &mz->lists[lru]);
+ }
+@@ -1040,8 +1034,6 @@ void mem_cgroup_add_lru_list(struct page *page, enum lru_list lru)
+ 	/* huge page split is done under lru_lock. so, we have no races. */
+ 	MEM_CGROUP_ZSTAT(mz, lru) += 1 << compound_order(page);
+ 	SetPageCgroupAcctLRU(pc);
+-	if (mem_cgroup_is_root(pc->mem_cgroup))
+-		return;
+ 	list_add(&pc->lru, &mz->lists[lru]);
+ }
  
 -- 
 1.7.6
