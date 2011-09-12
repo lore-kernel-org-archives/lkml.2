@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753394Ab1ILSPa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 14:15:30 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:55285 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751352Ab1ILSP2 (ORCPT
+	id S1753534Ab1ILSQH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 14:16:07 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:33851 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751352Ab1ILSQD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 14:15:28 -0400
-Date: Mon, 12 Sep 2011 14:13:52 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: linux-wireless@vger.kernel.org
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Temporary(?) relocation of wireless git trees...
-Message-ID: <20110912181351.GD2689@tuxdriver.com>
+	Mon, 12 Sep 2011 14:16:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110912144717.GB2555@redhat.com>
+References: <94c0e3275b0bf7d2cad8e7909da1482a867e7bc6.1314725877.git.jbaron@redhat.com>
+ <20110908165230.a7505321.akpm@linux-foundation.org> <1315534396.11939.10.camel@Joe-Laptop>
+ <20110908204200.6cf7abc2.akpm@linux-foundation.org> <1315540963.11939.12.camel@Joe-Laptop>
+ <CAO+b5-oOHXEhnA+zpwA9GR7k1TX3Wn6XuOdc3TB4MPNiSpskiw@mail.gmail.com>
+ <CAJfuBxx=r_P7em_naUN_c96A++V4v6nfd8B_V2dppRag-z_qwg@mail.gmail.com>
+ <1315602252.23777.5.camel@Joe-Laptop> <CAJfuBxwtefLyJcz1EbKvsGJ+XMtJiRW7A3Yy+wHXgL3GpUXbSg@mail.gmail.com>
+ <1315607527.23777.21.camel@Joe-Laptop> <20110912144717.GB2555@redhat.com>
+From: Jim Cromie <jim.cromie@gmail.com>
+Date: Mon, 12 Sep 2011 12:15:32 -0600
+Message-ID: <CAJfuBxysYL+Co3vDnWKYX_nJHaFoq9MJ9o4DP1Djwh84nm7HJA@mail.gmail.com>
+Subject: Re: [PATCH 1/4] dynamic_debug: consolidate repetitive struct _ddebug
+ descriptor definitions
+To: Jason Baron <jbaron@redhat.com>
+Cc: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>,
+        gregkh@suse.de, Bart Van Assche <bvanassche@acm.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With no news on when the kernel.org trees will be accessible again
-(which could be 10 minutes from now for all I know), I have pushed
-my local copies to Infradead.  This should be equivalent to what was
-last pushed to kernel.org almost two weeks ago.
+>> No real idea why it's aligned(8).  Jason?
+>>
+>
+> I think when I first implemented it, I noticed that subsystems that did
+> similar things, set aligned(8) in include/asm-generic/vmlinux.lds.h. For
+> example, FTRACE_EVENTS() sets ALIGN(8)...I know that not a great reason
+> thouh :( Don't remember if I tried ALIGN(4), but if it saves space, we
+> can look at it...
+>
 
-The "current" wireless tree is here:
+I tried it here on 32bit (on 586 class machine), it blew up.
+I imagine it could be made to work, but its not a gimme.
 
-	git://git.infradead.org/users/linville/wireless.git
+> Also, as I mentioned before, we probably need an extra array of pointers into
+> the dynamic debug structures. see: https://lkml.org/lkml/2011/1/26/463.
+>
 
-The "next" wireless tree is here:
+I'll try it again, once this happens.
 
-	git://git.infradead.org/users/linville/wireless-next.git
-
-The "testing" wireless tree is here:
-
-	git://git.infradead.org/users/linville/wireless-testing.git
-
-I don't know how long these trees will be on Infradead or when (or
-if) they will return to kernel.org.  Such changes will be determined
-as conditions change.  Please be flexible.
-
-Thanks,
-
-John
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+> thanks,
+>
+> -Jason
+>
