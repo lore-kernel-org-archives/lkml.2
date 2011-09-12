@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755319Ab1ILK6c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 06:58:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55709 "EHLO mx1.redhat.com"
+	id S1755360Ab1ILK6g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 06:58:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63771 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754026Ab1ILK63 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 06:58:29 -0400
+	id S1754026Ab1ILK6d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Sep 2011 06:58:33 -0400
 From: Johannes Weiner <jweiner@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
@@ -16,86 +16,104 @@ Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Minchan Kim <minchan.kim@gmail.com>,
         Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: [patch 06/11] mm: memcg: remove optimization of keeping the root_mem_cgroup LRU lists empty
-Date: Mon, 12 Sep 2011 12:57:23 +0200
-Message-Id: <1315825048-3437-7-git-send-email-jweiner@redhat.com>
+Subject: [patch 08/11] mm: vmscan: convert global reclaim to per-memcg LRU lists
+Date: Mon, 12 Sep 2011 12:57:25 +0200
+Message-Id: <1315825048-3437-9-git-send-email-jweiner@redhat.com>
 In-Reply-To: <1315825048-3437-1-git-send-email-jweiner@redhat.com>
 References: <1315825048-3437-1-git-send-email-jweiner@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-root_mem_cgroup, lacking a configurable limit, was never subject to
-limit reclaim, so the pages charged to it could be kept off its LRU
-lists.  They would be found on the global per-zone LRU lists upon
-physical memory pressure and it made sense to avoid uselessly linking
-them to both lists.
-
 The global per-zone LRU lists are about to go away on memcg-enabled
-kernels, with all pages being exclusively linked to their respective
-per-memcg LRU lists.  As a result, pages of the root_mem_cgroup must
-also be linked to its LRU lists again.
+kernels, global reclaim must be able to find its pages on the
+per-memcg LRU lists.
 
-The overhead is temporary until the double-LRU scheme is going away
-completely.
+Since the LRU pages of a zone are distributed over all existing memory
+cgroups, a scan target for a zone is complete when all memory cgroups
+are scanned for their proportional share of a zone's memory.
+
+The forced scanning of small scan targets from kswapd is limited to
+zones marked unreclaimable, otherwise kswapd can quickly overreclaim
+by force-scanning the LRU lists of multiple memory cgroups.
 
 Signed-off-by: Johannes Weiner <jweiner@redhat.com>
 ---
- mm/memcontrol.c |   12 ++----------
- 1 files changed, 2 insertions(+), 10 deletions(-)
+ mm/vmscan.c |   39 ++++++++++++++++++++++-----------------
+ 1 files changed, 22 insertions(+), 17 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 413e1f8..518f640 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -956,8 +956,6 @@ void mem_cgroup_del_lru_list(struct page *page, enum lru_list lru)
- 	mz = page_cgroup_zoneinfo(pc->mem_cgroup, page);
- 	/* huge page split is done under lru_lock. so, we have no races. */
- 	MEM_CGROUP_ZSTAT(mz, lru) -= 1 << compound_order(page);
--	if (mem_cgroup_is_root(pc->mem_cgroup))
--		return;
- 	VM_BUG_ON(list_empty(&pc->lru));
- 	list_del_init(&pc->lru);
- }
-@@ -982,13 +980,11 @@ void mem_cgroup_rotate_reclaimable_page(struct page *page)
- 		return;
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index bb4d8b8..053609e 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1887,7 +1887,7 @@ static void get_scan_count(struct mem_cgroup_zone *mz, struct scan_control *sc,
+ 	 * latencies, so it's better to scan a minimum amount there as
+ 	 * well.
+ 	 */
+-	if (current_is_kswapd())
++	if (current_is_kswapd() && mz->zone->all_unreclaimable)
+ 		force_scan = true;
+ 	if (!global_reclaim(sc))
+ 		force_scan = true;
+@@ -2111,16 +2111,6 @@ static void shrink_zone(int priority, struct zone *zone,
+ 	};
+ 	struct mem_cgroup *mem;
  
- 	pc = lookup_page_cgroup(page);
--	/* unused or root page is not rotated. */
-+	/* unused page is not rotated. */
- 	if (!PageCgroupUsed(pc))
- 		return;
- 	/* Ensure pc->mem_cgroup is visible after reading PCG_USED. */
- 	smp_rmb();
--	if (mem_cgroup_is_root(pc->mem_cgroup))
+-	if (global_reclaim(sc)) {
+-		struct mem_cgroup_zone mz = {
+-			.mem_cgroup = NULL,
+-			.zone = zone,
+-		};
+-
+-		shrink_mem_cgroup_zone(priority, &mz, sc);
 -		return;
- 	mz = page_cgroup_zoneinfo(pc->mem_cgroup, page);
- 	list_move_tail(&pc->lru, &mz->lists[lru]);
- }
-@@ -1002,13 +998,11 @@ void mem_cgroup_rotate_lru_list(struct page *page, enum lru_list lru)
- 		return;
+-	}
+-
+ 	mem = mem_cgroup_iter(root, NULL, &iter);
+ 	do {
+ 		struct mem_cgroup_zone mz = {
+@@ -2134,6 +2124,10 @@ static void shrink_zone(int priority, struct zone *zone,
+ 		 * scanned it with decreasing priority levels until
+ 		 * nr_to_reclaim had been reclaimed.  This priority
+ 		 * cycle is thus over after a single memcg.
++		 *
++		 * Direct reclaim and kswapd, on the other hand, have
++		 * to scan all memory cgroups to fulfill the overall
++		 * scan target for the zone.
+ 		 */
+ 		if (!global_reclaim(sc)) {
+ 			mem_cgroup_iter_break(root, mem);
+@@ -2451,13 +2445,24 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem_cont,
+ static void age_active_anon(struct zone *zone, struct scan_control *sc,
+ 			    int priority)
+ {
+-	struct mem_cgroup_zone mz = {
+-		.mem_cgroup = NULL,
+-		.zone = zone,
+-	};
++	struct mem_cgroup *mem;
++
++	if (!total_swap_pages)
++		return;
++
++	mem = mem_cgroup_iter(NULL, NULL, NULL);
++	do {
++		struct mem_cgroup_zone mz = {
++			.mem_cgroup = mem,
++			.zone = zone,
++		};
  
- 	pc = lookup_page_cgroup(page);
--	/* unused or root page is not rotated. */
-+	/* unused page is not rotated. */
- 	if (!PageCgroupUsed(pc))
- 		return;
- 	/* Ensure pc->mem_cgroup is visible after reading PCG_USED. */
- 	smp_rmb();
--	if (mem_cgroup_is_root(pc->mem_cgroup))
--		return;
- 	mz = page_cgroup_zoneinfo(pc->mem_cgroup, page);
- 	list_move(&pc->lru, &mz->lists[lru]);
- }
-@@ -1040,8 +1034,6 @@ void mem_cgroup_add_lru_list(struct page *page, enum lru_list lru)
- 	/* huge page split is done under lru_lock. so, we have no races. */
- 	MEM_CGROUP_ZSTAT(mz, lru) += 1 << compound_order(page);
- 	SetPageCgroupAcctLRU(pc);
--	if (mem_cgroup_is_root(pc->mem_cgroup))
--		return;
- 	list_add(&pc->lru, &mz->lists[lru]);
+-	if (inactive_anon_is_low(&mz))
+-		shrink_active_list(SWAP_CLUSTER_MAX, &mz, sc, priority, 0);
++		if (inactive_anon_is_low(&mz))
++			shrink_active_list(SWAP_CLUSTER_MAX, &mz,
++					   sc, priority, 0);
++
++		mem = mem_cgroup_iter(NULL, mem, NULL);
++	} while (mem);
  }
  
+ /*
 -- 
 1.7.6
 
