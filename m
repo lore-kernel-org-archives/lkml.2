@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755661Ab1ILMgh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 08:36:37 -0400
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:44749
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755466Ab1ILMgf (ORCPT
+	id S1755438Ab1ILMgR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 08:36:17 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49710 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752562Ab1ILMgQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 08:36:35 -0400
-X-SpamScore: -18
-X-BigFish: VPS-18(zz1432N98dKzz1202hzz15d4Rz32i668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LRETNP-02-B8D-02
-X-M-MSG: 
-Date: Mon, 12 Sep 2011 14:35:51 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Sethi Varun-B16395 <B16395@freescale.com>
-CC: Joerg Roedel <joro@8bytes.org>, Greg KH <gregkh@suse.de>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        David Brown <davidb@codeaurora.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 02/10] Driver core: Add iommu_ops to bus_type
-Message-ID: <20110912123551.GA11701@amd.com>
-References: <1315410113-26608-1-git-send-email-joerg.roedel@amd.com>
- <1315410113-26608-3-git-send-email-joerg.roedel@amd.com>
- <20110907184750.GA920@suse.de>
- <20110907191919.GA31674@8bytes.org>
- <F1FD01C1EFCE15408DBF59462450B3BD1C4658@039-SN1MPN1-006.039d.mgd.msft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <F1FD01C1EFCE15408DBF59462450B3BD1C4658@039-SN1MPN1-006.039d.mgd.msft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	Mon, 12 Sep 2011 08:36:16 -0400
+Subject: Re: CFS Bandwidth Control - Test results of cgroups tasks pinned vs
+ unpinnede
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+Cc: Paul Turner <pjt@google.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelianov <xemul@parallels.com>
+Date: Mon, 12 Sep 2011 14:35:43 +0200
+In-Reply-To: <20110912101722.GA28950@linux.vnet.ibm.com>
+References: <20110608163234.GA23031@linux.vnet.ibm.com>
+	 <BANLkTim7a9uhH_K6sw4YdqWB6frT+HUqqQ@mail.gmail.com>
+	 <20110610181719.GA30330@linux.vnet.ibm.com>
+	 <BANLkTimE1b8HP-q4jgsv5jPD5S-dRoUi_g@mail.gmail.com>
+	 <20110615053716.GA390@linux.vnet.ibm.com>
+	 <BANLkTi=7S2qdVjbJkDja+GAoD=pNo2gPsTFZMFkB8NWWkO1JVQ@mail.gmail.com>
+	 <20110907152009.GA3868@linux.vnet.ibm.com>
+	 <1315423342.11101.25.camel@twins>
+	 <20110908151433.GB6587@linux.vnet.ibm.com> <1315571462.26517.9.camel@twins>
+	 <20110912101722.GA28950@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1315830943.26517.36.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 12, 2011 at 08:08:41AM -0400, Sethi Varun-B16395 wrote:
-> > The IOMMUs are usually devices on the bus itself, so they are initialized
-> > after the bus is set up and the devices on it are populated.  So the
-> > function can not be called on bus initialization because the IOMMU is not
-> > ready at this point.
-> Well, at what point would the add_device_group (referring to patch set posted by Alex) call back be invoked?
+On Mon, 2011-09-12 at 15:47 +0530, Srivatsa Vaddagiri wrote:
+> * Peter Zijlstra <a.p.zijlstra@chello.nl> [2011-09-09 14:31:02]:
+> 
+> > > Machine : 16-cpus (2 Quad-core w/ HT enabled)
+> > > Cgroups : 5 in number (C1-C5), each having {2, 2, 4, 8, 16} tasks respectively.
+> > >           Further, each task is placed in its own (sub-)cgroup with 
+> > >           a capped usage of 50% CPU.
+> > 
+> > So that's loads: {512,512}, {512,512}, {256,256,256,256}, {128,..} and {64,..}
+> 
+> Yes, with the default shares of 1024 for each cgroup.
+> 
+> FWIW we did also try setting shares for each cgroup proportional to number of 
+> tasks it has. For ex: C1's shares = 1024 * 2 = 2048, C2 = 1024 * 2 = 2048, 
+> C3 = 4 * 1024 = 4096 etc. while /C1/C1_1, /C1/C1_2, .../C5/C5_16/ shares were 
+> left at default of 1024 (as those sub-cgroups contain only one task). 
+>  
+> That does help reduce idle time by almost 50% (from 15-20% -> 6-9%)
 
-The details are up to Alex Williamson. One option is to register a
-notifier for the bus in the iommu_bus_init() function and react to its
-notifications.
-I think in the end we will have a number of additional call-backs in the
-iommu_ops which are called by the notifier (or from the driver-core
-directly) to handle actions like added or removed devices. All the
-infrastructure for that which is implemented in the iommu-drivers today
-will then be in the iommu-core code.
+Of course it does.. and I bet you can improve that slightly if you
+manage to fix some of the numerical nightmares that live in the cgroup
+load-balancer (Paul, care to share your WIP?)
 
-	Joerg
+But the initial scenario is a complete and utter fail, its impossible to
+schedule that sanely. Its an infeasible weight scenario with more tasks
+than cpus, and the added bandwidth constraints just keep changing the
+set requiring endless migrations to try and keep utilization from
+tanking.
 
--- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+Really, classic fail.
