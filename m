@@ -1,78 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932087Ab1ILO6a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 10:58:30 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:41561 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757275Ab1ILO62 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 10:58:28 -0400
-Date: Mon, 12 Sep 2011 10:58:14 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Jarod Wilson <jarod@redhat.com>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Sasha Levin <levinsasha928@gmail.com>,
-        linux-crypto@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
-        Neil Horman <nhorman@redhat.com>, Herbert Xu <herbert.xu@redhat.com>,
-        Steve Grubb <sgrubb@redhat.com>,
-        Stephan Mueller <stephan.mueller@atsec.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] random: add blocking facility to urandom
-Message-ID: <20110912145814.GB29050@hmsreliant.think-freely.org>
-References: <1314974248-1511-1-git-send-email-jarod@redhat.com>
- <1315417137-12093-1-git-send-email-jarod@redhat.com>
- <1315419179.3576.6.camel@lappy>
- <4E67B75B.8010500@redhat.com>
- <20110907192737.GD20571@thunk.org>
- <4E6E1103.2000408@redhat.com>
+	id S1757757Ab1ILPAZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 11:00:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34647 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755267Ab1ILPAX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Sep 2011 11:00:23 -0400
+Date: Mon, 12 Sep 2011 11:00:14 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: Jim Cromie <jim.cromie@gmail.com>
+Cc: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>,
+        gregkh@suse.de, Bart Van Assche <bvanassche@acm.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] dynamic_debug: consolidate repetitive struct _ddebug
+ descriptor definitions
+Message-ID: <20110912150011.GD2555@redhat.com>
+References: <cover.1314725877.git.jbaron@redhat.com>
+ <94c0e3275b0bf7d2cad8e7909da1482a867e7bc6.1314725877.git.jbaron@redhat.com>
+ <20110908165230.a7505321.akpm@linux-foundation.org>
+ <1315534396.11939.10.camel@Joe-Laptop>
+ <20110908204200.6cf7abc2.akpm@linux-foundation.org>
+ <1315540963.11939.12.camel@Joe-Laptop>
+ <CAO+b5-oOHXEhnA+zpwA9GR7k1TX3Wn6XuOdc3TB4MPNiSpskiw@mail.gmail.com>
+ <CAJfuBxx=r_P7em_naUN_c96A++V4v6nfd8B_V2dppRag-z_qwg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <4E6E1103.2000408@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -1.3 (-)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAJfuBxx=r_P7em_naUN_c96A++V4v6nfd8B_V2dppRag-z_qwg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 12, 2011 at 10:02:43AM -0400, Jarod Wilson wrote:
-> Ted Ts'o wrote:
-> >On Wed, Sep 07, 2011 at 02:26:35PM -0400, Jarod Wilson wrote:
-> >>We're looking for a generic solution here that doesn't require
-> >>re-educating every single piece of userspace. And anything done in
-> >>userspace is going to be full of possible holes -- there needs to be
-> >>something in place that actually *enforces* the policy, and
-> >>centralized accounting/tracking, lest you wind up with multiple
-> >>processes racing to grab the entropy.
+On Fri, Sep 09, 2011 at 01:23:43PM -0600, Jim Cromie wrote:
+> On Fri, Sep 9, 2011 at 4:31 AM, Bart Van Assche <bvanassche@acm.org> wrote:
+> > On Fri, Sep 9, 2011 at 6:02 AM, Joe Perches <joe@perches.com> wrote:
+> >> On Thu, 2011-09-08 at 20:42 -0700, Andrew Morton wrote:
+> >> > On Thu, 08 Sep 2011 19:13:16 -0700 Joe Perches <joe@perches.com> wrote:
+> >> > > On Thu, 2011-09-08 at 16:52 -0700, Andrew Morton wrote:
+> >> > > > On Tue, 30 Aug 2011 14:28:41 -0400
+> >> > > > Jason Baron <jbaron@redhat.com> wrote:
+> >> > > > > Replace the repetitive struct _ddebug descriptor definitions with
+> >> > > > > a new DECLARE_DYNAMIC_DEBUG_META_DATA(name, fmt) macro.
+> >> > > > > +#define DECLARE_DYNAMIC_DEBUG_METADATA(name, fmt)              \
+> >> > > > > +       static struct _ddebug __used __aligned(8)               \
+> >> > > > > +       __attribute__((section("__verbose"))) name = {          \
+> >> > > > > +               .modname = KBUILD_MODNAME,                      \
+> >> > > > > +               .function = __func__,                           \
+> >> > > > > +               .filename = __FILE__,                           \
+> >> > > > > +               .format = (fmt),                                \
+> >> > > > > +               .lineno = __LINE__,                             \
+> >> > > > > +               .flags =  _DPRINTK_FLAGS_DEFAULT,               \
+> >> > > > > +               .enabled = false,                               \
+> >> > > > > +       }
+> >> > > > <anal>That macro implements a definition, not a declaration</anal>
+> >> > > Andrew, that's not quite true
+> >> > It's precisely true.
+> >> Not according to the c99 standard section 6.7
 > >
-> >Yeah, but there are userspace programs that depend on urandom not
-> >blocking... so your proposed change would break them.
+> > Have you read that paragraph ? This is what I found in paragraph 6.7,
+> > which confirms Andrews interpretation:
+> >
+> > <quote>
+> > A declaration speciﬁes the interpretation and attributes of a set of
+> > identiﬁers. A deﬁnition of an identiﬁer is a declaration for that
+> > identiﬁer that:
+> > - for an object, causes storage to be reserved for that object;
+> > - for a function, includes the function body;
+> > - for an enumeration constant or typedef name, is the (only)
+> > declaration of the identiﬁer.
+> > </quote>
+> >
+> > Bart.
+> >
 > 
-> I'm already consigned to the fact this isn't going to fly, but I'm
-> still curious to know examples of programs that are going to break
-> here, for my own education. Its already possible for urandom reads
-> to fail as the code is now (-ERESTARTSYS and -EFAULT are possible),
-> so a sane program ought to already be handling error cases, though
-> not -EAGAIN, which this would add.
 > 
-Its not a failure return code here, its the possibility of no return code at all
-(i.e. indefinte blocking).  While I can't cite a specific application the
-failure profile would be an application holding a critical system resource say a
-manditory file lock that several applications require to do their work).  If the
-application that holds said lock blocks on urandom (having previously correctly
-assumed that no blocking could occur), all applications requiring access to that
-file lock then in turn block indefinately, violating any time critical deadlines
-they may have.
+> I hesitate to churn this more (I have patchset to go on top of all this) but
+> 
+> Id like to see an INIT_DYNAMIC_DEBUG_METADATA,
+> along with ability to expose the descriptor.
+> 
+> This would support pr_dbg_cont(), by letting it see/reuse
+> the same descriptor that controls the pr_debug that started
+> the multi-call message.  While this defeats the "atomicity"
+> of buffering the entire message before calling printk,
+> it does so only for the actual uses of KERN_CONT.
+> 
+> It also allows for "lite" usage of dynamic-debug,
+> including 1..few descriptor per file or module to control all debug printing.
+> As outlined, this "lite" usage is determined by the coder,
+> it would be cool if it were more configurable than that,
+> but I dont see how that would work atm.
+> 
+> 
 
-Neil
+We can expose the descriptor, but I that can wait for a folow-up
+patchset, especially, since we don't have any consumers at the moment.
 
+> Now that the worms have escaped the can, one other thought:
+> 	unsigned int lineno:24;
+> allows for insanely large files.  The largest in the tree is 29k,
+> 16 bits would cover all files likely to be accepted in the future.
+> Even allowing for never-to-be-submitted machine-generated code,
+> Id think 18 bits would suffice.  ~250k lines should be enough ;-)
 > 
-> -- 
-> Jarod Wilson
-> jarod@redhat.com
+> Given that my patchset adds flags-filtering
+> ( echo mt+p > $CONTROL )
+> The availability of user-flags, which do nothing but mark callsites,
+> has some value - user can mark arbitrary sets of callsites,
+> then enable/disable them as a group or subgroup:
 > 
+> echo function foo +x > $CONTROL
+> ...
+> echo x+p > $CONTROL
+> echo y-p > $CONTROL
+> echo z+p > $CONTROL
+> echo yz-p > $CONTROL
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-crypto" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+> Since since it works with module/file/function filtering, 3-4 user
+> flags should be plenty.
+
+makes sense...this can also be done is follow-on patchset...
+
+thanks,
+
+-Jason
