@@ -1,155 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755588Ab1ILXCt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 19:02:49 -0400
-Received: from shutemov.name ([188.40.19.243]:54569 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753689Ab1ILXCr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 19:02:47 -0400
-Date: Tue, 13 Sep 2011 02:02:46 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
-        Michal Hocko <mhocko@suse.cz>, Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 02/11] mm: vmscan: distinguish global reclaim from global
- LRU scanning
-Message-ID: <20110912230246.GA20975@shutemov.name>
-References: <1315825048-3437-1-git-send-email-jweiner@redhat.com>
- <1315825048-3437-3-git-send-email-jweiner@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1315825048-3437-3-git-send-email-jweiner@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755765Ab1ILXLo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 19:11:44 -0400
+Received: from mail-vw0-f52.google.com ([209.85.212.52]:45745 "EHLO
+	mail-vw0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755486Ab1ILXLm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Sep 2011 19:11:42 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Paul Menage <paul@paulmenage.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, Tim Hockin <thockin@hockin.org>,
+        Tejun Heo <tj@kernel.org>, Containers <containers@lists.osdl.org>
+Subject: [PATCH 00/11 v5] cgroups: Task counter subsystem
+Date: Tue, 13 Sep 2011 01:11:20 +0200
+Message-Id: <1315869091-18933-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 12, 2011 at 12:57:19PM +0200, Johannes Weiner wrote:
-> The traditional zone reclaim code is scanning the per-zone LRU lists
-> during direct reclaim and kswapd, and the per-zone per-memory cgroup
-> LRU lists when reclaiming on behalf of a memory cgroup limit.
-> 
-> Subsequent patches will convert the traditional reclaim code to
-> reclaim exclusively from the per-memory cgroup LRU lists.  As a
-> result, using the predicate for which LRU list is scanned will no
-> longer be appropriate to tell global reclaim from limit reclaim.
-> 
-> This patch adds a global_reclaim() predicate to tell direct/kswapd
-> reclaim from memory cgroup limit reclaim and substitutes it in all
-> places where currently scanning_global_lru() is used for that.
-> 
-> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
-> ---
->  mm/vmscan.c |   60 +++++++++++++++++++++++++++++++++++-----------------------
->  1 files changed, 36 insertions(+), 24 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 7502726..354f125 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -153,9 +153,25 @@ static LIST_HEAD(shrinker_list);
->  static DECLARE_RWSEM(shrinker_rwsem);
->  
->  #ifdef CONFIG_CGROUP_MEM_RES_CTLR
-> -#define scanning_global_lru(sc)	(!(sc)->mem_cgroup)
-> +static bool global_reclaim(struct scan_control *sc)
-> +{
-> +	return !sc->mem_cgroup;
-> +}
-> +
-> +static bool scanning_global_lru(struct scan_control *sc)
-> +{
-> +	return !sc->mem_cgroup;
-> +}
->  #else
-> -#define scanning_global_lru(sc)	(1)
-> +static bool global_reclaim(struct scan_control *sc)
-> +{
-> +	return true;
-> +}
-> +
-> +static bool scanning_global_lru(struct scan_control *sc)
-> +{
-> +	return true;
-> +}
->  #endif
->  
->  static struct zone_reclaim_stat *get_reclaim_stat(struct zone *zone,
-> @@ -1011,7 +1027,7 @@ keep_lumpy:
->  	 * back off and wait for congestion to clear because further reclaim
->  	 * will encounter the same problem
->  	 */
-> -	if (nr_dirty && nr_dirty == nr_congested && scanning_global_lru(sc))
-> +	if (nr_dirty && nr_dirty == nr_congested && global_reclaim(sc))
->  		zone_set_flag(zone, ZONE_CONGESTED);
->  
->  	free_page_list(&free_pages);
-> @@ -1330,7 +1346,7 @@ static int too_many_isolated(struct zone *zone, int file,
->  	if (current_is_kswapd())
->  		return 0;
->  
-> -	if (!scanning_global_lru(sc))
-> +	if (!global_reclaim(sc))
->  		return 0;
->  
->  	if (file) {
-> @@ -1508,6 +1524,12 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
->  	if (scanning_global_lru(sc)) {
->  		nr_taken = isolate_pages_global(nr_to_scan, &page_list,
->  			&nr_scanned, sc->order, reclaim_mode, zone, 0, file);
-> +	} else {
-> +		nr_taken = mem_cgroup_isolate_pages(nr_to_scan, &page_list,
-> +			&nr_scanned, sc->order, reclaim_mode, zone,
-> +			sc->mem_cgroup, 0, file);
-> +	}
+No functional changes. Only documentation and comments added.
+Checkpatch.pl fixes, etc...
 
-Redundant braces.
+This mostly addresses Andrew's reviews on v4.
 
-> +	if (global_reclaim(sc)) {
->  		zone->pages_scanned += nr_scanned;
->  		if (current_is_kswapd())
->  			__count_zone_vm_events(PGSCAN_KSWAPD, zone,
-> @@ -1515,14 +1537,6 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
->  		else
->  			__count_zone_vm_events(PGSCAN_DIRECT, zone,
->  					       nr_scanned);
-> -	} else {
-> -		nr_taken = mem_cgroup_isolate_pages(nr_to_scan, &page_list,
-> -			&nr_scanned, sc->order, reclaim_mode, zone,
-> -			sc->mem_cgroup, 0, file);
-> -		/*
-> -		 * mem_cgroup_isolate_pages() keeps track of
-> -		 * scanned pages on its own.
-> -		 */
->  	}
->  
->  	if (nr_taken == 0) {
-> @@ -1647,18 +1661,16 @@ static void shrink_active_list(unsigned long nr_pages, struct zone *zone,
->  						&pgscanned, sc->order,
->  						reclaim_mode, zone,
->  						1, file);
-> -		zone->pages_scanned += pgscanned;
->  	} else {
->  		nr_taken = mem_cgroup_isolate_pages(nr_pages, &l_hold,
->  						&pgscanned, sc->order,
->  						reclaim_mode, zone,
->  						sc->mem_cgroup, 1, file);
-> -		/*
-> -		 * mem_cgroup_isolate_pages() keeps track of
-> -		 * scanned pages on its own.
-> -		 */
->  	}
+Changes in v5:
 
-Ditto.
+- commented res_counter_common_ancestor (patch 6)
+- commented res_counter_inherit (patch 2)
+- merged documentation and task counter subsystem patch (patch 9)
+- rename cgroup_task_counter_res in cgroup_task_res_counter (patch 9)
+- more comments/ fix comments in cgroup_task_counter.c (patch 9)
+- document res_counter_charge return value (patch 8)
+- document res_counter_charge_until (patch 5)
+- more comment in kconfig help (patch 9)
+- fix various checkpatch reported issues
 
+Frederic Weisbecker (11):
+  cgroups: Add res_counter_write_u64() API
+  cgroups: New resource counter inheritance API
+  cgroups: Add previous cgroup in can_attach_task/attach_task callbacks
+  cgroups: New cancel_attach_task subsystem callback
+  cgroups: Ability to stop res charge propagation on bounded ancestor
+  cgroups: Add res counter common ancestor searching
+  res_counter: Allow charge failure pointer to be null
+  cgroups: Pull up res counter charge failure interpretation to caller
+  cgroups: Add a task counter subsystem
+  cgroups: Allow subsystems to cancel a fork
+  cgroups: Convert task counter to use the subsys fork callback
+
+ Documentation/cgroups/cgroups.txt          |   13 ++-
+ Documentation/cgroups/resource_counter.txt |   20 +++-
+ Documentation/cgroups/task_counter.txt     |  126 +++++++++++++++
+ block/blk-cgroup.c                         |   12 +-
+ include/linux/cgroup.h                     |   22 ++-
+ include/linux/cgroup_subsys.h              |    8 +
+ include/linux/res_counter.h                |   27 +++-
+ init/Kconfig                               |    9 +
+ kernel/Makefile                            |    1 +
+ kernel/cgroup.c                            |   58 ++++++--
+ kernel/cgroup_freezer.c                    |    9 +-
+ kernel/cgroup_task_counter.c               |  239 ++++++++++++++++++++++++++++
+ kernel/cpuset.c                            |    6 +-
+ kernel/events/core.c                       |    5 +-
+ kernel/exit.c                              |    2 +-
+ kernel/fork.c                              |    7 +-
+ kernel/res_counter.c                       |   86 +++++++++--
+ kernel/sched.c                             |    6 +-
+ 18 files changed, 601 insertions(+), 55 deletions(-)
+ create mode 100644 Documentation/cgroups/task_counter.txt
+ create mode 100644 kernel/cgroup_task_counter.c
 
 -- 
- Kirill A. Shutemov
+1.7.5.4
+
