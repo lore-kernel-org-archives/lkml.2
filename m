@@ -1,82 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756225Ab1ILQuI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 12:50:08 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53624 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755803Ab1ILQuF convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 12:50:05 -0400
-Subject: Re: [RFC 1/2] virtio: Add AMBA bus driver for virtio device
-From: Pawel Moll <pawel.moll@arm.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        virtualization <virtualization@lists.linux-foundation.org>,
-        "Michael S.Tsirkin" <mst@redhat.com>,
-        Magnus Damm <magnus.damm@gmail.com>
-In-Reply-To: <877h5e5yxp.fsf@rustcorp.com.au>
-References: <1314966257-7503-1-git-send-email-pawel.moll@arm.com>
-	 <1314966257-7503-2-git-send-email-pawel.moll@arm.com>
-	 <877h5e5yxp.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 12 Sep 2011 17:45:56 +0100
-Message-ID: <1315845956.3297.7.camel@hornet.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 8BIT
-X-OriginalArrivalTime: 12 Sep 2011 16:45:56.0735 (UTC) FILETIME=[718C20F0:01CC716B]
+	id S1755551Ab1ILQyT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 12:54:19 -0400
+Received: from david.siemens.de ([192.35.17.14]:16996 "EHLO david.siemens.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752229Ab1ILQyQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Sep 2011 12:54:16 -0400
+From: Jan Kiszka <jan.kiszka@siemens.com>
+To: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, "Hans J. Koch" <hjk@hansjkoch.de>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        "Michael S. Tsirkin" <mst@redhat.com>, kvm@vger.kernel.org
+Subject: [PATCH 3/3] uio: Convert uio_generic_pci to new intx masking API
+Date: Mon, 12 Sep 2011 18:54:04 +0200
+Message-Id: <e95ab5cdfd3f1e0fd70fc077e7b699876f4552e7.1315846441.git.jan.kiszka@siemens.com>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <cover.1315846441.git.jan.kiszka@siemens.com>
+References: <cover.1315846441.git.jan.kiszka@siemens.com>
+In-Reply-To: <cover.1315846441.git.jan.kiszka@siemens.com>
+References: <cover.1315846441.git.jan.kiszka@siemens.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-09-12 at 11:01 +0930, Rusty Russell wrote:
-> Cool work!  I like the concept, but a few implementation notes below:
+The new PCI API provides both generic probing for 2.3 masking support
+and check&mask in the interrupt handler.
 
-Glad to hear that it makes any sense :-)
+Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+---
+ drivers/uio/uio_pci_generic.c |   84 +++-------------------------------------
+ 1 files changed, 7 insertions(+), 77 deletions(-)
 
-I'll post the RFC v2 in a second - it's a platform bus driver now, so
-it's not ARM specific any more...
-
-> > + * offset width name          description
-> > + * ------ ----- ------------- -----------------
-> > + *
-> > + *  0x000   32  HostFeatures  Features supported by the host
-> > + *  0x004   32  GuestFeatures Features activated by the guest
-> 
-> You need to make these at least 64 bits.  Lguest makes them variable
-> width, in fact.
-
-No problem, I've reserved 128 bits in the modified registers layout (see
-RFC v2), I can even change it into "offset/value" interface, which would
-give you variable width. One thing I don't get is how to access feature
-bits > 31? The get_features() seems
-to be limited to 32:
-
-struct virtio_config_ops {
-<...>
-	u32 (*get_features)(struct virtio_device *vdev);
-<...>
-}
-
-> > + *  0x008   32  QueuePFN      PFN for the currently selected queue
-> > + *  0x00c   32  QueueNum      Queue size for the currently selected queue
-> 
-> You should, I believe, seriously consider allowing the guest to set the
-> queue size, rather than the host (perhaps the host could suggest one,
-> but the guest should be able to override it).
-
-I guess the QueueNum could be simply a read/write register - guest can
-read suggestion and override it writing it back. The same question
-though - how can guest change it? (I mean some API?)
-
-> Anthony or Michael might suggest other changes, since they are most
-> familiar with virtio_pci limitations...
-
-I've added them on the RFC v2 Cc as well - all feedback more then
-welcome!
-
-Cheers!
-
-Paweł
+diff --git a/drivers/uio/uio_pci_generic.c b/drivers/uio/uio_pci_generic.c
+index 67535f9..33f7dfb 100644
+--- a/drivers/uio/uio_pci_generic.c
++++ b/drivers/uio/uio_pci_generic.c
+@@ -33,7 +33,6 @@
+ struct uio_pci_generic_dev {
+ 	struct uio_info info;
+ 	struct pci_dev *pdev;
+-	spinlock_t lock; /* guards command register accesses */
+ };
+ 
+ static inline struct uio_pci_generic_dev *
+@@ -47,81 +46,12 @@ to_uio_pci_generic_dev(struct uio_info *info)
+ static irqreturn_t irqhandler(int irq, struct uio_info *info)
+ {
+ 	struct uio_pci_generic_dev *gdev = to_uio_pci_generic_dev(info);
+-	struct pci_dev *pdev = gdev->pdev;
+-	irqreturn_t ret = IRQ_NONE;
+-	u32 cmd_status_dword;
+-	u16 origcmd, newcmd, status;
+-
+-	/* We do a single dword read to retrieve both command and status.
+-	 * Document assumptions that make this possible. */
+-	BUILD_BUG_ON(PCI_COMMAND % 4);
+-	BUILD_BUG_ON(PCI_COMMAND + 2 != PCI_STATUS);
+-
+-	spin_lock_irq(&gdev->lock);
+-	if (!pci_cfg_access_trylock(pdev))
+-		goto error;
+-
+-	/* Read both command and status registers in a single 32-bit operation.
+-	 * Note: we could cache the value for command and move the status read
+-	 * out of the lock if there was a way to get notified of user changes
+-	 * to command register through sysfs. Should be good for shared irqs. */
+-	pci_read_config_dword(pdev, PCI_COMMAND, &cmd_status_dword);
+-	origcmd = cmd_status_dword;
+-	status = cmd_status_dword >> 16;
+-
+-	/* Check interrupt status register to see whether our device
+-	 * triggered the interrupt. */
+-	if (!(status & PCI_STATUS_INTERRUPT))
+-		goto done;
+-
+-	/* We triggered the interrupt, disable it. */
+-	newcmd = origcmd | PCI_COMMAND_INTX_DISABLE;
+-	if (newcmd != origcmd)
+-		pci_write_config_word(pdev, PCI_COMMAND, newcmd);
+ 
+-	/* UIO core will signal the user process. */
+-	ret = IRQ_HANDLED;
+-done:
+-
+-	pci_cfg_access_lock(pdev);
+-error:
+-	spin_unlock_irq(&gdev->lock);
+-	return ret;
+-}
++	if (!pci_check_and_mask_intx(gdev->pdev))
++		return IRQ_NONE;
+ 
+-/* Verify that the device supports Interrupt Disable bit in command register,
+- * per PCI 2.3, by flipping this bit and reading it back: this bit was readonly
+- * in PCI 2.2. */
+-static int __devinit verify_pci_2_3(struct pci_dev *pdev)
+-{
+-	u16 orig, new;
+-	int err = 0;
+-
+-	pci_cfg_access_lock(pdev);
+-	pci_read_config_word(pdev, PCI_COMMAND, &orig);
+-	pci_write_config_word(pdev, PCI_COMMAND,
+-			      orig ^ PCI_COMMAND_INTX_DISABLE);
+-	pci_read_config_word(pdev, PCI_COMMAND, &new);
+-	/* There's no way to protect against
+-	 * hardware bugs or detect them reliably, but as long as we know
+-	 * what the value should be, let's go ahead and check it. */
+-	if ((new ^ orig) & ~PCI_COMMAND_INTX_DISABLE) {
+-		err = -EBUSY;
+-		dev_err(&pdev->dev, "Command changed from 0x%x to 0x%x: "
+-			"driver or HW bug?\n", orig, new);
+-		goto err;
+-	}
+-	if (!((new ^ orig) & PCI_COMMAND_INTX_DISABLE)) {
+-		dev_warn(&pdev->dev, "Device does not support "
+-			 "disabling interrupts: unable to bind.\n");
+-		err = -ENODEV;
+-		goto err;
+-	}
+-	/* Now restore the original value. */
+-	pci_write_config_word(pdev, PCI_COMMAND, orig);
+-err:
+-	pci_cfg_access_unlock(pdev);
+-	return err;
++	/* UIO core will signal the user process. */
++	return IRQ_HANDLED;
+ }
+ 
+ static int __devinit probe(struct pci_dev *pdev,
+@@ -144,9 +74,10 @@ static int __devinit probe(struct pci_dev *pdev,
+ 		return -ENODEV;
+ 	}
+ 
+-	err = verify_pci_2_3(pdev);
+-	if (err)
++	if (!pci_intx_mask_supported(pdev)) {
++		err = -ENODEV;
+ 		goto err_verify;
++	}
+ 
+ 	gdev = kzalloc(sizeof(struct uio_pci_generic_dev), GFP_KERNEL);
+ 	if (!gdev) {
+@@ -160,7 +91,6 @@ static int __devinit probe(struct pci_dev *pdev,
+ 	gdev->info.irq_flags = IRQF_SHARED;
+ 	gdev->info.handler = irqhandler;
+ 	gdev->pdev = pdev;
+-	spin_lock_init(&gdev->lock);
+ 
+ 	if (uio_register_device(&pdev->dev, &gdev->info))
+ 		goto err_register;
+-- 
+1.7.3.4
 
