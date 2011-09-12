@@ -1,43 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753971Ab1ILSxx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 14:53:53 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38285 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753639Ab1ILSxw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 14:53:52 -0400
-Subject: Re: [PATCH 8/5] llist: Remove cpu_relax() usage in cmpxchg loops
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Huang Ying <ying.huang@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Date: Mon, 12 Sep 2011 20:53:28 +0200
-In-Reply-To: <20110912163842.GO7761@one.firstfloor.org>
-References: <1315461646-1379-1-git-send-email-ying.huang@intel.com>
-	 <1315836358.26517.43.camel@twins>
-	 <20110912142305.GN7761@one.firstfloor.org> <20110912144706.GA21716@Krystal>
-	 <20110912163842.GO7761@one.firstfloor.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1315853608.575.1.camel@twins>
-Mime-Version: 1.0
+	id S1754091Ab1ILTGb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 15:06:31 -0400
+Received: from mail.avalus.com ([89.16.176.221]:35938 "EHLO mail.avalus.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753689Ab1ILTG2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Sep 2011 15:06:28 -0400
+Date: Mon, 12 Sep 2011 20:06:25 +0100
+From: Alex Bligh <alex@alex.org.uk>
+Reply-To: Alex Bligh <alex@alex.org.uk>
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+cc: Alexey Dobriyan <adobriyan@gmail.com>, netfilter-devel@vger.kernel.org,
+        netfilter@vger.kernel.org, coreteam@netfilter.org,
+        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        Linux Containers <containers@lists.osdl.org>,
+        Alex Bligh <alex@alex.org.uk>
+Subject: Re: [PATCH] Fix repeatable Oops on container destroy with conntrack
+Message-ID: <87A32B21CA99D62CE1AB7A4B@Ximines.local>
+In-Reply-To: <20110912183357.GC3641@1984>
+References: <2184C0CE5A5EDC94CDDA5053@Ximines.local> <20110912072524.GA2996@p183.telecom.by> <20110912093749.GE2194@1984> <E0902A9541FD5D118EA02B31@Ximines.local> <20110912183357.GC3641@1984>
+X-Mailer: Mulberry/4.0.8 (Mac OS X)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-09-12 at 18:38 +0200, Andi Kleen wrote:
-> > so basically, in typical locking primitives (spinlock), it looks like
-> > lower power consumption is preferred over getting the raw maximal
-> 
-> It's not only power, its:
-> - Allow the other siblings make more progress on SMT
-> - Do some backoff to stress the interconnect less (this is important on >2S):
-> A tight loop which constantly writes is a extremly stressfull pattern.
-> - Save some power by allowing the CPU to do more clock gating
+Pablo,
 
-If you're hitting a cmpxchg hard enough for any of those to make a
-difference you're doing it wrong.
+--On 12 September 2011 20:33:57 +0200 Pablo Neira Ayuso <pablo@netfilter.org> wrote:
+
+> Yes, this is what Alexey was pointing out in the previous email and
+> why he suggested to move it to nfnetlink_has_listeners (to cover the
+> expectation case).
+>
+> But you're right, we cannot move it to nfnetlink_has_listeners because
+> of the item->report case. Please, include the expectation part and
+> resend the patch.
+
+Thanks - see below
+
+-- 
+Alex Bligh
+
+Signed-off-by: Alex Bligh <alex@alex.org.uk>
+---
+ net/netfilter/nf_conntrack_netlink.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
+
+diff --git a/net/netfilter/nf_conntrack_netlink.c b/net/netfilter/nf_conntrack_netlink.c
+index 482e90c..f44d571 100644
+--- a/net/netfilter/nf_conntrack_netlink.c
++++ b/net/netfilter/nf_conntrack_netlink.c
+@@ -570,6 +570,11 @@ ctnetlink_conntrack_event(unsigned int events, struct nf_ct_event *item)
+                return 0;
+
+        net = nf_ct_net(ct);
++
++       /* container deinit, netlink may have died before death_by_timeout */
++       if (!net->nfnl)
++               return 0;
++
+        if (!item->report && !nfnetlink_has_listeners(net, group))
+                return 0;
+
+@@ -1723,6 +1728,10 @@ ctnetlink_expect_event(unsigned int events, struct nf_exp_event *item)
+        } else
+                return 0;
+
++       /* container deinit, netlink may have died before death_by_timeout */
++       if (!net->nfnl)
++               return 0;
++
+        if (!item->report && !nfnetlink_has_listeners(net, group))
+                return 0;
+
+-- 
+1.7.5.4
