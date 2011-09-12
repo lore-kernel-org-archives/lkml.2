@@ -1,72 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752637Ab1ILQrk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 12:47:40 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:64825 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751333Ab1ILQri (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 12:47:38 -0400
-From: Ohad Ben-Cohen <ohad@wizery.com>
-To: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: Tony Lindgren <tony@atomide.com>, Arnd Bergmann <arnd@arndb.de>,
-        Ohad Ben-Cohen <ohad@wizery.com>
-Subject: [PATCH 00/10] hwspinlock-next
-Date: Mon, 12 Sep 2011 19:46:55 +0300
-Message-Id: <1315846025-11453-1-git-send-email-ohad@wizery.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1756225Ab1ILQuI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 12:50:08 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53624 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755803Ab1ILQuF convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Sep 2011 12:50:05 -0400
+Subject: Re: [RFC 1/2] virtio: Add AMBA bus driver for virtio device
+From: Pawel Moll <pawel.moll@arm.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        virtualization <virtualization@lists.linux-foundation.org>,
+        "Michael S.Tsirkin" <mst@redhat.com>,
+        Magnus Damm <magnus.damm@gmail.com>
+In-Reply-To: <877h5e5yxp.fsf@rustcorp.com.au>
+References: <1314966257-7503-1-git-send-email-pawel.moll@arm.com>
+	 <1314966257-7503-2-git-send-email-pawel.moll@arm.com>
+	 <877h5e5yxp.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 12 Sep 2011 17:45:56 +0100
+Message-ID: <1315845956.3297.7.camel@hornet.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 8BIT
+X-OriginalArrivalTime: 12 Sep 2011 16:45:56.0735 (UTC) FILETIME=[718C20F0:01CC716B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series includes a new u8500 hwspinlock driver from Mathieu,
-a core fix from Juan and several other cleanups/fixes
-(some of which were reported by Arnd while reviewing Mathieu's
-driver).
+On Mon, 2011-09-12 at 11:01 +0930, Rusty Russell wrote:
+> Cool work!  I like the concept, but a few implementation notes below:
 
-Maybe the most notable core change is the move to registering
-a bank of hwspinlocks in a single API call, rather than the
-existing approach which required drivers to register each
-hwspinlock separately.
+Glad to hear that it makes any sense :-)
 
-That also allowed eliminating 3 per-lock struct members
-(dev and ops, which are now maintained per-bank, and id, which
-is completely removed, and instead, derived from the array index
-of the hwspinlock struct).
+I'll post the RFC v2 in a second - it's a platform bus driver now, so
+it's not ARM specific any more...
 
-The result is ~20% code reduction in the hwspinlock drivers and
-a smaller memory footprint.
+> > + * offset width name          description
+> > + * ------ ----- ------------- -----------------
+> > + *
+> > + *  0x000   32  HostFeatures  Features supported by the host
+> > + *  0x004   32  GuestFeatures Features activated by the guest
+> 
+> You need to make these at least 64 bits.  Lguest makes them variable
+> width, in fact.
 
-Juan Gutierrez (1):
-  hwspinlock/core: use a mutex to protect the radix tree
+No problem, I've reserved 128 bits in the modified registers layout (see
+RFC v2), I can even change it into "offset/value" interface, which would
+give you variable width. One thing I don't get is how to access feature
+bits > 31? The get_features() seems
+to be limited to 32:
 
-Mathieu J. Poirier (1):
-  hwspinlock/u8500: add hwspinlock driver
+struct virtio_config_ops {
+<...>
+	u32 (*get_features)(struct virtio_device *vdev);
+<...>
+}
 
-Ohad Ben-Cohen (8):
-  hwspinlock/core: simplify Kconfig
-  hwspinlock/core: simplify 'owner' handling
-  hwspinlock/omap: simplify allocation scheme
-  hwspinlock/core/omap: fix id issues on multiple hwspinlock devices
-  hwspinlock/core: remove stubs for register/unregister
-  hwspinlock/core: register a bank of hwspinlocks in a single API call
-  hwspinlock/omap: omap_hwspinlock_remove should be __devexit
-  hwspinlock: add MAINTAINERS entries
+> > + *  0x008   32  QueuePFN      PFN for the currently selected queue
+> > + *  0x00c   32  QueueNum      Queue size for the currently selected queue
+> 
+> You should, I believe, seriously consider allowing the guest to set the
+> queue size, rather than the host (perhaps the host could suggest one,
+> but the guest should be able to override it).
 
- Documentation/hwspinlock.txt             |   74 +++++++-----
- MAINTAINERS                              |   15 +++
- arch/arm/mach-omap2/hwspinlock.c         |    8 +-
- drivers/hwspinlock/Kconfig               |   27 +++--
- drivers/hwspinlock/Makefile              |    2 +
- drivers/hwspinlock/hwspinlock_core.c     |  204 +++++++++++++++++++-----------
- drivers/hwspinlock/hwspinlock_internal.h |   40 ++++--
- drivers/hwspinlock/omap_hwspinlock.c     |  127 +++++++------------
- drivers/hwspinlock/u8500_hsem.c          |  198 +++++++++++++++++++++++++++++
- include/linux/hwspinlock.h               |   46 +++++--
- 10 files changed, 516 insertions(+), 225 deletions(-)
- create mode 100644 drivers/hwspinlock/u8500_hsem.c
+I guess the QueueNum could be simply a read/write register - guest can
+read suggestion and override it writing it back. The same question
+though - how can guest change it? (I mean some API?)
 
--- 
-1.7.4.1
+> Anthony or Michael might suggest other changes, since they are most
+> familiar with virtio_pci limitations...
+
+I've added them on the RFC v2 Cc as well - all feedback more then
+welcome!
+
+Cheers!
+
+Paweł
 
