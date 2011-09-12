@@ -1,98 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753505Ab1ILROs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 13:14:48 -0400
-Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:9368 "EHLO
-	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752658Ab1ILROp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 13:14:45 -0400
-X-Greylist: delayed 546 seconds by postgrey-1.27 at vger.kernel.org; Mon, 12 Sep 2011 13:14:45 EDT
-From: "Chumbalkar, Nagananda" <Nagananda.Chumbalkar@hp.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "davej@codemonkey.org.uk" <davej@codemonkey.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "stable@kernel.org" <stable@kernel.org>
-Date: Mon, 12 Sep 2011 18:05:26 +0100
-Subject: RE: [PATCH] cpufreq: pcc-cpufreq: sanity check to prevent a NULL
- pointer dereference
-Thread-Topic: [PATCH] cpufreq: pcc-cpufreq: sanity check to prevent a NULL
- pointer dereference
-Thread-Index: AcxugnYdNVqxj4gcSueNXsLSZShfHgC6xWZg
-Message-ID: <66D9D2F0CDB5C9428E6166B01EC85EE1635519C88F@GVW0676EXC.americas.hpqcorp.net>
-References: <20110831200910.27633.20372.sendpatchset@nchumbalkar.americas.cpqcorp.net>
- <20110908165257.7b613baf.akpm@linux-foundation.org>
-In-Reply-To: <20110908165257.7b613baf.akpm@linux-foundation.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752325Ab1ILRVV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 13:21:21 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:58446 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751925Ab1ILRVU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Sep 2011 13:21:20 -0400
+Date: Mon, 12 Sep 2011 10:16:25 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Christian Hoffmann <email@christianhoffmann.info>
+Cc: Josh Boyer <jwboyer@gmail.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: scheduling while atomic: swapper/0/0x10000002
+Message-ID: <20110912171625.GE2362@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <4E6B6624.1000406@christianhoffmann.info>
+ <CA+5PVA4nRVN0cia9R49=T5xy1inxQLSjDcv1yn4+UFppufRiYA@mail.gmail.com>
+ <4E6B9BC1.4060000@christianhoffmann.info>
+ <20110910195820.GC4118@linux.vnet.ibm.com>
+ <4E6E36A5.2030702@christianhoffmann.info>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E6E36A5.2030702@christianhoffmann.info>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 11091217-5112-0000-0000-0000004683FC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Sep 12, 2011 at 06:43:17PM +0200, Christian Hoffmann wrote:
+> On 09/10/2011 09:58 PM, Paul E. McKenney wrote:
+> >On Sat, Sep 10, 2011 at 07:17:53PM +0200, Christian Hoffmann wrote:
+> >>On 09/10/2011 06:44 PM, Josh Boyer wrote:
+> >>>On Sat, Sep 10, 2011 at 9:29 AM, Christian Hoffmann
+> >>><email@christianhoffmann.info>   wrote:
+> >>>>Hi,
+> >>>>
+> >>>>I can see the following bug report in the kernel 3.1 rc5 dmesg:
+> >>>>
+> >>>>[    0.000008] BUG: scheduling while atomic: swapper/0/0x10000002
+> >>>>[    0.000012] Modules linked in:
+> >>>>[    0.000015] Pid: 0, comm: swapper Not tainted 3.1.0-rc5-ch+ #2
+> >>>>[    0.000017] Call Trace:
+> >>>>[    0.000024]  [<ffffffff81052cb6>] __schedule_bug+0x66/0x70
+> >>>>[    0.000028]  [<ffffffff8160329d>] schedule+0x99d/0x9b0
+> >>>>[    0.000032]  [<ffffffff81cf22b5>] ? pidmap_init+0x9f/0xdf
+> >>>>[    0.000035]  [<ffffffff8105cc7a>] __cond_resched+0x2a/0x40
+> >>>>[    0.000038]  [<ffffffff81603541>] _cond_resched+0x31/0x40
+> >>>>[    0.000041]  [<ffffffff8115fb63>] kmem_cache_alloc_trace+0x53/0x160
+> >>>>[    0.000043]  [<ffffffff81cf22b5>] pidmap_init+0x9f/0xdf
+> >>>>[    0.000046]  [<ffffffff81cd9b8a>] start_kernel+0x333/0x3c8
+> >>>>[    0.000049]  [<ffffffff81cd9347>] x86_64_start_reservations+0x132/0x136
+> >>>>[    0.000051]  [<ffffffff81cd944c>] x86_64_start_kernel+0x101/0x110
+> >>>
+> >>>Paul McKenney has a patch that solves this oops.  You can find it here:
+> >>>
+> >>>http://marc.info/?l=linux-kernel&m=131537669921538&w=2
+> >>>
+> >>>We had discussed getting this into 3.1, but apparently that didn't
+> >>>happen (yet?).  I thought it had been sent upstream with my tested-by,
+> >>>but I don't see it included in Linus' tree.
+> >>
+> >>Hi,
+> >>
+> >>the patch up there doesn't seem to apply cleanly to 3.1 rc5, as it
+> >>misses the rename done in "[PATCH tip/core/rcu 23/55] rcu: Simplify
+> >>quiescent-state accounting"
+> >>(http://marc.info/?l=linux-kernel&m=131537654621392&w=2).
+> >
+> >For 3.1-rc5, you will be wanting this one:
+> >
+> >	https://lkml.org/lkml/2011/8/19/355
+> 
+> Hi,
+> 
+> yes, this applies and makes the stack disappear.
 
+Very good!  I have added your Tested-by, along with Josh Boyer's.
 
->-----Original Message-----
->From: Andrew Morton [mailto:akpm@linux-foundation.org]
->Sent: Thursday, September 08, 2011 6:53 PM
->To: Chumbalkar, Nagananda
->Cc: davej@codemonkey.org.uk; linux-kernel@vger.kernel.org;
->cpufreq@vger.kernel.org; stable@kernel.org
->Subject: Re: [PATCH] cpufreq: pcc-cpufreq: sanity check to prevent a
->NULL pointer dereference
->
->On Wed, 31 Aug 2011 20:08:45 +0000 (UTC)
->Naga Chumbalkar <nagananda.chumbalkar@hp.com> wrote:
->
->> If, for whatever reason, "pr" ends up being NULL we would end up in a
->PANIC
->> as seen below:
->>
->> Loading CPUFreq modules[  437.661360] BUG: unable to handle kernel
->NULL pointer
->> dereference at (null)
->> IP: [<ffffffffa0434314>] pcc_cpufreq_cpu_init+0x74/0x220 [pcc_cpufreq]
->>
->> It's better to prevent the PANIC by failing the driver, and allowing
->the system to boot.
->>
->> Signed-off-by: Naga Chumbalkar <nagananda.chumbalkar@hp.com>
->> Cc: stable@kernel.org
->>
->> diff --git a/drivers/cpufreq/pcc-cpufreq.c b/drivers/cpufreq/pcc-
->cpufreq.c
->> index 7b0603e..cdc02ac 100644
->> --- a/drivers/cpufreq/pcc-cpufreq.c
->> +++ b/drivers/cpufreq/pcc-cpufreq.c
->> @@ -261,6 +261,9 @@ static int pcc_get_offset(int cpu)
->>  	pr = per_cpu(processors, cpu);
->>  	pcc_cpu_data = per_cpu_ptr(pcc_cpu_info, cpu);
->>
->> +	if (!pr)
->> +		return -ENODEV;
->> +
->>  	status = acpi_evaluate_object(pr->handle, "PCCP", NULL, &buffer);
->>  	if (ACPI_FAILURE(status))
->>  		return -ENODEV;
->
->hm, from reading drivers/acpi/processor_driver.c it appears that
->per_cpu(processors, n)==NULL is an expected and valid state.  Heaven
->knows what that state actually *means* - apparently this is a secret.
->
->I assume that you've hit this crash in real live code, hence your
->suggestion of a -stable backport?
-
-Yes - the above oops can be reproduced on a shipping Linux distro when, 
-for x2APIC implementations, the BIOS does not use the ACPI "Device" 
-declaration for processors with Local APIC ID >= 255. Such a declaration 
-is necessitated by Sec 8.4 of ACPI 4.0a.
-
-- naga -
-
+							Thanx, Paul
 
