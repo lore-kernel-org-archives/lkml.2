@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754793Ab1ILJ2o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 05:28:44 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:60255 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753602Ab1ILJ2m convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 05:28:42 -0400
-Subject: Re: [ANNOUNCE] 3.0.4-rt13
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-In-Reply-To: <1315737307.6544.1.camel@marge.simson.net>
-References: <alpine.LFD.2.02.1109101052340.2723@ionos>
-	 <1315737307.6544.1.camel@marge.simson.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 12 Sep 2011 10:59:08 +0200
-Message-ID: <1315817948.26517.16.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 3.0.2- 
+	id S1754657Ab1ILJej (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 05:34:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38999 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751387Ab1ILJeh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Sep 2011 05:34:37 -0400
+Date: Mon, 12 Sep 2011 10:34:34 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Christoph Hellwig <hch@infradead.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        Linux-NFS <linux-nfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Neil Brown <neilb@suse.de>
+Subject: Re: [PATCH 03/10] mm: Add support for a filesystem to control swap
+ files
+Message-ID: <20110912093058.GA3207@suse.de>
+References: <1315566054-17209-1-git-send-email-mgorman@suse.de>
+ <1315566054-17209-4-git-send-email-mgorman@suse.de>
+ <20110909130007.GA11810@infradead.org>
+ <20110909131550.GV14369@suse.de>
+ <20110909133611.GB8155@infradead.org>
+ <1315818285.26517.18.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1315818285.26517.18.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-09-11 at 12:35 +0200, Mike Galbraith wrote:
-> (gdb) list *do_sigtimedwait+0x62
-> 0xffffffff8104f3e2 is in do_sigtimedwait (kernel/signal.c:2628).
-> 2623             * Invert the set of allowed signals to get those we want to block.
-> 2624             */
-> 2625            sigdelsetmask(&mask, sigmask(SIGKILL) | sigmask(SIGSTOP));
-> 2626            signotset(&mask);
-> 2627
-> 2628            spin_lock_irq(&tsk->sighand->siglock);
-> 2629            sig = dequeue_signal(tsk, &mask, info);
-> 2630            if (!sig && timeout) {
-> 2631                    /*
-> 2632                     * None ready, temporarily unblock those we're interested
-> (gdb) list *do_sigtimedwait+0x15f
-> 0xffffffff8104f4df is in do_sigtimedwait (kernel/signal.c:2642).
-> 2637                    tsk->real_blocked = tsk->blocked;
-> 2638                    sigandsets(&tsk->blocked, &tsk->blocked, &mask);
-> 2639                    recalc_sigpending();
-> 2640                    spin_unlock_irq(&tsk->sighand->siglock);
-> 2641
-> 2642                    timeout = schedule_timeout_interruptible(timeout);
-> 2643
-> 2644                    spin_lock_irq(&tsk->sighand->siglock);
-> 2645                    __set_task_blocked(tsk, &tsk->real_blocked);
-> 2646                    siginitset(&tsk->real_blocked, 0);
+On Mon, Sep 12, 2011 at 11:04:45AM +0200, Peter Zijlstra wrote:
+> On Fri, 2011-09-09 at 09:36 -0400, Christoph Hellwig wrote:
+> > The equivalent of ->direct_IO should be used for both reads and writes.
+> 
+> So the difference between DIO and swapIO is that swapIO needs the block
+> map pinned in memory.. So at the very least you'll need those
+> swap_{activate,deactivate} aops. The read/write-page thingies could
+> indeed be shared with DIO.
 > 
 
+I'm travelling at the moment so it'll be later in the week when I investigate
+properly but I agree swap_[de|a]ctivate are still necessary. NFS does not
+need to pin a block map but it's still necessary for calling xs_set_memalloc.
 
-Right, so what Thomas says.. Now admittedly I haven't had my morning
-juice yet, but staring at that function I can't see why that warning
-would trigger at all.
-
-I'm going to try and reproduce, but Thomas is already saying he can't,
-so I'm not too confident.
-
-I you can easily trigger this, could you add some trace_printk() to
-migrate_disable/enable that prints both counters etc.. so we can see wtf
-happens?
+-- 
+Mel Gorman
+SUSE Labs
