@@ -1,87 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752396Ab1ILBPk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Sep 2011 21:15:40 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:52540 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751862Ab1ILBPi (ORCPT
+	id S1752866Ab1ILBgk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Sep 2011 21:36:40 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:46214 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751960Ab1ILBgj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Sep 2011 21:15:38 -0400
-Date: Mon, 12 Sep 2011 11:15:33 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>, Russell King <rmk@arm.linux.org.uk>
-Subject: linux-next: manual merge of the arm-lpae tree with the arm tree
-Message-Id: <20110912111533.c263b24de84a824a813c8056@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 11 Sep 2011 21:36:39 -0400
+From: Wanlong Gao <wanlong.gao@gmail.com>
+To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Cc: davem@davemloft.net, Gao feng <omarapazanadi@gmail.com>,
+        Gao feng <gaofeng@cn.fujitsu.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: [PATCH resend] fib:fix BUG_ON in fib_nl_newrule when add new fib rule
+Date: Mon, 12 Sep 2011 09:36:05 +0800
+Message-Id: <1315791365-5324-1-git-send-email-wanlong.gao@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1315675150-3012-1-git-send-email-wanlong.gao@gmail.com>
+References: <1315675150-3012-1-git-send-email-wanlong.gao@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Catalin,
+From: Gao feng <gaofeng@cn.fujitsu.com>
 
-Today's linux-next merge of the arm-lpae tree got a conflict in
-arch/arm/kernel/sleep.S between commit 805f72ef00a4 ("ARM: pm:
-preallocate a page table for suspend/resume") (and later ones) from the
-arm tree and commit 787dad4a57fb ("ARM: LPAE: add ISBs around MMU
-enabling code") from the arm-lpae tree.
+add new fib rule can cause BUG_ON happen
+the reproduce shell is
+ip rule add pref 38
+ip rule add pref 38
+ip rule add to 192.168.3.0/24 goto 38
+ip rule del pref 38
+ip rule add to 192.168.3.0/24 goto 38
+ip rule add pref 38
 
-I attempted to fix it up (see below) and can carry the fix as necessary.
+then the BUG_ON will happen
+del BUG_ON and use (ctarget == NULL) identify whether this rule is unresolved
 
-There are also other conflicts due to the same changes existaing in each
-of these trees as different commits.  Maybe some rebase or cleanup of the
-arm-lpae tree is required.
+Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+---
+ net/core/fib_rules.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/net/core/fib_rules.c b/net/core/fib_rules.c
+index e7ab0c0..3231b46 100644
+--- a/net/core/fib_rules.c
++++ b/net/core/fib_rules.c
+@@ -384,8 +384,8 @@ static int fib_nl_newrule(struct sk_buff *skb, struct nlmsghdr* nlh, void *arg)
+ 		 */
+ 		list_for_each_entry(r, &ops->rules_list, list) {
+ 			if (r->action == FR_ACT_GOTO &&
+-			    r->target == rule->pref) {
+-				BUG_ON(rtnl_dereference(r->ctarget) != NULL);
++			    r->target == rule->pref &&
++			    rtnl_dereference(r->ctarget) == NULL) {
+ 				rcu_assign_pointer(r->ctarget, rule);
+ 				if (--ops->unresolved_rules == 0)
+ 					break;
 -- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+1.7.6
 
-diff --cc arch/arm/kernel/sleep.S
-index 020e99c,ecece65..0000000
---- a/arch/arm/kernel/sleep.S
-+++ b/arch/arm/kernel/sleep.S
-@@@ -52,17 -67,35 +52,19 @@@ ENDPROC(cpu_suspend_abort
-  
-  /*
-   * r0 = control register value
- - * r1 = v:p offset (preserved by cpu_do_resume)
- - * r2 = phys page table base
- - * r3 = L1 section flags
-   */
- +	.align	5
-  ENTRY(cpu_resume_mmu)
- -	adr	r4, cpu_resume_turn_mmu_on
- -	mov	r4, r4, lsr #20
- -	orr	r3, r3, r4, lsl #20
- -	ldr	r5, [r2, r4, lsl #2]	@ save old mapping
- -	str	r3, [r2, r4, lsl #2]	@ setup 1:1 mapping for mmu code
- -	sub	r2, r2, r1
-  	ldr	r3, =cpu_resume_after_mmu
- -	bic	r1, r0, #CR_C		@ ensure D-cache is disabled
- -	b	cpu_resume_turn_mmu_on
- -ENDPROC(cpu_resume_mmu)
- -	.ltorg
- -	.align	5
- -cpu_resume_turn_mmu_on:
-+ 	instr_sync
- -	mcr	p15, 0, r1, c1, c0, 0	@ turn on MMU, I-cache, etc
- -	mrc	p15, 0, r1, c0, c0, 0	@ read id reg
- +	mcr	p15, 0, r0, c1, c0, 0	@ turn on MMU, I-cache, etc
- +	mrc	p15, 0, r0, c0, c0, 0	@ read id reg
-+ 	instr_sync
- -	mov	r1, r1
- -	mov	r1, r1
- +	mov	r0, r0
- +	mov	r0, r0
-  	mov	pc, r3			@ jump to virtual address
- -ENDPROC(cpu_resume_turn_mmu_on)
- +ENDPROC(cpu_resume_mmu)
-  cpu_resume_after_mmu:
- -	str	r5, [r2, r4, lsl #2]	@ restore old mapping
- -	mcr	p15, 0, r0, c1, c0, 0	@ turn on D-cache
-  	bl	cpu_init		@ restore the und/abt/irq banked regs
-  	mov	r0, #0			@ return zero on success
-  	ldmfd	sp!, {r4 - r11, pc}
