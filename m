@@ -1,84 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932164Ab1ILQEc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 12:04:32 -0400
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:10269
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758392Ab1ILQE3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 12:04:29 -0400
-X-SpamScore: -12
-X-BigFish: VPS-12(zz98dKzz1202hzz15d4Rz32i668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LRF39B-01-NHB-02
-X-M-MSG: 
-Date: Mon, 12 Sep 2011 18:02:52 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Hiroshi DOYU <Hiroshi.DOYU@nokia.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        David Brown <davidb@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] iommu/core: add fault reporting mechanism
-Message-ID: <20110912160252.GE11701@amd.com>
-References: <1315421604-12286-1-git-send-email-ohad@wizery.com>
+	id S1758418Ab1ILQHG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 12:07:06 -0400
+Received: from ns.theshore.net ([67.18.92.50]:36538 "EHLO www.theshore.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758232Ab1ILQHF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Sep 2011 12:07:05 -0400
+Message-ID: <4E6E2E11.1030602@theshore.net>
+Date: Mon, 12 Sep 2011 12:06:41 -0400
+From: "Christopher S. Aker" <caker@theshore.net>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.22) Gecko/20110902 Lightning/1.0b2 Thunderbird/3.1.14
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1315421604-12286-1-git-send-email-ohad@wizery.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Ian Campbell <Ian.Campbell@citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+Subject: Re: [Xen-devel] Re: kernel BUG at mm/swapfile.c:2527! [was 3.0.0
+ Xen pv guest - BUG: Unable to handle]
+References: <9CAEB881-07FE-437C-8A6B-DB7B690CEABE@linode.com> <4E5BA49D.5060800@theshore.net> <20110829150734.GB24825@dumpdata.com> <1314704744.28989.2.camel@zakaz.uk.xensource.com> <4E5E9CDB.3070706@theshore.net> <20110906171319.GB29839@dumpdata.com>
+In-Reply-To: <20110906171319.GB29839@dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 07, 2011 at 02:53:22PM -0400, Ohad Ben-Cohen wrote:
->  struct device;
-> +struct iommu_domain;
-> +
-> +/**
-> + * enum iommu_fault_types - iommu fault types
-> + *
-> + * @IOMMU_ERROR: Unrecoverable error
-> + *
-> + * Currently we only support a generic error fault type.
-> + * Future users, which will require more informative fault types, will add
-> + * them as needed.
-> + */
-> +enum iommu_fault_types {
-> +	IOMMU_ERROR,
-> +};
+On 9/6/11 1:13 PM, Konrad Rzeszutek Wilk wrote:
+> So .. just to confirm this b/c you have been seeing this for some time. Did you
+> see this with a 2.6.32 DomU? Asking b/c in 2.6.37 we removed some code:
 
-I still don't get the need for this. It would make sense to encode
-different types of faults, like page-faults or interrupt-faults. That is
-what I read from the name of the enum.
-When I read the comment above it sounds more like you want to encode
-different error-levels, like recoverable and unrecoverable error.
-The exact meaning of these values need to be clarified.
+2.6.32 was NOT affected and our problems began right around 2.6.37. 
+This looks promising!
 
-> +/**
-> + * report_iommu_fault() - report about an IOMMU fault to the IOMMU framework
-> + * @domain: the iommu domain where the fault has happened
-> + * @dev: the device where the fault has happened
-> + * @iova: the faulting address
-> + * @flags: mmu fault flags (e.g. IOMMU_FAULT_READ/IOMMU_FAULT_WRITE/...)
-> + * @event: the mmu fault type
+> It would really neat if the issue you have been hitting was exactly this
+> and just having you revert the ef691947d8a3d479e67652312783aedcf629320a
+> would fix it.
 
-Please place 'event' before iova when you keep it, and not at the end.
-Then you have 'where' and 'what' of the fault first before the details
-(iova, flags).
+Reverted, built, deployed, and set as default.  We shall see!
 
-	Joerg
-
--- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+Thanks,
+-Chris
