@@ -1,43 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756307Ab1ILOBa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 10:01:30 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:60037 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755994Ab1ILOB3 convert rfc822-to-8bit (ORCPT
+	id S1756218Ab1ILOGP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 10:06:15 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50765 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754774Ab1ILOGO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 10:01:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110911141040.GA23339@infradead.org>
-References: <20110907175952.GC23829@thinkpad-t410> <1315451581.92826.YahooMailClassic@web29509.mail.ird.yahoo.com>
- <20110908162303.GA18435@ubuntu-NB505> <CAG1a4rvfajX8BwbL39UP5PYcwMLi_GETS3psq7cZv48UvZv0Ng@mail.gmail.com>
- <20110911141040.GA23339@infradead.org>
-From: Pavel Ivanov <paivanof@gmail.com>
-Date: Mon, 12 Sep 2011 10:00:58 -0400
-Message-ID: <CAG1a4rubbzvOE3KoGmc_9svS-UFX8gzuE=3TnVYfGAeXCJpLYw@mail.gmail.com>
-Subject: Re: Kernel 3.1.0-rc4 oops when connecting iPod
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Hin-Tak Leung <htl10@users.sourceforge.net>,
-        Christoph Hellwig <hch@tuxera.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Seth Forshee <seth.forshee@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 12 Sep 2011 10:06:14 -0400
+Subject: [PATCH 6/5] llist: Add llist_next()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Andi Kleen <andi@firstfloor.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Date: Mon, 12 Sep 2011 16:05:48 +0200
+In-Reply-To: <1315461646-1379-1-git-send-email-ying.huang@intel.com>
+References: <1315461646-1379-1-git-send-email-ying.huang@intel.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1315836348.26517.41.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 11, 2011 at 10:10 AM, Christoph Hellwig <hch@infradead.org> wrote:
-> On Sat, Sep 10, 2011 at 11:32:15PM -0400, Pavel Ivanov wrote:
->> Seth, Christoph,
->>
->> I've just found another wrong pointers freeing. The following patch
->> should fix it.
->
-> I'd like to throw this into Seths previous patch, while adding an
-> ACK for your finding.  Is that fine with you?
+Subject: llist: Add llist_next()
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Mon Sep 12 13:12:28 CEST 2011
 
-Yes, that's fine with me.
+So we don't have to expose the struct list_node members
 
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ include/linux/llist.h |    5 +++++
+ kernel/irq_work.c     |    2 +-
+ 2 files changed, 6 insertions(+), 1 deletion(-)
+Index: linux-2.6/include/linux/llist.h
+===================================================================
+--- linux-2.6.orig/include/linux/llist.h
++++ linux-2.6/include/linux/llist.h
+@@ -144,6 +144,11 @@ static inline bool llist_empty(const str
+ 	return ACCESS_ONCE(head->first) == NULL;
+ }
+ 
++static inline struct llist_node *llist_next(struct llist_node *node)
++{
++	return node->next;
++}
++
+ /**
+  * llist_add - add a new entry
+  * @new:	new entry to be added
+Index: linux-2.6/kernel/irq_work.c
+===================================================================
+--- linux-2.6.orig/kernel/irq_work.c
++++ linux-2.6/kernel/irq_work.c
+@@ -110,7 +110,7 @@ void irq_work_run(void)
+ 	while (llnode != NULL) {
+ 		work = llist_entry(llnode, struct irq_work, llnode);
+ 
+-		llnode = llnode->next;
++		llnode = llist_next(llnode);
+ 
+ 		/*
+ 		 * Clear the PENDING bit, after this point the @work
 
-Pavel
