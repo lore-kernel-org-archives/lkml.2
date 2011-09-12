@@ -1,67 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757407Ab1ILOrK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 10:47:10 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:35970 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755899Ab1ILOrJ (ORCPT
+	id S1757537Ab1ILOr0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 10:47:26 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:54289 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757461Ab1ILOrZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 10:47:09 -0400
-Date: Mon, 12 Sep 2011 10:47:06 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Huang Ying <ying.huang@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 8/5] llist: Remove cpu_relax() usage in cmpxchg loops
-Message-ID: <20110912144706.GA21716@Krystal>
-References: <1315461646-1379-1-git-send-email-ying.huang@intel.com> <1315836358.26517.43.camel@twins> <20110912142305.GN7761@one.firstfloor.org>
+	Mon, 12 Sep 2011 10:47:25 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:date:
+	message-id:subject:from:to:cc:content-type:x-system-of-record;
+	b=XpWaFfezl4GzwoxyNSWGrArLkVP6e6J+T3JO6nfh3X+JxIIhGJmB6S4RlTq/4/Jqd
+	GYs7snjRR1KDyVyweu5ww==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110912142305.GN7761@one.firstfloor.org>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 10:43:00 up 292 days, 19:46,  4 users,  load average: 0.12, 0.09,
-	0.03
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1315838611.26517.51.camel@twins>
+References: <20110907191045.GA13475@quad>
+	<4E6E0D0B.3080306@gmail.com>
+	<CABPqkBSfQo5E=MJ913E--dc8Fi7VLcFSGNbBf60tOnTLMuVN_w@mail.gmail.com>
+	<4E6E181E.9080506@gmail.com>
+	<CABPqkBQWd=DyRRDhaxwDGrpCs=XqyTUv72+dn7GKsT=kjPqiJg@mail.gmail.com>
+	<1315838611.26517.51.camel@twins>
+Date: Mon, 12 Sep 2011 16:47:21 +0200
+Message-ID: <CABPqkBSJdCahCugQDyJnoKrB3iFh-yEWNF4Ckm0pRjbcFiKvkA@mail.gmail.com>
+Subject: Re: [PATCH] perf: make perf.data more self-descriptive (v4)
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
+        acme@redhat.com, mingo@elte.hu
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Andi Kleen (andi@firstfloor.org) wrote:
-> On Mon, Sep 12, 2011 at 04:05:58PM +0200, Peter Zijlstra wrote:
-> > Subject: llist: Remove cpu_relax() usage in cmpxchg loops
-> > From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Date: Mon Sep 12 15:50:49 CEST 2011
-> > 
-> > Initial benchmarks show they're a net loss (2 socket wsm):
-> > 
-> 
-> May still save power.
-
-Looking at kernel/spinlock.c:
-
-void __lockfunc __raw_##op##_lock(locktype##_t *lock) \
-{
-[...]
-                while (!raw_##op##_can_lock(lock) && (lock)->break_lock)\
-                        arch_##op##_relax(&lock->raw_lock); \
-
-so basically, in typical locking primitives (spinlock), it looks like
-lower power consumption is preferred over getting the raw maximal
-performance in fully contented scenarios.
-
-So what is the rationale for making those lock-less lists retry scheme
-different from spinlocks here ?
-
-Thanks,
-
-Mathieu
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+On Mon, Sep 12, 2011 at 4:43 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Mon, 2011-09-12 at 16:40 +0200, Stephane Eranian wrote:
+>> I don't think this should be the test to detect endianess.
+>
+> You should be able to tell the endianness from the PERF_MAGIC string, it
+> stores the string as a u64, so depending on endianness it reads back as
+> either: PERFFILE or ELIFFREP or whatever the bswap64 result is.
+>
+right, something like that...
