@@ -1,72 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755438Ab1ILMgR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 08:36:17 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49710 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752562Ab1ILMgQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 08:36:16 -0400
-Subject: Re: CFS Bandwidth Control - Test results of cgroups tasks pinned vs
- unpinnede
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Cc: Paul Turner <pjt@google.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelianov <xemul@parallels.com>
-Date: Mon, 12 Sep 2011 14:35:43 +0200
-In-Reply-To: <20110912101722.GA28950@linux.vnet.ibm.com>
-References: <20110608163234.GA23031@linux.vnet.ibm.com>
-	 <BANLkTim7a9uhH_K6sw4YdqWB6frT+HUqqQ@mail.gmail.com>
-	 <20110610181719.GA30330@linux.vnet.ibm.com>
-	 <BANLkTimE1b8HP-q4jgsv5jPD5S-dRoUi_g@mail.gmail.com>
-	 <20110615053716.GA390@linux.vnet.ibm.com>
-	 <BANLkTi=7S2qdVjbJkDja+GAoD=pNo2gPsTFZMFkB8NWWkO1JVQ@mail.gmail.com>
-	 <20110907152009.GA3868@linux.vnet.ibm.com>
-	 <1315423342.11101.25.camel@twins>
-	 <20110908151433.GB6587@linux.vnet.ibm.com> <1315571462.26517.9.camel@twins>
-	 <20110912101722.GA28950@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1315830943.26517.36.camel@twins>
-Mime-Version: 1.0
+	id S1755733Ab1ILMhx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 08:37:53 -0400
+Received: from usb.org.br ([200.178.205.154]:49284 "EHLO usb.org.br"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752562Ab1ILMhw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Sep 2011 08:37:52 -0400
+Message-ID: <47349.190.144.165.226.1315830785.squirrel@webmail.usb.org.br>
+Date: Mon, 12 Sep 2011 09:33:05 -0300 (BRT)
+Subject: Assalam-o-alaikum!
+From: "Sabah Rahil" <rabil_sabah@hotmail.com>
+Reply-To: rabil_sabah@hotmail.com
+User-Agent: SquirrelMail/1.4.8
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.0.1 (usb.org.br [10.11.0.1]); Mon, 12 Sep 2011 09:33:05 -0300 (BRT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-09-12 at 15:47 +0530, Srivatsa Vaddagiri wrote:
-> * Peter Zijlstra <a.p.zijlstra@chello.nl> [2011-09-09 14:31:02]:
-> 
-> > > Machine : 16-cpus (2 Quad-core w/ HT enabled)
-> > > Cgroups : 5 in number (C1-C5), each having {2, 2, 4, 8, 16} tasks respectively.
-> > >           Further, each task is placed in its own (sub-)cgroup with 
-> > >           a capped usage of 50% CPU.
-> > 
-> > So that's loads: {512,512}, {512,512}, {256,256,256,256}, {128,..} and {64,..}
-> 
-> Yes, with the default shares of 1024 for each cgroup.
-> 
-> FWIW we did also try setting shares for each cgroup proportional to number of 
-> tasks it has. For ex: C1's shares = 1024 * 2 = 2048, C2 = 1024 * 2 = 2048, 
-> C3 = 4 * 1024 = 4096 etc. while /C1/C1_1, /C1/C1_2, .../C5/C5_16/ shares were 
-> left at default of 1024 (as those sub-cgroups contain only one task). 
->  
-> That does help reduce idle time by almost 50% (from 15-20% -> 6-9%)
+Greetings. My name is Sabah Rahil , i'm in urgent need of your assistance please
+respond to my email.
 
-Of course it does.. and I bet you can improve that slightly if you
-manage to fix some of the numerical nightmares that live in the cgroup
-load-balancer (Paul, care to share your WIP?)
+Regards
+Sabah Rahil
 
-But the initial scenario is a complete and utter fail, its impossible to
-schedule that sanely. Its an infeasible weight scenario with more tasks
-than cpus, and the added bandwidth constraints just keep changing the
-set requiring endless migrations to try and keep utilization from
-tanking.
-
-Really, classic fail.
