@@ -1,77 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755246Ab1ILWRF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 18:17:05 -0400
-Received: from peace.netnation.com ([204.174.223.2]:50644 "EHLO
-	peace.netnation.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755173Ab1ILWRC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 18:17:02 -0400
-Date: Mon, 12 Sep 2011 15:17:00 -0700
-From: Simon Kirby <sim@hostway.ca>
-To: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
-Subject: Re: [3.1-rc4] vfs_rmdir() -> mutex_unlock() Oops
-Message-ID: <20110912221700.GA11962@hostway.ca>
-References: <20110908222420.GE8043@hostway.ca>
+	id S1755304Ab1ILWUX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 18:20:23 -0400
+Received: from fieldses.org ([174.143.236.118]:40756 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755182Ab1ILWUU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Sep 2011 18:20:20 -0400
+Date: Mon, 12 Sep 2011 18:20:14 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: Valdis.Kletnieks@vt.edu,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        agruen@kernel.org, akpm@linux-foundation.org, dhowells@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        LSM <linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH -V6 00/26] New ACL format for better NFSv4 acl
+ interoperability
+Message-ID: <20110912222014.GA17483@fieldses.org>
+References: <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <4E655049.6060507@schaufler-ca.com>
+ <108028.1315442771@turing-police.cc.vt.edu>
+ <4E6E7ACC.8040003@schaufler-ca.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110908222420.GE8043@hostway.ca>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4E6E7ACC.8040003@schaufler-ca.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 08, 2011 at 03:24:20PM -0700, Simon Kirby wrote:
+On Mon, Sep 12, 2011 at 02:34:04PM -0700, Casey Schaufler wrote:
+> On 9/7/2011 5:46 PM, Valdis.Kletnieks@vt.edu wrote:
+> > On Mon, 05 Sep 2011 15:42:17 PDT, Casey Schaufler said:
+> >> On 9/5/2011 10:25 AM, Aneesh Kumar K.V wrote:
+> >>> The following set of patches implements VFS and ext4 changes needed to implement
+> >>> a new acl model for linux. Rich ACLs are an implementation of NFSv4 ACLs,
+> >>> extended by file( masks to fit into the standard POSIX file permission model.
+> >>> They are designed to work seamlessly locally as well as across the NFSv4 and
+> >>> CIFS/SMB2 network file system protocols.
+> >>
+> >> POSIX ACLs predate the LSM and can't be done as an LSM due to
+> >> the interactions between mode bits and ACLs as defined by the
+> >> POSIX DRAFT specification.
 
-> This box primarily does most of its VFS stuff over lots of NFS mounts,
-> but has some local EXT3 filesystems. This has happened a couple of times:
-> 
-> BUG: unable to handle kernel NULL pointer dereference at 00000000000000b8
-> IP: [<ffffffff816a6641>] mutex_unlock+0x1/0x20
-> PGD 12e07e067 PUD 102dfa067 PMD 0
-> Oops: 0002 [#1] SMP
-> CPU 3
-> Modules linked in: ipmi_devintf ipmi_si ipmi_msghandler xt_recent nf_conntrack_ftp xt_state xt_owner nf_conntrack_ipv4 nf_conntrack nf_defrag_ipv4 bnx2
-> [445464.657194]
-> Pid: 13796, comm: php Tainted: G        W   3.1.0-rc4-hw+ #27 Dell Inc. PowerEdge 1950/0UR033
-> RIP: 0010:[<ffffffff816a6641>]  [<ffffffff816a6641>] mutex_unlock+0x1/0x20
-> RSP: 0018:ffff8801381c7e58  EFLAGS: 00010206
-> RAX: 00000000fffffffe RBX: ffff88002e95aca8 RCX: ffff88010712dc70
-> RDX: 0000000040000200 RSI: ffff880126d21cc0 RDI: 00000000000000a0
-> RBP: ffff8801381c7e88 R08: 0000000026361000 R09: 0000000000000000
-> R10: 0000000000000000 R11: 0000000000000002 R12: 00000000fffffffe
-> R13: ffff880126d21cc0 R14: 00007f0a6e0ba9d8 R15: 00007f0a6e0bd258
-> FS:  00007f0a6e1c1720(0000) GS:ffff88022fcc0000(0000) knlGS:0000000000000000
-> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> CR2: 00000000000000b8 CR3: 000000012692a000 CR4: 00000000000006e0
-> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> Process php (pid: 13796, threadinfo ffff8801381c6000, task ffff88003ed4d900)
-> Stack:
->  ffff8801381c7e88 ffffffff8110e680 ffff8801381c7e98 ffff880126d21cc0
->  ffff8801381c7e98 0000000000000000 ffff8801381c7f68 ffffffff8110e7a6
->  ffff880225eed800 ffff8800bea6d780 00000004018245d5 ffff88003ed0b03b
-> Call Trace:
->  [<ffffffff8110e680>] ? vfs_rmdir+0xb0/0x100
->  [<ffffffff8110e7a6>] do_rmdir+0xd6/0x130
->  [<ffffffff811049c1>] ? sys_newlstat+0x31/0x50
->  [<ffffffff8110e851>] sys_rmdir+0x11/0x20
->  [<ffffffff816af57b>] system_call_fastpath+0x16/0x1b
-> Code: 0f 79 05 e8 d2 00 00 00 65 48 8b 04 25 c0 b5 00 00 48 8b 1c 24 49 89 44 24 18 4c 8b 64 24 08 c9 c3 66 0f 1f 84 00 00 00 00 00 55
->  c7 47 18 00 00 00 00 48 89 e5 f0 ff 07 7f 05 e8 4a 00 00 00
-> RIP  [<ffffffff816a6641>] mutex_unlock+0x1/0x20
->  RSP <ffff8801381c7e58>
-> CR2: 00000000000000b8
-> ---[ end trace 3ad1ff5004f78cbb ]---
-> 
-> I don't see any relevant changes in Linus HEAD yet. This build was of
-> 9e79e3e9dd9672b37ac9412e9a926714306551fe (slightly past 3.1-rc4).
+I don't know LSM so don't understand what you mean when you say that
+interactions between mode bits and ACLs would make an ACL model hard to
+implement as an LSM.
 
-Got a few more identical Oopses on another box running slightly past
-3.1-rc5 (79016f648872549392d232cd648bd02298c2d2bb). It seems to be
-do_rmdir()'s mutex_unlock() call.
+But in any case the rich acl/mode bit interactions are similar to the
+posix acl/mode bit interactions, so the same issue probably applies.
 
-I'm building -rc6 with CONFIG_DEBUG_MUTEXES now.
-
-Simon-
+--b.
