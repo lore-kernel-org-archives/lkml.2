@@ -1,66 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752626Ab1ILJEu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 05:04:50 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:54966 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750911Ab1ILJEt (ORCPT
+	id S1753489Ab1ILJFN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 05:05:13 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:35233 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752959Ab1ILJFL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 05:04:49 -0400
-Message-ID: <4E6DCAF5.50607@atmel.com>
-Date: Mon, 12 Sep 2011 11:03:49 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Josef Holzmayr <holzmayr@rsi-elektrotechnik.de>,
-        Nico Erfurth <ne@erfurth.eu>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>
-Subject: Re: [GIT PULL] at91: changes for next
-References: <4E6A09D0.40800@atmel.com> <201109102306.58340.arnd@arndb.de>
-In-Reply-To: <201109102306.58340.arnd@arndb.de>
-X-Enigmail-Version: 1.3.1
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 12 Sep 2011 05:05:11 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+cVMtQqIucfHRX832LCR/CtYuWCTcLnXs0JnOdpW
+	eUfKG5C8IevfaH
+Subject: Re: [ANNOUNCE] 3.0.4-rt13
+From: Mike Galbraith <efault@gmx.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+In-Reply-To: <1315817948.26517.16.camel@twins>
+References: <alpine.LFD.2.02.1109101052340.2723@ionos>
+	 <1315737307.6544.1.camel@marge.simson.net>
+	 <1315817948.26517.16.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 12 Sep 2011 11:05:07 +0200
+Message-ID: <1315818307.21927.30.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 10/09/2011 23:06, Arnd Bergmann :
-> On Friday 09 September 2011, Nicolas Ferre wrote:
->> Can you please pull the following changes since commit ddf28352b80c86754a6424e3a61e8bdf9213b3c7:
->>
->>   Linux 3.1-rc5 (2011-09-04 15:45:10 -0700)
->>
->> They are available in the git repository at:
->>   git://github.com/at91linux/linux-at91.git  at91-next
->>
->> They have been present on linux-arm-kernel for some time and where recently added in linux-next.
->> Stephen resolved some trivial conflicts relatives to the removal of a board file (Cf:
->> https://lkml.org/lkml/2011/9/9/96 ).
->>
->> A series by Thomas is touching the USB subsystem: ohci-at91.c but as most of changes are in the at91 directory, it makes more sense to take them in arm-soc.
+On Mon, 2011-09-12 at 10:59 +0200, Peter Zijlstra wrote:
+> On Sun, 2011-09-11 at 12:35 +0200, Mike Galbraith wrote:
+> > (gdb) list *do_sigtimedwait+0x62
+> > 0xffffffff8104f3e2 is in do_sigtimedwait (kernel/signal.c:2628).
+> > 2623             * Invert the set of allowed signals to get those we want to block.
+> > 2624             */
+> > 2625            sigdelsetmask(&mask, sigmask(SIGKILL) | sigmask(SIGSTOP));
+> > 2626            signotset(&mask);
+> > 2627
+> > 2628            spin_lock_irq(&tsk->sighand->siglock);
+> > 2629            sig = dequeue_signal(tsk, &mask, info);
+> > 2630            if (!sig && timeout) {
+> > 2631                    /*
+> > 2632                     * None ready, temporarily unblock those we're interested
+> > (gdb) list *do_sigtimedwait+0x15f
+> > 0xffffffff8104f4df is in do_sigtimedwait (kernel/signal.c:2642).
+> > 2637                    tsk->real_blocked = tsk->blocked;
+> > 2638                    sigandsets(&tsk->blocked, &tsk->blocked, &mask);
+> > 2639                    recalc_sigpending();
+> > 2640                    spin_unlock_irq(&tsk->sighand->siglock);
+> > 2641
+> > 2642                    timeout = schedule_timeout_interruptible(timeout);
+> > 2643
+> > 2644                    spin_lock_irq(&tsk->sighand->siglock);
+> > 2645                    __set_task_blocked(tsk, &tsk->real_blocked);
+> > 2646                    siginitset(&tsk->real_blocked, 0);
+> > 
 > 
-> Hi Nicolas,
 > 
-> I've resumed pulling patches and uploaded them to git.linaro.org while
-> master.kernel.org continues to be unavailable.
+> Right, so what Thomas says.. Now admittedly I haven't had my morning
+> juice yet, but staring at that function I can't see why that warning
+> would trigger at all.
 > 
-> I've decided to split your branch into two separate branches 'board'
-> and 'devel' to better match the code from other soc trees in a way
-> that I can send forward to Linus. Please check that the split trees
-> actually make sense, and tell me if that's ok for you or if you would
-> prefer them split differently.
+> I'm going to try and reproduce, but Thomas is already saying he can't,
+> so I'm not too confident.
+> 
+> I you can easily trigger this, could you add some trace_printk() to
+> migrate_disable/enable that prints both counters etc.. so we can see wtf
+> happens?
 
-I have checked and It is perfect for me.
+It was highly repeatable with rt executive model running on 3 CPUs, will
+poke.
 
-Thanks a lot Arnd, bye,
--- 
-Nicolas Ferre
+	-Mike
+
 
