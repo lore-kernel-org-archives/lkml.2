@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753534Ab1ILSQH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 14:16:07 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:33851 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751352Ab1ILSQD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 14:16:03 -0400
+	id S1753429Ab1ILS0A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 14:26:00 -0400
+Received: from mx2.fusionio.com ([66.114.96.31]:56049 "EHLO mx2.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752791Ab1ILSZ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Sep 2011 14:25:56 -0400
+X-ASG-Debug-ID: 1315851946-01de285e7b46590001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4E6E4EA5.1050701@fusionio.com>
+Date: Mon, 12 Sep 2011 20:25:41 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-In-Reply-To: <20110912144717.GB2555@redhat.com>
-References: <94c0e3275b0bf7d2cad8e7909da1482a867e7bc6.1314725877.git.jbaron@redhat.com>
- <20110908165230.a7505321.akpm@linux-foundation.org> <1315534396.11939.10.camel@Joe-Laptop>
- <20110908204200.6cf7abc2.akpm@linux-foundation.org> <1315540963.11939.12.camel@Joe-Laptop>
- <CAO+b5-oOHXEhnA+zpwA9GR7k1TX3Wn6XuOdc3TB4MPNiSpskiw@mail.gmail.com>
- <CAJfuBxx=r_P7em_naUN_c96A++V4v6nfd8B_V2dppRag-z_qwg@mail.gmail.com>
- <1315602252.23777.5.camel@Joe-Laptop> <CAJfuBxwtefLyJcz1EbKvsGJ+XMtJiRW7A3Yy+wHXgL3GpUXbSg@mail.gmail.com>
- <1315607527.23777.21.camel@Joe-Laptop> <20110912144717.GB2555@redhat.com>
-From: Jim Cromie <jim.cromie@gmail.com>
-Date: Mon, 12 Sep 2011 12:15:32 -0600
-Message-ID: <CAJfuBxysYL+Co3vDnWKYX_nJHaFoq9MJ9o4DP1Djwh84nm7HJA@mail.gmail.com>
-Subject: Re: [PATCH 1/4] dynamic_debug: consolidate repetitive struct _ddebug
- descriptor definitions
-To: Jason Baron <jbaron@redhat.com>
-Cc: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>,
-        gregkh@suse.de, Bart Van Assche <bvanassche@acm.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Christoph Hellwig <hch@infradead.org>
+CC: "Sam Bradshaw (sbradshaw)" <sbradshaw@micron.com>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jeff Garzik <jgarzik@pobox.com>,
+        "jmoyer@redhat.com" <jmoyer@redhat.com>,
+        "Asai Thambi Samymuthu Pattrayasamy (asamymuthupa) [CONTRACTOR]" 
+	<asamymuthupa@micron.com>
+Subject: Re: [PATCH v4] drivers/block/mtip32xx: Adding new driver mtip32xx
+References: <22A973199D2C2F46933448F6E7990A3002C80026@ntxboimbx31.micron.com> <4E44E782.7090309@fusionio.com> <2A9BE4FF6209B644B6F8EB62DE6AEA1E07663ED4@ntxfrembx01.micron.com> <20110909085433.GA9593@infradead.org> <4E69D519.8070802@fusionio.com> <20110912150228.GA5771@infradead.org>
+X-ASG-Orig-Subj: Re: [PATCH v4] drivers/block/mtip32xx: Adding new driver mtip32xx
+In-Reply-To: <20110912150228.GA5771@infradead.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1315851946
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.74330
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> No real idea why it's aligned(8).  Jason?
+On 2011-09-12 17:02, Christoph Hellwig wrote:
+> On Fri, Sep 09, 2011 at 10:58:01AM +0200, Jens Axboe wrote:
+>>>    Documentation/block/writeback_cache_control.txt file is the canonical
+>>>    resource.  Implementing your driver at the make_request layer
+>>>    unfortunately means you will have to do all the hard work yourself.
+>>>  - also the call to blk_queue_flush(queue, 0); from ->make_request for
+>>>    a non-data request is completely wrong.
 >>
->
-> I think when I first implemented it, I noticed that subsystems that did
-> similar things, set aligned(8) in include/asm-generic/vmlinux.lds.h. For
-> example, FTRACE_EVENTS() sets ALIGN(8)...I know that not a great reason
-> thouh :( Don't remember if I tried ALIGN(4), but if it saves space, we
-> can look at it...
->
+>> I noticed both of these flush/fua problems too and have fixed them up.
+> 
+> I still can't find any fixes in your repository.
 
-I tried it here on 32bit (on 586 class machine), it blew up.
-I imagine it could be made to work, but its not a gimme.
+It wasn't/isn't done, it's still sitting on the test box. I'll wrap it
+up tomorrow.
 
-> Also, as I mentioned before, we probably need an extra array of pointers into
-> the dynamic debug structures. see: https://lkml.org/lkml/2011/1/26/463.
->
 
-I'll try it again, once this happens.
+-- 
+Jens Axboe
 
-> thanks,
->
-> -Jason
->
