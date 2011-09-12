@@ -1,86 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755777Ab1ILMpS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 08:45:18 -0400
-Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:38735 "EHLO
-	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753771Ab1ILMpQ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 08:45:16 -0400
+	id S1755801Ab1ILMtJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 08:49:09 -0400
+Received: from mga02.intel.com ([134.134.136.20]:48788 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754037Ab1ILMtH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Sep 2011 08:49:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="47475750"
+From: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
+To: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>,
+        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        "cbou@mail.ru" <cbou@mail.ru>
+CC: "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        =?ks_c_5601-1987?B?udqw5rnO?= <kyungmin.park@samsung.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        "R, Durgadoss" <durgadoss.r@intel.com>
+Date: Mon, 12 Sep 2011 18:18:21 +0530
+Subject: RE: RE: [PATCHv1 1/1] [Power Supply]: Fix error handling in
+ max17042 fuel gauge
+Thread-Topic: RE: [PATCHv1 1/1] [Power Supply]: Fix error handling in
+ max17042 fuel gauge
+Thread-Index: AcxtOsRnz/g5r7rjSFiRud9kKwPRzgBEs2mQAL8dnyA=
+Message-ID: <12D0C12AF19E15409D57F22566E88EF50975C6147C@bgsmsx501.gar.corp.intel.com>
+References: <14735031.596001315385240106.JavaMail.weblogic@epml15> 
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="ks_c_5601-1987"
 MIME-Version: 1.0
-In-Reply-To: <20110912121255.GA2520@xps8300>
-References: <1315379772-8830-1-git-send-email-heikki.krogerus@linux.intel.com>
-	<20110912121255.GA2520@xps8300>
-Date: Mon, 12 Sep 2011 18:15:15 +0530
-Message-ID: <CAAe_U6LXt+f-xf7iO7xP6G7A3qZDnptQFJOHwS1UBeq0XTCyjg@mail.gmail.com>
-Subject: Re: [PATCHv4 00/19] First round in OTG rework
-From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Cc: Li Yang <leoli@freescale.com>,
-        Pavankumar Kondeti <pkondeti@codeaurora.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>, Felipe Balbi <balbi@ti.com>,
-        Greg KH <gregkh@suse.de>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Chen <peter.chen@freescale.com>,
-        Lin Tony-B19295 <B19295@freescale.com>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id p8CCnNQl010725
 
-Tested your patches in OMAP4 which has twl6030.
+Hi Anton,
 
-Tested-by: Kishon Vijay Abraham I <kishon@ti.com>
-
-On Mon, Sep 12, 2011 at 5:42 PM, Heikki Krogerus
-<heikki.krogerus@linux.intel.com> wrote:
-> Hi guys,
->
-> On Wed, Sep 07, 2011 at 10:15:53AM +0300, Heikki Krogerus wrote:
->> There were no comments in two weeks, so I'm dropping the RFC.
->> Otherwise this is the same as the previous, no changes.
->>
->> Quick summary:
->> This introduces struct usb_phy and struct usb_otg that
->> replace struct otg_transceiver. The transceiver and phy
->> members from struct otg_transceiver are left in struct
->> usb_phy and otg specific members are moved to struct
->> usb_otg.
->>
->> So the idea is simply to separate USB PHY handling from OTG.
->>
->> Heikki Krogerus (19):
->>   usb: otg: Rename otg_transceiver to usb_phy
->>   usb: otg: Rename usb_otg and usb_xceiv to usb_phy
->>   usb: otg: Separate otg members from usb_phy
->>   usb: otg: ab8500: Start using struct usb_otg
->>   usb: otg: fsl: Start using struct usb_otg
->>   usb: otg: gpio_vbus: Start using struct usb_otg
->>   usb: otg: isp1301_omap: Start using struct usb_otg
->>   usb: otg: msm: Start using struct usb_otg
->>   usb: otg: langwell: Start using struct usb_otg
->>   usb: otg: nop: Start using struct usb_otg
->>   usb: otg: twl4030: Start using struct usb_otg
->>   usb: otg: twl6030: Start using struct usb_otg
->>   usb: otg: ulpi: Start using struct usb_otg
->>   arm: imx: Start using struct usb_otg
->>   usb: musb: Start using struct usb_otg
->>   power_supply: Convert all users to new usb_phy
->>   usb: Convert all users to new usb_phy
->>   usb: otg: Remove OTG specific members from usb_phy
->>   usb: otg: Convert all users to pass struct usb_otg for OTG functions
->
-> You guys are maintainers of the tranceiver/otg drivers. Can you test
-> these and ACK the patch for your driver if you feel there is nothing
-> wrong with these? I would much appreciate.
->
+> -----Original Message-----
+> From: Pallala, Ramakrishna
+> Sent: Thursday, September 08, 2011 11:07 PM
+> To: myungjoo.ham@samsung.com; linux-kernel@vger.kernel.org; Anton Vorontsov
+> Cc: dwmw2@infradead.org; ¹Ú°æ¹Î; Wolfram Sang; R, Durgadoss
+> Subject: RE: RE: [PATCHv1 1/1] [Power Supply]: Fix error handling in max17042 fuel gauge
+> 
+> Hi Anton,
+> 
+> > -----Original Message-----
+> > From: MyungJoo Ham [mailto:myungjoo.ham@samsung.com]
+> > Sent: Wednesday, September 07, 2011 2:17 PM
+> > To: Pallala, Ramakrishna; linux-kernel@vger.kernel.org
+> > Cc: Anton Vorontsov; dwmw2@infradead.org; ¹Ú°æ¹Î; Wolfram Sang; R, Durgadoss
+> > Subject: Re: RE: [PATCHv1 1/1] [Power Supply]: Fix error handling in max17042 fuel
+> gauge
+> >
+> > Sender : Pallala, Ramakrishna<ramakrishna.pallala@intel.com> Date : 2011-09-07 17:30
+> > (GMT+09:00)
+> > > Hi MyungJoo,
+> > >
+> > > > -----Original Message-----
+> > > > From: MyungJoo Ham [mailto:myungjoo.ham@samsung.com]
+> > > > Sent: Monday, September 05, 2011 6:55 AM
+> > > > To: Pallala, Ramakrishna; linux-kernel@vger.kernel.org
+> > > > Cc: Anton Vorontsov; dwmw2@infradead.org; ¹Ú°æ¹Î; Wolfram Sang; R, Durgadoss
+> > > > Subject: Re: [PATCHv1 1/1] [Power Supply]: Fix error handling in max17042 fuel
+> gauge
+> > > >
+> > > > Sender : Ramakrishna Pallala<ramakrishna.pallala@intel.com> Date : 2011-09-02
+> 15:45
+> > > > (GMT+09:00)
+> > > > >
+> > > > > In max17042_get_property(...), the values returned by
+> > > > > max17042_read_reg are directly assigned to the variables,
+> > > > > even if the read results in an error.
+> > > > >
+> > > > > This patch checks for the return code from max17042_read_reg and
+> > > > > exits the function if there is any error.
+> > > > >
+> > > > > Signed-off-by: Ramakrishna Pallala
+> > > > > ---
+> > > > > drivers/power/max17042_battery.c |   85 ++++++++++++++++++++++++++------------
+> > > > > 1 files changed, 58 insertions(+), 27 deletions(-)
+> > > > >
+> > > >
+> > > > Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> > >
+> > > Thanks for the Ack.
+> > > When can I expect the patch to be merged ?
+> > >
+> > > Thanks,
+> > > Ram
+> > >
+> >
+> > Hello Ram,
+> >
+> > Although I'd be so glad to be able to merge patches of MAX17042 (and
+> > MAX8997/8998/8952/8903/...?) by myself; however, I'm not a maintainer of MAX17042.
+> >
+> > I guess you need to wait for Anton.
+> >
+> > Cheers,
+> > MyungJoo
+> 
+> When can I expect the patch to be merged ?
+> 
 > Thanks,
->
-> --
-> heikki
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+> Ram
+
+Please let me know your feedback on this patch.
+
+Thanks,
+Ram
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
