@@ -1,81 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755765Ab1ILXLo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 19:11:44 -0400
-Received: from mail-vw0-f52.google.com ([209.85.212.52]:45745 "EHLO
-	mail-vw0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755486Ab1ILXLm (ORCPT
+	id S1755946Ab1ILXLz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 19:11:55 -0400
+Received: from mail-qw0-f42.google.com ([209.85.216.42]:49111 "EHLO
+	mail-qw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755825Ab1ILXLu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 19:11:42 -0400
+	Mon, 12 Sep 2011 19:11:50 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
+        Containers <containers@lists.osdl.org>,
         Paul Menage <paul@paulmenage.org>, Li Zefan <lizf@cn.fujitsu.com>,
         Johannes Weiner <hannes@cmpxchg.org>,
         Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
         Kay Sievers <kay.sievers@vrfy.org>, Tim Hockin <thockin@hockin.org>,
-        Tejun Heo <tj@kernel.org>, Containers <containers@lists.osdl.org>
-Subject: [PATCH 00/11 v5] cgroups: Task counter subsystem
-Date: Tue, 13 Sep 2011 01:11:20 +0200
-Message-Id: <1315869091-18933-1-git-send-email-fweisbec@gmail.com>
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 02/11] cgroups: New resource counter inheritance API
+Date: Tue, 13 Sep 2011 01:11:22 +0200
+Message-Id: <1315869091-18933-3-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1315869091-18933-1-git-send-email-fweisbec@gmail.com>
+References: <1315869091-18933-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No functional changes. Only documentation and comments added.
-Checkpatch.pl fixes, etc...
+Provide an API to inherit a counter value from a parent.
+This can be useful to implement cgroup.clone_children on
+a resource counter.
 
-This mostly addresses Andrew's reviews on v4.
+Still the resources of the children are limited by those
+of the parent, so this is only to provide a default setting
+behaviour when clone_children is set.
 
-Changes in v5:
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Paul Menage <paul@paulmenage.org>
+Cc: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Aditya Kali <adityakali@google.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Tim Hockin <thockin@hockin.org>
+Cc: Tejun Heo <tj@kernel.org>
+---
+ include/linux/res_counter.h |    2 ++
+ kernel/res_counter.c        |   18 ++++++++++++++++++
+ 2 files changed, 20 insertions(+), 0 deletions(-)
 
-- commented res_counter_common_ancestor (patch 6)
-- commented res_counter_inherit (patch 2)
-- merged documentation and task counter subsystem patch (patch 9)
-- rename cgroup_task_counter_res in cgroup_task_res_counter (patch 9)
-- more comments/ fix comments in cgroup_task_counter.c (patch 9)
-- document res_counter_charge return value (patch 8)
-- document res_counter_charge_until (patch 5)
-- more comment in kconfig help (patch 9)
-- fix various checkpatch reported issues
-
-Frederic Weisbecker (11):
-  cgroups: Add res_counter_write_u64() API
-  cgroups: New resource counter inheritance API
-  cgroups: Add previous cgroup in can_attach_task/attach_task callbacks
-  cgroups: New cancel_attach_task subsystem callback
-  cgroups: Ability to stop res charge propagation on bounded ancestor
-  cgroups: Add res counter common ancestor searching
-  res_counter: Allow charge failure pointer to be null
-  cgroups: Pull up res counter charge failure interpretation to caller
-  cgroups: Add a task counter subsystem
-  cgroups: Allow subsystems to cancel a fork
-  cgroups: Convert task counter to use the subsys fork callback
-
- Documentation/cgroups/cgroups.txt          |   13 ++-
- Documentation/cgroups/resource_counter.txt |   20 +++-
- Documentation/cgroups/task_counter.txt     |  126 +++++++++++++++
- block/blk-cgroup.c                         |   12 +-
- include/linux/cgroup.h                     |   22 ++-
- include/linux/cgroup_subsys.h              |    8 +
- include/linux/res_counter.h                |   27 +++-
- init/Kconfig                               |    9 +
- kernel/Makefile                            |    1 +
- kernel/cgroup.c                            |   58 ++++++--
- kernel/cgroup_freezer.c                    |    9 +-
- kernel/cgroup_task_counter.c               |  239 ++++++++++++++++++++++++++++
- kernel/cpuset.c                            |    6 +-
- kernel/events/core.c                       |    5 +-
- kernel/exit.c                              |    2 +-
- kernel/fork.c                              |    7 +-
- kernel/res_counter.c                       |   86 +++++++++--
- kernel/sched.c                             |    6 +-
- 18 files changed, 601 insertions(+), 55 deletions(-)
- create mode 100644 Documentation/cgroups/task_counter.txt
- create mode 100644 kernel/cgroup_task_counter.c
-
+diff --git a/include/linux/res_counter.h b/include/linux/res_counter.h
+index 1b3fe05..109d118 100644
+--- a/include/linux/res_counter.h
++++ b/include/linux/res_counter.h
+@@ -84,6 +84,8 @@ int res_counter_write(struct res_counter *counter, int member,
+ 
+ void res_counter_write_u64(struct res_counter *counter, int member, u64 val);
+ 
++void res_counter_inherit(struct res_counter *counter, int member);
++
+ /*
+  * the field descriptors. one for each member of res_counter
+  */
+diff --git a/kernel/res_counter.c b/kernel/res_counter.c
+index 0faafcc..37abf4e 100644
+--- a/kernel/res_counter.c
++++ b/kernel/res_counter.c
+@@ -202,3 +202,21 @@ int res_counter_write(struct res_counter *counter, int member,
+ 
+ 	return 0;
+ }
++
++/*
++ * Simple inheritance implementation to get the same value
++ * than a parent. However this doesn't enforce the child value
++ * to be always below the one of the parent. But the child is
++ * subject to its parent limitation anyway.
++ */
++void res_counter_inherit(struct res_counter *counter, int member)
++{
++	struct res_counter *parent;
++	unsigned long long val;
++
++	parent = counter->parent;
++	if (parent) {
++		val = res_counter_read_u64(parent, member);
++		res_counter_write_u64(counter, member, val);
++	}
++}
 -- 
 1.7.5.4
 
