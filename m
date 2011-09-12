@@ -1,88 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756949Ab1ILOX2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 10:23:28 -0400
-Received: from mail-ey0-f175.google.com ([209.85.215.175]:48282 "EHLO
-	mail-ey0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755012Ab1ILOX1 (ORCPT
+	id S1756989Ab1ILOYP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 10:24:15 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51069 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756671Ab1ILOYN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 10:23:27 -0400
-X-Greylist: delayed 481 seconds by postgrey-1.27 at vger.kernel.org; Mon, 12 Sep 2011 10:23:27 EDT
-Date: Mon, 12 Sep 2011 10:15:20 -0400
-From: Benjamin Poirier <benjamin.poirier@gmail.com>
-To: David Howells <dhowells@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Documentation/memory-barriers.txt
-Message-ID: <20110912141520.GA18647@synalogic.ca>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 12 Sep 2011 10:24:13 -0400
+Subject: Re: [PATCH 8/5] llist: Remove cpu_relax() usage in cmpxchg loops
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Huang Ying <ying.huang@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Date: Mon, 12 Sep 2011 16:23:53 +0200
+In-Reply-To: <20110912142305.GN7761@one.firstfloor.org>
+References: <1315461646-1379-1-git-send-email-ying.huang@intel.com>
+	 <1315836358.26517.43.camel@twins>
+	 <20110912142305.GN7761@one.firstfloor.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1315837433.26517.45.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello David, Paul,
+On Mon, 2011-09-12 at 16:23 +0200, Andi Kleen wrote:
+> On Mon, Sep 12, 2011 at 04:05:58PM +0200, Peter Zijlstra wrote:
+> > Subject: llist: Remove cpu_relax() usage in cmpxchg loops
+> > From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > Date: Mon Sep 12 15:50:49 CEST 2011
+> > 
+> > Initial benchmarks show they're a net loss (2 socket wsm):
+> > 
+> 
+> May still save power. however:
+> 
+> >  		entry = cmpxchg(&head->first, old_entry, new);
+> >  		if (entry == old_entry)
+> >  			break;
+> > -		cpu_relax();
+> 
+> You need at least a barrier() then, otherwise the compiler could
+> change the memory order in the loop.
 
-Thank you for this great piece on memory barriers. I think it made a
-complex topic approachable. I have two questions:
-1)
-I had a hard time understanding the second part of the example in the
-section "Sleep and wake-up functions".
-
-> 	set_current_state(TASK_INTERRUPTIBLE);
-> 	if (event_indicated)
-> 		break;
-> 	__set_current_state(TASK_RUNNING);
-> 	do_something(my_data);
-
-I understand the need for memory barriers, but I don't understand what
-the code is trying to achieve.
-Where are the for (;;) loop and the schedule() call gone to?
-
-> 	set_current_state(TASK_INTERRUPTIBLE);
-> 	if (event_indicated) {
-> 		smp_rmb();
-> 		do_something(my_data);
-> 	}
-
-Isn't a break; missing here? How come do_something() has moved inside
-the condition?
-
-I'm thinking these final example code bits should look like this
-(without and with the smp_rmb), no?:
-
-for (;;) {
-	set_current_state(TASK_INTERRUPTIBLE);
-	if (event_indicated) {
-		smp_rmb();
-		do_something(my_data);
-		break;
-	}
-	schedule();
-}
-__set_current_state(TASK_RUNNING);
-
-2)
-On a more general note, why is there a read_barrier_depends() but not a
-write_barrier_depends()?
-
-l=7
-"write_barrier_depends()"
-g=&l
-
----
-
-l=g
-read_barrier_depends()
-t=*l
-
-Most processors do not reorder dependent loads but do reorder loads
-after loads. I'm guessing there's no processor that does not reorder
-dependent stores but that does reorder stores after stores. So there's
-no point in having write_barrier_depends(), it would always be defined
-to wmb()?
-
-Thanks,
--Ben
+the cmpxchg is a full memory barrier and compiler barrier.
