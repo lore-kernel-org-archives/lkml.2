@@ -1,69 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758089Ab1ILPbd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 11:31:33 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:53375
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757915Ab1ILPbc (ORCPT
+	id S1758181Ab1ILPbq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 11:31:46 -0400
+Received: from e24smtp04.br.ibm.com ([32.104.18.25]:48112 "EHLO
+	e24smtp04.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757915Ab1ILPbo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 11:31:32 -0400
-Date: Mon, 12 Sep 2011 11:31:29 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Pavel Ivanov <paivanof@gmail.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Hin-Tak Leung <hintak_leung@yahoo.co.uk>,
-        linux-fsdevel@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@tuxera.com>
-Subject: Re: Kernel 3.1.0-rc4 oops when connecting iPod
-Message-ID: <20110912153129.GA10625@infradead.org>
-References: <CAG1a4ruG8bL9j01RgSXuK2w9FV0izp8vdoQMLEZzc=qZfCNpzA@mail.gmail.com>
- <1315285921.46647.YahooMailClassic@web29519.mail.ird.yahoo.com>
- <CAG1a4rttHKgp=nAjQ=7zUu=bURq9x7DdhL2fTAZKimicpfdYsw@mail.gmail.com>
- <CAG1a4rt5wLihR-ZkUD78WRbHk39xWP0ypJzMe4K5G1O-k12-MQ@mail.gmail.com>
- <20110912143452.GA31539@infradead.org>
- <CAG1a4rsuYVehnSCM3KxeYQ+g94nrivG1vfss=y8275E4D24qTg@mail.gmail.com>
+	Mon, 12 Sep 2011 11:31:44 -0400
+Message-ID: <4E6E25CC.5020101@br.ibm.com>
+Date: Mon, 12 Sep 2011 12:31:24 -0300
+From: Breno Leitao <brenohl@br.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAG1a4rsuYVehnSCM3KxeYQ+g94nrivG1vfss=y8275E4D24qTg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Lucas Kannebley Tavares <lucaskt@linux.vnet.ibm.com>
+CC: Thadeu Lima De Souza Cascardo <cascardo@linux.vnet.ibm.com>,
+        Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] jsm: Fixed EEH recovery error
+References: <1315834565-9280-1-git-send-email-lucaskt@linux.vnet.ibm.com>
+In-Reply-To: <1315834565-9280-1-git-send-email-lucaskt@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 11091215-8936-0000-0000-0000046CB142
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yes, the shifts were the wrong way around.  I'll leave the 9 in for now,
-we use it in so many places and if we're going to clean it up I'd do it
-in ne go.
+On 09/12/2011 10:36 AM, Lucas Kannebley Tavares wrote:
+> There was an error on the jsm driver that would cause it to be unable to
+> recover after a second error is detected.
+>
+> At the first error, the device recovers properly:
+>
+> [72521.485691] EEH: Detected PCI bus error on device 0003:02:00.0
+> [72521.485695] EEH: This PCI device has failed 1 times in the last hour:
+> ...
+> [72532.035693] ttyn3 at MMIO 0x0 (irq = 49) is a jsm
+> [72532.105689] jsm: Port 3 added
+>
+> However, at the second error, it cascades until EEH disables the device:
+>
+> [72631.229549] Call Trace:
+> ...
+> [72641.725687] jsm: Port 3 added
+> [72641.725695] EEH: Detected PCI bus error on device 0003:02:00.0
+> [72641.725698] EEH: This PCI device has failed 3 times in the last hour:
+>
+> It was caused because the PCI state was not being saved after the first
+> restore. Therefore, at the second recovery the PCI state would not be
+> restored.
+>
+> Signed-off-by: Lucas Kannebley Tavares<lucaskt@linux.vnet.ibm.com>
+Signed-off-by: Breno Leitao <brenohl@br.ibm.com>
 
-Index: linux-2.6/fs/hfsplus/super.c
-===================================================================
---- linux-2.6.orig/fs/hfsplus/super.c	2011-09-12 11:20:33.866598100 -0400
-+++ linux-2.6/fs/hfsplus/super.c	2011-09-12 11:20:52.538098052 -0400
-@@ -344,6 +344,7 @@ static int hfsplus_fill_super(struct sup
- 	struct inode *root, *inode;
- 	struct qstr str;
- 	struct nls_table *nls = NULL;
-+	u64 last_fs_block, last_fs_page;
- 	int err;
- 
- 	err = -EINVAL;
-@@ -399,9 +400,13 @@ static int hfsplus_fill_super(struct sup
- 	if (!sbi->rsrc_clump_blocks)
- 		sbi->rsrc_clump_blocks = 1;
- 
--	err = generic_check_addressable(sbi->alloc_blksz_shift,
--					sbi->total_blocks);
--	if (err) {
-+	err = -EFBIG;
-+	last_fs_block = sbi->total_blocks - 1;
-+	last_fs_page = (last_fs_block << sbi->alloc_blksz_shift) >>
-+			PAGE_CACHE_SHIFT;
-+
-+	if ((last_fs_block > (sector_t)(~0ULL) >> (sbi->alloc_blksz_shift - 9)) ||
-+	    (last_fs_page > (pgoff_t)(~0ULL))) {
- 		printk(KERN_ERR "hfs: filesystem size too large.\n");
- 		goto out_free_vhdr;
- 	}
