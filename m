@@ -1,94 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754154Ab1ILTJD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 15:09:03 -0400
-Received: from mail.infrascan.de ([188.40.84.136]:39839 "EHLO infrascan.de"
+	id S1754224Ab1ILTx6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 15:53:58 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:41054 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753689Ab1ILTI7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 15:08:59 -0400
-Message-ID: <4E6E58C9.7090901@sensortherm.de>
-Date: Mon, 12 Sep 2011 21:08:57 +0200
-From: Klaus Schwarzkopf <schwarzkopf@sensortherm.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
-MIME-Version: 1.0
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <gregkh@suse.de>,
-        mina86@mina86.com, linux-usb@vger.kernel.org,
+	id S1753338Ab1ILTx5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Sep 2011 15:53:57 -0400
+Date: Mon, 12 Sep 2011 20:55:55 +0100 (IST)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] usb: clean up FSF boilerplate text
-References: <1315686255-12892-1-git-send-email-schwarzkopf@sensortherm.de> <20110910221045.04953572@lxorguk.ukuu.org.uk> <20110911004420.GA3413@suse.de> <20110911093625.325b9ea4@lxorguk.ukuu.org.uk> <20110912172407.GA8044@xanatos>
-In-Reply-To: <20110912172407.GA8044@xanatos>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: [git pull] drm fixes
+Message-ID: <alpine.DEB.2.00.1109122054380.25877@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 12.09.2011 19:24, schrieb Sarah Sharp:
-> On Sun, Sep 11, 2011 at 09:36:25AM +0100, Alan Cox wrote:
->> On Sun, 11 Sep 2011 02:44:20 +0200
->> Greg KH<gregkh@suse.de>  wrote:
->>
->>> On Sat, Sep 10, 2011 at 10:10:45PM +0100, Alan Cox wrote:
->>>> On Sat, 10 Sep 2011 22:24:15 +0200
->>>> Klaus Schwarzkopf<schwarzkopf@sensortherm.de>  wrote:
->>>>
->>>>>      remove the following two paragraphs:
->>>>
->>>> NAK this for anything containing my copyright. NAK the one about warranty
->>>> and liability because its incredibly important, although of course if
->>>> you'd like to take personal liability...
->>>
->>> Odd, I was told that if you have the "this is covered under the GPLv2"
->>> then that's all that is needed for a single file in a larger body of
->>> work, like the kernel.
->>
->> People regularly take files out of the kernel or display only one of
->> them. However it's a legal question which means changing it needs the
->> approval of the right subspecies ....
->>
->> You may be right, but it should go past the appropriate expert for the
->> change, just like anything else.
->>
->>> But you do agree about the address paragraph being able to be removed,
->>> right?
->>
->> <wears parrot outfit>
->> That is a legal question. I am not a lawyer. Please discuss with Intel
->> before removing any disclaimers other license material.
->> </>
->>
->> Sqwark!
->
-> Alan's probably right at least about the warranty bit, so I'll have to
-> NAK for the changes to the xHCI driver (which are copyright Intel).
-> BTW, it would have been nice to be CC'd on the original patch. :)
->
 
-Sorry, was 52 recipient, and i wouldn't spam the list.
+Hi Linus,
 
-> Sarah Sharp
+more changes from my people.freedesktop.org tree, a major nouveau 
+regression fix, along with a radeon DP fix, and a silly core spare line 
+removal.
 
-My proposals:
+Dave.
 
-1. do nothing, very easy ;-)
-2. change the old address to the new one
-3. remove the address paragraph and add the following text (from 
-http://www.gnu.org/licenses/gpl.html):
+The following changes since commit ddf28352b80c86754a6424e3a61e8bdf9213b3c7:
 
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  Linux 3.1-rc5 (2011-09-04 15:45:10 -0700)
 
+are available in the git repository at:
+  git://people.freedesktop.org/~airlied/linux.git drm-fixes
 
-possibly change the url to, e.g. http://kernel.org/gpl2.txt
+Alex Deucher (1):
+      drm/radeon/kms: fix DP detect and EDID fetch for DP bridges
 
-Regards,
+Ben Skeggs (1):
+      drm/nouveau: fix oops on pre-semaphore hardware
 
-Klaus Schwarzkopf
+Dave Airlie (1):
+      Merge branch 'drm-nouveau-fixes' of git://anongit.freedesktop.org/git/nouveau/linux-2.6 into drm-test
 
+Emil Velikov (2):
+      drm/nv50/crtc: Bail out if FB is not bound to crtc
+      drm/nv04/crtc: Bail out if FB is not bound to crtc
 
+Lin Ming (1):
+      drm: Remove duplicate "return" statement
 
+Marcin Slusarz (2):
+      drm/nouveau: properly handle allocation failure in nouveau_sgdma_populate
+      drm/nouveau: fix nv04_sgdma_bind on non-"4kB pages" archs
 
-
-
-
+ drivers/gpu/drm/drm_fb_helper.c            |    1 -
+ drivers/gpu/drm/nouveau/nouveau_fence.c    |    3 +-
+ drivers/gpu/drm/nouveau/nouveau_sgdma.c    |    7 ++++-
+ drivers/gpu/drm/nouveau/nv04_crtc.c        |   15 ++++++++++-
+ drivers/gpu/drm/nouveau/nv50_crtc.c        |   12 +++++++-
+ drivers/gpu/drm/radeon/radeon_connectors.c |   37 ++++++++++++++++++----------
+ drivers/gpu/drm/radeon/radeon_display.c    |   19 +++++++++-----
+ 7 files changed, 66 insertions(+), 28 deletions(-)
