@@ -1,56 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753783Ab1ILXid (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 19:38:33 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:38664 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756169Ab1ILXia (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 19:38:30 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6467"; a="118002047"
-Date: Mon, 12 Sep 2011 18:38:27 -0500
-From: Richard Kuo <rkuo@codeaurora.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Linas Vepstas <linas@codeaurora.org>
-Subject: Re: [patch v3 21/36] Hexagon: Add SMP support
-Message-ID: <20110912233827.GB6925@codeaurora.org>
-References: <20110909010847.294039464@codeaurora.org>
- <20110909010916.709728186@codeaurora.org>
- <1315752712.455.50.camel@pasglop>
+	id S1751495Ab1ILXxq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 19:53:46 -0400
+Received: from fieldses.org ([174.143.236.118]:35014 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751073Ab1ILXxn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Sep 2011 19:53:43 -0400
+Date: Mon, 12 Sep 2011 19:53:39 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: Valdis.Kletnieks@vt.edu,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        agruen@kernel.org, akpm@linux-foundation.org, dhowells@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        LSM <linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH -V6 00/26] New ACL format for better NFSv4 acl
+ interoperability
+Message-ID: <20110912235338.GC14628@fieldses.org>
+References: <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <4E655049.6060507@schaufler-ca.com>
+ <108028.1315442771@turing-police.cc.vt.edu>
+ <4E6E7ACC.8040003@schaufler-ca.com>
+ <20110912222014.GA17483@fieldses.org>
+ <4E6E89E0.4010406@schaufler-ca.com>
+ <20110912224351.GC17483@fieldses.org>
+ <4E6E946C.5050706@schaufler-ca.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1315752712.455.50.camel@pasglop>
+In-Reply-To: <4E6E946C.5050706@schaufler-ca.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 11, 2011 at 11:51:52AM -0300, Benjamin Herrenschmidt wrote:
-> And on the producer side, a spinlock for one or... that looks like wheel
-> re-inventing to me :-)
+On Mon, Sep 12, 2011 at 04:23:24PM -0700, Casey Schaufler wrote:
+> On 9/12/2011 3:43 PM, J. Bruce Fields wrote:
+> > On Mon, Sep 12, 2011 at 03:38:24PM -0700, Casey Schaufler wrote:
+> >> On 9/12/2011 3:20 PM, J. Bruce Fields wrote:
+> >>> On Mon, Sep 12, 2011 at 02:34:04PM -0700, Casey Schaufler wrote:
+> >>>> On 9/7/2011 5:46 PM, Valdis.Kletnieks@vt.edu wrote:
+> >>>>> On Mon, 05 Sep 2011 15:42:17 PDT, Casey Schaufler said:
+> >>>>>> On 9/5/2011 10:25 AM, Aneesh Kumar K.V wrote:
+> >>>>>>> The following set of patches implements VFS and ext4 changes needed to implement
+> >>>>>>> a new acl model for linux. Rich ACLs are an implementation of NFSv4 ACLs,
+> >>>>>>> extended by file( masks to fit into the standard POSIX file permission model.
+> >>>>>>> They are designed to work seamlessly locally as well as across the NFSv4 and
+> >>>>>>> CIFS/SMB2 network file system protocols.
+> >>>>>> POSIX ACLs predate the LSM and can't be done as an LSM due to
+> >>>>>> the interactions between mode bits and ACLs as defined by the
+> >>>>>> POSIX DRAFT specification.
+> >>> I don't know LSM so don't understand what you mean when you say that
+> >>> interactions between mode bits and ACLs would make an ACL model hard to
+> >>> implement as an LSM.
+> >> POSIX ACLs require that the file permission bits change when
+> >> the ACL changes. This interaction violates the strict "additional
+> >> restriction" model of the LSM.
+> > Oh, OK.  Yes, rich ACLs are the same as POSIX ACLs in this respect.
+> > When you set an ACL the mode bits are reset to represent an "upper
+> > bound" on the permissions granted by the ACL.
 > 
-> In fact your bit iteration loop also re-invents find_*_bit interfaces.
+> One of the areas in which the POSIX group was careful almost beyond
+> reason was the program that uses chmod() judiciously in the absence
+> of ACLs and how the presence of ACLs might result in a less secure
+> situation. Thus, a program that does
+>     stat(..., &buf);
+>     chmod(..., 0);
+>     chmod(..., buf.st_mode)
 > 
-> Any reason why you don't simply use bitops or atomics here ?
+> should get the exact same access at the end as it had at the beginning
+> and the file must be completely inaccessible after the chmod(..., 0)
+> regardless of the content of the ACL. Without this requirement the ACL
+> scheme would have worked fine as an LSM. If rich ACLs can't make these
+> claims, they aren't safe.
 
-No particular reason; just the way it turned out when I was getting things
-working.  I'll get them cleaned up.
+Yes, see the patches--rich ACLs have the same property, using a similar
+mechanism.  (They're essentially windows/NFSv4 ACLs + mask bits.)
 
-
-> Also what is your memory model ? ordered or weakly ordered ? Do you need
-> some kind of memory barrier between setting ipi->bits and
-> __vmintop_post() ?
-
-Our model is ordered, so there's no need for a barrier there yet.
-
-
-Thanks,
-Richard Kuo
-
-
--- 
-
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+--b.
