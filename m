@@ -1,86 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753201Ab1ILBoT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Sep 2011 21:44:19 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:64907 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751020Ab1ILBoR (ORCPT
+	id S1753340Ab1ILCFI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Sep 2011 22:05:08 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:39376 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752230Ab1ILCFH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Sep 2011 21:44:17 -0400
-Date: Sun, 11 Sep 2011 18:44:07 -0700
-From: Kent Overstreet <kent.overstreet@gmail.com>
-To: Andreas Dilger <adilger@dilger.ca>
-Cc: NeilBrown <neilb@suse.de>,
-        "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
-        "axboe@kernel.dk" <axboe@kernel.dk>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: Re: [GIT] Bcache version 12
-Message-ID: <20110912014407.GA5171@moria>
-References: <20110910064531.GA32536@moria>
- <20110911081854.2958fdc8@notabene.brown>
- <20110911192259.GA3743@moria>
- <FD294A0B-7127-4ED1-89B8-3E3ADA796360@dilger.ca>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <FD294A0B-7127-4ED1-89B8-3E3ADA796360@dilger.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 11 Sep 2011 22:05:07 -0400
+Date: Mon, 12 Sep 2011 12:05:01 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Brown <davidb@codeaurora.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Russell King <rmk@arm.linux.org.uk>
+Subject: linux-next: manual merge of the arm-soc tree with the arm tree
+Message-Id: <20110912120501.764336af05069fa23a371b5e@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 11, 2011 at 07:35:56PM -0600, Andreas Dilger wrote:
-> On 2011-09-11, at 1:23 PM, Kent Overstreet <kent.overstreet@gmail.com> wrote:
-> > On Sun, Sep 11, 2011 at 08:18:54AM +0200, NeilBrown wrote:
-> >> 
-> >> Looking at bcache.txt....
-> >> 
-> >> To make bcache devices known to the kernel, echo them to /sys/fs/bcache/register
-> >>  echo /dev/sdb > /sys/fs/bcache/register
-> >>  echo /dev/sdc > /sys/fs/bcache/register
-> >> 
-> >> ???
-> >> I know that /sys is heading the way of /proc and becoming a disorganised ad
-> >> hoc mess, but we don't need to actively encourage that.
-> >> So when you are created a new block device type, putting controls
-> >> under /sys/fs (where I believe 'fs' stands for "file system") seem ill
-> >> advised.
-> >> 
-> >> My personal preference would be to see this as configuring the module and us
-> >>  /sys/modules/bcache/parameters/register
-> > 
-> > I don't think that makes any more sense, as module paramaters AFAIK are
-> > even more explicitly just a value you can stick in and pull out.
-> > /sys/fs/bcache/register is really more analagous to mount().
-> > 
-> > You're not the first person to complain about that, I moved it to
-> > configfs for awhile at Greg K-H's behest... but when I added cache sets
-> > I had to move it back to sysfs.
-> > 
-> >> Alternately you could device a new 'bus' type for bcache and do some sort of
-> >> device-model magic to attach something as a new device of that type.
-> > 
-> > I like that, I think that could make a lot of sense.
-> > 
-> > I'm not sure what to do about register though, I do prefer to have it a
-> > file you can echo to but it doesn't really fit anywhere.
-> 
-> Rather than using /proc or /sys to configure bcache, why not integrate it with device mapper, and use dmsetup to configure it?  That avoids adding yet another block device abstraction into the kernel, and yet one more obscure way of configuring things. 
-> 
-> A bcache device could be considered almost like an LV snapshot, where writes go to the SSD device instead of a disk, and they can have writeback or writethrough cache. 
+Hi Arnd,
 
-I looked into that many months ago, spent quite a bit of time fighting
-with the dm code trying to get it to do what I wanted and... no. Never
-again. It's worse than the cgroups code, and that's saying something.
+Today's linux-next merge of the arm-soc tree got a conflict in
+arch/arm/mach-msm/board-msm8x60.c between commit 9e775ad19f52 ("ARM:
+7012/1: Set proper TEXT_OFFSET for newer MSMs") from the arm tree and
+commit 56e2d8a68803 ("ARM: msm: Add devicetree support for msm8660-surf")
+from the arm-soc tree.
 
-It'd be great to have some uniformity, but you can't pay me enough to
-touch that code again; IMO it's horribly misdesigned and probably a lost
-cause.
+Just overlapping additions.  I fixed it up (see below) and can carry the
+fix as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Anyways, the code to create a new block device in bcache is trivial,
-using dm certainly wouldn't make bcache any simpler (quite the
-opposite). Supporting a standard interface would also be easy provided
-it was a sane one.
+diff --cc arch/arm/mach-msm/board-msm8x60.c
+index 9221f54,10fa8f6..0000000
+--- a/arch/arm/mach-msm/board-msm8x60.c
++++ b/arch/arm/mach-msm/board-msm8x60.c
+@@@ -20,7 -14,10 +14,11 @@@
+  #include <linux/platform_device.h>
+  #include <linux/io.h>
+  #include <linux/irq.h>
+ +#include <linux/memblock.h>
++ #include <linux/irqdomain.h>
++ #include <linux/of.h>
++ #include <linux/of_address.h>
++ #include <linux/of_platform.h>
+  
+  #include <asm/mach-types.h>
+  #include <asm/mach/arch.h>
+@@@ -81,9 -62,42 +79,44 @@@ static void __init msm8x60_init(void
+  {
+  }
+  
++ #ifdef CONFIG_OF
++ static struct of_dev_auxdata msm_auxdata_lookup[] __initdata = {
++ 	{}
++ };
++ 
++ static struct of_device_id msm_dt_gic_match[] __initdata = {
++ 	{ .compatible = "qcom,msm-8660-qgic", },
++ 	{}
++ };
++ 
++ static void __init msm8x60_dt_init(void)
++ {
++ 	struct device_node *node;
++ 
++ 	node = of_find_matching_node_by_address(NULL, msm_dt_gic_match,
++ 			MSM8X60_QGIC_DIST_PHYS);
++ 	if (node)
++ 		irq_domain_add_simple(node, GIC_SPI_START);
++ 
++ 	if (of_machine_is_compatible("qcom,msm8660-surf")) {
++ 		printk(KERN_INFO "Init surf UART registers\n");
++ 		msm8x60_init_uart12dm();
++ 	}
++ 
++ 	of_platform_populate(NULL, of_default_bus_match_table,
++ 			msm_auxdata_lookup, NULL);
++ }
++ 
++ static const char *msm8x60_fluid_match[] __initdata = {
++ 	"qcom,msm8660-fluid",
++ 	"qcom,msm8660-surf",
++ 	NULL
++ };
++ #endif /* CONFIG_OF */
++ 
+  MACHINE_START(MSM8X60_RUMI3, "QCT MSM8X60 RUMI3")
+ +	.fixup = msm8x60_fixup,
+ +	.reserve = msm8x60_reserve,
+  	.map_io = msm8x60_map_io,
+  	.init_irq = msm8x60_init_irq,
+  	.init_machine = msm8x60_init,
