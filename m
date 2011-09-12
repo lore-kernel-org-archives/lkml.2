@@ -1,80 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755576Ab1ILMON (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 08:14:13 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:45461 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753801Ab1ILMOM (ORCPT
+	id S1755606Ab1ILMPg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 08:15:36 -0400
+Received: from outbound3.exchangedefender.com ([65.99.255.234]:44279 "EHLO
+	outbound3.exchangedefender.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755400Ab1ILMPf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 08:14:12 -0400
+	Mon, 12 Sep 2011 08:15:35 -0400
+X-ExchangeDefender-MagicKey: 1317039329.85658@lOxcDhdYLygr8R5gWlPq1g
+Message-ID: <4E6DF7EC.8000206@kelvatek.com>
+Date: Mon, 12 Sep 2011 14:15:40 +0200
+From: Krzysztof Kanas <k.kanas@kelvatek.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
 MIME-Version: 1.0
-In-Reply-To: <20110912113308.GA32396@kroah.com>
-References: <CA+O4pCKfWLP+ohfUVi811CRbmrb2FyoMwkmxxGJ1TF2kKtGDEA@mail.gmail.com>
-	<201108171914.52257.oliver@neukum.org>
-	<CA+O4pCK3vZjZwM0D7Q0gzsTZRJC1PfzYvoVmq-g2jJQ=uP_6ug@mail.gmail.com>
-	<201108190823.06638.oliver@neukum.org>
-	<CA+O4pCKteFZBT0UMetuk4-gsUf4wG3DXnOooW47GWD7o=dgpQQ@mail.gmail.com>
-	<CA+O4pC+gxbLaHDyAUB-ro1Z-jTGdMfey9yJht1Ux4jWhanKbkg@mail.gmail.com>
-	<CA+O4pCK5WE+fgYzMjpp2x54ePGivTdZnPRQdZ+BN6HAARYVU+g@mail.gmail.com>
-	<20110912113308.GA32396@kroah.com>
-Date: Mon, 12 Sep 2011 14:14:11 +0200
-Message-ID: <CA+O4pCKvi7rYYC=NSGgufA4T2Gajvj=+Z5YCdLKaDkcSVQ7jwA@mail.gmail.com>
-Subject: Re: [PATCH] Increase usbfs bulk buffer size
-From: Markus Rechberger <mrechberger@gmail.com>
 To: Greg KH <greg@kroah.com>
-Cc: Oliver Neukum <oliver@neukum.org>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Kernel  2.6.27.15  oops in PPP
+References: <4E6DCD36.6020104@kelvatek.com> <20110912113641.GA32603@kroah.com>
+In-Reply-To: <20110912113641.GA32603@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 12 Sep 2011 12:15:22.0607 (UTC) FILETIME=[A540C7F0:01CC7145]
+X-ExchangeDefender-Info: Please contact the ISP for more information
+X-MailScanner-ID: p8CCFMxY021138
+X-ExchangeDefender-VirusScan: Found to be clean
+X-ExchangeDefender-From: k.kanas@kelvatek.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 12, 2011 at 1:33 PM, Greg KH <greg@kroah.com> wrote:
-> On Mon, Sep 12, 2011 at 12:18:02PM +0200, Markus Rechberger wrote:
->> Hi,
->>
->> I'm a little bit curious why you guys are just ignoring this.
+On 09/12/2011 01:36 PM, Greg KH wrote:
+> On Mon, Sep 12, 2011 at 11:13:26AM +0200, Krzysztof Kanas wrote:
+>> Hi I am tracing kernel oops in 2.6.27.15 on ARM(CONFIG_CPU_ARM926T=y).
 >
-> Because you seem to be ignoring the fact that changing this can cause
-> problems on systems.
+> 2.6.27.15 is quite old, why that version?  If you are stuck on 2.6.27,
+> please use a newer stable version of it as odds are this is already
+> resolved in one of the 40+ releases after yours (current one is
+> 2.6.27.57 I think.)
 >
-
-Can you explain which problems? We are even using analogTV on
-Freescale ARM Systems.
-There is no way to read the maximum allowed buffersize from the kernel
-right now,
-if an application wants to use it they roughly need to know the
-current maximum packet size.
-
-Since this is about a product I'm not eager to introduce trouble to
-our customers frankly speaking
-those things are well tested at our side.
-
-> And because it really doesn't solve any problems,
-
-wrong, it does solve problems, and it also solved it in the past for
-isochronous. Would it help if we ship a sample
-device to you?
-The easiest way to reproduce this is to take 2 different Ubuntu
-versions, an old one with lower Isochronous packet size eg. Ubuntu
-9.04
-and another new one Ubuntu 10.04.
-Simply dragging the player with Ubuntu 9.04 can cause framedrops,
-while it works smoothly with 10.04.
-Next step update the buffer with 9.04 and the video is also smoothly
-with the old version - and there are no framedrops (=incomplete data).
-I can imagine because the application just gets a certain timeslice
-and cannot reliable requeue many packets.
-The problem with Bulk is that we need to submit many Bulk URBs in
-order to get it work at all, aside of that it shows up the
-same issue as with isochronous.
-
-> you are only pushing
-> the processing to the kernel, when it can be done in userspace just as
-> easily.
+> thanks,
 >
+> greg k-h
+>
+Yes I am quite stuck with that version - I will try to get new stable 
+version and see If that goes well. Unfortunately I have to make sure 
+that all applications etc are still working with new kernel.
 
-Your assumption is wrong, even though I understand your point.
-All I want is to sort this out.
+To me it is only strange that started to show when I changed kernel config.
 
-Markus
+Anyway I will see if upgrade helps :)
+
+
+-- 
+Best regards,
+Krzysztof Kanas
+
+
+
+--
+Asylia ExchangeDefender Message Security: Click below to verify authenticity
+http://www.exchangedefender.com/verify.asp?id=p8CCFMxY021138&from=k.kanas@kelvatek.com
+
+
