@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757637Ab1ILOwO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 10:52:14 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:44326 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757163Ab1ILOwN (ORCPT
+	id S1757727Ab1ILOxP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 10:53:15 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:33089 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757494Ab1ILOxP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 10:52:13 -0400
-Subject: Re: [PATCH] EFI: Do not use __pa() to get the physical address of
- an ioremapped memory range
-From: Matt Fleming <matt@console-pimps.org>
-To: huang ying <huang.ying.caritas@gmail.com>
-Cc: Zhang Rui <rui.zhang@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, x86@kernel.org
-In-Reply-To: <CAC=cRTOzcgm+3kHGcZrHs=9Q3cs5z6vmBqb1Bn+2qcvcSZ-2Xg@mail.gmail.com>
-References: <1314860114.32522.3.camel@rui> <1314864889.13161.4.camel@rui>
-	 <1314880125.8038.39.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <CAC=cRTOzcgm+3kHGcZrHs=9Q3cs5z6vmBqb1Bn+2qcvcSZ-2Xg@mail.gmail.com>
+	Mon, 12 Sep 2011 10:53:15 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+FPcQLlyyFDQ3uRme4C7GCHvMoyfYlQ8BPteUQlO
+	TIsH/f1FIuH4XD
+Subject: Re: [ANNOUNCE] 3.0.4-rt13
+From: Mike Galbraith <efault@gmx.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+In-Reply-To: <1315835562.6758.3.camel@marge.simson.net>
+References: <alpine.LFD.2.02.1109101052340.2723@ionos>
+	 <1315737307.6544.1.camel@marge.simson.net>
+	 <1315817948.26517.16.camel@twins>
+	 <1315835562.6758.3.camel@marge.simson.net>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 12 Sep 2011 15:52:10 +0100
-Message-ID: <1315839130.3466.6.camel@mfleming-mobl1.ger.corp.intel.com>
+Date: Mon, 12 Sep 2011 16:53:07 +0200
+Message-ID: <1315839187.6758.8.camel@marge.simson.net>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-09-02 at 13:12 +0800, huang ying wrote: 
-> On Thu, Sep 1, 2011 at 8:28 PM, Matt Fleming <matt@console-pimps.org> wrote:
-> >
-> > Hmm.. does anyone know why we ioremap_cache() the memory on
-> > CONFIG_X86_32 instead of ioremap_nocache()? In the case of
-> > EFI_MEMORY_MAPPED_IO the memory really needs to be uncached. Then if
-> > we've ioremap'd the memory we should skip set_memory_uc() altogether,
-> > no?
-> 
-> Because whether the mapping should be cached is determined by md->attr
-> instead of md->type.  And besides UC, we may add WC, etc support.
+On Mon, 2011-09-12 at 15:52 +0200, Mike Galbraith wrote:
 
-Confused.
+> 36717            <...>-6266  [002]   242.543129: sys_semop <-system_call_fastpath
+> 36718            <...>-6266  [002]   242.543129: sys_semtimedop <-sys_semop
+> 36719            <...>-6266  [002]   242.543131: ipc_lock_check <-sys_semtimedop
+> 36720            <...>-6266  [002]   242.543131: ipc_lock <-ipc_lock_check
+> 36721            <...>-6266  [002]   242.543132: __rcu_read_lock <-ipc_lock
+> 36722            <...>-6266  [002]   242.543133: migrate_disable <-ipc_lock
+> 36723            <...>-6266  [002]   242.543134: migrate_disable: migrate_disable: in_atomic:0 p->migrate_disable_atomic:0 p->migrate_disable:0
+> 36724            <...>-6266  [002]   242.543134: pin_current_cpu <-migrate_disable
+> 36725            <...>-6266  [002]   242.543134: _raw_spin_lock_irqsave <-migrate_disable
+> 36726            <...>-6266  [002]   242.543135: _raw_spin_unlock_irqrestore <-migrate_disable
+> 36727            <...>-6266  [002]   242.543135: rt_spin_lock <-ipc_lock
+> 36728            <...>-6266  [002]   242.543136: ipcperms <-sys_semtimedop
+> 36729            <...>-6266  [002]   242.543137: ns_capable <-ipcperms
+> 36730            <...>-6266  [002]   242.543138: cap_capable <-ns_capable
+> 36731            <...>-6266  [002]   242.543138: pid_vnr <-sys_semtimedop
+> 36732            <...>-6266  [002]   242.543139: try_atomic_semop <-sys_semtimedop
+> 36733            <...>-6266  [002]   242.543140: do_smart_update <-sys_semtimedop
+> 36734            <...>-6266  [002]   242.543140: update_queue <-do_smart_update
+> 36735            <...>-6266  [002]   242.543141: try_atomic_semop <-update_queue
+> 36736            <...>-6266  [002]   242.543142: update_queue <-do_smart_update
+> 36737            <...>-6266  [002]   242.543142: try_atomic_semop <-update_queue
+> 36738            <...>-6266  [002]   242.543143: update_queue <-do_smart_update
+> 36739            <...>-6266  [002]   242.543143: try_atomic_semop <-update_queue
+> 36740            <...>-6266  [002]   242.543144: get_seconds <-do_smart_update
+> 36741            <...>-6266  [002]   242.543144: rt_spin_unlock <-sys_semtimedop
+> 36742            <...>-6266  [002]   242.543144: migrate_enable <-sys_semtimedop
+> 36743            <...>-6266  [002]   242.543145: migrate_enable: migrate_enable: in_atomic:1 p->migrate_disable_atomic:0 p->migrate_disable:1
 
-The CONFIG_X86_64 version of efi_ioremap() looks like this,
+Hm.  Seems this is home grown a non-preemptive wakeup in the making.
 
-void __iomem *__init efi_ioremap(unsigned long phys_addr, unsigned long size,
-                                 u32 type)
-{
-        unsigned long last_map_pfn;
+	-Mike
 
-        if (type == EFI_MEMORY_MAPPED_IO)
-                return ioremap(phys_addr, size);
-
-Which uses md->type to figure out if we should call ioremap(), which on
-x86 is #define'd to ioremap_nocache(). CONFIG_X86_32 doesn't do this,
-but it looks to me like it should.
-
-Zhang, I agree that calling __pa() on an ioremap()'d region is bogus,
-but I don't understand why no one is seeing this crash on x86-64. Is it
-something to do with the x86-64 memory map layout such that __pa() works
-on an ioremap()'d address?
-
--- 
-Matt Fleming, Intel Open Source Technology Center
 
