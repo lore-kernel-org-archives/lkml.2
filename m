@@ -1,45 +1,613 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754558Ab1ILUTx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 16:19:53 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:54700 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754274Ab1ILUTv (ORCPT
+	id S1754679Ab1ILUXs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 16:23:48 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:41189 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754274Ab1ILUXq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 16:19:51 -0400
-Date: Mon, 12 Sep 2011 21:19:05 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Klaus Schwarzkopf <schwarzkopf@sensortherm.de>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>, Greg KH <gregkh@suse.de>,
-        mina86@mina86.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] usb: clean up FSF boilerplate text
-Message-ID: <20110912211905.1225b8c3@lxorguk.ukuu.org.uk>
-In-Reply-To: <4E6E58C9.7090901@sensortherm.de>
-References: <1315686255-12892-1-git-send-email-schwarzkopf@sensortherm.de>
-	<20110910221045.04953572@lxorguk.ukuu.org.uk>
-	<20110911004420.GA3413@suse.de>
-	<20110911093625.325b9ea4@lxorguk.ukuu.org.uk>
-	<20110912172407.GA8044@xanatos>
-	<4E6E58C9.7090901@sensortherm.de>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 12 Sep 2011 16:23:46 -0400
+X-Sasl-enc: A8l1HSStqB6WYQN1v6pVEOXpNZOyqdWey9LXIebtpGnR 1315859023
+Message-ID: <4E6E6A34.8060104@ladisch.de>
+Date: Mon, 12 Sep 2011 22:23:16 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090820)
+MIME-Version: 1.0
+To: Takashi Iwai <tiwai@suse.de>
+CC: Yong Zhang <yong.zhang0@gmail.com>, linux-kernel@vger.kernel.org,
+        Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org
+Subject: Re: [RFC] [PATCH 02/62] mpu401:snd_mpu401_uart_new(): split semantic
+ of irq_flags
+References: <1315383059-3673-1-git-send-email-yong.zhang0@gmail.com>	<1315383059-3673-3-git-send-email-yong.zhang0@gmail.com>	<4E689E9A.8000407@ladisch.de>	<20110908133700.GB2310@zhy>	<4E68CA15.8000504@ladisch.de>	<20110908144519.GB3069@zhy>	<4E69253F.3090705@ladisch.de>	<20110909013143.GB18249@zhy>	<4E6CCF6C.2020301@ladisch.de> <s5hvcsy6nr2.wl%tiwai@suse.de> <4E6E061E.2010000@ladisch.de>
+In-Reply-To: <4E6E061E.2010000@ladisch.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 1. do nothing, very easy ;-)
-> 2. change the old address to the new one
-> 3. remove the address paragraph and add the following text (from 
-> http://www.gnu.org/licenses/gpl.html):
+I wrote:
+> I'll have a new patch until tomorrow.
 
-Your proposals are a matter for lawyers. That makes me prefer #1 8)
+--8<---------------------------------------------------------------->8--
+ALSA: mpu401: clean up interrupt specification
 
-If there is a real wide general interest in changing these rather than an
-idea someone had (ie if Linus wants it done) then I can prod Intel legal
-about it in a week or so.
+The semantics of snd_mpu401_uart_new()'s interrupt parameters are
+somewhat counterintuitive:  To prevent the function from allocating its
+own interrupt, either the irq number must be invalid, or the irq_flags
+parameter must be zero.  At the same time, the irq parameter being
+invalid specifies that the mpu401 code has to work without an interrupt
+allocated by the caller.  This implies that, if there is an interrupt
+and it is allocated by the caller, the irq parameter must be set to
+a valid-looking number which then isn't actually used.
 
-Alan
+With the removal of IRQF_DISABLED, zero becomes a valid irq_flags value,
+which forces us to handle the parameters differently.
+
+This patch introduces a new flag MPU401_INFO_IRQ_HOOK for when the
+device interrupt is handled by the caller, and makes the allocation of
+the interrupt to depend only on the irq parameter.
+
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+---
+ Documentation/DocBook/writing-an-alsa-driver.tmpl |   33 +++++++++++++---------
+ include/sound/mpu401.h                            |    6 ++--
+ sound/drivers/mpu401/mpu401.c                     |    3 --
+ sound/drivers/mpu401/mpu401_uart.c                |   17 ++++++-----
+ sound/isa/als100.c                                |    2 -
+ sound/isa/cs423x/cs4231.c                         |    2 -
+ sound/isa/cs423x/cs4236.c                         |    2 -
+ sound/isa/es18xx.c                                |    4 +-
+ sound/isa/opl3sa2.c                               |    5 ++-
+ sound/isa/sb/jazz16.c                             |    2 -
+ sound/isa/sb/sb16.c                               |    5 ++-
+ sound/pci/als4000.c                               |    5 ++-
+ sound/pci/au88x0/au88x0_mpu401.c                  |    6 ++--
+ sound/pci/azt3328.c                               |    5 ++-
+ sound/pci/cmipci.c                                |    5 ++-
+ sound/pci/es1938.c                                |    5 ++-
+ sound/pci/es1968.c                                |    5 ++-
+ sound/pci/fm801.c                                 |    5 ++-
+ sound/pci/ice1712/ice1712.c                       |   10 ++++--
+ sound/pci/maestro3.c                              |    4 +-
+ sound/pci/oxygen/oxygen_lib.c                     |    5 ++-
+ sound/pci/riptide/riptide.c                       |    2 -
+ sound/pci/sonicvibes.c                            |    6 ++--
+ sound/pci/trident/trident.c                       |    5 ++-
+ sound/pci/via82xx.c                               |    5 ++-
+ sound/pci/ymfpci/ymfpci.c                         |    5 ++-
+ 26 files changed, 92 insertions(+), 67 deletions(-)
+
+
+diff --git a/Documentation/DocBook/writing-an-alsa-driver.tmpl b/Documentation/DocBook/writing-an-alsa-driver.tmpl
+index 598c22f..31ccd27 100644
+--- a/Documentation/DocBook/writing-an-alsa-driver.tmpl
++++ b/Documentation/DocBook/writing-an-alsa-driver.tmpl
+@@ -4343,6 +4343,13 @@ struct _snd_pcm_runtime {
+ 	by itself to start processing the output stream in the irq handler.
+ 	</para>
+
++	<para>
++	If the MPU-401 interface shares its interrupt with the other logical
++	devices on the card, set <constant>MPU401_INFO_IRQ_HOOK</constant>
++	(see <link linkend="midi-interface-interrupt-handler"><citetitle>
++	below</citetitle></link>).
++	</para>
++
+       <para>
+         Usually, the port address corresponds to the command port and
+         port + 1 corresponds to the data port. If not, you may change
+@@ -4375,14 +4382,13 @@ struct _snd_pcm_runtime {
+       </para>
+
+       <para>
+-        The 6th argument specifies the irq number for UART. If the irq
+-      is already allocated, pass 0 to the 7th argument
+-      (<parameter>irq_flags</parameter>). Otherwise, pass the flags
+-      for irq allocation
+-      (<constant>SA_XXX</constant> bits) to it, and the irq will be
+-      reserved by the mpu401-uart layer. If the card doesn't generate
+-      UART interrupts, pass -1 as the irq number. Then a timer
+-      interrupt will be invoked for polling.
++      The 6th argument specifies the irq number that will be allocated.
++      Pass the irq flags for calling <function>request_irq()</function>
++      (<constant>IRQF_XXX</constant> bits) in the 7th argument.
++      If no interrupt is to be allocated (because your code is already
++      allocating it, or because the device does not use interrupts),
++      pass -1 and 0 instead.  For a MPU-401 device without an interrupt,
++      a polling timer will be used instead.
+       </para>
+     </section>
+
+@@ -4390,12 +4396,13 @@ struct _snd_pcm_runtime {
+       <title>Interrupt Handler</title>
+       <para>
+         When the interrupt is allocated in
+-      <function>snd_mpu401_uart_new()</function>, the private
++      <function>snd_mpu401_uart_new()</function>, a private
+       interrupt handler is used, hence you don't have anything else to do
+-      than creating the mpu401 stuff. Otherwise, you have to call
+-      <function>snd_mpu401_uart_interrupt()</function> explicitly when
+-      a UART interrupt is invoked and checked in your own interrupt
+-      handler.
++      than creating the mpu401 stuff. Otherwise, you have to set
++      <constant>MPU401_INFO_IRQ_HOOK</constant>, and call
++      <function>snd_mpu401_uart_interrupt()</function> explicitly from your
++      own interrupt handler when it has determined that a UART interrupt
++      has occurred.
+       </para>
+
+       <para>
+diff --git a/include/sound/mpu401.h b/include/sound/mpu401.h
+index 1f1d53f..8f26148 100644
+--- a/include/sound/mpu401.h
++++ b/include/sound/mpu401.h
+@@ -50,7 +50,10 @@
+ #define MPU401_INFO_INTEGRATED	(1 << 2)	/* integrated h/w port */
+ #define MPU401_INFO_MMIO	(1 << 3)	/* MMIO access */
+ #define MPU401_INFO_TX_IRQ	(1 << 4)	/* independent TX irq */
++#define MPU401_INFO_IRQ_HOOK	(1 << 5)	/* mpu401 irq handler is called
++						   from driver irq handler */
+ #define MPU401_INFO_NO_ACK	(1 << 6)	/* No ACK cmd needed */
++#define MPU401_INFO_USE_TIMER	(1 << 15)	/* internal */
+
+ #define MPU401_MODE_BIT_INPUT		0
+ #define MPU401_MODE_BIT_OUTPUT		1
+@@ -73,8 +76,7 @@ struct snd_mpu401 {
+ 	unsigned long port;		/* base port of MPU-401 chip */
+ 	unsigned long cport;		/* port + 1 (usually) */
+ 	struct resource *res;		/* port resource */
+-	int irq;			/* IRQ number of MPU-401 chip (-1 = poll) */
+-	int irq_flags;
++	int irq;			/* IRQ number of MPU-401 chip */
+
+ 	unsigned long mode;		/* MPU401_MODE_XXXX */
+ 	int timer_invoked;
+diff --git a/sound/drivers/mpu401/mpu401.c b/sound/drivers/mpu401/mpu401.c
+index 149d05a..4133e0d 100644
+--- a/sound/drivers/mpu401/mpu401.c
++++ b/sound/drivers/mpu401/mpu401.c
+@@ -86,8 +86,7 @@ static int snd_mpu401_create(int dev, struct snd_card **rcard)
+ 	}
+
+ 	err = snd_mpu401_uart_new(card, 0, MPU401_HW_MPU401, port[dev], 0,
+-				  irq[dev], irq[dev] >= 0 ? IRQF_DISABLED : 0,
+-				  NULL);
++				  irq[dev], IRQF_DISABLED, NULL);
+ 	if (err < 0) {
+ 		printk(KERN_ERR "MPU401 not detected at 0x%lx\n", port[dev]);
+ 		goto _err;
+diff --git a/sound/drivers/mpu401/mpu401_uart.c b/sound/drivers/mpu401/mpu401_uart.c
+index 2af0999..893a94f 100644
+--- a/sound/drivers/mpu401/mpu401_uart.c
++++ b/sound/drivers/mpu401/mpu401_uart.c
+@@ -3,7 +3,7 @@
+  *  Routines for control of MPU-401 in UART mode
+  *
+  *  MPU-401 supports UART mode which is not capable generate transmit
+- *  interrupts thus output is done via polling. Also, if irq < 0, then
++ *  interrupts thus output is done via polling. Without interrupt,
+  *  input is done also via polling. Do not expect good performance.
+  *
+  *
+@@ -374,7 +374,7 @@ snd_mpu401_uart_input_trigger(struct snd_rawmidi_substream *substream, int up)
+ 			/* first time - flush FIFO */
+ 			while (max-- > 0)
+ 				mpu->read(mpu, MPU401D(mpu));
+-			if (mpu->irq < 0)
++			if (mpu->info_flags & MPU401_INFO_USE_TIMER)
+ 				snd_mpu401_uart_add_timer(mpu, 1);
+ 		}
+ 		
+@@ -383,7 +383,7 @@ snd_mpu401_uart_input_trigger(struct snd_rawmidi_substream *substream, int up)
+ 		snd_mpu401_uart_input_read(mpu);
+ 		spin_unlock_irqrestore(&mpu->input_lock, flags);
+ 	} else {
+-		if (mpu->irq < 0)
++		if (mpu->info_flags & MPU401_INFO_USE_TIMER)
+ 			snd_mpu401_uart_remove_timer(mpu, 1);
+ 		clear_bit(MPU401_MODE_BIT_INPUT_TRIGGER, &mpu->mode);
+ 	}
+@@ -496,7 +496,7 @@ static struct snd_rawmidi_ops snd_mpu401_uart_input =
+ static void snd_mpu401_uart_free(struct snd_rawmidi *rmidi)
+ {
+ 	struct snd_mpu401 *mpu = rmidi->private_data;
+-	if (mpu->irq_flags && mpu->irq >= 0)
++	if (mpu->irq >= 0)
+ 		free_irq(mpu->irq, (void *) mpu);
+ 	release_and_free_resource(mpu->res);
+ 	kfree(mpu);
+@@ -509,8 +509,8 @@ static void snd_mpu401_uart_free(struct snd_rawmidi *rmidi)
+  * @hardware: the hardware type, MPU401_HW_XXXX
+  * @port: the base address of MPU401 port
+  * @info_flags: bitflags MPU401_INFO_XXX
+- * @irq: the irq number, -1 if no interrupt for mpu
+- * @irq_flags: the irq request flags (SA_XXX), 0 if irq was already reserved.
++ * @irq: the irq number, -1 if not to be allocated
++ * @irq_flags: the irq request flags (IRQF_XXX)
+  * @rrawmidi: the pointer to store the new rawmidi instance
+  *
+  * Creates a new MPU-401 instance.
+@@ -577,7 +577,7 @@ int snd_mpu401_uart_new(struct snd_card *card, int device,
+ 		mpu->cport = port + 2;
+ 	else
+ 		mpu->cport = port + 1;
+-	if (irq >= 0 && irq_flags) {
++	if (irq >= 0) {
+ 		if (request_irq(irq, snd_mpu401_uart_interrupt, irq_flags,
+ 				"MPU401 UART", (void *) mpu)) {
+ 			snd_printk(KERN_ERR "mpu401_uart: "
+@@ -586,9 +586,10 @@ int snd_mpu401_uart_new(struct snd_card *card, int device,
+ 			return -EBUSY;
+ 		}
+ 	}
++	if (irq < 0 && !(info_flags & MPU401_INFO_IRQ_HOOK))
++		info_flags |= MPU401_INFO_USE_TIMER;
+ 	mpu->info_flags = info_flags;
+ 	mpu->irq = irq;
+-	mpu->irq_flags = irq_flags;
+ 	if (card->shortname[0])
+ 		snprintf(rmidi->name, sizeof(rmidi->name), "%s MIDI",
+ 			 card->shortname);
+diff --git a/sound/isa/als100.c b/sound/isa/als100.c
+index 20becc8..efa071c 100644
+--- a/sound/isa/als100.c
++++ b/sound/isa/als100.c
+@@ -256,7 +256,7 @@ static int __devinit snd_card_als100_probe(int dev,
+ 					mpu_type,
+ 					mpu_port[dev], 0,
+ 					mpu_irq[dev],
+-					mpu_irq[dev] >= 0 ? IRQF_DISABLED : 0,
++					IRQF_DISABLED,
+ 					NULL) < 0)
+ 			snd_printk(KERN_ERR PFX "no MPU-401 device at 0x%lx\n", mpu_port[dev]);
+ 	}
+diff --git a/sound/isa/cs423x/cs4231.c b/sound/isa/cs423x/cs4231.c
+index cb9153e..6c24248 100644
+--- a/sound/isa/cs423x/cs4231.c
++++ b/sound/isa/cs423x/cs4231.c
+@@ -131,7 +131,7 @@ static int __devinit snd_cs4231_probe(struct device *dev, unsigned int n)
+ 			mpu_irq[n] = -1;
+ 		if (snd_mpu401_uart_new(card, 0, MPU401_HW_CS4232,
+ 					mpu_port[n], 0, mpu_irq[n],
+-					mpu_irq[n] >= 0 ? IRQF_DISABLED : 0,
++					IRQF_DISABLED,
+ 					NULL) < 0)
+ 			dev_warn(dev, "MPU401 not detected\n");
+ 	}
+diff --git a/sound/isa/cs423x/cs4236.c b/sound/isa/cs423x/cs4236.c
+index 999dc1e..17c9a3e 100644
+--- a/sound/isa/cs423x/cs4236.c
++++ b/sound/isa/cs423x/cs4236.c
+@@ -450,7 +450,7 @@ static int __devinit snd_cs423x_probe(struct snd_card *card, int dev)
+ 		if (snd_mpu401_uart_new(card, 0, MPU401_HW_CS4232,
+ 					mpu_port[dev], 0,
+ 					mpu_irq[dev],
+-					mpu_irq[dev] >= 0 ? IRQF_DISABLED : 0, NULL) < 0)
++					IRQF_DISABLED, NULL) < 0)
+ 			printk(KERN_WARNING IDENT ": MPU401 not detected\n");
+ 	}
+
+diff --git a/sound/isa/es18xx.c b/sound/isa/es18xx.c
+index fb4d6b3..f5f3071 100644
+--- a/sound/isa/es18xx.c
++++ b/sound/isa/es18xx.c
+@@ -2160,8 +2160,8 @@ static int __devinit snd_audiodrive_probe(struct snd_card *card, int dev)
+
+ 	if (mpu_port[dev] > 0 && mpu_port[dev] != SNDRV_AUTO_PORT) {
+ 		err = snd_mpu401_uart_new(card, 0, MPU401_HW_ES18XX,
+-					  mpu_port[dev], 0,
+-					  irq[dev], 0, &chip->rmidi);
++					  mpu_port[dev], MPU401_INFO_IRQ_HOOK,
++					  -1, 0, &chip->rmidi);
+ 		if (err < 0)
+ 			return err;
+ 	}
+diff --git a/sound/isa/opl3sa2.c b/sound/isa/opl3sa2.c
+index 9b915e2..2003c67 100644
+--- a/sound/isa/opl3sa2.c
++++ b/sound/isa/opl3sa2.c
+@@ -707,8 +707,9 @@ static int __devinit snd_opl3sa2_probe(struct snd_card *card, int dev)
+ 	}
+ 	if (midi_port[dev] >= 0x300 && midi_port[dev] < 0x340) {
+ 		if ((err = snd_mpu401_uart_new(card, 0, MPU401_HW_OPL3SA2,
+-					       midi_port[dev], 0,
+-					       xirq, 0, &chip->rmidi)) < 0)
++					       midi_port[dev],
++					       MPU401_INFO_IRQ_HOOK, -1, 0,
++					       &chip->rmidi)) < 0)
+ 			return err;
+ 	}
+ 	sprintf(card->longname, "%s at 0x%lx, irq %d, dma %d",
+diff --git a/sound/isa/sb/jazz16.c b/sound/isa/sb/jazz16.c
+index 8ccbcdd..fbd8c16 100644
+--- a/sound/isa/sb/jazz16.c
++++ b/sound/isa/sb/jazz16.c
+@@ -322,7 +322,7 @@ static int __devinit snd_jazz16_probe(struct device *devptr, unsigned int dev)
+ 					MPU401_HW_MPU401,
+ 					mpu_port[dev], 0,
+ 					mpu_irq[dev],
+-					mpu_irq[dev] >= 0 ? IRQF_DISABLED : 0,
++					IRQF_DISABLED,
+ 					NULL) < 0)
+ 			snd_printk(KERN_ERR "no MPU-401 device at 0x%lx\n",
+ 					mpu_port[dev]);
+diff --git a/sound/isa/sb/sb16.c b/sound/isa/sb/sb16.c
+index 4d1c5a3..b10f021 100644
+--- a/sound/isa/sb/sb16.c
++++ b/sound/isa/sb/sb16.c
+@@ -394,8 +394,9 @@ static int __devinit snd_sb16_probe(struct snd_card *card, int dev)
+
+ 	if (chip->mpu_port > 0 && chip->mpu_port != SNDRV_AUTO_PORT) {
+ 		if ((err = snd_mpu401_uart_new(card, 0, MPU401_HW_SB,
+-					       chip->mpu_port, 0,
+-					       xirq, 0, &chip->rmidi)) < 0)
++					       chip->mpu_port,
++					       MPU401_INFO_IRQ_HOOK, -1, 0,
++					       &chip->rmidi)) < 0)
+ 			return err;
+ 		chip->rmidi_callback = snd_mpu401_uart_interrupt;
+ 	}
+diff --git a/sound/pci/als4000.c b/sound/pci/als4000.c
+index a9c1af3..507434b 100644
+--- a/sound/pci/als4000.c
++++ b/sound/pci/als4000.c
+@@ -931,8 +931,9 @@ static int __devinit snd_card_als4000_probe(struct pci_dev *pci,
+
+ 	if ((err = snd_mpu401_uart_new( card, 0, MPU401_HW_ALS4000,
+ 					iobase + ALS4K_IOB_30_MIDI_DATA,
+-					MPU401_INFO_INTEGRATED,
+-					pci->irq, 0, &chip->rmidi)) < 0) {
++					MPU401_INFO_INTEGRATED |
++					MPU401_INFO_IRQ_HOOK,
++					-1, 0, &chip->rmidi)) < 0) {
+ 		printk(KERN_ERR "als4000: no MPU-401 device at 0x%lx?\n",
+ 				iobase + ALS4K_IOB_30_MIDI_DATA);
+ 		goto out_err;
+diff --git a/sound/pci/au88x0/au88x0_mpu401.c b/sound/pci/au88x0/au88x0_mpu401.c
+index 0dc8d25..fc2133b 100644
+--- a/sound/pci/au88x0/au88x0_mpu401.c
++++ b/sound/pci/au88x0/au88x0_mpu401.c
+@@ -84,7 +84,7 @@ static int __devinit snd_vortex_midi(vortex_t * vortex)
+ #ifdef VORTEX_MPU401_LEGACY
+ 	if ((temp =
+ 	     snd_mpu401_uart_new(vortex->card, 0, MPU401_HW_MPU401, 0x330,
+-				 0, 0, 0, &rmidi)) != 0) {
++				 MPU401_INFO_IRQ_HOOK, -1, 0, &rmidi)) != 0) {
+ 		hwwrite(vortex->mmio, VORTEX_CTRL,
+ 			(hwread(vortex->mmio, VORTEX_CTRL) &
+ 			 ~CTRL_MIDI_PORT) & ~CTRL_MIDI_EN);
+@@ -94,8 +94,8 @@ static int __devinit snd_vortex_midi(vortex_t * vortex)
+ 	port = (unsigned long)(vortex->mmio + VORTEX_MIDI_DATA);
+ 	if ((temp =
+ 	     snd_mpu401_uart_new(vortex->card, 0, MPU401_HW_AUREAL, port,
+-				 MPU401_INFO_INTEGRATED | MPU401_INFO_MMIO,
+-				 0, 0, &rmidi)) != 0) {
++				 MPU401_INFO_INTEGRATED | MPU401_INFO_MMIO |
++				 MPU401_INFO_IRQ_HOOK, -1, 0, &rmidi)) != 0) {
+ 		hwwrite(vortex->mmio, VORTEX_CTRL,
+ 			(hwread(vortex->mmio, VORTEX_CTRL) &
+ 			 ~CTRL_MIDI_PORT) & ~CTRL_MIDI_EN);
+diff --git a/sound/pci/azt3328.c b/sound/pci/azt3328.c
+index 579fc0d..b80e87b 100644
+--- a/sound/pci/azt3328.c
++++ b/sound/pci/azt3328.c
+@@ -2652,8 +2652,9 @@ snd_azf3328_probe(struct pci_dev *pci, const struct pci_device_id *pci_id)
+ 	   since our hardware ought to be similar, thus use same ID. */
+ 	err = snd_mpu401_uart_new(
+ 		card, 0,
+-		MPU401_HW_AZT2320, chip->mpu_io, MPU401_INFO_INTEGRATED,
+-		pci->irq, 0, &chip->rmidi
++		MPU401_HW_AZT2320, chip->mpu_io,
++		MPU401_INFO_INTEGRATED | MPU401_INFO_IRQ_HOOK,
++		-1, 0, &chip->rmidi
+ 	);
+ 	if (err < 0) {
+ 		snd_printk(KERN_ERR "azf3328: no MPU-401 device at 0x%lx?\n",
+diff --git a/sound/pci/cmipci.c b/sound/pci/cmipci.c
+index 9cf99fb..4776790 100644
+--- a/sound/pci/cmipci.c
++++ b/sound/pci/cmipci.c
+@@ -3228,8 +3228,9 @@ static int __devinit snd_cmipci_create(struct snd_card *card, struct pci_dev *pc
+ 		if ((err = snd_mpu401_uart_new(card, 0, MPU401_HW_CMIPCI,
+ 					       iomidi,
+ 					       (integrated_midi ?
+-						MPU401_INFO_INTEGRATED : 0),
+-					       cm->irq, 0, &cm->rmidi)) < 0) {
++						MPU401_INFO_INTEGRATED : 0) |
++					       MPU401_INFO_IRQ_HOOK,
++					       -1, 0, &cm->rmidi)) < 0) {
+ 			printk(KERN_ERR "cmipci: no UART401 device at 0x%lx\n", iomidi);
+ 		}
+ 	}
+diff --git a/sound/pci/es1938.c b/sound/pci/es1938.c
+index 26a5a2f..8f4ddc3 100644
+--- a/sound/pci/es1938.c
++++ b/sound/pci/es1938.c
+@@ -1854,8 +1854,9 @@ static int __devinit snd_es1938_probe(struct pci_dev *pci,
+ 		}
+ 	}
+ 	if (snd_mpu401_uart_new(card, 0, MPU401_HW_MPU401,
+-				chip->mpu_port, MPU401_INFO_INTEGRATED,
+-				chip->irq, 0, &chip->rmidi) < 0) {
++				chip->mpu_port,
++				MPU401_INFO_INTEGRATED | MPU401_INFO_IRQ_HOOK,
++				-1, 0, &chip->rmidi) < 0) {
+ 		printk(KERN_ERR "es1938: unable to initialize MPU-401\n");
+ 	} else {
+ 		// this line is vital for MIDI interrupt handling on ess-solo1
+diff --git a/sound/pci/es1968.c b/sound/pci/es1968.c
+index 99ea932..b6397d0 100644
+--- a/sound/pci/es1968.c
++++ b/sound/pci/es1968.c
+@@ -2843,8 +2843,9 @@ static int __devinit snd_es1968_probe(struct pci_dev *pci,
+ 	if (enable_mpu[dev]) {
+ 		if ((err = snd_mpu401_uart_new(card, 0, MPU401_HW_MPU401,
+ 					       chip->io_port + ESM_MPU401_PORT,
+-					       MPU401_INFO_INTEGRATED,
+-					       chip->irq, 0, &chip->rmidi)) < 0) {
++					       MPU401_INFO_INTEGRATED |
++					       MPU401_INFO_IRQ_HOOK,
++					       -1, 0, &chip->rmidi)) < 0) {
+ 			printk(KERN_WARNING "es1968: skipping MPU-401 MIDI support..\n");
+ 		}
+ 	}
+diff --git a/sound/pci/fm801.c b/sound/pci/fm801.c
+index f9123f0..34a3414 100644
+--- a/sound/pci/fm801.c
++++ b/sound/pci/fm801.c
+@@ -1306,8 +1306,9 @@ static int __devinit snd_card_fm801_probe(struct pci_dev *pci,
+ 	}
+ 	if ((err = snd_mpu401_uart_new(card, 0, MPU401_HW_FM801,
+ 				       FM801_REG(chip, MPU401_DATA),
+-				       MPU401_INFO_INTEGRATED,
+-				       chip->irq, 0, &chip->rmidi)) < 0) {
++				       MPU401_INFO_INTEGRATED |
++				       MPU401_INFO_IRQ_HOOK,
++				       -1, 0, &chip->rmidi)) < 0) {
+ 		snd_card_free(card);
+ 		return err;
+ 	}
+diff --git a/sound/pci/ice1712/ice1712.c b/sound/pci/ice1712/ice1712.c
+index 0ccc0eb..a1d9815 100644
+--- a/sound/pci/ice1712/ice1712.c
++++ b/sound/pci/ice1712/ice1712.c
+@@ -2748,8 +2748,9 @@ static int __devinit snd_ice1712_probe(struct pci_dev *pci,
+ 	if (!c->no_mpu401) {
+ 		err = snd_mpu401_uart_new(card, 0, MPU401_HW_ICE1712,
+ 			ICEREG(ice, MPU1_CTRL),
+-			(c->mpu401_1_info_flags | MPU401_INFO_INTEGRATED),
+-			ice->irq, 0, &ice->rmidi[0]);
++			c->mpu401_1_info_flags |
++			MPU401_INFO_INTEGRATED | MPU401_INFO_IRQ_HOOK,
++			-1, 0, &ice->rmidi[0]);
+ 		if (err < 0) {
+ 			snd_card_free(card);
+ 			return err;
+@@ -2764,8 +2765,9 @@ static int __devinit snd_ice1712_probe(struct pci_dev *pci,
+ 			/*  2nd port used  */
+ 			err = snd_mpu401_uart_new(card, 1, MPU401_HW_ICE1712,
+ 				ICEREG(ice, MPU2_CTRL),
+-				(c->mpu401_2_info_flags | MPU401_INFO_INTEGRATED),
+-				ice->irq, 0, &ice->rmidi[1]);
++				c->mpu401_2_info_flags |
++				MPU401_INFO_INTEGRATED | MPU401_INFO_IRQ_HOOK,
++				-1, 0, &ice->rmidi[1]);
+
+ 			if (err < 0) {
+ 				snd_card_free(card);
+diff --git a/sound/pci/maestro3.c b/sound/pci/maestro3.c
+index 0378126..3e5f0bd 100644
+--- a/sound/pci/maestro3.c
++++ b/sound/pci/maestro3.c
+@@ -2820,8 +2820,8 @@ snd_m3_probe(struct pci_dev *pci, const struct pci_device_id *pci_id)
+ 	/* TODO enable MIDI IRQ and I/O */
+ 	err = snd_mpu401_uart_new(chip->card, 0, MPU401_HW_MPU401,
+ 				  chip->iobase + MPU401_DATA_PORT,
+-				  MPU401_INFO_INTEGRATED,
+-				  chip->irq, 0, &chip->rmidi);
++				  MPU401_INFO_INTEGRATED | MPU401_INFO_IRQ_HOOK,
++				  -1, 0, &chip->rmidi);
+ 	if (err < 0)
+ 		printk(KERN_WARNING "maestro3: no MIDI support.\n");
+ #endif
+diff --git a/sound/pci/oxygen/oxygen_lib.c b/sound/pci/oxygen/oxygen_lib.c
+index 82311fc..4aa3a80 100644
+--- a/sound/pci/oxygen/oxygen_lib.c
++++ b/sound/pci/oxygen/oxygen_lib.c
+@@ -678,14 +678,15 @@ int oxygen_pci_probe(struct pci_dev *pci, int index, char *id,
+ 		goto err_card;
+
+ 	if (chip->model.device_config & (MIDI_OUTPUT | MIDI_INPUT)) {
+-		unsigned int info_flags = MPU401_INFO_INTEGRATED;
++		unsigned int info_flags =
++				MPU401_INFO_INTEGRATED | MPU401_INFO_IRQ_HOOK;
+ 		if (chip->model.device_config & MIDI_OUTPUT)
+ 			info_flags |= MPU401_INFO_OUTPUT;
+ 		if (chip->model.device_config & MIDI_INPUT)
+ 			info_flags |= MPU401_INFO_INPUT;
+ 		err = snd_mpu401_uart_new(card, 0, MPU401_HW_CMIPCI,
+ 					  chip->addr + OXYGEN_MPU401,
+-					  info_flags, 0, 0,
++					  info_flags, -1, 0,
+ 					  &chip->midi);
+ 		if (err < 0)
+ 			goto err_card;
+diff --git a/sound/pci/riptide/riptide.c b/sound/pci/riptide/riptide.c
+index e34ae14..0c2bc68 100644
+--- a/sound/pci/riptide/riptide.c
++++ b/sound/pci/riptide/riptide.c
+@@ -2109,7 +2109,7 @@ snd_card_riptide_probe(struct pci_dev *pci, const struct pci_device_id *pci_id)
+ 		val = mpu_port[dev];
+ 		pci_write_config_word(chip->pci, PCI_EXT_MPU_Base, val);
+ 		err = snd_mpu401_uart_new(card, 0, MPU401_HW_RIPTIDE,
+-					  val, 0, chip->irq, 0,
++					  val, MPU401_INFO_IRQ_HOOK, -1, 0,
+ 					  &chip->rmidi);
+ 		if (err < 0)
+ 			snd_printk(KERN_WARNING
+diff --git a/sound/pci/sonicvibes.c b/sound/pci/sonicvibes.c
+index 2571a67..a439f17 100644
+--- a/sound/pci/sonicvibes.c
++++ b/sound/pci/sonicvibes.c
+@@ -1493,8 +1493,10 @@ static int __devinit snd_sonic_probe(struct pci_dev *pci,
+ 		return err;
+ 	}
+ 	if ((err = snd_mpu401_uart_new(card, 0, MPU401_HW_SONICVIBES,
+-				       sonic->midi_port, MPU401_INFO_INTEGRATED,
+-				       sonic->irq, 0,
++				       sonic->midi_port,
++				       MPU401_INFO_INTEGRATED |
++				       MPU401_INFO_IRQ_HOOK,
++				       -1, 0,
+ 				       &midi_uart)) < 0) {
+ 		snd_card_free(card);
+ 		return err;
+diff --git a/sound/pci/trident/trident.c b/sound/pci/trident/trident.c
+index d8a128f..6406a18 100644
+--- a/sound/pci/trident/trident.c
++++ b/sound/pci/trident/trident.c
+@@ -148,8 +148,9 @@ static int __devinit snd_trident_probe(struct pci_dev *pci,
+ 	if (trident->device != TRIDENT_DEVICE_ID_SI7018 &&
+ 	    (err = snd_mpu401_uart_new(card, 0, MPU401_HW_TRID4DWAVE,
+ 				       trident->midi_port,
+-				       MPU401_INFO_INTEGRATED,
+-				       trident->irq, 0, &trident->rmidi)) < 0) {
++				       MPU401_INFO_INTEGRATED |
++				       MPU401_INFO_IRQ_HOOK,
++				       -1, 0, &trident->rmidi)) < 0) {
+ 		snd_card_free(card);
+ 		return err;
+ 	}
+diff --git a/sound/pci/via82xx.c b/sound/pci/via82xx.c
+index f03fd62..d2204ed 100644
+--- a/sound/pci/via82xx.c
++++ b/sound/pci/via82xx.c
+@@ -2068,8 +2068,9 @@ static int __devinit snd_via686_init_misc(struct via82xx *chip)
+ 	pci_write_config_byte(chip->pci, VIA_PNP_CONTROL, legacy_cfg);
+ 	if (chip->mpu_res) {
+ 		if (snd_mpu401_uart_new(chip->card, 0, MPU401_HW_VIA686A,
+-					mpu_port, MPU401_INFO_INTEGRATED,
+-					chip->irq, 0, &chip->rmidi) < 0) {
++					mpu_port, MPU401_INFO_INTEGRATED |
++					MPU401_INFO_IRQ_HOOK, -1, 0,
++					&chip->rmidi) < 0) {
+ 			printk(KERN_WARNING "unable to initialize MPU-401"
+ 			       " at 0x%lx, skipping\n", mpu_port);
+ 			legacy &= ~VIA_FUNC_ENABLE_MIDI;
+diff --git a/sound/pci/ymfpci/ymfpci.c b/sound/pci/ymfpci/ymfpci.c
+index 511d576..553aa57 100644
+--- a/sound/pci/ymfpci/ymfpci.c
++++ b/sound/pci/ymfpci/ymfpci.c
+@@ -305,8 +305,9 @@ static int __devinit snd_card_ymfpci_probe(struct pci_dev *pci,
+ 	if (chip->mpu_res) {
+ 		if ((err = snd_mpu401_uart_new(card, 0, MPU401_HW_YMFPCI,
+ 					       mpu_port[dev],
+-					       MPU401_INFO_INTEGRATED,
+-					       pci->irq, 0, &chip->rawmidi)) < 0) {
++					       MPU401_INFO_INTEGRATED |
++					       MPU401_INFO_IRQ_HOOK,
++					       -1, 0, &chip->rawmidi)) < 0) {
+ 			printk(KERN_WARNING "ymfpci: cannot initialize MPU401 at 0x%lx, skipping...\n", mpu_port[dev]);
+ 			legacy_ctrl &= ~YMFPCI_LEGACY_MIEN; /* disable MPU401 irq */
+ 			pci_write_config_word(pci, PCIR_DSXG_LEGACY, legacy_ctrl);
