@@ -1,65 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753940Ab1ILCsj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Sep 2011 22:48:39 -0400
-Received: from vm4.telegraphics.com.au ([98.124.60.149]:36133 "EHLO
-	vps4.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751999Ab1ILCsi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Sep 2011 22:48:38 -0400
-Date: Mon, 12 Sep 2011 12:48:30 +1000 (EST)
-From: Finn Thain <fthain@telegraphics.com.au>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 07/28] m68k/irq: Switch irq_chip methods to "struct
- irq_data *data"
-In-Reply-To: <CAMuHMdWri-LyhDN+z-WpJUkERekAwkD_F88VOtB9kEm_u=QzrA@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1109121204040.2525@nippy.intranet>
-References: <1315742394-16036-1-git-send-email-geert@linux-m68k.org> <1315742394-16036-8-git-send-email-geert@linux-m68k.org> <alpine.LNX.2.00.1109112327500.2286@nippy.intranet> <CAMuHMdWri-LyhDN+z-WpJUkERekAwkD_F88VOtB9kEm_u=QzrA@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-1463806400-566375710-1315793904=:2525"
-Content-ID: <alpine.LNX.2.00.1109121244090.2525@nippy.intranet>
+	id S1754771Ab1ILDZT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Sep 2011 23:25:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54437 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751318Ab1ILDZS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Sep 2011 23:25:18 -0400
+Date: Mon, 12 Sep 2011 05:25:08 +0200
+From: NeilBrown <neilb@suse.de>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-raid@vger.kernel.org,
+        dm-devel@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] block: remove support for bio remapping from
+ ->make_request
+Message-ID: <20110912052508.6b59b5ac@notabene.brown>
+In-Reply-To: <20110911145129.GA29504@infradead.org>
+References: <20110911145053.GA28996@infradead.org>
+	<20110911145129.GA29504@infradead.org>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Sun, 11 Sep 2011 10:51:29 -0400 Christoph Hellwig <hch@infradead.org>
+wrote:
 
----1463806400-566375710-1315793904=:2525
-Content-Type: TEXT/PLAIN; CHARSET=ISO-8859-15
-Content-Transfer-Encoding: QUOTED-PRINTABLE
-Content-ID: <alpine.LNX.2.00.1109121244091.2525@nippy.intranet>
+> There is very little benefit in allowing to let a ->make_request instance update
+> the bios device and sector and loop around it in __generic_make_request when
+> we can archive the same through calling generic_make_request from the driver
+> and letting the loop in generic_make_request handle it.
+
+Completely agree - I like this change!
+
+> 
+> Note that various drivers got the return value from ->make_request and returned
+> non-zero values for errors.
+
+:-(
+
+A diff-stat would have been nice... I think I've found all 'my' files though.
 
 
-On Sun, 11 Sep 2011, Geert Uytterhoeven wrote:
 
->=20
-> > @@ -152,7 +149,7 @@ void baboon_irq_enable(int irq)
-> >
-> > =A0 =A0 =A0 =A0baboon_disabled &=3D ~(1 << irq_idx);
-> > =A0 =A0 =A0 =A0if (!baboon_disabled)
-> > - =A0 =A0 =A0 =A0 =A0 =A0 =A0 mac_enable_irq(IRQ_NUBUS_C);
-> > + =A0 =A0 =A0 =A0 =A0 =A0 =A0 mac_irq_enable(irq_get_irq_data(IRQ_NUBUS=
-_C));
->=20
-> irq_get_irq_data() is not available in the non-genirq case, so this=20
-> cleanup cannot be folded in patch 7, and has to wait until after patch=20
-> 27.
+> Index: linux-2.6/drivers/md/faulty.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/md/faulty.c	2011-09-08 12:01:53.000000000 +0200
+> +++ linux-2.6/drivers/md/faulty.c	2011-09-08 12:05:58.602773802 +0200
+> @@ -169,7 +169,7 @@ static void add_sector(conf_t *conf, sec
+>  		conf->nfaults = n+1;
+>  }
+>  
+> -static int make_request(mddev_t *mddev, struct bio *bio)
+> +static void make_request(mddev_t *mddev, struct bio *bio)
+>  {
+>  	conf_t *conf = mddev->private;
+>  	int failit = 0;
+> @@ -181,7 +181,7 @@ static int make_request(mddev_t *mddev,
+>  			 * just fail immediately
+>  			 */
+>  			bio_endio(bio, -EIO);
+> -			return 0;
+> +			return;
+>  		}
+>  
+>  		if (check_sector(conf, bio->bi_sector, bio->bi_sector+(bio->bi_size>>9),
+> @@ -214,12 +214,11 @@ static int make_request(mddev_t *mddev,
+>  		b->bi_bdev = conf->rdev->bdev;
+>  		b->bi_private = bio;
+>  		b->bi_end_io = faulty_fail;
+> -		generic_make_request(b);
+> -		return 0;
+>  	} else {
+>  		bio->bi_bdev = conf->rdev->bdev;
+> -		return 1;
+>  	}
+> +
+> +	generic_make_request(b);
+>  }
 
-Right, I forgot about that.
+If the 'else' branch was taken, we need to generic_make_request(bio).
+And 'b' isn't even declared at this level.
+So at the end of the 'then' branch, add
+        bio = b;
+and make the final call
+        generic_make_request(bio);
 
->=20
-> I'll add it at the end of the series, OK?
 
-That's fine. Please go ahead and add my signed-off-by tag (or I can=20
-resubmit if you would prefer).
+Changes to these files:
+> Index: linux-2.6/drivers/md/linear.c
+> Index: linux-2.6/drivers/md/multipath.c
+> Index: linux-2.6/drivers/md/raid0.c
+> Index: linux-2.6/drivers/md/raid1.c
+> Index: linux-2.6/drivers/md/raid10.c
+> Index: linux-2.6/drivers/md/raid5.c
+> Index: linux-2.6/drivers/md/md.h
+> Index: linux-2.6/drivers/md/md.c
 
-Finn
+Acked-by: NeilBrown <neilb@suse.de>
 
->=20
-> Gr{oetje,eeting}s,
->=20
-> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 Geert
----1463806400-566375710-1315793904=:2525--
+Thanks,
+NeilBrown
