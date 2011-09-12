@@ -1,43 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755345Ab1ILWXR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 18:23:17 -0400
-Received: from fieldses.org ([174.143.236.118]:40763 "EHLO fieldses.org"
+	id S1755384Ab1ILW1i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 18:27:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10691 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755182Ab1ILWXP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 18:23:15 -0400
-Date: Mon, 12 Sep 2011 18:23:06 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: David Howells <dhowells@redhat.com>
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>, agruen@kernel.org,
-        akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V6 00/26] New ACL format for better NFSv4 acl
- interoperability
-Message-ID: <20110912222306.GB17483@fieldses.org>
-References: <25175.1315572498@redhat.com>
- <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <26458.1315577016@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <26458.1315577016@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755279Ab1ILW1f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Sep 2011 18:27:35 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20110912222306.GB17483@fieldses.org>
+References: <20110912222306.GB17483@fieldses.org> <25175.1315572498@redhat.com> <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <26458.1315577016@redhat.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: dhowells@redhat.com, "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        agruen@kernel.org, akpm@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V6 00/26] New ACL format for better NFSv4 acl interoperability
+Date: Mon, 12 Sep 2011 23:27:02 +0100
+Message-ID: <8331.1315866422@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 09, 2011 at 03:03:36PM +0100, David Howells wrote:
-> David Howells <dhowells@redhat.com> wrote:
-> 
-> > Acked-by: David Howells <dhowells@redhat.com> for all patches generally where
-> > I haven't found anything bad.
-> 
-> Having said that, there's a distinct lack of changes in the Documentation
-> directory...
+J. Bruce Fields <bfields@fieldses.org> wrote:
 
-Probably the documentation belongs in man pages.  Which I think they've
-done, but alas the git repos (on kernel.org) aren't accesible right
-now....
+> Probably the documentation belongs in man pages.  Which I think they've
+> done, but alas the git repos (on kernel.org) aren't accesible right
+> now....
 
---b.
+There is also an in-kernel API that filesystems have to deal with if they want
+to support richacls.  See the ext4 patches...  There should probably be one
+document describing how to 'use' ACLs of all kinds from a filesystem internals
+point of view somewhere under Documentation/filesystems/
+
+David
