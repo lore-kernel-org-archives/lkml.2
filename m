@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754657Ab1ILJej (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 05:34:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38999 "EHLO mx2.suse.de"
+	id S1754464Ab1ILJhx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 05:37:53 -0400
+Received: from mail.us.es ([193.147.175.20]:35613 "EHLO mail.us.es"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751387Ab1ILJeh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 05:34:37 -0400
-Date: Mon, 12 Sep 2011 10:34:34 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Christoph Hellwig <hch@infradead.org>, Linux-MM <linux-mm@kvack.org>,
-        Linux-Netdev <netdev@vger.kernel.org>,
-        Linux-NFS <linux-nfs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Neil Brown <neilb@suse.de>
-Subject: Re: [PATCH 03/10] mm: Add support for a filesystem to control swap
- files
-Message-ID: <20110912093058.GA3207@suse.de>
-References: <1315566054-17209-1-git-send-email-mgorman@suse.de>
- <1315566054-17209-4-git-send-email-mgorman@suse.de>
- <20110909130007.GA11810@infradead.org>
- <20110909131550.GV14369@suse.de>
- <20110909133611.GB8155@infradead.org>
- <1315818285.26517.18.camel@twins>
+	id S1754210Ab1ILJhw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Sep 2011 05:37:52 -0400
+Date: Mon, 12 Sep 2011 11:37:49 +0200
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: Alex Bligh <alex@alex.org.uk>, netfilter-devel@vger.kernel.org,
+        netfilter@vger.kernel.org, coreteam@netfilter.org,
+        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        Linux Containers <containers@lists.osdl.org>
+Subject: Re: [PATCH] Fix repeatable Oops on container destroy with conntrack
+Message-ID: <20110912093749.GE2194@1984>
+References: <2184C0CE5A5EDC94CDDA5053@Ximines.local>
+ <20110912072524.GA2996@p183.telecom.by>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1315818285.26517.18.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110912072524.GA2996@p183.telecom.by>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 12, 2011 at 11:04:45AM +0200, Peter Zijlstra wrote:
-> On Fri, 2011-09-09 at 09:36 -0400, Christoph Hellwig wrote:
-> > The equivalent of ->direct_IO should be used for both reads and writes.
+On Mon, Sep 12, 2011 at 10:25:24AM +0300, Alexey Dobriyan wrote:
+> On Sat, Sep 10, 2011 at 07:48:43PM +0100, Alex Bligh wrote:
+> > --- a/net/netfilter/nf_conntrack_netlink.c
+> > +++ b/net/netfilter/nf_conntrack_netlink.c
+> > @@ -570,6 +570,11 @@ ctnetlink_conntrack_event(unsigned int events, struct nf_ct_event *item)
+> >  		return 0;
+> > 
+> >  	net = nf_ct_net(ct);
+> > +
+> > +	/* container deinit, netlink may have died before death_by_timeout */
+> > +	if (!net->nfnl)
+> > +		return 0;
+> > +
+> >  	if (!item->report && !nfnetlink_has_listeners(net, group))
+> >  		return 0;
 > 
-> So the difference between DIO and swapIO is that swapIO needs the block
-> map pinned in memory.. So at the very least you'll need those
-> swap_{activate,deactivate} aops. The read/write-page thingies could
-> indeed be shared with DIO.
-> 
+> If this is correct fix, ->nfnl check should be folded into
+> nfnetlink_has_listeners(), otherwise expectations aren't covered.
 
-I'm travelling at the moment so it'll be later in the week when I investigate
-properly but I agree swap_[de|a]ctivate are still necessary. NFS does not
-need to pin a block map but it's still necessary for calling xs_set_memalloc.
-
--- 
-Mel Gorman
-SUSE Labs
+Agreed.
