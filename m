@@ -1,68 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756218Ab1ILOGP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 10:06:15 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50765 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754774Ab1ILOGO convert rfc822-to-8bit (ORCPT
+	id S1756479Ab1ILOGV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 10:06:21 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:46607 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756262Ab1ILOGT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 10:06:14 -0400
-Subject: [PATCH 6/5] llist: Add llist_next()
+	Mon, 12 Sep 2011 10:06:19 -0400
+Subject: [PATCH 7/5] sched: Convert to use llist
 From: Peter Zijlstra <peterz@infradead.org>
 To: Huang Ying <ying.huang@intel.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
         Andi Kleen <andi@firstfloor.org>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Date: Mon, 12 Sep 2011 16:05:48 +0200
+Date: Mon, 12 Sep 2011 16:05:53 +0200
 In-Reply-To: <1315461646-1379-1-git-send-email-ying.huang@intel.com>
 References: <1315461646-1379-1-git-send-email-ying.huang@intel.com>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
 X-Mailer: Evolution 3.0.2- 
-Message-ID: <1315836348.26517.41.camel@twins>
+Message-ID: <1315836353.26517.42.camel@twins>
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: llist: Add llist_next()
+Subject: sched: Convert to use llist
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Mon Sep 12 13:12:28 CEST 2011
+Date: Mon Sep 12 13:06:17 CEST 2011
 
-So we don't have to expose the struct list_node members
+Use the generic llist primitives..
 
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- include/linux/llist.h |    5 +++++
- kernel/irq_work.c     |    2 +-
- 2 files changed, 6 insertions(+), 1 deletion(-)
-Index: linux-2.6/include/linux/llist.h
+ include/linux/sched.h |    3 ++-
+ kernel/sched.c        |   48 ++++++++++--------------------------------------
+ 2 files changed, 12 insertions(+), 39 deletions(-)
+Index: linux-2.6/include/linux/sched.h
 ===================================================================
---- linux-2.6.orig/include/linux/llist.h
-+++ linux-2.6/include/linux/llist.h
-@@ -144,6 +144,11 @@ static inline bool llist_empty(const str
- 	return ACCESS_ONCE(head->first) == NULL;
+--- linux-2.6.orig/include/linux/sched.h
++++ linux-2.6/include/linux/sched.h
+@@ -90,6 +90,7 @@ struct sched_param {
+ #include <linux/task_io_accounting.h>
+ #include <linux/latencytop.h>
+ #include <linux/cred.h>
++#include <linux/llist.h>
+ 
+ #include <asm/processor.h>
+ 
+@@ -1225,7 +1226,7 @@ struct task_struct {
+ 	unsigned int ptrace;
+ 
+ #ifdef CONFIG_SMP
+-	struct task_struct *wake_entry;
++	struct llist_node wake_entry;
+ 	int on_cpu;
+ #endif
+ 	int on_rq;
+Index: linux-2.6/kernel/sched.c
+===================================================================
+--- linux-2.6.orig/kernel/sched.c
++++ linux-2.6/kernel/sched.c
+@@ -702,7 +702,7 @@ struct rq {
+ #endif
+ 
+ #ifdef CONFIG_SMP
+-	struct task_struct *wake_list;
++	struct llist_head wake_list;
+ #endif
+ };
+ 
+@@ -2698,42 +2698,26 @@ static int ttwu_remote(struct task_struc
  }
  
-+static inline struct llist_node *llist_next(struct llist_node *node)
-+{
-+	return node->next;
-+}
-+
- /**
-  * llist_add - add a new entry
-  * @new:	new entry to be added
-Index: linux-2.6/kernel/irq_work.c
-===================================================================
---- linux-2.6.orig/kernel/irq_work.c
-+++ linux-2.6/kernel/irq_work.c
-@@ -110,7 +110,7 @@ void irq_work_run(void)
- 	while (llnode != NULL) {
- 		work = llist_entry(llnode, struct irq_work, llnode);
+ #ifdef CONFIG_SMP
+-static void sched_ttwu_do_pending(struct task_struct *list)
++static void sched_ttwu_pending(void)
+ {
+ 	struct rq *rq = this_rq();
++	struct llist_node *llist = llist_del_all(&rq->wake_list);
++	struct task_struct *p;
  
--		llnode = llnode->next;
-+		llnode = llist_next(llnode);
+ 	raw_spin_lock(&rq->lock);
  
- 		/*
- 		 * Clear the PENDING bit, after this point the @work
+-	while (list) {
+-		struct task_struct *p = list;
+-		list = list->wake_entry;
++	while (llist) {
++		p = llist_entry(llist, struct task_struct, wake_entry);
++		llist = llist_next(llist);
+ 		ttwu_do_activate(rq, p, 0);
+ 	}
+ 
+ 	raw_spin_unlock(&rq->lock);
+ }
+ 
+-#ifdef CONFIG_HOTPLUG_CPU
+-
+-static void sched_ttwu_pending(void)
+-{
+-	struct rq *rq = this_rq();
+-	struct task_struct *list = xchg(&rq->wake_list, NULL);
+-
+-	if (!list)
+-		return;
+-
+-	sched_ttwu_do_pending(list);
+-}
+-
+-#endif /* CONFIG_HOTPLUG_CPU */
+-
+ void scheduler_ipi(void)
+ {
+-	struct rq *rq = this_rq();
+-	struct task_struct *list = xchg(&rq->wake_list, NULL);
+-
+-	if (!list)
++	if (llist_empty(&this_rq()->wake_list))
+ 		return;
+ 
+ 	/*
+@@ -2750,25 +2734,13 @@ void scheduler_ipi(void)
+ 	 * somewhat pessimize the simple resched case.
+ 	 */
+ 	irq_enter();
+-	sched_ttwu_do_pending(list);
++	sched_ttwu_pending();
+ 	irq_exit();
+ }
+ 
+ static void ttwu_queue_remote(struct task_struct *p, int cpu)
+ {
+-	struct rq *rq = cpu_rq(cpu);
+-	struct task_struct *next = rq->wake_list;
+-
+-	for (;;) {
+-		struct task_struct *old = next;
+-
+-		p->wake_entry = next;
+-		next = cmpxchg(&rq->wake_list, old, p);
+-		if (next == old)
+-			break;
+-	}
+-
+-	if (!next)
++	if (llist_add(&p->wake_entry, &cpu_rq(cpu)->wake_list))
+ 		smp_send_reschedule(cpu);
+ }
+ 
 
