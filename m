@@ -1,77 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932953Ab1IMV7Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 17:59:25 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:46610 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932867Ab1IMV7Y (ORCPT
+	id S932949Ab1IMWGN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 18:06:13 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:23515 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932834Ab1IMWGM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 17:59:24 -0400
-Message-ID: <4E6FD232.6030000@linux.vnet.ibm.com>
-Date: Tue, 13 Sep 2011 16:59:14 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
+	Tue, 13 Sep 2011 18:06:12 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=AQOZae7lKmvVkFv24rDfBubowibybfhRD8fje+VntGeEZcqIAltHJoI1iryvpui32
+	csYeC3mSsFgbzXrtAE33g==
+Date: Tue, 13 Sep 2011 15:06:04 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Miao Xie <miaox@cn.fujitsu.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Nick Piggin <npiggin@suse.de>, Paul Menage <paul@paulmenage.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [patch] cpusets: avoid looping when storing to mems_allowed if
+ one node remains set
+In-Reply-To: <4E6EDA2B.9090507@cn.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1109131503520.11120@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1109090313130.23841@chino.kir.corp.google.com> <4E6EDA2B.9090507@cn.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
-        hughd@google.com, ngupta@vflare.org,
-        Konrad Wilk <konrad.wilk@oracle.com>, JBeulich@novell.com,
-        Kurt Hackel <kurt.hackel@oracle.com>, npiggin@kernel.dk,
-        akpm@linux-foundation.org, riel@redhat.com, hannes@cmpxchg.org,
-        matthew@wil.cx, Chris Mason <chris.mason@oracle.com>,
-        kamezawa.hiroyu@jp.fujitsu.com, jackdachef@gmail.com,
-        cyclonusj@gmail.com, levinsasha928@gmail.com
-Subject: Re: [PATCH V9 3/6] mm: frontswap: core frontswap functionality
-References: <20110913174026.GA11298@ca-server1.us.oracle.com 4E6FBFC4.1080901@linux.vnet.ibm.com> <f477a147-9948-4bef-973a-1f77bd185da1@default>
-In-Reply-To: <f477a147-9948-4bef-973a-1f77bd185da1@default>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 11091321-3270-0000-0000-000000299EAE
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/13/2011 03:50 PM, Dan Magenheimer wrote:
->> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
->> Subject: Re: [PATCH V9 3/6] mm: frontswap: core frontswap functionality
->>
->> Hey Dan,
->>
->> I get the following compile warnings:
->>
->> mm/frontswap.c: In function 'init_frontswap':
->> mm/frontswap.c:264:5: warning: passing argument 4 of 'debugfs_create_size_t' from incompatible pointer
->> type
->> include/linux/debugfs.h:68:16: note: expected 'size_t *' but argument is of type 'long unsigned int *'
->> mm/frontswap.c:266:5: warning: passing argument 4 of 'debugfs_create_size_t' from incompatible pointer
->> type
->> include/linux/debugfs.h:68:16: note: expected 'size_t *' but argument is of type 'long unsigned int *'
->> mm/frontswap.c:268:5: warning: passing argument 4 of 'debugfs_create_size_t' from incompatible pointer
->> type
->> include/linux/debugfs.h:68:16: note: expected 'size_t *' but argument is of type 'long unsigned int *'
->> mm/frontswap.c:270:5: warning: passing argument 4 of 'debugfs_create_size_t' from incompatible pointer
->> type
->> include/linux/debugfs.h:68:16: note: expected 'size_t *' but argument is of type 'long unsigned int *'
-> 
-> Thanks for checking on 32-bit!
->  
->> size_t is platform dependent but is generally "unsigned int"
->> for 32-bit and "unsigned long" for 64-bit.
->>
->> I think just typecasting these to size_t * would fix it.
-> 
-> Actually, I think the best fix is likely to change the variables
-> and the debugfs calls to u64 since even on 32-bit, the
-> counters may exceed 2**32 on a heavily-loaded long-running
-> system.
+On Tue, 13 Sep 2011, Miao Xie wrote:
+
+> This patch is dangerous if the task has a bind memory policy that was set
+> to be neither MPOL_F_STATIC_NODES nor MPOL_F_RELATIVE_NODES, because the
+> memory policy use node_remap() to rebind the allowed nodes, but node_remap()
+> may make the old mask and the new mask nonoverlapping. So at this condition,
+> the task may also see an empty node mask.
 > 
 
-That was going to be my other suggestion :)  I thought I'd suggest
-the route that didn't involve you having to retype the counters.  But
-the u64 solution is cleaner and, as Andrew pointed out, less risky.
-
-> I'll give it a day or two to see if anyone else has any feedback
-> before I fix this for V10.
-> 
-> Dan
-
+The vast majority of cpuset users are not going to have mempolicies at 
+all, the cpuset itself is the only policy they need to take advantage of 
+the NUMA locality of their machine.  I'd be find with checking for 
+!tsk->mempolicy in this exception as well since we already hold 
+task_lock(tsk), but I think the real fix would be to make sure that an 
+empty nodemask is never returned by mempolicies.  Something like ensuring 
+that if the preferred node is MAX_NUMNODES (since it is determined by 
+using first_node() over a possibly racing empty nodemask) that the first 
+online node is returned during the race and that 
+node_states[N_HIGH_MEMORY] is returned if an MPOL_BIND or MPOL_INTERLEAVE 
+mask is empty.  Thoughts?
