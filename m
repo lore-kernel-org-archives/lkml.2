@@ -1,103 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754220Ab1IMOPA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 10:15:00 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:27241 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754005Ab1IMOO6 (ORCPT
+	id S1754259Ab1IMOPe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 10:15:34 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:57994 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753291Ab1IMOPb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 10:14:58 -0400
+	Tue, 13 Sep 2011 10:15:31 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: thellstrom@vmware.com, linux-kernel@vger.kernel.org,
         xen-devel@lists.xensource.com, dri-devel@lists.freedesktop.org,
         thomas@shipmail.org
 Cc: Pekka Paalanen <pq@iki.fi>, bskeggs@redhat.com, j.glisse@redhat.com,
-        airlied@redhat.com, airlied@linux.ie, alexdeucher@gmail.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 1/7] ttm/radeon/nouveau: Check the DMA address from TTM against known value.
-Date: Tue, 13 Sep 2011 10:12:44 -0400
-Message-Id: <1315923170-25568-2-git-send-email-konrad.wilk@oracle.com>
+        airlied@redhat.com, airlied@linux.ie, alexdeucher@gmail.com
+Subject: [PATCH] TTM DMA v1.8
+Date: Tue, 13 Sep 2011 10:12:43 -0400
+Message-Id: <1315923170-25568-1-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1315923170-25568-1-git-send-email-konrad.wilk@oracle.com>
-References: <1315923170-25568-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4E6F64F3.0091:SCFMA922111,ss=1,re=-4.000,fgs=0
+X-CT-RefId: str=0001.0A090202.4E6F64F3.0045:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-. instead of checking against the DMA_ERROR_CODE value which is
-per-platform specific. The zero value is a known invalid value
-that the TTM layer sets on the dma_address array if it is not
-used (ttm_tt_alloc_page_directory calls drm_calloc_large which
-creates a page with GFP_ZERO).
+Since v1.7: [https://lkml.org/lkml/2011/8/30/460]
+ - Fixed checking the DMA address in radeon/nouveau code.
+Since v1: [http://lwn.net/Articles/456246/]
+ - Ran it through the gauntlet of SubmitChecklist and fixed issues
+ - Made radeon/nouveau driver set coherent_dma (which is required for dmapool)
 
-We can't use pci_dma_mapping_error as that is IOMMU
-specific (some check for a specific physical address, some
-for ranges, some just do a check against zero).
+[.. and this is what I said in v1 post]:
 
-Also update the comments in the header about the true state
-of that parameter.
+Way back in January this patchset:
+http://lists.freedesktop.org/archives/dri-devel/2011-January/006905.html
+was merged in, but pieces of it had to be reverted b/c they did not
+work properly under PowerPC, ARM, and when swapping out pages to disk.
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/gpu/drm/nouveau/nouveau_sgdma.c |    3 +--
- drivers/gpu/drm/radeon/radeon_gart.c    |    4 +---
- include/drm/ttm/ttm_page_alloc.h        |    4 ++--
- 3 files changed, 4 insertions(+), 7 deletions(-)
+After a bit of discussion on the mailing list
+http://marc.info/?i=4D769726.2030307@shipmail.org I started working on it, but
+got waylaid by other things .. and finally I am able to post the RFC patches.
 
-diff --git a/drivers/gpu/drm/nouveau/nouveau_sgdma.c b/drivers/gpu/drm/nouveau/nouveau_sgdma.c
-index 82fad91..9b570c3 100644
---- a/drivers/gpu/drm/nouveau/nouveau_sgdma.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_sgdma.c
-@@ -42,8 +42,7 @@ nouveau_sgdma_populate(struct ttm_backend *be, unsigned long num_pages,
- 
- 	nvbe->nr_pages = 0;
- 	while (num_pages--) {
--		/* this code path isn't called and is incorrect anyways */
--		if (0) { /*dma_addrs[nvbe->nr_pages] != DMA_ERROR_CODE)*/
-+		if (dma_addrs[nvbe->nr_pages] != 0) {
- 			nvbe->pages[nvbe->nr_pages] =
- 					dma_addrs[nvbe->nr_pages];
- 		 	nvbe->ttm_alloced[nvbe->nr_pages] = true;
-diff --git a/drivers/gpu/drm/radeon/radeon_gart.c b/drivers/gpu/drm/radeon/radeon_gart.c
-index a533f52..068ba09 100644
---- a/drivers/gpu/drm/radeon/radeon_gart.c
-+++ b/drivers/gpu/drm/radeon/radeon_gart.c
-@@ -181,9 +181,7 @@ int radeon_gart_bind(struct radeon_device *rdev, unsigned offset,
- 	p = t / (PAGE_SIZE / RADEON_GPU_PAGE_SIZE);
- 
- 	for (i = 0; i < pages; i++, p++) {
--		/* we reverted the patch using dma_addr in TTM for now but this
--		 * code stops building on alpha so just comment it out for now */
--		if (0) { /*dma_addr[i] != DMA_ERROR_CODE) */
-+		if (dma_addr[i] != 0) {
- 			rdev->gart.ttm_alloced[p] = true;
- 			rdev->gart.pages_addr[p] = dma_addr[i];
- 		} else {
-diff --git a/include/drm/ttm/ttm_page_alloc.h b/include/drm/ttm/ttm_page_alloc.h
-index 8062890..0017b17 100644
---- a/include/drm/ttm/ttm_page_alloc.h
-+++ b/include/drm/ttm/ttm_page_alloc.h
-@@ -36,7 +36,7 @@
-  * @flags: ttm flags for page allocation.
-  * @cstate: ttm caching state for the page.
-  * @count: number of pages to allocate.
-- * @dma_address: The DMA (bus) address of pages (if TTM_PAGE_FLAG_DMA32 set).
-+ * @dma_address: The DMA (bus) address of pages - (by default zero).
-  */
- int ttm_get_pages(struct list_head *pages,
- 		  int flags,
-@@ -51,7 +51,7 @@ int ttm_get_pages(struct list_head *pages,
-  * count.
-  * @flags: ttm flags for page allocation.
-  * @cstate: ttm caching state.
-- * @dma_address: The DMA (bus) address of pages (if TTM_PAGE_FLAG_DMA32 set).
-+ * @dma_address: The DMA (bus) address of pages (by default zero).
-  */
- void ttm_put_pages(struct list_head *pages,
- 		   unsigned page_count,
--- 
-1.7.4.1
+There was a lot of discussion about it and I am not sure if I captured
+everybody's thoughts - if I did not - that is _not_ intentional - it has just
+been quite some time..
 
+Anyhow .. the patches explore what the "lib/dmapool.c" does - which is to have a
+DMA pool that the device has associated with. I kind of married that code
+along with drivers/gpu/drm/ttm/ttm_page_alloc.c to create a TTM DMA pool code.
+The end result is DMA pool with extra features: can do write-combine, uncached,
+writeback (and tracks them and sets back to WB when freed); tracks "cached"
+pages that don't really need to be returned to a pool; and hooks up to
+the shrinker code so that the pools can be shrunk.
+
+If you guys think this set of patches make sense  - my future plans were
+ 1) Get this in large crowd of testing .. and if it works for a kernel release
+ 2) to move a bulk of this in the lib/dmapool.c (I spoke with Matthew Wilcox
+    about it and he is OK as long as I don't introduce performance regressions).
+
+But before I do any of that a second set of eyes taking a look at these
+patches would be most welcome.
+
+In regards to testing, I've been running them non-stop for the last two weeks
+(and found some issues which I've fixed up) - and been quite happy with how
+they work. I finally got my Intel VT-d box online so will test that shortly.
+
+Michel (thanks!) took a spin of the patches on his PowerPC and they did not
+cause any regressions (wheew).
+
+The patches are also located in a git tree:
+
+ git://oss.oracle.com/git/kwilk/xen.git devel/ttm.dma_pool.v1.8
+
+ drivers/gpu/drm/nouveau/nouveau_mem.c    |    8 +-
+ drivers/gpu/drm/nouveau/nouveau_sgdma.c  |    3 +-
+ drivers/gpu/drm/radeon/radeon_device.c   |    6 +
+ drivers/gpu/drm/radeon/radeon_gart.c     |    4 +-
+ drivers/gpu/drm/radeon/radeon_ttm.c      |    3 +-
+ drivers/gpu/drm/ttm/Makefile             |    3 +
+ drivers/gpu/drm/ttm/ttm_bo.c             |    4 +-
+ drivers/gpu/drm/ttm/ttm_memory.c         |    5 +
+ drivers/gpu/drm/ttm/ttm_page_alloc.c     |   63 ++-
+ drivers/gpu/drm/ttm/ttm_page_alloc_dma.c | 1317 ++++++++++++++++++++++++++++++
+ drivers/gpu/drm/ttm/ttm_tt.c             |    5 +-
+ drivers/gpu/drm/vmwgfx/vmwgfx_drv.c      |    4 +-
+ drivers/xen/swiotlb-xen.c                |    2 +-
+ include/drm/ttm/ttm_bo_driver.h          |    7 +-
+ include/drm/ttm/ttm_page_alloc.h         |  100 +++-
+ include/linux/swiotlb.h                  |    7 +-
+ lib/swiotlb.c                            |    5 +-
+ 17 files changed, 1516 insertions(+), 30 deletions(-)
