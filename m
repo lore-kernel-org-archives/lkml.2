@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754146Ab1IMFaJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 01:30:09 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:55393 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752920Ab1IMFaH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 01:30:07 -0400
-Date: Tue, 13 Sep 2011 13:30:07 +0800
-From: Adam Lee <adam8157@gmail.com>
-To: esmaeil mirzaee <esmaeil.debian@gmail.com>
-Cc: kernelnewbies <kernelnewbies@kernelnewbies.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: maintenance time and git error
-Message-ID: <20110913053007.GA21628@adam-station.nay.redhat.com>
-Mail-Followup-To: esmaeil mirzaee <esmaeil.debian@gmail.com>,
-	kernelnewbies <kernelnewbies@kernelnewbies.org>,
-	linux-kernel@vger.kernel.org
-References: <CAOwGe_yrRjq8Mqfcrm1P9bTYmPCA=qhNBxide10_w5ceR6wkDg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOwGe_yrRjq8Mqfcrm1P9bTYmPCA=qhNBxide10_w5ceR6wkDg@mail.gmail.com>
-X-PGP-Key-ID: D15CA3BE
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754238Ab1IMFbr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 01:31:47 -0400
+Received: from mga14.intel.com ([143.182.124.37]:39606 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752302Ab1IMFbq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 01:31:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,372,1312182000"; 
+   d="scan'208";a="16454953"
+Subject: Re: [patch] x86: tlb flush avoid superflous leave_mm()
+From: Shaohua Li <shaohua.li@intel.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, hpa@linux.intel.com
+In-Reply-To: <1314947277.29510.66.camel@sli10-conroe>
+References: <1314947277.29510.66.camel@sli10-conroe>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 13 Sep 2011 13:35:15 +0800
+Message-ID: <1315892115.29510.89.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 13, 2011 at 01:22:05AM -0400, esmaeil mirzaee wrote:
-> Hi
-> does anyone know when the maintaining of the web page www.kernel.org
-> will be finish?
-> and when I try this "git clone
-> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux2.6.git
-> linux
+On Fri, 2011-09-02 at 15:07 +0800, Shaohua Li wrote:
+> If just one page VA tlb is required to be flushed and current task is in lazy
+> TLB state, doing leave_mm() is superfluous because it flushes the whole TLB.
+> This can reduce some TLB miss.
+ping, any comments?
+
+> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
 > 
-> I got below error
-> "Initialized empty Git repository in /home/esmaeil/fixbug/krl/linux/.git/"
-> "fatal: Unable to look up git.kernel.org (port 9418) (Name or service
-> not known)"
+> diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
+> index d6c0418..3041665 100644
+> --- a/arch/x86/mm/tlb.c
+> +++ b/arch/x86/mm/tlb.c
+> @@ -153,13 +153,13 @@ void smp_invalidate_interrupt(struct pt_regs *regs)
+>  		 */
+>  
+>  	if (f->flush_mm == percpu_read(cpu_tlbstate.active_mm)) {
+> -		if (percpu_read(cpu_tlbstate.state) == TLBSTATE_OK) {
+> -			if (f->flush_va == TLB_FLUSH_ALL)
+> +		if (f->flush_va == TLB_FLUSH_ALL) {
+> +			if (percpu_read(cpu_tlbstate.state) == TLBSTATE_OK)
+>  				local_flush_tlb();
+>  			else
+> -				__flush_tlb_one(f->flush_va);
+> +				leave_mm(cpu);
+>  		} else
+> -			leave_mm(cpu);
+> +			__flush_tlb_one(f->flush_va);
+>  	}
+>  out:
+>  	ack_APIC_irq();
+> @@ -306,12 +306,8 @@ void flush_tlb_page(struct vm_area_struct *vma, unsigned long va)
+>  
+>  	preempt_disable();
+>  
+> -	if (current->active_mm == mm) {
+> -		if (current->mm)
+> -			__flush_tlb_one(va);
+> -		else
+> -			leave_mm(smp_processor_id());
+> -	}
+> +	if (current->active_mm == mm)
+> +		__flush_tlb_one(va);
+>  
+>  	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
+>  		flush_tlb_others(mm_cpumask(mm), mm, va);
 > 
 
-It will be back in few days.
 
-If you wanna get updated, you can:
-
-$ git remote add github git://github.com/torvalds/linux.git
-$ git fetch github
-$ git checkout -b github github/master
-
-and you will get a branch named "github" with github remote.
-
--- 
-Regards,
-	Adam Lee
-	--------------------------------------------------
-	E-mail: adam8157@gmail.com
-	Website: http://www.adam8157.info
-	--------------------------------------------------
