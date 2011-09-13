@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756085Ab1IMSNK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 14:13:10 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:53163 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755870Ab1IMSNI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 14:13:08 -0400
-Date: Tue, 13 Sep 2011 23:42:45 +0530
-From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Turner <pjt@google.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelianov <xemul@parallels.com>
-Subject: Re: CFS Bandwidth Control - Test results of cgroups tasks pinned vs
- unpinnede
-Message-ID: <20110913181245.GN11100@linux.vnet.ibm.com>
-Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-References: <1315830943.26517.36.camel@twins>
- <20110913041545.GD11100@linux.vnet.ibm.com>
- <20110913050306.GB7254@linux.vnet.ibm.com>
- <1315906788.575.3.camel@twins>
- <20110913112852.GE7254@linux.vnet.ibm.com>
- <1315922848.5977.11.camel@twins>
- <20110913162119.GA3045@linux.vnet.ibm.com>
- <1315931775.5977.29.camel@twins>
- <20110913175425.GB3062@linux.vnet.ibm.com>
- <1315936984.4226.2.camel@twins>
+	id S932086Ab1IMSNe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 14:13:34 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:14787 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755870Ab1IMSNc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 14:13:32 -0400
+Subject: [PATCH v3 00/11] SUNRPC: make rpcbind clients allocated and destroyed
+	dynamically
+To: Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bfields@fieldses.org, davem@davemloft.net
+Date: Tue, 13 Sep 2011 22:13:20 +0400
+Message-ID: <20110913180953.3961.69217.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1315936984.4226.2.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 11091318-2398-0000-0000-00000030BE99
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <a.p.zijlstra@chello.nl> [2011-09-13 20:03:04]:
+v3:
+1) rebased to v3.1-rc6 (against branch
+git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git)
+2) creation and destruction on rpcbind clients now depends on service type
 
-> On Tue, 2011-09-13 at 23:24 +0530, Srivatsa Vaddagiri wrote:
-> > Fyi, we have added additional levels to cgroup setup
-> > (/Level1/Level2/C1/C1_1 etc) to mimic cgroup hierarchy for VMS as
-> > created by libvirt. 
-> 
-> The deeper you nest the bigger the numerical problems get.. 
->
-> Also, can you please stop using virt crap and focus on useful
-> things? :-) 
+This patch is required for further RPC layer virtualization, because rpcbind
+clients have to be per network namespace.
+To achive this, we have to untie network namespace from rpcbind clients sockets.
+The idea of this patch set is to make rpcbind clients non-static. I.e. rpcbind
+clients will be created during first RPC service creation, and destroyed when
+last RPC service is stopped.
+With this patch set rpcbind clients can be virtualized easely.
 
-That unfortunately is the target environment where we want this working
-(want to cap VMs under KVM) :-) For simplicity, we have been playing
-with non-VM based testcase ..
 
-> Start with simple cases of single depth groups.
 
-We did try with single level and "extra" large proportional
-shares (10k * NR_TASKS if I recall)..I don't think they made any 
-difference ..will re-check though.
+The following series consists of:
 
-- vatsa
+---
 
+Stanislav Kinsbursky (11):
+      SUNRPC: introduce helpers for reference counted rpcbind clients
+      SUNRPC: use rpcbind reference counting helpers
+      SUNRPC: introduce svc helpers for prepairing rpcbind infrastructure
+      SUNRPC: parametrize svc creation calls with portmapper flag
+      SUNRPC: cleanup service destruction
+      Lockd: force creation of rpcbind clients during service creation
+      NFS: avoid rpcbind clients creation during service creation
+      NFSd: force creation of rpcbind clients during service creation
+      NFSd: call svc rpcbind cleanup explicitly
+      SUNRPC: remove rpcbind clients creation during service registering
+      SUNRPC: remove rpcbind clients destruction on module cleanup
+
+
+ fs/lockd/svc.c              |    2 +
+ fs/nfs/callback.c           |    2 +
+ fs/nfsd/nfssvc.c            |    4 ++
+ include/linux/sunrpc/clnt.h |    2 +
+ include/linux/sunrpc/svc.h  |    3 ++
+ net/sunrpc/rpcb_clnt.c      |   85 ++++++++++++++++++++++++++++---------------
+ net/sunrpc/sunrpc_syms.c    |    3 --
+ net/sunrpc/svc.c            |   41 +++++++++++++++++----
+ 8 files changed, 98 insertions(+), 44 deletions(-)
+
+-- 
+Signature
