@@ -1,100 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752971Ab1IMLR1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 07:17:27 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:61128 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751522Ab1IMLRP (ORCPT
+	id S1753003Ab1IMLSJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 07:18:09 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:63133 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752152Ab1IMLSH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 07:17:15 -0400
-From: Arvydas Sidorenko <asido4@gmail.com>
-To: mchehab@infradead.org
-Cc: asido4@gmail.com, hverkuil@xs4all.nl, arnd@arndb.de,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] drivers/media/video/stk-webcam.c: coding style issue
-Date: Tue, 13 Sep 2011 13:18:11 +0200
-Message-Id: <1315912691-11227-2-git-send-email-asido4@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1315912691-11227-1-git-send-email-asido4@gmail.com>
-References: <1315912691-11227-1-git-send-email-asido4@gmail.com>
+	Tue, 13 Sep 2011 07:18:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LNX.2.00.1109132030020.14483@nippy.intranet>
+References: <1315742394-16036-1-git-send-email-geert@linux-m68k.org>
+	<alpine.LNX.2.00.1109132030020.14483@nippy.intranet>
+Date: Tue, 13 Sep 2011 13:18:06 +0200
+X-Google-Sender-Auth: vYDB7JwRAaydCOEKrwcck1EkU8M
+Message-ID: <CAMuHMdXJEeooAjdQo+JhUWJcrGzKZb-jQPPhVggy3ocQyPe3Lw@mail.gmail.com>
+Subject: Re: [PATCH 00/28 v6] m68k: Convert to genirq
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Finn Thain <fthain@telegraphics.com.au>
+Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-checkpatch.pl gave some coding style errors, so on the way to the first
-patch I added the fix to them.
+On Tue, Sep 13, 2011 at 13:11, Finn Thain <fthain@telegraphics.com.au> wrote:
+> When I was testing your v5 patch series, I had to patch macmace.c to
+> resolve some compiler errors --
+>
+> --- linux-m68k.orig/drivers/net/macmace.c       2011-09-13 18:33:55.000000000 +1000
+> +++ linux-m68k/drivers/net/macmace.c    2011-09-13 18:34:05.000000000 +1000
+> @@ -31,8 +31,8 @@
+>  #include <linux/dma-mapping.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/gfp.h>
+> +#include <linux/interrupt.h>
+>  #include <asm/io.h>
+> -#include <asm/irq.h>
+>  #include <asm/macints.h>
+>  #include <asm/mac_psc.h>
+>  #include <asm/page.h>
+>
+> Would you please check whether this is still needed after the v6 series?
 
-Signed-off-by: Arvydas Sidorenko <asido4@gmail.com>
----
- drivers/media/video/stk-webcam.c |   18 ++++++++----------
- 1 files changed, 8 insertions(+), 10 deletions(-)
+Will do. Don't think I ever saw that problem, though.
+Did it show up with genirq disabled or enabled?
 
-diff --git a/drivers/media/video/stk-webcam.c b/drivers/media/video/stk-webcam.c
-index 859e78f..5fc6bbc 100644
---- a/drivers/media/video/stk-webcam.c
-+++ b/drivers/media/video/stk-webcam.c
-@@ -518,7 +518,7 @@ static int stk_prepare_sio_buffers(struct stk_camera *dev, unsigned n_sbufs)
- 			return -ENOMEM;
- 		for (i = 0; i < n_sbufs; i++) {
- 			if (stk_setup_siobuf(dev, i))
--				return (dev->n_sbufs > 1)? 0 : -ENOMEM;
-+				return (dev->n_sbufs > 1 ? 0 : -ENOMEM);
- 			dev->n_sbufs = i+1;
- 		}
- 	}
-@@ -558,9 +558,8 @@ static int v4l_stk_open(struct file *fp)
- 	vdev = video_devdata(fp);
- 	dev = vdev_to_camera(vdev);
- 
--	if (dev == NULL || !is_present(dev)) {
-+	if (dev == NULL || !is_present(dev))
- 		return -ENXIO;
--	}
- 	fp->private_data = dev;
- 	usb_autopm_get_interface(dev->interface);
- 
-@@ -579,7 +578,7 @@ static int v4l_stk_release(struct file *fp)
- 		dev->owner = NULL;
- 	}
- 
--	if(is_present(dev))
-+	if (is_present(dev))
- 		usb_autopm_put_interface(dev->interface);
- 
- 	return 0;
-@@ -656,7 +655,7 @@ static unsigned int v4l_stk_poll(struct file *fp, poll_table *wait)
- 		return POLLERR;
- 
- 	if (!list_empty(&dev->sio_full))
--		return (POLLIN | POLLRDNORM);
-+		return POLLIN | POLLRDNORM;
- 
- 	return 0;
- }
-@@ -893,9 +892,9 @@ static int stk_vidioc_g_fmt_vid_cap(struct file *filp,
- 	struct stk_camera *dev = priv;
- 	int i;
- 
--	for (i = 0; i < ARRAY_SIZE(stk_sizes)
--			&& stk_sizes[i].m != dev->vsettings.mode;
--		i++);
-+	for (i = 0; i < ARRAY_SIZE(stk_sizes) &&
-+			stk_sizes[i].m != dev->vsettings.mode; i++)
-+		;
- 	if (i == ARRAY_SIZE(stk_sizes)) {
- 		STK_ERROR("ERROR: mode invalid\n");
- 		return -EINVAL;
-@@ -1307,9 +1306,8 @@ static int stk_camera_probe(struct usb_interface *interface,
- 	usb_set_intfdata(interface, dev);
- 
- 	err = stk_register_video_device(dev);
--	if (err) {
-+	if (err)
- 		goto error;
--	}
- 
- 	return 0;
- 
--- 
-1.7.4.4
+> (I'd check myself, but I don't have the source tree on which your emailed
+> patches were based...)
 
+They're based on a v3.1-rc5 version of the m68k tree. I think it's
+identical to the
+current m68k master with v3.1-rc5 merged into.
+
+> BTW, you'll probably want to patch this comment in
+> include/linux/interrupt.h --
+>
+> /*
+>  * Special function to avoid ifdeffery in kernel/irq/devres.c which
+>  * gets magically built by GENERIC_HARDIRQS=n architectures (sparc,
+>  * m68k).
+
+Thanks, will do.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
