@@ -1,43 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754736Ab1IMO6O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 10:58:14 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:38331 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754346Ab1IMO6N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 10:58:13 -0400
+	id S1754808Ab1IMO7C (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 10:59:02 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42547 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754346Ab1IMO7A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 10:59:00 -0400
+Date: Tue, 13 Sep 2011 16:58:55 +0200
+From: Greg KH <gregkh@suse.de>
+To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+Cc: Joerg Roedel <joro@8bytes.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        David Brown <davidb@codeaurora.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 02/10] Driver core: Add iommu_ops to bus_type
+Message-ID: <20110913145855.GA4581@suse.de>
+References: <1315410113-26608-1-git-send-email-joerg.roedel@amd.com>
+ <1315410113-26608-3-git-send-email-joerg.roedel@amd.com>
+ <20110907184750.GA920@suse.de>
+ <20110907191919.GA31674@8bytes.org>
+ <20110907194445.GA2526@suse.de>
+ <20110913145402.GM11701@amd.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1109130722210.21380@p34.internal.lan>
-References: <alpine.DEB.2.02.1109110511250.8626@p34.internal.lan>
-	<CAEuXFEzs1f7n5taYzupux3AtKmRcY4P0m7yjkUQA8aLyS8eujw@mail.gmail.com>
-	<1315886706.2556.11.camel@edumazet-laptop>
-	<alpine.DEB.2.02.1109130722210.21380@p34.internal.lan>
-Date: Tue, 13 Sep 2011 16:58:12 +0200
-Message-ID: <CAL4WiipmRyprf3nU-mgz8zE+n=Cy_Th=MT1JMnO=Qy_993++yw@mail.gmail.com>
-Subject: Re: 3.1-rc4: spectacular kernel errors / filesystem crash
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-Cc: Jesse Brandeburg <jesse.brandeburg@gmail.com>,
-        Alan Piszcz <ap@solarrain.com>, NetDEV list <netdev@vger.kernel.org>,
-        xfs@oss.sgi.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110913145402.GM11701@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/9/13 Justin Piszcz <jpiszcz@lucidpixels.com>:
->
+On Tue, Sep 13, 2011 at 04:54:02PM +0200, Roedel, Joerg wrote:
+> --- a/include/linux/device.h
+> +++ b/include/linux/device.h
+> @@ -22,6 +22,7 @@
+>  #include <linux/types.h>
+>  #include <linux/module.h>
+>  #include <linux/pm.h>
+> +#include <linux/iommu.h>
 
-> I found this commit here:
-> http://permalink.gmane.org/gmane.linux.kernel.pci/11700
->
-> Applied:
-> # patch -p1 < ../ed2888e906b56769b4ffabb9c577190438aa68b8.txt patching file
-> drivers/pci/probe.c
->
->
+Ick, please don't add new #includes to device.h, it makes the whole
+build slower.  Just pre-declare the structure and all should be fine.
 
-Oh, I should have sent the git anchor you can use instead of searching the web ;
+Don't you need to also redo the other patches in this series based on
+the other comments you received?
 
-git pull https://github.com/torvalds/linux.git
+greg k-h
