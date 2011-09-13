@@ -1,79 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932200Ab1IMSO6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 14:14:58 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:16845 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932161Ab1IMSO4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 14:14:56 -0400
-Subject: [PATCH v3 11/11] SUNRPC: remove rpcbind clients destruction on module
-	cleanup
-To: Trond.Myklebust@netapp.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bfields@fieldses.org, davem@davemloft.net
-Date: Tue, 13 Sep 2011 22:14:45 +0400
-Message-ID: <20110913181444.3961.84427.stgit@localhost6.localdomain6>
-In-Reply-To: <20110913180953.3961.69217.stgit@localhost6.localdomain6>
-References: <20110913180953.3961.69217.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
+	id S932226Ab1IMSPd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 14:15:33 -0400
+Received: from mail3.microsoft.com ([131.107.115.214]:6273 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756174Ab1IMSPa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 14:15:30 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Joe Perches <joe@perches.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: RE: [PATCH 20/20] Staging: hv: netvsc: Rename deviceInfo as
+ device_info
+Thread-Topic: [PATCH 20/20] Staging: hv: netvsc: Rename deviceInfo as
+ device_info
+Thread-Index: AQHMcjvrT3mD7dsep06ayBqlnNU7fpVMEbmA//+L1aA=
+Date: Tue, 13 Sep 2011 18:15:28 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E048081E4C60@TK5EX14MBXC124.redmond.corp.microsoft.com>
+References: <1315936759-20623-1-git-send-email-kys@microsoft.com>
+	 <1315936796-20662-1-git-send-email-kys@microsoft.com>
+	 <1315936796-20662-20-git-send-email-kys@microsoft.com>
+ <1315937432.25776.9.camel@Joe-Laptop>
+In-Reply-To: <1315937432.25776.9.camel@Joe-Laptop>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.33]
 Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id p8DIFihN018141
 
-Rpcbind clients destruction during SUNRPC module removing is obsolete since now
-those clients are destroying during last RPC service shutdown.
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
----
- net/sunrpc/rpcb_clnt.c   |   12 ------------
- net/sunrpc/sunrpc_syms.c |    3 ---
- 2 files changed, 0 insertions(+), 15 deletions(-)
+> -----Original Message-----
+> From: Joe Perches [mailto:joe@perches.com]
+> Sent: Tuesday, September 13, 2011 2:11 PM
+> To: KY Srinivasan
+> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang
+> Subject: Re: [PATCH 20/20] Staging: hv: netvsc: Rename deviceInfo as
+> device_info
+> 
+> On Tue, 2011-09-13 at 10:59 -0700, K. Y. Srinivasan wrote:
+> > Rename deviceInfo as device_info.
+> []
+> > diff --git a/drivers/staging/hv/rndis_filter.c b/drivers/staging/hv/rndis_filter.c
+> []
+> > @@ -732,15 +732,15 @@ int rndis_filter_device_add(struct hv_device *dev,
+> []
+> >  	dev_info(&dev->device, "Device MAC %pM link state %s",
+> >  		 rndis_device->hw_mac_adr,
+> > -		 ((deviceInfo->link_state) ? ("down\n") : ("up\n")));
+> > +		 ((device_info->link_state) ? ("down\n") : ("up\n")));
+> 
+> Maybe get rid of the superfluous parentheses too?
+> 
+> 	dev_info(&dev->device, "Device MAC %pM link state %s\n",
+> 		 rndis_device->hw_mac_adr,
+> 		 device_info->link_state ? "down" : "up");
+> 
+> Also, struct rndis_device uses
+> 	u32 link_stat;
+> that is copied into struct netvsc_device_info
+> 	bool link_state;
+> could you please rationalize the names and types
+> of those 2 variables?
 
-diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
-index e5c936d..fc6c59b 100644
---- a/net/sunrpc/rpcb_clnt.c
-+++ b/net/sunrpc/rpcb_clnt.c
-@@ -1097,15 +1097,3 @@ static struct rpc_program rpcb_program = {
- 	.version	= rpcb_version,
- 	.stats		= &rpcb_stats,
- };
--
--/**
-- * cleanup_rpcb_clnt - remove xprtsock's sysctls, unregister
-- *
-- */
--void cleanup_rpcb_clnt(void)
--{
--	if (rpcb_local_clnt4)
--		rpc_shutdown_client(rpcb_local_clnt4);
--	if (rpcb_local_clnt)
--		rpc_shutdown_client(rpcb_local_clnt);
--}
-diff --git a/net/sunrpc/sunrpc_syms.c b/net/sunrpc/sunrpc_syms.c
-index 9d08091..8ec9778 100644
---- a/net/sunrpc/sunrpc_syms.c
-+++ b/net/sunrpc/sunrpc_syms.c
-@@ -61,8 +61,6 @@ static struct pernet_operations sunrpc_net_ops = {
- 
- extern struct cache_detail unix_gid_cache;
- 
--extern void cleanup_rpcb_clnt(void);
--
- static int __init
- init_sunrpc(void)
- {
-@@ -102,7 +100,6 @@ out:
- static void __exit
- cleanup_sunrpc(void)
- {
--	cleanup_rpcb_clnt();
- 	rpcauth_remove_module();
- 	cleanup_socket_xprt();
- 	svc_cleanup_xprt_sock();
+Thanks Joe; I will get a patch out soon.
 
+Regards,
+
+K. Y
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
