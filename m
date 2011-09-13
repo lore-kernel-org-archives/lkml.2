@@ -1,71 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161Ab1IMFXN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 01:23:13 -0400
-Received: from ozlabs.org ([203.10.76.45]:47083 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754117Ab1IMFXM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 01:23:12 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Pawel Moll <pawel.moll@arm.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        virtualization <virtualization@lists.linux-foundation.org>,
-        "Michael S.Tsirkin" <mst@redhat.com>,
-        Magnus Damm <magnus.damm@gmail.com>
-Subject: Re: [RFC 1/2] virtio: Add AMBA bus driver for virtio device
-In-Reply-To: <1315845956.3297.7.camel@hornet.cambridge.arm.com>
-References: <1314966257-7503-1-git-send-email-pawel.moll@arm.com> <1314966257-7503-2-git-send-email-pawel.moll@arm.com> <877h5e5yxp.fsf@rustcorp.com.au> <1315845956.3297.7.camel@hornet.cambridge.arm.com>
-User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
-Date: Tue, 13 Sep 2011 12:28:26 +0930
-Message-ID: <87hb4h408d.fsf@rustcorp.com.au>
+	id S1754146Ab1IMFaJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 01:30:09 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:55393 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752920Ab1IMFaH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 01:30:07 -0400
+Date: Tue, 13 Sep 2011 13:30:07 +0800
+From: Adam Lee <adam8157@gmail.com>
+To: esmaeil mirzaee <esmaeil.debian@gmail.com>
+Cc: kernelnewbies <kernelnewbies@kernelnewbies.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: maintenance time and git error
+Message-ID: <20110913053007.GA21628@adam-station.nay.redhat.com>
+Mail-Followup-To: esmaeil mirzaee <esmaeil.debian@gmail.com>,
+	kernelnewbies <kernelnewbies@kernelnewbies.org>,
+	linux-kernel@vger.kernel.org
+References: <CAOwGe_yrRjq8Mqfcrm1P9bTYmPCA=qhNBxide10_w5ceR6wkDg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOwGe_yrRjq8Mqfcrm1P9bTYmPCA=qhNBxide10_w5ceR6wkDg@mail.gmail.com>
+X-PGP-Key-ID: D15CA3BE
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Sep 2011 17:45:56 +0100, Pawel Moll <pawel.moll@arm.com> wrote:
-> On Mon, 2011-09-12 at 11:01 +0930, Rusty Russell wrote:
-> > You need to make these at least 64 bits.  Lguest makes them variable
-> > width, in fact.
+On Tue, Sep 13, 2011 at 01:22:05AM -0400, esmaeil mirzaee wrote:
+> Hi
+> does anyone know when the maintaining of the web page www.kernel.org
+> will be finish?
+> and when I try this "git clone
+> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux2.6.git
+> linux
 > 
-> No problem, I've reserved 128 bits in the modified registers layout (see
-> RFC v2), I can even change it into "offset/value" interface, which would
-> give you variable width. One thing I don't get is how to access feature
-> bits > 31? The get_features() seems
-> to be limited to 32:
+> I got below error
+> "Initialized empty Git repository in /home/esmaeil/fixbug/krl/linux/.git/"
+> "fatal: Unable to look up git.kernel.org (port 9418) (Name or service
+> not known)"
 > 
-> struct virtio_config_ops {
-> <...>
-> 	u32 (*get_features)(struct virtio_device *vdev);
-> <...>
-> }
 
-There's a patch for that already :)
+It will be back in few days.
 
-> > > + *  0x008   32  QueuePFN      PFN for the currently selected queue
-> > > + *  0x00c   32  QueueNum      Queue size for the currently selected queue
-> > 
-> > You should, I believe, seriously consider allowing the guest to set the
-> > queue size, rather than the host (perhaps the host could suggest one,
-> > but the guest should be able to override it).
-> 
-> I guess the QueueNum could be simply a read/write register - guest can
-> read suggestion and override it writing it back. The same question
-> though - how can guest change it? (I mean some API?)
+If you wanna get updated, you can:
 
-We can sort that out later... the Guest may try some ambitious large
-allocation and fall back if it fails.
+$ git remote add github git://github.com/torvalds/linux.git
+$ git fetch github
+$ git checkout -b github github/master
 
-> > Anthony or Michael might suggest other changes, since they are most
-> > familiar with virtio_pci limitations...
-> 
-> I've added them on the RFC v2 Cc as well - all feedback more then
-> welcome!
+and you will get a branch named "github" with github remote.
 
-Excellent...  of course, the virtualization list is down at the moment,
-making this a bit more awkward.
-
-Cheers,
-Rusty.
+-- 
+Regards,
+	Adam Lee
+	--------------------------------------------------
+	E-mail: adam8157@gmail.com
+	Website: http://www.adam8157.info
+	--------------------------------------------------
