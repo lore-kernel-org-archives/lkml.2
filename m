@@ -1,48 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932232Ab1IMSRe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 14:17:34 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:10271 "EHLO relay.sw.ru"
+	id S932266Ab1IMSSH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 14:18:07 -0400
+Received: from gate.crashing.org ([63.228.1.57]:33925 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932137Ab1IMSOK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 14:14:10 -0400
-Subject: [PATCH v3 05/11] SUNRPC: cleanup service destruction
-To: Trond.Myklebust@netapp.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bfields@fieldses.org, davem@davemloft.net
-Date: Tue, 13 Sep 2011 22:13:59 +0400
-Message-ID: <20110913181359.3961.36298.stgit@localhost6.localdomain6>
-In-Reply-To: <20110913180953.3961.69217.stgit@localhost6.localdomain6>
-References: <20110913180953.3961.69217.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S932101Ab1IMSSC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 14:18:02 -0400
+Subject: Re: [PATCH 0/2] PCI: PCI-E MPS bug fixes
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Jon Mason <mason@myri.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+In-Reply-To: <1315911045.455.150.camel@pasglop>
+References: <1315518078-30619-1-git-send-email-mason@myri.com>
+	 <CA+55aFyFXXyEvOs0asgNeCrLzvH+e1zXgOen1rDd9BkB09J5NQ@mail.gmail.com>
+	 <6dad18a7-cf65-46db-8283-78b8da5bfa3a@email.android.com>
+	 <1315911045.455.150.camel@pasglop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 13 Sep 2011 15:17:32 -0300
+Message-ID: <1315937852.455.156.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-svc_unregister() call have to be removed from svc_destroy() since it will be
-called in sv_shutdown callback.
+On Tue, 2011-09-13 at 07:50 -0300, Benjamin Herrenschmidt wrote:
+> > 
+> > You should apply them. I would queue them, and but I don't have
+> > another PCI tree anywhere for you to pull them. 
+> > 
+> > In fact, I'll be out for the next few weeks; I'll ask Bjorn to cover
+> > for me. 
+> 
+> Note that I might be missing some patches, but what's currently in Linus
+> tree is rather wrong.
+> 
+> The comment is right, but the implementation is bogus:
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Oh and another one (again, I never saw the patches I'm responding to for
+some odd reason, only email 0/2, so you might have already fixed that):
 
+When using "safe" mode, I get a crash in pcie_find_smpss(). Patch below.
+
+>From 1b542d690323fab332e61099193d598c5c515d13 Mon Sep 17 00:00:00 2001
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Date: Tue, 13 Sep 2011 15:16:33 -0300
+Subject: [PATCH] pci: Don't crash when reading mpss from root complex
+
+In pcie_find_smpss(), we have the following statement:
+
+ 	if (dev->is_hotplug_bridge && (!list_is_singular(&dev->bus->devices) ||
+	    dev->bus->self->pcie_type != PCI_EXP_TYPE_ROOT_PORT))
+
+The problem is that at least on my machine, this gets called for the
+root complex (virtual P2P bridge), and dev->bus->self is NULL since
+the parent bus for this is not itself anchor to a PCI device.
+
+This adds the necessary NULL check.
+
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 ---
- net/sunrpc/svc.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ drivers/pci/probe.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
-index 03231d5..1bf1b1a 100644
---- a/net/sunrpc/svc.c
-+++ b/net/sunrpc/svc.c
-@@ -513,7 +513,6 @@ svc_destroy(struct svc_serv *serv)
- 	if (svc_serv_is_pooled(serv))
- 		svc_pool_map_put();
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 8473727..09d1c0f 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -1351,7 +1351,8 @@ static int pcie_find_smpss(struct pci_dev *dev, void *data)
+ 	 * will occur as normal.
+ 	 */
+ 	if (dev->is_hotplug_bridge && (!list_is_singular(&dev->bus->devices) ||
+-	    dev->bus->self->pcie_type != PCI_EXP_TYPE_ROOT_PORT))
++	     (dev->bus->self &&
++	      dev->bus->self->pcie_type != PCI_EXP_TYPE_ROOT_PORT)))
+ 		*smpss = 0;
  
--	svc_unregister(serv);
- 	kfree(serv->sv_pools);
- 	kfree(serv);
- }
+ 	if (*smpss > dev->pcie_mpss)
+-- 
+1.7.4.1
+
+
+
+
+
 
