@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755940Ab1IMRii (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 13:38:38 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:51324
-	"HELO p3plsmtps2ded02-02.prod.phx3.secureserver.net"
+	id S1756071Ab1IMRjQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 13:39:16 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:41809
+	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755866Ab1IMRiN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 13:38:13 -0400
+	id S1755853Ab1IMRiM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 13:38:12 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 18/20] Staging: hv: netvsc: Rename netDevice as net_device
-Date: Tue, 13 Sep 2011 10:59:54 -0700
-Message-Id: <1315936796-20662-18-git-send-email-kys@microsoft.com>
+Subject: [PATCH 02/20] Staging: hv: vmbus: Change the signature of struct hv_driver probe function
+Date: Tue, 13 Sep 2011 10:59:38 -0700
+Message-Id: <1315936796-20662-2-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1315936796-20662-1-git-send-email-kys@microsoft.com>
 References: <1315936759-20623-1-git-send-email-kys@microsoft.com>
@@ -23,74 +23,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rename netDevice as net_device.
+In preparation to leveraging the driver_data field in struct
+hv_vmbus_device_id, change the signature of struct hv_driver probe function.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- drivers/staging/hv/netvsc.c       |    5 ++++-
- drivers/staging/hv/rndis_filter.c |   14 +++++++-------
- 2 files changed, 11 insertions(+), 8 deletions(-)
+ drivers/staging/hv/hv_mouse.c    |    3 ++-
+ drivers/staging/hv/hv_util.c     |    3 ++-
+ drivers/staging/hv/hyperv.h      |    2 +-
+ drivers/staging/hv/netvsc_drv.c  |    3 ++-
+ drivers/staging/hv/storvsc_drv.c |    3 ++-
+ drivers/staging/hv/vmbus_drv.c   |    4 +++-
+ 6 files changed, 12 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/staging/hv/netvsc.c b/drivers/staging/hv/netvsc.c
-index 2bcc8b2..b902579 100644
---- a/drivers/staging/hv/netvsc.c
-+++ b/drivers/staging/hv/netvsc.c
-@@ -382,7 +382,10 @@ int netvsc_device_remove(struct hv_device *device)
- 	hv_set_drvdata(device, NULL);
- 	spin_unlock_irqrestore(&device->channel->inbound_lock, flags);
- 
--	/* At this point, no one should be accessing netDevice except in here */
-+	/*
-+	 * At this point, no one should be accessing net_device
-+	 * except in here
-+	 */
- 	dev_notice(&device->device, "net device safe to remove\n");
- 
- 	/* Now, we can close the channel safely */
-diff --git a/drivers/staging/hv/rndis_filter.c b/drivers/staging/hv/rndis_filter.c
-index b354b0b..efa7df5 100644
---- a/drivers/staging/hv/rndis_filter.c
-+++ b/drivers/staging/hv/rndis_filter.c
-@@ -689,7 +689,7 @@ int rndis_filter_device_add(struct hv_device *dev,
- 				  void *additional_info)
- {
- 	int ret;
--	struct netvsc_device *netDevice;
-+	struct netvsc_device *net_device;
- 	struct rndis_device *rndisDevice;
- 	struct netvsc_device_info *deviceInfo = additional_info;
- 
-@@ -710,10 +710,10 @@ int rndis_filter_device_add(struct hv_device *dev,
- 
- 
- 	/* Initialize the rndis device */
--	netDevice = hv_get_drvdata(dev);
-+	net_device = hv_get_drvdata(dev);
- 
--	netDevice->extension = rndisDevice;
--	rndisDevice->net_dev = netDevice;
-+	net_device->extension = rndisDevice;
-+	rndisDevice->net_dev = net_device;
- 
- 	/* Send the rndis initialization message */
- 	ret = rndis_filter_init_device(rndisDevice);
-@@ -762,12 +762,12 @@ void rndis_filter_device_remove(struct hv_device *dev)
- 
- int rndis_filter_open(struct hv_device *dev)
- {
--	struct netvsc_device *netDevice = hv_get_drvdata(dev);
-+	struct netvsc_device *net_device = hv_get_drvdata(dev);
- 
--	if (!netDevice)
-+	if (!net_device)
- 		return -EINVAL;
- 
--	return rndis_filter_open_device(netDevice->extension);
-+	return rndis_filter_open_device(net_device->extension);
+diff --git a/drivers/staging/hv/hv_mouse.c b/drivers/staging/hv/hv_mouse.c
+index dbb04ee..5ff8a03 100644
+--- a/drivers/staging/hv/hv_mouse.c
++++ b/drivers/staging/hv/hv_mouse.c
+@@ -823,7 +823,8 @@ static int mousevsc_on_device_remove(struct hv_device *device)
  }
  
- int rndis_filter_close(struct hv_device *dev)
+ 
+-static int mousevsc_probe(struct hv_device *dev)
++static int mousevsc_probe(struct hv_device *dev,
++			const struct hv_vmbus_device_id *dev_id)
+ {
+ 	int ret = 0;
+ 
+diff --git a/drivers/staging/hv/hv_util.c b/drivers/staging/hv/hv_util.c
+index 6039217..d9460fdd 100644
+--- a/drivers/staging/hv/hv_util.c
++++ b/drivers/staging/hv/hv_util.c
+@@ -239,7 +239,8 @@ static void heartbeat_onchannelcallback(void *context)
+  * The devices managed by the util driver don't need any additional
+  * setup.
+  */
+-static int util_probe(struct hv_device *dev)
++static int util_probe(struct hv_device *dev,
++			const struct hv_vmbus_device_id *dev_id)
+ {
+ 	return 0;
+ }
+diff --git a/drivers/staging/hv/hyperv.h b/drivers/staging/hv/hyperv.h
+index c249811..caa3a7b 100644
+--- a/drivers/staging/hv/hyperv.h
++++ b/drivers/staging/hv/hyperv.h
+@@ -810,7 +810,7 @@ struct hv_driver {
+ 
+ 	struct device_driver driver;
+ 
+-	int (*probe)(struct hv_device *);
++	int (*probe)(struct hv_device *, const struct hv_vmbus_device_id *);
+ 	int (*remove)(struct hv_device *);
+ 	void (*shutdown)(struct hv_device *);
+ 
+diff --git a/drivers/staging/hv/netvsc_drv.c b/drivers/staging/hv/netvsc_drv.c
+index 30b9c80..d06cde2 100644
+--- a/drivers/staging/hv/netvsc_drv.c
++++ b/drivers/staging/hv/netvsc_drv.c
+@@ -329,7 +329,8 @@ static void netvsc_send_garp(struct work_struct *w)
+ }
+ 
+ 
+-static int netvsc_probe(struct hv_device *dev)
++static int netvsc_probe(struct hv_device *dev,
++			const struct hv_vmbus_device_id *dev_id)
+ {
+ 	struct net_device *net = NULL;
+ 	struct net_device_context *net_device_ctx;
+diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
+index b0c4e56..fff1e5b 100644
+--- a/drivers/staging/hv/storvsc_drv.c
++++ b/drivers/staging/hv/storvsc_drv.c
+@@ -1380,7 +1380,8 @@ MODULE_DEVICE_TABLE(vmbus, id_table);
+  * storvsc_probe - Add a new device for this driver
+  */
+ 
+-static int storvsc_probe(struct hv_device *device)
++static int storvsc_probe(struct hv_device *device,
++			const struct hv_vmbus_device_id *dev_id)
+ {
+ 	int ret;
+ 	struct Scsi_Host *host;
+diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
+index 77f4373..2fccb1f 100644
+--- a/drivers/staging/hv/vmbus_drv.c
++++ b/drivers/staging/hv/vmbus_drv.c
+@@ -312,9 +312,11 @@ static int vmbus_probe(struct device *child_device)
+ 	struct hv_driver *drv =
+ 			drv_to_hv_drv(child_device->driver);
+ 	struct hv_device *dev = device_to_hv_device(child_device);
++	const struct hv_vmbus_device_id *dev_id;
+ 
++	dev_id = hv_vmbus_get_id(drv->id_table, dev->dev_type.b);
+ 	if (drv->probe) {
+-		ret = drv->probe(dev);
++		ret = drv->probe(dev, dev_id);
+ 		if (ret != 0)
+ 			pr_err("probe failed for device %s (%d)\n",
+ 			       dev_name(child_device), ret);
 -- 
 1.7.4.1
 
