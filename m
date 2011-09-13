@@ -1,240 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755285Ab1IMPvH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 11:51:07 -0400
-Received: from mail-gx0-f170.google.com ([209.85.161.170]:63012 "EHLO
-	mail-gx0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754546Ab1IMPvF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 11:51:05 -0400
+	id S1755265Ab1IMQEX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 12:04:23 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:52099 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754546Ab1IMQEW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 12:04:22 -0400
+Message-ID: <4E6F7DA7.9000706@linux.vnet.ibm.com>
+Date: Tue, 13 Sep 2011 10:58:31 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1109131142010.7113@p34.internal.lan>
-References: <alpine.DEB.2.02.1109110511250.8626@p34.internal.lan>
-	<CAEuXFEzs1f7n5taYzupux3AtKmRcY4P0m7yjkUQA8aLyS8eujw@mail.gmail.com>
-	<1315886706.2556.11.camel@edumazet-laptop>
-	<alpine.DEB.2.02.1109130722210.21380@p34.internal.lan>
-	<CAMaF-rN-qeXBDoc9=7kwu40Wj8=G8YuPKWXPRhOuhdYX_VO34w@mail.gmail.com>
-	<alpine.DEB.2.02.1109131142010.7113@p34.internal.lan>
-Date: Tue, 13 Sep 2011 10:51:03 -0500
-Message-ID: <CAMaF-rMxTWRAO7WRdYoEM57k66MC6Vuwk1mcfgCgMO6Z+KBvzQ@mail.gmail.com>
-Subject: Re: 3.1-rc4: spectacular kernel errors / filesystem crash
-From: Jon Mason <mason@myri.com>
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Jesse Brandeburg <jesse.brandeburg@gmail.com>,
-        Alan Piszcz <ap@solarrain.com>, NetDEV list <netdev@vger.kernel.org>,
-        xfs@oss.sgi.com, linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=001636ef0a156a8f1104acd49c0a
+To: Nitin Gupta <ngupta@vflare.org>
+CC: Greg KH <greg@kroah.com>, gregkh@suse.de, devel@driverdev.osuosl.org,
+        dan.magenheimer@oracle.com, cascardo@holoscopio.com,
+        linux-kernel@vger.kernel.org, dave@linux.vnet.ibm.com,
+        linux-mm@kvack.org, brking@linux.vnet.ibm.com, rcj@linux.vnet.ibm.com
+Subject: Re: [PATCH v2 0/3] staging: zcache: xcfmalloc support
+References: <1315404547-20075-1-git-send-email-sjenning@linux.vnet.ibm.com> <20110909203447.GB19127@kroah.com> <4E6ACE5B.9040401@vflare.org> <4E6E18C6.8080900@linux.vnet.ibm.com> <4E6EB802.4070109@vflare.org>
+In-Reply-To: <4E6EB802.4070109@vflare.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 11091315-8974-0000-0000-0000001E98C1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001636ef0a156a8f1104acd49c0a
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
-
-On Tue, Sep 13, 2011 at 10:42 AM, Justin Piszcz <jpiszcz@lucidpixels.com> w=
-rote:
->
->
-> On Tue, 13 Sep 2011, Jon Mason wrote:
->
->> On Tue, Sep 13, 2011 at 9:54 AM, Justin Piszcz <jpiszcz@lucidpixels.com>
->> wrote:
+On 09/12/2011 08:55 PM, Nitin Gupta wrote:
+> Hi Seth,
+> 
+> I revised some of the original plans for xcfmalloc and below are some
+> details.  I had few nits regarding the current implementation but I'm
+> avoiding them here since we may have to change the design itself
+> significantly.
+> 
+> On 09/12/2011 10:35 AM, Seth Jennings wrote:
+> 
+>> On 09/09/2011 09:41 PM, Nitin Gupta wrote:
+>>> On 09/09/2011 04:34 PM, Greg KH wrote:
 >>>
->>>
->>> On Tue, 13 Sep 2011, Eric Dumazet wrote:
->>>
->>>> Please Justin make sure you pulled commit
->>>> commit ed2888e906b56769b4ffabb9c577190438aa68b8
->>>> Author: Jon Mason <mason@myri.com>
->>>> Date: =A0 Thu Sep 8 16:41:18 2011 -0500
+>>>> On Wed, Sep 07, 2011 at 09:09:04AM -0500, Seth Jennings wrote:
+>>>>> Changelog:
+>>>>> v2: fix bug in find_remove_block()
+>>>>>     fix whitespace warning at EOF
+>>>>>
+>>>>> This patchset introduces a new memory allocator for persistent
+>>>>> pages for zcache.  The current allocator is xvmalloc.  xvmalloc
+>>>>> has two notable limitations:
+>>>>> * High (up to 50%) external fragmentation on allocation sets > PAGE_SIZE/2
+>>>>> * No compaction support which reduces page reclaimation
 >>>>
->>>> =A0 PCI: Remove MRRS modification from MPS setting code
+>>>> I need some acks from other zcache developers before I can accept this.
 >>>>
->>>> =A0 Modifying the Maximum Read Request Size to 0 (value of 128Bytes) h=
-as
->>>> =A0 massive negative ramifications on some devices. =A0Without knowing=
- which
->>>> =A0 devices have this issue, do not modify from the default value when
->>>> =A0 walking the PCI-E bus in pcie_bus_safe mode. =A0Also, make pcie_bu=
-s_safe
->>>> =A0 the default procedure.
->>>>
->>>> =A0 Tested-by: Sven Schnelle <svens@stackframe.org>
->>>> =A0 Tested-by: Simon Kirby <sim@hostway.ca>
->>>> =A0 Tested-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
->>>> =A0 Reported-and-tested-by: Eric Dumazet <eric.dumazet@gmail.com>
->>>> =A0 Reported-and-tested-by: Niels Ole Salscheider
->>>> <niels_ole@salscheider-online.
->>>> =A0 References: https://bugzilla.kernel.org/show_bug.cgi?id=3D42162
->>>> =A0 Signed-off-by: Jon Mason <mason@myri.com>
->>>> =A0 Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
->>>> =A0 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 >>>
->>> Hello,
+>>> First, thanks for this new allocator; xvmalloc badly needed a replacement :)
 >>>
->>> I found this commit here:
->>> http://permalink.gmane.org/gmane.linux.kernel.pci/11700
 >>
->> This is an early version of the patch. =A0This is the patch that you wan=
-t:
+>> Hey Nitin, I hope your internship went well :)  It's good to hear from you.
 >>
->> https://github.com/torvalds/linux/commit/ed2888e906b56769b4ffabb9c577190=
-438aa68b8
+> 
+> 
+> Yes, it went well and now I can spend more time on this project :)
+> 
+> 
+>>> I went through xcfmalloc in detail and would be posting detailed
+>>> comments tomorrow.  In general, it seems to be quite similar to the
+>>> "chunk based" allocator used in initial implementation of "compcache" --
+>>> please see section 2.3.1 in this paper:
+>>> http://www.linuxsymposium.org/archives/OLS/Reprints-2007/briglia-Reprint.pdf
+>>>
 >>
->> It appears that this patch didn't make it to lkml or linux-pci list
->> due to kernel.org DNS being down when it was sent.
+>> Ah, indeed they look similar.  I didn't know that this approach
+>> had already been done before in the history of this project.
 >>
->> Thanks,
->> Jon
->
-> I need to learn how to use git at some point, can you please provide plai=
-n
-> text patches so I can apply them and reboot?
->
-> Justin.
+>>> I'm really looking forward to a slab based allocator as I mentioned in
+>>> the initial mail:
+>>> http://permalink.gmane.org/gmane.linux.kernel.mm/65467
+>>>
+>>> With the current design xcfmalloc suffers from issues similar to the
+>>> allocator described in the paper:
+>>>  - High metadata overhead
+>>>  - Difficult implementation of compaction
+>>>  - Need for extra memcpy()s  etc.
+>>>
+>>> With slab based approach, we can almost eliminate any metadata overhead,
+>>> remove any free chunk merging logic, simplify compaction and so on.
+>>>
+>>
+>> Just to align my understanding with yours, when I hear slab-based,
+>> I'm thinking each page in the compressed memory pool will contain
+>> 1 or more blocks that are all the same size.  Is this what you mean?
+>>
+> 
+> 
+> Yes, exactly.  The memory pool will consist of "superblocks" (typically
+> 16K or 64K).
 
-I've attached the 2 patches I asked Linus to include into 3.1-rc6.
-Let me know if there are any issues.
+A fixed superblock size would be an issue.  If you have a fixed superblock
+size of 64k on a system that has 64k hardware pages, then we'll find 
+ourselves in the same fragmentation mess as xvmalloc.  It needs to be 
+relative to the hardware page size; say 4*PAGE_SIZE or 8*PAGE_SIZE.
 
-Thanks,
-Jon
+> Each of these superblocks will contain objects of only one
+> particular size (which is its size class).  This is the general
+> structure of all slab allocators. In particular, I'm planning to use
+> many of the ideas discussed in this paper:
+> http://www.cs.umass.edu/~emery/hoard/asplos2000.pdf
+> 
+> One major point to consider would be that these superblocks cannot be
+> physically contiguous in our case, so we will have to do some map/unmap
+> trickery.
 
---001636ef0a156a8f1104acd49c0a
-Content-Type: text/x-patch; charset=US-ASCII; 
-	name="0001-Fix-pointer-dereference-before-call-to-pcie_bus_conf.patch"
-Content-Disposition: attachment; 
-	filename="0001-Fix-pointer-dereference-before-call-to-pcie_bus_conf.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gsj21mz70
+I assume you mean vm_map_ram() by "trickery".
 
-RnJvbSBjZjgyMmFlZDk5ZmQ4ODUxZDgyYWU1ZjJkZjExYzI5Yjc5ZTMxNmM4IE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBTaHlhbSBJeWVyIDxzaHlhbS5peWVyLnRAZ21haWwuY29tPgpE
-YXRlOiBXZWQsIDMxIEF1ZyAyMDExIDEyOjIxOjQyIC0wNDAwClN1YmplY3Q6IFtQQVRDSCAxLzJd
-IEZpeCBwb2ludGVyIGRlcmVmZXJlbmNlIGJlZm9yZSBjYWxsIHRvCiBwY2llX2J1c19jb25maWd1
-cmVfc2V0dGluZ3MKClRoZXJlIGlzIGEgcG90ZW50aWFsIE5VTEwgcG9pbnRlciBkZXJlZmVyZW5j
-ZSBpbiBjYWxscyB0bwpwY2llX2J1c19jb25maWd1cmVfc2V0dGluZ3MgZHVlIHRvIGF0dGVtcHRz
-IHRvIGFjY2VzcyBwY2lfYnVzIHNlbGYKdmFyaWFibGVzIHdoZW4gdGhlIHNlbGYgcG9pbnRlciBp
-cyBOVUxMLiAgVG8gY29ycmVjdCB0aGlzLCB2ZXJpZnkgdGhhdAp0aGUgc2VsZiBwb2ludGVyIGlu
-IHBjaV9idXMgaXMgbm9uLU5VTEwgYmVmb3JlIGRlcmVmZXJlbmNpbmcgaXQuCgpSZXBvcnRlZC1i
-eTogU3RhbmlzbGF3IEdydXN6a2EgPHNncnVzemthQHJlZGhhdC5jb20+ClNpZ25lZC1vZmYtYnk6
-IFNoeWFtIEl5ZXIgPHNoeWFtX2l5ZXJAZGVsbC5jb20+ClNpZ25lZC1vZmYtYnk6IEpvbiBNYXNv
-biA8bWFzb25AbXlyaS5jb20+Ci0tLQogYXJjaC94ODYvcGNpL2FjcGkuYyAgICAgICAgICAgICAg
-fCAgICA5ICsrKysrKystLQogZHJpdmVycy9wY2kvaG90cGx1Zy9wY2locF9zbG90LmMgfCAgICA0
-ICsrKy0KIGRyaXZlcnMvcGNpL3Byb2JlLmMgICAgICAgICAgICAgIHwgICAgMyAtLS0KIDMgZmls
-ZXMgY2hhbmdlZCwgMTAgaW5zZXJ0aW9ucygrKSwgNiBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQg
-YS9hcmNoL3g4Ni9wY2kvYWNwaS5jIGIvYXJjaC94ODYvcGNpL2FjcGkuYwppbmRleCBjOTUzMzAy
-Li4wMzlkOTEzIDEwMDY0NAotLS0gYS9hcmNoL3g4Ni9wY2kvYWNwaS5jCisrKyBiL2FyY2gveDg2
-L3BjaS9hY3BpLmMKQEAgLTM2NSw4ICszNjUsMTMgQEAgc3RydWN0IHBjaV9idXMgKiBfX2Rldmlu
-aXQgcGNpX2FjcGlfc2Nhbl9yb290KHN0cnVjdCBhY3BpX3BjaV9yb290ICpyb290KQogCSAqLwog
-CWlmIChidXMpIHsKIAkJc3RydWN0IHBjaV9idXMgKmNoaWxkOwotCQlsaXN0X2Zvcl9lYWNoX2Vu
-dHJ5KGNoaWxkLCAmYnVzLT5jaGlsZHJlbiwgbm9kZSkKLQkJCXBjaWVfYnVzX2NvbmZpZ3VyZV9z
-ZXR0aW5ncyhjaGlsZCwgY2hpbGQtPnNlbGYtPnBjaWVfbXBzcyk7CisJCWxpc3RfZm9yX2VhY2hf
-ZW50cnkoY2hpbGQsICZidXMtPmNoaWxkcmVuLCBub2RlKSB7CisJCQlzdHJ1Y3QgcGNpX2RldiAq
-c2VsZiA9IGNoaWxkLT5zZWxmOworCQkJaWYgKCFzZWxmKQorCQkJCWNvbnRpbnVlOworCisJCQlw
-Y2llX2J1c19jb25maWd1cmVfc2V0dGluZ3MoY2hpbGQsIHNlbGYtPnBjaWVfbXBzcyk7CisJCX0K
-IAl9CiAKIAlpZiAoIWJ1cykKZGlmZiAtLWdpdCBhL2RyaXZlcnMvcGNpL2hvdHBsdWcvcGNpaHBf
-c2xvdC5jIGIvZHJpdmVycy9wY2kvaG90cGx1Zy9wY2locF9zbG90LmMKaW5kZXggNzUzYjIxYS4u
-M2ZmZDljMSAxMDA2NDQKLS0tIGEvZHJpdmVycy9wY2kvaG90cGx1Zy9wY2locF9zbG90LmMKKysr
-IGIvZHJpdmVycy9wY2kvaG90cGx1Zy9wY2locF9zbG90LmMKQEAgLTE2OSw3ICsxNjksOSBAQCB2
-b2lkIHBjaV9jb25maWd1cmVfc2xvdChzdHJ1Y3QgcGNpX2RldiAqZGV2KQogCQkJKGRldi0+Y2xh
-c3MgPj4gOCkgPT0gUENJX0NMQVNTX0JSSURHRV9QQ0kpKSkKIAkJcmV0dXJuOwogCi0JcGNpZV9i
-dXNfY29uZmlndXJlX3NldHRpbmdzKGRldi0+YnVzLCBkZXYtPmJ1cy0+c2VsZi0+cGNpZV9tcHNz
-KTsKKwlpZiAoZGV2LT5idXMgJiYgZGV2LT5idXMtPnNlbGYpCisJCXBjaWVfYnVzX2NvbmZpZ3Vy
-ZV9zZXR0aW5ncyhkZXYtPmJ1cywKKwkJCQkJICAgIGRldi0+YnVzLT5zZWxmLT5wY2llX21wc3Mp
-OwogCiAJbWVtc2V0KCZocHAsIDAsIHNpemVvZihocHApKTsKIAlyZXQgPSBwY2lfZ2V0X2hwX3Bh
-cmFtcyhkZXYsICZocHApOwpkaWZmIC0tZ2l0IGEvZHJpdmVycy9wY2kvcHJvYmUuYyBiL2RyaXZl
-cnMvcGNpL3Byb2JlLmMKaW5kZXggODQ3MzcyNy4uMDgyMGZjMSAxMDA2NDQKLS0tIGEvZHJpdmVy
-cy9wY2kvcHJvYmUuYworKysgYi9kcml2ZXJzL3BjaS9wcm9iZS5jCkBAIC0xNDU2LDkgKzE0NTYs
-NiBAQCB2b2lkIHBjaWVfYnVzX2NvbmZpZ3VyZV9zZXR0aW5ncyhzdHJ1Y3QgcGNpX2J1cyAqYnVz
-LCB1OCBtcHNzKQogewogCXU4IHNtcHNzID0gbXBzczsKIAotCWlmICghYnVzLT5zZWxmKQotCQly
-ZXR1cm47Ci0KIAlpZiAoIXBjaV9pc19wY2llKGJ1cy0+c2VsZikpCiAJCXJldHVybjsKIAotLSAK
-MS43LjYKCg==
---001636ef0a156a8f1104acd49c0a
-Content-Type: text/x-patch; charset=US-ASCII; 
-	name="0002-PCI-Remove-MRRS-modification-from-MPS-setting-code.patch"
-Content-Disposition: attachment; 
-	filename="0002-PCI-Remove-MRRS-modification-from-MPS-setting-code.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gsj21oi01
+In my own experiments, I can tell you that vm_map_ram() is VERY expensive
+wrt kmap_atomic().  I made a version of xvmalloc (affectionately called
+"chunky xvmalloc") where I modified grow_pool() to allocate 4 0-order pages,
+if it could, and group them into a "chunk" (what you are calling a
+"superblock").  The first page in the chunk had a chunk header that contained
+the array of page pointers that vm_map_ram() expects.  A block was 
+identified by a page pointer to the first page in the chunk, and an offset
+within the mapped area of the chunk.
 
-RnJvbSA3NGQ4MTIzNWY4ZTRiZDYwODU5ZDUzOWEyN2U1MWQzYTA5ZDE4M2NmIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBKb24gTWFzb24gPG1hc29uQG15cmkuY29tPgpEYXRlOiBUaHUs
-IDggU2VwIDIwMTEgMTI6NTk6MDAgLTA1MDAKU3ViamVjdDogW1BBVENIIDIvMl0gUENJOiBSZW1v
-dmUgTVJSUyBtb2RpZmljYXRpb24gZnJvbSBNUFMgc2V0dGluZyBjb2RlCgpNb2RpZnlpbmcgdGhl
-IE1heGltdW0gUmVhZCBSZXF1ZXN0IFNpemUgdG8gMCAodmFsdWUgb2YgMTI4Qnl0ZXMpIGhhcwpt
-YXNzaXZlIG5lZ2F0aXZlIHJhbWlmaWNhdGlvbnMgb24gc29tZSBkZXZpY2VzLiAgV2l0aG91dCBr
-bm93aW5nIHdoaWNoCmRldmljZXMgaGF2ZSB0aGlzIGlzc3VlLCBkbyBub3QgbW9kaWZ5IGZyb20g
-dGhlIGRlZmF1bHQgdmFsdWUgd2hlbgp3YWxraW5nIHRoZSBQQ0ktRSBidXMgaW4gcGNpZV9idXNf
-c2FmZSBtb2RlLiAgQWxzbywgbWFrZSBwY2llX2J1c19zYWZlCnRoZSBkZWZhdWx0IHByb2NlZHVy
-ZS4KClRlc3RlZC1ieTogU3ZlbiBTY2huZWxsZSA8c3ZlbnNAc3RhY2tmcmFtZS5vcmc+ClRlc3Rl
-ZC1ieTogU2ltb24gS2lyYnkgPHNpbUBob3N0d2F5LmNhPgpUZXN0ZWQtYnk6IFN0ZXBoZW4gTS4g
-Q2FtZXJvbiA8c2NhbWVyb25AYmVhcmRvZy5jY2UuaHAuY29tPgpSZXBvcnRlZC1hbmQtdGVzdGVk
-LWJ5OiBFcmljIER1bWF6ZXQgPGVyaWMuZHVtYXpldEBnbWFpbC5jb20+ClJlcG9ydGVkLWFuZC10
-ZXN0ZWQtYnk6IE5pZWxzIE9sZSBTYWxzY2hlaWRlciA8bmllbHNfb2xlQHNhbHNjaGVpZGVyLW9u
-bGluZS5kZT4KUmVmZXJlbmNlczogaHR0cHM6Ly9idWd6aWxsYS5rZXJuZWwub3JnL3Nob3dfYnVn
-LmNnaT9pZD00MjE2MgpTaWduZWQtb2ZmLWJ5OiBKb24gTWFzb24gPG1hc29uQG15cmkuY29tPgot
-LS0KIGRyaXZlcnMvcGNpL3BjaS5jICAgfCAgICAyICstCiBkcml2ZXJzL3BjaS9wcm9iZS5jIHwg
-ICA0MSArKysrKysrKysrKysrKysrKysrKysrLS0tLS0tLS0tLS0tLS0tLS0tLQogMiBmaWxlcyBj
-aGFuZ2VkLCAyMyBpbnNlcnRpb25zKCspLCAyMCBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9k
-cml2ZXJzL3BjaS9wY2kuYyBiL2RyaXZlcnMvcGNpL3BjaS5jCmluZGV4IDBjZTY3NDIuLjRlODRm
-ZDQgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvcGNpL3BjaS5jCisrKyBiL2RyaXZlcnMvcGNpL3BjaS5j
-CkBAIC03Nyw3ICs3Nyw3IEBAIHVuc2lnbmVkIGxvbmcgcGNpX2NhcmRidXNfbWVtX3NpemUgPSBE
-RUZBVUxUX0NBUkRCVVNfTUVNX1NJWkU7CiB1bnNpZ25lZCBsb25nIHBjaV9ob3RwbHVnX2lvX3Np
-emUgID0gREVGQVVMVF9IT1RQTFVHX0lPX1NJWkU7CiB1bnNpZ25lZCBsb25nIHBjaV9ob3RwbHVn
-X21lbV9zaXplID0gREVGQVVMVF9IT1RQTFVHX01FTV9TSVpFOwogCi1lbnVtIHBjaWVfYnVzX2Nv
-bmZpZ190eXBlcyBwY2llX2J1c19jb25maWcgPSBQQ0lFX0JVU19QRVJGT1JNQU5DRTsKK2VudW0g
-cGNpZV9idXNfY29uZmlnX3R5cGVzIHBjaWVfYnVzX2NvbmZpZyA9IFBDSUVfQlVTX1NBRkU7CiAK
-IC8qCiAgKiBUaGUgZGVmYXVsdCBDTFMgaXMgdXNlZCBpZiBhcmNoIGRpZG4ndCBzZXQgQ0xTIGV4
-cGxpY2l0bHkgYW5kIG5vdApkaWZmIC0tZ2l0IGEvZHJpdmVycy9wY2kvcHJvYmUuYyBiL2RyaXZl
-cnMvcGNpL3Byb2JlLmMKaW5kZXggMDgyMGZjMS4uYjExODdmZiAxMDA2NDQKLS0tIGEvZHJpdmVy
-cy9wY2kvcHJvYmUuYworKysgYi9kcml2ZXJzL3BjaS9wcm9iZS5jCkBAIC0xMzk2LDM0ICsxMzk2
-LDM3IEBAIHN0YXRpYyB2b2lkIHBjaWVfd3JpdGVfbXBzKHN0cnVjdCBwY2lfZGV2ICpkZXYsIGlu
-dCBtcHMpCiAKIHN0YXRpYyB2b2lkIHBjaWVfd3JpdGVfbXJycyhzdHJ1Y3QgcGNpX2RldiAqZGV2
-LCBpbnQgbXBzKQogewotCWludCByYywgbXJyczsKKwlpbnQgcmMsIG1ycnMsIGRldl9tcHNzOwog
-Ci0JaWYgKHBjaWVfYnVzX2NvbmZpZyA9PSBQQ0lFX0JVU19QRVJGT1JNQU5DRSkgewotCQlpbnQg
-ZGV2X21wc3MgPSAxMjggPDwgZGV2LT5wY2llX21wc3M7CisJLyogSW4gdGhlICJzYWZlIiBjYXNl
-LCBkbyBub3QgY29uZmlndXJlIHRoZSBNUlJTLiAgVGhlcmUgYXBwZWFyIHRvIGJlCisJICogaXNz
-dWVzIHdpdGggc2V0dGluZyBNUlJTIHRvIDAgb24gYSBudW1iZXIgb2YgZGV2aWNlcy4KKwkgKi8K
-IAotCQkvKiBGb3IgTWF4IHBlcmZvcm1hbmNlLCB0aGUgTVJSUyBtdXN0IGJlIHNldCB0byB0aGUg
-bGFyZ2VzdAotCQkgKiBzdXBwb3J0ZWQgdmFsdWUuICBIb3dldmVyLCBpdCBjYW5ub3QgYmUgY29u
-ZmlndXJlZCBsYXJnZXIKLQkJICogdGhhbiB0aGUgTVBTIHRoZSBkZXZpY2Ugb3IgdGhlIGJ1cyBj
-YW4gc3VwcG9ydC4gIFRoaXMgYXNzdW1lcwotCQkgKiB0aGF0IHRoZSBsYXJnZXN0IE1SUlMgYXZh
-aWxhYmxlIG9uIHRoZSBkZXZpY2UgY2Fubm90IGJlCi0JCSAqIHNtYWxsZXIgdGhhbiB0aGUgZGV2
-aWNlIE1QU1MuCi0JCSAqLwotCQltcnJzID0gbXBzIDwgZGV2X21wc3MgPyBtcHMgOiBkZXZfbXBz
-czsKLQl9IGVsc2UKLQkJLyogSW4gdGhlICJzYWZlIiBjYXNlLCBjb25maWd1cmUgdGhlIE1SUlMg
-Zm9yIGZhaXJuZXNzIG9uIHRoZQotCQkgKiBidXMgYnkgbWFraW5nIGFsbCBkZXZpY2VzIGhhdmUg
-dGhlIHNhbWUgc2l6ZQotCQkgKi8KLQkJbXJycyA9IG1wczsKKwlpZiAocGNpZV9idXNfY29uZmln
-ICE9IFBDSUVfQlVTX1BFUkZPUk1BTkNFKQorCQlyZXR1cm47CisKKwlkZXZfbXBzcyA9IDEyOCA8
-PCBkZXYtPnBjaWVfbXBzczsKIAorCS8qIEZvciBNYXggcGVyZm9ybWFuY2UsIHRoZSBNUlJTIG11
-c3QgYmUgc2V0IHRvIHRoZSBsYXJnZXN0IHN1cHBvcnRlZAorCSAqIHZhbHVlLiAgSG93ZXZlciwg
-aXQgY2Fubm90IGJlIGNvbmZpZ3VyZWQgbGFyZ2VyIHRoYW4gdGhlIE1QUyB0aGUKKwkgKiBkZXZp
-Y2Ugb3IgdGhlIGJ1cyBjYW4gc3VwcG9ydC4gIFRoaXMgYXNzdW1lcyB0aGF0IHRoZSBsYXJnZXN0
-IE1SUlMKKwkgKiBhdmFpbGFibGUgb24gdGhlIGRldmljZSBjYW5ub3QgYmUgc21hbGxlciB0aGFu
-IHRoZSBkZXZpY2UgTVBTUy4KKwkgKi8KKwltcnJzID0gbWluKG1wcywgZGV2X21wc3MpOwogCiAJ
-LyogTVJSUyBpcyBhIFIvVyByZWdpc3Rlci4gIEludmFsaWQgdmFsdWVzIGNhbiBiZSB3cml0dGVu
-LCBidXQgYQotCSAqIHN1YnNpcXVlbnQgcmVhZCB3aWxsIHZlcmlmeSBpZiB0aGUgdmFsdWUgaXMg
-YWNjZXB0YWJsZSBvciBub3QuCisJICogc3Vic2VxdWVudCByZWFkIHdpbGwgdmVyaWZ5IGlmIHRo
-ZSB2YWx1ZSBpcyBhY2NlcHRhYmxlIG9yIG5vdC4KIAkgKiBJZiB0aGUgTVJSUyB2YWx1ZSBwcm92
-aWRlZCBpcyBub3QgYWNjZXB0YWJsZSAoZS5nLiwgdG9vIGxhcmdlKSwKIAkgKiBzaHJpbmsgdGhl
-IHZhbHVlIHVudGlsIGl0IGlzIGFjY2VwdGFibGUgdG8gdGhlIEhXLgogIAkgKi8KIAl3aGlsZSAo
-bXJycyAhPSBwY2llX2dldF9yZWFkcnEoZGV2KSAmJiBtcnJzID49IDEyOCkgeworCQlkZXZfd2Fy
-bigmZGV2LT5kZXYsICJBdHRlbXB0aW5nIHRvIG1vZGlmeSB0aGUgUENJLUUgTVJSUyB2YWx1ZSIK
-KwkJCSAiIHRvICVkLiAgSWYgYW55IGlzc3VlcyBhcmUgZW5jb3VudGVyZWQsIHBsZWFzZSB0cnkg
-IgorCQkJICJydW5uaW5nIHdpdGggcGNpPXBjaWVfYnVzX3NhZmVcbiIsIG1ycnMpOwogCQlyYyA9
-IHBjaWVfc2V0X3JlYWRycShkZXYsIG1ycnMpOwogCQlpZiAocmMpCi0JCQlkZXZfZXJyKCZkZXYt
-PmRldiwgIkZhaWxlZCBhdHRlbXB0aW5nIHRvIHNldCB0aGUgTVJSU1xuIik7CisJCQlkZXZfZXJy
-KCZkZXYtPmRldiwKKwkJCQkiRmFpbGVkIGF0dGVtcHRpbmcgdG8gc2V0IHRoZSBNUlJTXG4iKTsK
-IAogCQltcnJzIC89IDI7CiAJfQpAQCAtMTQzNiwxMyArMTQzOSwxMyBAQCBzdGF0aWMgaW50IHBj
-aWVfYnVzX2NvbmZpZ3VyZV9zZXQoc3RydWN0IHBjaV9kZXYgKmRldiwgdm9pZCAqZGF0YSkKIAlp
-ZiAoIXBjaV9pc19wY2llKGRldikpCiAJCXJldHVybiAwOwogCi0JZGV2X2luZm8oJmRldi0+ZGV2
-LCAiRGV2IE1QUyAlZCBNUFNTICVkIE1SUlMgJWRcbiIsCisJZGV2X2RiZygmZGV2LT5kZXYsICJE
-ZXYgTVBTICVkIE1QU1MgJWQgTVJSUyAlZFxuIiwKIAkJIHBjaWVfZ2V0X21wcyhkZXYpLCAxMjg8
-PGRldi0+cGNpZV9tcHNzLCBwY2llX2dldF9yZWFkcnEoZGV2KSk7CiAKIAlwY2llX3dyaXRlX21w
-cyhkZXYsIG1wcyk7CiAJcGNpZV93cml0ZV9tcnJzKGRldiwgbXBzKTsKIAotCWRldl9pbmZvKCZk
-ZXYtPmRldiwgIkRldiBNUFMgJWQgTVBTUyAlZCBNUlJTICVkXG4iLAorCWRldl9kYmcoJmRldi0+
-ZGV2LCAiRGV2IE1QUyAlZCBNUFNTICVkIE1SUlMgJWRcbiIsCiAJCSBwY2llX2dldF9tcHMoZGV2
-KSwgMTI4PDxkZXYtPnBjaWVfbXBzcywgcGNpZV9nZXRfcmVhZHJxKGRldikpOwogCiAJcmV0dXJu
-IDA7Ci0tIAoxLjcuNgoK
---001636ef0a156a8f1104acd49c0a--
+It... was... slow...
+
+Additionally, vm_map_ram() failed a lot because it actually allocates
+memory of its own for the vmap_area.  In my tests, many pages slipped
+through zcache because of this failure.
+
+Even worse, it uses GFP_KERNEL when alloc'ing the vmap_area which 
+isn't safe under spinlock.
+
+It seems that the use of vm_map_ram() is a linchpin in this design.
+
+> The basic idea is to link together individual pages
+> (typically 4k) using underlying struct_page->lru to form superblocks and
+> map/unmap objects on demand.
+> 
+>> If so, I'm not sure how changing to a slab-based system would eliminate
+>> metadata overhead or do away with memcpy()s.
+>>
+> 
+> 
+> With slab based approach, the allocator itself need not store any
+> metadata with allocated objects.  However, considering zcache and zram
+> use-cases, the caller will still have to request additional space for
+> per-object header: actual object size and back-reference (which
+> inode/page-idx this object belongs to) needed for compaction.
+> 
+
+So the metadata still exists.  It's just zcache's metadata vs the
+allocator's metadata.
+
+> For free-list management, the underlying struct page and the free object
+> space itself can be used. Some field in the struct page can point to the
+> first free object in a page and free slab objects themselves will
+> contain links to next/previous free objects in the page.
+> 
+>> The memcpy()s are a side effect of having an allocation spread over
+>> blocks in different pages.  I'm not seeing a way around this.
+>>
+> 
+> 
+> For slab objects than span 2 pages, we can use vm_map_ram() to
+> temporarily map pages involved and read/write to objects directly. For
+> objects lying entirely within a page, we can use much faster
+> kmap_atomic() for access.
+> 
+> 
+
+See previous comment about vm_map_ram().  There is also an issue
+here with a slab object being unreadable do to vm_map_ram() failing.
+
+>> It also follows that the blocks that make up an allocation must be in
+>> a list of some kind, leading to some amount of metadata overhead.
+>>
+> 
+> 
+> Used objects need not be placed in any list.  For free objects we can use
+> underlying struct page and free object space itself to manage free list,
+> as described above.
+> 
+
+I assume this means that allocations consist of only one slab object as
+opposed to multiple objects in slabs with different class sizes.
+
+In other words, if you have a 3k allocation and your slab
+class sizes are 1k, 2k, and 4k, the allocation would have to
+be in a single 4k object (with 25% fragmentation), not spanning
+a 1k and 2k object, correct?
+
+This is something that I'm inferring from your description, but is key
+to the design.  Please confirm that I'm understanding correctly.
+
+>> If you want to do compaction, it follows that you can't give the user
+>> a direct pointer to the data, since the location of that data may change.
+>> In this case, an indirection layer is required (i.e. xcf_blkdesc and
+>> xcf_read()/xcf_write()).
+>>
+> 
+> 
+> Yes, we can't give a direct pointer anyways since pages used by the
+> allocator are not permanently mapped (to save precious VA spave on
+> 32-bit).  Still, we can save on much of metadata overhead and extra
+> memcpy() as described above.
+> 
+> 
+
+This isn't clear to me.  What would be returned by the malloc() call
+in this design?  In other words, how does the caller access the
+allocation?  You just said we can't give a direct access to the data
+via a page pointer and an offset. What else is there to return other
+than a pointer to metadata?
+
+>> The only part of the metadata that could be done away with in a slab-
+>> based approach, as far as I can see, is the prevoffset field in xcf_blkhdr,
+>> since the size of the previous block in the page (or the previous object
+>> in the slab) can be inferred from the size of the current block/object.
+>>
+>> I do agree that we don't have to worry about free block merging in a
+>> slab-based system.
+>>
+>> I didn't implement compaction so a slab-based system could very well
+>> make it easier.  I guess it depends on how one ends up doing it.
+>>
+> 
+> 
+> I expect compaction to be much easier with slab like design since
+> finding target for relocating objects is so simple. You don't have to
+> deal with all those little unusable holes created throughout the heap
+> when mix-all-object-sizes-together approach is used.
+> 
+> 
+> For compaction, I plan to have a scheme where the user (zcache/zram)
+> would "cooperate" with the process.  Here is a rough outline for
+> relocating an object:
+>  - For any size class, when emptiness threshold (=total space allocated
+> / actual used) exceeds some threshold, the allocator will copy objects
+> from least used slab superblocks to the most used ones.
+>  - It will then issue a callback, registered by the user during pool
+> creation, informing about the new object location,
+>  - Due to various cases, this callback may return failure in which case
+> the relocation is considered failed and we will disk newly created copy.
+>  - If callback succeeds, it means that the user successfully updated its
+> object reference and we can now mark the original copy as free.
+> 
+> 
+> We can also batch this process (copy all objects in victim superblock at
+> once to other superblocks and issue a single callback) for better
+> efficiency.
+> 
+> 
+> Please let me know if you have any comments. I plan to start with its
+> implementation sometime this week.
+> 
+> Thanks,
+> Nitin
+
+--
+Seth
+
