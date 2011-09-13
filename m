@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755562Ab1IMQdn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 12:33:43 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:55972 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755297Ab1IMQdm convert rfc822-to-8bit (ORCPT
+	id S1755539Ab1IMQgq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 12:36:46 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39545 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753662Ab1IMQgo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 12:33:42 -0400
+	Tue, 13 Sep 2011 12:36:44 -0400
 Subject: Re: CFS Bandwidth Control - Test results of cgroups tasks pinned vs
  unpinnede
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
@@ -19,7 +19,7 @@ Cc: Paul Turner <pjt@google.com>,
         Dhaval Giani <dhaval.giani@gmail.com>,
         Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@elte.hu>, Pavel Emelianov <xemul@parallels.com>
-Date: Tue, 13 Sep 2011 18:33:09 +0200
+Date: Tue, 13 Sep 2011 18:36:15 +0200
 In-Reply-To: <20110913162119.GA3045@linux.vnet.ibm.com>
 References: <1315423342.11101.25.camel@twins>
 	 <20110908151433.GB6587@linux.vnet.ibm.com> <1315571462.26517.9.camel@twins>
@@ -32,40 +32,36 @@ References: <1315423342.11101.25.camel@twins>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
 X-Mailer: Evolution 3.0.3- 
-Message-ID: <1315931591.5977.26.camel@twins>
+Message-ID: <1315931775.5977.29.camel@twins>
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Tue, 2011-09-13 at 21:51 +0530, Srivatsa Vaddagiri wrote:
-> > which increases the time you force a task to sleep that's holding locks etc..
+> > I can't read it seems.. I thought you were talking about increasing the
+> > period,
 > 
-> Ideally all tasks should get capped at the same time, given that there is
-> a global pool from which everyone pulls bandwidth? So while one vcpu/task
-> (holding a lock) gets capped, other vcpus/tasks (that may want the same lock)
-> should ideally not be running for long after that, avoiding lock inversion
-> related problems you point out.
+> Mm ..I brought up the increased lock contention with reference to this
+> experimental result that I posted earlier:
+> 
+>   > Tuning min_interval and max_interval of various sched_domains to 1
+>   > and also setting sched_cfs_bandwidth_slice_us to 500 does cut down idle
+>   > time further to 2.7%
 
-No this simply cannot be true.. You force groups to sleep so that other
-groups can run, right? Therefore shared kernel locks will cause
-inversion.
+Yeah, that's the not being able to read part..
 
-You cannot put both groups to sleep and still expect a utilization of
-100%.
+> Value of sched_cfs_bandwidth_slice_us was reduced from default of 5000us
+> to 500us, which (along with reduction of min/max interval) helped cut down
+> idle time further (3.9% -> 2.7%). I was commenting that this may not necessarily
+> be optimal (as for example low 'sched_cfs_bandwidth_slice_us' could result
+> in all cpus contending for cfs_b->lock very frequently). 
 
-Simple example, some task in group A owns the i_mutex of a file, group A
-runs out of time and gets dequeued. Some other task in group B needs
-that same i_mutex.
+Right.. so this seems to suggest you're migrating a lot.
 
-> I guess that we may still run into that with current implementation ..
-> Basically global pool may have zero runtime left for current period,
-> forcing a vcpu/task to be throttled, while there is surplus runtime in
-> per-cpu pools, allowing some sibling vcpus/tasks to run for wee bit
-> more, leading to lock-inversion related problems (more idling). That
-> makes me think we can improve directed yield->capping interaction.
-> Essentially when the target task of directed yield is capped, can the
-> "yielding" task donate some of its bandwidth? 
+Also what workload are we talking about? the insane one with 5 groups of
+weight 1024?
 
-What moron ever calls yield anyway? If you use yield you're doing it
-wrong!
+Ramping up the frequency of the load-balancer and giving out smaller
+slices is really anti-scalability.. I bet a lot of that 'reclaimed' idle
+time is spend in system time. 
