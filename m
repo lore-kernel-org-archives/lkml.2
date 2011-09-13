@@ -1,79 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753243Ab1IMCUl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 22:20:41 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:45486 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752231Ab1IMCUk convert rfc822-to-8bit (ORCPT
+	id S1753565Ab1IMDD5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 23:03:57 -0400
+Received: from mga14.intel.com ([143.182.124.37]:45943 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753070Ab1IMDDy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 22:20:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110912153129.GA10625@infradead.org>
-References: <CAG1a4ruG8bL9j01RgSXuK2w9FV0izp8vdoQMLEZzc=qZfCNpzA@mail.gmail.com>
- <1315285921.46647.YahooMailClassic@web29519.mail.ird.yahoo.com>
- <CAG1a4rttHKgp=nAjQ=7zUu=bURq9x7DdhL2fTAZKimicpfdYsw@mail.gmail.com>
- <CAG1a4rt5wLihR-ZkUD78WRbHk39xWP0ypJzMe4K5G1O-k12-MQ@mail.gmail.com>
- <20110912143452.GA31539@infradead.org> <CAG1a4rsuYVehnSCM3KxeYQ+g94nrivG1vfss=y8275E4D24qTg@mail.gmail.com>
- <20110912153129.GA10625@infradead.org>
-From: Pavel Ivanov <paivanof@gmail.com>
-Date: Mon, 12 Sep 2011 22:20:01 -0400
-Message-ID: <CAG1a4rsKQexL8vhAAoJDtnEvqH0rDvPQCiBGM74EH-+pZ9+WPg@mail.gmail.com>
-Subject: Re: Kernel 3.1.0-rc4 oops when connecting iPod
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Hin-Tak Leung <hintak_leung@yahoo.co.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@tuxera.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 12 Sep 2011 23:03:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,371,1312182000"; 
+   d="scan'208";a="48050059"
+From: "Brown, Len" <len.brown@intel.com>
+To: "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
+Date: Mon, 12 Sep 2011 20:03:52 -0700
+Subject: ACPI git tree re-locates to github.com
+Thread-Topic: ACPI git tree re-locates to github.com
+Thread-Index: AcxxwcSrBB1fLED8Tfia3KhO3my/8g==
+Message-ID: <E87738D94A6AD54789B5B8D1BAEB06CC829B3E4886@azsmsx503.amr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 12, 2011 at 11:31 AM, Christoph Hellwig <hch@infradead.org> wrote:
-> Yes, the shifts were the wrong way around.  I'll leave the 9 in for now,
-> we use it in so many places and if we're going to clean it up I'd do it
-> in ne go.
->
-> Index: linux-2.6/fs/hfsplus/super.c
-> ===================================================================
-> --- linux-2.6.orig/fs/hfsplus/super.c   2011-09-12 11:20:33.866598100 -0400
-> +++ linux-2.6/fs/hfsplus/super.c        2011-09-12 11:20:52.538098052 -0400
-> @@ -344,6 +344,7 @@ static int hfsplus_fill_super(struct sup
->        struct inode *root, *inode;
->        struct qstr str;
->        struct nls_table *nls = NULL;
-> +       u64 last_fs_block, last_fs_page;
->        int err;
->
->        err = -EINVAL;
-> @@ -399,9 +400,13 @@ static int hfsplus_fill_super(struct sup
->        if (!sbi->rsrc_clump_blocks)
->                sbi->rsrc_clump_blocks = 1;
->
-> -       err = generic_check_addressable(sbi->alloc_blksz_shift,
-> -                                       sbi->total_blocks);
-> -       if (err) {
-> +       err = -EFBIG;
-> +       last_fs_block = sbi->total_blocks - 1;
-> +       last_fs_page = (last_fs_block << sbi->alloc_blksz_shift) >>
-> +                       PAGE_CACHE_SHIFT;
-> +
-> +       if ((last_fs_block > (sector_t)(~0ULL) >> (sbi->alloc_blksz_shift - 9)) ||
-> +           (last_fs_page > (pgoff_t)(~0ULL))) {
->                printk(KERN_ERR "hfs: filesystem size too large.\n");
->                goto out_free_vhdr;
->        }
->
+Effective immediately...
 
-Christoph,
+https://github.com/lenb/linux.git acpi
 
-This patch works for me.
+replaces
 
-And could you comment on my PAGE_SIZE question?
+git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-acpi-2.6.git test
 
->> Also I have a little concern about consistency in using
->> PAGE_CACHE_SHIFT and PAGE_SHIFT. hfsplus_read_wrapper() limits visible
->> block size to PAGE_SIZE, not PAGE_CACHE_SIZE. And although now they
->> are equal comment in linux/pagemap.h clearly says that PAGE_CACHE_SIZE
->> can be bigger than PAGE_SIZE. Is it something that should be fixed in
->> hfsplus_read_wrapper() ?
+This is where I will consolidate ACPI-related patches for linux-next,
+and upstream.
+
+Note that I reserve the right to re-base this branch from time to time
+as needed to revise or remove patches before they are pulled upstream.
+
+Currently there are only a couple of patches on this branch,
+and I'll use them as a test case to make sure the workflow is okay.
+
+thanks,
+-Len Brown
+Intel Open Source Technology Center
+
