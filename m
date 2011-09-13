@@ -1,61 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754994Ab1IMHkN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 03:40:13 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:64132 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754848Ab1IMHkL (ORCPT
+	id S1755033Ab1IMHpI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 03:45:08 -0400
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:34538 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754947Ab1IMHpG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 03:40:11 -0400
-Date: Tue, 13 Sep 2011 16:40:04 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: What is the difference between percpu_xxx and this_cpu_xxx?
-Message-ID: <20110913074004.GA11397@mtj.dyndns.org>
-References: <4E6EDBFB.4010705@intel.com>
- <1315894267.2556.21.camel@edumazet-laptop>
- <4E6EF4AE.4030503@intel.com>
+	Tue, 13 Sep 2011 03:45:06 -0400
+Message-ID: <b45dbb1b8a02ec6c5c52c95f62d887f2.squirrel@webmail.greenhost.nl>
+In-Reply-To: <201109101636.37007.pedro@codesourcery.com>
+References: <1315506333.18043.49.camel@dhcp-25-63.brq.redhat.com>
+    <201109101340.16506.vda.linux@googlemail.com>
+    <201109101312.39256.pedro@codesourcery.com>
+    <201109101636.37007.pedro@codesourcery.com>
+Date: Tue, 13 Sep 2011 09:45:00 +0200
+Subject: Re: [PATCH v3] Make PTRACE_SEIZE set ptrace options specified in
+ 'data'
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Pedro Alves" <pedro@codesourcery.com>
+Cc: "Denys Vlasenko" <vda.linux@googlemail.com>,
+        "Denys Vlasenko" <dvlasenk@redhat.com>,
+        "Oleg Nesterov" <oleg@redhat.com>, "Tejun Heo" <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+Content-Type: text/plain;charset=UTF-8
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <4E6EF4AE.4030503@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.0
+X-Scan-Signature: bbdeaaa4d227adae8d620e69c05793d6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 13, 2011 at 02:14:06PM +0800, Huang Ying wrote:
-> Hi, Eric,
-> 
-> On 09/13/2011 02:11 PM, Eric Dumazet wrote:
-> > Le mardi 13 septembre 2011 à 12:28 +0800, Huang Ying a écrit :
-> >> Hi,
-> >>
-> >> If my understanding was correct, from the kernel source code, it appears
-> >> that percpu_xxx and this_cpu_xxx have the same semantics and
-> >> implementation in effect, haven’t them?
-> >>
-> >> If so, why do we need two API for the same thing?
-> > 
-> > History mostly, and transition.
-> > 
-> > percpu_inc() was an x86 only thing
-> > 
-> > __get_cpu_var(var)++ -> percpu_inc(var) -> this_cpu_inc(var)
+Hello,
 
-Also, we used to need separate accessors for static and dynamic percpu
-variables, so we have quite a few duplications in the interface.
+On Sat, September 10, 2011 17:36, Pedro Alves wrote:
+> On Saturday 10 September 2011 13:12:38, Pedro Alves wrote:
+>
+>> (just-options-on-SEIZE scares me in terms of future expansion,
+>> as it assumes only bitflags will ever be necessary.)
+>
+> The more I think of this, the more I think we could do this
+> some other way --- why don't we allow setting the default
+> options _on the ptracer_, and then tracee's inherit those
+> options from the ptracer-set-of-default-options if their
+> parent is not currently ptraced by own tracer?  That is, you'd make
+> the ptracer set options on itself:
+>
+> options = PTRACE_O_TRACESYSGOOD | PTRACE_O_TRACECLONE|FORK|VFORK|EXEC ...;
+> ptrace(PTRACE_SETOPTIONS, gettid(), 0, options);
 
-> Thanks for clarification.  Is there someone working on the transition?
-> Is that possible to translate most percpu_xxx to this_cpu_xxx blindly?
+Please just use a zero pid to set options on yourself, that's easier for
+everyone.
 
-It's on my todo list but AFAIK nobody is actually working on it yet.
 
-Thanks.
+> And then, in all of
+>
+>  ptrace(PTRACE_ATTACH, foo_pid, 0, 0);
+>  ptrace(PTRACE_TRACEME, 0, 0, 0);
+>  ptrace(PTRACE_SEIZE, foo_pid, 0, 0);
+>
+> you'd end up with the tracee already with your chosen options set.
+>
+> Clones, vforks and forks that are auto-attached would still inherit their
+> options from their parent, just like today.
+>
+> Some pro points:
+>
+> - works for PTRACE_ATTACH AND PTRACE_TRACEME too.
+>
+> - most ptracers on earth will only need to set options once.
+>
+> - backwards compatible.  The "default ptrace options" default
+> to 0, so old tracers on new kernels will still behave the same.
+>
+> - future proof.  If some other PTRACE_SET_NEAT_OPTION ptrace
+> command appears in the future, we can make it work the same
+> way, instead of getting stuck with PTRACE_SEIZE's `data'
+> already being taken...
+>
+> - if ptrace(PTRACE_SETOPTIONS, gettid(), 0, 0) works, then
+> we can stop gdb (and probably other tracers) from forking a new
+> child just to check if PTRACE_O_TRACEFOO works before actually
+> attaching/spawning the process of interest.
+> (see code around linux_supports_tracefork_flag at
+> <http://sourceware.org/cgi-bin/cvsweb.cgi/src/gdb/linux-nat.c?rev=1.215&content-type=text/x-cvsweb-markup&cvsroot=src>)
 
--- 
-tejun
+The forking a new child just to check the option is needed because aparently
+some old ptrace version didn't return an error for unknown options (according
+to the comment in that code), so trying it out is the only reliable way of
+being sure if options are supported or not. Otherwise no extra forking would
+be needed anyway.
+
+> Cons:
+>
+> - is there any real con?
+>
+> Note the default ptrace options would _not_ conflict with
+> the ptracer's own ptrace options in case the ptracer itself
+> is being ptraced.
+>
+> WDYT?
+
+I agree that this would probably be better than setting options at SEIZE
+time.
+
+Greetings,
+
+Indan
+
+
