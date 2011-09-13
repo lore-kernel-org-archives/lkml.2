@@ -1,131 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755476Ab1IMQWA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 12:22:00 -0400
-Received: from mail-qw0-f47.google.com ([209.85.216.47]:41037 "EHLO
-	mail-qw0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755230Ab1IMQV6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 12:21:58 -0400
-X-Greylist: delayed 414 seconds by postgrey-1.27 at vger.kernel.org; Tue, 13 Sep 2011 12:21:58 EDT
+	id S1755429Ab1IMQYn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 12:24:43 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:55543 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755230Ab1IMQYl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 12:24:41 -0400
+Date: Tue, 13 Sep 2011 09:06:45 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Temporary -rcu tree location
+Message-ID: <20110913160645.GA6258@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110913000107.GA15945@linux.vnet.ibm.com>
+ <alpine.LRH.2.00.1109130210090.19238@twin.jikos.cz>
+ <20110913002419.GN2362@linux.vnet.ibm.com>
+ <alpine.LNX.2.00.1109130242440.13109@pobox.suse.cz>
+ <20110913013400.GB2313@linux.vnet.ibm.com>
+ <20110913120716.1b893c483ee91d6b7f12a5b4@canb.auug.org.au>
+ <20110913040647.GC2313@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <CAJ0pr18dn3CtBsXk9MG3Zn9zSwAiNoxB3b-62aMO3+8H+kUX3A@mail.gmail.com>
-References: <1313758358-27536-1-git-send-email-per.forlin@stericsson.com>
-	<1313758358-27536-2-git-send-email-per.forlin@stericsson.com>
-	<1313758358-27536-3-git-send-email-per.forlin@stericsson.com>
-	<CAC5umyjWx7ZvT+F_XhOZt_utr=mS-0p5tDpJ1ioWNiDAJLNXwQ@mail.gmail.com>
-	<CAJ0pr18dn3CtBsXk9MG3Zn9zSwAiNoxB3b-62aMO3+8H+kUX3A@mail.gmail.com>
-Date: Tue, 13 Sep 2011 18:15:03 +0200
-Message-ID: <CAJ0pr1-ba0iY808igXJuEiWAX5zwhTUD6r+8MAMeBTHYFTenCg@mail.gmail.com>
-Subject: Re: [PATCH v9 2/3] mmc: core: add random fault injection
-From: Per Forlin <per.forlin@linaro.org>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Per Forlin <per.forlin@stericsson.com>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>,
-        linux-doc@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110913040647.GC2313@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 11091316-6078-0000-0000-000000AC85C7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Akinobu,
+On Mon, Sep 12, 2011 at 09:06:47PM -0700, Paul E. McKenney wrote:
+> On Tue, Sep 13, 2011 at 12:07:16PM +1000, Stephen Rothwell wrote:
+> > Hi Paul,
+> > 
+> > On Mon, 12 Sep 2011 18:34:00 -0700 "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+> > >
+> > > > there doesn't seem to be 'rcu/next' branch, right?
+> > > 
+> > > No, there is not.  So the idea is to push "rcu/next" the first time,
+> > > then ":rcu/next" thereafter?
+> > 
+> > Can't you just do a (forced) push over and over again without removing
+> > the branch each time?
+> 
+> I will give it a try on the next update.  ;-)
 
-On 13 September 2011 16:19, Per Forlin <per.forlin@linaro.org> wrote:
-> On 13 September 2011 15:12, Akinobu Mita <akinobu.mita@gmail.com> wrote:
->> 2011/8/19 Per Forlin <per.forlin@stericsson.com>:
->>
->>> +#ifdef KERNEL
->>> +/*
->>> + * Internal function. Pass the boot param fail_mmc_request to
->>> + * the setup fault injection attributes routine.
->>> + */
->>> +static int __init setup_fail_mmc_request(char *str)
->>> +{
->>> +       return setup_fault_attr(&fail_mmc_request, str);
->>> +}
->>> +__setup("fail_mmc_request=", setup_fail_mmc_request);
->>> +#endif /* KERNEL */
->>
->> You attempt to enable __setup() only when mmc_core is built into
->> the kernel.  Does it really work? I cannot find any drivers using
->> "KERNEL" macro.
->>
-> Your right it doesn't work. I think I change from ifndef MODULE to
-> ifdef KERNEL at one point.
-> It should be "ifndef MODULE"
->
->> You can use module_param_cb() instead of __setup() without #ifdef KERNEL.
->> When mmc_core is built into the kernel, you can specify the parameter
->> with "mmc_core.fail_mmc_request=..."
->>
-I am considering using module_param() with perm = 0 (not visible in
-sysfs). The purpose of the param is to set fault attributes during
-kerne boot time or module load time. After the kernel boot all can be
-set under debug fs, therefore no need to make the module param
-visible.
+OK, I pushed a small update to one of the commits, this time to branch
+rcu/next, again at https://github.com/paulmckrcu/linux.
 
-What do you think about this? I have not tested it yet.
-----------------------------------------------------------
-+++ b/drivers/mmc/core/debugfs.c
-@@ -20,6 +20,14 @@
- #include "core.h"
- #include "mmc_ops.h"
+I guess that the acid test is the next time I update.  ;-)
 
-+#ifdef CONFIG_FAIL_MMC_REQUEST
-+
-+static DECLARE_FAULT_ATTR(fail_mmc_default_attr);
-+static char *fail_mmc_request;
-+module_param(fail_mmc_request, charp, 0);
-+
-+#endif /* CONFIG_FAIL_MMC_REQUEST */
-+
- /* The debugfs functions are optimized away when CONFIG_DEBUG_FS isn't set. */
- static int mmc_ios_show(struct seq_file *s, void *data)
- {
-@@ -159,23 +167,6 @@ static int mmc_clock_opt_set(void *data, u64 val)
-        return 0;
- }
+								Thanx, Paul
 
--#ifdef CONFIG_FAIL_MMC_REQUEST
--
--static DECLARE_FAULT_ATTR(fail_mmc_request);
--
--#ifdef KERNEL
--/*
-- * Internal function. Pass the boot param fail_mmc_request to
-- * the setup fault injection attributes routine.
-- */
--static int __init setup_fail_mmc_request(char *str)
--{
--       return setup_fault_attr(&fail_mmc_request, str);
--}
--__setup("fail_mmc_request=", setup_fail_mmc_request);
--#endif /* KERNEL */
--#endif /* CONFIG_FAIL_MMC_REQUEST */
--
- DEFINE_SIMPLE_ATTRIBUTE(mmc_clock_fops, mmc_clock_opt_get, mmc_clock_opt_set,
-        "%llu\n");
-
-@@ -207,7 +198,9 @@ void mmc_add_host_debugfs(struct mmc_host *host)
-                goto err_node;
- #endif
- #ifdef CONFIG_FAIL_MMC_REQUEST
--       host->fail_mmc_request = fail_mmc_request;
-+       if (fail_mmc_request)
-+               setup_fault_attr(&fail_mmc_default_attr, fail_mmc_request);
-+       host->fail_mmc_request = fail_mmc_default_attr;
-        if (IS_ERR(fault_create_debugfs_attr("fail_mmc_request",
-                                             root,
-                                             &host->fail_mmc_request)))
-----------------------------------------------------------
-It's only necessary to call setup_fault_attr() once for all hosts.
-Here it's called one time for each host. I think it's ok since the
-routine is small and used for debugging purposes.
-I could use a static bool to indicate whether setup_fault_attr() has
-already been issued.
-+ if (fail_mmc_request && !setup_fault_attr_done)
-
-Regards,
-Per
