@@ -1,161 +1,377 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932427Ab1IMTaL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 15:30:11 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52184 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932079Ab1IMTaH (ORCPT
+	id S932436Ab1IMTcH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 15:32:07 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:55279 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932079Ab1IMTcE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 15:30:07 -0400
-Date: Tue, 13 Sep 2011 14:29:57 -0500 (CDT)
-From: Manoj Iyer <manoj.iyer@canonical.com>
-X-X-Sender: manjo@lazy
-To: Chris Ball <cjb@laptop.org>
-cc: Jeremy Fitzhardinge <jeremy@goop.org>, linux-mmc@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Manoj Iyer <manoj.iyer@canonical.com>
-Subject: Re: SDHCI regression since 2.6.39
-In-Reply-To: <m2aaa89t1m.fsf@bob.laptop.org>
-Message-ID: <alpine.DEB.2.02.1109131419430.3556@lazy>
-References: <4E6EA3E4.5080401@goop.org> <m2bouo37by.fsf@bob.laptop.org> <4E6F8C24.3090207@goop.org> <m2wrdc1i5b.fsf@bob.laptop.org> <4E6FA44F.1050705@goop.org> <m2aaa89t1m.fsf@bob.laptop.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	Tue, 13 Sep 2011 15:32:04 -0400
+From: Ohad Ben-Cohen <ohad@wizery.com>
+To: <iommu@lists.linux-foundation.org>
+Cc: <linux-omap@vger.kernel.org>, Hiroshi DOYU <Hiroshi.DOYU@nokia.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Joerg Roedel <Joerg.Roedel@amd.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        David Brown <davidb@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-kernel@vger.kernel.org>, Ohad Ben-Cohen <ohad@wizery.com>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>, kvm@vger.kernel.org
+Subject: [PATCH v2 1/6] iommu/core: split mapping to page sizes as supported by the hardware
+Date: Tue, 13 Sep 2011 22:31:23 +0300
+Message-Id: <1315942288-17297-1-git-send-email-ohad@wizery.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When mapping a memory region, split it to page sizes as supported
+by the iommu hardware. Always prefer bigger pages, when possible,
+in order to reduce the TLB pressure.
 
-@Jeremy, Could the problem be BIOS related? we have seen a number of 
-issues with older bioses on the x220s.
+The logic to do that is now added to the IOMMU core, so neither the iommu
+drivers themselves nor users of the IOMMU API have to duplicate it.
 
-Here are a few cards I tested with the 3.1 RC4 kernel on Ubuntu running on
-a Lenovo X220. with Ricoh e823 card reader.
+This allows a more lenient granularity of mappings; traditionally the
+IOMMU API took 'order' (of a page) as a mapping size, and directly let
+the low level iommu drivers handle the mapping, but now that the IOMMU
+core can split arbitrary memory regions into pages, we can remove this
+limitation, so users don't have to split those regions by themselves.
 
-== kernel version ==
-Linux u 3.1.0-0301rc4-generic #201108290905 SMP MonO Aug 29 09:11:07 UTC 
-2011 x86_64 x86_64 x86_64 GNU/Linux
-This is the upstream RC4 kernel build for ubuntu. 
-http://kernel.ubuntu.com/~kernel-ppa/mainline/
+Currently the supported page sizes are advertised once and they then
+remain static. That works well for OMAP (and seemingly MSM too) but
+it would probably not fly with intel's hardware, where the page size
+capabilities seem to have the potential to be different between
+several DMA remapping devices. This limitation can be dealt with
+later, if desired. For now, the existing IOMMU API behavior is retained
+(see: "iommu/intel: announce supported page sizes").
 
-== LSPCI output for SD card reader ==
-0d:00.0 System peripheral [0880]: Ricoh Co Ltd Device [1180:e823] (rev 04) (prog-if 01)
- 	Subsystem: Lenovo Device [17aa:21db]
- 	Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
- 	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
- 	Latency: 0, Cache Line Size: 64 bytes
- 	Interrupt: pin A routed to IRQ 16
- 	Region 0: Memory at 91500000 (32-bit, non-prefetchable) [size=256]
- 	Capabilities: [50] MSI: Enable- Count=1/1 Maskable- 64bit+
- 		Address: 0000000000000000  Data: 0000
- 	Capabilities: [78] Power Management version 3
- 		Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=0mA PME(D0+,D1+,D2+,D3hot+,D3cold+)
- 		Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=2 PME+
- 	Capabilities: [80] Express (v1) Endpoint, MSI 00
- 		DevCap:	MaxPayload 128 bytes, PhantFunc 0, Latency L0s unlimited, L1 unlimited
- 			ExtTag- AttnBtn+ AttnInd+ PwrInd+ RBE+ FLReset-
- 		DevCtl:	Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
- 			RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
- 			MaxPayload 128 bytes, MaxReadReq 128 bytes
- 		DevSta:	CorrErr+ UncorrErr- FatalErr- UnsuppReq+ AuxPwr- TransPend-
- 		LnkCap:	Port #1, Speed 2.5GT/s, Width x1, ASPM L0s L1, Latency L0 <4us, L1 unlimited
- 			ClockPM+ Surprise- LLActRep- BwNot-
- 		LnkCtl:	ASPM L1 Enabled; RCB 64 bytes Disabled- Retrain- CommClk+
- 			ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
- 		LnkSta:	Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive- BWMgmt- ABWMgmt-
- 	Capabilities: [100 v1] Virtual Channel
- 		Caps:	LPEVC=0 RefClk=100ns PATEntryBits=1
- 		Arb:	Fixed- WRR32- WRR64- WRR128-
- 		Ctrl:	ArbSelect=Fixed
- 		Status:	InProgress-
- 		VC0:	Caps:	PATOffset=00 MaxTimeSlots=1 RejSnoopTrans-
- 			Arb:	Fixed- WRR32- WRR64- WRR128- TWRR128- WRR256-
- 			Ctrl:	Enable+ ID=0 ArbSelect=Fixed TC/VC=ff
- 			Status:	NegoPending- InProgress-
- 	Capabilities: [800 v1] Advanced Error Reporting
- 		UESta:	DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
- 		UEMsk:	DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
- 		UESvrt:	DLP+ SDES+ TLP- FCP+ CmpltTO- CmpltAbrt- UnxCmplt- RxOF+ MalfTLP+ ECRC- UnsupReq- ACSViol-
- 		CESta:	RxErr+ BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
- 		CEMsk:	RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
- 		AERCap:	First Error Pointer: 00, GenCap+ CGenEn- ChkCap+ ChkEn-
- 	Kernel driver in use: sdhci-pci
- 	Kernel modules: sdhci-pci
+As requested, register_iommu() isn't changed yet, so we can convert
+the IOMMU drivers in subsequent patches, and after all the drivers
+are converted, register_iommu will be changed (and the temporary
+register_iommu_pgsize() will be removed).
 
-== Sandisk Extreme Pro 16GB ==
-Was able to mount Ultra high speed SDHC card 45MB/s, read and write works.
+Mainline users of the IOMMU API (kvm and omap-iovmm) are adopted
+to send the mapping size in bytes instead of in page order.
 
-[   60.578630] mmc0: new ultra high speed SDHC card at address e624
-[   60.611808] mmcblk0: mmc0:e624 SD16G 14.8 GiB 
-[   60.644314]  mmcblk0: p1
-[   60.947772] mmcblk0: error -84 transferring data, sector 8192, nr 8, cmd response 0x900, card status 0xb00
-[   60.947777] mmcblk0: retrying using single block read
+Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: David Brown <davidb@codeaurora.org>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Joerg Roedel <Joerg.Roedel@amd.com>
+Cc: Stepan Moskovchenko <stepanm@codeaurora.org>
+Cc: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: kvm@vger.kernel.org
+---
+v1->v2: keep old code around until all drivers are converted
 
-/dev/mmcblk0p1 on /media/New Volume type vfat (rw,nosuid,nodev,uid=1000,gid=1000,shortname=mixed,dmask=0077,utf8=1,showexec,flush,uhelper=udisks)
+ drivers/iommu/iommu.c      |  158 +++++++++++++++++++++++++++++++++++++++++---
+ drivers/iommu/omap-iovmm.c |   12 +---
+ include/linux/iommu.h      |    6 +-
+ virt/kvm/iommu.c           |    4 +-
+ 4 files changed, 157 insertions(+), 23 deletions(-)
 
-== Sandisk 2GB SD card ==
-Was able to mount Sandisk SD card, read and write works.
-[  298.540999] mmc0: new SD card at address 0002
-[  298.541306] mmcblk0: mmc0:0002 00000 1.86 GiB 
-[  298.543157]  mmcblk0: p1
-
-/dev/mmcblk0p1 on /media/E0FD-1813 type vfat (rw,nosuid,nodev,uid=1000,gid=1000,shortname=mixed,dmask=0077,utf8=1,showexec,flush,uhelper=udisks)
-
-== Transcend 2GB MMC plus card ==
-Was able to mount and read/write. Shows up as SD card.
-[  734.032981] mmc0: error -110 whilst initialising MMC card
-[  734.132920] mmc0: error -110 whilst initialising MMC card
-[  734.228244] mmc0: new MMC card at address 0001
-[  734.228631] mmcblk0: mmc0:0001 MMC    1.87 GiB 
-[  734.229834]  mmcblk0: p1
-u@u:~$
-
-/dev/mmcblk0p1 on /media/New Volume type vfat 
-(rw,nosuid,nodev,uid=1000,gid=1000,shortname=mixed,dmask=0077,utf8=1,showexec,flush,uhelper=udisks)
-
-Cheers
---
-====================
-Manoj Iyer
-Ubuntu/Canonical
-Hardware Enablement
-====================
-
-
-On Tue, 13 Sep 2011, Chris Ball wrote:
-
-> Hi,
->
-> On Tue, Sep 13 2011, Jeremy Fitzhardinge wrote:
->>> If it is running, and not helping, can I persuade you to try a full
->>> bisection?
->>
->> OK, will do.
->
-> Thank you!
->
->>>   I don't think we have other reports of this bug, and the
->>> only other person who has reported something like it wasn't a kernel
->>> hacker.
->>
->> That's interesting; the X220 is a pretty common machine these days, I
->> think.  I wonder if there's variations in the SD controller or something?
->
-> I just asked Matthew Garrett to check his X220, and his has the same e823
-> controller as you, is running a 3.1-rc kernel, and everything's working.
->
-> So it's not even variation in the controller model, it's something even
-> more subtle.  Perhaps try some different cards?  What capacity/speed is
-> the one you're trying?  If there is a per-card difference, I suppose
-> we'd expect it to be that slower cards work and faster cards fail
-> (given the nature of the patch I linked in my last mail).
->
-> Thanks,
->
-> - Chris.
-> -- 
-> Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-> One Laptop Per Child
->
->
+diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
+index c68ff29..c848f14 100644
+--- a/drivers/iommu/iommu.c
++++ b/drivers/iommu/iommu.c
+@@ -16,6 +16,8 @@
+  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+  */
+ 
++#define pr_fmt(fmt)    "%s: " fmt, __func__
++
+ #include <linux/kernel.h>
+ #include <linux/bug.h>
+ #include <linux/types.h>
+@@ -23,15 +25,73 @@
+ #include <linux/slab.h>
+ #include <linux/errno.h>
+ #include <linux/iommu.h>
++#include <linux/bitmap.h>
+ 
+ static struct iommu_ops *iommu_ops;
+ 
++/* bitmap of supported page sizes */
++static unsigned long *iommu_pgsize_bitmap;
++
++/* number of bits used to represent the supported pages */
++static unsigned int iommu_nr_page_bits;
++
++/* size of the smallest supported page (in bytes) */
++static unsigned int iommu_min_pagesz;
++
++/* bit number of the smallest supported page */
++static unsigned int iommu_min_page_idx;
++
++/**
++ * register_iommu() - register an IOMMU hardware
++ * @ops: iommu handlers
++ * @pgsize_bitmap: bitmap of page sizes supported by the hardware
++ * @nr_page_bits: size of @pgsize_bitmap (in bits)
++ *
++ * Note: this is a temporary function, which will be removed once
++ * all IOMMU drivers are converted. The only reason it exists is to
++ * allow splitting the pgsizes changes to several patches in order to ease
++ * the review.
++ */
++void register_iommu_pgsize(struct iommu_ops *ops, unsigned long *pgsize_bitmap,
++					unsigned int nr_page_bits)
++{
++	if (iommu_ops || iommu_pgsize_bitmap || !nr_page_bits)
++		BUG();
++
++	iommu_ops = ops;
++	iommu_pgsize_bitmap = pgsize_bitmap;
++	iommu_nr_page_bits = nr_page_bits;
++
++	/* find the minimum page size and its index only once */
++	iommu_min_page_idx = find_first_bit(pgsize_bitmap, nr_page_bits);
++	iommu_min_pagesz = 1 << iommu_min_page_idx;
++}
++
++/*
++ * default pagesize bitmap, will be removed once all IOMMU drivers
++ * are converted
++ */
++static unsigned long default_iommu_pgsizes = ~0xFFFUL;
++
+ void register_iommu(struct iommu_ops *ops)
+ {
+ 	if (iommu_ops)
+ 		BUG();
+ 
+ 	iommu_ops = ops;
++
++	/*
++	 * set default pgsize values, which retain the existing
++	 * IOMMU API behavior: drivers will be called to map
++	 * regions that are sized/aligned to order of 4KB pages
++	 */
++	iommu_pgsize_bitmap = &default_iommu_pgsizes;
++	iommu_nr_page_bits = BITS_PER_LONG;
++
++	/* find the minimum page size and its index only once */
++	iommu_min_page_idx = find_first_bit(iommu_pgsize_bitmap,
++						iommu_nr_page_bits);
++	iommu_min_pagesz = 1 << iommu_min_page_idx;
+ }
+ 
+ bool iommu_found(void)
+@@ -109,26 +169,104 @@ int iommu_domain_has_cap(struct iommu_domain *domain,
+ EXPORT_SYMBOL_GPL(iommu_domain_has_cap);
+ 
+ int iommu_map(struct iommu_domain *domain, unsigned long iova,
+-	      phys_addr_t paddr, int gfp_order, int prot)
++	      phys_addr_t paddr, size_t size, int prot)
+ {
+-	size_t size;
++	int ret = 0;
++
++	/*
++	 * both the virtual address and the physical one, as well as
++	 * the size of the mapping, must be aligned (at least) to the
++	 * size of the smallest page supported by the hardware
++	 */
++	if (!IS_ALIGNED(iova | paddr | size, iommu_min_pagesz)) {
++		pr_err("unaligned: iova 0x%lx pa 0x%lx size 0x%lx min_pagesz "
++			"0x%x\n", iova, (unsigned long)paddr,
++			(unsigned long)size, iommu_min_pagesz);
++		return -EINVAL;
++	}
++
++	pr_debug("map: iova 0x%lx pa 0x%lx size 0x%lx\n", iova,
++				(unsigned long)paddr, (unsigned long)size);
++
++	while (size) {
++		unsigned long pgsize = iommu_min_pagesz;
++		unsigned long idx = iommu_min_page_idx;
++		unsigned long addr_merge = iova | paddr;
++		int order;
++
++		/* find the max page size with which iova, paddr are aligned */
++		for (;;) {
++			unsigned long try_pgsize;
++
++			idx = find_next_bit(iommu_pgsize_bitmap,
++						iommu_nr_page_bits, idx + 1);
++
++			/* no more pages to check ? */
++			if (idx >= iommu_nr_page_bits)
++				break;
++
++			try_pgsize = 1 << idx;
+ 
+-	size         = 0x1000UL << gfp_order;
++			/* page too big ? addresses not aligned ? */
++			if (size < try_pgsize ||
++					!IS_ALIGNED(addr_merge, try_pgsize))
++				break;
+ 
+-	BUG_ON(!IS_ALIGNED(iova | paddr, size));
++			pgsize = try_pgsize;
++		}
+ 
+-	return iommu_ops->map(domain, iova, paddr, gfp_order, prot);
++		order = get_order(pgsize);
++
++		pr_debug("mapping: iova 0x%lx pa 0x%lx order %d\n", iova,
++					(unsigned long)paddr, order);
++
++		ret = iommu_ops->map(domain, iova, paddr, order, prot);
++		if (ret)
++			break;
++
++		size -= pgsize;
++		iova += pgsize;
++		paddr += pgsize;
++	}
++
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(iommu_map);
+ 
+-int iommu_unmap(struct iommu_domain *domain, unsigned long iova, int gfp_order)
++int iommu_unmap(struct iommu_domain *domain, unsigned long iova, size_t size)
+ {
+-	size_t size;
++	int order, unmapped_size, unmapped_order, total_unmapped = 0;
++
++	/*
++	 * The virtual address, as well as the size of the mapping, must be
++	 * aligned (at least) to the size of the smallest page supported
++	 * by the hardware
++	 */
++	if (!IS_ALIGNED(iova | size, iommu_min_pagesz)) {
++		pr_err("unaligned: iova 0x%lx size 0x%lx min_pagesz 0x%x\n",
++				iova, (unsigned long)size, iommu_min_pagesz);
++		return -EINVAL;
++	}
++
++	pr_debug("unmap this: iova 0x%lx size 0x%lx\n", iova,
++							(unsigned long)size);
++
++	while (size > total_unmapped) {
++		order = get_order(size - total_unmapped);
++
++		unmapped_order = iommu_ops->unmap(domain, iova, order);
++		if (unmapped_order < 0)
++			return unmapped_order;
++
++		pr_debug("unmapped: iova 0x%lx order %d\n", iova,
++							unmapped_order);
+ 
+-	size         = 0x1000UL << gfp_order;
++		unmapped_size = 0x1000UL << unmapped_order;
+ 
+-	BUG_ON(!IS_ALIGNED(iova, size));
++		iova += unmapped_size;
++		total_unmapped += unmapped_size;
++	}
+ 
+-	return iommu_ops->unmap(domain, iova, gfp_order);
++	return get_order(total_unmapped);
+ }
+ EXPORT_SYMBOL_GPL(iommu_unmap);
+diff --git a/drivers/iommu/omap-iovmm.c b/drivers/iommu/omap-iovmm.c
+index e8fdb88..f4dea5a 100644
+--- a/drivers/iommu/omap-iovmm.c
++++ b/drivers/iommu/omap-iovmm.c
+@@ -409,7 +409,6 @@ static int map_iovm_area(struct iommu_domain *domain, struct iovm_struct *new,
+ 	unsigned int i, j;
+ 	struct scatterlist *sg;
+ 	u32 da = new->da_start;
+-	int order;
+ 
+ 	if (!domain || !sgt)
+ 		return -EINVAL;
+@@ -428,12 +427,10 @@ static int map_iovm_area(struct iommu_domain *domain, struct iovm_struct *new,
+ 		if (bytes_to_iopgsz(bytes) < 0)
+ 			goto err_out;
+ 
+-		order = get_order(bytes);
+-
+ 		pr_debug("%s: [%d] %08x %08x(%x)\n", __func__,
+ 			 i, da, pa, bytes);
+ 
+-		err = iommu_map(domain, da, pa, order, flags);
++		err = iommu_map(domain, da, pa, bytes, flags);
+ 		if (err)
+ 			goto err_out;
+ 
+@@ -448,10 +445,9 @@ err_out:
+ 		size_t bytes;
+ 
+ 		bytes = sg->length + sg->offset;
+-		order = get_order(bytes);
+ 
+ 		/* ignore failures.. we're already handling one */
+-		iommu_unmap(domain, da, order);
++		iommu_unmap(domain, da, bytes);
+ 
+ 		da += bytes;
+ 	}
+@@ -474,12 +470,10 @@ static void unmap_iovm_area(struct iommu_domain *domain, struct omap_iommu *obj,
+ 	start = area->da_start;
+ 	for_each_sg(sgt->sgl, sg, sgt->nents, i) {
+ 		size_t bytes;
+-		int order;
+ 
+ 		bytes = sg->length + sg->offset;
+-		order = get_order(bytes);
+ 
+-		err = iommu_unmap(domain, start, order);
++		err = iommu_unmap(domain, start, bytes);
+ 		if (err < 0)
+ 			break;
+ 
+diff --git a/include/linux/iommu.h b/include/linux/iommu.h
+index d084e87..1806956 100644
+--- a/include/linux/iommu.h
++++ b/include/linux/iommu.h
+@@ -61,6 +61,8 @@ struct iommu_ops {
+ #ifdef CONFIG_IOMMU_API
+ 
+ extern void register_iommu(struct iommu_ops *ops);
++extern void register_iommu_pgsize(struct iommu_ops *ops,
++		unsigned long *pgsize_bitmap, unsigned int nr_page_bits);
+ extern bool iommu_found(void);
+ extern struct iommu_domain *iommu_domain_alloc(void);
+ extern void iommu_domain_free(struct iommu_domain *domain);
+@@ -69,9 +71,9 @@ extern int iommu_attach_device(struct iommu_domain *domain,
+ extern void iommu_detach_device(struct iommu_domain *domain,
+ 				struct device *dev);
+ extern int iommu_map(struct iommu_domain *domain, unsigned long iova,
+-		     phys_addr_t paddr, int gfp_order, int prot);
++		     phys_addr_t paddr, size_t size, int prot);
+ extern int iommu_unmap(struct iommu_domain *domain, unsigned long iova,
+-		       int gfp_order);
++		       size_t size);
+ extern phys_addr_t iommu_iova_to_phys(struct iommu_domain *domain,
+ 				      unsigned long iova);
+ extern int iommu_domain_has_cap(struct iommu_domain *domain,
+diff --git a/virt/kvm/iommu.c b/virt/kvm/iommu.c
+index 78c80f6..ea142d3 100644
+--- a/virt/kvm/iommu.c
++++ b/virt/kvm/iommu.c
+@@ -111,7 +111,7 @@ int kvm_iommu_map_pages(struct kvm *kvm, struct kvm_memory_slot *slot)
+ 
+ 		/* Map into IO address space */
+ 		r = iommu_map(domain, gfn_to_gpa(gfn), pfn_to_hpa(pfn),
+-			      get_order(page_size), flags);
++			      page_size, flags);
+ 		if (r) {
+ 			printk(KERN_ERR "kvm_iommu_map_address:"
+ 			       "iommu failed to map pfn=%llx\n", pfn);
+@@ -293,7 +293,7 @@ static void kvm_iommu_put_pages(struct kvm *kvm,
+ 		pfn  = phys >> PAGE_SHIFT;
+ 
+ 		/* Unmap address from IO address space */
+-		order       = iommu_unmap(domain, gfn_to_gpa(gfn), 0);
++		order       = iommu_unmap(domain, gfn_to_gpa(gfn), PAGE_SIZE);
+ 		unmap_pages = 1ULL << order;
+ 
+ 		/* Unpin all pages we just unmapped to not leak any memory */
+-- 
+1.7.4.1
 
