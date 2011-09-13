@@ -1,52 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751777Ab1IMJvX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 05:51:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43332 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751308Ab1IMJvW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 05:51:22 -0400
-Message-ID: <4E6F2790.4020602@redhat.com>
-Date: Tue, 13 Sep 2011 12:51:12 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
+	id S1751886Ab1IMKC0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 06:02:26 -0400
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:50448
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751626Ab1IMKCY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 06:02:24 -0400
+X-SpamScore: -21
+X-BigFish: VPS-21(zz9371K1432N98dKzz1202hzz15d4R8275bhz32i668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LRGH67-01-030-02
+X-M-MSG: 
+Date: Tue, 13 Sep 2011 12:00:34 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Hiroshi DOYU <Hiroshi.DOYU@nokia.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        David Brown <davidb@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] iommu/core: add fault reporting mechanism
+Message-ID: <20110913100034.GJ11701@amd.com>
+References: <1315421604-12286-1-git-send-email-ohad@wizery.com>
+ <20110912160252.GE11701@amd.com>
+ <CAK=WgbZCDsBk+dueKfAX3ewsvqEnVDN+jW_ftW+BDKnayunOwA@mail.gmail.com>
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v3 01/11] KVM: MMU: avoid pte_list_desc running out in
- kvm_mmu_pte_write
-References: <4E5C4C20.3000403@cn.fujitsu.com>
-In-Reply-To: <4E5C4C20.3000403@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CAK=WgbZCDsBk+dueKfAX3ewsvqEnVDN+jW_ftW+BDKnayunOwA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/30/2011 05:34 AM, Xiao Guangrong wrote:
-> kvm_mmu_pte_write is unsafe since we need to alloc pte_list_desc in the
-> function when spte is prefetched, unfortunately, we can not know how many
-> spte need to be prefetched on this path, that means we can use out of the
-> free  pte_list_desc object in the cache, and BUG_ON() is triggered, also some
-> path does not fill the cache, such as INS instruction emulated that does not
-> trigger page fault
->
-> @@ -3716,10 +3735,6 @@ int kvm_mmu_page_fault(struct kvm_vcpu *vcpu, gva_t cr2, u32 error_code,
->   		goto out;
->   	}
->
-> -	r = mmu_topup_memory_caches(vcpu);
-> -	if (r)
-> -		goto out;
-> -
->   	er = x86_emulate_instruction(vcpu, cr2, 0, insn, insn_len);
->
+On Mon, Sep 12, 2011 at 12:21:13PM -0400, Ohad Ben-Cohen wrote:
+> On Mon, Sep 12, 2011 at 7:02 PM, Roedel, Joerg <Joerg.Roedel@amd.com> wrote:
+> > I still don't get the need for this. It would make sense to encode
+> > different types of faults, like page-faults or interrupt-faults.
+> 
+> Right.
+> 
+> > When I read the comment above it sounds more like you want to encode
+> > different error-levels, like recoverable and unrecoverable error.
+> > The exact meaning of these values need to be clarified.
+> 
+> Well, we currently only need to say "something bad has happened".
+> 
+> We don't need at this point to tell whether it's a hardware bug,
+> inconsistent data, missing page-table entries or whatnot, because we
+> don't expect the user (or the iommu core itself) to do anything about
+> it. Not that it's not possible though: a valid response one day would
+> be to fix the page-table or add a missing TLB (depending on the mode
+> the hardware is configured to) but this is not (yet?) implemented. So
+> a "general unrecoverable error" is enough at this point, but it's
+> certainly makes sense to allow drivers to provide additional types of
+> errors/faults - once they are implemented.
 
-Suppose we are out of memory, can't this get us in an endless loop?
+But besides real faults all this can be handled in the iommu-driver
+itself, right? So there is no need to communicate other errors than
+page-faults up to the driver.
 
-return -ENOMEM breaks as out (and kills the guest, likely).
+For now I think it is the best to remove this IOMMU_ERROR thing. It is
+inherent to the function call already. When a real use-case comes up we
+can easily add it later.
+
+	Joerg
 
 -- 
-error compiling committee.c: too many arguments to function
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
