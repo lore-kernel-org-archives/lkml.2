@@ -1,49 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752172Ab1IMAY0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 20:24:26 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:32879 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752013Ab1IMAYW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 20:24:22 -0400
-Date: Mon, 12 Sep 2011 17:24:19 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Temporary -rcu tree location
-Message-ID: <20110913002419.GN2362@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110913000107.GA15945@linux.vnet.ibm.com>
- <alpine.LRH.2.00.1109130210090.19238@twin.jikos.cz>
+	id S1752327Ab1IMA3M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 20:29:12 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:35682 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752044Ab1IMA3I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Sep 2011 20:29:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.00.1109130210090.19238@twin.jikos.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+From: Greg Lee <glee@swspec.com>
+Date: Mon, 12 Sep 2011 20:28:46 -0400
+X-Google-Sender-Auth: MngF9zaEYcEEoGW4NDAY8ukBe5Y
+Message-ID: <CADB-PD3bJEHPTa8RXP-RjHZHsFXyFUVosOPh7kUgUEWOQDr3qA@mail.gmail.com>
+Subject: [PATCH v2] Add WDIOC_GETTIMELEFT ioctl support to w83627 watchdog driver
+To: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
+        P@draigbrady.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 13, 2011 at 02:11:05AM +0200, Jiri Kosina wrote:
-> On Mon, 12 Sep 2011, Paul E. McKenney wrote:
-> 
-> > PS.  If someone knows how to make github delete a branch, please let me
-> >      know, as this would allow me to use the "rcu/next" nomenclature.
-> >      Yes, it is probably obvious, but I am new to github...
-> 
-> git push origin :branch should work everywhere, right?
+Add WDIOC_GETTIMELEFT ioctl allowing you to check how much time is left
+on the watchdog counter before a reset occurs.  A few additional
+naming clean-ups
+requested by Padraig Brady as well.
 
-Here is what happens when I try that:
+Signed-off-by: Greg Lee <glee [at] swspec.com>
+---
+--- linux-3.1-rc5.orig/drivers/watchdog/w83627hf_wdt.c
++++ linux-3.1-rc5.mine/drivers/watchdog/w83627hf_wdt.c
+@@ -142,7 +142,7 @@ static void w83627hf_init(void)
+ 	w83627hf_unselect_wd_register();
+ }
 
-	git push github :rcu/next
-	Username: 
-	Password: 
-	error: unable to push to unqualified destination: rcu/next
-	The destination refspec neither matches an existing ref on the remote nor
-	begins with refs/, and we are unable to guess a prefix based on the source ref.
-	error: failed to push some refs to 'https://github.com/paulmckrcu/linux'
+-static void wdt_ctrl(int timeout)
++static void wdt_set_time(int timeout)
+ {
+ 	spin_lock(&io_lock);
 
-So what am I missing here?
+@@ -158,13 +158,13 @@ static void wdt_ctrl(int timeout)
 
-							Thanx, Paul
+ static int wdt_ping(void)
+ {
+-	wdt_ctrl(timeout);
++	wdt_set_time(timeout);
+ 	return 0;
+ }
+
+ static int wdt_disable(void)
+ {
+-	wdt_ctrl(0);
++	wdt_set_time(0);
+ 	return 0;
+ }
+
+@@ -176,6 +176,24 @@ static int wdt_set_heartbeat(int t)
+ 	return 0;
+ }
+
++static int wdt_get_time(void)
++{
++	int timeleft;
++
++	spin_lock(&io_lock);
++
++	w83627hf_select_wd_register();
++
++	outb_p(0xF6, WDT_EFER);    /* Select CRF6 */
++	timeleft = inb_p(WDT_EFDR); /* Read Timeout counter to CRF6 */
++
++	w83627hf_unselect_wd_register();
++
++	spin_unlock(&io_lock);
++
++	return timeleft;
++}
++
+ static ssize_t wdt_write(struct file *file, const char __user *buf,
+ 						size_t count, loff_t *ppos)
+ {
+@@ -202,7 +220,7 @@ static long wdt_ioctl(struct file *file,
+ {
+ 	void __user *argp = (void __user *)arg;
+ 	int __user *p = argp;
+-	int new_timeout;
++	int timeval;
+ 	static const struct watchdog_info ident = {
+ 		.options = WDIOF_KEEPALIVEPING | WDIOF_SETTIMEOUT |
+ 							WDIOF_MAGICCLOSE,
+@@ -238,14 +256,17 @@ static long wdt_ioctl(struct file *file,
+ 		wdt_ping();
+ 		break;
+ 	case WDIOC_SETTIMEOUT:
+-		if (get_user(new_timeout, p))
++		if (get_user(timeval, p))
+ 			return -EFAULT;
+-		if (wdt_set_heartbeat(new_timeout))
++		if (wdt_set_heartbeat(timeval))
+ 			return -EINVAL;
+ 		wdt_ping();
+ 		/* Fall */
+ 	case WDIOC_GETTIMEOUT:
+ 		return put_user(timeout, p);
++	case WDIOC_GETTIMELEFT:
++		timeval = wdt_get_time();
++		return put_user(timeval, p);
+ 	default:
+ 		return -ENOTTY;
+ 	}
