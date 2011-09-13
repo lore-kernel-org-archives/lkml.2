@@ -1,77 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932784Ab1IMVAT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 17:00:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36796 "EHLO mx1.redhat.com"
+	id S932715Ab1IMU7H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 16:59:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1923 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932731Ab1IMU7J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 16:59:09 -0400
+	id S932649Ab1IMU7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 16:59:05 -0400
 From: Don Zickus <dzickus@redhat.com>
 To: <x86@kernel.org>, Andi Kleen <andi@firstfloor.org>,
         Robert Richter <robert.richter@amd.com>,
         Peter Zijlstra <peterz@infradead.org>, ying.huang@intel.com
 Cc: LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
         avi@redhat.com, jeremy@goop.org, Don Zickus <dzickus@redhat.com>
-Subject: [V4][PATCH 0/6] x86, nmi: new NMI handling routines
-Date: Tue, 13 Sep 2011 16:58:23 -0400
-Message-Id: <1315947509-6429-1-git-send-email-dzickus@redhat.com>
+Subject: [V4][PATCH 4/6] x86, nmi:  add in logic to handle multiple events and unknown NMIs
+Date: Tue, 13 Sep 2011 16:58:27 -0400
+Message-Id: <1315947509-6429-5-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1315947509-6429-1-git-send-email-dzickus@redhat.com>
+References: <1315947509-6429-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I had the pleasure of hosting Robert Richter this week at Red Hat.  One of
-the issues he wanted to talk with me about was having the NMI handling 
-routines execute all the NMI handlers for each NMI mainly for his AMD IBS
-work.  But he also brought up another good point that because of the way NMIs
-work, it is possible to lose them if multiple NMIs happen at the same time.
+Previous patches allow the NMI subsystem to process multipe NMI events
+in one NMI.  As previously discussed this can cause issues when an event
+triggered another NMI but is processed in the current NMI.  This causes the
+next NMI to go unprocessed and become an 'unknown' NMI.
 
-As a result, we sat around and discussed how we could go about executing
-all the nmi handlers for each NMI to ensure that we would not lose any events.
+To handle this, we first have to flag whether or not the NMI handler handled
+more than one event or not.  If it did, then there exists a chance that
+the next NMI might be already processed.  Once the NMI is flagged as a
+candidate to be swallowed, we next look for a back-to-back NMI condition.
 
-We decided the best way to do this would be to have the NMI handlers break
-away from the notifier routines and create our own.  This would allow us to
-execute all the handlers without hacking up the notifier stuff and easily
-track the number of events processed at a higher level to deal with the new
-problemm of extra NMIs.
+This is determined by looking at the %rip from pt_regs.  If it is the same
+as the previous NMI, it is assumed the cpu did not have a chance to jump
+back into a non-NMI context and execute code and instead handled another NMI.
 
-I spent some time hacking and came up with this patch.  I tested it on my
-core2quad machine trying to enable all the NMI handler I could, mainly
-perf and kgdb (and oprofile too when perf was disabled).  Everything seems
-to work correctly.  If people are ok with this approach, I'll try and test
-this on more machines.
+If both of those conditions are true then we will swallow any unknown NMI.
 
-More details about the patch are in the individual changelogs.
+There still exists a chance that we accidentally swallow a real unknown NMI,
+but for now things seem better.
 
-Don Zickus (6):
-  x86, nmi: split out nmi from traps.c
-  x86, nmi: create new NMI handler routines
-  x86, nmi: wire up NMI handlers to new routines
-  x86, nmi:  add in logic to handle multiple events and unknown NMIs
-  x86, nmi: track NMI usage stats
-  x86, nmi: print out NMI stats in /proc/interrupts
+V2:
+  - forgot to add the 'read' code for swallow_nmi (went into next patch)
 
- arch/x86/include/asm/nmi.h              |   39 ++--
- arch/x86/include/asm/reboot.h           |    2 +-
- arch/x86/kernel/Makefile                |    2 +-
- arch/x86/kernel/apic/hw_nmi.c           |   27 +--
- arch/x86/kernel/apic/x2apic_uv_x.c      |   20 +-
- arch/x86/kernel/cpu/mcheck/mce-inject.c |   20 +-
- arch/x86/kernel/cpu/mcheck/mce.c        |    3 -
- arch/x86/kernel/cpu/perf_event.c        |   60 +----
- arch/x86/kernel/crash.c                 |    5 +-
- arch/x86/kernel/irq.c                   |    2 +
- arch/x86/kernel/kgdb.c                  |   60 +++-
- arch/x86/kernel/nmi.c                   |  473 +++++++++++++++++++++++++++++++
- arch/x86/kernel/reboot.c                |   23 +-
- arch/x86/kernel/traps.c                 |  155 ----------
- arch/x86/oprofile/nmi_int.c             |   40 +--
- arch/x86/oprofile/nmi_timer_int.c       |   28 +--
- drivers/acpi/apei/ghes.c                |   22 +-
- drivers/char/ipmi/ipmi_watchdog.c       |   32 +--
- drivers/watchdog/hpwdt.c                |   23 +--
- 19 files changed, 613 insertions(+), 423 deletions(-)
- create mode 100644 arch/x86/kernel/nmi.c
+V3:
+  - redesigned the algorithm to utilize Avi's idea of detecting a back-to-back
+    NMI with %rip.
 
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+
+better b2b nmi handling
+---
+ arch/x86/kernel/nmi.c |   80 +++++++++++++++++++++++++++++++++++++++++++++---
+ 1 files changed, 75 insertions(+), 5 deletions(-)
+
+diff --git a/arch/x86/kernel/nmi.c b/arch/x86/kernel/nmi.c
+index acd61e8..b741c34 100644
+--- a/arch/x86/kernel/nmi.c
++++ b/arch/x86/kernel/nmi.c
+@@ -66,7 +66,7 @@ __setup("unknown_nmi_panic", setup_unknown_nmi_panic);
+ 
+ #define nmi_to_desc(type) (&nmi_desc[type])
+ 
+-static int notrace __kprobes nmi_handle(unsigned int type, struct pt_regs *regs)
++static int notrace __kprobes nmi_handle(unsigned int type, struct pt_regs *regs, bool b2b)
+ {
+ 	struct nmi_desc *desc = nmi_to_desc(type);
+ 	struct nmiaction *next_a, *a, **ap = &desc->head;
+@@ -87,6 +87,16 @@ static int notrace __kprobes nmi_handle(unsigned int type, struct pt_regs *regs)
+ 
+ 		handled += a->handler(type, regs);
+ 
++		/*
++ 		 * Optimization: only loop once if this is not a 
++ 		 * back-to-back NMI.  The idea is nothing is dropped
++ 		 * on the first NMI, only on the second of a back-to-back
++ 		 * NMI.  No need to waste cycles going through all the
++ 		 * handlers.
++ 		 */
++		if (!b2b && handled)
++			break;
++
+ 		a = next_a;
+ 	}
+ 	rcu_read_unlock();
+@@ -255,7 +265,13 @@ unknown_nmi_error(unsigned char reason, struct pt_regs *regs)
+ {
+ 	int handled;
+ 
+-	handled = nmi_handle(NMI_UNKNOWN, regs);
++	/*
++	 * Use 'false' as back-to-back NMIs are dealt with one level up.
++	 * Of course this makes having multiple 'unknown' handlers useless
++	 * as only the first one is ever run (unless it can actually determine
++	 * if it caused the NMI)
++	 */
++	handled = nmi_handle(NMI_UNKNOWN, regs, false);
+ 	if (handled) 
+ 		return;
+ #ifdef CONFIG_MCA
+@@ -278,19 +294,49 @@ unknown_nmi_error(unsigned char reason, struct pt_regs *regs)
+ 	pr_emerg("Dazed and confused, but trying to continue\n");
+ }
+ 
++DEFINE_PER_CPU(bool, swallow_nmi);
++DEFINE_PER_CPU(unsigned long, save_rip);
++
+ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
+ {
+ 	unsigned char reason = 0;
+ 	int handled;
++	bool b2b = false;
+ 
+ 	/*
+ 	 * CPU-specific NMI must be processed before non-CPU-specific
+ 	 * NMI, otherwise we may lose it, because the CPU-specific
+ 	 * NMI can not be detected/processed on other CPUs.
+ 	 */
+-	handled = nmi_handle(NMI_LOCAL, regs);
+-	if (handled)
++
++	/*
++	 * Back-to-back NMIs are interesting because they can either
++	 * be two NMI or more than two NMIs (any thing over two is dropped
++	 * due to NMI being edge-triggered).  If this is the second half
++	 * of the back-to-back NMI, assume we dropped things and process
++	 * more handlers.  Otherwise reset the 'swallow' NMI behaviour
++	 */
++	if (regs->ip == __this_cpu_read(save_rip))
++		b2b = true;
++	else
++		__this_cpu_write(swallow_nmi, false);
++
++	__this_cpu_write(save_rip, regs->ip);
++
++	handled = nmi_handle(NMI_LOCAL, regs, b2b);
++	if (handled) {
++		/*
++ 		 * There are cases when a NMI handler handles multiple
++ 		 * events in the current NMI.  One of these events may
++ 		 * be queued for in the next NMI.  Because the event is
++ 		 * already handled, the next NMI will result in an unknown
++ 		 * NMI.  Instead lets flag this for a potential NMI to
++ 		 * swallow.
++		 */
++		if (handled > 1)
++			__this_cpu_write(swallow_nmi, true);
+ 		return;
++	}
+ 
+ 	/* Non-CPU-specific NMI: NMI sources can be processed on any CPU */
+ 	raw_spin_lock(&nmi_reason_lock);
+@@ -313,7 +359,31 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
+ 	}
+ 	raw_spin_unlock(&nmi_reason_lock);
+ 
+-	unknown_nmi_error(reason, regs);
++	/*
++	 * Only one NMI can be latched at a time.  To handle
++	 * this we may process multiple nmi handlers at once to
++	 * cover the case where an NMI is dropped.  The downside
++	 * to this approach is we may process an NMI prematurely,
++	 * while its real NMI is sitting latched.  This will cause
++	 * an unknown NMI on the next run of the NMI processing.
++	 * 
++	 * We tried to flag that condition above, by setting the
++	 * swallow_nmi flag when we process more than one event.
++	 * This condition is also only present on the second half
++	 * of a back-to-back NMI, so we flag that condition too.
++	 *
++	 * If both are true, we assume we already processed this
++	 * NMI previously and we swallow it.  Otherwise we reset
++	 * the logic.
++	 *
++	 * I am sure there are scenarios where we accidentally
++	 * swallow a real 'unknown' NMI.  But this is the best
++	 * we can do for now.
++	 */
++	if (b2b && __this_cpu_read(swallow_nmi))
++		;
++	else
++		unknown_nmi_error(reason, regs);
+ }
+ 
+ dotraplinkage notrace __kprobes void
 -- 
 1.7.6
 
