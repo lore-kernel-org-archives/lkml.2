@@ -1,334 +1,257 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933058Ab1IMXGY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 19:06:24 -0400
-Received: from nm5-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.204]:45008 "HELO
-	nm5-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932988Ab1IMXGN (ORCPT
+	id S933068Ab1IMXH3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 19:07:29 -0400
+Received: from gate.crashing.org ([63.228.1.57]:58302 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932988Ab1IMXH2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 19:06:13 -0400
-X-Yahoo-Newman-Id: 514823.60896.bm@omp1008.mail.sp2.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: juKpSIYVM1kck6PaKdaul70pTZaaV8ISY6nRbilmil2QH1o
- .bS53IiSA3odfrunNU4tq6OorKZwDplqh.lzBlVbLdlmJ6Fb9E_soUP.4289
- iZkkef60vUkoVHqV5Y438PuFKOQybeFQD8r_rAOtEqv5_iOIXNG2w1fY5tkW
- 3FLnMFfpqslXxr32CwnMiKqEAgf5IiYJwJ5T_lrNXogkRE.ZnRCdSBd2eBSd
- fa_TS_MjBvBonLajwJO2L3KueGYBiEr18Tpzof3bvyPXbn4kr_iisO6ZI6Rr
- SjNPziwKK5DfAJjq4KkSKh_ose7In7n2V7pmAwwjP3ir7HWxg0dQdMBkn3Oh
- rtF8fgwS4j8zD9gDC65vzRaO6ZS6GHBojPEKAzMHD_AlOp4hDvVmVlQm9lbE
- 1oiqTU1e85Ywc6NrOWgks7kbTd2RHCz7brUmZkJ28Cy6af1lo.h93g5Apr9n
- GmCWsH63zfMCrh__2NwxhpbQGS07SJFdNuIx9b3Xxm9kKB.uCXsHT54hN9kH
- YAuZR
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-Message-ID: <4E6FE1A4.7080907@schaufler-ca.com>
-Date: Tue, 13 Sep 2011 16:05:08 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
-CC: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [PATCH] Smack: check permissions from user space
-References: <1314596111-2781-1-git-send-email-jarkko.sakkinen@intel.com>
-In-Reply-To: <1314596111-2781-1-git-send-email-jarkko.sakkinen@intel.com>
-X-Enigmail-Version: 1.3.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 13 Sep 2011 19:07:28 -0400
+Subject: Re: [PATCH 2/3] netdev/of/phy: Add MDIO bus multiplexer support.
+Mime-Version: 1.0 (Apple Message framework v1244.3)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <1314820906-14004-3-git-send-email-david.daney@cavium.com>
+Date: Tue, 13 Sep 2011 18:07:09 -0500
+Cc: linux-mips@linux-mips.org, ralf@linux-mips.org,
+        devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <129FAAB3-C9AD-43F6-A8CB-96548A47C4DC@kernel.crashing.org>
+References: <1314820906-14004-1-git-send-email-david.daney@cavium.com> <1314820906-14004-3-git-send-email-david.daney@cavium.com>
+To: David Daney <david.daney@cavium.com>
+X-Mailer: Apple Mail (2.1244.3)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/28/2011 10:35 PM, Jarkko Sakkinen wrote:
-> Adds a new file into SmackFS called 'access'. Wanted
-> Smack permission is written into /smack/access.
-> After that result can be read from the opened file.
-> If access applies result contains 1 and otherwise
-> 0. File access is protected from race conditions
-> by using simple_transaction_get()/set() API.
 
-Applied to git://gitorious.org/smack-next/kernel.git
-
->
-> Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
-> ---
->  security/smack/smack.h   |    1 +
->  security/smack/smackfs.c |  181 ++++++++++++++++++++++++++++++----------------
->  2 files changed, 119 insertions(+), 63 deletions(-)
->
-> diff --git a/security/smack/smack.h b/security/smack/smack.h
-> index 2b6c6a5..82c5a30 100644
-> --- a/security/smack/smack.h
-> +++ b/security/smack/smack.h
-> @@ -189,6 +189,7 @@ struct smk_audit_info {
->  	struct common_audit_data a;
->  #endif
->  };
+> diff --git a/Documentation/devicetree/bindings/net/mdio-mux.txt b/Documentation/devicetree/bindings/net/mdio-mux.txt
+> new file mode 100644
+> index 0000000..a908312
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/net/mdio-mux.txt
+> @@ -0,0 +1,132 @@
+> +Common MDIO bus multiplexer/switch properties.
 > +
->  /*
->   * These functions are in smack_lsm.c
->   */
-> diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
-> index f934601..5a87075 100644
-> --- a/security/smack/smackfs.c
-> +++ b/security/smack/smackfs.c
-> @@ -27,6 +27,7 @@
->  #include <linux/seq_file.h>
->  #include <linux/ctype.h>
->  #include <linux/audit.h>
-> +#include <linux/smack.h>
->  #include "smack.h"
->  
->  /*
-> @@ -44,6 +45,7 @@ enum smk_inos {
->  	SMK_ONLYCAP	= 9,	/* the only "capable" label */
->  	SMK_LOGGING	= 10,	/* logging */
->  	SMK_LOAD_SELF	= 11,	/* task specific rules */
-> +	SMK_ACCESSES	= 12,	/* access policy */
->  };
->  
->  /*
-> @@ -176,71 +178,19 @@ static int smk_set_access(struct smack_rule *srp, struct list_head *rule_list,
->  }
->  
->  /**
-> - * smk_write_load_list - write() for any /smack/load
-> - * @file: file pointer, not actually used
-> - * @buf: where to get the data from
-> - * @count: bytes sent
-> - * @ppos: where to start - must be 0
-> - * @rule_list: the list of rules to write to
-> - * @rule_lock: lock for the rule list
-> - *
-> - * Get one smack access rule from above.
-> - * The format is exactly:
-> - *     char subject[SMK_LABELLEN]
-> - *     char object[SMK_LABELLEN]
-> - *     char access[SMK_ACCESSLEN]
-> - *
-> - * writes must be SMK_LABELLEN+SMK_LABELLEN+SMK_ACCESSLEN bytes.
-> + * smk_parse_rule - parse subject, object and access type
-> + * @data: string to be parsed whose size is SMK_LOADLEN
-> + * @rule: parsed entities are stored in here
->   */
-> -static ssize_t smk_write_load_list(struct file *file, const char __user *buf,
-> -				size_t count, loff_t *ppos,
-> -				struct list_head *rule_list,
-> -				struct mutex *rule_lock)
-> +static int smk_parse_rule(const char *data, struct smack_rule *rule)
->  {
-> -	struct smack_rule *rule;
-> -	char *data;
-> -	int rc = -EINVAL;
-> -
-> -	/*
-> -	 * No partial writes.
-> -	 * Enough data must be present.
-> -	 */
-> -	if (*ppos != 0)
-> -		return -EINVAL;
-> -	/*
-> -	 * Minor hack for backward compatibility
-> -	 */
-> -	if (count < (SMK_OLOADLEN) || count > SMK_LOADLEN)
-> -		return -EINVAL;
-> -
-> -	data = kzalloc(SMK_LOADLEN, GFP_KERNEL);
-> -	if (data == NULL)
-> -		return -ENOMEM;
-> -
-> -	if (copy_from_user(data, buf, count) != 0) {
-> -		rc = -EFAULT;
-> -		goto out;
-> -	}
-> -
-> -	/*
-> -	 * More on the minor hack for backward compatibility
-> -	 */
-> -	if (count == (SMK_OLOADLEN))
-> -		data[SMK_OLOADLEN] = '-';
-> -
-> -	rule = kzalloc(sizeof(*rule), GFP_KERNEL);
-> -	if (rule == NULL) {
-> -		rc = -ENOMEM;
-> -		goto out;
-> -	}
-> -
->  	rule->smk_subject = smk_import(data, 0);
->  	if (rule->smk_subject == NULL)
-> -		goto out_free_rule;
-> +		return -1;
->  
->  	rule->smk_object = smk_import(data + SMK_LABELLEN, 0);
->  	if (rule->smk_object == NULL)
-> -		goto out_free_rule;
-> +		return -1;
->  
->  	rule->smk_access = 0;
->  
-> @@ -252,7 +202,7 @@ static ssize_t smk_write_load_list(struct file *file, const char __user *buf,
->  		rule->smk_access |= MAY_READ;
->  		break;
->  	default:
-> -		goto out_free_rule;
-> +		return -1;
->  	}
->  
->  	switch (data[SMK_LABELLEN + SMK_LABELLEN + 1]) {
-> @@ -263,7 +213,7 @@ static ssize_t smk_write_load_list(struct file *file, const char __user *buf,
->  		rule->smk_access |= MAY_WRITE;
->  		break;
->  	default:
-> -		goto out_free_rule;
-> +		return -1;
->  	}
->  
->  	switch (data[SMK_LABELLEN + SMK_LABELLEN + 2]) {
-> @@ -274,7 +224,7 @@ static ssize_t smk_write_load_list(struct file *file, const char __user *buf,
->  		rule->smk_access |= MAY_EXEC;
->  		break;
->  	default:
-> -		goto out_free_rule;
-> +		return -1;
->  	}
->  
->  	switch (data[SMK_LABELLEN + SMK_LABELLEN + 3]) {
-> @@ -285,7 +235,7 @@ static ssize_t smk_write_load_list(struct file *file, const char __user *buf,
->  		rule->smk_access |= MAY_APPEND;
->  		break;
->  	default:
-> -		goto out_free_rule;
-> +		return -1;
->  	}
->  
->  	switch (data[SMK_LABELLEN + SMK_LABELLEN + 4]) {
-> @@ -296,9 +246,74 @@ static ssize_t smk_write_load_list(struct file *file, const char __user *buf,
->  		rule->smk_access |= MAY_TRANSMUTE;
->  		break;
->  	default:
-> -		goto out_free_rule;
-> +		return -1;
->  	}
->  
+> +An MDIO bus multiplexer/switch will have several child busses that are
+> +numbered uniquely in a device dependent manner.  The nodes for an MDIO
+> +bus multiplexer/switch will have one child node for each child bus.
+> +
+> +Required properties:
+> +- parent-bus : phandle to the parent MDIO bus.
+
+Should probably be mdio-parent-bus
+
+> +
+> +Optional properties:
+> +- Other properties specific to the multiplexer/switch hardware.
+> +
+> +Required properties for child nodes:
+> +- #address-cells = <1>;
+> +- #size-cells = <0>;
+> +- cell-index : The sub-bus number.
+
+What does sub-bus number mean?
+
+> +
+> +
+> +Example :
+
+[snip]
+
+> diff --git a/drivers/net/phy/mdio-mux.c b/drivers/net/phy/mdio-mux.c
+> new file mode 100644
+> index 0000000..f9c5826
+> --- /dev/null
+> +++ b/drivers/net/phy/mdio-mux.c
+> @@ -0,0 +1,182 @@
+> +/*
+> + * This file is subject to the terms and conditions of the GNU General Public
+> + * License.  See the file "COPYING" in the main directory of this archive
+> + * for more details.
+> + *
+> + * Copyright (C) 2011 Cavium Networks
+> + */
+> +
+> +#include <linux/platform_device.h>
+> +#include <linux/of_mdio.h>
+> +#include <linux/module.h>
+> +#include <linux/init.h>
+> +#include <linux/gfp.h>
+> +#include <linux/phy.h>
+> +#include <linux/mdio-mux.h>
+> +
+> +#define DRV_VERSION "1.0"
+> +#define DRV_DESCRIPTION "MDIO bus multiplexer driver"
+> +
+> +struct mdio_mux_parent_bus {
+> +	struct mii_bus *mii_bus;
+> +	int current_child;
+> +	int parent_id;
+> +	void *switch_data;
+> +	int (*switch_fn)(int current_child, int desired_child, void *data);
+> +};
+> +
+> +struct mdio_mux_child_bus {
+> +	struct mii_bus *mii_bus;
+> +	struct mdio_mux_parent_bus *parent;
+> +	int bus_number;
+> +	int phy_irq[PHY_MAX_ADDR];
+> +};
+> +
+> +/*
+> + * The parent bus' lock is used to order access to the switch_fn.
+> + */
+> +static int mdio_mux_read(struct mii_bus *bus, int phy_id, int regnum)
+> +{
+> +	struct mdio_mux_child_bus *cb = bus->priv;
+> +	struct mdio_mux_parent_bus *pb = cb->parent;
+> +	int r;
+> +
+> +	mutex_lock(&pb->mii_bus->mdio_lock);
+> +	r = pb->switch_fn(pb->current_child, cb->bus_number, pb->switch_data);
+> +	if (r)
+> +		goto out;
+> +
+> +	pb->current_child = cb->bus_number;
+> +
+> +	r = pb->mii_bus->read(pb->mii_bus, phy_id, regnum);
+> +out:
+> +	mutex_unlock(&pb->mii_bus->mdio_lock);
+> +
+> +	return r;
+> +}
+> +
+> +/*
+> + * The parent bus' lock is used to order access to the switch_fn.
+> + */
+> +static int mdio_mux_write(struct mii_bus *bus, int phy_id,
+> +			  int regnum, u16 val)
+> +{
+> +	struct mdio_mux_child_bus *cb = bus->priv;
+> +	struct mdio_mux_parent_bus *pb = cb->parent;
+> +
+> +	int r;
+> +
+> +	mutex_lock(&pb->mii_bus->mdio_lock);
+> +	r = pb->switch_fn(pb->current_child, cb->bus_number, pb->switch_data);
+> +	if (r)
+> +		goto out;
+> +
+> +	pb->current_child = cb->bus_number;
+> +
+> +	r = pb->mii_bus->write(pb->mii_bus, phy_id, regnum, val);
+> +out:
+> +	mutex_unlock(&pb->mii_bus->mdio_lock);
+> +
+> +	return r;
+> +}
+> +
+> +static int parent_count;
+> +
+> +int mdio_mux_probe(struct platform_device *pdev,
+> +		   int (*switch_fn)(int cur, int desired, void *data),
+> +		   void *data)
+> +{
+> +	struct device_node *parent_bus_node;
+> +	struct device_node *child_bus_node;
+> +	int r, n, ret_val;
+> +	struct mii_bus *parent_bus;
+> +	struct mdio_mux_parent_bus *pb;
+> +	struct mdio_mux_child_bus *cb;
+> +
+> +	if (!pdev->dev.of_node)
+> +		return -ENODEV;
+> +
+> +	parent_bus_node = of_parse_phandle(pdev->dev.of_node, "parent-bus", 0);
+> +
+> +	if (!parent_bus_node)
+> +		return -ENODEV;
+> +
+> +	parent_bus = of_mdio_find_bus(parent_bus_node);
+
+
+So what happens if the parent bus probe happens after the mux probe?
+
+> +
+> +	pb = devm_kzalloc(&pdev->dev, sizeof(*pb), GFP_KERNEL);
+> +	if (pb == NULL) {
+> +		ret_val = -ENOMEM;
+> +		goto err_parent_bus;
+> +	}
+> +
+> +	pb->switch_data = data;
+> +	pb->switch_fn = switch_fn;
+> +	pb->current_child = -1;
+> +	pb->parent_id = parent_count++;
+> +	pb->mii_bus = parent_bus;
+> +
+> +	n = 0;
+> +	for_each_child_of_node(pdev->dev.of_node, child_bus_node) {
+> +		u32 v;
+> +
+> +		r = of_property_read_u32(child_bus_node, "cell-index", &v);
+> +		if (r == 0) {
+> +			cb = devm_kzalloc(&pdev->dev, sizeof(*cb), GFP_KERNEL);
+> +			if (cb == NULL)
+> +				break;
+> +			cb->bus_number = v;
+> +			cb->parent = pb;
+> +			cb->mii_bus = mdiobus_alloc();
+> +			cb->mii_bus->priv = cb;
+> +
+> +			cb->mii_bus->irq = cb->phy_irq;
+> +			cb->mii_bus->name = "mdio_mux";
+> +			snprintf(cb->mii_bus->id, MII_BUS_ID_SIZE, "%x.%x",
+> +				 pb->parent_id, v);
+> +			cb->mii_bus->parent = &pdev->dev;
+> +			cb->mii_bus->read = mdio_mux_read;
+> +			cb->mii_bus->write = mdio_mux_write;
+> +			r = of_mdiobus_register(cb->mii_bus, child_bus_node);
+> +			if (r) {
+> +				of_node_put(child_bus_node);
+> +				devm_kfree(&pdev->dev, cb);
+> +			} else {
+> +				n++;
+> +			}
+> +
+> +		} else {
+> +			of_node_put(child_bus_node);
+> +		}
+> +	}
+> +	if (n) {
+> +		dev_info(&pdev->dev, "Version " DRV_VERSION "\n");
+> +		return 0;
+> +	}
+> +	ret_val = -ENOMEM;
+> +	devm_kfree(&pdev->dev, pb);
+> +err_parent_bus:
+> +	of_node_put(parent_bus_node);
+> +	return ret_val;
+> +}
+> +EXPORT_SYMBOL(mdio_mux_probe);
+> +
+> +static int __devexit mdio_mux_remove(struct platform_device *pdev)
+> +{
 > +	return 0;
 > +}
 > +
-> +/**
-> + * smk_write_load_list - write() for any /smack/load
-> + * @file: file pointer, not actually used
-> + * @buf: where to get the data from
-> + * @count: bytes sent
-> + * @ppos: where to start - must be 0
-> + * @rule_list: the list of rules to write to
-> + * @rule_lock: lock for the rule list
-> + *
-> + * Get one smack access rule from above.
-> + * The format is exactly:
-> + *     char subject[SMK_LABELLEN]
-> + *     char object[SMK_LABELLEN]
-> + *     char access[SMK_ACCESSLEN]
-> + *
-> + * writes must be SMK_LABELLEN+SMK_LABELLEN+SMK_ACCESSLEN bytes.
-> + */
-> +static ssize_t smk_write_load_list(struct file *file, const char __user *buf,
-> +				size_t count, loff_t *ppos,
-> +				struct list_head *rule_list,
-> +				struct mutex *rule_lock)
+> +static int __init mdio_mux_mod_init(void)
 > +{
-> +	struct smack_rule *rule;
-> +	char *data;
-> +	int rc = -EINVAL;
-> +
-> +	/*
-> +	 * No partial writes.
-> +	 * Enough data must be present.
-> +	 */
-> +	if (*ppos != 0)
-> +		return -EINVAL;
-> +	/*
-> +	 * Minor hack for backward compatibility
-> +	 */
-> +	if (count < (SMK_OLOADLEN) || count > SMK_LOADLEN)
-> +		return -EINVAL;
-> +
-> +	data = kzalloc(SMK_LOADLEN, GFP_KERNEL);
-> +	if (data == NULL)
-> +		return -ENOMEM;
-> +
-> +	if (copy_from_user(data, buf, count) != 0) {
-> +		rc = -EFAULT;
-> +		goto out;
-> +	}
-> +
-> +	/*
-> +	 * More on the minor hack for backward compatibility
-> +	 */
-> +	if (count == (SMK_OLOADLEN))
-> +		data[SMK_OLOADLEN] = '-';
-> +
-> +	rule = kzalloc(sizeof(*rule), GFP_KERNEL);
-> +	if (rule == NULL) {
-> +		rc = -ENOMEM;
-> +		goto out;
-> +	}
-> +
-> +	if (smk_parse_rule(data, rule))
-> +		goto out_free_rule;
-> +
->  	rc = count;
->  	/*
->  	 * smk_set_access returns true if there was already a rule
-> @@ -1425,6 +1440,44 @@ static const struct file_operations smk_load_self_ops = {
->  	.write		= smk_write_load_self,
->  	.release        = seq_release,
->  };
-> +
-> +/**
-> + * smk_write_access - handle access check transaction
-> + * @file: file pointer
-> + * @buf: data from user space
-> + * @count: bytes sent
-> + * @ppos: where to start - must be 0
-> + */
-> +static ssize_t smk_write_access(struct file *file, const char __user *buf,
-> +				size_t count, loff_t *ppos)
-> +{
-> +	struct smack_rule rule;
-> +	char *data;
-> +
-> +	if (!capable(CAP_MAC_ADMIN))
-> +		return -EPERM;
-> +
-> +	data = simple_transaction_get(file, buf, count);
-> +	if (IS_ERR(data))
-> +		return PTR_ERR(data);
-> +
-> +	if (count < SMK_LOADLEN || smk_parse_rule(data, &rule))
-> +		return -EINVAL;
-> +
-> +	data[0] = smk_access(rule.smk_subject, rule.smk_object,
-> +			     rule.smk_access, NULL) == 0;
-> +
-> +	simple_transaction_set(file, 1);
-> +	return SMK_LOADLEN;
+> +	return 0;
 > +}
+> +module_init(mdio_mux_mod_init);
 > +
-> +static const struct file_operations smk_access_ops = {
-> +	.write		= smk_write_access,
-> +	.read		= simple_transaction_read,
-> +	.release	= simple_transaction_release,
-> +	.llseek		= generic_file_llseek,
-> +};
+> +static void __exit mdio_mux_mod_exit(void)
+> +{
+> +}
+> +module_exit(mdio_mux_mod_exit);
 > +
->  /**
->   * smk_fill_super - fill the /smackfs superblock
->   * @sb: the empty superblock
-> @@ -1459,6 +1512,8 @@ static int smk_fill_super(struct super_block *sb, void *data, int silent)
->  			"logging", &smk_logging_ops, S_IRUGO|S_IWUSR},
->  		[SMK_LOAD_SELF] = {
->  			"load-self", &smk_load_self_ops, S_IRUGO|S_IWUGO},
-> +		[SMK_ACCESSES] = {
-> +			"access", &smk_access_ops, S_IRUGO|S_IWUSR},
->  		/* last one */
->  			{""}
->  	};
+> +MODULE_DESCRIPTION(DRV_DESCRIPTION);
+> +MODULE_VERSION(DRV_VERSION);
+> +MODULE_AUTHOR("David Daney");
+> +MODULE_LICENSE("GPL");
+
 
