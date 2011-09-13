@@ -1,65 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755314Ab1IMQEg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 12:04:36 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:58987 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755274Ab1IMQEd (ORCPT
+	id S1755335Ab1IMQOO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 12:14:14 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39234 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755159Ab1IMQOM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 12:04:33 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX197E54segF7h9FD1Pqdm9oSX/Pfs8KTfHiLQe8P5y
-	nak9ha2/XiSO3e
-Subject: Re: [PATCH tip/core/rcu 44/55] rcu: wire up RCU_BOOST_PRIO for
- rcutree
-From: Mike Galbraith <efault@gmx.de>
-To: paulmck@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, patches@linaro.org
-In-Reply-To: <20110913153413.GB2416@linux.vnet.ibm.com>
-References: <20110906180015.GA2560@linux.vnet.ibm.com>
-	 <1315332049-2604-44-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1315915334.6300.15.camel@marge.simson.net>
-	 <20110913153413.GB2416@linux.vnet.ibm.com>
+	Tue, 13 Sep 2011 12:14:12 -0400
+Subject: Re: [ANNOUNCE] 3.0.4-rt13
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Date: Tue, 13 Sep 2011 18:13:50 +0200
+In-Reply-To: <1315927699.6445.6.camel@marge.simson.net>
+References: <alpine.LFD.2.02.1109101052340.2723@ionos>
+	 <1315737307.6544.1.camel@marge.simson.net>
+	 <1315817948.26517.16.camel@twins>
+	 <1315835562.6758.3.camel@marge.simson.net>
+	 <1315839187.6758.8.camel@marge.simson.net> <1315926499.5977.19.camel@twins>
+	 <1315927699.6445.6.camel@marge.simson.net>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 13 Sep 2011 18:04:18 +0200
-Message-ID: <1315929858.6312.16.camel@marge.simson.net>
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1315930430.5977.21.camel@twins>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-09-13 at 08:34 -0700, Paul E. McKenney wrote:
-> On Tue, Sep 13, 2011 at 02:02:14PM +0200, Mike Galbraith wrote:
-
-> > @@ -1608,7 +1618,7 @@ static int rcu_node_kthread(void *arg)
-> >  				continue;
-> >  			}
-> >  			per_cpu(rcu_cpu_has_work, cpu) = 1;
-> > -			sp.sched_priority = RCU_KTHREAD_PRIO;
-> > +			sp.sched_priority = current->rt_priority;
+On Tue, 2011-09-13 at 17:28 +0200, Mike Galbraith wrote:
+> On Tue, 2011-09-13 at 17:08 +0200, Peter Zijlstra wrote:
+> > On Tue, 2011-09-13 at 15:36 +0200, Peter Zijlstra wrote:
+> > > Does the below cure things? It breaks !rt builds, but we can cure that
+> > > if it works..
+> > 
+> > n/m its broken like hell..
 > 
-> This is broken -- the per-node kthread runs at RT prio 99, but we usually
-> would not want to boost that high.
+> Since this seems to be a legitimate need for a non-preemptive wakeup,
+> how about we [re]create one to get rid of abuse?  (otoh, that would add
+> a branch everywhere.. btdt a couple times, always ended up tossing it)
 
-Ouch, right.  My userland sets things on boot, so it works.
+Nah, we absolutely need to kill that preempt_disable/enable stuff in
+there, it covers an O(n^2) loop, its complete crap.
 
-> Seems like we should have a global variable that tracks the current
-> priority.  This global variable could then be set in a manner similar
-> to the softirq priorities -- or, perhaps better, simply set whenever
-> the softirq priority is changed.
-> 
-> Thoughts?
-
-RCU threads would have to constantly watch for user priority changes on
-their own, and update private data methinks.
-
-	-Mike
-
+Just need to wrap my head around that code..
