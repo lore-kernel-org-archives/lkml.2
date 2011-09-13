@@ -1,71 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932402Ab1IMT3U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 15:29:20 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:56352 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932093Ab1IMT3S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 15:29:18 -0400
-Message-ID: <4E6FAFA3.4010108@cn.fujitsu.com>
-Date: Wed, 14 Sep 2011 03:31:47 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S932427Ab1IMTaL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 15:30:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52184 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932079Ab1IMTaH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 15:30:07 -0400
+Date: Tue, 13 Sep 2011 14:29:57 -0500 (CDT)
+From: Manoj Iyer <manoj.iyer@canonical.com>
+X-X-Sender: manjo@lazy
+To: Chris Ball <cjb@laptop.org>
+cc: Jeremy Fitzhardinge <jeremy@goop.org>, linux-mmc@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Manoj Iyer <manoj.iyer@canonical.com>
+Subject: Re: SDHCI regression since 2.6.39
+In-Reply-To: <m2aaa89t1m.fsf@bob.laptop.org>
+Message-ID: <alpine.DEB.2.02.1109131419430.3556@lazy>
+References: <4E6EA3E4.5080401@goop.org> <m2bouo37by.fsf@bob.laptop.org> <4E6F8C24.3090207@goop.org> <m2wrdc1i5b.fsf@bob.laptop.org> <4E6FA44F.1050705@goop.org> <m2aaa89t1m.fsf@bob.laptop.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v3 01/11] KVM: MMU: avoid pte_list_desc running out in
- kvm_mmu_pte_write
-References: <4E5C4C20.3000403@cn.fujitsu.com> <4E6F2790.4020602@redhat.com> <4E6F2F54.4030004@cn.fujitsu.com> <4E6F3589.1090107@redhat.com>
-In-Reply-To: <4E6F3589.1090107@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-09-14 03:28:05,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-09-14 03:28:05,
-	Serialize complete at 2011-09-14 03:28:05
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/13/2011 06:50 PM, Avi Kivity wrote:
-> On 09/13/2011 01:24 PM, Xiao Guangrong wrote:
->> On 09/13/2011 05:51 PM, Avi Kivity wrote:
->> >  On 08/30/2011 05:34 AM, Xiao Guangrong wrote:
->> >>  kvm_mmu_pte_write is unsafe since we need to alloc pte_list_desc in the
->> >>  function when spte is prefetched, unfortunately, we can not know how many
->> >>  spte need to be prefetched on this path, that means we can use out of the
->> >>  free  pte_list_desc object in the cache, and BUG_ON() is triggered, also some
->> >>  path does not fill the cache, such as INS instruction emulated that does not
->> >>  trigger page fault
->> >>
->> >>  @@ -3716,10 +3735,6 @@ int kvm_mmu_page_fault(struct kvm_vcpu *vcpu, gva_t cr2, u32 error_code,
->> >>            goto out;
->> >>        }
->> >>
->> >>  -    r = mmu_topup_memory_caches(vcpu);
->> >>  -    if (r)
->> >>  -        goto out;
->> >>  -
->> >>        er = x86_emulate_instruction(vcpu, cr2, 0, insn, insn_len);
->> >>
->> >
->> >  Suppose we are out of memory, can't this get us in an endless loop?
->> >
->> >  return -ENOMEM breaks as out (and kills the guest, likely).
->> >
->>
->> If memory is not enough, we just clear sptes on pte_write path(not prefetch spte),
->> the later page fault path can return -1 to let guest crash. Hmm?
->>
-> 
-> Yes.
-> 
-> btw, is rmap_can_add() sufficent?  We allocate more than just rmaps in mmu_topup_memory_caches().  I guess it is, but this is getting tricky.
-> 
 
-rmap_can_add() is used to avoid prefetching sptes more than the number of rmaps in
-the cache, because we do not know the exact number of sptes to be fetched. :-)
+@Jeremy, Could the problem be BIOS related? we have seen a number of 
+issues with older bioses on the x220s.
 
+Here are a few cards I tested with the 3.1 RC4 kernel on Ubuntu running on
+a Lenovo X220. with Ricoh e823 card reader.
+
+== kernel version ==
+Linux u 3.1.0-0301rc4-generic #201108290905 SMP MonO Aug 29 09:11:07 UTC 
+2011 x86_64 x86_64 x86_64 GNU/Linux
+This is the upstream RC4 kernel build for ubuntu. 
+http://kernel.ubuntu.com/~kernel-ppa/mainline/
+
+== LSPCI output for SD card reader ==
+0d:00.0 System peripheral [0880]: Ricoh Co Ltd Device [1180:e823] (rev 04) (prog-if 01)
+ 	Subsystem: Lenovo Device [17aa:21db]
+ 	Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
+ 	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+ 	Latency: 0, Cache Line Size: 64 bytes
+ 	Interrupt: pin A routed to IRQ 16
+ 	Region 0: Memory at 91500000 (32-bit, non-prefetchable) [size=256]
+ 	Capabilities: [50] MSI: Enable- Count=1/1 Maskable- 64bit+
+ 		Address: 0000000000000000  Data: 0000
+ 	Capabilities: [78] Power Management version 3
+ 		Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=0mA PME(D0+,D1+,D2+,D3hot+,D3cold+)
+ 		Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=2 PME+
+ 	Capabilities: [80] Express (v1) Endpoint, MSI 00
+ 		DevCap:	MaxPayload 128 bytes, PhantFunc 0, Latency L0s unlimited, L1 unlimited
+ 			ExtTag- AttnBtn+ AttnInd+ PwrInd+ RBE+ FLReset-
+ 		DevCtl:	Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
+ 			RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
+ 			MaxPayload 128 bytes, MaxReadReq 128 bytes
+ 		DevSta:	CorrErr+ UncorrErr- FatalErr- UnsuppReq+ AuxPwr- TransPend-
+ 		LnkCap:	Port #1, Speed 2.5GT/s, Width x1, ASPM L0s L1, Latency L0 <4us, L1 unlimited
+ 			ClockPM+ Surprise- LLActRep- BwNot-
+ 		LnkCtl:	ASPM L1 Enabled; RCB 64 bytes Disabled- Retrain- CommClk+
+ 			ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+ 		LnkSta:	Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive- BWMgmt- ABWMgmt-
+ 	Capabilities: [100 v1] Virtual Channel
+ 		Caps:	LPEVC=0 RefClk=100ns PATEntryBits=1
+ 		Arb:	Fixed- WRR32- WRR64- WRR128-
+ 		Ctrl:	ArbSelect=Fixed
+ 		Status:	InProgress-
+ 		VC0:	Caps:	PATOffset=00 MaxTimeSlots=1 RejSnoopTrans-
+ 			Arb:	Fixed- WRR32- WRR64- WRR128- TWRR128- WRR256-
+ 			Ctrl:	Enable+ ID=0 ArbSelect=Fixed TC/VC=ff
+ 			Status:	NegoPending- InProgress-
+ 	Capabilities: [800 v1] Advanced Error Reporting
+ 		UESta:	DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
+ 		UEMsk:	DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
+ 		UESvrt:	DLP+ SDES+ TLP- FCP+ CmpltTO- CmpltAbrt- UnxCmplt- RxOF+ MalfTLP+ ECRC- UnsupReq- ACSViol-
+ 		CESta:	RxErr+ BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
+ 		CEMsk:	RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
+ 		AERCap:	First Error Pointer: 00, GenCap+ CGenEn- ChkCap+ ChkEn-
+ 	Kernel driver in use: sdhci-pci
+ 	Kernel modules: sdhci-pci
+
+== Sandisk Extreme Pro 16GB ==
+Was able to mount Ultra high speed SDHC card 45MB/s, read and write works.
+
+[   60.578630] mmc0: new ultra high speed SDHC card at address e624
+[   60.611808] mmcblk0: mmc0:e624 SD16G 14.8 GiB 
+[   60.644314]  mmcblk0: p1
+[   60.947772] mmcblk0: error -84 transferring data, sector 8192, nr 8, cmd response 0x900, card status 0xb00
+[   60.947777] mmcblk0: retrying using single block read
+
+/dev/mmcblk0p1 on /media/New Volume type vfat (rw,nosuid,nodev,uid=1000,gid=1000,shortname=mixed,dmask=0077,utf8=1,showexec,flush,uhelper=udisks)
+
+== Sandisk 2GB SD card ==
+Was able to mount Sandisk SD card, read and write works.
+[  298.540999] mmc0: new SD card at address 0002
+[  298.541306] mmcblk0: mmc0:0002 00000 1.86 GiB 
+[  298.543157]  mmcblk0: p1
+
+/dev/mmcblk0p1 on /media/E0FD-1813 type vfat (rw,nosuid,nodev,uid=1000,gid=1000,shortname=mixed,dmask=0077,utf8=1,showexec,flush,uhelper=udisks)
+
+== Transcend 2GB MMC plus card ==
+Was able to mount and read/write. Shows up as SD card.
+[  734.032981] mmc0: error -110 whilst initialising MMC card
+[  734.132920] mmc0: error -110 whilst initialising MMC card
+[  734.228244] mmc0: new MMC card at address 0001
+[  734.228631] mmcblk0: mmc0:0001 MMC    1.87 GiB 
+[  734.229834]  mmcblk0: p1
+u@u:~$
+
+/dev/mmcblk0p1 on /media/New Volume type vfat 
+(rw,nosuid,nodev,uid=1000,gid=1000,shortname=mixed,dmask=0077,utf8=1,showexec,flush,uhelper=udisks)
+
+Cheers
+--
+====================
+Manoj Iyer
+Ubuntu/Canonical
+Hardware Enablement
+====================
+
+
+On Tue, 13 Sep 2011, Chris Ball wrote:
+
+> Hi,
+>
+> On Tue, Sep 13 2011, Jeremy Fitzhardinge wrote:
+>>> If it is running, and not helping, can I persuade you to try a full
+>>> bisection?
+>>
+>> OK, will do.
+>
+> Thank you!
+>
+>>>   I don't think we have other reports of this bug, and the
+>>> only other person who has reported something like it wasn't a kernel
+>>> hacker.
+>>
+>> That's interesting; the X220 is a pretty common machine these days, I
+>> think.  I wonder if there's variations in the SD controller or something?
+>
+> I just asked Matthew Garrett to check his X220, and his has the same e823
+> controller as you, is running a 3.1-rc kernel, and everything's working.
+>
+> So it's not even variation in the controller model, it's something even
+> more subtle.  Perhaps try some different cards?  What capacity/speed is
+> the one you're trying?  If there is a per-card difference, I suppose
+> we'd expect it to be that slower cards work and faster cards fail
+> (given the nature of the patch I linked in my last mail).
+>
+> Thanks,
+>
+> - Chris.
+> -- 
+> Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+> One Laptop Per Child
+>
+>
 
