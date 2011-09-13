@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932220Ab1IMSQx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 14:16:53 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:32249 "EHLO relay.sw.ru"
+	id S932232Ab1IMSRe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 14:17:34 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:10271 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756175Ab1IMSOZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 14:14:25 -0400
-Subject: [PATCH v3 07/11] NFS: avoid rpcbind clients creation during service
-	creation
+	id S932137Ab1IMSOK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 14:14:10 -0400
+Subject: [PATCH v3 05/11] SUNRPC: cleanup service destruction
 To: Trond.Myklebust@netapp.com
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         bfields@fieldses.org, davem@davemloft.net
-Date: Tue, 13 Sep 2011 22:14:14 +0400
-Message-ID: <20110913181414.3961.88915.stgit@localhost6.localdomain6>
+Date: Tue, 13 Sep 2011 22:13:59 +0400
+Message-ID: <20110913181359.3961.36298.stgit@localhost6.localdomain6>
 In-Reply-To: <20110913180953.3961.69217.stgit@localhost6.localdomain6>
 References: <20110913180953.3961.69217.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
@@ -25,26 +24,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NFS callbacks doesn't communicate portmapper and thus doesn't need rpcbind
-clients.
+svc_unregister() call have to be removed from svc_destroy() since it will be
+called in sv_shutdown callback.
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
 ---
- fs/nfs/callback.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ net/sunrpc/svc.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/fs/nfs/callback.c b/fs/nfs/callback.c
-index e3d2942..2715c02 100644
---- a/fs/nfs/callback.c
-+++ b/fs/nfs/callback.c
-@@ -259,7 +259,7 @@ int nfs_callback_up(u32 minorversion, struct rpc_xprt *xprt)
- 		nfs_callback_bc_serv(minorversion, xprt, cb_info);
- 		goto out;
- 	}
--	serv = svc_create(&nfs4_callback_program, NFS4_CALLBACK_BUFSIZE, NULL);
-+	serv = svc_create(&nfs4_callback_program, NFS4_CALLBACK_BUFSIZE, 0, NULL);
- 	if (!serv) {
- 		ret = -ENOMEM;
- 		goto out_err;
+diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
+index 03231d5..1bf1b1a 100644
+--- a/net/sunrpc/svc.c
++++ b/net/sunrpc/svc.c
+@@ -513,7 +513,6 @@ svc_destroy(struct svc_serv *serv)
+ 	if (svc_serv_is_pooled(serv))
+ 		svc_pool_map_put();
+ 
+-	svc_unregister(serv);
+ 	kfree(serv->sv_pools);
+ 	kfree(serv);
+ }
 
