@@ -1,49 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751520Ab1IMJk1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 05:40:27 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48996 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751185Ab1IMJk0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 05:40:26 -0400
-Subject: Re: CFS Bandwidth Control - Test results of cgroups tasks pinned vs
- unpinnede
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Cc: Paul Turner <pjt@google.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelianov <xemul@parallels.com>
-Date: Tue, 13 Sep 2011 11:39:48 +0200
-In-Reply-To: <20110913050306.GB7254@linux.vnet.ibm.com>
-References: <BANLkTimE1b8HP-q4jgsv5jPD5S-dRoUi_g@mail.gmail.com>
-	 <20110615053716.GA390@linux.vnet.ibm.com>
-	 <BANLkTi=7S2qdVjbJkDja+GAoD=pNo2gPsTFZMFkB8NWWkO1JVQ@mail.gmail.com>
-	 <20110907152009.GA3868@linux.vnet.ibm.com>
-	 <1315423342.11101.25.camel@twins>
-	 <20110908151433.GB6587@linux.vnet.ibm.com> <1315571462.26517.9.camel@twins>
-	 <20110912101722.GA28950@linux.vnet.ibm.com>
-	 <1315830943.26517.36.camel@twins>
-	 <20110913041545.GD11100@linux.vnet.ibm.com>
-	 <20110913050306.GB7254@linux.vnet.ibm.com>
+	id S1751599Ab1IMJot (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 05:44:49 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:61077 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751295Ab1IMJor convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 05:44:47 -0400
+Subject: Re: [RFC 1/2] virtio: Add AMBA bus driver for virtio device
+From: Pawel Moll <pawel.moll@arm.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Anthony Liguori <aliguori@us.ibm.com>,
+        "Michael S.Tsirkin" <mst@redhat.com>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
+        virtualization <virtualization@lists.linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <87hb4h408d.fsf@rustcorp.com.au>
+References: <1314966257-7503-1-git-send-email-pawel.moll@arm.com>
+	 <1314966257-7503-2-git-send-email-pawel.moll@arm.com>
+	 <877h5e5yxp.fsf@rustcorp.com.au>
+	 <1315845956.3297.7.camel@hornet.cambridge.arm.com>
+	 <87hb4h408d.fsf@rustcorp.com.au>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1315906788.575.3.camel@twins>
+Date: Tue, 13 Sep 2011 10:40:32 +0100
+Message-ID: <1315906832.3297.41.camel@hornet.cambridge.arm.com>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 8BIT
+X-OriginalArrivalTime: 13 Sep 2011 09:40:32.0629 (UTC) FILETIME=[2E686250:01CC71F9]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-09-13 at 10:33 +0530, Srivatsa Vaddagiri wrote:
+> > No problem, I've reserved 128 bits in the modified registers layout (see
+> > RFC v2), I can even change it into "offset/value" interface, which would
+> > give you variable width. One thing I don't get is how to access feature
+> > bits > 31? The get_features() seems
+> > to be limited to 32:
+> > 
+> > struct virtio_config_ops {
+> > <...>
+> > 	u32 (*get_features)(struct virtio_device *vdev);
+> > <...>
+> > }
 > 
-> This is perhaps not optimal (as it may lead to more lock contentions), but 
-> something to note for those who care for both capping and utilization in
-> equal measure!
+> There's a patch for that already :)
 
-You meant lock inversion, which leads to more idle time :-)
+Ok, so how about one of the following two options:
+
+1. 4 * 32-bit words of feature flags, 128 bits in total:
+
+ *  0x010   32  HostFeatures0  Features supported by the host, bits 0-31
+ *  0x014   32  HostFeatures1  Features supported by the host, bits 32-63
+ *  0x018   32  HostFeatures2  Features supported by the host, bits 64-95
+ *  0x01c   32  HostFeatures3  Features supported by the host, bits 96-127
+
+ *  0x020   32  GuestFeatures0 Features activated by the guest, bits 0-31
+ *  0x024   32  GuestFeatures1 Features activated by the guest, bits 32-63
+ *  0x028   32  GuestFeatures2 Features activated by the guest, bits 64-95
+ *  0x02c   32  GuestFeatures3 Features activated by the guest, bits 96-127
+
+2. "Select word -> read flags" interface:
+
+ *  0x010   32  HostFeaturesFlags  Features supported by the host
+ *  0x014   32  HostFeaturesWord   Set of features to access
+
+ *  0x020   32  GuestFeaturesFlags Features activated by the guest
+ *  0x024   32  GuestFeaturesWord  Set of features to set
+
+In this case the algorithm would be:
+
+	writel(0, HostFeaturesWord);
+	bits_0_31 = readl(HostFeaturesFlags);
+	writel(1, HostFeaturesWord);
+	bits_32_63 = readl(HostFeaturesFlags);
+	<etc>
+
+The latter seems more "future-proof" to me, if slightly more complex...
+Any other suggestions?
+
+> > > > + *  0x008   32  QueuePFN      PFN for the currently selected queue
+> > > > + *  0x00c   32  QueueNum      Queue size for the currently selected queue
+> > > 
+> > > You should, I believe, seriously consider allowing the guest to set the
+> > > queue size, rather than the host (perhaps the host could suggest one,
+> > > but the guest should be able to override it).
+> > 
+> > I guess the QueueNum could be simply a read/write register - guest can
+> > read suggestion and override it writing it back. The same question
+> > though - how can guest change it? (I mean some API?)
+> 
+> We can sort that out later... the Guest may try some ambitious large
+> allocation and fall back if it fails.
+
+So, to my mind, the negotiations could look like this (from the Guest's
+point of view):
+
+1. (optional) The Guest is asking what size is "suggested" by the Host:
+
+	size = readl(QueueNum);
+
+2. The Guest requests size it would like to use:
+
+	writel(optimal_size(size), QueueNum);
+
+3. The Host does the best it can to accommodate the Guest and the Guest
+checks the effective size:
+
+	size = real(QueueNum);
+
+Does it make some sense?
+
+> > > Anthony or Michael might suggest other changes, since they are most
+> > > familiar with virtio_pci limitations...
+> > 
+> > I've added them on the RFC v2 Cc as well - all feedback more then
+> > welcome!
+> 
+> Excellent...  of course, the virtualization list is down at the moment,
+> making this a bit more awkward.
+
+Haha - at least once I can't blame our corporate IT for making my job
+harder ;-)
+
+Cheers!
+
+Paweł
+
