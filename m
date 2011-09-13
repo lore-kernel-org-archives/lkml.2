@@ -1,45 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753171Ab1IMBcv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 21:32:51 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:52537 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752437Ab1IMBct (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 21:32:49 -0400
-Date: Mon, 12 Sep 2011 18:32:43 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Temporary -rcu tree location
-Message-ID: <20110913013243.GA2313@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110913000107.GA15945@linux.vnet.ibm.com>
- <20110913112127.cd62b006c302a575ceae4dee@canb.auug.org.au>
+	id S1753600Ab1IMBdg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 21:33:36 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:30227 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752437Ab1IMBdc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Sep 2011 21:33:32 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:sender:in-reply-to:references:date:
+	x-google-sender-auth:message-id:subject:from:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=BeuKH9lp/vHi4Vn3/R4qcT5JETMhPbJTSCHsMj1ijlcZByXLYHAXz3A2jU173nd8B
+	GnJN1/ZFN2i90rAZWyfCw==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110913112127.cd62b006c302a575ceae4dee@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 11091301-8974-0000-0000-000000192C22
+In-Reply-To: <1315008447-11012-1-git-send-email-bleung@chromium.org>
+References: <1315008447-11012-1-git-send-email-bleung@chromium.org>
+Date: Mon, 12 Sep 2011 18:29:20 -0700
+X-Google-Sender-Auth: NokCakoQYkoLQmRHOyd0kgcRogA
+Message-ID: <CANLzEkto=6itnTXz3cwsjNUS0UR5knMzyut7-m8_Mfw9fNMsMw@mail.gmail.com>
+Subject: Re: [PATCH] HID: usbhid: fix suspend timeout due to RUNNING bits
+From: Benson Leung <bleung@chromium.org>
+To: jkosina@suse.cz, linux-usb@vger.kernel.org, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: bleung@chromium.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 13, 2011 at 11:21:27AM +1000, Stephen Rothwell wrote:
-> Hi Paul,
-> 
-> On Mon, 12 Sep 2011 17:01:07 -0700 "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-> >
-> > Could you please make the -next tree pull from branch next.2011.09.12a
-> > of https://github.com/paulmckrcu/linux while kernel.org is down?
-> 
-> I have swiched to that now (actually git://github.com/paulmckrcu/linux).
-> Just a couple of minor changes and some new commits, right?  Hash of the
-> branch top commit is f88a19a.
+Ping. Would someone in linux-usb take a look at this fix?
 
-Yep, that is the one!  And yes, not hugely different than the last
-rcu/next from the kernel.org -rcu, but Linus seemed to be rather serious
-about pull requests having been exposed to -next testing.  ;-)
+Thanks,
+Benson
 
-							Thanx, Paul
+On Fri, Sep 2, 2011 at 5:07 PM, Benson Leung <bleung@chromium.org> wrote:
+> hid_submit_ctrl and hid_submit_out should return error
+> codes when HID_REPORTED_IDLE is set by hid_suspend.
+> This will allow the output and control completion
+> handlers to clear HID_OUT_RUNNING and HID_CTRL_RUNNING
+> so hid_suspend succeeds.
+>
+> Previously, if there were outstanding out messages
+> or control messages while hid_suspend was called,
+> hid_suspend would fail because usbhid_wait_io would time
+> out.
+>
+> This condition happens with USB keyboards with both capslock and
+> numlock leds enabled at suspend time. Control requests
+> will come down to the hid-core to disable both leds, with
+> hid_suspend being called between the two being submitted.
+>
+> Signed-off-by: Benson Leung <bleung@chromium.org>
+> ---
+>  drivers/hid/usbhid/hid-core.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
+> index a9fa294..cf5c106 100644
+> --- a/drivers/hid/usbhid/hid-core.c
+> +++ b/drivers/hid/usbhid/hid-core.c
+> @@ -326,6 +326,8 @@ static int hid_submit_out(struct hid_device *hid)
+>                        return -1;
+>                }
+>                usbhid->last_out = jiffies;
+> +       } else {
+> +               return -1;
+>        }
+>
+>        return 0;
+> @@ -385,6 +387,8 @@ static int hid_submit_ctrl(struct hid_device *hid)
+>                        return -1;
+>                }
+>                usbhid->last_ctrl = jiffies;
+> +       } else {
+> +               return -1;
+>        }
+>
+>        return 0;
+> --
+> 1.7.1
+>
+>
 
+
+
+-- 
+Benson Leung
+Software Engineer, Chrom* OS
+bleung@chromium.org
