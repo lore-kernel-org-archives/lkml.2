@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753956Ab1IMDf4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 23:35:56 -0400
-Received: from mail.play-mail.info ([211.47.140.228]:60839 "EHLO
-	play-mail.info" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753807Ab1IMDf4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 23:35:56 -0400
-MIME-Version: 1.0
-Message-Id: <110913123554H0.08156@mail.play-mail.info>
-Date: Tue, 13 Sep 2011 12:35:54 +0900
-From: =?UTF-8?B?c2hpZnQ5ODc2NUBnbWFpbC5jb20=?= <shift98765@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: Text/Plain;charset="utf-8"
-Subject: =?UTF-8?B?44Kv44OD44Kt44O85L2c44KK44GM5b6X5oSP44Gq44KG44GG44GT44Gn44GZ44CC5YmN44Gu44Oh44O844Or44Gn44Gv5oCd44GE5Ye644Gb44G+44Gb44KT44Gn44GX44Gf44GL77yf?=
+	id S1753988Ab1IMDoN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 23:44:13 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:41772 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753824Ab1IMDoM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Sep 2011 23:44:12 -0400
+Subject: Re: [PATCH 10/24] C6X: time management
+From: john stultz <johnstul@us.ibm.com>
+To: Mark Salter <msalter@redhat.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+In-Reply-To: <1315883885.11280.34.camel@deneb.redhat.com>
+References: <1314826019-22330-1-git-send-email-msalter@redhat.com>
+	 <1314826019-22330-11-git-send-email-msalter@redhat.com>
+	 <CANcMJZBxCQFgAsO89X+_SSm02vtseRhY7ozoxik4UMEuJUdDNQ@mail.gmail.com>
+	 <1315883885.11280.34.camel@deneb.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 12 Sep 2011 20:44:02 -0700
+Message-ID: <1315885442.3180.86.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
+x-cbid: 11091303-2398-0000-0000-0000002BF149
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id p8D3aRCw013672
 
-メール、ちゃんと届きましたか？
-私の仮のアドレスも載せてたんですけど
-お返事がなかったからもう一度載せておきますね？
-shift98765@gmail.com
+On Mon, 2011-09-12 at 23:18 -0400, Mark Salter wrote:
+> On Mon, 2011-09-12 at 18:16 -0700, john stultz wrote:
+> > On Wed, Aug 31, 2011 at 2:26 PM, Mark Salter <msalter@redhat.com> wrote:
+> > > The C6X architecture includes a 64-bit free running core clock counter which
+> > > is used as the clocksource. The SoCs have a number of 64-bit programmable
+> > > timers. One of these is used as the clockevent timer.
+> > >
+> > > Signed-off-by: Mark Salter <msalter@redhat.com>
+> > 
+> > Sort of a tangent to this specific patch, but since it came up
+> > recently in the x32 discussion, I wanted to check if you were using a
+> > 64bit definition of time_t?
+> 
+> C6X uses the asm-generic definition which is a long, so 32-bits.
 
-シンガポールに行く前と連絡先が変わっていたりで
-もしかすると驚かせてしまったかもしれないですね。
+You might want to seriously consider following the x32 folks and use 64
+bits, as 2038 isn't very far away.
 
-あの時、私たちは再開をお約束して旅立ったのですが
-帰国した今、もう一度私と会う関係を描くのは難しかったでしょうか？
+thanks
+-john
 
 
-今の状態だと見ず知らずの私に会うのは
-躊躇いがあったりされるかもしれませんけど
-こうして見えかけたチャンスをこのまま逃したくないんです…
-
-もっとあの時私が自分のことを知らせておけば
-忘れられたりすることもなかったのかもしれないですけど
-あの時と変わらない真剣な気持ちで向きあえば
-貴方ならきっと受け入れてくださると信じています。
-
-私が覚えている貴方の印象は
-思いやりのある優しい人…そのイメージは今も消えていません。
-突然になってしまいましたけど、会いに行っても構いませんか？
-
-ちゃんと聞けなかった貴方のこと…
-今度はご迷惑かけませんのでお住まいなど貴方の事もう一度教えてください…   ���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
