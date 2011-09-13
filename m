@@ -1,47 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754765Ab1IMPB0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 11:01:26 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:51436 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754346Ab1IMPBZ (ORCPT
+	id S1754817Ab1IMPHs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 11:07:48 -0400
+Received: from www.linutronix.de ([62.245.132.108]:37960 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754346Ab1IMPHr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 11:01:25 -0400
-Date: Tue, 13 Sep 2011 17:01:19 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Paul Menage <paul@paulmenage.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, Tim Hockin <thockin@hockin.org>,
-        Tejun Heo <tj@kernel.org>, Containers <containers@lists.osdl.org>
-Subject: Re: [PATCH 00/11 v5] cgroups: Task counter subsystem
-Message-ID: <20110913150115.GB23424@somewhere>
-References: <1315869091-18933-1-git-send-email-fweisbec@gmail.com>
- <1315924371.5977.16.camel@twins>
- <20110913143749.GA23424@somewhere>
- <1315925360.5977.17.camel@twins>
+	Tue, 13 Sep 2011 11:07:47 -0400
+Date: Tue, 13 Sep 2011 17:07:33 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+cc: "H. Peter Anvin" <hpa@zytor.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
+        Xen Devel <Xen-devel@lists.xensource.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: linux-next: manual merge of the xen tree with the tip tree
+In-Reply-To: <20110913211154.fe53ca8c1d608def77a69022@canb.auug.org.au>
+Message-ID: <alpine.LFD.2.02.1109131706410.2723@ionos>
+References: <20110825142450.c84e02d8763cfd1a93411844@canb.auug.org.au> <4E5690C3.2050706@goop.org> <4E5693DD.2010307@zytor.com> <20110826090619.7588d424798f53a6f3621eb2@canb.auug.org.au> <4E56D6E1.6030405@zytor.com> <20110826125441.709aa423cdf072ce085fb91c@canb.auug.org.au>
+ <20110913211154.fe53ca8c1d608def77a69022@canb.auug.org.au>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1315925360.5977.17.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 13, 2011 at 04:49:20PM +0200, Peter Zijlstra wrote:
-> On Tue, 2011-09-13 at 16:37 +0200, Frederic Weisbecker wrote:
-> > Because cgroup_task_limit.c sounds way too much generic to be
-> > self-explanatory.
+On Tue, 13 Sep 2011, Stephen Rothwell wrote:
+> Hi,
 > 
-> Uhm, why? That's exactly what it does, no? It limits the number of
-> tasks.
+> On Fri, 26 Aug 2011 12:54:41 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> >
+> > On Thu, 25 Aug 2011 16:12:33 -0700 "H. Peter Anvin" <hpa@zytor.com> wrote:
+> > >
+> > > On 08/25/2011 04:06 PM, Stephen Rothwell wrote:
+> > > >>
+> > > >> Stephen: the x86/spinlocks branch in the -tip tree is obsolete and
+> > > >> should be dropped.
+> > > > 
+> > > > That's a bit tricky as I get a rolled up tip tree.  The best I could do
+> > > > is revert the commit that merges the x86/spinlocks branch into
+> > > > auto-latest ...  I'll do that for today (unless something happens to the
+> > > > tip tree in the next hour).
+> > > > 
+> > > 
+> > > OK, let me bother Ingo about it.
+> > 
+> > For today, I have done "git revert -m 1 6f8fa39c81f1" after merging the
+> > tip tree.
+> 
+> I am still doing this in each linux-next, and it doesn't appear to have
+> been fixed up the the tree on tesla.tglx.de, yet, I think.
 
-To me that name sounds too generic. It's like something that does
-a random limit on the tasks. Could be memory, IO or whatever. But
-not something on the number of tasks.
+We'll take it out. Thanks,
 
-Or may be cgroup_tasks_limit.c (note the "s" that tells about tasks
-as a set), or cgroup_max_tasks.c ?
+      tglx
+
+
