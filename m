@@ -1,194 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753443Ab1IMMsh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 08:48:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22606 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753321Ab1IMMsg convert rfc822-to-8bit (ORCPT
+	id S1753501Ab1IMMtQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 08:49:16 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:60082
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753321Ab1IMMtO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 08:48:36 -0400
-Date: Tue, 13 Sep 2011 08:51:39 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "davem@davemloft.net" <davem@davemloft.net>
-Subject: Re: [PATCH v2 3/5] SUNRPC: make RPC service dependable on rpcbind
- clients creation
-Message-ID: <20110913085139.00f112e2@corrin.poochiereds.net>
-In-Reply-To: <1315596308.17611.46.camel@lade.trondhjem.org>
-References: <20110909115146.13697.71682.stgit@localhost6.localdomain6>
-	<20110909120844.13697.48102.stgit@localhost6.localdomain6>
-	<20110909100745.7e2e8bf9@corrin.poochiereds.net>
-	<4E6A41D4.6090001@parallels.com>
-	<1315593874.17611.19.camel@lade.trondhjem.org>
-	<20110909150104.5a83c60d@tlielax.poochiereds.net>
-	<1315596308.17611.46.camel@lade.trondhjem.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 13 Sep 2011 08:49:14 -0400
+Date: Tue, 13 Sep 2011 08:49:06 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: "Sam Bradshaw (sbradshaw)" <sbradshaw@micron.com>
+Cc: jaxboe@fusionio.com, alan@lxorguk.ukuu.org.uk, hch@infradead.org,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jeff Garzik <jgarzik@pobox.com>, jmoyer@redhat.com,
+        "Asai Thambi Samymuthu Pattrayasamy (asamymuthupa) [CONTRACTOR]" 
+	<asamymuthupa@micron.com>
+Subject: Re: [PATCH v4] drivers/block/mtip32xx: Adding new driver mtip32xx
+Message-ID: <20110913124906.GA17855@infradead.org>
+References: <22A973199D2C2F46933448F6E7990A3002C80026@ntxboimbx31.micron.com>
+ <4E44E782.7090309@fusionio.com>
+ <2A9BE4FF6209B644B6F8EB62DE6AEA1E07663ED4@ntxfrembx01.micron.com>
+ <20110909085433.GA9593@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110909085433.GA9593@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 09 Sep 2011 15:25:08 -0400
-Trond Myklebust <Trond.Myklebust@netapp.com> wrote:
+Btw, there is another _huge_ issue with the driver, and that is the
+lack of any internal queueing.  Remember the make_request interface is
+an extremly thin layer (or rather the lack of it) below the filesystem.
 
-> On Fri, 2011-09-09 at 15:01 -0400, Jeff Layton wrote: 
-> > On Fri, 09 Sep 2011 14:44:34 -0400
-> > Trond Myklebust <Trond.Myklebust@netapp.com> wrote:
-> > 
-> > > On Fri, 2011-09-09 at 20:41 +0400, Stanislav Kinsbursky wrote: 
-> > > > 09.09.2011 18:07, Jeff Layton пишет:
-> > > > > On Fri, 09 Sep 2011 16:08:44 +0400
-> > > > > Stanislav Kinsbursky<skinsbursky@parallels.com>  wrote:
-> > > > >
-> > > > >> Create rcbind clients or increase rpcbind users counter during RPC service
-> > > > >> creation and decrease this counter (and possibly destroy those clients) on RPC
-> > > > >> service destruction.
-> > > > >>
-> > > > >> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
-> > > > >>
-> > > > >> ---
-> > > > >>   include/linux/sunrpc/clnt.h |    2 ++
-> > > > >>   net/sunrpc/rpcb_clnt.c      |    2 +-
-> > > > >>   net/sunrpc/svc.c            |   13 +++++++++++--
-> > > > >>   3 files changed, 14 insertions(+), 3 deletions(-)
-> > > > >>
-> > > > >> diff --git a/include/linux/sunrpc/clnt.h b/include/linux/sunrpc/clnt.h
-> > > > >> index db7bcaf..65a8115 100644
-> > > > >> --- a/include/linux/sunrpc/clnt.h
-> > > > >> +++ b/include/linux/sunrpc/clnt.h
-> > > > >> @@ -135,10 +135,12 @@ void		rpc_shutdown_client(struct rpc_clnt *);
-> > > > >>   void		rpc_release_client(struct rpc_clnt *);
-> > > > >>   void		rpc_task_release_client(struct rpc_task *);
-> > > > >>
-> > > > >> +int		rpcb_create_local(void);
-> > > > >>   int		rpcb_register(u32, u32, int, unsigned short);
-> > > > >>   int		rpcb_v4_register(const u32 program, const u32 version,
-> > > > >>   				 const struct sockaddr *address,
-> > > > >>   				 const char *netid);
-> > > > >> +void		rpcb_put_local(void);
-> > > > >>   void		rpcb_getport_async(struct rpc_task *);
-> > > > >>
-> > > > >>   void		rpc_call_start(struct rpc_task *);
-> > > > >> diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
-> > > > >> index b4cc0f1..437ec60 100644
-> > > > >> --- a/net/sunrpc/rpcb_clnt.c
-> > > > >> +++ b/net/sunrpc/rpcb_clnt.c
-> > > > >> @@ -318,7 +318,7 @@ out:
-> > > > >>    * Returns zero on success, otherwise a negative errno value
-> > > > >>    * is returned.
-> > > > >>    */
-> > > > >> -static int rpcb_create_local(void)
-> > > > >> +int rpcb_create_local(void)
-> > > > >>   {
-> > > > >>   	static DEFINE_MUTEX(rpcb_create_local_mutex);
-> > > > >>   	int result = 0;
-> > > > >> diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
-> > > > >> index 6a69a11..9095c0e 100644
-> > > > >> --- a/net/sunrpc/svc.c
-> > > > >> +++ b/net/sunrpc/svc.c
-> > > > >> @@ -367,8 +367,11 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
-> > > > >>   	unsigned int xdrsize;
-> > > > >>   	unsigned int i;
-> > > > >>
-> > > > >> -	if (!(serv = kzalloc(sizeof(*serv), GFP_KERNEL)))
-> > > > >> +	if (rpcb_create_local()<  0)
-> > > > >>   		return NULL;
-> > > > >> +
-> > > > >> +	if (!(serv = kzalloc(sizeof(*serv), GFP_KERNEL)))
-> > > > >> +		goto out_err;
-> > > > >>   	serv->sv_name      = prog->pg_name;
-> > > > >>   	serv->sv_program   = prog;
-> > > > >>   	serv->sv_nrthreads = 1;
-> > > > >> @@ -403,7 +406,7 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
-> > > > >>   			GFP_KERNEL);
-> > > > >>   	if (!serv->sv_pools) {
-> > > > >>   		kfree(serv);
-> > > > >> -		return NULL;
-> > > > >> +		goto out_err;
-> > > > >>   	}
-> > > > >>
-> > > > >>   	for (i = 0; i<  serv->sv_nrpools; i++) {
-> > > > >> @@ -423,6 +426,10 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
-> > > > >>   	svc_unregister(serv);
-> > > > >>
-> > > > >>   	return serv;
-> > > > >> +
-> > > > >> +out_err:
-> > > > >> +	rpcb_put_local();
-> > > > >> +	return NULL;
-> > > > >>   }
-> > > > >>
-> > > > >>   struct svc_serv *
-> > > > >> @@ -491,6 +498,8 @@ svc_destroy(struct svc_serv *serv)
-> > > > >>   	svc_unregister(serv);
-> > > > >>   	kfree(serv->sv_pools);
-> > > > >>   	kfree(serv);
-> > > > >> +
-> > > > >> +	rpcb_put_local();
-> > > > >>   }
-> > > > >>   EXPORT_SYMBOL_GPL(svc_destroy);
-> > > > >>
-> > > > >>
-> > > > >
-> > > > > I don't get it -- what's the advantage of creating rpcbind clients in
-> > > > > __svc_create vs. the old way of creating them just before we plan to
-> > > > > use them?
-> > > > >
-> > > > 
-> > > > The main problem here is not in creation, but in destroying those clients.
-> > > > Now rpcbind clients are created during rpcb_register(). I.e. once per every family, program version and so on.
-> > > > But can be unregistered for all protocol families by one call. So it's impossible to put reference counting for those clients in the place, where they are created now.
-> > > 
-> > > Could we perhaps set up a 'struct pernet_operations' to create a
-> > > destructor for them?
-> > > 
-> > 
-> > An even easier idea might be to just not take a reference to the
-> > rpcbind client for svc_programs that have vs_hidden set on every
-> > version.
-> 
-> Isn't the problem that Stanislav is trying to solve that we need to be
-> able to register and unregister RPC services to the correct rpcbind
-> server, depending on which net namespace we are in?
-> 
-> My understanding is that the current code will register everything to
-> whatever rpcbind server is running in the init net namespace because
-> that's what rpcb_create_local() uses.
-> 
-
-My assumption in reading this set (maybe wrong) was that this was a
-preliminary set for now that just plops in function calls in the places
-that do this sort of thing now. I figured that eventually he'd convert
-rpcb_create_local, et. al. to do the same thing but within the correct
-namespace for the calling task.
-
-> My suggestion is to use a struct pernet_operations to detect when a net
-> namespace is being created or destroyed, so that the rpcbind client code
-> knows when to create or destroy a connection to the server that is
-> running in that namespace.
-> 
-
-I'm not sure that solves anything. I'd also ass|u|me that something
-here (the xprt?) will hold a reference to its netns. If we try to do
-this with pernet ops, then I think we'd end up with a chicken-and-egg
-problem...
-
-I think the simplest solution would be to basically call these
-functions closer to where the rpcbind calls happen today, and just
-don't do them when the svc_program has vs_hidden set or if the xprt is
-being created with SVC_SOCK_ANONYMOUS set.
-
-In fact, a rethink of the vs_hidden/SVC_SOCK_ANONYMOUS scheme would
-probably be a good preliminary patch here. There's a lot of overlap
-between those two flags, and somehow consolidating them would probably
-be a good thing.
-
--- 
-Jeff Layton <jlayton@redhat.com>
+So for example if eh_active is non-zero you return -EBUSY to the
+filesystems.  That's an error code it a) doesn't recognize and b)
+couldn't handle even if it did.  Similarly mtip_hw_get_scatterlist
+simply blocks if no tag is currently available instead of queueing
+it up.
