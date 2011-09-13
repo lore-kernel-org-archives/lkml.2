@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932473Ab1IMTzw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 15:55:52 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:50525
-	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S932193Ab1IMTzw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 15:55:52 -0400
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 1/1] Staging: hv: netvsc: Cleanup the name and type of link_stat variable
-Date: Tue, 13 Sep 2011 12:53:38 -0700
-Message-Id: <1315943618-22308-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S932488Ab1IMT6k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 15:58:40 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:53558 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932218Ab1IMT6j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 15:58:39 -0400
+Date: Tue, 13 Sep 2011 21:58:38 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Avi Kivity <avi@redhat.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@kernel.dk>, Marcelo Tosatti <mtosatti@redhat.com>,
+        KVM <kvm@vger.kernel.org>, Xen Devel <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: Re: [PATCH 08/13] xen/pvticketlock: disable interrupts while blocking
+Message-ID: <20110913195838.GS7761@one.firstfloor.org>
+References: <4E66EF86.9070200@redhat.com> <20110907134411.GV5795@redhat.com> <4E678992.5050709@redhat.com> <20110907155657.GX5795@redhat.com> <4E679AF4.50209@redhat.com> <20110907165203.GQ6838@redhat.com> <4E67A551.4000502@redhat.com> <20110913184044.GN5795@redhat.com> <20110913190320.GR7761@one.firstfloor.org> <20110913192152.GO5795@redhat.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110913192152.GO5795@redhat.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Consistently name the variable tracking the link status. Use a consistent
-type for this variable and get rid of some unnecessary parentheses as well.
+> Or are you saying an NMI in an idle system will have the same %rip thus
+> falsely detecting a back-to-back NMI?
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- drivers/staging/hv/rndis_filter.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+Yup.
 
-diff --git a/drivers/staging/hv/rndis_filter.c b/drivers/staging/hv/rndis_filter.c
-index 963582a..696d2c5 100644
---- a/drivers/staging/hv/rndis_filter.c
-+++ b/drivers/staging/hv/rndis_filter.c
-@@ -41,7 +41,7 @@ struct rndis_device {
- 	struct netvsc_device *net_dev;
- 
- 	enum rndis_device_state state;
--	u32 link_stat;
-+	bool link_state;
- 	atomic_t new_req_id;
- 
- 	spinlock_t request_lock;
-@@ -514,7 +514,7 @@ static int rndis_filter_query_device_link_status(struct rndis_device *dev)
- 
- 	return rndis_filter_query_device(dev,
- 				      RNDIS_OID_GEN_MEDIA_CONNECT_STATUS,
--				      &dev->link_stat, &size);
-+				      &dev->link_state, &size);
- }
- 
- static int rndis_filter_set_packet_filter(struct rndis_device *dev,
-@@ -736,11 +736,11 @@ int rndis_filter_device_add(struct hv_device *dev,
- 
- 	rndis_filter_query_device_link_status(rndis_device);
- 
--	device_info->link_state = rndis_device->link_stat;
-+	device_info->link_state = rndis_device->link_state;
- 
- 	dev_info(&dev->device, "Device MAC %pM link state %s",
- 		 rndis_device->hw_mac_adr,
--		 ((device_info->link_state) ? ("down\n") : ("up\n")));
-+		 device_info->link_state ? "down\n" : "up\n");
- 
- 	return ret;
- }
+Another problem is very long running instructions, like WBINVD and some others.
+If there's a high frequency NMI it may well hit multiple times in a single
+ instance.
+
+-Andi
+
 -- 
-1.7.4.1
-
+ak@linux.intel.com -- Speaking for myself only.
