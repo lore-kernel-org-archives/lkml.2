@@ -1,59 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932759Ab1IMVA4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 17:00:56 -0400
-Received: from claw.goop.org ([74.207.240.146]:35703 "EHLO claw.goop.org"
+	id S932731Ab1IMVDY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 17:03:24 -0400
+Received: from mx2.fusionio.com ([66.114.96.31]:38479 "EHLO mx2.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932726Ab1IMVAx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 17:00:53 -0400
-Message-ID: <4E6FC481.6040505@goop.org>
-Date: Tue, 13 Sep 2011 14:00:49 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S932691Ab1IMVDW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 17:03:22 -0400
+X-ASG-Debug-ID: 1315947800-01de285e7b538d0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4E6FC514.7070401@fusionio.com>
+Date: Tue, 13 Sep 2011 23:03:16 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, "H. Peter Anvin" <hpa@zytor.com>,
-        Xen Devel <Xen-devel@lists.xensource.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: linux-next: manual merge of the xen tree with the tip tree
-References: <20110825142450.c84e02d8763cfd1a93411844@canb.auug.org.au> <4E5690C3.2050706@goop.org> <4E5693DD.2010307@zytor.com> <20110826090619.7588d424798f53a6f3621eb2@canb.auug.org.au> <4E56D6E1.6030405@zytor.com> <20110826125441.709aa423cdf072ce085fb91c@canb.auug.org.au> <20110913211154.fe53ca8c1d608def77a69022@canb.auug.org.au> <alpine.LFD.2.02.1109131706410.2723@ionos> <4E6FC2D3.2060408@goop.org> <alpine.LFD.2.02.1109132254470.2723@ionos>
-In-Reply-To: <alpine.LFD.2.02.1109132254470.2723@ionos>
-X-Enigmail-Version: 1.3.1
-Content-Type: text/plain; charset=ISO-8859-1
+To: Eric Seppanen <eds@reric.net>
+CC: Christoph Hellwig <hch@infradead.org>,
+        "Sam Bradshaw (sbradshaw)" <sbradshaw@micron.com>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jeff Garzik <jgarzik@pobox.com>,
+        "jmoyer@redhat.com" <jmoyer@redhat.com>,
+        "Asai Thambi Samymuthu Pattrayasamy (asamymuthupa) [CONTRACTOR]" 
+	<asamymuthupa@micron.com>
+Subject: Re: [PATCH v4] drivers/block/mtip32xx: Adding new driver mtip32xx
+References: <22A973199D2C2F46933448F6E7990A3002C80026@ntxboimbx31.micron.com> <4E44E782.7090309@fusionio.com> <2A9BE4FF6209B644B6F8EB62DE6AEA1E07663ED4@ntxfrembx01.micron.com> <20110909085433.GA9593@infradead.org> <20110913124906.GA17855@infradead.org> <CAJqx+goSvc75q0gr3AkG3RqXi5_rUCuy+igx9+EZBFvyZLj39A@mail.gmail.com>
+X-ASG-Orig-Subj: Re: [PATCH v4] drivers/block/mtip32xx: Adding new driver mtip32xx
+In-Reply-To: <CAJqx+goSvc75q0gr3AkG3RqXi5_rUCuy+igx9+EZBFvyZLj39A@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1315947800
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.74438
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/13/2011 01:56 PM, Thomas Gleixner wrote:
-> On Tue, 13 Sep 2011, Jeremy Fitzhardinge wrote:
->
->> On 09/13/2011 08:07 AM, Thomas Gleixner wrote:
->>> On Tue, 13 Sep 2011, Stephen Rothwell wrote:
->>>> Hi,
->>>>
->>>> On Fri, 26 Aug 2011 12:54:41 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->>>>> On Thu, 25 Aug 2011 16:12:33 -0700 "H. Peter Anvin" <hpa@zytor.com> wrote:
->>>>>> On 08/25/2011 04:06 PM, Stephen Rothwell wrote:
->>>>>>>> Stephen: the x86/spinlocks branch in the -tip tree is obsolete and
->>>>>>>> should be dropped.
->>>>>>> That's a bit tricky as I get a rolled up tip tree.  The best I could do
->>>>>>> is revert the commit that merges the x86/spinlocks branch into
->>>>>>> auto-latest ...  I'll do that for today (unless something happens to the
->>>>>>> tip tree in the next hour).
->>>>>>>
->>>>>> OK, let me bother Ingo about it.
->>>>> For today, I have done "git revert -m 1 6f8fa39c81f1" after merging the
->>>>> tip tree.
->>>> I am still doing this in each linux-next, and it doesn't appear to have
->>>> been fixed up the the tree on tesla.tglx.de, yet, I think.
->>> We'll take it out. 
->> Actually, the tip x86/spinlocks was the most up-to-date version of those
->> patches (since hpa had rebased them to a more recent version of mainline).
-> Mooo. You tell that after we did a nasty rebase from hell :(
+On 2011-09-13 18:46, Eric Seppanen wrote:
+> On Tue, Sep 13, 2011 at 5:49 AM, Christoph Hellwig <hch@infradead.org> wrote:
+>> Btw, there is another _huge_ issue with the driver, and that is the
+>> lack of any internal queueing.  Remember the make_request interface is
+>> an extremly thin layer (or rather the lack of it) below the filesystem.
+>>
+>> So for example if eh_active is non-zero you return -EBUSY to the
+>> filesystems.  That's an error code it a) doesn't recognize and b)
+>> couldn't handle even if it did.  Similarly mtip_hw_get_scatterlist
+>> simply blocks if no tag is currently available instead of queueing
+>> it up.
+> 
+> Just out of curiosity, why is blocking on no-tag-available a bad
+> thing?  How is it any different than the blocking that will occur when
+> a request queue is full?  When the hardware queue depth is bigger than
+> that of a request queue, what extra benefit does queuing give?
 
-I'd been meaning to take it out of my tree to solve Stephen's problem,
-but, well, kernel.org.
+The blocking for a free tag is fine, the actual implementation is
+definitely not optimal (using a rw semaphore with count initialized to
+the tag depth, ugh). You'll need to block for a free tag in any case, or
+add a thread to restart things on a free tag. The thread would not help
+performance.
 
-    J
+But the -EBUSY is definitely a bug, that needs to be a waiting condition
+as well.
+
+-- 
+Jens Axboe
+
