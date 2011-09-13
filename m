@@ -1,45 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754582Ab1IMGHQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 02:07:16 -0400
-Received: from server655-han.de-nserver.de ([85.158.177.45]:54568 "EHLO
-	server655-han.de-nserver.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754065Ab1IMGHP (ORCPT
+	id S1754587Ab1IMGLQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 02:11:16 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:48469 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754065Ab1IMGLP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 02:07:15 -0400
-Message-ID: <4E6EF310.7060603@profihost.ag>
-Date: Tue, 13 Sep 2011 08:07:12 +0200
-From: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-scsi@vger.kernel.org
-Subject: Re: system freezing with 3.0.4
-References: <4E69A496.9040707@profihost.ag> <20110912201606.GA24927@infradead.org>
-In-Reply-To: <20110912201606.GA24927@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-User-Auth: Auth by hostmaster@profihost.com through 85.158.179.66
+	Tue, 13 Sep 2011 02:11:15 -0400
+Subject: Re: What is the difference between percpu_xxx and this_cpu_xxx?
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <4E6EDBFB.4010705@intel.com>
+References: <4E6EDBFB.4010705@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 13 Sep 2011 08:11:06 +0200
+Message-ID: <1315894267.2556.21.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Le mardi 13 septembre 2011 à 12:28 +0800, Huang Ying a écrit :
+> Hi,
+> 
+> If my understanding was correct, from the kernel source code, it appears
+> that percpu_xxx and this_cpu_xxx have the same semantics and
+> implementation in effect, haven’t them?
+> 
+> If so, why do we need two API for the same thing?
 
-> On Fri, Sep 09, 2011 at 07:31:02AM +0200, Stefan Priebe - Profihost AG wrote:
->> Hi list,
->>
->> here's an updated post of my one yesterday.
->>
->> We've updated some systems from 2.6.32 to 3.0.4 vanilla kernel.
->> Since then we're expecting freezes every now and then. All in memory
->> apps are still working but nothing which reads or writes from or to
->> disk (at least it seems like that).
->
-> What storage driver(s) do you use?
+History mostly, and transition.
 
-aacraid - but i'm also seeing this on other systems.
+percpu_inc() was an x86 only thing
 
-Stefan
+__get_cpu_var(var)++ -> percpu_inc(var) -> this_cpu_inc(var)
+
+
+
