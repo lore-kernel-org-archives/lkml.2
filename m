@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932641Ab1IMUvH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 16:51:07 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:45882 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932446Ab1IMUvE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 16:51:04 -0400
-Date: Tue, 13 Sep 2011 13:50:55 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mike Galbraith <efault@gmx.de>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu 44/55] rcu: wire up RCU_BOOST_PRIO for
- rcutree
-Message-ID: <20110913205055.GF3301@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110906180015.GA2560@linux.vnet.ibm.com>
- <1315332049-2604-44-git-send-email-paulmck@linux.vnet.ibm.com>
- <1315915334.6300.15.camel@marge.simson.net>
- <20110913153413.GB2416@linux.vnet.ibm.com>
- <1315929858.6312.16.camel@marge.simson.net>
+	id S932657Ab1IMUvO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 16:51:14 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:32177 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932446Ab1IMUvM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 16:51:12 -0400
 MIME-Version: 1.0
+Message-ID: <f477a147-9948-4bef-973a-1f77bd185da1@default>
+Date: Tue, 13 Sep 2011 13:50:27 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
+        hughd@google.com, ngupta@vflare.org,
+        Konrad Wilk <konrad.wilk@oracle.com>, JBeulich@novell.com,
+        Kurt Hackel <kurt.hackel@oracle.com>, npiggin@kernel.dk,
+        akpm@linux-foundation.org, riel@redhat.com, hannes@cmpxchg.org,
+        matthew@wil.cx, Chris Mason <chris.mason@oracle.com>,
+        kamezawa.hiroyu@jp.fujitsu.com, jackdachef@gmail.com,
+        cyclonusj@gmail.com, levinsasha928@gmail.com
+Subject: RE: [PATCH V9 3/6] mm: frontswap: core frontswap functionality
+References: <20110913174026.GA11298@ca-server1.us.oracle.com
+ 4E6FBFC4.1080901@linux.vnet.ibm.com>
+In-Reply-To: <4E6FBFC4.1080901@linux.vnet.ibm.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
+ 12.0.6557.5001]
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1315929858.6312.16.camel@marge.simson.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090202.4E6FC22D.0004,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 13, 2011 at 06:04:18PM +0200, Mike Galbraith wrote:
-> On Tue, 2011-09-13 at 08:34 -0700, Paul E. McKenney wrote:
-> > On Tue, Sep 13, 2011 at 02:02:14PM +0200, Mike Galbraith wrote:
+> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+> Subject: Re: [PATCH V9 3/6] mm: frontswap: core frontswap functionality
 > 
-> > > @@ -1608,7 +1618,7 @@ static int rcu_node_kthread(void *arg)
-> > >  				continue;
-> > >  			}
-> > >  			per_cpu(rcu_cpu_has_work, cpu) = 1;
-> > > -			sp.sched_priority = RCU_KTHREAD_PRIO;
-> > > +			sp.sched_priority = current->rt_priority;
-> > 
-> > This is broken -- the per-node kthread runs at RT prio 99, but we usually
-> > would not want to boost that high.
+> Hey Dan,
 > 
-> Ouch, right.  My userland sets things on boot, so it works.
-
-;-)
-
-> > Seems like we should have a global variable that tracks the current
-> > priority.  This global variable could then be set in a manner similar
-> > to the softirq priorities -- or, perhaps better, simply set whenever
-> > the softirq priority is changed.
-> > 
-> > Thoughts?
+> I get the following compile warnings:
 > 
-> RCU threads would have to constantly watch for user priority changes on
-> their own, and update private data methinks.
+> mm/frontswap.c: In function 'init_frontswap':
+> mm/frontswap.c:264:5: warning: passing argument 4 of 'debugfs_create_size_t' from incompatible pointer
+> type
+> include/linux/debugfs.h:68:16: note: expected 'size_t *' but argument is of type 'long unsigned int *'
+> mm/frontswap.c:266:5: warning: passing argument 4 of 'debugfs_create_size_t' from incompatible pointer
+> type
+> include/linux/debugfs.h:68:16: note: expected 'size_t *' but argument is of type 'long unsigned int *'
+> mm/frontswap.c:268:5: warning: passing argument 4 of 'debugfs_create_size_t' from incompatible pointer
+> type
+> include/linux/debugfs.h:68:16: note: expected 'size_t *' but argument is of type 'long unsigned int *'
+> mm/frontswap.c:270:5: warning: passing argument 4 of 'debugfs_create_size_t' from incompatible pointer
+> type
+> include/linux/debugfs.h:68:16: note: expected 'size_t *' but argument is of type 'long unsigned int *'
 
-I believe that we are going to need some sort of -rt-specific handling
-of the RCU boost priority in the short term.  Though maybe I could think
-about getting runtime modification into mainline as well -- but it would
-be different that -rt for a bit.
+Thanks for checking on 32-bit!
+ 
+> size_t is platform dependent but is generally "unsigned int"
+> for 32-bit and "unsigned long" for 64-bit.
+> 
+> I think just typecasting these to size_t * would fix it.
 
-							Thanx, Paul
+Actually, I think the best fix is likely to change the variables
+and the debugfs calls to u64 since even on 32-bit, the
+counters may exceed 2**32 on a heavily-loaded long-running
+system.
+
+I'll give it a day or two to see if anyone else has any feedback
+before I fix this for V10.
+
+Dan
