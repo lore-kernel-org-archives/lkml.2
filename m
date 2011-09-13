@@ -1,68 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932944Ab1IMV7M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 17:59:12 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:33436 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932834Ab1IMV7L (ORCPT
+	id S932953Ab1IMV7Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 17:59:25 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:46610 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932867Ab1IMV7Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 17:59:11 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:to:cc:subject:message-id:
-	references:mime-version:content-type:content-disposition:in-reply-to:
-	x-operating-system:user-agent:x-system-of-record;
-	b=ZneUFuDlwzkCx+eAH0Wu6sx/vaPvtKIQjoaVIsw6S+TEVf6MW6bvaTnE3prnC/PiG
-	cukhV1BPNEuIX6hjoZdcw==
-Date: Tue, 13 Sep 2011 14:58:51 -0700
-From: msb@google.com
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] lib/sha1.c: quite sparse noise about symbol not
- declared
-Message-ID: <20110913215851.GD9560@google.com>
-References: <201109091130.28110.hartleys@visionengravers.com>
+	Tue, 13 Sep 2011 17:59:24 -0400
+Message-ID: <4E6FD232.6030000@linux.vnet.ibm.com>
+Date: Tue, 13 Sep 2011 16:59:14 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201109091130.28110.hartleys@visionengravers.com>
-X-Operating-System: Linux/2.6.32-gg508-generic (x86_64)
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-System-Of-Record: true
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
+        hughd@google.com, ngupta@vflare.org,
+        Konrad Wilk <konrad.wilk@oracle.com>, JBeulich@novell.com,
+        Kurt Hackel <kurt.hackel@oracle.com>, npiggin@kernel.dk,
+        akpm@linux-foundation.org, riel@redhat.com, hannes@cmpxchg.org,
+        matthew@wil.cx, Chris Mason <chris.mason@oracle.com>,
+        kamezawa.hiroyu@jp.fujitsu.com, jackdachef@gmail.com,
+        cyclonusj@gmail.com, levinsasha928@gmail.com
+Subject: Re: [PATCH V9 3/6] mm: frontswap: core frontswap functionality
+References: <20110913174026.GA11298@ca-server1.us.oracle.com 4E6FBFC4.1080901@linux.vnet.ibm.com> <f477a147-9948-4bef-973a-1f77bd185da1@default>
+In-Reply-To: <f477a147-9948-4bef-973a-1f77bd185da1@default>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 11091321-3270-0000-0000-000000299EAE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+cc linux-crypto, herbert, davem, torvalds
-
-H Hartley Sweeten (hartleys@visionengravers.com) wrote:
-> Include <linux/cryptohash.h> to pickup the declarations for sha_transform
-> and sha_init to quite the sparse noise:
+On 09/13/2011 03:50 PM, Dan Magenheimer wrote:
+>> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+>> Subject: Re: [PATCH V9 3/6] mm: frontswap: core frontswap functionality
+>>
+>> Hey Dan,
+>>
+>> I get the following compile warnings:
+>>
+>> mm/frontswap.c: In function 'init_frontswap':
+>> mm/frontswap.c:264:5: warning: passing argument 4 of 'debugfs_create_size_t' from incompatible pointer
+>> type
+>> include/linux/debugfs.h:68:16: note: expected 'size_t *' but argument is of type 'long unsigned int *'
+>> mm/frontswap.c:266:5: warning: passing argument 4 of 'debugfs_create_size_t' from incompatible pointer
+>> type
+>> include/linux/debugfs.h:68:16: note: expected 'size_t *' but argument is of type 'long unsigned int *'
+>> mm/frontswap.c:268:5: warning: passing argument 4 of 'debugfs_create_size_t' from incompatible pointer
+>> type
+>> include/linux/debugfs.h:68:16: note: expected 'size_t *' but argument is of type 'long unsigned int *'
+>> mm/frontswap.c:270:5: warning: passing argument 4 of 'debugfs_create_size_t' from incompatible pointer
+>> type
+>> include/linux/debugfs.h:68:16: note: expected 'size_t *' but argument is of type 'long unsigned int *'
 > 
-> warning: symbol 'sha_transform' was not declared. Should it be static?
-> warning: symbol 'sha_init' was not declared. Should it be static?
-> 
-> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-> Cc: Mandeep Singh Baines <msb@chromium.org>
-> 
-
-Acked-by: Mandeep Singh Baines <msb@chromium.org>
-
-Thanks.
-
-> ---
-> 
-> diff --git a/lib/sha1.c b/lib/sha1.c
-> index f33271d..1de509a 100644
-> --- a/lib/sha1.c
-> +++ b/lib/sha1.c
-> @@ -8,6 +8,7 @@
->  #include <linux/kernel.h>
->  #include <linux/module.h>
->  #include <linux/bitops.h>
-> +#include <linux/cryptohash.h>
->  #include <asm/unaligned.h>
+> Thanks for checking on 32-bit!
 >  
->  /*
+>> size_t is platform dependent but is generally "unsigned int"
+>> for 32-bit and "unsigned long" for 64-bit.
+>>
+>> I think just typecasting these to size_t * would fix it.
+> 
+> Actually, I think the best fix is likely to change the variables
+> and the debugfs calls to u64 since even on 32-bit, the
+> counters may exceed 2**32 on a heavily-loaded long-running
+> system.
+> 
+
+That was going to be my other suggestion :)  I thought I'd suggest
+the route that didn't involve you having to retype the counters.  But
+the u64 solution is cleaner and, as Andrew pointed out, less risky.
+
+> I'll give it a day or two to see if anyone else has any feedback
+> before I fix this for V10.
+> 
+> Dan
+
