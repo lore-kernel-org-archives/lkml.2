@@ -1,58 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751649Ab1IMEZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 00:25:56 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:42391 "EHLO e7.ny.us.ibm.com"
+	id S1753444Ab1IME2p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 00:28:45 -0400
+Received: from mga11.intel.com ([192.55.52.93]:50403 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750747Ab1IMEZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 00:25:55 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: David Howells <dhowells@redhat.com>
-Cc: dhowells@redhat.com, agruen@kernel.org, bfields@fieldses.org,
-        akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V6 25/26] ext4: Implement rich acl for ext4
-In-Reply-To: <25112.1315572358@redhat.com>
-References: <1315243548-18664-26-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <25112.1315572358@redhat.com>
-User-Agent: Notmuch/0.5-318-g52e4ded (http://notmuchmail.org) Emacs/23.2.1 (x86_64-pc-linux-gnu)
-Date: Tue, 13 Sep 2011 09:55:30 +0530
-Message-ID: <87zki99ih1.fsf@skywalker.in.ibm.com>
+	id S1750983Ab1IME2o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 00:28:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,372,1312182000"; 
+   d="scan'208";a="52346198"
+Message-ID: <4E6EDBFB.4010705@intel.com>
+Date: Tue, 13 Sep 2011 12:28:43 +0800
+From: Huang Ying <ying.huang@intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Iceowl/1.0b2 Icedove/3.1.13
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux-foundation.org>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: What is the difference between percpu_xxx and this_cpu_xxx?
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 09 Sep 2011 13:45:58 +0100, David Howells <dhowells@redhat.com> wrote:
-> Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com> wrote:
-> 
-> > +	retval = ext4_set_richacl(handle, inode, acl);
-> > +	ext4_journal_stop(handle);
-> > +	if (retval == ENOSPC && ext4_should_retry_alloc(inode->i_sb, &retries))
-> > +		goto retry;
-> 
-> Should that be -ENOSPC?
+Hi,
 
-Fixed 
+If my understanding was correct, from the kernel source code, it appears
+that percpu_xxx and this_cpu_xxx have the same semantics and
+implementation in effect, haven’t them?
 
-> 
-> I do wonder, why does ext4 need to know about richacls at all?  Surely, as far
-> as ext4 is concerned, they should be seen as xattrs?
-> 
+If so, why do we need two API for the same thing?
 
-richacl related changes to ext4 is minimal. They mostly are to call
-necessary permission check functions and to map xattr to richacl
-structure.
-
-
-> If ext4 needs a mark on disk to say it supports richacls, then why can't that
-> simply be the presence or lack thereof of a richacl on the root dir?
-> 
-
-I have a patch in the full series which enable richacl on ext4 file system
-based on ext4 compatibility flags. I didn't add that as a part of this
-series to enable easy testing. The goal is to use tune2fs to enable
-richacl and them the mount option -o acl enable richacl/posix acl
-accordingly. 
-
--aneesh
+Best Regards,
+Huang Ying
