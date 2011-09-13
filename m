@@ -1,138 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754851Ab1IMHKJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 03:10:09 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:43337 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754743Ab1IMHKH convert rfc822-to-8bit (ORCPT
+	id S1753659Ab1IMHLw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 03:11:52 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:44114 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750710Ab1IMHLv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 03:10:07 -0400
-From: "Ravi, Deepthy" <deepthy.ravi@ti.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mchehab@infradead.org" <mchehab@infradead.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "g.liakhovetski@gmx.de" <g.liakhovetski@gmx.de>,
-        "Hiremath, Vaibhav" <hvaibhav@ti.com>
-Date: Tue, 13 Sep 2011 12:36:20 +0530
-Subject: RE: [PATCH 1/8] omap3evm: Enable regulators for camera interface
-Thread-Topic: [PATCH 1/8] omap3evm: Enable regulators for camera interface
-Thread-Index: AcxuR98Ggsdoa+x+QrSckXE7Ax44nADm8SeW
-Message-ID: <ADF30F4D7BDE934D9B632CE7D5C7ACA4047C4D090831@dbde03.ent.ti.com>
-References: <1315488831-15998-1-git-send-email-deepthy.ravi@ti.com>,<201109081851.53078.laurent.pinchart@ideasonboard.com>
-In-Reply-To: <201109081851.53078.laurent.pinchart@ideasonboard.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 13 Sep 2011 03:11:51 -0400
 MIME-Version: 1.0
+Date: Tue, 13 Sep 2011 19:11:50 +1200
+Message-ID: <CAKaWdxbcpZKL9pkf0sKS3OarSE-jRgy8QKuGu=0NEd3Rigq0dg@mail.gmail.com>
+Subject: IRQ Storm - nobody cared
+From: Keith Chew <keith.chew@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-> ________________________________________
-> From: Laurent Pinchart [laurent.pinchart@ideasonboard.com]
-> Sent: Thursday, September 08, 2011 10:21 PM
-> To: Ravi, Deepthy
-> Cc: linux-omap@vger.kernel.org; tony@atomide.com; linux@arm.linux.org.uk; linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org; mchehab@infradead.org; linux-media@vger.kernel.org; g.liakhovetski@gmx.de; Hiremath, Vaibhav
-> Subject: Re: [PATCH 1/8] omap3evm: Enable regulators for camera interface
->
-> Hi,
->
-> On Thursday 08 September 2011 15:33:51 Deepthy Ravi wrote:
->> From: Vaibhav Hiremath <hvaibhav@ti.com>
->>
->> Enabled 1v8 and 2v8 regulator output, which is being used by
->> camera module.
->
-> Thanks for the patch. Just one minor comment below.
->
->> Signed-off-by: Vaibhav Hiremath <hvaibhav@ti.com>
->> Signed-off-by: Deepthy Ravi <deepthy.ravi@ti.com>
->> ---
->>  arch/arm/mach-omap2/board-omap3evm.c |   40
->> ++++++++++++++++++++++++++++++++++ 1 files changed, 40 insertions(+), 0
->> deletions(-)
->>
->> diff --git a/arch/arm/mach-omap2/board-omap3evm.c
->> b/arch/arm/mach-omap2/board-omap3evm.c index a1184b3..8333ee4 100644
->> --- a/arch/arm/mach-omap2/board-omap3evm.c
->> +++ b/arch/arm/mach-omap2/board-omap3evm.c
->> @@ -273,6 +273,44 @@ static struct omap_dss_board_info omap3_evm_dss_data =
->> { .default_device     = &omap3_evm_lcd_device,
->>  };
->>
->> +static struct regulator_consumer_supply omap3evm_vaux3_supply = {
->> +     .supply         = "cam_1v8",
->> +};
->> +
->> +static struct regulator_consumer_supply omap3evm_vaux4_supply = {
->> +     .supply         = "cam_2v8",
->> +};
->> +
->> +/* VAUX3 for CAM_1V8 */
->> +static struct regulator_init_data omap3evm_vaux3 = {
->> +     .constraints = {
->> +             .min_uV                 = 1800000,
->> +             .max_uV                 = 1800000,
->> +             .apply_uV               = true,
->> +             .valid_modes_mask       = REGULATOR_MODE_NORMAL
->> +                                     | REGULATOR_MODE_STANDBY,
->> +             .valid_ops_mask         = REGULATOR_CHANGE_MODE
->> +                                     | REGULATOR_CHANGE_STATUS,
->> +             },
->> +     .num_consumer_supplies  = 1,
->> +     .consumer_supplies      = &omap3evm_vaux3_supply,
->
-> I might be wrong, but I think we're standardizing on using REGULATOR_SUPPLY
-> arrays as described in commit 786b01a8c1db0c0decca55d660a2a3ebd7cfb26b
-> ("cleanup regulator supply definitions in mach-omap2").
->
-[Deepthy Ravi] Yes, you are right. I will modify it.
->> +};
->> +
->> +/* VAUX4 for CAM_2V8 */
->> +static struct regulator_init_data omap3evm_vaux4 = {
->> +     .constraints = {
->> +             .min_uV                 = 1800000,
->> +             .max_uV                 = 1800000,
->> +             .apply_uV               = true,
->> +             .valid_modes_mask       = REGULATOR_MODE_NORMAL
->> +                     | REGULATOR_MODE_STANDBY,
->> +             .valid_ops_mask         = REGULATOR_CHANGE_MODE
->> +                     | REGULATOR_CHANGE_STATUS,
->> +     },
->> +     .num_consumer_supplies  = 1,
->> +     .consumer_supplies      = &omap3evm_vaux4_supply,
->> +};
->> +
->>  static struct regulator_consumer_supply omap3evm_vmmc1_supply[] = {
->>       REGULATOR_SUPPLY("vmmc", "omap_hsmmc.0"),
->>  };
->> @@ -499,6 +537,8 @@ static struct twl4030_platform_data omap3evm_twldata =
->> { .vio                = &omap3evm_vio,
->>       .vmmc1          = &omap3evm_vmmc1,
->>       .vsim           = &omap3evm_vsim,
->> +     .vaux3          = &omap3evm_vaux3,
->> +     .vaux4          = &omap3evm_vaux4,
->>  };
->>
->>  static int __init omap3_evm_i2c_init(void)
->
-> --
-> Regards,
->
-> Laurent Pinchart
->
+Hi
 
-Thanks,
-Deepthy Ravi.
+I have been trying trace through an IRQ problem, but without any
+success. Summary of problem:
+- Hardware with Intel ICH7 chipset, and PCI video capture card =
+Working flawlessly, getting 100+ interrupts per second from
+/proc/interrupts (units have been in production for 6+ years)
+- New hardware with Intel ICH9 chipset = getting spurious interrupts
+(20000+ per second), and these from dmesg at bootup:
+--------------------------------------
+Sep 13 18:49:01 localhost kernel: bttv1: timeout: drop=0 irq=1/1974,
+risc=36b4301c, bits: VSYNC HSYNC RISCI
+Sep 13 18:49:01 localhost kernel: bttv1: timeout: drop=0 irq=1/1974,
+risc=36b4301c, bits: VSYNC HSYNC RISCI
+Sep 13 18:49:02 localhost kernel: bttv3: timeout: drop=0 irq=3/1806,
+risc=36818744, bits: VSYNC HSYNC RISCI
+Sep 13 18:49:03 localhost kernel: bttv3: timeout: drop=0 irq=3/1806,
+risc=36b3b03c, bits: VSYNC HSYNC RISCI
+Sep 13 18:49:03 localhost kernel: irq 17: nobody cared (try booting
+with the "irqpoll" option)
+Sep 13 18:49:03 localhost kernel: Pid: 0, comm: swapper Not tainted 2.6.39.4 #10
+Sep 13 18:49:03 localhost kernel: Call Trace:
+Sep 13 18:49:03 localhost kernel: [<c0471785>] ? __report_bad_irq+0x25/0x90
+Sep 13 18:49:03 localhost kernel: [<c0471969>] ? note_interrupt+0x179/0x1b0
+Sep 13 18:49:03 localhost kernel: [<c04702a3>] ?
+handle_irq_event_percpu+0x93/0x1e0
+Sep 13 18:49:03 localhost kernel: [<c0471ed0>] ? handle_percpu_irq+0x50/0x50
+Sep 13 18:49:03 localhost kernel: [<c0470409>] ? handle_irq_event+0x19/0x30
+Sep 13 18:49:03 localhost kernel: [<c0471f05>] ? handle_fasteoi_irq+0x35/0x80
+Sep 13 18:49:03 localhost kernel: <IRQ>  [<c040371a>] ? do_IRQ+0x3a/0xb0
+Sep 13 18:49:03 localhost kernel: [<c075f0b0>] ? common_interrupt+0x30/0x40
+Sep 13 18:49:03 localhost kernel: [<c040887d>] ? mwait_idle+0x5d/0x140
+Sep 13 18:49:03 localhost kernel: [<c0401b7c>] ? cpu_idle+0x6c/0x90
+Sep 13 18:49:03 localhost kernel: [<c093f7d6>] ? start_kernel+0x32b/0x330
+Sep 13 18:49:03 localhost kernel: [<c093f2eb>] ? kernel_init+0x11c/0x11c
+Sep 13 18:49:03 localhost kernel: [<c093f0b5>] ? i386_start_kernel+0xb5/0xc0
+Sep 13 18:49:03 localhost kernel: handlers:
+Sep 13 18:49:03 localhost kernel: [<fb16b830>] (bttv_irq+0x0/0x9d0 [bttv])
+Sep 13 18:49:03 localhost kernel: [<fb16b830>] (bttv_irq+0x0/0x9d0 [bttv])
+Sep 13 18:49:03 localhost kernel: Disabling IRQ #17
+Sep 13 18:49:04 localhost kernel: irq 18: nobody cared (try booting
+with the "irqpoll" option)
+Sep 13 18:49:04 localhost kernel: Pid: 0, comm: swapper Not tainted 2.6.39.4 #10
+Sep 13 18:49:04 localhost kernel: Call Trace:
+Sep 13 18:49:04 localhost kernel: [<c0471785>] ? __report_bad_irq+0x25/0x90
+Sep 13 18:49:04 localhost kernel: [<f99892c0>] ?
+piix_irq_check+0x10/0x20 [ata_piix]
+Sep 13 18:49:04 localhost kernel: [<c0471969>] ? note_interrupt+0x179/0x1b0
+Sep 13 18:49:04 localhost kernel: [<c04702a3>] ?
+handle_irq_event_percpu+0x93/0x1e0
+Sep 13 18:49:04 localhost kernel: [<c0419917>] ? __io_apic_modify_irq+0x77/0x90
+Sep 13 18:49:04 localhost kernel: [<c0471ed0>] ? handle_percpu_irq+0x50/0x50
+Sep 13 18:49:04 localhost kernel: [<c0471ed0>] ? handle_percpu_irq+0x50/0x50
+Sep 13 18:49:04 localhost kernel: [<c0470409>] ? handle_irq_event+0x19/0x30
+Sep 13 18:49:04 localhost kernel: [<c0471f05>] ? handle_fasteoi_irq+0x35/0x80
+Sep 13 18:49:04 localhost kernel: <IRQ>  [<c040371a>] ? do_IRQ+0x3a/0xb0
+Sep 13 18:49:04 localhost kernel: [<c075f0b0>] ? common_interrupt+0x30/0x40
+Sep 13 18:49:04 localhost kernel: [<c040887d>] ? mwait_idle+0x5d/0x140
+Sep 13 18:49:04 localhost kernel: [<c0401b7c>] ? cpu_idle+0x6c/0x90
+Sep 13 18:49:04 localhost kernel: [<c093f7d6>] ? start_kernel+0x32b/0x330
+Sep 13 18:49:04 localhost kernel: [<c093f2eb>] ? kernel_init+0x11c/0x11c
+Sep 13 18:49:04 localhost kernel: [<c093f0b5>] ? i386_start_kernel+0xb5/0xc0
+Sep 13 18:49:04 localhost kernel: handlers:
+Sep 13 18:49:04 localhost kernel: [<c0661f60>] (usb_hcd_irq+0x0/0x50)
+Sep 13 18:49:04 localhost kernel: [<fb16b830>] (bttv_irq+0x0/0x9d0 [bttv])
+Sep 13 18:49:04 localhost kernel: [<fb16b830>] (bttv_irq+0x0/0x9d0 [bttv])
+Sep 13 18:49:04 localhost kernel: Disabling IRQ #18
+Sep 13 18:49:36 localhost kernel: irq 19: nobody cared (try booting
+with the "irqpoll" option)
+Sep 13 18:49:36 localhost kernel: Pid: 1502, comm: mplayer Not tainted
+2.6.39.4 #10
+Sep 13 18:49:36 localhost kernel: Call Trace:
+Sep 13 18:49:36 localhost kernel: [<c0471785>] ? __report_bad_irq+0x25/0x90
+Sep 13 18:49:36 localhost kernel: [<f99892c0>] ?
+piix_irq_check+0x10/0x20 [ata_piix]
+Sep 13 18:49:36 localhost kernel: [<c0471969>] ? note_interrupt+0x179/0x1b0
+Sep 13 18:49:36 localhost kernel: [<c04702a3>] ?
+handle_irq_event_percpu+0x93/0x1e0
+Sep 13 18:49:36 localhost kernel: [<c0419917>] ? __io_apic_modify_irq+0x77/0x90
+Sep 13 18:49:36 localhost kernel: [<c0471ed0>] ? handle_percpu_irq+0x50/0x50
+Sep 13 18:49:36 localhost kernel: [<c0471ed0>] ? handle_percpu_irq+0x50/0x50
+Sep 13 18:49:36 localhost kernel: [<c0470409>] ? handle_irq_event+0x19/0x30
+Sep 13 18:49:36 localhost kernel: [<c0471f05>] ? handle_fasteoi_irq+0x35/0x80
+Sep 13 18:49:36 localhost kernel: <IRQ>  [<c040371a>] ? do_IRQ+0x3a/0xb0
+Sep 13 18:49:36 localhost kernel: [<c075f0b0>] ? common_interrupt+0x30/0x40
+Sep 13 18:49:36 localhost kernel: [<c075007b>] ? pci_scan_bridge+0xdc/0x4dc
+Sep 13 18:49:36 localhost kernel: [<c0750000>] ? pci_scan_bridge+0x61/0x4dc
+Sep 13 18:49:36 localhost kernel: handlers:
+Sep 13 18:49:36 localhost kernel: [<c0646f20>] (ata_bmdma_interrupt+0x0/0x1e0)
+Sep 13 18:49:36 localhost kernel: [<c0646f20>] (ata_bmdma_interrupt+0x0/0x1e0)
+Sep 13 18:49:36 localhost kernel: [<fb16b830>] (bttv_irq+0x0/0x9d0 [bttv])
+Sep 13 18:49:36 localhost kernel: [<fb16b830>] (bttv_irq+0x0/0x9d0 [bttv])
+Sep 13 18:49:36 localhost kernel: Disabling IRQ #19
+--------------------------------------
+
+Have tested on 3 pieces of new hardware, and all same results (so it
+is not faulty RAM, CPU, HDD or PCI card).
+
+I have updated the BIOS to the latest, and also tried all possible
+combinations: nosmp, noapic, nolapic, noriqdebug, irqpoll, etc. From
+the kernel compilation options, I have tried all the things that are
+related to IRQs and PCI, eg disable MSI, PCIe, ASPM, etc. I end up
+with the same results.
+
+Also upgraded to the lastest kernel 2.6.39.4, and getting the same
+results. This is driving me insane.
+
+I have analysed the dmesg, and I cannot pin point the culprit.  But if
+I pull out the PCI video capture card, then the system behaves well.
+So, perhaps this is a BUG in the bttv driver with ICH9 chipset?
+
+Regards
+Keith
