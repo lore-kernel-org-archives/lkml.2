@@ -1,62 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752793Ab1IMArx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 20:47:53 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:53668 "EHLO
+	id S1753126Ab1IMA7N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 20:59:13 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:47778 "EHLO
 	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752300Ab1IMArv (ORCPT
+	with ESMTP id S1752300Ab1IMA7M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 20:47:51 -0400
-Date: Tue, 13 Sep 2011 10:47:43 +1000
+	Mon, 12 Sep 2011 20:59:12 -0400
+Date: Tue, 13 Sep 2011 10:58:58 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: paulmck@linux.vnet.ibm.com
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Temporary -rcu tree location
-Message-Id: <20110913104743.9087bec1bd105bec142c9e0e@canb.auug.org.au>
-In-Reply-To: <20110913000107.GA15945@linux.vnet.ibm.com>
-References: <20110913000107.GA15945@linux.vnet.ibm.com>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-wireless@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Temporary(?) relocation of wireless git trees...
+Message-Id: <20110913105858.eedd5ac594679aa36111c9d4@canb.auug.org.au>
+In-Reply-To: <20110912181351.GD2689@tuxdriver.com>
+References: <20110912181351.GD2689@tuxdriver.com>
 X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA1";
- boundary="Signature=_Tue__13_Sep_2011_10_47_43_+1000_61ltFHyqXduHKGq0"
+ boundary="Signature=_Tue__13_Sep_2011_10_58_58_+1000_0U2ldkyiAt.41egq"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__13_Sep_2011_10_47_43_+1000_61ltFHyqXduHKGq0
+--Signature=_Tue__13_Sep_2011_10_58_58_+1000_0U2ldkyiAt.41egq
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Paul,
+Hi John,
 
-On Mon, 12 Sep 2011 17:01:07 -0700 "Paul E. McKenney" <paulmck@linux.vnet.i=
-bm.com> wrote:
+On Mon, 12 Sep 2011 14:13:52 -0400 "John W. Linville" <linville@tuxdriver.c=
+om> wrote:
 >
-> Could you please make the -next tree pull from branch next.2011.09.12a
-> of https://github.com/paulmckrcu/linux while kernel.org is down?
+> With no news on when the kernel.org trees will be accessible again
+> (which could be 10 minutes from now for all I know), I have pushed
+> my local copies to Infradead.  This should be equivalent to what was
+> last pushed to kernel.org almost two weeks ago.
+>=20
+> The "current" wireless tree is here:
+>=20
+> 	git://git.infradead.org/users/linville/wireless.git
+>=20
+> The "next" wireless tree is here:
+>=20
+> 	git://git.infradead.org/users/linville/wireless-next.git
 
-What branch?
+OK, I have switched to these using their "master" branches.  There is
+nothing new in them, correct?
 
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 http://www.canb.auug.org.au/~sfr/
 
---Signature=_Tue__13_Sep_2011_10_47_43_+1000_61ltFHyqXduHKGq0
+--Signature=_Tue__13_Sep_2011_10_58_58_+1000_0U2ldkyiAt.41egq
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQEcBAEBAgAGBQJObqgvAAoJEDMEi1NhKgbsn24H/jAi5sPM0rgWqvnbRaLVkOYj
-ACCQERFJbmHKwEwSnlWTXD8HzX0DlNDlz5RGGnkoFVQL7pYnAgajJBykpu+E1Bsr
-WpBcsGFyfVMoRFswS7bfyBC0SV0/eFlIGOE3BZkzhznUmH+r7TEI/RB145uHPDQk
-PBHJy7j2GyMs1O5V3EALcDRaVGphipuPrIXnxc+kbpVpKvdsYPcEuCXSijHSX452
-ZdqwRrkkmHUTid0LVR3HRsai4VO7pITJydJMyD9JuzZAQ9cQV3HN7d9fSTB3J6gl
-scxduybP4VJAkLP4RR5QGl3h9jQjrD3o5q2HAQLmvbQC+NaXCvxDpEugCCQDc8M=
-=GJLk
+iQEcBAEBAgAGBQJObqrSAAoJEDMEi1NhKgbsZXUH/1mA4y7T5EZEACpn+0ST5xK5
+hc16XHpILQ4Mq48ZQg2zkj0RMnlCCIgSplKupRMG9DlHw/YJ5bViEJ20yu01vXVb
+ld6tQ2JEfNtjG/SPMhOZU6/wCk9gXspqvXEK3kMoX8ZDv1fuGH2G4t7kHIXStYPI
+GgEHt5APdnaEEMybmnsZSd1AeUqr+qIzhFmNir9PFuvDlTMoDMt9YLqz7BlzqHRG
+CyX+5v4g7qm4aiR1QC4b8Rwgk0a4oJ674Kl1cofsND+pjzQOm6keOz27jWo+9vdK
+mk5++PXFK8hEhwpaYnPTBPkDW8VUPuwhc1MLrWR/K8PCeaKKqIFkAkz3MFJakkc=
+=c3Of
 -----END PGP SIGNATURE-----
 
---Signature=_Tue__13_Sep_2011_10_47_43_+1000_61ltFHyqXduHKGq0--
+--Signature=_Tue__13_Sep_2011_10_58_58_+1000_0U2ldkyiAt.41egq--
