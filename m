@@ -1,124 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756172Ab1IMSVv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 14:21:51 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:59991 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755870Ab1IMSVt convert rfc822-to-8bit (ORCPT
+	id S932148Ab1IMSYN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 14:24:13 -0400
+Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:38841 "EHLO
+	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755856Ab1IMSYL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 14:21:49 -0400
-Message-ID: <4E6F9FD2.4010407@cn.fujitsu.com>
-Date: Wed, 14 Sep 2011 02:24:18 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	Tue, 13 Sep 2011 14:24:11 -0400
+From: Kevin Hilman <khilman@ti.com>
+To: "Koyamangalath\, Abhilash" <abhilash.kv@ti.com>
+Cc: "linux-omap\@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tony\@atomide.com" <tony@atomide.com>,
+        "linux\@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "Lohithakshan\, Ranjith" <ranjithl@ti.com>
+Subject: Re: [PATCH 1/4] AM3517 : support for suspend/resume
+Organization: Texas Instruments, Inc.
+References: <1313754927-11992-1-git-send-email-abhilash.kv@ti.com>
+	<1313754927-11992-2-git-send-email-abhilash.kv@ti.com>
+	<87fwkild5k.fsf@ti.com>
+	<FCCFB4CDC6E5564B9182F639FC356087037B3D8823@dbde02.ent.ti.com>
+Date: Tue, 13 Sep 2011 11:24:05 -0700
+In-Reply-To: <FCCFB4CDC6E5564B9182F639FC356087037B3D8823@dbde02.ent.ti.com>
+	(Abhilash Koyamangalath's message of "Tue, 13 Sep 2011 17:01:01
+	+0530")
+Message-ID: <8739g0b8sa.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v3 03/11] KVM: x86: retry non-page-table writing instruction
-References: <4E5C4C20.3000403@cn.fujitsu.com> <4E5C4C5C.8030602@cn.fujitsu.com> <4E6F34CF.1060302@redhat.com>
-In-Reply-To: <4E6F34CF.1060302@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-09-14 02:20:35,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-09-14 02:20:35
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/13/2011 06:47 PM, Avi Kivity wrote:
-> On 08/30/2011 05:35 AM, Xiao Guangrong wrote:
->> If the emulation is caused by #PF and it is non-page_table writing instruction,
->> it means the VM-EXIT is caused by shadow page protected, we can zap the shadow
->> page and retry this instruction directly
+Hi Abhilash,
+
+"Koyamangalath, Abhilash" <abhilash.kv@ti.com> writes:
+
+> Hi
+>
+> On Wed, Aug 31, 2011 at 4:28 AM, Hilman, Kevin wrote:
 >>
->> The idea is from Avi
+>> Abhilash K V <abhilash.kv@ti.com> writes:
 >>
+>>> 1. Patch to disable dynamic sleep (as it is not supported
+>>>    on AM35xx).
+>>> 2. Imported the unique suspend/resume sequence for AM3517,
+>>>    contained in the new file arch/arm/mach-omap2/sleep3517.S.
+>>> 3. Added omap3517_ to symbol-names in sleep3517.S which are common
+>>>    with sleep34xx.S, and added appropriate checks.
+>>>
+>>> There are still 3 caveats:
+>>>
+>>> 1. If "no_console_suspend" is enabled (via boot-args), the device
+>>>    doesnot resume but simply hangs.
+>>> 2. Every second and subsequent attempt to suspend/resume prints this slow-path
+>>>    WARNING (for both uart1 and uart2), while resuming :
+>>>    [   70.943939] omap_hwmod: uart1: idle state can only be entered from
+>>>    enabled state
+>>> 3. Wakeup using the TSC2004 touch-screen controller is not supported.
+>>>
+>>> Signed-off-by: Ranjith Lohithakshan <ranjithl@ti.com>
+>>> Reviewed-by: Vaibhav Hiremath <hvaibhav@ti.com>
+>>> Signed-off-by: Abhilash K V <abhilash.kv@ti.com>
 >>
->>   int x86_decode_insn(struct x86_emulate_ctxt *ctxt, void *insn, int insn_len);
->> +bool page_table_writing_insn(struct x86_emulate_ctxt *ctxt);
-> 
-> Please use the usual x86_ prefix used in the emulator interface.
-> 
+>> In addition to Russell's comments about using the latest code from
+>> mainline, I have some comments below.
+> [Abhilash K V] I have reworked the patch against the tip (as suggested by
+> Russell).
+> And I've incorporated all of Kevin's comments too.
 
-OK, will fix.
+Great, thanks!
 
->> @@ -3720,10 +3721,18 @@ void __kvm_mmu_free_some_pages(struct kvm_vcpu *vcpu)
->>       kvm_mmu_commit_zap_page(vcpu->kvm,&invalid_list);
->>   }
->>
->> +static bool is_mmio_page_fault(struct kvm_vcpu *vcpu, gva_t addr)
->> +{
->> +    if (vcpu->arch.mmu.direct_map || mmu_is_nested(vcpu))
->> +        return vcpu_match_mmio_gpa(vcpu, addr);
->> +
->> +    return vcpu_match_mmio_gva(vcpu, addr);
->> +}
->> +
->>   int kvm_mmu_page_fault(struct kvm_vcpu *vcpu, gva_t cr2, u32 error_code,
->>                  void *insn, int insn_len)
->>   {
->> -    int r;
->> +    int r, emulation_type = EMULTYPE_RETRY;
->>       enum emulation_result er;
->>
->>       r = vcpu->arch.mmu.page_fault(vcpu, cr2, error_code, false);
->> @@ -3735,7 +3744,10 @@ int kvm_mmu_page_fault(struct kvm_vcpu *vcpu, gva_t cr2, u32 error_code,
->>           goto out;
->>       }
->>
->> -    er = x86_emulate_instruction(vcpu, cr2, 0, insn, insn_len);
->> +    if (is_mmio_page_fault(vcpu, cr2))
->> +        emulation_type = 0;
->> +
->> +    er = x86_emulate_instruction(vcpu, cr2, emulation_type, insn, insn_len);
->>
->>       switch (er) {
->>       case EMULATE_DONE:
->> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
->> index 6b37f18..1afe59e 100644
->> --- a/arch/x86/kvm/x86.c
->> +++ b/arch/x86/kvm/x86.c
->> @@ -4814,6 +4814,50 @@ static bool reexecute_instruction(struct kvm_vcpu *vcpu, gva_t gva)
->>       return false;
->>   }
->>
->> +static bool retry_instruction(struct x86_emulate_ctxt *ctxt,
->> +                  unsigned long cr2,  int emulation_type)
->> +{
->> +    if (!vcpu->arch.mmu.direct_map&&  !mmu_is_nested(vcpu))
->> +        gpa = kvm_mmu_gva_to_gpa_write(vcpu, cr2, NULL);
-> 
-> If mmu_is_nested() cr2 is an ngpa, we have to translate it to a gpa, no?
-> 
+> There is one "known" issue left which needs to be closed before I can submit v2 of this patch.
+> With no_console_suspend, suspend to RAM hangs right now on AM3517, after
+> the message:
+>           Disabling non-boot CPUs ...
+> There is no error message or dump.
+> I found that this crash is happening in a call to pr_warning(), from _omap_device_deactivate().
+> The same code does not produce this issue on omap34xx due to this snippet from omap_sram_idle() :
+>         /* PER */
+>         if (per_next_state < PWRDM_POWER_ON) {
+>                 per_going_off = (per_next_state == PWRDM_POWER_OFF) ? 1 : 0;
+>                 omap_uart_prepare_idle(2);
+>                 omap_uart_prepare_idle(3);
+>                 omap2_gpio_prepare_for_idle(per_going_off);
+>                 if (per_next_state == PWRDM_POWER_OFF)
+>                                 omap3_per_save_context();
+>         }
+>         /* CORE */
+>         if (core_next_state < PWRDM_POWER_ON) {
+>                 omap_uart_prepare_idle(0);
+>                 omap_uart_prepare_idle(1);
+>                 if (core_next_state == PWRDM_POWER_OFF) {
+>                         omap3_core_save_context();
+>                         omap3_cm_save_context();
+>                 }
+>         }
+> This happens in preparation to the suspend operation (I,e. the WFI).
+> As seen here, on 34xx the sequence in which the uarts are disabled is 2, 3, 0 and 1.The console-uart, which is uart-1 here (starting from uart-0) is disabled last.
 
-Yeah, will fix it.
+> For AM3517 EVM, the console-uart is uart-2 and this ought to be
+> disabled at the last to prevent this crash from occurring.
 
-And this bug also exists in the current code: it always uses L2 gpa to emulate
-write operation.
-I guess the reason that it is not triggered is: the gpa of L2's shadow page can
-not be touched by L2, it means no page table is write-protected by L2.
+There are several other OMAP3 platforms (n900, Beagle, etc.) where the
+UART console is also UART2, so console ordering is not the problem.
 
-> btw, I don't see mmu.direct_map initialized for nested npt?
-> 
+The fact that that pr_warning is making it to the console suggests that
+the console is not locked.  In the idle path, we take the console lock
+(using console_trylock(), just above the code you showed above.)
 
-nested_svm_vmrun() -> nested_svm_init_mmu_context():
-static int nested_svm_init_mmu_context(struct kvm_vcpu *vcpu)
-{
-	int r;
+But during suspend, there was an assumption (by me[2]) that the console
+would always be locked in the suspend path.  During no_console_suspend,
+it appears that is not the case.
 
-	r = kvm_init_shadow_mmu(vcpu, &vcpu->arch.mmu);
+Can you try the patch below[1] to see if that fixes your problem?  I
+think it should.
 
-	vcpu->arch.mmu.set_cr3           = nested_svm_set_tdp_cr3;
-	vcpu->arch.mmu.get_cr3           = nested_svm_get_tdp_cr3;
-	vcpu->arch.mmu.get_pdptr         = nested_svm_get_tdp_pdptr;
-	vcpu->arch.mmu.inject_page_fault = nested_svm_inject_npf_exit;
-	vcpu->arch.mmu.shadow_root_level = get_npt_level();
-	vcpu->arch.walk_mmu              = &vcpu->arch.nested_mmu;
+Kevin
 
-	return r;
-}
 
-It is initialized in kvm_init_shadow_mmu　:-)
+[1]
+>From 5b5a73101fcfa042d53828c017ee3149eae44b50 Mon Sep 17 00:00:00 2001
+From: Kevin Hilman <khilman@ti.com>
+Date: Tue, 13 Sep 2011 11:18:44 -0700
+Subject: [PATCH] OMAP3: PM: fix UART handling when using no_console_suspend
+
+During the idle/suspend path, we expect the console lock to be held so
+that no console output is done during/after the UARTs are idled.
+
+However, when using the no_console_suspend argument on the
+command-line, the console driver does not take the console lock.  This
+allows the possibility of console activity after UARTs have been
+disabled.
+
+To fix, update the current is_suspending() to also check the
+console_suspend_enabled flag.
+
+NOTE: this is short-term workaround until the OMAP serial driver
+      is fully converted to use runtime PM.
+
+Signed-off-by: Kevin Hilman <khilman@ti.com>
+---
+ arch/arm/mach-omap2/pm34xx.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/pm34xx.c b/arch/arm/mach-omap2/pm34xx.c
+index 7255d9b..c8cbd00 100644
+--- a/arch/arm/mach-omap2/pm34xx.c
++++ b/arch/arm/mach-omap2/pm34xx.c
+@@ -55,7 +55,7 @@
+ static suspend_state_t suspend_state = PM_SUSPEND_ON;
+ static inline bool is_suspending(void)
+ {
+-	return (suspend_state != PM_SUSPEND_ON);
++	return (suspend_state != PM_SUSPEND_ON) && console_suspend_enabled;
+ }
+ #else
+ static inline bool is_suspending(void)
+-- 
+1.7.6
+
+
+
+[2]
+commit e83df17f178360a8e7874441bca04a710c869e42
+Author: Kevin Hilman <khilman@deeprootsystems.com>
+Date:   Wed Dec 8 22:40:40 2010 +0000
+
+    OMAP2+: PM/serial: fix console semaphore acquire during suspend
+    
+    commit 0d8e2d0dad98a693bad88aea6876ac8b94ad95c6 (OMAP2+: PM/serial:
+    hold console semaphore while OMAP UARTs are disabled) added use of the
+    console semaphore to protect UARTs from being accessed after disabled
+    during idle, but this causes problems in suspend.
+    
+    During suspend, the console semaphore is acquired by the console
+    suspend method (console_suspend()) so the try_acquire_console_sem()
+    will always fail and suspend will be aborted.
+    
+    To fix, introduce a check so the console semaphore is only attempted
+    during idle, and not during suspend.  Also use the same check so that
+    the console semaphore is not prematurely released during resume.
+    
+    Thanks to Paul Walmsley for suggesting adding the same check during
+    resume.
+    
+    Cc: Paul Walmsley <paul@pwsan.com>
+    Tested-by: Jean Pihet <j-pihet@ti.com>
+    Tested-by: Paul Walmsley <paul@pwsan.com>
+    Signed-off-by: Kevin Hilman <khilman@deeprootsystems.com>
+    Signed-off-by: Tony Lindgren <tony@atomide.com>
+
+
