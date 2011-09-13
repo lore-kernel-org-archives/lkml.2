@@ -1,106 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933122Ab1IMXmv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 19:42:51 -0400
-Received: from mail-vw0-f42.google.com ([209.85.212.42]:41462 "EHLO
-	mail-vw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933105Ab1IMXmt convert rfc822-to-8bit (ORCPT
+	id S933127Ab1IMXyN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 19:54:13 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:10993 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933094Ab1IMXyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 19:42:49 -0400
-X-Greylist: delayed 310 seconds by postgrey-1.27 at vger.kernel.org; Tue, 13 Sep 2011 19:42:49 EDT
-MIME-Version: 1.0
-In-Reply-To: <CAJ0pr1-ba0iY808igXJuEiWAX5zwhTUD6r+8MAMeBTHYFTenCg@mail.gmail.com>
-References: <1313758358-27536-1-git-send-email-per.forlin@stericsson.com>
-	<1313758358-27536-2-git-send-email-per.forlin@stericsson.com>
-	<1313758358-27536-3-git-send-email-per.forlin@stericsson.com>
-	<CAC5umyjWx7ZvT+F_XhOZt_utr=mS-0p5tDpJ1ioWNiDAJLNXwQ@mail.gmail.com>
-	<CAJ0pr18dn3CtBsXk9MG3Zn9zSwAiNoxB3b-62aMO3+8H+kUX3A@mail.gmail.com>
-	<CAJ0pr1-ba0iY808igXJuEiWAX5zwhTUD6r+8MAMeBTHYFTenCg@mail.gmail.com>
-Date: Wed, 14 Sep 2011 08:37:37 +0900
-Message-ID: <CAC5umygBmE-dayTrUhU_=dn7+YZ=nd8-s7SJw5xLxnKN1pBMAQ@mail.gmail.com>
-Subject: Re: [PATCH v9 2/3] mmc: core: add random fault injection
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: Per Forlin <per.forlin@linaro.org>
-Cc: Per Forlin <per.forlin@stericsson.com>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>,
-        linux-doc@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 13 Sep 2011 19:54:12 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:to:cc:subject:message-id:in-reply-to:references:
+	x-mailer:mime-version:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=iE9ijYAqRSGHJDCeJOlODgt37hmNpEgweOCJ2V9sbGuo+zfiUaK0uzzA3rdIFiCPi
+	nQzms9W/ULK0Uj/OM+A+Q==
+Date: Tue, 13 Sep 2011 16:53:44 -0700
+From: Andrew Morton <akpm@google.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>,
+        Dave Chinner <david@fromorbit.com>, Hugh Dickins <hughd@google.com>
+Subject: Re: [BUG] infinite loop in find_get_pages()
+Message-Id: <20110913165344.1d800582.akpm@google.com>
+In-Reply-To: <1315941801.2565.19.camel@edumazet-laptop>
+References: <1315941801.2565.19.camel@edumazet-laptop>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/9/14 Per Forlin <per.forlin@linaro.org>:
-> Hi Akinobu,
->
-> On 13 September 2011 16:19, Per Forlin <per.forlin@linaro.org> wrote:
->> On 13 September 2011 15:12, Akinobu Mita <akinobu.mita@gmail.com> wrote:
->>> 2011/8/19 Per Forlin <per.forlin@stericsson.com>:
->>>
->>>> +#ifdef KERNEL
->>>> +/*
->>>> + * Internal function. Pass the boot param fail_mmc_request to
->>>> + * the setup fault injection attributes routine.
->>>> + */
->>>> +static int __init setup_fail_mmc_request(char *str)
->>>> +{
->>>> +       return setup_fault_attr(&fail_mmc_request, str);
->>>> +}
->>>> +__setup("fail_mmc_request=", setup_fail_mmc_request);
->>>> +#endif /* KERNEL */
->>>
->>> You attempt to enable __setup() only when mmc_core is built into
->>> the kernel.  Does it really work? I cannot find any drivers using
->>> "KERNEL" macro.
->>>
->> Your right it doesn't work. I think I change from ifndef MODULE to
->> ifdef KERNEL at one point.
->> It should be "ifndef MODULE"
+On Tue, 13 Sep 2011 21:23:21 +0200
+Eric Dumazet <eric.dumazet@gmail.com> wrote:
 
-It's simple and I like this solution.
+> Linus,
+> 
+> It seems current kernels (3.1.0-rc6) are really unreliable, or maybe I
+> expect too much from them.
+> 
+> On my 4GB x86_64 machine (2 quad-core cpus, 2 threads per core), I can
+> have a cpu locked in
+> 
+>  find_get_pages -> radix_tree_gang_lookup_slot -> __lookup 
+> 
+> 
+> Problem is : A bisection will be very hard, since a lot of kernels
+> simply destroy my disk (the PCI MRRS horror stuff).
 
-module_param is more complicated than this. Also the parameter is only
-usefull when when mmc_core is built into the kernel (it's useless when
-mmc_core is built as a module).
+Yes, that's hard.  Quite often my bisection efforts involve moving to a
+new bisection point then hand-applying a few patches to make the the
+thing compile and/or work.
 
->>> You can use module_param_cb() instead of __setup() without #ifdef KERNEL.
->>> When mmc_core is built into the kernel, you can specify the parameter
->>> with "mmc_core.fail_mmc_request=..."
->>>
-> I am considering using module_param() with perm = 0 (not visible in
-> sysfs). The purpose of the param is to set fault attributes during
-> kerne boot time or module load time. After the kernel boot all can be
-> set under debug fs, therefore no need to make the module param
-> visible.
->
-> What do you think about this? I have not tested it yet.
-> ----------------------------------------------------------
+There have only been three commits to radix-tree.c this year, so a bit
+of manual searching through those would be practical?
 
-...
+> Messages at console :
+>  
+> INFO: rcu_preempt_state detected stalls on CPUs/tasks: {} (detected by
+> 11 t=60002 jiffies)
+> 
+> perf top -C 1
+> 
+> Events: 3K cycles                                                                                                                                             
+> +     43,08%  bash  [kernel.kallsyms]  [k] __lookup
+> +     41,51%  bash  [kernel.kallsyms]  [k] find_get_pages
+> +     15,31%  bash  [kernel.kallsyms]  [k] radix_tree_gang_lookup_slot
+> 
+>     43.08%     bash  [kernel.kallsyms]  [k] __lookup
+>                |
+>                --- __lookup
+>                   |          
+>                   |--97.09%-- radix_tree_gang_lookup_slot
+>                   |          find_get_pages
+>                   |          pagevec_lookup
+>                   |          invalidate_mapping_pages
+>                   |          drop_pagecache_sb
+>                   |          iterate_supers
+>                   |          drop_caches_sysctl_handler
+>                   |          proc_sys_call_handler.isra.3
+>                   |          proc_sys_write
+>                   |          vfs_write
+>                   |          sys_write
+>                   |          system_call_fastpath
+>                   |          __write
+>                   |          
+> 
+> 
+> Steps to reproduce :
+> 
+> In one terminal, kernel builds in a loop (defconfig + hpsa driver)
+> 
+> cd /usr/src/linux
+> while :
+> do
+>  make clean
+>  make -j128
+> done
+> 
+> 
+> In another term :
+> 
+> while :
+> do
+>  echo 3 >/proc/sys/vm/drop_caches
+>  sleep 20
+> done
+> 
 
-> ----------------------------------------------------------
-> It's only necessary to call setup_fault_attr() once for all hosts.
-> Here it's called one time for each host. I think it's ok since the
-> routine is small and used for debugging purposes.
-> I could use a static bool to indicate whether setup_fault_attr() has
-> already been issued.
-> + if (fail_mmc_request && !setup_fault_attr_done)
+This is a regression?  3.0 is OK?
 
-module_param_cb() doesn't work as you expected?  (Although I suggested
-to use #ifdef MODULE instead of #ifdef KERNEL, I'm just asking out of
-curiosity)
+Also, do you know that the hang is happening at the radix-tree level? 
+It might be at the filemap.c level or at the superblock level and we
+just end up spending most cycles at the lower levels because they're
+called so often?  The iterate_supers/drop_pagecache_sb code is fairly
+recent.
 
-static int fail_mmc_request_param_set(const char *val,
-                                const struct kernel_param *kp)
-{
-        setup_fault_attr(&fail_mmc_request, val);
-        return 0;
-}
 
-static const struct kernel_param_ops fail_mmc_request_param_ops = {
-        .set = fail_mmc_request_param_set
-};
-
-module_param_cb(fail_mmc_request, &fail_mmc_request_param_ops,
-                &fail_mmc_request, 0);
