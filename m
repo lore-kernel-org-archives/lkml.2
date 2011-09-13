@@ -1,184 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755214Ab1IMPkb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 11:40:31 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:42228 "EHLO e3.ny.us.ibm.com"
+	id S1755177Ab1IMPmk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 11:42:40 -0400
+Received: from lucidpixels.com ([72.73.18.11]:44044 "EHLO lucidpixels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755166Ab1IMPk0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 11:40:26 -0400
-Date: Tue, 13 Sep 2011 08:34:13 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mike Galbraith <efault@gmx.de>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu 44/55] rcu: wire up RCU_BOOST_PRIO for
- rcutree
-Message-ID: <20110913153413.GB2416@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110906180015.GA2560@linux.vnet.ibm.com>
- <1315332049-2604-44-git-send-email-paulmck@linux.vnet.ibm.com>
- <1315915334.6300.15.camel@marge.simson.net>
+	id S1754505Ab1IMPmi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 11:42:38 -0400
+Date: Tue, 13 Sep 2011 11:42:38 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: Jon Mason <mason@myri.com>
+cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Jesse Brandeburg <jesse.brandeburg@gmail.com>,
+        Alan Piszcz <ap@solarrain.com>, NetDEV list <netdev@vger.kernel.org>,
+        xfs@oss.sgi.com, linux-kernel@vger.kernel.org
+Subject: Re: 3.1-rc4: spectacular kernel errors / filesystem crash
+In-Reply-To: <CAMaF-rN-qeXBDoc9=7kwu40Wj8=G8YuPKWXPRhOuhdYX_VO34w@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1109131142010.7113@p34.internal.lan>
+References: <alpine.DEB.2.02.1109110511250.8626@p34.internal.lan> <CAEuXFEzs1f7n5taYzupux3AtKmRcY4P0m7yjkUQA8aLyS8eujw@mail.gmail.com> <1315886706.2556.11.camel@edumazet-laptop> <alpine.DEB.2.02.1109130722210.21380@p34.internal.lan>
+ <CAMaF-rN-qeXBDoc9=7kwu40Wj8=G8YuPKWXPRhOuhdYX_VO34w@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1315915334.6300.15.camel@marge.simson.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 11091315-8974-0000-0000-0000001E6A8E
+Content-Type: MULTIPART/MIXED; BOUNDARY="655872-1916408521-1315928558=:7113"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 13, 2011 at 02:02:14PM +0200, Mike Galbraith wrote:
-> Hi Paul,
-> 
-> This patch causes RCU thread priority funnies, with some help from rcun.
-> 
-> On Tue, 2011-09-06 at 11:00 -0700, Paul E. McKenney wrote:
-> > 	return 0;
-> > @@ -1466,6 +1474,7 @@ static void rcu_yield(void (*f)(unsigned long), unsigned long arg)
-> >  {
-> >  	struct sched_param sp;
-> >  	struct timer_list yield_timer;
-> > +	int prio = current->normal_prio;
-> >  
-> >  	setup_timer_on_stack(&yield_timer, f, arg);
-> >  	mod_timer(&yield_timer, jiffies + 2);
-> 
-> There's a thinko there, prio either needs to be inverted before feeding
-> it to __setscheduler().. or just use ->rt_priority.  I did the latter,
-> and twiddled rcun to restore it's priority instead of RCU_KTHREAD_PRIO.
-> RCU threads now stay put.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Very good -- some comments below.  I had to hand-apply this due to
-conflicts with my current patch stack: https://github.com/paulmckrcu/linux
+--655872-1916408521-1315928558=:7113
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 
-> rcu: wire up RCU_BOOST_PRIO for rcutree
-> 
-> RCU boost threads start life at RCU_BOOST_PRIO, while others remain at
-> RCU_KTHREAD_PRIO.  Adjust rcu_yield() to preserve priority across the
-> yield, and if the node thread restores RT policy for a yielding thread,
-> it sets priority to it's own priority.  This sets the stage for user
-> controlled runtime changes to priority in the -rt tree.
-> 
-> While here, change thread names to match other kthreads.
-> 
-> Signed-off-by: Mike Galbraith <efault@gmx.de>
-> 
-> ---
->  kernel/rcutree.c        |    2 --
->  kernel/rcutree_plugin.h |   22 ++++++++++++++++------
->  2 files changed, 16 insertions(+), 8 deletions(-)
-> 
-> Index: linux-3.0-tip/kernel/rcutree.c
-> ===================================================================
-> --- linux-3.0-tip.orig/kernel/rcutree.c
-> +++ linux-3.0-tip/kernel/rcutree.c
-> @@ -128,8 +128,6 @@ static void rcu_node_kthread_setaffinity
->  static void invoke_rcu_core(void);
->  static void invoke_rcu_callbacks(struct rcu_state *rsp, struct rcu_data *rdp);
-> 
-> -#define RCU_KTHREAD_PRIO 1	/* RT priority for per-CPU kthreads. */
-> -
->  /*
->   * Track the rcutorture test sequence number and the update version
->   * number within a given test.  The rcutorture_testseq is incremented
-> Index: linux-3.0-tip/kernel/rcutree_plugin.h
-> ===================================================================
-> --- linux-3.0-tip.orig/kernel/rcutree_plugin.h
-> +++ linux-3.0-tip/kernel/rcutree_plugin.h
-> @@ -27,6 +27,14 @@
->  #include <linux/delay.h>
->  #include <linux/stop_machine.h>
-> 
-> +#define RCU_KTHREAD_PRIO 1
-> +
-> +#ifdef CONFIG_RCU_BOOST
-> +#define RCU_BOOST_PRIO CONFIG_RCU_BOOST_PRIO
-> +#else
-> +#define RCU_BOOST_PRIO RCU_KTHREAD_PRIO
-> +#endif
-> +
->  /*
->   * Check the RCU kernel configuration parameters and print informative
->   * messages about anything out of the ordinary.  If you like #ifdef, you
-> @@ -1345,13 +1353,13 @@ static int __cpuinit rcu_spawn_one_boost
->  	if (rnp->boost_kthread_task != NULL)
->  		return 0;
->  	t = kthread_create(rcu_boost_kthread, (void *)rnp,
-> -			   "rcub%d", rnp_index);
-> +			   "rcub/%d", rnp_index);
->  	if (IS_ERR(t))
->  		return PTR_ERR(t);
->  	raw_spin_lock_irqsave(&rnp->lock, flags);
->  	rnp->boost_kthread_task = t;
->  	raw_spin_unlock_irqrestore(&rnp->lock, flags);
-> -	sp.sched_priority = RCU_KTHREAD_PRIO;
-> +	sp.sched_priority = RCU_BOOST_PRIO;
->  	sched_setscheduler_nocheck(t, SCHED_FIFO, &sp);
->  	wake_up_process(t); /* get to TASK_INTERRUPTIBLE quickly. */
->  	return 0;
-> @@ -1446,6 +1454,7 @@ static void rcu_yield(void (*f)(unsigned
->  {
->  	struct sched_param sp;
->  	struct timer_list yield_timer;
-> +	int prio = current->rt_priority;
 
-This makes sense, and I have merged it into your previous patch.
 
->  	setup_timer_on_stack(&yield_timer, f, arg);
->  	mod_timer(&yield_timer, jiffies + 2);
-> @@ -1453,7 +1462,8 @@ static void rcu_yield(void (*f)(unsigned
->  	sched_setscheduler_nocheck(current, SCHED_NORMAL, &sp);
->  	set_user_nice(current, 19);
->  	schedule();
-> -	sp.sched_priority = RCU_KTHREAD_PRIO;
-> +	set_user_nice(current, 0);
-> +	sp.sched_priority = prio;
->  	sched_setscheduler_nocheck(current, SCHED_FIFO, &sp);
->  	del_timer(&yield_timer);
->  }
-> @@ -1562,7 +1572,7 @@ static int __cpuinit rcu_spawn_one_cpu_k
->  	if (!rcu_scheduler_fully_active ||
->  	    per_cpu(rcu_cpu_kthread_task, cpu) != NULL)
->  		return 0;
-> -	t = kthread_create(rcu_cpu_kthread, (void *)(long)cpu, "rcuc%d", cpu);
-> +	t = kthread_create(rcu_cpu_kthread, (void *)(long)cpu, "rcuc/%d", cpu);
->  	if (IS_ERR(t))
->  		return PTR_ERR(t);
->  	if (cpu_online(cpu))
-> @@ -1608,7 +1618,7 @@ static int rcu_node_kthread(void *arg)
->  				continue;
->  			}
->  			per_cpu(rcu_cpu_has_work, cpu) = 1;
-> -			sp.sched_priority = RCU_KTHREAD_PRIO;
-> +			sp.sched_priority = current->rt_priority;
+On Tue, 13 Sep 2011, Jon Mason wrote:
 
-This is broken -- the per-node kthread runs at RT prio 99, but we usually
-would not want to boost that high.
+> On Tue, Sep 13, 2011 at 9:54 AM, Justin Piszcz <jpiszcz@lucidpixels.com> =
+wrote:
+>>
+>>
+>> On Tue, 13 Sep 2011, Eric Dumazet wrote:
+>>
+>>> Please Justin make sure you pulled commit
+>>> commit ed2888e906b56769b4ffabb9c577190438aa68b8
+>>> Author: Jon Mason <mason@myri.com>
+>>> Date: =A0 Thu Sep 8 16:41:18 2011 -0500
+>>>
+>>> =A0 PCI: Remove MRRS modification from MPS setting code
+>>>
+>>> =A0 Modifying the Maximum Read Request Size to 0 (value of 128Bytes) ha=
+s
+>>> =A0 massive negative ramifications on some devices. =A0Without knowing =
+which
+>>> =A0 devices have this issue, do not modify from the default value when
+>>> =A0 walking the PCI-E bus in pcie_bus_safe mode. =A0Also, make pcie_bus=
+_safe
+>>> =A0 the default procedure.
+>>>
+>>> =A0 Tested-by: Sven Schnelle <svens@stackframe.org>
+>>> =A0 Tested-by: Simon Kirby <sim@hostway.ca>
+>>> =A0 Tested-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+>>> =A0 Reported-and-tested-by: Eric Dumazet <eric.dumazet@gmail.com>
+>>> =A0 Reported-and-tested-by: Niels Ole Salscheider
+>>> <niels_ole@salscheider-online.
+>>> =A0 References: https://bugzilla.kernel.org/show_bug.cgi?id=3D42162
+>>> =A0 Signed-off-by: Jon Mason <mason@myri.com>
+>>> =A0 Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+>>> =A0 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+>>
+>> Hello,
+>>
+>> I found this commit here:
+>> http://permalink.gmane.org/gmane.linux.kernel.pci/11700
+>
+> This is an early version of the patch.  This is the patch that you want:
+> https://github.com/torvalds/linux/commit/ed2888e906b56769b4ffabb9c5771904=
+38aa68b8
+>
+> It appears that this patch didn't make it to lkml or linux-pci list
+> due to kernel.org DNS being down when it was sent.
+>
+> Thanks,
+> Jon
 
-Seems like we should have a global variable that tracks the current
-priority.  This global variable could then be set in a manner similar
-to the softirq priorities -- or, perhaps better, simply set whenever
-the softirq priority is changed.
+I need to learn how to use git at some point, can you please provide plain
+text patches so I can apply them and reboot?
 
-Thoughts?
+Justin.
 
->  			sched_setscheduler_nocheck(t, SCHED_FIFO, &sp);
->  			preempt_enable();
->  		}
-> @@ -1671,7 +1681,7 @@ static int __cpuinit rcu_spawn_one_node_
->  		return 0;
->  	if (rnp->node_kthread_task == NULL) {
->  		t = kthread_create(rcu_node_kthread, (void *)rnp,
-> -				   "rcun%d", rnp_index);
-> +				   "rcun/%d", rnp_index);
->  		if (IS_ERR(t))
->  			return PTR_ERR(t);
->  		raw_spin_lock_irqsave(&rnp->lock, flags);
-> 
-> 
-
+--655872-1916408521-1315928558=:7113--
