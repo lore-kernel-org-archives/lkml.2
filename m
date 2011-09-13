@@ -1,51 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753201Ab1IMBAe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 21:00:34 -0400
-Received: from mga09.intel.com ([134.134.136.24]:30845 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752300Ab1IMBAd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 21:00:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="47680631"
-Subject: Re: [RFC]block: don't mark flush request as SOFTBARRIER
-From: Shaohua Li <shaohua.li@intel.com>
-To: Tejun Heo <htejun@gmail.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, Jens Axboe <jaxboe@fusionio.com>,
-        Vivek Goyal <vgoyal@redhat.com>
-In-Reply-To: <20110911025128.GM29319@htj.dyndns.org>
-References: <1315445394.29510.71.camel@sli10-conroe>
-	 <20110911025128.GM29319@htj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 13 Sep 2011 09:04:01 +0800
-Message-ID: <1315875841.29510.80.camel@sli10-conroe>
+	id S1752700Ab1IMBOM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 21:14:12 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:60044 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751890Ab1IMBOL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Sep 2011 21:14:11 -0400
+Date: Tue, 13 Sep 2011 11:14:03 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: paulmck@linux.vnet.ibm.com
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Temporary -rcu tree location
+Message-Id: <20110913111403.bf9b204d17002dd55c29c709@canb.auug.org.au>
+In-Reply-To: <20110913104743.9087bec1bd105bec142c9e0e@canb.auug.org.au>
+References: <20110913000107.GA15945@linux.vnet.ibm.com>
+	<20110913104743.9087bec1bd105bec142c9e0e@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__13_Sep_2011_11_14_03_+1000_JP=KLsJdGQ2Ei/7I"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-09-11 at 10:51 +0800, Tejun Heo wrote:
-> Hello,
-> 
-> On Thu, Sep 08, 2011 at 09:29:54AM +0800, Shaohua Li wrote:
-> > I'm wondering why flush request should be marked as
-> > SOFTBARRIER. Current flush sequence guarantees the correctness of
-> > flush even the request is reordered by ioscheduler.
-> 
-> The primary reason would be because when those flush data requests are
-> put on the dispatch queue, it doesn't go through elv_dispatch_sort().
-> SOFTBARRIERs function as dispatch sort boundaries and queueing flush
-> data request at the head w/o SOFTBARRIER would confuse dispatch
-> sorting, and we want to put it at the head of dispatch queue to
-> decrease latency for flush sequence.
-we do the flush first and then dispatch the data. The flush is already
-delayed a lot, so if latency is a problem, we already saw it. Why not
-just remove SOFTBARRIER and use elv_dispatch_sort() for flush data so
-drive can better arrange requests?
+--Signature=_Tue__13_Sep_2011_11_14_03_+1000_JP=KLsJdGQ2Ei/7I
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
-Shaohua
+On Tue, 13 Sep 2011 10:47:43 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+>
+> Hi Paul,
+>=20
+> On Mon, 12 Sep 2011 17:01:07 -0700 "Paul E. McKenney" <paulmck@linux.vnet=
+.ibm.com> wrote:
+> >
+> > Could you please make the -next tree pull from branch next.2011.09.12a
+> > of https://github.com/paulmckrcu/linux while kernel.org is down?
+>=20
+> What branch?
 
+Sorry, half asleep :-)
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Tue__13_Sep_2011_11_14_03_+1000_JP=KLsJdGQ2Ei/7I
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJObq5bAAoJEDMEi1NhKgbsyqYIAKJT4/JKPb+hcUdxOVySDpLn
+/iIQ664Rgl7TXS2gWOkwoNgBG2BryBNLBVT3c0XpGcdvNWwYFtH8J20ni+XQJhHZ
+dghAggAMaqw+byWWEIHCijNZYmV7GDE+SbSyt5RFeYc6a+2Irl9Fm/8Gfbu/PuA8
+iGGw1h26qyckM2dCKEBPXAKHLxHL62HO4F2yr5LfOgIAdYuimWuBanKpLu/0CFKF
+0I4AJZwabGhiwODQvyndoiUdJeVNivJi3P819mBhqNHG5RziQ/uauNKPQJRQH9HN
+C3NitkBpv3WF2efG+bw4B6rKYrWQgyAPDrmvFCHc99vjM698rF/H9rUNCrI+KWo=
+=oB8/
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__13_Sep_2011_11_14_03_+1000_JP=KLsJdGQ2Ei/7I--
