@@ -1,56 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932415Ab1IMTTi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 15:19:38 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:50852 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932293Ab1IMTTi (ORCPT
+	id S1756167Ab1IMTXa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 15:23:30 -0400
+Received: from mail-ew0-f52.google.com ([209.85.215.52]:62714 "EHLO
+	mail-ew0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754403Ab1IMTX3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 15:19:38 -0400
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-mm@kvack.org, ngupta@vflare.org,
-        linux-kernel@vger.kernel.org, francis.moro@gmail.com,
-        dan.magenheimer@oracle.com,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>
-Subject: [PATCH] staging: zcache: fix cleancache crash
-Date: Tue, 13 Sep 2011 14:19:22 -0500
-Message-Id: <1315941562-25422-1-git-send-email-sjenning@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <4E6FA75A.8060308@linux.vnet.ibm.com>
-References: <4E6FA75A.8060308@linux.vnet.ibm.com>
+	Tue, 13 Sep 2011 15:23:29 -0400
+Subject: [BUG] infinite loop in find_get_pages()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 13 Sep 2011 21:23:21 +0200
+Message-ID: <1315941801.2565.19.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After commit, c5f5c4db, cleancache crashes on the first
-successful get. This was caused by a remaining virt_to_page()
-call in zcache_pampd_get_data_and_free() that only gets
-run in the cleancache path.
+Linus,
 
-The patch converts the virt_to_page() to struct page
-casting like was done for other instances in c5f5c4db.
+It seems current kernels (3.1.0-rc6) are really unreliable, or maybe I
+expect too much from them.
 
-Based on 3.1-rc4
+On my 4GB x86_64 machine (2 quad-core cpus, 2 threads per core), I can
+have a cpu locked in
 
-Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
----
- drivers/staging/zcache/zcache-main.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ find_get_pages -> radix_tree_gang_lookup_slot -> __lookup 
 
-diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-index a3f5162..462fbc2 100644
---- a/drivers/staging/zcache/zcache-main.c
-+++ b/drivers/staging/zcache/zcache-main.c
-@@ -1242,7 +1242,7 @@ static int zcache_pampd_get_data_and_free(char *data, size_t *bufsize, bool raw,
- 	int ret = 0;
+
+Problem is : A bisection will be very hard, since a lot of kernels
+simply destroy my disk (the PCI MRRS horror stuff).
+
+Messages at console :
  
- 	BUG_ON(!is_ephemeral(pool));
--	zbud_decompress(virt_to_page(data), pampd);
-+	zbud_decompress((struct page *)(data), pampd);
- 	zbud_free_and_delist((struct zbud_hdr *)pampd);
- 	atomic_dec(&zcache_curr_eph_pampd_count);
- 	return ret;
--- 
-1.7.4.1
+INFO: rcu_preempt_state detected stalls on CPUs/tasks: {} (detected by
+11 t=60002 jiffies)
+
+perf top -C 1
+
+Events: 3K cycles                                                                                                                                             
++     43,08%  bash  [kernel.kallsyms]  [k] __lookup
++     41,51%  bash  [kernel.kallsyms]  [k] find_get_pages
++     15,31%  bash  [kernel.kallsyms]  [k] radix_tree_gang_lookup_slot
+
+    43.08%     bash  [kernel.kallsyms]  [k] __lookup
+               |
+               --- __lookup
+                  |          
+                  |--97.09%-- radix_tree_gang_lookup_slot
+                  |          find_get_pages
+                  |          pagevec_lookup
+                  |          invalidate_mapping_pages
+                  |          drop_pagecache_sb
+                  |          iterate_supers
+                  |          drop_caches_sysctl_handler
+                  |          proc_sys_call_handler.isra.3
+                  |          proc_sys_write
+                  |          vfs_write
+                  |          sys_write
+                  |          system_call_fastpath
+                  |          __write
+                  |          
+
+
+Steps to reproduce :
+
+In one terminal, kernel builds in a loop (defconfig + hpsa driver)
+
+cd /usr/src/linux
+while :
+do
+ make clean
+ make -j128
+done
+
+
+In another term :
+
+while :
+do
+ echo 3 >/proc/sys/vm/drop_caches
+ sleep 20
+done
+
+
+Before the lock, I can see in another terminal some swapping activity.
+
+$ vmstat 1
+procs -----------memory---------- ---swap-- -----io---- -system-- ----cpu----
+ r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa
+ 2  2  17728 3443924  11520 328020    0    0   256 12076 16250  554  0  6 82 12
+ 1  1  17728 3444776  11584 328072    0    0   100  2868 16223  267  0  6 86  7
+ 1  1  17728 3442200  12100 328348    0    0   868     0 16600 1778  0  7 88  6
+ 1  1  17728 3438032  13036 329048    0    0  1628     0 16862 2480  0  7 87  5
+ 1  1  17728 3546864  13988 220256    0    0  1000     0 16313  931  0  7 87  6
+ 1  1  17728 3544260  16024 220256    0    0  2036     0 16513 1531  0  6 88  6
+ 1  1  17728 3542896  17196 220256    0    0  1160   556 16324  893  0  6 88  6
+ 1  1  17728 3540748  18756 220256    0    0  1560     0 16398 1172  0  6 88  6
+ 1  1  17728 3538692  20168 220256    0    0  1412     0 16544 1088  0  6 88  6
+ 2  0  17728 3536676  21816 220248    0    0  1648     0 16447 1246  0  6 88  6
+ 1  1  17728 3535052  22544 220256    0    0   728     0 16215  605  1  6 87  5
+ 1  1  17728 3533672  23404 220244    0    0   860  4240 16264  705  0  6 88  6
+ 1  1  17728 3532688  24232 220244    0    0   828     0 16272  685  0  6 87  6
+ 1  1  17728 3531552  25080 220244    0    0   848     0 16294  700  0  6 88  6
+ 1  1  17728 3529584  26532 220256    0    0  1452     0 16376 1104  0  6 87  6
+ 1  2  17728 3545232  27848 199176    0    0  1312    52 16392  911  0  7 85  8
+ 1  2  17728 3659060  29576  84420    0    0  1736    40 16570  959  0  7 81 12
+38  3  17728 3640652  29984  69976    0    0   688     0 16885 2987  3  8 80  9
+ 5  2  17728 3601716  30208  75628    0    0  4676     4 18080 5727 11 10 66 12
+procs -----------memory---------- ---swap-- -----io---- -system-- ----cpu----
+ r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa
+103 27  17728 2286372  30376  78952    0    0  3044     8 17772 6803 49 16 34  1
+128  1  17728 1337588  30416  79952    0    0   732  4080 16389 4874 91  9  0  0
+122  7  17728 730264  30472  81056    0    0   540  1300 16535 5451 91  9  0  0
+99 16  17728 996308  30544  83136    0    0   492   452 16951 6629 92  8  0  0
+89 23  17728 1150640  30592  88288    0    0  3232   224 17286 7312 91  9  0  0
+114  7  17728 1344768  30660  92104    0    0  1668   228 17395 7297 89 11  0  0
+99  3  17728 848716  30696  93684    0    0   688  2072 16947 6368 92  8  0  0
+112  9  17728 609908  30748  96036    0    0   620   272 17221 7640 90 10  0  0
+111  8  17728 480244  30808  98268    0    0   788   320 17227 7391 92  8  0  0
+115  7  17728 549564  30852 100552    0    0   656   232 17583 7807 92  9  0  0
+107  9  17728 666776  30888 102904    0    0   716     0 17406 7781 91  9  0  0
+124  5  17728 685368  30960 105544    0    0  1056   944 17281 7713 90 10  0  0
+130  1  17728 538832  31000 108080    0    0   776     0 16943 7347 91  9  0  0
+130  0  17728 364476  31032 110252    0    0   676     0 16767 6948 91  9  0  0
+129  0  17728 149332  31064 111848    0    0   540    32 16673 6272 92  8  0  0
+129  0  17728 274664  31096 114052    0    0   628     0 17207 7694 92  8  0  0
+128  3  17728 589736  31160 117420    0    0   816   996 17381 8443 90 10  0  0
+126  5  17728 485300  31172 119544    0    0   416     0 17024 7186 91  9  0  0
+130  0  17728 349500  31216 122344    0    0   492     0 17046 7358 91  9  0  0
+procs -----------memory---------- ---swap-- -----io---- -system-- ----cpu----
+ r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa
+130  2  17728 416972  31248 125404    0    0   496   120 17112 7124 91  9  0  0
+125  5  17308 188608  29444 106888    0  576  1436   612 40020 9430 91  8  0  0
+113 16  17308 218700  29528 110336   32    0  1908     0 17210 7214 92  8  0  0
+ 1 145  20292  15688  26884 108200   40 3020   188  4660 27003 3664 30  7  0 63
+ 1 145  21128  15920  24212 107420    0  836     0  3824 16813  430  1  6  0 93
+ 2 144  22904  16020  20780 106780    0 1776     0  6548 16611  505  1  6  0 93
+ 1 146  23496  15788  17476 106160   32  596    60  3620 16610  308  1  6  0 93
+ 1 147  23924  16216  16028 105852   32  432    32  5012 16477  156  0  6  0 93
+ 1 145  24428  15904  14744 103452   20  504    20  3112 16776  125  1  6  0 93
+ 1 146  25304  16184  14688  97712    0  876    16  3352 16759  447  2  6  0 92
+ 1 147  26984  15908  14588  88348   96 1680    96  6352 17006  235  1  6  0 93
+ 1 146  28724  16112  14152  77132   32 1740    44  3536 16739  375  2  6  0 92
+ 1 151  29900  15896  12072  68484  156 1184   192  2068 16860  576  2  6  0 91
+ 2 152  33724  33908   9536  58616  184 3856   512  6764 16536  492  2  6  3 88
+ 1 142  33276 427352   8964  58988 1096  120  2624   120 16730 1129  6  7  8 79
+ 2 142  33000 421512   8988  60944 1560    0  3512     0 16771 1220  1  6  9 84
+ 2 143  32604 392952   9012  62308 1176    0  2436     0 16690 1173  2  7 10 82
+ 8 134  32400 255348   9044  64696  688    0  2584     0 17105 2181 16  8 14 62
+ 6 136  31796 142068   9092  66024 1060    0  1828     0 17040 2226 37 10 12 41
+procs -----------memory---------- ---swap-- -----io---- -system-- ----cpu----
+ r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa
+ 2 143  31664  15844   9152  67452  580   64  1324   292 16973 2066 37 10 11 43
+ 4 141  31876  56160   9052  67528   48  328   140  1724 16476  696  6  7  0 87
+ 4 141  32420 176260   8896  68808  108  732   760  2280 17449 3081 24  9  0 67
+11 134  32540 119868   8484  70568  108  852  1140  1408 17436 3788 45 12  1 43
+17 129  32880  57044   8256  73008    0  364  1212   364 17489 4000 59 13  0 28
+11 135  33468 107128   7660  73124  200 1044   888  2076 17043 1956 23  9  0 69
+ 1 144  34788  16076   6948  71572  180 1524   276  1908 16787  967 13  7  0 79
+ 1 145  35472  16188   5868  70348  112  768   120  1284 16696  561  1  6  0 93
+ 1 145  36056  16696   5492  68240   16  596    16  3356 16456  202  0  6  0 93
+ 1 143  38200  15952   3168  63968   32 2168    52  6460 16834  423  1  7  0 92
+ 9 131  40128 139084   3064  61060  172 2144   644  2192 17701 2250 19  9  0 72
+ 9 133  40548 110308   3092  60492  468  620   900  1852 17516 1983 35  9  0 55
+10 132  40448  79476   3132  61808 1020    0  1480     0 17505 3254 35 10  0 55
+12 132  40532 139396   3156  63204  776  260  1272   892 17457 3179 44 11  0 45
+11 132  40392  66336   3256  65264  788    0  1536     0 17551 3860 46 11  0 43
+ 1 142  41112  15796   3296  65680 1176  812  1636  2568 17026 1798 28  9  0 63
+ 1 140  41500  15960   3244  64828   92  472   116  4008 16445  443  4  7  0 90
+ 1 140  42252  16740   3232  64356    0  764     0  1500 16403  185  0  6  0 94
+ 1 139  49636  16024   2928  60652   52 7376    52  7376 17507 1236  0  7  0 93
+procs -----------memory---------- ---swap-- -----io---- -system-- ----cpu----
+ r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa
+ 2 140  55780  16444   2548  55948  176 6200   332  6260 17160  592  1  7  0 92
+ 3 145  59800 358088   2404  55468  100 4108  1092  4132 18514 3864 17  8  0 75
+ 3 143  60712  27028   2416  57184  816  964  2392  1288 18089 3476 43 10  0 47
+ 4 141  61296 154136   2516  58024  424  980  1312   980 17298 2489 28  9  0 62
+21 122  62544  83120   2528  58372  100 1456   788  1456 17717 2738 64 12  0 24
+24 120  62780  53328   2580  62216   16  292  2528   292 17163 4076 85 14  0  1
+ 1 143  65088  16096   2492  61524  152 2708   764  2712 16734 1474 16  8  0 76
+ 3 141  65672  34232   2476  60536   56  672   240  3208 16726  661  4  7  0 89
+ 1 144  65584  16044   2488  60440  808   68   948  1532 17187 1353 10  8  0 82
+ 4 141  70836  17216   2444  58024   64 5272    64  6968 16957  437  0  6  0 93
+ 6 134  73728  31940   2424  56880  436 3092   748  3188 16950 1269  8  7  0 85
+ 2 139  76036 107996   2408  56404   92 2420   476  2784 16869  690  6  7  0 87
+ 6 135  76112  82792   2436  57884 1108  476  1632   724 16999 1711 18  8  0 73
+ 1 139  77184  17872   2444  57860  996 1084  1168  2320 16644  748 11  8  0 81
+ 1 141  91136  15952   2300  51868  100 14088   128 14152 17494 1284  1  7  5 87
+ 1 143  98356 204144   2256  48168  640 7496  1148  7580 17471 1840  6  7 12 74
+ 3 139  97344 174272   2276  48968 2636    0  3216     0 16962 1499 13  8 11 69
+ 9 133  97220 123464   2352  50584 1348    0  2320   500 17100 2255 27  9  8 56
+ 9 134  97092  33672   2396  51780 1292  108  2028   108 16821 1547 27  8  8 57
+procs -----------memory---------- ---swap-- -----io---- -system-- ----cpu----
+ r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa
+11 134  95068  75744   2448  53444  852    0  1696     0 17318 2630 34 10  2 54
+ 1 143  95104  15972   2504  54544  116   44   696    44 16545 1209 20  8  5 67
+^C
+
+
 
