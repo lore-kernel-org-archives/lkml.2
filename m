@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756013Ab1IMSDg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 14:03:36 -0400
-Received: from casper.infradead.org ([85.118.1.10]:40673 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754344Ab1IMSDf convert rfc822-to-8bit (ORCPT
+	id S1755992Ab1IMSIM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 14:08:12 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:43843 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754344Ab1IMSIK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 14:03:35 -0400
+	Tue, 13 Sep 2011 14:08:10 -0400
 Subject: Re: CFS Bandwidth Control - Test results of cgroups tasks pinned vs
  unpinnede
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
@@ -19,7 +19,7 @@ Cc: Paul Turner <pjt@google.com>,
         Dhaval Giani <dhaval.giani@gmail.com>,
         Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@elte.hu>, Pavel Emelianov <xemul@parallels.com>
-Date: Tue, 13 Sep 2011 20:03:04 +0200
+Date: Tue, 13 Sep 2011 20:07:41 +0200
 In-Reply-To: <20110913175425.GB3062@linux.vnet.ibm.com>
 References: <1315571462.26517.9.camel@twins>
 	 <20110912101722.GA28950@linux.vnet.ibm.com>
@@ -32,20 +32,21 @@ References: <1315571462.26517.9.camel@twins>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
 X-Mailer: Evolution 3.0.3- 
-Message-ID: <1315936984.4226.2.camel@twins>
+Message-ID: <1315937261.4226.5.camel@twins>
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Tue, 2011-09-13 at 23:24 +0530, Srivatsa Vaddagiri wrote:
-> Fyi, we have added additional levels to cgroup setup
-> (/Level1/Level2/C1/C1_1 etc) to mimic cgroup hierarchy for VMS as
-> created by libvirt. 
+> I guess the additional "system" time
+> can't be accounted for easily by the tick-based accounting system we
+> have. I agree there could be other un-observed side-effects of increased
+> load-balance frequency (like workload performance) that I haven't noticed. 
 
-The deeper you nest the bigger the numerical problems get.. 
+Yeah, very hard, its the tick that starts the balancer, so it would have
+to last longer than a tick to be noticed, very unlikely.
 
-Also, can you please stop using virt crap and focus on useful
-things? :-) Start with simple cases of single depth groups.
-
-
+We should implement full blown CONFIG_VIRT_CPU_ACCOUNTING,.. except I
+bet that once we do that people will want it enabled and I'm pretty sure
+people also don't want to pay the price for it... :-)
