@@ -1,49 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755968Ab1IMRjH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 13:39:07 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:51319
-	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755865Ab1IMRiM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 13:38:12 -0400
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 17/20] Staging: hv: vmbus: Get rid of the module dependency
-Date: Tue, 13 Sep 2011 10:59:53 -0700
-Message-Id: <1315936796-20662-17-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1315936796-20662-1-git-send-email-kys@microsoft.com>
-References: <1315936759-20623-1-git-send-email-kys@microsoft.com>
- <1315936796-20662-1-git-send-email-kys@microsoft.com>
+	id S1755901Ab1IMRsF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 13:48:05 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:45447 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755734Ab1IMRsD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 13:48:03 -0400
+MIME-Version: 1.0
+Date: Tue, 13 Sep 2011 20:48:02 +0300
+Message-ID: <CAOJsxLHo+2Lrc4hCbRZQ2MM_PM9zgTcYgE7U9HQ25i4ow6vjgg@mail.gmail.com>
+Subject: slab.git temporary location
+From: Pekka Enberg <penberg@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hyper-V modules can be built as part of the kernel (not just as modules).
-Get rid of the module dependency in Kconfig.
+Hi Stephen,
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- drivers/staging/hv/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+I've moved slab.git over to github until kernel.org is back up:
 
-diff --git a/drivers/staging/hv/Kconfig b/drivers/staging/hv/Kconfig
-index 26b5064..815f8c2 100644
---- a/drivers/staging/hv/Kconfig
-+++ b/drivers/staging/hv/Kconfig
-@@ -1,6 +1,6 @@
- config HYPERV
- 	tristate "Microsoft Hyper-V client drivers"
--	depends on X86 && ACPI && PCI && m
-+	depends on X86 && ACPI && PCI
- 	default n
- 	help
- 	  Select this option to run Linux as a Hyper-V client operating
--- 
-1.7.4.1
+  git://github.com/penberg/linux.git for-next
 
+Can you please update linux-next to pull from that?
+
+P.S. Christoph, please let me know if I missed any patched you Acked.
+My kernel.org email forward hasn't been working for a while for
+obvious reasons...
+
+                        Pekka
