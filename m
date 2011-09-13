@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752346Ab1IMOAv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 10:00:51 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:49945 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751154Ab1IMOAu convert rfc822-to-8bit (ORCPT
+	id S1753816Ab1IMOBU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 10:01:20 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:39355 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752899Ab1IMOBT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 10:00:50 -0400
-Subject: Re: [patch 00/18] CFS Bandwidth Control v7.2
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Paul Turner <pjt@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelianov <xemul@parallels.com>,
-        Jason Baron <jbaron@redhat.com>
-Date: Tue, 13 Sep 2011 16:00:02 +0200
-In-Reply-To: <1315915848.1151.26.camel@dhcp-10-30-22-158.sw.ru>
-References: <20110721164325.231521704@google.com>
-	 <1315915848.1151.26.camel@dhcp-10-30-22-158.sw.ru>
+	Tue, 13 Sep 2011 10:01:19 -0400
+Subject: Re: [PATCH v2 10/10] x86, efi: EFI boot stub support
+From: Matt Fleming <matt@console-pimps.org>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@linux.intel.com>,
+        x86@kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mike Waychison <mikew@google.com>, Andi Kleen <andi@firstfloor.org>,
+        Maarten Lankhorst <m.b.lankhorst@gmail.com>
+In-Reply-To: <20110913132931.GA5203@srcf.ucam.org>
+References: <1315838094-2307-1-git-send-email-matt@console-pimps.org>
+	 <1315838094-2307-11-git-send-email-matt@console-pimps.org>
+	 <20110913132931.GA5203@srcf.ucam.org>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1315922402.5977.10.camel@twins>
+Date: Tue, 13 Sep 2011 15:01:16 +0100
+Message-ID: <1315922476.3466.60.camel@mfleming-mobl1.ger.corp.intel.com>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-09-13 at 16:10 +0400, Vladimir Davydov wrote:
+On Tue, 2011-09-13 at 14:29 +0100, Matthew Garrett wrote:
+> On Mon, Sep 12, 2011 at 03:34:54PM +0100, Matt Fleming wrote:
+> 
+> > +	status = efi_call_phys5(sys_table->boottime->locate_handle,
+> > +				EFI_LOCATE_BY_PROTOCOL, proto,
+> > +				NULL, &size, gop_handle);
+> > +	if (status != EFI_SUCCESS)
+> > +		goto free_handle;
+> > +
+> > +	nr_gops = size / sizeof(void *);
+> > +	for (i = 0; i < nr_gops; i++) {
+> > +		void *h = gop_handle[i];
+> > +
+> > +		status = efi_call_phys3(sys_table->boottime->handle_protocol,
+> > +					h, proto, &gop);
+> > +		if (status != EFI_SUCCESS)
+> > +			continue;
+> > +
+> > +		status = efi_call_phys4(gop->query_mode, gop, gop->mode->mode,
+> > +					&size, &info);
+> > +		if (status == EFI_SUCCESS)
+> > +			break;
+> > +	}
+> 
+> Apple do something funky here, which is to provide a GOP that's not 
+> backed by real hardware but which muxes writes out to multiple outputs 
+> in order to handle the multiple display case without screwing up aspect 
+> ratio. That's fine, except that the stride reported for the fake one is 
+> just the horizontal width of the logical display. That results in things 
+> failing badly. The real one also implements PCIIO. My workaround so far 
+> has been to look for a GOP that handles PCIIO and use it if found, and 
+> otherwise just fall back to the first GOP.
 
-> In other words, I'd like to know if your code (or the scheduler code)
-> tries to gather all tasks of the same cgroup on such a subset of all
-> CPUs 
+Ah right, thanks for that. I actually implement that strategy when
+searching for a UGA (checking for PCIIO) but without falling back to the
+first one if no PCIIO protocol is found. Your proposed scheme seems much
+more robust so I'll respin this patch.
 
-No
-
-> so that the tasks can't execute less CPUs without losing quota
-> during each period. 
-
-what?!
-
-> And if not, are you going to address the issue? 
-
-and no.
-
-There is nothing special about being part of a cgroup that warrants
-that, as for pipes the scheduler already tries to pull the waking task
-to the cpu of the waker if possible (or an idle cache sibling).
-
+-- 
+Matt Fleming, Intel Open Source Technology Center
 
