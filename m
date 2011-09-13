@@ -1,81 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753853Ab1IMNGZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 09:06:25 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:61473 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753799Ab1IMNGY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 09:06:24 -0400
+	id S1753527Ab1IMNLQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 09:11:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55920 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752752Ab1IMNLO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 09:11:14 -0400
+Date: Tue, 13 Sep 2011 09:11:06 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Cc: ebiederm@xmission.com, mahesh@linux.vnet.ibm.com, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
+Subject: Re: [RFC][patch 1/2] kdump: Add infrastructure for unmapping
+ crashkernel memory
+Message-ID: <20110913131106.GA29194@redhat.com>
+References: <20110908132609.177038405@linux.vnet.ibm.com>
+ <20110908132652.189920773@linux.vnet.ibm.com>
+ <20110909182325.GD15748@redhat.com>
+ <1315842902.3602.9.camel@br98xy6r>
 MIME-Version: 1.0
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF04B327A570@HQMAIL01.nvidia.com>
-References: <1314869552-5531-1-git-send-email-linus.walleij@stericsson.com>
-	<74CDBE0F657A3D45AFBB94109FB122FF04B327A40C@HQMAIL01.nvidia.com>
-	<CACRpkdZ1kNbtOqw=X1mmM-bA+Gg2BbmO5_CT0sSQtBCK_WdwYw@mail.gmail.com>
-	<74CDBE0F657A3D45AFBB94109FB122FF04B327A570@HQMAIL01.nvidia.com>
-Date: Tue, 13 Sep 2011 15:06:23 +0200
-Message-ID: <CACRpkdan_g6dBvuXwbAdtHFd14GLkKsKLcHnybTuNGmYiqcStA@mail.gmail.com>
-Subject: Re: [PATCH 2/4 v6] pinmux: add a driver for the U300 pinmux
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Lee Jones <lee.jones@linaro.org>, Joe Perches <joe@perches.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linaro Dev <linaro-dev@lists.linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        David Brown <davidb@codeaurora.org>, Barry Song <21cnbao@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1315842902.3602.9.camel@br98xy6r>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 2, 2011 at 6:04 PM, Stephen Warren <swarren@nvidia.com> wrote:
-> Linus Walleij wrote at Friday, September 02, 2011 2:12 AM:
->> On Thu, Sep 1, 2011 at 11:33 PM, Stephen Warren <swarren@nvidia.com> wrote:
->>
->> >> +static const struct u300_pmx_func u300_pmx_functions[] = {
->> >> +     {
->> >> +             .name = "power",
->> >> +             .groups = { POWERGRP_INDEX },
->> >> +             /* Mask is N/A */
->> >> +     },
->> >
->> > Hmmm. That's a lot of _INDEX defines that'd need to be set up, at least
->> > to fully represent a chip like Tegra. Can the pinmux core be modified
->> > such that the group list is an array of names (char*) rather than the
->> > actual numeric IDs of the groups? Still, perhaps we could use the enum
->> > we already have for this, so perhaps it isn't a big deal...
->>
->> Well I could think about a lot of ways to do this, but it's basically up
->> to the driver, the U300 is just some simple example of what you can
->> do, it's just trying to satisfy the API.
->>
->> Maybe as part of writing the nVidia driver you find a clever
->> mechanism for doing this, if it's looking generally useful at that
->> point then let's move it to the core I'd say.
->
-> The reason I asked about the pinmux core handling this is because the
-> driver op get_function_groups:
->
-> +       int (*get_function_groups) (struct pinctrl_dev *pctldev,
-> +                                 unsigned selector,
-> +                                 unsigned ** const groups,
-> +                                 unsigned * const num_groups);
->
-> returns an array of integer indexes. I think the only way to get rid of
-> the index definitions in the drivers is to allow get_function_groups to
-> return an array of strings instead.
+On Mon, Sep 12, 2011 at 05:55:02PM +0200, Michael Holzheu wrote:
+> Hello Vivek,
+> 
+> On Fri, 2011-09-09 at 14:23 -0400, Vivek Goyal wrote:
+> > On Thu, Sep 08, 2011 at 03:26:10PM +0200, Michael Holzheu wrote:
+> > > From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+> > > 
+> > > This patch introduces a mechanism that allows architecture backends to
+> > > remove page tables for the crashkernel memory. This can protect the loaded
+> > > kdump kernel from being overwritten by broken kernel code.
+> > > A new function crash_map_pages() is added that can be implemented by
+> > > architecture code. This function has the following syntax:
+> > 
+> > I guess having separate functions for mapping and unmapping pages might
+> > look cleaner. Because we are not passing a page range, so specifying
+> > what pages we are talking about in function name might make it more
+> > clear.
+> > 
+> > crash_map_reserved_pages()
+> > crash_unmap_reserved_pages().
+> 
+> Ok fine, no problem.
+> 
+> > Secondly, what happens to the code which runs after crash (crash_kexec()).
+> > Current x86 code assumes that reserved region is mapped at the time of
+> > crash and does few things with control page there. 
+> 
+> For s390, purgatory code can run in real mode. No page tables are
+> required.
+> 
+> > So this generic approach is not valid atleast for x86, because it does
+> > not tackle the scenario about how to map reserved range again once 
+> > kernel crashes. It will only work if there is assumption that after
+> > a crash, we don't expect reserved range/pages to be mapped.
+> 
+> All architectures that support unmapping of crashkernel memory have to
+> deal with this problem somehow. Either remap the crashkernel memory in
+> machine_kexec() again or be able to run in real mode.
+> 
+> I adjusted that patch regarding your comment above. Will the following
+> patch be ok for you?
 
-OK good idea, I reworked this interface to get an array of strings
-instead, I've been told several times to use strings rather than numbers
-when possible, so I think this is the right thing to do.
+I guess it is fine. Atleast conceptually it makes sense to unmap
+the reserved memory pages to avoid accidental corruption from some
+kernel code. It does not take care of some kind of DMA happening
+to this memory location though.
 
-Check it out in v7!
+I am not an memory management expert so not sure if this is best way
+to call unmap/map pages for some calls already exist which can do
+the job.
 
-Yours,
-Linus Walleij
+Anyway, this change is not visible to user and changes can be done
+later also without impacting anything else so it is a low risk change
+that way.
+
+So yes, please repost the series (as you need to change second patch
+also to reflect new function names). I will ack the first patch.
+
+Thanks
+Vivek 
+
+
+> ---
+> Subject: kdump: Add infrastructure for unmapping crashkernel memory
+> 
+> From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+> 
+> This patch introduces a mechanism that allows architecture backends to
+> remove page tables for the crashkernel memory. This can protect the loaded
+> kdump kernel from being overwritten by broken kernel code.  Two new
+> functions crash_map_reserved_pages() and crash_unmap_reserved_pages() are
+> added that can be implemented by architecture code.  The
+> crash_map_reserved_pages() function is called before and
+> crash_unmap_reserved_pages() after the crashkernel segments are loaded.  The
+> functions are also called in crash_shrink_memory() to create/remove page
+> tables when the crashkernel memory size is reduced.
+> 
+> To support architectures that have large pages this patch also introduces
+> a new define KEXEC_CRASH_MEM_ALIGN. The crashkernel start and size must 
+> always be aligned with KEXEC_CRASH_MEM_ALIGN.
+> 
+> Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+> ---
+>  include/linux/kexec.h |    6 ++++++
+>  kernel/kexec.c        |   21 +++++++++++++++++++--
+>  2 files changed, 25 insertions(+), 2 deletions(-)
+> 
+> --- a/include/linux/kexec.h
+> +++ b/include/linux/kexec.h
+> @@ -37,6 +37,10 @@
+>  #define KEXEC_CRASH_CONTROL_MEMORY_LIMIT KEXEC_CONTROL_MEMORY_LIMIT
+>  #endif
+>  
+> +#ifndef KEXEC_CRASH_MEM_ALIGN
+> +#define KEXEC_CRASH_MEM_ALIGN PAGE_SIZE
+> +#endif
+> +
+>  #define KEXEC_NOTE_HEAD_BYTES ALIGN(sizeof(struct elf_note), 4)
+>  #define KEXEC_CORE_NOTE_NAME "CORE"
+>  #define KEXEC_CORE_NOTE_NAME_BYTES ALIGN(sizeof(KEXEC_CORE_NOTE_NAME), 4)
+> @@ -133,6 +137,8 @@ extern void crash_kexec(struct pt_regs *
+>  int kexec_should_crash(struct task_struct *);
+>  void crash_save_cpu(struct pt_regs *regs, int cpu);
+>  void crash_save_vmcoreinfo(void);
+> +void crash_map_reserved_pages(void);
+> +void crash_unmap_reserved_pages(void);
+>  void arch_crash_save_vmcoreinfo(void);
+>  void vmcoreinfo_append_str(const char *fmt, ...)
+>  	__attribute__ ((format (printf, 1, 2)));
+> --- a/kernel/kexec.c
+> +++ b/kernel/kexec.c
+> @@ -999,6 +999,7 @@ SYSCALL_DEFINE4(kexec_load, unsigned lon
+>  			kimage_free(xchg(&kexec_crash_image, NULL));
+>  			result = kimage_crash_alloc(&image, entry,
+>  						     nr_segments, segments);
+> +			crash_map_reserved_pages();
+>  		}
+>  		if (result)
+>  			goto out;
+> @@ -1015,6 +1016,8 @@ SYSCALL_DEFINE4(kexec_load, unsigned lon
+>  				goto out;
+>  		}
+>  		kimage_terminate(image);
+> +		if (flags & KEXEC_ON_CRASH)
+> +			crash_unmap_reserved_pages();
+>  	}
+>  	/* Install the new kernel, and  Uninstall the old */
+>  	image = xchg(dest_image, image);
+> @@ -1026,6 +1029,18 @@ out:
+>  	return result;
+>  }
+>  
+> +/*
+> + * Add and remove page tables for crashkernel memory
+> + *
+> + * Provide an empty default implementation here -- architecture
+> + * code may override this
+> + */
+> +void __weak crash_map_reserved_pages(void)
+> +{}
+> +
+> +void __weak crash_unmap_reserved_pages(void)
+> +{}
+> +
+>  #ifdef CONFIG_COMPAT
+>  asmlinkage long compat_sys_kexec_load(unsigned long entry,
+>  				unsigned long nr_segments,
+> @@ -1134,14 +1149,16 @@ int crash_shrink_memory(unsigned long ne
+>  		goto unlock;
+>  	}
+>  
+> -	start = roundup(start, PAGE_SIZE);
+> -	end = roundup(start + new_size, PAGE_SIZE);
+> +	start = roundup(start, KEXEC_CRASH_MEM_ALIGN);
+> +	end = roundup(start + new_size, KEXEC_CRASH_MEM_ALIGN);
+>  
+> +	crash_map_reserved_pages();
+>  	crash_free_reserved_phys_range(end, crashk_res.end);
+>  
+>  	if ((start == end) && (crashk_res.parent != NULL))
+>  		release_resource(&crashk_res);
+>  	crashk_res.end = end - 1;
+> +	crash_unmap_reserved_pages();
+>  
+>  unlock:
+>  	mutex_unlock(&kexec_mutex);
+> 
