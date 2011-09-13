@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755471Ab1IMQbQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 12:31:16 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:50030 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755297Ab1IMQbP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 12:31:15 -0400
+	id S1755542Ab1IMQcW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 12:32:22 -0400
+Received: from lucidpixels.com ([72.73.18.11]:50668 "EHLO lucidpixels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755297Ab1IMQcV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 12:32:21 -0400
+Date: Tue, 13 Sep 2011 12:32:20 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: Jon Mason <mason@myri.com>
+cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Jesse Brandeburg <jesse.brandeburg@gmail.com>,
+        Alan Piszcz <ap@solarrain.com>, NetDEV list <netdev@vger.kernel.org>,
+        xfs@oss.sgi.com, linux-kernel@vger.kernel.org
+Subject: Re: 3.1-rc4: spectacular kernel errors / filesystem crash
+In-Reply-To: <CAMaF-rMxTWRAO7WRdYoEM57k66MC6Vuwk1mcfgCgMO6Z+KBvzQ@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1109131156050.7113@p34.internal.lan>
+References: <alpine.DEB.2.02.1109110511250.8626@p34.internal.lan> <CAEuXFEzs1f7n5taYzupux3AtKmRcY4P0m7yjkUQA8aLyS8eujw@mail.gmail.com> <1315886706.2556.11.camel@edumazet-laptop> <alpine.DEB.2.02.1109130722210.21380@p34.internal.lan>
+ <CAMaF-rN-qeXBDoc9=7kwu40Wj8=G8YuPKWXPRhOuhdYX_VO34w@mail.gmail.com> <alpine.DEB.2.02.1109131142010.7113@p34.internal.lan> <CAMaF-rMxTWRAO7WRdYoEM57k66MC6Vuwk1mcfgCgMO6Z+KBvzQ@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20110913162023.GA23759@codeaurora.org>
-References: <20110913162023.GA23759@codeaurora.org>
-Date: Tue, 13 Sep 2011 18:31:14 +0200
-Message-ID: <CAL4Wiioh69CYAnbJnCuQM8cs19eWCsXF8p_rwAswBWQfe5+rWQ@mail.gmail.com>
-Subject: Re: [PATCH] Janitor: Typo in stack debug code
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "Linas Vepstas (Code Aurora)" <linas@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/9/13 Linas Vepstas (Code Aurora) <linas@codeaurora.org>:
->
-> In the debug routine check_stack_usage(), free stack space is counted
-> in units of (unsigned long), not bytes.  Make this clear when printing.
->
-> It seems easiest to just change the message, instead of multiplying
-> by sizeof(unsigned long).
->
-> Signed-off-by: Linas Vepstas <linas@codeaurora.org>
->
-> ---
->
-> ===================================================================
-> --- a/kernel/exit.c
-> +++ b/kernel/exit.c
-> @@ -888,7 +888,7 @@ static void check_stack_usage(void)
->
->        spin_lock(&low_water_lock);
->        if (free < lowest_to_date) {
-> -               printk(KERN_WARNING "%s used greatest stack depth: %lu bytes "
-> +               printk(KERN_WARNING "%s used greatest stack depth: %lu words "
->                                "left\n",
->                                current->comm, free);
->                lowest_to_date = free;
->
->
->
->
 
-Thats not true, everything is fine.
 
-dmesg | grep stack
-[    1.564907] kworker/u:0 used greatest stack depth: 5592 bytes left
-[    2.467909] modprobe used greatest stack depth: 5576 bytes left
-[    2.483228] exe used greatest stack depth: 5552 bytes left
-[    2.489430] all_generic_ide used greatest stack depth: 5496 bytes left
-[    2.524731] scsi_id used greatest stack depth: 5440 bytes left
-[    2.643103] blkid used greatest stack depth: 4768 bytes left
-[    4.232051] exe used greatest stack depth: 4320 bytes left
-[    4.761443] stty used greatest stack depth: 3784 bytes left
-[    6.011566] modprobe used greatest stack depth: 3664 bytes left
-[    6.011681] modprobe used greatest stack depth: 3184 bytes left
-[  339.890273] nroff used greatest stack depth: 3032 bytes left
+On Tue, 13 Sep 2011, Jon Mason wrote:
+
+> On Tue, Sep 13, 2011 at 10:42 AM, Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
+>>
+>>
+>> On Tue, 13 Sep 2011, Jon Mason wrote:
+>>
+>>> On Tue, Sep 13, 2011 at 9:54 AM, Justin Piszcz <jpiszcz@lucidpixels.com>
+>>> wrote:
+>>>>
+>>>>
+>>>> On Tue, 13 Sep 2011, Eric Dumazet wrote:
+>>>>
+
+Thanks,
+
+# patch -p1 < ../0001-Fix-pointer-dereference-before-call-to-pcie_bus_conf.patch
+patching file arch/x86/pci/acpi.c
+patching file drivers/pci/hotplug/pcihp_slot.c
+patching file drivers/pci/probe.c
+# patch -p1 < ../0002-PCI-Remove-MRRS-modification-from-MPS-setting-code.patch
+patching file drivers/pci/pci.c
+patching file drivers/pci/probe.c
+#
+
+Rebooted & running with new patches for 3.1-rc4.
+Will let you know if any further issues, I wonder if this will fix
+the RCU/SLAB issues too, thanks.
+
+Justin.
