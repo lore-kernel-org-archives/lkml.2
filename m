@@ -1,67 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752942Ab1IMFFb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 01:05:31 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:51779 "EHLO e5.ny.us.ibm.com"
+	id S1753819Ab1IMFHN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 01:07:13 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:47191 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751736Ab1IMFFa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 01:05:30 -0400
-Date: Tue, 13 Sep 2011 10:35:24 +0530
-From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Turner <pjt@google.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelianov <xemul@parallels.com>
-Subject: Re: CFS Bandwidth Control - Test results of cgroups tasks pinned vs
- unpinnede
-Message-ID: <20110913050524.GC7254@linux.vnet.ibm.com>
-Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-References: <20110615053716.GA390@linux.vnet.ibm.com>
- <BANLkTi=7S2qdVjbJkDja+GAoD=pNo2gPsTFZMFkB8NWWkO1JVQ@mail.gmail.com>
- <20110907152009.GA3868@linux.vnet.ibm.com>
- <1315423342.11101.25.camel@twins>
- <20110908151433.GB6587@linux.vnet.ibm.com>
- <1315571462.26517.9.camel@twins>
- <20110912101722.GA28950@linux.vnet.ibm.com>
- <1315830943.26517.36.camel@twins>
- <20110913041545.GD11100@linux.vnet.ibm.com>
- <20110913050306.GB7254@linux.vnet.ibm.com>
+	id S1752020Ab1IMFHM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 01:07:12 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: David Howells <dhowells@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>
+Cc: dhowells@redhat.com, agruen@kernel.org, akpm@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V6 00/26] New ACL format for better NFSv4 acl interoperability
+In-Reply-To: <8331.1315866422@redhat.com>
+References: <20110912222306.GB17483@fieldses.org> <25175.1315572498@redhat.com> <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <26458.1315577016@redhat.com> <8331.1315866422@redhat.com>
+User-Agent: Notmuch/0.5-318-g52e4ded (http://notmuchmail.org) Emacs/23.2.1 (x86_64-pc-linux-gnu)
+Date: Tue, 13 Sep 2011 10:37:00 +0530
+Message-ID: <87sjo19gjv.fsf@skywalker.in.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20110913050306.GB7254@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com> [2011-09-13 10:33:06]:
-
-> * Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com> [2011-09-13 09:45:45]:
+On Mon, 12 Sep 2011 23:27:02 +0100, David Howells <dhowells@redhat.com> wrote:
+> J. Bruce Fields <bfields@fieldses.org> wrote:
 > 
-> > * Peter Zijlstra <a.p.zijlstra@chello.nl> [2011-09-12 14:35:43]:
-> > 
-> > > Of course it does.. and I bet you can improve that slightly if you
-> > > manage to fix some of the numerical nightmares that live in the cgroup
-> > > load-balancer (Paul, care to share your WIP?)
-> > 
-> > Booting with "nohz=off" also helps significantly.
-> > 
-> > With nohz=on, average idle time (over 1 min) is 10.3%
-> > With nohz=off, average idle time (over 1 min) is 3.9%
+> > Probably the documentation belongs in man pages.  Which I think they've
+> > done, but alas the git repos (on kernel.org) aren't accesible right
+> > now....
 > 
-> Tuning min_interval and max_interval of various sched_domains to 1 [a]
+> There is also an in-kernel API that filesystems have to deal with if they want
+> to support richacls.  See the ext4 patches...  There should probably be one
+> document describing how to 'use' ACLs of all kinds from a filesystem internals
+> point of view somewhere under Documentation/filesystems/
+> 
 
-Forgot to add footnote (a) earlier. min and max_interval tuned as
-below:
+setattr callback should call richacl_chmod when called with ATTR_MODE
+and we should have new xattr callbacks for "system.richacl" . Those are
+the only two changes needed for file system.
 
-	# cd /proc/sys/kernel/sched_domain
-	# for i in `find . -name min_interval`; do echo 1 > $i; done
-	# for i in `find . -name max_interval`; do echo 1 > $i; done
-
-- vatsa
+-aneesh
