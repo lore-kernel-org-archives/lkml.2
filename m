@@ -1,82 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932501Ab1IMUEo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 16:04:44 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:53284 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932467Ab1IMUEn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 16:04:43 -0400
-Subject: Re: [PATCH 1/1] Staging: hv: netvsc: Cleanup the name and type of
- link_stat variable
-From: Joe Perches <joe@perches.com>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, Haiyang Zhang <haiyangz@microsoft.com>
-Date: Tue, 13 Sep 2011 13:04:42 -0700
-In-Reply-To: <1315943618-22308-1-git-send-email-kys@microsoft.com>
-References: <1315943618-22308-1-git-send-email-kys@microsoft.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.1.91- 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1315944283.25776.14.camel@Joe-Laptop>
-Mime-Version: 1.0
+	id S932509Ab1IMUHF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 16:07:05 -0400
+Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:53464 "EHLO
+	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932421Ab1IMUHE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 16:07:04 -0400
+Date: Tue, 13 Sep 2011 15:06:58 -0500
+From: Shawn Bohrer <sbohrer@rgmadvisors.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sched_rt: Migrate equal priority tasks to available CPUs
+Message-ID: <20110913200658.GC2362@BohrerMBP.rgmadvisors.com>
+References: <1315837684-18733-1-git-send-email-sbohrer@rgmadvisors.com>
+ <1315919147.26295.1.camel@gandalf.stny.rr.com>
+ <20110913162713.GA2362@BohrerMBP.rgmadvisors.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110913162713.GA2362@BohrerMBP.rgmadvisors.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-09-13 at 12:53 -0700, K. Y. Srinivasan wrote:
-> Consistently name the variable tracking the link status. Use a consistent
-> type for this variable and get rid of some unnecessary parentheses as well.
-> 
-> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> ---
->  drivers/staging/hv/rndis_filter.c |    8 ++++----
->  1 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/staging/hv/rndis_filter.c b/drivers/staging/hv/rndis_filter.c
-> index 963582a..696d2c5 100644
-> --- a/drivers/staging/hv/rndis_filter.c
-> +++ b/drivers/staging/hv/rndis_filter.c
-> @@ -41,7 +41,7 @@ struct rndis_device {
->  	struct netvsc_device *net_dev;
->  
->  	enum rndis_device_state state;
-> -	u32 link_stat;
-> +	bool link_state;
->  	atomic_t new_req_id;
->  
->  	spinlock_t request_lock;
-> @@ -514,7 +514,7 @@ static int rndis_filter_query_device_link_status(struct rndis_device *dev)
->  
->  	return rndis_filter_query_device(dev,
->  				      RNDIS_OID_GEN_MEDIA_CONNECT_STATUS,
-> -				      &dev->link_stat, &size);
-> +				      &dev->link_state, &size);
+On Tue, Sep 13, 2011 at 11:27:14AM -0500, Shawn Bohrer wrote:
+> On Tue, Sep 13, 2011 at 09:05:46AM -0400, Steven Rostedt wrote:
+> > Looks good, but do you have a test case that shows the issue? I like to
+> > have something that proves even the obvious before making changes to the
+> > schedule.
+>
+> I played around a little this morning trying to make a simple test case
+> that reproduces the issue, but so far I've been unsuccessful.  My simple
+> test cases trying to simulate the workload above actually do get evenly
+> distributed across all CPUs.  If I get some more time I'll see if I can
+> get an example to trigger the issue, but feel free to see if you can
+> reproduce it as well.
 
-Are you sure you can do this?
-You're changing the info request from u32 to bool
-without changing the size above it
+Alright, I'm still having trouble making a case that actually resulted
+in some CPUs left completely idle while others are loaded, but the
+rough test case below does still show the benefit of the patch.
 
-	u32 size = sizeof(u32);
+$ gcc -o sched_rt_migration sched_rt_migration.c
+$ chrt -f 1 ./sched_rt_migration &
+
+# Run 5 times with 3.0
+$ sudo trace-cmd record -e sched:sched_switch -e sched:sched_wakeup sleep 1
+$ trace-cmd report -r -w -F 'sched: comm == "sched_rt_migrat" || next_comm == "sched_rt_migrat"' | tail -4
+
+Wakeup Latency
+Average: 2.551 usecs Max: 188.409 usecs
+Average: 2.372 usecs Max: 187.185 usecs
+Average: 2.559 usecs Max: 182.151 usecs
+Average: 2.628 usecs Max: 180.113 usecs
+Average: 2.559 usecs Max: 178.105 usecs
+
+# Run 5 with 3.0 + patch
+
+Wakeup Latency
+Average: 0.730 usecs Max: 8.037 usecs
+Average: 0.721 usecs Max: 16.613 usecs
+Average: 0.718 usecs Max: 16.613 usecs
+Average: 0.693 usecs Max: 58.095 usecs
+Average: 0.703 usecs Max: 11.078 usecs
+
+So you can see that the patch does decrease both the Average and the
+max wakeup latency.
 
 
->  }
->  
->  static int rndis_filter_set_packet_filter(struct rndis_device *dev,
-> @@ -736,11 +736,11 @@ int rndis_filter_device_add(struct hv_device *dev,
->  
->  	rndis_filter_query_device_link_status(rndis_device);
->  
-> -	device_info->link_state = rndis_device->link_stat;
-> +	device_info->link_state = rndis_device->link_state;
->  
->  	dev_info(&dev->device, "Device MAC %pM link state %s",
->  		 rndis_device->hw_mac_adr,
-> -		 ((device_info->link_state) ? ("down\n") : ("up\n")));
-> +		 device_info->link_state ? "down\n" : "up\n");
 
-It's better to remove the multiple "\n"s from "up" and "down"
-and move it to the format string as I suggested.
+#include <sys/time.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/syscall.h>
+#include <time.h>
+#include <sys/sysinfo.h>
+#include <stdint.h>
+#include <sys/timerfd.h>
 
+
+#define WORKLOAD_HIGH 100000
+#define WORKLOAD_LOW  100
+
+void worker()
+{
+	int timerfd, ret;
+	struct itimerspec new_value, old_value;
+
+	timerfd = timerfd_create(CLOCK_MONOTONIC, 0);
+	if (timerfd == -1) {
+		perror("timerfd_create");
+		return;
+	}
+
+	new_value.it_value.tv_sec = 0;
+	new_value.it_value.tv_nsec = 250000;
+	new_value.it_interval.tv_sec = 0;
+	new_value.it_interval.tv_nsec = 250000;
+
+	ret = timerfd_settime(timerfd, 0, &new_value, &old_value);
+	if (ret == -1) {
+		perror("timerfd_settime");
+		return;
+	}
+
+	while (1) {
+		int i, j, loops, event_count;
+		uint64_t buf;
+		for (i = 0; i < 10; ++i) {
+			read(timerfd, &buf, sizeof(buf));
+
+			if (i == 0)
+				loops = WORKLOAD_HIGH;
+			else
+				loops = WORKLOAD_LOW;
+			for (j = 0; j < loops; ++j)
+				/* burn cpu */;
+		}
+	}
+}
+
+
+int main ()
+{
+	int i, nprocs;
+	pid_t pid;
+
+
+	nprocs = get_nprocs();
+	for (i = 0; i < 2 * nprocs - 1; ++i) {
+		pid = fork();
+		if (pid == 0)
+			worker();
+		else if (pid == -1)
+			perror("fork");
+	}
+
+	worker();
+}
+
+
+---------------------------------------------------------------
+This email, along with any attachments, is confidential. If you 
+believe you received this message in error, please contact the 
+sender immediately and delete all copies of the message.  
+Thank you.
 
