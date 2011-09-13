@@ -1,84 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755357Ab1IMQEm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 12:04:42 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:60384 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755283Ab1IMQEg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755314Ab1IMQEg (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 13 Sep 2011 12:04:36 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Ming Lei <tom.leiming@gmail.com>
-Subject: Re: [PATCH 2/5] PM / Runtime: Do not run callbacks under lock for power.irq_safe set
-Date: Tue, 13 Sep 2011 18:06:38 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Linux-sh list" <linux-sh@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, Kevin Hilman <khilman@ti.com>,
-        jean.pihet@newoldbits.com
-References: <201108310017.03103.rjw@sisk.pl> <201109122344.02386.rjw@sisk.pl> <CACVXFVN5E6pToFk_nn0xgNrUW-DQzVssmPFDpHckSaHSRwWjoQ@mail.gmail.com>
-In-Reply-To: <CACVXFVN5E6pToFk_nn0xgNrUW-DQzVssmPFDpHckSaHSRwWjoQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+Received: from mailout-de.gmx.net ([213.165.64.22]:58987 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755274Ab1IMQEd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 12:04:33 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX197E54segF7h9FD1Pqdm9oSX/Pfs8KTfHiLQe8P5y
+	nak9ha2/XiSO3e
+Subject: Re: [PATCH tip/core/rcu 44/55] rcu: wire up RCU_BOOST_PRIO for
+ rcutree
+From: Mike Galbraith <efault@gmx.de>
+To: paulmck@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, patches@linaro.org
+In-Reply-To: <20110913153413.GB2416@linux.vnet.ibm.com>
+References: <20110906180015.GA2560@linux.vnet.ibm.com>
+	 <1315332049-2604-44-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <1315915334.6300.15.camel@marge.simson.net>
+	 <20110913153413.GB2416@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 13 Sep 2011 18:04:18 +0200
+Message-ID: <1315929858.6312.16.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201109131806.39050.rjw@sisk.pl>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, September 13, 2011, Ming Lei wrote:
-> Hi,
+On Tue, 2011-09-13 at 08:34 -0700, Paul E. McKenney wrote:
+> On Tue, Sep 13, 2011 at 02:02:14PM +0200, Mike Galbraith wrote:
+
+> > @@ -1608,7 +1618,7 @@ static int rcu_node_kthread(void *arg)
+> >  				continue;
+> >  			}
+> >  			per_cpu(rcu_cpu_has_work, cpu) = 1;
+> > -			sp.sched_priority = RCU_KTHREAD_PRIO;
+> > +			sp.sched_priority = current->rt_priority;
 > 
-> On Tue, Sep 13, 2011 at 5:44 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > Hi,
-> >
-> > On Monday, September 12, 2011, Ming Lei wrote:
-> >
-> >> Hi,
-> >
-> >>
-> >
-> >> On Wed, Aug 31, 2011 at 6:20 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >
-> >> > From: Rafael J. Wysocki <rjw@sisk.pl>
-> >
-> >> >
-> >
-> >> > The rpm_suspend() and rpm_resume() routines execute subsystem or PM
-> >
-> >> > domain callbacks under power.lock if power.irq_safe is set for the
-> >
-> >> > given device.  This is inconsistent with that rpm_idle() does after
-> >
-> >> > commit 02b2677 (PM / Runtime: Allow _put_sync() from
-> >
-> >> > interrupts-disabled context) and is problematic for subsystems and PM
-> >
-> >> > domains wanting to use power.lock for synchronization in their
-> >
-> >> > runtime PM callbacks.  For this reason, make runtime PM core functions
-> >
-> >> > always release power.lock before invoking subsystem or PM domain
-> >
-> >>
-> >
-> >> If power.lock is released, the transition states(resuming or suspending)
-> >
-> >> may be observed in rpm_suspend or rpm_resume, then tasks schedule
-> >
-> >> will be produced in these two functions,
-> >
-> > I don't think so, because the interrupts are still off.
+> This is broken -- the per-node kthread runs at RT prio 99, but we usually
+> would not want to boost that high.
+
+Ouch, right.  My userland sets things on boot, so it works.
+
+> Seems like we should have a global variable that tracks the current
+> priority.  This global variable could then be set in a manner similar
+> to the softirq priorities -- or, perhaps better, simply set whenever
+> the softirq priority is changed.
 > 
-> Yes, the interrupts are still off on local CPU, but the release of spin lock may
-> cause another CPUs to run into rpm_suspend or rpm_resume and produce
-> task schedule inside the two functions.
+> Thoughts?
 
-Not for the same device, though.
+RCU threads would have to constantly watch for user priority changes on
+their own, and update private data methinks.
 
-Also, I'm not quite sure what scenario exactly are you referring to.
-Could you please give an example?
+	-Mike
 
-Thanks,
-Rafael
