@@ -1,74 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932657Ab1IMUvO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 16:51:14 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:32177 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932446Ab1IMUvM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 16:51:12 -0400
-MIME-Version: 1.0
-Message-ID: <f477a147-9948-4bef-973a-1f77bd185da1@default>
-Date: Tue, 13 Sep 2011 13:50:27 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
-        hughd@google.com, ngupta@vflare.org,
-        Konrad Wilk <konrad.wilk@oracle.com>, JBeulich@novell.com,
-        Kurt Hackel <kurt.hackel@oracle.com>, npiggin@kernel.dk,
-        akpm@linux-foundation.org, riel@redhat.com, hannes@cmpxchg.org,
-        matthew@wil.cx, Chris Mason <chris.mason@oracle.com>,
-        kamezawa.hiroyu@jp.fujitsu.com, jackdachef@gmail.com,
-        cyclonusj@gmail.com, levinsasha928@gmail.com
-Subject: RE: [PATCH V9 3/6] mm: frontswap: core frontswap functionality
-References: <20110913174026.GA11298@ca-server1.us.oracle.com
- 4E6FBFC4.1080901@linux.vnet.ibm.com>
-In-Reply-To: <4E6FBFC4.1080901@linux.vnet.ibm.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6557.5001]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
-X-CT-RefId: str=0001.0A090202.4E6FC22D.0004,ss=1,re=0.000,fgs=0
+	id S932671Ab1IMUvV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 16:51:21 -0400
+Received: from gate.crashing.org ([63.228.1.57]:39717 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932446Ab1IMUvS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 16:51:18 -0400
+Subject: Re: [PATCH tip/core/rcu 55/55] powerpc: Work around tracing from
+ dyntick-idle mode
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        patches@linaro.org, anton@samba.org, paulus@samba.org
+In-Reply-To: <20110913195033.GB3301@linux.vnet.ibm.com>
+References: <20110906180015.GA2560@linux.vnet.ibm.com>
+	 <1315332049-2604-55-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <1315389622.26118.17.camel@pasglop>
+	 <20110907134400.GJ3610@linux.vnet.ibm.com>
+	 <20110913191319.GF23424@somewhere>
+	 <20110913195033.GB3301@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 13 Sep 2011 17:49:53 -0300
+Message-ID: <1315946993.455.158.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
-> Subject: Re: [PATCH V9 3/6] mm: frontswap: core frontswap functionality
-> 
-> Hey Dan,
-> 
-> I get the following compile warnings:
-> 
-> mm/frontswap.c: In function 'init_frontswap':
-> mm/frontswap.c:264:5: warning: passing argument 4 of 'debugfs_create_size_t' from incompatible pointer
-> type
-> include/linux/debugfs.h:68:16: note: expected 'size_t *' but argument is of type 'long unsigned int *'
-> mm/frontswap.c:266:5: warning: passing argument 4 of 'debugfs_create_size_t' from incompatible pointer
-> type
-> include/linux/debugfs.h:68:16: note: expected 'size_t *' but argument is of type 'long unsigned int *'
-> mm/frontswap.c:268:5: warning: passing argument 4 of 'debugfs_create_size_t' from incompatible pointer
-> type
-> include/linux/debugfs.h:68:16: note: expected 'size_t *' but argument is of type 'long unsigned int *'
-> mm/frontswap.c:270:5: warning: passing argument 4 of 'debugfs_create_size_t' from incompatible pointer
-> type
-> include/linux/debugfs.h:68:16: note: expected 'size_t *' but argument is of type 'long unsigned int *'
 
-Thanks for checking on 32-bit!
- 
-> size_t is platform dependent but is generally "unsigned int"
-> for 32-bit and "unsigned long" for 64-bit.
+> As I understand it, cede_processor()'s call to plpar_hcall_norets()
+> results in the hypervisor being invoked, and could give up the CPU.
+> And yes, in this case, RCU needs to stop paying attention to this CPU.
+> And pseries_shared_idle_sleep() also invokes cede_proceessor().
 > 
-> I think just typecasting these to size_t * would fix it.
+> Gah...  And there also appear to be some assembly-language functions
+> that can be invoked via the ppc_md.power_save() call from cpu_idle():
+> ppc6xx_idle(), power4_idle(), idle_spin(), idle_doze(), and book3e_idle().
+> There is also a power7_idle(), but it does not appear to be used anywhere.
+> 
+> Plus there are the C-language ppc44x_idle(), beat_power_save(),
+> cbe_power_save(), ps3_power_save(), and cpm_idle().
+> 
+> > > The same thing would be needed for tick_nohz_exit_idle() and
+> > > rcu_exit_nohz(): powerpc would need to invoke rcu_exit_nohz() after
+> > > gaining control from the hypervisor but before doing its first tracing,
+> > > and then it would need the idle loop to to tick_nohz_exit_idle(false).
+> > > Again, if pseries is the only powerpc architecture requiring this,
+> > > the argument to tick_nohz_exit_idle() could depend on the architecture.
+> > > 
+> > > Would this approach work?
+> > 
+> > Sounds like we really need that.
+> 
+> Sounds like an arch-dependent config symbol that is defined for the
+> pseries targets, but not for the other powerpc architectures.
+> 
+> Not clear to me what to do about power4_idle(), though.
 
-Actually, I think the best fix is likely to change the variables
-and the debugfs calls to u64 since even on 32-bit, the
-counters may exceed 2**32 on a heavily-loaded long-running
-system.
+I don't totally follow, too many things to deal with right now, but keep
+in mind that we build multiplatform kernels, so you can have powermac,
+cell, pseries, etc... all in one kernel binary (including power7 idle).
 
-I'll give it a day or two to see if anyone else has any feedback
-before I fix this for V10.
+Shouldn't we instead change the plpar trace call to skip the tracing
+when not safe to do so ?
 
-Dan
+Cheers,
+Ben.
+
+
