@@ -1,116 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932699Ab1IMU5x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 16:57:53 -0400
-Received: from mail3.microsoft.com ([131.107.115.214]:39176 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932556Ab1IMU5w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 16:57:52 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Joe Perches <joe@perches.com>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: RE: [PATCH 1/1] Staging: hv: netvsc: Cleanup the name and type of
- link_stat variable
-Thread-Topic: [PATCH 1/1] Staging: hv: netvsc: Cleanup the name and type of
- link_stat variable
-Thread-Index: AQHMck8mQFx3XNhN9ke9w2n7Kx84OZVMMXoA//+Yu+A=
-Date: Tue, 13 Sep 2011 20:57:50 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E048081E4D9D@TK5EX14MBXC124.redmond.corp.microsoft.com>
-References: <1315943618-22308-1-git-send-email-kys@microsoft.com>
- <1315944283.25776.14.camel@Joe-Laptop>
-In-Reply-To: <1315944283.25776.14.camel@Joe-Laptop>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.33]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S932755Ab1IMU7O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 16:59:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1051 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932718Ab1IMU7I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 16:59:08 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: <x86@kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Peter Zijlstra <peterz@infradead.org>, ying.huang@intel.com
+Cc: LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
+        avi@redhat.com, jeremy@goop.org, Don Zickus <dzickus@redhat.com>
+Subject: [V4][PATCH 6/6] x86, nmi: print out NMI stats in /proc/interrupts
+Date: Tue, 13 Sep 2011 16:58:29 -0400
+Message-Id: <1315947509-6429-7-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1315947509-6429-1-git-send-email-dzickus@redhat.com>
+References: <1315947509-6429-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id p8DKw4Iv018862
 
+This is a cheap hack to add the stats to the middle of /proc/interrupts.
+It is more of a conversation starter than anything as I am not sure
+the right letters and place to put this stuff.
 
+The benefit of these stats is a better breakdown of which list the NMIs
+get handled in either a normal handler, unknown, or external.  It also
+list the number of unknown NMIs swallowed to help check for false
+positives or not.  Another benefit is the ability to actually see which
+NMI handlers are currently registered in the system.
 
-> -----Original Message-----
-> From: Joe Perches [mailto:joe@perches.com]
-> Sent: Tuesday, September 13, 2011 4:05 PM
-> To: KY Srinivasan
-> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang
-> Subject: Re: [PATCH 1/1] Staging: hv: netvsc: Cleanup the name and type of
-> link_stat variable
-> 
-> On Tue, 2011-09-13 at 12:53 -0700, K. Y. Srinivasan wrote:
-> > Consistently name the variable tracking the link status. Use a consistent
-> > type for this variable and get rid of some unnecessary parentheses as well.
-> >
-> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> > ---
-> >  drivers/staging/hv/rndis_filter.c |    8 ++++----
-> >  1 files changed, 4 insertions(+), 4 deletions(-)
-> >
-> > diff --git a/drivers/staging/hv/rndis_filter.c b/drivers/staging/hv/rndis_filter.c
-> > index 963582a..696d2c5 100644
-> > --- a/drivers/staging/hv/rndis_filter.c
-> > +++ b/drivers/staging/hv/rndis_filter.c
-> > @@ -41,7 +41,7 @@ struct rndis_device {
-> >  	struct netvsc_device *net_dev;
-> >
-> >  	enum rndis_device_state state;
-> > -	u32 link_stat;
-> > +	bool link_state;
-> >  	atomic_t new_req_id;
-> >
-> >  	spinlock_t request_lock;
-> > @@ -514,7 +514,7 @@ static int rndis_filter_query_device_link_status(struct
-> rndis_device *dev)
-> >
-> >  	return rndis_filter_query_device(dev,
-> >  				      RNDIS_OID_GEN_MEDIA_CONNECT_STATUS,
-> > -				      &dev->link_stat, &size);
-> > +				      &dev->link_state, &size);
-> 
-> Are you sure you can do this?
-> You're changing the info request from u32 to bool
-> without changing the size above it
+The output of 'cat /proc/interrupts/ will look like this:
 
-Oops! I will fix this.
+<snip>
+ 58:        275          0        864          0   PCI-MSI-edge      eth0
+NMI:       4161       4155        158       4194   Non-maskable interrupts
+SWA:          0          0          0          0   Unknown NMIs swallowed
+  0:       4161       4155        158       4194   NMI  PMI, arch_bt
+UNK:          0          0          0          0   NMI
+EXT:          0          0          0          0   NMI
+LOC:      12653      13304      13974      12926   Local timer interrupts
+SPU:          0          0          0          0   Spurious interrupts
+PMI:          6          6          5          6   Performance monitoring interrupts
+IWI:          0          0          0          0   IRQ work interrupts
+RES:       1839       1897       1821       1854   Rescheduling interrupts
+CAL:        524       2714        392        331   Function call interrupts
+TLB:        217        146        593        576   TLB shootdowns
+TRM:          0          0          0          0   Thermal event interrupts
+THR:          0          0          0          0   Threshold APIC interrupts
+MCE:          0          0          0          0   Machine check exceptions
+MCP:          1          1          1          1   Machine check polls
+ERR:          0
+MIS:          0
 
-> 
-> 	u32 size = sizeof(u32);
-> 
-> 
-> >  }
-> >
-> >  static int rndis_filter_set_packet_filter(struct rndis_device *dev,
-> > @@ -736,11 +736,11 @@ int rndis_filter_device_add(struct hv_device *dev,
-> >
-> >  	rndis_filter_query_device_link_status(rndis_device);
-> >
-> > -	device_info->link_state = rndis_device->link_stat;
-> > +	device_info->link_state = rndis_device->link_state;
-> >
-> >  	dev_info(&dev->device, "Device MAC %pM link state %s",
-> >  		 rndis_device->hw_mac_adr,
-> > -		 ((device_info->link_state) ? ("down\n") : ("up\n")));
-> > +		 device_info->link_state ? "down\n" : "up\n");
-> 
-> It's better to remove the multiple "\n"s from "up" and "down"
-> and move it to the format string as I suggested.
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+---
+ arch/x86/include/asm/nmi.h |    2 +
+ arch/x86/kernel/irq.c      |    2 +
+ arch/x86/kernel/nmi.c      |   47 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 51 insertions(+), 0 deletions(-)
 
-I will fix it.
+diff --git a/arch/x86/include/asm/nmi.h b/arch/x86/include/asm/nmi.h
+index fc74547..a4f1945 100644
+--- a/arch/x86/include/asm/nmi.h
++++ b/arch/x86/include/asm/nmi.h
+@@ -24,6 +24,8 @@ void arch_trigger_all_cpu_backtrace(void);
+ 
+ #define NMI_FLAG_FIRST	1
+ 
++void arch_show_nmi(struct seq_file *p, int prec);
++
+ enum {
+ 	NMI_LOCAL=0,
+ 	NMI_UNKNOWN,
+diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
+index 6c0802e..44d1cac 100644
+--- a/arch/x86/kernel/irq.c
++++ b/arch/x86/kernel/irq.c
+@@ -16,6 +16,7 @@
+ #include <asm/idle.h>
+ #include <asm/mce.h>
+ #include <asm/hw_irq.h>
++#include <asm/nmi.h>
+ 
+ atomic_t irq_err_count;
+ 
+@@ -55,6 +56,7 @@ int arch_show_interrupts(struct seq_file *p, int prec)
+ 	for_each_online_cpu(j)
+ 		seq_printf(p, "%10u ", irq_stats(j)->__nmi_count);
+ 	seq_printf(p, "  Non-maskable interrupts\n");
++	arch_show_nmi(p, prec);
+ #ifdef CONFIG_X86_LOCAL_APIC
+ 	seq_printf(p, "%*s: ", prec, "LOC");
+ 	for_each_online_cpu(j)
+diff --git a/arch/x86/kernel/nmi.c b/arch/x86/kernel/nmi.c
+index 326886c..bfcb4b8 100644
+--- a/arch/x86/kernel/nmi.c
++++ b/arch/x86/kernel/nmi.c
+@@ -424,3 +424,50 @@ void restart_nmi(void)
+ {
+ 	ignore_nmis--;
+ }
++
++void arch_show_nmi(struct seq_file *p, int prec)
++{
++	int j;
++	struct nmiaction *action;
++
++	seq_printf(p, "%*s: ", prec, "SWA");
++        for_each_online_cpu(j)
++                seq_printf(p, "%10u ", per_cpu(nmi_stats.swallow, j));
++        seq_printf(p, "  Unknown NMIs swallowed\n");
++
++	seq_printf(p, "%*s: ", prec, "  0");
++        for_each_online_cpu(j)
++                seq_printf(p, "%10u ", per_cpu(nmi_stats.normal, j));
++        seq_printf(p, "  NMI");
++	action = (nmi_to_desc(NMI_LOCAL))->head;
++	if (action) {
++		seq_printf(p, "\t%s", action->name);
++		while ((action = action->next) != NULL)
++			seq_printf(p, ", %s", action->name);
++	}
++	seq_putc(p, '\n');
++
++	seq_printf(p, "%*s: ", prec, "UNK");
++        for_each_online_cpu(j)
++                seq_printf(p, "%10u ", per_cpu(nmi_stats.unknown, j));
++        seq_printf(p, "  NMI");
++	action = (nmi_to_desc(NMI_UNKNOWN))->head;
++	if (action) {
++		seq_printf(p, "\t%s", action->name);
++		while ((action = action->next) != NULL)
++			seq_printf(p, ", %s", action->name);
++	}
++	seq_putc(p, '\n');
++
++	seq_printf(p, "%*s: ", prec, "EXT");
++        for_each_online_cpu(j)
++                seq_printf(p, "%10u ", per_cpu(nmi_stats.external, j));
++        seq_printf(p, "  NMI");
++	action = (nmi_to_desc(NMI_EXTERNAL))->head;
++	if (action) {
++		seq_printf(p, "\t%s", action->name);
++		while ((action = action->next) != NULL)
++			seq_printf(p, ", %s", action->name);
++	}
++	seq_putc(p, '\n');
++}
+-- 
+1.7.6
 
-Thank you,
-
-K. Y
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
