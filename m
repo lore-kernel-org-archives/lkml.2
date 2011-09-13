@@ -1,55 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932949Ab1IMWGN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 18:06:13 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:23515 "EHLO
+	id S932969Ab1IMWZA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 18:25:00 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:32478 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932834Ab1IMWGM (ORCPT
+	with ESMTP id S932956Ab1IMWY7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 18:06:12 -0400
+	Tue, 13 Sep 2011 18:24:59 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=AQOZae7lKmvVkFv24rDfBubowibybfhRD8fje+VntGeEZcqIAltHJoI1iryvpui32
-	csYeC3mSsFgbzXrtAE33g==
-Date: Tue, 13 Sep 2011 15:06:04 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Miao Xie <miaox@cn.fujitsu.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Nick Piggin <npiggin@suse.de>, Paul Menage <paul@paulmenage.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [patch] cpusets: avoid looping when storing to mems_allowed if
- one node remains set
-In-Reply-To: <4E6EDA2B.9090507@cn.fujitsu.com>
-Message-ID: <alpine.DEB.2.00.1109131503520.11120@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1109090313130.23841@chino.kir.corp.google.com> <4E6EDA2B.9090507@cn.fujitsu.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	h=date:from:to:cc:subject:message-id:in-reply-to:references:
+	x-mailer:mime-version:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=cUA/Uf7RCW1fNj28FeYtylOvohsLrQBS3t3ZtfQAmRk91sxrFLlAB6ZuEJrDewm7V
+	9nsrYKVR4B4wyfaM5b3+g==
+Date: Tue, 13 Sep 2011 15:23:02 -0700
+From: Andrew Morton <akpm@google.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Paul Menage <paul@paulmenage.org>,
+        Li Zefan <lizf@cn.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, Tim Hockin <thockin@hockin.org>,
+        Tejun Heo <tj@kernel.org>, Containers <containers@lists.osdl.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 00/11 v5] cgroups: Task counter subsystem
+Message-Id: <20110913152302.6c33ea6d.akpm@google.com>
+In-Reply-To: <1315869091-18933-1-git-send-email-fweisbec@gmail.com>
+References: <1315869091-18933-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Sep 2011, Miao Xie wrote:
+On Tue, 13 Sep 2011 01:11:20 +0200
+Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-> This patch is dangerous if the task has a bind memory policy that was set
-> to be neither MPOL_F_STATIC_NODES nor MPOL_F_RELATIVE_NODES, because the
-> memory policy use node_remap() to rebind the allowed nodes, but node_remap()
-> may make the old mask and the new mask nonoverlapping. So at this condition,
-> the task may also see an empty node mask.
+> No functional changes. Only documentation and comments added.
+> Checkpatch.pl fixes, etc...
 > 
 
-The vast majority of cpuset users are not going to have mempolicies at 
-all, the cpuset itself is the only policy they need to take advantage of 
-the NUMA locality of their machine.  I'd be find with checking for 
-!tsk->mempolicy in this exception as well since we already hold 
-task_lock(tsk), but I think the real fix would be to make sure that an 
-empty nodemask is never returned by mempolicies.  Something like ensuring 
-that if the preferred node is MAX_NUMNODES (since it is determined by 
-using first_node() over a possibly racing empty nodemask) that the first 
-online node is returned during the race and that 
-node_states[N_HIGH_MEMORY] is returned if an MPOL_BIND or MPOL_INTERLEAVE 
-mask is empty.  Thoughts?
+What is the actual rationale for merging all of this?  For this amount
+of complexity I do think we need to see significant end-user benefits. 
+But all I'm seeing in this patchset is
+
+       This is a step to be able to isolate a bit more a cgroup
+       against the rest of the system and limit the global impact of a
+       fork bomb inside a given cgroup.
+
+which is really very thin.
+
+
+
+Also, the changelogs don't appear to mention any testing results for
+the fork-bomb-killer feature.
+
+Is the fork-bomb-killer feature realistically useful?  As I understand
+it, the problem with a fork-bomb is that it causes a huge swapstorm
+while creating tasks very quickly.  The latency impact of the swapping
+makes it very hard to regain control of the system so you can stop the
+forking.  So to be effective, this feature would need to limit the
+swapping?  Or something.  More substantiation, please.
+
+
+
+Also, what is the relationship between this and RLIMIT_NPROC?  Given
+that we have user namespaces, does that give us per-user,
+per-namespace, per-container rlimits?  If it doesn't, should it?  Will
+it?  If it does/will, how duplicative will that be?
