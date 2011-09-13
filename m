@@ -1,288 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756151Ab1IMTFy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 15:05:54 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:37356
-	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755836Ab1IMTFx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 15:05:53 -0400
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 05/20] Staging: hv: util: Perform some service specific init/deinit in probe/remove
-Date: Tue, 13 Sep 2011 10:59:41 -0700
-Message-Id: <1315936796-20662-5-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1315936796-20662-1-git-send-email-kys@microsoft.com>
-References: <1315936759-20623-1-git-send-email-kys@microsoft.com>
- <1315936796-20662-1-git-send-email-kys@microsoft.com>
+	id S932370Ab1IMTJd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 15:09:33 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:56891 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932092Ab1IMTJc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 15:09:32 -0400
+Message-ID: <4E6FAA1B.5020102@parallels.com>
+Date: Tue, 13 Sep 2011 16:08:11 -0300
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
+MIME-Version: 1.0
+To: Paul Menage <paul@paulmenage.org>
+CC: Greg Thelen <gthelen@google.com>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, <containers@lists.osdl.org>,
+        <netdev@vger.kernel.org>, <xemul@parallels.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Lennart Poettering <lennart@poettering.net>
+Subject: Re: [PATCH] per-cgroup tcp buffer limitation
+References: <1315276556-10970-1-git-send-email-glommer@parallels.com> <CAHH2K0aJxjinSu0Ek6jzsZ5dBmm5mEU-typuwYWYWEudF2F3Qg@mail.gmail.com> <4E664766.40200@parallels.com> <CAHH2K0YJA7vZZ3QNAf63TZOnWhsRUwfuZYfntBL4muZ0G_Vt2w@mail.gmail.com> <4E66A0A9.3060403@parallels.com> <CAHH2K0aq4s1_H-yY0kA3LhM00CCNNbJZyvyBoDD6rHC+qo_gNg@mail.gmail.com> <4E68484A.4000201@parallels.com> <CAHH2K0YcXMUfd1Zr=f5a4=X9cPPp8NZiuichFXaOo=kVp5rRJA@mail.gmail.com> <4E699341.9010606@parallels.com> <CALdu-PCrYPZx38o44ZyFrbQ6H39-vNPKey_Tpm4HRUNHNFMpyA@mail.gmail.com> <4E6E39DD.2040102@parallels.com> <CALdu-PC7ESSUHuF4vfVoRFFfkaBt1V28rGW3-O5pT3WtegAh4g@mail.gmail.com> <4E6F9CC4.2000601@parallels.com> <CALdu-PDGpBnVHW7E5NobAwtXop5c03NTmijkk8oB7u-a5LEXww@mail.gmail.com>
+In-Reply-To: <CALdu-PDGpBnVHW7E5NobAwtXop5c03NTmijkk8oB7u-a5LEXww@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [187.106.51.14]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In preparation for modifying the util driver to fully conform to the
-Linux Driver Model, perform some service specific init and de-init 
-operations in util_probe()/util_remove()  as opposed to in 
-init_hyperv_utils()/exit_hyperv_utils() as is currently done.
+On 09/13/2011 03:46 PM, Paul Menage wrote:
+> On Tue, Sep 13, 2011 at 11:11 AM, Glauber Costa<glommer@parallels.com>  wrote:
+>>
+>> What if they are all updated under the same lock ?
+>
+> Right, that would be the kind of optimization that would remove the
+> need for worrying about whether or not to account it. It would
+> probably mean creating some memcg-specific structures like
+> res-counters that could handle multiple values, since you'd need to
+> update both the kernel charge and the total charge, in this cgroup
+> *and* its ancestors.
+>
+> Paul
+If we do that, we may have to commit to an intermediary user interface - 
+with controls to to determine if kernel memory is billed to kernel or 
+total, a enable/disable file, just to later render it pointless by a new 
+optimization - that we seem to agree that seems possible.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- drivers/staging/hv/hv_kvp.c  |    7 +--
- drivers/staging/hv/hv_kvp.h  |    2 +-
- drivers/staging/hv/hv_util.c |   95 ++++++++++++++++++++++++++----------------
- drivers/staging/hv/hyperv.h  |   14 ++++++
- 4 files changed, 76 insertions(+), 42 deletions(-)
-
-diff --git a/drivers/staging/hv/hv_kvp.c b/drivers/staging/hv/hv_kvp.c
-index 13b0ecf..ff0d9ab 100644
---- a/drivers/staging/hv/hv_kvp.c
-+++ b/drivers/staging/hv/hv_kvp.c
-@@ -312,16 +312,14 @@ callback_done:
- }
- 
- int
--hv_kvp_init(void)
-+hv_kvp_init(struct hv_util_service *srv)
- {
- 	int err;
- 
- 	err = cn_add_callback(&kvp_id, kvp_name, kvp_cn_callback);
- 	if (err)
- 		return err;
--	recv_buffer = kmalloc(PAGE_SIZE, GFP_KERNEL);
--	if (!recv_buffer)
--		return -ENOMEM;
-+	recv_buffer = srv->recv_buffer;
- 
- 	return 0;
- }
-@@ -330,5 +328,4 @@ void hv_kvp_deinit(void)
- {
- 	cn_del_callback(&kvp_id);
- 	cancel_delayed_work_sync(&kvp_work);
--	kfree(recv_buffer);
- }
-diff --git a/drivers/staging/hv/hv_kvp.h b/drivers/staging/hv/hv_kvp.h
-index 8c402f3..9b765d7 100644
---- a/drivers/staging/hv/hv_kvp.h
-+++ b/drivers/staging/hv/hv_kvp.h
-@@ -175,7 +175,7 @@ struct hv_kvp_msg {
- 	struct hv_kvp_msg_enumerate	kvp_data;
- };
- 
--int hv_kvp_init(void);
-+int hv_kvp_init(struct hv_util_service *);
- void hv_kvp_deinit(void);
- void hv_kvp_onchannelcallback(void *);
- 
-diff --git a/drivers/staging/hv/hv_util.c b/drivers/staging/hv/hv_util.c
-index d9460fdd..f082e5a 100644
---- a/drivers/staging/hv/hv_util.c
-+++ b/drivers/staging/hv/hv_util.c
-@@ -30,9 +30,31 @@
- #include "hyperv.h"
- #include "hv_kvp.h"
- 
--static u8 *shut_txf_buf;
--static u8 *time_txf_buf;
--static u8 *hbeat_txf_buf;
-+
-+static void shutdown_onchannelcallback(void *context);
-+static struct hv_util_service util_shutdown = {
-+	.service_name = "Shutdown channel functionality initialized\n",
-+	.util_cb = shutdown_onchannelcallback,
-+};
-+
-+static void timesync_onchannelcallback(void *context);
-+static struct hv_util_service util_timesynch = {
-+	.service_name = "Timesync channel functionality initialized\n",
-+	.util_cb = timesync_onchannelcallback,
-+};
-+
-+static void heartbeat_onchannelcallback(void *context);
-+static struct hv_util_service util_heartbeat = {
-+	.service_name = "Heartbeat channel functionality initialized\n",
-+	.util_cb = heartbeat_onchannelcallback,
-+};
-+
-+static struct hv_util_service util_kvp = {
-+	.service_name = "KVP channel functionality initialized\n",
-+	.util_cb = hv_kvp_onchannelcallback,
-+	.util_init = hv_kvp_init,
-+	.util_deinit = hv_kvp_deinit,
-+};
- 
- static void shutdown_onchannelcallback(void *context)
- {
-@@ -40,6 +62,7 @@ static void shutdown_onchannelcallback(void *context)
- 	u32 recvlen;
- 	u64 requestid;
- 	u8  execute_shutdown = false;
-+	u8  *shut_txf_buf = util_shutdown.recv_buffer;
- 
- 	struct shutdown_msg_data *shutdown_msg;
- 
-@@ -169,6 +192,7 @@ static void timesync_onchannelcallback(void *context)
- 	u64 requestid;
- 	struct icmsg_hdr *icmsghdrp;
- 	struct ictimesync_data *timedatap;
-+	u8 *time_txf_buf = util_timesynch.recv_buffer;
- 
- 	vmbus_recvpacket(channel, time_txf_buf,
- 			 PAGE_SIZE, &recvlen, &requestid);
-@@ -207,6 +231,7 @@ static void heartbeat_onchannelcallback(void *context)
- 	u64 requestid;
- 	struct icmsg_hdr *icmsghdrp;
- 	struct heartbeat_msg_data *heartbeat_msg;
-+	u8 *hbeat_txf_buf = util_heartbeat.recv_buffer;
- 
- 	vmbus_recvpacket(channel, hbeat_txf_buf,
- 			 PAGE_SIZE, &recvlen, &requestid);
-@@ -235,34 +260,56 @@ static void heartbeat_onchannelcallback(void *context)
- 	}
- }
- 
--/*
-- * The devices managed by the util driver don't need any additional
-- * setup.
-- */
- static int util_probe(struct hv_device *dev,
- 			const struct hv_vmbus_device_id *dev_id)
- {
-+	struct hv_util_service *srv =
-+		(struct hv_util_service *)dev_id->driver_data;
-+	int ret;
-+
-+	srv->recv_buffer = kmalloc(PAGE_SIZE, GFP_KERNEL);
-+	if (!srv->recv_buffer)
-+		return -ENOMEM;
-+	if (srv->util_init) {
-+		ret = srv->util_init(srv);
-+		if (ret) {
-+			kfree(srv->recv_buffer);
-+			return -ENODEV;
-+		}
-+	}
-+
-+	hv_set_drvdata(dev, srv);
- 	return 0;
- }
- 
- static int util_remove(struct hv_device *dev)
- {
-+	struct hv_util_service *srv = hv_get_drvdata(dev);
-+
-+	if (srv->util_deinit)
-+		srv->util_deinit();
-+	kfree(srv->recv_buffer);
-+
- 	return 0;
- }
- 
- static const struct hv_vmbus_device_id id_table[] = {
- 	/* Shutdown guid */
- 	{ VMBUS_DEVICE(0x31, 0x60, 0x0B, 0X0E, 0x13, 0x52, 0x34, 0x49,
--		       0x81, 0x8B, 0x38, 0XD9, 0x0C, 0xED, 0x39, 0xDB) },
-+		       0x81, 0x8B, 0x38, 0XD9, 0x0C, 0xED, 0x39, 0xDB)
-+	  .driver_data = (unsigned long)&util_shutdown },
- 	/* Time synch guid */
- 	{ VMBUS_DEVICE(0x30, 0xe6, 0x27, 0x95, 0xae, 0xd0, 0x7b, 0x49,
--		       0xad, 0xce, 0xe8, 0x0a, 0xb0, 0x17, 0x5c, 0xaf) },
-+		       0xad, 0xce, 0xe8, 0x0a, 0xb0, 0x17, 0x5c, 0xaf)
-+	  .driver_data = (unsigned long)&util_timesynch },
- 	/* Heartbeat guid */
- 	{ VMBUS_DEVICE(0x39, 0x4f, 0x16, 0x57, 0x15, 0x91, 0x78, 0x4e,
--		       0xab, 0x55, 0x38, 0x2f, 0x3b, 0xd5, 0x42, 0x2d) },
-+		       0xab, 0x55, 0x38, 0x2f, 0x3b, 0xd5, 0x42, 0x2d)
-+	  .driver_data = (unsigned long)&util_heartbeat },
- 	/* KVP guid */
- 	{ VMBUS_DEVICE(0xe7, 0xf4, 0xa0, 0xa9, 0x45, 0x5a, 0x96, 0x4d,
--		       0xb8, 0x27, 0x8a, 0x84, 0x1e, 0x8c, 0x3,  0xe6) },
-+		       0xb8, 0x27, 0x8a, 0x84, 0x1e, 0x8c, 0x3,  0xe6)
-+	  .driver_data = (unsigned long)&util_kvp },
- 	{ },
- };
- 
-@@ -281,24 +328,11 @@ static int __init init_hyperv_utils(void)
- 	int ret;
- 	pr_info("Registering HyperV Utility Driver\n");
- 
--	if (hv_kvp_init())
--		return -ENODEV;
--
--
--	shut_txf_buf = kmalloc(PAGE_SIZE, GFP_KERNEL);
--	time_txf_buf = kmalloc(PAGE_SIZE, GFP_KERNEL);
--	hbeat_txf_buf = kmalloc(PAGE_SIZE, GFP_KERNEL);
--
--	if (!shut_txf_buf || !time_txf_buf || !hbeat_txf_buf) {
--		pr_info("Unable to allocate memory for receive buffer\n");
--		ret = -ENOMEM;
--		goto err;
--	}
- 
- 	ret = vmbus_driver_register(&util_drv);
- 
- 	if (ret != 0)
--		goto err;
-+		return ret;
- 
- 	hv_cb_utils[HV_SHUTDOWN_MSG].callback = &shutdown_onchannelcallback;
- 
-@@ -310,12 +344,6 @@ static int __init init_hyperv_utils(void)
- 
- 	return 0;
- 
--err:
--	kfree(shut_txf_buf);
--	kfree(time_txf_buf);
--	kfree(hbeat_txf_buf);
--
--	return ret;
- }
- 
- static void exit_hyperv_utils(void)
-@@ -342,11 +370,6 @@ static void exit_hyperv_utils(void)
- 			&chn_cb_negotiate;
- 	hv_cb_utils[HV_KVP_MSG].callback = NULL;
- 
--	hv_kvp_deinit();
--
--	kfree(shut_txf_buf);
--	kfree(time_txf_buf);
--	kfree(hbeat_txf_buf);
- 	vmbus_driver_unregister(&util_drv);
- }
- 
-diff --git a/drivers/staging/hv/hyperv.h b/drivers/staging/hv/hyperv.h
-index 91e557b..b0d7711 100644
---- a/drivers/staging/hv/hyperv.h
-+++ b/drivers/staging/hv/hyperv.h
-@@ -892,6 +892,20 @@ void vmbus_driver_unregister(struct hv_driver *hv_driver);
- #define HV_ERROR_NOT_SUPPORTED		0x80070032
- #define HV_ERROR_MACHINE_LOCKED		0x800704F7
- 
-+/*
-+ * While we want to handle util services as regular devices,
-+ * there is only one instance of each of these services; so
-+ * we statically allocate the service specific state.
-+ */
-+
-+struct hv_util_service {
-+	u8 *recv_buffer;
-+	char *service_name;
-+	void (*util_cb)(void *);
-+	int (*util_init)(struct hv_util_service *);
-+	void (*util_deinit)(void);
-+};
-+
- struct vmbuspipe_hdr {
- 	u32 flags;
- 	u32 msgsize;
--- 
-1.7.4.1
-
+I think it is preferred to always assume kernel memory is accounted to 
+the kernel, and when we optimize it, no changes are made to what's 
+exposed to userspace.
