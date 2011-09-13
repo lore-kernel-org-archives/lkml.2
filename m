@@ -1,46 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489Ab1IMBdW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 21:33:22 -0400
-Received: from claw.goop.org ([74.207.240.146]:34667 "EHLO claw.goop.org"
+	id S1753821Ab1IMBeH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 21:34:07 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:47543 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752437Ab1IMBdU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 21:33:20 -0400
-Message-ID: <4E6EB2DE.8090102@goop.org>
-Date: Mon, 12 Sep 2011 18:33:18 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1753706Ab1IMBeF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Sep 2011 21:34:05 -0400
+Date: Mon, 12 Sep 2011 18:34:00 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Temporary -rcu tree location
+Message-ID: <20110913013400.GB2313@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110913000107.GA15945@linux.vnet.ibm.com>
+ <alpine.LRH.2.00.1109130210090.19238@twin.jikos.cz>
+ <20110913002419.GN2362@linux.vnet.ibm.com>
+ <alpine.LNX.2.00.1109130242440.13109@pobox.suse.cz>
 MIME-Version: 1.0
-To: padovan@profusion.mobi
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-bluetooth@vger.kernel.org, linux-wireless@vger.kernel.org,
-        Keith Packard <keithp@keithp.com>
-Subject: Bluetooth regression with headphones
-X-Enigmail-Version: 1.3.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1109130242440.13109@pobox.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Tue, Sep 13, 2011 at 02:43:55AM +0200, Jiri Kosina wrote:
+> On Mon, 12 Sep 2011, Paul E. McKenney wrote:
+> 
+> > Here is what happens when I try that:
+> > 
+> > 	git push github :rcu/next
+> > 	Username: 
+> > 	Password: 
+> > 	error: unable to push to unqualified destination: rcu/next
+> > 	The destination refspec neither matches an existing ref on the remote nor
+> > 	begins with refs/, and we are unable to guess a prefix based on the source ref.
+> > 	error: failed to push some refs to 'https://github.com/paulmckrcu/linux'
+> > 
+> > So what am I missing here?
+> 
+> Looking at 
+> 
+> 	https://github.com/paulmckrcu/linux/branches
+> 
+> there doesn't seem to be 'rcu/next' branch, right?
 
-I reported a regression in connecting my Nokia BH-905i headphones in
-June this year (https://lkml.org/lkml/2011/6/23/770), which was the same
-problem Keith Packard reported in https://lkml.org/lkml/2011/6/9/63.  
-It was briefly fixed in
-git://git.kernel.org/pub/scm/linux/kernel/git/padovan/bluetooth-2.6.git.
+No, there is not.  So the idea is to push "rcu/next" the first time,
+then ":rcu/next" thereafter?
 
-Unfortunately it regressed again by the time of the linux-3.0 release,
-to something with similar symptoms: the headphones won't reliably
-connect to my laptop unless I freshly re-pair them.  However, unlike the
-original bug, they will very occasionally connect normally, though I
-don't know why.
-
-This behaviour has been consistent since 3.0 up until the current
-3.1-rc6 kernel.
-
-What further information can I provide?  How can I help debug this?
-
-Thanks,
-    J
+							Thanx, Paul
