@@ -1,75 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753901Ab1IMEln (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 00:41:43 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:49855 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750983Ab1IMEll (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 00:41:41 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Casey Schaufler <casey@schaufler-ca.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Valdis.Kletnieks@vt.edu, agruen@kernel.org, akpm@linux-foundation.org,
-        dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        LSM <linux-security-module@vger.kernel.org>,
-        Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [PATCH -V6 00/26] New ACL format for better NFSv4 acl interoperability
-In-Reply-To: <4E6E89E0.4010406@schaufler-ca.com>
-References: <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <4E655049.6060507@schaufler-ca.com> <108028.1315442771@turing-police.cc.vt.edu> <4E6E7ACC.8040003@schaufler-ca.com> <20110912222014.GA17483@fieldses.org> <4E6E89E0.4010406@schaufler-ca.com>
-User-Agent: Notmuch/0.5-318-g52e4ded (http://notmuchmail.org) Emacs/23.2.1 (x86_64-pc-linux-gnu)
-Date: Tue, 13 Sep 2011 10:11:15 +0530
-Message-ID: <87wrdd9hqs.fsf@skywalker.in.ibm.com>
+	id S1752719Ab1IMFDS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 01:03:18 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:41947 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750829Ab1IMFDR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 01:03:17 -0400
+Date: Tue, 13 Sep 2011 10:33:06 +0530
+From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Turner <pjt@google.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelianov <xemul@parallels.com>
+Subject: Re: CFS Bandwidth Control - Test results of cgroups tasks pinned vs
+ unpinnede
+Message-ID: <20110913050306.GB7254@linux.vnet.ibm.com>
+Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+References: <BANLkTimE1b8HP-q4jgsv5jPD5S-dRoUi_g@mail.gmail.com>
+ <20110615053716.GA390@linux.vnet.ibm.com>
+ <BANLkTi=7S2qdVjbJkDja+GAoD=pNo2gPsTFZMFkB8NWWkO1JVQ@mail.gmail.com>
+ <20110907152009.GA3868@linux.vnet.ibm.com>
+ <1315423342.11101.25.camel@twins>
+ <20110908151433.GB6587@linux.vnet.ibm.com>
+ <1315571462.26517.9.camel@twins>
+ <20110912101722.GA28950@linux.vnet.ibm.com>
+ <1315830943.26517.36.camel@twins>
+ <20110913041545.GD11100@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20110913041545.GD11100@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 11091305-7282-0000-0000-00000168EE67
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Sep 2011 15:38:24 -0700, Casey Schaufler <casey@schaufler-ca.com> wrote:
-> On 9/12/2011 3:20 PM, J. Bruce Fields wrote:
-> > On Mon, Sep 12, 2011 at 02:34:04PM -0700, Casey Schaufler wrote:
-> >> On 9/7/2011 5:46 PM, Valdis.Kletnieks@vt.edu wrote:
-> >>> On Mon, 05 Sep 2011 15:42:17 PDT, Casey Schaufler said:
-> >>>> On 9/5/2011 10:25 AM, Aneesh Kumar K.V wrote:
-> >>>>> The following set of patches implements VFS and ext4 changes needed to implement
-> >>>>> a new acl model for linux. Rich ACLs are an implementation of NFSv4 ACLs,
-> >>>>> extended by file( masks to fit into the standard POSIX file permission model.
-> >>>>> They are designed to work seamlessly locally as well as across the NFSv4 and
-> >>>>> CIFS/SMB2 network file system protocols.
-> >>>> POSIX ACLs predate the LSM and can't be done as an LSM due to
-> >>>> the interactions between mode bits and ACLs as defined by the
-> >>>> POSIX DRAFT specification.
-> > I don't know LSM so don't understand what you mean when you say that
-> > interactions between mode bits and ACLs would make an ACL model hard to
-> > implement as an LSM.
+* Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com> [2011-09-13 09:45:45]:
+
+> * Peter Zijlstra <a.p.zijlstra@chello.nl> [2011-09-12 14:35:43]:
 > 
-> POSIX ACLs require that the file permission bits change when
-> the ACL changes. This interaction violates the strict "additional
-> restriction" model of the LSM.
+> > Of course it does.. and I bet you can improve that slightly if you
+> > manage to fix some of the numerical nightmares that live in the cgroup
+> > load-balancer (Paul, care to share your WIP?)
 > 
+> Booting with "nohz=off" also helps significantly.
 > 
-> > But in any case the rich acl/mode bit interactions are similar to the
-> > posix acl/mode bit interactions, so the same issue probably applies.
-> 
-> It would help if you knew for sure and could explain the interaction
-> in sufficient detail to justify the position.
-> 
+> With nohz=on, average idle time (over 1 min) is 10.3%
+> With nohz=off, average idle time (over 1 min) is 3.9%
 
-Andreas have documented the details here
-http://acl.bestbits.at/richacl/draft-gruenbacher-nfsv4-acls-in-posix-00.html
+Tuning min_interval and max_interval of various sched_domains to 1 [a]
+and also setting sched_cfs_bandwidth_slice_us to 500 does cut down idle
+time further to 2.7% ..
 
-In short with respect to mode bits, the interaction between acl/mode
-bits is more or less similar between posix acl and richacl. When we set
-richacl we need to make sure that mode bits represent allowed permission
-on the file system object. We need to do the above to be posix
-compliant.  As per POSIX additional file access control mechanisms may
-only further restrict the access permissions defined by the file
-permission bits. You can find further details in the OLS 2010 paper on
-richacl. http://www.fmeh.org/ols-2010-implementing-richacl-paper.pdf
+This is perhaps not optimal (as it may lead to more lock contentions), but 
+something to note for those who care for both capping and utilization in
+equal measure!
 
-
--aneesh
-
-
+- vatsa
 
