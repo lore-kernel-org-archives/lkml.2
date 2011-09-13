@@ -1,87 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932383Ab1IMTNa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 15:13:30 -0400
-Received: from mail-ew0-f52.google.com ([209.85.215.52]:50338 "EHLO
-	mail-ew0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932328Ab1IMTN3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 15:13:29 -0400
-Date: Tue, 13 Sep 2011 21:13:21 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, patches@linaro.org, anton@samba.org,
-        paulus@samba.org
-Subject: Re: [PATCH tip/core/rcu 55/55] powerpc: Work around tracing from
- dyntick-idle mode
-Message-ID: <20110913191319.GF23424@somewhere>
-References: <20110906180015.GA2560@linux.vnet.ibm.com>
- <1315332049-2604-55-git-send-email-paulmck@linux.vnet.ibm.com>
- <1315389622.26118.17.camel@pasglop>
- <20110907134400.GJ3610@linux.vnet.ibm.com>
+	id S932397Ab1IMTQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 15:16:57 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:58781 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S932132Ab1IMTQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 15:16:56 -0400
+Message-ID: <4E6FACBD.1020801@cn.fujitsu.com>
+Date: Wed, 14 Sep 2011 03:19:25 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110907134400.GJ3610@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v3 11/11] KVM: MMU: improve write flooding detected
+References: <4E5C4C20.3000403@cn.fujitsu.com> <4E5C4D17.2080700@cn.fujitsu.com> <4E6F395A.5030609@redhat.com>
+In-Reply-To: <4E6F395A.5030609@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-09-14 03:15:42,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-09-14 03:15:43,
+	Serialize complete at 2011-09-14 03:15:43
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 07, 2011 at 06:44:00AM -0700, Paul E. McKenney wrote:
-> On Wed, Sep 07, 2011 at 07:00:22AM -0300, Benjamin Herrenschmidt wrote:
-> > On Tue, 2011-09-06 at 11:00 -0700, Paul E. McKenney wrote:
-> > > PowerPC LPAR's __trace_hcall_exit() can invoke event tracing at a
-> > > point where RCU has been told that the CPU is in dyntick-idle mode.
-> > > Because event tracing uses RCU, this can result in failures.
-> > > 
-> > > A correct fix would arrange for RCU to be told about dyntick-idle
-> > > mode after tracing had completed, however, this will require some care
-> > > because it appears that __trace_hcall_exit() can also be called from
-> > > non-dyntick-idle mode.
-> > 
-> > This obviously needs to be fixed properly. hcall tracing is very useful
-> > and if I understand your patch properly, it just comments it out :-)
+On 09/13/2011 07:07 PM, Avi Kivity wrote:
+> On 08/30/2011 05:38 AM, Xiao Guangrong wrote:
+>> Detecting write-flooding does not work well, when we handle page written, if
+>> the last speculative spte is not accessed, we treat the page is
+>> write-flooding, however, we can speculative spte on many path, such as pte
+>> prefetch, page synced, that means the last speculative spte may be not point
+>> to the written page and the written page can be accessed via other sptes, so
+>> depends on the Accessed bit of the last speculative spte is not enough
+>>
+>> Instead of detected page accessed, we can detect whether the spte is accessed
+>> after it is written, if the spte is not accessed but it is written frequently,
+>> we treat is not a page table or it not used for a long time
+>>
+>>
 > 
-> That is exactly what it does, and I completely agree that this patch
-> is nothing but a short-term work-around to allow my RCU tests to find
-> other bugs.
-> 
-> > I'm not sure what the best approach is, maybe have the hcall tracing
-> > test for the dyntick-idle mode and skip tracing in that case ?
-> 
-> Another approach would be to update Frederic Weisbecker's patch at:
-> 
-> 	https://lkml.org/lkml/2011/8/20/83
-> 
-> so that powerpc does tick_nohz_enter_idle(false), and then uses
-> rcu_enter_nohz() explicitly just after doing the hcall tracing.
-> If pseries is the only powerpc architecture requiring this, then
-> the argument to tick_nohz_enter_idle() could depend on the powerpc
-> sub-architecture.
+> The spte may not be accessed, but other sptes in the same page can be accessed.  An example is the fixmap area for kmap_atomic(), there will be a lot of pte writes but other sptes will be accessed without going through soft-mmu at all.
 
-I'm trying to fix this but I need a bit of help to understand the
-pseries cpu sleeping.
-
-In pseries_dedicated_idle_sleep(), what is the function that does
-the real sleeping? Is it cede_processor()?
-
+I think this kind of shadow pae is mostly the last page table(level=1), maybe
+we can skip the write-flooding for the last shadow page, because the last shadow
+page can become unsync and it can not let page table write-protected.
+ 
+> I think you have to read the parent_ptes->spte.accessed bits to be sure.
 > 
-> The same thing would be needed for tick_nohz_exit_idle() and
-> rcu_exit_nohz(): powerpc would need to invoke rcu_exit_nohz() after
-> gaining control from the hypervisor but before doing its first tracing,
-> and then it would need the idle loop to to tick_nohz_exit_idle(false).
-> Again, if pseries is the only powerpc architecture requiring this,
-> the argument to tick_nohz_exit_idle() could depend on the architecture.
-> 
-> Would this approach work?
 
-Sounds like we really need that.
+I guess the overload of this way is little high:
+- it needs to walk parent ptes for every shadow pages
+- we need to clear the parent_ptes->spte.accessed bit when the page is written, and
+  the tlb flush is needed.
+no?
 
-Thanks.
