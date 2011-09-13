@@ -1,95 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756035Ab1IMSJZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 14:09:25 -0400
-Received: from mail-gx0-f170.google.com ([209.85.161.170]:48181 "EHLO
-	mail-gx0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755870Ab1IMSJX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 14:09:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <4E6E39DD.2040102@parallels.com>
-References: <1315276556-10970-1-git-send-email-glommer@parallels.com>
- <CAHH2K0aJxjinSu0Ek6jzsZ5dBmm5mEU-typuwYWYWEudF2F3Qg@mail.gmail.com>
- <4E664766.40200@parallels.com> <CAHH2K0YJA7vZZ3QNAf63TZOnWhsRUwfuZYfntBL4muZ0G_Vt2w@mail.gmail.com>
- <4E66A0A9.3060403@parallels.com> <CAHH2K0aq4s1_H-yY0kA3LhM00CCNNbJZyvyBoDD6rHC+qo_gNg@mail.gmail.com>
- <4E68484A.4000201@parallels.com> <CAHH2K0YcXMUfd1Zr=f5a4=X9cPPp8NZiuichFXaOo=kVp5rRJA@mail.gmail.com>
- <4E699341.9010606@parallels.com> <CALdu-PCrYPZx38o44ZyFrbQ6H39-vNPKey_Tpm4HRUNHNFMpyA@mail.gmail.com>
- <4E6E39DD.2040102@parallels.com>
-From: Paul Menage <paul@paulmenage.org>
-Date: Tue, 13 Sep 2011 11:09:03 -0700
-X-Google-Sender-Auth: iNhcG-N7z8inkoKJ9mtjQNJd9uk
-Message-ID: <CALdu-PC7ESSUHuF4vfVoRFFfkaBt1V28rGW3-O5pT3WtegAh4g@mail.gmail.com>
-Subject: Re: [PATCH] per-cgroup tcp buffer limitation
-To: Glauber Costa <glommer@parallels.com>
-Cc: Greg Thelen <gthelen@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, containers@lists.osdl.org, netdev@vger.kernel.org,
-        xemul@parallels.com, "David S. Miller" <davem@davemloft.net>,
-        Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Lennart Poettering <lennart@poettering.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1756063Ab1IMSKd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 14:10:33 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:59649 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755870Ab1IMSKc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 14:10:32 -0400
+Subject: Re: [PATCH 20/20] Staging: hv: netvsc: Rename deviceInfo as
+ device_info
+From: Joe Perches <joe@perches.com>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, Haiyang Zhang <haiyangz@microsoft.com>
+Date: Tue, 13 Sep 2011 11:10:31 -0700
+In-Reply-To: <1315936796-20662-20-git-send-email-kys@microsoft.com>
+References: <1315936759-20623-1-git-send-email-kys@microsoft.com>
+	 <1315936796-20662-1-git-send-email-kys@microsoft.com>
+	 <1315936796-20662-20-git-send-email-kys@microsoft.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.1.91- 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1315937432.25776.9.camel@Joe-Laptop>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 12, 2011 at 9:57 AM, Glauber Costa <glommer@parallels.com> wrote:
->
-> I think at this point there is at least consensus that this could very well
-> live in memcg, right ?
+On Tue, 2011-09-13 at 10:59 -0700, K. Y. Srinivasan wrote:
+> Rename deviceInfo as device_info.
+[]
+> diff --git a/drivers/staging/hv/rndis_filter.c b/drivers/staging/hv/rndis_filter.c
+[]
+> @@ -732,15 +732,15 @@ int rndis_filter_device_add(struct hv_device *dev,
+[]
+>  	dev_info(&dev->device, "Device MAC %pM link state %s",
+>  		 rndis_device->hw_mac_adr,
+> -		 ((deviceInfo->link_state) ? ("down\n") : ("up\n")));
+> +		 ((device_info->link_state) ? ("down\n") : ("up\n")));
 
-Yes, it looks that way.
+Maybe get rid of the superfluous parentheses too?
 
->> This is definitely an improvement, but I'd say it's not enough. I
->> think we should consider something like:
->
-> One step at a time =)
+	dev_info(&dev->device, "Device MAC %pM link state %s\n",
+		 rndis_device->hw_mac_adr,
+		 device_info->link_state ? "down" : "up");
 
-Yes, as far as design and initial implementation goes - but the full
-plan has to be figured out before anything gets committed to mainline,
-given the stability guarantees that implies.
+Also, struct rndis_device uses
+	u32 link_stat;
+that is copied into struct netvsc_device_info
+	bool link_state;
+could you please rationalize the names and types
+of those 2 variables?
 
->> - the 'active' control determines whether (all) child cgroups will
->> have  memory.{limit,usage}_in_bytes files, or
->> memory.{kernel,user}_{limit,usage}_in_bytes files
->> - kernel memory will be charged either against 'kernel' or 'total'
->> depending on the value of unified
->
-> You mean for display/pressure purposes, right? Internally, I think once we
-> have kernel memory, we always charge it to kernel memory, regardless of
-> anything else. The value in unified field will only take place when we need
-> to grab this value.
->
-> I don't personally see a reason for not having all files present at all
-> times.
 
-There's pretty much only one reason - avoiding the overhead of
-maintaining multiple counters.
-
-Each set of counters (user, kernel, total) will have its own locks,
-contention and other overheads to keep up to date. If userspace
-doesn't care about one or two of the three, then that's mostly wasted.
-
-Now it might be that the accounting of all three can be done with
-little more overhead than that required to update just a split view or
-just a unified view, in which case there's much less argument against
-simplifying and tracking/charging/limiting all three.
-
->
-> It is overly flexible if we're exposing these counters and expecting the
-> user to do anything with them. It is perfectly fine if a single file, when
-> read, displays this information as statistics.
->
-
-When I proposed this, I guess I was envisioning that most of the
-counters (e.g. things like TCP buffers or general network buffers)
-would be primarily for stats, since the admin probably only cares
-about total memory usage.
-
-The main point of this was to allow people who want to do something
-like tracking/limiting TCP buffer usage specifically per-cgroup to do
-so, without having any performance impact on the regular users.
-
-Paul
