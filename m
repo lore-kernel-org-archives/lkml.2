@@ -1,82 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932976Ab1IMWZw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 18:25:52 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:42344
-	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S932956Ab1IMWZw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 18:25:52 -0400
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, joe@perches.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 1/1] Staging: hv: netvsc: Cleanup the name and type of link_stat variable
-Date: Tue, 13 Sep 2011 15:21:27 -0700
-Message-Id: <1315952487-23406-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S932991Ab1IMW0N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 18:26:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60464 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932958Ab1IMW0L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 18:26:11 -0400
+Subject: Re: [PATCH 06/24] C6X: devicetree
+From: Mark Salter <msalter@redhat.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Arnd Bergmann <arnd@arndb.de>, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 13 Sep 2011 18:26:03 -0400
+In-Reply-To: <CACxGe6tVafwVN6vdU7sCxL5JM7+as0bp_AaHaGAyE9+eTgR5Tw@mail.gmail.com>
+References: <1314826019-22330-1-git-send-email-msalter@redhat.com>
+	 <6360771.ouEC5EKNMR@wuerfel> <1315917546.11280.38.camel@deneb.redhat.com>
+	 <201109131733.59700.arnd@arndb.de>
+	 <CACxGe6tVafwVN6vdU7sCxL5JM7+as0bp_AaHaGAyE9+eTgR5Tw@mail.gmail.com>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-ID: <1315952764.11280.49.camel@deneb.redhat.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Consistently name the variable tracking the link status. Use a consistent
-type for this variable and get rid of some unnecessary parentheses as well.
-I would like to thank Joe Perches <joe@perches.com> for suggesting these
-changes and patiently helping me get here!
+On Tue, 2011-09-13 at 11:54 -0600, Grant Likely wrote:
+> On Tue, Sep 13, 2011 at 9:33 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > On Tuesday 13 September 2011, Mark Salter wrote:
+> >> On Tue, 2011-09-13 at 08:43 +0200, Arnd Bergmann wrote:
+> >> > Are these instructions specific to the interrupt controller or
+> >> > do they access a register space that can contain arbitrary
+> >> > devices?
+> >> >
+> >> > If there is a separate address space for special devices, it might
+> >> > be good to describe that in the device tree, like we do for PCI
+> >> > I/O space.
+> >> >
+> >>
+> >> It is a core register area. Similar to ARM or MIPS coprocessor
+> >> registers.
+> >
+> > I guess it still depends, it's probably a grey area. If the register layout
+> > is the same on all c6x cores and it's only for core stuff, there is no need
+> > to put it in the device tree. If you have multiple soc (off-core) devices
+> > being controlled through the registers, or the numbers vary a lot between
+> > different chips, I would put all of them into the device tree.
+> 
+> It's an interrupt controller.  There still needs to be a node to act
+> as the interrupt-parent and specify #interrupt-cells.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- drivers/staging/hv/rndis_filter.c |   17 +++++++++++------
- 1 files changed, 11 insertions(+), 6 deletions(-)
+It already has that. But maybe that node should be moved into the cpu
+node.
 
-diff --git a/drivers/staging/hv/rndis_filter.c b/drivers/staging/hv/rndis_filter.c
-index 963582a..ef43f2e 100644
---- a/drivers/staging/hv/rndis_filter.c
-+++ b/drivers/staging/hv/rndis_filter.c
-@@ -41,7 +41,7 @@ struct rndis_device {
- 	struct netvsc_device *net_dev;
- 
- 	enum rndis_device_state state;
--	u32 link_stat;
-+	bool link_state;
- 	atomic_t new_req_id;
- 
- 	spinlock_t request_lock;
-@@ -511,10 +511,15 @@ static int rndis_filter_query_device_mac(struct rndis_device *dev)
- static int rndis_filter_query_device_link_status(struct rndis_device *dev)
- {
- 	u32 size = sizeof(u32);
-+	u32 link_status;
-+	int ret;
- 
--	return rndis_filter_query_device(dev,
-+	ret = rndis_filter_query_device(dev,
- 				      RNDIS_OID_GEN_MEDIA_CONNECT_STATUS,
--				      &dev->link_stat, &size);
-+				      &link_status, &size);
-+	dev->link_state = (link_status != 0) ? true : false;
-+
-+	return ret;
- }
- 
- static int rndis_filter_set_packet_filter(struct rndis_device *dev,
-@@ -736,11 +741,11 @@ int rndis_filter_device_add(struct hv_device *dev,
- 
- 	rndis_filter_query_device_link_status(rndis_device);
- 
--	device_info->link_state = rndis_device->link_stat;
-+	device_info->link_state = rndis_device->link_state;
- 
--	dev_info(&dev->device, "Device MAC %pM link state %s",
-+	dev_info(&dev->device, "Device MAC %pM link state %s\n",
- 		 rndis_device->hw_mac_adr,
--		 ((device_info->link_state) ? ("down\n") : ("up\n")));
-+		 device_info->link_state ? "down" : "up");
- 
- 	return ret;
- }
--- 
-1.7.4.1
+--Mark
+
 
