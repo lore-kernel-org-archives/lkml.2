@@ -1,70 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932308Ab1IMSna (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 14:43:30 -0400
-Received: from claw.goop.org ([74.207.240.146]:35377 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932101Ab1IMSn3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 14:43:29 -0400
-Message-ID: <4E6FA44F.1050705@goop.org>
-Date: Tue, 13 Sep 2011 11:43:27 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S932322Ab1IMSqv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 14:46:51 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:58887 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932101Ab1IMSqu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 14:46:50 -0400
 MIME-Version: 1.0
-To: Chris Ball <cjb@laptop.org>
-CC: linux-mmc@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: SDHCI regression since 2.6.39
-References: <4E6EA3E4.5080401@goop.org> <m2bouo37by.fsf@bob.laptop.org> <4E6F8C24.3090207@goop.org> <m2wrdc1i5b.fsf@bob.laptop.org>
-In-Reply-To: <m2wrdc1i5b.fsf@bob.laptop.org>
-X-Enigmail-Version: 1.3.1
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4E6F9CC4.2000601@parallels.com>
+References: <1315276556-10970-1-git-send-email-glommer@parallels.com>
+ <CAHH2K0aJxjinSu0Ek6jzsZ5dBmm5mEU-typuwYWYWEudF2F3Qg@mail.gmail.com>
+ <4E664766.40200@parallels.com> <CAHH2K0YJA7vZZ3QNAf63TZOnWhsRUwfuZYfntBL4muZ0G_Vt2w@mail.gmail.com>
+ <4E66A0A9.3060403@parallels.com> <CAHH2K0aq4s1_H-yY0kA3LhM00CCNNbJZyvyBoDD6rHC+qo_gNg@mail.gmail.com>
+ <4E68484A.4000201@parallels.com> <CAHH2K0YcXMUfd1Zr=f5a4=X9cPPp8NZiuichFXaOo=kVp5rRJA@mail.gmail.com>
+ <4E699341.9010606@parallels.com> <CALdu-PCrYPZx38o44ZyFrbQ6H39-vNPKey_Tpm4HRUNHNFMpyA@mail.gmail.com>
+ <4E6E39DD.2040102@parallels.com> <CALdu-PC7ESSUHuF4vfVoRFFfkaBt1V28rGW3-O5pT3WtegAh4g@mail.gmail.com>
+ <4E6F9CC4.2000601@parallels.com>
+From: Paul Menage <paul@paulmenage.org>
+Date: Tue, 13 Sep 2011 11:46:29 -0700
+X-Google-Sender-Auth: ykb9PosuEgzYenxdTX8lcdy8VMI
+Message-ID: <CALdu-PDGpBnVHW7E5NobAwtXop5c03NTmijkk8oB7u-a5LEXww@mail.gmail.com>
+Subject: Re: [PATCH] per-cgroup tcp buffer limitation
+To: Glauber Costa <glommer@parallels.com>
+Cc: Greg Thelen <gthelen@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org, netdev@vger.kernel.org,
+        xemul@parallels.com, "David S. Miller" <davem@davemloft.net>,
+        Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Lennart Poettering <lennart@poettering.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/13/2011 10:12 AM, Chris Ball wrote:
-> Hi Jeremy,
+On Tue, Sep 13, 2011 at 11:11 AM, Glauber Costa <glommer@parallels.com> wrote:
 >
-> On Tue, Sep 13 2011, Jeremy Fitzhardinge wrote:
->>> On Mon, Sep 12 2011, Jeremy Fitzhardinge wrote:
->>>> Since 2.6.39, the SD card slot in my Lenovo X220 has stopped working.  
->>>> When I insert a card with current linux.git kernel (3.1-rc6), I get:
->>>>
->>>> [ 3891.745549] mmc0: new SDHC card at address b368
->>>> [ 3891.790704] mmcblk0: mmc0:b368 PNY   7.51 GiB 
->>>> [ 3891.795568] mmc0: Got data interrupt 0x00200000 even though no data
->>>> operation was in progress.
->>> Please could you try reverting a3c7778f8153b9 "mmc: sdhci: R1B command
->>> handling + MMC_CAP_ERASE"?  We've had one other similar report that
->>> bisected to this patch.
->> The revert was not entirely trivial (below), but I'm fairly sure I got
->> it right, and it didn't help.
-> Thanks very much for doing that, sorry it didn't help.
->
-> There's another related patch for your controller:
->    https://bugs.launchpad.net/ubuntu/+source/linux/+bug/773524
->
-> This was merged as 15bed0f2fa8e1d7db ("mmc: Added quirks for Ricoh
-> 1180:e823 lower base clock frequency").  Perhaps you could check that
-> this code is running for you?
+> What if they are all updated under the same lock ?
 
-Yes, that's already there.
+Right, that would be the kind of optimization that would remove the
+need for worrying about whether or not to account it. It would
+probably mean creating some memcg-specific structures like
+res-counters that could handle multiple values, since you'd need to
+update both the kernel charge and the total charge, in this cgroup
+*and* its ancestors.
 
-> If it is running, and not helping, can I persuade you to try a full
-> bisection?
-
-OK, will do.
-
->   I don't think we have other reports of this bug, and the
-> only other person who has reported something like it wasn't a kernel
-> hacker.
-
-That's interesting; the X220 is a pretty common machine these days, I
-think.  I wonder if there's variations in the SD controller or something?
-
-> Thanks!
-
-
-    J
+Paul
