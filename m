@@ -1,72 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755167Ab1IMPkH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 11:40:07 -0400
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:51314
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754153Ab1IMPkF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 11:40:05 -0400
-X-SpamScore: -24
-X-BigFish: VPS-24(zz179dN1432N98dKzz1202hzz15d4Rz32i668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LRGWRQ-01-6LH-02
-X-M-MSG: 
-Date: Tue, 13 Sep 2011 17:38:11 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Greg KH <gregkh@suse.de>
-CC: Joerg Roedel <joro@8bytes.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        David Brown <davidb@codeaurora.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 02/10] Driver core: Add iommu_ops to bus_type
-Message-ID: <20110913153811.GO11701@amd.com>
-References: <1315410113-26608-1-git-send-email-joerg.roedel@amd.com>
- <1315410113-26608-3-git-send-email-joerg.roedel@amd.com>
- <20110907184750.GA920@suse.de>
- <20110907191919.GA31674@8bytes.org>
- <20110907194445.GA2526@suse.de>
- <20110913145402.GM11701@amd.com>
- <20110913145855.GA4581@suse.de>
+	id S1755214Ab1IMPkb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 11:40:31 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:42228 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755166Ab1IMPk0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 11:40:26 -0400
+Date: Tue, 13 Sep 2011 08:34:13 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, patches@linaro.org
+Subject: Re: [PATCH tip/core/rcu 44/55] rcu: wire up RCU_BOOST_PRIO for
+ rcutree
+Message-ID: <20110913153413.GB2416@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110906180015.GA2560@linux.vnet.ibm.com>
+ <1315332049-2604-44-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1315915334.6300.15.camel@marge.simson.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110913145855.GA4581@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+In-Reply-To: <1315915334.6300.15.camel@marge.simson.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 11091315-8974-0000-0000-0000001E6A8E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 13, 2011 at 10:58:55AM -0400, Greg KH wrote:
-> On Tue, Sep 13, 2011 at 04:54:02PM +0200, Roedel, Joerg wrote:
-> > --- a/include/linux/device.h
-> > +++ b/include/linux/device.h
-> > @@ -22,6 +22,7 @@
-> >  #include <linux/types.h>
-> >  #include <linux/module.h>
-> >  #include <linux/pm.h>
-> > +#include <linux/iommu.h>
+On Tue, Sep 13, 2011 at 02:02:14PM +0200, Mike Galbraith wrote:
+> Hi Paul,
 > 
-> Ick, please don't add new #includes to device.h, it makes the whole
-> build slower.  Just pre-declare the structure and all should be fine.
+> This patch causes RCU thread priority funnies, with some help from rcun.
+> 
+> On Tue, 2011-09-06 at 11:00 -0700, Paul E. McKenney wrote:
+> > 	return 0;
+> > @@ -1466,6 +1474,7 @@ static void rcu_yield(void (*f)(unsigned long), unsigned long arg)
+> >  {
+> >  	struct sched_param sp;
+> >  	struct timer_list yield_timer;
+> > +	int prio = current->normal_prio;
+> >  
+> >  	setup_timer_on_stack(&yield_timer, f, arg);
+> >  	mod_timer(&yield_timer, jiffies + 2);
+> 
+> There's a thinko there, prio either needs to be inverted before feeding
+> it to __setscheduler().. or just use ->rt_priority.  I did the latter,
+> and twiddled rcun to restore it's priority instead of RCU_KTHREAD_PRIO.
+> RCU threads now stay put.
 
-Hmm, since linux/iommu.h provides 'struct iommu_ops', and this patch
-adds a 'struct iommu_ops' to 'struct bus_type', wouldn't a simple
-forward declaration make the bus_type incomplete in most other places?
-To lower the impact I can move the 'struct iommu_ops' to a seperate
-header file instead.
+Very good -- some comments below.  I had to hand-apply this due to
+conflicts with my current patch stack: https://github.com/paulmckrcu/linux
 
-	Joerg
+> rcu: wire up RCU_BOOST_PRIO for rcutree
+> 
+> RCU boost threads start life at RCU_BOOST_PRIO, while others remain at
+> RCU_KTHREAD_PRIO.  Adjust rcu_yield() to preserve priority across the
+> yield, and if the node thread restores RT policy for a yielding thread,
+> it sets priority to it's own priority.  This sets the stage for user
+> controlled runtime changes to priority in the -rt tree.
+> 
+> While here, change thread names to match other kthreads.
+> 
+> Signed-off-by: Mike Galbraith <efault@gmx.de>
+> 
+> ---
+>  kernel/rcutree.c        |    2 --
+>  kernel/rcutree_plugin.h |   22 ++++++++++++++++------
+>  2 files changed, 16 insertions(+), 8 deletions(-)
+> 
+> Index: linux-3.0-tip/kernel/rcutree.c
+> ===================================================================
+> --- linux-3.0-tip.orig/kernel/rcutree.c
+> +++ linux-3.0-tip/kernel/rcutree.c
+> @@ -128,8 +128,6 @@ static void rcu_node_kthread_setaffinity
+>  static void invoke_rcu_core(void);
+>  static void invoke_rcu_callbacks(struct rcu_state *rsp, struct rcu_data *rdp);
+> 
+> -#define RCU_KTHREAD_PRIO 1	/* RT priority for per-CPU kthreads. */
+> -
+>  /*
+>   * Track the rcutorture test sequence number and the update version
+>   * number within a given test.  The rcutorture_testseq is incremented
+> Index: linux-3.0-tip/kernel/rcutree_plugin.h
+> ===================================================================
+> --- linux-3.0-tip.orig/kernel/rcutree_plugin.h
+> +++ linux-3.0-tip/kernel/rcutree_plugin.h
+> @@ -27,6 +27,14 @@
+>  #include <linux/delay.h>
+>  #include <linux/stop_machine.h>
+> 
+> +#define RCU_KTHREAD_PRIO 1
+> +
+> +#ifdef CONFIG_RCU_BOOST
+> +#define RCU_BOOST_PRIO CONFIG_RCU_BOOST_PRIO
+> +#else
+> +#define RCU_BOOST_PRIO RCU_KTHREAD_PRIO
+> +#endif
+> +
+>  /*
+>   * Check the RCU kernel configuration parameters and print informative
+>   * messages about anything out of the ordinary.  If you like #ifdef, you
+> @@ -1345,13 +1353,13 @@ static int __cpuinit rcu_spawn_one_boost
+>  	if (rnp->boost_kthread_task != NULL)
+>  		return 0;
+>  	t = kthread_create(rcu_boost_kthread, (void *)rnp,
+> -			   "rcub%d", rnp_index);
+> +			   "rcub/%d", rnp_index);
+>  	if (IS_ERR(t))
+>  		return PTR_ERR(t);
+>  	raw_spin_lock_irqsave(&rnp->lock, flags);
+>  	rnp->boost_kthread_task = t;
+>  	raw_spin_unlock_irqrestore(&rnp->lock, flags);
+> -	sp.sched_priority = RCU_KTHREAD_PRIO;
+> +	sp.sched_priority = RCU_BOOST_PRIO;
+>  	sched_setscheduler_nocheck(t, SCHED_FIFO, &sp);
+>  	wake_up_process(t); /* get to TASK_INTERRUPTIBLE quickly. */
+>  	return 0;
+> @@ -1446,6 +1454,7 @@ static void rcu_yield(void (*f)(unsigned
+>  {
+>  	struct sched_param sp;
+>  	struct timer_list yield_timer;
+> +	int prio = current->rt_priority;
 
--- 
-AMD Operating System Research Center
+This makes sense, and I have merged it into your previous patch.
 
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+>  	setup_timer_on_stack(&yield_timer, f, arg);
+>  	mod_timer(&yield_timer, jiffies + 2);
+> @@ -1453,7 +1462,8 @@ static void rcu_yield(void (*f)(unsigned
+>  	sched_setscheduler_nocheck(current, SCHED_NORMAL, &sp);
+>  	set_user_nice(current, 19);
+>  	schedule();
+> -	sp.sched_priority = RCU_KTHREAD_PRIO;
+> +	set_user_nice(current, 0);
+> +	sp.sched_priority = prio;
+>  	sched_setscheduler_nocheck(current, SCHED_FIFO, &sp);
+>  	del_timer(&yield_timer);
+>  }
+> @@ -1562,7 +1572,7 @@ static int __cpuinit rcu_spawn_one_cpu_k
+>  	if (!rcu_scheduler_fully_active ||
+>  	    per_cpu(rcu_cpu_kthread_task, cpu) != NULL)
+>  		return 0;
+> -	t = kthread_create(rcu_cpu_kthread, (void *)(long)cpu, "rcuc%d", cpu);
+> +	t = kthread_create(rcu_cpu_kthread, (void *)(long)cpu, "rcuc/%d", cpu);
+>  	if (IS_ERR(t))
+>  		return PTR_ERR(t);
+>  	if (cpu_online(cpu))
+> @@ -1608,7 +1618,7 @@ static int rcu_node_kthread(void *arg)
+>  				continue;
+>  			}
+>  			per_cpu(rcu_cpu_has_work, cpu) = 1;
+> -			sp.sched_priority = RCU_KTHREAD_PRIO;
+> +			sp.sched_priority = current->rt_priority;
+
+This is broken -- the per-node kthread runs at RT prio 99, but we usually
+would not want to boost that high.
+
+Seems like we should have a global variable that tracks the current
+priority.  This global variable could then be set in a manner similar
+to the softirq priorities -- or, perhaps better, simply set whenever
+the softirq priority is changed.
+
+Thoughts?
+
+>  			sched_setscheduler_nocheck(t, SCHED_FIFO, &sp);
+>  			preempt_enable();
+>  		}
+> @@ -1671,7 +1681,7 @@ static int __cpuinit rcu_spawn_one_node_
+>  		return 0;
+>  	if (rnp->node_kthread_task == NULL) {
+>  		t = kthread_create(rcu_node_kthread, (void *)rnp,
+> -				   "rcun%d", rnp_index);
+> +				   "rcun/%d", rnp_index);
+>  		if (IS_ERR(t))
+>  			return PTR_ERR(t);
+>  		raw_spin_lock_irqsave(&rnp->lock, flags);
+> 
+> 
 
