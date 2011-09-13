@@ -1,92 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932747Ab1IMVNb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 17:13:31 -0400
-Received: from mail-gx0-f170.google.com ([209.85.161.170]:49599 "EHLO
-	mail-gx0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756122Ab1IMVNa convert rfc822-to-8bit (ORCPT
+	id S932805Ab1IMVQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 17:16:58 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:10975 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932691Ab1IMVQ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 17:13:30 -0400
-MIME-Version: 1.0
-In-Reply-To: <4E6A0700.9030401@suse.cz>
-References: <1313800642-32418-1-git-send-email-lacombar@gmail.com>
-	<4E6A0700.9030401@suse.cz>
-Date: Tue, 13 Sep 2011 17:13:29 -0400
-Message-ID: <CACqU3MUfJAeur_65i5vDegu1d1VqAdq15EedfX9A3w52J23MPg@mail.gmail.com>
-Subject: Re: [RFC] Kbuild: allow code re-use across different directories
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 13 Sep 2011 17:16:57 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:to:cc:subject:message-id:in-reply-to:references:
+	x-mailer:mime-version:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=IicynBiTYxgvDYGZ3rhbqXMsb/d8GYDmh9bBTkrUuBR6BJAVOdxF2FYMk/x+2hL+f
+	yDebW9WU9CwCBB/FBBmIQ==
+Date: Tue, 13 Sep 2011 14:16:03 -0700
+From: Andrew Morton <akpm@google.com>
+To: Jason Baron <jbaron@redhat.com>
+Cc: Josh Boyer <jwboyer@redhat.com>, Nelson Elhage <nelhage@nelhage.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Davide Libenzi <davidel@xmailserver.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Paul Bolle <pebolle@tiscali.nl>,
+        stable@kernel.org
+Subject: Re: [PATCH] epoll: Fix spurious lockdep warnings
+Message-Id: <20110913141603.25614d00.akpm@google.com>
+In-Reply-To: <20110913202248.GA6580@redhat.com>
+References: <1312913515-432-1-git-send-email-nelhage@nelhage.com>
+	<20110908000429.GK10700@zod.bos.redhat.com>
+	<20110913202248.GA6580@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 13 Sep 2011 16:22:48 -0400
+Jason Baron <jbaron@redhat.com> wrote:
 
-2011/9/9 Michal Marek <mmarek@suse.cz>:
-> On 20.8.2011 02:37, Arnaud Lacombe wrote:
->> Hi folks,
->>
->> The attached patch modify Kbuild to allow to directly re-use code in multiple
->> directory without having to go through a copy. Technically, it changes Kbuild to
->> use by default the VPATH feature of GNU make and provides accessors for Makefile
->> to change it indirectly.
->>
->> Considering:
->>
->> arch/foo/lib:
->> fancy.c
->>
->> We want to be able to build it with -DPANTS=32 in the kernel, but the
->> bootloader requires -DPANTS_SIZE=30.
->>
->> Currently we would do, either:
->>
->> arch/foo/lib/Makefile
->> LDFLAGS_fancy.o := -DPANTS=32
->> obj-y += fancy.o
->>
->> and, either:
->>
->> arch/foo/boot/Makefile:
->> LDFLAGS_fancy.o := -DPANTS=30
->> obj-y += fancy.o
->> $(obj)/fancy.c: $(srctree)/arch/foo/lib/fancy.c
->>       $(call cmd,shipped)
->>
->> or
->>
->> arch/foo/boot/Makefile:
->> LDFLAGS_fancy.o := -DPANTS=30
->> obj-y += fancy.o
->> $(obj)/fancy.o: $(srctree)/arch/foo/lib/fancy.c
->>       $(call cmd,cc_c_o)
->>
->> The former implies an extra copy of the source file, the latter expose Kbuild
->> internal function.
->>
->> With the attached patch, we would do:
->>
->> arch/foo/boot/Makefile:
->> LDFLAGS_fancy.o := -DPANTS=30
->> obj-y += fancy.o
->> vpath-y += $(srctree)/arch/foo/lib
->>
->> and let GNU make do the job.
->
-> I like this. The only issue I can think of right now, is that if you add
-> a large directory to vpath-y, then it would be easy to accidentally
-> reuse more files from that directory than intended. But that could be
-> easily prevented by isolating those reusable source files.
->
-I do not think it is that dangerous. We enforce unique access to VPATH
-and we still prioritize $(src) over any other specified path.
+> On Wed, Sep 07, 2011 at 08:04:29PM -0400, Josh Boyer wrote:
+> > On Tue, Aug 09, 2011 at 02:11:55PM -0400, Nelson Elhage wrote:
+> > > epoll can acquire recursively acquire ep->mtx on multiple "struct
+> > > eventpoll"s at once in the case where one epoll fd is monitoring
+> > > another epoll fd. This is perfectly OK, since we're careful about the
+> > > lock ordering, but it causes spurious lockdep warnings. Annotate the
+> > > recursion using mutex_lock_nested, and add a comment explaining the
+> > > nesting rules for good measure.
+> > > 
+> > > Recent versions of systemd are triggering this, and it can also be
+> > > demonstrated with the following trivial test program:
+> > > 
+> > > --------------------8<--------------------
+> > > 
+> > > int main(void) {
+> > >    int e1, e2;
+> > >    struct epoll_event evt = {
+> > >        .events = EPOLLIN
+> > >    };
+> > > 
+> > >    e1 = epoll_create1(0);
+> > >    e2 = epoll_create1(0);
+> > >    epoll_ctl(e1, EPOLL_CTL_ADD, e2, &evt);
+> > >    return 0;
+> > > }
+> > > --------------------8<--------------------
+> > > 
+> > > Cc: stable@kernel.org
+> > > Reported-by: Paul Bolle <pebolle@tiscali.nl>
+> > > Tested-by: Paul Bolle <pebolle@tiscali.nl>
+> > > Signed-off-by: Nelson Elhage <nelhage@nelhage.com>
+> > 
+> > Any progress on this heading upstream?
+> > 
+> 
+> Patch looks good to me, feel free to add:
+> 
+> Acked-by: Jason Baron <jbaron@redhat.com>
+> 
+> However, I am going to have to re-base the epoll path I recently posted:
+> https://lkml.org/lkml/2011/9/2/295, if this goes in first. Perhaps,
+> Andrew (added to the 'cc), can help us sort out the ordering...
 
-That said, what would you want to pull the patch into -next, beside
-kernel.org being up ?
-
-Thanks,
- - Arnaud
+I have already fixed up epoll-limit-paths.patch.  You're planning on
+sending a new version of that patch.  Please do base that on
+epoll-fix-spurious-lockdep-warnings.patch.
