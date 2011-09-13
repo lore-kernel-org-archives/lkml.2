@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753414Ab1IMBhR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 21:37:17 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:49954 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752646Ab1IMBhP convert rfc822-to-8bit (ORCPT
+	id S1753636Ab1IMBlC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 21:41:02 -0400
+Received: from emcscan.emc.com.tw ([192.72.220.5]:51421 "EHLO
+	emcscan.emc.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753094Ab1IMBlA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 21:37:15 -0400
+	Mon, 12 Sep 2011 21:41:00 -0400
+From: JJ Ding <jj_ding@emc.com.tw>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
+        =?utf-8?Q?=C3=89ric?= Piel <E.A.B.Piel@tudelft.nl>,
+        Daniel Kurtz <djkurtz@chromium.org>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Alessandro Rubini <rubini@cvml.unipv.it>
+Subject: Re: [PATCH v5 0/8] Input: elantech: add support for newer hardware
+In-Reply-To: <20110909173342.GB13555@core.coreip.homeip.net>
+References: <1315189007-2179-1-git-send-email-jj_ding@emc.com.tw> <20110909173342.GB13555@core.coreip.homeip.net>
+User-Agent: Notmuch/0.7 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
+Date: Tue, 13 Sep 2011 09:43:30 +0800
+Message-ID: <874o0h43p9.fsf@emc.com.tw>
 MIME-Version: 1.0
-In-Reply-To: <4E66EDBC.4040102@redhat.com>
-References: <4E649986.5060606@redhat.com>
-	<CA+55aFw+EJr9FhZZnj0re8hyH5+gFesDso2mX+PWck31ivnWYQ@mail.gmail.com>
-	<4E66EDBC.4040102@redhat.com>
-Date: Mon, 12 Sep 2011 21:37:15 -0400
-Message-ID: <CACqU3MUojYPiDEPusZ0WU-PUAByO6yu02gYEj11W8QVNga-HFw@mail.gmail.com>
-Subject: Re: [GIT PULL] KVM fix for 3.1-rc5
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        KVM list <kvm@vger.kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Dmitry,
 
-On Wed, Sep 7, 2011 at 12:06 AM, Avi Kivity <avi@redhat.com> wrote:
-> On 09/07/2011 02:20 AM, Linus Torvalds wrote:
->>
->> On Mon, Sep 5, 2011 at 2:42 AM, Avi Kivity<avi@redhat.com>  wrote:
->> >  Linus, please pull from
->> >
->> >    git://github.com/avikivity/kvm.git kvm-updates/3.1
->> >
->> >  to receive a fix for a build failure due to a missing instruction size
->> >  suffix in inline assembly.
->>
->> Again, please give me a warm and fuzzy feeling that this is really
->> Avi, and the right thing to do, rather than just a "please pull from
->> this random tree".
->
-> Yup, it's the genuine thing here, and the s/mul/mulq/ is not an incredibly
-> clever backdoor.
->
->> It's not that I don't think you are you, but I want people to actually
->> *think* about what they are doing and sending me. When you give me a
->> kernel.org address, I know you have access to kernel.org, and that
->> makes me believe you are you. When you give me a github address, that
->> doesn't really mean anything.
->>
->
-> Well, these days access to kernel.org proves a lot less than it used to,
-> unfortunately.
->
-How comes that companies who directly participate in the kernel
-development[0] cannot setup servers that would host trees of their
-employee ? In which case, kernel.org would just be a mirror for those
-tree.
+On Fri, 9 Sep 2011 10:33:43 -0700, Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
+> Hi JJ,
+> 
+> On Mon, Sep 05, 2011 at 10:16:39AM +0800, JJ Ding wrote:
+> > Hi Lists,
+> > 
+> > This is a series of patches to add support for newer generations of ELAN
+> > touchpad.
+> > 
+> > Patches #1~#6 are essentially fixes and cleanups that pave the way for
+> > patch #7 and patch #8, which really adds code for v3 and v4 hardware.
+> > 
+> > Any comments, suggestoins are welcome.
+> > 
+> 
+> OK, I applied all 8 patches to my 3.2 queue (and will push out once
+> kernel.org is restored) so any followups needs to be sent relative to
+> these 8.
+> 
+> Thanks.
 
-Thanks,
- - Arnaud
+Happy to hear that. Thank you very much.
+And thank all for reviewing and testing this series.
 
-[0]: from the top of my mind, RedHat, SuSe/Novell, Canonical, IBM, Intel, ...
+jj
+> -- 
+> Dmitry
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
