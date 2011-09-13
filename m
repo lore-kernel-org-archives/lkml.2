@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932322Ab1IMSqv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 14:46:51 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:58887 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932101Ab1IMSqu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 14:46:50 -0400
+	id S932335Ab1IMSte (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 14:49:34 -0400
+Received: from void.printf.net ([89.145.121.20]:46340 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932216Ab1IMStc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 14:49:32 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: linux-mmc@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Manoj Iyer <manoj.iyer@canonical.com>
+Subject: Re: SDHCI regression since 2.6.39
+References: <4E6EA3E4.5080401@goop.org> <m2bouo37by.fsf@bob.laptop.org>
+	<4E6F8C24.3090207@goop.org> <m2wrdc1i5b.fsf@bob.laptop.org>
+	<4E6FA44F.1050705@goop.org>
+Date: Tue, 13 Sep 2011 14:49:25 -0400
+In-Reply-To: <4E6FA44F.1050705@goop.org> (Jeremy Fitzhardinge's message of
+	"Tue, 13 Sep 2011 11:43:27 -0700")
+Message-ID: <m2aaa89t1m.fsf@bob.laptop.org>
+User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <4E6F9CC4.2000601@parallels.com>
-References: <1315276556-10970-1-git-send-email-glommer@parallels.com>
- <CAHH2K0aJxjinSu0Ek6jzsZ5dBmm5mEU-typuwYWYWEudF2F3Qg@mail.gmail.com>
- <4E664766.40200@parallels.com> <CAHH2K0YJA7vZZ3QNAf63TZOnWhsRUwfuZYfntBL4muZ0G_Vt2w@mail.gmail.com>
- <4E66A0A9.3060403@parallels.com> <CAHH2K0aq4s1_H-yY0kA3LhM00CCNNbJZyvyBoDD6rHC+qo_gNg@mail.gmail.com>
- <4E68484A.4000201@parallels.com> <CAHH2K0YcXMUfd1Zr=f5a4=X9cPPp8NZiuichFXaOo=kVp5rRJA@mail.gmail.com>
- <4E699341.9010606@parallels.com> <CALdu-PCrYPZx38o44ZyFrbQ6H39-vNPKey_Tpm4HRUNHNFMpyA@mail.gmail.com>
- <4E6E39DD.2040102@parallels.com> <CALdu-PC7ESSUHuF4vfVoRFFfkaBt1V28rGW3-O5pT3WtegAh4g@mail.gmail.com>
- <4E6F9CC4.2000601@parallels.com>
-From: Paul Menage <paul@paulmenage.org>
-Date: Tue, 13 Sep 2011 11:46:29 -0700
-X-Google-Sender-Auth: ykb9PosuEgzYenxdTX8lcdy8VMI
-Message-ID: <CALdu-PDGpBnVHW7E5NobAwtXop5c03NTmijkk8oB7u-a5LEXww@mail.gmail.com>
-Subject: Re: [PATCH] per-cgroup tcp buffer limitation
-To: Glauber Costa <glommer@parallels.com>
-Cc: Greg Thelen <gthelen@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, containers@lists.osdl.org, netdev@vger.kernel.org,
-        xemul@parallels.com, "David S. Miller" <davem@davemloft.net>,
-        Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Lennart Poettering <lennart@poettering.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 13, 2011 at 11:11 AM, Glauber Costa <glommer@parallels.com> wrote:
+Hi,
+
+On Tue, Sep 13 2011, Jeremy Fitzhardinge wrote:
+>> If it is running, and not helping, can I persuade you to try a full
+>> bisection?
 >
-> What if they are all updated under the same lock ?
+> OK, will do.
 
-Right, that would be the kind of optimization that would remove the
-need for worrying about whether or not to account it. It would
-probably mean creating some memcg-specific structures like
-res-counters that could handle multiple values, since you'd need to
-update both the kernel charge and the total charge, in this cgroup
-*and* its ancestors.
+Thank you!
 
-Paul
+>>   I don't think we have other reports of this bug, and the
+>> only other person who has reported something like it wasn't a kernel
+>> hacker.
+>
+> That's interesting; the X220 is a pretty common machine these days, I
+> think.  I wonder if there's variations in the SD controller or something?
+
+I just asked Matthew Garrett to check his X220, and his has the same e823
+controller as you, is running a 3.1-rc kernel, and everything's working.
+
+So it's not even variation in the controller model, it's something even
+more subtle.  Perhaps try some different cards?  What capacity/speed is
+the one you're trying?  If there is a per-card difference, I suppose
+we'd expect it to be that slower cards work and faster cards fail
+(given the nature of the patch I linked in my last mail).
+
+Thanks,
+
+- Chris.
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
