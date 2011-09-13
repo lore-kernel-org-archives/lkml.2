@@ -1,84 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932234Ab1IMSPy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 14:15:54 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:59842
-	"HELO p3plsmtps2ded02-02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756226Ab1IMSPw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 14:15:52 -0400
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 10/20] Staging: hv: storvsc: Get rid of alloc_stor_device() by inlining the code
-Date: Tue, 13 Sep 2011 10:59:46 -0700
-Message-Id: <1315936796-20662-10-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1315936796-20662-1-git-send-email-kys@microsoft.com>
-References: <1315936759-20623-1-git-send-email-kys@microsoft.com>
- <1315936796-20662-1-git-send-email-kys@microsoft.com>
+	id S932220Ab1IMSQx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 14:16:53 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:32249 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756175Ab1IMSOZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 14:14:25 -0400
+Subject: [PATCH v3 07/11] NFS: avoid rpcbind clients creation during service
+	creation
+To: Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bfields@fieldses.org, davem@davemloft.net
+Date: Tue, 13 Sep 2011 22:14:14 +0400
+Message-ID: <20110913181414.3961.88915.stgit@localhost6.localdomain6>
+In-Reply-To: <20110913180953.3961.69217.stgit@localhost6.localdomain6>
+References: <20110913180953.3961.69217.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get rid of alloc_stor_device() by inlining the code.
+NFS callbacks doesn't communicate portmapper and thus doesn't need rpcbind
+clients.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+
 ---
- drivers/staging/hv/storvsc_drv.c |   24 ++++++------------------
- 1 files changed, 6 insertions(+), 18 deletions(-)
+ fs/nfs/callback.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-index 2210c8c..ce8652e 100644
---- a/drivers/staging/hv/storvsc_drv.c
-+++ b/drivers/staging/hv/storvsc_drv.c
-@@ -332,23 +332,6 @@ static inline void storvsc_wait_to_drain(struct storvsc_device *dev)
- 	dev->drain_notify = false;
- }
- 
--static inline struct storvsc_device *alloc_stor_device(struct hv_device *device)
--{
--	struct storvsc_device *stor_device;
--
--	stor_device = kzalloc(sizeof(struct storvsc_device), GFP_KERNEL);
--	if (!stor_device)
--		return NULL;
--
--	stor_device->destroy = false;
--	init_waitqueue_head(&stor_device->waiting_to_drain);
--	stor_device->device = device;
--	device->ext = stor_device;
--
--	return stor_device;
--}
--
--
- static inline struct storvsc_device *get_in_stor_device(
- 					struct hv_device *device)
- {
-@@ -1382,13 +1365,18 @@ static int storvsc_probe(struct hv_device *device,
- 		return -ENOMEM;
+diff --git a/fs/nfs/callback.c b/fs/nfs/callback.c
+index e3d2942..2715c02 100644
+--- a/fs/nfs/callback.c
++++ b/fs/nfs/callback.c
+@@ -259,7 +259,7 @@ int nfs_callback_up(u32 minorversion, struct rpc_xprt *xprt)
+ 		nfs_callback_bc_serv(minorversion, xprt, cb_info);
+ 		goto out;
  	}
- 
--	stor_device = alloc_stor_device(device);
-+	stor_device = kzalloc(sizeof(struct storvsc_device), GFP_KERNEL);
- 	if (!stor_device) {
- 		kmem_cache_destroy(host_dev->request_pool);
- 		scsi_host_put(host);
- 		return -ENOMEM;
- 	}
- 
-+	stor_device->destroy = false;
-+	init_waitqueue_head(&stor_device->waiting_to_drain);
-+	stor_device->device = device;
-+	device->ext = stor_device;
-+
- 	stor_device->port_number = host->host_no;
- 	ret = storvsc_connect_to_vsp(device, storvsc_ringbuffer_size);
- 	if (ret) {
--- 
-1.7.4.1
+-	serv = svc_create(&nfs4_callback_program, NFS4_CALLBACK_BUFSIZE, NULL);
++	serv = svc_create(&nfs4_callback_program, NFS4_CALLBACK_BUFSIZE, 0, NULL);
+ 	if (!serv) {
+ 		ret = -ENOMEM;
+ 		goto out_err;
 
