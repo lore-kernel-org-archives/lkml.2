@@ -1,133 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753430Ab1IMMq4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 08:46:56 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:43622 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753321Ab1IMMqz convert rfc822-to-8bit (ORCPT
+	id S1753443Ab1IMMsh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 08:48:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22606 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753321Ab1IMMsg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 08:46:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <1315884601.29510.87.camel@sli10-conroe>
-References: <1313768318-7960-1-git-send-email-maxim.patlasov@gmail.com>
-	<1313768318-7960-2-git-send-email-maxim.patlasov@gmail.com>
-	<CANejiEWadFK9GdXSwKgzNoj1Da_4QTUidTp-6FGkBtZwhbKvfw@mail.gmail.com>
-	<CA+X1aCRSADrUB+YVJ9j5u+VgGn=8fKw7A1eVVzPtODg+hK-B-w@mail.gmail.com>
-	<CANejiEX=S8tyPDhAjm84+9xBNt08Q0mjWHjqh-kFqL4H1ME-RA@mail.gmail.com>
-	<CA+X1aCSMb9CTpoHWv=UiMg-mHkB2ssmKRACtbDofWG=QSxXOdg@mail.gmail.com>
-	<CANejiEV7UfEHEMwokKwE+Pwqn_HRUT0_9wHakhOYj8r0roGYuw@mail.gmail.com>
-	<CA+X1aCR6Rptj_7bKf7O7TJ8a9z7AH0vXL90XAgY=+054WegsgQ@mail.gmail.com>
-	<CANejiEUTjZbxesiKFzGE4a9rs-GQfq1ekzaDAv34pMGrEQAUcg@mail.gmail.com>
-	<CA+X1aCQhUALGLrtjSzdHonQ1WdPgVMPa7kW2Yi0UFqBwD0Vv6w@mail.gmail.com>
-	<CA+X1aCSPPoHjOyVpTgZ+NFySLiEK6hLM5boCVFaTTYBcQnYS1g@mail.gmail.com>
-	<1315884601.29510.87.camel@sli10-conroe>
-Date: Tue, 13 Sep 2011 16:46:54 +0400
-Message-ID: <CA+X1aCRgNfUurajzkt-cCN166Q_7PCm91FZOFfU3rb1+zoE2jA@mail.gmail.com>
-Subject: Re: [PATCH 1/1] CFQ: fix handling 'deep' cfqq
-From: Maxim Patlasov <maxim.patlasov@gmail.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: "axboe@kernel.dk" <axboe@kernel.dk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 13 Sep 2011 08:48:36 -0400
+Date: Tue, 13 Sep 2011 08:51:39 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "davem@davemloft.net" <davem@davemloft.net>
+Subject: Re: [PATCH v2 3/5] SUNRPC: make RPC service dependable on rpcbind
+ clients creation
+Message-ID: <20110913085139.00f112e2@corrin.poochiereds.net>
+In-Reply-To: <1315596308.17611.46.camel@lade.trondhjem.org>
+References: <20110909115146.13697.71682.stgit@localhost6.localdomain6>
+	<20110909120844.13697.48102.stgit@localhost6.localdomain6>
+	<20110909100745.7e2e8bf9@corrin.poochiereds.net>
+	<4E6A41D4.6090001@parallels.com>
+	<1315593874.17611.19.camel@lade.trondhjem.org>
+	<20110909150104.5a83c60d@tlielax.poochiereds.net>
+	<1315596308.17611.46.camel@lade.trondhjem.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Shaohua,
+On Fri, 09 Sep 2011 15:25:08 -0400
+Trond Myklebust <Trond.Myklebust@netapp.com> wrote:
 
-See, please, test results below.
+> On Fri, 2011-09-09 at 15:01 -0400, Jeff Layton wrote: 
+> > On Fri, 09 Sep 2011 14:44:34 -0400
+> > Trond Myklebust <Trond.Myklebust@netapp.com> wrote:
+> > 
+> > > On Fri, 2011-09-09 at 20:41 +0400, Stanislav Kinsbursky wrote: 
+> > > > 09.09.2011 18:07, Jeff Layton Ð¿Ð¸ÑˆÐµÑ‚:
+> > > > > On Fri, 09 Sep 2011 16:08:44 +0400
+> > > > > Stanislav Kinsbursky<skinsbursky@parallels.com>  wrote:
+> > > > >
+> > > > >> Create rcbind clients or increase rpcbind users counter during RPC service
+> > > > >> creation and decrease this counter (and possibly destroy those clients) on RPC
+> > > > >> service destruction.
+> > > > >>
+> > > > >> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
+> > > > >>
+> > > > >> ---
+> > > > >>   include/linux/sunrpc/clnt.h |    2 ++
+> > > > >>   net/sunrpc/rpcb_clnt.c      |    2 +-
+> > > > >>   net/sunrpc/svc.c            |   13 +++++++++++--
+> > > > >>   3 files changed, 14 insertions(+), 3 deletions(-)
+> > > > >>
+> > > > >> diff --git a/include/linux/sunrpc/clnt.h b/include/linux/sunrpc/clnt.h
+> > > > >> index db7bcaf..65a8115 100644
+> > > > >> --- a/include/linux/sunrpc/clnt.h
+> > > > >> +++ b/include/linux/sunrpc/clnt.h
+> > > > >> @@ -135,10 +135,12 @@ void		rpc_shutdown_client(struct rpc_clnt *);
+> > > > >>   void		rpc_release_client(struct rpc_clnt *);
+> > > > >>   void		rpc_task_release_client(struct rpc_task *);
+> > > > >>
+> > > > >> +int		rpcb_create_local(void);
+> > > > >>   int		rpcb_register(u32, u32, int, unsigned short);
+> > > > >>   int		rpcb_v4_register(const u32 program, const u32 version,
+> > > > >>   				 const struct sockaddr *address,
+> > > > >>   				 const char *netid);
+> > > > >> +void		rpcb_put_local(void);
+> > > > >>   void		rpcb_getport_async(struct rpc_task *);
+> > > > >>
+> > > > >>   void		rpc_call_start(struct rpc_task *);
+> > > > >> diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
+> > > > >> index b4cc0f1..437ec60 100644
+> > > > >> --- a/net/sunrpc/rpcb_clnt.c
+> > > > >> +++ b/net/sunrpc/rpcb_clnt.c
+> > > > >> @@ -318,7 +318,7 @@ out:
+> > > > >>    * Returns zero on success, otherwise a negative errno value
+> > > > >>    * is returned.
+> > > > >>    */
+> > > > >> -static int rpcb_create_local(void)
+> > > > >> +int rpcb_create_local(void)
+> > > > >>   {
+> > > > >>   	static DEFINE_MUTEX(rpcb_create_local_mutex);
+> > > > >>   	int result = 0;
+> > > > >> diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
+> > > > >> index 6a69a11..9095c0e 100644
+> > > > >> --- a/net/sunrpc/svc.c
+> > > > >> +++ b/net/sunrpc/svc.c
+> > > > >> @@ -367,8 +367,11 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
+> > > > >>   	unsigned int xdrsize;
+> > > > >>   	unsigned int i;
+> > > > >>
+> > > > >> -	if (!(serv = kzalloc(sizeof(*serv), GFP_KERNEL)))
+> > > > >> +	if (rpcb_create_local()<  0)
+> > > > >>   		return NULL;
+> > > > >> +
+> > > > >> +	if (!(serv = kzalloc(sizeof(*serv), GFP_KERNEL)))
+> > > > >> +		goto out_err;
+> > > > >>   	serv->sv_name      = prog->pg_name;
+> > > > >>   	serv->sv_program   = prog;
+> > > > >>   	serv->sv_nrthreads = 1;
+> > > > >> @@ -403,7 +406,7 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
+> > > > >>   			GFP_KERNEL);
+> > > > >>   	if (!serv->sv_pools) {
+> > > > >>   		kfree(serv);
+> > > > >> -		return NULL;
+> > > > >> +		goto out_err;
+> > > > >>   	}
+> > > > >>
+> > > > >>   	for (i = 0; i<  serv->sv_nrpools; i++) {
+> > > > >> @@ -423,6 +426,10 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
+> > > > >>   	svc_unregister(serv);
+> > > > >>
+> > > > >>   	return serv;
+> > > > >> +
+> > > > >> +out_err:
+> > > > >> +	rpcb_put_local();
+> > > > >> +	return NULL;
+> > > > >>   }
+> > > > >>
+> > > > >>   struct svc_serv *
+> > > > >> @@ -491,6 +498,8 @@ svc_destroy(struct svc_serv *serv)
+> > > > >>   	svc_unregister(serv);
+> > > > >>   	kfree(serv->sv_pools);
+> > > > >>   	kfree(serv);
+> > > > >> +
+> > > > >> +	rpcb_put_local();
+> > > > >>   }
+> > > > >>   EXPORT_SYMBOL_GPL(svc_destroy);
+> > > > >>
+> > > > >>
+> > > > >
+> > > > > I don't get it -- what's the advantage of creating rpcbind clients in
+> > > > > __svc_create vs. the old way of creating them just before we plan to
+> > > > > use them?
+> > > > >
+> > > > 
+> > > > The main problem here is not in creation, but in destroying those clients.
+> > > > Now rpcbind clients are created during rpcb_register(). I.e. once per every family, program version and so on.
+> > > > But can be unregistered for all protocol families by one call. So it's impossible to put reference counting for those clients in the place, where they are created now.
+> > > 
+> > > Could we perhaps set up a 'struct pernet_operations' to create a
+> > > destructor for them?
+> > > 
+> > 
+> > An even easier idea might be to just not take a reference to the
+> > rpcbind client for svc_programs that have vs_hidden set on every
+> > version.
+> 
+> Isn't the problem that Stanislav is trying to solve that we need to be
+> able to register and unregister RPC services to the correct rpcbind
+> server, depending on which net namespace we are in?
+> 
+> My understanding is that the current code will register everything to
+> whatever rpcbind server is running in the init net namespace because
+> that's what rpcb_create_local() uses.
+> 
 
->> 1. Single slow disk (ST3200826AS). Eight instances of aio-stress, cmd-line:
->>
->> # aio-stress -a 4 -b 4 -c 1 -r 4 -O -o 0 -t 1 -d 1 -i 1 -s 16 f1_$I
->> f2_$I f3_$I f4_$I
->>
->> Aggreagate throughput:
->>
->> Pristine 3.1.0-rc5 (CFQ): 3.77 MB/s
->> Pristine 3.1.0-rc5 (noop): 2.63 MB/s
->> Pristine 3.1.0-rc5 (CFQ, slice_idle=0): 2.81 MB/s
->> 3.1.0-rc5 + my patch (CFQ): 5.76 MB/s
->> 3.1.0-rc5 + your patch (CFQ): 5.61 MB/s
+My assumption in reading this set (maybe wrong) was that this was a
+preliminary set for now that just plops in function calls in the places
+that do this sort of thing now. I figured that eventually he'd convert
+rpcb_create_local, et. al. to do the same thing but within the correct
+namespace for the calling task.
 
-3.1.0-rc5 + your patch-v2 (CFQ): 2.85 MB/s
+> My suggestion is to use a struct pernet_operations to detect when a net
+> namespace is being created or destroyed, so that the rpcbind client code
+> knows when to create or destroy a connection to the server that is
+> running in that namespace.
+> 
 
-I re-run test many times (including node reboot), results varied from
-2.79 to 2.9. It's quite close to pristine 3.1.0-rc5 with slice_idle=0.
-Probably, in this case hdd was claimed as 'fast' mistakenly by the
-patch.
+I'm not sure that solves anything. I'd also ass|u|me that something
+here (the xprt?) will hold a reference to its netns. If we try to do
+this with pernet ops, then I think we'd end up with a chicken-and-egg
+problem...
 
->> 2. Four modern disks (WD1003FBYX) assembled in RAID-0 (Adaptec
->> AAC-RAID (rev 09) 256Mb RAM). Eight instances of aio-stress with
->> think-time 1msec:
->>
->> > --- aio-stress-orig.c       2011-08-16 17:00:04.000000000 -0400
->> > +++ aio-stress.c    2011-08-18 14:49:31.000000000 -0400
->> > @@ -884,6 +884,7 @@ static int run_active_list(struct thread
->> >      }
->> >      if (num_built) {
->> >     ret = run_built(t, num_built, t->iocbs);
->> > +   usleep(1000);
->> >     if (ret < 0) {
->> >         fprintf(stderr, "error %d on run_built\n", ret);
->> >         exit(1);
->>
->> Cmd-line:
->>
->> # aio-stress -a 4 -b 4 -c 1 -r 4 -O -o 0 -t 1 -d 1 -i 1 f1_$I f2_$I f3_$I f4_$I
->>
->> Aggreagate throughput:
->>
->> Pristine 3.1.0-rc5 (CFQ): 63.67 MB/s
->> Pristine 3.1.0-rc5 (noop): 100.8 MB/s
->> Pristine 3.1.0-rc5 (CFQ, slice_idle=0): 105.63 MB/s
->> 3.1.0-rc5 + my patch (CFQ): 105.59 MB/s
->> 3.1.0-rc5 + your patch (CFQ): 14.36 MB/s
+I think the simplest solution would be to basically call these
+functions closer to where the rpcbind calls happen today, and just
+don't do them when the svc_program has vs_hidden set or if the xprt is
+being created with SVC_SOCK_ANONYMOUS set.
 
-3.1.0-rc5 + your patch-v2 (CFQ): 92.44 - 109.49 MB/s.
+In fact, a rethink of the vs_hidden/SVC_SOCK_ANONYMOUS scheme would
+probably be a good preliminary patch here. There's a lot of overlap
+between those two flags, and somehow consolidating them would probably
+be a good thing.
 
-First time (after reboot) I got 92.44. One of instances of aio-stress
-took much longer than others to complete: 597secs, while others took
-approximately 335secs. May be this happened because one instance got
-deepy flag set before claiming disk as 'fast'. Second run: 109.49.
-Then, after reboot, 101.44 in the first run and 109.41 in the second
-run.
-
-> Thanks for the testing. You are right, this method doesn't work for hard
-> raid. I missed each request in raid still has long finish time. I
-> changed the patch to detect fast device, the idea remains but the
-> algorithm is different. It detects my hard disk/ssd well, but I haven't
-> raid setup, so please help test.
-
-A few general concerns (strictly IMHO) about this version of the patch:
-1. If some cfqq was marked as 'deep' in the past and now we're
-claiming disk 'fast', it would be nice either to clear stale flag or
-ignore it (in making decision about idle/noidle behaviour).
-2. cfqd->fast_device_samples is never expired. I think it's wrong. The
-system might experience some peculiar workload long time ago that
-resulted in claiming disk 'fast'. Why should we trust it now? Another
-concern is the noise: from time to time requests may hit h/w disk
-cache and so be completed very quickly. W/o expiration logic, such a
-noise will eventually end up in claiming disk 'fast'.
-3. CFQQ_STRICT_SEEKY() looks extremely strict. Theoretically, it's
-possible that we have many SEEKY cfqq-s but the rate of STRICT_SEEKY
-events is too low to make reliable estimation. Any rationale why
-STRICT_SEEKY should be typical case?
-
-> I'm not satisfied with fast device detection in dispatch stage, even
-> slow device with NCQ can dispatch several requests in short time (so my
-> original implementation is wrong as you pointed out)
-
-I'd like to understand this concern better. OK, let it be slow device
-with NCQ which can dispatch several requests in short time. But if we
-have one or more disk-bound apps keeping device busy, is it possible
-that the device dispatches several requests in short time more often
-than in longer time? As soon as its internal queue is saturated, the
-device will be able to snatch next request from CFQ only when one of
-those which are servicing now is completed, won't it? If the device
-drains deep queue in short time again and again and again, it's fast,
-not slow, isn't it? What I'm missing?
-
-Thanks in advance,
-Maxim
+-- 
+Jeff Layton <jlayton@redhat.com>
