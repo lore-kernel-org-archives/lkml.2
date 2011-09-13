@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751282Ab1IMEP6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 00:15:58 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:47719 "EHLO e6.ny.us.ibm.com"
+	id S1751649Ab1IMEZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 00:25:56 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:42391 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750714Ab1IMEP5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 00:15:57 -0400
-Date: Tue, 13 Sep 2011 09:45:45 +0530
-From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Turner <pjt@google.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelianov <xemul@parallels.com>
-Subject: Re: CFS Bandwidth Control - Test results of cgroups tasks pinned vs
- unpinnede
-Message-ID: <20110913041545.GD11100@linux.vnet.ibm.com>
-Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-References: <20110610181719.GA30330@linux.vnet.ibm.com>
- <BANLkTimE1b8HP-q4jgsv5jPD5S-dRoUi_g@mail.gmail.com>
- <20110615053716.GA390@linux.vnet.ibm.com>
- <BANLkTi=7S2qdVjbJkDja+GAoD=pNo2gPsTFZMFkB8NWWkO1JVQ@mail.gmail.com>
- <20110907152009.GA3868@linux.vnet.ibm.com>
- <1315423342.11101.25.camel@twins>
- <20110908151433.GB6587@linux.vnet.ibm.com>
- <1315571462.26517.9.camel@twins>
- <20110912101722.GA28950@linux.vnet.ibm.com>
- <1315830943.26517.36.camel@twins>
+	id S1750747Ab1IMEZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 00:25:55 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: dhowells@redhat.com, agruen@kernel.org, bfields@fieldses.org,
+        akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V6 25/26] ext4: Implement rich acl for ext4
+In-Reply-To: <25112.1315572358@redhat.com>
+References: <1315243548-18664-26-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <25112.1315572358@redhat.com>
+User-Agent: Notmuch/0.5-318-g52e4ded (http://notmuchmail.org) Emacs/23.2.1 (x86_64-pc-linux-gnu)
+Date: Tue, 13 Sep 2011 09:55:30 +0530
+Message-ID: <87zki99ih1.fsf@skywalker.in.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1315830943.26517.36.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <a.p.zijlstra@chello.nl> [2011-09-12 14:35:43]:
+On Fri, 09 Sep 2011 13:45:58 +0100, David Howells <dhowells@redhat.com> wrote:
+> Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com> wrote:
+> 
+> > +	retval = ext4_set_richacl(handle, inode, acl);
+> > +	ext4_journal_stop(handle);
+> > +	if (retval == ENOSPC && ext4_should_retry_alloc(inode->i_sb, &retries))
+> > +		goto retry;
+> 
+> Should that be -ENOSPC?
 
-> Of course it does.. and I bet you can improve that slightly if you
-> manage to fix some of the numerical nightmares that live in the cgroup
-> load-balancer (Paul, care to share your WIP?)
+Fixed 
 
-Booting with "nohz=off" also helps significantly.
+> 
+> I do wonder, why does ext4 need to know about richacls at all?  Surely, as far
+> as ext4 is concerned, they should be seen as xattrs?
+> 
 
-With nohz=on, average idle time (over 1 min) is 10.3%
-With nohz=off, average idle time (over 1 min) is 3.9%
+richacl related changes to ext4 is minimal. They mostly are to call
+necessary permission check functions and to map xattr to richacl
+structure.
 
-- vatsa
+
+> If ext4 needs a mark on disk to say it supports richacls, then why can't that
+> simply be the presence or lack thereof of a richacl on the root dir?
+> 
+
+I have a patch in the full series which enable richacl on ext4 file system
+based on ext4 compatibility flags. I didn't add that as a part of this
+series to enable easy testing. The goal is to use tune2fs to enable
+richacl and them the mount option -o acl enable richacl/posix acl
+accordingly. 
+
+-aneesh
