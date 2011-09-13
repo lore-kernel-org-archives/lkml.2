@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755380Ab1IMIAO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 04:00:14 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:60968 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755339Ab1IMIAK (ORCPT
+	id S1755080Ab1IMIEv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 04:04:51 -0400
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:36475 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753596Ab1IMIEs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 04:00:10 -0400
-Date: Tue, 13 Sep 2011 17:00:04 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Denys Vlasenko <vda.linux@googlemail.com>, linux-kernel@vger.kernel.org,
-        dvlasenk@redhat.com
-Subject: Re: [PATCH v2] Make PTRACE_SEIZE set ptrace options specified in
- 'data' parameter
-Message-ID: <20110913080004.GF11397@mtj.dyndns.org>
-References: <201109072340.31460.vda.linux@googlemail.com>
- <20110908004438.GC3987@mtj.dyndns.org>
- <20110908181747.GA28120@redhat.com>
- <20110911020523.GL29319@htj.dyndns.org>
- <20110911181442.GA22239@redhat.com>
+	Tue, 13 Sep 2011 04:04:48 -0400
+Message-ID: <9b86bd67bedfcd3d4e592a419d190b90.squirrel@webmail.greenhost.nl>
+In-Reply-To: <201109101312.39256.pedro@codesourcery.com>
+References: <1315506333.18043.49.camel@dhcp-25-63.brq.redhat.com>
+    <201109101219.30942.pedro@codesourcery.com>
+    <201109101340.16506.vda.linux@googlemail.com>
+    <201109101312.39256.pedro@codesourcery.com>
+Date: Tue, 13 Sep 2011 10:04:46 +0200
+Subject: Re: [PATCH v3] Make PTRACE_SEIZE set ptrace options specified in
+ 'data'
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Pedro Alves" <pedro@codesourcery.com>
+Cc: "Denys Vlasenko" <vda.linux@googlemail.com>,
+        "Denys Vlasenko" <dvlasenk@redhat.com>,
+        "Oleg Nesterov" <oleg@redhat.com>, "Tejun Heo" <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110911181442.GA22239@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.0
+X-Scan-Signature: 4052b6d1c9976086d5ab5ce040fcf5b8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 11, 2011 at 08:14:42PM +0200, Oleg Nesterov wrote:
-> We need to rework the locking, yes. But we need the lock which protects
-> the parent's list_head (currently we rely on tasklist). Yes, a single
-> lock can't help. We already use ->cred_guard_mutex though.
-> 
-> This needs more thinking, but imho child->siglock is pointless here.
+Hello,
 
-But we can at least guarantee that if ->ptrace is set (or clear) while
-tracee's siglock is held, its ->parent points to the tracer (or not).
-At any rate, AFAICS, this currently doesn't really matter.  I
-suggested it mainly because it would make the locking change easier.
+On Sat, September 10, 2011 14:12, Pedro Alves wrote:
+>
+> I happen to know gdb's code quite well.  ;-)
 
-Thanks.
+In that case, could you explain why gdb isn't using WCONTINUED
+notifications for selective thread wakeup instead of trying to
+achieve the same at group stop time?
 
--- 
-tejun
+Background thread: https://lkml.org/lkml/2011/9/7/294
+
+Basically the only argument against making ptrace not automatically
+continue group stopped tasks was that gdb uses that to resume one
+thread instead of all. But it does this by letting the tasks hang in
+trapped state at group stop notification time, breaking normal group
+stops. If it would instead use the group continuation notification,
+gdb would never need to directly interfere with group stops.
+
+I find PTRACE_LISTEN an ugly solution to this problem and am searching
+for something nicer.
+
+Greetings,
+
+Indan
+
+
