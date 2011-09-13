@@ -1,72 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932969Ab1IMWZA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 18:25:00 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:32478 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932956Ab1IMWY7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 18:24:59 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:to:cc:subject:message-id:in-reply-to:references:
-	x-mailer:mime-version:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=cUA/Uf7RCW1fNj28FeYtylOvohsLrQBS3t3ZtfQAmRk91sxrFLlAB6ZuEJrDewm7V
-	9nsrYKVR4B4wyfaM5b3+g==
-Date: Tue, 13 Sep 2011 15:23:02 -0700
-From: Andrew Morton <akpm@google.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Paul Menage <paul@paulmenage.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, Tim Hockin <thockin@hockin.org>,
-        Tejun Heo <tj@kernel.org>, Containers <containers@lists.osdl.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 00/11 v5] cgroups: Task counter subsystem
-Message-Id: <20110913152302.6c33ea6d.akpm@google.com>
-In-Reply-To: <1315869091-18933-1-git-send-email-fweisbec@gmail.com>
-References: <1315869091-18933-1-git-send-email-fweisbec@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-System-Of-Record: true
+	id S932976Ab1IMWZw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 18:25:52 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:42344
+	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S932956Ab1IMWZw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 18:25:52 -0400
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, joe@perches.com
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: [PATCH 1/1] Staging: hv: netvsc: Cleanup the name and type of link_stat variable
+Date: Tue, 13 Sep 2011 15:21:27 -0700
+Message-Id: <1315952487-23406-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Sep 2011 01:11:20 +0200
-Frederic Weisbecker <fweisbec@gmail.com> wrote:
+Consistently name the variable tracking the link status. Use a consistent
+type for this variable and get rid of some unnecessary parentheses as well.
+I would like to thank Joe Perches <joe@perches.com> for suggesting these
+changes and patiently helping me get here!
 
-> No functional changes. Only documentation and comments added.
-> Checkpatch.pl fixes, etc...
-> 
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+---
+ drivers/staging/hv/rndis_filter.c |   17 +++++++++++------
+ 1 files changed, 11 insertions(+), 6 deletions(-)
 
-What is the actual rationale for merging all of this?  For this amount
-of complexity I do think we need to see significant end-user benefits. 
-But all I'm seeing in this patchset is
+diff --git a/drivers/staging/hv/rndis_filter.c b/drivers/staging/hv/rndis_filter.c
+index 963582a..ef43f2e 100644
+--- a/drivers/staging/hv/rndis_filter.c
++++ b/drivers/staging/hv/rndis_filter.c
+@@ -41,7 +41,7 @@ struct rndis_device {
+ 	struct netvsc_device *net_dev;
+ 
+ 	enum rndis_device_state state;
+-	u32 link_stat;
++	bool link_state;
+ 	atomic_t new_req_id;
+ 
+ 	spinlock_t request_lock;
+@@ -511,10 +511,15 @@ static int rndis_filter_query_device_mac(struct rndis_device *dev)
+ static int rndis_filter_query_device_link_status(struct rndis_device *dev)
+ {
+ 	u32 size = sizeof(u32);
++	u32 link_status;
++	int ret;
+ 
+-	return rndis_filter_query_device(dev,
++	ret = rndis_filter_query_device(dev,
+ 				      RNDIS_OID_GEN_MEDIA_CONNECT_STATUS,
+-				      &dev->link_stat, &size);
++				      &link_status, &size);
++	dev->link_state = (link_status != 0) ? true : false;
++
++	return ret;
+ }
+ 
+ static int rndis_filter_set_packet_filter(struct rndis_device *dev,
+@@ -736,11 +741,11 @@ int rndis_filter_device_add(struct hv_device *dev,
+ 
+ 	rndis_filter_query_device_link_status(rndis_device);
+ 
+-	device_info->link_state = rndis_device->link_stat;
++	device_info->link_state = rndis_device->link_state;
+ 
+-	dev_info(&dev->device, "Device MAC %pM link state %s",
++	dev_info(&dev->device, "Device MAC %pM link state %s\n",
+ 		 rndis_device->hw_mac_adr,
+-		 ((device_info->link_state) ? ("down\n") : ("up\n")));
++		 device_info->link_state ? "down" : "up");
+ 
+ 	return ret;
+ }
+-- 
+1.7.4.1
 
-       This is a step to be able to isolate a bit more a cgroup
-       against the rest of the system and limit the global impact of a
-       fork bomb inside a given cgroup.
-
-which is really very thin.
-
-
-
-Also, the changelogs don't appear to mention any testing results for
-the fork-bomb-killer feature.
-
-Is the fork-bomb-killer feature realistically useful?  As I understand
-it, the problem with a fork-bomb is that it causes a huge swapstorm
-while creating tasks very quickly.  The latency impact of the swapping
-makes it very hard to regain control of the system so you can stop the
-forking.  So to be effective, this feature would need to limit the
-swapping?  Or something.  More substantiation, please.
-
-
-
-Also, what is the relationship between this and RLIMIT_NPROC?  Given
-that we have user namespaces, does that give us per-user,
-per-namespace, per-container rlimits?  If it doesn't, should it?  Will
-it?  If it does/will, how duplicative will that be?
