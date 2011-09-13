@@ -1,65 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752879Ab1IMKx7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 06:53:59 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:48731 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752747Ab1IMKx4 (ORCPT
+	id S1752855Ab1IMK4J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 06:56:09 -0400
+Received: from mail-ew0-f52.google.com ([209.85.215.52]:61976 "EHLO
+	mail-ew0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752749Ab1IMK4H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 06:53:56 -0400
-Date: Tue, 13 Sep 2011 20:53:44 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: Re: IOMMU tree location
-Message-Id: <20110913205344.8b6374ca7befe44ad4d0cb92@canb.auug.org.au>
-In-Reply-To: <20110913093211.GI11701@amd.com>
-References: <20110913093211.GI11701@amd.com>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__13_Sep_2011_20_53_44_+1000_Pxx13bc_dme6Xyth"
+	Tue, 13 Sep 2011 06:56:07 -0400
+Message-ID: <4E6F36C1.50507@gmail.com>
+Date: Tue, 13 Sep 2011 12:56:01 +0200
+From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+MIME-Version: 1.0
+To: Mateusz Murawski <matowy@tlen.pl>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: VT-d / iommu problem on Intel S3210SH
+References: <5d3988ad.24b007ce.4e6e07a7.c204f@tlen.pl>
+In-Reply-To: <5d3988ad.24b007ce.4e6e07a7.c204f@tlen.pl>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__13_Sep_2011_20_53_44_+1000_Pxx13bc_dme6Xyth
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hey Mateusz,
 
-Hi Joerg,
-
-On Tue, 13 Sep 2011 11:32:11 +0200 Joerg Roedel <joerg.roedel@amd.com> wrot=
-e:
+On 09/12/2011 03:22 PM, Mateusz Murawski wrote:
+> Hi
+> I have problem with Intel VT for Directed I/O.
+> When I enable this option in bios, my system (Fedora 15) can't start.
+> Kernel 2.6.40.4-5.fc15.x86_64
+> Bios S3200X38.86B.00.00.0052
 >
-> the temporary location for the iommu-tree (until korg comes back) is at=20
->=20
-> 	git://git.8bytes.org/scm/iommu.git next
->=20
-> Please use this tree for receiving iommu-updates.
+> Last lines from dmesg
+>
+> [    5.357181] DRHD: handling fault status reg 3
+> [    5.358179] DMAR:[DMA Write] Request device [02:08.0] fault addr ffe8a000
+> [    5.358179] DMAR:[fault reason 02] Present bit in context entry is clear
+> [   24.087406] dracut Warning: No root device "block:/dev/disk/by-uuid/1c624f0d-4593-4653-a4ce-b7af80d549ff" found
+>
+> Full dmesgs
+> dmesg_bad_2.6.40 VT-d enable http://pastebin.com/AXAByHBh
+> dmesg_good_2.6.40 VT-d enable iommu=off http://pastebin.com/8zrMRiin
+>
+> Please let me know if you need more information. I have access by serial console.
+>
+Does that cpu have vt-d support?
 
-I will switch to this from tomorrow.
+http://ark.intel.com/products/35432 doesn't list it. If you enable it
+for the mainboard, but cpu has no support, weird things happen.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+For comparison a cpu that does:
+http://ark.intel.com/products/52209
 
---Signature=_Tue__13_Sep_2011_20_53_44_+1000_Pxx13bc_dme6Xyth
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJObzY4AAoJEDMEi1NhKgbsUUsH/2uxb2az1cXhBZl0ARdhb2gg
-Onmdan9fEJksHN8btXE+eKf7nwfo3nIUPZJcV68ZQiSWaLMKU2iDY4L0E/vasb7f
-idf/fXQimv3yxd+680vwjVpqzE5XZbEQCVn1wWESp/vwwANnulSwPitcWx5eTpyu
-0ALhEL6peUpb954mED6VLgV8WSA0J06hmFLB8UgNpXJlR7fkZRoA27mKK2RaGcaH
-hS0H45OZibVFNZt92O0fppjddybzQSZX2zVwjvBQup+PXePSuT8zALSBop/2IoRb
-eO7YbYE07uTZ1rzYbYptBW3CeGDeBoIi0iYtohXaGsfm+CflwU6onPC8rEcav2I=
-=nICV
------END PGP SIGNATURE-----
-
---Signature=_Tue__13_Sep_2011_20_53_44_+1000_Pxx13bc_dme6Xyth--
+~Maarten
