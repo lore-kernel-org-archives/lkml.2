@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754549Ab1IMHQx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 03:16:53 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:53133 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752613Ab1IMHQw (ORCPT
+	id S1754896Ab1IMHRr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 03:17:47 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:31389 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752801Ab1IMHRp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 03:16:52 -0400
-Date: Tue, 13 Sep 2011 17:16:44 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Brown, Len" <len.brown@intel.com>
-Cc: "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Subject: Re: ACPI git tree re-locates to github.com
-Message-Id: <20110913171644.a16b1be72ed6163d4a303488@canb.auug.org.au>
-In-Reply-To: <E87738D94A6AD54789B5B8D1BAEB06CC829B3E4886@azsmsx503.amr.corp.intel.com>
-References: <E87738D94A6AD54789B5B8D1BAEB06CC829B3E4886@azsmsx503.amr.corp.intel.com>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__13_Sep_2011_17_16_44_+1000_Ewzw98P2=EWEghR4"
+	Tue, 13 Sep 2011 03:17:45 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6467"; a="117902143"
+To: "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>
+Cc: <linville@tuxdriver.com>, <linux-wireless@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <yangjie@qca.qualcomm.com>,
+        "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>, <stable@kernel.org>,
+        <netdev@vger.kernel.org>, <jouni@qca.qualcomm.com>,
+        <vthiagar@qca.qualcomm.com>, <senthilb@qca.qualcomm.com>
+X-IronPort-AV: E=Sophos;i="4.68,371,1312182000"; 
+   d="scan'208";a="118584261"
+Message-ID: <4E6F0390.4060704@qca.qualcomm.com>
+Date: Tue, 13 Sep 2011 10:17:36 +0300
+From: Kalle Valo <kvalo@qca.qualcomm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
+MIME-Version: 1.0
+Subject: Re: [PATCH] MAINTANERS: update Qualcomm Atheros addresses
+References: <1314137251-32096-1-git-send-email-lrodriguez@qca.qualcomm.com>
+In-Reply-To: <1314137251-32096-1-git-send-email-lrodriguez@qca.qualcomm.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.64.1.23]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__13_Sep_2011_17_16_44_+1000_Ewzw98P2=EWEghR4
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 08/24/2011 01:07 AM, Luis R. Rodriguez wrote:
+> From: Luis R. Rodriguez <mcgrof@qca.qualcomm.com>
+> 
+> Qualcomm ate up Atheros, all of the old e-mail addresses
+> no longer work and e-mails sent to it will bounce. Update
+> the addresses to the new shiny Qualcomm Atheros (QCA) ones.
+> 
+> Cc: stable@kernel.org
+> Cc: netdev@vger.kernel.org
+> Cc: jouni@qca.qualcomm.com
+> Cc: yangjie@qca.qualcomm.com
+> Cc: vthiagar@qca.qualcomm.com
+> Cc: senthilb@qca.qualcomm.com
+> Signed-off-by: Luis R. Rodriguez <mcgrof@qca.qualcomm.com>
+> ---
+> 
+> John, I've left out ath6kl as you removed that so I take it
+> the respective MAINTAINERS entry was deleted as well (although
+> I do not see this on wireless-testing.git)
 
-Hi Len,
+Actually I forgot the MAINTAINERS file altogether, thanks for reminding.
+Shortly I'll send a patch to linux-wireless which updates the ath6kl entry.
 
-On Mon, 12 Sep 2011 20:03:52 -0700 "Brown, Len" <len.brown@intel.com> wrote:
->
-> Effective immediately...
->=20
-> https://github.com/lenb/linux.git acpi
->=20
-> replaces
->=20
-> git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-acpi-2.6.git test
-
-I will switch starting tomorrow.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__13_Sep_2011_17_16_44_+1000_Ewzw98P2=EWEghR4
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJObwNcAAoJEDMEi1NhKgbslIUH/iNQS6E5fZ7qVZArk1Ulogbx
-VxeKZj+BJtzSP9dsW4OB7DkVY7hDPrnhRxESkmhoowluxC0dbKuCreQXQ6JllhUI
-iCTQyL0B2ns7zbCuWbetl1j8kwWMdWTLGskyBsmJyDdcs0InH8sNtUtDqe1+tQZR
-7dvwILoA4D3sKe+tQrxFhSaU0nxzOx/zaBczgzB+uThaa03HhrX3zKEKbf6I+Pyh
-SLZszt1YN9tHcsIG/mdUIy+jrs9ITyWuQtszPbPpflWhHZRrxl/fgx25LR6W+6Nu
-QYuOxsUI6tgwKAmR0NEe6qo/erNqSkr6TK8ijhuS6Bi699Fo9xUPLKdiUBnuu0Q=
-=qwwC
------END PGP SIGNATURE-----
-
---Signature=_Tue__13_Sep_2011_17_16_44_+1000_Ewzw98P2=EWEghR4--
+Kalle
