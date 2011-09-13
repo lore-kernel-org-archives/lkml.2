@@ -1,75 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753003Ab1IMLSJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 07:18:09 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:63133 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752152Ab1IMLSH convert rfc822-to-8bit (ORCPT
+	id S1752842Ab1IMLWR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 07:22:17 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:41671 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751431Ab1IMLWQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 07:18:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1109132030020.14483@nippy.intranet>
-References: <1315742394-16036-1-git-send-email-geert@linux-m68k.org>
-	<alpine.LNX.2.00.1109132030020.14483@nippy.intranet>
-Date: Tue, 13 Sep 2011 13:18:06 +0200
-X-Google-Sender-Auth: vYDB7JwRAaydCOEKrwcck1EkU8M
-Message-ID: <CAMuHMdXJEeooAjdQo+JhUWJcrGzKZb-jQPPhVggy3ocQyPe3Lw@mail.gmail.com>
-Subject: Re: [PATCH 00/28 v6] m68k: Convert to genirq
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Finn Thain <fthain@telegraphics.com.au>
-Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 13 Sep 2011 07:22:16 -0400
+Date: Tue, 13 Sep 2011 21:22:08 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: Current tip tree location
+Message-Id: <20110913212208.ba0575708addd627a4e7f06e@canb.auug.org.au>
+In-Reply-To: <alpine.LFD.2.02.1109131005200.2723@ionos>
+References: <alpine.LFD.2.02.1109131005200.2723@ionos>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__13_Sep_2011_21_22_08_+1000_j50BhiKPmciPWugC"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 13, 2011 at 13:11, Finn Thain <fthain@telegraphics.com.au> wrote:
-> When I was testing your v5 patch series, I had to patch macmace.c to
-> resolve some compiler errors --
+--Signature=_Tue__13_Sep_2011_21_22_08_+1000_j50BhiKPmciPWugC
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi Thomas,
+
+On Tue, 13 Sep 2011 10:08:12 +0200 (CEST) Thomas Gleixner <tglx@linutronix.=
+de> wrote:
 >
-> --- linux-m68k.orig/drivers/net/macmace.c       2011-09-13 18:33:55.000000000 +1000
-> +++ linux-m68k/drivers/net/macmace.c    2011-09-13 18:34:05.000000000 +1000
-> @@ -31,8 +31,8 @@
->  #include <linux/dma-mapping.h>
->  #include <linux/platform_device.h>
->  #include <linux/gfp.h>
-> +#include <linux/interrupt.h>
->  #include <asm/io.h>
-> -#include <asm/irq.h>
->  #include <asm/macints.h>
->  #include <asm/mac_psc.h>
->  #include <asm/page.h>
->
-> Would you please check whether this is still needed after the v6 series?
+> the tip tree for next branch can be found at
+>=20
+>     git://tesla.tglx.de/git/linux-2.6-tip auto-latest
+>=20
+> for now.
 
-Will do. Don't think I ever saw that problem, though.
-Did it show up with genirq disabled or enabled?
+I will switch to this from tomorrow, thanks.
 
-> (I'd check myself, but I don't have the source tree on which your emailed
-> patches were based...)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-They're based on a v3.1-rc5 version of the m68k tree. I think it's
-identical to the
-current m68k master with v3.1-rc5 merged into.
+--Signature=_Tue__13_Sep_2011_21_22_08_+1000_j50BhiKPmciPWugC
+Content-Type: application/pgp-signature
 
-> BTW, you'll probably want to patch this comment in
-> include/linux/interrupt.h --
->
-> /*
->  * Special function to avoid ifdeffery in kernel/irq/devres.c which
->  * gets magically built by GENERIC_HARDIRQS=n architectures (sparc,
->  * m68k).
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Thanks, will do.
+iQEcBAEBAgAGBQJObzzgAAoJEDMEi1NhKgbs9UcH/A08Cu5xawsmuoqC+twzIGhM
+wPzHyb2twJe5bxhhuzdUkv/KT0QNE5NocSn1+IW0e1JWjKd/WA4y9UlQ4+nlfBrf
+t8+6q7yA1FaQ4c7+dhqu5MnucACtByyS90u47frhGtZ36Qu008zkzGf9OgCBdQ9u
+7k8wdID6aEf63wU52d4RRUUDBjvsvBuyJNUBIBtQpFFr6vcsZRZ4cx6or3qWaHEi
+PVj4q94e6Ull4KsK+d/VhN8pJD5QVp3MmFNzp/h1d4xWCa1kd2zKulNwmnFSYmvE
+aA2ThiWPydCXuK6cmbZfBWVedZxGFAHZxJrqinc5aCxZZ+ouvdbp47eQWAjMk0g=
+=jxL0
+-----END PGP SIGNATURE-----
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+--Signature=_Tue__13_Sep_2011_21_22_08_+1000_j50BhiKPmciPWugC--
