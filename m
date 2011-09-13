@@ -1,75 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932547Ab1IMUXD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 16:23:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54043 "EHLO mx1.redhat.com"
+	id S932564Ab1IMU1U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 16:27:20 -0400
+Received: from claw.goop.org ([74.207.240.146]:35568 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932470Ab1IMUXB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 16:23:01 -0400
-Date: Tue, 13 Sep 2011 16:22:48 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: Nelson Elhage <nelhage@nelhage.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Davide Libenzi <davidel@xmailserver.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Paul Bolle <pebolle@tiscali.nl>,
-        stable@kernel.org, akpm@linux-foundation.org
-Subject: Re: [PATCH] epoll: Fix spurious lockdep warnings
-Message-ID: <20110913202248.GA6580@redhat.com>
-References: <1312913515-432-1-git-send-email-nelhage@nelhage.com>
- <20110908000429.GK10700@zod.bos.redhat.com>
+	id S932470Ab1IMU1T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 16:27:19 -0400
+Message-ID: <4E6FBCA1.6040307@goop.org>
+Date: Tue, 13 Sep 2011 13:27:13 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110908000429.GK10700@zod.bos.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Manoj Iyer <manoj.iyer@canonical.com>
+CC: Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: SDHCI regression since 2.6.39
+References: <4E6EA3E4.5080401@goop.org> <m2bouo37by.fsf@bob.laptop.org> <4E6F8C24.3090207@goop.org> <m2wrdc1i5b.fsf@bob.laptop.org> <4E6FA44F.1050705@goop.org> <m2aaa89t1m.fsf@bob.laptop.org> <alpine.DEB.2.02.1109131419430.3556@lazy>
+In-Reply-To: <alpine.DEB.2.02.1109131419430.3556@lazy>
+X-Enigmail-Version: 1.3.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 07, 2011 at 08:04:29PM -0400, Josh Boyer wrote:
-> On Tue, Aug 09, 2011 at 02:11:55PM -0400, Nelson Elhage wrote:
-> > epoll can acquire recursively acquire ep->mtx on multiple "struct
-> > eventpoll"s at once in the case where one epoll fd is monitoring
-> > another epoll fd. This is perfectly OK, since we're careful about the
-> > lock ordering, but it causes spurious lockdep warnings. Annotate the
-> > recursion using mutex_lock_nested, and add a comment explaining the
-> > nesting rules for good measure.
-> > 
-> > Recent versions of systemd are triggering this, and it can also be
-> > demonstrated with the following trivial test program:
-> > 
-> > --------------------8<--------------------
-> > 
-> > int main(void) {
-> >    int e1, e2;
-> >    struct epoll_event evt = {
-> >        .events = EPOLLIN
-> >    };
-> > 
-> >    e1 = epoll_create1(0);
-> >    e2 = epoll_create1(0);
-> >    epoll_ctl(e1, EPOLL_CTL_ADD, e2, &evt);
-> >    return 0;
-> > }
-> > --------------------8<--------------------
-> > 
-> > Cc: stable@kernel.org
-> > Reported-by: Paul Bolle <pebolle@tiscali.nl>
-> > Tested-by: Paul Bolle <pebolle@tiscali.nl>
-> > Signed-off-by: Nelson Elhage <nelhage@nelhage.com>
-> 
-> Any progress on this heading upstream?
-> 
+On 09/13/2011 12:29 PM, Manoj Iyer wrote:
+>
+> @Jeremy, Could the problem be BIOS related? we have seen a number of
+> issues with older bioses on the x220s.
 
-Patch looks good to me, feel free to add:
+I have 1.17 installed at the moment.  It looks like 1.21 is current, so
+I could try updating it.  But the Fedora 15 2.6.38 kernel worked fine
+with this controller and cards, so I don't think BIOS version is an
+issue.  Also, there's nothing obviously related to the SD controller in
+the release notes (not that I trust their competeness).
 
-Acked-by: Jason Baron <jbaron@redhat.com>
+    J
 
-However, I am going to have to re-base the epoll path I recently posted:
-https://lkml.org/lkml/2011/9/2/295, if this goes in first. Perhaps,
-Andrew (added to the 'cc), can help us sort out the ordering...
 
-Thanks,
+>
+> Here are a few cards I tested with the 3.1 RC4 kernel on Ubuntu
+> running on
+> a Lenovo X220. with Ricoh e823 card reader.
+>
+> == kernel version ==
+> Linux u 3.1.0-0301rc4-generic #201108290905 SMP MonO Aug 29 09:11:07
+> UTC 2011 x86_64 x86_64 x86_64 GNU/Linux
+> This is the upstream RC4 kernel build for ubuntu.
+> http://kernel.ubuntu.com/~kernel-ppa/mainline/
+>
+> == LSPCI output for SD card reader ==
+> 0d:00.0 System peripheral [0880]: Ricoh Co Ltd Device [1180:e823] (rev
+> 04) (prog-if 01)
+>     Subsystem: Lenovo Device [17aa:21db]
+>     Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+> ParErr- Stepping- SERR- FastB2B- DisINTx-
+>     Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+> <TAbort- <MAbort- >SERR- <PERR- INTx-
+>     Latency: 0, Cache Line Size: 64 bytes
+>     Interrupt: pin A routed to IRQ 16
+>     Region 0: Memory at 91500000 (32-bit, non-prefetchable) [size=256]
+>     Capabilities: [50] MSI: Enable- Count=1/1 Maskable- 64bit+
+>         Address: 0000000000000000  Data: 0000
+>     Capabilities: [78] Power Management version 3
+>         Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=0mA
+> PME(D0+,D1+,D2+,D3hot+,D3cold+)
+>         Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=2 PME+
+>     Capabilities: [80] Express (v1) Endpoint, MSI 00
+>         DevCap:    MaxPayload 128 bytes, PhantFunc 0, Latency L0s
+> unlimited, L1 unlimited
+>             ExtTag- AttnBtn+ AttnInd+ PwrInd+ RBE+ FLReset-
+>         DevCtl:    Report errors: Correctable- Non-Fatal- Fatal-
+> Unsupported-
+>             RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
+>             MaxPayload 128 bytes, MaxReadReq 128 bytes
+>         DevSta:    CorrErr+ UncorrErr- FatalErr- UnsuppReq+ AuxPwr-
+> TransPend-
+>         LnkCap:    Port #1, Speed 2.5GT/s, Width x1, ASPM L0s L1,
+> Latency L0 <4us, L1 unlimited
+>             ClockPM+ Surprise- LLActRep- BwNot-
+>         LnkCtl:    ASPM L1 Enabled; RCB 64 bytes Disabled- Retrain-
+> CommClk+
+>             ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+>         LnkSta:    Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+
+> DLActive- BWMgmt- ABWMgmt-
+>     Capabilities: [100 v1] Virtual Channel
+>         Caps:    LPEVC=0 RefClk=100ns PATEntryBits=1
+>         Arb:    Fixed- WRR32- WRR64- WRR128-
+>         Ctrl:    ArbSelect=Fixed
+>         Status:    InProgress-
+>         VC0:    Caps:    PATOffset=00 MaxTimeSlots=1 RejSnoopTrans-
+>             Arb:    Fixed- WRR32- WRR64- WRR128- TWRR128- WRR256-
+>             Ctrl:    Enable+ ID=0 ArbSelect=Fixed TC/VC=ff
+>             Status:    NegoPending- InProgress-
+>     Capabilities: [800 v1] Advanced Error Reporting
+>         UESta:    DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt-
+> RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
+>         UEMsk:    DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt-
+> RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
+>         UESvrt:    DLP+ SDES+ TLP- FCP+ CmpltTO- CmpltAbrt- UnxCmplt-
+> RxOF+ MalfTLP+ ECRC- UnsupReq- ACSViol-
+>         CESta:    RxErr+ BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
+>         CEMsk:    RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
+>         AERCap:    First Error Pointer: 00, GenCap+ CGenEn- ChkCap+
+> ChkEn-
+>     Kernel driver in use: sdhci-pci
+>     Kernel modules: sdhci-pci
+>
+> == Sandisk Extreme Pro 16GB ==
+> Was able to mount Ultra high speed SDHC card 45MB/s, read and write
+> works.
+>
+> [   60.578630] mmc0: new ultra high speed SDHC card at address e624
+> [   60.611808] mmcblk0: mmc0:e624 SD16G 14.8 GiB [   60.644314] 
+> mmcblk0: p1
+> [   60.947772] mmcblk0: error -84 transferring data, sector 8192, nr
+> 8, cmd response 0x900, card status 0xb00
+> [   60.947777] mmcblk0: retrying using single block read
+>
+> /dev/mmcblk0p1 on /media/New Volume type vfat
+> (rw,nosuid,nodev,uid=1000,gid=1000,shortname=mixed,dmask=0077,utf8=1,showexec,flush,uhelper=udisks)
+>
+> == Sandisk 2GB SD card ==
+> Was able to mount Sandisk SD card, read and write works.
+> [  298.540999] mmc0: new SD card at address 0002
+> [  298.541306] mmcblk0: mmc0:0002 00000 1.86 GiB [  298.543157] 
+> mmcblk0: p1
+>
+> /dev/mmcblk0p1 on /media/E0FD-1813 type vfat
+> (rw,nosuid,nodev,uid=1000,gid=1000,shortname=mixed,dmask=0077,utf8=1,showexec,flush,uhelper=udisks)
+>
+> == Transcend 2GB MMC plus card ==
+> Was able to mount and read/write. Shows up as SD card.
+> [  734.032981] mmc0: error -110 whilst initialising MMC card
+> [  734.132920] mmc0: error -110 whilst initialising MMC card
+> [  734.228244] mmc0: new MMC card at address 0001
+> [  734.228631] mmcblk0: mmc0:0001 MMC    1.87 GiB [  734.229834] 
+> mmcblk0: p1
+> u@u:~$
+>
+> /dev/mmcblk0p1 on /media/New Volume type vfat
+> (rw,nosuid,nodev,uid=1000,gid=1000,shortname=mixed,dmask=0077,utf8=1,showexec,flush,uhelper=udisks)
+>
+> Cheers
+> -- 
+> ====================
+> Manoj Iyer
+> Ubuntu/Canonical
+> Hardware Enablement
+> ====================
+>
+>
+> On Tue, 13 Sep 2011, Chris Ball wrote:
+>
+>> Hi,
+>>
+>> On Tue, Sep 13 2011, Jeremy Fitzhardinge wrote:
+>>>> If it is running, and not helping, can I persuade you to try a full
+>>>> bisection?
+>>>
+>>> OK, will do.
+>>
+>> Thank you!
+>>
+>>>>   I don't think we have other reports of this bug, and the
+>>>> only other person who has reported something like it wasn't a kernel
+>>>> hacker.
+>>>
+>>> That's interesting; the X220 is a pretty common machine these days, I
+>>> think.  I wonder if there's variations in the SD controller or
+>>> something?
+>>
+>> I just asked Matthew Garrett to check his X220, and his has the same
+>> e823
+>> controller as you, is running a 3.1-rc kernel, and everything's working.
+>>
+>> So it's not even variation in the controller model, it's something even
+>> more subtle.  Perhaps try some different cards?  What capacity/speed is
+>> the one you're trying?  If there is a per-card difference, I suppose
+>> we'd expect it to be that slower cards work and faster cards fail
+>> (given the nature of the patch I linked in my last mail).
+>>
+>> Thanks,
+>>
+>> - Chris.
+>> -- 
+>> Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+>> One Laptop Per Child
+>>
+>>
+>
 
--Jason
