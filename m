@@ -1,51 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753175Ab1IMHx0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 03:53:26 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:55852 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751670Ab1IMHxZ (ORCPT
+	id S1754973Ab1IMHzd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 03:55:33 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:45920 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751685Ab1IMHzb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 03:53:25 -0400
-Date: Tue, 13 Sep 2011 16:46:53 +0900
-From: Tejun Heo <htejun@gmail.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, Jens Axboe <jaxboe@fusionio.com>,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [RFC]block: don't mark flush request as SOFTBARRIER
-Message-ID: <20110913074653.GC11397@mtj.dyndns.org>
-References: <1315445394.29510.71.camel@sli10-conroe>
- <20110911025128.GM29319@htj.dyndns.org>
- <1315875841.29510.80.camel@sli10-conroe>
+	Tue, 13 Sep 2011 03:55:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1315875841.29510.80.camel@sli10-conroe>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1315899939.3402.2.camel@snb>
+References: <1315899939.3402.2.camel@snb>
+Date: Tue, 13 Sep 2011 15:55:31 +0800
+Message-ID: <CAM_iQpVsKXn3ZMygOKc699KQPXbt=-yEWMdKFLqYGVucoJ874w@mail.gmail.com>
+Subject: Re: [PATCH -v2] netconsole: switch init_netconsole() to late_initcall
+ if build-in
+From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Shaohua.
+On Tue, Sep 13, 2011 at 3:45 PM, Lin Ming <ming.m.lin@intel.com> wrote:
+> Commit 88491d8(drivers/net: Kconfig & Makefile cleanup) causes a
+> regression that netconsole does not work if netconsole and network
+> device driver are build into kernel, because netconsole is linked
+> before network device driver.
+>
+> Andrew Morton suggested to fix this with initcall ordering.
+> Fixes it by switching init_netconsole() to late_initcall if build-in.
+>
 
-On Tue, Sep 13, 2011 at 09:04:01AM +0800, Shaohua Li wrote:
-> we do the flush first and then dispatch the data. The flush is
-> already delayed a lot, so if latency is a problem, we already saw
-> it.
+Putting one or two lines of comments into the code would
+be nicer, otherwise people have to dig git log to see why. ;-)
 
-I don't necessarily agree with the above.  We don't induce any extra
-latency for flushes which don't overlap.
-
-> Why not just remove SOFTBARRIER and use elv_dispatch_sort() for
-> flush data so drive can better arrange requests?
-
-Maybe, I don't know.  Elevator sorting on writes is likely to be much
-less important to begin with.  Combined with the fact that sorting
-flush data would require more writes to be flushed by the following
-flush, I don't think it would be clear which way would be better.  If
-it can be shown that sorting flush data is better, why not?
-
-Thanks.
-
--- 
-tejun
+Thanks!
