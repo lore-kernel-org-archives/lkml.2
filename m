@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932335Ab1IMSte (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 14:49:34 -0400
-Received: from void.printf.net ([89.145.121.20]:46340 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932216Ab1IMStc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 14:49:32 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: linux-mmc@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Manoj Iyer <manoj.iyer@canonical.com>
-Subject: Re: SDHCI regression since 2.6.39
-References: <4E6EA3E4.5080401@goop.org> <m2bouo37by.fsf@bob.laptop.org>
-	<4E6F8C24.3090207@goop.org> <m2wrdc1i5b.fsf@bob.laptop.org>
-	<4E6FA44F.1050705@goop.org>
-Date: Tue, 13 Sep 2011 14:49:25 -0400
-In-Reply-To: <4E6FA44F.1050705@goop.org> (Jeremy Fitzhardinge's message of
-	"Tue, 13 Sep 2011 11:43:27 -0700")
-Message-ID: <m2aaa89t1m.fsf@bob.laptop.org>
-User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.2 (gnu/linux)
+	id S932331Ab1IMSw0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 14:52:26 -0400
+Received: from smtp.microsoft.com ([131.107.115.215]:48233 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932185Ab1IMSwZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 14:52:25 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Christoph Hellwig <hch@infradead.org>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: RE: [PATCH 09/20] Staging: hv: storvsc: Get rid of
+ storvsc_dev_add() by inlining the code
+Thread-Topic: [PATCH 09/20] Staging: hv: storvsc: Get rid of
+ storvsc_dev_add() by inlining the code
+Thread-Index: AQHMcjvsHRSV9WmkI0OBY1db3SakjJVMGd+A//+NogA=
+Date: Tue, 13 Sep 2011 18:52:23 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E048081E4CB0@TK5EX14MBXC124.redmond.corp.microsoft.com>
+References: <1315936759-20623-1-git-send-email-kys@microsoft.com>
+ <1315936796-20662-1-git-send-email-kys@microsoft.com>
+ <1315936796-20662-9-git-send-email-kys@microsoft.com>
+ <20110913183941.GA23318@infradead.org>
+In-Reply-To: <20110913183941.GA23318@infradead.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.33]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On Tue, Sep 13 2011, Jeremy Fitzhardinge wrote:
->> If it is running, and not helping, can I persuade you to try a full
->> bisection?
->
-> OK, will do.
 
-Thank you!
+> -----Original Message-----
+> From: Christoph Hellwig [mailto:hch@infradead.org]
+> Sent: Tuesday, September 13, 2011 2:40 PM
+> To: KY Srinivasan
+> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang
+> Subject: Re: [PATCH 09/20] Staging: hv: storvsc: Get rid of storvsc_dev_add() by
+> inlining the code
+> 
+> On Tue, Sep 13, 2011 at 10:59:45AM -0700, K. Y. Srinivasan wrote:
+> > Get rid of storvsc_dev_add() by inlining the code.
+> 
+> This also means struct storvsc_device_info can go away, doesn't it?
+> 
+Yes;  PATCH 11/20 gets rid of struct storvsc_device_info definition and other unneeded state.
 
->>   I don't think we have other reports of this bug, and the
->> only other person who has reported something like it wasn't a kernel
->> hacker.
->
-> That's interesting; the X220 is a pretty common machine these days, I
-> think.  I wonder if there's variations in the SD controller or something?
+Regards,
 
-I just asked Matthew Garrett to check his X220, and his has the same e823
-controller as you, is running a 3.1-rc kernel, and everything's working.
-
-So it's not even variation in the controller model, it's something even
-more subtle.  Perhaps try some different cards?  What capacity/speed is
-the one you're trying?  If there is a per-card difference, I suppose
-we'd expect it to be that slower cards work and faster cards fail
-(given the nature of the patch I linked in my last mail).
-
-Thanks,
-
-- Chris.
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+K. Y
