@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756134Ab1IMSNl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 14:13:41 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:27853 "EHLO relay.sw.ru"
+	id S1756158Ab1IMSNy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 14:13:54 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:46367 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755870Ab1IMSNj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 14:13:39 -0400
-Subject: [PATCH v3 01/11] SUNRPC: introduce helpers for reference counted
-	rpcbind clients
+	id S1756138Ab1IMSNr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 14:13:47 -0400
+Subject: [PATCH v3 02/11] SUNRPC: use rpcbind reference counting helpers
 To: Trond.Myklebust@netapp.com
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         bfields@fieldses.org, davem@davemloft.net
-Date: Tue, 13 Sep 2011 22:13:28 +0400
-Message-ID: <20110913181328.3961.50093.stgit@localhost6.localdomain6>
+Date: Tue, 13 Sep 2011 22:13:36 +0400
+Message-ID: <20110913181336.3961.83229.stgit@localhost6.localdomain6>
 In-Reply-To: <20110913180953.3961.69217.stgit@localhost6.localdomain6>
 References: <20110913180953.3961.69217.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
@@ -25,83 +24,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This helpers will be used for dynamical creation and destruction of rpcbind
-clients.
-Variable rpcb_users is actually a counter of lauched RPC services. If rpcbind
-clients has been created already, then we just increase rpcb_users.
+All is simple: we just increase users counter if rpcbind clients has been
+created already. Otherwise we create them and set users counter to 1.
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
 ---
- net/sunrpc/rpcb_clnt.c |   50 ++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 50 insertions(+), 0 deletions(-)
+ net/sunrpc/rpcb_clnt.c |   12 ++++--------
+ 1 files changed, 4 insertions(+), 8 deletions(-)
 
 diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
-index e45d2fb..3f2bb8a 100644
+index 3f2bb8a..b3ac194 100644
 --- a/net/sunrpc/rpcb_clnt.c
 +++ b/net/sunrpc/rpcb_clnt.c
-@@ -114,6 +114,9 @@ static struct rpc_program	rpcb_program;
- static struct rpc_clnt *	rpcb_local_clnt;
- static struct rpc_clnt *	rpcb_local_clnt4;
+@@ -255,9 +255,7 @@ static int rpcb_create_local_unix(void)
+ 		clnt4 = NULL;
+ 	}
  
-+DEFINE_SPINLOCK(rpcb_clnt_lock);
-+unsigned int			rpcb_users;
-+
- struct rpcbind_args {
- 	struct rpc_xprt *	r_xprt;
+-	/* Protected by rpcb_create_local_mutex */
+-	rpcb_local_clnt = clnt;
+-	rpcb_local_clnt4 = clnt4;
++	rpcb_set_local(clnt, clnt4);
  
-@@ -161,6 +164,53 @@ static void rpcb_map_release(void *data)
- 	kfree(map);
- }
+ out:
+ 	return result;
+@@ -309,9 +307,7 @@ static int rpcb_create_local_net(void)
+ 		clnt4 = NULL;
+ 	}
  
-+static int rpcb_get_local(void)
-+{
-+	spin_lock(&rpcb_clnt_lock);
-+	if (rpcb_users)
-+		rpcb_users++;
-+	spin_unlock(&rpcb_clnt_lock);
-+
-+	return rpcb_users;
-+}
-+
-+void rpcb_put_local(void)
-+{
-+	struct rpc_clnt *clnt = rpcb_local_clnt;
-+	struct rpc_clnt *clnt4 = rpcb_local_clnt4;
-+	int shutdown;
-+
-+	spin_lock(&rpcb_clnt_lock);
-+	if (--rpcb_users == 0) {
-+		rpcb_local_clnt = NULL;
-+		rpcb_local_clnt4 = NULL;
-+	}
-+	shutdown = !rpcb_users;
-+	spin_unlock(&rpcb_clnt_lock);
-+
-+	if (shutdown) {
-+		/*
-+		 * cleanup_rpcb_clnt - remove xprtsock's sysctls, unregister
-+		 */
-+		if (clnt4)
-+			rpc_shutdown_client(clnt4);
-+		if (clnt)
-+			rpc_shutdown_client(clnt);
-+	}
-+	return;
-+}
-+
-+static void rpcb_set_local(struct rpc_clnt *clnt, struct rpc_clnt *clnt4)
-+{
-+	/* Protected by rpcb_create_local_mutex */
-+	rpcb_local_clnt = clnt;
-+	rpcb_local_clnt4 = clnt4;
-+	rpcb_users++;
-+	dprintk("RPC:       created new rpcb local clients (rpcb_local_clnt: "
-+			"0x%p, rpcb_local_clnt4: 0x%p)\n", rpcb_local_clnt,
-+			rpcb_local_clnt4);
-+}
-+
- /*
-  * Returns zero on success, otherwise a negative errno value
-  * is returned.
+-	/* Protected by rpcb_create_local_mutex */
+-	rpcb_local_clnt = clnt;
+-	rpcb_local_clnt4 = clnt4;
++	rpcb_set_local(clnt, clnt4);
+ 
+ out:
+ 	return result;
+@@ -326,11 +322,11 @@ static int rpcb_create_local(void)
+ 	static DEFINE_MUTEX(rpcb_create_local_mutex);
+ 	int result = 0;
+ 
+-	if (rpcb_local_clnt)
++	if (rpcb_get_local())
+ 		return result;
+ 
+ 	mutex_lock(&rpcb_create_local_mutex);
+-	if (rpcb_local_clnt)
++	if (rpcb_get_local())
+ 		goto out;
+ 
+ 	if (rpcb_create_local_unix() != 0)
 
