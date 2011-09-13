@@ -1,55 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754486Ab1IMFtE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 01:49:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32015 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752815Ab1IMFtC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 01:49:02 -0400
-Date: Tue, 13 Sep 2011 07:48:39 +0200
-From: Johannes Weiner <jweiner@redhat.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
-        Michal Hocko <mhocko@suse.cz>, Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 02/11] mm: vmscan: distinguish global reclaim from global
- LRU scanning
-Message-ID: <20110913054839.GD2929@redhat.com>
-References: <1315825048-3437-1-git-send-email-jweiner@redhat.com>
- <1315825048-3437-3-git-send-email-jweiner@redhat.com>
- <20110912230246.GA20975@shutemov.name>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110912230246.GA20975@shutemov.name>
+	id S1754417Ab1IMF6Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 01:58:16 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:62324 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752920Ab1IMF6P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 01:58:15 -0400
+Date: Tue, 13 Sep 2011 13:58:03 +0800
+From: "canquan.shen" <shencanquan@huawei.com>
+Subject: Re: [PATCH v2] acpi: Fix CPU hot removal problem
+In-reply-to: <4E682AC8.7040302@huawei.com>
+X-Originating-IP: [10.166.80.130]
+To: len.brown@intel.com
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        "shemminger@vyatta.com" <shemminger@vyatta.com>,
+        "yakui.zhao@intel.com" <yakui.zhao@intel.com>,
+        "xiaowei.yang@huawei.com" <xiaowei.yang@huawei.com>,
+        hanweidong <hanweidong@huawei.com>, linqiangmin@huawei.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Message-id: <4E6EF0EB.2040701@huawei.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7BIT
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:6.0.2) Gecko/20110902
+ Thunderbird/6.0.2
+X-CFilter-Loop: Reflected
+References: <4E682AC8.7040302@huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 13, 2011 at 02:02:46AM +0300, Kirill A. Shutemov wrote:
-> On Mon, Sep 12, 2011 at 12:57:19PM +0200, Johannes Weiner wrote:
-> > @@ -1508,6 +1524,12 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
-> >  	if (scanning_global_lru(sc)) {
-> >  		nr_taken = isolate_pages_global(nr_to_scan, &page_list,
-> >  			&nr_scanned, sc->order, reclaim_mode, zone, 0, file);
-> > +	} else {
-> > +		nr_taken = mem_cgroup_isolate_pages(nr_to_scan, &page_list,
-> > +			&nr_scanned, sc->order, reclaim_mode, zone,
-> > +			sc->mem_cgroup, 0, file);
-> > +	}
-> 
-> Redundant braces.
+On 2011/9/8 10:39, canquan.shen wrote:
+> We run Linux as a guest in Xen environment. When used xen tools
+> (xm vcpu-set <n>) to hot add and remove vcpu to and from the guest,
+> we encountered the failure on vcpu removal. We found the reason is
+> that it didn't go to really remove cpu in the cpu removal code path.
+>
+> This patch adds acpi_bus_trim in acpi_process_hotplug_notify to fix
+> this issue. With this patch, it works fine for us.
+>
+> Signed-off-by: Canquan Shen <shencanquan@huawei.com>
+> ---
+> drivers/acpi/processor_driver.c | 5 +++++
+> 1 files changed, 5 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/acpi/processor_driver.c
+> b/drivers/acpi/processor_driver.c
+> index a1c564f..114592f 100644
+> --- a/drivers/acpi/processor_driver.c
+> +++ b/drivers/acpi/processor_driver.c
+> @@ -678,7 +678,11 @@ static void
+> acpi_processor_hotplug_notify(acpi_handle handle,
+> return;
+> }
+>
+> + if (acpi_bus_trim(device, 1)) {
+> + printk(KERN_ERR PREFIX
+> + "Removing device failed\n");
+> + return;
+> + }
+> break;
+> default:
+> ACPI_DEBUG_PRINT((ACPI_DB_INFO,
 
-I usually keep them for multiline branches, no matter how any
-statements.
+Hi Len,
+     I just see your email in linux-kernel maillist and known that your 
+kernel.org email is kaput, so I resend this email to your intel email 
+address.
 
-But this is temporary anyway, 10/11 gets rid of this branch, leaving
-only
+Thanks,
+- Canquan Shen
 
-	nr_taken = isolate_pages(...)
