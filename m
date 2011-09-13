@@ -1,52 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753511Ab1IMNRV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 09:17:21 -0400
-Received: from imr4.ericy.com ([198.24.6.9]:37709 "EHLO imr4.ericy.com"
+	id S1751705Ab1IMNWz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 09:22:55 -0400
+Received: from void.printf.net ([89.145.121.20]:34908 "EHLO void.printf.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752761Ab1IMNRU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 09:17:20 -0400
-Date: Tue, 13 Sep 2011 06:15:31 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: sfr@canb.auug.org.au
-CC: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
-Subject: temporary hwmon tree location
-Message-ID: <20110913131531.GA26559@ericsson.com>
+	id S1750746Ab1IMNWy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 09:22:54 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: linux-mmc@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: SDHCI regression since 2.6.39
+References: <4E6EA3E4.5080401@goop.org>
+Date: Tue, 13 Sep 2011 09:22:41 -0400
+In-Reply-To: <4E6EA3E4.5080401@goop.org> (Jeremy Fitzhardinge's message of
+	"Mon, 12 Sep 2011 17:29:24 -0700")
+Message-ID: <m2bouo37by.fsf@bob.laptop.org>
+User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="jRHKVT23PllUwdXP"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---jRHKVT23PllUwdXP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Hi Jeremy,
 
-Stephen,
+On Mon, Sep 12 2011, Jeremy Fitzhardinge wrote:
+> Since 2.6.39, the SD card slot in my Lenovo X220 has stopped working.  
+> When I insert a card with current linux.git kernel (3.1-rc6), I get:
+>
+> [ 3891.745549] mmc0: new SDHC card at address b368
+> [ 3891.790704] mmcblk0: mmc0:b368 PNY   7.51 GiB 
+> [ 3891.795568] mmc0: Got data interrupt 0x00200000 even though no data
+> operation was in progress.
 
-my hwmon tree for -next is temporarily located at
-	git://github.com/groeck/linux.git hwmon-next
+Please could you try reverting a3c7778f8153b9 "mmc: sdhci: R1B command
+handling + MMC_CAP_ERASE"?  We've had one other similar report that
+bisected to this patch.
 
 Thanks,
-Guenter
 
---jRHKVT23PllUwdXP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOb1dzAAoJEANmWzN1g3l3tt0IAId8zkxE10R3rmDyTfMePOX5
-onuIzPS3r4zIAO5VYq8ZSnNtvT4zxLffNTrWenL6gQLiFrjdysCW1vpLioo8+J2C
-XI8yKqfnunVYs+Cn2fKfLGH9nwqUCiInc2lyYGQeWPp1LpcYVRY4xZnZNw+jhID5
-GaSv+PXRWk4AzXrDng1k7lRSVtrfWlmbIAOseMO0TY5S3YwpX85DVVPeY+/Mx+wq
-7WvK5FCdpWlYf/mTG7NA9jw/YPojE85sfHxClzKSDP7D+4hvtuUmIN3pRKgssHA1
-nj1EZxm/uaNqEI1A8RSuN/jM2sCUoegs+lo5X3UhWNik3B3Xvj4DOU8jCt9UBfk=
-=cb8r
------END PGP SIGNATURE-----
-
---jRHKVT23PllUwdXP--
+- Chris.
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
