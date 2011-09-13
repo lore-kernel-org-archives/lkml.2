@@ -1,67 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752842Ab1IMLWR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 07:22:17 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:41671 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751431Ab1IMLWQ (ORCPT
+	id S1753002Ab1IML0J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 07:26:09 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:47413 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752461Ab1IML0I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 07:22:16 -0400
-Date: Tue, 13 Sep 2011 21:22:08 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: Current tip tree location
-Message-Id: <20110913212208.ba0575708addd627a4e7f06e@canb.auug.org.au>
-In-Reply-To: <alpine.LFD.2.02.1109131005200.2723@ionos>
-References: <alpine.LFD.2.02.1109131005200.2723@ionos>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__13_Sep_2011_21_22_08_+1000_j50BhiKPmciPWugC"
+	Tue, 13 Sep 2011 07:26:08 -0400
+Message-ID: <4E6F3DCB.1060204@monstr.eu>
+Date: Tue, 13 Sep 2011 13:26:03 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+MIME-Version: 1.0
+To: Eli Billauer <eli.billauer@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] microblaze: Moved __dma_sync() to dma-mapping.h
+References: <1315770188-17550-1-git-send-email-eli.billauer@gmail.com>
+In-Reply-To: <1315770188-17550-1-git-send-email-eli.billauer@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__13_Sep_2011_21_22_08_+1000_j50BhiKPmciPWugC
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Eli Billauer wrote:
+> __dma_sync_page() was replaced by __dma_sync(), and parameters of calls to
+> the new function were adjusted to match __dma_sync()'s format.
+> 
+> Signed-off-by: Eli Billauer <eli.billauer@gmail.com>
+> ---
+>  arch/microblaze/include/asm/dma-mapping.h |   20 ++++++++++++++++++--
+>  arch/microblaze/kernel/dma.c              |   22 +++-------------------
+>  2 files changed, 21 insertions(+), 21 deletions(-)
 
-Hi Thomas,
+Applied.
 
-On Tue, 13 Sep 2011 10:08:12 +0200 (CEST) Thomas Gleixner <tglx@linutronix.=
-de> wrote:
->
-> the tip tree for next branch can be found at
->=20
->     git://tesla.tglx.de/git/linux-2.6-tip auto-latest
->=20
-> for now.
+Thanks,
+Michal
 
-I will switch to this from tomorrow, thanks.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__13_Sep_2011_21_22_08_+1000_j50BhiKPmciPWugC
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJObzzgAAoJEDMEi1NhKgbs9UcH/A08Cu5xawsmuoqC+twzIGhM
-wPzHyb2twJe5bxhhuzdUkv/KT0QNE5NocSn1+IW0e1JWjKd/WA4y9UlQ4+nlfBrf
-t8+6q7yA1FaQ4c7+dhqu5MnucACtByyS90u47frhGtZ36Qu008zkzGf9OgCBdQ9u
-7k8wdID6aEf63wU52d4RRUUDBjvsvBuyJNUBIBtQpFFr6vcsZRZ4cx6or3qWaHEi
-PVj4q94e6Ull4KsK+d/VhN8pJD5QVp3MmFNzp/h1d4xWCa1kd2zKulNwmnFSYmvE
-aA2ThiWPydCXuK6cmbZfBWVedZxGFAHZxJrqinc5aCxZZ+ouvdbp47eQWAjMk0g=
-=jxL0
------END PGP SIGNATURE-----
-
---Signature=_Tue__13_Sep_2011_21_22_08_+1000_j50BhiKPmciPWugC--
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
