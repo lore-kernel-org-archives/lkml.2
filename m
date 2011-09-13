@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932705Ab1IMU4R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 16:56:17 -0400
-Received: from www.linutronix.de ([62.245.132.108]:38898 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932556Ab1IMU4P (ORCPT
+	id S932720Ab1IMU4a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 16:56:30 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:65303 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932556Ab1IMU43 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 16:56:15 -0400
-Date: Tue, 13 Sep 2011 22:56:07 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-cc: Stephen Rothwell <sfr@canb.auug.org.au>, "H. Peter Anvin" <hpa@zytor.com>,
-        Xen Devel <Xen-devel@lists.xensource.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: linux-next: manual merge of the xen tree with the tip tree
-In-Reply-To: <4E6FC2D3.2060408@goop.org>
-Message-ID: <alpine.LFD.2.02.1109132254470.2723@ionos>
-References: <20110825142450.c84e02d8763cfd1a93411844@canb.auug.org.au> <4E5690C3.2050706@goop.org> <4E5693DD.2010307@zytor.com> <20110826090619.7588d424798f53a6f3621eb2@canb.auug.org.au> <4E56D6E1.6030405@zytor.com> <20110826125441.709aa423cdf072ce085fb91c@canb.auug.org.au>
- <20110913211154.fe53ca8c1d608def77a69022@canb.auug.org.au> <alpine.LFD.2.02.1109131706410.2723@ionos> <4E6FC2D3.2060408@goop.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Tue, 13 Sep 2011 16:56:29 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Message-ID: <a7d17e7e-c6a1-448e-b60f-b79a4ae0c3ba@default>
+Date: Tue, 13 Sep 2011 13:56:00 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>, gregkh@suse.de
+Cc: devel@driverdev.osuosl.org, linux-mm@kvack.org, ngupta@vflare.org,
+        linux-kernel@vger.kernel.org, francis.moro@gmail.com
+Subject: RE: [PATCH] staging: zcache: fix cleancache crash
+References: <4E6FA75A.8060308@linux.vnet.ibm.com
+ 1315941562-25422-1-git-send-email-sjenning@linux.vnet.ibm.com>
+In-Reply-To: <1315941562-25422-1-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
+ 12.0.6557.5001]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090208.4E6FC374.0116,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Sep 2011, Jeremy Fitzhardinge wrote:
-
-> On 09/13/2011 08:07 AM, Thomas Gleixner wrote:
-> > On Tue, 13 Sep 2011, Stephen Rothwell wrote:
-> >> Hi,
-> >>
-> >> On Fri, 26 Aug 2011 12:54:41 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> >>> On Thu, 25 Aug 2011 16:12:33 -0700 "H. Peter Anvin" <hpa@zytor.com> wrote:
-> >>>> On 08/25/2011 04:06 PM, Stephen Rothwell wrote:
-> >>>>>> Stephen: the x86/spinlocks branch in the -tip tree is obsolete and
-> >>>>>> should be dropped.
-> >>>>> That's a bit tricky as I get a rolled up tip tree.  The best I could do
-> >>>>> is revert the commit that merges the x86/spinlocks branch into
-> >>>>> auto-latest ...  I'll do that for today (unless something happens to the
-> >>>>> tip tree in the next hour).
-> >>>>>
-> >>>> OK, let me bother Ingo about it.
-> >>> For today, I have done "git revert -m 1 6f8fa39c81f1" after merging the
-> >>> tip tree.
-> >> I am still doing this in each linux-next, and it doesn't appear to have
-> >> been fixed up the the tree on tesla.tglx.de, yet, I think.
-> > We'll take it out. 
+> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+> Sent: Tuesday, September 13, 2011 1:19 PM
+> To: gregkh@suse.de
+> Cc: devel@driverdev.osuosl.org; linux-mm@kvack.org; ngupta@vflare.org; linux-kernel@vger.kernel.org;
+> francis.moro@gmail.com; Dan Magenheimer; Seth Jennings
+> Subject: [PATCH] staging: zcache: fix cleancache crash
 > 
-> Actually, the tip x86/spinlocks was the most up-to-date version of those
-> patches (since hpa had rebased them to a more recent version of mainline).
+> After commit, c5f5c4db, cleancache crashes on the first
+> successful get. This was caused by a remaining virt_to_page()
+> call in zcache_pampd_get_data_and_free() that only gets
+> run in the cleancache path.
+> 
+> The patch converts the virt_to_page() to struct page
+> casting like was done for other instances in c5f5c4db.
+> 
+> Based on 3.1-rc4
+> 
+> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
 
-Mooo. You tell that after we did a nasty rebase from hell :(
- 
-Thanks,
+Yep, this appears to fix it!  Hopefully Francis can confirm.
 
-	tglx
+Greg, ideally apply this additional fix rather than do the revert
+of the original patch suggested in https://lkml.org/lkml/2011/9/13/234 
+
+Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+
+> ---
+>  drivers/staging/zcache/zcache-main.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
+> index a3f5162..462fbc2 100644
+> --- a/drivers/staging/zcache/zcache-main.c
+> +++ b/drivers/staging/zcache/zcache-main.c
+> @@ -1242,7 +1242,7 @@ static int zcache_pampd_get_data_and_free(char *data, size_t *bufsize, bool raw,
+>  	int ret = 0;
+> 
+>  	BUG_ON(!is_ephemeral(pool));
+> -	zbud_decompress(virt_to_page(data), pampd);
+> +	zbud_decompress((struct page *)(data), pampd);
+>  	zbud_free_and_delist((struct zbud_hdr *)pampd);
+>  	atomic_dec(&zcache_curr_eph_pampd_count);
+>  	return ret;
+> --
+> 1.7.4.1
+> 
