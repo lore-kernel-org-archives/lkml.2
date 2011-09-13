@@ -1,211 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756092Ab1IMRl5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 13:41:57 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:30242 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755821Ab1IMRl4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 13:41:56 -0400
-Date: Tue, 13 Sep 2011 10:41:26 -0700
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
-        hughd@google.com, ngupta@vflare.org, konrad.wilk@oracle.com,
-        JBeulich@novell.com, kurt.hackel@oracle.com, npiggin@kernel.dk,
-        akpm@linux-foundation.org, riel@redhat.com, hannes@cmpxchg.org,
-        matthew@wil.cx, chris.mason@oracle.com, dan.magenheimer@oracle.com,
-        sjenning@linux.vnet.ibm.com, kamezawa.hiroyu@jp.fujitsu.com,
-        jackdachef@gmail.com, cyclonusj@gmail.com, levinsasha928@gmail.com
-Subject: [PATCH V9 6/6] mm: frontswap/cleancache: final flush->invalidate
-Message-ID: <20110913174126.GA11347@ca-server1.us.oracle.com>
+	id S932077Ab1IMRmC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 13:42:02 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:56174 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755821Ab1IMRl6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 13:41:58 -0400
+Date: Tue, 13 Sep 2011 23:11:50 +0530
+From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Turner <pjt@google.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelianov <xemul@parallels.com>
+Subject: Re: CFS Bandwidth Control - Test results of cgroups tasks pinned vs
+ unpinnede
+Message-ID: <20110913174150.GA3062@linux.vnet.ibm.com>
+Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+References: <1315571462.26517.9.camel@twins>
+ <20110912101722.GA28950@linux.vnet.ibm.com>
+ <1315830943.26517.36.camel@twins>
+ <20110913041545.GD11100@linux.vnet.ibm.com>
+ <20110913050306.GB7254@linux.vnet.ibm.com>
+ <1315906788.575.3.camel@twins>
+ <20110913112852.GE7254@linux.vnet.ibm.com>
+ <1315922848.5977.11.camel@twins>
+ <20110913162119.GA3045@linux.vnet.ibm.com>
+ <1315931591.5977.26.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-User-Agent: Mutt/1.5.16 (2007-06-11)
-X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
-X-CT-RefId: str=0001.0A090208.4E6F95D1.00AC,ss=1,re=0.000,fgs=0
+In-Reply-To: <1315931591.5977.26.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-Subject: [PATCH V9 6/6] mm: frontswap/cleancache: final flush->invalidate
+* Peter Zijlstra <a.p.zijlstra@chello.nl> [2011-09-13 18:33:09]:
 
-This sixth patch of six in this frontswap series completes the renaming
-from "flush" to "invalidate" across both tmem frontends (cleancache and
-frontswap) and both tmem backends (Xen and zcache), as required by akpm.
-This change is completely cosmetic.
+> On Tue, 2011-09-13 at 21:51 +0530, Srivatsa Vaddagiri wrote:
+> > > which increases the time you force a task to sleep that's holding locks etc..
+> > 
+> > Ideally all tasks should get capped at the same time, given that there is
+> > a global pool from which everyone pulls bandwidth? So while one vcpu/task
+> > (holding a lock) gets capped, other vcpus/tasks (that may want the same lock)
+> > should ideally not be running for long after that, avoiding lock inversion
+> > related problems you point out.
+> 
+> No this simply cannot be true.. You force groups to sleep so that other
+> groups can run, right? Therefore shared kernel locks will cause
+> inversion.
 
-[v9: akpm@linux-foundation.org: change "flush" to "invalidate", part 3]
+Ah ..shared locks of "host" kernel ..true ..that can still cause
+lock-inversion yes.
 
-Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-Reviewed-by: Konrad Wilk <konrad.wilk@oracle.com>
-Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Jan Beulich <JBeulich@novell.com>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Nitin Gupta <ngupta@vflare.org>
-Cc: Matthew Wilcox <matthew@wil.cx>
-Cc: Chris Mason <chris.mason@oracle.com>
-Cc: Rik Riel <riel@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
+I had in mind user-space (or "guest" kernel) locks - which can't get inverted 
+that easily (one of cgroup's tasks wanting a "userspace" lock which is held by 
+another "throttled" task of same cgroup - causing a inversion problem of sorts).
+My point was that once a task gets throttled, other sibling tasks should get 
+throttled almost immediately after that (given that bandwidth for a cgroup is 
+maintained in a global pool from which everyone draws in "small" increments) - 
+so a task that gets capped while holding a user-space lock should not
+result in other sibling tasks going too much hungry on held locks within the
+same period?
 
----
+> You cannot put both groups to sleep and still expect a utilization of
+> 100%.
+> 
+> Simple example, some task in group A owns the i_mutex of a file, group A
+> runs out of time and gets dequeued. Some other task in group B needs
+> that same i_mutex.
+> 
+> > I guess that we may still run into that with current implementation ..
+> > Basically global pool may have zero runtime left for current period,
+> > forcing a vcpu/task to be throttled, while there is surplus runtime in
+> > per-cpu pools, allowing some sibling vcpus/tasks to run for wee bit
+> > more, leading to lock-inversion related problems (more idling). That
+> > makes me think we can improve directed yield->capping interaction.
+> > Essentially when the target task of directed yield is capped, can the
+> > "yielding" task donate some of its bandwidth? 
+> 
+> What moron ever calls yield anyway?
 
-Diffstat:
- drivers/staging/zcache/zcache-main.c     |   10 +++++-----
- drivers/xen/tmem.c                       |   10 +++++-----
- include/linux/cleancache.h               |   11 +++--------
- include/linux/frontswap.h                |    9 ++-------
- mm/cleancache.c                          |    7 ++++---
- mm/frontswap.c                           |    4 ++--
- 6 files changed, 21 insertions(+), 30 deletions(-)
+I meant directed yield (yield_to) ..which is used by KVM when it detects 
+pause-loops. Essentially, a vcpu spinning in guest-kernel context for too long 
+leading to PLE (Pasue-Loop-Exit), which leads to KVM driver doing a directed 
+yield to another sibling vcpu ..so the target of directed yield may be a
+capped vcpu task, in which case was wondering if directed yield can donate
+bit of bandwidth to the throttled task. Again going by what I said earlier about
+tasks getting capped more or less at same time, this should occur very 
+infrequently ...something for me to test and find out nevertheless!
 
-diff -Napur -x .git frontswap-v9-no_flush_change/drivers/staging/zcache/zcache-main.c frontswap-v9-with_flush_change/drivers/staging/zcache/zcache-main.c
---- frontswap-v9-no_flush_change/drivers/staging/zcache/zcache-main.c	2011-09-12 15:32:16.423932548 -0600
-+++ frontswap-v9-with_flush_change/drivers/staging/zcache/zcache-main.c	2011-09-12 15:44:35.294729696 -0600
-@@ -1775,9 +1775,9 @@ static int zcache_cleancache_init_shared
- static struct cleancache_ops zcache_cleancache_ops = {
- 	.put_page = zcache_cleancache_put_page,
- 	.get_page = zcache_cleancache_get_page,
--	.flush_page = zcache_cleancache_flush_page,
--	.flush_inode = zcache_cleancache_flush_inode,
--	.flush_fs = zcache_cleancache_flush_fs,
-+	.invalidate_page = zcache_cleancache_flush_page,
-+	.invalidate_inode = zcache_cleancache_flush_inode,
-+	.invalidate_fs = zcache_cleancache_flush_fs,
- 	.init_shared_fs = zcache_cleancache_init_shared_fs,
- 	.init_fs = zcache_cleancache_init_fs
- };
-@@ -1883,8 +1883,8 @@ static void zcache_frontswap_init(unsign
- static struct frontswap_ops zcache_frontswap_ops = {
- 	.put_page = zcache_frontswap_put_page,
- 	.get_page = zcache_frontswap_get_page,
--	.flush_page = zcache_frontswap_flush_page,
--	.flush_area = zcache_frontswap_flush_area,
-+	.invalidate_page = zcache_frontswap_flush_page,
-+	.invalidate_area = zcache_frontswap_flush_area,
- 	.init = zcache_frontswap_init
- };
- 
-diff -Napur -x .git frontswap-v9-no_flush_change/drivers/xen/tmem.c frontswap-v9-with_flush_change/drivers/xen/tmem.c
---- frontswap-v9-no_flush_change/drivers/xen/tmem.c	2011-09-12 15:32:17.764196069 -0600
-+++ frontswap-v9-with_flush_change/drivers/xen/tmem.c	2011-09-12 15:43:26.111701645 -0600
-@@ -242,9 +242,9 @@ __setup("nocleancache", no_cleancache);
- static struct cleancache_ops tmem_cleancache_ops = {
- 	.put_page = tmem_cleancache_put_page,
- 	.get_page = tmem_cleancache_get_page,
--	.flush_page = tmem_cleancache_flush_page,
--	.flush_inode = tmem_cleancache_flush_inode,
--	.flush_fs = tmem_cleancache_flush_fs,
-+	.invalidate_page = tmem_cleancache_flush_page,
-+	.invalidate_inode = tmem_cleancache_flush_inode,
-+	.invalidate_fs = tmem_cleancache_flush_fs,
- 	.init_shared_fs = tmem_cleancache_init_shared_fs,
- 	.init_fs = tmem_cleancache_init_fs
- };
-@@ -369,8 +369,8 @@ __setup("nofrontswap", no_frontswap);
- static struct frontswap_ops tmem_frontswap_ops = {
- 	.put_page = tmem_frontswap_put_page,
- 	.get_page = tmem_frontswap_get_page,
--	.flush_page = tmem_frontswap_flush_page,
--	.flush_area = tmem_frontswap_flush_area,
-+	.invalidate_page = tmem_frontswap_flush_page,
-+	.invalidate_area = tmem_frontswap_flush_area,
- 	.init = tmem_frontswap_init
- };
- #endif
-diff -Napur -x .git frontswap-v9-no_flush_change/include/linux/cleancache.h frontswap-v9-with_flush_change/include/linux/cleancache.h
---- frontswap-v9-no_flush_change/include/linux/cleancache.h	2011-09-12 15:39:10.641753680 -0600
-+++ frontswap-v9-with_flush_change/include/linux/cleancache.h	2011-09-12 15:42:01.429056182 -0600
-@@ -28,14 +28,9 @@ struct cleancache_ops {
- 			pgoff_t, struct page *);
- 	void (*put_page)(int, struct cleancache_filekey,
- 			pgoff_t, struct page *);
--	/*
--	 * NOTE: per akpm, flush_page, flush_inode and flush_fs will be
--	 * renamed to invalidate_* in a later commit in which all
--	 * dependencies (i.e Xen, zcache) will be renamed simultaneously
--	 */
--	void (*flush_page)(int, struct cleancache_filekey, pgoff_t);
--	void (*flush_inode)(int, struct cleancache_filekey);
--	void (*flush_fs)(int);
-+	void (*invalidate_page)(int, struct cleancache_filekey, pgoff_t);
-+	void (*invalidate_inode)(int, struct cleancache_filekey);
-+	void (*invalidate_fs)(int);
- };
- 
- extern struct cleancache_ops
-diff -Napur -x .git frontswap-v9-no_flush_change/include/linux/frontswap.h frontswap-v9-with_flush_change/include/linux/frontswap.h
---- frontswap-v9-no_flush_change/include/linux/frontswap.h	2011-09-12 15:39:10.642745506 -0600
-+++ frontswap-v9-with_flush_change/include/linux/frontswap.h	2011-09-12 16:53:48.162102905 -0600
-@@ -9,13 +9,8 @@ struct frontswap_ops {
- 	void (*init)(unsigned);
- 	int (*put_page)(unsigned, pgoff_t, struct page *);
- 	int (*get_page)(unsigned, pgoff_t, struct page *);
--	/*
--	 * NOTE: per akpm, flush_page and flush_area will be renamed to
--	 * invalidate_page and invalidate_area in a later commit in which
--	 * all dependencies (i.e. Xen, zcache) will be renamed simultaneously
--	 */
--	void (*flush_page)(unsigned, pgoff_t);
--	void (*flush_area)(unsigned);
-+	void (*invalidate_page)(unsigned, pgoff_t);
-+	void (*invalidate_area)(unsigned);
- };
- 
- extern int frontswap_enabled;
-diff -Napur -x .git frontswap-v9-no_flush_change/mm/cleancache.c frontswap-v9-with_flush_change/mm/cleancache.c
---- frontswap-v9-no_flush_change/mm/cleancache.c	2011-09-12 15:39:10.652684538 -0600
-+++ frontswap-v9-with_flush_change/mm/cleancache.c	2011-09-12 16:44:50.867691721 -0600
-@@ -166,7 +166,8 @@ void __cleancache_invalidate_page(struct
- 	if (pool_id >= 0) {
- 		VM_BUG_ON(!PageLocked(page));
- 		if (cleancache_get_key(mapping->host, &key) >= 0) {
--			(*cleancache_ops.flush_page)(pool_id, key, page->index);
-+			(*cleancache_ops.invalidate_page)(pool_id,
-+							  key, page->index);
- 			cleancache_invalidates++;
- 		}
- 	}
-@@ -184,7 +185,7 @@ void __cleancache_invalidate_inode(struc
- 	struct cleancache_filekey key = { .u.key = { 0 } };
- 
- 	if (pool_id >= 0 && cleancache_get_key(mapping->host, &key) >= 0)
--		(*cleancache_ops.flush_inode)(pool_id, key);
-+		(*cleancache_ops.invalidate_inode)(pool_id, key);
- }
- EXPORT_SYMBOL(__cleancache_invalidate_inode);
- 
-@@ -198,7 +199,7 @@ void __cleancache_invalidate_fs(struct s
- 	if (sb->cleancache_poolid >= 0) {
- 		int old_poolid = sb->cleancache_poolid;
- 		sb->cleancache_poolid = -1;
--		(*cleancache_ops.flush_fs)(old_poolid);
-+		(*cleancache_ops.invalidate_fs)(old_poolid);
- 	}
- }
- EXPORT_SYMBOL(__cleancache_invalidate_fs);
-diff -Napur -x .git frontswap-v9-no_flush_change/mm/frontswap.c frontswap-v9-with_flush_change/mm/frontswap.c
---- frontswap-v9-no_flush_change/mm/frontswap.c	2011-09-12 15:39:10.655748025 -0600
-+++ frontswap-v9-with_flush_change/mm/frontswap.c	2011-09-12 16:44:20.364800836 -0600
-@@ -147,7 +147,7 @@ void __frontswap_invalidate_page(unsigne
- 
- 	BUG_ON(sis == NULL);
- 	if (frontswap_test(sis, offset)) {
--		(*frontswap_ops.flush_page)(type, offset);
-+		(*frontswap_ops.invalidate_page)(type, offset);
- 		atomic_dec(&sis->frontswap_pages);
- 		frontswap_clear(sis, offset);
- 		frontswap_invalidates++;
-@@ -166,7 +166,7 @@ void __frontswap_invalidate_area(unsigne
- 	BUG_ON(sis == NULL);
- 	if (sis->frontswap_map == NULL)
- 		return;
--	(*frontswap_ops.flush_area)(type);
-+	(*frontswap_ops.invalidate_area)(type);
- 	atomic_set(&sis->frontswap_pages, 0);
- 	memset(sis->frontswap_map, 0, sis->max / sizeof(long));
- }
+> If you use yield you're doing it wrong!
