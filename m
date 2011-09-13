@@ -1,64 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753012Ab1IMBVj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Sep 2011 21:21:39 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:42195 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752328Ab1IMBVh (ORCPT
+	id S1753340Ab1IMBWp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Sep 2011 21:22:45 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:46210 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752646Ab1IMBWn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Sep 2011 21:21:37 -0400
-Date: Tue, 13 Sep 2011 11:21:27 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: paulmck@linux.vnet.ibm.com
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Temporary -rcu tree location
-Message-Id: <20110913112127.cd62b006c302a575ceae4dee@canb.auug.org.au>
-In-Reply-To: <20110913000107.GA15945@linux.vnet.ibm.com>
-References: <20110913000107.GA15945@linux.vnet.ibm.com>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__13_Sep_2011_11_21_27_+1000_AqeOEFi3p26ijENb"
+	Mon, 12 Sep 2011 21:22:43 -0400
+MIME-Version: 1.0
+In-Reply-To: <201109122344.02386.rjw@sisk.pl>
+References: <201108310017.03103.rjw@sisk.pl>
+	<201108310020.26104.rjw@sisk.pl>
+	<CACVXFVPshpc-aVHGMYWkthffMRYLFh4BadnEAhf+eQ47CwWLZw@mail.gmail.com>
+	<201109122344.02386.rjw@sisk.pl>
+Date: Tue, 13 Sep 2011 09:22:43 +0800
+Message-ID: <CACVXFVN5E6pToFk_nn0xgNrUW-DQzVssmPFDpHckSaHSRwWjoQ@mail.gmail.com>
+Subject: Re: [PATCH 2/5] PM / Runtime: Do not run callbacks under lock for
+ power.irq_safe set
+From: Ming Lei <tom.leiming@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, Kevin Hilman <khilman@ti.com>,
+        jean.pihet@newoldbits.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__13_Sep_2011_11_21_27_+1000_AqeOEFi3p26ijENb
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-Hi Paul,
-
-On Mon, 12 Sep 2011 17:01:07 -0700 "Paul E. McKenney" <paulmck@linux.vnet.i=
-bm.com> wrote:
+On Tue, Sep 13, 2011 at 5:44 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> Hi,
 >
-> Could you please make the -next tree pull from branch next.2011.09.12a
-> of https://github.com/paulmckrcu/linux while kernel.org is down?
+> On Monday, September 12, 2011, Ming Lei wrote:
+>
+>> Hi,
+>
+>>
+>
+>> On Wed, Aug 31, 2011 at 6:20 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>
+>> > From: Rafael J. Wysocki <rjw@sisk.pl>
+>
+>> >
+>
+>> > The rpm_suspend() and rpm_resume() routines execute subsystem or PM
+>
+>> > domain callbacks under power.lock if power.irq_safe is set for the
+>
+>> > given device.  This is inconsistent with that rpm_idle() does after
+>
+>> > commit 02b2677 (PM / Runtime: Allow _put_sync() from
+>
+>> > interrupts-disabled context) and is problematic for subsystems and PM
+>
+>> > domains wanting to use power.lock for synchronization in their
+>
+>> > runtime PM callbacks.  For this reason, make runtime PM core functions
+>
+>> > always release power.lock before invoking subsystem or PM domain
+>
+>>
+>
+>> If power.lock is released, the transition states(resuming or suspending)
+>
+>> may be observed in rpm_suspend or rpm_resume, then tasks schedule
+>
+>> will be produced in these two functions,
+>
+> I don't think so, because the interrupts are still off.
 
-I have swiched to that now (actually git://github.com/paulmckrcu/linux).
-Just a couple of minor changes and some new commits, right?  Hash of the
-branch top commit is f88a19a.
+Yes, the interrupts are still off on local CPU, but the release of spin lock may
+cause another CPUs to run into rpm_suspend or rpm_resume and produce
+task schedule inside the two functions.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+>
+>> so the functions below can't be
+>
+>>
+>
+>> pm_runtime_suspend()
+>
+>> pm_runtime_autosuspend()
+>
+>> pm_runtime_resume()
+>
+>> pm_runtime_put_sync_suspend()
+>
+>> pm_runtime_put_sync_autosuspend()
+>
+>>
+>
+>> called in irq-off contexts safely even though irq_safe flag is set.
+>
+> The patch doesn't cause rpm_suspend() and rpm_resume() to turn interrupts
+>
+> on if irq_safe is set, it only causes them to release the lock
+> (temporarily).
 
---Signature=_Tue__13_Sep_2011_11_21_27_+1000_AqeOEFi3p26ijENb
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJObrAXAAoJEDMEi1NhKgbsi7UH/jRMBXgf0nnDdE6v0iq6e8v2
-i3GRemVYxKQ4hKYoSbLFF0l35rSh8Uow99q2oLQDXdI/+61cBUKebc5GVhgQDoxp
-tUqiQfqybJQwycPwXbIoBe/haUiqPbuNINQDCjTOcI1j3ITtRXh2+oett4p1nd+t
-IPFCwk/NVqT1eLobYynFRQ6AqFZqGOq1772bdGBrY/0eb0x2sJ2vv5A+qgPwsbWR
-HffvgBuIcA9zEoDVDeaoU7ZdbQcTOwdL1EorvVVQOPRXsZwdpXIr1OP+WybJmHeb
-HpPeHjUsoieXEfYeme22U04fEtp1WJVZtmZ1lKanTFAjJJAP4Y6ceFeOUvqPCa4=
-=T5RF
------END PGP SIGNATURE-----
-
---Signature=_Tue__13_Sep_2011_11_21_27_+1000_AqeOEFi3p26ijENb--
+thanks,
+-- 
+Ming Lei
