@@ -1,262 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755265Ab1IMQEX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 12:04:23 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:52099 "EHLO e3.ny.us.ibm.com"
+	id S1755357Ab1IMQEm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 12:04:42 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:60384 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754546Ab1IMQEW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 12:04:22 -0400
-Message-ID: <4E6F7DA7.9000706@linux.vnet.ibm.com>
-Date: Tue, 13 Sep 2011 10:58:31 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
+	id S1755283Ab1IMQEg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 12:04:36 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Ming Lei <tom.leiming@gmail.com>
+Subject: Re: [PATCH 2/5] PM / Runtime: Do not run callbacks under lock for power.irq_safe set
+Date: Tue, 13 Sep 2011 18:06:38 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc4+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Linux-sh list" <linux-sh@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, Kevin Hilman <khilman@ti.com>,
+        jean.pihet@newoldbits.com
+References: <201108310017.03103.rjw@sisk.pl> <201109122344.02386.rjw@sisk.pl> <CACVXFVN5E6pToFk_nn0xgNrUW-DQzVssmPFDpHckSaHSRwWjoQ@mail.gmail.com>
+In-Reply-To: <CACVXFVN5E6pToFk_nn0xgNrUW-DQzVssmPFDpHckSaHSRwWjoQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Nitin Gupta <ngupta@vflare.org>
-CC: Greg KH <greg@kroah.com>, gregkh@suse.de, devel@driverdev.osuosl.org,
-        dan.magenheimer@oracle.com, cascardo@holoscopio.com,
-        linux-kernel@vger.kernel.org, dave@linux.vnet.ibm.com,
-        linux-mm@kvack.org, brking@linux.vnet.ibm.com, rcj@linux.vnet.ibm.com
-Subject: Re: [PATCH v2 0/3] staging: zcache: xcfmalloc support
-References: <1315404547-20075-1-git-send-email-sjenning@linux.vnet.ibm.com> <20110909203447.GB19127@kroah.com> <4E6ACE5B.9040401@vflare.org> <4E6E18C6.8080900@linux.vnet.ibm.com> <4E6EB802.4070109@vflare.org>
-In-Reply-To: <4E6EB802.4070109@vflare.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-x-cbid: 11091315-8974-0000-0000-0000001E98C1
+Message-Id: <201109131806.39050.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/12/2011 08:55 PM, Nitin Gupta wrote:
-> Hi Seth,
+On Tuesday, September 13, 2011, Ming Lei wrote:
+> Hi,
 > 
-> I revised some of the original plans for xcfmalloc and below are some
-> details.  I had few nits regarding the current implementation but I'm
-> avoiding them here since we may have to change the design itself
-> significantly.
+> On Tue, Sep 13, 2011 at 5:44 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > Hi,
+> >
+> > On Monday, September 12, 2011, Ming Lei wrote:
+> >
+> >> Hi,
+> >
+> >>
+> >
+> >> On Wed, Aug 31, 2011 at 6:20 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >
+> >> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> >
+> >> >
+> >
+> >> > The rpm_suspend() and rpm_resume() routines execute subsystem or PM
+> >
+> >> > domain callbacks under power.lock if power.irq_safe is set for the
+> >
+> >> > given device.  This is inconsistent with that rpm_idle() does after
+> >
+> >> > commit 02b2677 (PM / Runtime: Allow _put_sync() from
+> >
+> >> > interrupts-disabled context) and is problematic for subsystems and PM
+> >
+> >> > domains wanting to use power.lock for synchronization in their
+> >
+> >> > runtime PM callbacks.  For this reason, make runtime PM core functions
+> >
+> >> > always release power.lock before invoking subsystem or PM domain
+> >
+> >>
+> >
+> >> If power.lock is released, the transition states(resuming or suspending)
+> >
+> >> may be observed in rpm_suspend or rpm_resume, then tasks schedule
+> >
+> >> will be produced in these two functions,
+> >
+> > I don't think so, because the interrupts are still off.
 > 
-> On 09/12/2011 10:35 AM, Seth Jennings wrote:
-> 
->> On 09/09/2011 09:41 PM, Nitin Gupta wrote:
->>> On 09/09/2011 04:34 PM, Greg KH wrote:
->>>
->>>> On Wed, Sep 07, 2011 at 09:09:04AM -0500, Seth Jennings wrote:
->>>>> Changelog:
->>>>> v2: fix bug in find_remove_block()
->>>>>     fix whitespace warning at EOF
->>>>>
->>>>> This patchset introduces a new memory allocator for persistent
->>>>> pages for zcache.  The current allocator is xvmalloc.  xvmalloc
->>>>> has two notable limitations:
->>>>> * High (up to 50%) external fragmentation on allocation sets > PAGE_SIZE/2
->>>>> * No compaction support which reduces page reclaimation
->>>>
->>>> I need some acks from other zcache developers before I can accept this.
->>>>
->>>
->>> First, thanks for this new allocator; xvmalloc badly needed a replacement :)
->>>
->>
->> Hey Nitin, I hope your internship went well :)  It's good to hear from you.
->>
-> 
-> 
-> Yes, it went well and now I can spend more time on this project :)
-> 
-> 
->>> I went through xcfmalloc in detail and would be posting detailed
->>> comments tomorrow.  In general, it seems to be quite similar to the
->>> "chunk based" allocator used in initial implementation of "compcache" --
->>> please see section 2.3.1 in this paper:
->>> http://www.linuxsymposium.org/archives/OLS/Reprints-2007/briglia-Reprint.pdf
->>>
->>
->> Ah, indeed they look similar.  I didn't know that this approach
->> had already been done before in the history of this project.
->>
->>> I'm really looking forward to a slab based allocator as I mentioned in
->>> the initial mail:
->>> http://permalink.gmane.org/gmane.linux.kernel.mm/65467
->>>
->>> With the current design xcfmalloc suffers from issues similar to the
->>> allocator described in the paper:
->>>  - High metadata overhead
->>>  - Difficult implementation of compaction
->>>  - Need for extra memcpy()s  etc.
->>>
->>> With slab based approach, we can almost eliminate any metadata overhead,
->>> remove any free chunk merging logic, simplify compaction and so on.
->>>
->>
->> Just to align my understanding with yours, when I hear slab-based,
->> I'm thinking each page in the compressed memory pool will contain
->> 1 or more blocks that are all the same size.  Is this what you mean?
->>
-> 
-> 
-> Yes, exactly.  The memory pool will consist of "superblocks" (typically
-> 16K or 64K).
+> Yes, the interrupts are still off on local CPU, but the release of spin lock may
+> cause another CPUs to run into rpm_suspend or rpm_resume and produce
+> task schedule inside the two functions.
 
-A fixed superblock size would be an issue.  If you have a fixed superblock
-size of 64k on a system that has 64k hardware pages, then we'll find 
-ourselves in the same fragmentation mess as xvmalloc.  It needs to be 
-relative to the hardware page size; say 4*PAGE_SIZE or 8*PAGE_SIZE.
+Not for the same device, though.
 
-> Each of these superblocks will contain objects of only one
-> particular size (which is its size class).  This is the general
-> structure of all slab allocators. In particular, I'm planning to use
-> many of the ideas discussed in this paper:
-> http://www.cs.umass.edu/~emery/hoard/asplos2000.pdf
-> 
-> One major point to consider would be that these superblocks cannot be
-> physically contiguous in our case, so we will have to do some map/unmap
-> trickery.
+Also, I'm not quite sure what scenario exactly are you referring to.
+Could you please give an example?
 
-I assume you mean vm_map_ram() by "trickery".
-
-In my own experiments, I can tell you that vm_map_ram() is VERY expensive
-wrt kmap_atomic().  I made a version of xvmalloc (affectionately called
-"chunky xvmalloc") where I modified grow_pool() to allocate 4 0-order pages,
-if it could, and group them into a "chunk" (what you are calling a
-"superblock").  The first page in the chunk had a chunk header that contained
-the array of page pointers that vm_map_ram() expects.  A block was 
-identified by a page pointer to the first page in the chunk, and an offset
-within the mapped area of the chunk.
-
-It... was... slow...
-
-Additionally, vm_map_ram() failed a lot because it actually allocates
-memory of its own for the vmap_area.  In my tests, many pages slipped
-through zcache because of this failure.
-
-Even worse, it uses GFP_KERNEL when alloc'ing the vmap_area which 
-isn't safe under spinlock.
-
-It seems that the use of vm_map_ram() is a linchpin in this design.
-
-> The basic idea is to link together individual pages
-> (typically 4k) using underlying struct_page->lru to form superblocks and
-> map/unmap objects on demand.
-> 
->> If so, I'm not sure how changing to a slab-based system would eliminate
->> metadata overhead or do away with memcpy()s.
->>
-> 
-> 
-> With slab based approach, the allocator itself need not store any
-> metadata with allocated objects.  However, considering zcache and zram
-> use-cases, the caller will still have to request additional space for
-> per-object header: actual object size and back-reference (which
-> inode/page-idx this object belongs to) needed for compaction.
-> 
-
-So the metadata still exists.  It's just zcache's metadata vs the
-allocator's metadata.
-
-> For free-list management, the underlying struct page and the free object
-> space itself can be used. Some field in the struct page can point to the
-> first free object in a page and free slab objects themselves will
-> contain links to next/previous free objects in the page.
-> 
->> The memcpy()s are a side effect of having an allocation spread over
->> blocks in different pages.  I'm not seeing a way around this.
->>
-> 
-> 
-> For slab objects than span 2 pages, we can use vm_map_ram() to
-> temporarily map pages involved and read/write to objects directly. For
-> objects lying entirely within a page, we can use much faster
-> kmap_atomic() for access.
-> 
-> 
-
-See previous comment about vm_map_ram().  There is also an issue
-here with a slab object being unreadable do to vm_map_ram() failing.
-
->> It also follows that the blocks that make up an allocation must be in
->> a list of some kind, leading to some amount of metadata overhead.
->>
-> 
-> 
-> Used objects need not be placed in any list.  For free objects we can use
-> underlying struct page and free object space itself to manage free list,
-> as described above.
-> 
-
-I assume this means that allocations consist of only one slab object as
-opposed to multiple objects in slabs with different class sizes.
-
-In other words, if you have a 3k allocation and your slab
-class sizes are 1k, 2k, and 4k, the allocation would have to
-be in a single 4k object (with 25% fragmentation), not spanning
-a 1k and 2k object, correct?
-
-This is something that I'm inferring from your description, but is key
-to the design.  Please confirm that I'm understanding correctly.
-
->> If you want to do compaction, it follows that you can't give the user
->> a direct pointer to the data, since the location of that data may change.
->> In this case, an indirection layer is required (i.e. xcf_blkdesc and
->> xcf_read()/xcf_write()).
->>
-> 
-> 
-> Yes, we can't give a direct pointer anyways since pages used by the
-> allocator are not permanently mapped (to save precious VA spave on
-> 32-bit).  Still, we can save on much of metadata overhead and extra
-> memcpy() as described above.
-> 
-> 
-
-This isn't clear to me.  What would be returned by the malloc() call
-in this design?  In other words, how does the caller access the
-allocation?  You just said we can't give a direct access to the data
-via a page pointer and an offset. What else is there to return other
-than a pointer to metadata?
-
->> The only part of the metadata that could be done away with in a slab-
->> based approach, as far as I can see, is the prevoffset field in xcf_blkhdr,
->> since the size of the previous block in the page (or the previous object
->> in the slab) can be inferred from the size of the current block/object.
->>
->> I do agree that we don't have to worry about free block merging in a
->> slab-based system.
->>
->> I didn't implement compaction so a slab-based system could very well
->> make it easier.  I guess it depends on how one ends up doing it.
->>
-> 
-> 
-> I expect compaction to be much easier with slab like design since
-> finding target for relocating objects is so simple. You don't have to
-> deal with all those little unusable holes created throughout the heap
-> when mix-all-object-sizes-together approach is used.
-> 
-> 
-> For compaction, I plan to have a scheme where the user (zcache/zram)
-> would "cooperate" with the process.  Here is a rough outline for
-> relocating an object:
->  - For any size class, when emptiness threshold (=total space allocated
-> / actual used) exceeds some threshold, the allocator will copy objects
-> from least used slab superblocks to the most used ones.
->  - It will then issue a callback, registered by the user during pool
-> creation, informing about the new object location,
->  - Due to various cases, this callback may return failure in which case
-> the relocation is considered failed and we will disk newly created copy.
->  - If callback succeeds, it means that the user successfully updated its
-> object reference and we can now mark the original copy as free.
-> 
-> 
-> We can also batch this process (copy all objects in victim superblock at
-> once to other superblocks and issue a single callback) for better
-> efficiency.
-> 
-> 
-> Please let me know if you have any comments. I plan to start with its
-> implementation sometime this week.
-> 
-> Thanks,
-> Nitin
-
---
-Seth
-
+Thanks,
+Rafael
