@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753359Ab1IMMVN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 08:21:13 -0400
-Received: from mailer.odon.uba.ar ([157.92.160.2]:59388 "EHLO
-	mailer.odon.uba.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753255Ab1IMMVM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 08:21:12 -0400
-Message-ID: <24a3f2480e5eb1252810d375562814b1.squirrel@webmail.odon.uba.ar>
-Date: Tue, 13 Sep 2011 09:08:40 -0300 (ART)
-Subject: =?iso-8859-1?Q?Ostrze=BFenia_Przed?=
-From: "Systemu Administrator" <info@systemuadministrator.pl.odon.uba.ar>
-Reply-To: customercarewebdept40@w.cn
-User-Agent: SquirrelMail/1.4.15
-MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.5 (mailer.odon.uba.ar [157.92.160.2]); Tue, 13 Sep 2011 09:18:48 -0300 (ART)
+	id S1753385Ab1IMMjO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 08:39:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13814 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752553Ab1IMMjN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 08:39:13 -0400
+Subject: Re: [PATCH 06/24] C6X: devicetree
+From: Mark Salter <msalter@redhat.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: devicetree-discuss@lists.ozlabs.org,
+        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org
+Date: Tue, 13 Sep 2011 08:39:04 -0400
+In-Reply-To: <6360771.ouEC5EKNMR@wuerfel>
+References: <1314826019-22330-1-git-send-email-msalter@redhat.com>
+	 <20110912201102.GF23345@ponder.secretlab.ca>
+	 <1315869636.11280.26.camel@deneb.redhat.com> <6360771.ouEC5EKNMR@wuerfel>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-ID: <1315917546.11280.38.camel@deneb.redhat.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2011-09-13 at 08:43 +0200, Arnd Bergmann wrote:
+> On Monday 12 September 2011 19:20:35 Mark Salter wrote:
+> > On Mon, 2011-09-12 at 14:11 -0600, Grant Likely wrote:
+> > > On Wed, Aug 31, 2011 at 05:26:41PM -0400, Mark Salter wrote:
+> > > > +           interrupt-controller;
+> > > > +           #interrupt-cells = <1>;
+> > > > +           compatible = "ti,c64x+core-pic";
+> > > 
+> > > The interrupt controller isn't addressable?  Is it integrated into
+> > > the CPU?
+> > 
+> > Yes, that core controller is controlled through registers accessed
+> > with special-purpose instructions, not MMIO. Other controllers, like
+> > megamodule and some as-yet unimplemented use MMIO.
+> 
+> Are these instructions specific to the interrupt controller or
+> do they access a register space that can contain arbitrary
+> devices?
+> 
+> If there is a separate address space for special devices, it might
+> be good to describe that in the device tree, like we do for PCI
+> I/O space.
+> 
 
+It is a core register area. Similar to ARM or MIPS coprocessor
+registers.
 
+--Mark
 
-Do wiadomosci:
-
-Ze wzgledu na niedawne sladu przez naszych pracowników administratora,
-zauwazylismy, ze rózne komputerów zalogowaniu sie do poczty ektronicznej i
-wielu hasel awariibyly obecne przed zalogowac. Dlatego twoje konto zostalo
-ograniczone.
-
-Dostep do portalu zarzadzania dla przywrócenia kontroli oraz kadry
-zarzadzajacej. Wystarczy kliknac odpowiedziec na te wiadomosc natychmiast
-i wprowadz szczególy konta ponizej.
-
-E-mail w celu potwierdzenia tozsamosci ponizej:
-Uzytkownik:
-E-mail Uzytkownik :
-Haslo :
-Potwierdz haslo :
-Data urodzenia :
-Przyszlosci Haslo :
-
-
-Uwaga: Tylko przywrócony konto nie zostanie zablokowane.
-
-Dziekuje za wspólprace.
-
-Webmail Help Desk.
-Systemu Administrator
 
