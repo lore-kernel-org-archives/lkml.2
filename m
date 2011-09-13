@@ -1,72 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932197Ab1IMSYS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 14:24:18 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41176 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932095Ab1IMSYQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 14:24:16 -0400
-Subject: Re: CFS Bandwidth Control - Test results of cgroups tasks pinned vs
- unpinnede
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Cc: Paul Turner <pjt@google.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelianov <xemul@parallels.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Tue, 13 Sep 2011 20:23:46 +0200
-In-Reply-To: <20110913180146.GA12723@linux.vnet.ibm.com>
-References: <20110615053716.GA390@linux.vnet.ibm.com>
-	 <BANLkTi=7S2qdVjbJkDja+GAoD=pNo2gPsTFZMFkB8NWWkO1JVQ@mail.gmail.com>
-	 <20110907152009.GA3868@linux.vnet.ibm.com>
-	 <1315423342.11101.25.camel@twins>
-	 <20110908151433.GB6587@linux.vnet.ibm.com> <1315571462.26517.9.camel@twins>
-	 <20110912101722.GA28950@linux.vnet.ibm.com>
-	 <1315830943.26517.36.camel@twins>
-	 <20110913041545.GD11100@linux.vnet.ibm.com>
-	 <1315923579.5977.14.camel@twins>
-	 <20110913180146.GA12723@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1315938226.4226.11.camel@twins>
-Mime-Version: 1.0
+	id S932146Ab1IMS1P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 14:27:15 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:60266 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S932095Ab1IMS1O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 14:27:14 -0400
+Message-ID: <4E6FA117.1050707@cn.fujitsu.com>
+Date: Wed, 14 Sep 2011 02:29:43 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v3 05/11] KVM: MMU: do not mark accessed bit on pte write
+ path
+References: <4E5C4C20.3000403@cn.fujitsu.com> <4E5C4C8D.5040509@cn.fujitsu.com> <4E6F363E.9080000@redhat.com>
+In-Reply-To: <4E6F363E.9080000@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-09-14 02:26:00,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-09-14 02:26:00,
+	Serialize complete at 2011-09-14 02:26:00
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-09-13 at 23:31 +0530, Srivatsa Vaddagiri wrote:
-> * Peter Zijlstra <a.p.zijlstra@chello.nl> [2011-09-13 16:19:39]:
+On 09/13/2011 06:53 PM, Avi Kivity wrote:
+> On 08/30/2011 05:35 AM, Xiao Guangrong wrote:
+>> In current code, the accessed bit is always set when page fault occurred,
+>> do not need to set it on pte write path
 > 
-> > > Booting with "nohz=off" also helps significantly.
-> > > 
-> > > With nohz=on, average idle time (over 1 min) is 10.3%
-> > > With nohz=off, average idle time (over 1 min) is 3.9%
-> >
-> > So we should put the cpufreq/idle governor into the nohz/idle path, it
-> > already tries to predict the idle duration in order to pick a C state,
-> > that same prediction should be used to determine if stopping the tick is
-> > worth it.
+> What about speculative sptes that are then only accessed via emulation?
 > 
-> Hmm ..I tried performance governor and found that it slightly increases
-> idle time.
-> 
->   With nohz=off && ondemand governor, idle time = 4%
->   With nohz=off && performance governor on all cpus, idle time = 6%
-> 
-> I can't see obvious reasons for that ..afaict bandwidth capping should
-> be independent of frequency (i.e task gets capped by "used" time,
-> irrespective of frequency at which it was "using" the cpu)?
 
-That's not what I said.. what I said is that the nohz code should also
-use the idle time prognosis.. disabling the tick is a costly operation,
-doing it only to have to undo it costs time, and will be accounted to
-idle time, hence your improvement with nohz=off.
-
-
+The gfn is read and written only via emulation? I think this case is very
+very rare?
