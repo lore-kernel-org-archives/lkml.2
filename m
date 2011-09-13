@@ -1,35 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753444Ab1IME2p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 00:28:45 -0400
-Received: from mga11.intel.com ([192.55.52.93]:50403 "EHLO mga11.intel.com"
+	id S1753901Ab1IMEln (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 00:41:43 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:49855 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750983Ab1IME2o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 00:28:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,372,1312182000"; 
-   d="scan'208";a="52346198"
-Message-ID: <4E6EDBFB.4010705@intel.com>
-Date: Tue, 13 Sep 2011 12:28:43 +0800
-From: Huang Ying <ying.huang@intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Iceowl/1.0b2 Icedove/3.1.13
+	id S1750983Ab1IMEll (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 00:41:41 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Casey Schaufler <casey@schaufler-ca.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Valdis.Kletnieks@vt.edu, agruen@kernel.org, akpm@linux-foundation.org,
+        dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        LSM <linux-security-module@vger.kernel.org>,
+        Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: [PATCH -V6 00/26] New ACL format for better NFSv4 acl interoperability
+In-Reply-To: <4E6E89E0.4010406@schaufler-ca.com>
+References: <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <4E655049.6060507@schaufler-ca.com> <108028.1315442771@turing-police.cc.vt.edu> <4E6E7ACC.8040003@schaufler-ca.com> <20110912222014.GA17483@fieldses.org> <4E6E89E0.4010406@schaufler-ca.com>
+User-Agent: Notmuch/0.5-318-g52e4ded (http://notmuchmail.org) Emacs/23.2.1 (x86_64-pc-linux-gnu)
+Date: Tue, 13 Sep 2011 10:11:15 +0530
+Message-ID: <87wrdd9hqs.fsf@skywalker.in.ibm.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux-foundation.org>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: What is the difference between percpu_xxx and this_cpu_xxx?
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 12 Sep 2011 15:38:24 -0700, Casey Schaufler <casey@schaufler-ca.com> wrote:
+> On 9/12/2011 3:20 PM, J. Bruce Fields wrote:
+> > On Mon, Sep 12, 2011 at 02:34:04PM -0700, Casey Schaufler wrote:
+> >> On 9/7/2011 5:46 PM, Valdis.Kletnieks@vt.edu wrote:
+> >>> On Mon, 05 Sep 2011 15:42:17 PDT, Casey Schaufler said:
+> >>>> On 9/5/2011 10:25 AM, Aneesh Kumar K.V wrote:
+> >>>>> The following set of patches implements VFS and ext4 changes needed to implement
+> >>>>> a new acl model for linux. Rich ACLs are an implementation of NFSv4 ACLs,
+> >>>>> extended by file( masks to fit into the standard POSIX file permission model.
+> >>>>> They are designed to work seamlessly locally as well as across the NFSv4 and
+> >>>>> CIFS/SMB2 network file system protocols.
+> >>>> POSIX ACLs predate the LSM and can't be done as an LSM due to
+> >>>> the interactions between mode bits and ACLs as defined by the
+> >>>> POSIX DRAFT specification.
+> > I don't know LSM so don't understand what you mean when you say that
+> > interactions between mode bits and ACLs would make an ACL model hard to
+> > implement as an LSM.
+> 
+> POSIX ACLs require that the file permission bits change when
+> the ACL changes. This interaction violates the strict "additional
+> restriction" model of the LSM.
+> 
+> 
+> > But in any case the rich acl/mode bit interactions are similar to the
+> > posix acl/mode bit interactions, so the same issue probably applies.
+> 
+> It would help if you knew for sure and could explain the interaction
+> in sufficient detail to justify the position.
+> 
 
-If my understanding was correct, from the kernel source code, it appears
-that percpu_xxx and this_cpu_xxx have the same semantics and
-implementation in effect, haven’t them?
+Andreas have documented the details here
+http://acl.bestbits.at/richacl/draft-gruenbacher-nfsv4-acls-in-posix-00.html
 
-If so, why do we need two API for the same thing?
+In short with respect to mode bits, the interaction between acl/mode
+bits is more or less similar between posix acl and richacl. When we set
+richacl we need to make sure that mode bits represent allowed permission
+on the file system object. We need to do the above to be posix
+compliant.  As per POSIX additional file access control mechanisms may
+only further restrict the access permissions defined by the file
+permission bits. You can find further details in the OLS 2010 paper on
+richacl. http://www.fmeh.org/ols-2010-implementing-richacl-paper.pdf
 
-Best Regards,
-Huang Ying
+
+-aneesh
+
+
+
