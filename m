@@ -1,94 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932105Ab1IMSN6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 14:13:58 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:48396 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756163Ab1IMSNz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 14:13:55 -0400
-Subject: [PATCH v3 03/11] SUNRPC: introduce svc helpers for prepairing rpcbind
-	infrastructure
-To: Trond.Myklebust@netapp.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bfields@fieldses.org, davem@davemloft.net
-Date: Tue, 13 Sep 2011 22:13:43 +0400
-Message-ID: <20110913181343.3961.53143.stgit@localhost6.localdomain6>
-In-Reply-To: <20110913180953.3961.69217.stgit@localhost6.localdomain6>
-References: <20110913180953.3961.69217.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S932152Ab1IMSOM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 14:14:12 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:53031 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932111Ab1IMSOI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 14:14:08 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>, agruen@kernel.org,
+        bfields@fieldses.org, akpm@linux-foundation.org, dhowells@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        LSM <linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH -V6 00/26] New ACL format for better NFSv4 acl interoperability
+In-Reply-To: Your message of "Mon, 12 Sep 2011 14:34:04 PDT."
+             <4E6E7ACC.8040003@schaufler-ca.com>
+From: Valdis.Kletnieks@vt.edu
+References: <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <4E655049.6060507@schaufler-ca.com> <108028.1315442771@turing-police.cc.vt.edu>
+            <4E6E7ACC.8040003@schaufler-ca.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1315937565_79123P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Tue, 13 Sep 2011 14:12:45 -0400
+Message-ID: <106565.1315937565@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020203.4E6F9D25.014C,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This helpers will be used only for those services, that will send portmapper
-registration calls.
+--==_Exmh_1315937565_79123P
+Content-Type: text/plain; charset=us-ascii
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+(merging two replies)
 
----
- include/linux/sunrpc/clnt.h |    2 ++
- net/sunrpc/rpcb_clnt.c      |    2 +-
- net/sunrpc/svc.c            |   18 ++++++++++++++++++
- 3 files changed, 21 insertions(+), 1 deletions(-)
+On Mon, 12 Sep 2011 14:34:04 PDT, Casey Schaufler said:
+> > Well, if it was done as an LSM, it would mean that if I wanted to build a
+> > system where I have a few hundred terabytes of disk exported via Samba, and I
+> > wanted Samba to save the CIFS permission ACL, I couldn't also run Selinux or
+> > SMACK or anything like that - unless somebody actually snuck in the "LSMs are
+> > stackable" patch while I wasn't looking?
 
-diff --git a/include/linux/sunrpc/clnt.h b/include/linux/sunrpc/clnt.h
-index db7bcaf..1eb437d 100644
---- a/include/linux/sunrpc/clnt.h
-+++ b/include/linux/sunrpc/clnt.h
-@@ -135,6 +135,8 @@ void		rpc_shutdown_client(struct rpc_clnt *);
- void		rpc_release_client(struct rpc_clnt *);
- void		rpc_task_release_client(struct rpc_task *);
- 
-+int		rpcb_create_local(void);
-+void		rpcb_put_local(void);
- int		rpcb_register(u32, u32, int, unsigned short);
- int		rpcb_v4_register(const u32 program, const u32 version,
- 				 const struct sockaddr *address,
-diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
-index b3ac194..d42b642 100644
---- a/net/sunrpc/rpcb_clnt.c
-+++ b/net/sunrpc/rpcb_clnt.c
-@@ -317,7 +317,7 @@ out:
-  * Returns zero on success, otherwise a negative errno value
-  * is returned.
-  */
--static int rpcb_create_local(void)
-+int rpcb_create_local(void)
- {
- 	static DEFINE_MUTEX(rpcb_create_local_mutex);
- 	int result = 0;
-diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
-index 6a69a11..f31e5cc 100644
---- a/net/sunrpc/svc.c
-+++ b/net/sunrpc/svc.c
-@@ -354,6 +354,24 @@ svc_pool_for_cpu(struct svc_serv *serv, int cpu)
- 	return &serv->sv_pools[pidx % serv->sv_nrpools];
- }
- 
-+static int svc_rpcb_setup(struct svc_serv *serv)
-+{
-+	int err;
-+
-+	err = rpcb_create_local();
-+	if (err)
-+		return err;
-+
-+	/* Remove any stale portmap registrations */
-+	svc_unregister(serv);
-+	return 0;
-+}
-+
-+static void svc_rpcb_cleanup(struct svc_serv *serv)
-+{
-+	svc_unregister(serv);
-+	rpcb_put_local();
-+}
- 
- /*
-  * Create an RPC service
+> True, but not an acceptable argument for not doing it as an LSM.
+> It is an argument in favor of LSM stacking, and after the Linux
+> Security Summit this past week it seems only a matter of time before
+> we have that. This could be the compelling use case that we've been
+> missing for LSM stacking.
+
+OK, I can certainly agree with that logic..
+
+> So at this point, unless there is another reason why it can't be an
+> LSM it should be an LSM.
+
+Well, this issue still:
+
+On Mon, 12 Sep 2011 18:43:51 EDT, "J. Bruce Fields" said:
+> On Mon, Sep 12, 2011 at 03:38:24PM -0700, Casey Schaufler wrote:
+> > POSIX ACLs require that the file permission bits change when
+> > the ACL changes. This interaction violates the strict "additional
+> > restriction" model of the LSM.
+>
+> Oh, OK.  Yes, rich ACLs are the same as POSIX ACLs in this respect.
+> When you set an ACL the mode bits are reset to represent an "upper
+> bound" on the permissions granted by the ACL.
+
+Can we finess this detail by making the "set an ACL and make needed changes to
+the mode bits" part of the VFS's responsibility as part of whatever syscall/
+ioctl handling?  After all, the LSM doesn't get involved in the handling of
+chmod() other than to say "yes/no this chmod can be issued" -  for instance,
+the clearing of setUID/setGID bits when a file is written is done by each
+individual filesystem. So there's certianly precident for doing the permission
+tweaking in the VFS code. Then we can limit the LSM part to *applying* an
+already existing ACL to permission checking.
+
+Or should I go get some more caffeine? ;)
+
+
+--==_Exmh_1315937565_79123P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFOb50dcC3lWbTT17ARAgp2AJ47MqqG/Siu3rRJhkwivTpThkKKFQCgmYa+
+UHRNSbg7AYkNRLBIh2BlVnA=
+=mLgp
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1315937565_79123P--
 
