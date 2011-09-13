@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753948Ab1IMOIM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 10:08:12 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:49956 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753291Ab1IMOIK convert rfc822-to-8bit (ORCPT
+	id S1753920Ab1IMONI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 10:13:08 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:36677 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752145Ab1IMONG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 10:08:10 -0400
-Subject: Re: CFS Bandwidth Control - Test results of cgroups tasks pinned vs
- unpinnede
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Cc: Paul Turner <pjt@google.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelianov <xemul@parallels.com>
-Date: Tue, 13 Sep 2011 16:07:28 +0200
-In-Reply-To: <20110913112852.GE7254@linux.vnet.ibm.com>
-References: <BANLkTi=7S2qdVjbJkDja+GAoD=pNo2gPsTFZMFkB8NWWkO1JVQ@mail.gmail.com>
-	 <20110907152009.GA3868@linux.vnet.ibm.com>
-	 <1315423342.11101.25.camel@twins>
-	 <20110908151433.GB6587@linux.vnet.ibm.com> <1315571462.26517.9.camel@twins>
-	 <20110912101722.GA28950@linux.vnet.ibm.com>
-	 <1315830943.26517.36.camel@twins>
-	 <20110913041545.GD11100@linux.vnet.ibm.com>
-	 <20110913050306.GB7254@linux.vnet.ibm.com> <1315906788.575.3.camel@twins>
-	 <20110913112852.GE7254@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1315922848.5977.11.camel@twins>
-Mime-Version: 1.0
+	Tue, 13 Sep 2011 10:13:06 -0400
+Date: Tue, 13 Sep 2011 16:12:06 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andi Kleen <andi@firstfloor.org>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH] Add a personality to report 2.6.x version numbers
+Message-ID: <20110913141158.GA7352@ucw.cz>
+References: <1313795710-30827-1-git-send-email-andi@firstfloor.org>
+ <CA+55aFwEgp=3F6uH198XuQR0=6Um-Kp+0Wjcm0Xv1WoHRveKXw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwEgp=3F6uH198XuQR0=6Um-Kp+0Wjcm0Xv1WoHRveKXw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-09-13 at 16:58 +0530, Srivatsa Vaddagiri wrote:
-> * Peter Zijlstra <a.p.zijlstra@chello.nl> [2011-09-13 11:39:48]:
+On Mon 2011-08-22 11:30:33, Linus Torvalds wrote:
+> On Fri, Aug 19, 2011 at 4:15 PM, Andi Kleen <andi@firstfloor.org> wrote:
+> >
+> > Reposting due to popular demand. Several other people are running
+> > into the same problem with all kinds of software.
 > 
-> > On Tue, 2011-09-13 at 10:33 +0530, Srivatsa Vaddagiri wrote:
-> > > 
-> > > This is perhaps not optimal (as it may lead to more lock contentions), but 
-> > > something to note for those who care for both capping and utilization in
-> > > equal measure!
-> > 
-> > You meant lock inversion, which leads to more idle time :-)
+> I have heard this several times now, but nobody actually ever says
+> *what* is broken.
 > 
-> I think 'cfs_b->lock' contention would go up significantly when reducing
-> sysctl_sched_cfs_bandwidth_slice, while for something like 'balancing' lock 
-> (taken with SD_SERIALIZE set and more frequently when tuning down
-> max_interval?), yes it may increase idle time! Did you have any other
-> lock in mind when speaking of inversion?
+> The Fedora people seem to have done the 2.6.40 thing without any
+> actual reason, for example (the two programs they claim were broken
+> were things that they had already fixed in rawhide, afaik).
+> 
+> I'm not at all interested in these kinds of "all kinds of software" reports.
+> 
+> Details. Examples. Name the f&*cking names already. Shame them publicly.
 
-I can't read it seems.. I thought you were talking about increasing the
-period, which increases the time you force a task to sleep that's
-holding locks etc..
+ketchup :-(. And no, it is probably not what you wanted, and no, it is
+not easy to fix.
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
