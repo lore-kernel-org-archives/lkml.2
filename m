@@ -1,189 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932715Ab1IMU7H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 16:59:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1923 "EHLO mx1.redhat.com"
+	id S932759Ab1IMVA4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 17:00:56 -0400
+Received: from claw.goop.org ([74.207.240.146]:35703 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932649Ab1IMU7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 16:59:05 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: <x86@kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Peter Zijlstra <peterz@infradead.org>, ying.huang@intel.com
-Cc: LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
-        avi@redhat.com, jeremy@goop.org, Don Zickus <dzickus@redhat.com>
-Subject: [V4][PATCH 4/6] x86, nmi:  add in logic to handle multiple events and unknown NMIs
-Date: Tue, 13 Sep 2011 16:58:27 -0400
-Message-Id: <1315947509-6429-5-git-send-email-dzickus@redhat.com>
-In-Reply-To: <1315947509-6429-1-git-send-email-dzickus@redhat.com>
-References: <1315947509-6429-1-git-send-email-dzickus@redhat.com>
+	id S932726Ab1IMVAx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 17:00:53 -0400
+Message-ID: <4E6FC481.6040505@goop.org>
+Date: Tue, 13 Sep 2011 14:00:49 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, "H. Peter Anvin" <hpa@zytor.com>,
+        Xen Devel <Xen-devel@lists.xensource.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: linux-next: manual merge of the xen tree with the tip tree
+References: <20110825142450.c84e02d8763cfd1a93411844@canb.auug.org.au> <4E5690C3.2050706@goop.org> <4E5693DD.2010307@zytor.com> <20110826090619.7588d424798f53a6f3621eb2@canb.auug.org.au> <4E56D6E1.6030405@zytor.com> <20110826125441.709aa423cdf072ce085fb91c@canb.auug.org.au> <20110913211154.fe53ca8c1d608def77a69022@canb.auug.org.au> <alpine.LFD.2.02.1109131706410.2723@ionos> <4E6FC2D3.2060408@goop.org> <alpine.LFD.2.02.1109132254470.2723@ionos>
+In-Reply-To: <alpine.LFD.2.02.1109132254470.2723@ionos>
+X-Enigmail-Version: 1.3.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previous patches allow the NMI subsystem to process multipe NMI events
-in one NMI.  As previously discussed this can cause issues when an event
-triggered another NMI but is processed in the current NMI.  This causes the
-next NMI to go unprocessed and become an 'unknown' NMI.
+On 09/13/2011 01:56 PM, Thomas Gleixner wrote:
+> On Tue, 13 Sep 2011, Jeremy Fitzhardinge wrote:
+>
+>> On 09/13/2011 08:07 AM, Thomas Gleixner wrote:
+>>> On Tue, 13 Sep 2011, Stephen Rothwell wrote:
+>>>> Hi,
+>>>>
+>>>> On Fri, 26 Aug 2011 12:54:41 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>>>>> On Thu, 25 Aug 2011 16:12:33 -0700 "H. Peter Anvin" <hpa@zytor.com> wrote:
+>>>>>> On 08/25/2011 04:06 PM, Stephen Rothwell wrote:
+>>>>>>>> Stephen: the x86/spinlocks branch in the -tip tree is obsolete and
+>>>>>>>> should be dropped.
+>>>>>>> That's a bit tricky as I get a rolled up tip tree.  The best I could do
+>>>>>>> is revert the commit that merges the x86/spinlocks branch into
+>>>>>>> auto-latest ...  I'll do that for today (unless something happens to the
+>>>>>>> tip tree in the next hour).
+>>>>>>>
+>>>>>> OK, let me bother Ingo about it.
+>>>>> For today, I have done "git revert -m 1 6f8fa39c81f1" after merging the
+>>>>> tip tree.
+>>>> I am still doing this in each linux-next, and it doesn't appear to have
+>>>> been fixed up the the tree on tesla.tglx.de, yet, I think.
+>>> We'll take it out. 
+>> Actually, the tip x86/spinlocks was the most up-to-date version of those
+>> patches (since hpa had rebased them to a more recent version of mainline).
+> Mooo. You tell that after we did a nasty rebase from hell :(
 
-To handle this, we first have to flag whether or not the NMI handler handled
-more than one event or not.  If it did, then there exists a chance that
-the next NMI might be already processed.  Once the NMI is flagged as a
-candidate to be swallowed, we next look for a back-to-back NMI condition.
+I'd been meaning to take it out of my tree to solve Stephen's problem,
+but, well, kernel.org.
 
-This is determined by looking at the %rip from pt_regs.  If it is the same
-as the previous NMI, it is assumed the cpu did not have a chance to jump
-back into a non-NMI context and execute code and instead handled another NMI.
-
-If both of those conditions are true then we will swallow any unknown NMI.
-
-There still exists a chance that we accidentally swallow a real unknown NMI,
-but for now things seem better.
-
-V2:
-  - forgot to add the 'read' code for swallow_nmi (went into next patch)
-
-V3:
-  - redesigned the algorithm to utilize Avi's idea of detecting a back-to-back
-    NMI with %rip.
-
-Signed-off-by: Don Zickus <dzickus@redhat.com>
-
-better b2b nmi handling
----
- arch/x86/kernel/nmi.c |   80 +++++++++++++++++++++++++++++++++++++++++++++---
- 1 files changed, 75 insertions(+), 5 deletions(-)
-
-diff --git a/arch/x86/kernel/nmi.c b/arch/x86/kernel/nmi.c
-index acd61e8..b741c34 100644
---- a/arch/x86/kernel/nmi.c
-+++ b/arch/x86/kernel/nmi.c
-@@ -66,7 +66,7 @@ __setup("unknown_nmi_panic", setup_unknown_nmi_panic);
- 
- #define nmi_to_desc(type) (&nmi_desc[type])
- 
--static int notrace __kprobes nmi_handle(unsigned int type, struct pt_regs *regs)
-+static int notrace __kprobes nmi_handle(unsigned int type, struct pt_regs *regs, bool b2b)
- {
- 	struct nmi_desc *desc = nmi_to_desc(type);
- 	struct nmiaction *next_a, *a, **ap = &desc->head;
-@@ -87,6 +87,16 @@ static int notrace __kprobes nmi_handle(unsigned int type, struct pt_regs *regs)
- 
- 		handled += a->handler(type, regs);
- 
-+		/*
-+ 		 * Optimization: only loop once if this is not a 
-+ 		 * back-to-back NMI.  The idea is nothing is dropped
-+ 		 * on the first NMI, only on the second of a back-to-back
-+ 		 * NMI.  No need to waste cycles going through all the
-+ 		 * handlers.
-+ 		 */
-+		if (!b2b && handled)
-+			break;
-+
- 		a = next_a;
- 	}
- 	rcu_read_unlock();
-@@ -255,7 +265,13 @@ unknown_nmi_error(unsigned char reason, struct pt_regs *regs)
- {
- 	int handled;
- 
--	handled = nmi_handle(NMI_UNKNOWN, regs);
-+	/*
-+	 * Use 'false' as back-to-back NMIs are dealt with one level up.
-+	 * Of course this makes having multiple 'unknown' handlers useless
-+	 * as only the first one is ever run (unless it can actually determine
-+	 * if it caused the NMI)
-+	 */
-+	handled = nmi_handle(NMI_UNKNOWN, regs, false);
- 	if (handled) 
- 		return;
- #ifdef CONFIG_MCA
-@@ -278,19 +294,49 @@ unknown_nmi_error(unsigned char reason, struct pt_regs *regs)
- 	pr_emerg("Dazed and confused, but trying to continue\n");
- }
- 
-+DEFINE_PER_CPU(bool, swallow_nmi);
-+DEFINE_PER_CPU(unsigned long, save_rip);
-+
- static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
- {
- 	unsigned char reason = 0;
- 	int handled;
-+	bool b2b = false;
- 
- 	/*
- 	 * CPU-specific NMI must be processed before non-CPU-specific
- 	 * NMI, otherwise we may lose it, because the CPU-specific
- 	 * NMI can not be detected/processed on other CPUs.
- 	 */
--	handled = nmi_handle(NMI_LOCAL, regs);
--	if (handled)
-+
-+	/*
-+	 * Back-to-back NMIs are interesting because they can either
-+	 * be two NMI or more than two NMIs (any thing over two is dropped
-+	 * due to NMI being edge-triggered).  If this is the second half
-+	 * of the back-to-back NMI, assume we dropped things and process
-+	 * more handlers.  Otherwise reset the 'swallow' NMI behaviour
-+	 */
-+	if (regs->ip == __this_cpu_read(save_rip))
-+		b2b = true;
-+	else
-+		__this_cpu_write(swallow_nmi, false);
-+
-+	__this_cpu_write(save_rip, regs->ip);
-+
-+	handled = nmi_handle(NMI_LOCAL, regs, b2b);
-+	if (handled) {
-+		/*
-+ 		 * There are cases when a NMI handler handles multiple
-+ 		 * events in the current NMI.  One of these events may
-+ 		 * be queued for in the next NMI.  Because the event is
-+ 		 * already handled, the next NMI will result in an unknown
-+ 		 * NMI.  Instead lets flag this for a potential NMI to
-+ 		 * swallow.
-+		 */
-+		if (handled > 1)
-+			__this_cpu_write(swallow_nmi, true);
- 		return;
-+	}
- 
- 	/* Non-CPU-specific NMI: NMI sources can be processed on any CPU */
- 	raw_spin_lock(&nmi_reason_lock);
-@@ -313,7 +359,31 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
- 	}
- 	raw_spin_unlock(&nmi_reason_lock);
- 
--	unknown_nmi_error(reason, regs);
-+	/*
-+	 * Only one NMI can be latched at a time.  To handle
-+	 * this we may process multiple nmi handlers at once to
-+	 * cover the case where an NMI is dropped.  The downside
-+	 * to this approach is we may process an NMI prematurely,
-+	 * while its real NMI is sitting latched.  This will cause
-+	 * an unknown NMI on the next run of the NMI processing.
-+	 * 
-+	 * We tried to flag that condition above, by setting the
-+	 * swallow_nmi flag when we process more than one event.
-+	 * This condition is also only present on the second half
-+	 * of a back-to-back NMI, so we flag that condition too.
-+	 *
-+	 * If both are true, we assume we already processed this
-+	 * NMI previously and we swallow it.  Otherwise we reset
-+	 * the logic.
-+	 *
-+	 * I am sure there are scenarios where we accidentally
-+	 * swallow a real 'unknown' NMI.  But this is the best
-+	 * we can do for now.
-+	 */
-+	if (b2b && __this_cpu_read(swallow_nmi))
-+		;
-+	else
-+		unknown_nmi_error(reason, regs);
- }
- 
- dotraplinkage notrace __kprobes void
--- 
-1.7.6
-
+    J
