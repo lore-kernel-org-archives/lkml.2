@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756049Ab1IMRlb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 13:41:31 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:65505 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755838Ab1IMRl0 (ORCPT
+	id S1756077Ab1IMRlm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 13:41:42 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:30020 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755838Ab1IMRlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 13:41:26 -0400
-Date: Tue, 13 Sep 2011 10:40:26 -0700
+	Tue, 13 Sep 2011 13:41:40 -0400
+Date: Tue, 13 Sep 2011 10:41:06 -0700
 From: Dan Magenheimer <dan.magenheimer@oracle.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
         hughd@google.com, ngupta@vflare.org, konrad.wilk@oracle.com,
@@ -16,48 +16,37 @@ To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
         matthew@wil.cx, chris.mason@oracle.com, dan.magenheimer@oracle.com,
         sjenning@linux.vnet.ibm.com, kamezawa.hiroyu@jp.fujitsu.com,
         jackdachef@gmail.com, cyclonusj@gmail.com, levinsasha928@gmail.com
-Subject: [PATCH V9 3/6] mm: frontswap: core frontswap functionality
-Message-ID: <20110913174026.GA11298@ca-server1.us.oracle.com>
+Subject: [PATCH V9 5/6] mm: cleancache: update to match akpm frontswap
+	feedback
+Message-ID: <20110913174106.GA11330@ca-server1.us.oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 User-Agent: Mutt/1.5.16 (2007-06-11)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4E6F9595.005E:SCFMA922111,ss=1,re=-6.300,fgs=0
+X-CT-RefId: str=0001.0A090208.4E6F95BC.01D4:SCFMA922111,ss=1,re=-2.401,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dan Magenheimer <dan.magenheimer@oracle.com>
-Subject: [PATCH V9 3/6] mm: frontswap: core frontswap functionality
+Subject: [PATCH V9 5/6] mm: cleancache: update to match akpm frontswap feedback
 
-(Note to earlier reviewers:  This patchset has been reorganized due to
-feedback from Kame Hiroyuki and Andrew Morton. This patch contains part
-of patch 3of4 from the previous series.)
+This is the fifth patch of six in the frontswap series; changes made to
+frontswap due to feedback from akpm/others must also be made to cleancache
+for consistency.  These are: (1) change sysfs to debugfs; (2) change
+use of the term "flush" to "invalidate".  Note that some changes
+for (2) are deferred to the next patch in this patchset in order to
+coordinate with simultaneous required driver changes.
 
-This third patch of six in the frontswap series provides the core
-frontswap code that interfaces between the hooks in the swap subsystem
-and a frontswap backend via frontswap_ops.
+[v9: akpm@linux-foundation.org: sysfs->debugfs; no longer need Doc/ABI file]
+[v9: akpm@linux-foundation.org: change "flush" to "invalidate", part 2]
 
-[v9: akpm@linux-foundation.org: change "flush" to "invalidate", part 1]
-[v9: akpm@linux-foundation.org: mark some statics __read_mostly]
-[v9: akpm@linux-foundation.org: add clarifying comments]
-[v9: akpm@linux-foundation.org: no need to loop repeating try_to_unuse]
-[v9: error27@gmail.com: remove superfluous check for NULL]
-[v8: rebase to 3.0-rc4]
-[v8: kamezawa.hiroyu@jp.fujitsu.com: add comment to clarify find_next_to_unuse]
-[v7: rebase to 3.0-rc3]
-[v7: JBeulich@novell.com: use new static inlines, no-ops if not config'd]
-[v6: rebase to 3.1-rc1]
-[v6: lliubbo@gmail.com: use vzalloc]
-[v6: lliubbo@gmail.com: fix null pointer deref if vzalloc fails]
-[v6: konrad.wilk@oracl.com: various checks and code clarifications/comments]
-[v4: rebase to 2.6.39]
 Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
 Reviewed-by: Konrad Wilk <konrad.wilk@oracle.com>
-Acked-by: Jan Beulich <JBeulich@novell.com>
-Acked-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Jan Beulich <JBeulich@novell.com>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
 Cc: Jeremy Fitzhardinge <jeremy@goop.org>
 Cc: Hugh Dickins <hughd@google.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
@@ -67,281 +56,428 @@ Cc: Chris Mason <chris.mason@oracle.com>
 Cc: Rik Riel <riel@redhat.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 
---- linux/mm/frontswap.c	1969-12-31 17:00:00.000000000 -0700
-+++ frontswap-v9/mm/frontswap.c	2011-09-12 13:57:56.039709017 -0600
-@@ -0,0 +1,275 @@
-+/*
-+ * Frontswap frontend
-+ *
-+ * This code provides the generic "frontend" layer to call a matching
-+ * "backend" driver implementation of frontswap.  See
-+ * Documentation/vm/frontswap.txt for more information.
-+ *
-+ * Copyright (C) 2009-2010 Oracle Corp.  All rights reserved.
-+ * Author: Dan Magenheimer
-+ *
-+ * This work is licensed under the terms of the GNU GPL, version 2.
-+ */
-+
-+#include <linux/mm.h>
-+#include <linux/mman.h>
-+#include <linux/swap.h>
-+#include <linux/swapops.h>
-+#include <linux/proc_fs.h>
-+#include <linux/security.h>
-+#include <linux/capability.h>
-+#include <linux/module.h>
-+#include <linux/uaccess.h>
+--- linux/mm/cleancache.c	2011-07-20 14:50:42.366996604 -0600
++++ frontswap-v9/mm/cleancache.c	2011-09-12 14:06:52.493685838 -0600
+@@ -15,29 +15,34 @@
+ #include <linux/fs.h>
+ #include <linux/exportfs.h>
+ #include <linux/mm.h>
 +#include <linux/debugfs.h>
-+#include <linux/frontswap.h>
-+#include <linux/swapfile.h>
-+
-+/*
-+ * frontswap_ops is set by frontswap_register_ops to contain the pointers
-+ * to the frontswap "backend" implementation functions.
-+ */
-+static struct frontswap_ops frontswap_ops __read_mostly;
-+
-+/*
-+ * This global enablement flag reduces overhead on systems where frontswap_ops
-+ * has not been registered, so is preferred to the slower alternative: a
-+ * function call that checks a non-global.
-+ */
-+int frontswap_enabled __read_mostly;
-+EXPORT_SYMBOL(frontswap_enabled);
-+
+ #include <linux/cleancache.h>
+ 
+ /*
+  * This global enablement flag may be read thousands of times per second
+- * by cleancache_get/put/flush even on systems where cleancache_ops
++ * by cleancache_get/put/invalidate even on systems where cleancache_ops
+  * is not claimed (e.g. cleancache is config'ed on but remains
+  * disabled), so is preferred to the slower alternative: a function
+  * call that checks a non-global.
+  */
+-int cleancache_enabled;
++int cleancache_enabled __read_mostly;
+ EXPORT_SYMBOL(cleancache_enabled);
+ 
+ /*
+  * cleancache_ops is set by cleancache_ops_register to contain the pointers
+  * to the cleancache "backend" implementation functions.
+  */
+-static struct cleancache_ops cleancache_ops;
++static struct cleancache_ops cleancache_ops __read_mostly;
+ 
+-/* useful stats available in /sys/kernel/mm/cleancache */
 +/*
 + * Counters available via /sys/kernel/debug/frontswap (if debugfs is
 + * properly configured.  These are for information only so are not protected
-+ * against increment races.
++ * agains increment races.
 + */
-+static unsigned long frontswap_gets;
-+static unsigned long frontswap_succ_puts;
-+static unsigned long frontswap_failed_puts;
-+static unsigned long frontswap_invalidates;
-+
-+/*
-+ * Register operations for frontswap, returning previous thus allowing
-+ * detection of multiple backends and possible nesting
-+ */
-+struct frontswap_ops frontswap_register_ops(struct frontswap_ops *ops)
-+{
-+	struct frontswap_ops old = frontswap_ops;
-+
-+	frontswap_ops = *ops;
-+	frontswap_enabled = 1;
-+	return old;
-+}
-+EXPORT_SYMBOL(frontswap_register_ops);
-+
-+/* Called when a swap device is swapon'd */
-+void __frontswap_init(unsigned type)
-+{
-+	struct swap_info_struct *sis = swap_info[type];
-+
-+	BUG_ON(sis == NULL);
-+	if (sis->frontswap_map == NULL)
-+		return;
-+	if (frontswap_enabled)
-+		(*frontswap_ops.init)(type);
-+}
-+EXPORT_SYMBOL(__frontswap_init);
-+
-+/*
-+ * "Put" data from a page to frontswap and associate it with the page's
-+ * swaptype and offset.  Page must be locked and in the swap cache.
-+ * If frontswap already contains a page with matching swaptype and
-+ * offset, the frontswap implmentation may either overwrite the data and
-+ * return success or invalidate the page from frontswap and return failure
-+ */
-+int __frontswap_put_page(struct page *page)
-+{
-+	int ret = -1, dup = 0;
-+	swp_entry_t entry = { .val = page_private(page), };
-+	int type = swp_type(entry);
-+	struct swap_info_struct *sis = swap_info[type];
-+	pgoff_t offset = swp_offset(entry);
-+
-+	BUG_ON(!PageLocked(page));
-+	BUG_ON(sis == NULL);
-+	if (frontswap_test(sis, offset))
-+		dup = 1;
-+	ret = (*frontswap_ops.put_page)(type, offset, page);
-+	if (ret == 0) {
-+		frontswap_set(sis, offset);
-+		frontswap_succ_puts++;
-+		if (!dup)
-+			atomic_inc(&sis->frontswap_pages);
-+	} else if (dup) {
-+		/*
-+		  failed dup always results in automatic invalidate of
-+		  the (older) page from frontswap
-+		 */
-+		frontswap_clear(sis, offset);
-+		atomic_dec(&sis->frontswap_pages);
-+		frontswap_failed_puts++;
-+	} else
-+		frontswap_failed_puts++;
-+	return ret;
-+}
-+EXPORT_SYMBOL(__frontswap_put_page);
-+
-+/*
-+ * "Get" data from frontswap associated with swaptype and offset that were
-+ * specified when the data was put to frontswap and use it to fill the
-+ * specified page with data. Page must be locked and in the swap cache
-+ */
-+int __frontswap_get_page(struct page *page)
-+{
-+	int ret = -1;
-+	swp_entry_t entry = { .val = page_private(page), };
-+	int type = swp_type(entry);
-+	struct swap_info_struct *sis = swap_info[type];
-+	pgoff_t offset = swp_offset(entry);
-+
-+	BUG_ON(!PageLocked(page));
-+	BUG_ON(sis == NULL);
-+	if (frontswap_test(sis, offset))
-+		ret = (*frontswap_ops.get_page)(type, offset, page);
-+	if (ret == 0)
-+		frontswap_gets++;
-+	return ret;
-+}
-+EXPORT_SYMBOL(__frontswap_get_page);
-+
-+/*
-+ * Invalidate any data from frontswap associated with the specified swaptype
-+ * and offset so that a subsequent "get" will fail.
-+ */
-+void __frontswap_invalidate_page(unsigned type, pgoff_t offset)
-+{
-+	struct swap_info_struct *sis = swap_info[type];
-+
-+	BUG_ON(sis == NULL);
-+	if (frontswap_test(sis, offset)) {
-+		(*frontswap_ops.flush_page)(type, offset);
-+		atomic_dec(&sis->frontswap_pages);
-+		frontswap_clear(sis, offset);
-+		frontswap_invalidates++;
-+	}
-+}
-+EXPORT_SYMBOL(__frontswap_invalidate_page);
-+
-+/*
-+ * Invalidate all data from frontswap associated with all offsets for the
-+ * specified swaptype.
-+ */
-+void __frontswap_invalidate_area(unsigned type)
-+{
-+	struct swap_info_struct *sis = swap_info[type];
-+
-+	BUG_ON(sis == NULL);
-+	if (sis->frontswap_map == NULL)
-+		return;
-+	(*frontswap_ops.flush_area)(type);
-+	atomic_set(&sis->frontswap_pages, 0);
-+	memset(sis->frontswap_map, 0, sis->max / sizeof(long));
-+}
-+EXPORT_SYMBOL(__frontswap_invalidate_area);
-+
-+/*
-+ * Frontswap, like a true swap device, may unnecessarily retain pages
-+ * under certain circumstances; "shrink" frontswap is essentially a
-+ * "partial swapoff" and works by calling try_to_unuse to attempt to
-+ * unuse enough frontswap pages to attempt to -- subject to memory
-+ * constraints -- reduce the number of pages in frontswap to the
-+ * number given in the parameter target_pages.
-+ */
-+void frontswap_shrink(unsigned long target_pages)
-+{
-+	struct swap_info_struct *si = NULL;
-+	int si_frontswap_pages;
-+	unsigned long total_pages = 0, total_pages_to_unuse;
-+	unsigned long pages = 0, pages_to_unuse = 0;
-+	int type;
-+	bool locked = false;
-+
-+	/*
-+	 * we don't want to hold swap_lock while doing a very
-+	 * lengthy try_to_unuse, but swap_list may change
-+	 * so restart scan from swap_list.head each time
-+	 */
-+	spin_lock(&swap_lock);
-+	locked = true;
-+	total_pages = 0;
-+	for (type = swap_list.head; type >= 0; type = si->next) {
-+		si = swap_info[type];
-+		total_pages += atomic_read(&si->frontswap_pages);
-+	}
-+	if (total_pages <= target_pages)
-+		goto out;
-+	total_pages_to_unuse = total_pages - target_pages;
-+	for (type = swap_list.head; type >= 0; type = si->next) {
-+		si = swap_info[type];
-+		si_frontswap_pages = atomic_read(&si->frontswap_pages);
-+		if (total_pages_to_unuse < si_frontswap_pages)
-+			pages = pages_to_unuse = total_pages_to_unuse;
-+		else {
-+			pages = si_frontswap_pages;
-+			pages_to_unuse = 0; /* unuse all */
-+		}
-+		/* ensure there is enough RAM to fetch pages from frontswap */
-+		if (security_vm_enough_memory_kern(pages))
-+			continue;
-+		vm_unacct_memory(pages);
-+		break;
-+	}
-+	if (type < 0)
-+		goto out;
-+	locked = false;
-+	spin_unlock(&swap_lock);
-+	try_to_unuse(type, true, pages_to_unuse);
-+out:
-+	if (locked)
-+		spin_unlock(&swap_lock);
-+	return;
-+}
-+EXPORT_SYMBOL(frontswap_shrink);
-+
-+/*
-+ * Count and return the number of frontswap pages across all
-+ * swap devices.  This is exported so that backend drivers can
-+ * determine current usage without reading debugfs.
-+ */
-+unsigned long frontswap_curr_pages(void)
-+{
-+	int type;
-+	unsigned long totalpages = 0;
-+	struct swap_info_struct *si = NULL;
-+
-+	spin_lock(&swap_lock);
-+	for (type = swap_list.head; type >= 0; type = si->next) {
-+		si = swap_info[type];
-+		totalpages += atomic_read(&si->frontswap_pages);
-+	}
-+	spin_unlock(&swap_lock);
-+	return totalpages;
-+}
-+EXPORT_SYMBOL(frontswap_curr_pages);
-+
-+static int __init init_frontswap(void)
-+{
-+	int err = 0;
-+
+ static unsigned long cleancache_succ_gets;
+ static unsigned long cleancache_failed_gets;
+ static unsigned long cleancache_puts;
+-static unsigned long cleancache_flushes;
++static unsigned long cleancache_invalidates;
+ 
+ /*
+  * register operations for cleancache, returning previous thus allowing
+@@ -148,10 +153,11 @@ void __cleancache_put_page(struct page *
+ EXPORT_SYMBOL(__cleancache_put_page);
+ 
+ /*
+- * Flush any data from cleancache associated with the poolid and the
++ * Invalidate any data from cleancache associated with the poolid and the
+  * page's inode and page index so that a subsequent "get" will fail.
+  */
+-void __cleancache_flush_page(struct address_space *mapping, struct page *page)
++void __cleancache_invalidate_page(struct address_space *mapping,
++					struct page *page)
+ {
+ 	/* careful... page->mapping is NULL sometimes when this is called */
+ 	int pool_id = mapping->host->i_sb->cleancache_poolid;
+@@ -161,18 +167,18 @@ void __cleancache_flush_page(struct addr
+ 		VM_BUG_ON(!PageLocked(page));
+ 		if (cleancache_get_key(mapping->host, &key) >= 0) {
+ 			(*cleancache_ops.flush_page)(pool_id, key, page->index);
+-			cleancache_flushes++;
++			cleancache_invalidates++;
+ 		}
+ 	}
+ }
+-EXPORT_SYMBOL(__cleancache_flush_page);
++EXPORT_SYMBOL(__cleancache_invalidate_page);
+ 
+ /*
+- * Flush all data from cleancache associated with the poolid and the
++ * Invalidate all data from cleancache associated with the poolid and the
+  * mappings's inode so that all subsequent gets to this poolid/inode
+  * will fail.
+  */
+-void __cleancache_flush_inode(struct address_space *mapping)
++void __cleancache_invalidate_inode(struct address_space *mapping)
+ {
+ 	int pool_id = mapping->host->i_sb->cleancache_poolid;
+ 	struct cleancache_filekey key = { .u.key = { 0 } };
+@@ -180,14 +186,14 @@ void __cleancache_flush_inode(struct add
+ 	if (pool_id >= 0 && cleancache_get_key(mapping->host, &key) >= 0)
+ 		(*cleancache_ops.flush_inode)(pool_id, key);
+ }
+-EXPORT_SYMBOL(__cleancache_flush_inode);
++EXPORT_SYMBOL(__cleancache_invalidate_inode);
+ 
+ /*
+  * Called by any cleancache-enabled filesystem at time of unmount;
+  * note that pool_id is surrendered and may be reutrned by a subsequent
+  * cleancache_init_fs or cleancache_init_shared_fs
+  */
+-void __cleancache_flush_fs(struct super_block *sb)
++void __cleancache_invalidate_fs(struct super_block *sb)
+ {
+ 	if (sb->cleancache_poolid >= 0) {
+ 		int old_poolid = sb->cleancache_poolid;
+@@ -195,50 +201,23 @@ void __cleancache_flush_fs(struct super_
+ 		(*cleancache_ops.flush_fs)(old_poolid);
+ 	}
+ }
+-EXPORT_SYMBOL(__cleancache_flush_fs);
+-
+-#ifdef CONFIG_SYSFS
+-
+-/* see Documentation/ABI/xxx/sysfs-kernel-mm-cleancache */
+-
+-#define CLEANCACHE_SYSFS_RO(_name) \
+-	static ssize_t cleancache_##_name##_show(struct kobject *kobj, \
+-				struct kobj_attribute *attr, char *buf) \
+-	{ \
+-		return sprintf(buf, "%lu\n", cleancache_##_name); \
+-	} \
+-	static struct kobj_attribute cleancache_##_name##_attr = { \
+-		.attr = { .name = __stringify(_name), .mode = 0444 }, \
+-		.show = cleancache_##_name##_show, \
+-	}
+-
+-CLEANCACHE_SYSFS_RO(succ_gets);
+-CLEANCACHE_SYSFS_RO(failed_gets);
+-CLEANCACHE_SYSFS_RO(puts);
+-CLEANCACHE_SYSFS_RO(flushes);
+-
+-static struct attribute *cleancache_attrs[] = {
+-	&cleancache_succ_gets_attr.attr,
+-	&cleancache_failed_gets_attr.attr,
+-	&cleancache_puts_attr.attr,
+-	&cleancache_flushes_attr.attr,
+-	NULL,
+-};
+-
+-static struct attribute_group cleancache_attr_group = {
+-	.attrs = cleancache_attrs,
+-	.name = "cleancache",
+-};
+-
+-#endif /* CONFIG_SYSFS */
++EXPORT_SYMBOL(__cleancache_invalidate_fs);
+ 
+ static int __init init_cleancache(void)
+ {
+-#ifdef CONFIG_SYSFS
+-	int err;
+-
+-	err = sysfs_create_group(mm_kobj, &cleancache_attr_group);
+-#endif /* CONFIG_SYSFS */
 +#ifdef CONFIG_DEBUG_FS
-+	struct dentry *root = debugfs_create_dir("frontswap", NULL);
++	struct dentry *root = debugfs_create_dir("cleancache", NULL);
 +	if (root == NULL)
 +		return -ENXIO;
-+	debugfs_create_size_t("gets", S_IRUGO,
-+				root, &frontswap_gets);
-+	debugfs_create_size_t("succ_puts", S_IRUGO,
-+				root, &frontswap_succ_puts);
++	debugfs_create_size_t("succ_gets", S_IRUGO,
++				root, &cleancache_succ_gets);
++	debugfs_create_size_t("failed_gets", S_IRUGO,
++				root, &cleancache_failed_gets);
 +	debugfs_create_size_t("puts", S_IRUGO,
-+				root, &frontswap_failed_puts);
++				root, &cleancache_puts);
 +	debugfs_create_size_t("invalidates", S_IRUGO,
-+				root, &frontswap_invalidates);
++				root, &cleancache_invalidates);
 +#endif
-+	return err;
-+}
-+
-+module_init(init_frontswap);
+ 	return 0;
+ }
+ module_init(init_cleancache)
+--- linux/include/linux/cleancache.h	2011-07-20 14:50:38.986877289 -0600
++++ frontswap-v9/include/linux/cleancache.h	2011-09-12 14:04:30.484682125 -0600
+@@ -28,6 +28,11 @@ struct cleancache_ops {
+ 			pgoff_t, struct page *);
+ 	void (*put_page)(int, struct cleancache_filekey,
+ 			pgoff_t, struct page *);
++	/*
++	 * NOTE: per akpm, flush_page, flush_inode and flush_fs will be
++	 * renamed to invalidate_* in a later commit in which all
++	 * dependencies (i.e Xen, zcache) will be renamed simultaneously
++	 */
+ 	void (*flush_page)(int, struct cleancache_filekey, pgoff_t);
+ 	void (*flush_inode)(int, struct cleancache_filekey);
+ 	void (*flush_fs)(int);
+@@ -39,9 +44,9 @@ extern void __cleancache_init_fs(struct 
+ extern void __cleancache_init_shared_fs(char *, struct super_block *);
+ extern int  __cleancache_get_page(struct page *);
+ extern void __cleancache_put_page(struct page *);
+-extern void __cleancache_flush_page(struct address_space *, struct page *);
+-extern void __cleancache_flush_inode(struct address_space *);
+-extern void __cleancache_flush_fs(struct super_block *);
++extern void __cleancache_invalidate_page(struct address_space *, struct page *);
++extern void __cleancache_invalidate_inode(struct address_space *);
++extern void __cleancache_invalidate_fs(struct super_block *);
+ extern int cleancache_enabled;
+ 
+ #ifdef CONFIG_CLEANCACHE
+@@ -99,24 +104,24 @@ static inline void cleancache_put_page(s
+ 		__cleancache_put_page(page);
+ }
+ 
+-static inline void cleancache_flush_page(struct address_space *mapping,
++static inline void cleancache_invalidate_page(struct address_space *mapping,
+ 					struct page *page)
+ {
+ 	/* careful... page->mapping is NULL sometimes when this is called */
+ 	if (cleancache_enabled && cleancache_fs_enabled_mapping(mapping))
+-		__cleancache_flush_page(mapping, page);
++		__cleancache_invalidate_page(mapping, page);
+ }
+ 
+-static inline void cleancache_flush_inode(struct address_space *mapping)
++static inline void cleancache_invalidate_inode(struct address_space *mapping)
+ {
+ 	if (cleancache_enabled && cleancache_fs_enabled_mapping(mapping))
+-		__cleancache_flush_inode(mapping);
++		__cleancache_invalidate_inode(mapping);
+ }
+ 
+-static inline void cleancache_flush_fs(struct super_block *sb)
++static inline void cleancache_invalidate_fs(struct super_block *sb)
+ {
+ 	if (cleancache_enabled)
+-		__cleancache_flush_fs(sb);
++		__cleancache_invalidate_fs(sb);
+ }
+ 
+ #endif /* _LINUX_CLEANCACHE_H */
+--- linux/fs/buffer.c	2011-07-20 14:50:37.505748163 -0600
++++ frontswap-v9/fs/buffer.c	2011-09-12 14:57:13.481685261 -0600
+@@ -273,7 +273,7 @@ void invalidate_bdev(struct block_device
+ 	/* 99% of the time, we don't need to flush the cleancache on the bdev.
+ 	 * But, for the strange corners, lets be cautious
+ 	 */
+-	cleancache_flush_inode(mapping);
++	cleancache_invalidate_inode(mapping);
+ }
+ EXPORT_SYMBOL(invalidate_bdev);
+ 
+--- linux/fs/super.c	2011-08-08 08:19:25.338811404 -0600
++++ frontswap-v9/fs/super.c	2011-09-12 14:57:30.631693874 -0600
+@@ -248,7 +248,7 @@ void deactivate_locked_super(struct supe
+ {
+ 	struct file_system_type *fs = s->s_type;
+ 	if (atomic_dec_and_test(&s->s_active)) {
+-		cleancache_flush_fs(s);
++		cleancache_invalidate_fs(s);
+ 		fs->kill_sb(s);
+ 
+ 		/* caches are now gone, we can safely kill the shrinker now */
+--- linux/mm/truncate.c	2011-08-08 08:19:26.337689640 -0600
++++ frontswap-v9/mm/truncate.c	2011-09-12 14:04:25.269686500 -0600
+@@ -52,7 +52,7 @@ void do_invalidatepage(struct page *page
+ static inline void truncate_partial_page(struct page *page, unsigned partial)
+ {
+ 	zero_user_segment(page, partial, PAGE_CACHE_SIZE);
+-	cleancache_flush_page(page->mapping, page);
++	cleancache_invalidate_page(page->mapping, page);
+ 	if (page_has_private(page))
+ 		do_invalidatepage(page, partial);
+ }
+@@ -213,7 +213,7 @@ void truncate_inode_pages_range(struct a
+ 	pgoff_t end;
+ 	int i;
+ 
+-	cleancache_flush_inode(mapping);
++	cleancache_invalidate_inode(mapping);
+ 	if (mapping->nrpages == 0)
+ 		return;
+ 
+@@ -292,7 +292,7 @@ void truncate_inode_pages_range(struct a
+ 		mem_cgroup_uncharge_end();
+ 		index++;
+ 	}
+-	cleancache_flush_inode(mapping);
++	cleancache_invalidate_inode(mapping);
+ }
+ EXPORT_SYMBOL(truncate_inode_pages_range);
+ 
+@@ -444,7 +444,7 @@ int invalidate_inode_pages2_range(struct
+ 	int ret2 = 0;
+ 	int did_range_unmap = 0;
+ 
+-	cleancache_flush_inode(mapping);
++	cleancache_invalidate_inode(mapping);
+ 	pagevec_init(&pvec, 0);
+ 	index = start;
+ 	while (index <= end && pagevec_lookup(&pvec, mapping, index,
+@@ -500,7 +500,7 @@ int invalidate_inode_pages2_range(struct
+ 		cond_resched();
+ 		index++;
+ 	}
+-	cleancache_flush_inode(mapping);
++	cleancache_invalidate_inode(mapping);
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(invalidate_inode_pages2_range);
+--- linux/mm/filemap.c	2011-08-08 08:19:26.306654147 -0600
++++ frontswap-v9/mm/filemap.c	2011-09-12 14:03:58.188686605 -0600
+@@ -123,7 +123,7 @@ void __delete_from_page_cache(struct pag
+ 	if (PageUptodate(page) && PageMappedToDisk(page))
+ 		cleancache_put_page(page);
+ 	else
+-		cleancache_flush_page(mapping, page);
++		cleancache_invalidate_page(mapping, page);
+ 
+ 	radix_tree_delete(&mapping->page_tree, page->index);
+ 	page->mapping = NULL;
+--- linux/Documentation/vm/cleancache.txt	2011-07-20 14:50:17.030148717 -0600
++++ frontswap-v9/Documentation/vm/cleancache.txt	2011-09-12 15:09:44.895685804 -0600
+@@ -46,10 +46,11 @@ a negative return value indicates failur
+ the pool id, a file key, and a page index into the file.  (The combination
+ of a pool id, a file key, and an index is sometimes called a "handle".)
+ A "get_page" will copy the page, if found, from cleancache into kernel memory.
+-A "flush_page" will ensure the page no longer is present in cleancache;
+-a "flush_inode" will flush all pages associated with the specified file;
+-and, when a filesystem is unmounted, a "flush_fs" will flush all pages in
+-all files specified by the given pool id and also surrender the pool id.
++An "invalidate_page" will ensure the page no longer is present in cleancache;
++an "invalidate_inode" will invalidate all pages associated with the specified
++file; and, when a filesystem is unmounted, an "invalidate_fs" will invalidate
++all pages in all files specified by the given pool id and also surrender
++the pool id.
+ 
+ An "init_shared_fs", like init_fs, obtains a pool id but tells cleancache
+ to treat the pool as shared using a 128-bit UUID as a key.  On systems
+@@ -62,12 +63,12 @@ of the kernel (e.g. by "tools" that cont
+ cleancache implementation can simply disable shared_init by always
+ returning a negative value.
+ 
+-If a get_page is successful on a non-shared pool, the page is flushed (thus
+-making cleancache an "exclusive" cache).  On a shared pool, the page
+-is NOT flushed on a successful get_page so that it remains accessible to
++If a get_page is successful on a non-shared pool, the page is invalidated
++(thus making cleancache an "exclusive" cache).  On a shared pool, the page
++is NOT invalidated on a successful get_page so that it remains accessible to
+ other sharers.  The kernel is responsible for ensuring coherency between
+ cleancache (shared or not), the page cache, and the filesystem, using
+-cleancache flush operations as required.
++cleancache invalidate operations as required.
+ 
+ Note that cleancache must enforce put-put-get coherency and get-get
+ coherency.  For the former, if two puts are made to the same handle but
+@@ -77,20 +78,20 @@ if a get for a given handle fails, subse
+ never succeed unless preceded by a successful put with that handle.
+ 
+ Last, cleancache provides no SMP serialization guarantees; if two
+-different Linux threads are simultaneously putting and flushing a page
++different Linux threads are simultaneously putting and invalidating a page
+ with the same handle, the results are indeterminate.  Callers must
+ lock the page to ensure serial behavior.
+ 
+ CLEANCACHE PERFORMANCE METRICS
+ 
+-Cleancache monitoring is done by sysfs files in the
+-/sys/kernel/mm/cleancache directory.  The effectiveness of cleancache
++If properly configured, monitoring of cleancache is done via debugfs in
++the /sys/kernel/debug/cleancache directory.  The effectiveness of cleancache
+ can be measured (across all filesystems) with:
+ 
+ succ_gets	- number of gets that were successful
+ failed_gets	- number of gets that failed
+ puts		- number of puts attempted (all "succeed")
+-flushes		- number of flushes attempted
++invalidates	- number of invalidates attempted
+ 
+ A backend implementatation may provide additional metrics.
+ 
+@@ -143,7 +144,7 @@ systems.
+ 
+ The core hooks for cleancache in VFS are in most cases a single line
+ and the minimum set are placed precisely where needed to maintain
+-coherency (via cleancache_flush operations) between cleancache,
++coherency (via cleancache_invalidate operations) between cleancache,
+ the page cache, and disk.  All hooks compile into nothingness if
+ cleancache is config'ed off and turn into a function-pointer-
+ compare-to-NULL if config'ed on but no backend claims the ops
+@@ -184,15 +185,15 @@ or for real kernel-addressable RAM, it m
+ transcendent memory.
+ 
+ 4) Why is non-shared cleancache "exclusive"?  And where is the
+-   page "flushed" after a "get"? (Minchan Kim)
++   page "invalidated" after a "get"? (Minchan Kim)
+ 
+ The main reason is to free up space in transcendent memory and
+-to avoid unnecessary cleancache_flush calls.  If you want inclusive,
++to avoid unnecessary cleancache_invalidate calls.  If you want inclusive,
+ the page can be "put" immediately following the "get".  If
+ put-after-get for inclusive becomes common, the interface could
+-be easily extended to add a "get_no_flush" call.
++be easily extended to add a "get_no_invalidate" call.
+ 
+-The flush is done by the cleancache backend implementation.
++The invalidate is done by the cleancache backend implementation.
+ 
+ 5) What's the performance impact?
+ 
+@@ -222,7 +223,7 @@ Some points for a filesystem to consider
+   as tmpfs should not enable cleancache)
+ - To ensure coherency/correctness, the FS must ensure that all
+   file removal or truncation operations either go through VFS or
+-  add hooks to do the equivalent cleancache "flush" operations
++  add hooks to do the equivalent cleancache "invalidate" operations
+ - To ensure coherency/correctness, either inode numbers must
+   be unique across the lifetime of the on-disk file OR the
+   FS must provide an "encode_fh" function.
+@@ -243,11 +244,11 @@ If cleancache would use the inode virtua
+ inode/filehandle, the pool id could be eliminated.  But, this
+ won't work because cleancache retains pagecache data pages
+ persistently even when the inode has been pruned from the
+-inode unused list, and only flushes the data page if the file
++inode unused list, and only invalidates the data page if the file
+ gets removed/truncated.  So if cleancache used the inode kva,
+ there would be potential coherency issues if/when the inode
+ kva is reused for a different file.  Alternately, if cleancache
+-flushed the pages when the inode kva was freed, much of the value
++invalidated the pages when the inode kva was freed, much of the value
+ of cleancache would be lost because the cache of pages in cleanache
+ is potentially much larger than the kernel pagecache and is most
+ useful if the pages survive inode cache removal.
+--- linux/Documentation/ABI/testing/sysfs-kernel-mm-cleancache	2011-07-20 14:50:16.384143559 -0600
++++ frontswap-v9/Documentation/ABI/testing/sysfs-kernel-mm-cleancache	1969-12-31 17:00:00.000000000 -0700
+@@ -1,11 +0,0 @@
+-What:		/sys/kernel/mm/cleancache/
+-Date:		April 2011
+-Contact:	Dan Magenheimer <dan.magenheimer@oracle.com>
+-Description:
+-		/sys/kernel/mm/cleancache/ contains a number of files which
+-		record a count of various cleancache operations
+-		(sum across all filesystems):
+-			succ_gets
+-			failed_gets
+-			puts
+-			flushes
