@@ -1,100 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932914Ab1IMV4p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 17:56:45 -0400
-Received: from gate.crashing.org ([63.228.1.57]:49062 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932834Ab1IMV4o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 17:56:44 -0400
-Subject: Re: [PATCH 0/2] PCI: PCI-E MPS bug fixes
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Jon Mason <mason@myri.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-In-Reply-To: <CAMaF-rPhfVmuMthdO_iHEMmSbi9cujX7LrK+DTGHZ=FxGpdokg@mail.gmail.com>
-References: <1315518078-30619-1-git-send-email-mason@myri.com>
-	 <CA+55aFyFXXyEvOs0asgNeCrLzvH+e1zXgOen1rDd9BkB09J5NQ@mail.gmail.com>
-	 <6dad18a7-cf65-46db-8283-78b8da5bfa3a@email.android.com>
-	 <1315911045.455.150.camel@pasglop> <1315937852.455.156.camel@pasglop>
-	 <CAMaF-rPhfVmuMthdO_iHEMmSbi9cujX7LrK+DTGHZ=FxGpdokg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 13 Sep 2011 18:56:19 -0300
-Message-ID: <1315950979.455.159.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S932944Ab1IMV7M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 17:59:12 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:33436 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932834Ab1IMV7L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 17:59:11 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:to:cc:subject:message-id:
+	references:mime-version:content-type:content-disposition:in-reply-to:
+	x-operating-system:user-agent:x-system-of-record;
+	b=ZneUFuDlwzkCx+eAH0Wu6sx/vaPvtKIQjoaVIsw6S+TEVf6MW6bvaTnE3prnC/PiG
+	cukhV1BPNEuIX6hjoZdcw==
+Date: Tue, 13 Sep 2011 14:58:51 -0700
+From: msb@google.com
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] lib/sha1.c: quite sparse noise about symbol not
+ declared
+Message-ID: <20110913215851.GD9560@google.com>
+References: <201109091130.28110.hartleys@visionengravers.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201109091130.28110.hartleys@visionengravers.com>
+X-Operating-System: Linux/2.6.32-gg508-generic (x86_64)
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
++cc linux-crypto, herbert, davem, torvalds
 
-> DNS issue with kernel.org when the patches went out caused it to not
-> get out to any of the mailing lists.
+H Hartley Sweeten (hartleys@visionengravers.com) wrote:
+> Include <linux/cryptohash.h> to pickup the declarations for sha_transform
+> and sha_init to quite the sparse noise:
 > 
-> In Linux' github tree
-> Patch 1/2 is commit 5307f6d5fb12fd01f9f321bc4a8fd77e74858647
-> Patch 2/2 is commit ed2888e906b56769b4ffabb9c577190438aa68b8
+> warning: symbol 'sha_transform' was not declared. Should it be static?
+> warning: symbol 'sha_init' was not declared. Should it be static?
 > 
-> > When using "safe" mode, I get a crash in pcie_find_smpss(). Patch below.
-> >
-> > From 1b542d690323fab332e61099193d598c5c515d13 Mon Sep 17 00:00:00 2001
-> > From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> > Date: Tue, 13 Sep 2011 15:16:33 -0300
-> > Subject: [PATCH] pci: Don't crash when reading mpss from root complex
-> >
-> > In pcie_find_smpss(), we have the following statement:
-> >
-> >        if (dev->is_hotplug_bridge && (!list_is_singular(&dev->bus->devices) ||
-> >            dev->bus->self->pcie_type != PCI_EXP_TYPE_ROOT_PORT))
-> >
-> > The problem is that at least on my machine, this gets called for the
-> > root complex (virtual P2P bridge), and dev->bus->self is NULL since
-> > the parent bus for this is not itself anchor to a PCI device.
-> >
-> > This adds the necessary NULL check.
-> >
-> > Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+> Cc: Mandeep Singh Baines <msb@chromium.org>
 > 
-> Good catch.
+
+Acked-by: Mandeep Singh Baines <msb@chromium.org>
+
+Thanks.
+
+> ---
 > 
-> Acked-by: Jon Mason <mason@myri.com>
-
-Linus, please apply.
-
-Cheers
-Ben.
-
-> > ---
-> >  drivers/pci/probe.c |    3 ++-
-> >  1 files changed, 2 insertions(+), 1 deletions(-)
-> >
-> > diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> > index 8473727..09d1c0f 100644
-> > --- a/drivers/pci/probe.c
-> > +++ b/drivers/pci/probe.c
-> > @@ -1351,7 +1351,8 @@ static int pcie_find_smpss(struct pci_dev *dev, void *data)
-> >         * will occur as normal.
-> >         */
-> >        if (dev->is_hotplug_bridge && (!list_is_singular(&dev->bus->devices) ||
-> > -           dev->bus->self->pcie_type != PCI_EXP_TYPE_ROOT_PORT))
-> > +            (dev->bus->self &&
-> > +             dev->bus->self->pcie_type != PCI_EXP_TYPE_ROOT_PORT)))
-> >                *smpss = 0;
-> >
-> >        if (*smpss > dev->pcie_mpss)
-> > --
-> > 1.7.4.1
-> >
-> >
-> >
-> >
-> >
-> >
-> >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
+> diff --git a/lib/sha1.c b/lib/sha1.c
+> index f33271d..1de509a 100644
+> --- a/lib/sha1.c
+> +++ b/lib/sha1.c
+> @@ -8,6 +8,7 @@
+>  #include <linux/kernel.h>
+>  #include <linux/module.h>
+>  #include <linux/bitops.h>
+> +#include <linux/cryptohash.h>
+>  #include <asm/unaligned.h>
+>  
+>  /*
