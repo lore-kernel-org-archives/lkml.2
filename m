@@ -1,106 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932903Ab1IMVwy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 17:52:54 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:16997 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932834Ab1IMVwx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 17:52:53 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:to:cc:subject:message-id:in-reply-to:references:
-	x-mailer:mime-version:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=h6VrhVqo4U2ath1d9jEjgmmqy+TbspIPnDmVj9I0ZebqpJAwoOqCFqLvRVHoTsZEI
-	/ekKnx2jexT8Pv8mvertg==
-Date: Tue, 13 Sep 2011 14:52:18 -0700
-From: Andrew Morton <akpm@google.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: vgoyal@redhat.com, ebiederm@xmission.com, mahesh@linux.vnet.ibm.com,
-        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [patch v2 2/2] s390: Add architecture code for unmapping
- crashkernel memory
-Message-Id: <20110913145218.659f9e21.akpm@google.com>
-In-Reply-To: <20110913132654.157278466@linux.vnet.ibm.com>
-References: <20110913132635.063397500@linux.vnet.ibm.com>
-	<20110913132654.157278466@linux.vnet.ibm.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	id S932914Ab1IMV4p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 17:56:45 -0400
+Received: from gate.crashing.org ([63.228.1.57]:49062 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932834Ab1IMV4o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 17:56:44 -0400
+Subject: Re: [PATCH 0/2] PCI: PCI-E MPS bug fixes
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Jon Mason <mason@myri.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+In-Reply-To: <CAMaF-rPhfVmuMthdO_iHEMmSbi9cujX7LrK+DTGHZ=FxGpdokg@mail.gmail.com>
+References: <1315518078-30619-1-git-send-email-mason@myri.com>
+	 <CA+55aFyFXXyEvOs0asgNeCrLzvH+e1zXgOen1rDd9BkB09J5NQ@mail.gmail.com>
+	 <6dad18a7-cf65-46db-8283-78b8da5bfa3a@email.android.com>
+	 <1315911045.455.150.camel@pasglop> <1315937852.455.156.camel@pasglop>
+	 <CAMaF-rPhfVmuMthdO_iHEMmSbi9cujX7LrK+DTGHZ=FxGpdokg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 13 Sep 2011 18:56:19 -0300
+Message-ID: <1315950979.455.159.camel@pasglop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Sep 2011 15:26:37 +0200
-Michael Holzheu <holzheu@linux.vnet.ibm.com> wrote:
 
-> From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+> DNS issue with kernel.org when the patches went out caused it to not
+> get out to any of the mailing lists.
 > 
-> This patch implements the crash_map_pages() function for s390.
-> KEXEC_CRASH_MEM_ALIGN is set to HPAGE_SIZE, in order to support
-> kernel mappings that use large pages.
+> In Linux' github tree
+> Patch 1/2 is commit 5307f6d5fb12fd01f9f321bc4a8fd77e74858647
+> Patch 2/2 is commit ed2888e906b56769b4ffabb9c577190438aa68b8
 > 
-> Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-> ---
->  arch/s390/include/asm/kexec.h    |    3 +++
->  arch/s390/kernel/machine_kexec.c |   31 +++++++++++++++++++++++++++++++
->  arch/s390/kernel/setup.c         |   10 ++++++----
->  3 files changed, 40 insertions(+), 4 deletions(-)
+> > When using "safe" mode, I get a crash in pcie_find_smpss(). Patch below.
+> >
+> > From 1b542d690323fab332e61099193d598c5c515d13 Mon Sep 17 00:00:00 2001
+> > From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> > Date: Tue, 13 Sep 2011 15:16:33 -0300
+> > Subject: [PATCH] pci: Don't crash when reading mpss from root complex
+> >
+> > In pcie_find_smpss(), we have the following statement:
+> >
+> >        if (dev->is_hotplug_bridge && (!list_is_singular(&dev->bus->devices) ||
+> >            dev->bus->self->pcie_type != PCI_EXP_TYPE_ROOT_PORT))
+> >
+> > The problem is that at least on my machine, this gets called for the
+> > root complex (virtual P2P bridge), and dev->bus->self is NULL since
+> > the parent bus for this is not itself anchor to a PCI device.
+> >
+> > This adds the necessary NULL check.
+> >
+> > Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 > 
-> --- a/arch/s390/include/asm/kexec.h
-> +++ b/arch/s390/include/asm/kexec.h
-> @@ -36,6 +36,9 @@
->  /* Allocate one page for the pdp and the second for the code */
->  #define KEXEC_CONTROL_PAGE_SIZE 4096
->  
-> +/* Alignment of crashkernel memory */
-> +#define KEXEC_CRASH_MEM_ALIGN HPAGE_SIZE
+> Good catch.
+> 
+> Acked-by: Jon Mason <mason@myri.com>
 
-Why not make this unconditional, for all architectures which support
-hugepages?  ie:
+Linus, please apply.
 
-#ifdef HPAGE_SIZE
-#define KEXEC_CRASH_MEM_ALIGN HPAGE_SIZE
-#else
-#define KEXEC_CRASH_MEM_ALIGN PAGE_SIZE
-#endif
+Cheers
+Ben.
 
-in include/linux/kexec.h?
+> > ---
+> >  drivers/pci/probe.c |    3 ++-
+> >  1 files changed, 2 insertions(+), 1 deletions(-)
+> >
+> > diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+> > index 8473727..09d1c0f 100644
+> > --- a/drivers/pci/probe.c
+> > +++ b/drivers/pci/probe.c
+> > @@ -1351,7 +1351,8 @@ static int pcie_find_smpss(struct pci_dev *dev, void *data)
+> >         * will occur as normal.
+> >         */
+> >        if (dev->is_hotplug_bridge && (!list_is_singular(&dev->bus->devices) ||
+> > -           dev->bus->self->pcie_type != PCI_EXP_TYPE_ROOT_PORT))
+> > +            (dev->bus->self &&
+> > +             dev->bus->self->pcie_type != PCI_EXP_TYPE_ROOT_PORT)))
+> >                *smpss = 0;
+> >
+> >        if (*smpss > dev->pcie_mpss)
+> > --
+> > 1.7.4.1
+> >
+> >
+> >
+> >
+> >
+> >
+> >
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-IOW, what are the compromises here?
 
-Also, does s390 support CONFIG_HUGETLB_PAGE=n?  If so, does the use of
-HPAGE_SIZE still make sense?  Does it compile?
-
-
->  /* The native architecture */
->  #define KEXEC_ARCH KEXEC_ARCH_S390
->  
-> --- a/arch/s390/kernel/machine_kexec.c
-> +++ b/arch/s390/kernel/machine_kexec.c
-> @@ -243,6 +243,37 @@ static void __machine_kdump(void *image)
->  #endif
->  
->  /*
-> + * Map or unmap crashkernel memory
-> + */
-> +static void crash_map_pages(int enable)
-> +{
-> +	unsigned long size = crashk_res.end - crashk_res.start + 1;
-
-resource_size().
-
-> +	BUG_ON(crashk_res.start % KEXEC_CRASH_MEM_ALIGN ||
-> +	       size % KEXEC_CRASH_MEM_ALIGN);
-> +	if (enable)
-> +		vmem_add_mapping(crashk_res.start, size);
-> +	else
-> +		vmem_remove_mapping(crashk_res.start, size);
-> +}
->
-> ...
->
