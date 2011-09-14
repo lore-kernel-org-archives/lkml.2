@@ -1,99 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933271Ab1INUGe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 16:06:34 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:19197 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933151Ab1INUGc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 16:06:32 -0400
-From: Glauber Costa <glommer@parallels.com>
-To: linux-kernel@vger.kernel.org
-Cc: xemul@parallels.com, paul@paulmenage.org, lizf@cn.fujitsu.com,
-        daniel.lezcano@free.fr, mingo@elte.hu, a.p.zijlstra@chello.nl,
-        jbottomley@parallels.com, Glauber Costa <glommer@parallels.com>
-Subject: [PATCH 9/9] Report steal time for cgroup
-Date: Wed, 14 Sep 2011 17:04:55 -0300
-Message-Id: <1316030695-19826-10-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.7.6
+	id S933148Ab1INUNe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 16:13:34 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:55644 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933027Ab1INUNe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Sep 2011 16:13:34 -0400
+Subject: Re: [PATCH 0/9] Per-cgroup /proc/stat
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, xemul@parallels.com, paul@paulmenage.org,
+        lizf@cn.fujitsu.com, daniel.lezcano@free.fr, mingo@elte.hu,
+        jbottomley@parallels.com
+Date: Wed, 14 Sep 2011 22:13:16 +0200
 In-Reply-To: <1316030695-19826-1-git-send-email-glommer@parallels.com>
 References: <1316030695-19826-1-git-send-email-glommer@parallels.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1316031196.5040.46.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces a functionality commonly found in
-hypervisors: steal time.
+On Wed, 2011-09-14 at 17:04 -0300, Glauber Costa wrote:
+> [[ For those getting this twice: I sent it previously to containers
+>    ml, but I guess it was out. Sending now to a broader audience anyway ]]
+> 
+> Hi,
+> 
+> This patchset is a simple initial proposal for a per-cgroup/container
+> display of /proc/stat. The display method is based on Daniel's idea of
+> exposing a file that can be bind mounted (Daniel, is that more or less
+> what you had in mind?)
+> 
+> To grab the stats themselves, I am (ab)using cpuacct cgroup. percpu counters
+> are dropped in favor of normal percpu pointers, so we can easily track
+> per-cpu quantities.
+> 
+> In case you guys like this idea, my TODO list would include the removal
+> of the show stat code in fs/proc/stat.c altogether, and the displaying
+> of some fields I haven't touched yet.
+> 
+> Also, to demonstrate one of the potential ideas for such method, I
+> implemented a feature comonly found in hypervisors - steal time - on top
+> of it. I arguee that containers can/should also display steal time when
+> available. Turns out that due to the fact that we run on the same kernel,
+> steal time is quite easy to implement once we have per-container tick
+> accounting in place.
+> 
+> Please let me know what you guys think
+> 
+> Glauber Costa (9):
+>   Remove parent field in cpuacct cgroup
+>   Make cpuacct fields per cpu variables
+>   Include nice values in cpuacct
+>   Include irq and softirq fields in cpuacct
+>   Include guest fields in cpuacct
+>   Include idle and iowait fields in cpuacct
+>   Create cpuacct.proc.stat file
+>   per-cgroup boot time
+>   Report steal time for cgroup
+> 
+>  kernel/sched.c |  265 +++++++++++++++++++++++++++++++++++++++++++++++++-------
+>  1 files changed, 234 insertions(+), 31 deletions(-)
 
-For those not particularly familiar with it, steal time
-is defined as any time in which a virtual machine (or container)
-wanted to perform cpu work, but could not due to another
-VM/container being scheduled in its place. Note that idle
-time is never defined as steal time.
+I hate it already.. it just smells of more senseless accounting
+overhead.
 
-Assuming each container will live in its cgroup, we can
-very easily and nicely calculate steal time as all user/system
-time recorded in our sibling cgroups.
+Guys we should seriously trim back a lot of that code, not grow ever
+more and more. The sad fact is that if you build a kernel with
+cpu-cgroup support the context switch cost is more than double that of a
+kernel without, and then you haven't even started creating cgroups yet.
 
-Signed-off-by: Glauber Costa <glommer@parallels.com>
----
- kernel/sched.c |   30 ++++++++++++++++++++++++++++++
- 1 files changed, 30 insertions(+), 0 deletions(-)
+Also, how doesn't all this duplicate part of cpuacct-cgroup?
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 8f254d0..2dad1e0 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -9321,6 +9321,7 @@ static int cpuacct_proc_stat(struct cgroup *cgrp, struct cftype *cft,
- 	struct cpuacct *ca = cgroup_ca(cgrp);
- 	struct timespec ts;
- 	u64 *cpustat;
-+	struct cgroup *sib;
- 
- 	user = nice = system = idle = iowait =
- 		irq = softirq = steal = cputime64_zero;
-@@ -9343,6 +9344,20 @@ static int cpuacct_proc_stat(struct cgroup *cgrp, struct cftype *cft,
- 		irq = cputime64_add(irq, cpustat[CPUACCT_STAT_IRQ]);
- 		softirq = cputime64_add(softirq, cpustat[CPUACCT_STAT_SOFTIRQ]);
- 		steal = cputime64_add(steal, kstat_cpu(i).cpustat.steal);
-+		rcu_read_lock();
-+		list_for_each_entry(sib, &ca->css.cgroup->sibling, sibling) {
-+			u64 *cpustat_sib;
-+			struct cpuacct *ca_sib = cgroup_ca(sib);
-+			if (!ca_sib)
-+				continue;
-+
-+			cpustat_sib = per_cpu_ptr(ca_sib->cpustat, i);
-+			steal = cputime64_add(steal, cpustat_sib[CPUACCT_STAT_USER]);
-+			steal = cputime64_add(steal, cpustat_sib[CPUACCT_STAT_SYSTEM]);
-+			steal = cputime64_add(steal, cpustat_sib[CPUACCT_STAT_IRQ]);
-+			steal = cputime64_add(steal, cpustat_sib[CPUACCT_STAT_SOFTIRQ]);
-+		}
-+		rcu_read_unlock();
- 		guest = cputime64_add(guest, cpustat[CPUACCT_STAT_GUEST]);
- 		guest_nice = cputime64_add(guest_nice,
- 			cpustat[CPUACCT_STAT_GUEST_NICE]);
-@@ -9384,6 +9399,21 @@ static int cpuacct_proc_stat(struct cgroup *cgrp, struct cftype *cft,
- 		irq = cpustat[CPUACCT_STAT_IRQ];
- 		softirq = cpustat[CPUACCT_STAT_SOFTIRQ];
- 		steal = kstat_cpu(i).cpustat.steal;
-+		rcu_read_lock();
-+		list_for_each_entry(sib, &ca->css.cgroup->sibling, sibling) {
-+			u64 *cpustat_sib;
-+			struct cpuacct *ca_sib = cgroup_ca(sib);
-+
-+			if (!ca_sib)
-+				continue;
-+			cpustat_sib = per_cpu_ptr(ca_sib->cpustat, i);
-+			steal = cputime64_add(steal, cpustat_sib[CPUACCT_STAT_USER]);
-+			steal = cputime64_add(steal, cpustat_sib[CPUACCT_STAT_SYSTEM]);
-+			steal = cputime64_add(steal, cpustat_sib[CPUACCT_STAT_IRQ]);
-+			steal = cputime64_add(steal, cpustat_sib[CPUACCT_STAT_SOFTIRQ]);
-+		}
-+		rcu_read_unlock();
-+
- 		guest = cpustat[CPUACCT_STAT_GUEST];
- 		guest_nice = cpustat[CPUACCT_STAT_GUEST_NICE];
- 		seq_printf(p,
--- 
-1.7.6
-
+/me won't actually look at the patches for a little while longer.
