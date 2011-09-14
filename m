@@ -1,77 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933326Ab1INUnO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 16:43:14 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:34655 "EHLO ogre.sisk.pl"
+	id S933330Ab1INUpI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 16:45:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37635 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933143Ab1INUnM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 16:43:12 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Ming Lei <tom.leiming@gmail.com>
-Subject: Re: [PATCH 2/5] PM / Runtime: Do not run callbacks under lock for power.irq_safe set
-Date: Wed, 14 Sep 2011 22:45:14 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+	id S933306Ab1INUpH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Sep 2011 16:45:07 -0400
+Date: Wed, 14 Sep 2011 16:44:46 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: "x86@kernel.org" <x86@kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "ying.huang@intel.com" <ying.huang@intel.com>,
         LKML <linux-kernel@vger.kernel.org>,
-        "Linux-sh list" <linux-sh@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, Kevin Hilman <khilman@ti.com>,
-        jean.pihet@newoldbits.com
-References: <201108310017.03103.rjw@sisk.pl> <201109131806.39050.rjw@sisk.pl> <CACVXFVMFZJioG_vgJ_tx9rA8_=H0HcKZLCyLcTu8oSSSmUoNJg@mail.gmail.com>
-In-Reply-To: <CACVXFVMFZJioG_vgJ_tx9rA8_=H0HcKZLCyLcTu8oSSSmUoNJg@mail.gmail.com>
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "avi@redhat.com" <avi@redhat.com>, "jeremy@goop.org" <jeremy@goop.org>
+Subject: Re: [V4][PATCH 4/6] x86, nmi:  add in logic to handle multiple
+ events and unknown NMIs
+Message-ID: <20110914204446.GZ5795@redhat.com>
+References: <1315947509-6429-1-git-send-email-dzickus@redhat.com>
+ <1315947509-6429-5-git-send-email-dzickus@redhat.com>
+ <20110914162653.GI6063@erda.amd.com>
+ <20110914175809.GY5795@redhat.com>
+ <20110914201612.GK6063@erda.amd.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201109142245.14808.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110914201612.GK6063@erda.amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, September 14, 2011, Ming Lei wrote:
-> Hi,
+On Wed, Sep 14, 2011 at 10:16:12PM +0200, Robert Richter wrote:
+> On 14.09.11 13:58:09, Don Zickus wrote:
+> > On Wed, Sep 14, 2011 at 06:26:53PM +0200, Robert Richter wrote:
+> > > On 13.09.11 16:58:27, Don Zickus wrote:
+> > > > @@ -87,6 +87,16 @@ static int notrace __kprobes nmi_handle(unsigned int type, struct pt_regs *regs)
+> > > >  
+> > > >  		handled += a->handler(type, regs);
+> > > >  
+> > > > +		/*
+> > > > + 		 * Optimization: only loop once if this is not a 
+> > > > + 		 * back-to-back NMI.  The idea is nothing is dropped
+> > > > + 		 * on the first NMI, only on the second of a back-to-back
+> > > > + 		 * NMI.  No need to waste cycles going through all the
+> > > > + 		 * handlers.
+> > > > + 		 */
+> > > > +		if (!b2b && handled)
+> > > > +			break;
+> > > 
+> > > Don, if I am not missing something, this actually does not work
+> > > because perfctr NMIs do not re-trigger. Suppose a handler running
+> > > before perfctr. It sets 'handled' and the chain is stopped here. To
+> > > run through the perfctr handler the NMI must retrigger which it
+> > > doesn't.
+> > 
+> > Your patch is incorrect.  Your dummy handler does not handle a _real_ NMI.
+> > Which means no _real_ NMI was ever generated.  Of course perf won't work.
+> > You just swallowed its NMI.
+> > 
+> > The change I made is for nmi handlers that actually have an NMI associated
+> > with them.  The idea is if somebody generated an NMI, it will get handled
+> > by a handler.  If perf comes along and generates another NMI, it should
+> > get latched.  Upon handling the first NMI, the perf NMI should be sitting
+> > queued up and cause the back-to-back NMI. In this case all the handlers
+> > will be executed (to handle dropped NMIs).
 > 
-> On Wed, Sep 14, 2011 at 12:06 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> 
-> >> >> If power.lock is released, the transition states(resuming or suspending)
-> >> >
-> >> >> may be observed in rpm_suspend or rpm_resume, then tasks schedule
-> >> >
-> >> >> will be produced in these two functions,
-> >> >
-> >> > I don't think so, because the interrupts are still off.
-> >>
-> >> Yes, the interrupts are still off on local CPU, but the release of spin lock may
-> >> cause another CPUs to run into rpm_suspend or rpm_resume and produce
-> >> task schedule inside the two functions.
-> >
-> > Not for the same device, though.
-> 
-> I think it is probable to happen on the same device in theory, see below:
-> 
-> - suppose irq_safe is set before calling two pm_runtime_suspend below
-> - suppose this patch has been applied
-> 
-> CPU0						CPU1
-> pm_runtime_suspend
-> 	acquired power lock
-> 	rpm_suspend
-> 						pm_runtime_suspend
-> 							spining power lock
-> 	...
-> 	release power lock
-> 							acquired power lock
-> 	run .runtime_suspend
-> 							found the dev suspending
-> 							wait for power state and schedule
+> Yes, your thought about the latched NMI could work. Though I better
 
-OK, I see what the problem is.  The second CPU can see the status
-being RPM_SUSPENDING in the irq_safe case, which isn't possible
-without the patch.
+I don't think it is a matter of could as I believe this is how x86 is
+designed if I understand correctly. :-)
 
-Good catch!
+> test this with some real nmis from different sources.  Unfortunately
+> this is much harder to trigger. Will give it a try. It would be a
+> pretty nice optimization then.
 
-I think in that case rpm_suspend() should just release the lock,
-run cpu_relax(), reacquire the lock and go to the "repeat" label.
+That is why I was generating NMIs using IPIs
 
-Thanks,
-Rafael
+apic->send_IPI_mask(cpumask_of(smp_processor_id()), NMI_VECTOR)
+
+> 
+> > My only question to you is the IBS stuff you were working on.  Does that
+> > generate a _real_ NMI or does it just piggy back off of the perf NMI?
+> 
+> Yes, IBS generates real NMIs, there is an own interrupt vector for
+> it.
+
+Ok, good.
+
+Cheers,
+Don
