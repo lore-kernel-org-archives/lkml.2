@@ -1,64 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756933Ab1INPxw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 11:53:52 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:47138 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756887Ab1INPxv (ORCPT
+	id S1756945Ab1INPyw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 11:54:52 -0400
+Received: from mail-gx0-f170.google.com ([209.85.161.170]:62982 "EHLO
+	mail-gx0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756891Ab1INPyv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 11:53:51 -0400
-Date: Wed, 14 Sep 2011 09:47:25 -0600
+	Wed, 14 Sep 2011 11:54:51 -0400
+Date: Wed, 14 Sep 2011 09:54:45 -0600
 From: Grant Likely <grant.likely@secretlab.ca>
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH] MAINTAINERS: update devicetree maintainers
-Message-ID: <20110914154725.GC3134@ponder.secretlab.ca>
-References: <1316004470-22643-1-git-send-email-robherring2@gmail.com>
+To: Rhyland Klein <rklein@nvidia.com>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2 v3] power: bq20z75: devicetree init support
+Message-ID: <20110914155445.GD3134@ponder.secretlab.ca>
+References: <1315948860-21482-1-git-send-email-rklein@nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1316004470-22643-1-git-send-email-robherring2@gmail.com>
+In-Reply-To: <1315948860-21482-1-git-send-email-rklein@nvidia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 14, 2011 at 07:47:50AM -0500, Rob Herring wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
+On Tue, Sep 13, 2011 at 02:20:59PM -0700, Rhyland Klein wrote:
+> Adding support to generate platform data when kernel is configured
+> through device tree.
 > 
-> As requested by Grant, adding myself as an additional devicetree maintainer.
-> 
-> Also, add Documentation/devicetree to the file list for devicetree.
-> 
-> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
-
-Thanks for agreeing to help Rob!
-
+> Signed-off-by: Rhyland Klein <rklein@nvidia.com>
 > ---
->  MAINTAINERS |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
+> 	v3: Changed to use "ti," properties
+> 	    Changed to use gpio property with flag for polarity
+> 	    Removed unnecessary call to of_match_device
 > 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 1a8cc60..09754a6 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -4719,10 +4719,12 @@ F:	drivers/i2c/busses/i2c-ocores.c
+>  drivers/power/bq20z75.c |   75 +++++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 75 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/power/bq20z75.c b/drivers/power/bq20z75.c
+> index 9c5e5be..bb4afb2 100644
+> --- a/drivers/power/bq20z75.c
+> +++ b/drivers/power/bq20z75.c
+> @@ -613,6 +613,78 @@ static void bq20z75_delayed_work(struct work_struct *work)
+>  	}
+>  }
 >  
->  OPEN FIRMWARE AND FLATTENED DEVICE TREE
->  M:	Grant Likely <grant.likely@secretlab.ca>
-> +M:	Rob Herring <rob.herring@calxeda.com>
->  L:	devicetree-discuss@lists.ozlabs.org (moderated for non-subscribers)
->  W:	http://fdt.secretlab.ca
->  T:	git git://git.secretlab.ca/git/linux-2.6.git
->  S:	Maintained
-> +F:	Documentation/devicetree
->  F:	drivers/of
->  F:	include/linux/of*.h
->  K:	of_get_property
+> +#if defined(CONFIG_OF)
+> +#include <linux/of_device.h>
+> +static const struct of_device_id bq20z75_dt_ids[] = {
+> +	{ .compatible = "ti,bq20z75" },
+> +	{ }
+> +};
+> +MODULE_DEVICE_TABLE(platform, bq20z75_dt_ids);
+> +
+> +static struct bq20z75_platform_data *bq20z75_of_populate_pdata(
+> +	struct i2c_client *client)
+> +{
+> +	const struct of_device_id *dtid;
+> +	struct device_node *of_node = client->dev.of_node;
+> +	struct bq20z75_platform_data *pdata = client->dev.platform_data;
+> +	enum of_gpio_flags gpio_flags;
+> +	int rc;
+> +	u32 prop;
+> +
+> +	/* verify this driver matches this device */
+> +	if (!of_node)
+> +		return NULL;
+> +
+> +	/* if platform data is set, honor it */
+> +	if (pdata)
+> +		return pdata;
+> +
+> +	/* first make sure at least one property is set, otherwise
+> +	 * it won't change behavior from running without pdata.
+> +	 */
+> +	if (!of_get_property(of_node, "ti,i2c-retry-count", NULL) &&
+> +		!of_get_property(of_node, "ti,poll-retry-count", NULL) &&
+> +		!of_get_property(of_node, "ti,battery-detect-gpios", NULL))
+> +		goto of_out;
+> +
+> +	pdata = devm_kzalloc(&client->dev, sizeof(struct bq20z75_platform_data),
+> +				GFP_KERNEL);
+> +	if (!pdata)
+> +		goto of_out;
+> +
+> +	rc = of_property_read_u32(of_node, "ti,i2c-retry-count", &prop);
+> +	if (!rc)
+> +		pdata->i2c_retry_count = prop;
+> +
+> +	rc = of_property_read_u32(of_node, "ti,poll-retry-count", &prop);
+> +	if (!rc)
+> +		pdata->poll_retry_count = prop;
+> +
+> +	if (!of_get_property(of_node, "ti,battery-detect-gpios", NULL)) {
+> +		pdata->battery_detect = -1;
+> +		goto of_out;
+> +	}
+> +
+> +	pdata->battery_detect = of_get_named_gpio_flags(of_node,
+> +			"ti,battery-detect-gpios", 0, &gpio_flags);
+> +
+> +	if (gpio_flags & OF_GPIO_ACTIVE_LOW)
+> +		pdata->battery_detect_present = 0;
+> +	else
+> +		pdata->battery_detect_present = 1;
+> +
+> +of_out:
+> +	return pdata;
+> +}
+> +#else
+> +#define bq20z75_dt_ids NULL
+> +static struct bq20z75_platform_data *bq20z75_of_populate_pdata(
+> +	struct i2c_client *client)
+> +{
+> +	return NULL;
+> +}
+
+This looks like the driver will break when !CONFIG_OF.  The caller of
+bq20z75_of_populate_pdata will get NULL and therefore won't have any
+pdata.
+
+> +#endif
+> +
+>  static int __devinit bq20z75_probe(struct i2c_client *client,
+>  	const struct i2c_device_id *id)
+>  {
+> @@ -642,6 +714,8 @@ static int __devinit bq20z75_probe(struct i2c_client *client,
+>  	bq20z75_device->power_supply.external_power_changed =
+>  		bq20z75_external_power_changed;
+>  
+> +	pdata = bq20z75_of_populate_pdata(client);
+> +
+>  	if (pdata) {
+>  		bq20z75_device->gpio_detect =
+>  			gpio_is_valid(pdata->battery_detect);
+> @@ -775,6 +849,7 @@ static struct i2c_driver bq20z75_battery_driver = {
+>  	.id_table	= bq20z75_id,
+>  	.driver = {
+>  		.name	= "bq20z75-battery",
+> +		.of_match_table = bq20z75_dt_ids,
+>  	},
+>  };
+>  
 > -- 
-> 1.7.5.4
+> 1.7.6
 > 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
