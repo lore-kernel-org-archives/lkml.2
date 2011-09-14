@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756577Ab1INMKt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 08:10:49 -0400
+	id S1756564Ab1INMKs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 08:10:48 -0400
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:65403 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756549Ab1INMKo (ORCPT
+	with ESMTP id S1756484Ab1INMKl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 08:10:44 -0400
+	Wed, 14 Sep 2011 08:10:41 -0400
 From: Per Forlin <per.forlin@linaro.org>
 To: linaro-dev@lists.linaro.org, Akinobu Mita <akinobu.mita@gmail.com>,
         Linus Walleij <linus.walleij@linaro.org>, linux-mmc@vger.kernel.org
 Cc: Chris Ball <cjb@laptop.org>, Randy Dunlap <rdunlap@xenotime.net>,
         linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         Per Forlin <per.forlin@linaro.org>
-Subject: [PATCH v3 2/3] mmc: add module param to set fault injection attributes
-Date: Wed, 14 Sep 2011 14:10:17 +0200
-Message-Id: <1316002218-3408-3-git-send-email-per.forlin@linaro.org>
+Subject: [PATCH v3 1/3] fault-inject: export setup_fault_attr()
+Date: Wed, 14 Sep 2011 14:10:16 +0200
+Message-Id: <1316002218-3408-2-git-send-email-per.forlin@linaro.org>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1316002218-3408-1-git-send-email-per.forlin@linaro.org>
 References: <1316002218-3408-1-git-send-email-per.forlin@linaro.org>
@@ -23,79 +23,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace setup("fail_mmc_request") and faulty "ifdef KERNEL" with
-a module_param_cb(). The module param mmc_core.fail_request
-may be used to set the fault injection attributes during boot time
-or module load time.
+mmc_core module needs to use setup_fault_attr() in order
+to set fault injection attributes during module load time.
 
 Signed-off-by: Per Forlin <per.forlin@linaro.org>
 ---
- drivers/mmc/core/debugfs.c |   38 ++++++++++++++++++++------------------
- 1 files changed, 20 insertions(+), 18 deletions(-)
+ lib/fault-inject.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/mmc/core/debugfs.c b/drivers/mmc/core/debugfs.c
-index 5acd707..13e44c9 100644
---- a/drivers/mmc/core/debugfs.c
-+++ b/drivers/mmc/core/debugfs.c
-@@ -20,6 +20,25 @@
- #include "core.h"
- #include "mmc_ops.h"
- 
-+#ifdef CONFIG_FAIL_MMC_REQUEST
-+
-+static DECLARE_FAULT_ATTR(fail_default_attr);
-+static int fail_mmc_request_param_set(const char *val,
-+				      const struct kernel_param *kp)
-+{
-+	if (setup_fault_attr(&fail_default_attr, (char *) val) == 0)
-+		return -EINVAL;
-+
-+	return 0;
-+}
-+
-+static const struct kernel_param_ops fail_mmc_request_param_ops = {
-+	.set = fail_mmc_request_param_set
-+};
-+module_param_cb(fail_request, &fail_mmc_request_param_ops, NULL, 0);
-+
-+#endif /* CONFIG_FAIL_MMC_REQUEST */
-+
- /* The debugfs functions are optimized away when CONFIG_DEBUG_FS isn't set. */
- static int mmc_ios_show(struct seq_file *s, void *data)
+diff --git a/lib/fault-inject.c b/lib/fault-inject.c
+index 328d433..4f75540 100644
+--- a/lib/fault-inject.c
++++ b/lib/fault-inject.c
+@@ -14,7 +14,7 @@
+  * setup_fault_attr() is a helper function for various __setup handlers, so it
+  * returns 0 on error, because that is what __setup handlers do.
+  */
+-int __init setup_fault_attr(struct fault_attr *attr, char *str)
++int setup_fault_attr(struct fault_attr *attr, char *str)
  {
-@@ -159,23 +178,6 @@ static int mmc_clock_opt_set(void *data, u64 val)
- 	return 0;
+ 	unsigned long probability;
+ 	unsigned long interval;
+@@ -36,6 +36,7 @@ int __init setup_fault_attr(struct fault_attr *attr, char *str)
+ 
+ 	return 1;
  }
++EXPORT_SYMBOL_GPL(setup_fault_attr);
  
--#ifdef CONFIG_FAIL_MMC_REQUEST
--
--static DECLARE_FAULT_ATTR(fail_mmc_request);
--
--#ifdef KERNEL
--/*
-- * Internal function. Pass the boot param fail_mmc_request to
-- * the setup fault injection attributes routine.
-- */
--static int __init setup_fail_mmc_request(char *str)
--{
--	return setup_fault_attr(&fail_mmc_request, str);
--}
--__setup("fail_mmc_request=", setup_fail_mmc_request);
--#endif /* KERNEL */
--#endif /* CONFIG_FAIL_MMC_REQUEST */
--
- DEFINE_SIMPLE_ATTRIBUTE(mmc_clock_fops, mmc_clock_opt_get, mmc_clock_opt_set,
- 	"%llu\n");
- 
-@@ -207,7 +209,7 @@ void mmc_add_host_debugfs(struct mmc_host *host)
- 		goto err_node;
- #endif
- #ifdef CONFIG_FAIL_MMC_REQUEST
--	host->fail_mmc_request = fail_mmc_request;
-+	host->fail_mmc_request = fail_default_attr;
- 	if (IS_ERR(fault_create_debugfs_attr("fail_mmc_request",
- 					     root,
- 					     &host->fail_mmc_request)))
+ static void fail_dump(struct fault_attr *attr)
+ {
 -- 
 1.7.4.1
 
