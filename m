@@ -1,63 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932621Ab1INNKU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 09:10:20 -0400
-Received: from lucidpixels.com ([72.73.18.11]:52261 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932406Ab1INNKT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 09:10:19 -0400
-Date: Wed, 14 Sep 2011 09:10:17 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: Lin Ming <mlin@ss.pku.edu.cn>, linux-kernel@vger.kernel.org,
-        Alan Piszcz <ap@solarrain.com>, "Li, Shaohua" <shaohua.li@intel.com>,
-        Andrew Morton <akpm@google.com>
-Subject: Re: 3.0.1: pagevec_lookup+0x1d/0x30, SLAB issues?
-In-Reply-To: <alpine.DEB.2.02.1109140629300.29782@p34.internal.lan>
-Message-ID: <alpine.DEB.2.02.1109140901560.2082@p34.internal.lan>
-References: <alpine.DEB.2.02.1109111815520.19558@p34.internal.lan>  <alpine.DEB.2.02.1109111837200.19558@p34.internal.lan>  <CAF1ivSZQ=KKC0gAk93eMVwLSCbeEWr=k6YszuE=sb1+Ue521vw@mail.gmail.com>  <alpine.DEB.2.02.1109140543590.29782@p34.internal.lan>
- <1315995608.2361.18.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <alpine.DEB.2.02.1109140629300.29782@p34.internal.lan>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S932657Ab1INNRE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 09:17:04 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:48705 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932406Ab1INNRB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Sep 2011 09:17:01 -0400
+Date: Wed, 14 Sep 2011 17:16:30 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: kernel-hardening@lists.openwall.com,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Dan Rosenberg <drosenberg@vsecurity.com>, Theodore Tso <tytso@mit.edu>,
+        Alan Cox <alan@linux.intel.com>, Jesper Juhl <jj@chaosbits.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC PATCH 2/2] mm: restrict access to /proc/slabinfo
+Message-ID: <20110914131630.GA7001@albatros>
+References: <20110910164001.GA2342@albatros>
+ <20110910164134.GA2442@albatros>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110910164134.GA2442@albatros>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(cc'ed all members of the previous discussion as currently lists might
+not work as they should)
 
+On Sat, Sep 10, 2011 at 20:41 +0400, Vasiliy Kulikov wrote:
+> Historically /proc/slabinfo has 0444 permissions and is accessible to
+> the world.  slabinfo contains rather private information related both to
+> the kernel and userspace tasks.  Depending on the situation, it might
+> reveal either private information per se or information useful to make
+> another targeted attack.  Some examples of what can be learned by
+> reading/watching for /proc/slabinfo entries:
+> 
+> 1) dentry (and different *inode*) number might reveal other processes fs
+> activity.  The number of dentry "active objects" doesn't strictly show
+> file count opened/touched by a process, however, there is a good
+> correlation between them.  The patch "proc: force dcache drop on
+> unauthorized access" relies on the privacy of dentry count.
+> 
+> 2) different inode entries might reveal the same information as (1), but
+> these are more fine granted counters.  If a filesystem is mounted in a
+> private mount point (or even a private namespace) and fs type differs from
+> other mounted fs types, fs activity in this mount point/namespace is
+> revealed.  If there is a single ecryptfs mount point, the whole fs
+> activity of a single user is revealed.  Number of files in ecryptfs
+> mount point is a private information per se.
+> 
+> 3) fuse_* reveals number of files / fs activity of a user in a user
+> private mount point.  It is approx. the same severity as ecryptfs
+> infoleak in (2).
+> 
+> 4) sysfs_dir_cache similar to (2) reveals devices' addition/removal,
+> which can be otherwise hidden by "chmod 0700 /sys/".  With 0444 slabinfo
+> the precise number of sysfs files is known to the world.
+> 
+> 5) buffer_head might reveal some kernel activity.  With other
+> information leaks an attacker might identify what specific kernel
+> routines generate buffer_head activity.
+> 
+> 6) *kmalloc* infoleaks are very situational.  Attacker should watch for
+> the specific kmalloc size entry and filter the noise related to the unrelated
+> kernel activity.  If an attacker has relatively silent victim system, he
+> might get rather precise counters.
+> 
+> Additional information sources might significantly increase the slabinfo
+> infoleak benefits.  E.g. if an attacker knows that the processes
+> activity on the system is very low (only core daemons like syslog and
+> cron), he may run setxid binaries / trigger local daemon activity /
+> trigger network services activity / await sporadic cron jobs activity
+> / etc. and get rather precise counters for fs and network activity of
+> these privileged tasks, which is unknown otherwise.
+> 
+> 
+> Also hiding slabinfo is a one step to complicate exploitation of kernel
+> heap overflows (and possibly, other bugs).  The related discussion:
+> 
+> http://thread.gmane.org/gmane.linux.kernel/1108378
+> 
+> 
+> World readable slabinfo simplifies kernel developers' job of debugging
+> kernel bugs (e.g. memleaks), but I believe it does more harm than
+> benefits.  For most users 0444 slabinfo is an unreasonable attack vector.
 
-On Wed, 14 Sep 2011, Justin Piszcz wrote:
+Please tell if anybody has complains about the restriction - whether it
+forces someone besides kernel developers to do "chmod/chgrp".  But if
+someone want to debug the kernel, it shouldn't significantly influence
+on common users, especially it shouldn't create security issues.
 
->
->
-> On Wed, 14 Sep 2011, Eric Dumazet wrote:
->
-> Hi,
->
-> Thanks-- patch applied and booted to the new kernel, so just so everyone 
-> knows, I am running three patches atop of 3.1-rc4:
->
-> (for the igb problem/memory allocation issue)
-> 0001-Fix-pointer-dereference-before-call-to-pcie_bus_conf.patch
-> 0002-PCI-Remove-MRRS-modification-from-MPS-setting-code.patch
->
-> (for the RCU/memory errors)
-> 0003-filemap.patch
->
-> I will try to perform more load tests on the NIC and CPU/MEM/I+O and see
-> if any of my problems return!
->
-> Justin.
+Thanks!
 
-Hi,
+> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+> ---
+>  mm/slab.c |    3 ++-
+>  mm/slub.c |    2 +-
+>  2 files changed, 3 insertions(+), 2 deletions(-)
+> 
+> --
+> diff --git a/mm/slab.c b/mm/slab.c
+> index 6d90a09..560ffd0 100644
+> --- a/mm/slab.c
+> +++ b/mm/slab.c
+> @@ -4584,7 +4584,8 @@ static const struct file_operations proc_slabstats_operations = {
+>  
+>  static int __init slab_proc_init(void)
+>  {
+> -	proc_create("slabinfo",S_IWUSR|S_IRUGO,NULL,&proc_slabinfo_operations);
+> +	proc_create("slabinfo", S_IWUSR | S_IRUSR, NULL,
+> +		    &proc_slabinfo_operations);
+>  #ifdef CONFIG_DEBUG_SLAB_LEAK
+>  	proc_create("slab_allocators", 0, NULL, &proc_slabstats_operations);
+>  #endif
+> diff --git a/mm/slub.c b/mm/slub.c
+> index 9f662d7..f440fc7 100644
+> --- a/mm/slub.c
+> +++ b/mm/slub.c
+> @@ -5257,7 +5257,7 @@ static const struct file_operations proc_slabinfo_operations = {
+>  
+>  static int __init slab_proc_init(void)
+>  {
+> -	proc_create("slabinfo", S_IRUGO, NULL, &proc_slabinfo_operations);
+> +	proc_create("slabinfo", S_IRUSR, NULL, &proc_slabinfo_operations);
+>  	return 0;
+>  }
+>  module_init(slab_proc_init);
 
-Been running a lot of stressful jobs and will let them continue, so far,
-no ERROR, WARN or OOPS yet.
-
-3.1-rc4 + the three patches above seem to fix the problems (thus far).
-
-Does anyone know when the bugs were introduced into the kernel, as some/all
-of these problems also happened with 3.0.x.
-
-Justin.
-
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
