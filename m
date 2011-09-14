@@ -1,53 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751519Ab1INFyy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 01:54:54 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:52883 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751134Ab1INFyw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 01:54:52 -0400
-Date: Wed, 14 Sep 2011 09:54:46 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: linux-kernel@vger.kernel.org, containers@lists.osdl.org,
-        linux-fsdevel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Nathan Lynch <ntl@pobox.com>, Zan Lynx <zlynx@acm.org>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>,
-        Vasiliy Kulikov <segoon@openwall.com>, Tejun Heo <tj@kernel.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>
-Subject: Re: [patch 2/2] fs, proc: Introduce the /proc/<pid>/map_files/
- directory v12
-Message-ID: <20110914055446.GK25367@sun>
-References: <20110913211359.674453213@openvz.org>
- <20110913212447.918816776@openvz.org>
- <20110914023428.GA4034@shutemov.name>
+	id S1751571Ab1INF5C (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 01:57:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39358 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751152Ab1INF5B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Sep 2011 01:57:01 -0400
+Date: Wed, 14 Sep 2011 07:56:34 +0200
+From: Johannes Weiner <jweiner@redhat.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
+        Michal Hocko <mhocko@suse.cz>, Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 04/11] mm: memcg: per-priority per-zone hierarchy scan
+ generations
+Message-ID: <20110914055634.GA28051@redhat.com>
+References: <1315825048-3437-1-git-send-email-jweiner@redhat.com>
+ <1315825048-3437-5-git-send-email-jweiner@redhat.com>
+ <20110913192759.ff0da031.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110913110301.GB18886@redhat.com>
+ <20110914095504.30fca5d0.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110914023428.GA4034@shutemov.name>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110914095504.30fca5d0.kamezawa.hiroyu@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 14, 2011 at 05:34:28AM +0300, Kirill A. Shutemov wrote:
-...
-> > 
-> > Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
-> > Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-> > CC: Tejun Heo <tj@kernel.org>
-> > CC: Vasiliy Kulikov <segoon@openwall.com>
-> > CC: "Kirill A. Shutemov" <kirill@shutemov.name>
-> > CC: Alexey Dobriyan <adobriyan@gmail.com>
-> > CC: Al Viro <viro@ZenIV.linux.org.uk>
-> > CC: Andrew Morton <akpm@linux-foundation.org>
+On Wed, Sep 14, 2011 at 09:55:04AM +0900, KAMEZAWA Hiroyuki wrote:
+> On Tue, 13 Sep 2011 13:03:01 +0200
+> Johannes Weiner <jweiner@redhat.com> wrote:
 > 
-> Reviewed-by: Kirill A. Shutemov <kirill@shutemov.name>
->
+> > On Tue, Sep 13, 2011 at 07:27:59PM +0900, KAMEZAWA Hiroyuki wrote:
+> > > On Mon, 12 Sep 2011 12:57:21 +0200
+> > > Johannes Weiner <jweiner@redhat.com> wrote:
+> > > 
+> > > > Memory cgroup limit reclaim currently picks one memory cgroup out of
+> > > > the target hierarchy, remembers it as the last scanned child, and
+> > > > reclaims all zones in it with decreasing priority levels.
+> > > > 
+> > > > The new hierarchy reclaim code will pick memory cgroups from the same
+> > > > hierarchy concurrently from different zones and priority levels, it
+> > > > becomes necessary that hierarchy roots not only remember the last
+> > > > scanned child, but do so for each zone and priority level.
+> > > > 
+> > > > Furthermore, detecting full hierarchy round-trips reliably will become
+> > > > crucial, so instead of counting on one iterator site seeing a certain
+> > > > memory cgroup twice, use a generation counter that is increased every
+> > > > time the child with the highest ID has been visited.
+> > > > 
+> > > > Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+> > > 
+> > > I cannot image how this works. could you illustrate more with easy example ?
+> > 
+> > Previously, we did
+> > 
+> > 	mem = mem_cgroup_iter(root)
+> > 	  for each priority level:
+> > 	    for each zone in zonelist:
+> > 
+> > and this would reclaim memcg-1-zone-1, memcg-1-zone-2, memcg-1-zone-3
+> > etc.
+> > 
+> yes.
+> 
+> > The new code does
+> > 
+> > 	for each priority level
+> > 	  for each zone in zonelist
+> >             mem = mem_cgroup_iter(root)
+> > 
+> > but with a single last_scanned_child per memcg, this would scan
+> > memcg-1-zone-1, memcg-2-zone-2, memcg-3-zone-3 etc, which does not
+> > make much sense.
+> > 
+> > Now imagine two reclaimers.  With the old code, the first reclaimer
+> > would pick memcg-1 and scan all its zones, the second reclaimer would
+> > pick memcg-2 and reclaim all its zones.  Without this patch, the first
+> > reclaimer would pick memcg-1 and scan zone-1, the second reclaimer
+> > would pick memcg-2 and scan zone-1, then the first reclaimer would
+> > pick memcg-3 and scan zone-2.  If the reclaimers are concurrently
+> > scanning at different priority levels, things are even worse because
+> > one reclaimer may put much more force on the memcgs it gets from
+> > mem_cgroup_iter() than the other reclaimer.  They must not share the
+> > same iterator.
+> > 
+> > The generations are needed because the old algorithm did not rely too
+> > much on detecting full round-trips.  After every reclaim cycle, it
+> > checked the limit and broke out of the loop if enough was reclaimed,
+> > no matter how many children were reclaimed from.  The new algorithm is
+> > used for global reclaim, where the only exit condition of the
+> > hierarchy reclaim is the full roundtrip, because equal pressure needs
+> > to be applied to all zones.
+> > 
+> Hm, ok, maybe good for global reclam.
+> Is this used for both of reclaim-by-limit and global-reclaim ?
 
-Thanks for review, Kirill!
+No, the hierarchy iteration in shrink_zone() is done after a single
+memcg, which is equivalent to the old code: scan all zones at all
+priority levels from a memcg, then move on to the next memcg.  This
+also works because of the per-zone per-priority last_scanned_child:
+
+	for each priority
+	  for each zone
+	    mem = mem_cgroup_iter(root)
+	    scan(mem)
+
+priority-12 + zone-1 will yield memcg-1.  priority-12 + zone-2 starts
+at its own last_scanned_child, so yields memcg-1 as well, etc.  A
+second reclaimer that comes in with priority-12 + zone-1 will receive
+memcg-2 for scanning.  So there is no change in behaviour for limit
+reclaim.
+
+> If so, I need to abandon node-selection-logic for reclaim-by-limit
+> and nodemask-for-memcg which shows me very good result. 
+> I'll be sad ;)
+
+With my clarification, do you still think so?
