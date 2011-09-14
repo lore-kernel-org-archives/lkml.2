@@ -1,81 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756868Ab1INPnh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 11:43:37 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:36401 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754004Ab1INPng (ORCPT
+	id S1756879Ab1INPo0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 11:44:26 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:44182 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755292Ab1INPoY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 11:43:36 -0400
-Date: Wed, 14 Sep 2011 19:42:29 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: kernel-hardening@lists.openwall.com
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Dan Rosenberg <drosenberg@vsecurity.com>, Theodore Tso <tytso@mit.edu>,
-        Alan Cox <alan@linux.intel.com>, Jesper Juhl <jj@chaosbits.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [kernel-hardening] Re: [RFC PATCH 2/2] mm: restrict access to
- /proc/slabinfo
-Message-ID: <20110914154229.GA9776@albatros>
-References: <20110910164001.GA2342@albatros>
- <20110910164134.GA2442@albatros>
- <20110914131630.GA7001@albatros>
- <1316013505.4478.50.camel@nimitz>
+	Wed, 14 Sep 2011 11:44:24 -0400
+Date: Wed, 14 Sep 2011 11:44:02 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, a.p.zijlstra@chello.nl,
+        mingo@elte.hu, paulus@samba.org, linux-kernel@vger.kernel.org,
+        rostedt@goodmis.org
+Subject: Re: [PATCH] perf tools: Fix tracing info recording
+Message-ID: <20110914154402.GC3866@hmsreliant.think-freely.org>
+References: <1314022997-9217-1-git-send-email-jolsa@redhat.com>
+ <1314023913.2307.63.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <20110822145210.GA8694@jolsa.brq.redhat.com>
+ <1314028266.2307.93.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <20110822160713.GA10134@jolsa.brq.redhat.com>
+ <20110829132037.GB27261@ghostprotocols.net>
+ <20110829134147.GD1918@jolsa.redhat.com>
+ <20110829142547.GC27261@ghostprotocols.net>
+ <20110914135840.GC2719@jolsa.brq.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1316013505.4478.50.camel@nimitz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110914135840.GC2719@jolsa.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -1.9 (-)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
-
-On Wed, Sep 14, 2011 at 08:18 -0700, Dave Hansen wrote:
-> On Wed, 2011-09-14 at 17:16 +0400, Vasiliy Kulikov wrote:
-> > > World readable slabinfo simplifies kernel developers' job of debugging
-> > > kernel bugs (e.g. memleaks), but I believe it does more harm than
-> > > benefits.  For most users 0444 slabinfo is an unreasonable attack vector.
-> > 
-> > Please tell if anybody has complains about the restriction - whether it
-> > forces someone besides kernel developers to do "chmod/chgrp".  But if
-> > someone want to debug the kernel, it shouldn't significantly influence
-> > on common users, especially it shouldn't create security issues. 
+On Wed, Sep 14, 2011 at 03:58:40PM +0200, Jiri Olsa wrote:
+> On Mon, Aug 29, 2011 at 11:25:47AM -0300, Arnaldo Carvalho de Melo wrote:
 > 
-> Ubuntu ships today with a /etc/init/mounted-proc.conf that does:
+> SNIP
 > 
-> 	chmod 0400 "${MOUNTPOINT}"/slabinfo
+> > > > 
+> > > > Hi Jiri, any news here?
+> > > > 
+> > > > I just stumbled in this bug while testing Neil's net_dropmonitor script
+> > > > :-\
+> > > 
+> > > well, I was thinking about taking files snapshot, so we dont read them
+> > > twice and omit the reading for size.. but it'll be probably bigger
+> > > change, I'll try to send out something by the end of the week
 > 
-> After cursing Kees's name a few times, I commented it out and it hasn't
-> bothered me again.  
-
-Another way is chgrp slabinfo to some "admin" group which are privileged
-in this sense and add your user to this group.  But please, sane and
-secure defaults!
-
-> I expect that the folks that really care about this (and their distros)
-> will probably have a similar mechanism.  I guess the sword cuts both
-> ways in this case: it obviously _works_ to have the distros do it, but
-> it was a one-time inconvenience for me to override that.
+> sry, I did not make it and then I was out for vacation..  sending now ;)
 > 
-> In other words, I dunno.  If we do this in the kernel, can we at least
-> do something like CONFIG_INSECURE to both track these kinds of things
-> and make it easy to get them out of a developer's way?
+> jirka
+> 
+Thanks Jiri!
 
-What do you think about adding your user to the slabinfo's group or
-chmod it - quite the opposite Ubuntu currently does?  I think it is more
-generic (e.g. you may chmod 0444 to allow all users to get debug
-information or just 0440 and chgrp admin to allow only trusted users to
-do it) and your local policy doesn't touch the kernel.
-
-Thanks,
-
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
