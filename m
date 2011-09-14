@@ -1,61 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756685Ab1INOpz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 10:45:55 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53957 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751756Ab1INOpy convert rfc822-to-8bit (ORCPT
+	id S1756679Ab1INOtU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 10:49:20 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:41342 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751756Ab1INOtS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 10:45:54 -0400
-Subject: Re: [PATCH 2/2] perf, x86: Fix event scheduler for constraints with
-From: Peter Zijlstra <peterz@infradead.org>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 14 Sep 2011 16:45:47 +0200
-In-Reply-To: <1315666143-7106-3-git-send-email-robert.richter@amd.com>
-References: <1315666143-7106-1-git-send-email-robert.richter@amd.com>
-	 <1315666143-7106-3-git-send-email-robert.richter@amd.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1316011547.5040.22.camel@twins>
-Mime-Version: 1.0
+	Wed, 14 Sep 2011 10:49:18 -0400
+Date: Wed, 14 Sep 2011 18:48:41 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Pavel Machek <pavel@ucw.cz>, Andrew Morton <akpm00@gmail.com>,
+        linux-kernel@vger.kernel.org, containers@lists.osdl.org,
+        linux-fsdevel@vger.kernel.org, Kirill Shutemov <kirill@shutemov.name>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Nathan Lynch <ntl@pobox.com>, Zan Lynx <zlynx@acm.org>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>, Tejun Heo <tj@kernel.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [patch 2/2] fs, proc: Introduce the /proc/<pid>/map_files/
+ directory v12
+Message-ID: <20110914144841.GA7906@albatros>
+References: <20110913211359.674453213@openvz.org>
+ <20110913212447.918816776@openvz.org>
+ <20110913235222.043927b3.akpm@linux-foundation.org>
+ <20110914105607.GP25367@sun>
+ <20110914111437.GA22516@atrey.karlin.mff.cuni.cz>
+ <20110914113912.GQ25367@sun>
+ <20110914134405.GV25367@sun>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110914134405.GV25367@sun>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-09-10 at 16:49 +0200, Robert Richter wrote:
->  struct perf_sched {
->         int                     max_weight;
->         int                     max_events;
->         struct event_constraint **constraints;
->         struct sched_state      state;
-> +
-> +       int                     saved_states;
+Hi,
 
-This creates an ugly hole in the structure
+On Wed, Sep 14, 2011 at 17:44 +0400, Cyrill Gorcunov wrote:
+> On Wed, Sep 14, 2011 at 03:39:12PM +0400, Cyrill Gorcunov wrote:
+> ...
+> > > 
+> > > AFAICT, this recreates existing problem with /proc/<pid>/fd (see
+> > > discussion at 
+> > > 
+> > > http://www.securityfocus.com/archive/1/507386/30/0/threaded
+> > > 
+> > > ). It creates object that looks like symlink, but does not behave as
+> > > one, and permissions of directories are not checked as they would be
+> > > if it was a symlink.
 
-> +       struct sched_state      saved[SCHED_STATES_MAX];
->  };
->  
->  static void perf_sched_init(struct perf_sched *sched, struct event_constraint **c,
-> @@ -817,7 +849,30 @@ static void perf_sched_init(struct perf_sched *sched, struct event_constraint **
->         sched->state.unassigned = num;
->  }
->  
-> -static struct sched_state *perf_sched_find_counter(struct perf_sched *sched)
-> +static void perf_sched_save_state(struct perf_sched *sched)
-> +{
-> +       if (sched->saved_states >= SCHED_STATES_MAX)
-> +               return;
-> +
-> +       sched->saved[sched->saved_states] = sched->state;
-> +       sched->saved_states++;
-> +} 
+The only difference between fd/X and dup(X) was the ability to write to
+an fd opened as RO.  Now it is fixed:
 
-Shouldn't we fail the save_state when we're out of states? the restore
-code doesn't check to see if --saved_states is within range and simply
-derefs the array.
+$ ls -l 123
+-rw-r--r-- 1 vasya vasya 0 Sep 14 18:21 123
+$ id
+uid=1008(new1) gid=1008(new1) groups=1008(new1)
+$ bash 4< /tmp/123
+new1@albatros:/tmp$ echo bla >&4
+bash: 4: Bad file descriptor
+new1@albatros:/tmp$ echo bla >/proc/$$/fd/4
+bash: /proc/8527/fd/4: Permission denied
+
+I don't really see any difference between opening fd/* and dup'ing file
+descriptors with the current code.
 
 
+> So, there is no *new* hole.
+
+Actually now I see the difference between having something mapped and
+having an _fd_ of this something.
+
+Relevant code:
+
++static struct dentry *
++proc_map_files_instantiate(struct inode *dir, struct dentry *dentry,
++              struct task_struct *task, const void *ptr)
++{
+...
++   inode->i_mode = S_IFLNK;
++
++   if (file->f_mode & FMODE_READ)
++       inode->i_mode |= S_IRUSR | S_IXUSR;
++   if (file->f_mode & FMODE_WRITE)
++       inode->i_mode |= S_IWUSR | S_IXUSR;
+
+
+If you have a write mmap area, but no fd, you may not trunc a file; with
+map_files/ you may get an fd and ftrunc it.
+
+
+> Both fd/ and map_files/ have ptrace_may_access checks, which
+> (as you pointed) might be not enough, but squashing all changes
+> into one big path seems to be not that good idea.
+
+ptrace() check is irrelevant to the access bypasses by the task owner.
+
+> Vasiliy, as far as I remember you had something in mind on
+> fd/ additional fixups, no?
+
+Only closing fd presense leak:
+
+http://www.openwall.com/lists/kernel-hardening/2011/09/10/3
+http://www.openwall.com/lists/kernel-hardening/2011/09/10/4
+
+Unfortunatelly, not yet applied/commented :(
+
+Thanks,
+
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
