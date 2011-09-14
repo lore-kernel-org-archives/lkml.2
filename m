@@ -1,84 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757169Ab1INQu6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 12:50:58 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:47134 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757142Ab1INQu4 (ORCPT
+	id S1757133Ab1INQxl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 12:53:41 -0400
+Received: from service88.mimecast.com ([195.130.217.12]:58346 "HELO
+	service88.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756884Ab1INQxl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 12:50:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAN+gG=H2jfT2zdn5H19hyn9JtDU7U1ensX_aUDgv0jk4d81jXg@mail.gmail.com>
-References: <1315638713-3731-1-git-send-email-benjamin.tissoires@gmail.com>
-	<20110910072826.GA1611@x4.trippels.de>
-	<CAN+gG=H2jfT2zdn5H19hyn9JtDU7U1ensX_aUDgv0jk4d81jXg@mail.gmail.com>
-Date: Wed, 14 Sep 2011 18:45:02 +0200
-Message-ID: <CAN+gG=E90-y--6C-Ok8TibcFZGAaL2X-KxnchquDLCUUniip1Q@mail.gmail.com>
-Subject: Re: [PATCH v4] HID: Add full support for Logitech Unifying receivers
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        rtitmuss@logitech.com, ogay@logitech.com, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Nestor Lopez Casado <nlopezcasad@logitech.com>,
-        Jean-Daniel Zanone <jzanone@logitech.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 14 Sep 2011 12:53:41 -0400
+X-Greylist: delayed 302 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Sep 2011 12:53:40 EDT
+Subject: Re: [RFC 1/2] virtio: Add AMBA bus driver for virtio device
+From: Pawel Moll <pawel.moll@arm.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Anthony Liguori <aliguori@us.ibm.com>,
+        "Michael S.Tsirkin" <mst@redhat.com>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
+        virtualization <virtualization@lists.linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <87ehzkht7x.fsf@rustcorp.com.au>
+References: <1314966257-7503-1-git-send-email-pawel.moll@arm.com>
+	 <1314966257-7503-2-git-send-email-pawel.moll@arm.com>
+	 <877h5e5yxp.fsf@rustcorp.com.au>
+	 <1315845956.3297.7.camel@hornet.cambridge.arm.com>
+	 <87hb4h408d.fsf@rustcorp.com.au>
+	 <1315906832.3297.41.camel@hornet.cambridge.arm.com>
+	 <87ehzkht7x.fsf@rustcorp.com.au>
+Date: Wed, 14 Sep 2011 17:47:23 +0100
+Message-ID: <1316018843.3297.96.camel@hornet.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1
+X-OriginalArrivalTime: 14 Sep 2011 16:47:23.0297 (UTC) FILETIME=[F9F7F110:01CC72FD]
+X-MC-Unique: 111091417472703001
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Markus,
+> > 2. "Select word -> read flags" interface:
+> > 
+> >  *  0x010   32  HostFeaturesFlags  Features supported by the host
+> >  *  0x014   32  HostFeaturesWord   Set of features to access
+> > 
+> >  *  0x020   32  GuestFeaturesFlags Features activated by the guest
+> >  *  0x024   32  GuestFeaturesWord  Set of features to set
+> > 
+> > In this case the algorithm would be:
+> > 
+> > 	writel(0, HostFeaturesWord);
+> > 	bits_0_31 = readl(HostFeaturesFlags);
+> > 	writel(1, HostFeaturesWord);
+> > 	bits_32_63 = readl(HostFeaturesFlags);
+> > 	<etc>
+> > 
+> > The latter seems more "future-proof" to me, if slightly more complex...
+> > Any other suggestions?
+> 
+> The former is almost certainly sufficient (remember, we can abuse the
+> final feature bit to indicate there are extended features somewhere
+> else, if we really have to).  But agree the latter is preferable: this
+> isn't time-critical.
 
-I got some information for you. Apparently, it won't be possible to
-enable this thumb button right now.
-To enable it, the Windows driver put the mouse in a kind of debug mode
-that need to be handled properly, which is not the case as of today.
+Ok, I'll do this in v3 then.
 
-I was able to make it work at home because there were different series
-of M705, the latest sending the thumb button by default.
+> > > We can sort that out later... the Guest may try some ambitious large
+> > > allocation and fall back if it fails.
+> > 
+> > So, to my mind, the negotiations could look like this (from the Guest's
+> > point of view):
+> > 
+> > 1. (optional) The Guest is asking what size is "suggested" by the Host:
+> > 
+> > 	size = readl(QueueNum);
+> > 
+> > 2. The Guest requests size it would like to use:
+> > 
+> > 	writel(optimal_size(size), QueueNum);
+> > 
+> > 3. The Host does the best it can to accommodate the Guest and the Guest
+> > checks the effective size:
+> > 
+> > 	size = real(QueueNum);
+> > 
+> > Does it make some sense?
+> 
+> Does Host care?  It is sufficient for it to publish min/max values?
 
-Sorry,
-Benjamin
+Hm. You're right, it should no care. Most likely the queue size will
+impact some Host's memory allocation size, but that's the Host's
+problem :-)
 
-On Sun, Sep 11, 2011 at 10:39, Benjamin Tissoires
-<benjamin.tissoires@gmail.com> wrote:
-> Hi Markus,
->
-> On Sat, Sep 10, 2011 at 09:28, Markus Trippelsdorf
-> <markus@trippelsdorf.de> wrote:
->> On 2011.09.10 at 09:11 +0200, Benjamin Tissoires wrote:
->>> From: Nestor Lopez Casado <nlopezcasad@logitech.com>
->>>
->>> From: Nestor Lopez Casado <nlopezcasad@logitech.com>
->>>
->>> With this driver, all the devices paired to a single Unifying
->>> receiver are exposed to user processes in separated /input/dev
->>> nodes.
->>>
->>> Keyboards with different layouts can be treated differently,
->>> Multiplayer games on single PC (like home theater PC) can
->>> differentiate input coming from different kbds paired to the
->>> same receiver.
->>
->> Nice. Does this mean I will be able to use the thumb-button of my M705
->> mouse in the near future?
->>
->> (Someone asked the same question 1.5 years ago, but nothing happened
->> till then:
->> http://thread.gmane.org/gmane.linux.kernel.input/11791 )
->
-> This is quite weird. I was going to say that it will work, but with
-> the M705 I've got at home,this thumb button doesn't work at all
-> (anything is emitted from the usb, even with this driver).
-> But I'm pretty sure I made it work with the one I got at work.
->
-> I'll give a try on Monday unless people at Logitech gave us the solution.
->
-> Cheers,
-> Benjamin
->
->>
->> --
->> Markus
->>
->
+At the same time, how the Host would know what the max value is?
+
+Generally it looks like the matter was getting back to value suggested
+by the Host (as it is now) that may be changed by the Guest. Single R/W
+register should be fine, I believe?
+
+> You might want to throw the alignment value in there; there has been
+> talk about adding that to PCI, for really small rings (less than a
+> page).
+
+Sure thing, will do.
+
+v3 will be ready tomorrow.
+
+Cheers!
+
+Paweł
+
+
