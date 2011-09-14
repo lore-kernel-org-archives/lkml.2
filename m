@@ -1,65 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755574Ab1INHIf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 03:08:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29111 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755208Ab1INHIe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 03:08:34 -0400
-Message-ID: <4E7052DD.8080305@redhat.com>
-Date: Wed, 14 Sep 2011 10:08:13 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1755652Ab1INHKI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 03:10:08 -0400
+Received: from mail-vw0-f42.google.com ([209.85.212.42]:53390 "EHLO
+	mail-vw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755208Ab1INHKH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Sep 2011 03:10:07 -0400
+X-Greylist: delayed 416 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Sep 2011 03:10:07 EDT
 MIME-Version: 1.0
-To: Don Zickus <dzickus@redhat.com>
-CC: x86@kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Peter Zijlstra <peterz@infradead.org>, ying.huang@intel.com,
-        LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
-        jeremy@goop.org
-Subject: Re: [V4][PATCH 4/6] x86, nmi:  add in logic to handle multiple events
- and unknown NMIs
-References: <1315947509-6429-1-git-send-email-dzickus@redhat.com> <1315947509-6429-5-git-send-email-dzickus@redhat.com>
-In-Reply-To: <1315947509-6429-5-git-send-email-dzickus@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <s5hmxe8vntc.wl%tiwai@suse.de>
+References: <CAC9WiBjoO50H5ZQEShbdZ=64ZXz6Q-OdD+VSD-YrBry3hvdJJQ@mail.gmail.com>
+	<s5haaaa865l.wl%tiwai@suse.de>
+	<CAC9WiBjDfTnNG+5HxEgLm-PLa=RMQu47L3Pa-oN_0sQ3rs4ssA@mail.gmail.com>
+	<CAC9WiBhng3Aa9N+GM-ND100jqb+x22wAp+c9rTDEJ2riKtNZ7w@mail.gmail.com>
+	<s5hmxe8vntc.wl%tiwai@suse.de>
+Date: Wed, 14 Sep 2011 09:03:10 +0200
+Message-ID: <CAC9WiBivf2HCVAe-d9ah+mpA50pwjH8ga6w5O4rAq9U2CTa8HA@mail.gmail.com>
+Subject: Re: 3.1-rc5 is the worst
+From: Francis Moreau <francis.moro@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/13/2011 11:58 PM, Don Zickus wrote:
-> Previous patches allow the NMI subsystem to process multipe NMI events
-> in one NMI.  As previously discussed this can cause issues when an event
-> triggered another NMI but is processed in the current NMI.  This causes the
-> next NMI to go unprocessed and become an 'unknown' NMI.
->
-> To handle this, we first have to flag whether or not the NMI handler handled
-> more than one event or not.  If it did, then there exists a chance that
-> the next NMI might be already processed.  Once the NMI is flagged as a
-> candidate to be swallowed, we next look for a back-to-back NMI condition.
->
-> This is determined by looking at the %rip from pt_regs.  If it is the same
-> as the previous NMI, it is assumed the cpu did not have a chance to jump
-> back into a non-NMI context and execute code and instead handled another NMI.
->
-> If both of those conditions are true then we will swallow any unknown NMI.
->
-> There still exists a chance that we accidentally swallow a real unknown NMI,
-> but for now things seem better.
+Hello,
 
-Patch looks good, but the changelog is outdated.
-
-> @@ -278,19 +294,49 @@ unknown_nmi_error(unsigned char reason, struct pt_regs *regs)
->   	pr_emerg("Dazed and confused, but trying to continue\n");
->   }
+On Tue, Sep 13, 2011 at 10:39 AM, Takashi Iwai <tiwai@suse.de> wrote:
 >
-> +DEFINE_PER_CPU(bool, swallow_nmi);
-> +DEFINE_PER_CPU(unsigned long, save_rip);
+> The patch below should fix the problem.  Give it a try.
+>
 
-'static'.  Also need a better name for save_rip (suggest last_nmi_rip).
+Yes it does, thanks !
+
+>
+> ---
+> From: Takashi Iwai <tiwai@suse.de>
+> Subject: [PATCH] ALSA: hda - Terminate the recursive connection search properly
+>
+> The recursive search of widget connections in snd_hda_get_conn_index()
+> must be terminated at the pin and the audio-out widgets.  Otherwise
+> you'll get "too deep connection" warnings unnecessarily.
+>
+> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+> ---
+>  sound/pci/hda/hda_codec.c |    6 +++++-
+>  1 files changed, 5 insertions(+), 1 deletions(-)
+>
+> diff --git a/sound/pci/hda/hda_codec.c b/sound/pci/hda/hda_codec.c
+> index 3e7850c..f3aefef 100644
+> --- a/sound/pci/hda/hda_codec.c
+> +++ b/sound/pci/hda/hda_codec.c
+> @@ -579,9 +579,13 @@ int snd_hda_get_conn_index(struct hda_codec *codec, hda_nid_t mux,
+>                return -1;
+>        }
+>        recursive++;
+> -       for (i = 0; i < nums; i++)
+> +       for (i = 0; i < nums; i++) {
+> +               unsigned int type = get_wcaps_type(get_wcaps(codec, conn[i]));
+> +               if (type == AC_WID_PIN || type == AC_WID_AUD_OUT)
+> +                       continue;
+>                if (snd_hda_get_conn_index(codec, conn[i], nid, recursive) >= 0)
+>                        return i;
+> +       }
+>        return -1;
+>  }
+>  EXPORT_SYMBOL_HDA(snd_hda_get_conn_index);
+> --
+> 1.7.6.1
+>
+>
+
 
 
 -- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
-
+Francis
