@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756601Ab1INN4f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 09:56:35 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:50186 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751534Ab1INN4e convert rfc822-to-8bit (ORCPT
+	id S1756630Ab1INN5E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 09:57:04 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:44378 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751534Ab1INN5C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 09:56:34 -0400
-Subject: Re: [RFC][PATCH 0/3] delayed wakeup list
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        David Miller <davem@davemloft.net>, Mike Galbraith <efault@gmx.de>
-Date: Wed, 14 Sep 2011 15:56:20 +0200
-In-Reply-To: <1316008283.2361.28.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-References: <20110914133034.687048806@chello.nl>
-	 <1316008283.2361.28.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1316008580.5040.5.camel@twins>
+	Wed, 14 Sep 2011 09:57:02 -0400
+Date: Wed, 14 Sep 2011 23:56:47 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Temporary relocation of sound git tree
+Message-Id: <20110914235647.88604c1d82e5588fc5f9a039@canb.auug.org.au>
+In-Reply-To: <s5hy5xrtwq9.wl%tiwai@suse.de>
+References: <s5hy5xrtwq9.wl%tiwai@suse.de>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__14_Sep_2011_23_56_47_+1000_+UCUscXkUcw7XJZZ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-09-14 at 15:51 +0200, Eric Dumazet wrote:
-> Le mercredi 14 septembre 2011 à 15:30 +0200, Peter Zijlstra a écrit :
-> > This patch-set provides the infrastructure to delay/batch task wakeups.
+--Signature=_Wed__14_Sep_2011_23_56_47_+1000_+UCUscXkUcw7XJZZ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > Alternatively it can be used to avoid issuing multiple wakeups, and
-> > thus save a few cycles, in packet processing. Queue all target tasks
-> > and wakeup once you've processed all packets. That way you avoid
-> > waking the target task multiple times if there were multiple packets
-> > for the same task.
-> > 
-> > No actual such usage yet, but ISTR talking to some net folks a long while back
-> > about this, is there still interest, Dave, Eric?
-> > 
-> 
-> Yes, I remember playing with such idea some years ago, to speedup
-> multicast processing.
-> 
-> Say you have 10 receivers on a multicast group, each incoming message
-> actually wakeups 10 threads.
-> 
-> If we receive a burst of 10 messages, we spend a lot of time in
-> scheduler.
-> 
-> So adding one queue to batch all scheduler works (and factorize some
-> work if the same thread is queued), and perform the scheduler calls at
-> the end of software IRQ for example was a win.
+Hi Takashi,
 
-Awesome, so my memory didn't trick me ;-) Patches 1 and 2 should be
-stable, its just 3 that's a bit troublesome. So if you have the
-bandwidth you could try this.
+On Wed, 14 Sep 2011 09:21:49 +0200 Takashi Iwai <tiwai@suse.de> wrote:
+>
+> the sound git tree for -next is temporarily relocated at
+> 	git://github.com/tiwai/sound.git for-next
+>=20
+> Please pull from this for linux-next until kernel.org gets recovered.
+
+I will switch to this from tomorrow.  I will also fetch the sound-current
+tree from the for-linus branch.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__14_Sep_2011_23_56_47_+1000_+UCUscXkUcw7XJZZ
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOcLKfAAoJEDMEi1NhKgbsMZcH/2UhBtzeSU4PT1T2YqJGIsW2
+3ALJS+rcx7fJW89nwdvd/xdnHX7fs/hHRq4/lRNidz8dEWOg1iBol9V2mpAxhD+O
+m4F84BLIzkXZ7knUC69osA1sVQyNalgPWNo0kuOd3e4ikgFvnqzKVUKL0/SZUrZo
+qGNFuRSKI2VZiGYuzdSKMEKoe99uZA7zJwlH1mcWsy9bss6rXLo4xVBfmzHqCZAL
+DOWu0QsGATKbRJq1gdSI2dg7NS7geEQw1zgRpRpyoT/QWpWVwdXh9Cx9MV8DrlfB
++me5pzMfPNElnO2xZF6I9XSNiccsVfqxd48fo4YPbkI3h1r81UNweeKaPqJO570=
+=KZD3
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__14_Sep_2011_23_56_47_+1000_+UCUscXkUcw7XJZZ--
