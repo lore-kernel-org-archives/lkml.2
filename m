@@ -1,65 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757449Ab1INTTm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 15:19:42 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:47597 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757306Ab1INTTl (ORCPT
+	id S932908Ab1INTXm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 15:23:42 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:55510 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757457Ab1INTXk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 15:19:41 -0400
-Date: Wed, 14 Sep 2011 20:19:17 +0100
-From: Russell King <rmk+alsa@arm.linux.org.uk>
-To: Axel Lin <axel.lin@gmail.com>, Harald Welte <laforge@openezx.org>
-Cc: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: Re: [linux-next] ASoC: sound/soc/samsung/neo1973_wm8753.c build
-	failure
-Message-ID: <20110914191917.GA30518@flint.arm.linux.org.uk>
-References: <1315991893.17271.2.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1315991893.17271.2.camel@phoenix>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Wed, 14 Sep 2011 15:23:40 -0400
+Subject: Re: [PATCH -rt] ipc/sem: Rework semaphore wakeups
+From: Peter Zijlstra <peterz@infradead.org>
+To: Manfred Spraul <manfred@colorfullife.com>
+Cc: Mike Galbraith <efault@gmx.de>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Date: Wed, 14 Sep 2011 21:23:33 +0200
+In-Reply-To: <4E70F6FD.2060709@colorfullife.com>
+References: <alpine.LFD.2.02.1109101052340.2723@ionos>
+	 <1315737307.6544.1.camel@marge.simson.net>
+	 <1315817948.26517.16.camel@twins>
+	 <1315835562.6758.3.camel@marge.simson.net>
+	 <1315839187.6758.8.camel@marge.simson.net> <1315926499.5977.19.camel@twins>
+	 <1315927699.6445.6.camel@marge.simson.net> <1315994224.5040.1.camel@twins>
+	 <4E70F6FD.2060709@colorfullife.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1316028213.5040.41.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 14, 2011 at 05:18:13PM +0800, Axel Lin wrote:
-> Hi,
+On Wed, 2011-09-14 at 20:48 +0200, Manfred Spraul wrote:
+> On 09/14/2011 11:57 AM, Peter Zijlstra wrote:
+> > Subject: ipc/sem: Rework semaphore wakeups
+> > From: Peter Zijlstra<a.p.zijlstra@chello.nl>
+> > Date: Tue Sep 13 15:09:40 CEST 2011
+> >
+> > Current sysv sems have a weird ass wakeup scheme that involves keeping
+> > preemption disabled over a potential O(n^2) loop and busy waiting on
+> > that on other CPUs.
+> Have you checked that the patch improves the latency?
+> Note that  the busy wait only happens if there is a simultaneous timeout 
+> of a semtimedop() and a true wakeup.
 > 
-> I got below build error: ( on linux-next 20110831 )
->   CC      sound/soc/samsung/neo1973_wm8753.o
-> sound/soc/samsung/neo1973_wm8753.c: In function 'neo1973_wm8753_init':
-> sound/soc/samsung/neo1973_wm8753.c:325: error: implicit declaration of function 'machine_is_neo1973_gta01'
-> make[3]: *** [sound/soc/samsung/neo1973_wm8753.o] Error 1
-> make[2]: *** [sound/soc/samsung] Error 2
-> make[1]: *** [sound/soc] Error 2
-> make: *** [sound] Error 2
+> The code does:
 > 
-> I think the root cause is below commit:
-> commit 6f82f4db "ARM: Update (and cut down) mach-types"
-> removes neo1973_gta01 entry.
+>      spin_lock()
+>      preempt_disable();
+>      usually_very_simple_but_worstcase_O_2
+>      spin_unlock()
+>      usually_very_simple_but_worstcase_O_1
+>      preempt_enable();
 > 
-> I'm not sure if we should add back the neo1973_gta01 entry to mach-types or
-> remove all machine_is_neo1973_gta01() calls in neo1973_wm8753.c.
-> Comments?
+> with your change, it becomes:
+> 
+>      spin_lock()
+>      usually_very_simple_but_worstcase_O_2
+>      usually_very_simple_but_worstcase_O_1
+>      spin_unlock()
+> 
+> The complex ops remain unchanged, they are still under a lock.
 
-neo1973_gta01 was added to the database in October 2006.  Five months
-later, neo1973_gta02 was registered by the same person (Harald Welte),
-and gta02 has been merged.
+preemptible lock (aka pi-mutex) on -rt, so no weird latencies.
 
-Therefore, I suggest that the GTA01 will never be submitted now, moreover
-I suggest that neo1973_gta01 was probably a prototype and neo1973_gta02
-was probably the production platform.
+> What about removing the preempt_disable?
+> It's only there to cover a rare race on uniprocessor preempt systems.
+> (a task is woken up simultaneously due to timeout of semtimedop() and a 
+> true wakeup)
+> 
+> Then fix the that race - something like the attached patch [obviously 
+> buggy - see the fixme]
 
-So I suggest these references should be removed.  If the platform is not
-going to be merged its pointless carrying the baggage around in drivers.
-Maybe Harald can confirm?
+sched_yield() is always a bug, as is it here. Its an life-lock if the
+woken task is of higher priority than the waking task. A higher prio
+FIFO task calling sched_yield() in a loop is just that, a loop, starving
+the lower prio waker.
 
--- 
-Russell King
- Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
- maintainer of:
+If you've got enough medium prio tasks around to occupy all other cpus,
+you're got indefinite priority inversion, so even on smp its a problem.
+
+But yeah its not the prettiest of solutions but it works.. see that
+other patch with the wake-list stuff for something that ought to work
+for both rt and mainline (except of course it doesn't actually work).
