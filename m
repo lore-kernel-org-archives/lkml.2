@@ -1,103 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752711Ab1INH4P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 03:56:15 -0400
-Received: from mga03.intel.com ([143.182.124.21]:36321 "EHLO mga03.intel.com"
+	id S1752952Ab1INIBk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 04:01:40 -0400
+Received: from mail.avalus.com ([89.16.176.221]:46857 "EHLO mail.avalus.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751306Ab1INH4O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 03:56:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,379,1312182000"; 
-   d="scan'208";a="48603405"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        kirill.shutemov@linux.intel.com,
-        Mika Westerberg <mika.westerberg@linux.intel.com>, stable@kernel.org
-Subject: [PATCH] x86, mrst: use a temporary variable for SFI irq
-Date: Wed, 14 Sep 2011 10:56:23 +0300
-Message-Id: <1315986983-22398-1-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S1752089Ab1INIBj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Sep 2011 04:01:39 -0400
+Date: Wed, 14 Sep 2011 09:01:34 +0100
+From: Alex Bligh <alex@alex.org.uk>
+Reply-To: Alex Bligh <alex@alex.org.uk>
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+cc: Alexey Dobriyan <adobriyan@gmail.com>, netfilter-devel@vger.kernel.org,
+        netfilter@vger.kernel.org, coreteam@netfilter.org,
+        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        Linux Containers <containers@lists.osdl.org>,
+        Alex Bligh <alex@alex.org.uk>
+Subject: Re: [PATCH] Fix repeatable Oops on container destroy with conntrack
+Message-ID: <A51A04647674405AF6C39A4F@nimrod.local>
+In-Reply-To: <20110914013500.GB17051@1984>
+References: <2184C0CE5A5EDC94CDDA5053@Ximines.local>
+ <20110912072524.GA2996@p183.telecom.by> <20110912093749.GE2194@1984>
+ <E0902A9541FD5D118EA02B31@Ximines.local> <20110912183357.GC3641@1984>
+ <87A32B21CA99D62CE1AB7A4B@Ximines.local>
+ <7631498AC7E7C0EAD641AC7D@nimrod.local> <20110914013500.GB17051@1984>
+X-Mailer: Mulberry/4.0.8 (Mac OS X)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SFI tables reside in RAM and should not be modified once they are written.
-Current code went to set pentry->irq to zero which causes subsequent reads
-to fail with invalid SFI table checksum.
 
-To fix this we use temporary variable for irq number.
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Reviewed-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Cc: stable@kernel.org
----
- arch/x86/platform/mrst/mrst.c |   22 ++++++++++++----------
- 1 files changed, 12 insertions(+), 10 deletions(-)
+--On 14 September 2011 03:35:00 +0200 Pablo Neira Ayuso 
+<pablo@netfilter.org> wrote:
 
-diff --git a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/mrst/mrst.c
-index 58425ad..fe73276 100644
---- a/arch/x86/platform/mrst/mrst.c
-+++ b/arch/x86/platform/mrst/mrst.c
-@@ -678,38 +678,40 @@ static int __init sfi_parse_devs(struct sfi_table_header *table)
- 	pentry = (struct sfi_device_table_entry *)sb->pentry;
- 
- 	for (i = 0; i < num; i++, pentry++) {
--		if (pentry->irq != (u8)0xff) { /* native RTE case */
-+		int irq = pentry->irq;
-+
-+		if (irq != (u8)0xff) { /* native RTE case */
- 			/* these SPI2 devices are not exposed to system as PCI
- 			 * devices, but they have separate RTE entry in IOAPIC
- 			 * so we have to enable them one by one here
- 			 */
--			ioapic = mp_find_ioapic(pentry->irq);
-+			ioapic = mp_find_ioapic(irq);
- 			irq_attr.ioapic = ioapic;
--			irq_attr.ioapic_pin = pentry->irq;
-+			irq_attr.ioapic_pin = irq;
- 			irq_attr.trigger = 1;
- 			irq_attr.polarity = 1;
--			io_apic_set_pci_routing(NULL, pentry->irq, &irq_attr);
-+			io_apic_set_pci_routing(NULL, irq, &irq_attr);
- 		} else
--			pentry->irq = 0; /* No irq */
-+			irq = 0; /* No irq */
- 
- 		switch (pentry->type) {
- 		case SFI_DEV_TYPE_IPC:
- 			/* ID as IRQ is a hack that will go away */
--			pdev = platform_device_alloc(pentry->name, pentry->irq);
-+			pdev = platform_device_alloc(pentry->name, irq);
- 			if (pdev == NULL) {
- 				pr_err("out of memory for SFI platform device '%s'.\n",
- 							pentry->name);
- 				continue;
- 			}
--			install_irq_resource(pdev, pentry->irq);
-+			install_irq_resource(pdev, irq);
- 			pr_debug("info[%2d]: IPC bus, name = %16.16s, "
--				"irq = 0x%2x\n", i, pentry->name, pentry->irq);
-+				"irq = 0x%2x\n", i, pentry->name, irq);
- 			sfi_handle_ipc_dev(pdev);
- 			break;
- 		case SFI_DEV_TYPE_SPI:
- 			memset(&spi_info, 0, sizeof(spi_info));
- 			strncpy(spi_info.modalias, pentry->name, SFI_NAME_LEN);
--			spi_info.irq = pentry->irq;
-+			spi_info.irq = irq;
- 			spi_info.bus_num = pentry->host_num;
- 			spi_info.chip_select = pentry->addr;
- 			spi_info.max_speed_hz = pentry->max_freq;
-@@ -726,7 +728,7 @@ static int __init sfi_parse_devs(struct sfi_table_header *table)
- 			memset(&i2c_info, 0, sizeof(i2c_info));
- 			bus = pentry->host_num;
- 			strncpy(i2c_info.type, pentry->name, SFI_NAME_LEN);
--			i2c_info.irq = pentry->irq;
-+			i2c_info.irq = irq;
- 			i2c_info.addr = pentry->addr;
- 			pr_debug("info[%2d]: I2C bus = %d, name = %16.16s, "
- 				"irq = 0x%2x, addr = 0x%x\n", i, bus,
+>> Is this new version OK? I am happy to adjust if not.
+>
+> Hm, I still think that this is a workaround.
+
+It is a bit of a workaround, that is true. But it is a workaround
+that will fix the bug in every kernel since 2.6.32 (and perhaps
+before - I haven't looked). It's thus reasonably easily applicable
+to stable kernel series.
+
+I'm not clued-up enough on Netfilter to know what the right fix is,
+but is applying the workaround in a commit which could be easily
+backported, then applying the 'right fix' (assuming that is different)
+a reasonable strategy?
+
+As you can probably tell, my interest here is to get something that
+doesn't oops into stable kernels.
+
 -- 
-1.7.5.4
-
+Alex Bligh
