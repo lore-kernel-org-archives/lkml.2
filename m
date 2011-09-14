@@ -1,114 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756158Ab1INJtn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 05:49:43 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:63665 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755747Ab1INJtl convert rfc822-to-8bit (ORCPT
+	id S1756208Ab1INJtx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 05:49:53 -0400
+Received: from mail-wy0-f180.google.com ([74.125.82.180]:59699 "EHLO
+	mail-wy0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755747Ab1INJtv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 05:49:41 -0400
+	Wed, 14 Sep 2011 05:49:51 -0400
+X-Greylist: delayed 385 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Sep 2011 05:49:50 EDT
+Message-ID: <4E707742.7050809@gmail.com>
+Date: Wed, 14 Sep 2011 17:43:30 +0800
+From: Shan Hai <haishan.bai@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-In-Reply-To: <CABb+yY36xmq3mKpWOn+ZZuvPehRkSGe720WrQtMie2C-udgZyQ@mail.gmail.com>
-References: <1315374075-15479-1-git-send-email-Baohua.Song@csr.com>
- <438BB0150E931F4B9CE701519A4463010871804A46@bgsmsx502.gar.corp.intel.com>
- <CAGsJ_4x4S+8d3xS+QTrjDpoxcHo3p7qArd7yFr=+h1vxSRvEpA@mail.gmail.com>
- <438BB0150E931F4B9CE701519A4463010871804A48@bgsmsx502.gar.corp.intel.com>
- <CAGsJ_4yeovNP=6CKTafbxrBTrYQ42B9yvAOM8gM_bYqD6mTnUw@mail.gmail.com>
- <CABb+yY1=P=D3GFFxMOUM0a2yWCiAHNqwVU0a--t+pJnUhqKHKA@mail.gmail.com>
- <CABb+yY3F+DMn2SxeO0chjpiMBkgLvSK5EVYMdhQsfQoZNZ4_7Q@mail.gmail.com>
- <CAGsJ_4x0isAUgmTkRavUC6p3K38ho70A+q8Pp2cMLnxbgMEL7Q@mail.gmail.com> <CABb+yY36xmq3mKpWOn+ZZuvPehRkSGe720WrQtMie2C-udgZyQ@mail.gmail.com>
-From: Barry Song <21cnbao@gmail.com>
-Date: Wed, 14 Sep 2011 17:49:20 +0800
-Message-ID: <CAGsJ_4wNFjcvrF2=HbD3xAwpySVaHoB0hMfqNXcYncuZNMca6Q@mail.gmail.com>
-Subject: Re: [PATCH] dmaengine: add CSR SiRFprimaII DMAC driver
-To: Jassi Brar <jassisinghbrar@gmail.com>
-Cc: "Koul, Vinod" <vinod.koul@intel.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "workgroup.linux@csr.com" <workgroup.linux@csr.com>,
-        "rongjun.ying@csr.com" <rongjun.ying@csr.com>,
-        "Baohua.Song@csr.com" <Baohua.Song@csr.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Yong Zhang <yong.zhang0@gmail.com>
+Subject: Re: linux-next: build warning after merge of the tip tree
+References: <20110914163455.fcc47a7aba8604c690988473@canb.auug.org.au> <alpine.LFD.2.02.1109141137260.2723@ionos>
+In-Reply-To: <alpine.LFD.2.02.1109141137260.2723@ionos>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/9/14 Jassi Brar <jassisinghbrar@gmail.com>:
-> On Wed, Sep 14, 2011 at 12:16 PM, Barry Song <21cnbao@gmail.com> wrote:
+On 09/14/2011 05:37 PM, Thomas Gleixner wrote:
+> On Wed, 14 Sep 2011, Stephen Rothwell wrote:
 >
->>> Anyways, every case can be easily expressed using the generic api
->>> I proposed. See 'struct xfer_template' in https://lkml.org/lkml/2011/8/12/128
->>>
->>> Roughly speaking, the following should be done...
->>> Client driver :-
->>> **************
->>> For a 'Rectangular' transfer (2d-dma.PNG) :-
->>>      xfer_template.numf = Ylen;  /* height of rectangle */
->>>      xfer_template.frame_size = 1;
->>>      xfer_template.sgl[0].size = Xlen; /* width of rectangle */
->>>      xfer_template.sgl[0].icg = start_addr_Y(n) - end_addr_Y(n-1);
+>> Hi all,
 >>
->> For prima2:
+>> After merging the tip tree, today's linux-next build (powerpc allnoconfig)
+>> produced this warning:
 >>
->> xfer_template.numf = ylen + 1
->> xfer_template.frame_size = 1;
->> xfer_template.sgl[0].size = xlen;
->> xfer_template.sgl[0].icg = dma_width - xlen;
+>> lib/atomic64.c: In function 'lock_addr':
+>> lib/atomic64.c:42:2: warning: return from incompatible pointer type
 >>
-> All is same as I suggested except for 'numf'.
-> You might want to keep 'numf' same as well. Because the client
-> driver shouldn't need to know that the DMAC's register expect "+1" value.
-> Remember the client is supposed to be reusable over other DMACs as well.
-> So, rather in the DMAC driver, please do
->    schan->ylen = xfer_template.numf + 1;
+>> Introduced by commit f59ca05871a0 ("locking, lib/atomic64: Annotate
+>> atomic64_lock::lock as raw").  This function (which is declared to return
+>> "spinlock_t *") is now returning "raw_spinlock_t *".
+> My bad, it seems I picked the wrong version of the patch.
 
-clients should not know any thing like xlen, ylen, dma_width, which
-are all dmac driver cares. clients only need to know the generic xfer.
-here i am just listing the relationship between client and dmac driver
-to get the confirmation from you  and make sure i haven't
-misunderstood your api :-)
+Hi Thomas,
 
->
->
->>> DMAC driver :-
->>> ***************
->>>      if (xfer_template.frame_size == 1) {
->>>           /* rectangle */
->>>           schan->xlen = xfer_template.sgl[0].size;
->>>           schan->width = schan->xlen + xfer_template.sgl[0].icg;
->>>      } else if (xfer_template.frame_size == 2 &&
->>>                  xfer_template.numf == 1 &&
->>>                  xfer_template.sgl[1].size == xfer_template.sgl[0].icg){
->>>           /* a line and some */
->>>           schan->xlen = xfer_template.sgl[0].size +  xfer_template.sgl[1].size.
->>>           schan->width = xfer_template.sgl[0].size;
->>>      } else {
->>>           /* _Hardware_ doesn't support the transfer as such. *
->>>           return -EINVAL;
->>>      }
->>>      schan->ylen = xfer_template.numf /* -1? */;
->>>
->>
->> For prima2:
->> xfer_template.frame_size is always 1, then
->> schan->xlen = xfer_template.sgl[0].size;
->> schan->width = schan->xlen + xfer_template.sgl[0].icg;
->>
-> Ok, you don't need the 'else if' clause because as you said
-> {xlen > width} is not an option.
-> But you do need the other two checks, so that the DMAC driver
-> cleanly rejects any interleaved-format that it doesn't support.
->
-> Point being, the clients and DMAC drivers are supposed to be
-> very 'promiscuous' - any Client could be 'riding' any DMAC ;)
+Please pick the V4 patch, the last one which I have sent to you,
+I am sorry for the subject line it indicates V3 :(
 
-yes. of course.
-
->
-
--barry
+Thanks
+Shan Hai
