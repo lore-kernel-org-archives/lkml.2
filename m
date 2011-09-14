@@ -1,89 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933175Ab1INUQG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 16:16:06 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:48685 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933027Ab1INUQE (ORCPT
+	id S933188Ab1INUQu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 16:16:50 -0400
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:47089
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933151Ab1INUQt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 16:16:04 -0400
-Subject: Re: [PATCH 1/2] block: export __make_request
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Jens Axboe <axboe@kernel.dk>,
-        linux-raid@vger.kernel.org, dm-devel@redhat.com,
-        linux-kernel@vger.kernel.org, ryanh@us.ibm.com
-In-Reply-To: <4E70E1C1.8040907@panasas.com>
-References: <20110911145053.GA28996@infradead.org>
-	 <4E6DD7F0.8020903@kernel.dk> <20110912122507.GA12229@infradead.org>
-	 <4E6DFA8C.3030400@kernel.dk> <20110912133826.GA22548@infradead.org>
-	 <4E6E49BE.6020005@kernel.dk> <20110913211911.GA13894@infradead.org>
-	 <4E70E1C1.8040907@panasas.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 14 Sep 2011 13:16:01 -0700
-Message-ID: <1316031361.12820.100.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 14 Sep 2011 16:16:49 -0400
+X-SpamScore: -8
+X-BigFish: VPS-8(zz1432N98dKzz1202hzzz32i668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 0,13,
+X-WSS-ID: 0LRJ4B6-02-4UU-02
+X-M-MSG: 
+Date: Wed, 14 Sep 2011 22:16:12 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Don Zickus <dzickus@redhat.com>
+CC: "x86@kernel.org" <x86@kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "ying.huang@intel.com" <ying.huang@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "avi@redhat.com" <avi@redhat.com>, "jeremy@goop.org" <jeremy@goop.org>
+Subject: Re: [V4][PATCH 4/6] x86, nmi:  add in logic to handle multiple
+ events and unknown NMIs
+Message-ID: <20110914201612.GK6063@erda.amd.com>
+References: <1315947509-6429-1-git-send-email-dzickus@redhat.com>
+ <1315947509-6429-5-git-send-email-dzickus@redhat.com>
+ <20110914162653.GI6063@erda.amd.com>
+ <20110914175809.GY5795@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20110914175809.GY5795@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-09-14 at 20:17 +0300, Boaz Harrosh wrote:
-> On 9/14/2011 12:19 AM, Christoph Hellwig wrote:
-> > On Mon, Sep 12, 2011 at 08:04:46PM +0200, Jens Axboe wrote:
-> >>> I really hate naming things different from the method they are
-> >>> implementing.  I've tried to figure out what the point of the
-> >>> old blk_make_request is - why would we not go through
-> >>> generic_make_request for this?
-> >>>
-> >>> Boaz, any idea?
-> >>
-> >> I tend to agree, we could rename the existing blk_make_request(). It
-> >> could be blk_make_request_from_bio() or something like that, since
-> >> that's what it does.
-> >
-> > It should at very least be renamed.  But I still can't figure out what
-> > it is for exactly.
-> >
-> > There are three users:
-> >
-> >   (1) virtio_blk::virtblk_get_id():
-> > 	This looks like it really should just use blk_rq_map_kern.
-> >   (2) osd_initiator::_make_request():
-> > 	This one looks like it should just use the same scheme as
-> > 	sg_io(), as it's doing the same thing.
+On 14.09.11 13:58:09, Don Zickus wrote:
+> On Wed, Sep 14, 2011 at 06:26:53PM +0200, Robert Richter wrote:
+> > On 13.09.11 16:58:27, Don Zickus wrote:
+> > > @@ -87,6 +87,16 @@ static int notrace __kprobes nmi_handle(unsigned int type, struct pt_regs *regs)
+> > >  
+> > >  		handled += a->handler(type, regs);
+> > >  
+> > > +		/*
+> > > + 		 * Optimization: only loop once if this is not a 
+> > > + 		 * back-to-back NMI.  The idea is nothing is dropped
+> > > + 		 * on the first NMI, only on the second of a back-to-back
+> > > + 		 * NMI.  No need to waste cycles going through all the
+> > > + 		 * handlers.
+> > > + 		 */
+> > > +		if (!b2b && handled)
+> > > +			break;
+> > 
+> > Don, if I am not missing something, this actually does not work
+> > because perfctr NMIs do not re-trigger. Suppose a handler running
+> > before perfctr. It sets 'handled' and the chain is stopped here. To
+> > run through the perfctr handler the NMI must retrigger which it
+> > doesn't.
 > 
-> Good god what sg_io? That broken pointr+length from user-mode that sg.c
-> and bsg.c are using? no can do it's not user-mode pointers, and it's not
-> pointer+length it's pages pointers of a bio. The only other structure
-> that could carry the same information is struct sg, but we work very 
-> hard to get rid of this contraption. (scsi_execute_async or something 
-> that it was)
+> Your patch is incorrect.  Your dummy handler does not handle a _real_ NMI.
+> Which means no _real_ NMI was ever generated.  Of course perf won't work.
+> You just swallowed its NMI.
 > 
-> blk_make_request() was made to be the parallel of __make_request, to be
-> used from filesystem level users. But with two differences.
-> 1. Mainly support for none-FS BLOCK_PC requests
-> 2. Also support chained bios. (was added later)
-> 
-> >   (3) target_core_pscsi::__pscsi_map_SG():
-> > 	Same as (2).
-> >
-> 
-> There is no better suitable structure in current Kernel to carry a list
-> of pages, with optional offset and length, then bio struct. Given a bio
-> at hand. how do you make a block request out of it? (If it's not an 
-> FS_PC type IO?)
-> 
-> As I remember target_core had their own pages-linked-list structure, and
-> how do you make a request out of that? again best at hand is bio.
-> 
+> The change I made is for nmi handlers that actually have an NMI associated
+> with them.  The idea is if somebody generated an NMI, it will get handled
+> by a handler.  If perf comes along and generates another NMI, it should
+> get latched.  Upon handling the first NMI, the perf NMI should be sitting
+> queued up and cause the back-to-back NMI. In this case all the handlers
+> will be executed (to handle dropped NMIs).
 
-FYI, for v3.1-rc code, target core has been converted to use native
-struct scatterlist for everything, and the legacy struct se_mem that
-existed before the advent of modern >= .24 SGL linking, et al. has been
-completely removed.
+Yes, your thought about the latched NMI could work. Though I better
+test this with some real nmis from different sources.  Unfortunately
+this is much harder to trigger. Will give it a try. It would be a
+pretty nice optimization then.
 
---nab
+> My only question to you is the IBS stuff you were working on.  Does that
+> generate a _real_ NMI or does it just piggy back off of the perf NMI?
 
+Yes, IBS generates real NMIs, there is an own interrupt vector for
+it.
+
+-Robert
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
