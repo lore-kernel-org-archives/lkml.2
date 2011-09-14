@@ -1,59 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756763Ab1INPCJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 11:02:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28503 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751612Ab1INPCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 11:02:07 -0400
-Message-ID: <4E70C1BE.7060209@redhat.com>
-Date: Wed, 14 Sep 2011 18:01:18 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
+	id S1756773Ab1INPC1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 11:02:27 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:51224 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751612Ab1INPC0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Sep 2011 11:02:26 -0400
+Date: Wed, 14 Sep 2011 11:02:25 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Sameer Nanda <snanda@chromium.org>
+cc: gregkh@suse.de, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] USB: ehci-pci: Check and enable wakeup capability
+In-Reply-To: <1315955661-29493-1-git-send-email-snanda@chromium.org>
+Message-ID: <Pine.LNX.4.44L0.1109141056310.2066-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Don Zickus <dzickus@redhat.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@kernel.dk>, Marcelo Tosatti <mtosatti@redhat.com>,
-        KVM <kvm@vger.kernel.org>, Xen Devel <xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: Re: [PATCH 08/13] xen/pvticketlock: disable interrupts while blocking
-References: <20110907134411.GV5795@redhat.com> <4E678992.5050709@redhat.com> <20110907155657.GX5795@redhat.com> <4E679AF4.50209@redhat.com> <20110907165203.GQ6838@redhat.com> <4E67A551.4000502@redhat.com> <20110913184044.GN5795@redhat.com> <20110913190320.GR7761@one.firstfloor.org> <20110913192152.GO5795@redhat.com> <4E7050F7.3000208@redhat.com> <20110914144926.GU7761@one.firstfloor.org>
-In-Reply-To: <20110914144926.GU7761@one.firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/14/2011 05:49 PM, Andi Kleen wrote:
-> On Wed, Sep 14, 2011 at 10:00:07AM +0300, Avi Kivity wrote:
-> >  On 09/13/2011 10:21 PM, Don Zickus wrote:
-> >  >Or are you saying an NMI in an idle system will have the same %rip thus
-> >  >falsely detecting a back-to-back NMI?
-> >  >
-> >  >
-> >
-> >  That's easy to avoid - insert an instruction zeroing the last nmi_rip
-> >  somewhere before or after hlt.  It's always okay to execute such an
-> >  instruction (outside the nmi handler itself), since nmi_rip is meant to
-> >  detect a "no instructions executed" condition.
->
-> At least for classic hlt there is no simple "after hlt" because it's all
-> interrupt handlers and exceptions and everything else that can interrupt
-> combined.
+On Tue, 13 Sep 2011, Sameer Nanda wrote:
 
-If an NMI hits in an interrupt handler, or in the "after hlt" section 
-before the write-to-last-nmi-rip, then we'll see that %rip has changed.  
-If it hits after the write-to-last-nmi-rip instruction (or in the hlt 
-itself), then we'll also see that %rip has changed, due to the effect of 
-that instruction.
+> If the PORTWAK register is implemented and at least one of the physical
+> ports is enabled for wakeup, enable wakeup for the ehci-pci device.
 
--- 
-error compiling committee.c: too many arguments to function
+NAK.  Our current policy is that devices do not get enabled for wakeup 
+by default unless users expect it (things like keyboards and power 
+buttons, maybe LAN interfaces).
+
+One certainly can question this policy.  It might make sense to enable 
+wakeup for devices that don't generate wakeup events on their own but 
+merely act as bridges for other devices.  By this reasoning, all USB 
+host controllers should always be enabled for wakeup by default -- not 
+just some of the PCI-based controllers.  But this is a separate matter 
+and should be discussed on the mailing list.
+
+Alan Stern
 
