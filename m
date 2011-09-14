@@ -1,51 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756371Ab1INQEV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 12:04:21 -0400
-Received: from www.linutronix.de ([62.245.132.108]:42192 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754215Ab1INQEU (ORCPT
+	id S1756552Ab1INQH4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 12:07:56 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:54549 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754662Ab1INQHz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 12:04:20 -0400
-Date: Wed, 14 Sep 2011 18:04:18 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Tero Kristo <t-kristo@ti.com>
-cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] irq: call also chip->irq_mask from irq_disable
-In-Reply-To: <1315990675-22814-1-git-send-email-t-kristo@ti.com>
-Message-ID: <alpine.LFD.2.02.1109141757150.2723@ionos>
-References: <1315990675-22814-1-git-send-email-t-kristo@ti.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 14 Sep 2011 12:07:55 -0400
+Date: Wed, 14 Sep 2011 20:07:25 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Pavel Machek <pavel@ucw.cz>, Andrew Morton <akpm00@gmail.com>,
+        linux-kernel@vger.kernel.org, containers@lists.osdl.org,
+        linux-fsdevel@vger.kernel.org, Kirill Shutemov <kirill@shutemov.name>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Nathan Lynch <ntl@pobox.com>, Zan Lynx <zlynx@acm.org>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>, Tejun Heo <tj@kernel.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [patch 2/2] fs, proc: Introduce the /proc/<pid>/map_files/
+ directory v12
+Message-ID: <20110914160724.GA10612@albatros>
+References: <20110913211359.674453213@openvz.org>
+ <20110913212447.918816776@openvz.org>
+ <20110913235222.043927b3.akpm@linux-foundation.org>
+ <20110914105607.GP25367@sun>
+ <20110914111437.GA22516@atrey.karlin.mff.cuni.cz>
+ <20110914113912.GQ25367@sun>
+ <20110914134405.GV25367@sun>
+ <20110914144841.GA7906@albatros>
+ <20110914160018.GW25367@sun>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110914160018.GW25367@sun>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Sep 2011, Tero Kristo wrote:
+On Wed, Sep 14, 2011 at 20:00 +0400, Cyrill Gorcunov wrote:
+> On Wed, Sep 14, 2011 at 06:48:41PM +0400, Vasiliy Kulikov wrote:
+> ...
+> > 
+> > Actually now I see the difference between having something mapped and
+> > having an _fd_ of this something.
+> > 
+> > Relevant code:
+> > 
+> > +static struct dentry *
+> > +proc_map_files_instantiate(struct inode *dir, struct dentry *dentry,
+> > +              struct task_struct *task, const void *ptr)
+> > +{
+> > ...
+> > +   inode->i_mode = S_IFLNK;
+> > +
+> > +   if (file->f_mode & FMODE_READ)
+> > +       inode->i_mode |= S_IRUSR | S_IXUSR;
+> > +   if (file->f_mode & FMODE_WRITE)
+> > +       inode->i_mode |= S_IWUSR | S_IXUSR;
+> > 
+> > 
+> > If you have a write mmap area, but no fd, you may not trunc a file; with
+> > map_files/ you may get an fd and ftrunc it.
+> > 
+> 
+> This stands for anonymous memory, and if you have enough rights to
+> access the task this ftruncate is the last problem (since having ptrace
+> access to the task I _aready_ can trash various stuff inside, i dont need
+> even bother to look into map_files/ or whatever). So I don't see how
+> ftruncate migh harm you here?
 
-> Current implementation of the irq_disable only calls chip->irq_disable.
-> This fails to disable interrupt on some chip implementations, as there
-> are two alternative chip specific functions for this task,
-> chip->irq_disable and chip->irq_mask. Added alternative path for
-> chip->irq_disable also.
+No, I mean something else.  Assume you have a task, which does the
+steps:
 
-This does not fail to do so. It's done on purpose. We don't want to
-access the interrupt chip when we can avoid it.
+1) opens some sensitive file as root.  This file is e.g. 0700.
 
-So we just mark the interrupt disabled and keep the line enabled.
-When another interrupt happens, then the handling code checks the
-disabled state of the line, masks the interrupt on the hardware level
-and sets the pending bit. This is documented behaviour and not going
-to change.
+2) mmaps the file via opened fd, either RO or RW.
 
-http://docs.blackfin.uclinux.org/kernel/generated/genericirq/ch04s03.html#Delayed_interrupt_disable
+3) closes fd.
 
-What are you trying to solve ?
+4) drops root.
 
-Thanks,
+Now it has a mapping of a privileged file, but cannot get fd of it
+anyhow.  With map_files/ he may open his own /proc/$$/map_files/, pass
+ptrace() check, and get fd of the privileged file.  He cannot explicitly
+open it as it is 0700, but he may open it via map_files/ and get RO/RW
+fd.
 
-	tglx
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
