@@ -1,99 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756561Ab1INMMf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 08:12:35 -0400
-Received: from fieldses.org ([174.143.236.118]:58977 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756500Ab1INMMd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 08:12:33 -0400
-Date: Wed, 14 Sep 2011 08:12:25 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, Neil Brown <neilb@suse.de>,
-        "David S. Miller" <davem@davemloft.net>, linux-nfs@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH net-next-2.6 ] Fix overflow of socket buffer in sunrpc
-Message-ID: <20110914121225.GA3435@fieldses.org>
-References: <20110902034138.22595.9759.stgit@ltc219.sdl.hitachi.co.jp>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110902034138.22595.9759.stgit@ltc219.sdl.hitachi.co.jp>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932416Ab1INMX3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 08:23:29 -0400
+Received: from mail.visioncatalog.de ([217.6.246.34]:44565 "EHLO
+	root.phytec.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932370Ab1INMX2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Sep 2011 08:23:28 -0400
+Subject: Re: [RFC] w1: Disable irqs in critical section
+From: Jan Weitzel <J.Weitzel@phytec.de>
+Reply-To: J.Weitzel@phytec.de
+To: Andrew Morton <akpm@google.com>
+Cc: Evgeniy Polyakov <zbr@ioremap.net>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <20110913154142.f14b2c4c.akpm@google.com>
+References: <1315385312-1176-1-git-send-email-j.weitzel@phytec.de>
+	 <20110907175059.GA12074@ioremap.net> <1315460781.4396.10.camel@lws-weitzel>
+	 <20110913154142.f14b2c4c.akpm@google.com>
+Organization: PHYTEC Messtechnik GmbH
+Date: Wed, 14 Sep 2011 14:23:25 +0200
+Message-ID: <1316003005.4369.10.camel@lws-weitzel>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+X-MIMETrack: Itemize by SMTP Server on Idefix/Phytec(Release 8.5.2FP2|March 22, 2011) at
+ 14.09.2011 14:23:25,
+	Serialize by Router on Idefix/Phytec(Release 8.5.2FP2|March 22, 2011) at
+ 14.09.2011 14:23:26,
+	Serialize complete at 14.09.2011 14:23:26
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="UTF-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 02, 2011 at 12:41:38PM +0900, Mitsuo Hayasaka wrote:
-> The sk_sndbuf and sk_rcvbuf fields of struct sock are sizes of send and
-> receive socket buffers respectively, and are defined as integer.
-> The sunrpc which is used in NFSD and any other applications
-
-I'd call those "kernel subsystems" or "in-kernel applications"--it needs
-to be clear that you're not talking about userspace applications.
-
-> can change them
-> via svc_sock_setbufsize(). It, however, sets them as unsigned integer and
-> may cause overflow of integer. This leads to a degradation of networking
-> capability.
-
-Tracing through the callers, actually I believe they all set this to a
-constant, with the single exception of nfsd, which allows the size to be
-configured; but write_maxlksize already limits it to NFSSVC_MAXBLKSIZE.
-
-So this patch looks unnecessary to me, unless I'm missing something.
-
-If you can argue that it would be safer to check here as well, I might
-consider that, but please:
-
-	- do make that argument in detail;
-	- especially, convince me that *this* is the right place for the
-	  check; and
-	- also double-check my audit of the callers.
-
-And include all that in the changelog.
-
-Dropping for now.
-
---b.
-
+Am Dienstag, den 13.09.2011, 15:41 -0700 schrieb Andrew Morton:
+> On Thu, 08 Sep 2011 07:46:21 +0200
+> Jan Weitzel <J.Weitzel@phytec.de> wrote:
 > 
-> This patch adds integer-overflow check into svc_sock_setbufsize() before
-> both fields are set, and limits their maximum sizes to INT_MAX.
+> > Am Mittwoch, den 07.09.2011, 21:50 +0400 schrieb Evgeniy Polyakov:
+> > > On Wed, Sep 07, 2011 at 10:48:32AM +0200, Jan Weitzel (j.weitzel@phytec.de) wrote:
+> > > > Interrupting w1_delay in w1_read_bit results in missing the low level
+> > > > on the w1 line and receiving "1" instead of "0".
+> > > > Adding local_irq_save / local_irq_restore around the critical section
+> > > 
+> > > This means that CPU will be essentially stuck for 15 useconds for every
+> > > bit transferred, doesn't really look like a good idea.
+> > > 
+> > > Are you absolutely sure that missing bit is because of timings and not
+> > > some other bug?
+> > > 
+> > 
+> > I trigger a gpio line after the samplepoint. I case of a wrong bit the
+> > sample is taken after the "0 gap". The cycle time (samplt to sample)is
+> > increased form about 80__s to 95__s. 
+> > I did the measurement with the w1-gpio driver on a OMAP4 board.
+> > 
 > 
-> Signed-off-by: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
-> Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
-> Cc: "J. Bruce Fields" <bfields@fieldses.org>
-> Cc: Neil Brown <neilb@suse.de>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> ---
+> I'm not clear on how w1 actually works.  Is it a bit-banging
+> protocol in which the timing is provided by the host CPU?  If so then
+correct.
+> yes, we should carefully disable interrupts in places where an
+> interrupt would disrupt critical timing.  (But what to do about NMIs
+> and SMIs?)
+fortunately on our embedded platform we have no SMIs
+> Disabling interrupts for 15us is pretty obnoxious, but there's a 55us
+> delay there with interrupts enabled, so the overall effect shouldn't be
+> too bad.
 > 
->  net/sunrpc/svcsock.c |    6 ++++++
->  1 files changed, 6 insertions(+), 0 deletions(-)
+> Finally, can we fine-tune the interrupt-disabled section a bit?  For
+> example, can the local_irq_disable() be moved to after the
+> write_bit(..., 0)?
 > 
-> diff --git a/net/sunrpc/svcsock.c b/net/sunrpc/svcsock.c
-> index 767d494..bd66775 100644
-> --- a/net/sunrpc/svcsock.c
-> +++ b/net/sunrpc/svcsock.c
-> @@ -54,6 +54,7 @@
->  #include "sunrpc.h"
->  
->  #define RPCDBG_FACILITY	RPCDBG_SVCXPRT
-> +#define MAX_SKBUFSIZ	INT_MAX
->  
->  
->  static struct svc_sock *svc_setup_socket(struct svc_serv *, struct socket *,
-> @@ -435,6 +436,11 @@ static void svc_sock_setbufsize(struct socket *sock, unsigned int snd,
->  	 * on not having CAP_SYS_RESOURCE or similar, we go direct...
->  	 * DaveM said I could!
->  	 */
-> +	if (snd > MAX_SKBUFSIZ/2)
-> +		snd = MAX_SKBUFSIZ/2;
-> +	if (rcv > MAX_SKBUFSIZ/2)
-> +		rcv = MAX_SKBUFSIZ/2;
-> +
->  	lock_sock(sock->sk);
->  	sock->sk->sk_sndbuf = snd * 2;
->  	sock->sk->sk_rcvbuf = rcv * 2;
-> 
+The falling edge from 1 to 0 starts timing for the slave. After the 6µs
+the slave should drive the line low (In case the information bit is
+"0"). So there is no additional edge on the line. If there is an
+interrupt and the low pulse from master is longer, slave did't see it.
+Master need to generate the 1 -> 0 transition and measure after 15µs
+
+I tested it anyhow. Behaviour is slightly better than without disabling
+interrupts. Only disabling it for 15µs fix the problem. 
+
+Jan
+
