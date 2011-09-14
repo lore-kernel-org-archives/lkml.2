@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751490Ab1INFZI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 01:25:08 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:46854 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750984Ab1INFZG (ORCPT
+	id S1751519Ab1INFyy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 01:54:54 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:52883 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751134Ab1INFyw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 01:25:06 -0400
-Date: Wed, 14 Sep 2011 15:25:01 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Oberparleiter <peter.oberparleiter@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: linux-next: manual merge of the moduleh tree with the s390 tree
-Message-Id: <20110914152501.90490a58e3601e47a7d53c60@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 14 Sep 2011 01:54:52 -0400
+Date: Wed, 14 Sep 2011 09:54:46 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: linux-kernel@vger.kernel.org, containers@lists.osdl.org,
+        linux-fsdevel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Nathan Lynch <ntl@pobox.com>, Zan Lynx <zlynx@acm.org>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>,
+        Vasiliy Kulikov <segoon@openwall.com>, Tejun Heo <tj@kernel.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Subject: Re: [patch 2/2] fs, proc: Introduce the /proc/<pid>/map_files/
+ directory v12
+Message-ID: <20110914055446.GK25367@sun>
+References: <20110913211359.674453213@openvz.org>
+ <20110913212447.918816776@openvz.org>
+ <20110914023428.GA4034@shutemov.name>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110914023428.GA4034@shutemov.name>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+On Wed, Sep 14, 2011 at 05:34:28AM +0300, Kirill A. Shutemov wrote:
+...
+> > 
+> > Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
+> > Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> > CC: Tejun Heo <tj@kernel.org>
+> > CC: Vasiliy Kulikov <segoon@openwall.com>
+> > CC: "Kirill A. Shutemov" <kirill@shutemov.name>
+> > CC: Alexey Dobriyan <adobriyan@gmail.com>
+> > CC: Al Viro <viro@ZenIV.linux.org.uk>
+> > CC: Andrew Morton <akpm@linux-foundation.org>
+> 
+> Reviewed-by: Kirill A. Shutemov <kirill@shutemov.name>
+>
 
-Today's linux-next merge of the moduleh tree got a conflict in
-drivers/s390/char/vmur.c between commit 003184781fea ("[S390] s390: fix
-mismatch in summation of I/O IRQ statistics") from the s390 tree and
-commit e7a6a4ef9ffe ("s390: add missing module.h/export.h includes") from
-the moduleh tree.
-
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.  (Or this part of the moduleh commit could be added to the
-s390 tree.)
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/s390/char/vmur.c
-index d291a54,c9782ff..0000000
---- a/drivers/s390/char/vmur.c
-+++ b/drivers/s390/char/vmur.c
-@@@ -11,6 -11,8 +11,7 @@@
-  #define KMSG_COMPONENT "vmur"
-  #define pr_fmt(fmt) KMSG_COMPONENT ": " fmt
-  
- -#include <linux/kernel_stat.h>
-+ #include <linux/module.h>
-  #include <linux/cdev.h>
-  #include <linux/slab.h>
-  
+Thanks for review, Kirill!
