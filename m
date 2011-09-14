@@ -1,66 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756520Ab1INLOm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 07:14:42 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:37436 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756483Ab1INLOl (ORCPT
+	id S932149Ab1INLb2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 07:31:28 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:36230 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756518Ab1INLb1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 07:14:41 -0400
-Date: Wed, 14 Sep 2011 13:14:38 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Andrew Morton <akpm00@gmail.com>, linux-kernel@vger.kernel.org,
-        containers@lists.osdl.org, linux-fsdevel@vger.kernel.org,
-        Kirill Shutemov <kirill@shutemov.name>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Nathan Lynch <ntl@pobox.com>, Zan Lynx <zlynx@acm.org>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>,
-        Vasiliy Kulikov <segoon@openwall.com>, Tejun Heo <tj@kernel.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [patch 2/2] fs, proc: Introduce the /proc/<pid>/map_files/
-	directory v12
-Message-ID: <20110914111437.GA22516@atrey.karlin.mff.cuni.cz>
-References: <20110913211359.674453213@openvz.org> <20110913212447.918816776@openvz.org> <20110913235222.043927b3.akpm@linux-foundation.org> <20110914105607.GP25367@sun>
+	Wed, 14 Sep 2011 07:31:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110914105607.GP25367@sun>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CAJ0pr1-2K5Emr+Sq4MqcBoYFDRVV9=HE9_A0U72SZrT1DFEy3A@mail.gmail.com>
+References: <1315990017-16912-1-git-send-email-per.forlin@linaro.org>
+	<1315990017-16912-3-git-send-email-per.forlin@linaro.org>
+	<CAC5umygS+viGcG2wAi=7vbjmiQB1jVgwKNAeZxDxB4WMC-teGg@mail.gmail.com>
+	<CAJ0pr1-WiLDS-wdb1je81L=tk0TVCbH9eci2YZ=JBp+G7rZ0GQ@mail.gmail.com>
+	<CAJ0pr1-2K5Emr+Sq4MqcBoYFDRVV9=HE9_A0U72SZrT1DFEy3A@mail.gmail.com>
+Date: Wed, 14 Sep 2011 13:31:25 +0200
+Message-ID: <CAJ0pr186Q-Yk=O8PEJYBDijFoj3AAUNLoZexbXqb9t8czCp86A@mail.gmail.com>
+Subject: Re: [PATCH v2 2/3] mmc: add module param to set fault injection attributes
+From: Per Forlin <per.forlin@linaro.org>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: linaro-dev@lists.linaro.org, Linus Walleij <linus.walleij@linaro.org>,
+        linux-mmc@vger.kernel.org, Chris Ball <cjb@laptop.org>,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On 14 September 2011 12:38, Per Forlin <per.forlin@linaro.org> wrote:
+> On 14 September 2011 12:18, Per Forlin <per.forlin@linaro.org> wrote:
+>> On 14 September 2011 12:05, Akinobu Mita <akinobu.mita@gmail.com> wrote:
+>>> 2011/9/14 Per Forlin <per.forlin@linaro.org>:
+>>>
+>>>> +#ifdef CONFIG_FAIL_MMC_REQUEST
+>>>> +
+>>>> +static DECLARE_FAULT_ATTR(fail_default_attr);
+>>>> +static char *fail_request;
+>>>
+>>> This is not used anymore and ...
+>>>
+>> Yes of course. Will remove it.
+>>
+>>>> +static int fail_mmc_request_param_set(const char *val,
+>>>> +                                     const struct kernel_param *kp)
+>>>> +{
+>>>> +       setup_fault_attr(&fail_default_attr, (char *) val);
+> I am thinking of returning failure here if setup_fault_attr() fails.
+> if (setup_fault_attr(&fail_default_attr, (char *) val) == 0)
+>  return -EINVAL;
+>
+> There will be a printk(KERN_WARNING "FAULT_INJECTION: failed to parse
+> arguments) it setup() fails. Is it too harsh to return failure?
+>
+If error is returned here the kernel prints: "invalid for parameter
+`mmc_core.fail_request'"
+This piece of information is a reason for returning error on failure.
 
-> > 
-> > > This one behaves similarly to the /proc/<pid>/fd/ one - it contains symlinks
-> > > one for each mapping with file, the name of a symlink is "vma->vm_start-vma->vm_end",
-> > > the target is the file. Opening a symlink results in a file that point exactly
-> > > to the same inode as them vma's one.
-> > 
-> > We should fully work through Pavel Machek's comments, please.  For some
-> > reason I'm a bit paranoid about security lately :(
-> 
-> Pavel, I somehow lost. What exactly the security issue here? There are a few
-> patches from Vasiliy in -mm queue at moment. In particular one includes
-> .permission set for fd/ handling. So I've updated the map_files as well
-> (it's below). So please review and point me where the problem
-> is. Thanks!
-
-AFAICT, this recreates existing problem with /proc/<pid>/fd (see
-discussion at 
-
-http://www.securityfocus.com/archive/1/507386/30/0/threaded
-
-). It creates object that looks like symlink, but does not behave as
-one, and permissions of directories are not checked as they would be
-if it was a symlink.
-
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Regards,
+Per
