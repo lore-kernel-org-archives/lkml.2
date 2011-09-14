@@ -1,90 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933051Ab1INTxS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 15:53:18 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:35333 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932918Ab1INTxQ (ORCPT
+	id S933096Ab1INTxU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 15:53:20 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:59237 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932973Ab1INTxS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 15:53:16 -0400
+	Wed, 14 Sep 2011 15:53:18 -0400
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 0/3] Fix various typos in the kernel.
-Date: Wed, 14 Sep 2011 12:52:45 -0700
-Message-Id: <1316029968-11277-1-git-send-email-justinmattock@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH 1/3]Fix typos in the kernel
+Date: Wed, 14 Sep 2011 12:52:46 -0700
+Message-Id: <1316029968-11277-2-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.6
+In-Reply-To: <1316029968-11277-1-git-send-email-justinmattock@gmail.com>
+References: <1316029968-11277-1-git-send-email-justinmattock@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: "Justin P. Mattock" <justinmattock@gmail.com>
 
-The patch's below fix various typos that I have found in the kernel. 
-Note: I am not sure if trivial will receive this or any other list for that matter due to 
-kernel.org being down.
+The below patch fixes some typos that I have found in the kernel.
+Note:not sure if I am able to send this, due to kernel.org being down.
 
+ Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- arch/arm/mach-omap2/smartreflex.c                  |    2 +-
- arch/arm/plat-omap/include/plat/serial.h           |    4 ++--
- arch/powerpc/include/asm/io.h                      |    2 +-
- arch/powerpc/include/asm/keylargo.h                |    2 +-
- arch/powerpc/mm/numa.c                             |    2 +-
- arch/powerpc/platforms/embedded6xx/storcenter.c    |    2 +-
- arch/sparc/kernel/smp_64.c                         |    4 ++--
- drivers/acpi/acpica/hwxface.c                      |    2 +-
- drivers/base/regmap/regmap.c                       |    2 +-
- drivers/block/xen-blkback/xenbus.c                 |    2 +-
- drivers/char/ipmi/ipmi_bt_sm.c                     |    2 +-
- drivers/edac/ppc4xx_edac.c                         |    2 +-
- drivers/media/video/zoran/zoran_driver.c           |    2 +-
- drivers/message/fusion/lsi/mpi_ioc.h               |    2 +-
- drivers/net/arm/ks8695net.c                        |    2 +-
- drivers/net/atlx/atl1.c                            |    2 +-
- drivers/net/cs89x0.c                               |    2 +-
- drivers/net/irda/nsc-ircc.c                        |    2 +-
- drivers/net/irda/via-ircc.c                        |    4 ++--
- drivers/net/irda/w83977af_ir.c                     |    2 +-
- drivers/net/qlge/qlge_main.c                       |    2 +-
- drivers/net/sky2.c                                 |    2 +-
- drivers/net/tile/tilepro.c                         |    2 +-
- drivers/net/wimax/i2400m/i2400m.h                  |    2 +-
- drivers/net/wireless/rtlwifi/pci.c                 |    2 +-
- drivers/net/wireless/rtlwifi/rtl8192de/hw.c        |    4 ++--
- drivers/parport/parport_mfc3.c                     |    2 +-
- drivers/scsi/aic7xxx/aicasm/aicasm.c               |    2 +-
- drivers/scsi/ips.c                                 |    2 +-
- drivers/scsi/qla4xxx/ql4_fw.h                      |    2 +-
- drivers/scsi/vmw_pvscsi.c                          |    2 +-
- drivers/staging/brcm80211/brcmfmac/sdio_host.h     |    2 +-
- .../comedi/drivers/addi-data/hwdrv_apci3200.c      |    2 +-
- drivers/staging/cxt1e1/libsbew.h                   |    2 +-
- drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c   |    4 ++--
- drivers/staging/ft1000/ft1000-usb/ft1000_hw.c      |    2 +-
- drivers/staging/iio/industrialio-trigger.c         |    2 +-
- drivers/staging/sep/sep_driver.c                   |    2 +-
- drivers/staging/tidspbridge/Kconfig                |    2 +-
- drivers/staging/tidspbridge/rmgr/dbdcd.c           |    2 +-
- drivers/tty/serial/mrst_max3110.c                  |    2 +-
- drivers/usb/gadget/langwell_udc.c                  |    2 +-
- drivers/usb/host/hwa-hc.c                          |    2 +-
- drivers/usb/host/imx21-hcd.c                       |    2 +-
- drivers/usb/musb/musb_gadget.c                     |    2 +-
- drivers/usb/otg/fsl_otg.c                          |    2 +-
- drivers/uwb/i1480/dfu/usb.c                        |    2 +-
- fs/btrfs/inode.c                                   |    2 +-
- fs/ext3/inode.c                                    |    2 +-
- fs/ext4/inode.c                                    |    2 +-
- fs/nfsd/nfs4state.c                                |    2 +-
- fs/ocfs2/file.c                                    |    2 +-
- fs/xfs/xfs_file.c                                  |    6 +++---
- fs/xfs/xfs_log_cil.c                               |    2 +-
- include/drm/drmP.h                                 |    2 +-
- include/linux/wanrouter.h                          |    2 +-
- include/net/mac80211.h                             |    2 +-
- net/ipv4/ip_fragment.c                             |    2 +-
- net/mac80211/work.c                                |    2 +-
- net/sctp/endpointola.c                             |    2 +-
- tools/power/cpupower/debug/i386/intel_gsic.c       |    2 +-
- 61 files changed, 68 insertions(+), 68 deletions(-)
+ arch/arm/mach-omap2/smartreflex.c               |    2 +-
+ arch/arm/plat-omap/include/plat/serial.h        |    4 ++--
+ arch/powerpc/include/asm/io.h                   |    2 +-
+ arch/powerpc/include/asm/keylargo.h             |    2 +-
+ arch/powerpc/mm/numa.c                          |    2 +-
+ arch/powerpc/platforms/embedded6xx/storcenter.c |    2 +-
+ arch/sparc/kernel/smp_64.c                      |    4 ++--
+ drivers/acpi/acpica/hwxface.c                   |    2 +-
+ drivers/base/regmap/regmap.c                    |    2 +-
+ drivers/block/xen-blkback/xenbus.c              |    2 +-
+ drivers/char/ipmi/ipmi_bt_sm.c                  |    2 +-
+ drivers/edac/ppc4xx_edac.c                      |    2 +-
+ drivers/media/video/zoran/zoran_driver.c        |    2 +-
+ 13 files changed, 15 insertions(+), 15 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/smartreflex.c b/arch/arm/mach-omap2/smartreflex.c
+index 34c01a7..f49804f 100644
+--- a/arch/arm/mach-omap2/smartreflex.c
++++ b/arch/arm/mach-omap2/smartreflex.c
+@@ -247,7 +247,7 @@ static void sr_stop_vddautocomp(struct omap_sr *sr)
+  * driver register and sr device intializtion API's. Only one call
+  * will ultimately succeed.
+  *
+- * Currently this function registers interrrupt handler for a particular SR
++ * Currently this function registers interrupt handler for a particular SR
+  * if smartreflex class driver is already registered and has
+  * requested for interrupts and the SR interrupt line in present.
+  */
+diff --git a/arch/arm/plat-omap/include/plat/serial.h b/arch/arm/plat-omap/include/plat/serial.h
+index de3b10c..c457b6a 100644
+--- a/arch/arm/plat-omap/include/plat/serial.h
++++ b/arch/arm/plat-omap/include/plat/serial.h
+@@ -2,7 +2,7 @@
+  * arch/arm/plat-omap/include/mach/serial.h
+  *
+  * Copyright (C) 2009 Texas Instruments
+- * Addded OMAP4 support- Santosh Shilimkar <santosh.shilimkar@ti.com>
++ * Added OMAP4 support- Santosh Shilimkar <santosh.shilimkar@ti.com>
+  *
+  * This program is distributed in the hope that it will be useful,
+  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+@@ -24,7 +24,7 @@
+  *
+  * 1. Kernel uncompress code cannot overlap OMAP_UART_INFO as the
+  *    uncompress code could then partially overwrite itself
+- * 2. We assume printascii is called at least once before paging_init,
++ * 2. We assume print ascii is called at least once before paging_init,
+  *    and addruart has a chance to read OMAP_UART_INFO
+  */
+ #define OMAP_UART_INFO		(PLAT_PHYS_OFFSET + 0x3ffc)
+diff --git a/arch/powerpc/include/asm/io.h b/arch/powerpc/include/asm/io.h
+index 45698d5..2fd3645 100644
+--- a/arch/powerpc/include/asm/io.h
++++ b/arch/powerpc/include/asm/io.h
+@@ -394,7 +394,7 @@ __do_out_asm(_rec_outl, "stwbrx")
+ #endif /* CONFIG_PPC32 */
+ 
+ /* The "__do_*" operations below provide the actual "base" implementation
+- * for each of the defined acccessor. Some of them use the out_* functions
++ * for each of the defined accessor. Some of them use the out_* functions
+  * directly, some of them still use EEH, though we might change that in the
+  * future. Those macros below provide the necessary argument swapping and
+  * handling of the IO base for PIO.
+diff --git a/arch/powerpc/include/asm/keylargo.h b/arch/powerpc/include/asm/keylargo.h
+index d8520ef..01b1ae4 100644
+--- a/arch/powerpc/include/asm/keylargo.h
++++ b/arch/powerpc/include/asm/keylargo.h
+@@ -51,7 +51,7 @@
+ 
+ #define KL_GPIO_SOUND_POWER		(KEYLARGO_GPIO_0+0x05)
+ 
+-/* Hrm... this one is only to be used on Pismo. It seeem to also
++/* Hrm... this one is only to be used on Pismo. It seem's to also
+  * control the timebase enable on other machines. Still to be
+  * experimented... --BenH.
+  */
+diff --git a/arch/powerpc/mm/numa.c b/arch/powerpc/mm/numa.c
+index 2164006..ef2674d 100644
+--- a/arch/powerpc/mm/numa.c
++++ b/arch/powerpc/mm/numa.c
+@@ -511,7 +511,7 @@ static int of_get_assoc_arrays(struct device_node *memory,
+ 	aa->n_arrays = *prop++;
+ 	aa->array_sz = *prop++;
+ 
+-	/* Now that we know the number of arrrays and size of each array,
++	/* Now that we know the number of arrays and size of each array,
+ 	 * revalidate the size of the property read in.
+ 	 */
+ 	if (len < (aa->n_arrays * aa->array_sz + 2) * sizeof(unsigned int))
+diff --git a/arch/powerpc/platforms/embedded6xx/storcenter.c b/arch/powerpc/platforms/embedded6xx/storcenter.c
+index 613070e..f1eebca 100644
+--- a/arch/powerpc/platforms/embedded6xx/storcenter.c
++++ b/arch/powerpc/platforms/embedded6xx/storcenter.c
+@@ -77,7 +77,7 @@ static void __init storcenter_setup_arch(void)
+ }
+ 
+ /*
+- * Interrupt setup and service.  Interrrupts on the turbostation come
++ * Interrupt setup and service.  Interrupts on the turbostation come
+  * from the four PCI slots plus onboard 8241 devices: I2C, DUART.
+  */
+ static void __init storcenter_init_IRQ(void)
+diff --git a/arch/sparc/kernel/smp_64.c b/arch/sparc/kernel/smp_64.c
+index 4a442c3..0101eea 100644
+--- a/arch/sparc/kernel/smp_64.c
++++ b/arch/sparc/kernel/smp_64.c
+@@ -840,9 +840,9 @@ static void tsb_sync(void *info)
+ 	struct trap_per_cpu *tp = &trap_block[raw_smp_processor_id()];
+ 	struct mm_struct *mm = info;
+ 
+-	/* It is not valid to test "currrent->active_mm == mm" here.
++	/* It is not valid to test "current->active_mm == mm" here.
+ 	 *
+-	 * The value of "current" is not changed atomically with
++	 * The value of "current" is not changed automatically with
+ 	 * switch_mm().  But that's OK, we just need to check the
+ 	 * current cpu's trap block PGD physical address.
+ 	 */
+diff --git a/drivers/acpi/acpica/hwxface.c b/drivers/acpi/acpica/hwxface.c
+index f75f81a..f34ba22 100644
+--- a/drivers/acpi/acpica/hwxface.c
++++ b/drivers/acpi/acpica/hwxface.c
+@@ -355,7 +355,7 @@ ACPI_EXPORT_SYMBOL(acpi_read_bit_register)
+  *
+  * PARAMETERS:  register_id     - ID of ACPI Bit Register to access
+  *              Value           - Value to write to the register, in bit
+- *                                position zero. The bit is automaticallly
++ *                                position zero. The bit is automatically
+  *                                shifted to the correct position.
+  *
+  * RETURN:      Status
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index 0eef4da..d6217d2 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -309,7 +309,7 @@ static int _regmap_raw_read(struct regmap *map, unsigned int reg, void *val,
+ 
+ 	/*
+ 	 * Some buses flag reads by setting the high bits in the
+-	 * register addresss; since it's always the high bits for all
++	 * register address; since it's always the high bits for all
+ 	 * current formats we can do this here rather than in
+ 	 * formatting.  This may break if we get interesting formats.
+ 	 */
+diff --git a/drivers/block/xen-blkback/xenbus.c b/drivers/block/xen-blkback/xenbus.c
+index 3f129b4..c092368 100644
+--- a/drivers/block/xen-blkback/xenbus.c
++++ b/drivers/block/xen-blkback/xenbus.c
+@@ -582,7 +582,7 @@ static void frontend_changed(struct xenbus_device *dev,
+ 	case XenbusStateConnected:
+ 		/*
+ 		 * Ensure we connect even when two watches fire in
+-		 * close successsion and we miss the intermediate value
++		 * close succession and we miss the intermediate value
+ 		 * of frontend_state.
+ 		 */
+ 		if (dev->state == XenbusStateConnected)
+diff --git a/drivers/char/ipmi/ipmi_bt_sm.c b/drivers/char/ipmi/ipmi_bt_sm.c
+index 3ed20e8..cdd4c09f 100644
+--- a/drivers/char/ipmi/ipmi_bt_sm.c
++++ b/drivers/char/ipmi/ipmi_bt_sm.c
+@@ -560,7 +560,7 @@ static enum si_sm_result bt_event(struct si_sm_data *bt, long time)
+ 		BT_CONTROL(BT_H_BUSY);		/* set */
+ 
+ 		/*
+-		 * Uncached, ordered writes should just proceeed serially but
++		 * Uncached, ordered writes should just proceed serially but
+ 		 * some BMCs don't clear B2H_ATN with one hit.  Fast-path a
+ 		 * workaround without too much penalty to the general case.
+ 		 */
+diff --git a/drivers/edac/ppc4xx_edac.c b/drivers/edac/ppc4xx_edac.c
+index 0de7d87..032a9c6 100644
+--- a/drivers/edac/ppc4xx_edac.c
++++ b/drivers/edac/ppc4xx_edac.c
+@@ -142,7 +142,7 @@
+ 
+ /*
+  * The ibm,sdram-4xx-ddr2 Device Control Registers (DCRs) are
+- * indirectly acccessed and have a base and length defined by the
++ * indirectly accessed and have a base and length defined by the
+  * device tree. The base can be anything; however, we expect the
+  * length to be precisely two registers, the first for the address
+  * window and the second for the data window.
+diff --git a/drivers/media/video/zoran/zoran_driver.c b/drivers/media/video/zoran/zoran_driver.c
+index d4d05d2..c624403 100644
+--- a/drivers/media/video/zoran/zoran_driver.c
++++ b/drivers/media/video/zoran/zoran_driver.c
+@@ -1550,7 +1550,7 @@ static int zoran_enum_fmt(struct zoran *zr, struct v4l2_fmtdesc *fmt, int flag)
+ 		if (zoran_formats[i].flags & flag && num++ == fmt->index) {
+ 			strncpy(fmt->description, zoran_formats[i].name,
+ 				sizeof(fmt->description) - 1);
+-			/* fmt struct pre-zeroed, so adding '\0' not neeed */
++			/* fmt struct pre-zeroed, so adding '\0' not need */
+ 			fmt->pixelformat = zoran_formats[i].fourcc;
+ 			if (zoran_formats[i].flags & ZORAN_FORMAT_COMPRESSED)
+ 				fmt->flags |= V4L2_FMT_FLAG_COMPRESSED;
+-- 
+1.7.6
 
