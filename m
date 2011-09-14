@@ -1,53 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757289Ab1INSZh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 14:25:37 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:36604 "EHLO e6.ny.us.ibm.com"
+	id S1757312Ab1INS3O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 14:29:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62719 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757261Ab1INSZg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 14:25:36 -0400
-Subject: Re: [kernel-hardening] Re: [RFC PATCH 2/2] mm: restrict access to
- /proc/slabinfo
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: kernel-hardening@lists.openwall.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Dan Rosenberg <drosenberg@vsecurity.com>, Theodore Tso <tytso@mit.edu>,
-        Alan Cox <alan@linux.intel.com>, Jesper Juhl <jj@chaosbits.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <20110914154229.GA9776@albatros>
-References: <20110910164001.GA2342@albatros>
-	 <20110910164134.GA2442@albatros> <20110914131630.GA7001@albatros>
-	 <1316013505.4478.50.camel@nimitz>  <20110914154229.GA9776@albatros>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 14 Sep 2011 11:24:40 -0700
-Message-ID: <1316024680.4478.61.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1757261Ab1INS3M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Sep 2011 14:29:12 -0400
+Date: Wed, 14 Sep 2011 14:29:02 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@google.com>, ebiederm@xmission.com,
+        mahesh@linux.vnet.ibm.com, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [patch v2 2/2] s390: Add architecture code for unmapping
+ crashkernel memory
+Message-ID: <20110914182902.GA32658@redhat.com>
+References: <20110913132635.063397500@linux.vnet.ibm.com>
+ <20110913132654.157278466@linux.vnet.ibm.com>
+ <20110913145218.659f9e21.akpm@google.com>
+ <1315990708.3367.14.camel@br98xy6r>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1315990708.3367.14.camel@br98xy6r>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-09-14 at 19:42 +0400, Vasiliy Kulikov wrote:
-> > In other words, I dunno.  If we do this in the kernel, can we at least
-> > do something like CONFIG_INSECURE to both track these kinds of things
-> > and make it easy to get them out of a developer's way?
+On Wed, Sep 14, 2011 at 10:58:28AM +0200, Michael Holzheu wrote:
+> Hello Andrew,
 > 
-> What do you think about adding your user to the slabinfo's group or
-> chmod it - quite the opposite Ubuntu currently does?  I think it is more
-> generic (e.g. you may chmod 0444 to allow all users to get debug
-> information or just 0440 and chgrp admin to allow only trusted users to
-> do it) and your local policy doesn't touch the kernel.
+> On Tue, 2011-09-13 at 14:52 -0700, Andrew Morton wrote:
+> > On Tue, 13 Sep 2011 15:26:37 +0200
+> > Michael Holzheu <holzheu@linux.vnet.ibm.com> wrote:
+> 
+> [snip]
+> 
+> > > --- a/arch/s390/include/asm/kexec.h
+> > > +++ b/arch/s390/include/asm/kexec.h
+> > > @@ -36,6 +36,9 @@
+> > >  /* Allocate one page for the pdp and the second for the code */
+> > >  #define KEXEC_CONTROL_PAGE_SIZE 4096
+> > >  
+> > > +/* Alignment of crashkernel memory */
+> > > +#define KEXEC_CRASH_MEM_ALIGN HPAGE_SIZE
+> > 
+> > Why not make this unconditional, for all architectures which support
+> > hugepages?  ie:
+> > 
+> > #ifdef HPAGE_SIZE
+> > #define KEXEC_CRASH_MEM_ALIGN HPAGE_SIZE
+> > #else
+> > #define KEXEC_CRASH_MEM_ALIGN PAGE_SIZE
+> > #endif
+> 
+> > in include/linux/kexec.h?
+> > 
+> > IOW, what are the compromises here?
+> 
+> If we would do it that way, crashkernel memory on architectures that
+> support large pages but do not support unmapping of crashkernel memory
+> would always be aligned to HPAGE_SIZE. But only PAGE_SIZE alignment
+> would be necessary in that case.
+> 
+> If that is acceptable I have no problem to define that unconditional for
+> all architectures. Vivek what do you think?
 
-That obviously _works_.  I'd be happy to ack your patch.  As I said,
-it's pretty minimally painful, even to folks who care about slabinfo
-like me.
+As PAGE_SIZE alignment is sufficient for rest of the architecture, I 
+am fine with keeping it in arch dependent files.
 
--- Dave
-
+Thanks
+Vivek
