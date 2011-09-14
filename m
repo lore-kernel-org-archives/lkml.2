@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932998Ab1INTel (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 15:34:41 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:60993 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932890Ab1INTej (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 15:34:39 -0400
-Date: Wed, 14 Sep 2011 21:34:37 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Don Zickus <dzickus@redhat.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@kernel.dk>, Marcelo Tosatti <mtosatti@redhat.com>,
-        KVM <kvm@vger.kernel.org>, Xen Devel <xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: Re: [PATCH 08/13] xen/pvticketlock: disable interrupts while blocking
-Message-ID: <20110914193437.GX7761@one.firstfloor.org>
-References: <20110907165203.GQ6838@redhat.com> <4E67A551.4000502@redhat.com> <20110913184044.GN5795@redhat.com> <20110913190320.GR7761@one.firstfloor.org> <20110913192152.GO5795@redhat.com> <4E7050F7.3000208@redhat.com> <20110914144926.GU7761@one.firstfloor.org> <4E70C1BE.7060209@redhat.com> <20110914172838.GV7761@one.firstfloor.org> <4E70FFDD.80405@redhat.com>
-Mime-Version: 1.0
+	id S933035Ab1INTfK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 15:35:10 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:52698 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932890Ab1INTfJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Sep 2011 15:35:09 -0400
+X-Greylist: delayed 303 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Sep 2011 15:35:08 EDT
+Date: Wed, 14 Sep 2011 12:27:44 -0700
+From: Kees Cook <kees@ubuntu.com>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: kernel-hardening@lists.openwall.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cyrill Gorcunov <gorcunov@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC PATCH 2/2] mm: restrict access to /proc/slabinfo
+Message-ID: <20110914192744.GC4529@outflux.net>
+References: <20110910164001.GA2342@albatros>
+ <20110910164134.GA2442@albatros>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E70FFDD.80405@redhat.com>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <20110910164134.GA2442@albatros>
+Organization: Ubuntu
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 14, 2011 at 10:26:21PM +0300, Avi Kivity wrote:
-> On 09/14/2011 08:28 PM, Andi Kleen wrote:
-> >>  If an NMI hits in an interrupt handler, or in the "after hlt" section
-> >>  before the write-to-last-nmi-rip, then we'll see that %rip has changed.
-> >>  If it hits after the write-to-last-nmi-rip instruction (or in the hlt
-> >>  itself), then we'll also see that %rip has changed, due to the effect of
-> >>  that instruction.
-> >
-> >It won't handle multiple NMIs in halt. I assume that's reasonable common.
-> >
+Hi Vasiliy,
+
+On Sat, Sep 10, 2011 at 08:41:34PM +0400, Vasiliy Kulikov wrote:
+> Historically /proc/slabinfo has 0444 permissions and is accessible to
+> the world.  slabinfo contains rather private information related both to
+> the kernel and userspace tasks.  Depending on the situation, it might
+> reveal either private information per se or information useful to make
+> another targeted attack.  Some examples of what can be learned by
+> reading/watching for /proc/slabinfo entries:
+> ...
+> World readable slabinfo simplifies kernel developers' job of debugging
+> kernel bugs (e.g. memleaks), but I believe it does more harm than
+> benefits.  For most users 0444 slabinfo is an unreasonable attack vector.
 > 
-> Why not?
+> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
 
-They all have the same original RIPs and there is no way to distingush
-them.
+Haven't had any mass complaints about the 0400 in Ubuntu (sorry Dave!), so
+I'm obviously for it.
 
--Andi
+Reviewed-by: Kees Cook <kees@ubuntu.com>
+
+-Kees
 
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+Kees Cook
+Ubuntu Security Team
