@@ -1,94 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932805Ab1INNsS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 09:48:18 -0400
-Received: from mail.ss.pku.edu.cn ([211.101.48.138]:53169 "EHLO
-	mail.ss.pku.edu.cn" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751076Ab1INNsR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 09:48:17 -0400
+	id S1756612Ab1INNsf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 09:48:35 -0400
+Received: from void.printf.net ([89.145.121.20]:44189 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751076Ab1INNse (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Sep 2011 09:48:34 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Philip Rakity <prakity@marvell.com>,
+        "linux-mmc\@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Manoj Iyer <manoj.iyer@canonical.com>
+Subject: Re: SDHCI regression since 2.6.39
+References: <4E6EA3E4.5080401@goop.org> <m2bouo37by.fsf@bob.laptop.org>
+	<4E6F8C24.3090207@goop.org> <m2wrdc1i5b.fsf@bob.laptop.org>
+	<4E6FA44F.1050705@goop.org> <m2aaa89t1m.fsf@bob.laptop.org>
+	<alpine.DEB.2.02.1109131419430.3556@lazy> <4E6FBCA1.6040307@goop.org>
+	<D45CBF70-F0B1-453A-9E31-A621F52C21B9@marvell.com>
+	<4E6FC422.9080306@goop.org>
+	<7C3ED924-555D-4C50-9000-36077650328C@marvell.com>
+	<4E6FCE28.5040403@goop.org>
+	<F54ECF19-5E4C-40A6-8E26-99BF223F9FE2@marvell.com>
+	<4E6FDA0B.9060007@goop.org> <4E6FDC3E.8030702@goop.org>
+	<003A4041-99F9-4598-AB9A-D08C76CDAECB@marvell.com>
+	<4E6FFADE.5090004@goop.org>
+Date: Wed, 14 Sep 2011 09:48:21 -0400
+In-Reply-To: <4E6FFADE.5090004@goop.org> (Jeremy Fitzhardinge's message of
+	"Tue, 13 Sep 2011 17:52:46 -0700")
+Message-ID: <m2k49b9qvu.fsf@bob.laptop.org>
+User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20110913164342.GA1039@hostway.ca>
-References: <20110908222420.GE8043@hostway.ca>
-	<20110912221700.GA11962@hostway.ca>
-	<20110913164342.GA1039@hostway.ca>
-Date: Wed, 14 Sep 2011 21:48:09 +0800
-Message-ID: <CAF1ivSa3i=4=sdD_ajdQ-fS-ifErFVDrOA1suLZTDG0BZ3TpZg@mail.gmail.com>
-Subject: Re: [3.1-rc4] vfs_rmdir() -> mutex_unlock() Oops
-From: Lin Ming <mlin@ss.pku.edu.cn>
-To: Simon Kirby <sim@hostway.ca>
-Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Fabio Coatti <fabio.coatti@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 14, 2011 at 12:43 AM, Simon Kirby <sim@hostway.ca> wrote:
-> On Mon, Sep 12, 2011 at 03:17:00PM -0700, Simon Kirby wrote:
->
->> On Thu, Sep 08, 2011 at 03:24:20PM -0700, Simon Kirby wrote:
->>
->> > This box primarily does most of its VFS stuff over lots of NFS mounts,
->> > but has some local EXT3 filesystems. This has happened a couple of times:
->> >
->> > BUG: unable to handle kernel NULL pointer dereference at 00000000000000b8
->>...
->> Got a few more identical Oopses on another box running slightly past
->> 3.1-rc5 (79016f648872549392d232cd648bd02298c2d2bb). It seems to be
->> do_rmdir()'s mutex_unlock() call.
->>
->> I'm building -rc6 with CONFIG_DEBUG_MUTEXES now.
->
-> ...and not much more help with CONFIG_DEBUG_MUTEXES, from 3.1-rc6:
->
-> BUG: unable to handle kernel NULL pointer dereference at 00000000000000a4
-> IP: [<ffffffff816adc93>] __mutex_unlock_slowpath+0x53/0x140
-> PGD 13c6c4067 PUD 2256fc067 PMD 0
-> Oops: 0002 [#1] SMP
-> CPU 2
-> Modules linked in: ipmi_devintf ipmi_si ipmi_msghandler xt_recent nf_conntrack_ftp xt_state xt_owner nf_conntrack_ipv4 nf_conntrack nf_defrag_ipv4 bnx2
->
-> Pid: 27658, comm: php Not tainted 3.1.0-rc6-hw-mudbg+ #32 Dell Inc. PowerEdge 1950/0TT740
-> RIP: 0010:[<ffffffff816adc93>]  [<ffffffff816adc93>] __mutex_unlock_slowpath+0x53/0x140
-> RSP: 0018:ffff8800b65e1e28  EFLAGS: 00010046
-> RAX: 0000000000000100 RBX: ffff88001bcece48 RCX: ffff88001bd05348
-> RDX: 0000000040000200 RSI: ffff8800916cf6c0 RDI: 00000000000000a0
-> RBP: ffff8800b65e1e48 R08: 00000000043205bc R09: ffffea00011340c0
-> R10: 0000000000000000 R11: 0000000000000002 R12: 00000000000000a0
-> R13: 00000000000000a4 R14: 0000000000000246 R15: 00007f7fe2d15680
-> FS:  00007f7fe2e1f720(0000) GS:ffff88022fc80000(0000) knlGS:0000000000000000
-> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> CR2: 00000000000000a4 CR3: 0000000215c16000 CR4: 00000000000006e0
-> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> Process php (pid: 27658, threadinfo ffff8800b65e0000, task ffff8800175d4320)
-> Stack:
->  ffff88001bcece48 00000000fffffffe ffff8800916cf6c0 00007f7fe2d146a8
->  ffff8800b65e1e58 ffffffff816add89 ffff8800b65e1e88 ffffffff8110ec70
->  ffff8800b65e1e98 ffff8800916cf6c0 ffff8800b65e1e98 0000000000000000
-> Call Trace:
->  [<ffffffff816add89>] mutex_unlock+0x9/0x10
->  [<ffffffff8110ec70>] vfs_rmdir+0xb0/0x100
->  [<ffffffff8110ed96>] do_rmdir+0xd6/0x130
->  [<ffffffff81102063>] ? fput+0x1c3/0x260
->  [<ffffffff810fe648>] ? filp_close+0x68/0xa0
->  [<ffffffff8110ee41>] sys_rmdir+0x11/0x20
->  [<ffffffff816b6f3b>] system_call_fastpath+0x16/0x1b
-> Code: 75 1b 65 48 8b 04 25 c8 b5 00 00 48 63 80 44 e0 ff ff a9 00 ff ff 07 0f 85 bb 00 00 00 9c 41 5e fa b8 00 01 00 00 4d 8d 6c 24 04 <f0> 66 41 0f c1 45 00 38 e0 74 08 f3 90 41 8a 45 00 eb f4 44 8b
-> RIP  [<ffffffff816adc93>] __mutex_unlock_slowpath+0x53/0x140
->  RSP <ffff8800b65e1e28>
-> CR2: 00000000000000a4
-> ---[ end trace f515ec8376bdb799 ]---
->
-> How can I further debug this? At this point, it seems to be happening several times daily.
+Hi Jeremy,
 
-Fabio reported a similar bug,
-3.0.3 [BUG] unable to handle kernel NULL pointer dereference
-http://marc.info/?t=131416920900001&r=1&w=2
+On Tue, Sep 13 2011, Jeremy Fitzhardinge wrote:
+> Very strange.  I reinstalled the original 2.6.38-based F15 kernel
+> (kernel-2.6.38.6-26.rc1.fc15.x86_64) which I'm sure did work, and it is
+> failing in the same way.  So I guess some BIOS setting changed, or the
+> hardware itself has died?  But it's still there; it does appear on the
+> PCI bus, and it does respond to the driver to some extent (register
+> dumps aren't all 0xff, etc).
 
-Do you have a test case to trigger this bug reliably?
+Long shot, but did you try removing power completely between the reboots?
+I wonder if the PCI config space write patch could be (a) bogus for your
+device, and (b) preserved across warm reboot by your PCI hardware.
 
-Lin Ming
+So, you could just try removing the battery and PSU, hitting the power
+button a few times with them unplugged to discharge caps, and then
+boot into the old kernel again.
+
+Thanks,
+
+- Chris.
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
