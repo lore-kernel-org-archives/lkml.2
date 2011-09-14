@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756806Ab1INP16 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 11:27:58 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:48516 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756784Ab1INP14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 11:27:56 -0400
-Subject: Re: [RFC PATCH 2/2] mm: restrict access to /proc/slabinfo
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: kernel-hardening@lists.openwall.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Dan Rosenberg <drosenberg@vsecurity.com>, Theodore Tso <tytso@mit.edu>,
-        Alan Cox <alan@linux.intel.com>, Jesper Juhl <jj@chaosbits.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <20110914131630.GA7001@albatros>
-References: <20110910164001.GA2342@albatros>
-	 <20110910164134.GA2442@albatros>  <20110914131630.GA7001@albatros>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 14 Sep 2011 08:18:25 -0700
-Message-ID: <1316013505.4478.50.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1756785Ab1INPaW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 11:30:22 -0400
+Received: from mail.play-mail.info ([211.47.140.228]:49318 "EHLO
+	play-mail.info" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752676Ab1INPaV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Sep 2011 11:30:21 -0400
+MIME-Version: 1.0
+Message-Id: <110915003020VN.16774@mail.play-mail.info>
+Date: Thu, 15 Sep 2011 00:30:20 +0900
+From: =?UTF-8?B?c2hpZnQ5ODc2NUBnbWFpbC5jb20=?= <shift98765@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: Text/Plain;charset="utf-8"
+Subject: =?UTF-8?B?5b255ZOh44Gq44KT44Gm6IKp5pu444GN44GM5Ly85ZCI44KP44Gq44GE44Gt44CB44Gd44GG6KiA44KP44KM44Gf44KG44GG44GT44Gn44GZ44CC?=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id p8EFUTUl023455
 
-On Wed, 2011-09-14 at 17:16 +0400, Vasiliy Kulikov wrote:
-> > World readable slabinfo simplifies kernel developers' job of debugging
-> > kernel bugs (e.g. memleaks), but I believe it does more harm than
-> > benefits.  For most users 0444 slabinfo is an unreasonable attack vector.
-> 
-> Please tell if anybody has complains about the restriction - whether it
-> forces someone besides kernel developers to do "chmod/chgrp".  But if
-> someone want to debug the kernel, it shouldn't significantly influence
-> on common users, especially it shouldn't create security issues. 
+私のメールは見ていただけてないのでしょうか？仮のアドレスですが一度こちらに
+ご連絡頂けますか？
+shift98765@gmail.com
 
-Ubuntu ships today with a /etc/init/mounted-proc.conf that does:
+覚えていらっしゃらないでしょうね？
+あの言葉、実はとても嬉しかったんですよ。
 
-	chmod 0400 "${MOUNTPOINT}"/slabinfo
+何気ない瞬間に出た言葉って
+偽りのない素直な気持ちだって言うでしょう？
+だから私の心にもとても良く響いたのを覚えています。
 
-After cursing Kees's name a few times, I commented it out and it hasn't
-bothered me again.  
 
-I expect that the folks that really care about this (and their distros)
-will probably have a similar mechanism.  I guess the sword cuts both
-ways in this case: it obviously _works_ to have the distros do it, but
-it was a one-time inconvenience for me to override that.
+今までの私、反省すべきところは
+あの時みたいに仕事に時間を奪われない事でしたよね。
+だからこそ今回シンガポールでは今まで生きてきた中でも
+１番頑張ってこれたんだと思ってます。
 
-In other words, I dunno.  If we do this in the kernel, can we at least
-do something like CONFIG_INSECURE to both track these kinds of things
-and make it easy to get them out of a developer's way?
+結果的に帰国が大幅に早くなれたことや
+しばらくは海外との行き来をしなくなって良くなったこと。
+他にもたくさんこれからに繋がるお土産を作ってきました。
 
--- Dave
 
+今までずっと自分を「女」としてアピールしたこと無かった私ですけど
+そんな私に興味を持ってくれた貴方がずっと忘れられません。
+
+もしかしたらもう好きな人がいるかもしれないですけど
+それでも自分の気持ちは
+どうしても直接目を見てお話したいんです。
+
+どんな結果になっても構いません…
+このメールを読んでくれたのならば
+一度お返事いただけないでしょうか？
+
+
+ゆうこ。  ���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
