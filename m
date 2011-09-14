@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751301Ab1INW62 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 18:58:28 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:61700 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750945Ab1INW61 (ORCPT
+	id S1751472Ab1INX1N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 19:27:13 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41643 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751077Ab1INX1J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 18:58:27 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6469"; a="118710695"
-Date: Wed, 14 Sep 2011 15:58:25 -0700
-From: David Brown <davidb@codeaurora.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Brown <davidb@codeaurora.org>,
-        Russell King <rmk@arm.linux.org.uk>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the arm tree
-Message-ID: <20110914225825.GA13421@huya.qualcomm.com>
-References: <20110912120501.764336af05069fa23a371b5e@canb.auug.org.au>
- <4E6D6C0D.60100@codeaurora.org>
- <20110913115533.403d4fe6d961ccc8ba9b58b7@canb.auug.org.au>
+	Wed, 14 Sep 2011 19:27:09 -0400
+Date: Thu, 15 Sep 2011 00:27:07 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Marcus Folkesson <marcus.folkesson@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Regulator constraints and userspace consumer
+Message-ID: <20110914232706.GB2953@opensource.wolfsonmicro.com>
+References: <CAM8FrKKEXUwV6=cMzqi0Le7eadb2XWkrjSQ+jm=QBUJMGPKztQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20110913115533.403d4fe6d961ccc8ba9b58b7@canb.auug.org.au>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAM8FrKKEXUwV6=cMzqi0Le7eadb2XWkrjSQ+jm=QBUJMGPKztQ@mail.gmail.com>
+X-Cookie: You have a truly strong individuality.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 13, 2011 at 11:55:33AM +1000, Stephen Rothwell wrote:
-> Hi Stephen,
-> 
-> On Sun, 11 Sep 2011 19:18:53 -0700 Stephen Boyd <sboyd@codeaurora.org> wrote:
-> >
-> > The device tree machine description also needs to have the .fixup and
-> > .reserve callbacks added to it so that the device tree machines boot
-> > properly. Perhaps the soc tree needs to pull in Russell's tree at some
-> > point to resolve this subtle logical conflict or when the trees are
-> > merged together someone will need to do an evil merge and add the
-> > callbacks in the merge commit.
-> 
-> Ah, right.  I have added this merge fixup for today and can carry it as
-> necessary.
+On Wed, Sep 14, 2011 at 08:54:47PM +0200, Marcus Folkesson wrote:
 
-Arnd, how do you want to handle this?  It's a simple patch, but only
-applies to the merge of Russell's tree and the soc tree.
+>   What is the most accurate way to set the voltage for these
+> limitations when the system starts up? There is apparently no check if
+> the default configuration is within limits as the regulator stays on
+> 1125mV.
+>   When I'm looking in the userspace consumer (/sys/class/regulator/),
+> the "max_microvolts" and "min_microvolts" is set to 1000000 but the
+> "microvolts" is set to 1125000.
 
-Thanks,
-David
+Set apply_uV in hte constraints.  The regulator framework won't touch
+the hardware unless explicitly told to.
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+> * I want to change the output voltage from userspace on demand. What
+> is the most proper way to do this? If I have understand correctly, the
+> userspace consumer just exports interface for switching on/off the
+> regulator, is that correct?
+
+Why do you wish to do this?  In general this is not a good sign.  There
+is the virtual consumer but that is explicitly intended for test, it's
+not really supposed to be used in production.
