@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756864Ab1INPkb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 11:40:31 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:56407 "EHLO
-	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755292Ab1INPka (ORCPT
+	id S1756868Ab1INPnh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 11:43:37 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36401 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754004Ab1INPng (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 11:40:30 -0400
-X-SpamScore: -11
-X-BigFish: VPS-11(z1039oz1432N98dKzz1202hzz15d4R8275bhz32i668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-FB-SS: 13,
-X-WSS-ID: 0LRIRIC-02-ODG-02
-X-M-MSG: 
-Date: Wed, 14 Sep 2011 17:39:47 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Hiroshi DOYU <Hiroshi.DOYU@nokia.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        David Brown <davidb@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 2/2] iommu/omap: migrate to the generic fault report
- mechanism
-Message-ID: <20110914153947.GX11701@amd.com>
-References: <1315941989-17199-1-git-send-email-ohad@wizery.com>
+	Wed, 14 Sep 2011 11:43:36 -0400
+Date: Wed, 14 Sep 2011 19:42:29 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: kernel-hardening@lists.openwall.com
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Cyrill Gorcunov <gorcunov@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Dan Rosenberg <drosenberg@vsecurity.com>, Theodore Tso <tytso@mit.edu>,
+        Alan Cox <alan@linux.intel.com>, Jesper Juhl <jj@chaosbits.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [kernel-hardening] Re: [RFC PATCH 2/2] mm: restrict access to
+ /proc/slabinfo
+Message-ID: <20110914154229.GA9776@albatros>
+References: <20110910164001.GA2342@albatros>
+ <20110910164134.GA2442@albatros>
+ <20110914131630.GA7001@albatros>
+ <1316013505.4478.50.camel@nimitz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1315941989-17199-1-git-send-email-ohad@wizery.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+In-Reply-To: <1316013505.4478.50.camel@nimitz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 13, 2011 at 03:26:29PM -0400, Ohad Ben-Cohen wrote:
-> Start using the generic fault report mechanism, as provided by
-> the IOMMU core, and remove its now-redundant omap_iommu_set_isr API.
-> 
-> Currently we're only interested in letting upper layers know about the
-> fault, so in case the faulting device is a remote processor, they could
-> restart it.
-> 
-> Dynamic PTE/TLB loading is not supported.
-> 
-> Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
-> ---
->  arch/arm/plat-omap/include/plat/iommu.h |    3 +--
->  drivers/iommu/omap-iommu.c              |   31 +++----------------------------
->  2 files changed, 4 insertions(+), 30 deletions(-)
+Hi Dave,
 
-Applied both to new branch iommu/fault-reporting and merged into my next
-branch. Thanks Ohad.
+On Wed, Sep 14, 2011 at 08:18 -0700, Dave Hansen wrote:
+> On Wed, 2011-09-14 at 17:16 +0400, Vasiliy Kulikov wrote:
+> > > World readable slabinfo simplifies kernel developers' job of debugging
+> > > kernel bugs (e.g. memleaks), but I believe it does more harm than
+> > > benefits.  For most users 0444 slabinfo is an unreasonable attack vector.
+> > 
+> > Please tell if anybody has complains about the restriction - whether it
+> > forces someone besides kernel developers to do "chmod/chgrp".  But if
+> > someone want to debug the kernel, it shouldn't significantly influence
+> > on common users, especially it shouldn't create security issues. 
+> 
+> Ubuntu ships today with a /etc/init/mounted-proc.conf that does:
+> 
+> 	chmod 0400 "${MOUNTPOINT}"/slabinfo
+> 
+> After cursing Kees's name a few times, I commented it out and it hasn't
+> bothered me again.  
 
-	Joerg
+Another way is chgrp slabinfo to some "admin" group which are privileged
+in this sense and add your user to this group.  But please, sane and
+secure defaults!
+
+> I expect that the folks that really care about this (and their distros)
+> will probably have a similar mechanism.  I guess the sword cuts both
+> ways in this case: it obviously _works_ to have the distros do it, but
+> it was a one-time inconvenience for me to override that.
+> 
+> In other words, I dunno.  If we do this in the kernel, can we at least
+> do something like CONFIG_INSECURE to both track these kinds of things
+> and make it easy to get them out of a developer's way?
+
+What do you think about adding your user to the slabinfo's group or
+chmod it - quite the opposite Ubuntu currently does?  I think it is more
+generic (e.g. you may chmod 0444 to allow all users to get debug
+information or just 0440 and chgrp admin to allow only trusted users to
+do it) and your local policy doesn't touch the kernel.
+
+Thanks,
 
 -- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
