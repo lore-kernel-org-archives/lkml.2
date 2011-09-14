@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756282Ab1INKFr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 06:05:47 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:41594 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756063Ab1INKFp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 06:05:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <1315990017-16912-3-git-send-email-per.forlin@linaro.org>
-References: <1315990017-16912-1-git-send-email-per.forlin@linaro.org>
-	<1315990017-16912-3-git-send-email-per.forlin@linaro.org>
-Date: Wed, 14 Sep 2011 19:05:44 +0900
-Message-ID: <CAC5umygS+viGcG2wAi=7vbjmiQB1jVgwKNAeZxDxB4WMC-teGg@mail.gmail.com>
-Subject: Re: [PATCH v2 2/3] mmc: add module param to set fault injection attributes
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: Per Forlin <per.forlin@linaro.org>
-Cc: linaro-dev@lists.linaro.org, Linus Walleij <linus.walleij@linaro.org>,
-        linux-mmc@vger.kernel.org, Chris Ball <cjb@laptop.org>,
-        Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756278Ab1INKPb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 06:15:31 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:45131 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755990Ab1INKPa convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@suse.com:6:1>);
+	Wed, 14 Sep 2011 06:15:30 -0400
+Message-Id: <4E709ADE0200007800056002@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Wed, 14 Sep 2011 11:15:26 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Cc: <jaxboe@fusionio.com>, "Jeremy Fitzhardinge" <jeremy@goop.org>,
+        <hch@infradead.org>, "Jan Kara" <jack@suse.cz>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: Help with implementing some form of barriers in 3.0
+	 kernels.
+References: <20110907174832.GN32190@dumpdata.com>
+ <4E6F50170200007800055CF5@nat28.tlf.novell.com>
+ <20110914085913.GB25628@phenom.oracle.com>
+ <4E708C240200007800055FDF@nat28.tlf.novell.com>
+ <20110914093019.GA15866@phenom.oracle.com>
+In-Reply-To: <20110914093019.GA15866@phenom.oracle.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/9/14 Per Forlin <per.forlin@linaro.org>:
+>>> On 14.09.11 at 11:30, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+>> >     [v1: Added some extra functions, and other cases]
+>> 
+>> Ah, yes, of course - Jan probably didn't pay attention because in our
+>> variant of the driver these functions never got removed.
+> 
+> <nods> Which is OK - but you might want to migrate in the the 
+> 'feature-write-flush'
 
-> +#ifdef CONFIG_FAIL_MMC_REQUEST
-> +
-> +static DECLARE_FAULT_ATTR(fail_default_attr);
-> +static char *fail_request;
+We really have both. I just never removed the barrier one.
 
-This is not used anymore and ...
+Jan
 
-> +static int fail_mmc_request_param_set(const char *val,
-> +                                     const struct kernel_param *kp)
-> +{
-> +       setup_fault_attr(&fail_default_attr, (char *) val);
-> +       return 0;
-> +}
-> +
-> +static const struct kernel_param_ops fail_mmc_request_param_ops = {
-> +       .set = fail_mmc_request_param_set
-> +};
-> +module_param_cb(fail_request, &fail_mmc_request_param_ops,
-> +               &fail_request, 0);
-
-you can change this third parameter to NULL.
-
-> +
-> +#endif /* CONFIG_FAIL_MMC_REQUEST */
