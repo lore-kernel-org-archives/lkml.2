@@ -1,43 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933255Ab1IQAt7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 20:49:59 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:27906 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932869Ab1IQAq4 (ORCPT
+	id S933213Ab1IQAt6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 20:49:58 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:5615 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932824Ab1IQAq5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 20:46:56 -0400
-Message-Id: <e97c6e$3hno0g@wolverine02.qualcomm.com>
-X-IronPort-AV: E=McAfee;i="5400,1158,6471"; a="119267344"
+	Fri, 16 Sep 2011 20:46:57 -0400
+Message-Id: <093448$3hstuq@wolverine01.qualcomm.com>
+X-IronPort-AV: E=McAfee;i="5400,1158,6471"; a="119437274"
 From: Richard Kuo <rkuo@codeaurora.org>
-Date: Wed, 14 Sep 2011 13:19:10 -0500
-Subject: [PATCH v4 26/36] Hexagon: Implement basic TLB management routines for Hexagon.
+Date: Wed, 14 Sep 2011 13:19:08 -0500
+Subject: [PATCH v4 24/36] Hexagon: Provide basic implementation and/or stubs for I/O routines.
 To: linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mostly all stubs, as the TLB is managed by the hypervisor.
-
 Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
+Signed-off-by: Linas Vepstas <linas@codeaurora.org>
 Acked-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/hexagon/include/asm/tlb.h      |   39 +++++++++++++++
- arch/hexagon/include/asm/tlbflush.h |   58 ++++++++++++++++++++++
- arch/hexagon/mm/vm_tlb.c            |   93 +++++++++++++++++++++++++++++++++++
- 3 files changed, 190 insertions(+), 0 deletions(-)
- create mode 100644 arch/hexagon/include/asm/tlb.h
- create mode 100644 arch/hexagon/include/asm/tlbflush.h
- create mode 100644 arch/hexagon/mm/vm_tlb.c
+ arch/hexagon/include/asm/io.h |  326 +++++++++++++++++++++++++++++++++++++++++
+ arch/hexagon/lib/io.c         |   91 ++++++++++++
+ 2 files changed, 417 insertions(+), 0 deletions(-)
+ create mode 100644 arch/hexagon/include/asm/io.h
+ create mode 100644 arch/hexagon/lib/io.c
 
-diff --git a/arch/hexagon/include/asm/tlb.h b/arch/hexagon/include/asm/tlb.h
+diff --git a/arch/hexagon/include/asm/io.h b/arch/hexagon/include/asm/io.h
 new file mode 100644
-index 0000000..473abde
+index 0000000..b3acc2c
 --- /dev/null
-+++ b/arch/hexagon/include/asm/tlb.h
-@@ -0,0 +1,39 @@
++++ b/arch/hexagon/include/asm/io.h
+@@ -0,0 +1,326 @@
 +/*
++ * IO definitions for the Hexagon architecture
++ *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -55,35 +54,320 @@ index 0000000..473abde
 + * 02110-1301, USA.
 + */
 +
-+#ifndef _ASM_TLB_H
-+#define _ASM_TLB_H
++#ifndef _ASM_IO_H
++#define _ASM_IO_H
 +
-+#include <linux/pagemap.h>
++#ifdef __KERNEL__
++
++#include <linux/types.h>
++#include <linux/delay.h>
++#include <linux/vmalloc.h>
++#include <asm/string.h>
++#include <asm/mem-layout.h>
++#include <asm/iomap.h>
++#include <asm/page.h>
++#include <asm/cacheflush.h>
 +#include <asm/tlbflush.h>
 +
 +/*
-+ * We don't need any special per-pte or per-vma handling...
++ * We don't have PCI yet.
++ * _IO_BASE is pointing at what should be unused virtual space.
 + */
-+#define tlb_start_vma(tlb, vma)				do { } while (0)
-+#define tlb_end_vma(tlb, vma)				do { } while (0)
-+#define __tlb_remove_tlb_entry(tlb, ptep, address)	do { } while (0)
++#define IO_SPACE_LIMIT 0xffff
++#define _IO_BASE ((void __iomem *)0xfe000000)
++
++extern int remap_area_pages(unsigned long start, unsigned long phys_addr,
++				unsigned long end, unsigned long flags);
++
++extern void __iounmap(const volatile void __iomem *addr);
++
++/* Defined in lib/io.c, needed for smc91x driver. */
++extern void __raw_readsw(const void __iomem *addr, void *data, int wordlen);
++extern void __raw_writesw(void __iomem *addr, const void *data, int wordlen);
++
++extern void __raw_readsl(const void __iomem *addr, void *data, int wordlen);
++extern void __raw_writesl(void __iomem *addr, const void *data, int wordlen);
++
++#define readsw(p, d, l)	__raw_readsw(p, d, l)
++#define writesw(p, d, l) __raw_writesw(p, d, l)
++
++#define readsl(p, d, l)   __raw_readsl(p, d, l)
++#define writesl(p, d, l)  __raw_writesl(p, d, l)
 +
 +/*
-+ * .. because we flush the whole mm when it fills up
++ * virt_to_phys - map virtual address to physical
++ * @address:  address to map
 + */
-+#define tlb_flush(tlb)		flush_tlb_mm((tlb)->mm)
++static inline unsigned long virt_to_phys(volatile void *address)
++{
++	return __pa(address);
++}
 +
-+#include <asm-generic/tlb.h>
++/*
++ * phys_to_virt - map physical address to virtual
++ * @address: address to map
++ */
++static inline void *phys_to_virt(unsigned long address)
++{
++	return __va(address);
++}
++
++/*
++ * convert a physical pointer to a virtual kernel pointer for
++ * /dev/mem access.
++ */
++#define xlate_dev_kmem_ptr(p)    __va(p)
++#define xlate_dev_mem_ptr(p)    __va(p)
++
++/*
++ * IO port access primitives.  Hexagon doesn't have special IO access
++ * instructions; all I/O is memory mapped.
++ *
++ * in/out are used for "ports", but we don't have "port instructions",
++ * so these are really just memory mapped too.
++ */
++
++/*
++ * readb - read byte from memory mapped device
++ * @addr:  pointer to memory
++ *
++ * Operates on "I/O bus memory space"
++ */
++static inline u8 readb(const volatile void __iomem *addr)
++{
++	u8 val;
++	asm volatile(
++		"%0 = memb(%1);"
++		: "=&r" (val)
++		: "r" (addr)
++	);
++	return val;
++}
++
++static inline u16 readw(const volatile void __iomem *addr)
++{
++	u16 val;
++	asm volatile(
++		"%0 = memh(%1);"
++		: "=&r" (val)
++		: "r" (addr)
++	);
++	return val;
++}
++
++static inline u32 readl(const volatile void __iomem *addr)
++{
++	u32 val;
++	asm volatile(
++		"%0 = memw(%1);"
++		: "=&r" (val)
++		: "r" (addr)
++	);
++	return val;
++}
++
++/*
++ * writeb - write a byte to a memory location
++ * @data: data to write to
++ * @addr:  pointer to memory
++ *
++ */
++static inline void writeb(u8 data, volatile void __iomem *addr)
++{
++	asm volatile(
++		"memb(%0) = %1;"
++		:
++		: "r" (addr), "r" (data)
++		: "memory"
++	);
++}
++
++static inline void writew(u16 data, volatile void __iomem *addr)
++{
++	asm volatile(
++		"memh(%0) = %1;"
++		:
++		: "r" (addr), "r" (data)
++		: "memory"
++	);
++
++}
++
++static inline void writel(u32 data, volatile void __iomem *addr)
++{
++	asm volatile(
++		"memw(%0) = %1;"
++		:
++		: "r" (addr), "r" (data)
++		: "memory"
++	);
++}
++
++#define __raw_writeb writeb
++#define __raw_writew writew
++#define __raw_writel writel
++
++#define __raw_readb readb
++#define __raw_readw readw
++#define __raw_readl readl
++
++/*
++ * Need an mtype somewhere in here, for cache type deals?
++ * This is probably too long for an inline.
++ */
++void __iomem *ioremap_nocache(unsigned long phys_addr, unsigned long size);
++
++static inline void __iomem *ioremap(unsigned long phys_addr, unsigned long size)
++{
++	return ioremap_nocache(phys_addr, size);
++}
++
++static inline void iounmap(volatile void __iomem *addr)
++{
++	__iounmap(addr);
++}
++
++#define __raw_writel writel
++
++static inline void memcpy_fromio(void *dst, const volatile void __iomem *src,
++	int count)
++{
++	memcpy(dst, (void *) src, count);
++}
++
++static inline void memcpy_toio(volatile void __iomem *dst, const void *src,
++	int count)
++{
++	memcpy((void *) dst, src, count);
++}
++
++#define PCI_IO_ADDR	(volatile void __iomem *)
++
++/*
++ * inb - read byte from I/O port or something
++ * @port:  address in I/O space
++ *
++ * Operates on "I/O bus I/O space"
++ */
++static inline u8 inb(unsigned long port)
++{
++	return readb(_IO_BASE + (port & IO_SPACE_LIMIT));
++}
++
++static inline u16 inw(unsigned long port)
++{
++	return readw(_IO_BASE + (port & IO_SPACE_LIMIT));
++}
++
++static inline u32 inl(unsigned long port)
++{
++	return readl(_IO_BASE + (port & IO_SPACE_LIMIT));
++}
++
++/*
++ * outb - write a byte to a memory location
++ * @data: data to write to
++ * @addr:  address in I/O space
++ */
++static inline void outb(u8 data, unsigned long port)
++{
++	writeb(data, _IO_BASE + (port & IO_SPACE_LIMIT));
++}
++
++static inline void outw(u16 data, unsigned long port)
++{
++	writew(data, _IO_BASE + (port & IO_SPACE_LIMIT));
++}
++
++static inline void outl(u32 data, unsigned long port)
++{
++	writel(data, _IO_BASE + (port & IO_SPACE_LIMIT));
++}
++
++#define outb_p outb
++#define outw_p outw
++#define outl_p outl
++
++#define inb_p inb
++#define inw_p inw
++#define inl_p inl
++
++static inline void insb(unsigned long port, void *buffer, int count)
++{
++	if (count) {
++		u8 *buf = buffer;
++		do {
++			u8 x = inb(port);
++			*buf++ = x;
++		} while (--count);
++	}
++}
++
++static inline void insw(unsigned long port, void *buffer, int count)
++{
++	if (count) {
++		u16 *buf = buffer;
++		do {
++			u16 x = inw(port);
++			*buf++ = x;
++		} while (--count);
++	}
++}
++
++static inline void insl(unsigned long port, void *buffer, int count)
++{
++	if (count) {
++		u32 *buf = buffer;
++		do {
++			u32 x = inw(port);
++			*buf++ = x;
++		} while (--count);
++	}
++}
++
++static inline void outsb(unsigned long port, const void *buffer, int count)
++{
++	if (count) {
++		const u8 *buf = buffer;
++		do {
++			outb(*buf++, port);
++		} while (--count);
++	}
++}
++
++static inline void outsw(unsigned long port, const void *buffer, int count)
++{
++	if (count) {
++		const u16 *buf = buffer;
++		do {
++			outw(*buf++, port);
++		} while (--count);
++	}
++}
++
++static inline void outsl(unsigned long port, const void *buffer, int count)
++{
++	if (count) {
++		const u32 *buf = buffer;
++		do {
++			outl(*buf++, port);
++		} while (--count);
++	}
++}
++
++#define flush_write_buffers() do { } while (0)
++
++#endif /* __KERNEL__ */
 +
 +#endif
-diff --git a/arch/hexagon/include/asm/tlbflush.h b/arch/hexagon/include/asm/tlbflush.h
+diff --git a/arch/hexagon/lib/io.c b/arch/hexagon/lib/io.c
 new file mode 100644
-index 0000000..b89a902
+index 0000000..8ae47ba
 --- /dev/null
-+++ b/arch/hexagon/include/asm/tlbflush.h
-@@ -0,0 +1,58 @@
++++ b/arch/hexagon/lib/io.c
+@@ -0,0 +1,91 @@
 +/*
-+ * TLB flush support for Hexagon
++ * I/O access functions for Hexagon
 + *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
@@ -102,142 +386,76 @@ index 0000000..b89a902
 + * 02110-1301, USA.
 + */
 +
-+#ifndef _ASM_TLBFLUSH_H
-+#define _ASM_TLBFLUSH_H
++#include <asm/io.h>
 +
-+#include <linux/mm.h>
-+#include <asm/processor.h>
++/*  These are all FIFO routines!  */
 +
 +/*
-+ * TLB flushing -- in "SMP", these routines get defined to be the
-+ * ones from smp.c, else they are some local flavors.
++ * __raw_readsw - read words a short at a time
++ * @addr:  source address
++ * @data:  data address
++ * @len: number of shorts to read
 + */
-+
-+/*
-+ * These functions are commonly macros, but in the interests of
-+ * VM vs. native implementation and code size, we simply declare
-+ * the function prototypes here.
-+ */
-+extern void tlb_flush_all(void);
-+extern void flush_tlb_mm(struct mm_struct *mm);
-+extern void flush_tlb_page(struct vm_area_struct *vma, unsigned long addr);
-+extern void flush_tlb_range(struct vm_area_struct *vma,
-+				unsigned long start, unsigned long end);
-+extern void flush_tlb_kernel_range(unsigned long start, unsigned long end);
-+extern void flush_tlb_one(unsigned long);
-+
-+/*
-+ * "This is called in munmap when we have freed up some page-table pages.
-+ * We don't need to do anything here..."
-+ *
-+ * The VM kernel doesn't walk page tables, and they are passed to the VMM
-+ * by logical address. There doesn't seem to be any possibility that they
-+ * could be referenced by the VM kernel based on a stale mapping, since
-+ * they would only be located by consulting the mm structure, and they
-+ * will have been purged from that structure by the munmap.  Seems like
-+ * a noop on HVM as well.
-+ */
-+#define flush_tlb_pgtables(mm, start, end)
-+
-+#endif
-diff --git a/arch/hexagon/mm/vm_tlb.c b/arch/hexagon/mm/vm_tlb.c
-new file mode 100644
-index 0000000..c6ff415
---- /dev/null
-+++ b/arch/hexagon/mm/vm_tlb.c
-@@ -0,0 +1,93 @@
-+/*
-+ * Hexagon Virtual Machine TLB functions
-+ *
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+/*
-+ * The Hexagon Virtual Machine conceals the real workings of
-+ * the TLB, but there are one or two functions that need to
-+ * be instantiated for it, differently from a native build.
-+ */
-+#include <linux/mm.h>
-+#include <asm/page.h>
-+#include <asm/hexagon_vm.h>
-+
-+/*
-+ * Initial VM implementation has only one map active at a time, with
-+ * TLB purgings on changes.  So either we're nuking the current map,
-+ * or it's a no-op.  This operation is messy on true SMPs where other
-+ * processors must be induced to flush the copies in their local TLBs,
-+ * but Hexagon thread-based virtual processors share the same MMU.
-+ */
-+void flush_tlb_range(struct vm_area_struct *vma, unsigned long start,
-+			unsigned long end)
++void __raw_readsw(const void __iomem *addr, void *data, int len)
 +{
-+	struct mm_struct *mm = vma->vm_mm;
++	const volatile short int *src = (short int *) addr;
++	short int *dst = (short int *) data;
 +
-+	if (mm->context.ptbase == current->active_mm->context.ptbase)
-+		__vmclrmap((void *)start, end - start);
++	if ((u32)data & 0x1)
++		panic("unaligned pointer to readsw");
++
++	while (len-- > 0)
++		*dst++ = *src;
++
 +}
 +
 +/*
-+ * Flush a page from the kernel virtual map - used by highmem
++ * __raw_writesw - read words a short at a time
++ * @addr:  source address
++ * @data:  data address
++ * @len: number of shorts to read
 + */
-+void flush_tlb_one(unsigned long vaddr)
++void __raw_writesw(void __iomem *addr, const void *data, int len)
 +{
-+	__vmclrmap((void *)vaddr, PAGE_SIZE);
++	const short int *src = (short int *)data;
++	volatile short int *dst = (short int *)addr;
++
++	if ((u32)data & 0x1)
++		panic("unaligned pointer to writesw");
++
++	while (len-- > 0)
++		*dst = *src++;
++
++
 +}
 +
-+/*
-+ * Flush all TLBs across all CPUs, virtual or real.
-+ * A single Hexagon core has 6 thread contexts but
-+ * only one TLB.
-+ */
-+void tlb_flush_all(void)
++/*  Pretty sure len is pre-adjusted for the length of the access already */
++void __raw_readsl(const void __iomem *addr, void *data, int len)
 +{
-+	/*  should probably use that fixaddr end or whateve label  */
-+	__vmclrmap(0, 0xffff0000);
++	const volatile long *src = (long *) addr;
++	long *dst = (long *) data;
++
++	if ((u32)data & 0x3)
++		panic("unaligned pointer to readsl");
++
++	while (len-- > 0)
++		*dst++ = *src;
++
++
 +}
 +
-+/*
-+ * Flush TLB entries associated with a given mm_struct mapping.
-+ */
-+void flush_tlb_mm(struct mm_struct *mm)
++void __raw_writesl(void __iomem *addr, const void *data, int len)
 +{
-+	/* Current Virtual Machine has only one map active at a time */
-+	if (current->active_mm->context.ptbase == mm->context.ptbase)
-+		tlb_flush_all();
-+}
++	const long *src = (long *)data;
++	volatile long *dst = (long *)addr;
 +
-+/*
-+ * Flush TLB state associated with a page of a vma.
-+ */
-+void flush_tlb_page(struct vm_area_struct *vma, unsigned long vaddr)
-+{
-+	struct mm_struct *mm = vma->vm_mm;
++	if ((u32)data & 0x3)
++		panic("unaligned pointer to writesl");
 +
-+	if (mm->context.ptbase  == current->active_mm->context.ptbase)
-+		__vmclrmap((void *)vaddr, PAGE_SIZE);
-+}
++	while (len-- > 0)
++		*dst = *src++;
 +
-+/*
-+ * Flush TLB entries associated with a kernel address range.
-+ * Like flush range, but without the check on the vma->vm_mm.
-+ */
-+void flush_tlb_kernel_range(unsigned long start, unsigned long end)
-+{
-+		__vmclrmap((void *)start, end - start);
++
 +}
 -- 
 1.7.1
