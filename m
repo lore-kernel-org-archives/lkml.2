@@ -1,100 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755700Ab1INHL2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 03:11:28 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:41329 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755418Ab1INHL1 convert rfc822-to-8bit (ORCPT
+	id S1755930Ab1INHPJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 03:15:09 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:55370 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755684Ab1INHPF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 03:11:27 -0400
+	Wed, 14 Sep 2011 03:15:05 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAGsJ_4x0isAUgmTkRavUC6p3K38ho70A+q8Pp2cMLnxbgMEL7Q@mail.gmail.com>
-References: <1315374075-15479-1-git-send-email-Baohua.Song@csr.com>
-	<438BB0150E931F4B9CE701519A4463010871804A46@bgsmsx502.gar.corp.intel.com>
-	<CAGsJ_4x4S+8d3xS+QTrjDpoxcHo3p7qArd7yFr=+h1vxSRvEpA@mail.gmail.com>
-	<438BB0150E931F4B9CE701519A4463010871804A48@bgsmsx502.gar.corp.intel.com>
-	<CAGsJ_4yeovNP=6CKTafbxrBTrYQ42B9yvAOM8gM_bYqD6mTnUw@mail.gmail.com>
-	<CABb+yY1=P=D3GFFxMOUM0a2yWCiAHNqwVU0a--t+pJnUhqKHKA@mail.gmail.com>
-	<CABb+yY3F+DMn2SxeO0chjpiMBkgLvSK5EVYMdhQsfQoZNZ4_7Q@mail.gmail.com>
-	<CAGsJ_4x0isAUgmTkRavUC6p3K38ho70A+q8Pp2cMLnxbgMEL7Q@mail.gmail.com>
-Date: Wed, 14 Sep 2011 12:41:26 +0530
-Message-ID: <CABb+yY36xmq3mKpWOn+ZZuvPehRkSGe720WrQtMie2C-udgZyQ@mail.gmail.com>
-Subject: Re: [PATCH] dmaengine: add CSR SiRFprimaII DMAC driver
-From: Jassi Brar <jassisinghbrar@gmail.com>
-To: Barry Song <21cnbao@gmail.com>
-Cc: "Koul, Vinod" <vinod.koul@intel.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "workgroup.linux@csr.com" <workgroup.linux@csr.com>,
-        "rongjun.ying@csr.com" <rongjun.ying@csr.com>,
-        "Baohua.Song@csr.com" <Baohua.Song@csr.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <20110913082448.GA5046@polaris.bitmath.org>
+References: <1315029042-27513-1-git-send-email-martinez.javier@gmail.com>
+ <1315029042-27513-2-git-send-email-martinez.javier@gmail.com> <20110913082448.GA5046@polaris.bitmath.org>
+From: Javier Martinez Canillas <martinez.javier@gmail.com>
+Date: Wed, 14 Sep 2011 09:14:50 +0200
+Message-ID: <CAAwP0s0FvkzTUo5kAZE_pd_8u-znDvoLks74gf8+75cUF0aM2g@mail.gmail.com>
+Subject: Re: [PATCH V2 1/3] Input: cyttsp - Cypress TTSP capacitive
+ multi-touch screen support
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Kevin McNeely <kev@cypress.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 14, 2011 at 12:16 PM, Barry Song <21cnbao@gmail.com> wrote:
-
->> Anyways, every case can be easily expressed using the generic api
->> I proposed. See 'struct xfer_template' in https://lkml.org/lkml/2011/8/12/128
+On Tue, Sep 13, 2011 at 10:24 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
+> Hi Javier,
+>
+>> Cypress TrueTouch(tm) Standard Product controllers are found in
+>> a wide range of embedded devices. This driver add support for a
+>> variety of TTSP controllers.
 >>
->> Roughly speaking, the following should be done...
->> Client driver :-
->> **************
->> For a 'Rectangular' transfer (2d-dma.PNG) :-
->>      xfer_template.numf = Ylen;  /* height of rectangle */
->>      xfer_template.frame_size = 1;
->>      xfer_template.sgl[0].size = Xlen; /* width of rectangle */
->>      xfer_template.sgl[0].icg = start_addr_Y(n) - end_addr_Y(n-1);
->
-> For prima2:
->
-> xfer_template.numf = ylen + 1
-> xfer_template.frame_size = 1;
-> xfer_template.sgl[0].size = xlen;
-> xfer_template.sgl[0].icg = dma_width - xlen;
->
-All is same as I suggested except for 'numf'.
-You might want to keep 'numf' same as well. Because the client
-driver shouldn't need to know that the DMAC's register expect "+1" value.
-Remember the client is supposed to be reusable over other DMACs as well.
-So, rather in the DMAC driver, please do
-    schan->ylen = xfer_template.numf + 1;
-
-
->> DMAC driver :-
->> ***************
->>      if (xfer_template.frame_size == 1) {
->>           /* rectangle */
->>           schan->xlen = xfer_template.sgl[0].size;
->>           schan->width = schan->xlen + xfer_template.sgl[0].icg;
->>      } else if (xfer_template.frame_size == 2 &&
->>                  xfer_template.numf == 1 &&
->>                  xfer_template.sgl[1].size == xfer_template.sgl[0].icg){
->>           /* a line and some */
->>           schan->xlen = xfer_template.sgl[0].size +  xfer_template.sgl[1].size.
->>           schan->width = xfer_template.sgl[0].size;
->>      } else {
->>           /* _Hardware_ doesn't support the transfer as such. *
->>           return -EINVAL;
->>      }
->>      schan->ylen = xfer_template.numf /* -1? */;
+>> The driver is composed of a core driver that process the data sent by
+>> the contacts and a set of bus specific interface modules. This patch
+>> adds the base core TTSP driver.
 >>
+>> The original author of the driver is Kevin McNeely <kev@cypress.com>
+>>
+>> Since the hardware is capable of tracking identifiable contacts and the
+>> original driver used multi-touch protocol type A (stateless), multi-touch
+>> protocol type B (stateful) support was added by Javier Martinez Canillas.
+>>
+>> Signed-off-by: Javier Martinez Canillas <martinez.javier@gmail.com>
+>> ---
+>> Changes since v1: Fix issues called out by Dmitry Torokhov
+>>      - Add msleep() delays between retries for read and write operations
+>>      - Change cyttsp_core_init() to receive the IRQ from the client data
+>>        instead of obtaining from the platform_data
 >
-> For prima2:
-> xfer_template.frame_size is always 1, then
-> schan->xlen = xfer_template.sgl[0].size;
-> schan->width = schan->xlen + xfer_template.sgl[0].icg;
+> Compared to the staging version you sent earlier, this version seems
+> to be a step back towards the original version regarding the MT
+> implementation. Is this the right patch?
 >
-Ok, you don't need the 'else if' clause because as you said
-{xlen > width} is not an option.
-But you do need the other two checks, so that the DMAC driver
-cleanly rejects any interleaved-format that it doesn't support.
+> Thanks,
+> Henrik
+>
 
-Point being, the clients and DMAC drivers are supposed to be
-very 'promiscuous' - any Client could be 'riding' any DMAC ;)
+Hello Henrik,
+
+Yes it is the right patch, or at least the patch I meant to send. The
+staging version I send earlier didn't support multi-touch protocol
+type A.
+
+Since Cypress HW can do finger (contact) tracking, a requirement was
+to add multi-touch protocol type B support to the driver. This
+patch-set does that and also fixes some issues that Dmitry had with
+this patch-set in its V1.
+
+Even when Cypress touchscreen can keep track of each contact, it
+doesn't preserve the contact index. So if I have 3 fingers that were
+pressed in order and the touchscreen assigned it the values:
+
+10 11 12
+
+And then I lift the first finger (10), the hardware reports:
+
+11 12
+
+Maybe that is why the driver seems complex, you have to keep a copy of
+the hardware state and iterate over all previous contacts to see if
+there are new fingers and if the old ones have been lifted.
+
+Best regards,
+
+-- 
+Javier Martínez Canillas
+(+34) 682 39 81 69
+Barcelona, Spain
