@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757437Ab1INTPB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 15:15:01 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:42695 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757306Ab1INTPA (ORCPT
+	id S1757434Ab1INTRA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 15:17:00 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:46885 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757306Ab1INTQ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 15:15:00 -0400
-Date: Wed, 14 Sep 2011 23:14:17 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: kernel-hardening@lists.openwall.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC PATCH 2/2] mm: restrict access to /proc/slabinfo
-Message-ID: <20110914191417.GA15936@albatros>
-References: <20110910164001.GA2342@albatros>
- <20110910164134.GA2442@albatros>
- <1316025701.4478.65.camel@nimitz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1316025701.4478.65.camel@nimitz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 14 Sep 2011 15:16:59 -0400
+Subject: Re: [PATCH] EFI: Do not use __pa() to get the physical address of
+ an ioremapped memory range
+From: Matt Fleming <matt@console-pimps.org>
+To: huang ying <huang.ying.caritas@gmail.com>
+Cc: Zhang Rui <rui.zhang@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, x86@kernel.org
+In-Reply-To: <CAC=cRTPb17tnRqDtwFMkUV7wM9=uoayerK-nj_T25EkXuWgyMg@mail.gmail.com>
+References: <1314860114.32522.3.camel@rui> <1314864889.13161.4.camel@rui>
+	 <1314880125.8038.39.camel@mfleming-mobl1.ger.corp.intel.com>
+	 <CAC=cRTOzcgm+3kHGcZrHs=9Q3cs5z6vmBqb1Bn+2qcvcSZ-2Xg@mail.gmail.com>
+	 <1315839130.3466.6.camel@mfleming-mobl1.ger.corp.intel.com>
+	 <CAC=cRTPb17tnRqDtwFMkUV7wM9=uoayerK-nj_T25EkXuWgyMg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 14 Sep 2011 20:16:50 +0100
+Message-ID: <1316027810.3466.78.camel@mfleming-mobl1.ger.corp.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 14, 2011 at 11:41 -0700, Dave Hansen wrote:
-> On Sat, 2011-09-10 at 20:41 +0400, Vasiliy Kulikov wrote:
-> > @@ -4584,7 +4584,8 @@ static const struct file_operations proc_slabstats_operations = {
-> >  
-> >  static int __init slab_proc_init(void)
-> >  {
-> > -       proc_create("slabinfo",S_IWUSR|S_IRUGO,NULL,&proc_slabinfo_operations);
-> > +       proc_create("slabinfo", S_IWUSR | S_IRUSR, NULL,
-> > +                   &proc_slabinfo_operations);
-> >  #ifdef CONFIG_DEBUG_SLAB_LEAK
-> >         proc_create("slab_allocators", 0, NULL, &proc_sla 
+On Tue, 2011-09-13 at 16:48 +0800, huang ying wrote:
+> On Mon, Sep 12, 2011 at 10:52 PM, Matt Fleming <matt@console-pimps.org> wrote:
+> > On Fri, 2011-09-02 at 13:12 +0800, huang ying wrote:
+> >> On Thu, Sep 1, 2011 at 8:28 PM, Matt Fleming <matt@console-pimps.org> wrote:
+> >> >
+> >> > Hmm.. does anyone know why we ioremap_cache() the memory on
+> >> > CONFIG_X86_32 instead of ioremap_nocache()? In the case of
+> >> > EFI_MEMORY_MAPPED_IO the memory really needs to be uncached. Then if
+> >> > we've ioremap'd the memory we should skip set_memory_uc() altogether,
+> >> > no?
+> >>
+> >> Because whether the mapping should be cached is determined by md->attr
+> >> instead of md->type.  And besides UC, we may add WC, etc support.
+> >
+> > Confused.
+> >
+> > The CONFIG_X86_64 version of efi_ioremap() looks like this,
+> >
+> > void __iomem *__init efi_ioremap(unsigned long phys_addr, unsigned long size,
+> >                                 u32 type)
+> > {
+> >        unsigned long last_map_pfn;
+> >
+> >        if (type == EFI_MEMORY_MAPPED_IO)
+> >                return ioremap(phys_addr, size);
+> >
+> > Which uses md->type to figure out if we should call ioremap(), which on
+> > x86 is #define'd to ioremap_nocache(). CONFIG_X86_32 doesn't do this,
+> > but it looks to me like it should.
 > 
-> If you respin this, please don't muck with the whitespace.
+> I don't think this type based solution is the perfect one.
 
-OK, I was just removing checkpatch warnings.
-
->  Otherwise,
-> I'm fine with this.  Distros are already starting to do this anyway in
-> userspace.
-> 
-> Reviewed-by: Dave Hansen <dave@linux.vnet.ibm.com>
-
-Thank you!
+Why? What else would you suggest?
 
 -- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+Matt Fleming, Intel Open Source Technology Center
+
