@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933108Ab1INTyY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 15:54:24 -0400
-Received: from claw.goop.org ([74.207.240.146]:37746 "EHLO claw.goop.org"
+	id S933063Ab1INT52 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 15:57:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16470 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932905Ab1INTyX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 15:54:23 -0400
-Message-ID: <4E710660.1060101@goop.org>
-Date: Wed, 14 Sep 2011 12:54:08 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S932905Ab1INT50 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Sep 2011 15:57:26 -0400
+Message-ID: <4E710703.1010604@redhat.com>
+Date: Wed, 14 Sep 2011 22:56:51 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-To: Chris Ball <cjb@laptop.org>
-CC: Philip Rakity <prakity@marvell.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+To: Andi Kleen <andi@firstfloor.org>
+CC: Don Zickus <dzickus@redhat.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, the arch/x86 maintainers <x86@kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Manoj Iyer <manoj.iyer@canonical.com>
-Subject: Re: SDHCI regression since 2.6.39
-References: <4E6EA3E4.5080401@goop.org> <m2bouo37by.fsf@bob.laptop.org> <4E6F8C24.3090207@goop.org> <m2wrdc1i5b.fsf@bob.laptop.org> <4E6FA44F.1050705@goop.org> <m2aaa89t1m.fsf@bob.laptop.org> <alpine.DEB.2.02.1109131419430.3556@lazy> <4E6FBCA1.6040307@goop.org> <D45CBF70-F0B1-453A-9E31-A621F52C21B9@marvell.com> <4E6FC422.9080306@goop.org> <7C3ED924-555D-4C50-9000-36077650328C@marvell.com> <4E6FCE28.5040403@goop.org> <F54ECF19-5E4C-40A6-8E26-99BF223F9FE2@marvell.com> <4E6FDA0B.9060007@goop.org> <4E6FDC3E.8030702@goop.org> <003A4041-99F9-4598-AB9A-D08C76CDAECB@marvell.com> <4E6FFADE.5090004@goop.org> <m2k49b9qvu.fsf@bob.laptop.org> <4E70D62B.2030007@goop.org> <m2boun9dg1.fsf@bob.laptop.org>
-In-Reply-To: <m2boun9dg1.fsf@bob.laptop.org>
-X-Enigmail-Version: 1.3.1
-Content-Type: text/plain; charset=ISO-8859-15
+        Nick Piggin <npiggin@kernel.dk>, Marcelo Tosatti <mtosatti@redhat.com>,
+        KVM <kvm@vger.kernel.org>, Xen Devel <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: Re: [PATCH 08/13] xen/pvticketlock: disable interrupts while blocking
+References: <20110907165203.GQ6838@redhat.com> <4E67A551.4000502@redhat.com> <20110913184044.GN5795@redhat.com> <20110913190320.GR7761@one.firstfloor.org> <20110913192152.GO5795@redhat.com> <4E7050F7.3000208@redhat.com> <20110914144926.GU7761@one.firstfloor.org> <4E70C1BE.7060209@redhat.com> <20110914172838.GV7761@one.firstfloor.org> <4E70FFDD.80405@redhat.com> <20110914193437.GX7761@one.firstfloor.org>
+In-Reply-To: <20110914193437.GX7761@one.firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/14/2011 11:38 AM, Chris Ball wrote:
-> Hi,
+On 09/14/2011 10:34 PM, Andi Kleen wrote:
+> On Wed, Sep 14, 2011 at 10:26:21PM +0300, Avi Kivity wrote:
+> >  On 09/14/2011 08:28 PM, Andi Kleen wrote:
+> >  >>   If an NMI hits in an interrupt handler, or in the "after hlt" section
+> >  >>   before the write-to-last-nmi-rip, then we'll see that %rip has changed.
+> >  >>   If it hits after the write-to-last-nmi-rip instruction (or in the hlt
+> >  >>   itself), then we'll also see that %rip has changed, due to the effect of
+> >  >>   that instruction.
+> >  >
+> >  >It won't handle multiple NMIs in halt. I assume that's reasonable common.
+> >  >
+> >
+> >  Why not?
 >
-> On Wed, Sep 14 2011, Jeremy Fitzhardinge wrote:
->> I powered it off with battery unplugged for about an hour, and rebooted
->> into the known-working kernel, making sure that any fancy power mgmt
->> features were disabled (like aspm), but it still failed in the same way.
->>
->> I'm wondering if it's simply something like the socket has failed, and
->> one or more of the terminals isn't connecting to the card?  Though that
->> would only show problems on card insertion, but I gather the driver is
->> having problems from the moment it detects the controller?
-> I don't think it's true that we're having any problems talking to the
-> controller other than with a card inserted -- do you see any errors in
-> dmesg before inserting a card?
+> They all have the same original RIPs and there is no way to distingush
+> them.
 >
-> It could indeed be some kind of signal integrity issue.  The easy way to
-> investigate that would be to boot Windows and see if it works there, and
-> the hard way would be to find a friendly hardware hacker with a nice scope.
 
-I have the original HDD with Windows on it around here somewhere; when I
-get the chance I'll switch them around and see what Windows thinks of it
-(I guess if its still failing then its a warranty fix).
+That's how we detect multiple NMIs.
 
-    J
+1. First NMI is posted
+2. NMI handler starts
+3. 2nd NMI posted, queued
+4. First NMI source handled
+5. IRET
+6. Queued NMI hits the core
+7. back-to-back NMI detected (same rip)
+8. Second (and third...) NMI source handled
+9. Execution continues.
+
+
+-- 
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
+
