@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753642Ab1INBfH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 21:35:07 -0400
-Received: from mail.us.es ([193.147.175.20]:40961 "EHLO mail.us.es"
+	id S1753705Ab1INBiA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 21:38:00 -0400
+Received: from shutemov.name ([188.40.19.243]:33535 "EHLO shutemov.name"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753385Ab1INBfF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 21:35:05 -0400
-Date: Wed, 14 Sep 2011 03:35:00 +0200
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Alex Bligh <alex@alex.org.uk>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>, netfilter-devel@vger.kernel.org,
-        netfilter@vger.kernel.org, coreteam@netfilter.org,
-        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        Linux Containers <containers@lists.osdl.org>
-Subject: Re: [PATCH] Fix repeatable Oops on container destroy with conntrack
-Message-ID: <20110914013500.GB17051@1984>
-References: <2184C0CE5A5EDC94CDDA5053@Ximines.local>
- <20110912072524.GA2996@p183.telecom.by>
- <20110912093749.GE2194@1984>
- <E0902A9541FD5D118EA02B31@Ximines.local>
- <20110912183357.GC3641@1984>
- <87A32B21CA99D62CE1AB7A4B@Ximines.local>
- <7631498AC7E7C0EAD641AC7D@nimrod.local>
+	id S1752554Ab1INBh6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 21:37:58 -0400
+Date: Wed, 14 Sep 2011 04:37:57 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: linux-kernel@vger.kernel.org, containers@lists.osdl.org,
+        linux-fsdevel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Nathan Lynch <ntl@pobox.com>, Zan Lynx <zlynx@acm.org>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>,
+        Vasiliy Kulikov <segoon@openwall.com>, Tejun Heo <tj@kernel.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Subject: Re: [patch 1/2] fs, proc: Make proc_get_link to use dentry instead
+ of inode
+Message-ID: <20110914013757.GA3948@shutemov.name>
+References: <20110913211359.674453213@openvz.org>
+ <20110913212447.682271914@openvz.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <7631498AC7E7C0EAD641AC7D@nimrod.local>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110913212447.682271914@openvz.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 13, 2011 at 09:44:38PM +0100, Alex Bligh wrote:
-> Alexey / Pablo,
+On Wed, Sep 14, 2011 at 01:14:00AM +0400, Cyrill Gorcunov wrote:
+> This patch prepares the ground for the next "map_files"
+> patch which needs a name of a link file to analyse.
 > 
-> --On 12 September 2011 20:06:25 +0100 Alex Bligh <alex@alex.org.uk> wrote:
+> So instead of squashing this change into one big
+> patch the separate one is done.
 > 
-> >Pablo,
-> >
-> >--On 12 September 2011 20:33:57 +0200 Pablo Neira Ayuso
-> ><pablo@netfilter.org> wrote:
-> >
-> >>Yes, this is what Alexey was pointing out in the previous email and
-> >>why he suggested to move it to nfnetlink_has_listeners (to cover the
-> >>expectation case).
-> >>
-> >>But you're right, we cannot move it to nfnetlink_has_listeners because
-> >>of the item->report case. Please, include the expectation part and
-> >>resend the patch.
-> >
-> >Thanks - see below
-> 
-> Is this new version OK? I am happy to adjust if not.
+> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> CC: Pavel Emelyanov <xemul@parallels.com>
+> CC: Tejun Heo <tj@kernel.org>
+> CC: Vasiliy Kulikov <segoon@openwall.com>
+> CC: "Kirill A. Shutemov" <kirill@shutemov.name>
+> CC: Alexey Dobriyan <adobriyan@gmail.com>
+> CC: Al Viro <viro@ZenIV.linux.org.uk>
+> CC: Andrew Morton <akpm@linux-foundation.org>
 
-Hm, I still think that this is a workaround.
+Reviewed-by: Kirill Shutemov <kirill@shutemov.name>
 
-The nice fix should move nf_conntrack_event_cb in
-nf_conntrack_ecache.c to the net container structure.
-
-Alexey?
-
-> I think we ought to get /something/ in, because without anything it's
-> very simple to cause an oops and a resultant machine hang.
-
-Sure, I'm all for fixing it :-).
+-- 
+ Kirill A. Shutemov
