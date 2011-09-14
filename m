@@ -1,73 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756574Ab1INNAu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 09:00:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10106 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756345Ab1INNAt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 09:00:49 -0400
-Date: Wed, 14 Sep 2011 09:00:27 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: x86@kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Peter Zijlstra <peterz@infradead.org>, ying.huang@intel.com,
-        LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
-        jeremy@goop.org
-Subject: Re: [V4][PATCH 4/6] x86, nmi:  add in logic to handle multiple
- events and unknown NMIs
-Message-ID: <20110914130027.GU5795@redhat.com>
-References: <1315947509-6429-1-git-send-email-dzickus@redhat.com>
- <1315947509-6429-5-git-send-email-dzickus@redhat.com>
- <4E7052DD.8080305@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E7052DD.8080305@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756594Ab1INNCZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 09:02:25 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:34954 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756345Ab1INNCY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Sep 2011 09:02:24 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/eT0kD1XXe0/Bdl/lpXlR2AT5/RONOlCYK6ifiHC
+	BMb37gl2QvVb6D
+Subject: Re: [PATCH -rt] ipc/sem: Rework semaphore wakeups
+From: Mike Galbraith <efault@gmx.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Manfred Spraul <manfred@colorfullife.com>
+In-Reply-To: <1315994224.5040.1.camel@twins>
+References: <alpine.LFD.2.02.1109101052340.2723@ionos>
+	 <1315737307.6544.1.camel@marge.simson.net>
+	 <1315817948.26517.16.camel@twins>
+	 <1315835562.6758.3.camel@marge.simson.net>
+	 <1315839187.6758.8.camel@marge.simson.net> <1315926499.5977.19.camel@twins>
+	 <1315927699.6445.6.camel@marge.simson.net>  <1315994224.5040.1.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 14 Sep 2011 15:02:19 +0200
+Message-ID: <1316005339.6497.0.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 14, 2011 at 10:08:13AM +0300, Avi Kivity wrote:
-> On 09/13/2011 11:58 PM, Don Zickus wrote:
-> >Previous patches allow the NMI subsystem to process multipe NMI events
-> >in one NMI.  As previously discussed this can cause issues when an event
-> >triggered another NMI but is processed in the current NMI.  This causes the
-> >next NMI to go unprocessed and become an 'unknown' NMI.
-> >
-> >To handle this, we first have to flag whether or not the NMI handler handled
-> >more than one event or not.  If it did, then there exists a chance that
-> >the next NMI might be already processed.  Once the NMI is flagged as a
-> >candidate to be swallowed, we next look for a back-to-back NMI condition.
-> >
-> >This is determined by looking at the %rip from pt_regs.  If it is the same
-> >as the previous NMI, it is assumed the cpu did not have a chance to jump
-> >back into a non-NMI context and execute code and instead handled another NMI.
-> >
-> >If both of those conditions are true then we will swallow any unknown NMI.
-> >
-> >There still exists a chance that we accidentally swallow a real unknown NMI,
-> >but for now things seem better.
+All better.
+
+On Wed, 2011-09-14 at 11:57 +0200, Peter Zijlstra wrote:
+> Subject: ipc/sem: Rework semaphore wakeups
+> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Date: Tue Sep 13 15:09:40 CEST 2011
 > 
-> Patch looks good, but the changelog is outdated.
-
-Perhaps, but I tried rewriting most of it to reflect the current changes.
-Was there something obvious in there that I missed?  I re-read it a few
-times and can't figure out what part might be outdated (not that I
-disagree with you, I just want to update it).
-
+> Current sysv sems have a weird ass wakeup scheme that involves keeping
+> preemption disabled over a potential O(n^2) loop and busy waiting on
+> that on other CPUs.
 > 
-> >@@ -278,19 +294,49 @@ unknown_nmi_error(unsigned char reason, struct pt_regs *regs)
-> >  	pr_emerg("Dazed and confused, but trying to continue\n");
-> >  }
-> >
-> >+DEFINE_PER_CPU(bool, swallow_nmi);
-> >+DEFINE_PER_CPU(unsigned long, save_rip);
+> Kill this and simply wake the task directly from under the sem_lock.
 > 
-> 'static'.  Also need a better name for save_rip (suggest last_nmi_rip).
+> This was discovered by a migrate_disable() debug feature that
+> disallows:
+> 
+>   spin_lock();
+>   preempt_disable();
+>   spin_unlock()
+>   preempt_enable();
+> 
+> Cc: Manfred Spraul <manfred@colorfullife.com>
+> Suggested-by: Thomas Gleixner <tglx@linutronix.de>
+> Reported-by: Mike Galbraith <efault@gmx.de>
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> ---
+>  ipc/sem.c |   10 ++++++++++
+>  1 file changed, 10 insertions(+)
+> 
+> Index: linux-rt/ipc/sem.c
+> ===================================================================
+> --- linux-rt.orig/ipc/sem.c
+> +++ linux-rt/ipc/sem.c
+> @@ -415,6 +415,13 @@ static int try_atomic_semop (struct sem_
+>  static void wake_up_sem_queue_prepare(struct list_head *pt,
+>  				struct sem_queue *q, int error)
+>  {
+> +#ifdef CONFIG_PREEMPT_RT_BASE
+> +	struct task_struct *p = q->sleeper;
+> +	get_task_struct(p);
+> +	q->status = error;
+> +	wake_up_process(p);
+> +	put_task_struct(p);
+> +#else
+>  	if (list_empty(pt)) {
+>  		/*
+>  		 * Hold preempt off so that we don't get preempted and have the
+> @@ -426,6 +433,7 @@ static void wake_up_sem_queue_prepare(st
+>  	q->pid = error;
+>  
+>  	list_add_tail(&q->simple_list, pt);
+> +#endif
+>  }
+>  
+>  /**
+> @@ -439,6 +447,7 @@ static void wake_up_sem_queue_prepare(st
+>   */
+>  static void wake_up_sem_queue_do(struct list_head *pt)
+>  {
+> +#ifndef CONFIG_PREEMPT_RT_BASE
+>  	struct sem_queue *q, *t;
+>  	int did_something;
+>  
+> @@ -451,6 +460,7 @@ static void wake_up_sem_queue_do(struct
+>  	}
+>  	if (did_something)
+>  		preempt_enable();
+> +#endif
+>  }
+>  
+>  static void unlink_queue(struct sem_array *sma, struct sem_queue *q)
+> 
 
-Good suggestion. 
 
-Thanks,
-Don
