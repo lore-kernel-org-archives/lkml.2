@@ -1,128 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933409Ab1INVlU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 17:41:20 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:48868 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933341Ab1INVlS (ORCPT
+	id S933415Ab1INVw4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 17:52:56 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:33176 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933380Ab1INVwz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 17:41:18 -0400
-MIME-Version: 1.0
-Reply-To: doug@easyco.com
-In-Reply-To: <20110914194040.37ed38c9@lxorguk.ukuu.org.uk>
-References: <20110911145053.GA28996@infradead.org>
-	<4E6DD7F0.8020903@kernel.dk>
-	<20110912122507.GA12229@infradead.org>
-	<4E6DFA8C.3030400@kernel.dk>
-	<20110912133826.GA22548@infradead.org>
-	<4E6E49BE.6020005@kernel.dk>
-	<20110913211911.GA13894@infradead.org>
-	<4E70E1C1.8040907@panasas.com>
-	<CAFx4rwR=EnCVfi4Pzm9pmTtKWAdzvzOg7wwzBbzZN7YTvu5-fw@mail.gmail.com>
-	<20110914194040.37ed38c9@lxorguk.ukuu.org.uk>
-Date: Wed, 14 Sep 2011 14:34:50 -0700
-X-Google-Sender-Auth: Gvh8RF6b7gfDIsN3S5z9-HkLGiw
-Message-ID: <CAFx4rwR2LgMZ8x8aCPa=FnPF0yCOH+7=HbX8OENdbZoMUzO59g@mail.gmail.com>
-Subject: Re: [PATCH 1/2] block: export __make_request
-From: Doug Dumitru <doug@easyco.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Boaz Harrosh <bharrosh@panasas.com>, Christoph Hellwig <hch@infradead.org>,
-        Jens Axboe <axboe@kernel.dk>, linux-raid@vger.kernel.org,
-        dm-devel@redhat.com, linux-kernel@vger.kernel.org, nab@linux-iscsi.org,
-        ryanh@us.ibm.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 14 Sep 2011 17:52:55 -0400
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: trivial@kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        "Justin P. Mattock" <justinmattock@gmail.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>
+Subject: [PATCH v2 1/3]Fix typos in the kernel
+Date: Wed, 14 Sep 2011 14:52:25 -0700
+Message-Id: <1316037145-18079-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 14, 2011 at 11:40 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> On Wed, 14 Sep 2011 10:53:22 -0700
-> Doug Dumitru <doug@easyco.com> wrote:
->
->> It would be great if this function were exported, but I would
->> encourage everyone to consider exporting it generally, not just for
->> GPL usage.
->
-> That would require a licensing change for the kernel. The kernel is a GPL
-> work. Some of us have not licensed it in any other way.
+From: "Justin P. Mattock" <justinmattock@gmail.com>
 
-Alan,
+Resend with changes.
+The below patch fixes some typos that I have found in the kernel.
 
-I agree with you, in part.  What you are saying implies that no new
-EXPORT can ever happen.  If you wrote this function, then obviously,
-you can choose to export it GPL only.  Likewise, if you wrote this
-function, considering it's location in the block IO layer, I would ask
-that you consider exporting it generally.
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+Cc: J. Bruce Fields <bfields@fieldses.org>
 
-This does not change the GPL nature of the kernel.  It does change how
-non GPL modules can interact with the kernel.  There are some (and I
-am not sure if this includes you), that believe that all commercial
-license kernel modules violate the GPL.  Other believe that they are
-legal, but perhaps not desirable.  Others believe there is no issue.
+---
+ arch/arm/mach-omap2/smartreflex.c               |    2 +-
+ arch/arm/plat-omap/include/plat/serial.h        |    2 +-
+ arch/powerpc/include/asm/io.h                   |    2 +-
+ arch/powerpc/include/asm/keylargo.h             |    2 +-
+ arch/powerpc/mm/numa.c                          |    2 +-
+ arch/powerpc/platforms/embedded6xx/storcenter.c |    2 +-
+ arch/sparc/kernel/smp_64.c                      |    2 +-
+ drivers/acpi/acpica/hwxface.c                   |    2 +-
+ drivers/base/regmap/regmap.c                    |    2 +-
+ drivers/block/xen-blkback/xenbus.c              |    2 +-
+ drivers/char/ipmi/ipmi_bt_sm.c                  |    2 +-
+ drivers/edac/ppc4xx_edac.c                      |    2 +-
+ drivers/media/video/zoran/zoran_driver.c        |    2 +-
+ 13 files changed, 13 insertions(+), 13 deletions(-)
 
-Again, my request was just a polite request to consider the sub-system
-when deciding on whether an EXPORT or EXPORT_GPL was more appropriate.
-
->> The kernel seems to be pretty clean that some subsystems are GPL only
->> (things like sysfs), and some are open
->
-> The _GPL is meant to make it clear they are internal symbols. The lack of
-> an _GPL does not make them usable by non GPL code, it merely indicates
-> that its perhaps more likely that you could in some cases shown something
-> was not a derivative work.
-
-I don't think this is true, at least from a practical point.  If you
-develop a commercial module, you can link to the kernel through public
-symbols.  These symbols, and the kernels header files, define a public
-API that is usable from commercial modules.  Provided that the
-techniques used inside of the commercial module were not "derived
-from" the rest of the kernel, using the API is acceptable.
-
-When a symbol is not exported publicly, then, pretty much by
-definition, it is not a part of the public API.  This creates kernel
-functionality that is unreachable from a commercial module, regardless
-of whether the commercial module is derived or not.  As such, the
-EXPORT_GPL has the effect of being even more stringent than the GPL
-license itself.  With an EXPORT_GPL, the author is saying that this
-API is not available to commercial modules even if the commercial
-software is not a derivative work.
-
-> The licensing is determined by the license document, and that very
-> clearly says the boundary is derivative works. The rest is just vague
-> guidance.
-
-I am very careful about what is a derivative work.  I am also careful
-about honoring author's "desires" as to how stuff gets exported.
-Right now, the block IO layer has a pretty clean, published, API with
-adequate public symbols to get real work done, either from GPL or
-commercial licensed modules.  If useful functions are walled off,
-then this does not change the derivative nature, but just degrades the
-usefulness of the kernel.  This would be like exporting kmalloc() as
-an open symbol, but exporting kfree() as GPL only.
-
-I guess another way of saying this is that if you are creating a new
-entry into an existing, published API, and the API keeps caller/called
-at "arms length" (which the block IO layer does), then it is possible
-to create a work that uses the API but is not a derivative, and
-hopefully the new symbol will be declared accessible to everyone.
-
-> In addition btw please be careful when trying to do this even with non
-> derivative code your lawyer is happy with. The kernel contains algorithms
-> which are subject to various US software patent mess where GPL use has
-> been granted, that may impact you if you use such code indirectly in non
-> GPL code.
-
-Understood, but, in all fairness, the US patent mess is far worse and
-I suspect that breathing violates someones claim.
-
-> Alan
-
-Again, I was not trying to create a contentious issue.  I was just
-asking that new exports consider what is around them, and try to
-maintain some consistency of GPL vs open exports.  A function that
-submits a block IO request seems to be a good candidate for an open
-API which implies an open export.
-
+diff --git a/arch/arm/mach-omap2/smartreflex.c b/arch/arm/mach-omap2/smartreflex.c
+index 34c01a7..f49804f 100644
+--- a/arch/arm/mach-omap2/smartreflex.c
++++ b/arch/arm/mach-omap2/smartreflex.c
+@@ -247,7 +247,7 @@ static void sr_stop_vddautocomp(struct omap_sr *sr)
+  * driver register and sr device intializtion API's. Only one call
+  * will ultimately succeed.
+  *
+- * Currently this function registers interrrupt handler for a particular SR
++ * Currently this function registers interrupt handler for a particular SR
+  * if smartreflex class driver is already registered and has
+  * requested for interrupts and the SR interrupt line in present.
+  */
+diff --git a/arch/arm/plat-omap/include/plat/serial.h b/arch/arm/plat-omap/include/plat/serial.h
+index de3b10c..564646d 100644
+--- a/arch/arm/plat-omap/include/plat/serial.h
++++ b/arch/arm/plat-omap/include/plat/serial.h
+@@ -2,7 +2,7 @@
+  * arch/arm/plat-omap/include/mach/serial.h
+  *
+  * Copyright (C) 2009 Texas Instruments
+- * Addded OMAP4 support- Santosh Shilimkar <santosh.shilimkar@ti.com>
++ * Added OMAP4 support- Santosh Shilimkar <santosh.shilimkar@ti.com>
+  *
+  * This program is distributed in the hope that it will be useful,
+  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+diff --git a/arch/powerpc/include/asm/io.h b/arch/powerpc/include/asm/io.h
+index 45698d5..2fd3645 100644
+--- a/arch/powerpc/include/asm/io.h
++++ b/arch/powerpc/include/asm/io.h
+@@ -394,7 +394,7 @@ __do_out_asm(_rec_outl, "stwbrx")
+ #endif /* CONFIG_PPC32 */
+ 
+ /* The "__do_*" operations below provide the actual "base" implementation
+- * for each of the defined acccessor. Some of them use the out_* functions
++ * for each of the defined accessor. Some of them use the out_* functions
+  * directly, some of them still use EEH, though we might change that in the
+  * future. Those macros below provide the necessary argument swapping and
+  * handling of the IO base for PIO.
+diff --git a/arch/powerpc/include/asm/keylargo.h b/arch/powerpc/include/asm/keylargo.h
+index d8520ef..fc195d0 100644
+--- a/arch/powerpc/include/asm/keylargo.h
++++ b/arch/powerpc/include/asm/keylargo.h
+@@ -51,7 +51,7 @@
+ 
+ #define KL_GPIO_SOUND_POWER		(KEYLARGO_GPIO_0+0x05)
+ 
+-/* Hrm... this one is only to be used on Pismo. It seeem to also
++/* Hrm... this one is only to be used on Pismo. It seems to also
+  * control the timebase enable on other machines. Still to be
+  * experimented... --BenH.
+  */
+diff --git a/arch/powerpc/mm/numa.c b/arch/powerpc/mm/numa.c
+index 2164006..ef2674d 100644
+--- a/arch/powerpc/mm/numa.c
++++ b/arch/powerpc/mm/numa.c
+@@ -511,7 +511,7 @@ static int of_get_assoc_arrays(struct device_node *memory,
+ 	aa->n_arrays = *prop++;
+ 	aa->array_sz = *prop++;
+ 
+-	/* Now that we know the number of arrrays and size of each array,
++	/* Now that we know the number of arrays and size of each array,
+ 	 * revalidate the size of the property read in.
+ 	 */
+ 	if (len < (aa->n_arrays * aa->array_sz + 2) * sizeof(unsigned int))
+diff --git a/arch/powerpc/platforms/embedded6xx/storcenter.c b/arch/powerpc/platforms/embedded6xx/storcenter.c
+index 613070e..f1eebca 100644
+--- a/arch/powerpc/platforms/embedded6xx/storcenter.c
++++ b/arch/powerpc/platforms/embedded6xx/storcenter.c
+@@ -77,7 +77,7 @@ static void __init storcenter_setup_arch(void)
+ }
+ 
+ /*
+- * Interrupt setup and service.  Interrrupts on the turbostation come
++ * Interrupt setup and service.  Interrupts on the turbostation come
+  * from the four PCI slots plus onboard 8241 devices: I2C, DUART.
+  */
+ static void __init storcenter_init_IRQ(void)
+diff --git a/arch/sparc/kernel/smp_64.c b/arch/sparc/kernel/smp_64.c
+index 4a442c3..92aa0e7 100644
+--- a/arch/sparc/kernel/smp_64.c
++++ b/arch/sparc/kernel/smp_64.c
+@@ -840,7 +840,7 @@ static void tsb_sync(void *info)
+ 	struct trap_per_cpu *tp = &trap_block[raw_smp_processor_id()];
+ 	struct mm_struct *mm = info;
+ 
+-	/* It is not valid to test "currrent->active_mm == mm" here.
++	/* It is not valid to test "current->active_mm == mm" here.
+ 	 *
+ 	 * The value of "current" is not changed atomically with
+ 	 * switch_mm().  But that's OK, we just need to check the
+diff --git a/drivers/acpi/acpica/hwxface.c b/drivers/acpi/acpica/hwxface.c
+index f75f81a..f34ba22 100644
+--- a/drivers/acpi/acpica/hwxface.c
++++ b/drivers/acpi/acpica/hwxface.c
+@@ -355,7 +355,7 @@ ACPI_EXPORT_SYMBOL(acpi_read_bit_register)
+  *
+  * PARAMETERS:  register_id     - ID of ACPI Bit Register to access
+  *              Value           - Value to write to the register, in bit
+- *                                position zero. The bit is automaticallly
++ *                                position zero. The bit is automatically
+  *                                shifted to the correct position.
+  *
+  * RETURN:      Status
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index 0eef4da..d6217d2 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -309,7 +309,7 @@ static int _regmap_raw_read(struct regmap *map, unsigned int reg, void *val,
+ 
+ 	/*
+ 	 * Some buses flag reads by setting the high bits in the
+-	 * register addresss; since it's always the high bits for all
++	 * register address; since it's always the high bits for all
+ 	 * current formats we can do this here rather than in
+ 	 * formatting.  This may break if we get interesting formats.
+ 	 */
+diff --git a/drivers/block/xen-blkback/xenbus.c b/drivers/block/xen-blkback/xenbus.c
+index 3f129b4..c092368 100644
+--- a/drivers/block/xen-blkback/xenbus.c
++++ b/drivers/block/xen-blkback/xenbus.c
+@@ -582,7 +582,7 @@ static void frontend_changed(struct xenbus_device *dev,
+ 	case XenbusStateConnected:
+ 		/*
+ 		 * Ensure we connect even when two watches fire in
+-		 * close successsion and we miss the intermediate value
++		 * close succession and we miss the intermediate value
+ 		 * of frontend_state.
+ 		 */
+ 		if (dev->state == XenbusStateConnected)
+diff --git a/drivers/char/ipmi/ipmi_bt_sm.c b/drivers/char/ipmi/ipmi_bt_sm.c
+index 3ed20e8..cdd4c09f 100644
+--- a/drivers/char/ipmi/ipmi_bt_sm.c
++++ b/drivers/char/ipmi/ipmi_bt_sm.c
+@@ -560,7 +560,7 @@ static enum si_sm_result bt_event(struct si_sm_data *bt, long time)
+ 		BT_CONTROL(BT_H_BUSY);		/* set */
+ 
+ 		/*
+-		 * Uncached, ordered writes should just proceeed serially but
++		 * Uncached, ordered writes should just proceed serially but
+ 		 * some BMCs don't clear B2H_ATN with one hit.  Fast-path a
+ 		 * workaround without too much penalty to the general case.
+ 		 */
+diff --git a/drivers/edac/ppc4xx_edac.c b/drivers/edac/ppc4xx_edac.c
+index 0de7d87..032a9c6 100644
+--- a/drivers/edac/ppc4xx_edac.c
++++ b/drivers/edac/ppc4xx_edac.c
+@@ -142,7 +142,7 @@
+ 
+ /*
+  * The ibm,sdram-4xx-ddr2 Device Control Registers (DCRs) are
+- * indirectly acccessed and have a base and length defined by the
++ * indirectly accessed and have a base and length defined by the
+  * device tree. The base can be anything; however, we expect the
+  * length to be precisely two registers, the first for the address
+  * window and the second for the data window.
+diff --git a/drivers/media/video/zoran/zoran_driver.c b/drivers/media/video/zoran/zoran_driver.c
+index d4d05d2..c624403 100644
+--- a/drivers/media/video/zoran/zoran_driver.c
++++ b/drivers/media/video/zoran/zoran_driver.c
+@@ -1550,7 +1550,7 @@ static int zoran_enum_fmt(struct zoran *zr, struct v4l2_fmtdesc *fmt, int flag)
+ 		if (zoran_formats[i].flags & flag && num++ == fmt->index) {
+ 			strncpy(fmt->description, zoran_formats[i].name,
+ 				sizeof(fmt->description) - 1);
+-			/* fmt struct pre-zeroed, so adding '\0' not neeed */
++			/* fmt struct pre-zeroed, so adding '\0' not need */
+ 			fmt->pixelformat = zoran_formats[i].fourcc;
+ 			if (zoran_formats[i].flags & ZORAN_FORMAT_COMPRESSED)
+ 				fmt->flags |= V4L2_FMT_FLAG_COMPRESSED;
 -- 
-Doug Dumitru
-EasyCo LLC
+1.7.6
+
