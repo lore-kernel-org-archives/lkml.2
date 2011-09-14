@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756222Ab1IQAqT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 20:46:19 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:7362 "EHLO
+	id S932710Ab1IQAqj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 20:46:39 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:5596 "EHLO
 	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755977Ab1IQAqQ (ORCPT
+	with ESMTP id S932678Ab1IQAqg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 20:46:16 -0400
-Message-Id: <093448$3hstsr@wolverine01.qualcomm.com>
-X-IronPort-AV: E=McAfee;i="5400,1158,6471"; a="119437211"
+	Fri, 16 Sep 2011 20:46:36 -0400
+Message-Id: <093448$3hsttv@wolverine01.qualcomm.com>
+X-IronPort-AV: E=McAfee;i="5400,1158,6471"; a="119437247"
 From: Richard Kuo <rkuo@codeaurora.org>
-Date: Wed, 14 Sep 2011 13:18:48 -0500
-Subject: [PATCH v4 04/36] Hexagon: Add atomic ops support
+Date: Wed, 14 Sep 2011 13:18:59 -0500
+Subject: [PATCH v4 15/36] Hexagon: Add init_task and process functions
 To: linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,21 +21,22 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
 Acked-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/hexagon/include/asm/atomic.h |  164 +++++++++++++++++++++++++++++++++++++
- 1 files changed, 164 insertions(+), 0 deletions(-)
- create mode 100644 arch/hexagon/include/asm/atomic.h
+ arch/hexagon/kernel/init_task.c |   54 ++++++++
+ arch/hexagon/kernel/process.c   |  279 +++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 333 insertions(+), 0 deletions(-)
+ create mode 100644 arch/hexagon/kernel/init_task.c
+ create mode 100644 arch/hexagon/kernel/process.c
 
-diff --git a/arch/hexagon/include/asm/atomic.h b/arch/hexagon/include/asm/atomic.h
+diff --git a/arch/hexagon/kernel/init_task.c b/arch/hexagon/kernel/init_task.c
 new file mode 100644
-index 0000000..e220f90
+index 0000000..73283d3
 --- /dev/null
-+++ b/arch/hexagon/include/asm/atomic.h
-@@ -0,0 +1,164 @@
++++ b/arch/hexagon/kernel/init_task.c
+@@ -0,0 +1,54 @@
 +/*
-+ * Atomic operations for the Hexagon architecture
++ * Init task definition
 + *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 and
@@ -52,149 +53,325 @@ index 0000000..e220f90
 + * 02110-1301, USA.
 + */
 +
-+#ifndef _ASM_ATOMIC_H
-+#define _ASM_ATOMIC_H
++#include <linux/mm.h>
++#include <linux/module.h>
++#include <linux/sched.h>
++#include <linux/init_task.h>
++#include <linux/fs.h>
++#include <linux/mqueue.h>
++#include <asm/thread_info.h>
++#include <asm/uaccess.h>
++#include <asm/pgtable.h>
 +
++static struct signal_struct init_signals = INIT_SIGNALS(init_signals);
++static struct sighand_struct init_sighand = INIT_SIGHAND(init_sighand);
++
++/*
++ * Initial thread structure.
++ *
++ * We need to make sure that this is 8192-byte aligned due to the
++ * way process stacks are handled. This is done by making sure
++ * the linker maps this in the .text segment right after head.S,
++ * and making head.S ensure the proper alignment.
++ */
++union thread_union init_thread_union
++	__attribute__((__section__(".data.init_task"),
++		__aligned__(THREAD_SIZE))) = {
++			INIT_THREAD_INFO(init_task)
++		};
++
++/*
++ * Initial task structure.
++ *
++ * All other task structs will be allocated on slabs in fork.c
++ */
++struct task_struct init_task = INIT_TASK(init_task);
++EXPORT_SYMBOL(init_task);
+diff --git a/arch/hexagon/kernel/process.c b/arch/hexagon/kernel/process.c
+new file mode 100644
+index 0000000..18c4f0b
+--- /dev/null
++++ b/arch/hexagon/kernel/process.c
+@@ -0,0 +1,279 @@
++/*
++ * Process creation support for Hexagon
++ *
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#include <linux/sched.h>
 +#include <linux/types.h>
++#include <linux/module.h>
++#include <linux/tick.h>
++#include <linux/uaccess.h>
++#include <linux/slab.h>
 +
-+#define ATOMIC_INIT(i)		{ (i) }
-+#define atomic_set(v, i)	((v)->counter = (i))
-+
-+/**
-+ * atomic_read - reads a word, atomically
-+ * @v: pointer to atomic value
-+ *
-+ * Assumes all word reads on our architecture are atomic.
++/*
++ * Kernel thread creation.  The desired kernel function is "wrapped"
++ * in the kernel_thread_helper function, which does cleanup
++ * afterwards.
 + */
-+#define atomic_read(v)		((v)->counter)
-+
-+/**
-+ * atomic_xchg - atomic
-+ * @v: pointer to memory to change
-+ * @new: new value (technically passed in a register -- see xchg)
-+ */
-+#define atomic_xchg(v, new)	(xchg(&((v)->counter), (new)))
-+
-+
-+/**
-+ * atomic_cmpxchg - atomic compare-and-exchange values
-+ * @v: pointer to value to change
-+ * @old:  desired old value to match
-+ * @new:  new value to put in
-+ *
-+ * Parameters are then pointer, value-in-register, value-in-register,
-+ * and the output is the old value.
-+ *
-+ * Apparently this is complicated for archs that don't support
-+ * the memw_locked like we do (or it's broken or whatever).
-+ *
-+ * Kind of the lynchpin of the rest of the generically defined routines.
-+ * Remember V2 had that bug with dotnew predicate set by memw_locked.
-+ *
-+ * "old" is "expected" old val, __oldval is actual old value
-+ */
-+static inline int atomic_cmpxchg(atomic_t *v, int old, int new)
++static void __noreturn kernel_thread_helper(void *arg, int (*fn)(void *))
 +{
-+	int __oldval;
-+
-+	asm volatile(
-+		"1:	%0 = memw_locked(%1);\n"
-+		"	{ P0 = cmp.eq(%0,%2);\n"
-+		"	  if (!P0.new) jump:nt 2f; }\n"
-+		"	memw_locked(%1,P0) = %3;\n"
-+		"	if (!P0) jump 1b;\n"
-+		"2:\n"
-+		: "=&r" (__oldval)
-+		: "r" (&v->counter), "r" (old), "r" (new)
-+		: "memory", "p0"
-+	);
-+
-+	return __oldval;
++	do_exit(fn(arg));
 +}
 +
-+static inline int atomic_add_return(int i, atomic_t *v)
++int kernel_thread(int (*fn)(void *), void *arg, unsigned long flags)
 +{
-+	int output;
++	struct pt_regs regs;
 +
-+	__asm__ __volatile__ (
-+		"1:	%0 = memw_locked(%1);\n"
-+		"	%0 = add(%0,%2);\n"
-+		"	memw_locked(%1,P3)=%0;\n"
-+		"	if !P3 jump 1b;\n"
-+		: "=&r" (output)
-+		: "r" (&v->counter), "r" (i)
-+		: "memory", "p3"
-+	);
-+	return output;
++	memset(&regs, 0, sizeof(regs));
++	/*
++	 * Yes, we're exploting illicit knowledge of the ABI here.
++	 */
++	regs.r00 = (unsigned long) arg;
++	regs.r01 = (unsigned long) fn;
++	pt_set_elr(&regs, (unsigned long)kernel_thread_helper);
++	pt_set_kmode(&regs);
 +
++	return do_fork(flags|CLONE_VM|CLONE_UNTRACED, 0, &regs, 0, NULL, NULL);
 +}
++EXPORT_SYMBOL(kernel_thread);
 +
-+#define atomic_add(i, v) atomic_add_return(i, (v))
-+
-+static inline int atomic_sub_return(int i, atomic_t *v)
-+{
-+	int output;
-+	__asm__ __volatile__ (
-+		"1:	%0 = memw_locked(%1);\n"
-+		"	%0 = sub(%0,%2);\n"
-+		"	memw_locked(%1,P3)=%0\n"
-+		"	if !P3 jump 1b;\n"
-+		: "=&r" (output)
-+		: "r" (&v->counter), "r" (i)
-+		: "memory", "p3"
-+	);
-+	return output;
-+}
-+
-+#define atomic_sub(i, v) atomic_sub_return(i, (v))
-+
-+/**
-+ * atomic_add_unless - add unless the number is a given value
-+ * @v: pointer to value
-+ * @a: amount to add
-+ * @u: unless value is equal to u
++/*
++ * Program thread launch.  Often defined as a macro in processor.h,
++ * but we're shooting for a small footprint and it's not an inner-loop
++ * performance-critical operation.
 + *
-+ * Returns 1 if the add happened, 0 if it didn't.
++ * The Hexagon ABI specifies that R28 is zero'ed before program launch,
++ * so that gets automatically done here.  If we ever stop doing that here,
++ * we'll probably want to define the ELF_PLAT_INIT macro.
 + */
-+static inline int __atomic_add_unless(atomic_t *v, int a, int u)
++void start_thread(struct pt_regs *regs, unsigned long pc, unsigned long sp)
 +{
-+	int output, __oldval;
-+	asm volatile(
-+		"1:	%0 = memw_locked(%2);"
-+		"	{"
-+		"		p3 = cmp.eq(%0, %4);"
-+		"		if (p3.new) jump:nt 2f;"
-+		"		%0 = add(%0, %3);"
-+		"		%1 = #0;"
-+		"	}"
-+		"	memw_locked(%2, p3) = %0;"
-+		"	{"
-+		"		if !p3 jump 1b;"
-+		"		%1 = #1;"
-+		"	}"
-+		"2:"
-+		: "=&r" (__oldval), "=&r" (output)
-+		: "r" (v), "r" (a), "r" (u)
-+		: "memory", "p3"
-+	);
-+	return output;
++	/* Set to run with user-mode data segmentation */
++	set_fs(USER_DS);
++	/* We want to zero all data-containing registers. Is this overkill? */
++	memset(regs, 0, sizeof(*regs));
++	/* We might want to also zero all Processor registers here */
++	pt_set_usermode(regs);
++	pt_set_elr(regs, pc);
++	pt_set_rte_sp(regs, sp);
 +}
 +
-+#define atomic_inc_not_zero(v) atomic_add_unless((v), 1, 0)
++/*
++ *  Spin, or better still, do a hardware or VM wait instruction
++ *  If hardware or VM offer wait termination even though interrupts
++ *  are disabled.
++ */
++static void default_idle(void)
++{
++	__vmwait();
++}
 +
-+#define atomic_inc(v) atomic_add(1, (v))
-+#define atomic_dec(v) atomic_sub(1, (v))
++void (*idle_sleep)(void) = default_idle;
 +
-+#define atomic_inc_and_test(v) (atomic_add_return(1, (v)) == 0)
-+#define atomic_dec_and_test(v) (atomic_sub_return(1, (v)) == 0)
-+#define atomic_sub_and_test(i, v) (atomic_sub_return(i, (v)) == 0)
-+#define atomic_add_negative(i, v) (atomic_add_return(i, (v)) < 0)
++void cpu_idle(void)
++{
++	while (1) {
++		tick_nohz_stop_sched_tick(1);
++		local_irq_disable();
++		while (!need_resched()) {
++			idle_sleep();
++			/*  interrupts wake us up, but aren't serviced  */
++			local_irq_enable();	/* service interrupt   */
++			local_irq_disable();
++		}
++		local_irq_enable();
++		tick_nohz_restart_sched_tick();
++		schedule();
++	}
++}
 +
++/*
++ *  Return saved PC of a blocked thread
++ */
++unsigned long thread_saved_pc(struct task_struct *tsk)
++{
++	return 0;
++}
 +
-+#define atomic_inc_return(v) (atomic_add_return(1, v))
-+#define atomic_dec_return(v) (atomic_sub_return(1, v))
++/*
++ * Copy architecture-specific thread state
++ */
++int copy_thread(unsigned long clone_flags, unsigned long usp,
++		unsigned long unused, struct task_struct *p,
++		struct pt_regs *regs)
++{
++	struct thread_info *ti = task_thread_info(p);
++	struct hexagon_switch_stack *ss;
++	struct pt_regs *childregs;
++	asmlinkage void ret_from_fork(void);
 +
++	childregs = (struct pt_regs *) (((unsigned long) ti + THREAD_SIZE) -
++					sizeof(*childregs));
++
++	memcpy(childregs, regs, sizeof(*childregs));
++	ti->regs = childregs;
++
++	/*
++	 * Establish kernel stack pointer and initial PC for new thread
++	 */
++	ss = (struct hexagon_switch_stack *) ((unsigned long) childregs -
++						    sizeof(*ss));
++	ss->lr = (unsigned long)ret_from_fork;
++	p->thread.switch_sp = ss;
++
++	/* If User mode thread, set pt_reg stack pointer as per parameter */
++	if (user_mode(childregs)) {
++		pt_set_rte_sp(childregs, usp);
++
++		/* Child sees zero return value */
++		childregs->r00 = 0;
++
++		/*
++		 * The clone syscall has the C signature:
++		 * int [r0] clone(int flags [r0],
++		 *           void *child_frame [r1],
++		 *           void *parent_tid [r2],
++		 *           void *child_tid [r3],
++		 *           void *thread_control_block [r4]);
++		 * ugp is used to provide TLS support.
++		 */
++		if (clone_flags & CLONE_SETTLS)
++			childregs->ugp = childregs->r04;
++
++		/*
++		 * Parent sees new pid -- not necessary, not even possible at
++		 * this point in the fork process
++		 * Might also want to set things like ti->addr_limit
++		 */
++	} else {
++		/*
++		 * If kernel thread, resume stack is kernel stack base.
++		 * Note that this is pointer arithmetic on pt_regs *
++		 */
++		pt_set_rte_sp(childregs, (unsigned long)(childregs + 1));
++		/*
++		 * We need the current thread_info fast path pointer
++		 * set up in pt_regs.  The register to be used is
++		 * parametric for assembler code, but the mechanism
++		 * doesn't drop neatly into C.  Needs to be fixed.
++		 */
++		childregs->THREADINFO_REG = (unsigned long) ti;
++	}
++
++	/*
++	 * thread_info pointer is pulled out of task_struct "stack"
++	 * field on switch_to.
++	 */
++	p->stack = (void *)ti;
++
++	return 0;
++}
++
++/*
++ * Release any architecture-specific resources locked by thread
++ */
++void release_thread(struct task_struct *dead_task)
++{
++}
++
++/*
++ * Free any architecture-specific thread data structures, etc.
++ */
++void exit_thread(void)
++{
++}
++
++/*
++ * Some archs flush debug and FPU info here
++ */
++void flush_thread(void)
++{
++}
++
++/*
++ * The "wait channel" terminology is archaic, but what we want
++ * is an identification of the point at which the scheduler
++ * was invoked by a blocked thread.
++ */
++unsigned long get_wchan(struct task_struct *p)
++{
++	unsigned long fp, pc;
++	unsigned long stack_page;
++	int count = 0;
++	if (!p || p == current || p->state == TASK_RUNNING)
++		return 0;
++
++	stack_page = (unsigned long)task_stack_page(p);
++	fp = ((struct hexagon_switch_stack *)p->thread.switch_sp)->fp;
++	do {
++		if (fp < (stack_page + sizeof(struct thread_info)) ||
++			fp >= (THREAD_SIZE - 8 + stack_page))
++			return 0;
++		pc = ((unsigned long *)fp)[1];
++		if (!in_sched_functions(pc))
++			return pc;
++		fp = *(unsigned long *) fp;
++	} while (count++ < 16);
++
++	return 0;
++}
++
++/*
++ * Borrowed from PowerPC -- basically allow smaller kernel stacks if we
++ * go crazy with the page sizes.
++ */
++#if THREAD_SHIFT < PAGE_SHIFT
++
++static struct kmem_cache *thread_info_cache;
++
++struct thread_info *alloc_thread_info_node(struct task_struct *tsk, int node)
++{
++	struct thread_info *ti;
++
++	ti = kmem_cache_alloc_node(thread_info_cache, GFP_KERNEL, node);
++	if (unlikely(ti == NULL))
++		return NULL;
++#ifdef CONFIG_DEBUG_STACK_USAGE
++	memset(ti, 0, THREAD_SIZE);
 +#endif
++	return ti;
++}
++
++void free_thread_info(struct thread_info *ti)
++{
++	kmem_cache_free(thread_info_cache, ti);
++}
++
++/*  Weak symbol; called by init/main.c  */
++
++void thread_info_cache_init(void)
++{
++	thread_info_cache = kmem_cache_create("thread_info", THREAD_SIZE,
++					      THREAD_SIZE, 0, NULL);
++	BUG_ON(thread_info_cache == NULL);
++}
++
++#endif /* THREAD_SHIFT < PAGE_SHIFT */
++
++/*
++ * Required placeholder.
++ */
++int dump_fpu(struct pt_regs *regs, elf_fpregset_t *fpu)
++{
++	return 0;
++}
 -- 
 1.7.1
 
