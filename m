@@ -1,72 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757427Ab1INTO3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 15:14:29 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:46580 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757306Ab1INTO3 convert rfc822-to-8bit (ORCPT
+	id S1757437Ab1INTPB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 15:15:01 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:42695 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757306Ab1INTPA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 15:14:29 -0400
+	Wed, 14 Sep 2011 15:15:00 -0400
+Date: Wed, 14 Sep 2011 23:14:17 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: kernel-hardening@lists.openwall.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cyrill Gorcunov <gorcunov@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC PATCH 2/2] mm: restrict access to /proc/slabinfo
+Message-ID: <20110914191417.GA15936@albatros>
+References: <20110910164001.GA2342@albatros>
+ <20110910164134.GA2442@albatros>
+ <1316025701.4478.65.camel@nimitz>
 MIME-Version: 1.0
-In-Reply-To: <1316023462-3287-1-git-send-email-rklein@nvidia.com>
-References: <1316023462-3287-1-git-send-email-rklein@nvidia.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 14 Sep 2011 13:14:08 -0600
-X-Google-Sender-Auth: 46ZEL5zDx2vHahX-yfZWcVLQnuQ
-Message-ID: <CACxGe6uWvWz-8rFVv4HPs_DgoJabV2N0aUQTx7xJ8Zr6thkSMA@mail.gmail.com>
-Subject: Re: [PATCH v4] power: bq20z75: devicetree init support
-To: Rhyland Klein <rklein@nvidia.com>
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1316025701.4478.65.camel@nimitz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 14, 2011 at 12:04 PM, Rhyland Klein <rklein@nvidia.com> wrote:
-> Adding support to generate platform data when kernel is configured
-> through device tree.
->
-> Also adding the binding for the TI bq20z75 fuel gadge and the
-> bq20z75 driver.
->
-> Signed-off-by: Rhyland Klein <rklein@nvidia.com>
-> ---
->        v2: Fixed typo in binding description
->        v3: Changed to use "ti," for properties
->            Changed to use single gpio entry for battery detect info.
->            Removed unnecessary call to of_match_device.
->        v4: squashed bindings and drivers changes together.
->            fixed case where CONFIG_OF is not selected, to return existing
->            pdata pointer if it exists.
+On Wed, Sep 14, 2011 at 11:41 -0700, Dave Hansen wrote:
+> On Sat, 2011-09-10 at 20:41 +0400, Vasiliy Kulikov wrote:
+> > @@ -4584,7 +4584,8 @@ static const struct file_operations proc_slabstats_operations = {
+> >  
+> >  static int __init slab_proc_init(void)
+> >  {
+> > -       proc_create("slabinfo",S_IWUSR|S_IRUGO,NULL,&proc_slabinfo_operations);
+> > +       proc_create("slabinfo", S_IWUSR | S_IRUSR, NULL,
+> > +                   &proc_slabinfo_operations);
+> >  #ifdef CONFIG_DEBUG_SLAB_LEAK
+> >         proc_create("slab_allocators", 0, NULL, &proc_sla 
+> 
+> If you respin this, please don't muck with the whitespace.
 
-Nit: Personally, I'm much happier when the revision list is above the
---- line so it appears in the linux commit text.  That helps when
-trying to figure out exactly which posting of a patch got merged.
+OK, I was just removing checkpatch warnings.
 
->
-> diff --git a/drivers/power/bq20z75.c b/drivers/power/bq20z75.c
-> index 9c5e5be..4c4669e 100644
-> --- a/drivers/power/bq20z75.c
-> +++ b/drivers/power/bq20z75.c
-> @@ -613,6 +613,78 @@ static void bq20z75_delayed_work(struct work_struct *work)
->        }
->  }
->
-> +#if defined(CONFIG_OF)
-> +#include <linux/of_device.h>
-> +static const struct of_device_id bq20z75_dt_ids[] = {
-> +       { .compatible = "ti,bq20z75" },
-> +       { }
-> +};
-> +MODULE_DEVICE_TABLE(platform, bq20z75_dt_ids);
+>  Otherwise,
+> I'm fine with this.  Distros are already starting to do this anyway in
+> userspace.
+> 
+> Reviewed-by: Dave Hansen <dave@linux.vnet.ibm.com>
 
-MODULE_DEVICE_TABLE(of, ...)
+Thank you!
 
-It's not a platform_device_id table.
-
-Otherwise:
-
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
