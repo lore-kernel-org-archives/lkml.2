@@ -1,85 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756901Ab1INPs4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 11:48:56 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:56413 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755292Ab1INPs4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 11:48:56 -0400
-Date: Wed, 14 Sep 2011 19:48:26 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: kernel-hardening@lists.openwall.com, Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Dan Rosenberg <drosenberg@vsecurity.com>, Theodore Tso <tytso@mit.edu>,
-        Alan Cox <alan@linux.intel.com>, Jesper Juhl <jj@chaosbits.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [kernel-hardening] Re: [RFC PATCH 2/2] mm: restrict access to
- /proc/slabinfo
-Message-ID: <20110914154826.GA9942@albatros>
-References: <20110910164001.GA2342@albatros>
- <20110910164134.GA2442@albatros>
- <20110914131630.GA7001@albatros>
- <1316013505.4478.50.camel@nimitz>
- <20110914154229.GA9776@albatros>
+	id S1756909Ab1INPtz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 11:49:55 -0400
+Received: from mga09.intel.com ([134.134.136.24]:49731 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755292Ab1INPty (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Sep 2011 11:49:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="48391497"
+Message-ID: <4E70CD20.1010501@linux.intel.com>
+Date: Wed, 14 Sep 2011 08:49:52 -0700
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110914154229.GA9776@albatros>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        David Miller <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Mike Galbraith <efault@gmx.de>,
+        Michel Lespinasse <walken@google.com>
+Subject: Re: [RFC][PATCH 1/3] sched: Provide delayed wakeup list
+References: <20110914133034.687048806@chello.nl>  <20110914133750.739484417@chello.nl> <4E70C9B3.5080503@linux.intel.com> <1316014774.5040.29.camel@twins>
+In-Reply-To: <1316014774.5040.29.camel@twins>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc'ed Dave back, sorry for the noise)
 
-On Wed, Sep 14, 2011 at 19:42 +0400, Vasiliy Kulikov wrote:
-> Hi Dave,
+
+On 09/14/2011 08:39 AM, Peter Zijlstra wrote:
+> On Wed, 2011-09-14 at 08:35 -0700, Darren Hart wrote:
+>> Missing here is what the value of state should be when
+>> calling wake_up_list. 
 > 
-> On Wed, Sep 14, 2011 at 08:18 -0700, Dave Hansen wrote:
-> > On Wed, 2011-09-14 at 17:16 +0400, Vasiliy Kulikov wrote:
-> > > > World readable slabinfo simplifies kernel developers' job of debugging
-> > > > kernel bugs (e.g. memleaks), but I believe it does more harm than
-> > > > benefits.  For most users 0444 slabinfo is an unreasonable attack vector.
-> > > 
-> > > Please tell if anybody has complains about the restriction - whether it
-> > > forces someone besides kernel developers to do "chmod/chgrp".  But if
-> > > someone want to debug the kernel, it shouldn't significantly influence
-> > > on common users, especially it shouldn't create security issues. 
-> > 
-> > Ubuntu ships today with a /etc/init/mounted-proc.conf that does:
-> > 
-> > 	chmod 0400 "${MOUNTPOINT}"/slabinfo
-> > 
-> > After cursing Kees's name a few times, I commented it out and it hasn't
-> > bothered me again.  
-> 
-> Another way is chgrp slabinfo to some "admin" group which are privileged
-> in this sense and add your user to this group.  But please, sane and
-> secure defaults!
-> 
-> > I expect that the folks that really care about this (and their distros)
-> > will probably have a similar mechanism.  I guess the sword cuts both
-> > ways in this case: it obviously _works_ to have the distros do it, but
-> > it was a one-time inconvenience for me to override that.
-> > 
-> > In other words, I dunno.  If we do this in the kernel, can we at least
-> > do something like CONFIG_INSECURE to both track these kinds of things
-> > and make it easy to get them out of a developer's way?
-> 
-> What do you think about adding your user to the slabinfo's group or
-> chmod it - quite the opposite Ubuntu currently does?  I think it is more
-> generic (e.g. you may chmod 0444 to allow all users to get debug
-> information or just 0440 and chgrp admin to allow only trusted users to
-> do it) and your local policy doesn't touch the kernel.
-> 
-> Thanks,
-> 
-> -- 
-> Vasiliy Kulikov
-> http://www.openwall.com - bringing security into open computing environments
+> Depends on what all you want to wake up :-) Would a reference to the
+> comment of try_to_wake_up() be good enough?
+
+I found it by following the calls as well, and any serious developer
+could as well. I just find the kerneldoc headers to be very valuable as
+reference and I like to encourage their use when I can. This isn't a
+huge deal, just a nudge to see if it sticks ;)
+
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
