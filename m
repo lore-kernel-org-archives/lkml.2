@@ -1,82 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932299Ab1INQWO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 12:22:14 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:60694 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750837Ab1INQWN (ORCPT
+	id S1756886Ab1INQ11 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 12:27:27 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:49475
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753359Ab1INQ10 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 12:22:13 -0400
-Date: Wed, 14 Sep 2011 20:21:43 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Pavel Emelyanov <xemul@parallels.com>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>, Pavel Machek <pavel@ucw.cz>,
-        Andrew Morton <akpm00@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "containers@lists.osdl.org" <containers@lists.osdl.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Kirill Shutemov <kirill@shutemov.name>,
-        James Bottomley <jbottomley@parallels.com>,
-        Nathan Lynch <ntl@pobox.com>, Zan Lynx <zlynx@acm.org>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>, Tejun Heo <tj@kernel.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [patch 2/2] fs, proc: Introduce the /proc/<pid>/map_files/
- directory v12
-Message-ID: <20110914162143.GA11157@albatros>
-References: <20110913212447.918816776@openvz.org>
- <20110913235222.043927b3.akpm@linux-foundation.org>
- <20110914105607.GP25367@sun>
- <20110914111437.GA22516@atrey.karlin.mff.cuni.cz>
- <20110914113912.GQ25367@sun>
- <20110914134405.GV25367@sun>
- <20110914144841.GA7906@albatros>
- <20110914160018.GW25367@sun>
- <20110914160724.GA10612@albatros>
- <4E70D29D.20104@parallels.com>
+	Wed, 14 Sep 2011 12:27:26 -0400
+X-SpamScore: -8
+X-BigFish: VPS-8(zz1432N98dKzz1202hzz8275bhz32i668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 0,13,
+X-WSS-ID: 0LRITOV-02-TCF-02
+X-M-MSG: 
+Date: Wed, 14 Sep 2011 18:26:53 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Don Zickus <dzickus@redhat.com>
+CC: "x86@kernel.org" <x86@kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "ying.huang@intel.com" <ying.huang@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "avi@redhat.com" <avi@redhat.com>, "jeremy@goop.org" <jeremy@goop.org>
+Subject: Re: [V4][PATCH 4/6] x86, nmi:  add in logic to handle multiple
+ events and unknown NMIs
+Message-ID: <20110914162653.GI6063@erda.amd.com>
+References: <1315947509-6429-1-git-send-email-dzickus@redhat.com>
+ <1315947509-6429-5-git-send-email-dzickus@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <4E70D29D.20104@parallels.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1315947509-6429-5-git-send-email-dzickus@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 14, 2011 at 20:13 +0400, Pavel Emelyanov wrote:
-> > No, I mean something else.  Assume you have a task, which does the
-> > steps:
-> > 
-> > 1) opens some sensitive file as root.  This file is e.g. 0700.
-> > 
-> > 2) mmaps the file via opened fd, either RO or RW.
-> > 
-> > 3) closes fd.
-> > 
-> > 4) drops root.
-> > 
-> > Now it has a mapping of a privileged file, but cannot get fd of it
-> > anyhow.  With map_files/ he may open his own /proc/$$/map_files/, pass
-> > ptrace() check, and get fd of the privileged file.  He cannot explicitly
-> > open it as it is 0700, but he may open it via map_files/ and get RO/RW
-> > fd.
-> > 
-> 
-> What is the problem here - the fact that we have some file considered to
-> be private be open-able by somebody else, or the fact that we can truncate
-> the file being mapped?
+On 13.09.11 16:58:27, Don Zickus wrote:
+> @@ -87,6 +87,16 @@ static int notrace __kprobes nmi_handle(unsigned int type, struct pt_regs *regs)
+>  
+>  		handled += a->handler(type, regs);
+>  
+> +		/*
+> + 		 * Optimization: only loop once if this is not a 
+> + 		 * back-to-back NMI.  The idea is nothing is dropped
+> + 		 * on the first NMI, only on the second of a back-to-back
+> + 		 * NMI.  No need to waste cycles going through all the
+> + 		 * handlers.
+> + 		 */
+> +		if (!b2b && handled)
+> +			break;
 
-The latter - the file, which is considered to be restricted to a process
-as W only without ability to truncate it, now can be truncated.  The
-process after (4) had no such ability without map_files/ with current
-permission model of mmap'ed files.  Or I am missing something?
+Don, if I am not missing something, this actually does not work
+because perfctr NMIs do not re-trigger. Suppose a handler running
+before perfctr. It sets 'handled' and the chain is stopped here. To
+run through the perfctr handler the NMI must retrigger which it
+doesn't.
 
-FWIW, ftruncate() might be not the only syscall which makes sense to use
-in this case, I just thought about it.
+I tested the above with enclosed patch.
 
-Thanks,
+The patch handles the nmi and then stops the chain. You see by the PMI
+count that the perfctr nmi is not handled:
+
+Patch applied:
+
+ # echo $(($(grep PMI /proc/interrupts | sed -e 's/.*: *//;s/ *Non.*//;s/  */ + /g')))
+ 0
+ # echo $(($(grep NMI /proc/interrupts | sed -e 's/.*: *//;s/ *Non.*//;s/  */ + /g')))
+ 0
+ # perf record -e cpu-cycles bash -c 'perl -e "while(1) {}" & sleep 5 ; kill $!'
+ [ perf record: Woken up 1 times to write data ]
+ [ perf record: Captured and wrote 0.011 MB perf.data (~472 samples) ]
+ # echo $(($(grep PMI /proc/interrupts | sed -e 's/.*: *//;s/ *Non.*//;s/  */ + /g')))
+ 128
+ # echo $(($(grep NMI /proc/interrupts | sed -e 's/.*: *//;s/ *Non.*//;s/  */ + /g')))
+ 1387
+
+W/o the patch (tip/perf/core: 51887c8):
+
+ # echo $(($(grep NMI /proc/interrupts | sed -e 's/.*: *//;s/ *Non.*//;s/  */ + /g')))
+ 0
+ # echo $(($(grep PMI /proc/interrupts | sed -e 's/.*: *//;s/ *Non.*//;s/  */ + /g')))
+ 0
+ # perf record -e cpu-cycles bash -c 'perl -e "while(1) {}" & sleep 5 ; kill $!'
+ [ perf record: Woken up 1 times to write data ]
+ [ perf record: Captured and wrote 0.194 MB perf.data (~8455 samples) ]
+ # echo $(($(grep PMI /proc/interrupts | sed -e 's/.*: *//;s/ *Non.*//;s/  */ + /g')))
+ 4918
+ # echo $(($(grep NMI /proc/interrupts | sed -e 's/.*: *//;s/ *Non.*//;s/  */ + /g')))
+ 4918
+
+So we may not jump out the while loop.
+
+-Robert
+
+> +
+>  		a = next_a;
+>  	}
+>  	rcu_read_unlock();
+
+
+
+>From b1d68bf037cfa78f073cf71c296057ff422294f2 Mon Sep 17 00:00:00 2001
+From: Robert Richter <robert.richter@amd.com>
+Date: Wed, 14 Sep 2011 11:44:49 +0200
+Subject: [PATCH] perf_nmi_test
+
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+---
+ arch/x86/kernel/cpu/perf_event.c |   45 ++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 45 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 594d425..2255221 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -31,6 +31,7 @@
+ #include <asm/compat.h>
+ #include <asm/smp.h>
+ #include <asm/alternative.h>
++#include <asm/hardirq.h>
+ 
+ #if 0
+ #undef wrmsrl
+@@ -43,6 +44,8 @@ do {								\
+ } while (0)
+ #endif
+ 
++#define irq_stats(x)              (&per_cpu(irq_stat, x))
++
+ /*
+  *          |   NHM/WSM    |      SNB     |
+  * register -------------------------------
+@@ -1383,6 +1386,7 @@ perf_event_nmi_handler(struct notifier_block *self,
+ 	struct die_args *args = __args;
+ 	unsigned int this_nmi;
+ 	int handled;
++	int cpu;
+ 
+ 	if (!atomic_read(&active_events))
+ 		return NOTIFY_DONE;
+@@ -1408,6 +1412,9 @@ perf_event_nmi_handler(struct notifier_block *self,
+ 	}
+ 
+ 	handled = x86_pmu.handle_irq(args->regs);
++	cpu = smp_processor_id();
++	trace_printk("perf: NMI: %d, PMI: %d, handled: %d\n", irq_stats(cpu)->__nmi_count,
++		     irq_stats(cpu)->apic_perf_irqs, handled);
+ 	if (!handled)
+ 		return NOTIFY_DONE;
+ 
+@@ -1961,3 +1968,41 @@ unsigned long perf_misc_flags(struct pt_regs *regs)
+ 
+ 	return misc;
+ }
++
++static DEFINE_PER_CPU(unsigned long, save_rip);
++
++static int __kprobes perf_test_nmi_handler(struct notifier_block *self,
++					   unsigned long cmd, void *__args)
++{
++	struct die_args *args = __args;
++	bool b2b = false;
++	int cpu = smp_processor_id();
++
++	if (cmd != DIE_NMI)
++		return NOTIFY_DONE;
++
++	if (args->regs->ip == __this_cpu_read(save_rip))
++		b2b = true;
++
++	__this_cpu_write(save_rip, args->regs->ip);
++
++	trace_printk("skip: NMI: %d, PMI: %d, b2b: %d\n", irq_stats(cpu)->__nmi_count,
++		     irq_stats(cpu)->apic_perf_irqs, b2b);
++
++	if (!b2b)
++		return NOTIFY_STOP;
++
++	return NOTIFY_DONE;
++}
++
++static __read_mostly struct notifier_block perf_test_nmi_notifier = {
++	.notifier_call		= perf_test_nmi_handler,
++	.priority		= NMI_LOCAL_HIGH_PRIOR,
++};
++
++static __init int perf_nmi_test_init(void)
++{
++	return register_die_notifier(&perf_test_nmi_notifier);
++}
++
++device_initcall(perf_nmi_test_init);
+-- 
+1.7.6.1
+
+
 
 -- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
