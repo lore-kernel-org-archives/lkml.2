@@ -1,136 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933399Ab1INVkp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 17:40:45 -0400
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:6957 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933341Ab1INVkn (ORCPT
+	id S933409Ab1INVlU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 17:41:20 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:48868 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933341Ab1INVlS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 17:40:43 -0400
-Message-ID: <4E711F59.6000801@cavium.com>
-Date: Wed, 14 Sep 2011 14:40:41 -0700
-From: David Daney <david.daney@cavium.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	Wed, 14 Sep 2011 17:41:18 -0400
 MIME-Version: 1.0
-To: Kumar Gala <galak@kernel.crashing.org>, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com
-CC: linux-mips@linux-mips.org, ralf@linux-mips.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
-Subject: Device tree property names for MDIO bus multiplexer.  Was: Re: [PATCH
- 2/3] netdev/of/phy: Add MDIO bus multiplexer support.
-References: <1314820906-14004-1-git-send-email-david.daney@cavium.com> <1314820906-14004-3-git-send-email-david.daney@cavium.com> <129FAAB3-C9AD-43F6-A8CB-96548A47C4DC@kernel.crashing.org> <4E6FE5F9.2060604@cavium.com> <678076BE-4CF8-4AC9-BE9B-9AF1A17B7AF8@kernel.crashing.org>
-In-Reply-To: <678076BE-4CF8-4AC9-BE9B-9AF1A17B7AF8@kernel.crashing.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 14 Sep 2011 21:40:42.0459 (UTC) FILETIME=[F3E2F2B0:01CC7326]
+Reply-To: doug@easyco.com
+In-Reply-To: <20110914194040.37ed38c9@lxorguk.ukuu.org.uk>
+References: <20110911145053.GA28996@infradead.org>
+	<4E6DD7F0.8020903@kernel.dk>
+	<20110912122507.GA12229@infradead.org>
+	<4E6DFA8C.3030400@kernel.dk>
+	<20110912133826.GA22548@infradead.org>
+	<4E6E49BE.6020005@kernel.dk>
+	<20110913211911.GA13894@infradead.org>
+	<4E70E1C1.8040907@panasas.com>
+	<CAFx4rwR=EnCVfi4Pzm9pmTtKWAdzvzOg7wwzBbzZN7YTvu5-fw@mail.gmail.com>
+	<20110914194040.37ed38c9@lxorguk.ukuu.org.uk>
+Date: Wed, 14 Sep 2011 14:34:50 -0700
+X-Google-Sender-Auth: Gvh8RF6b7gfDIsN3S5z9-HkLGiw
+Message-ID: <CAFx4rwR2LgMZ8x8aCPa=FnPF0yCOH+7=HbX8OENdbZoMUzO59g@mail.gmail.com>
+Subject: Re: [PATCH 1/2] block: export __make_request
+From: Doug Dumitru <doug@easyco.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Boaz Harrosh <bharrosh@panasas.com>, Christoph Hellwig <hch@infradead.org>,
+        Jens Axboe <axboe@kernel.dk>, linux-raid@vger.kernel.org,
+        dm-devel@redhat.com, linux-kernel@vger.kernel.org, nab@linux-iscsi.org,
+        ryanh@us.ibm.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Well, I would really like to get an official maintainer's take on the 
-name of the parent MDIO bus property.  Prehaps Grant or Rob could opine 
-on the matter.
+On Wed, Sep 14, 2011 at 11:40 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> On Wed, 14 Sep 2011 10:53:22 -0700
+> Doug Dumitru <doug@easyco.com> wrote:
+>
+>> It would be great if this function were exported, but I would
+>> encourage everyone to consider exporting it generally, not just for
+>> GPL usage.
+>
+> That would require a licensing change for the kernel. The kernel is a GPL
+> work. Some of us have not licensed it in any other way.
 
-Sooner would be better than later as I am about to start shipping boards 
-with this burnt into the bootloader.  If it needs changing, I could do 
-it in the next couple of days, but after that it escapes into the wild.
+Alan,
 
-Thanks in advance,
-David Daney
+I agree with you, in part.  What you are saying implies that no new
+EXPORT can ever happen.  If you wrote this function, then obviously,
+you can choose to export it GPL only.  Likewise, if you wrote this
+function, considering it's location in the block IO layer, I would ask
+that you consider exporting it generally.
 
+This does not change the GPL nature of the kernel.  It does change how
+non GPL modules can interact with the kernel.  There are some (and I
+am not sure if this includes you), that believe that all commercial
+license kernel modules violate the GPL.  Other believe that they are
+legal, but perhaps not desirable.  Others believe there is no issue.
 
-On 09/14/2011 01:42 PM, Kumar Gala wrote:
->
-> On Sep 13, 2011, at 6:23 PM, David Daney wrote:
->
->> On 09/13/2011 04:07 PM, Kumar Gala wrote:
->>>
->>>> diff --git a/Documentation/devicetree/bindings/net/mdio-mux.txt b/Documentation/devicetree/bindings/net/mdio-mux.txt
->>>> new file mode 100644
->>>> index 0000000..a908312
->>>> --- /dev/null
->>>> +++ b/Documentation/devicetree/bindings/net/mdio-mux.txt
->>>> @@ -0,0 +1,132 @@
->>>> +Common MDIO bus multiplexer/switch properties.
->>>> +
->>>> +An MDIO bus multiplexer/switch will have several child busses that are
->>>> +numbered uniquely in a device dependent manner.  The nodes for an MDIO
->>>> +bus multiplexer/switch will have one child node for each child bus.
->>>> +
->>>> +Required properties:
->>>> +- parent-bus : phandle to the parent MDIO bus.
->>>
->>> Should probably be mdio-parent-bus
->>
->> Why?  We know it is MDIO.
->>
->> Serial bus multiplexing is not a concept limited to MDIO.  We would want to use "parent-bus" for some I2C multiplexers as well.
->
->> From many years of dealing with device trees.  We typically don't name things overlay generically unless they will be used over and over again as a common idiom (like reg, interrupt, etc.).
->
-> We don't really use 'bus' generically today.
->
->>
->>>
->>>> +
->>>> +Optional properties:
->>>> +- Other properties specific to the multiplexer/switch hardware.
->>>> +
->>>> +Required properties for child nodes:
->>>> +- #address-cells =<1>;
->>>> +- #size-cells =<0>;
->>>> +- cell-index : The sub-bus number.
->>>
->>> What does sub-bus number mean?
->>
->> There are N child buses (or sub-buses) coming out of the multiplexer. The cell-index is used as a handle or identifier for each of these.
->>
->> The concrete example in Patch 3/3 is a multiplexer with four child buses.  The happen to have cell-indexes of 0, 1, 2 and 3.
->>
->> In the GPIO case of patch 3/3, these directly correspond the the state of the two GPIO pins controlling the multiplexer.  The driver then uses the cell-index property to determine the state of the GPIO to connect any given child.
->>
->> It is possible that the documentation part of the patch could be made more clear about this.
->>
->>>
->>>> +
->>>> +
->>>> +Example :
->>>
->> [...]
->>>> +
->>>> +int mdio_mux_probe(struct platform_device *pdev,
->>>> +		   int (*switch_fn)(int cur, int desired, void *data),
->>>> +		   void *data)
->>>> +{
->>>> +	struct device_node *parent_bus_node;
->>>> +	struct device_node *child_bus_node;
->>>> +	int r, n, ret_val;
->>>> +	struct mii_bus *parent_bus;
->>>> +	struct mdio_mux_parent_bus *pb;
->>>> +	struct mdio_mux_child_bus *cb;
->>>> +
->>>> +	if (!pdev->dev.of_node)
->>>> +		return -ENODEV;
->>>> +
->>>> +	parent_bus_node = of_parse_phandle(pdev->dev.of_node, "parent-bus", 0);
->>>> +
->>>> +	if (!parent_bus_node)
->>>> +		return -ENODEV;
->>>> +
->>>> +	parent_bus = of_mdio_find_bus(parent_bus_node);
->>>
->>>
->>> So what happens if the parent bus probe happens after the mux probe?
->>>
->>
->> The whole house of cards collapses.
->>
->> Grant Likely has a patch to deal with this by retrying the probing,  but as far as I know, it has not been merged yet.
->
-> - k--
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+Again, my request was just a polite request to consider the sub-system
+when deciding on whether an EXPORT or EXPORT_GPL was more appropriate.
 
+>> The kernel seems to be pretty clean that some subsystems are GPL only
+>> (things like sysfs), and some are open
+>
+> The _GPL is meant to make it clear they are internal symbols. The lack of
+> an _GPL does not make them usable by non GPL code, it merely indicates
+> that its perhaps more likely that you could in some cases shown something
+> was not a derivative work.
+
+I don't think this is true, at least from a practical point.  If you
+develop a commercial module, you can link to the kernel through public
+symbols.  These symbols, and the kernels header files, define a public
+API that is usable from commercial modules.  Provided that the
+techniques used inside of the commercial module were not "derived
+from" the rest of the kernel, using the API is acceptable.
+
+When a symbol is not exported publicly, then, pretty much by
+definition, it is not a part of the public API.  This creates kernel
+functionality that is unreachable from a commercial module, regardless
+of whether the commercial module is derived or not.  As such, the
+EXPORT_GPL has the effect of being even more stringent than the GPL
+license itself.  With an EXPORT_GPL, the author is saying that this
+API is not available to commercial modules even if the commercial
+software is not a derivative work.
+
+> The licensing is determined by the license document, and that very
+> clearly says the boundary is derivative works. The rest is just vague
+> guidance.
+
+I am very careful about what is a derivative work.  I am also careful
+about honoring author's "desires" as to how stuff gets exported.
+Right now, the block IO layer has a pretty clean, published, API with
+adequate public symbols to get real work done, either from GPL or
+commercial licensed modules.  If useful functions are walled off,
+then this does not change the derivative nature, but just degrades the
+usefulness of the kernel.  This would be like exporting kmalloc() as
+an open symbol, but exporting kfree() as GPL only.
+
+I guess another way of saying this is that if you are creating a new
+entry into an existing, published API, and the API keeps caller/called
+at "arms length" (which the block IO layer does), then it is possible
+to create a work that uses the API but is not a derivative, and
+hopefully the new symbol will be declared accessible to everyone.
+
+> In addition btw please be careful when trying to do this even with non
+> derivative code your lawyer is happy with. The kernel contains algorithms
+> which are subject to various US software patent mess where GPL use has
+> been granted, that may impact you if you use such code indirectly in non
+> GPL code.
+
+Understood, but, in all fairness, the US patent mess is far worse and
+I suspect that breathing violates someones claim.
+
+> Alan
+
+Again, I was not trying to create a contentious issue.  I was just
+asking that new exports consider what is around them, and try to
+maintain some consistency of GPL vs open exports.  A function that
+submits a block IO request seems to be a good candidate for an open
+API which implies an open export.
+
+-- 
+Doug Dumitru
+EasyCo LLC
