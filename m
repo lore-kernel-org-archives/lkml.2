@@ -1,59 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933345Ab1INVCr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 17:02:47 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:43562 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933305Ab1INVCq convert rfc822-to-8bit (ORCPT
+	id S933360Ab1INVDk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 17:03:40 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:34835 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933201Ab1INVDj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 17:02:46 -0400
+	Wed, 14 Sep 2011 17:03:39 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAC9WiBjbWTRBkRN6pKSqJLVJXzcx89j7oFpCf0dzVeHAJM8zyw@mail.gmail.com>
-References: <1315941562-25422-1-git-send-email-sjenning@linux.vnet.ibm.com>
-	<a7d17e7e-c6a1-448e-b60f-b79a4ae0c3ba@default>
-	<CAC9WiBjbWTRBkRN6pKSqJLVJXzcx89j7oFpCf0dzVeHAJM8zyw@mail.gmail.com>
-Date: Wed, 14 Sep 2011 23:02:45 +0200
-Message-ID: <CAC9WiBiHZ8jSBRaFQdsk-DwaNLFyR=e0zWUgrNEu6mE0ZoS0vQ@mail.gmail.com>
-Subject: Re: [PATCH] staging: zcache: fix cleancache crash
-From: Francis Moreau <francis.moro@gmail.com>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>, gregkh@suse.de,
-        devel@driverdev.osuosl.org, linux-mm@kvack.org, ngupta@vflare.org,
+In-Reply-To: <20110914074621.GA3582@polaris.bitmath.org>
+References: <1315029042-27513-1-git-send-email-martinez.javier@gmail.com>
+ <1315029042-27513-2-git-send-email-martinez.javier@gmail.com>
+ <20110913082448.GA5046@polaris.bitmath.org> <CAAwP0s0FvkzTUo5kAZE_pd_8u-znDvoLks74gf8+75cUF0aM2g@mail.gmail.com>
+ <20110914074621.GA3582@polaris.bitmath.org>
+From: Javier Martinez Canillas <martinez.javier@gmail.com>
+Date: Wed, 14 Sep 2011 23:03:22 +0200
+Message-ID: <CAAwP0s2iWaDwAXiaHn110WahnbEhG43nnC_pJwC=539OB4vmmA@mail.gmail.com>
+Subject: Re: [PATCH V2 1/3] Input: cyttsp - Cypress TTSP capacitive
+ multi-touch screen support
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Kevin McNeely <kev@cypress.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 14, 2011 at 11:26 AM, Francis Moreau <francis.moro@gmail.com> wrote:
-> On Tue, Sep 13, 2011 at 10:56 PM, Dan Magenheimer
-> <dan.magenheimer@oracle.com> wrote:
->>> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
->>> Sent: Tuesday, September 13, 2011 1:19 PM
->>> To: gregkh@suse.de
->>> Cc: devel@driverdev.osuosl.org; linux-mm@kvack.org; ngupta@vflare.org; linux-kernel@vger.kernel.org;
->>> francis.moro@gmail.com; Dan Magenheimer; Seth Jennings
->>> Subject: [PATCH] staging: zcache: fix cleancache crash
->>>
->>> After commit, c5f5c4db, cleancache crashes on the first
->>> successful get. This was caused by a remaining virt_to_page()
->>> call in zcache_pampd_get_data_and_free() that only gets
->>> run in the cleancache path.
->>>
->>> The patch converts the virt_to_page() to struct page
->>> casting like was done for other instances in c5f5c4db.
->>>
->>> Based on 3.1-rc4
->>>
->>> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+On Wed, Sep 14, 2011 at 9:46 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
 >>
->> Yep, this appears to fix it! †Hopefully Francis can confirm.
+>> Yes it is the right patch, or at least the patch I meant to send. The
+>> staging version I send earlier didn't support multi-touch protocol
+>> type A.
 >
-> Ok I can give this a try and let you know.
+> I see - the cyttsp_xydata struct seems to be the old version,
+> though. Any particular reason for that? Also, the similarity to the
+> problem found here, https://lkml.org/lkml/2011/8/25/516, suggests your
+> 16 tracking ids could be mapped directly to slots instead, using the
+> example code. It ought to reduce the present patch significantly.
+>
+> Thanks,
+> Henrik
+>
 
-This patch has fixed the issue I was hitting with qemu.
+Hello Henrik,
 
-Thanks
+Thank you for your recommendations.
+
+I didn't know that there was a newer version of cyttsp_xydata struct.
+I thought I based my work on the last version of Cypress driver.
+Didn't know about Dudley Du's work either. It seems that both drivers
+are for the same device family.
+
+I'll take a look at Dudley's patch-set and also contact him to join efforts.
+
+Best regards,
+
 -- 
-Francis
+Javier Mart√≠nez Canillas
+(+34) 682 39 81 69
+Barcelona, Spain
