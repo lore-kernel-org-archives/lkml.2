@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932710Ab1IQAqj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 20:46:39 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:5596 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932678Ab1IQAqg (ORCPT
+	id S932584Ab1IQAq3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 20:46:29 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:27878 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932458Ab1IQAqZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 20:46:36 -0400
-Message-Id: <093448$3hsttv@wolverine01.qualcomm.com>
-X-IronPort-AV: E=McAfee;i="5400,1158,6471"; a="119437247"
+	Fri, 16 Sep 2011 20:46:25 -0400
+Message-Id: <e97c6e$3hnnut@wolverine02.qualcomm.com>
+X-IronPort-AV: E=McAfee;i="5400,1158,6471"; a="119267293"
 From: Richard Kuo <rkuo@codeaurora.org>
-Date: Wed, 14 Sep 2011 13:18:59 -0500
-Subject: [PATCH v4 15/36] Hexagon: Add init_task and process functions
+Date: Wed, 14 Sep 2011 13:18:53 -0500
+Subject: [PATCH v4 09/36] Hexagon: Add checksum functions
 To: linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
@@ -19,22 +19,113 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
+Signed-off-by: Linas Vepstas <linas@codeaurora.org>
 Acked-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/hexagon/kernel/init_task.c |   54 ++++++++
- arch/hexagon/kernel/process.c   |  279 +++++++++++++++++++++++++++++++++++++++
- 2 files changed, 333 insertions(+), 0 deletions(-)
- create mode 100644 arch/hexagon/kernel/init_task.c
- create mode 100644 arch/hexagon/kernel/process.c
+ arch/hexagon/include/asm/checksum.h   |   50 ++++++++
+ arch/hexagon/include/asm/intrinsics.h |   26 ++++
+ arch/hexagon/lib/checksum.c           |  203 +++++++++++++++++++++++++++++++++
+ 3 files changed, 279 insertions(+), 0 deletions(-)
+ create mode 100644 arch/hexagon/include/asm/checksum.h
+ create mode 100644 arch/hexagon/include/asm/intrinsics.h
+ create mode 100644 arch/hexagon/lib/checksum.c
 
-diff --git a/arch/hexagon/kernel/init_task.c b/arch/hexagon/kernel/init_task.c
+diff --git a/arch/hexagon/include/asm/checksum.h b/arch/hexagon/include/asm/checksum.h
 new file mode 100644
-index 0000000..73283d3
+index 0000000..3ce4ecd
 --- /dev/null
-+++ b/arch/hexagon/kernel/init_task.c
-@@ -0,0 +1,54 @@
++++ b/arch/hexagon/include/asm/checksum.h
+@@ -0,0 +1,50 @@
 +/*
-+ * Init task definition
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#ifndef _ASM_CHECKSUM_H
++#define _ASM_CHECKSUM_H
++
++#define do_csum	do_csum
++unsigned int do_csum(const void *voidptr, int len);
++
++/*
++ * the same as csum_partial, but copies from src while it
++ * checksums
++ *
++ * here even more important to align src and dst on a 32-bit (or even
++ * better 64-bit) boundary
++ */
++#define csum_partial_copy_nocheck csum_partial_copy_nocheck
++__wsum csum_partial_copy_nocheck(const void *src, void *dst,
++					int len, __wsum sum);
++
++/*
++ * computes the checksum of the TCP/UDP pseudo-header
++ * returns a 16-bit checksum, already complemented
++ */
++#define csum_tcpudp_nofold csum_tcpudp_nofold
++__wsum csum_tcpudp_nofold(unsigned long saddr, unsigned long daddr,
++	unsigned short len, unsigned short proto, __wsum sum);
++
++#define csum_tcpudp_magic csum_tcpudp_magic
++__sum16 csum_tcpudp_magic(unsigned long saddr, unsigned long daddr,
++	unsigned short len, unsigned short proto, __wsum sum);
++
++#include <asm-generic/checksum.h>
++
++#endif
+diff --git a/arch/hexagon/include/asm/intrinsics.h b/arch/hexagon/include/asm/intrinsics.h
+new file mode 100644
+index 0000000..1c02186
+--- /dev/null
++++ b/arch/hexagon/include/asm/intrinsics.h
+@@ -0,0 +1,26 @@
++/*
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#ifndef _ASM_HEXAGON_INTRINSICS_H
++#define _ASM_HEXAGON_INTRINSICS_H
++
++#define HEXAGON_P_vrmpyhacc_PP	__builtin_HEXAGON_M2_vrmac_s0
++#define HEXAGON_P_vrmpyh_PP	__builtin_HEXAGON_M2_vrmpy_s0
++#define HEXAGON_R_cl0_R		__builtin_HEXAGON_S2_cl0
++
++#endif
+diff --git a/arch/hexagon/lib/checksum.c b/arch/hexagon/lib/checksum.c
+new file mode 100644
+index 0000000..9300552
+--- /dev/null
++++ b/arch/hexagon/lib/checksum.c
+@@ -0,0 +1,203 @@
++/*
++ * Checksum functions for Hexagon
 + *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
@@ -53,324 +144,188 @@ index 0000000..73283d3
 + * 02110-1301, USA.
 + */
 +
-+#include <linux/mm.h>
++/*  This was derived from arch/alpha/lib/checksum.c  */
++
++
 +#include <linux/module.h>
-+#include <linux/sched.h>
-+#include <linux/init_task.h>
-+#include <linux/fs.h>
-+#include <linux/mqueue.h>
-+#include <asm/thread_info.h>
-+#include <asm/uaccess.h>
-+#include <asm/pgtable.h>
++#include <linux/string.h>
 +
-+static struct signal_struct init_signals = INIT_SIGNALS(init_signals);
-+static struct sighand_struct init_sighand = INIT_SIGHAND(init_sighand);
-+
-+/*
-+ * Initial thread structure.
-+ *
-+ * We need to make sure that this is 8192-byte aligned due to the
-+ * way process stacks are handled. This is done by making sure
-+ * the linker maps this in the .text segment right after head.S,
-+ * and making head.S ensure the proper alignment.
-+ */
-+union thread_union init_thread_union
-+	__attribute__((__section__(".data.init_task"),
-+		__aligned__(THREAD_SIZE))) = {
-+			INIT_THREAD_INFO(init_task)
-+		};
-+
-+/*
-+ * Initial task structure.
-+ *
-+ * All other task structs will be allocated on slabs in fork.c
-+ */
-+struct task_struct init_task = INIT_TASK(init_task);
-+EXPORT_SYMBOL(init_task);
-diff --git a/arch/hexagon/kernel/process.c b/arch/hexagon/kernel/process.c
-new file mode 100644
-index 0000000..18c4f0b
---- /dev/null
-+++ b/arch/hexagon/kernel/process.c
-@@ -0,0 +1,279 @@
-+/*
-+ * Process creation support for Hexagon
-+ *
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#include <linux/sched.h>
-+#include <linux/types.h>
-+#include <linux/module.h>
-+#include <linux/tick.h>
++#include <asm/byteorder.h>
++#include <net/checksum.h>
 +#include <linux/uaccess.h>
-+#include <linux/slab.h>
++#include <asm/intrinsics.h>
++
++
++/*  Vector value operations  */
++#define SIGN(x, y)	((0x8000ULL*x)<<y)
++#define CARRY(x, y)	((0x0002ULL*x)<<y)
++#define SELECT(x, y)	((0x0001ULL*x)<<y)
++
++#define VR_NEGATE(a, b, c, d)	(SIGN(a, 48) + SIGN(b, 32) + SIGN(c, 16) \
++	+ SIGN(d, 0))
++#define VR_CARRY(a, b, c, d)	(CARRY(a, 48) + CARRY(b, 32) + CARRY(c, 16) \
++	+ CARRY(d, 0))
++#define VR_SELECT(a, b, c, d)	(SELECT(a, 48) + SELECT(b, 32) + SELECT(c, 16) \
++	+ SELECT(d, 0))
++
++
++/* optimized HEXAGON V3 intrinsic version */
++static inline unsigned short from64to16(u64 x)
++{
++	u64 sum;
++
++	sum = HEXAGON_P_vrmpyh_PP(x^VR_NEGATE(1, 1, 1, 1),
++			     VR_SELECT(1, 1, 1, 1));
++	sum += VR_CARRY(0, 0, 1, 0);
++	sum = HEXAGON_P_vrmpyh_PP(sum, VR_SELECT(0, 0, 1, 1));
++
++	return 0xFFFF & sum;
++}
 +
 +/*
-+ * Kernel thread creation.  The desired kernel function is "wrapped"
-+ * in the kernel_thread_helper function, which does cleanup
-+ * afterwards.
++ * computes the checksum of the TCP/UDP pseudo-header
++ * returns a 16-bit checksum, already complemented.
 + */
-+static void __noreturn kernel_thread_helper(void *arg, int (*fn)(void *))
++__sum16 csum_tcpudp_magic(unsigned long saddr, unsigned long daddr,
++			  unsigned short len, unsigned short proto,
++			  __wsum sum)
 +{
-+	do_exit(fn(arg));
++	return (__force __sum16)~from64to16(
++		(__force u64)saddr + (__force u64)daddr +
++		(__force u64)sum + ((len + proto) << 8));
 +}
 +
-+int kernel_thread(int (*fn)(void *), void *arg, unsigned long flags)
++__wsum csum_tcpudp_nofold(unsigned long saddr, unsigned long daddr,
++			  unsigned short len, unsigned short proto,
++			  __wsum sum)
 +{
-+	struct pt_regs regs;
++	u64 result;
 +
-+	memset(&regs, 0, sizeof(regs));
-+	/*
-+	 * Yes, we're exploting illicit knowledge of the ABI here.
-+	 */
-+	regs.r00 = (unsigned long) arg;
-+	regs.r01 = (unsigned long) fn;
-+	pt_set_elr(&regs, (unsigned long)kernel_thread_helper);
-+	pt_set_kmode(&regs);
++	result = (__force u64)saddr + (__force u64)daddr +
++		 (__force u64)sum + ((len + proto) << 8);
 +
-+	return do_fork(flags|CLONE_VM|CLONE_UNTRACED, 0, &regs, 0, NULL, NULL);
++	/* Fold down to 32-bits so we don't lose in the typedef-less
++	   network stack.  */
++	/* 64 to 33 */
++	result = (result & 0xffffffffUL) + (result >> 32);
++	/* 33 to 32 */
++	result = (result & 0xffffffffUL) + (result >> 32);
++	return (__force __wsum)result;
 +}
-+EXPORT_SYMBOL(kernel_thread);
++EXPORT_SYMBOL(csum_tcpudp_nofold);
 +
 +/*
-+ * Program thread launch.  Often defined as a macro in processor.h,
-+ * but we're shooting for a small footprint and it's not an inner-loop
-+ * performance-critical operation.
++ * Do a 64-bit checksum on an arbitrary memory area..
 + *
-+ * The Hexagon ABI specifies that R28 is zero'ed before program launch,
-+ * so that gets automatically done here.  If we ever stop doing that here,
-+ * we'll probably want to define the ELF_PLAT_INIT macro.
++ * This isn't a great routine, but it's not _horrible_ either. The
++ * inner loop could be unrolled a bit further, and there are better
++ * ways to do the carry, but this is reasonable.
 + */
-+void start_thread(struct pt_regs *regs, unsigned long pc, unsigned long sp)
++
++/* optimized HEXAGON intrinsic version, with over read fixed */
++unsigned int do_csum(const void *voidptr, int len)
 +{
-+	/* Set to run with user-mode data segmentation */
-+	set_fs(USER_DS);
-+	/* We want to zero all data-containing registers. Is this overkill? */
-+	memset(regs, 0, sizeof(*regs));
-+	/* We might want to also zero all Processor registers here */
-+	pt_set_usermode(regs);
-+	pt_set_elr(regs, pc);
-+	pt_set_rte_sp(regs, sp);
-+}
++	u64 sum0, sum1, x0, x1, *ptr8_o, *ptr8_e, *ptr8;
++	int i, start, mid, end, mask;
++	const char *ptr = voidptr;
++	unsigned short *ptr2;
++	unsigned int *ptr4;
 +
-+/*
-+ *  Spin, or better still, do a hardware or VM wait instruction
-+ *  If hardware or VM offer wait termination even though interrupts
-+ *  are disabled.
-+ */
-+static void default_idle(void)
-+{
-+	__vmwait();
-+}
-+
-+void (*idle_sleep)(void) = default_idle;
-+
-+void cpu_idle(void)
-+{
-+	while (1) {
-+		tick_nohz_stop_sched_tick(1);
-+		local_irq_disable();
-+		while (!need_resched()) {
-+			idle_sleep();
-+			/*  interrupts wake us up, but aren't serviced  */
-+			local_irq_enable();	/* service interrupt   */
-+			local_irq_disable();
-+		}
-+		local_irq_enable();
-+		tick_nohz_restart_sched_tick();
-+		schedule();
-+	}
-+}
-+
-+/*
-+ *  Return saved PC of a blocked thread
-+ */
-+unsigned long thread_saved_pc(struct task_struct *tsk)
-+{
-+	return 0;
-+}
-+
-+/*
-+ * Copy architecture-specific thread state
-+ */
-+int copy_thread(unsigned long clone_flags, unsigned long usp,
-+		unsigned long unused, struct task_struct *p,
-+		struct pt_regs *regs)
-+{
-+	struct thread_info *ti = task_thread_info(p);
-+	struct hexagon_switch_stack *ss;
-+	struct pt_regs *childregs;
-+	asmlinkage void ret_from_fork(void);
-+
-+	childregs = (struct pt_regs *) (((unsigned long) ti + THREAD_SIZE) -
-+					sizeof(*childregs));
-+
-+	memcpy(childregs, regs, sizeof(*childregs));
-+	ti->regs = childregs;
-+
-+	/*
-+	 * Establish kernel stack pointer and initial PC for new thread
-+	 */
-+	ss = (struct hexagon_switch_stack *) ((unsigned long) childregs -
-+						    sizeof(*ss));
-+	ss->lr = (unsigned long)ret_from_fork;
-+	p->thread.switch_sp = ss;
-+
-+	/* If User mode thread, set pt_reg stack pointer as per parameter */
-+	if (user_mode(childregs)) {
-+		pt_set_rte_sp(childregs, usp);
-+
-+		/* Child sees zero return value */
-+		childregs->r00 = 0;
-+
-+		/*
-+		 * The clone syscall has the C signature:
-+		 * int [r0] clone(int flags [r0],
-+		 *           void *child_frame [r1],
-+		 *           void *parent_tid [r2],
-+		 *           void *child_tid [r3],
-+		 *           void *thread_control_block [r4]);
-+		 * ugp is used to provide TLS support.
-+		 */
-+		if (clone_flags & CLONE_SETTLS)
-+			childregs->ugp = childregs->r04;
-+
-+		/*
-+		 * Parent sees new pid -- not necessary, not even possible at
-+		 * this point in the fork process
-+		 * Might also want to set things like ti->addr_limit
-+		 */
-+	} else {
-+		/*
-+		 * If kernel thread, resume stack is kernel stack base.
-+		 * Note that this is pointer arithmetic on pt_regs *
-+		 */
-+		pt_set_rte_sp(childregs, (unsigned long)(childregs + 1));
-+		/*
-+		 * We need the current thread_info fast path pointer
-+		 * set up in pt_regs.  The register to be used is
-+		 * parametric for assembler code, but the mechanism
-+		 * doesn't drop neatly into C.  Needs to be fixed.
-+		 */
-+		childregs->THREADINFO_REG = (unsigned long) ti;
-+	}
-+
-+	/*
-+	 * thread_info pointer is pulled out of task_struct "stack"
-+	 * field on switch_to.
-+	 */
-+	p->stack = (void *)ti;
-+
-+	return 0;
-+}
-+
-+/*
-+ * Release any architecture-specific resources locked by thread
-+ */
-+void release_thread(struct task_struct *dead_task)
-+{
-+}
-+
-+/*
-+ * Free any architecture-specific thread data structures, etc.
-+ */
-+void exit_thread(void)
-+{
-+}
-+
-+/*
-+ * Some archs flush debug and FPU info here
-+ */
-+void flush_thread(void)
-+{
-+}
-+
-+/*
-+ * The "wait channel" terminology is archaic, but what we want
-+ * is an identification of the point at which the scheduler
-+ * was invoked by a blocked thread.
-+ */
-+unsigned long get_wchan(struct task_struct *p)
-+{
-+	unsigned long fp, pc;
-+	unsigned long stack_page;
-+	int count = 0;
-+	if (!p || p == current || p->state == TASK_RUNNING)
++	if (len <= 0)
 +		return 0;
 +
-+	stack_page = (unsigned long)task_stack_page(p);
-+	fp = ((struct hexagon_switch_stack *)p->thread.switch_sp)->fp;
-+	do {
-+		if (fp < (stack_page + sizeof(struct thread_info)) ||
-+			fp >= (THREAD_SIZE - 8 + stack_page))
-+			return 0;
-+		pc = ((unsigned long *)fp)[1];
-+		if (!in_sched_functions(pc))
-+			return pc;
-+		fp = *(unsigned long *) fp;
-+	} while (count++ < 16);
++	start = 0xF & (16-(((int) ptr) & 0xF)) ;
++	mask  = 0x7fffffffUL >> HEXAGON_R_cl0_R(len);
++	start = start & mask ;
 +
-+	return 0;
++	mid = len - start;
++	end = mid & 0xF;
++	mid = mid>>4;
++	sum0 = mid << 18;
++	sum1 = 0;
++
++	if (start & 1)
++		sum0 += (u64) (ptr[0] << 8);
++	ptr2 = (unsigned short *) &ptr[start & 1];
++	if (start & 2)
++		sum1 += (u64) ptr2[0];
++	ptr4 = (unsigned int *) &ptr[start & 3];
++	if (start & 4) {
++		sum0 = HEXAGON_P_vrmpyhacc_PP(sum0,
++			VR_NEGATE(0, 0, 1, 1)^((u64)ptr4[0]),
++			VR_SELECT(0, 0, 1, 1));
++		sum0 += VR_SELECT(0, 0, 1, 0);
++	}
++	ptr8 = (u64 *) &ptr[start & 7];
++	if (start & 8) {
++		sum1 = HEXAGON_P_vrmpyhacc_PP(sum1,
++			VR_NEGATE(1, 1, 1, 1)^(ptr8[0]),
++			VR_SELECT(1, 1, 1, 1));
++		sum1 += VR_CARRY(0, 0, 1, 0);
++	}
++	ptr8_o = (u64 *) (ptr + start);
++	ptr8_e = (u64 *) (ptr + start + 8);
++
++	if (mid) {
++		x0 = *ptr8_e; ptr8_e += 2;
++		x1 = *ptr8_o; ptr8_o += 2;
++		if (mid > 1)
++			for (i = 0; i < mid-1; i++) {
++				sum0 = HEXAGON_P_vrmpyhacc_PP(sum0,
++					x0^VR_NEGATE(1, 1, 1, 1),
++					VR_SELECT(1, 1, 1, 1));
++				sum1 = HEXAGON_P_vrmpyhacc_PP(sum1,
++					x1^VR_NEGATE(1, 1, 1, 1),
++					VR_SELECT(1, 1, 1, 1));
++				x0 = *ptr8_e; ptr8_e += 2;
++				x1 = *ptr8_o; ptr8_o += 2;
++			}
++		sum0 = HEXAGON_P_vrmpyhacc_PP(sum0, x0^VR_NEGATE(1, 1, 1, 1),
++			VR_SELECT(1, 1, 1, 1));
++		sum1 = HEXAGON_P_vrmpyhacc_PP(sum1, x1^VR_NEGATE(1, 1, 1, 1),
++			VR_SELECT(1, 1, 1, 1));
++	}
++
++	ptr4 = (unsigned int *) &ptr[start + (mid * 16) + (end & 8)];
++	if (end & 4) {
++		sum1 = HEXAGON_P_vrmpyhacc_PP(sum1,
++			VR_NEGATE(0, 0, 1, 1)^((u64)ptr4[0]),
++			VR_SELECT(0, 0, 1, 1));
++		sum1 += VR_SELECT(0, 0, 1, 0);
++	}
++	ptr2 = (unsigned short *) &ptr[start + (mid * 16) + (end & 12)];
++	if (end & 2)
++		sum0 += (u64) ptr2[0];
++
++	if (end & 1)
++		sum1 += (u64) ptr[start + (mid * 16) + (end & 14)];
++
++	ptr8 = (u64 *) &ptr[start + (mid * 16)];
++	if (end & 8) {
++		sum0 = HEXAGON_P_vrmpyhacc_PP(sum0,
++			VR_NEGATE(1, 1, 1, 1)^(ptr8[0]),
++			VR_SELECT(1, 1, 1, 1));
++		sum0 += VR_CARRY(0, 0, 1, 0);
++	}
++	sum0 = HEXAGON_P_vrmpyh_PP((sum0+sum1)^VR_NEGATE(0, 0, 0, 1),
++		VR_SELECT(0, 0, 1, 1));
++	sum0 += VR_NEGATE(0, 0, 0, 1);
++	sum0 = HEXAGON_P_vrmpyh_PP(sum0, VR_SELECT(0, 0, 1, 1));
++
++	if (start & 1)
++		sum0 = (sum0 << 8) | (0xFF & (sum0 >> 8));
++
++	return 0xFFFF & sum0;
 +}
 +
 +/*
-+ * Borrowed from PowerPC -- basically allow smaller kernel stacks if we
-+ * go crazy with the page sizes.
++ * copy from ds while checksumming, otherwise like csum_partial
 + */
-+#if THREAD_SHIFT < PAGE_SHIFT
-+
-+static struct kmem_cache *thread_info_cache;
-+
-+struct thread_info *alloc_thread_info_node(struct task_struct *tsk, int node)
++__wsum
++csum_partial_copy_nocheck(const void *src, void *dst, int len, __wsum sum)
 +{
-+	struct thread_info *ti;
-+
-+	ti = kmem_cache_alloc_node(thread_info_cache, GFP_KERNEL, node);
-+	if (unlikely(ti == NULL))
-+		return NULL;
-+#ifdef CONFIG_DEBUG_STACK_USAGE
-+	memset(ti, 0, THREAD_SIZE);
-+#endif
-+	return ti;
-+}
-+
-+void free_thread_info(struct thread_info *ti)
-+{
-+	kmem_cache_free(thread_info_cache, ti);
-+}
-+
-+/*  Weak symbol; called by init/main.c  */
-+
-+void thread_info_cache_init(void)
-+{
-+	thread_info_cache = kmem_cache_create("thread_info", THREAD_SIZE,
-+					      THREAD_SIZE, 0, NULL);
-+	BUG_ON(thread_info_cache == NULL);
-+}
-+
-+#endif /* THREAD_SHIFT < PAGE_SHIFT */
-+
-+/*
-+ * Required placeholder.
-+ */
-+int dump_fpu(struct pt_regs *regs, elf_fpregset_t *fpu)
-+{
-+	return 0;
++	memcpy(dst, src, len);
++	return csum_partial(dst, len, sum);
 +}
 -- 
 1.7.1
