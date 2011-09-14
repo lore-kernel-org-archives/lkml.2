@@ -1,95 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756552Ab1INQH4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 12:07:56 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:54549 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754662Ab1INQHz (ORCPT
+	id S1756971Ab1INQIG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 12:08:06 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:56898 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754662Ab1INQIF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 12:07:55 -0400
-Date: Wed, 14 Sep 2011 20:07:25 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Pavel Machek <pavel@ucw.cz>, Andrew Morton <akpm00@gmail.com>,
-        linux-kernel@vger.kernel.org, containers@lists.osdl.org,
-        linux-fsdevel@vger.kernel.org, Kirill Shutemov <kirill@shutemov.name>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Nathan Lynch <ntl@pobox.com>, Zan Lynx <zlynx@acm.org>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>, Tejun Heo <tj@kernel.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [patch 2/2] fs, proc: Introduce the /proc/<pid>/map_files/
- directory v12
-Message-ID: <20110914160724.GA10612@albatros>
-References: <20110913211359.674453213@openvz.org>
- <20110913212447.918816776@openvz.org>
- <20110913235222.043927b3.akpm@linux-foundation.org>
- <20110914105607.GP25367@sun>
- <20110914111437.GA22516@atrey.karlin.mff.cuni.cz>
- <20110914113912.GQ25367@sun>
- <20110914134405.GV25367@sun>
- <20110914144841.GA7906@albatros>
- <20110914160018.GW25367@sun>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110914160018.GW25367@sun>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 14 Sep 2011 12:08:05 -0400
+Subject: Re: [PATCH v2 10/10] x86, efi: EFI boot stub support
+From: Matt Fleming <matt@console-pimps.org>
+To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Matthew Garrett <mjg@redhat.com>, x86@kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Mike Waychison <mikew@google.com>, Andi Kleen <andi@firstfloor.org>,
+        Matt Domsch <Matt_Domsch@dell.com>
+In-Reply-To: <4E6F69A1.9030406@gmail.com>
+References: <1315838094-2307-1-git-send-email-matt@console-pimps.org>
+	 <1315838094-2307-11-git-send-email-matt@console-pimps.org>
+	 <4E6F69A1.9030406@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 14 Sep 2011 17:07:58 +0100
+Message-ID: <1316016478.3466.74.camel@mfleming-mobl1.ger.corp.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 14, 2011 at 20:00 +0400, Cyrill Gorcunov wrote:
-> On Wed, Sep 14, 2011 at 06:48:41PM +0400, Vasiliy Kulikov wrote:
-> ...
-> > 
-> > Actually now I see the difference between having something mapped and
-> > having an _fd_ of this something.
-> > 
-> > Relevant code:
-> > 
-> > +static struct dentry *
-> > +proc_map_files_instantiate(struct inode *dir, struct dentry *dentry,
-> > +              struct task_struct *task, const void *ptr)
-> > +{
-> > ...
-> > +   inode->i_mode = S_IFLNK;
-> > +
-> > +   if (file->f_mode & FMODE_READ)
-> > +       inode->i_mode |= S_IRUSR | S_IXUSR;
-> > +   if (file->f_mode & FMODE_WRITE)
-> > +       inode->i_mode |= S_IWUSR | S_IXUSR;
-> > 
-> > 
-> > If you have a write mmap area, but no fd, you may not trunc a file; with
-> > map_files/ you may get an fd and ftrunc it.
-> > 
+On Tue, 2011-09-13 at 16:33 +0200, Maarten Lankhorst wrote:
+> This version seems to boot for me.
+
+Yay! Thanks for testing.
+
+> Is it useful to add 32-bits support though?
+> It seems that only some older versions of OSX use it. I could see if I can
+> revive my mac mini, iirc it has 32-bits efi, or at least used to have.
+
+32-bit UEFI platforms do exist, so I think it's worth supporting them.
+
+> Do I need to pass anything to add it to efibootmgr?
 > 
-> This stands for anonymous memory, and if you have enough rights to
-> access the task this ftruncate is the last problem (since having ptrace
-> access to the task I _aready_ can trash various stuff inside, i dont need
-> even bother to look into map_files/ or whatever). So I don't see how
-> ftruncate migh harm you here?
+> I tried something like this:
+> echo "args" | efibootmgr -c -l '\vmlinuz.efi' -L 'Native EFI linux boot' -@ - -u -d /dev/sdb
+> 
+> And it boots vmlinuz.efi, but the arguments I passed do not appear to
+> have any effect.
 
-No, I mean something else.  Assume you have a task, which does the
-steps:
-
-1) opens some sensitive file as root.  This file is e.g. 0700.
-
-2) mmaps the file via opened fd, either RO or RW.
-
-3) closes fd.
-
-4) drops root.
-
-Now it has a mapping of a privileged file, but cannot get fd of it
-anyhow.  With map_files/ he may open his own /proc/$$/map_files/, pass
-ptrace() check, and get fd of the privileged file.  He cannot explicitly
-open it as it is 0700, but he may open it via map_files/ and get RO/RW
-fd.
+No idea, I've never used efibootmgr. Let's add Matt Domsch to the
+discussion (now Cc'd).
 
 -- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+Matt Fleming, Intel Open Source Technology Center
+
