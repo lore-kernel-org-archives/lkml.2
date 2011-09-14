@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932930Ab1IQAvR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 20:51:17 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:5608 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932756Ab1IQAqr (ORCPT
+	id S932893Ab1IQAvh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 20:51:37 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:27878 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932728Ab1IQAqm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 20:46:47 -0400
-Message-Id: <093448$3hstu8@wolverine01.qualcomm.com>
-X-IronPort-AV: E=McAfee;i="5400,1158,6471"; a="119437256"
+	Fri, 16 Sep 2011 20:46:42 -0400
+Message-Id: <e97c6e$3hno05@wolverine02.qualcomm.com>
+X-IronPort-AV: E=McAfee;i="5400,1158,6471"; a="119267333"
 From: Richard Kuo <rkuo@codeaurora.org>
-Date: Wed, 14 Sep 2011 13:19:05 -0500
-Subject: [PATCH v4 21/36] Hexagon: Add SMP support
+Date: Wed, 14 Sep 2011 13:19:02 -0500
+Subject: [PATCH v4 18/36] Hexagon: Add time and timer functions
 To: linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
@@ -19,26 +19,23 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
-Signed-off-by: Linas Vepstas <linas@codeaurora.org>
 Acked-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/hexagon/include/asm/smp.h |   44 +++++++
- arch/hexagon/kernel/smp.c      |  280 ++++++++++++++++++++++++++++++++++++++++
- arch/hexagon/kernel/topology.c |   52 ++++++++
- 3 files changed, 376 insertions(+), 0 deletions(-)
- create mode 100644 arch/hexagon/include/asm/smp.h
- create mode 100644 arch/hexagon/kernel/smp.c
- create mode 100644 arch/hexagon/kernel/topology.c
+ arch/hexagon/include/asm/time.h       |   29 ++++
+ arch/hexagon/include/asm/timer-regs.h |   39 +++++
+ arch/hexagon/kernel/time.c            |  258 +++++++++++++++++++++++++++++++++
+ 3 files changed, 326 insertions(+), 0 deletions(-)
+ create mode 100644 arch/hexagon/include/asm/time.h
+ create mode 100644 arch/hexagon/include/asm/timer-regs.h
+ create mode 100644 arch/hexagon/kernel/time.c
 
-diff --git a/arch/hexagon/include/asm/smp.h b/arch/hexagon/include/asm/smp.h
+diff --git a/arch/hexagon/include/asm/time.h b/arch/hexagon/include/asm/time.h
 new file mode 100644
-index 0000000..87c869a
+index 0000000..081b82c
 --- /dev/null
-+++ b/arch/hexagon/include/asm/smp.h
-@@ -0,0 +1,44 @@
++++ b/arch/hexagon/include/asm/time.h
+@@ -0,0 +1,29 @@
 +/*
-+ * SMP definitions for the Hexagon architecture
-+ *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -56,38 +53,25 @@ index 0000000..87c869a
 + * 02110-1301, USA.
 + */
 +
-+#ifndef __ASM_SMP_H
-+#define __ASM_SMP_H
++#ifndef ASM_TIME_H
++#define ASM_TIME_H
 +
-+#include <linux/cpumask.h>
++extern cycles_t        pcycle_freq_mhz;
++extern cycles_t        thread_freq_mhz;
++extern cycles_t        sleep_clk_freq;
 +
-+#define raw_smp_processor_id() (current_thread_info()->cpu)
-+
-+enum ipi_message_type {
-+	IPI_NOP = 0,
-+	IPI_RESCHEDULE = 1,
-+	IPI_CALL_FUNC,
-+	IPI_CALL_FUNC_SINGLE,
-+	IPI_CPU_STOP,
-+	IPI_TIMER,
-+};
-+
-+extern void send_ipi(const struct cpumask *cpumask, enum ipi_message_type msg);
-+extern void smp_start_cpus(void);
-+extern void arch_send_call_function_single_ipi(int cpu);
-+extern void arch_send_call_function_ipi_mask(const struct cpumask *mask);
-+
-+extern void smp_vm_unmask_irq(void *info);
++void setup_percpu_clockdev(void);
++void ipi_timer(void);
 +
 +#endif
-diff --git a/arch/hexagon/kernel/smp.c b/arch/hexagon/kernel/smp.c
+diff --git a/arch/hexagon/include/asm/timer-regs.h b/arch/hexagon/include/asm/timer-regs.h
 new file mode 100644
-index 0000000..96bf6c2
+index 0000000..d80db23
 --- /dev/null
-+++ b/arch/hexagon/kernel/smp.c
-@@ -0,0 +1,280 @@
++++ b/arch/hexagon/include/asm/timer-regs.h
+@@ -0,0 +1,39 @@
 +/*
-+ * SMP support for Hexagon
++ * Timer support for Hexagon
 + *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
@@ -106,324 +90,289 @@ index 0000000..96bf6c2
 + * 02110-1301, USA.
 + */
 +
-+#include <linux/err.h>
-+#include <linux/errno.h>
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
-+#include <linux/module.h>
-+#include <linux/percpu.h>
-+#include <linux/sched.h>
-+#include <linux/smp.h>
-+#include <linux/spinlock.h>
++#ifndef _ASM_TIMER_REGS_H
++#define _ASM_TIMER_REGS_H
 +
-+#include <asm/system.h>  /*  xchg  */
-+#include <asm/time.h>    /*  timer_interrupt  */
++/*  This stuff should go into a platform specific file  */
++#define TCX0_CLK_RATE		19200
++#define TIMER_ENABLE		0
++#define TIMER_CLR_ON_MATCH	1
++
++/*
++ * 8x50 HDD Specs 5-8.  Simulator co-sim not fixed until
++ * release 1.1, and then it's "adjustable" and probably not defaulted.
++ */
++#define RTOS_TIMER_INT		3
++#ifdef CONFIG_HEXAGON_COMET
++#define RTOS_TIMER_REGS_ADDR	0xAB000000UL
++#endif
++#define SLEEP_CLK_RATE		32000
++
++#endif
+diff --git a/arch/hexagon/kernel/time.c b/arch/hexagon/kernel/time.c
+new file mode 100644
+index 0000000..fc8e95c
+--- /dev/null
++++ b/arch/hexagon/kernel/time.c
+@@ -0,0 +1,258 @@
++/*
++ * Time related functions for Hexagon architecture
++ *
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#include <linux/init.h>
++#include <linux/clockchips.h>
++#include <linux/clocksource.h>
++#include <linux/interrupt.h>
++#include <linux/err.h>
++#include <linux/platform_device.h>
++#include <linux/ioport.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/of_irq.h>
++
++#include <asm/timer-regs.h>
 +#include <asm/hexagon_vm.h>
 +
-+#define BASE_IPI_IRQ 26
-+
 +/*
-+ * cpu_possible_map needs to be filled out prior to setup_per_cpu_areas
-+ * (which is prior to any of our smp_prepare_cpu crap), in order to set
-+ * up the...  per_cpu areas.
++ * For the clocksource we need:
++ *	pcycle frequency (600MHz)
++ * For the loops_per_jiffy we need:
++ *	thread/cpu frequency (100MHz)
++ * And for the timer, we need:
++ *	sleep clock rate
 + */
 +
-+struct ipi_data {
-+	unsigned long bits;
++cycles_t	pcycle_freq_mhz;
++cycles_t	thread_freq_mhz;
++cycles_t	sleep_clk_freq;
++
++static struct resource rtos_timer_resources[] = {
++	{
++		.start	= RTOS_TIMER_REGS_ADDR,
++		.end	= RTOS_TIMER_REGS_ADDR+PAGE_SIZE-1,
++		.flags	= IORESOURCE_MEM,
++	},
 +};
 +
-+static DEFINE_PER_CPU(struct ipi_data, ipi_data);
++static struct platform_device rtos_timer_device = {
++	.name		= "rtos_timer",
++	.id		= -1,
++	.num_resources	= ARRAY_SIZE(rtos_timer_resources),
++	.resource	= rtos_timer_resources,
++};
 +
-+static inline void __handle_ipi(unsigned long *ops, struct ipi_data *ipi,
-+				int cpu)
++/*  A lot of this stuff should move into a platform specific section.  */
++struct adsp_hw_timer_struct {
++	u32 match;   /*  Match value  */
++	u32 count;
++	u32 enable;  /*  [1] - CLR_ON_MATCH_EN, [0] - EN  */
++	u32 clear;   /*  one-shot register that clears the count  */
++};
++
++/*  Look for "TCX0" for related constants.  */
++static __iomem struct adsp_hw_timer_struct *rtos_timer;
++
++void debug_adsp_timers(void)
 +{
-+	unsigned long msg = 0;
-+	do {
-+		msg = find_next_bit(ops, BITS_PER_LONG, msg+1);
-+
-+		switch (msg) {
-+
-+		case IPI_TIMER:
-+			ipi_timer();
-+			break;
-+
-+		case IPI_CALL_FUNC:
-+			generic_smp_call_function_interrupt();
-+			break;
-+
-+		case IPI_CALL_FUNC_SINGLE:
-+			generic_smp_call_function_single_interrupt();
-+			break;
-+
-+		case IPI_CPU_STOP:
-+			/*
-+			 * call vmstop()
-+			 */
-+			__vmstop();
-+			break;
-+
-+		case IPI_RESCHEDULE:
-+			/*
-+			 * need to revisit our exit path; see comments for
-+			 * scheduler_ipi()
-+			 */
-+			scheduler_ipi();
-+			break;
-+		}
-+	} while (msg < BITS_PER_LONG);
++	printk(KERN_INFO "rtos_timer->match=0x%08x\n", rtos_timer->match);
++	printk(KERN_INFO "rtos_timer->count=%d\n", rtos_timer->count);
++	printk(KERN_INFO "rtos_timer->enable=%d\n", rtos_timer->enable);
++	printk(KERN_INFO "rtos_timer->clear=%d\n", rtos_timer->clear);
 +}
 +
-+/*  Used for IPI call from other CPU's to unmask int  */
-+void smp_vm_unmask_irq(void *info)
++static cycle_t timer_get_cycles(struct clocksource *cs)
 +{
-+	__vmintop_locen((long) info);
++	return (cycle_t) __vmgettime();
 +}
 +
++static struct clocksource hexagon_clocksource = {
++	.name		= "pcycles",
++	.rating		= 250,
++	.read		= timer_get_cycles,
++	.mask		= CLOCKSOURCE_MASK(64),
++	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
++};
++
++static int set_next_event(unsigned long delta, struct clock_event_device *evt)
++{
++	/*  Assuming the timer will be disabled when we enter here.  */
++	rtos_timer->clear = 1;
++	rtos_timer->clear = 0;
++
++	/*  Does this need massaging?  */
++	rtos_timer->match = delta;
++	rtos_timer->enable = 1 << TIMER_ENABLE;
++	return 0;
++}
 +
 +/*
-+ * This is based on Alpha's IPI stuff.
-+ * Supposed to take (int, void*) as args now.
-+ * Specifically, first arg is irq, second is the irq_desc.
++ * Sets the mode (periodic, shutdown, oneshot, etc) of a timer.
 + */
++static void set_mode(enum clock_event_mode mode,
++	struct clock_event_device *evt)
++{
++	switch (mode) {
++	case CLOCK_EVT_MODE_SHUTDOWN:
++		/* XXX implement me */
++	default:
++		break;
++	}
++}
 +
-+irqreturn_t handle_ipi(int irq, void *desc)
++#ifdef CONFIG_SMP
++/*  Broadcast mechanism  */
++static void broadcast(const struct cpumask *mask)
++{
++	send_ipi(mask, IPI_TIMER);
++}
++#endif
++
++static struct clock_event_device hexagon_clockevent_dev = {
++	.name		= "clockevent",
++	.features	= CLOCK_EVT_FEAT_ONESHOT,
++	.rating		= 400,
++	.irq		= RTOS_TIMER_INT,
++	.set_next_event = set_next_event,
++	.set_mode	= set_mode,
++#ifdef CONFIG_SMP
++	.broadcast	= broadcast,
++#endif
++};
++
++#ifdef CONFIG_SMP
++static DEFINE_PER_CPU(struct clock_event_device, clock_events);
++
++void setup_percpu_clockdev(void)
 +{
 +	int cpu = smp_processor_id();
-+	struct ipi_data *ipi = &per_cpu(ipi_data, cpu);
-+	unsigned long ops;
++	struct clock_event_device *ce_dev = &hexagon_clockevent_dev;
++	struct clock_event_device *dummy_clock_dev =
++		&per_cpu(clock_events, cpu);
 +
-+	while ((ops = xchg(&ipi->bits, 0)) != 0)
-+		__handle_ipi(&ops, ipi, cpu);
++	memcpy(dummy_clock_dev, ce_dev, sizeof(*dummy_clock_dev));
++	INIT_LIST_HEAD(&dummy_clock_dev->list);
++
++	dummy_clock_dev->features = CLOCK_EVT_FEAT_DUMMY;
++	dummy_clock_dev->cpumask = cpumask_of(cpu);
++	dummy_clock_dev->mode = CLOCK_EVT_MODE_UNUSED;
++
++	clockevents_register_device(dummy_clock_dev);
++}
++
++/*  Called from smp.c for each CPU's timer ipi call  */
++void ipi_timer(void)
++{
++	int cpu = smp_processor_id();
++	struct clock_event_device *ce_dev = &per_cpu(clock_events, cpu);
++
++	ce_dev->event_handler(ce_dev);
++}
++#endif /* CONFIG_SMP */
++
++static irqreturn_t timer_interrupt(int irq, void *devid)
++{
++	struct clock_event_device *ce_dev = &hexagon_clockevent_dev;
++
++	rtos_timer->enable = 0;
++	ce_dev->event_handler(ce_dev);
++
 +	return IRQ_HANDLED;
 +}
 +
-+void send_ipi(const struct cpumask *cpumask, enum ipi_message_type msg)
-+{
-+	unsigned long flags;
-+	unsigned long cpu;
-+	unsigned long retval;
-+
-+	local_irq_save(flags);
-+
-+	for_each_cpu(cpu, cpumask) {
-+		struct ipi_data *ipi = &per_cpu(ipi_data, cpu);
-+
-+		set_bit(msg, &ipi->bits);
-+		/*  Possible barrier here  */
-+		retval = __vmintop_post(BASE_IPI_IRQ+cpu);
-+
-+		if (retval != 0) {
-+			printk(KERN_ERR "interrupt %ld not configured?\n",
-+				BASE_IPI_IRQ+cpu);
-+		}
-+	}
-+
-+	local_irq_restore(flags);
-+}
-+
-+static struct irqaction ipi_intdesc = {
-+	.handler = handle_ipi,
-+	.flags = IRQF_DISABLED | IRQF_TRIGGER_RISING,
-+	.name = "ipi_handler"
++/*  This should also be pulled from devtree  */
++static struct irqaction rtos_timer_intdesc = {
++	.handler = timer_interrupt,
++	.flags = IRQF_DISABLED | IRQF_TIMER | IRQF_TRIGGER_RISING,
++	.name = "rtos_timer"
 +};
 +
-+void __init smp_prepare_boot_cpu(void)
-+{
-+}
-+
 +/*
-+ * interrupts should already be disabled from the VM
-+ * SP should already be correct; need to set THREADINFO_REG
-+ * to point to current thread info
++ * time_init_deferred - called by start_kernel to set up timer/clock source
++ *
++ * Install the IRQ handler for the clock, setup timers.
++ * This is done late, as that way, we can use ioremap().
++ *
++ * This runs just before the delay loop is calibrated, and
++ * is used for delay calibration.
 + */
-+
-+void __cpuinit start_secondary(void)
++void __init time_init_deferred(void)
 +{
-+	unsigned int cpu;
-+	unsigned long thread_ptr;
++	struct resource *resource = NULL;
++	struct clock_event_device *ce_dev = &hexagon_clockevent_dev;
++	struct device_node *dn;
++	struct resource r;
++	int err;
 +
-+	/*  Calculate thread_info pointer from stack pointer  */
-+	__asm__ __volatile__(
-+		"%0 = SP;\n"
-+		: "=r" (thread_ptr)
-+	);
++	ce_dev->cpumask = cpu_all_mask;
 +
-+	thread_ptr = thread_ptr & ~(THREAD_SIZE-1);
++	if (!resource)
++		resource = rtos_timer_device.resource;
 +
-+	__asm__ __volatile__(
-+		QUOTED_THREADINFO_REG " = %0;\n"
-+		:
-+		: "r" (thread_ptr)
-+	);
++	/*  ioremap here means this has to run later, after paging init  */
++	rtos_timer = ioremap(resource->start, resource->end
++		- resource->start + 1);
 +
-+	/*  Set the memory struct  */
-+	atomic_inc(&init_mm.mm_count);
-+	current->active_mm = &init_mm;
++	if (!rtos_timer) {
++		release_mem_region(resource->start, resource->end
++			- resource->start + 1);
++	}
++	clocksource_register_khz(&hexagon_clocksource, pcycle_freq_mhz * 1000);
 +
-+	cpu = smp_processor_id();
-+
-+	setup_irq(BASE_IPI_IRQ + cpu, &ipi_intdesc);
-+
-+	/*  Register the clock_event dummy  */
-+	setup_percpu_clockdev();
-+
-+	printk(KERN_INFO "%s cpu %d\n", __func__, current_thread_info()->cpu);
-+
-+	set_cpu_online(cpu, true);
-+	while (!cpumask_test_cpu(cpu, cpu_active_mask))
-+		cpu_relax();
-+	local_irq_enable();
-+
-+	cpu_idle();
-+}
-+
-+
-+/*
-+ * called once for each present cpu
-+ * apparently starts up the CPU and then
-+ * maintains control until "cpu_online(cpu)" is set.
-+ */
-+
-+int __cpuinit __cpu_up(unsigned int cpu)
-+{
-+	struct task_struct *idle;
-+	struct thread_info *thread;
-+	void *stack_start;
-+
-+	/*  Create new init task for the CPU  */
-+	idle = fork_idle(cpu);
-+	if (IS_ERR(idle))
-+		panic(KERN_ERR "fork_idle failed\n");
-+
-+	thread = (struct thread_info *)idle->stack;
-+	thread->cpu = cpu;
-+
-+	/*  Boot to the head.  */
-+	stack_start =  ((void *) thread) + THREAD_SIZE;
-+	__vmstart(start_secondary, stack_start);
-+
-+	while (!cpu_isset(cpu, cpu_online_map))
-+		barrier();
-+
-+	return 0;
-+}
-+
-+void __init smp_cpus_done(unsigned int max_cpus)
-+{
-+}
-+
-+void __init smp_prepare_cpus(unsigned int max_cpus)
-+{
-+	int i;
++	/*  Note: the sim generic RTOS clock is apparently really 18750Hz  */
 +
 +	/*
-+	 * should eventually have some sort of machine
-+	 * descriptor that has this stuff
++	 * Last arg is some guaranteed seconds for which the conversion will
++	 * work without overflow.
 +	 */
++	clockevents_calc_mult_shift(ce_dev, sleep_clk_freq, 4);
 +
-+	/*  Right now, let's just fake it. */
-+	for (i = 0; i < max_cpus; i++)
-+		cpu_set(i, cpu_present_map);
++	ce_dev->max_delta_ns = clockevent_delta2ns(0x7fffffff, ce_dev);
++	ce_dev->min_delta_ns = clockevent_delta2ns(0xf, ce_dev);
 +
-+	/*  Also need to register the interrupts for IPI  */
-+	if (max_cpus > 1)
-+		setup_irq(BASE_IPI_IRQ, &ipi_intdesc);
++#ifdef CONFIG_SMP
++	setup_percpu_clockdev();
++#endif
++
++	clockevents_register_device(ce_dev);
++	setup_irq(ce_dev->irq, &rtos_timer_intdesc);
 +}
 +
-+void smp_send_reschedule(int cpu)
++void __init time_init(void)
 +{
-+	send_ipi(cpumask_of(cpu), IPI_RESCHEDULE);
++	late_time_init = time_init_deferred;
 +}
 +
-+void smp_send_stop(void)
-+{
-+	struct cpumask targets;
-+	cpumask_copy(&targets, cpu_online_mask);
-+	cpumask_clear_cpu(smp_processor_id(), &targets);
-+	send_ipi(&targets, IPI_CPU_STOP);
-+}
-+
-+void arch_send_call_function_single_ipi(int cpu)
-+{
-+	send_ipi(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
-+}
-+
-+void arch_send_call_function_ipi_mask(const struct cpumask *mask)
-+{
-+	send_ipi(mask, IPI_CALL_FUNC);
-+}
-+
-+int setup_profiling_timer(unsigned int multiplier)
-+{
-+	return -EINVAL;
-+}
-+
-+void smp_start_cpus(void)
-+{
-+	int i;
-+
-+	for (i = 0; i < NR_CPUS; i++)
-+		cpu_set(i, cpu_possible_map);
-+}
-diff --git a/arch/hexagon/kernel/topology.c b/arch/hexagon/kernel/topology.c
-new file mode 100644
-index 0000000..ba44751
---- /dev/null
-+++ b/arch/hexagon/kernel/topology.c
-@@ -0,0 +1,52 @@
 +/*
-+ * CPU topology for Hexagon
-+ *
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
++ * This could become parametric or perhaps even computed at run-time,
++ * but for now we take the observed simulator jitter.
 + */
++static long long fudgefactor = 350;  /* Maybe lower if kernel optimized. */
 +
-+#include <linux/cpu.h>
-+#include <linux/cpumask.h>
-+#include <linux/init.h>
-+#include <linux/node.h>
-+#include <linux/nodemask.h>
-+#include <linux/percpu.h>
-+
-+/*  Swiped from MIPS.  */
-+
-+static DEFINE_PER_CPU(struct cpu, cpu_devices);
-+
-+static int __init topology_init(void)
++void __udelay(unsigned long usecs)
 +{
-+	int i, ret;
++	unsigned long long start = __vmgettime();
++	unsigned long long finish = (pcycle_freq_mhz * usecs) - fudgefactor;
 +
-+	for_each_present_cpu(i) {
-+
-+		/*
-+		 * register_cpu takes a per_cpu pointer and
-+		 * just points it at another per_cpu struct...
-+		 */
-+
-+		ret = register_cpu(&per_cpu(cpu_devices, i), i);
-+		if (ret)
-+			printk(KERN_WARNING "topology_init: register_cpu %d "
-+			       "failed (%d)\n", i, ret);
-+	}
-+
-+	return 0;
++	while ((__vmgettime() - start) < finish)
++		cpu_relax(); /*  not sure how this improves readability  */
 +}
-+
-+subsys_initcall(topology_init);
++EXPORT_SYMBOL(__udelay);
 -- 
 1.7.1
 
