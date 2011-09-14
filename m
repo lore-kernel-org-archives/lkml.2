@@ -1,108 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752757Ab1INAcq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 20:32:46 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:38330 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751757Ab1INAco (ORCPT
+	id S1752906Ab1INAe1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 20:34:27 -0400
+Received: from mail.ss.pku.edu.cn ([211.101.48.138]:59644 "EHLO
+	mail.ss.pku.edu.cn" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752085Ab1INAe0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 20:32:44 -0400
-Date: Wed, 14 Sep 2011 10:32:34 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Xen Devel <Xen-devel@lists.xensource.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: linux-next: manual merge of the xen tree with the tip tree
-Message-Id: <20110914103234.4f2f6a2dd65734de6622e79f@canb.auug.org.au>
-In-Reply-To: <4E6FC2D3.2060408@goop.org>
-References: <20110825142450.c84e02d8763cfd1a93411844@canb.auug.org.au>
-	<4E5690C3.2050706@goop.org>
-	<4E5693DD.2010307@zytor.com>
-	<20110826090619.7588d424798f53a6f3621eb2@canb.auug.org.au>
-	<4E56D6E1.6030405@zytor.com>
-	<20110826125441.709aa423cdf072ce085fb91c@canb.auug.org.au>
-	<20110913211154.fe53ca8c1d608def77a69022@canb.auug.org.au>
-	<alpine.LFD.2.02.1109131706410.2723@ionos>
-	<4E6FC2D3.2060408@goop.org>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__14_Sep_2011_10_32_34_+1000_XZM3NiBv=JSQE3KM"
+	Tue, 13 Sep 2011 20:34:26 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110913165344.1d800582.akpm@google.com>
+References: <1315941801.2565.19.camel@edumazet-laptop>
+	<20110913165344.1d800582.akpm@google.com>
+Date: Wed, 14 Sep 2011 08:34:21 +0800
+Message-ID: <CAF1ivSbCb-eS=npyHO+iWuAXfKPjnCD+LZDWQQ9SbTxGg3nq7Q@mail.gmail.com>
+Subject: Re: [BUG] infinite loop in find_get_pages()
+From: Lin Ming <mlin@ss.pku.edu.cn>
+To: Andrew Morton <akpm@google.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>,
+        Dave Chinner <david@fromorbit.com>, Hugh Dickins <hughd@google.com>,
+        Pawel Sikora <pluto@agmk.net>, Justin Piszcz <jpiszcz@lucidpixels.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__14_Sep_2011_10_32_34_+1000_XZM3NiBv=JSQE3KM
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Jeremy,
-
-On Tue, 13 Sep 2011 13:53:39 -0700 Jeremy Fitzhardinge <jeremy@goop.org> wr=
-ote:
+On Wed, Sep 14, 2011 at 7:53 AM, Andrew Morton <akpm@google.com> wrote:
+> On Tue, 13 Sep 2011 21:23:21 +0200
+> Eric Dumazet <eric.dumazet@gmail.com> wrote:
 >
-> On 09/13/2011 08:07 AM, Thomas Gleixner wrote:
-> > On Tue, 13 Sep 2011, Stephen Rothwell wrote:
-> >>
-> >> On Fri, 26 Aug 2011 12:54:41 +1000 Stephen Rothwell <sfr@canb.auug.org=
-.au> wrote:
-> >>> On Thu, 25 Aug 2011 16:12:33 -0700 "H. Peter Anvin" <hpa@zytor.com> w=
-rote:
-> >>>> On 08/25/2011 04:06 PM, Stephen Rothwell wrote:
-> >>>>>> Stephen: the x86/spinlocks branch in the -tip tree is obsolete and
-> >>>>>> should be dropped.
-> >>>>> That's a bit tricky as I get a rolled up tip tree.  The best I coul=
-d do
-> >>>>> is revert the commit that merges the x86/spinlocks branch into
-> >>>>> auto-latest ...  I'll do that for today (unless something happens t=
-o the
-> >>>>> tip tree in the next hour).
-> >>>>>
-> >>>> OK, let me bother Ingo about it.
-> >>> For today, I have done "git revert -m 1 6f8fa39c81f1" after merging t=
-he
-> >>> tip tree.
-> >> I am still doing this in each linux-next, and it doesn't appear to have
-> >> been fixed up the the tree on tesla.tglx.de, yet, I think.
-> > We'll take it out.=20
->=20
-> Actually, the tip x86/spinlocks was the most up-to-date version of those
-> patches (since hpa had rebased them to a more recent version of mainline).
->=20
-> But never mind.  Stephen, could you use
->=20
->     git://github.com/jsgf/linux-xen.git upstream/xen
->=20
-> for linux-next instead of the kernel.org xen.git, and I've re-added the
-> up-to-date spinlock changes there.
+>> Linus,
+>>
+>> It seems current kernels (3.1.0-rc6) are really unreliable, or maybe I
+>> expect too much from them.
+>>
+>> On my 4GB x86_64 machine (2 quad-core cpus, 2 threads per core), I can
+>> have a cpu locked in
+>>
+>>  find_get_pages -> radix_tree_gang_lookup_slot -> __lookup
+>>
+>>
+>> Problem is : A bisection will be very hard, since a lot of kernels
+>> simply destroy my disk (the PCI MRRS horror stuff).
+>
+> Yes, that's hard.  Quite often my bisection efforts involve moving to a
+> new bisection point then hand-applying a few patches to make the the
+> thing compile and/or work.
+>
+> There have only been three commits to radix-tree.c this year, so a bit
+> of manual searching through those would be practical?
+>
+>> Messages at console :
+>>
+>> INFO: rcu_preempt_state detected stalls on CPUs/tasks: {} (detected by
+>> 11 t=60002 jiffies)
+>>
+>> perf top -C 1
+>>
+>> Events: 3K cycles
+>> +     43,08%  bash  [kernel.kallsyms]  [k] __lookup
+>> +     41,51%  bash  [kernel.kallsyms]  [k] find_get_pages
+>> +     15,31%  bash  [kernel.kallsyms]  [k] radix_tree_gang_lookup_slot
+>>
+>>     43.08%     bash  [kernel.kallsyms]  [k] __lookup
+>>                |
+>>                --- __lookup
+>>                   |
+>>                   |--97.09%-- radix_tree_gang_lookup_slot
+>>                   |          find_get_pages
+>>                   |          pagevec_lookup
+>>                   |          invalidate_mapping_pages
+>>                   |          drop_pagecache_sb
+>>                   |          iterate_supers
+>>                   |          drop_caches_sysctl_handler
+>>                   |          proc_sys_call_handler.isra.3
+>>                   |          proc_sys_write
+>>                   |          vfs_write
+>>                   |          sys_write
+>>                   |          system_call_fastpath
+>>                   |          __write
+>>                   |
+>>
+>>
+>> Steps to reproduce :
+>>
+>> In one terminal, kernel builds in a loop (defconfig + hpsa driver)
+>>
+>> cd /usr/src/linux
+>> while :
+>> do
+>>  make clean
+>>  make -j128
+>> done
+>>
+>>
+>> In another term :
+>>
+>> while :
+>> do
+>>  echo 3 >/proc/sys/vm/drop_caches
+>>  sleep 20
+>> done
+>>
+>
+> This is a regression?  3.0 is OK?
 
-OK, I have switched to this from today.
+FYI,  other guys have reported similar bugs for 3.0.
 
-My understanding is this:  I do *not* need to revert the spinlock changes
-from tip anymore, correct?
+kernel 3.0: BUG: soft lockup: find_get_pages+0x51/0x110
+http://marc.info/?l=linux-kernel&m=131342662028153&w=2
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+[3.0.2-stable] BUG: soft lockup - CPU#13 stuck for 22s! [kswapd2:1092]
+http://marc.info/?l=linux-kernel&m=131469584117857&w=2
 
---Signature=_Wed__14_Sep_2011_10_32_34_+1000_XZM3NiBv=JSQE3KM
-Content-Type: application/pgp-signature
+kernel 3.1-rc4: BUG soft lockup (w/frame pointers enabled)
+http://marc.info/?l=linux-kernel&m=131566383719422&w=2
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Lin Ming
 
-iQEcBAEBAgAGBQJOb/YiAAoJEDMEi1NhKgbs6zUH/AxDWuN4AXeNYpsajyioPglF
-+1NSWctPiCt15Kub2zeiBcKyYIhFO8KDlyqT3TAMGDS+lK9XsT490OXfdnMLVAAN
-A34AZ1xTtkOqrsv9LdQpqnyr3jcq42CUkpMtdacRRmP7qUnaqBGc1PI4iwsAFhbm
-aF47Ud77I7fmXJDyi73zka6tlP7HxH/G78JUoBo/NKBb4Lyuv40UL3+CVBdxPZxu
-KaCG3w1Yvs+psAoW0ts29wCt0QqchIaaQfXXeVH+ARxvSwqOJezGs9Nlp9gxFhRa
-HGtU3U6RsW5JBEgWxu7Tj4OdjMjddNc9kycjAdgND129Wn/Pjaq84G/z/qYBmGw=
-=OFgd
------END PGP SIGNATURE-----
-
---Signature=_Wed__14_Sep_2011_10_32_34_+1000_XZM3NiBv=JSQE3KM--
+>
+> Also, do you know that the hang is happening at the radix-tree level?
+> It might be at the filemap.c level or at the superblock level and we
+> just end up spending most cycles at the lower levels because they're
+> called so often?  The iterate_supers/drop_pagecache_sb code is fairly
+> recent.
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
