@@ -1,45 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932885Ab1INS6r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 14:58:47 -0400
-Received: from lucidpixels.com ([72.73.18.11]:55646 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932519Ab1INS6r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 14:58:47 -0400
-Date: Wed, 14 Sep 2011 14:58:46 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: Lin Ming <mlin@ss.pku.edu.cn>, linux-kernel@vger.kernel.org,
-        Alan Piszcz <ap@solarrain.com>, "Li, Shaohua" <shaohua.li@intel.com>,
-        Andrew Morton <akpm@google.com>
-Subject: Re: 3.0.1: pagevec_lookup+0x1d/0x30, SLAB issues?
-In-Reply-To: <alpine.DEB.2.02.1109140901560.2082@p34.internal.lan>
-Message-ID: <alpine.DEB.2.02.1109141457510.2082@p34.internal.lan>
-References: <alpine.DEB.2.02.1109111815520.19558@p34.internal.lan>  <alpine.DEB.2.02.1109111837200.19558@p34.internal.lan>  <CAF1ivSZQ=KKC0gAk93eMVwLSCbeEWr=k6YszuE=sb1+Ue521vw@mail.gmail.com>  <alpine.DEB.2.02.1109140543590.29782@p34.internal.lan>
- <1315995608.2361.18.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <alpine.DEB.2.02.1109140629300.29782@p34.internal.lan> <alpine.DEB.2.02.1109140901560.2082@p34.internal.lan>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1757427Ab1INTO3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 15:14:29 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:46580 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757306Ab1INTO3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Sep 2011 15:14:29 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+In-Reply-To: <1316023462-3287-1-git-send-email-rklein@nvidia.com>
+References: <1316023462-3287-1-git-send-email-rklein@nvidia.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 14 Sep 2011 13:14:08 -0600
+X-Google-Sender-Auth: 46ZEL5zDx2vHahX-yfZWcVLQnuQ
+Message-ID: <CACxGe6uWvWz-8rFVv4HPs_DgoJabV2N0aUQTx7xJ8Zr6thkSMA@mail.gmail.com>
+Subject: Re: [PATCH v4] power: bq20z75: devicetree init support
+To: Rhyland Klein <rklein@nvidia.com>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> Hi,
+On Wed, Sep 14, 2011 at 12:04 PM, Rhyland Klein <rklein@nvidia.com> wrote:
+> Adding support to generate platform data when kernel is configured
+> through device tree.
 >
-> Been running a lot of stressful jobs and will let them continue, so far,
-> no ERROR, WARN or OOPS yet.
+> Also adding the binding for the TI bq20z75 fuel gadge and the
+> bq20z75 driver.
 >
-> 3.1-rc4 + the three patches above seem to fix the problems (thus far).
+> Signed-off-by: Rhyland Klein <rklein@nvidia.com>
+> ---
+>        v2: Fixed typo in binding description
+>        v3: Changed to use "ti," for properties
+>            Changed to use single gpio entry for battery detect info.
+>            Removed unnecessary call to of_match_device.
+>        v4: squashed bindings and drivers changes together.
+>            fixed case where CONFIG_OF is not selected, to return existing
+>            pdata pointer if it exists.
+
+Nit: Personally, I'm much happier when the revision list is above the
+--- line so it appears in the linux commit text.  That helps when
+trying to figure out exactly which posting of a patch got merged.
+
 >
-> Does anyone know when the bugs were introduced into the kernel, as some/all
-> of these problems also happened with 3.0.x.
+> diff --git a/drivers/power/bq20z75.c b/drivers/power/bq20z75.c
+> index 9c5e5be..4c4669e 100644
+> --- a/drivers/power/bq20z75.c
+> +++ b/drivers/power/bq20z75.c
+> @@ -613,6 +613,78 @@ static void bq20z75_delayed_work(struct work_struct *work)
+>        }
+>  }
 >
+> +#if defined(CONFIG_OF)
+> +#include <linux/of_device.h>
+> +static const struct of_device_id bq20z75_dt_ids[] = {
+> +       { .compatible = "ti,bq20z75" },
+> +       { }
+> +};
+> +MODULE_DEVICE_TABLE(platform, bq20z75_dt_ids);
 
-Up for 8+ hours, no problems yet, going to keep hammering it over the next
-24 hours or so and see if I can get it to fail; thus far; no issues, very
-happy, the Linux kernel is working, so far :-)
+MODULE_DEVICE_TABLE(of, ...)
 
-Justin.
+It's not a platform_device_id table.
 
+Otherwise:
+
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
