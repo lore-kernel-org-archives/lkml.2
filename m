@@ -1,47 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756692Ab1INOMk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 10:12:40 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53591 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754489Ab1INOMj convert rfc822-to-8bit (ORCPT
+	id S1756650Ab1INOO3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 10:14:29 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:50317 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753572Ab1INOO1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 10:12:39 -0400
-Subject: Re: [RFC][PATCH 1/3] sched: Provide delayed wakeup list
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        David Miller <davem@davemloft.net>, Mike Galbraith <efault@gmx.de>
-Date: Wed, 14 Sep 2011 16:12:23 +0200
-In-Reply-To: <1316009286.2361.35.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-References: <20110914133034.687048806@chello.nl>
-	 <20110914133750.739484417@chello.nl>
-	 <1316009286.2361.35.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Content-Type: text/plain; charset="UTF-8"
+	Wed, 14 Sep 2011 10:14:27 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=hxwTfqvlXodGWubtuFdZuYgJVWBywF7plZGzQkLXoLeUQW300FY0Ty6DBFhRf9bqC
+	IARYWdDYJQv3Dkl0IUgGg==
+MIME-Version: 1.0
+In-Reply-To: <4E700EDA.7090505@huawei.com>
+References: <4E700EDA.7090505@huawei.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 14 Sep 2011 08:14:04 -0600
+Message-ID: <CAErSpo4F1oH6uBcbYRf9M49=kk49H==r=Cuh2Mrx2Wq4rmUeVg@mail.gmail.com>
+Subject: Re: [PATCH v3] acpi: Fix CPU hot removal problem
+To: "canquan.shen" <shencanquan@huawei.com>
+Cc: len.brown@intel.com, "shemminger@vyatta.com" <shemminger@vyatta.com>,
+        "yakui.zhao@intel.com" <yakui.zhao@intel.com>,
+        "xiaowei.yang@huawei.com" <xiaowei.yang@huawei.com>,
+        hanweidong <hanweidong@huawei.com>, linqiangmin@huawei.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1316009543.5040.7.camel@twins>
-Mime-Version: 1.0
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-09-14 at 16:08 +0200, Eric Dumazet wrote:
-> I dont understand why you make a get_task_struct() before the cmpxchg()
-> and rollback. We certainly must hold a lock/mutex before calling
-> wake_list_add()
-> 
-> It could be :
-> 
-> {
->         if (cmpxchg(&n->next, NULL, head->first))
->                 return;
->          
->         get_task_struct(p);
->         head->first = n;
-> } 
+On Tue, Sep 13, 2011 at 8:18 PM, canquan.shen <shencanquan@huawei.com> wrote:
+> We run linux as a guest in Xen environment. When we used the xen tools
+> (xm vcpu-set <n>) to hot add and remove vcpu to and from the guest, we
+> encountered the failure on vcpu removal. We found the reason is that it
+> didn't go to really remove cpu in the cpu removal code path.
+>
+> This patch adds acpi_bus_trim in acpi_process_hotplug_notify to fix this
+> issue. With this patch, it works fine for us.
+>
+> Signed-off-by: Shen canquan <shencanquan@huawei.com>
+> ---
+>  drivers/acpi/processor_driver.c |    7 +++++++
+>  1 files changed, 7 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/acpi/processor_driver.c
+> b/drivers/acpi/processor_driver.c
+> index a4e0f1b..0856ef8 100644
+> --- a/drivers/acpi/processor_driver.c
+> +++ b/drivers/acpi/processor_driver.c
+> @@ -677,6 +677,13 @@ static void acpi_processor_hotplug_notify(acpi_handle
+> handle,
+>                                    "Driver data is NULL, dropping EJECT\n");
+>                        return;
+>                }
+> +               ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+> +                       "Hot-removing processor device %s\n",
+> +                       dev_name(&device->dev)));
+> +               if (acpi_bus_trim(device, 1)) {
+> +                       printk(KERN_ERR "ACPI: Removing device failed!\n");
 
-You're quite right. No idea why I wrote it like that..
+We can do better than that.  Nobody ever looks at ACPI_DEBUG_PRINT info.
+
+    u32 id;
+    ...
+    id = pr->id;
+    if (acpi_bus_trim(device, 1))
+        printk(KERN_ERR PREFIX "Failed to remove CPU %d\n", id);
+
+(No "return" needed here.  In fact, the "return" at the bottom of
+acpi_processor_hotplug_notify() is also superfluous.  You could remove
+it at the same time.)
