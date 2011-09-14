@@ -1,33 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932088Ab1INLIR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 07:08:17 -0400
-Received: from mail-vw0-f42.google.com ([209.85.212.42]:40521 "EHLO
-	mail-vw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756456Ab1INLIQ (ORCPT
+	id S1756520Ab1INLOm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 07:14:42 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:37436 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756483Ab1INLOl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 07:08:16 -0400
+	Wed, 14 Sep 2011 07:14:41 -0400
+Date: Wed, 14 Sep 2011 13:14:38 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Andrew Morton <akpm00@gmail.com>, linux-kernel@vger.kernel.org,
+        containers@lists.osdl.org, linux-fsdevel@vger.kernel.org,
+        Kirill Shutemov <kirill@shutemov.name>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Nathan Lynch <ntl@pobox.com>, Zan Lynx <zlynx@acm.org>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>,
+        Vasiliy Kulikov <segoon@openwall.com>, Tejun Heo <tj@kernel.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [patch 2/2] fs, proc: Introduce the /proc/<pid>/map_files/
+	directory v12
+Message-ID: <20110914111437.GA22516@atrey.karlin.mff.cuni.cz>
+References: <20110913211359.674453213@openvz.org> <20110913212447.918816776@openvz.org> <20110913235222.043927b3.akpm@linux-foundation.org> <20110914105607.GP25367@sun>
 MIME-Version: 1.0
-In-Reply-To: <4E6FFE3E.1090702@gmail.com>
-References: <4E6FFE3E.1090702@gmail.com>
-Date: Wed, 14 Sep 2011 07:02:35 -0400
-Message-ID: <CA+5PVA4WQ3M2NM_BskL4==UwJ_XthVpynmQUHO+1R3-4-XdBRQ@mail.gmail.com>
-Subject: Re: 3.0.3 nouveau: page allocation failure and oops
-From: Josh Boyer <jwboyer@gmail.com>
-To: Robert Hancock <hancockrwd@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, nouveau@lists.freedesktop.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110914105607.GP25367@sun>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 13, 2011 at 9:07 PM, Robert Hancock <hancockrwd@gmail.com> wrote:
-> Just saw this page allocation failure followed by a null pointer dereference
-> in Fedora 15 2.6.40.3-0 (aka 3.0.3). This is with a GeForce 9600GT. Is this
-> already known?
+Hi!
 
-There are a handful of nouveau patches in the newer F15 kernel.  Your
-issue looks fairly similar to RH bugzilla 699551.  You should try the
-latest stable kernel update (2.6.40.4-5).
+> > 
+> > > This one behaves similarly to the /proc/<pid>/fd/ one - it contains symlinks
+> > > one for each mapping with file, the name of a symlink is "vma->vm_start-vma->vm_end",
+> > > the target is the file. Opening a symlink results in a file that point exactly
+> > > to the same inode as them vma's one.
+> > 
+> > We should fully work through Pavel Machek's comments, please.  For some
+> > reason I'm a bit paranoid about security lately :(
+> 
+> Pavel, I somehow lost. What exactly the security issue here? There are a few
+> patches from Vasiliy in -mm queue at moment. In particular one includes
+> .permission set for fd/ handling. So I've updated the map_files as well
+> (it's below). So please review and point me where the problem
+> is. Thanks!
 
-josh
+AFAICT, this recreates existing problem with /proc/<pid>/fd (see
+discussion at 
+
+http://www.securityfocus.com/archive/1/507386/30/0/threaded
+
+). It creates object that looks like symlink, but does not behave as
+one, and permissions of directories are not checked as they would be
+if it was a symlink.
+
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
