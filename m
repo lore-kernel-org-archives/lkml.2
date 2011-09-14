@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751194Ab1INFL4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 01:11:56 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:48559 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750974Ab1INFLz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 01:11:55 -0400
-MIME-Version: 1.0
-X-Originating-IP: [46.116.113.217]
-In-Reply-To: <1315949582.2687.204.camel@shinybook.infradead.org>
-References: <1315942288-17297-1-git-send-email-ohad@wizery.com>
- <1315942288-17297-5-git-send-email-ohad@wizery.com> <1315949582.2687.204.camel@shinybook.infradead.org>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Wed, 14 Sep 2011 08:11:34 +0300
-Message-ID: <CAK=WgbbVTFb3vh7CA+teA4Un9-BBaAVO5m-rq2V6CMKv0++YFg@mail.gmail.com>
-Subject: Re: [PATCH v2 5/6] iommu/intel: announce supported page sizes
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: iommu@lists.linux-foundation.org, linux-omap@vger.kernel.org,
-        Hiroshi DOYU <Hiroshi.DOYU@nokia.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Joerg Roedel <Joerg.Roedel@amd.com>,
-        linux-arm-kernel@lists.infradead.org,
-        David Brown <davidb@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751255Ab1INFUJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 01:20:09 -0400
+Received: from mga02.intel.com ([134.134.136.20]:53444 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750984Ab1INFUH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Sep 2011 01:20:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="48190416"
+Subject: Re: [PATCH] serial: sh-sci: don't filter on DMA device, use only
+ channel ID
+From: Vinod Koul <vinod.koul@intel.com>
+To: Paul Mundt <lethal@linux-sh.org>, alan@linux.intel.com
+Cc: "g.liakhovetski@gmx.de" <g.liakhovetski@gmx.de>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        "magnus.damm@gmail.com" <magnus.damm@gmail.com>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "damm@opensource.se" <damm@opensource.se>
+In-Reply-To: <1315510263.26251.296.camel@vkoul-udesk3>
+References: <Pine.LNX.4.64.1109051002400.1112@axis700.grange>
+	 <1315228408.26251.75.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1109051532220.1112@axis700.grange>
+	 <1315233788.26251.163.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1109051700030.1112@axis700.grange>
+	 <1315235335.26251.194.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1109051716530.1112@axis700.grange>
+	 <438BB0150E931F4B9CE701519A4463010871804A4B@bgsmsx502.gar.corp.intel.com>
+	 <alpine.DEB.2.00.1109072048310.30407@axis700.grange>
+	 <438BB0150E931F4B9CE701519A4463010871804A4F@bgsmsx502.gar.corp.intel.com>
+	 <20110908012119.GJ22142@linux-sh.org>
+	 <1315510263.26251.296.camel@vkoul-udesk3>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 14 Sep 2011 10:46:50 +0530
+Message-ID: <1315977410.26251.476.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 14, 2011 at 12:32 AM, David Woodhouse <dwmw2@infradead.org> wrote:
-> On Tue, 2011-09-13 at 22:31 +0300, Ohad Ben-Cohen wrote:
->> + * Traditionally the IOMMU core just handed us the mappings directly,
->> + * after making sure the size is an order of a 4KB page and that the
->> + * mapping has natural alignment.
->> + *
->> + * To retain this behavior, we currently advertise that we support
->> + * all page sizes that are an order of 4KB.
->
-> This is wrong. We do not support 4000-byte pages. We only support
-> 4096-byte pages. 4KiB, not 4kB.
->
-> Please fix.
+On Fri, 2011-09-09 at 01:01 +0530, Vinod Koul wrote:
+> On Thu, 2011-09-08 at 10:21 +0900, Paul Mundt wrote:
+> > On Thu, Sep 08, 2011 at 03:07:53AM +0530, Koul, Vinod wrote:
+> > > On Wed, 2011-09-07 at 22:01 +0200, Guennadi Liakhovetski wrote:
+> 
+> I relooked at the patch, since the filtering is already done in
+> your .alloc_chan_resources, (which should be fixed when we fix
+> filtering), I am going to apply this patch
+Since this is for serial driver, I can carry this patch with ACK from
+Alan or Alan can take this patch with Ack from me
 
-Sure thing; I'll s/KB/KiB throughout the patch set.
 
-Do I have your ACK otherwise ?
+-- 
+~Vinod
 
-Thanks,
-Ohad.
