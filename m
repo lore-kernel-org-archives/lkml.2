@@ -1,134 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756641Ab1INOIB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 10:08:01 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:39971 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752401Ab1INOIA (ORCPT
+	id S1756678Ab1INOIP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 10:08:15 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:47052 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756654Ab1INOIH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 10:08:00 -0400
-Subject: Re: [RFC][PATCH 1/3] sched: Provide delayed wakeup list
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        David Miller <davem@davemloft.net>, Mike Galbraith <efault@gmx.de>
-In-Reply-To: <20110914133750.739484417@chello.nl>
-References: <20110914133034.687048806@chello.nl>
-	 <20110914133750.739484417@chello.nl>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 14 Sep 2011 16:08:06 +0200
-Message-ID: <1316009286.2361.35.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	Wed, 14 Sep 2011 10:08:07 -0400
+Date: Thu, 15 Sep 2011 00:07:59 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Temporary location for hid, apm and trivial trees
+Message-Id: <20110915000759.44ec63c0f9a3d68239886de5@canb.auug.org.au>
+In-Reply-To: <alpine.LNX.2.00.1109141520450.13109@pobox.suse.cz>
+References: <alpine.LNX.2.00.1109141520450.13109@pobox.suse.cz>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__15_Sep_2011_00_07_59_+1000_qbiaEtriYV6W8o0s"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 14 septembre 2011 à 15:30 +0200, Peter Zijlstra a écrit :
-> pièce jointe document texte brut (sched-wakeup-list.patch)
-> Provide means to queue wakeup targets for later mass wakeup.
-> 
-> This is useful for locking primitives that can effect multiple wakeups
-> per operation and want to avoid lock internal lock contention by
-> delaying the wakeups until we've released the lock internal locks.
-> 
-> Alternatively it can be used to avoid issuing multiple wakeups, and
-> thus save a few cycles, in packet processing. Queue all target tasks
-> and wakeup once you've processed all packets. That way you avoid
-> waking the target task multiple times if there were multiple packets
-> for the same task.
-> 
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Darren Hart <dvhart@linux.intel.com>
-> Cc: Manfred Spraul <manfred@colorfullife.com>
-> Cc: David Miller <davem@davemloft.net>
-> Cc: Eric Dumazet <eric.dumazet@gmail.com>
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> ---
->  include/linux/sched.h |   44 ++++++++++++++++++++++++++++++++++++++++++++
->  kernel/sched.c        |   21 +++++++++++++++++++++
->  2 files changed, 65 insertions(+)
-> Index: linux-2.6/include/linux/sched.h
-> ===================================================================
-> --- linux-2.6.orig/include/linux/sched.h
-> +++ linux-2.6/include/linux/sched.h
-> @@ -1065,6 +1065,19 @@ struct uts_namespace;
->  struct rq;
->  struct sched_domain;
->  
-> +struct wake_list_head {
-> +	struct wake_list_node *first;
-> +};
-> +
-> +struct wake_list_node {
-> +	struct wake_list_node *next;
-> +};
-> +
-> +#define WAKE_LIST_TAIL ((struct wake_list_node *)0x01)
-> +
-> +#define WAKE_LIST(name) \
-> +	struct wake_list_head name = { WAKE_LIST_TAIL }
-> +
->  /*
->   * wake flags
->   */
-> @@ -1255,6 +1268,8 @@ struct task_struct {
->  	unsigned int btrace_seq;
->  #endif
->  
-> +	struct wake_list_node wake_list;
-> +
->  	unsigned int policy;
->  	cpumask_t cpus_allowed;
->  
-> @@ -2143,6 +2158,35 @@ extern void wake_up_new_task(struct task
->  extern void sched_fork(struct task_struct *p);
->  extern void sched_dead(struct task_struct *p);
->  
-> +static inline void
-> +wake_list_add(struct wake_list_head *head, struct task_struct *p)
-> +{
-> +	struct wake_list_node *n = &p->wake_list;
-> +
-> +	get_task_struct(p);
-> +	/*
-> +	 * Atomically grab the task, if ->wake_list is !0 already it means
-> +	 * its already queued (either by us or someone else) and will get the
-> +	 * wakeup due to that.
-> +	 *
-> +	 * This cmpxchg() implies a full barrier, which pairs with the write
-> +	 * barrier implied by the wakeup in wake_up_list().
-> +	 */
-> +	if (cmpxchg(&n->next, 0, n) != 0) {
-> +		/* It was already queued, drop the extra ref and we're done. */
-> +		put_task_struct(p);
-> +		return;
-> +	}
-> +
-> +	/*
-> +	 * The head is context local, there can be no concurrency.
-> +	 */
-> +	n->next = head->first;
-> +	head->first = n;
-> +}
-> +
+--Signature=_Thu__15_Sep_2011_00_07_59_+1000_qbiaEtriYV6W8o0s
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I dont understand why you make a get_task_struct() before the cmpxchg()
-and rollback. We certainly must hold a lock/mutex before calling
-wake_list_add()
+Hi Jiri,
 
-It could be :
+On Wed, 14 Sep 2011 15:24:32 +0200 (CEST) Jiri Kosina <jkosina@suse.cz> wro=
+te:
+>
+> temporary locations for hid, apm and trivial trees until kernel.org=20
+> reappears, are
+>=20
+> 	git://twin.jikos.cz/jikos/hid
+> 	git://twin.jikos.cz/jikos/apm
+> 	git://twin.jikos.cz/jikos/trivial
 
-{
-	if (cmpxchg(&n->next, NULL, head->first))
-		return;
-	 
-	get_task_struct(p);
-	head->first = n;
-}
+I am assuming the for-next branch of each.  However, fetching the trivial
+tree fails with:
 
+fatal: The remote end hung up unexpectedly
 
+I will switch to these tomorrow (assuming that you fix the trivial tree).
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__15_Sep_2011_00_07_59_+1000_qbiaEtriYV6W8o0s
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOcLU/AAoJEDMEi1NhKgbsxHgH/is4YMy3w1vhvsQvubqb2Mf3
+IpcpQfMKcTjAEAYD8sQpNpfu5aIkODo7x4v0zHNlAXvcAZdS4C81UiD3o7O75Cgp
+8+91yfbhUvbsuukMd98OO32FJu+fO7o409RVXQz/vBSARyvnVJBFf1V7FuKFSdtL
+XKHXm9ILYnRQuH/Aj2vcK3b9uql7BACXhZICNuy9xFqeLU3jSPfvV9vLFWtN7TcE
+AS2UMX4BUzOiTk1ulr9bbc/Zq8m9zuIQmbKteC1hxvobmsS32X+s2Mc7wIGck8hb
+01VN75VrmblnZ/CluNE4LC8/yr0WbZP2rwXdutajooWejj4LdpGI/ls2MCF/XAk=
+=H+R1
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__15_Sep_2011_00_07_59_+1000_qbiaEtriYV6W8o0s--
