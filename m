@@ -1,81 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755652Ab1INHKI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 03:10:08 -0400
-Received: from mail-vw0-f42.google.com ([209.85.212.42]:53390 "EHLO
-	mail-vw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755208Ab1INHKH convert rfc822-to-8bit (ORCPT
+	id S1755700Ab1INHL2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 03:11:28 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:41329 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755418Ab1INHL1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 03:10:07 -0400
-X-Greylist: delayed 416 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Sep 2011 03:10:07 EDT
+	Wed, 14 Sep 2011 03:11:27 -0400
 MIME-Version: 1.0
-In-Reply-To: <s5hmxe8vntc.wl%tiwai@suse.de>
-References: <CAC9WiBjoO50H5ZQEShbdZ=64ZXz6Q-OdD+VSD-YrBry3hvdJJQ@mail.gmail.com>
-	<s5haaaa865l.wl%tiwai@suse.de>
-	<CAC9WiBjDfTnNG+5HxEgLm-PLa=RMQu47L3Pa-oN_0sQ3rs4ssA@mail.gmail.com>
-	<CAC9WiBhng3Aa9N+GM-ND100jqb+x22wAp+c9rTDEJ2riKtNZ7w@mail.gmail.com>
-	<s5hmxe8vntc.wl%tiwai@suse.de>
-Date: Wed, 14 Sep 2011 09:03:10 +0200
-Message-ID: <CAC9WiBivf2HCVAe-d9ah+mpA50pwjH8ga6w5O4rAq9U2CTa8HA@mail.gmail.com>
-Subject: Re: 3.1-rc5 is the worst
-From: Francis Moreau <francis.moro@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CAGsJ_4x0isAUgmTkRavUC6p3K38ho70A+q8Pp2cMLnxbgMEL7Q@mail.gmail.com>
+References: <1315374075-15479-1-git-send-email-Baohua.Song@csr.com>
+	<438BB0150E931F4B9CE701519A4463010871804A46@bgsmsx502.gar.corp.intel.com>
+	<CAGsJ_4x4S+8d3xS+QTrjDpoxcHo3p7qArd7yFr=+h1vxSRvEpA@mail.gmail.com>
+	<438BB0150E931F4B9CE701519A4463010871804A48@bgsmsx502.gar.corp.intel.com>
+	<CAGsJ_4yeovNP=6CKTafbxrBTrYQ42B9yvAOM8gM_bYqD6mTnUw@mail.gmail.com>
+	<CABb+yY1=P=D3GFFxMOUM0a2yWCiAHNqwVU0a--t+pJnUhqKHKA@mail.gmail.com>
+	<CABb+yY3F+DMn2SxeO0chjpiMBkgLvSK5EVYMdhQsfQoZNZ4_7Q@mail.gmail.com>
+	<CAGsJ_4x0isAUgmTkRavUC6p3K38ho70A+q8Pp2cMLnxbgMEL7Q@mail.gmail.com>
+Date: Wed, 14 Sep 2011 12:41:26 +0530
+Message-ID: <CABb+yY36xmq3mKpWOn+ZZuvPehRkSGe720WrQtMie2C-udgZyQ@mail.gmail.com>
+Subject: Re: [PATCH] dmaengine: add CSR SiRFprimaII DMAC driver
+From: Jassi Brar <jassisinghbrar@gmail.com>
+To: Barry Song <21cnbao@gmail.com>
+Cc: "Koul, Vinod" <vinod.koul@intel.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "workgroup.linux@csr.com" <workgroup.linux@csr.com>,
+        "rongjun.ying@csr.com" <rongjun.ying@csr.com>,
+        "Baohua.Song@csr.com" <Baohua.Song@csr.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, Sep 14, 2011 at 12:16 PM, Barry Song <21cnbao@gmail.com> wrote:
 
-On Tue, Sep 13, 2011 at 10:39 AM, Takashi Iwai <tiwai@suse.de> wrote:
+>> Anyways, every case can be easily expressed using the generic api
+>> I proposed. See 'struct xfer_template' in https://lkml.org/lkml/2011/8/12/128
+>>
+>> Roughly speaking, the following should be done...
+>> Client driver :-
+>> **************
+>> For a 'Rectangular' transfer (2d-dma.PNG) :-
+>> Â  Â  Â xfer_template.numf = Ylen; Â /* height of rectangle */
+>> Â  Â  Â xfer_template.frame_size = 1;
+>> Â  Â  Â xfer_template.sgl[0].size = Xlen; /* width of rectangle */
+>> Â  Â  Â xfer_template.sgl[0].icg = start_addr_Y(n) - end_addr_Y(n-1);
 >
-> The patch below should fix the problem.  Give it a try.
+> For prima2:
 >
-
-Yes it does, thanks !
-
+> xfer_template.numf = ylen + 1
+> xfer_template.frame_size = 1;
+> xfer_template.sgl[0].size = xlen;
+> xfer_template.sgl[0].icg = dma_width - xlen;
 >
-> ---
-> From: Takashi Iwai <tiwai@suse.de>
-> Subject: [PATCH] ALSA: hda - Terminate the recursive connection search properly
->
-> The recursive search of widget connections in snd_hda_get_conn_index()
-> must be terminated at the pin and the audio-out widgets.  Otherwise
-> you'll get "too deep connection" warnings unnecessarily.
->
-> Signed-off-by: Takashi Iwai <tiwai@suse.de>
-> ---
->  sound/pci/hda/hda_codec.c |    6 +++++-
->  1 files changed, 5 insertions(+), 1 deletions(-)
->
-> diff --git a/sound/pci/hda/hda_codec.c b/sound/pci/hda/hda_codec.c
-> index 3e7850c..f3aefef 100644
-> --- a/sound/pci/hda/hda_codec.c
-> +++ b/sound/pci/hda/hda_codec.c
-> @@ -579,9 +579,13 @@ int snd_hda_get_conn_index(struct hda_codec *codec, hda_nid_t mux,
->                return -1;
->        }
->        recursive++;
-> -       for (i = 0; i < nums; i++)
-> +       for (i = 0; i < nums; i++) {
-> +               unsigned int type = get_wcaps_type(get_wcaps(codec, conn[i]));
-> +               if (type == AC_WID_PIN || type == AC_WID_AUD_OUT)
-> +                       continue;
->                if (snd_hda_get_conn_index(codec, conn[i], nid, recursive) >= 0)
->                        return i;
-> +       }
->        return -1;
->  }
->  EXPORT_SYMBOL_HDA(snd_hda_get_conn_index);
-> --
-> 1.7.6.1
->
->
+All is same as I suggested except for 'numf'.
+You might want to keep 'numf' same as well. Because the client
+driver shouldn't need to know that the DMAC's register expect "+1" value.
+Remember the client is supposed to be reusable over other DMACs as well.
+So, rather in the DMAC driver, please do
+    schan->ylen = xfer_template.numf + 1;
 
 
+>> DMAC driver :-
+>> ***************
+>> Â  Â  Â if (xfer_template.frame_size == 1) {
+>> Â  Â  Â  Â  Â  /* rectangle */
+>> Â  Â  Â  Â  Â  schan->xlen = xfer_template.sgl[0].size;
+>> Â  Â  Â  Â  Â  schan->width = schan->xlen + xfer_template.sgl[0].icg;
+>> Â  Â  Â } else if (xfer_template.frame_size == 2 &&
+>> Â  Â  Â  Â  Â  Â  Â  Â  Â xfer_template.numf == 1 &&
+>> Â  Â  Â  Â  Â  Â  Â  Â  Â xfer_template.sgl[1].size == xfer_template.sgl[0].icg){
+>> Â  Â  Â  Â  Â  /* a line and some */
+>> Â  Â  Â  Â  Â  schan->xlen = xfer_template.sgl[0].size + Â xfer_template.sgl[1].size.
+>> Â  Â  Â  Â  Â  schan->width = xfer_template.sgl[0].size;
+>> Â  Â  Â } else {
+>> Â  Â  Â  Â  Â  /* _Hardware_ doesn't support the transfer as such. *
+>> Â  Â  Â  Â  Â  return -EINVAL;
+>> Â  Â  Â }
+>> Â  Â  Â schan->ylen = xfer_template.numf /* -1? */;
+>>
+>
+> For prima2:
+> xfer_template.frame_size is always 1, then
+> schan->xlen = xfer_template.sgl[0].size;
+> schan->width = schan->xlen + xfer_template.sgl[0].icg;
+>
+Ok, you don't need the 'else if' clause because as you said
+{xlen > width} is not an option.
+But you do need the other two checks, so that the DMAC driver
+cleanly rejects any interleaved-format that it doesn't support.
 
--- 
-Francis
+Point being, the clients and DMAC drivers are supposed to be
+very 'promiscuous' - any Client could be 'riding' any DMAC ;)
