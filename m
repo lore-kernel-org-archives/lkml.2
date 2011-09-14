@@ -1,52 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756208Ab1INJtx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 05:49:53 -0400
-Received: from mail-wy0-f180.google.com ([74.125.82.180]:59699 "EHLO
-	mail-wy0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755747Ab1INJtv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 05:49:51 -0400
-X-Greylist: delayed 385 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Sep 2011 05:49:50 EDT
-Message-ID: <4E707742.7050809@gmail.com>
-Date: Wed, 14 Sep 2011 17:43:30 +0800
-From: Shan Hai <haishan.bai@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	id S1756181Ab1INJx2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 05:53:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37313 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755127Ab1INJx0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Sep 2011 05:53:26 -0400
+Message-ID: <4E707991.10705@redhat.com>
+Date: Wed, 14 Sep 2011 12:53:21 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Yong Zhang <yong.zhang0@gmail.com>
-Subject: Re: linux-next: build warning after merge of the tip tree
-References: <20110914163455.fcc47a7aba8604c690988473@canb.auug.org.au> <alpine.LFD.2.02.1109141137260.2723@ionos>
-In-Reply-To: <alpine.LFD.2.02.1109141137260.2723@ionos>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v3 03/11] KVM: x86: retry non-page-table writing instruction
+References: <4E5C4C20.3000403@cn.fujitsu.com> <4E5C4C5C.8030602@cn.fujitsu.com> <4E6F34CF.1060302@redhat.com> <4E6F9FD2.4010407@cn.fujitsu.com>
+In-Reply-To: <4E6F9FD2.4010407@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/14/2011 05:37 PM, Thomas Gleixner wrote:
-> On Wed, 14 Sep 2011, Stephen Rothwell wrote:
+On 09/13/2011 09:24 PM, Xiao Guangrong wrote:
+> >>
+> >>  +static bool retry_instruction(struct x86_emulate_ctxt *ctxt,
+> >>  +                  unsigned long cr2,  int emulation_type)
+> >>  +{
+> >>  +    if (!vcpu->arch.mmu.direct_map&&   !mmu_is_nested(vcpu))
+> >>  +        gpa = kvm_mmu_gva_to_gpa_write(vcpu, cr2, NULL);
+> >
+> >  If mmu_is_nested() cr2 is an ngpa, we have to translate it to a gpa, no?
+> >
 >
->> Hi all,
->>
->> After merging the tip tree, today's linux-next build (powerpc allnoconfig)
->> produced this warning:
->>
->> lib/atomic64.c: In function 'lock_addr':
->> lib/atomic64.c:42:2: warning: return from incompatible pointer type
->>
->> Introduced by commit f59ca05871a0 ("locking, lib/atomic64: Annotate
->> atomic64_lock::lock as raw").  This function (which is declared to return
->> "spinlock_t *") is now returning "raw_spinlock_t *".
-> My bad, it seems I picked the wrong version of the patch.
+> Yeah, will fix it.
+>
+> And this bug also exists in the current code: it always uses L2 gpa to emulate
+> write operation.
 
-Hi Thomas,
+Can you please send this fix separately, so it can be backported if needed?
 
-Please pick the V4 patch, the last one which I have sent to you,
-I am sorry for the subject line it indicates V3 :(
+> I guess the reason that it is not triggered is: the gpa of L2's shadow page can
+> not be touched by L2, it means no page table is write-protected by L2.
 
-Thanks
-Shan Hai
+Yes.  All real guest hypervisors will do that.  But it is technically 
+possible for a hypervisor to allow its guest access to the real page tables.
+
+> >  btw, I don't see mmu.direct_map initialized for nested npt?
+> >
+>
+> nested_svm_vmrun() ->  nested_svm_init_mmu_context():
+> static int nested_svm_init_mmu_context(struct kvm_vcpu *vcpu)
+> {
+> 	int r;
+>
+> 	r = kvm_init_shadow_mmu(vcpu,&vcpu->arch.mmu);
+>
+> 	vcpu->arch.mmu.set_cr3           = nested_svm_set_tdp_cr3;
+> 	vcpu->arch.mmu.get_cr3           = nested_svm_get_tdp_cr3;
+> 	vcpu->arch.mmu.get_pdptr         = nested_svm_get_tdp_pdptr;
+> 	vcpu->arch.mmu.inject_page_fault = nested_svm_inject_npf_exit;
+> 	vcpu->arch.mmu.shadow_root_level = get_npt_level();
+> 	vcpu->arch.walk_mmu              =&vcpu->arch.nested_mmu;
+>
+> 	return r;
+> }
+>
+> It is initialized in kvm_init_shadow_mmu　:-)
+
+Yes, need new eyeglasses.
+
+-- 
+error compiling committee.c: too many arguments to function
+
