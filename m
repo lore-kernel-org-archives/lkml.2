@@ -1,68 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932696Ab1INNWd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 09:22:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20195 "EHLO mx1.redhat.com"
+	id S932716Ab1INNYe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 09:24:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55281 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932406Ab1INNWc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 09:22:32 -0400
-Message-ID: <4E70AA82.5050409@redhat.com>
-Date: Wed, 14 Sep 2011 16:22:10 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
+	id S932406Ab1INNYe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Sep 2011 09:24:34 -0400
+Date: Wed, 14 Sep 2011 15:24:32 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: sfr@canb.auug.org.au
+Cc: linux-kernel@vger.kernel.org
+Subject: Temporary location for hid, apm and trivial trees
+Message-ID: <alpine.LNX.2.00.1109141520450.13109@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Don Zickus <dzickus@redhat.com>
-CC: x86@kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Peter Zijlstra <peterz@infradead.org>, ying.huang@intel.com,
-        LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
-        jeremy@goop.org
-Subject: Re: [V4][PATCH 4/6] x86, nmi:  add in logic to handle multiple events
- and unknown NMIs
-References: <1315947509-6429-1-git-send-email-dzickus@redhat.com> <1315947509-6429-5-git-send-email-dzickus@redhat.com> <4E7052DD.8080305@redhat.com> <20110914130027.GU5795@redhat.com>
-In-Reply-To: <20110914130027.GU5795@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/14/2011 04:00 PM, Don Zickus wrote:
-> On Wed, Sep 14, 2011 at 10:08:13AM +0300, Avi Kivity wrote:
-> >  On 09/13/2011 11:58 PM, Don Zickus wrote:
-> >  >Previous patches allow the NMI subsystem to process multipe NMI events
-> >  >in one NMI.  As previously discussed this can cause issues when an event
-> >  >triggered another NMI but is processed in the current NMI.  This causes the
-> >  >next NMI to go unprocessed and become an 'unknown' NMI.
-> >  >
-> >  >To handle this, we first have to flag whether or not the NMI handler handled
-> >  >more than one event or not.  If it did, then there exists a chance that
-> >  >the next NMI might be already processed.  Once the NMI is flagged as a
-> >  >candidate to be swallowed, we next look for a back-to-back NMI condition.
-> >  >
-> >  >This is determined by looking at the %rip from pt_regs.  If it is the same
-> >  >as the previous NMI, it is assumed the cpu did not have a chance to jump
-> >  >back into a non-NMI context and execute code and instead handled another NMI.
-> >  >
-> >  >If both of those conditions are true then we will swallow any unknown NMI.
-> >  >
-> >  >There still exists a chance that we accidentally swallow a real unknown NMI,
-> >  >but for now things seem better.
-> >
-> >  Patch looks good, but the changelog is outdated.
->
-> Perhaps, but I tried rewriting most of it to reflect the current changes.
-> Was there something obvious in there that I missed?  I re-read it a few
-> times and can't figure out what part might be outdated (not that I
-> disagree with you, I just want to update it).
->
+Hi Stephen,
 
-It's not really outdated (I guess I misread it).  However it emphasises 
-the nmi swallowing part (which I guess was the focus of the first 
-version) and doesn't really talk about doing just one source in ordinary 
-NMIs and processing all sources in second (and third...) back-to-back 
-NMIs.  I'd add something about that.
+temporary locations for hid, apm and trivial trees until kernel.org 
+reappears, are
+
+	git://twin.jikos.cz/jikos/hid
+	git://twin.jikos.cz/jikos/apm
+	git://twin.jikos.cz/jikos/trivial
+
+Thanks,
 
 -- 
-error compiling committee.c: too many arguments to function
-
+Jiri Kosina
+SUSE Labs
