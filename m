@@ -1,165 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752311Ab1INHth (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 03:49:37 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:55966 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751306Ab1INHtf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 03:49:35 -0400
-Date: Wed, 14 Sep 2011 15:49:24 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Shan Hai <haishan.bai@gmail.com>
-Subject: Re: linux-next: build warning after merge of the tip tree
-Message-ID: <20110914074924.GA16096@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <20110914163455.fcc47a7aba8604c690988473@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20110914163455.fcc47a7aba8604c690988473@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752711Ab1INH4P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 03:56:15 -0400
+Received: from mga03.intel.com ([143.182.124.21]:36321 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751306Ab1INH4O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Sep 2011 03:56:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,379,1312182000"; 
+   d="scan'208";a="48603405"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        kirill.shutemov@linux.intel.com,
+        Mika Westerberg <mika.westerberg@linux.intel.com>, stable@kernel.org
+Subject: [PATCH] x86, mrst: use a temporary variable for SFI irq
+Date: Wed, 14 Sep 2011 10:56:23 +0300
+Message-Id: <1315986983-22398-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 14, 2011 at 04:34:55PM +1000, Stephen Rothwell wrote:
-> Hi all,
-> 
-> After merging the tip tree, today's linux-next build (powerpc allnoconfig)
-> produced this warning:
-> 
-> lib/atomic64.c: In function 'lock_addr':
-> lib/atomic64.c:42:2: warning: return from incompatible pointer type
-> 
-> Introduced by commit f59ca05871a0 ("locking, lib/atomic64: Annotate
-> atomic64_lock::lock as raw").  This function (which is declared to return
-> "spinlock_t *") is now returning "raw_spinlock_t *".
+SFI tables reside in RAM and should not be modified once they are written.
+Current code went to set pentry->irq to zero which causes subsequent reads
+to fail with invalid SFI table checksum.
 
-Oh, we still have something left to clean.
+To fix this we use temporary variable for irq number.
 
-Does below patch help?
-
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Reviewed-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Cc: stable@kernel.org
 ---
-From: Yong Zhang <yong.zhang0@gmail.com>
-Subject: [PATCH] lib: atomic64: change the type of local lock to raw_spinlock_t
+ arch/x86/platform/mrst/mrst.c |   22 ++++++++++++----------
+ 1 files changed, 12 insertions(+), 10 deletions(-)
 
-There are still some leftovers of commit f59ca058
-[locking, lib/atomic64: Annotate atomic64_lock::lock as raw]
-
-Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Shan Hai <haishan.bai@gmail.com>
----
- lib/atomic64.c |   22 +++++++++++-----------
- 1 files changed, 11 insertions(+), 11 deletions(-)
-
-diff --git a/lib/atomic64.c b/lib/atomic64.c
-index 9db8dea..f9c5b29 100644
---- a/lib/atomic64.c
-+++ b/lib/atomic64.c
-@@ -33,7 +33,7 @@ static union {
- 	char pad[L1_CACHE_BYTES];
- } atomic64_lock[NR_LOCKS] __cacheline_aligned_in_smp;
+diff --git a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/mrst/mrst.c
+index 58425ad..fe73276 100644
+--- a/arch/x86/platform/mrst/mrst.c
++++ b/arch/x86/platform/mrst/mrst.c
+@@ -678,38 +678,40 @@ static int __init sfi_parse_devs(struct sfi_table_header *table)
+ 	pentry = (struct sfi_device_table_entry *)sb->pentry;
  
--static inline spinlock_t *lock_addr(const atomic64_t *v)
-+static inline raw_spinlock_t *lock_addr(const atomic64_t *v)
- {
- 	unsigned long addr = (unsigned long) v;
+ 	for (i = 0; i < num; i++, pentry++) {
+-		if (pentry->irq != (u8)0xff) { /* native RTE case */
++		int irq = pentry->irq;
++
++		if (irq != (u8)0xff) { /* native RTE case */
+ 			/* these SPI2 devices are not exposed to system as PCI
+ 			 * devices, but they have separate RTE entry in IOAPIC
+ 			 * so we have to enable them one by one here
+ 			 */
+-			ioapic = mp_find_ioapic(pentry->irq);
++			ioapic = mp_find_ioapic(irq);
+ 			irq_attr.ioapic = ioapic;
+-			irq_attr.ioapic_pin = pentry->irq;
++			irq_attr.ioapic_pin = irq;
+ 			irq_attr.trigger = 1;
+ 			irq_attr.polarity = 1;
+-			io_apic_set_pci_routing(NULL, pentry->irq, &irq_attr);
++			io_apic_set_pci_routing(NULL, irq, &irq_attr);
+ 		} else
+-			pentry->irq = 0; /* No irq */
++			irq = 0; /* No irq */
  
-@@ -45,7 +45,7 @@ static inline spinlock_t *lock_addr(const atomic64_t *v)
- long long atomic64_read(const atomic64_t *v)
- {
- 	unsigned long flags;
--	spinlock_t *lock = lock_addr(v);
-+	raw_spinlock_t *lock = lock_addr(v);
- 	long long val;
- 
- 	raw_spin_lock_irqsave(lock, flags);
-@@ -58,7 +58,7 @@ EXPORT_SYMBOL(atomic64_read);
- void atomic64_set(atomic64_t *v, long long i)
- {
- 	unsigned long flags;
--	spinlock_t *lock = lock_addr(v);
-+	raw_spinlock_t *lock = lock_addr(v);
- 
- 	raw_spin_lock_irqsave(lock, flags);
- 	v->counter = i;
-@@ -69,7 +69,7 @@ EXPORT_SYMBOL(atomic64_set);
- void atomic64_add(long long a, atomic64_t *v)
- {
- 	unsigned long flags;
--	spinlock_t *lock = lock_addr(v);
-+	raw_spinlock_t *lock = lock_addr(v);
- 
- 	raw_spin_lock_irqsave(lock, flags);
- 	v->counter += a;
-@@ -80,7 +80,7 @@ EXPORT_SYMBOL(atomic64_add);
- long long atomic64_add_return(long long a, atomic64_t *v)
- {
- 	unsigned long flags;
--	spinlock_t *lock = lock_addr(v);
-+	raw_spinlock_t *lock = lock_addr(v);
- 	long long val;
- 
- 	raw_spin_lock_irqsave(lock, flags);
-@@ -93,7 +93,7 @@ EXPORT_SYMBOL(atomic64_add_return);
- void atomic64_sub(long long a, atomic64_t *v)
- {
- 	unsigned long flags;
--	spinlock_t *lock = lock_addr(v);
-+	raw_spinlock_t *lock = lock_addr(v);
- 
- 	raw_spin_lock_irqsave(lock, flags);
- 	v->counter -= a;
-@@ -104,7 +104,7 @@ EXPORT_SYMBOL(atomic64_sub);
- long long atomic64_sub_return(long long a, atomic64_t *v)
- {
- 	unsigned long flags;
--	spinlock_t *lock = lock_addr(v);
-+	raw_spinlock_t *lock = lock_addr(v);
- 	long long val;
- 
- 	raw_spin_lock_irqsave(lock, flags);
-@@ -117,7 +117,7 @@ EXPORT_SYMBOL(atomic64_sub_return);
- long long atomic64_dec_if_positive(atomic64_t *v)
- {
- 	unsigned long flags;
--	spinlock_t *lock = lock_addr(v);
-+	raw_spinlock_t *lock = lock_addr(v);
- 	long long val;
- 
- 	raw_spin_lock_irqsave(lock, flags);
-@@ -132,7 +132,7 @@ EXPORT_SYMBOL(atomic64_dec_if_positive);
- long long atomic64_cmpxchg(atomic64_t *v, long long o, long long n)
- {
- 	unsigned long flags;
--	spinlock_t *lock = lock_addr(v);
-+	raw_spinlock_t *lock = lock_addr(v);
- 	long long val;
- 
- 	raw_spin_lock_irqsave(lock, flags);
-@@ -147,7 +147,7 @@ EXPORT_SYMBOL(atomic64_cmpxchg);
- long long atomic64_xchg(atomic64_t *v, long long new)
- {
- 	unsigned long flags;
--	spinlock_t *lock = lock_addr(v);
-+	raw_spinlock_t *lock = lock_addr(v);
- 	long long val;
- 
- 	raw_spin_lock_irqsave(lock, flags);
-@@ -161,7 +161,7 @@ EXPORT_SYMBOL(atomic64_xchg);
- int atomic64_add_unless(atomic64_t *v, long long a, long long u)
- {
- 	unsigned long flags;
--	spinlock_t *lock = lock_addr(v);
-+	raw_spinlock_t *lock = lock_addr(v);
- 	int ret = 0;
- 
- 	raw_spin_lock_irqsave(lock, flags);
+ 		switch (pentry->type) {
+ 		case SFI_DEV_TYPE_IPC:
+ 			/* ID as IRQ is a hack that will go away */
+-			pdev = platform_device_alloc(pentry->name, pentry->irq);
++			pdev = platform_device_alloc(pentry->name, irq);
+ 			if (pdev == NULL) {
+ 				pr_err("out of memory for SFI platform device '%s'.\n",
+ 							pentry->name);
+ 				continue;
+ 			}
+-			install_irq_resource(pdev, pentry->irq);
++			install_irq_resource(pdev, irq);
+ 			pr_debug("info[%2d]: IPC bus, name = %16.16s, "
+-				"irq = 0x%2x\n", i, pentry->name, pentry->irq);
++				"irq = 0x%2x\n", i, pentry->name, irq);
+ 			sfi_handle_ipc_dev(pdev);
+ 			break;
+ 		case SFI_DEV_TYPE_SPI:
+ 			memset(&spi_info, 0, sizeof(spi_info));
+ 			strncpy(spi_info.modalias, pentry->name, SFI_NAME_LEN);
+-			spi_info.irq = pentry->irq;
++			spi_info.irq = irq;
+ 			spi_info.bus_num = pentry->host_num;
+ 			spi_info.chip_select = pentry->addr;
+ 			spi_info.max_speed_hz = pentry->max_freq;
+@@ -726,7 +728,7 @@ static int __init sfi_parse_devs(struct sfi_table_header *table)
+ 			memset(&i2c_info, 0, sizeof(i2c_info));
+ 			bus = pentry->host_num;
+ 			strncpy(i2c_info.type, pentry->name, SFI_NAME_LEN);
+-			i2c_info.irq = pentry->irq;
++			i2c_info.irq = irq;
+ 			i2c_info.addr = pentry->addr;
+ 			pr_debug("info[%2d]: I2C bus = %d, name = %16.16s, "
+ 				"irq = 0x%2x, addr = 0x%x\n", i, bus,
 -- 
-1.7.4.1
+1.7.5.4
 
