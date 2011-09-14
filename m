@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757230Ab1INRm4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 13:42:56 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:55668
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757104Ab1INRmz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 13:42:55 -0400
-Date: Wed, 14 Sep 2011 13:42:50 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Pavel Ivanov <paivanof@gmail.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Hin-Tak Leung <hintak_leung@yahoo.co.uk>,
-        linux-fsdevel@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@tuxera.com>
-Subject: Re: Kernel 3.1.0-rc4 oops when connecting iPod
-Message-ID: <20110914174250.GA30240@infradead.org>
-References: <CAG1a4ruG8bL9j01RgSXuK2w9FV0izp8vdoQMLEZzc=qZfCNpzA@mail.gmail.com>
- <1315285921.46647.YahooMailClassic@web29519.mail.ird.yahoo.com>
- <CAG1a4rttHKgp=nAjQ=7zUu=bURq9x7DdhL2fTAZKimicpfdYsw@mail.gmail.com>
- <CAG1a4rt5wLihR-ZkUD78WRbHk39xWP0ypJzMe4K5G1O-k12-MQ@mail.gmail.com>
- <20110912143452.GA31539@infradead.org>
- <CAG1a4rsuYVehnSCM3KxeYQ+g94nrivG1vfss=y8275E4D24qTg@mail.gmail.com>
- <20110912153129.GA10625@infradead.org>
- <CAG1a4rsKQexL8vhAAoJDtnEvqH0rDvPQCiBGM74EH-+pZ9+WPg@mail.gmail.com>
+	id S1757235Ab1INRtz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 13:49:55 -0400
+Received: from claw.goop.org ([74.207.240.146]:37494 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757195Ab1INRtx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Sep 2011 13:49:53 -0400
+Message-ID: <4E70D62B.2030007@goop.org>
+Date: Wed, 14 Sep 2011 09:28:27 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAG1a4rsKQexL8vhAAoJDtnEvqH0rDvPQCiBGM74EH-+pZ9+WPg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Chris Ball <cjb@laptop.org>
+CC: Philip Rakity <prakity@marvell.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Manoj Iyer <manoj.iyer@canonical.com>
+Subject: Re: SDHCI regression since 2.6.39
+References: <4E6EA3E4.5080401@goop.org> <m2bouo37by.fsf@bob.laptop.org> <4E6F8C24.3090207@goop.org> <m2wrdc1i5b.fsf@bob.laptop.org> <4E6FA44F.1050705@goop.org> <m2aaa89t1m.fsf@bob.laptop.org> <alpine.DEB.2.02.1109131419430.3556@lazy> <4E6FBCA1.6040307@goop.org> <D45CBF70-F0B1-453A-9E31-A621F52C21B9@marvell.com> <4E6FC422.9080306@goop.org> <7C3ED924-555D-4C50-9000-36077650328C@marvell.com> <4E6FCE28.5040403@goop.org> <F54ECF19-5E4C-40A6-8E26-99BF223F9FE2@marvell.com> <4E6FDA0B.9060007@goop.org> <4E6FDC3E.8030702@goop.org> <003A4041-99F9-4598-AB9A-D08C76CDAECB@marvell.com> <4E6FFADE.5090004@goop.org> <m2k49b9qvu.fsf@bob.laptop.org>
+In-Reply-To: <m2k49b9qvu.fsf@bob.laptop.org>
+X-Enigmail-Version: 1.3.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 12, 2011 at 10:20:01PM -0400, Pavel Ivanov wrote:
-> This patch works for me.
-> 
-> And could you comment on my PAGE_SIZE question?
-> 
-> >> Also I have a little concern about consistency in using
-> >> PAGE_CACHE_SHIFT and PAGE_SHIFT. hfsplus_read_wrapper() limits visible
-> >> block size to PAGE_SIZE, not PAGE_CACHE_SIZE. And although now they
-> >> are equal comment in linux/pagemap.h clearly says that PAGE_CACHE_SIZE
-> >> can be bigger than PAGE_SIZE. Is it something that should be fixed in
-> >> hfsplus_read_wrapper() ?
+On 09/14/2011 06:48 AM, Chris Ball wrote:
+> Long shot, but did you try removing power completely between the
+> reboots? I wonder if the PCI config space write patch could be (a)
+> bogus for your device, and (b) preserved across warm reboot by your
+> PCI hardware. So, you could just try removing the battery and PSU,
+> hitting the power button a few times with them unplugged to discharge
+> caps, and then boot into the old kernel again.
 
-The two are and always have been the same.  There were plans to allow
-for a larger PAGE_CACHE_SIZE long time ago, but it never happened.
+I powered it off with battery unplugged for about an hour, and rebooted
+into the known-working kernel, making sure that any fancy power mgmt
+features were disabled (like aspm), but it still failed in the same way.
 
-I'll switch everything to PAGE_SIZE in the patch for consistency.
+I'm wondering if it's simply something like the socket has failed, and
+one or more of the terminals isn't connecting to the card?  Though that
+would only show problems on card insertion, but I gather the driver is
+having problems from the moment it detects the controller?
+
+    J
