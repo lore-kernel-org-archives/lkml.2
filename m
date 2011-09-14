@@ -1,131 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933250Ab1INUbA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 16:31:00 -0400
-Received: from mxin.vub.ac.be ([134.184.129.112]:34633 "EHLO mxin.vub.ac.be"
+	id S933264Ab1INUc5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 16:32:57 -0400
+Received: from gherkin.frus.com ([192.158.254.49]:56499 "EHLO gherkin.frus.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933122Ab1INUa7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 16:30:59 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ap4EAE8FcU6GuBhX/2dsb2JhbABBhFWja4FTAQEFAQIgBFIQCxgCAiYCAigvBogMAqNZkheBLIQxgREEkSuHHRKMDA
-Subject: Re: e1000e: NIC not working, power management issue?
-From: Frederik Himpe <fhimpe@telenet.be>
-To: Lucas Nussbaum <lucas@lucas-nussbaum.net>
-Cc: netdev@vger.kernel.org, e1000-devel <e1000-devel@lists.sourceforge.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Wed, 14 Sep 2011 22:31:00 +0200
-In-Reply-To: <20110914134042.GA5739@xanadu.blop.info>
-References: <20110914134042.GA5739@xanadu.blop.info>
-Organization: Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3- 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1316032260.6309.1.camel@defected>
+	id S933122Ab1INUc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Sep 2011 16:32:56 -0400
+Date: Wed, 14 Sep 2011 15:32:55 -0500
+From: Bob Tracy <rct@gherkin.frus.com>
+To: Josh Boyer <jwboyer@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: stupid git question
+Message-ID: <20110914203255.GA29723@gherkin.frus.com>
+References: <20110914201912.GA29635@gherkin.frus.com> <CA+5PVA7ZZGB5TPFQi4NeN6XQakArOOHrDqoJYVhyOz5ZUEMJwQ@mail.gmail.com>
 Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+5PVA7ZZGB5TPFQi4NeN6XQakArOOHrDqoJYVhyOz5ZUEMJwQ@mail.gmail.com>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[CC'ing e1000e ML and LKML]
+On Wed, Sep 14, 2011 at 04:22:05PM -0400, Josh Boyer wrote:
+> On Wed, Sep 14, 2011 at 4:19 PM, Bob Tracy <rct@gherkin.frus.com> wrote:
+> > Pointed "git" at Linus' github.com repository to pull the "-rc6"
+> > changes (git pull <repo_url>).  Seems to have worked, except I received
+> > no updated tags: the latest tag in my local repo copy is "v3.1-rc4".
+> 
+> Do a git fetch --tags <repo url> and you'll get the tags too.
 
-On Wed, 2011-09-14 at 15:40 +0200, Lucas Nussbaum wrote:
-> Hi,
-> 
-> I get the same symptoms as the ones reported by Frederik Himpe in
-> http://www.spinics.net/lists/netdev/msg174336.html
-> (Sorry for starting a new thread, I could not find a mbox archive of netdev)
-> 
-> My config:
-> 00:19.0 Ethernet controller: Intel Corporation 82567LM Gigabit Network Connection (rev 03)
->         Subsystem: Dell Device 024d
->         Control: I/O- Mem- BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR+ FastB2B- DisINTx-
->         Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
->         Interrupt: pin A routed to IRQ 22
->         Region 0: Memory at f6ae0000 (32-bit, non-prefetchable) [disabled] [size=128K]
->         Region 1: Memory at f6adb000 (32-bit, non-prefetchable) [disabled] [size=4K]
->         Region 2: I/O ports at efe0 [disabled] [size=32]
->         Capabilities: [c8] Power Management version 2
->                 Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
->                 Status: D3 NoSoftRst- PME-Enable+ DSel=0 DScale=1 PME+
->         Capabilities: [d0] MSI: Enable- Count=1/1 Maskable- 64bit+
->                 Address: 00000000fee0300c  Data: 41b9
->         Capabilities: [e0] PCI Advanced Features
->                 AFCap: TP+ FLR+
->                 AFCtrl: FLR-
->                 AFStatus: TP-
->         Kernel driver in use: e1000e
-> 
-> running Linux 3.1rc4.
-> 
-> Symptoms:
-> network doesn't work.
-> ifconfig shows the device, but ethtool eth0 says:
-> # ethtool eth0
-> Settings for eth0:
-> Cannot get device settings: No such device
-> Cannot get wake-on-lan settings: No such device
-> Cannot get message level: No such device
-> Cannot get link status: No such device
-> No data available
-> 
-> dmesg:
-> [ 6260.327320] e1000e: Intel(R) PRO/1000 Network Driver - 1.4.4-k
-> [ 6260.327324] e1000e: Copyright(c) 1999 - 2011 Intel Corporation.
-> [ 6260.327355] e1000e 0000:00:19.0: PCI INT A -> GSI 22 (level, low) -> IRQ 22
-> [ 6260.327366] e1000e 0000:00:19.0: setting latency timer to 64
-> [ 6260.327490] e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
-> [ 6260.517813] e1000e 0000:00:19.0: eth0: (PCI Express:2.5GT/s:Width x1) 00:24:e8:a7:2c:42
-> [ 6260.517824] e1000e 0000:00:19.0: eth0: Intel(R) PRO/1000 Network Connection
-> [ 6260.518077] e1000e 0000:00:19.0: eth0: MAC: 7, PHY: 8, PBA No: 3002FF-0FF
-> [ 6260.518102] e1000e 0000:00:19.0: PME# enabled
-> [ 6260.556129] e1000e 0000:00:19.0: BAR 0: set to [mem 0xf6ae0000-0xf6afffff] (PCI address [0xf6ae0000-0xf6afffff])
-> [ 6260.556139] e1000e 0000:00:19.0: BAR 1: set to [mem 0xf6adb000-0xf6adbfff] (PCI address [0xf6adb000-0xf6adbfff])
-> [ 6260.556147] e1000e 0000:00:19.0: BAR 2: set to [io  0xefe0-0xefff] (PCI address [0xefe0-0xefff])
-> [ 6260.556167] e1000e 0000:00:19.0: restoring config space at offset 0xf (was 0x100, writing 0x10a)
-> [ 6260.556193] e1000e 0000:00:19.0: restoring config space at offset 0x1 (was 0x100000, writing 0x100107)
-> [ 6260.556253] e1000e 0000:00:19.0: PME# disabled
-> [ 6260.645141] e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
-> [ 6260.700393] e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
-> [ 6260.702222] ADDRCONF(NETDEV_UP): eth0: link is not ready
-> [ 6261.796451] e1000e 0000:00:19.0: PME# enabled
-> 
-> On a friend's laptop (also Dell latitude E4300, running Linux 3.0), things work
-> fine. lspci -vvv of the working laptop:
-> 00:19.0 Ethernet controller: Intel Corporation 82567LM Gigabit Network Connection (rev 03)
->         Subsystem: Dell Device 024d
->         Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR+ FastB2B- DisINTx+
->         Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
->         Latency: 0
->         Interrupt: pin A routed to IRQ 43
->         Region 0: Memory at f6ae0000 (32-bit, non-prefetchable) [size=128K]
->         Region 1: Memory at f6adb000 (32-bit, non-prefetchable) [size=4K]
->         Region 2: I/O ports at efe0 [size=32]
->         Capabilities: [c8] Power Management version 2
->                 Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
->                 Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=1 PME-
->         Capabilities: [d0] MSI: Enable+ Count=1/1 Maskable- 64bit+
->                 Address: 00000000fee0300c  Data: 412a
->         Capabilities: [e0] PCI Advanced Features
->                 AFCap: TP+ FLR+
->                 AFCtrl: FLR-
->                 AFStatus: TP-
->         Kernel driver in use: e1000e
-> 
-> dmesg for the working laptop:
-> [    0.936973] e1000e: Intel(R) PRO/1000 Network Driver - 1.3.10-k2
-> [    0.936975] e1000e: Copyright(c) 1999 - 2011 Intel Corporation.
-> [    0.937013] e1000e 0000:00:19.0: PCI INT A -> GSI 22 (level, low) -> IRQ 22
-> [    0.937024] e1000e 0000:00:19.0: setting latency timer to 64
-> [    0.937133] e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
-> [    1.146345] e1000e 0000:00:19.0: eth0: (PCI Express:2.5GT/s:Width x1) 00:21:70:fb:7a:00
-> [    1.146348] e1000e 0000:00:19.0: eth0: Intel(R) PRO/1000 Network Connection
-> [    1.146375] e1000e 0000:00:19.0: eth0: MAC: 7, PHY: 8, PBA No: 3002FF-0FF
-> [   19.568318] e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
-> [   19.624124] e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
-> 
-> The only thing I understand so far is that my NIC seems to be stuck in D3...
-> 
-> Lucas
-> 
+Perfect!  Exactly what I needed: thanks!
 
-
+--Bob
