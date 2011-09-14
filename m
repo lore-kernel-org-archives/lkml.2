@@ -1,76 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751939Ab1INHlt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 03:41:49 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:35514 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751154Ab1INHlr (ORCPT
+	id S1752181Ab1INHms (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 03:42:48 -0400
+Received: from smtprelay-b22.telenor.se ([195.54.99.213]:41010 "EHLO
+	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751154Ab1INHmr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 03:41:47 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 14 Sep 2011 16:40:45 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
-        Michal Hocko <mhocko@suse.cz>, Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
+	Wed, 14 Sep 2011 03:42:47 -0400
+X-SENDER-IP: [85.230.168.63]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlxSADBacE5V5qg/Omdsb2JhbABBp3cLAQEBASEWM4FTAQEEATocIxAIA0YUJQoaiAoCArUqDoYAYASYaIt+
+X-IronPort-AV: E=Sophos;i="4.68,379,1312149600"; 
+   d="scan'208";a="1759234736"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Wed, 14 Sep 2011 09:46:21 +0200
+To: Javier Martinez Canillas <martinez.javier@gmail.com>
+Cc: Kevin McNeely <kev@cypress.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [patch 04/11] mm: memcg: per-priority per-zone hierarchy scan
- generations
-Message-Id: <20110914164045.f8074468.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110914055634.GA28051@redhat.com>
-References: <1315825048-3437-1-git-send-email-jweiner@redhat.com>
-	<1315825048-3437-5-git-send-email-jweiner@redhat.com>
-	<20110913192759.ff0da031.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110913110301.GB18886@redhat.com>
-	<20110914095504.30fca5d0.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110914055634.GA28051@redhat.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH V2 1/3] Input: cyttsp - Cypress TTSP capacitive
+ multi-touch screen support
+Message-ID: <20110914074621.GA3582@polaris.bitmath.org>
+References: <1315029042-27513-1-git-send-email-martinez.javier@gmail.com>
+ <1315029042-27513-2-git-send-email-martinez.javier@gmail.com>
+ <20110913082448.GA5046@polaris.bitmath.org>
+ <CAAwP0s0FvkzTUo5kAZE_pd_8u-znDvoLks74gf8+75cUF0aM2g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAAwP0s0FvkzTUo5kAZE_pd_8u-znDvoLks74gf8+75cUF0aM2g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Sep 2011 07:56:34 +0200
-Johannes Weiner <jweiner@redhat.com> wrote:
-
-> On Wed, Sep 14, 2011 at 09:55:04AM +0900, KAMEZAWA Hiroyuki wrote:
-> > On Tue, 13 Sep 2011 13:03:01 +0200
-> > Johannes Weiner <jweiner@redhat.com> wrote:
-> No, the hierarchy iteration in shrink_zone() is done after a single
-> memcg, which is equivalent to the old code: scan all zones at all
-> priority levels from a memcg, then move on to the next memcg.  This
-> also works because of the per-zone per-priority last_scanned_child:
+> > Compared to the staging version you sent earlier, this version seems
+> > to be a step back towards the original version regarding the MT
+> > implementation. Is this the right patch?
 > 
-> 	for each priority
-> 	  for each zone
-> 	    mem = mem_cgroup_iter(root)
-> 	    scan(mem)
+> Hello Henrik,
 > 
-> priority-12 + zone-1 will yield memcg-1.  priority-12 + zone-2 starts
-> at its own last_scanned_child, so yields memcg-1 as well, etc.  A
-> second reclaimer that comes in with priority-12 + zone-1 will receive
-> memcg-2 for scanning.  So there is no change in behaviour for limit
-> reclaim.
-> 
-ok, thanks.
+> Yes it is the right patch, or at least the patch I meant to send. The
+> staging version I send earlier didn't support multi-touch protocol
+> type A.
 
-> > If so, I need to abandon node-selection-logic for reclaim-by-limit
-> > and nodemask-for-memcg which shows me very good result. 
-> > I'll be sad ;)
-> 
-> With my clarification, do you still think so?
-> 
+I see - the cyttsp_xydata struct seems to be the old version,
+though. Any particular reason for that? Also, the similarity to the
+problem found here, https://lkml.org/lkml/2011/8/25/516, suggests your
+16 tracking ids could be mapped directly to slots instead, using the
+example code. It ought to reduce the present patch significantly.
 
-No. Thank you. 
-
-Regards,
--Kame
-
+Thanks,
+Henrik
