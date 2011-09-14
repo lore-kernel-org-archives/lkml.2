@@ -1,77 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756656Ab1INOJd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 10:09:33 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:8507
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753821Ab1INOJb (ORCPT
+	id S1756653Ab1INOMK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 10:12:10 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:35061 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754489Ab1INOMI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 10:09:31 -0400
-X-SpamScore: 1
-X-BigFish: VPS1(zzzz1202hzz8275bh8275dhz32i668h839h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LRIN9A-01-GNL-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: <linux-omap@vger.kernel.org>
-CC: Joerg Roedel <joerg.roedel@amd.com>, Ohad Ben-Cohen <ohad@wizery.com>,
-        <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] iommu/omap: Fix build error with !IOMMU_SUPPORT
-Date: Wed, 14 Sep 2011 16:07:39 +0200
-Message-ID: <1316009259-18052-1-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.4.1
+	Wed, 14 Sep 2011 10:12:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+In-Reply-To: <4E70955D.8050106@metafoo.de>
+References: <1315997270-14332-1-git-send-email-keguang.zhang@gmail.com>
+	<4E70955D.8050106@metafoo.de>
+Date: Wed, 14 Sep 2011 22:12:06 +0800
+Message-ID: <CAJhJPsV1sKOSbpn3bQa2FCTM+rm8LeuMEt5SkqXscV8xmZcr+g@mail.gmail.com>
+Subject: Re: [PATCH] MIPS: Add basic support for Loongson1B
+From: Kelvin Cheung <keguang.zhang@gmail.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        ralf@linux-mips.org, wuzhangjin@gmail.com, r0bertz@gentoo.org,
+        chenj@lemote.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Without this patch it is possible to select the VIDEO_OMAP3
-driver which then selects OMAP_IOVMM. But the omap iommu
-driver is not compiled without IOMMU_SUPPORT enabled. Fix
-that by forcing OMAP_IOMMU and OMAP_IOVMM are enabled before
-VIDEO_OMAP3 can be selected.
+2011/9/14, Lars-Peter Clausen <lars@metafoo.de>:
+> On 09/14/2011 12:47 PM, keguang.zhang@gmail.com wrote:
+>> From: Zhang, Keguang <keguang.zhang@gmail.com>
+>>
+>> This patch adds basic support for Loongson1B
+>> including serial, timer and interrupt handler.
+>>
+>> Loongson 1B is a 32-bit SoC designed by Institute of
+>> Computing Technology (ICT), Chinese Academy of Sciences (CAS),
+>> which implements the MIPS32 release 2 instruction set.
+>>
+>> Signed-off-by: Zhang, Keguang <keguang.zhang@gmail.com>
+>> ---
+>>
+>> [...
+>> diff --git a/arch/mips/include/asm/mach-loongson1/regs-clk.h
+>> b/arch/mips/include/asm/mach-loongson1/regs-clk.h
+>> new file mode 100644
+>> index 0000000..acffd4f
+>> --- /dev/null
+>> +++ b/arch/mips/include/asm/mach-loongson1/regs-clk.h
+>> @@ -0,0 +1,32 @@
+>> +/*
+>> + * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
+>> + *
+>> + * Loongson1 Clock Register Definitions.
+>> + *
+>> + * This program is free software; you can redistribute  it and/or modify
+>> it
+>> + * under  the terms of  the GNU General  Public License as published by
+>> the
+>> + * Free Software Foundation;  either version 2 of the  License, or (at
+>> your
+>> + * option) any later version.
+>> + */
+>> +
+>> +#ifndef __ASM_MACH_LOONGSON1_REGS_CLK_H
+>> +#define __ASM_MACH_LOONGSON1_REGS_CLK_H
+>> +
+>> +#define LOONGSON1_CLK_REG(x)		((void __iomem *)(LOONGSON1_CLK_BASE +
+>> (x)))
+>> +
+>> +#define	CLK_PLL_FREQ			LOONGSON1_CLK_REG(0x0)
+>> +#define	CLK_PLL_DIV			LOONGSON1_CLK_REG(0x4)
+>> +
+>> +/* Clock PLL Divisor Register Bits */
+>> +#define	DIV_DC_EN			(0x1 << 31)
+>> +#define DIV_DC				(0x1f << 26)
+>> +#define	DIV_CPU_EN			(0x1 << 25)
+>> +#define DIV_CPU				(0x1f << 20)
+>> +#define	DIV_DDR_EN			(0x1 << 19)
+>> +#define DIV_DDR				(0x1f << 14)
+>> +
+>> +#define	DIV_DC_SHIFT			(26)
+>> +#define	DIV_CPU_SHIFT			(20)
+>> +#define	DIV_DDR_SHIFT			(14)
+>> +
+>
+> In my opinion these defines should be namespaced, same goes for the other
+> register definitions.
 
-Cc: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: iommu@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
----
- drivers/iommu/Kconfig       |    4 ++--
- drivers/media/video/Kconfig |    3 +--
- 2 files changed, 3 insertions(+), 4 deletions(-)
+I will take care about this.
 
-diff --git a/drivers/iommu/Kconfig b/drivers/iommu/Kconfig
-index d901930..ae46776 100644
---- a/drivers/iommu/Kconfig
-+++ b/drivers/iommu/Kconfig
-@@ -114,8 +114,8 @@ config OMAP_IOMMU
- 	select IOMMU_API
- 
- config OMAP_IOVMM
--	tristate
--	select OMAP_IOMMU
-+	tristate "OMAP IO Virtual Memory Manager Support"
-+	depends on OMAP_IOMMU
- 
- config OMAP_IOMMU_DEBUG
-        tristate "Export OMAP IOMMU/IOVMM internals in DebugFS"
-diff --git a/drivers/media/video/Kconfig b/drivers/media/video/Kconfig
-index 6a25fad..6201069 100644
---- a/drivers/media/video/Kconfig
-+++ b/drivers/media/video/Kconfig
-@@ -763,8 +763,7 @@ source "drivers/media/video/m5mols/Kconfig"
- 
- config VIDEO_OMAP3
- 	tristate "OMAP 3 Camera support (EXPERIMENTAL)"
--	select OMAP_IOVMM
--	depends on VIDEO_V4L2 && I2C && VIDEO_V4L2_SUBDEV_API && ARCH_OMAP3 && EXPERIMENTAL
-+	depends on OMAP_IOVMM && VIDEO_V4L2 && I2C && VIDEO_V4L2_SUBDEV_API && ARCH_OMAP3 && EXPERIMENTAL
- 	---help---
- 	  Driver for an OMAP 3 camera controller.
- 
+>> +#endif /* __ASM_MACH_LOONGSON1_REGS_CLK_H */
+>> [...]
+>> diff --git a/arch/mips/loongson1/Platform b/arch/mips/loongson1/Platform
+>> new file mode 100644
+>> index 0000000..92804c6
+>> --- /dev/null
+>> +++ b/arch/mips/loongson1/Platform
+>> @@ -0,0 +1,7 @@
+>> +cflags-$(CONFIG_CPU_LOONGSON1)  += \
+>> +	$(call cc-option,-march=mips32r2,-mips32r2 -U_MIPS_ISA
+>> -D_MIPS_ISA=_MIPS_ISA_MIPS32) \
+>> +	-Wa,-mips32r2 -Wa,--trap
+>> +
+>> +platform-$(CONFIG_MACH_LOONGSON1)	+= loongson1/
+>> +cflags-$(CONFIG_MACH_LOONGSON1)		+=
+>> -I$(srctree)/arch/mips/include/asm/mach-loongson1
+>> +load-$(CONFIG_LOONGSON1_LS1B)		+= 0xffffffff80010000
+>> diff --git a/arch/mips/loongson1/common/Makefile
+>> b/arch/mips/loongson1/common/Makefile
+>> new file mode 100644
+>> index 0000000..b279770
+>> --- /dev/null
+>> +++ b/arch/mips/loongson1/common/Makefile
+>> @@ -0,0 +1,5 @@
+>> +#
+>> +# Makefile for common code of loongson1 based machines.
+>> +#
+>> +
+>> +obj-y	+= clock.o irq.o platform.o prom.o reset.o setup.o
+>> diff --git a/arch/mips/loongson1/common/clock.c
+>> b/arch/mips/loongson1/common/clock.c
+>> new file mode 100644
+>> index 0000000..e854953
+>> --- /dev/null
+>> +++ b/arch/mips/loongson1/common/clock.c
+>> @@ -0,0 +1,164 @@
+>> +/*
+>> + * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
+>> + *
+>> + * This program is free software; you can redistribute  it and/or modify
+>> it
+>> + * under  the terms of  the GNU General  Public License as published by
+>> the
+>> + * Free Software Foundation;  either version 2 of the  License, or (at
+>> your
+>> + * option) any later version.
+>> + */
+>> +
+>> +#include <linux/module.h>
+>> +#include <linux/list.h>
+>> +#include <linux/mutex.h>
+>> +#include <linux/clk.h>
+>> +#include <linux/err.h>
+>> +#include <asm/clock.h>
+>> +#include <asm/time.h>
+>> +
+>> +#include <loongson1.h>
+>> +
+>> +static LIST_HEAD(clocks);
+>> +static DEFINE_MUTEX(clocks_mutex);
+>> +
+>> +struct clk *clk_get(struct device *dev, const char *name)
+>> +{
+>> +	struct clk *c;
+>> +	struct clk *ret = NULL;
+>> +
+>> +	mutex_lock(&clocks_mutex);
+>> +	list_for_each_entry(c, &clocks, node) {
+>> +		if (!strcmp(c->name, name)) {
+>> +			ret = c;
+>> +			break;
+>> +		}
+>> +	}
+>> +	mutex_unlock(&clocks_mutex);
+>> +
+>> +	return ret;
+>> +}
+>> +EXPORT_SYMBOL(clk_get);
+>> +
+>> +unsigned long clk_get_rate(struct clk *clk)
+>> +{
+>> +	return clk->rate;
+>> +}
+>> +EXPORT_SYMBOL(clk_get_rate);
+>> +
+>
+> Maybe use the generic clkdev implementation.
+>
+>> [...]
+>> diff --git a/arch/mips/loongson1/common/irq.c
+>> b/arch/mips/loongson1/common/irq.c
+>> new file mode 100644
+>> index 0000000..8a7287f
+>> --- /dev/null
+>> +++ b/arch/mips/loongson1/common/irq.c
+>> @@ -0,0 +1,132 @@
+>> +/*
+>> + * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
+>> + *
+>> + * Based on Copyright (C) 2009 Lemote Inc.
+>> + *
+>> + * This program is free software; you can redistribute  it and/or modify
+>> it
+>> + * under  the terms of  the GNU General  Public License as published by
+>> the
+>> + * Free Software Foundation;  either version 2 of the  License, or (at
+>> your
+>> + * option) any later version.
+>> + */
+>> +
+>> +#include <linux/interrupt.h>
+>> +#include <linux/irq.h>
+>> +#include <asm/irq_cpu.h>
+>> +
+>> +#include <loongson1.h>
+>> +#include <irq.h>
+>> +
+>> +static void loongson1_irq_ack(struct irq_data *d)
+>> +{
+>> +	unsigned int bit = (d->irq - LOONGSON1_IRQ_BASE) & 0x1f;
+>> +	unsigned int n = (d->irq - LOONGSON1_IRQ_BASE) >> 5;
+>> +
+>> +	__raw_writel(__raw_readl(INTC_INTCLR(n)) | (1 << bit), INTC_INTCLR(n));
+>> +}
+>> +
+>> +static void loongson1_irq_mask(struct irq_data *d)
+>> +{
+>> +	unsigned int bit = (d->irq - LOONGSON1_IRQ_BASE) & 0x1f;
+>> +	unsigned int n = (d->irq - LOONGSON1_IRQ_BASE) >> 5;
+>> +
+>> +	__raw_writel(__raw_readl(INTC_INTIEN(n)) & ~(1 << bit), INTC_INTIEN(n));
+>> +}
+>> +
+>> +static void loongson1_irq_mask_ack(struct irq_data *d)
+>> +{
+>> +	unsigned int bit = (d->irq - LOONGSON1_IRQ_BASE) & 0x1f;
+>> +	unsigned int n = (d->irq - LOONGSON1_IRQ_BASE) >> 5;
+>> +
+>> +	__raw_writel(__raw_readl(INTC_INTIEN(n)) & ~(1 << bit), INTC_INTIEN(n));
+>> +	__raw_writel(__raw_readl(INTC_INTCLR(n)) | (1 << bit), INTC_INTCLR(n));
+>> +}
+>> +
+>> +static void loongson1_irq_unmask(struct irq_data *d)
+>> +{
+>> +	unsigned int bit = (d->irq - LOONGSON1_IRQ_BASE) & 0x1f;
+>> +	unsigned int n = (d->irq - LOONGSON1_IRQ_BASE) >> 5;
+>> +
+>> +	__raw_writel(__raw_readl(INTC_INTIEN(n)) | (1 << bit), INTC_INTIEN(n));
+>> +}
+>> +
+>> +static struct irq_chip loongson1_irq_chip = {
+>> +	.name		= "LOONGSON1-INTC",
+>> +	.irq_ack	= loongson1_irq_ack,
+>> +	.irq_mask	= loongson1_irq_mask,
+>> +	.irq_mask_ack	= loongson1_irq_mask_ack,
+>> +	.irq_unmask	= loongson1_irq_unmask,
+>> +};
+>
+> looks like a perfect candidate for irq_chip_generic.
+>
+
+Thanks for your response.
+
 -- 
-1.7.4.1
-
-
+Best Regards!
+Kelvin
