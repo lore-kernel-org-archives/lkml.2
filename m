@@ -1,51 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756330Ab1INKRN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 06:17:13 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:54057 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756215Ab1INKRL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 06:17:11 -0400
-Message-ID: <4E707FBB.5030809@cn.fujitsu.com>
-Date: Wed, 14 Sep 2011 18:19:39 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1756348Ab1INKSr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 06:18:47 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:60825 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756269Ab1INKSq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Sep 2011 06:18:46 -0400
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v3 03/11] KVM: x86: retry non-page-table writing instruction
-References: <4E5C4C20.3000403@cn.fujitsu.com> <4E5C4C5C.8030602@cn.fujitsu.com> <4E6F34CF.1060302@redhat.com> <4E6F9FD2.4010407@cn.fujitsu.com> <4E707991.10705@redhat.com>
-In-Reply-To: <4E707991.10705@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-09-14 18:15:55,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-09-14 18:15:57,
-	Serialize complete at 2011-09-14 18:15:57
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CAC5umygS+viGcG2wAi=7vbjmiQB1jVgwKNAeZxDxB4WMC-teGg@mail.gmail.com>
+References: <1315990017-16912-1-git-send-email-per.forlin@linaro.org>
+	<1315990017-16912-3-git-send-email-per.forlin@linaro.org>
+	<CAC5umygS+viGcG2wAi=7vbjmiQB1jVgwKNAeZxDxB4WMC-teGg@mail.gmail.com>
+Date: Wed, 14 Sep 2011 12:18:45 +0200
+Message-ID: <CAJ0pr1-WiLDS-wdb1je81L=tk0TVCbH9eci2YZ=JBp+G7rZ0GQ@mail.gmail.com>
+Subject: Re: [PATCH v2 2/3] mmc: add module param to set fault injection attributes
+From: Per Forlin <per.forlin@linaro.org>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: linaro-dev@lists.linaro.org, Linus Walleij <linus.walleij@linaro.org>,
+        linux-mmc@vger.kernel.org, Chris Ball <cjb@laptop.org>,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/14/2011 05:53 PM, Avi Kivity wrote:
-> On 09/13/2011 09:24 PM, Xiao Guangrong wrote:
->> >>
->> >>  +static bool retry_instruction(struct x86_emulate_ctxt *ctxt,
->> >>  +                  unsigned long cr2,  int emulation_type)
->> >>  +{
->> >>  +    if (!vcpu->arch.mmu.direct_map&&   !mmu_is_nested(vcpu))
->> >>  +        gpa = kvm_mmu_gva_to_gpa_write(vcpu, cr2, NULL);
->> >
->> >  If mmu_is_nested() cr2 is an ngpa, we have to translate it to a gpa, no?
->> >
->>
->> Yeah, will fix it.
->>
->> And this bug also exists in the current code: it always uses L2 gpa to emulate
->> write operation.
-> 
-> Can you please send this fix separately, so it can be backported if needed?
-> 
+On 14 September 2011 12:05, Akinobu Mita <akinobu.mita@gmail.com> wrote:
+> 2011/9/14 Per Forlin <per.forlin@linaro.org>:
+>
+>> +#ifdef CONFIG_FAIL_MMC_REQUEST
+>> +
+>> +static DECLARE_FAULT_ATTR(fail_default_attr);
+>> +static char *fail_request;
+>
+> This is not used anymore and ...
+>
+Yes of course. Will remove it.
 
-Sure, i will do it as soon as possible. :-)
+>> +static int fail_mmc_request_param_set(const char *val,
+>> +                                     const struct kernel_param *kp)
+>> +{
+>> +       setup_fault_attr(&fail_default_attr, (char *) val);
+>> +       return 0;
+>> +}
+>> +
+>> +static const struct kernel_param_ops fail_mmc_request_param_ops = {
+>> +       .set = fail_mmc_request_param_set
+>> +};
+>> +module_param_cb(fail_request, &fail_mmc_request_param_ops,
+>> +               &fail_request, 0);
+>
+> you can change this third parameter to NULL.
+>
+Absolutely..
+
+Thanks,
+Per
