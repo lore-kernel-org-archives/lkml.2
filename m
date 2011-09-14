@@ -1,59 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751255Ab1INFUJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 01:20:09 -0400
-Received: from mga02.intel.com ([134.134.136.20]:53444 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750984Ab1INFUH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 01:20:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="48190416"
-Subject: Re: [PATCH] serial: sh-sci: don't filter on DMA device, use only
- channel ID
-From: Vinod Koul <vinod.koul@intel.com>
-To: Paul Mundt <lethal@linux-sh.org>, alan@linux.intel.com
-Cc: "g.liakhovetski@gmx.de" <g.liakhovetski@gmx.de>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        "magnus.damm@gmail.com" <magnus.damm@gmail.com>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "damm@opensource.se" <damm@opensource.se>
-In-Reply-To: <1315510263.26251.296.camel@vkoul-udesk3>
-References: <Pine.LNX.4.64.1109051002400.1112@axis700.grange>
-	 <1315228408.26251.75.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1109051532220.1112@axis700.grange>
-	 <1315233788.26251.163.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1109051700030.1112@axis700.grange>
-	 <1315235335.26251.194.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1109051716530.1112@axis700.grange>
-	 <438BB0150E931F4B9CE701519A4463010871804A4B@bgsmsx502.gar.corp.intel.com>
-	 <alpine.DEB.2.00.1109072048310.30407@axis700.grange>
-	 <438BB0150E931F4B9CE701519A4463010871804A4F@bgsmsx502.gar.corp.intel.com>
-	 <20110908012119.GJ22142@linux-sh.org>
-	 <1315510263.26251.296.camel@vkoul-udesk3>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 14 Sep 2011 10:46:50 +0530
-Message-ID: <1315977410.26251.476.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1751370Ab1INFXT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 01:23:19 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:38119 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750984Ab1INFXS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Sep 2011 01:23:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <4E69FEC9.2080204@suse.cz>
+References: <1314234210-11090-1-git-send-email-lacombar@gmail.com>
+	<4E69FEC9.2080204@suse.cz>
+Date: Wed, 14 Sep 2011 01:17:10 -0400
+Message-ID: <CACqU3MUFyn_jh2pN4GLENqcGVUzAwcMJUR_WLY2EtqOhMheceQ@mail.gmail.com>
+Subject: Re: [PATCH] Kbuild: append missing-syscalls to the default target list
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-09-09 at 01:01 +0530, Vinod Koul wrote:
-> On Thu, 2011-09-08 at 10:21 +0900, Paul Mundt wrote:
-> > On Thu, Sep 08, 2011 at 03:07:53AM +0530, Koul, Vinod wrote:
-> > > On Wed, 2011-09-07 at 22:01 +0200, Guennadi Liakhovetski wrote:
-> 
-> I relooked at the patch, since the filtering is already done in
-> your .alloc_chan_resources, (which should be fixed when we fix
-> filtering), I am going to apply this patch
-Since this is for serial driver, I can carry this patch with ACK from
-Alan or Alan can take this patch with Ack from me
+Hi,
+
+2011/9/9 Michal Marek <mmarek@suse.cz>:
+> On 25.8.2011 03:03, Arnaud Lacombe wrote:
+>> This avoid an extra make invocation on `prepare0'.
+>>
+>> Signed-off-by: Arnaud Lacombe <lacombar@gmail.com>
+>> ---
+>>  Kbuild   |    4 +++-
+>>  Makefile |    1 -
+>>  2 files changed, 3 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/Kbuild b/Kbuild
+>> index 2114113..1a2eb32 100644
+>> --- a/Kbuild
+>> +++ b/Kbuild
+>> @@ -88,10 +88,12 @@ $(obj)/$(offsets-file): arch/$(SRCARCH)/kernel/asm-offsets.s Kbuild
+>>  # 3) Check for missing system calls
+>>  #
+>>
+>> +always += missing-syscalls
+>> +targets += missing-syscalls
+>> +
+>>  quiet_cmd_syscalls = CALL    $<
+>>        cmd_syscalls = $(CONFIG_SHELL) $< $(CC) $(c_flags)
+>
+> checksyscalls.sh needs to depend on generated/asm-offsets.h, otherwise a
+> parallel build will fail.
+>
+true.
+
+This:
+
+diff --git a/Kbuild b/Kbuild
+index 1a2eb32..4caab4f 100644
+--- a/Kbuild
++++ b/Kbuild
+@@ -94,7 +94,7 @@ targets += missing-syscalls
+ quiet_cmd_syscalls = CALL    $<
+       cmd_syscalls = $(CONFIG_SHELL) $< $(CC) $(c_flags)
+
+-missing-syscalls: scripts/checksyscalls.sh FORCE
++missing-syscalls: scripts/checksyscalls.sh $(offsets-file) FORCE
+        $(call cmd,syscalls)
+
+ # Keep these two files during make clean
 
 
--- 
-~Vinod
+should do the job.
 
+ - Arnaud
