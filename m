@@ -1,143 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757310Ab1INSee (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 14:34:34 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:45165 "HELO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755834Ab1INSee convert rfc822-to-8bit (ORCPT
+	id S1757329Ab1INSf0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 14:35:26 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:50712 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755834Ab1INSfZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 14:34:34 -0400
-Message-ID: <4E70F3C9.2010202@arm.com>
-Date: Wed, 14 Sep 2011 19:34:49 +0100
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+	Wed, 14 Sep 2011 14:35:25 -0400
+Date: Wed, 14 Sep 2011 14:35:21 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+cc: linux-arm-kernel@lists.infradead.org
+Subject: [PATCH/RFC] mm: add vm_area_add_early()
+Message-ID: <alpine.LFD.2.00.1109141427340.20358@xanadu.home>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
-        "jamie@jamieiles.com" <jamie@jamieiles.com>,
-        "b-cousson@ti.com" <b-cousson@ti.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH 5/5] ARM: gic: add OF based initialization
-References: <1316017900-19918-1-git-send-email-robherring2@gmail.com> <1316017900-19918-6-git-send-email-robherring2@gmail.com> <4E70E88E.4090503@arm.com> <4E70EB1F.4060000@gmail.com>
-In-Reply-To: <4E70EB1F.4060000@gmail.com>
-X-Enigmail-Version: 1.2.1
-X-OriginalArrivalTime: 14 Sep 2011 18:34:25.0878 (UTC) FILETIME=[EE200760:01CC730C]
-X-MC-Unique: 111091419342901201
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rob,
 
-On 14/09/11 18:57, Rob Herring wrote:
-> Marc,
-> 
-> On 09/14/2011 12:46 PM, Marc Zyngier wrote:
->> On 14/09/11 17:31, Rob Herring wrote:
->>> From: Rob Herring <rob.herring@calxeda.com>
->>>
->>> This adds gic initialization using device tree data. The initialization
->>> functions are intended to be called by a generic OF interrupt
->>> controller parsing function once the right pieces are in place.
->>>
->>> PPIs are handled using 3rd cell of interrupts properties to specify the cpu
->>> mask the PPI is assigned to.
->>>
->>> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
->>> ---
->>>  Documentation/devicetree/bindings/arm/gic.txt |   53 ++++++++++++++++++++++++
->>>  arch/arm/common/gic.c                         |   55 +++++++++++++++++++++++--
->>>  arch/arm/include/asm/hardware/gic.h           |   10 +++++
->>>  3 files changed, 114 insertions(+), 4 deletions(-)
->>>  create mode 100644 Documentation/devicetree/bindings/arm/gic.txt
->>>
->>> diff --git a/Documentation/devicetree/bindings/arm/gic.txt b/Documentation/devicetree/bindings/arm/gic.txt
->>> new file mode 100644
->>> index 0000000..6c513de
->>> --- /dev/null
->>> +++ b/Documentation/devicetree/bindings/arm/gic.txt
->>> @@ -0,0 +1,53 @@
->>> +* ARM Generic Interrupt Controller
->>> +
->>> +ARM SMP cores are often associated with a GIC, providing per processor
->>> +interrupts (PPI), shared processor interrupts (SPI) and software
->>> +generated interrupts (SGI).
->>> +
->>> +Primary GIC is attached directly to the CPU and typically has PPIs and SGIs.
->>> +Secondary GICs are cascaded into the upward interrupt controller and do not
->>> +have PPIs or SGIs.
->>> +
->>> +Main node required properties:
->>> +
->>> +- compatible : should be one of:
->>> +	"arm,cortex-a9-gic"
->>> +	"arm,arm11mp-gic"
->>> +- interrupt-controller : Identifies the node as an interrupt controller
->>> +- #interrupt-cells : Specifies the number of cells needed to encode an
->>> +  interrupt source.  The type shall be a <u32> and the value shall be 3.
->>> +
->>> +  The 1st cell is the interrupt number. 0-15 are reserved for SGIs. 16-31 are
->>> +  for PPIs.
->>> +
->>> +  The 2nd cell is the level-sense information, encoded as follows:
->>> +                    1 = low-to-high edge triggered
->>> +                    2 = high-to-low edge triggered
->>> +                    4 = active high level-sensitive
->>> +                    8 = active low level-sensitive
->>> +
->>> +  Only values of 1 and 4 are valid for GIC 1.0 spec.
->>> +
->>> +  The 3rd cell contains the mask of the cpu number for the interrupt source.
->>> +  The cpu mask is only valid for PPIs and shall be 0 for SPIs. This value shall
->>> +  be 0 for PPIs.
->>      ^^^^^^^^^^^^^
->>
->> Typo here ? The way I understand it, it should read "For PPIs, this
->> value shall be the mask of the possible CPU numbers for the interrupt
->> source" (or something to similar effect...).
->>
-> 
-> Cut and paste error. This sentence goes in the previous paragraph. What
-> I meant is the 2nd cell should contain 0 for PPIs as you cannot set the
-> edge/level on PPIs (that is always true, right?). I probably should also
-> add 0 in the list of values.
+The existing vm_area_register_early() allows for early vmalloc space
+allocation.  However upcoming cleanups in the ARM architecture require
+that some fixed locations in the vmalloc area be reserved also very early.
 
-Ah, right. It makes sense indeed. You're correct about PPIs polarity,
-this is defined by the hardware and cannot be configured. But it may be
-interesting to have the DT to reflect the way the hardware is actually
-configured (on the Cortex-A9, some PPIs are configured active-low, and
-others are rising-edge).
+The name "vm_area_register_early" would have been a good name for the
+reservation part without the allocation.  Since it is already in use with
+different semantics, let's create vm_area_add_early() instead.
 
-> I take it you are otherwise fine with this binding?
+Both vm_area_register_early() and vm_area_add_early() can be used together
+meaning that the former is now implemented using the later where it is
+ensured that no conflicting areas are added, but no attempt is made to
+make the allocation scheme in vm_area_register_early() more sophisticated.
+After all, you must know what you're doing when using those functions.
 
-I very much like the fact that it (or at least that's the way I
-understand it...) allows for a very compact expression of peripherals
-connected to PPIs.
+Signed-off-by: Nicolas Pitre <nicolas.pitre@linaro.org>
+---
 
-What I'd like to write is the following:
+Comments / ACKs appreciated.
 
-twd@1f000600 {
-	compatible = "arm,11mpcore-twd";
-	reg = <0x1f000600 0x100>;
-	interrupt-parent = <&intc>;
-	interrupt = <29 0 0xf>;
-}
-
-where 0xf would indicate that the TWD is connected to all four cores. Is
-that correct?
-
-Thanks,
-
-	M.
--- 
-Jazz is not dead. It just smells funny...
-
+diff --git a/include/linux/vmalloc.h b/include/linux/vmalloc.h
+index 9332e52ea8..e7d2cba995 100644
+--- a/include/linux/vmalloc.h
++++ b/include/linux/vmalloc.h
+@@ -130,6 +130,7 @@ extern long vwrite(char *buf, char *addr, unsigned long count);
+  */
+ extern rwlock_t vmlist_lock;
+ extern struct vm_struct *vmlist;
++extern __init void vm_area_add_early(struct vm_struct *vm);
+ extern __init void vm_area_register_early(struct vm_struct *vm, size_t align);
+ 
+ #ifdef CONFIG_SMP
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index 7ef0903058..bf20a0ff95 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -1118,6 +1118,31 @@ void *vm_map_ram(struct page **pages, unsigned int count, int node, pgprot_t pro
+ EXPORT_SYMBOL(vm_map_ram);
+ 
+ /**
++ * vm_area_add_early - add vmap area early during boot
++ * @vm: vm_struct to add
++ *
++ * This function is used to add fixed kernel vm area to vmlist before
++ * vmalloc_init() is called.  @vm->addr, @vm->size, and @vm->flags
++ * should contain proper values and the other fields should be zero.
++ *
++ * DO NOT USE THIS FUNCTION UNLESS YOU KNOW WHAT YOU'RE DOING.
++ */
++void __init vm_area_add_early(struct vm_struct *vm)
++{
++	struct vm_struct *tmp, **p;
++
++	for (p = &vmlist; (tmp = *p) != NULL; p = &tmp->next) {
++		if (tmp->addr >= vm->addr) {
++			BUG_ON(tmp->addr < vm->addr + vm->size);
++			break;
++		} else
++			BUG_ON(tmp->addr + tmp->size > vm->addr);
++	}
++	vm->next = *p;
++	*p = vm;
++}
++
++/**
+  * vm_area_register_early - register vmap area early during boot
+  * @vm: vm_struct to register
+  * @align: requested alignment
+@@ -1139,8 +1164,7 @@ void __init vm_area_register_early(struct vm_struct *vm, size_t align)
+ 
+ 	vm->addr = (void *)addr;
+ 
+-	vm->next = vmlist;
+-	vmlist = vm;
++	vm_area_add_early(vm);
+ }
+ 
+ void __init vmalloc_init(void)
