@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756278Ab1INKPb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 06:15:31 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:45131 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755990Ab1INKPa convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@suse.com:6:1>);
-	Wed, 14 Sep 2011 06:15:30 -0400
-Message-Id: <4E709ADE0200007800056002@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Wed, 14 Sep 2011 11:15:26 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
-Cc: <jaxboe@fusionio.com>, "Jeremy Fitzhardinge" <jeremy@goop.org>,
-        <hch@infradead.org>, "Jan Kara" <jack@suse.cz>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: Help with implementing some form of barriers in 3.0
-	 kernels.
-References: <20110907174832.GN32190@dumpdata.com>
- <4E6F50170200007800055CF5@nat28.tlf.novell.com>
- <20110914085913.GB25628@phenom.oracle.com>
- <4E708C240200007800055FDF@nat28.tlf.novell.com>
- <20110914093019.GA15866@phenom.oracle.com>
-In-Reply-To: <20110914093019.GA15866@phenom.oracle.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1756330Ab1INKRN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 06:17:13 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:54057 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1756215Ab1INKRL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Sep 2011 06:17:11 -0400
+Message-ID: <4E707FBB.5030809@cn.fujitsu.com>
+Date: Wed, 14 Sep 2011 18:19:39 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v3 03/11] KVM: x86: retry non-page-table writing instruction
+References: <4E5C4C20.3000403@cn.fujitsu.com> <4E5C4C5C.8030602@cn.fujitsu.com> <4E6F34CF.1060302@redhat.com> <4E6F9FD2.4010407@cn.fujitsu.com> <4E707991.10705@redhat.com>
+In-Reply-To: <4E707991.10705@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-09-14 18:15:55,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-09-14 18:15:57,
+	Serialize complete at 2011-09-14 18:15:57
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 14.09.11 at 11:30, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
->> >     [v1: Added some extra functions, and other cases]
->> 
->> Ah, yes, of course - Jan probably didn't pay attention because in our
->> variant of the driver these functions never got removed.
+On 09/14/2011 05:53 PM, Avi Kivity wrote:
+> On 09/13/2011 09:24 PM, Xiao Guangrong wrote:
+>> >>
+>> >>  +static bool retry_instruction(struct x86_emulate_ctxt *ctxt,
+>> >>  +                  unsigned long cr2,  int emulation_type)
+>> >>  +{
+>> >>  +    if (!vcpu->arch.mmu.direct_map&&   !mmu_is_nested(vcpu))
+>> >>  +        gpa = kvm_mmu_gva_to_gpa_write(vcpu, cr2, NULL);
+>> >
+>> >  If mmu_is_nested() cr2 is an ngpa, we have to translate it to a gpa, no?
+>> >
+>>
+>> Yeah, will fix it.
+>>
+>> And this bug also exists in the current code: it always uses L2 gpa to emulate
+>> write operation.
 > 
-> <nods> Which is OK - but you might want to migrate in the the 
-> 'feature-write-flush'
+> Can you please send this fix separately, so it can be backported if needed?
+> 
 
-We really have both. I just never removed the barrier one.
-
-Jan
-
+Sure, i will do it as soon as possible. :-)
