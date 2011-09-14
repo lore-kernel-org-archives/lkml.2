@@ -1,47 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756145Ab1INJrH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 05:47:07 -0400
-Received: from lucidpixels.com ([72.73.18.11]:58206 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755747Ab1INJrF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 05:47:05 -0400
-Date: Wed, 14 Sep 2011 05:47:04 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: Lin Ming <mlin@ss.pku.edu.cn>
-cc: linux-kernel@vger.kernel.org, Alan Piszcz <ap@solarrain.com>,
-        "Li, Shaohua" <shaohua.li@intel.com>, Andrew Morton <akpm@google.com>
-Subject: Re: 3.0.1: pagevec_lookup+0x1d/0x30, SLAB issues?
-In-Reply-To: <CAF1ivSZQ=KKC0gAk93eMVwLSCbeEWr=k6YszuE=sb1+Ue521vw@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1109140543590.29782@p34.internal.lan>
-References: <alpine.DEB.2.02.1109111815520.19558@p34.internal.lan> <alpine.DEB.2.02.1109111837200.19558@p34.internal.lan> <CAF1ivSZQ=KKC0gAk93eMVwLSCbeEWr=k6YszuE=sb1+Ue521vw@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1756158Ab1INJtn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 05:49:43 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:63665 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755747Ab1INJtl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Sep 2011 05:49:41 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+In-Reply-To: <CABb+yY36xmq3mKpWOn+ZZuvPehRkSGe720WrQtMie2C-udgZyQ@mail.gmail.com>
+References: <1315374075-15479-1-git-send-email-Baohua.Song@csr.com>
+ <438BB0150E931F4B9CE701519A4463010871804A46@bgsmsx502.gar.corp.intel.com>
+ <CAGsJ_4x4S+8d3xS+QTrjDpoxcHo3p7qArd7yFr=+h1vxSRvEpA@mail.gmail.com>
+ <438BB0150E931F4B9CE701519A4463010871804A48@bgsmsx502.gar.corp.intel.com>
+ <CAGsJ_4yeovNP=6CKTafbxrBTrYQ42B9yvAOM8gM_bYqD6mTnUw@mail.gmail.com>
+ <CABb+yY1=P=D3GFFxMOUM0a2yWCiAHNqwVU0a--t+pJnUhqKHKA@mail.gmail.com>
+ <CABb+yY3F+DMn2SxeO0chjpiMBkgLvSK5EVYMdhQsfQoZNZ4_7Q@mail.gmail.com>
+ <CAGsJ_4x0isAUgmTkRavUC6p3K38ho70A+q8Pp2cMLnxbgMEL7Q@mail.gmail.com> <CABb+yY36xmq3mKpWOn+ZZuvPehRkSGe720WrQtMie2C-udgZyQ@mail.gmail.com>
+From: Barry Song <21cnbao@gmail.com>
+Date: Wed, 14 Sep 2011 17:49:20 +0800
+Message-ID: <CAGsJ_4wNFjcvrF2=HbD3xAwpySVaHoB0hMfqNXcYncuZNMca6Q@mail.gmail.com>
+Subject: Re: [PATCH] dmaengine: add CSR SiRFprimaII DMAC driver
+To: Jassi Brar <jassisinghbrar@gmail.com>
+Cc: "Koul, Vinod" <vinod.koul@intel.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "workgroup.linux@csr.com" <workgroup.linux@csr.com>,
+        "rongjun.ying@csr.com" <rongjun.ying@csr.com>,
+        "Baohua.Song@csr.com" <Baohua.Song@csr.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Wed, 14 Sep 2011, Lin Ming wrote:
-
-> On Mon, Sep 12, 2011 at 6:44 AM, Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
-> Hi, Justin
+2011/9/14 Jassi Brar <jassisinghbrar@gmail.com>:
+> On Wed, Sep 14, 2011 at 12:16 PM, Barry Song <21cnbao@gmail.com> wrote:
 >
-> There is a similar bug report at:
-> http://marc.info/?t=131594190600005&r=1&w=2
+>>> Anyways, every case can be easily expressed using the generic api
+>>> I proposed. See 'struct xfer_template' in https://lkml.org/lkml/2011/8/12/128
+>>>
+>>> Roughly speaking, the following should be done...
+>>> Client driver :-
+>>> **************
+>>> For a 'Rectangular' transfer (2d-dma.PNG) :-
+>>>      xfer_template.numf = Ylen;  /* height of rectangle */
+>>>      xfer_template.frame_size = 1;
+>>>      xfer_template.sgl[0].size = Xlen; /* width of rectangle */
+>>>      xfer_template.sgl[0].icg = start_addr_Y(n) - end_addr_Y(n-1);
+>>
+>> For prima2:
+>>
+>> xfer_template.numf = ylen + 1
+>> xfer_template.frame_size = 1;
+>> xfer_template.sgl[0].size = xlen;
+>> xfer_template.sgl[0].icg = dma_width - xlen;
+>>
+> All is same as I suggested except for 'numf'.
+> You might want to keep 'numf' same as well. Because the client
+> driver shouldn't need to know that the DMAC's register expect "+1" value.
+> Remember the client is supposed to be reusable over other DMACs as well.
+> So, rather in the DMAC driver, please do
+>    schan->ylen = xfer_template.numf + 1;
+
+clients should not know any thing like xlen, ylen, dma_width, which
+are all dmac driver cares. clients only need to know the generic xfer.
+here i am just listing the relationship between client and dmac driver
+to get the confirmation from you  and make sure i haven't
+misunderstood your api :-)
+
 >
-> The attached patch from Shaohua fixed the bug.
 >
-> Could you have a try it?
+>>> DMAC driver :-
+>>> ***************
+>>>      if (xfer_template.frame_size == 1) {
+>>>           /* rectangle */
+>>>           schan->xlen = xfer_template.sgl[0].size;
+>>>           schan->width = schan->xlen + xfer_template.sgl[0].icg;
+>>>      } else if (xfer_template.frame_size == 2 &&
+>>>                  xfer_template.numf == 1 &&
+>>>                  xfer_template.sgl[1].size == xfer_template.sgl[0].icg){
+>>>           /* a line and some */
+>>>           schan->xlen = xfer_template.sgl[0].size +  xfer_template.sgl[1].size.
+>>>           schan->width = xfer_template.sgl[0].size;
+>>>      } else {
+>>>           /* _Hardware_ doesn't support the transfer as such. *
+>>>           return -EINVAL;
+>>>      }
+>>>      schan->ylen = xfer_template.numf /* -1? */;
+>>>
+>>
+>> For prima2:
+>> xfer_template.frame_size is always 1, then
+>> schan->xlen = xfer_template.sgl[0].size;
+>> schan->width = schan->xlen + xfer_template.sgl[0].icg;
+>>
+> Ok, you don't need the 'else if' clause because as you said
+> {xlen > width} is not an option.
+> But you do need the other two checks, so that the DMAC driver
+> cleanly rejects any interleaved-format that it doesn't support.
+>
+> Point being, the clients and DMAC drivers are supposed to be
+> very 'promiscuous' - any Client could be 'riding' any DMAC ;)
+
+yes. of course.
+
 >
 
-Hi Lin/LKML,
-
-Can you please provide text patch files for what you want me to apply?
-I did read that e-mail thread and that could be the culprit, I will patch
-and apply as soon as someone points to to the patch locations :)
-
-Justin.
-
+-barry
