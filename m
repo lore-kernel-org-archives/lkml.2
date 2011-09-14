@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752154Ab1IOAck (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 20:32:40 -0400
-Received: from ozlabs.org ([203.10.76.45]:47731 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751519Ab1IOAci convert rfc822-to-8bit (ORCPT
+	id S1752182Ab1IOAd1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 20:33:27 -0400
+Received: from smh05.opentransfer.com ([98.130.1.173]:57517 "EHLO
+	smh05.opentransfer.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751719Ab1IOAd0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 20:32:38 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, akpm@linux-foundation.org,
-        Brian Swetland <swetland@google.com>, Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        davinci-linux-open-source 
-	<davinci-linux-open-source@linux.davincidsp.com>
-Subject: Re: [RFC 7/8] drivers: introduce rpmsg, a remote-processor messaging bus
-In-Reply-To: <CAK=WgbY0zMkHw9XHDKPEfVQZVRfGP=nMmyJgm6jD5FEkBZkMRQ@mail.gmail.com>
-References: <1308640714-17961-1-git-send-email-ohad@wizery.com> <1308640714-17961-8-git-send-email-ohad@wizery.com> <87liwu8u3q.fsf@rustcorp.com.au> <BANLkTi=7TBMqnEf2qustrmSaubtTam79Bw@mail.gmail.com> <CAK=WgbY0zMkHw9XHDKPEfVQZVRfGP=nMmyJgm6jD5FEkBZkMRQ@mail.gmail.com>
-User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
-Date: Thu, 15 Sep 2011 09:42:05 +0930
-Message-ID: <87d3f2hdey.fsf@rustcorp.com.au>
+	Wed, 14 Sep 2011 20:33:26 -0400
+X-Greylist: delayed 2884 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Sep 2011 20:33:26 EDT
+X-Opentransfer-Authenticated: cheryl.robson@aurorametro.com
+Message-ID: <20110914194518.zvwccuybz4g0wkss@webmail.opentransfer.com>
+Date: Wed, 14 Sep 2011 19:45:18 -0400
+From: upgradewebmail <cheryl.robson@aurorametro.com>
+Reply-to: upgradeweb1@hotmail.com
+To: undisclosed-recipients:;
+Subject: Dear 'WEB-MAIL ACCOUNT USER
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
+Content-Disposition: inline
 Content-Transfer-Encoding: 8BIT
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.4)
+X-Originating-IP: 198.36.222.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Sep 2011 21:38:43 +0300, Ohad Ben-Cohen <ohad@wizery.com> wrote:
-> Hi Rusty,
-> 
-> On Wed, Jun 22, 2011 at 1:46 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
-> > On Wed, Jun 22, 2011 at 5:42 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> >> On Tue, 21 Jun 2011 10:18:33 +0300, Ohad Ben-Cohen <ohad@wizery.com> wrote:
-> >>> +#define VIRTIO_ID_RPMSG              10 /* virtio remote processor messaging */
-> >>
-> >> I think you want 6.  Plan 9 jumped ahead to grab 9 :)
-> >
-> > 6 it is :)
-> 
-> Looking at the virtio-spec, it seems that 6 is taken by 'ioMemory'.
-> There's no indication for it in virtio_ids.h though, and the
-> virtio-spec has no appendix for this id, so maybe it's available after
-> all ?
-> 
-> If it is available, I'll take it for rpmsg, and will also update
-> virtio-spec appropriately. Otherwise, we'll settle on 7 ? :)
 
-7... numbers are cheap :)
 
-Cheers,
-Rusty.
+Dear 'WEB-MAIL ACCOUNT USER',
+
+We are currently upgrading our database and all account need to be verified.
+To complete your account activation with us,you are required to reply to this
+message and enter correctly the information's that is required from you.
+
+Fill in your User Name and Password in the space provided (********)You are
+required to reply to this e-mail within the next 48 hours.
+
+Failure to get back to us, your Web-mail account will be DE-activated from our
+database.
+
+FULL NAME;
+USER-NAME;
+PASSWORD;
+RE-TYPE PASSWORD;
+DATE OF BIRTH;
+Email.upgradeweb1@hotmail.com
+
+Thank you for using Web-mail Copyright 2011 � Web Team.
+19X45HANJ4453VXTM334M
+14-09-2011
+
+
