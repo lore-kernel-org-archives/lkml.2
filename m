@@ -1,45 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756041Ab1INJiP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 05:38:15 -0400
-Received: from www.linutronix.de ([62.245.132.108]:40782 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755747Ab1INJiM (ORCPT
+	id S1756079Ab1INJoD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 05:44:03 -0400
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:47438 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755747Ab1INJoA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 05:38:12 -0400
-Date: Wed, 14 Sep 2011 11:37:55 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Shan Hai <haishan.bai@gmail.com>,
-        Yong Zhang <yong.zhang0@gmail.com>
-Subject: Re: linux-next: build warning after merge of the tip tree
-In-Reply-To: <20110914163455.fcc47a7aba8604c690988473@canb.auug.org.au>
-Message-ID: <alpine.LFD.2.02.1109141137260.2723@ionos>
-References: <20110914163455.fcc47a7aba8604c690988473@canb.auug.org.au>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Wed, 14 Sep 2011 05:44:00 -0400
+From: Tao Ma <tm@tao.ma>
+To: linux-kernel@vger.kernel.org
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH RESEND] fs: Add device information for error output in __find_get_block_slow.
+Date: Wed, 14 Sep 2011 17:43:41 +0800
+Message-Id: <1315993421-6807-1-git-send-email-tm@tao.ma>
+X-Mailer: git-send-email 1.7.4.1
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 182.92.247.2 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Sep 2011, Stephen Rothwell wrote:
+From: Tao Ma <boyu.mt@taobao.com>
 
-> Hi all,
-> 
-> After merging the tip tree, today's linux-next build (powerpc allnoconfig)
-> produced this warning:
-> 
-> lib/atomic64.c: In function 'lock_addr':
-> lib/atomic64.c:42:2: warning: return from incompatible pointer type
-> 
-> Introduced by commit f59ca05871a0 ("locking, lib/atomic64: Annotate
-> atomic64_lock::lock as raw").  This function (which is declared to return
-> "spinlock_t *") is now returning "raw_spinlock_t *".
+In ext4 mailist[1], we got some report about errors in
+__find_get_block_slow, but the information is very limited.
+If the device information is given, we can know the name of
+the sick volume. Futhermore, we can get the corresponding
+status of that block(group, inode block etc) by analyzing
+the disk layout.
 
-My bad, it seems I picked the wrong version of the patch.
+[1] http://marc.info/?l=linux-ext4&m=131379831421147&w=2
+
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+---
+ fs/buffer.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
+
+diff --git a/fs/buffer.c b/fs/buffer.c
+index 1a80b04..6fe4ece 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -213,13 +213,16 @@ __find_get_block_slow(struct block_device *bdev, sector_t block)
+ 	 * elsewhere, don't buffer_error if we had some unmapped buffers
+ 	 */
+ 	if (all_mapped) {
++		char b[BDEVNAME_SIZE];
++
+ 		printk("__find_get_block_slow() failed. "
+ 			"block=%llu, b_blocknr=%llu\n",
+ 			(unsigned long long)block,
+ 			(unsigned long long)bh->b_blocknr);
+ 		printk("b_state=0x%08lx, b_size=%zu\n",
+ 			bh->b_state, bh->b_size);
+-		printk("device blocksize: %d\n", 1 << bd_inode->i_blkbits);
++		printk("device %s blocksize: %d\n", bdevname(bdev, b),
++			1 << bd_inode->i_blkbits);
+ 	}
+ out_unlock:
+ 	spin_unlock(&bd_mapping->private_lock);
+-- 
+1.7.0.4
+
