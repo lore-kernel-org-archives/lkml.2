@@ -1,67 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932823Ab1INNvZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 09:51:25 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:46073 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752481Ab1INNvX (ORCPT
+	id S1756599Ab1INNye (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 09:54:34 -0400
+Received: from mail-vw0-f42.google.com ([209.85.212.42]:41185 "EHLO
+	mail-vw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751627Ab1INNyd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 09:51:23 -0400
-Subject: Re: [RFC][PATCH 0/3] delayed wakeup list
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        David Miller <davem@davemloft.net>, Mike Galbraith <efault@gmx.de>
-In-Reply-To: <20110914133034.687048806@chello.nl>
-References: <20110914133034.687048806@chello.nl>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 14 Sep 2011 15:51:23 +0200
-Message-ID: <1316008283.2361.28.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	Wed, 14 Sep 2011 09:54:33 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110914113134.GS15003@mails.so.argh.org>
+References: <1315997270-14332-1-git-send-email-keguang.zhang@gmail.com>
+	<20110914113134.GS15003@mails.so.argh.org>
+Date: Wed, 14 Sep 2011 21:54:32 +0800
+Message-ID: <CAJhJPsUW+4fpJUSR07LBO=FDCyAw-KHKaZCt8G+sHCJtjts0oA@mail.gmail.com>
+Subject: Re: [PATCH] MIPS: Add basic support for Loongson1B
+From: Kelvin Cheung <keguang.zhang@gmail.com>
+To: Andreas Barth <aba@not.so.argh.org>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        ralf@linux-mips.org, wuzhangjin@gmail.com, r0bertz@gentoo.org,
+        chenj@lemote.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 14 septembre 2011 à 15:30 +0200, Peter Zijlstra a écrit :
-> This patch-set provides the infrastructure to delay/batch task wakeups.
-> 
-> This is useful for locking primitives that can effect multiple wakeups
-> per operation and want to avoid lock internal lock contention by
-> delaying the wakeups until we've released the lock internal locks.
-> 
-> Patch 2 converts futexes
-> Patch 3 converts sysv sems, and is broken
-> 
-> [ I've been staring at patch 3 way too long, so I thought I'd post it just
->   to get a few more eyes on it.. ]
-> 
-> Alternatively it can be used to avoid issuing multiple wakeups, and
-> thus save a few cycles, in packet processing. Queue all target tasks
-> and wakeup once you've processed all packets. That way you avoid
-> waking the target task multiple times if there were multiple packets
-> for the same task.
-> 
-> No actual such usage yet, but ISTR talking to some net folks a long while back
-> about this, is there still interest, Dave, Eric?
-> 
+2011/9/14, Andreas Barth <aba@not.so.argh.org>:
+> * keguang.zhang@gmail.com (keguang.zhang@gmail.com) [110914 12:49]:
+>> This patch adds basic support for Loongson1B
+>> including serial, timer and interrupt handler.
+>
+> I have a couple of questions. One of them is if it shouldn't be
+> possible to add this as part of the loongson-platform, and if we
+> really need a new platform. Each platform comes with some maintainence
+> costs which we should try to avoid. Making things more generic is
+> usually the right answer.
 
-Yes, I remember playing with such idea some years ago, to speedup
-multicast processing.
+I've tried to add Loongson1 to loongson-platform (acturally loongson2
+platform), but there is essential difference between them. The
+loongson2 platform is something like the PC's architecture, which has
+north and south bridge, while the loongson1 is SoC.
+So, I think it's better that adding loongson1 as a new platform.
 
-Say you have 10 receivers on a multicast group, each incoming message
-actually wakeups 10 threads.
+>> diff --git a/arch/mips/include/asm/mach-loongson1/irq.h
+>> b/arch/mips/include/asm/mach-loongson1/irq.h
+>> new file mode 100644
+>> index 0000000..44cec4a
+>> --- /dev/null
+>> +++ b/arch/mips/include/asm/mach-loongson1/irq.h
+>> @@ -0,0 +1,70 @@
+>> +/*
+>> + * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
+>> + *
+>> + * Register mappings for Loongson1.
+>
+> Can't we do the mapping via device trees, or are we not there yet?
+>
+>
+>> --- /dev/null
+>> +++ b/arch/mips/loongson1/common/clock.c
+>> @@ -0,0 +1,164 @@
+>> +/*
+>> + * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
+>
+> Is this file not derived from any of the clock drivers we already have
+> in Linux?
+>
+> Doesn't any of the existing clock drivers work?
+>
+> Is this clock part of the CPU? Otherwise it would make sense to move
+> it out to the generic drivers section.
+>
+>> --- /dev/null
+>> +++ b/arch/mips/loongson1/common/irq.c
+>> @@ -0,0 +1,132 @@
+>> +/*
+>> + * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
+>> + *
+>> + * Based on Copyright (C) 2009 Lemote Inc.
+>
+> same question here. Also, do you have permission from Lemote to put
+> the code within GPLv2?
 
-If we receive a burst of 10 messages, we spend a lot of time in
-scheduler.
+These code are based on the loongson platform, which is part of the
+kernel code already.
 
-So adding one queue to batch all scheduler works (and factorize some
-work if the same thread is queued), and perform the scheduler calls at
-the end of software IRQ for example was a win.
+>> diff --git a/arch/mips/loongson1/common/prom.c
+>> b/arch/mips/loongson1/common/prom.c
+>> new file mode 100644
+>> index 0000000..84a25f6
+>> --- /dev/null
+>> +++ b/arch/mips/loongson1/common/prom.c
+>
+> Can't we re-use the prom-routines from the loongson platform here? Or
+> even better, factor them out somewhere else in the mips or even
+> generic linux tree?
 
+Same reason as question 1.
 
+>> index 0000000..b34ad35
+>> --- /dev/null
+>> +++ b/arch/mips/loongson1/common/reset.c
+>
+>
+>> +static void loongson1_halt(void)
+>> +{
+>> +	pr_notice("\n\n** You can safely turn off the power now **\n\n");
+>> +	while (1) {
+>> +		if (cpu_wait)
+>> +			cpu_wait();
+>> +	}
+>> +}
+>
+>
+> This code looks familiar to me, i.e. it shouldn't be
+> platform-specific.
+>
+>
+>
+>
+> Andi
+>
 
+Thanks for your review!
+
+-- 
+Best Regards!
+Kelvin
