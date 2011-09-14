@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756709Ab1INO4y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 10:56:54 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:44981 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751328Ab1INO4x (ORCPT
+	id S1756741Ab1INO6k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 10:58:40 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:40289 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755513Ab1INO6j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 10:56:53 -0400
-Date: Thu, 15 Sep 2011 00:56:47 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Temporary location for hid, apm and trivial trees
-Message-Id: <20110915005647.31daf133c37610bfa1694a8e@canb.auug.org.au>
-In-Reply-To: <alpine.LNX.2.00.1109141650280.13109@pobox.suse.cz>
-References: <alpine.LNX.2.00.1109141520450.13109@pobox.suse.cz>
-	<20110915000759.44ec63c0f9a3d68239886de5@canb.auug.org.au>
-	<alpine.LNX.2.00.1109141650280.13109@pobox.suse.cz>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__15_Sep_2011_00_56_47_+1000_RP8barcn4odL0FgY"
+	Wed, 14 Sep 2011 10:58:39 -0400
+Date: Wed, 14 Sep 2011 18:57:46 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Pavel Machek <pavel@ucw.cz>, Andrew Morton <akpm00@gmail.com>,
+        linux-kernel@vger.kernel.org, containers@lists.osdl.org,
+        linux-fsdevel@vger.kernel.org, Kirill Shutemov <kirill@shutemov.name>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Nathan Lynch <ntl@pobox.com>, Zan Lynx <zlynx@acm.org>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>, Tejun Heo <tj@kernel.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [patch 2/2] fs, proc: Introduce the /proc/<pid>/map_files/
+ directory v12
+Message-ID: <20110914145746.GA9074@albatros>
+References: <20110913211359.674453213@openvz.org>
+ <20110913212447.918816776@openvz.org>
+ <20110913235222.043927b3.akpm@linux-foundation.org>
+ <20110914105607.GP25367@sun>
+ <20110914111437.GA22516@atrey.karlin.mff.cuni.cz>
+ <20110914113912.GQ25367@sun>
+ <20110914134405.GV25367@sun>
+ <20110914144841.GA7906@albatros>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110914144841.GA7906@albatros>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__15_Sep_2011_00_56_47_+1000_RP8barcn4odL0FgY
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Sep 14, 2011 at 18:48 +0400, Vasiliy Kulikov wrote:
+> > So, there is no *new* hole.
+> 
+> Actually now I see the difference between having something mapped and
+> having an _fd_ of this something.
+> 
+> Relevant code:
+> 
+> +static struct dentry *
+> +proc_map_files_instantiate(struct inode *dir, struct dentry *dentry,
+> +              struct task_struct *task, const void *ptr)
+> +{
+> ...
+> +   inode->i_mode = S_IFLNK;
+> +
+> +   if (file->f_mode & FMODE_READ)
+> +       inode->i_mode |= S_IRUSR | S_IXUSR;
+> +   if (file->f_mode & FMODE_WRITE)
+> +       inode->i_mode |= S_IWUSR | S_IXUSR;
+> 
+> 
+> If you have a write mmap area, but no fd, you may not trunc a file; with
+> map_files/ you may get an fd and ftrunc it.
 
-Hi Jiri,
+Also it unconditionally adds +x, but I don't think it breaks any
+security assumption as (1) there is no +s and (2) fd is not a directory.
 
-On Wed, 14 Sep 2011 16:50:42 +0200 (CEST) Jiri Kosina <jkosina@suse.cz> wro=
-te:
->
-> Ah, you are right, it has been broken. Fixed now.
+Thanks,
 
-Excellent, thanks.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__15_Sep_2011_00_56_47_+1000_RP8barcn4odL0FgY
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOcMCvAAoJEDMEi1NhKgbsaoMIAKEqxECr3wJx2y7+nXKOiBlK
-spCZRC8VIhn9toGw3qj7hG/2S+ZIlGfXp3mYJF31inMJ4wYGxBJVPV1/ORragUg4
-QE6DgRlqqBq3nH7Bie7F3Ox3v3Ul1iswVd8eYVJxjVxwoFZZO8GbH1ZXtJrLTDhz
-GZmcwfCUDaoo3Fw8cPJd/SpXt+adM90X7vzytGmPNe8KaXgZ+IEXjRgwKwBmBvOh
-HXRCBLMP7C2iLtg0zqiSgd6G/AVLt0e+5kRmGwS0juERPHKxackQYF60hMWDgddD
-3mZa5ra+4VIVfFkqUUS97TBBFdCfkaBgARAxgfllO506OI/MkaVAMin/nuiploA=
-=cad3
------END PGP SIGNATURE-----
-
---Signature=_Thu__15_Sep_2011_00_56_47_+1000_RP8barcn4odL0FgY--
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
