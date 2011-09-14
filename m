@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933080Ab1IQAsw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 20:48:52 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:21412 "EHLO
+	id S933102Ab1IQAtN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 20:49:13 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:5615 "EHLO
 	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932947Ab1IQArE (ORCPT
+	with ESMTP id S932940Ab1IQArC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 20:47:04 -0400
-Message-Id: <093448$3hstvh@wolverine01.qualcomm.com>
-X-IronPort-AV: E=McAfee;i="5400,1158,6471"; a="119437297"
+	Fri, 16 Sep 2011 20:47:02 -0400
+Message-Id: <093448$3hstvg@wolverine01.qualcomm.com>
+X-IronPort-AV: E=McAfee;i="5400,1158,6471"; a="119437296"
 From: Richard Kuo <rkuo@codeaurora.org>
-Date: Wed, 14 Sep 2011 13:19:14 -0500
-Subject: [PATCH v4 30/36] Hexagon: Add page-fault support.
+Date: Wed, 14 Sep 2011 13:19:13 -0500
+Subject: [PATCH v4 29/36] Hexagon: Add page table header files & etc.
 To: linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
@@ -22,24 +22,30 @@ Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
 Signed-off-by: Linas Vepstas <linas@codeaurora.org>
 Acked-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/hexagon/include/asm/mem-layout.h |  112 +++++++++++++
- arch/hexagon/include/asm/vm_fault.h   |   26 +++
- arch/hexagon/mm/init.c                |  276 +++++++++++++++++++++++++++++++++
- arch/hexagon/mm/vm_fault.c            |  187 ++++++++++++++++++++++
- 4 files changed, 601 insertions(+), 0 deletions(-)
- create mode 100644 arch/hexagon/include/asm/mem-layout.h
- create mode 100644 arch/hexagon/include/asm/vm_fault.h
- create mode 100644 arch/hexagon/mm/init.c
- create mode 100644 arch/hexagon/mm/vm_fault.c
+ arch/hexagon/include/asm/fixmap.h      |   73 +++++
+ arch/hexagon/include/asm/mmu.h         |   37 +++
+ arch/hexagon/include/asm/mmu_context.h |  100 ++++++
+ arch/hexagon/include/asm/page.h        |  157 ++++++++++
+ arch/hexagon/include/asm/pgalloc.h     |  146 +++++++++
+ arch/hexagon/include/asm/pgtable.h     |  518 ++++++++++++++++++++++++++++++++
+ arch/hexagon/mm/pgalloc.c              |   25 ++
+ 7 files changed, 1056 insertions(+), 0 deletions(-)
+ create mode 100644 arch/hexagon/include/asm/fixmap.h
+ create mode 100644 arch/hexagon/include/asm/mmu.h
+ create mode 100644 arch/hexagon/include/asm/mmu_context.h
+ create mode 100644 arch/hexagon/include/asm/page.h
+ create mode 100644 arch/hexagon/include/asm/pgalloc.h
+ create mode 100644 arch/hexagon/include/asm/pgtable.h
+ create mode 100644 arch/hexagon/mm/pgalloc.c
 
-diff --git a/arch/hexagon/include/asm/mem-layout.h b/arch/hexagon/include/asm/mem-layout.h
+diff --git a/arch/hexagon/include/asm/fixmap.h b/arch/hexagon/include/asm/fixmap.h
 new file mode 100644
-index 0000000..72e5dcd
+index 0000000..b27f494
 --- /dev/null
-+++ b/arch/hexagon/include/asm/mem-layout.h
-@@ -0,0 +1,112 @@
++++ b/arch/hexagon/include/asm/fixmap.h
+@@ -0,0 +1,73 @@
 +/*
-+ * Memory layout definitions for the Hexagon architecture
++ * Fixmap support for Hexagon - enough to support highmem features
 + *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
@@ -58,105 +64,380 @@ index 0000000..72e5dcd
 + * 02110-1301, USA.
 + */
 +
-+#ifndef _ASM_HEXAGON_MEM_LAYOUT_H
-+#define _ASM_HEXAGON_MEM_LAYOUT_H
++#ifndef _ASM_FIXMAP_H
++#define _ASM_FIXMAP_H
++
++/*
++ * A lot of the fixmap info is already in mem-layout.h
++ */
++#include <asm/mem-layout.h>
++
++/*
++ * Full fixmap support involves set_fixmap() functions, but
++ * these may not be needed if all we're after is an area for
++ * highmem kernel mappings.
++ */
++#define	__fix_to_virt(x)	(FIXADDR_TOP - ((x) << PAGE_SHIFT))
++#define	__virt_to_fix(x)	((FIXADDR_TOP - ((x)&PAGE_MASK)) >> PAGE_SHIFT)
++
++extern void __this_fixmap_does_not_exist(void);
++
++/**
++ * fix_to_virt -- "index to address" translation.
++ *
++ * If anyone tries to use the idx directly without translation,
++ * we catch the bug with a NULL-deference kernel oops. Illegal
++ * ranges of incoming indices are caught too.
++ */
++static inline unsigned long fix_to_virt(const unsigned int idx)
++{
++	/*
++	 * This branch gets completely eliminated after inlining,
++	 * except when someone tries to use fixaddr indices in an
++	 * illegal way. (such as mixing up address types or using
++	 * out-of-range indices).
++	 *
++	 * If it doesn't get removed, the linker will complain
++	 * loudly with a reasonably clear error message..
++	 */
++	if (idx >= __end_of_fixed_addresses)
++		__this_fixmap_does_not_exist();
++
++	return __fix_to_virt(idx);
++}
++
++static inline unsigned long virt_to_fix(const unsigned long vaddr)
++{
++	BUG_ON(vaddr >= FIXADDR_TOP || vaddr < FIXADDR_START);
++	return __virt_to_fix(vaddr);
++}
++
++#define kmap_get_fixmap_pte(vaddr) \
++	pte_offset_kernel(pmd_offset(pud_offset(pgd_offset_k(vaddr), \
++				(vaddr)), (vaddr)), (vaddr))
++
++#endif
+diff --git a/arch/hexagon/include/asm/mmu.h b/arch/hexagon/include/asm/mmu.h
+new file mode 100644
+index 0000000..30a5d8d
+--- /dev/null
++++ b/arch/hexagon/include/asm/mmu.h
+@@ -0,0 +1,37 @@
++/*
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#ifndef _ASM_MMU_H
++#define _ASM_MMU_H
++
++#include <asm/vdso.h>
++
++/*
++ * Architecture-specific state for a mm_struct.
++ * For the Hexagon Virtual Machine, it can be a copy
++ * of the pointer to the page table base.
++ */
++struct mm_context {
++	unsigned long long generation;
++	unsigned long ptbase;
++	struct hexagon_vdso *vdso;
++};
++
++typedef struct mm_context mm_context_t;
++
++#endif
+diff --git a/arch/hexagon/include/asm/mmu_context.h b/arch/hexagon/include/asm/mmu_context.h
+new file mode 100644
+index 0000000..b4fe5a5
+--- /dev/null
++++ b/arch/hexagon/include/asm/mmu_context.h
+@@ -0,0 +1,100 @@
++/*
++ * MM context support for the Hexagon architecture
++ *
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#ifndef _ASM_MMU_CONTEXT_H
++#define _ASM_MMU_CONTEXT_H
++
++#include <asm/setup.h>
++#include <asm/page.h>
++#include <asm/pgalloc.h>
++#include <asm/mem-layout.h>
++
++static inline void destroy_context(struct mm_struct *mm)
++{
++}
++
++/*
++ * VM port hides all TLB management, so "lazy TLB" isn't very
++ * meaningful.  Even for ports to architectures with visble TLBs,
++ * this is almost invariably a null function.
++ */
++static inline void enter_lazy_tlb(struct mm_struct *mm,
++	struct task_struct *tsk)
++{
++}
++
++/*
++ * Architecture-specific actions, if any, for memory map deactivation.
++ */
++static inline void deactivate_mm(struct task_struct *tsk,
++	struct mm_struct *mm)
++{
++}
++
++/**
++ * init_new_context - initialize context related info for new mm_struct instance
++ * @tsk: pointer to a task struct
++ * @mm: pointer to a new mm struct
++ */
++static inline int init_new_context(struct task_struct *tsk,
++					struct mm_struct *mm)
++{
++	/* mm->context is set up by pgd_alloc */
++	return 0;
++}
++
++/*
++ *  Switch active mm context
++ */
++static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
++				struct task_struct *tsk)
++{
++	int l1;
++
++	/*
++	 * For virtual machine, we have to update system map if it's been
++	 * touched.
++	 */
++	if (next->context.generation < prev->context.generation) {
++		for (l1 = MIN_KERNEL_SEG; l1 <= max_kernel_seg; l1++)
++			next->pgd[l1] = init_mm.pgd[l1];
++
++		next->context.generation = prev->context.generation;
++	}
++
++	__vmnewmap((void *)next->context.ptbase);
++}
++
++/*
++ *  Activate new memory map for task
++ */
++static inline void activate_mm(struct mm_struct *prev, struct mm_struct *next)
++{
++	unsigned long flags;
++
++	local_irq_save(flags);
++	switch_mm(prev, next, current_thread_info()->task);
++	local_irq_restore(flags);
++}
++
++/*  Generic hooks for arch_dup_mmap and arch_exit_mmap  */
++#include <asm-generic/mm_hooks.h>
++
++#endif
+diff --git a/arch/hexagon/include/asm/page.h b/arch/hexagon/include/asm/page.h
+new file mode 100644
+index 0000000..edd9762
+--- /dev/null
++++ b/arch/hexagon/include/asm/page.h
+@@ -0,0 +1,157 @@
++/*
++ * Page management definitions for the Hexagon architecture
++ *
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#ifndef _ASM_PAGE_H
++#define _ASM_PAGE_H
 +
 +#include <linux/const.h>
 +
-+/*
-+ * Have to do this for ginormous numbers, else they get printed as
-+ * negative numbers, which the linker no likey when you try to
-+ * assign it to the location counter.
-+ */
++/*  This is probably not the most graceful way to handle this.  */
 +
-+#define PAGE_OFFSET			_AC(0xc0000000, UL)
-+
-+/*
-+ * LOAD_ADDRESS is the physical/linear address of where in memory
-+ * the kernel gets loaded. The 12 least significant bits must be zero (0)
-+ * due to limitations on setting the EVB
-+ *
-+ */
-+
-+#ifndef LOAD_ADDRESS
-+#define LOAD_ADDRESS			0x00000000
++#ifdef CONFIG_PAGE_SIZE_4KB
++#define PAGE_SHIFT 12
++#define HEXAGON_L1_PTE_SIZE __HVM_PDE_S_4KB
 +#endif
 +
-+#define TASK_SIZE			(PAGE_OFFSET)
++#ifdef CONFIG_PAGE_SIZE_16KB
++#define PAGE_SHIFT 14
++#define HEXAGON_L1_PTE_SIZE __HVM_PDE_S_16KB
++#endif
 +
-+/*  not sure how these are used yet  */
-+#define STACK_TOP			TASK_SIZE
-+#define STACK_TOP_MAX			TASK_SIZE
++#ifdef CONFIG_PAGE_SIZE_64KB
++#define PAGE_SHIFT 16
++#define HEXAGON_L1_PTE_SIZE __HVM_PDE_S_64KB
++#endif
 +
++#ifdef CONFIG_PAGE_SIZE_256KB
++#define PAGE_SHIFT 18
++#define HEXAGON_L1_PTE_SIZE __HVM_PDE_S_256KB
++#endif
++
++#ifdef CONFIG_PAGE_SIZE_1MB
++#define PAGE_SHIFT 20
++#define HEXAGON_L1_PTE_SIZE __HVM_PDE_S_1MB
++#endif
++
++/*
++ *  These should be defined in hugetlb.h, but apparently not.
++ *  "Huge" for us should be 4MB or 16MB, which are both represented
++ *  in L1 PTE's.  Right now, it's set up for 4MB.
++ */
++#ifdef CONFIG_HUGETLB_PAGE
++#define HPAGE_SHIFT 22
++#define HPAGE_SIZE (1UL << HPAGE_SHIFT)
++#define HPAGE_MASK (~(HPAGE_SIZE-1))
++#define HUGETLB_PAGE_ORDER (HPAGE_SHIFT-PAGE_SHIFT)
++#define HVM_HUGEPAGE_SIZE 0x5
++#endif
++
++#define PAGE_SIZE  (1UL << PAGE_SHIFT)
++#define PAGE_MASK  (~((1 << PAGE_SHIFT) - 1))
++
++#ifdef __KERNEL__
 +#ifndef __ASSEMBLY__
-+enum fixed_addresses {
-+	FIX_KMAP_BEGIN,
-+	FIX_KMAP_END,  /*  check for per-cpuism  */
-+	__end_of_fixed_addresses
-+};
-+
-+#define MIN_KERNEL_SEG 0x300   /* From 0xc0000000 */
-+extern int max_kernel_seg;
 +
 +/*
-+ * Start of vmalloc virtual address space for kernel;
-+ * supposed to be based on the amount of physical memory available
++ * This is for PFN_DOWN, which mm.h needs.  Seems the right place to pull it in.
 + */
-+
-+#define VMALLOC_START (PAGE_OFFSET + VMALLOC_OFFSET + \
-+	(unsigned long)high_memory)
-+
-+/* Gap between physical ram and vmalloc space for guard purposes. */
-+#define VMALLOC_OFFSET PAGE_SIZE
++#include <linux/pfn.h>
 +
 +/*
-+ * Create the space between VMALLOC_START and FIXADDR_TOP backwards
-+ * from the ... "top".
-+ *
-+ * Permanent IO mappings will live at 0xfexx_xxxx
-+ * Hypervisor occupies the last 16MB page at 0xffxxxxxx
++ * We implement a two-level architecture-specific page table structure.
++ * Null intermediate page table level (pmd, pud) definitions will come from
++ * asm-generic/pagetable-nopmd.h and asm-generic/pagetable-nopud.h
 + */
++typedef struct { unsigned long pte; } pte_t;
++typedef struct { unsigned long pgd; } pgd_t;
++typedef struct { unsigned long pgprot; } pgprot_t;
++typedef struct page *pgtable_t;
 +
-+#define FIXADDR_TOP     0xfe000000
-+#define FIXADDR_SIZE    (__end_of_fixed_addresses << PAGE_SHIFT)
-+#define FIXADDR_START   (FIXADDR_TOP - FIXADDR_SIZE)
++#define pte_val(x)     ((x).pte)
++#define pgd_val(x)     ((x).pgd)
++#define pgprot_val(x)  ((x).pgprot)
++#define __pte(x)       ((pte_t) { (x) })
++#define __pgd(x)       ((pgd_t) { (x) })
++#define __pgprot(x)    ((pgprot_t) { (x) })
 +
 +/*
-+ * "permanent kernel mappings", defined as long-lasting mappings of
-+ * high-memory page frames into the kernel address space.
++ * We need a __pa and a __va routine for kernel space.
++ * MIPS says they're only used during mem_init.
++ * also, check if we need a PHYS_OFFSET.
 + */
++#define __pa(x) ((unsigned long)(x) - PAGE_OFFSET)
++#define __va(x) ((void *)((unsigned long)(x) + PAGE_OFFSET))
 +
-+#define LAST_PKMAP	PTRS_PER_PTE
-+#define LAST_PKMAP_MASK	(LAST_PKMAP - 1)
-+#define PKMAP_NR(virt)	((virt - PKMAP_BASE) >> PAGE_SHIFT)
-+#define PKMAP_ADDR(nr)	(PKMAP_BASE + ((nr) << PAGE_SHIFT))
++/* The "page frame" descriptor is defined in linux/mm.h */
++struct page;
++
++/* Returns page frame descriptor for virtual address. */
++#define virt_to_page(kaddr) pfn_to_page(PFN_DOWN(__pa(kaddr)))
++
++/* Default vm area behavior is non-executable.  */
++#define VM_DATA_DEFAULT_FLAGS (VM_READ | VM_WRITE | \
++				VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
++
++#define pfn_valid(pfn) ((pfn) < max_mapnr)
++#define virt_addr_valid(kaddr) pfn_valid(__pa(kaddr) >> PAGE_SHIFT)
++
++/*  Need to not use a define for linesize; may move this to another file.  */
++static inline void clear_page(void *page)
++{
++	/*  This can only be done on pages with L1 WB cache */
++	asm volatile(
++		"	loop0(1f,%1);\n"
++		"1:	{ dczeroa(%0);\n"
++		"	  %0 = add(%0,#32); }:endloop0\n"
++		: "+r" (page)
++		: "r" (PAGE_SIZE/32)
++		: "lc0", "sa0", "memory"
++	);
++}
++
++#define copy_page(to, from)	memcpy((to), (from), PAGE_SIZE)
 +
 +/*
-+ * To the "left" of the fixed map space is the kmap space
-+ *
-+ * "Permanent Kernel Mappings"; fancy (or less fancy) PTE table
-+ * that looks like it's actually walked.
-+ * Need to check the alignment/shift usage; some archs use
-+ * PMD_MASK on this value
++ * Under assumption that kernel always "sees" user map...
 + */
-+#define PKMAP_BASE (FIXADDR_START-PAGE_SIZE*LAST_PKMAP)
++#define clear_user_page(page, vaddr, pg)	clear_page(page)
++#define copy_user_page(to, from, vaddr, pg)	copy_page(to, from)
 +
 +/*
-+ * 2 pages of guard gap between where vmalloc area ends
-+ * and pkmap_base begins.
++ * page_to_phys - convert page to physical address
++ * @page - pointer to page entry in mem_map
 + */
-+#define VMALLOC_END (PKMAP_BASE-PAGE_SIZE*2)
-+#endif /*  !__ASSEMBLY__  */
++#define page_to_phys(page)      (page_to_pfn(page) << PAGE_SHIFT)
 +
++/*
++ * For port to Hexagon Virtual Machine, MAYBE we check for attempts
++ * to reference reserved HVM space, but in any case, the VM will be
++ * protected.
++ */
++#define kern_addr_valid(addr)   (1)
 +
-+#endif /* _ASM_HEXAGON_MEM_LAYOUT_H */
-diff --git a/arch/hexagon/include/asm/vm_fault.h b/arch/hexagon/include/asm/vm_fault.h
++#include <asm-generic/memory_model.h>
++/* XXX Todo: implement assembly-optimized version of getorder. */
++#include <asm-generic/getorder.h>
++
++#endif /* ifdef __ASSEMBLY__ */
++#endif /* ifdef __KERNEL__ */
++
++#endif
+diff --git a/arch/hexagon/include/asm/pgalloc.h b/arch/hexagon/include/asm/pgalloc.h
 new file mode 100644
-index 0000000..cacda36
+index 0000000..13443c7
 --- /dev/null
-+++ b/arch/hexagon/include/asm/vm_fault.h
-@@ -0,0 +1,26 @@
++++ b/arch/hexagon/include/asm/pgalloc.h
+@@ -0,0 +1,146 @@
 +/*
++ * Page table support for the Hexagon architecture
++ *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -174,23 +455,663 @@ index 0000000..cacda36
 + * 02110-1301, USA.
 + */
 +
-+#ifndef _ASM_HEXAGON_VM_FAULT_H
-+#define _ASM_HEXAGON_VM_FAULT_H
++#ifndef _ASM_PGALLOC_H
++#define _ASM_PGALLOC_H
 +
-+extern void execute_protection_fault(struct pt_regs *);
-+extern void write_protection_fault(struct pt_regs *);
-+extern void read_protection_fault(struct pt_regs *);
++#include <asm/mem-layout.h>
++#include <asm/atomic.h>
++
++#define check_pgt_cache() do {} while (0)
++
++extern unsigned long long kmap_generation;
++
++/*
++ * Page table creation interface
++ */
++static inline pgd_t *pgd_alloc(struct mm_struct *mm)
++{
++	pgd_t *pgd;
++
++	pgd = (pgd_t *)__get_free_page(GFP_KERNEL | __GFP_ZERO);
++
++	/*
++	 * There may be better ways to do this, but to ensure
++	 * that new address spaces always contain the kernel
++	 * base mapping, and to ensure that the user area is
++	 * initially marked invalid, initialize the new map
++	 * map with a copy of the kernel's persistent map.
++	 */
++
++	memcpy(pgd, swapper_pg_dir, PTRS_PER_PGD*sizeof(pgd_t *));
++	mm->context.generation = kmap_generation;
++
++	/* Physical version is what is passed to virtual machine on switch */
++	mm->context.ptbase = __pa(pgd);
++
++	return pgd;
++}
++
++static inline void pgd_free(struct mm_struct *mm, pgd_t *pgd)
++{
++	free_page((unsigned long) pgd);
++}
++
++static inline struct page *pte_alloc_one(struct mm_struct *mm,
++					 unsigned long address)
++{
++	struct page *pte;
++
++	pte = alloc_page(GFP_KERNEL | __GFP_REPEAT | __GFP_ZERO);
++
++	if (pte)
++		pgtable_page_ctor(pte);
++
++	return pte;
++}
++
++/* _kernel variant gets to use a different allocator */
++static inline pte_t *pte_alloc_one_kernel(struct mm_struct *mm,
++					  unsigned long address)
++{
++	gfp_t flags =  GFP_KERNEL | __GFP_REPEAT | __GFP_ZERO;
++	return (pte_t *) __get_free_page(flags);
++}
++
++static inline void pte_free(struct mm_struct *mm, struct page *pte)
++{
++	pgtable_page_dtor(pte);
++	__free_page(pte);
++}
++
++static inline void pte_free_kernel(struct mm_struct *mm, pte_t *pte)
++{
++	free_page((unsigned long)pte);
++}
++
++static inline void pmd_populate(struct mm_struct *mm, pmd_t *pmd,
++				pgtable_t pte)
++{
++	/*
++	 * Conveniently, zero in 3 LSB means indirect 4K page table.
++	 * Not so convenient when you're trying to vary the page size.
++	 */
++	set_pmd(pmd, __pmd(((unsigned long)page_to_pfn(pte) << PAGE_SHIFT) |
++		HEXAGON_L1_PTE_SIZE));
++}
++
++/*
++ * Other architectures seem to have ways of making all processes
++ * share the same pmd's for their kernel mappings, but the v0.3
++ * Hexagon VM spec has a "monolithic" L1 table for user and kernel
++ * segments.  We track "generations" of the kernel map to minimize
++ * overhead, and update the "slave" copies of the kernel mappings
++ * as part of switch_mm.  However, we still need to update the
++ * kernel map of the active thread who's calling pmd_populate_kernel...
++ */
++static inline void pmd_populate_kernel(struct mm_struct *mm, pmd_t *pmd,
++				       pte_t *pte)
++{
++	extern spinlock_t kmap_gen_lock;
++	pmd_t *ppmd;
++	int pmdindex;
++
++	spin_lock(&kmap_gen_lock);
++	kmap_generation++;
++	mm->context.generation = kmap_generation;
++	current->active_mm->context.generation = kmap_generation;
++	spin_unlock(&kmap_gen_lock);
++
++	set_pmd(pmd, __pmd(((unsigned long)__pa(pte)) | HEXAGON_L1_PTE_SIZE));
++
++	/*
++	 * Now the "slave" copy of the current thread.
++	 * This is pointer arithmetic, not byte addresses!
++	 */
++	pmdindex = (pgd_t *)pmd - mm->pgd;
++	ppmd = (pmd_t *)current->active_mm->pgd + pmdindex;
++	set_pmd(ppmd, __pmd(((unsigned long)__pa(pte)) | HEXAGON_L1_PTE_SIZE));
++	if (pmdindex > max_kernel_seg)
++		max_kernel_seg = pmdindex;
++}
++
++#define __pte_free_tlb(tlb, pte, addr)		\
++do {						\
++	pgtable_page_dtor((pte));		\
++	tlb_remove_page((tlb), (pte));		\
++} while (0)
 +
 +#endif
-diff --git a/arch/hexagon/mm/init.c b/arch/hexagon/mm/init.c
+diff --git a/arch/hexagon/include/asm/pgtable.h b/arch/hexagon/include/asm/pgtable.h
 new file mode 100644
-index 0000000..b57d741
+index 0000000..ca619bf
 --- /dev/null
-+++ b/arch/hexagon/mm/init.c
-@@ -0,0 +1,276 @@
++++ b/arch/hexagon/include/asm/pgtable.h
+@@ -0,0 +1,518 @@
 +/*
-+ * Memory subsystem initialization for Hexagon
++ * Page table support for the Hexagon architecture
 + *
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#ifndef _ASM_PGTABLE_H
++#define _ASM_PGTABLE_H
++
++/*
++ * Page table definitions for Qualcomm Hexagon processor.
++ */
++#include <linux/swap.h>
++#include <asm/page.h>
++#include <asm-generic/pgtable-nopmd.h>
++
++/* A handy thing to have if one has the RAM. Declared in head.S */
++extern unsigned long empty_zero_page;
++extern unsigned long zero_page_mask;
++
++/*
++ * The PTE model described here is that of the Hexagon Virtual Machine,
++ * which autonomously walks 2-level page tables.  At a lower level, we
++ * also describe the RISCish software-loaded TLB entry structure of
++ * the underlying Hexagon processor. A kernel built to run on the
++ * virtual machine has no need to know about the underlying hardware.
++ */
++#include <asm/vm_mmu.h>
++
++/*
++ * To maximize the comfort level for the PTE manipulation macros,
++ * define the "well known" architecture-specific bits.
++ */
++#define _PAGE_READ	__HVM_PTE_R
++#define _PAGE_WRITE	__HVM_PTE_W
++#define _PAGE_EXECUTE	__HVM_PTE_X
++#define _PAGE_USER	__HVM_PTE_U
++
++/*
++ * We have a total of 4 "soft" bits available in the abstract PTE.
++ * The two mandatory software bits are Dirty and Accessed.
++ * To make nonlinear swap work according to the more recent
++ * model, we want a low order "Present" bit to indicate whether
++ * the PTE describes MMU programming or swap space.
++ */
++#define _PAGE_PRESENT	(1<<0)
++#define _PAGE_DIRTY	(1<<1)
++#define _PAGE_ACCESSED	(1<<2)
++
++/*
++ * _PAGE_FILE is only meaningful if _PAGE_PRESENT is false, while
++ * _PAGE_DIRTY is only meaningful if _PAGE_PRESENT is true.
++ * So we can overload the bit...
++ */
++#define _PAGE_FILE	_PAGE_DIRTY /* set:  pagecache, unset = swap */
++
++/*
++ * For now, let's say that Valid and Present are the same thing.
++ * Alternatively, we could say that it's the "or" of R, W, and X
++ * permissions.
++ */
++#define _PAGE_VALID	_PAGE_PRESENT
++
++/*
++ * We're not defining _PAGE_GLOBAL here, since there's no concept
++ * of global pages or ASIDs exposed to the Hexagon Virtual Machine,
++ * and we want to use the same page table structures and macros in
++ * the native kernel as we do in the virtual machine kernel.
++ * So we'll put up with a bit of inefficiency for now...
++ */
++
++/*
++ * Top "FOURTH" level (pgd), which for the Hexagon VM is really
++ * only the second from the bottom, pgd and pud both being collapsed.
++ * Each entry represents 4MB of virtual address space, 4K of table
++ * thus maps the full 4GB.
++ */
++#define PGDIR_SHIFT 22
++#define PTRS_PER_PGD 1024
++
++#define PGDIR_SIZE (1UL << PGDIR_SHIFT)
++#define PGDIR_MASK (~(PGDIR_SIZE-1))
++
++#ifdef CONFIG_PAGE_SIZE_4KB
++#define PTRS_PER_PTE 1024
++#endif
++
++#ifdef CONFIG_PAGE_SIZE_16KB
++#define PTRS_PER_PTE 256
++#endif
++
++#ifdef CONFIG_PAGE_SIZE_64KB
++#define PTRS_PER_PTE 64
++#endif
++
++#ifdef CONFIG_PAGE_SIZE_256KB
++#define PTRS_PER_PTE 16
++#endif
++
++#ifdef CONFIG_PAGE_SIZE_1MB
++#define PTRS_PER_PTE 4
++#endif
++
++/*  Any bigger and the PTE disappears.  */
++#define pgd_ERROR(e) \
++	printk(KERN_ERR "%s:%d: bad pgd %08lx.\n", __FILE__, __LINE__,\
++		pgd_val(e))
++
++/*
++ * Page Protection Constants. Includes (in this variant) cache attributes.
++ */
++extern unsigned long _dflt_cache_att;
++
++#define PAGE_NONE	__pgprot(_PAGE_PRESENT | _PAGE_USER | \
++				_dflt_cache_att)
++#define PAGE_READONLY	__pgprot(_PAGE_PRESENT | _PAGE_USER | \
++				_PAGE_READ | _PAGE_EXECUTE | _dflt_cache_att)
++#define PAGE_COPY	PAGE_READONLY
++#define PAGE_EXEC	__pgprot(_PAGE_PRESENT | _PAGE_USER | \
++				_PAGE_READ | _PAGE_EXECUTE | _dflt_cache_att)
++#define PAGE_COPY_EXEC	PAGE_EXEC
++#define PAGE_SHARED	__pgprot(_PAGE_PRESENT | _PAGE_USER | _PAGE_READ | \
++				_PAGE_EXECUTE | _PAGE_WRITE | _dflt_cache_att)
++#define PAGE_KERNEL	__pgprot(_PAGE_PRESENT | _PAGE_READ | \
++				_PAGE_WRITE | _PAGE_EXECUTE | _dflt_cache_att)
++
++
++/*
++ * Aliases for mapping mmap() protection bits to page protections.
++ * These get used for static initialization, so using the _dflt_cache_att
++ * variable for the default cache attribute isn't workable. If the
++ * default gets changed at boot time, the boot option code has to
++ * update data structures like the protaction_map[] array.
++ */
++#define CACHEDEF	(CACHE_DEFAULT << 6)
++
++/* Private (copy-on-write) page protections. */
++#define __P000 __pgprot(_PAGE_PRESENT | _PAGE_USER | CACHEDEF)
++#define __P001 __pgprot(_PAGE_PRESENT | _PAGE_USER | _PAGE_READ | CACHEDEF)
++#define __P010 __P000	/* Write-only copy-on-write */
++#define __P011 __P001	/* Read/Write copy-on-write */
++#define __P100 __pgprot(_PAGE_PRESENT | _PAGE_USER | \
++			_PAGE_EXECUTE | CACHEDEF)
++#define __P101 __pgprot(_PAGE_PRESENT | _PAGE_USER | _PAGE_EXECUTE | \
++			_PAGE_READ | CACHEDEF)
++#define __P110 __P100	/* Write/execute copy-on-write */
++#define __P111 __P101	/* Read/Write/Execute, copy-on-write */
++
++/* Shared page protections. */
++#define __S000 __P000
++#define __S001 __P001
++#define __S010 __pgprot(_PAGE_PRESENT | _PAGE_USER | \
++			_PAGE_WRITE | CACHEDEF)
++#define __S011 __pgprot(_PAGE_PRESENT | _PAGE_USER | _PAGE_READ | \
++			_PAGE_WRITE | CACHEDEF)
++#define __S100 __pgprot(_PAGE_PRESENT | _PAGE_USER | \
++			_PAGE_EXECUTE | CACHEDEF)
++#define __S101 __P101
++#define __S110 __pgprot(_PAGE_PRESENT | _PAGE_USER | \
++			_PAGE_EXECUTE | _PAGE_WRITE | CACHEDEF)
++#define __S111 __pgprot(_PAGE_PRESENT | _PAGE_USER | _PAGE_READ | \
++			_PAGE_EXECUTE | _PAGE_WRITE | CACHEDEF)
++
++extern pgd_t swapper_pg_dir[PTRS_PER_PGD];  /* located in head.S */
++
++/* Seems to be zero even in architectures where the zero page is firewalled? */
++#define FIRST_USER_ADDRESS 0
++#define pte_special(pte)	0
++#define pte_mkspecial(pte)	(pte)
++
++/*  HUGETLB not working currently  */
++#ifdef CONFIG_HUGETLB_PAGE
++#define pte_mkhuge(pte) __pte((pte_val(pte) & ~0x3) | HVM_HUGEPAGE_SIZE)
++#endif
++
++/*
++ * For now, assume that higher-level code will do TLB/MMU invalidations
++ * and don't insert that overhead into this low-level function.
++ */
++extern void sync_icache_dcache(pte_t pte);
++
++#define pte_present_exec_user(pte) \
++	((pte_val(pte) & (_PAGE_EXECUTE | _PAGE_USER)) == \
++	(_PAGE_EXECUTE | _PAGE_USER))
++
++static inline void set_pte(pte_t *ptep, pte_t pteval)
++{
++	/*  should really be using pte_exec, if it weren't declared later. */
++	if (pte_present_exec_user(pteval))
++		sync_icache_dcache(pteval);
++
++	*ptep = pteval;
++}
++
++/*
++ * For the Hexagon Virtual Machine MMU (or its emulation), a null/invalid
++ * L1 PTE (PMD/PGD) has 7 in the least significant bits. For the L2 PTE
++ * (Linux PTE), the key is to have bits 11..9 all zero.  We'd use 0x7
++ * as a universal null entry, but some of those least significant bits
++ * are interpreted by software.
++ */
++#define _NULL_PMD	0x7
++#define _NULL_PTE	0x0
++
++static inline void pmd_clear(pmd_t *pmd_entry_ptr)
++{
++	 pmd_val(*pmd_entry_ptr) = _NULL_PMD;
++}
++
++/*
++ * Conveniently, a null PTE value is invalid.
++ */
++static inline void pte_clear(struct mm_struct *mm, unsigned long addr,
++				pte_t *ptep)
++{
++	pte_val(*ptep) = _NULL_PTE;
++}
++
++#ifdef NEED_PMD_INDEX_DESPITE_BEING_2_LEVEL
++/**
++ * pmd_index - returns the index of the entry in the PMD page
++ * which would control the given virtual address
++ */
++#define pmd_index(address) (((address) >> PMD_SHIFT) & (PTRS_PER_PMD-1))
++
++#endif
++
++/**
++ * pgd_index - returns the index of the entry in the PGD page
++ * which would control the given virtual address
++ *
++ * This returns the *index* for the address in the pgd_t
++ */
++#define pgd_index(address) (((address) >> PGDIR_SHIFT) & (PTRS_PER_PGD-1))
++
++/*
++ * pgd_offset - find an offset in a page-table-directory
++ */
++#define pgd_offset(mm, addr) ((mm)->pgd + pgd_index(addr))
++
++/*
++ * pgd_offset_k - get kernel (init_mm) pgd entry pointer for addr
++ */
++#define pgd_offset_k(address) pgd_offset(&init_mm, address)
++
++/**
++ * pmd_none - check if pmd_entry is mapped
++ * @pmd_entry:  pmd entry
++ *
++ * MIPS checks it against that "invalid pte table" thing.
++ */
++static inline int pmd_none(pmd_t pmd)
++{
++	return pmd_val(pmd) == _NULL_PMD;
++}
++
++/**
++ * pmd_present - is there a page table behind this?
++ * Essentially the inverse of pmd_none.  We maybe
++ * save an inline instruction by defining it this
++ * way, instead of simply "!pmd_none".
++ */
++static inline int pmd_present(pmd_t pmd)
++{
++	return pmd_val(pmd) != (unsigned long)_NULL_PMD;
++}
++
++/**
++ * pmd_bad - check if a PMD entry is "bad". That might mean swapped out.
++ * As we have no known cause of badness, it's null, as it is for many
++ * architectures.
++ */
++static inline int pmd_bad(pmd_t pmd)
++{
++	return 0;
++}
++
++/*
++ * pmd_page - converts a PMD entry to a page pointer
++ */
++#define pmd_page(pmd)  (pfn_to_page(pmd_val(pmd) >> PAGE_SHIFT))
++#define pmd_pgtable(pmd) pmd_page(pmd)
++
++/**
++ * pte_none - check if pte is mapped
++ * @pte: pte_t entry
++ */
++static inline int pte_none(pte_t pte)
++{
++	return pte_val(pte) == _NULL_PTE;
++};
++
++/*
++ * pte_present - check if page is present
++ */
++static inline int pte_present(pte_t pte)
++{
++	return pte_val(pte) & _PAGE_PRESENT;
++}
++
++/* mk_pte - make a PTE out of a page pointer and protection bits */
++#define mk_pte(page, pgprot) pfn_pte(page_to_pfn(page), (pgprot))
++
++/* pte_page - returns a page (frame pointer/descriptor?) based on a PTE */
++#define pte_page(x) pfn_to_page(pte_pfn(x))
++
++/* pte_mkold - mark PTE as not recently accessed */
++static inline pte_t pte_mkold(pte_t pte)
++{
++	pte_val(pte) &= ~_PAGE_ACCESSED;
++	return pte;
++}
++
++/* pte_mkyoung - mark PTE as recently accessed */
++static inline pte_t pte_mkyoung(pte_t pte)
++{
++	pte_val(pte) |= _PAGE_ACCESSED;
++	return pte;
++}
++
++/* pte_mkclean - mark page as in sync with backing store */
++static inline pte_t pte_mkclean(pte_t pte)
++{
++	pte_val(pte) &= ~_PAGE_DIRTY;
++	return pte;
++}
++
++/* pte_mkdirty - mark page as modified */
++static inline pte_t pte_mkdirty(pte_t pte)
++{
++	pte_val(pte) |= _PAGE_DIRTY;
++	return pte;
++}
++
++/* pte_young - "is PTE marked as accessed"? */
++static inline int pte_young(pte_t pte)
++{
++	return pte_val(pte) & _PAGE_ACCESSED;
++}
++
++/* pte_dirty - "is PTE dirty?" */
++static inline int pte_dirty(pte_t pte)
++{
++	return pte_val(pte) & _PAGE_DIRTY;
++}
++
++/* pte_modify - set protection bits on PTE */
++static inline pte_t pte_modify(pte_t pte, pgprot_t prot)
++{
++	pte_val(pte) &= PAGE_MASK;
++	pte_val(pte) |= pgprot_val(prot);
++	return pte;
++}
++
++/* pte_wrprotect - mark page as not writable */
++static inline pte_t pte_wrprotect(pte_t pte)
++{
++	pte_val(pte) &= ~_PAGE_WRITE;
++	return pte;
++}
++
++/* pte_mkwrite - mark page as writable */
++static inline pte_t pte_mkwrite(pte_t pte)
++{
++	pte_val(pte) |= _PAGE_WRITE;
++	return pte;
++}
++
++/* pte_mkexec - mark PTE as executable */
++static inline pte_t pte_mkexec(pte_t pte)
++{
++	pte_val(pte) |= _PAGE_EXECUTE;
++	return pte;
++}
++
++/* pte_read - "is PTE marked as readable?" */
++static inline int pte_read(pte_t pte)
++{
++	return pte_val(pte) & _PAGE_READ;
++}
++
++/* pte_write - "is PTE marked as writable?" */
++static inline int pte_write(pte_t pte)
++{
++	return pte_val(pte) & _PAGE_WRITE;
++}
++
++
++/* pte_exec - "is PTE marked as executable?" */
++static inline int pte_exec(pte_t pte)
++{
++	return pte_val(pte) & _PAGE_EXECUTE;
++}
++
++/* __pte_to_swp_entry - extract swap entry from PTE */
++#define __pte_to_swp_entry(pte) ((swp_entry_t) { pte_val(pte) })
++
++/* __swp_entry_to_pte - extract PTE from swap entry */
++#define __swp_entry_to_pte(x) ((pte_t) { (x).val })
++
++/* pfn_pte - convert page number and protection value to page table entry */
++#define pfn_pte(pfn, pgprot) __pte((pfn << PAGE_SHIFT) | pgprot_val(pgprot))
++
++/* pte_pfn - convert pte to page frame number */
++#define pte_pfn(pte) (pte_val(pte) >> PAGE_SHIFT)
++#define set_pmd(pmdptr, pmdval) (*(pmdptr) = (pmdval))
++
++/*
++ * set_pte_at - update page table and do whatever magic may be
++ * necessary to make the underlying hardware/firmware take note.
++ *
++ * VM may require a virtual instruction to alert the MMU.
++ */
++#define set_pte_at(mm, addr, ptep, pte) set_pte(ptep, pte)
++
++/*
++ * May need to invoke the virtual machine as well...
++ */
++#define pte_unmap(pte)		do { } while (0)
++#define pte_unmap_nested(pte)	do { } while (0)
++
++/*
++ * pte_offset_map - returns the linear address of the page table entry
++ * corresponding to an address
++ */
++#define pte_offset_map(dir, address)                                    \
++	((pte_t *)page_address(pmd_page(*(dir))) + __pte_offset(address))
++
++#define pte_offset_map_nested(pmd, addr) pte_offset_map(pmd, addr)
++
++/* pte_offset_kernel - kernel version of pte_offset */
++#define pte_offset_kernel(dir, address) \
++	((pte_t *) (unsigned long) __va(pmd_val(*dir) & PAGE_MASK) \
++				+  __pte_offset(address))
++
++/* ZERO_PAGE - returns the globally shared zero page */
++#define ZERO_PAGE(vaddr) (virt_to_page(&empty_zero_page))
++
++#define __pte_offset(address) (((address) >> PAGE_SHIFT) & (PTRS_PER_PTE - 1))
++
++/* Nothing special about IO remapping at this point */
++#define io_remap_pfn_range(vma, vaddr, pfn, size, prot) \
++	remap_pfn_range(vma, vaddr, pfn, size, prot)
++
++/*  I think this is in case we have page table caches; needed by init/main.c  */
++#define pgtable_cache_init()    do { } while (0)
++
++/*
++ * Swap/file PTE definitions.  If _PAGE_PRESENT is zero, the rest of the
++ * PTE is interpreted as swap information.  Depending on the _PAGE_FILE
++ * bit, the remaining free bits are eitehr interpreted as a file offset
++ * or a swap type/offset tuple.  Rather than have the TLB fill handler
++ * test _PAGE_PRESENT, we're going to reserve the permissions bits
++ * and set them to all zeros for swap entries, which speeds up the
++ * miss handler at the cost of 3 bits of offset.  That trade-off can
++ * be revisited if necessary, but Hexagon processor architecture and
++ * target applications suggest a lot of TLB misses and not much swap space.
++ *
++ * Format of swap PTE:
++ *	bit	0:	Present (zero)
++ *	bit	1:	_PAGE_FILE (zero)
++ *	bits	2-6:	swap type (arch independent layer uses 5 bits max)
++ *	bits	7-9:	bits 2:0 of offset
++ *	bits 10-12:	effectively _PAGE_PROTNONE (all zero)
++ *	bits 13-31:  bits 21:3 of swap offset
++ *
++ * Format of file PTE:
++ *	bit	0:	Present (zero)
++ *	bit	1:	_PAGE_FILE (zero)
++ *	bits	2-9:	bits 7:0 of offset
++ *	bits 10-12:	effectively _PAGE_PROTNONE (all zero)
++ *	bits 13-31:  bits 26:8 of swap offset
++ *
++ * The split offset makes some of the following macros a little gnarly,
++ * but there's plenty of precedent for this sort of thing.
++ */
++#define PTE_FILE_MAX_BITS     27
++
++/* Used for swap PTEs */
++#define __swp_type(swp_pte)		(((swp_pte).val >> 2) & 0x1f)
++
++#define __swp_offset(swp_pte) \
++	((((swp_pte).val >> 7) & 0x7) | (((swp_pte).val >> 10) & 0x003ffff8))
++
++#define __swp_entry(type, offset) \
++	((swp_entry_t)	{ \
++		((type << 2) | \
++		 ((offset & 0x3ffff8) << 10) | ((offset & 0x7) << 7)) })
++
++/* Used for file PTEs */
++#define pte_file(pte) \
++	((pte_val(pte) & (_PAGE_FILE | _PAGE_PRESENT)) == _PAGE_FILE)
++
++#define pte_to_pgoff(pte) \
++	(((pte_val(pte) >> 2) & 0xff) | ((pte_val(pte) >> 5) & 0x07ffff00))
++
++#define pgoff_to_pte(off) \
++	((pte_t) { ((((off) & 0x7ffff00) << 5) | (((off) & 0xff) << 2)\
++	| _PAGE_FILE) })
++
++/*  Oh boy.  There are a lot of possible arch overrides found in this file.  */
++#include <asm-generic/pgtable.h>
++
++#endif
+diff --git a/arch/hexagon/mm/pgalloc.c b/arch/hexagon/mm/pgalloc.c
+new file mode 100644
+index 0000000..5286f12
+--- /dev/null
++++ b/arch/hexagon/mm/pgalloc.c
+@@ -0,0 +1,25 @@
++/*
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -209,454 +1130,12 @@ index 0000000..b57d741
 + */
 +
 +#include <linux/init.h>
-+#include <linux/mm.h>
-+#include <linux/bootmem.h>
-+#include <asm/atomic.h>
-+#include <linux/highmem.h>
-+#include <asm/tlb.h>
-+#include <asm/sections.h>
-+#include <asm/vm_mmu.h>
 +
-+/*
-+ * Define a startpg just past the end of the kernel image and a lastpg
-+ * that corresponds to the end of real or simulated platform memory.
-+ */
-+#define bootmem_startpg (PFN_UP(((unsigned long) _end) - PAGE_OFFSET))
-+
-+unsigned long bootmem_lastpg;  /*  Should be set by platform code  */
-+
-+/*  Set as variable to limit PMD copies  */
-+int max_kernel_seg = 0x303;
-+
-+/*  think this should be (page_size-1) the way it's used...*/
-+unsigned long zero_page_mask;
-+
-+/*  indicate pfn's of high memory  */
-+unsigned long highstart_pfn, highend_pfn;
-+
-+/* struct mmu_gather defined in asm-generic.h;  */
-+DEFINE_PER_CPU(struct mmu_gather, mmu_gathers);
-+
-+/* Default cache attribute for newly created page tables */
-+unsigned long _dflt_cache_att = CACHEDEF;
-+
-+/*
-+ * The current "generation" of kernel map, which should not roll
-+ * over until Hell freezes over.  Actual bound in years needs to be
-+ * calculated to confirm.
-+ */
-+DEFINE_SPINLOCK(kmap_gen_lock);
-+
-+/*  checkpatch says don't init this to 0.  */
-+unsigned long long kmap_generation;
-+
-+/*
-+ * mem_init - initializes memory
-+ *
-+ * Frees up bootmem
-+ * Fixes up more stuff for HIGHMEM
-+ * Calculates and displays memory available/used
-+ */
-+void __init mem_init(void)
-+{
-+	/*  No idea where this is actually declared.  Seems to evade LXR.  */
-+	totalram_pages += free_all_bootmem();
-+	num_physpages = bootmem_lastpg;	/*  seriously, what?  */
-+
-+	printk(KERN_INFO "totalram_pages = %ld\n", totalram_pages);
-+
-+	/*
-+	 *  To-Do:  someone somewhere should wipe out the bootmem map
-+	 *  after we're done?
-+	 */
-+
-+	/*
-+	 * This can be moved to some more virtual-memory-specific
-+	 * initialization hook at some point.  Set the init_mm
-+	 * descriptors "context" value to point to the initial
-+	 * kernel segment table's physical address.
-+	 */
-+	init_mm.context.ptbase = __pa(init_mm.pgd);
-+}
-+
-+/*
-+ * free_initmem - frees memory used by stuff declared with __init
-+ *
-+ * Todo:  free pages between __init_begin and __init_end; possibly
-+ * some devtree related stuff as well.
-+ */
-+void __init_refok free_initmem(void)
++void __init pgtable_cache_init(void)
 +{
 +}
 +
-+/*
-+ * free_initrd_mem - frees...  initrd memory.
-+ * @start - start of init memory
-+ * @end - end of init memory
-+ *
-+ * Apparently has to be passed the address of the initrd memory.
-+ *
-+ * Wrapped by #ifdef CONFIG_BLKDEV_INITRD
-+ */
-+void free_initrd_mem(unsigned long start, unsigned long end)
-+{
-+}
 +
-+void sync_icache_dcache(pte_t pte)
-+{
-+	unsigned long addr;
-+	struct page *page;
-+
-+	page = pte_page(pte);
-+	addr = (unsigned long) page_address(page);
-+
-+	__vmcache_idsync(addr, PAGE_SIZE);
-+}
-+
-+/*
-+ * In order to set up page allocator "nodes",
-+ * somebody has to call free_area_init() for UMA.
-+ *
-+ * In this mode, we only have one pg_data_t
-+ * structure: contig_mem_data.
-+ */
-+void __init paging_init(void)
-+{
-+	unsigned long zones_sizes[MAX_NR_ZONES] = {0, };
-+
-+	/*
-+	 *  This is not particularly well documented anywhere, but
-+	 *  give ZONE_NORMAL all the memory, including the big holes
-+	 *  left by the kernel+bootmem_map which are already left as reserved
-+	 *  in the bootmem_map; free_area_init should see those bits and
-+	 *  adjust accordingly.
-+	 */
-+
-+	zones_sizes[ZONE_NORMAL] = max_low_pfn;
-+
-+	free_area_init(zones_sizes);  /*  sets up the zonelists and mem_map  */
-+
-+	/*
-+	 * Start of high memory area.  Will probably need something more
-+	 * fancy if we...  get more fancy.
-+	 */
-+	high_memory = (void *)((bootmem_lastpg + 1) << PAGE_SHIFT);
-+}
-+
-+#ifndef DMA_RESERVE
-+#define DMA_RESERVE		(4)
-+#endif
-+
-+#define DMA_CHUNKSIZE		(1<<22)
-+#define DMA_RESERVED_BYTES	(DMA_RESERVE * DMA_CHUNKSIZE)
-+
-+/*
-+ * Pick out the memory size.  We look for mem=size,
-+ * where size is "size[KkMm]"
-+ */
-+static int __init early_mem(char *p)
-+{
-+	unsigned long size;
-+	char *endp;
-+
-+	size = memparse(p, &endp);
-+
-+	bootmem_lastpg = PFN_DOWN(size);
-+
-+	return 0;
-+}
-+early_param("mem", early_mem);
-+
-+size_t hexagon_coherent_pool_size = (size_t) (DMA_RESERVE << 22);
-+
-+void __init setup_arch_memory(void)
-+{
-+	int bootmap_size;
-+	/*  XXX Todo: this probably should be cleaned up  */
-+	u32 *segtable = (u32 *) &swapper_pg_dir[0];
-+	u32 *segtable_end;
-+
-+	/*
-+	 * Set up boot memory allocator
-+	 *
-+	 * The Gorman book also talks about these functions.
-+	 * This needs to change for highmem setups.
-+	 */
-+
-+	/* Memory size needs to be a multiple of 16M */
-+	bootmem_lastpg = PFN_DOWN((bootmem_lastpg << PAGE_SHIFT) &
-+		~((BIG_KERNEL_PAGE_SIZE) - 1));
-+
-+	/*
-+	 * Reserve the top DMA_RESERVE bytes of RAM for DMA (uncached)
-+	 * memory allocation
-+	 */
-+	bootmap_size = init_bootmem(bootmem_startpg, bootmem_lastpg -
-+				    PFN_DOWN(DMA_RESERVED_BYTES));
-+
-+	printk(KERN_INFO "bootmem_startpg:  0x%08lx\n", bootmem_startpg);
-+	printk(KERN_INFO "bootmem_lastpg:  0x%08lx\n", bootmem_lastpg);
-+	printk(KERN_INFO "bootmap_size:  %d\n", bootmap_size);
-+	printk(KERN_INFO "max_low_pfn:  0x%08lx\n", max_low_pfn);
-+
-+	/*
-+	 * The default VM page tables (will be) populated with
-+	 * VA=PA+PAGE_OFFSET mapping.  We go in and invalidate entries
-+	 * higher than what we have memory for.
-+	 */
-+
-+	/*  this is pointer arithmetic; each entry covers 4MB  */
-+	segtable = segtable + (PAGE_OFFSET >> 22);
-+
-+	/*  this actually only goes to the end of the first gig  */
-+	segtable_end = segtable + (1<<(30-22));
-+
-+	/*  Move forward to the start of empty pages  */
-+	segtable += bootmem_lastpg >> (22-PAGE_SHIFT);
-+
-+	{
-+	    int i;
-+
-+	    for (i = 1 ; i <= DMA_RESERVE ; i++)
-+		segtable[-i] = ((segtable[-i] & __HVM_PTE_PGMASK_4MB)
-+				| __HVM_PTE_R | __HVM_PTE_W | __HVM_PTE_X
-+				| __HEXAGON_C_UNC << 6
-+				| __HVM_PDE_S_4MB);
-+	}
-+
-+	printk(KERN_INFO "clearing segtable from %p to %p\n", segtable,
-+		segtable_end);
-+	while (segtable < (segtable_end-8))
-+		*(segtable++) = __HVM_PDE_S_INVALID;
-+	/* stop the pointer at the device I/O 4MB page  */
-+
-+	printk(KERN_INFO "segtable = %p (should be equal to _K_io_map)\n",
-+		segtable);
-+
-+#if 0
-+	/*  Other half of the early device table from vm_init_segtable. */
-+	printk(KERN_INFO "&_K_init_devicetable = 0x%08x\n",
-+		(unsigned long) _K_init_devicetable-PAGE_OFFSET);
-+	*segtable = ((u32) (unsigned long) _K_init_devicetable-PAGE_OFFSET) |
-+		__HVM_PDE_S_4KB;
-+	printk(KERN_INFO "*segtable = 0x%08x\n", *segtable);
-+#endif
-+
-+	/*
-+	 * Free all the memory that wasn't taken up by the bootmap, the DMA
-+	 * reserve, or kernel itself.
-+	 */
-+	free_bootmem(PFN_PHYS(bootmem_startpg)+bootmap_size,
-+		     PFN_PHYS(bootmem_lastpg - bootmem_startpg) - bootmap_size -
-+		     DMA_RESERVED_BYTES);
-+
-+	/*
-+	 *  The bootmem allocator seemingly just lives to feed memory
-+	 *  to the paging system
-+	 */
-+	printk(KERN_INFO "PAGE_SIZE=%lu\n", PAGE_SIZE);
-+	paging_init();  /*  See Gorman Book, 2.3  */
-+
-+	/*
-+	 *  At this point, the page allocator is kind of initialized, but
-+	 *  apparently no pages are available (just like with the bootmem
-+	 *  allocator), and need to be freed themselves via mem_init(),
-+	 *  which is called by start_kernel() later on in the process
-+	 */
-+}
-diff --git a/arch/hexagon/mm/vm_fault.c b/arch/hexagon/mm/vm_fault.c
-new file mode 100644
-index 0000000..c10b76f
---- /dev/null
-+++ b/arch/hexagon/mm/vm_fault.c
-@@ -0,0 +1,187 @@
-+/*
-+ * Memory fault handling for Hexagon
-+ *
-+ * Copyright (c) 2010-2011 Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+/*
-+ * Page fault handling for the Hexagon Virtual Machine.
-+ * Can also be called by a native port emulating the HVM
-+ * execptions.
-+ */
-+
-+#include <asm/pgtable.h>
-+#include <asm/traps.h>
-+#include <asm/uaccess.h>
-+#include <linux/mm.h>
-+#include <linux/signal.h>
-+#include <linux/module.h>
-+#include <linux/hardirq.h>
-+
-+/*
-+ * Decode of hardware exception sends us to one of several
-+ * entry points.  At each, we generate canonical arguments
-+ * for handling by the abstract memory management code.
-+ */
-+#define FLT_IFETCH     -1
-+#define FLT_LOAD        0
-+#define FLT_STORE       1
-+
-+
-+/*
-+ * Canonical page fault handler
-+ */
-+void do_page_fault(unsigned long address, long cause, struct pt_regs *regs)
-+{
-+	struct vm_area_struct *vma;
-+	struct mm_struct *mm = current->mm;
-+	siginfo_t info;
-+	int si_code = SEGV_MAPERR;
-+	int fault;
-+	const struct exception_table_entry *fixup;
-+
-+	/*
-+	 * If we're in an interrupt or have no user context,
-+	 * then must not take the fault.
-+	 */
-+	if (unlikely(in_interrupt() || !mm))
-+		goto no_context;
-+
-+	local_irq_enable();
-+
-+	down_read(&mm->mmap_sem);
-+	vma = find_vma(mm, address);
-+	if (!vma)
-+		goto bad_area;
-+
-+	if (vma->vm_start <= address)
-+		goto good_area;
-+
-+	if (!(vma->vm_flags & VM_GROWSDOWN))
-+		goto bad_area;
-+
-+	if (expand_stack(vma, address))
-+		goto bad_area;
-+
-+good_area:
-+	/* Address space is OK.  Now check access rights. */
-+	si_code = SEGV_ACCERR;
-+
-+	switch (cause) {
-+	case FLT_IFETCH:
-+		if (!(vma->vm_flags & VM_EXEC))
-+			goto bad_area;
-+		break;
-+	case FLT_LOAD:
-+		if (!(vma->vm_flags & VM_READ))
-+			goto bad_area;
-+		break;
-+	case FLT_STORE:
-+		if (!(vma->vm_flags & VM_WRITE))
-+			goto bad_area;
-+		break;
-+	}
-+
-+	fault = handle_mm_fault(mm, vma, address, (cause > 0));
-+
-+	/* The most common case -- we are done. */
-+	if (likely(!(fault & VM_FAULT_ERROR))) {
-+		if (fault & VM_FAULT_MAJOR)
-+			current->maj_flt++;
-+		else
-+			current->min_flt++;
-+
-+		up_read(&mm->mmap_sem);
-+		return;
-+	}
-+
-+	up_read(&mm->mmap_sem);
-+
-+	/* Handle copyin/out exception cases */
-+	if (!user_mode(regs))
-+		goto no_context;
-+
-+	if (fault & VM_FAULT_OOM) {
-+		pagefault_out_of_memory();
-+		return;
-+	}
-+
-+	/* User-mode address is in the memory map, but we are
-+	 * unable to fix up the page fault.
-+	 */
-+	if (fault & VM_FAULT_SIGBUS) {
-+		info.si_signo = SIGBUS;
-+		info.si_code = BUS_ADRERR;
-+	}
-+	/* Address is not in the memory map */
-+	else {
-+		info.si_signo = SIGSEGV;
-+		info.si_code = SEGV_ACCERR;
-+	}
-+	info.si_errno = 0;
-+	info.si_addr = (void __user *)address;
-+	force_sig_info(info.si_code, &info, current);
-+	return;
-+
-+bad_area:
-+	up_read(&mm->mmap_sem);
-+
-+	if (user_mode(regs)) {
-+		info.si_signo = SIGSEGV;
-+		info.si_errno = 0;
-+		info.si_code = si_code;
-+		info.si_addr = (void *)address;
-+		force_sig_info(SIGSEGV, &info, current);
-+		return;
-+	}
-+	/* Kernel-mode fault falls through */
-+
-+no_context:
-+	fixup = search_exception_tables(pt_elr(regs));
-+	if (fixup) {
-+		pt_set_elr(regs, fixup->fixup);
-+		return;
-+	}
-+
-+	/* Things are looking very, very bad now */
-+	bust_spinlocks(1);
-+	printk(KERN_EMERG "Unable to handle kernel paging request at "
-+		"virtual address 0x%08lx, regs %p\n", address, regs);
-+	die("Bad Kernel VA", regs, SIGKILL);
-+}
-+
-+
-+void read_protection_fault(struct pt_regs *regs)
-+{
-+	unsigned long badvadr = pt_badva(regs);
-+
-+	do_page_fault(badvadr, FLT_LOAD, regs);
-+}
-+
-+void write_protection_fault(struct pt_regs *regs)
-+{
-+	unsigned long badvadr = pt_badva(regs);
-+
-+	do_page_fault(badvadr, FLT_STORE, regs);
-+}
-+
-+void execute_protection_fault(struct pt_regs *regs)
-+{
-+	unsigned long badvadr = pt_badva(regs);
-+
-+	do_page_fault(badvadr, FLT_IFETCH, regs);
-+}
 -- 
 1.7.1
 
