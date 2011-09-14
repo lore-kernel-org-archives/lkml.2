@@ -1,2137 +1,1177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756418Ab1INKsj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 06:48:39 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:60322 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756389Ab1INKsg (ORCPT
+	id S932081Ab1INKud (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 06:50:33 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:57774 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756384Ab1INKua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 06:48:36 -0400
-From: keguang.zhang@gmail.com
-To: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Cc: ralf@linux-mips.org, wuzhangjin@gmail.com, r0bertz@gentoo.org,
-        chenj@lemote.com, "Zhang, Keguang" <keguang.zhang@gmail.com>
-Subject: [PATCH] MIPS: Add basic support for Loongson1B
-Date: Wed, 14 Sep 2011 18:47:50 +0800
-Message-Id: <1315997270-14332-1-git-send-email-keguang.zhang@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	Wed, 14 Sep 2011 06:50:30 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6468"; a="118474440"
+Message-ID: <4E7086F0.8050009@codeaurora.org>
+Date: Wed, 14 Sep 2011 16:20:24 +0530
+From: Mohan Pallaka <mpallaka@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
+MIME-Version: 1.0
+To: Javier Martinez Canillas <martinez.javier@gmail.com>
+CC: Kevin McNeely <kev@cypress.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2 1/3] Input: cyttsp - Cypress TTSP capacitive multi-touch
+ screen support
+References: <1315029042-27513-1-git-send-email-martinez.javier@gmail.com> <1315029042-27513-2-git-send-email-martinez.javier@gmail.com>
+In-Reply-To: <1315029042-27513-2-git-send-email-martinez.javier@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhang, Keguang <keguang.zhang@gmail.com>
+  Hi Javier,
 
-This patch adds basic support for Loongson1B
-including serial, timer and interrupt handler.
+Please find my review comments.
 
-Loongson 1B is a 32-bit SoC designed by Institute of
-Computing Technology (ICT), Chinese Academy of Sciences (CAS),
-which implements the MIPS32 release 2 instruction set.
+On 9/3/2011 11:20 AM, Javier Martinez Canillas wrote:
+> Cypress TrueTouch(tm) Standard Product controllers are found in
+> a wide range of embedded devices. This driver add support for a
+> variety of TTSP controllers.
+>
+> The driver is composed of a core driver that process the data sent by
+> the contacts and a set of bus specific interface modules. This patch
+> adds the base core TTSP driver.
+>
+> The original author of the driver is Kevin McNeely<kev@cypress.com>
+>
+> Since the hardware is capable of tracking identifiable contacts and the
+> original driver used multi-touch protocol type A (stateless), multi-touch
+> protocol type B (stateful) support was added by Javier Martinez Canillas.
+>
+> Signed-off-by: Javier Martinez Canillas<martinez.javier@gmail.com>
+> ---
+> Changes since v1: Fix issues called out by Dmitry Torokhov
+>       - Add msleep() delays between retries for read and write operations
+>       - Change cyttsp_core_init() to receive the IRQ from the client data
+>         instead of obtaining from the platform_data
+>
+>   drivers/input/touchscreen/Kconfig              |    2 +
+>   drivers/input/touchscreen/Makefile             |    1 +
+>   drivers/input/touchscreen/cyttsp/Kconfig       |    4 +
+>   drivers/input/touchscreen/cyttsp/Makefile      |    1 +
+>   drivers/input/touchscreen/cyttsp/cyttsp_core.c |  879 ++++++++++++++++++++++++
+>   drivers/input/touchscreen/cyttsp/cyttsp_core.h |   56 ++
+>   include/linux/input/cyttsp.h                   |   68 ++
+>   7 files changed, 1011 insertions(+), 0 deletions(-)
+>   create mode 100644 drivers/input/touchscreen/cyttsp/Kconfig
+>   create mode 100644 drivers/input/touchscreen/cyttsp/Makefile
+>   create mode 100644 drivers/input/touchscreen/cyttsp/cyttsp_core.c
+>   create mode 100644 drivers/input/touchscreen/cyttsp/cyttsp_core.h
+>   create mode 100644 include/linux/input/cyttsp.h
+>
+> diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
+> index cabd9e5..6786680 100644
+> --- a/drivers/input/touchscreen/Kconfig
+> +++ b/drivers/input/touchscreen/Kconfig
+> @@ -726,4 +726,6 @@ config TOUCHSCREEN_TPS6507X
+>   	  To compile this driver as a module, choose M here: the
+>   	  module will be called tps6507x_ts.
+>
+> +source "drivers/input/touchscreen/cyttsp/Kconfig"
+> +
+>   endif
+> diff --git a/drivers/input/touchscreen/Makefile b/drivers/input/touchscreen/Makefile
+> index 282d6f7..945950a 100644
+> --- a/drivers/input/touchscreen/Makefile
+> +++ b/drivers/input/touchscreen/Makefile
+> @@ -60,3 +60,4 @@ obj-$(CONFIG_TOUCHSCREEN_WM97XX_MAINSTONE)	+= mainstone-wm97xx.o
+>   obj-$(CONFIG_TOUCHSCREEN_WM97XX_ZYLONITE)	+= zylonite-wm97xx.o
+>   obj-$(CONFIG_TOUCHSCREEN_W90X900)	+= w90p910_ts.o
+>   obj-$(CONFIG_TOUCHSCREEN_TPS6507X)	+= tps6507x-ts.o
+> +obj-$(CONFIG_TOUCHSCREEN_CYTTSP_CORE)	+= cyttsp/
+> diff --git a/drivers/input/touchscreen/cyttsp/Kconfig b/drivers/input/touchscreen/cyttsp/Kconfig
+> new file mode 100644
+> index 0000000..7e8e0f4
+> --- /dev/null
+> +++ b/drivers/input/touchscreen/cyttsp/Kconfig
+> @@ -0,0 +1,4 @@
+> +config TOUCHSCREEN_CYTTSP_CORE
+> +	tristate "Cypress TTSP touchscreen core"
+> +	help
+> +	  Always activated for Cypress TTSP touchscreen
+> diff --git a/drivers/input/touchscreen/cyttsp/Makefile b/drivers/input/touchscreen/cyttsp/Makefile
+> new file mode 100644
+> index 0000000..d1b250f
+> --- /dev/null
+> +++ b/drivers/input/touchscreen/cyttsp/Makefile
+> @@ -0,0 +1 @@
+> +obj-$(CONFIG_TOUCHSCREEN_CYTTSP_CORE)   += cyttsp_core.o
+> diff --git a/drivers/input/touchscreen/cyttsp/cyttsp_core.c b/drivers/input/touchscreen/cyttsp/cyttsp_core.c
+> new file mode 100644
+> index 0000000..a145518
+> --- /dev/null
+> +++ b/drivers/input/touchscreen/cyttsp/cyttsp_core.c
+> @@ -0,0 +1,879 @@
+> +/*
+> + * Core Source for:
+> + * Cypress TrueTouch(TM) Standard Product (TTSP) touchscreen drivers.
+> + * For use with Cypress Txx3xx parts.
+> + * Supported parts include:
+> + * CY8CTST341
+> + * CY8CTMA340
+> + *
+> + * Copyright (C) 2009, 2010, 2011 Cypress Semiconductor, Inc.
+> + * Copyright (C) 2011 Javier Martinez Canillas<martinez.javier@gmail.com>
+> + *
+> + * Added multi-touch protocol type B support by Javier Martinez Canillas
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License
+> + * version 2, and only version 2, as published by the
+> + * Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License along
+> + * with this program; if not, write to the Free Software Foundation, Inc.,
+> + * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+> + *
+> + * Contact Cypress Semiconductor at www.cypress.com<kev@cypress.com>
+> + *
+> + */
+> +
+> +#include "cyttsp_core.h"
+> +
+> +#include<linux/delay.h>
+> +#include<linux/input.h>
+> +#include<linux/input/mt.h>
+> +#include<linux/gpio.h>
+> +#include<linux/interrupt.h>
+> +#include<linux/slab.h>
+> +
+> +/* Bootloader number of command keys */
+> +#define CY_NUM_BL_KEYS    8
+> +
+> +/* helpers */
+> +#define GET_NUM_TOUCHES(x)          ((x)&  0x0F)
+> +#define IS_LARGE_AREA(x)            (((x)&  0x10)>>  4)
+> +#define IS_BAD_PKT(x)               ((x)&  0x20)
+> +#define IS_VALID_APP(x)             ((x)&  0x01)
+> +#define IS_OPERATIONAL_ERR(x)       ((x)&  0x3F)
+> +#define GET_HSTMODE(reg)            ((reg&  0x70)>>  4)
+> +#define GET_BOOTLOADERMODE(reg)     ((reg&  0x10)>>  4)
+> +
+> +#define CY_REG_BASE                 0x00
+> +#define CY_REG_ACT_DIST             0x1E
+> +#define CY_REG_ACT_INTRVL           0x1D
+> +#define CY_REG_TCH_TMOUT            (CY_REG_ACT_INTRVL+1)
+> +#define CY_REG_LP_INTRVL            (CY_REG_TCH_TMOUT+1)
+> +#define CY_MAXZ                     255
+> +#define CY_DELAY_DFLT               20 /* ms */
+> +#define CY_DELAY_MAX                (500/CY_DELAY_DFLT) /* half second */
+> +#define CY_ACT_DIST_DFLT            0xF8
+> +#define CY_HNDSHK_BIT               0x80
+> +/* device mode bits */
+> +#define CY_OPERATE_MODE             0x00
+> +#define CY_SYSINFO_MODE             0x10
+> +/* power mode select bits */
+> +#define CY_SOFT_RESET_MODE          0x01 /* return to Bootloader mode */
+> +#define CY_DEEP_SLEEP_MODE          0x02
+> +#define CY_LOW_POWER_MODE           0x04
+> +
+> +/* Slots management */
+> +#define CY_MAX_FINGER               4
+> +#define CY_SLOT_UNUSED              0
+> +
+> +struct cyttsp_tch {
+> +	__be16 x, y;
+> +	u8 z;
+> +} __packed;
+> +
+> +/* TrueTouch Standard Product Gen3 interface definition */
+> +struct cyttsp_xydata {
+> +	u8 hst_mode;
+> +	u8 tt_mode;
+> +	u8 tt_stat;
+> +	struct cyttsp_tch tch1;
+> +	u8 touch12_id;
+> +	struct cyttsp_tch tch2;
+> +	u8 gest_cnt;
+> +	u8 gest_id;
+> +	struct cyttsp_tch tch3;
+> +	u8 touch34_id;
+> +	struct cyttsp_tch tch4;
+> +	u8 tt_undef[3];
+> +	u8 act_dist;
+> +	u8 tt_reserved;
+> +} __packed;
+> +
+> +/* TTSP System Information interface definition */
+> +struct cyttsp_sysinfo_data {
+> +	u8 hst_mode;
+> +	u8 mfg_cmd;
+> +	u8 mfg_stat;
+> +	u8 cid[3];
+> +	u8 tt_undef1;
+> +	u8 uid[8];
+> +	u8 bl_verh;
+> +	u8 bl_verl;
+> +	u8 tts_verh;
+> +	u8 tts_verl;
+> +	u8 app_idh;
+> +	u8 app_idl;
+> +	u8 app_verh;
+> +	u8 app_verl;
+> +	u8 tt_undef[5];
+> +	u8 scn_typ;
+> +	u8 act_intrvl;
+> +	u8 tch_tmout;
+> +	u8 lp_intrvl;
+> +};
+> +
+> +/* TTSP Bootloader Register Map interface definition */
+> +#define CY_BL_CHKSUM_OK 0x01
+> +struct cyttsp_bootloader_data {
+> +	u8 bl_file;
+> +	u8 bl_status;
+> +	u8 bl_error;
+> +	u8 blver_hi;
+> +	u8 blver_lo;
+> +	u8 bld_blver_hi;
+> +	u8 bld_blver_lo;
+> +	u8 ttspver_hi;
+> +	u8 ttspver_lo;
+> +	u8 appid_hi;
+> +	u8 appid_lo;
+> +	u8 appver_hi;
+> +	u8 appver_lo;
+> +	u8 cid_0;
+> +	u8 cid_1;
+> +	u8 cid_2;
+> +};
+> +
+> +struct cyttsp {
+> +	struct device *dev;
+> +	int irq;
+> +	struct input_dev *input;
+> +	char phys[32];
+> +	const struct bus_type *bus_type;
+Do we need to know the bus type? Rest of the code doesn't seem to
+be using this information.
+> +	const struct cyttsp_platform_data *platform_data;
+> +	struct cyttsp_bus_ops *bus_ops;
+> +	struct cyttsp_bootloader_data bl_data;
+> +	struct cyttsp_sysinfo_data sysinfo_data;
+> +	struct completion bl_ready;
+> +	enum cyttsp_powerstate power_state;
+> +	int slot_cnt;
+> +	int slots[CY_MAX_FINGER];
+> +	int slot_status[CY_MAX_FINGER];
+> +};
+> +
+> +static const u8 bl_command[] = {
+> +	0x00,			/* file offset */
+> +	0xFF,			/* command */
+> +	0xA5,			/* exit bootloader command */
+> +	0, 1, 2, 3, 4, 5, 6, 7	/* default keys */
+> +};
+> +
+> +static int ttsp_read_block_data(struct cyttsp *ts, u8 command,
+> +	u8 length, void *buf)
+> +{
+> +	int retval;
+> +	int tries;
+> +
+> +	if (!buf || !length)
+> +		return -EINVAL;
+> +
+> +	for (tries = 0, retval = -1;
+> +	     tries<  CY_NUM_RETRY&&  (retval<  0);
+> +	     tries++) {
+> +		retval = ts->bus_ops->read(ts->bus_ops, command, length, buf);
+> +		if (retval)
+> +			msleep(CY_DELAY_DFLT);
+> +	}
+> +
+> +	return retval;
+> +}
+> +
+> +static int ttsp_write_block_data(struct cyttsp *ts, u8 command,
+> +	u8 length, void *buf)
+> +{
+> +	int retval;
+> +	if (!buf || !length)
+> +		return -EINVAL;
+> +
+> +	retval = ts->bus_ops->write(ts->bus_ops, command, length, buf);
+> +	if (retval)
+> +		msleep(CY_DELAY_DFLT);
+Don't we need to retry if write fails?
+> +
+> +	return retval;
+> +}
+> +
+> +static int ttsp_tch_ext(struct cyttsp *ts, void *buf)
+> +{
+> +	int retval;
+> +
+> +	if (!buf)
+> +		return -EIO;
+> +
+> +	retval = ts->bus_ops->ext(ts->bus_ops, buf);
+> +
+> +	return retval;
+> +}
+> +
+> +static int cyttsp_load_bl_regs(struct cyttsp *ts)
+> +{
+> +	int retval;
+> +
+> +	memset(&(ts->bl_data), 0, sizeof(struct cyttsp_bootloader_data));
+> +
+> +	retval =  ttsp_read_block_data(ts, CY_REG_BASE,
+> +		sizeof(ts->bl_data),&(ts->bl_data));
+> +
+> +	return retval;
+> +}
+> +
+> +static int cyttsp_bl_app_valid(struct cyttsp *ts)
+> +{
+> +	int retval;
+> +
+> +	retval = cyttsp_load_bl_regs(ts);
+> +
+> +	if (retval<  0)
+> +		return -ENODEV;
+> +
+> +	if (GET_BOOTLOADERMODE(ts->bl_data.bl_status)) {
+> +		if (IS_VALID_APP(ts->bl_data.bl_status)) {
+> +			dev_dbg(ts->dev, "%s: App found; normal boot\n",
+> +				__func__);
+> +			return 0;
+> +		} else {
+> +			dev_dbg(ts->dev, "%s: NO APP; load firmware!!\n",
+> +				__func__);
+> +			return -ENODEV;
+> +		}
+> +	} else if (GET_HSTMODE(ts->bl_data.bl_file) == CY_OPERATE_MODE) {
+> +		if (!(IS_OPERATIONAL_ERR(ts->bl_data.bl_status))) {
+> +			dev_dbg(ts->dev, "%s: Operational\n",
+> +				__func__);
+> +			return 1;
+> +		} else {
+> +			dev_dbg(ts->dev, "%s: Operational failure\n",
+> +				__func__);
+> +			return -ENODEV;
+> +		}
+> +	} else {
+> +		dev_dbg(ts->dev, "%s: Non-Operational failure\n",
+> +			__func__);
+> +			return -ENODEV;
+> +	}
+> +
+> +}
+> +
+> +static int cyttsp_exit_bl_mode(struct cyttsp *ts)
+> +{
+> +	int retval;
+> +	int tries;
+> +	u8 bl_cmd[sizeof(bl_command)];
+> +
+> +	memcpy(bl_cmd, bl_command, sizeof(bl_command));
+> +	if (ts->platform_data->bl_keys)
+> +		memcpy(&bl_cmd[sizeof(bl_command) - CY_NUM_BL_KEYS],
+> +			ts->platform_data->bl_keys, sizeof(bl_command));
+> +
+> +	dev_dbg(ts->dev,
+> +		"%s: bl_cmd= "
+> +		"%02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X\n",
+> +		__func__, bl_cmd[0], bl_cmd[1], bl_cmd[2],
+> +		bl_cmd[3], bl_cmd[4], bl_cmd[5], bl_cmd[6],
+> +		bl_cmd[7], bl_cmd[8], bl_cmd[9], bl_cmd[10]);
+> +
+> +	retval = ttsp_write_block_data(ts, CY_REG_BASE,
+> +		sizeof(bl_cmd), (void *)bl_cmd);
+> +	if (retval<  0)
+> +		return retval;
+> +
+> +	/* wait for TTSP Device to complete switch to Operational mode */
+> +	tries = 0;
+> +	do {
+> +		msleep(CY_DELAY_DFLT);
+> +		retval = cyttsp_load_bl_regs(ts);
+> +	} while (!((retval == 0)&&
+> +		!GET_BOOTLOADERMODE(ts->bl_data.bl_status))&&
+> +		(tries++<  CY_DELAY_MAX));
+> +
+> +	dev_dbg(ts->dev, "%s: check bl ready tries=%d ret=%d stat=%02X\n",
+> +		__func__, tries, retval, ts->bl_data.bl_status);
+> +
+> +	if (retval<  0)
+> +		return retval;
+> +	else if (GET_BOOTLOADERMODE(ts->bl_data.bl_status))
+> +		return -ENODEV;
+> +	else
+> +		return 0;
+> +}
+> +
+> +static int cyttsp_set_operational_mode(struct cyttsp *ts)
+> +{
+> +	struct cyttsp_xydata xy_data;
+> +	int retval;
+> +	int tries;
+> +	u8 cmd = CY_OPERATE_MODE;
+> +
+> +	retval = ttsp_write_block_data(ts, CY_REG_BASE, sizeof(cmd),&cmd);
+> +
+> +	if (retval<  0)
+> +		return retval;
+> +
+> +	/* wait for TTSP Device to complete switch to Operational mode */
+> +	tries = 0;
+> +	do {
+> +		msleep(CY_DELAY_DFLT);
+> +		retval = ttsp_read_block_data(ts, CY_REG_BASE,
+> +			sizeof(xy_data),&(xy_data));
+> +	} while (!((retval == 0)&&
+> +		(xy_data.act_dist == CY_ACT_DIST_DFLT))&&
+what is the need for this check,"xy_data.act_dist == CY_ACT_DIST_DFLT"?
+we can pass a different value for act_dist from pdata. Another point to 
+concerns me
+is that in case of i2c/spi failures "ttsp_read_block_data" will it self 
+try for NUM_TRY
+and this particular code block tries till CY_DELAY_MAX, I think we are 
+overdoing
+in this case.  How about keeping the "ttsp_read_block_dat" simple and 
+let the
+code that uses do the retry job.
+> +		(tries++<  CY_DELAY_MAX));
+> +
+> +	dev_dbg(ts->dev, "%s: check op ready tries=%d ret=%d dist=%02X\n",
+> +		__func__, tries, retval, xy_data.act_dist);
+> +
+> +	return retval;
+> +}
+> +
+> +static int cyttsp_set_sysinfo_mode(struct cyttsp *ts)
+> +{
+> +	int retval;
+> +	int tries;
+> +	u8 cmd = CY_SYSINFO_MODE;
+> +
+> +	memset(&(ts->sysinfo_data), 0, sizeof(struct cyttsp_sysinfo_data));
+> +
+> +	/* switch to sysinfo mode */
+> +	retval = ttsp_write_block_data(ts, CY_REG_BASE, sizeof(cmd),&cmd);
+> +	if (retval<  0)
+> +		return retval;
+> +
+> +	/* read sysinfo registers */
+> +	tries = 0;
+> +	do {
+> +		msleep(CY_DELAY_DFLT);
+> +		retval = ttsp_read_block_data(ts, CY_REG_BASE,
+> +			sizeof(ts->sysinfo_data),&(ts->sysinfo_data));
+> +	} while (!((retval == 0)&&
+> +		!((ts->sysinfo_data.tts_verh == 0)&&
+> +		(ts->sysinfo_data.tts_verl == 0)))&&
+> +		(tries++<  CY_DELAY_MAX));
+> +
+> +	dev_dbg(ts->dev, "%s: check sysinfo ready tries=%d ret=%d\n",
+> +		__func__, tries, retval);
+> +
+> +	dev_info(ts->dev, "%s: tv=%02X%02X ai=0x%02X%02X "
+> +		"av=0x%02X%02X ci=0x%02X%02X%02X\n", "cyttsp",
+> +		ts->sysinfo_data.tts_verh, ts->sysinfo_data.tts_verl,
+> +		ts->sysinfo_data.app_idh, ts->sysinfo_data.app_idl,
+> +		ts->sysinfo_data.app_verh, ts->sysinfo_data.app_verl,
+> +		ts->sysinfo_data.cid[0], ts->sysinfo_data.cid[1],
+> +		ts->sysinfo_data.cid[2]);
+> +
+> +	return retval;
+> +}
+> +
+> +static int cyttsp_set_sysinfo_regs(struct cyttsp *ts)
+> +{
+> +	int retval = 0;
+> +
+> +	if (ts->platform_data->act_intrvl != CY_ACT_INTRVL_DFLT ||
+> +		ts->platform_data->tch_tmout != CY_TCH_TMOUT_DFLT ||
+> +		ts->platform_data->lp_intrvl != CY_LP_INTRVL_DFLT) {
+> +
+> +		u8 intrvl_ray[3];
+> +
+> +		intrvl_ray[0] = ts->platform_data->act_intrvl;
+> +		intrvl_ray[1] = ts->platform_data->tch_tmout;
+> +		intrvl_ray[2] = ts->platform_data->lp_intrvl;
+> +
+> +		/* set intrvl registers */
+> +		retval = ttsp_write_block_data(ts,
+> +				CY_REG_ACT_INTRVL,
+> +				sizeof(intrvl_ray), intrvl_ray);
+> +
+> +		msleep(CY_DELAY_DFLT);
+> +	}
+> +
+> +	return retval;
+> +}
+> +
+> +static int cyttsp_soft_reset(struct cyttsp *ts)
+> +{
+> +	int retval;
+> +	u8 cmd = CY_SOFT_RESET_MODE;
+> +
+> +	retval = ttsp_write_block_data(ts, CY_REG_BASE, sizeof(cmd),&cmd);
+> +	if (retval<  0)
+> +		return retval;
+> +
+> +	/* wait for interrupt to set ready completion */
+> +	INIT_COMPLETION(ts->bl_ready);
+> +
+> +	retval = wait_for_completion_interruptible_timeout(&ts->bl_ready,
+> +		msecs_to_jiffies(CY_DELAY_DFLT * CY_DELAY_MAX));
+> +
+> +	if (retval>  0)
+> +		retval = 0;
+> +
+> +	return retval;
+> +}
+> +
+> +static int cyttsp_act_dist_setup(struct cyttsp *ts)
+> +{
+> +	int retval;
+> +	u8 act_dist_setup;
+> +
+> +	/* Init gesture; active distance setup */
+> +	act_dist_setup = ts->platform_data->act_dist;
+> +	retval = ttsp_write_block_data(ts, CY_REG_ACT_DIST,
+> +		sizeof(act_dist_setup),&act_dist_setup);
+> +
+> +	return retval;
+> +}
+> +
+> +static int cyttsp_hndshk(struct cyttsp *ts, u8 hst_mode)
+> +{
+> +	int retval;
+> +	u8 cmd;
+> +
+> +	cmd = hst_mode&  CY_HNDSHK_BIT ?
+> +		hst_mode&  ~CY_HNDSHK_BIT :
+> +		hst_mode | CY_HNDSHK_BIT;
+> +
+> +	retval = ttsp_write_block_data(ts, CY_REG_BASE,
+> +		sizeof(cmd), (u8 *)&cmd);
+> +
+> +	return retval;
+> +}
+> +
+> +static void cyttsp_report_slot(struct input_dev *dev, int slot,
+> +			       int x, int y, int z)
+> +{
+> +	input_mt_slot(dev, slot);
+> +	input_mt_report_slot_state(dev, MT_TOOL_FINGER, true);
+> +	input_report_abs(dev, ABS_MT_POSITION_X, x);
+> +	input_report_abs(dev, ABS_MT_POSITION_Y, y);
+> +	input_report_abs(dev, ABS_MT_TOUCH_MAJOR, z);
+> +}
+> +
+> +static void cyttsp_report_slot_empty(struct input_dev *dev, int slot)
+> +{
+> +	input_mt_slot(dev, slot);
+> +	input_mt_report_slot_state(dev, MT_TOOL_FINGER, false);
+> +}
+> +
+> +static void cyttsp_extract_track_ids(struct cyttsp_xydata *xy_data, int *ids)
+> +{
+> +	ids[0] = xy_data->touch12_id>>  4;
+> +	ids[1] = xy_data->touch12_id&  0xF;
+> +	ids[2] = xy_data->touch34_id>>  4;
+> +	ids[3] = xy_data->touch34_id&  0xF;
+> +}
+> +
+> +static void cyttsp_get_tch(struct cyttsp_xydata *xy_data, int idx,
+> +			   struct cyttsp_tch **tch)
+> +{
+> +	switch (idx) {
+> +	case 0:
+> +		*tch =&xy_data->tch1;
+> +		break;
+> +	case 1:
+> +		*tch =&xy_data->tch2;
+> +		break;
+> +	case 2:
+> +		*tch =&xy_data->tch3;
+> +		break;
+> +	case 3:
+> +		*tch =&xy_data->tch4;
+> +		break;
+> +	}
+> +}
+> +
+> +static int cyttsp_get_slot_id(struct cyttsp *ts, int id)
+> +{
+> +	int i;
+> +
+> +	for (i = 0; i<  CY_MAX_FINGER; i++)
+> +		if (ts->slots[i] == id)
+> +			return i;
+> +
+> +	return -1;
+> +}
+> +
+> +static int cyttsp_assign_next_slot(struct cyttsp *ts, int id)
+> +{
+> +	int i;
+> +
+> +	for (i = 0; i<  CY_MAX_FINGER; i++)
+> +		if (ts->slots[i] == CY_SLOT_UNUSED) {
+> +			ts->slots[i] = id;
+> +			ts->slot_cnt++;
+> +			return i;
+> +		}
+> +
+> +	return -1;
+> +}
+> +
+> +static int cyttsp_xy_worker(struct cyttsp *ts)
+> +{
+> +	struct cyttsp_xydata xy_data;
+> +	u8 num_cur_tch;
+> +	int i;
+> +	int ids[4];
+> +	int slot = -1;
+> +	struct cyttsp_tch *tch = NULL;
+> +	int x, y, z;
+> +
+> +	/* Get touch data from CYTTSP device */
+> +	if (ttsp_read_block_data(ts,
+> +		CY_REG_BASE, sizeof(struct cyttsp_xydata),&xy_data))
+> +		return 0;
+> +
+> +	/* touch extension handling */
+> +	if (ttsp_tch_ext(ts,&xy_data))
+> +		return 0;
+> +
+> +	/* provide flow control handshake */
+> +	if (ts->platform_data->use_hndshk)
+> +		if (cyttsp_hndshk(ts, xy_data.hst_mode))
+> +			return 0;
+> +
+> +	/* determine number of currently active touches */
+> +	num_cur_tch = GET_NUM_TOUCHES(xy_data.tt_stat);
+> +
+> +	/* check for any error conditions */
+> +	if (ts->power_state == CY_IDLE_STATE)
+> +		return 0;
+> +	else if (GET_BOOTLOADERMODE(xy_data.tt_mode)) {
+> +		return -1;
+> +	} else if (IS_LARGE_AREA(xy_data.tt_stat) == 1) {
+> +		/* terminate all active tracks */
+> +		num_cur_tch = 0;
+> +		dev_dbg(ts->dev, "%s: Large area detected\n", __func__);
+> +	} else if (num_cur_tch>  CY_MAX_FINGER) {
+> +		/* terminate all active tracks */
+> +		num_cur_tch = 0;
+> +		dev_dbg(ts->dev, "%s: Num touch error detected\n", __func__);
+> +	} else if (IS_BAD_PKT(xy_data.tt_mode)) {
+> +		/* terminate all active tracks */
+> +		num_cur_tch = 0;
+> +		dev_dbg(ts->dev, "%s: Invalid buffer detected\n", __func__);
+> +	}
+> +
+> +	cyttsp_extract_track_ids(&xy_data, ids);
+> +
+> +	for (i = 0; i<  CY_MAX_FINGER; i++)
+> +		ts->slot_status[i] = false;
+> +
+> +	for (i = 0; i<  num_cur_tch; i++) {
+> +		slot = cyttsp_get_slot_id(ts, ids[i]);
+> +
+> +		if (slot<  0)
+> +			slot = cyttsp_assign_next_slot(ts, ids[i]);
+> +
+> +		cyttsp_get_tch(&xy_data, i,&tch);
+> +
+> +		x = be16_to_cpu(tch->x);
+> +		y = be16_to_cpu(tch->y);
+> +		z = tch->z;
+> +
+> +		cyttsp_report_slot(ts->input, slot, x, y, z);
+> +
+> +		ts->slot_status[slot] = true;
+> +	}
+> +
+> +	for (i = 0; i<  CY_MAX_FINGER; i++)
+> +		if (ts->slot_status[i] == false&&
+> +		   ts->slots[i] != CY_SLOT_UNUSED) {
+> +			ts->slots[i] = CY_SLOT_UNUSED;
+> +			ts->slot_cnt--;
+> +			cyttsp_report_slot_empty(ts->input, i);
+> +		}
+> +
+> +	input_sync(ts->input);
+> +
+> +	return 0;
+> +}
+> +
+> +static void cyttsp_pr_state(struct cyttsp *ts)
+> +{
+> +	static char *cyttsp_powerstate_string[] = {
+> +		"IDLE",
+> +		"ACTIVE",
+> +		"LOW_PWR",
+> +		"SLEEP",
+> +		"BOOTLOADER",
+> +		"INVALID"
+> +	};
+> +
+> +	dev_info(ts->dev, "%s: %s\n", __func__,
+> +		ts->power_state<  CY_INVALID_STATE ?
+> +		cyttsp_powerstate_string[ts->power_state] :
+> +		"INVALID");
+> +}
+> +
+> +static irqreturn_t cyttsp_irq(int irq, void *handle)
+> +{
+> +	struct cyttsp *ts = handle;
+> +	int retval;
+> +
+> +	if (ts->power_state == CY_BL_STATE)
+> +		complete(&ts->bl_ready);
+> +	else {
+> +		/* process the touches */
+> +		retval = cyttsp_xy_worker(ts);
+can we have a different name than cyttsp_xy_worker as we can 
+misinterpret as a workqueue,
+like cyttsp_handle_tchdata. Also, we seem to be doing good amount of 
+work in this function,
+how about deferring it to a workqueue to make irq handler fast to not to 
+miss any irqs.
+> +
+> +		if (retval<  0) {
+> +			/*
+> +			 * TTSP device has reset back to bootloader mode.
+> +			 * Restore to operational mode.
+> +			 */
+> +			retval = cyttsp_exit_bl_mode(ts);
+> +			if (retval)
+> +				ts->power_state = CY_IDLE_STATE;
+> +			else
+> +				ts->power_state = CY_ACTIVE_STATE;
+> +			cyttsp_pr_state(ts);
+> +		}
+> +	}
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static int cyttsp_power_on(struct cyttsp *ts)
+> +{
+> +	int retval = 0;
+> +
+> +	if (!ts)
+> +		return -ENOMEM;
+> +
+> +	ts->power_state = CY_BL_STATE;
+> +
+> +	/* enable interrupts */
+> +	retval = request_threaded_irq(ts->irq, NULL, cyttsp_irq,
+> +		IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+> +		ts->platform_data->name, ts);
+> +	if (retval<  0)
+> +		goto bypass;
+> +
+> +	retval = cyttsp_soft_reset(ts);
+> +	if (retval<  0)
+> +		goto bypass;
+> +
+> +	retval = cyttsp_bl_app_valid(ts);
+> +	if (retval<  0)
+> +		goto bypass;
+> +	else if (retval>  0)
+> +		goto no_bl_bypass;
+> +
+> +	retval = cyttsp_exit_bl_mode(ts);
+> +
+> +	if (retval<  0)
+> +		goto bypass;
+> +
+> +	ts->power_state = CY_IDLE_STATE;
+> +
+> +no_bl_bypass:
+> +	retval = cyttsp_set_sysinfo_mode(ts);
+> +	if (retval<  0)
+> +		goto bypass;
+> +
+> +	retval = cyttsp_set_sysinfo_regs(ts);
+> +	if (retval<  0)
+> +		goto bypass;
+> +
+> +	retval = cyttsp_set_operational_mode(ts);
+> +	if (retval<  0)
+> +		goto bypass;
+> +
+> +	/* init active distance */
+> +	retval = cyttsp_act_dist_setup(ts);
+> +	if (retval<  0)
+> +		goto bypass;
+> +
+> +	ts->power_state = CY_ACTIVE_STATE;
+> +	retval = 0;
+> +
+> +bypass:
+> +	cyttsp_pr_state(ts);
+> +	return retval;
+> +}
+> +
+> +#ifdef CONFIG_PM
+> +int cyttsp_resume(void *handle)
+> +{
+> +	struct cyttsp *ts = handle;
+"handle" is passed from a different path, so it is possible to be a 
+"NULL" which
+could crash the machine. so I think we can have an extra check here like 
+you
+did for core_release.
+> +	int retval = 0;
+> +	struct cyttsp_xydata xydata;
+> +
+> +	if (ts->platform_data->use_sleep&&  (ts->power_state !=
+> +		CY_ACTIVE_STATE)) {
+> +		if (ts->platform_data->wakeup) {
+> +			retval = ts->platform_data->wakeup();
+> +			if (retval<  0)
+> +				dev_dbg(ts->dev, "%s: Error, wakeup failed!\n",
+> +					__func__);
+> +		} else {
+> +			dev_dbg(ts->dev, "%s: Error, wakeup not implemented "
+> +				"(check board file).\n", __func__);
+> +			retval = -ENOSYS;
+> +		}
+> +		if (!(retval<  0)) {
+> +			retval = ttsp_read_block_data(ts, CY_REG_BASE,
+> +				sizeof(xydata),&xydata);
+> +			if (!(retval<  0)&&  !GET_HSTMODE(xydata.hst_mode))
+> +				ts->power_state = CY_ACTIVE_STATE;
+I think we need to have a error msg when it fails to resume. Also, say 
+after resume if it goes to
+"bootloader"(which happens when the chip is reset) mode then touch will 
+not work. So, we
+can get it out of the bootloader mode in cyttsp_xy_worker as interrupts 
+are fired even in bootloader
+mode.
+> +		}
+> +	}
+> +	dev_dbg(ts->dev, "%s: Wake Up %s\n", __func__,
+> +		(retval<  0) ? "FAIL" : "PASS");
+> +	return retval;
+> +}
+> +EXPORT_SYMBOL_GPL(cyttsp_resume);
+> +
+> +int cyttsp_suspend(void *handle)
+> +{
+> +	struct cyttsp *ts = handle;
+> +	u8 sleep_mode = 0;
+> +	int retval = 0;
+> +
+> +	if (ts->platform_data->use_sleep&&
+> +		(ts->power_state == CY_ACTIVE_STATE)) {
+> +		sleep_mode = CY_DEEP_SLEEP_MODE;
+> +		retval = ttsp_write_block_data(ts,
+> +			CY_REG_BASE, sizeof(sleep_mode),&sleep_mode);
+> +		if (!(retval<  0))
+> +			ts->power_state = CY_SLEEP_STATE;
+> +	}
+> +	dev_dbg(ts->dev, "%s: Sleep Power state is %s\n", __func__,
+> +		(ts->power_state == CY_ACTIVE_STATE) ?
+> +		"ACTIVE" :
+> +		((ts->power_state == CY_SLEEP_STATE) ?
+> +		"SLEEP" : "LOW POWER"));
+This code will not let the chip to go to low power mode since we are 
+setting
+CY_DEEP_SLEEP_MODE directly. So, lets use platform_data's "use_sleep" 
+flag to
+determine if we want to go to deep sleep or low power mode.
+> +	return retval;
+> +}
+> +EXPORT_SYMBOL_GPL(cyttsp_suspend);
+> +#endif
+> +
+> +static int cyttsp_open(struct input_dev *dev)
+> +{
+> +	struct cyttsp *ts = input_get_drvdata(dev);
+> +
+> +	return cyttsp_power_on(ts);
+> +}
+> +
+> +void cyttsp_core_release(void *handle)
+> +{
+> +	struct cyttsp *ts = handle;
+> +
+> +	if (ts) {
+> +		free_irq(ts->irq, ts);
+> +		input_unregister_device(ts->input);
+> +		if (ts->platform_data->exit)
+> +			ts->platform_data->exit();
+> +		input_mt_destroy_slots(ts->input);
+> +		kfree(ts);
+> +	}
+> +}
+> +EXPORT_SYMBOL_GPL(cyttsp_core_release);
+> +
+> +static void cyttsp_close(struct input_dev *dev)
+> +{
+> +	struct cyttsp *ts = input_get_drvdata(dev);
+> +
+> +	free_irq(ts->irq, ts);
+> +}
+> +
+> +void *cyttsp_core_init(struct cyttsp_bus_ops *bus_ops, struct device *dev, int irq)
+> +{
+> +	struct input_dev *input_device;
+> +	int i;
+> +
+> +	struct cyttsp *ts = kzalloc(sizeof(*ts), GFP_KERNEL);
+> +
+> +	if (!ts) {
+> +		pr_err("%s: Error, kzalloc\n", __func__);
+> +		goto error_alloc_data;
+> +	}
+> +
+> +	if (dev == NULL || bus_ops == NULL) {
+> +		kfree(ts);
+> +		goto error_alloc_data;
+> +	}
+> +
+> +	ts->dev = dev;
+> +	ts->platform_data = dev->platform_data;
+> +	ts->bus_ops = bus_ops;
+> +	init_completion(&ts->bl_ready);
+> +
+> +	if (ts->platform_data->init) {
+> +		if (ts->platform_data->init()) {
+> +			dev_dbg(ts->dev, "%s: Error, platform init failed!\n",
+> +				__func__);
+> +			goto error_init;
+> +		}
+> +	}
+> +
+> +	ts->irq = irq;
+> +	if (ts->irq<= 0) {
+> +		dev_dbg(ts->dev, "%s: Error, failed to allocate irq\n",
+> +			__func__);
+> +			goto error_init;
+> +	}
+> +
+> +	/* Create the input device and register it. */
+> +	input_device = input_allocate_device();
+> +	if (!input_device) {
+> +		dev_dbg(ts->dev, "%s: Error, failed to allocate input device\n",
+> +			__func__);
+> +		goto error_input_allocate_device;
+> +	}
+> +
+> +	ts->input = input_device;
+> +	input_device->name = ts->platform_data->name;
+> +	snprintf(ts->phys, sizeof(ts->phys), "%s", dev_name(dev));
+> +	input_device->phys = ts->phys;
+> +	input_device->dev.parent = ts->dev;
+> +	ts->bus_type = bus_ops->dev->bus;
+> +	input_device->open = cyttsp_open;
+> +	input_device->close = cyttsp_close;
+> +	input_set_drvdata(input_device, ts);
+> +
+> +	__set_bit(EV_SYN, input_device->evbit);
+> +	__set_bit(EV_KEY, input_device->evbit);
+> +	__set_bit(EV_ABS, input_device->evbit);
+> +
+> +	input_set_abs_params(input_device, ABS_MT_POSITION_X,
+> +			     0, ts->platform_data->maxx, 0, 0);
+> +	input_set_abs_params(input_device, ABS_MT_POSITION_Y,
+> +			     0, ts->platform_data->maxy, 0, 0);
+> +	input_set_abs_params(input_device, ABS_MT_TOUCH_MAJOR,
+> +			     0, CY_MAXZ, 0, 0);
+> +
+> +	input_mt_init_slots(input_device, CY_MAX_FINGER);
+> +
+> +	for (i = 0; i<  CY_MAX_FINGER; i++)
+> +		ts->slots[i] = CY_SLOT_UNUSED;
+> +
+> +	ts->slot_cnt = 0;
+> +
+> +	if (input_register_device(input_device)) {
+Please avoid this style of check, we will not know why it is failed.
+> +		dev_dbg(ts->dev, "%s: Error, failed to register input device\n",
+> +			__func__);
+> +		goto error_input_register_device;
+> +	}
+> +
+> +	goto no_error;
+> +
+> +error_input_register_device:
+> +	input_unregister_device(input_device);
+Here we should use input_free_device() rather than unregister since it 
+failed in
+registration.
+> +error_input_allocate_device:
+> +	if (ts->platform_data->exit)
+> +		ts->platform_data->exit();
+> +error_init:
+> +	kfree(ts);
+> +error_alloc_data:
+> +no_error:
+> +	return ts;
+> +}
+> +EXPORT_SYMBOL_GPL(cyttsp_core_init);
+> +
+> +MODULE_LICENSE("GPL");
+> +MODULE_DESCRIPTION("Cypress TrueTouch(R) Standard touchscreen driver core");
+> +MODULE_AUTHOR("Cypress");
+> +
+> diff --git a/drivers/input/touchscreen/cyttsp/cyttsp_core.h b/drivers/input/touchscreen/cyttsp/cyttsp_core.h
+> new file mode 100644
+> index 0000000..e72fecf
+> --- /dev/null
+> +++ b/drivers/input/touchscreen/cyttsp/cyttsp_core.h
+> @@ -0,0 +1,56 @@
+> +/*
+> + * Header file for:
+> + * Cypress TrueTouch(TM) Standard Product (TTSP) touchscreen drivers.
+> + * For use with Cypress Txx3xx parts.
+> + * Supported parts include:
+> + * CY8CTST341
+> + * CY8CTMA340
+> + *
+> + * Copyright (C) 2009, 2010, 2011 Cypress Semiconductor, Inc.
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License
+> + * version 2, and only version 2, as published by the
+> + * Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License along
+> + * with this program; if not, write to the Free Software Foundation, Inc.,
+> + * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+> + *
+> + * Contact Cypress Semiconductor at www.cypress.com<kev@cypress.com>
+> + *
+> + */
+> +
+> +
+> +#ifndef __CYTTSP_CORE_H__
+> +#define __CYTTSP_CORE_H__
+> +
+> +#include<linux/kernel.h>
+> +#include<linux/err.h>
+> +#include<linux/module.h>
+> +#include<linux/input/cyttsp.h>
+> +
+> +#define CY_NUM_RETRY                4 /* max number of retries for read ops */
+> +
+> +
+> +struct cyttsp_bus_ops {
+> +	s32 (*write)(void *handle, u8 addr, u8 length, const void *values);
+> +	s32 (*read)(void *handle, u8 addr, u8 length, void *values);
+> +	s32 (*ext)(void *handle, void *values);
+> +	struct device *dev;
+> +};
+> +
+> +void *cyttsp_core_init(struct cyttsp_bus_ops *bus_ops, struct device *dev, int irq);
+> +
+> +void cyttsp_core_release(void *handle);
+> +#ifdef CONFIG_PM
+> +int cyttsp_resume(void *handle);
+> +int cyttsp_suspend(void *handle);
+> +#endif
+> +
+> +#endif /* __CYTTSP_CORE_H__ */
+> diff --git a/include/linux/input/cyttsp.h b/include/linux/input/cyttsp.h
+> new file mode 100644
+> index 0000000..3907bfc
+> --- /dev/null
+> +++ b/include/linux/input/cyttsp.h
+> @@ -0,0 +1,68 @@
+> +/*
+> + * Header file for:
+> + * Cypress TrueTouch(TM) Standard Product (TTSP) touchscreen drivers.
+> + * For use with Cypress Txx3xx parts.
+> + * Supported parts include:
+> + * CY8CTST341
+> + * CY8CTMA340
+> + *
+> + * Copyright (C) 2009, 2010, 2011 Cypress Semiconductor, Inc.
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License
+> + * version 2, and only version 2, as published by the
+> + * Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License along
+> + * with this program; if not, write to the Free Software Foundation, Inc.,
+> + * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+> + *
+> + * Contact Cypress Semiconductor at www.cypress.com (kev@cypress.com)
+> + *
+> + */
+> +#ifndef _CYTTSP_H_
+> +#define _CYTTSP_H_
+> +
+> +#define CY_SPI_NAME "cyttsp-spi"
+> +#define CY_I2C_NAME "cyttsp-i2c"
+> +/* Active Power state scanning/processing refresh interval */
+> +#define CY_ACT_INTRVL_DFLT 0x00 /* ms */
+> +/* touch timeout for the Active power */
+> +#define CY_TCH_TMOUT_DFLT 0xFF /* ms */
+> +/* Low Power state scanning/processing refresh interval */
+> +#define CY_LP_INTRVL_DFLT 0x0A /* ms */
+> +/* Active distance in pixels for a gesture to be reported */
+> +#define CY_ACT_DIST_DFLT 0xF8 /* pixels */
+> +
+> +enum cyttsp_powerstate {
+> +	CY_IDLE_STATE,
+> +	CY_ACTIVE_STATE,
+> +	CY_LOW_PWR_STATE,
+> +	CY_SLEEP_STATE,
+> +	CY_BL_STATE,
+> +	CY_INVALID_STATE	/* always last in the list */
+> +};
+> +
+> +struct cyttsp_platform_data {
+> +	u32 maxx;
+> +	u32 maxy;
+> +	bool use_hndshk;
+> +	bool use_sleep;
+> +	u8 act_dist;	/* Active distance */
+> +	u8 act_intrvl;  /* Active refresh interval; ms */
+> +	u8 tch_tmout;   /* Active touch timeout; ms */
+> +	u8 lp_intrvl;   /* Low power refresh interval; ms */
+> +	int (*wakeup)(void);
+> +	int (*init)(void);
+> +	void (*exit)(void);
+> +	char *name;
+> +	s16 irq_gpio;
+> +	u8 *bl_keys;
+> +};
+> +
+> +#endif /* _CYTTSP_H_ */
+--Mohan.
 
-Signed-off-by: Zhang, Keguang <keguang.zhang@gmail.com>
----
- arch/mips/Kbuild.platforms                       |    1 +
- arch/mips/Kconfig                                |   31 +
- arch/mips/configs/ls1b_defconfig                 |  830 ++++++++++++++++++++++
- arch/mips/include/asm/bootinfo.h                 |    3 +-
- arch/mips/include/asm/cpu.h                      |    3 +-
- arch/mips/include/asm/mach-loongson1/irq.h       |   70 ++
- arch/mips/include/asm/mach-loongson1/loongson1.h |   48 ++
- arch/mips/include/asm/mach-loongson1/platform.h  |   20 +
- arch/mips/include/asm/mach-loongson1/prom.h      |   24 +
- arch/mips/include/asm/mach-loongson1/regs-clk.h  |   32 +
- arch/mips/include/asm/mach-loongson1/regs-intc.h |   24 +
- arch/mips/include/asm/mach-loongson1/regs-wdt.h  |   21 +
- arch/mips/include/asm/mach-loongson1/war.h       |   25 +
- arch/mips/include/asm/module.h                   |    2 +
- arch/mips/kernel/cpu-probe.c                     |   15 +
- arch/mips/kernel/perf_event_mipsxx.c             |    6 +
- arch/mips/kernel/traps.c                         |    1 +
- arch/mips/loongson1/Kconfig                      |   29 +
- arch/mips/loongson1/Makefile                     |   11 +
- arch/mips/loongson1/Platform                     |    7 +
- arch/mips/loongson1/common/Makefile              |    5 +
- arch/mips/loongson1/common/clock.c               |  164 +++++
- arch/mips/loongson1/common/irq.c                 |  132 ++++
- arch/mips/loongson1/common/platform.c            |   50 ++
- arch/mips/loongson1/common/prom.c                |   89 +++
- arch/mips/loongson1/common/reset.c               |   48 ++
- arch/mips/loongson1/common/setup.c               |   32 +
- arch/mips/loongson1/ls1b/Makefile                |    5 +
- arch/mips/loongson1/ls1b/board.c                 |   30 +
- arch/mips/oprofile/common.c                      |    1 +
- arch/mips/oprofile/op_model_mipsxx.c             |    4 +
- 31 files changed, 1761 insertions(+), 2 deletions(-)
- create mode 100644 arch/mips/configs/ls1b_defconfig
- create mode 100644 arch/mips/include/asm/mach-loongson1/irq.h
- create mode 100644 arch/mips/include/asm/mach-loongson1/loongson1.h
- create mode 100644 arch/mips/include/asm/mach-loongson1/platform.h
- create mode 100644 arch/mips/include/asm/mach-loongson1/prom.h
- create mode 100644 arch/mips/include/asm/mach-loongson1/regs-clk.h
- create mode 100644 arch/mips/include/asm/mach-loongson1/regs-intc.h
- create mode 100644 arch/mips/include/asm/mach-loongson1/regs-wdt.h
- create mode 100644 arch/mips/include/asm/mach-loongson1/war.h
- create mode 100644 arch/mips/loongson1/Kconfig
- create mode 100644 arch/mips/loongson1/Makefile
- create mode 100644 arch/mips/loongson1/Platform
- create mode 100644 arch/mips/loongson1/common/Makefile
- create mode 100644 arch/mips/loongson1/common/clock.c
- create mode 100644 arch/mips/loongson1/common/irq.c
- create mode 100644 arch/mips/loongson1/common/platform.c
- create mode 100644 arch/mips/loongson1/common/prom.c
- create mode 100644 arch/mips/loongson1/common/reset.c
- create mode 100644 arch/mips/loongson1/common/setup.c
- create mode 100644 arch/mips/loongson1/ls1b/Makefile
- create mode 100644 arch/mips/loongson1/ls1b/board.c
+--
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora
+Forum.
 
-diff --git a/arch/mips/Kbuild.platforms b/arch/mips/Kbuild.platforms
-index 5ce8029..d64786d 100644
---- a/arch/mips/Kbuild.platforms
-+++ b/arch/mips/Kbuild.platforms
-@@ -14,6 +14,7 @@ platforms += jz4740
- platforms += lantiq
- platforms += lasat
- platforms += loongson
-+platforms += loongson1
- platforms += mipssim
- platforms += mti-malta
- platforms += netlogic
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index b122adc..d693f48 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -259,6 +259,17 @@ config MACH_LOONGSON
- 	  Chinese Academy of Sciences (CAS) in the People's Republic
- 	  of China. The chief architect is Professor Weiwu Hu.
- 
-+config MACH_LOONGSON1
-+	bool "Loongson1 family of machines"
-+	select SYS_SUPPORTS_ZBOOT
-+	help
-+	  This enables the support of Loongson1 family of machines.
-+
-+	  Loongson1 is a family of 32-bit MIPS-compatible SoCs.
-+	  developed at Institute of Computing Technology (ICT),
-+	  Chinese Academy of Sciences (CAS) in the People's Republic
-+	  of China.
-+
- config MIPS_MALTA
- 	bool "MIPS Malta board"
- 	select ARCH_MAY_HAVE_PC_FDC
-@@ -804,6 +815,7 @@ source "arch/mips/txx9/Kconfig"
- source "arch/mips/vr41xx/Kconfig"
- source "arch/mips/cavium-octeon/Kconfig"
- source "arch/mips/loongson/Kconfig"
-+source "arch/mips/loongson1/Kconfig"
- source "arch/mips/netlogic/Kconfig"
- 
- endmenu
-@@ -1197,6 +1209,14 @@ config CPU_LOONGSON2F
- 	  have a similar programming interface with FPGA northbridge used in
- 	  Loongson2E.
- 
-+config CPU_LOONGSON1B
-+	bool "Loongson 1B"
-+	depends on SYS_HAS_CPU_LOONGSON1B
-+	select CPU_LOONGSON1
-+	help
-+	  The Loongson 1B is a 32-bit SoC, which implements the MIPS32 release 2
-+	  instruction set.
-+
- config CPU_MIPS32_R1
- 	bool "MIPS32 Release 1"
- 	depends on SYS_HAS_CPU_MIPS32_R1
-@@ -1525,6 +1545,14 @@ config CPU_LOONGSON2
- 	select CPU_SUPPORTS_64BIT_KERNEL
- 	select CPU_SUPPORTS_HIGHMEM
- 
-+config CPU_LOONGSON1
-+	bool
-+	select CPU_MIPS32
-+	select CPU_MIPSR2
-+	select CPU_HAS_PREFETCH
-+	select CPU_SUPPORTS_32BIT_KERNEL
-+	select CPU_SUPPORTS_HIGHMEM
-+
- config SYS_HAS_CPU_LOONGSON2E
- 	bool
- 
-@@ -1534,6 +1562,9 @@ config SYS_HAS_CPU_LOONGSON2F
- 	select CPU_SUPPORTS_ADDRWINCFG if 64BIT
- 	select CPU_SUPPORTS_UNCACHED_ACCELERATED
- 
-+config SYS_HAS_CPU_LOONGSON1B
-+	bool
-+
- config SYS_HAS_CPU_MIPS32_R1
- 	bool
- 
-diff --git a/arch/mips/configs/ls1b_defconfig b/arch/mips/configs/ls1b_defconfig
-new file mode 100644
-index 0000000..6463311
---- /dev/null
-+++ b/arch/mips/configs/ls1b_defconfig
-@@ -0,0 +1,830 @@
-+#
-+# Automatically generated make config: don't edit
-+# Linux/mips 3.0.3 Kernel Configuration
-+#
-+CONFIG_MIPS=y
-+
-+#
-+# Machine selection
-+#
-+# CONFIG_MIPS_ALCHEMY is not set
-+# CONFIG_AR7 is not set
-+# CONFIG_ATH79 is not set
-+# CONFIG_BCM47XX is not set
-+# CONFIG_BCM63XX is not set
-+# CONFIG_MIPS_COBALT is not set
-+# CONFIG_MACH_DECSTATION is not set
-+# CONFIG_MACH_JAZZ is not set
-+# CONFIG_MACH_JZ4740 is not set
-+# CONFIG_LANTIQ is not set
-+# CONFIG_LASAT is not set
-+# CONFIG_MACH_LOONGSON is not set
-+CONFIG_MACH_LOONGSON1=y
-+# CONFIG_MIPS_MALTA is not set
-+# CONFIG_MIPS_SIM is not set
-+# CONFIG_NEC_MARKEINS is not set
-+# CONFIG_MACH_VR41XX is not set
-+# CONFIG_NXP_STB220 is not set
-+# CONFIG_NXP_STB225 is not set
-+# CONFIG_PNX8550_JBS is not set
-+# CONFIG_PNX8550_STB810 is not set
-+# CONFIG_PMC_MSP is not set
-+# CONFIG_PMC_YOSEMITE is not set
-+# CONFIG_POWERTV is not set
-+# CONFIG_SGI_IP22 is not set
-+# CONFIG_SGI_IP27 is not set
-+# CONFIG_SGI_IP28 is not set
-+# CONFIG_SGI_IP32 is not set
-+# CONFIG_SIBYTE_CRHINE is not set
-+# CONFIG_SIBYTE_CARMEL is not set
-+# CONFIG_SIBYTE_CRHONE is not set
-+# CONFIG_SIBYTE_RHONE is not set
-+# CONFIG_SIBYTE_SWARM is not set
-+# CONFIG_SIBYTE_LITTLESUR is not set
-+# CONFIG_SIBYTE_SENTOSA is not set
-+# CONFIG_SIBYTE_BIGSUR is not set
-+# CONFIG_SNI_RM is not set
-+# CONFIG_MACH_TX39XX is not set
-+# CONFIG_MACH_TX49XX is not set
-+# CONFIG_MIKROTIK_RB532 is not set
-+# CONFIG_WR_PPMC is not set
-+# CONFIG_CAVIUM_OCTEON_SIMULATOR is not set
-+# CONFIG_CAVIUM_OCTEON_REFERENCE_BOARD is not set
-+# CONFIG_NLM_XLR_BOARD is not set
-+# CONFIG_ALCHEMY_GPIO_INDIRECT is not set
-+CONFIG_ARCH_SPARSEMEM_ENABLE=y
-+CONFIG_LOONGSON1_LS1B=y
-+CONFIG_RWSEM_GENERIC_SPINLOCK=y
-+# CONFIG_ARCH_HAS_ILOG2_U32 is not set
-+# CONFIG_ARCH_HAS_ILOG2_U64 is not set
-+CONFIG_ARCH_SUPPORTS_OPROFILE=y
-+CONFIG_GENERIC_HWEIGHT=y
-+CONFIG_GENERIC_CALIBRATE_DELAY=y
-+CONFIG_GENERIC_CLOCKEVENTS=y
-+CONFIG_GENERIC_CMOS_UPDATE=y
-+CONFIG_SCHED_OMIT_FRAME_POINTER=y
-+CONFIG_CEVT_R4K_LIB=y
-+CONFIG_CEVT_R4K=y
-+CONFIG_CSRC_R4K_LIB=y
-+CONFIG_CSRC_R4K=y
-+# CONFIG_ARCH_DMA_ADDR_T_64BIT is not set
-+CONFIG_DMA_NONCOHERENT=y
-+CONFIG_NEED_DMA_MAP_STATE=y
-+CONFIG_SYS_HAS_EARLY_PRINTK=y
-+# CONFIG_MIPS_MACHINE is not set
-+# CONFIG_NO_IOPORT is not set
-+CONFIG_CPU_LITTLE_ENDIAN=y
-+CONFIG_SYS_SUPPORTS_LITTLE_ENDIAN=y
-+CONFIG_IRQ_CPU=y
-+CONFIG_BOOT_ELF32=y
-+CONFIG_MIPS_L1_CACHE_SHIFT=5
-+
-+#
-+# CPU selection
-+#
-+CONFIG_CPU_LOONGSON1B=y
-+CONFIG_SYS_SUPPORTS_ZBOOT=y
-+CONFIG_CPU_LOONGSON1=y
-+CONFIG_SYS_HAS_CPU_LOONGSON1B=y
-+CONFIG_CPU_MIPS32=y
-+CONFIG_CPU_MIPSR2=y
-+CONFIG_SYS_SUPPORTS_32BIT_KERNEL=y
-+CONFIG_CPU_SUPPORTS_32BIT_KERNEL=y
-+CONFIG_HARDWARE_WATCHPOINTS=y
-+
-+#
-+# Kernel type
-+#
-+CONFIG_32BIT=y
-+CONFIG_PAGE_SIZE_4KB=y
-+# CONFIG_PAGE_SIZE_16KB is not set
-+# CONFIG_PAGE_SIZE_64KB is not set
-+CONFIG_FORCE_MAX_ZONEORDER=11
-+CONFIG_CPU_HAS_PREFETCH=y
-+CONFIG_MIPS_MT_DISABLED=y
-+# CONFIG_ARCH_PHYS_ADDR_T_64BIT is not set
-+CONFIG_CPU_HAS_SYNC=y
-+# CONFIG_HIGHMEM is not set
-+CONFIG_CPU_SUPPORTS_HIGHMEM=y
-+CONFIG_SYS_SUPPORTS_HIGHMEM=y
-+CONFIG_ARCH_FLATMEM_ENABLE=y
-+CONFIG_ARCH_POPULATES_NODE_MAP=y
-+CONFIG_HW_PERF_EVENTS=y
-+CONFIG_SELECT_MEMORY_MODEL=y
-+CONFIG_FLATMEM_MANUAL=y
-+# CONFIG_SPARSEMEM_MANUAL is not set
-+CONFIG_FLATMEM=y
-+CONFIG_FLAT_NODE_MEM_MAP=y
-+CONFIG_SPARSEMEM_STATIC=y
-+CONFIG_PAGEFLAGS_EXTENDED=y
-+CONFIG_SPLIT_PTLOCK_CPUS=4
-+# CONFIG_COMPACTION is not set
-+# CONFIG_PHYS_ADDR_T_64BIT is not set
-+CONFIG_ZONE_DMA_FLAG=0
-+CONFIG_VIRT_TO_BUS=y
-+# CONFIG_KSM is not set
-+CONFIG_DEFAULT_MMAP_MIN_ADDR=4096
-+CONFIG_NEED_PER_CPU_KM=y
-+# CONFIG_CLEANCACHE is not set
-+CONFIG_TICK_ONESHOT=y
-+# CONFIG_NO_HZ is not set
-+CONFIG_HIGH_RES_TIMERS=y
-+CONFIG_GENERIC_CLOCKEVENTS_BUILD=y
-+# CONFIG_HZ_48 is not set
-+# CONFIG_HZ_100 is not set
-+# CONFIG_HZ_128 is not set
-+CONFIG_HZ_250=y
-+# CONFIG_HZ_256 is not set
-+# CONFIG_HZ_1000 is not set
-+# CONFIG_HZ_1024 is not set
-+CONFIG_SYS_SUPPORTS_ARBIT_HZ=y
-+CONFIG_HZ=250
-+# CONFIG_PREEMPT_NONE is not set
-+CONFIG_PREEMPT_VOLUNTARY=y
-+# CONFIG_PREEMPT is not set
-+CONFIG_KEXEC=y
-+# CONFIG_SECCOMP is not set
-+# CONFIG_USE_OF is not set
-+CONFIG_LOCKDEP_SUPPORT=y
-+CONFIG_STACKTRACE_SUPPORT=y
-+CONFIG_DEFCONFIG_LIST="/lib/modules/$UNAME_RELEASE/.config"
-+CONFIG_HAVE_IRQ_WORK=y
-+CONFIG_IRQ_WORK=y
-+
-+#
-+# General setup
-+#
-+CONFIG_EXPERIMENTAL=y
-+CONFIG_BROKEN_ON_SMP=y
-+CONFIG_INIT_ENV_ARG_LIMIT=32
-+CONFIG_CROSS_COMPILE=""
-+CONFIG_LOCALVERSION=""
-+# CONFIG_LOCALVERSION_AUTO is not set
-+CONFIG_HAVE_KERNEL_GZIP=y
-+CONFIG_HAVE_KERNEL_BZIP2=y
-+CONFIG_HAVE_KERNEL_LZMA=y
-+CONFIG_HAVE_KERNEL_LZO=y
-+CONFIG_KERNEL_GZIP=y
-+# CONFIG_KERNEL_BZIP2 is not set
-+# CONFIG_KERNEL_LZMA is not set
-+# CONFIG_KERNEL_LZO is not set
-+CONFIG_DEFAULT_HOSTNAME="(none)"
-+CONFIG_SWAP=y
-+CONFIG_SYSVIPC=y
-+CONFIG_SYSVIPC_SYSCTL=y
-+# CONFIG_POSIX_MQUEUE is not set
-+CONFIG_BSD_PROCESS_ACCT=y
-+CONFIG_BSD_PROCESS_ACCT_V3=y
-+# CONFIG_FHANDLE is not set
-+# CONFIG_TASKSTATS is not set
-+# CONFIG_AUDIT is not set
-+CONFIG_HAVE_GENERIC_HARDIRQS=y
-+
-+#
-+# IRQ subsystem
-+#
-+CONFIG_GENERIC_HARDIRQS=y
-+CONFIG_GENERIC_IRQ_PROBE=y
-+CONFIG_GENERIC_IRQ_SHOW=y
-+
-+#
-+# RCU Subsystem
-+#
-+CONFIG_TINY_RCU=y
-+# CONFIG_PREEMPT_RCU is not set
-+# CONFIG_RCU_TRACE is not set
-+# CONFIG_TREE_RCU_TRACE is not set
-+CONFIG_IKCONFIG=y
-+CONFIG_IKCONFIG_PROC=y
-+CONFIG_LOG_BUF_SHIFT=16
-+# CONFIG_CGROUPS is not set
-+# CONFIG_NAMESPACES is not set
-+# CONFIG_SCHED_AUTOGROUP is not set
-+# CONFIG_SYSFS_DEPRECATED is not set
-+# CONFIG_RELAY is not set
-+CONFIG_BLK_DEV_INITRD=y
-+CONFIG_INITRAMFS_SOURCE=""
-+CONFIG_RD_GZIP=y
-+CONFIG_RD_BZIP2=y
-+CONFIG_RD_LZMA=y
-+CONFIG_RD_XZ=y
-+CONFIG_RD_LZO=y
-+# CONFIG_CC_OPTIMIZE_FOR_SIZE is not set
-+CONFIG_SYSCTL=y
-+CONFIG_ANON_INODES=y
-+CONFIG_EXPERT=y
-+CONFIG_SYSCTL_SYSCALL=y
-+CONFIG_KALLSYMS=y
-+CONFIG_KALLSYMS_ALL=y
-+CONFIG_HOTPLUG=y
-+CONFIG_PRINTK=y
-+CONFIG_BUG=y
-+CONFIG_ELF_CORE=y
-+CONFIG_PCSPKR_PLATFORM=y
-+CONFIG_BASE_FULL=y
-+CONFIG_FUTEX=y
-+CONFIG_EPOLL=y
-+CONFIG_SIGNALFD=y
-+CONFIG_TIMERFD=y
-+CONFIG_EVENTFD=y
-+CONFIG_SHMEM=y
-+CONFIG_AIO=y
-+# CONFIG_EMBEDDED is not set
-+CONFIG_HAVE_PERF_EVENTS=y
-+CONFIG_PERF_USE_VMALLOC=y
-+
-+#
-+# Kernel Performance Events And Counters
-+#
-+CONFIG_PERF_EVENTS=y
-+# CONFIG_PERF_COUNTERS is not set
-+# CONFIG_DEBUG_PERF_USE_VMALLOC is not set
-+CONFIG_VM_EVENT_COUNTERS=y
-+CONFIG_SLUB_DEBUG=y
-+# CONFIG_COMPAT_BRK is not set
-+# CONFIG_SLAB is not set
-+CONFIG_SLUB=y
-+# CONFIG_SLOB is not set
-+# CONFIG_PROFILING is not set
-+CONFIG_HAVE_OPROFILE=y
-+# CONFIG_KPROBES is not set
-+# CONFIG_JUMP_LABEL is not set
-+CONFIG_HAVE_KPROBES=y
-+CONFIG_HAVE_KRETPROBES=y
-+CONFIG_HAVE_DMA_ATTRS=y
-+CONFIG_HAVE_DMA_API_DEBUG=y
-+CONFIG_HAVE_ARCH_JUMP_LABEL=y
-+
-+#
-+# GCOV-based kernel profiling
-+#
-+# CONFIG_GCOV_KERNEL is not set
-+CONFIG_HAVE_GENERIC_DMA_COHERENT=y
-+CONFIG_SLABINFO=y
-+CONFIG_RT_MUTEXES=y
-+CONFIG_BASE_SMALL=0
-+CONFIG_MODULES=y
-+# CONFIG_MODULE_FORCE_LOAD is not set
-+CONFIG_MODULE_UNLOAD=y
-+# CONFIG_MODULE_FORCE_UNLOAD is not set
-+CONFIG_MODVERSIONS=y
-+# CONFIG_MODULE_SRCVERSION_ALL is not set
-+CONFIG_BLOCK=y
-+# CONFIG_LBDAF is not set
-+# CONFIG_BLK_DEV_BSG is not set
-+# CONFIG_BLK_DEV_INTEGRITY is not set
-+
-+#
-+# IO Schedulers
-+#
-+CONFIG_IOSCHED_NOOP=y
-+CONFIG_IOSCHED_DEADLINE=y
-+CONFIG_IOSCHED_CFQ=y
-+# CONFIG_DEFAULT_DEADLINE is not set
-+CONFIG_DEFAULT_CFQ=y
-+# CONFIG_DEFAULT_NOOP is not set
-+CONFIG_DEFAULT_IOSCHED="cfq"
-+# CONFIG_INLINE_SPIN_TRYLOCK is not set
-+# CONFIG_INLINE_SPIN_TRYLOCK_BH is not set
-+# CONFIG_INLINE_SPIN_LOCK is not set
-+# CONFIG_INLINE_SPIN_LOCK_BH is not set
-+# CONFIG_INLINE_SPIN_LOCK_IRQ is not set
-+# CONFIG_INLINE_SPIN_LOCK_IRQSAVE is not set
-+CONFIG_INLINE_SPIN_UNLOCK=y
-+# CONFIG_INLINE_SPIN_UNLOCK_BH is not set
-+CONFIG_INLINE_SPIN_UNLOCK_IRQ=y
-+# CONFIG_INLINE_SPIN_UNLOCK_IRQRESTORE is not set
-+# CONFIG_INLINE_READ_TRYLOCK is not set
-+# CONFIG_INLINE_READ_LOCK is not set
-+# CONFIG_INLINE_READ_LOCK_BH is not set
-+# CONFIG_INLINE_READ_LOCK_IRQ is not set
-+# CONFIG_INLINE_READ_LOCK_IRQSAVE is not set
-+CONFIG_INLINE_READ_UNLOCK=y
-+# CONFIG_INLINE_READ_UNLOCK_BH is not set
-+CONFIG_INLINE_READ_UNLOCK_IRQ=y
-+# CONFIG_INLINE_READ_UNLOCK_IRQRESTORE is not set
-+# CONFIG_INLINE_WRITE_TRYLOCK is not set
-+# CONFIG_INLINE_WRITE_LOCK is not set
-+# CONFIG_INLINE_WRITE_LOCK_BH is not set
-+# CONFIG_INLINE_WRITE_LOCK_IRQ is not set
-+# CONFIG_INLINE_WRITE_LOCK_IRQSAVE is not set
-+CONFIG_INLINE_WRITE_UNLOCK=y
-+# CONFIG_INLINE_WRITE_UNLOCK_BH is not set
-+CONFIG_INLINE_WRITE_UNLOCK_IRQ=y
-+# CONFIG_INLINE_WRITE_UNLOCK_IRQRESTORE is not set
-+# CONFIG_MUTEX_SPIN_ON_OWNER is not set
-+# CONFIG_FREEZER is not set
-+
-+#
-+# Bus options (PCI, PCMCIA, EISA, ISA, TC)
-+#
-+# CONFIG_ARCH_SUPPORTS_MSI is not set
-+CONFIG_MMU=y
-+# CONFIG_PCCARD is not set
-+
-+#
-+# Executable file formats
-+#
-+CONFIG_BINFMT_ELF=y
-+# CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
-+# CONFIG_HAVE_AOUT is not set
-+# CONFIG_BINFMT_MISC is not set
-+CONFIG_TRAD_SIGNALS=y
-+
-+#
-+# Power management options
-+#
-+CONFIG_ARCH_HIBERNATION_POSSIBLE=y
-+CONFIG_ARCH_SUSPEND_POSSIBLE=y
-+# CONFIG_SUSPEND is not set
-+# CONFIG_HIBERNATION is not set
-+# CONFIG_PM_RUNTIME is not set
-+CONFIG_NET=y
-+
-+#
-+# Networking options
-+#
-+CONFIG_PACKET=y
-+CONFIG_UNIX=y
-+# CONFIG_NET_KEY is not set
-+CONFIG_INET=y
-+# CONFIG_IP_MULTICAST is not set
-+# CONFIG_IP_ADVANCED_ROUTER is not set
-+CONFIG_IP_PNP=y
-+CONFIG_IP_PNP_DHCP=y
-+# CONFIG_IP_PNP_BOOTP is not set
-+# CONFIG_IP_PNP_RARP is not set
-+# CONFIG_NET_IPIP is not set
-+# CONFIG_NET_IPGRE_DEMUX is not set
-+# CONFIG_ARPD is not set
-+CONFIG_SYN_COOKIES=y
-+# CONFIG_INET_AH is not set
-+# CONFIG_INET_ESP is not set
-+# CONFIG_INET_IPCOMP is not set
-+# CONFIG_INET_XFRM_TUNNEL is not set
-+# CONFIG_INET_TUNNEL is not set
-+# CONFIG_INET_XFRM_MODE_TRANSPORT is not set
-+# CONFIG_INET_XFRM_MODE_TUNNEL is not set
-+# CONFIG_INET_XFRM_MODE_BEET is not set
-+CONFIG_INET_LRO=y
-+# CONFIG_INET_DIAG is not set
-+# CONFIG_TCP_CONG_ADVANCED is not set
-+CONFIG_TCP_CONG_CUBIC=y
-+CONFIG_DEFAULT_TCP_CONG="cubic"
-+# CONFIG_TCP_MD5SIG is not set
-+# CONFIG_IPV6 is not set
-+# CONFIG_NETWORK_SECMARK is not set
-+# CONFIG_NETWORK_PHY_TIMESTAMPING is not set
-+# CONFIG_NETFILTER is not set
-+# CONFIG_IP_DCCP is not set
-+# CONFIG_IP_SCTP is not set
-+# CONFIG_RDS is not set
-+# CONFIG_TIPC is not set
-+# CONFIG_ATM is not set
-+# CONFIG_L2TP is not set
-+# CONFIG_BRIDGE is not set
-+# CONFIG_VLAN_8021Q is not set
-+# CONFIG_DECNET is not set
-+# CONFIG_LLC2 is not set
-+# CONFIG_IPX is not set
-+# CONFIG_ATALK is not set
-+# CONFIG_X25 is not set
-+# CONFIG_LAPB is not set
-+# CONFIG_ECONET is not set
-+# CONFIG_WAN_ROUTER is not set
-+# CONFIG_PHONET is not set
-+# CONFIG_IEEE802154 is not set
-+# CONFIG_NET_SCHED is not set
-+# CONFIG_DCB is not set
-+# CONFIG_DNS_RESOLVER is not set
-+# CONFIG_BATMAN_ADV is not set
-+
-+#
-+# Network testing
-+#
-+# CONFIG_NET_PKTGEN is not set
-+# CONFIG_HAMRADIO is not set
-+# CONFIG_CAN is not set
-+# CONFIG_IRDA is not set
-+# CONFIG_BT is not set
-+# CONFIG_AF_RXRPC is not set
-+# CONFIG_WIRELESS is not set
-+# CONFIG_WIMAX is not set
-+# CONFIG_RFKILL is not set
-+# CONFIG_NET_9P is not set
-+# CONFIG_CAIF is not set
-+# CONFIG_CEPH_LIB is not set
-+
-+#
-+# Device Drivers
-+#
-+
-+#
-+# Generic Driver Options
-+#
-+CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
-+CONFIG_DEVTMPFS=y
-+CONFIG_DEVTMPFS_MOUNT=y
-+# CONFIG_STANDALONE is not set
-+CONFIG_PREVENT_FIRMWARE_BUILD=y
-+CONFIG_FW_LOADER=y
-+CONFIG_FIRMWARE_IN_KERNEL=y
-+CONFIG_EXTRA_FIRMWARE=""
-+# CONFIG_DEBUG_DRIVER is not set
-+# CONFIG_DEBUG_DEVRES is not set
-+# CONFIG_SYS_HYPERVISOR is not set
-+# CONFIG_CONNECTOR is not set
-+# CONFIG_MTD is not set
-+# CONFIG_PARPORT is not set
-+CONFIG_BLK_DEV=y
-+# CONFIG_BLK_DEV_COW_COMMON is not set
-+CONFIG_BLK_DEV_LOOP=y
-+# CONFIG_BLK_DEV_CRYPTOLOOP is not set
-+
-+#
-+# DRBD disabled because PROC_FS, INET or CONNECTOR not selected
-+#
-+# CONFIG_BLK_DEV_NBD is not set
-+# CONFIG_BLK_DEV_RAM is not set
-+# CONFIG_CDROM_PKTCDVD is not set
-+# CONFIG_ATA_OVER_ETH is not set
-+# CONFIG_BLK_DEV_HD is not set
-+# CONFIG_BLK_DEV_RBD is not set
-+# CONFIG_SENSORS_LIS3LV02D is not set
-+# CONFIG_MISC_DEVICES is not set
-+CONFIG_HAVE_IDE=y
-+# CONFIG_IDE is not set
-+
-+#
-+# SCSI device support
-+#
-+CONFIG_SCSI_MOD=y
-+# CONFIG_RAID_ATTRS is not set
-+# CONFIG_SCSI is not set
-+# CONFIG_SCSI_DMA is not set
-+# CONFIG_SCSI_NETLINK is not set
-+# CONFIG_ATA is not set
-+# CONFIG_MD is not set
-+# CONFIG_NETDEVICES is not set
-+# CONFIG_ISDN is not set
-+# CONFIG_PHONE is not set
-+
-+#
-+# Input device support
-+#
-+CONFIG_INPUT=y
-+# CONFIG_INPUT_FF_MEMLESS is not set
-+# CONFIG_INPUT_POLLDEV is not set
-+# CONFIG_INPUT_SPARSEKMAP is not set
-+
-+#
-+# Userland interfaces
-+#
-+# CONFIG_INPUT_MOUSEDEV is not set
-+# CONFIG_INPUT_JOYDEV is not set
-+# CONFIG_INPUT_EVDEV is not set
-+# CONFIG_INPUT_EVBUG is not set
-+
-+#
-+# Input Device Drivers
-+#
-+# CONFIG_INPUT_KEYBOARD is not set
-+# CONFIG_INPUT_MOUSE is not set
-+# CONFIG_INPUT_JOYSTICK is not set
-+# CONFIG_INPUT_TABLET is not set
-+# CONFIG_INPUT_TOUCHSCREEN is not set
-+# CONFIG_INPUT_MISC is not set
-+
-+#
-+# Hardware I/O ports
-+#
-+# CONFIG_SERIO is not set
-+# CONFIG_GAMEPORT is not set
-+
-+#
-+# Character devices
-+#
-+CONFIG_VT=y
-+CONFIG_CONSOLE_TRANSLATIONS=y
-+CONFIG_VT_CONSOLE=y
-+CONFIG_HW_CONSOLE=y
-+CONFIG_VT_HW_CONSOLE_BINDING=y
-+CONFIG_UNIX98_PTYS=y
-+# CONFIG_DEVPTS_MULTIPLE_INSTANCES is not set
-+CONFIG_LEGACY_PTYS=y
-+CONFIG_LEGACY_PTY_COUNT=8
-+# CONFIG_SERIAL_NONSTANDARD is not set
-+# CONFIG_N_GSM is not set
-+# CONFIG_TRACE_SINK is not set
-+# CONFIG_DEVKMEM is not set
-+
-+#
-+# Serial drivers
-+#
-+CONFIG_SERIAL_8250=y
-+CONFIG_SERIAL_8250_CONSOLE=y
-+CONFIG_SERIAL_8250_NR_UARTS=4
-+CONFIG_SERIAL_8250_RUNTIME_UARTS=4
-+# CONFIG_SERIAL_8250_EXTENDED is not set
-+
-+#
-+# Non-8250 serial port support
-+#
-+CONFIG_SERIAL_CORE=y
-+CONFIG_SERIAL_CORE_CONSOLE=y
-+CONFIG_CONSOLE_POLL=y
-+# CONFIG_SERIAL_TIMBERDALE is not set
-+# CONFIG_SERIAL_ALTERA_JTAGUART is not set
-+# CONFIG_SERIAL_ALTERA_UART is not set
-+# CONFIG_SERIAL_XILINX_PS_UART is not set
-+# CONFIG_TTY_PRINTK is not set
-+# CONFIG_IPMI_HANDLER is not set
-+# CONFIG_HW_RANDOM is not set
-+# CONFIG_R3964 is not set
-+# CONFIG_RAW_DRIVER is not set
-+# CONFIG_TCG_TPM is not set
-+CONFIG_RAMOOPS=y
-+# CONFIG_I2C is not set
-+# CONFIG_SPI is not set
-+
-+#
-+# PPS support
-+#
-+# CONFIG_PPS is not set
-+
-+#
-+# PPS generators support
-+#
-+
-+#
-+# PTP clock support
-+#
-+
-+#
-+# Enable Device Drivers -> PPS to see the PTP clock options.
-+#
-+# CONFIG_W1 is not set
-+# CONFIG_POWER_SUPPLY is not set
-+# CONFIG_HWMON is not set
-+# CONFIG_THERMAL is not set
-+# CONFIG_WATCHDOG is not set
-+CONFIG_SSB_POSSIBLE=y
-+
-+#
-+# Sonics Silicon Backplane
-+#
-+# CONFIG_SSB is not set
-+CONFIG_BCMA_POSSIBLE=y
-+
-+#
-+# Broadcom specific AMBA
-+#
-+# CONFIG_BCMA is not set
-+# CONFIG_MFD_SUPPORT is not set
-+# CONFIG_REGULATOR is not set
-+# CONFIG_MEDIA_SUPPORT is not set
-+
-+#
-+# Graphics support
-+#
-+# CONFIG_DRM is not set
-+# CONFIG_VGASTATE is not set
-+# CONFIG_VIDEO_OUTPUT_CONTROL is not set
-+# CONFIG_FB is not set
-+# CONFIG_BACKLIGHT_LCD_SUPPORT is not set
-+
-+#
-+# Display device support
-+#
-+# CONFIG_DISPLAY_SUPPORT is not set
-+
-+#
-+# Console display driver support
-+#
-+# CONFIG_VGA_CONSOLE is not set
-+CONFIG_DUMMY_CONSOLE=y
-+# CONFIG_SOUND is not set
-+# CONFIG_HID_SUPPORT is not set
-+# CONFIG_USB_SUPPORT is not set
-+# CONFIG_MMC is not set
-+# CONFIG_MEMSTICK is not set
-+# CONFIG_NEW_LEDS is not set
-+# CONFIG_NFC_DEVICES is not set
-+# CONFIG_ACCESSIBILITY is not set
-+CONFIG_RTC_LIB=y
-+# CONFIG_RTC_CLASS is not set
-+# CONFIG_DMADEVICES is not set
-+# CONFIG_AUXDISPLAY is not set
-+# CONFIG_UIO is not set
-+# CONFIG_STAGING is not set
-+
-+#
-+# File systems
-+#
-+CONFIG_EXT2_FS=y
-+CONFIG_EXT2_FS_XATTR=y
-+CONFIG_EXT2_FS_POSIX_ACL=y
-+CONFIG_EXT2_FS_SECURITY=y
-+# CONFIG_EXT2_FS_XIP is not set
-+CONFIG_EXT3_FS=y
-+CONFIG_EXT3_DEFAULTS_TO_ORDERED=y
-+CONFIG_EXT3_FS_XATTR=y
-+CONFIG_EXT3_FS_POSIX_ACL=y
-+CONFIG_EXT3_FS_SECURITY=y
-+# CONFIG_EXT4_FS is not set
-+CONFIG_JBD=y
-+# CONFIG_JBD_DEBUG is not set
-+CONFIG_FS_MBCACHE=y
-+# CONFIG_REISERFS_FS is not set
-+# CONFIG_JFS_FS is not set
-+# CONFIG_XFS_FS is not set
-+# CONFIG_BTRFS_FS is not set
-+# CONFIG_NILFS2_FS is not set
-+CONFIG_FS_POSIX_ACL=y
-+CONFIG_FILE_LOCKING=y
-+CONFIG_FSNOTIFY=y
-+# CONFIG_DNOTIFY is not set
-+CONFIG_INOTIFY_USER=y
-+# CONFIG_FANOTIFY is not set
-+# CONFIG_QUOTA is not set
-+# CONFIG_QUOTACTL is not set
-+# CONFIG_AUTOFS4_FS is not set
-+# CONFIG_FUSE_FS is not set
-+CONFIG_GENERIC_ACL=y
-+
-+#
-+# Caches
-+#
-+# CONFIG_FSCACHE is not set
-+
-+#
-+# CD-ROM/DVD Filesystems
-+#
-+# CONFIG_ISO9660_FS is not set
-+# CONFIG_UDF_FS is not set
-+
-+#
-+# DOS/FAT/NT Filesystems
-+#
-+# CONFIG_MSDOS_FS is not set
-+# CONFIG_VFAT_FS is not set
-+# CONFIG_NTFS_FS is not set
-+
-+#
-+# Pseudo filesystems
-+#
-+CONFIG_PROC_FS=y
-+CONFIG_PROC_KCORE=y
-+CONFIG_PROC_SYSCTL=y
-+CONFIG_PROC_PAGE_MONITOR=y
-+CONFIG_SYSFS=y
-+CONFIG_TMPFS=y
-+CONFIG_TMPFS_POSIX_ACL=y
-+CONFIG_TMPFS_XATTR=y
-+# CONFIG_HUGETLB_PAGE is not set
-+# CONFIG_CONFIGFS_FS is not set
-+# CONFIG_MISC_FILESYSTEMS is not set
-+# CONFIG_NETWORK_FILESYSTEMS is not set
-+
-+#
-+# Partition Types
-+#
-+# CONFIG_PARTITION_ADVANCED is not set
-+CONFIG_MSDOS_PARTITION=y
-+# CONFIG_NLS is not set
-+
-+#
-+# Kernel hacking
-+#
-+CONFIG_TRACE_IRQFLAGS_SUPPORT=y
-+# CONFIG_PRINTK_TIME is not set
-+CONFIG_DEFAULT_MESSAGE_LOGLEVEL=4
-+# CONFIG_ENABLE_WARN_DEPRECATED is not set
-+# CONFIG_ENABLE_MUST_CHECK is not set
-+CONFIG_FRAME_WARN=1024
-+CONFIG_MAGIC_SYSRQ=y
-+# CONFIG_STRIP_ASM_SYMS is not set
-+CONFIG_UNUSED_SYMBOLS=y
-+CONFIG_DEBUG_FS=y
-+# CONFIG_HEADERS_CHECK is not set
-+# CONFIG_DEBUG_SECTION_MISMATCH is not set
-+CONFIG_DEBUG_KERNEL=y
-+# CONFIG_DEBUG_SHIRQ is not set
-+# CONFIG_LOCKUP_DETECTOR is not set
-+# CONFIG_HARDLOCKUP_DETECTOR is not set
-+CONFIG_DETECT_HUNG_TASK=y
-+CONFIG_DEFAULT_HUNG_TASK_TIMEOUT=120
-+# CONFIG_BOOTPARAM_HUNG_TASK_PANIC is not set
-+CONFIG_BOOTPARAM_HUNG_TASK_PANIC_VALUE=0
-+CONFIG_SCHED_DEBUG=y
-+CONFIG_SCHEDSTATS=y
-+CONFIG_TIMER_STATS=y
-+# CONFIG_DEBUG_OBJECTS is not set
-+# CONFIG_SLUB_DEBUG_ON is not set
-+# CONFIG_SLUB_STATS is not set
-+# CONFIG_DEBUG_KMEMLEAK is not set
-+# CONFIG_DEBUG_RT_MUTEXES is not set
-+# CONFIG_RT_MUTEX_TESTER is not set
-+# CONFIG_DEBUG_SPINLOCK is not set
-+# CONFIG_DEBUG_MUTEXES is not set
-+# CONFIG_DEBUG_LOCK_ALLOC is not set
-+# CONFIG_PROVE_LOCKING is not set
-+# CONFIG_SPARSE_RCU_POINTER is not set
-+# CONFIG_LOCK_STAT is not set
-+# CONFIG_DEBUG_SPINLOCK_SLEEP is not set
-+# CONFIG_DEBUG_LOCKING_API_SELFTESTS is not set
-+# CONFIG_DEBUG_STACK_USAGE is not set
-+# CONFIG_DEBUG_KOBJECT is not set
-+CONFIG_DEBUG_INFO=y
-+# CONFIG_DEBUG_INFO_REDUCED is not set
-+# CONFIG_DEBUG_VM is not set
-+# CONFIG_DEBUG_WRITECOUNT is not set
-+CONFIG_DEBUG_MEMORY_INIT=y
-+# CONFIG_DEBUG_LIST is not set
-+# CONFIG_TEST_LIST_SORT is not set
-+# CONFIG_DEBUG_SG is not set
-+# CONFIG_DEBUG_NOTIFIERS is not set
-+# CONFIG_DEBUG_CREDENTIALS is not set
-+CONFIG_BOOT_PRINTK_DELAY=y
-+# CONFIG_RCU_TORTURE_TEST is not set
-+# CONFIG_BACKTRACE_SELF_TEST is not set
-+# CONFIG_DEBUG_BLOCK_EXT_DEVT is not set
-+# CONFIG_DEBUG_FORCE_WEAK_PER_CPU is not set
-+# CONFIG_LKDTM is not set
-+# CONFIG_FAULT_INJECTION is not set
-+CONFIG_SYSCTL_SYSCALL_CHECK=y
-+# CONFIG_DEBUG_PAGEALLOC is not set
-+CONFIG_HAVE_FUNCTION_TRACER=y
-+CONFIG_HAVE_FUNCTION_GRAPH_TRACER=y
-+CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST=y
-+CONFIG_HAVE_DYNAMIC_FTRACE=y
-+CONFIG_HAVE_FTRACE_MCOUNT_RECORD=y
-+CONFIG_HAVE_C_RECORDMCOUNT=y
-+CONFIG_TRACING_SUPPORT=y
-+# CONFIG_FTRACE is not set
-+# CONFIG_DYNAMIC_DEBUG is not set
-+# CONFIG_DMA_API_DEBUG is not set
-+# CONFIG_ATOMIC64_SELFTEST is not set
-+# CONFIG_SAMPLES is not set
-+CONFIG_HAVE_ARCH_KGDB=y
-+CONFIG_KGDB=y
-+CONFIG_KGDB_SERIAL_CONSOLE=y
-+# CONFIG_KGDB_TESTS is not set
-+CONFIG_KGDB_LOW_LEVEL_TRAP=y
-+CONFIG_KGDB_KDB=y
-+CONFIG_KDB_KEYBOARD=y
-+# CONFIG_TEST_KSTRTOX is not set
-+# CONFIG_EARLY_PRINTK is not set
-+# CONFIG_CMDLINE_BOOL is not set
-+# CONFIG_DEBUG_STACKOVERFLOW is not set
-+# CONFIG_RUNTIME_DEBUG is not set
-+# CONFIG_DEBUG_ZBOOT is not set
-+# CONFIG_SPINLOCK_TEST is not set
-+
-+#
-+# Security options
-+#
-+CONFIG_KEYS=y
-+# CONFIG_KEYS_DEBUG_PROC_KEYS is not set
-+# CONFIG_SECURITY_DMESG_RESTRICT is not set
-+# CONFIG_SECURITY is not set
-+# CONFIG_SECURITYFS is not set
-+CONFIG_DEFAULT_SECURITY_DAC=y
-+CONFIG_DEFAULT_SECURITY=""
-+# CONFIG_CRYPTO is not set
-+# CONFIG_VIRTUALIZATION is not set
-+# CONFIG_BINARY_PRINTF is not set
-+
-+#
-+# Library routines
-+#
-+CONFIG_BITREVERSE=y
-+# CONFIG_CRC_CCITT is not set
-+# CONFIG_CRC16 is not set
-+# CONFIG_CRC_T10DIF is not set
-+# CONFIG_CRC_ITU_T is not set
-+CONFIG_CRC32=y
-+# CONFIG_CRC7 is not set
-+# CONFIG_LIBCRC32C is not set
-+CONFIG_ZLIB_INFLATE=y
-+CONFIG_LZO_DECOMPRESS=y
-+CONFIG_XZ_DEC=y
-+CONFIG_XZ_DEC_X86=y
-+CONFIG_XZ_DEC_POWERPC=y
-+CONFIG_XZ_DEC_IA64=y
-+CONFIG_XZ_DEC_ARM=y
-+CONFIG_XZ_DEC_ARMTHUMB=y
-+CONFIG_XZ_DEC_SPARC=y
-+CONFIG_XZ_DEC_BCJ=y
-+# CONFIG_XZ_DEC_TEST is not set
-+CONFIG_DECOMPRESS_GZIP=y
-+CONFIG_DECOMPRESS_BZIP2=y
-+CONFIG_DECOMPRESS_LZMA=y
-+CONFIG_DECOMPRESS_XZ=y
-+CONFIG_DECOMPRESS_LZO=y
-+CONFIG_HAS_IOMEM=y
-+CONFIG_HAS_IOPORT=y
-+CONFIG_HAS_DMA=y
-+CONFIG_NLATTR=y
-+CONFIG_GENERIC_ATOMIC64=y
-+# CONFIG_AVERAGE is not set
-diff --git a/arch/mips/include/asm/bootinfo.h b/arch/mips/include/asm/bootinfo.h
-index 35cd1ba..f850b88 100644
---- a/arch/mips/include/asm/bootinfo.h
-+++ b/arch/mips/include/asm/bootinfo.h
-@@ -69,7 +69,8 @@
- #define MACH_DEXXON_GDIUM2F10  5
- #define MACH_LEMOTE_NAS        6
- #define MACH_LEMOTE_LL2F       7
--#define MACH_LOONGSON_END      8
-+#define MACH_LOONGSON_LS1B     8
-+#define MACH_LOONGSON_END      9
- 
- /*
-  * Valid machtype for group INGENIC
-diff --git a/arch/mips/include/asm/cpu.h b/arch/mips/include/asm/cpu.h
-index 5f95a4b..975f372 100644
---- a/arch/mips/include/asm/cpu.h
-+++ b/arch/mips/include/asm/cpu.h
-@@ -191,6 +191,7 @@
- #define PRID_REV_34K_V1_0_2	0x0022
- #define PRID_REV_LOONGSON2E	0x0002
- #define PRID_REV_LOONGSON2F	0x0003
-+#define PRID_REV_LOONGSON1B	0x0020
- 
- /*
-  * Older processors used to encode processor version and revision in two
-@@ -253,7 +254,7 @@ enum cpu_type_enum {
- 	 */
- 	CPU_4KC, CPU_4KEC, CPU_4KSC, CPU_24K, CPU_34K, CPU_1004K, CPU_74K,
- 	CPU_ALCHEMY, CPU_PR4450, CPU_BMIPS32, CPU_BMIPS3300, CPU_BMIPS4350,
--	CPU_BMIPS4380, CPU_BMIPS5000, CPU_JZRISC,
-+	CPU_BMIPS4380, CPU_BMIPS5000, CPU_JZRISC, CPU_LOONGSON1,
- 
- 	/*
- 	 * MIPS64 class processors
-diff --git a/arch/mips/include/asm/mach-loongson1/irq.h b/arch/mips/include/asm/mach-loongson1/irq.h
-new file mode 100644
-index 0000000..44cec4a
---- /dev/null
-+++ b/arch/mips/include/asm/mach-loongson1/irq.h
-@@ -0,0 +1,70 @@
-+/*
-+ * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
-+ *
-+ * Register mappings for Loongson1.
-+ *
-+ * This program is free software; you can redistribute  it and/or modify it
-+ * under  the terms of  the GNU General  Public License as published by the
-+ * Free Software Foundation;  either version 2 of the  License, or (at your
-+ * option) any later version.
-+ */
-+
-+
-+#ifndef __ASM_MACH_LOONGSON1_IRQ_H
-+#define __ASM_MACH_LOONGSON1_IRQ_H
-+
-+/*
-+ * CPU core Interrupt Numbers
-+ */
-+#define MIPS_CPU_IRQ_BASE		0
-+#define MIPS_CPU_IRQ(x)			(MIPS_CPU_IRQ_BASE + (x))
-+#define SOFTINT0_IRQ			MIPS_CPU_IRQ(0)
-+#define SOFTINT1_IRQ			MIPS_CPU_IRQ(1)
-+#define INT0_IRQ			MIPS_CPU_IRQ(2)
-+#define INT1_IRQ			MIPS_CPU_IRQ(3)
-+#define INT2_IRQ			MIPS_CPU_IRQ(4)
-+#define INT3_IRQ			MIPS_CPU_IRQ(5)
-+#define INT4_IRQ			MIPS_CPU_IRQ(6)
-+#define TIMER_IRQ			MIPS_CPU_IRQ(7)		/* cpu timer */
-+
-+/*
-+ * INT0~3 Interrupt Numbers
-+ */
-+#define LOONGSON1_IRQ_BASE		8
-+#define LOONGSON1_IRQ(n,x)		(LOONGSON1_IRQ_BASE + (n << 5) + (x))
-+
-+#define LOONGSON1_UART0_IRQ		LOONGSON1_IRQ(0,2)
-+#define LOONGSON1_UART1_IRQ		LOONGSON1_IRQ(0,3)
-+#define LOONGSON1_UART2_IRQ		LOONGSON1_IRQ(0,4)
-+#define LOONGSON1_UART3_IRQ		LOONGSON1_IRQ(0,5)
-+#define LOONGSON1_CAN0_IRQ		LOONGSON1_IRQ(0,6)
-+#define LOONGSON1_CAN1_IRQ		LOONGSON1_IRQ(0,7)
-+#define LOONGSON1_SPI0_IRQ		LOONGSON1_IRQ(0,8)
-+#define LOONGSON1_SPI1_IRQ		LOONGSON1_IRQ(0,9)
-+#define LOONGSON1_AC97_IRQ		LOONGSON1_IRQ(0,10)
-+#define LOONGSON1_DMA0_IRQ		LOONGSON1_IRQ(0,13)
-+#define LOONGSON1_DMA1_IRQ		LOONGSON1_IRQ(0,14)
-+#define LOONGSON1_DMA2_IRQ		LOONGSON1_IRQ(0,15)
-+#define LOONGSON1_PWM0_IRQ		LOONGSON1_IRQ(0,17)
-+#define LOONGSON1_PWM1_IRQ		LOONGSON1_IRQ(0,18)
-+#define LOONGSON1_PWM2_IRQ		LOONGSON1_IRQ(0,19)
-+#define LOONGSON1_PWM3_IRQ		LOONGSON1_IRQ(0,20)
-+#define LOONGSON1_RTC_INT0_IRQ		LOONGSON1_IRQ(0,21)
-+#define LOONGSON1_RTC_INT1_IRQ		LOONGSON1_IRQ(0,22)
-+#define LOONGSON1_RTC_INT2_IRQ		LOONGSON1_IRQ(0,23)
-+#define LOONGSON1_TOY_INT0_IRQ		LOONGSON1_IRQ(0,24)
-+#define LOONGSON1_TOY_INT1_IRQ		LOONGSON1_IRQ(0,25)
-+#define LOONGSON1_TOY_INT2_IRQ		LOONGSON1_IRQ(0,26)
-+#define LOONGSON1_RTC_TICK_IRQ		LOONGSON1_IRQ(0,27)
-+#define LOONGSON1_TOY_TICK_IRQ		LOONGSON1_IRQ(0,28)
-+#define LOONGSON1_UART4_IRQ		LOONGSON1_IRQ(0,29)
-+#define LOONGSON1_UART5_IRQ		LOONGSON1_IRQ(0,30)
-+
-+#define LOONGSON1_OHCI_IRQ		LOONGSON1_IRQ(1,0)
-+#define LOONGSON1_EHCI_IRQ		LOONGSON1_IRQ(1,1)
-+#define LOONGSON1_GMAC0_IRQ		LOONGSON1_IRQ(1,2)
-+#define LOONGSON1_GMAC1_IRQ		LOONGSON1_IRQ(1,3)
-+
-+#define NR_IRQS				LOONGSON1_GMAC1_IRQ
-+
-+#endif /* __ASM_MACH_LOONGSON1_IRQ_H */ 
-diff --git a/arch/mips/include/asm/mach-loongson1/loongson1.h b/arch/mips/include/asm/mach-loongson1/loongson1.h
-new file mode 100644
-index 0000000..3df4f5d
---- /dev/null
-+++ b/arch/mips/include/asm/mach-loongson1/loongson1.h
-@@ -0,0 +1,48 @@
-+/*
-+ * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
-+ *
-+ * Register mappings for Loongson1.
-+ *
-+ * This program is free software; you can redistribute  it and/or modify it
-+ * under  the terms of  the GNU General  Public License as published by the
-+ * Free Software Foundation;  either version 2 of the  License, or (at your
-+ * option) any later version.
-+ */
-+
-+
-+#ifndef __ASM_MACH_LOONGSON1_LOONGSON1_H
-+#define __ASM_MACH_LOONGSON1_LOONGSON1_H
-+
-+#define DEFAULT_MEMSIZE			(256)   /* If no memsize provided */
-+
-+/* Loongson1 Register Bases */
-+/* All regs are accessed in KSEG1 */
-+#define LOONGSON1_REGBASE		(0xa0000000ul + 0x1fe00000ul)
-+
-+#define LOONGSON1_INTC_BASE		(0xbfd01040)
-+#define LOONGSON1_USB_BASE		(0xbfe00000)
-+#define LOONGSON1_GMAC0_BASE		(0xbfe10000)
-+#define LOONGSON1_GMAC1_BASE		(0xbfe20000)
-+#define LOONGSON1_UART0_BASE		(0xbfe40000)
-+#define LOONGSON1_UART1_BASE		(0xbfe44000)
-+#define LOONGSON1_UART2_BASE		(0xbfe48000)
-+#define LOONGSON1_UART3_BASE		(0xbfe4c000)
-+#define LOONGSON1_UART4_BASE		(0xbfe6c000)
-+#define LOONGSON1_UART5_BASE		(0xbfe7c000)
-+#define LOONGSON1_CAN0_BASE		(0xbfe50000)
-+#define LOONGSON1_CAN1_BASE		(0xbfe54000)
-+#define LOONGSON1_I2C0_BASE		(0xbfe58000)
-+#define LOONGSON1_I2C1_BASE		(0xbfe68000)
-+#define LOONGSON1_I2C2_BASE		(0xbfe70000)
-+#define LOONGSON1_PWM_BASE		(0xbfe5c000)
-+#define LOONGSON1_WDT_BASE		(0xbfe5c060)
-+#define LOONGSON1_RTC_BASE		(0xbfe64000)
-+#define LOONGSON1_AC97_BASE		(0xbfe74000)
-+#define LOONGSON1_NAND_BASE		(0xbfe78000)
-+#define LOONGSON1_CLK_BASE		(0xbfe78030)
-+
-+#include <regs-clk.h>
-+#include <regs-intc.h>
-+#include <regs-wdt.h>
-+
-+#endif /* __ASM_MACH_LOONGSON1_LOONGSON1_H */
-diff --git a/arch/mips/include/asm/mach-loongson1/platform.h b/arch/mips/include/asm/mach-loongson1/platform.h
-new file mode 100644
-index 0000000..f9e3a9e
---- /dev/null
-+++ b/arch/mips/include/asm/mach-loongson1/platform.h
-@@ -0,0 +1,20 @@
-+/*
-+ * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
-+ *
-+ * This program is free software; you can redistribute  it and/or modify it
-+ * under  the terms of  the GNU General  Public License as published by the
-+ * Free Software Foundation;  either version 2 of the  License, or (at your
-+ * option) any later version.
-+ */
-+
-+
-+#ifndef __ASM_MACH_LOONGSON1_PLATFORM_H
-+#define __ASM_MACH_LOONGSON1_PLATFORM_H
-+
-+#include <linux/platform_device.h>
-+
-+extern struct platform_device loongson1_uart_device;
-+
-+void loongson1_serial_setup(void);
-+
-+#endif /* __ASM_MACH_LOONGSON1_PLATFORM_H */ 
-diff --git a/arch/mips/include/asm/mach-loongson1/prom.h b/arch/mips/include/asm/mach-loongson1/prom.h
-new file mode 100644
-index 0000000..b871dc4
---- /dev/null
-+++ b/arch/mips/include/asm/mach-loongson1/prom.h
-@@ -0,0 +1,24 @@
-+/*
-+ * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
-+ *
-+ * This program is free software; you can redistribute  it and/or modify it
-+ * under  the terms of  the GNU General  Public License as published by the
-+ * Free Software Foundation;  either version 2 of the  License, or (at your
-+ * option) any later version.
-+ */
-+
-+#ifndef __ASM_MACH_LOONGSON1_PROM_H
-+#define __ASM_MACH_LOONGSON1_PROM_H
-+
-+#include <linux/io.h>
-+#include <linux/init.h>
-+#include <linux/irq.h>
-+
-+/* environment arguments from bootloader */
-+extern unsigned long memsize, highmemsize;
-+
-+/* loongson-specific command line, env and memory initialization */
-+extern char *prom_getenv(char *name);
-+extern void __init prom_init_cmdline(void);
-+
-+#endif /* __ASM_MACH_LOONGSON1_PROM_H */
-diff --git a/arch/mips/include/asm/mach-loongson1/regs-clk.h b/arch/mips/include/asm/mach-loongson1/regs-clk.h
-new file mode 100644
-index 0000000..acffd4f
---- /dev/null
-+++ b/arch/mips/include/asm/mach-loongson1/regs-clk.h
-@@ -0,0 +1,32 @@
-+/*
-+ * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
-+ *
-+ * Loongson1 Clock Register Definitions.
-+ *
-+ * This program is free software; you can redistribute  it and/or modify it
-+ * under  the terms of  the GNU General  Public License as published by the
-+ * Free Software Foundation;  either version 2 of the  License, or (at your
-+ * option) any later version.
-+ */
-+
-+#ifndef __ASM_MACH_LOONGSON1_REGS_CLK_H
-+#define __ASM_MACH_LOONGSON1_REGS_CLK_H
-+
-+#define LOONGSON1_CLK_REG(x)		((void __iomem *)(LOONGSON1_CLK_BASE + (x)))
-+
-+#define	CLK_PLL_FREQ			LOONGSON1_CLK_REG(0x0)
-+#define	CLK_PLL_DIV			LOONGSON1_CLK_REG(0x4)
-+
-+/* Clock PLL Divisor Register Bits */
-+#define	DIV_DC_EN			(0x1 << 31)
-+#define DIV_DC				(0x1f << 26)
-+#define	DIV_CPU_EN			(0x1 << 25)
-+#define DIV_CPU				(0x1f << 20)
-+#define	DIV_DDR_EN			(0x1 << 19)
-+#define DIV_DDR				(0x1f << 14)
-+
-+#define	DIV_DC_SHIFT			(26)
-+#define	DIV_CPU_SHIFT			(20)
-+#define	DIV_DDR_SHIFT			(14)
-+
-+#endif /* __ASM_MACH_LOONGSON1_REGS_CLK_H */
-diff --git a/arch/mips/include/asm/mach-loongson1/regs-intc.h b/arch/mips/include/asm/mach-loongson1/regs-intc.h
-new file mode 100644
-index 0000000..783eb54
---- /dev/null
-+++ b/arch/mips/include/asm/mach-loongson1/regs-intc.h
-@@ -0,0 +1,24 @@
-+/*
-+ * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
-+ *
-+ * Loongson1 Interrupt register definitions.
-+ *
-+ * This program is free software; you can redistribute  it and/or modify it
-+ * under  the terms of  the GNU General  Public License as published by the
-+ * Free Software Foundation;  either version 2 of the  License, or (at your
-+ * option) any later version.
-+ */
-+
-+#ifndef __ASM_MACH_LOONGSON1_REGS_INTC_H
-+#define __ASM_MACH_LOONGSON1_REGS_INTC_H
-+
-+#define LOONGSON1_INTC_REG(x)		((void __iomem *)(LOONGSON1_INTC_BASE + n * 0x18 + x))
-+
-+#define	INTC_INTISR(n)			LOONGSON1_INTC_REG(0x0)
-+#define	INTC_INTIEN(n)			LOONGSON1_INTC_REG(0x4)
-+#define	INTC_INTSET(n)			LOONGSON1_INTC_REG(0x8)
-+#define	INTC_INTCLR(n)			LOONGSON1_INTC_REG(0xc)
-+#define	INTC_INTPOL(n)			LOONGSON1_INTC_REG(0x10)
-+#define	INTC_INTEDGE(n)			LOONGSON1_INTC_REG(0x14)
-+
-+#endif /* __ASM_MACH_LOONGSON1_REGS_INTC_H */
-diff --git a/arch/mips/include/asm/mach-loongson1/regs-wdt.h b/arch/mips/include/asm/mach-loongson1/regs-wdt.h
-new file mode 100644
-index 0000000..ae04f08
---- /dev/null
-+++ b/arch/mips/include/asm/mach-loongson1/regs-wdt.h
-@@ -0,0 +1,21 @@
-+/*
-+ * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
-+ *
-+ * Loongson1 Watchdog register definitions.
-+ *
-+ * This program is free software; you can redistribute  it and/or modify it
-+ * under  the terms of  the GNU General  Public License as published by the
-+ * Free Software Foundation;  either version 2 of the  License, or (at your
-+ * option) any later version.
-+ */
-+
-+#ifndef __ASM_MACH_LOONGSON1_REGS_WDT_H
-+#define __ASM_MACH_LOONGSON1_REGS_WDT_H
-+
-+#define LOONGSON1_WDT_REG(x)		((void __iomem *)(LOONGSON1_WDT_BASE + (x)))
-+
-+#define	WDT_EN				LOONGSON1_WDT_REG(0x0)
-+#define	WDT_SET				LOONGSON1_WDT_REG(0x4)
-+#define	WDT_TIMER			LOONGSON1_WDT_REG(0x8)
-+
-+#endif /* __ASM_MACH_LOONGSON1_REGS_WDT_H */
-diff --git a/arch/mips/include/asm/mach-loongson1/war.h b/arch/mips/include/asm/mach-loongson1/war.h
-new file mode 100644
-index 0000000..e3680a8
---- /dev/null
-+++ b/arch/mips/include/asm/mach-loongson1/war.h
-@@ -0,0 +1,25 @@
-+/*
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ *
-+ * Copyright (C) 2002, 2004, 2007 by Ralf Baechle <ralf@linux-mips.org>
-+ */
-+#ifndef __ASM_MACH_LOONGSON1_WAR_H
-+#define __ASM_MACH_LOONGSON1_WAR_H
-+
-+#define R4600_V1_INDEX_ICACHEOP_WAR	0
-+#define R4600_V1_HIT_CACHEOP_WAR	0
-+#define R4600_V2_HIT_CACHEOP_WAR	0
-+#define R5432_CP0_INTERRUPT_WAR		0
-+#define BCM1250_M3_WAR			0
-+#define SIBYTE_1956_WAR			0
-+#define MIPS4K_ICACHE_REFILL_WAR	0
-+#define MIPS_CACHE_SYNC_WAR		0
-+#define TX49XX_ICACHE_INDEX_INV_WAR	0
-+#define RM9000_CDEX_SMP_WAR		0
-+#define ICACHE_REFILLS_WORKAROUND_WAR	0
-+#define R10000_LLSC_WAR			0
-+#define MIPS34K_MISSED_ITLB_WAR		0
-+
-+#endif /* __ASM_MACH_LOONGSON1_WAR_H */
-diff --git a/arch/mips/include/asm/module.h b/arch/mips/include/asm/module.h
-index bc01a02..b53d642 100644
---- a/arch/mips/include/asm/module.h
-+++ b/arch/mips/include/asm/module.h
-@@ -116,6 +116,8 @@ search_module_dbetables(unsigned long addr)
- #define MODULE_PROC_FAMILY "SB1 "
- #elif defined CONFIG_CPU_LOONGSON2
- #define MODULE_PROC_FAMILY "LOONGSON2 "
-+#elif defined CONFIG_CPU_LOONGSON1
-+#define MODULE_PROC_FAMILY "LOONGSON1 "
- #elif defined CONFIG_CPU_CAVIUM_OCTEON
- #define MODULE_PROC_FAMILY "OCTEON "
- #elif defined CONFIG_CPU_XLR
-diff --git a/arch/mips/kernel/cpu-probe.c b/arch/mips/kernel/cpu-probe.c
-index ebc0cd2..c886e0d 100644
---- a/arch/mips/kernel/cpu-probe.c
-+++ b/arch/mips/kernel/cpu-probe.c
-@@ -37,6 +37,8 @@
- void (*cpu_wait)(void);
- EXPORT_SYMBOL(cpu_wait);
- 
-+static void __cpuinit decode_configs(struct cpuinfo_mips *c);
-+
- static void r3081_wait(void)
- {
- 	unsigned long cfg = read_c0_conf();
-@@ -190,6 +192,7 @@ void __init check_wait(void)
- 	case CPU_CAVIUM_OCTEON_PLUS:
- 	case CPU_CAVIUM_OCTEON2:
- 	case CPU_JZRISC:
-+	case CPU_LOONGSON1:
- 		cpu_wait = r4k_wait;
- 		break;
- 
-@@ -635,6 +638,18 @@ static inline void cpu_probe_legacy(struct cpuinfo_mips *c, unsigned int cpu)
- 			     MIPS_CPU_32FPR;
- 		c->tlbsize = 64;
- 		break;
-+	case PRID_IMP_LOONGSON1:
-+		decode_configs(c);
-+
-+		c->cputype = CPU_LOONGSON1;
-+
-+		switch (c->processor_id & PRID_REV_MASK) {
-+		case PRID_REV_LOONGSON1B:
-+			__cpu_name[cpu] = "Loongson 1B";
-+			break;
-+		}
-+
-+		break;
- 	}
- }
- 
-diff --git a/arch/mips/kernel/perf_event_mipsxx.c b/arch/mips/kernel/perf_event_mipsxx.c
-index e5ad09a..e316b0e 100644
---- a/arch/mips/kernel/perf_event_mipsxx.c
-+++ b/arch/mips/kernel/perf_event_mipsxx.c
-@@ -1062,6 +1062,12 @@ init_hw_perf_events(void)
- 		mipsxxcore_pmu.irq = irq;
- 		mipspmu = &mipsxxcore_pmu;
- 		break;
-+	case CPU_LOONGSON1:
-+		mipsxxcore_pmu.name = "mips/loongson1";
-+		mipsxxcore_pmu.num_counters = counters;
-+		mipsxxcore_pmu.irq = irq;
-+		mipspmu = &mipsxxcore_pmu;
-+		break;
- 	default:
- 		pr_cont("Either hardware does not support performance "
- 			"counters, or not yet implemented.\n");
-diff --git a/arch/mips/kernel/traps.c b/arch/mips/kernel/traps.c
-index 01eff7e..cd55823 100644
---- a/arch/mips/kernel/traps.c
-+++ b/arch/mips/kernel/traps.c
-@@ -1241,6 +1241,7 @@ static inline void parity_protection_init(void)
- 		break;
- 
- 	case CPU_5KC:
-+	case CPU_LOONGSON1:
- 		write_c0_ecc(0x80000000);
- 		back_to_back_c0_hazard();
- 		/* Set the PE bit (bit 31) in the c0_errctl register. */
-diff --git a/arch/mips/loongson1/Kconfig b/arch/mips/loongson1/Kconfig
-new file mode 100644
-index 0000000..c22ceac
---- /dev/null
-+++ b/arch/mips/loongson1/Kconfig
-@@ -0,0 +1,29 @@
-+if MACH_LOONGSON1
-+
-+choice
-+	prompt "Machine Type"
-+
-+config LOONGSON1_LS1B
-+	bool "Loongson LS1B board"
-+	select ARCH_SPARSEMEM_ENABLE
-+	select CEVT_R4K
-+	select CSRC_R4K
-+	select SYS_HAS_CPU_LOONGSON1B
-+	select DMA_NONCOHERENT
-+	select BOOT_ELF32
-+	select IRQ_CPU
-+	select SYS_SUPPORTS_32BIT_KERNEL
-+	select SYS_SUPPORTS_LITTLE_ENDIAN
-+	select SYS_SUPPORTS_HIGHMEM
-+	select SYS_HAS_EARLY_PRINTK
-+#	select USB_ARCH_HAS_OHCI
-+#	select USB_ARCH_HAS_EHCI
-+
-+endchoice
-+
-+#config LOONGSON_SUSPEND
-+#	bool
-+#	default y
-+#	depends on CPU_SUPPORTS_CPUFREQ && SUSPEND
-+
-+endif # MACH_LOONGSON1
-diff --git a/arch/mips/loongson1/Makefile b/arch/mips/loongson1/Makefile
-new file mode 100644
-index 0000000..e9123c2
---- /dev/null
-+++ b/arch/mips/loongson1/Makefile
-@@ -0,0 +1,11 @@
-+#
-+# Common code for all Loongson1 based systems
-+#
-+
-+obj-$(CONFIG_MACH_LOONGSON1) += common/
-+
-+#
-+# Loongson LS1B board
-+#
-+
-+obj-$(CONFIG_LOONGSON1_LS1B)  += ls1b/
-diff --git a/arch/mips/loongson1/Platform b/arch/mips/loongson1/Platform
-new file mode 100644
-index 0000000..92804c6
---- /dev/null
-+++ b/arch/mips/loongson1/Platform
-@@ -0,0 +1,7 @@
-+cflags-$(CONFIG_CPU_LOONGSON1)  += \
-+	$(call cc-option,-march=mips32r2,-mips32r2 -U_MIPS_ISA -D_MIPS_ISA=_MIPS_ISA_MIPS32) \
-+	-Wa,-mips32r2 -Wa,--trap
-+
-+platform-$(CONFIG_MACH_LOONGSON1)	+= loongson1/
-+cflags-$(CONFIG_MACH_LOONGSON1)		+= -I$(srctree)/arch/mips/include/asm/mach-loongson1
-+load-$(CONFIG_LOONGSON1_LS1B)		+= 0xffffffff80010000
-diff --git a/arch/mips/loongson1/common/Makefile b/arch/mips/loongson1/common/Makefile
-new file mode 100644
-index 0000000..b279770
---- /dev/null
-+++ b/arch/mips/loongson1/common/Makefile
-@@ -0,0 +1,5 @@
-+#
-+# Makefile for common code of loongson1 based machines.
-+#
-+
-+obj-y	+= clock.o irq.o platform.o prom.o reset.o setup.o
-diff --git a/arch/mips/loongson1/common/clock.c b/arch/mips/loongson1/common/clock.c
-new file mode 100644
-index 0000000..e854953
---- /dev/null
-+++ b/arch/mips/loongson1/common/clock.c
-@@ -0,0 +1,164 @@
-+/*
-+ * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
-+ *
-+ * This program is free software; you can redistribute  it and/or modify it
-+ * under  the terms of  the GNU General  Public License as published by the
-+ * Free Software Foundation;  either version 2 of the  License, or (at your
-+ * option) any later version.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/list.h>
-+#include <linux/mutex.h>
-+#include <linux/clk.h>
-+#include <linux/err.h>
-+#include <asm/clock.h>
-+#include <asm/time.h>
-+
-+#include <loongson1.h>
-+
-+static LIST_HEAD(clocks);
-+static DEFINE_MUTEX(clocks_mutex);
-+
-+struct clk *clk_get(struct device *dev, const char *name)
-+{
-+	struct clk *c;
-+	struct clk *ret = NULL;
-+
-+	mutex_lock(&clocks_mutex);
-+	list_for_each_entry(c, &clocks, node) {
-+		if (!strcmp(c->name, name)) {
-+			ret = c;
-+			break;
-+		}
-+	}
-+	mutex_unlock(&clocks_mutex);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL(clk_get);
-+
-+unsigned long clk_get_rate(struct clk *clk)
-+{
-+	return clk->rate;
-+}
-+EXPORT_SYMBOL(clk_get_rate);
-+
-+static void pll_clk_init(struct clk *clk)
-+{
-+	u32 pll;
-+
-+	pll = __raw_readl(CLK_PLL_FREQ);
-+        clk->rate = (12 + (pll & 0x3f)) * 33 / 2 + ((pll >>8 ) & 0x3ff) * 33 / 1024 / 2;
-+        clk->rate *= 1000000;
-+}
-+
-+static void cpu_clk_init(struct clk *clk)
-+{
-+	u32 pll, ctrl;
-+
-+	pll = clk_get_rate(clk->parent);
-+	ctrl = __raw_readl(CLK_PLL_DIV) & DIV_CPU;
-+	clk->rate = pll / (ctrl >> DIV_CPU_SHIFT);
-+}
-+
-+static void ddr_clk_init(struct clk *clk)
-+{
-+	u32 pll, ctrl;
-+
-+	pll = clk_get_rate(clk->parent);
-+	ctrl = __raw_readl(CLK_PLL_DIV) & DIV_DDR;
-+	clk->rate = pll / (ctrl >> DIV_DDR_SHIFT);
-+}
-+
-+static void dc_clk_init(struct clk *clk)
-+{
-+	u32 pll, ctrl;
-+
-+	pll = clk_get_rate(clk->parent);
-+	ctrl = __raw_readl(CLK_PLL_DIV) & DIV_DC;
-+	clk->rate = pll / (ctrl >> DIV_DC_SHIFT);
-+}
-+
-+static struct clk_ops pll_clk_ops = {
-+	.init	= pll_clk_init,
-+};
-+
-+static struct clk_ops cpu_clk_ops = {
-+	.init	= cpu_clk_init,
-+};
-+
-+static struct clk_ops ddr_clk_ops = {
-+	.init	= ddr_clk_init,
-+};
-+
-+static struct clk_ops dc_clk_ops = {
-+	.init	= dc_clk_init,
-+};
-+
-+static struct clk pll_clk = {
-+	.name	= "pll",
-+	.ops	= &pll_clk_ops,
-+};
-+
-+static struct clk cpu_clk = {
-+	.name	= "cpu",
-+	.parent = &pll_clk,
-+	.ops	= &cpu_clk_ops,
-+};
-+
-+static struct clk ddr_clk = {
-+	.name	= "ddr",
-+	.parent = &pll_clk,
-+	.ops	= &ddr_clk_ops,
-+};
-+
-+static struct clk dc_clk = {
-+	.name	= "dc",
-+	.parent = &pll_clk,
-+	.ops	= &dc_clk_ops,
-+};
-+
-+int clk_register(struct clk *clk)
-+{
-+	mutex_lock(&clocks_mutex);
-+	list_add(&clk->node, &clocks);
-+	if (clk->ops->init)
-+		clk->ops->init(clk);
-+	mutex_unlock(&clocks_mutex);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(clk_register);
-+
-+static struct clk *loongson1_clks[] = {
-+	&pll_clk,
-+	&cpu_clk,
-+	&ddr_clk,
-+	&dc_clk,
-+};
-+
-+int __init loongson1_clock_init(void)
-+{
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(loongson1_clks); i++)
-+		clk_register(loongson1_clks[i]);
-+
-+	return 0;
-+}
-+
-+void __init plat_time_init(void)
-+{
-+	struct clk *clk;
-+
-+	 /* Initialize loongson1 clocks */ 
-+	loongson1_clock_init();
-+
-+        /* setup mips r4k timer */
-+	clk = clk_get(NULL, "cpu");
-+	if (IS_ERR(clk))
-+		panic("unable to get dc clock, err=%ld", PTR_ERR(clk));
-+
-+	mips_hpt_frequency = clk_get_rate(clk) / 2;
-+}
-diff --git a/arch/mips/loongson1/common/irq.c b/arch/mips/loongson1/common/irq.c
-new file mode 100644
-index 0000000..8a7287f
---- /dev/null
-+++ b/arch/mips/loongson1/common/irq.c
-@@ -0,0 +1,132 @@
-+/*
-+ * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
-+ *
-+ * Based on Copyright (C) 2009 Lemote Inc.
-+ *
-+ * This program is free software; you can redistribute  it and/or modify it
-+ * under  the terms of  the GNU General  Public License as published by the
-+ * Free Software Foundation;  either version 2 of the  License, or (at your
-+ * option) any later version.
-+ */
-+
-+#include <linux/interrupt.h>
-+#include <linux/irq.h>
-+#include <asm/irq_cpu.h>
-+
-+#include <loongson1.h>
-+#include <irq.h>
-+
-+static void loongson1_irq_ack(struct irq_data *d)
-+{
-+	unsigned int bit = (d->irq - LOONGSON1_IRQ_BASE) & 0x1f;
-+	unsigned int n = (d->irq - LOONGSON1_IRQ_BASE) >> 5;
-+
-+	__raw_writel(__raw_readl(INTC_INTCLR(n)) | (1 << bit), INTC_INTCLR(n));
-+}
-+
-+static void loongson1_irq_mask(struct irq_data *d)
-+{
-+	unsigned int bit = (d->irq - LOONGSON1_IRQ_BASE) & 0x1f;
-+	unsigned int n = (d->irq - LOONGSON1_IRQ_BASE) >> 5;
-+
-+	__raw_writel(__raw_readl(INTC_INTIEN(n)) & ~(1 << bit), INTC_INTIEN(n));
-+}
-+
-+static void loongson1_irq_mask_ack(struct irq_data *d)
-+{
-+	unsigned int bit = (d->irq - LOONGSON1_IRQ_BASE) & 0x1f;
-+	unsigned int n = (d->irq - LOONGSON1_IRQ_BASE) >> 5;
-+
-+	__raw_writel(__raw_readl(INTC_INTIEN(n)) & ~(1 << bit), INTC_INTIEN(n));
-+	__raw_writel(__raw_readl(INTC_INTCLR(n)) | (1 << bit), INTC_INTCLR(n));
-+}
-+
-+static void loongson1_irq_unmask(struct irq_data *d)
-+{
-+	unsigned int bit = (d->irq - LOONGSON1_IRQ_BASE) & 0x1f;
-+	unsigned int n = (d->irq - LOONGSON1_IRQ_BASE) >> 5;
-+
-+	__raw_writel(__raw_readl(INTC_INTIEN(n)) | (1 << bit), INTC_INTIEN(n));
-+}
-+
-+static struct irq_chip loongson1_irq_chip = {
-+	.name		= "LOONGSON1-INTC",
-+	.irq_ack	= loongson1_irq_ack,
-+	.irq_mask	= loongson1_irq_mask,
-+	.irq_mask_ack	= loongson1_irq_mask_ack,
-+	.irq_unmask	= loongson1_irq_unmask,
-+};
-+
-+static void loongson1_irq_dispatch(int n)
-+{
-+	u32 int_status, irq;
-+
-+	/* Get pending sources, masked by current enables */
-+	int_status = __raw_readl(INTC_INTISR(n)) &
-+			__raw_readl(INTC_INTIEN(n));
-+
-+	if (int_status) {
-+		irq = LOONGSON1_IRQ(n, __ffs(int_status));
-+		do_IRQ(irq);
-+	}
-+}
-+
-+asmlinkage void plat_irq_dispatch(void)
-+{
-+	unsigned int pending;
-+
-+	pending = read_c0_cause() & read_c0_status() & ST0_IM;
-+
-+	if (pending & CAUSEF_IP7)
-+		do_IRQ(TIMER_IRQ);
-+	else if (pending & CAUSEF_IP2)
-+		loongson1_irq_dispatch(0); /* INT0 */ 
-+	else if (pending & CAUSEF_IP3)
-+		loongson1_irq_dispatch(1); /* INT1 */ 
-+	else if (pending & CAUSEF_IP4)
-+		loongson1_irq_dispatch(2); /* INT2 */ 
-+	else if (pending & CAUSEF_IP5)
-+		loongson1_irq_dispatch(3); /* INT3 */ 
-+	else if (pending & CAUSEF_IP6)
-+		loongson1_irq_dispatch(4); /* INT4 */ 
-+	else
-+		spurious_interrupt();
-+
-+}
-+
-+struct irqaction cascade_irqaction = {
-+	.handler = no_action,
-+	.name = "cascade",
-+};
-+
-+static void __init loongson1_irq_init(int base)
-+{
-+	int n;
-+
-+	/* Disable interrupts and clear pending,
-+	 * setup all IRQs as high level triggered
-+	 */
-+	for (n = 0; n < 4; n++) {
-+		__raw_writel(0x0, INTC_INTIEN(n));
-+		__raw_writel(0xffffffff, INTC_INTCLR(n));
-+		__raw_writel(0xffffffff, INTC_INTPOL(n));
-+		__raw_writel(0x0, INTC_INTEDGE(n));
-+	}
-+
-+
-+	for (n = base; n < NR_IRQS; n++) {
-+		irq_set_chip_and_handler(n, &loongson1_irq_chip,
-+					 handle_level_irq);
-+	}
-+
-+	setup_irq(INT0_IRQ, &cascade_irqaction);
-+	setup_irq(INT1_IRQ, &cascade_irqaction);
-+	setup_irq(INT2_IRQ, &cascade_irqaction);
-+	setup_irq(INT3_IRQ, &cascade_irqaction);
-+}
-+
-+void __init arch_init_irq(void)
-+{
-+	mips_cpu_irq_init();
-+	loongson1_irq_init(LOONGSON1_IRQ_BASE);
-+}
-diff --git a/arch/mips/loongson1/common/platform.c b/arch/mips/loongson1/common/platform.c
-new file mode 100644
-index 0000000..baababb
---- /dev/null
-+++ b/arch/mips/loongson1/common/platform.c
-@@ -0,0 +1,50 @@
-+/*
-+ * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
-+ *
-+ * This program is free software; you can redistribute  it and/or modify it
-+ * under  the terms of  the GNU General  Public License as published by the
-+ * Free Software Foundation;  either version 2 of the  License, or (at your
-+ * option) any later version.
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/err.h>
-+#include <linux/serial_8250.h>
-+
-+#include <loongson1.h>
-+
-+#define LOONGSON1_UART_PORT(_id)					\
-+	{						\
-+		.mapbase	= LOONGSON1_UART ## _id ## _BASE, \
-+		.membase	= (void *)(LOONGSON1_UART ## _id ## _BASE),	\
-+		.irq		= LOONGSON1_UART ## _id ## _IRQ, \
-+		.iotype		= UPIO_MEM,		\
-+		.flags		= UPF_BOOT_AUTOCONF | UPF_FIXED_TYPE,	\
-+		.type		= PORT_16550A,		\
-+	}
-+
-+static struct plat_serial8250_port loongson1_serial8250_port[] = {
-+	LOONGSON1_UART_PORT(0),
-+	{},
-+};
-+
-+struct platform_device loongson1_uart_device = {
-+	.name			= "serial8250",
-+	.id			= PLAT8250_DEV_PLATFORM,
-+	.dev			= {
-+		.platform_data	= loongson1_serial8250_port,
-+	},
-+};
-+
-+void __init loongson1_serial_setup(void)
-+{       
-+	struct clk *clk;
-+	struct plat_serial8250_port *p;
-+	
-+        clk = clk_get(NULL, "dc");
-+        if (IS_ERR(clk))
-+                panic("unable to get dc clock, err=%ld", PTR_ERR(clk));
-+
-+	for (p = loongson1_serial8250_port; p->flags != 0; ++p)
-+		p->uartclk = clk_get_rate(clk);
-+}
-diff --git a/arch/mips/loongson1/common/prom.c b/arch/mips/loongson1/common/prom.c
-new file mode 100644
-index 0000000..84a25f6
---- /dev/null
-+++ b/arch/mips/loongson1/common/prom.c
-@@ -0,0 +1,89 @@
-+/*
-+ * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
-+ *
-+ * Based on Copyright (C) 2009 Lemote Inc.
-+ *
-+ * This program is free software; you can redistribute  it and/or modify it
-+ * under  the terms of  the GNU General  Public License as published by the
-+ * Free Software Foundation;  either version 2 of the  License, or (at your
-+ * option) any later version.
-+ */
-+
-+#include <linux/serial_reg.h>
-+#include <asm/bootinfo.h>
-+
-+#include <loongson1.h>
-+#include <prom.h>
-+
-+int prom_argc;
-+char **prom_argv, **prom_envp;
-+unsigned long memsize, highmemsize;
-+
-+char *prom_getenv(char *envname)
-+{       
-+	extern char **prom_envp;
-+	char **env = prom_envp;
-+	int i;
-+
-+	i = strlen(envname);
-+
-+	while (*env) {
-+		if (strncmp(envname, *env, i) == 0 && *(*env+i) == '=')
-+			return *env + i + 1;
-+		env++;  
-+	}       
-+
-+	return 0;
-+}
-+
-+static inline unsigned long env_or_default(char *env, unsigned long dfl)
-+{
-+	char *str = prom_getenv(env);
-+	return str ? simple_strtol(str, 0, 0) : dfl;
-+}
-+
-+void __init prom_init_cmdline(void)
-+{
-+	char *c = &(arcs_cmdline[0]);
-+	int i;
-+
-+	for (i = 1; i < prom_argc; i++) {
-+		strcpy(c, prom_argv[i]);
-+		c += strlen(prom_argv[i]);
-+		if (i < prom_argc-1)
-+			*c++ = ' ';
-+	}
-+	*c = 0;
-+}
-+
-+void __init prom_init(void)
-+{
-+	prom_argc = fw_arg0;
-+	prom_argv = (char **)fw_arg1;
-+	prom_envp = (char **)fw_arg2;
-+
-+	prom_init_cmdline();
-+
-+	memsize = env_or_default("memsize", DEFAULT_MEMSIZE);
-+	highmemsize = env_or_default("highmemsize", 0x0);
-+}
-+
-+void __init prom_free_prom_memory(void)
-+{
-+}
-+
-+#define UART_BASE	LOONGSON1_UART0_BASE
-+#define PORT(base, offset) (u8 *)(base + offset)
-+
-+void __init prom_putchar(char c)
-+{
-+	int timeout;
-+
-+	timeout = 1024;
-+
-+	while (((readb(PORT(UART_BASE, UART_LSR)) & UART_LSR_THRE) == 0)
-+			&& (timeout-- > 0))
-+		;
-+
-+	writeb(c, PORT(UART_BASE, UART_TX));
-+}
-diff --git a/arch/mips/loongson1/common/reset.c b/arch/mips/loongson1/common/reset.c
-new file mode 100644
-index 0000000..b34ad35
---- /dev/null
-+++ b/arch/mips/loongson1/common/reset.c
-@@ -0,0 +1,48 @@
-+/*
-+ * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
-+ *
-+ * Based on Copyright (C) 2009 Lemote Inc.
-+ *
-+ * This program is free software; you can redistribute  it and/or modify it
-+ * under  the terms of  the GNU General  Public License as published by the
-+ * Free Software Foundation;  either version 2 of the  License, or (at your
-+ * option) any later version.
-+ */
-+
-+#include <linux/io.h>
-+#include <linux/pm.h>
-+#include <asm/reboot.h>
-+
-+#include <loongson1.h>
-+
-+static void loongson1_restart(char *command)
-+{
-+	__raw_writel(0x1, WDT_EN);
-+	__raw_writel(0x5000000, WDT_TIMER);
-+	__raw_writel(0x1, WDT_SET);
-+}
-+
-+static void loongson1_halt(void)
-+{
-+	pr_notice("\n\n** You can safely turn off the power now **\n\n");
-+	while (1) {
-+		if (cpu_wait)
-+			cpu_wait();
-+	}
-+}
-+
-+static void loongson1_power_off(void)
-+{
-+	loongson1_halt();
-+}
-+
-+static int __init loongson1_reboot_setup(void)
-+{
-+	_machine_restart = loongson1_restart;
-+	_machine_halt = loongson1_halt;
-+	pm_power_off = loongson1_power_off;
-+
-+	return 0;
-+}
-+
-+arch_initcall(loongson1_reboot_setup);
-diff --git a/arch/mips/loongson1/common/setup.c b/arch/mips/loongson1/common/setup.c
-new file mode 100644
-index 0000000..2a978d2
---- /dev/null
-+++ b/arch/mips/loongson1/common/setup.c
-@@ -0,0 +1,32 @@
-+/*
-+ * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
-+ *
-+ * Based on Copyright (C) 2009 Lemote Inc.
-+ *
-+ * This program is free software; you can redistribute  it and/or modify it
-+ * under  the terms of  the GNU General  Public License as published by the
-+ * Free Software Foundation;  either version 2 of the  License, or (at your
-+ * option) any later version.
-+ */
-+
-+#include <asm/bootinfo.h>
-+
-+#include <prom.h>
-+
-+void __init plat_mem_setup(void)
-+{
-+	add_memory_region(0x0, (memsize << 20), BOOT_MEM_RAM);
-+}
-+
-+const char *get_system_type(void)
-+{
-+	unsigned int processor_id = (&current_cpu_data)->processor_id;
-+
-+	switch (processor_id & PRID_REV_MASK) {
-+	case PRID_REV_LOONGSON1B:
-+		return "LOONGSON LS1B";
-+	default:
-+		return "LOONGSON (unknown)";
-+	}
-+
-+}
-diff --git a/arch/mips/loongson1/ls1b/Makefile b/arch/mips/loongson1/ls1b/Makefile
-new file mode 100644
-index 0000000..891eac4
---- /dev/null
-+++ b/arch/mips/loongson1/ls1b/Makefile
-@@ -0,0 +1,5 @@
-+#
-+# Makefile for loongson1B based machines.
-+#
-+
-+obj-y += board.o
-diff --git a/arch/mips/loongson1/ls1b/board.c b/arch/mips/loongson1/ls1b/board.c
-new file mode 100644
-index 0000000..b1a602f
---- /dev/null
-+++ b/arch/mips/loongson1/ls1b/board.c
-@@ -0,0 +1,30 @@
-+/*
-+ * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
-+ *
-+ * This program is free software; you can redistribute  it and/or modify it
-+ * under  the terms of  the GNU General  Public License as published by the
-+ * Free Software Foundation;  either version 2 of the  License, or (at your
-+ * option) any later version.
-+ */
-+
-+#include <platform.h>
-+
-+#include <linux/serial_8250.h>
-+#include <loongson1.h>
-+
-+static struct platform_device *loongson1_platform_devices[] __initdata = {
-+	&loongson1_uart_device,
-+};
-+
-+static int __init loongson1_platform_init(void)
-+{
-+	int err;
-+
-+	loongson1_serial_setup();
-+
-+	err = platform_add_devices(loongson1_platform_devices,
-+				   ARRAY_SIZE(loongson1_platform_devices));
-+	return err;
-+}
-+
-+arch_initcall(loongson1_platform_init);
-diff --git a/arch/mips/oprofile/common.c b/arch/mips/oprofile/common.c
-index d1f2d4c..99216f0 100644
---- a/arch/mips/oprofile/common.c
-+++ b/arch/mips/oprofile/common.c
-@@ -89,6 +89,7 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
- 	case CPU_R10000:
- 	case CPU_R12000:
- 	case CPU_R14000:
-+	case CPU_LOONGSON1:
- 		lmodel = &op_model_mipsxx_ops;
- 		break;
- 
-diff --git a/arch/mips/oprofile/op_model_mipsxx.c b/arch/mips/oprofile/op_model_mipsxx.c
-index 54759f1..03be670 100644
---- a/arch/mips/oprofile/op_model_mipsxx.c
-+++ b/arch/mips/oprofile/op_model_mipsxx.c
-@@ -365,6 +365,10 @@ static int __init mipsxx_init(void)
- 		op_model_mipsxx_ops.cpu_type = "mips/sb1";
- 		break;
- 
-+	case CPU_LOONGSON1:
-+		op_model_mipsxx_ops.cpu_type = "mips/loongson1";
-+		break;
-+
- 	default:
- 		printk(KERN_ERR "Profiling unsupported for this CPU\n");
- 
--- 
-1.7.1
 
