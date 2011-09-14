@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756297Ab1INJ7H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 05:59:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49010 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756177Ab1INJ7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 05:59:05 -0400
-Message-ID: <4E707AE5.2030704@redhat.com>
-Date: Wed, 14 Sep 2011 12:59:01 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
+	id S1756282Ab1INKFr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 06:05:47 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:41594 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756063Ab1INKFp convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Sep 2011 06:05:45 -0400
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v3 11/11] KVM: MMU: improve write flooding detected
-References: <4E5C4C20.3000403@cn.fujitsu.com> <4E5C4D17.2080700@cn.fujitsu.com> <4E6F395A.5030609@redhat.com> <4E6FACBD.1020801@cn.fujitsu.com>
-In-Reply-To: <4E6FACBD.1020801@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1315990017-16912-3-git-send-email-per.forlin@linaro.org>
+References: <1315990017-16912-1-git-send-email-per.forlin@linaro.org>
+	<1315990017-16912-3-git-send-email-per.forlin@linaro.org>
+Date: Wed, 14 Sep 2011 19:05:44 +0900
+Message-ID: <CAC5umygS+viGcG2wAi=7vbjmiQB1jVgwKNAeZxDxB4WMC-teGg@mail.gmail.com>
+Subject: Re: [PATCH v2 2/3] mmc: add module param to set fault injection attributes
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: Per Forlin <per.forlin@linaro.org>
+Cc: linaro-dev@lists.linaro.org, Linus Walleij <linus.walleij@linaro.org>,
+        linux-mmc@vger.kernel.org, Chris Ball <cjb@laptop.org>,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/13/2011 10:19 PM, Xiao Guangrong wrote:
-> >
-> >  The spte may not be accessed, but other sptes in the same page can be accessed.  An example is the fixmap area for kmap_atomic(), there will be a lot of pte writes but other sptes will be accessed without going through soft-mmu at all.
->
-> I think this kind of shadow pae is mostly the last page table(level=1), maybe
-> we can skip the write-flooding for the last shadow page, because the last shadow
-> page can become unsync and it can not let page table write-protected.
+2011/9/14 Per Forlin <per.forlin@linaro.org>:
 
-Yes.
+> +#ifdef CONFIG_FAIL_MMC_REQUEST
+> +
+> +static DECLARE_FAULT_ATTR(fail_default_attr);
+> +static char *fail_request;
 
->
-> >  I think you have to read the parent_ptes->spte.accessed bits to be sure.
-> >
->
-> I guess the overload of this way is little high:
-> - it needs to walk parent ptes for every shadow pages
-> - we need to clear the parent_ptes->spte.accessed bit when the page is written, and
->    the tlb flush is needed.
-> no?
->
+This is not used anymore and ...
 
-Right.
+> +static int fail_mmc_request_param_set(const char *val,
+> +                                     const struct kernel_param *kp)
+> +{
+> +       setup_fault_attr(&fail_default_attr, (char *) val);
+> +       return 0;
+> +}
+> +
+> +static const struct kernel_param_ops fail_mmc_request_param_ops = {
+> +       .set = fail_mmc_request_param_set
+> +};
+> +module_param_cb(fail_request, &fail_mmc_request_param_ops,
+> +               &fail_request, 0);
 
--- 
-error compiling committee.c: too many arguments to function
+you can change this third parameter to NULL.
 
+> +
+> +#endif /* CONFIG_FAIL_MMC_REQUEST */
