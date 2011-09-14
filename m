@@ -1,110 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756903Ab1INQA0 (ORCPT <rfc822;w@1wt.eu>);
+	id S932873Ab1INQA2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 12:00:28 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:33740 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753431Ab1INQA0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 Sep 2011 12:00:26 -0400
-Received: from alius.ayous.org ([78.46.213.165]:48041 "EHLO alius.ayous.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752903Ab1INQAZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 12:00:25 -0400
-Date: Wed, 14 Sep 2011 18:00:13 +0200
-From: Andreas Barth <aba@not.so.argh.org>
-To: Kelvin Cheung <keguang.zhang@gmail.com>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        ralf@linux-mips.org, wuzhangjin@gmail.com, r0bertz@gentoo.org,
-        chenj@lemote.com
-Subject: Re: [PATCH] MIPS: Add basic support for Loongson1B
-Message-ID: <20110914160013.GH4110@mails.so.argh.org>
-References: <1315997270-14332-1-git-send-email-keguang.zhang@gmail.com> <20110914113134.GS15003@mails.so.argh.org> <CAJhJPsUW+4fpJUSR07LBO=FDCyAw-KHKaZCt8G+sHCJtjts0oA@mail.gmail.com>
+Date: Wed, 14 Sep 2011 20:00:19 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: Pavel Machek <pavel@ucw.cz>, Andrew Morton <akpm00@gmail.com>,
+        linux-kernel@vger.kernel.org, containers@lists.osdl.org,
+        linux-fsdevel@vger.kernel.org, Kirill Shutemov <kirill@shutemov.name>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Nathan Lynch <ntl@pobox.com>, Zan Lynx <zlynx@acm.org>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>, Tejun Heo <tj@kernel.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [patch 2/2] fs, proc: Introduce the /proc/<pid>/map_files/
+ directory v12
+Message-ID: <20110914160018.GW25367@sun>
+References: <20110913211359.674453213@openvz.org>
+ <20110913212447.918816776@openvz.org>
+ <20110913235222.043927b3.akpm@linux-foundation.org>
+ <20110914105607.GP25367@sun>
+ <20110914111437.GA22516@atrey.karlin.mff.cuni.cz>
+ <20110914113912.GQ25367@sun>
+ <20110914134405.GV25367@sun>
+ <20110914144841.GA7906@albatros>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAJhJPsUW+4fpJUSR07LBO=FDCyAw-KHKaZCt8G+sHCJtjts0oA@mail.gmail.com>
-X-Editor: Vim http://www.vim.org/
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110914144841.GA7906@albatros>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Kelvin Cheung (keguang.zhang@gmail.com) [110914 15:54]:
-> 2011/9/14, Andreas Barth <aba@not.so.argh.org>:
-> > * keguang.zhang@gmail.com (keguang.zhang@gmail.com) [110914 12:49]:
-> >> This patch adds basic support for Loongson1B
-> >> including serial, timer and interrupt handler.
-> >
-> > I have a couple of questions. One of them is if it shouldn't be
-> > possible to add this as part of the loongson-platform, and if we
-> > really need a new platform. Each platform comes with some maintainence
-> > costs which we should try to avoid. Making things more generic is
-> > usually the right answer.
+On Wed, Sep 14, 2011 at 06:48:41PM +0400, Vasiliy Kulikov wrote:
+...
 > 
-> I've tried to add Loongson1 to loongson-platform (acturally loongson2
-> platform), but there is essential difference between them. The
-> loongson2 platform is something like the PC's architecture, which has
-> north and south bridge, while the loongson1 is SoC.
-> So, I think it's better that adding loongson1 as a new platform.
-
-I'm not convinced, but that's also not necessary.
-
-
-> >> --- /dev/null
-> >> +++ b/arch/mips/loongson1/common/clock.c
-> >> @@ -0,0 +1,164 @@
-> >> +/*
-> >> + * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
-> >
-> > Is this file not derived from any of the clock drivers we already have
-> > in Linux?
-> >
-> > Doesn't any of the existing clock drivers work?
-> >
-> > Is this clock part of the CPU? Otherwise it would make sense to move
-> > it out to the generic drivers section.
-
-What's the answer to this questions?
-
-
-
-> >> --- /dev/null
-> >> +++ b/arch/mips/loongson1/common/irq.c
-> >> @@ -0,0 +1,132 @@
-> >> +/*
-> >> + * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
-> >> + *
-> >> + * Based on Copyright (C) 2009 Lemote Inc.
-> >
-> > same question here. Also, do you have permission from Lemote to put
-> > the code within GPLv2?
+> Actually now I see the difference between having something mapped and
+> having an _fd_ of this something.
 > 
-> These code are based on the loongson platform, which is part of the
-> kernel code already.
-
-In that case, it would make sense to say "derived from arch/mips/..."
-so that other people can understand where it comes from.
-
-> >> diff --git a/arch/mips/loongson1/common/prom.c
-> >> b/arch/mips/loongson1/common/prom.c
-> >> new file mode 100644
-> >> index 0000000..84a25f6
-> >> --- /dev/null
-> >> +++ b/arch/mips/loongson1/common/prom.c
-> >
-> > Can't we re-use the prom-routines from the loongson platform here? Or
-> > even better, factor them out somewhere else in the mips or even
-> > generic linux tree?
+> Relevant code:
 > 
-> Same reason as question 1.
+> +static struct dentry *
+> +proc_map_files_instantiate(struct inode *dir, struct dentry *dentry,
+> +              struct task_struct *task, const void *ptr)
+> +{
+> ...
+> +   inode->i_mode = S_IFLNK;
+> +
+> +   if (file->f_mode & FMODE_READ)
+> +       inode->i_mode |= S_IRUSR | S_IXUSR;
+> +   if (file->f_mode & FMODE_WRITE)
+> +       inode->i_mode |= S_IWUSR | S_IXUSR;
+> 
+> 
+> If you have a write mmap area, but no fd, you may not trunc a file; with
+> map_files/ you may get an fd and ftrunc it.
+> 
 
-Not really. Please try to de-duplicate code as far as possible, and to
-generalize it's usage. Having some code of the form
-+       while (((readb(PORT(UART_BASE, UART_LSR)) & UART_LSR_THRE) == 0)
-+                       && (timeout-- > 0))
-+               ;
-+
-+       writeb(c, PORT(UART_BASE, UART_TX));
-here doesn't make too much sense to me. (Also questioning why this is
-part of the prom.c file).
+This stands for anonymous memory, and if you have enough rights to
+access the task this ftruncate is the last problem (since having ptrace
+access to the task I _aready_ can trash various stuff inside, i dont need
+even bother to look into map_files/ or whatever). So I don't see how
+ftruncate migh harm you here?
 
-
-
-
-Andi
+	Cyrill
