@@ -1,45 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933125Ab1INUCQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 16:02:16 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:42284 "EHLO relay.sgi.com"
+	id S933137Ab1INUFk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 16:05:40 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:5375 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932611Ab1INUCP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 16:02:15 -0400
-From: Alex Elder <aelder@sgi.com>
-Message-Id: <201109142002.p8EK29TA027782@stout.americas.sgi.com>
-Date: Wed, 14 Sep 2011 15:02:09 -0500
-To: torvalds@linux-foundation.org
-Subject: [GIT PULL] XFS update for 3.1-rc7
-Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com, akpm@linux-foundation.org
-User-Agent: Heirloom mailx 12.5 7/5/10
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S932920Ab1INUFj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Sep 2011 16:05:39 -0400
+From: Glauber Costa <glommer@parallels.com>
+To: linux-kernel@vger.kernel.org
+Cc: xemul@parallels.com, paul@paulmenage.org, lizf@cn.fujitsu.com,
+        daniel.lezcano@free.fr, mingo@elte.hu, a.p.zijlstra@chello.nl,
+        jbottomley@parallels.com
+Subject: [PATCH 0/9] Per-cgroup /proc/stat
+Date: Wed, 14 Sep 2011 17:04:46 -0300
+Message-Id: <1316030695-19826-1-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus, please pull the following XFS fix in for 3.1-rc7.  It
-addresses a use-after-free problem that is due to code that
-went in to 3.1-rc1 (commit 72c5052d).
+[[ For those getting this twice: I sent it previously to containers
+   ml, but I guess it was out. Sending now to a broader audience anyway ]]
 
-The repository is the same as has always been used for XFS at
-oss.sgi.com.
+Hi,
 
-Thanks.
+This patchset is a simple initial proposal for a per-cgroup/container
+display of /proc/stat. The display method is based on Daniel's idea of
+exposing a file that can be bind mounted (Daniel, is that more or less
+what you had in mind?)
 
-					-Alex
+To grab the stats themselves, I am (ab)using cpuacct cgroup. percpu counters
+are dropped in favor of normal percpu pointers, so we can easily track
+per-cpu quantities.
 
-The following changes since commit 003f6c9df54970d8b19578d195b3e2b398cdbde2:
+In case you guys like this idea, my TODO list would include the removal
+of the show stat code in fs/proc/stat.c altogether, and the displaying
+of some fields I haven't touched yet.
 
-  lib/sha1.c: quiet sparse noise about symbol not declared (2011-09-13 16:09:41 -0700)
+Also, to demonstrate one of the potential ideas for such method, I
+implemented a feature comonly found in hypervisors - steal time - on top
+of it. I arguee that containers can/should also display steal time when
+available. Turns out that due to the fact that we run on the same kernel,
+steal time is quite easy to implement once we have per-container tick
+accounting in place.
 
-are available in the git repository at:
-  git://oss.sgi.com/xfs/xfs for-linus
+Please let me know what you guys think
 
-Christoph Hellwig (1):
-      xfs: fix a use after free in xfs_end_io_direct_write
+Glauber Costa (9):
+  Remove parent field in cpuacct cgroup
+  Make cpuacct fields per cpu variables
+  Include nice values in cpuacct
+  Include irq and softirq fields in cpuacct
+  Include guest fields in cpuacct
+  Include idle and iowait fields in cpuacct
+  Create cpuacct.proc.stat file
+  per-cgroup boot time
+  Report steal time for cgroup
 
- fs/xfs/xfs_aops.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ kernel/sched.c |  265 +++++++++++++++++++++++++++++++++++++++++++++++++-------
+ 1 files changed, 234 insertions(+), 31 deletions(-)
+
+-- 
+1.7.6
+
