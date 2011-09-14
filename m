@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932702Ab1IQAxO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 20:53:14 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:27878 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932563Ab1IQAq1 (ORCPT
+	id S932469Ab1IQAqX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 20:46:23 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:5578 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755977Ab1IQAqU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 20:46:27 -0400
-Message-Id: <e97c6e$3hnnv6@wolverine02.qualcomm.com>
-X-IronPort-AV: E=McAfee;i="5400,1158,6471"; a="119267302"
+	Fri, 16 Sep 2011 20:46:20 -0400
+Message-Id: <093448$3hstsu@wolverine01.qualcomm.com>
+X-IronPort-AV: E=McAfee;i="5400,1158,6471"; a="119437214"
 From: Richard Kuo <rkuo@codeaurora.org>
-Date: Wed, 14 Sep 2011 13:18:54 -0500
-Subject: [PATCH v4 10/36] Hexagon: Add memcpy and memset accelerated functions
+Date: Wed, 14 Sep 2011 13:18:50 -0500
+Subject: [PATCH v4 06/36] Hexagon: Add processor and system headers
 To: linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
@@ -19,24 +19,39 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
+Signed-off-by: Linas Vepstas <linas@codeaurora.org>
 Acked-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/hexagon/lib/memcpy.S |  543 +++++++++++++++++++++++++++++++++++++++++++++
- arch/hexagon/lib/memset.S |  316 ++++++++++++++++++++++++++
- 2 files changed, 859 insertions(+), 0 deletions(-)
- create mode 100644 arch/hexagon/lib/memcpy.S
- create mode 100644 arch/hexagon/lib/memset.S
+ arch/hexagon/include/asm/asm-offsets.h |    1 +
+ arch/hexagon/include/asm/irqflags.h    |   62 +++++++++
+ arch/hexagon/include/asm/processor.h   |  123 +++++++++++++++++
+ arch/hexagon/include/asm/registers.h   |  236 ++++++++++++++++++++++++++++++++
+ arch/hexagon/include/asm/system.h      |  126 +++++++++++++++++
+ 5 files changed, 548 insertions(+), 0 deletions(-)
+ create mode 100644 arch/hexagon/include/asm/asm-offsets.h
+ create mode 100644 arch/hexagon/include/asm/irqflags.h
+ create mode 100644 arch/hexagon/include/asm/processor.h
+ create mode 100644 arch/hexagon/include/asm/registers.h
+ create mode 100644 arch/hexagon/include/asm/system.h
 
-diff --git a/arch/hexagon/lib/memcpy.S b/arch/hexagon/lib/memcpy.S
+diff --git a/arch/hexagon/include/asm/asm-offsets.h b/arch/hexagon/include/asm/asm-offsets.h
 new file mode 100644
-index 0000000..2101c33
+index 0000000..d370ee3
 --- /dev/null
-+++ b/arch/hexagon/lib/memcpy.S
-@@ -0,0 +1,543 @@
++++ b/arch/hexagon/include/asm/asm-offsets.h
+@@ -0,0 +1 @@
++#include <generated/asm-offsets.h>
+diff --git a/arch/hexagon/include/asm/irqflags.h b/arch/hexagon/include/asm/irqflags.h
+new file mode 100644
+index 0000000..ec15236
+--- /dev/null
++++ b/arch/hexagon/include/asm/irqflags.h
+@@ -0,0 +1,62 @@
 +/*
++ * IRQ support for the Hexagon architecture
++ *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
-+ *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 and
 + * only version 2 as published by the Free Software Foundation.
@@ -52,538 +67,58 @@ index 0000000..2101c33
 + * 02110-1301, USA.
 + */
 +
-+/*
-+ * Description
-+ *
-+ *   library function for memcpy where length bytes are copied from
-+ *   ptr_in to ptr_out. ptr_out is returned unchanged.
-+ *   Allows any combination of alignment on input and output pointers
-+ *   and length from 0 to 2^32-1
-+ *
-+ * Restrictions
-+ *   The arrays should not overlap, the program will produce undefined output
-+ *   if they do.
-+ *   For blocks less than 16 bytes a byte by byte copy is performed. For
-+ *   8byte alignments, and length multiples, a dword copy is performed up to
-+ *   96bytes
-+ * History
-+ *
-+ *   DJH  5/15/09 Initial version 1.0
-+ *   DJH  6/ 1/09 Version 1.1 modified ABI to inlcude R16-R19
-+ *   DJH  7/12/09 Version 1.2 optimized codesize down to 760 was 840
-+ *   DJH 10/14/09 Version 1.3 added special loop for aligned case, was
-+ *                            overreading bloated codesize back up to 892
-+ *   DJH  4/20/10 Version 1.4 fixed Ldword_loop_epilog loop to prevent loads
-+ *                            occuring if only 1 left outstanding, fixes bug
-+ *                            # 3888, corrected for all alignments. Peeled off
-+ *                            1 32byte chunk from kernel loop and extended 8byte
-+ *                            loop at end to solve all combinations and prevent
-+ *                            over read.  Fixed Ldword_loop_prolog to prevent
-+ *                            overread for blocks less than 48bytes. Reduced
-+ *                            codesize to 752 bytes
-+ *   DJH  4/21/10 version 1.5 1.4 fix broke code for input block ends not
-+ *                            aligned to dword boundaries,underwriting by 1
-+ *                            byte, added detection for this and fixed. A
-+ *                            little bloat.
-+ *   DJH  4/23/10 version 1.6 corrected stack error, R20 was not being restored
-+ *                            always, fixed the error of R20 being modified
-+ *                            before it was being saved
-+ * Natural c model
-+ * ===============
-+ * void * memcpy(char * ptr_out, char * ptr_in, int length) {
-+ *   int i;
-+ *   if(length) for(i=0; i < length; i++) { ptr_out[i] = ptr_in[i]; }
-+ *   return(ptr_out);
-+ * }
-+ *
-+ * Optimized memcpy function
-+ * =========================
-+ * void * memcpy(char * ptr_out, char * ptr_in, int len) {
-+ *   int i, prolog, kernel, epilog, mask;
-+ *   u8 offset;
-+ *   s64 data0, dataF8, data70;
-+ *
-+ *   s64 * ptr8_in;
-+ *   s64 * ptr8_out;
-+ *   s32 * ptr4;
-+ *   s16 * ptr2;
-+ *
-+ *   offset = ((int) ptr_in) & 7;
-+ *   ptr8_in = (s64 *) &ptr_in[-offset];   //read in the aligned pointers
-+ *
-+ *   data70 = *ptr8_in++;
-+ *   dataF8 = *ptr8_in++;
-+ *
-+ *   data0 = HEXAGON_P_valignb_PPp(dataF8, data70, offset);
-+ *
-+ *   prolog = 32 - ((int) ptr_out);
-+ *   mask  = 0x7fffffff >> HEXAGON_R_cl0_R(len);
-+ *   prolog = prolog & mask;
-+ *   kernel = len - prolog;
-+ *   epilog = kernel & 0x1F;
-+ *   kernel = kernel>>5;
-+ *
-+ *   if (prolog & 1) { ptr_out[0] = (u8) data0; data0 >>= 8; ptr_out += 1;}
-+ *   ptr2 = (s16 *) &ptr_out[0];
-+ *   if (prolog & 2) { ptr2[0] = (u16) data0;  data0 >>= 16; ptr_out += 2;}
-+ *   ptr4 = (s32 *) &ptr_out[0];
-+ *   if (prolog & 4) { ptr4[0] = (u32) data0;  data0 >>= 32; ptr_out += 4;}
-+ *
-+ *   offset = offset + (prolog & 7);
-+ *   if (offset >= 8) {
-+ *     data70 = dataF8;
-+ *     dataF8 = *ptr8_in++;
-+ *   }
-+ *   offset = offset & 0x7;
-+ *
-+ *   prolog = prolog >> 3;
-+ *   if (prolog) for (i=0; i < prolog; i++) {
-+ *       data0 = HEXAGON_P_valignb_PPp(dataF8, data70, offset);
-+ *       ptr8_out = (s64 *) &ptr_out[0]; *ptr8_out = data0; ptr_out += 8;
-+ *       data70 = dataF8;
-+ *       dataF8 = *ptr8_in++;
-+ *   }
-+ *   if(kernel) { kernel -= 1; epilog += 32; }
-+ *   if(kernel) for(i=0; i < kernel; i++) {
-+ *       data0 = HEXAGON_P_valignb_PPp(dataF8, data70, offset);
-+ *       ptr8_out = (s64 *) &ptr_out[0]; *ptr8_out = data0; ptr_out += 8;
-+ *       data70 = *ptr8_in++;
-+ *
-+ *       data0 = HEXAGON_P_valignb_PPp(data70, dataF8, offset);
-+ *       ptr8_out = (s64 *) &ptr_out[0]; *ptr8_out = data0; ptr_out += 8;
-+ *       dataF8 = *ptr8_in++;
-+ *
-+ *       data0 = HEXAGON_P_valignb_PPp(dataF8, data70, offset);
-+ *       ptr8_out = (s64 *) &ptr_out[0]; *ptr8_out = data0; ptr_out += 8;
-+ *       data70 = *ptr8_in++;
-+ *
-+ *       data0 = HEXAGON_P_valignb_PPp(data70, dataF8, offset);
-+ *       ptr8_out = (s64 *) &ptr_out[0]; *ptr8_out = data0; ptr_out += 8;
-+ *       dataF8 = *ptr8_in++;
-+ *   }
-+ *   epilogdws = epilog >> 3;
-+ *   if (epilogdws) for (i=0; i < epilogdws; i++) {
-+ *       data0 = HEXAGON_P_valignb_PPp(dataF8, data70, offset);
-+ *       ptr8_out = (s64 *) &ptr_out[0]; *ptr8_out = data0; ptr_out += 8;
-+ *       data70 = dataF8;
-+ *       dataF8 = *ptr8_in++;
-+ *   }
-+ *   data0 = HEXAGON_P_valignb_PPp(dataF8, data70, offset);
-+ *
-+ *   ptr4 = (s32 *) &ptr_out[0];
-+ *   if (epilog & 4) { ptr4[0] = (u32) data0; data0 >>= 32; ptr_out += 4;}
-+ *   ptr2 = (s16 *) &ptr_out[0];
-+ *   if (epilog & 2) { ptr2[0] = (u16) data0; data0 >>= 16; ptr_out += 2;}
-+ *   if (epilog & 1) { *ptr_out++ = (u8) data0; }
-+ *
-+ *   return(ptr_out - length);
-+ * }
-+ *
-+ * Codesize : 784 bytes
-+ */
++#ifndef _ASM_IRQFLAGS_H
++#define _ASM_IRQFLAGS_H
 +
++#include <asm/hexagon_vm.h>
++#include <linux/types.h>
 +
-+#define ptr_out		R0	/*  destination  pounter  */
-+#define ptr_in		R1	/*  source pointer  */
-+#define len		R2	/*  length of copy in bytes  */
++static inline unsigned long arch_local_save_flags(void)
++{
++	return __vmgetie();
++}
 +
-+#define data70		R13:12	/*  lo 8 bytes of non-aligned transfer  */
-+#define dataF8		R11:10	/*  hi 8 bytes of non-aligned transfer  */
-+#define ldata0		R7:6	/*  even 8 bytes chunks  */
-+#define ldata1		R25:24	/*  odd 8 bytes chunks  */
-+#define data1		R7	/*  lower 8 bytes of ldata1  */
-+#define data0		R6	/*  lower 8 bytes of ldata0  */
++static inline unsigned long arch_local_irq_save(void)
++{
++	return __vmsetie(VM_INT_DISABLE);
++}
 +
-+#define ifbyte		p0	/*  if transfer has bytes in epilog/prolog  */
-+#define ifhword		p0	/*  if transfer has shorts in epilog/prolog  */
-+#define ifword		p0	/*  if transfer has words in epilog/prolog  */
-+#define noprolog	p0	/*  no prolog, xfer starts at 32byte  */
-+#define nokernel	p1	/*  no 32byte multiple block in the transfer  */
-+#define noepilog	p0	/*  no epilog, xfer ends on 32byte boundary  */
-+#define align		p2	/*  alignment of input rel to 8byte boundary  */
-+#define kernel1		p0	/*  kernel count == 1  */
++static inline bool arch_irqs_disabled_flags(unsigned long flags)
++{
++	return !flags;
++}
 +
-+#define dalign		R25	/*  rel alignment of input to output data  */
-+#define star3		R16	/*  number bytes in prolog - dwords  */
-+#define rest		R8	/*  length - prolog bytes  */
-+#define back		R7	/*  nr bytes > dword boundary in src block  */
-+#define epilog		R3	/*  bytes in epilog  */
-+#define inc		R15:14	/*  inc kernel by -1 and defetch ptr by 32  */
-+#define kernel		R4	/*  number of 32byte chunks in kernel  */
-+#define ptr_in_p_128	R5	/*  pointer for prefetch of input data  */
-+#define mask		R8	/*  mask used to determine prolog size  */
-+#define shift		R8	/*  used to work a shifter to extract bytes  */
-+#define shift2		R5	/*  in epilog to workshifter to extract bytes */
-+#define prolog		R15	/*  bytes in  prolog  */
-+#define epilogdws	R15	/*  number dwords in epilog  */
-+#define shiftb		R14	/*  used to extract bytes  */
-+#define offset		R9	/*  same as align in reg  */
-+#define ptr_out_p_32	R17	/*  pointer to output dczero  */
-+#define align888	R14	/*  if simple dword loop can be used  */
-+#define len8		R9	/*  number of dwords in length  */
-+#define over		R20	/*  nr of bytes > last inp buf dword boundary */
++static inline bool arch_irqs_disabled(void)
++{
++	return !__vmgetie();
++}
 +
-+#define ptr_in_p_128kernel	R5:4	/*  packed fetch pointer & kernel cnt */
++static inline void arch_local_irq_enable(void)
++{
++	__vmsetie(VM_INT_ENABLE);
++}
 +
-+	.section .text
-+	.p2align 4
-+        .global memcpy
-+        .type memcpy, @function
-+memcpy:
++static inline void arch_local_irq_disable(void)
 +{
-+	p2 = cmp.eq(len, #0);		/*  =0 */
-+	align888 = or(ptr_in, ptr_out);	/*  %8 < 97 */
-+	p0 = cmp.gtu(len, #23);		/*  %1, <24 */
-+	p1 = cmp.eq(ptr_in, ptr_out);	/*  attempt to overwrite self */
++	__vmsetie(VM_INT_DISABLE);
 +}
++
++static inline void arch_local_irq_restore(unsigned long flags)
 +{
-+	p1 = or(p2, p1);
-+	p3 = cmp.gtu(len, #95);		/*  %8 < 97 */
-+	align888 = or(align888, len);	/*  %8 < 97 */
-+	len8 = lsr(len, #3);		/*  %8 < 97 */
++	__vmsetie(flags);
 +}
-+{
-+	dcfetch(ptr_in);		/*  zero/ptrin=ptrout causes fetch */
-+	p2 = bitsclr(align888, #7);	/*  %8 < 97  */
-+	if(p1) jumpr r31;		/*  =0  */
-+}
-+{
-+	p2 = and(p2,!p3);			/*  %8 < 97  */
-+	if (p2.new) len = add(len, #-8);	/*  %8 < 97  */
-+	if (p2.new) jump:NT .Ldwordaligned; 	/*  %8 < 97  */
-+}
-+{
-+	if(!p0) jump .Lbytes23orless;	/*  %1, <24  */
-+	mask.l = #LO(0x7fffffff);
-+	/*  all bytes before line multiples of data  */
-+	prolog = sub(#0, ptr_out);
-+}
-+{
-+	/*  save r31 on stack, decrement sp by 16  */
-+	allocframe(#24);
-+	mask.h = #HI(0x7fffffff);
-+	ptr_in_p_128 = add(ptr_in, #32);
-+	back = cl0(len);
-+}
-+{
-+	memd(sp+#0) = R17:16;		/*  save r16,r17 on stack6  */
-+	r31.l = #LO(.Lmemcpy_return);	/*  set up final return pointer  */
-+	prolog &= lsr(mask, back);
-+	offset = and(ptr_in, #7);
-+}
-+{
-+	memd(sp+#8) = R25:24;		/*  save r25,r24 on stack  */
-+	dalign = sub(ptr_out, ptr_in);
-+	r31.h = #HI(.Lmemcpy_return);	/*  set up final return pointer  */
-+}
-+{
-+	/*  see if there if input buffer end if aligned  */
-+	over = add(len, ptr_in);
-+	back = add(len, offset);
-+	memd(sp+#16) = R21:20;		/*  save r20,r21 on stack  */
-+}
-+{
-+	noprolog = bitsclr(prolog, #7);
-+	prolog = and(prolog, #31);
-+	dcfetch(ptr_in_p_128);
-+	ptr_in_p_128 = add(ptr_in_p_128, #32);
-+}
-+{
-+	kernel = sub(len, prolog);
-+	shift = asl(prolog, #3);
-+	star3 = and(prolog, #7);
-+	ptr_in = and(ptr_in, #-8);
-+}
-+{
-+	prolog = lsr(prolog, #3);
-+	epilog = and(kernel, #31);
-+	ptr_out_p_32 = add(ptr_out, prolog);
-+	over = and(over, #7);
-+}
-+{
-+	p3 = cmp.gtu(back, #8);
-+	kernel = lsr(kernel, #5);
-+	dcfetch(ptr_in_p_128);
-+	ptr_in_p_128 = add(ptr_in_p_128, #32);
-+}
-+{
-+	p1 = cmp.eq(prolog, #0);
-+	if(!p1.new) prolog = add(prolog, #1);
-+	dcfetch(ptr_in_p_128);	/*  reserve the line 64bytes on  */
-+	ptr_in_p_128 = add(ptr_in_p_128, #32);
-+}
-+{
-+	nokernel = cmp.eq(kernel,#0);
-+	dcfetch(ptr_in_p_128);	/* reserve the line 64bytes on  */
-+	ptr_in_p_128 = add(ptr_in_p_128, #32);
-+	shiftb = and(shift, #8);
-+}
-+{
-+	dcfetch(ptr_in_p_128);		/*  reserve the line 64bytes on  */
-+	ptr_in_p_128 = add(ptr_in_p_128, #32);
-+	if(nokernel) jump .Lskip64;
-+	p2 = cmp.eq(kernel, #1);	/*  skip ovr if kernel == 0  */
-+}
-+{
-+	dczeroa(ptr_out_p_32);
-+	/*  don't advance pointer  */
-+	if(!p2) ptr_out_p_32 = add(ptr_out_p_32, #32);
-+}
-+{
-+	dalign = and(dalign, #31);
-+	dczeroa(ptr_out_p_32);
-+}
-+.Lskip64:
-+{
-+	data70 = memd(ptr_in++#16);
-+	if(p3) dataF8 = memd(ptr_in+#8);
-+	if(noprolog) jump .Lnoprolog32;
-+	align = offset;
-+}
-+/*  upto initial 7 bytes  */
-+{
-+	ldata0 = valignb(dataF8, data70, align);
-+	ifbyte = tstbit(shift,#3);
-+	offset = add(offset, star3);
-+}
-+{
-+	if(ifbyte) memb(ptr_out++#1) = data0;
-+	ldata0 = lsr(ldata0, shiftb);
-+	shiftb = and(shift, #16);
-+	ifhword = tstbit(shift,#4);
-+}
-+{
-+	if(ifhword) memh(ptr_out++#2) = data0;
-+	ldata0 = lsr(ldata0, shiftb);
-+	ifword = tstbit(shift,#5);
-+	p2 = cmp.gtu(offset, #7);
-+}
-+{
-+	if(ifword) memw(ptr_out++#4) = data0;
-+	if(p2) data70 = dataF8;
-+	if(p2) dataF8 = memd(ptr_in++#8);	/*  another 8 bytes  */
-+	align = offset;
-+}
-+.Lnoprolog32:
-+{
-+	p3 = sp1loop0(.Ldword_loop_prolog, prolog)
-+	rest = sub(len, star3);	/*  whats left after the loop  */
-+	p0 = cmp.gt(over, #0);
-+}
-+	if(p0) rest = add(rest, #16);
-+.Ldword_loop_prolog:
-+{
-+	if(p3) memd(ptr_out++#8) = ldata0;
-+	ldata0 = valignb(dataF8, data70, align);
-+	p0 = cmp.gt(rest, #16);
-+}
-+{
-+	data70 = dataF8;
-+	if(p0) dataF8 = memd(ptr_in++#8);
-+	rest = add(rest, #-8);
-+}:endloop0
-+.Lkernel:
-+{
-+	/*  kernel is at least 32bytes  */
-+	p3 = cmp.gtu(kernel, #0);
-+	/*  last itn. remove edge effects  */
-+	if(p3.new) kernel = add(kernel, #-1);
-+	/*  dealt with in last dword loop  */
-+	if(p3.new) epilog = add(epilog, #32);
-+}
-+{
-+	nokernel = cmp.eq(kernel, #0);		/*  after adjustment, recheck */
-+	if(nokernel.new) jump:NT .Lepilog;	/*  likely not taken  */
-+	inc = combine(#32, #-1);
-+	p3 = cmp.gtu(dalign, #24);
-+}
-+{
-+	if(p3) jump .Lodd_alignment;
-+}
-+{
-+	loop0(.Loword_loop_25to31, kernel);
-+	kernel1 = cmp.gtu(kernel, #1);
-+	rest = kernel;
-+}
-+	.falign
-+.Loword_loop_25to31:
-+{
-+	dcfetch(ptr_in_p_128);	/*  prefetch 4 lines ahead  */
-+	if(kernel1) ptr_out_p_32 = add(ptr_out_p_32, #32);
-+}
-+{
-+	dczeroa(ptr_out_p_32);	/*  reserve the next 32bytes in cache  */
-+	p3 = cmp.eq(kernel, rest);
-+}
-+{
-+	/*  kernel -= 1  */
-+	ptr_in_p_128kernel = vaddw(ptr_in_p_128kernel, inc);
-+	/*  kill write on first iteration  */
-+	if(!p3) memd(ptr_out++#8) = ldata1;
-+	ldata1 = valignb(dataF8, data70, align);
-+	data70 = memd(ptr_in++#8);
-+}
-+{
-+	memd(ptr_out++#8) = ldata0;
-+	ldata0 = valignb(data70, dataF8, align);
-+	dataF8 = memd(ptr_in++#8);
-+}
-+{
-+	memd(ptr_out++#8) = ldata1;
-+	ldata1 = valignb(dataF8, data70, align);
-+	data70 = memd(ptr_in++#8);
-+}
-+{
-+	memd(ptr_out++#8) = ldata0;
-+	ldata0 = valignb(data70, dataF8, align);
-+	dataF8 = memd(ptr_in++#8);
-+	kernel1 = cmp.gtu(kernel, #1);
-+}:endloop0
-+{
-+	memd(ptr_out++#8) = ldata1;
-+	jump .Lepilog;
-+}
-+.Lodd_alignment:
-+{
-+	loop0(.Loword_loop_00to24, kernel);
-+	kernel1 = cmp.gtu(kernel, #1);
-+	rest = add(kernel, #-1);
-+}
-+	.falign
-+.Loword_loop_00to24:
-+{
-+	dcfetch(ptr_in_p_128);	/*  prefetch 4 lines ahead  */
-+	ptr_in_p_128kernel = vaddw(ptr_in_p_128kernel, inc);
-+	if(kernel1) ptr_out_p_32 = add(ptr_out_p_32, #32);
-+}
-+{
-+	dczeroa(ptr_out_p_32);	/*  reserve the next 32bytes in cache  */
-+}
-+{
-+	memd(ptr_out++#8) = ldata0;
-+	ldata0 = valignb(dataF8, data70, align);
-+	data70 = memd(ptr_in++#8);
-+}
-+{
-+	memd(ptr_out++#8) = ldata0;
-+	ldata0 = valignb(data70, dataF8, align);
-+	dataF8 = memd(ptr_in++#8);
-+}
-+{
-+	memd(ptr_out++#8) = ldata0;
-+	ldata0 = valignb(dataF8, data70, align);
-+	data70 = memd(ptr_in++#8);
-+}
-+{
-+	memd(ptr_out++#8) = ldata0;
-+	ldata0 = valignb(data70, dataF8, align);
-+	dataF8 = memd(ptr_in++#8);
-+	kernel1 = cmp.gtu(kernel, #1);
-+}:endloop0
-+.Lepilog:
-+{
-+	noepilog = cmp.eq(epilog,#0);
-+	epilogdws = lsr(epilog, #3);
-+	kernel = and(epilog, #7);
-+}
-+{
-+	if(noepilog) jumpr r31;
-+	if(noepilog) ptr_out = sub(ptr_out, len);
-+	p3 = cmp.eq(epilogdws, #0);
-+	shift2 = asl(epilog, #3);
-+}
-+{
-+	shiftb = and(shift2, #32);
-+	ifword = tstbit(epilog,#2);
-+	if(p3) jump .Lepilog60;
-+	if(!p3) epilog = add(epilog, #-16);
-+}
-+{
-+	loop0(.Ldword_loop_epilog, epilogdws);
-+	/*  stop criteria is lsbs unless = 0 then its 8  */
-+	p3 = cmp.eq(kernel, #0);
-+	if(p3.new) kernel= #8;
-+	p1 = cmp.gt(over, #0);
-+}
-+	/*  if not aligned to end of buffer execute 1 more iteration  */
-+	if(p1) kernel= #0;
-+.Ldword_loop_epilog:
-+{
-+	memd(ptr_out++#8) = ldata0;
-+	ldata0 = valignb(dataF8, data70, align);
-+	p3 = cmp.gt(epilog, kernel);
-+}
-+{
-+	data70 = dataF8;
-+	if(p3) dataF8 = memd(ptr_in++#8);
-+	epilog = add(epilog, #-8);
-+}:endloop0
-+/* copy last 7 bytes */
-+.Lepilog60:
-+{
-+	if(ifword) memw(ptr_out++#4) = data0;
-+	ldata0 = lsr(ldata0, shiftb);
-+	ifhword = tstbit(epilog,#1);
-+	shiftb = and(shift2, #16);
-+}
-+{
-+	if(ifhword) memh(ptr_out++#2) = data0;
-+	ldata0 = lsr(ldata0, shiftb);
-+	ifbyte = tstbit(epilog,#0);
-+	if(ifbyte.new) len = add(len, #-1);
-+}
-+{
-+	if(ifbyte) memb(ptr_out) = data0;
-+	ptr_out = sub(ptr_out, len);	/*  return dest pointer  */
-+        jumpr r31;
-+}
-+/*  do byte copy for small n  */
-+.Lbytes23orless:
-+{
-+	p3 = sp1loop0(.Lbyte_copy, len);
-+	len = add(len, #-1);
-+}
-+.Lbyte_copy:
-+{
-+	data0 = memb(ptr_in++#1);
-+	if(p3) memb(ptr_out++#1) = data0;
-+}:endloop0
-+{
-+	memb(ptr_out) = data0;
-+	ptr_out = sub(ptr_out, len);
-+	jumpr r31;
-+}
-+/*  do dword copies for aligned in, out and length  */
-+.Ldwordaligned:
-+{
-+	p3 = sp1loop0(.Ldword_copy, len8);
-+}
-+.Ldword_copy:
-+{
-+	if(p3) memd(ptr_out++#8) = ldata0;
-+	ldata0 = memd(ptr_in++#8);
-+}:endloop0
-+{
-+	memd(ptr_out) = ldata0;
-+	ptr_out = sub(ptr_out, len);
-+	jumpr r31;	/*  return to function caller  */
-+}
-+.Lmemcpy_return:
-+	r21:20 = memd(sp+#16);	/*  restore r20+r21  */
-+{
-+	r25:24 = memd(sp+#8);	/*  restore r24+r25  */
-+	r17:16 = memd(sp+#0);	/*  restore r16+r17  */
-+}
-+	deallocframe;	/*  restore r31 and incrment stack by 16  */
-+	jumpr r31
-diff --git a/arch/hexagon/lib/memset.S b/arch/hexagon/lib/memset.S
++
++#endif
+diff --git a/arch/hexagon/include/asm/processor.h b/arch/hexagon/include/asm/processor.h
 new file mode 100644
-index 0000000..e8a8f93
+index 0000000..20c5dda
 --- /dev/null
-+++ b/arch/hexagon/lib/memset.S
-@@ -0,0 +1,316 @@
++++ b/arch/hexagon/include/asm/processor.h
+@@ -0,0 +1,123 @@
 +/*
-+ * Copyright (c) 2011 Code Aurora Forum. All rights reserved.
++ * Process/processor support for the Hexagon architecture
++ *
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 and
@@ -600,304 +135,483 @@ index 0000000..e8a8f93
 + * 02110-1301, USA.
 + */
 +
++#ifndef _ASM_PROCESSOR_H
++#define _ASM_PROCESSOR_H
 +
-+/* HEXAGON assembly optimized memset */
-+/* Replaces the standard library function memset */
++#ifndef __ASSEMBLY__
++
++#include <asm/mem-layout.h>
++#include <asm/registers.h>
++#include <asm/hexagon_vm.h>
++
++/*  must be a macro  */
++#define current_text_addr() ({ __label__ _l; _l: &&_l; })
++
++/*  task_struct, defined elsewhere, is the "process descriptor" */
++struct task_struct;
++
++/*  this is defined in arch/process.c  */
++extern pid_t kernel_thread(int (*fn)(void *), void * arg, unsigned long flags);
++extern unsigned long thread_saved_pc(struct task_struct *tsk);
++
++extern void start_thread(struct pt_regs *, unsigned long, unsigned long);
++
++/*
++ * thread_struct is supposed to be for context switch data.
++ * Specifically, to hold the state necessary to perform switch_to...
++ */
++struct thread_struct {
++	void *switch_sp;
++};
++
++/*
++ * initializes thread_struct
++ * The only thing we have in there is switch_sp
++ * which doesn't really need to be initialized.
++ */
++
++#define INIT_THREAD { \
++}
++
++#define cpu_relax() __vmyield()
++
++/*
++ * "Unlazying all lazy status" occurs here.
++ */
++static inline void prepare_to_copy(struct task_struct *tsk)
++{
++}
++
++/*
++ * Decides where the kernel will search for a free chunk of vm space during
++ * mmaps.
++ * See also arch_get_unmapped_area.
++ * Doesn't affect if you have MAX_FIXED in the page flags set though...
++ *
++ * Apparently the convention is that ld.so will ask for "unmapped" private
++ * memory to be allocated SOMEWHERE, but it also asks for memory explicitly
++ * via MAP_FIXED at the lower * addresses starting at VA=0x0.
++ *
++ * If the two requests collide, you get authentic segfaulting action, so
++ * you have to kick the "unmapped" base requests higher up.
++ */
++#define TASK_UNMAPPED_BASE	(PAGE_ALIGN(TASK_SIZE/3))
 +
 +
-+        .macro HEXAGON_OPT_FUNC_BEGIN name
-+	.text
-+	.p2align 4
-+	.globl \name
-+	.type  \name, @function
-+\name:
-+	.endm
++#define task_pt_regs(task) \
++	((struct pt_regs *)(task_stack_page(task) + THREAD_SIZE) - 1)
 +
-+	.macro HEXAGON_OPT_FUNC_FINISH name
-+	.size  \name, . - \name
-+	.endm
++#define KSTK_EIP(tsk) (pt_elr(task_pt_regs(tsk)))
++#define KSTK_ESP(tsk) (pt_psp(task_pt_regs(tsk)))
 +
-+/* FUNCTION: memset (v2 version) */
-+#if __HEXAGON_ARCH__ < 3
-+HEXAGON_OPT_FUNC_BEGIN memset
-+	{
-+		r6 = #8
-+		r7 = extractu(r0, #3 , #0)
-+		p0 = cmp.eq(r2, #0)
-+		p1 = cmp.gtu(r2, #7)
-+	}
-+	{
-+		r4 = vsplatb(r1)
-+		r8 = r0           /* leave r0 intact for return val  */
-+		r9 = sub(r6, r7)  /* bytes until double alignment  */
-+		if p0 jumpr r31   /* count == 0, so return  */
-+	}
-+	{
-+		r3 = #0
-+		r7 = #0
-+		p0 = tstbit(r9, #0)
-+		if p1 jump 2f /* skip byte loop */
-+	}
++/*  Free all resources held by a thread; defined in process.c  */
++extern void release_thread(struct task_struct *dead_task);
 +
-+/* less than 8 bytes to set, so just set a byte at a time and return  */
++/* Get wait channel for task P.  */
++extern unsigned long get_wchan(struct task_struct *p);
 +
-+		loop0(1f, r2) /* byte loop */
-+	.falign
-+1: /* byte loop */
-+	{
-+		memb(r8++#1) = r4
-+	}:endloop0
-+		jumpr r31
-+	.falign
-+2: /* skip byte loop */
-+	{
-+		r6 = #1
-+		p0 = tstbit(r9, #1)
-+		p1 = cmp.eq(r2, #1)
-+		if !p0 jump 3f /* skip initial byte store */
-+	}
-+	{
-+		memb(r8++#1) = r4
-+		r3:2 = sub(r3:2, r7:6)
-+		if p1 jumpr r31
-+	}
-+	.falign
-+3: /* skip initial byte store */
-+	{
-+		r6 = #2
-+		p0 = tstbit(r9, #2)
-+		p1 = cmp.eq(r2, #2)
-+		if !p0 jump 4f /* skip initial half store */
-+	}
-+	{
-+		memh(r8++#2) = r4
-+		r3:2 = sub(r3:2, r7:6)
-+		if p1 jumpr r31
-+	}
-+	.falign
-+4: /* skip initial half store */
-+	{
-+		r6 = #4
-+		p0 = cmp.gtu(r2, #7)
-+		p1 = cmp.eq(r2, #4)
-+		if !p0 jump 5f /* skip initial word store */
-+	}
-+	{
-+		memw(r8++#4) = r4
-+		r3:2 = sub(r3:2, r7:6)
-+		p0 = cmp.gtu(r2, #11)
-+		if p1 jumpr r31
-+	}
-+	.falign
-+5: /* skip initial word store */
-+	{
-+		r10 = lsr(r2, #3)
-+		p1 = cmp.eq(r3, #1)
-+		if !p0 jump 7f /* skip double loop */
-+	}
-+	{
-+		r5 = r4
-+		r6 = #8
-+		loop0(6f, r10) /* double loop */
-+	}
++/*  The following stuff is pretty HEXAGON specific.  */
 +
-+/* set bytes a double word at a time  */
++/*  This is really just here for __switch_to.
++    Offsets are pulled via asm-offsets.c  */
 +
-+	.falign
-+6: /* double loop */
-+	{
-+		memd(r8++#8) = r5:4
-+		r3:2 = sub(r3:2, r7:6)
-+		p1 = cmp.eq(r2, #8)
-+	}:endloop0
-+	.falign
-+7: /* skip double loop */
-+	{
-+		p0 = tstbit(r2, #2)
-+		if p1 jumpr r31
-+	}
-+	{
-+		r6 = #4
-+		p0 = tstbit(r2, #1)
-+		p1 = cmp.eq(r2, #4)
-+		if !p0 jump 8f /* skip final word store */
-+	}
-+	{
-+		memw(r8++#4) = r4
-+		r3:2 = sub(r3:2, r7:6)
-+		if p1 jumpr r31
-+	}
-+	.falign
-+8: /* skip final word store */
-+	{
-+		p1 = cmp.eq(r2, #2)
-+		if !p0 jump 9f /* skip final half store */
-+	}
-+	{
-+		memh(r8++#2) = r4
-+		if p1 jumpr r31
-+	}
-+	.falign
-+9: /* skip final half store */
-+	{
-+		memb(r8++#1) = r4
-+		jumpr r31
-+	}
-+HEXAGON_OPT_FUNC_FINISH memset
++/*
++ * No real reason why VM and native switch stacks should be different.
++ * Ultimately this should merge.  Note that Rev C. ABI called out only
++ * R24-27 as callee saved GPRs needing explicit attention (R29-31 being
++ * dealt with automagically by allocframe), but the current ABI has
++ * more, R16-R27.  By saving more, the worst case is that we waste some
++ * cycles if building with the old compilers.
++ */
++
++struct hexagon_switch_stack {
++	unsigned long long	r1716;
++	unsigned long long	r1918;
++	unsigned long long	r2120;
++	unsigned long long	r2322;
++	unsigned long long	r2524;
++	unsigned long long	r2726;
++	unsigned long		fp;
++	unsigned long		lr;
++};
++
++#endif /* !__ASSEMBLY__ */
++
 +#endif
+diff --git a/arch/hexagon/include/asm/registers.h b/arch/hexagon/include/asm/registers.h
+new file mode 100644
+index 0000000..4dd741b
+--- /dev/null
++++ b/arch/hexagon/include/asm/registers.h
+@@ -0,0 +1,236 @@
++/*
++ * Register definitions for the Hexagon architecture
++ *
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
 +
++#ifndef _ASM_REGISTERS_H
++#define _ASM_REGISTERS_H
 +
-+/*  FUNCTION: memset (v3 and higher version)  */
-+#if __HEXAGON_ARCH__ >= 3
-+HEXAGON_OPT_FUNC_BEGIN memset
-+	{
-+		r7=vsplatb(r1)
-+		r6 = r0
-+		if (r2==#0) jump:nt .L1
-+	}
-+	{
-+		r5:4=combine(r7,r7)
-+		p0 = cmp.gtu(r2,#8)
-+		if (p0.new) jump:nt .L3
-+	}
-+	{
-+		r3 = r0
-+		loop0(.L47,r2)
-+	}
-+	.falign
-+.L47:
-+	{
-+		memb(r3++#1) = r1
-+	}:endloop0 /* start=.L47 */
-+		jumpr r31
-+.L3:
-+	{
-+		p0 = tstbit(r0,#0)
-+		if (!p0.new) jump:nt .L8
-+		p1 = cmp.eq(r2, #1)
-+	}
-+	{
-+		r6 = add(r0, #1)
-+		r2 = add(r2,#-1)
-+		memb(r0) = r1
-+		if (p1) jump .L1
-+	}
-+.L8:
-+	{
-+		p0 = tstbit(r6,#1)
-+		if (!p0.new) jump:nt .L10
-+	}
-+	{
-+		r2 = add(r2,#-2)
-+		memh(r6++#2) = r7
-+		p0 = cmp.eq(r2, #2)
-+		if (p0.new) jump:nt .L1
-+	}
-+.L10:
-+	{
-+		p0 = tstbit(r6,#2)
-+		if (!p0.new) jump:nt .L12
-+	}
-+	{
-+		r2 = add(r2,#-4)
-+		memw(r6++#4) = r7
-+		p0 = cmp.eq(r2, #4)
-+		if (p0.new) jump:nt .L1
-+	}
-+.L12:
-+	{
-+		p0 = cmp.gtu(r2,#127)
-+		if (!p0.new) jump:nt .L14
-+	}
-+		r3 = and(r6,#31)
-+		if (r3==#0) jump:nt .L17
-+	{
-+		memd(r6++#8) = r5:4
-+		r2 = add(r2,#-8)
-+	}
-+		r3 = and(r6,#31)
-+		if (r3==#0) jump:nt .L17
-+	{
-+		memd(r6++#8) = r5:4
-+		r2 = add(r2,#-8)
-+	}
-+		r3 = and(r6,#31)
-+		if (r3==#0) jump:nt .L17
-+	{
-+		memd(r6++#8) = r5:4
-+		r2 = add(r2,#-8)
-+	}
-+.L17:
-+	{
-+		r3 = lsr(r2,#5)
-+		if (r1!=#0) jump:nt .L18
-+	}
-+	{
-+		r8 = r3
-+		r3 = r6
-+		loop0(.L46,r3)
-+	}
-+	.falign
-+.L46:
-+	{
-+		dczeroa(r6)
-+		r6 = add(r6,#32)
-+		r2 = add(r2,#-32)
-+	}:endloop0 /* start=.L46 */
-+.L14:
-+	{
-+		p0 = cmp.gtu(r2,#7)
-+		if (!p0.new) jump:nt .L28
-+		r8 = lsr(r2,#3)
-+	}
-+		loop0(.L44,r8)
-+	.falign
-+.L44:
-+	{
-+		memd(r6++#8) = r5:4
-+		r2 = add(r2,#-8)
-+	}:endloop0 /* start=.L44 */
-+.L28:
-+	{
-+		p0 = tstbit(r2,#2)
-+		if (!p0.new) jump:nt .L33
-+	}
-+	{
-+		r2 = add(r2,#-4)
-+		memw(r6++#4) = r7
-+	}
-+.L33:
-+	{
-+		p0 = tstbit(r2,#1)
-+		if (!p0.new) jump:nt .L35
-+	}
-+	{
-+		r2 = add(r2,#-2)
-+		memh(r6++#2) = r7
-+	}
-+.L35:
-+		p0 = cmp.eq(r2,#1)
-+		if (p0) memb(r6) = r1
-+.L1:
-+		jumpr r31
-+.L18:
-+		loop0(.L45,r3)
-+	.falign
-+.L45:
-+		dczeroa(r6)
-+	{
-+		memd(r6++#8) = r5:4
-+		r2 = add(r2,#-32)
-+	}
-+		memd(r6++#8) = r5:4
-+		memd(r6++#8) = r5:4
-+	{
-+		memd(r6++#8) = r5:4
-+	}:endloop0 /* start=.L45  */
-+		jump .L14
-+HEXAGON_OPT_FUNC_FINISH memset
++#define SP r29
++
++#ifndef __ASSEMBLY__
++
++/*  See kernel/entry.S for further documentation.  */
++
++/*
++ * Entry code copies the event record out of guest registers into
++ * this structure (which is on the stack).
++ */
++
++struct hvm_event_record {
++	unsigned long vmel;     /* Event Linkage (return address) */
++	unsigned long vmest;    /* Event context - pre-event SSR values */
++	unsigned long vmpsp;    /* Previous stack pointer */
++	unsigned long vmbadva;  /* Bad virtual address for addressing events */
++};
++
++struct pt_regs {
++	long restart_r0;        /* R0 checkpoint for syscall restart */
++	long syscall_nr;        /* Only used in system calls */
++	union {
++		struct {
++			unsigned long usr;
++			unsigned long preds;
++		};
++		long long int predsusr;
++	};
++	union {
++		struct {
++			unsigned long m0;
++			unsigned long m1;
++		};
++		long long int m1m0;
++	};
++	union {
++		struct {
++			unsigned long sa1;
++			unsigned long lc1;
++		};
++		long long int lc1sa1;
++	};
++	union {
++		struct {
++			unsigned long sa0;
++			unsigned long lc0;
++		};
++		long long int lc0sa0;
++	};
++	union {
++		struct {
++			unsigned long gp;
++			unsigned long ugp;
++		};
++		long long int ugpgp;
++	};
++	/*
++	* Be extremely careful with rearranging these, if at all.  Some code
++	* assumes the 32 registers exist exactly like this in memory;
++	* e.g. kernel/ptrace.c
++	* e.g. kernel/signal.c (restore_sigcontext)
++	*/
++	union {
++		struct {
++			unsigned long r00;
++			unsigned long r01;
++		};
++		long long int r0100;
++	};
++	union {
++		struct {
++			unsigned long r02;
++			unsigned long r03;
++		};
++		long long int r0302;
++	};
++	union {
++		struct {
++			unsigned long r04;
++			unsigned long r05;
++		};
++		long long int r0504;
++	};
++	union {
++		struct {
++			unsigned long r06;
++			unsigned long r07;
++		};
++		long long int r0706;
++	};
++	union {
++		struct {
++			unsigned long r08;
++			unsigned long r09;
++		};
++		long long int r0908;
++	};
++	union {
++	       struct {
++			unsigned long r10;
++			unsigned long r11;
++	       };
++	       long long int r1110;
++	};
++	union {
++	       struct {
++			unsigned long r12;
++			unsigned long r13;
++	       };
++	       long long int r1312;
++	};
++	union {
++	       struct {
++			unsigned long r14;
++			unsigned long r15;
++	       };
++	       long long int r1514;
++	};
++	union {
++		struct {
++			unsigned long r16;
++			unsigned long r17;
++		};
++		long long int r1716;
++	};
++	union {
++		struct {
++			unsigned long r18;
++			unsigned long r19;
++		};
++		long long int r1918;
++	};
++	union {
++		struct {
++			unsigned long r20;
++			unsigned long r21;
++		};
++		long long int r2120;
++	};
++	union {
++		struct {
++			unsigned long r22;
++			unsigned long r23;
++		};
++		long long int r2322;
++	};
++	union {
++		struct {
++			unsigned long r24;
++			unsigned long r25;
++		};
++		long long int r2524;
++	};
++	union {
++		struct {
++			unsigned long r26;
++			unsigned long r27;
++		};
++		long long int r2726;
++	};
++	union {
++		struct {
++			unsigned long r28;
++			unsigned long r29;
++	       };
++	       long long int r2928;
++	};
++	union {
++		struct {
++			unsigned long r30;
++			unsigned long r31;
++		};
++		long long int r3130;
++	};
++	/* VM dispatch pushes event record onto stack - we can build on it */
++	struct hvm_event_record hvmer;
++};
++
++/* Defines to conveniently access the values  */
++
++/*
++ * As of the VM spec 0.5, these registers are now set/retrieved via a
++ * VM call.  On the in-bound side, we just fetch the values
++ * at the entry points and stuff them into the old record in pt_regs.
++ * However, on the outbound side, probably at VM rte, we set the
++ * registers back.
++ */
++
++#define pt_elr(regs) ((regs)->hvmer.vmel)
++#define pt_set_elr(regs, val) ((regs)->hvmer.vmel = (val))
++#define pt_cause(regs) ((regs)->hvmer.vmest & (HVM_VMEST_CAUSE_MSK))
++#define user_mode(regs) \
++	(((regs)->hvmer.vmest & (HVM_VMEST_UM_MSK << HVM_VMEST_UM_SFT)) != 0)
++#define ints_enabled(regs) \
++	(((regs)->hvmer.vmest & (HVM_VMEST_IE_MSK << HVM_VMEST_IE_SFT)) != 0)
++#define pt_psp(regs) ((regs)->hvmer.vmpsp)
++#define pt_badva(regs) ((regs)->hvmer.vmbadva)
++
++#define pt_set_rte_sp(regs, sp) do {\
++	pt_psp(regs) = (sp);\
++	(regs)->SP = (unsigned long) &((regs)->hvmer);\
++	} while (0)
++
++#define pt_set_kmode(regs) \
++	(regs)->hvmer.vmest = (HVM_VMEST_IE_MSK << HVM_VMEST_IE_SFT)
++
++#define pt_set_usermode(regs) \
++	(regs)->hvmer.vmest = (HVM_VMEST_UM_MSK << HVM_VMEST_UM_SFT) \
++			    | (HVM_VMEST_IE_MSK << HVM_VMEST_IE_SFT)
++
++#endif  /*  ifndef __ASSEMBLY  */
++
 +#endif
+diff --git a/arch/hexagon/include/asm/system.h b/arch/hexagon/include/asm/system.h
+new file mode 100644
+index 0000000..323ed1d
+--- /dev/null
++++ b/arch/hexagon/include/asm/system.h
+@@ -0,0 +1,126 @@
++/*
++ * System level definitions for the Hexagon architecture
++ *
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
 +
++#ifndef _ASM_SYSTEM_H
++#define _ASM_SYSTEM_H
++
++#include <linux/linkage.h>
++#include <linux/irqflags.h>
++#include <asm/atomic.h>
++#include <asm/hexagon_vm.h>
++
++struct thread_struct;
++
++extern struct task_struct *__switch_to(struct task_struct *,
++	struct task_struct *,
++	struct task_struct *);
++
++#define switch_to(p, n, r) do {\
++	r = __switch_to((p), (n), (r));\
++} while (0)
++
++
++#define rmb()				barrier()
++#define read_barrier_depends()		barrier()
++#define wmb()				barrier()
++#define mb()				barrier()
++#define smp_rmb()			barrier()
++#define smp_read_barrier_depends()	barrier()
++#define smp_wmb()			barrier()
++#define smp_mb()			barrier()
++#define smp_mb__before_atomic_dec()	barrier()
++#define smp_mb__after_atomic_dec()	barrier()
++#define smp_mb__before_atomic_inc()	barrier()
++#define smp_mb__after_atomic_inc()	barrier()
++
++/*
++ * __xchg - atomically exchange a register and a memory location
++ * @x: value to swap
++ * @ptr: pointer to memory
++ * @size:  size of the value
++ *
++ * Only 4 bytes supported currently.
++ *
++ * Note:  there was an errata for V2 about .new's and memw_locked.
++ *
++ */
++static inline unsigned long __xchg(unsigned long x, volatile void *ptr,
++				   int size)
++{
++	unsigned long retval;
++
++	/*  Can't seem to use printk or panic here, so just stop  */
++	if (size != 4) do { asm volatile("brkpt;\n"); } while (1);
++
++	__asm__ __volatile__ (
++	"1:	%0 = memw_locked(%1);\n"    /*  load into retval */
++	"	memw_locked(%1,P0) = %2;\n" /*  store into memory */
++	"	if !P0 jump 1b;\n"
++	: "=&r" (retval)
++	: "r" (ptr), "r" (x)
++	: "memory", "p0"
++	);
++	return retval;
++}
++
++/*
++ * Atomically swap the contents of a register with memory.  Should be atomic
++ * between multiple CPU's and within interrupts on the same CPU.
++ */
++#define xchg(ptr, v) ((__typeof__(*(ptr)))__xchg((unsigned long)(v), (ptr), \
++	sizeof(*(ptr))))
++
++/*  Set a value and use a memory barrier.  Used by the scheduler somewhere.  */
++#define set_mb(var, value) \
++	do { var = value; mb(); } while (0)
++
++/*
++ *  see rt-mutex-design.txt; cmpxchg supposedly checks if *ptr == A and swaps.
++ *  looks just like atomic_cmpxchg on our arch currently with a bunch of
++ *  variable casting.
++ */
++#define __HAVE_ARCH_CMPXCHG 1
++
++#define cmpxchg(ptr, old, new)					\
++({								\
++	__typeof__(ptr) __ptr = (ptr);				\
++	__typeof__(*(ptr)) __old = (old);			\
++	__typeof__(*(ptr)) __new = (new);			\
++	__typeof__(*(ptr)) __oldval = 0;			\
++								\
++	asm volatile(						\
++		"1:	%0 = memw_locked(%1);\n"		\
++		"	{ P0 = cmp.eq(%0,%2);\n"		\
++		"	  if (!P0.new) jump:nt 2f; }\n"		\
++		"	memw_locked(%1,p0) = %3;\n"		\
++		"	if (!P0) jump 1b;\n"			\
++		"2:\n"						\
++		: "=&r" (__oldval)				\
++		: "r" (__ptr), "r" (__old), "r" (__new)		\
++		: "memory", "p0"				\
++	);							\
++	__oldval;						\
++})
++
++/*  Should probably shoot for an 8-byte aligned stack pointer  */
++#define STACK_MASK (~7)
++#define arch_align_stack(x) (x & STACK_MASK)
++
++#endif
 -- 
 1.7.1
 
