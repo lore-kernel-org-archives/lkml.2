@@ -1,110 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757133Ab1INQxl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 12:53:41 -0400
-Received: from service88.mimecast.com ([195.130.217.12]:58346 "HELO
-	service88.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756884Ab1INQxl convert rfc822-to-8bit (ORCPT
+	id S1757166Ab1INRAO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 13:00:14 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:60406 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757103Ab1INRAM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 12:53:41 -0400
-X-Greylist: delayed 302 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Sep 2011 12:53:40 EDT
-Subject: Re: [RFC 1/2] virtio: Add AMBA bus driver for virtio device
-From: Pawel Moll <pawel.moll@arm.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Anthony Liguori <aliguori@us.ibm.com>,
-        "Michael S.Tsirkin" <mst@redhat.com>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
-        virtualization <virtualization@lists.linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org
-In-Reply-To: <87ehzkht7x.fsf@rustcorp.com.au>
-References: <1314966257-7503-1-git-send-email-pawel.moll@arm.com>
-	 <1314966257-7503-2-git-send-email-pawel.moll@arm.com>
-	 <877h5e5yxp.fsf@rustcorp.com.au>
-	 <1315845956.3297.7.camel@hornet.cambridge.arm.com>
-	 <87hb4h408d.fsf@rustcorp.com.au>
-	 <1315906832.3297.41.camel@hornet.cambridge.arm.com>
-	 <87ehzkht7x.fsf@rustcorp.com.au>
-Date: Wed, 14 Sep 2011 17:47:23 +0100
-Message-ID: <1316018843.3297.96.camel@hornet.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1
-X-OriginalArrivalTime: 14 Sep 2011 16:47:23.0297 (UTC) FILETIME=[F9F7F110:01CC72FD]
-X-MC-Unique: 111091417472703001
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 14 Sep 2011 13:00:12 -0400
+Date: Wed, 14 Sep 2011 19:00:09 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        rtitmuss@logitech.com, ogay@logitech.com, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Nestor Lopez Casado <nlopezcasad@logitech.com>,
+        Jean-Daniel Zanone <jzanone@logitech.com>
+Subject: Re: [PATCH v4] HID: Add full support for Logitech Unifying receivers
+Message-ID: <20110914170009.GB1623@x4.trippels.de>
+References: <1315638713-3731-1-git-send-email-benjamin.tissoires@gmail.com>
+ <20110910072826.GA1611@x4.trippels.de>
+ <CAN+gG=H2jfT2zdn5H19hyn9JtDU7U1ensX_aUDgv0jk4d81jXg@mail.gmail.com>
+ <CAN+gG=E90-y--6C-Ok8TibcFZGAaL2X-KxnchquDLCUUniip1Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAN+gG=E90-y--6C-Ok8TibcFZGAaL2X-KxnchquDLCUUniip1Q@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > 2. "Select word -> read flags" interface:
-> > 
-> >  *  0x010   32  HostFeaturesFlags  Features supported by the host
-> >  *  0x014   32  HostFeaturesWord   Set of features to access
-> > 
-> >  *  0x020   32  GuestFeaturesFlags Features activated by the guest
-> >  *  0x024   32  GuestFeaturesWord  Set of features to set
-> > 
-> > In this case the algorithm would be:
-> > 
-> > 	writel(0, HostFeaturesWord);
-> > 	bits_0_31 = readl(HostFeaturesFlags);
-> > 	writel(1, HostFeaturesWord);
-> > 	bits_32_63 = readl(HostFeaturesFlags);
-> > 	<etc>
-> > 
-> > The latter seems more "future-proof" to me, if slightly more complex...
-> > Any other suggestions?
-> 
-> The former is almost certainly sufficient (remember, we can abuse the
-> final feature bit to indicate there are extended features somewhere
-> else, if we really have to).  But agree the latter is preferable: this
-> isn't time-critical.
+On 2011.09.14 at 18:45 +0200, Benjamin Tissoires wrote:
+> I got some information for you. Apparently, it won't be possible to
+> enable this thumb button right now.
+> To enable it, the Windows driver put the mouse in a kind of debug mode
+> that need to be handled properly, which is not the case as of today.
 
-Ok, I'll do this in v3 then.
+Understood. But all we need to know is the magic bytes to send to the
+controller to enable the thumb-button. And because it works without
+problems under Windows, it shouldn't be impossible to implement in
+Linux. Maybe the Logitech guys could cook something up?
 
-> > > We can sort that out later... the Guest may try some ambitious large
-> > > allocation and fall back if it fails.
-> > 
-> > So, to my mind, the negotiations could look like this (from the Guest's
-> > point of view):
-> > 
-> > 1. (optional) The Guest is asking what size is "suggested" by the Host:
-> > 
-> > 	size = readl(QueueNum);
-> > 
-> > 2. The Guest requests size it would like to use:
-> > 
-> > 	writel(optimal_size(size), QueueNum);
-> > 
-> > 3. The Host does the best it can to accommodate the Guest and the Guest
-> > checks the effective size:
-> > 
-> > 	size = real(QueueNum);
-> > 
-> > Does it make some sense?
-> 
-> Does Host care?  It is sufficient for it to publish min/max values?
+Thanks.
 
-Hm. You're right, it should no care. Most likely the queue size will
-impact some Host's memory allocation size, but that's the Host's
-problem :-)
-
-At the same time, how the Host would know what the max value is?
-
-Generally it looks like the matter was getting back to value suggested
-by the Host (as it is now) that may be changed by the Guest. Single R/W
-register should be fine, I believe?
-
-> You might want to throw the alignment value in there; there has been
-> talk about adding that to PCI, for really small rings (less than a
-> page).
-
-Sure thing, will do.
-
-v3 will be ready tomorrow.
-
-Cheers!
-
-Paweł
-
-
+-- 
+Markus
