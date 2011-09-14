@@ -1,589 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932832Ab1INNoO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 09:44:14 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:55359 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756548Ab1INNoM (ORCPT
+	id S932805Ab1INNsS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 09:48:18 -0400
+Received: from mail.ss.pku.edu.cn ([211.101.48.138]:53169 "EHLO
+	mail.ss.pku.edu.cn" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751076Ab1INNsR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 09:44:12 -0400
-Date: Wed, 14 Sep 2011 17:44:05 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Pavel Machek <pavel@ucw.cz>, Andrew Morton <akpm00@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>
-Cc: linux-kernel@vger.kernel.org, containers@lists.osdl.org,
-        linux-fsdevel@vger.kernel.org, Kirill Shutemov <kirill@shutemov.name>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Nathan Lynch <ntl@pobox.com>, Zan Lynx <zlynx@acm.org>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>, Tejun Heo <tj@kernel.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [patch 2/2] fs, proc: Introduce the /proc/<pid>/map_files/
- directory v12
-Message-ID: <20110914134405.GV25367@sun>
-References: <20110913211359.674453213@openvz.org>
- <20110913212447.918816776@openvz.org>
- <20110913235222.043927b3.akpm@linux-foundation.org>
- <20110914105607.GP25367@sun>
- <20110914111437.GA22516@atrey.karlin.mff.cuni.cz>
- <20110914113912.GQ25367@sun>
+	Wed, 14 Sep 2011 09:48:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110914113912.GQ25367@sun>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110913164342.GA1039@hostway.ca>
+References: <20110908222420.GE8043@hostway.ca>
+	<20110912221700.GA11962@hostway.ca>
+	<20110913164342.GA1039@hostway.ca>
+Date: Wed, 14 Sep 2011 21:48:09 +0800
+Message-ID: <CAF1ivSa3i=4=sdD_ajdQ-fS-ifErFVDrOA1suLZTDG0BZ3TpZg@mail.gmail.com>
+Subject: Re: [3.1-rc4] vfs_rmdir() -> mutex_unlock() Oops
+From: Lin Ming <mlin@ss.pku.edu.cn>
+To: Simon Kirby <sim@hostway.ca>
+Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Fabio Coatti <fabio.coatti@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 14, 2011 at 03:39:12PM +0400, Cyrill Gorcunov wrote:
-...
-> > 
-> > AFAICT, this recreates existing problem with /proc/<pid>/fd (see
-> > discussion at 
-> > 
-> > http://www.securityfocus.com/archive/1/507386/30/0/threaded
-> > 
-> > ). It creates object that looks like symlink, but does not behave as
-> > one, and permissions of directories are not checked as they would be
-> > if it was a symlink.
-> > 
-> > 									Pavel
-> 
-> OK, so the problem is that we might return a path to the file mapped
-> even if the directory which consists the former file has its permission
-> changed, right? For example, lets say we have
-> 
-> | lr-x------ 1 cyrill cyrill 64 Sep 14 19:35 /proc/self/map_files/3d73a00000-3d73a1c000 -> /lib64/ld-2.5.so
-> 
-> and once /lib64 became unreadable we should not return the path to
-> 3d73a00000-3d73a1c000 as well, that is what you mean, right?
-> 
+On Wed, Sep 14, 2011 at 12:43 AM, Simon Kirby <sim@hostway.ca> wrote:
+> On Mon, Sep 12, 2011 at 03:17:00PM -0700, Simon Kirby wrote:
+>
+>> On Thu, Sep 08, 2011 at 03:24:20PM -0700, Simon Kirby wrote:
+>>
+>> > This box primarily does most of its VFS stuff over lots of NFS mounts,
+>> > but has some local EXT3 filesystems. This has happened a couple of times:
+>> >
+>> > BUG: unable to handle kernel NULL pointer dereference at 00000000000000b8
+>>...
+>> Got a few more identical Oopses on another box running slightly past
+>> 3.1-rc5 (79016f648872549392d232cd648bd02298c2d2bb). It seems to be
+>> do_rmdir()'s mutex_unlock() call.
+>>
+>> I'm building -rc6 with CONFIG_DEBUG_MUTEXES now.
+>
+> ...and not much more help with CONFIG_DEBUG_MUTEXES, from 3.1-rc6:
+>
+> BUG: unable to handle kernel NULL pointer dereference at 00000000000000a4
+> IP: [<ffffffff816adc93>] __mutex_unlock_slowpath+0x53/0x140
+> PGD 13c6c4067 PUD 2256fc067 PMD 0
+> Oops: 0002 [#1] SMP
+> CPU 2
+> Modules linked in: ipmi_devintf ipmi_si ipmi_msghandler xt_recent nf_conntrack_ftp xt_state xt_owner nf_conntrack_ipv4 nf_conntrack nf_defrag_ipv4 bnx2
+>
+> Pid: 27658, comm: php Not tainted 3.1.0-rc6-hw-mudbg+ #32 Dell Inc. PowerEdge 1950/0TT740
+> RIP: 0010:[<ffffffff816adc93>]  [<ffffffff816adc93>] __mutex_unlock_slowpath+0x53/0x140
+> RSP: 0018:ffff8800b65e1e28  EFLAGS: 00010046
+> RAX: 0000000000000100 RBX: ffff88001bcece48 RCX: ffff88001bd05348
+> RDX: 0000000040000200 RSI: ffff8800916cf6c0 RDI: 00000000000000a0
+> RBP: ffff8800b65e1e48 R08: 00000000043205bc R09: ffffea00011340c0
+> R10: 0000000000000000 R11: 0000000000000002 R12: 00000000000000a0
+> R13: 00000000000000a4 R14: 0000000000000246 R15: 00007f7fe2d15680
+> FS:  00007f7fe2e1f720(0000) GS:ffff88022fc80000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> CR2: 00000000000000a4 CR3: 0000000215c16000 CR4: 00000000000006e0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process php (pid: 27658, threadinfo ffff8800b65e0000, task ffff8800175d4320)
+> Stack:
+>  ffff88001bcece48 00000000fffffffe ffff8800916cf6c0 00007f7fe2d146a8
+>  ffff8800b65e1e58 ffffffff816add89 ffff8800b65e1e88 ffffffff8110ec70
+>  ffff8800b65e1e98 ffff8800916cf6c0 ffff8800b65e1e98 0000000000000000
+> Call Trace:
+>  [<ffffffff816add89>] mutex_unlock+0x9/0x10
+>  [<ffffffff8110ec70>] vfs_rmdir+0xb0/0x100
+>  [<ffffffff8110ed96>] do_rmdir+0xd6/0x130
+>  [<ffffffff81102063>] ? fput+0x1c3/0x260
+>  [<ffffffff810fe648>] ? filp_close+0x68/0xa0
+>  [<ffffffff8110ee41>] sys_rmdir+0x11/0x20
+>  [<ffffffff816b6f3b>] system_call_fastpath+0x16/0x1b
+> Code: 75 1b 65 48 8b 04 25 c8 b5 00 00 48 63 80 44 e0 ff ff a9 00 ff ff 07 0f 85 bb 00 00 00 9c 41 5e fa b8 00 01 00 00 4d 8d 6c 24 04 <f0> 66 41 0f c1 45 00 38 e0 74 08 f3 90 41 8a 45 00 eb f4 44 8b
+> RIP  [<ffffffff816adc93>] __mutex_unlock_slowpath+0x53/0x140
+>  RSP <ffff8800b65e1e28>
+> CR2: 00000000000000a4
+> ---[ end trace f515ec8376bdb799 ]---
+>
+> How can I further debug this? At this point, it seems to be happening several times daily.
 
-So, there is no *new* hole. And from conversation you've pointed
-I actually don't get what the final solution was taken?
+Fabio reported a similar bug,
+3.0.3 [BUG] unable to handle kernel NULL pointer dereference
+http://marc.info/?t=131416920900001&r=1&w=2
 
-Since I still can read file from fd/ even if the file keeper
-directory (say 'fd/7 --> /home/cyrill/t/testee-shared.img' where
-'t' directory has changed to '-x' after the process opened
-it) I assume -- not that much.
+Do you have a test case to trigger this bug reliably?
 
-Both fd/ and map_files/ have ptrace_may_access checks, which
-(as you pointed) might be not enough, but squashing all changes
-into one big path seems to be not that good idea.
-
-And what is more important -- would the change of the current
-behaviour break some user-space programs?
-
-Vasiliy, as far as I remember you had something in mind on
-fd/ additional fixups, no?
-
-A bit updated/tested patch below.
-
-	Cyrill
----
-fs, proc: Introduce the /proc/<pid>/map_files/ directory v13
-
-From: Pavel Emelyanov <xemul@parallels.com>
-
-This one behaves similarly to the /proc/<pid>/fd/ one - it contains symlinks
-one for each mapping with file, the name of a symlink is "vma->vm_start-vma->vm_end",
-the target is the file. Opening a symlink results in a file that point exactly
-to the same inode as them vma's one.
-
-For example the ls -l of some arbitrary /proc/<pid>/map_files/
-
- | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80403000-7f8f80404000 -> /lib64/libc-2.5.so
- | lr-x------ 1 root root 64 Aug 26 06:40 7f8f8061e000-7f8f80620000 -> /lib64/libselinux.so.1
- | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80826000-7f8f80827000 -> /lib64/libacl.so.1.1.0
- | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80a2f000-7f8f80a30000 -> /lib64/librt-2.5.so
- | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80a30000-7f8f80a4c000 -> /lib64/ld-2.5.so
-
-This *helps* checkpointing process in three ways:
-
-1. When dumping a task mappings we do know exact file that is mapped by particular
-   region. We do this by opening /proc/$pid/map_files/address symlink the way we do
-   with file descriptors.
-
-2. This also helps in determining which anonymous shared mappings are shared with
-   each other by comparing the inodes of them.
-
-3. When restoring a set of process in case two of them has a mapping shared, we map
-   the memory by the 1st one and then open its /proc/$pid/map_files/address file and
-   map it by the 2nd task.
-
-Using /proc/$pid/maps for this is quite inconvenient since it brings repeatable
-re-reading and reparsing for this text file which slows down restore procesure
-significantly. Also as being pointed in (3) it is a way easier to use top level
-shared mapping in children as /proc/$pid/map_files/address when needed.
-
-v2: (spotted by Tejun Heo)
- - /proc/<pid>/mfd changed to /proc/<pid>/map_files
- - find_vma helper is used instead of linear search
- - routines are re-grouped
- - d_revalidate is set now
-
-v3:
- - d_revalidate reworked, now it should drops no longer valid dentries (Tejun Heo)
- - ptrace_may_access added into proc_map_files_lookup (Vasiliy Kulikov)
- - because of filldir (which eventually might need to lock mmap_sem)
-   the proc_map_files_readdir() was reworked to call proc_fill_cache()
-   with unlocked mmap_sem
-
-v4: (feedback by Tejun Heo and Vasiliy Kulikov)
- - instead of saving data in proc_inode we rather make a dentry name
-   to keep both vm_start and vm_end accordingly
- - d_revalidate now honor task credentials
-
-v5: (feedback by Kirill A. Shutemov)
- - don't forget to release mmap_sem on error path
-
-v6:
- - sizeof get used in map_files_info which shrink member a bit on
-   x86-32 (by Kirill A. Shutemov)
- - map_name_to_addr returns -EINVAL instead of -1
-   which is more appropriate (by Tejun Heo)
-
-v7:
- - add [get/set]attr handlers for
-   proc_map_files_inode_operations (by Vasiliy Kulikov)
-
-v8:
- - Kirill A. Shutemov spotted a parasite semicolon
-   which ruined the ptrace_check call, fixed.
-
-v9: (feedback by Andrew Morton)
- - find_exact_vma moved into include/linux/mm.h as an inline helper
- - proc_map_files_setattr uses either kmalloc or vmalloc depending
-   on how many ojects are to be allocated
- - no more map_name_to_addr but dname_to_vma_addr introduced instead
-   and it uses sscanf because in one case the find_exact_vma() is used
-   only to confirm existence of vma area the boolean flag is used
- - fancy justification dropped
- - still the proc_map_files_get/setattr leaved untouched
-   until additional fd/ patches applied first.
-
-v10: (feedback by Andrew Morton)
- - flex_arrays are used instead of kmalloc/vmalloc calls
- - map_files_d_revalidate use ptrace_may_access for
-   security reason (by Vasiliy Kulikov)
-
-v11:
- - should use fput and drop !ret test from a loop code
-   (feedback by Andrew Morton)
- - no need for 'used' variable, use existing
-   nr_files with file->pos predicate
- - if preallocation fails no need to go further,
-   simply release mmap semaphore and jump out
-
-v12:
- - rework map_files_d_revalidate to make sure
-   the task get released on return (by Vasiliy Kulikov)
-
-v13:
- - proc_map_files_inode_operations are set to be the same
-   as proc_fd_inode_operations, ie to include .permission
-   pointing to proc_fd_permission
-
-Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: Tejun Heo <tj@kernel.org>
-CC: Vasiliy Kulikov <segoon@openwall.com>
-CC: "Kirill A. Shutemov" <kirill@shutemov.name>
-CC: Alexey Dobriyan <adobriyan@gmail.com>
-CC: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: Pavel Machek <pavel@ucw.cz>
----
- fs/proc/base.c     |  331 +++++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/mm.h |   12 +
- 2 files changed, 343 insertions(+)
-
-Index: linux-2.6.git/fs/proc/base.c
-===================================================================
---- linux-2.6.git.orig/fs/proc/base.c
-+++ linux-2.6.git/fs/proc/base.c
-@@ -83,6 +83,7 @@
- #include <linux/pid_namespace.h>
- #include <linux/fs_struct.h>
- #include <linux/slab.h>
-+#include <linux/flex_array.h>
- #ifdef CONFIG_HARDWALL
- #include <asm/hardwall.h>
- #endif
-@@ -133,6 +134,8 @@ struct pid_entry {
- 		NULL, &proc_single_file_operations,	\
- 		{ .proc_show = show } )
- 
-+static int proc_fd_permission(struct inode *inode, int mask);
-+
- /*
-  * Count the number of hardlinks for the pid_entry table, excluding the .
-  * and .. links.
-@@ -2201,6 +2204,333 @@ static const struct file_operations proc
- };
- 
- /*
-+ * dname_to_vma_addr - maps a dentry name into two unsigned longs
-+ * which represent vma start and end addresses.
-+ */
-+static int dname_to_vma_addr(struct dentry *dentry,
-+			     unsigned long *start, unsigned long *end)
-+{
-+	if (sscanf(dentry->d_name.name, "%lx-%lx", start, end) != 2)
-+		return -EINVAL;
-+
-+	return 0;
-+}
-+
-+static int map_files_d_revalidate(struct dentry *dentry, struct nameidata *nd)
-+{
-+	unsigned long vm_start, vm_end;
-+	bool exact_vma_exists = false;
-+	struct mm_struct *mm = NULL;
-+	struct task_struct *task;
-+	const struct cred *cred;
-+	struct inode *inode;
-+	int status = 0;
-+
-+	if (nd && nd->flags & LOOKUP_RCU)
-+		return -ECHILD;
-+
-+	inode = dentry->d_inode;
-+	task = get_proc_task(inode);
-+	if (!task)
-+		goto out_notask;
-+
-+	if (!ptrace_may_access(task, PTRACE_MODE_READ))
-+		goto out;
-+
-+	mm = get_task_mm(task);
-+	if (!mm)
-+		goto out;
-+
-+	if (!dname_to_vma_addr(dentry, &vm_start, &vm_end)) {
-+		down_read(&mm->mmap_sem);
-+		exact_vma_exists = !!find_exact_vma(mm, vm_start, vm_end);
-+		up_read(&mm->mmap_sem);
-+	}
-+
-+	mmput(mm);
-+
-+	if (exact_vma_exists) {
-+		if (task_dumpable(task)) {
-+			rcu_read_lock();
-+			cred = __task_cred(task);
-+			inode->i_uid = cred->euid;
-+			inode->i_gid = cred->egid;
-+			rcu_read_unlock();
-+		} else {
-+			inode->i_uid = 0;
-+			inode->i_gid = 0;
-+		}
-+		security_task_to_inode(task, inode);
-+		status = 1;
-+	}
-+
-+out:
-+	put_task_struct(task);
-+
-+out_notask:
-+	if (status <= 0)
-+		d_drop(dentry);
-+
-+	return status;
-+}
-+
-+static const struct dentry_operations tid_map_files_dentry_operations = {
-+	.d_revalidate	= map_files_d_revalidate,
-+	.d_delete	= pid_delete_dentry,
-+};
-+
-+static int proc_map_files_get_link(struct dentry *dentry, struct path *path)
-+{
-+	unsigned long vm_start, vm_end;
-+	struct vm_area_struct *vma;
-+	struct task_struct *task;
-+	struct mm_struct *mm;
-+	int rc = -ENOENT;
-+
-+	task = get_proc_task(dentry->d_inode);
-+	if (!task)
-+		goto out;
-+
-+	mm = get_task_mm(task);
-+	put_task_struct(task);
-+	if (!mm)
-+		goto out;
-+
-+	rc = dname_to_vma_addr(dentry, &vm_start, &vm_end);
-+	if (rc)
-+		goto out_mmput;
-+
-+	down_read(&mm->mmap_sem);
-+	vma = find_exact_vma(mm, vm_start, vm_end);
-+	if (vma && vma->vm_file) {
-+		*path = vma->vm_file->f_path;
-+		path_get(path);
-+		rc = 0;
-+	}
-+	up_read(&mm->mmap_sem);
-+
-+out_mmput:
-+	mmput(mm);
-+out:
-+	return rc;
-+}
-+
-+struct map_files_info {
-+	struct file	*file;
-+	unsigned long	len;
-+	unsigned char	name[4*sizeof(long)+2]; /* max: %lx-%lx\0 */
-+};
-+
-+static struct dentry *
-+proc_map_files_instantiate(struct inode *dir, struct dentry *dentry,
-+			   struct task_struct *task, const void *ptr)
-+{
-+	const struct file *file = ptr;
-+	struct proc_inode *ei;
-+	struct inode *inode;
-+
-+	if (!file)
-+		return ERR_PTR(-ENOENT);
-+
-+	inode = proc_pid_make_inode(dir->i_sb, task);
-+	if (!inode)
-+		return ERR_PTR(-ENOENT);
-+
-+	ei = PROC_I(inode);
-+	ei->op.proc_get_link = proc_map_files_get_link;
-+
-+	inode->i_op = &proc_pid_link_inode_operations;
-+	inode->i_size = 64;
-+	inode->i_mode = S_IFLNK;
-+
-+	if (file->f_mode & FMODE_READ)
-+		inode->i_mode |= S_IRUSR | S_IXUSR;
-+	if (file->f_mode & FMODE_WRITE)
-+		inode->i_mode |= S_IWUSR | S_IXUSR;
-+
-+	d_set_d_op(dentry, &tid_map_files_dentry_operations);
-+	d_add(dentry, inode);
-+
-+	return NULL;
-+}
-+
-+static struct dentry *proc_map_files_lookup(struct inode *dir,
-+		struct dentry *dentry, struct nameidata *nd)
-+{
-+	unsigned long vm_start, vm_end;
-+	struct task_struct *task;
-+	struct vm_area_struct *vma;
-+	struct mm_struct *mm;
-+	struct dentry *result;
-+
-+	result = ERR_PTR(-ENOENT);
-+	task = get_proc_task(dir);
-+	if (!task)
-+		goto out;
-+
-+	result = ERR_PTR(-EACCES);
-+	if (lock_trace(task))
-+		goto out_put_task;
-+
-+	result = ERR_PTR(-ENOENT);
-+	if (dname_to_vma_addr(dentry, &vm_start, &vm_end))
-+		goto out_unlock;
-+
-+	mm = get_task_mm(task);
-+	if (!mm)
-+		goto out_unlock;
-+
-+	down_read(&mm->mmap_sem);
-+	vma = find_exact_vma(mm, vm_start, vm_end);
-+	if (!vma)
-+		goto out_no_vma;
-+
-+	result = proc_map_files_instantiate(dir, dentry, task, vma->vm_file);
-+
-+out_no_vma:
-+	up_read(&mm->mmap_sem);
-+	mmput(mm);
-+out_unlock:
-+	unlock_trace(task);
-+out_put_task:
-+	put_task_struct(task);
-+out:
-+	return result;
-+}
-+
-+static const struct inode_operations proc_map_files_inode_operations = {
-+	.lookup		= proc_map_files_lookup,
-+	.permission	= proc_fd_permission,
-+	.setattr	= proc_setattr,
-+};
-+
-+static int proc_map_files_readdir(struct file *filp, void *dirent, filldir_t filldir)
-+{
-+	struct dentry *dentry = filp->f_path.dentry;
-+	struct inode *inode = dentry->d_inode;
-+	struct vm_area_struct *vma;
-+	struct task_struct *task;
-+	struct mm_struct *mm;
-+	ino_t ino;
-+	int ret;
-+
-+	ret = -ENOENT;
-+	task = get_proc_task(inode);
-+	if (!task)
-+		goto out;
-+
-+	ret = -EACCES;
-+	if (lock_trace(task))
-+		goto out_put_task;
-+
-+	ret = 0;
-+	switch (filp->f_pos) {
-+	case 0:
-+		ino = inode->i_ino;
-+		if (filldir(dirent, ".", 1, 0, ino, DT_DIR) < 0)
-+			goto out_unlock;
-+		filp->f_pos++;
-+	case 1:
-+		ino = parent_ino(dentry);
-+		if (filldir(dirent, "..", 2, 1, ino, DT_DIR) < 0)
-+			goto out_unlock;
-+		filp->f_pos++;
-+	default:
-+	{
-+		unsigned long nr_files, pos, i;
-+		struct flex_array *fa = NULL;
-+		struct map_files_info info;
-+		struct map_files_info *p;
-+
-+		mm = get_task_mm(task);
-+		if (!mm)
-+			goto out_unlock;
-+		down_read(&mm->mmap_sem);
-+
-+		nr_files = 0;
-+
-+		/*
-+		 * We need two passes here:
-+		 *
-+		 *  1) Collect vmas of mapped files with mmap_sem taken
-+		 *  2) Release mmap_sem and instantiate entries
-+		 *
-+		 * otherwise we get lockdep complained, since filldir()
-+		 * routine might require mmap_sem taken in might_fault().
-+		 */
-+
-+		for (vma = mm->mmap, pos = 2; vma; vma = vma->vm_next) {
-+			if (vma->vm_file && ++pos > filp->f_pos)
-+				nr_files++;
-+		}
-+
-+		if (nr_files) {
-+			fa = flex_array_alloc(sizeof(info), nr_files, GFP_KERNEL);
-+			if (!fa || flex_array_prealloc(fa, 0, nr_files, GFP_KERNEL)) {
-+				ret = -ENOMEM;
-+				if (fa)
-+					flex_array_free(fa);
-+				up_read(&mm->mmap_sem);
-+				mmput(mm);
-+				goto out_unlock;
-+			}
-+			for (i = 0, vma = mm->mmap, pos = 2; vma; vma = vma->vm_next) {
-+				if (!vma->vm_file)
-+					continue;
-+				if (++pos <= filp->f_pos)
-+					continue;
-+
-+				get_file(vma->vm_file);
-+				info.file = vma->vm_file;
-+				info.len = snprintf(info.name, sizeof(info.name),
-+						    "%lx-%lx", vma->vm_start,
-+						    vma->vm_end);
-+				if (flex_array_put(fa, i++, &info, GFP_KERNEL))
-+					BUG();
-+			}
-+		}
-+		up_read(&mm->mmap_sem);
-+
-+		for (i = 0; i < nr_files; i++) {
-+			p = flex_array_get(fa, i);
-+			ret = proc_fill_cache(filp, dirent, filldir,
-+					      p->name, p->len,
-+					      proc_map_files_instantiate,
-+					      task, p->file);
-+			if (ret)
-+				break;
-+			filp->f_pos++;
-+			fput(p->file);
-+		}
-+		for (; i < nr_files; i++) {
-+			/*
-+			 * In case of error don't forget
-+			 * to put rest of file refs.
-+			 */
-+			p = flex_array_get(fa, i);
-+			fput(p->file);
-+		}
-+		if (fa)
-+			flex_array_free(fa);
-+		mmput(mm);
-+	}
-+	}
-+
-+out_unlock:
-+	unlock_trace(task);
-+out_put_task:
-+	put_task_struct(task);
-+out:
-+	return ret;
-+}
-+
-+static const struct file_operations proc_map_files_operations = {
-+	.read		= generic_read_dir,
-+	.readdir	= proc_map_files_readdir,
-+	.llseek		= default_llseek,
-+};
-+
-+/*
-  * /proc/pid/fd needs a special permission handler so that a process can still
-  * access /proc/self/fd after it has executed a setuid().
-  */
-@@ -2815,6 +3145,7 @@ static const struct inode_operations pro
- static const struct pid_entry tgid_base_stuff[] = {
- 	DIR("task",       S_IRUGO|S_IXUGO, proc_task_inode_operations, proc_task_operations),
- 	DIR("fd",         S_IRUSR|S_IXUSR, proc_fd_inode_operations, proc_fd_operations),
-+	DIR("map_files",  S_IRUSR|S_IXUSR, proc_map_files_inode_operations, proc_map_files_operations),
- 	DIR("fdinfo",     S_IRUSR|S_IXUSR, proc_fdinfo_inode_operations, proc_fdinfo_operations),
- 	DIR("ns",	  S_IRUSR|S_IXUGO, proc_ns_dir_inode_operations, proc_ns_dir_operations),
- #ifdef CONFIG_NET
-Index: linux-2.6.git/include/linux/mm.h
-===================================================================
---- linux-2.6.git.orig/include/linux/mm.h
-+++ linux-2.6.git/include/linux/mm.h
-@@ -1491,6 +1491,18 @@ static inline unsigned long vma_pages(st
- 	return (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
- }
- 
-+/* Look up the first VMA which exactly match the interval vm_start ... vm_end */
-+static inline struct vm_area_struct *
-+find_exact_vma(struct mm_struct *mm, unsigned long vm_start, unsigned long vm_end)
-+{
-+	struct vm_area_struct *vma = find_vma(mm, vm_start);
-+
-+	if (vma && (vma->vm_start != vm_start || vma->vm_end != vm_end))
-+		vma = NULL;
-+
-+	return vma;
-+}
-+
- #ifdef CONFIG_MMU
- pgprot_t vm_get_page_prot(unsigned long vm_flags);
- #else
+Lin Ming
