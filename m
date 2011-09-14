@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753565Ab1INBRG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 21:17:06 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:39974 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753044Ab1INBRE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 21:17:04 -0400
+	id S1753642Ab1INBfH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 21:35:07 -0400
+Received: from mail.us.es ([193.147.175.20]:40961 "EHLO mail.us.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753385Ab1INBfF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Sep 2011 21:35:05 -0400
+Date: Wed, 14 Sep 2011 03:35:00 +0200
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: Alex Bligh <alex@alex.org.uk>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>, netfilter-devel@vger.kernel.org,
+        netfilter@vger.kernel.org, coreteam@netfilter.org,
+        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        Linux Containers <containers@lists.osdl.org>
+Subject: Re: [PATCH] Fix repeatable Oops on container destroy with conntrack
+Message-ID: <20110914013500.GB17051@1984>
+References: <2184C0CE5A5EDC94CDDA5053@Ximines.local>
+ <20110912072524.GA2996@p183.telecom.by>
+ <20110912093749.GE2194@1984>
+ <E0902A9541FD5D118EA02B31@Ximines.local>
+ <20110912183357.GC3641@1984>
+ <87A32B21CA99D62CE1AB7A4B@Ximines.local>
+ <7631498AC7E7C0EAD641AC7D@nimrod.local>
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1109111636410.21533-100000@netrider.rowland.org>
-References: <1315665442-4194-2-git-send-email-tom.leiming@gmail.com>
-	<Pine.LNX.4.44L0.1109111636410.21533-100000@netrider.rowland.org>
-Date: Wed, 14 Sep 2011 09:17:03 +0800
-Message-ID: <CACVXFVOfXBT9jPRq=WwasN0rNeaZ_T3ceZ1hsnP_QYdXHh+nDQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] PM/runtime: handle ->runtime_suspend failure correctly
-From: Ming Lei <tom.leiming@gmail.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: rjw@sisk.pl, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <7631498AC7E7C0EAD641AC7D@nimrod.local>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Sep 13, 2011 at 09:44:38PM +0100, Alex Bligh wrote:
+> Alexey / Pablo,
+> 
+> --On 12 September 2011 20:06:25 +0100 Alex Bligh <alex@alex.org.uk> wrote:
+> 
+> >Pablo,
+> >
+> >--On 12 September 2011 20:33:57 +0200 Pablo Neira Ayuso
+> ><pablo@netfilter.org> wrote:
+> >
+> >>Yes, this is what Alexey was pointing out in the previous email and
+> >>why he suggested to move it to nfnetlink_has_listeners (to cover the
+> >>expectation case).
+> >>
+> >>But you're right, we cannot move it to nfnetlink_has_listeners because
+> >>of the item->report case. Please, include the expectation part and
+> >>resend the patch.
+> >
+> >Thanks - see below
+> 
+> Is this new version OK? I am happy to adjust if not.
 
-On Mon, Sep 12, 2011 at 4:44 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Sat, 10 Sep 2011 tom.leiming@gmail.com wrote:
->
->> From: Ming Lei <tom.leiming@gmail.com>
->>
->> If ->runtime_suspend returns -EAGAIN or -EBUSY, the device should
->> still be in ACTIVE state, so it is not needed to handle defered
->> resume and idle notification to its parent; if ->runtime_suspend
->> returns other fatal failure, it doesn't make sense to process defered
->> resume and send idle notification to its parent.
->
->> @@ -422,6 +425,9 @@ static int rpm_suspend(struct device *dev, int rpmflags)
->>       }
->>       wake_up_all(&dev->power.wait_queue);
->>
->> +     if (retval)
->> +             goto out;
->> +
->>       if (dev->power.deferred_resume) {
->>               rpm_resume(dev, 0);
->>               retval = -EAGAIN;
->
-> If there's a suspend failure, the deferred_resume flag gets turned off
-> anyway.  But skipping this test won't hurt, and skipping the parent
-> notification is a good idea.
+Hm, I still think that this is a workaround.
 
-Yes, I will update the commit log.
+The nice fix should move nf_conntrack_event_cb in
+nf_conntrack_ecache.c to the net container structure.
 
->
-> In fact, it might be even better to put a copy of the wake_up_all() in
-> the "if (retval)" branch after the suspend callback and then go
-> directly to out.  The "else" branch could then become part of the
-> straight-through code, not indented.
+Alexey?
 
-Good idea, will update this in -v1.
+> I think we ought to get /something/ in, because without anything it's
+> very simple to cause an oops and a resultant machine hang.
 
-thanks,
--- 
-Ming Lei
+Sure, I'm all for fixing it :-).
