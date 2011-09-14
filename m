@@ -1,101 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756837Ab1INPg0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 11:36:26 -0400
-Received: from smp.if.uj.edu.pl ([149.156.82.206]:35986 "EHLO smp.if.uj.edu.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755509Ab1INPgZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 11:36:25 -0400
-Date: Wed, 14 Sep 2011 17:36:19 +0200
-From: Witold Baryluk <baryluk@smp.if.uj.edu.pl>
-To: Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: [BUG] drm/radeon: locking problems with page_flip
-Message-ID: <20110914153619.GN23706@smp.if.uj.edu.pl>
-References: <20110913034955.GJ23706@smp.if.uj.edu.pl>
- <1315906152.17617.24.camel@thor.local>
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1; protocol="application/pgp-signature"; boundary="=_smp.if.uj.edu.pl-24004-1316014581-0001-2"
-Content-Disposition: inline
-In-Reply-To: <1315906152.17617.24.camel@thor.local>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756831Ab1INPjb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 11:39:31 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:40033 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754005Ab1INPja convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Sep 2011 11:39:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAF1ivSa3i=4=sdD_ajdQ-fS-ifErFVDrOA1suLZTDG0BZ3TpZg@mail.gmail.com>
+References: <20110908222420.GE8043@hostway.ca>
+	<20110912221700.GA11962@hostway.ca>
+	<20110913164342.GA1039@hostway.ca>
+	<CAF1ivSa3i=4=sdD_ajdQ-fS-ifErFVDrOA1suLZTDG0BZ3TpZg@mail.gmail.com>
+Date: Wed, 14 Sep 2011 17:39:29 +0200
+Message-ID: <CADpTngUMit0sqSvYTCwML_Azk=vsYLGCnW9RBRyDs8Ruxs=SRA@mail.gmail.com>
+Subject: Re: [3.1-rc4] vfs_rmdir() -> mutex_unlock() Oops
+From: Fabio Coatti <fabio.coatti@gmail.com>
+To: Lin Ming <mlin@ss.pku.edu.cn>
+Cc: Simon Kirby <sim@hostway.ca>, linux-kernel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME-formatted message.  If you see this text it means that your
-E-mail software does not support MIME-formatted messages.
+2011/9/14 Lin Ming <mlin@ss.pku.edu.cn>:
+> On Wed, Sep 14, 2011 at 12:43 AM, Simon Kirby <sim@hostway.ca> wrote:
+>> On Mon, Sep 12, 2011 at 03:17:00PM -0700, Simon Kirby wrote:
+>>
+>>> On Thu, Sep 08, 2011 at 03:24:20PM -0700, Simon Kirby wrote:
+>>>
+>>> > This box primarily does most of its VFS stuff over lots of NFS mounts,
+>>> > but has some local EXT3 filesystems. This has happened a couple of times:
+>>> >
+>>> > BUG: unable to handle kernel NULL pointer dereference at 00000000000000b8
+>>>...
+>>> Got a few more identical Oopses on another box running slightly past
+>>> 3.1-rc5 (79016f648872549392d232cd648bd02298c2d2bb). It seems to be
+>>> do_rmdir()'s mutex_unlock() call.
+>>>
+>>> I'm building -rc6 with CONFIG_DEBUG_MUTEXES now.
+>>
+>> ...and not much more help with CONFIG_DEBUG_MUTEXES, from 3.1-rc6:
+>>
+>> BUG: unable to handle kernel NULL pointer dereference at 00000000000000a4
+>> IP: [<ffffffff816adc93>] __mutex_unlock_slowpath+0x53/0x140
+>> PGD 13c6c4067 PUD 2256fc067 PMD 0
+>> Oops: 0002 [#1] SMP
+>> CPU 2
+>> Modules linked in: ipmi_devintf ipmi_si ipmi_msghandler xt_recent nf_conntrack_ftp xt_state xt_owner nf_conntrack_ipv4 nf_conntrack nf_defrag_ipv4 bnx2
+>>
+>> Pid: 27658, comm: php Not tainted 3.1.0-rc6-hw-mudbg+ #32 Dell Inc. PowerEdge 1950/0TT740
+>> RIP: 0010:[<ffffffff816adc93>]  [<ffffffff816adc93>] __mutex_unlock_slowpath+0x53/0x140
+>> RSP: 0018:ffff8800b65e1e28  EFLAGS: 00010046
+>> RAX: 0000000000000100 RBX: ffff88001bcece48 RCX: ffff88001bd05348
+>> RDX: 0000000040000200 RSI: ffff8800916cf6c0 RDI: 00000000000000a0
+>> RBP: ffff8800b65e1e48 R08: 00000000043205bc R09: ffffea00011340c0
+>> R10: 0000000000000000 R11: 0000000000000002 R12: 00000000000000a0
+>> R13: 00000000000000a4 R14: 0000000000000246 R15: 00007f7fe2d15680
+>> FS:  00007f7fe2e1f720(0000) GS:ffff88022fc80000(0000) knlGS:0000000000000000
+>> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+>> CR2: 00000000000000a4 CR3: 0000000215c16000 CR4: 00000000000006e0
+>> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>> Process php (pid: 27658, threadinfo ffff8800b65e0000, task ffff8800175d4320)
+>> Stack:
+>>  ffff88001bcece48 00000000fffffffe ffff8800916cf6c0 00007f7fe2d146a8
+>>  ffff8800b65e1e58 ffffffff816add89 ffff8800b65e1e88 ffffffff8110ec70
+>>  ffff8800b65e1e98 ffff8800916cf6c0 ffff8800b65e1e98 0000000000000000
+>> Call Trace:
+>>  [<ffffffff816add89>] mutex_unlock+0x9/0x10
+>>  [<ffffffff8110ec70>] vfs_rmdir+0xb0/0x100
+>>  [<ffffffff8110ed96>] do_rmdir+0xd6/0x130
+>>  [<ffffffff81102063>] ? fput+0x1c3/0x260
+>>  [<ffffffff810fe648>] ? filp_close+0x68/0xa0
+>>  [<ffffffff8110ee41>] sys_rmdir+0x11/0x20
+>>  [<ffffffff816b6f3b>] system_call_fastpath+0x16/0x1b
+>> Code: 75 1b 65 48 8b 04 25 c8 b5 00 00 48 63 80 44 e0 ff ff a9 00 ff ff 07 0f 85 bb 00 00 00 9c 41 5e fa b8 00 01 00 00 4d 8d 6c 24 04 <f0> 66 41 0f c1 45 00 38 e0 74 08 f3 90 41 8a 45 00 eb f4 44 8b
+>> RIP  [<ffffffff816adc93>] __mutex_unlock_slowpath+0x53/0x140
+>>  RSP <ffff8800b65e1e28>
+>> CR2: 00000000000000a4
+>> ---[ end trace f515ec8376bdb799 ]---
+>>
+>> How can I further debug this? At this point, it seems to be happening several times daily.
+>
+> Fabio reported a similar bug,
+> 3.0.3 [BUG] unable to handle kernel NULL pointer dereference
+> http://marc.info/?t=131416920900001&r=1&w=2
+>
+> Do you have a test case to trigger this bug reliably?
 
---=_smp.if.uj.edu.pl-24004-1316014581-0001-2
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On 09-13 11:29, Michel D=E4nzer wrote:
-> On Die, 2011-09-13 at 05:49 +0200, Witold Baryluk wrote:=20
-> >=20
-> > I yeasterday discovered pretty nasty issue in radeon / drm code,
-> > and page_flip locking code on my ThinkPad T43.
->=20
-> Does the patch below fix the problem?
->=20
->=20
-> From ed7cf809c4fb737fa486b24004ee47056bf0e797 Mon Sep 17 00:00:00 2001
-> From: =3D?UTF-8?q?Michel=3D20D=3DC3=3DA4nzer?=3D <michel.daenzer@amd.com>
-> Date: Thu, 8 Sep 2011 17:36:22 +0200
-> Subject: [PATCH] drm/radeon: Unreference GEM object outside of spinlock
->  in page flip error path.
-> MIME-Version: 1.0
-> Content-Type: text/plain; charset=3DUTF-8
-> Content-Transfer-Encoding: 8bit
->=20
-> Should fix https://bugzilla.redhat.com/show_bug.cgi?id=3D726277 .
->=20
-> Signed-off-by: Michel D=E4nzer <michel.daenzer@amd.com>
-> ---
->  drivers/gpu/drm/radeon/radeon_display.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->=20
-> diff --git a/drivers/gpu/drm/radeon/radeon_display.c b/drivers/gpu/drm/ra=
-deon/radeon_display.c
-> index 6cc17fb..6adb3e5 100644
-> --- a/drivers/gpu/drm/radeon/radeon_display.c
-> +++ b/drivers/gpu/drm/radeon/radeon_display.c
-> @@ -473,8 +473,8 @@ pflip_cleanup:
->  	spin_lock_irqsave(&dev->event_lock, flags);
->  	radeon_crtc->unpin_work =3D NULL;
->  unlock_free:
-> -	drm_gem_object_unreference_unlocked(old_radeon_fb->obj);
->  	spin_unlock_irqrestore(&dev->event_lock, flags);
-> +	drm_gem_object_unreference_unlocked(old_radeon_fb->obj);
->  	radeon_fence_unref(&work->fence);
->  	kfree(work);
-> =20
-> --=20
-> 1.7.5.4
-
-Hi,
-
-unfortunetly I cannot reproduce problem with or without patch.
-Will do more stress testing and wait until something happens.
+Unfortunatey not, so far. This problem happens on a quite loaded
+server with apache on it and it is difficult to find root cause or at
+least a situation able to trigger it. Still digging, but I wouldn't
+expect to find something useful in short time.
 
 
---=20
-Witold Baryluk
-JID: witold.baryluk // jabster.pl
 
---=_smp.if.uj.edu.pl-24004-1316014581-0001-2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Transfer-Encoding: 7bit
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAk5wyfIACgkQ7ZLFFOttZ4J8JQCcDRYKqEcByeBJxyuDDIEO+JDh
-7zkAoMumBN1LR5DPK4wTlJCBN+sD3UqE
-=qN2a
------END PGP SIGNATURE-----
-
---=_smp.if.uj.edu.pl-24004-1316014581-0001-2--
+-- 
+Fabio
