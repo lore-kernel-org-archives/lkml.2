@@ -1,88 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753879Ab1INBsi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 21:48:38 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:37528 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753618Ab1INBsh convert rfc822-to-8bit (ORCPT
+	id S1753933Ab1INBwW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 21:52:22 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:63224 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753620Ab1INBwV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 21:48:37 -0400
+	Tue, 13 Sep 2011 21:52:21 -0400
+Message-ID: <4E70098D.2050504@vlnb.net>
+Date: Tue, 13 Sep 2011 21:55:25 -0400
+From: Vladislav Bolkhovitin <vst@vlnb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.17) Gecko/20110424 Mnenhy/0.8.3 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdan_g6dBvuXwbAdtHFd14GLkKsKLcHnybTuNGmYiqcStA@mail.gmail.com>
-References: <1314869552-5531-1-git-send-email-linus.walleij@stericsson.com>
- <74CDBE0F657A3D45AFBB94109FB122FF04B327A40C@HQMAIL01.nvidia.com>
- <CACRpkdZ1kNbtOqw=X1mmM-bA+Gg2BbmO5_CT0sSQtBCK_WdwYw@mail.gmail.com>
- <74CDBE0F657A3D45AFBB94109FB122FF04B327A570@HQMAIL01.nvidia.com> <CACRpkdan_g6dBvuXwbAdtHFd14GLkKsKLcHnybTuNGmYiqcStA@mail.gmail.com>
-From: Barry Song <21cnbao@gmail.com>
-Date: Wed, 14 Sep 2011 09:48:16 +0800
-Message-ID: <CAGsJ_4zRJaOs9W_jSXEGjAMNQhGTbDCPADc_uY7cvMpCEmKv9A@mail.gmail.com>
-Subject: Re: [PATCH 2/4 v6] pinmux: add a driver for the U300 pinmux
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Lee Jones <lee.jones@linaro.org>, Joe Perches <joe@perches.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linaro Dev <linaro-dev@lists.linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        David Brown <davidb@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Lockdep and rw_semaphores
+References: <4E6C1016.8030703@vlnb.net> <20110911023840.GZ2203@ZenIV.linux.org.uk> <4E6EBDA8.2040401@vlnb.net> <20110913051714.GC2203@ZenIV.linux.org.uk>
+In-Reply-To: <20110913051714.GC2203@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:E9RFgMrBMGZeEq1mg+l5/9DyBL/6Pi400NNAtww80wl
+ P89BQhE4bLskYByZCJvELh1hYMnOgP2+LZPuxpOLpgCeeD4/hy
+ UtxUmmD8NV8Uid8lKBY95IiSZGyqEqTnwxYXRMV225xGetEJNv
+ 9BCCQzHIkCGXBWrvbrvgLQkCDVWdVUqdMYm0f22fCSftMCeAZT
+ 3i/wdT25frigKYwz293xBT02sCdkA8IBuJZoEcjUlR10B8IpGP
+ 23mVunkDC48lh/j3SmOHXcu/ovjs4aH+gWS2Gh0qKMI3lO03Sa
+ CNBfUrsxMBuRN4qBpHP/tn+WrMIZRbI9j0SOze+CyQy4wwTeuf
+ LqNGNS34KPXJHtNaVF4w=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/9/13 Linus Walleij <linus.walleij@linaro.org>:
-> On Fri, Sep 2, 2011 at 6:04 PM, Stephen Warren <swarren@nvidia.com> wrote:
->> Linus Walleij wrote at Friday, September 02, 2011 2:12 AM:
->>> On Thu, Sep 1, 2011 at 11:33 PM, Stephen Warren <swarren@nvidia.com> wrote:
->>>
->>> >> +static const struct u300_pmx_func u300_pmx_functions[] = {
->>> >> +     {
->>> >> +             .name = "power",
->>> >> +             .groups = { POWERGRP_INDEX },
->>> >> +             /* Mask is N/A */
->>> >> +     },
->>> >
->>> > Hmmm. That's a lot of _INDEX defines that'd need to be set up, at least
->>> > to fully represent a chip like Tegra. Can the pinmux core be modified
->>> > such that the group list is an array of names (char*) rather than the
->>> > actual numeric IDs of the groups? Still, perhaps we could use the enum
->>> > we already have for this, so perhaps it isn't a big deal...
->>>
->>> Well I could think about a lot of ways to do this, but it's basically up
->>> to the driver, the U300 is just some simple example of what you can
->>> do, it's just trying to satisfy the API.
->>>
->>> Maybe as part of writing the nVidia driver you find a clever
->>> mechanism for doing this, if it's looking generally useful at that
->>> point then let's move it to the core I'd say.
->>
->> The reason I asked about the pinmux core handling this is because the
->> driver op get_function_groups:
->>
->> +       int (*get_function_groups) (struct pinctrl_dev *pctldev,
->> +                                 unsigned selector,
->> +                                 unsigned ** const groups,
->> +                                 unsigned * const num_groups);
->>
->> returns an array of integer indexes. I think the only way to get rid of
->> the index definitions in the drivers is to allow get_function_groups to
->> return an array of strings instead.
->
-> OK good idea, I reworked this interface to get an array of strings
-> instead, I've been told several times to use strings rather than numbers
-> when possible, so I think this is the right thing to do.
->
-> Check it out in v7!
 
-well. we'll rebase prima2 pinmux on v7.
+Al Viro, on 09/13/2011 01:17 AM wrote:
+> On Mon, Sep 12, 2011 at 10:19:20PM -0400, Vladislav Bolkhovitin wrote:
+> 
+>> Sure, if nested write locking is involved, lockdep should loudly complain, but on
+>> the first nested write, not read, because what's the point to complain on nested
+>> reads? I may not have nested write locking at all (and don't have).
+> 
+> _What_ nested write locking?  For that to happen it's enough to have
+> unrelated threads try to grab these suckers exclusive at the wrong time.
+> One thread for each lock.  Separately.  No nesting involved.
+> 
+> And if you never grab these locks exclusive (again, not nested - anything
+> grabbing them exclusive will suffice), why the fsck do you have them at
+> all?  rwsem that is never grabbed exclusive is rather pointless, isn't it?
+> 
+>> Plus, the deadlock scenario lockdep described for me
+>>
+>>        CPU0                    CPU1
+>>        ----                    ----
+>>   lock(QQ1_sem);
+>>                                lock(QQ_sem);
+>>                                lock(QQ1_sem);
+>>   lock(QQ_sem);
+>>
+>>  *** DEADLOCK ***
+>>
+>> is simply wrong. Such deadlock can never happen, correct?
+> 
+> Sigh...  OK, let's spell it out:
+> 
+> thread 1:
+> 	down_read(&A); /* got it */
+> thread 2:
+> 	down_read(&B); /* got it */
+> thread 3:
+> 	down_write(&A);	/* blocked until thread 1 releases A */
+> thread 4:
+> 	down_write(&B);	/* blocked until thread 2 releases B */
+> thread 1:
+> 	down_read(&B);	/* blocked until thread 4 gets and releases B */
+> thread 2:
+> 	down_read(&A);	/* blocked until thread 3 gets and released A */
+> 
+> and we have a deadlock.  Note that thread 3 and thread 4 are just doing
+> solitary down_write(), no other locks held.  And if they happen to come
+> a bit later, we won't get stuck.
+> 
+> Again, if your code does that kind of out-of-order down_read(), it is broken.
+> Period.  Either there's literally nothing that would ever do down_write()
+> (in which case you can remove the useless rwsem completely), or you can get
+> a full-blown deadlock there.  It's harder to hit (you need 4 tasks instead
+> if 2, as you would with mutex_lock() out of order), but it's still quite
+> triggerable.
+> 
+> What you seem to be missing is that rwsems are fair to writers.  I.e.
+> down_read() blocks not only when there's a writer already holding the lock;
+> it blocks when there's a writer blocked trying to acquire the lock.  That's
+> what makes this kind of out-of-order down_read() unsafe; unrelated thread
+> doing a solitary down_write() is able to wedge the whole thing stuck.  Without
+> having acquired *any* locks - just waiting for readers to go away so it could
+> get the damn thing exclusive.
 
->
-> Yours,
-> Linus Walleij
->
--barry
+Al, David,
+
+I see your point and agree, thanks for the explanation. But my original points are
+still valid:
+
+1. Reverse read locking isn't always a deadlock. For instance, if only 1 write
+thread participating and doesn't do nested write locking, which is a quite valid
+scenario, because by design of rw locks they are used with many readers and
+limited amount of rare writers.
+
+2. The "deadlock" explanation lockdep is producing in such cases is wrong and
+confusing, because in the explanation scenario there is no deadlock. If to do such
+nice and helpful explanations, better to do it correctly.
+
+So, it should be better if this warning is issued, if there is >1 thread write
+locking detected on any participated rw lock, and illustrated with a correct
+explanation.
+
+Thanks,
+Vlad
