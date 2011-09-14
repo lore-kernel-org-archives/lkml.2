@@ -1,93 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753511Ab1INBMi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Sep 2011 21:12:38 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:37771 "EHLO
+	id S1753565Ab1INBRG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Sep 2011 21:17:06 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:39974 "EHLO
 	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753044Ab1INBMg (ORCPT
+	with ESMTP id S1753044Ab1INBRE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Sep 2011 21:12:36 -0400
+	Tue, 13 Sep 2011 21:17:04 -0400
 MIME-Version: 1.0
-In-Reply-To: <201109131806.39050.rjw@sisk.pl>
-References: <201108310017.03103.rjw@sisk.pl>
-	<201109122344.02386.rjw@sisk.pl>
-	<CACVXFVN5E6pToFk_nn0xgNrUW-DQzVssmPFDpHckSaHSRwWjoQ@mail.gmail.com>
-	<201109131806.39050.rjw@sisk.pl>
-Date: Wed, 14 Sep 2011 09:12:35 +0800
-Message-ID: <CACVXFVMFZJioG_vgJ_tx9rA8_=H0HcKZLCyLcTu8oSSSmUoNJg@mail.gmail.com>
-Subject: Re: [PATCH 2/5] PM / Runtime: Do not run callbacks under lock for
- power.irq_safe set
+In-Reply-To: <Pine.LNX.4.44L0.1109111636410.21533-100000@netrider.rowland.org>
+References: <1315665442-4194-2-git-send-email-tom.leiming@gmail.com>
+	<Pine.LNX.4.44L0.1109111636410.21533-100000@netrider.rowland.org>
+Date: Wed, 14 Sep 2011 09:17:03 +0800
+Message-ID: <CACVXFVOfXBT9jPRq=WwasN0rNeaZ_T3ceZ1hsnP_QYdXHh+nDQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] PM/runtime: handle ->runtime_suspend failure correctly
 From: Ming Lei <tom.leiming@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, Kevin Hilman <khilman@ti.com>,
-        jean.pihet@newoldbits.com
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: rjw@sisk.pl, linux-pm@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-On Wed, Sep 14, 2011 at 12:06 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-
->> >> If power.lock is released, the transition states(resuming or suspending)
->> >
->> >> may be observed in rpm_suspend or rpm_resume, then tasks schedule
->> >
->> >> will be produced in these two functions,
->> >
->> > I don't think so, because the interrupts are still off.
+On Mon, Sep 12, 2011 at 4:44 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Sat, 10 Sep 2011 tom.leiming@gmail.com wrote:
+>
+>> From: Ming Lei <tom.leiming@gmail.com>
 >>
->> Yes, the interrupts are still off on local CPU, but the release of spin lock may
->> cause another CPUs to run into rpm_suspend or rpm_resume and produce
->> task schedule inside the two functions.
+>> If ->runtime_suspend returns -EAGAIN or -EBUSY, the device should
+>> still be in ACTIVE state, so it is not needed to handle defered
+>> resume and idle notification to its parent; if ->runtime_suspend
+>> returns other fatal failure, it doesn't make sense to process defered
+>> resume and send idle notification to its parent.
 >
-> Not for the same device, though.
+>> @@ -422,6 +425,9 @@ static int rpm_suspend(struct device *dev, int rpmflags)
+>>       }
+>>       wake_up_all(&dev->power.wait_queue);
+>>
+>> +     if (retval)
+>> +             goto out;
+>> +
+>>       if (dev->power.deferred_resume) {
+>>               rpm_resume(dev, 0);
+>>               retval = -EAGAIN;
+>
+> If there's a suspend failure, the deferred_resume flag gets turned off
+> anyway.  But skipping this test won't hurt, and skipping the parent
+> notification is a good idea.
 
-I think it is probable to happen on the same device in theory, see below:
-
-- suppose irq_safe is set before calling two pm_runtime_suspend below
-- suppose this patch has been applied
-
-CPU0						CPU1
-pm_runtime_suspend
-	acquired power lock
-	rpm_suspend
-						pm_runtime_suspend
-							spining power lock
-	...
-	release power lock
-							acquired power lock
-	run .runtime_suspend
-							found the dev suspending
-							wait for power state and schedule
+Yes, I will update the commit log.
 
 >
-> Also, I'm not quite sure what scenario exactly are you referring to.
-> Could you please give an example?
+> In fact, it might be even better to put a copy of the wake_up_all() in
+> the "if (retval)" branch after the suspend callback and then go
+> directly to out.  The "else" branch could then become part of the
+> straight-through code, not indented.
 
-I have no actual examples about it, just a theory analysis.
-
-Also, maybe the patch below can avoid the race above.
-
-diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
-index a6750fc..87c9a37 100644
---- a/drivers/base/power/runtime.c
-+++ b/drivers/base/power/runtime.c
-@@ -150,6 +150,9 @@ static int rpm_check_suspend_allowed(struct device *dev)
- 		retval = -EAGAIN;
- 	else if (dev->power.runtime_status == RPM_SUSPENDED)
- 		retval = 1;
-+	else if (dev->power.runtime_status != RPM_ACTIVE &&
-+			dev->power.irq_safe)
-+		retval = -EAGAIN;
-
- 	return retval;
- }
-
+Good idea, will update this in -v1.
 
 thanks,
 -- 
