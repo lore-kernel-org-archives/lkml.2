@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932856Ab1IOKez (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 06:34:55 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55186 "EHLO
+	id S932957Ab1IOKe7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 06:34:59 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55194 "EHLO
 	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932312Ab1IOKex (ORCPT
+	by vger.kernel.org with ESMTP id S932312Ab1IOKe6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 06:34:53 -0400
+	Thu, 15 Sep 2011 06:34:58 -0400
 From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
 To: linux-kernel@vger.kernel.org
 Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Liam Girdwood <lrg@ti.com>, Graeme Gregory <gg@slimlogic.co.uk>,
         Samuel Oritz <sameo@linux.intel.com>,
         Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH 6/6 v3] regmap: Incorporate the regcache core into regmap
-Date: Thu, 15 Sep 2011 11:34:39 +0100
-Message-Id: <1316082879-21810-7-git-send-email-dp@opensource.wolfsonmicro.com>
+Subject: [PATCH 5/6 v3] regmap: Add the regcache_sync trace event
+Date: Thu, 15 Sep 2011 11:34:38 +0100
+Message-Id: <1316082879-21810-6-git-send-email-dp@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.6.1
 In-Reply-To: <1316082879-21810-1-git-send-email-dp@opensource.wolfsonmicro.com>
 References: <1316082879-21810-1-git-send-email-dp@opensource.wolfsonmicro.com>
@@ -23,116 +23,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch incorporates the regcache core code into regmap.  All previous
-patches have been no-ops essentially up to this point.
-
-The bulk read operation is not supported by regcache at the moment.  This
-will be implemented incrementally.
-
 Signed-off-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
 ---
- drivers/base/regmap/regmap.c |   46 ++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 46 insertions(+), 0 deletions(-)
+ drivers/base/regmap/regcache.c |    8 +++++++-
+ include/trace/events/regmap.h  |   24 ++++++++++++++++++++++++
+ 2 files changed, 31 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index fa2bd89..6858932 100644
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -146,6 +146,13 @@ struct regmap *regmap_init(struct device *dev,
- 	map->readable_reg = config->readable_reg;
- 	map->volatile_reg = config->volatile_reg;
- 	map->precious_reg = config->precious_reg;
-+	map->cache_type = config->cache_type;
-+	map->cache_defaults = config->cache_defaults;
-+	map->num_cache_defaults = config->num_cache_defaults;
-+	map->num_cache_defaults_raw = config->num_cache_defaults_raw;
-+	map->cache_defaults_raw = config->cache_defaults_raw;
-+	map->cache_size_raw = (config->val_bits / 8) * config->num_cache_defaults_raw;
-+	map->cache_word_size = config->val_bits / 8;
- 
- 	switch (config->reg_bits) {
- 	case 4:
-@@ -201,6 +208,10 @@ struct regmap *regmap_init(struct device *dev,
- 		goto err_bus;
- 	}
- 
-+	ret = regcache_init(map);
-+	if (ret < 0)
-+		goto err_bus;
-+
- 	regmap_debugfs_init(map);
- 
- 	return map;
-@@ -219,6 +230,7 @@ EXPORT_SYMBOL_GPL(regmap_init);
+diff --git a/drivers/base/regmap/regcache.c b/drivers/base/regmap/regcache.c
+index 2565904..4440de7 100644
+--- a/drivers/base/regmap/regcache.c
++++ b/drivers/base/regmap/regcache.c
+@@ -230,12 +230,18 @@ EXPORT_SYMBOL_GPL(regcache_write);
   */
- void regmap_exit(struct regmap *map)
+ int regcache_sync(struct regmap *map)
  {
-+	regcache_exit(map);
- 	regmap_debugfs_exit(map);
- 	kfree(map->work_buf);
- 	module_put(map->bus->owner);
-@@ -321,6 +333,18 @@ int regmap_write(struct regmap *map, unsigned int reg, unsigned int val)
- 
- 	mutex_lock(&map->lock);
- 
-+	if (!map->cache_bypass) {
-+		ret = regcache_write(map, reg, val);
-+		if (ret < 0) {
-+			mutex_unlock(&map->lock);
-+			return ret;
-+		}
-+		if (map->cache_only) {
-+			mutex_unlock(&map->lock);
-+			return 0;
-+		}
-+	}
++	int ret;
++	const char *name;
 +
- 	ret = _regmap_write(map, reg, val);
+ 	BUG_ON(!map->cache_ops);
  
- 	mutex_unlock(&map->lock);
-@@ -422,6 +446,14 @@ int regmap_read(struct regmap *map, unsigned int reg, unsigned int *val)
+ 	if (map->cache_ops->sync) {
+ 		dev_dbg(map->dev, "Syncing %s cache\n",
+ 			map->cache_ops->name);
+-		return map->cache_ops->sync(map);
++		name = map->cache_ops->name;
++		trace_regcache_sync(map->dev, name, "start");
++		ret = map->cache_ops->sync(map);
++		trace_regcache_sync(map->dev, name, "stop");
+ 	}
+ 	return 0;
+ }
+diff --git a/include/trace/events/regmap.h b/include/trace/events/regmap.h
+index e35e37c..1e3193b 100644
+--- a/include/trace/events/regmap.h
++++ b/include/trace/events/regmap.h
+@@ -106,6 +106,30 @@ DEFINE_EVENT(regmap_block, regmap_hw_write_done,
+ 	TP_ARGS(dev, reg, count)
+ );
  
- 	mutex_lock(&map->lock);
- 
-+	if (!map->cache_bypass) {
-+		ret = regcache_read(map, reg, val);
-+		if (!ret) {
-+			mutex_unlock(&map->lock);
-+			return 0;
-+		}
-+	}
++TRACE_EVENT(regcache_sync,
 +
- 	ret = _regmap_read(map, reg, val);
- 
- 	mutex_unlock(&map->lock);
-@@ -473,6 +505,8 @@ int regmap_bulk_read(struct regmap *map, unsigned int reg, void *val,
- 	int ret, i;
- 	size_t val_bytes = map->format.val_bytes;
- 
-+	WARN_ON(map->cache_type != REGCACHE_NONE);
++	TP_PROTO(struct device *dev, const char *type,
++		 const char *status),
 +
- 	if (!map->format.parse_val)
- 		return -EINVAL;
- 
-@@ -512,6 +546,18 @@ int regmap_update_bits(struct regmap *map, unsigned int reg,
- 	tmp &= ~mask;
- 	tmp |= val & mask;
- 
-+	if (!map->cache_bypass) {
-+		ret = regcache_write(map, reg, tmp);
-+		if (ret < 0) {
-+			mutex_unlock(&map->lock);
-+			return ret;
-+		}
-+		if (map->cache_only) {
-+			mutex_unlock(&map->lock);
-+			return 0;
-+		}
-+	}
++	TP_ARGS(dev, type, status),
 +
- 	ret = _regmap_write(map, reg, tmp);
++	TP_STRUCT__entry(
++		__string(       name,           dev_name(dev)   )
++		__string(	status,		status		)
++		__string(	type,		type		)
++		__field(	int,		type		)
++	),
++
++	TP_fast_assign(
++		__assign_str(name, dev_name(dev));
++		__assign_str(status, status);
++		__assign_str(type, type);
++	),
++
++	TP_printk("%s type=%s status=%s", __get_str(name),
++		  __get_str(type), __get_str(status))
++);
++
+ #endif /* _TRACE_REGMAP_H */
  
- out:
+ /* This part must be outside protection */
 -- 
 1.7.6.1
 
