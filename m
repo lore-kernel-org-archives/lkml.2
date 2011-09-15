@@ -1,72 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935481Ab1IOXae (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 19:30:34 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:51055 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935411Ab1IOXad (ORCPT
+	id S935473Ab1IOXd4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 19:33:56 -0400
+Received: from www.linutronix.de ([62.245.132.108]:47567 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935437Ab1IOXdz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 19:30:33 -0400
-From: David Kilroy <kilroyd@googlemail.com>
-To: linux-kernel@vger.kernel.org, greg@kroah.com
-Cc: pe1dnn@amsat.org, David Kilroy <kilroyd@googlemail.com>
-Subject: [PATCH 12/13] staging: wlags49_h2: Reformat TX_CNTL comment
-Date: Fri, 16 Sep 2011 00:20:56 +0100
-Message-Id: <1316128857-9781-13-git-send-email-kilroyd@googlemail.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1316128857-9781-1-git-send-email-kilroyd@googlemail.com>
-References: <1316128857-9781-1-git-send-email-kilroyd@googlemail.com>
+	Thu, 15 Sep 2011 19:33:55 -0400
+Date: Fri, 16 Sep 2011 01:33:54 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andi Kleen <andi@firstfloor.org>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: Tree sweep to fix up initconst
+In-Reply-To: <1316117394-21666-1-git-send-email-andi@firstfloor.org>
+Message-ID: <alpine.LFD.2.02.1109160126550.2723@ionos>
+References: <1316117394-21666-1-git-send-email-andi@firstfloor.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This tabular comment is useful, but the original tabbed layout
-is for a tab-wdth of 4. Reformat with spaces.
+On Thu, 15 Sep 2011, Andi Kleen wrote:
 
-Signed-off-by: David Kilroy <kilroyd@googlemail.com>
----
- drivers/staging/wlags49_h2/mdd.h |   28 ++++++++++++++--------------
- 1 files changed, 14 insertions(+), 14 deletions(-)
+> This is a global tree sweep to fix up initconst section problems.
+> 
+> Any variable const in initdata must be marked __initconst, not initdata.
+> const __read_mostly is not allowed.
+> 
+> Otherwise the global sections can get a read only marking and in some
+> circumstances the compiler/and or the linker will detect conflicts.
 
-diff --git a/drivers/staging/wlags49_h2/mdd.h b/drivers/staging/wlags49_h2/mdd.h
-index acdeacd..b02e3ea 100644
---- a/drivers/staging/wlags49_h2/mdd.h
-+++ b/drivers/staging/wlags49_h2/mdd.h
-@@ -893,20 +893,20 @@ XX1( CFG_SCAN,					SCAN_RS_STRCT, scan_result[32]		 ) /*Scan results											*
+In some circumstances?  Care to explain that in detail?
  
- //HFS_TX_CNTL
- /* Note that the HCF_.... System Constants influence the HFS_.... values below
-- * 								H-I		H-I	 |	H-II	H-II	H-II.5
-- *										WPA	 |			WPA
-- * HFS_TX_CNTL_TX_OK			0002	0002 |	0002	0002	 N/A	<<<<<<<<deprecated
-- * HFS_TX_CNTL_TX_EX			0004	0004 |	0004	0004	 N/A
-- * HFS_TX_CNTL_MIC				 N/A	0010 |	 N/A	0010	 N/A
-- * HFS_TX_CNTL_TID				 N/A	 N/A |	 N/A	 N/A	000F
-- * HFS_TX_CNTL_SERVICE_CLASS	 N/A	 N/A |	 N/A	 N/A	00C0
-- * HFS_TX_CNTL_PORT				0700	0700 |	0700	0700	0700
-- * HFS_TX_CNTL_MIC_KEY_ID		1800	1800 |	0000	1800	 N/A
-- * HFS_TX_CNTL_CKIP				0000	0000 |	0000	2000	2000
-- * HFS_TX_CNTL_TX_DELAY			4000	4000 |	4000	4000	 N/A
-- * HFS_TX_CNTL_ACTION			 N/A	 N/A |	 N/A	 N/A	4000
-- * 								====	==== |	====	====	====
-- * 								5F06	5F16 |	4706	7F06	67CF
-+ *                              H-I     H-I  |  H-II    H-II    H-II.5
-+ *                                      WPA  |          WPA
-+ * HFS_TX_CNTL_TX_OK            0002    0002 |  0002    0002     N/A    <<<<<<<<deprecated
-+ * HFS_TX_CNTL_TX_EX            0004    0004 |  0004    0004     N/A
-+ * HFS_TX_CNTL_MIC               N/A    0010 |   N/A    0010     N/A
-+ * HFS_TX_CNTL_TID               N/A     N/A |   N/A     N/A    000F
-+ * HFS_TX_CNTL_SERVICE_CLASS     N/A     N/A |   N/A     N/A    00C0
-+ * HFS_TX_CNTL_PORT             0700    0700 |  0700    0700    0700
-+ * HFS_TX_CNTL_MIC_KEY_ID       1800    1800 |  0000    1800     N/A
-+ * HFS_TX_CNTL_CKIP             0000    0000 |  0000    2000    2000
-+ * HFS_TX_CNTL_TX_DELAY         4000    4000 |  4000    4000     N/A
-+ * HFS_TX_CNTL_ACTION            N/A     N/A |   N/A     N/A    4000
-+ *                              ====    ==== |  ====    ====    ====
-+ *                              5F06    5F16 |  4706    7F06    67CF
-  *
-  * HCF_TX_CNTL_MASK specifies the bits allowed on the Host I/F
-  * note: bit 0x4000 has different meaning for H-II and H-II.5
--- 
-1.7.4.1
+> This patchkit aims to fix it up everywhere.
 
+Aims? How did you generate these patches? [grep|compile+look] and hack
+or did you actually use something sensible like coccinelle?
+ 
+> Also available in git://github.com/andikleen/linux-misc.git const-sections
+> 
+> Note I plan to ask Linus to pull this directly.
+
+You can plan what you want, but unless you provide substantial
+information please target your plan towards /dev/null
+
+Thanks,
+
+	tglx
