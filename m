@@ -1,107 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755330Ab1IOIEr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 04:04:47 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:61914 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754691Ab1IOIEo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 04:04:44 -0400
-Message-ID: <4E71B196.1060504@gmail.com>
-Date: Thu, 15 Sep 2011 10:04:38 +0200
-From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: Matt Domsch <Matt_Domsch@dell.com>
-CC: Matt Fleming <matt@console-pimps.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Matthew Garrett <mjg@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Mike Waychison <mikew@google.com>, Andi Kleen <andi@firstfloor.org>,
-        jordan_hargrave@dell.com
-Subject: Re: [PATCH v2 10/10] x86, efi: EFI boot stub support
-References: <1315838094-2307-1-git-send-email-matt@console-pimps.org> <1315838094-2307-11-git-send-email-matt@console-pimps.org> <4E6F69A1.9030406@gmail.com> <1316016478.3466.74.camel@mfleming-mobl1.ger.corp.intel.com> <20110915045231.GA32136@emperor.us.dell.com>
-In-Reply-To: <20110915045231.GA32136@emperor.us.dell.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754691Ab1IOIJW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 04:09:22 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:21794 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751162Ab1IOIJU convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@suse.com:4:1>);
+	Thu, 15 Sep 2011 04:09:20 -0400
+Message-Id: <4E71CECC020000780005637C@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Thu, 15 Sep 2011 09:09:16 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: "Frederic Weisbecker" <fweisbec@gmail.com>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86-64: fix CFI data for interrupt frames
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Matt,
+The patch titled "x86: Don't use frame pointer to save old stack on irq
+entry" did not properly adjust CFI directives, so this patch is a
+follow-up to that one.
 
-On 09/15/2011 06:52 AM, Matt Domsch wrote:
-> On Wed, Sep 14, 2011 at 11:07:58AM -0500, Matt Fleming wrote:
->> On Tue, 2011-09-13 at 16:33 +0200, Maarten Lankhorst wrote:
->>> This version seems to boot for me.
->> Yay! Thanks for testing.
->>
->>> Is it useful to add 32-bits support though?
->>> It seems that only some older versions of OSX use it. I could see if I can
->>> revive my mac mini, iirc it has 32-bits efi, or at least used to have.
->> 32-bit UEFI platforms do exist, so I think it's worth supporting them.
->>
->>> Do I need to pass anything to add it to efibootmgr?
->>>
->>> I tried something like this:
->>> echo "args" | efibootmgr -c -l '\vmlinuz.efi' -L 'Native EFI linux boot' -@ - -u -d /dev/sdb
->>>
->>> And it boots vmlinuz.efi, but the arguments I passed do not appear to
->>> have any effect.
->> No idea, I've never used efibootmgr. Let's add Matt Domsch to the
->> discussion (now Cc'd).
-> Maarten, do you not see your 'args' in /proc/cmdline after booting the
-> entry?  From reading this thread, that's what you should see.
->
-> Can you provide an 'efibootmgr -v' and hexdump -C
-> /sys/firmware/efi/vars/Boot*  to see the args are appended as expected
-> in the boot variable in nvram?
->
-> Adding Jordan Hargrave, who is maintainer for efibootmgr now.
-Thanks, that helped. It looks like efibootmgr stores the arguments without converting it to UCS-2.
+With the old stack pointer no longer stored in a callee-saved register
+(plus some offset), we now have to use a CFA expression to describe the
+memory location where it is being found. This requires the use of
+.cfi_escape (allowing arbitrary byte streams to be emitted into
+.eh_frame), as there is no .cfi_def_cfa_expression (which also cannot
+reasonably be expected, as it would require a full expression parser).
 
-Patch below is a rough check for ascii, in which case it passes it unmodified.
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 
-After this 'args' is passed succesfully. :)
+---
+ arch/x86/include/asm/dwarf2.h |    2 ++
+ arch/x86/kernel/entry_64.S    |   14 +++++++++-----
+ 2 files changed, 11 insertions(+), 5 deletions(-)
 
-Should probably be folded in 10/10.
-
-Signed-off-by: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-
-diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
-index 6c34828..b24affb 100644
---- a/arch/x86/boot/compressed/eboot.c
-+++ b/arch/x86/boot/compressed/eboot.c
-@@ -619,12 +619,12 @@ static efi_status_t make_boot_params(struct boot_params *boot_params,
- 	unsigned long cmdline;
- 	u8 nr_entries;
- 	u16 *s2;
--	u8 *s1;
-+	u8 *s1, *s2_8;
- 	int i;
+--- 3.1-rc6/arch/x86/include/asm/dwarf2.h
++++ 3.1-rc6-x86_64-unwind-through-interrupts/arch/x86/include/asm/dwarf2.h
+@@ -27,6 +27,7 @@
+ #define CFI_REMEMBER_STATE	.cfi_remember_state
+ #define CFI_RESTORE_STATE	.cfi_restore_state
+ #define CFI_UNDEFINED		.cfi_undefined
++#define CFI_ESCAPE		.cfi_escape
  
- 	hdr->type_of_loader = 0x21;
+ #ifdef CONFIG_AS_CFI_SIGNAL_FRAME
+ #define CFI_SIGNAL_FRAME	.cfi_signal_frame
+@@ -68,6 +69,7 @@
+ #define CFI_REMEMBER_STATE	cfi_ignore
+ #define CFI_RESTORE_STATE	cfi_ignore
+ #define CFI_UNDEFINED		cfi_ignore
++#define CFI_ESCAPE		cfi_ignore
+ #define CFI_SIGNAL_FRAME	cfi_ignore
  
--	status = low_alloc(options_size, 1, &cmdline);
-+	status = low_alloc(options_size+1, 1, &cmdline);
- 	if (status != EFI_SUCCESS)
- 		goto fail;
+ #endif
+--- 3.1-rc6/arch/x86/kernel/entry_64.S
++++ 3.1-rc6-x86_64-unwind-through-interrupts/arch/x86/kernel/entry_64.S
+@@ -331,10 +331,15 @@ ENDPROC(native_usergs_sysret64)
+ 1:	incl PER_CPU_VAR(irq_count)
+ 	jne 2f
+ 	mov PER_CPU_VAR(irq_stack_ptr),%rsp
+-	EMPTY_FRAME 0
++	CFI_DEF_CFA_REGISTER	rsi
  
-@@ -633,6 +633,14 @@ static efi_status_t make_boot_params(struct boot_params *boot_params,
- 	/* Convert unicode cmdline to ascii */
- 	s1 = (u8 *)(unsigned long)hdr->cmd_line_ptr;
- 	s2 = (u16 *)options;
-+	s2_8 = (u8*)options;
-+	/* Assume the first byte is < 0x128 */
-+	if (options_size > 1 && s2_8[1] && s2_8[1] < 0x80 && s2_8[0] < 0x80) {
-+		s2 = NULL;
-+		memcpy(s1, s2_8, options_size);
-+		s1[options_size] = 0;
-+		hdr->cmdline_size = options_size;
-+	}
+ 2:	/* Store previous stack value */
+ 	pushq %rsi
++	CFI_ESCAPE	0x0f /* DW_CFA_def_cfa_expression */, 6, \
++			0x77 /* DW_OP_breg7 */, 0, \
++			0x06 /* DW_OP_deref */, \
++			0x08 /* DW_OP_const1u */, SS+8-RBP, \
++			0x22 /* DW_OP_plus */
+ 	/* We entered an interrupt context - irqs are off: */
+ 	TRACE_IRQS_OFF
+ 	.endm
+@@ -788,7 +793,6 @@ END(interrupt)
+ 	subq $ORIG_RAX-RBP, %rsp
+ 	CFI_ADJUST_CFA_OFFSET ORIG_RAX-RBP
+ 	SAVE_ARGS_IRQ
+-	PARTIAL_FRAME 0
+ 	call \func
+ 	.endm
  
- 	if (s2 && options_size) {
- 		/* Skip first word, that's the kernel name */
+@@ -813,10 +817,10 @@ ret_from_intr:
+ 
+ 	/* Restore saved previous stack */
+ 	popq %rsi
+-	leaq 16(%rsi), %rsp
+-
++	CFI_DEF_CFA_REGISTER	rsi
++	leaq ARGOFFSET-RBP(%rsi), %rsp
+ 	CFI_DEF_CFA_REGISTER	rsp
+-	CFI_ADJUST_CFA_OFFSET	-16
++	CFI_ADJUST_CFA_OFFSET	RBP-ARGOFFSET
+ 
+ exit_intr:
+ 	GET_THREAD_INFO(%rcx)
+
 
 
