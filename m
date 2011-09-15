@@ -1,59 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933899Ab1IOPJg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 11:09:36 -0400
-Received: from mga01.intel.com ([192.55.52.88]:29865 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933892Ab1IOPJf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 11:09:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,387,1312182000"; 
-   d="scan'208";a="53996225"
-Date: Thu, 15 Sep 2011 17:12:13 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Philippe =?iso-8859-1?Q?R=E9tornaz?= <philippe.retornaz@epfl.ch>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Jean Delvare <khali@linux-fr.org>, David Jander <david@protonic.nl>,
-        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
-        kernel@pengutronix.de, linux-input@vger.kernel.org
-Subject: Re: [PATCH 0/6] mc13783 cleanup
-Message-ID: <20110915151213.GE32263@sortiz-mobl>
-References: <20110824132740.GA28197@pengutronix.de>
- <201108250905.13168.philippe.retornaz@epfl.ch>
+	id S934004Ab1IOPLu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 11:11:50 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:42879 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933892Ab1IOPLt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Sep 2011 11:11:49 -0400
+Message-ID: <4E721595.9040108@metafoo.de>
+Date: Thu, 15 Sep 2011 17:11:17 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110818 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201108250905.13168.philippe.retornaz@epfl.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+CC: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Graeme Gregory <gg@slimlogic.co.uk>,
+        Samuel Oritz <sameo@linux.intel.com>
+Subject: Re: [PATCH 1/6 v3] regmap: Introduce caching support
+References: <1316082879-21810-1-git-send-email-dp@opensource.wolfsonmicro.com> <1316082879-21810-2-git-send-email-dp@opensource.wolfsonmicro.com>
+In-Reply-To: <1316082879-21810-2-git-send-email-dp@opensource.wolfsonmicro.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Philippe,
+Tested-by: Lars-Peter Clausen <lars@metafoo.de> (for REGCACHE_NONE and
+REGCACHE_RBTREE)
 
-On Thu, Aug 25, 2011 at 09:05:12AM +0200, Philippe Rétornaz wrote:
-> Le mercredi 24 août 2011 15:27:40, Uwe Kleine-König a écrit :
-> > Hello,
-> > 
-> > this series removes the long obsolte mc13783 API after fixing all
-> > remaining users.
-> 
-> I posted a patch last month which was touching this MFD too.
-> We will need to synchronize both patch. 
-I applied Uwe's patchset now. Could you please sync your code and send me a
-patchset that applies on top of:
+Some minor comments though:
 
-git://git.infradead.org/users/sameo/mfd-2.6.git for-next
+> -
+> +/**
+> + * regcache_read: Fetch the value of a given register from the cache.
+> + *
+> + * @map: map to configure.
+> + * @reg: The register index.
+> + * @value: The value to be returned.
+> + *
+> + * Return a negative value on failure, 0 on success.
+> + */
+> +int regcache_read(struct regmap *map,
+> +		  unsigned int reg, unsigned int *value)
+> +{
+> +	unsigned int max_reg;
+> +
+> +	if (map->cache_type == REGCACHE_NONE)
+> +		return -ENOSYS;
+> +
+> +	BUG_ON(!map->cache_ops);
+> +
+> +	if (!regmap_readable(map, reg))
+> +		return -EIO;
+> +
+> +	if (map->max_register)
+> +		max_reg = map->max_register;
+> +	else
+> +		max_reg = map->num_cache_defaults_raw;
 
-Cheers,
-Samuel.
+In my opinion we should initialize max_register to num_cache_defaults_raw if it
+is not set during initialization instead of doing this check each time. Also
+regmap_readable already checks whether the register is in the register range,
+so there is no need to repeat the check here.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+> +
+> +
+> +	if (reg < max_reg && !regmap_volatile(map, reg))
+> +		return map->cache_ops->read(map, reg, value);
+> +	return -EINVAL;
+> +}
+> +EXPORT_SYMBOL_GPL(regcache_read);
+> +
