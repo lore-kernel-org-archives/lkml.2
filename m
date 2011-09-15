@@ -1,45 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755571Ab1IOI4o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 04:56:44 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:60986 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755240Ab1IOI4n convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 04:56:43 -0400
-Subject: Re: [PATCH 0/9] Per-cgroup /proc/stat
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
-        xemul@parallels.com, paul@paulmenage.org, lizf@cn.fujitsu.com,
-        daniel.lezcano@free.fr, mingo@elte.hu, jbottomley@parallels.com,
-        Paul Turner <pjt@google.com>
-Date: Thu, 15 Sep 2011 10:56:29 +0200
-In-Reply-To: <m2fwjyg9fx.fsf@firstfloor.org>
-References: <1316030695-19826-1-git-send-email-glommer@parallels.com>
-	 <1316031196.5040.46.camel@twins> <m2fwjyg9fx.fsf@firstfloor.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1316076989.3045.8.camel@twins>
-Mime-Version: 1.0
+	id S1755652Ab1IOJDi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 05:03:38 -0400
+Received: from mga02.intel.com ([134.134.136.20]:43517 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755428Ab1IOJDg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Sep 2011 05:03:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="48683005"
+From: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
+To: "cbou@mail.ru" <cbou@mail.ru>, Wolfram Sang <w.sang@pengutronix.de>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>
+CC: =?ks_c_5601-1987?B?udqw5rnO?= <kyungmin.park@samsung.com>,
+        "R, Durgadoss" <durgadoss.r@intel.com>,
+        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>
+Date: Thu, 15 Sep 2011 14:33:20 +0530
+Subject: RE: RE: [PATCHv1 1/1] [Power Supply]: Fix error handling in
+ max17042 fuel gauge
+Thread-Topic: RE: [PATCHv1 1/1] [Power Supply]: Fix error handling in
+ max17042 fuel gauge
+Thread-Index: AcxtOsRnz/g5r7rjSFiRud9kKwPRzgBEs2mQAL8dnyAAjkahkA==
+Message-ID: <12D0C12AF19E15409D57F22566E88EF50975CD2B34@bgsmsx501.gar.corp.intel.com>
+References: <14735031.596001315385240106.JavaMail.weblogic@epml15>
+  <12D0C12AF19E15409D57F22566E88EF50975C6147C@bgsmsx501.gar.corp.intel.com>
+In-Reply-To: <12D0C12AF19E15409D57F22566E88EF50975C6147C@bgsmsx501.gar.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="ks_c_5601-1987"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id p8F93rGR027107
 
-On Wed, 2011-09-14 at 13:23 -0700, Andi Kleen wrote:
-> Peter Zijlstra <a.p.zijlstra@chello.nl> writes:
-> >
-> > Guys we should seriously trim back a lot of that code, not grow ever
-> > more and more. The sad fact is that if you build a kernel with
-> > cpu-cgroup support the context switch cost is more than double that of a
-> > kernel without, and then you haven't even started creating cgroups yet.
+Hi Anton/Sang/David,
+
+> -----Original Message-----
+> From: Pallala, Ramakrishna
+> Sent: Monday, September 12, 2011 6:18 PM
+> To: Pallala, Ramakrishna; myungjoo.ham@samsung.com; linux-kernel@vger.kernel.org; Anton
+> Vorontsov; cbou@mail.ru
+> Cc: dwmw2@infradead.org; ¹Ú°æ¹Î; Wolfram Sang; R, Durgadoss
+> Subject: RE: RE: [PATCHv1 1/1] [Power Supply]: Fix error handling in max17042 fuel gauge
 > 
-> That sounds indeed quite bad. Is it known why it is so costly?
+> Hi Anton,
+> 
+> > -----Original Message-----
+> > From: Pallala, Ramakrishna
+> > Sent: Thursday, September 08, 2011 11:07 PM
+> > To: myungjoo.ham@samsung.com; linux-kernel@vger.kernel.org; Anton Vorontsov
+> > Cc: dwmw2@infradead.org; ¹Ú°æ¹Î; Wolfram Sang; R, Durgadoss
+> > Subject: RE: RE: [PATCHv1 1/1] [Power Supply]: Fix error handling in max17042 fuel
+> gauge
+> >
+> > Hi Anton,
+> >
+> > > -----Original Message-----
+> > > From: MyungJoo Ham [mailto:myungjoo.ham@samsung.com]
+> > > Sent: Wednesday, September 07, 2011 2:17 PM
+> > > To: Pallala, Ramakrishna; linux-kernel@vger.kernel.org
+> > > Cc: Anton Vorontsov; dwmw2@infradead.org; ¹Ú°æ¹Î; Wolfram Sang; R, Durgadoss
+> > > Subject: Re: RE: [PATCHv1 1/1] [Power Supply]: Fix error handling in max17042 fuel
+> > gauge
+> > >
+> > > Sender : Pallala, Ramakrishna<ramakrishna.pallala@intel.com> Date : 2011-09-07 17:30
+> > > (GMT+09:00)
+> > > > Hi MyungJoo,
+> > > >
+> > > > > -----Original Message-----
+> > > > > From: MyungJoo Ham [mailto:myungjoo.ham@samsung.com]
+> > > > > Sent: Monday, September 05, 2011 6:55 AM
+> > > > > To: Pallala, Ramakrishna; linux-kernel@vger.kernel.org
+> > > > > Cc: Anton Vorontsov; dwmw2@infradead.org; ¹Ú°æ¹Î; Wolfram Sang; R, Durgadoss
+> > > > > Subject: Re: [PATCHv1 1/1] [Power Supply]: Fix error handling in max17042 fuel
+> > gauge
+> > > > >
+> > > > > Sender : Ramakrishna Pallala<ramakrishna.pallala@intel.com> Date : 2011-09-02
+> > 15:45
+> > > > > (GMT+09:00)
+> > > > > >
+> > > > > > In max17042_get_property(...), the values returned by
+> > > > > > max17042_read_reg are directly assigned to the variables,
+> > > > > > even if the read results in an error.
+> > > > > >
+> > > > > > This patch checks for the return code from max17042_read_reg and
+> > > > > > exits the function if there is any error.
+> > > > > >
+> > > > > > Signed-off-by: Ramakrishna Pallala
+> > > > > > ---
+> > > > > > drivers/power/max17042_battery.c |   85 ++++++++++++++++++++++++++------------
+> > > > > > 1 files changed, 58 insertions(+), 27 deletions(-)
+> > > > > >
+> > > > >
+> > > > > Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> > > >
+> > > > Thanks for the Ack.
+> > > > When can I expect the patch to be merged ?
+> > > >
+> > > > Thanks,
+> > > > Ram
+> > > >
+> > >
+> > > Hello Ram,
+> > >
+> > > Although I'd be so glad to be able to merge patches of MAX17042 (and
+> > > MAX8997/8998/8952/8903/...?) by myself; however, I'm not a maintainer of MAX17042.
+> > >
+> > > I guess you need to wait for Anton.
+> > >
+> > > Cheers,
+> > > MyungJoo
+> >
+> > When can I expect the patch to be merged ?
+> >
+> > Thanks,
+> > Ram
+> 
+> Please let me know your feedback on this patch.
+> 
+> Thanks,
+> Ram
 
-Mostly because all data structures grow and all code paths grow, some by
-quite a bit, its spread all over the place, lots of little cuts etc..
+I have been waiting for your comments for two weeks.
+Please let me know when can I get the feedback on this patch.
 
-pjt and I tried trimming some of the code paths with static_branch() but
-didn't really get anywhere.. need to get back to looking at this stuff
-sometime soon.
+Thanks,
+Ram
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
