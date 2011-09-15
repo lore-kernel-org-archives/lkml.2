@@ -1,73 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934177Ab1IOQOh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 12:14:37 -0400
-Received: from mta1.cl.cam.ac.uk ([128.232.25.21]:51697 "EHLO
-	mta1.cl.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934067Ab1IOQOg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 12:14:36 -0400
-Date: Thu, 15 Sep 2011 17:14:30 +0100
-From: Ripduman Sohan <Ripduman.Sohan@cl.cam.ac.uk>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org
-Subject: Re: [PATCH] workqueue: Restore cpus_allowed mask for sleeping
- workqueue rescue threads
-Message-ID: <20110915161430.GE1548@tusker>
-References: <1314884193-20454-1-git-send-email-ripduman.sohan@cl.cam.ac.uk>
- <20110902002917.GD2752@htj.dyndns.org>
+	id S934194Ab1IOQeE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 12:34:04 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:57014 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934154Ab1IOQeC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Sep 2011 12:34:02 -0400
+Message-ID: <4E72284B.2040907@linux.vnet.ibm.com>
+Date: Thu, 15 Sep 2011 11:31:07 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110902002917.GD2752@htj.dyndns.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Nitin Gupta <ngupta@vflare.org>
+CC: Greg KH <greg@kroah.com>, gregkh@suse.de, devel@driverdev.osuosl.org,
+        dan.magenheimer@oracle.com, cascardo@holoscopio.com,
+        linux-kernel@vger.kernel.org, dave@linux.vnet.ibm.com,
+        linux-mm@kvack.org, brking@linux.vnet.ibm.com, rcj@linux.vnet.ibm.com
+Subject: Re: [PATCH v2 0/3] staging: zcache: xcfmalloc support
+References: <1315404547-20075-1-git-send-email-sjenning@linux.vnet.ibm.com> <20110909203447.GB19127@kroah.com> <4E6ACE5B.9040401@vflare.org> <4E6E18C6.8080900@linux.vnet.ibm.com> <4E6EB802.4070109@vflare.org> <4E6F7DA7.9000706@linux.vnet.ibm.com> <4E6FC8A1.8070902@vflare.org>
+In-Reply-To: <4E6FC8A1.8070902@vflare.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 11091516-5112-0000-0000-0000005CE4CC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun Heo <tj@kernel.org> wrote:
+Hey Nitin,
 
-> Hello,
+So this is how I see things...
+
+Right now xvmalloc is broken for zcache's application because
+of its huge fragmentation for half the valid allocation sizes
+(> PAGE_SIZE/2).
+
+My xcfmalloc patches are _a_ solution that is ready now.  Sure,
+it doesn't so compaction yet, and it has some metadata overhead.
+So it's not "ideal" (if there is such I thing). But it does fix
+the brokenness of xvmalloc for zcache's application.
+
+So I see two ways going forward:
+
+1) We review and integrate xcfmalloc now.  Then, when you are
+done with your allocator, we can run them side by side and see
+which is better by numbers.  If yours is better, you'll get no
+argument from me and we can replace xcfmalloc with yours.
+
+2) We can agree on a date (sooner rather than later) by which your
+allocator will be completed.  At that time we can compare them and
+integrate the best one by the numbers.
+
+Which would you like to do?
+
+--
+Seth
+
+On 09/13/2011 04:18 PM, Nitin Gupta wrote:
+> On 09/13/2011 11:58 AM, Seth Jennings wrote:
+>> On 09/12/2011 08:55 PM, Nitin Gupta wrote:
 > 
-> On Thu, Sep 01, 2011 at 02:36:33PM +0100, Ripduman Sohan wrote:
-> > Rescuer threads may be migrated (and are bound) to particular CPUs when
-> > active.  However, the allowed_cpus mask is not restored when they return
-> > to sleep rendering inconsistent the presented and actual set of CPUs the
-> > process may potentially run on.  This patch fixes this oversight by
-> > recording the allowed_cpus mask for rescuer threads when it enters the
-> > rescuer_thread() main loop and restoring it every time the thread sleeps.
+>>>>>
+>>>>> With slab based approach, we can almost eliminate any metadata overhead,
+>>>>> remove any free chunk merging logic, simplify compaction and so on.
+>>>>>
+>>>>
+>>>> Just to align my understanding with yours, when I hear slab-based,
+>>>> I'm thinking each page in the compressed memory pool will contain
+>>>> 1 or more blocks that are all the same size.  Is this what you mean?
+>>>>
+>>>
+>>>
+>>> Yes, exactly.  The memory pool will consist of "superblocks" (typically
+>>> 16K or 64K).
+>>
+>> A fixed superblock size would be an issue.  If you have a fixed superblock
+>> size of 64k on a system that has 64k hardware pages, then we'll find 
+>> ourselves in the same fragmentation mess as xvmalloc.  It needs to be 
+>> relative to the hardware page size; say 4*PAGE_SIZE or 8*PAGE_SIZE.
+>>
 > 
-> Hmmm... so, currently, rescuer is left bound to the last cpu it worked
-> on.  Why is this a problem?
+> Yes, I meant some multiple of actual PAGE_SIZE.
 > 
-> Thanks.
+>>> Each of these superblocks will contain objects of only one
+>>> particular size (which is its size class).  This is the general
+>>> structure of all slab allocators. In particular, I'm planning to use
+>>> many of the ideas discussed in this paper:
+>>> http://www.cs.umass.edu/~emery/hoard/asplos2000.pdf
+>>>
+>>> One major point to consider would be that these superblocks cannot be
+>>> physically contiguous in our case, so we will have to do some map/unmap
+>>> trickery.
+>>
+>> I assume you mean vm_map_ram() by "trickery".
+>>
+>> In my own experiments, I can tell you that vm_map_ram() is VERY expensive
+>> wrt kmap_atomic().  I made a version of xvmalloc (affectionately called
+>> "chunky xvmalloc") where I modified grow_pool() to allocate 4 0-order pages,
+>> if it could, and group them into a "chunk" (what you are calling a
+>> "superblock").  The first page in the chunk had a chunk header that contained
+>> the array of page pointers that vm_map_ram() expects.  A block was 
+>> identified by a page pointer to the first page in the chunk, and an offset
+>> within the mapped area of the chunk.
+>>
+>> It... was... slow...
+>>
+>> Additionally, vm_map_ram() failed a lot because it actually allocates
+>> memory of its own for the vmap_area.  In my tests, many pages slipped
+>> through zcache because of this failure.
+>>
+>> Even worse, it uses GFP_KERNEL when alloc'ing the vmap_area which 
+>> isn't safe under spinlock.
+>>
+>> It seems that the use of vm_map_ram() is a linchpin in this design.
+>>
 > 
-> -- 
-> tejun
+> Real bad. So, we simply cannot use vm_map_ram().  Maybe we can come-up with
+> something that can map just two pages contiguously and provide kmap_atomic()
+> like characteristics?
+> 
+>>> The basic idea is to link together individual pages
+>>> (typically 4k) using underlying struct_page->lru to form superblocks and
+>>> map/unmap objects on demand.
+>>>
+>>>> If so, I'm not sure how changing to a slab-based system would eliminate
+>>>> metadata overhead or do away with memcpy()s.
+>>>>
+>>>
+>>>
+>>> With slab based approach, the allocator itself need not store any
+>>> metadata with allocated objects.  However, considering zcache and zram
+>>> use-cases, the caller will still have to request additional space for
+>>> per-object header: actual object size and back-reference (which
+>>> inode/page-idx this object belongs to) needed for compaction.
+>>>
+>>
+>> So the metadata still exists.  It's just zcache's metadata vs the
+>> allocator's metadata.
+>>
+> 
+> Yes, some little metadata still exists but we save storing previous, next
+> pointers in used objects.
+> 
+>>> For free-list management, the underlying struct page and the free object
+>>> space itself can be used. Some field in the struct page can point to the
+>>> first free object in a page and free slab objects themselves will
+>>> contain links to next/previous free objects in the page.
+>>>
+>>>> The memcpy()s are a side effect of having an allocation spread over
+>>>> blocks in different pages.  I'm not seeing a way around this.
+>>>>
+>>>
+>>>
+>>> For slab objects than span 2 pages, we can use vm_map_ram() to
+>>> temporarily map pages involved and read/write to objects directly. For
+>>> objects lying entirely within a page, we can use much faster
+>>> kmap_atomic() for access.
+>>>
+>>>
+>>
+>> See previous comment about vm_map_ram().  There is also an issue
+>> here with a slab object being unreadable do to vm_map_ram() failing.
+>>
+> 
+> I will try coming-up with some variant of kmap_atomic() which allows mapping
+> just two pages contiguously which is sufficient for our purpose.
+> 
+>>>> It also follows that the blocks that make up an allocation must be in
+>>>> a list of some kind, leading to some amount of metadata overhead.
+>>>>
+>>>
+>>>
+>>> Used objects need not be placed in any list.  For free objects we can use
+>>> underlying struct page and free object space itself to manage free list,
+>>> as described above.
+>>>
+>>
+>> I assume this means that allocations consist of only one slab object as
+>> opposed to multiple objects in slabs with different class sizes.
+>>
+>> In other words, if you have a 3k allocation and your slab
+>> class sizes are 1k, 2k, and 4k, the allocation would have to
+>> be in a single 4k object (with 25% fragmentation), not spanning
+>> a 1k and 2k object, correct?
+>>
+>> This is something that I'm inferring from your description, but is key
+>> to the design.  Please confirm that I'm understanding correctly.
+>>
+> 
+> To rephrase the slab design: the memory pool is grown in units of superblocks
+> which is a (virtually) contiguous region of say, 4*PAGE_SIZE or 8*PAGE_SIZE.
+> Each of these superblocks is assigned to exactly one size class which is the
+> size of objects this superblock will store. For example, a superblock of size
+> 64K assigned to size-class 512B can store 64K/512B = 128 objects of size 512B;
+> it cannot store objects of any other size.
+> 
+> Considering your example, if we have size classes of say 1K, 2K and 4K and
+> superblock size is say 16K and we get allocation request for 3K, we will use
+> superblocks assigned to 4K size class. If we selected, say, an empty superblock,
+> the object will take 4K (1K wasted) leaving 16K-4K = 12K of free space in that
+> superblock.
+> 
+> To reduce such internal fragmentation, we can have closely spaced size-classes
+> (say, separated by 32 bytes) but there is a tradeoff here: if there are too many
+> size classes, we can waste lot of memory due to partially filled superblocks
+> in each of size classes and if they are too widely spaced, we can lot of
+> internal fragmentation.
+> 
+>>>> If you want to do compaction, it follows that you can't give the user
+>>>> a direct pointer to the data, since the location of that data may change.
+>>>> In this case, an indirection layer is required (i.e. xcf_blkdesc and
+>>>> xcf_read()/xcf_write()).
+>>>>
+>>>
+>>>
+>>> Yes, we can't give a direct pointer anyways since pages used by the
+>>> allocator are not permanently mapped (to save precious VA spave on
+>>> 32-bit).  Still, we can save on much of metadata overhead and extra
+>>> memcpy() as described above.
+>>>
+>>>
+>>
+>> This isn't clear to me.  What would be returned by the malloc() call
+>> in this design?  In other words, how does the caller access the
+>> allocation?  You just said we can't give a direct access to the data
+>> via a page pointer and an offset. What else is there to return other
+>> than a pointer to metadata?
+>>
+> 
+> I meant that, since we cannot have allocator pages always mapped, we cannot
+> return a direct pointer (VA) to the allocated object. Instead, we can combine
+> page frame number (PFN) and offset within the page as a single 64-bit unsigned
+> number and return this as "object handle".
+> 
+> Thanks,
+> Nitin
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
 
-Hi,
-
-The rescuer being left bound to the last CPU it was active on is not a
-problem.  As I pointed out in the commit log the issue is that the
-allowed_cpus mask is not restored when rescuers return to sleep,
-rendering inconsistent the presented and actual set of CPUs the
-process may potentially run on.
-
-Perhaps an explanation is in order.  I am working on a system where we
-constantly sample process run-state (including the process
-Cpus_Allowed field in /proc/<pid>/status) to build a forward plan of
-where the process _may_ run in the future.  In situations of high
-memory pressue (common on our setup) where the rescuers ran often the
-plan begun to significantly deviate from the calculated schedule
-because rescuer threads were marked as only runnable on a single CPU
-when in reality they would bounce across CPUs.
-
-I've currently put in a special-case exception in our code to account
-for the fact that rescuer threads may run on _any_ CPU regardless of
-the current cpus_allowed mask but I thought it would be useful to
-correct it.  I'm happy to continue with my current approach if you
-deem the patch irrelevant.
-
-Kind regards,
-
---rip
