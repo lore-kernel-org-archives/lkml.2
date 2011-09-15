@@ -1,124 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756718Ab1IORcF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 13:32:05 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:40935 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756574Ab1IORcD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 13:32:03 -0400
-Message-ID: <4E7235F6.1030303@colorfullife.com>
-Date: Thu, 15 Sep 2011 19:29:26 +0200
-From: Manfred Spraul <manfred@colorfullife.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
+	id S934280Ab1IORjS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 13:39:18 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:35717 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S934211Ab1IORjR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Sep 2011 13:39:17 -0400
+Date: Thu, 15 Sep 2011 12:39:15 -0500
+From: Jack Steiner <steiner@sgi.com>
+To: mingo@elte.hu, tglx@linutronix.de, akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH, resend] x66 - Reduce clock calibration time during slave
+	cpu startup
+Message-ID: <20110915173915.GA13657@sgi.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        David Miller <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Mike Galbraith <efault@gmx.de>
-Subject: Re: [RFC][PATCH 3/3] ipc/sem: Rework wakeup scheme
-References: <20110914133034.687048806@chello.nl> <20110914133750.916911903@chello.nl>
-In-Reply-To: <20110914133750.916911903@chello.nl>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+
+Reduce the startup time for slave cpus.
+
+This patch adds hooks for an arch-specific function for clock calibration.
+
+These hooks are used on x86. If a newly started cpu has the same phys_proc_id
+as a core already active, uses the TSC for the delay loop and has a CONSTANT_TSC,
+use the already-calculated value of loops_per_jiffy.
+
+This patch reduces the time required to start slave cpus on a 4096 cpu system
+from:
+	465 sec  OLD
+	 62 sec NEW
+
+This reduces boot time on a 4096p system by almost 7 minutes.  Nice...
 
 
-On 09/14/2011 03:30 PM, Peter Zijlstra wrote:
-> This removes the home-brew busy-wait and the requirement to keep
-> preemption disabled.
-In the initial mail of the patch series, you write:
-
->  Patch 3 converts sysv sems, and is broken
+Signed-off-by: Jack Steiner <steiner@sgi.com>
 
 
-What is broken?
+---
+V2 - remove assumption that all cores in a socket have the same core frequency.
+     the patch is enabled only if delay() uses the TSC & socket is CONSTANT_TSC.
 
->
->   /**
->    * newary - Create a new semaphore set
-> @@ -406,51 +388,39 @@ static int try_atomic_semop (struct sem_
->   	return result;
->   }
->
-> -/** wake_up_sem_queue_prepare(q, error): Prepare wake-up
-> +/** wake_up_sem_queue_prepare(wake_list, q, error): Prepare wake-up
-> + * @wake_list: list to queue the to be woken task on
->    * @q: queue entry that must be signaled
->    * @error: Error value for the signal
->    *
->    * Prepare the wake-up of the queue entry q.
->    */
-> -static void wake_up_sem_queue_prepare(struct list_head *pt,
-> +static void wake_up_sem_queue_prepare(struct wake_list_head *wake_list,
->   				struct sem_queue *q, int error)
->   {
-> -	if (list_empty(pt)) {
-> -		/*
-> -		 * Hold preempt off so that we don't get preempted and have the
-> -		 * wakee busy-wait until we're scheduled back on.
-> -		 */
-> -		preempt_disable();
-> -	}
-> -	q->status = IN_WAKEUP;
-> -	q->pid = error;
-> +	struct task_struct *p = ACCESS_ONCE(q->sleeper);
->
-> -	list_add_tail(&q->simple_list, pt);
-> +	get_task_struct(p);
-> +	q->status = error;
-> +	/*
-> +	 * implies a full barrier
-> +	 */
-> +	wake_list_add(wake_list, p);
-> +	put_task_struct(p);
->   }
-I think the get_task_struct()/put_task_struct is not necessary:
-Just do the wake_list_add() before writing q->status:
-wake_list_add() is identical to list_add_tail(&q->simple_list, pt).
-[except that it contains additional locking, which doesn't matter here]
+V3 - Update comments & patch description. No code changes.
 
->
->   /**
-> - * wake_up_sem_queue_do(pt) - do the actual wake-up
-> - * @pt: list of tasks to be woken up
-> + * wake_up_sem_queue_do(wake_list) - do the actual wake-up
-> + * @wake_list: list of tasks to be woken up
->    *
->    * Do the actual wake-up.
->    * The function is called without any locks held, thus the semaphore array
->    * could be destroyed already and the tasks can disappear as soon as the
->    * status is set to the actual return code.
->    */
-> -static void wake_up_sem_queue_do(struct list_head *pt)
-> +static void wake_up_sem_queue_do(struct wake_list_head *wake_list)
->   {
-> -	struct sem_queue *q, *t;
-> -	int did_something;
-> -
-> -	did_something = !list_empty(pt);
-> -	list_for_each_entry_safe(q, t, pt, simple_list) {
-> -		wake_up_process(q->sleeper);
-> -		/* q can disappear immediately after writing q->status. */
-> -		smp_wmb();
-> -		q->status = q->pid;
-> -	}
-> -	if (did_something)
-> -		preempt_enable();
-> +	wake_up_list(wake_list, TASK_ALL);
->   }
->   
-wake_up_list() calls wake_up_state() that calls try_to_wake_up().
-try_to_wake_up() seems to return immediately when the state is TASK_DEAD.
+Resend - no feedback from last posting. Not sure if this is acceptible or what needs
+to be done next. Pointers appreciated.
 
-That leaves: Is it safe to call wake_up_list() in parallel with do_exit()?
-The current implementation avoids that.
 
---
-     Manfred
+
+Also see https://lkml.org/lkml/2010/12/14/511 for a previous discussion
+for similar improvement. This patch gives almost equivalent performance
+and is less intrusive.
+
+
+ arch/x86/kernel/smpboot.c |   16 +++++++++++-----
+ arch/x86/kernel/tsc.c     |   19 +++++++++++++++++++
+ init/calibrate.c          |   15 +++++++++++++++
+ 3 files changed, 45 insertions(+), 5 deletions(-)
+
+Index: linux/arch/x86/kernel/smpboot.c
+===================================================================
+--- linux.orig/arch/x86/kernel/smpboot.c	2011-08-05 08:24:19.492148934 -0500
++++ linux/arch/x86/kernel/smpboot.c	2011-08-08 15:21:47.919979997 -0500
+@@ -207,23 +207,29 @@ static void __cpuinit smp_callin(void)
+ 	 * Need to setup vector mappings before we enable interrupts.
+ 	 */
+ 	setup_vector_irq(smp_processor_id());
++
++	/*
++	 * Save our processor parameters. Note: this information
++	 * is needed for clock calibration.
++	 */
++	smp_store_cpu_info(cpuid);
++
+ 	/*
+ 	 * Get our bogomips.
++	 * Update loops_per_jiffy in cpu_data. Previous call to
++	 * smp_store_cpu_info() stored a value that is close but not as
++	 * accurate as the value just calculated.
+ 	 *
+ 	 * Need to enable IRQs because it can take longer and then
+ 	 * the NMI watchdog might kill us.
+ 	 */
+ 	local_irq_enable();
+ 	calibrate_delay();
++	cpu_data(cpuid).loops_per_jiffy = loops_per_jiffy;
+ 	local_irq_disable();
+ 	pr_debug("Stack at about %p\n", &cpuid);
+ 
+ 	/*
+-	 * Save our processor parameters
+-	 */
+-	smp_store_cpu_info(cpuid);
+-
+-	/*
+ 	 * This must be done before setting cpu_online_mask
+ 	 * or calling notify_cpu_starting.
+ 	 */
+Index: linux/arch/x86/kernel/tsc.c
+===================================================================
+--- linux.orig/arch/x86/kernel/tsc.c	2011-08-05 08:24:19.492148934 -0500
++++ linux/arch/x86/kernel/tsc.c	2011-08-08 15:31:43.236111159 -0500
+@@ -995,3 +995,22 @@ void __init tsc_init(void)
+ 	check_system_tsc_reliable();
+ }
+ 
++/*
++ * If we have a constant TSC and are using the TSC for the delay loop,
++ * we can skip clock calibration if another cpu in the same socket has already
++ * been calibrated. This assumes that CONSTANT_TSC applies to all
++ * cpus in the socket - this should be a safe assumption.
++ */
++unsigned long __cpuinit calibrate_delay_is_known(void)
++{
++	int i, cpu = smp_processor_id();
++
++	if (!tsc_disabled && !cpu_has(&cpu_data(cpu), X86_FEATURE_CONSTANT_TSC))
++		return 0;
++
++	for_each_online_cpu(i)
++		if (cpu_data(i).phys_proc_id == cpu_data(cpu).phys_proc_id)
++			return cpu_data(i).loops_per_jiffy;
++	return 0;
++}
++
+Index: linux/init/calibrate.c
+===================================================================
+--- linux.orig/init/calibrate.c	2011-08-05 08:24:19.492148934 -0500
++++ linux/init/calibrate.c	2011-08-08 15:33:17.003985763 -0500
+@@ -246,6 +246,19 @@ recalibrate:
+ 
+ static DEFINE_PER_CPU(unsigned long, cpu_loops_per_jiffy) = { 0 };
+ 
++/*
++ * Check if cpu calibration delay is already known. For example,
++ * some processors with multi-core sockets may have all cores
++ * with the same calibration delay.
++ *
++ * Architectures should override this function if a faster calibration
++ * method is available.
++ */
++unsigned long __attribute__((weak)) __cpuinit calibrate_delay_is_known(void)
++{
++	return 0;
++}
++
+ void __cpuinit calibrate_delay(void)
+ {
+ 	unsigned long lpj;
+@@ -265,6 +278,8 @@ void __cpuinit calibrate_delay(void)
+ 		lpj = lpj_fine;
+ 		pr_info("Calibrating delay loop (skipped), "
+ 			"value calculated using timer frequency.. ");
++	} else if ((lpj = calibrate_delay_is_known())) {
++		;
+ 	} else if ((lpj = calibrate_delay_direct()) != 0) {
+ 		if (!printed)
+ 			pr_info("Calibrating delay using timer "
