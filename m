@@ -1,86 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754168Ab1IOD2y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 23:28:54 -0400
-Received: from mail-vw0-f45.google.com ([209.85.212.45]:55956 "EHLO
+	id S1754178Ab1IODeJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 23:34:09 -0400
+Received: from mail-vw0-f45.google.com ([209.85.212.45]:56437 "EHLO
 	mail-vw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754026Ab1IOD2x convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1754026Ab1IODeI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 23:28:53 -0400
-X-Greylist: delayed 459 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Sep 2011 23:28:53 EDT
+	Wed, 14 Sep 2011 23:34:08 -0400
+X-Greylist: delayed 397 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Sep 2011 23:34:08 EDT
 MIME-Version: 1.0
-In-Reply-To: <1316051535.15084.5.camel@rui>
-References: <1314860114.32522.3.camel@rui>
-	<1314864889.13161.4.camel@rui>
-	<1314880125.8038.39.camel@mfleming-mobl1.ger.corp.intel.com>
-	<CAC=cRTOzcgm+3kHGcZrHs=9Q3cs5z6vmBqb1Bn+2qcvcSZ-2Xg@mail.gmail.com>
-	<1315839130.3466.6.camel@mfleming-mobl1.ger.corp.intel.com>
-	<CANejiEXSvT1hGasoowf1nCc5+EWyXr8PSmfpWDJOT0d_vEiKxA@mail.gmail.com>
-	<1316051535.15084.5.camel@rui>
-Date: Thu, 15 Sep 2011 11:21:13 +0800
-Message-ID: <CAC=cRTO8LKSOq-Div=QeyqRvbbB6WFgM3vjYWesCS7OPk+PaZw@mail.gmail.com>
-Subject: Re: [PATCH] EFI: Do not use __pa() to get the physical address of an
- ioremapped memory range
-From: huang ying <huang.ying.caritas@gmail.com>
-To: Zhang Rui <rui.zhang@intel.com>
-Cc: Shaohua Li <shli@kernel.org>, Matt Fleming <matt@console-pimps.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "x86@kernel.org" <x86@kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20110914160013.GH4110@mails.so.argh.org>
+References: <1315997270-14332-1-git-send-email-keguang.zhang@gmail.com>
+	<20110914113134.GS15003@mails.so.argh.org>
+	<CAJhJPsUW+4fpJUSR07LBO=FDCyAw-KHKaZCt8G+sHCJtjts0oA@mail.gmail.com>
+	<20110914160013.GH4110@mails.so.argh.org>
+Date: Thu, 15 Sep 2011 11:27:30 +0800
+Message-ID: <CAJhJPsUXvGJBB-YiLB53VSf8GRXHjkrPRf3F3YE5ekOz-OVqgQ@mail.gmail.com>
+Subject: Re: [PATCH] MIPS: Add basic support for Loongson1B
+From: Kelvin Cheung <keguang.zhang@gmail.com>
+To: Andreas Barth <aba@not.so.argh.org>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        ralf@linux-mips.org, wuzhangjin@gmail.com, r0bertz@gentoo.org,
+        chenj@lemote.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 15, 2011 at 9:52 AM, Zhang Rui <rui.zhang@intel.com> wrote:
-> On Thu, 2011-09-15 at 09:22 +0800, Shaohua Li wrote:
->> 2011/9/12 Matt Fleming <matt@console-pimps.org>:
->> > On Fri, 2011-09-02 at 13:12 +0800, huang ying wrote:
->> >> On Thu, Sep 1, 2011 at 8:28 PM, Matt Fleming <matt@console-pimps.org> wrote:
->> >> >
->> >> > Hmm.. does anyone know why we ioremap_cache() the memory on
->> >> > CONFIG_X86_32 instead of ioremap_nocache()? In the case of
->> >> > EFI_MEMORY_MAPPED_IO the memory really needs to be uncached. Then if
->> >> > we've ioremap'd the memory we should skip set_memory_uc() altogether,
->> >> > no?
->> >>
->> >> Because whether the mapping should be cached is determined by md->attr
->> >> instead of md->type.  And besides UC, we may add WC, etc support.
+2011/9/15, Andreas Barth <aba@not.so.argh.org>:
+> * Kelvin Cheung (keguang.zhang@gmail.com) [110914 15:54]:
+>> 2011/9/14, Andreas Barth <aba@not.so.argh.org>:
+>> > * keguang.zhang@gmail.com (keguang.zhang@gmail.com) [110914 12:49]:
+>> >> This patch adds basic support for Loongson1B
+>> >> including serial, timer and interrupt handler.
 >> >
->> > Confused.
->> >
->> > The CONFIG_X86_64 version of efi_ioremap() looks like this,
->> >
->> > void __iomem *__init efi_ioremap(unsigned long phys_addr, unsigned long size,
->> >                                 u32 type)
->> > {
->> >        unsigned long last_map_pfn;
->> >
->> >        if (type == EFI_MEMORY_MAPPED_IO)
->> >                return ioremap(phys_addr, size);
->> >
->> > Which uses md->type to figure out if we should call ioremap(), which on
->> > x86 is #define'd to ioremap_nocache(). CONFIG_X86_32 doesn't do this,
->> > but it looks to me like it should.
->> agree. mapping it wrong and fixing it later makes no sense. we should get
->> the mapping correct at the first.
+>> > I have a couple of questions. One of them is if it shouldn't be
+>> > possible to add this as part of the loongson-platform, and if we
+>> > really need a new platform. Each platform comes with some maintainence
+>> > costs which we should try to avoid. Making things more generic is
+>> > usually the right answer.
 >>
-> So what kinds of memory regions need ioremap_nocache?
-> should we make this decision based on the memory range type or attribute
-> or even both of them?
+>> I've tried to add Loongson1 to loongson-platform (acturally loongson2
+>> platform), but there is essential difference between them. The
+>> loongson2 platform is something like the PC's architecture, which has
+>> north and south bridge, while the loongson1 is SoC.
+>> So, I think it's better that adding loongson1 as a new platform.
+>
+> I'm not convinced, but that's also not necessary.
 
-I think the decision should be made based on attribute as follow:
+As I mentioned before, Loongson1 is a 32-bit SoC with many built-in
+controllers, which implements the MIPS32 release 2 instruction set,
+while Loongson2 is a 64-bit CPU, which only implements the MIPSIII
+instruction set.
+The Loongson1 does not have a PCI controller. And its interrupt and
+gpio are different from Loongson2 ...
 
-- attribute & EFI_MEMORY_WB --> ioremap_cache
-- attribute & EFI_MEMORY_WC --> ioremap_wc
-- others -> ioremap_nocache
+They are totally different thing.
+So, it is hard to reuse the code of loongson-platform.
 
-init_memory_mapping in efi_ioremap is used to make kexec support
-possible.  But ioremap is used anyway, kexec support should be done in
-another way.  So I think it is ok to just use ioremap_xxx in
-efi_ioremap.  The efi_ioremap definition for 32bit need to be fixed
-too.
+>> >> --- /dev/null
+>> >> +++ b/arch/mips/loongson1/common/clock.c
+>> >> @@ -0,0 +1,164 @@
+>> >> +/*
+>> >> + * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
+>> >
+>> > Is this file not derived from any of the clock drivers we already have
+>> > in Linux?
+>> >
+>> > Doesn't any of the existing clock drivers work?
+>> >
+>> > Is this clock part of the CPU? Otherwise it would make sense to move
+>> > it out to the generic drivers section.
+>
+> What's the answer to this questions?
 
-Best Regards,
-Huang Ying
+I just did what other platform did, such as ar7, ath79, bcm63xx and
+jz4740. Could you have a look at their clock.c/clk.c?
+
+>> >> --- /dev/null
+>> >> +++ b/arch/mips/loongson1/common/irq.c
+>> >> @@ -0,0 +1,132 @@
+>> >> +/*
+>> >> + * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
+>> >> + *
+>> >> + * Based on Copyright (C) 2009 Lemote Inc.
+>> >
+>> > same question here. Also, do you have permission from Lemote to put
+>> > the code within GPLv2?
+>>
+>> These code are based on the loongson platform, which is part of the
+>> kernel code already.
+>
+> In that case, it would make sense to say "derived from arch/mips/..."
+> so that other people can understand where it comes from.
+
+Thanks! I will pay attention to this.
+
+>> >> diff --git a/arch/mips/loongson1/common/prom.c
+>> >> b/arch/mips/loongson1/common/prom.c
+>> >> new file mode 100644
+>> >> index 0000000..84a25f6
+>> >> --- /dev/null
+>> >> +++ b/arch/mips/loongson1/common/prom.c
+>> >
+>> > Can't we re-use the prom-routines from the loongson platform here? Or
+>> > even better, factor them out somewhere else in the mips or even
+>> > generic linux tree?
+>>
+>> Same reason as question 1.
+>
+> Not really. Please try to de-duplicate code as far as possible, and to
+> generalize it's usage. Having some code of the form
+
+I did not just duplicate code, modified exactly. The prom-routines of
+loongson platform does not fit loongson1.For instance, the
+"cpu_clock_freq" parameter is not needed. The cpu freq. could be get
+from the PLL register directly. Moreover, the routines does not
+include the parameter "ethaddr", which is useful for embedded system.
+
+> +       while (((readb(PORT(UART_BASE, UART_LSR)) & UART_LSR_THRE) == 0)
+> +                       && (timeout-- > 0))
+> +               ;
+> +
+> +       writeb(c, PORT(UART_BASE, UART_TX));
+> here doesn't make too much sense to me. (Also questioning why this is
+> part of the prom.c file).
+>
+
+I just did what other platform did, such as ar7, bcm47xx and jz4740.
+Could you have a look at their prom.c?
+
+>
+> Andi
+>
+
+
+-- 
+Best Regards!
+Kelvin
