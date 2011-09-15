@@ -1,58 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933671Ab1IOM7H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 08:59:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32913 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933338Ab1IOM7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 08:59:05 -0400
-Date: Thu, 15 Sep 2011 14:59:03 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-kernel@vger.kernel.org, Jonathan Corbet <corbet@lwn.net>,
-        linux-media@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-Subject: Re: [PATCH][Resend] viacam: Don't explode if pci_find_bus() returns
- NULL
-In-Reply-To: <alpine.LNX.2.00.1108012337070.31999@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1109151458550.13109@pobox.suse.cz>
-References: <alpine.LNX.2.00.1108012337070.31999@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S933702Ab1IOM7w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 08:59:52 -0400
+Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:54801 "EHLO
+	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933682Ab1IOM7u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Sep 2011 08:59:50 -0400
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Samuel Ortiz <samuel.ortiz@intel.com>, Dmitry Torokhov <dtor@mail.ru>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        Misael Lopez Cruz <misael.lopez@ti.com>, linux-input@vger.kernel.org
+Subject: [PATCH 1/8] Input: twl6040: Simplify vibra regsiter definitions
+Date: Thu, 15 Sep 2011 15:59:14 +0300
+Message-Id: <1316091561-30899-2-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.7.6.1
+In-Reply-To: <1316091561-30899-1-git-send-email-peter.ujfalusi@ti.com>
+References: <1316091561-30899-1-git-send-email-peter.ujfalusi@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 1 Aug 2011, Jesper Juhl wrote:
+The bits within the two control registers (for left and right channel)
+are identical.
+Use common names for the bits acros the two register.
+Also add the missing definition for the path selection bit.
 
-> In the unlikely case that pci_find_bus() should return NULL
-> viacam_serial_is_enabled() is going to dereference a NULL pointer and
-> blow up. Better safe than sorry, so be defensive and check the
-> pointer.
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> Acked-by: Jonathan Corbet <corbet@lwn.net>
-> ---
->  drivers/media/video/via-camera.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/media/video/via-camera.c b/drivers/media/video/via-camera.c
-> index 85d3048..bb7f17f 100644
-> --- a/drivers/media/video/via-camera.c
-> +++ b/drivers/media/video/via-camera.c
-> @@ -1332,6 +1332,8 @@ static __devinit bool viacam_serial_is_enabled(void)
->  	struct pci_bus *pbus = pci_find_bus(0, 0);
->  	u8 cbyte;
->  
-> +	if (!pbus)
-> +		return false;
->  	pci_bus_read_config_byte(pbus, VIACAM_SERIAL_DEVFN,
->  			VIACAM_SERIAL_CREG, &cbyte);
->  	if ((cbyte & VIACAM_SERIAL_BIT) == 0)
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+---
+ drivers/input/misc/twl6040-vibra.c |   12 ++++++------
+ include/linux/mfd/twl6040.h        |   20 +++++++-------------
+ 2 files changed, 13 insertions(+), 19 deletions(-)
 
-Applied, thanks.
-
+diff --git a/drivers/input/misc/twl6040-vibra.c b/drivers/input/misc/twl6040-vibra.c
+index 154b7a3..cb74185 100644
+--- a/drivers/input/misc/twl6040-vibra.c
++++ b/drivers/input/misc/twl6040-vibra.c
+@@ -74,12 +74,12 @@ static irqreturn_t twl6040_vib_irq_handler(int irq, void *data)
+ 	if (status & TWL6040_VIBLOCDET) {
+ 		dev_warn(info->dev, "Left Vibrator overcurrent detected\n");
+ 		twl6040_clear_bits(twl6040, TWL6040_REG_VIBCTLL,
+-				   TWL6040_VIBENAL);
++				   TWL6040_VIBENA);
+ 	}
+ 	if (status & TWL6040_VIBROCDET) {
+ 		dev_warn(info->dev, "Right Vibrator overcurrent detected\n");
+ 		twl6040_clear_bits(twl6040, TWL6040_REG_VIBCTLR,
+-				   TWL6040_VIBENAR);
++				   TWL6040_VIBENA);
+ 	}
+ 
+ 	return IRQ_HANDLED;
+@@ -104,16 +104,16 @@ static void twl6040_vibra_enable(struct vibra_info *info)
+ 		 * overcurrent detection
+ 		 */
+ 		twl6040_reg_write(twl6040, TWL6040_REG_VIBCTLL,
+-				  TWL6040_VIBENAL | TWL6040_VIBCTRLL);
++				  TWL6040_VIBENA | TWL6040_VIBCTRL);
+ 		twl6040_reg_write(twl6040, TWL6040_REG_VIBCTLR,
+-				  TWL6040_VIBENAR | TWL6040_VIBCTRLR);
++				  TWL6040_VIBENA | TWL6040_VIBCTRL);
+ 		usleep_range(3000, 3500);
+ 	}
+ 
+ 	twl6040_reg_write(twl6040, TWL6040_REG_VIBCTLL,
+-			  TWL6040_VIBENAL);
++			  TWL6040_VIBENA);
+ 	twl6040_reg_write(twl6040, TWL6040_REG_VIBCTLR,
+-			  TWL6040_VIBENAR);
++			  TWL6040_VIBENA);
+ 
+ 	info->enabled = true;
+ }
+diff --git a/include/linux/mfd/twl6040.h b/include/linux/mfd/twl6040.h
+index 0bbb1e7..6059935 100644
+--- a/include/linux/mfd/twl6040.h
++++ b/include/linux/mfd/twl6040.h
+@@ -126,24 +126,18 @@
+ #define TWL6040_HSDACMODE		(1 << 1)
+ #define TWL6040_HSDRVMODE		(1 << 3)
+ 
+-/* VIBCTLL (0x18) fields */
++/* VIBCTLL/R (0x18/0x1A) fields */
+ 
+-#define TWL6040_VIBENAL			0x01
+-#define TWL6040_VIBCTRLL		0x04
+-#define TWL6040_VIBCTRLLP		0x08
+-#define TWL6040_VIBCTRLLN		0x10
++#define TWL6040_VIBENA			(1 << 0)
++#define TWL6040_VIBSEL			(1 << 1)
++#define TWL6040_VIBCTRL			(1 << 2)
++#define TWL6040_VIBCTRL_P		(1 << 3)
++#define TWL6040_VIBCTRL_N		(1 << 4)
+ 
+-/* VIBDATL (0x19) fields */
++/* VIBDATL/R (0x19/0x1B) fields */
+ 
+ #define TWL6040_VIBDAT_MAX		0x64
+ 
+-/* VIBCTLR (0x1A) fields */
+-
+-#define TWL6040_VIBENAR			0x01
+-#define TWL6040_VIBCTRLR		0x04
+-#define TWL6040_VIBCTRLRP		0x08
+-#define TWL6040_VIBCTRLRN		0x10
+-
+ /* GPOCTL (0x1E) fields */
+ 
+ #define TWL6040_GPO1			0x01
 -- 
-Jiri Kosina
-SUSE Labs
+1.7.6.1
+
