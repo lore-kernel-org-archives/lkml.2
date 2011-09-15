@@ -1,74 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752104Ab1IOA10 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 20:27:26 -0400
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:38881 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751095Ab1IOA1W (ORCPT
+	id S1752154Ab1IOAck (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 20:32:40 -0400
+Received: from ozlabs.org ([203.10.76.45]:47731 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751519Ab1IOAci convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 20:27:22 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/qAx/J9RTxqVsyl9k8yXxV
-Date: Wed, 14 Sep 2011 17:27:19 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: "Koyamangalath, Abhilash" <abhilash.kv@ti.com>
-Cc: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] OMAP3: powerdomains: Match silicon revision to
- select the correct "core_pwrdm" definition
-Message-ID: <20110915002719.GB30941@atomide.com>
-References: <1310730250-10920-1-git-send-email-abhilash.kv@ti.com>
- <FCCFB4CDC6E5564B9182F639FC3560870370A4D985@dbde02.ent.ti.com>
+	Wed, 14 Sep 2011 20:32:38 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, akpm@linux-foundation.org,
+        Brian Swetland <swetland@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        davinci-linux-open-source 
+	<davinci-linux-open-source@linux.davincidsp.com>
+Subject: Re: [RFC 7/8] drivers: introduce rpmsg, a remote-processor messaging bus
+In-Reply-To: <CAK=WgbY0zMkHw9XHDKPEfVQZVRfGP=nMmyJgm6jD5FEkBZkMRQ@mail.gmail.com>
+References: <1308640714-17961-1-git-send-email-ohad@wizery.com> <1308640714-17961-8-git-send-email-ohad@wizery.com> <87liwu8u3q.fsf@rustcorp.com.au> <BANLkTi=7TBMqnEf2qustrmSaubtTam79Bw@mail.gmail.com> <CAK=WgbY0zMkHw9XHDKPEfVQZVRfGP=nMmyJgm6jD5FEkBZkMRQ@mail.gmail.com>
+User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
+Date: Thu, 15 Sep 2011 09:42:05 +0930
+Message-ID: <87d3f2hdey.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <FCCFB4CDC6E5564B9182F639FC3560870370A4D985@dbde02.ent.ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Koyamangalath, Abhilash <abhilash.kv@ti.com> [110812 00:12]:
-> Hi 
+On Wed, 14 Sep 2011 21:38:43 +0300, Ohad Ben-Cohen <ohad@wizery.com> wrote:
+> Hi Rusty,
 > 
-> > @@ -58,6 +59,24 @@ static struct powerdomain *_pwrdm_lookup(const char *name)
-> > 
-> >         list_for_each_entry(temp_pwrdm, &pwrdm_list, node) {
-> >                 if (!strcmp(name, temp_pwrdm->name)) {
-> > +                       if (!strcmp(name, "core_pwrdm") && cpu_is_omap3630()) {
-> > +                               if (omap_rev() > OMAP3630_REV_ES1_0) {
-> > +                                       /*
-> > +                                        * match omap_chip info for OMAP3630
-> > +                                        * Rev ES1.1, ES1.2 or higher
-> > +                                        */
-> > +                                       if (!(temp_pwrdm->omap_chip.oc
-> > +                                               & CHIP_GE_OMAP3630ES1_1))
-> > +                                               continue;
-> > +                               } else {
-> > +                                       /* match omap_chip info for OMAP3630
-> > +                                        * Rev ES1.0
-> > +                                        */
-> > +                                       if (!(temp_pwrdm->omap_chip.oc
-> > +                                                & CHIP_IS_OMAP3630ES1))
-> > +                                               continue;
-> > +                               }
-> > +                       }
-> >                         pwrdm = temp_pwrdm;
-> >                         break;
-> >                 }
->
-> Any comments ?
+> On Wed, Jun 22, 2011 at 1:46 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
+> > On Wed, Jun 22, 2011 at 5:42 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> >> On Tue, 21 Jun 2011 10:18:33 +0300, Ohad Ben-Cohen <ohad@wizery.com> wrote:
+> >>> +#define VIRTIO_ID_RPMSG              10 /* virtio remote processor messaging */
+> >>
+> >> I think you want 6.  Plan 9 jumped ahead to grab 9 :)
+> >
+> > 6 it is :)
+> 
+> Looking at the virtio-spec, it seems that 6 is taken by 'ioMemory'.
+> There's no indication for it in virtio_ids.h though, and the
+> virtio-spec has no appendix for this id, so maybe it's available after
+> all ?
+> 
+> If it is available, I'll take it for rpmsg, and will also update
+> virtio-spec appropriately. Otherwise, we'll settle on 7 ? :)
 
-Can you please check if this is still needed after Paul's
-CHIP_IS removal patches? You can find them at:
+7... numbers are cheap :)
 
-git://git.pwsan.com/linux-2.6 omap_chip_remove_cleanup_3.2
-
-Regards,
-
-Tony
+Cheers,
+Rusty.
