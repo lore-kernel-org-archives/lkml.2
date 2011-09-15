@@ -1,85 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934608Ab1IOTlJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 15:41:09 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:12625 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934532Ab1IOTlG (ORCPT
+	id S934636Ab1IOTnz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 15:43:55 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:52706 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934532Ab1IOTny (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 15:41:06 -0400
-From: Daniel Kurtz <djkurtz@chromium.org>
-To: Joonyoung Shim <jy0922.shim@samsung.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Iiro Valkonen <iiro.valkonen@atmel.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Yufeng Shen <miletus@chromium.org>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH] Input: atmel_mxt_ts - Use snprintf for sysfs attribute show method
-Date: Thu, 15 Sep 2011 12:40:47 -0700
-Message-Id: <1316115647-1244-1-git-send-email-djkurtz@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
-X-System-Of-Record: true
+	Thu, 15 Sep 2011 15:43:54 -0400
+Date: Thu, 15 Sep 2011 14:43:48 -0500
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Bastien ROUCARIES <roucaries.bastien@gmail.com>
+Cc: Leopold Palomo-Avellaneda <leo@alaxarxa.net>, linux-kernel@vger.kernel.org,
+        Adam Baker <linux@baker-net.org.uk>, linux-parport@lists.infradead.org,
+        Nicos Gollan <gollan@informatik.uni-kl.de>, Greg KH <greg@kroah.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Alexander Gordeev <lasaine@lvk.cs.msu.su>, jan@lvr.com
+Subject: Re: [PATCH/RFC] parport_pc: remove ancient, overeager quirk that
+ disables EPP support on many chipsets
+Message-ID: <20110915194348.GC19450@elie>
+References: <201109151441.15015.leo@alaxarxa.net>
+ <CAE2SPAatxqkFUExiNc3EAP3T4EiHQiPxVcd7vPZG23xycy4QLw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE2SPAatxqkFUExiNc3EAP3T4EiHQiPxVcd7vPZG23xycy4QLw@mail.gmail.com>
+User-Agent: Mutt/1.5.21+46 (b01d63af6fea) (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sysfs attribute show methods are always passed a buffer of length
-PAGE_SIZE.  To keep from overwriting this buffer and causing havoc, use
-snprintf() to guarantee we never write more than the buffer can hold.
+Bastien ROUCARIES wrote:
 
-In addition, at least for my touchscreen, the number and size of objects
-was far too big to fit in a single 4K page.  Therefore, this patch also
-trims some redundant framing text to leave more room for actual data.
+> Why not check dmi years for this test and do the test only for board
+> before 2000 ? Better safe than sorry
 
-Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
----
- drivers/input/touchscreen/atmel_mxt_ts.c |   21 +++++++++++++++------
- 1 files changed, 15 insertions(+), 6 deletions(-)
+That would just leave the code broken on boards before 2000.
 
-diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index f5d6685..a596c27 100644
---- a/drivers/input/touchscreen/atmel_mxt_ts.c
-+++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -910,12 +910,17 @@ static ssize_t mxt_object_show(struct device *dev,
- 	for (i = 0; i < data->info.object_num; i++) {
- 		object = data->object_table + i;
- 
--		count += sprintf(buf + count,
--				"Object Table Element %d(Type %d)\n",
-+		count += snprintf(buf + count, PAGE_SIZE - count,
-+				"Object[%d] (Type %d)\n",
- 				i + 1, object->type);
-+		if (count >= PAGE_SIZE)
-+			return PAGE_SIZE - 1;
- 
- 		if (!mxt_object_readable(object->type)) {
--			count += sprintf(buf + count, "\n");
-+			count += snprintf(buf + count, PAGE_SIZE - count,
-+					"\n");
-+			if (count >= PAGE_SIZE)
-+				return PAGE_SIZE - 1;
- 			continue;
- 		}
- 
-@@ -925,11 +930,15 @@ static ssize_t mxt_object_show(struct device *dev,
- 			if (error)
- 				return error;
- 
--			count += sprintf(buf + count,
--					"  Byte %d: 0x%x (%d)\n", j, val, val);
-+			count += snprintf(buf + count, PAGE_SIZE - count,
-+					"\t[%2d]: %02x (%d)\n", j, val, val);
-+			if (count >= PAGE_SIZE)
-+				return PAGE_SIZE - 1;
- 		}
- 
--		count += sprintf(buf + count, "\n");
-+		count += snprintf(buf + count, PAGE_SIZE - count, "\n");
-+		if (count >= PAGE_SIZE)
-+			return PAGE_SIZE - 1;
- 	}
- 
- 	return count;
--- 
-1.7.3.1
+Here's a reference to the problem the test was supposed to fix:
 
+ http://lkml.indiana.edu/hypermail/linux/kernel/9901.2/1285.html
+
+It says:
+
+| A small number of IO chipsets do not have the EPP timeout function hence if 
+| there is no EPP device then the CPU is permantly in the HALT state and nothing 
+| happens LITERALLY! <CNTL><ALT><DEL> does not even function! The bulk (if not 
+| all) the IO chipsets in this category fail the bug check test, as a result it 
+| is assumed there is no EPP (or to dangerous to use). This may prevent some 
+| valid chipsets working properly.
+
+It sounds like the test removed by [1] has false positives and false
+negatives.
+
+Jan Axelson's "Parallel Port Complete" recommends:
+
+ - first check for ECP as described in Microsoft's "Extended
+   Capabilities Port Protocol and ISA Interface Standard" document:
+
+   . First check for the presence of the ECR register, by checking
+     that bits 0 and 1 act like "empty" and "full" bits (so they
+     start out set and cleared respectively and after writing 0x34 you
+     can read back 0x35).
+
+     parport_ECR_present() does this and save the result to priv->ecr.
+
+   . Put the port in configuration mode by writing 0xf4 to the ECR,
+     etc (parport_ECP_supported() does these checks).
+
+ - if the above fails, then check for EPP.  There are a couple of
+   choices suggested for that:
+
+   A) Write some values to one of the EPP registers and then read them
+      back.  If nothing is plugged in there, that should provoke a
+      timeout; the spec doesn't say what you read back, but she found
+      that it would always read back what you wrote and that in practice
+      it worked for discovering EPP ports.
+
+   B) Check that the timeout bit (ECR bit 0) is set when a timeout occurs,
+      and then clear it.  On some ports, just trying a transfer with
+      nothing plugged in will provoke a timeout, while on others ECR bit 7
+      needs to be set first.  And of course there's more than one way to
+      clear it.
+
+      Intel's 82091 data sheet does not mention the timeout bit at all.
+      Maybe it doesn't implement it.
+
+      http://www.lvr.com/jansfaq.htm also mentions "Beware #1: on
+      SMC's chips (& maybe others), a set timeout bit can make the
+      port unusable in any mode, until a hard reset (or clearing the
+      bit)!"  So one does have to make sure to clear the bit.
+
+Would it make sense to switch to doing (A)?  If not, is there some
+test that can be used to detect an 82091 specifically (or are there
+other chipsets that don't have the timeout bit)?  Cc-ing Jan for
+advice (thanks for your work in documenting what makes parallel ports
+tick, Jan!).
+
+Thanks,
+Jonathan
+
+[1] http://thread.gmane.org/gmane.linux.kernel/1191591
