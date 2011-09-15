@@ -1,134 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935055Ab1IOVby (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 17:31:54 -0400
-Received: from mga02.intel.com ([134.134.136.20]:43244 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932126Ab1IOVby (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 17:31:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="48896184"
-From: Andi Kleen <andi@firstfloor.org>
-To: acme@ghostprotocols.net
-Cc: linux-kernel@vger.kernel.org, fweisbec@gmail.com, eranian@google.com,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 2/3] perf: Support setting the disassembler style
-Date: Thu, 15 Sep 2011 14:31:41 -0700
-Message-Id: <1316122302-24306-2-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1316122302-24306-1-git-send-email-andi@firstfloor.org>
-References: <1316122302-24306-1-git-send-email-andi@firstfloor.org>
+	id S935118Ab1IOVck (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 17:32:40 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:38429 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S934922Ab1IOVci (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Sep 2011 17:32:38 -0400
+Date: Thu, 15 Sep 2011 22:31:24 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: Keith Packard <keithp@keithp.com>, Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linaro-dev@lists.linaro.org,
+        "Clark\, Rob" <rob@ti.com>, Archit Taneja <archit@ti.com>
+Subject: Re: Proposal for a low-level Linux display framework
+Message-ID: <20110915223124.7c24e6bb@lxorguk.ukuu.org.uk>
+In-Reply-To: <4E72561C.7060603@gmx.de>
+References: <1316088425.11294.78.camel@lappyti>
+	<yunboul7sx7.fsf@aiko.keithp.com>
+	<1316100594.23214.65.camel@deskari>
+	<yun8vpp7qk7.fsf@aiko.keithp.com>
+	<4E72320B.6020000@gmx.de>
+	<20110915181802.69ef0d56@lxorguk.ukuu.org.uk>
+	<4E723A20.2040002@gmx.de>
+	<20110915200514.74bdcd90@lxorguk.ukuu.org.uk>
+	<4E72561C.7060603@gmx.de>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+> Okay, I see your problem. It's a bit strange you don't have acceleration. I
 
-Add -M option to report/annotate to pass directly to objdump.
-This allows to use -M intel for intel style disassembler syntax,
-which is useful for people who are very used to the Intel syntax.
+The hardware has 3D acceleration but not open so we can't support it.
+There is no 2D acceleration - which seems to be increasingly common.
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- tools/perf/Documentation/perf-annotate.txt |    3 +++
- tools/perf/Documentation/perf-report.txt   |    3 +++
- tools/perf/builtin-annotate.c              |    2 ++
- tools/perf/builtin-report.c                |    2 ++
- tools/perf/util/annotate.c                 |    6 +++++-
- tools/perf/util/annotate.h                 |    2 ++
- 6 files changed, 17 insertions(+), 1 deletions(-)
+At some point I'll add hardware scrolling however by using the GTT to
+implemnent scroll wrapping.
 
-diff --git a/tools/perf/Documentation/perf-annotate.txt b/tools/perf/Documentation/perf-annotate.txt
-index 85c5f02..4a42c31 100644
---- a/tools/perf/Documentation/perf-annotate.txt
-+++ b/tools/perf/Documentation/perf-annotate.txt
-@@ -72,6 +72,9 @@ OPTIONS
- 	CPUs are specified with -: 0-2. Default is to report samples on all
- 	CPUs.
- 
-+-M::
-+--disassembler-style=:: Set disassembler style for objdump.
-+
- SEE ALSO
- --------
- linkperf:perf-record[1], linkperf:perf-report[1]
-diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
-index 04253c0..0407c8c 100644
---- a/tools/perf/Documentation/perf-report.txt
-+++ b/tools/perf/Documentation/perf-report.txt
-@@ -134,6 +134,9 @@ OPTIONS
- 	CPUs are specified with -: 0-2. Default is to report samples on all
- 	CPUs.
- 
-+-m::
-+--disassembler-style=:: Set disassembler style for objdump.
-+
- SEE ALSO
- --------
- linkperf:perf-stat[1]
-diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-index 555aefd..5b0a0ac 100644
---- a/tools/perf/builtin-annotate.c
-+++ b/tools/perf/builtin-annotate.c
-@@ -267,6 +267,8 @@ static const struct option options[] = {
- 	OPT_BOOLEAN('P', "full-paths", &full_paths,
- 		    "Don't shorten the displayed pathnames"),
- 	OPT_STRING('c', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
-+	OPT_STRING('M', "disassembler-style", &disassembler_style, "disassembler style",
-+		   "Specify disassembler style (e.g. -M intel for intel syntax)"),
- 	OPT_END()
- };
- 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index d7ff277..a0673ee 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -487,6 +487,8 @@ static const struct option options[] = {
- 	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
- 		    "Look for files with symbols relative to this directory"),
- 	OPT_STRING('c', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
-+	OPT_STRING('M', "disassembler-style", &disassembler_style, "disassembler style",
-+		   "Specify disassembler style (e.g. -M intel for intel syntax)"),
- 	OPT_END()
- };
- 
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index e01af2b..6495966 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -16,6 +16,8 @@
- #include "annotate.h"
- #include <pthread.h>
- 
-+const char 	*disassembler_style;
-+
- int symbol__annotate_init(struct map *map __used, struct symbol *sym)
- {
- 	struct annotation *notes = symbol__annotation(sym);
-@@ -323,8 +325,10 @@ fallback:
- 		 dso, dso->long_name, sym, sym->name);
- 
- 	snprintf(command, sizeof(command),
--		 "objdump --start-address=0x%016" PRIx64
-+		 "objdump %s%s --start-address=0x%016" PRIx64
- 		 " --stop-address=0x%016" PRIx64 " -dS -C %s|grep -v %s|expand",
-+		 disassembler_style ? "-M " : "",
-+		 disassembler_style ? disassembler_style : "",
- 		 map__rip_2objdump(map, sym->start),
- 		 map__rip_2objdump(map, sym->end),
- 		 symfs_filename, filename);
-diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
-index c2c2868..6ede128 100644
---- a/tools/perf/util/annotate.h
-+++ b/tools/perf/util/annotate.h
-@@ -100,4 +100,6 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
- 			 int refresh);
- #endif
- 
-+extern const char	*disassembler_style;
-+
- #endif	/* __PERF_ANNOTATE_H */
--- 
-1.7.4.4
+> sound like a big problem to me, but pretty inefficient, so probably copying the
+> existing ones and adjusting it to your needs would be preferred (just like the
+> sys* implementations exist).
 
+I did have a look at the current ones but fixing them up given scan lines
+can span page boundaries looked pretty horrible so I deferred it until I
+feel inspired.
+
+Alan
