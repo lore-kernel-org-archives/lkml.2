@@ -1,52 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933905Ab1IOOsD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 10:48:03 -0400
-Received: from na3sys009aog126.obsmtp.com ([74.125.149.155]:48026 "EHLO
-	na3sys009aog126.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933801Ab1IOOsB (ORCPT
+	id S933919Ab1IOOsQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 10:48:16 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:44795
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933801Ab1IOOsM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 10:48:01 -0400
-Date: Thu, 15 Sep 2011 09:47:55 -0500
-From: Shawn Bohrer <sbohrer@rgmadvisors.com>
-To: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: xfs@oss.sgi.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Stalls during writeback for mmaped I/O on XFS in 3.0
-Message-ID: <20110915144755.GB2235@BohrerMBP.rgmadvisors.com>
+	Thu, 15 Sep 2011 10:48:12 -0400
+Date: Thu, 15 Sep 2011 10:48:10 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: torvalds@linux-foundation.org
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/2] hfsplus regression fixes
+Message-ID: <20110915144810.GA18876@infradead.org>
+References: <20110722152722.GA11946@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20110722152722.GA11946@infradead.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've got a workload that is latency sensitive that writes data to a
-memory mapped file on XFS.  With the 3.0 kernel I'm seeing stalls of
-up to 100ms that occur during writeback that we did not see with older
-kernels.  I've traced the stalls and it looks like they are blocking
-on wait_on_page_writeback() introduced in
-d76ee18a8551e33ad7dbd55cac38bc7b094f3abb "fs: block_page_mkwrite
-should wait for writeback to finish"
+Hi Linus,
 
-Reading the commit description doesn't really explain to me why this
-change was needed.  Can someone explain what "This is needed to
-stabilize pages during writeback for those two filesystems." means in
-the context of that commit?  Is this a problem for older kernels as
-well?  Should this have been backported to the stable kernels? What
-are the downsides of reverting this commit?
+two small patches to fix regressions introduced in the Linux 3.1 cycle.
 
-Assuming this change is required are there any alternatives solutions
-to avoid these stalls with mmaped I/O on XFS?
-
-Thanks,
-Shawn
-
-
----------------------------------------------------------------
-This email, along with any attachments, is confidential. If you 
-believe you received this message in error, please contact the 
-sender immediately and delete all copies of the message.  
-Thank you.
-
+Given that it's just two patches I have't bothered setting up an
+alternate git tree for now.
