@@ -1,228 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935085Ab1IOVeu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 17:34:50 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:23800 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935058Ab1IOVes (ORCPT
+	id S935146Ab1IOVgp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 17:36:45 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:52964 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935035Ab1IOVgn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 17:34:48 -0400
-Date: Thu, 15 Sep 2011 14:33:25 -0700
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
-        hughd@google.com, ngupta@vflare.org, konrad.wilk@oracle.com,
-        JBeulich@novell.com, kurt.hackel@oracle.com, npiggin@kernel.dk,
-        akpm@linux-foundation.org, riel@redhat.com, hannes@cmpxchg.org,
-        matthew@wil.cx, chris.mason@oracle.com, dan.magenheimer@oracle.com,
-        sjenning@linux.vnet.ibm.com, kamezawa.hiroyu@jp.fujitsu.com,
-        jackdachef@gmail.com, cyclonusj@gmail.com, levinsasha928@gmail.com
-Subject: [PATCH V10 1/6] mm: frontswap: add frontswap header file
-Message-ID: <20110915213325.GA26333@ca-server1.us.oracle.com>
+	Thu, 15 Sep 2011 17:36:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.16 (2007-06-11)
-X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
-X-CT-RefId: str=0001.0A090206.4E726F33.00D3,ss=1,re=0.000,fgs=0
+In-Reply-To: <1316105551-17505-2-git-send-email-marc.zyngier@arm.com>
+References: <1316105551-17505-1-git-send-email-marc.zyngier@arm.com> <1316105551-17505-2-git-send-email-marc.zyngier@arm.com>
+From: =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirqus@gmail.com>
+Date: Thu, 15 Sep 2011 23:36:23 +0200
+Message-ID: <CAHXqBFKOQNOePc00yuzfotrYP6wT0ue_CJfv7rKdC+gEkomunA@mail.gmail.com>
+Subject: Re: [RFC PATCH 1/3] genirq: add support for per-cpu dev_id interrupts
+To: Marc Zyngier <marc.zyngier@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-Subject: [PATCH V10 1/6] mm: frontswap: add frontswap header file
+2011/9/15 Marc Zyngier <marc.zyngier@arm.com>:
+[...]
+> diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+> index a103732..f9b7fa3 100644
+> --- a/include/linux/interrupt.h
+> +++ b/include/linux/interrupt.h
+> @@ -95,6 +95,7 @@ typedef irqreturn_t (*irq_handler_t)(int, void *);
+>  * @flags:     flags (see IRQF_* above)
+>  * @name:      name of the device
+>  * @dev_id:    cookie to identify the device
+> + * @percpu_dev_id:     cookie to identify the device
+>  * @next:      pointer to the next irqaction for shared interrupts
+>  * @irq:       interrupt number
+>  * @dir:       pointer to the proc/irq/NN/name entry
+> @@ -104,17 +105,20 @@ typedef irqreturn_t (*irq_handler_t)(int, void *);
+>  * @thread_mask:       bitmask for keeping track of @thread activity
+>  */
+>  struct irqaction {
+[...]
+> +       void                    *dev_id;
+> +#ifdef CONFIG_IRQ_PERCPU_DEVID
+> +       void __percpu           *percpu_dev_id;
+> +#endif
 
-(Note: Following three paragraphs repeated for git commit log.)
+Those two can share the memory (in a anonymous union), if I read the
+idea correctly.
 
-Frontswap is the alter ego of cleancache, the "yang" to cleancache's
-"yin"... and more precisely frontswap is the provider of anonymous
-pages to transcendent memory to nicely complement cleancache's providing
-of clean pagecache pages to transcendent memory.  For optimal use
-of transcendent memory, both are necessary... because a kernel
-under memory pressure first reclaims clean pagecache pages and,
-when under more memory pressure, starts swapping anonymous pages.
-
-Frontswap and cleancache (which was merged at 3.0) are the only
-necessary changes to the core kernel for transcendent memory; all
-other supporting code is implemented as drivers.  See "Transcendent
-memory in a nutshell" for a current (Aug 2011) and detailed overview of
-frontswap and related kernel parts: https://lwn.net/Articles/454795/
-
-Frontswap code was first posted publicly in January 2009 and on LKML
-in May 2009, and has remained very stable for over two years now.
-It is barely invasive, touching only the swap subsystem and adds only
-about 100 lines of code to existing swap subsystem code files.
-It has improved syntactically substantially between V1 and this posting
-of V10, thanks to the review of a few kernel developers, and has adapted
-easily to at least one major swap subsystem change.  As of 3.1, there are
-two in-tree users of frontswap patiently waiting for this patchset and for
-CONFIG_FRONTSWAP to be enabled: zcache (staging driver merged at
-2.6.39) and Xen tmem (merged at 3.0 and 3.1).  V5 of the frontswap
-patchset has been in linux-next since next-110603 (and this V10
-will be there shortly).  Earlier versions of frontswap already appear
-in some leading-edge distros.
-
-This first patch of six in this frontswap series provides the header
-file for the core code for frontswap that interfaces between the hooks
-in the swap subsystem and a frontswap backend via frontswap_ops.
-(Note to earlier reviewers:  This patchset has been reorganized due to
-feedback from Kame Hiroyuki and Andrew Morton. This patch contains part
-of patch 3of4 from the previous series.)
-
-New file added: include/linux/frontswap.h
-
-[v10: no change]
-[v9: akpm@linux-foundation.org: change "flush" to "invalidate", part 1]
-[v8: rebase to 3.0-rc4]
-[v7: rebase to 3.0-rc3]
-[v7: JBeulich@novell.com: new static inlines resolve to no-ops if not config'd]
-[v7: JBeulich@novell.com: avoid redundant shifts/divides for *_bit lib calls]
-[v6: rebase to 3.1-rc1]
-[v5: no change from v4]
-[v4: rebase to 2.6.39]
-Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-Reviewed-by: Konrad Wilk <konrad.wilk@oracle.com>
-Reviewed-by: Andrew Morton <akpm@linux-foundation.org>
-Acked-by: Jan Beulich <JBeulich@novell.com>
-Acked-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Nitin Gupta <ngupta@vflare.org>
-Cc: Matthew Wilcox <matthew@wil.cx>
-Cc: Chris Mason <chris.mason@oracle.com>
-Cc: Rik Riel <riel@redhat.com>
-
---- linux/include/linux/frontswap.h	1969-12-31 17:00:00.000000000 -0700
-+++ frontswap-v10/include/linux/frontswap.h	2011-09-15 11:40:53.585807413 -0600
-@@ -0,0 +1,131 @@
-+#ifndef _LINUX_FRONTSWAP_H
-+#define _LINUX_FRONTSWAP_H
-+
-+#include <linux/swap.h>
-+#include <linux/mm.h>
-+#include <linux/bitops.h>
-+
-+struct frontswap_ops {
-+	void (*init)(unsigned);
-+	int (*put_page)(unsigned, pgoff_t, struct page *);
-+	int (*get_page)(unsigned, pgoff_t, struct page *);
-+	/*
-+	 * NOTE: per akpm, flush_page and flush_area will be renamed to
-+	 * invalidate_page and invalidate_area in a later commit in which
-+	 * all dependencies (i.e. Xen, zcache) will be renamed simultaneously
-+	 */
-+	void (*flush_page)(unsigned, pgoff_t);
-+	void (*flush_area)(unsigned);
-+};
-+
-+extern int frontswap_enabled;
-+extern struct frontswap_ops
-+	frontswap_register_ops(struct frontswap_ops *ops);
-+extern void frontswap_shrink(unsigned long);
-+extern unsigned long frontswap_curr_pages(void);
-+
-+extern void __frontswap_init(unsigned type);
-+extern int __frontswap_put_page(struct page *page);
-+extern int __frontswap_get_page(struct page *page);
-+extern void __frontswap_invalidate_page(unsigned, pgoff_t);
-+extern void __frontswap_invalidate_area(unsigned);
-+
-+#ifdef CONFIG_FRONTSWAP
-+
-+static inline int frontswap_test(struct swap_info_struct *sis, pgoff_t offset)
-+{
-+	int ret = 0;
-+
-+	if (frontswap_enabled && sis->frontswap_map)
-+		ret = test_bit(offset, sis->frontswap_map);
-+	return ret;
-+}
-+
-+static inline void frontswap_set(struct swap_info_struct *sis, pgoff_t offset)
-+{
-+	if (frontswap_enabled && sis->frontswap_map)
-+		set_bit(offset, sis->frontswap_map);
-+}
-+
-+static inline void frontswap_clear(struct swap_info_struct *sis, pgoff_t offset)
-+{
-+	if (frontswap_enabled && sis->frontswap_map)
-+		clear_bit(offset, sis->frontswap_map);
-+}
-+
-+static inline void frontswap_map_set(struct swap_info_struct *p,
-+				     unsigned long *map)
-+{
-+	p->frontswap_map = map;
-+}
-+
-+static inline unsigned long *frontswap_map_get(struct swap_info_struct *p)
-+{
-+	return p->frontswap_map;
-+}
-+#else
-+/* all inline routines become no-ops and all externs are ignored */
-+
-+#define frontswap_enabled (0)
-+
-+static inline int frontswap_test(struct swap_info_struct *sis, pgoff_t offset)
-+{
-+	return 0;
-+}
-+
-+static inline void frontswap_set(struct swap_info_struct *sis, pgoff_t offset)
-+{
-+}
-+
-+static inline void frontswap_clear(struct swap_info_struct *sis, pgoff_t offset)
-+{
-+}
-+
-+static inline void frontswap_map_set(struct swap_info_struct *p,
-+				     unsigned long *map)
-+{
-+}
-+
-+static inline unsigned long *frontswap_map_get(struct swap_info_struct *p)
-+{
-+	return NULL;
-+}
-+#endif
-+
-+static inline int frontswap_put_page(struct page *page)
-+{
-+	int ret = -1;
-+
-+	if (frontswap_enabled)
-+		ret = __frontswap_put_page(page);
-+	return ret;
-+}
-+
-+static inline int frontswap_get_page(struct page *page)
-+{
-+	int ret = -1;
-+
-+	if (frontswap_enabled)
-+		ret = __frontswap_get_page(page);
-+	return ret;
-+}
-+
-+static inline void frontswap_invalidate_page(unsigned type, pgoff_t offset)
-+{
-+	if (frontswap_enabled)
-+		__frontswap_invalidate_page(type, offset);
-+}
-+
-+static inline void frontswap_invalidate_area(unsigned type)
-+{
-+	if (frontswap_enabled)
-+		__frontswap_invalidate_area(type);
-+}
-+
-+static inline void frontswap_init(unsigned type)
-+{
-+	if (frontswap_enabled)
-+		__frontswap_init(type);
-+}
-+
-+#endif /* _LINUX_FRONTSWAP_H */
+Best Regards,
+Michał Mirosław
