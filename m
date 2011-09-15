@@ -1,105 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934514Ab1IOTZo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 15:25:44 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:43875 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934209Ab1IOTZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 15:25:43 -0400
-Message-ID: <4E725109.3010609@linux.vnet.ibm.com>
-Date: Thu, 15 Sep 2011 14:24:57 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
-MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: Nitin Gupta <ngupta@vflare.org>, Greg KH <greg@kroah.com>, gregkh@suse.de,
-        devel@driverdev.osuosl.org, cascardo@holoscopio.com,
-        linux-kernel@vger.kernel.org, dave@linux.vnet.ibm.com,
-        linux-mm@kvack.org, brking@linux.vnet.ibm.com, rcj@linux.vnet.ibm.com
-Subject: Re: [PATCH v2 0/3] staging: zcache: xcfmalloc support
-References: <1315404547-20075-1-git-send-email-sjenning@linux.vnet.ibm.com> <20110909203447.GB19127@kroah.com> <4E6ACE5B.9040401@vflare.org> <4E6E18C6.8080900@linux.vnet.ibm.com> <4E6EB802.4070109@vflare.org> <4E6F7DA7.9000706@linux.vnet.ibm.com> <4E6FC8A1.8070902@vflare.org 4E72284B.2040907@linux.vnet.ibm.com> <075c4e4c-a22d-47d1-ae98-31839df6e722@default>
-In-Reply-To: <075c4e4c-a22d-47d1-ae98-31839df6e722@default>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S934518Ab1IOT2u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 15:28:50 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:37922 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S934209Ab1IOT2s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Sep 2011 15:28:48 -0400
+Date: Thu, 15 Sep 2011 20:28:00 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: Alex Deucher <alexdeucher@gmail.com>, Keith Packard <keithp@keithp.com>,
+        linux-fbdev@vger.kernel.org, linaro-dev@lists.linaro.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Archit Taneja <archit@ti.com>, "Clark, Rob" <rob@ti.com>
+Subject: Re: Proposal for a low-level Linux display framework
+Message-ID: <20110915202800.6320826a@lxorguk.ukuu.org.uk>
+In-Reply-To: <4E724F93.1050203@gmx.de>
+References: <1316088425.11294.78.camel@lappyti>
+	<yunboul7sx7.fsf@aiko.keithp.com>
+	<1316100594.23214.65.camel@deskari>
+	<yun8vpp7qk7.fsf@aiko.keithp.com>
+	<4E72320B.6020000@gmx.de>
+	<CADnq5_NnzLtJmSzOgyppnBtv96DRTJ71u6ZSrs56KJ-F5CC-mw@mail.gmail.com>
+	<4E724659.5080709@gmx.de>
+	<20110915195804.4e6d965b@lxorguk.ukuu.org.uk>
+	<4E724F93.1050203@gmx.de>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-x-cbid: 11091519-6078-0000-0000-000000C973F0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/15/2011 12:29 PM, Dan Magenheimer wrote:
->> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
->> Subject: Re: [PATCH v2 0/3] staging: zcache: xcfmalloc support
->>
->> Hey Nitin,
->>
->> So this is how I see things...
->>
->> Right now xvmalloc is broken for zcache's application because
->> of its huge fragmentation for half the valid allocation sizes
->> (> PAGE_SIZE/2).
-> 
-> Um, I have to disagree here. It is broken for zcache for
-> SOME set of workloads/data, where the AVERAGE compression
-> is poor (> PAGE_SIZE/2).
-> 
+> As you have DRM now and as I'm not interested in wayland I won't discuss this,
+> but I guess it might be a good start for Geert's question what would be needed
+> to use it on dumb framebuffers.
 
-True.
+GMA500 is basically a 2D or dumb frame buffer setup but with a lot of
+rather complicated output and memory management required due to the
+hardware. With the latest changes to GEM (private objects) it's basically
+trivial to use the frame buffer management interfaces.
 
-But are we not in agreement that xvmalloc needs to be replaced
-with an allocator that doesn't have this issue? I thought we all
-agreed on that...
+> Yes, if you limit DRM to the functionality of the fb API I guess you could reach
+> the same stability level. But where can I do this? Where is a option to forbid
+> all acceleration or at least limit to the acceleration that can be done without
+> any risk?
 
->> My xcfmalloc patches are _a_ solution that is ready now.  Sure,
->> it doesn't so compaction yet, and it has some metadata overhead.
->> So it's not "ideal" (if there is such I thing). But it does fix
->> the brokenness of xvmalloc for zcache's application.
-> 
-> But at what cost?  As Dave Hansen pointed out, we still do
-> not have a comprehensive worst-case performance analysis for
-> xcfmalloc.  Without that (and without an analysis over a very
-> large set of workloads), it is difficult to characterize
-> one as "better" than the other.
-> 
+A driver can provide such module options as it wants.
 
-I'm not sure what you mean by "comprehensive worst-case performance
-analysis".  If you're talking about theoretical worst-case runtimes
-(i.e. O(whatever)) then apparently we are going to have to
-talk to an authority on algorithm analysis because we can't agree
-how to determine that.  However, it isn't difficult to look at the
-code and (within your own understanding) see what it is.
+> That's a really difficult question. Determining the users is difficult and there
+> are people that use their hardware very long, for example we are about to get a
+> new driver for i740. For the framebuffer infrastructure I guess you have to at
+> least wait for my death.
 
-I'd be interested so see what Nitin thinks is the worst-case runtime
-bound.
+I doubt it'll be that long - but you are right it will take time and
+there isn't really any need to push or force it. These things take care
+of themselves and in time nobody will care about the old fb stuff, either
+because DRM covers it all or equally possibly because it doesn't support
+3D holographic projection 8)
 
-How would you suggest that I measure xcfmalloc performance on a "very
-large set of workloads".  I guess another form of that question is: How
-did xvmalloc do this?
-
->> So I see two ways going forward:
->>
->> 1) We review and integrate xcfmalloc now.  Then, when you are
->> done with your allocator, we can run them side by side and see
->> which is better by numbers.  If yours is better, you'll get no
->> argument from me and we can replace xcfmalloc with yours.
->>
->> 2) We can agree on a date (sooner rather than later) by which your
->> allocator will be completed.  At that time we can compare them and
->> integrate the best one by the numbers.
->>
->> Which would you like to do?
-> 
-> Seth, I am still not clear why it is not possible to support
-> either allocation algorithm, selectable at runtime.  Or even
-> dynamically... use xvmalloc to store well-compressible pages
-> and xcfmalloc for poorly-compressible pages.  I understand
-> it might require some additional coding, perhaps even an
-> ugly hack or two, but it seems possible.
-
-But why do an ugly hack if we can just use a single allocator
-that has the best overall performance for the allocation range
-the zcache requires.  Why make it more complicated that it
-needs to be?
-
-> 
-> Dan
-
+Alan
