@@ -1,152 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934452Ab1IOSuk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 14:50:40 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:29154 "EHLO mx2.netapp.com"
+	id S934443Ab1IOSzF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 14:55:05 -0400
+Received: from imr4.ericy.com ([198.24.6.9]:42344 "EHLO imr4.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934209Ab1IOSui convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 14:50:38 -0400
-X-IronPort-AV: E=Sophos;i="4.68,388,1312182000"; 
-   d="scan'208";a="582240844"
-Subject: [GIT PULL] Please pull bugfixes for the NFS client
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 15 Sep 2011 14:50:17 -0400
-Organization: NetApp Inc
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Message-ID: <1316112617.5271.8.camel@lade.trondhjem.org.localdomain>
-Mime-Version: 1.0
-X-OriginalArrivalTime: 15 Sep 2011 18:50:17.0735 (UTC) FILETIME=[4FE3A170:01CC73D8]
+	id S934209Ab1IOSzE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Sep 2011 14:55:04 -0400
+Subject: [GIT PULL] hwmon fixes for 3.1-rc7
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+Reply-To: guenter.roeck@ericsson.com
+To: torvalds@linux-foundation.org
+CC: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="=-pwFKYr+h5L7o4O7Eq0iT"
+Organization: Ericsson
+Date: Thu, 15 Sep 2011 11:53:40 -0700
+Message-ID: <1316112821.2456.47.camel@groeck-laptop>
+MIME-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--=-pwFKYr+h5L7o4O7Eq0iT
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
 Hi Linus,
 
-Please pull from the "bugfixes" branch of the repository at
+Please pull hwmon subsystem fixes for Linux 3.1-rc7 from:
 
-   git pull git://git.linux-nfs.org/projects/trondmy/linux-nfs.git bugfixes
+    git://github.com/groeck/linux.git hwmon-for-linus
 
-This will update the following files through the appended changesets.
+Thanks,
+Guenter Roeck
 
-  Cheers,
-    Trond
+------
 
-----
- fs/nfs/nfs4_fs.h    |    8 +++++---
- fs/nfs/nfs4proc.c   |   20 ++++++++++++++------
- fs/nfs/nfs4renewd.c |   12 +++++++++---
- fs/nfs/nfs4state.c  |    6 ++++++
- fs/nfs/super.c      |   23 ++++++++++++++++++++---
- fs/nfs/write.c      |    2 +-
- 6 files changed, 55 insertions(+), 16 deletions(-)
+The following changes since commit
+b6fd41e29dea9c6753b1843a77e50433e6123bcb:
 
-commit fb2088ccc139ffbf1cf359216883712dab4ae43d
-Author: Sachin Prabhu <sprabhu@redhat.com>
-Date:   Mon Aug 1 12:10:12 2011 +0100
+  Linux 3.1-rc6 (2011-09-12 14:02:02 -0700)
 
-    nfs: Do not allow multiple mounts on same mountpoint when using -o noac
-    
-    Do not allow multiple mounts on same mountpoint when using -o noac
-    
-    When you normally attempt to mount a share twice on the same mountpoint,
-    a check in do_add_mount causes it to return an error
-    
-    # mount localhost:/nfsv3 /mnt
-    # mount localhost:/nfsv3 /mnt
-    mount.nfs: /mnt is already mounted or busy
-    
-    However when using the option 'noac', the user is able to mount the same
-    share on the same mountpoint multiple times. This happens because a
-    share mounted with the noac option is automatically assigned the 'sync'
-    flag MS_SYNCHRONOUS in nfs_initialise_sb(). This flag is set after the
-    check for already existing superblocks is done in sget(). The check for
-    the mount flags in nfs_compare_mount_options() does not take into
-    account the 'sync' flag applied later on in the code path. This means
-    that when using 'noac', a new superblock structure is assigned for every
-    new mount of the same share and multiple shares on the same mountpoint
-    are allowed.
-    
-    ie.
-    # mount -onoac localhost:/nfsv3 /mnt
-    can be run multiple times.
-    
-    The patch checks for noac and assigns the sync flag before sget() is
-    called to obtain an already existing superblock structure.
-    
-    Signed-off-by: Sachin Prabhu <sprabhu@redhat.com>
-    Reviewed-by: Jeff Layton <jlayton@redhat.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+are available in the git repository at:
+  git://github.com/groeck/linux.git hwmon-for-linus
 
-commit f13c3620a4d1123dbf032f93f350b856ef292ced
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Mon Sep 12 11:47:53 2011 -0400
+Guenter Roeck (1):
+      hwmon: (pmbus) Fix low limit temperature alarms
 
-    NFS: Fix a typo in nfs_flush_multi
-    
-    Fix a typo which causes an Oops in the RPC layer, when using wsize < 4k.
-    
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-    Tested-by: Sricharan R <r.sricharan@ti.com>
+Jean Delvare (1):
+      hwmon: (coretemp) Initialize tmin
 
-commit 042b60beb410caf68f576d63d6849d0f0a545eb0
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Wed Aug 24 15:07:37 2011 -0400
-
-    NFSv4: renewd needs to be able to handle the NFS4ERR_CB_PATH_DOWN error
-    
-    The NFSv4 spec does not specify that the server must repeat that error,
-    so in order to avoid having the delegations revoked, we should handle
-    it immediately.
-    
-    Also note that NFS4ERR_CB_PATH_DOWN does in fact renew the lease...
-    
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit 2f60ea6b8ceda61ae08bef71a652eac36ec193b3
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Wed Aug 24 15:07:37 2011 -0400
-
-    NFSv4: The NFSv4.0 client must send RENEW calls if it holds a delegation
-    
-    RFC3530 states that if the client holds a delegation, then it is obliged
-    to continue to send RENEW calls once every lease period in order to allow
-    the server to return NFS4ERR_CB_PATH_DOWN if the callback path is
-    unreachable.
-    
-    This is not required for NFSv4.1, since the server can at any time set
-    the SEQ4_STATUS_CB_PATH_DOWN_SESSION in any SEQUENCE operation.
-    
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit 8534d4ec055d854be6c94e8e5654fa87678ea5f7
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Wed Aug 24 15:07:37 2011 -0400
-
-    NFSv4: nfs4_proc_renew should be declared static
-    
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit b569ad34926defcff998f214afeb260331165985
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Wed Aug 24 15:07:35 2011 -0400
-
-    NFSv4: nfs4_proc_async_renew should use a GFP_NOFS allocation
-    
-    We shouldn't allow the renew daemon to do direct reclaim on the NFS
-    partition.
-    
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+ drivers/hwmon/coretemp.c         |    7 ++++++-
+ drivers/hwmon/pmbus/pmbus_core.c |    9 ++++++++-
+ 2 files changed, 14 insertions(+), 2 deletions(-)
 
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
+--=-pwFKYr+h5L7o4O7Eq0iT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQEcBAABAgAGBQJOckmxAAoJEANmWzN1g3l3SrQH/ia+6I5VzOm1obACuyfXlaqA
+87M1jJePpM50BtVQtcUMUKPn2ZCuTaHCOB0VmV+6voVMc5ColL3UJSHgsl+mY+Hy
+hJkeWUqq5EvjM/VUKM1IJcrBzWIzHm3B0tlSiDNcgfEgAJY3tVon8FwhATU9KSgC
+d8OoowmFgdKatx1Y/LyvRwZ9ehfTpuieoI6nPJusY8w6MO3PLq43lLezItScVbT0
+NJkcRG+uj/zON9LwQRHheI2L46gMWtg4ZtVKY/jkQJyEBss7YsTQbL1io1y6DKtq
+8UE6zNtYBHeyxFH3I8EJrReE0Uxbb4nJtemrCLAKsAD7Qtqd4lrH9i5CDZFtotE=
+=IPdo
+-----END PGP SIGNATURE-----
+
+--=-pwFKYr+h5L7o4O7Eq0iT--
