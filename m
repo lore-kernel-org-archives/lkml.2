@@ -1,140 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178Ab1IODeJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 23:34:09 -0400
-Received: from mail-vw0-f45.google.com ([209.85.212.45]:56437 "EHLO
-	mail-vw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754026Ab1IODeI (ORCPT
+	id S1754233Ab1IODfh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 23:35:37 -0400
+Received: from usindpps06.hds.com ([207.126.252.19]:58363 "EHLO
+	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754086Ab1IODfg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 23:34:08 -0400
-X-Greylist: delayed 397 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Sep 2011 23:34:08 EDT
+	Wed, 14 Sep 2011 23:35:36 -0400
+From: Satoru Moriya <satoru.moriya@hds.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>
+CC: Randy Dunlap <rdunlap@xenotime.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "lwoodman@redhat.com" <lwoodman@redhat.com>,
+        Seiji Aguchi <saguchi@redhat.com>,
+        "hughd@google.com" <hughd@google.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
+Date: Wed, 14 Sep 2011 23:33:34 -0400
+Subject: Re: [PATCH -v2 -mm] add extra free kbytes tunable
+Thread-Topic: [PATCH -v2 -mm] add extra free kbytes tunable
+Thread-Index: Acxo8lfuHB0gMHZ2TYComoolH0i7LQAmvWxwAnK8cBg=
+Message-ID: <65795E11DBF1E645A09CEC7EAEE94B9CAFE00221@USINDEVS02.corp.hds.com>
+References: <20110901105208.3849a8ff@annuminas.surriel.com>
+	<20110901100650.6d884589.rdunlap@xenotime.net>
+	<20110901152650.7a63cb8b@annuminas.surriel.com>
+ <20110901145819.4031ef7c.akpm@linux-foundation.org>,<E1FA588BC672D846BDBB452FCA1E308C2389B4@USINDEVS02.corp.hds.com>
+In-Reply-To: <E1FA588BC672D846BDBB452FCA1E308C2389B4@USINDEVS02.corp.hds.com>
+Accept-Language: ja-JP, en-US
+Content-Language: ja-JP
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ja-JP, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20110914160013.GH4110@mails.so.argh.org>
-References: <1315997270-14332-1-git-send-email-keguang.zhang@gmail.com>
-	<20110914113134.GS15003@mails.so.argh.org>
-	<CAJhJPsUW+4fpJUSR07LBO=FDCyAw-KHKaZCt8G+sHCJtjts0oA@mail.gmail.com>
-	<20110914160013.GH4110@mails.so.argh.org>
-Date: Thu, 15 Sep 2011 11:27:30 +0800
-Message-ID: <CAJhJPsUXvGJBB-YiLB53VSf8GRXHjkrPRf3F3YE5ekOz-OVqgQ@mail.gmail.com>
-Subject: Re: [PATCH] MIPS: Add basic support for Loongson1B
-From: Kelvin Cheung <keguang.zhang@gmail.com>
-To: Andreas Barth <aba@not.so.argh.org>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        ralf@linux-mips.org, wuzhangjin@gmail.com, r0bertz@gentoo.org,
-        chenj@lemote.com
-Content-Type: text/plain; charset=ISO-8859-1
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=5 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
+ definitions=main-1109140353
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/9/15, Andreas Barth <aba@not.so.argh.org>:
-> * Kelvin Cheung (keguang.zhang@gmail.com) [110914 15:54]:
->> 2011/9/14, Andreas Barth <aba@not.so.argh.org>:
->> > * keguang.zhang@gmail.com (keguang.zhang@gmail.com) [110914 12:49]:
->> >> This patch adds basic support for Loongson1B
->> >> including serial, timer and interrupt handler.
->> >
->> > I have a couple of questions. One of them is if it shouldn't be
->> > possible to add this as part of the loongson-platform, and if we
->> > really need a new platform. Each platform comes with some maintainence
->> > costs which we should try to avoid. Making things more generic is
->> > usually the right answer.
->>
->> I've tried to add Loongson1 to loongson-platform (acturally loongson2
->> platform), but there is essential difference between them. The
->> loongson2 platform is something like the PC's architecture, which has
->> north and south bridge, while the loongson1 is SoC.
->> So, I think it's better that adding loongson1 as a new platform.
->
-> I'm not convinced, but that's also not necessary.
+On 09/02/2011 12:31 PM, Satoru Moriya wrote:
+> On 09/01/2011 05:58 PM, Andrew Morton wrote:
+>> On Thu, 1 Sep 2011 15:26:50 -0400
+>> Rik van Riel <riel@redhat.com> wrote:
+> Anyway, now I'm testing this patch and will report a test result later.
 
-As I mentioned before, Loongson1 is a 32-bit SoC with many built-in
-controllers, which implements the MIPS32 release 2 instruction set,
-while Loongson2 is a 64-bit CPU, which only implements the MIPSIII
-instruction set.
-The Loongson1 does not have a PCI controller. And its interrupt and
-gpio are different from Loongson2 ...
+Sorry for late reply. Here is my test result.
 
-They are totally different thing.
-So, it is hard to reuse the code of loongson-platform.
+I ran some sample workloads and measure memory allocation latency
+(latency of __alloc_page_nodemask()).
+The test is like following:
 
->> >> --- /dev/null
->> >> +++ b/arch/mips/loongson1/common/clock.c
->> >> @@ -0,0 +1,164 @@
->> >> +/*
->> >> + * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
->> >
->> > Is this file not derived from any of the clock drivers we already have
->> > in Linux?
->> >
->> > Doesn't any of the existing clock drivers work?
->> >
->> > Is this clock part of the CPU? Otherwise it would make sense to move
->> > it out to the generic drivers section.
->
-> What's the answer to this questions?
+ - CPU: 1 socket, 4 core
+ - Memory: 4GB
 
-I just did what other platform did, such as ar7, ath79, bcm63xx and
-jz4740. Could you have a look at their clock.c/clk.c?
+ - Background load:
+   $ dd if=/dev/zero of=/tmp/tmp1
+   $ dd if=/dev/zero of=/tmp/tmp2
+   $ dd if=/dev/zero of=/tmp/tmp3
 
->> >> --- /dev/null
->> >> +++ b/arch/mips/loongson1/common/irq.c
->> >> @@ -0,0 +1,132 @@
->> >> +/*
->> >> + * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
->> >> + *
->> >> + * Based on Copyright (C) 2009 Lemote Inc.
->> >
->> > same question here. Also, do you have permission from Lemote to put
->> > the code within GPLv2?
->>
->> These code are based on the loongson platform, which is part of the
->> kernel code already.
->
-> In that case, it would make sense to say "derived from arch/mips/..."
-> so that other people can understand where it comes from.
+ - Main load:
+   $ mapped-file-stream 1 $((1024 * 1024 * 640))  --(*)
 
-Thanks! I will pay attention to this.
+ (*) This is made by Johannes Weiner
+     https://lkml.org/lkml/2010/8/30/226
 
->> >> diff --git a/arch/mips/loongson1/common/prom.c
->> >> b/arch/mips/loongson1/common/prom.c
->> >> new file mode 100644
->> >> index 0000000..84a25f6
->> >> --- /dev/null
->> >> +++ b/arch/mips/loongson1/common/prom.c
->> >
->> > Can't we re-use the prom-routines from the loongson platform here? Or
->> > even better, factor them out somewhere else in the mips or even
->> > generic linux tree?
->>
->> Same reason as question 1.
->
-> Not really. Please try to de-duplicate code as far as possible, and to
-> generalize it's usage. Having some code of the form
+     It allocates/access 640MByte memory at a burst.
 
-I did not just duplicate code, modified exactly. The prom-routines of
-loongson platform does not fit loongson1.For instance, the
-"cpu_clock_freq" parameter is not needed. The cpu freq. could be get
-from the PLL register directly. Moreover, the routines does not
-include the parameter "ethaddr", which is useful for embedded system.
+The result is follwoing:
 
-> +       while (((readb(PORT(UART_BASE, UART_LSR)) & UART_LSR_THRE) == 0)
-> +                       && (timeout-- > 0))
-> +               ;
-> +
-> +       writeb(c, PORT(UART_BASE, UART_TX));
-> here doesn't make too much sense to me. (Also questioning why this is
-> part of the prom.c file).
->
-
-I just did what other platform did, such as ar7, bcm47xx and jz4740.
-Could you have a look at their prom.c?
-
->
-> Andi
->
+                               |         |  extra   |
+                               | default |  kbytes  |
+--------------------------------------------------------------
+min_free_kbytes                |    8113 |   8113   |
+extra_free_kbytes              |       0 | 640*1024 | (KB)
+--------------------------------------------------------------
+worst latency                  | 517.762 |  20.775  | (usec)
+--------------------------------------------------------------
+vmstat result                  |         |          |
+ nr_vmscan_write               |       0 |      0   |
+ pgsteal_dma                   |       0 |      0   |
+ pgsteal_dma32                 |  143667 | 144882   |
+ pgsteal_normal                |   31486 |  27001   |
+ pgsteal_movable               |       0 |      0   |
+ pgscan_kswapd_dma             |       0 |      0   |
+ pgscan_kswapd_dma32           |  138617 | 156351   |
+ pgscan_kswapd_normal          |   30593 |  27955   |
+ pgscan_kswapd_movable         |       0 |      0   |
+ pgscan_direct_dma             |       0 |      0   |
+ pgscan_direct_dma32           |    5050 |      0   |
+ pgscan_direct_normal          |     896 |      0   |
+ pgscan_direct_movable         |       0 |      0   |
+ kswapd_steal                  |  169207 | 171883   |
+ kswapd_inodesteal             |       0 |      0   |
+ kswapd_low_wmark_hit_quickly  |      43 |     45   |
+ kswapd_high_wmark_hit_quickly |       1 |      0   |
+ allocstall                    |      32 |      0   |
 
 
--- 
-Best Regards!
-Kelvin
+As you can see, in the default case there were 32 direct reclaim (allocstall)
+and its worst latency was 517.762 usecs. This value may be larger if
+a process would sleep or issue I/O in the direct reclaim path. OTOH,
+ii the other case where I add extra free bytes, there were no direct
+reclaim and its worst latency was 20.775 usecs.
+
+In this test case, we can avoid direct reclaim and keep a latency low.
+
+Tested-by: Satoru Moriya <satoru.moriya@hds.com>
