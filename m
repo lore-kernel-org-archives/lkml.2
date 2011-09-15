@@ -1,177 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933758Ab1IONAh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 09:00:37 -0400
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:51568 "EHLO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933748Ab1IONAK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 09:00:10 -0400
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Samuel Ortiz <samuel.ortiz@intel.com>, Dmitry Torokhov <dtor@mail.ru>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Misael Lopez Cruz <misael.lopez@ti.com>, linux-input@vger.kernel.org
-Subject: [PATCH 8/8] ASoC: twl6040: Support for vibra output paths
-Date: Thu, 15 Sep 2011 15:59:21 +0300
-Message-Id: <1316091561-30899-9-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.7.6.1
-In-Reply-To: <1316091561-30899-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1316091561-30899-1-git-send-email-peter.ujfalusi@ti.com>
+	id S933776Ab1IONAu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 09:00:50 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:53211 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933766Ab1IONAt convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@suse.com:6:1>);
+	Thu, 15 Sep 2011 09:00:49 -0400
+Message-Id: <4E72131B02000078000564AC@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Thu, 15 Sep 2011 14:00:43 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Cc: "Jeremy Fitzhardinge" <jeremy@goop.org>, <hch@infradead.org>,
+        <axboe@kernel.dk>, "Jan Kara" <jack@suse.cz>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH]: xen/blkback: Add support for old BARRIER requests
+	 - 'feature-barrier', was "Help with implementing some form of
+	 barriers in 3.0 kernels."
+References: <20110907174832.GN32190@dumpdata.com>
+ <4E6F50170200007800055CF5@nat28.tlf.novell.com>
+ <20110914085913.GB25628@phenom.oracle.com>
+ <4E708C240200007800055FDF@nat28.tlf.novell.com>
+ <20110914143247.GA17206@phenom.oracle.com>
+ <20110914150102.GA18015@phenom.oracle.com>
+ <4E70EEB302000078000561AE@nat28.tlf.novell.com>
+ <20110915125111.GA18875@phenom.oracle.com>
+In-Reply-To: <20110915125111.GA18875@phenom.oracle.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-twl6040 have two vibra output drivers.
-They can be operated with audio stream coming through
-the PDM interface (fifth channel).
-The vibra outputs can be controlled via the input/FF
-driver as well.
-Selection between the two mode is implemented within
-the codec driver, the input/FF driver can only operate if
-the routing is set to "Input FF".
-Changing from "Input FF" to "Audio PDM" mode is protected
-as well: The switchin can only be done, if there is no
-running effect from the input/FF.
+>>> On 15.09.11 at 14:51, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+>> > +	if (drain) {
+>> > +		struct request_queue *q = bdev_get_queue(preq.bdev);
+>> > +		unsigned long flags;
+>> > +
+>> > +		if (!q->elevator) {
+>> > +			__end_block_io_op(pending_req, -EOPNOTSUPP);
+>> > +			return -EOPNOTSUPP;
+>> > +		}
+>> 
+>> You shouldn't return here - barrier requests may be "non-empty" (i.e.
+>> carry data to be written), and hence you'd need to make sure the
+>> writes get carried out nevertheless.
+> 
+> In theory (and in practice) the 'feature-barrier' is set to zero
+> if !q->elevator. So the frontend should not even try WRITE_BARRIER.
+> 
+> I think the better approach will be to outright fail the WRITE_BARRIER
+> request if 'feature-barrier=0' instead of just trying (which is what
+> this tries).
+> 
+> On a unrelated topic is what to do with devices which are bio based
+> but not request based. From the DM directory, only multipath is capable
+> of doing requests, while the rest are all bio. There is code to
+> quisce the bio's: dm_suspend, but it is not apparent to me how to
+> make it be exposed.
+> 
+> 
+>> 
+>> Jan - this suggests that the placement isn't correct either: The
+>> draining of the queue - as I understand it - should be happening
+>> *after* these writes completed, not before they get started.
+> 
+> So that looks like it should be just moved a bit, like this new patch:
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- sound/soc/codecs/twl6040.c |   72 ++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 72 insertions(+), 0 deletions(-)
+Looks like this is the patch after the very first modifications you made
+to it - I don't see anything being moved, and I no longer see any of
+the subsequent changes you did.
 
-diff --git a/sound/soc/codecs/twl6040.c b/sound/soc/codecs/twl6040.c
-index 70f9a64..6667d7a 100644
---- a/sound/soc/codecs/twl6040.c
-+++ b/sound/soc/codecs/twl6040.c
-@@ -944,6 +944,23 @@ static int twl6040_get_volsw_2r(struct snd_kcontrol *kcontrol,
- 		{.reg = reg_left, .rreg = reg_right, .shift = xshift, \
- 		 .rshift = xshift, .max = xmax, .invert = xinvert}, }
- 
-+static int twl6040_soc_dapm_put_vibra_enum(struct snd_kcontrol *kcontrol,
-+	struct snd_ctl_elem_value *ucontrol)
-+{
-+	struct snd_soc_dapm_widget_list *wlist = snd_kcontrol_chip(kcontrol);
-+	struct snd_soc_dapm_widget *widget = wlist->widgets[0];
-+	struct snd_soc_codec *codec = widget->codec;
-+	struct soc_enum *e = (struct soc_enum *)kcontrol->private_value;
-+	unsigned int val;
-+
-+	/* Do not allow changes while Input/FF efect is running */
-+	val = twl6040_read_reg_volatile(codec, e->reg);
-+	if (val & TWL6040_VIBENA && !(val & TWL6040_VIBSEL))
-+		return -EBUSY;
-+
-+	return snd_soc_dapm_put_enum_double(kcontrol, ucontrol);
-+}
-+
- /*
-  * MICATT volume control:
-  * from -6 to 0 dB in 6 dB steps
-@@ -1015,6 +1032,19 @@ static const struct soc_enum twl6040_hf_enum[] = {
- 			twl6040_hf_texts),
- };
- 
-+static const char *twl6040_vibrapath_texts[] = {
-+	"Input FF", "Audio PDM"
-+};
-+
-+static const struct soc_enum twl6040_vibra_enum[] = {
-+	SOC_ENUM_SINGLE(TWL6040_REG_VIBCTLL, 1,
-+			ARRAY_SIZE(twl6040_vibrapath_texts),
-+			twl6040_vibrapath_texts),
-+	SOC_ENUM_SINGLE(TWL6040_REG_VIBCTLR, 1,
-+			ARRAY_SIZE(twl6040_vibrapath_texts),
-+			twl6040_vibrapath_texts),
-+};
-+
- static const struct snd_kcontrol_new amicl_control =
- 	SOC_DAPM_ENUM("Route", twl6040_enum[0]);
- 
-@@ -1044,6 +1074,17 @@ static const struct snd_kcontrol_new auxl_switch_control =
- static const struct snd_kcontrol_new auxr_switch_control =
- 	SOC_DAPM_SINGLE("Switch", TWL6040_REG_HFRCTL, 6, 1, 0);
- 
-+/* Vibra playback switches */
-+static const struct snd_kcontrol_new vibral_mux_controls =
-+	SOC_DAPM_ENUM_EXT("Route", twl6040_vibra_enum[0],
-+		snd_soc_dapm_get_enum_double,
-+		twl6040_soc_dapm_put_vibra_enum);
-+
-+static const struct snd_kcontrol_new vibrar_mux_controls =
-+	SOC_DAPM_ENUM_EXT("Route", twl6040_vibra_enum[1],
-+		snd_soc_dapm_get_enum_double,
-+		twl6040_soc_dapm_put_vibra_enum);
-+
- /* Headset power mode */
- static const char *twl6040_power_mode_texts[] = {
- 	"Low-Power", "High-Perfomance",
-@@ -1163,6 +1204,8 @@ static const struct snd_soc_dapm_widget twl6040_dapm_widgets[] = {
- 	SND_SOC_DAPM_OUTPUT("EP"),
- 	SND_SOC_DAPM_OUTPUT("AUXL"),
- 	SND_SOC_DAPM_OUTPUT("AUXR"),
-+	SND_SOC_DAPM_OUTPUT("VIBRAL"),
-+	SND_SOC_DAPM_OUTPUT("VIBRAR"),
- 
- 	/* Analog input muxes for the capture amplifiers */
- 	SND_SOC_DAPM_MUX("Analog Left Capture Route",
-@@ -1215,6 +1258,9 @@ static const struct snd_soc_dapm_widget twl6040_dapm_widgets[] = {
- 			TWL6040_REG_HFRCTL, 0, 0,
- 			twl6040_power_mode_event,
- 			SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_POST_PMD),
-+	/* Virtual DAC for vibra path (DL4 channel) */
-+	SND_SOC_DAPM_DAC("VIBRA DAC", "Vibra Playback",
-+			SND_SOC_NOPM, 0, 0),
- 
- 	SND_SOC_DAPM_MUX("Handsfree Left Playback",
- 			SND_SOC_NOPM, 0, 0, &hfl_mux_controls),
-@@ -1226,6 +1272,11 @@ static const struct snd_soc_dapm_widget twl6040_dapm_widgets[] = {
- 	SND_SOC_DAPM_MUX("Headset Right Playback",
- 			SND_SOC_NOPM, 0, 0, &hsr_mux_controls),
- 
-+	SND_SOC_DAPM_MUX("Vibra Left Playback", SND_SOC_NOPM, 0, 0,
-+			&vibral_mux_controls),
-+	SND_SOC_DAPM_MUX("Vibra Right Playback", SND_SOC_NOPM, 0, 0,
-+			&vibrar_mux_controls),
-+
- 	SND_SOC_DAPM_SWITCH("Earphone Playback", SND_SOC_NOPM, 0, 0,
- 			&ep_path_enable_control),
- 	SND_SOC_DAPM_SWITCH("AUXL Playback", SND_SOC_NOPM, 0, 0,
-@@ -1254,6 +1305,15 @@ static const struct snd_soc_dapm_widget twl6040_dapm_widgets[] = {
- 			TWL6040_REG_EARCTL, 0, 0, NULL, 0,
- 			twl6040_power_mode_event,
- 			SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_POST_PMD),
-+	SND_SOC_DAPM_OUT_DRV("Vibra Left Driver",
-+			TWL6040_REG_VIBCTLL, 0, 0, NULL, 0),
-+	SND_SOC_DAPM_OUT_DRV("Vibra Right Driver",
-+			TWL6040_REG_VIBCTLR, 0, 0, NULL, 0),
-+
-+	SND_SOC_DAPM_SUPPLY("Vibra Left Control", TWL6040_REG_VIBCTLL, 2, 0,
-+			    NULL, 0),
-+	SND_SOC_DAPM_SUPPLY("Vibra Right Control", TWL6040_REG_VIBCTLR, 2, 0,
-+			    NULL, 0),
- 
- 	/* Analog playback PGAs */
- 	SND_SOC_DAPM_PGA("HF Left PGA",
-@@ -1320,6 +1380,18 @@ static const struct snd_soc_dapm_route intercon[] = {
- 
- 	{"AUXL", NULL, "AUXL Playback"},
- 	{"AUXR", NULL, "AUXR Playback"},
-+
-+	/* Vibrator paths */
-+	{"Vibra Left Playback", "Audio PDM", "VIBRA DAC"},
-+	{"Vibra Right Playback", "Audio PDM", "VIBRA DAC"},
-+
-+	{"Vibra Left Driver", NULL, "Vibra Left Playback"},
-+	{"Vibra Right Driver", NULL, "Vibra Right Playback"},
-+	{"Vibra Left Driver", NULL, "Vibra Left Control"},
-+	{"Vibra Right Driver", NULL, "Vibra Right Control"},
-+
-+	{"VIBRAL", NULL, "Vibra Left Driver"},
-+	{"VIBRAR", NULL, "Vibra Right Driver"},
- };
- 
- static int twl6040_add_widgets(struct snd_soc_codec *codec)
--- 
-1.7.6.1
+Jan
+
+> commit 315c0cf1a5174b9aed494d7903133ce9ac76d6f1
+> Author: Jan Kara <jack@suse.cz>
+> Date:   Tue Sep 13 11:44:07 2011 +0100
+> 
+>     xen: Add support for old BARRIER requests to xenblk driver
+>     
+>     Recent kernels do not support BARRIER operation but only FLUSH 
+> operation. But
+>     older xenblk frontends still use the BARRIER operation to achieve data
+>     integrity requirements. So add support for BARRIER operation into xenblk
+>     backend so that all guests do not corrupt their filesystem on host 
+> crash.
+>     
+>     Signed-off-by: Jan Kara <jack@suse.cz>
+>     Signed-off-by: Jan Beulich <JBeulich@suse.com>
+>     [v1: Added some extra functions, and other cases]
+>     Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> 
+> diff --git a/block/elevator.c b/block/elevator.c
+> index a3b64bc..b2143a8 100644
+> --- a/block/elevator.c
+> +++ b/block/elevator.c
+> @@ -616,6 +616,7 @@ void elv_drain_elevator(struct request_queue *q)
+>  		       q->elevator->elevator_type->elevator_name, q->nr_sorted);
+>  	}
+>  }
+> +EXPORT_SYMBOL(elv_drain_elevator);
+>  
+>  /*
+>   * Call with queue lock held, interrupts disabled
+> diff --git a/drivers/block/xen-blkback/blkback.c 
+> b/drivers/block/xen-blkback/blkback.c
+> index 9713d5a..1df773c 100644
+> --- a/drivers/block/xen-blkback/blkback.c
+> +++ b/drivers/block/xen-blkback/blkback.c
+> @@ -464,6 +464,11 @@ static void __end_block_io_op(struct pending_req 
+> *pending_req, int error)
+>  		pr_debug(DRV_PFX "flush diskcache op failed, not supported\n");
+>  		xen_blkbk_flush_diskcache(XBT_NIL, pending_req->blkif->be, 0);
+>  		pending_req->status = BLKIF_RSP_EOPNOTSUPP;
+> +	} else if ((pending_req->operation == BLKIF_OP_WRITE_BARRIER) &&
+> +		 (error == -EOPNOTSUPP)) {
+> +		pr_debug(DRV_PFX "write barrier op failed, not supported\n");
+> +		xen_blkbk_barrier(XBT_NIL, pending_req->blkif->be, 0);
+> +		pending_req->status = BLKIF_RSP_EOPNOTSUPP;
+>  	} else if (error) {
+>  		pr_debug(DRV_PFX "Buffer not up-to-date at end of operation,"
+>  			 " error=%d\n", error);
+> @@ -590,6 +595,7 @@ static int dispatch_rw_block_io(struct xen_blkif *blkif,
+>  	struct bio *biolist[BLKIF_MAX_SEGMENTS_PER_REQUEST];
+>  	int i, nbio = 0;
+>  	int operation;
+> +	bool drain = false;
+>  	struct blk_plug plug;
+>  
+>  	switch (req->operation) {
+> @@ -601,6 +607,8 @@ static int dispatch_rw_block_io(struct xen_blkif *blkif,
+>  		blkif->st_wr_req++;
+>  		operation = WRITE_ODIRECT;
+>  		break;
+> +	case BLKIF_OP_WRITE_BARRIER:
+> +		drain = true;
+>  	case BLKIF_OP_FLUSH_DISKCACHE:
+>  		blkif->st_f_req++;
+>  		operation = WRITE_FLUSH;
+> @@ -609,7 +617,6 @@ static int dispatch_rw_block_io(struct xen_blkif *blkif,
+>  		blkif->st_ds_req++;
+>  		operation = REQ_DISCARD;
+>  		break;
+> -	case BLKIF_OP_WRITE_BARRIER:
+>  	default:
+>  		operation = 0; /* make gcc happy */
+>  		goto fail_response;
+> @@ -668,6 +675,17 @@ static int dispatch_rw_block_io(struct xen_blkif *blkif,
+>  		}
+>  	}
+>  
+> +	if (drain) {
+> +		struct request_queue *q = bdev_get_queue(preq.bdev);
+> +		unsigned long flags;
+> +
+> +		/* Emulate the original behavior of write barriers */
+> +		spin_lock_irqsave(q->queue_lock, flags);
+> +		elv_drain_elevator(q);
+> +		__blk_run_queue(q);
+> +		spin_unlock_irqrestore(q->queue_lock, flags);
+> +	}
+> +
+>  	/*
+>  	 * If we have failed at this point, we need to undo the M2P override,
+>  	 * set gnttab_set_unmap_op on all of the grant references and perform
+> diff --git a/drivers/block/xen-blkback/common.h 
+> b/drivers/block/xen-blkback/common.h
+> index bfb532e..42b0e46 100644
+> --- a/drivers/block/xen-blkback/common.h
+> +++ b/drivers/block/xen-blkback/common.h
+> @@ -228,6 +228,8 @@ int xen_blkif_schedule(void *arg);
+>  
+>  int xen_blkbk_flush_diskcache(struct xenbus_transaction xbt,
+>  			      struct backend_info *be, int state);
+> +int xen_blkbk_barrier(struct xenbus_transaction xbt,
+> +		      struct backend_info *be, int state);
+>  
+>  struct xenbus_device *xen_blkbk_xenbus(struct backend_info *be);
+>  
+> diff --git a/drivers/block/xen-blkback/xenbus.c 
+> b/drivers/block/xen-blkback/xenbus.c
+> index 2b3aef0..b477aee 100644
+> --- a/drivers/block/xen-blkback/xenbus.c
+> +++ b/drivers/block/xen-blkback/xenbus.c
+> @@ -421,6 +421,20 @@ int xen_blkbk_flush_diskcache(struct xenbus_transaction 
+> xbt,
+>  	return err;
+>  }
+>  
+> +int xen_blkbk_barrier(struct xenbus_transaction xbt,
+> +		      struct backend_info *be, int state)
+> +{
+> +	struct xenbus_device *dev = be->dev;
+> +	int err;
+> +
+> +	err = xenbus_printf(xbt, dev->nodename, "feature-barrier",
+> +			    "%d", state);
+> +	if (err)
+> +		xenbus_dev_fatal(dev, err, "writing feature-barrier");
+> +
+> +	return err;
+> +}
+> +
+>  int xen_blkbk_discard(struct xenbus_transaction xbt, struct backend_info 
+> *be)
+>  {
+>  	struct xenbus_device *dev = be->dev;
+> @@ -706,6 +720,8 @@ again:
+>  	if (err)
+>  		goto abort;
+>  
+> +	err = xen_blkbk_barrier(xbt, be, be->blkif->vbd.flush_support);
+> +
+>  	err = xen_blkbk_discard(xbt, be);
+>  
+>  	err = xenbus_printf(xbt, dev->nodename, "sectors", "%llu",
+
 
