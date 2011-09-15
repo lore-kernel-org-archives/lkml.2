@@ -1,59 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935233Ab1IOW1m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 18:27:42 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:42891 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935182Ab1IOW1l convert rfc822-to-8bit (ORCPT
+	id S935240Ab1IOWcR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 18:32:17 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54022 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935135Ab1IOWcQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 18:27:41 -0400
+	Thu, 15 Sep 2011 18:32:16 -0400
+Date: Thu, 15 Sep 2011 17:32:08 -0500
+From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morgan <morgan@kernel.org>,
+        Vasiliy Kulikov <segoon@openwall.com>, Andrew Morton <akpm@osdl.org>,
+        richard@nod.at, Linux Containers <containers@lists.osdl.org>
+Subject: [PATCH] user namespace: clamp down users of cap_raised
+Message-ID: <20110915223208.GA32247@sergelap>
 MIME-Version: 1.0
-Message-ID: <504b4342-e6b0-4544-b81c-ca41240ac5bf@default>
-Date: Thu, 15 Sep 2011 15:27:07 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Dave Hansen <dave@linux.vnet.ibm.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Nitin Gupta <ngupta@vflare.org>, Greg KH <greg@kroah.com>, gregkh@suse.de,
-        devel@driverdev.osuosl.org, cascardo@holoscopio.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        brking@linux.vnet.ibm.com, rcj@linux.vnet.ibm.com
-Subject: RE: [PATCH v2 0/3] staging: zcache: xcfmalloc support
-References: <1315404547-20075-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <20110909203447.GB19127@kroah.com> <4E6ACE5B.9040401@vflare.org>
- <4E6E18C6.8080900@linux.vnet.ibm.com> <4E6EB802.4070109@vflare.org>
- <4E6F7DA7.9000706@linux.vnet.ibm.com> <4E6FC8A1.8070902@vflare.org>
- <4E72284B.2040907@linux.vnet.ibm.com>
- <075c4e4c-a22d-47d1-ae98-31839df6e722@default>
- <4E725109.3010609@linux.vnet.ibm.com 1316125062.16137.80.camel@nimitz>
-In-Reply-To: <1316125062.16137.80.camel@nimitz>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6557.5001]
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
-X-CT-RefId: str=0001.0A090204.4E727BD2.00A2,ss=1,re=0.000,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Dave Hansen [mailto:dave@linux.vnet.ibm.com]
-> Subject: Re: [PATCH v2 0/3] staging: zcache: xcfmalloc support
-> 
-> On Thu, 2011-09-15 at 14:24 -0500, Seth Jennings wrote:
-> > How would you suggest that I measure xcfmalloc performance on a "very
-> > large set of workloads".  I guess another form of that question is: How
-> > did xvmalloc do this?
-> 
-> Well, it didn't have a competitor, so this probably wasn't done. :)
-> 
-> I'd like to see a microbenchmarky sort of thing.  Do a million (or 100
-> million, whatever) allocations, and time it for both allocators doing
-> the same thing.  You just need to do the *same* allocations for both.
+A few modules are using cap_raised(current_cap(), cap) to authorize
+actions.  This means that tasks which are privileged in non-initial
+user namespaces will be deemed privileged.  The privilege should only
+be granted if the task is in the initial user namespace.
 
-One suggestion:  We already know xvmalloc sucks IF the workload has
-poor compression for most pages.  We are looking to understand if xcfmalloc
-is [very**N] bad when xvmalloc is good.  So please measure BIG-NUMBER
-allocations where compression is known to be OK on average (which is,
-I think, a large fraction of workloads), rather than workloads where
-xvmalloc already sucks.
+Switching the calls to capable() would change the behavior - it would
+cause the LSM capable hooks to be called, and set PF_SUPERPRIV if
+the capability was used.  So instead, put in an explicit check and
+refuse privilege if the caller is not in init_user_ns.
+
+Vasiliy had suggested introducing a new helper for this.  I'm open
+to suggestions, but for four callers and for a discouraged idiom,
+I'd rather not pollute the capable* function namespace with a bad name.
+(even has_capability goes through the LSM hooks)
+
+Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+Cc: Andrew Morgan <morgan@kernel.org>
+Cc: Vasiliy Kulikov <segoon@openwall.com>
+---
+ drivers/block/drbd/drbd_nl.c           |    5 +++++
+ drivers/md/dm-log-userspace-transfer.c |    3 +++
+ drivers/staging/pohmelfs/config.c      |    3 +++
+ drivers/video/uvesafb.c                |    3 +++
+ 4 files changed, 14 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
+index 0feab26..9a87a14 100644
+--- a/drivers/block/drbd/drbd_nl.c
++++ b/drivers/block/drbd/drbd_nl.c
+@@ -2297,6 +2297,11 @@ static void drbd_connector_callback(struct cn_msg *req, struct netlink_skb_parms
+ 		return;
+ 	}
+ 
++	if (current_user_ns() != &init_user_ns) {
++		retcode = ERR_PERM;
++		goto fail;
++	}
++
+ 	if (!cap_raised(current_cap(), CAP_SYS_ADMIN)) {
+ 		retcode = ERR_PERM;
+ 		goto fail;
+diff --git a/drivers/md/dm-log-userspace-transfer.c b/drivers/md/dm-log-userspace-transfer.c
+index 1f23e04..140ca81 100644
+--- a/drivers/md/dm-log-userspace-transfer.c
++++ b/drivers/md/dm-log-userspace-transfer.c
+@@ -134,6 +134,9 @@ static void cn_ulog_callback(struct cn_msg *msg, struct netlink_skb_parms *nsp)
+ {
+ 	struct dm_ulog_request *tfr = (struct dm_ulog_request *)(msg + 1);
+ 
++	if (current_user_ns() != &init_user_ns)
++		return;
++
+ 	if (!cap_raised(current_cap(), CAP_SYS_ADMIN))
+ 		return;
+ 
+diff --git a/drivers/staging/pohmelfs/config.c b/drivers/staging/pohmelfs/config.c
+index b6c42cb..cd259d0 100644
+--- a/drivers/staging/pohmelfs/config.c
++++ b/drivers/staging/pohmelfs/config.c
+@@ -525,6 +525,9 @@ static void pohmelfs_cn_callback(struct cn_msg *msg, struct netlink_skb_parms *n
+ {
+ 	int err;
+ 
++	if (current_user_ns() != &init_user_ns)
++		return;
++
+ 	if (!cap_raised(current_cap(), CAP_SYS_ADMIN))
+ 		return;
+ 
+diff --git a/drivers/video/uvesafb.c b/drivers/video/uvesafb.c
+index 7f8472c..71dab8e 100644
+--- a/drivers/video/uvesafb.c
++++ b/drivers/video/uvesafb.c
+@@ -73,6 +73,9 @@ static void uvesafb_cn_callback(struct cn_msg *msg, struct netlink_skb_parms *ns
+ 	struct uvesafb_task *utask;
+ 	struct uvesafb_ktask *task;
+ 
++	if (current_user_ns() != &init_user_ns)
++		return;
++
+ 	if (!cap_raised(current_cap(), CAP_SYS_ADMIN))
+ 		return;
+ 
+-- 
+1.7.0.4
+
