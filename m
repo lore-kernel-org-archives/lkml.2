@@ -1,52 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756325Ab1IOOhu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 10:37:50 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:61819 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753248Ab1IOOht (ORCPT
+	id S933884Ab1IOOlv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 10:41:51 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:33888 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933096Ab1IOOlu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 10:37:49 -0400
-Subject: Re: a question regarding sys_poll() on x86_64 via tha ia32 layer
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Thomas Meyer <thomas@m3y3r.de>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        viro@zeniv.linux.org.uk, mingo@redhat.com
-In-Reply-To: <1316091669.6545.79.camel@localhost.localdomain>
-References: <1316086860.6545.66.camel@localhost.localdomain>
-	 <1316089435.2893.6.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <1316091669.6545.79.camel@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 15 Sep 2011 16:37:56 +0200
-Message-ID: <1316097476.2893.7.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	Thu, 15 Sep 2011 10:41:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <web-606831561@zbackend1.aha.ru>
+References: <web-606439650@zbackend1.aha.ru> <CA+55aFwyC7s=YK10Wkpr+GzdukXp-JUtf_=MgWcrhBOtTg4eTg@mail.gmail.com>
+ <web-606798161@zbackend1.aha.ru> <CA+55aFwBuySWa2VErrfud_SFqyfT5ib+Qfq9gWBaBz=cQ6VcHg@mail.gmail.com>
+ <web-606831561@zbackend1.aha.ru>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Thu, 15 Sep 2011 07:41:30 -0700
+X-Google-Sender-Auth: 4GYg7k7BmGRDc1x7QcQ2fhdQAvQ
+Message-ID: <CAObL_7F2Pu0K1Oe3oLe5Pef2kaGE8vdO2qgfc0KEt8TJdUaOWg@mail.gmail.com>
+Subject: Re: 3.1-rc6 boot problem reason searching
+To: werner <w.landgraf@ru.ru>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=KOI8-R
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 15 septembre 2011 Ã  15:00 +0200, Thomas Meyer a Ã©crit :
-> Am Donnerstag, den 15.09.2011, 14:23 +0200 schrieb Eric Dumazet:
-> > Its a plain bug, please submit a formal patch.
-> > 
-> > Probably not noticed because timer is set to more than 24 days.
-> > 
-> 
-> okay. I think a similar problem exists for sys_truncate() in ia32 layer
-> on x86_64:
-> 
-> the ia32 syscall is directly wired to sys_truncate(char *, long).
-> 
-> signed long will use %rbx on x86_64 and %ebx on x86.
-> 
-> call sys_truncate on x86_64 from x86 userspace will handle length
-> 0xffffffff not as -1.
-> 
-> maybe an easy fix would be to change long to unsigned long for
-> sys_truncate(), like sys_ftruncate(). what do you think?
+2011/9/14 werner <w.landgraf@ru.ru>:
+> The config is below. šThat's the M486 config which don't boor. šThe M586
+> config which boots has the diff given in my last mail, and which for make
+> the comparison more easy I give below again. š As said, all 3.0-rcX and up
+> to 3.0.4 boot with 486 too, the problem started with 3.1-rc1 . Perhaps the
+> šmessages before the computer sticked (using the M486 config below) which I
+> copied manually from the screen, posted in the treat 3.1-rc5 boot problem š,
+> may be helpful to find out what exactly causes the sticking.
+> wl
 
-I think you should take a look at fs/compat.c
+Gack.  I obviously did a terrible job grepping for this stuff when I
+wrote the original patch.  The problem is probably in static_cpu_has.
+I'll send a patch in a little bit.
 
-
-
+--Andy
