@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755514Ab1IOIum (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 04:50:42 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:48783 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753194Ab1IOIul (ORCPT
+	id S1755550Ab1IOIx1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 04:53:27 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:60977 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753194Ab1IOIx0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 04:50:41 -0400
-Date: Thu, 15 Sep 2011 09:50:36 +0100
-From: Jamie Iles <jamie@jamieiles.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        marc.zyngier@arm.com, thomas.abraham@linaro.org, jamie@jamieiles.com,
-        b-cousson@ti.com, shawn.guo@linaro.org,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH 0/5] GIC OF bindings
-Message-ID: <20110915085036.GB3089@pulham.picochip.com>
-References: <1316017900-19918-1-git-send-email-robherring2@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1316017900-19918-1-git-send-email-robherring2@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 15 Sep 2011 04:53:26 -0400
+Subject: Re: [PATCH 0/9] Per-cgroup /proc/stat
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, xemul@parallels.com, paul@paulmenage.org,
+        lizf@cn.fujitsu.com, daniel.lezcano@free.fr, mingo@elte.hu,
+        jbottomley@parallels.com
+Date: Thu, 15 Sep 2011 10:53:09 +0200
+In-Reply-To: <4E710C93.40609@parallels.com>
+References: <1316030695-19826-1-git-send-email-glommer@parallels.com>
+	 <1316031196.5040.46.camel@twins> <4E710C93.40609@parallels.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1316076789.3045.4.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 14, 2011 at 11:31:35AM -0500, Rob Herring wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
-> 
-> This series introduces of_irq_init to scan the device tree for interrupt
-> controller nodes and call their init functions in proper order. The GIC
-> init function is then called from this function. The platform code then
-> looks something like this:
-> 
-> const static struct of_device_id irq_match[] = {
-> 	{ .compatible = "arm,cortex-a9-gic", .data = gic_of_init, },
-> 	{}
-> };
-> 
-> static void __init highbank_init_irq(void)
-> {
-> 	of_irq_init(irq_match);
-> }
-> 
-> The binding for GIC PPIs is now done with a 3rd interrupt cell to specify
-> a cpu mask for which cpu the PPI is connected to. This was discussed at LPC
-> and suggested by Grant.
-> 
-> I dropped the public intc_desc struct. The the interrupt controller's node
-> and the interrupt parent's node are passed in directly to the controller's
-> init function. The linux irq assignment is now done dynamically using
-> irq_alloc_descs.
+On Wed, 2011-09-14 at 17:20 -0300, Glauber Costa wrote:
 
-Hi Rob,
 
-This looks really nicely implemented to me.
+> Answering just a single point here, if you look closely, it does not 
+> duplicate  anything from cpuacct. What it does, is to divide it in more
+> fine grained groups than just user/system. But it is not even called 
+> more than it already used to be. Also, I change the counters to per-cpu 
+> variables instead of percpu counters (so we can access per-cpu data). If 
+> there is any perf. change wrt the current code, it comes from that, and 
+> since percpu variables are cheaper to update (and summing up is much 
+> less frequent), it will end up even cheaper.
 
-Reviewed-by: Jamie Iles <jamie@jamieiles.com>
+I just saw the word statistics and 234 lines added to sched.c and went
+mental ;-)
 
-Jamie
+> The steal time feature is really trivial once it is in place.
+> 
+> About your point of the context switch cost, how would you feel if we 
+> optimized it out using static_branch() like it was done for kvm steal time?
+
+Both pjt and me tried, but its hard, part of the problem is also data
+structure bloat.
