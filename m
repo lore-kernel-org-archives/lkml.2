@@ -1,64 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752897Ab1IOB0o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 21:26:44 -0400
-Received: from mga02.intel.com ([134.134.136.20]:43492 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752412Ab1IOB0n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 21:26:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="48563637"
-Subject: Re: [PATCH] slub Discard slab page only when node partials >
- minimum setting
-From: "Alex,Shi" <alex.shi@intel.com>
-To: Christoph Lameter <christoph@lameter.com>
-Cc: Christoph Lameter <cl@linux.com>,
-        "penberg@kernel.org" <penberg@kernel.org>,
+	id S1752954Ab1IOBgL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 21:36:11 -0400
+Received: from szxga04-in.huawei.com ([119.145.14.67]:50519 "EHLO
+	szxga04-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752560Ab1IOBgJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Sep 2011 21:36:09 -0400
+Date: Thu, 15 Sep 2011 09:35:34 +0800
+From: "canquan.shen" <shencanquan@huawei.com>
+Subject: Re: [PATCH v3] acpi: Fix CPU hot removal problem
+In-reply-to: <CAErSpo4F1oH6uBcbYRf9M49=kk49H==r=Cuh2Mrx2Wq4rmUeVg@mail.gmail.com>
+X-Originating-IP: [10.166.80.130]
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: len.brown@intel.com, "shemminger@vyatta.com" <shemminger@vyatta.com>,
+        "yakui.zhao@intel.com" <yakui.zhao@intel.com>,
+        "xiaowei.yang@huawei.com" <xiaowei.yang@huawei.com>,
+        hanweidong <hanweidong@huawei.com>, linqiangmin@huawei.com,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        "Li, Shaohua" <shaohua.li@intel.com>,
-        "Chen, Tim C" <tim.c.chen@intel.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-In-Reply-To: <CALmdxiMuF6Q0W4ZdvhK5c4fQs8wUjcVGWYGWBjJi7WOfLYX=Gw@mail.gmail.com>
-References: <1315188460.31737.5.camel@debian>
-	 <alpine.DEB.2.00.1109061914440.18646@router.home>
-	 <1315357399.31737.49.camel@debian>
-	 <alpine.DEB.2.00.1109062022100.20474@router.home>
-	 <4E671E5C.7010405@cs.helsinki.fi>
-	 <6E3BC7F7C9A4BF4286DD4C043110F30B5D00DA333C@shsmsx502.ccr.corp.intel.com>
-	 <alpine.DEB.2.00.1109071003240.9406@router.home>
-	 <1315442639.31737.224.camel@debian>
-	 <alpine.DEB.2.00.1109081336320.14787@router.home>
-	 <1315557944.31737.782.camel@debian>	<1315902583.31737.848.camel@debian>
-	 <CALmdxiMuF6Q0W4ZdvhK5c4fQs8wUjcVGWYGWBjJi7WOfLYX=Gw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 15 Sep 2011 09:32:43 +0800
-Message-ID: <1316050363.8425.483.camel@debian>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Message-id: <4E715666.8090600@huawei.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7BIT
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:6.0.2) Gecko/20110902
+ Thunderbird/6.0.2
+X-CFilter-Loop: Reflected
+References: <4E700EDA.7090505@huawei.com>
+ <CAErSpo4F1oH6uBcbYRf9M49=kk49H==r=Cuh2Mrx2Wq4rmUeVg@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-09-13 at 23:04 +0800, Christoph Lameter wrote:
-> Sorry to be that late with a response but my email setup is screwed
-> up.
-> 
-> I was more thinking about the number of slab pages in the partial
-> caches rather than the size of the objects itself being an issue. I
-> believe that was /sys/kernel/slab/*/cpu_partial.
-> 
-> That setting could be tuned further before merging. An increase there
-> causes additional memory to be caught in the partial list. But it
-> reduces the node lock pressure further.
-> 
+On 2011/9/14 22:14, Bjorn Helgaas wrote:
+> On Tue, Sep 13, 2011 at 8:18 PM, canquan.shen<shencanquan@huawei.com>  wrote:
+>> We run linux as a guest in Xen environment. When we used the xen tools
+>> (xm vcpu-set<n>) to hot add and remove vcpu to and from the guest, we
+>> encountered the failure on vcpu removal. We found the reason is that it
+>> didn't go to really remove cpu in the cpu removal code path.
+>>
+>> This patch adds acpi_bus_trim in acpi_process_hotplug_notify to fix this
+>> issue. With this patch, it works fine for us.
+>>
+>> Signed-off-by: Shen canquan<shencanquan@huawei.com>
+>> ---
+>>   drivers/acpi/processor_driver.c |    7 +++++++
+>>   1 files changed, 7 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/acpi/processor_driver.c
+>> b/drivers/acpi/processor_driver.c
+>> index a4e0f1b..0856ef8 100644
+>> --- a/drivers/acpi/processor_driver.c
+>> +++ b/drivers/acpi/processor_driver.c
+>> @@ -677,6 +677,13 @@ static void acpi_processor_hotplug_notify(acpi_handle
+>> handle,
+>>                                     "Driver data is NULL, dropping EJECT\n");
+>>                         return;
+>>                 }
+>> +               ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+>> +                       "Hot-removing processor device %s\n",
+>> +                       dev_name(&device->dev)));
+>> +               if (acpi_bus_trim(device, 1)) {
+>> +                       printk(KERN_ERR "ACPI: Removing device failed!\n");
+>
+> We can do better than that.  Nobody ever looks at ACPI_DEBUG_PRINT info.
+>
+>      u32 id;
+>      ...
+>      id = pr->id;
+>      if (acpi_bus_trim(device, 1))
+>          printk(KERN_ERR PREFIX "Failed to remove CPU %d\n", id);
+>
+> (No "return" needed here.  In fact, the "return" at the bottom of
+> acpi_processor_hotplug_notify() is also superfluous.  You could remove
+> it at the same time.)
+>
+> .
+>
 
-Yeah, I think so. The more cpu partial page, the quicker to getting
-slabs. Maybe it's better to considerate the system memory size to set
-them. Do you has some plan or suggestions on tunning? 
+Thanks for your suggestion. I will modify it and resend the patch.
 
-
+--
+Canquan.shen
 
 
