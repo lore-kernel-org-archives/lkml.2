@@ -1,97 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933587Ab1IOMot (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 08:44:49 -0400
-Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:57198 "EHLO
-	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933525Ab1IOMki (ORCPT
+	id S933604Ab1IOMoz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 08:44:55 -0400
+Received: from mail-ew0-f43.google.com ([209.85.215.43]:35318 "EHLO
+	mail-ew0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933558Ab1IOMot (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 08:40:38 -0400
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Samuel Ortiz <samuel.ortiz@intel.com>, Dmitry Torokhov <dtor@mail.ru>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Misael Lopez Cruz <misael.lopez@ti.com>
-Subject: [PATCH 11/17] ASoC: twl6040: Earphone path correction
-Date: Thu, 15 Sep 2011 15:39:33 +0300
-Message-Id: <1316090379-30760-12-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.7.6.1
-In-Reply-To: <1316090379-30760-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1316090379-30760-1-git-send-email-peter.ujfalusi@ti.com>
+	Thu, 15 Sep 2011 08:44:49 -0400
+Message-ID: <4E71F33C.2010809@gmail.com>
+Date: Thu, 15 Sep 2011 14:44:44 +0200
+From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+MIME-Version: 1.0
+To: Matt Domsch <Matt_Domsch@Dell.com>
+CC: Matt Fleming <matt@console-pimps.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Matthew Garrett <mjg@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Mike Waychison <mikew@google.com>, Andi Kleen <andi@firstfloor.org>,
+        "Hargrave, Jordan" <Jordan_Hargrave@Dell.com>
+Subject: Re: [PATCH v2 10/10] x86, efi: EFI boot stub support
+References: <1315838094-2307-1-git-send-email-matt@console-pimps.org> <1315838094-2307-11-git-send-email-matt@console-pimps.org> <4E6F69A1.9030406@gmail.com> <1316016478.3466.74.camel@mfleming-mobl1.ger.corp.intel.com> <20110915045231.GA32136@emperor.us.dell.com> <4E71B196.1060504@gmail.com> <20110915115255.GA4669@emperor.us.dell.com>
+In-Reply-To: <20110915115255.GA4669@emperor.us.dell.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the DAPM routing for the earphone path.
-Convert the DAPM_SWITCH_E to DAPM_OUT_DRV_E, so we can have correct
-power up, and down sequence for EP.
-Introduce mute control (Earphone Playback Switch) for users to
-enable/disable the EP path.
-Note: the EP does not have it's own dedicated DAC. EP is connected to
-HSL DAC.
+Hey,
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- sound/soc/codecs/twl6040.c |   17 ++++++++++++-----
- 1 files changed, 12 insertions(+), 5 deletions(-)
+On 09/15/2011 01:52 PM, Matt Domsch wrote:
+> On Thu, Sep 15, 2011 at 03:04:38AM -0500, Maarten Lankhorst wrote:
+>> Hey Matt,
+>>
+>> On 09/15/2011 06:52 AM, Matt Domsch wrote:
+>>> On Wed, Sep 14, 2011 at 11:07:58AM -0500, Matt Fleming wrote:
+>>>> On Tue, 2011-09-13 at 16:33 +0200, Maarten Lankhorst wrote:
+>>>>> This version seems to boot for me.
+>>>> Yay! Thanks for testing.
+>>>>
+>>>>> Is it useful to add 32-bits support though?
+>>>>> It seems that only some older versions of OSX use it. I could see if I can
+>>>>> revive my mac mini, iirc it has 32-bits efi, or at least used to have.
+>>>> 32-bit UEFI platforms do exist, so I think it's worth supporting them.
+>>>>
+>>>>> Do I need to pass anything to add it to efibootmgr?
+>>>>>
+>>>>> I tried something like this:
+>>>>> echo "args" | efibootmgr -c -l '\vmlinuz.efi' -L 'Native EFI linux boot' -@ - -u -d /dev/sdb
+>>>>>
+>>>>> And it boots vmlinuz.efi, but the arguments I passed do not appear to
+>>>>> have any effect.
+>>>> No idea, I've never used efibootmgr. Let's add Matt Domsch to the
+>>>> discussion (now Cc'd).
+>>> Maarten, do you not see your 'args' in /proc/cmdline after booting the
+>>> entry?  From reading this thread, that's what you should see.
+>>>
+>>> Can you provide an 'efibootmgr -v' and hexdump -C
+>>> /sys/firmware/efi/vars/Boot*  to see the args are appended as expected
+>>> in the boot variable in nvram?
+>>>
+>>> Adding Jordan Hargrave, who is maintainer for efibootmgr now.
+>> Thanks, that helped. It looks like efibootmgr stores the arguments without converting it to UCS-2.
+> When using -@, you are correct.  Given a file (or stdin), it places it
+> unmodified onto the command line of the boot loader.
+>
+> When using efibootmgr -u, all extra arguments passed to efibootmgr's
+> command line are converted to UCS-2.
+>
+> When using efibootmgr -a, all extra arguments passed to efibootmgr's
+> command line are not converted and are treated as ascii.
+>
+> So it's a matter of how you invoke efibootmgr as to which kind of blob
+> winds up appended to the boot loader's command line.  Using -@ means
+> it's entirely up to you to create the blob you need apriori.  This was
+> done to allow arbitrary blobs to be passed in.
+>
+Thanks, that makes much more sense. The man page makes mention
+of extra arguments, but it kind of looked like the way to pass it was by
+using -u -@ - which didn't work of course. :)
 
-diff --git a/sound/soc/codecs/twl6040.c b/sound/soc/codecs/twl6040.c
-index ce9fb37..8b908ab 100644
---- a/sound/soc/codecs/twl6040.c
-+++ b/sound/soc/codecs/twl6040.c
-@@ -61,6 +61,9 @@
- #define TWL6040_REG_SW_SHADOW	0x2F
- #define TWL6040_CACHEREGNUM	(TWL6040_REG_SW_SHADOW + 1)
+So for reference:
+efibootmgr -L 'EFI Native Linux Boot' -l '\vmlinuz.efi' -d /dev/sdb -u root=/dev/sdb2 console=ttyS0,115200n8
+
+or as ASCII (reads much prettier in efibootmgr -v)
+efibootmgr -L 'EFI Native Linux Boot' -l '\vmlinuz.efi' -d /dev/sdb root=/dev/sdb2 console=ttyS0,115200n8
+
+This is the fixed patch I'm using for booting native linux kernel,
+with passing args tested for UCS-2 and ASCII. It seems that
+options_size can be halved safely, otherwise too much data is
+copied from input.
+
+I keep the first word, since otherwise the first argument is stripped off,
+and it's probably harmless for the kernel to read something like
+\vmlinuz.efi when you don't do a direct boot.
+
+Signed-off-by: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+
+diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
+index 6c34828..f77f9f5 100644
+--- a/arch/x86/boot/compressed/eboot.c
++++ b/arch/x86/boot/compressed/eboot.c
+@@ -619,12 +619,12 @@ static efi_status_t make_boot_params(struct boot_params *boot_params,
+ 	unsigned long cmdline;
+ 	u8 nr_entries;
+ 	u16 *s2;
+-	u8 *s1;
++	u8 *s1, *s2_8;
+ 	int i;
  
-+/* TWL6040_REG_SW_SHADOW (0x2F) fields */
-+#define TWL6040_EAR_PATH_ENABLE	0x01
-+
- struct twl6040_output {
- 	u16 active;
- 	u16 left_vol;
-@@ -987,8 +990,8 @@ static const struct snd_kcontrol_new hfl_mux_controls =
- static const struct snd_kcontrol_new hfr_mux_controls =
- 	SOC_DAPM_ENUM("Route", twl6040_hf_enum[1]);
+ 	hdr->type_of_loader = 0x21;
  
--static const struct snd_kcontrol_new ep_driver_switch_controls =
--	SOC_DAPM_SINGLE("Switch", TWL6040_REG_EARCTL, 0, 1, 0);
-+static const struct snd_kcontrol_new ep_path_enable_control =
-+	SOC_DAPM_SINGLE("Switch", TWL6040_REG_SW_SHADOW, 0, 1, 0);
+-	status = low_alloc(options_size, 1, &cmdline);
++	status = low_alloc(options_size+1, 1, &cmdline);
+ 	if (status != EFI_SUCCESS)
+ 		goto fail;
  
- /* Headset power mode */
- static const char *twl6040_power_mode_texts[] = {
-@@ -1161,6 +1164,9 @@ static const struct snd_soc_dapm_widget twl6040_dapm_widgets[] = {
- 	SND_SOC_DAPM_MUX("HS Right Playback",
- 			SND_SOC_NOPM, 0, 0, &hsr_mux_controls),
+@@ -633,27 +633,29 @@ static efi_status_t make_boot_params(struct boot_params *boot_params,
+ 	/* Convert unicode cmdline to ascii */
+ 	s1 = (u8 *)(unsigned long)hdr->cmd_line_ptr;
+ 	s2 = (u16 *)options;
++	s2_8 = (u8*)options;
  
-+	SND_SOC_DAPM_SWITCH("Earphone Playback", SND_SOC_NOPM, 0, 0,
-+			&ep_path_enable_control),
-+
- 	/* Analog playback drivers */
- 	SND_SOC_DAPM_OUT_DRV_E("Handsfree Left Driver",
- 			TWL6040_REG_HFLCTL, 4, 0, NULL, 0,
-@@ -1178,8 +1184,8 @@ static const struct snd_soc_dapm_widget twl6040_dapm_widgets[] = {
- 			TWL6040_REG_HSRCTL, 2, 0, NULL, 0,
- 			pga_event,
- 			SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_PRE_PMD),
--	SND_SOC_DAPM_SWITCH_E("Earphone Driver",
--			SND_SOC_NOPM, 0, 0, &ep_driver_switch_controls,
-+	SND_SOC_DAPM_OUT_DRV_E("Earphone Driver",
-+			TWL6040_REG_EARCTL, 0, 0, NULL, 0,
- 			twl6040_power_mode_event,
- 			SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_POST_PMD),
+-	if (s2 && options_size) {
+-		/* Skip first word, that's the kernel name */
+-		while (*s2 && *s2 != ' ' && *s2 != '\n') {
+-			options_size--;
+-			s2++;
+-		}
+-
+-		/* skip space */
+-		if (*s2 == ' ') {
+-			options_size--;
+-			s2++;
+-		}
+-
+-		while (options_size-- != 0) {
++	if (options_size < 2 || !s2) {
++		*s1 = '\0';
++	} else if (s2_8[1] && s2_8[1] < 0x80 && s2_8[0] < 0x80) {
++		/* Passed as ASCII */
++		s2 = NULL;
++		memcpy(s1, s2_8, options_size);
++		hdr->cmdline_size = options_size;
++	} else {
++		options_size /= 2; /* Passed as UCS-2 */
++		while (options_size-- != 0 && *s2) {
+ 			*s1++ = *s2++;
+ 			hdr->cmdline_size++;
+ 		}
+-
+ 		*s1 = '\0';
++		s1 = (u8 *)(unsigned long)hdr->cmd_line_ptr;
+ 	}
++	if (hdr->cmdline_size && s1[hdr->cmdline_size - 1] == '\0')
++		hdr->cmdline_size--;
++	if (hdr->cmdline_size && s1[hdr->cmdline_size - 1] == '\n')
++		hdr->cmdline_size--;
++	s1[hdr->cmdline_size] = '\0';
  
-@@ -1224,7 +1230,8 @@ static const struct snd_soc_dapm_route intercon[] = {
- 	{"HSOR", NULL, "Headset Right Driver"},
- 
- 	/* Earphone playback path */
--	{"Earphone Driver", "Switch", "HSDAC Left"},
-+	{"Earphone Playback", "Switch", "HSDAC Left"},
-+	{"Earphone Driver", NULL, "Earphone Playback"},
- 	{"EP", NULL, "Earphone Driver"},
- 
- 	{"HF Left Playback", "HF DAC", "HFDAC Left"},
--- 
-1.7.6.1
+ 	hdr->ramdisk_image = 0;
+ 	hdr->ramdisk_size = 0;
+
+
 
