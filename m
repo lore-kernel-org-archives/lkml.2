@@ -1,137 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755652Ab1IOJDi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 05:03:38 -0400
-Received: from mga02.intel.com ([134.134.136.20]:43517 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755428Ab1IOJDg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 05:03:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="48683005"
-From: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
-To: "cbou@mail.ru" <cbou@mail.ru>, Wolfram Sang <w.sang@pengutronix.de>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>
-CC: =?ks_c_5601-1987?B?udqw5rnO?= <kyungmin.park@samsung.com>,
-        "R, Durgadoss" <durgadoss.r@intel.com>,
-        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>,
-        Anton Vorontsov <cbouatmailru@gmail.com>
-Date: Thu, 15 Sep 2011 14:33:20 +0530
-Subject: RE: RE: [PATCHv1 1/1] [Power Supply]: Fix error handling in
- max17042 fuel gauge
-Thread-Topic: RE: [PATCHv1 1/1] [Power Supply]: Fix error handling in
- max17042 fuel gauge
-Thread-Index: AcxtOsRnz/g5r7rjSFiRud9kKwPRzgBEs2mQAL8dnyAAjkahkA==
-Message-ID: <12D0C12AF19E15409D57F22566E88EF50975CD2B34@bgsmsx501.gar.corp.intel.com>
-References: <14735031.596001315385240106.JavaMail.weblogic@epml15>
-  <12D0C12AF19E15409D57F22566E88EF50975C6147C@bgsmsx501.gar.corp.intel.com>
-In-Reply-To: <12D0C12AF19E15409D57F22566E88EF50975C6147C@bgsmsx501.gar.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="ks_c_5601-1987"
-MIME-Version: 1.0
+	id S1755787Ab1IOJFt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 05:05:49 -0400
+Received: from mtagate1.uk.ibm.com ([194.196.100.161]:52054 "EHLO
+	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755564Ab1IOJFr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Sep 2011 05:05:47 -0400
+Message-Id: <20110915090543.517351607@linux.vnet.ibm.com>
+User-Agent: quilt/0.48-1
+Date: Thu, 15 Sep 2011 11:04:41 +0200
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+To: vgoyal@redhat.com, akpm@linux-foundation.org
+Cc: ebiederm@xmission.com, mahesh@linux.vnet.ibm.com, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
+Subject: [patch v3 1/2] kdump: Add infrastructure for unmapping crashkernel memory
+References: <20110915090440.063421605@linux.vnet.ibm.com>
+Content-Disposition: inline; filename=s390-kdump-common-crash_map_pages.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id p8F93rGR027107
 
-Hi Anton/Sang/David,
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 
-> -----Original Message-----
-> From: Pallala, Ramakrishna
-> Sent: Monday, September 12, 2011 6:18 PM
-> To: Pallala, Ramakrishna; myungjoo.ham@samsung.com; linux-kernel@vger.kernel.org; Anton
-> Vorontsov; cbou@mail.ru
-> Cc: dwmw2@infradead.org; π⁄∞ÊπŒ; Wolfram Sang; R, Durgadoss
-> Subject: RE: RE: [PATCHv1 1/1] [Power Supply]: Fix error handling in max17042 fuel gauge
-> 
-> Hi Anton,
-> 
-> > -----Original Message-----
-> > From: Pallala, Ramakrishna
-> > Sent: Thursday, September 08, 2011 11:07 PM
-> > To: myungjoo.ham@samsung.com; linux-kernel@vger.kernel.org; Anton Vorontsov
-> > Cc: dwmw2@infradead.org; π⁄∞ÊπŒ; Wolfram Sang; R, Durgadoss
-> > Subject: RE: RE: [PATCHv1 1/1] [Power Supply]: Fix error handling in max17042 fuel
-> gauge
-> >
-> > Hi Anton,
-> >
-> > > -----Original Message-----
-> > > From: MyungJoo Ham [mailto:myungjoo.ham@samsung.com]
-> > > Sent: Wednesday, September 07, 2011 2:17 PM
-> > > To: Pallala, Ramakrishna; linux-kernel@vger.kernel.org
-> > > Cc: Anton Vorontsov; dwmw2@infradead.org; π⁄∞ÊπŒ; Wolfram Sang; R, Durgadoss
-> > > Subject: Re: RE: [PATCHv1 1/1] [Power Supply]: Fix error handling in max17042 fuel
-> > gauge
-> > >
-> > > Sender : Pallala, Ramakrishna<ramakrishna.pallala@intel.com> Date : 2011-09-07 17:30
-> > > (GMT+09:00)
-> > > > Hi MyungJoo,
-> > > >
-> > > > > -----Original Message-----
-> > > > > From: MyungJoo Ham [mailto:myungjoo.ham@samsung.com]
-> > > > > Sent: Monday, September 05, 2011 6:55 AM
-> > > > > To: Pallala, Ramakrishna; linux-kernel@vger.kernel.org
-> > > > > Cc: Anton Vorontsov; dwmw2@infradead.org; π⁄∞ÊπŒ; Wolfram Sang; R, Durgadoss
-> > > > > Subject: Re: [PATCHv1 1/1] [Power Supply]: Fix error handling in max17042 fuel
-> > gauge
-> > > > >
-> > > > > Sender : Ramakrishna Pallala<ramakrishna.pallala@intel.com> Date : 2011-09-02
-> > 15:45
-> > > > > (GMT+09:00)
-> > > > > >
-> > > > > > In max17042_get_property(...), the values returned by
-> > > > > > max17042_read_reg are directly assigned to the variables,
-> > > > > > even if the read results in an error.
-> > > > > >
-> > > > > > This patch checks for the return code from max17042_read_reg and
-> > > > > > exits the function if there is any error.
-> > > > > >
-> > > > > > Signed-off-by: Ramakrishna Pallala
-> > > > > > ---
-> > > > > > drivers/power/max17042_battery.c |   85 ++++++++++++++++++++++++++------------
-> > > > > > 1 files changed, 58 insertions(+), 27 deletions(-)
-> > > > > >
-> > > > >
-> > > > > Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-> > > >
-> > > > Thanks for the Ack.
-> > > > When can I expect the patch to be merged ?
-> > > >
-> > > > Thanks,
-> > > > Ram
-> > > >
-> > >
-> > > Hello Ram,
-> > >
-> > > Although I'd be so glad to be able to merge patches of MAX17042 (and
-> > > MAX8997/8998/8952/8903/...?) by myself; however, I'm not a maintainer of MAX17042.
-> > >
-> > > I guess you need to wait for Anton.
-> > >
-> > > Cheers,
-> > > MyungJoo
-> >
-> > When can I expect the patch to be merged ?
-> >
-> > Thanks,
-> > Ram
-> 
-> Please let me know your feedback on this patch.
-> 
-> Thanks,
-> Ram
+This patch introduces a mechanism that allows architecture backends to
+remove page tables for the crashkernel memory. This can protect the loaded
+kdump kernel from being overwritten by broken kernel code.  Two new
+functions crash_map_reserved_pages() and crash_unmap_reserved_pages() are
+added that can be implemented by architecture code.  The
+crash_map_reserved_pages() function is called before and
+crash_unmap_reserved_pages() after the crashkernel segments are loaded.  The
+functions are also called in crash_shrink_memory() to create/remove page
+tables when the crashkernel memory size is reduced.
 
-I have been waiting for your comments for two weeks.
-Please let me know when can I get the feedback on this patch.
+To support architectures that have large pages this patch also introduces
+a new define KEXEC_CRASH_MEM_ALIGN. The crashkernel start and size must 
+always be aligned with KEXEC_CRASH_MEM_ALIGN.
 
-Thanks,
-Ram
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+---
+ include/linux/kexec.h |    6 ++++++
+ kernel/kexec.c        |   21 +++++++++++++++++++--
+ 2 files changed, 25 insertions(+), 2 deletions(-)
+
+--- a/include/linux/kexec.h
++++ b/include/linux/kexec.h
+@@ -37,6 +37,10 @@
+ #define KEXEC_CRASH_CONTROL_MEMORY_LIMIT KEXEC_CONTROL_MEMORY_LIMIT
+ #endif
+ 
++#ifndef KEXEC_CRASH_MEM_ALIGN
++#define KEXEC_CRASH_MEM_ALIGN PAGE_SIZE
++#endif
++
+ #define KEXEC_NOTE_HEAD_BYTES ALIGN(sizeof(struct elf_note), 4)
+ #define KEXEC_CORE_NOTE_NAME "CORE"
+ #define KEXEC_CORE_NOTE_NAME_BYTES ALIGN(sizeof(KEXEC_CORE_NOTE_NAME), 4)
+@@ -133,6 +137,8 @@ extern void crash_kexec(struct pt_regs *
+ int kexec_should_crash(struct task_struct *);
+ void crash_save_cpu(struct pt_regs *regs, int cpu);
+ void crash_save_vmcoreinfo(void);
++void crash_map_reserved_pages(void);
++void crash_unmap_reserved_pages(void);
+ void arch_crash_save_vmcoreinfo(void);
+ void vmcoreinfo_append_str(const char *fmt, ...)
+ 	__attribute__ ((format (printf, 1, 2)));
+--- a/kernel/kexec.c
++++ b/kernel/kexec.c
+@@ -999,6 +999,7 @@ SYSCALL_DEFINE4(kexec_load, unsigned lon
+ 			kimage_free(xchg(&kexec_crash_image, NULL));
+ 			result = kimage_crash_alloc(&image, entry,
+ 						     nr_segments, segments);
++			crash_map_reserved_pages();
+ 		}
+ 		if (result)
+ 			goto out;
+@@ -1015,6 +1016,8 @@ SYSCALL_DEFINE4(kexec_load, unsigned lon
+ 				goto out;
+ 		}
+ 		kimage_terminate(image);
++		if (flags & KEXEC_ON_CRASH)
++			crash_unmap_reserved_pages();
+ 	}
+ 	/* Install the new kernel, and  Uninstall the old */
+ 	image = xchg(dest_image, image);
+@@ -1026,6 +1029,18 @@ out:
+ 	return result;
+ }
+ 
++/*
++ * Add and remove page tables for crashkernel memory
++ *
++ * Provide an empty default implementation here -- architecture
++ * code may override this
++ */
++void __weak crash_map_reserved_pages(void)
++{}
++
++void __weak crash_unmap_reserved_pages(void)
++{}
++
+ #ifdef CONFIG_COMPAT
+ asmlinkage long compat_sys_kexec_load(unsigned long entry,
+ 				unsigned long nr_segments,
+@@ -1134,14 +1149,16 @@ int crash_shrink_memory(unsigned long ne
+ 		goto unlock;
+ 	}
+ 
+-	start = roundup(start, PAGE_SIZE);
+-	end = roundup(start + new_size, PAGE_SIZE);
++	start = roundup(start, KEXEC_CRASH_MEM_ALIGN);
++	end = roundup(start + new_size, KEXEC_CRASH_MEM_ALIGN);
+ 
++	crash_map_reserved_pages();
+ 	crash_free_reserved_phys_range(end, crashk_res.end);
+ 
+ 	if ((start == end) && (crashk_res.parent != NULL))
+ 		release_resource(&crashk_res);
+ 	crashk_res.end = end - 1;
++	crash_unmap_reserved_pages();
+ 
+ unlock:
+ 	mutex_unlock(&kexec_mutex);
+
