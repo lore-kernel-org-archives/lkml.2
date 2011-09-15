@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753462Ab1IOBsX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 21:48:23 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:44274 "EHLO relay.sw.ru"
+	id S1753327Ab1IOBsG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 21:48:06 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:28150 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753116Ab1IOBsT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 21:48:19 -0400
+	id S1753208Ab1IOBrr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Sep 2011 21:47:47 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: linux-kernel@vger.kernel.org
 Cc: paul@paulmenage.org, lizf@cn.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com,
         ebiederm@xmission.com, davem@davemloft.net, gthelen@google.com,
         netdev@vger.kernel.org, linux-mm@kvack.org,
         Glauber Costa <glommer@parallels.com>
-Subject: [PATCH v2 5/7] per-netns ipv4 sysctl_tcp_mem
-Date: Wed, 14 Sep 2011 22:46:13 -0300
-Message-Id: <1316051175-17780-6-git-send-email-glommer@parallels.com>
+Subject: [PATCH v2 1/7] Basic kernel memory functionality for the Memory Controller
+Date: Wed, 14 Sep 2011 22:46:09 -0300
+Message-Id: <1316051175-17780-2-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <1316051175-17780-1-git-send-email-glommer@parallels.com>
 References: <1316051175-17780-1-git-send-email-glommer@parallels.com>
@@ -22,221 +22,303 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch allows each namespace to independently set up
-its levels for tcp memory pressure thresholds. This patch
-alone does not buy much: we need to make this values
-per group of process somehow. This is achieved in the
-patches that follows in this patchset.
+This patch lays down the foundation for the kernel memory component
+of the Memory Controller.
+
+As of today, I am only laying down the following files:
+
+ * memory.independent_kmem_limit
+ * memory.kmem.limit_in_bytes (currently ignored)
+ * memory.kmem.usage_in_bytes (always zero)
 
 Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: David S. Miller <davem@davemloft.net>
-CC: Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>
-CC: Eric W. Biederman <ebiederm@xmission.com>
+CC: Paul Menage <paul@paulmenage.org>
+CC: Greg Thelen <gthelen@google.com>
 ---
- include/net/netns/ipv4.h   |    1 +
- include/net/tcp.h          |    1 -
- mm/memcontrol.c            |    9 +++++--
- net/ipv4/sysctl_net_ipv4.c |   51 +++++++++++++++++++++++++++++++++++++------
- net/ipv4/tcp.c             |   13 ++--------
- 5 files changed, 54 insertions(+), 21 deletions(-)
+ Documentation/cgroups/memory.txt |   29 ++++++++++-
+ init/Kconfig                     |   11 ++++
+ mm/memcontrol.c                  |  105 ++++++++++++++++++++++++++++++++++++-
+ 3 files changed, 140 insertions(+), 5 deletions(-)
 
-diff --git a/include/net/netns/ipv4.h b/include/net/netns/ipv4.h
-index d786b4f..bbd023a 100644
---- a/include/net/netns/ipv4.h
-+++ b/include/net/netns/ipv4.h
-@@ -55,6 +55,7 @@ struct netns_ipv4 {
- 	int current_rt_cache_rebuild_count;
+diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+index 6f3c598..ca58eff 100644
+--- a/Documentation/cgroups/memory.txt
++++ b/Documentation/cgroups/memory.txt
+@@ -44,8 +44,9 @@ Features:
+  - oom-killer disable knob and oom-notifier
+  - Root cgroup has no limit controls.
  
- 	unsigned int sysctl_ping_group_range[2];
-+	long sysctl_tcp_mem[3];
+- Kernel memory and Hugepages are not under control yet. We just manage
+- pages on LRU. To add more controls, we have to take care of performance.
++ Hugepages is not under control yet. We just manage pages on LRU. To add more
++ controls, we have to take care of performance. Kernel memory support is work
++ in progress, and the current version provides basically functionality.
  
- 	atomic_t rt_genid;
- 	atomic_t dev_addr_genid;
-diff --git a/include/net/tcp.h b/include/net/tcp.h
-index ce3c211..257e1f9 100644
---- a/include/net/tcp.h
-+++ b/include/net/tcp.h
-@@ -231,7 +231,6 @@ extern int sysctl_tcp_fack;
- extern int sysctl_tcp_reordering;
- extern int sysctl_tcp_ecn;
- extern int sysctl_tcp_dsack;
--extern long sysctl_tcp_mem[3];
- extern int sysctl_tcp_wmem[3];
- extern int sysctl_tcp_rmem[3];
- extern int sysctl_tcp_app_win;
+ Brief summary of control files.
+ 
+@@ -56,8 +57,11 @@ Brief summary of control files.
+ 				 (See 5.5 for details)
+  memory.memsw.usage_in_bytes	 # show current res_counter usage for memory+Swap
+ 				 (See 5.5 for details)
++ memory.kmem.usage_in_bytes	 # show current res_counter usage for kmem only.
++				 (See 2.7 for details)
+  memory.limit_in_bytes		 # set/show limit of memory usage
+  memory.memsw.limit_in_bytes	 # set/show limit of memory+Swap usage
++ memory.kmem.limit_in_bytes	 # if allowed, set/show limit of kernel memory
+  memory.failcnt			 # show the number of memory usage hits limits
+  memory.memsw.failcnt		 # show the number of memory+Swap hits limits
+  memory.max_usage_in_bytes	 # show max memory usage recorded
+@@ -72,6 +76,9 @@ Brief summary of control files.
+  memory.oom_control		 # set/show oom controls.
+  memory.numa_stat		 # show the number of memory usage per numa node
+ 
++ memory.independent_kmem_limit	 # select whether or not kernel memory limits are
++				   independent of user limits
++
+ 1. History
+ 
+ The memory controller has a long history. A request for comments for the memory
+@@ -255,6 +262,24 @@ When oom event notifier is registered, event will be delivered.
+   per-zone-per-cgroup LRU (cgroup's private LRU) is just guarded by
+   zone->lru_lock, it has no lock of its own.
+ 
++2.7 Kernel Memory Extension (CONFIG_CGROUP_MEM_RES_CTLR_KMEM)
++
++ With the Kernel memory extension, the Memory Controller is able to limit
++the amount of kernel memory used by the system. Kernel memory is fundamentally
++different than user memory, since it can't be swapped out, which makes it
++possible to DoS the system by consuming too much of this precious resource.
++
++Memory limits as specified by the standard Memory Controller may or may not
++take kernel memory into consideration. This is achieved through the file
++memory.independent_kmem_limit. A Value different than 0 will allow for kernel
++memory to be controlled separately.
++
++When kernel memory limits are not independent, the limit values set in
++memory.kmem files are ignored.
++
++Currently no soft limit is implemented for kernel memory. It is future work
++to trigger slab reclaim when those limits are reached.
++
+ 3. User Interface
+ 
+ 0. Configuration
+diff --git a/init/Kconfig b/init/Kconfig
+index d627783..49e5839 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -689,6 +689,17 @@ config CGROUP_MEM_RES_CTLR_SWAP_ENABLED
+ 	  For those who want to have the feature enabled by default should
+ 	  select this option (if, for some reason, they need to disable it
+ 	  then swapaccount=0 does the trick).
++config CGROUP_MEM_RES_CTLR_KMEM
++	bool "Memory Resource Controller Kernel Memory accounting"
++	depends on CGROUP_MEM_RES_CTLR
++	default y
++	help
++	  The Kernel Memory extension for Memory Resource Controller can limit
++	  the amount of memory used by kernel objects in the system. Those are
++	  fundamentally different from the entities handled by the standard
++	  Memory Controller, which are page-based, and can be swapped. Users of
++	  the kmem extension can use it to guarantee that no group of processes
++	  will ever exhaust kernel resources alone.
+ 
+ config CGROUP_PERF
+ 	bool "Enable perf_event per-cpu per-container group (cgroup) monitoring"
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 7db430c..039cb79 100644
+index ebd1e86..1c5d01a 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -358,6 +358,8 @@ static struct mem_cgroup *parent_mem_cgroup(struct mem_cgroup *mem);
- #ifdef CONFIG_INET
- #include <net/tcp.h>
- #include <net/ip.h>
-+#include <linux/nsproxy.h>
+@@ -73,7 +73,11 @@ static int really_do_swap_account __initdata = 0;
+ #define do_swap_account		(0)
+ #endif
+ 
+-
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
++int do_kmem_account __read_mostly = 1;
++#else
++#define do_kmem_account		(0)
++#endif
+ /*
+  * Statistics for memory cgroup.
+  */
+@@ -270,6 +274,10 @@ struct mem_cgroup {
+ 	 */
+ 	struct res_counter memsw;
+ 	/*
++	 * the counter to account for kmem usage.
++	 */
++	struct res_counter kmem;
++	/*
+ 	 * Per cgroup active and inactive list, similar to the
+ 	 * per zone LRU lists.
+ 	 */
+@@ -321,6 +329,11 @@ struct mem_cgroup {
+ 	 */
+ 	unsigned long 	move_charge_at_immigrate;
+ 	/*
++	 * Should kernel memory limits be stabilished independently
++	 * from user memory ?
++	 */
++	int		kmem_independent;
++	/*
+ 	 * percpu counter.
+ 	 */
+ 	struct mem_cgroup_stat_cpu *stat;
+@@ -391,6 +404,7 @@ enum charge_type {
+ #define _MEM			(0)
+ #define _MEMSWAP		(1)
+ #define _OOM_TYPE		(2)
++#define _KMEM			(3)
+ #define MEMFILE_PRIVATE(x, val)	(((x) << 16) | (val))
+ #define MEMFILE_TYPE(val)	(((val) >> 16) & 0xffff)
+ #define MEMFILE_ATTR(val)	((val) & 0xffff)
+@@ -3941,12 +3955,18 @@ static unsigned long mem_cgroup_recursive_stat(struct mem_cgroup *mem,
+ static inline u64 mem_cgroup_usage(struct mem_cgroup *mem, bool swap)
+ {
+ 	u64 val;
++	u64 kmem = 0;
 +
- void memcg_sock_mem_alloc(struct mem_cgroup *mem, struct proto *prot,
- 			  int amt, int *parent_failure)
- {
-@@ -470,6 +472,7 @@ int tcp_init_cgroup(struct proto *prot, struct cgroup *cgrp,
- {
- 	struct mem_cgroup *cg = mem_cgroup_from_cont(cgrp);
- 	unsigned long limit;
-+	struct net *net = current->nsproxy->net_ns;
++	if (!mem->kmem_independent)
++		kmem = res_counter_read_u64(&mem->kmem, RES_USAGE);
  
- 	cg->tcp_memory_pressure = 0;
- 	atomic_long_set(&cg->tcp_memory_allocated, 0);
-@@ -478,9 +481,9 @@ int tcp_init_cgroup(struct proto *prot, struct cgroup *cgrp,
- 	limit = nr_free_buffer_pages() / 8;
- 	limit = max(limit, 128UL);
+ 	if (!mem_cgroup_is_root(mem)) {
+ 		if (!swap)
+-			return res_counter_read_u64(&mem->res, RES_USAGE);
++			kmem += res_counter_read_u64(&mem->res, RES_USAGE);
+ 		else
+-			return res_counter_read_u64(&mem->memsw, RES_USAGE);
++			kmem += res_counter_read_u64(&mem->memsw, RES_USAGE);
++
++		return kmem;
+ 	}
  
--	cg->tcp_prot_mem[0] = sysctl_tcp_mem[0];
--	cg->tcp_prot_mem[1] = sysctl_tcp_mem[1];
--	cg->tcp_prot_mem[2] = sysctl_tcp_mem[2];
-+	cg->tcp_prot_mem[0] = net->ipv4.sysctl_tcp_mem[0];
-+	cg->tcp_prot_mem[1] = net->ipv4.sysctl_tcp_mem[1];
-+	cg->tcp_prot_mem[2] = net->ipv4.sysctl_tcp_mem[2];
- 
- 	tcp_init_cgroup_fill(prot, cgrp, ss);
+ 	val = mem_cgroup_recursive_stat(mem, MEM_CGROUP_STAT_CACHE);
+@@ -3979,6 +3999,10 @@ static u64 mem_cgroup_read(struct cgroup *cont, struct cftype *cft)
+ 		else
+ 			val = res_counter_read_u64(&mem->memsw, name);
+ 		break;
++	case _KMEM:
++		val = res_counter_read_u64(&mem->kmem, name);
++		break;
++
+ 	default:
+ 		BUG();
+ 		break;
+@@ -4756,6 +4780,21 @@ static int mem_cgroup_reset_vmscan_stat(struct cgroup *cgrp,
  	return 0;
-diff --git a/net/ipv4/sysctl_net_ipv4.c b/net/ipv4/sysctl_net_ipv4.c
-index 69fd720..bbd67ab 100644
---- a/net/ipv4/sysctl_net_ipv4.c
-+++ b/net/ipv4/sysctl_net_ipv4.c
-@@ -14,6 +14,7 @@
- #include <linux/init.h>
- #include <linux/slab.h>
- #include <linux/nsproxy.h>
-+#include <linux/swap.h>
- #include <net/snmp.h>
- #include <net/icmp.h>
- #include <net/ip.h>
-@@ -174,6 +175,36 @@ static int proc_allowed_congestion_control(ctl_table *ctl,
+ }
+ 
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
++static u64 kmem_limit_independent_read(struct cgroup *cont, struct cftype *cft)
++{
++	return mem_cgroup_from_cont(cont)->kmem_independent;
++}
++
++static int kmem_limit_independent_write(struct cgroup *cont, struct cftype *cft,
++					u64 val)
++{
++	cgroup_lock();
++	mem_cgroup_from_cont(cont)->kmem_independent = !!val;
++	cgroup_unlock();
++	return 0;
++}
++#endif
+ 
+ static struct cftype mem_cgroup_files[] = {
+ 	{
+@@ -4877,6 +4916,46 @@ static int register_memsw_files(struct cgroup *cont, struct cgroup_subsys *ss)
+ }
+ #endif
+ 
++
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
++static struct cftype kmem_cgroup_files[] = {
++	{
++		.name = "independent_kmem_limit",
++		.read_u64 = kmem_limit_independent_read,
++		.write_u64 = kmem_limit_independent_write,
++	},
++	{
++		.name = "kmem.usage_in_bytes",
++		.private = MEMFILE_PRIVATE(_KMEM, RES_USAGE),
++		.read_u64 = mem_cgroup_read,
++		.register_event = mem_cgroup_usage_register_event,
++		.unregister_event = mem_cgroup_usage_unregister_event,
++	},
++	{
++		.name = "kmem.limit_in_bytes",
++		.private = MEMFILE_PRIVATE(_KMEM, RES_LIMIT),
++		.read_u64 = mem_cgroup_read,
++		.register_event = mem_cgroup_usage_register_event,
++		.unregister_event = mem_cgroup_usage_unregister_event,
++	},
++};
++
++static int register_kmem_files(struct cgroup *cont, struct cgroup_subsys *ss)
++{
++	if (!do_kmem_account)
++		return 0;
++
++	return cgroup_add_files(cont, ss, kmem_cgroup_files,
++				ARRAY_SIZE(kmem_cgroup_files));
++};
++
++#else
++static int register_kmem_files(struct cgroup *cont, struct cgroup_subsys *ss)
++{
++	return 0;
++}
++#endif
++
+ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *mem, int node)
+ {
+ 	struct mem_cgroup_per_node *pn;
+@@ -5075,6 +5154,7 @@ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
+ 	if (parent && parent->use_hierarchy) {
+ 		res_counter_init(&mem->res, &parent->res);
+ 		res_counter_init(&mem->memsw, &parent->memsw);
++		res_counter_init(&mem->kmem, &parent->kmem);
+ 		/*
+ 		 * We increment refcnt of the parent to ensure that we can
+ 		 * safely access it on res_counter_charge/uncharge.
+@@ -5085,6 +5165,7 @@ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
+ 	} else {
+ 		res_counter_init(&mem->res, NULL);
+ 		res_counter_init(&mem->memsw, NULL);
++		res_counter_init(&mem->kmem, NULL);
+ 	}
+ 	mem->last_scanned_child = 0;
+ 	mem->last_scanned_node = MAX_NUMNODES;
+@@ -5129,6 +5210,10 @@ static int mem_cgroup_populate(struct cgroup_subsys *ss,
+ 
+ 	if (!ret)
+ 		ret = register_memsw_files(cont, ss);
++
++	if (!ret)
++		ret = register_kmem_files(cont, ss);
++
  	return ret;
  }
  
-+static int ipv4_tcp_mem(ctl_table *ctl, int write,
-+			   void __user *buffer, size_t *lenp,
-+			   loff_t *ppos)
+@@ -5665,3 +5750,17 @@ static int __init enable_swap_account(char *s)
+ __setup("swapaccount=", enable_swap_account);
+ 
+ #endif
++
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
++static int __init disable_kmem_account(char *s)
 +{
-+	int ret;
-+	unsigned long vec[3];
-+	struct net *net = current->nsproxy->net_ns;
-+
-+	ctl_table tmp = {
-+		.data = &vec,
-+		.maxlen = sizeof(vec),
-+		.mode = ctl->mode,
-+	};
-+
-+	if (!write) {
-+		ctl->data = &net->ipv4.sysctl_tcp_mem;
-+		return proc_doulongvec_minmax(ctl, write, buffer, lenp, ppos);
-+	}
-+
-+	ret = proc_doulongvec_minmax(&tmp, write, buffer, lenp, ppos);
-+	if (ret)
-+		return ret;
-+
-+	net->ipv4.sysctl_tcp_mem[0] = vec[0];
-+	net->ipv4.sysctl_tcp_mem[1] = vec[1];
-+	net->ipv4.sysctl_tcp_mem[2] = vec[2];
-+
-+	return 0;
++	/* consider enabled if no parameter or 1 is given */
++	if (!strcmp(s, "1"))
++		do_kmem_account = 1;
++	else if (!strcmp(s, "0"))
++		do_kmem_account = 0;
++	return 1;
 +}
++__setup("kmemaccount=", disable_kmem_account);
 +
- static struct ctl_table ipv4_table[] = {
- 	{
- 		.procname	= "tcp_timestamps",
-@@ -433,13 +464,6 @@ static struct ctl_table ipv4_table[] = {
- 		.proc_handler	= proc_dointvec
- 	},
- 	{
--		.procname	= "tcp_mem",
--		.data		= &sysctl_tcp_mem,
--		.maxlen		= sizeof(sysctl_tcp_mem),
--		.mode		= 0644,
--		.proc_handler	= proc_doulongvec_minmax
--	},
--	{
- 		.procname	= "tcp_wmem",
- 		.data		= &sysctl_tcp_wmem,
- 		.maxlen		= sizeof(sysctl_tcp_wmem),
-@@ -721,6 +745,12 @@ static struct ctl_table ipv4_net_table[] = {
- 		.mode		= 0644,
- 		.proc_handler	= ipv4_ping_group_range,
- 	},
-+	{
-+		.procname	= "tcp_mem",
-+		.maxlen		= sizeof(init_net.ipv4.sysctl_tcp_mem),
-+		.mode		= 0644,
-+		.proc_handler	= ipv4_tcp_mem,
-+	},
- 	{ }
- };
- 
-@@ -734,6 +764,7 @@ EXPORT_SYMBOL_GPL(net_ipv4_ctl_path);
- static __net_init int ipv4_sysctl_init_net(struct net *net)
- {
- 	struct ctl_table *table;
-+	unsigned long limit;
- 
- 	table = ipv4_net_table;
- 	if (!net_eq(net, &init_net)) {
-@@ -769,6 +800,12 @@ static __net_init int ipv4_sysctl_init_net(struct net *net)
- 
- 	net->ipv4.sysctl_rt_cache_rebuild_count = 4;
- 
-+	limit = nr_free_buffer_pages() / 8;
-+	limit = max(limit, 128UL);
-+	net->ipv4.sysctl_tcp_mem[0] = limit / 4 * 3;
-+	net->ipv4.sysctl_tcp_mem[1] = limit;
-+	net->ipv4.sysctl_tcp_mem[2] = net->ipv4.sysctl_tcp_mem[0] * 2;
-+
- 	net->ipv4.ipv4_hdr = register_net_sysctl_table(net,
- 			net_ipv4_ctl_path, table);
- 	if (net->ipv4.ipv4_hdr == NULL)
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 156b836..a94a0f1 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -282,11 +282,9 @@ int sysctl_tcp_fin_timeout __read_mostly = TCP_FIN_TIMEOUT;
- struct percpu_counter tcp_orphan_count;
- EXPORT_SYMBOL_GPL(tcp_orphan_count);
- 
--long sysctl_tcp_mem[3] __read_mostly;
- int sysctl_tcp_wmem[3] __read_mostly;
- int sysctl_tcp_rmem[3] __read_mostly;
- 
--EXPORT_SYMBOL(sysctl_tcp_mem);
- EXPORT_SYMBOL(sysctl_tcp_rmem);
- EXPORT_SYMBOL(sysctl_tcp_wmem);
- 
-@@ -333,7 +331,7 @@ EXPORT_SYMBOL(tcp_enter_memory_pressure_nocg);
- 
- long *tcp_sysctl_mem_nocg(struct mem_cgroup *sg)
- {
--	return sysctl_tcp_mem;
-+	return init_net.ipv4.sysctl_tcp_mem;
- }
- EXPORT_SYMBOL(tcp_sysctl_mem_nocg);
- 
-@@ -3296,14 +3294,9 @@ void __init tcp_init(void)
- 	sysctl_tcp_max_orphans = cnt / 2;
- 	sysctl_max_syn_backlog = max(128, cnt / 256);
- 
--	limit = nr_free_buffer_pages() / 8;
--	limit = max(limit, 128UL);
--	sysctl_tcp_mem[0] = limit / 4 * 3;
--	sysctl_tcp_mem[1] = limit;
--	sysctl_tcp_mem[2] = sysctl_tcp_mem[0] * 2;
--
- 	/* Set per-socket limits to no more than 1/128 the pressure threshold */
--	limit = ((unsigned long)sysctl_tcp_mem[1]) << (PAGE_SHIFT - 7);
-+	limit = ((unsigned long)init_net.ipv4.sysctl_tcp_mem[1])
-+		<< (PAGE_SHIFT - 7);
- 	max_share = min(4UL*1024*1024, limit);
- 
- 	sysctl_tcp_wmem[0] = SK_MEM_QUANTUM;
++#endif
 -- 
 1.7.6
 
