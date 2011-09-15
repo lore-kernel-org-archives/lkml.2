@@ -1,53 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933694Ab1IONDv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 09:03:51 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:33606 "EHLO comal.ext.ti.com"
+	id S933690Ab1IONKO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 09:10:14 -0400
+Received: from dash.upc.es ([147.83.2.50]:34586 "EHLO dash.upc.es"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933535Ab1IONDu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 09:03:50 -0400
-Message-ID: <4E71F79C.6080900@ti.com>
-Date: Thu, 15 Sep 2011 15:03:24 +0200
-From: "Cousson, Benoit" <b-cousson@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
+	id S933338Ab1IONKN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Sep 2011 09:10:13 -0400
+X-Greylist: delayed 417 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Sep 2011 09:10:12 EDT
+To: linux-kernel@vger.kernel.org, Adam Baker <linux@baker-net.org.uk>
+Subject: [PATCH/RFC] parport_pc: remove ancient, overeager quirk that disables EPP support on many chipsets
+Cc: linux-parport@lists.infradead.org, 630593@bugs.debian.org,
+        Nicos Gollan <gollan@informatik.uni-kl.de>, Greg KH <greg@kroah.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Alexander Gordeev <lasaine@lvk.cs.msu.su>,
+        Jonathan Nieder <jrnieder@gmail.com>
+From: "Leopold Palomo-Avellaneda" <leopold.palomo@upc.edu>
+Reply-To: leopold.palomo@upc.edu
+Date: Thu, 15 Sep 2011 15:02:36 +0200
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Rob Herring <robherring2@gmail.com>,
-        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        "jamie@jamieiles.com" <jamie@jamieiles.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 5/5] ARM: gic: add OF based initialization
-References: <1316017900-19918-1-git-send-email-robherring2@gmail.com> <1316017900-19918-6-git-send-email-robherring2@gmail.com> <CAJuYYwSFu2HC+u2NY41+yw9tEyy85RKa4Dpm3SL+jbwS_OOA0A@mail.gmail.com> <4E71CE5D.9030900@ti.com> <20110915102915.GJ6267@n2100.arm.linux.org.uk> <4E71EF56.3050503@ti.com> <20110915125107.GK6267@n2100.arm.linux.org.uk>
-In-Reply-To: <20110915125107.GK6267@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: Multipart/Mixed;
+  boundary="Boundary-00=_sdfcOoZueM0tUyz"
+Message-Id: <201109151502.36740.leopold.palomo@upc.edu>
+X-Mail-Scanned: Criba 2.0 + Clamd
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (dash.upc.es [147.83.2.50]); Thu, 15 Sep 2011 15:02:40 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/15/2011 2:51 PM, Russell King - ARM Linux wrote:
-> On Thu, Sep 15, 2011 at 02:28:06PM +0200, Cousson, Benoit wrote:
->> The HW specs is obviously counting the IRQ number at the GIC interface.
->> That offset is not known outside the MPUSS. Please have a look at the
->> OMAP4430 TRM p4761 (NDA vM version).
->
-> As far as I know, I have no access to that.  I've certainly never been
-> pointed to any documentation on OMAP4.
+--Boundary-00=_sdfcOoZueM0tUyz
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
 
-That's easy to fix since the same information is in the public TRM 
-(p3386 in that case). And here is the link:
-http://focus.ti.com/pdfs/wtbu/OMAP4430_ES2.x_PUBLIC_TRM_vX.zip
+Hi again,
 
-Do not hesitate to ask if you never further information on OMAP SoC.
+sorry for the noise and my mistake. The patch...
 
-Regards,
-Benoit
+there's a bug in the parport module that have been reported (in another 
+places) some time ago [1]. Also, this bug was reported at Redhat [2], but 
+nobody follow the report and it was closed.
+
+As Adam Baker said [1] :
+
+<quote>
+A long time ago (~ 10 years), Intel produced a chipset that 
+included broken EPP support. The Linux parport driver was written to detect 
+such a chipset and disable EPP support on it. Unfortunately the test that was 
+written gives false positives for many current chipsets and no-one seems to 
+know exactly what the problem hardware was, let alone have a sample of it to 
+see if a better test can be written. After such a long time it is probably 
+appropriate to just remove the test (on average it does more harm than good) 
+however you are correct in asserting the driver is unmaintained so no-one is 
+bothering to fix it.
+</quote>
+
+I have applied the patch to the standard debian kernel and vanilla kernels and 
+runs perfectly. The patch simply erases a check. Applied to some Dell 
+hardware, now the EPP mode is detected and, after some initial tests it's 
+working.
+
+Please, apply the patch.
+
+Best regards,
+
+Leo
+
+[1] http://lists.infradead.org/pipermail/linux-parport/2008-March/000628.html
+[2] https://bugzilla.redhat.com/show_bug.cgi?id=284471
+
+
+Signed-off-by: Adam Baker <linux at baker-net.org.uk>
+Signed-off-by: Leopold Palomo-Avellaneda <leo@alaxarxa.net>
+
+
+---
+
+--Boundary-00=_sdfcOoZueM0tUyz
+Content-Type: text/x-patch;
+  charset="utf-8";
+  name="patch_parport_bug.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+	filename="patch_parport_bug.patch"
+
+--- linux-2.6-3.0.0/drivers/parport/parport_pc.c.orig	2011-09-13 16:29:54.333048437 +0200
++++ linux-2.6-3.0.0/drivers/parport/parport_pc.c	2011-09-13 16:30:39.933451659 +0200
+@@ -2018,18 +2018,6 @@ static int parport_EPP_supported(struct
+ 	if (!clear_epp_timeout(pb))
+ 		return 0;  /* No way to clear timeout */
+ 
+-	/* Check for Intel bug. */
+-	if (priv->ecr) {
+-		unsigned char i;
+-		for (i = 0x00; i < 0x80; i += 0x20) {
+-			ECR_WRITE(pb, i);
+-			if (clear_epp_timeout(pb)) {
+-				/* Phony EPP in ECP. */
+-				return 0;
+-			}
+-		}
+-	}
+-
+ 	pb->modes |= PARPORT_MODE_EPP;
+ 
+ 	/* Set up access functions to use EPP hardware. */
+
+--Boundary-00=_sdfcOoZueM0tUyz--
