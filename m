@@ -1,74 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935369Ab1IOXIf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 19:08:35 -0400
-Received: from mga02.intel.com ([134.134.136.20]:26360 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935302Ab1IOXHI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 19:07:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="48921897"
+	id S935325Ab1IOXK6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 19:10:58 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:56148 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935246Ab1IOXK5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Sep 2011 19:10:57 -0400
+Date: Fri, 16 Sep 2011 01:10:53 +0200
 From: Andi Kleen <andi@firstfloor.org>
-To: viro@zeniv.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 7/7] LSEEK: BTRFS: Avoid i_mutex for SEEK_{CUR,SET,END}
-Date: Thu, 15 Sep 2011 16:06:53 -0700
-Message-Id: <1316128013-21980-8-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1316128013-21980-1-git-send-email-andi@firstfloor.org>
-References: <1316128013-21980-1-git-send-email-andi@firstfloor.org>
+To: Josh Boyer <jwboyer@gmail.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Andi Kleen <ak@linux.intel.com>,
+        linux-kernel@vger.kernel.org, benh@kernel.crashing.org
+Subject: Re: [PATCH 07/27] Initconst section fixes for POWERPC
+Message-ID: <20110915231053.GD7761@one.firstfloor.org>
+References: <1316117394-21666-1-git-send-email-andi@firstfloor.org> <1316117394-21666-8-git-send-email-andi@firstfloor.org> <CA+5PVA66idjR6uLaJOJm81ZJrjRiYQVJMvKNttAS7B=4iUoqVQ@mail.gmail.com> <4E726489.6080606@linux.intel.com> <CA+5PVA52Q+9jBbF7fdjDgpkv9rAwPKgyH+34zMPxYXusn-LctQ@mail.gmail.com> <20110915205709.GB7761@one.firstfloor.org> <CA+5PVA416wv7fLxyKCe3w+LAmqhJa3d14TeqXxwM_oAbixci5w@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+5PVA416wv7fLxyKCe3w+LAmqhJa3d14TeqXxwM_oAbixci5w@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+> I'm not arguing against the patch.  I just want to poke around with
+> what you're reporting.  Where can one get the toolkit?
 
-Don't need the i_mutex for those cases, only for SEEK_HOLE/DATA.
+You currently need a gcc 4.7, HJ Lu's binutils, a rather largish patchkit
+of mine to enable a kernel LTO build and then it doesn't quite build yet
+due to some gcc bugs, but gets far enough to complain about invalid
+section attribute mismatches.
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- fs/btrfs/file.c |   18 ++++++------------
- 1 files changed, 6 insertions(+), 12 deletions(-)
+I think the people who originally introduced initconst* triggered
+it in the linker, but I'm not fully sure how they did it.
+What happens is that the linker silently has to change the 'r'
+attribute of that section, this can be flagged.
 
-diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
-index 62f56d4..ae7f37e 100644
---- a/fs/btrfs/file.c
-+++ b/fs/btrfs/file.c
-@@ -1809,18 +1809,13 @@ static loff_t btrfs_file_llseek(struct file *file, loff_t offset, int origin)
- 	struct inode *inode = file->f_mapping->host;
- 	int ret;
- 
-+	if (origin != SEEK_DATA && origin != SEEK_HOLE)
-+		return generic_file_llseek(file, offset, origin);
-+
- 	mutex_lock(&inode->i_mutex);
--	switch (origin) {
--	case SEEK_END:
--	case SEEK_CUR:
--		offset = generic_file_llseek(file, offset, origin);
--		goto out;
--	case SEEK_DATA:
--	case SEEK_HOLE:
--		ret = find_desired_extent(inode, &offset, origin);
--		if (ret)
--			goto error;
--	}
-+	ret = find_desired_extent(inode, &offset, origin);
-+	if (ret)
-+		goto error;
- 
- 	if (offset < 0 && !(file->f_mode & FMODE_UNSIGNED_OFFSET)) {
- 		ret = -EINVAL;
-@@ -1836,7 +1831,6 @@ static loff_t btrfs_file_llseek(struct file *file, loff_t offset, int origin)
- 		file->f_pos = offset;
- 		file->f_version = 0;
- 	}
--out:
- 	mutex_unlock(&inode->i_mutex);
- 	return offset;
- error:
+-Andi
 -- 
-1.7.4.4
-
+ak@linux.intel.com -- Speaking for myself only.
