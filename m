@@ -1,100 +1,324 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933857Ab1ION1A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 09:27:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64719 "EHLO mx1.redhat.com"
+	id S933862Ab1ION1W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 09:27:22 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:37682 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933811Ab1ION0z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 09:26:55 -0400
-Date: Thu, 15 Sep 2011 10:26:14 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Eric B Munson <emunson@mgebm.net>
-Cc: Anthony Liguori <anthony@codemonkey.ws>, avi@redhat.com,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, arnd@arndb.de,
-        riel@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, kvm-ppc@vger.kernel.org,
-        aliguori@us.ibm.com, raharper@us.ibm.com, kvm-ia64@vger.kernel.org,
-        Glauber Costa <glommer@gmail.com>, mjwolf@us.ibm.com
-Subject: Re: [PATCH 0/4] Avoid soft lockup message when KVM is stopped by host
-Message-ID: <20110915132614.GA7101@amt.cnet>
-References: <1314660435-23293-1-git-send-email-emunson@mgebm.net>
- <20110830122630.GA19450@amt.cnet>
- <4E5FDBDC.2030302@codemonkey.ws>
- <6c387b0ab0b091253c1a1488dd625b94@mgebm.net>
- <20110909132955.GA19459@amt.cnet>
- <20110913204955.GD9096@mgebm.net>
+	id S933788Ab1IONZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Sep 2011 09:25:55 -0400
+From: Keshava Munegowda <keshava_mgowda@ti.com>
+To: <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <b-cousson@ti.com>
+CC: Keshava Munegowda <keshava_mgowda@ti.com>, <balbi@ti.com>,
+        <gadiyar@ti.com>, <sameo@linux.intel.com>, <parthab@india.ti.com>,
+        <tony@atomide.com>, <khilman@ti.com>, <paul@pwsan.com>,
+        <johnstul@us.ibm.com>, <vishwanath.bs@ti.com>
+Subject: [PATCH 1/5 v9] arm: omap: usb: ehci and ohci hwmod structures for omap4
+Date: Thu, 15 Sep 2011 18:52:46 +0530
+Message-ID: <1316092970-2440-2-git-send-email-keshava_mgowda@ti.com>
+X-Mailer: git-send-email 1.6.0.4
+In-Reply-To: <1316092970-2440-1-git-send-email-keshava_mgowda@ti.com>
+References: <1316092970-2440-1-git-send-email-keshava_mgowda@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110913204955.GD9096@mgebm.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 13, 2011 at 04:49:55PM -0400, Eric B Munson wrote:
-> On Fri, 09 Sep 2011, Marcelo Tosatti wrote:
-> 
-> > On Thu, Sep 01, 2011 at 02:27:49PM -0600, emunson@mgebm.net wrote:
-> > > On Thu, 01 Sep 2011 14:24:12 -0500, Anthony Liguori wrote:
-> > > >On 08/30/2011 07:26 AM, Marcelo Tosatti wrote:
-> > > >>On Mon, Aug 29, 2011 at 05:27:11PM -0600, Eric B Munson wrote:
-> > > >>>Currently, when qemu stops a guest kernel that guest will
-> > > >>>issue a soft lockup
-> > > >>>message when it resumes.  This set provides the ability for
-> > > >>>qemu to comminucate
-> > > >>>to the guest that it has been stopped.  When the guest hits
-> > > >>>the watchdog on
-> > > >>>resume it will check if it was suspended before issuing the
-> > > >>>warning.
-> > > >>>
-> > > >>>Eric B Munson (4):
-> > > >>>   Add flag to indicate that a vm was stopped by the host
-> > > >>>   Add functions to check if the host has stopped the vm
-> > > >>>   Add generic stubs for kvm stop check functions
-> > > >>>   Add check for suspended vm in softlockup detector
-> > > >>>
-> > > >>>  arch/x86/include/asm/pvclock-abi.h |    1 +
-> > > >>>  arch/x86/include/asm/pvclock.h     |    2 ++
-> > > >>>  arch/x86/kernel/kvmclock.c         |   14 ++++++++++++++
-> > > >>>  include/asm-generic/pvclock.h      |   14 ++++++++++++++
-> > > >>>  kernel/watchdog.c                  |   12 ++++++++++++
-> > > >>>  5 files changed, 43 insertions(+), 0 deletions(-)
-> > > >>>  create mode 100644 include/asm-generic/pvclock.h
-> > > >>>
-> > > >>>--
-> > > >>>1.7.4.1
-> > > >>
-> > > >>How is the host supposed to set this flag?
-> > > >>
-> > > >>As mentioned previously, if you save save/restore the offset
-> > > >>added to
-> > > >>kvmclock on stop/cont (and the TSC MSR, forgot to mention that), no
-> > > >>paravirt infrastructure is required. Which means the issue is
-> > > >>also fixed
-> > > >>for older guests.
-> > > >
-> 
-> Marcelo,
-> 
-> I think that stopping the TSC is the wrong approach because it will break time
-> between the two systems so timething that expects the monotonic clock to move
-> consistently will be wrong.
+From: Benoit Cousson <b-cousson@ti.com>
 
-In case the VM stops for whatever reason, the host system is not
-supposed to adjust time related hardware state to compensate, in an
-attempt to present apparent continuous time.
+Following 4 hwmod structures are added:
+UHH hwmod of usbhs with uhh base address and functional clock,
+EHCI hwmod with irq and base address,
+OHCI hwmod with irq and base address,
+TLL hwmod of usbhs with the TLL base address and irq.
 
-If you save a VM and then restore it later, it is the guest
-responsability to adjust its time representation.
+Signed-off-by: Benoit Cousson <b-cousson@ti.com>
+Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
+---
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c |  249 +++++++++++++++++++++++++++-
+ 1 files changed, 248 insertions(+), 1 deletions(-)
 
-QEMU exposing continuous TSC and kvmclock state between "stop" and
-"cont" should not be a reason to introduce new paravirt infrastructure.
-
->  IMO, messing with the TSC at run time to avoid a watchdog message
-> is the wrong solution, better to teach the watchdog to ignore this
-> special case.
-
-OK then, it is not a harmful addition, can you post the QEMU patches to
-set the "ignore watchdog" bit.
+diff --git a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+index 6201422..f06efa6 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+@@ -68,6 +68,10 @@ static struct omap_hwmod omap44xx_mmc2_hwmod;
+ static struct omap_hwmod omap44xx_mpu_hwmod;
+ static struct omap_hwmod omap44xx_mpu_private_hwmod;
+ static struct omap_hwmod omap44xx_usb_otg_hs_hwmod;
++static struct omap_hwmod omap44xx_usb_host_hs_hwmod;
++static struct omap_hwmod omap44xx_usbhs_ohci_hwmod;
++static struct omap_hwmod omap44xx_usbhs_ehci_hwmod;
++static struct omap_hwmod omap44xx_usb_tll_hs_hwmod;
+ 
+ /*
+  * Interconnects omap_hwmod structures
+@@ -5336,6 +5340,244 @@ static struct omap_hwmod omap44xx_wd_timer3_hwmod = {
+ 	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP4430),
+ };
+ 
++/*
++ * 'usb_host_hs' class
++ * high-speed multi-port usb host controller
++ */
++static struct omap_hwmod_ocp_if omap44xx_usb_host_hs__l3_main_2 = {
++	.master		= &omap44xx_usb_host_hs_hwmod,
++	.slave		= &omap44xx_l3_main_2_hwmod,
++	.clk		= "l3_div_ck",
++	.user		= OCP_USER_MPU | OCP_USER_SDMA,
++};
++
++static struct omap_hwmod_class_sysconfig omap44xx_usb_host_hs_sysc = {
++	.rev_offs	= 0x0000,
++	.sysc_offs	= 0x0010,
++	.syss_offs	= 0x0014,
++	.sysc_flags	= (SYSC_HAS_MIDLEMODE | SYSC_HAS_SIDLEMODE),
++	.idlemodes      = (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
++			SIDLE_SMART_WKUP | MSTANDBY_FORCE | MSTANDBY_NO |
++			MSTANDBY_SMART | MSTANDBY_SMART_WKUP),
++	.sysc_fields	= &omap_hwmod_sysc_type2,
++};
++
++static struct omap_hwmod_class omap44xx_usb_host_hs_hwmod_class = {
++	.name = "usbhs_uhh",
++	.sysc = &omap44xx_usb_host_hs_sysc,
++};
++
++static struct omap_hwmod_ocp_if *omap44xx_usb_host_hs_masters[] = {
++	&omap44xx_usb_host_hs__l3_main_2,
++};
++
++static struct omap_hwmod_addr_space omap44xx_usb_host_hs_addrs[] = {
++	{
++		.name		= "uhh",
++		.pa_start	= 0x4a064000,
++		.pa_end		= 0x4a0647ff,
++		.flags		= ADDR_TYPE_RT
++	},
++	{}
++};
++
++static struct omap_hwmod_ocp_if omap44xx_l4_cfg__usb_host_hs = {
++	.master		= &omap44xx_l4_cfg_hwmod,
++	.slave		= &omap44xx_usb_host_hs_hwmod,
++	.clk		= "l4_div_ck",
++	.addr		= omap44xx_usb_host_hs_addrs,
++	.user		= OCP_USER_MPU | OCP_USER_SDMA,
++};
++
++static struct omap_hwmod_ocp_if *omap44xx_usb_host_hs_slaves[] = {
++	&omap44xx_l4_cfg__usb_host_hs,
++};
++
++static struct omap_hwmod omap44xx_usb_host_hs_hwmod = {
++	.name		= "usbhs_uhh",
++	.class		= &omap44xx_usb_host_hs_hwmod_class,
++	.clkdm_name	= "l3_init_clkdm",
++	.main_clk	= "usb_host_hs_fck",
++	.prcm = {
++		.omap4 = {
++			.clkctrl_offs = OMAP4_CM_L3INIT_USB_HOST_CLKCTRL_OFFSET,
++			.context_offs = OMAP4_RM_L3INIT_USB_HOST_CONTEXT_OFFSET,
++			.modulemode   = MODULEMODE_SWCTRL,
++		},
++	},
++	.slaves		= omap44xx_usb_host_hs_slaves,
++	.slaves_cnt	= ARRAY_SIZE(omap44xx_usb_host_hs_slaves),
++	.masters	= omap44xx_usb_host_hs_masters,
++	.masters_cnt	= ARRAY_SIZE(omap44xx_usb_host_hs_masters),
++	.flags		= HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY,
++	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP4430),
++};
++
++/* 'usbhs_ohci' class */
++static struct omap_hwmod_class omap44xx_usbhs_ohci_hwmod_class = {
++	.name = "usbhs_ohci",
++};
++
++static struct omap_hwmod_irq_info omap44xx_usbhs_ohci_irqs[] = {
++	{ .name = "ohci-irq", .irq = 76 + OMAP44XX_IRQ_GIC_START },
++	{ .irq = -1 }
++};
++
++static struct omap_hwmod_addr_space omap44xx_usbhs_ohci_addrs[] = {
++	{
++		.name		= "ohci",
++		.pa_start	= 0x4A064800,
++		.pa_end		= 0x4A064BFF,
++		.flags		= ADDR_MAP_ON_INIT
++	},
++	{}
++};
++
++static struct omap_hwmod_ocp_if omap44xx_l4_cfg__usbhs_ohci = {
++	.master		= &omap44xx_l4_cfg_hwmod,
++	.slave		= &omap44xx_usbhs_ohci_hwmod,
++	.clk		= "l4_div_ck",
++	.addr		= omap44xx_usbhs_ohci_addrs,
++	.user		= OCP_USER_MPU | OCP_USER_SDMA,
++};
++
++static struct omap_hwmod_ocp_if *omap44xx_usbhs_ohci_slaves[] = {
++	&omap44xx_l4_cfg__usbhs_ohci,
++};
++
++static struct omap_hwmod_ocp_if *omap44xx_usbhs_ohci_masters[] = {
++	&omap44xx_usb_host_hs__l3_main_2,
++};
++
++static struct omap_hwmod omap44xx_usbhs_ohci_hwmod = {
++	.name		= "usbhs_ohci",
++	.class		= &omap44xx_usbhs_ohci_hwmod_class,
++	.clkdm_name	= "l3_init_clkdm",
++	.mpu_irqs	= omap44xx_usbhs_ohci_irqs,
++	.slaves		= omap44xx_usbhs_ohci_slaves,
++	.slaves_cnt	= ARRAY_SIZE(omap44xx_usbhs_ohci_slaves),
++	.masters	= omap44xx_usbhs_ohci_masters,
++	.masters_cnt	= ARRAY_SIZE(omap44xx_usbhs_ohci_masters),
++	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP4430),
++	.flags		= HWMOD_INIT_NO_RESET | HWMOD_NO_IDLEST,
++};
++
++/* 'usbhs_ehci' class */
++static struct omap_hwmod_class omap44xx_usbhs_ehci_hwmod_class = {
++	.name = "usbhs_ehci",
++};
++
++static struct omap_hwmod_irq_info omap44xx_usbhs_ehci_irqs[] = {
++	{ .name = "ehci-irq", .irq = 77 + OMAP44XX_IRQ_GIC_START },
++	{ .irq = -1 }
++};
++
++static struct omap_hwmod_addr_space omap44xx_usbhs_ehci_addrs[] = {
++	{
++		.name		= "ehci",
++		.pa_start	= 0x4A064C00,
++		.pa_end		= 0x4A064FFF,
++		.flags		= ADDR_MAP_ON_INIT
++	},
++	{}
++};
++
++static struct omap_hwmod_ocp_if omap44xx_l4_cfg__usbhs_ehci = {
++	.master		= &omap44xx_l4_cfg_hwmod,
++	.slave		= &omap44xx_usbhs_ehci_hwmod,
++	.clk		= "l4_div_ck",
++	.addr		= omap44xx_usbhs_ehci_addrs,
++	.user		= OCP_USER_MPU | OCP_USER_SDMA,
++};
++
++static struct omap_hwmod_ocp_if *omap44xx_usbhs_ehci_slaves[] = {
++	&omap44xx_l4_cfg__usbhs_ehci,
++};
++
++static struct omap_hwmod_ocp_if *omap44xx_usbhs_ehci_masters[] = {
++	&omap44xx_usb_host_hs__l3_main_2,
++};
++
++
++static struct omap_hwmod omap44xx_usbhs_ehci_hwmod = {
++	.name		= "usbhs_ehci",
++	.class		= &omap44xx_usbhs_ehci_hwmod_class,
++	.clkdm_name	= "l3_init_clkdm",
++	.mpu_irqs	= omap44xx_usbhs_ehci_irqs,
++	.slaves		= omap44xx_usbhs_ehci_slaves,
++	.slaves_cnt	= ARRAY_SIZE(omap44xx_usbhs_ehci_slaves),
++	.masters	= omap44xx_usbhs_ehci_masters,
++	.masters_cnt	= ARRAY_SIZE(omap44xx_usbhs_ehci_masters),
++	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP4430),
++	.flags		= HWMOD_INIT_NO_RESET | HWMOD_NO_IDLEST,
++};
++
++/*
++ * 'usb_tll_hs' class
++ * usb_tll_hs module is the adapter on the usb_host_hs ports
++ */
++static struct omap_hwmod_class_sysconfig omap44xx_usb_tll_hs_sysc = {
++	.rev_offs	= 0x0000,
++	.sysc_offs	= 0x0010,
++	.syss_offs	= 0x0014,
++	.sysc_flags	= (SYSC_HAS_AUTOIDLE | SYSC_HAS_SIDLEMODE |
++			SYSC_HAS_SOFTRESET | SYSC_HAS_ENAWAKEUP	|
++			SYSC_HAS_CLOCKACTIVITY),
++	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART),
++	.sysc_fields	= &omap_hwmod_sysc_type1,
++};
++
++static struct omap_hwmod_class omap44xx_usb_tll_hs_hwmod_class = {
++	.name = "usbhs_tll",
++	.sysc = &omap44xx_usb_tll_hs_sysc,
++};
++
++static struct omap_hwmod_irq_info omap44xx_usb_tll_hs_irqs[] = {
++	{ .name = "tll-irq", .irq = 78 + OMAP44XX_IRQ_GIC_START },
++	{ .irq = -1 }
++};
++
++static struct omap_hwmod_addr_space omap44xx_usb_tll_hs_addrs[] = {
++	{
++		.name		= "tll",
++		.pa_start	= 0x4a062000,
++		.pa_end		= 0x4a063fff,
++		.flags		= ADDR_TYPE_RT
++	},
++	{}
++};
++
++static struct omap_hwmod_ocp_if omap44xx_l4_cfg__usb_tll_hs = {
++	.master		= &omap44xx_l4_cfg_hwmod,
++	.slave		= &omap44xx_usb_tll_hs_hwmod,
++	.clk		= "l4_div_ck",
++	.addr		= omap44xx_usb_tll_hs_addrs,
++	.user		= OCP_USER_MPU | OCP_USER_SDMA,
++};
++
++static struct omap_hwmod_ocp_if *omap44xx_usb_tll_hs_slaves[] = {
++	&omap44xx_l4_cfg__usb_tll_hs,
++};
++
++static struct omap_hwmod omap44xx_usb_tll_hs_hwmod = {
++	.name		= "usbhs_tll",
++	.class		= &omap44xx_usb_tll_hs_hwmod_class,
++	.clkdm_name	= "l3_init_clkdm",
++	.mpu_irqs	= omap44xx_usb_tll_hs_irqs,
++	.main_clk	= "usb_tll_hs_ick",
++	.prcm = {
++		.omap4 = {
++			.clkctrl_offs = OMAP4_CM_L3INIT_USB_TLL_CLKCTRL_OFFSET,
++			.context_offs = OMAP4_RM_L3INIT_USB_TLL_CONTEXT_OFFSET,
++			.modulemode   = MODULEMODE_HWCTRL,
++		},
++	},
++	.slaves		= omap44xx_usb_tll_hs_slaves,
++	.slaves_cnt	= ARRAY_SIZE(omap44xx_usb_tll_hs_slaves),
++	.flags		= HWMOD_SWSUP_SIDLE,
++	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP4430),
++};
++
+ static __initdata struct omap_hwmod *omap44xx_hwmods[] = {
+ 
+ 	/* dmm class */
+@@ -5475,13 +5717,18 @@ static __initdata struct omap_hwmod *omap44xx_hwmods[] = {
+ 	&omap44xx_uart3_hwmod,
+ 	&omap44xx_uart4_hwmod,
+ 
++	/* usb host class */
++	&omap44xx_usb_host_hs_hwmod,
++	&omap44xx_usbhs_ohci_hwmod,
++	&omap44xx_usbhs_ehci_hwmod,
++	&omap44xx_usb_tll_hs_hwmod,
++
+ 	/* usb_otg_hs class */
+ 	&omap44xx_usb_otg_hs_hwmod,
+ 
+ 	/* wd_timer class */
+ 	&omap44xx_wd_timer2_hwmod,
+ 	&omap44xx_wd_timer3_hwmod,
+-
+ 	NULL,
+ };
+ 
+-- 
+1.6.0.4
 
