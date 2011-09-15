@@ -1,99 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932216Ab1IOJd0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 05:33:26 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:33263 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755714Ab1IOJdZ (ORCPT
+	id S932302Ab1IOJfn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 05:35:43 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47954 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932088Ab1IOJfm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 05:33:25 -0400
-X-Originating-IP: 217.70.178.138
-X-Originating-IP: 147.83.37.97
-From: "Leopold Palomo-Avellaneda" <leo@alaxarxa.net>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH/RFC] parport_pc: remove ancient, overeager quirk that disables EPP support on many chipsets
-Date: Thu, 15 Sep 2011 11:33:18 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.32-5-amd64; KDE/4.4.5; x86_64; ; )
-Cc: linux-parport@lists.infradead.org, 630593@bugs.debian.org,
-        Nicos Gollan <gollan@informatik.uni-kl.de>, Greg KH <greg@kroah.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Alexander Gordeev <lasaine@lvk.cs.msu.su>,
-        Jonathan Nieder <jrnieder@gmail.com>
+	Thu, 15 Sep 2011 05:35:42 -0400
+Date: Thu, 15 Sep 2011 10:35:38 +0100
+From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Graeme Gregory <gg@slimlogic.co.uk>,
+        Samuel Oritz <sameo@linux.intel.com>
+Subject: Re: [PATCH 4/6] regmap: Add the LZO cache support
+Message-ID: <20110915093538.GA8631@opensource.wolfsonmicro.com>
+References: <1315230662-12401-1-git-send-email-dp@opensource.wolfsonmicro.com> <1315230662-12401-5-git-send-email-dp@opensource.wolfsonmicro.com> <4E64F656.3040009@metafoo.de>
 MIME-Version: 1.0
-Content-Type: Multipart/Mixed;
-  boundary="Boundary-00=_eZccO6BXH/0PW0y"
-Message-Id: <201109151133.19211.leo@alaxarxa.net>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E64F656.3040009@metafoo.de>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Boundary-00=_eZccO6BXH/0PW0y
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
+On Mon, Sep 05, 2011 at 06:18:30PM +0200, Lars-Peter Clausen wrote:
+> On 09/05/2011 03:51 PM, Dimitris Papastamos wrote:
+> > This patch adds support for LZO compression when storing the register
+> > cache.
+> > 
+> > For a typical device whose register map would normally occupy 25kB or 50kB
+> > by using the LZO compression technique, one can get down to ~5-7kB.  There
+> > might be a performance penalty associated with each individual read/write
+> > due to decompressing/compressing the underlying cache, however that should not
+> > be noticeable.  These memory benefits depend on whether the target architecture
+> > can get rid of the memory occupied by the original register defaults cache
+> > which is marked as __devinitconst.  Nevertheless there will be some memory
+> > gain even if the target architecture can't get rid of the original register
+> > map, this should be around ~30-32kB instead of 50kB.
+> > 
+> > Signed-off-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+> > ---
+> >  drivers/base/regmap/Makefile       |    2 +-
+> >  drivers/base/regmap/internal.h     |    2 +
+> >  drivers/base/regmap/regcache-lzo.c |  361 ++++++++++++++++++++++++++++++++++++
+> >  drivers/base/regmap/regcache.c     |    1 +
+> >  include/linux/regmap.h             |    1 +
+> >  5 files changed, 366 insertions(+), 1 deletions(-)
+> >  create mode 100644 drivers/base/regmap/regcache-lzo.c
+> > 
+> 
+> Fails to compile due to CONFIG_LZO_{COMPRESS,DECOMPRESS} not being selected.
+> Also it will have issues, with caches where we don't use raw cache defaults.
 
-Hi,
+Yes, the LZO code will need to use cache_defaults instead of
+cache_defaults_raw.  Since there are no users at the moment and since
+most of the potential users do actually use cache_defaults_raw, I think
+I can fix this incrementally.
 
-there's a bug in the parport module that have been reported (in another 
-places) some time ago [1]. Also, this bug was reported at Redhat [2], but 
-nobody follow the report and it was closed.
-
-As Adam baked said [1] :
-
-<quote>
-A long time ago (~ 10 years), Intel produced a chipset that 
-included broken EPP support. The Linux parport driver was written to detect 
-such a chipset and disable EPP support on it. Unfortunately the test that was 
-written gives false positives for many current chipsets and no-one seems to 
-know exactly what the problem hardware was, let alone have a sample of it to 
-see if a better test can be written. After such a long time it is probably 
-appropriate to just remove the test (on average it does more harm than good) 
-however you are correct in asserting the driver is unmaintained so no-one is 
-bothering to fix it.
-</quote>
-
-I have applied the patch to the standard debian kernel and vanilla kernels and 
-runs perfectly. The patch simply erases a check. Applied to some Dell 
-hardware, now the EPP mode is detected and, after some initial tests it's 
-working.
-
-Please, apply the patch.
-
-Best regards,
-
-Leo
-
-[1] http://lists.infradead.org/pipermail/linux-parport/2008-March/000628.html
-[2] https://bugzilla.redhat.com/show_bug.cgi?id=284471
-
---Boundary-00=_eZccO6BXH/0PW0y
-Content-Type: text/x-patch;
-  charset="UTF-8";
-  name="patch_parport_bug.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
-	filename="patch_parport_bug.patch"
-
---- linux-2.6-3.0.0/drivers/parport/parport_pc.c.orig	2011-09-13 16:29:54.333048437 +0200
-+++ linux-2.6-3.0.0/drivers/parport/parport_pc.c	2011-09-13 16:30:39.933451659 +0200
-@@ -2018,18 +2018,6 @@ static int parport_EPP_supported(struct
- 	if (!clear_epp_timeout(pb))
- 		return 0;  /* No way to clear timeout */
- 
--	/* Check for Intel bug. */
--	if (priv->ecr) {
--		unsigned char i;
--		for (i = 0x00; i < 0x80; i += 0x20) {
--			ECR_WRITE(pb, i);
--			if (clear_epp_timeout(pb)) {
--				/* Phony EPP in ECP. */
--				return 0;
--			}
--		}
--	}
--
- 	pb->modes |= PARPORT_MODE_EPP;
- 
- 	/* Set up access functions to use EPP hardware. */
-
---Boundary-00=_eZccO6BXH/0PW0y--
+Thanks,
+Dimitris
