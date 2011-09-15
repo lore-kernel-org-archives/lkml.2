@@ -1,68 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934147Ab1IOPu6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 11:50:58 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:43910
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934067Ab1IOPu4 (ORCPT
+	id S934144Ab1IOPyl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 11:54:41 -0400
+Received: from mail-wy0-f180.google.com ([74.125.82.180]:32943 "EHLO
+	mail-wy0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934124Ab1IOPyk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 11:50:56 -0400
-Date: Thu, 15 Sep 2011 11:50:52 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: axboe@kernel.dk, rusty@rustcorp.com.au
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] virtio_blk: use blk_rq_map_kern
-Message-ID: <20110915155051.GA29694@infradead.org>
+	Thu, 15 Sep 2011 11:54:40 -0400
+X-Greylist: delayed 420 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Sep 2011 11:54:40 EDT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <CAObL_7E0iyinOyXU=uQHyQN+TBNmVVB89r_hQUb8LTqJ2ix_5A@mail.gmail.com>
+References: <web-606439650@zbackend1.aha.ru> <CA+55aFwyC7s=YK10Wkpr+GzdukXp-JUtf_=MgWcrhBOtTg4eTg@mail.gmail.com>
+ <web-606798161@zbackend1.aha.ru> <CA+55aFwBuySWa2VErrfud_SFqyfT5ib+Qfq9gWBaBz=cQ6VcHg@mail.gmail.com>
+ <web-606831561@zbackend1.aha.ru> <CAObL_7F2Pu0K1Oe3oLe5Pef2kaGE8vdO2qgfc0KEt8TJdUaOWg@mail.gmail.com>
+ <CAObL_7E0iyinOyXU=uQHyQN+TBNmVVB89r_hQUb8LTqJ2ix_5A@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 15 Sep 2011 08:47:19 -0700
+X-Google-Sender-Auth: GjAYqw17GSZsP8E7flS3GpNCjlw
+Message-ID: <CA+55aFzay+U5JA0Q6vdjmV73yG0OUXnO_zi6Q0c6iTkmozSSiw@mail.gmail.com>
+Subject: Re: 3.1-rc6 boot problem reason searching
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: werner <w.landgraf@ru.ru>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use blk_rq_map_kern instead of opencoding it for the serial sysfs attribute.
+2011/9/15 Andrew Lutomirski <luto@mit.edu>:
+>
+> In the mean time, I'll see if I can reproduce the crash in qemu by
+> playing with -cpu.
 
-[Rusty, any chance to get this in through the block tree? I have some
- other bits in that area pending for it]
+Note that Werner doesn't actually have a i486 CPU - the i686 kernel
+works fine for him. So you don't need an old CPU for the problem, you
+just need to compile *for* an old CPU. He wants to support i486-class
+machines because he supports a lot of old hardware.
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+Werner, btw, what compiler are you using? For gcc-4.5+ we use a
+different magic inline asm than for older compilers..
 
-Index: linux-2.6/drivers/block/virtio_blk.c
-===================================================================
---- linux-2.6.orig/drivers/block/virtio_blk.c	2011-09-14 10:49:32.571738374 -0400
-+++ linux-2.6/drivers/block/virtio_blk.c	2011-09-14 10:53:54.483239920 -0400
-@@ -203,24 +203,20 @@ static int virtblk_get_id(struct gendisk
- {
- 	struct virtio_blk *vblk = disk->private_data;
- 	struct request *req;
--	struct bio *bio;
- 	int err;
- 
--	bio = bio_map_kern(vblk->disk->queue, id_str, VIRTIO_BLK_ID_BYTES,
--			   GFP_KERNEL);
--	if (IS_ERR(bio))
--		return PTR_ERR(bio);
-+	req = blk_get_request(vblk->disk->queue, READ, GFP_KERNEL);
- 
--	req = blk_make_request(vblk->disk->queue, bio, GFP_KERNEL);
--	if (IS_ERR(req)) {
--		bio_put(bio);
--		return PTR_ERR(req);
--	}
-+	err = blk_rq_map_kern(vblk->disk->queue, req, id_str,
-+			      VIRTIO_BLK_ID_BYTES, GFP_KERNEL);
-+	if (err)
-+		goto put_request;
- 
- 	req->cmd_type = REQ_TYPE_SPECIAL;
- 	err = blk_execute_rq(vblk->disk->queue, vblk->disk, req, false);
--	blk_put_request(req);
- 
-+put_request:
-+	blk_put_request(req);
- 	return err;
- }
- 
+                  Linus
