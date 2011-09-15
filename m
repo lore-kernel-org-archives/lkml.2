@@ -1,42 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935325Ab1IOXK6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 19:10:58 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:56148 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935246Ab1IOXK5 (ORCPT
+	id S935352Ab1IOXQc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 19:16:32 -0400
+Received: from www.linutronix.de ([62.245.132.108]:47510 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932690Ab1IOXQb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 19:10:57 -0400
-Date: Fri, 16 Sep 2011 01:10:53 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Josh Boyer <jwboyer@gmail.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Andi Kleen <ak@linux.intel.com>,
-        linux-kernel@vger.kernel.org, benh@kernel.crashing.org
-Subject: Re: [PATCH 07/27] Initconst section fixes for POWERPC
-Message-ID: <20110915231053.GD7761@one.firstfloor.org>
-References: <1316117394-21666-1-git-send-email-andi@firstfloor.org> <1316117394-21666-8-git-send-email-andi@firstfloor.org> <CA+5PVA66idjR6uLaJOJm81ZJrjRiYQVJMvKNttAS7B=4iUoqVQ@mail.gmail.com> <4E726489.6080606@linux.intel.com> <CA+5PVA52Q+9jBbF7fdjDgpkv9rAwPKgyH+34zMPxYXusn-LctQ@mail.gmail.com> <20110915205709.GB7761@one.firstfloor.org> <CA+5PVA416wv7fLxyKCe3w+LAmqhJa3d14TeqXxwM_oAbixci5w@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+5PVA416wv7fLxyKCe3w+LAmqhJa3d14TeqXxwM_oAbixci5w@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
+	Thu, 15 Sep 2011 19:16:31 -0400
+Date: Fri, 16 Sep 2011 01:16:26 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andi Kleen <andi@firstfloor.org>
+cc: a.p.zijlstra@chello.nl, acme@ghostprotocols.net,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 2/4] perf_events: Pass the event to
+ perf_instruction_pointer
+In-Reply-To: <1316127412-1912-2-git-send-email-andi@firstfloor.org>
+Message-ID: <alpine.LFD.2.02.1109160113500.2723@ionos>
+References: <1316127412-1912-1-git-send-email-andi@firstfloor.org> <1316127412-1912-2-git-send-email-andi@firstfloor.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I'm not arguing against the patch.  I just want to poke around with
-> what you're reporting.  Where can one get the toolkit?
+On Thu, 15 Sep 2011, Andi Kleen wrote:
 
-You currently need a gcc 4.7, HJ Lu's binutils, a rather largish patchkit
-of mine to enable a kernel LTO build and then it doesn't quite build yet
-due to some gcc bugs, but gets far enough to complain about invalid
-section attribute mismatches.
+> From: Andi Kleen <ak@linux.intel.com>
+> 
+> Used in next patch.
 
-I think the people who originally introduced initconst* triggered
-it in the linker, but I'm not fully sure how they did it.
-What happens is that the linker silently has to change the 'r'
-attribute of that section, this can be flagged.
+What for?
 
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+Just get it: We want to have reasonable changelogs and not a puzzle
+game!
+
+Is it really that hard ?
+
+Thanks,
+
+	tglx
