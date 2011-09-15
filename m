@@ -1,161 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755837Ab1IOJJD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 05:09:03 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:54465 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755480Ab1IOJJB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 05:09:01 -0400
-Message-ID: <4E71C0A9.60401@gmail.com>
-Date: Thu, 15 Sep 2011 11:08:57 +0200
-From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+	id S932111Ab1IOJKs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 05:10:48 -0400
+Received: from claw.goop.org ([74.207.240.146]:38890 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755480Ab1IOJKr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Sep 2011 05:10:47 -0400
+Message-ID: <4E71C116.4080400@goop.org>
+Date: Thu, 15 Sep 2011 02:10:46 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-To: Matt Domsch <Matt_Domsch@dell.com>
-CC: Matt Fleming <matt@console-pimps.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Matthew Garrett <mjg@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Mike Waychison <mikew@google.com>, Andi Kleen <andi@firstfloor.org>,
-        jordan_hargrave@dell.com
-Subject: Re: [PATCH v2 10/10] x86, efi: EFI boot stub support
-References: <1315838094-2307-1-git-send-email-matt@console-pimps.org> <1315838094-2307-11-git-send-email-matt@console-pimps.org> <4E6F69A1.9030406@gmail.com> <1316016478.3466.74.camel@mfleming-mobl1.ger.corp.intel.com> <20110915045231.GA32136@emperor.us.dell.com> <4E71B196.1060504@gmail.com>
-In-Reply-To: <4E71B196.1060504@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Xen Devel <Xen-devel@lists.xensource.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the xen tree
+References: <20110915152723.b3bdd6a5478c810245fabca1@canb.auug.org.au>
+In-Reply-To: <20110915152723.b3bdd6a5478c810245fabca1@canb.auug.org.au>
+X-Enigmail-Version: 1.3.1
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/15/2011 10:04 AM, Maarten Lankhorst wrote:
-> Hey Matt,
+On 09/14/2011 10:27 PM, Stephen Rothwell wrote:
+> Hi all,
 >
-> On 09/15/2011 06:52 AM, Matt Domsch wrote:
->> On Wed, Sep 14, 2011 at 11:07:58AM -0500, Matt Fleming wrote:
->>> On Tue, 2011-09-13 at 16:33 +0200, Maarten Lankhorst wrote:
->>>> This version seems to boot for me.
->>> Yay! Thanks for testing.
->>>
->>>> Is it useful to add 32-bits support though?
->>>> It seems that only some older versions of OSX use it. I could see if I can
->>>> revive my mac mini, iirc it has 32-bits efi, or at least used to have.
->>> 32-bit UEFI platforms do exist, so I think it's worth supporting them.
->>>
->>>> Do I need to pass anything to add it to efibootmgr?
->>>>
->>>> I tried something like this:
->>>> echo "args" | efibootmgr -c -l '\vmlinuz.efi' -L 'Native EFI linux boot' -@ - -u -d /dev/sdb
->>>>
->>>> And it boots vmlinuz.efi, but the arguments I passed do not appear to
->>>> have any effect.
->>> No idea, I've never used efibootmgr. Let's add Matt Domsch to the
->>> discussion (now Cc'd).
->> Maarten, do you not see your 'args' in /proc/cmdline after booting the
->> entry?  From reading this thread, that's what you should see.
->>
->> Can you provide an 'efibootmgr -v' and hexdump -C
->> /sys/firmware/efi/vars/Boot*  to see the args are appended as expected
->> in the boot variable in nvram?
->>
->> Adding Jordan Hargrave, who is maintainer for efibootmgr now.
-> Thanks, that helped. It looks like efibootmgr stores the arguments without converting it to UCS-2.
+> After merging the xen tree, today's linux-next build (x86_64 allmodconfig)
+> failed like this:
 >
-> Patch below is a rough check for ascii, in which case it passes it unmodified.
+> arch/x86/xen/time.c: In function 'xen_set_wallclock':
+> arch/x86/xen/time.c:204:25: error: storage size of 'op' isn't known
+> arch/x86/xen/time.c:211:11: error: 'XENPF_settime' undeclared (first
+use in this function)
+> arch/x86/xen/time.c:211:11: note: each undeclared identifier is
+reported only once for each function it appears in
+> arch/x86/xen/time.c:216:2: error: implicit declaration of function
+'HYPERVISOR_dom0_op'
+> arch/x86/xen/time.c:204:25: warning: unused variable 'op'
 >
-> After this 'args' is passed succesfully. :)
+> Caused by commit 7b11a83f592a ("xen/dom0: set wallclock time in Xen").
 >
-> Should probably be folded in 10/10.
->
-> Signed-off-by: Maarten Lankhorst <m.b.lankhorst@gmail.com>
->
-> diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
-> index 6c34828..b24affb 100644
-> --- a/arch/x86/boot/compressed/eboot.c
-> +++ b/arch/x86/boot/compressed/eboot.c
-> @@ -619,12 +619,12 @@ static efi_status_t make_boot_params(struct boot_params *boot_params,
->  	unsigned long cmdline;
->  	u8 nr_entries;
->  	u16 *s2;
-> -	u8 *s1;
-> +	u8 *s1, *s2_8;
->  	int i;
->  
->  	hdr->type_of_loader = 0x21;
->  
-> -	status = low_alloc(options_size, 1, &cmdline);
-> +	status = low_alloc(options_size+1, 1, &cmdline);
->  	if (status != EFI_SUCCESS)
->  		goto fail;
->  
-> @@ -633,6 +633,14 @@ static efi_status_t make_boot_params(struct boot_params *boot_params,
->  	/* Convert unicode cmdline to ascii */
->  	s1 = (u8 *)(unsigned long)hdr->cmd_line_ptr;
->  	s2 = (u16 *)options;
-> +	s2_8 = (u8*)options;
-> +	/* Assume the first byte is < 0x128 */
-Woops, typo.
-> +	if (options_size > 1 && s2_8[1] && s2_8[1] < 0x80 && s2_8[0] < 0x80) {
-> +		s2 = NULL;
-> +		memcpy(s1, s2_8, options_size);
-> +		s1[options_size] = 0;
-> +		hdr->cmdline_size = options_size;
-> +	}
->  
->  	if (s2 && options_size) {
->  		/* Skip first word, that's the kernel name */
-I noticed 10/10 doesn't include the size of null pointer is this expected?
-And when options_size = 0, you do a null allocation and never null-terminate.
-Also in s2 && options_size you initially check for newline, but when copying
-arguments, you ignore it. With echo moo | efibootmgr -@ - you'd pass a newline,
-which should probably be stripped. I think this would fix both cases:
+> I have used teh xen tree from next-20110914 for today.
 
-diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
-index 6c34828..dbaaf54 100644
---- a/arch/x86/boot/compressed/eboot.c
-+++ b/arch/x86/boot/compressed/eboot.c
-@@ -619,12 +619,12 @@ static efi_status_t make_boot_params(struct boot_params *boot_params,
- 	unsigned long cmdline;
- 	u8 nr_entries;
- 	u16 *s2;
--	u8 *s1;
-+	u8 *s1, *s2_8;
- 	int i;
- 
- 	hdr->type_of_loader = 0x21;
- 
--	status = low_alloc(options_size, 1, &cmdline);
-+	status = low_alloc(options_size+1, 1, &cmdline);
- 	if (status != EFI_SUCCESS)
- 		goto fail;
- 
-@@ -633,6 +633,14 @@ static efi_status_t make_boot_params(struct boot_params *boot_params,
- 	/* Convert unicode cmdline to ascii */
- 	s1 = (u8 *)(unsigned long)hdr->cmd_line_ptr;
- 	s2 = (u16 *)options;
-+	s2_8 = (u8*)options;
-+	/* Assume the first byte is < 128 */
-+	if (options_size > 1 && s2_8[1] s2_8[1] < 0x80 && s2_8[0] < 0x80) {
-+		s2 = NULL;
-+		memcpy(s1, s2_8, options_size);
-+		s1[options_size] = '\0';
-+		hdr->cmdline_size = options_size;
-+	}
- 
- 	if (s2 && options_size) {
- 		/* Skip first word, that's the kernel name */
-@@ -655,6 +663,11 @@ static efi_status_t make_boot_params(struct boot_params *boot_params,
- 		*s1 = '\0';
- 	}
- 
-+	if (!hdr->cmdline_size)
-+		*s1 = '\0';
-+	else if (hdr->cmd_line_ptr[hdr->cmdline_size-1] == '\n')
-+		hdr->cmd_line_ptr[--hdr->cmdline_size] = '\0';
-+
- 	hdr->ramdisk_image = 0;
- 	hdr->ramdisk_size = 0;
- 
+Thanks, I'll drop that for now.
+
+    J
+
 
 
