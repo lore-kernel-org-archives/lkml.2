@@ -1,76 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934233Ab1IOQ6Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 12:58:25 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:62665 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934142Ab1IOQ6X (ORCPT
+	id S934219Ab1IORDf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 13:03:35 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:48465 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751628Ab1IORDd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 12:58:23 -0400
-Message-ID: <4E723023.5080406@colorfullife.com>
-Date: Thu, 15 Sep 2011 19:04:35 +0200
-From: Manfred Spraul <manfred@colorfullife.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
+	Thu, 15 Sep 2011 13:03:33 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:sender:from:date:
+	x-google-sender-auth:message-id:subject:to:cc:content-type:x-system-of-record;
+	b=aTcvLATbyZl3OhcRWSCzyxAubU70ixOKAuZfyrsI7LtdqlN4kkopst7OkaSx3fr63
+	D5PtNlBILCc54gVOYglEg==
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Mike Galbraith <efault@gmx.de>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Subject: Re: [PATCH -rt] ipc/sem: Rework semaphore wakeups
-References: <alpine.LFD.2.02.1109101052340.2723@ionos> <1315737307.6544.1.camel@marge.simson.net> <1315817948.26517.16.camel@twins> <1315835562.6758.3.camel@marge.simson.net> <1315839187.6758.8.camel@marge.simson.net> <1315926499.5977.19.camel@twins> <1315927699.6445.6.camel@marge.simson.net> <1315994224.5040.1.camel@twins> <4E70F6FD.2060709@colorfullife.com> <1316028213.5040.41.camel@twins>
-In-Reply-To: <1316028213.5040.41.camel@twins>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+From: Sameer Nanda <snanda@chromium.org>
+Date: Thu, 15 Sep 2011 10:03:11 -0700
+X-Google-Sender-Auth: RmW6NO-pDx5bbuZo5ZaMsCVpxfE
+Message-ID: <CANMivWbGTS_Xyj4MtgrYTWTkCbVKP_Uf-i-_hNYFx+YAPaNxjQ@mail.gmail.com>
+Subject: RFC: Enable wakeup for intermediate USB bridge devices
+To: stern@rowland.harvard.edu, gregkh@suse.de
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sameer Nanda <snanda@chromium.org>,
+        Vincent Palatin <vpalatin@chromium.org>, olofj@chromium.org
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/14/2011 09:23 PM, Peter Zijlstra wrote:
-> On Wed, 2011-09-14 at 20:48 +0200, Manfred Spraul wrote:
->> The code does:
->>
->>       spin_lock()
->>       preempt_disable();
->>       usually_very_simple_but_worstcase_O_2
->>       spin_unlock()
->>       usually_very_simple_but_worstcase_O_1
->>       preempt_enable();
->>
->> with your change, it becomes:
->>
->>       spin_lock()
->>       usually_very_simple_but_worstcase_O_2
->>       usually_very_simple_but_worstcase_O_1
->>       spin_unlock()
->>
->> The complex ops remain unchanged, they are still under a lock.
-> preemptible lock (aka pi-mutex) on -rt, so no weird latencies.
-But the change means that more operations are under spin_lock().
-Acutally for a large SMP system with a simple semaphore operation, the 
-wake_up_process() takes longer than the semaphore operation.
-And for some databases, contention on the spin_lock() is an issue.
+This is a follow-up from the patch I sent earlier enabling wakeup by
+default in the ehci-pci driver.  That thread is here:
+http://marc.info/?l=linux-usb&m=131595571619689&w=2
 
+The current wake policy is to enable wake by default for a small set
+of devices that the users expect (like keyboards, power buttons and
+maybe LAN interfaces).  An example check of this can be seen in
+usbhid_start where wakeup is enabled only if the interface subclass is
+USB_INTERFACE_SUBCLASS_BOOT and protocol is
+USB_INTERFACE_PROTOCOL_KEYBOARD.
 
->> What about removing the preempt_disable?
->> It's only there to cover a rare race on uniprocessor preempt systems.
->> (a task is woken up simultaneously due to timeout of semtimedop() and a
->> true wakeup)
->>
->> Then fix the that race - something like the attached patch [obviously
->> buggy - see the fixme]
-> sched_yield() is always a bug, as is it here. Its an life-lock if the
-> woken task is of higher priority than the waking task. A higher prio
-> FIFO task calling sched_yield() in a loop is just that, a loop, starving
-> the lower prio waker.
->
-> If you've got enough medium prio tasks around to occupy all other cpus,
-> you're got indefinite priority inversion, so even on smp its a problem.
->
-> But yeah its not the prettiest of solutions but it works.. see that
-> other patch with the wake-list stuff for something that ought to work
-> for both rt and mainline (except of course it doesn't actually work).
-Wake lists are definitively the better approach.
-[let's continue in that thread]
+However, this doesn't quite work out of the box today since the USB
+host controllers that these devices connect to do not enable wakeup by
+default.
 
---
-     Manfred
+The proposal is to enable wakeup by default on the intermediate bridge
+devices such as ehci-pci and ohci-hcd.  This allows wake from USB
+keyboard to work by default.  For non-keyboard devices, the user will
+still need to explicitly enable them as a wakesources so there is no
+change in the device wakeup policy from what is in place currently for
+those devices.
+
+Below is an example patch that enables wakeup for the ehci-pci bridge
+device.  I can spin up a similar patch for the ohci-hcd also,
+if there is interest in moving this forward.
+
+=============
+
+If the PORTWAK register is implemented and at least one of the physical
+ports is enabled for wakeup, enable wakeup for the ehci-pci device.
+
+Signed-off-by: Sameer Nanda <snanda@chromium.org>
+---
+ drivers/usb/host/ehci-pci.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/usb/host/ehci-pci.c b/drivers/usb/host/ehci-pci.c
+index 1102ce6..ce6f784 100644
+--- a/drivers/usb/host/ehci-pci.c
++++ b/drivers/usb/host/ehci-pci.c
+@@ -285,6 +285,16 @@ static int ehci_pci_setup(struct usb_hcd *hcd)
+                      dev_warn(&pdev->dev, "Enabling legacy PCI PM\n");
+                      device_set_wakeup_capable(&pdev->dev, 1);
+              }
++       } else {
++               u16     port_wake;
++
++               pci_read_config_word(pdev, 0x62, &port_wake);
++
++               /* If PORTWAK register is implemented and at least one USB
++                * port is enabled for wakeup, enable wakeup.
++                */
++               if (port_wake & 0x0001 && port_wake & 0xfffe)
++                       device_set_wakeup_enable(&pdev->dev, 1);
+      }
+
+ #ifdef CONFIG_USB_SUSPEND
