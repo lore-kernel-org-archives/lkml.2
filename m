@@ -1,324 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753327Ab1IOBsG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 21:48:06 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:28150 "EHLO relay.sw.ru"
+	id S1753277Ab1IOBwm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 21:52:42 -0400
+Received: from mga03.intel.com ([143.182.124.21]:60856 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753208Ab1IOBrr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 21:47:47 -0400
-From: Glauber Costa <glommer@parallels.com>
-To: linux-kernel@vger.kernel.org
-Cc: paul@paulmenage.org, lizf@cn.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com,
-        ebiederm@xmission.com, davem@davemloft.net, gthelen@google.com,
-        netdev@vger.kernel.org, linux-mm@kvack.org,
-        Glauber Costa <glommer@parallels.com>
-Subject: [PATCH v2 1/7] Basic kernel memory functionality for the Memory Controller
-Date: Wed, 14 Sep 2011 22:46:09 -0300
-Message-Id: <1316051175-17780-2-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1316051175-17780-1-git-send-email-glommer@parallels.com>
-References: <1316051175-17780-1-git-send-email-glommer@parallels.com>
+	id S1752933Ab1IOBwl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Sep 2011 21:52:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,384,1312182000"; 
+   d="scan'208";a="48967645"
+Subject: Re: [PATCH] EFI: Do not use __pa() to get the physical address of
+ an ioremapped memory range
+From: Zhang Rui <rui.zhang@intel.com>
+To: Shaohua Li <shli@kernel.org>
+Cc: Matt Fleming <matt@console-pimps.org>,
+        huang ying <huang.ying.caritas@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "x86@kernel.org" <x86@kernel.org>
+In-Reply-To: <CANejiEXSvT1hGasoowf1nCc5+EWyXr8PSmfpWDJOT0d_vEiKxA@mail.gmail.com>
+References: <1314860114.32522.3.camel@rui>	<1314864889.13161.4.camel@rui>
+	 <1314880125.8038.39.camel@mfleming-mobl1.ger.corp.intel.com>
+	 <CAC=cRTOzcgm+3kHGcZrHs=9Q3cs5z6vmBqb1Bn+2qcvcSZ-2Xg@mail.gmail.com>
+	 <1315839130.3466.6.camel@mfleming-mobl1.ger.corp.intel.com>
+	 <CANejiEXSvT1hGasoowf1nCc5+EWyXr8PSmfpWDJOT0d_vEiKxA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 15 Sep 2011 09:52:15 +0800
+Message-ID: <1316051535.15084.5.camel@rui>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch lays down the foundation for the kernel memory component
-of the Memory Controller.
+On Thu, 2011-09-15 at 09:22 +0800, Shaohua Li wrote:
+> 2011/9/12 Matt Fleming <matt@console-pimps.org>:
+> > On Fri, 2011-09-02 at 13:12 +0800, huang ying wrote:
+> >> On Thu, Sep 1, 2011 at 8:28 PM, Matt Fleming <matt@console-pimps.org> wrote:
+> >> >
+> >> > Hmm.. does anyone know why we ioremap_cache() the memory on
+> >> > CONFIG_X86_32 instead of ioremap_nocache()? In the case of
+> >> > EFI_MEMORY_MAPPED_IO the memory really needs to be uncached. Then if
+> >> > we've ioremap'd the memory we should skip set_memory_uc() altogether,
+> >> > no?
+> >>
+> >> Because whether the mapping should be cached is determined by md->attr
+> >> instead of md->type.  And besides UC, we may add WC, etc support.
+> >
+> > Confused.
+> >
+> > The CONFIG_X86_64 version of efi_ioremap() looks like this,
+> >
+> > void __iomem *__init efi_ioremap(unsigned long phys_addr, unsigned long size,
+> >                                 u32 type)
+> > {
+> >        unsigned long last_map_pfn;
+> >
+> >        if (type == EFI_MEMORY_MAPPED_IO)
+> >                return ioremap(phys_addr, size);
+> >
+> > Which uses md->type to figure out if we should call ioremap(), which on
+> > x86 is #define'd to ioremap_nocache(). CONFIG_X86_32 doesn't do this,
+> > but it looks to me like it should.
+> agree. mapping it wrong and fixing it later makes no sense. we should get
+> the mapping correct at the first.
+> 
+So what kinds of memory regions need ioremap_nocache?
+should we make this decision based on the memory range type or attribute
+or even both of them?
 
-As of today, I am only laying down the following files:
+-rui
 
- * memory.independent_kmem_limit
- * memory.kmem.limit_in_bytes (currently ignored)
- * memory.kmem.usage_in_bytes (always zero)
+> > Zhang, I agree that calling __pa() on an ioremap()'d region is bogus,
+> > but I don't understand why no one is seeing this crash on x86-64. Is it
+> > something to do with the x86-64 memory map layout such that __pa() works
+> > on an ioremap()'d address?
+> x86-64 does identity mapping for larger space (from 0 to the last physical mem
+> even there is hole). Maybe this is the reason.
 
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Paul Menage <paul@paulmenage.org>
-CC: Greg Thelen <gthelen@google.com>
----
- Documentation/cgroups/memory.txt |   29 ++++++++++-
- init/Kconfig                     |   11 ++++
- mm/memcontrol.c                  |  105 ++++++++++++++++++++++++++++++++++++-
- 3 files changed, 140 insertions(+), 5 deletions(-)
-
-diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-index 6f3c598..ca58eff 100644
---- a/Documentation/cgroups/memory.txt
-+++ b/Documentation/cgroups/memory.txt
-@@ -44,8 +44,9 @@ Features:
-  - oom-killer disable knob and oom-notifier
-  - Root cgroup has no limit controls.
- 
-- Kernel memory and Hugepages are not under control yet. We just manage
-- pages on LRU. To add more controls, we have to take care of performance.
-+ Hugepages is not under control yet. We just manage pages on LRU. To add more
-+ controls, we have to take care of performance. Kernel memory support is work
-+ in progress, and the current version provides basically functionality.
- 
- Brief summary of control files.
- 
-@@ -56,8 +57,11 @@ Brief summary of control files.
- 				 (See 5.5 for details)
-  memory.memsw.usage_in_bytes	 # show current res_counter usage for memory+Swap
- 				 (See 5.5 for details)
-+ memory.kmem.usage_in_bytes	 # show current res_counter usage for kmem only.
-+				 (See 2.7 for details)
-  memory.limit_in_bytes		 # set/show limit of memory usage
-  memory.memsw.limit_in_bytes	 # set/show limit of memory+Swap usage
-+ memory.kmem.limit_in_bytes	 # if allowed, set/show limit of kernel memory
-  memory.failcnt			 # show the number of memory usage hits limits
-  memory.memsw.failcnt		 # show the number of memory+Swap hits limits
-  memory.max_usage_in_bytes	 # show max memory usage recorded
-@@ -72,6 +76,9 @@ Brief summary of control files.
-  memory.oom_control		 # set/show oom controls.
-  memory.numa_stat		 # show the number of memory usage per numa node
- 
-+ memory.independent_kmem_limit	 # select whether or not kernel memory limits are
-+				   independent of user limits
-+
- 1. History
- 
- The memory controller has a long history. A request for comments for the memory
-@@ -255,6 +262,24 @@ When oom event notifier is registered, event will be delivered.
-   per-zone-per-cgroup LRU (cgroup's private LRU) is just guarded by
-   zone->lru_lock, it has no lock of its own.
- 
-+2.7 Kernel Memory Extension (CONFIG_CGROUP_MEM_RES_CTLR_KMEM)
-+
-+ With the Kernel memory extension, the Memory Controller is able to limit
-+the amount of kernel memory used by the system. Kernel memory is fundamentally
-+different than user memory, since it can't be swapped out, which makes it
-+possible to DoS the system by consuming too much of this precious resource.
-+
-+Memory limits as specified by the standard Memory Controller may or may not
-+take kernel memory into consideration. This is achieved through the file
-+memory.independent_kmem_limit. A Value different than 0 will allow for kernel
-+memory to be controlled separately.
-+
-+When kernel memory limits are not independent, the limit values set in
-+memory.kmem files are ignored.
-+
-+Currently no soft limit is implemented for kernel memory. It is future work
-+to trigger slab reclaim when those limits are reached.
-+
- 3. User Interface
- 
- 0. Configuration
-diff --git a/init/Kconfig b/init/Kconfig
-index d627783..49e5839 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -689,6 +689,17 @@ config CGROUP_MEM_RES_CTLR_SWAP_ENABLED
- 	  For those who want to have the feature enabled by default should
- 	  select this option (if, for some reason, they need to disable it
- 	  then swapaccount=0 does the trick).
-+config CGROUP_MEM_RES_CTLR_KMEM
-+	bool "Memory Resource Controller Kernel Memory accounting"
-+	depends on CGROUP_MEM_RES_CTLR
-+	default y
-+	help
-+	  The Kernel Memory extension for Memory Resource Controller can limit
-+	  the amount of memory used by kernel objects in the system. Those are
-+	  fundamentally different from the entities handled by the standard
-+	  Memory Controller, which are page-based, and can be swapped. Users of
-+	  the kmem extension can use it to guarantee that no group of processes
-+	  will ever exhaust kernel resources alone.
- 
- config CGROUP_PERF
- 	bool "Enable perf_event per-cpu per-container group (cgroup) monitoring"
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index ebd1e86..1c5d01a 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -73,7 +73,11 @@ static int really_do_swap_account __initdata = 0;
- #define do_swap_account		(0)
- #endif
- 
--
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-+int do_kmem_account __read_mostly = 1;
-+#else
-+#define do_kmem_account		(0)
-+#endif
- /*
-  * Statistics for memory cgroup.
-  */
-@@ -270,6 +274,10 @@ struct mem_cgroup {
- 	 */
- 	struct res_counter memsw;
- 	/*
-+	 * the counter to account for kmem usage.
-+	 */
-+	struct res_counter kmem;
-+	/*
- 	 * Per cgroup active and inactive list, similar to the
- 	 * per zone LRU lists.
- 	 */
-@@ -321,6 +329,11 @@ struct mem_cgroup {
- 	 */
- 	unsigned long 	move_charge_at_immigrate;
- 	/*
-+	 * Should kernel memory limits be stabilished independently
-+	 * from user memory ?
-+	 */
-+	int		kmem_independent;
-+	/*
- 	 * percpu counter.
- 	 */
- 	struct mem_cgroup_stat_cpu *stat;
-@@ -391,6 +404,7 @@ enum charge_type {
- #define _MEM			(0)
- #define _MEMSWAP		(1)
- #define _OOM_TYPE		(2)
-+#define _KMEM			(3)
- #define MEMFILE_PRIVATE(x, val)	(((x) << 16) | (val))
- #define MEMFILE_TYPE(val)	(((val) >> 16) & 0xffff)
- #define MEMFILE_ATTR(val)	((val) & 0xffff)
-@@ -3941,12 +3955,18 @@ static unsigned long mem_cgroup_recursive_stat(struct mem_cgroup *mem,
- static inline u64 mem_cgroup_usage(struct mem_cgroup *mem, bool swap)
- {
- 	u64 val;
-+	u64 kmem = 0;
-+
-+	if (!mem->kmem_independent)
-+		kmem = res_counter_read_u64(&mem->kmem, RES_USAGE);
- 
- 	if (!mem_cgroup_is_root(mem)) {
- 		if (!swap)
--			return res_counter_read_u64(&mem->res, RES_USAGE);
-+			kmem += res_counter_read_u64(&mem->res, RES_USAGE);
- 		else
--			return res_counter_read_u64(&mem->memsw, RES_USAGE);
-+			kmem += res_counter_read_u64(&mem->memsw, RES_USAGE);
-+
-+		return kmem;
- 	}
- 
- 	val = mem_cgroup_recursive_stat(mem, MEM_CGROUP_STAT_CACHE);
-@@ -3979,6 +3999,10 @@ static u64 mem_cgroup_read(struct cgroup *cont, struct cftype *cft)
- 		else
- 			val = res_counter_read_u64(&mem->memsw, name);
- 		break;
-+	case _KMEM:
-+		val = res_counter_read_u64(&mem->kmem, name);
-+		break;
-+
- 	default:
- 		BUG();
- 		break;
-@@ -4756,6 +4780,21 @@ static int mem_cgroup_reset_vmscan_stat(struct cgroup *cgrp,
- 	return 0;
- }
- 
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-+static u64 kmem_limit_independent_read(struct cgroup *cont, struct cftype *cft)
-+{
-+	return mem_cgroup_from_cont(cont)->kmem_independent;
-+}
-+
-+static int kmem_limit_independent_write(struct cgroup *cont, struct cftype *cft,
-+					u64 val)
-+{
-+	cgroup_lock();
-+	mem_cgroup_from_cont(cont)->kmem_independent = !!val;
-+	cgroup_unlock();
-+	return 0;
-+}
-+#endif
- 
- static struct cftype mem_cgroup_files[] = {
- 	{
-@@ -4877,6 +4916,46 @@ static int register_memsw_files(struct cgroup *cont, struct cgroup_subsys *ss)
- }
- #endif
- 
-+
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-+static struct cftype kmem_cgroup_files[] = {
-+	{
-+		.name = "independent_kmem_limit",
-+		.read_u64 = kmem_limit_independent_read,
-+		.write_u64 = kmem_limit_independent_write,
-+	},
-+	{
-+		.name = "kmem.usage_in_bytes",
-+		.private = MEMFILE_PRIVATE(_KMEM, RES_USAGE),
-+		.read_u64 = mem_cgroup_read,
-+		.register_event = mem_cgroup_usage_register_event,
-+		.unregister_event = mem_cgroup_usage_unregister_event,
-+	},
-+	{
-+		.name = "kmem.limit_in_bytes",
-+		.private = MEMFILE_PRIVATE(_KMEM, RES_LIMIT),
-+		.read_u64 = mem_cgroup_read,
-+		.register_event = mem_cgroup_usage_register_event,
-+		.unregister_event = mem_cgroup_usage_unregister_event,
-+	},
-+};
-+
-+static int register_kmem_files(struct cgroup *cont, struct cgroup_subsys *ss)
-+{
-+	if (!do_kmem_account)
-+		return 0;
-+
-+	return cgroup_add_files(cont, ss, kmem_cgroup_files,
-+				ARRAY_SIZE(kmem_cgroup_files));
-+};
-+
-+#else
-+static int register_kmem_files(struct cgroup *cont, struct cgroup_subsys *ss)
-+{
-+	return 0;
-+}
-+#endif
-+
- static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *mem, int node)
- {
- 	struct mem_cgroup_per_node *pn;
-@@ -5075,6 +5154,7 @@ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
- 	if (parent && parent->use_hierarchy) {
- 		res_counter_init(&mem->res, &parent->res);
- 		res_counter_init(&mem->memsw, &parent->memsw);
-+		res_counter_init(&mem->kmem, &parent->kmem);
- 		/*
- 		 * We increment refcnt of the parent to ensure that we can
- 		 * safely access it on res_counter_charge/uncharge.
-@@ -5085,6 +5165,7 @@ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
- 	} else {
- 		res_counter_init(&mem->res, NULL);
- 		res_counter_init(&mem->memsw, NULL);
-+		res_counter_init(&mem->kmem, NULL);
- 	}
- 	mem->last_scanned_child = 0;
- 	mem->last_scanned_node = MAX_NUMNODES;
-@@ -5129,6 +5210,10 @@ static int mem_cgroup_populate(struct cgroup_subsys *ss,
- 
- 	if (!ret)
- 		ret = register_memsw_files(cont, ss);
-+
-+	if (!ret)
-+		ret = register_kmem_files(cont, ss);
-+
- 	return ret;
- }
- 
-@@ -5665,3 +5750,17 @@ static int __init enable_swap_account(char *s)
- __setup("swapaccount=", enable_swap_account);
- 
- #endif
-+
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-+static int __init disable_kmem_account(char *s)
-+{
-+	/* consider enabled if no parameter or 1 is given */
-+	if (!strcmp(s, "1"))
-+		do_kmem_account = 1;
-+	else if (!strcmp(s, "0"))
-+		do_kmem_account = 0;
-+	return 1;
-+}
-+__setup("kmemaccount=", disable_kmem_account);
-+
-+#endif
--- 
-1.7.6
 
