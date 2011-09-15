@@ -1,55 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934101Ab1IOPng (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 11:43:36 -0400
-Received: from mga09.intel.com ([134.134.136.24]:30875 "EHLO mga09.intel.com"
+	id S934121Ab1IOPnz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 11:43:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10262 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934046Ab1IOPnf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 11:43:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="48811831"
-Date: Thu, 15 Sep 2011 17:46:11 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Jean Delvare <khali@linux-fr.org>, Luciano Coelho <coelho@ti.com>,
-        Randy Dunlap <rdunlap@xenotime.net>, matti.j.aaltonen@nokia.com,
-        johannes@sipsolutions.net, linux-kernel@vger.kernel.org,
-        mchehab@infradead.org, linux-media@vger.kernel.org,
-        linux-omap@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 2/2] mfd: remove CONFIG_MFD_SUPPORT
-Message-ID: <20110915154611.GF32263@sortiz-mobl>
-References: <20110829102732.03f0f05d.rdunlap@xenotime.net>
- <201108311849.37273.arnd@arndb.de>
- <20110902143713.307bbebe@endymion.delvare>
- <201109021643.36369.arnd@arndb.de>
+	id S934046Ab1IOPnx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Sep 2011 11:43:53 -0400
+Date: Thu, 15 Sep 2011 16:43:47 +0100
+To: linux-fsdevel@vger.kernel.org
+Subject: hfs: fix hfs_find_init() sb->ext_tree NULL ptr oops
+Cc: eteo@redhat.com, akpm@linux-foundation.org, hch@lst.de,
+        linux-kernel@vger.kernel.org
+User-Agent: Heirloom mailx 12.4 7/29/08
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201109021643.36369.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+Message-Id: <20110915154347.AF1E444B82@plougher.csb>
+From: plougher@redhat.com (Phillip Lougher)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
 
-On Fri, Sep 02, 2011 at 04:43:36PM +0200, Arnd Bergmann wrote:
-> We currently have two symbols to control compilation the MFD subsystem,
-> MFD_SUPPORT and MFD_CORE. The MFD_SUPPORT is actually not required
-> at all, it only hides the submenu when not set, with the effect that
-> Kconfig warns about missing dependencies when another driver selects
-> an MFD driver while MFD_SUPPORT is disabled. Turning the MFD submenu
-> back from menuconfig into a plain menu simplifies the Kconfig syntax
-> for those kinds of users and avoids the surprise when the menu
-> suddenly appears because another driver was enabled that selects this
-> symbol.
-So I applied this one, thanks a lot.
+Clement Lecigne reports a filesystem which causes a kernel oops
+in hfs_find_init() trying to dereference sb->ext_tree which is NULL.
 
-Cheers,
-Samuel.
+This proves to be because the filesystem has a corrupted MDB extent record,
+where the extents file does not fit into the first three extents in
+the file record (the first blocks).
 
+In hfs_get_block() when looking up the blocks for the extent file
+(HFS_EXT_CNID), it fails the first blocks special case, and falls through
+to the extent code (which ultimately calls hfs_find_init()) which is
+in the process of being initialised.
+
+Hfs avoids this scenario by always having the extents b-tree
+fitting into the first blocks (the extents B-tree can't have overflow
+extents).
+
+The fix is to check at mount time that the B-tree fits into first blocks,
+i.e.  fail if HFS_I(inode)->alloc_blocks >= HFS_I(inode)->first_blocks
+
+Note, the existing commit 47f365eb575735c6b2edf5d08e0d16d26a9c23bd
+becomes subsumed into this as a special case, but only for the
+extents B-tree (HFS_EXT_CNID), it is perfectly acceptable for the catalog
+B-Tree file to grow beyond three extents, with the remaining extent
+descriptors in the extents overfow.
+
+This fixes CVE-2011-2203
+
+Reported-by: Clement LECIGNE <clement.lecigne@netasq.com>
+Signed-off-by: Phillip Lougher <plougher@redhat.com>
+---
+ fs/hfs/btree.c |   20 +++++++++++++++-----
+ 1 files changed, 15 insertions(+), 5 deletions(-)
+
+diff --git a/fs/hfs/btree.c b/fs/hfs/btree.c
+index 3ebc437..c28b7fa 100644
+--- a/fs/hfs/btree.c
++++ b/fs/hfs/btree.c
+@@ -46,11 +46,26 @@ struct hfs_btree *hfs_btree_open(struct super_block *sb, u32 id, btree_keycmp ke
+ 	case HFS_EXT_CNID:
+ 		hfs_inode_read_fork(tree->inode, mdb->drXTExtRec, mdb->drXTFlSize,
+ 				    mdb->drXTFlSize, be32_to_cpu(mdb->drXTClpSiz));
++		if (HFS_I(tree->inode)->alloc_blocks >
++					HFS_I(tree->inode)->first_blocks) {
++			printk(KERN_ERR "hfs: invalid btree extent records\n");
++			unlock_new_inode(tree->inode);
++			goto free_inode;
++		}
++
+ 		tree->inode->i_mapping->a_ops = &hfs_btree_aops;
+ 		break;
+ 	case HFS_CAT_CNID:
+ 		hfs_inode_read_fork(tree->inode, mdb->drCTExtRec, mdb->drCTFlSize,
+ 				    mdb->drCTFlSize, be32_to_cpu(mdb->drCTClpSiz));
++
++		if (!HFS_I(tree->inode)->first_blocks) {
++			printk(KERN_ERR "hfs: invalid btree extent records "
++								"(0 size).\n");
++			unlock_new_inode(tree->inode);
++			goto free_inode;
++		}
++
+ 		tree->inode->i_mapping->a_ops = &hfs_btree_aops;
+ 		break;
+ 	default:
+@@ -59,11 +74,6 @@ struct hfs_btree *hfs_btree_open(struct super_block *sb, u32 id, btree_keycmp ke
+ 	}
+ 	unlock_new_inode(tree->inode);
+ 
+-	if (!HFS_I(tree->inode)->first_blocks) {
+-		printk(KERN_ERR "hfs: invalid btree extent records (0 size).\n");
+-		goto free_inode;
+-	}
+-
+ 	mapping = tree->inode->i_mapping;
+ 	page = read_mapping_page(mapping, 0, NULL);
+ 	if (IS_ERR(page))
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+1.7.1
+
