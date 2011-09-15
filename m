@@ -1,59 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752623Ab1IOBNN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 21:13:13 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:37747 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751719Ab1IOBNK (ORCPT
+	id S1752779Ab1IOBW0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 21:22:26 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:40568 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752273Ab1IOBWZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 21:13:10 -0400
-Date: Thu, 15 Sep 2011 11:13:01 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: import of the kernel-doc tree failed
-Message-Id: <20110915111301.a4227f9ca0d1f448d54050ae@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__15_Sep_2011_11_13_01_+1000_rew9D0BZSEhKjfy="
+	Wed, 14 Sep 2011 21:22:25 -0400
+MIME-Version: 1.0
+In-Reply-To: <1315839130.3466.6.camel@mfleming-mobl1.ger.corp.intel.com>
+References: <1314860114.32522.3.camel@rui>
+	<1314864889.13161.4.camel@rui>
+	<1314880125.8038.39.camel@mfleming-mobl1.ger.corp.intel.com>
+	<CAC=cRTOzcgm+3kHGcZrHs=9Q3cs5z6vmBqb1Bn+2qcvcSZ-2Xg@mail.gmail.com>
+	<1315839130.3466.6.camel@mfleming-mobl1.ger.corp.intel.com>
+Date: Thu, 15 Sep 2011 09:22:24 +0800
+X-Google-Sender-Auth: zGMPwdkFS-dS0mq4cgP-crjlx3s
+Message-ID: <CANejiEXSvT1hGasoowf1nCc5+EWyXr8PSmfpWDJOT0d_vEiKxA@mail.gmail.com>
+Subject: Re: [PATCH] EFI: Do not use __pa() to get the physical address of an
+ ioremapped memory range
+From: Shaohua Li <shli@kernel.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: huang ying <huang.ying.caritas@gmail.com>, Zhang Rui <rui.zhang@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, x86@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__15_Sep_2011_11_13_01_+1000_rew9D0BZSEhKjfy=
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+2011/9/12 Matt Fleming <matt@console-pimps.org>:
+> On Fri, 2011-09-02 at 13:12 +0800, huang ying wrote:
+>> On Thu, Sep 1, 2011 at 8:28 PM, Matt Fleming <matt@console-pimps.org> wrote:
+>> >
+>> > Hmm.. does anyone know why we ioremap_cache() the memory on
+>> > CONFIG_X86_32 instead of ioremap_nocache()? In the case of
+>> > EFI_MEMORY_MAPPED_IO the memory really needs to be uncached. Then if
+>> > we've ioremap'd the memory we should skip set_memory_uc() altogether,
+>> > no?
+>>
+>> Because whether the mapping should be cached is determined by md->attr
+>> instead of md->type.  And besides UC, we may add WC, etc support.
+>
+> Confused.
+>
+> The CONFIG_X86_64 version of efi_ioremap() looks like this,
+>
+> void __iomem *__init efi_ioremap(unsigned long phys_addr, unsigned long size,
+>                                 u32 type)
+> {
+>        unsigned long last_map_pfn;
+>
+>        if (type == EFI_MEMORY_MAPPED_IO)
+>                return ioremap(phys_addr, size);
+>
+> Which uses md->type to figure out if we should call ioremap(), which on
+> x86 is #define'd to ioremap_nocache(). CONFIG_X86_32 doesn't do this,
+> but it looks to me like it should.
+agree. mapping it wrong and fixing it later makes no sense. we should get
+the mapping correct at the first.
 
-Hi Randy,
-
-Importing the kernel-doc tree today produced this error:
-
-$ git am ../quilt/kernel-doc/docum-leds-class-fix-typo.patch
-Patch format detection failed.
-
-I just had to replace the tab in the From: line with a space.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__15_Sep_2011_11_13_01_+1000_rew9D0BZSEhKjfy=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOcVEdAAoJEDMEi1NhKgbshwgH/3bjUKc/MBHxDxe+eZm5onga
-aiLlnSD5KYidpGK+AQqQO8IUqwVjmd8J/d0wjI6pzD/b3TpDV7BddxCcerEdvr4B
-TOx2ANj44vVsaWHlRd0oPT3diLTUdlPg76kGQ/Yto/UVLk65q715dJY28PqjFMSX
-NQV8RVhKcxE3Qo261kO0hYbJuAn/CydQ3Vs5S2f+1SkedDuVisy5BCzineiecrFE
-3gBxdQW7XJdg8OiAMXbvj1Z9twWm0Uuu+oqhTICbZl7/SLZFOg/XWCZ1GNLjn3KT
-myIGgTF8M3EdHTgOBfUv8L0dDnLUJsiSISyMksWUJrtX91wDivRcTPfBiJ0puWI=
-=SjzB
------END PGP SIGNATURE-----
-
---Signature=_Thu__15_Sep_2011_11_13_01_+1000_rew9D0BZSEhKjfy=--
+> Zhang, I agree that calling __pa() on an ioremap()'d region is bogus,
+> but I don't understand why no one is seeing this crash on x86-64. Is it
+> something to do with the x86-64 memory map layout such that __pa() works
+> on an ioremap()'d address?
+x86-64 does identity mapping for larger space (from 0 to the last physical mem
+even there is hole). Maybe this is the reason.
