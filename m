@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934668Ab1IOTsO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 15:48:14 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:41629 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934532Ab1IOTsM (ORCPT
+	id S934693Ab1IOTsU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 15:48:20 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:33437 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934532Ab1IOTsS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 15:48:12 -0400
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Dave Airlie <airlied@linux.ie>
-Cc: linux-kernel@vger.kernel.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        intel-gfx@lists.freedesktop.org, nouveau@lists.freedesktop.org,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, stable@kernel.org
-Subject: [PATCH] io-mapping: ensure io_mapping_map_atomic _is_ atomic
-Date: Thu, 15 Sep 2011 20:48:07 +0200
-Message-Id: <1316112487-15583-1-git-send-email-daniel.vetter@ffwll.ch>
-X-Mailer: git-send-email 1.7.6
+	Thu, 15 Sep 2011 15:48:18 -0400
+Date: Thu, 15 Sep 2011 14:48:12 -0500
+From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linux Containers <containers@lists.osdl.org>,
+        Andrew Morton <akpm@osdl.org>, Vasiliy Kulikov <segoon@openwall.com>,
+        richard@nod.at
+Subject: [PATCH] User namespace: don't allow sysctl in non-init user ns
+Message-ID: <20110915194812.GA24348@sergelap>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For the !HAVE_ATOMIC_IOMAP case the stub functions did not call
-pagefault_disable/_enable. The i915 driver relies on the map
-actually being atomic, otherwise it can deadlock with it's own
-pagefault handler in the gtt pwrite fastpath.
+sysctl.c has its own custom uid check, which is not user namespace
+aware.  As discovered by Richard, that allows root in a container
+privileged access to set all sysctls.
 
-This is exercised by gem_mmap_gtt from the intel-gpu-toosl gem
-testsuite.
+To fix that, just refuse access if current is not in init_user_ns.  We
+may at some point want to relax that check so that some sysctls are
+allowed - for instance dmesg_restrict when syslog is containerized.
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=38115
-Cc: stable@kernel.org
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Vasiliy Kulikov <segoon@openwall.com>
+Cc: richard@nod.at
 ---
- include/linux/io-mapping.h |    2 ++
+ kernel/sysctl.c |    2 ++
  1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/io-mapping.h b/include/linux/io-mapping.h
-index 8cdcc2a1..6b3bef1 100644
---- a/include/linux/io-mapping.h
-+++ b/include/linux/io-mapping.h
-@@ -138,12 +138,14 @@ static inline void __iomem *
- io_mapping_map_atomic_wc(struct io_mapping *mapping,
- 			 unsigned long offset)
- {
-+	pagefault_disable();
- 	return ((char __force __iomem *) mapping) + offset;
- }
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 11d65b5..f2b42e2 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -1697,6 +1697,8 @@ void register_sysctl_root(struct ctl_table_root *root)
  
- static inline void
- io_mapping_unmap_atomic(void __iomem *vaddr)
+ static int test_perm(int mode, int op)
  {
-+	pagefault_enable();
- }
- 
- /* Non-atomic map/unmap */
++	if (current_user_ns() != &init_user_ns)
++		return -EACCES;
+ 	if (!current_euid())
+ 		mode >>= 6;
+ 	else if (in_egroup_p(0))
 -- 
-1.7.6
+1.7.5.4
 
