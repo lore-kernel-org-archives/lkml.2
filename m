@@ -1,87 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934511Ab1IOTSr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 15:18:47 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:52209 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S934209Ab1IOTSq (ORCPT
+	id S934506Ab1IOTUx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 15:20:53 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54899 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934209Ab1IOTUv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 15:18:46 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX1+LFzE2gxuL68JmKWneBpdV85pGhRzIPSxoK1yw+p
-	38oTeqrODFtdGc
-Message-ID: <4E724F93.1050203@gmx.de>
-Date: Thu, 15 Sep 2011 19:18:43 +0000
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110818 Icedove/3.0.11
+	Thu, 15 Sep 2011 15:20:51 -0400
+Date: Thu, 15 Sep 2011 20:20:35 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Rob Herring <robherring2@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-kbuild@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: 3.1-rc1 link failure
+Message-ID: <20110915192034.GM6267@n2100.arm.linux.org.uk>
+References: <4E402FBB.2070401@gmail.com> <20110808195804.GD19367@n2100.arm.linux.org.uk> <4E724715.1030505@codeaurora.org>
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Alex Deucher <alexdeucher@gmail.com>, Keith Packard <keithp@keithp.com>,
-        linux-fbdev@vger.kernel.org, linaro-dev@lists.linaro.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Archit Taneja <archit@ti.com>, "Clark, Rob" <rob@ti.com>
-Subject: Re: Proposal for a low-level Linux display framework
-References: <1316088425.11294.78.camel@lappyti>	<yunboul7sx7.fsf@aiko.keithp.com>	<1316100594.23214.65.camel@deskari>	<yun8vpp7qk7.fsf@aiko.keithp.com>	<4E72320B.6020000@gmx.de>	<CADnq5_NnzLtJmSzOgyppnBtv96DRTJ71u6ZSrs56KJ-F5CC-mw@mail.gmail.com>	<4E724659.5080709@gmx.de> <20110915195804.4e6d965b@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110915195804.4e6d965b@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E724715.1030505@codeaurora.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/15/2011 06:58 PM, Alan Cox wrote:
->> Well, I rather think that the fb API is more user centric to allow every program
->> to use it directly in contrast to the KMS/DRM API which aims to support every
->> feature the hardware has. For this the fb API should not change much, but I
->> understand some additions were needed for some special users, probably limited
->> to X and wayland.
+On Thu, Sep 15, 2011 at 11:42:29AM -0700, Stephen Boyd wrote:
+> ( Including full text for other lists)
 > 
-> Wayland needs vblank frame buffer switching and the like. Likewise given
-> you want to composite buffers really any serious accelerated device ends
-> up needing a full memory manager and that ends up needing a buffer
-> manager. Wayland needs clients to be doing their own rendering into
-> objects which means authorisation and management of the render engine
-> which ends up looking much like DRM.
-
-As you have DRM now and as I'm not interested in wayland I won't discuss this,
-but I guess it might be a good start for Geert's question what would be needed
-to use it on dumb framebuffers.
-
->> One of my biggest problems with KMS is that it has (naturally) a lot more
->> complexity than the fb API which leads to instability. Basically it's very
+> On 08/08/11 12:58, Russell King - ARM Linux wrote:
+> > On Mon, Aug 08, 2011 at 01:49:31PM -0500, Rob Herring wrote:
+> >> Russell,
+> >>
+> >> This commit is causing some link failures:
+> >>
+> >>     ARM: vmlinux.lds: move discarded sections to beginning
+> >>
+> >>     Rather than scattering the discarded sections throughout the linker
+> >>     file, move them to the start.
+> >>
+> >>     Acked-by: Nicolas Pitre <nicolas.pitre@linaro.org>
+> >>     Tested-by: Stephen Boyd <sboyd@codeaurora.org>
+> >>     Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+> >>
+> >> The error is this:
+> >>
+> >> `.exit.text' referenced in section `.alt.smp.init' of
+> >> drivers/built-in.o: defined in discarded section `.exit.text' of
+> >> drivers/built
+> >> -in.o
+> >> `.exit.text' referenced in section `.alt.smp.init' of net/built-in.o:
+> >> defined in discarded section `.exit.text' of net/built-in.o
+> >>
+> >> I traced the one in net/ to CONFIG_SMP_ON_UP=y and CONFIG_DCB=y.
+> >> dcbnl_exit calls dcb_flushapp which contains a spinlock. dcb_flushapp is
+> >> getting inlined into dcbnl_exit.
+> > Argh.  This is going to be an absolute _pig_ to fix.
+> >
+> > This is the relevent part of the linker script (reformatted to make it
+> > clearer):
+> >
+> > | SECTIONS
+> > | {
+> > |  /*
+> > |   * unwind exit sections must be discarded before the rest of the
+> > |   * unwind sections get included.
+> > |   */
+> > |  /DISCARD/ : {
+> > |   *(.ARM.exidx.exit.text)
+> > |   *(.ARM.extab.exit.text)
+> > |  }
+> > | ...
+> > |  .exit.text : {
+> > |   *(.exit.text)
+> > |   *(.memexit.text)
+> > |  }
+> > | ...
+> > |  /DISCARD/ : {
+> > |   *(.exit.text)
+> > |   *(.memexit.text)
+> > |   *(.exit.data)
+> > |   *(.memexit.data)
+> > |   *(.memexit.rodata)
+> > |   *(.exitcall.exit)
+> > |   *(.discard)
+> > |   *(.discard.*)
+> > |   }
+> > | }
+> >
+> > Now, this is what the linker manual says about discarded output sections:
+> >
+> > |    The special output section name `/DISCARD/' may be used to discard
+> > | input sections.  Any input sections which are assigned to an output
+> > | section named `/DISCARD/' are not included in the output file.
+> >
+> > No questions, no exceptions.  It doesn't say "unless they are listed
+> > before the /DISCARD/ section."  Now, this is what asn-generic/vmlinux.lds.S
+> > says:
+> >
+> > | /*
+> > |  * Default discarded sections.
+> > |  *
+> > |  * Some archs want to discard exit text/data at runtime rather than
+> > |  * link time due to cross-section references such as alt instructions,
+> > |  * bug table, eh_frame, etc.  DISCARDS must be the last of output
+> > |  * section definitions so that such archs put those in earlier section
+> > |  * definitions.
+> > |  */
+> >
+> > And guess what - the list _always_ includes .exit.text etc.
+> >
+> > Now, what's actually happening is that the linker is reading the script,
+> > and it finds the first /DISCARD/ output section at the beginning of the
+> > script.  It continues reading the script, and finds the 'DISCARD' macro
+> > at the end, which having been postprocessed results in another
+> > /DISCARD/ output section.  As the linker already contains the earlier
+> > /DISCARD/ output section, it adds it to that existing section, so it
+> > effectively is placed at the start.  This can be seen by using the -M
+> > option to ld:
+> >
+> > | Linker script and memory map
+> > | 
+> > |                 0xc037c080                jiffies = jiffies_64
+> > | 
+> > | /DISCARD/
+> > |  *(.ARM.exidx.exit.text)
+> > |  *(.ARM.extab.exit.text)
+> > |  *(.exit.text)
+> > |  *(.memexit.text)
+> > |  *(.exit.data)
+> > |  *(.memexit.data)
+> > |  *(.memexit.rodata)
+> > |  *(.exitcall.exit)
+> > |  *(.discard)
+> > |  *(.discard.*)
+> > | 
+> > |                 0xc0008000                . = 0xc0008000
+> > | 
+> > | .head.text      0xc0008000      0x1d0
+> > |                 0xc0008000                _text = .
+> > |  *(.head.text)
+> > |  .head.text     0xc0008000      0x1d0 arch/arm/kernel/head.o
+> > |                 0xc0008000                stext
+> > | 
+> > | .text           0xc0008200   0x2d78d0
+> > |                 0xc0008200                _stext = .
+> > |                 0xc0008200                __exception_text_start = .
+> > |  *(.exception.text)
+> > |  .exception.text
+> > | ...
+> >
+> > As you can see, all the discarded sections are grouped together - and
+> > as a result of it being the first output section, they all appear before
+> > any other section.
+> >
+> > The result is that not only is the unwind information discarded (as
+> > intended), but also the .exit.text, despite us wanting to have the
+> > .exit.text preserved.
+> >
+> > We can't move the unwind information elsewhere, because it'll then be
+> > included even when we do actually discard the .exit.text (and similar)
+> > sections.
+> >
+> > The only solution that I can think of is to stop using this
+> > asm-generic/vmlinux.lds.S and write our own fully conditionalized
+> > linker script, ensuring that no input section is mentioned more than
+> > once in the output sections.
+> >
+> > Or someone sorts out the asm-generic/vmlinux.lds.S stuff to actually
+> > conform to the linker manual, and stop relying on implementation defined
+> > behaviour of the linker - again by having it fully conditionalized.
+> >
 > 
-> It shouldn't do - and a sample of one (your machine) is not a
-> statistically valid set. Fb is pretty much ununsable in contrast on my
-> main box, but that's not a statistically valid sample either.
+> Now that the generic bug patch has been merged to linux-next a lot of
+> ARM builds are failing like so:
 > 
-> I'm not that convinced by the complexity either. For a simple video card
-> setup such as those that the fb layer can kind of cope with (ie linear
-> buffer, simple mode changes, no client rendering, no vblank flipping,
-> limited mode management, no serious multi-head) a DRM driver is also
-> pretty tiny and simple.
-
-Yes, if you limit DRM to the functionality of the fb API I guess you could reach
-the same stability level. But where can I do this? Where is a option to forbid
-all acceleration or at least limit to the acceleration that can be done without
-any risk?
-
->> Well, I think it's too late to really fix this thing. We now have 3 APIs in the
->> kernel that have to be kept. Probably the best we can do now is figure out how
->> we can reduce code duplication and do extensions to those APIs in a way that
->> they are compatible with each other or completely independent and can be used
->> across the APIs.
+> `.exit.text' referenced in section `__bug_table' of net/built-in.o: defined in discarded section `.exit.text' of net/built-in.o
+> `.exit.text' referenced in section `__bug_table' of net/built-in.o: defined in discarded section `.exit.text' of net/built-in.o
+> `.exit.text' referenced in section `__bug_table' of net/built-in.o: defined in discarded section `.exit.text' of net/built-in.o
 > 
-> I think it comes down to 'when nobody is using the old fb drivers they can
-> drop into staging and oblivion'. Right now the fb layer is essentially
-> compatibility glue on most modern x86 platforms.
+> 
+> I'm not sure what the fix is here. Hopefully we can figure out how to
+> keep using the asm-generic stuff.
 
-That's a really difficult question. Determining the users is difficult and there
-are people that use their hardware very long, for example we are about to get a
-new driver for i740. For the framebuffer infrastructure I guess you have to at
-least wait for my death.
-
-
-Regards,
-
-Florian Tobias Schandinat
+At the moment, I still have no solution to this problem other than the
+undesirable one I mention in the quote.
