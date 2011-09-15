@@ -1,168 +1,278 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934713Ab1IOUIW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 16:08:22 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:61775 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934521Ab1IOUIV convert rfc822-to-8bit (ORCPT
+	id S934718Ab1IOUJN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 16:09:13 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:48515 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934488Ab1IOUJL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 16:08:21 -0400
-MIME-Version: 1.0
-Message-ID: <863f8de5-a8e5-427d-a329-e69a5402f88a@default>
-Date: Thu, 15 Sep 2011 13:07:38 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Nitin Gupta <ngupta@vflare.org>, Greg KH <greg@kroah.com>, gregkh@suse.de,
-        devel@driverdev.osuosl.org, cascardo@holoscopio.com,
-        linux-kernel@vger.kernel.org, dave@linux.vnet.ibm.com,
-        linux-mm@kvack.org, brking@linux.vnet.ibm.com, rcj@linux.vnet.ibm.com
-Subject: RE: [PATCH v2 0/3] staging: zcache: xcfmalloc support
-References: <1315404547-20075-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <20110909203447.GB19127@kroah.com> <4E6ACE5B.9040401@vflare.org>
- <4E6E18C6.8080900@linux.vnet.ibm.com> <4E6EB802.4070109@vflare.org>
- <4E6F7DA7.9000706@linux.vnet.ibm.com> <4E6FC8A1.8070902@vflare.org>
- <4E72284B.2040907@linux.vnet.ibm.com>
- <075c4e4c-a22d-47d1-ae98-31839df6e722@default
- 4E725109.3010609@linux.vnet.ibm.com>
-In-Reply-To: <4E725109.3010609@linux.vnet.ibm.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6557.5001]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
-X-CT-RefId: str=0001.0A090209.4E725B23.011D,ss=1,re=0.000,fgs=0
+	Thu, 15 Sep 2011 16:09:11 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: linux-kernel@vger.kernel.org
+Cc: Neil Horman <nhorman@tuxdriver.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [PATCH] sysfs: add per pci device msi[x] irq listing (v2)
+Date: Thu, 15 Sep 2011 16:08:38 -0400
+Message-Id: <1316117318-22027-1-git-send-email-nhorman@tuxdriver.com>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <1316025413-5855-1-git-send-email-nhorman@tuxdriver.com>
+References: <1316025413-5855-1-git-send-email-nhorman@tuxdriver.com>
+X-Spam-Score: -0.8 (/)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On 09/15/2011 12:29 PM, Dan Magenheimer wrote:
-> >> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
-> >> Subject: Re: [PATCH v2 0/3] staging: zcache: xcfmalloc support
-> >>
-> >> Right now xvmalloc is broken for zcache's application because
-> >> of its huge fragmentation for half the valid allocation sizes
-> >> (> PAGE_SIZE/2).
-> >
-> > Um, I have to disagree here. It is broken for zcache for
-> > SOME set of workloads/data, where the AVERAGE compression
-> > is poor (> PAGE_SIZE/2).
-> 
-> True.
-> 
-> But are we not in agreement that xvmalloc needs to be replaced
-> with an allocator that doesn't have this issue? I thought we all
-> agreed on that...
+So a while back, I wanted to provide a way for irqbalance (and other apps) to
+definitively map irqs to devices, which, for msi[x] irqs is currently not really
+possible in user space.  My first attempt wen't not so well:
+https://lkml.org/lkml/2011/4/21/308
 
-First, let me make it clear that I very much do appreciate
-your innovation and effort here.  I'm not trying to block
-your work from getting upstream or create hoops for you to
-jump through.  Heaven knows, I can personally attest to
-how frustrating that can be!
+It was plauged by the same issues that prior attempts were, namely that it
+violated the one-file-one-value sysfs rule.  I wandered off but have recently
+come back to this.  I've got a new implementation here that exports a new
+subdirectory for every pci device,  called msi_irqs.  This subdirectory contanis
+a variable number of numbered subdirectories, in which the number represents an
+msi irq.  Each numbered subdirectory contains attributes for that irq, which
+currently is only the mode it is operating in (msi vs. msix).  I think fits
+within the constraints sysfs requires, and will allow irqbalance to properly map
+msi irqs to devices without having to rely on rickety, best guess methods like
+interface name matching.
 
-I am in agreement that xvmalloc has a significant problem with
-some workloads and that it would be good to fix that.  What
-I'm not clear on is if we are replacing an algorithm with
-Problem X with another algorithm that has Problem Y... or
-at least, if we are, that we agree that Problem Y is not
-worse across a broad set of real world workloads than Problem X.
+Change Notes:
+
+(v2)
+Fixed up Documentation to put new sysfs interface descriptions in the right
+place, as per request by Greg K-H
+
+Fixed up oops that resulted from removing pci device.  Not 100% sure I did this
+exactly right, but looking at the crash (triggered by echo 1 >
+/sys/class/net/eth0/device/remove), it looked as though we were freeing the
+pci_dev struct prior to all sysfs objects releasing their use of the device.  AS
+such it seemed most appropriate to hold references on the pci_dev for each msi
+irq sysfs object that we create, and release them on free accordingly.  With
+this change in place, I can remove, and add (via rescan) msi enabled devices
+ad-nauseum without a panic.  Again thanks to Greg K-H
+
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+CC: Greg Kroah-Hartman <gregkh@suse.de>
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>
+---
+ Documentation/ABI/testing/sysfs-bus-pci |   18 ++++++
+ drivers/pci/msi.c                       |  102 +++++++++++++++++++++++++++++++
+ include/linux/msi.h                     |    3 +
+ include/linux/pci.h                     |    1 +
+ 4 files changed, 124 insertions(+), 0 deletions(-)
+
+diff --git a/Documentation/ABI/testing/sysfs-bus-pci b/Documentation/ABI/testing/sysfs-bus-pci
+index 349ecf2..699da99 100644
+--- a/Documentation/ABI/testing/sysfs-bus-pci
++++ b/Documentation/ABI/testing/sysfs-bus-pci
+@@ -66,6 +66,24 @@ Description:
+ 		re-discover previously removed devices.
+ 		Depends on CONFIG_HOTPLUG.
  
-> >> My xcfmalloc patches are _a_ solution that is ready now.  Sure,
-> >> it doesn't so compaction yet, and it has some metadata overhead.
-> >> So it's not "ideal" (if there is such I thing). But it does fix
-> >> the brokenness of xvmalloc for zcache's application.
-> >
-> > But at what cost?  As Dave Hansen pointed out, we still do
-> > not have a comprehensive worst-case performance analysis for
-> > xcfmalloc.  Without that (and without an analysis over a very
-> > large set of workloads), it is difficult to characterize
-> > one as "better" than the other.
-> 
-> I'm not sure what you mean by "comprehensive worst-case performance
-> analysis".  If you're talking about theoretical worst-case runtimes
-> (i.e. O(whatever)) then apparently we are going to have to
-> talk to an authority on algorithm analysis because we can't agree
-> how to determine that.  However, it isn't difficult to look at the
-> code and (within your own understanding) see what it is.
-> 
-> I'd be interested so see what Nitin thinks is the worst-case runtime
-> bound.
-> 
-> How would you suggest that I measure xcfmalloc performance on a "very
-> large set of workloads".  I guess another form of that question is: How
-> did xvmalloc do this?
++What:		/sys/bus/pci/devices/.../msi_irqs/
++Date:		September, 2011
++Contact:	Neil Horman <nhorman@tuxdriver.com>
++Description:
++		The /sys/devices/.../msi_irqs directory contains a variable set
++		subdirectories, with each subdirectory being named after a
++		corresponding msi irq vector allocated to that device.  Each
++		numbered subdirectory N contains attributes of that irq.
++		Note that this directory is not created for device drivers which
++		do not support msi irqs
++
++What:		/sys/bus/pci/devices/.../msi_irqs/<N>/mode
++Date:		September 2011
++Contact:	Neil Horman <nhorman@tuxdriver.com>
++Description:
++		This attribute indicates the mode that the irq vecotor named by
++		the parent directory is in (msi vs. msix)
++
+ What:		/sys/bus/pci/devices/.../remove
+ Date:		January 2009
+ Contact:	Linux PCI developers <linux-pci@vger.kernel.org>
+diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+index 2f10328..13a59a5 100644
+--- a/drivers/pci/msi.c
++++ b/drivers/pci/msi.c
+@@ -322,6 +322,8 @@ static void free_msi_irqs(struct pci_dev *dev)
+ 			if (list_is_last(&entry->list, &dev->msi_list))
+ 				iounmap(entry->mask_base);
+ 		}
++		kobject_put(&entry->kobj);
++		pci_dev_put(dev);
+ 		list_del(&entry->list);
+ 		kfree(entry);
+ 	}
+@@ -402,6 +404,89 @@ void pci_restore_msi_state(struct pci_dev *dev)
+ }
+ EXPORT_SYMBOL_GPL(pci_restore_msi_state);
+ 
++
++#define to_msi_attr(obj) container_of(obj, struct msi_attribute, attr)
++#define to_msi_desc(obj) container_of(obj, struct msi_desc, kobj)
++
++struct msi_attribute {
++	struct attribute        attr;
++	ssize_t (*show)(struct msi_desc *entry, struct msi_attribute *attr,
++			char *buf);
++	ssize_t (*store)(struct msi_desc *entry, struct msi_attribute *attr,
++			 const char *buf, size_t count);
++};
++
++static ssize_t show_msi_mode(struct msi_desc *entry, struct msi_attribute *atr,
++			     char *buf)
++{
++	return sprintf(buf, "%s\n", entry->msi_attrib.is_msix ? "msix" : "msi");
++}
++
++static ssize_t msi_irq_attr_show(struct kobject *kobj,
++				 struct attribute *attr, char *buf)
++{
++	struct msi_attribute *attribute = to_msi_attr(attr);
++	struct msi_desc *entry = to_msi_desc(kobj);
++
++	if (!attribute->show)
++		return -EIO;
++
++	return attribute->show(entry, attribute, buf);
++}
++
++static const struct sysfs_ops msi_irq_sysfs_ops = {
++	.show = msi_irq_attr_show,
++};
++
++static struct msi_attribute mode_attribute =
++	__ATTR(mode, S_IRUGO, show_msi_mode, NULL);
++
++
++struct attribute *msi_irq_default_attrs[] = {
++	&mode_attribute.attr,
++	NULL
++};
++
++static struct kobj_type msi_irq_ktype = {
++	.sysfs_ops = &msi_irq_sysfs_ops,
++	.default_attrs = msi_irq_default_attrs,
++};
++
++static int populate_msi_sysfs(struct pci_dev *pdev)
++{
++	struct msi_desc *entry;
++	struct kobject *kobj;
++	int ret;
++	int count = 0;
++
++	pdev->msi_kset = kset_create_and_add("msi_irqs", NULL, &pdev->dev.kobj);
++	if (!pdev->msi_kset)
++		return -ENOMEM;
++
++	list_for_each_entry(entry, &pdev->msi_list, list) {
++		kobj = &entry->kobj;
++		kobj->kset = pdev->msi_kset;
++		pci_dev_get(pdev);
++		ret = kobject_init_and_add(kobj, &msi_irq_ktype, NULL,
++				     "%u", entry->irq);
++		if (ret)
++			goto out_unroll;
++
++		count++;
++	}
++
++	return 0;
++
++out_unroll:
++	list_for_each_entry(entry, &pdev->msi_list, list) {
++		if (!count)
++			break;
++		kobject_put(&entry->kobj);
++		count--;
++	}
++	return ret;
++}
++
+ /**
+  * msi_capability_init - configure device's MSI capability structure
+  * @dev: pointer to the pci_dev data structure of MSI device function
+@@ -453,6 +538,13 @@ static int msi_capability_init(struct pci_dev *dev, int nvec)
+ 		return ret;
+ 	}
+ 
++	ret = populate_msi_sysfs(dev);
++	if (ret) {
++		msi_mask_irq(entry, mask, ~mask);
++		free_msi_irqs(dev);
++		return ret;
++	}
++
+ 	/* Set MSI enabled bits	 */
+ 	pci_intx_for_msi(dev, 0);
+ 	msi_set_enable(dev, pos, 1);
+@@ -573,6 +665,12 @@ static int msix_capability_init(struct pci_dev *dev,
+ 
+ 	msix_program_entries(dev, entries);
+ 
++	ret = populate_msi_sysfs(dev);
++	if (ret) {
++		ret = 0;
++		goto error;
++	}
++
+ 	/* Set MSI-X enabled bits and unmask the function */
+ 	pci_intx_for_msi(dev, 0);
+ 	dev->msix_enabled = 1;
+@@ -731,6 +829,8 @@ void pci_disable_msi(struct pci_dev *dev)
+ 
+ 	pci_msi_shutdown(dev);
+ 	free_msi_irqs(dev);
++	kset_unregister(dev->msi_kset);
++	dev->msi_kset = NULL;
+ }
+ EXPORT_SYMBOL(pci_disable_msi);
+ 
+@@ -829,6 +929,8 @@ void pci_disable_msix(struct pci_dev *dev)
+ 
+ 	pci_msix_shutdown(dev);
+ 	free_msi_irqs(dev);
++	kset_unregister(dev->msi_kset);
++	dev->msi_kset = NULL;
+ }
+ EXPORT_SYMBOL(pci_disable_msix);
+ 
+diff --git a/include/linux/msi.h b/include/linux/msi.h
+index 05acced..ce93a34 100644
+--- a/include/linux/msi.h
++++ b/include/linux/msi.h
+@@ -1,6 +1,7 @@
+ #ifndef LINUX_MSI_H
+ #define LINUX_MSI_H
+ 
++#include <linux/kobject.h>
+ #include <linux/list.h>
+ 
+ struct msi_msg {
+@@ -44,6 +45,8 @@ struct msi_desc {
+ 
+ 	/* Last set MSI message */
+ 	struct msi_msg msg;
++
++	struct kobject kobj;
+ };
+ 
+ /*
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index f27893b..fff3961 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -332,6 +332,7 @@ struct pci_dev {
+ 	struct bin_attribute *res_attr_wc[DEVICE_COUNT_RESOURCE]; /* sysfs file for WC mapping of resources */
+ #ifdef CONFIG_PCI_MSI
+ 	struct list_head msi_list;
++	struct kset *msi_kset;
+ #endif
+ 	struct pci_vpd *vpd;
+ #ifdef CONFIG_PCI_IOV
+-- 
+1.7.6
 
-I'm far from an expert in the allocation algorithms you and
-Nitin are discussing, so let me use an analogy: ordered link
-lists.  If you insert, a sequence of N numbers from largest to
-smallest and then search/retrieve them in order from smallest
-to largest, the data structure appears very very fast.  If you
-insert them in the opposite order and then search/retrieve
-them in the opposite order, the data structure appears
-very very slow.
-
-For your algorithm, are there sequences of allocations/deallocations
-which will perform very poorly?  If so, how poorly?  If
-"perform very poorly" for allocation/deallocation is
-a fraction of the time to compress/decompress, I don't
-care, let's switch to xcfmalloc.  However, if one could
-manufacture a sequence of allocations/searches where the
-overhead is much larger than the compress/decompress
-time (and especially if grows worse as N grows), that's
-an issue we need to understand better.
-
-I think Dave Hansen was saying the same thing in an earlier thread:
-
-> From: Dave Hansen [mailto:dave@linux.vnet.ibm.com]
-> It took the largest (most valuable) block, and split a 500 block when it
-> didn't have to.  The reason it doesn't do this is that it doesn't
-> _search_.  It just indexes and guesses.  That's *fast*, but it errs on
-> the side of speed rather than being optimal.  That's OK, we do it all
-> the time, but it *is* a compromise.  We should at least be thinking of
-> the cases when this doesn't perform well.
-
-In other words, what happens if on some workload, strictly
-by chance, xcfmalloc always guesses wrong?  Will search time
-grow linearly, or exponentially?  (This is especially an
-issue if interrupts are disabled during the search, which
-they currently are, correct?)
-
-> >> So I see two ways going forward:
-> >>
-> >> 1) We review and integrate xcfmalloc now.  Then, when you are
-> >> done with your allocator, we can run them side by side and see
-> >> which is better by numbers.  If yours is better, you'll get no
-> >> argument from me and we can replace xcfmalloc with yours.
-> >>
-> >> 2) We can agree on a date (sooner rather than later) by which your
-> >> allocator will be completed.  At that time we can compare them and
-> >> integrate the best one by the numbers.
-> >>
-> >> Which would you like to do?
-> >
-> > Seth, I am still not clear why it is not possible to support
-> > either allocation algorithm, selectable at runtime.  Or even
-> > dynamically... use xvmalloc to store well-compressible pages
-> > and xcfmalloc for poorly-compressible pages.  I understand
-> > it might require some additional coding, perhaps even an
-> > ugly hack or two, but it seems possible.
-> 
-> But why do an ugly hack if we can just use a single allocator
-> that has the best overall performance for the allocation range
-> the zcache requires.  Why make it more complicated that it
-> needs to be?
-
-I agree, if we are certain that your statement of "best overall
-performance" is true.
-
-If you and Nitin can agree that xcfmalloc is better than xvmalloc,
-even if future-slab-based-allocator is predicted to be better
-than xcfmalloc, I am OK with (1) above.  I just want to feel
-confident we aren't exchanging problem X for problem Y (in
-which case some runtime or dynamic selection hack might be better).
-
-With all that said, I guess my bottom line is: If Nitin provides
-an Acked-by on your patchset, I will too.
-
-Thanks again for your work on this!
-Dan
