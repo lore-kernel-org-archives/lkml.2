@@ -1,120 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756674Ab1IORVX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 13:21:23 -0400
-Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:48183 "EHLO
-	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756494Ab1IORVU (ORCPT
+	id S1756687Ab1IORab (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 13:30:31 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:30994 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756574Ab1IORaa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 13:21:20 -0400
-Subject: Re: Proposal for a low-level Linux display framework
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-To: Keith Packard <keithp@keithp.com>
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linaro-dev@lists.linaro.org,
-        "Clark, Rob" <rob@ti.com>, Archit Taneja <archit@ti.com>
-In-Reply-To: <yun8vpp7qk7.fsf@aiko.keithp.com>
-References: <1316088425.11294.78.camel@lappyti>
-	 <yunboul7sx7.fsf@aiko.keithp.com> <1316100594.23214.65.camel@deskari>
-	 <yun8vpp7qk7.fsf@aiko.keithp.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 15 Sep 2011 20:21:15 +0300
-Message-ID: <1316107275.23214.99.camel@deskari>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Thu, 15 Sep 2011 13:30:30 -0400
+MIME-Version: 1.0
+Message-ID: <075c4e4c-a22d-47d1-ae98-31839df6e722@default>
+Date: Thu, 15 Sep 2011 10:29:51 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>
+Cc: Greg KH <greg@kroah.com>, gregkh@suse.de, devel@driverdev.osuosl.org,
+        cascardo@holoscopio.com, linux-kernel@vger.kernel.org,
+        dave@linux.vnet.ibm.com, linux-mm@kvack.org, brking@linux.vnet.ibm.com,
+        rcj@linux.vnet.ibm.com
+Subject: RE: [PATCH v2 0/3] staging: zcache: xcfmalloc support
+References: <1315404547-20075-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <20110909203447.GB19127@kroah.com> <4E6ACE5B.9040401@vflare.org>
+ <4E6E18C6.8080900@linux.vnet.ibm.com> <4E6EB802.4070109@vflare.org>
+ <4E6F7DA7.9000706@linux.vnet.ibm.com> <4E6FC8A1.8070902@vflare.org
+ 4E72284B.2040907@linux.vnet.ibm.com>
+In-Reply-To: <4E72284B.2040907@linux.vnet.ibm.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
+ 12.0.6557.5001]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4E72362B.0148:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-09-15 at 10:50 -0500, Keith Packard wrote:
-> On Thu, 15 Sep 2011 18:29:54 +0300, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
+> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+> Subject: Re: [PATCH v2 0/3] staging: zcache: xcfmalloc support
 > 
-> > 1) It's part of DRM, so it doesn't help fb or v4l2 drivers. Except if
-> > the plan is to make DRM the core Linux display framework, upon which
-> > everything else is built, and fb and v4l2 are changed to use DRM.
+> Hey Nitin,
 > 
-> I'd like to think we could make DRM the underlying display framework;
-> it already exposes an fb interface, and with overlays, a bit more of the
-> v4l2 stuff is done as well. Certainly eliminating three copies of mode
-> setting infrastructure would be nice...
-
-Ok, sounds good to me. We (as in OMAP display people) are already
-planning to take DRM into use, so no problem there.
-
-> > But even if it was done like that, I see that it's combining two
-> > separate things: 1) the lower level HW control, and 2) the upper level
-> > buffer management, policies and userspace interfaces.
+> So this is how I see things...
 > 
-> Those are split between the DRM layer and the underlying device driver,
-> which provides both kernel (via fb) and user space interfaces.
+> Right now xvmalloc is broken for zcache's application because
+> of its huge fragmentation for half the valid allocation sizes
+> (> PAGE_SIZE/2).
 
-I'm not so familiar with DRM, but with device driver you mean a driver
-for the the hardware which handles display output (gfx cards or whatever
-it is on that platform)?
+Um, I have to disagree here. It is broken for zcache for
+SOME set of workloads/data, where the AVERAGE compression
+is poor (> PAGE_SIZE/2).
+ 
+> My xcfmalloc patches are _a_ solution that is ready now.  Sure,
+> it doesn't so compaction yet, and it has some metadata overhead.
+> So it's not "ideal" (if there is such I thing). But it does fix
+> the brokenness of xvmalloc for zcache's application.
 
-If so, it sounds good. That quite well matches what omapdss driver does
-currently for us. But we still have semi-complex omapdrm between omapdss
-and the standard drm layer.
+But at what cost?  As Dave Hansen pointed out, we still do
+not have a comprehensive worst-case performance analysis for
+xcfmalloc.  Without that (and without an analysis over a very
+large set of workloads), it is difficult to characterize
+one as "better" than the other.
 
-Rob, would you say omapdrm is more of a DRM wrapper for omapdss than a
-real separate entity? If so, then we could possibly in the future (when
-nobody else uses omapdss) change omapdss to support DRM natively. (or
-make omapdrm support omap HW natively, which ever way =).
-
-> > 2) It's missing the panel driver part. This is rather important on
-> > embedded systems, as the panels often are not "dummy" panels, but they
-> > need things like custom initialization, sending commands to adjust
-> > backlight, etc.
+> So I see two ways going forward:
 > 
-> We integrate the panel (and other video output) drivers into the device
-> drivers. With desktop chips, they're not easily separable. None of the
-> desktop output drivers are simple; things like DisplayPort require link
-> training, and everyone needs EDID. We share some of that code in the DRM
-> layer today, and it would be nice to share even more.
+> 1) We review and integrate xcfmalloc now.  Then, when you are
+> done with your allocator, we can run them side by side and see
+> which is better by numbers.  If yours is better, you'll get no
+> argument from me and we can replace xcfmalloc with yours.
+> 
+> 2) We can agree on a date (sooner rather than later) by which your
+> allocator will be completed.  At that time we can compare them and
+> integrate the best one by the numbers.
+> 
+> Which would you like to do?
 
-I don't think we speak of similar panel drivers. I think there are two
-different drivers here:
+Seth, I am still not clear why it is not possible to support
+either allocation algorithm, selectable at runtime.  Or even
+dynamically... use xvmalloc to store well-compressible pages
+and xcfmalloc for poorly-compressible pages.  I understand
+it might require some additional coding, perhaps even an
+ugly hack or two, but it seems possible.
 
-1) output drivers, handles the output from the SoC / gfx card. For
-example DVI, DisplayPort, MIPI DPI/DBI/DSI.
-
-2) panel drivers, handles panel specific things. Each panel may support
-custom commands and features, for which we need a dedicated driver. And
-this driver is not platform specific, but should work with any platform
-which has the output used with the panel.
-
-As an example, DSI command mode displays can be quite complex:
-
-DSI bus is a half-duplex serial bus, and while it's designed for
-displays you could use it easily for any communication between the SoC
-and the peripheral.
-
-The panel could have a feature like content adaptive backlight control,
-and this would be configured via the DSI bus, sending a particular
-command to the panel (possibly by first reading something from the
-panel). The panel driver would accomplish this more or less the same way
-one uses, say, i2c, so it would use the platform's DSI support to send
-and receive packets.
-
-Or a more complex scenario (but still a realistic scenario, been there,
-done that) is sending the image to the panel in multiple parts, and
-between each part sending configuration commands to the panel. (and
-still getting it done in time so we avoid tearing).
-
-And to complicate things more, there are DSI bus features like LP mode
-(low power, basically low speed mode) and HS mode (high speed), virtual
-channel IDs, and whatnot, which each panel may need to be used in
-particular manner. Some panels may require initial configuration done in
-LP, or configuration commands sent to a certain virtual channel ID.
-
-The point is that we cannot have standard "MIPI DSI command mode panel
-driver" which would work for all DSI cmd mode panels, but we need (in
-the worst case) separate driver for each panel.
-
-The same goes to lesser extent for other panels also. Some are
-configured via i2c or spi.
-
- Tomi
-
-
+Dan
