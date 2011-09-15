@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934839Ab1IOUP4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 16:15:56 -0400
-Received: from mga01.intel.com ([192.55.52.88]:9031 "EHLO mga01.intel.com"
+	id S934888Ab1IOUQP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 16:16:15 -0400
+Received: from mga14.intel.com ([143.182.124.37]:47975 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934680Ab1IOUKD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S934640Ab1IOUKD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 15 Sep 2011 16:10:03 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.68,389,1312182000"; 
-   d="scan'208";a="51959236"
+   d="scan'208";a="49297072"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
-Cc: Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 12/27] Initconst section fixes for hwmon
-Date: Thu, 15 Sep 2011 13:09:39 -0700
-Message-Id: <1316117394-21666-13-git-send-email-andi@firstfloor.org>
+Cc: Andi Kleen <ak@linux.intel.com>, dhowells@redhat.com
+Subject: [PATCH 02/27] Initconst section fixes for FRV
+Date: Thu, 15 Sep 2011 13:09:29 -0700
+Message-Id: <1316117394-21666-3-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1316117394-21666-1-git-send-email-andi@firstfloor.org>
 References: <1316117394-21666-1-git-send-email-andi@firstfloor.org>
@@ -24,52 +24,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
+Cc: dhowells@redhat.com
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- drivers/hwmon/w83627ehf.c |   16 ++++++++--------
- drivers/hwmon/w83627hf.c  |    2 +-
- 2 files changed, 9 insertions(+), 9 deletions(-)
+ arch/frv/kernel/setup.c         |    2 +-
+ arch/frv/mb93090-mb00/pci-irq.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/hwmon/w83627ehf.c b/drivers/hwmon/w83627ehf.c
-index f2b377c..85827a3 100644
---- a/drivers/hwmon/w83627ehf.c
-+++ b/drivers/hwmon/w83627ehf.c
-@@ -2309,14 +2309,14 @@ static struct platform_driver w83627ehf_driver = {
- static int __init w83627ehf_find(int sioaddr, unsigned short *addr,
- 				 struct w83627ehf_sio_data *sio_data)
- {
--	static const char __initdata sio_name_W83627EHF[] = "W83627EHF";
--	static const char __initdata sio_name_W83627EHG[] = "W83627EHG";
--	static const char __initdata sio_name_W83627DHG[] = "W83627DHG";
--	static const char __initdata sio_name_W83627DHG_P[] = "W83627DHG-P";
--	static const char __initdata sio_name_W83667HG[] = "W83667HG";
--	static const char __initdata sio_name_W83667HG_B[] = "W83667HG-B";
--	static const char __initdata sio_name_NCT6775[] = "NCT6775F";
--	static const char __initdata sio_name_NCT6776[] = "NCT6776F";
-+	static const char __initconst sio_name_W83627EHF[] = "W83627EHF";
-+	static const char __initconst sio_name_W83627EHG[] = "W83627EHG";
-+	static const char __initconst sio_name_W83627DHG[] = "W83627DHG";
-+	static const char __initconst sio_name_W83627DHG_P[] = "W83627DHG-P";
-+	static const char __initconst sio_name_W83667HG[] = "W83667HG";
-+	static const char __initconst sio_name_W83667HG_B[] = "W83667HG-B";
-+	static const char __initconst sio_name_NCT6775[] = "NCT6775F";
-+	static const char __initconst sio_name_NCT6776[] = "NCT6776F";
+diff --git a/arch/frv/kernel/setup.c b/arch/frv/kernel/setup.c
+index 75cf7f4..1f1e5ef 100644
+--- a/arch/frv/kernel/setup.c
++++ b/arch/frv/kernel/setup.c
+@@ -184,7 +184,7 @@ static struct clock_cmode __pminitdata clock_cmodes_fr555[16] = {
+ 	[6]	= {	_x1,	_x1_5,	_x1_5,	_x4_5,	_x0_375	},
+ };
  
- 	u16 val;
- 	const char *sio_name;
-diff --git a/drivers/hwmon/w83627hf.c b/drivers/hwmon/w83627hf.c
-index bde50e3..d152014 100644
---- a/drivers/hwmon/w83627hf.c
-+++ b/drivers/hwmon/w83627hf.c
-@@ -1129,7 +1129,7 @@ static int __init w83627hf_find(int sioaddr, unsigned short *addr,
- 	int err = -ENODEV;
- 	u16 val;
+-static const struct clock_cmode __pminitdata *clock_cmodes;
++static const struct clock_cmode __pminitconst *clock_cmodes;
+ static int __pminitdata clock_doubled;
  
--	static const __initdata char *names[] = {
-+	static __initconst char *const names[] = {
- 		"W83627HF",
- 		"W83627THF",
- 		"W83697HF",
+ static struct uart_port __pminitdata __frv_uart0 = {
+diff --git a/arch/frv/mb93090-mb00/pci-irq.c b/arch/frv/mb93090-mb00/pci-irq.c
+index 20f6497..c677b9d 100644
+--- a/arch/frv/mb93090-mb00/pci-irq.c
++++ b/arch/frv/mb93090-mb00/pci-irq.c
+@@ -28,7 +28,7 @@
+  *
+  */
+ 
+-static const uint8_t __initdata pci_bus0_irq_routing[32][4] = {
++static const uint8_t __initconst pci_bus0_irq_routing[32][4] = {
+ 	[0 ] = { IRQ_FPGA_MB86943_PCI_INTA },
+ 	[16] = { IRQ_FPGA_RTL8029_INTA },
+ 	[17] = { IRQ_FPGA_PCI_INTC, IRQ_FPGA_PCI_INTD, IRQ_FPGA_PCI_INTA, IRQ_FPGA_PCI_INTB },
 -- 
 1.7.4.4
 
