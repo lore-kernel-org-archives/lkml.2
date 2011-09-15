@@ -1,38 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755882Ab1IOJGP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 05:06:15 -0400
-Received: from mtagate2.uk.ibm.com ([194.196.100.162]:34767 "EHLO
-	mtagate2.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755611Ab1IOJFs (ORCPT
+	id S1755837Ab1IOJJD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 05:09:03 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:54465 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755480Ab1IOJJB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 05:05:48 -0400
-Message-Id: <20110915090440.063421605@linux.vnet.ibm.com>
-User-Agent: quilt/0.48-1
-Date: Thu, 15 Sep 2011 11:04:40 +0200
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-To: vgoyal@redhat.com, akpm@linux-foundation.org
-Cc: ebiederm@xmission.com, mahesh@linux.vnet.ibm.com, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
-Subject: [patch v3 0/2] kdump: Allow removal of page tables for crashkernel memory
+	Thu, 15 Sep 2011 05:09:01 -0400
+Message-ID: <4E71C0A9.60401@gmail.com>
+Date: Thu, 15 Sep 2011 11:08:57 +0200
+From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+MIME-Version: 1.0
+To: Matt Domsch <Matt_Domsch@dell.com>
+CC: Matt Fleming <matt@console-pimps.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Matthew Garrett <mjg@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Mike Waychison <mikew@google.com>, Andi Kleen <andi@firstfloor.org>,
+        jordan_hargrave@dell.com
+Subject: Re: [PATCH v2 10/10] x86, efi: EFI boot stub support
+References: <1315838094-2307-1-git-send-email-matt@console-pimps.org> <1315838094-2307-11-git-send-email-matt@console-pimps.org> <4E6F69A1.9030406@gmail.com> <1316016478.3466.74.camel@mfleming-mobl1.ger.corp.intel.com> <20110915045231.GA32136@emperor.us.dell.com> <4E71B196.1060504@gmail.com>
+In-Reply-To: <4E71B196.1060504@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Vivek, Andrew, Martin
+On 09/15/2011 10:04 AM, Maarten Lankhorst wrote:
+> Hey Matt,
+>
+> On 09/15/2011 06:52 AM, Matt Domsch wrote:
+>> On Wed, Sep 14, 2011 at 11:07:58AM -0500, Matt Fleming wrote:
+>>> On Tue, 2011-09-13 at 16:33 +0200, Maarten Lankhorst wrote:
+>>>> This version seems to boot for me.
+>>> Yay! Thanks for testing.
+>>>
+>>>> Is it useful to add 32-bits support though?
+>>>> It seems that only some older versions of OSX use it. I could see if I can
+>>>> revive my mac mini, iirc it has 32-bits efi, or at least used to have.
+>>> 32-bit UEFI platforms do exist, so I think it's worth supporting them.
+>>>
+>>>> Do I need to pass anything to add it to efibootmgr?
+>>>>
+>>>> I tried something like this:
+>>>> echo "args" | efibootmgr -c -l '\vmlinuz.efi' -L 'Native EFI linux boot' -@ - -u -d /dev/sdb
+>>>>
+>>>> And it boots vmlinuz.efi, but the arguments I passed do not appear to
+>>>> have any effect.
+>>> No idea, I've never used efibootmgr. Let's add Matt Domsch to the
+>>> discussion (now Cc'd).
+>> Maarten, do you not see your 'args' in /proc/cmdline after booting the
+>> entry?  From reading this thread, that's what you should see.
+>>
+>> Can you provide an 'efibootmgr -v' and hexdump -C
+>> /sys/firmware/efi/vars/Boot*  to see the args are appended as expected
+>> in the boot variable in nvram?
+>>
+>> Adding Jordan Hargrave, who is maintainer for efibootmgr now.
+> Thanks, that helped. It looks like efibootmgr stores the arguments without converting it to UCS-2.
+>
+> Patch below is a rough check for ascii, in which case it passes it unmodified.
+>
+> After this 'args' is passed succesfully. :)
+>
+> Should probably be folded in 10/10.
+>
+> Signed-off-by: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+>
+> diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
+> index 6c34828..b24affb 100644
+> --- a/arch/x86/boot/compressed/eboot.c
+> +++ b/arch/x86/boot/compressed/eboot.c
+> @@ -619,12 +619,12 @@ static efi_status_t make_boot_params(struct boot_params *boot_params,
+>  	unsigned long cmdline;
+>  	u8 nr_entries;
+>  	u16 *s2;
+> -	u8 *s1;
+> +	u8 *s1, *s2_8;
+>  	int i;
+>  
+>  	hdr->type_of_loader = 0x21;
+>  
+> -	status = low_alloc(options_size, 1, &cmdline);
+> +	status = low_alloc(options_size+1, 1, &cmdline);
+>  	if (status != EFI_SUCCESS)
+>  		goto fail;
+>  
+> @@ -633,6 +633,14 @@ static efi_status_t make_boot_params(struct boot_params *boot_params,
+>  	/* Convert unicode cmdline to ascii */
+>  	s1 = (u8 *)(unsigned long)hdr->cmd_line_ptr;
+>  	s2 = (u16 *)options;
+> +	s2_8 = (u8*)options;
+> +	/* Assume the first byte is < 0x128 */
+Woops, typo.
+> +	if (options_size > 1 && s2_8[1] && s2_8[1] < 0x80 && s2_8[0] < 0x80) {
+> +		s2 = NULL;
+> +		memcpy(s1, s2_8, options_size);
+> +		s1[options_size] = 0;
+> +		hdr->cmdline_size = options_size;
+> +	}
+>  
+>  	if (s2 && options_size) {
+>  		/* Skip first word, that's the kernel name */
+I noticed 10/10 doesn't include the size of null pointer is this expected?
+And when options_size = 0, you do a null allocation and never null-terminate.
+Also in s2 && options_size you initially check for newline, but when copying
+arguments, you ignore it. With echo moo | efibootmgr -@ - you'd pass a newline,
+which should probably be stripped. I think this would fix both cases:
 
-Here the version 3 patch series for the removal of page tables for the
-crashkernel memory:
+diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
+index 6c34828..dbaaf54 100644
+--- a/arch/x86/boot/compressed/eboot.c
++++ b/arch/x86/boot/compressed/eboot.c
+@@ -619,12 +619,12 @@ static efi_status_t make_boot_params(struct boot_params *boot_params,
+ 	unsigned long cmdline;
+ 	u8 nr_entries;
+ 	u16 *s2;
+-	u8 *s1;
++	u8 *s1, *s2_8;
+ 	int i;
+ 
+ 	hdr->type_of_loader = 0x21;
+ 
+-	status = low_alloc(options_size, 1, &cmdline);
++	status = low_alloc(options_size+1, 1, &cmdline);
+ 	if (status != EFI_SUCCESS)
+ 		goto fail;
+ 
+@@ -633,6 +633,14 @@ static efi_status_t make_boot_params(struct boot_params *boot_params,
+ 	/* Convert unicode cmdline to ascii */
+ 	s1 = (u8 *)(unsigned long)hdr->cmd_line_ptr;
+ 	s2 = (u16 *)options;
++	s2_8 = (u8*)options;
++	/* Assume the first byte is < 128 */
++	if (options_size > 1 && s2_8[1] s2_8[1] < 0x80 && s2_8[0] < 0x80) {
++		s2 = NULL;
++		memcpy(s1, s2_8, options_size);
++		s1[options_size] = '\0';
++		hdr->cmdline_size = options_size;
++	}
+ 
+ 	if (s2 && options_size) {
+ 		/* Skip first word, that's the kernel name */
+@@ -655,6 +663,11 @@ static efi_status_t make_boot_params(struct boot_params *boot_params,
+ 		*s1 = '\0';
+ 	}
+ 
++	if (!hdr->cmdline_size)
++		*s1 = '\0';
++	else if (hdr->cmd_line_ptr[hdr->cmdline_size-1] == '\n')
++		hdr->cmd_line_ptr[--hdr->cmdline_size] = '\0';
++
+ 	hdr->ramdisk_image = 0;
+ 	hdr->ramdisk_size = 0;
+ 
 
-[1] kdump: Add infrastructure for unmapping crashkernel memory
-[2] s390: Add architecture code for unmapping crashkernel memory
 
-Changes to version 2: Use resource_size()
-
-The patches apply on top of the last kdump patch series that I sent.
-
-I would suggest that Martin sends the patches together with the other s390
-kdump patches in the next merge window.
-
-Michael
