@@ -1,48 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933850Ab1ION6z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 09:58:55 -0400
-Received: from mga02.intel.com ([134.134.136.20]:49264 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753892Ab1ION6y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 09:58:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="48777239"
-Date: Thu, 15 Sep 2011 16:01:33 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mattias Wallin <mattias.wallin@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>
-Subject: Re: [PATCH 1/2] mfd: ab5500 chip register access
-Message-ID: <20110915140133.GC32263@sortiz-mobl>
-References: <1307616640-2013-1-git-send-email-mattias.wallin@stericsson.com>
+	id S1756165Ab1IOOAh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 10:00:37 -0400
+Received: from 6.mo2.mail-out.ovh.net ([87.98.165.38]:55870 "EHLO
+	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753892Ab1IOOAg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Sep 2011 10:00:36 -0400
+Date: Thu, 15 Sep 2011 15:23:01 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Sylwester Nawrocki <snjw23@gmail.com>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>, Josh Wu <josh.wu@atmel.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org
+X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
+Subject: Re: [PATCH v2] [media] at91: add code to initialize and manage the
+ ISI_MCK for Atmel ISI driver.
+Message-ID: <20110915132301.GK28104@game.jcrosoft.org>
+References: <1315288601-22384-1-git-send-email-josh.wu@atmel.com>
+ <Pine.LNX.4.64.1109060803590.14818@axis700.grange>
+ <20110906200512.GA15083@game.jcrosoft.org>
+ <4E668BBF.4020600@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1307616640-2013-1-git-send-email-mattias.wallin@stericsson.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4E668BBF.4020600@gmail.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 94575594050595807
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -200
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeftddrfeefucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmneculddquddttddm
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mattias,
+On 23:08 Tue 06 Sep     , Sylwester Nawrocki wrote:
+> On 09/06/2011 10:05 PM, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> >> I'm not entirely sure on this one, but as we had a similar situation with
+> >> clocks, we decided to extablish the clock hierarchy in the board code, and
+> >> only deal with the actual device clocks in the driver itself. I.e., we
+> >> moved all clk_set_parent() and setting up the parent clock into the board.
+> >> And I do think, this makes more sense, than doing this in the driver, not
+> >> all users of this driver will need to manage the parent clock, right?
+> >
+> > I don't like to manage the clock in the board except if it's manadatory otherwise
+> > we manage this at soc level
+> > 
+> > the driver does not have to manage the clock hierachy or detail implementation
+> > but manage the clock enable/disable and speed depending on it's need
+> 
+> We had a similar problem in the past and we ended up having the boot loader
+> setting up the parent clock for the device clock. The driver only controls clock
+> gating and sets its clock frequency based on an internal IP version information,
+> derived from the SoC revision.
+sorry NACK
 
-On Thu, Jun 09, 2011 at 12:50:40PM +0200, Mattias Wallin wrote:
-> The analog baseband chip ab5500 is a multi functional chip
-> containing regulators, charging, gpio, USB and accessory detect.
-> It also contain various multimedia functionalities like digital
-> encoder and audio codec.
-> The core driver added with this patch provides register access via
-> i2c via PRCMU. Event handling implemented as irq_chip will come in
-> future patches since it depends on PRCMU functionality not yet
-> implemented.
-This patch looks good to me. However, I think the 800 lines of debugfs code
-could live in an ab5500-debugfs.c file. Could you please do that ?
+I do not want to rely on bootloader
+when we will have the DT we will pass it via it right now we need find an
+other generic way
 
-Cheers,
-Samuel.
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Best Regards,
+J.
