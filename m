@@ -1,55 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934216Ab1IOQt3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 12:49:29 -0400
-Received: from mga03.intel.com ([143.182.124.21]:41678 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934192Ab1IOQt2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 12:49:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,388,1312182000"; 
-   d="scan'208";a="49229671"
-Date: Thu, 15 Sep 2011 18:52:06 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Thomas Weber <weber@corscience.de>
-Cc: linux-kernel@vger.kernel.org, peter.ujfalusi@ti.com,
-        linux-omap@vger.kernel.org, broonie@opensource.wolfsonicro.com,
-        tiwai@suse.de, alsa-devel@alsa-project.org
-Subject: Re: [PATCH] ASoC/MFD: twl4030: Fix dependencies for audio codec
-Message-ID: <20110915165206.GH32263@sortiz-mobl>
-References: <1315214793-661-1-git-send-email-weber@corscience.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1315214793-661-1-git-send-email-weber@corscience.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S934221Ab1IOQwX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 12:52:23 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:56640 "HELO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S934192Ab1IOQwW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Sep 2011 12:52:22 -0400
+From: Marc Zyngier <marc.zyngier@arm.com>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Bryan Huntsman <bryanh@codeaurora.org>,
+        David Brown <davidb@codeaurora.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>
+Subject: [RFC PATCH 0/3] genirq: handling GIC per-cpu interrupts
+Date: Thu, 15 Sep 2011 17:52:28 +0100
+Message-Id: <1316105551-17505-1-git-send-email-marc.zyngier@arm.com>
+X-Mailer: git-send-email 1.7.0.4
+X-OriginalArrivalTime: 15 Sep 2011 16:52:15.0478 (UTC) FILETIME=[D288F960:01CC73C7]
+X-MC-Unique: 111091517521800801
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id p8FGqcil029571
 
-Hi THomas,
+The current GIC per-cpu interrupts (aka PPIs) suffer from a number of
+problems:
 
-On Mon, Sep 05, 2011 at 11:26:33AM +0200, Thomas Weber wrote:
-> The codec for Devkit8000 (TWL4030)  was not detected except
-> when build with CONFIG_SND_SOC_ALL_CODECS.
-> 
-> twl-core.c still uses the CONFIG_TWL4030_CODEC for
-> twl_has_codec().
-> 
-> In commit 57fe7251f5bfc4332f24479376de48a1e8ca6211
-> the CONFIG_TWL4030_CODEC was renamed
-> into CONFIG_MFD_TWL4030_AUDIO, thatswhy the codec
-> was not detected.
-> 
-> This patch renames the CONFIG_ TWL4030_CODEC into
-> CONFIG_MFD_TWL4030_AUDIO in twl-core.c.
-> 
-> Signed-off-by: Thomas Weber <weber@corscience.de>
-Applied, thanks a lot.
+- They use a completely separate scheme to handle the interrupts,
+  mostly because the PPI concept doesn't really match the kernel view
+  of an interrupt.
+- PPIs can only be used by the timer code, unless we add more low-level
+  assembly code.
+- The local timer code can only be used by devices generating PPIs,
+  and not SPIs.
+- At least one platform (msm) has started implementing its own
+  alternative scheme.
+- Some low-level code gets duplicated, as usual...
 
-Cheers,
-Samuel.
+The proposed solution is to handle the PPIs using the same path as
+SPIs. A new core API is added to deal with per-cpu interrupts in a
+less awkward way. The local timer code is updated to reflect these
+changes.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+The core API changes are based on an initial patch by Thomas Gleixner.
+
+Tested on ARM Versatile Express (Cortex A5 and A15), ARM RealView
+PB11MP, OMAP4 (Panda) and Tegra (Harmony). Patch series against
+next-20110831.
+
+Marc Zyngier (3):
+  genirq: add support for per-cpu dev_id interrupts
+  ARM: gic: consolidate PPI handling
+  ARM: gic, local timers: use the request_percpu_irq() interface
+
+ arch/arm/common/Kconfig                           |    1 +
+ arch/arm/common/gic.c                             |   38 +++-
+ arch/arm/include/asm/entry-macro-multi.S          |    7 -
+ arch/arm/include/asm/hardirq.h                    |    3 -
+ arch/arm/include/asm/hardware/entry-macro-gic.S   |   19 +--
+ arch/arm/include/asm/hardware/gic.h               |    1 -
+ arch/arm/include/asm/localtimer.h                 |   19 +-
+ arch/arm/include/asm/smp.h                        |    5 -
+ arch/arm/include/asm/smp_twd.h                    |    2 +-
+ arch/arm/kernel/irq.c                             |    3 -
+ arch/arm/kernel/smp.c                             |   33 +---
+ arch/arm/kernel/smp_twd.c                         |   47 +++++-
+ arch/arm/mach-exynos4/include/mach/entry-macro.S  |    6 +-
+ arch/arm/mach-exynos4/mct.c                       |    5 -
+ arch/arm/mach-msm/board-msm8x60.c                 |   11 -
+ arch/arm/mach-msm/include/mach/entry-macro-qgic.S |   73 +-------
+ arch/arm/mach-msm/timer.c                         |   69 ++++---
+ arch/arm/mach-omap2/include/mach/entry-macro.S    |   14 +--
+ arch/arm/mach-shmobile/entry-intc.S               |    3 -
+ arch/arm/mach-shmobile/include/mach/entry-macro.S |    3 -
+ include/linux/interrupt.h                         |   40 +++-
+ include/linux/irq.h                               |   25 +++-
+ include/linux/irqdesc.h                           |    3 +
+ kernel/irq/Kconfig                                |    4 +
+ kernel/irq/chip.c                                 |   58 ++++++
+ kernel/irq/internals.h                            |    2 +
+ kernel/irq/manage.c                               |  209 ++++++++++++++++++++-
+ kernel/irq/settings.h                             |    7 +
+ 28 files changed, 461 insertions(+), 249 deletions(-)
+
+
