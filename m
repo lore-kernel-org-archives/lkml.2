@@ -1,75 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934031Ab1IOPTq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 11:19:46 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:43500 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933990Ab1IOPTp (ORCPT
+	id S934042Ab1IOPWA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 11:22:00 -0400
+Received: from mail-gx0-f170.google.com ([209.85.161.170]:35963 "EHLO
+	mail-gx0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933990Ab1IOPV7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 11:19:45 -0400
-Message-ID: <4E721784.90302@metafoo.de>
-Date: Thu, 15 Sep 2011 17:19:32 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110818 Icedove/3.0.11
+	Thu, 15 Sep 2011 11:21:59 -0400
 MIME-Version: 1.0
-To: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-CC: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Graeme Gregory <gg@slimlogic.co.uk>,
-        Samuel Oritz <sameo@linux.intel.com>
-Subject: Re: [PATCH 6/6 v3] regmap: Incorporate the regcache core into regmap
-References: <1316082879-21810-1-git-send-email-dp@opensource.wolfsonmicro.com> <1316082879-21810-7-git-send-email-dp@opensource.wolfsonmicro.com>
-In-Reply-To: <1316082879-21810-7-git-send-email-dp@opensource.wolfsonmicro.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAObL_7F2Pu0K1Oe3oLe5Pef2kaGE8vdO2qgfc0KEt8TJdUaOWg@mail.gmail.com>
+References: <web-606439650@zbackend1.aha.ru> <CA+55aFwyC7s=YK10Wkpr+GzdukXp-JUtf_=MgWcrhBOtTg4eTg@mail.gmail.com>
+ <web-606798161@zbackend1.aha.ru> <CA+55aFwBuySWa2VErrfud_SFqyfT5ib+Qfq9gWBaBz=cQ6VcHg@mail.gmail.com>
+ <web-606831561@zbackend1.aha.ru> <CAObL_7F2Pu0K1Oe3oLe5Pef2kaGE8vdO2qgfc0KEt8TJdUaOWg@mail.gmail.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Thu, 15 Sep 2011 08:21:37 -0700
+X-Google-Sender-Auth: BeLDhBGLjSauGEpnMTIFuLHMo_E
+Message-ID: <CAObL_7E0iyinOyXU=uQHyQN+TBNmVVB89r_hQUb8LTqJ2ix_5A@mail.gmail.com>
+Subject: Re: 3.1-rc6 boot problem reason searching
+To: werner <w.landgraf@ru.ru>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=KOI8-R
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> [...]
-> @@ -321,6 +333,18 @@ int regmap_write(struct regmap *map, unsigned int reg, unsigned int val)
->  
->  	mutex_lock(&map->lock);
->  
-> +	if (!map->cache_bypass) {
-> +		ret = regcache_write(map, reg, val);
-> +		if (ret < 0) {
-> +			mutex_unlock(&map->lock);
-> +			return ret;
-> +		}
-> +		if (map->cache_only) {
-> +			mutex_unlock(&map->lock);
-> +			return 0;
-> +		}
-> +	}
-> +
+On Thu, Sep 15, 2011 at 7:41 AM, Andrew Lutomirski <luto@mit.edu> wrote:
+> 2011/9/14 werner <w.landgraf@ru.ru>:
+>> The config is below. šThat's the M486 config which don't boor. šThe M586
+>> config which boots has the diff given in my last mail, and which for make
+>> the comparison more easy I give below again. š As said, all 3.0-rcX and up
+>> to 3.0.4 boot with 486 too, the problem started with 3.1-rc1 . Perhaps the
+>> šmessages before the computer sticked (using the M486 config below) which I
+>> copied manually from the screen, posted in the treat 3.1-rc5 boot problem š,
+>> may be helpful to find out what exactly causes the sticking.
+>> wl
+>
+> Gack. šI obviously did a terrible job grepping for this stuff when I
+> wrote the original patch. šThe problem is probably in static_cpu_has.
+> I'll send a patch in a little bit.
 
-Would it make sense to move this into _regmap_write ? In that case the code
-wouldn't have to be duplicated in regmap_update_bits and as a bonus it wouldn't
-have to deal with the mutex either.
+-ETOOEARLYINTHEMORNING.  static_cpu_has looks correct.
 
->  	ret = _regmap_write(map, reg, val);
->  
->  	mutex_unlock(&map->lock);
-> @@ -422,6 +446,14 @@ int regmap_read(struct regmap *map, unsigned int reg, unsigned int *val)
->  
->  	mutex_lock(&map->lock);
->  
-> +	if (!map->cache_bypass) {
-> +		ret = regcache_read(map, reg, val);
-> +		if (!ret) {
-> +			mutex_unlock(&map->lock);
-> +			return 0;
-> +		}
+werner, your kernel survives:
 
-So in case regmap_readable is not true for this register regcache_read will
-return -EIO and we'll fallback to an uncached read. This doesn't make sense in
-my opinion. Or what are the except semantics regmap_readable supposed to be?
+for i in `find -name \*.o`; do objdump -j .altinstructions -r "$i"
+2>/dev/null |grep R_ |grep -v R_386_PC32\ ; done
 
-> +	}
-> +
->  	ret = _regmap_read(map, reg, val);
->  
->  	mutex_unlock(&map->lock);
+Can you try the same command in your build directory?
 
+In the mean time, I'll see if I can reproduce the crash in qemu by
+playing with -cpu.
+
+--Andy
