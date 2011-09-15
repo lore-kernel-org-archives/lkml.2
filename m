@@ -1,61 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934431Ab1IOSuP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 14:50:15 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:37899 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934209Ab1IOSuN (ORCPT
+	id S934452Ab1IOSuk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 14:50:40 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:29154 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934209Ab1IOSui convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 14:50:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110908132756.GT31717@ics.muni.cz>
-References: <20110720082640.GZ7561@ics.muni.cz> <4E280964.6070000@ct.jp.nec.com>
- <20110721132627.GY7561@ics.muni.cz> <4E291F28.2040609@ct.jp.nec.com>
- <20110722081903.GB7561@ics.muni.cz> <4E2A7806.1060601@ce.jp.nec.com>
- <20110724221619.GM16487@ics.muni.cz> <4E367256.8020206@ct.jp.nec.com> <20110908132756.GT31717@ics.muni.cz>
-From: Mike Snitzer <snitzer@redhat.com>
-Date: Thu, 15 Sep 2011 14:49:52 -0400
-X-Google-Sender-Auth: kH0xutcVdeyEulbE558kzQG1of4
-Message-ID: <CAMM=eLd9fToJ5Kh+vf4WG1ZN-qTc2CX98-+BUkFWWQQ=tCG7LQ@mail.gmail.com>
-Subject: Re: request baset device mapper in Linux
-To: Lukas Hejtmanek <xhejtman@ics.muni.cz>
-Cc: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, agk@redhat.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 15 Sep 2011 14:50:38 -0400
+X-IronPort-AV: E=Sophos;i="4.68,388,1312182000"; 
+   d="scan'208";a="582240844"
+Subject: [GIT PULL] Please pull bugfixes for the NFS client
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 15 Sep 2011 14:50:17 -0400
+Organization: NetApp Inc
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Message-ID: <1316112617.5271.8.camel@lade.trondhjem.org.localdomain>
+Mime-Version: 1.0
+X-OriginalArrivalTime: 15 Sep 2011 18:50:17.0735 (UTC) FILETIME=[4FE3A170:01CC73D8]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/9/8 Lukas Hejtmanek <xhejtman@ics.muni.cz>:
-> On Mon, Aug 01, 2011 at 06:31:02PM +0900, Kiyoshi Ueda wrote:
->> Hi Lukas,
->>
->> Lukas Hejtmanek wrote:
->> > On Sat, Jul 23, 2011 at 04:28:06PM +0900, Jun'ichi Nomura wrote:
->> >> As Kiyoshi suggested, it is important to know whether this
->> >> problem occurs with the latest kernel.
->> >> So if you could try 3.0, it would be very helpful.
->> >
->> > so, do I need to check recent kernel as the patch works for me?
->>
->> Yes, please.
->> (Unfortunately my storage has been broken today :-<)
->>
->> CPU usage seems to be one of the reasons for your case, but I
->> still cannot understand why memory pressure is needed.
->> I want to know your problem also occurs on 3.0 without the patch.
->
-> Well, I tried 3.0.3 kernel. It is not so bad as 2.6.32.36, but it is not as
-> good as the same kernel with your patch.
->
-> CPU load is caused by ksoftirqd (30-40%) and kworker (30%).
->
-> Overal speed is about 2.5GB/s. With your patch I can reach 2.8-2.9GB/s.
+Hi Linus,
 
-Does "with your patch" mean against 3.0.3 or the original 2.6.32 kernel?
+Please pull from the "bugfixes" branch of the repository at
 
-If you apply the patch to the 3.0.3 kernel do you regain the performance?
+   git pull git://git.linux-nfs.org/projects/trondmy/linux-nfs.git bugfixes
 
-Thanks,
-Mike
+This will update the following files through the appended changesets.
+
+  Cheers,
+    Trond
+
+----
+ fs/nfs/nfs4_fs.h    |    8 +++++---
+ fs/nfs/nfs4proc.c   |   20 ++++++++++++++------
+ fs/nfs/nfs4renewd.c |   12 +++++++++---
+ fs/nfs/nfs4state.c  |    6 ++++++
+ fs/nfs/super.c      |   23 ++++++++++++++++++++---
+ fs/nfs/write.c      |    2 +-
+ 6 files changed, 55 insertions(+), 16 deletions(-)
+
+commit fb2088ccc139ffbf1cf359216883712dab4ae43d
+Author: Sachin Prabhu <sprabhu@redhat.com>
+Date:   Mon Aug 1 12:10:12 2011 +0100
+
+    nfs: Do not allow multiple mounts on same mountpoint when using -o noac
+    
+    Do not allow multiple mounts on same mountpoint when using -o noac
+    
+    When you normally attempt to mount a share twice on the same mountpoint,
+    a check in do_add_mount causes it to return an error
+    
+    # mount localhost:/nfsv3 /mnt
+    # mount localhost:/nfsv3 /mnt
+    mount.nfs: /mnt is already mounted or busy
+    
+    However when using the option 'noac', the user is able to mount the same
+    share on the same mountpoint multiple times. This happens because a
+    share mounted with the noac option is automatically assigned the 'sync'
+    flag MS_SYNCHRONOUS in nfs_initialise_sb(). This flag is set after the
+    check for already existing superblocks is done in sget(). The check for
+    the mount flags in nfs_compare_mount_options() does not take into
+    account the 'sync' flag applied later on in the code path. This means
+    that when using 'noac', a new superblock structure is assigned for every
+    new mount of the same share and multiple shares on the same mountpoint
+    are allowed.
+    
+    ie.
+    # mount -onoac localhost:/nfsv3 /mnt
+    can be run multiple times.
+    
+    The patch checks for noac and assigns the sync flag before sget() is
+    called to obtain an already existing superblock structure.
+    
+    Signed-off-by: Sachin Prabhu <sprabhu@redhat.com>
+    Reviewed-by: Jeff Layton <jlayton@redhat.com>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit f13c3620a4d1123dbf032f93f350b856ef292ced
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Mon Sep 12 11:47:53 2011 -0400
+
+    NFS: Fix a typo in nfs_flush_multi
+    
+    Fix a typo which causes an Oops in the RPC layer, when using wsize < 4k.
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+    Tested-by: Sricharan R <r.sricharan@ti.com>
+
+commit 042b60beb410caf68f576d63d6849d0f0a545eb0
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Wed Aug 24 15:07:37 2011 -0400
+
+    NFSv4: renewd needs to be able to handle the NFS4ERR_CB_PATH_DOWN error
+    
+    The NFSv4 spec does not specify that the server must repeat that error,
+    so in order to avoid having the delegations revoked, we should handle
+    it immediately.
+    
+    Also note that NFS4ERR_CB_PATH_DOWN does in fact renew the lease...
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 2f60ea6b8ceda61ae08bef71a652eac36ec193b3
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Wed Aug 24 15:07:37 2011 -0400
+
+    NFSv4: The NFSv4.0 client must send RENEW calls if it holds a delegation
+    
+    RFC3530 states that if the client holds a delegation, then it is obliged
+    to continue to send RENEW calls once every lease period in order to allow
+    the server to return NFS4ERR_CB_PATH_DOWN if the callback path is
+    unreachable.
+    
+    This is not required for NFSv4.1, since the server can at any time set
+    the SEQ4_STATUS_CB_PATH_DOWN_SESSION in any SEQUENCE operation.
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 8534d4ec055d854be6c94e8e5654fa87678ea5f7
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Wed Aug 24 15:07:37 2011 -0400
+
+    NFSv4: nfs4_proc_renew should be declared static
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit b569ad34926defcff998f214afeb260331165985
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Wed Aug 24 15:07:35 2011 -0400
+
+    NFSv4: nfs4_proc_async_renew should use a GFP_NOFS allocation
+    
+    We shouldn't allow the renew daemon to do direct reclaim on the NFS
+    partition.
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
