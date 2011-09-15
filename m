@@ -1,62 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934246Ab1IORQl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 13:16:41 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:34524 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756529Ab1IORQj (ORCPT
+	id S1756641Ab1IORSz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 13:18:55 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:33659 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756445Ab1IORSx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 13:16:39 -0400
-Date: Thu, 15 Sep 2011 11:16:34 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Luciano Coelho <coelho@ti.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, matti.j.aaltonen@nokia.com,
-        johannes@sipsolutions.net, linux-kernel@vger.kernel.org,
-        sameo@linux.intel.com, mchehab@infradead.org,
-        linux-media@vger.kernel.org, linux-omap@vger.kernel.org,
-        Jean Delvare <khali@linux-fr.org>, Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH] mfd: Combine MFD_SUPPORT and MFD_CORE
-Message-ID: <20110915171634.GD3523@ponder.secretlab.ca>
-References: <20110829102732.03f0f05d.rdunlap@xenotime.net>
- <1314643307-17780-1-git-send-email-coelho@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1314643307-17780-1-git-send-email-coelho@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 15 Sep 2011 13:18:53 -0400
+Date: Thu, 15 Sep 2011 18:18:02 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: Keith Packard <keithp@keithp.com>, Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linaro-dev@lists.linaro.org,
+        "Clark\, Rob" <rob@ti.com>, Archit Taneja <archit@ti.com>
+Subject: Re: Proposal for a low-level Linux display framework
+Message-ID: <20110915181802.69ef0d56@lxorguk.ukuu.org.uk>
+In-Reply-To: <4E72320B.6020000@gmx.de>
+References: <1316088425.11294.78.camel@lappyti>
+	<yunboul7sx7.fsf@aiko.keithp.com>
+	<1316100594.23214.65.camel@deskari>
+	<yun8vpp7qk7.fsf@aiko.keithp.com>
+	<4E72320B.6020000@gmx.de>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 29, 2011 at 09:41:47PM +0300, Luciano Coelho wrote:
-> ---
-> @@ -417,7 +417,6 @@ config GPIO_TIMBERDALE
->  config GPIO_RDC321X
->  	tristate "RDC R-321x GPIO support"
->  	depends on PCI
-> -	select MFD_SUPPORT
->  	select MFD_CORE
->  	select MFD_RDC321X
->  	help
-> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> index 21574bd..1836cdf 100644
-> --- a/drivers/mfd/Kconfig
-> +++ b/drivers/mfd/Kconfig
-> @@ -2,10 +2,9 @@
->  # Multifunction miscellaneous devices
->  #
->  
-> -menuconfig MFD_SUPPORT
-> -	bool "Multifunction device drivers"
-> +menuconfig MFD_CORE
-> +	tristate "Multifunction device drivers"
->  	depends on HAS_IOMEM
-> -	default y
+> is and we could use it. Such attitude is not helpful and as I don't see any
+> serious intention of the DRM guys to cooperate I think those subsystems are more
+> likely to diverge. At least I'll never accept any change to the fb
+> infrastructure that requires DRM.
 
-Looks like there is a bug here.  Kconfig symbols with dependencies
-(HAS_IOMEM) must not ever be selected by other symbols because Kconfig
-doesn't implement a way to resolve them.  This patch means that every
-"select MFD_CORE" just assumes that HAS_IOMEM is also selected.
+There are aspects of the fb code that want changing for DRM (and indeed
+modern hardware) but which won't break for other stuff. Given the move to
+using main memory for video and the need for the OS to do buffer
+management for framebuffers I suspect a move to DRM is pretty much
+inevitable, along with having to fix the fb layer to cope with
+discontiguous framebuffers.
 
-g.
-
+Alan
