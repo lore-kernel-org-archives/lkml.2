@@ -1,70 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751808Ab1IOAJq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 20:09:46 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:51055 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750916Ab1IOAJn (ORCPT
+	id S1752104Ab1IOA10 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 20:27:26 -0400
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:38881 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751095Ab1IOA1W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 20:09:43 -0400
-Date: Thu, 15 Sep 2011 10:09:31 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Ted Ts'o" <tytso@mit.edu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Temporary ext4 tree location
-Message-Id: <20110915100931.ebba20dcbe93d41c6115ecc7@canb.auug.org.au>
-In-Reply-To: <20110914154910.GC3429@dhcp-172-31-195-159.cam.corp.google.com>
-References: <20110914154910.GC3429@dhcp-172-31-195-159.cam.corp.google.com>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__15_Sep_2011_10_09_31_+1000_AJ65v1XXDlHgpJxa"
+	Wed, 14 Sep 2011 20:27:22 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/qAx/J9RTxqVsyl9k8yXxV
+Date: Wed, 14 Sep 2011 17:27:19 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: "Koyamangalath, Abhilash" <abhilash.kv@ti.com>
+Cc: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] OMAP3: powerdomains: Match silicon revision to
+ select the correct "core_pwrdm" definition
+Message-ID: <20110915002719.GB30941@atomide.com>
+References: <1310730250-10920-1-git-send-email-abhilash.kv@ti.com>
+ <FCCFB4CDC6E5564B9182F639FC3560870370A4D985@dbde02.ent.ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <FCCFB4CDC6E5564B9182F639FC3560870370A4D985@dbde02.ent.ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__15_Sep_2011_10_09_31_+1000_AJ65v1XXDlHgpJxa
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Ted,
-
-On Wed, 14 Sep 2011 11:49:10 -0400 Ted Ts'o <tytso@mit.edu> wrote:
+* Koyamangalath, Abhilash <abhilash.kv@ti.com> [110812 00:12]:
+> Hi 
+> 
+> > @@ -58,6 +59,24 @@ static struct powerdomain *_pwrdm_lookup(const char *name)
+> > 
+> >         list_for_each_entry(temp_pwrdm, &pwrdm_list, node) {
+> >                 if (!strcmp(name, temp_pwrdm->name)) {
+> > +                       if (!strcmp(name, "core_pwrdm") && cpu_is_omap3630()) {
+> > +                               if (omap_rev() > OMAP3630_REV_ES1_0) {
+> > +                                       /*
+> > +                                        * match omap_chip info for OMAP3630
+> > +                                        * Rev ES1.1, ES1.2 or higher
+> > +                                        */
+> > +                                       if (!(temp_pwrdm->omap_chip.oc
+> > +                                               & CHIP_GE_OMAP3630ES1_1))
+> > +                                               continue;
+> > +                               } else {
+> > +                                       /* match omap_chip info for OMAP3630
+> > +                                        * Rev ES1.0
+> > +                                        */
+> > +                                       if (!(temp_pwrdm->omap_chip.oc
+> > +                                                & CHIP_IS_OMAP3630ES1))
+> > +                                               continue;
+> > +                               }
+> > +                       }
+> >                         pwrdm = temp_pwrdm;
+> >                         break;
+> >                 }
 >
-> -----BEGIN PGP SIGNED MESSAGE-----
+> Any comments ?
 
-[ Good plan, but I havne't got a trust path to your key :-( cc'd to lkml
-just so that the real Ted may see it and scream if necessary :-) ]
+Can you please check if this is still needed after Paul's
+CHIP_IS removal patches? You can find them at:
 
-> The temporary ext4 tree (for linux-next purposes) is at:
->=20
->         git://github.com/tytso/ext4.git	dev
->=20
-> I've previously sent changes to Linus using this git tree at github.
+git://git.pwsan.com/linux-2.6 omap_chip_remove_cleanup_3.2
 
-OK, I will switch to this tree from today.
+Regards,
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__15_Sep_2011_10_09_31_+1000_AJ65v1XXDlHgpJxa
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOcUI7AAoJEDMEi1NhKgbs+0oH/0CjlgT5XVhd49fNcCuDOJ+S
-oiYdboQwjX7FiZqxFEOy6CEpkQN2AAh8DxKngnCFCufonU00Trye8k+4282YwLfC
-i2jTAVFEhcxUcQPUSqJjTZg/gt9P3RNUXeqZ60hKGdFCzhNxQtVXcvw0VOcWw9hU
-X6AQ9IjS6oI7bwAMOCHYzK+6Z2I2qM+63QJmcqAN8DLq3sDIuQZ2ESI9IYguBCmi
-SkgYz8UZOTgNltGoIf5EAAhaXXTH/dTJj4GGiEHxd9nC5dP2UM/bNoDiuln3BjyK
-1FxOLDPgbB05Rvjz679QX/K3Q8ZGuuz6RYiC3Dgz+rqKyRPjI/WGFtnreL2TZjI=
-=RuRg
------END PGP SIGNATURE-----
-
---Signature=_Thu__15_Sep_2011_10_09_31_+1000_AJ65v1XXDlHgpJxa--
+Tony
