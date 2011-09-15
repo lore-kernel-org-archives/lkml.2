@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934672Ab1IOTqq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 15:46:46 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:33155 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S934628Ab1IOTqo (ORCPT
+	id S934668Ab1IOTsO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 15:48:14 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:41629 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934532Ab1IOTsM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 15:46:44 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX1+/Lf5hFRO/IfanADZAyNu/cjSWqWwbddpN4TbEJS
-	hU1n8hG3XChzzv
-Message-ID: <4E72561C.7060603@gmx.de>
-Date: Thu, 15 Sep 2011 19:46:36 +0000
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110818 Icedove/3.0.11
-MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Keith Packard <keithp@keithp.com>, Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linaro-dev@lists.linaro.org,
-        "Clark\, Rob" <rob@ti.com>, Archit Taneja <archit@ti.com>
-Subject: Re: Proposal for a low-level Linux display framework
-References: <1316088425.11294.78.camel@lappyti>	<yunboul7sx7.fsf@aiko.keithp.com>	<1316100594.23214.65.camel@deskari>	<yun8vpp7qk7.fsf@aiko.keithp.com>	<4E72320B.6020000@gmx.de>	<20110915181802.69ef0d56@lxorguk.ukuu.org.uk>	<4E723A20.2040002@gmx.de> <20110915200514.74bdcd90@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110915200514.74bdcd90@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	Thu, 15 Sep 2011 15:48:12 -0400
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Dave Airlie <airlied@linux.ie>
+Cc: linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        intel-gfx@lists.freedesktop.org, nouveau@lists.freedesktop.org,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, stable@kernel.org
+Subject: [PATCH] io-mapping: ensure io_mapping_map_atomic _is_ atomic
+Date: Thu, 15 Sep 2011 20:48:07 +0200
+Message-Id: <1316112487-15583-1-git-send-email-daniel.vetter@ffwll.ch>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/15/2011 07:05 PM, Alan Cox wrote:
->> What is your problem with discontigous framebuffers? (I assume discontigous
->> refers to the pages the framebuffer is composed of)
->> Sounds to me like you should implement your own fb_mmap and either map it
->> contigous to screen_base or implement your own fb_read/write.
->> In theory you could even have each pixel at a completely different memory
->> location although some userspace wouldn't be happy when it could no longer mmap
->> the framebuffer.
-> 
-> The mmap side is trivial, the problem is that the fb layer default
-> implementations of blits, fills etc only work on a kernel linear frame
-> buffer. And (for example) there is not enough linear stolen memory on
-> some Intel video for a 1080p console on HDMI even though the hardware is
-> perfectly capable of using an HDTV as its monitor. Nor - on a 32bit box-
-> is there enough space to vremap it.
+For the !HAVE_ATOMIC_IOMAP case the stub functions did not call
+pagefault_disable/_enable. The i915 driver relies on the map
+actually being atomic, otherwise it can deadlock with it's own
+pagefault handler in the gtt pwrite fastpath.
 
-Okay, I see your problem. It's a bit strange you don't have acceleration. I
-guess you need either your own implementation of those or adding function
-pointers like fb_read/write just without the __user and use those instead of
-direct memory access in the cfb* implementation if screen_base is NULL. Does not
-sound like a big problem to me, but pretty inefficient, so probably copying the
-existing ones and adjusting it to your needs would be preferred (just like the
-sys* implementations exist).
+This is exercised by gem_mmap_gtt from the intel-gpu-toosl gem
+testsuite.
 
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=38115
+Cc: stable@kernel.org
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+---
+ include/linux/io-mapping.h |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-Best regards,
+diff --git a/include/linux/io-mapping.h b/include/linux/io-mapping.h
+index 8cdcc2a1..6b3bef1 100644
+--- a/include/linux/io-mapping.h
++++ b/include/linux/io-mapping.h
+@@ -138,12 +138,14 @@ static inline void __iomem *
+ io_mapping_map_atomic_wc(struct io_mapping *mapping,
+ 			 unsigned long offset)
+ {
++	pagefault_disable();
+ 	return ((char __force __iomem *) mapping) + offset;
+ }
+ 
+ static inline void
+ io_mapping_unmap_atomic(void __iomem *vaddr)
+ {
++	pagefault_enable();
+ }
+ 
+ /* Non-atomic map/unmap */
+-- 
+1.7.6
 
-Florian Tobias Schandinat
