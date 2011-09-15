@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752688Ab1IOAnl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 20:43:41 -0400
+	id S1752840Ab1IOAn6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 20:43:58 -0400
 Received: from claw.goop.org ([74.207.240.146]:38198 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752584Ab1IOAm5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 20:42:57 -0400
+	id S1752560Ab1IOAm4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Sep 2011 20:42:56 -0400
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 To: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
@@ -16,295 +16,230 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
         Andi Kleen <andi@firstfloor.org>,
         Xen Devel <xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Subject: [PATCH 08/10] x86/ticketlock: add slowpath logic
-Date: Wed, 14 Sep 2011 17:31:40 -0700
-Message-Id: <618bff1804602d2f67b8a248cb86dd580fa37a79.1315878463.git.jeremy.fitzhardinge@citrix.com>
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH 00/10] [PATCH RFC V2] Paravirtualized ticketlocks
+Date: Wed, 14 Sep 2011 17:31:32 -0700
+Message-Id: <cover.1315878463.git.jeremy.fitzhardinge@citrix.com>
 X-Mailer: git-send-email 1.7.6
-In-Reply-To: <cover.1315878463.git.jeremy.fitzhardinge@citrix.com>
-References: <cover.1315878463.git.jeremy.fitzhardinge@citrix.com>
-In-Reply-To: <cover.1315878463.git.jeremy.fitzhardinge@citrix.com>
-References: <cover.1315878463.git.jeremy.fitzhardinge@citrix.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-Maintain a flag in the LSB of the ticket lock tail which indicates
-whether anyone is in the lock slowpath and may need kicking when
-the current holder unlocks.  The flags are set when the first locker
-enters the slowpath, and cleared when unlocking to an empty queue (ie,
-no contention).
+[ Changes since last posting:
+  - fix bugs exposed by the cold light of testing
+    - make the "slow flag" read in unlock cover the whole lock
+      to force ordering WRT the unlock write
+    - when kicking on unlock, only look for the CPU *we* released
+      (ie, head value the unlock resulted in), rather than re-reading
+      the new head and kicking on that basis
+  - enable PV ticketlocks in Xen HVM guests
+]
 
-In the specific implementation of lock_spinning(), make sure to set
-the slowpath flags on the lock just before blocking.  We must do
-this before the last-chance pickup test to prevent a deadlock
-with the unlocker:
+NOTE: this series is available in:
+      git://github.com/jsgf/linux-xen.git upstream/pvticketlock-slowflag
+and is based on the previously posted ticketlock cleanup series in
+      git://github.com/jsgf/linux-xen.git upstream/ticketlock-cleanup
 
-Unlocker			Locker
-				test for lock pickup
-					-> fail
-unlock
-test slowpath
-	-> false
-				set slowpath flags
-				block
+This series replaces the existing paravirtualized spinlock mechanism
+with a paravirtualized ticketlock mechanism.
 
-Whereas this works in any ordering:
+Ticket locks have an inherent problem in a virtualized case, because
+the vCPUs are scheduled rather than running concurrently (ignoring
+gang scheduled vCPUs).  This can result in catastrophic performance
+collapses when the vCPU scheduler doesn't schedule the correct "next"
+vCPU, and ends up scheduling a vCPU which burns its entire timeslice
+spinning.  (Note that this is not the same problem as lock-holder
+preemption, which this series also addresses; that's also a problem,
+but not catastrophic).
 
-Unlocker			Locker
-				set slowpath flags
-				test for lock pickup
-					-> fail
-				block
-unlock
-test slowpath
-	-> true, kick
+(See Thomas Friebel's talk "Prevent Guests from Spinning Around"
+http://www.xen.org/files/xensummitboston08/LHP.pdf for more details.)
 
-If the unlocker finds that the lock has the slowpath flag set but it is
-actually uncontended (ie, head == tail, so nobody is waiting), then it
-clear the slowpath flag.
+Currently we deal with this by having PV spinlocks, which adds a layer
+of indirection in front of all the spinlock functions, and defining a
+completely new implementation for Xen (and for other pvops users, but
+there are none at present).
 
-Note on memory access ordering:
-When unlocking a ticketlock with PV callbacks enabled, unlock
-first "add"s to the lock head, then checks to see if the slowpath
-flag is set in the lock tail.
+PV ticketlocks keeps the existing ticketlock implemenentation
+(fastpath) as-is, but adds a couple of pvops for the slow paths:
 
-However, because reads are not ordered with respect to writes in
-different memory locations, the CPU could perform the read before
-updating head to release the lock.
+- If a CPU has been waiting for a spinlock for SPIN_THRESHOLD
+  iterations, then call out to the __ticket_lock_spinning() pvop,
+  which allows a backend to block the vCPU rather than spinning.  This
+  pvop can set the lock into "slowpath state".
 
-This would deadlock with another CPU in the lock slowpath, as it will
-set the slowpath flag before checking to see if the lock has been
-released in the interim.
+- When releasing a lock, if it is in "slowpath state", the call
+  __ticket_unlock_kick() to kick the next vCPU in line awake.  If the
+  lock is no longer in contention, it also clears the slowpath flag.
 
-A heavyweight fix would be to stick a full mfence between the two.
-However, a lighterweight fix is to simply make sure the flag tests
-loads both head and tail of the lock in a single operation, thereby
-making sure that it overlaps with the memory written by the unlock,
-forcing the CPU to maintain ordering.
+The "slowpath state" is stored in the LSB of the within the lock
+ticket.  This has the effect of reducing the max number of CPUs by
+half (so, a "small ticket" can deal with 128 CPUs, and "large ticket"
+32768).
 
-Note: this code relies on gcc making sure that unlikely() code is out of
-line of the fastpath, which only happens when OPTIMIZE_SIZE=n.  If it
-doesn't the generated code isn't too bad, but its definitely suboptimal.
+This series provides a Xen implementation, but it should be
+straightforward to add a KVM implementation as well.
 
-(Thanks to Srivatsa Vaddagiri for providing a bugfix to the original
-version of this change, which has been folded in.)
+Overall, it results in a large reduction in code, it makes the native
+and virtualized cases closer, and it removes a layer of indirection
+around all the spinlock functions.
 
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Signed-off-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
----
- arch/x86/include/asm/paravirt.h       |    2 +-
- arch/x86/include/asm/spinlock.h       |   92 ++++++++++++++++++++++++++------
- arch/x86/include/asm/spinlock_types.h |    2 +
- arch/x86/kernel/paravirt-spinlocks.c  |    1 +
- arch/x86/xen/spinlock.c               |    4 ++
- 5 files changed, 82 insertions(+), 19 deletions(-)
+The fast path (taking an uncontended lock which isn't in "slowpath"
+state) is optimal, identical to the non-paravirtualized case.
 
-diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
-index 50281c7..13b3d8b 100644
---- a/arch/x86/include/asm/paravirt.h
-+++ b/arch/x86/include/asm/paravirt.h
-@@ -755,7 +755,7 @@ static __always_inline void __ticket_lock_spinning(struct arch_spinlock *lock, _
- 	PVOP_VCALLEE2(pv_lock_ops.lock_spinning, lock, ticket);
- }
- 
--static __always_inline void ____ticket_unlock_kick(struct arch_spinlock *lock, __ticket_t ticket)
-+static __always_inline void __ticket_unlock_kick(struct arch_spinlock *lock, __ticket_t ticket)
- {
- 	PVOP_VCALL2(pv_lock_ops.unlock_kick, lock, ticket);
- }
-diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
-index 40c90aa..c1f6981 100644
---- a/arch/x86/include/asm/spinlock.h
-+++ b/arch/x86/include/asm/spinlock.h
-@@ -40,29 +40,56 @@
- /* How long a lock should spin before we consider blocking */
- #define SPIN_THRESHOLD	(1 << 11)
- 
--#ifndef CONFIG_PARAVIRT_SPINLOCKS
-+#ifdef CONFIG_PARAVIRT_SPINLOCKS
- 
--static __always_inline void __ticket_lock_spinning(struct arch_spinlock *lock, __ticket_t ticket)
-+/*
-+ * Return true if someone is in the slowpath on this lock.  This
-+ * should only be used by the current lock-holder.
-+ */
-+static inline bool __ticket_in_slowpath(arch_spinlock_t *lock)
- {
-+	/*
-+	 * This deliberately reads both head and tail as a single
-+	 * memory operation, and then tests the flag in tail.  This is
-+	 * to guarantee that this read is ordered after the "add" to
-+	 * head which does the unlock.  If we were to only read "tail"
-+	 * to test the flag, then the CPU would be free to reorder the
-+	 * read to before the write to "head" (since it is a different
-+	 * memory location), which could cause a deadlock with someone
-+	 * setting the flag before re-checking the lock availability.
-+	 */
-+	return ACCESS_ONCE(lock->head_tail) & (TICKET_SLOWPATH_FLAG << TICKET_SHIFT);
- }
- 
--static __always_inline void ____ticket_unlock_kick(struct arch_spinlock *lock, __ticket_t ticket)
-+static inline void __ticket_enter_slowpath(arch_spinlock_t *lock)
- {
-+	if (sizeof(lock->tickets.tail) == sizeof(u8))
-+		asm (LOCK_PREFIX "orb %1, %0"
-+		     : "+m" (lock->tickets.tail)
-+		     : "i" (TICKET_SLOWPATH_FLAG) : "memory");
-+	else
-+		asm (LOCK_PREFIX "orw %1, %0"
-+		     : "+m" (lock->tickets.tail)
-+		     : "i" (TICKET_SLOWPATH_FLAG) : "memory");
- }
- 
--#endif	/* CONFIG_PARAVIRT_SPINLOCKS */
-+#else  /* !CONFIG_PARAVIRT_SPINLOCKS */
-+static inline bool __ticket_in_slowpath(arch_spinlock_t *lock)
-+{
-+	return false;
-+}
- 
-+static __always_inline void __ticket_lock_spinning(arch_spinlock_t *lock, __ticket_t ticket)
-+{
-+}
- 
--/* 
-- * If a spinlock has someone waiting on it, then kick the appropriate
-- * waiting cpu.
-- */
--static __always_inline void __ticket_unlock_kick(struct arch_spinlock *lock, __ticket_t next)
-+static inline void __ticket_unlock_kick(arch_spinlock_t *lock, __ticket_t ticket)
- {
--	if (unlikely(lock->tickets.tail != next))
--		____ticket_unlock_kick(lock, next);
- }
- 
-+#endif	/* CONFIG_PARAVIRT_SPINLOCKS */
-+
-+
- /*
-  * Ticket locks are conceptually two parts, one indicating the current head of
-  * the queue, and the other indicating the current tail. The lock is acquired
-@@ -76,20 +103,22 @@ static __always_inline void __ticket_unlock_kick(struct arch_spinlock *lock, __t
-  * in the high part, because a wide xadd increment of the low part would carry
-  * up and contaminate the high part.
-  */
--static __always_inline void arch_spin_lock(struct arch_spinlock *lock)
-+static __always_inline void arch_spin_lock(arch_spinlock_t *lock)
- {
- 	register struct __raw_tickets inc = { .tail = TICKET_LOCK_INC };
- 
- 	inc = xadd(&lock->tickets, inc);
-+	if (likely(inc.head == inc.tail))
-+		goto out;
- 
-+	inc.tail &= ~TICKET_SLOWPATH_FLAG;
- 	for (;;) {
- 		unsigned count = SPIN_THRESHOLD;
- 
- 		do {
--			if (inc.head == inc.tail)
-+			if (ACCESS_ONCE(lock->tickets.head) == inc.tail)
- 				goto out;
- 			cpu_relax();
--			inc.head = ACCESS_ONCE(lock->tickets.head);
- 		} while (--count);
- 		__ticket_lock_spinning(lock, inc.tail);
- 	}
-@@ -101,7 +130,7 @@ static __always_inline int arch_spin_trylock(arch_spinlock_t *lock)
- 	arch_spinlock_t old, new;
- 
- 	old.tickets = ACCESS_ONCE(lock->tickets);
--	if (old.tickets.head != old.tickets.tail)
-+	if (old.tickets.head != (old.tickets.tail & ~TICKET_SLOWPATH_FLAG))
- 		return 0;
- 
- 	new.head_tail = old.head_tail + (TICKET_LOCK_INC << TICKET_SHIFT);
-@@ -128,12 +157,39 @@ static __always_inline void __ticket_unlock_release(arch_spinlock_t *lock)
- }
- #endif
- 
--static __always_inline void arch_spin_unlock(arch_spinlock_t *lock)
-+static inline void __ticket_unlock_slowpath(arch_spinlock_t *lock,
-+					    arch_spinlock_t old)
- {
--	__ticket_t next = lock->tickets.head + TICKET_LOCK_INC;
-+	arch_spinlock_t new;
-+
-+	BUILD_BUG_ON(((__ticket_t)NR_CPUS) != NR_CPUS);
-+
-+	/* Perform the unlock on the "before" copy */
-+	old.tickets.head += TICKET_LOCK_INC;
-+
-+	/* Clear the slowpath flag */
-+	new.head_tail = old.head_tail & ~(TICKET_SLOWPATH_FLAG << TICKET_SHIFT);
-+
-+	/*
-+	 * If the lock is uncontended, clear the flag - use cmpxchg in
-+	 * case it changes behind our back though.
-+	 */
-+	if (new.tickets.head != new.tickets.tail ||
-+	    cmpxchg(&lock->head_tail, old.head_tail, new.head_tail) != old.head_tail) {
-+		/*
-+		 * Lock still has someone queued for it, so wake up an
-+		 * appropriate waiter.
-+		 */
-+		__ticket_unlock_kick(lock, old.tickets.head);
-+	}
-+}
- 
-+static __always_inline void arch_spin_unlock(arch_spinlock_t *lock)
-+{
-+	arch_spinlock_t prev = *lock;
- 	__ticket_unlock_release(lock);
--	__ticket_unlock_kick(lock, next);
-+	if (unlikely(__ticket_in_slowpath(lock)))
-+		__ticket_unlock_slowpath(lock, prev);
- }
- 
- static inline int arch_spin_is_locked(arch_spinlock_t *lock)
-diff --git a/arch/x86/include/asm/spinlock_types.h b/arch/x86/include/asm/spinlock_types.h
-index aa9a205..407f7f7 100644
---- a/arch/x86/include/asm/spinlock_types.h
-+++ b/arch/x86/include/asm/spinlock_types.h
-@@ -5,8 +5,10 @@
- 
- #ifdef CONFIG_PARAVIRT_SPINLOCKS
- #define __TICKET_LOCK_INC	2
-+#define TICKET_SLOWPATH_FLAG	((__ticket_t)1)
- #else
- #define __TICKET_LOCK_INC	1
-+#define TICKET_SLOWPATH_FLAG	((__ticket_t)0)
- #endif
- 
- #if (CONFIG_NR_CPUS < (256 / __TICKET_LOCK_INC))
-diff --git a/arch/x86/kernel/paravirt-spinlocks.c b/arch/x86/kernel/paravirt-spinlocks.c
-index 4251c1d..0883c48 100644
---- a/arch/x86/kernel/paravirt-spinlocks.c
-+++ b/arch/x86/kernel/paravirt-spinlocks.c
-@@ -15,3 +15,4 @@ struct pv_lock_ops pv_lock_ops = {
- };
- EXPORT_SYMBOL(pv_lock_ops);
- 
-+
-diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
-index 7a04950..c939723 100644
---- a/arch/x86/xen/spinlock.c
-+++ b/arch/x86/xen/spinlock.c
-@@ -124,6 +124,10 @@ static void xen_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
- 	/* Only check lock once pending cleared */
- 	barrier();
- 
-+	/* Mark entry to slowpath before doing the pickup test to make
-+	   sure we don't deadlock with an unlocker. */
-+	__ticket_enter_slowpath(lock);
-+
- 	/* check again make sure it didn't become free while
- 	   we weren't looking  */
- 	if (ACCESS_ONCE(lock->tickets.head) == want) {
+The inner part of ticket lock code becomes:
+	inc = xadd(&lock->tickets, inc);
+	inc.tail &= ~TICKET_SLOWPATH_FLAG;
+
+	if (likely(inc.head == inc.tail))
+		goto out;
+
+	for (;;) {
+		unsigned count = SPIN_THRESHOLD;
+
+		do {
+			if (ACCESS_ONCE(lock->tickets.head) == inc.tail)
+				goto out;
+			cpu_relax();
+		} while (--count);
+		__ticket_lock_spinning(lock, inc.tail);
+	}
+out:	barrier();
+
+which results in:
+	push   %rbp
+	mov    %rsp,%rbp
+
+	mov    $0x200,%eax
+	lock xadd %ax,(%rdi)
+	movzbl %ah,%edx
+	cmp    %al,%dl
+	jne    1f
+
+	pop    %rbp
+	retq   
+
+	### SLOWPATH START
+1:	and    $-2,%edx
+	movzbl %dl,%esi
+
+2:	mov    $0x800,%eax
+	jmp    4f
+
+3:	pause  
+	sub    $0x1,%eax
+	je     5f
+
+4:	movzbl (%rdi),%ecx
+	cmp    %cl,%dl
+	jne    3b
+
+	pop    %rbp
+	retq   
+
+5:	callq  *__ticket_lock_spinning
+	jmp    2b
+	### SLOWPATH END
+
+with CONFIG_PARAVIRT_SPINLOCKS=n, the code has changed slightly, where
+the fastpath case is straight through (taking the lock without
+contention), and the spin loop is out of line:
+
+	push   %rbp
+	mov    %rsp,%rbp
+
+	mov    $0x100,%eax
+	lock xadd %ax,(%rdi)
+	movzbl %ah,%edx
+	cmp    %al,%dl
+	jne    1f
+
+	pop    %rbp
+	retq   
+
+	### SLOWPATH START
+1:	pause  
+	movzbl (%rdi),%eax
+	cmp    %dl,%al
+	jne    1b
+
+	pop    %rbp
+	retq   
+	### SLOWPATH END
+
+The unlock code is very straightforward:
+	prev = *lock;
+	__ticket_unlock_release(lock);
+	if (unlikely(__ticket_in_slowpath(lock)))
+		__ticket_unlock_slowpath(lock, prev);
+
+which generates:
+	push   %rbp
+	mov    %rsp,%rbp
+
+        movzwl (%rdi),%esi
+	addb   $0x2,(%rdi)
+        movzwl (%rdi),%eax
+	testb  $0x1,%ah
+	jne    1f
+
+	pop    %rbp
+	retq   
+
+	### SLOWPATH START
+1:	movzwl (%rdi),%edx
+	movzbl %dh,%ecx
+	mov    %edx,%eax
+	and    $-2,%ecx	# clear TICKET_SLOWPATH_FLAG
+	mov    %cl,%dh
+	cmp    %dl,%cl	# test to see if lock is uncontended
+	je     3f
+
+2:	movzbl %dl,%esi
+	callq  *__ticket_unlock_kick	# kick anyone waiting
+	pop    %rbp
+	retq   
+
+3:	lock cmpxchg %dx,(%rdi)	# use cmpxchg to safely write back flag
+	jmp    2b
+	### SLOWPATH END
+
+The fastpath is pretty straightforward, but it is definitely more
+complex than a simple "addb $1,(%rdi)" - which is still generated (and
+inlined) when PARAVIRT_SPINLOCKS is disabled.
+
+Thoughts? Comments? Suggestions?
+
+Thanks,
+	J
+
+Jeremy Fitzhardinge (9):
+  x86/spinlocks: replace pv spinlocks with pv ticketlocks
+  x86/ticketlock: don't inline _spin_unlock when using paravirt
+    spinlocks
+  x86/ticketlock: collapse a layer of functions
+  xen/pvticketlock: Xen implementation for PV ticket locks
+  x86/pvticketlock: use callee-save for lock_spinning
+  x86/ticketlocks: when paravirtualizing ticket locks, increment by 2
+  x86/ticketlock: add slowpath logic
+  xen/pvticketlock: allow interrupts to be enabled while blocking
+
+Stefano Stabellini (1):
+  xen: enable PV ticketlocks on HVM Xen
+
+ arch/x86/Kconfig                      |    3 +
+ arch/x86/include/asm/paravirt.h       |   30 +---
+ arch/x86/include/asm/paravirt_types.h |   10 +-
+ arch/x86/include/asm/spinlock.h       |  160 ++++++++++++-----
+ arch/x86/include/asm/spinlock_types.h |   16 ++-
+ arch/x86/kernel/paravirt-spinlocks.c  |   16 +--
+ arch/x86/xen/smp.c                    |    1 +
+ arch/x86/xen/spinlock.c               |  315 ++++++++------------------------
+ kernel/Kconfig.locks                  |    2 +-
+ 9 files changed, 217 insertions(+), 336 deletions(-)
+
 -- 
 1.7.6
 
