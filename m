@@ -1,85 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934050Ab1IOPXh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 11:23:37 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:38234 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934018Ab1IOPXg (ORCPT
+	id S934056Ab1IOPaG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 11:30:06 -0400
+Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:46584 "EHLO
+	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933872Ab1IOPaE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 11:23:36 -0400
-Message-ID: <4E721871.7040901@lwfinger.net>
-Date: Thu, 15 Sep 2011 10:23:29 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110907 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: linux-wireless@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        "'Chaoming_Li'" <chaoming_li@realsil.com.cn>
-Subject: Re: 3.1-rc6+ rtl8192se issue
-References: <20110915124406.GA14374@gere.osrc.amd.com>
-In-Reply-To: <20110915124406.GA14374@gere.osrc.amd.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Thu, 15 Sep 2011 11:30:04 -0400
+Subject: Re: Proposal for a low-level Linux display framework
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+To: Keith Packard <keithp@keithp.com>
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linaro-dev@lists.linaro.org,
+        "Clark, Rob" <rob@ti.com>, Archit Taneja <archit@ti.com>
+In-Reply-To: <yunboul7sx7.fsf@aiko.keithp.com>
+References: <1316088425.11294.78.camel@lappyti>
+	 <yunboul7sx7.fsf@aiko.keithp.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 15 Sep 2011 18:29:54 +0300
+Message-ID: <1316100594.23214.65.camel@deskari>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/15/2011 07:44 AM, Borislav Petkov wrote:
-> Hi Larry,
->
-> I'm experiencing an issue with rtl8192se since 3.1-ish timeframe where
-> the machine becomes completely unresponsive and only a reboot helps
-> the situation. I think the issue has to do with the rtl8192se wireless
-> driver because if I connect the machine through ethernet, it runs pretty
-> smoothly.
->
-> Today, I left the machine on the vt console in the expectation of an
-> oops or something to appear in the logs and logged into it from another
-> machine over ssh.
->
-> After a while, the unresponsiveness happened and the box didn't
-> react to keyboard input except sysrq with which I was able to do the
-> show-backtrace-all-active-cpus(L) thing and attached is a partial
-> screen cap of that. It looks like the stuck-up happens somewhere in
-> rtl_lps_leave() along the rtl92s_phy_set_rf_power_state() path but the
-> register dump is missing with the exact %rIP.
->
-> Anyway, pls take a look and let me know if it rings any bells. I'll
-> continue trying to debug the issue, maybe I should bisect it if nothing
-> else pops up.
+On Thu, 2011-09-15 at 09:59 -0500, Keith Packard wrote:
+> On Thu, 15 Sep 2011 15:07:05 +0300, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
+> 
+> > This was a very rough and quite short proposal, but I'm happy to improve
+> > and extend it if it's not totally shot down.
+> 
+> Jesse Barnes has put together a proposal much like this to work within
+> the existing DRM environment. This is pretty much the last piece of
+> missing mode-setting functionality that we know of, making DRM capable
+> of fully supporting existing (and planned) devices.
+> 
+> Here's a link to some older discussion on the issue, things have changed
+> a bit since then and we had a long talk about this during the X
+> Developers' Conference this week in Chicago. Expect an update to his
+> proposal in the coming weeks.
+> 
+> http://lists.freedesktop.org/archives/dri-devel/2011-April/010559.html
+> 
 
-Borislav,
+Thanks for the link.
 
-Thanks for the report. I have been running rtl8192se for the past few days and I 
-have also noticed two such system freezes, but not been able to capture any 
-info. As I have recently made many changes in my system recently, I did not know 
-what might be the cause, but rtl8192se is certainly on the suspect list.
+Right, DRM has already components I described in my proposal, and adding
+overlays brings it even closer. However, I think there are two major
+differences:
 
-I have added Chaoming Li to the Cc list. I will send him the screen photo 
-separately.
+1) It's part of DRM, so it doesn't help fb or v4l2 drivers. Except if
+the plan is to make DRM the core Linux display framework, upon which
+everything else is built, and fb and v4l2 are changed to use DRM.
 
-Some questions:
+But even if it was done like that, I see that it's combining two
+separate things: 1) the lower level HW control, and 2) the upper level
+buffer management, policies and userspace interfaces.
 
-I expect that you are running a mainline kernel from Linus's tree. If not, 
-please let me know. Mine is 3.1-rc4 from the wireless-testing tree. I don't 
-recall any changes in out "next-flavored" version that are not in 3.1.
+2) It's missing the panel driver part. This is rather important on
+embedded systems, as the panels often are not "dummy" panels, but they
+need things like custom initialization, sending commands to adjust
+backlight, etc.
 
-Which flavor of RTL8192SE card do you have? The one I'm running shows as 
-"Realtek Semiconductor Co., Ltd. RTL8191SEvB Wireless LAN Controller [10ec:8172] 
-(rev 10)", but I have two others. The differences are in the number of TX and RX 
-streams. Mine is the 1x2 variety.
+ Tomi
 
-How frequently do your freezes occur? As I said before, I have only had two in 2 
-or 3 days, which would make bisection tricky.
 
-I see from the dump that you have x86_64 architecture. How many CPUs and how 
-fast? There is one questionable report of problems on a box with an 8-way fast 
-processor. That was on initialization and is not the same, but may indicate a 
-problem. My system has a dual AMD CPU at 2.0 GHz.
-
-Would you also try loading rtl8192se with the "ips=0" option? As power save is 
-implicated in your traceback, that may help. I will be trying "swlps=0 ips=0".
-
-Thanks for the report,
-
-Larry
