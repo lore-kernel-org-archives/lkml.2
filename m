@@ -1,54 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935146Ab1IOVgp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 17:36:45 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:52964 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935035Ab1IOVgn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 17:36:43 -0400
+	id S935131Ab1IOVhY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 17:37:24 -0400
+Received: from sabe.cs.wisc.edu ([128.105.6.20]:36078 "EHLO sabe.cs.wisc.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935035Ab1IOVhV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Sep 2011 17:37:21 -0400
+Message-ID: <4E727115.8060603@cs.wisc.edu>
+Date: Thu, 15 Sep 2011 16:41:41 -0500
+From: Mike Christie <michaelc@cs.wisc.edu>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-In-Reply-To: <1316105551-17505-2-git-send-email-marc.zyngier@arm.com>
-References: <1316105551-17505-1-git-send-email-marc.zyngier@arm.com> <1316105551-17505-2-git-send-email-marc.zyngier@arm.com>
-From: =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirqus@gmail.com>
-Date: Thu, 15 Sep 2011 23:36:23 +0200
-Message-ID: <CAHXqBFKOQNOePc00yuzfotrYP6wT0ue_CJfv7rKdC+gEkomunA@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/3] genirq: add support for per-cpu dev_id interrupts
-To: Marc Zyngier <marc.zyngier@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, scsi <linux-scsi@vger.kernel.org>,
+        iscsi-driver@qlogic.com, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        jejbscsi <jbottomley@parallels.com>, akpm <akpm@linux-foundation.org>
+Subject: Re: [PATCH] scsi: qla4xxx needs libiscsi.o
+References: <20110831150137.acb3b3805bd599ac57ce96c8@canb.auug.org.au> <20110831150200.54bec12e.rdunlap@xenotime.net>
+In-Reply-To: <20110831150200.54bec12e.rdunlap@xenotime.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/9/15 Marc Zyngier <marc.zyngier@arm.com>:
-[...]
-> diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-> index a103732..f9b7fa3 100644
-> --- a/include/linux/interrupt.h
-> +++ b/include/linux/interrupt.h
-> @@ -95,6 +95,7 @@ typedef irqreturn_t (*irq_handler_t)(int, void *);
->  * @flags:     flags (see IRQF_* above)
->  * @name:      name of the device
->  * @dev_id:    cookie to identify the device
-> + * @percpu_dev_id:     cookie to identify the device
->  * @next:      pointer to the next irqaction for shared interrupts
->  * @irq:       interrupt number
->  * @dir:       pointer to the proc/irq/NN/name entry
-> @@ -104,17 +105,20 @@ typedef irqreturn_t (*irq_handler_t)(int, void *);
->  * @thread_mask:       bitmask for keeping track of @thread activity
->  */
->  struct irqaction {
-[...]
-> +       void                    *dev_id;
-> +#ifdef CONFIG_IRQ_PERCPU_DEVID
-> +       void __percpu           *percpu_dev_id;
-> +#endif
+On 08/31/2011 05:02 PM, Randy Dunlap wrote:
+> From: Randy Dunlap <rdunlap@xenotime.net>
+> 
+> qla4xxx driver needs to be linked with libiscsi.o to fix
+> build errors.  This happens when no other drivers that use
+> libiscsi.o are enabled.
+> 
+> Found in linux-next but applies to mainline also.
+> 
+> ERROR: "iscsi_conn_stop" [drivers/scsi/qla4xxx/qla4xxx.ko] undefined!
+> ERROR: "iscsi_conn_get_addr_param" [drivers/scsi/qla4xxx/qla4xxx.ko] undefined!
+> ERROR: "iscsi_session_teardown" [drivers/scsi/qla4xxx/qla4xxx.ko] undefined!
+> ERROR: "iscsi_host_alloc" [drivers/scsi/qla4xxx/qla4xxx.ko] undefined!
+> ERROR: "iscsi_conn_start" [drivers/scsi/qla4xxx/qla4xxx.ko] undefined!
+> ERROR: "iscsi_conn_send_pdu" [drivers/scsi/qla4xxx/qla4xxx.ko] undefined!
+> ERROR: "iscsi_session_get_param" [drivers/scsi/qla4xxx/qla4xxx.ko] undefined!
+> ERROR: "iscsi_conn_get_param" [drivers/scsi/qla4xxx/qla4xxx.ko] undefined!
+> ERROR: "iscsi_set_param" [drivers/scsi/qla4xxx/qla4xxx.ko] undefined!
+> ERROR: "iscsi_session_failure" [drivers/scsi/qla4xxx/qla4xxx.ko] undefined!
+> ERROR: "iscsi_complete_pdu" [drivers/scsi/qla4xxx/qla4xxx.ko] undefined!
+> ERROR: "iscsi_session_setup" [drivers/scsi/qla4xxx/qla4xxx.ko] undefined!
+> ERROR: "iscsi_conn_bind" [drivers/scsi/qla4xxx/qla4xxx.ko] undefined!
+> ERROR: "iscsi_conn_setup" [drivers/scsi/qla4xxx/qla4xxx.ko] undefined!
+> ERROR: "iscsi_itt_to_task" [drivers/scsi/qla4xxx/qla4xxx.ko] undefined!
+> 
+> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+> ---
+>  drivers/scsi/Makefile |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> --- linux-next-20110831.orig/drivers/scsi/Makefile
+> +++ linux-next-20110831/drivers/scsi/Makefile
+> @@ -88,7 +88,7 @@ obj-$(CONFIG_SCSI_QLOGIC_FAS)	+= qlogicf
+>  obj-$(CONFIG_PCMCIA_QLOGIC)	+= qlogicfas408.o
+>  obj-$(CONFIG_SCSI_QLOGIC_1280)	+= qla1280.o 
+>  obj-$(CONFIG_SCSI_QLA_FC)	+= qla2xxx/
+> -obj-$(CONFIG_SCSI_QLA_ISCSI)	+= qla4xxx/
+> +obj-$(CONFIG_SCSI_QLA_ISCSI)	+= libiscsi.o qla4xxx/
+>  obj-$(CONFIG_SCSI_LPFC)		+= lpfc/
+>  obj-$(CONFIG_SCSI_BFA_FC)	+= bfa/
+>  obj-$(CONFIG_SCSI_PAS16)	+= pas16.o
 
-Those two can share the memory (in a anonymous union), if I read the
-idea correctly.
 
-Best Regards,
-Michał Mirosław
+Sorry. Mixed this patch up with the other one sent that day. Looks ok.
+
+Reviewed-by: Mike Christie <michaelc@cs.wisc.edu>
