@@ -1,69 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934740Ab1IOUS4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 16:18:56 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:41660 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934640Ab1IOUSz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 16:18:55 -0400
-From: James Bottomley <jbottomley@parallels.com>
-To: Andi Kleen <andi@firstfloor.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH 20/27] Initconst section fixes for SCSI
-Thread-Topic: [PATCH 20/27] Initconst section fixes for SCSI
-Thread-Index: AQHMc+N1cKxGB8ANgUKWRWrm3FwhhpVPVuqA
-Date: Thu, 15 Sep 2011 20:18:48 +0000
-Message-ID: <1316117927.2983.74.camel@dabdike.hansenpartnership.com>
-References: <1316117394-21666-1-git-send-email-andi@firstfloor.org>
-	 <1316117394-21666-21-git-send-email-andi@firstfloor.org>
-In-Reply-To: <1316117394-21666-21-git-send-email-andi@firstfloor.org>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [76.243.235.53]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <FE0726A6EB1CDA4E936E908973B98468@sw.swsoft.com>
+	id S934790Ab1IOUTh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 16:19:37 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:44074 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934640Ab1IOUTf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Sep 2011 16:19:35 -0400
+Date: Thu, 15 Sep 2011 23:08:53 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, Haiyang Zhang <haiyangz@microsoft.com>
+Subject: Re: [PATCH 06/20] Staging: hv: util: Properly handle util services
+ in the util driver
+Message-ID: <20110915200853.GJ3789@shale.localdomain>
+References: <1315936759-20623-1-git-send-email-kys@microsoft.com>
+ <1315936796-20662-1-git-send-email-kys@microsoft.com>
+ <1315936796-20662-6-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1315936796-20662-6-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id p8FKJAR3030530
 
-On Thu, 2011-09-15 at 13:09 -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
+On Tue, Sep 13, 2011 at 10:59:42AM -0700, K. Y. Srinivasan wrote:
+> @@ -403,31 +384,13 @@ static void vmbus_process_offer(struct work_struct *work)
+>  		spin_unlock_irqrestore(&vmbus_connection.channel_lock, flags);
+>  
+>  		free_channel(newchannel);
+> -	} else {
+> +	} else
+>  		/*
+>  		 * This state is used to indicate a successful open
+>  		 * so that when we do close the channel normally, we
+>  		 * can cleanup properly
+>  		 */
+>  		newchannel->state = CHANNEL_OPEN_STATE;
 
-I don't know why you're doing this without a description (and please cc
-at least linux-scsi on SCSI patches).
+It's not worth resending, but this should have kept the curly braces
+for two style reasons.
+1) If one side of the if else pair has braces the other side gets
+braces too.
+2) If it's more than one line, it gets braces even if it's not needed
+for semantic reasons.
 
-> Cc: JBottomley@parallels.com
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  drivers/scsi/aacraid/linit.c        |    2 +-
->  drivers/scsi/aic94xx/aic94xx_init.c |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/scsi/aacraid/linit.c b/drivers/scsi/aacraid/linit.c
-> index 3382475..9c8d000 100644
-> --- a/drivers/scsi/aacraid/linit.c
-> +++ b/drivers/scsi/aacraid/linit.c
-> @@ -92,7 +92,7 @@ static DECLARE_PCI_DEVICE_TABLE(aac_pci_tbl) = {
->  #elif defined(__devinitconst)
->  static const struct pci_device_id aac_pci_tbl[] __devinitconst = {
->  #else
-> -static const struct pci_device_id aac_pci_tbl[] __devinitdata = {
-> +static const struct pci_device_id aac_pci_tbl[] __devinitconst = {
+Sorry to email you these pedantic things, but if I don't then my OCD 
+acts up and I feel all itchy for hours.  Also you have a similar
+thing below as well.
 
-How can this possibly be correct?  You just checked in the preceding
-#elif defined() that __devinitconst wasn't defined for this leg, so if
-it's taken there'll be an instant compile failure.
+regards,
+dan carpenter
 
-If you want to argue the whole of the #ifdef construct should be removed
-then I'd be interested.
-
-James
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
