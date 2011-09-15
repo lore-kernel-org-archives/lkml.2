@@ -1,45 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935352Ab1IOXQc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 19:16:32 -0400
-Received: from www.linutronix.de ([62.245.132.108]:47510 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932690Ab1IOXQb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 19:16:31 -0400
-Date: Fri, 16 Sep 2011 01:16:26 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andi Kleen <andi@firstfloor.org>
-cc: a.p.zijlstra@chello.nl, acme@ghostprotocols.net,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 2/4] perf_events: Pass the event to
- perf_instruction_pointer
-In-Reply-To: <1316127412-1912-2-git-send-email-andi@firstfloor.org>
-Message-ID: <alpine.LFD.2.02.1109160113500.2723@ionos>
-References: <1316127412-1912-1-git-send-email-andi@firstfloor.org> <1316127412-1912-2-git-send-email-andi@firstfloor.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S935383Ab1IOXQw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 19:16:52 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:52293 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932690Ab1IOXQv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Sep 2011 19:16:51 -0400
+Date: Thu, 15 Sep 2011 16:16:45 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+Subject: [PATCH] ext4: Prevent stack overrun in ext4_file_open when
+	recording last known mountpoint
+Message-ID: <20110915231645.GE12086@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Sep 2011, Andi Kleen wrote:
+In ext4_file_open, the filesystem records the mountpoint of the first file that
+is opened after mounting the filesystem.  It does this by allocating a 64-byte
+stack buffer, calling d_path() to grab the mount point through which this file
+was accessed, and then memcpy()ing 64 bytes into the superblock's
+s_last_mounted field, starting from the return value of d_path(), which is
+stored as "cp".  However, if cp > buf (which it frequently is since path
+components are prepended starting at the end of buf) then we can end up copying
+stack data into the superblock.
 
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> Used in next patch.
+Writing stack variables into the superblock doesn't sound like a great idea, so
+use strncpy instead.
 
-What for?
+Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+---
 
-Just get it: We want to have reasonable changelogs and not a puzzle
-game!
+ fs/ext4/file.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Is it really that hard ?
-
-Thanks,
-
-	tglx
+diff --git a/fs/ext4/file.c b/fs/ext4/file.c
+index e4095e9..67223e0 100644
+--- a/fs/ext4/file.c
++++ b/fs/ext4/file.c
+@@ -181,8 +181,8 @@ static int ext4_file_open(struct inode * inode, struct file * filp)
+ 		path.dentry = mnt->mnt_root;
+ 		cp = d_path(&path, buf, sizeof(buf));
+ 		if (!IS_ERR(cp)) {
+-			memcpy(sbi->s_es->s_last_mounted, cp,
+-			       sizeof(sbi->s_es->s_last_mounted));
++			strncpy(sbi->s_es->s_last_mounted, cp,
++				sizeof(sbi->s_es->s_last_mounted));
+ 			ext4_mark_super_dirty(sb);
+ 		}
+ 	}
