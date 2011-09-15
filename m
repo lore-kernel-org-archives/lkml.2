@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935473Ab1IOXd4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 19:33:56 -0400
-Received: from www.linutronix.de ([62.245.132.108]:47567 "EHLO
+	id S935495Ab1IOXl7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 19:41:59 -0400
+Received: from www.linutronix.de ([62.245.132.108]:47581 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935437Ab1IOXdz (ORCPT
+	with ESMTP id S935248Ab1IOXl6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 19:33:55 -0400
-Date: Fri, 16 Sep 2011 01:33:54 +0200 (CEST)
+	Thu, 15 Sep 2011 19:41:58 -0400
+Date: Fri, 16 Sep 2011 01:41:55 +0200 (CEST)
 From: Thomas Gleixner <tglx@linutronix.de>
-To: Andi Kleen <andi@firstfloor.org>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: Tree sweep to fix up initconst
-In-Reply-To: <1316117394-21666-1-git-send-email-andi@firstfloor.org>
-Message-ID: <alpine.LFD.2.02.1109160126550.2723@ionos>
-References: <1316117394-21666-1-git-send-email-andi@firstfloor.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: Marc Zyngier <marc.zyngier@arm.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH 1/3] genirq: add support for per-cpu dev_id
+ interrupts
+In-Reply-To: <20110915232903.GA22533@n2100.arm.linux.org.uk>
+Message-ID: <alpine.LFD.2.02.1109160137130.2723@ionos>
+References: <1316105551-17505-1-git-send-email-marc.zyngier@arm.com> <1316105551-17505-2-git-send-email-marc.zyngier@arm.com> <alpine.LFD.2.02.1109152207010.2723@ionos> <20110915232903.GA22533@n2100.arm.linux.org.uk>
 User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -25,30 +27,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Sep 2011, Andi Kleen wrote:
+On Fri, 16 Sep 2011, Russell King - ARM Linux wrote:
 
-> This is a global tree sweep to fix up initconst section problems.
+> On Fri, Sep 16, 2011 at 12:49:10AM +0200, Thomas Gleixner wrote:
+> > Marc,
+> > 
+> > On Thu, 15 Sep 2011, Marc Zyngier wrote:
+> > > +
+> > > +	raw_spin_unlock_irqrestore(&desc->lock, flags);
+> > > +
+> > > +	unregister_handler_proc(irq, action);
+> > > +
+> > > +	/* Make sure it's not being used on another CPU: */
+> > > +	synchronize_irq(irq);
+> > 
+> > That's not helping w/o making synchronize_irq() aware of the percpu
+> > stuff. Also there is the question whether we need the ability to
+> > remove such interrupts in the first place. The target users are low
+> > level arch interrupts not some random device drivers.
 > 
-> Any variable const in initdata must be marked __initconst, not initdata.
-> const __read_mostly is not allowed.
-> 
-> Otherwise the global sections can get a read only marking and in some
-> circumstances the compiler/and or the linker will detect conflicts.
+> You do - think local timers which go away on hotunplug and come back
+> on hotplug.  The alternative is requiring every local timer code to
+> remember whether it registered its per-cpu handler on each CPU or not,
+> and that just gets more messy than having them unregister on hotunplug.
+> Not only would that be more prone to bugs but it will also mean extra
+> complexity in arch code.
 
-In some circumstances?  Care to explain that in detail?
- 
-> This patchkit aims to fix it up everywhere.
+Yikes! That code is removing the GLOBAL action, so all users are going
+to hell.
 
-Aims? How did you generate these patches? [grep|compile+look] and hack
-or did you actually use something sensible like coccinelle?
- 
-> Also available in git://github.com/andikleen/linux-misc.git const-sections
-> 
-> Note I plan to ask Linus to pull this directly.
-
-You can plan what you want, but unless you provide substantial
-information please target your plan towards /dev/null
+The point of the percpu_irq stuff is to have a single action with a
+percpu dev_id and a per cpu enable/disable. So when you unplug your
+cpu that very cpu calls the disable function and therefor removes
+itself w/o causing the other cpus to die on action = NULL
 
 Thanks,
 
 	tglx
+
+
+ 
