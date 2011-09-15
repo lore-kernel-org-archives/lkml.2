@@ -1,132 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932186Ab1IOJ2a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 05:28:30 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:42775 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755714Ab1IOJ23 (ORCPT
+	id S932216Ab1IOJd0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 05:33:26 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:33263 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755714Ab1IOJdZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 05:28:29 -0400
-Date: Thu, 15 Sep 2011 13:27:57 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Pavel Machek <pavel@ucw.cz>, Andrew Morton <akpm00@gmail.com>,
-        linux-kernel@vger.kernel.org, containers@lists.osdl.org,
-        linux-fsdevel@vger.kernel.org, Kirill Shutemov <kirill@shutemov.name>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Nathan Lynch <ntl@pobox.com>, Zan Lynx <zlynx@acm.org>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>, Tejun Heo <tj@kernel.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [patch 2/2] fs, proc: Introduce the /proc/<pid>/map_files/
- directory v12
-Message-ID: <20110915092757.GA23404@albatros>
-References: <20110913212447.918816776@openvz.org>
- <20110913235222.043927b3.akpm@linux-foundation.org>
- <20110914105607.GP25367@sun>
- <20110914111437.GA22516@atrey.karlin.mff.cuni.cz>
- <20110914113912.GQ25367@sun>
- <20110914134405.GV25367@sun>
- <20110914144841.GA7906@albatros>
- <20110914160018.GW25367@sun>
- <20110914160724.GA10612@albatros>
- <20110915091417.GA27755@sun>
+	Thu, 15 Sep 2011 05:33:25 -0400
+X-Originating-IP: 217.70.178.138
+X-Originating-IP: 147.83.37.97
+From: "Leopold Palomo-Avellaneda" <leo@alaxarxa.net>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH/RFC] parport_pc: remove ancient, overeager quirk that disables EPP support on many chipsets
+Date: Thu, 15 Sep 2011 11:33:18 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.32-5-amd64; KDE/4.4.5; x86_64; ; )
+Cc: linux-parport@lists.infradead.org, 630593@bugs.debian.org,
+        Nicos Gollan <gollan@informatik.uni-kl.de>, Greg KH <greg@kroah.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Alexander Gordeev <lasaine@lvk.cs.msu.su>,
+        Jonathan Nieder <jrnieder@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110915091417.GA27755@sun>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Multipart/Mixed;
+  boundary="Boundary-00=_eZccO6BXH/0PW0y"
+Message-Id: <201109151133.19211.leo@alaxarxa.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Boundary-00=_eZccO6BXH/0PW0y
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+
 Hi,
 
-On Thu, Sep 15, 2011 at 13:14 +0400, Cyrill Gorcunov wrote:
-> On Wed, Sep 14, 2011 at 08:07:25PM +0400, Vasiliy Kulikov wrote:
-> ...
-> > 
-> > No, I mean something else.  Assume you have a task, which does the
-> > steps:
-> > 
-> > 1) opens some sensitive file as root.  This file is e.g. 0700.
-> > 
-> > 2) mmaps the file via opened fd, either RO or RW.
-> > 
-> > 3) closes fd.
-> > 
-> > 4) drops root.
-> > 
-> > Now it has a mapping of a privileged file, but cannot get fd of it
-> > anyhow.  With map_files/ he may open his own /proc/$$/map_files/, pass
-> > ptrace() check, and get fd of the privileged file.  He cannot explicitly
-> > open it as it is 0700, but he may open it via map_files/ and get RO/RW
-> > fd.
-> > 
-> 
-> Hi Vasiliy, could you please check if the update below address all your
-> concerns? Note that we still need at least RO access on such files.
-> 
-> 	Cyrill
-> ---
-> fs, proc: Introduce the /proc/<pid>/map_files/ directory v14
-> 
-> From: Pavel Emelyanov <xemul@parallels.com>
-> 
-> This one behaves similarly to the /proc/<pid>/fd/ one - it contains symlinks
-> one for each mapping with file, the name of a symlink is "vma->vm_start-vma->vm_end",
-> the target is the file. Opening a symlink results in a file that point exactly
-> to the same inode as them vma's one.
-> 
-> For example the ls -l of some arbitrary /proc/<pid>/map_files/
-> 
->  | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80403000-7f8f80404000 -> /lib64/libc-2.5.so
->  | lr-x------ 1 root root 64 Aug 26 06:40 7f8f8061e000-7f8f80620000 -> /lib64/libselinux.so.1
->  | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80826000-7f8f80827000 -> /lib64/libacl.so.1.1.0
->  | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80a2f000-7f8f80a30000 -> /lib64/librt-2.5.so
->  | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80a30000-7f8f80a4c000 -> /lib64/ld-2.5.so
-> 
-> This *helps* checkpointing process in three ways:
-> 
-> 1. When dumping a task mappings we do know exact file that is mapped by particular
->    region. We do this by opening /proc/$pid/map_files/address symlink the way we do
->    with file descriptors.
+there's a bug in the parport module that have been reported (in another 
+places) some time ago [1]. Also, this bug was reported at Redhat [2], but 
+nobody follow the report and it was closed.
 
-s/address/$address/ for consistency.
+As Adam baked said [1] :
 
-> 
-> 2. This also helps in determining which anonymous shared mappings are shared with
->    each other by comparing the inodes of them.
-> 
-> 3. When restoring a set of process
+<quote>
+A long time ago (~ 10 years), Intel produced a chipset that 
+included broken EPP support. The Linux parport driver was written to detect 
+such a chipset and disable EPP support on it. Unfortunately the test that was 
+written gives false positives for many current chipsets and no-one seems to 
+know exactly what the problem hardware was, let alone have a sample of it to 
+see if a better test can be written. After such a long time it is probably 
+appropriate to just remove the test (on average it does more harm than good) 
+however you are correct in asserting the driver is unmaintained so no-one is 
+bothering to fix it.
+</quote>
 
-s/process/processes/
+I have applied the patch to the standard debian kernel and vanilla kernels and 
+runs perfectly. The patch simply erases a check. Applied to some Dell 
+hardware, now the EPP mode is detected and, after some initial tests it's 
+working.
 
-> in case two of them has a mapping shared, we map
->    the memory by the 1st one and then open its /proc/$pid/map_files/address file and
->    map it by the 2nd task.
+Please, apply the patch.
 
-How can you restore a set of processes in case they share an RW mapping
-as RW in both tasks if you deny opening /proc/$pid/map_files/$address as W?
+Best regards,
 
-> Using /proc/$pid/maps for this is quite inconvenient since it brings repeatable
-> re-reading and reparsing for this text file which slows down restore procesure
-> significantly. Also as being pointed in (3) it is a way easier to use top level
-> shared mapping in children as /proc/$pid/map_files/address when needed.
-[...]
-> v14: (by Vasiliy Kulikov)
->  - for security reason the links are created with FMODE_READ mode
->    only even if the former file has FMODE_WRITE
->  - proc_map_files_lookup fails on any non-read-only queries.
+Leo
 
-Do you have a PoC of the dumper?  At least without the restorer.  If we
-see an implementation of map_files/ user we probably identify what
-operation it needs and what security restrictions we have to define.
+[1] http://lists.infradead.org/pipermail/linux-parport/2008-March/000628.html
+[2] https://bugzilla.redhat.com/show_bug.cgi?id=284471
 
-Thanks,
+--Boundary-00=_eZccO6BXH/0PW0y
+Content-Type: text/x-patch;
+  charset="UTF-8";
+  name="patch_parport_bug.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+	filename="patch_parport_bug.patch"
 
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+--- linux-2.6-3.0.0/drivers/parport/parport_pc.c.orig	2011-09-13 16:29:54.333048437 +0200
++++ linux-2.6-3.0.0/drivers/parport/parport_pc.c	2011-09-13 16:30:39.933451659 +0200
+@@ -2018,18 +2018,6 @@ static int parport_EPP_supported(struct
+ 	if (!clear_epp_timeout(pb))
+ 		return 0;  /* No way to clear timeout */
+ 
+-	/* Check for Intel bug. */
+-	if (priv->ecr) {
+-		unsigned char i;
+-		for (i = 0x00; i < 0x80; i += 0x20) {
+-			ECR_WRITE(pb, i);
+-			if (clear_epp_timeout(pb)) {
+-				/* Phony EPP in ECP. */
+-				return 0;
+-			}
+-		}
+-	}
+-
+ 	pb->modes |= PARPORT_MODE_EPP;
+ 
+ 	/* Set up access functions to use EPP hardware. */
+
+--Boundary-00=_eZccO6BXH/0PW0y--
