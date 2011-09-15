@@ -1,73 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933687Ab1IOM7u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 08:59:50 -0400
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:41907 "EHLO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933338Ab1IOM7s (ORCPT
+	id S933737Ab1IONCU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 09:02:20 -0400
+Received: from www17.your-server.de ([213.133.104.17]:50866 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933535Ab1IONCS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 08:59:48 -0400
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Samuel Ortiz <samuel.ortiz@intel.com>, Dmitry Torokhov <dtor@mail.ru>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Misael Lopez Cruz <misael.lopez@ti.com>, linux-input@vger.kernel.org
-Subject: [PATCH 0/8] ASoC/MFD/Input: twl6040: Support for audio driven vibra
-Date: Thu, 15 Sep 2011 15:59:13 +0300
-Message-Id: <1316091561-30899-1-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.7.6.1
+	Thu, 15 Sep 2011 09:02:18 -0400
+Subject: Re: a question regarding sys_poll() on x86_64 via tha ia32 layer
+From: Thomas Meyer <thomas@m3y3r.de>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        viro@zeniv.linux.org.uk, mingo@redhat.com
+Date: Thu, 15 Sep 2011 15:00:55 +0200
+In-Reply-To: <1316089435.2893.6.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+References: <1316086860.6545.66.camel@localhost.localdomain>
+	 <1316089435.2893.6.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-3+K4PgSt/mYLYMrm10T0"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Message-ID: <1316091669.6545.79.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-The following series adds support for the soc driver to route audio (PCM
-stream) to the vibra ports of the twl6040.
-We have ALSA controls for the vibra source selection (PDM, or Input/FF).
-The route can not be changed from Input/FF to PDM during ongoing effect coming
-from Input/FF.
-The Input/FF driver can not execute new effect, while the vibra source is
-configured to be PDM.
-TO get things working in legacy mode the omap-mcpdm, and twl6040 soc codec
-driver's channel count needed to be fixed.
+--=-3+K4PgSt/mYLYMrm10T0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-To minimize the need for reads through the I2C bus, the MFD driver will cache
-the vibra control registers.
+Am Donnerstag, den 15.09.2011, 14:23 +0200 schrieb Eric Dumazet:
+> Its a plain bug, please submit a formal patch.
+>=20
+> Probably not noticed because timer is set to more than 24 days.
+>=20
 
-With this series we can route PCM audio to drive the twl6040 vibra output.
-In order to that we need to play 5 channel audio, and place the vibra sample at
-the 5th channel. This will change with ABE support (change == simplified).
+okay. I think a similar problem exists for sys_truncate() in ia32 layer
+on x86_64:
 
-The series depends on the previous two from me:
-ASoC: twl6040: Cleanups and fixes
-ASoC: omap-mcpdm/twl6040: Offset cancellation
+the ia32 syscall is directly wired to sys_truncate(char *, long).
 
-Regards,
-Peter
+signed long will use %rbx on x86_64 and %ebx on x86.
 
-PS: Samuel, Dmitry, Liam: will it be possible to take this through Liam (via
-audio), since we are going to have dependencies coming via audio.
+call sys_truncate on x86_64 from x86 userspace will handle length
+0xffffffff not as -1.
 
----
-Peter Ujfalusi (8):
-  Input: twl6040: Simplify vibra regsiter definitions
-  MFD: twl6040: Cache the vibra control registers
-  MFD: twl6040: function to query the vibra status for clients
-  Input: twl6040-vibra: Check the selected path for vibra
-  ASoC: twl6040: Fix the number of channels for vibra
-  ASoC: twl6040: Correct supported number of playback channels
-  ASoC: omap-mcpdm: Correct the supported number of channels
-  ASoC: twl6040: Support for vibra output paths
+maybe an easy fix would be to change long to unsigned long for
+sys_truncate(), like sys_ftruncate(). what do you think?
 
- drivers/input/misc/twl6040-vibra.c |   19 ++++++---
- drivers/mfd/twl6040-core.c         |   31 ++++++++++++--
- include/linux/mfd/twl6040.h        |   24 +++++------
- sound/soc/codecs/twl6040.c         |   78 ++++++++++++++++++++++++++++++++++-
- sound/soc/omap/omap-mcpdm.c        |   14 ++++---
- 5 files changed, 134 insertions(+), 32 deletions(-)
+with kind regards
+thomas
 
--- 
-1.7.6.1
+--=-3+K4PgSt/mYLYMrm10T0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAABAgAGBQJOcfcHAAoJEK2Y/UtDbsHsAWIH/2wcu6P1PTZk188X1MUZ9juy
+JGBc6PcJXGBSdzCL79po8O7Z3GCzs3Fft3ToH5bsDXPzJIabfdT1dzJ1alJRAcja
+m2FqZ9UaEXg+cnuzXM41FxOQsOkQwwYqHlhJKmzRvUF6156C+IfooBaxiQ2AlfgG
+rsZNGz+1Rjomy/ciTIc9r19p52hpDoiCHmI6Mh3E/NP4j2/Cc1KEgwzaBbZHnIE8
+7Q4Hkts8OtIUmiOd7o3dw2QLO2tBRSX0S7b4PUPfB27+8qLc45OHvGLrdJpasnfw
+5Al3xrbBhZ2kY7jF/WCgckyCfwQ0hTJZqPR8PjwvECUnF8kLOj5fG3pv7TCkuzc=
+=9at+
+-----END PGP SIGNATURE-----
+
+--=-3+K4PgSt/mYLYMrm10T0--
 
