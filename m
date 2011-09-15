@@ -1,126 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755787Ab1IOJFt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 05:05:49 -0400
-Received: from mtagate1.uk.ibm.com ([194.196.100.161]:52054 "EHLO
-	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755564Ab1IOJFr (ORCPT
+	id S1755733Ab1IOJFs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 05:05:48 -0400
+Received: from mtagate3.uk.ibm.com ([194.196.100.163]:37551 "EHLO
+	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755537Ab1IOJFr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 15 Sep 2011 05:05:47 -0400
-Message-Id: <20110915090543.517351607@linux.vnet.ibm.com>
+Message-Id: <20110915090543.690987017@linux.vnet.ibm.com>
 User-Agent: quilt/0.48-1
-Date: Thu, 15 Sep 2011 11:04:41 +0200
+Date: Thu, 15 Sep 2011 11:04:42 +0200
 From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 To: vgoyal@redhat.com, akpm@linux-foundation.org
 Cc: ebiederm@xmission.com, mahesh@linux.vnet.ibm.com, schwidefsky@de.ibm.com,
         heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
         linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
-Subject: [patch v3 1/2] kdump: Add infrastructure for unmapping crashkernel memory
+Subject: [patch v3 2/2] s390: Add architecture code for unmapping crashkernel memory
 References: <20110915090440.063421605@linux.vnet.ibm.com>
-Content-Disposition: inline; filename=s390-kdump-common-crash_map_pages.patch
+Content-Disposition: inline; filename=s390-kdump-arch-crash_map_pages.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 
-This patch introduces a mechanism that allows architecture backends to
-remove page tables for the crashkernel memory. This can protect the loaded
-kdump kernel from being overwritten by broken kernel code.  Two new
-functions crash_map_reserved_pages() and crash_unmap_reserved_pages() are
-added that can be implemented by architecture code.  The
-crash_map_reserved_pages() function is called before and
-crash_unmap_reserved_pages() after the crashkernel segments are loaded.  The
-functions are also called in crash_shrink_memory() to create/remove page
-tables when the crashkernel memory size is reduced.
-
-To support architectures that have large pages this patch also introduces
-a new define KEXEC_CRASH_MEM_ALIGN. The crashkernel start and size must 
-always be aligned with KEXEC_CRASH_MEM_ALIGN.
+This patch implements the crash_map_pages() function for s390.
+KEXEC_CRASH_MEM_ALIGN is set to HPAGE_SIZE, in order to support
+kernel mappings that use large pages. We also use HPAGE_SIZE alignment
+for CONFIG_HUGETLB_PAGE=n in order to have the same 1 MiB alignment on
+all s390 systems.
 
 Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 ---
- include/linux/kexec.h |    6 ++++++
- kernel/kexec.c        |   21 +++++++++++++++++++--
- 2 files changed, 25 insertions(+), 2 deletions(-)
+ arch/s390/include/asm/kexec.h    |    3 +++
+ arch/s390/kernel/machine_kexec.c |   31 +++++++++++++++++++++++++++++++
+ arch/s390/kernel/setup.c         |   10 ++++++----
+ 3 files changed, 40 insertions(+), 4 deletions(-)
 
---- a/include/linux/kexec.h
-+++ b/include/linux/kexec.h
-@@ -37,6 +37,10 @@
- #define KEXEC_CRASH_CONTROL_MEMORY_LIMIT KEXEC_CONTROL_MEMORY_LIMIT
+--- a/arch/s390/include/asm/kexec.h
++++ b/arch/s390/include/asm/kexec.h
+@@ -36,6 +36,9 @@
+ /* Allocate one page for the pdp and the second for the code */
+ #define KEXEC_CONTROL_PAGE_SIZE 4096
+ 
++/* Alignment of crashkernel memory */
++#define KEXEC_CRASH_MEM_ALIGN HPAGE_SIZE
++
+ /* The native architecture */
+ #define KEXEC_ARCH KEXEC_ARCH_S390
+ 
+--- a/arch/s390/kernel/machine_kexec.c
++++ b/arch/s390/kernel/machine_kexec.c
+@@ -243,6 +243,37 @@ static void __machine_kdump(void *image)
  #endif
  
-+#ifndef KEXEC_CRASH_MEM_ALIGN
-+#define KEXEC_CRASH_MEM_ALIGN PAGE_SIZE
-+#endif
-+
- #define KEXEC_NOTE_HEAD_BYTES ALIGN(sizeof(struct elf_note), 4)
- #define KEXEC_CORE_NOTE_NAME "CORE"
- #define KEXEC_CORE_NOTE_NAME_BYTES ALIGN(sizeof(KEXEC_CORE_NOTE_NAME), 4)
-@@ -133,6 +137,8 @@ extern void crash_kexec(struct pt_regs *
- int kexec_should_crash(struct task_struct *);
- void crash_save_cpu(struct pt_regs *regs, int cpu);
- void crash_save_vmcoreinfo(void);
-+void crash_map_reserved_pages(void);
-+void crash_unmap_reserved_pages(void);
- void arch_crash_save_vmcoreinfo(void);
- void vmcoreinfo_append_str(const char *fmt, ...)
- 	__attribute__ ((format (printf, 1, 2)));
---- a/kernel/kexec.c
-+++ b/kernel/kexec.c
-@@ -999,6 +999,7 @@ SYSCALL_DEFINE4(kexec_load, unsigned lon
- 			kimage_free(xchg(&kexec_crash_image, NULL));
- 			result = kimage_crash_alloc(&image, entry,
- 						     nr_segments, segments);
-+			crash_map_reserved_pages();
- 		}
- 		if (result)
- 			goto out;
-@@ -1015,6 +1016,8 @@ SYSCALL_DEFINE4(kexec_load, unsigned lon
- 				goto out;
- 		}
- 		kimage_terminate(image);
-+		if (flags & KEXEC_ON_CRASH)
-+			crash_unmap_reserved_pages();
- 	}
- 	/* Install the new kernel, and  Uninstall the old */
- 	image = xchg(dest_image, image);
-@@ -1026,6 +1029,18 @@ out:
- 	return result;
- }
- 
-+/*
-+ * Add and remove page tables for crashkernel memory
-+ *
-+ * Provide an empty default implementation here -- architecture
-+ * code may override this
+ /*
++ * Map or unmap crashkernel memory
 + */
-+void __weak crash_map_reserved_pages(void)
-+{}
++static void crash_map_pages(int enable)
++{
++	unsigned long size = resource_size(&crashk_res);
 +
-+void __weak crash_unmap_reserved_pages(void)
-+{}
++	BUG_ON(crashk_res.start % KEXEC_CRASH_MEM_ALIGN ||
++	       size % KEXEC_CRASH_MEM_ALIGN);
++	if (enable)
++		vmem_add_mapping(crashk_res.start, size);
++	else
++		vmem_remove_mapping(crashk_res.start, size);
++}
 +
- #ifdef CONFIG_COMPAT
- asmlinkage long compat_sys_kexec_load(unsigned long entry,
- 				unsigned long nr_segments,
-@@ -1134,14 +1149,16 @@ int crash_shrink_memory(unsigned long ne
- 		goto unlock;
- 	}
++/*
++ * Map crashkernel memory
++ */
++void crash_map_reserved_pages(void)
++{
++	crash_map_pages(1);
++}
++
++/*
++ * Unmap crashkernel memory
++ */
++void crash_unmap_reserved_pages(void)
++{
++	crash_map_pages(0);
++}
++
++/*
+  * Give back memory to hypervisor before new kdump is loaded
+  */
+ static int machine_kexec_prepare_kdump(void)
+--- a/arch/s390/kernel/setup.c
++++ b/arch/s390/kernel/setup.c
+@@ -446,6 +446,7 @@ static void __init setup_resources(void)
+ 		res->flags = IORESOURCE_BUSY | IORESOURCE_MEM;
+ 		switch (memory_chunk[i].type) {
+ 		case CHUNK_READ_WRITE:
++		case CHUNK_CRASHK:
+ 			res->name = "System RAM";
+ 			break;
+ 		case CHUNK_READ_ONLY:
+@@ -706,8 +707,8 @@ static void __init reserve_crashkernel(v
+ 			       &crash_base);
+ 	if (rc || crash_size == 0)
+ 		return;
+-	crash_base = PAGE_ALIGN(crash_base);
+-	crash_size = PAGE_ALIGN(crash_size);
++	crash_base = ALIGN(crash_base, KEXEC_CRASH_MEM_ALIGN);
++	crash_size = ALIGN(crash_size, KEXEC_CRASH_MEM_ALIGN);
+ 	if (register_memory_notifier(&kdump_mem_nb))
+ 		return;
+ 	if (!crash_base)
+@@ -727,7 +728,7 @@ static void __init reserve_crashkernel(v
+ 	crashk_res.start = crash_base;
+ 	crashk_res.end = crash_base + crash_size - 1;
+ 	insert_resource(&iomem_resource, &crashk_res);
+-	reserve_kdump_bootmem(crash_base, crash_size, CHUNK_READ_WRITE);
++	reserve_kdump_bootmem(crash_base, crash_size, CHUNK_CRASHK);
+ 	pr_info("Reserving %lluMB of memory at %lluMB "
+ 		"for crashkernel (System RAM: %luMB)\n",
+ 		crash_size >> 20, crash_base >> 20, memory_end >> 20);
+@@ -802,7 +803,8 @@ setup_memory(void)
+ 	for (i = 0; i < MEMORY_CHUNKS && memory_chunk[i].size > 0; i++) {
+ 		unsigned long start_chunk, end_chunk, pfn;
  
--	start = roundup(start, PAGE_SIZE);
--	end = roundup(start + new_size, PAGE_SIZE);
-+	start = roundup(start, KEXEC_CRASH_MEM_ALIGN);
-+	end = roundup(start + new_size, KEXEC_CRASH_MEM_ALIGN);
- 
-+	crash_map_reserved_pages();
- 	crash_free_reserved_phys_range(end, crashk_res.end);
- 
- 	if ((start == end) && (crashk_res.parent != NULL))
- 		release_resource(&crashk_res);
- 	crashk_res.end = end - 1;
-+	crash_unmap_reserved_pages();
- 
- unlock:
- 	mutex_unlock(&kexec_mutex);
+-		if (memory_chunk[i].type != CHUNK_READ_WRITE)
++		if (memory_chunk[i].type != CHUNK_READ_WRITE &&
++		    memory_chunk[i].type != CHUNK_CRASHK)
+ 			continue;
+ 		start_chunk = PFN_DOWN(memory_chunk[i].addr);
+ 		end_chunk = start_chunk + PFN_DOWN(memory_chunk[i].size);
 
