@@ -1,201 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755947Ab1IOKHb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 06:07:31 -0400
-Received: from cluster-g.mailcontrol.com ([208.87.233.190]:36809 "EHLO
-	cluster-g.mailcontrol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751946Ab1IOKH3 (ORCPT
+	id S1755979Ab1IOKHt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 06:07:49 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:45841 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751946Ab1IOKHs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 06:07:29 -0400
-From: Barry Song <Baohua.Song@csr.com>
-To: <vinod.koul@intel.com>
-CC: <linux-kernel@vger.kernel.org>, <workgroup.linux@csr.com>,
-        Barry Song <Baohua.Song@csr.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Viresh Kumar <viresh.kumar@st.com>, Piotr Ziecik <kosmo@semihalf.com>,
-        Yong Wang <yong.y.wang@intel.com>,
-        Jaswinder Singh <jassi.brar@samsung.com>,
-        Pelagicore AB <info@pelagicore.com>
-Subject: [PATCH] dmaengine: delete redundant chan_id and chancnt initialization in dma drivers
-Date: Thu, 15 Sep 2011 03:06:30 -0700
-Message-ID: <1316081190-29777-1-git-send-email-Baohua.Song@csr.com>
-X-Mailer: git-send-email 1.7.1
+	Thu, 15 Sep 2011 06:07:48 -0400
+Message-ID: <4E71CE5D.9030900@ti.com>
+Date: Thu, 15 Sep 2011 12:07:25 +0200
+From: "Cousson, Benoit" <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.125.36.59]
+To: Rob Herring <robherring2@gmail.com>
+CC: Thomas Abraham <thomas.abraham@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
+        "jamie@jamieiles.com" <jamie@jamieiles.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH 5/5] ARM: gic: add OF based initialization
+References: <1316017900-19918-1-git-send-email-robherring2@gmail.com> <1316017900-19918-6-git-send-email-robherring2@gmail.com> <CAJuYYwSFu2HC+u2NY41+yw9tEyy85RKa4Dpm3SL+jbwS_OOA0A@mail.gmail.com>
+In-Reply-To: <CAJuYYwSFu2HC+u2NY41+yw9tEyy85RKa4Dpm3SL+jbwS_OOA0A@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dma_async_device_register will re-init chan_id and chancnt,
-so whatever chan_id and chancnt are set in drivers, they will
-be re-written by dma_async_device_register.
+Hi Rob,
 
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Viresh Kumar <viresh.kumar@st.com>
-Cc: Vinod Koul <vinod.koul@intel.com>
-Cc: Piotr Ziecik <kosmo@semihalf.com>
-Cc: Yong Wang <yong.y.wang@intel.com>
-Cc: Jaswinder Singh <jassi.brar@samsung.com>
-Cc: Pelagicore AB <info@pelagicore.com>
-Signed-off-by: Barry Song <Baohua.Song@csr.com>
----
- drivers/dma/at_hdmac.c      |    5 ++---
- drivers/dma/dw_dmac.c       |    5 ++---
- drivers/dma/intel_mid_dma.c |    2 --
- drivers/dma/mpc512x_dma.c   |    1 -
- drivers/dma/pch_dma.c       |    2 --
- drivers/dma/pl330.c         |    2 --
- drivers/dma/timb_dma.c      |    3 +--
- 7 files changed, 5 insertions(+), 15 deletions(-)
+On 9/15/2011 9:55 AM, Thomas Abraham wrote:
+> Hi Rob,
+>
+> On 14 September 2011 22:01, Rob Herring<robherring2@gmail.com>  wrote:
+>> From: Rob Herring<rob.herring@calxeda.com>
+>>
+>> This adds gic initialization using device tree data. The initialization
+>> functions are intended to be called by a generic OF interrupt
+>> controller parsing function once the right pieces are in place.
+>>
+>> PPIs are handled using 3rd cell of interrupts properties to specify the cpu
+>> mask the PPI is assigned to.
+>>
+>> Signed-off-by: Rob Herring<rob.herring@calxeda.com>
+>> ---
+>>   Documentation/devicetree/bindings/arm/gic.txt |   53 ++++++++++++++++++++++++
+>>   arch/arm/common/gic.c                         |   55 +++++++++++++++++++++++--
+>>   arch/arm/include/asm/hardware/gic.h           |   10 +++++
+>>   3 files changed, 114 insertions(+), 4 deletions(-)
+>>   create mode 100644 Documentation/devicetree/bindings/arm/gic.txt
+>
+> [...]
+>
+>
+>> diff --git a/arch/arm/common/gic.c b/arch/arm/common/gic.c
+>> index d1ccc72..14de380 100644
+>> --- a/arch/arm/common/gic.c
+>> +++ b/arch/arm/common/gic.c
+>
+> [...]
+>
+>> +void __init gic_of_init(struct device_node *node, struct device_node *parent)
+>> +{
+>> +       void __iomem *cpu_base;
+>> +       void __iomem *dist_base;
+>> +       int irq;
+>> +       struct irq_domain *domain =&gic_data[gic_cnt].domain;
+>> +
+>> +       if (WARN_ON(!node))
+>> +               return;
+>> +
+>> +       dist_base = of_iomap(node, 0);
+>> +       WARN(!dist_base, "unable to map gic dist registers\n");
+>> +
+>> +       cpu_base = of_iomap(node, 1);
+>> +       WARN(!cpu_base, "unable to map gic cpu registers\n");
+>> +
+>> +       domain->nr_irq = gic_irq_count(dist_base);
+>> +       domain->irq_base = irq_alloc_descs(-1, 0, domain->nr_irq, numa_node_id());
+>
+> For exynos4, all the interrupts originating from GIC are statically
+> mapped to start from 32 in the linux virq space (GIC SPI interrupts
+> start from 64). In the above code, since irq_base would be 0 for
+> exynos4, the interrupt mapping is not working correctly. In your
+> previous version of the patch, you have given a option to the platform
+> code to choose the offset. Could that option be added to this series
+> also. Or a provision to use platform specific translate function
+> instead of the irq_domain_simple translator.
 
-diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
-index 6a483ea..c1b8c15 100644
---- a/drivers/dma/at_hdmac.c
-+++ b/drivers/dma/at_hdmac.c
-@@ -1260,12 +1260,11 @@ static int __init at_dma_probe(struct platform_device *pdev)
- 
- 	/* initialize channels related values */
- 	INIT_LIST_HEAD(&atdma->dma_common.channels);
--	for (i = 0; i < pdata->nr_channels; i++, atdma->dma_common.chancnt++) {
-+	for (i = 0; i < pdata->nr_channels; i++) {
- 		struct at_dma_chan	*atchan = &atdma->chan[i];
- 
- 		atchan->chan_common.device = &atdma->dma_common;
- 		atchan->chan_common.cookie = atchan->completed_cookie = 1;
--		atchan->chan_common.chan_id = i;
- 		list_add_tail(&atchan->chan_common.device_node,
- 				&atdma->dma_common.channels);
- 
-@@ -1308,7 +1307,7 @@ static int __init at_dma_probe(struct platform_device *pdev)
- 	dev_info(&pdev->dev, "Atmel AHB DMA Controller ( %s%s), %d channels\n",
- 	  dma_has_cap(DMA_MEMCPY, atdma->dma_common.cap_mask) ? "cpy " : "",
- 	  dma_has_cap(DMA_SLAVE, atdma->dma_common.cap_mask)  ? "slave " : "",
--	  atdma->dma_common.chancnt);
-+	  pdata->nr_channels);
- 
- 	dma_async_device_register(&atdma->dma_common);
- 
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index 4d180ca..9bfd6d3 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -1407,12 +1407,11 @@ static int __init dw_probe(struct platform_device *pdev)
- 	dw->all_chan_mask = (1 << pdata->nr_channels) - 1;
- 
- 	INIT_LIST_HEAD(&dw->dma.channels);
--	for (i = 0; i < pdata->nr_channels; i++, dw->dma.chancnt++) {
-+	for (i = 0; i < pdata->nr_channels; i++) {
- 		struct dw_dma_chan	*dwc = &dw->chan[i];
- 
- 		dwc->chan.device = &dw->dma;
- 		dwc->chan.cookie = dwc->completed = 1;
--		dwc->chan.chan_id = i;
- 		if (pdata->chan_allocation_order == CHAN_ALLOCATION_ASCENDING)
- 			list_add_tail(&dwc->chan.device_node,
- 					&dw->dma.channels);
-@@ -1468,7 +1467,7 @@ static int __init dw_probe(struct platform_device *pdev)
- 	dma_writel(dw, CFG, DW_CFG_DMA_EN);
- 
- 	printk(KERN_INFO "%s: DesignWare DMA Controller, %d channels\n",
--			dev_name(&pdev->dev), dw->dma.chancnt);
-+			dev_name(&pdev->dev), pdata->nr_channels);
- 
- 	dma_async_device_register(&dw->dma);
- 
-diff --git a/drivers/dma/intel_mid_dma.c b/drivers/dma/intel_mid_dma.c
-index 8a3fdd8..cf74a66 100644
---- a/drivers/dma/intel_mid_dma.c
-+++ b/drivers/dma/intel_mid_dma.c
-@@ -1114,7 +1114,6 @@ static int mid_setup_dma(struct pci_dev *pdev)
- 
- 		midch->chan.device = &dma->common;
- 		midch->chan.cookie =  1;
--		midch->chan.chan_id = i;
- 		midch->ch_id = dma->chan_base + i;
- 		pr_debug("MDMA:Init CH %d, ID %d\n", i, midch->ch_id);
- 
-@@ -1150,7 +1149,6 @@ static int mid_setup_dma(struct pci_dev *pdev)
- 	dma_cap_set(DMA_SLAVE, dma->common.cap_mask);
- 	dma_cap_set(DMA_PRIVATE, dma->common.cap_mask);
- 	dma->common.dev = &pdev->dev;
--	dma->common.chancnt = dma->max_chan;
- 
- 	dma->common.device_alloc_chan_resources =
- 					intel_mid_dma_alloc_chan_resources;
-diff --git a/drivers/dma/mpc512x_dma.c b/drivers/dma/mpc512x_dma.c
-index b9bae94..8ba4edc 100644
---- a/drivers/dma/mpc512x_dma.c
-+++ b/drivers/dma/mpc512x_dma.c
-@@ -741,7 +741,6 @@ static int __devinit mpc_dma_probe(struct platform_device *op)
- 		mchan = &mdma->channels[i];
- 
- 		mchan->chan.device = dma;
--		mchan->chan.chan_id = i;
- 		mchan->chan.cookie = 1;
- 		mchan->completed_cookie = mchan->chan.cookie;
- 
-diff --git a/drivers/dma/pch_dma.c b/drivers/dma/pch_dma.c
-index 1ac8d4b..5b65362 100644
---- a/drivers/dma/pch_dma.c
-+++ b/drivers/dma/pch_dma.c
-@@ -926,7 +926,6 @@ static int __devinit pch_dma_probe(struct pci_dev *pdev,
- 	}
- 
- 	pd->dma.dev = &pdev->dev;
--	pd->dma.chancnt = nr_channels;
- 
- 	INIT_LIST_HEAD(&pd->dma.channels);
- 
-@@ -935,7 +934,6 @@ static int __devinit pch_dma_probe(struct pci_dev *pdev,
- 
- 		pd_chan->chan.device = &pd->dma;
- 		pd_chan->chan.cookie = 1;
--		pd_chan->chan.chan_id = i;
- 
- 		pd_chan->membase = &regs->desc[i];
- 
-diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-index 00eee59..7f86e7d 100644
---- a/drivers/dma/pl330.c
-+++ b/drivers/dma/pl330.c
-@@ -747,11 +747,9 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
- 		spin_lock_init(&pch->lock);
- 		pch->pl330_chid = NULL;
- 		pch->chan.device = pd;
--		pch->chan.chan_id = i;
- 		pch->dmac = pdmac;
- 
- 		/* Add the channel to the DMAC list */
--		pd->chancnt++;
- 		list_add_tail(&pch->chan.device_node, &pd->channels);
- 	}
- 
-diff --git a/drivers/dma/timb_dma.c b/drivers/dma/timb_dma.c
-index f69f90a..6dbdf45 100644
---- a/drivers/dma/timb_dma.c
-+++ b/drivers/dma/timb_dma.c
-@@ -753,7 +753,7 @@ static int __devinit td_probe(struct platform_device *pdev)
- 
- 	INIT_LIST_HEAD(&td->dma.channels);
- 
--	for (i = 0; i < pdata->nr_channels; i++, td->dma.chancnt++) {
-+	for (i = 0; i < pdata->nr_channels; i++) {
- 		struct timb_dma_chan *td_chan = &td->channels[i];
- 		struct timb_dma_platform_data_channel *pchan =
- 			pdata->channels + i;
-@@ -767,7 +767,6 @@ static int __devinit td_probe(struct platform_device *pdev)
- 
- 		td_chan->chan.device = &td->dma;
- 		td_chan->chan.cookie = 1;
--		td_chan->chan.chan_id = i;
- 		spin_lock_init(&td_chan->lock);
- 		INIT_LIST_HEAD(&td_chan->active_list);
- 		INIT_LIST_HEAD(&td_chan->queue);
--- 
-1.7.1
+I have another concern on a similar topic.
 
+On OMAP4 the SoC interrupts external to the MPU (SPI) have an offset of 
+32. Only the internal PPI are between 0 and 31.
 
+For the moment we add 32 to every SoC interrupts in the irq.h define, 
+but I'm assuming that this offset calculation should be done thanks to a 
+dedicated irq domain for the SPI.
+The real HW physical number start at 0, and thus this is that value that 
+should be in the irq binding of the device.
 
-Member of the CSR plc group of companies. CSR plc registered in England and Wales, registered number 4187346, registered office Churchill House, Cambridge Business Park, Cowley Road, Cambridge, CB4 0WZ, United Kingdom
-More information can be found at www.csr.com. Follow CSR on Twitter at http://twitter.com/CSR_PLC and read our blog at www.csr.com/blog
+So ideally we should have a irq domain for the PPI starting at 0 and 
+another one for the SPI starting at 32. Or 32 and 64 for the exynos4 
+case, but it looks like the PPI/SPI offset is always 32.
+
+Regards,
+Benoit
