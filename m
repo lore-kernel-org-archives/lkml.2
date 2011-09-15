@@ -1,40 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934656Ab1IOTzD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 15:55:03 -0400
-Received: from mga02.intel.com ([134.134.136.20]:45008 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934601Ab1IOTzB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 15:55:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="48894880"
-Date: Thu, 15 Sep 2011 21:57:25 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu
-Subject: Re: [PATCH 41/62] mfd: irq: Remove IRQF_DISABLED
-Message-ID: <20110915195725.GK32263@sortiz-mobl>
-References: <1315383059-3673-1-git-send-email-yong.zhang0@gmail.com>
- <1315383059-3673-42-git-send-email-yong.zhang0@gmail.com>
+	id S934664Ab1IOT5E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 15:57:04 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:47598 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934532Ab1IOT5C (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Sep 2011 15:57:02 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1315383059-3673-42-git-send-email-yong.zhang0@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Thu, 15 Sep 2011 21:57:01 +0200
+Message-ID: <CA+o4b4fpXtF+LgLREPdjY7N06vwhCdOwRWgn-sQZYhL44=w+zA@mail.gmail.com>
+Subject: legal question regarding use of glibc headers in /usr/include/linux
+From: David Miller <davemiller2222@googlemail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Yong,
+Hi,
 
-On Wed, Sep 07, 2011 at 04:10:38PM +0800, Yong Zhang wrote:
-> This flag is a NOOP and can be removed now.
-Patch applied, thanks.
+I have a question that came up regarding the use of Linux in
+proprietary user-space programs.
+After several hours searching the web I am even more confused than
+before, so I decided to ask someone that should know about.
+My company would like to use Linux in an embedded system along with
+some proprietary software. I think in general this alone should be
+possible. The problem is that I am unsure what headers I can include
+within user-space programs and which not. When I install the normal
+glibc in Ubuntu (build-essential package) it installs also some linux
+kernel headers in /usr/include/linux.
+My question now is: Can I include these headers (e.g. #include
+<linux/types.h>) since they seem to be normal glibc headers that seem
+to be intended to be included in user-space programs that are
+proprietary. I mean it's clear that I cannot use the ones in
+/usr/src/linux-headers... that are containing the normal Linux Code.
 
-Cheers,
-Samuel.
+If your answer is no:
+------------------------
+Why not - these headers contain just facts and how glibc could work
+then? In any way glibc must interface with the linux kernel also, or
+not? And the glibc is LGPL!
+And also how can that be? I can then include accidentally any
+forbidden header? From my point of view linux is not maintainable
+then!
+References:
+http://www.osnews.com/story/24553/Does_Android_Violate_the_GPL_Probably_Not
+also: the text file linux COPYING in the kernel sources
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+If your answer is yes:
+----------------------
+Some of the kernel headers in /usr/include/linux contain a GPL notice
+in its header. When I include these headers, my proprietary user-space
+program will be forced to be under GPL license and I will be killed by
+my boss or not?
+
+
+I stay tuned and look forward to your answer.
+
+Thanks in advance,
+Dave Miller (not the well-known)
