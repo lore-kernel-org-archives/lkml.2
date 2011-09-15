@@ -1,74 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933737Ab1IONCU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 09:02:20 -0400
-Received: from www17.your-server.de ([213.133.104.17]:50866 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933535Ab1IONCS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 09:02:18 -0400
-Subject: Re: a question regarding sys_poll() on x86_64 via tha ia32 layer
-From: Thomas Meyer <thomas@m3y3r.de>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        viro@zeniv.linux.org.uk, mingo@redhat.com
-Date: Thu, 15 Sep 2011 15:00:55 +0200
-In-Reply-To: <1316089435.2893.6.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-References: <1316086860.6545.66.camel@localhost.localdomain>
-	 <1316089435.2893.6.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-3+K4PgSt/mYLYMrm10T0"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Message-ID: <1316091669.6545.79.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Authenticated-Sender: thomas@m3y3r.de
+	id S933694Ab1IONDv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 09:03:51 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:33606 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933535Ab1IONDu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Sep 2011 09:03:50 -0400
+Message-ID: <4E71F79C.6080900@ti.com>
+Date: Thu, 15 Sep 2011 15:03:24 +0200
+From: "Cousson, Benoit" <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
+MIME-Version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Rob Herring <robherring2@gmail.com>,
+        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        "jamie@jamieiles.com" <jamie@jamieiles.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 5/5] ARM: gic: add OF based initialization
+References: <1316017900-19918-1-git-send-email-robherring2@gmail.com> <1316017900-19918-6-git-send-email-robherring2@gmail.com> <CAJuYYwSFu2HC+u2NY41+yw9tEyy85RKa4Dpm3SL+jbwS_OOA0A@mail.gmail.com> <4E71CE5D.9030900@ti.com> <20110915102915.GJ6267@n2100.arm.linux.org.uk> <4E71EF56.3050503@ti.com> <20110915125107.GK6267@n2100.arm.linux.org.uk>
+In-Reply-To: <20110915125107.GK6267@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 9/15/2011 2:51 PM, Russell King - ARM Linux wrote:
+> On Thu, Sep 15, 2011 at 02:28:06PM +0200, Cousson, Benoit wrote:
+>> The HW specs is obviously counting the IRQ number at the GIC interface.
+>> That offset is not known outside the MPUSS. Please have a look at the
+>> OMAP4430 TRM p4761 (NDA vM version).
+>
+> As far as I know, I have no access to that.  I've certainly never been
+> pointed to any documentation on OMAP4.
 
---=-3+K4PgSt/mYLYMrm10T0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+That's easy to fix since the same information is in the public TRM 
+(p3386 in that case). And here is the link:
+http://focus.ti.com/pdfs/wtbu/OMAP4430_ES2.x_PUBLIC_TRM_vX.zip
 
-Am Donnerstag, den 15.09.2011, 14:23 +0200 schrieb Eric Dumazet:
-> Its a plain bug, please submit a formal patch.
->=20
-> Probably not noticed because timer is set to more than 24 days.
->=20
+Do not hesitate to ask if you never further information on OMAP SoC.
 
-okay. I think a similar problem exists for sys_truncate() in ia32 layer
-on x86_64:
-
-the ia32 syscall is directly wired to sys_truncate(char *, long).
-
-signed long will use %rbx on x86_64 and %ebx on x86.
-
-call sys_truncate on x86_64 from x86 userspace will handle length
-0xffffffff not as -1.
-
-maybe an easy fix would be to change long to unsigned long for
-sys_truncate(), like sys_ftruncate(). what do you think?
-
-with kind regards
-thomas
-
---=-3+K4PgSt/mYLYMrm10T0
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAABAgAGBQJOcfcHAAoJEK2Y/UtDbsHsAWIH/2wcu6P1PTZk188X1MUZ9juy
-JGBc6PcJXGBSdzCL79po8O7Z3GCzs3Fft3ToH5bsDXPzJIabfdT1dzJ1alJRAcja
-m2FqZ9UaEXg+cnuzXM41FxOQsOkQwwYqHlhJKmzRvUF6156C+IfooBaxiQ2AlfgG
-rsZNGz+1Rjomy/ciTIc9r19p52hpDoiCHmI6Mh3E/NP4j2/Cc1KEgwzaBbZHnIE8
-7Q4Hkts8OtIUmiOd7o3dw2QLO2tBRSX0S7b4PUPfB27+8qLc45OHvGLrdJpasnfw
-5Al3xrbBhZ2kY7jF/WCgckyCfwQ0hTJZqPR8PjwvECUnF8kLOj5fG3pv7TCkuzc=
-=9at+
------END PGP SIGNATURE-----
-
---=-3+K4PgSt/mYLYMrm10T0--
-
+Regards,
+Benoit
