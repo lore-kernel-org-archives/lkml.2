@@ -1,52 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753096Ab1IOApK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 20:45:10 -0400
-Received: from smtp2.sbb.rs ([89.216.2.34]:44613 "EHLO smtp2.sbb.rs"
+	id S1753130Ab1IOApe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 20:45:34 -0400
+Received: from claw.goop.org ([74.207.240.146]:38198 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752456Ab1IOApG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 20:45:06 -0400
-X-Greylist: delayed 1837 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Sep 2011 20:45:06 EDT
-Message-ID: <2962.41.155.6.33.1316045682.squirrel@webmail.sbb.rs>
-Date: Thu, 15 Sep 2011 02:14:42 +0200 (CEST)
-Subject: Dear 'WEB-MAIL ACCOUNT USER
-From: "WEB-MAIL ACCOUNT USER" <mail@sbb.rs>
-Reply-To: upgradeweb1@hotmail.com
-User-Agent: SquirrelMail/1.4.13
-MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-SMTP-Vilter-Version: 1.3.2
-X-SBB-Virus-Status: clean
-X-SBB-Spam-Score: -0.5
-To: unlisted-recipients:; (no To-header on input)
+	id S1752245Ab1IOAms (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Sep 2011 20:42:48 -0400
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@kernel.dk>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH 07/10] x86/ticketlocks: when paravirtualizing ticket locks, increment by 2
+Date: Wed, 14 Sep 2011 17:31:39 -0700
+Message-Id: <49abff7b6fdc629c601387610beaa834af2c3085.1315878463.git.jeremy.fitzhardinge@citrix.com>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <cover.1315878463.git.jeremy.fitzhardinge@citrix.com>
+References: <cover.1315878463.git.jeremy.fitzhardinge@citrix.com>
+In-Reply-To: <cover.1315878463.git.jeremy.fitzhardinge@citrix.com>
+References: <cover.1315878463.git.jeremy.fitzhardinge@citrix.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear 'WEB-MAIL ACCOUNT USER',
+From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-We are currently upgrading our database and all account need to be verified.
-To complete your account activation with us,you are required to reply to this
-message and enter correctly the information's that is required from you.
+Increment ticket head/tails by 2 rather than 1 to leave the LSB free
+to store a "is in slowpath state" bit.  This halves the number
+of possible CPUs for a given ticket size, but this shouldn't matter
+in practice - kernels built for 32k+ CPU systems are probably
+specially built for the hardware rather than a generic distro
+kernel.
 
-Fill in your User Name and Password in the space provided (********)You are
-required to reply to this e-mail within the next 48 hours.
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+---
+ arch/x86/include/asm/spinlock.h       |   16 ++++++++--------
+ arch/x86/include/asm/spinlock_types.h |   10 +++++++++-
+ 2 files changed, 17 insertions(+), 9 deletions(-)
 
-Failure to get back to us, your Web-mail account will be DE-activated from
-our
-database.
-
-FULL NAME;
-USER-NAME;
-PASSWORD;
-RE-TYPE PASSWORD;
-DATE OF BIRTH;
-Email.upgradeweb1@hotmail.com
-
-Thank you for using Web-mail Copyright 2011 © Web Team.
-19X45HANJ4453VXTM334M
-15-09-2011
+diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
+index 98fe202..40c90aa 100644
+--- a/arch/x86/include/asm/spinlock.h
++++ b/arch/x86/include/asm/spinlock.h
+@@ -78,7 +78,7 @@ static __always_inline void __ticket_unlock_kick(struct arch_spinlock *lock, __t
+  */
+ static __always_inline void arch_spin_lock(struct arch_spinlock *lock)
+ {
+-	register struct __raw_tickets inc = { .tail = 1 };
++	register struct __raw_tickets inc = { .tail = TICKET_LOCK_INC };
+ 
+ 	inc = xadd(&lock->tickets, inc);
+ 
+@@ -104,7 +104,7 @@ static __always_inline int arch_spin_trylock(arch_spinlock_t *lock)
+ 	if (old.tickets.head != old.tickets.tail)
+ 		return 0;
+ 
+-	new.head_tail = old.head_tail + (1 << TICKET_SHIFT);
++	new.head_tail = old.head_tail + (TICKET_LOCK_INC << TICKET_SHIFT);
+ 
+ 	/* cmpxchg is a full barrier, so nothing can move before it */
+ 	return cmpxchg(&lock->head_tail, old.head_tail, new.head_tail) == old.head_tail;
+@@ -113,24 +113,24 @@ static __always_inline int arch_spin_trylock(arch_spinlock_t *lock)
+ #if (NR_CPUS < 256)
+ static __always_inline void __ticket_unlock_release(arch_spinlock_t *lock)
+ {
+-	asm volatile(UNLOCK_LOCK_PREFIX "incb %0"
++	asm volatile(UNLOCK_LOCK_PREFIX "addb %1, %0"
+ 		     : "+m" (lock->head_tail)
+-		     :
++		     : "i" (TICKET_LOCK_INC)
+ 		     : "memory", "cc");
+ }
+ #else
+ static __always_inline void __ticket_unlock_release(arch_spinlock_t *lock)
+ {
+-	asm volatile(UNLOCK_LOCK_PREFIX "incw %0"
++	asm volatile(UNLOCK_LOCK_PREFIX "addw %1, %0"
+ 		     : "+m" (lock->head_tail)
+-		     :
++		     : "i" (TICKET_LOCK_INC)
+ 		     : "memory", "cc");
+ }
+ #endif
+ 
+ static __always_inline void arch_spin_unlock(arch_spinlock_t *lock)
+ {
+-	__ticket_t next = lock->tickets.head + 1;
++	__ticket_t next = lock->tickets.head + TICKET_LOCK_INC;
+ 
+ 	__ticket_unlock_release(lock);
+ 	__ticket_unlock_kick(lock, next);
+@@ -147,7 +147,7 @@ static inline int arch_spin_is_contended(arch_spinlock_t *lock)
+ {
+ 	struct __raw_tickets tmp = ACCESS_ONCE(lock->tickets);
+ 
+-	return ((tmp.tail - tmp.head) & TICKET_MASK) > 1;
++	return ((tmp.tail - tmp.head) & TICKET_MASK) > TICKET_LOCK_INC;
+ }
+ #define arch_spin_is_contended	arch_spin_is_contended
+ 
+diff --git a/arch/x86/include/asm/spinlock_types.h b/arch/x86/include/asm/spinlock_types.h
+index dbe223d..aa9a205 100644
+--- a/arch/x86/include/asm/spinlock_types.h
++++ b/arch/x86/include/asm/spinlock_types.h
+@@ -3,7 +3,13 @@
+ 
+ #include <linux/types.h>
+ 
+-#if (CONFIG_NR_CPUS < 256)
++#ifdef CONFIG_PARAVIRT_SPINLOCKS
++#define __TICKET_LOCK_INC	2
++#else
++#define __TICKET_LOCK_INC	1
++#endif
++
++#if (CONFIG_NR_CPUS < (256 / __TICKET_LOCK_INC))
+ typedef u8  __ticket_t;
+ typedef u16 __ticketpair_t;
+ #else
+@@ -11,6 +17,8 @@ typedef u16 __ticket_t;
+ typedef u32 __ticketpair_t;
+ #endif
+ 
++#define TICKET_LOCK_INC	((__ticket_t)__TICKET_LOCK_INC)
++
+ #define TICKET_SHIFT	(sizeof(__ticket_t) * 8)
+ #define TICKET_MASK	((__ticket_t)((1 << TICKET_SHIFT) - 1))
+ 
+-- 
+1.7.6
 
