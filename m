@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935091Ab1IOVcA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 17:32:00 -0400
-Received: from mga01.intel.com ([192.55.52.88]:16206 "EHLO mga01.intel.com"
+	id S935055Ab1IOVby (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 17:31:54 -0400
+Received: from mga02.intel.com ([134.134.136.20]:43244 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934998Ab1IOVb5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 17:31:57 -0400
+	id S932126Ab1IOVby (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Sep 2011 17:31:54 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,389,1312182000"; 
-   d="scan'208";a="54195376"
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="48896184"
 From: Andi Kleen <andi@firstfloor.org>
 To: acme@ghostprotocols.net
 Cc: linux-kernel@vger.kernel.org, fweisbec@gmail.com, eranian@google.com,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 3/3] perf: Clarify -c help text
-Date: Thu, 15 Sep 2011 14:31:42 -0700
-Message-Id: <1316122302-24306-3-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 2/3] perf: Support setting the disassembler style
+Date: Thu, 15 Sep 2011 14:31:41 -0700
+Message-Id: <1316122302-24306-2-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1316122302-24306-1-git-send-email-andi@firstfloor.org>
 References: <1316122302-24306-1-git-send-email-andi@firstfloor.org>
@@ -25,72 +25,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Clarify what perf record/top -c actually does in the help text.
+Add -M option to report/annotate to pass directly to objdump.
+This allows to use -M intel for intel style disassembler syntax,
+which is useful for people who are very used to the Intel syntax.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- tools/perf/Documentation/perf-record.txt |    6 +++---
- tools/perf/Documentation/perf-top.txt    |    2 +-
- tools/perf/builtin-record.c              |    2 +-
- tools/perf/builtin-top.c                 |    2 +-
- 4 files changed, 6 insertions(+), 6 deletions(-)
+ tools/perf/Documentation/perf-annotate.txt |    3 +++
+ tools/perf/Documentation/perf-report.txt   |    3 +++
+ tools/perf/builtin-annotate.c              |    2 ++
+ tools/perf/builtin-report.c                |    2 ++
+ tools/perf/util/annotate.c                 |    6 +++++-
+ tools/perf/util/annotate.h                 |    2 ++
+ 6 files changed, 17 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
-index 5a520f8..f636cc8 100644
---- a/tools/perf/Documentation/perf-record.txt
-+++ b/tools/perf/Documentation/perf-record.txt
-@@ -72,9 +72,9 @@ OPTIONS
- --force::
- 	Overwrite existing data file. (deprecated)
+diff --git a/tools/perf/Documentation/perf-annotate.txt b/tools/perf/Documentation/perf-annotate.txt
+index 85c5f02..4a42c31 100644
+--- a/tools/perf/Documentation/perf-annotate.txt
++++ b/tools/perf/Documentation/perf-annotate.txt
+@@ -72,6 +72,9 @@ OPTIONS
+ 	CPUs are specified with -: 0-2. Default is to report samples on all
+ 	CPUs.
  
---c::
----count=::
--	Event period to sample.
-+-cN::
-+--count=N::
-+	Sample event every N occurrences.
++-M::
++--disassembler-style=:: Set disassembler style for objdump.
++
+ SEE ALSO
+ --------
+ linkperf:perf-record[1], linkperf:perf-report[1]
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index 04253c0..0407c8c 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -134,6 +134,9 @@ OPTIONS
+ 	CPUs are specified with -: 0-2. Default is to report samples on all
+ 	CPUs.
  
- -o::
- --output=::
-diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
-index f6eb1cd..b6043b0 100644
---- a/tools/perf/Documentation/perf-top.txt
-+++ b/tools/perf/Documentation/perf-top.txt
-@@ -23,7 +23,7 @@ OPTIONS
++-m::
++--disassembler-style=:: Set disassembler style for objdump.
++
+ SEE ALSO
+ --------
+ linkperf:perf-stat[1]
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index 555aefd..5b0a0ac 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -267,6 +267,8 @@ static const struct option options[] = {
+ 	OPT_BOOLEAN('P', "full-paths", &full_paths,
+ 		    "Don't shorten the displayed pathnames"),
+ 	OPT_STRING('c', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
++	OPT_STRING('M', "disassembler-style", &disassembler_style, "disassembler style",
++		   "Specify disassembler style (e.g. -M intel for intel syntax)"),
+ 	OPT_END()
+ };
  
- -c <count>::
- --count=<count>::
--	Event period to sample.
-+	Sample event every COUNT occurrences.
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index d7ff277..a0673ee 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -487,6 +487,8 @@ static const struct option options[] = {
+ 	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
+ 		    "Look for files with symbols relative to this directory"),
+ 	OPT_STRING('c', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
++	OPT_STRING('M', "disassembler-style", &disassembler_style, "disassembler style",
++		   "Specify disassembler style (e.g. -M intel for intel syntax)"),
+ 	OPT_END()
+ };
  
- -C <cpu-list>::
- --cpu=<cpu>::
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 042117f..22a9a27 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -761,7 +761,7 @@ const struct option record_options[] = {
- 		    "list of cpus to monitor"),
- 	OPT_BOOLEAN('f', "force", &force,
- 			"overwrite existing data file (deprecated)"),
--	OPT_U64('c', "count", &user_interval, "event period to sample"),
-+	OPT_U64('c', "count", &user_interval, "sample every COUNTS events"),
- 	OPT_STRING('o', "output", &output_name, "file",
- 		    "output file name"),
- 	OPT_BOOLEAN('i', "no-inherit", &no_inherit,
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index a43433f..79bfb5d 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -992,7 +992,7 @@ static const struct option options[] = {
- 		     "event selector. use 'perf list' to list available events",
- 		     parse_events_option),
- 	OPT_INTEGER('c', "count", &default_interval,
--		    "event period to sample"),
-+		    "sample event every N occurrences"),
- 	OPT_INTEGER('p', "pid", &top.target_pid,
- 		    "profile events on existing process id"),
- 	OPT_INTEGER('t', "tid", &top.target_tid,
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index e01af2b..6495966 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -16,6 +16,8 @@
+ #include "annotate.h"
+ #include <pthread.h>
+ 
++const char 	*disassembler_style;
++
+ int symbol__annotate_init(struct map *map __used, struct symbol *sym)
+ {
+ 	struct annotation *notes = symbol__annotation(sym);
+@@ -323,8 +325,10 @@ fallback:
+ 		 dso, dso->long_name, sym, sym->name);
+ 
+ 	snprintf(command, sizeof(command),
+-		 "objdump --start-address=0x%016" PRIx64
++		 "objdump %s%s --start-address=0x%016" PRIx64
+ 		 " --stop-address=0x%016" PRIx64 " -dS -C %s|grep -v %s|expand",
++		 disassembler_style ? "-M " : "",
++		 disassembler_style ? disassembler_style : "",
+ 		 map__rip_2objdump(map, sym->start),
+ 		 map__rip_2objdump(map, sym->end),
+ 		 symfs_filename, filename);
+diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
+index c2c2868..6ede128 100644
+--- a/tools/perf/util/annotate.h
++++ b/tools/perf/util/annotate.h
+@@ -100,4 +100,6 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
+ 			 int refresh);
+ #endif
+ 
++extern const char	*disassembler_style;
++
+ #endif	/* __PERF_ANNOTATE_H */
 -- 
 1.7.4.4
 
