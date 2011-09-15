@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933968Ab1IOO7t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 10:59:49 -0400
-Received: from home.keithp.com ([63.227.221.253]:57331 "EHLO keithp.com"
+	id S933975Ab1IOPAd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 11:00:33 -0400
+Received: from mail.agmk.net ([91.192.224.71]:44000 "EHLO mail.agmk.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756278Ab1IOO7r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 10:59:47 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linaro-dev@lists.linaro.org
-Cc: "Clark\, Rob" <rob@ti.com>, Archit Taneja <archit@ti.com>
-Subject: Re: Proposal for a low-level Linux display framework
-In-Reply-To: <1316088425.11294.78.camel@lappyti>
-References: <1316088425.11294.78.camel@lappyti>
-User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Thu, 15 Sep 2011 09:59:32 -0500
-Message-ID: <yunboul7sx7.fsf@aiko.keithp.com>
+	id S1756278Ab1IOPAc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Sep 2011 11:00:32 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Thu, 15 Sep 2011 17:00:27 +0200
+From: =?UTF-8?Q?Pawe=C5=82_Sikora?= <pluto@agmk.net>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Justin Piszcz <jpiszcz@lucidpixels.com>, Lin Ming <mlin@ss.pku.edu.cn>,
+        Andrew Morton <akpm@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>,
+        Dave Chinner <david@fromorbit.com>, Hugh Dickins <hughd@google.com>,
+        Alan Piszcz <ap@solarrain.com>
+Subject: Re: [BUG] infinite loop in =?UTF-8?Q?find=5Fget=5Fpages=28=29?=
+In-Reply-To: <1316088255.2893.1.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+References: <1315941801.2565.19.camel@edumazet-laptop>
+ <20110913165344.1d800582.akpm@google.com>
+ <CAF1ivSbCb-eS=npyHO+iWuAXfKPjnCD+LZDWQQ9SbTxGg3nq7Q@mail.gmail.com>
+ <3669551.Uo4Qe4YO2W@pawels>
+ <alpine.DEB.2.02.1109150708540.23647@p34.internal.lan>
+ <1316088255.2893.1.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Message-ID: <13f5e10e68df485139384151da0ec4ed@agmk.net>
+User-Agent: RoundCube Webmail/0.5.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+ On Thu, 15 Sep 2011 14:04:15 +0200, Eric Dumazet wrote:
+ 
+> Or just pull latest Linus tree. No need to repost those patches over 
+> and
+> over ;)
+>
+> from your local copy, do :
+>
+> git pull https://github.com/torvalds/linux.git
 
-On Thu, 15 Sep 2011 15:07:05 +0300, Tomi Valkeinen <tomi.valkeinen@ti.com> =
-wrote:
+ i'm using the 3.0.x line and mentioned patch won't be helpful 
+ (https://lkml.org/lkml/2011/9/14/271).
 
-> This was a very rough and quite short proposal, but I'm happy to improve
-> and extend it if it's not totally shot down.
-
-Jesse Barnes has put together a proposal much like this to work within
-the existing DRM environment. This is pretty much the last piece of
-missing mode-setting functionality that we know of, making DRM capable
-of fully supporting existing (and planned) devices.
-
-Here's a link to some older discussion on the issue, things have changed
-a bit since then and we had a long talk about this during the X
-Developers' Conference this week in Chicago. Expect an update to his
-proposal in the coming weeks.
-
-http://lists.freedesktop.org/archives/dri-devel/2011-April/010559.html
-
-=2D-=20
-keith.packard@intel.com
-
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iD8DBQFOchLUQp8BWwlsTdMRAm8uAJ9sgDb5o2PVt4z7BF94byaVY4P8jACgpvFP
-8CNUnoiylJ9Phg6SI0fLegU=
-=aRky
------END PGP SIGNATURE-----
---=-=-=--
