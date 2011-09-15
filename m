@@ -1,47 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934035Ab1IOPQM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 11:16:12 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:45402
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756395Ab1IOPQK (ORCPT
+	id S934031Ab1IOPTq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 11:19:46 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:43500 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933990Ab1IOPTp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 11:16:10 -0400
-Date: Thu, 15 Sep 2011 11:15:40 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Jan Kara <jack@suse.cz>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jan Beulich <JBeulich@suse.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
-        hch@infradead.org, axboe@kernel.dk, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]: xen/blkback: Add support for old BARRIER requests -
- 'feature-barrier', was "Help with implementing some form of barriers in 3.0
- kernels."
-Message-ID: <20110915151540.GA24348@infradead.org>
-References: <4E6F50170200007800055CF5@nat28.tlf.novell.com>
- <20110914085913.GB25628@phenom.oracle.com>
- <4E708C240200007800055FDF@nat28.tlf.novell.com>
- <20110914143247.GA17206@phenom.oracle.com>
- <20110914150102.GA18015@phenom.oracle.com>
- <4E70EEB302000078000561AE@nat28.tlf.novell.com>
- <20110915125111.GA18875@phenom.oracle.com>
- <4E72131B02000078000564AC@nat28.tlf.novell.com>
- <20110915142125.GB19897@phenom.oracle.com>
- <20110915151326.GA16195@quack.suse.cz>
+	Thu, 15 Sep 2011 11:19:45 -0400
+Message-ID: <4E721784.90302@metafoo.de>
+Date: Thu, 15 Sep 2011 17:19:32 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110818 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110915151326.GA16195@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+CC: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Graeme Gregory <gg@slimlogic.co.uk>,
+        Samuel Oritz <sameo@linux.intel.com>
+Subject: Re: [PATCH 6/6 v3] regmap: Incorporate the regcache core into regmap
+References: <1316082879-21810-1-git-send-email-dp@opensource.wolfsonmicro.com> <1316082879-21810-7-git-send-email-dp@opensource.wolfsonmicro.com>
+In-Reply-To: <1316082879-21810-7-git-send-email-dp@opensource.wolfsonmicro.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Btw, I'm really against exporting any of the low-level request/elevator
-code interfaces.  I have plans for huge changes in that area, and having
-someone poke into it is just a bad idea.
+> [...]
+> @@ -321,6 +333,18 @@ int regmap_write(struct regmap *map, unsigned int reg, unsigned int val)
+>  
+>  	mutex_lock(&map->lock);
+>  
+> +	if (!map->cache_bypass) {
+> +		ret = regcache_write(map, reg, val);
+> +		if (ret < 0) {
+> +			mutex_unlock(&map->lock);
+> +			return ret;
+> +		}
+> +		if (map->cache_only) {
+> +			mutex_unlock(&map->lock);
+> +			return 0;
+> +		}
+> +	}
+> +
 
-Try to take a look at the barrier era dm implementation of them, which
-did the draining on the bio layer and copy & paste that.
+Would it make sense to move this into _regmap_write ? In that case the code
+wouldn't have to be duplicated in regmap_update_bits and as a bonus it wouldn't
+have to deal with the mutex either.
+
+>  	ret = _regmap_write(map, reg, val);
+>  
+>  	mutex_unlock(&map->lock);
+> @@ -422,6 +446,14 @@ int regmap_read(struct regmap *map, unsigned int reg, unsigned int *val)
+>  
+>  	mutex_lock(&map->lock);
+>  
+> +	if (!map->cache_bypass) {
+> +		ret = regcache_read(map, reg, val);
+> +		if (!ret) {
+> +			mutex_unlock(&map->lock);
+> +			return 0;
+> +		}
+
+So in case regmap_readable is not true for this register regcache_read will
+return -EIO and we'll fallback to an uncached read. This doesn't make sense in
+my opinion. Or what are the except semantics regmap_readable supposed to be?
+
+> +	}
+> +
+>  	ret = _regmap_read(map, reg, val);
+>  
+>  	mutex_unlock(&map->lock);
 
