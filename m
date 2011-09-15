@@ -1,41 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933893Ab1IOOpN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 10:45:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39617 "EHLO mx2.suse.de"
+	id S933792Ab1IOOru (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 10:47:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14790 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753473Ab1IOOpM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 10:45:12 -0400
-Date: Thu, 15 Sep 2011 16:40:15 +0200
-From: Greg KH <gregkh@suse.de>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [PATCH] sysfs: add per pci device msi[x] irq listing
-Message-ID: <20110915144015.GC20602@suse.de>
-References: <1316025413-5855-1-git-send-email-nhorman@tuxdriver.com>
+	id S1753515Ab1IOOrt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Sep 2011 10:47:49 -0400
+Date: Thu, 15 Sep 2011 10:47:26 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: x86@kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Peter Zijlstra <peterz@infradead.org>, ying.huang@intel.com
+Cc: LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
+        avi@redhat.com, jeremy@goop.org
+Subject: Re: [V4][PATCH 6/6] x86, nmi: print out NMI stats in /proc/interrupts
+Message-ID: <20110915144726.GA5795@redhat.com>
+References: <1315947509-6429-1-git-send-email-dzickus@redhat.com>
+ <1315947509-6429-7-git-send-email-dzickus@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1316025413-5855-1-git-send-email-nhorman@tuxdriver.com>
+In-Reply-To: <1315947509-6429-7-git-send-email-dzickus@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 14, 2011 at 02:36:53PM -0400, Neil Horman wrote:
-> --- /dev/null
-> +++ b/Documentation/ABI/testing/sysfs-devices-msi_irqs
-> @@ -0,0 +1,17 @@
-> +What:		/sys/devices/.../power/
+On Tue, Sep 13, 2011 at 04:58:29PM -0400, Don Zickus wrote:
+> This is a cheap hack to add the stats to the middle of /proc/interrupts.
+> It is more of a conversation starter than anything as I am not sure
+> the right letters and place to put this stuff.
+> 
+> The benefit of these stats is a better breakdown of which list the NMIs
+> get handled in either a normal handler, unknown, or external.  It also
+> list the number of unknown NMIs swallowed to help check for false
+> positives or not.  Another benefit is the ability to actually see which
+> NMI handlers are currently registered in the system.
 
-I don't think this is the file that you are describing here :)
+I wanted to trying modifying this patch to add a /proc/nmi instead.
+In there I was thinking about putting per-NMI-handler stats.  However, I
+don't know how to dynamically allocate per-cpu memory (basically every
+time someone registers a handler, allocate a per-cpu chunk to track its
+stats).  Is this overkill?  Anyone have any ideas on how to do that?
 
-And I see you have not tried to remove a PCI device with this patch
-running, right?
+Cheers,
+Don
 
-Please do so and properly fix up the messages that the kernel spits at
-you.
-
-thanks,
-
-greg k-h
+> 
+> The output of 'cat /proc/interrupts/ will look like this:
+> 
+> <snip>
+>  58:        275          0        864          0   PCI-MSI-edge      eth0
+> NMI:       4161       4155        158       4194   Non-maskable interrupts
+> SWA:          0          0          0          0   Unknown NMIs swallowed
+>   0:       4161       4155        158       4194   NMI  PMI, arch_bt
+> UNK:          0          0          0          0   NMI
+> EXT:          0          0          0          0   NMI
+> LOC:      12653      13304      13974      12926   Local timer interrupts
+> SPU:          0          0          0          0   Spurious interrupts
+> PMI:          6          6          5          6   Performance monitoring interrupts
+> IWI:          0          0          0          0   IRQ work interrupts
+> RES:       1839       1897       1821       1854   Rescheduling interrupts
+> CAL:        524       2714        392        331   Function call interrupts
+> TLB:        217        146        593        576   TLB shootdowns
+> TRM:          0          0          0          0   Thermal event interrupts
+> THR:          0          0          0          0   Threshold APIC interrupts
+> MCE:          0          0          0          0   Machine check exceptions
+> MCP:          1          1          1          1   Machine check polls
+> ERR:          0
+> MIS:          0
+> 
+> Signed-off-by: Don Zickus <dzickus@redhat.com>
+> ---
+>  arch/x86/include/asm/nmi.h |    2 +
+>  arch/x86/kernel/irq.c      |    2 +
+>  arch/x86/kernel/nmi.c      |   47 ++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 51 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/nmi.h b/arch/x86/include/asm/nmi.h
+> index fc74547..a4f1945 100644
+> --- a/arch/x86/include/asm/nmi.h
+> +++ b/arch/x86/include/asm/nmi.h
+> @@ -24,6 +24,8 @@ void arch_trigger_all_cpu_backtrace(void);
+>  
+>  #define NMI_FLAG_FIRST	1
+>  
+> +void arch_show_nmi(struct seq_file *p, int prec);
+> +
+>  enum {
+>  	NMI_LOCAL=0,
+>  	NMI_UNKNOWN,
+> diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
+> index 6c0802e..44d1cac 100644
+> --- a/arch/x86/kernel/irq.c
+> +++ b/arch/x86/kernel/irq.c
+> @@ -16,6 +16,7 @@
+>  #include <asm/idle.h>
+>  #include <asm/mce.h>
+>  #include <asm/hw_irq.h>
+> +#include <asm/nmi.h>
+>  
+>  atomic_t irq_err_count;
+>  
+> @@ -55,6 +56,7 @@ int arch_show_interrupts(struct seq_file *p, int prec)
+>  	for_each_online_cpu(j)
+>  		seq_printf(p, "%10u ", irq_stats(j)->__nmi_count);
+>  	seq_printf(p, "  Non-maskable interrupts\n");
+> +	arch_show_nmi(p, prec);
+>  #ifdef CONFIG_X86_LOCAL_APIC
+>  	seq_printf(p, "%*s: ", prec, "LOC");
+>  	for_each_online_cpu(j)
+> diff --git a/arch/x86/kernel/nmi.c b/arch/x86/kernel/nmi.c
+> index 326886c..bfcb4b8 100644
+> --- a/arch/x86/kernel/nmi.c
+> +++ b/arch/x86/kernel/nmi.c
+> @@ -424,3 +424,50 @@ void restart_nmi(void)
+>  {
+>  	ignore_nmis--;
+>  }
+> +
+> +void arch_show_nmi(struct seq_file *p, int prec)
+> +{
+> +	int j;
+> +	struct nmiaction *action;
+> +
+> +	seq_printf(p, "%*s: ", prec, "SWA");
+> +        for_each_online_cpu(j)
+> +                seq_printf(p, "%10u ", per_cpu(nmi_stats.swallow, j));
+> +        seq_printf(p, "  Unknown NMIs swallowed\n");
+> +
+> +	seq_printf(p, "%*s: ", prec, "  0");
+> +        for_each_online_cpu(j)
+> +                seq_printf(p, "%10u ", per_cpu(nmi_stats.normal, j));
+> +        seq_printf(p, "  NMI");
+> +	action = (nmi_to_desc(NMI_LOCAL))->head;
+> +	if (action) {
+> +		seq_printf(p, "\t%s", action->name);
+> +		while ((action = action->next) != NULL)
+> +			seq_printf(p, ", %s", action->name);
+> +	}
+> +	seq_putc(p, '\n');
+> +
+> +	seq_printf(p, "%*s: ", prec, "UNK");
+> +        for_each_online_cpu(j)
+> +                seq_printf(p, "%10u ", per_cpu(nmi_stats.unknown, j));
+> +        seq_printf(p, "  NMI");
+> +	action = (nmi_to_desc(NMI_UNKNOWN))->head;
+> +	if (action) {
+> +		seq_printf(p, "\t%s", action->name);
+> +		while ((action = action->next) != NULL)
+> +			seq_printf(p, ", %s", action->name);
+> +	}
+> +	seq_putc(p, '\n');
+> +
+> +	seq_printf(p, "%*s: ", prec, "EXT");
+> +        for_each_online_cpu(j)
+> +                seq_printf(p, "%10u ", per_cpu(nmi_stats.external, j));
+> +        seq_printf(p, "  NMI");
+> +	action = (nmi_to_desc(NMI_EXTERNAL))->head;
+> +	if (action) {
+> +		seq_printf(p, "\t%s", action->name);
+> +		while ((action = action->next) != NULL)
+> +			seq_printf(p, ", %s", action->name);
+> +	}
+> +	seq_putc(p, '\n');
+> +}
+> -- 
+> 1.7.6
+> 
