@@ -1,245 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934194Ab1IOQeE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 12:34:04 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:57014 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934154Ab1IOQeC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 12:34:02 -0400
-Message-ID: <4E72284B.2040907@linux.vnet.ibm.com>
-Date: Thu, 15 Sep 2011 11:31:07 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
+	id S934205Ab1IOQnc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 12:43:32 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:62566 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934190Ab1IOQnb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Sep 2011 12:43:31 -0400
+Message-ID: <4E722B2D.4050307@gmail.com>
+Date: Thu, 15 Sep 2011 11:43:25 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110906 Thunderbird/7.0
 MIME-Version: 1.0
-To: Nitin Gupta <ngupta@vflare.org>
-CC: Greg KH <greg@kroah.com>, gregkh@suse.de, devel@driverdev.osuosl.org,
-        dan.magenheimer@oracle.com, cascardo@holoscopio.com,
-        linux-kernel@vger.kernel.org, dave@linux.vnet.ibm.com,
-        linux-mm@kvack.org, brking@linux.vnet.ibm.com, rcj@linux.vnet.ibm.com
-Subject: Re: [PATCH v2 0/3] staging: zcache: xcfmalloc support
-References: <1315404547-20075-1-git-send-email-sjenning@linux.vnet.ibm.com> <20110909203447.GB19127@kroah.com> <4E6ACE5B.9040401@vflare.org> <4E6E18C6.8080900@linux.vnet.ibm.com> <4E6EB802.4070109@vflare.org> <4E6F7DA7.9000706@linux.vnet.ibm.com> <4E6FC8A1.8070902@vflare.org>
-In-Reply-To: <4E6FC8A1.8070902@vflare.org>
+To: "Cousson, Benoit" <b-cousson@ti.com>
+CC: Thomas Abraham <thomas.abraham@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
+        "jamie@jamieiles.com" <jamie@jamieiles.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH 5/5] ARM: gic: add OF based initialization
+References: <1316017900-19918-1-git-send-email-robherring2@gmail.com> <1316017900-19918-6-git-send-email-robherring2@gmail.com> <CAJuYYwSFu2HC+u2NY41+yw9tEyy85RKa4Dpm3SL+jbwS_OOA0A@mail.gmail.com> <4E71CE5D.9030900@ti.com> <4E71F978.6020402@gmail.com> <4E72030F.1090300@ti.com>
+In-Reply-To: <4E72030F.1090300@ti.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-x-cbid: 11091516-5112-0000-0000-0000005CE4CC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Nitin,
+Benoit,
 
-So this is how I see things...
-
-Right now xvmalloc is broken for zcache's application because
-of its huge fragmentation for half the valid allocation sizes
-(> PAGE_SIZE/2).
-
-My xcfmalloc patches are _a_ solution that is ready now.  Sure,
-it doesn't so compaction yet, and it has some metadata overhead.
-So it's not "ideal" (if there is such I thing). But it does fix
-the brokenness of xvmalloc for zcache's application.
-
-So I see two ways going forward:
-
-1) We review and integrate xcfmalloc now.  Then, when you are
-done with your allocator, we can run them side by side and see
-which is better by numbers.  If yours is better, you'll get no
-argument from me and we can replace xcfmalloc with yours.
-
-2) We can agree on a date (sooner rather than later) by which your
-allocator will be completed.  At that time we can compare them and
-integrate the best one by the numbers.
-
-Which would you like to do?
-
---
-Seth
-
-On 09/13/2011 04:18 PM, Nitin Gupta wrote:
-> On 09/13/2011 11:58 AM, Seth Jennings wrote:
->> On 09/12/2011 08:55 PM, Nitin Gupta wrote:
-> 
+On 09/15/2011 08:52 AM, Cousson, Benoit wrote:
+> On 9/15/2011 3:11 PM, Rob Herring wrote:
+>> Benoit,
+>>
+>> On 09/15/2011 05:07 AM, Cousson, Benoit wrote:
+>>> Hi Rob,
+>>>
+>>> On 9/15/2011 9:55 AM, Thomas Abraham wrote:
+>>>> Hi Rob,
+>>>>
+>>>> On 14 September 2011 22:01, Rob Herring<robherring2@gmail.com>   wrote:
+>>>>> From: Rob Herring<rob.herring@calxeda.com>
 >>>>>
->>>>> With slab based approach, we can almost eliminate any metadata overhead,
->>>>> remove any free chunk merging logic, simplify compaction and so on.
+>>>>> This adds gic initialization using device tree data. The
+>>>>> initialization
+>>>>> functions are intended to be called by a generic OF interrupt
+>>>>> controller parsing function once the right pieces are in place.
 >>>>>
+>>>>> PPIs are handled using 3rd cell of interrupts properties to specify
+>>>>> the cpu
+>>>>> mask the PPI is assigned to.
+>>>>>
+>>>>> Signed-off-by: Rob Herring<rob.herring@calxeda.com>
+>>>>> ---
+>>>>>    Documentation/devicetree/bindings/arm/gic.txt |   53
+>>>>> ++++++++++++++++++++++++
+>>>>>    arch/arm/common/gic.c                         |   55
+>>>>> +++++++++++++++++++++++--
+>>>>>    arch/arm/include/asm/hardware/gic.h           |   10 +++++
+>>>>>    3 files changed, 114 insertions(+), 4 deletions(-)
+>>>>>    create mode 100644 Documentation/devicetree/bindings/arm/gic.txt
 >>>>
->>>> Just to align my understanding with yours, when I hear slab-based,
->>>> I'm thinking each page in the compressed memory pool will contain
->>>> 1 or more blocks that are all the same size.  Is this what you mean?
+>>>> [...]
 >>>>
->>>
->>>
->>> Yes, exactly.  The memory pool will consist of "superblocks" (typically
->>> 16K or 64K).
->>
->> A fixed superblock size would be an issue.  If you have a fixed superblock
->> size of 64k on a system that has 64k hardware pages, then we'll find 
->> ourselves in the same fragmentation mess as xvmalloc.  It needs to be 
->> relative to the hardware page size; say 4*PAGE_SIZE or 8*PAGE_SIZE.
->>
-> 
-> Yes, I meant some multiple of actual PAGE_SIZE.
-> 
->>> Each of these superblocks will contain objects of only one
->>> particular size (which is its size class).  This is the general
->>> structure of all slab allocators. In particular, I'm planning to use
->>> many of the ideas discussed in this paper:
->>> http://www.cs.umass.edu/~emery/hoard/asplos2000.pdf
->>>
->>> One major point to consider would be that these superblocks cannot be
->>> physically contiguous in our case, so we will have to do some map/unmap
->>> trickery.
->>
->> I assume you mean vm_map_ram() by "trickery".
->>
->> In my own experiments, I can tell you that vm_map_ram() is VERY expensive
->> wrt kmap_atomic().  I made a version of xvmalloc (affectionately called
->> "chunky xvmalloc") where I modified grow_pool() to allocate 4 0-order pages,
->> if it could, and group them into a "chunk" (what you are calling a
->> "superblock").  The first page in the chunk had a chunk header that contained
->> the array of page pointers that vm_map_ram() expects.  A block was 
->> identified by a page pointer to the first page in the chunk, and an offset
->> within the mapped area of the chunk.
->>
->> It... was... slow...
->>
->> Additionally, vm_map_ram() failed a lot because it actually allocates
->> memory of its own for the vmap_area.  In my tests, many pages slipped
->> through zcache because of this failure.
->>
->> Even worse, it uses GFP_KERNEL when alloc'ing the vmap_area which 
->> isn't safe under spinlock.
->>
->> It seems that the use of vm_map_ram() is a linchpin in this design.
->>
-> 
-> Real bad. So, we simply cannot use vm_map_ram().  Maybe we can come-up with
-> something that can map just two pages contiguously and provide kmap_atomic()
-> like characteristics?
-> 
->>> The basic idea is to link together individual pages
->>> (typically 4k) using underlying struct_page->lru to form superblocks and
->>> map/unmap objects on demand.
->>>
->>>> If so, I'm not sure how changing to a slab-based system would eliminate
->>>> metadata overhead or do away with memcpy()s.
 >>>>
->>>
->>>
->>> With slab based approach, the allocator itself need not store any
->>> metadata with allocated objects.  However, considering zcache and zram
->>> use-cases, the caller will still have to request additional space for
->>> per-object header: actual object size and back-reference (which
->>> inode/page-idx this object belongs to) needed for compaction.
->>>
->>
->> So the metadata still exists.  It's just zcache's metadata vs the
->> allocator's metadata.
->>
-> 
-> Yes, some little metadata still exists but we save storing previous, next
-> pointers in used objects.
-> 
->>> For free-list management, the underlying struct page and the free object
->>> space itself can be used. Some field in the struct page can point to the
->>> first free object in a page and free slab objects themselves will
->>> contain links to next/previous free objects in the page.
->>>
->>>> The memcpy()s are a side effect of having an allocation spread over
->>>> blocks in different pages.  I'm not seeing a way around this.
+>>>>> diff --git a/arch/arm/common/gic.c b/arch/arm/common/gic.c
+>>>>> index d1ccc72..14de380 100644
+>>>>> --- a/arch/arm/common/gic.c
+>>>>> +++ b/arch/arm/common/gic.c
 >>>>
->>>
->>>
->>> For slab objects than span 2 pages, we can use vm_map_ram() to
->>> temporarily map pages involved and read/write to objects directly. For
->>> objects lying entirely within a page, we can use much faster
->>> kmap_atomic() for access.
->>>
->>>
->>
->> See previous comment about vm_map_ram().  There is also an issue
->> here with a slab object being unreadable do to vm_map_ram() failing.
->>
-> 
-> I will try coming-up with some variant of kmap_atomic() which allows mapping
-> just two pages contiguously which is sufficient for our purpose.
-> 
->>>> It also follows that the blocks that make up an allocation must be in
->>>> a list of some kind, leading to some amount of metadata overhead.
+>>>> [...]
 >>>>
->>>
->>>
->>> Used objects need not be placed in any list.  For free objects we can use
->>> underlying struct page and free object space itself to manage free list,
->>> as described above.
->>>
->>
->> I assume this means that allocations consist of only one slab object as
->> opposed to multiple objects in slabs with different class sizes.
->>
->> In other words, if you have a 3k allocation and your slab
->> class sizes are 1k, 2k, and 4k, the allocation would have to
->> be in a single 4k object (with 25% fragmentation), not spanning
->> a 1k and 2k object, correct?
->>
->> This is something that I'm inferring from your description, but is key
->> to the design.  Please confirm that I'm understanding correctly.
->>
-> 
-> To rephrase the slab design: the memory pool is grown in units of superblocks
-> which is a (virtually) contiguous region of say, 4*PAGE_SIZE or 8*PAGE_SIZE.
-> Each of these superblocks is assigned to exactly one size class which is the
-> size of objects this superblock will store. For example, a superblock of size
-> 64K assigned to size-class 512B can store 64K/512B = 128 objects of size 512B;
-> it cannot store objects of any other size.
-> 
-> Considering your example, if we have size classes of say 1K, 2K and 4K and
-> superblock size is say 16K and we get allocation request for 3K, we will use
-> superblocks assigned to 4K size class. If we selected, say, an empty superblock,
-> the object will take 4K (1K wasted) leaving 16K-4K = 12K of free space in that
-> superblock.
-> 
-> To reduce such internal fragmentation, we can have closely spaced size-classes
-> (say, separated by 32 bytes) but there is a tradeoff here: if there are too many
-> size classes, we can waste lot of memory due to partially filled superblocks
-> in each of size classes and if they are too widely spaced, we can lot of
-> internal fragmentation.
-> 
->>>> If you want to do compaction, it follows that you can't give the user
->>>> a direct pointer to the data, since the location of that data may change.
->>>> In this case, an indirection layer is required (i.e. xcf_blkdesc and
->>>> xcf_read()/xcf_write()).
+>>>>> +void __init gic_of_init(struct device_node *node, struct device_node
+>>>>> *parent)
+>>>>> +{
+>>>>> +       void __iomem *cpu_base;
+>>>>> +       void __iomem *dist_base;
+>>>>> +       int irq;
+>>>>> +       struct irq_domain *domain =&gic_data[gic_cnt].domain;
+>>>>> +
+>>>>> +       if (WARN_ON(!node))
+>>>>> +               return;
+>>>>> +
+>>>>> +       dist_base = of_iomap(node, 0);
+>>>>> +       WARN(!dist_base, "unable to map gic dist registers\n");
+>>>>> +
+>>>>> +       cpu_base = of_iomap(node, 1);
+>>>>> +       WARN(!cpu_base, "unable to map gic cpu registers\n");
+>>>>> +
+>>>>> +       domain->nr_irq = gic_irq_count(dist_base);
+>>>>> +       domain->irq_base = irq_alloc_descs(-1, 0, domain->nr_irq,
+>>>>> numa_node_id());
 >>>>
+>>>> For exynos4, all the interrupts originating from GIC are statically
+>>>> mapped to start from 32 in the linux virq space (GIC SPI interrupts
+>>>> start from 64). In the above code, since irq_base would be 0 for
+>>>> exynos4, the interrupt mapping is not working correctly. In your
+>>>> previous version of the patch, you have given a option to the platform
+>>>> code to choose the offset. Could that option be added to this series
+>>>> also. Or a provision to use platform specific translate function
+>>>> instead of the irq_domain_simple translator.
 >>>
+>>> I have another concern on a similar topic.
 >>>
->>> Yes, we can't give a direct pointer anyways since pages used by the
->>> allocator are not permanently mapped (to save precious VA spave on
->>> 32-bit).  Still, we can save on much of metadata overhead and extra
->>> memcpy() as described above.
+>>> On OMAP4 the SoC interrupts external to the MPU (SPI) have an offset of
+>>> 32. Only the internal PPI are between 0 and 31.
 >>>
+>>> For the moment we add 32 to every SoC interrupts in the irq.h define,
+>>
+>> Those defines will not be used in the DT case. So the question is
+>> whether to add 32 or not in the DT. Since we have just a single node and
+>> a linear mapping of PPIs and SPIs, the only choice is to have SPIs start
+>> at 32. And from the h/w definition, SPIs always start at 32, so it's in
+>> agreement.
+> 
+> This is a agreement inside the MPUSS, but not outside.
+> Both Tegra and OMAP4 must add an offset to the HW irq number to deal
+> with that today.
+> 
+>>> but I'm assuming that this offset calculation should be done thanks to a
+>>> dedicated irq domain for the SPI.
+>>> The real HW physical number start at 0, and thus this is that value that
+>>> should be in the irq binding of the device.
+>>>
+>>> So ideally we should have a irq domain for the PPI starting at 0 and
+>>> another one for the SPI starting at 32. Or 32 and 64 for the exynos4
+>>> case, but it looks like the PPI/SPI offset is always 32.
 >>>
 >>
->> This isn't clear to me.  What would be returned by the malloc() call
->> in this design?  In other words, how does the caller access the
->> allocation?  You just said we can't give a direct access to the data
->> via a page pointer and an offset. What else is there to return other
->> than a pointer to metadata?
->>
+>> That offset of SPIs is always there. If you have a GIC as a secondary
+>> controller, It will have 32 reserved interrupts and the register layout
+>> is exactly the same as a cpu's GIC.
 > 
-> I meant that, since we cannot have allocator pages always mapped, we cannot
-> return a direct pointer (VA) to the allocated object. Instead, we can combine
-> page frame number (PFN) and offset within the page as a single 64-bit unsigned
-> number and return this as "object handle".
-> 
-> Thanks,
-> Nitin
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> Yep, but that's the GIC view and not the SoC one. My concern is to have
+> to tweak the HW number provided by the HW spec in order to add that offset.
+> If you look at SoC level, the MPUSS is just an IP that can be
+> potentially replaced by other one that will not have a GIC. In that case
+> you will not change the IRQ mapping at SoC level.
+> For example if you replace the Dual-cortexA9 by a single CortexA8, then
+> all the interrupts will have to be shifted by 32 just because the MPU
+> subsystem is different.
 > 
 
+Is that a realistic case? That would be a new chip and new device tree.
+You could argue that the whole peripheral subsystem DT could be reused
+and the numbering needs to be the same. However, there's one thing that
+would prevent that. The number of interrupt cells is defined by the
+controller binding. So you have to change the peripheral nodes anyway.
+
+It's good that OMAP is trying to standardize the peripheral layout, but
+in my experience that's not something you can rely on.
+
+At some point the interrupt numbering is going to differ from the h/w
+documentation. If it's not in the DT, then it will be in linux. Right
+now its just offset of 32, but if irqdescs get assigned on demand as PPC
+is doing, then there will be no relationship to the documentation.
+
+> Since that offset is dependent of the GIC internals and is not exposed
+> outside the MPUSS, it should not be visible by the SoC IPs. And the HW
+> spec is exposing exactly that.
+> 
+>> Since the idea of splitting PPIs for each core out to a flattened linux
+>> irq map has been abandoned, I see no reason to have more than 1 domain
+>> with a simple linear translation. Ultimately, domains will do dynamic
+>> irqdesc allocation and the translation within the gic will be completely
+>> dynamic.
+> 
+> I think the only reason to do that is to separate internal MPU
+> interrupts with the external ones that should not have a clue about the
+> GIC.
+
+I see 2 options (besides leaving it as is):
+
+- Revert back to my previous binding where PPIs are a sub-node and a
+different interrupt parent.
+
+- Use the current binding, but allow SPIs to start at 0. We can still
+distinguish PPIs and SPIs by the cpu mask cell. A cpu mask of 0 is a
+SPI. If there was ever a reason to have a cpu mask for an SPI, you would
+not be able to with this scheme.
+
+Either way you will still have the above issue with the cell size changing.
+
+Rob
