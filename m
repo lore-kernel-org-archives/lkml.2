@@ -1,204 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933647Ab1IOMv5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 08:51:57 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:37474 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751972Ab1IOMv4 (ORCPT
+	id S933579Ab1IOMyu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 08:54:50 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:44348 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933473Ab1IOMyt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 08:51:56 -0400
-Date: Thu, 15 Sep 2011 08:51:11 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>, hch@infradead.org, axboe@kernel.dk,
-        Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]: xen/blkback: Add support for old BARRIER requests -
- 'feature-barrier', was "Help with implementing some form of barriers in 3.0
- kernels."
-Message-ID: <20110915125111.GA18875@phenom.oracle.com>
-References: <20110907174832.GN32190@dumpdata.com>
- <4E6F50170200007800055CF5@nat28.tlf.novell.com>
- <20110914085913.GB25628@phenom.oracle.com>
- <4E708C240200007800055FDF@nat28.tlf.novell.com>
- <20110914143247.GA17206@phenom.oracle.com>
- <20110914150102.GA18015@phenom.oracle.com>
- <4E70EEB302000078000561AE@nat28.tlf.novell.com>
+	Thu, 15 Sep 2011 08:54:49 -0400
+Message-ID: <4E71F593.2040903@gmail.com>
+Date: Thu, 15 Sep 2011 07:54:43 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110906 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E70EEB302000078000561AE@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090201.4E71F4CD.0203,ss=1,re=0.000,fgs=0
+To: Thomas Abraham <thomas.abraham@linaro.org>
+CC: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
+        marc.zyngier@arm.com, jamie@jamieiles.com, b-cousson@ti.com,
+        shawn.guo@linaro.org, Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH 5/5] ARM: gic: add OF based initialization
+References: <1316017900-19918-1-git-send-email-robherring2@gmail.com> <1316017900-19918-6-git-send-email-robherring2@gmail.com> <CAJuYYwSFu2HC+u2NY41+yw9tEyy85RKa4Dpm3SL+jbwS_OOA0A@mail.gmail.com>
+In-Reply-To: <CAJuYYwSFu2HC+u2NY41+yw9tEyy85RKa4Dpm3SL+jbwS_OOA0A@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +	if (drain) {
-> > +		struct request_queue *q = bdev_get_queue(preq.bdev);
-> > +		unsigned long flags;
-> > +
-> > +		if (!q->elevator) {
-> > +			__end_block_io_op(pending_req, -EOPNOTSUPP);
-> > +			return -EOPNOTSUPP;
-> > +		}
+On 09/15/2011 02:55 AM, Thomas Abraham wrote:
+> Hi Rob,
 > 
-> You shouldn't return here - barrier requests may be "non-empty" (i.e.
-> carry data to be written), and hence you'd need to make sure the
-> writes get carried out nevertheless.
-
-In theory (and in practice) the 'feature-barrier' is set to zero
-if !q->elevator. So the frontend should not even try WRITE_BARRIER.
-
-I think the better approach will be to outright fail the WRITE_BARRIER
-request if 'feature-barrier=0' instead of just trying (which is what
-this tries).
-
-On a unrelated topic is what to do with devices which are bio based
-but not request based. From the DM directory, only multipath is capable
-of doing requests, while the rest are all bio. There is code to
-quisce the bio's: dm_suspend, but it is not apparent to me how to
-make it be exposed.
-
-
+> On 14 September 2011 22:01, Rob Herring <robherring2@gmail.com> wrote:
+>> From: Rob Herring <rob.herring@calxeda.com>
+>>
+>> This adds gic initialization using device tree data. The initialization
+>> functions are intended to be called by a generic OF interrupt
+>> controller parsing function once the right pieces are in place.
+>>
+>> PPIs are handled using 3rd cell of interrupts properties to specify the cpu
+>> mask the PPI is assigned to.
+>>
+>> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+>> ---
+>>  Documentation/devicetree/bindings/arm/gic.txt |   53 ++++++++++++++++++++++++
+>>  arch/arm/common/gic.c                         |   55 +++++++++++++++++++++++--
+>>  arch/arm/include/asm/hardware/gic.h           |   10 +++++
+>>  3 files changed, 114 insertions(+), 4 deletions(-)
+>>  create mode 100644 Documentation/devicetree/bindings/arm/gic.txt
 > 
-> Jan - this suggests that the placement isn't correct either: The
-> draining of the queue - as I understand it - should be happening
-> *after* these writes completed, not before they get started.
+> [...]
+> 
+> 
+>> diff --git a/arch/arm/common/gic.c b/arch/arm/common/gic.c
+>> index d1ccc72..14de380 100644
+>> --- a/arch/arm/common/gic.c
+>> +++ b/arch/arm/common/gic.c
+> 
+> [...]
+> 
+>> +void __init gic_of_init(struct device_node *node, struct device_node *parent)
+>> +{
+>> +       void __iomem *cpu_base;
+>> +       void __iomem *dist_base;
+>> +       int irq;
+>> +       struct irq_domain *domain = &gic_data[gic_cnt].domain;
+>> +
+>> +       if (WARN_ON(!node))
+>> +               return;
+>> +
+>> +       dist_base = of_iomap(node, 0);
+>> +       WARN(!dist_base, "unable to map gic dist registers\n");
+>> +
+>> +       cpu_base = of_iomap(node, 1);
+>> +       WARN(!cpu_base, "unable to map gic cpu registers\n");
+>> +
+>> +       domain->nr_irq = gic_irq_count(dist_base);
+>> +       domain->irq_base = irq_alloc_descs(-1, 0, domain->nr_irq, numa_node_id());
+> 
+> For exynos4, all the interrupts originating from GIC are statically
+> mapped to start from 32 in the linux virq space (GIC SPI interrupts
+> start from 64). In the above code, since irq_base would be 0 for
+> exynos4, the interrupt mapping is not working correctly. In your
+> previous version of the patch, you have given a option to the platform
+> code to choose the offset. Could that option be added to this series
+> also. Or a provision to use platform specific translate function
+> instead of the irq_domain_simple translator.
+> 
 
-So that looks like it should be just moved a bit, like this new patch:
+So I guess you have the A9 external nIRQ hooked up to another
+controller? Why can't the 0-31 interrupts get mapped to after the gic
+interrupts? Ultimately we want h/w irq numbers completely decoupled from
+linux irq numbers. So you will want to put that controller in devicetree
+and have an DT init function for it as well.
 
-commit 315c0cf1a5174b9aed494d7903133ce9ac76d6f1
-Author: Jan Kara <jack@suse.cz>
-Date:   Tue Sep 13 11:44:07 2011 +0100
+In anycase, there's a simple solution. You just need a call to
+irq_alloc_descs to reserve the first 32 interrupts before calling
+of_irq_init.
 
-    xen: Add support for old BARRIER requests to xenblk driver
-    
-    Recent kernels do not support BARRIER operation but only FLUSH operation. But
-    older xenblk frontends still use the BARRIER operation to achieve data
-    integrity requirements. So add support for BARRIER operation into xenblk
-    backend so that all guests do not corrupt their filesystem on host crash.
-    
-    Signed-off-by: Jan Kara <jack@suse.cz>
-    Signed-off-by: Jan Beulich <JBeulich@suse.com>
-    [v1: Added some extra functions, and other cases]
-    Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-
-diff --git a/block/elevator.c b/block/elevator.c
-index a3b64bc..b2143a8 100644
---- a/block/elevator.c
-+++ b/block/elevator.c
-@@ -616,6 +616,7 @@ void elv_drain_elevator(struct request_queue *q)
- 		       q->elevator->elevator_type->elevator_name, q->nr_sorted);
- 	}
- }
-+EXPORT_SYMBOL(elv_drain_elevator);
- 
- /*
-  * Call with queue lock held, interrupts disabled
-diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
-index 9713d5a..1df773c 100644
---- a/drivers/block/xen-blkback/blkback.c
-+++ b/drivers/block/xen-blkback/blkback.c
-@@ -464,6 +464,11 @@ static void __end_block_io_op(struct pending_req *pending_req, int error)
- 		pr_debug(DRV_PFX "flush diskcache op failed, not supported\n");
- 		xen_blkbk_flush_diskcache(XBT_NIL, pending_req->blkif->be, 0);
- 		pending_req->status = BLKIF_RSP_EOPNOTSUPP;
-+	} else if ((pending_req->operation == BLKIF_OP_WRITE_BARRIER) &&
-+		 (error == -EOPNOTSUPP)) {
-+		pr_debug(DRV_PFX "write barrier op failed, not supported\n");
-+		xen_blkbk_barrier(XBT_NIL, pending_req->blkif->be, 0);
-+		pending_req->status = BLKIF_RSP_EOPNOTSUPP;
- 	} else if (error) {
- 		pr_debug(DRV_PFX "Buffer not up-to-date at end of operation,"
- 			 " error=%d\n", error);
-@@ -590,6 +595,7 @@ static int dispatch_rw_block_io(struct xen_blkif *blkif,
- 	struct bio *biolist[BLKIF_MAX_SEGMENTS_PER_REQUEST];
- 	int i, nbio = 0;
- 	int operation;
-+	bool drain = false;
- 	struct blk_plug plug;
- 
- 	switch (req->operation) {
-@@ -601,6 +607,8 @@ static int dispatch_rw_block_io(struct xen_blkif *blkif,
- 		blkif->st_wr_req++;
- 		operation = WRITE_ODIRECT;
- 		break;
-+	case BLKIF_OP_WRITE_BARRIER:
-+		drain = true;
- 	case BLKIF_OP_FLUSH_DISKCACHE:
- 		blkif->st_f_req++;
- 		operation = WRITE_FLUSH;
-@@ -609,7 +617,6 @@ static int dispatch_rw_block_io(struct xen_blkif *blkif,
- 		blkif->st_ds_req++;
- 		operation = REQ_DISCARD;
- 		break;
--	case BLKIF_OP_WRITE_BARRIER:
- 	default:
- 		operation = 0; /* make gcc happy */
- 		goto fail_response;
-@@ -668,6 +675,17 @@ static int dispatch_rw_block_io(struct xen_blkif *blkif,
- 		}
- 	}
- 
-+	if (drain) {
-+		struct request_queue *q = bdev_get_queue(preq.bdev);
-+		unsigned long flags;
-+
-+		/* Emulate the original behavior of write barriers */
-+		spin_lock_irqsave(q->queue_lock, flags);
-+		elv_drain_elevator(q);
-+		__blk_run_queue(q);
-+		spin_unlock_irqrestore(q->queue_lock, flags);
-+	}
-+
- 	/*
- 	 * If we have failed at this point, we need to undo the M2P override,
- 	 * set gnttab_set_unmap_op on all of the grant references and perform
-diff --git a/drivers/block/xen-blkback/common.h b/drivers/block/xen-blkback/common.h
-index bfb532e..42b0e46 100644
---- a/drivers/block/xen-blkback/common.h
-+++ b/drivers/block/xen-blkback/common.h
-@@ -228,6 +228,8 @@ int xen_blkif_schedule(void *arg);
- 
- int xen_blkbk_flush_diskcache(struct xenbus_transaction xbt,
- 			      struct backend_info *be, int state);
-+int xen_blkbk_barrier(struct xenbus_transaction xbt,
-+		      struct backend_info *be, int state);
- 
- struct xenbus_device *xen_blkbk_xenbus(struct backend_info *be);
- 
-diff --git a/drivers/block/xen-blkback/xenbus.c b/drivers/block/xen-blkback/xenbus.c
-index 2b3aef0..b477aee 100644
---- a/drivers/block/xen-blkback/xenbus.c
-+++ b/drivers/block/xen-blkback/xenbus.c
-@@ -421,6 +421,20 @@ int xen_blkbk_flush_diskcache(struct xenbus_transaction xbt,
- 	return err;
- }
- 
-+int xen_blkbk_barrier(struct xenbus_transaction xbt,
-+		      struct backend_info *be, int state)
-+{
-+	struct xenbus_device *dev = be->dev;
-+	int err;
-+
-+	err = xenbus_printf(xbt, dev->nodename, "feature-barrier",
-+			    "%d", state);
-+	if (err)
-+		xenbus_dev_fatal(dev, err, "writing feature-barrier");
-+
-+	return err;
-+}
-+
- int xen_blkbk_discard(struct xenbus_transaction xbt, struct backend_info *be)
- {
- 	struct xenbus_device *dev = be->dev;
-@@ -706,6 +720,8 @@ again:
- 	if (err)
- 		goto abort;
- 
-+	err = xen_blkbk_barrier(xbt, be, be->blkif->vbd.flush_support);
-+
- 	err = xen_blkbk_discard(xbt, be);
- 
- 	err = xenbus_printf(xbt, dev->nodename, "sectors", "%llu",
+Rob
