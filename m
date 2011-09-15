@@ -1,68 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756165Ab1IOOAh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 10:00:37 -0400
-Received: from 6.mo2.mail-out.ovh.net ([87.98.165.38]:55870 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753892Ab1IOOAg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 10:00:36 -0400
-Date: Thu, 15 Sep 2011 15:23:01 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Sylwester Nawrocki <snjw23@gmail.com>
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>, Josh Wu <josh.wu@atmel.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org
-X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
-Subject: Re: [PATCH v2] [media] at91: add code to initialize and manage the
- ISI_MCK for Atmel ISI driver.
-Message-ID: <20110915132301.GK28104@game.jcrosoft.org>
-References: <1315288601-22384-1-git-send-email-josh.wu@atmel.com>
- <Pine.LNX.4.64.1109060803590.14818@axis700.grange>
- <20110906200512.GA15083@game.jcrosoft.org>
- <4E668BBF.4020600@gmail.com>
+	id S1756187Ab1IOOCN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 10:02:13 -0400
+Received: from mail.play-mail.info ([211.47.140.228]:57606 "EHLO
+	play-mail.info" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753892Ab1IOOCM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Sep 2011 10:02:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E668BBF.4020600@gmail.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 94575594050595807
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -200
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeftddrfeefucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmneculddquddttddm
+Message-Id: <1109152302113X.24017@mail.play-mail.info>
+Date: Thu, 15 Sep 2011 23:02:11 +0900
+From: =?UTF-8?B?c2hpZnQ5ODc2NUBnbWFpbC5jb20=?= <shift98765@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: Text/Plain;charset="utf-8"
+Subject: =?UTF-8?B?44KE44Gv44KK5pyI5pel44GM57WM44Gj44Gm44GX44G+44Gj44Gf44Gu44GM44GE44GR44Gq44GL44Gj44Gf44Gu44Gn44GX44KH44GG44GL77yf?=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id p8FE2RqK028949
 
-On 23:08 Tue 06 Sep     , Sylwester Nawrocki wrote:
-> On 09/06/2011 10:05 PM, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> >> I'm not entirely sure on this one, but as we had a similar situation with
-> >> clocks, we decided to extablish the clock hierarchy in the board code, and
-> >> only deal with the actual device clocks in the driver itself. I.e., we
-> >> moved all clk_set_parent() and setting up the parent clock into the board.
-> >> And I do think, this makes more sense, than doing this in the driver, not
-> >> all users of this driver will need to manage the parent clock, right?
-> >
-> > I don't like to manage the clock in the board except if it's manadatory otherwise
-> > we manage this at soc level
-> > 
-> > the driver does not have to manage the clock hierachy or detail implementation
-> > but manage the clock enable/disable and speed depending on it's need
-> 
-> We had a similar problem in the past and we ended up having the boot loader
-> setting up the parent clock for the device clock. The driver only controls clock
-> gating and sets its clock frequency based on an internal IP version information,
-> derived from the SoC revision.
-sorry NACK
+仮とは言え今はこのメールアドレスしか連絡手段がなく
+何度覗いても貴方からお返事が届いていないのが寂しいです。
+shift98765@gmail.com
+このメールアドレスにお返事すること躊躇っていらっしゃいますか？
 
-I do not want to rely on bootloader
-when we will have the DT we will pass it via it right now we need find an
-other generic way
 
-Best Regards,
-J.
+もう貴方には特定の相手が見つかってしまったのでしょうか…
+一度で良いのでお話がしたいのですが、どうしても難しいですか？
+
+ついこうして時間が取れると
+いつも貴方のことばかり考えてしまいます。
+私って女々しいですよね…ごめんなさい。
+
+だけどまだフラれたわけじゃないですし
+希望の光があると信じてますからね。
+１通のメールで安心出来るんです。
+
+このメールもいつまで使えるか分からないので
+また音信不通になる前に
+お返事いただけないでしょうか？  ���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
