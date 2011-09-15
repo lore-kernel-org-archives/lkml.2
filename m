@@ -1,72 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934469Ab1IOS64 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 14:58:56 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:37232 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S934457Ab1IOS6x (ORCPT
+	id S934448Ab1IOTES (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 15:04:18 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:46261 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754871Ab1IOTER (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 14:58:53 -0400
-Date: Thu, 15 Sep 2011 19:58:04 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: Alex Deucher <alexdeucher@gmail.com>, Keith Packard <keithp@keithp.com>,
-        linux-fbdev@vger.kernel.org, linaro-dev@lists.linaro.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Archit Taneja <archit@ti.com>, "Clark, Rob" <rob@ti.com>
-Subject: Re: Proposal for a low-level Linux display framework
-Message-ID: <20110915195804.4e6d965b@lxorguk.ukuu.org.uk>
-In-Reply-To: <4E724659.5080709@gmx.de>
-References: <1316088425.11294.78.camel@lappyti>
-	<yunboul7sx7.fsf@aiko.keithp.com>
-	<1316100594.23214.65.camel@deskari>
-	<yun8vpp7qk7.fsf@aiko.keithp.com>
-	<4E72320B.6020000@gmx.de>
-	<CADnq5_NnzLtJmSzOgyppnBtv96DRTJ71u6ZSrs56KJ-F5CC-mw@mail.gmail.com>
-	<4E724659.5080709@gmx.de>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 15 Sep 2011 15:04:17 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFxcibMZbEpJzP-LfV1aYFM-n9ctEqNMZ_k4XJxoZPfbrg@mail.gmail.com>
+References: <web-606439650@zbackend1.aha.ru> <CA+55aFwyC7s=YK10Wkpr+GzdukXp-JUtf_=MgWcrhBOtTg4eTg@mail.gmail.com>
+ <web-606798161@zbackend1.aha.ru> <CA+55aFwBuySWa2VErrfud_SFqyfT5ib+Qfq9gWBaBz=cQ6VcHg@mail.gmail.com>
+ <web-606831561@zbackend1.aha.ru> <CAObL_7F2Pu0K1Oe3oLe5Pef2kaGE8vdO2qgfc0KEt8TJdUaOWg@mail.gmail.com>
+ <CAObL_7E0iyinOyXU=uQHyQN+TBNmVVB89r_hQUb8LTqJ2ix_5A@mail.gmail.com>
+ <CA+55aFzay+U5JA0Q6vdjmV73yG0OUXnO_zi6Q0c6iTkmozSSiw@mail.gmail.com>
+ <web-607296211@zbackend1.aha.ru> <CAObL_7HAxg0j3ywpTy1-5Y5vBBQLSTiF7AZ0bctRsPOLKA8ZNA@mail.gmail.com>
+ <CA+55aFwEKNEN8QPpBhAkDQ4UGFtSDtpdwFRSkTvnhaYRTmrsOA@mail.gmail.com>
+ <CAObL_7Gjk91MFSwbaMnfdxwrM0mDGxWtDBaKMoimg2FSUqjAUg@mail.gmail.com>
+ <CA+55aFxmW7rFEpanD-ngB-Egx5j1q8b_u31Keo3+s-TJ13UZGA@mail.gmail.com> <CA+55aFxcibMZbEpJzP-LfV1aYFM-n9ctEqNMZ_k4XJxoZPfbrg@mail.gmail.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Thu, 15 Sep 2011 11:56:35 -0700
+X-Google-Sender-Auth: LQh93SprC3kRAvwtRvCb_KJUMlc
+Message-ID: <CAObL_7FpzpEcW=Q5Ch0YF3qQC4MTNJ-fOnZJVLRdTwGthJTcPg@mail.gmail.com>
+Subject: Re: 3.1-rc6 boot problem reason searching
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        werner <w.landgraf@ru.ru>
+Content-Type: multipart/mixed; boundary=e89a8f5037a2bfa9db04acff70d3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Well, I rather think that the fb API is more user centric to allow every program
-> to use it directly in contrast to the KMS/DRM API which aims to support every
-> feature the hardware has. For this the fb API should not change much, but I
-> understand some additions were needed for some special users, probably limited
-> to X and wayland.
+--e89a8f5037a2bfa9db04acff70d3
+Content-Type: text/plain; charset=ISO-8859-1
 
-Wayland needs vblank frame buffer switching and the like. Likewise given
-you want to composite buffers really any serious accelerated device ends
-up needing a full memory manager and that ends up needing a buffer
-manager. Wayland needs clients to be doing their own rendering into
-objects which means authorisation and management of the render engine
-which ends up looking much like DRM.
+On Thu, Sep 15, 2011 at 11:23 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Thu, Sep 15, 2011 at 11:15 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>>
+>> It *used* to have an alignment of 8 back before your patch to make the
+>> pointers be relative due to the 64-bit pointers. But now all fields
+>> are 32-bit, and it could easily have a size of just 12 bytes, getting
+>> rid of the 'pad2' field, and getting rid of the '.balign 8's.
+>
+> IOW, maybe the correct patch is just the attached one.
+>
+> Werner, does this fix the boot for you? It gets rid of all the bogus
+> alignment stuff, it's all wrong anyway, the altinstructions section
+> entries are all 12 bytes long so it starts out sufficiently aligned,
+> and it *stays* aligned because if anybody ever adds a non-12-byte
+> entry that would be a huge bug regardless. So any extra alignment is
+> just likely to be buggy and hide much bigger issues.
+>
+> This is COMPLETELY UNTESTED, just looking at the source.
 
-> One of my biggest problems with KMS is that it has (naturally) a lot more
-> complexity than the fb API which leads to instability. Basically it's very
+If you want to apply it this late, fine with me.  It looks generally
+sane, but I haven't tested it.
 
-It shouldn't do - and a sample of one (your machine) is not a
-statistically valid set. Fb is pretty much ununsable in contrast on my
-main box, but that's not a statistically valid sample either.
+OTOH, I have tested the attached minimal patch on 32-bit and 64-bit.
 
-I'm not that convinced by the complexity either. For a simple video card
-setup such as those that the fb layer can kind of cope with (ie linear
-buffer, simple mode changes, no client rendering, no vblank flipping,
-limited mode management, no serious multi-head) a DRM driver is also
-pretty tiny and simple.
+--Andy
 
-> Well, I think it's too late to really fix this thing. We now have 3 APIs in the
-> kernel that have to be kept. Probably the best we can do now is figure out how
-> we can reduce code duplication and do extensions to those APIs in a way that
-> they are compatible with each other or completely independent and can be used
-> across the APIs.
+--e89a8f5037a2bfa9db04acff70d3
+Content-Type: text/x-patch; charset=US-ASCII; name="my_patch.diff"
+Content-Disposition: attachment; filename="my_patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gsm3op5o1
 
-I think it comes down to 'when nobody is using the old fb drivers they can
-drop into staging and oblivion'. Right now the fb layer is essentially
-compatibility glue on most modern x86 platforms.
-
-Alan
+Y29tbWl0IGI1NjRhNmFhZGI3NGQ3MjdjNjllYzQ3YTQwZGNjODFmMTc2OTkyMTQKQXV0aG9yOiBB
+bmR5IEx1dG9taXJza2kgPGx1dG9AbWl0LmVkdT4KRGF0ZTogICBUaHUgU2VwIDE1IDEwOjUyOjA1
+IDIwMTEgLTA3MDAKCiAgICB4ODY6IEZpeCBhbHRpbnN0cnVjdGlvbl9lbnRyeSBhbGlnbm1lbnQg
+b24gMzItYml0IGJ1aWxkcwogICAgCiAgICBUaGUgYWxpZ25tZW50IHNob3VsZCBiZSA0IG9uIDMy
+IGJpdCBidWlsZHMgYW5kIDggb24gNjQtYml0IGJ1aWxkcy4KICAgIFRoaXMgZml4ZXMgYSBmYWls
+dXJlIHRvIGJvb3Qgb24gc29tZSBjb25maWd1cmF0aW9ucy4KICAgIAogICAgU2lnbmVkLW9mZi1i
+eTogQW5keSBMdXRvbWlyc2tpIDxsdXRvQG1pdC5lZHU+CgpkaWZmIC0tZ2l0IGEvYXJjaC94ODYv
+aW5jbHVkZS9hc20vYWx0ZXJuYXRpdmUtYXNtLmggYi9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9hbHRl
+cm5hdGl2ZS1hc20uaAppbmRleCA0NTU0Y2M2Li5kMDBkYzJhIDEwMDY0NAotLS0gYS9hcmNoL3g4
+Ni9pbmNsdWRlL2FzbS9hbHRlcm5hdGl2ZS1hc20uaAorKysgYi9hcmNoL3g4Ni9pbmNsdWRlL2Fz
+bS9hbHRlcm5hdGl2ZS1hc20uaApAQCAtMTYsNyArMTYsNyBAQAogI2VuZGlmCiAKIC5tYWNybyBh
+bHRpbnN0cnVjdGlvbl9lbnRyeSBvcmlnIGFsdCBmZWF0dXJlIG9yaWdfbGVuIGFsdF9sZW4KLQku
+YWxpZ24gOAorCV9BU01fQUxJR04KIAkubG9uZyBcb3JpZyAtIC4KIAkubG9uZyBcYWx0IC0gLgog
+CS53b3JkIFxmZWF0dXJlCg==
+--e89a8f5037a2bfa9db04acff70d3--
