@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934518Ab1IOT2u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 15:28:50 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:37922 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S934209Ab1IOT2s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 15:28:48 -0400
-Date: Thu, 15 Sep 2011 20:28:00 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: Alex Deucher <alexdeucher@gmail.com>, Keith Packard <keithp@keithp.com>,
-        linux-fbdev@vger.kernel.org, linaro-dev@lists.linaro.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Archit Taneja <archit@ti.com>, "Clark, Rob" <rob@ti.com>
-Subject: Re: Proposal for a low-level Linux display framework
-Message-ID: <20110915202800.6320826a@lxorguk.ukuu.org.uk>
-In-Reply-To: <4E724F93.1050203@gmx.de>
-References: <1316088425.11294.78.camel@lappyti>
-	<yunboul7sx7.fsf@aiko.keithp.com>
-	<1316100594.23214.65.camel@deskari>
-	<yun8vpp7qk7.fsf@aiko.keithp.com>
-	<4E72320B.6020000@gmx.de>
-	<CADnq5_NnzLtJmSzOgyppnBtv96DRTJ71u6ZSrs56KJ-F5CC-mw@mail.gmail.com>
-	<4E724659.5080709@gmx.de>
-	<20110915195804.4e6d965b@lxorguk.ukuu.org.uk>
-	<4E724F93.1050203@gmx.de>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S934524Ab1IOTax (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 15:30:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21243 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934429Ab1IOTaw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Sep 2011 15:30:52 -0400
+Date: Thu, 15 Sep 2011 15:30:18 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: Rudolf Marek <r.marek@assembler.cz>
+Subject: coretemp breaks lockdep. (MAX_LOCKDEP_ENTRIES too low!)
+Message-ID: <20110915193018.GA10256@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Rudolf Marek <r.marek@assembler.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> As you have DRM now and as I'm not interested in wayland I won't discuss this,
-> but I guess it might be a good start for Geert's question what would be needed
-> to use it on dumb framebuffers.
+just had a user report this against rc6..
 
-GMA500 is basically a 2D or dumb frame buffer setup but with a lot of
-rather complicated output and memory management required due to the
-hardware. With the latest changes to GEM (private objects) it's basically
-trivial to use the frame buffer management interfaces.
+# while true; do rmmod coretemp; modprobe coretemp; done
 
-> Yes, if you limit DRM to the functionality of the fb API I guess you could reach
-> the same stability level. But where can I do this? Where is a option to forbid
-> all acceleration or at least limit to the acceleration that can be done without
-> any risk?
 
-A driver can provide such module options as it wants.
+[15811.924167] BUG: MAX_LOCKDEP_ENTRIES too low!
+[15811.924171] turning off the locking correctness validator.
+[15811.924175] Pid: 10598, comm: modprobe Not tainted 3.1.0-rc6+ #5
+[15811.924178] Call Trace:
+[15811.924187]  [<ffffffff81081205>] ? up+0x39/0x3e
+[15811.924193]  [<ffffffff8108e556>] add_lock_to_list.constprop.22+0x45/0xa7
+[15811.924198]  [<ffffffff81090c05>] __lock_acquire+0xb7f/0xd0c
+[15811.924204]  [<ffffffff81091594>] ? mark_held_locks+0x6d/0x95
+[15811.924210]  [<ffffffff814e27d5>] ? __slab_alloc+0x41c/0x43d
+[15811.924216]  [<ffffffff812701d0>] ? kobject_add_internal+0x9b/0x18c
+[15811.924221]  [<ffffffff81091295>] lock_acquire+0xf3/0x13e
+[15811.924225]  [<ffffffff812701d0>] ? kobject_add_internal+0x9b/0x18c
+[15811.924230]  [<ffffffff812701d0>] ? kobject_add_internal+0x9b/0x18c
+[15811.924236]  [<ffffffff814e96a3>] _raw_spin_lock+0x40/0x73
+[15811.924241]  [<ffffffff812701d0>] ? kobject_add_internal+0x9b/0x18c
+[15811.924245]  [<ffffffff8127012e>] ? kobject_get+0x18/0x1f
+[15811.924250]  [<ffffffff812701d0>] kobject_add_internal+0x9b/0x18c
+[15811.924255]  [<ffffffff812705fa>] kobject_add+0x91/0xa2
+[15811.924260]  [<ffffffff814c5afd>] ? klist_init+0x33/0x46
+[15811.924265]  [<ffffffff81337bc3>] device_add+0xd5/0x576
+[15811.924271]  [<ffffffff81336ac3>] ? dev_set_name+0x41/0x43
+[15811.924277]  [<ffffffff8133b8f1>] platform_device_add+0x111/0x15b
+[15811.924283]  [<ffffffffa0606cbd>] get_core_online+0x9b/0x143 [coretemp]
+[15811.924290]  [<ffffffffa0050000>] ? 0xffffffffa004ffff
+[15811.924296]  [<ffffffffa005004b>] coretemp_init+0x4b/0x1000 [coretemp]
+[15811.924302]  [<ffffffffa0050000>] ? 0xffffffffa004ffff
+[15811.924308]  [<ffffffff81002099>] do_one_initcall+0x7f/0x13a
+[15811.924313]  [<ffffffffa0050000>] ? 0xffffffffa004ffff
+[15811.924319]  [<ffffffff8109cacf>] sys_init_module+0x114/0x267
+[15811.924324]  [<ffffffff814f0202>] system_call_fastpath+0x16/0x1b
 
-> That's a really difficult question. Determining the users is difficult and there
-> are people that use their hardware very long, for example we are about to get a
-> new driver for i740. For the framebuffer infrastructure I guess you have to at
-> least wait for my death.
-
-I doubt it'll be that long - but you are right it will take time and
-there isn't really any need to push or force it. These things take care
-of themselves and in time nobody will care about the old fb stuff, either
-because DRM covers it all or equally possibly because it doesn't support
-3D holographic projection 8)
-
-Alan
