@@ -1,78 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753822Ab1IOCQM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 22:16:12 -0400
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:39236 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753448Ab1IOCQH (ORCPT
+	id S1753871Ab1IOCRK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 22:17:10 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:17776 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753448Ab1IOCRH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 22:16:07 -0400
-Message-ID: <4E715FE2.7040004@tao.ma>
-Date: Thu, 15 Sep 2011 10:16:02 +0800
-From: Tao Ma <tm@tao.ma>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Shaohua Li <shli@kernel.org>
-CC: linux-kernel@vger.kernel.org, Jens Axboe <jaxboe@fusionio.com>
-Subject: Re: [PATCH RESEND] block: Don't check QUEUE_FLAG_SAME_COMP in __blk_complete_request.
-References: <1315984992-5158-1-git-send-email-tm@tao.ma>	<1315984992-5158-2-git-send-email-tm@tao.ma> <CANejiEWa5um5LtRkL3NcbNgBnUCG1Ud8qw-hfXW3X3GPfHv4iQ@mail.gmail.com>
-In-Reply-To: <CANejiEWa5um5LtRkL3NcbNgBnUCG1Ud8qw-hfXW3X3GPfHv4iQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 182.92.247.2 authed with tm@tao.ma}
+	Wed, 14 Sep 2011 22:17:07 -0400
+X-AuditID: cbfee61b-b7b7fae000005864-94-4e716020d42a
+Date: Thu, 15 Sep 2011 11:17:03 +0900
+From: Sangbeom Kim <sbkim73@samsung.com>
+Subject: RE: [PATCH] ASoC: samsung: Fix checking return value of clk_get
+In-reply-to: <1315925062.6042.1.camel@phoenix>
+To: "'Axel Lin'" <axel.lin@gmail.com>, linux-kernel@vger.kernel.org
+Cc: "'Christian Pellegrin'" <chripell@evolware.org>,
+        "'Ben Dooks'" <ben@simtec.co.uk>,
+        "'Jassi Brar'" <jassisinghbrar@gmail.com>,
+        "'Liam Girdwood'" <lrg@ti.com>,
+        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org
+Message-id: <00ba01cc734d$8f9bf320$aed3d960$@com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=UTF-8
+Content-language: ko
+Content-transfer-encoding: 7BIT
+Thread-index: AcxyI6hNlLM3/la2QeS5fUpgHcuI4gBIGgGg
+References: <1315925062.6042.1.camel@phoenix>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/15/2011 09:05 AM, Shaohua Li wrote:
-> 2011/9/14 Tao Ma <tm@tao.ma>:
->> From: Tao Ma <boyu.mt@taobao.com>
->>
->> In __blk_complete_request, we check both QUEUE_FLAG_SAME_COMP and req->cpu
->> to decide whether we should use req->cpu. Actually the user can also
->> select the complete cpu by either setting BIO_CPU_AFFINE or by calling
->> bio_set_completion_cpu. Current solution makes these 2 ways don't work
->> any more. So we'd better just check req->cpu.
->>
->> Cc: Jens Axboe <jaxboe@fusionio.com>
->> Signed-off-by: Tao Ma <boyu.mt@taobao.com>
->> ---
->>  block/blk-softirq.c |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/block/blk-softirq.c b/block/blk-softirq.c
->> index 58340d0..1366a89 100644
->> --- a/block/blk-softirq.c
->> +++ b/block/blk-softirq.c
->> @@ -115,7 +115,7 @@ void __blk_complete_request(struct request *req)
->>        /*
->>         * Select completion CPU
->>         */
->> -       if (test_bit(QUEUE_FLAG_SAME_COMP, &q->queue_flags) && req->cpu != -1) {
->> +       if (req->cpu != -1) {
->>                ccpu = req->cpu;
->>                if (!test_bit(QUEUE_FLAG_SAME_FORCE, &q->queue_flags)) {
->>                        ccpu = blk_cpu_to_group(ccpu);
-> why not delete bio_set_completion_cpu()?
-Not sure. It is added in commit c7c22e4d from the very beginning, and in
-the commit log Jens described it as:
-A bio helper (bio_set_completion_cpu()) is also added, so that queuers
-can ask for completion on that specific CPU. Maybe it is obsolete.
-Anyway, I am fine to generate a patch to remove it if you prefer.
-> 1. nobody uses it in my search
-yes, but it may be designed for someone to use it. The same goes with
-BIO_CPU_AFFINE.
-> 2. it's misleading. even setting the completion cpu, the bio isn't
-> always to run finish in the cpu,
-> it's just run in the group of the cpu.
-Without this patch, it works as you said.
-But with this patch, it the user uses bio_set_completion_cpu and
-QUEUE_FLAG_SAME_FORCE isn't set, the completion will happen in the
-req->cpu the user specified.
+On Tue, 2011-09-13 at 22:44 +0800, Axel Lin wrote:
+>  	s3c2412_i2s.iis_cclk = clk_get(dai->dev, "i2sclk");
+> -	if (s3c2412_i2s.iis_cclk == NULL) {
+> +	if (IS_ERR(s3c2412_i2s.iis_cclk)) {
+>  		pr_err("failed to get i2sclk clock\n");
+>  		iounmap(s3c2412_i2s.regs);
+>  		return -ENODEV;
+Why don't you use PTR_ERR() for return value?
 
-Jens,
-	Do you have any option for it? Whether we should preserve it and make
-it work or just totally remove it?
+> diff --git a/sound/soc/samsung/s3c24xx-i2s.c b/sound/soc/samsung/s3c24xx-
+> i2s.c
+> index 63d8849..9f888bc 100644
+> --- a/sound/soc/samsung/s3c24xx-i2s.c
+> +++ b/sound/soc/samsung/s3c24xx-i2s.c
+> @@ -383,7 +383,7 @@ static int s3c24xx_i2s_probe(struct snd_soc_dai *dai)
+>  		return -ENXIO;
+> 
+>  	s3c24xx_i2s.iis_clk = clk_get(dai->dev, "iis");
+> -	if (s3c24xx_i2s.iis_clk == NULL) {
+> +	if (IS_ERR(s3c24xx_i2s.iis_clk)) {
+>  		pr_err("failed to get iis_clock\n");
+>  		iounmap(s3c24xx_i2s.regs);
+>  		return -ENODEV;
+Ditto
 
-Thanks
-Tao
+> diff --git a/sound/soc/samsung/s3c24xx_uda134x.c
+> b/sound/soc/samsung/s3c24xx_uda134x.c
+> index dc9d551..4da57cd 100644
+> --- a/sound/soc/samsung/s3c24xx_uda134x.c
+> +++ b/sound/soc/samsung/s3c24xx_uda134x.c
+> @@ -66,13 +66,13 @@ static int s3c24xx_uda134x_startup(struct
+> snd_pcm_substream *substream)
+>  	pr_debug("%s %d\n", __func__, clk_users);
+>  	if (clk_users == 0) {
+>  		xtal = clk_get(&s3c24xx_uda134x_snd_device->dev, "xtal");
+> -		if (!xtal) {
+> +		if (IS_ERR(xtal)) {
+>  			printk(KERN_ERR "%s cannot get xtal\n", __func__);
+>  			ret = -EBUSY;
+Ditto
+
+>  		} else {
+>  			pclk = clk_get(&s3c24xx_uda134x_snd_device->dev,
+>  				       "pclk");
+> -			if (!pclk) {
+> +			if (IS_ERR(pclk)) {
+>  				printk(KERN_ERR "%s cannot get pclk\n",
+>  				       __func__);
+>  				clk_put(xtal);
+> --
+> 1.7.4.1
+> 
+
+Thanks,
+
+Sangbeom
+
