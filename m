@@ -1,55 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933545Ab1IOMqh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 08:46:37 -0400
-Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:35434 "EHLO
-	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751972Ab1IOMqg (ORCPT
+	id S933591Ab1IOMqt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 08:46:49 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:7253 "EHLO
+	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933533Ab1IOMqr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 08:46:36 -0400
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Samuel Ortiz <samuel.ortiz@intel.com>, Dmitry Torokhov <dtor@mail.ru>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Misael Lopez Cruz <misael.lopez@ti.com>
-Subject: [PATCH 07/17] ASoC: twl6040: Lower the initial gains
-Date: Thu, 15 Sep 2011 15:39:29 +0300
-Message-Id: <1316090379-30760-8-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.7.6.1
-In-Reply-To: <1316090379-30760-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1316090379-30760-1-git-send-email-peter.ujfalusi@ti.com>
+	Thu, 15 Sep 2011 08:46:47 -0400
+X-SpamScore: -17
+X-BigFish: VS-17(zz9371K542M1432N98dKzz1202hzz8275dhz2dh2a8h668h839h8e2h8e3h944h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Sethi Varun-B16395 <B16395@freescale.com>
+To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+CC: Joerg Roedel <joro@8bytes.org>, Greg KH <gregkh@suse.de>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        David Brown <davidb@codeaurora.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 02/10] Driver core: Add iommu_ops to bus_type
+Thread-Topic: [PATCH 02/10] Driver core: Add iommu_ops to bus_type
+Thread-Index: AQHMbX1KEHbH2ksOTkK6XUaJZsZynZVCliAAgAAIzICABw2cQIAAXVGAgARjHbA=
+Date: Thu, 15 Sep 2011 12:45:35 +0000
+Message-ID: <F1FD01C1EFCE15408DBF59462450B3BD1CF87C@039-SN1MPN1-006.039d.mgd.msft.net>
+References: <1315410113-26608-1-git-send-email-joerg.roedel@amd.com>
+ <1315410113-26608-3-git-send-email-joerg.roedel@amd.com>
+ <20110907184750.GA920@suse.de> <20110907191919.GA31674@8bytes.org>
+ <F1FD01C1EFCE15408DBF59462450B3BD1C4658@039-SN1MPN1-006.039d.mgd.msft.net>
+ <20110912123551.GA11701@amd.com>
+In-Reply-To: <20110912123551.GA11701@amd.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [122.163.200.245]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The default gains on outputs/inputs are set to 0dB.
-To be able to handle pop noise better, we need to lower
-the gains on controls, where it is possible.
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- sound/soc/codecs/twl6040.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/sound/soc/codecs/twl6040.c b/sound/soc/codecs/twl6040.c
-index 987d9c9..1f6068b 100644
---- a/sound/soc/codecs/twl6040.c
-+++ b/sound/soc/codecs/twl6040.c
-@@ -269,6 +269,13 @@ static void twl6040_init_chip(struct snd_soc_codec *codec)
- 	/* No imput selected for microphone amplifiers */
- 	twl6040_write_reg_cache(codec, TWL6040_REG_MICLCTL, 0x18);
- 	twl6040_write_reg_cache(codec, TWL6040_REG_MICRCTL, 0x18);
-+
-+	/* Lower the gains */
-+	twl6040_write_reg_cache(codec, TWL6040_REG_HSGAIN, 0xff);
-+	twl6040_write_reg_cache(codec, TWL6040_REG_EARCTL, 0x1e);
-+	twl6040_write_reg_cache(codec, TWL6040_REG_HFLGAIN, 0x1d);
-+	twl6040_write_reg_cache(codec, TWL6040_REG_HFRGAIN, 0x1d);
-+	twl6040_write_reg_cache(codec, TWL6040_REG_LINEGAIN, 0);
- }
+> -----Original Message-----
+> From: Roedel, Joerg [mailto:Joerg.Roedel@amd.com]
+> Sent: Monday, September 12, 2011 6:06 PM
+> To: Sethi Varun-B16395
+> Cc: Joerg Roedel; Greg KH; iommu@lists.linux-foundation.org; Alex
+> Williamson; Ohad Ben-Cohen; David Woodhouse; David Brown;
+> kvm@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH 02/10] Driver core: Add iommu_ops to bus_type
+> 
+> On Mon, Sep 12, 2011 at 08:08:41AM -0400, Sethi Varun-B16395 wrote:
+> > > The IOMMUs are usually devices on the bus itself, so they are
+> > > initialized after the bus is set up and the devices on it are
+> > > populated.  So the function can not be called on bus initialization
+> > > because the IOMMU is not ready at this point.
+> > Well, at what point would the add_device_group (referring to patch set
+> posted by Alex) call back be invoked?
+> 
+> The details are up to Alex Williamson. One option is to register a
+> notifier for the bus in the iommu_bus_init() function and react to its
+> notifications.
+> I think in the end we will have a number of additional call-backs in the
+> iommu_ops which are called by the notifier (or from the driver-core
+> directly) to handle actions like added or removed devices. All the
+> infrastructure for that which is implemented in the iommu-drivers today
+> will then be in the iommu-core code.
+I am not sure If I understand this, but as per your earlier statement iommu is a device on the bus
+and its initialization would happen when bus is set up and devices are populated. So, when would device
+notifier call an iommu call back?
+
+-Varun
  
- static void twl6040_restore_regs(struct snd_soc_codec *codec)
--- 
-1.7.6.1
 
