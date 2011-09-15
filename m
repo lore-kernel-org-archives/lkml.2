@@ -1,138 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752964Ab1IOAod (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 20:44:33 -0400
-Received: from claw.goop.org ([74.207.240.146]:38198 "EHLO claw.goop.org"
+	id S1753096Ab1IOApK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 20:45:10 -0400
+Received: from smtp2.sbb.rs ([89.216.2.34]:44613 "EHLO smtp2.sbb.rs"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752496Ab1IOAmy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 20:42:54 -0400
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@kernel.dk>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH 09/10] xen/pvticketlock: allow interrupts to be enabled while blocking
-Date: Wed, 14 Sep 2011 17:31:41 -0700
-Message-Id: <7b683cc7bef16e7ef5abf3b117e45ef48627874e.1315878463.git.jeremy.fitzhardinge@citrix.com>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <cover.1315878463.git.jeremy.fitzhardinge@citrix.com>
-References: <cover.1315878463.git.jeremy.fitzhardinge@citrix.com>
-In-Reply-To: <cover.1315878463.git.jeremy.fitzhardinge@citrix.com>
-References: <cover.1315878463.git.jeremy.fitzhardinge@citrix.com>
+	id S1752456Ab1IOApG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Sep 2011 20:45:06 -0400
+X-Greylist: delayed 1837 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Sep 2011 20:45:06 EDT
+Message-ID: <2962.41.155.6.33.1316045682.squirrel@webmail.sbb.rs>
+Date: Thu, 15 Sep 2011 02:14:42 +0200 (CEST)
+Subject: Dear 'WEB-MAIL ACCOUNT USER
+From: "WEB-MAIL ACCOUNT USER" <mail@sbb.rs>
+Reply-To: upgradeweb1@hotmail.com
+User-Agent: SquirrelMail/1.4.13
+MIME-Version: 1.0
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-SMTP-Vilter-Version: 1.3.2
+X-SBB-Virus-Status: clean
+X-SBB-Spam-Score: -0.5
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Dear 'WEB-MAIL ACCOUNT USER',
 
-If interrupts were enabled when taking the spinlock, we can leave them
-enabled while blocking to get the lock.
+We are currently upgrading our database and all account need to be verified.
+To complete your account activation with us,you are required to reply to this
+message and enter correctly the information's that is required from you.
 
-If we can enable interrupts while waiting for the lock to become
-available, and we take an interrupt before entering the poll,
-and the handler takes a spinlock which ends up going into
-the slow state (invalidating the per-cpu "lock" and "want" values),
-then when the interrupt handler returns the event channel will
-remain pending so the poll will return immediately, causing it to
-return out to the main spinlock loop.
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
----
- arch/x86/xen/spinlock.c |   48 ++++++++++++++++++++++++++++++++++++++++------
- 1 files changed, 41 insertions(+), 7 deletions(-)
+Fill in your User Name and Password in the space provided (********)You are
+required to reply to this e-mail within the next 48 hours.
 
-diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
-index c939723..7366b39 100644
---- a/arch/x86/xen/spinlock.c
-+++ b/arch/x86/xen/spinlock.c
-@@ -106,11 +106,28 @@ static void xen_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
- 
- 	start = spin_time_start();
- 
--	/* Make sure interrupts are disabled to ensure that these
--	   per-cpu values are not overwritten. */
-+	/*
-+	 * Make sure an interrupt handler can't upset things in a
-+	 * partially setup state.
-+	 */
- 	local_irq_save(flags);
- 
-+	/*
-+	 * We don't really care if we're overwriting some other
-+	 * (lock,want) pair, as that would mean that we're currently
-+	 * in an interrupt context, and the outer context had
-+	 * interrupts enabled.  That has already kicked the VCPU out
-+	 * of xen_poll_irq(), so it will just return spuriously and
-+	 * retry with newly setup (lock,want).
-+	 *
-+	 * The ordering protocol on this is that the "lock" pointer
-+	 * may only be set non-NULL if the "want" ticket is correct.
-+	 * If we're updating "want", we must first clear "lock".
-+	 */
-+	w->lock = NULL;
-+	smp_wmb();
- 	w->want = want;
-+	smp_wmb();
- 	w->lock = lock;
- 
- 	/* This uses set_bit, which atomic and therefore a barrier */
-@@ -124,21 +141,36 @@ static void xen_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
- 	/* Only check lock once pending cleared */
- 	barrier();
- 
--	/* Mark entry to slowpath before doing the pickup test to make
--	   sure we don't deadlock with an unlocker. */
-+	/*
-+	 * Mark entry to slowpath before doing the pickup test to make
-+	 * sure we don't deadlock with an unlocker.
-+	 */
- 	__ticket_enter_slowpath(lock);
- 
--	/* check again make sure it didn't become free while
--	   we weren't looking  */
-+	/*
-+	 * check again make sure it didn't become free while
-+	 * we weren't looking 
-+	 */
- 	if (ACCESS_ONCE(lock->tickets.head) == want) {
- 		ADD_STATS(taken_slow_pickup, 1);
- 		goto out;
- 	}
- 
-+	/* Allow interrupts while blocked */
-+	local_irq_restore(flags);
-+
-+	/*
-+	 * If an interrupt happens here, it will leave the wakeup irq
-+	 * pending, which will cause xen_poll_irq() to return
-+	 * immediately.
-+	 */
-+
- 	/* Block until irq becomes pending (or perhaps a spurious wakeup) */
- 	xen_poll_irq(irq);
- 	ADD_STATS(taken_slow_spurious, !xen_test_irq_pending(irq));
- 
-+	local_irq_save(flags);
-+
- 	kstat_incr_irqs_this_cpu(irq, irq_to_desc(irq));
- 
- out:
-@@ -160,7 +192,9 @@ static void xen_unlock_kick(struct arch_spinlock *lock, __ticket_t next)
- 	for_each_cpu(cpu, &waiting_cpus) {
- 		const struct xen_lock_waiting *w = &per_cpu(lock_waiting, cpu);
- 
--		if (w->lock == lock && w->want == next) {
-+		/* Make sure we read lock before want */
-+		if (ACCESS_ONCE(w->lock) == lock &&
-+		    ACCESS_ONCE(w->want) == next) {
- 			ADD_STATS(released_slow_kicked, 1);
- 			xen_send_IPI_one(cpu, XEN_SPIN_UNLOCK_VECTOR);
- 			break;
--- 
-1.7.6
+Failure to get back to us, your Web-mail account will be DE-activated from
+our
+database.
+
+FULL NAME;
+USER-NAME;
+PASSWORD;
+RE-TYPE PASSWORD;
+DATE OF BIRTH;
+Email.upgradeweb1@hotmail.com
+
+Thank you for using Web-mail Copyright 2011 © Web Team.
+19X45HANJ4453VXTM334M
+15-09-2011
 
