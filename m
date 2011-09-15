@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933998Ab1IOPH5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 11:07:57 -0400
-Received: from mga09.intel.com ([134.134.136.24]:41420 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933899Ab1IOPH4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 11:07:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="48774831"
-Date: Thu, 15 Sep 2011 17:10:33 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Richard Purdie <rpurdie@rpsys.net>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Jean Delvare <khali@linux-fr.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de, lm-sensors@lm-sensors.org,
-        linux-input@vger.kernel.org, David Jander <david@protonic.nl>
-Subject: Re: [PATCH 0/6] mc13783 cleanup
-Message-ID: <20110915151033.GD32263@sortiz-mobl>
-References: <20110824132740.GA28197@pengutronix.de>
+	id S934013Ab1IOPII (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 11:08:08 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:48001 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933899Ab1IOPIG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Sep 2011 11:08:06 -0400
+Date: Thu, 15 Sep 2011 11:07:56 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: [PATCH] sysfs: add per pci device msi[x] irq listing
+Message-ID: <20110915150756.GB14665@hmsreliant.think-freely.org>
+References: <1316025413-5855-1-git-send-email-nhorman@tuxdriver.com>
+ <20110915144015.GC20602@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110824132740.GA28197@pengutronix.de>
+In-Reply-To: <20110915144015.GC20602@suse.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.6 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Uwe,
+On Thu, Sep 15, 2011 at 04:40:15PM +0200, Greg KH wrote:
+> On Wed, Sep 14, 2011 at 02:36:53PM -0400, Neil Horman wrote:
+> > --- /dev/null
+> > +++ b/Documentation/ABI/testing/sysfs-devices-msi_irqs
+> > @@ -0,0 +1,17 @@
+> > +What:		/sys/devices/.../power/
+> 
+> I don't think this is the file that you are describing here :)
+> 
+Yeah, you're right, thats what I get for copying an existing entry and assuming
+there was only one devices subdir :)
 
-On Wed, Aug 24, 2011 at 03:27:40PM +0200, Uwe Kleine-König wrote:
-> Hello,
+> And I see you have not tried to remove a PCI device with this patch
+> running, right?
 > 
-> this series removes the long obsolte mc13783 API after fixing all
-> remaining users.
+> Please do so and properly fix up the messages that the kernel spits at
+> you.
 > 
-> The patches touch many subsystems and have some interdependencies:
-> 
->  - patches 3 and 5 depend on patch 2
->  - patch 6 depends on patches 1-5
-> 
-> So we have to think about how to merge them when everyone is OK that
-> they are merged.
-I am merging them, unless someone objects here.
-I have applied all 6 patches now.
+Hadn't considered doing that, no, I'll give it a shot and repost fixes.
 
-Cheers,
-Samuel.
+Thanks
+Neil
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
