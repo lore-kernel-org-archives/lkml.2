@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752779Ab1IOBW0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Sep 2011 21:22:26 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:40568 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752273Ab1IOBWZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Sep 2011 21:22:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <1315839130.3466.6.camel@mfleming-mobl1.ger.corp.intel.com>
-References: <1314860114.32522.3.camel@rui>
-	<1314864889.13161.4.camel@rui>
-	<1314880125.8038.39.camel@mfleming-mobl1.ger.corp.intel.com>
-	<CAC=cRTOzcgm+3kHGcZrHs=9Q3cs5z6vmBqb1Bn+2qcvcSZ-2Xg@mail.gmail.com>
-	<1315839130.3466.6.camel@mfleming-mobl1.ger.corp.intel.com>
-Date: Thu, 15 Sep 2011 09:22:24 +0800
-X-Google-Sender-Auth: zGMPwdkFS-dS0mq4cgP-crjlx3s
-Message-ID: <CANejiEXSvT1hGasoowf1nCc5+EWyXr8PSmfpWDJOT0d_vEiKxA@mail.gmail.com>
-Subject: Re: [PATCH] EFI: Do not use __pa() to get the physical address of an
- ioremapped memory range
-From: Shaohua Li <shli@kernel.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: huang ying <huang.ying.caritas@gmail.com>, Zhang Rui <rui.zhang@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, x86@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752897Ab1IOB0o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Sep 2011 21:26:44 -0400
+Received: from mga02.intel.com ([134.134.136.20]:43492 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752412Ab1IOB0n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Sep 2011 21:26:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="48563637"
+Subject: Re: [PATCH] slub Discard slab page only when node partials >
+ minimum setting
+From: "Alex,Shi" <alex.shi@intel.com>
+To: Christoph Lameter <christoph@lameter.com>
+Cc: Christoph Lameter <cl@linux.com>,
+        "penberg@kernel.org" <penberg@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        "Li, Shaohua" <shaohua.li@intel.com>,
+        "Chen, Tim C" <tim.c.chen@intel.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+In-Reply-To: <CALmdxiMuF6Q0W4ZdvhK5c4fQs8wUjcVGWYGWBjJi7WOfLYX=Gw@mail.gmail.com>
+References: <1315188460.31737.5.camel@debian>
+	 <alpine.DEB.2.00.1109061914440.18646@router.home>
+	 <1315357399.31737.49.camel@debian>
+	 <alpine.DEB.2.00.1109062022100.20474@router.home>
+	 <4E671E5C.7010405@cs.helsinki.fi>
+	 <6E3BC7F7C9A4BF4286DD4C043110F30B5D00DA333C@shsmsx502.ccr.corp.intel.com>
+	 <alpine.DEB.2.00.1109071003240.9406@router.home>
+	 <1315442639.31737.224.camel@debian>
+	 <alpine.DEB.2.00.1109081336320.14787@router.home>
+	 <1315557944.31737.782.camel@debian>	<1315902583.31737.848.camel@debian>
+	 <CALmdxiMuF6Q0W4ZdvhK5c4fQs8wUjcVGWYGWBjJi7WOfLYX=Gw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 15 Sep 2011 09:32:43 +0800
+Message-ID: <1316050363.8425.483.camel@debian>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/9/12 Matt Fleming <matt@console-pimps.org>:
-> On Fri, 2011-09-02 at 13:12 +0800, huang ying wrote:
->> On Thu, Sep 1, 2011 at 8:28 PM, Matt Fleming <matt@console-pimps.org> wrote:
->> >
->> > Hmm.. does anyone know why we ioremap_cache() the memory on
->> > CONFIG_X86_32 instead of ioremap_nocache()? In the case of
->> > EFI_MEMORY_MAPPED_IO the memory really needs to be uncached. Then if
->> > we've ioremap'd the memory we should skip set_memory_uc() altogether,
->> > no?
->>
->> Because whether the mapping should be cached is determined by md->attr
->> instead of md->type.  And besides UC, we may add WC, etc support.
->
-> Confused.
->
-> The CONFIG_X86_64 version of efi_ioremap() looks like this,
->
-> void __iomem *__init efi_ioremap(unsigned long phys_addr, unsigned long size,
->                                 u32 type)
-> {
->        unsigned long last_map_pfn;
->
->        if (type == EFI_MEMORY_MAPPED_IO)
->                return ioremap(phys_addr, size);
->
-> Which uses md->type to figure out if we should call ioremap(), which on
-> x86 is #define'd to ioremap_nocache(). CONFIG_X86_32 doesn't do this,
-> but it looks to me like it should.
-agree. mapping it wrong and fixing it later makes no sense. we should get
-the mapping correct at the first.
+On Tue, 2011-09-13 at 23:04 +0800, Christoph Lameter wrote:
+> Sorry to be that late with a response but my email setup is screwed
+> up.
+> 
+> I was more thinking about the number of slab pages in the partial
+> caches rather than the size of the objects itself being an issue. I
+> believe that was /sys/kernel/slab/*/cpu_partial.
+> 
+> That setting could be tuned further before merging. An increase there
+> causes additional memory to be caught in the partial list. But it
+> reduces the node lock pressure further.
+> 
 
-> Zhang, I agree that calling __pa() on an ioremap()'d region is bogus,
-> but I don't understand why no one is seeing this crash on x86-64. Is it
-> something to do with the x86-64 memory map layout such that __pa() works
-> on an ioremap()'d address?
-x86-64 does identity mapping for larger space (from 0 to the last physical mem
-even there is hole). Maybe this is the reason.
+Yeah, I think so. The more cpu partial page, the quicker to getting
+slabs. Maybe it's better to considerate the system memory size to set
+them. Do you has some plan or suggestions on tunning? 
+
+
+
+
