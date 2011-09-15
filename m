@@ -1,44 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934170Ab1IOQK3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 12:10:29 -0400
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:43409 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S934067Ab1IOQK1 (ORCPT
+	id S934177Ab1IOQOh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 12:14:37 -0400
+Received: from mta1.cl.cam.ac.uk ([128.232.25.21]:51697 "EHLO
+	mta1.cl.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934067Ab1IOQOg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 12:10:27 -0400
-Message-ID: <4E722371.2060908@xenotime.net>
-Date: Thu, 15 Sep 2011 09:10:25 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
+	Thu, 15 Sep 2011 12:14:36 -0400
+Date: Thu, 15 Sep 2011 17:14:30 +0100
+From: Ripduman Sohan <Ripduman.Sohan@cl.cam.ac.uk>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org
+Subject: Re: [PATCH] workqueue: Restore cpus_allowed mask for sleeping
+ workqueue rescue threads
+Message-ID: <20110915161430.GE1548@tusker>
+References: <1314884193-20454-1-git-send-email-ripduman.sohan@cl.cam.ac.uk>
+ <20110902002917.GD2752@htj.dyndns.org>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: import of the kernel-doc tree failed
-References: <20110915111301.a4227f9ca0d1f448d54050ae@canb.auug.org.au>
-In-Reply-To: <20110915111301.a4227f9ca0d1f448d54050ae@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110902002917.GD2752@htj.dyndns.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/14/11 18:13, Stephen Rothwell wrote:
-> Hi Randy,
-> 
-> Importing the kernel-doc tree today produced this error:
-> 
-> $ git am ../quilt/kernel-doc/docum-leds-class-fix-typo.patch
-> Patch format detection failed.
-> 
-> I just had to replace the tab in the From: line with a space.
+Tejun Heo <tj@kernel.org> wrote:
 
-I fixed my version of the patch.
+> Hello,
+> 
+> On Thu, Sep 01, 2011 at 02:36:33PM +0100, Ripduman Sohan wrote:
+> > Rescuer threads may be migrated (and are bound) to particular CPUs when
+> > active.  However, the allowed_cpus mask is not restored when they return
+> > to sleep rendering inconsistent the presented and actual set of CPUs the
+> > process may potentially run on.  This patch fixes this oversight by
+> > recording the allowed_cpus mask for rescuer threads when it enters the
+> > rescuer_thread() main loop and restoring it every time the thread sleeps.
+> 
+> Hmmm... so, currently, rescuer is left bound to the last cpu it worked
+> on.  Why is this a problem?
+> 
+> Thanks.
+> 
+> -- 
+> tejun
 
-Thanks.
+Hi,
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+The rescuer being left bound to the last CPU it was active on is not a
+problem.  As I pointed out in the commit log the issue is that the
+allowed_cpus mask is not restored when rescuers return to sleep,
+rendering inconsistent the presented and actual set of CPUs the
+process may potentially run on.
+
+Perhaps an explanation is in order.  I am working on a system where we
+constantly sample process run-state (including the process
+Cpus_Allowed field in /proc/<pid>/status) to build a forward plan of
+where the process _may_ run in the future.  In situations of high
+memory pressue (common on our setup) where the rescuers ran often the
+plan begun to significantly deviate from the calculated schedule
+because rescuer threads were marked as only runnable on a single CPU
+when in reality they would bounce across CPUs.
+
+I've currently put in a special-case exception in our code to account
+for the fact that rescuer threads may run on _any_ CPU regardless of
+the current cpus_allowed mask but I thought it would be useful to
+correct it.  I'm happy to continue with my current approach if you
+deem the patch irrelevant.
+
+Kind regards,
+
+--rip
