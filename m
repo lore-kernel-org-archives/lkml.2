@@ -1,58 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934693Ab1IOTsU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 15:48:20 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:33437 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934532Ab1IOTsS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 15:48:18 -0400
-Date: Thu, 15 Sep 2011 14:48:12 -0500
-From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linux Containers <containers@lists.osdl.org>,
-        Andrew Morton <akpm@osdl.org>, Vasiliy Kulikov <segoon@openwall.com>,
-        richard@nod.at
-Subject: [PATCH] User namespace: don't allow sysctl in non-init user ns
-Message-ID: <20110915194812.GA24348@sergelap>
+	id S934656Ab1IOTzD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 15:55:03 -0400
+Received: from mga02.intel.com ([134.134.136.20]:45008 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934601Ab1IOTzB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Sep 2011 15:55:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="48894880"
+Date: Thu, 15 Sep 2011 21:57:25 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu
+Subject: Re: [PATCH 41/62] mfd: irq: Remove IRQF_DISABLED
+Message-ID: <20110915195725.GK32263@sortiz-mobl>
+References: <1315383059-3673-1-git-send-email-yong.zhang0@gmail.com>
+ <1315383059-3673-42-git-send-email-yong.zhang0@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1315383059-3673-42-git-send-email-yong.zhang0@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sysctl.c has its own custom uid check, which is not user namespace
-aware.  As discovered by Richard, that allows root in a container
-privileged access to set all sysctls.
+Hi Yong,
 
-To fix that, just refuse access if current is not in init_user_ns.  We
-may at some point want to relax that check so that some sysctls are
-allowed - for instance dmesg_restrict when syslog is containerized.
+On Wed, Sep 07, 2011 at 04:10:38PM +0800, Yong Zhang wrote:
+> This flag is a NOOP and can be removed now.
+Patch applied, thanks.
 
-Signed-off-by: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Vasiliy Kulikov <segoon@openwall.com>
-Cc: richard@nod.at
----
- kernel/sysctl.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+Cheers,
+Samuel.
 
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 11d65b5..f2b42e2 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -1697,6 +1697,8 @@ void register_sysctl_root(struct ctl_table_root *root)
- 
- static int test_perm(int mode, int op)
- {
-+	if (current_user_ns() != &init_user_ns)
-+		return -EACCES;
- 	if (!current_euid())
- 		mode >>= 6;
- 	else if (in_egroup_p(0))
 -- 
-1.7.5.4
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
