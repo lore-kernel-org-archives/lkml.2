@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755403Ab1IOIXQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 04:23:16 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34894 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751162Ab1IOIXM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 04:23:12 -0400
-Date: Thu, 15 Sep 2011 09:22:53 +0100
-From: Russell King <rmk@arm.linux.org.uk>
-To: Jassi Brar <jaswinder.singh@linaro.org>
-Cc: dan.j.williams@intel.com, vkoul@infradead.org,
-        linux-kernel@vger.kernel.org, 21cnbao@gmail.com
-Subject: Re: [PATCHv2] DMAEngine: Define generic transfer request api
-Message-ID: <20110915082252.GB30518@flint.arm.linux.org.uk>
-References: <1313147667-3385-1-git-send-email-jaswinder.singh@linaro.org> <1316072789-12830-1-git-send-email-jaswinder.singh@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753458Ab1IOI3h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 04:29:37 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:7817 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751162Ab1IOI3g convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@suse.com:3:1>);
+	Thu, 15 Sep 2011 04:29:36 -0400
+Message-Id: <4E71D38E02000078000563A1@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Thu, 15 Sep 2011 09:29:34 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH, resend] x86-64: don't apply destructive erratum
+	 workaround on unaffected CPUs
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <1316072789-12830-1-git-send-email-jaswinder.singh@linaro.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 15, 2011 at 01:16:29PM +0530, Jassi Brar wrote:
-> +/**
-> + * struct dmaxfer_template - Template to convey DMAC the transfer pattern
-> + *	 and attributes.
-> + * @src_start: Bus address of source for the first chunk.
-> + * @dst_start: Bus address of destination for the first chunk.
-> + * @src_inc: If the source address increments after reading from it.
-> + * @dst_inc: If the destination address increments after writing to it.
-> + * @src_sgl: If the 'icg' of sgl[] applies to Source (scattered read).
-> + *		Otherwise, source is read contiguously (icg ignored).
-> + *		Ignored if src_inc is false.
-> + * @dst_sgl: If the 'icg' of sgl[] applies to Destination (scattered write).
-> + *		Otherwise, destination is filled contiguously (icg ignored).
-> + *		Ignored if dst_inc is false.
-> + * @frm_irq: If the client expects DMAC driver to do callback after each frame.
-> + * @numf: Number of frames in this template.
-> + * @frame_size: Number of chunks in a frame i.e, size of sgl[].
-> + * @sgl: Array of {chunk,icg} pairs that make up a frame.
-> + */
-> +struct dmaxfer_template {
-> +	dma_addr_t src_start;
-> +	dma_addr_t dst_start;
-> +	bool src_inc;
-> +	bool dst_inc;
-> +	bool src_sgl;
-> +	bool dst_sgl;
-> +	bool frm_irq;
+Erratum 93 applies to AMD K8 CPUs only, and its workaround (forcing
+the upper 32 bits of %rip to all get set under certain conditions) is
+actually getting in the way of analyzing page faults occurring during
+EFI physical mode runtime calls (in particular the page table walk
+shown is completely unrelated to the actual fault). This is because
+typically EFI runtime code lives in the space between 2G and 4G, which
+- modulo the above manipulation - is likely to overlap with the kernel
+or modules area.
 
-I'll ask again.  How does this deal with the XOR operation, where you have
-two sources and one destination?  Unless you sort that out, I don't see
-how your idea of collapsing all the prepare functions can possibly work.
+While even for the other errata workarounds their taking effect could
+be limited to just the affected CPUs, none of them appears to be
+destructive, and they're generally getting called only outside of
+performance critical paths, so they're being left untouched.
 
--- 
-Russell King
- Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
- maintainer of:
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
+
+---
+ arch/x86/mm/fault.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+--- 3.1-rc6/arch/x86/mm/fault.c
++++ 3.1-rc6-x86_64-amd-erratum93/arch/x86/mm/fault.c
+@@ -420,12 +420,14 @@ static noinline __kprobes int vmalloc_fa
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_CPU_SUP_AMD
+ static const char errata93_warning[] =
+ KERN_ERR 
+ "******* Your BIOS seems to not contain a fix for K8 errata #93\n"
+ "******* Working around it, but it may cause SEGVs or burn power.\n"
+ "******* Please consider a BIOS update.\n"
+ "******* Disabling USB legacy in the BIOS may also help.\n";
++#endif
+ 
+ /*
+  * No vm86 mode in 64-bit mode:
+@@ -505,7 +507,11 @@ bad:
+  */
+ static int is_errata93(struct pt_regs *regs, unsigned long address)
+ {
+-#ifdef CONFIG_X86_64
++#if defined(CONFIG_X86_64) && defined(CONFIG_CPU_SUP_AMD)
++	if (boot_cpu_data.x86_vendor != X86_VENDOR_AMD
++	    || boot_cpu_data.x86 != 0xf)
++		return 0;
++
+ 	if (address != regs->ip)
+ 		return 0;
+ 
+
+
+
