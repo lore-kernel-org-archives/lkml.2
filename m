@@ -1,43 +1,344 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933244Ab1IOLFh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 07:05:37 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:35383
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933075Ab1IOLFg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 07:05:36 -0400
-Date: Thu, 15 Sep 2011 07:05:27 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: David Chinner <david@fromorbit.com>, xfs-masters@oss.sgi.com,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: linux-next: manual merge of the xfs tree with Linus' tree
-Message-ID: <20110915110527.GA5955@infradead.org>
-References: <20110915123031.104554f51c7642451fc31434@canb.auug.org.au>
+	id S933284Ab1IOLLK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 07:11:10 -0400
+Received: from lucidpixels.com ([72.73.18.11]:43294 "EHLO lucidpixels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933075Ab1IOLLH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Sep 2011 07:11:07 -0400
+Date: Thu, 15 Sep 2011 07:11:06 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: Pawel Sikora <pluto@agmk.net>
+cc: Lin Ming <mlin@ss.pku.edu.cn>, Andrew Morton <akpm@google.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>,
+        Dave Chinner <david@fromorbit.com>, Hugh Dickins <hughd@google.com>,
+        Alan Piszcz <ap@solarrain.com>
+Subject: Re: [BUG] infinite loop in find_get_pages()
+In-Reply-To: <3669551.Uo4Qe4YO2W@pawels>
+Message-ID: <alpine.DEB.2.02.1109150708540.23647@p34.internal.lan>
+References: <1315941801.2565.19.camel@edumazet-laptop> <20110913165344.1d800582.akpm@google.com> <CAF1ivSbCb-eS=npyHO+iWuAXfKPjnCD+LZDWQQ9SbTxGg3nq7Q@mail.gmail.com> <3669551.Uo4Qe4YO2W@pawels>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110915123031.104554f51c7642451fc31434@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: MULTIPART/MIXED; BOUNDARY="655872-507364377-1316085066=:23647"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 15, 2011 at 12:30:31PM +1000, Stephen Rothwell wrote:
-> Hi all,
-> 
-> Today's linux-next merge of the xfs tree got a conflict in
-> fs/xfs/xfs_aops.c between commit 2d2422aebc03 ("xfs: fix a use after free
-> in xfs_end_io_direct_write") from Linus' tree and commit a826361aa4af
-> ("xfs: defer AIO/DIO completions") from the xfs tree.
-> 
-> The latter moves this code to another function (better solution?), so I
-> used the latter version.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Yes, the mainline version is a quick fix for the use after free, the
-linux-next version fixes this by changing the broader scope.
+--655872-507364377-1316085066=:23647
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 
+
+
+On Thu, 15 Sep 2011, Pawel Sikora wrote:
+
+> On Wednesday 14 of September 2011 08:34:21 Lin Ming wrote:
+>
+>> [3.0.2-stable] BUG: soft lockup - CPU#13 stuck for 22s! [kswapd2:1092]
+>> http://marc.info/?l=linux-kernel&m=131469584117857&w=2
+>
+> Hi,
+>
+> i'm not sure that this is fully related to this thread but i've found
+> new warnings about memory pages in dmesg today:
+>
+> [650697.716481] ------------[ cut here ]------------
+> [650697.716498] WARNING: at mm/page-writeback.c:1176 __set_page_dirty_nobuffers+0x10a/0x140()
+> [650697.716501] Hardware name: H8DGU
+> [650697.716502] Modules linked in: nfs fscache binfmt_misc nfsd lockd nfs_acl auth_rpcgss sunrpc ipmi_si ipmi_devintf ipmi_msghandler sch_sfq iptable_nat nf_nat nf_conntrack_ipv4
+> nf_conntrack nf_defrag_ipv4 iptable_filter xt_TCPMSS xt_tcpudp iptable_mangle ip_tables ip6table_filter ip6_tables x_tables ext4 jbd2 crc16 raid10 raid0 dm_mod uvesafb autofs4
+> dummy aoe joydev usbhid hid ide_cd_mod cdrom ata_generic pata_acpi pata_atiixp sp5100_tco ohci_hcd ide_pci_generic ssb ehci_hcd pcmcia igb pcmcia_core psmouse mmc_core evdev
+> i2c_piix4 atiixp ide_core k10temp usbcore amd64_edac_mod edac_core i2c_core dca hwmon edac_mce_amd ghes serio_raw button hed processor pcspkr sg sd_mod crc_t10dif raid1 md_mod ext3
+> jbd mbcache ahci libahci libata scsi_mod [last unloaded: scsi_wait_scan]
+> [650697.716569] Pid: 16806, comm: m_xilinx Not tainted 3.0.4 #5
+> [650697.716572] Call Trace:
+> [650697.716582]  [<ffffffff810470da>] warn_slowpath_common+0x7a/0xb0
+> [650697.716586]  [<ffffffff81047125>] warn_slowpath_null+0x15/0x20
+> [650697.716590]  [<ffffffff810e71ba>] __set_page_dirty_nobuffers+0x10a/0x140
+> [650697.716596]  [<ffffffff81127eb8>] migrate_page_copy+0x1c8/0x1d0
+> [650697.716600]  [<ffffffff81127ef5>] migrate_page+0x35/0x50
+> [650697.716623]  [<ffffffffa04b6f19>] nfs_migrate_page+0x59/0xf0 [nfs]
+> [650697.716627]  [<ffffffff81127fb9>] move_to_new_page+0xa9/0x260
+> [650697.716630]  [<ffffffff811286bd>] migrate_pages+0x3fd/0x4c0
+> [650697.716635]  [<ffffffff8142988e>] ? apic_timer_interrupt+0xe/0x20
+> [650697.716641]  [<ffffffff8111cbf0>] ? ftrace_define_fields_mm_compaction_isolate_template+0x70/0x70
+> [650697.716645]  [<ffffffff8111d5da>] compact_zone+0x52a/0x8c0
+> [650697.716649]  [<ffffffff8111dade>] compact_zone_order+0x7e/0xb0
+> [650697.716653]  [<ffffffff8111dbcd>] try_to_compact_pages+0xbd/0xf0
+> [650697.716657]  [<ffffffff810e5148>] __alloc_pages_direct_compact+0xa8/0x180
+> [650697.716661]  [<ffffffff810e588d>] __alloc_pages_nodemask+0x66d/0x7f0
+> [650697.716667]  [<ffffffff8110a92d>] ? page_add_new_anon_rmap+0x9d/0xb0
+> [650697.716671]  [<ffffffff8111b865>] alloc_pages_vma+0x95/0x180
+> [650697.716676]  [<ffffffff8112c2f8>] do_huge_pmd_anonymous_page+0x138/0x310
+> [650697.716680]  [<ffffffff81102ace>] handle_mm_fault+0x21e/0x310
+> [650697.716685]  [<ffffffff81424bed>] do_page_fault+0x11d/0x4e0
+> [650697.716688]  [<ffffffff811077a7>] ? do_mmap_pgoff+0x357/0x370
+> [650697.716692]  [<ffffffff8110790d>] ? sys_mmap_pgoff+0x14d/0x220
+> [650697.716697]  [<ffffffff811371b8>] ? do_sys_open+0x168/0x1d0
+> [650697.716701]  [<ffffffff81421d5f>] page_fault+0x1f/0x30
+> [650697.716704] ---[ end trace 4255de435c6def21 ]---
+>
+> BR,
+> Pawe?.
+>
+
+Hi Pawell,
+
+I had the same issues, either try the latest patch that was recommended,
+OR, try the older ones (I am using these three and I have not had a memory
+error/OOPS/etc in 24hrs)
+
+Before patches:
+Aug 30 05:00:48 p34 kernel: [122150.720173]  [<ffffffff8103798a>] warn_slowpath_common+0x7a/0xb0
+Sep 10 20:59:39 p34 kernel: [531189.671424]  [<ffffffff810379ba>] warn_slowpath_common+0x7a/0xb0
+
+After patches:
+(no errors)
+
+Patches you need (against 3.1-rc4):
+
+(for the igb problem/memory allocation issue)
+0001-Fix-pointer-dereference-before-call-to-pcie_bus_conf.patch
+0002-PCI-Remove-MRRS-modification-from-MPS-setting-code.patch
+
+(for the RCU/memory errors)
+0003-filemap.patch
+
+I've attached them to this e-mail, they seem to have fixed all of my 
+problems so far.
+
+Justin.
+
+--655872-507364377-1316085066=:23647
+Content-Type: TEXT/x-diff; name=0003-filemap.patch
+Content-Transfer-Encoding: BASE64
+Content-ID: <alpine.DEB.2.02.1109150711060.23647@p34.internal.lan>
+Content-Description: 
+Content-Disposition: attachment; filename=0003-filemap.patch
+
+RnJvbSBlcmljLmR1bWF6ZXRAZ21haWwuY29tIFdlZCBTZXAgMTQgMDY6MjA6
+MTEgMjAxMQ0KRGF0ZTogV2VkLCAxNCBTZXAgMjAxMSAwNjoyMDowOA0KRnJv
+bTogRXJpYyBEdW1hemV0IDxlcmljLmR1bWF6ZXRAZ21haWwuY29tPg0KVG86
+IEp1c3RpbiBQaXN6Y3ogPGpwaXN6Y3pAbHVjaWRwaXhlbHMuY29tPg0KQ2M6
+IExpbiBNaW5nIDxtbGluQHNzLnBrdS5lZHUuY24+LCBsaW51eC1rZXJuZWxA
+dmdlci5rZXJuZWwub3JnLCBBbGFuIFBpc3pjeiA8YXBAc29sYXJyYWluLmNv
+bT4sICJMaSwgU2hhb2h1YSIgPHNoYW9odWEubGlAaW50ZWwuY29tPiwgQW5k
+cmV3IE1vcnRvbiA8YWtwbUBnb29nbGUuY29tPg0KU3ViamVjdDogUmU6IDMu
+MC4xOiBwYWdldmVjX2xvb2t1cCsweDFkLzB4MzAsIFNMQUIgaXNzdWVzPw0K
+DQpMZSBtZXJjcmVkaSAxNCBzZXB0ZW1icmUgMjAxMSDgIDA1OjQ3IC0wNDAw
+LCBKdXN0aW4gUGlzemN6IGEg6WNyaXQgOg0KPiANCj4gT24gV2VkLCAxNCBT
+ZXAgMjAxMSwgTGluIE1pbmcgd3JvdGU6DQo+IA0KPiA+IE9uIE1vbiwgU2Vw
+IDEyLCAyMDExIGF0IDY6NDQgQU0sIEp1c3RpbiBQaXN6Y3ogPGpwaXN6Y3pA
+bHVjaWRwaXhlbHMuY29tPiB3cm90ZToNCj4gPiBIaSwgSnVzdGluDQo+ID4N
+Cj4gPiBUaGVyZSBpcyBhIHNpbWlsYXIgYnVnIHJlcG9ydCBhdDoNCj4gPiBo
+dHRwOi8vbWFyYy5pbmZvLz90PTEzMTU5NDE5MDYwMDAwNSZyPTEmdz0yDQo+
+ID4NCj4gPiBUaGUgYXR0YWNoZWQgcGF0Y2ggZnJvbSBTaGFvaHVhIGZpeGVk
+IHRoZSBidWcuDQo+ID4NCj4gPiBDb3VsZCB5b3UgaGF2ZSBhIHRyeSBpdD8N
+Cj4gPg0KPiANCj4gSGkgTGluL0xLTUwsDQo+IA0KPiBDYW4geW91IHBsZWFz
+ZSBwcm92aWRlIHRleHQgcGF0Y2ggZmlsZXMgZm9yIHdoYXQgeW91IHdhbnQg
+bWUgdG8gYXBwbHk/DQo+IEkgZGlkIHJlYWQgdGhhdCBlLW1haWwgdGhyZWFk
+IGFuZCB0aGF0IGNvdWxkIGJlIHRoZSBjdWxwcml0LCBJIHdpbGwgcGF0Y2gN
+Cj4gYW5kIGFwcGx5IGFzIHNvb24gYXMgc29tZW9uZSBwb2ludHMgdG8gdG8g
+dGhlIHBhdGNoIGxvY2F0aW9ucyA6KQ0KDQpkaWZmIC0tZ2l0IGEvbW0vZmls
+ZW1hcC5jIGIvbW0vZmlsZW1hcC5jDQppbmRleCA2NDVhMDgwLi43NzcxODcx
+IDEwMDY0NA0KLS0tIGEvbW0vZmlsZW1hcC5jDQorKysgYi9tbS9maWxlbWFw
+LmMNCkBAIC04MjcsMTMgKzgyNywxNCBAQCB1bnNpZ25lZCBmaW5kX2dldF9w
+YWdlcyhzdHJ1Y3QgYWRkcmVzc19zcGFjZSAqbWFwcGluZywgcGdvZmZfdCBz
+dGFydCwNCiB7DQogCXVuc2lnbmVkIGludCBpOw0KIAl1bnNpZ25lZCBpbnQg
+cmV0Ow0KLQl1bnNpZ25lZCBpbnQgbnJfZm91bmQ7DQorCXVuc2lnbmVkIGlu
+dCBucl9mb3VuZCwgbnJfc2tpcDsNCiANCiAJcmN1X3JlYWRfbG9jaygpOw0K
+IHJlc3RhcnQ6DQogCW5yX2ZvdW5kID0gcmFkaXhfdHJlZV9nYW5nX2xvb2t1
+cF9zbG90KCZtYXBwaW5nLT5wYWdlX3RyZWUsDQogCQkJCSh2b2lkICoqKilw
+YWdlcywgTlVMTCwgc3RhcnQsIG5yX3BhZ2VzKTsNCiAJcmV0ID0gMDsNCisJ
+bnJfc2tpcCA9IDA7DQogCWZvciAoaSA9IDA7IGkgPCBucl9mb3VuZDsgaSsr
+KSB7DQogCQlzdHJ1Y3QgcGFnZSAqcGFnZTsNCiByZXBlYXQ6DQpAQCAtODU2
+LDYgKzg1Nyw3IEBAIHJlcGVhdDoNCiAJCQkgKiBoZXJlIGFzIGFuIGV4Y2Vw
+dGlvbmFsIGVudHJ5OiBzbyBza2lwIG92ZXIgaXQgLQ0KIAkJCSAqIHdlIG9u
+bHkgcmVhY2ggdGhpcyBmcm9tIGludmFsaWRhdGVfbWFwcGluZ19wYWdlcygp
+Lg0KIAkJCSAqLw0KKwkJCW5yX3NraXArKzsNCiAJCQljb250aW51ZTsNCiAJ
+CX0NCiANCkBAIC04NzYsNyArODc4LDcgQEAgcmVwZWF0Og0KIAkgKiBJZiBh
+bGwgZW50cmllcyB3ZXJlIHJlbW92ZWQgYmVmb3JlIHdlIGNvdWxkIHNlY3Vy
+ZSB0aGVtLA0KIAkgKiB0cnkgYWdhaW4sIGJlY2F1c2UgY2FsbGVycyBzdG9w
+IHRyeWluZyBvbmNlIDAgaXMgcmV0dXJuZWQuDQogCSAqLw0KLQlpZiAodW5s
+aWtlbHkoIXJldCAmJiBucl9mb3VuZCkpDQorCWlmICh1bmxpa2VseSghcmV0
+ICYmIG5yX2ZvdW5kID4gbnJfc2tpcCkpDQogCQlnb3RvIHJlc3RhcnQ7DQog
+CXJjdV9yZWFkX3VubG9jaygpOw0KIAlyZXR1cm4gcmV0Ow0KDQo=
+
+--655872-507364377-1316085066=:23647
+Content-Type: TEXT/x-diff; name=0002-PCI-Remove-MRRS-modification-from-MPS-setting-code.patch
+Content-Transfer-Encoding: BASE64
+Content-ID: <alpine.DEB.2.02.1109150711061.23647@p34.internal.lan>
+Content-Description: 
+Content-Disposition: attachment; filename=0002-PCI-Remove-MRRS-modification-from-MPS-setting-code.patch
+
+RnJvbSA3NGQ4MTIzNWY4ZTRiZDYwODU5ZDUzOWEyN2U1MWQzYTA5ZDE4M2Nm
+IE1vbiBTZXAgMTcgMDA6MDA6MDAgMjAwMQ0KRnJvbTogSm9uIE1hc29uIDxt
+YXNvbkBteXJpLmNvbT4NCkRhdGU6IFRodSwgOCBTZXAgMjAxMSAxMjo1OTow
+MCAtMDUwMA0KU3ViamVjdDogW1BBVENIIDIvMl0gUENJOiBSZW1vdmUgTVJS
+UyBtb2RpZmljYXRpb24gZnJvbSBNUFMgc2V0dGluZyBjb2RlDQoNCk1vZGlm
+eWluZyB0aGUgTWF4aW11bSBSZWFkIFJlcXVlc3QgU2l6ZSB0byAwICh2YWx1
+ZSBvZiAxMjhCeXRlcykgaGFzDQptYXNzaXZlIG5lZ2F0aXZlIHJhbWlmaWNh
+dGlvbnMgb24gc29tZSBkZXZpY2VzLiAgV2l0aG91dCBrbm93aW5nIHdoaWNo
+DQpkZXZpY2VzIGhhdmUgdGhpcyBpc3N1ZSwgZG8gbm90IG1vZGlmeSBmcm9t
+IHRoZSBkZWZhdWx0IHZhbHVlIHdoZW4NCndhbGtpbmcgdGhlIFBDSS1FIGJ1
+cyBpbiBwY2llX2J1c19zYWZlIG1vZGUuICBBbHNvLCBtYWtlIHBjaWVfYnVz
+X3NhZmUNCnRoZSBkZWZhdWx0IHByb2NlZHVyZS4NCg0KVGVzdGVkLWJ5OiBT
+dmVuIFNjaG5lbGxlIDxzdmVuc0BzdGFja2ZyYW1lLm9yZz4NClRlc3RlZC1i
+eTogU2ltb24gS2lyYnkgPHNpbUBob3N0d2F5LmNhPg0KVGVzdGVkLWJ5OiBT
+dGVwaGVuIE0uIENhbWVyb24gPHNjYW1lcm9uQGJlYXJkb2cuY2NlLmhwLmNv
+bT4NClJlcG9ydGVkLWFuZC10ZXN0ZWQtYnk6IEVyaWMgRHVtYXpldCA8ZXJp
+Yy5kdW1hemV0QGdtYWlsLmNvbT4NClJlcG9ydGVkLWFuZC10ZXN0ZWQtYnk6
+IE5pZWxzIE9sZSBTYWxzY2hlaWRlciA8bmllbHNfb2xlQHNhbHNjaGVpZGVy
+LW9ubGluZS5kZT4NClJlZmVyZW5jZXM6IGh0dHBzOi8vYnVnemlsbGEua2Vy
+bmVsLm9yZy9zaG93X2J1Zy5jZ2k/aWQ9NDIxNjINClNpZ25lZC1vZmYtYnk6
+IEpvbiBNYXNvbiA8bWFzb25AbXlyaS5jb20+DQotLS0NCiBkcml2ZXJzL3Bj
+aS9wY2kuYyAgIHwgICAgMiArLQ0KIGRyaXZlcnMvcGNpL3Byb2JlLmMgfCAg
+IDQxICsrKysrKysrKysrKysrKysrKysrKystLS0tLS0tLS0tLS0tLS0tLS0t
+DQogMiBmaWxlcyBjaGFuZ2VkLCAyMyBpbnNlcnRpb25zKCspLCAyMCBkZWxl
+dGlvbnMoLSkNCg0KZGlmZiAtLWdpdCBhL2RyaXZlcnMvcGNpL3BjaS5jIGIv
+ZHJpdmVycy9wY2kvcGNpLmMNCmluZGV4IDBjZTY3NDIuLjRlODRmZDQgMTAw
+NjQ0DQotLS0gYS9kcml2ZXJzL3BjaS9wY2kuYw0KKysrIGIvZHJpdmVycy9w
+Y2kvcGNpLmMNCkBAIC03Nyw3ICs3Nyw3IEBAIHVuc2lnbmVkIGxvbmcgcGNp
+X2NhcmRidXNfbWVtX3NpemUgPSBERUZBVUxUX0NBUkRCVVNfTUVNX1NJWkU7
+DQogdW5zaWduZWQgbG9uZyBwY2lfaG90cGx1Z19pb19zaXplICA9IERFRkFV
+TFRfSE9UUExVR19JT19TSVpFOw0KIHVuc2lnbmVkIGxvbmcgcGNpX2hvdHBs
+dWdfbWVtX3NpemUgPSBERUZBVUxUX0hPVFBMVUdfTUVNX1NJWkU7DQogDQot
+ZW51bSBwY2llX2J1c19jb25maWdfdHlwZXMgcGNpZV9idXNfY29uZmlnID0g
+UENJRV9CVVNfUEVSRk9STUFOQ0U7DQorZW51bSBwY2llX2J1c19jb25maWdf
+dHlwZXMgcGNpZV9idXNfY29uZmlnID0gUENJRV9CVVNfU0FGRTsNCiANCiAv
+Kg0KICAqIFRoZSBkZWZhdWx0IENMUyBpcyB1c2VkIGlmIGFyY2ggZGlkbid0
+IHNldCBDTFMgZXhwbGljaXRseSBhbmQgbm90DQpkaWZmIC0tZ2l0IGEvZHJp
+dmVycy9wY2kvcHJvYmUuYyBiL2RyaXZlcnMvcGNpL3Byb2JlLmMNCmluZGV4
+IDA4MjBmYzEuLmIxMTg3ZmYgMTAwNjQ0DQotLS0gYS9kcml2ZXJzL3BjaS9w
+cm9iZS5jDQorKysgYi9kcml2ZXJzL3BjaS9wcm9iZS5jDQpAQCAtMTM5Niwz
+NCArMTM5NiwzNyBAQCBzdGF0aWMgdm9pZCBwY2llX3dyaXRlX21wcyhzdHJ1
+Y3QgcGNpX2RldiAqZGV2LCBpbnQgbXBzKQ0KIA0KIHN0YXRpYyB2b2lkIHBj
+aWVfd3JpdGVfbXJycyhzdHJ1Y3QgcGNpX2RldiAqZGV2LCBpbnQgbXBzKQ0K
+IHsNCi0JaW50IHJjLCBtcnJzOw0KKwlpbnQgcmMsIG1ycnMsIGRldl9tcHNz
+Ow0KIA0KLQlpZiAocGNpZV9idXNfY29uZmlnID09IFBDSUVfQlVTX1BFUkZP
+Uk1BTkNFKSB7DQotCQlpbnQgZGV2X21wc3MgPSAxMjggPDwgZGV2LT5wY2ll
+X21wc3M7DQorCS8qIEluIHRoZSAic2FmZSIgY2FzZSwgZG8gbm90IGNvbmZp
+Z3VyZSB0aGUgTVJSUy4gIFRoZXJlIGFwcGVhciB0byBiZQ0KKwkgKiBpc3N1
+ZXMgd2l0aCBzZXR0aW5nIE1SUlMgdG8gMCBvbiBhIG51bWJlciBvZiBkZXZp
+Y2VzLg0KKwkgKi8NCiANCi0JCS8qIEZvciBNYXggcGVyZm9ybWFuY2UsIHRo
+ZSBNUlJTIG11c3QgYmUgc2V0IHRvIHRoZSBsYXJnZXN0DQotCQkgKiBzdXBw
+b3J0ZWQgdmFsdWUuICBIb3dldmVyLCBpdCBjYW5ub3QgYmUgY29uZmlndXJl
+ZCBsYXJnZXINCi0JCSAqIHRoYW4gdGhlIE1QUyB0aGUgZGV2aWNlIG9yIHRo
+ZSBidXMgY2FuIHN1cHBvcnQuICBUaGlzIGFzc3VtZXMNCi0JCSAqIHRoYXQg
+dGhlIGxhcmdlc3QgTVJSUyBhdmFpbGFibGUgb24gdGhlIGRldmljZSBjYW5u
+b3QgYmUNCi0JCSAqIHNtYWxsZXIgdGhhbiB0aGUgZGV2aWNlIE1QU1MuDQot
+CQkgKi8NCi0JCW1ycnMgPSBtcHMgPCBkZXZfbXBzcyA/IG1wcyA6IGRldl9t
+cHNzOw0KLQl9IGVsc2UNCi0JCS8qIEluIHRoZSAic2FmZSIgY2FzZSwgY29u
+ZmlndXJlIHRoZSBNUlJTIGZvciBmYWlybmVzcyBvbiB0aGUNCi0JCSAqIGJ1
+cyBieSBtYWtpbmcgYWxsIGRldmljZXMgaGF2ZSB0aGUgc2FtZSBzaXplDQot
+CQkgKi8NCi0JCW1ycnMgPSBtcHM7DQorCWlmIChwY2llX2J1c19jb25maWcg
+IT0gUENJRV9CVVNfUEVSRk9STUFOQ0UpDQorCQlyZXR1cm47DQorDQorCWRl
+dl9tcHNzID0gMTI4IDw8IGRldi0+cGNpZV9tcHNzOw0KIA0KKwkvKiBGb3Ig
+TWF4IHBlcmZvcm1hbmNlLCB0aGUgTVJSUyBtdXN0IGJlIHNldCB0byB0aGUg
+bGFyZ2VzdCBzdXBwb3J0ZWQNCisJICogdmFsdWUuICBIb3dldmVyLCBpdCBj
+YW5ub3QgYmUgY29uZmlndXJlZCBsYXJnZXIgdGhhbiB0aGUgTVBTIHRoZQ0K
+KwkgKiBkZXZpY2Ugb3IgdGhlIGJ1cyBjYW4gc3VwcG9ydC4gIFRoaXMgYXNz
+dW1lcyB0aGF0IHRoZSBsYXJnZXN0IE1SUlMNCisJICogYXZhaWxhYmxlIG9u
+IHRoZSBkZXZpY2UgY2Fubm90IGJlIHNtYWxsZXIgdGhhbiB0aGUgZGV2aWNl
+IE1QU1MuDQorCSAqLw0KKwltcnJzID0gbWluKG1wcywgZGV2X21wc3MpOw0K
+IA0KIAkvKiBNUlJTIGlzIGEgUi9XIHJlZ2lzdGVyLiAgSW52YWxpZCB2YWx1
+ZXMgY2FuIGJlIHdyaXR0ZW4sIGJ1dCBhDQotCSAqIHN1YnNpcXVlbnQgcmVh
+ZCB3aWxsIHZlcmlmeSBpZiB0aGUgdmFsdWUgaXMgYWNjZXB0YWJsZSBvciBu
+b3QuDQorCSAqIHN1YnNlcXVlbnQgcmVhZCB3aWxsIHZlcmlmeSBpZiB0aGUg
+dmFsdWUgaXMgYWNjZXB0YWJsZSBvciBub3QuDQogCSAqIElmIHRoZSBNUlJT
+IHZhbHVlIHByb3ZpZGVkIGlzIG5vdCBhY2NlcHRhYmxlIChlLmcuLCB0b28g
+bGFyZ2UpLA0KIAkgKiBzaHJpbmsgdGhlIHZhbHVlIHVudGlsIGl0IGlzIGFj
+Y2VwdGFibGUgdG8gdGhlIEhXLg0KICAJICovDQogCXdoaWxlIChtcnJzICE9
+IHBjaWVfZ2V0X3JlYWRycShkZXYpICYmIG1ycnMgPj0gMTI4KSB7DQorCQlk
+ZXZfd2FybigmZGV2LT5kZXYsICJBdHRlbXB0aW5nIHRvIG1vZGlmeSB0aGUg
+UENJLUUgTVJSUyB2YWx1ZSINCisJCQkgIiB0byAlZC4gIElmIGFueSBpc3N1
+ZXMgYXJlIGVuY291bnRlcmVkLCBwbGVhc2UgdHJ5ICINCisJCQkgInJ1bm5p
+bmcgd2l0aCBwY2k9cGNpZV9idXNfc2FmZVxuIiwgbXJycyk7DQogCQlyYyA9
+IHBjaWVfc2V0X3JlYWRycShkZXYsIG1ycnMpOw0KIAkJaWYgKHJjKQ0KLQkJ
+CWRldl9lcnIoJmRldi0+ZGV2LCAiRmFpbGVkIGF0dGVtcHRpbmcgdG8gc2V0
+IHRoZSBNUlJTXG4iKTsNCisJCQlkZXZfZXJyKCZkZXYtPmRldiwNCisJCQkJ
+IkZhaWxlZCBhdHRlbXB0aW5nIHRvIHNldCB0aGUgTVJSU1xuIik7DQogDQog
+CQltcnJzIC89IDI7DQogCX0NCkBAIC0xNDM2LDEzICsxNDM5LDEzIEBAIHN0
+YXRpYyBpbnQgcGNpZV9idXNfY29uZmlndXJlX3NldChzdHJ1Y3QgcGNpX2Rl
+diAqZGV2LCB2b2lkICpkYXRhKQ0KIAlpZiAoIXBjaV9pc19wY2llKGRldikp
+DQogCQlyZXR1cm4gMDsNCiANCi0JZGV2X2luZm8oJmRldi0+ZGV2LCAiRGV2
+IE1QUyAlZCBNUFNTICVkIE1SUlMgJWRcbiIsDQorCWRldl9kYmcoJmRldi0+
+ZGV2LCAiRGV2IE1QUyAlZCBNUFNTICVkIE1SUlMgJWRcbiIsDQogCQkgcGNp
+ZV9nZXRfbXBzKGRldiksIDEyODw8ZGV2LT5wY2llX21wc3MsIHBjaWVfZ2V0
+X3JlYWRycShkZXYpKTsNCiANCiAJcGNpZV93cml0ZV9tcHMoZGV2LCBtcHMp
+Ow0KIAlwY2llX3dyaXRlX21ycnMoZGV2LCBtcHMpOw0KIA0KLQlkZXZfaW5m
+bygmZGV2LT5kZXYsICJEZXYgTVBTICVkIE1QU1MgJWQgTVJSUyAlZFxuIiwN
+CisJZGV2X2RiZygmZGV2LT5kZXYsICJEZXYgTVBTICVkIE1QU1MgJWQgTVJS
+UyAlZFxuIiwNCiAJCSBwY2llX2dldF9tcHMoZGV2KSwgMTI4PDxkZXYtPnBj
+aWVfbXBzcywgcGNpZV9nZXRfcmVhZHJxKGRldikpOw0KIA0KIAlyZXR1cm4g
+MDsNCi0tIA0KMS43LjYNCg0K
+
+--655872-507364377-1316085066=:23647
+Content-Type: TEXT/x-diff; name=0001-Fix-pointer-dereference-before-call-to-pcie_bus_conf.patch
+Content-Transfer-Encoding: BASE64
+Content-ID: <alpine.DEB.2.02.1109150711062.23647@p34.internal.lan>
+Content-Description: 
+Content-Disposition: attachment; filename=0001-Fix-pointer-dereference-before-call-to-pcie_bus_conf.patch
+
+RnJvbSBjZjgyMmFlZDk5ZmQ4ODUxZDgyYWU1ZjJkZjExYzI5Yjc5ZTMxNmM4
+IE1vbiBTZXAgMTcgMDA6MDA6MDAgMjAwMQ0KRnJvbTogU2h5YW0gSXllciA8
+c2h5YW0uaXllci50QGdtYWlsLmNvbT4NCkRhdGU6IFdlZCwgMzEgQXVnIDIw
+MTEgMTI6MjE6NDIgLTA0MDANClN1YmplY3Q6IFtQQVRDSCAxLzJdIEZpeCBw
+b2ludGVyIGRlcmVmZXJlbmNlIGJlZm9yZSBjYWxsIHRvDQogcGNpZV9idXNf
+Y29uZmlndXJlX3NldHRpbmdzDQoNClRoZXJlIGlzIGEgcG90ZW50aWFsIE5V
+TEwgcG9pbnRlciBkZXJlZmVyZW5jZSBpbiBjYWxscyB0bw0KcGNpZV9idXNf
+Y29uZmlndXJlX3NldHRpbmdzIGR1ZSB0byBhdHRlbXB0cyB0byBhY2Nlc3Mg
+cGNpX2J1cyBzZWxmDQp2YXJpYWJsZXMgd2hlbiB0aGUgc2VsZiBwb2ludGVy
+IGlzIE5VTEwuICBUbyBjb3JyZWN0IHRoaXMsIHZlcmlmeSB0aGF0DQp0aGUg
+c2VsZiBwb2ludGVyIGluIHBjaV9idXMgaXMgbm9uLU5VTEwgYmVmb3JlIGRl
+cmVmZXJlbmNpbmcgaXQuDQoNClJlcG9ydGVkLWJ5OiBTdGFuaXNsYXcgR3J1
+c3prYSA8c2dydXN6a2FAcmVkaGF0LmNvbT4NClNpZ25lZC1vZmYtYnk6IFNo
+eWFtIEl5ZXIgPHNoeWFtX2l5ZXJAZGVsbC5jb20+DQpTaWduZWQtb2ZmLWJ5
+OiBKb24gTWFzb24gPG1hc29uQG15cmkuY29tPg0KLS0tDQogYXJjaC94ODYv
+cGNpL2FjcGkuYyAgICAgICAgICAgICAgfCAgICA5ICsrKysrKystLQ0KIGRy
+aXZlcnMvcGNpL2hvdHBsdWcvcGNpaHBfc2xvdC5jIHwgICAgNCArKystDQog
+ZHJpdmVycy9wY2kvcHJvYmUuYyAgICAgICAgICAgICAgfCAgICAzIC0tLQ0K
+IDMgZmlsZXMgY2hhbmdlZCwgMTAgaW5zZXJ0aW9ucygrKSwgNiBkZWxldGlv
+bnMoLSkNCg0KZGlmZiAtLWdpdCBhL2FyY2gveDg2L3BjaS9hY3BpLmMgYi9h
+cmNoL3g4Ni9wY2kvYWNwaS5jDQppbmRleCBjOTUzMzAyLi4wMzlkOTEzIDEw
+MDY0NA0KLS0tIGEvYXJjaC94ODYvcGNpL2FjcGkuYw0KKysrIGIvYXJjaC94
+ODYvcGNpL2FjcGkuYw0KQEAgLTM2NSw4ICszNjUsMTMgQEAgc3RydWN0IHBj
+aV9idXMgKiBfX2RldmluaXQgcGNpX2FjcGlfc2Nhbl9yb290KHN0cnVjdCBh
+Y3BpX3BjaV9yb290ICpyb290KQ0KIAkgKi8NCiAJaWYgKGJ1cykgew0KIAkJ
+c3RydWN0IHBjaV9idXMgKmNoaWxkOw0KLQkJbGlzdF9mb3JfZWFjaF9lbnRy
+eShjaGlsZCwgJmJ1cy0+Y2hpbGRyZW4sIG5vZGUpDQotCQkJcGNpZV9idXNf
+Y29uZmlndXJlX3NldHRpbmdzKGNoaWxkLCBjaGlsZC0+c2VsZi0+cGNpZV9t
+cHNzKTsNCisJCWxpc3RfZm9yX2VhY2hfZW50cnkoY2hpbGQsICZidXMtPmNo
+aWxkcmVuLCBub2RlKSB7DQorCQkJc3RydWN0IHBjaV9kZXYgKnNlbGYgPSBj
+aGlsZC0+c2VsZjsNCisJCQlpZiAoIXNlbGYpDQorCQkJCWNvbnRpbnVlOw0K
+Kw0KKwkJCXBjaWVfYnVzX2NvbmZpZ3VyZV9zZXR0aW5ncyhjaGlsZCwgc2Vs
+Zi0+cGNpZV9tcHNzKTsNCisJCX0NCiAJfQ0KIA0KIAlpZiAoIWJ1cykNCmRp
+ZmYgLS1naXQgYS9kcml2ZXJzL3BjaS9ob3RwbHVnL3BjaWhwX3Nsb3QuYyBi
+L2RyaXZlcnMvcGNpL2hvdHBsdWcvcGNpaHBfc2xvdC5jDQppbmRleCA3NTNi
+MjFhLi4zZmZkOWMxIDEwMDY0NA0KLS0tIGEvZHJpdmVycy9wY2kvaG90cGx1
+Zy9wY2locF9zbG90LmMNCisrKyBiL2RyaXZlcnMvcGNpL2hvdHBsdWcvcGNp
+aHBfc2xvdC5jDQpAQCAtMTY5LDcgKzE2OSw5IEBAIHZvaWQgcGNpX2NvbmZp
+Z3VyZV9zbG90KHN0cnVjdCBwY2lfZGV2ICpkZXYpDQogCQkJKGRldi0+Y2xh
+c3MgPj4gOCkgPT0gUENJX0NMQVNTX0JSSURHRV9QQ0kpKSkNCiAJCXJldHVy
+bjsNCiANCi0JcGNpZV9idXNfY29uZmlndXJlX3NldHRpbmdzKGRldi0+YnVz
+LCBkZXYtPmJ1cy0+c2VsZi0+cGNpZV9tcHNzKTsNCisJaWYgKGRldi0+YnVz
+ICYmIGRldi0+YnVzLT5zZWxmKQ0KKwkJcGNpZV9idXNfY29uZmlndXJlX3Nl
+dHRpbmdzKGRldi0+YnVzLA0KKwkJCQkJICAgIGRldi0+YnVzLT5zZWxmLT5w
+Y2llX21wc3MpOw0KIA0KIAltZW1zZXQoJmhwcCwgMCwgc2l6ZW9mKGhwcCkp
+Ow0KIAlyZXQgPSBwY2lfZ2V0X2hwX3BhcmFtcyhkZXYsICZocHApOw0KZGlm
+ZiAtLWdpdCBhL2RyaXZlcnMvcGNpL3Byb2JlLmMgYi9kcml2ZXJzL3BjaS9w
+cm9iZS5jDQppbmRleCA4NDczNzI3Li4wODIwZmMxIDEwMDY0NA0KLS0tIGEv
+ZHJpdmVycy9wY2kvcHJvYmUuYw0KKysrIGIvZHJpdmVycy9wY2kvcHJvYmUu
+Yw0KQEAgLTE0NTYsOSArMTQ1Niw2IEBAIHZvaWQgcGNpZV9idXNfY29uZmln
+dXJlX3NldHRpbmdzKHN0cnVjdCBwY2lfYnVzICpidXMsIHU4IG1wc3MpDQog
+ew0KIAl1OCBzbXBzcyA9IG1wc3M7DQogDQotCWlmICghYnVzLT5zZWxmKQ0K
+LQkJcmV0dXJuOw0KLQ0KIAlpZiAoIXBjaV9pc19wY2llKGJ1cy0+c2VsZikp
+DQogCQlyZXR1cm47DQogDQotLSANCjEuNy42DQoNCg==
+
+--655872-507364377-1316085066=:23647--
