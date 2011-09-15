@@ -1,103 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934121Ab1IOPnz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 11:43:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10262 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934046Ab1IOPnx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 11:43:53 -0400
-Date: Thu, 15 Sep 2011 16:43:47 +0100
-To: linux-fsdevel@vger.kernel.org
-Subject: hfs: fix hfs_find_init() sb->ext_tree NULL ptr oops
-Cc: eteo@redhat.com, akpm@linux-foundation.org, hch@lst.de,
-        linux-kernel@vger.kernel.org
-User-Agent: Heirloom mailx 12.4 7/29/08
+	id S934109Ab1IOPrP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 11:47:15 -0400
+Received: from ganesha.gnumonks.org ([213.95.27.120]:56961 "EHLO
+	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934067Ab1IOPrO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Sep 2011 11:47:14 -0400
+Date: Thu, 15 Sep 2011 08:20:36 +0100
+From: Harald Welte <laforge@gnumonks.org>
+To: Russell King <rmk+alsa@arm.linux.org.uk>
+Cc: Axel Lin <axel.lin@gmail.com>, Harald Welte <laforge@openezx.org>,
+        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: Re: [linux-next] ASoC: sound/soc/samsung/neo1973_wm8753.c build
+ failure
+Message-ID: <20110915072036.GB9509@prithivi.gnumonks.org>
+References: <1315991893.17271.2.camel@phoenix>
+ <20110914191917.GA30518@flint.arm.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20110915154347.AF1E444B82@plougher.csb>
-From: plougher@redhat.com (Phillip Lougher)
+Content-Disposition: inline
+In-Reply-To: <20110914191917.GA30518@flint.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Russell,
 
-Clement Lecigne reports a filesystem which causes a kernel oops
-in hfs_find_init() trying to dereference sb->ext_tree which is NULL.
+On Wed, Sep 14, 2011 at 08:19:17PM +0100, Russell King wrote:
 
-This proves to be because the filesystem has a corrupted MDB extent record,
-where the extents file does not fit into the first three extents in
-the file record (the first blocks).
+> neo1973_gta01 was added to the database in October 2006.  Five months
+> later, neo1973_gta02 was registered by the same person (Harald Welte),
+> and gta02 has been merged.
+> 
+> Therefore, I suggest that the GTA01 will never be submitted now, moreover
+> I suggest that neo1973_gta01 was probably a prototype and neo1973_gta02
+> was probably the production platform.
 
-In hfs_get_block() when looking up the blocks for the extent file
-(HFS_EXT_CNID), it fails the first blocks special case, and falls through
-to the extent code (which ultimately calls hfs_find_init()) which is
-in the process of being initialised.
+GTA01 was produced in a certain quantity, to be honest I don't remember
+the details.  It was not just a prototype but actually sold + shipped to
+quite a number of people.
 
-Hfs avoids this scenario by always having the extents b-tree
-fitting into the first blocks (the extents B-tree can't have overflow
-extents).
+> So I suggest these references should be removed.  If the platform is not
+> going to be merged its pointless carrying the baggage around in drivers.
+> Maybe Harald can confirm?
 
-The fix is to check at mount time that the B-tree fits into first blocks,
-i.e.  fail if HFS_I(inode)->alloc_blocks >= HFS_I(inode)->first_blocks
+I can confirm that I personally definitely will not be working on
+merging GTA01 related code.  However, the remaining "wider Openmoko
+community" is surprisingly active, and I wouldn't be surprised at all if
+somebody still wanted to do that, despite all that time having passed.
 
-Note, the existing commit 47f365eb575735c6b2edf5d08e0d16d26a9c23bd
-becomes subsumed into this as a special case, but only for the
-extents B-tree (HFS_EXT_CNID), it is perfectly acceptable for the catalog
-B-Tree file to grow beyond three extents, with the remaining extent
-descriptors in the extents overfow.
-
-This fixes CVE-2011-2203
-
-Reported-by: Clement LECIGNE <clement.lecigne@netasq.com>
-Signed-off-by: Phillip Lougher <plougher@redhat.com>
----
- fs/hfs/btree.c |   20 +++++++++++++++-----
- 1 files changed, 15 insertions(+), 5 deletions(-)
-
-diff --git a/fs/hfs/btree.c b/fs/hfs/btree.c
-index 3ebc437..c28b7fa 100644
---- a/fs/hfs/btree.c
-+++ b/fs/hfs/btree.c
-@@ -46,11 +46,26 @@ struct hfs_btree *hfs_btree_open(struct super_block *sb, u32 id, btree_keycmp ke
- 	case HFS_EXT_CNID:
- 		hfs_inode_read_fork(tree->inode, mdb->drXTExtRec, mdb->drXTFlSize,
- 				    mdb->drXTFlSize, be32_to_cpu(mdb->drXTClpSiz));
-+		if (HFS_I(tree->inode)->alloc_blocks >
-+					HFS_I(tree->inode)->first_blocks) {
-+			printk(KERN_ERR "hfs: invalid btree extent records\n");
-+			unlock_new_inode(tree->inode);
-+			goto free_inode;
-+		}
-+
- 		tree->inode->i_mapping->a_ops = &hfs_btree_aops;
- 		break;
- 	case HFS_CAT_CNID:
- 		hfs_inode_read_fork(tree->inode, mdb->drCTExtRec, mdb->drCTFlSize,
- 				    mdb->drCTFlSize, be32_to_cpu(mdb->drCTClpSiz));
-+
-+		if (!HFS_I(tree->inode)->first_blocks) {
-+			printk(KERN_ERR "hfs: invalid btree extent records "
-+								"(0 size).\n");
-+			unlock_new_inode(tree->inode);
-+			goto free_inode;
-+		}
-+
- 		tree->inode->i_mapping->a_ops = &hfs_btree_aops;
- 		break;
- 	default:
-@@ -59,11 +74,6 @@ struct hfs_btree *hfs_btree_open(struct super_block *sb, u32 id, btree_keycmp ke
- 	}
- 	unlock_new_inode(tree->inode);
- 
--	if (!HFS_I(tree->inode)->first_blocks) {
--		printk(KERN_ERR "hfs: invalid btree extent records (0 size).\n");
--		goto free_inode;
--	}
--
- 	mapping = tree->inode->i_mapping;
- 	page = read_mapping_page(mapping, 0, NULL);
- 	if (IS_ERR(page))
+Regards,
+	Harald
 -- 
-1.7.1
-
+- Harald Welte <laforge@gnumonks.org>           http://laforge.gnumonks.org/
+============================================================================
+"Privacy in residential applications is a desirable marketing option."
+                                                  (ETSI EN 300 175-7 Ch. A6)
