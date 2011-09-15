@@ -1,91 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935215Ab1IOWD4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 18:03:56 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:55492 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934111Ab1IOWDy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 18:03:54 -0400
-Subject: Re: linux-next: build failure after merge of the final tree
- (security tree related)
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: James Morris <jmorris@namei.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20110915170715.a380a5be954efc5891386ee3@canb.auug.org.au>
-References: <20110915170715.a380a5be954efc5891386ee3@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 15 Sep 2011 18:03:51 -0400
-Message-ID: <1316124231.3345.29.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
+	id S935220Ab1IOWH0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 18:07:26 -0400
+Received: from exout101.netflix.com ([69.53.237.162]:21590 "EHLO
+	exout101.netflix.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932326Ab1IOWHZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Sep 2011 18:07:25 -0400
+X-Greylist: delayed 305 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Sep 2011 18:07:25 EDT
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024;d=netflix.com;
+  h=from:to:date:subject:message-id:content-type:mime-version;
+  b=dKC80ok+QSi+iIKLyFAOt3B6cHfIkVDnQN2e7ycnfvWF9LchOvFhPuut2j8pk+RwrAvf3jCc
+    Px1TeUlNo0FsJkVfoUf8rnVDU5lUx448Q+2CQujG7wPKSbmn5KdM0xzmzLSnjNyz7yp4CGL4
+    8dqw1uOBx4hMhx9gF8oN1NR777Q=
+From: Wesley Miaw <wmiaw@netflix.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 15 Sep 2011 15:02:18 -0700
+Subject: Re: [PATCH] dm: verity target
+Thread-Topic: [PATCH] dm: verity target
+Thread-Index: Acxz8yMooADs1JM/T0yS1tVxxBVR6Q==
+Message-ID: <48F0EA4A-5982-4686-8492-422F4225D5FB@netflix.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-09-15 at 17:07 +1000, Stephen Rothwell wrote:
-> Hi all,
-> 
-> After merging the final tree, today's linux-next build (powerpc
-> allyesconfig) failed like this:
-> 
-> security/keys/encrypted-keys/masterkey_trusted.c: In function 'request_trusted_key':
-> security/keys/encrypted-keys/masterkey_trusted.c:35:2: error: implicit declaration of function 'IS_ERR'
-> 
-> Caused by commit 982e617a313b ("encrypted-keys: remove trusted-keys
-> dependency").  Forgot to include linux/err.h.  See Rule 1 in
-> Documentation/SubmitChecklist.
-> 
-> I have applied the following patch for today.
-> 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Thu, 15 Sep 2011 17:03:09 +1000
-> Subject: [PATCH] encrypted-keys: IS_ERR need include/err.h
-> 
-> Fixes this build error:
-> 
-> security/keys/encrypted-keys/masterkey_trusted.c: In function 'request_trusted_key':
-> security/keys/encrypted-keys/masterkey_trusted.c:35:2: error: implicit declaration of function 'IS_ERR'
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  security/keys/encrypted-keys/masterkey_trusted.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/security/keys/encrypted-keys/masterkey_trusted.c b/security/keys/encrypted-keys/masterkey_trusted.c
-> index a5da512..df87272 100644
-> --- a/security/keys/encrypted-keys/masterkey_trusted.c
-> +++ b/security/keys/encrypted-keys/masterkey_trusted.c
-> @@ -16,6 +16,7 @@
-> 
->  #include <linux/uaccess.h>
->  #include <linux/module.h>
-> +#include <linux/err.h>
->  #include <keys/trusted-type.h>
-> 
->  /*
-> -- 
-> 1.7.5.4
+On 2011 Sep 15, at 11:45 AM, Mandeep Singh Baines wrote:
 
-Thanks Stephen.  James, assuming that the patch needs to be made
-available from the security tree, it's available from:
+> The verity target provides transparent integrity checking of block devices
+> using a cryptographic digest.
+> 
+> dm-verity is meant to be setup as part of a verified boot path.  This
+> may be anything ranging from a boot using tboot or trustedgrub to just
+> booting from a known-good device (like a USB drive or CD).
+> 
+> dm-verity is part of ChromeOS's verified boot path. It is used to verify
+> the integrity of the root filesystem on boot. The root filesystem is
+> mounted on a dm-verity partition which transparently verifies each block
+> with a bootloader verified hash passed into the kernel at boot.
 
-The following changes since commit 8de6ac7f58a22fdab399fbe97763e465ea49c735:
-
-  Merge branch 'next-evm' of git://github.com/mzohar/linux-evm into next (2011-09-15 09:53:38 +1000)
-
-are available in the git repository at:
-
-  git://github.com/mzohar/linux-evm.git next-for-james
-
-Stephen Rothwell (1):
-      encrypted-keys: IS_ERR need include/err.h
-
- security/keys/encrypted-keys/masterkey_trusted.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-thanks,
-
-Mimi
-
+Netflix would like dm-verity to be included in the Linux kernel. Over the past year, we have been working with Google and porting dm-verity onto a number of consumer electronics devices running embedded Linux. Demand for this feature has been high and we see a lot of benefit associated with making dm-verity part of the official kernel.
+--
+Wesley Miaw
