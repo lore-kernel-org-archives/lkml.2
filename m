@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753458Ab1IOI3h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 04:29:37 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:7817 "EHLO
+	id S1755324Ab1IOIaE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 04:30:04 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:58258 "EHLO
 	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751162Ab1IOI3g convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@suse.com:3:1>);
-	Thu, 15 Sep 2011 04:29:36 -0400
-Message-Id: <4E71D38E02000078000563A1@nat28.tlf.novell.com>
+	with ESMTP id S1751669Ab1IOIaC convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@suse.com:4:1>);
+	Thu, 15 Sep 2011 04:30:02 -0400
+Message-Id: <4E71D3A802000078000563A4@nat28.tlf.novell.com>
 X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Thu, 15 Sep 2011 09:29:34 +0100
+Date: Thu, 15 Sep 2011 09:30:00 +0100
 From: "Jan Beulich" <JBeulich@suse.com>
 To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: [PATCH, resend] x86-64: don't apply destructive erratum
-	 workaround on unaffected CPUs
+Cc: <stable@kernel.org>, <tj@kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] i386/bigsmp: eliminate false warnings regarding
+	 logical APIC ID mismatches
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
@@ -23,56 +23,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Erratum 93 applies to AMD K8 CPUs only, and its workaround (forcing
-the upper 32 bits of %rip to all get set under certain conditions) is
-actually getting in the way of analyzing page faults occurring during
-EFI physical mode runtime calls (in particular the page table walk
-shown is completely unrelated to the actual fault). This is because
-typically EFI runtime code lives in the space between 2G and 4G, which
-- modulo the above manipulation - is likely to overlap with the kernel
-or modules area.
+These warnings (generally one per CPU) are a result of initializing
+x86_cpu_to_logical_apicid while apic_default is still in use, but the
+check in setup_local_APIC() being done when apic_bigsmp was already
+used as an override in default_setup_apic_routing():
 
-While even for the other errata workarounds their taking effect could
-be limited to just the affected CPUs, none of them appears to be
-destructive, and they're generally getting called only outside of
-performance critical paths, so they're being left untouched.
+Overriding APIC driver with bigsmp
+Enabling APIC mode:  Physflat.  Using 5 I/O APICs
+------------[ cut here ]------------
+WARNING: at .../arch/x86/kernel/apic/apic.c:1239 setup_local_APIC+0x137/0x46b()
+Hardware name: ...
+CPU0 logical APIC ID: 1 != 0
+Pid: 1, comm: swapper Not tainted 3.0.1-2011-08-09-jb #2
+Call Trace:
+ [<c1005f91>] try_stack_unwind+0x1b1/0x1f0
+ [<c1004cc7>] dump_trace+0x47/0x110
+ [<c1005b0b>] show_trace_log_lvl+0x4b/0x60
+ [<c1005b38>] show_trace+0x18/0x20
+ [<c1261435>] dump_stack+0x6d/0x72
+ [<c10355f7>] warn_slowpath_common+0x77/0xb0
+ [<c10356c3>] warn_slowpath_fmt+0x33/0x40
+ [<c13fda81>] setup_local_APIC+0x137/0x46b
+ [<c13d1733>] native_smp_prepare_cpus+0x108/0x1cd
+ [<c13c61ff>] kernel_init+0x37/0x12c
+ [<c1264826>] kernel_thread_helper+0x6/0xd
+---[ end trace 4eaa2a86a8e2da22 ]---
+...
+CPU 1 irqstacks, hard=f1c9a000 soft=f1c9c000
+Booting Node   0, Processors  #1
+smpboot cpu 1: start_ip = 9e000
+Initializing CPU#1
+------------[ cut here ]------------
+WARNING: at .../arch/x86/kernel/apic/apic.c:1239 setup_local_APIC+0x137/0x46b()
+Hardware name: ...
+CPU1 logical APIC ID: 2 != 8
+...
+
+Fix this (for the time being, i.e. until x86_32_early_logical_apicid()
+will get removed again, as Tehun says ought to be possible) by
+overriding the previously stored values at the point where the APIC
+driver gets overridden.
 
 Signed-off-by: Jan Beulich <jbeulich@novell.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+Cc: stable@kernel.org (2.6.39 and onwards)
 
 ---
- arch/x86/mm/fault.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ arch/x86/kernel/apic/probe_32.c |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
---- 3.1-rc6/arch/x86/mm/fault.c
-+++ 3.1-rc6-x86_64-amd-erratum93/arch/x86/mm/fault.c
-@@ -420,12 +420,14 @@ static noinline __kprobes int vmalloc_fa
- 	return 0;
- }
- 
-+#ifdef CONFIG_CPU_SUP_AMD
- static const char errata93_warning[] =
- KERN_ERR 
- "******* Your BIOS seems to not contain a fix for K8 errata #93\n"
- "******* Working around it, but it may cause SEGVs or burn power.\n"
- "******* Please consider a BIOS update.\n"
- "******* Disabling USB legacy in the BIOS may also help.\n";
-+#endif
- 
- /*
-  * No vm86 mode in 64-bit mode:
-@@ -505,7 +507,11 @@ bad:
-  */
- static int is_errata93(struct pt_regs *regs, unsigned long address)
- {
--#ifdef CONFIG_X86_64
-+#if defined(CONFIG_X86_64) && defined(CONFIG_CPU_SUP_AMD)
-+	if (boot_cpu_data.x86_vendor != X86_VENDOR_AMD
-+	    || boot_cpu_data.x86 != 0xf)
-+		return 0;
+--- 3.1-rc6/arch/x86/kernel/apic/probe_32.c
++++ 3.1-rc6-i386-bigsmp-early-lapicid-override/arch/x86/kernel/apic/probe_32.c
+@@ -203,7 +203,18 @@ void __init default_setup_apic_routing(v
+ 	if (!cmdline_apic && apic == &apic_default) {
+ 		struct apic *bigsmp = generic_bigsmp_probe();
+ 		if (bigsmp) {
++			unsigned int cpu;
 +
- 	if (address != regs->ip)
- 		return 0;
- 
+ 			apic = bigsmp;
++			for_each_possible_cpu(cpu) {
++				if (early_per_cpu(x86_cpu_to_logical_apicid,
++						  cpu) == BAD_APICID)
++					continue;
++				early_per_cpu(x86_cpu_to_logical_apicid,
++					      cpu) =
++					bigsmp->x86_32_early_logical_apicid
++						(cpu);
++			}
+ 			printk(KERN_INFO "Overriding APIC driver with %s\n",
+ 			       apic->name);
+ 		}
 
 
 
