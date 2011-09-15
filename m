@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934821Ab1IOUNc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 16:13:32 -0400
-Received: from mga02.intel.com ([134.134.136.20]:48932 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934742Ab1IOUKG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S934745Ab1IOUKG (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 15 Sep 2011 16:10:06 -0400
+Received: from mga02.intel.com ([134.134.136.20]:46846 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934521Ab1IOUKC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Sep 2011 16:10:02 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="48873442"
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="48899365"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
-Cc: Andi Kleen <ak@linux.intel.com>, mchehab@infradead.org
-Subject: [PATCH 15/27] Initconst section fixes for media
-Date: Thu, 15 Sep 2011 13:09:42 -0700
-Message-Id: <1316117394-21666-16-git-send-email-andi@firstfloor.org>
+Cc: Andi Kleen <ak@linux.intel.com>, ysato@users.sourceforge.jp
+Subject: [PATCH 03/27] Initconst section fixes for H8300
+Date: Thu, 15 Sep 2011 13:09:30 -0700
+Message-Id: <1316117394-21666-4-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1316117394-21666-1-git-send-email-andi@firstfloor.org>
 References: <1316117394-21666-1-git-send-email-andi@firstfloor.org>
@@ -24,71 +24,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Cc: mchehab@infradead.org
+Cc: ysato@users.sourceforge.jp
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- drivers/media/dvb/ngene/ngene-cards.c |    2 +-
- drivers/media/video/cx88/cx88-alsa.c  |    2 +-
- drivers/media/video/timblogiw.c       |    6 +++---
- 3 files changed, 5 insertions(+), 5 deletions(-)
+ arch/h8300/kernel/timer/itu.c     |    2 +-
+ arch/h8300/kernel/timer/timer16.c |    2 +-
+ arch/h8300/kernel/timer/timer8.c  |    2 +-
+ arch/h8300/kernel/timer/tpu.c     |    2 +-
+ arch/h8300/platform/h8300h/irq.c  |    4 ++--
+ arch/h8300/platform/h8s/irq.c     |    4 ++--
+ 6 files changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/media/dvb/ngene/ngene-cards.c b/drivers/media/dvb/ngene/ngene-cards.c
-index 0564192..75b16f5 100644
---- a/drivers/media/dvb/ngene/ngene-cards.c
-+++ b/drivers/media/dvb/ngene/ngene-cards.c
-@@ -477,7 +477,7 @@ static struct ngene_info ngene_info_m780 = {
- 
- /****************************************************************************/
- 
--static const struct pci_device_id ngene_id_tbl[] __devinitdata = {
-+static const struct pci_device_id ngene_id_tbl[] __devinitconst = {
- 	NGENE_ID(0x18c3, 0xabc3, ngene_info_cineS2),
- 	NGENE_ID(0x18c3, 0xabc4, ngene_info_cineS2),
- 	NGENE_ID(0x18c3, 0xdb01, ngene_info_satixS2),
-diff --git a/drivers/media/video/cx88/cx88-alsa.c b/drivers/media/video/cx88/cx88-alsa.c
-index 68d1240..46b32eb 100644
---- a/drivers/media/video/cx88/cx88-alsa.c
-+++ b/drivers/media/video/cx88/cx88-alsa.c
-@@ -766,7 +766,7 @@ static struct snd_kcontrol_new snd_cx88_alc_switch = {
-  * Only boards with eeprom and byte 1 at eeprom=1 have it
-  */
- 
--static const struct pci_device_id const cx88_audio_pci_tbl[] __devinitdata = {
-+static const struct pci_device_id const cx88_audio_pci_tbl[] __devinitconst = {
- 	{0x14f1,0x8801,PCI_ANY_ID,PCI_ANY_ID,0,0,0},
- 	{0x14f1,0x8811,PCI_ANY_ID,PCI_ANY_ID,0,0,0},
- 	{0, }
-diff --git a/drivers/media/video/timblogiw.c b/drivers/media/video/timblogiw.c
-index 84cd1b6..586706b 100644
---- a/drivers/media/video/timblogiw.c
-+++ b/drivers/media/video/timblogiw.c
-@@ -744,7 +744,7 @@ static int timblogiw_mmap(struct file *file, struct vm_area_struct *vma)
- 
- /* Platform device functions */
- 
--static __devinitconst struct v4l2_ioctl_ops timblogiw_ioctl_ops = {
-+static const __devinitconst struct v4l2_ioctl_ops timblogiw_ioctl_ops = {
- 	.vidioc_querycap		= timblogiw_querycap,
- 	.vidioc_enum_fmt_vid_cap	= timblogiw_enum_fmt,
- 	.vidioc_g_fmt_vid_cap		= timblogiw_g_fmt,
-@@ -766,7 +766,7 @@ static __devinitconst struct v4l2_ioctl_ops timblogiw_ioctl_ops = {
- 	.vidioc_enum_framesizes		= timblogiw_enum_framesizes,
+diff --git a/arch/h8300/kernel/timer/itu.c b/arch/h8300/kernel/timer/itu.c
+index a2ae5e9..0a8b5cd 100644
+--- a/arch/h8300/kernel/timer/itu.c
++++ b/arch/h8300/kernel/timer/itu.c
+@@ -62,7 +62,7 @@ static struct irqaction itu_irq = {
+ 	.flags		= IRQF_DISABLED | IRQF_TIMER,
  };
  
--static __devinitconst struct v4l2_file_operations timblogiw_fops = {
-+static const __devinitconst struct v4l2_file_operations timblogiw_fops = {
- 	.owner		= THIS_MODULE,
- 	.open		= timblogiw_open,
- 	.release	= timblogiw_close,
-@@ -776,7 +776,7 @@ static __devinitconst struct v4l2_file_operations timblogiw_fops = {
- 	.poll		= timblogiw_poll,
+-static const int __initdata divide_rate[] = {1, 2, 4, 8};
++static const int __initconst divide_rate[] = {1, 2, 4, 8};
+ 
+ void __init h8300_timer_setup(void)
+ {
+diff --git a/arch/h8300/kernel/timer/timer16.c b/arch/h8300/kernel/timer/timer16.c
+index ae0d381..462d9f58 100644
+--- a/arch/h8300/kernel/timer/timer16.c
++++ b/arch/h8300/kernel/timer/timer16.c
+@@ -57,7 +57,7 @@ static struct irqaction timer16_irq = {
+ 	.flags		= IRQF_DISABLED | IRQF_TIMER,
  };
  
--static __devinitconst struct video_device timblogiw_template = {
-+static const __devinitconst struct video_device timblogiw_template = {
- 	.name		= TIMBLOGIWIN_NAME,
- 	.fops		= &timblogiw_fops,
- 	.ioctl_ops	= &timblogiw_ioctl_ops,
+-static const int __initdata divide_rate[] = {1, 2, 4, 8};
++static const int __initconst divide_rate[] = {1, 2, 4, 8};
+ 
+ void __init h8300_timer_setup(void)
+ {
+diff --git a/arch/h8300/kernel/timer/timer8.c b/arch/h8300/kernel/timer/timer8.c
+index 7a1533f..505f341 100644
+--- a/arch/h8300/kernel/timer/timer8.c
++++ b/arch/h8300/kernel/timer/timer8.c
+@@ -77,7 +77,7 @@ static struct irqaction timer8_irq = {
+ 	.flags		= IRQF_DISABLED | IRQF_TIMER,
+ };
+ 
+-static const int __initdata divide_rate[] = {8, 64, 8192};
++static const int __initconst divide_rate[] = {8, 64, 8192};
+ 
+ void __init h8300_timer_setup(void)
+ {
+diff --git a/arch/h8300/kernel/timer/tpu.c b/arch/h8300/kernel/timer/tpu.c
+index 2193a2e..0350f62 100644
+--- a/arch/h8300/kernel/timer/tpu.c
++++ b/arch/h8300/kernel/timer/tpu.c
+@@ -66,7 +66,7 @@ static struct irqaction tpu_irq = {
+ 	.flags		= IRQF_DISABLED | IRQF_TIMER,
+ };
+ 
+-static const int __initdata divide_rate[] = {
++static const int __initconst divide_rate[] = {
+ #if CONFIG_H8300_TPU_CH == 0
+ 	1,4,16,64,0,0,0,0,
+ #elif (CONFIG_H8300_TPU_CH == 1) || (CONFIG_H8300_TPU_CH == 5)
+diff --git a/arch/h8300/platform/h8300h/irq.c b/arch/h8300/platform/h8300h/irq.c
+index e977345..7a5aa87 100644
+--- a/arch/h8300/platform/h8300h/irq.c
++++ b/arch/h8300/platform/h8300h/irq.c
+@@ -14,14 +14,14 @@
+ #include <asm/gpio.h>
+ #include <asm/regs306x.h>
+ 
+-const int __initdata h8300_saved_vectors[] = {
++const int __initconst h8300_saved_vectors[] = {
+ #if defined(CONFIG_GDB_DEBUG)
+ 	TRAP3_VEC,	/* TRAPA #3 is GDB breakpoint */
+ #endif
+ 	-1,
+ };
+ 
+-const h8300_vector __initdata h8300_trap_table[] = {
++const h8300_vector __initconst h8300_trap_table[] = {
+ 	0, 0, 0, 0, 0, 0, 0, 0,
+ 	system_call,
+ 	0,
+diff --git a/arch/h8300/platform/h8s/irq.c b/arch/h8300/platform/h8s/irq.c
+index 8182f04..6369ca9 100644
+--- a/arch/h8300/platform/h8s/irq.c
++++ b/arch/h8300/platform/h8s/irq.c
+@@ -18,7 +18,7 @@
+ #include <asm/regs267x.h>
+ 
+ /* saved vector list */
+-const int __initdata h8300_saved_vectors[]={
++const int __initconst h8300_saved_vectors[]={
+ #if defined(CONFIG_GDB_DEBUG)
+ 	TRACE_VEC,
+ 	TRAP3_VEC,
+@@ -27,7 +27,7 @@ const int __initdata h8300_saved_vectors[]={
+ };
+ 
+ /* trap entry table */
+-const H8300_VECTOR __initdata h8300_trap_table[] = {
++const H8300_VECTOR __initconst h8300_trap_table[] = {
+ 	0,0,0,0,0,
+ 	trace_break,  /* TRACE */
+ 	0,0,
 -- 
 1.7.4.4
 
