@@ -1,54 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933931Ab1IOOs1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 10:48:27 -0400
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:35699 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933524Ab1IOOsZ (ORCPT
+	id S933917Ab1IOOtc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 10:49:32 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:62572 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932553Ab1IOOta convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 10:48:25 -0400
-Message-ID: <4E721033.8060201@tao.ma>
-Date: Thu, 15 Sep 2011 22:48:19 +0800
-From: Tao Ma <tm@tao.ma>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
+	Thu, 15 Sep 2011 10:49:30 -0400
 MIME-Version: 1.0
-To: Jens Axboe <jaxboe@fusionio.com>
-CC: Christoph Hellwig <hch@infradead.org>, Shaohua Li <shli@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RESEND] block: Don't check QUEUE_FLAG_SAME_COMP in __blk_complete_request.
-References: <1315984992-5158-1-git-send-email-tm@tao.ma> <1315984992-5158-2-git-send-email-tm@tao.ma> <CANejiEWa5um5LtRkL3NcbNgBnUCG1Ud8qw-hfXW3X3GPfHv4iQ@mail.gmail.com> <4E715FE2.7040004@tao.ma> <20110915111728.GA6275@infradead.org> <4E71E15F.1050507@fusionio.com>
-In-Reply-To: <4E71E15F.1050507@fusionio.com>
+In-Reply-To: <4E71D59702000078000563D1@nat28.tlf.novell.com>
+References: <4E71D59702000078000563D1@nat28.tlf.novell.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Thu, 15 Sep 2011 07:44:11 -0700
+X-Google-Sender-Auth: KckXffOPadJzbyL6HnZIg9v1rO4
+Message-ID: <CAObL_7FU+QNK0ho5281GXWTDtYAqaHaai=mohti2CVSdH0d_Zg@mail.gmail.com>
+Subject: Re: [PATCH] x86-64: add default case to emulate_vsyscall() to silence
+ compiler warning
+To: Jan Beulich <JBeulich@suse.com>
+Cc: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 221.217.44.169 authed with tm@tao.ma}
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/15/2011 07:28 PM, Jens Axboe wrote:
-> On 2011-09-15 13:17, Christoph Hellwig wrote:
->> On Thu, Sep 15, 2011 at 10:16:02AM +0800, Tao Ma wrote:
->>>> why not delete bio_set_completion_cpu()?
->>> Not sure. It is added in commit c7c22e4d from the very beginning, and in
->>> the commit log Jens described it as:
->>> A bio helper (bio_set_completion_cpu()) is also added, so that queuers
->>> can ask for completion on that specific CPU. Maybe it is obsolete.
->>> Anyway, I am fine to generate a patch to remove it if you prefer.
->>>> 1. nobody uses it in my search
->>> yes, but it may be designed for someone to use it. The same goes with
->>> BIO_CPU_AFFINE.
->>
->> This code is unused, and from the all the discussions lately pretty
->> obviously broken.  The only thing keeping it serves is creating more
->> confusion and possibly more bugs.
-> 
-> We can kill bio_set_completion_cpu(). I'm fine with leaving cpu control
-> to the request based drivers, they are the only ones that can toggle the
-> setting anyway.
-So we should remove bio_comp_cpu and BIO_CPU_AFFINE also if we have
-decided to only leave cpu control to the request based drivers, right?
+On Thu, Sep 15, 2011 at 1:38 AM, Jan Beulich <JBeulich@suse.com> wrote:
+> ... since the compiler can't possibly know that vsyscall_nr is limited
+> to three values, and hence 'ret' must appear possibly uninitialized to
+> it.
 
-I will generate a patch for it later.
+Hmm.  I actually wrote that thing carefully to avoid needing a default
+case.  My copy of gcc (Red Hat 4.6.0-10) doesn't warn.
 
-Thanks
-Tao
+I guess that older versions do warn.  I have no strong preference on
+what to do avoid it.
+
+--Andy
+
+>
+> Signed-off-by: Jan Beulich <jbeulich@novell.com>
+> Cc: Andy Lutomirski <luto@mit.edu>
+>
+> ---
+>  arch/x86/kernel/vsyscall_64.c |    3 +++
+>  1 file changed, 3 insertions(+)
+>
+> --- 3.1-rc6/arch/x86/kernel/vsyscall_64.c
+> +++ 3.1-rc6-x86_64-emul-vsyscall/arch/x86/kernel/vsyscall_64.c
+> @@ -195,6 +195,9 @@ bool emulate_vsyscall(struct pt_regs *re
+>                                 (unsigned __user *)regs->si,
+>                                 0);
+>                break;
+> +       default:
+> +               ret = -ENOSYS;
+> +               break;
+>        }
+>
+>        if (ret == -EFAULT) {
+>
+>
+>
+>
