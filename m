@@ -1,56 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934042Ab1IOPWA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 11:22:00 -0400
-Received: from mail-gx0-f170.google.com ([209.85.161.170]:35963 "EHLO
-	mail-gx0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933990Ab1IOPV7 convert rfc822-to-8bit (ORCPT
+	id S934050Ab1IOPXh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 11:23:37 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:38234 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934018Ab1IOPXg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 11:21:59 -0400
+	Thu, 15 Sep 2011 11:23:36 -0400
+Message-ID: <4E721871.7040901@lwfinger.net>
+Date: Thu, 15 Sep 2011 10:23:29 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110907 Thunderbird/6.0.2
 MIME-Version: 1.0
-In-Reply-To: <CAObL_7F2Pu0K1Oe3oLe5Pef2kaGE8vdO2qgfc0KEt8TJdUaOWg@mail.gmail.com>
-References: <web-606439650@zbackend1.aha.ru> <CA+55aFwyC7s=YK10Wkpr+GzdukXp-JUtf_=MgWcrhBOtTg4eTg@mail.gmail.com>
- <web-606798161@zbackend1.aha.ru> <CA+55aFwBuySWa2VErrfud_SFqyfT5ib+Qfq9gWBaBz=cQ6VcHg@mail.gmail.com>
- <web-606831561@zbackend1.aha.ru> <CAObL_7F2Pu0K1Oe3oLe5Pef2kaGE8vdO2qgfc0KEt8TJdUaOWg@mail.gmail.com>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Thu, 15 Sep 2011 08:21:37 -0700
-X-Google-Sender-Auth: BeLDhBGLjSauGEpnMTIFuLHMo_E
-Message-ID: <CAObL_7E0iyinOyXU=uQHyQN+TBNmVVB89r_hQUb8LTqJ2ix_5A@mail.gmail.com>
-Subject: Re: 3.1-rc6 boot problem reason searching
-To: werner <w.landgraf@ru.ru>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=KOI8-R
-Content-Transfer-Encoding: 8BIT
+To: Borislav Petkov <bp@alien8.de>
+CC: linux-wireless@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        "'Chaoming_Li'" <chaoming_li@realsil.com.cn>
+Subject: Re: 3.1-rc6+ rtl8192se issue
+References: <20110915124406.GA14374@gere.osrc.amd.com>
+In-Reply-To: <20110915124406.GA14374@gere.osrc.amd.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 15, 2011 at 7:41 AM, Andrew Lutomirski <luto@mit.edu> wrote:
-> 2011/9/14 werner <w.landgraf@ru.ru>:
->> The config is below. šThat's the M486 config which don't boor. šThe M586
->> config which boots has the diff given in my last mail, and which for make
->> the comparison more easy I give below again. š As said, all 3.0-rcX and up
->> to 3.0.4 boot with 486 too, the problem started with 3.1-rc1 . Perhaps the
->> šmessages before the computer sticked (using the M486 config below) which I
->> copied manually from the screen, posted in the treat 3.1-rc5 boot problem š,
->> may be helpful to find out what exactly causes the sticking.
->> wl
+On 09/15/2011 07:44 AM, Borislav Petkov wrote:
+> Hi Larry,
 >
-> Gack. šI obviously did a terrible job grepping for this stuff when I
-> wrote the original patch. šThe problem is probably in static_cpu_has.
-> I'll send a patch in a little bit.
+> I'm experiencing an issue with rtl8192se since 3.1-ish timeframe where
+> the machine becomes completely unresponsive and only a reboot helps
+> the situation. I think the issue has to do with the rtl8192se wireless
+> driver because if I connect the machine through ethernet, it runs pretty
+> smoothly.
+>
+> Today, I left the machine on the vt console in the expectation of an
+> oops or something to appear in the logs and logged into it from another
+> machine over ssh.
+>
+> After a while, the unresponsiveness happened and the box didn't
+> react to keyboard input except sysrq with which I was able to do the
+> show-backtrace-all-active-cpus(L) thing and attached is a partial
+> screen cap of that. It looks like the stuck-up happens somewhere in
+> rtl_lps_leave() along the rtl92s_phy_set_rf_power_state() path but the
+> register dump is missing with the exact %rIP.
+>
+> Anyway, pls take a look and let me know if it rings any bells. I'll
+> continue trying to debug the issue, maybe I should bisect it if nothing
+> else pops up.
 
--ETOOEARLYINTHEMORNING.  static_cpu_has looks correct.
+Borislav,
 
-werner, your kernel survives:
+Thanks for the report. I have been running rtl8192se for the past few days and I 
+have also noticed two such system freezes, but not been able to capture any 
+info. As I have recently made many changes in my system recently, I did not know 
+what might be the cause, but rtl8192se is certainly on the suspect list.
 
-for i in `find -name \*.o`; do objdump -j .altinstructions -r "$i"
-2>/dev/null |grep R_ |grep -v R_386_PC32\ ; done
+I have added Chaoming Li to the Cc list. I will send him the screen photo 
+separately.
 
-Can you try the same command in your build directory?
+Some questions:
 
-In the mean time, I'll see if I can reproduce the crash in qemu by
-playing with -cpu.
+I expect that you are running a mainline kernel from Linus's tree. If not, 
+please let me know. Mine is 3.1-rc4 from the wireless-testing tree. I don't 
+recall any changes in out "next-flavored" version that are not in 3.1.
 
---Andy
+Which flavor of RTL8192SE card do you have? The one I'm running shows as 
+"Realtek Semiconductor Co., Ltd. RTL8191SEvB Wireless LAN Controller [10ec:8172] 
+(rev 10)", but I have two others. The differences are in the number of TX and RX 
+streams. Mine is the 1x2 variety.
+
+How frequently do your freezes occur? As I said before, I have only had two in 2 
+or 3 days, which would make bisection tricky.
+
+I see from the dump that you have x86_64 architecture. How many CPUs and how 
+fast? There is one questionable report of problems on a box with an 8-way fast 
+processor. That was on initialization and is not the same, but may indicate a 
+problem. My system has a dual AMD CPU at 2.0 GHz.
+
+Would you also try loading rtl8192se with the "ips=0" option? As power save is 
+implicated in your traceback, that may help. I will be trying "swlps=0 ips=0".
+
+Thanks for the report,
+
+Larry
