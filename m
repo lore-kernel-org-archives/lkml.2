@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934092Ab1IOPhh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 11:37:37 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:34504 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933872Ab1IOPhf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 11:37:35 -0400
-Subject: Temporary location for some of the SCSI trees
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: linux-scsi <linux-scsi@vger.kernel.org>, linux-next@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 15 Sep 2011 10:37:33 -0500
-Message-ID: <1316101053.2983.42.camel@dabdike.hansenpartnership.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	id S934101Ab1IOPng (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 11:43:36 -0400
+Received: from mga09.intel.com ([134.134.136.24]:30875 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934046Ab1IOPnf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Sep 2011 11:43:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="48811831"
+Date: Thu, 15 Sep 2011 17:46:11 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Jean Delvare <khali@linux-fr.org>, Luciano Coelho <coelho@ti.com>,
+        Randy Dunlap <rdunlap@xenotime.net>, matti.j.aaltonen@nokia.com,
+        johannes@sipsolutions.net, linux-kernel@vger.kernel.org,
+        mchehab@infradead.org, linux-media@vger.kernel.org,
+        linux-omap@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 2/2] mfd: remove CONFIG_MFD_SUPPORT
+Message-ID: <20110915154611.GF32263@sortiz-mobl>
+References: <20110829102732.03f0f05d.rdunlap@xenotime.net>
+ <201108311849.37273.arnd@arndb.de>
+ <20110902143713.307bbebe@endymion.delvare>
+ <201109021643.36369.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201109021643.36369.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've relocated the scsi-rc-fixes and scsi-misc trees on to my own
-infrastructure while master.kernel.org is down.  The locations are:
+Hi Arnd,
 
-git://bedivere.hansenpartnership.com/git/scsi-rc-fixes-2.6.git
-git://bedivere.hansenpartnership.com/git/scsi-misc-2.6.git
+On Fri, Sep 02, 2011 at 04:43:36PM +0200, Arnd Bergmann wrote:
+> We currently have two symbols to control compilation the MFD subsystem,
+> MFD_SUPPORT and MFD_CORE. The MFD_SUPPORT is actually not required
+> at all, it only hides the submenu when not set, with the effect that
+> Kconfig warns about missing dependencies when another driver selects
+> an MFD driver while MFD_SUPPORT is disabled. Turning the MFD submenu
+> back from menuconfig into a plain menu simplifies the Kconfig syntax
+> for those kinds of users and avoids the surprise when the menu
+> suddenly appears because another driver was enabled that selects this
+> symbol.
+So I applied this one, thanks a lot.
 
-Since we're not currently using the scsi-postmerge tree, I haven't yet
-done a replacement for it.
+Cheers,
+Samuel.
 
-The current tree tops are
-
-scsi-misc:
-
-  linus      ba8f318 m68k: fix __page_to_pfn for a const struct page argument
-  master     ebd1f64 [SCSI] scsi_dh_alua: Decrease retry interval
-  merge-base 7ca3c80 [SCSI] qla2xxx: Update version number to 8.03.07.07-k.
-
-scsi-fixes:
-
-  linus  003f6c9 lib/sha1.c: quiet sparse noise about symbol not declared
-  master 610602f [SCSI] bnx2i: Fixed the endian on TTT for NOP out transmission
-
-Could you add these to linux-next, please (until master comes back at least)?
-
-For SCSI people, I still don't have any machinery for notifications or
-an ftp site for the combined patch sets and change logs yet.  When I get
-that sorted out, I'll begin adding commits again.
-
-Thanks,
-
-James
-
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
