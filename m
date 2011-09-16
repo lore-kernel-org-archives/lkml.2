@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932182Ab1IPTMt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 15:12:49 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:56437 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753832Ab1IPTMs convert rfc822-to-8bit (ORCPT
+	id S1756032Ab1IPTQA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 15:16:00 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:57558 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754188Ab1IPTP7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 15:12:48 -0400
+	Fri, 16 Sep 2011 15:15:59 -0400
+Date: Fri, 16 Sep 2011 15:15:15 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: axboe@kernel.dk, xen-devel@lists.xensource.com,
+        jeremy.fitzhardinge@citrix.com, stable@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] Re: [PATCH 3/3] xen-blkfront: If no barrier or flush
+ is supported, use invalid operation.
+Message-ID: <20110916191514.GA31818@phenom.oracle.com>
+References: <1315593060-20031-1-git-send-email-konrad.wilk@oracle.com>
+ <1315593060-20031-3-git-send-email-konrad.wilk@oracle.com>
+ <4E6DD8750200007800055ADA@nat28.tlf.novell.com>
 MIME-Version: 1.0
-In-Reply-To: <CAKA=qzZAYx2C9EKAU5RhOthXVkexJdXap-2tuswNnpLo91TEvg@mail.gmail.com>
-References: <4DE6264A.2040901@gmail.com>
-	<20110601212432.2677b03a.rdunlap@xenotime.net>
-	<201106211534.10366.roucaries.bastien@gmail.com>
-	<CAE2SPAa=AD=YGyLJn2bX4E8Mu70BaXGi2CvL_fikPKP1gab7+g@mail.gmail.com>
-	<20110826173517.7321c086@lxorguk.ukuu.org.uk>
-	<m2ei089fwq.fsf@firstfloor.org>
-	<CACqU3MU4hPpULM7w2HOz-5w7SGLH0E1SMdrdZ9Dremvxqr0tCg@mail.gmail.com>
-	<4E57EA84.3080405@linux.intel.com>
-	<CAKA=qzZAYx2C9EKAU5RhOthXVkexJdXap-2tuswNnpLo91TEvg@mail.gmail.com>
-Date: Fri, 16 Sep 2011 14:12:48 -0500
-Message-ID: <CAKA=qzZORyFbFqyJ9doSxf8hNyT27CSP5FPx_6fZXnWZCziTKg@mail.gmail.com>
-Subject: Re: Kerneloops.org defunct?
-From: Josh Hunt <joshhunt00@gmail.com>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Arnaud Lacombe <lacombar@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Bastien ROUCARIES <roucaries.bastien@gmail.com>,
-        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
-        Jiri Slaby <jirislaby@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E6DD8750200007800055ADA@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4E73A04A.00D3:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 26, 2011 at 6:46 PM, Josh Hunt <joshhunt00@gmail.com> wrote:
-> On Fri, Aug 26, 2011 at 1:48 PM, Arjan van de Ven <arjan@linux.intel.com> wrote:
->> On 8/26/2011 11:47 AM, Arnaud Lacombe wrote:
->>>
->>> Is the code available somewhere, or will it need to be rewritten ?
->>
->> we have the code on the server/etc... if someone signs up to help he will be
->> on the server of course
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
->
-> I'd be interested in working on this with someone.
->
-> Josh
->
-Has someone stepped up to work on this? If not, I'd still be interested.
+On Mon, Sep 12, 2011 at 09:01:25AM +0100, Jan Beulich wrote:
+> >>> On 09.09.11 at 20:31, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> > By default we would set the info->flush_op=0, and zero maps
+> > to BLKIF_OP_READ request code. So if the backend did not support
+> > either barrier ('feature-barrier') or flush ('feature-flush-cache')
+> > we would end up using that opcode for the flush/barrier request, meaning
+> > we actually do a READ request. Fortunatly for us, __generic_make_request
+> > checks q->flush_flags and realizes that we don't do FLUSH and removes
+> > the REQ_FLUSH | REQ_FUA so we never end up issuing a READ request
+> > for a flush request. However, other third party implementations of
+> > __make_request might not be so smart, so lets fix this up.
+> 
+> Wouldn't it be better to simply have blkif_queue_request() fail in that
+> case (and then it doesn't matter whether flush_op is set to 0 or -1)?
+> Not the least because older (forward-port) backends stall the incoming
+> queue and are possibly verbose for invalid requests seen.
 
--- 
-Josh
+So like this:
+
+
+diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+index 468bfec..e9d301c 100644
+--- a/drivers/block/xen-blkfront.c
++++ b/drivers/block/xen-blkfront.c
+@@ -380,7 +380,9 @@ static void do_blkif_request(struct request_queue *rq)
+ 
+ 		blk_start_request(req);
+ 
+-		if (req->cmd_type != REQ_TYPE_FS) {
++		if ((req->cmd_type != REQ_TYPE_FS) ||
++		    ((req->cmd_flags & (REQ_FLUSH | REQ_FUA)) &&
++		    !info->flush_op)) {
+ 			__blk_end_request_all(req, -EIO);
+ 			continue;
+ 		}
