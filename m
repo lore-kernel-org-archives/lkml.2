@@ -1,61 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754622Ab1IPPM1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 11:12:27 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:58732 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752645Ab1IPPM0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 11:12:26 -0400
-Message-ID: <4E73674B.6090901@linux.vnet.ibm.com>
-Date: Fri, 16 Sep 2011 10:12:11 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
-MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
-        hughd@google.com, ngupta@vflare.org, konrad.wilk@oracle.com,
-        JBeulich@novell.com, kurt.hackel@oracle.com, npiggin@kernel.dk,
-        akpm@linux-foundation.org, riel@redhat.com, hannes@cmpxchg.org,
-        matthew@wil.cx, chris.mason@oracle.com, kamezawa.hiroyu@jp.fujitsu.com,
-        jackdachef@gmail.com, cyclonusj@gmail.com, levinsasha928@gmail.com
-Subject: Re: [PATCH V10 3/6] mm: frontswap: core frontswap functionality
-References: <20110915213406.GA26369@ca-server1.us.oracle.com>
-In-Reply-To: <20110915213406.GA26369@ca-server1.us.oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754735Ab1IPPTY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 11:19:24 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:52534 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751679Ab1IPPTX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Sep 2011 11:19:23 -0400
+Subject: Re: [PATCH] perf: make perf.data more self-descriptive (v4)
+From: Peter Zijlstra <peterz@infradead.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
+        acme@redhat.com, mingo@elte.hu
+Date: Fri, 16 Sep 2011 17:19:13 +0200
+In-Reply-To: <4E73622D.5010506@gmail.com>
+References: <20110907191045.GA13475@quad> <4E6E0D0B.3080306@gmail.com>
+	 <CABPqkBSfQo5E=MJ913E--dc8Fi7VLcFSGNbBf60tOnTLMuVN_w@mail.gmail.com>
+	 <4E6E181E.9080506@gmail.com>
+	 <CABPqkBQWd=DyRRDhaxwDGrpCs=XqyTUv72+dn7GKsT=kjPqiJg@mail.gmail.com>
+	 <1315838611.26517.51.camel@twins>
+	 <CABPqkBShe6OG1ukQ=7vn_Mr=Aa_c8jcbo1mYuF+41Euy5_R7Dw@mail.gmail.com>
+	 <4E73622D.5010506@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1316186353.10174.29.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/15/2011 04:34 PM, Dan Magenheimer wrote:
-> From: Dan Magenheimer <dan.magenheimer@oracle.com>
-> Subject: [PATCH V10 3/6] mm: frontswap: core frontswap functionality
+On Fri, 2011-09-16 at 08:50 -0600, David Ahern wrote:
 > 
-> (Note to earlier reviewers:  This patchset has been reorganized due to
-> feedback from Kame Hiroyuki and Andrew Morton. This patch contains part
-> of patch 3of4 from the previous series.)
+> ppc data file: header->magic 454c494646524550
+> x86 data file: header->magic 454c494646524550
 > 
-> This third patch of six in the frontswap series provides the core
-> frontswap code that interfaces between the hooks in the swap subsystem
-> and a frontswap backend via frontswap_ops.
-> 
-> [v10: sjenning@linux.vnet.ibm.com: fix debugfs calls on 32-bit]
-...
-> +#ifdef CONFIG_DEBUG_FS
-> +	struct dentry *root = debugfs_create_dir("frontswap", NULL);
-> +	if (root == NULL)
-> +		return -ENXIO;
-> +	debugfs_create_u64("gets", S_IRUGO, root, &frontswap_gets);
-> +	debugfs_create_u64("succ_puts", S_IRUGO, root, &frontswap_succ_puts);
-> +	debugfs_create_u64("puts", S_IRUGO, root, &frontswap_failed_puts);
-
-Sorry I didn't see this one before :-/  This should be "failed_puts",
-not "puts".
-
-Other than that, it compiles cleanly here and runs without issue when
-applied on 3.1-rc4 + fix for cleancache crash.
-
-Thanks
---
-Seth
-
+Ok then we need to fix that magic thing..
