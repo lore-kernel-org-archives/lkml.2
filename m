@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755375Ab1IPQsO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 12:48:14 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:62852 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753405Ab1IPQsN (ORCPT
+	id S1755364Ab1IPQyN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 12:54:13 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:46415 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753405Ab1IPQyL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 12:48:13 -0400
-From: Tzu-Jung Lee <roylee17@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: rmk+kernel@arm.linux.org.uk, Tzu-Jung Lee <tjlee@ambarella.com>
-Subject: [PATCH] ARM: mm: Compile out HIGHMEM specific code when itss undefined
-Date: Sat, 17 Sep 2011 00:46:34 +0800
-Message-Id: <1316191594-30486-1-git-send-email-tjlee@ambarella.com>
-X-Mailer: git-send-email 1.7.6.1
+	Fri, 16 Sep 2011 12:54:11 -0400
+Date: Fri, 16 Sep 2011 17:53:26 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Keith Packard <keithp@keithp.com>
+Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linaro-dev@lists.linaro.org, "Clark\, Rob" <rob@ti.com>,
+        Archit Taneja <archit@ti.com>
+Subject: Re: Proposal for a low-level Linux display framework
+Message-ID: <20110916175326.54567b14@lxorguk.ukuu.org.uk>
+In-Reply-To: <yunfwjxwbjq.fsf@aiko.keithp.com>
+References: <1316088425.11294.78.camel@lappyti>
+	<yunboul7sx7.fsf@aiko.keithp.com>
+	<1316100594.23214.65.camel@deskari>
+	<yun8vpp7qk7.fsf@aiko.keithp.com>
+	<1316107275.23214.99.camel@deskari>
+	<yunfwjxwbjq.fsf@aiko.keithp.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Explicitly compile out HIGHMEM specific code to eliminate compile-time errors
-when built with -O0.
+> I'm not sure a common interface to all of these different
+> channels makes sense, but surely a DSI library and an aux channel
+> library would fit nicely alongside the existing DDC library.
 
-Change-Id: I98237f11aef07864017c67fb1a69b86f28a46e80
+DSI and the various other MIPI bits tend to be horribly panel and device
+specific. In one sense yes its a standard with standard commands,
+processes, queries etc, on the other a lot of stuff is oriented around
+the 'its a fixed configuration unit we don't need to have queries' view.
+There also tends to be a lot of vendor magic initialisation logic both
+chipset and device dependant, and often 'plumbing dependant' on SoC
+systems. This is doubly ugly with the I²C abstractions for DDC because
+SoC systems are not above putting the DDC on a standard I²C port being
+shared with other functionality.
 
-diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
-index 4771dba..10d1e3c 100644
---- a/arch/arm/mm/dma-mapping.c
-+++ b/arch/arm/mm/dma-mapping.c
-@@ -456,6 +456,7 @@ static void dma_cache_maint_page(struct page *page, unsigned long offset,
- 	size_t size, enum dma_data_direction dir,
- 	void (*op)(const void *, size_t, int))
- {
-+#ifdef CONFIG_HIGHMEM
- 	/*
- 	 * A single sg entry may refer to multiple physically contiguous
- 	 * pages.  But we still need to process highmem pages individually.
-@@ -494,6 +495,7 @@ static void dma_cache_maint_page(struct page *page, unsigned long offset,
- 		page++;
- 		left -= len;
- 	} while (left);
-+#endif
- }
- 
- void ___dma_page_cpu_to_dev(struct page *page, unsigned long off,
-diff --git a/arch/arm/mm/flush.c b/arch/arm/mm/flush.c
-index 2b269c9..3349df2 100644
---- a/arch/arm/mm/flush.c
-+++ b/arch/arm/mm/flush.c
-@@ -167,6 +167,7 @@ void copy_to_user_page(struct vm_area_struct *vma, struct page *page,
- 
- void __flush_dcache_page(struct address_space *mapping, struct page *page)
- {
-+#ifdef CONFIG_HIGHMEM
- 	/*
- 	 * Writeback any data associated with the kernel mapping of this
- 	 * page.  This ensures that data in the physical page is mutually
-@@ -186,7 +187,7 @@ void __flush_dcache_page(struct address_space *mapping, struct page *page)
- 			kunmap_atomic(addr);
- 		}
- 	}
--
-+#endif
- 	/*
- 	 * If this is a page cache page, and we have an aliasing VIPT cache,
- 	 * we only need to do one flush - which would be at the relevant
--- 
-1.7.6.1
+> Oh, I think you're also trying to get at how we expose some of these
+> controls outside of the display driver -- right now, they're mostly
+> exposed as properties on the output device. Things like backlight
+> brightness, a million analog TV output values, dithering control and
+> other more esoteric controls.
 
+This is how the MIPI handling in the GMA500 driver works, although the
+existing code needs to be taken out and shot, which should be happening
+soon. There is a lot, like panel initialisation which is however not
+really going to fit a properties model.
+
+Alan
