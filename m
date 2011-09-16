@@ -1,63 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751518Ab1IPBfE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 21:35:04 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:55599 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751245Ab1IPBfC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 21:35:02 -0400
-Message-ID: <4E72A785.2050207@cn.fujitsu.com>
-Date: Fri, 16 Sep 2011 09:33:57 +0800
-From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Reply-To: gaowanlong@cn.fujitsu.com
-Organization: FNST
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110322 Red Hat/3.1.9-3.el6_0 Thunderbird/3.1.9
+	id S1751683Ab1IPCgN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 22:36:13 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:49439 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751604Ab1IPCgH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Sep 2011 22:36:07 -0400
+Date: Thu, 15 Sep 2011 22:36:05 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Sameer Nanda <snanda@chromium.org>
+cc: gregkh@suse.de, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Vincent Palatin <vpalatin@chromium.org>, <olofj@chromium.org>
+Subject: Re: RFC: Enable wakeup for intermediate USB bridge devices
+In-Reply-To: <CANMivWbGTS_Xyj4MtgrYTWTkCbVKP_Uf-i-_hNYFx+YAPaNxjQ@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1109152230000.13140-100000@netrider.rowland.org>
 MIME-Version: 1.0
-To: Andrew Lutomirski <luto@mit.edu>
-CC: Linus Torvalds <torvalds@linux-foundation.org>, werner <w.landgraf@ru.ru>,
-        linux-kernel@vger.kernel.org
-Subject: Re: 3.1-rc6 boot problem reason searching
-References: <web-606439650@zbackend1.aha.ru> <web-606798161@zbackend1.aha.ru> <CA+55aFwBuySWa2VErrfud_SFqyfT5ib+Qfq9gWBaBz=cQ6VcHg@mail.gmail.com> <web-606831561@zbackend1.aha.ru> <CAObL_7F2Pu0K1Oe3oLe5Pef2kaGE8vdO2qgfc0KEt8TJdUaOWg@mail.gmail.com> <CAObL_7E0iyinOyXU=uQHyQN+TBNmVVB89r_hQUb8LTqJ2ix_5A@mail.gmail.com> <CA+55aFzay+U5JA0Q6vdjmV73yG0OUXnO_zi6Q0c6iTkmozSSiw@mail.gmail.com> <web-607296211@zbackend1.aha.ru> <CAObL_7HAxg0j3ywpTy1-5Y5vBBQLSTiF7AZ0bctRsPOLKA8ZNA@mail.gmail.com> <CA+55aFwEKNEN8QPpBhAkDQ4UGFtSDtpdwFRSkTvnhaYRTmrsOA@mail.gmail.com> <CAObL_7Gjk91MFSwbaMnfdxwrM0mDGxWtDBaKMoimg2FSUqjAUg@mail.gmail.com> <CA+55aFxmW7rFEpanD-ngB-Egx5j1q8b_u31Keo3+s-TJ13UZGA@mail.gmail.com> <CA+55aFxcibMZbEpJzP-LfV1aYFM-n9ctEqNMZ_k4XJxoZPfbrg@mail.gmail.com> <web-607463067@zbackend1.aha.ru> <CA+55aFzEedjD0vqemMhYEEH99ya6tk9X4ViGwm_vuVy-41w3=A@mail.gmail.com> <CAObL_7EuUyeJ2ebhMhYgY_4O+wUE-rHbc4aBvEKaGrimxU_z7A@mail.gmail.com>
-In-Reply-To: <CAObL_7EuUyeJ2ebhMhYgY_4O+wUE-rHbc4aBvEKaGrimxU_z7A@mail.gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-09-16 09:33:41,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-09-16 09:33:42,
-	Serialize complete at 2011-09-16 09:33:42
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/16/2011 09:27 AM, Andrew Lutomirski wrote:
-> 2011/9/15 Linus Torvalds<torvalds@linux-foundation.org>:
->> On Thu, Sep 15, 2011 at 6:10 PM, werner<w.landgraf@ru.ru>  wrote:
->>> Meanwhile 3.1-rc6 with the patch by L.T. is compiled, and it boots, with the
->>> original allyesconfig with M486 , so that insofar that problem is resolved.
->>> So that 95% of the population of poorer parts of the world (which have 486
->>> computers) continue to be benefited also by version 3.1 .
->>
->> Thanks for testing.. I suspect you're the only one who ever actually
->> builds i486 kernels any more - at least development kernels ;)
->
-> Would you prefer for me to test your patch or to submit my one-liner?
->
-> --Andy
+On Thu, 15 Sep 2011, Sameer Nanda wrote:
 
-Andy:
-Please see commit a7f934d4f16144cb9521b62e9b8c9ac0118097da
-Thanks
--Wanlong
+> This is a follow-up from the patch I sent earlier enabling wakeup by
+> default in the ehci-pci driver.  That thread is here:
+> http://marc.info/?l=linux-usb&m=131595571619689&w=2
+> 
+> The current wake policy is to enable wake by default for a small set
+> of devices that the users expect (like keyboards, power buttons and
+> maybe LAN interfaces).  An example check of this can be seen in
+> usbhid_start where wakeup is enabled only if the interface subclass is
+> USB_INTERFACE_SUBCLASS_BOOT and protocol is
+> USB_INTERFACE_PROTOCOL_KEYBOARD.
+> 
+> However, this doesn't quite work out of the box today since the USB
+> host controllers that these devices connect to do not enable wakeup by
+> default.
+> 
+> The proposal is to enable wakeup by default on the intermediate bridge
+> devices such as ehci-pci and ohci-hcd.  This allows wake from USB
+> keyboard to work by default.  For non-keyboard devices, the user will
+> still need to explicitly enable them as a wakesources so there is no
+> change in the device wakeup policy from what is in place currently for
+> those devices.
+> 
+> Below is an example patch that enables wakeup for the ehci-pci bridge
+> device.  I can spin up a similar patch for the ohci-hcd also,
+> if there is interest in moving this forward.
+> 
+> =============
+> 
+> If the PORTWAK register is implemented and at least one of the physical
+> ports is enabled for wakeup, enable wakeup for the ehci-pci device.
+> 
+> Signed-off-by: Sameer Nanda <snanda@chromium.org>
+> ---
+>  drivers/usb/host/ehci-pci.c |   10 ++++++++++
+>  1 files changed, 10 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/usb/host/ehci-pci.c b/drivers/usb/host/ehci-pci.c
+> index 1102ce6..ce6f784 100644
+> --- a/drivers/usb/host/ehci-pci.c
+> +++ b/drivers/usb/host/ehci-pci.c
+> @@ -285,6 +285,16 @@ static int ehci_pci_setup(struct usb_hcd *hcd)
+>                       dev_warn(&pdev->dev, "Enabling legacy PCI PM\n");
+>                       device_set_wakeup_capable(&pdev->dev, 1);
+>               }
+> +       } else {
+> +               u16     port_wake;
+> +
+> +               pci_read_config_word(pdev, 0x62, &port_wake);
+> +
+> +               /* If PORTWAK register is implemented and at least one USB
+> +                * port is enabled for wakeup, enable wakeup.
+> +                */
+> +               if (port_wake & 0x0001 && port_wake & 0xfffe)
+> +                       device_set_wakeup_enable(&pdev->dev, 1);
+>       }
+> 
+>  #ifdef CONFIG_USB_SUSPEND
 
->
->>
->>                   Linus
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+This is not the right way to do what you want.  Assuming the change to
+the kernel's default wakeup-enable policy is accepted, the patch below
+will enable remote wakeup for _all_ host controllers that support it.
+
+At the same time, the patch will disable remote wakeup by default for
+root hubs.  I think this is unlikely to cause any problems; people
+probably don't want their sleeping laptops to wake up when a USB device
+is plugged in or unplugged.  And besides, this is what we should have
+been doing all along, according to the current policy.
+
+Note: I haven't tested this patch.  You ought to check and make sure it 
+behaves the way it's supposed to.
+
+Alan Stern
+
+
+Index: usb-3.1/drivers/usb/core/hcd.c
+===================================================================
+--- usb-3.1.orig/drivers/usb/core/hcd.c
++++ usb-3.1/drivers/usb/core/hcd.c
+@@ -2429,7 +2429,7 @@ int usb_add_hcd(struct usb_hcd *hcd,
+ 	 * but drivers can override it in reset() if needed, along with
+ 	 * recording the overall controller's system wakeup capability.
+ 	 */
+-	device_init_wakeup(&rhdev->dev, 1);
++	device_set_wakeup_capable(&rhdev->dev, 1);
+ 
+ 	/* HCD_FLAG_RH_RUNNING doesn't matter until the root hub is
+ 	 * registered.  But since the controller can die at any time,
+@@ -2478,6 +2478,13 @@ int usb_add_hcd(struct usb_hcd *hcd,
+ 	}
+ 	if (hcd->uses_new_polling && HCD_POLL_RH(hcd))
+ 		usb_hcd_poll_rh_status(hcd);
++
++	/*
++	 * Host controllers don't generate their own wakeup requests;
++	 * they only forward requests from the root hub.  Therefore
++	 * controllers should always be enabled for remote wakeup.
++	 */
++	device_wakeup_enable(hcd->self.controller);
+ 	return retval;
+ 
+ error_create_attr_group:
 
