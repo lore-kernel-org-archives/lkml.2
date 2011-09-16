@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932222Ab1IPUVX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 16:21:23 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:34700 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754800Ab1IPUVW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 16:21:22 -0400
-Subject: Re: [RFC][PATCH 5/5] target: check hex2bin result
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: zohar@linux.vnet.ibm.com, andy.shevchenko@gmail.com,
-        safford@watson.ibm.com, target-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <201109162307.FFF57890.OSFOtFLHJQVOMF@I-love.SAKURA.ne.jp>
-References: <1316177430-13167-1-git-send-email-zohar@linux.vnet.ibm.com>
-	 <1316177430-13167-5-git-send-email-zohar@linux.vnet.ibm.com>
-	 <201109162307.FFF57890.OSFOtFLHJQVOMF@I-love.SAKURA.ne.jp>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 16 Sep 2011 13:21:19 -0700
-Message-ID: <1316204479.12820.394.camel@haakon2.linux-iscsi.org>
+	id S1755326Ab1IPU1G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 16:27:06 -0400
+Received: from kanga.kvack.org ([205.233.56.17]:49618 "EHLO kanga.kvack.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751759Ab1IPU1F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Sep 2011 16:27:05 -0400
+X-Greylist: delayed 1126 seconds by postgrey-1.27 at vger.kernel.org; Fri, 16 Sep 2011 16:27:05 EDT
+Date: Fri, 16 Sep 2011 16:08:17 -0400
+From: Benjamin LaHaise <bcrl@kvack.org>
+To: Andres Freund <andres@anarazel.de>
+Cc: Matthew Wilcox <matthew@wil.cx>, Andi Kleen <andi@firstfloor.org>,
+        viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, robertmhaas@gmail.com,
+        pgsql-hackers@postgresql.org
+Subject: Re: Improve lseek scalability v3
+Message-ID: <20110916200817.GD28519@kvack.org>
+References: <1316128013-21980-1-git-send-email-andi@firstfloor.org> <201109161616.50004.andres@anarazel.de> <20110916153620.GA9913@parisc-linux.org> <201109161927.34472.andres@anarazel.de>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201109161927.34472.andres@anarazel.de>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-09-16 at 23:07 +0900, Tetsuo Handa wrote:
-> Mimi Zohar wrote:
-> > Now that hex2bin does error checking, on error add debugging error msg.
+On Fri, Sep 16, 2011 at 07:27:33PM +0200, Andres Freund wrote:
+> many tuples does the table have. Those statistics are only updated every now 
+> and then though.
+> So it uses those old stats to check how many tuples are normally stored on a 
+> page and then uses that to extrapolate the number of tuples from the current 
+> nr of pages (which is computed by lseek(SEEK_END) over the 1GB segements of a 
+> table).
 > 
-> We are waiting for response from Nicholas, aren't we?
-> Quotuing from http://www.spinics.net/linux/fedora/linux-security-module/msg11570.html :
-> | I was assuming that, by adding error check, hex2bin() will leave the buffer
-> | uninitialized in case of bad input because hex2bin() user in Linux 3.0 can
-> | return errors. Now you are a new user of hex2bin() but your code cannot return
-> | errors. Nicholas, how do you want to handle bad input?
+> I am not sure how interested you are on the relevant postgres internals?
 
-Hi Folks,
+For such tables, can't Postgres track the size of the file internally?  I'm 
+assuming it's keeping file descriptors open on the tables it manages, in 
+which case when it writes to a file to extend it, the internally stored size 
+could be updated.  Not making a syscall at all would scale far better than 
+even a modified lseek() will perform.
 
-There is another patch queued for v3.1-final to ensure that non hex
-characters are skipped in target_emulate_evpd_83() when building the NAA
-IEEE Registered Extended designator.
+Granted, I've not looked at the Postgres code at all.
 
-[PATCH-v2] target: Skip non hex characters for VPD=0x83 NAA IEEE Registered Extended
-http://www.spinics.net/lists/target-devel/msg00607.html
-
-Other than dropping this part from Mimi's patch, the two other warning
-messages on conversion failure are OK in target_core_fabric_lib.c code.
-
-I'm happy to queue a modified version of this one for v3.2.
-
---nab
-
-
-
-
+		-ben
