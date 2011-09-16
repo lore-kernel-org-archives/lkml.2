@@ -1,63 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755965Ab1IPSk5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 14:40:57 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:56328 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754869Ab1IPSk4 (ORCPT
+	id S1755901Ab1IPSt7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 14:49:59 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:51344 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754757Ab1IPSt6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 14:40:56 -0400
-Date: Fri, 16 Sep 2011 22:40:49 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Vasiliy Kulikov <segoon@openwall.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Pavel Machek <pavel@ucw.cz>,
-        Andrew Morton <akpm00@gmail.com>, linux-kernel@vger.kernel.org,
-        containers@lists.osdl.org, linux-fsdevel@vger.kernel.org,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Nathan Lynch <ntl@pobox.com>, Zan Lynx <zlynx@acm.org>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>, Tejun Heo <tj@kernel.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>
-Subject: Re: [patch 2/2] fs, proc: Introduce the /proc/<pid>/map_files/
- directory v12
-Message-ID: <20110916184049.GD8599@sun>
-References: <20110915091417.GA27755@sun>
- <20110915092757.GA23404@albatros>
- <20110915102922.GB27755@sun>
- <20110915105651.GA17575@albatros>
- <20110915201939.GE12040@sun>
- <20110916175618.GA20046@albatros>
- <20110916180731.GB8599@sun>
- <20110916181146.GA20801@albatros>
- <20110916182654.GC8599@sun>
- <20110916183150.GA26226@shutemov.name>
+	Fri, 16 Sep 2011 14:49:58 -0400
+X-Sasl-enc: 4YFQJUwo1hRnXNGl9A4JjjLWhXkzZ0OA/oq+EtVZqX4d 1316198997
+Date: Fri, 16 Sep 2011 20:47:25 +0200
+From: Greg KH <greg@kroah.com>
+To: "Leonid V. Fedorenchik" <leonidsbox@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Hans Verkuil <hverkuil@xs4all.nl>,
+        Joe Perches <joe@perches.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
+Subject: Re: [PATCH 00/44] Staging: cx25821: Fix style issues
+Message-ID: <20110916184725.GA31993@kroah.com>
+References: <1316153717-7272-1-git-send-email-leonidsbox@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110916183150.GA26226@shutemov.name>
+In-Reply-To: <1316153717-7272-1-git-send-email-leonidsbox@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 16, 2011 at 09:31:50PM +0300, Kirill A. Shutemov wrote:
-...
-> > 
-> > Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
-> > Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-> > Reviewed-by: Vasiliy Kulikov <segoon@openwall.com>
-> > CC: Tejun Heo <tj@kernel.org>
-> > CC: Vasiliy Kulikov <segoon@openwall.com>
-> > CC: "Kirill A. Shutemov" <kirill@shutemov.name>
-> > CC: Alexey Dobriyan <adobriyan@gmail.com>
-> > CC: Al Viro <viro@ZenIV.linux.org.uk>
-> > CC: Andrew Morton <akpm@linux-foundation.org>
-> > CC: Pavel Machek <pavel@ucw.cz>
+On Fri, Sep 16, 2011 at 02:14:33PM +0800, Leonid V. Fedorenchik wrote:
+> This patch series fixes up style issues in cx25821-video.{c,h} files in
+> drivers/staging/cx25821
 > 
-> My Reviewed-by is in force.
-> 
+> What the heck with patches 5-39? ... Well, in cx25821-video.c file there
+> are lots of lines starting with 7 spaces where clearly this intented to
+> be a tab; that is reported by checkpatch.pl script. And even more lines
+> that start with one or more tabs and 7 spaces; this is intented to be 2
+> or more tabs instead and this is not reported by checkpatch.pl script
+> (obviously). So, first, I fix up all that kind of wrong indents and
+> resulting patch was too big and unreviewable. (around 2K lines) So,
+> since I haven't thought of better way to make the patch reviewable, I
+> decided to split that huge patch into small reviewable patches. The
+> result is 35 patches. %-) If you can think of a better way to deal with
+> this, let me know.
 
-Thanks, Kirill! (I didn't put it in first place since we tuned
-code a bit and I didn't know your opinion on new changes)
+Looks good, all now applied, thanks.
+
+greg k-h
