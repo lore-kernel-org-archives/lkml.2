@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753589Ab1IPNYR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 09:24:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58108 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751464Ab1IPNYQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 09:24:16 -0400
-Date: Fri, 16 Sep 2011 09:24:11 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Corrado Zoccolo <czoccolo@gmail.com>
-Cc: Shaohua Li <shaohua.li@intel.com>, lkml <linux-kernel@vger.kernel.org>,
-        Jens Axboe <jaxboe@fusionio.com>,
-        Maxim Patlasov <maxim.patlasov@gmail.com>
-Subject: Re: [patch]cfq-iosched: delete deep seeky queue idle logic
-Message-ID: <20110916132411.GB4377@redhat.com>
-References: <1316142577.29510.130.camel@sli10-conroe>
- <CADX3swqrpz+=JSk8gQf6tDRZ25Z9FOnJbTyiCrZAM6LiJSmoGA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CADX3swqrpz+=JSk8gQf6tDRZ25Z9FOnJbTyiCrZAM6LiJSmoGA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753563Ab1IPNYy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 09:24:54 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:44302 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752566Ab1IPNYx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Sep 2011 09:24:53 -0400
+X-Authority-Analysis: v=1.1 cv=MgN7/KJv0EmO5CJGH57r3ABwexVA6M4dLJdFirx4b8Y= c=1 sm=0 a=Ou53dPJkDmsA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=Yu8cKBsB9kmY0ngl2sAA:9 a=PUjeQqilurYA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.83.30
+Subject: Re: [PATCH] ftrace:  use a global counter for the global clock
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, mingo <mingo@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <1316179421.26295.37.camel@gandalf.stny.rr.com>
+References: <1316163765.10174.8.camel@twins>
+	 <1316175506.26295.36.camel@gandalf.stny.rr.com>
+	 <1316176603.10174.24.camel@twins>
+	 <1316179421.26295.37.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 16 Sep 2011 09:24:51 -0400
+Message-ID: <1316179491.26295.38.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 16, 2011 at 08:04:49AM +0200, Corrado Zoccolo wrote:
+On Fri, 2011-09-16 at 09:23 -0400, Steven Rostedt wrote:
+> On Fri, 2011-09-16 at 14:36 +0200, Peter Zijlstra wrote:
+> > On Fri, 2011-09-16 at 08:18 -0400, Steven Rostedt wrote:
+> > > +       return atomic64_add_return(1, &trace_counter);
+> > 
+> > Oh, fwiw I modified mine to increment by 1000 because we're showing us
+> > in the trace output, 1000 lines with the same 'time'-stamp is slightly
+> > confusing even though you know the order is absolutely right...
+> 
+> 
+> Or I could change it so that if counter clock is set, just show that
+> field as a counter too.
+> 
 
-[..]
-> >
-> > 2. deep seeky queue idle. This makes raid performs poorly. I would think we
-> > revert the logic. Deep queue is more popular with high end hardware. In such
-> > hardware, we'd better not do idle.
-> > Note, currently we set a queue's slice after the first request is finished.
-> > This means the drive already idles a little time. If the queue is truely deep,
-> > new requests should already come in, so idle isn't required.
-> > Looks Vivek used to post a patch to rever it, but it gets ignored.
-> > http://us.generation-nt.com/patch-cfq-iosched-revert-logic-deep-queues-help-198339681.html
-> I get a 404 here. I think you are seeing only one half of the medal.
-> That logic is there mainly to ensure fairness between deep seeky
-> processes and normal seeky processes that want low latency.
-> If you remove that logic, a single process making many parallel aio
-> reads could completely swamp one machine, preventing other seeky
-> processes from progressing.
+Hmm, as I have other things to work on. I think I'll take your
+suggestion of the 1000 increment for now ;)
 
-I think to tackle that we can expire the queue early once it has
-dispatched few requests. (Something along the lines of async queues
-being expired once they dispatch cfq_prio_to_maxrq() requests).
+-- Steve
 
-That way one deep queue will not starve other random queues and
-at the same time we will not introduce per queue idling for deep
-queues.
 
-Anyway deep queue here is seeky so idling is not helping getting
-improved throughput.
-
-> Instead of removing completely the logic, you should make the depth
-> configurable, so multi-spindle storages could allow deeper queues
-> before switching to fairness-enforcing policy.
-
-I would think getting rid of deep queue logic is probably better than
-introducing more tunables. We just need to expire queue after dispatching
-few requests so that we do good rounding robin dispatch among all the
-queues on sync-noidle service tree.
-
-Thanks
-Vivek
