@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755808Ab1IPRwd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 13:52:33 -0400
+	id S1755645Ab1IPRwS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 13:52:18 -0400
 Received: from mail-fx0-f46.google.com ([209.85.161.46]:53304 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932139Ab1IPRwb (ORCPT
+	with ESMTP id S1752386Ab1IPRwR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 13:52:31 -0400
+	Fri, 16 Sep 2011 13:52:17 -0400
 From: Ohad Ben-Cohen <ohad@wizery.com>
 To: <iommu@lists.linux-foundation.org>
 Cc: <linux-omap@vger.kernel.org>, Hiroshi DOYU <Hiroshi.DOYU@nokia.com>,
@@ -16,83 +16,41 @@ Cc: <linux-omap@vger.kernel.org>, Hiroshi DOYU <Hiroshi.DOYU@nokia.com>,
         <linux-arm-kernel@lists.infradead.org>,
         David Brown <davidb@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
         <linux-kernel@vger.kernel.org>, Ohad Ben-Cohen <ohad@wizery.com>
-Subject: [PATCH v3 5/6] iommu/intel: announce supported page sizes
-Date: Fri, 16 Sep 2011 20:51:45 +0300
-Message-Id: <1316195506-9777-6-git-send-email-ohad@wizery.com>
+Subject: [PATCH v3 0/6] iommu: split mapping to page sizes as supported by the hardware
+Date: Fri, 16 Sep 2011 20:51:40 +0300
+Message-Id: <1316195506-9777-1-git-send-email-ohad@wizery.com>
 X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1316195506-9777-1-git-send-email-ohad@wizery.com>
-References: <1316195506-9777-1-git-send-email-ohad@wizery.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let the IOMMU core know we support arbitrary page sizes (as long as
-they're an order of 4KiB).
+v2->v3:
 
-This way the IOMMU core will retain the existing behavior we're used to;
-it will let us map regions that:
-- their size is an order of 4KiB
-- they are naturally aligned
+- s/KB/KiB/ (David W)
 
-Note: Intel IOMMU hardware doesn't support arbitrary page sizes,
-but the driver does (it splits arbitrary-sized mappings into
-the pages supported by the hardware).
+v1->v2:
 
-To make everything simpler for now, though, this patch effectively tells
-the IOMMU core to keep giving this driver the same memory regions it did
-before, so nothing is changed as far as it's concerned.
+- split to patches (by keeping the old code around until all drivers are converted) (Joerg)
 
-At this point, the page sizes announced remain static within the IOMMU
-core. To correctly utilize the pgsize-splitting of the IOMMU core by
-this driver, it seems that some core changes should still be done,
-because Intel's IOMMU page size capabilities seem to have the potential
-to be different between different DMA remapping devices.
 
-Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
----
- drivers/iommu/intel-iommu.c |   21 ++++++++++++++++++++-
- 1 files changed, 20 insertions(+), 1 deletions(-)
+Ohad Ben-Cohen (6):
+  iommu/core: split mapping to page sizes as supported by the hardware
+  iommu/omap: announce supported page sizes
+  iommu/msm: announce supported page sizes
+  iommu/amd: announce supported page sizes
+  iommu/intel: announce supported page sizes
+  iommu/core: remove the temporary register_iommu_pgsize API
 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index c621c98..46c21a2 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -3426,6 +3426,24 @@ static struct notifier_block device_nb = {
- 	.notifier_call = device_notifier,
- };
- 
-+/*
-+ * This bitmap is used to advertise the page sizes our hardware support
-+ * to the IOMMU core, which will then use this information to split
-+ * physically contiguous memory regions it is mapping into page sizes
-+ * that we support.
-+ *
-+ * Traditionally the IOMMU core just handed us the mappings directly,
-+ * after making sure the size is an order of a 4KiB page and that the
-+ * mapping has natural alignment.
-+ *
-+ * To retain this behavior, we currently advertise that we support
-+ * all page sizes that are an order of 4KiB.
-+ *
-+ * If at some point we'd like to utilize the IOMMU core's new behavior,
-+ * we could change this to advertise the real page sizes we support.
-+ */
-+static unsigned long intel_iommu_pgsizes = ~0xFFFUL;
-+
- int __init intel_iommu_init(void)
- {
- 	int ret = 0;
-@@ -3486,7 +3504,8 @@ int __init intel_iommu_init(void)
- 
- 	init_iommu_pm_ops();
- 
--	register_iommu(&intel_iommu_ops);
-+	register_iommu_pgsize(&intel_iommu_ops, &intel_iommu_pgsizes,
-+							BITS_PER_LONG);
- 
- 	bus_register_notifier(&pci_bus_type, &device_nb);
- 
+ drivers/iommu/amd_iommu.c   |   20 ++++++-
+ drivers/iommu/intel-iommu.c |   20 ++++++-
+ drivers/iommu/iommu.c       |  130 +++++++++++++++++++++++++++++++++++++++----
+ drivers/iommu/msm_iommu.c   |    8 ++-
+ drivers/iommu/omap-iommu.c  |    6 ++-
+ drivers/iommu/omap-iovmm.c  |   12 +---
+ include/linux/iommu.h       |    7 +-
+ virt/kvm/iommu.c            |    4 +-
+ 8 files changed, 177 insertions(+), 30 deletions(-)
+
 -- 
 1.7.4.1
 
