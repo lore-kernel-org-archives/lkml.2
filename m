@@ -1,71 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755451Ab1IPSM4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 14:12:56 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:39114 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753046Ab1IPSMz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 14:12:55 -0400
-Date: Fri, 16 Sep 2011 22:11:46 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Pavel Machek <pavel@ucw.cz>, Andrew Morton <akpm00@gmail.com>,
-        linux-kernel@vger.kernel.org, containers@lists.osdl.org,
-        linux-fsdevel@vger.kernel.org, Kirill Shutemov <kirill@shutemov.name>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Nathan Lynch <ntl@pobox.com>, Zan Lynx <zlynx@acm.org>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>, Tejun Heo <tj@kernel.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [patch 2/2] fs, proc: Introduce the /proc/<pid>/map_files/
- directory v12
-Message-ID: <20110916181146.GA20801@albatros>
-References: <20110914144841.GA7906@albatros>
- <20110914160018.GW25367@sun>
- <20110914160724.GA10612@albatros>
- <20110915091417.GA27755@sun>
- <20110915092757.GA23404@albatros>
- <20110915102922.GB27755@sun>
- <20110915105651.GA17575@albatros>
- <20110915201939.GE12040@sun>
- <20110916175618.GA20046@albatros>
- <20110916180731.GB8599@sun>
+	id S1755621Ab1IPSNV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 14:13:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52868 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753525Ab1IPSNU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Sep 2011 14:13:20 -0400
+Date: Fri, 16 Sep 2011 14:13:08 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: andi@firstfloor.org, gregkh@suse.de, willy@meta-x.org,
+        paul.gortmaker@windriver.com
+Cc: linux-kernel@vger.kernel.org
+Message-ID: <20110916181307.GW10700@zod.bos.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110916180731.GB8599@sun>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 16, 2011 at 22:07 +0400, Cyrill Gorcunov wrote:
-> > BTW, not a big deal, but probably you should return -EACCES on
-> > !capable() as file presence is not an issue in this case.
-> > 
-> >     if (!ptrace_may_access(task, PTRACE_MODE_READ))
-> >         goto out_notask;
-> > 
-> >     status = -EACCES;
-> >     if (!capable(CAP_SYS_ADMIN))
-> >         goto out_notask;
-> > 
-> >     status = 0;
-> > 
-> > 
-> 
-> That's not a proble to fix it actually. So can I fix it and
-> put some tage here (Reviewed or something?).
+<paul.gortmaker@windriver.com>
+Cc: linux-kernel@vger.kernel.org
+Bcc: 
+Subject: stable patch queues and submission
+Reply-To: 
 
-Yep, with CAP_SYS_ADMIN check there should be no issues here.
+Hi All,
 
-Reviewed-by: Vasiliy Kulikov <segoon@openwall.com>
+With kernel.org being down, the stable@kernel.org list is no longer
+working.  This leaves me wondering if we should send patches directly to
+the various stable tree maintainers with [stable] in the prefix and
+linux-kernel CC'd, or if the stable queues are even being maintained
+during the outage.
 
-Thanks,
+Does anyone have a preference or suggestion on how to continue stable
+releases until the list comes back?  (I'm assuming 'wait' isn't really a
+best all around option.)
 
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+josh
