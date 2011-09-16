@@ -1,74 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755217Ab1IPPmg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 11:42:36 -0400
-Received: from casper.infradead.org ([85.118.1.10]:59056 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752811Ab1IPPmf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 11:42:35 -0400
-Subject: Re: [PATCH] perf: make perf.data more self-descriptive (v4)
-From: Peter Zijlstra <peterz@infradead.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
-        acme@redhat.com, mingo@elte.hu
-Date: Fri, 16 Sep 2011 17:42:21 +0200
-In-Reply-To: <4E736C5A.1040502@gmail.com>
-References: <20110907191045.GA13475@quad> <4E6E0D0B.3080306@gmail.com>
-	  <CABPqkBSfQo5E=MJ913E--dc8Fi7VLcFSGNbBf60tOnTLMuVN_w@mail.gmail.com>
-	  <4E6E181E.9080506@gmail.com>
-	  <CABPqkBQWd=DyRRDhaxwDGrpCs=XqyTUv72+dn7GKsT=kjPqiJg@mail.gmail.com>
-	  <1315838611.26517.51.camel@twins>
-	  <CABPqkBShe6OG1ukQ=7vn_Mr=Aa_c8jcbo1mYuF+41Euy5_R7Dw@mail.gmail.com>
-	  <4E73622D.5010506@gmail.com> <1316186353.10174.29.camel@twins>
-	 <4E736C5A.1040502@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1316187741.10174.30.camel@twins>
-Mime-Version: 1.0
+	id S1755207Ab1IPPqx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 11:46:53 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:10411 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752811Ab1IPPqw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Sep 2011 11:46:52 -0400
+From: Andrew Vagin <avagin@openvz.org>
+To: linux-kernel@vger.kernel.org
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, avagin@openvz.org
+Subject: [PATCH] perf: fix counter of ftrace events
+Date: Fri, 16 Sep 2011 19:46:34 +0400
+Message-Id: <1316187994-670129-1-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-09-16 at 09:33 -0600, David Ahern wrote:
-> 
-> On 09/16/2011 09:19 AM, Peter Zijlstra wrote:
-> > On Fri, 2011-09-16 at 08:50 -0600, David Ahern wrote:
-> >>
-> >> ppc data file: header->magic 454c494646524550
-> >> x86 data file: header->magic 454c494646524550
-> >>
-> > Ok then we need to fix that magic thing..
-> 
-> Right, but it breaks backwards/forwards compatibility. e.g.,
-> 
-> diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-> index 73fa59e..603a8bb9 100644
-> --- a/tools/perf/util/header.c
-> +++ b/tools/perf/util/header.c
-> @@ -65,9 +65,7 @@ char *perf_header__find_event(u64 id)
->     return NULL;
->  }
-> 
-> -static const char *__perf_magic = "PERFFILE";
-> -
-> -#define PERF_MAGIC (*(u64 *)__perf_magic)
-> +#define PERF_MAGIC 0x5045524646494c45ULL  // "PERFFILE"
-> 
->  struct perf_file_attr {
->     struct perf_event_attr  attr;
-> 
-> That puts the magic in the file based on endianness of the recording
-> system. e.g., on x86:
-> 
-> $ od -c perf-magic.data | head -1
-> 0000000   E   L   I   F   F   R   E   P   h  \0  \0  \0  \0  \0  \0  \0
-> 
-> Which means older perf binaries can't analyze new files (created with
-> new magic order) and newer perf binaries can't analyze older perf files
-> -- the new command will incorrectly want to do endian swapping on the
-> old file.
+Each event adds some points to its counters. By default it adds 1,
+and a number of points may be transmited in event's parameters.
 
-crap.. sounds like a nice moment to ditch the current format and go for
-the multi-file setup.. :-)
+E.g. sched:sched_stat_runtime adds how long process has been running.
+
+But this functionality was broken by v2.6.31-rc5-392-gf413cdb
+and now the event's parameters doesn't affect on a number of points.
+
+TP_perf_assign isn't defined, so __perf_count(c) isn't executed and
+__count is always equal to 1.
+
+Signed-off-by: Andrew Vagin <avagin@openvz.org>
+---
+ include/trace/ftrace.h |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+index 7f89fbf..d6385ee 100644
+--- a/include/trace/ftrace.h
++++ b/include/trace/ftrace.h
+@@ -712,6 +712,9 @@ __attribute__((section("_ftrace_events"))) *__event_##call = &event_##call
+ #undef __perf_count
+ #define __perf_count(c) __count = (c)
+ 
++#undef TP_perf_assign
++#define TP_perf_assign(args...) args
++
+ #undef DECLARE_EVENT_CLASS
+ #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
+ static notrace void							\
+-- 
+1.7.1
+
