@@ -1,50 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755351Ab1IPSKo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 14:10:44 -0400
-Received: from solo.fdn.fr ([80.67.169.19]:46114 "EHLO solo.fdn.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753692Ab1IPSKn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 14:10:43 -0400
-Date: Fri, 16 Sep 2011 20:10:40 +0200
-From: Samuel Thibault <samuel.thibault@ens-lyon.org>
-To: Keith Packard <keithp@keithp.com>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [REGRESSION] i915 KMS dual head broken on DELL latitude E6420 in
- 3.1-rc*
-Message-ID: <20110916181040.GD4698@type.famille.thibault.fr>
-Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-	Keith Packard <keithp@keithp.com>, dri-devel@lists.freedesktop.org,
-	linux-kernel@vger.kernel.org
-References: <20110914232717.GA5410@type.famille.thibault.fr>
- <yunobym743b.fsf@aiko.keithp.com>
- <20110915074106.GA4544@type.famille.thibault.fr>
- <20110915081259.GB4877@type.bordeaux.inria.fr>
- <yunlitp7umf.fsf@aiko.keithp.com>
- <20110916163050.GT4891@type.bordeaux.inria.fr>
+	id S1755451Ab1IPSM4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 14:12:56 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:39114 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753046Ab1IPSMz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Sep 2011 14:12:55 -0400
+Date: Fri, 16 Sep 2011 22:11:46 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Pavel Machek <pavel@ucw.cz>, Andrew Morton <akpm00@gmail.com>,
+        linux-kernel@vger.kernel.org, containers@lists.osdl.org,
+        linux-fsdevel@vger.kernel.org, Kirill Shutemov <kirill@shutemov.name>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Nathan Lynch <ntl@pobox.com>, Zan Lynx <zlynx@acm.org>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>, Tejun Heo <tj@kernel.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [patch 2/2] fs, proc: Introduce the /proc/<pid>/map_files/
+ directory v12
+Message-ID: <20110916181146.GA20801@albatros>
+References: <20110914144841.GA7906@albatros>
+ <20110914160018.GW25367@sun>
+ <20110914160724.GA10612@albatros>
+ <20110915091417.GA27755@sun>
+ <20110915092757.GA23404@albatros>
+ <20110915102922.GB27755@sun>
+ <20110915105651.GA17575@albatros>
+ <20110915201939.GE12040@sun>
+ <20110916175618.GA20046@albatros>
+ <20110916180731.GB8599@sun>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110916163050.GT4891@type.bordeaux.inria.fr>
-User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
+In-Reply-To: <20110916180731.GB8599@sun>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Samuel Thibault, le Fri 16 Sep 2011 18:30:50 +0200, a écrit :
-> Keith Packard, le Thu 15 Sep 2011 09:22:48 -0500, a écrit :
-> > On Thu, 15 Sep 2011 10:12:59 +0200, Samuel Thibault <samuel.thibault@ens-lyon.org> wrote:
+On Fri, Sep 16, 2011 at 22:07 +0400, Cyrill Gorcunov wrote:
+> > BTW, not a big deal, but probably you should return -EACCES on
+> > !capable() as file presence is not an issue in this case.
 > > 
-> > > At home only. At work, with a different VGA screen, I'm still getting
-> > > the issue.
+> >     if (!ptrace_may_access(task, PTRACE_MODE_READ))
+> >         goto out_notask;
 > > 
-> > You're still having a problem with the LVDS screen at work with FBC
-> > disabled?
+> >     status = -EACCES;
+> >     if (!capable(CAP_SYS_ADMIN))
+> >         goto out_notask;
+> > 
+> >     status = 0;
+> > 
+> > 
 > 
-> Yes, though it now seems random, sometimes it works, sometimes not.
+> That's not a proble to fix it actually. So can I fix it and
+> put some tage here (Reviewed or something?).
 
-Ah, actually home's success was a luck. I'm still getting random
-failures at home too.
+Yep, with CAP_SYS_ADMIN check there should be no issues here.
 
-Samuel
+Reviewed-by: Vasiliy Kulikov <segoon@openwall.com>
+
+Thanks,
+
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
