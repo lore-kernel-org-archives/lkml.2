@@ -1,60 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755179Ab1IPPgX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 11:36:23 -0400
-Received: from palinux.external.hp.com ([192.25.206.14]:40990 "EHLO
-	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753999Ab1IPPgW (ORCPT
+	id S1755217Ab1IPPmg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 11:42:36 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59056 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752811Ab1IPPmf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 11:36:22 -0400
-Date: Fri, 16 Sep 2011 09:36:20 -0600
-From: Matthew Wilcox <matthew@wil.cx>
-To: Andres Freund <andres@anarazel.de>
-Cc: Andi Kleen <andi@firstfloor.org>, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        robertmhaas@gmail.com, pgsql-hackers@postgresql.org
-Subject: Re: Improve lseek scalability v3
-Message-ID: <20110916153620.GA9913@parisc-linux.org>
-References: <1316128013-21980-1-git-send-email-andi@firstfloor.org> <20110916130054.GA8997@parisc-linux.org> <201109161616.50004.andres@anarazel.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201109161616.50004.andres@anarazel.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Fri, 16 Sep 2011 11:42:35 -0400
+Subject: Re: [PATCH] perf: make perf.data more self-descriptive (v4)
+From: Peter Zijlstra <peterz@infradead.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
+        acme@redhat.com, mingo@elte.hu
+Date: Fri, 16 Sep 2011 17:42:21 +0200
+In-Reply-To: <4E736C5A.1040502@gmail.com>
+References: <20110907191045.GA13475@quad> <4E6E0D0B.3080306@gmail.com>
+	  <CABPqkBSfQo5E=MJ913E--dc8Fi7VLcFSGNbBf60tOnTLMuVN_w@mail.gmail.com>
+	  <4E6E181E.9080506@gmail.com>
+	  <CABPqkBQWd=DyRRDhaxwDGrpCs=XqyTUv72+dn7GKsT=kjPqiJg@mail.gmail.com>
+	  <1315838611.26517.51.camel@twins>
+	  <CABPqkBShe6OG1ukQ=7vn_Mr=Aa_c8jcbo1mYuF+41Euy5_R7Dw@mail.gmail.com>
+	  <4E73622D.5010506@gmail.com> <1316186353.10174.29.camel@twins>
+	 <4E736C5A.1040502@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1316187741.10174.30.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 16, 2011 at 04:16:49PM +0200, Andres Freund wrote:
-> I sent an email containing benchmarks from Robert Haas regarding the Subject. 
-> Looking at lkml.org I can't see it right now, Will recheck when I am at home.
+On Fri, 2011-09-16 at 09:33 -0600, David Ahern wrote:
 > 
-> He replaced lseek(SEEK_END) with fstat() and got speedups up to 8.7 times the 
-> lseek performance.
-> The workload was 64 clients hammering postgres with a simple readonly workload 
-> (pgbench -S).
+> On 09/16/2011 09:19 AM, Peter Zijlstra wrote:
+> > On Fri, 2011-09-16 at 08:50 -0600, David Ahern wrote:
+> >>
+> >> ppc data file: header->magic 454c494646524550
+> >> x86 data file: header->magic 454c494646524550
+> >>
+> > Ok then we need to fix that magic thing..
+> 
+> Right, but it breaks backwards/forwards compatibility. e.g.,
+> 
+> diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+> index 73fa59e..603a8bb9 100644
+> --- a/tools/perf/util/header.c
+> +++ b/tools/perf/util/header.c
+> @@ -65,9 +65,7 @@ char *perf_header__find_event(u64 id)
+>     return NULL;
+>  }
+> 
+> -static const char *__perf_magic = "PERFFILE";
+> -
+> -#define PERF_MAGIC (*(u64 *)__perf_magic)
+> +#define PERF_MAGIC 0x5045524646494c45ULL  // "PERFFILE"
+> 
+>  struct perf_file_attr {
+>     struct perf_event_attr  attr;
+> 
+> That puts the magic in the file based on endianness of the recording
+> system. e.g., on x86:
+> 
+> $ od -c perf-magic.data | head -1
+> 0000000   E   L   I   F   F   R   E   P   h  \0  \0  \0  \0  \0  \0  \0
+> 
+> Which means older perf binaries can't analyze new files (created with
+> new magic order) and newer perf binaries can't analyze older perf files
+> -- the new command will incorrectly want to do endian swapping on the
+> old file.
 
-Yay!  Data!
-
-> For reference see the thread in the postgres archives which also links to 
-> performance data: http://archives.postgresql.org/message-
-> id/CA+TgmoawRfpan35wzvgHkSJ0+i-W=VkJpKnRxK2kTDR+HsanWA@mail.gmail.com
-
-So both fstat and lseek do more work than postgres wants.  lseek modifies
-the file pointer while fstat copies all kinds of unnecessary information
-into userspace.  I imagine this is the source of the slowdown seen in
-the 1-client case.
-
-There have been various proposals to make the amount of information returned
-by fstat limited to the 'cheap' (for various definitions of 'cheap') fields.
-
-I'd like to dig into the requirement for knowing the file size a little
-better.  According to the blog entry it's used for "the query planner".
-Does the query planner need to know the exact number of bytes in the file,
-or is it after an order-of-magnitude?  Or to-the-nearest-gigabyte?
-
--- 
-Matthew Wilcox				Intel Open Source Technology Centre
-"Bill, look, we understand that you're interested in selling us this
-operating system, but compare it to ours.  We can't possibly take such
-a retrograde step."
+crap.. sounds like a nice moment to ditch the current format and go for
+the multi-file setup.. :-)
