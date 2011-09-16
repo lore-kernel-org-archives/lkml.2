@@ -1,40 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754485Ab1IPSDa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 14:03:30 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:43400 "EHLO mail.skyhub.de"
+	id S1755066Ab1IPSDx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 14:03:53 -0400
+Received: from svenfoo.org ([82.94.215.22]:55705 "EHLO mail.zonque.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753089Ab1IPSD3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 14:03:29 -0400
-Date: Fri, 16 Sep 2011 20:03:24 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: linux-wireless@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        "'Chaoming_Li'" <chaoming_li@realsil.com.cn>
-Subject: Re: 3.1-rc6+ rtl8192se issue
-Message-ID: <20110916180323.GA1988@gere.osrc.amd.com>
-References: <20110915124406.GA14374@gere.osrc.amd.com>
- <4E721871.7040901@lwfinger.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E721871.7040901@lwfinger.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753089Ab1IPSDw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Sep 2011 14:03:52 -0400
+X-Greylist: delayed 335 seconds by postgrey-1.27 at vger.kernel.org; Fri, 16 Sep 2011 14:03:52 EDT
+From: Daniel Mack <zonque@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Daniel Mack <zonque@gmail.com>, Wolfgang Grandegger <wg@grandegger.com>,
+        netdev@vger.kernel.org
+Subject: [PATCH] can: ti_hecc: include linux/io.h
+Date: Fri, 16 Sep 2011 19:57:43 +0200
+Message-Id: <1316195863-18695-1-git-send-email-zonque@gmail.com>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 15, 2011 at 10:23:29AM -0500, Larry Finger wrote:
-> Would you also try loading rtl8192se with the "ips=0" option? As power
-> save is implicated in your traceback, that may help. I will be trying
-> "swlps=0 ips=0".
+This fixes a build breakage for OMAP3 boards.
 
-Ok, "ips=0" seems to fix the issue ... almost. I say, almost because I
-had only one hang so far for running the box for a day today. Will try
-together with "swlps=0" next week.
+Signed-off-by: Daniel Mack <zonque@gmail.com>
+Cc: Wolfgang Grandegger <wg@grandegger.com>
+Cc: netdev@vger.kernel.org
+---
+ drivers/net/can/ti_hecc.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Thanks.
-
+diff --git a/drivers/net/can/ti_hecc.c b/drivers/net/can/ti_hecc.c
+index a812492..2adc294 100644
+--- a/drivers/net/can/ti_hecc.c
++++ b/drivers/net/can/ti_hecc.c
+@@ -46,6 +46,7 @@
+ #include <linux/skbuff.h>
+ #include <linux/platform_device.h>
+ #include <linux/clk.h>
++#include <linux/io.h>
+ 
+ #include <linux/can/dev.h>
+ #include <linux/can/error.h>
 -- 
-Regards/Gruss,
-Boris.
+1.7.6
+
