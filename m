@@ -1,98 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754747Ab1IPIUI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 04:20:08 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:38991 "HELO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754423Ab1IPIUG convert rfc822-to-8bit (ORCPT
+	id S1754768Ab1IPIVX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 04:21:23 -0400
+Received: from mtagate7.uk.ibm.com ([194.196.100.167]:34167 "EHLO
+	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753526Ab1IPIVU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 04:20:06 -0400
-Message-ID: <4E7306C8.4050809@arm.com>
-Date: Fri, 16 Sep 2011 09:20:24 +0100
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
-MIME-Version: 1.0
-To: =?UTF-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirqus@gmail.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC PATCH 1/3] genirq: add support for per-cpu dev_id interrupts
-References: <1316105551-17505-1-git-send-email-marc.zyngier@arm.com> <1316105551-17505-2-git-send-email-marc.zyngier@arm.com> <CAHXqBFKOQNOePc00yuzfotrYP6wT0ue_CJfv7rKdC+gEkomunA@mail.gmail.com>
-In-Reply-To: <CAHXqBFKOQNOePc00yuzfotrYP6wT0ue_CJfv7rKdC+gEkomunA@mail.gmail.com>
-X-Enigmail-Version: 1.2.1
-X-OriginalArrivalTime: 16 Sep 2011 08:20:00.0634 (UTC) FILETIME=[6D8DB5A0:01CC7449]
-X-MC-Unique: 111091609200208901
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 16 Sep 2011 04:21:20 -0400
+Subject: Re: [patch 1/2] kdump: Initialize vmcoreinfo note at startup
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Reply-To: holzheu@linux.vnet.ibm.com
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: ebiederm@xmission.com, mahesh@linux.vnet.ibm.com, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
+In-Reply-To: <20110915184637.GF32658@redhat.com>
+References: <20110909102659.320220628@linux.vnet.ibm.com>
+	 <20110909102732.497569031@linux.vnet.ibm.com>
+	 <20110915184637.GF32658@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: IBM
+Date: Fri, 16 Sep 2011 10:21:17 +0200
+Message-ID: <1316161277.3507.8.camel@br98xy6r>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michał,
+Hello Vivek,
 
-On 15/09/11 22:36, Michał Mirosław wrote:
-> 2011/9/15 Marc Zyngier <marc.zyngier@arm.com>:
-> [...]
->> diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
->> index a103732..f9b7fa3 100644
->> --- a/include/linux/interrupt.h
->> +++ b/include/linux/interrupt.h
->> @@ -95,6 +95,7 @@ typedef irqreturn_t (*irq_handler_t)(int, void *);
->>  * @flags:     flags (see IRQF_* above)
->>  * @name:      name of the device
->>  * @dev_id:    cookie to identify the device
->> + * @percpu_dev_id:     cookie to identify the device
->>  * @next:      pointer to the next irqaction for shared interrupts
->>  * @irq:       interrupt number
->>  * @dir:       pointer to the proc/irq/NN/name entry
->> @@ -104,17 +105,20 @@ typedef irqreturn_t (*irq_handler_t)(int, void *);
->>  * @thread_mask:       bitmask for keeping track of @thread activity
->>  */
->>  struct irqaction {
-> [...]
->> +       void                    *dev_id;
->> +#ifdef CONFIG_IRQ_PERCPU_DEVID
->> +       void __percpu           *percpu_dev_id;
->> +#endif
+On Thu, 2011-09-15 at 14:46 -0400, Vivek Goyal wrote:
+> On Fri, Sep 09, 2011 at 12:27:00PM +0200, Michael Holzheu wrote:
+> > From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+> > 
+> > Currently the vmcoreinfo note is only initialized in case of kdump. On s390
+> > it is possible to create kernel dumps with other dump mechanisms than kdump
+> > (e.g. via hypervisor dump or stand-alone dump tools).
 > 
-> Those two can share the memory (in a anonymous union), if I read the
-> idea correctly.
+> Both of these will be invoked through panic notifiers because kdump kernel
+> is not loaded?
 
-That was the initial implementation, and everything was fine until I
-tried gcc 4.4.1. Having an anonymous union breaks static initialization
-of the structure.
+This is only one possibility. The other is that they are invoked
+manually or by hypervisor watchdog without any Linux kernel involvement.
 
-Try the following:
-$ cat x.c
-struct foo {
-	int a;
-	union {
-		int b1;
-		void * b2;
-	};
-	int c;
-};
+> 
+> >For those dumps it
+> > would also be desirable to include the vmcoreinfo data.
+> 
+> Curious that how these two dump schemes make use vmcoreinfo data?
 
-struct foo bar = {
-	.a  = 1,
-	.b1 = 0,
-	.c  = 2,
-};
+We have a tool named zgetdump. With this tool it is possible to convert
+dump formats on the fly using fuse. E.g. you can mount a s390
+stand-alone dump as ELF dump. When this is done, the tool finds the
+vmcoreinfo in the stand-alone dump via our well known ABI defined
+address and it creates the respective VMCOREINFO ELF note in the output
+ELF dump. This then can be used e.g. by makedumpfile for dump filtering.
+No more need for a vmlinux file with debug information.
 
-$ gcc -c -Wall x.c
-x.c:13: error: unknown field ‘b1’ specified in initializer
-x.c:13: warning: missing braces around initializer
-x.c:13: warning: (near initialization for ‘bar.<anonymous>’)
+So this will look like the following:
 
-GCC 4.6 seem fine though. Haven't tried anything in between.
+# zgetdump --mount standalone.dump -f elf /mnt
+# ls /mnt
+# dump.elf
+# readelf -n /mnt/dump.elf
+# ...
+  VMCOREINFO		0x00000474	Unknown note type: (0x00000000)
+# makedumpfile -c -d 31 /mnt/dump.elf dump.kdump
 
-A possible solution would be to name the union and fix all the accesses
-to .dev_id. Ugly at best...
+> 
+> > To accomplish this,
+> > with this patch the vmcoreinfo ELF note is always initialized, not only in
+> > case of a (kdump) crash. On s390 we will add an ABI defined pointer at
+> > a well known address to vmcoreinfo so that dump analysis tools are able to
+> > find this information.
+> 
+> Instead of this, why don't you initialize the notes in your arch specific
+> call. IOW, why don't you give a call to crash_save_vmcoreinfo() in stand
+> alone dump path to prepare the note and then continue with stand alone
+> dump.
 
-Cheers,
+We can't do that because stand-alone and hypervisor dump can be
+triggered completely without Linux. So no Linux kernel function can/will
+be called.
 
-	M.
--- 
-Jazz is not dead. It just smells funny...
+Michael
 
