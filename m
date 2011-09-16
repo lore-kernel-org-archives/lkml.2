@@ -1,45 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755066Ab1IPSDx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 14:03:53 -0400
-Received: from svenfoo.org ([82.94.215.22]:55705 "EHLO mail.zonque.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753089Ab1IPSDw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 14:03:52 -0400
-X-Greylist: delayed 335 seconds by postgrey-1.27 at vger.kernel.org; Fri, 16 Sep 2011 14:03:52 EDT
-From: Daniel Mack <zonque@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Daniel Mack <zonque@gmail.com>, Wolfgang Grandegger <wg@grandegger.com>,
-        netdev@vger.kernel.org
-Subject: [PATCH] can: ti_hecc: include linux/io.h
-Date: Fri, 16 Sep 2011 19:57:43 +0200
-Message-Id: <1316195863-18695-1-git-send-email-zonque@gmail.com>
-X-Mailer: git-send-email 1.7.6
+	id S1754936Ab1IPSHl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 14:07:41 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:47742 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750755Ab1IPSHj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Sep 2011 14:07:39 -0400
+Date: Fri, 16 Sep 2011 22:07:32 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: Pavel Machek <pavel@ucw.cz>, Andrew Morton <akpm00@gmail.com>,
+        linux-kernel@vger.kernel.org, containers@lists.osdl.org,
+        linux-fsdevel@vger.kernel.org, Kirill Shutemov <kirill@shutemov.name>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Nathan Lynch <ntl@pobox.com>, Zan Lynx <zlynx@acm.org>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>, Tejun Heo <tj@kernel.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [patch 2/2] fs, proc: Introduce the /proc/<pid>/map_files/
+ directory v12
+Message-ID: <20110916180731.GB8599@sun>
+References: <20110914134405.GV25367@sun>
+ <20110914144841.GA7906@albatros>
+ <20110914160018.GW25367@sun>
+ <20110914160724.GA10612@albatros>
+ <20110915091417.GA27755@sun>
+ <20110915092757.GA23404@albatros>
+ <20110915102922.GB27755@sun>
+ <20110915105651.GA17575@albatros>
+ <20110915201939.GE12040@sun>
+ <20110916175618.GA20046@albatros>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110916175618.GA20046@albatros>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes a build breakage for OMAP3 boards.
+On Fri, Sep 16, 2011 at 09:56:18PM +0400, Vasiliy Kulikov wrote:
+...
+> > 
+> > v14: (by Vasiliy Kulikov)
+> >  - for security reason map_files/ entries are allowed for
+> >    readers with CAP_SYS_ADMIN credentials granted only
+> 
+> This changelog is currently much longer than the commit description text ;)
 
-Signed-off-by: Daniel Mack <zonque@gmail.com>
-Cc: Wolfgang Grandegger <wg@grandegger.com>
-Cc: netdev@vger.kernel.org
----
- drivers/net/can/ti_hecc.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Yes, I know ;) I would like to keep it (to appreciate everyone who spent time
+in review and feedback).
+...
+> 
+> > +
+> > + inode = dentry->d_inode;
+> > + task = get_proc_task(inode);
+> > + if (!task)
+> > +         goto out_notask;
+> > +
+> > + if (!ptrace_may_access(task, PTRACE_MODE_READ))
+> > +         goto out;
+> 
+> While this is not needed with capable() check, it's OK to keep it for
+> the future more finegranted access checks.
 
-diff --git a/drivers/net/can/ti_hecc.c b/drivers/net/can/ti_hecc.c
-index a812492..2adc294 100644
---- a/drivers/net/can/ti_hecc.c
-+++ b/drivers/net/can/ti_hecc.c
-@@ -46,6 +46,7 @@
- #include <linux/skbuff.h>
- #include <linux/platform_device.h>
- #include <linux/clk.h>
-+#include <linux/io.h>
- 
- #include <linux/can/dev.h>
- #include <linux/can/error.h>
--- 
-1.7.6
+yeah
 
+> 
+> BTW, not a big deal, but probably you should return -EACCES on
+> !capable() as file presence is not an issue in this case.
+> 
+>     if (!ptrace_may_access(task, PTRACE_MODE_READ))
+>         goto out_notask;
+> 
+>     status = -EACCES;
+>     if (!capable(CAP_SYS_ADMIN))
+>         goto out_notask;
+> 
+>     status = 0;
+> 
+> 
+
+That's not a proble to fix it actually. So can I fix it and
+put some tage here (Reviewed or something?).
+
+	Cyrill
