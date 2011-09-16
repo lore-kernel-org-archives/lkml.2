@@ -1,75 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755298Ab1IPQJf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 12:09:35 -0400
-Received: from imr4.ericy.com ([198.24.6.9]:38173 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752489Ab1IPQJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 12:09:34 -0400
-Date: Fri, 16 Sep 2011 09:07:52 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Rudolf Marek <r.marek@assembler.cz>
-CC: lm-sensors@lm-sensors.org, "R, Durgadoss" <durgadoss.r@intel.com>
-Subject: Re: coretemp breaks lockdep. (MAX_LOCKDEP_ENTRIES too low!)
-Message-ID: <20110916160752.GA10978@ericsson.com>
-References: <20110915193018.GA10256@redhat.com>
+	id S1755338Ab1IPQJy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 12:09:54 -0400
+Received: from mail-wy0-f180.google.com ([74.125.82.180]:35722 "EHLO
+	mail-wy0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752489Ab1IPQJx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Sep 2011 12:09:53 -0400
+Date: Fri, 16 Sep 2011 17:09:39 +0100
+From: Dave Martin <dave.martin@linaro.org>
+To: "Cousson, Benoit" <b-cousson@ti.com>
+Cc: Rob Herring <robherring2@gmail.com>,
+        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        "jamie@jamieiles.com" <jamie@jamieiles.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 5/5] ARM: gic: add OF based initialization
+Message-ID: <20110916160939.GA2100@arm.com>
+References: <1316017900-19918-1-git-send-email-robherring2@gmail.com>
+ <1316017900-19918-6-git-send-email-robherring2@gmail.com>
+ <CAJuYYwSFu2HC+u2NY41+yw9tEyy85RKa4Dpm3SL+jbwS_OOA0A@mail.gmail.com>
+ <4E71CE5D.9030900@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110915193018.GA10256@redhat.com>
+In-Reply-To: <4E71CE5D.9030900@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 15, 2011 at 03:30:18PM -0400, Dave Jones wrote:
-> just had a user report this against rc6..
+On Thu, Sep 15, 2011 at 12:07:25PM +0200, Cousson, Benoit wrote:
+> Hi Rob,
 > 
-> # while true; do rmmod coretemp; modprobe coretemp; done
+> On 9/15/2011 9:55 AM, Thomas Abraham wrote:
+> >Hi Rob,
+> >
+> >On 14 September 2011 22:01, Rob Herring<robherring2@gmail.com>  wrote:
+> >>From: Rob Herring<rob.herring@calxeda.com>
+> >>
+> >>This adds gic initialization using device tree data. The initialization
+> >>functions are intended to be called by a generic OF interrupt
+> >>controller parsing function once the right pieces are in place.
+> >>
+> >>PPIs are handled using 3rd cell of interrupts properties to specify the cpu
+> >>mask the PPI is assigned to.
+> >>
+> >>Signed-off-by: Rob Herring<rob.herring@calxeda.com>
+> >>---
+> >>  Documentation/devicetree/bindings/arm/gic.txt |   53 ++++++++++++++++++++++++
+> >>  arch/arm/common/gic.c                         |   55 +++++++++++++++++++++++--
+> >>  arch/arm/include/asm/hardware/gic.h           |   10 +++++
+> >>  3 files changed, 114 insertions(+), 4 deletions(-)
+> >>  create mode 100644 Documentation/devicetree/bindings/arm/gic.txt
+> >
+> >[...]
+> >
+> >
+> >>diff --git a/arch/arm/common/gic.c b/arch/arm/common/gic.c
+> >>index d1ccc72..14de380 100644
+> >>--- a/arch/arm/common/gic.c
+> >>+++ b/arch/arm/common/gic.c
+> >
+> >[...]
+> >
+> >>+void __init gic_of_init(struct device_node *node, struct device_node *parent)
+> >>+{
+> >>+       void __iomem *cpu_base;
+> >>+       void __iomem *dist_base;
+> >>+       int irq;
+> >>+       struct irq_domain *domain =&gic_data[gic_cnt].domain;
+> >>+
+> >>+       if (WARN_ON(!node))
+> >>+               return;
+> >>+
+> >>+       dist_base = of_iomap(node, 0);
+> >>+       WARN(!dist_base, "unable to map gic dist registers\n");
+> >>+
+> >>+       cpu_base = of_iomap(node, 1);
+> >>+       WARN(!cpu_base, "unable to map gic cpu registers\n");
+> >>+
+> >>+       domain->nr_irq = gic_irq_count(dist_base);
+> >>+       domain->irq_base = irq_alloc_descs(-1, 0, domain->nr_irq, numa_node_id());
+> >
+> >For exynos4, all the interrupts originating from GIC are statically
+> >mapped to start from 32 in the linux virq space (GIC SPI interrupts
+> >start from 64). In the above code, since irq_base would be 0 for
+> >exynos4, the interrupt mapping is not working correctly. In your
+> >previous version of the patch, you have given a option to the platform
+> >code to choose the offset. Could that option be added to this series
+> >also. Or a provision to use platform specific translate function
+> >instead of the irq_domain_simple translator.
 > 
+> I have another concern on a similar topic.
 > 
-> [15811.924167] BUG: MAX_LOCKDEP_ENTRIES too low!
-> [15811.924171] turning off the locking correctness validator.
-> [15811.924175] Pid: 10598, comm: modprobe Not tainted 3.1.0-rc6+ #5
-> [15811.924178] Call Trace:
-> [15811.924187]  [<ffffffff81081205>] ? up+0x39/0x3e
-> [15811.924193]  [<ffffffff8108e556>] add_lock_to_list.constprop.22+0x45/0xa7
-> [15811.924198]  [<ffffffff81090c05>] __lock_acquire+0xb7f/0xd0c
-> [15811.924204]  [<ffffffff81091594>] ? mark_held_locks+0x6d/0x95
-> [15811.924210]  [<ffffffff814e27d5>] ? __slab_alloc+0x41c/0x43d
-> [15811.924216]  [<ffffffff812701d0>] ? kobject_add_internal+0x9b/0x18c
-> [15811.924221]  [<ffffffff81091295>] lock_acquire+0xf3/0x13e
-> [15811.924225]  [<ffffffff812701d0>] ? kobject_add_internal+0x9b/0x18c
-> [15811.924230]  [<ffffffff812701d0>] ? kobject_add_internal+0x9b/0x18c
-> [15811.924236]  [<ffffffff814e96a3>] _raw_spin_lock+0x40/0x73
-> [15811.924241]  [<ffffffff812701d0>] ? kobject_add_internal+0x9b/0x18c
-> [15811.924245]  [<ffffffff8127012e>] ? kobject_get+0x18/0x1f
-> [15811.924250]  [<ffffffff812701d0>] kobject_add_internal+0x9b/0x18c
-> [15811.924255]  [<ffffffff812705fa>] kobject_add+0x91/0xa2
-> [15811.924260]  [<ffffffff814c5afd>] ? klist_init+0x33/0x46
-> [15811.924265]  [<ffffffff81337bc3>] device_add+0xd5/0x576
-> [15811.924271]  [<ffffffff81336ac3>] ? dev_set_name+0x41/0x43
-> [15811.924277]  [<ffffffff8133b8f1>] platform_device_add+0x111/0x15b
-> [15811.924283]  [<ffffffffa0606cbd>] get_core_online+0x9b/0x143 [coretemp]
-> [15811.924290]  [<ffffffffa0050000>] ? 0xffffffffa004ffff
-> [15811.924296]  [<ffffffffa005004b>] coretemp_init+0x4b/0x1000 [coretemp]
-> [15811.924302]  [<ffffffffa0050000>] ? 0xffffffffa004ffff
-> [15811.924308]  [<ffffffff81002099>] do_one_initcall+0x7f/0x13a
-> [15811.924313]  [<ffffffffa0050000>] ? 0xffffffffa004ffff
-> [15811.924319]  [<ffffffff8109cacf>] sys_init_module+0x114/0x267
-> [15811.924324]  [<ffffffff814f0202>] system_call_fastpath+0x16/0x1b
-> 
-> 
-I have tried to reproduce the problem with lockdeb debugging enabled,
-but I was unable to see it. Guess I must be missing something. 
+> On OMAP4 the SoC interrupts external to the MPU (SPI) have an offset
+> of 32. Only the internal PPI are between 0 and 31.
 
-Couple of questions:
+On a similar theme, on Versatile express the motherboard and core-tiles
+are independent things, and the GIC lives on the core-tile (the motherboard
+has no interrupt controller of its owh).
 
-What CPU and/or system was this seen with ? Output of /proc/cpuinfo might help.
-Can you send the configuration file used to build the kernel ?
-How long does one have to run the loop ?
-What is the output of "sensors" with coretemp loaded ?
+This means that the mapping of motherboard peripheral interrupts onto
+GIC inputs is dependent on the coretile.
 
-Thanks,
-Guenter
+Since the DT is supposed to be descrbing the hardware in a componentised
+way, the motherboard description should be independent of the core-tile
+description except for describing the interface between the two.
+
+
+For now, we express the mapping by putting an interrupt-map in the
+core-tile DT, but this feels inelegant as well as wasteful -- expressing
+"+ 32" using a table which is about 1K in size and duplicates that
+information 43 times.
+
+Using a dedicated irq domain or a fake interrupt controller node to
+encapsulate the motherboard interrupts feels like a cleaner approach,
+but for now I'm not clear on the best way to do it.
+
+Cheers
+---Dave
