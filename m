@@ -1,116 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753975Ab1IPHiO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 03:38:14 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:64000 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752714Ab1IPHiN convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@suse.com:4:2>);
-	Fri, 16 Sep 2011 03:38:13 -0400
-Message-Id: <4E7319010200007800056727@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Fri, 16 Sep 2011 08:38:09 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Julia Lawall" <julia@diku.dk>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
-Cc: "Ian Campbell" <ian.campbell@citrix.com>,
-        <kernel-janitors@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/4] drivers/block/xen-blkback/blkback.c: take size
-	 of pointed value, not pointer
-References: <1316156255-19509-1-git-send-email-julia@diku.dk>
-In-Reply-To: <1316156255-19509-1-git-send-email-julia@diku.dk>
+	id S1754062Ab1IPHjX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 03:39:23 -0400
+Received: from lo.gmane.org ([80.91.229.12]:47948 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753664Ab1IPHjW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Sep 2011 03:39:22 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Paul Turner <pjt@google.com>
+Subject: Re: [PATCH] cfs: remove unused 'if' condition checking
+Date: Fri, 16 Sep 2011 00:39:02 -0700
+Message-ID: <j4uuem$8v0$1@dough.gmane.org>
+References: <1316194552-12019-1-git-send-email-xingchao.wang@intel.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: 216-239-45-4.google.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
+In-Reply-To: <1316194552-12019-1-git-send-email-xingchao.wang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 16.09.11 at 08:57, Julia Lawall <julia@diku.dk> wrote:
-> From: Julia Lawall <julia@diku.dk>
-> 
-> Sizeof a pointer-typed expression returns the size of the pointer, not that
-> of the pointed data.
-> 
-> The semantic patch that fixes this problem is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @@
-> expression *e;
-> type T;
-> identifier f;
-> @@
-> 
-> f(...,(T)e,...,
-> -sizeof(e)
-> +sizeof(*e)
-> ,...)
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
-> 
+On 09/16/11 10:35, Wang Xingchao wrote:
+
+Please include a one-line summary such as:
+sched: remove extra nr_running check in check_preempt_tick
+
+> nr_running must be more than 1, so remove the checking
+>
+
+Sure, reasonable.
+
+Please expand this comment though, e.g.
+We already test for nr_running > 1 within entity_tick so there is no 
+need to recheck it within check_preempt_tick().
+
+> Signed-off-by: Wang Xingchao<xingchao.wang@intel.com>
+
+Reviewed-by: Paul Turner <pjt@google.com>
+
 > ---
->  drivers/block/xen-blkback/blkback.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff -u -p a/drivers/block/xen-blkback/blkback.c 
-> b/drivers/block/xen-blkback/blkback.c
-> --- a/drivers/block/xen-blkback/blkback.c
-> +++ b/drivers/block/xen-blkback/blkback.c
-> @@ -790,7 +790,7 @@ static int __init xen_blkif_init(void)
->  	if (rc)
->  		goto failed_init;
->  
-> -	memset(blkbk->pending_reqs, 0, sizeof(blkbk->pending_reqs));
-> +	memset(blkbk->pending_reqs, 0, sizeof(*blkbk->pending_reqs));
->  
->  	INIT_LIST_HEAD(&blkbk->pending_free);
->  	spin_lock_init(&blkbk->pending_free_lock);
+>   kernel/sched_fair.c |   16 ++++++++--------
+>   1 files changed, 8 insertions(+), 8 deletions(-)
+>
+> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+> index 1ca2cd4..fef0bfd 100644
+> --- a/kernel/sched_fair.c
+> +++ b/kernel/sched_fair.c
+> @@ -1106,6 +1106,8 @@ static void
+>   check_preempt_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr)
+>   {
+>   	unsigned long ideal_runtime, delta_exec;
+> +	struct sched_entity *se;
+> +	s64 delta;
+>
+>   	ideal_runtime = sched_slice(cfs_rq, curr);
+>   	delta_exec = curr->sum_exec_runtime - curr->prev_sum_exec_runtime;
+> @@ -1127,16 +1129,14 @@ check_preempt_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr)
+>   	if (delta_exec<  sysctl_sched_min_granularity)
 
-I think a better fix for this is to use kzalloc() properly here:
+You've mangled the white space on the less-than.
 
-Subject: xen-blkback: use kzalloc() in favor of kmalloc()+memset()
+>   		return;
+>
+> -	if (cfs_rq->nr_running>  1) {
+> -		struct sched_entity *se = __pick_first_entity(cfs_rq);
+> -		s64 delta = curr->vruntime - se->vruntime;
+> +	se = __pick_first_entity(cfs_rq);
+> +	delta = curr->vruntime - se->vruntime;
+>
+> -		if (delta<  0)
+> -			return;
+> +	if (delta<  0)
 
-This fixes the problem of three of those four memset()-s having
-improper size arguments passed: Sizeof a pointer-typed expression
-returns the size of the pointer, not that of the pointed to data.
+And here.
 
-It also reverts using kmalloc() instead of kzalloc() for the allocation
-of the pending grant handles array, as that array gets fully
-initialized in a subsequent loop.
+> +		return;
+>
+> -		if (delta>  ideal_runtime)
+> -			resched_task(rq_of(cfs_rq)->curr);
+> -	}
+> +	if (delta>  ideal_runtime)
 
-Reported-by: Julia Lawall <julia@diku.dk>
-Signed-off-by: Jan Beulich <jbeulich@novell.com>
+Here too.
 
----
- drivers/block/xen-blkback/blkback.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
-
---- 3.1-rc6/drivers/block/xen-blkback/blkback.c
-+++ 3.1-rc6-xen-blkback-kzalloc/drivers/block/xen-blkback/blkback.c
-@@ -765,9 +765,9 @@ static int __init xen_blkif_init(void)
- 
- 	mmap_pages = xen_blkif_reqs * BLKIF_MAX_SEGMENTS_PER_REQUEST;
- 
--	blkbk->pending_reqs          = kmalloc(sizeof(blkbk->pending_reqs[0]) *
-+	blkbk->pending_reqs          = kzalloc(sizeof(blkbk->pending_reqs[0]) *
- 					xen_blkif_reqs, GFP_KERNEL);
--	blkbk->pending_grant_handles = kzalloc(sizeof(blkbk->pending_grant_handles[0]) *
-+	blkbk->pending_grant_handles = kmalloc(sizeof(blkbk->pending_grant_handles[0]) *
- 					mmap_pages, GFP_KERNEL);
- 	blkbk->pending_pages         = kzalloc(sizeof(blkbk->pending_pages[0]) *
- 					mmap_pages, GFP_KERNEL);
-@@ -790,8 +790,6 @@ static int __init xen_blkif_init(void)
- 	if (rc)
- 		goto failed_init;
- 
--	memset(blkbk->pending_reqs, 0, sizeof(blkbk->pending_reqs));
--
- 	INIT_LIST_HEAD(&blkbk->pending_free);
- 	spin_lock_init(&blkbk->pending_free_lock);
- 	init_waitqueue_head(&blkbk->pending_free_wq);
-
+> +		resched_task(rq_of(cfs_rq)->curr);
+>   }
+>
+>   static void
 
 
