@@ -1,38 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754922Ab1IPIuT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 04:50:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54036 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753993Ab1IPIuS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 04:50:18 -0400
-Date: Fri, 16 Sep 2011 10:36:46 +0200
-From: Greg KH <gregkh@suse.de>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [PATCH] sysfs: add per pci device msi[x] irq listing (v2)
-Message-ID: <20110916083646.GA30915@suse.de>
-References: <1316025413-5855-1-git-send-email-nhorman@tuxdriver.com>
- <1316117318-22027-1-git-send-email-nhorman@tuxdriver.com>
+	id S1754951Ab1IPIyl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 04:54:41 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:34278 "EHLO
+	rtits2.realtek.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754421Ab1IPIyj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Sep 2011 04:54:39 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.13 with qID p8G8sP3Y030272, This message is released by code: ctaloc0852
+From: <edwin_rong@realsil.com.cn>
+To: <gregkh@suse.de>, <devel@linuxdriverproject.org>,
+        <linux-kernel@vger.kernel.org>
+CC: edwin_rong <edwin_rong@realsil.com.cn>
+Subject: [PATCH] Realtek cr: Fix driver freeze issue
+Date: Fri, 16 Sep 2011 16:53:37 +0800
+X-BOX-Message-Id: p8G8sP3Y030272
+Message-ID: <1316163217-17720-1-git-send-email-edwin_rong@realsil.com.cn>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1316117318-22027-1-git-send-email-nhorman@tuxdriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 15, 2011 at 04:08:38PM -0400, Neil Horman wrote:
-> +static struct kobj_type msi_irq_ktype = {
-> +	.sysfs_ops = &msi_irq_sysfs_ops,
-> +	.default_attrs = msi_irq_default_attrs,
-> +};
+From: edwin_rong <edwin_rong@realsil.com.cn>
 
-You still haven't successfully removed the kobject associated with this
-kobj_type.  Otherwise you would have seen the error messages in the
-kernel log and fixed up what it told you to fix.
+After auto-delink command is triggered, the CSW won't be sent back
+to host side, in which scenario, the USB Mass Storage driver will
+wait for the completion of the URB for MAX_SCHEDULE_TIMEOUT.
 
-Please do so.
+Signed-off-by: edwin_rong <edwin_rong@realsil.com.cn>
+---
+ drivers/usb/storage/realtek_cr.c |   81 ++++++++++++++++++++++++++++++++++++--
+ 1 files changed, 77 insertions(+), 4 deletions(-)
 
-greg k-h
+diff --git a/drivers/usb/storage/realtek_cr.c b/drivers/usb/storage/realtek_cr.c
+index 34adc4b..0061bfc 100644
+--- a/drivers/usb/storage/realtek_cr.c
++++ b/drivers/usb/storage/realtek_cr.c
+@@ -293,6 +293,52 @@ static int rts51x_bulk_transport(struct us_data *us, u8 lun,
+ 	return USB_STOR_TRANSPORT_ERROR;
+ }
+ 
++static int rts51x_bulk_transport_special(struct us_data *us, u8 lun,
++				 u8 *cmd, int cmd_len, u8 *buf, int buf_len,
++				 enum dma_data_direction dir, int *act_len)
++{
++	struct bulk_cb_wrap *bcb = (struct bulk_cb_wrap *) us->iobuf;
++	struct bulk_cs_wrap *bcs = (struct bulk_cs_wrap *) us->iobuf;
++	int result;
++	unsigned int cswlen;
++	unsigned int cbwlen = US_BULK_CB_WRAP_LEN;
++
++	/* set up the command wrapper */
++	bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
++	bcb->DataTransferLength = cpu_to_le32(buf_len);
++	bcb->Flags = (dir == DMA_FROM_DEVICE) ? 1 << 7 : 0;
++	bcb->Tag = ++us->tag;
++	bcb->Lun = lun;
++	bcb->Length = cmd_len;
++
++	/* copy the command payload */
++	memset(bcb->CDB, 0, sizeof(bcb->CDB));
++	memcpy(bcb->CDB, cmd, bcb->Length);
++
++	/* send it to out endpoint */
++	result = usb_stor_bulk_transfer_buf(us, us->send_bulk_pipe,
++				bcb, cbwlen, NULL);
++	if (result != USB_STOR_XFER_GOOD)
++		return USB_STOR_TRANSPORT_ERROR;
++
++	/* DATA STAGE */
++	/* send/receive data payload, if there is any */
++
++	if (buf && buf_len) {
++		unsigned int pipe = (dir == DMA_FROM_DEVICE) ?
++				us->recv_bulk_pipe : us->send_bulk_pipe;
++		result = usb_stor_bulk_transfer_buf(us, pipe,
++				buf, buf_len, NULL);
++		if (result == USB_STOR_XFER_ERROR)
++			return USB_STOR_TRANSPORT_ERROR;
++	}
++
++	/* get CSW for device status */
++	result = usb_bulk_msg(us->pusb_dev, us->recv_bulk_pipe, bcs,
++			US_BULK_CS_WRAP_LEN, &cswlen, 250);
++	return result;
++}
++
+ /* Determine what the maximum LUN supported is */
+ static int rts51x_get_max_lun(struct us_data *us)
+ {
+@@ -434,6 +480,29 @@ static int enable_oscillator(struct us_data *us)
+ 	return 0;
+ }
+ 
++static int __do_config_autodelink(struct us_data *us, u8 *data, u16 len)
++{
++	int retval;
++	u16 addr = 0xFE47;
++	u8 cmnd[12] = {0};
++
++	US_DEBUGP("%s, addr = 0x%x, len = %d\n", __FUNCTION__, addr, len);
++
++	cmnd[0] = 0xF0;
++	cmnd[1] = 0x0E;
++	cmnd[2] = (u8)(addr >> 8);
++	cmnd[3] = (u8)addr;
++	cmnd[4] = (u8)(len >> 8);
++	cmnd[5] = (u8)len;
++
++	retval = rts51x_bulk_transport_special(us, 0, cmnd, 12, data, len, DMA_TO_DEVICE, NULL);
++	if (retval != USB_STOR_TRANSPORT_GOOD) {
++		return -EIO;
++	}
++
++	return 0;
++}
++
+ static int do_config_autodelink(struct us_data *us, int enable, int force)
+ {
+ 	int retval;
+@@ -454,7 +523,8 @@ static int do_config_autodelink(struct us_data *us, int enable, int force)
+ 
+ 	US_DEBUGP("In %s,set 0xfe47 to 0x%x\n", __func__, value);
+ 
+-	retval = rts51x_write_mem(us, 0xFE47, &value, 1);
++	/* retval = rts51x_write_mem(us, 0xFE47, &value, 1); */
++	retval = __do_config_autodelink(us, &value, 1);
+ 	if (retval < 0)
+ 		return -EIO;
+ 
+@@ -486,7 +556,8 @@ static int config_autodelink_after_power_on(struct us_data *us)
+ 
+ 		SET_BIT(value, 7);
+ 
+-		retval = rts51x_write_mem(us, 0xFE47, &value, 1);
++		/* retval = rts51x_write_mem(us, 0xFE47, &value, 1); */
++		retval = __do_config_autodelink(us, &value, 1);
+ 		if (retval < 0)
+ 			return -EIO;
+ 
+@@ -507,7 +578,8 @@ static int config_autodelink_after_power_on(struct us_data *us)
+ 			CLR_BIT(value, 7);
+ 		}
+ 
+-		retval = rts51x_write_mem(us, 0xFE47, &value, 1);
++		/* retval = rts51x_write_mem(us, 0xFE47, &value, 1); */
++		retval = __do_config_autodelink(us, &value, 1);
+ 		if (retval < 0)
+ 			return -EIO;
+ 
+@@ -584,7 +656,8 @@ static int config_autodelink_before_power_down(struct us_data *us)
+ 			if (CHECK_ID(chip, 0x0138, 0x3882))
+ 				SET_BIT(value, 2);
+ 
+-			retval = rts51x_write_mem(us, 0xFE47, &value, 1);
++			/* retval = rts51x_write_mem(us, 0xFE47, &value, 1); */
++			retval = __do_config_autodelink(us, &value, 1);
+ 			if (retval < 0)
+ 				return -EIO;
+ 		}
+-- 
+1.7.4.1
+
