@@ -1,106 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753130Ab1IPMSa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 08:18:30 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:43813 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751820Ab1IPMS3 (ORCPT
+	id S1753512Ab1IPMSh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 08:18:37 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56282 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753278Ab1IPMSf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 08:18:29 -0400
-X-Authority-Analysis: v=1.1 cv=BYTzOfBuqH0MnPkg9hJMEJejO8uiqGqgn0U8Q/tCzYo= c=1 sm=0 a=Ou53dPJkDmsA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=meVymXHHAAAA:8 a=ZTsbKecoXV8ulAn1bFYA:9 a=PUjeQqilurYA:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.83.30
-Subject: Re: [PATCH] ftrace:  use a global counter for the global clock
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, mingo <mingo@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <1316163765.10174.8.camel@twins>
-References: <1316163765.10174.8.camel@twins>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 16 Sep 2011 08:18:26 -0400
-Message-ID: <1316175506.26295.36.camel@gandalf.stny.rr.com>
+	Fri, 16 Sep 2011 08:18:35 -0400
+Subject: Re: [RFC][PATCH 3/3] ipc/sem: Rework wakeup scheme
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Manfred Spraul <manfred@colorfullife.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        David Miller <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Mike Galbraith <efault@gmx.de>
+Date: Fri, 16 Sep 2011 14:18:17 +0200
+In-Reply-To: <4E7235F6.1030303@colorfullife.com>
+References: <20110914133034.687048806@chello.nl>
+	 <20110914133750.916911903@chello.nl> <4E7235F6.1030303@colorfullife.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1316175497.10174.16.camel@twins>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-09-16 at 11:02 +0200, Peter Zijlstra wrote:
-> no reason to muck about, just use a counter already.
-> 
+On Thu, 2011-09-15 at 19:29 +0200, Manfred Spraul wrote:
+> What is broken?
 
-But some of us actually use the global clock as a clock ;)
+So basically sembench was broken and the futex patch is causing spurious
+wakeups.
 
-How about this patch instead?
+I've got the below patch to fix up the sem code.
 
-----
+One more question, do the sem wakeups need to be issued in FIFO order?
+There's a comment in there:
 
-tracing: Add a counter clock for those that do not trust clocks
+ * User space visible behavior:
+ * - FIFO ordering for semop() operations (just FIFO, not starvation
+ *   protection)
 
-When debugging tight race conditions, it can be helpful to have a
-synchronized tracing method. Although in most cases the global clock
-provides this functionality, if timings is not the issue, it is more
-comforting to know that the order of events really happened in a precise
-order.
+that seems to suggest the sem ops processing is in FIFO order, but does
+the user visible effect propagate to the wakeup order?
 
-Instead of using a clock, add a "counter" that is simply an incrementing
-atomic 64bit counter that orders the events as they are perceived to
-happen.
+Currently the wake-list is a FILO, although making it FIFO isn't really
+hard (in fact, I've got the patch).
 
-The trace_clock_counter() is added from the attempt by Peter Zijlstra
-trying to convert the trace_clock_global() to it. I took Peter's counter
-code and made trace_clock_counter() instead, and added it to the choice
-of clocks. Just echo counter > /debug/tracing/trace_clock to activate
-it.
 
-Requested-by: Thomas Gleixner <tglx@linutronix.de>
-Requested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+Subject: ipc/sem: Deal with spurious wakeups
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Fri Sep 16 13:58:44 CEST 2011
 
-diff --git a/include/linux/trace_clock.h b/include/linux/trace_clock.h
-index 7a81303..4eb4902 100644
---- a/include/linux/trace_clock.h
-+++ b/include/linux/trace_clock.h
-@@ -15,5 +15,6 @@
- extern u64 notrace trace_clock_local(void);
- extern u64 notrace trace_clock(void);
- extern u64 notrace trace_clock_global(void);
-+extern u64 notrace trace_clock_counter(void);
+The current code doesn't deal well with spurious wakeups and returns
+a -EINTR to user space even though there were no signals anywhere near
+the task.
+
+Deal with this to check for pending signals before actually dropping
+out of the kernel and try again, avoids user<->kernel round-trip
+overhead.
+
+Cc: Manfred Spraul <manfred@colorfullife.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/n/tip-1uiuenzz5hwf04opwqmni7cn@git.kernel.org
+---
+ ipc/sem.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+Index: linux-2.6/ipc/sem.c
+===================================================================
+--- linux-2.6.orig/ipc/sem.c
++++ linux-2.6/ipc/sem.c
+@@ -1366,6 +1366,7 @@ SYSCALL_DEFINE4(semtimedop, int, semid, 
  
- #endif /* _LINUX_TRACE_CLOCK_H */
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index b419070..4b8df0d 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -435,6 +435,7 @@ static struct {
- } trace_clocks[] = {
- 	{ trace_clock_local,	"local" },
- 	{ trace_clock_global,	"global" },
-+	{ trace_clock_counter,	"counter" },
- };
+ 	queue.status = -EINTR;
+ 	queue.sleeper = current;
++retry:
+ 	current->state = TASK_INTERRUPTIBLE;
+ 	sem_unlock(sma);
  
- int trace_clock_id;
-diff --git a/kernel/trace/trace_clock.c b/kernel/trace/trace_clock.c
-index 6302747..3947835 100644
---- a/kernel/trace/trace_clock.c
-+++ b/kernel/trace/trace_clock.c
-@@ -113,3 +113,15 @@ u64 notrace trace_clock_global(void)
+@@ -1399,21 +1400,23 @@ SYSCALL_DEFINE4(semtimedop, int, semid, 
+ 		goto out_free;
+ 	}
  
- 	return now;
- }
+-
+ 	/*
+ 	 * If queue.status != -EINTR we are woken up by another process.
+ 	 * Leave without unlink_queue(), but with sem_unlock().
+ 	 */
+ 
+-	if (error != -EINTR) {
++	if (error != -EINTR)
+ 		goto out_unlock_free;
+-	}
+ 
+ 	/*
+ 	 * If an interrupt occurred we have to clean up the queue
+ 	 */
+ 	if (timeout && jiffies_left == 0)
+ 		error = -EAGAIN;
 +
-+static atomic64_t trace_counter;
++	if (error == -EINTR && !signal_pending(current))
++		goto retry;
 +
-+/*
-+ * trace_clock_counter(): simply an atomic counter.
-+ * Use the trace_counter "counter" for cases where you do not care
-+ * about timings, but are interested in strict ordering.
-+ */
-+u64 notrace trace_clock_counter(void)
-+{
-+	return atomic64_add_return(1, &trace_counter);
-+}
-
+ 	unlink_queue(sma, &queue);
+ 
+ out_unlock_free:
 
