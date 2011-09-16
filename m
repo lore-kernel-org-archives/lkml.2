@@ -1,60 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754331Ab1IPNhr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 09:37:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12579 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751691Ab1IPNhq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 09:37:46 -0400
-Date: Fri, 16 Sep 2011 09:37:43 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Corrado Zoccolo <czoccolo@gmail.com>
-Cc: Shaohua Li <shaohua.li@intel.com>, lkml <linux-kernel@vger.kernel.org>,
-        Jens Axboe <jaxboe@fusionio.com>,
-        Maxim Patlasov <maxim.patlasov@gmail.com>
-Subject: Re: [patch]cfq-iosched: delete deep seeky queue idle logic
-Message-ID: <20110916133743.GC4377@redhat.com>
-References: <1316142577.29510.130.camel@sli10-conroe>
- <CADX3swqrpz+=JSk8gQf6tDRZ25Z9FOnJbTyiCrZAM6LiJSmoGA@mail.gmail.com>
+	id S1754725Ab1IPNkM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 09:40:12 -0400
+Received: from mail-gw0-f42.google.com ([74.125.83.42]:55695 "EHLO
+	mail-gw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753989Ab1IPNkL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Sep 2011 09:40:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CADX3swqrpz+=JSk8gQf6tDRZ25Z9FOnJbTyiCrZAM6LiJSmoGA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110907203646.2a7b7833@schatten.dmk.lab>
+References: <1280784368-4226-8-git-send-email-mcarlson@broadcom.com>
+ <20110906170343.09252578@schatten.dmk.lab> <20110907012515.GA9038@mcarlson.broadcom.com>
+ <20110907203646.2a7b7833@schatten.dmk.lab>
+From: Francesco Piccinno <stack.box@gmail.com>
+Date: Fri, 16 Sep 2011 15:39:30 +0200
+Message-ID: <CAA7bCn4NTSppmAph9pxykpEfYT_tYoBFV8zReaKFgJqcu6=t7Q@mail.gmail.com>
+Subject: Re: re add support for bcm5750
+To: Florian Mickler <florian@mickler.org>
+Cc: Matt Carlson <mcarlson@broadcom.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Benjamin Li <benli@broadcom.com>, Michael Chan <mchan@broadcom.com>,
+        "davem@davemloft.net" <davem@davemloft.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 16, 2011 at 08:04:49AM +0200, Corrado Zoccolo wrote:
-> On Fri, Sep 16, 2011 at 5:09 AM, Shaohua Li <shaohua.li@intel.com> wrote:
-> > Recently Maxim and I discussed why his aiostress workload performs poorly. If
-> > you didn't follow the discussion, here are the issues we found:
-> > 1. cfq seeky dection isn't good. Assume a task accesses sector A, B, C, D, A+1,
-> > B+1, C+1, D+1, A+2...Accessing A, B, C, D is random. cfq will detect the queue
-> > as seeky, but since when accessing A+1, A+1 is already in disk cache, this
-> > should be detected as sequential really. Not sure if any real workload has such
-> > access patern, and seems not easy to have a clean fix too. Any idea for this?
-> 
-> Not all disks will cache 4 independent streams, we can't make that
-> assumption in cfq.
-> The current behaviour of assuming it as seeky should work well enough,
-> in fact it will be put in the seeky tree, and it can enjoy the seeky
-> tree quantum of time. If the second round takes a short time, it will
-> be able to schedule a third round again after the idle time.
-> If there are other seeky processes competing for the tree, the cache
-> can be cleared by the time it gets back to your 4 streams process, so
-> it will behave exactly as a seeky process from cfq point of view.
-> If the various accesses were submitted in parallel, the deep seeky
-> queue logic should kick in and make sure the process gets a sequential
-> quantum, rather than sharing it with other seeky processes, so
-> depending on your disk, it could perform better.
+I have contacted Broadcom asking for support and apparently there is
+no way to fix the problem. Now I have a couple of questions: the use
+of tg3 driver without a firmware expose the NIC to some risks or not?
+And is there any chance to have the PCI IDs added back to tg3 module?
+I do not want to modify and recompile the module at every version
+bump.
 
-I think I agree that we probably can not optimize CFQ for cache behavior
-without even knowing what a cache on a device might be doing. There
-are no gurantees that by making this 4 stream process sequential you will
-get better throughput in fact additional idling can kill the throughput
-on faster storage. It probably should be left to the device cache to
-optimize for such IO patterns.
+Thanks for the support :)
 
-Thanks
-Vivek
+--
+Best regards,
+Francesco Piccinno
+
+
+
+On Wed, Sep 7, 2011 at 8:36 PM, Florian Mickler <florian@mickler.org> wrote:
+> On Tue, 6 Sep 2011 18:25:15 -0700
+> "Matt Carlson" <mcarlson@broadcom.com> wrote:
+>
+>> On Tue, Sep 06, 2011 at 08:03:43AM -0700, Florian Mickler wrote:
+>> > Hi,
+>> >
+>> > in https://bugzilla.kernel.org/show_bug.cgi?id=42132 Francesco wrote:
+>> >
+>> > > I have a notebook (HP TC4400) which has a BCM5750 ethernet card inside. The
+>> > > ouput of lspci is:
+>> > >
+>> > > 08:00.0 Ethernet controller [0200]: Broadcom Corporation NetXtreme BCM5750M
+>> > > Gigabit Ethernet [14e4:167c]
+>> > >
+>> > > Commit 67b284d476bcb3d100e946da23d6cf9acfd0465c removed the support for this
+>> > > device. I wish to have the support for this network card back again. Thanks!
+>>
+>> Hi Florian.  Are you experiencing the same problem?  We found that
+>> Francesco's problem was that the firmware of his device was missing.  Do
+>> you see :
+>>
+>> eth0: No firmware running
+>>
+>> messages?
+>>
+>
+> Hi Matt!
+> No, I was just browsing the regression list and found this entry but
+> couldn't associate any action with it.
+>
+> This clears that up, thanks for the information and I will close this
+> bug.
+>
+> Regards,
+> Flo
+>
