@@ -1,48 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755901Ab1IPSt7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 14:49:59 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:51344 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754757Ab1IPSt6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 14:49:58 -0400
-X-Sasl-enc: 4YFQJUwo1hRnXNGl9A4JjjLWhXkzZ0OA/oq+EtVZqX4d 1316198997
-Date: Fri, 16 Sep 2011 20:47:25 +0200
-From: Greg KH <greg@kroah.com>
-To: "Leonid V. Fedorenchik" <leonidsbox@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Hans Verkuil <hverkuil@xs4all.nl>,
-        Joe Perches <joe@perches.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
-Subject: Re: [PATCH 00/44] Staging: cx25821: Fix style issues
-Message-ID: <20110916184725.GA31993@kroah.com>
-References: <1316153717-7272-1-git-send-email-leonidsbox@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1316153717-7272-1-git-send-email-leonidsbox@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755905Ab1IPSvl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 14:51:41 -0400
+Received: from sh.osrg.net ([192.16.179.4]:36591 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752481Ab1IPSvk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Sep 2011 14:51:40 -0400
+Date: Sat, 17 Sep 2011 03:51:13 +0900
+To: benh@kernel.crashing.org
+Cc: fujita.tomonori@lab.ntt.co.jp, nacc@us.ibm.com, miltonm@bga.com,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        vinod.koul@intel.com, dan.j.williams@intel.com
+Subject: Re: [PATCH 2/4] dma-mapping: add get_required_mask if arch
+ overrides default
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <1314855311.4145.8.camel@pasglop>
+References: <1308942325-4813-3-git-send-email-nacc@us.ibm.com>
+	<20110629171304B.fujita.tomonori@lab.ntt.co.jp>
+	<1314855311.4145.8.camel@pasglop>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20110917034122J.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Sat, 17 Sep 2011 03:51:16 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 16, 2011 at 02:14:33PM +0800, Leonid V. Fedorenchik wrote:
-> This patch series fixes up style issues in cx25821-video.{c,h} files in
-> drivers/staging/cx25821
+Sorry for the late reply,
+
+On Thu, 01 Sep 2011 15:35:11 +1000
+Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote:
+
+> On Wed, 2011-06-29 at 17:19 +0900, FUJITA Tomonori wrote:
+> > On Fri, 24 Jun 2011 12:05:23 -0700
+> > Nishanth Aravamudan <nacc@us.ibm.com> wrote:
+> > 
+> > > From: Milton Miller <miltonm@bga.com>
+> > > 
+> > > If an architecture sets ARCH_HAS_DMA_GET_REQUIRED_MASK and has settable
+> > > dma_map_ops, the required mask may change by the ops implementation.
+> > > For example, a system that always has an mmu inline may only require 32
+> > > bits while a swiotlb would desire bits to cover all of memory.
+> > > 
+> > > Therefore add the field if the architecture does not use the generic
+> > > definition of dma_get_required_mask. The first use will by by powerpc.
+> > > Note that this does add some dependency on the order in which files are
+> > > visible here.
 > 
-> What the heck with patches 5-39? ... Well, in cx25821-video.c file there
-> are lots of lines starting with 7 spaces where clearly this intented to
-> be a tab; that is reported by checkpatch.pl script. And even more lines
-> that start with one or more tabs and 7 spaces; this is intented to be 2
-> or more tabs instead and this is not reported by checkpatch.pl script
-> (obviously). So, first, I fix up all that kind of wrong indents and
-> resulting patch was too big and unreviewable. (around 2K lines) So,
-> since I haven't thought of better way to make the patch reviewable, I
-> decided to split that huge patch into small reviewable patches. The
-> result is 35 patches. %-) If you can think of a better way to deal with
-> this, let me know.
+>  .../...
+> 
+> > If you add get_required_mask to dma_map_ops, we should clean up ia64
+> > too and implement the generic proper version in
+> > dma-mapping-common.h. Then we kill ARCH_HAS_DMA_GET_REQUIRED_MASK
+> > ifdef hack. Otherwise, I don't think it makes sense to add this to
+> > dma_map_ops.
+> 
+> In the meantime, can I have an ack so I can include this along with the
+> rest of Milton's patches ? It's been around for a while now :-)
 
-Looks good, all now applied, thanks.
+Sure, we can clean up this later.
 
-greg k-h
+Thanks,
+
+
+
