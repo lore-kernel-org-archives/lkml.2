@@ -1,69 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755914Ab1IPSkH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 14:40:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59383 "EHLO mx2.suse.de"
+	id S1755940Ab1IPSkM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 14:40:12 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:60702 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754037Ab1IPSkF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 14:40:05 -0400
-Date: Fri, 16 Sep 2011 20:38:34 +0200
-From: Greg KH <gregkh@suse.de>
-To: Willy Tarreau <w@1wt.eu>
-Cc: Josh Boyer <jwboyer@redhat.com>, andi@firstfloor.org,
-        paul.gortmaker@windriver.com, linux-kernel@vger.kernel.org
-Subject: Re: stable patch queues and submission
-Message-ID: <20110916183834.GA16415@suse.de>
-References: <20110916181307.GW10700@zod.bos.redhat.com>
- <20110916182350.GA7315@suse.de>
- <20110916183516.GA4121@1wt.eu>
+	id S1754037Ab1IPSkJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Sep 2011 14:40:09 -0400
+Date: Fri, 16 Sep 2011 11:40:05 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+Subject: [PATCH v2] ext4: Prevent stack overrun in ext4_file_open when
+	recording last known mountpoint
+Message-ID: <20110916184005.GH12086@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20110915231645.GE12086@tux1.beaverton.ibm.com> <m239fwfk4k.fsf@firstfloor.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110916183516.GA4121@1wt.eu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <m239fwfk4k.fsf@firstfloor.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 16, 2011 at 08:35:16PM +0200, Willy Tarreau wrote:
-> On Fri, Sep 16, 2011 at 08:23:50PM +0200, Greg KH wrote:
-> > > Hi All,
-> > > 
-> > > With kernel.org being down, the stable@kernel.org list is no longer
-> > > working.  This leaves me wondering if we should send patches directly to
-> > > the various stable tree maintainers with [stable] in the prefix and
-> > > linux-kernel CC'd, or if the stable queues are even being maintained
-> > > during the outage.
-> > 
-> > No, please do not, unless you need something "special", and even then,
-> > please cc: lkml and the developers so it's not lost.
-> > 
-> > > Does anyone have a preference or suggestion on how to continue stable
-> > > releases until the list comes back?  (I'm assuming 'wait' isn't really a
-> > > best all around option.)
-> > 
-> > Wait and continue to add the marking to your patches, my scripts are
-> > still running and pulling the patches out and they are going into the
-> > stable queue just fine.  The queue just isn't public at the moment due
-> > to kernel.org being out.
-> 
-> I was thinking about an alternative if that can help. If the mails are
-> sent to our addresses followed by "+stable", they're easy to filter out
-> to another mailbox (eg: "willy+stable@1wt.eu").
-> 
-> But there are a number of other reviewers on stable@k.o who provide a
-> lot of value with their reviews, and not having them check the patches
-> could easily lead to some nasty patches leaking into stable.
+In ext4_file_open, the filesystem records the mountpoint of the first file that
+is opened after mounting the filesystem.  It does this by allocating a 64-byte
+stack buffer, calling d_path() to grab the mount point through which this file
+was accessed, and then memcpy()ing 64 bytes into the superblock's
+s_last_mounted field, starting from the return value of d_path(), which is
+stored as "cp".  However, if cp > buf (which it frequently is since path
+components are prepended starting at the end of buf) then we can end up copying
+stack data into the superblock.
 
-I agree, and the review of the final patches during the -rc period will
-still happen.
+Writing stack variables into the superblock doesn't sound like a great idea, so
+use strlcpy instead.  Andi Kleen suggested using strlcpy instead of strncpy.
 
-I just don't want to see people start to drop using the "Cc: stable@..."
-as part of their patches going to Linus if they somehow think they
-should do something else.  This proceedure is still working just fine,
-and when kernel.org comes back up, it will return to being an automated
-process.
+Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+---
 
-thanks,
+ fs/ext4/file.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-greg k-h
+diff --git a/fs/ext4/file.c b/fs/ext4/file.c
+index e4095e9..9781099 100644
+--- a/fs/ext4/file.c
++++ b/fs/ext4/file.c
+@@ -181,8 +181,8 @@ static int ext4_file_open(struct inode * inode, struct file * filp)
+ 		path.dentry = mnt->mnt_root;
+ 		cp = d_path(&path, buf, sizeof(buf));
+ 		if (!IS_ERR(cp)) {
+-			memcpy(sbi->s_es->s_last_mounted, cp,
+-			       sizeof(sbi->s_es->s_last_mounted));
++			strlcpy(sbi->s_es->s_last_mounted, cp,
++				sizeof(sbi->s_es->s_last_mounted));
+ 			ext4_mark_super_dirty(sb);
+ 		}
+ 	}
