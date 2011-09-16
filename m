@@ -1,105 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751189Ab1IPAxZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 20:53:25 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:11239 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750964Ab1IPAxX (ORCPT
+	id S1751225Ab1IPAyn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 20:54:43 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:58778 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750868Ab1IPAym (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 20:53:23 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 8BIT
-Content-type: text/plain; charset=UTF-8; format=flowed
-X-AuditID: cbfee61b-b7b7fae000005864-9d-4e729e011e7c
-Date: Fri, 16 Sep 2011 09:52:36 +0900
-From: Joonyoung Shim <jy0922.shim@samsung.com>
-Subject: Re: [PATCH] Input: atmel_mxt_ts - Use snprintf for sysfs attribute
- show method
-In-reply-to: <1316115647-1244-1-git-send-email-djkurtz@chromium.org>
-To: Daniel Kurtz <djkurtz@chromium.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Iiro Valkonen <iiro.valkonen@atmel.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Yufeng Shen <miletus@chromium.org>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-id: <4E729DD4.8010208@samsung.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.13)
- Gecko/20101207 Thunderbird/3.1.7
-References: <1316115647-1244-1-git-send-email-djkurtz@chromium.org>
-X-OriginalArrivalTime: 16 Sep 2011 00:53:52.0782 (UTC)
- FILETIME=[1AABA2E0:01CC740B]
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 15 Sep 2011 20:54:42 -0400
+Date: Fri, 16 Sep 2011 10:54:33 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Temporary MFD tree location
+Message-Id: <20110916105433.f8a03317ee4172c7e318be83@canb.auug.org.au>
+In-Reply-To: <20110915100626.GA32263@sortiz-mobl>
+References: <20110915100626.GA32263@sortiz-mobl>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__16_Sep_2011_10_54_33_+1000_Mbxbb0P6xKzhaE58"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--Signature=_Fri__16_Sep_2011_10_54_33_+1000_Mbxbb0P6xKzhaE58
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 2011-09-16 오전 4:40, Daniel Kurtz wrote:
-> Sysfs attribute show methods are always passed a buffer of length
-> PAGE_SIZE.  To keep from overwriting this buffer and causing havoc, use
-> snprintf() to guarantee we never write more than the buffer can hold.
->
-> In addition, at least for my touchscreen, the number and size of objects
-> was far too big to fit in a single 4K page.  Therefore, this patch also
-> trims some redundant framing text to leave more room for actual data.
->
-> Signed-off-by: Daniel Kurtz<djkurtz@chromium.org>
+Hi Samuel,
 
-This patch is working but original problem is object size is increasing
-as atmel touchscreen chip updates and we should consider also the
-instances of object.
+On Thu, 15 Sep 2011 12:06:26 +0200 Samuel Ortiz <sameo@linux.intel.com> wro=
+te:
+>
+> Since kernel.org is still down, I temporarily moved my MFD kernel tree to
+> infradead.
+>=20
+> The URL is:
+> git://git.infradead.org/users/sameo/mfd-2.6.git
+>=20
+> And the branches are identical: master, for-next and for-linus. As with t=
+he
+> kernel.org setup, you'd want to take for-next for your linux-next tree.
 
-How about splitting attributes to each object?
+OK, I will switch to this tree from today.
 
-Iiro, do you have any update plans about atmel touchscreen driver?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-> ---
->   drivers/input/touchscreen/atmel_mxt_ts.c |   21 +++++++++++++++------
->   1 files changed, 15 insertions(+), 6 deletions(-)
->
-> diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-> index f5d6685..a596c27 100644
-> --- a/drivers/input/touchscreen/atmel_mxt_ts.c
-> +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-> @@ -910,12 +910,17 @@ static ssize_t mxt_object_show(struct device *dev,
->   	for (i = 0; i<  data->info.object_num; i++) {
->   		object = data->object_table + i;
->
-> -		count += sprintf(buf + count,
-> -				"Object Table Element %d(Type %d)\n",
-> +		count += snprintf(buf + count, PAGE_SIZE - count,
-> +				"Object[%d] (Type %d)\n",
->   				i + 1, object->type);
-> +		if (count>= PAGE_SIZE)
-> +			return PAGE_SIZE - 1;
->
->   		if (!mxt_object_readable(object->type)) {
-> -			count += sprintf(buf + count, "\n");
-> +			count += snprintf(buf + count, PAGE_SIZE - count,
-> +					"\n");
-> +			if (count>= PAGE_SIZE)
-> +				return PAGE_SIZE - 1;
->   			continue;
->   		}
->
-> @@ -925,11 +930,15 @@ static ssize_t mxt_object_show(struct device *dev,
->   			if (error)
->   				return error;
->
-> -			count += sprintf(buf + count,
-> -					"  Byte %d: 0x%x (%d)\n", j, val, val);
-> +			count += snprintf(buf + count, PAGE_SIZE - count,
-> +					"\t[%2d]: %02x (%d)\n", j, val, val);
-> +			if (count>= PAGE_SIZE)
-> +				return PAGE_SIZE - 1;
->   		}
->
-> -		count += sprintf(buf + count, "\n");
-> +		count += snprintf(buf + count, PAGE_SIZE - count, "\n");
-> +		if (count>= PAGE_SIZE)
-> +			return PAGE_SIZE - 1;
->   	}
->
->   	return count;
+--Signature=_Fri__16_Sep_2011_10_54_33_+1000_Mbxbb0P6xKzhaE58
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOcp5JAAoJEDMEi1NhKgbsap4H/3gX0BrIwPDJxNF0UCEe1vqh
+KRi1NErCwsT+lN5xjJcvmgq23VMkeri+6LiIRMrVOP6VBhcmtOY/A6qMdmlX46y9
+1YYrj1raOeoqK3a1m01UcCcm4z6hmDufRAx71HtquZpvXAEP/lk7IhjqalMx768P
+6YuTX/RXdIU8WuaPUFIoOGiXXGFZdkAU5i4fsFI34BdpoY4Vmlqz8yM/F4pnH0c9
+JMkZlrIi/49aHju8SMIowHOxYzbC1uvQI8mb7a5qSKteMC4uzVu6m6TZLsT0VfVI
+DsZaikh28mOc3VDiZC3tYHJI/j3Lnfit34cdQ3mkU3wiEc68rTXa87Og27TYSNc=
+=X5yC
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__16_Sep_2011_10_54_33_+1000_Mbxbb0P6xKzhaE58--
