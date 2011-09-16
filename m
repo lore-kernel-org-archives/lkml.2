@@ -1,62 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754058Ab1IPQWJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 12:22:09 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:38059 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751332Ab1IPQWH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 12:22:07 -0400
-Date: Fri, 16 Sep 2011 18:21:51 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Alexander Stein <alexander.stein@systec-electronic.com>
-Cc: guenter.roeck@ericsson.com, "R, Durgadoss" <durgadoss.r@intel.com>,
-        "Yu, Fenghua" <fenghua.yu@intel.com>, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [lm-sensors] coretemp: Support for Intel Atom E6XX CPU
- (TunnelCreek)?
-Message-ID: <20110916182151.463d6003@endymion.delvare>
-In-Reply-To: <201108031640.31196.alexander.stein@systec-electronic.com>
-References: <201106271220.51953.alexander.stein@systec-electronic.com>
-	<201108031458.01805.alexander.stein@systec-electronic.com>
-	<D6D887BA8C9DFF48B5233887EF04654109E88956B7@bgsmsx502.gar.corp.intel.com>
-	<201108031640.31196.alexander.stein@systec-electronic.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752668Ab1IPQ2z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 12:28:55 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:3618 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750755Ab1IPQ2x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Sep 2011 12:28:53 -0400
+X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
+Date: Fri, 16 Sep 2011 09:28:24 -0700
+From: "Matt Carlson" <mcarlson@broadcom.com>
+To: "Francesco Piccinno" <stack.box@gmail.com>
+cc: "Florian Mickler" <florian@mickler.org>,
+        "Matthew Carlson" <mcarlson@broadcom.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Benjamin Li" <benli@broadcom.com>,
+        "Michael Chan" <mchan@broadcom.com>,
+        "davem@davemloft.net" <davem@davemloft.net>
+Subject: Re: re add support for bcm5750
+Message-ID: <20110916162824.GB27116@mcarlson.broadcom.com>
+References: <1280784368-4226-8-git-send-email-mcarlson@broadcom.com>
+ <20110906170343.09252578@schatten.dmk.lab>
+ <20110907012515.GA9038@mcarlson.broadcom.com>
+ <20110907203646.2a7b7833@schatten.dmk.lab>
+ <CAA7bCn4NTSppmAph9pxykpEfYT_tYoBFV8zReaKFgJqcu6=t7Q@mail.gmail.com>
+MIME-Version: 1.0
+In-Reply-To: <CAA7bCn4NTSppmAph9pxykpEfYT_tYoBFV8zReaKFgJqcu6=t7Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-WSS-ID: 626DA5215IS7831667-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexander,
-
-On Wed, 3 Aug 2011 16:40:30 +0200, Alexander Stein wrote:
-> On Wednesday 03 August 2011 15:26:53 R, Durgadoss wrote:
-> > Yes I checked with some Atom Guys here.
-> > Apparently there is no way to know it from the OS Level.
-> > 
-> > > On Monday 27 June 2011 18:54:44 R, Durgadoss wrote:
-> > > > > Unfortunately, looking at Alexander's /proc/cpuinfo output, it looks
-> > > > > like the E6xx chips have no mention of E6xx in the CPU ID string,
-> > > > > which unfortunately kills the idea.
-> > > > > 
-> > > > > Do you know if there is _any_ means to distinguish E6xx from E6xxT ?
-> > > > 
-> > > > Sorry I do not know. But I can ask some folks here and get back
-> > > > to you guys. Should not take more time, once I identify the right
-> > > > person to ask :-)
+On Fri, Sep 16, 2011 at 06:39:30AM -0700, Francesco Piccinno wrote:
+> I have contacted Broadcom asking for support and apparently there is
+> no way to fix the problem. Now I have a couple of questions: the use
+> of tg3 driver without a firmware expose the NIC to some risks or not?
+> And is there any chance to have the PCI IDs added back to tg3 module?
+> I do not want to modify and recompile the module at every version
+> bump.
 > 
-> So, is there a possibility to add a module parameter to force a either 
-> specific tjmax or the T model for E6xx?
+> Thanks for the support :)
 
-A parameter to force the T model for E6xx would be very very specific,
-while the problem at hand is much broader: the heuristics in
-adjust_tjmax() are best effort but largely insufficient in many (most?)
-cases. So, as we have been enable to provide a relative temperature
-scale interface in the past 2 years, a module parameter letting the
-user set TjMax as needed seems the best approach to me. I'll submit a
-patch doing this in a moment.
+That's the plan.  It's on my TODO list to add support back in.
 
--- 
-Jean Delvare
+> --
+> Best regards,
+> Francesco Piccinno
+> 
+> 
+> 
+> On Wed, Sep 7, 2011 at 8:36 PM, Florian Mickler <florian@mickler.org> wrote:
+> > On Tue, 6 Sep 2011 18:25:15 -0700
+> > "Matt Carlson" <mcarlson@broadcom.com> wrote:
+> >
+> >> On Tue, Sep 06, 2011 at 08:03:43AM -0700, Florian Mickler wrote:
+> >> > Hi,
+> >> >
+> >> > in https://bugzilla.kernel.org/show_bug.cgi?id=42132 Francesco wrote:
+> >> >
+> >> > > I have a notebook (HP TC4400) which has a BCM5750 ethernet card inside. The
+> >> > > ouput of lspci is:
+> >> > >
+> >> > > 08:00.0 Ethernet controller [0200]: Broadcom Corporation NetXtreme BCM5750M
+> >> > > Gigabit Ethernet [14e4:167c]
+> >> > >
+> >> > > Commit 67b284d476bcb3d100e946da23d6cf9acfd0465c removed the support for this
+> >> > > device. I wish to have the support for this network card back again. Thanks!
+> >>
+> >> Hi Florian. ??Are you experiencing the same problem? ??We found that
+> >> Francesco's problem was that the firmware of his device was missing. ??Do
+> >> you see :
+> >>
+> >> eth0: No firmware running
+> >>
+> >> messages?
+> >>
+> >
+> > Hi Matt!
+> > No, I was just browsing the regression list and found this entry but
+> > couldn't associate any action with it.
+> >
+> > This clears that up, thanks for the information and I will close this
+> > bug.
+> >
+> > Regards,
+> > Flo
+> >
+> 
+
