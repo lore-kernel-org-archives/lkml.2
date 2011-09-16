@@ -1,66 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754949Ab1IPRyX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 13:54:23 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:49457 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751608Ab1IPRyV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 13:54:21 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Mandeep Singh Baines <msb@chromium.org>
-Cc: dm-devel@redhat.com, Will Drewry <wad@chromium.org>,
-        Elly Jones <ellyjones@chromium.org>,
-        Alasdair G Kergon <agk@redhat.com>, Milan Broz <mbroz@redhat.com>,
-        Olof Johansson <olofj@chromium.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dm: verity target
-In-Reply-To: Your message of "Thu, 15 Sep 2011 11:45:59 PDT."
-             <1316112359-6085-1-git-send-email-msb@chromium.org>
-From: Valdis.Kletnieks@vt.edu
-References: <1316112359-6085-1-git-send-email-msb@chromium.org>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1316195647_55056P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Fri, 16 Sep 2011 13:54:07 -0400
-Message-ID: <59032.1316195647@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020203.4E738D41.0178,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	id S1755794Ab1IPRyi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 13:54:38 -0400
+Received: from mga03.intel.com ([143.182.124.21]:39125 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754544Ab1IPRyh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Sep 2011 13:54:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,394,1312182000"; 
+   d="scan'208";a="17888498"
+From: Andi Kleen <andi@firstfloor.org>
+To: djwong@us.ibm.com
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+Subject: Re: [PATCH] ext4: Prevent stack overrun in ext4_file_open when recording last known mountpoint
+References: <20110915231645.GE12086@tux1.beaverton.ibm.com>
+Date: Fri, 16 Sep 2011 10:54:35 -0700
+In-Reply-To: <20110915231645.GE12086@tux1.beaverton.ibm.com> (Darrick
+	J. Wong's message of "Thu, 15 Sep 2011 16:16:45 -0700")
+Message-ID: <m239fwfk4k.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1316195647_55056P
-Content-Type: text/plain; charset=us-ascii
+"Darrick J. Wong" <djwong@us.ibm.com> writes:
 
-On Thu, 15 Sep 2011 11:45:59 PDT, Mandeep Singh Baines said:
-> The verity target provides transparent integrity checking of block devices
-> using a cryptographic digest.
 
-I just had this mental image of Dr Henry Jones saying: "But in Latin, verify is
-spelled with an f..." ;)
+> Writing stack variables into the superblock doesn't sound like a great idea, so
+> use strncpy instead.
 
-Might want to add something to device-mapper/dm-verity.txt explaining
-where the name came from and that it's *not* a typo?
+This means you can end up with a non 0 terminated path in the
+superblock, which could confuse programs.
 
---==_Exmh_1316195647_55056P
-Content-Type: application/pgp-signature
+Better use strlcpy()
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+strncpy is usually a bad idea, it's semantics overall are quite
+bogus and it's also inefficient because it always fills.
 
-iD8DBQFOc40/cC3lWbTT17ARAlK+AJ96GzzZqE0XRLQrD5o7WPkv2HFZiQCeK8PD
-2R1jQZha0QSRetnPI+wPOzM=
-=SWTW
------END PGP SIGNATURE-----
+-Andi
 
---==_Exmh_1316195647_55056P--
-
+-- 
+ak@linux.intel.com -- Speaking for myself only
