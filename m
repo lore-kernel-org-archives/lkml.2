@@ -1,91 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752646Ab1IPNNt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 09:13:49 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:55204 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751608Ab1IPNNs convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 09:13:48 -0400
+	id S1752853Ab1IPNUH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 09:20:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46599 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751907Ab1IPNUF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Sep 2011 09:20:05 -0400
+Date: Fri, 16 Sep 2011 09:19:30 -0400
+From: Josef Bacik <josef@redhat.com>
+To: Matthew Wilcox <matthew@wil.cx>
+Cc: Andi Kleen <andi@firstfloor.org>, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Improve lseek scalability v3
+Message-ID: <20110916131929.GA27738@dhcp231-156.rdu.redhat.com>
+References: <1316128013-21980-1-git-send-email-andi@firstfloor.org> <20110916130054.GA8997@parisc-linux.org>
 MIME-Version: 1.0
-In-Reply-To: <1316177430-13167-2-git-send-email-zohar@linux.vnet.ibm.com>
-References: <1316177430-13167-1-git-send-email-zohar@linux.vnet.ibm.com>
-	<1316177430-13167-2-git-send-email-zohar@linux.vnet.ibm.com>
-Date: Fri, 16 Sep 2011 16:13:47 +0300
-Message-ID: <CAHp75VexDE3UXUQYv=i=nLtiVWJFwDuYwzDub2nG2nQHqFn9Pw@mail.gmail.com>
-Subject: Re: [RFC][PATCH 2/5] lib: add error checking to hex2bin
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: linux-security-module@vger.kernel.org,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        David Safford <safford@watson.ibm.com>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        target-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110916130054.GA8997@parisc-linux.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 16, 2011 at 3:50 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> hex2bin converts a hexadecimal string to its binary representation.
-> The original version of hex2bin did not do any error checking.  This
-> patch adds error checking and returns the result.
->
-> Changelog:
-> - use the new unpack_hex_byte()
-> - add __must_check compiler option (Andy Shevchenko's suggestion)
-> - change function API to return error checking result
->  (based on Tetsuo Handa's initial patch)
->
-> Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
-> ---
->  include/linux/kernel.h |    2 +-
->  lib/hexdump.c          |   11 +++++++----
->  2 files changed, 8 insertions(+), 5 deletions(-)
->
-> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-> index d8ea13b..3021e64 100644
-> --- a/include/linux/kernel.h
-> +++ b/include/linux/kernel.h
-> @@ -382,7 +382,7 @@ static inline char *pack_hex_byte(char *buf, u8 byte)
->  }
->
->  extern int hex_to_bin(char ch);
-> -extern void hex2bin(u8 *dst, const char *src, size_t count);
-> +extern bool __must_check hex2bin(u8 *dst, const char *src, size_t count);
->
->  /*
->  * unpack_hex_byte - convert 2 asii hex digits into a byte
-> diff --git a/lib/hexdump.c b/lib/hexdump.c
-> index f5fe6ba..7711095 100644
-> --- a/lib/hexdump.c
-> +++ b/lib/hexdump.c
-> @@ -38,14 +38,17 @@ EXPORT_SYMBOL(hex_to_bin);
->  * @dst: binary result
->  * @src: ascii hexadecimal string
->  * @count: result length
-> + *
-> + * Returns true on success, false in case of bad input.
->  */
-> -void hex2bin(u8 *dst, const char *src, size_t count)
-> +bool hex2bin(u8 *dst, const char *src, size_t count)
->  {
->        while (count--) {
-> -               *dst = hex_to_bin(*src++) << 4;
-> -               *dst += hex_to_bin(*src++);
-> -               dst++;
-> +               if (!unpack_hex_byte(dst++, src))
-> +                       return false;
-> +               src += 2;
->        }
-> +       return true;
->  }
->  EXPORT_SYMBOL(hex2bin);
+On Fri, Sep 16, 2011 at 07:00:55AM -0600, Matthew Wilcox wrote:
+> On Thu, Sep 15, 2011 at 04:06:46PM -0700, Andi Kleen wrote:
+> > Currently generic_file_llseek users synchronize all on the inode i_mutex,
+> > which is very heavy handed because it affects even different processes.
+> > 
+> > This patchkit attempts to make generic_file_llseek (mostly) lockless.
+> 
+> Yes, but, are there any real workloads which care?  I know will-it-scale
+> says that lseek doesn't scale, but any real app which has a seek-heavy
+> workload is surely using pread()/pwrite() by now ... after all, they
+> were in UNIX98 so they've been a standard for 13 years.
 >
 
-Acked-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Apparently postgresql uses lseek heavily
 
--- 
-With Best Regards,
-Andy Shevchenko
+http://rhaas.blogspot.com/2011/08/linux-and-glibc-scalability.html
+
+Thanks,
+
+Josef 
