@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753164Ab1IPG5n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 02:57:43 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:56891 "EHLO mgw2.diku.dk"
+	id S1753473Ab1IPG6b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 02:58:31 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:56905 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750828Ab1IPG5m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 02:57:42 -0400
+	id S1752600Ab1IPG5n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Sep 2011 02:57:43 -0400
 From: Julia Lawall <julia@diku.dk>
-To: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: kernel-janitors@vger.kernel.org, Kashyap Desai <kashyap.desai@lsi.com>,
-        James Bottomley <James.Bottomley@suse.de>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/4] drivers/scsi/mpt2sas/mpt2sas_transport.c: take size of pointed value, not pointer
-Date: Fri, 16 Sep 2011 08:57:34 +0200
-Message-Id: <1316156255-19509-3-git-send-email-julia@diku.dk>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: kernel-janitors@vger.kernel.org, Ian Campbell <ian.campbell@citrix.com>,
+        Jan Beulich <jbeulich@novell.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/4] drivers/block/xen-blkback/blkback.c: take size of pointed value, not pointer
+Date: Fri, 16 Sep 2011 08:57:32 +0200
+Message-Id: <1316156255-19509-1-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -43,19 +42,19 @@ f(...,(T)e,...,
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/scsi/mpt2sas/mpt2sas_transport.c |    2 +-
+ drivers/block/xen-blkback/blkback.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff -u -p a/drivers/scsi/mpt2sas/mpt2sas_transport.c b/drivers/scsi/mpt2sas/mpt2sas_transport.c
---- a/drivers/scsi/mpt2sas/mpt2sas_transport.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_transport.c
-@@ -163,7 +163,7 @@ _transport_set_identify(struct MPT2SAS_A
- 		return -EIO;
- 	}
+diff -u -p a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
+--- a/drivers/block/xen-blkback/blkback.c
++++ b/drivers/block/xen-blkback/blkback.c
+@@ -790,7 +790,7 @@ static int __init xen_blkif_init(void)
+ 	if (rc)
+ 		goto failed_init;
  
--	memset(identify, 0, sizeof(identify));
-+	memset(identify, 0, sizeof(*identify));
- 	device_info = le32_to_cpu(sas_device_pg0.DeviceInfo);
+-	memset(blkbk->pending_reqs, 0, sizeof(blkbk->pending_reqs));
++	memset(blkbk->pending_reqs, 0, sizeof(*blkbk->pending_reqs));
  
- 	/* sas_address */
+ 	INIT_LIST_HEAD(&blkbk->pending_free);
+ 	spin_lock_init(&blkbk->pending_free_lock);
 
