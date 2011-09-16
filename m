@@ -1,44 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752500Ab1IPFtk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 01:49:40 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48107 "EHLO mx2.suse.de"
+	id S1752511Ab1IPFv7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 01:51:59 -0400
+Received: from mga02.intel.com ([134.134.136.20]:33679 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752398Ab1IPFtj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 01:49:39 -0400
-Date: Fri, 16 Sep 2011 07:49:37 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Temporary location for hid, apm and trivial trees
-In-Reply-To: <20110916111939.98b49c7304550ae509e1435f@canb.auug.org.au>
-Message-ID: <alpine.LNX.2.00.1109160748000.13109@pobox.suse.cz>
-References: <alpine.LNX.2.00.1109141520450.13109@pobox.suse.cz> <20110915000759.44ec63c0f9a3d68239886de5@canb.auug.org.au> <alpine.LNX.2.00.1109141650280.13109@pobox.suse.cz> <20110915005647.31daf133c37610bfa1694a8e@canb.auug.org.au>
- <20110916111939.98b49c7304550ae509e1435f@canb.auug.org.au>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752365Ab1IPFv6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Sep 2011 01:51:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="49037829"
+From: Wang Xingchao <xingchao.wang@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, peterz@infradead.org, yong.zhang0@gmail.com,
+        alex.shi@intel.com, Wang Xingchao <xingchao.wang@intel.com>
+Subject: [PATCH] cfs: NULL pointer check
+Date: Fri, 16 Sep 2011 13:48:53 -0400
+Message-Id: <1316195333-12374-1-git-send-email-xingchao.wang@intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Sep 2011, Stephen Rothwell wrote:
+se maybe NULL if cfs_rq->rb_leftmost is NULL
 
-> > > Ah, you are right, it has been broken. Fixed now.
-> > 
-> > Excellent, thanks.
-> 
-> Today (and yesterday) I am getting:
-> 
-> twin.jikos.cz[0: 89.185.236.188]: errno=Connection refused
-> 
-> I will kepp using what I have fetched already.
+Signed-off-by: Wang Xingchao <xingchao.wang@intel.com>
+---
+ kernel/sched_fair.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-Gah, that git daemon thing died. I have now put a slightly newer version 
-in place and be monitoring it more closely.
-
-Thanks for reportig,
-
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index fef0bfd..109b232 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -1130,6 +1130,10 @@ check_preempt_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr)
+ 		return;
+ 
+ 	se = __pick_first_entity(cfs_rq);
++
++	if (!se)
++		return;
++
+ 	delta = curr->vruntime - se->vruntime;
+ 
+ 	if (delta < 0)
 -- 
-Jiri Kosina
-SUSE Labs
+1.7.1
+
