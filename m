@@ -1,101 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753353Ab1IPMVw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 08:21:52 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53966 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751820Ab1IPMVv (ORCPT
+	id S1753557Ab1IPMY1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 08:24:27 -0400
+Received: from mail-wy0-f180.google.com ([74.125.82.180]:42906 "EHLO
+	mail-wy0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752529Ab1IPMY0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 08:21:51 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Oritz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] mfd: Simulate active high IRQs with wm831x
-Date: Fri, 16 Sep 2011 13:21:47 +0100
-Message-Id: <1316175707-17871-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.6.3
+	Fri, 16 Sep 2011 08:24:26 -0400
+Date: Fri, 16 Sep 2011 14:24:17 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, patches@linaro.org, anton@samba.org,
+        paulus@samba.org
+Subject: Re: [PATCH tip/core/rcu 55/55] powerpc: Work around tracing from
+ dyntick-idle mode
+Message-ID: <20110916122220.GA5089@somewhere.redhat.com>
+References: <20110906180015.GA2560@linux.vnet.ibm.com>
+ <1315332049-2604-55-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1315389622.26118.17.camel@pasglop>
+ <20110907134400.GJ3610@linux.vnet.ibm.com>
+ <20110913191319.GF23424@somewhere>
+ <20110913195033.GB3301@linux.vnet.ibm.com>
+ <1315946993.455.158.camel@pasglop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1315946993.455.158.camel@pasglop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to ease system integration provide a simulation of active high
-IRQs on the GPIOs by polling the GPIO status when an IRQ is generated.
+On Tue, Sep 13, 2011 at 05:49:53PM -0300, Benjamin Herrenschmidt wrote:
+> 
+> > As I understand it, cede_processor()'s call to plpar_hcall_norets()
+> > results in the hypervisor being invoked, and could give up the CPU.
+> > And yes, in this case, RCU needs to stop paying attention to this CPU.
+> > And pseries_shared_idle_sleep() also invokes cede_proceessor().
+> > 
+> > Gah...  And there also appear to be some assembly-language functions
+> > that can be invoked via the ppc_md.power_save() call from cpu_idle():
+> > ppc6xx_idle(), power4_idle(), idle_spin(), idle_doze(), and book3e_idle().
+> > There is also a power7_idle(), but it does not appear to be used anywhere.
+> > 
+> > Plus there are the C-language ppc44x_idle(), beat_power_save(),
+> > cbe_power_save(), ps3_power_save(), and cpm_idle().
+> > 
+> > > > The same thing would be needed for tick_nohz_exit_idle() and
+> > > > rcu_exit_nohz(): powerpc would need to invoke rcu_exit_nohz() after
+> > > > gaining control from the hypervisor but before doing its first tracing,
+> > > > and then it would need the idle loop to to tick_nohz_exit_idle(false).
+> > > > Again, if pseries is the only powerpc architecture requiring this,
+> > > > the argument to tick_nohz_exit_idle() could depend on the architecture.
+> > > > 
+> > > > Would this approach work?
+> > > 
+> > > Sounds like we really need that.
+> > 
+> > Sounds like an arch-dependent config symbol that is defined for the
+> > pseries targets, but not for the other powerpc architectures.
+> > 
+> > Not clear to me what to do about power4_idle(), though.
+> 
+> I don't totally follow, too many things to deal with right now, but keep
+> in mind that we build multiplatform kernels, so you can have powermac,
+> cell, pseries, etc... all in one kernel binary (including power7 idle).
+> 
+> Shouldn't we instead change the plpar trace call to skip the tracing
+> when not safe to do so ?
 
-This isn't ideal on several fronts and will miss initially active IRQs in
-the current implementation but it should work well for most cases.
+So perhaps something like this could help? AFAIK the only place
+where the calls to trace_hcall_entry/exit are unsafe is on
+cede_processor().
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+(I don't know powerpc asm so that patch is only made on guesses
+from similarities with ARM asm that I know better).
+
+Only compile tested.
+
+
+Not-yet-signed-off-by: Me
 ---
- drivers/mfd/wm831x-irq.c        |   22 +++++++++++++++++++++-
- include/linux/mfd/wm831x/core.h |    1 +
- 2 files changed, 22 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/mfd/wm831x-irq.c b/drivers/mfd/wm831x-irq.c
-index a10937c..f4747a4 100644
---- a/drivers/mfd/wm831x-irq.c
-+++ b/drivers/mfd/wm831x-irq.c
-@@ -420,12 +420,19 @@ static int wm831x_irq_set_type(struct irq_data *data, unsigned int type)
- 	switch (type) {
- 	case IRQ_TYPE_EDGE_BOTH:
- 		wm831x->gpio_update[irq] = 0x10000 | WM831X_GPN_INT_MODE;
-+		wm831x->gpio_level[irq] = false;
- 		break;
- 	case IRQ_TYPE_EDGE_RISING:
- 		wm831x->gpio_update[irq] = 0x10000 | WM831X_GPN_POL;
-+		wm831x->gpio_level[irq] = false;
- 		break;
- 	case IRQ_TYPE_EDGE_FALLING:
- 		wm831x->gpio_update[irq] = 0x10000;
-+		wm831x->gpio_level[irq] = false;
-+		break;
-+	case IRQ_TYPE_LEVEL_HIGH:
-+		wm831x->gpio_update[irq] = 0x10000 | WM831X_GPN_POL;
-+		wm831x->gpio_level[irq] = true;
- 		break;
- 	default:
- 		return -EINVAL;
-@@ -449,7 +456,7 @@ static irqreturn_t wm831x_irq_thread(int irq, void *data)
- {
- 	struct wm831x *wm831x = data;
- 	unsigned int i;
--	int primary, status_addr;
-+	int primary, status_addr, ret;
- 	int status_regs[WM831X_NUM_IRQ_REGS] = { 0 };
- 	int read[WM831X_NUM_IRQ_REGS] = { 0 };
- 	int *status;
-@@ -507,6 +514,19 @@ static irqreturn_t wm831x_irq_thread(int irq, void *data)
+diff --git a/arch/powerpc/include/asm/hvcall.h b/arch/powerpc/include/asm/hvcall.h
+index fd8201d..37818d3 100644
+--- a/arch/powerpc/include/asm/hvcall.h
++++ b/arch/powerpc/include/asm/hvcall.h
+@@ -250,6 +250,8 @@
+  */
+ long plpar_hcall_norets(unsigned long opcode, ...);
  
- 		if (*status & wm831x_irqs[i].mask)
- 			handle_nested_irq(wm831x->irq_base + i);
++long plpar_hcall_norets_notrace(unsigned long opcode, ...);
 +
-+		/* Simulate an edge triggered IRQ by polling the input
-+		 * status.  This is sucky but improves interoperability.
-+		 */
-+		if (primary == WM831X_GP_INT &&
-+		    wm831x->gpio_level[i - WM831X_IRQ_GPIO_1]) {
-+			ret = wm831x_reg_read(wm831x, WM831X_GPIO_LEVEL);
-+			while (ret & 1 << (i - WM831X_IRQ_GPIO_1)) {
-+				handle_nested_irq(wm831x->irq_base + i);
-+				ret = wm831x_reg_read(wm831x,
-+						      WM831X_GPIO_LEVEL);
-+			}
-+		}
- 	}
+ /**
+  * plpar_hcall: - Make a pseries hypervisor call
+  * @opcode: The hypervisor call to make.
+diff --git a/arch/powerpc/platforms/pseries/hvCall.S b/arch/powerpc/platforms/pseries/hvCall.S
+index fd05fde..302fc7a 100644
+--- a/arch/powerpc/platforms/pseries/hvCall.S
++++ b/arch/powerpc/platforms/pseries/hvCall.S
+@@ -107,6 +107,18 @@ END_FTR_SECTION(0, 1);						\
  
- out:
-diff --git a/include/linux/mfd/wm831x/core.h b/include/linux/mfd/wm831x/core.h
-index ed8fe0d..4b12118 100644
---- a/include/linux/mfd/wm831x/core.h
-+++ b/include/linux/mfd/wm831x/core.h
-@@ -382,6 +382,7 @@ struct wm831x {
+ 	.text
  
- 	/* Used by the interrupt controller code to post writes */
- 	int gpio_update[WM831X_NUM_GPIO_REGS];
-+	bool gpio_level[WM831X_NUM_GPIO_REGS];
++_GLOBAL(plpar_hcall_norets_notrace)
++	HMT_MEDIUM
++
++	mfcr	r0
++	stw	r0,8(r1)
++
++	HVSC				/* invoke the hypervisor */
++
++	lwz	r0,8(r1)
++	mtcrf	0xff,r0
++	blr				/* return r3 = status */
++
+ _GLOBAL(plpar_hcall_norets)
+ 	HMT_MEDIUM
  
- 	struct mutex auxadc_lock;
- 	struct list_head auxadc_pending;
--- 
-1.7.6.3
+diff --git a/arch/powerpc/platforms/pseries/plpar_wrappers.h b/arch/powerpc/platforms/pseries/plpar_wrappers.h
+index 4bf2120..30f3d64 100644
+--- a/arch/powerpc/platforms/pseries/plpar_wrappers.h
++++ b/arch/powerpc/platforms/pseries/plpar_wrappers.h
+@@ -29,7 +29,7 @@ static inline void set_cede_latency_hint(u8 latency_hint)
+ 
+ static inline long cede_processor(void)
+ {
+-	return plpar_hcall_norets(H_CEDE);
++	return plpar_hcall_norets_notrace(H_CEDE);
+ }
+ 
+ static inline long extended_cede_processor(unsigned long latency_hint)
 
