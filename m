@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754688Ab1IPMvJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 08:51:09 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:33619 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754333Ab1IPMuu (ORCPT
+	id S1754318Ab1IPMut (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 08:50:49 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:33007 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753805Ab1IPMur (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 08:50:50 -0400
+	Fri, 16 Sep 2011 08:50:47 -0400
 From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 To: linux-security-module@vger.kernel.org
 Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
@@ -15,71 +15,60 @@ Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
         David Safford <safford@watson.ibm.com>,
         "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
         target-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [RFC][PATCH 2/5] lib: add error checking to hex2bin
-Date: Fri, 16 Sep 2011 08:50:27 -0400
-Message-Id: <1316177430-13167-2-git-send-email-zohar@linux.vnet.ibm.com>
+Subject: [RFC][PATCH 1/5] lib: add unpack_hex_byte()
+Date: Fri, 16 Sep 2011 08:50:26 -0400
+Message-Id: <1316177430-13167-1-git-send-email-zohar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1316177430-13167-1-git-send-email-zohar@linux.vnet.ibm.com>
-References: <1316177430-13167-1-git-send-email-zohar@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hex2bin converts a hexadecimal string to its binary representation.
-The original version of hex2bin did not do any error checking.  This
-patch adds error checking and returns the result.
+Since converting 2 ascii hex digits into a byte with error checks
+is commonly used, we can replace multiple hex_to_bin() calls with
+a single call to unpack_hex_byte().
 
 Changelog:
-- use the new unpack_hex_byte()
-- add __must_check compiler option (Andy Shevchenko's suggestion)
-- change function API to return error checking result
-  (based on Tetsuo Handa's initial patch)
+- Error checking added based on Tetsuo Handa's patch.
+- Moved the hex2bin code here, making it into a static inline function.
+  (Andy Shevchenko's request.)
 
 Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
 ---
- include/linux/kernel.h |    2 +-
- lib/hexdump.c          |   11 +++++++----
- 2 files changed, 8 insertions(+), 5 deletions(-)
+ include/linux/kernel.h |   21 +++++++++++++++++++++
+ 1 files changed, 21 insertions(+), 0 deletions(-)
 
 diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index d8ea13b..3021e64 100644
+index 46ac9a5..d8ea13b 100644
 --- a/include/linux/kernel.h
 +++ b/include/linux/kernel.h
-@@ -382,7 +382,7 @@ static inline char *pack_hex_byte(char *buf, u8 byte)
- }
- 
- extern int hex_to_bin(char ch);
--extern void hex2bin(u8 *dst, const char *src, size_t count);
-+extern bool __must_check hex2bin(u8 *dst, const char *src, size_t count);
+@@ -385,6 +385,27 @@ extern int hex_to_bin(char ch);
+ extern void hex2bin(u8 *dst, const char *src, size_t count);
  
  /*
-  * unpack_hex_byte - convert 2 asii hex digits into a byte
-diff --git a/lib/hexdump.c b/lib/hexdump.c
-index f5fe6ba..7711095 100644
---- a/lib/hexdump.c
-+++ b/lib/hexdump.c
-@@ -38,14 +38,17 @@ EXPORT_SYMBOL(hex_to_bin);
-  * @dst: binary result
-  * @src: ascii hexadecimal string
-  * @count: result length
-+ *
-+ * Returns true on success, false in case of bad input.
-  */
--void hex2bin(u8 *dst, const char *src, size_t count)
-+bool hex2bin(u8 *dst, const char *src, size_t count)
- {
- 	while (count--) {
--		*dst = hex_to_bin(*src++) << 4;
--		*dst += hex_to_bin(*src++);
--		dst++;
-+		if (!unpack_hex_byte(dst++, src))
-+			return false;
-+		src += 2;
- 	}
++ * unpack_hex_byte - convert 2 asii hex digits into a byte
++ * @byte: binary result
++ * @buf: ascii hexadecimal byte string
++ */
++static inline bool unpack_hex_byte(u8 *byte, const char *buf)
++{
++	int hi, lo;
++
++	hi = hex_to_bin(buf[0]);
++	if (hi < 0)
++		return false;
++
++	lo = hex_to_bin(buf[1]);
++	if (lo < 0)
++		return false;
++
++	*byte = (hi << 4) | lo;
 +	return true;
- }
- EXPORT_SYMBOL(hex2bin);
- 
++}
++
++/*
+  * General tracing related utility functions - trace_printk(),
+  * tracing_on/tracing_off and tracing_start()/tracing_stop
+  *
 -- 
 1.7.3.4
 
