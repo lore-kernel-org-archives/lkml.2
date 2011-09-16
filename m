@@ -1,69 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752374Ab1IPFbm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 01:31:42 -0400
-Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:47109 "EHLO
-	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752100Ab1IPFbl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 01:31:41 -0400
-Message-ID: <4E72DF1E.3080301@st.com>
-Date: Fri, 16 Sep 2011 11:01:10 +0530
-From: Viresh Kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
-MIME-Version: 1.0
-To: Barry Song <Baohua.Song@csr.com>
-Cc: "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "workgroup.linux@csr.com" <workgroup.linux@csr.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Piotr Ziecik <kosmo@semihalf.com>, Yong Wang <yong.y.wang@intel.com>,
-        Jaswinder Singh <jassi.brar@samsung.com>,
-        Pelagicore AB <info@pelagicore.com>
-Subject: Re: [PATCH] dmaengine: delete redundant chan_id and chancnt initialization
- in dma drivers
-References: <1316081190-29777-1-git-send-email-Baohua.Song@csr.com>
-In-Reply-To: <1316081190-29777-1-git-send-email-Baohua.Song@csr.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1752410Ab1IPFi7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 01:38:59 -0400
+Received: from mga11.intel.com ([192.55.52.93]:26772 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752177Ab1IPFi5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Sep 2011 01:38:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,391,1312182000"; 
+   d="scan'208";a="54342271"
+From: Wang Xingchao <xingchao.wang@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, peterz@infradead.org, yong.zhang0@gmail.com,
+        Wang Xingchao <xingchao.wang@intel.com>
+Subject: [PATCH] cfs: remove unused 'if' condition checking
+Date: Fri, 16 Sep 2011 13:35:52 -0400
+Message-Id: <1316194552-12019-1-git-send-email-xingchao.wang@intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/15/2011 3:36 PM, Barry Song wrote:
-> dma_async_device_register will re-init chan_id and chancnt,
-> so whatever chan_id and chancnt are set in drivers, they will
-> be re-written by dma_async_device_register.
-> 
-> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-> index 4d180ca..9bfd6d3 100644
-> --- a/drivers/dma/dw_dmac.c
-> +++ b/drivers/dma/dw_dmac.c
-> @@ -1407,12 +1407,11 @@ static int __init dw_probe(struct platform_device *pdev)
->  	dw->all_chan_mask = (1 << pdata->nr_channels) - 1;
->  
->  	INIT_LIST_HEAD(&dw->dma.channels);
-> -	for (i = 0; i < pdata->nr_channels; i++, dw->dma.chancnt++) {
-> +	for (i = 0; i < pdata->nr_channels; i++) {
->  		struct dw_dma_chan	*dwc = &dw->chan[i];
->  
->  		dwc->chan.device = &dw->dma;
->  		dwc->chan.cookie = dwc->completed = 1;
-> -		dwc->chan.chan_id = i;
->  		if (pdata->chan_allocation_order == CHAN_ALLOCATION_ASCENDING)
->  			list_add_tail(&dwc->chan.device_node,
->  					&dw->dma.channels);
-> @@ -1468,7 +1467,7 @@ static int __init dw_probe(struct platform_device *pdev)
->  	dma_writel(dw, CFG, DW_CFG_DMA_EN);
->  
->  	printk(KERN_INFO "%s: DesignWare DMA Controller, %d channels\n",
-> -			dev_name(&pdev->dev), dw->dma.chancnt);
-> +			dev_name(&pdev->dev), pdata->nr_channels);
->  
->  	dma_async_device_register(&dw->dma);
->  
+nr_running must be more than 1, so remove the checking
 
-Acked-by: Viresh Kumar <viresh.kumar@st.com>
+Signed-off-by: Wang Xingchao <xingchao.wang@intel.com>
+---
+ kernel/sched_fair.c |   16 ++++++++--------
+ 1 files changed, 8 insertions(+), 8 deletions(-)
 
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index 1ca2cd4..fef0bfd 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -1106,6 +1106,8 @@ static void
+ check_preempt_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr)
+ {
+ 	unsigned long ideal_runtime, delta_exec;
++	struct sched_entity *se;
++	s64 delta;
+ 
+ 	ideal_runtime = sched_slice(cfs_rq, curr);
+ 	delta_exec = curr->sum_exec_runtime - curr->prev_sum_exec_runtime;
+@@ -1127,16 +1129,14 @@ check_preempt_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr)
+ 	if (delta_exec < sysctl_sched_min_granularity)
+ 		return;
+ 
+-	if (cfs_rq->nr_running > 1) {
+-		struct sched_entity *se = __pick_first_entity(cfs_rq);
+-		s64 delta = curr->vruntime - se->vruntime;
++	se = __pick_first_entity(cfs_rq);
++	delta = curr->vruntime - se->vruntime;
+ 
+-		if (delta < 0)
+-			return;
++	if (delta < 0)
++		return;
+ 
+-		if (delta > ideal_runtime)
+-			resched_task(rq_of(cfs_rq)->curr);
+-	}
++	if (delta > ideal_runtime)
++		resched_task(rq_of(cfs_rq)->curr);
+ }
+ 
+ static void
 -- 
-viresh
+1.7.1
+
