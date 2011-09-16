@@ -1,149 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752616Ab1IPGEw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 02:04:52 -0400
-Received: from mail-qw0-f42.google.com ([209.85.216.42]:60066 "EHLO
-	mail-qw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752367Ab1IPGEv convert rfc822-to-8bit (ORCPT
+	id S1752646Ab1IPGJk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 02:09:40 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:42285 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752398Ab1IPGJj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 02:04:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <1316142577.29510.130.camel@sli10-conroe>
-References: <1316142577.29510.130.camel@sli10-conroe>
-Date: Fri, 16 Sep 2011 08:04:49 +0200
-Message-ID: <CADX3swqrpz+=JSk8gQf6tDRZ25Z9FOnJbTyiCrZAM6LiJSmoGA@mail.gmail.com>
-Subject: Re: [patch]cfq-iosched: delete deep seeky queue idle logic
-From: Corrado Zoccolo <czoccolo@gmail.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, Jens Axboe <jaxboe@fusionio.com>,
-        Maxim Patlasov <maxim.patlasov@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 16 Sep 2011 02:09:39 -0400
+Date: Fri, 16 Sep 2011 16:09:28 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@google.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Johannes Weiner <jweiner@redhat.com>
+Subject: linux-next: manual merge of the akpm tree with Linus' tree
+Message-Id: <20110916160928.ca9a16909abdf625f7e7cd0e@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 16, 2011 at 5:09 AM, Shaohua Li <shaohua.li@intel.com> wrote:
-> Recently Maxim and I discussed why his aiostress workload performs poorly. If
-> you didn't follow the discussion, here are the issues we found:
-> 1. cfq seeky dection isn't good. Assume a task accesses sector A, B, C, D, A+1,
-> B+1, C+1, D+1, A+2...Accessing A, B, C, D is random. cfq will detect the queue
-> as seeky, but since when accessing A+1, A+1 is already in disk cache, this
-> should be detected as sequential really. Not sure if any real workload has such
-> access patern, and seems not easy to have a clean fix too. Any idea for this?
+Hi Andrew,
 
-Not all disks will cache 4 independent streams, we can't make that
-assumption in cfq.
-The current behaviour of assuming it as seeky should work well enough,
-in fact it will be put in the seeky tree, and it can enjoy the seeky
-tree quantum of time. If the second round takes a short time, it will
-be able to schedule a third round again after the idle time.
-If there are other seeky processes competing for the tree, the cache
-can be cleared by the time it gets back to your 4 streams process, so
-it will behave exactly as a seeky process from cfq point of view.
-If the various accesses were submitted in parallel, the deep seeky
-queue logic should kick in and make sure the process gets a sequential
-quantum, rather than sharing it with other seeky processes, so
-depending on your disk, it could perform better.
+Today's linux-next merge of the akpm tree got a conflict in
+mm/memcontrol.c between commit 185efc0f9a1f ("memcg: Revert "memcg: add
+memory.vmscan_stat"") from Linus' tree and commit 970f23b7f013 ("The
+memcg code sometimes uses "struct mem_cgroup *mem" and sometimes uses")
+from the akpm tree.
 
->
-> 2. deep seeky queue idle. This makes raid performs poorly. I would think we
-> revert the logic. Deep queue is more popular with high end hardware. In such
-> hardware, we'd better not do idle.
-> Note, currently we set a queue's slice after the first request is finished.
-> This means the drive already idles a little time. If the queue is truely deep,
-> new requests should already come in, so idle isn't required.
-> Looks Vivek used to post a patch to rever it, but it gets ignored.
-> http://us.generation-nt.com/patch-cfq-iosched-revert-logic-deep-queues-help-198339681.html
-I get a 404 here. I think you are seeing only one half of the medal.
-That logic is there mainly to ensure fairness between deep seeky
-processes and normal seeky processes that want low latency.
-If you remove that logic, a single process making many parallel aio
-reads could completely swamp one machine, preventing other seeky
-processes from progressing.
-Instead of removing completely the logic, you should make the depth
-configurable, so multi-spindle storages could allow deeper queues
-before switching to fairness-enforcing policy.
+I fixed it up (I think - see below) and can carry the fix as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-
-> Signed-off-by: Shaohua Li<shaohua.li@intel.com>
->
-> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-> index a33bd43..f75439e 100644
-> --- a/block/cfq-iosched.c
-> +++ b/block/cfq-iosched.c
-> @@ -334,7 +334,6 @@ enum cfqq_state_flags {
->        CFQ_CFQQ_FLAG_sync,             /* synchronous queue */
->        CFQ_CFQQ_FLAG_coop,             /* cfqq is shared */
->        CFQ_CFQQ_FLAG_split_coop,       /* shared cfqq will be splitted */
-> -       CFQ_CFQQ_FLAG_deep,             /* sync cfqq experienced large depth */
->        CFQ_CFQQ_FLAG_wait_busy,        /* Waiting for next request */
->  };
->
-> @@ -363,7 +362,6 @@ CFQ_CFQQ_FNS(slice_new);
->  CFQ_CFQQ_FNS(sync);
->  CFQ_CFQQ_FNS(coop);
->  CFQ_CFQQ_FNS(split_coop);
-> -CFQ_CFQQ_FNS(deep);
->  CFQ_CFQQ_FNS(wait_busy);
->  #undef CFQ_CFQQ_FNS
->
-> @@ -2375,17 +2373,6 @@ static struct cfq_queue *cfq_select_queue(struct cfq_data *cfqd)
->                goto keep_queue;
->        }
->
-> -       /*
-> -        * This is a deep seek queue, but the device is much faster than
-> -        * the queue can deliver, don't idle
-> -        **/
-> -       if (CFQQ_SEEKY(cfqq) && cfq_cfqq_idle_window(cfqq) &&
-> -           (cfq_cfqq_slice_new(cfqq) ||
-> -           (cfqq->slice_end - jiffies > jiffies - cfqq->slice_start))) {
-> -               cfq_clear_cfqq_deep(cfqq);
-> -               cfq_clear_cfqq_idle_window(cfqq);
-> -       }
-> -
-I haven't seen the patch that introduced this code hunk, but this
-could disrupt the cache in your first scenario if the reads A B C D
-were sent in parallel. You mistakenly assume your disk can issue more
-requests in parallel only because many of them hit the cache. Now you
-start sending other unrelated requests (your 4 stream process is not
-identified as deep any more, so other processes in the seeky tree
-compete with it), and this makes your cache hit ratio drop and
-everything slows down.
->        if (cfqq->dispatched && cfq_should_idle(cfqd, cfqq)) {
->                cfqq = NULL;
->                goto keep_queue;
-> @@ -3298,13 +3285,10 @@ cfq_update_idle_window(struct cfq_data *cfqd, struct cfq_queue *cfqq,
->
->        enable_idle = old_idle = cfq_cfqq_idle_window(cfqq);
->
-> -       if (cfqq->queued[0] + cfqq->queued[1] >= 4)
-> -               cfq_mark_cfqq_deep(cfqq);
-> -
->        if (cfqq->next_rq && (cfqq->next_rq->cmd_flags & REQ_NOIDLE))
->                enable_idle = 0;
->        else if (!atomic_read(&cic->ioc->nr_tasks) || !cfqd->cfq_slice_idle ||
-> -           (!cfq_cfqq_deep(cfqq) && CFQQ_SEEKY(cfqq)))
-> +           CFQQ_SEEKY(cfqq))
->                enable_idle = 0;
->        else if (sample_valid(cic->ttime.ttime_samples)) {
->                if (cic->ttime.ttime_mean > cfqd->cfq_slice_idle)
-> @@ -3874,11 +3858,6 @@ static void cfq_idle_slice_timer(unsigned long data)
->                 */
->                if (!RB_EMPTY_ROOT(&cfqq->sort_list))
->                        goto out_kick;
-> -
-> -               /*
-> -                * Queue depth flag is reset only when the idle didn't succeed
-> -                */
-> -               cfq_clear_cfqq_deep(cfqq);
->        }
->  expire:
->        cfq_slice_expired(cfqd, timed_out);
->
->
->
-Thanks,
-Corrado
+diff --cc mm/memcontrol.c
+index 1364b5e,e47a504..0000000
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@@ -202,9 -202,53 +202,9 @@@ struct mem_cgroup_eventfd_list 
+  	struct eventfd_ctx *eventfd;
+  };
+  
+- static void mem_cgroup_threshold(struct mem_cgroup *mem);
+- static void mem_cgroup_oom_notify(struct mem_cgroup *mem);
++ static void mem_cgroup_threshold(struct mem_cgroup *memcg);
++ static void mem_cgroup_oom_notify(struct mem_cgroup *memcg);
+  
+ -enum {
+ -	SCAN_BY_LIMIT,
+ -	SCAN_BY_SYSTEM,
+ -	NR_SCAN_CONTEXT,
+ -	SCAN_BY_SHRINK,	/* not recorded now */
+ -};
+ -
+ -enum {
+ -	SCAN,
+ -	SCAN_ANON,
+ -	SCAN_FILE,
+ -	ROTATE,
+ -	ROTATE_ANON,
+ -	ROTATE_FILE,
+ -	FREED,
+ -	FREED_ANON,
+ -	FREED_FILE,
+ -	ELAPSED,
+ -	NR_SCANSTATS,
+ -};
+ -
+ -struct scanstat {
+ -	spinlock_t	lock;
+ -	unsigned long	stats[NR_SCAN_CONTEXT][NR_SCANSTATS];
+ -	unsigned long	rootstats[NR_SCAN_CONTEXT][NR_SCANSTATS];
+ -};
+ -
+ -const char *scanstat_string[NR_SCANSTATS] = {
+ -	"scanned_pages",
+ -	"scanned_anon_pages",
+ -	"scanned_file_pages",
+ -	"rotated_pages",
+ -	"rotated_anon_pages",
+ -	"rotated_file_pages",
+ -	"freed_pages",
+ -	"freed_anon_pages",
+ -	"freed_file_pages",
+ -	"elapsed_ns",
+ -};
+ -#define SCANSTAT_WORD_LIMIT	"_by_limit"
+ -#define SCANSTAT_WORD_SYSTEM	"_by_system"
+ -#define SCANSTAT_WORD_HIERARCHY	"_under_hierarchy"
+ -
+ -
+  /*
+   * The memory controller data structure. The memory controller controls both
+   * page cache and RSS per cgroup. We would eventually like to provide
+@@@ -1659,18 -1745,28 +1662,18 @@@ static int mem_cgroup_hierarchical_recl
+  	bool noswap = reclaim_options & MEM_CGROUP_RECLAIM_NOSWAP;
+  	bool shrink = reclaim_options & MEM_CGROUP_RECLAIM_SHRINK;
+  	bool check_soft = reclaim_options & MEM_CGROUP_RECLAIM_SOFT;
+ -	struct memcg_scanrecord rec;
+  	unsigned long excess;
+ -	unsigned long scanned;
+ +	unsigned long nr_scanned;
+  
+- 	excess = res_counter_soft_limit_excess(&root_mem->res) >> PAGE_SHIFT;
++ 	excess = res_counter_soft_limit_excess(&root_memcg->res) >> PAGE_SHIFT;
+  
+  	/* If memsw_is_minimum==1, swap-out is of-no-use. */
+- 	if (!check_soft && !shrink && root_mem->memsw_is_minimum)
++ 	if (!check_soft && !shrink && root_memcg->memsw_is_minimum)
+  		noswap = true;
+  
+ -	if (shrink)
+ -		rec.context = SCAN_BY_SHRINK;
+ -	else if (check_soft)
+ -		rec.context = SCAN_BY_SYSTEM;
+ -	else
+ -		rec.context = SCAN_BY_LIMIT;
+ -
+ -	rec.root = root_memcg;
+ -
+  	while (1) {
+- 		victim = mem_cgroup_select_victim(root_mem);
+- 		if (victim == root_mem) {
++ 		victim = mem_cgroup_select_victim(root_memcg);
++ 		if (victim == root_memcg) {
+  			loop++;
+  			/*
+  			 * We are not draining per cpu cached charges during
+@@@ -3753,15 -3858,19 +3756,15 @@@ try_to_free
+  	lru_add_drain_all();
+  	/* try to free all pages in this cgroup */
+  	shrink = 1;
+- 	while (nr_retries && mem->res.usage > 0) {
++ 	while (nr_retries && memcg->res.usage > 0) {
+ -		struct memcg_scanrecord rec;
+  		int progress;
+  
+  		if (signal_pending(current)) {
+  			ret = -EINTR;
+  			goto out;
+  		}
+- 		progress = try_to_free_mem_cgroup_pages(mem, GFP_KERNEL,
+- 						false);
+ -		rec.context = SCAN_BY_SHRINK;
+ -		rec.mem = memcg;
+ -		rec.root = memcg;
++ 		progress = try_to_free_mem_cgroup_pages(memcg, GFP_KERNEL,
++ 						false, &rec);
+  		if (!progress) {
+  			nr_retries--;
+  			/* maybe some writeback is necessary */
+@@@ -4926,21 -5091,22 +4929,21 @@@ mem_cgroup_create(struct cgroup_subsys 
+  		 */
+  		mem_cgroup_get(parent);
+  	} else {
+- 		res_counter_init(&mem->res, NULL);
+- 		res_counter_init(&mem->memsw, NULL);
++ 		res_counter_init(&memcg->res, NULL);
++ 		res_counter_init(&memcg->memsw, NULL);
+  	}
+- 	mem->last_scanned_child = 0;
+- 	mem->last_scanned_node = MAX_NUMNODES;
+- 	INIT_LIST_HEAD(&mem->oom_notify);
++ 	memcg->last_scanned_child = 0;
++ 	memcg->last_scanned_node = MAX_NUMNODES;
++ 	INIT_LIST_HEAD(&memcg->oom_notify);
+  
+  	if (parent)
+- 		mem->swappiness = mem_cgroup_swappiness(parent);
+- 	atomic_set(&mem->refcnt, 1);
+- 	mem->move_charge_at_immigrate = 0;
+- 	mutex_init(&mem->thresholds_lock);
+- 	return &mem->css;
++ 		memcg->swappiness = mem_cgroup_swappiness(parent);
++ 	atomic_set(&memcg->refcnt, 1);
++ 	memcg->move_charge_at_immigrate = 0;
++ 	mutex_init(&memcg->thresholds_lock);
+ -	spin_lock_init(&memcg->scanstat.lock);
++ 	return &memcg->css;
+  free_out:
+- 	__mem_cgroup_free(mem);
++ 	__mem_cgroup_free(memcg);
+  	root_mem_cgroup = NULL;
+  	return ERR_PTR(error);
+  }
