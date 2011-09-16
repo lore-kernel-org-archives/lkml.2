@@ -1,54 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756071Ab1IQDTG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 23:19:06 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:51029 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754296Ab1IQDTF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 23:19:05 -0400
+	id S932435Ab1IQDWb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 23:22:31 -0400
+Received: from ozlabs.org ([203.10.76.45]:54789 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754296Ab1IQDWa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Sep 2011 23:22:30 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Christoph Hellwig <hch@infradead.org>, axboe@kernel.dk
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] virtio_blk: use blk_rq_map_kern
+In-Reply-To: <20110915155051.GA29694@infradead.org>
+References: <20110915155051.GA29694@infradead.org>
+User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
+Date: Fri, 16 Sep 2011 15:56:38 +0930
+Message-ID: <87mxe59f4x.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-In-Reply-To: <20110916200040.GA18566@flint.arm.linux.org.uk>
-References: <1316190666-18905-1-git-send-email-tjlee@ambarella.com>
-	<20110916200040.GA18566@flint.arm.linux.org.uk>
-Date: Sat, 17 Sep 2011 11:19:02 +0800
-Message-ID: <CAEvN+1ihRxe4g2wVErEWtg-VSw9dEL5R7YkufdGst5dEyzN8eQ@mail.gmail.com>
-Subject: Re: [PATCH] ARM: tlb: Compile out MULTI_TLB specific code when
- MULTI_TLB is undefined
-From: Tzu-Jung Lee <roylee17@gmail.com>
-To: Russell King <rmk@arm.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, Tzu-Jung Lee <tjlee@ambarella.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 17, 2011 at 4:00 AM, Russell King <rmk@arm.linux.org.uk> wrote:
-> On Sat, Sep 17, 2011 at 12:31:06AM +0800, Tzu-Jung Lee wrote:
->> To eliminate the 'undefined cpu_tlb' errors when the kernel is built with -O0
->
-> The kernel requires to be built with optimization in many places, and so
-> this is an option we don't support.
->
-> --
-> Russell King
->  Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
->  maintainer of:
->
+On Thu, 15 Sep 2011 11:50:52 -0400, Christoph Hellwig <hch@infradead.org> wrote:
+> Use blk_rq_map_kern instead of opencoding it for the serial sysfs attribute.
+> 
+> [Rusty, any chance to get this in through the block tree? I have some
+>  other bits in that area pending for it]
+> 
+> Signed-off-by: Christoph Hellwig <hch@lst.de>
 
-Hi Russell,
+Sure, and I have nothing pending that conflicts.
 
-Indeed, this is only one of the places where we used to particularly
-build with higher optimization level. More than often, we only disable
-the optimization for interested object files with CFLAGS_foo.o += -g
--O0. While porting kernel to different platforms, however, failures at
-the early booting stage usually makes low level
-initialization(mm/tlb/cache/cpu...) become the objects that we want to
-disable the optimization for the ease of diagnostic with source level
-debugger. In this cases, patches to the source code become required to
-get the -O0 work for them. Would you consider to have these patches
-merged if they doesn't have side effect.
+Acked-by: Rusty Russell <rusty@rustcorp.com.au>
 
-Thanks,
-Roy
+Thanks!
+Rusty.
