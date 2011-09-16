@@ -1,82 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932141Ab1IPRwa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 13:52:30 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:53304 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752386Ab1IPRw2 (ORCPT
+	id S1755730Ab1IPRxA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 13:53:00 -0400
+Received: from mail-vw0-f42.google.com ([209.85.212.42]:47863 "EHLO
+	mail-vw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753270Ab1IPRw6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 13:52:28 -0400
-From: Ohad Ben-Cohen <ohad@wizery.com>
-To: <iommu@lists.linux-foundation.org>
-Cc: <linux-omap@vger.kernel.org>, Hiroshi DOYU <Hiroshi.DOYU@nokia.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Joerg Roedel <Joerg.Roedel@amd.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        David Brown <davidb@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-kernel@vger.kernel.org>, Ohad Ben-Cohen <ohad@wizery.com>
-Subject: [PATCH v3 4/6] iommu/amd: announce supported page sizes
-Date: Fri, 16 Sep 2011 20:51:44 +0300
-Message-Id: <1316195506-9777-5-git-send-email-ohad@wizery.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1316195506-9777-1-git-send-email-ohad@wizery.com>
-References: <1316195506-9777-1-git-send-email-ohad@wizery.com>
+	Fri, 16 Sep 2011 13:52:58 -0400
+Message-ID: <4E738CF6.4020808@vflare.org>
+Date: Fri, 16 Sep 2011 13:52:54 -0400
+From: Nitin Gupta <ngupta@vflare.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
+MIME-Version: 1.0
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+CC: Dan Magenheimer <dan.magenheimer@oracle.com>, Greg KH <greg@kroah.com>,
+        gregkh@suse.de, devel@driverdev.osuosl.org, cascardo@holoscopio.com,
+        linux-kernel@vger.kernel.org, dave@linux.vnet.ibm.com,
+        linux-mm@kvack.org, brking@linux.vnet.ibm.com, rcj@linux.vnet.ibm.com
+Subject: Re: [PATCH v2 0/3] staging: zcache: xcfmalloc support
+References: <1315404547-20075-1-git-send-email-sjenning@linux.vnet.ibm.com> <20110909203447.GB19127@kroah.com> <4E6ACE5B.9040401@vflare.org> <4E6E18C6.8080900@linux.vnet.ibm.com> <4E6EB802.4070109@vflare.org> <4E6F7DA7.9000706@linux.vnet.ibm.com> <4E6FC8A1.8070902@vflare.org 4E72284B.2040907@linux.vnet.ibm.com> <075c4e4c-a22d-47d1-ae98-31839df6e722@default> <4E725109.3010609@linux.vnet.ibm.com>
+In-Reply-To: <4E725109.3010609@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let the IOMMU core know we support arbitrary page sizes (as long as
-they're an order of 4KiB).
+On 09/15/2011 03:24 PM, Seth Jennings wrote:
 
-This way the IOMMU core will retain the existing behavior we're used to;
-it will let us map regions that:
-- their size is an order of 4KiB
-- they are naturally aligned
+> On 09/15/2011 12:29 PM, Dan Magenheimer wrote:
+>>> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+>>> Subject: Re: [PATCH v2 0/3] staging: zcache: xcfmalloc support
+>>>
 
-Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: Joerg Roedel <Joerg.Roedel@amd.com>
----
- drivers/iommu/amd_iommu.c |   21 ++++++++++++++++++++-
- 1 files changed, 20 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-index a14f8dc..80191d2 100644
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -2488,12 +2488,31 @@ static unsigned device_dma_ops_init(void)
- }
- 
- /*
-+ * This bitmap is used to advertise the page sizes our hardware support
-+ * to the IOMMU core, which will then use this information to split
-+ * physically contiguous memory regions it is mapping into page sizes
-+ * that we support.
-+ *
-+ * Traditionally the IOMMU core just handed us the mappings directly,
-+ * after making sure the size is an order of a 4KiB page and that the
-+ * mapping has natural alignment.
-+ *
-+ * To retain this behavior, we currently advertise that we support
-+ * all page sizes that are an order of 4KiB.
-+ *
-+ * If at some point we'd like to utilize the IOMMU core's new behavior,
-+ * we could change this to advertise the real page sizes we support.
-+ */
-+static unsigned long amd_iommu_pgsizes = ~0xFFFUL;
-+
-+/*
-  * The function which clues the AMD IOMMU driver into dma_ops.
-  */
- 
- void __init amd_iommu_init_api(void)
- {
--	register_iommu(&amd_iommu_ops);
-+	register_iommu_pgsize(&amd_iommu_ops, &amd_iommu_pgsizes,
-+						BITS_PER_LONG);
- }
- 
- int __init amd_iommu_init_dma_ops(void)
--- 
-1.7.4.1
+>>
+>> Seth, I am still not clear why it is not possible to support
+>> either allocation algorithm, selectable at runtime.  Or even
+>> dynamically... use xvmalloc to store well-compressible pages
+>> and xcfmalloc for poorly-compressible pages.  I understand
+>> it might require some additional coding, perhaps even an
+>> ugly hack or two, but it seems possible.
+> 
+> But why do an ugly hack if we can just use a single allocator
+> that has the best overall performance for the allocation range
+> the zcache requires.  Why make it more complicated that it
+> needs to be?
+> 
+>>
+
+
+I agree with Seth here: a mix of different allocators for the (small)
+range of sizes which zcache requires, looks like a bad idea to me.
+Maintaining two allocators is a pain and this will also complicate
+future plans like compaction etc.
+
+Thanks,
+Nitin
 
