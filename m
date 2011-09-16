@@ -1,69 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752410Ab1IPFi7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 01:38:59 -0400
-Received: from mga11.intel.com ([192.55.52.93]:26772 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752177Ab1IPFi5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 01:38:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,391,1312182000"; 
-   d="scan'208";a="54342271"
-From: Wang Xingchao <xingchao.wang@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, peterz@infradead.org, yong.zhang0@gmail.com,
-        Wang Xingchao <xingchao.wang@intel.com>
-Subject: [PATCH] cfs: remove unused 'if' condition checking
-Date: Fri, 16 Sep 2011 13:35:52 -0400
-Message-Id: <1316194552-12019-1-git-send-email-xingchao.wang@intel.com>
-X-Mailer: git-send-email 1.7.1
+	id S1752467Ab1IPFrp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 01:47:45 -0400
+Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:42940 "EHLO
+	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752308Ab1IPFro convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Sep 2011 01:47:44 -0400
+MIME-Version: 1.0
+In-Reply-To: <4E729AFB.6010008@am.sony.com>
+References: <1316092970-2440-1-git-send-email-keshava_mgowda@ti.com>
+	<1316092970-2440-2-git-send-email-keshava_mgowda@ti.com>
+	<1316092970-2440-3-git-send-email-keshava_mgowda@ti.com>
+	<1316092970-2440-4-git-send-email-keshava_mgowda@ti.com>
+	<1316092970-2440-5-git-send-email-keshava_mgowda@ti.com>
+	<1316092970-2440-6-git-send-email-keshava_mgowda@ti.com>
+	<4E729AFB.6010008@am.sony.com>
+Date: Fri, 16 Sep 2011 11:17:42 +0530
+Message-ID: <CAP05o4JK9zdZ8P5o0Di+obDwYjur0p=TC-n9weznqx_odMzycw@mail.gmail.com>
+Subject: Re: [PATCH 5/5 v9] mfd: omap: usb: Runtime PM support
+From: "Munegowda, Keshava" <keshava_mgowda@ti.com>
+To: frank.rowand@am.sony.com
+Cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "b-cousson@ti.com" <b-cousson@ti.com>, "balbi@ti.com" <balbi@ti.com>,
+        "gadiyar@ti.com" <gadiyar@ti.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "parthab@india.ti.com" <parthab@india.ti.com>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "khilman@ti.com" <khilman@ti.com>, "paul@pwsan.com" <paul@pwsan.com>,
+        "johnstul@us.ibm.com" <johnstul@us.ibm.com>,
+        "vishwanath.bs@ti.com" <vishwanath.bs@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-nr_running must be more than 1, so remove the checking
+On Fri, Sep 16, 2011 at 6:10 AM, Frank Rowand <frank.rowand@am.sony.com> wrote:
+> On 09/15/11 06:22, Keshava Munegowda wrote:
+>> From: Keshava Munegowda <Keshava_mgowda@ti.com>
+>>
+>> The usbhs core driver does not enable/disable the interface and
+>> functional clocks; These clocks are handled by hwmod and runtime pm,
+>> hence instead of the clock enable/disable, the runtime pm APIS are
+>> used. however,the port clocks are handled by the usbhs core.
+>>
+>> Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
+>> Reviewed-by: Kevin Hilman <khilman@ti.com>
+>> ---
+>>  arch/arm/plat-omap/include/plat/usb.h |    3 -
+>>  drivers/mfd/omap-usb-host.c           |  731 +++++++++++++--------------------
+>>  drivers/usb/host/ehci-omap.c          |   17 +-
+>>  drivers/usb/host/ohci-omap3.c         |   18 +-
+>>  4 files changed, 295 insertions(+), 474 deletions(-)
+>>
+>> diff --git a/arch/arm/plat-omap/include/plat/usb.h b/arch/arm/plat-omap/include/plat/usb.h
+>> index 17d3c93..2b66dc2 100644
+>
+> Patch 5/5 is white space mangled.  The tabs have been changed into spaces.
+>
+> -Frank
 
-Signed-off-by: Wang Xingchao <xingchao.wang@intel.com>
----
- kernel/sched_fair.c |   16 ++++++++--------
- 1 files changed, 8 insertions(+), 8 deletions(-)
+where exactly? I had checked before sending it , but i dint find any?
+please let me know where exactly.
 
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 1ca2cd4..fef0bfd 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -1106,6 +1106,8 @@ static void
- check_preempt_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr)
- {
- 	unsigned long ideal_runtime, delta_exec;
-+	struct sched_entity *se;
-+	s64 delta;
- 
- 	ideal_runtime = sched_slice(cfs_rq, curr);
- 	delta_exec = curr->sum_exec_runtime - curr->prev_sum_exec_runtime;
-@@ -1127,16 +1129,14 @@ check_preempt_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr)
- 	if (delta_exec < sysctl_sched_min_granularity)
- 		return;
- 
--	if (cfs_rq->nr_running > 1) {
--		struct sched_entity *se = __pick_first_entity(cfs_rq);
--		s64 delta = curr->vruntime - se->vruntime;
-+	se = __pick_first_entity(cfs_rq);
-+	delta = curr->vruntime - se->vruntime;
- 
--		if (delta < 0)
--			return;
-+	if (delta < 0)
-+		return;
- 
--		if (delta > ideal_runtime)
--			resched_task(rq_of(cfs_rq)->curr);
--	}
-+	if (delta > ideal_runtime)
-+		resched_task(rq_of(cfs_rq)->curr);
- }
- 
- static void
--- 
-1.7.1
-
+regards
+keshava
