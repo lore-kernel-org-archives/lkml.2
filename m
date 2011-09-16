@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751259Ab1IPJQu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 05:16:50 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54311 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750815Ab1IPJQt convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 05:16:49 -0400
-Subject: [PATCH] sched,trace: Show PREEMPT_ACTIVE state in trace_sched_switch
-From: Peter Zijlstra <peterz@infradead.org>
-To: mingo <mingo@redhat.com>
-Cc: rostedt <rostedt@goodmis.org>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Fri, 16 Sep 2011 11:16:43 +0200
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1316164603.10174.11.camel@twins>
-Mime-Version: 1.0
+	id S1751430Ab1IPJTK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 05:19:10 -0400
+Received: from mga14.intel.com ([143.182.124.37]:9757 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750951Ab1IPJTJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Sep 2011 05:19:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,392,1312182000"; 
+   d="scan'208";a="49482450"
+From: Wang Xingchao <xingchao.wang@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, pjt@google.com, yong.zhang0@gmail.com,
+        Wang Xingchao <xingchao.wang@intel.com>
+Subject: [PATCH] sched: remove NULL pointer check
+Date: Fri, 16 Sep 2011 17:16:03 -0400
+Message-Id: <1316207763-3281-1-git-send-email-xingchao.wang@intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+cfs_rq->rb_leftmost is always true when calling __pick_first/last_entity(),
+so it's safe to remove the NULL pointer check.
 
-We had need to see the difference between scheduling a runnable task and
-a runnable task being involuntarily preempted.
-
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Wang Xingchao <xingchao.wang@intel.com>
 ---
- include/trace/events/sched.h |    9 +++++----
- 1 files changed, 5 insertions(+), 4 deletions(-)
+ kernel/sched_fair.c |    6 ------
+ 1 files changed, 0 insertions(+), 6 deletions(-)
 
-diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
-index f633478..959ff18 100644
---- a/include/trace/events/sched.h
-+++ b/include/trace/events/sched.h
-@@ -100,7 +100,7 @@ static inline long __trace_sched_switch_state(struct task_struct *p)
- 	 * For all intents and purposes a preempted task is a running task.
- 	 */
- 	if (task_thread_info(p)->preempt_count & PREEMPT_ACTIVE)
--		state = TASK_RUNNING;
-+		state = TASK_RUNNING | TASK_STATE_MAX;
- #endif
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index fef0bfd..55c67b5 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -417,9 +417,6 @@ static struct sched_entity *__pick_first_entity(struct cfs_rq *cfs_rq)
+ {
+ 	struct rb_node *left = cfs_rq->rb_leftmost;
  
- 	return state;
-@@ -137,13 +137,14 @@ TRACE_EVENT(sched_switch,
- 		__entry->next_prio	= next->prio;
- 	),
+-	if (!left)
+-		return NULL;
+-
+ 	return rb_entry(left, struct sched_entity, run_node);
+ }
  
--	TP_printk("prev_comm=%s prev_pid=%d prev_prio=%d prev_state=%s ==> next_comm=%s next_pid=%d next_prio=%d",
-+	TP_printk("prev_comm=%s prev_pid=%d prev_prio=%d prev_state=%s%s ==> next_comm=%s next_pid=%d next_prio=%d",
- 		__entry->prev_comm, __entry->prev_pid, __entry->prev_prio,
--		__entry->prev_state ?
--		  __print_flags(__entry->prev_state, "|",
-+		__entry->prev_state & (TASK_STATE_MAX-1) ?
-+		  __print_flags(__entry->prev_state & (TASK_STATE_MAX-1), "|",
- 				{ 1, "S"} , { 2, "D" }, { 4, "T" }, { 8, "t" },
- 				{ 16, "Z" }, { 32, "X" }, { 64, "x" },
- 				{ 128, "W" }) : "R",
-+		__entry->prev_state & TASK_STATE_MAX ? "+" : "",
- 		__entry->next_comm, __entry->next_pid, __entry->next_prio)
- );
+@@ -438,9 +435,6 @@ static struct sched_entity *__pick_last_entity(struct cfs_rq *cfs_rq)
+ {
+ 	struct rb_node *last = rb_last(&cfs_rq->tasks_timeline);
  
+-	if (!last)
+-		return NULL;
+-
+ 	return rb_entry(last, struct sched_entity, run_node);
+ }
+ 
+-- 
+1.7.1
 
