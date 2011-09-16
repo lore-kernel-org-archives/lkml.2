@@ -1,54 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755175Ab1IPOQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 10:16:56 -0400
-Received: from mail-wy0-f180.google.com ([74.125.82.180]:48731 "EHLO
-	mail-wy0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077Ab1IPOQy (ORCPT
+	id S1753525Ab1IPOXY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 10:23:24 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:57916 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751254Ab1IPOXW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 10:16:54 -0400
-Date: Fri, 16 Sep 2011 16:17:19 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Keith Packard <keithp@keithp.com>
-Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
-        linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, Archit Taneja <archit@ti.com>,
-        "Clark, Rob" <rob@ti.com>
-Subject: Re: Proposal for a low-level Linux display framework
-Message-ID: <20110916141719.GD2873@phenom.ffwll.local>
-Mail-Followup-To: Keith Packard <keithp@keithp.com>,
-	Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
-	linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
-	dri-devel@lists.freedesktop.org, Archit Taneja <archit@ti.com>,
-	"Clark, Rob" <rob@ti.com>
-References: <1316088425.11294.78.camel@lappyti>
- <yunboul7sx7.fsf@aiko.keithp.com>
- <1316100594.23214.65.camel@deskari>
- <yun8vpp7qk7.fsf@aiko.keithp.com>
- <1316107275.23214.99.camel@deskari>
- <yunfwjxwbjq.fsf@aiko.keithp.com>
-MIME-Version: 1.0
+	Fri, 16 Sep 2011 10:23:22 -0400
+Date: Fri, 16 Sep 2011 16:23:19 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Andres Freund <andres@anarazel.de>
+Cc: Matthew Wilcox <matthew@wil.cx>, Andi Kleen <andi@firstfloor.org>,
+        viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Improve lseek scalability v3
+Message-ID: <20110916142319.GE7761@one.firstfloor.org>
+References: <1316128013-21980-1-git-send-email-andi@firstfloor.org> <20110916130054.GA8997@parisc-linux.org> <201109161616.50004.andres@anarazel.de>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <yunfwjxwbjq.fsf@aiko.keithp.com>
-X-Operating-System: Linux phenom 3.1.0-rc4+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201109161616.50004.andres@anarazel.de>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 15, 2011 at 07:55:37PM -0500, Keith Packard wrote:
-> I suspect helper functions would be a good model to follow, rather than
-> trying to create a whole new device infrastructure; some of the
-> communication paths aren't easily separable from the underlying output
-> devices.
+> I sent an email containing benchmarks from Robert Haas regarding the Subject. 
+> Looking at lkml.org I can't see it right now, Will recheck when I am at home.
 
-This. Helper functions make the driver writers life so much easier - if
-your hw doesn't quite fit the model, you can usually extend functionality
-with much less fuzz than if there's a full framework. This is also pretty
-much the reason, why I don't like ttm.
--Daniel
+I never saw that. Thanks for the data.
+
+> You likely won't be able to see the bottlenecks with any of the released 
+> postgres versions as there are bottlenecks fixed in HEAD that throttle way 
+> before that.
+
+FWIW we did some postgres testing on a 4 socket, but only with the heavily patched 
+MOSBENCH version, which fixes various locking problems. Didn't run it with that
+patchkit though.
+
+-Andi
 -- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+ak@linux.intel.com -- Speaking for myself only.
