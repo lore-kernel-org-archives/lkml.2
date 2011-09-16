@@ -1,80 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932314Ab1IPVQO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 17:16:14 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:46608 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752968Ab1IPVQM (ORCPT
+	id S932345Ab1IPVUh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 17:20:37 -0400
+Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:4922 "EHLO
+	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932294Ab1IPVUg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 17:16:12 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, mingo <mingo@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ftrace: use a global counter for the global clock
-In-Reply-To: Your message of "Fri, 16 Sep 2011 08:18:26 EDT."
-             <1316175506.26295.36.camel@gandalf.stny.rr.com>
-From: Valdis.Kletnieks@vt.edu
-References: <1316163765.10174.8.camel@twins>
-            <1316175506.26295.36.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1316207693_55056P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+	Fri, 16 Sep 2011 17:20:36 -0400
+X-Greylist: delayed 723 seconds by postgrey-1.27 at vger.kernel.org; Fri, 16 Sep 2011 17:20:36 EDT
+Message-ID: <4E73BB61.7020407@hetnet.nl>
+Date: Fri, 16 Sep 2011 23:10:57 +0200
+From: Henk de Groot <henk.de.groot@hetnet.nl>
+Reply-To: henk.de.groot@hetnet.nl
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:6.0) Gecko/20110812 Thunderbird/6.0
+MIME-Version: 1.0
+To: David Kilroy <kilroyd@googlemail.com>
+CC: linux-kernel@vger.kernel.org, greg@kroah.com, pe1dnn@amsat.org
+Subject: Re: [PATCH 00/13] wlags49_h2: Various cleanups
+References: <1316128857-9781-1-git-send-email-kilroyd@googlemail.com>
+In-Reply-To: <1316128857-9781-1-git-send-email-kilroyd@googlemail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Date: Fri, 16 Sep 2011 17:14:53 -0400
-Message-ID: <66899.1316207693@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020201.4E73BC4F.00CE,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+X-OriginalArrivalTime: 16 Sep 2011 21:08:27.0587 (UTC) FILETIME=[C7706930:01CC74B4]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1316207693_55056P
-Content-Type: text/plain; charset=us-ascii
+David,
 
-On Fri, 16 Sep 2011 08:18:26 EDT, Steven Rostedt said:
+Nice work! It looks like you managed to understand how some of the HCF 
+code actually works... I found it rather unreadable but I also lack the 
+knowledge of the inner working of Agere's Hermes II chip.
 
-> +	return atomic64_add_return(1, &trace_counter);
+Op 16-9-2011 1:20, David Kilroy schreef:
+> Verified be recompiling and confirming there are no changes to the
+> binary (except line offsets from calls to mdd_assert).
+I applied your patches against the current 3.0 linux kernel driver code 
+and compiled it on my Ubuntu 11.04 system (2.6.38-11). I can confirm the 
+modified driver is still working okay using a Thomson Speedtouch 110 Wifi 
+card with WEP. WPA was - and I guess still is - non functional. The driver 
+is very stable in WEP mode; the laptop is frequently used for bittorrent 
+and Tweetdeck and never crashes.
 
-Given that the usefulness of this is probably directly proportional to the
-number of cores on the box, is this subject to cache line ping-ponging on
-systems with many cores?
+The only known problem (besides WPA) is removal and reinserting the PCMCIA 
+card. It is not recognized anymore on that slot. The card works on a 
+second PCMCIA slot. This is old behaviour and not due to your changes 
+(however this worked with older kernels).
 
-> When debugging tight race conditions, it can be helpful to have a
-> synchronized tracing method. Although in most cases the global clock
-> provides this functionality, if timings is not the issue, it is more
-> comforting to know that the order of events really happened in a precise
-> order.
+Kind regards,
 
-One wonders if the overhead can end up being enough to change the
-ordering, and possibly cause a heisenbug (most likely if the race condition
-involves one CPU doing something we're tracing, and another CPU doing
-something we are *not* tracing)...
-
-If that's considered not an issue, feel free to stick this on it:
-Reviewed-By: Valdis Kletnieks <valdis.kletnieks@vt.edu>
-
-
-
---==_Exmh_1316207693_55056P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFOc7xNcC3lWbTT17ARAg6UAJ9+wB4nwmM691iXvcPehfRoDw/4tQCdGWJb
-yN2tdD5Y/mPuO8w/9vsqiNc=
-=bxpH
------END PGP SIGNATURE-----
-
---==_Exmh_1316207693_55056P--
+Henk.
 
