@@ -1,625 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755313Ab1IPQr0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 12:47:26 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:33112 "HELO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753089Ab1IPQrY (ORCPT
+	id S1755375Ab1IPQsO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 12:48:14 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:62852 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753405Ab1IPQsN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 12:47:24 -0400
-X-Greylist: delayed 172791 seconds by postgrey-1.27 at vger.kernel.org; Fri, 16 Sep 2011 12:47:23 EDT
-From: Pawel Moll <pawel.moll@arm.com>
-To: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        linux-arm-kernel@lists.infradead.org
-Cc: Pawel Moll <pawel.moll@arm.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        "Michael S.Tsirkin" <mst@redhat.com>
-Subject: [RFC v3] arm: Add platform bus driver for memory mapped virtio device
-Date: Fri, 16 Sep 2011 17:47:03 +0100
-Message-Id: <1316191623-3835-1-git-send-email-pawel.moll@arm.com>
-X-Mailer: git-send-email 1.6.3.3
-X-OriginalArrivalTime: 16 Sep 2011 16:47:17.0981 (UTC) FILETIME=[4BA048D0:01CC7490]
-X-MC-Unique: 111091617472004201
-Content-Type: text/plain; charset=WINDOWS-1252
+	Fri, 16 Sep 2011 12:48:13 -0400
+From: Tzu-Jung Lee <roylee17@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: rmk+kernel@arm.linux.org.uk, Tzu-Jung Lee <tjlee@ambarella.com>
+Subject: [PATCH] ARM: mm: Compile out HIGHMEM specific code when itss undefined
+Date: Sat, 17 Sep 2011 00:46:34 +0800
+Message-Id: <1316191594-30486-1-git-send-email-tjlee@ambarella.com>
+X-Mailer: git-send-email 1.7.6.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id p8GGlj77003598
 
-This patch, based on virtio PCI driver, adds support for memory
-mapped (platform) virtio  device. This should allow environments
-like qemu to use virtio-based block & network devices.
+Explicitly compile out HIGHMEM specific code to eliminate compile-time errors
+when built with -O0.
 
-One can define and register a platform device which resources
-will describe memory mapped control registers and "mailbox"
-interrupt. Such device can be also instantiated using the Device
-Tree node with compatible property equal "virtio,mmio".
+Change-Id: I98237f11aef07864017c67fb1a69b86f28a46e80
 
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Anthony Liguori <aliguori@us.ibm.com>
-Cc: Michael S.Tsirkin <mst@redhat.com>
-Signed-off-by: Pawel Moll <pawel.moll@arm.com>
----
-
-This version incorporates all the discussed changes. I've also changed
-the name (again ;-) to virtio-mmio, as this seems to be more meaningful
-and not as generic as -platform.
-
-The config_ops->get_features is ready for >32 bits API and the Host is
-notified about the Used Ring alignment when the queue is being
-activated. The queue size, once the virtio API is in place, may be
-set writing to QUEUE_NUM register. I've also left a lot of spare
-space in the registers map, so we should be able to accommodate future
-extensions. One thing left TODO is the magic value check - I'll add
-this on next opportunity.
-
-Now, if it looks sane, next week I'd like to start working with Peter
-Maydell (subject to his availability :-) to get the qemu bits in place
-and test is all (just to make things clear - I _did_ test the original
-design as a block device, but it was our proprietary emulation
-environment, not qemu).
-
-Do you think this patch could get into 3.2?
-
-Cheers!
-
-Pawel
-
-
- drivers/virtio/Kconfig       |   11 +
- drivers/virtio/Makefile      |    1 +
- drivers/virtio/virtio_mmio.c |  431 ++++++++++++++++++++++++++++++++++++++++++
- include/linux/virtio_mmio.h  |   71 +++++++
- 4 files changed, 514 insertions(+), 0 deletions(-)
- create mode 100644 drivers/virtio/virtio_mmio.c
- create mode 100644 include/linux/virtio_mmio.h
-
-diff --git a/drivers/virtio/Kconfig b/drivers/virtio/Kconfig
-index 57e493b..816ed08 100644
---- a/drivers/virtio/Kconfig
-+++ b/drivers/virtio/Kconfig
-@@ -35,4 +35,15 @@ config VIRTIO_BALLOON
- 
- 	 If unsure, say M.
- 
-+ config VIRTIO_MMIO
-+ 	tristate "Platform bus driver for memory mapped virtio devices (EXPERIMENTAL)"
-+ 	depends on EXPERIMENTAL
-+ 	select VIRTIO
-+ 	select VIRTIO_RING
-+ 	---help---
-+ 	 This drivers provides support for memory mapped virtio
-+	 platform device driver.
-+
-+ 	 If unsure, say N.
-+
- endmenu
-diff --git a/drivers/virtio/Makefile b/drivers/virtio/Makefile
-index 6738c44..5a4c63c 100644
---- a/drivers/virtio/Makefile
-+++ b/drivers/virtio/Makefile
-@@ -1,4 +1,5 @@
- obj-$(CONFIG_VIRTIO) += virtio.o
- obj-$(CONFIG_VIRTIO_RING) += virtio_ring.o
-+obj-$(CONFIG_VIRTIO_MMIO) += virtio_mmio.o
- obj-$(CONFIG_VIRTIO_PCI) += virtio_pci.o
- obj-$(CONFIG_VIRTIO_BALLOON) += virtio_balloon.o
-diff --git a/drivers/virtio/virtio_mmio.c b/drivers/virtio/virtio_mmio.c
-new file mode 100644
-index 0000000..354f2f2
---- /dev/null
-+++ b/drivers/virtio/virtio_mmio.c
-@@ -0,0 +1,431 @@
-+/*
-+ * Virtio memory mapped device driver
-+ *
-+ * Copyright 2011, ARM Ltd.
-+ *
-+ * This module allows virtio devices to be used over a virtual, memory mapped
-+ * platform device.
-+ *
-+ * Registers layout (all 32-bit wide):
-+ *
-+ * offset name             description
-+ * ------ ---------------- -----------------
-+ *
-+ *  0x000 MagicValue       Magic value "virt" (0x74726976 LE)
-+ *  0x004 DeviceID         Virtio device ID
-+ *  0x008 VendorID         Virtio vendor ID
-+ *
-+ *  0x010 HostFeatures     Features supported by the host
-+ *  0x014 HostFeaturesSel  Set of host features to access via HostFeatures
-+ *  0x020 GuestFeatures    Features activated by the guest
-+ *  0x024 GuestFeaturesSel Set of activated features to set via GuestFeatures
-+ *
-+ *  0x030 QueueSel         Queue selector
-+ *  0x034 QueueNum         Queue size for the currently selected queue
-+ *  0x038 QueueAlign       Used Ring alignment for the current queue
-+ *  0x03c QueuePFN         PFN for the currently selected queue
-+
-+ *  0x050 QueueNotify      Queue notifier
-+ *  0x060 InterruptACK     Interrupt acknowledge register
-+ *  0x070 Status           Device status register
-+ *
-+ *  0x100+                 Device-specific configuration space
-+ *
-+ * Based on Virtio PCI driver by Anthony Liguori, copyright IBM Corp. 2007
-+ *
-+ * This work is licensed under the terms of the GNU GPL, version 2 or later.
-+ * See the COPYING file in the top-level directory.
-+ */
-+
-+#include <linux/highmem.h>
-+#include <linux/interrupt.h>
-+#include <linux/io.h>
-+#include <linux/list.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+#include <linux/spinlock.h>
-+#include <linux/virtio.h>
-+#include <linux/virtio_config.h>
-+#include <linux/virtio_mmio.h>
-+#include <linux/virtio_ring.h>
-+
-+
-+
-+#define to_virtio_mmio_device(_plat_dev) \
-+	container_of(_plat_dev, struct virtio_mmio_device, vdev)
-+
-+struct virtio_mmio_device {
-+	struct virtio_device vdev;
-+	struct platform_device *pdev;
-+
-+	void __iomem *base;
-+
-+	/* a list of queues so we can dispatch IRQs */
-+	spinlock_t lock;
-+	struct list_head virtqueues;
-+};
-+
-+struct virtio_mmio_vq_info {
-+	/* the actual virtqueue */
-+	struct virtqueue *vq;
-+
-+	/* the number of entries in the queue */
-+	int num;
-+
-+	/* the index of the queue */
-+	int queue_index;
-+
-+	/* the virtual address of the ring queue */
-+	void *queue;
-+
-+	/* the list node for the virtqueues list */
-+	struct list_head node;
-+};
-+
-+
-+
-+/* Configuration interface */
-+
-+static u32 vm_get_features(struct virtio_device *vdev)
-+{
-+	struct virtio_mmio_device *vm_dev = to_virtio_mmio_device(vdev);
-+
-+	/* TODO: Features > 32 bits */
-+	writel(0, vm_dev->base + VIRTIO_MMIO_HOST_FEATURES_SEL);
-+
-+	return readl(vm_dev->base + VIRTIO_MMIO_HOST_FEATURES);
-+}
-+
-+static void vm_finalize_features(struct virtio_device *vdev)
-+{
-+	struct virtio_mmio_device *vm_dev = to_virtio_mmio_device(vdev);
-+	int i;
-+
-+	/* Give virtio_ring a chance to accept features. */
-+	vring_transport_features(vdev);
-+
-+	for (i = 0; i < ARRAY_SIZE(vdev->features); i++) {
-+		writel(i, vm_dev->base + VIRTIO_MMIO_GUEST_FEATURES_SET);
-+		writel(vdev->features[i],
-+				vm_dev->base + VIRTIO_MMIO_GUEST_FEATURES);
-+	}
-+}
-+
-+static void vm_get(struct virtio_device *vdev, unsigned offset,
-+		   void *buf, unsigned len)
-+{
-+	struct virtio_mmio_device *vm_dev = to_virtio_mmio_device(vdev);
-+	u8 *ptr = buf;
-+	int i;
-+
-+	for (i = 0; i < len; i++)
-+		ptr[i] = readb(vm_dev->base + VIRTIO_MMIO_CONFIG + offset + i);
-+}
-+
-+static void vm_set(struct virtio_device *vdev, unsigned offset,
-+		   const void *buf, unsigned len)
-+{
-+	struct virtio_mmio_device *vm_dev = to_virtio_mmio_device(vdev);
-+	const u8 *ptr = buf;
-+	int i;
-+
-+	for (i = 0; i < len; i++)
-+		writeb(ptr[i], vm_dev->base + VIRTIO_MMIO_CONFIG + offset + i);
-+}
-+
-+static u8 vm_get_status(struct virtio_device *vdev)
-+{
-+	struct virtio_mmio_device *vm_dev = to_virtio_mmio_device(vdev);
-+
-+	return readl(vm_dev->base + VIRTIO_MMIO_STATUS) & 0xff;
-+}
-+
-+static void vm_set_status(struct virtio_device *vdev, u8 status)
-+{
-+	struct virtio_mmio_device *vm_dev = to_virtio_mmio_device(vdev);
-+
-+	/* We should never be setting status to 0. */
-+	BUG_ON(status == 0);
-+
-+	writel(status, vm_dev->base + VIRTIO_MMIO_STATUS);
-+}
-+
-+static void vm_reset(struct virtio_device *vdev)
-+{
-+	struct virtio_mmio_device *vm_dev = to_virtio_mmio_device(vdev);
-+
-+	/* 0 status means a reset. */
-+	writel(0, vm_dev->base + VIRTIO_MMIO_STATUS);
-+}
-+
-+
-+
-+/* Transport interface */
-+
-+/* the notify function used when creating a virt queue */
-+static void vm_notify(struct virtqueue *vq)
-+{
-+	struct virtio_mmio_device *vm_dev = to_virtio_mmio_device(vq->vdev);
-+	struct virtio_mmio_vq_info *info = vq->priv;
-+
-+	/* We write the queue's selector into the notification register to
-+	 * signal the other end */
-+	writel(info->queue_index, vm_dev->base + VIRTIO_MMIO_QUEUE_NOTIFY);
-+}
-+
-+/* Notify all virtqueues on an interrupt. */
-+static irqreturn_t vm_interrupt(int irq, void *opaque)
-+{
-+	struct virtio_mmio_device *vm_dev = opaque;
-+	struct virtio_mmio_vq_info *info;
-+	irqreturn_t ret = IRQ_NONE;
-+	unsigned long flags;
-+
-+	writel(1, vm_dev->base + VIRTIO_MMIO_INTERRUPT_ACK);
-+
-+	spin_lock_irqsave(&vm_dev->lock, flags);
-+	list_for_each_entry(info, &vm_dev->virtqueues, node) {
-+		if (vring_interrupt(irq, info->vq) == IRQ_HANDLED)
-+			ret = IRQ_HANDLED;
-+	}
-+	spin_unlock_irqrestore(&vm_dev->lock, flags);
-+
-+	return ret;
-+}
-+
-+
-+
-+static void vm_del_vq(struct virtqueue *vq)
-+{
-+	struct virtio_mmio_device *vm_dev = to_virtio_mmio_device(vq->vdev);
-+	struct virtio_mmio_vq_info *info = vq->priv;
-+	unsigned long flags, size;
-+
-+	spin_lock_irqsave(&vm_dev->lock, flags);
-+	list_del(&info->node);
-+	spin_unlock_irqrestore(&vm_dev->lock, flags);
-+
-+	vring_del_virtqueue(vq);
-+
-+	/* Select and deactivate the queue */
-+	writel(info->queue_index, vm_dev->base + VIRTIO_MMIO_QUEUE_SEL);
-+	writel(0, vm_dev->base + VIRTIO_MMIO_QUEUE_PFN);
-+
-+	size = PAGE_ALIGN(vring_size(info->num, VIRTIO_MMIO_VRING_ALIGN));
-+	free_pages_exact(info->queue, size);
-+	kfree(info);
-+}
-+
-+static void vm_del_vqs(struct virtio_device *vdev)
-+{
-+	struct virtio_mmio_device *vm_dev = to_virtio_mmio_device(vdev);
-+	struct virtqueue *vq, *n;
-+
-+	list_for_each_entry_safe(vq, n, &vdev->vqs, list)
-+		vm_del_vq(vq);
-+
-+	free_irq(platform_get_irq(vm_dev->pdev, 0), vm_dev);
-+}
-+
-+
-+
-+static struct virtqueue *vm_setup_vq(struct virtio_device *vdev, unsigned index,
-+				  void (*callback)(struct virtqueue *vq),
-+				  const char *name)
-+{
-+	struct virtio_mmio_device *vm_dev = to_virtio_mmio_device(vdev);
-+	struct virtio_mmio_vq_info *info;
-+	struct virtqueue *vq;
-+	unsigned long flags, size;
-+	u16 num;
-+	int err;
-+
-+	/* Select the queue we're interested in */
-+	writel(index, vm_dev->base + VIRTIO_MMIO_QUEUE_SEL);
-+
-+	/* Check if queue is either not available or already active. */
-+	num = readl(vm_dev->base + VIRTIO_MMIO_QUEUE_NUM);
-+	if (!num || readl(vm_dev->base + VIRTIO_MMIO_QUEUE_PFN)) {
-+		err = -ENOENT;
-+		goto error_available;
-+	}
-+
-+	/* Allocate and fill out our structure the represents an active
-+	 * queue */
-+	info = kmalloc(sizeof(struct virtio_mmio_vq_info), GFP_KERNEL);
-+	if (!info) {
-+		err = -ENOMEM;
-+		goto error_kmalloc;
-+	}
-+
-+	info->queue_index = index;
-+	info->num = num;
-+
-+	size = PAGE_ALIGN(vring_size(num, VIRTIO_MMIO_VRING_ALIGN));
-+	info->queue = alloc_pages_exact(size, GFP_KERNEL | __GFP_ZERO);
-+	if (info->queue == NULL) {
-+		err = -ENOMEM;
-+		goto error_alloc_pages;
-+	}
-+
-+	/* Activate the queue */
-+	writel(VIRTIO_MMIO_VRING_ALIGN,
-+			vm_dev->base + VIRTIO_MMIO_QUEUE_ALIGN);
-+	writel(virt_to_phys(info->queue) >> VIRTIO_MMIO_QUEUE_ADDR_SHIFT,
-+			vm_dev->base + VIRTIO_MMIO_QUEUE_PFN);
-+
-+	/* Create the vring */
-+	vq = vring_new_virtqueue(info->num, VIRTIO_MMIO_VRING_ALIGN,
-+				 vdev, info->queue, vm_notify, callback, name);
-+	if (!vq) {
-+		err = -ENOMEM;
-+		goto error_new_virtqueue;
-+	}
-+
-+	vq->priv = info;
-+	info->vq = vq;
-+
-+	spin_lock_irqsave(&vm_dev->lock, flags);
-+	list_add(&info->node, &vm_dev->virtqueues);
-+	spin_unlock_irqrestore(&vm_dev->lock, flags);
-+
-+	return vq;
-+
-+error_new_virtqueue:
-+	writel(0, vm_dev->base + VIRTIO_MMIO_QUEUE_PFN);
-+	free_pages_exact(info->queue, size);
-+error_alloc_pages:
-+	kfree(info);
-+error_kmalloc:
-+error_available:
-+	return ERR_PTR(err);
-+}
-+
-+static int vm_find_vqs(struct virtio_device *vdev, unsigned nvqs,
-+		       struct virtqueue *vqs[],
-+		       vq_callback_t *callbacks[],
-+		       const char *names[])
-+{
-+	struct virtio_mmio_device *vm_dev = to_virtio_mmio_device(vdev);
-+	unsigned int irq = platform_get_irq(vm_dev->pdev, 0);
-+	int i, err;
-+
-+	err = request_irq(irq, vm_interrupt, IRQF_SHARED,
-+			dev_name(&vdev->dev), vm_dev);
-+	if (err)
-+		return err;
-+
-+	for (i = 0; i < nvqs; ++i) {
-+		vqs[i] = vm_setup_vq(vdev, i, callbacks[i], names[i]);
-+		if (IS_ERR(vqs[i])) {
-+			vm_del_vqs(vdev);
-+			free_irq(irq, vm_dev);
-+			return PTR_ERR(vqs[i]);
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+
-+
-+static struct virtio_config_ops virtio_mmio_config_ops = {
-+	.get		= vm_get,
-+	.set		= vm_set,
-+	.get_status	= vm_get_status,
-+	.set_status	= vm_set_status,
-+	.reset		= vm_reset,
-+	.find_vqs	= vm_find_vqs,
-+	.del_vqs	= vm_del_vqs,
-+	.get_features	= vm_get_features,
-+	.finalize_features = vm_finalize_features,
-+};
-+
-+
-+
-+/* Platform device */
-+
-+static int __devinit virtio_mmio_probe(struct platform_device *pdev)
-+{
-+	struct virtio_mmio_device *vm_dev;
-+	struct resource *mem;
-+
-+	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!mem)
-+		return -EINVAL;
-+
-+	if (!devm_request_mem_region(&pdev->dev, mem->start,
-+			resource_size(mem), pdev->name))
-+		return -EBUSY;
-+
-+	vm_dev = devm_kzalloc(&pdev->dev, sizeof(struct virtio_mmio_device),
-+			GFP_KERNEL);
-+	if (!vm_dev)
-+		return  -ENOMEM;
-+
-+	vm_dev->vdev.dev.parent = &pdev->dev;
-+	vm_dev->vdev.config = &virtio_mmio_config_ops;
-+	vm_dev->pdev = pdev;
-+	INIT_LIST_HEAD(&vm_dev->virtqueues);
-+	spin_lock_init(&vm_dev->lock);
-+
-+	vm_dev->base = devm_ioremap(&pdev->dev, mem->start, resource_size(mem));
-+	if (vm_dev->base == NULL)
-+		return -EFAULT;
-+
-+	/* TODO: check magic value (VIRTIO_MMIO_MAGIC_VALUE) */
-+
-+	vm_dev->vdev.id.device = readl(vm_dev->base + VIRTIO_MMIO_DEVICE_ID);
-+	vm_dev->vdev.id.vendor = readl(vm_dev->base + VIRTIO_MMIO_VENDOR_ID);
-+
-+	platform_set_drvdata(pdev, vm_dev);
-+
-+	return register_virtio_device(&vm_dev->vdev);
-+}
-+
-+static int __devexit virtio_mmio_remove(struct platform_device *pdev)
-+{
-+	struct virtio_mmio_device *vm_dev = platform_get_drvdata(pdev);
-+
-+	unregister_virtio_device(&vm_dev->vdev);
-+
-+	return 0;
-+}
-+
-+
-+
-+/* Platform driver */
-+
-+static struct of_device_id virtio_mmio_match[] = {
-+	{ .compatible = "virtio,mmio", },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, virtio_mmio_match);
-+
-+static struct platform_driver virtio_mmio_driver = {
-+	.probe		= virtio_mmio_probe,
-+	.remove		= __devexit_p(virtio_mmio_remove),
-+	.driver		= {
-+		.name	= "virtio-mmio",
-+		.owner	= THIS_MODULE,
-+		.of_match_table	= virtio_mmio_match,
-+	},
-+};
-+
-+static int __init virtio_mmio_init(void)
-+{
-+	return platform_driver_register(&virtio_mmio_driver);
-+}
-+
-+static void __exit virtio_mmio_exit(void)
-+{
-+	platform_driver_unregister(&virtio_mmio_driver);
-+}
-+
-+module_init(virtio_mmio_init);
-+module_exit(virtio_mmio_exit);
-+
-+MODULE_AUTHOR("Pawel Moll <pawel.moll@arm.com>");
-+MODULE_DESCRIPTION("Platform bus driver for memory mapped virtio devices");
-+MODULE_LICENSE("GPL");
-diff --git a/include/linux/virtio_mmio.h b/include/linux/virtio_mmio.h
-new file mode 100644
-index 0000000..2a57908
---- /dev/null
-+++ b/include/linux/virtio_mmio.h
-@@ -0,0 +1,71 @@
-+/*
-+ * Virtio platform device driver
-+ *
-+ * Copyright 2011, ARM Ltd.
-+ *
-+ * Based on Virtio PCI driver by Anthony Liguori, copyright IBM Corp. 2007
-+ *
-+ * This header is BSD licensed so anyone can use the definitions to implement
-+ * compatible drivers/servers.
-+ */
-+
-+#ifndef _LINUX_VIRTIO_MMIO_H
-+#define _LINUX_VIRTIO_MMIO_H
-+
-+/* Magic value ("virt" string == 0x74726976 Little Endian word */
-+#define VIRTIO_MMIO_MAGIC_VALUE		0x000
-+
-+/* Virtio device ID */
-+#define VIRTIO_MMIO_DEVICE_ID		0x004
-+
-+/* Virtio vendor ID */
-+#define VIRTIO_MMIO_VENDOR_ID		0x008
-+
-+/* Bitmask of the features supported by the host (32 bits per set) */
-+#define VIRTIO_MMIO_HOST_FEATURES	0x010
-+
-+/* Host features set selector */
-+#define VIRTIO_MMIO_HOST_FEATURES_SEL	0x014
-+
-+/* Bitmask of features activated by the guest (32 bits per set) */
-+#define VIRTIO_MMIO_GUEST_FEATURES	0x020
-+
-+/* Activated features set selector */
-+#define VIRTIO_MMIO_GUEST_FEATURES_SET	0x024
-+
-+/* Queue selector */
-+#define VIRTIO_MMIO_QUEUE_SEL		0x030
-+
-+/* Queue size for the currently selected queue */
-+#define VIRTIO_MMIO_QUEUE_NUM		0x034
-+
-+/* Used Ring ailgnment for the currently selected queue */
-+#define VIRTIO_MMIO_QUEUE_ALIGN		0x038
-+
-+/* PFN for the currently selected queue */
-+#define VIRTIO_MMIO_QUEUE_PFN		0x03c
-+
-+/* Queue notifier */
-+#define VIRTIO_MMIO_QUEUE_NOTIFY	0x050
-+
-+/* Interrupt acknowledge */
-+#define VIRTIO_MMIO_INTERRUPT_ACK	0x060
-+
-+/* Device status register */
-+#define VIRTIO_MMIO_STATUS		0x070
-+
-+/* The config space is defined by each driver as
-+ * the per-driver configuration space */
-+#define VIRTIO_MMIO_CONFIG		0x100
-+
-+
-+
-+/* How many bits to shift physical queue address written to QUEUE_PFN.
-+ * 12 is historical, and due to 4kb page size. */
-+#define VIRTIO_MMIO_QUEUE_ADDR_SHIFT	12
-+
-+/* The alignment to use between consumer and producer parts of vring.
-+ * Page size again. */
-+#define VIRTIO_MMIO_VRING_ALIGN		4096
-+
+diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+index 4771dba..10d1e3c 100644
+--- a/arch/arm/mm/dma-mapping.c
++++ b/arch/arm/mm/dma-mapping.c
+@@ -456,6 +456,7 @@ static void dma_cache_maint_page(struct page *page, unsigned long offset,
+ 	size_t size, enum dma_data_direction dir,
+ 	void (*op)(const void *, size_t, int))
+ {
++#ifdef CONFIG_HIGHMEM
+ 	/*
+ 	 * A single sg entry may refer to multiple physically contiguous
+ 	 * pages.  But we still need to process highmem pages individually.
+@@ -494,6 +495,7 @@ static void dma_cache_maint_page(struct page *page, unsigned long offset,
+ 		page++;
+ 		left -= len;
+ 	} while (left);
 +#endif
+ }
+ 
+ void ___dma_page_cpu_to_dev(struct page *page, unsigned long off,
+diff --git a/arch/arm/mm/flush.c b/arch/arm/mm/flush.c
+index 2b269c9..3349df2 100644
+--- a/arch/arm/mm/flush.c
++++ b/arch/arm/mm/flush.c
+@@ -167,6 +167,7 @@ void copy_to_user_page(struct vm_area_struct *vma, struct page *page,
+ 
+ void __flush_dcache_page(struct address_space *mapping, struct page *page)
+ {
++#ifdef CONFIG_HIGHMEM
+ 	/*
+ 	 * Writeback any data associated with the kernel mapping of this
+ 	 * page.  This ensures that data in the physical page is mutually
+@@ -186,7 +187,7 @@ void __flush_dcache_page(struct address_space *mapping, struct page *page)
+ 			kunmap_atomic(addr);
+ 		}
+ 	}
+-
++#endif
+ 	/*
+ 	 * If this is a page cache page, and we have an aliasing VIPT cache,
+ 	 * we only need to do one flush - which would be at the relevant
 -- 
-1.6.3.3
-
+1.7.6.1
 
