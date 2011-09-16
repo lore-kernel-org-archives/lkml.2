@@ -1,80 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754430Ab1IPIIr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 04:08:47 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:52693 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753061Ab1IPIIo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 04:08:44 -0400
-Date: Fri, 16 Sep 2011 10:08:37 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] drivers/block/xen-blkback/blkback.c: take size  of
- pointed value, not pointer
-In-Reply-To: <4E7319010200007800056727@nat28.tlf.novell.com>
-Message-ID: <Pine.LNX.4.64.1109161008210.8543@pc-004.diku.dk>
-References: <1316156255-19509-1-git-send-email-julia@diku.dk>
- <4E7319010200007800056727@nat28.tlf.novell.com>
+	id S1754625Ab1IPIJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 04:09:28 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:57363 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753394Ab1IPIJ0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Sep 2011 04:09:26 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:message-id:date:from:user-agent:
+	mime-version:newsgroups:to:cc:subject:references:in-reply-to:
+	content-type:content-transfer-encoding:x-system-of-record;
+	b=G+d5itFrNrw2cOBm5A60Vk3HtdwY9PHfPe76Tl4imQj2EZa0ql1R0teKG7rR5D20w
+	qaNuAA0LuvQjbIsdMJGnA==
+Message-ID: <4E730430.7090608@google.com>
+Date: Fri, 16 Sep 2011 01:09:20 -0700
+From: Paul Turner <pjt@google.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Newsgroups: gmane.linux.kernel
+To: Peter Zijlstra <peterz@infradead.org>
+CC: "Luck, Tony" <tony.luck@intel.com>, Ken Chen <kenchen@google.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ralf Baechle <ralf@linux-mips.org>, David Miller <davem@davemloft.net>
+Subject: Re: [ia64] Question on __ARCH_WANT_UNLOCKED_CTXSW
+References: <1314188833.6925.3.camel@twins>  <987664A83D2D224EAE907B061CE93D5301EA611910@orsmsx505.amr.corp.intel.com> <1315940361.4226.17.camel@twins>
+In-Reply-To: <1315940361.4226.17.camel@twins>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I think a better fix for this is to use kzalloc() properly here:
+On 09/13/11 11:59, Peter Zijlstra wrote:
+> On Wed, 2011-08-24 at 13:46 -0700, Luck, Tony wrote:
+>>> happen to remember what the perceived benefit of using
+>>> __ARCH_WANT_UNLOCKED_CTXSW was about?
+>>
+>> No - digging around the code hasn't rung any bells for me either.
+>>
+>> Perhaps just general goodness for not holding a lock for
+>> longer than we need to?  But that would imply some case where
+>> someone else could do something useful by being able to grab
+>> the lock when we drop it. About the only thing I can think
+>> of is that it would allow tasks to be re-balanced just a
+>> teeny bit earlier --- but re-balancing ought to be somewhat
+>> rare, yes?
+>
+> Mostly yes, except remote wakeups, however that got a complete overhaul
+> in 3.0. Instead of taking the remote rq->lock we now enqueue the task on
+> a list and IPI the thing, then let the IPI do the remote enqueue and
+> trigger the reschedule.
+>
+> So it might make sense to re-evaluate this on ia64 like Ken suggested..
+> then again, who has a large ia64 box and is still willing to put time
+> in?
 
-Indeed, it seems like a much better idea :)
+Hum -- perhaps they'll come out of the woodwork if we just rip it out 
+(if they exist)
 
-julia
-
-> Subject: xen-blkback: use kzalloc() in favor of kmalloc()+memset()
-> 
-> This fixes the problem of three of those four memset()-s having
-> improper size arguments passed: Sizeof a pointer-typed expression
-> returns the size of the pointer, not that of the pointed to data.
-> 
-> It also reverts using kmalloc() instead of kzalloc() for the allocation
-> of the pending grant handles array, as that array gets fully
-> initialized in a subsequent loop.
-> 
-> Reported-by: Julia Lawall <julia@diku.dk>
-> Signed-off-by: Jan Beulich <jbeulich@novell.com>
-> 
-> ---
->  drivers/block/xen-blkback/blkback.c |    6 ++----
->  1 file changed, 2 insertions(+), 4 deletions(-)
-> 
-> --- 3.1-rc6/drivers/block/xen-blkback/blkback.c
-> +++ 3.1-rc6-xen-blkback-kzalloc/drivers/block/xen-blkback/blkback.c
-> @@ -765,9 +765,9 @@ static int __init xen_blkif_init(void)
->  
->  	mmap_pages = xen_blkif_reqs * BLKIF_MAX_SEGMENTS_PER_REQUEST;
->  
-> -	blkbk->pending_reqs          = kmalloc(sizeof(blkbk->pending_reqs[0]) *
-> +	blkbk->pending_reqs          = kzalloc(sizeof(blkbk->pending_reqs[0]) *
->  					xen_blkif_reqs, GFP_KERNEL);
-> -	blkbk->pending_grant_handles = kzalloc(sizeof(blkbk->pending_grant_handles[0]) *
-> +	blkbk->pending_grant_handles = kmalloc(sizeof(blkbk->pending_grant_handles[0]) *
->  					mmap_pages, GFP_KERNEL);
->  	blkbk->pending_pages         = kzalloc(sizeof(blkbk->pending_pages[0]) *
->  					mmap_pages, GFP_KERNEL);
-> @@ -790,8 +790,6 @@ static int __init xen_blkif_init(void)
->  	if (rc)
->  		goto failed_init;
->  
-> -	memset(blkbk->pending_reqs, 0, sizeof(blkbk->pending_reqs));
-> -
->  	INIT_LIST_HEAD(&blkbk->pending_free);
->  	spin_lock_init(&blkbk->pending_free_lock);
->  	init_waitqueue_head(&blkbk->pending_free_wq);
-> 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+- Paul
