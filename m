@@ -1,45 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932076Ab1IPSTL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 14:19:11 -0400
-Received: from eazy.amigager.de ([213.239.192.238]:35911 "EHLO
-	eazy.amigager.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753285Ab1IPSTK (ORCPT
+	id S1755669Ab1IPSWJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 14:22:09 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:37696 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753285Ab1IPSWG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 14:19:10 -0400
-Date: Fri, 16 Sep 2011 20:19:22 +0200
-From: Tino Keitel <tino.keitel@tikei.de>
-To: Hugh Dickins <hughd@google.com>
-Cc: Shaohua Li <shaohua.li@intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: echo 3 > /proc/.../drop_caches goes mad with 3.1-rc6, maybe
- fsnotify related
-Message-ID: <20110916181922.GA7993@mac.home>
-Mail-Followup-To: Hugh Dickins <hughd@google.com>,
-	Shaohua Li <shaohua.li@intel.com>, linux-kernel@vger.kernel.org
-References: <20110915200514.GA30223@mac.home>
- <alpine.LSU.2.00.1109151432330.10523@sister.anvils>
+	Fri, 16 Sep 2011 14:22:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1109151432330.10523@sister.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110916171824.GA23338@linutronix.de>
+References: <1315506287-31368-1-git-send-email-schwarzkopf@sensortherm.de>
+	<20110908191146.GA8552@suse.de>
+	<op.v1jdo3g53l0zgt@mnazarewicz-glaptop>
+	<20110909184354.GA30278@suse.de>
+	<20110916171824.GA23338@linutronix.de>
+Date: Fri, 16 Sep 2011 11:22:05 -0700
+Message-ID: <CAJJ6jxsC3vUS1dPSYDXCcjrdYB=ybHWaC9=RhHDWQgM6WgcGmw@mail.gmail.com>
+Subject: Re: [PATCH] usb: add new usb gadget for ACM and mass storage
+From: Steve Calfee <stevecalfee@gmail.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Greg KH <gregkh@suse.de>, Michal Nazarewicz <mina86@mina86.com>,
+        Klaus Schwarzkopf <schwarzkopf@sensortherm.de>, balbi@ti.com,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 15, 2011 at 14:42:05 -0700, Hugh Dickins wrote:
-
-[...]
-
-> Although these stacktraces don't implicate find_get_pages() at all,
-> please try Shaohua's fix below (see thread: [BUG] infinite loop in
-> find_get_pages()), which Linus put in his tree yesterday.
+On Fri, Sep 16, 2011 at 10:18 AM, Sebastian Andrzej Siewior
+<bigeasy@linutronix.de> wrote:
+> Would it be possible to come up with a gadget-hub driver which can have
+> multiple gadget attached? This should get rid of this kind of gadget
+> drivers, right?
+>
+> Sebastian
+> --
 
 Hi,
 
-thanks, I upgraded to git master
-c455ea4f122d21c91fcf4c36c3f0c08535ba3ce8 and the problem is gone.
+To literally make a gadget that can emulate a hub (where it could
+present port 1 as function x, port 2 as function y etc) would require
+special hardware. The (bus speed) translations and (ack/nak) timings
+are speced very tightly for hubs (see chapter 11 of the spec). Each
+function would have its own usb bus address - otherwise one gadget
+could not nak while another transfered data. Each bus address would
+have to meet the spec in responding to all signaling.
 
-Regards,
-Tino
+Think about how the individual functions would announce themselves to
+the host - when the port is enabled the available/speed pull ups would
+have to be set, but other ports have to be in their old state.
+Reset/Suspend signaling would have to be handled only by the selected
+function.
 
+So while it would make multiple function gadgets somewhat easier I
+don't see how it is possible, do composite and/or compound gadgets
+instead.
+
+Regards, Steve
