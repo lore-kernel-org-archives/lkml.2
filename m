@@ -1,81 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754676Ab1IPIOl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 04:14:41 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:59769 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754427Ab1IPIOh (ORCPT
+	id S1754706Ab1IPIRR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 04:17:17 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:62933 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754363Ab1IPIRO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 04:14:37 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:message-id:date:from:user-agent:
-	mime-version:newsgroups:to:cc:subject:references:in-reply-to:
-	content-type:content-transfer-encoding:x-system-of-record;
-	b=JyjxzaMAmFhLn/1sExqSWUTLsHGjWgsS0lpjG0BuGp3sGQjeDNuvNdQAsKPWa7n6Q
-	8CKYyquLrSaeA+m1MUkYQ==
-Message-ID: <4E730568.2030107@google.com>
-Date: Fri, 16 Sep 2011 01:14:32 -0700
-From: Paul Turner <pjt@google.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
+	Fri, 16 Sep 2011 04:17:14 -0400
+Date: Fri, 16 Sep 2011 16:17:00 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Paul Turner <pjt@google.com>
+Cc: Wang Xingchao <xingchao.wang@intel.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, peterz@infradead.org
+Subject: Re: [PATCH] cfs: remove unused 'if' condition checking
+Message-ID: <20110916081700.GC10741@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <1316194552-12019-1-git-send-email-xingchao.wang@intel.com>
+ <4E72FD93.2060805@google.com>
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelianov <xemul@parallels.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: CFS Bandwidth Control - Test results of cgroups tasks pinned
- vs unpinnede
-References: <20110615053716.GA390@linux.vnet.ibm.com>  <BANLkTi=7S2qdVjbJkDja+GAoD=pNo2gPsTFZMFkB8NWWkO1JVQ@mail.gmail.com>  <20110907152009.GA3868@linux.vnet.ibm.com>  <1315423342.11101.25.camel@twins>  <20110908151433.GB6587@linux.vnet.ibm.com> <1315571462.26517.9.camel@twins>  <20110912101722.GA28950@linux.vnet.ibm.com>  <1315830943.26517.36.camel@twins>  <20110913041545.GD11100@linux.vnet.ibm.com>  <1315923579.5977.14.camel@twins>  <20110913180146.GA12723@linux.vnet.ibm.com> <1315938226.4226.11.camel@twins>
-In-Reply-To: <1315938226.4226.11.camel@twins>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-System-Of-Record: true
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4E72FD93.2060805@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/13/11 11:23, Peter Zijlstra wrote:
-> On Tue, 2011-09-13 at 23:31 +0530, Srivatsa Vaddagiri wrote:
->> * Peter Zijlstra<a.p.zijlstra@chello.nl>  [2011-09-13 16:19:39]:
->>
->>>> Booting with "nohz=off" also helps significantly.
->>>>
->>>> With nohz=on, average idle time (over 1 min) is 10.3%
->>>> With nohz=off, average idle time (over 1 min) is 3.9%
+On Fri, Sep 16, 2011 at 12:41:07AM -0700, Paul Turner wrote:
+> On 09/16/11 10:35, Wang Xingchao wrote:
+> 
+> Please include a one-line summary such as:
+> sched: remove extra nr_running check in check_preempt_tick
+> 
+> > nr_running must be more than 1, so remove the checking
+> >
+> 
+> Sure, reasonable.
+> 
+> Please expand this comment though, e.g.
+> We already test for nr_running > 1 within entity_tick so there is no
+> need to recheck it within check_preempt_tick().
+> 
+> > Signed-off-by: Wang Xingchao<xingchao.wang@intel.com>
+> 
+> Reviewed-by: Paul Turner <pjt@google.com>
+> 
+> > ---
+> >   kernel/sched_fair.c |   16 ++++++++--------
+> >   1 files changed, 8 insertions(+), 8 deletions(-)
+> >
+> > diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+> > index 1ca2cd4..fef0bfd 100644
+> > --- a/kernel/sched_fair.c
+> > +++ b/kernel/sched_fair.c
+> > @@ -1106,6 +1106,8 @@ static void
+> >   check_preempt_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr)
+> >   {
+> >       unsigned long ideal_runtime, delta_exec;
+> > +    struct sched_entity *se;
+> > +    s64 delta;
+> >
+> >       ideal_runtime = sched_slice(cfs_rq, curr);
+> >       delta_exec = curr->sum_exec_runtime - curr->prev_sum_exec_runtime;
+> > @@ -1127,16 +1129,14 @@ check_preempt_tick(struct cfs_rq *cfs_rq,
+> struct sched_entity *curr)
+> >       if (delta_exec<  sysctl_sched_min_granularity)
+> 
+> You've mangled the white space on the less-than.
 
-I think more compelling here is that it looks like nohz load-balance 
-needs more love.
+But it looks ok on my side.
+And on LKML: https://lkml.org/lkml/2011/9/16/11
 
->>>
->>> So we should put the cpufreq/idle governor into the nohz/idle path, it
->>> already tries to predict the idle duration in order to pick a C state,
->>> that same prediction should be used to determine if stopping the tick is
->>> worth it.
->>
->> Hmm ..I tried performance governor and found that it slightly increases
->> idle time.
->>
->>    With nohz=off&&  ondemand governor, idle time = 4%
->>    With nohz=off&&  performance governor on all cpus, idle time = 6%
->>
->> I can't see obvious reasons for that ..afaict bandwidth capping should
->> be independent of frequency (i.e task gets capped by "used" time,
->> irrespective of frequency at which it was "using" the cpu)?
->
-> That's not what I said.. what I said is that the nohz code should also
-> use the idle time prognosis.. disabling the tick is a costly operation,
-> doing it only to have to undo it costs time, and will be accounted to
-> idle time, hence your improvement with nohz=off.
->
+So maybe it's not Xingchao's problem.
 
-Enabling Venki's CONFIG_IRQ_TIME_ACCOUNTING=y would discount to provide 
-a definitive answer here yes?
+Thanks,
+Yong
 
-- Paul
+> 
+> >           return;
+> >
+> > -    if (cfs_rq->nr_running>  1) {
+> > -        struct sched_entity *se = __pick_first_entity(cfs_rq);
+> > -        s64 delta = curr->vruntime - se->vruntime;
+> > +    se = __pick_first_entity(cfs_rq);
+> > +    delta = curr->vruntime - se->vruntime;
+> >
+> > -        if (delta<  0)
+> > -            return;
+> > +    if (delta<  0)
+> 
+> And here.
+> 
+> > +        return;
+> >
+> > -        if (delta>  ideal_runtime)
+> > -            resched_task(rq_of(cfs_rq)->curr);
+> > -    }
+> > +    if (delta>  ideal_runtime)
+> 
+> Here too.
+> 
+> > +        resched_task(rq_of(cfs_rq)->curr);
+> >   }
+> >
+> >   static void
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
+-- 
+Only stand for myself
