@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753903Ab1IPGST (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 02:18:19 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:35409 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753802Ab1IPGSK (ORCPT
+	id S1753999Ab1IPGSd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 02:18:33 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:49551 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753741Ab1IPGSa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 02:18:10 -0400
+	Fri, 16 Sep 2011 02:18:30 -0400
 From: "Leonid V. Fedorenchik" <leonidsbox@gmail.com>
 To: Greg Kroah-Hartman <gregkh@suse.de>
 Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
         Hans Verkuil <hverkuil@xs4all.nl>, Joe Perches <joe@perches.com>,
         devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
         "Leonid V. Fedorenchik" <leonidsbox@gmail.com>
-Subject: [PATCH 24/44] Staging: cx25821: Change indent with spaces to tabs 20
-Date: Fri, 16 Sep 2011 14:14:57 +0800
-Message-Id: <1316153717-7272-25-git-send-email-leonidsbox@gmail.com>
+Subject: [PATCH 29/44] Staging: cx25821: Change indent with spaces to tabs 25
+Date: Fri, 16 Sep 2011 14:15:02 +0800
+Message-Id: <1316153717-7272-30-git-send-email-leonidsbox@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1316153717-7272-1-git-send-email-leonidsbox@gmail.com>
 References: <1316153717-7272-1-git-send-email-leonidsbox@gmail.com>
@@ -27,67 +27,58 @@ Change indent with spaces to tabs.
 
 Signed-off-by: Leonid V. Fedorenchik <leonidsbox@gmail.com>
 ---
- drivers/staging/cx25821/cx25821-video.c |   32 +++++++++++++++---------------
- 1 files changed, 16 insertions(+), 16 deletions(-)
+ drivers/staging/cx25821/cx25821-video.c |   29 ++++++++++++++---------------
+ 1 files changed, 14 insertions(+), 15 deletions(-)
 
 diff --git a/drivers/staging/cx25821/cx25821-video.c b/drivers/staging/cx25821/cx25821-video.c
-index bbf1ad9..c77e9d5 100644
+index d3c3870..fb89c27 100644
 --- a/drivers/staging/cx25821/cx25821-video.c
 +++ b/drivers/staging/cx25821/cx25821-video.c
-@@ -1044,37 +1044,37 @@ static int vidioc_s_fmt_vid_cap(struct file *file, void *priv,
- 
- static int vidioc_dqbuf(struct file *file, void *priv, struct v4l2_buffer *p)
+@@ -1702,30 +1702,29 @@ int cx25821_is_valid_height(u32 height, v4l2_std_id tvnorm)
+ static long video_ioctl_upstream9(struct file *file, unsigned int cmd,
+ 				 unsigned long arg)
  {
--       int ret_val = 0;
--       struct cx25821_fh *fh = priv;
--       struct cx25821_dev *dev = ((struct cx25821_fh *)priv)->dev;
-+	int ret_val = 0;
-+	struct cx25821_fh *fh = priv;
-+	struct cx25821_dev *dev = ((struct cx25821_fh *)priv)->dev;
+-       struct cx25821_fh *fh = file->private_data;
+-       struct cx25821_dev *dev = fh->dev;
+-       int command = 0;
+-       struct upstream_user_struct *data_from_user;
++	struct cx25821_fh *fh = file->private_data;
++	struct cx25821_dev *dev = fh->dev;
++	int command = 0;
++	struct upstream_user_struct *data_from_user;
  
--       ret_val = videobuf_dqbuf(get_queue(fh), p, file->f_flags & O_NONBLOCK);
-+	ret_val = videobuf_dqbuf(get_queue(fh), p, file->f_flags & O_NONBLOCK);
+-       data_from_user = (struct upstream_user_struct *)arg;
++	data_from_user = (struct upstream_user_struct *)arg;
  
--    p->sequence = dev->channels[fh->channel_id].vidq.count;
-+	p->sequence = dev->channels[fh->channel_id].vidq.count;
+ 	if (!data_from_user) {
+ 		pr_err("%s(): Upstream data is INVALID. Returning\n", __func__);
+ 		return 0;
+ 	}
  
--       return ret_val;
-+	return ret_val;
- }
+-       command = data_from_user->command;
++	command = data_from_user->command;
  
- static int vidioc_log_status(struct file *file, void *priv)
- {
--       struct cx25821_dev *dev = ((struct cx25821_fh *)priv)->dev;
--       struct cx25821_fh *fh = priv;
--       char name[32 + 2];
-+	struct cx25821_dev *dev = ((struct cx25821_fh *)priv)->dev;
-+	struct cx25821_fh *fh = priv;
-+	char name[32 + 2];
+-       if (command != UPSTREAM_START_VIDEO &&
+-	       command != UPSTREAM_STOP_VIDEO)
+-	       return 0;
++	if (command != UPSTREAM_START_VIDEO && command != UPSTREAM_STOP_VIDEO)
++		return 0;
  
--       struct sram_channel *sram_ch = dev->channels[fh->channel_id]
--						       .sram_channels;
--       u32 tmp = 0;
-+	struct sram_channel *sram_ch = dev->channels[fh->channel_id]
-+								.sram_channels;
-+	u32 tmp = 0;
+-       dev->input_filename = data_from_user->input_filename;
+-       dev->input_audiofilename = data_from_user->input_filename;
+-       dev->vid_stdname = data_from_user->vid_stdname;
+-       dev->pixel_format = data_from_user->pixel_format;
+-       dev->channel_select = data_from_user->channel_select;
+-       dev->command = data_from_user->command;
++	dev->input_filename = data_from_user->input_filename;
++	dev->input_audiofilename = data_from_user->input_filename;
++	dev->vid_stdname = data_from_user->vid_stdname;
++	dev->pixel_format = data_from_user->pixel_format;
++	dev->channel_select = data_from_user->channel_select;
++	dev->command = data_from_user->command;
  
--       snprintf(name, sizeof(name), "%s/2", dev->name);
-+	snprintf(name, sizeof(name), "%s/2", dev->name);
- 	pr_info("%s/2: ============  START LOG STATUS  ============\n",
- 		dev->name);
--       cx25821_call_all(dev, core, log_status);
--       tmp = cx_read(sram_ch->dma_ctl);
-+	cx25821_call_all(dev, core, log_status);
-+	tmp = cx_read(sram_ch->dma_ctl);
- 	pr_info("Video input 0 is %s\n",
- 		(tmp & 0x11) ? "streaming" : "stopped");
- 	pr_info("%s/2: =============  END LOG STATUS  =============\n",
- 		dev->name);
--       return 0;
-+	return 0;
- }
- 
- static int vidioc_s_ctrl(struct file *file, void *priv,
+        switch (command) {
+        case UPSTREAM_START_VIDEO:
 -- 
 1.7.0.4
 
