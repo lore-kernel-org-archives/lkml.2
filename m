@@ -1,89 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752194Ab1IPEuh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 00:50:37 -0400
-Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:39920 "EHLO
-	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752052Ab1IPEug (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 00:50:36 -0400
-Message-ID: <4E72D593.9020902@ti.com>
-Date: Fri, 16 Sep 2011 10:20:27 +0530
-From: Santosh <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	id S1752233Ab1IPEx0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 00:53:26 -0400
+Received: from home.keithp.com ([63.227.221.253]:32970 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752063Ab1IPExZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Sep 2011 00:53:25 -0400
+From: Keith Packard <keithp@keithp.com>
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Alex Deucher <alexdeucher@gmail.com>
+Cc: linux-fbdev@vger.kernel.org, linaro-dev@lists.linaro.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Archit Taneja <archit@ti.com>, "Clark\, Rob" <rob@ti.com>
+Subject: Re: Proposal for a low-level Linux display framework
+In-Reply-To: <4E724659.5080709@gmx.de>
+References: <1316088425.11294.78.camel@lappyti> <yunboul7sx7.fsf@aiko.keithp.com> <1316100594.23214.65.camel@deskari> <yun8vpp7qk7.fsf@aiko.keithp.com> <4E72320B.6020000@gmx.de> <CADnq5_NnzLtJmSzOgyppnBtv96DRTJ71u6ZSrs56KJ-F5CC-mw@mail.gmail.com> <4E724659.5080709@gmx.de>
+User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Thu, 15 Sep 2011 21:53:21 -0700
+Message-ID: <yunsjnxulz2.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux@arm.linux.org.uk, ccross@android.com, rjw@sisk.pl,
-        khilman@ti.com
-Subject: Re: [PATCH v2 0/5] CPU PM notifiers
-References: <1315060755-4613-1-git-send-email-santosh.shilimkar@ti.com>
-In-Reply-To: <1315060755-4613-1-git-send-email-santosh.shilimkar@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 03 September 2011 08:09 PM, Santosh Shilimkar wrote:
-> Updates V2:
-> - The CPU PM notifiers are moved to generic level instead of keeping
->   it ARM specific as per Rafael's comment.
-> - To avoid every driver duplicating the sys-core ops and cpu pm notfiers,
->   the CPU PM common notifier is registering it in one place so that
->   suspend is taken care.
-> - CPU COMPLEX events are renamed to more appropriate CPU CLUSTER.
-> - GIC distributor is not disabled to avoid the live locks. This is
->   observed with CPUIDLE cases where at time CPU cluster fails to
->   transition to low power states. As such there was no need to
->   disable distributor in first place since on cluster reset, it
->   will get disabled anyways.
-> - In VFP code, syscore ops are dropped in favour of CPU PM
->   notifiers since S2R is already handled in core CPU PM notifiers.
-> - The last patch is an independent patch but can be pushed along with
->   the other GIC changes done here. 
->  
-> V1: [http://lwn.net/Articles/447259/]
-> 
-> This patch set tries to address concerns with platform pm code
-> calling into the driver for every block in the Cortex A9s
-> during idle, hotplug, and suspend.  The first patch adds cpu pm
-> notifiers that can be called by platform code, the second uses
-> the notifier to save and restore the GIC state, and the third
-> saves the VFP state.
-> 
-> The notifiers are used for two types of events, CPU PM events and
-> CPU cluster PM events.  CPU PM events are used to save and restore
-> per-cpu context when a single CPU is preparing to enter or has
-> just exited a low power state.  For example, the VFP saves the
-> last thread context, and the GIC saves banked CPU registers.
-> 
-> CPU cluster events are used after all the CPUs in a power domain
-> have been prepared for the low power state.  The GIC uses these
-> events to save global register state.
-> 
-> L2 cache is not covered by this patch set, as the determination
-> of when the L2 is reset and when it is retained is
-> platform-specific, and most of the APIs necessary are already
-> 
-> 
-> The series is tested with OMAP4 with S2R and CPUIDLE. 
-> 
-> The following changes since commit c6a389f123b9f68d605bb7e0f9b32ec1e3e14132:
-> 
->   Linux 3.1-rc4 (2011-08-28 21:16:01 -0700)
-> 
-> Colin Cross (5):
->       cpu_pm: Add cpu power management notifiers
->       cpu_pm: call notifiers during suspend
->       ARM: gic: Use cpu pm notifiers to save gic state
->       ARM: vfp: Use cpu pm notifiers to save vfp state
->       ARM: gic: Allow gic arch extensions to provide irqchip flags
-> 
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-Thanks all for the reviews and testing of this series.
-I am going to add these patches as part of my pull request
-to Russell for the 3.2.
+On Thu, 15 Sep 2011 18:39:21 +0000, Florian Tobias Schandinat <FlorianSchan=
+dinat@gmx.de> wrote:
 
-Regards
-Santosh
+> Well, I'm not against sharing the code and not against taking DRM's curre=
+nt
+> implementation as a base but the steps required to make it generally acce=
+ptable
+> would be to split it of, probably as a standalone module and strip all DRM
+> specific things off. Than all things that require EDID can use it, DRM ca=
+n add
+> DRM-specific things on top and fb can add fb-specific things.
+
+The rendering portions of the DRM drivers are all device-specific. The
+core DRM ioctls are largely about providing some sharing control over
+the device, mapping memory around and mode setting.
+
+> One of my biggest problems with KMS is that it has (naturally) a lot more
+> complexity than the fb API which leads to instability.
+
+The mode setting portions are of necessity the same. The KMS API exposes
+more functionality for mode setting, but doesn't actually require any
+additional hardware-specific knowledge. You still have to be able to
+bring the hardware up from power on and light up every connected
+monitor.
+
+However, if you want acceleration, you're going to run into bugs that
+crash the machine. It's a sad reality that graphics hardware just isn't
+able to recover cleanly in all cases from programmer errors, and that
+includes errors that come from user mode.
+
+Hardware is improving in this area, and reset is getting more reliable
+than it used to be. But, until we can context switch the graphics
+hardware at arbitrary points during execution, we're kinda stuck with
+using the really big reset hammer when programs go awry.
+
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iD8DBQFOctZBQp8BWwlsTdMRAh50AKCnOL5Xc5vMOOoslnd3Ms+sW2c3EQCg2pls
+Zu8aFtj9cbvUdfEggfd/mgk=
+=fH74
+-----END PGP SIGNATURE-----
+--=-=-=--
