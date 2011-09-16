@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755269Ab1IPPsV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 11:48:21 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:51592
+	id S1755267Ab1IPPuq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 11:50:46 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:51609
 	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754661Ab1IPPsU (ORCPT
+	by vger.kernel.org with ESMTP id S1753353Ab1IPPup (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 11:48:20 -0400
-Date: Fri, 16 Sep 2011 11:48:15 -0400
+	Fri, 16 Sep 2011 11:50:45 -0400
+Date: Fri, 16 Sep 2011 11:50:43 -0400
 From: Christoph Hellwig <hch@infradead.org>
 To: Andi Kleen <andi@firstfloor.org>
 Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        linux-btrfs@vger.kernel.org
-Subject: Re: [PATCH 1/7] BTRFS: Fix lseek return value for error
-Message-ID: <20110916154815.GA27150@infradead.org>
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 4/7] VFS: Add generic_file_llseek_size
+Message-ID: <20110916155042.GB27150@infradead.org>
 References: <1316128013-21980-1-git-send-email-andi@firstfloor.org>
- <1316128013-21980-2-git-send-email-andi@firstfloor.org>
+ <1316128013-21980-5-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1316128013-21980-2-git-send-email-andi@firstfloor.org>
+In-Reply-To: <1316128013-21980-5-git-send-email-andi@firstfloor.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
 	See http://www.infradead.org/rpr.html
@@ -28,65 +27,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 15, 2011 at 04:06:47PM -0700, Andi Kleen wrote:
+On Thu, Sep 15, 2011 at 04:06:50PM -0700, Andi Kleen wrote:
 > From: Andi Kleen <ak@linux.intel.com>
 > 
-> Introduced by 9a4327ca1f45f82edad7dc0a4e52ce9316e0950c
-
-I think this should go to Chris/Linus ASAP.  But a slightly better
-patch description wouldn't hurt either.
-
-Also any reason you captialize BTRFS?
-
+> Add a generic_file_llseek variant to the VFS that allows passing in
+> the maximum file size of the file system, instead of always
+> using maxbytes from the superblock.
 > 
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  fs/btrfs/file.c |   13 +++++++------
->  1 files changed, 7 insertions(+), 6 deletions(-)
-> 
-> diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
-> index 3c3abff..7ec0a24 100644
-> --- a/fs/btrfs/file.c
-> +++ b/fs/btrfs/file.c
-> @@ -1818,19 +1818,17 @@ static loff_t btrfs_file_llseek(struct file *file, loff_t offset, int origin)
->  	case SEEK_DATA:
->  	case SEEK_HOLE:
->  		ret = find_desired_extent(inode, &offset, origin);
-> -		if (ret) {
-> -			mutex_unlock(&inode->i_mutex);
-> -			return ret;
-> -		}
-> +		if (ret)
-> +			goto error;
->  	}
->  
->  	if (offset < 0 && !(file->f_mode & FMODE_UNSIGNED_OFFSET)) {
->  		ret = -EINVAL;
-> -		goto out;
-> +		goto error;
->  	}
->  	if (offset > inode->i_sb->s_maxbytes) {
->  		ret = -EINVAL;
-> -		goto out;
-> +		goto error;
->  	}
->  
->  	/* Special lock needed here? */
-> @@ -1841,6 +1839,9 @@ static loff_t btrfs_file_llseek(struct file *file, loff_t offset, int origin)
->  out:
->  	mutex_unlock(&inode->i_mutex);
->  	return offset;
-> +error:
-> +	mutex_unlock(&inode->i_mutex);
-> +	return ret;
->  }
->  
->  const struct file_operations btrfs_file_operations = {
-> -- 
-> 1.7.4.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
----end quoted text---
+> This can be used to eliminate some cut'n'paste seek code in ext4.
+
+I'd reorder this to the front of the series.  Also I think this
+helper could be used to implement default_llseek.
+
