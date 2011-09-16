@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755563Ab1IPSIo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 14:08:44 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:38078 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755261Ab1IPSIM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 14:08:12 -0400
-X-Sasl-enc: 94KlD6rbKrhQBe6VJFeW40O9cM6DXA76hKtBaaQhaYHs 1316196491
-Date: Fri, 16 Sep 2011 20:01:29 +0200
-From: Greg KH <greg@kroah.com>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, Haiyang Zhang <haiyangz@microsoft.com>
-Subject: Re: [PATCH 05/20] Staging: hv: util: Perform some service specific
- init/deinit in probe/remove
-Message-ID: <20110916180129.GA25531@kroah.com>
-References: <1315936759-20623-1-git-send-email-kys@microsoft.com>
- <1315936796-20662-1-git-send-email-kys@microsoft.com>
- <1315936796-20662-5-git-send-email-kys@microsoft.com>
+	id S1755351Ab1IPSKo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 14:10:44 -0400
+Received: from solo.fdn.fr ([80.67.169.19]:46114 "EHLO solo.fdn.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753692Ab1IPSKn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Sep 2011 14:10:43 -0400
+Date: Fri, 16 Sep 2011 20:10:40 +0200
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
+To: Keith Packard <keithp@keithp.com>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [REGRESSION] i915 KMS dual head broken on DELL latitude E6420 in
+ 3.1-rc*
+Message-ID: <20110916181040.GD4698@type.famille.thibault.fr>
+Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+	Keith Packard <keithp@keithp.com>, dri-devel@lists.freedesktop.org,
+	linux-kernel@vger.kernel.org
+References: <20110914232717.GA5410@type.famille.thibault.fr>
+ <yunobym743b.fsf@aiko.keithp.com>
+ <20110915074106.GA4544@type.famille.thibault.fr>
+ <20110915081259.GB4877@type.bordeaux.inria.fr>
+ <yunlitp7umf.fsf@aiko.keithp.com>
+ <20110916163050.GT4891@type.bordeaux.inria.fr>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1315936796-20662-5-git-send-email-kys@microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110916163050.GT4891@type.bordeaux.inria.fr>
+User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 13, 2011 at 10:59:41AM -0700, K. Y. Srinivasan wrote:
-> --- a/drivers/staging/hv/hv_util.c
-> +++ b/drivers/staging/hv/hv_util.c
-> @@ -30,9 +30,31 @@
->  #include "hyperv.h"
->  #include "hv_kvp.h"
->  
-> -static u8 *shut_txf_buf;
-> -static u8 *time_txf_buf;
-> -static u8 *hbeat_txf_buf;
-> +
-> +static void shutdown_onchannelcallback(void *context);
-> +static struct hv_util_service util_shutdown = {
-> +	.service_name = "Shutdown channel functionality initialized\n",
+Samuel Thibault, le Fri 16 Sep 2011 18:30:50 +0200, a écrit :
+> Keith Packard, le Thu 15 Sep 2011 09:22:48 -0500, a écrit :
+> > On Thu, 15 Sep 2011 10:12:59 +0200, Samuel Thibault <samuel.thibault@ens-lyon.org> wrote:
+> > 
+> > > At home only. At work, with a different VGA screen, I'm still getting
+> > > the issue.
+> > 
+> > You're still having a problem with the LVDS screen at work with FBC
+> > disabled?
+> 
+> Yes, though it now seems random, sometimes it works, sometimes not.
 
-That's not a name, it's a text string to send to userspace, and it's
-really redundant given the other times you use this.
+Ah, actually home's success was a luck. I'm still getting random
+failures at home too.
 
-Please just put the name here, if you really need it (hint, you really
-don't, so just drop it please.)
-
-greg k-h
+Samuel
