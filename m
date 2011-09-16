@@ -1,41 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755267Ab1IPPuq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 11:50:46 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:51609
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753353Ab1IPPup (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 11:50:45 -0400
-Date: Fri, 16 Sep 2011 11:50:43 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 4/7] VFS: Add generic_file_llseek_size
-Message-ID: <20110916155042.GB27150@infradead.org>
-References: <1316128013-21980-1-git-send-email-andi@firstfloor.org>
- <1316128013-21980-5-git-send-email-andi@firstfloor.org>
+	id S1755298Ab1IPQJf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 12:09:35 -0400
+Received: from imr4.ericy.com ([198.24.6.9]:38173 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752489Ab1IPQJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Sep 2011 12:09:34 -0400
+Date: Fri, 16 Sep 2011 09:07:52 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Rudolf Marek <r.marek@assembler.cz>
+CC: lm-sensors@lm-sensors.org, "R, Durgadoss" <durgadoss.r@intel.com>
+Subject: Re: coretemp breaks lockdep. (MAX_LOCKDEP_ENTRIES too low!)
+Message-ID: <20110916160752.GA10978@ericsson.com>
+References: <20110915193018.GA10256@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1316128013-21980-5-git-send-email-andi@firstfloor.org>
+In-Reply-To: <20110915193018.GA10256@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 15, 2011 at 04:06:50PM -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
+On Thu, Sep 15, 2011 at 03:30:18PM -0400, Dave Jones wrote:
+> just had a user report this against rc6..
 > 
-> Add a generic_file_llseek variant to the VFS that allows passing in
-> the maximum file size of the file system, instead of always
-> using maxbytes from the superblock.
+> # while true; do rmmod coretemp; modprobe coretemp; done
 > 
-> This can be used to eliminate some cut'n'paste seek code in ext4.
+> 
+> [15811.924167] BUG: MAX_LOCKDEP_ENTRIES too low!
+> [15811.924171] turning off the locking correctness validator.
+> [15811.924175] Pid: 10598, comm: modprobe Not tainted 3.1.0-rc6+ #5
+> [15811.924178] Call Trace:
+> [15811.924187]  [<ffffffff81081205>] ? up+0x39/0x3e
+> [15811.924193]  [<ffffffff8108e556>] add_lock_to_list.constprop.22+0x45/0xa7
+> [15811.924198]  [<ffffffff81090c05>] __lock_acquire+0xb7f/0xd0c
+> [15811.924204]  [<ffffffff81091594>] ? mark_held_locks+0x6d/0x95
+> [15811.924210]  [<ffffffff814e27d5>] ? __slab_alloc+0x41c/0x43d
+> [15811.924216]  [<ffffffff812701d0>] ? kobject_add_internal+0x9b/0x18c
+> [15811.924221]  [<ffffffff81091295>] lock_acquire+0xf3/0x13e
+> [15811.924225]  [<ffffffff812701d0>] ? kobject_add_internal+0x9b/0x18c
+> [15811.924230]  [<ffffffff812701d0>] ? kobject_add_internal+0x9b/0x18c
+> [15811.924236]  [<ffffffff814e96a3>] _raw_spin_lock+0x40/0x73
+> [15811.924241]  [<ffffffff812701d0>] ? kobject_add_internal+0x9b/0x18c
+> [15811.924245]  [<ffffffff8127012e>] ? kobject_get+0x18/0x1f
+> [15811.924250]  [<ffffffff812701d0>] kobject_add_internal+0x9b/0x18c
+> [15811.924255]  [<ffffffff812705fa>] kobject_add+0x91/0xa2
+> [15811.924260]  [<ffffffff814c5afd>] ? klist_init+0x33/0x46
+> [15811.924265]  [<ffffffff81337bc3>] device_add+0xd5/0x576
+> [15811.924271]  [<ffffffff81336ac3>] ? dev_set_name+0x41/0x43
+> [15811.924277]  [<ffffffff8133b8f1>] platform_device_add+0x111/0x15b
+> [15811.924283]  [<ffffffffa0606cbd>] get_core_online+0x9b/0x143 [coretemp]
+> [15811.924290]  [<ffffffffa0050000>] ? 0xffffffffa004ffff
+> [15811.924296]  [<ffffffffa005004b>] coretemp_init+0x4b/0x1000 [coretemp]
+> [15811.924302]  [<ffffffffa0050000>] ? 0xffffffffa004ffff
+> [15811.924308]  [<ffffffff81002099>] do_one_initcall+0x7f/0x13a
+> [15811.924313]  [<ffffffffa0050000>] ? 0xffffffffa004ffff
+> [15811.924319]  [<ffffffff8109cacf>] sys_init_module+0x114/0x267
+> [15811.924324]  [<ffffffff814f0202>] system_call_fastpath+0x16/0x1b
+> 
+> 
+I have tried to reproduce the problem with lockdeb debugging enabled,
+but I was unable to see it. Guess I must be missing something. 
 
-I'd reorder this to the front of the series.  Also I think this
-helper could be used to implement default_llseek.
+Couple of questions:
 
+What CPU and/or system was this seen with ? Output of /proc/cpuinfo might help.
+Can you send the configuration file used to build the kernel ?
+How long does one have to run the loop ?
+What is the output of "sensors" with coretemp loaded ?
+
+Thanks,
+Guenter
