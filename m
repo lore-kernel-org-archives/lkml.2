@@ -1,139 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753557Ab1IPMY1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 08:24:27 -0400
-Received: from mail-wy0-f180.google.com ([74.125.82.180]:42906 "EHLO
-	mail-wy0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752529Ab1IPMY0 (ORCPT
+	id S1753602Ab1IPMae (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 08:30:34 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:42526 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752670Ab1IPMad convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 08:24:26 -0400
-Date: Fri, 16 Sep 2011 14:24:17 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, patches@linaro.org, anton@samba.org,
-        paulus@samba.org
-Subject: Re: [PATCH tip/core/rcu 55/55] powerpc: Work around tracing from
- dyntick-idle mode
-Message-ID: <20110916122220.GA5089@somewhere.redhat.com>
-References: <20110906180015.GA2560@linux.vnet.ibm.com>
- <1315332049-2604-55-git-send-email-paulmck@linux.vnet.ibm.com>
- <1315389622.26118.17.camel@pasglop>
- <20110907134400.GJ3610@linux.vnet.ibm.com>
- <20110913191319.GF23424@somewhere>
- <20110913195033.GB3301@linux.vnet.ibm.com>
- <1315946993.455.158.camel@pasglop>
+	Fri, 16 Sep 2011 08:30:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1315946993.455.158.camel@pasglop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1316164077.27626.1030.camel@vkoul-udesk3>
+References: <1313147667-3385-1-git-send-email-jaswinder.singh@linaro.org>
+	<1316072789-12830-1-git-send-email-jaswinder.singh@linaro.org>
+	<1316164077.27626.1030.camel@vkoul-udesk3>
+Date: Fri, 16 Sep 2011 18:00:31 +0530
+Message-ID: <CAJe_Zhd5d7XeuVJpuyNYBmhwBkX_dgi+nngftCO9C589cF1Yqg@mail.gmail.com>
+Subject: Re: [PATCHv2] DMAEngine: Define generic transfer request api
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: dan.j.williams@intel.com, linux-kernel@vger.kernel.org,
+        rmk+kernel@arm.linux.org.uk, 21cnbao@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 13, 2011 at 05:49:53PM -0300, Benjamin Herrenschmidt wrote:
-> 
-> > As I understand it, cede_processor()'s call to plpar_hcall_norets()
-> > results in the hypervisor being invoked, and could give up the CPU.
-> > And yes, in this case, RCU needs to stop paying attention to this CPU.
-> > And pseries_shared_idle_sleep() also invokes cede_proceessor().
-> > 
-> > Gah...  And there also appear to be some assembly-language functions
-> > that can be invoked via the ppc_md.power_save() call from cpu_idle():
-> > ppc6xx_idle(), power4_idle(), idle_spin(), idle_doze(), and book3e_idle().
-> > There is also a power7_idle(), but it does not appear to be used anywhere.
-> > 
-> > Plus there are the C-language ppc44x_idle(), beat_power_save(),
-> > cbe_power_save(), ps3_power_save(), and cpm_idle().
-> > 
-> > > > The same thing would be needed for tick_nohz_exit_idle() and
-> > > > rcu_exit_nohz(): powerpc would need to invoke rcu_exit_nohz() after
-> > > > gaining control from the hypervisor but before doing its first tracing,
-> > > > and then it would need the idle loop to to tick_nohz_exit_idle(false).
-> > > > Again, if pseries is the only powerpc architecture requiring this,
-> > > > the argument to tick_nohz_exit_idle() could depend on the architecture.
-> > > > 
-> > > > Would this approach work?
-> > > 
-> > > Sounds like we really need that.
-> > 
-> > Sounds like an arch-dependent config symbol that is defined for the
-> > pseries targets, but not for the other powerpc architectures.
-> > 
-> > Not clear to me what to do about power4_idle(), though.
-> 
-> I don't totally follow, too many things to deal with right now, but keep
-> in mind that we build multiplatform kernels, so you can have powermac,
-> cell, pseries, etc... all in one kernel binary (including power7 idle).
-> 
-> Shouldn't we instead change the plpar trace call to skip the tracing
-> when not safe to do so ?
+On 16 September 2011 14:37, Vinod Koul <vinod.koul@intel.com> wrote:
+> On Thu, 2011-09-15 at 13:16 +0530, Jassi Brar wrote:
+>> Define a new api that could be used for doing fancy data transfers
+>> like interleaved to contiguous copy and vice-versa.
+> Then this is a very specific type of transfer this API supports, so the
+> name generic_xxx is not apt!
 
-So perhaps something like this could help? AFAIK the only place
-where the calls to trace_hcall_entry/exit are unsafe is on
-cede_processor().
-
-(I don't know powerpc asm so that patch is only made on guesses
-from similarities with ARM asm that I know better).
-
-Only compile tested.
+Currently it doesn't support every operation, perhaps there will be an
+operation that couldn't ever be merged into this.
+But it does support interleaved(async and slave), memcpy, memset, dma_sg,
+slave_sg, and cyclic.
+Please feel free to suggest a better name.
 
 
-Not-yet-signed-off-by: Me
----
-diff --git a/arch/powerpc/include/asm/hvcall.h b/arch/powerpc/include/asm/hvcall.h
-index fd8201d..37818d3 100644
---- a/arch/powerpc/include/asm/hvcall.h
-+++ b/arch/powerpc/include/asm/hvcall.h
-@@ -250,6 +250,8 @@
-  */
- long plpar_hcall_norets(unsigned long opcode, ...);
- 
-+long plpar_hcall_norets_notrace(unsigned long opcode, ...);
-+
- /**
-  * plpar_hcall: - Make a pseries hypervisor call
-  * @opcode: The hypervisor call to make.
-diff --git a/arch/powerpc/platforms/pseries/hvCall.S b/arch/powerpc/platforms/pseries/hvCall.S
-index fd05fde..302fc7a 100644
---- a/arch/powerpc/platforms/pseries/hvCall.S
-+++ b/arch/powerpc/platforms/pseries/hvCall.S
-@@ -107,6 +107,18 @@ END_FTR_SECTION(0, 1);						\
- 
- 	.text
- 
-+_GLOBAL(plpar_hcall_norets_notrace)
-+	HMT_MEDIUM
-+
-+	mfcr	r0
-+	stw	r0,8(r1)
-+
-+	HVSC				/* invoke the hypervisor */
-+
-+	lwz	r0,8(r1)
-+	mtcrf	0xff,r0
-+	blr				/* return r3 = status */
-+
- _GLOBAL(plpar_hcall_norets)
- 	HMT_MEDIUM
- 
-diff --git a/arch/powerpc/platforms/pseries/plpar_wrappers.h b/arch/powerpc/platforms/pseries/plpar_wrappers.h
-index 4bf2120..30f3d64 100644
---- a/arch/powerpc/platforms/pseries/plpar_wrappers.h
-+++ b/arch/powerpc/platforms/pseries/plpar_wrappers.h
-@@ -29,7 +29,7 @@ static inline void set_cede_latency_hint(u8 latency_hint)
- 
- static inline long cede_processor(void)
- {
--	return plpar_hcall_norets(H_CEDE);
-+	return plpar_hcall_norets_notrace(H_CEDE);
- }
- 
- static inline long extended_cede_processor(unsigned long latency_hint)
+>> +/**
+>> + * Generic Transfer Request
+>> + * ------------------------
+>> + * A chunk is collection of contiguous bytes to be transfered.
+>> + * The gap(in bytes) between two chunks is called inter-chunk-gap(ICG).
+>> + * ICGs may or maynot change between chunks.
+>> + * A FRAME is the smallest series of contiguous {chunk,icg} pairs,
+>> + *  that when repeated an integral number of times, specifies the transfer.
+>> + * A transfer template is specification of a Frame, the number of times
+>> + *  it is to be repeated and other per-transfer attributes.
+>> + *
+>> + * Practically, a client driver would have ready a template for each
+>> + *  type of transfer it is going to need during its lifetime and
+>> + *  set only 'src_start' and 'dst_start' before submitting the requests.
+>> + *
+>> + *
+>> + *  |      Frame-1        |       Frame-2       | ~ |       Frame-'numf'  |
+>> + *  |====....==.===...=...|====....==.===...=...| ~ |====....==.===...=...|
+>> + *
+>> + *    ==  Chunk size
+>> + *    ... ICG
+>> + */
+>> +
+>> +/**
+>> + * struct data_chunk - Element of scatter-gather list that makes a frame.
+>> + * @size: Number of bytes to read from source.
+>> + *     size_dst := fn(op, size_src), so doesn't mean much for destination.
+>> + * @icg: Number of bytes to jump after last src/dst address of this
+>> + *    chunk and before first src/dst address for next chunk.
+>> + *    Ignored for dst(assumed 0), if dst_inc is true and dst_sgl is false.
+>> + *    Ignored for src(assumed 0), if src_inc is true and src_sgl is false.
+>> + */
+>> +struct data_chunk {
+>> +     size_t size;
+>> +     size_t icg;
+>> +};
+>> +
+>> +/**
+>> + * struct dmaxfer_template - Template to convey DMAC the transfer pattern
+>> + *    and attributes.
+>> + * @src_start: Bus address of source for the first chunk.
+>> + * @dst_start: Bus address of destination for the first chunk.
+>> + * @src_inc: If the source address increments after reading from it.
+>> + * @dst_inc: If the destination address increments after writing to it.
+>> + * @src_sgl: If the 'icg' of sgl[] applies to Source (scattered read).
+>> + *           Otherwise, source is read contiguously (icg ignored).
+>> + *           Ignored if src_inc is false.
+>> + * @dst_sgl: If the 'icg' of sgl[] applies to Destination (scattered write).
+>> + *           Otherwise, destination is filled contiguously (icg ignored).
+>> + *           Ignored if dst_inc is false.
+>> + * @frm_irq: If the client expects DMAC driver to do callback after each frame.
+>> + * @numf: Number of frames in this template.
+>> + * @frame_size: Number of chunks in a frame i.e, size of sgl[].
+>> + * @sgl: Array of {chunk,icg} pairs that make up a frame.
+>> + */
+>> +struct dmaxfer_template {
+>> +     dma_addr_t src_start;
+>> +     dma_addr_t dst_start;
+>> +     bool src_inc;
+>> +     bool dst_inc;
+>> +     bool src_sgl;
+>> +     bool dst_sgl;
+>> +     bool frm_irq;
+>> +     size_t numf;
+>> +     size_t frame_size;
+>> +     struct data_chunk sgl[0];
+>> +};
+> This kind of transfer can be either slave (audio interleaved) based or
+> mem-to-mem (extracting still image from a buffer),
+> How do you propose the dmac know about this is unclear to me
 
+Every 'prepare' callback already passes the channel chosen for the transfer.
+And the DMAC driver already knows if that channel is SLAVE capable or not.
