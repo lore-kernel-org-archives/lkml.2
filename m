@@ -1,85 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754576Ab1IPMvH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 08:51:07 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:44147 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753864Ab1IPMus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 08:50:48 -0400
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: linux-security-module@vger.kernel.org
-Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        David Safford <safford@watson.ibm.com>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        target-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>
-Subject: [RFC][PATCH 3/5] trusted-keys: check hex2bin result
-Date: Fri, 16 Sep 2011 08:50:28 -0400
-Message-Id: <1316177430-13167-3-git-send-email-zohar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1316177430-13167-1-git-send-email-zohar@linux.vnet.ibm.com>
-References: <1316177430-13167-1-git-send-email-zohar@linux.vnet.ibm.com>
+	id S1754461Ab1IPMx1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 08:53:27 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:33339 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753805Ab1IPMx0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Sep 2011 08:53:26 -0400
+Date: Fri, 16 Sep 2011 14:53:27 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Han Pingtian <phan@redhat.com>
+Cc: mchehab@redhat.com, linux-kernel@vger.kernel.org,
+        edac-devel <linux-edac@vger.kernel.org>
+Subject: Re: [PATCH] Fix EDAC sdram_scrub_rate read failure
+Message-ID: <20110916125326.GA1957@gere.osrc.amd.com>
+References: <20110916105856.GA13253@hpt.nay.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110916105856.GA13253@hpt.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+On Fri, Sep 16, 2011 at 06:58:56PM +0800, Han Pingtian wrote:
+> If sdram scrubbing rate ins't implemented on current system, read it
+> will cause an error:
+> 
+> cat: /sys/devices/system/edac/mc//mc0/sdram_scrub_rate: Invalid argument
+> 
+> The eba042a81edd6baaff44831b2d719b14a6d21e58 let it returning -EINVAL,
 
-For each hex2bin call in trusted keys, check that the ascii hex string is
-valid.  On failure, return -EINVAL.
+Can you please add the patch author to CC next time, out of courtesy?
+Thanks.
 
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
----
- security/keys/trusted.c |   15 +++++++++++----
- 1 files changed, 11 insertions(+), 4 deletions(-)
+> but according to the document, it should show -1:
+> 
+> dram memory scrubbing rate:
+> 
+>         'sdram_scrub_rate'
+> 
+>         Read/Write attribute file that controls memory scrubbing. The scrubbing
+>         rate is set by writing a minimum bandwidth in bytes/sec to the attribute
+>         file. The rate will be translated to an internal value that gives at
+>         least the specified rate.
+> 
+>         Reading the file will return the actual scrubbing rate employed.
+> 
+>         If configuration fails or memory scrubbing is not implemented, the value
+>         of the attribute file will be -1.
+> 
+> Signed-off-by: Han Pingtian <phan@redhat.com>
+> ---
+>  drivers/edac/edac_mc_sysfs.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
+> index 29ffa35..602fdcf 100644
+> --- a/drivers/edac/edac_mc_sysfs.c
+> +++ b/drivers/edac/edac_mc_sysfs.c
+> @@ -475,7 +475,7 @@ static ssize_t mci_sdram_scrub_rate_show(struct mem_ctl_info *mci, char *data)
+>  	int bandwidth = 0;
+>  
+>  	if (!mci->get_sdram_scrub_rate)
+> -		return -EINVAL;
+> +		return sprintf(date, "%d\n", -1);
 
-diff --git a/security/keys/trusted.c b/security/keys/trusted.c
-index 0c33e2e..9b847e1 100644
---- a/security/keys/trusted.c
-+++ b/security/keys/trusted.c
-@@ -779,7 +779,9 @@ static int getoptions(char *c, struct trusted_key_payload *pay,
- 			opt->pcrinfo_len = strlen(args[0].from) / 2;
- 			if (opt->pcrinfo_len > MAX_PCRINFO_SIZE)
- 				return -EINVAL;
--			hex2bin(opt->pcrinfo, args[0].from, opt->pcrinfo_len);
-+			if (!hex2bin(opt->pcrinfo, args[0].from,
-+				     opt->pcrinfo_len))
-+				return -EINVAL;
- 			break;
- 		case Opt_keyhandle:
- 			res = strict_strtoul(args[0].from, 16, &handle);
-@@ -791,12 +793,16 @@ static int getoptions(char *c, struct trusted_key_payload *pay,
- 		case Opt_keyauth:
- 			if (strlen(args[0].from) != 2 * SHA1_DIGEST_SIZE)
- 				return -EINVAL;
--			hex2bin(opt->keyauth, args[0].from, SHA1_DIGEST_SIZE);
-+			if (!hex2bin(opt->keyauth, args[0].from,
-+				     SHA1_DIGEST_SIZE))
-+				return -EINVAL;
- 			break;
- 		case Opt_blobauth:
- 			if (strlen(args[0].from) != 2 * SHA1_DIGEST_SIZE)
- 				return -EINVAL;
--			hex2bin(opt->blobauth, args[0].from, SHA1_DIGEST_SIZE);
-+			if (!hex2bin(opt->blobauth, args[0].from,
-+				     SHA1_DIGEST_SIZE))
-+				return -EINVAL;
- 			break;
- 		case Opt_migratable:
- 			if (*args[0].from == '0')
-@@ -860,7 +866,8 @@ static int datablob_parse(char *datablob, struct trusted_key_payload *p,
- 		p->blob_len = strlen(c) / 2;
- 		if (p->blob_len > MAX_BLOB_SIZE)
- 			return -EINVAL;
--		hex2bin(p->blob, c, p->blob_len);
-+		if (!hex2bin(p->blob, c, p->blob_len))
-+			return -EINVAL;
- 		ret = getoptions(datablob, p, o);
- 		if (ret < 0)
- 			return ret;
+Have you even build-tested your patch:
+
+drivers/edac/edac_mc_sysfs.c: In function ‘mci_sdram_scrub_rate_show’:
+drivers/edac/edac_mc_sysfs.c:478: error: ‘date’ undeclared (first use in this function)
+drivers/edac/edac_mc_sysfs.c:478: error: (Each undeclared identifier is reported only once
+drivers/edac/edac_mc_sysfs.c:478: error: for each function it appears in.)
+make[2]: *** [drivers/edac/edac_mc_sysfs.o] Error 1
+make[2]: *** Waiting for unfinished jobs....
+make[1]: *** [drivers/edac] Error 2
+make[1]: *** Waiting for unfinished jobs....
+make: *** [drivers] Error 2
+make: *** Waiting for unfinished jobs....
+
+>  
+>  	bandwidth = mci->get_sdram_scrub_rate(mci);
+>  	if (bandwidth < 0) {
+
+Anyway, the EDAC document says that sdram_scrub_rate is
+read/write and when writing you have to write -1 too. Care to fix
+mci_sdram_scrub_rate_store too, test your patch properly and resend?
+
+Thanks.
+
 -- 
-1.7.3.4
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
