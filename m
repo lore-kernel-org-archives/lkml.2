@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755867Ab1IPSdf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 14:33:35 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:43743 "EHLO e5.ny.us.ibm.com"
+	id S1755764Ab1IPSfc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 14:35:32 -0400
+Received: from 1wt.eu ([62.212.114.60]:33037 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754288Ab1IPSde (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 14:33:34 -0400
-Message-ID: <4E739677.4020708@linux.vnet.ibm.com>
-Date: Fri, 16 Sep 2011 13:33:27 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
-MIME-Version: 1.0
-To: Nitin Gupta <ngupta@vflare.org>
-CC: Greg KH <greg@kroah.com>, gregkh@suse.de, devel@driverdev.osuosl.org,
-        dan.magenheimer@oracle.com, cascardo@holoscopio.com,
-        linux-kernel@vger.kernel.org, dave@linux.vnet.ibm.com,
-        linux-mm@kvack.org, brking@linux.vnet.ibm.com, rcj@linux.vnet.ibm.com
-Subject: Re: [PATCH v2 0/3] staging: zcache: xcfmalloc support
-References: <1315404547-20075-1-git-send-email-sjenning@linux.vnet.ibm.com> <20110909203447.GB19127@kroah.com> <4E6ACE5B.9040401@vflare.org> <4E6E18C6.8080900@linux.vnet.ibm.com> <4E6EB802.4070109@vflare.org> <4E6F7DA7.9000706@linux.vnet.ibm.com> <4E6FC8A1.8070902@vflare.org> <4E72284B.2040907@linux.vnet.ibm.com> <4E738B81.2070005@vflare.org>
-In-Reply-To: <4E738B81.2070005@vflare.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753285Ab1IPSfb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Sep 2011 14:35:31 -0400
+Date: Fri, 16 Sep 2011 20:35:16 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Greg KH <gregkh@suse.de>
+Cc: Josh Boyer <jwboyer@redhat.com>, andi@firstfloor.org,
+        paul.gortmaker@windriver.com, linux-kernel@vger.kernel.org
+Subject: Re: stable patch queues and submission
+Message-ID: <20110916183516.GA4121@1wt.eu>
+References: <20110916181307.GW10700@zod.bos.redhat.com> <20110916182350.GA7315@suse.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110916182350.GA7315@suse.de>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/16/2011 12:46 PM, Nitin Gupta wrote:
-> I think replacing allocator every few weeks isn't a good idea. So, I
-> guess better would be to let me work for about 2 weeks and try the slab
-> based approach.  If nothing works out in this time, then maybe xcfmalloc
-> can be integrated after further testing.
-
-Sounds good to me.
-
+On Fri, Sep 16, 2011 at 08:23:50PM +0200, Greg KH wrote:
+> > Hi All,
+> > 
+> > With kernel.org being down, the stable@kernel.org list is no longer
+> > working.  This leaves me wondering if we should send patches directly to
+> > the various stable tree maintainers with [stable] in the prefix and
+> > linux-kernel CC'd, or if the stable queues are even being maintained
+> > during the outage.
 > 
-> Thanks,
-> Nitin
+> No, please do not, unless you need something "special", and even then,
+> please cc: lkml and the developers so it's not lost.
 > 
+> > Does anyone have a preference or suggestion on how to continue stable
+> > releases until the list comes back?  (I'm assuming 'wait' isn't really a
+> > best all around option.)
+> 
+> Wait and continue to add the marking to your patches, my scripts are
+> still running and pulling the patches out and they are going into the
+> stable queue just fine.  The queue just isn't public at the moment due
+> to kernel.org being out.
 
-Thanks
---
-Seth
+I was thinking about an alternative if that can help. If the mails are
+sent to our addresses followed by "+stable", they're easy to filter out
+to another mailbox (eg: "willy+stable@1wt.eu").
+
+But there are a number of other reviewers on stable@k.o who provide a
+lot of value with their reviews, and not having them check the patches
+could easily lead to some nasty patches leaking into stable.
+
+Regards,
+Willy
 
