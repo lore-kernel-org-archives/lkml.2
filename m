@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755940Ab1IPSkM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 14:40:12 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:60702 "EHLO e8.ny.us.ibm.com"
+	id S1755882Ab1IPSkG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 14:40:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59387 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754037Ab1IPSkJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 14:40:09 -0400
-Date: Fri, 16 Sep 2011 11:40:05 -0700
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: "Theodore Ts'o" <tytso@mit.edu>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Subject: [PATCH v2] ext4: Prevent stack overrun in ext4_file_open when
-	recording last known mountpoint
-Message-ID: <20110916184005.GH12086@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20110915231645.GE12086@tux1.beaverton.ibm.com> <m239fwfk4k.fsf@firstfloor.org>
+	id S1754300Ab1IPSkF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Sep 2011 14:40:05 -0400
+Date: Fri, 16 Sep 2011 20:39:21 +0200
+From: Greg KH <gregkh@suse.de>
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: andi@firstfloor.org, willy@meta-x.org, paul.gortmaker@windriver.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: stable patch queues and submission
+Message-ID: <20110916183921.GB16415@suse.de>
+References: <20110916181307.GW10700@zod.bos.redhat.com>
+ <20110916182350.GA7315@suse.de>
+ <20110916183113.GY10700@zod.bos.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <m239fwfk4k.fsf@firstfloor.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <20110916183113.GY10700@zod.bos.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In ext4_file_open, the filesystem records the mountpoint of the first file that
-is opened after mounting the filesystem.  It does this by allocating a 64-byte
-stack buffer, calling d_path() to grab the mount point through which this file
-was accessed, and then memcpy()ing 64 bytes into the superblock's
-s_last_mounted field, starting from the return value of d_path(), which is
-stored as "cp".  However, if cp > buf (which it frequently is since path
-components are prepended starting at the end of buf) then we can end up copying
-stack data into the superblock.
+On Fri, Sep 16, 2011 at 02:31:13PM -0400, Josh Boyer wrote:
+> On Fri, Sep 16, 2011 at 08:23:50PM +0200, Greg KH wrote:
+> > > Hi All,
+> > > 
+> > > With kernel.org being down, the stable@kernel.org list is no longer
+> > > working.  This leaves me wondering if we should send patches directly to
+> > > the various stable tree maintainers with [stable] in the prefix and
+> > > linux-kernel CC'd, or if the stable queues are even being maintained
+> > > during the outage.
+> > 
+> > No, please do not, unless you need something "special", and even then,
+> > please cc: lkml and the developers so it's not lost.
+> 
+> Would "special" include patches that are backported for longterm
+> releases?
 
-Writing stack variables into the superblock doesn't sound like a great idea, so
-use strlcpy instead.  Andi Kleen suggested using strlcpy instead of strncpy.
+Yes.
 
-Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
----
-
- fs/ext4/file.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/fs/ext4/file.c b/fs/ext4/file.c
-index e4095e9..9781099 100644
---- a/fs/ext4/file.c
-+++ b/fs/ext4/file.c
-@@ -181,8 +181,8 @@ static int ext4_file_open(struct inode * inode, struct file * filp)
- 		path.dentry = mnt->mnt_root;
- 		cp = d_path(&path, buf, sizeof(buf));
- 		if (!IS_ERR(cp)) {
--			memcpy(sbi->s_es->s_last_mounted, cp,
--			       sizeof(sbi->s_es->s_last_mounted));
-+			strlcpy(sbi->s_es->s_last_mounted, cp,
-+				sizeof(sbi->s_es->s_last_mounted));
- 			ext4_mark_super_dirty(sb);
- 		}
- 	}
+greg k-h
