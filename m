@@ -1,91 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751993Ab1IPDcZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 23:32:25 -0400
-Received: from home.keithp.com ([63.227.221.253]:43711 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751807Ab1IPDcF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 23:32:05 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linaro-dev@lists.linaro.org,
-        "Clark\, Rob" <rob@ti.com>, Archit Taneja <archit@ti.com>
-Subject: Re: Proposal for a low-level Linux display framework
-In-Reply-To: <1316107275.23214.99.camel@deskari>
-References: <1316088425.11294.78.camel@lappyti> <yunboul7sx7.fsf@aiko.keithp.com> <1316100594.23214.65.camel@deskari> <yun8vpp7qk7.fsf@aiko.keithp.com> <1316107275.23214.99.camel@deskari>
-User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Thu, 15 Sep 2011 19:55:37 -0500
-Message-ID: <yunfwjxwbjq.fsf@aiko.keithp.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+	id S1752004Ab1IPDzf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 23:55:35 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:54765 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751780Ab1IPDze (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Sep 2011 23:55:34 -0400
+Date: Fri, 16 Sep 2011 13:55:23 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Jander <david@protonic.nl>,
+        Uwe =?UTF-8?B?S2xlaW5lLUvDtm5pZw==?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: linux-next: build failure after merge of the mfd tree
+Message-Id: <20110916135523.01ec57f699192230272e99e3@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__16_Sep_2011_13_55_23_+1000_+GhZUq.W250F8fv7"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
+--Signature=_Fri__16_Sep_2011_13_55_23_+1000_+GhZUq.W250F8fv7
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Thu, 15 Sep 2011 20:21:15 +0300, Tomi Valkeinen <tomi.valkeinen@ti.com> =
-wrote:
+Hi Samuel,
 
-> 2) panel drivers, handles panel specific things. Each panel may support
-> custom commands and features, for which we need a dedicated driver. And
-> this driver is not platform specific, but should work with any platform
-> which has the output used with the panel.
+After merging the mfd tree, today's linux-next build (x86_64 allmodconfig)
+failed like this:
 
-Right, we've got DDC ports (which are just i2c) and DisplayPort aux
-channel stuff.
+drivers/leds/leds-mc13783.c: In function 'mc13783_leds_prepare':
+drivers/leds/leds-mc13783.c:193:11: error: dereferencing pointer to incompl=
+ete type
+drivers/leds/leds-mc13783.c:196:11: error: dereferencing pointer to incompl=
+ete type
+drivers/leds/leds-mc13783.c:203:14: error: dereferencing pointer to incompl=
+ete type
+drivers/leds/leds-mc13783.c:206:11: error: dereferencing pointer to incompl=
+ete type
+drivers/leds/leds-mc13783.c:213:14: error: dereferencing pointer to incompl=
+ete type
+drivers/leds/leds-mc13783.c:216:11: error: dereferencing pointer to incompl=
+ete type
+drivers/leds/leds-mc13783.c:223:14: error: dereferencing pointer to incompl=
+ete type
+drivers/leds/leds-mc13783.c:226:11: error: dereferencing pointer to incompl=
+ete type
+drivers/leds/leds-mc13783.c:233:14: error: dereferencing pointer to incompl=
+ete type
+drivers/leds/leds-mc13783.c:236:11: error: dereferencing pointer to incompl=
+ete type
+drivers/leds/leds-mc13783.c:244:11: error: dereferencing pointer to incompl=
+ete type
+drivers/leds/leds-mc13783.c:246:11: error: dereferencing pointer to incompl=
+ete type
+drivers/leds/leds-mc13783.c:248:11: error: dereferencing pointer to incompl=
+ete type
+drivers/leds/leds-mc13783.c:250:11: error: dereferencing pointer to incompl=
+ete type
+drivers/leds/leds-mc13783.c:253:15: error: dereferencing pointer to incompl=
+ete type
+drivers/leds/leds-mc13783.c:255:15: error: dereferencing pointer to incompl=
+ete type
+drivers/leds/leds-mc13783.c: In function 'mc13783_led_probe':
+drivers/leds/leds-mc13783.c:278:11: error: dereferencing pointer to incompl=
+ete type
+drivers/leds/leds-mc13783.c:278:34: error: dereferencing pointer to incompl=
+ete type
+drivers/leds/leds-mc13783.c:279:54: error: dereferencing pointer to incompl=
+ete type
+drivers/leds/leds-mc13783.c:283:36: error: dereferencing pointer to incompl=
+ete type
+drivers/leds/leds-mc13783.c:295:23: error: dereferencing pointer to incompl=
+ete type
+drivers/leds/leds-mc13783.c:297:19: error: dereferencing pointer to incompl=
+ete type
+drivers/leds/leds-mc13783.c:299:14: error: dereferencing pointer to incompl=
+ete type
+drivers/leds/leds-mc13783.c:299:47: error: dereferencing pointer to incompl=
+ete type
+drivers/leds/leds-mc13783.c:300:50: error: dereferencing pointer to incompl=
+ete type
+drivers/leds/leds-mc13783.c:305:31: error: dereferencing pointer to incompl=
+ete type
+drivers/leds/leds-mc13783.c:307:13: error: dereferencing pointer to incompl=
+ete type
+drivers/leds/leds-mc13783.c:312:27: error: dereferencing pointer to incompl=
+ete type
+drivers/leds/leds-mc13783.c:313:31: error: dereferencing pointer to incompl=
+ete type
+drivers/leds/leds-mc13783.c:314:42: error: dereferencing pointer to incompl=
+ete type
+drivers/leds/leds-mc13783.c:317:24: error: dereferencing pointer to incompl=
+ete type
+drivers/leds/leds-mc13783.c:329:43: error: dereferencing pointer to incompl=
+ete type
+drivers/leds/leds-mc13783.c: In function 'mc13783_led_remove':
+drivers/leds/leds-mc13783.c:359:23: error: dereferencing pointer to incompl=
+ete type
 
-The DDC stuff is abstracted out and shared across the drivers, but the
-DisplayPort aux channel code is not -- it's duplicated in every output
-driver.=20
+Presumably caused by commit 747c98a3660d ("leds: Convert mc13783 driver
+to mc13xxx MFD").
 
-> DSI bus is a half-duplex serial bus, and while it's designed for
-> displays you could use it easily for any communication between the SoC
-> and the peripheral.
+I have used the mfd tree from next-20110915 for today.
 
-Yeah, HDMI uses DDC for all kinds of crazy stuff in the CE world.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> The point is that we cannot have standard "MIPI DSI command mode panel
-> driver" which would work for all DSI cmd mode panels, but we need (in
-> the worst case) separate driver for each panel.
-
-It sounds like we do want to share code for those bits, much like we
-have DDC split out now. And, we should do something about the
-DisplayPort aux channel stuff to avoid duplicating it everywhere.
-
-I'm not sure a common interface to all of these different
-channels makes sense, but surely a DSI library and an aux channel
-library would fit nicely alongside the existing DDC library.
-
-I suspect helper functions would be a good model to follow, rather than
-trying to create a whole new device infrastructure; some of the
-communication paths aren't easily separable from the underlying output
-devices.
-
-Oh, I think you're also trying to get at how we expose some of these
-controls outside of the display driver -- right now, they're mostly
-exposed as properties on the output device. Things like backlight
-brightness, a million analog TV output values, dithering control and
-other more esoteric controls.
-
-DRM properties include booleans, enumerations, integer ranges and chunks
-of binary data. Some are read-only (like EDID data), some are writable
-(like overscan values).
-
-=2D-=20
-keith.packard@intel.com
-
---=-=-=
+--Signature=_Fri__16_Sep_2011_13_55_23_+1000_+GhZUq.W250F8fv7
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iD8DBQFOcp6JQp8BWwlsTdMRAiLoAJ9dqKSIWK/PUo3pI53f0SS8zB3/nwCgvGp7
-fMEoV8AmSOXLkfh8XG7NFVg=
-=SEWx
+iQEcBAEBAgAGBQJOcsirAAoJEDMEi1NhKgbs+bwH/04tKgwKXzdQpk3jMjF9D0gg
+EACSTHlnDkpcAK+qcjevlASbB5mhM5GyvIMwNOBcb8HY4dQH+3TrX4UfTuCQA9xN
+DH3eycw3TINGfhej+/5cbNEJNORKEBkJcILCq0n6toBBzcPtXHQFdrjiZxBc0BEO
+UqH/tjb9GKeeOKPuRShBZQrIXSd5MLWUs0vYjNQYRiPNNI37SFOBJTHRIGf3Lqqw
+9j5y9BaJDvDKd7b5z15KtGscxFgOQW3NjdSZCkYJvQWCU0jQQ9zxfIUUBInO0EFH
+iosJUYW5S0MNwBFPyrmTXwfFBCHELVBbL+Fy9Ei7FaWdysBJn9I/M1xl8EChzX0=
+=1VzZ
 -----END PGP SIGNATURE-----
---=-=-=--
+
+--Signature=_Fri__16_Sep_2011_13_55_23_+1000_+GhZUq.W250F8fv7--
