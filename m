@@ -1,65 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751023Ab1IPAkx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Sep 2011 20:40:53 -0400
-Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:6786
-	"EHLO AM1EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750821Ab1IPAkv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Sep 2011 20:40:51 -0400
-X-SpamScore: -12
-X-BigFish: VPS-12(zzbb2dK1432N98dKzz1202hzz8275bhz2fh668h839h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPVD:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
-Message-ID: <4E729AFB.6010008@am.sony.com>
-Date: Thu, 15 Sep 2011 17:40:27 -0700
-From: Frank Rowand <frank.rowand@am.sony.com>
-Reply-To: <frank.rowand@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+	id S1751141Ab1IPAvP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Sep 2011 20:51:15 -0400
+Received: from tundra.namei.org ([65.99.196.166]:34451 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750957Ab1IPAvO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Sep 2011 20:51:14 -0400
+Date: Fri, 16 Sep 2011 10:51:06 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree (security
+ tree related)
+In-Reply-To: <1316124231.3345.29.camel@localhost.localdomain>
+Message-ID: <alpine.LRH.2.00.1109161050430.31572@tundra.namei.org>
+References: <20110915170715.a380a5be954efc5891386ee3@canb.auug.org.au> <1316124231.3345.29.camel@localhost.localdomain>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-To: Keshava Munegowda <keshava_mgowda@ti.com>
-CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "b-cousson@ti.com" <b-cousson@ti.com>, "balbi@ti.com" <balbi@ti.com>,
-        "gadiyar@ti.com" <gadiyar@ti.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "parthab@india.ti.com" <parthab@india.ti.com>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "khilman@ti.com" <khilman@ti.com>, "paul@pwsan.com" <paul@pwsan.com>,
-        "johnstul@us.ibm.com" <johnstul@us.ibm.com>,
-        "vishwanath.bs@ti.com" <vishwanath.bs@ti.com>
-Subject: Re: [PATCH 5/5 v9] mfd: omap: usb: Runtime PM support
-References: <1316092970-2440-1-git-send-email-keshava_mgowda@ti.com> <1316092970-2440-2-git-send-email-keshava_mgowda@ti.com> <1316092970-2440-3-git-send-email-keshava_mgowda@ti.com> <1316092970-2440-4-git-send-email-keshava_mgowda@ti.com> <1316092970-2440-5-git-send-email-keshava_mgowda@ti.com> <1316092970-2440-6-git-send-email-keshava_mgowda@ti.com>
-In-Reply-To: <1316092970-2440-6-git-send-email-keshava_mgowda@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/15/11 06:22, Keshava Munegowda wrote:
-> From: Keshava Munegowda <Keshava_mgowda@ti.com>
-> 
-> The usbhs core driver does not enable/disable the interface and
-> functional clocks; These clocks are handled by hwmod and runtime pm,
-> hence instead of the clock enable/disable, the runtime pm APIS are
-> used. however,the port clocks are handled by the usbhs core.
-> 
-> Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
-> Reviewed-by: Kevin Hilman <khilman@ti.com>
-> ---
->  arch/arm/plat-omap/include/plat/usb.h |    3 -
->  drivers/mfd/omap-usb-host.c           |  731 +++++++++++++--------------------
->  drivers/usb/host/ehci-omap.c          |   17 +-
->  drivers/usb/host/ohci-omap3.c         |   18 +-
->  4 files changed, 295 insertions(+), 474 deletions(-)
-> 
-> diff --git a/arch/arm/plat-omap/include/plat/usb.h b/arch/arm/plat-omap/include/plat/usb.h
-> index 17d3c93..2b66dc2 100644
+On Thu, 15 Sep 2011, Mimi Zohar wrote:
 
-Patch 5/5 is white space mangled.  The tabs have been changed into spaces.
+> Thanks Stephen.  James, assuming that the patch needs to be made
+> available from the security tree, it's available from:
+> 
+> The following changes since commit 8de6ac7f58a22fdab399fbe97763e465ea49c735:
+> 
+>   Merge branch 'next-evm' of git://github.com/mzohar/linux-evm into next (2011-09-15 09:53:38 +1000)
+> 
+> are available in the git repository at:
+> 
+>   git://github.com/mzohar/linux-evm.git next-for-james
+> 
+> Stephen Rothwell (1):
+>       encrypted-keys: IS_ERR need include/err.h
+> 
+>  security/keys/encrypted-keys/masterkey_trusted.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
 
--Frank
+Pulled, thanks.
 
+-- 
+James Morris
+<jmorris@namei.org>
