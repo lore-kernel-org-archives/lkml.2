@@ -1,120 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753089Ab1IPKjs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 06:39:48 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:54280 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752759Ab1IPKjr (ORCPT
+	id S1751679Ab1IPK5X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 06:57:23 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:40044 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751126Ab1IPK5W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 06:39:47 -0400
-X-Originating-IP: 217.70.178.129
-X-Originating-IP: 147.83.37.68
-From: "Leopold Palomo-Avellaneda" <leo@alaxarxa.net>
-To: Bastien ROUCARIES <roucaries.bastien@gmail.com>
-Subject: Re: [PATCH/RFC] parport_pc: remove ancient, overeager quirk that disables EPP support on many chipsets
-Date: Fri, 16 Sep 2011 12:39:40 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.32-5-amd64; KDE/4.4.5; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Adam Baker <linux@baker-net.org.uk>,
-        linux-parport@lists.infradead.org, 630593@bugs.debian.org,
-        Nicos Gollan <gollan@informatik.uni-kl.de>, Greg KH <greg@kroah.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Alexander Gordeev <lasaine@lvk.cs.msu.su>,
-        Jonathan Nieder <jrnieder@gmail.com>
-References: <201109151441.15015.leo@alaxarxa.net> <CAE2SPAatxqkFUExiNc3EAP3T4EiHQiPxVcd7vPZG23xycy4QLw@mail.gmail.com> <CAE2SPAaSOMCeyS=ED+VWKeoUwHSL=8BUGe8UXUaMKEUr0EtHSQ@mail.gmail.com>
-In-Reply-To: <CAE2SPAaSOMCeyS=ED+VWKeoUwHSL=8BUGe8UXUaMKEUr0EtHSQ@mail.gmail.com>
+	Fri, 16 Sep 2011 06:57:22 -0400
+Date: Fri, 16 Sep 2011 06:57:16 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: [PATCH] sysfs: add per pci device msi[x] irq listing (v2)
+Message-ID: <20110916105716.GA32672@hmsreliant.think-freely.org>
+References: <1316025413-5855-1-git-send-email-nhorman@tuxdriver.com>
+ <1316117318-22027-1-git-send-email-nhorman@tuxdriver.com>
+ <20110916083646.GA30915@suse.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201109161239.40592.leo@alaxarxa.net>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110916083646.GA30915@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -1.2 (-)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A Dijous, 15 de setembre de 2011, Bastien ROUCARIES va escriure:
-> On Thu, Sep 15, 2011 at 3:41 PM, Bastien ROUCARIES
-> <roucaries.bastien@gmail.com> wrote:
-> > On Thu, Sep 15, 2011 at 2:41 PM, Leopold Palomo-Avellaneda
-> > <leo@alaxarxa.net> wrote:
-> >> Hi again,
-> >>
-> >> sorry for the noise and my mistake. The patch...
-> >>
-> >> there's a bug in the parport module that have been reported (in another
-> >> places) some time ago [1]. Also, this bug was reported at Redhat [2], but
-> >> nobody follow the report and it was closed.
+On Fri, Sep 16, 2011 at 10:36:46AM +0200, Greg KH wrote:
+> On Thu, Sep 15, 2011 at 04:08:38PM -0400, Neil Horman wrote:
+> > +static struct kobj_type msi_irq_ktype = {
+> > +	.sysfs_ops = &msi_irq_sysfs_ops,
+> > +	.default_attrs = msi_irq_default_attrs,
+> > +};
 > 
-> Moreover they are more detail about this bug here you should contact
-> davbid campell
+> You still haven't successfully removed the kobject associated with this
+> kobj_type.  Otherwise you would have seen the error messages in the
+> kernel log and fixed up what it told you to fix.
 > 
-> http://lists.infradead.org/pipermail/linux-parport/2004-March/000048.html
-
-I think that this is a good approach, but it seems that this patch go to 
-nowhere.... also solves another question of timeouts.
-
-Leo
-
-
-
-> Bastien
+> Please do so.
 > 
-> >> As Adam Baker said [1] :
-> >>
-> >> <quote>
-> >> A long time ago (~ 10 years), Intel produced a chipset that
-> >
-> > Why not check dmi years for this test and do the test only for board
-> > before 2000 ? Better safe than sorry
-> >
-> > Bastien
-> >
-> >
-> >
-> >> included broken EPP support. The Linux parport driver was written to 
-detect
-> >> such a chipset and disable EPP support on it. Unfortunately the test that 
-was
-> >> written gives false positives for many current chipsets and no-one seems 
-to
-> >> know exactly what the problem hardware was, let alone have a sample of it 
-to
-> >> see if a better test can be written. After such a long time it is 
-probably
-> >> appropriate to just remove the test (on average it does more harm than 
-good)
-> >> however you are correct in asserting the driver is unmaintained so no-one 
-is
-> >> bothering to fix it.
-> >> </quote>
-> >>
-> >> I have applied the patch to the standard debian kernel and vanilla 
-kernels and
-> >> runs perfectly. The patch simply erases a check. Applied to some Dell
-> >> hardware, now the EPP mode is detected and, after some initial tests it's
-> >> working.
-> >>
-> >> Please, apply the patch.
-> >>
-> >> Best regards,
-> >>
-> >> Leo
-> >>
-> >> [1] http://lists.infradead.org/pipermail/linux-parport/2008-
-March/000628.html
-> >> [2] https://bugzilla.redhat.com/show_bug.cgi?id=284471
-> >>
-> >>
-> >> Signed-off-by: Adam Baker <linux at baker-net.org.uk>
-> >> Signed-off-by: Leopold Palomo-Avellaneda <leo@alaxarxa.net>
-> >>
-> >>
-> >> ---
-> >>
-> >
-> 
+Well, I'm not using kobject_del, you're right, I'm just using a kobject_put, and
+I swear I'm not getting any error messages about it:
+[root@amd-dinar-01 eth0]# echo 1 > ./device/remove
+[root@amd-dinar-01 eth0]# dmesg | tasil -10
+[   17.673050] RPC: Registered tcp transport module.
+[   17.677759] RPC: Registered tcp NFSv4.1 backchannel transport module.
+[   17.702913] SELinux: initialized (dev rpc_pipefs, type rpc_pipefs), uses
+genfs_contexts
+[   20.060280] bnx2 0000:01:00.0: eth0: NIC Copper Link is Up, 1000 Mbps full
+duplex
+[   20.070903] ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
+[   20.106296] bnx2 0000:01:00.1: eth1: NIC Copper Link is Up, 1000 Mbps full
+duplex
+[   20.116857] ADDRCONF(NETDEV_CHANGE): eth1: link becomes ready
+[   30.850059] eth1: no IPv6 routers present
 
+I'm not sure why that would be, but theres definately no warning about it.
+Either way, I'll gladly make the change to use kobject_del
 
--- 
---
-Linux User 152692
-Catalonia
+Regards
+Neil
+
