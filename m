@@ -1,90 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754936Ab1IPSHl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 14:07:41 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:47742 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750755Ab1IPSHj (ORCPT
+	id S1755398Ab1IPSIM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 14:08:12 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:52579 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753796Ab1IPSIL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 14:07:39 -0400
-Date: Fri, 16 Sep 2011 22:07:32 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Pavel Machek <pavel@ucw.cz>, Andrew Morton <akpm00@gmail.com>,
-        linux-kernel@vger.kernel.org, containers@lists.osdl.org,
-        linux-fsdevel@vger.kernel.org, Kirill Shutemov <kirill@shutemov.name>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Nathan Lynch <ntl@pobox.com>, Zan Lynx <zlynx@acm.org>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>, Tejun Heo <tj@kernel.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [patch 2/2] fs, proc: Introduce the /proc/<pid>/map_files/
- directory v12
-Message-ID: <20110916180731.GB8599@sun>
-References: <20110914134405.GV25367@sun>
- <20110914144841.GA7906@albatros>
- <20110914160018.GW25367@sun>
- <20110914160724.GA10612@albatros>
- <20110915091417.GA27755@sun>
- <20110915092757.GA23404@albatros>
- <20110915102922.GB27755@sun>
- <20110915105651.GA17575@albatros>
- <20110915201939.GE12040@sun>
- <20110916175618.GA20046@albatros>
+	Fri, 16 Sep 2011 14:08:11 -0400
+X-Sasl-enc: XCAsfsc9VQ7GDWum1UHImKmvpgL+CfXoW95fsvE4cPPq 1316196490
+Date: Fri, 16 Sep 2011 19:55:52 +0200
+From: Greg KH <greg@kroah.com>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-mm@kvack.org,
+        ngupta@vflare.org, linux-kernel@vger.kernel.org,
+        francis.moro@gmail.com, Seth Jennings <sjenning@linux.vnet.ibm.com>
+Subject: Re: [PATCH] staging: zcache: fix cleancache crash
+Message-ID: <20110916175552.GA25405@kroah.com>
+References: <a7d17e7e-c6a1-448e-b60f-b79a4ae0c3ba@default>
+ <8cb0f464-7e39-4294-9f98-c4c5a66110ba@default>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110916175618.GA20046@albatros>
+In-Reply-To: <8cb0f464-7e39-4294-9f98-c4c5a66110ba@default>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 16, 2011 at 09:56:18PM +0400, Vasiliy Kulikov wrote:
-...
+On Thu, Sep 15, 2011 at 07:16:10AM -0700, Dan Magenheimer wrote:
+> > From: Dan Magenheimer
+> > Sent: Tuesday, September 13, 2011 2:56 PM
+> > To: Seth Jennings; gregkh@suse.de
+> > Cc: devel@driverdev.osuosl.org; linux-mm@kvack.org; ngupta@vflare.org; linux-kernel@vger.kernel.org;
+> > francis.moro@gmail.com
+> > Subject: RE: [PATCH] staging: zcache: fix cleancache crash
 > > 
-> > v14: (by Vasiliy Kulikov)
-> >  - for security reason map_files/ entries are allowed for
-> >    readers with CAP_SYS_ADMIN credentials granted only
+> > > From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+> > > Sent: Tuesday, September 13, 2011 1:19 PM
+> > > To: gregkh@suse.de
+> > > Cc: devel@driverdev.osuosl.org; linux-mm@kvack.org; ngupta@vflare.org; linux-kernel@vger.kernel.org;
+> > > francis.moro@gmail.com; Dan Magenheimer; Seth Jennings
+> > > Subject: [PATCH] staging: zcache: fix cleancache crash
+> > >
+> > > After commit, c5f5c4db, cleancache crashes on the first
+> > > successful get. This was caused by a remaining virt_to_page()
+> > > call in zcache_pampd_get_data_and_free() that only gets
+> > > run in the cleancache path.
+> > >
+> > > The patch converts the virt_to_page() to struct page
+> > > casting like was done for other instances in c5f5c4db.
+> > >
+> > > Based on 3.1-rc4
+> > >
+> > > Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+> > 
+> > Yep, this appears to fix it!  Hopefully Francis can confirm.
+> > 
+> > Greg, ideally apply this additional fix rather than do the revert
+> > of the original patch suggested in https://lkml.org/lkml/2011/9/13/234
+> > 
+> > Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
 > 
-> This changelog is currently much longer than the commit description text ;)
+> 
+> Greg, Francis has confirmed offlist that Seth's fix below
+> has fixed his issue as well.  Please apply, hopefully as
+> soon as possible and before 3.1 goes final!
 
-Yes, I know ;) I would like to keep it (to appreciate everyone who spent time
-in review and feedback).
-...
-> 
-> > +
-> > + inode = dentry->d_inode;
-> > + task = get_proc_task(inode);
-> > + if (!task)
-> > +         goto out_notask;
-> > +
-> > + if (!ptrace_may_access(task, PTRACE_MODE_READ))
-> > +         goto out;
-> 
-> While this is not needed with capable() check, it's OK to keep it for
-> the future more finegranted access checks.
+Due to the loss of kernel.org, it might miss it, but don't worry, that's
+what stable kernel releases are for :)
 
-yeah
+thanks,
 
-> 
-> BTW, not a big deal, but probably you should return -EACCES on
-> !capable() as file presence is not an issue in this case.
-> 
->     if (!ptrace_may_access(task, PTRACE_MODE_READ))
->         goto out_notask;
-> 
->     status = -EACCES;
->     if (!capable(CAP_SYS_ADMIN))
->         goto out_notask;
-> 
->     status = 0;
-> 
-> 
-
-That's not a proble to fix it actually. So can I fix it and
-put some tage here (Reviewed or something?).
-
-	Cyrill
+greg k-h
