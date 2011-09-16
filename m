@@ -1,130 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755477Ab1IPRKJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 13:10:09 -0400
-Received: from mga09.intel.com ([134.134.136.24]:28895 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752046Ab1IPRKH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 13:10:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="49178098"
-Subject: Re: [PATCHv2] DMAEngine: Define generic transfer request api
-From: Vinod Koul <vinod.koul@intel.com>
-To: Jassi Brar <jaswinder.singh@linaro.org>
-Cc: dan.j.williams@intel.com, linux-kernel@vger.kernel.org,
-        rmk+kernel@arm.linux.org.uk, 21cnbao@gmail.com
-In-Reply-To: <CAJe_Zhd5d7XeuVJpuyNYBmhwBkX_dgi+nngftCO9C589cF1Yqg@mail.gmail.com>
-References: <1313147667-3385-1-git-send-email-jaswinder.singh@linaro.org>
-	 <1316072789-12830-1-git-send-email-jaswinder.singh@linaro.org>
-	 <1316164077.27626.1030.camel@vkoul-udesk3>
-	 <CAJe_Zhd5d7XeuVJpuyNYBmhwBkX_dgi+nngftCO9C589cF1Yqg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 16 Sep 2011 22:36:31 +0530
-Message-ID: <1316192791.27626.1881.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1755452Ab1IPRSa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 13:18:30 -0400
+Received: from www.linutronix.de ([62.245.132.108]:50578 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753492Ab1IPRS3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Sep 2011 13:18:29 -0400
+Date: Fri, 16 Sep 2011 19:18:25 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Greg KH <gregkh@suse.de>
+Cc: Michal Nazarewicz <mina86@mina86.com>,
+        Klaus Schwarzkopf <schwarzkopf@sensortherm.de>, balbi@ti.com,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb: add new usb gadget for ACM and mass storage
+Message-ID: <20110916171824.GA23338@linutronix.de>
+References: <1315506287-31368-1-git-send-email-schwarzkopf@sensortherm.de>
+ <20110908191146.GA8552@suse.de>
+ <op.v1jdo3g53l0zgt@mnazarewicz-glaptop>
+ <20110909184354.GA30278@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20110909184354.GA30278@suse.de>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-09-16 at 18:00 +0530, Jassi Brar wrote:
-> On 16 September 2011 14:37, Vinod Koul <vinod.koul@intel.com> wrote:
-> > On Thu, 2011-09-15 at 13:16 +0530, Jassi Brar wrote:
-> >> Define a new api that could be used for doing fancy data transfers
-> >> like interleaved to contiguous copy and vice-versa.
-> > Then this is a very specific type of transfer this API supports, so the
-> > name generic_xxx is not apt!
-> 
-> Currently it doesn't support every operation, perhaps there will be an
-> operation that couldn't ever be merged into this.
-> But it does support interleaved(async and slave), memcpy, memset, dma_sg,
-> slave_sg, and cyclic.
-> Please feel free to suggest a better name.
-ATM, this api is for interleaved like dma operation. so
-prep_interleaved_dma may be better suited.
+* Greg KH | 2011-09-09 11:43:54 [-0700]:
 
-Let the generalization be discussed separately...
-> 
-> 
-> >> +/**
-> >> + * Generic Transfer Request
-> >> + * ------------------------
-> >> + * A chunk is collection of contiguous bytes to be transfered.
-> >> + * The gap(in bytes) between two chunks is called inter-chunk-gap(ICG).
-> >> + * ICGs may or maynot change between chunks.
-> >> + * A FRAME is the smallest series of contiguous {chunk,icg} pairs,
-> >> + *  that when repeated an integral number of times, specifies the transfer.
-> >> + * A transfer template is specification of a Frame, the number of times
-> >> + *  it is to be repeated and other per-transfer attributes.
-> >> + *
-> >> + * Practically, a client driver would have ready a template for each
-> >> + *  type of transfer it is going to need during its lifetime and
-> >> + *  set only 'src_start' and 'dst_start' before submitting the requests.
-> >> + *
-> >> + *
-> >> + *  |      Frame-1        |       Frame-2       | ~ |       Frame-'numf'  |
-> >> + *  |====....==.===...=...|====....==.===...=...| ~ |====....==.===...=...|
-> >> + *
-> >> + *    ==  Chunk size
-> >> + *    ... ICG
-> >> + */
-> >> +
-> >> +/**
-> >> + * struct data_chunk - Element of scatter-gather list that makes a frame.
-> >> + * @size: Number of bytes to read from source.
-> >> + *     size_dst := fn(op, size_src), so doesn't mean much for destination.
-> >> + * @icg: Number of bytes to jump after last src/dst address of this
-> >> + *    chunk and before first src/dst address for next chunk.
-> >> + *    Ignored for dst(assumed 0), if dst_inc is true and dst_sgl is false.
-> >> + *    Ignored for src(assumed 0), if src_inc is true and src_sgl is false.
-> >> + */
-> >> +struct data_chunk {
-> >> +     size_t size;
-> >> +     size_t icg;
-> >> +};
-> >> +
-> >> +/**
-> >> + * struct dmaxfer_template - Template to convey DMAC the transfer pattern
-> >> + *    and attributes.
-> >> + * @src_start: Bus address of source for the first chunk.
-> >> + * @dst_start: Bus address of destination for the first chunk.
-> >> + * @src_inc: If the source address increments after reading from it.
-> >> + * @dst_inc: If the destination address increments after writing to it.
-> >> + * @src_sgl: If the 'icg' of sgl[] applies to Source (scattered read).
-> >> + *           Otherwise, source is read contiguously (icg ignored).
-> >> + *           Ignored if src_inc is false.
-> >> + * @dst_sgl: If the 'icg' of sgl[] applies to Destination (scattered write).
-> >> + *           Otherwise, destination is filled contiguously (icg ignored).
-> >> + *           Ignored if dst_inc is false.
-> >> + * @frm_irq: If the client expects DMAC driver to do callback after each frame.
-> >> + * @numf: Number of frames in this template.
-> >> + * @frame_size: Number of chunks in a frame i.e, size of sgl[].
-> >> + * @sgl: Array of {chunk,icg} pairs that make up a frame.
-> >> + */
-> >> +struct dmaxfer_template {
-> >> +     dma_addr_t src_start;
-> >> +     dma_addr_t dst_start;
-> >> +     bool src_inc;
-> >> +     bool dst_inc;
-> >> +     bool src_sgl;
-> >> +     bool dst_sgl;
-> >> +     bool frm_irq;
-> >> +     size_t numf;
-> >> +     size_t frame_size;
-> >> +     struct data_chunk sgl[0];
-> >> +};
-> > This kind of transfer can be either slave (audio interleaved) based or
-> > mem-to-mem (extracting still image from a buffer),
-> > How do you propose the dmac know about this is unclear to me
-> 
-> Every 'prepare' callback already passes the channel chosen for the transfer.
-> And the DMAC driver already knows if that channel is SLAVE capable or not.
-How about above params, you should add they may/may not be valid
-depending upon the mode.
-Pls also send updates to documentation for this API
+>So we can expect more patches like this adding all of the possible
+>permutations of the different gadget devices?
+>
+>If so, ick, I thought that the work that was done was to prevent this
+>from happening, oh well :(
 
--- 
-~Vinod
+Would it be possible to come up with a gadget-hub driver which can have
+multiple gadget attached? This should get rid of this kind of gadget
+drivers, right?
 
+>greg k-h
+
+Sebastian
