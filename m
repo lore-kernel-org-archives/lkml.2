@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753844Ab1IPMOI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 08:14:08 -0400
-Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:33905 "EHLO
-	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753400Ab1IPMOF (ORCPT
+	id S1753937Ab1IPMOk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 08:14:40 -0400
+Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:33294 "EHLO
+	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751329Ab1IPMOi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 08:14:05 -0400
+	Fri, 16 Sep 2011 08:14:38 -0400
 From: Linus Walleij <linus.walleij@stericsson.com>
 To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         Grant Likely <grant.likely@secretlab.ca>,
@@ -16,12 +16,10 @@ Cc: Lee Jones <lee.jones@linaro.org>, Joe Perches <joe@perches.com>,
         Linaro Dev <linaro-dev@lists.linaro.org>,
         Sascha Hauer <s.hauer@pengutronix.de>,
         David Brown <davidb@codeaurora.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH 1/2] drivers: create a pin control subsystem v7
-Date: Fri, 16 Sep 2011 14:13:23 +0200
-Message-ID: <1316175203-10736-1-git-send-email-linus.walleij@stericsson.com>
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 2/2 v7] pinmux: add a driver for the U300 pinmux
+Date: Fri, 16 Sep 2011 14:14:09 +0200
+Message-ID: <1316175249-10780-1-git-send-email-linus.walleij@stericsson.com>
 X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -31,3535 +29,2044 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Linus Walleij <linus.walleij@linaro.org>
 
-This creates a subsystem for handling of pin control devices.
-These are devices that control different aspects of package
-pins.
+This adds a driver for the U300 pinmux portions of the system
+controller "SYSCON". It also serves as an example of how to use
+the pinmux subsystem. This driver also houses the platform data
+for the only supported platform.
 
-Currently it handles pinmuxing, i.e. assigning electronic
-functions to groups of pins on primarily PGA and BGA type of
-chip packages which are common in embedded systems.
+This deletes the old U300 driver in arch/arm/mach-u300 and
+replace it with a driver using the new subsystem.
 
-The plan is to also handle other I/O pin control aspects
-such as biasing, driving, input properties such as
-schmitt-triggering, load capacitance etc within this
-subsystem, to remove a lot of ARM arch code as well as
-feature-creepy GPIO drivers which are implementing the same
-thing over and over again.
+The new driver is considerably fatter than the old one, but it
+also registers all 467 pins of the system and adds the power
+and EMIF pin groups and corresponding functions. The idea
+is to use this driver as a a reference for other
+implementation so it needs to be as complete and verbose
+as possible.
 
-This is being done to depopulate the arch/arm/* directory
-of such custom drivers and try to abstract the infrastructure
-they all need. See the Documentation/pinctrl.txt file that is
-part of this patch for more details.
-
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Stephen Warren <swarren@nvidia.com>
-Cc: Joe Perches <joe@perches.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Tested-by: Barry Song <21cnbao@gmail.com>
 Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
 ChangeLog v6->v7:
 
-- Make it possible to have several map entries matching the
-  same device, pin controller and function, but using
-  a different group, and alter the semantics so that
-  pinmux_get() will pick all matching map entries, and
-  store the associated groups in a list. The list will
-  then be iterated over at pinmux_enable()/pinmux_disable()
-  and corresponding driver functions called for each
-  defined group. Notice that you're only allowed to map
-  multiple *groups* to the same
-  { device, pin controller, function } triplet, attempts
-  to map the same device to multiple pin controllers will
-  for example fail. This is hopefully the crucial feature
-  requested by Stephen Warren.
+- Adjust the driver to return the group list as an array of
+  strings instead of a unsigned * array.
 
-- Add a pinmux hogging field to the pinmux mapping entries,
-  and enable the pinmux core to hog pinmux map entries.
-  This currently only works for pinmuxes without assigned
-  devices as it looks now, but with device trees we can
-  look up the corresponding struct device * entries when
-  we register the pinmux driver, and have it hog each
-  pinmux map in turn, for a simple approach to
-  non-dynamic pin muxing. This addresses an issue from
-  Grant Likely that the machine should take care of as
-  much of the pinmux setup as possible, not the devices.
-  By supplying a list of hogs, it can now instruct the
-  core to take care of any static mappings.
+- Add support for the EMIF0 and EMIF1 pin groups.
 
-- Switch pinmux group retrieveal function to grab an
-  array of strings representing the groups rather than an
-  array of unsigned and rewrite accordingly.
+- Acquire all muxmaps using pinmux hogs from the core using
+  a subsystem_initcall(). This way we need not change any
+  drivers or buses. We have the correct struct device *
+  pointers anyway so why not do it from there, and it
+  illustrates pretty well what the pinmux core will be able
+  to do once it can access the device tree.
 
-- Alter debugfs to show the grouplist handled by each
-  pinmux. Also add a list of hogs.
+- Use new convenience macros for system mappings.
 
-- Dynamically allocate a struct pinmux at pinmux_get() and
-  free it at pinmux_put(), then add these to the global
-  list of pinmuxes active as we go along.
-
-- Go over the list of pinmux maps at pinmux_get() time
-  and repeatedly apply matches.
-
-- Retrieve applicable groups per function from the driver
-  as a string array rather than a unsigned array, then
-  lookup the enumerators.
-
-- Make the device to pinmux map a singleton - only allow the
-  mapping table to be registered once and even tag the
-  registration function with __init so it surely won't be
-  abused.
-
-- Create a separate debugfs file to view the pinmux map at
-  runtime.
-
-- Introduce a spin lock to the pin descriptor struct, lock it
-  when modifying pin status entries. Reported by Stijn Devriendt.
-
-- Fix up the documentation after review from Stephen Warren.
-
-- Let the GPIO ranges give names as const char * instead of some
-  fixed-length string.
-
-- add a function to unregister GPIO ranges to mirror the
-  registration function.
-
-- Privatized the struct pinctrl_device and removed it from the
-  <linux/pinctrl/pinctrl.h> API, the drivers do not need to know
-  the members of this struct. It is now in the local header
-  "core.h".
-
-- Rename the concept of "anonymous" mux maps to "system" muxes
-  and add convenience macros and documentation.
+- Unregister the GPIO range at removal.
 ---
- Documentation/ABI/testing/sysfs-class-pinmux |   11 +
- Documentation/pinctrl.txt                    |  951 +++++++++++++++++++++
- MAINTAINERS                                  |    5 +
- drivers/Kconfig                              |    4 +
- drivers/Makefile                             |    2 +
- drivers/pinctrl/Kconfig                      |   29 +
- drivers/pinctrl/Makefile                     |    6 +
- drivers/pinctrl/core.c                       |  632 ++++++++++++++
- drivers/pinctrl/core.h                       |   73 ++
- drivers/pinctrl/pinmux.c                     | 1178 ++++++++++++++++++++++++++
- drivers/pinctrl/pinmux.h                     |   47 +
- include/linux/pinctrl/machine.h              |  107 +++
- include/linux/pinctrl/pinctrl.h              |  133 +++
- include/linux/pinctrl/pinmux.h               |  124 +++
- 14 files changed, 3302 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-class-pinmux
- create mode 100644 Documentation/pinctrl.txt
- create mode 100644 drivers/pinctrl/Kconfig
- create mode 100644 drivers/pinctrl/Makefile
- create mode 100644 drivers/pinctrl/core.c
- create mode 100644 drivers/pinctrl/core.h
- create mode 100644 drivers/pinctrl/pinmux.c
- create mode 100644 drivers/pinctrl/pinmux.h
- create mode 100644 include/linux/pinctrl/machine.h
- create mode 100644 include/linux/pinctrl/pinctrl.h
- create mode 100644 include/linux/pinctrl/pinmux.h
+ arch/arm/mach-u300/Kconfig               |    2 +
+ arch/arm/mach-u300/Makefile              |    2 +-
+ arch/arm/mach-u300/core.c                |   84 +++-
+ arch/arm/mach-u300/include/mach/syscon.h |  136 ----
+ arch/arm/mach-u300/mmc.c                 |   16 -
+ arch/arm/mach-u300/padmux.c              |  367 -----------
+ arch/arm/mach-u300/padmux.h              |   39 --
+ arch/arm/mach-u300/spi.c                 |   20 -
+ drivers/pinctrl/Kconfig                  |    7 +
+ drivers/pinctrl/Makefile                 |    1 +
+ drivers/pinctrl/pinmux-u300.c            | 1008 ++++++++++++++++++++++++++++++
+ drivers/pinctrl/pinmux-u300.h            |  141 +++++
+ 12 files changed, 1242 insertions(+), 581 deletions(-)
+ delete mode 100644 arch/arm/mach-u300/padmux.c
+ delete mode 100644 arch/arm/mach-u300/padmux.h
+ create mode 100644 drivers/pinctrl/pinmux-u300.c
+ create mode 100644 drivers/pinctrl/pinmux-u300.h
 
-diff --git a/Documentation/ABI/testing/sysfs-class-pinmux b/Documentation/ABI/testing/sysfs-class-pinmux
-new file mode 100644
-index 0000000..c2ea843
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-class-pinmux
-@@ -0,0 +1,11 @@
-+What:		/sys/class/pinmux/.../name
-+Date:		May 2011
-+KernelVersion:	3.1
-+Contact:	Linus Walleij <linus.walleij@linaro.org>
-+Description:
-+		Each pinmux directory will contain a field called
-+		name. This holds a string identifying the pinmux for
-+		display purposes.
-+
-+		NOTE: this will be empty if no suitable name is provided
-+		by platform or pinmux drivers.
-diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
-new file mode 100644
-index 0000000..2915fea
---- /dev/null
-+++ b/Documentation/pinctrl.txt
-@@ -0,0 +1,951 @@
-+PINCTRL (PIN CONTROL) subsystem
-+This document outlines the pin control subsystem in Linux
-+
-+This subsystem deals with:
-+
-+- Enumerating and naming controllable pins
-+
-+- Multiplexing of pins, pads, fingers (etc) see below for details
-+
-+The intention is to also deal with:
-+
-+- Software-controlled biasing and driving mode specific pins, such as
-+  pull-up/down, open drain etc, load capacitance configuration when controlled
-+  by software, etc.
-+
-+
-+Top-level interface
-+===================
-+
-+Definition of PIN CONTROLLER:
-+
-+- A pin controller is a piece of hardware, usually a set of registers, that
-+  can control PINs. It may be able to multiplex, bias, set load capacitance,
-+  set drive strength etc for individual pins or groups of pins.
-+
-+Definition of PIN:
-+
-+- PINS are equal to pads, fingers, balls or whatever packaging input or
-+  output line you want to control and these are denoted by unsigned integers
-+  in the range 0..maxpin. This numberspace is local to each PIN CONTROLLER, so
-+  there may be several such number spaces in a system. This pin space may
-+  be sparse - i.e. there may be gaps in the space with numbers where no
-+  pin exists.
-+
-+When a PIN CONTROLLER is instatiated, it will register a descriptor to the
-+pin control framework, and this descriptor contains an array of pin descriptors
-+describing the pins handled by this specific pin controller.
-+
-+Here is an example of a PGA (Pin Grid Array) chip seen from underneath:
-+
-+        A   B   C   D   E   F   G   H
-+
-+   8    o   o   o   o   o   o   o   o
-+
-+   7    o   o   o   o   o   o   o   o
-+
-+   6    o   o   o   o   o   o   o   o
-+
-+   5    o   o   o   o   o   o   o   o
-+
-+   4    o   o   o   o   o   o   o   o
-+
-+   3    o   o   o   o   o   o   o   o
-+
-+   2    o   o   o   o   o   o   o   o
-+
-+   1    o   o   o   o   o   o   o   o
-+
-+To register a pin controller and name all the pins on this package we can do
-+this in our driver:
-+
-+#include <linux/pinctrl/pinctrl.h>
-+
-+const struct pinctrl_pin_desc __refdata foo_pins[] = {
-+      PINCTRL_PIN(0, "A1"),
-+      PINCTRL_PIN(1, "A2"),
-+      PINCTRL_PIN(2, "A3"),
-+      ...
-+      PINCTRL_PIN(61, "H6"),
-+      PINCTRL_PIN(62, "H7"),
-+      PINCTRL_PIN(63, "H8"),
-+};
-+
-+static struct pinctrl_desc foo_desc = {
-+	.name = "foo",
-+	.pins = foo_pins,
-+	.npins = ARRAY_SIZE(foo_pins),
-+	.maxpin = 63,
-+	.owner = THIS_MODULE,
-+};
-+
-+int __init foo_probe(void)
-+{
-+	struct pinctrl_dev *pctl;
-+
-+	pctl = pinctrl_register(&foo_desc, <PARENT>, NULL);
-+	if (IS_ERR(pctl))
-+		pr_err("could not register foo pin driver\n");
-+}
-+
-+Pins usually have fancier names than this. You can find these in the dataheet
-+for your chip. Notice that the core pinctrl.h file provides a fancy macro
-+called PINCTRL_PIN() to create the struct entries. As you can see I enumerated
-+the pins from 0 in the upper left corner to 63 in the lower right corner,
-+this enumeration was arbitrarily chosen, in practice you need to think
-+through your numbering system so that it matches the layout of registers
-+and such things in your driver, or the code may become complicated. You must
-+also consider matching of offsets to the GPIO ranges that may be handled by
-+the pin controller.
-+
-+For a padring with 467 pads, as opposed to actual pins, I used an enumeration
-+like this, walking around the edge of the chip, which seems to be industry
-+standard too (all these pads had names, too):
-+
-+
-+     0 ..... 104
-+   466        105
-+     .        .
-+     .        .
-+   358        224
-+    357 .... 225
-+
-+
-+Pin groups
-+==========
-+
-+Many controllers need to deal with groups of pins, so the pin controller
-+subsystem has a mechanism for enumerating groups of pins and retrieving the
-+actual enumerated pins that are part of a certain group.
-+
-+For example, say that we have a group of pins dealing with an SPI interface
-+on { 0, 8, 16, 24 }, and a group of pins dealing with an I2C interface on pins
-+on { 24, 25 }.
-+
-+These two groups are presented to the pin control subsystem by implementing
-+some generic pinctrl_ops like this:
-+
-+#include <linux/pinctrl/pinctrl.h>
-+
-+struct foo_group {
-+	const char *name;
-+	const unsigned int *pins;
-+	const unsigned num_pins;
-+};
-+
-+static unsigned int spi0_pins[] = { 0, 8, 16, 24 };
-+static unsigned int i2c0_pins[] = { 24, 25 };
-+
-+static const struct foo_group foo_groups[] = {
-+	{
-+		.name = "spi0_grp",
-+		.pins = spi0_pins,
-+		.num_pins = ARRAY_SIZE(spi0_pins),
-+	},
-+	{
-+		.name = "i2c0_grp",
-+		.pins = i2c0_pins,
-+		.num_pins = ARRAY_SIZE(i2c0_pins),
-+	},
-+};
-+
-+
-+static int foo_list_groups(struct pinctrl_dev *pctldev, unsigned selector)
-+{
-+	if (selector >= ARRAY_SIZE(foo_groups))
-+		return -EINVAL;
-+	return 0;
-+}
-+
-+static const char *foo_get_group_name(struct pinctrl_dev *pctldev,
-+				       unsigned selector)
-+{
-+	return foo_groups[selector].name;
-+}
-+
-+static int foo_get_group_pins(struct pinctrl_dev *pctldev, unsigned selector,
-+			       unsigned ** const pins,
-+			       unsigned * const num_pins)
-+{
-+	*pins = (unsigned *) foo_groups[selector].pins;
-+	*num_pins = foo_groups[selector].num_pins;
-+	return 0;
-+}
-+
-+static struct pinctrl_ops foo_pctrl_ops = {
-+	.list_groups = foo_list_groups,
-+	.get_group_name = foo_get_group_name,
-+	.get_group_pins = foo_get_group_pins,
-+};
-+
-+
-+static struct pinctrl_desc foo_desc = {
-+       ...
-+       .pctlops = &foo_pctrl_ops,
-+};
-+
-+The pin control subsystem will call the .list_groups() function repeatedly
-+beginning on 0 until it returns non-zero to determine legal selectors, then
-+it will call the other functions to retrieve the name and pins of the group.
-+Maintaining the data structure of the groups is up to the driver, this is
-+just a simple example - in practice you may need more entries in your group
-+structure, for example specific register ranges associated with each group
-+and so on.
-+
-+
-+Interaction with the GPIO subsystem
-+===================================
-+
-+The GPIO drivers may want to perform operations of various types on the same
-+physical pins that are also registered as GPIO pins.
-+
-+Since the pin controller subsystem have its pinspace local to the pin
-+controller we need a mapping so that the pin control subsystem can figure out
-+which pin controller handles control of a certain GPIO pin. Since a single
-+pin controller may be muxing several GPIO ranges (typically SoCs that have
-+one set of pins but internally several GPIO silicon blocks, each modeled as
-+a struct gpio_chip) any number of GPIO ranges can be added to a pin controller
-+instance like this:
-+
-+struct gpio_chip chip_a;
-+struct gpio_chip chip_b;
-+
-+static struct pinctrl_gpio_range gpio_range_a = {
-+	.name = "chip a",
-+	.id = 0,
-+	.base = 32,
-+	.npins = 16,
-+	.gc = &chip_a;
-+};
-+
-+static struct pinctrl_gpio_range gpio_range_a = {
-+	.name = "chip b",
-+	.id = 0,
-+	.base = 48,
-+	.npins = 8,
-+	.gc = &chip_b;
-+};
-+
-+
-+{
-+	struct pinctrl_dev *pctl;
-+	...
-+	pinctrl_add_gpio_range(pctl, &gpio_range_a);
-+	pinctrl_add_gpio_range(pctl, &gpio_range_b);
-+}
-+
-+So this complex system has one pin controller handling two different
-+GPIO chips. Chip a has 16 pins and chip b has 8 pins. They are mapped in
-+the global GPIO pin space at:
-+
-+chip a: [32 .. 47]
-+chip b: [48 .. 55]
-+
-+When GPIO-specific functions in the pin control subsystem are called, these
-+ranges will be used to look up the apropriate pin controller by inspecting
-+and matching the pin to the pin ranges across all controllers. When a
-+pin controller handling the matching range is found, GPIO-specific functions
-+will be called on that specific pin controller.
-+
-+For all functionalities dealing with pin biasing, pin muxing etc, the pin
-+controller subsystem will subtract the range's .base offset from the passed
-+in gpio pin number, and pass that on to the pin control driver, so the driver
-+will get an offset into its handled number range. Further it is also passed
-+the range ID value, so that the pin controller knows which range it should
-+deal with.
-+
-+For example: if a user issues pinctrl_gpio_set_foo(50), the pin control
-+subsystem will find that the second range on this pin controller matches,
-+subtract the base 48 and call the
-+pinctrl_driver_gpio_set_foo(pinctrl, range, 2) where the latter function has
-+this signature:
-+
-+int pinctrl_driver_gpio_set_foo(struct pinctrl_dev *pctldev,
-+    struct pinctrl_gpio_range *rangeid,
-+    unsigned offset);
-+
-+Now the driver knows that we want to do some GPIO-specific operation on the
-+second GPIO range handled by "chip b", at offset 2 in that specific range.
-+
-+(If the GPIO subsystem is ever refactored to use a local per-GPIO controller
-+pin space, this mapping will need to be augmented accordingly.)
-+
-+
-+PINMUX interfaces
-+=================
-+
-+These calls use the pinmux_* naming prefix.  No other calls should use that
-+prefix.
-+
-+
-+What is pinmuxing?
-+==================
-+
-+PINMUX, also known as padmux, ballmux, alternate functions or mission modes
-+is a way for chip vendors producing some kind of electrical packages to use
-+a certain physical pin (ball, pad, finger, etc) for multiple mutually exclusive
-+functions, depending on the application. By "application" in this context
-+we usually mean a way of soldering or wiring the package into an electronic
-+system, even though the framework makes it possible to also change the function
-+at runtime.
-+
-+Here is an example of a PGA (Pin Grid Array) chip seen from underneath:
-+
-+        A   B   C   D   E   F   G   H
-+      +---+
-+   8  | o | o   o   o   o   o   o   o
-+      |   |
-+   7  | o | o   o   o   o   o   o   o
-+      |   |
-+   6  | o | o   o   o   o   o   o   o
-+      +---+---+
-+   5  | o | o | o   o   o   o   o   o
-+      +---+---+               +---+
-+   4    o   o   o   o   o   o | o | o
-+                              |   |
-+   3    o   o   o   o   o   o | o | o
-+                              |   |
-+   2    o   o   o   o   o   o | o | o
-+      +-------+-------+-------+---+---+
-+   1  | o   o | o   o | o   o | o | o |
-+      +-------+-------+-------+---+---+
-+
-+This is not tetris. The game to think of is chess. Not all PGA/BGA packages
-+are chessboard-like, big ones have "holes" in some arrangement according to
-+different design patterns, but we're using this as a simple example. Of the
-+pins you see some will be taken by things like a few VCC and GND to feed power
-+to the chip, and quite a few will be taken by large ports like an external
-+memory interface. The remaining pins will often be subject to pin multiplexing.
-+
-+The example 8x8 PGA package above will have pin numbers 0 thru 63 assigned to
-+its physical pins. It will name the pins { A1, A2, A3 ... H6, H7, H8 } using
-+pinctrl_register_pins_[sparse|dense]() and a suitable data set as shown
-+earlier.
-+
-+In this 8x8 BGA package the pins { A8, A7, A6, A5 } can be used as an SPI port
-+(these are four pins: CLK, RXD, TXD, FRM). In that case, pin B5 can be used as
-+some general-purpose GPIO pin. However, in another setting, pins { A5, B5 } can
-+be used as an I2C port (these are just two pins: SCL, SDA). Needless to say,
-+we cannot use the SPI port and I2C port at the same time. However in the inside
-+of the package the silicon performing the SPI logic can alternatively be routed
-+out on pins { G4, G3, G2, G1 }.
-+
-+On the botton row at { A1, B1, C1, D1, E1, F1, G1, H1 } we have something
-+special - it's an external MMC bus that can be 2, 4 or 8 bits wide, and it will
-+consume 2, 4 or 8 pins respectively, so either { A1, B1 } are taken or
-+{ A1, B1, C1, D1 } or all of them. If we use all 8 bits, we cannot use the SPI
-+port on pins { G4, G3, G2, G1 } of course.
-+
-+This way the silicon blocks present inside the chip can be multiplexed "muxed"
-+out on different pin ranges. Often contemporary SoC (systems on chip) will
-+contain several I2C, SPI, SDIO/MMC, etc silicon blocks that can be routed to
-+different pins by pinmux settings.
-+
-+Since general-purpose I/O pins (GPIO) are typically always in shortage, it is
-+common to be able to use almost any pin as a GPIO pin if it is not currently
-+in use by some other I/O port.
-+
-+
-+Pinmux conventions
-+==================
-+
-+The purpose of the pinmux functionality in the pin controller subsystem is to
-+abstract and provide pinmux settings to the devices you choose to instantiate
-+in your machine configuration. It is inspired by the clk, GPIO and regulator
-+subsystems, so devices will request their mux setting, but it's also possible
-+to request a single pin for e.g. GPIO.
-+
-+Definitions:
-+
-+- FUNCTIONS can be switched in and out by a driver residing with the pin
-+  control subsystem in the drivers/pinctrl/* directory of the kernel. The
-+  pin control driver knows the possible functions. In the example above you can
-+  identify three pinmux functions, one for spi, one for i2c and one for mmc.
-+
-+- FUNCTIONS are assumed to be enumerable from zero in a one-dimensional array.
-+  In this case the array could be something like: { spi0, i2c0, mmc0 }
-+  for the three available functions.
-+
-+- FUNCTIONS have PIN GROUPS as defined on the generic level - so a certain
-+  function is *always* associated with a certain set of pin groups, could
-+  be just a single one, but could also be many. In the example above the
-+  function i2c is associated with the pins { A5, B5 }, enumerated as
-+  { 24, 25 } in the controller pin space.
-+
-+  The Function spi is associated with pin groups { A8, A7, A6, A5 }
-+  and { G4, G3, G2, G1 }, which are enumerated as { 0, 8, 16, 24 } and
-+  { 38, 46, 54, 62 } respectively.
-+
-+  Group names must be unique per pin controller, no two groups on the same
-+  controller may have the same name.
-+
-+- The combination of a FUNCTION and a PIN GROUP determine a certain function
-+  for a certain set of pins. The knowledge of the functions and pin groups
-+  and their machine-specific particulars are kept inside the pinmux driver,
-+  from the outside only the enumerators are known, and the driver core can:
-+
-+  - Request the name of a function with a certain selector (>= 0)
-+  - A list of groups associated with a certain function
-+  - Request that a certain group in that list to be activated for a certain
-+    function
-+
-+  As already described above, pin groups are in turn self-descriptive, so
-+  the core will retrieve the actual pin range in a certain group from the
-+  driver.
-+
-+- FUNCTIONS and GROUPS on a certain PIN CONTROLLER are MAPPED to a certain
-+  device by the board file, device tree or similar machine setup configuration
-+  mechanism, similar to how regulators are connected to devices, usually by
-+  name. Defining a pin controller, function and group thus uniquely identify
-+  the set of pins to be used by a certain device. (If only one possible group
-+  of pins is available for the function, no group name need to be supplied -
-+  the core will simply select the first and only group available.)
-+
-+  In the example case we can define that this particular machine shall
-+  use device spi0 with pinmux function fspi0 group gspi0 and i2c0 on function
-+  fi2c0 group gi2c0, on the primary pin controller, we get mappings
-+  like these:
-+
-+  {
-+    {"map-spi0", spi0, pinctrl0, fspi0, gspi0},
-+    {"map-i2c0", i2c0, pinctrl0, fi2c0, gi2c0}
-+  }
-+
-+  Every map must be assigned a symbolic name, pin controller and function.
-+  The group is not compulsory - if it is omitted the first group presented by
-+  the driver as applicable for the function will be selected, which is
-+  useful for simple cases.
-+
-+  The device name is present in map entries tied to specific devices. Maps
-+  without device names are referred to as SYSTEM pinmuxes, such as can be taken
-+  by the machine implementation on boot and not tied to any specific device.
-+
-+  It is possible to map several groups to the same combination of device,
-+  pin controller and function. This is for cases where a certain function on
-+  a certain pin controller may use different sets of pins in different
-+  configurations.
-+
-+- PINS for a certain FUNCTION using a certain PIN GROUP on a certain
-+  PIN CONTROLLER are provided on a first-come first-serve basis, so if some
-+  other device mux setting or GPIO pin request has already taken your physical
-+  pin, you will be denied the use of it. To get (activate) a new setting, the
-+  old one has to be put (deactivated) first.
-+
-+Sometimes the documentation and hardware registers will be oriented around
-+pads (or "fingers") rather than pins - these are the soldering surfaces on the
-+silicon inside the package, and may or may not match the actual number of
-+pins/balls underneath the capsule. Pick some enumeration that makes sense to
-+you. Define enumerators only for the pins you can control if that makes sense.
-+
-+Assumptions:
-+
-+We assume that the number possible function maps to pin groups is limited by
-+the hardware. I.e. we assume that there is no system where any function can be
-+mapped to any pin, like in a phone exchange. So the available pins groups for
-+a certain function will be limited to a few choices (say up to eight or so),
-+not hundreds or any amount of choices. This is the characteristic we have found
-+by inspecting available pinmux hardware, and a necessary assumption since we
-+expect pinmux drivers to present *all* possible function vs pin group mappings
-+to the subsystem.
-+
-+
-+Pinmux drivers
-+==============
-+
-+The pinmux core takes care of preventing conflicts on pins and calling
-+the pin controller driver to execute different settings.
-+
-+It is the responsibility of the pinmux driver to impose further restrictions
-+(say for example infer electronic limitations due to load etc) to determine
-+whether or not the requested function can actually be allowed, and in case it
-+is possible to perform the requested mux setting, poke the hardware so that
-+this happens.
-+
-+Pinmux drivers are required to supply a few callback functions, some are
-+optional. Usually the enable() and disable() functions are implemented,
-+writing values into some certain registers to activate a certain mux setting
-+for a certain pin.
-+
-+A simple driver for the above example will work by setting bits 0, 1, 2, 3 or 4
-+into some register named MUX to select a certain function with a certain
-+group of pins would work something like this:
-+
-+#include <linux/pinctrl/pinctrl.h>
+diff --git a/arch/arm/mach-u300/Kconfig b/arch/arm/mach-u300/Kconfig
+index 32a7b0f..449fd6a 100644
+--- a/arch/arm/mach-u300/Kconfig
++++ b/arch/arm/mach-u300/Kconfig
+@@ -6,6 +6,8 @@ comment "ST-Ericsson Mobile Platform Products"
+ 
+ config MACH_U300
+ 	bool "U300"
++	select PINCTRL
++	select PINMUX_U300
+ 
+ comment "ST-Ericsson U300/U330/U335/U365 Feature Selections"
+ 
+diff --git a/arch/arm/mach-u300/Makefile b/arch/arm/mach-u300/Makefile
+index 8fd354a..2855381 100644
+--- a/arch/arm/mach-u300/Makefile
++++ b/arch/arm/mach-u300/Makefile
+@@ -2,7 +2,7 @@
+ # Makefile for the linux kernel, U300 machine.
+ #
+ 
+-obj-y		:= core.o clock.o timer.o padmux.o
++obj-y		:= core.o clock.o timer.o
+ obj-m		:=
+ obj-n		:=
+ obj-		:=
+diff --git a/arch/arm/mach-u300/core.c b/arch/arm/mach-u300/core.c
+index 399c89f..2f5929b 100644
+--- a/arch/arm/mach-u300/core.c
++++ b/arch/arm/mach-u300/core.c
+@@ -25,6 +25,8 @@
+ #include <linux/err.h>
+ #include <linux/mtd/nand.h>
+ #include <linux/mtd/fsmc.h>
++#include <linux/pinctrl/machine.h>
 +#include <linux/pinctrl/pinmux.h>
+ 
+ #include <asm/types.h>
+ #include <asm/setup.h>
+@@ -1535,6 +1537,14 @@ static struct coh901318_platform coh901318_platform = {
+ 	.max_channels = U300_DMA_CHANNELS,
+ };
+ 
++static struct resource pinmux_resources[] = {
++	{
++		.start = U300_SYSCON_BASE,
++		.end   = U300_SYSCON_BASE + SZ_4K - 1,
++		.flags = IORESOURCE_MEM,
++	},
++};
 +
-+struct foo_group {
+ static struct platform_device wdog_device = {
+ 	.name = "coh901327_wdog",
+ 	.id = -1,
+@@ -1630,6 +1640,72 @@ static struct platform_device dma_device = {
+ 	},
+ };
+ 
++static struct platform_device pinmux_device = {
++	.name = "pinmux-u300",
++	.id = -1,
++	.num_resources = ARRAY_SIZE(pinmux_resources),
++	.resource = pinmux_resources,
++};
++
++/* Pinmux settings */
++static struct pinmux_map u300_pinmux_map[] = {
++	/* anonymous maps for chip power and EMIFs */
++	PINMUX_MAP_PRIMARY_SYS_HOG("POWER", "power"),
++	PINMUX_MAP_PRIMARY_SYS_HOG("EMIF0", "emif0"),
++	PINMUX_MAP_PRIMARY_SYS_HOG("EMIF1", "emif1"),
++	/* per-device maps for MMC/SD, SPI and UART */
++	PINMUX_MAP_PRIMARY("MMCSD", "mmc0", "mmci"),
++	PINMUX_MAP_PRIMARY("SPI", "spi0", "pl022"),
++	PINMUX_MAP_PRIMARY("UART0", "uart0", "uart0"),
++};
++
++struct u300_mux_hog {
 +	const char *name;
-+	const unsigned int *pins;
-+	const unsigned num_pins;
++	struct device *dev;
++	struct pinmux *pmx;
 +};
 +
-+static const unsigned spi0_0_pins[] = { 0, 8, 16, 24 };
-+static const unsigned spi0_1_pins[] = { 38, 46, 54, 62 };
-+static const unsigned i2c0_pins[] = { 24, 25 };
-+static const unsigned mmc0_1_pins[] = { 56, 57 };
-+static const unsigned mmc0_2_pins[] = { 58, 59 };
-+static const unsigned mmc0_3_pins[] = { 60, 61, 62, 63 };
-+
-+static const struct foo_group foo_groups[] = {
++static struct u300_mux_hog u300_mux_hogs[] = {
 +	{
-+		.name = "spi0_0_grp",
-+		.pins = spi0_0_pins,
-+		.num_pins = ARRAY_SIZE(spi0_0_pins),
++		.name = "uart0",
++		.dev = &uart0_device.dev,
 +	},
-+	{
-+		.name = "spi0_1_grp",
-+		.pins = spi0_1_pins,
-+		.num_pins = ARRAY_SIZE(spi0_1_pins),
-+	},
-+	{
-+		.name = "i2c0_grp",
-+		.pins = i2c0_pins,
-+		.num_pins = ARRAY_SIZE(i2c0_pins),
-+	},
-+	{
-+		.name = "mmc0_1_grp",
-+		.pins = mmc0_1_pins,
-+		.num_pins = ARRAY_SIZE(mmc0_1_pins),
-+	},
-+	{
-+		.name = "mmc0_2_grp",
-+		.pins = mmc0_2_pins,
-+		.num_pins = ARRAY_SIZE(mmc0_2_pins),
-+	},
-+	{
-+		.name = "mmc0_3_grp",
-+		.pins = mmc0_3_pins,
-+		.num_pins = ARRAY_SIZE(mmc0_3_pins),
-+	},
-+};
-+
-+
-+static int foo_list_groups(struct pinctrl_dev *pctldev, unsigned selector)
-+{
-+	if (selector >= ARRAY_SIZE(foo_groups))
-+		return -EINVAL;
-+	return 0;
-+}
-+
-+static const char *foo_get_group_name(struct pinctrl_dev *pctldev,
-+				       unsigned selector)
-+{
-+	return foo_groups[selector].name;
-+}
-+
-+static int foo_get_group_pins(struct pinctrl_dev *pctldev, unsigned selector,
-+			       unsigned ** const pins,
-+			       unsigned * const num_pins)
-+{
-+	*pins = (unsigned *) foo_groups[selector].pins;
-+	*num_pins = foo_groups[selector].num_pins;
-+	return 0;
-+}
-+
-+static struct pinctrl_ops foo_pctrl_ops = {
-+	.list_groups = foo_list_groups,
-+	.get_group_name = foo_get_group_name,
-+	.get_group_pins = foo_get_group_pins,
-+};
-+
-+struct foo_pmx_func {
-+	const char *name;
-+	const char * const *groups;
-+	const unsigned num_groups;
-+};
-+
-+static const char * const spi0_groups[] = { "spi0_1_grp" };
-+static const char * const i2c0_groups[] = { "i2c0_grp" };
-+static const char * const mmc0_groups[] = { "mmc0_1_grp", "mmc0_2_grp",
-+					"mmc0_3_grp" };
-+
-+static const struct foo_pmx_func foo_functions[] = {
 +	{
 +		.name = "spi0",
-+		.groups = spi0_groups,
-+		.num_groups = ARRAY_SIZE(spi0_groups),
-+	},
-+	{
-+		.name = "i2c0",
-+		.groups = i2c0_groups,
-+		.num_groups = ARRAY_SIZE(i2c0_groups),
++		.dev = &pl022_device.dev,
 +	},
 +	{
 +		.name = "mmc0",
-+		.groups = mmc0_groups,
-+		.num_groups = ARRAY_SIZE(mmc0_groups),
++		.dev = &mmcsd_device.dev,
 +	},
 +};
 +
-+int foo_list_funcs(struct pinctrl_dev *pctldev, unsigned selector)
++static int __init u300_pinmux_fetch(void)
 +{
-+	if (selector >= ARRAY_SIZE(foo_functions))
-+		return -EINVAL;
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(u300_mux_hogs); i++) {
++		struct pinmux *pmx;
++		int ret;
++
++		pmx = pinmux_get(u300_mux_hogs[i].dev, NULL);
++		if (IS_ERR(pmx)) {
++			pr_err("u300: could not get pinmux hog %s\n",
++			       u300_mux_hogs[i].name);
++			continue;
++		}
++		ret = pinmux_enable(pmx);
++		if (ret) {
++			pr_err("u300: could enable pinmux hog %s\n",
++			       u300_mux_hogs[i].name);
++			continue;
++		}
++		u300_mux_hogs[i].pmx = pmx;
++	}
 +	return 0;
 +}
-+
-+const char *foo_get_fname(struct pinctrl_dev *pctldev, unsigned selector)
-+{
-+	return myfuncs[selector].name;
-+}
-+
-+static int foo_get_groups(struct pinctrl_dev *pctldev, unsigned selector,
-+			  const char * const **groups,
-+			  unsigned * const num_groups)
-+{
-+	*groups = foo_functions[selector].groups;
-+	*num_groups = foo_functions[selector].num_groups;
-+	return 0;
-+}
-+
-+int foo_enable(struct pinctrl_dev *pctldev, unsigned selector,
-+		unsigned group)
-+{
-+	u8 regbit = (1 << group);
-+
-+	writeb((readb(MUX)|regbit), MUX)
-+	return 0;
-+}
-+
-+int foo_disable(struct pinctrl_dev *pctldev, unsigned selector,
-+		unsigned group)
-+{
-+	u8 regbit = (1 << group);
-+
-+	writeb((readb(MUX) & ~(regbit)), MUX)
-+	return 0;
-+}
-+
-+struct pinmux_ops foo_pmxops = {
-+	.list_functions = foo_list_funcs,
-+	.get_function_name = foo_get_fname,
-+	.get_function_groups = foo_get_groups,
-+	.enable = foo_enable,
-+	.disable = foo_disable,
-+};
-+
-+/* Pinmux operations are handled by some pin controller */
-+static struct pinctrl_desc foo_desc = {
-+	...
-+	.pctlops = &foo_pctrl_ops,
-+	.pmxops = &foo_pmxops,
-+};
-+
-+In the example activating muxing 0 and 1 at the same time setting bits
-+0 and 1, uses one pin in common so they would collide.
-+
-+The beauty of the pinmux subsystem is that since it keeps track of all
-+pins and who is using them, it will already have denied an impossible
-+request like that, so the driver does not need to worry about such
-+things - when it gets a selector passed in, the pinmux subsystem makes
-+sure no other device or GPIO assignment is already using the selected
-+pins. Thus bits 0 and 1 in the control register will never be set at the
-+same time.
-+
-+All the above functions are mandatory to implement for a pinmux driver.
-+
-+
-+Pinmux interaction with the GPIO subsystem
-+==========================================
-+
-+The function list could become long, especially if you can convert every
-+individual pin into a GPIO pin independent of any other pins, and then try
-+the approach to define every pin as a function.
-+
-+In this case, the function array would become 64 entries for each GPIO
-+setting and then the device functions.
-+
-+For this reason there is an additional function a pinmux driver can implement
-+to enable only GPIO on an individual pin: .gpio_request_enable(). The same
-+.free() function as for other functions is assumed to be usable also for
-+GPIO pins.
-+
-+This function will pass in the affected GPIO range identified by the pin
-+controller core, so you know which GPIO pins are being affected by the request
-+operation.
-+
-+Alternatively it is fully allowed to use named functions for each GPIO
-+pin, the pinmux_request_gpio() will attempt to obtain the function "gpioN"
-+where "N" is the global GPIO pin number if no special GPIO-handler is
-+registered.
-+
-+
-+Pinmux board/machine configuration
-+==================================
-+
-+Boards and machines define how a certain complete running system is put
-+together, including how GPIOs and devices are muxed, how regulators are
-+constrained and how the clock tree looks. Of course pinmux settings are also
-+part of this.
-+
-+A pinmux config for a machine looks pretty much like a simple regulator
-+configuration, so for the example array above we want to enable i2c and
-+spi on the second function mapping:
-+
-+#include <linux/pinctrl/machine.h>
-+
-+static struct pinmux_map pmx_mapping[] = {
-+	{
-+		.ctrl_dev_name = "pinctrl.0",
-+		.function = "spi0",
-+		.dev_name = "foo-spi.0",
-+	},
-+	{
-+		.ctrl_dev_name = "pinctrl.0",
-+		.function = "i2c0",
-+		.dev_name = "foo-i2c.0",
-+	},
-+	{
-+		.ctrl_dev_name = "pinctrl.0",
-+		.function = "mmc0",
-+		.dev_name = "foo-mmc.0",
-+	},
-+};
-+
-+The dev_name here matches to the unique device name that can be used to look
-+up the device struct (just like with clockdev or regulators). The function name
-+must match a function provided by the pinmux driver handling this pin range.
-+
-+As you can see we may have several pin controllers on the system and thus
-+we need to specify which one of them that contain the functions we wish
-+to map. The map can also use struct device * directly, so there is no
-+inherent need to use strings to specify .dev_name or .ctrl_dev_name, these
-+are for the situation where you do not have a handle to the struct device *,
-+for example if they are not yet instantiated or cumbersome to obtain.
-+
-+You register this pinmux mapping to the pinmux subsystem by simply:
-+
-+       ret = pinmux_register_mappings(&pmx_mapping, ARRAY_SIZE(pmx_mapping));
-+
-+Since the above construct is pretty common there is a helper macro to make
-+it even more compact which assumes you want to use pinctrl.0 and position
-+0 for mapping, for example:
-+
-+static struct pinmux_map pmx_mapping[] = {
-+       PINMUX_MAP_PRIMARY("I2CMAP", "i2c0", "foo-i2c.0"),
-+};
-+
-+
-+Complex mappings
-+================
-+
-+As it is possible to map a function to different groups of pins an optional
-+.group can be specified like this:
-+
-+...
-+{
-+	.name = "spi0-pos-A",
-+	.ctrl_dev_name = "pinctrl.0",
-+	.function = "spi0",
-+	.group = "spi0_0_grp",
-+	.dev_name = "foo-spi.0",
-+},
-+{
-+	.name = "spi0-pos-B",
-+	.ctrl_dev_name = "pinctrl.0",
-+	.function = "spi0",
-+	.group = "spi0_1_grp",
-+	.dev_name = "foo-spi.0",
-+},
-+...
-+
-+This example mapping is used to switch between two positions for spi0 at
-+runtime, as described further below under the heading "Runtime pinmuxing".
-+
-+Further it is possible to match several groups of pins to the same function
-+for a single device, say for example in the mmc0 example above, where you can
-+additively expand the mmc0 bus from 2 to 4 to 8 pins. If we want to use all
-+three groups for a total of 2+2+4 = 8 pins (for an 8-bit MMC bus as is the
-+case), we define a mapping like this:
-+
-+...
-+{
-+	.name "2bit"
-+	.ctrl_dev_name = "pinctrl.0",
-+	.function = "mmc0",
-+	.group = "mmc0_0_grp",
-+	.dev_name = "foo-mmc.0",
-+},
-+{
-+	.name "4bit"
-+	.ctrl_dev_name = "pinctrl.0",
-+	.function = "mmc0",
-+	.group = "mmc0_0_grp",
-+	.dev_name = "foo-mmc.0",
-+},
-+{
-+	.name "4bit"
-+	.ctrl_dev_name = "pinctrl.0",
-+	.function = "mmc0",
-+	.group = "mmc0_1_grp",
-+	.dev_name = "foo-mmc.0",
-+},
-+{
-+	.name "8bit"
-+	.ctrl_dev_name = "pinctrl.0",
-+	.function = "mmc0",
-+	.group = "mmc0_0_grp",
-+	.dev_name = "foo-mmc.0",
-+},
-+{
-+	.name "8bit"
-+	.ctrl_dev_name = "pinctrl.0",
-+	.function = "mmc0",
-+	.group = "mmc0_1_grp",
-+	.dev_name = "foo-mmc.0",
-+},
-+{
-+	.name "8bit"
-+	.ctrl_dev_name = "pinctrl.0",
-+	.function = "mmc0",
-+	.group = "mmc0_2_grp",
-+	.dev_name = "foo-mmc.0",
-+},
-+...
-+
-+The result of grabbing this mapping from the device with something like
-+this (see next paragraph):
-+
-+	pmx = pinmux_get(&device, "8bit");
-+
-+Will be that you activate all the three bottom records in the mapping at
-+once. Since they share the same name, pin controller device, funcion and
-+device, and since we allow multiple groups to match to a single device, they
-+all get selected, and they all get enabled and disable simultaneously by the
-+pinmux core.
-+
-+
-+Pinmux requests from drivers
-+============================
-+
-+Generally it is discouraged to let individual drivers get and enable pinmuxes.
-+So if possible, handle the pinmuxes in platform code or some other place where
-+you have access to all the affected struct device * pointers. In some cases
-+where a driver needs to switch between different mux mappings at runtime
-+this is not possible.
-+
-+A driver may request a certain mux to be activated, usually just the default
-+mux like this:
-+
-+#include <linux/pinctrl/pinmux.h>
-+
-+struct foo_state {
-+       struct pinmux *pmx;
-+       ...
-+};
-+
-+foo_probe()
-+{
-+	/* Allocate a state holder named "state" etc */
-+	struct pinmux pmx;
-+
-+	pmx = pinmux_get(&device, NULL);
-+	if IS_ERR(pmx)
-+		return PTR_ERR(pmx);
-+	pinmux_enable(pmx);
-+
-+	state->pmx = pmx;
-+}
-+
-+foo_remove()
-+{
-+	pinmux_disable(state->pmx);
-+	pinmux_put(state->pmx);
-+}
-+
-+If you want to grab a specific mux mapping and not just the first one found for
-+this device you can specify a specific mapping name, for example in the above
-+example the second i2c0 setting: pinmux_get(&device, "spi0-pos-B");
-+
-+This get/enable/disable/put sequence can just as well be handled by bus drivers
-+if you don't want each and every driver to handle it and you know the
-+arrangement on your bus.
-+
-+The semantics of the get/enable respective disable/put is as follows:
-+
-+- pinmux_get() is called in process context to reserve the pins affected with
-+  a certain mapping and set up the pinmux core and the driver. It will allocate
-+  a struct from the kernel memory to hold the pinmux state.
-+
-+- pinmux_enable()/pinmux_disable() is quick and can be called from fastpath
-+  (irq context) when you quickly want to set up/tear down the hardware muxing
-+  when running a device driver. Usually it will just poke some values into a
-+  register.
-+
-+- pinmux_disable() is called in process context to tear down the pin requests
-+  and release the state holder struct for the mux setting.
-+
-+Usually the pinmux core handled the get/put pair and call out to the device
-+drivers bookkeeping operations, like checking available functions and the
-+associated pins, whereas the enable/disable pass on to the pin controller
-+driver which takes care of activating and/or deactivating the mux setting by
-+quickly poking some registers.
-+
-+The pins are allocated for your device when you issue the pinmux_get() call,
-+after this you should be able to see this in the debugfs listing of all pins.
-+
-+
-+System pinmux hogging
-+=====================
-+
-+A system pinmux map entry, i.e. a pinmux setting that does not have a device
-+associated with it, can be hogged by the core when the pin controller is
-+registered. This means that the core will attempt to call regulator_get() and
-+regulator_enable() on it immediately after the pin control device has been
-+registered.
-+
-+This is enabled by simply setting the .hog_on_boot field in the map to true,
-+like this:
-+
-+{
-+	.name "POWERMAP"
-+	.ctrl_dev_name = "pinctrl.0",
-+	.function = "power_func",
-+	.hog_on_boot = true,
-+},
-+
-+Since it may be common to request the core to hog a few always-applicable
-+mux settings on the primary pin controller, there is a convenience macro for
-+this:
-+
-+PINMUX_MAP_PRIMARY_SYS_HOG("POWERMAP", "power_func")
-+
-+This gives the exact same result as the above construction.
-+
-+
-+Runtime pinmuxing
-+=================
-+
-+It is possible to mux a certain function in and out at runtime, say to move
-+an SPI port from one set of pins to another set of pins. Say for example for
-+spi0 in the example above, we expose two different groups of pins for the same
-+function, but with different named in the mapping as described under
-+"Advanced mapping" above. So we have two mappings named "spi0-pos-A" and
-+"spi0-pos-B".
-+
-+This snippet first muxes the function in the pins defined by group A, enables
-+it, disables and releases it, and muxes it in on the pins defined by group B:
-+
-+foo_switch()
-+{
-+	struct pinmux pmx;
-+
-+	/* Enable on position A */
-+	pmx = pinmux_get(&device, "spi0-pos-A");
-+	if IS_ERR(pmx)
-+		return PTR_ERR(pmx);
-+	pinmux_enable(pmx);
-+
-+	/* This releases the pins again */
-+	pinmux_disable(pmx);
-+	pinmux_put(pmx);
-+
-+	/* Enable on position B */
-+	pmx = pinmux_get(&device, "spi0-pos-B");
-+	if IS_ERR(pmx)
-+		return PTR_ERR(pmx);
-+	pinmux_enable(pmx);
-+	...
-+}
-+
-+The above has to be done from process context.
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 1a8cc60..ce23d5f 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -5001,6 +5001,11 @@ L:	linux-mtd@lists.infradead.org
- S:	Maintained
- F:	drivers/mtd/devices/phram.c
++subsys_initcall(u300_pinmux_fetch);
++
+ /*
+  * Notice that AMBA devices are initialized before platform devices.
+  *
+@@ -1643,10 +1719,10 @@ static struct platform_device *platform_devs[] __initdata = {
+ 	&gpio_device,
+ 	&nand_device,
+ 	&wdog_device,
+-	&ave_device
++	&ave_device,
++	&pinmux_device,
+ };
  
-+PINMUX SUBSYSTEM
-+M:	Linus Walleij <linus.walleij@linaro.org>
-+S:	Maintained
-+F:	drivers/pinmux/
+-
+ /*
+  * Interrupts: the U300 platforms have two pl190 ARM PrimeCells connected
+  * together so some interrupts are connected to the first one and some
+@@ -1828,6 +1904,10 @@ void __init u300_init_devices(void)
+ 
+ 	u300_assign_physmem();
+ 
++	/* Initialize pinmuxing */
++	pinmux_register_mappings(u300_pinmux_map,
++				 ARRAY_SIZE(u300_pinmux_map));
 +
- PKTCDVD DRIVER
- M:	Peter Osterlund <petero2@telia.com>
- S:	Maintained
-diff --git a/drivers/Kconfig b/drivers/Kconfig
-index 95b9e7e..40d3e16 100644
---- a/drivers/Kconfig
-+++ b/drivers/Kconfig
-@@ -56,6 +56,10 @@ source "drivers/pps/Kconfig"
+ 	/* Register subdevices on the I2C buses */
+ 	u300_i2c_register_board_devices();
  
- source "drivers/ptp/Kconfig"
+diff --git a/arch/arm/mach-u300/include/mach/syscon.h b/arch/arm/mach-u300/include/mach/syscon.h
+index 7444f5c..6e84f07 100644
+--- a/arch/arm/mach-u300/include/mach/syscon.h
++++ b/arch/arm/mach-u300/include/mach/syscon.h
+@@ -234,91 +234,6 @@
+ #define U300_SYSCON_ECCR_EMIF_1_RET_OUT_CLK_EN_N_DISABLE	(0x0004)
+ #define U300_SYSCON_ECCR_EMIF_MEMCLK_RET_EN_N_DISABLE		(0x0002)
+ #define U300_SYSCON_ECCR_EMIF_SDRCLK_RET_EN_N_DISABLE		(0x0001)
+-/* PAD MUX Control register 1 (LOW) 16bit (R/W) */
+-#define U300_SYSCON_PMC1LR					(0x007C)
+-#define U300_SYSCON_PMC1LR_MASK					(0xFFFF)
+-#define U300_SYSCON_PMC1LR_CDI_MASK				(0xC000)
+-#define U300_SYSCON_PMC1LR_CDI_CDI				(0x0000)
+-#define U300_SYSCON_PMC1LR_CDI_EMIF				(0x4000)
+-#ifdef CONFIG_MACH_U300_BS335
+-#define U300_SYSCON_PMC1LR_CDI_CDI2				(0x8000)
+-#define U300_SYSCON_PMC1LR_CDI_WCDMA_APP_GPIO			(0xC000)
+-#elif CONFIG_MACH_U300_BS365
+-#define U300_SYSCON_PMC1LR_CDI_GPIO				(0x8000)
+-#define U300_SYSCON_PMC1LR_CDI_WCDMA				(0xC000)
+-#endif
+-#define U300_SYSCON_PMC1LR_PDI_MASK				(0x3000)
+-#define U300_SYSCON_PMC1LR_PDI_PDI				(0x0000)
+-#define U300_SYSCON_PMC1LR_PDI_EGG				(0x1000)
+-#define U300_SYSCON_PMC1LR_PDI_WCDMA				(0x3000)
+-#define U300_SYSCON_PMC1LR_MMCSD_MASK				(0x0C00)
+-#define U300_SYSCON_PMC1LR_MMCSD_MMCSD				(0x0000)
+-#define U300_SYSCON_PMC1LR_MMCSD_MSPRO				(0x0400)
+-#define U300_SYSCON_PMC1LR_MMCSD_DSP				(0x0800)
+-#define U300_SYSCON_PMC1LR_MMCSD_WCDMA				(0x0C00)
+-#define U300_SYSCON_PMC1LR_ETM_MASK				(0x0300)
+-#define U300_SYSCON_PMC1LR_ETM_ACC				(0x0000)
+-#define U300_SYSCON_PMC1LR_ETM_APP				(0x0100)
+-#define U300_SYSCON_PMC1LR_EMIF_1_CS2_MASK			(0x00C0)
+-#define U300_SYSCON_PMC1LR_EMIF_1_CS2_STATIC			(0x0000)
+-#define U300_SYSCON_PMC1LR_EMIF_1_CS2_NFIF			(0x0040)
+-#define U300_SYSCON_PMC1LR_EMIF_1_CS2_SDRAM			(0x0080)
+-#define U300_SYSCON_PMC1LR_EMIF_1_CS2_STATIC_2GB		(0x00C0)
+-#define U300_SYSCON_PMC1LR_EMIF_1_CS1_MASK			(0x0030)
+-#define U300_SYSCON_PMC1LR_EMIF_1_CS1_STATIC			(0x0000)
+-#define U300_SYSCON_PMC1LR_EMIF_1_CS1_NFIF			(0x0010)
+-#define U300_SYSCON_PMC1LR_EMIF_1_CS1_SDRAM			(0x0020)
+-#define U300_SYSCON_PMC1LR_EMIF_1_CS1_SEMI			(0x0030)
+-#define U300_SYSCON_PMC1LR_EMIF_1_CS0_MASK			(0x000C)
+-#define U300_SYSCON_PMC1LR_EMIF_1_CS0_STATIC			(0x0000)
+-#define U300_SYSCON_PMC1LR_EMIF_1_CS0_NFIF			(0x0004)
+-#define U300_SYSCON_PMC1LR_EMIF_1_CS0_SDRAM			(0x0008)
+-#define U300_SYSCON_PMC1LR_EMIF_1_CS0_SEMI			(0x000C)
+-#define U300_SYSCON_PMC1LR_EMIF_1_MASK				(0x0003)
+-#define U300_SYSCON_PMC1LR_EMIF_1_STATIC			(0x0000)
+-#define U300_SYSCON_PMC1LR_EMIF_1_SDRAM0			(0x0001)
+-#define U300_SYSCON_PMC1LR_EMIF_1_SDRAM1			(0x0002)
+-#define U300_SYSCON_PMC1LR_EMIF_1				(0x0003)
+-/* PAD MUX Control register 2 (HIGH) 16bit (R/W) */
+-#define U300_SYSCON_PMC1HR					(0x007E)
+-#define U300_SYSCON_PMC1HR_MASK					(0xFFFF)
+-#define U300_SYSCON_PMC1HR_MISC_2_MASK				(0xC000)
+-#define U300_SYSCON_PMC1HR_MISC_2_APP_GPIO			(0x0000)
+-#define U300_SYSCON_PMC1HR_MISC_2_MSPRO				(0x4000)
+-#define U300_SYSCON_PMC1HR_MISC_2_DSP				(0x8000)
+-#define U300_SYSCON_PMC1HR_MISC_2_AAIF				(0xC000)
+-#define U300_SYSCON_PMC1HR_APP_GPIO_2_MASK			(0x3000)
+-#define U300_SYSCON_PMC1HR_APP_GPIO_2_APP_GPIO			(0x0000)
+-#define U300_SYSCON_PMC1HR_APP_GPIO_2_NFIF			(0x1000)
+-#define U300_SYSCON_PMC1HR_APP_GPIO_2_DSP			(0x2000)
+-#define U300_SYSCON_PMC1HR_APP_GPIO_2_AAIF			(0x3000)
+-#define U300_SYSCON_PMC1HR_APP_GPIO_1_MASK			(0x0C00)
+-#define U300_SYSCON_PMC1HR_APP_GPIO_1_APP_GPIO			(0x0000)
+-#define U300_SYSCON_PMC1HR_APP_GPIO_1_MMC			(0x0400)
+-#define U300_SYSCON_PMC1HR_APP_GPIO_1_DSP			(0x0800)
+-#define U300_SYSCON_PMC1HR_APP_GPIO_1_AAIF			(0x0C00)
+-#define U300_SYSCON_PMC1HR_APP_SPI_CS_2_MASK			(0x0300)
+-#define U300_SYSCON_PMC1HR_APP_SPI_CS_2_APP_GPIO		(0x0000)
+-#define U300_SYSCON_PMC1HR_APP_SPI_CS_2_SPI			(0x0100)
+-#define U300_SYSCON_PMC1HR_APP_SPI_CS_2_AAIF			(0x0300)
+-#define U300_SYSCON_PMC1HR_APP_SPI_CS_1_MASK			(0x00C0)
+-#define U300_SYSCON_PMC1HR_APP_SPI_CS_1_APP_GPIO		(0x0000)
+-#define U300_SYSCON_PMC1HR_APP_SPI_CS_1_SPI			(0x0040)
+-#define U300_SYSCON_PMC1HR_APP_SPI_CS_1_AAIF			(0x00C0)
+-#define U300_SYSCON_PMC1HR_APP_SPI_2_MASK			(0x0030)
+-#define U300_SYSCON_PMC1HR_APP_SPI_2_APP_GPIO			(0x0000)
+-#define U300_SYSCON_PMC1HR_APP_SPI_2_SPI			(0x0010)
+-#define U300_SYSCON_PMC1HR_APP_SPI_2_DSP			(0x0020)
+-#define U300_SYSCON_PMC1HR_APP_SPI_2_AAIF			(0x0030)
+-#define U300_SYSCON_PMC1HR_APP_UART0_2_MASK			(0x000C)
+-#define U300_SYSCON_PMC1HR_APP_UART0_2_APP_GPIO			(0x0000)
+-#define U300_SYSCON_PMC1HR_APP_UART0_2_UART0			(0x0004)
+-#define U300_SYSCON_PMC1HR_APP_UART0_2_NFIF_CS			(0x0008)
+-#define U300_SYSCON_PMC1HR_APP_UART0_2_AAIF			(0x000C)
+-#define U300_SYSCON_PMC1HR_APP_UART0_1_MASK			(0x0003)
+-#define U300_SYSCON_PMC1HR_APP_UART0_1_APP_GPIO			(0x0000)
+-#define U300_SYSCON_PMC1HR_APP_UART0_1_UART0			(0x0001)
+-#define U300_SYSCON_PMC1HR_APP_UART0_1_AAIF			(0x0003)
+ /* Step one for killing the applications system 16bit (-/W) */
+ #define U300_SYSCON_KA1R					(0x0080)
+ #define U300_SYSCON_KA1R_MASK					(0xFFFF)
+@@ -357,57 +272,6 @@
+ #define U300_SYSCON_PUCR_EMIF_1_16BIT_PU_ENABLE			(0x0080)
+ #define U300_SYSCON_PUCR_EMIF_1_8BIT_PU_ENABLE			(0x0040)
+ #define U300_SYSCON_PUCR_KEY_IN_PU_EN_MASK			(0x003F)
+-/* Padmux 2 control */
+-#define U300_SYSCON_PMC2R					(0x100)
+-#define U300_SYSCON_PMC2R_APP_MISC_0_MASK			(0x00C0)
+-#define U300_SYSCON_PMC2R_APP_MISC_0_APP_GPIO			(0x0000)
+-#define U300_SYSCON_PMC2R_APP_MISC_0_EMIF_SDRAM			(0x0040)
+-#define U300_SYSCON_PMC2R_APP_MISC_0_MMC			(0x0080)
+-#define U300_SYSCON_PMC2R_APP_MISC_0_CDI2			(0x00C0)
+-#define U300_SYSCON_PMC2R_APP_MISC_1_MASK			(0x0300)
+-#define U300_SYSCON_PMC2R_APP_MISC_1_APP_GPIO			(0x0000)
+-#define U300_SYSCON_PMC2R_APP_MISC_1_EMIF_SDRAM			(0x0100)
+-#define U300_SYSCON_PMC2R_APP_MISC_1_MMC			(0x0200)
+-#define U300_SYSCON_PMC2R_APP_MISC_1_CDI2			(0x0300)
+-#define U300_SYSCON_PMC2R_APP_MISC_2_MASK			(0x0C00)
+-#define U300_SYSCON_PMC2R_APP_MISC_2_APP_GPIO			(0x0000)
+-#define U300_SYSCON_PMC2R_APP_MISC_2_EMIF_SDRAM			(0x0400)
+-#define U300_SYSCON_PMC2R_APP_MISC_2_MMC			(0x0800)
+-#define U300_SYSCON_PMC2R_APP_MISC_2_CDI2			(0x0C00)
+-#define U300_SYSCON_PMC2R_APP_MISC_3_MASK			(0x3000)
+-#define U300_SYSCON_PMC2R_APP_MISC_3_APP_GPIO			(0x0000)
+-#define U300_SYSCON_PMC2R_APP_MISC_3_EMIF_SDRAM			(0x1000)
+-#define U300_SYSCON_PMC2R_APP_MISC_3_MMC			(0x2000)
+-#define U300_SYSCON_PMC2R_APP_MISC_3_CDI2			(0x3000)
+-#define U300_SYSCON_PMC2R_APP_MISC_4_MASK			(0xC000)
+-#define U300_SYSCON_PMC2R_APP_MISC_4_APP_GPIO			(0x0000)
+-#define U300_SYSCON_PMC2R_APP_MISC_4_EMIF_SDRAM			(0x4000)
+-#define U300_SYSCON_PMC2R_APP_MISC_4_MMC			(0x8000)
+-#define U300_SYSCON_PMC2R_APP_MISC_4_ACC_GPIO			(0xC000)
+-/* TODO: More SYSCON registers missing */
+-#define U300_SYSCON_PMC3R					(0x10c)
+-#define U300_SYSCON_PMC3R_APP_MISC_11_MASK			(0xc000)
+-#define U300_SYSCON_PMC3R_APP_MISC_11_SPI			(0x4000)
+-#define U300_SYSCON_PMC3R_APP_MISC_10_MASK			(0x3000)
+-#define U300_SYSCON_PMC3R_APP_MISC_10_SPI			(0x1000)
+-/* TODO: Missing other configs */
+-#define U300_SYSCON_PMC4R					(0x168)
+-#define U300_SYSCON_PMC4R_APP_MISC_12_MASK			(0x0003)
+-#define U300_SYSCON_PMC4R_APP_MISC_12_APP_GPIO			(0x0000)
+-#define U300_SYSCON_PMC4R_APP_MISC_13_MASK			(0x000C)
+-#define U300_SYSCON_PMC4R_APP_MISC_13_CDI			(0x0000)
+-#define U300_SYSCON_PMC4R_APP_MISC_13_SMIA			(0x0004)
+-#define U300_SYSCON_PMC4R_APP_MISC_13_SMIA2			(0x0008)
+-#define U300_SYSCON_PMC4R_APP_MISC_13_APP_GPIO			(0x000C)
+-#define U300_SYSCON_PMC4R_APP_MISC_14_MASK			(0x0030)
+-#define U300_SYSCON_PMC4R_APP_MISC_14_CDI			(0x0000)
+-#define U300_SYSCON_PMC4R_APP_MISC_14_SMIA			(0x0010)
+-#define U300_SYSCON_PMC4R_APP_MISC_14_CDI2			(0x0020)
+-#define U300_SYSCON_PMC4R_APP_MISC_14_APP_GPIO			(0x0030)
+-#define U300_SYSCON_PMC4R_APP_MISC_16_MASK			(0x0300)
+-#define U300_SYSCON_PMC4R_APP_MISC_16_APP_GPIO_13		(0x0000)
+-#define U300_SYSCON_PMC4R_APP_MISC_16_APP_UART1_CTS		(0x0100)
+-#define U300_SYSCON_PMC4R_APP_MISC_16_EMIF_1_STATIC_CS5_N	(0x0200)
+ /* SYS_0_CLK_CONTROL first clock control 16bit (R/W) */
+ #define U300_SYSCON_S0CCR					(0x120)
+ #define U300_SYSCON_S0CCR_FIELD_MASK				(0x43FF)
+diff --git a/arch/arm/mach-u300/mmc.c b/arch/arm/mach-u300/mmc.c
+index 677ccef..d5e4a98 100644
+--- a/arch/arm/mach-u300/mmc.c
++++ b/arch/arm/mach-u300/mmc.c
+@@ -21,7 +21,6 @@
+ #include <mach/dma_channels.h>
  
-+# pinctrl before gpio - gpio drivers may need it
-+
-+source "drivers/pinctrl/Kconfig"
-+
- source "drivers/gpio/Kconfig"
+ #include "mmc.h"
+-#include "padmux.h"
  
- source "drivers/w1/Kconfig"
-diff --git a/drivers/Makefile b/drivers/Makefile
-index 7fa433a..e7afb3a 100644
---- a/drivers/Makefile
-+++ b/drivers/Makefile
-@@ -5,6 +5,8 @@
- # Rewritten to use lists instead of if-statements.
- #
+ static struct mmci_platform_data mmc0_plat_data = {
+ 	/*
+@@ -45,24 +44,9 @@ static struct mmci_platform_data mmc0_plat_data = {
+ int __devinit mmc_init(struct amba_device *adev)
+ {
+ 	struct device *mmcsd_device = &adev->dev;
+-	struct pmx *pmx;
+ 	int ret = 0;
  
-+# GPIO must come after pinctrl as gpios may need to mux pins etc
-+obj-y				+= pinctrl/
- obj-y				+= gpio/
- obj-$(CONFIG_PCI)		+= pci/
- obj-$(CONFIG_PARISC)		+= parisc/
+ 	mmcsd_device->platform_data = &mmc0_plat_data;
+ 
+-	/*
+-	 * Setup padmuxing for MMC. Since this must always be
+-	 * compiled into the kernel, pmx is never released.
+-	 */
+-	pmx = pmx_get(mmcsd_device, U300_APP_PMX_MMC_SETTING);
+-
+-	if (IS_ERR(pmx))
+-		pr_warning("Could not get padmux handle\n");
+-	else {
+-		ret = pmx_activate(mmcsd_device, pmx);
+-		if (IS_ERR_VALUE(ret))
+-			pr_warning("Could not activate padmuxing\n");
+-	}
+-
+ 	return ret;
+ }
+diff --git a/arch/arm/mach-u300/padmux.c b/arch/arm/mach-u300/padmux.c
+deleted file mode 100644
+index 4c93c6c..0000000
+--- a/arch/arm/mach-u300/padmux.c
++++ /dev/null
+@@ -1,367 +0,0 @@
+-/*
+- *
+- * arch/arm/mach-u300/padmux.c
+- *
+- *
+- * Copyright (C) 2009 ST-Ericsson AB
+- * License terms: GNU General Public License (GPL) version 2
+- * U300 PADMUX functions
+- * Author: Martin Persson <martin.persson@stericsson.com>
+- */
+-
+-#include <linux/module.h>
+-#include <linux/kernel.h>
+-#include <linux/device.h>
+-#include <linux/err.h>
+-#include <linux/errno.h>
+-#include <linux/io.h>
+-#include <linux/mutex.h>
+-#include <linux/string.h>
+-#include <linux/bug.h>
+-#include <linux/debugfs.h>
+-#include <linux/seq_file.h>
+-#include <mach/u300-regs.h>
+-#include <mach/syscon.h>
+-#include "padmux.h"
+-
+-static DEFINE_MUTEX(pmx_mutex);
+-
+-const u32 pmx_registers[] = {
+-	(U300_SYSCON_VBASE + U300_SYSCON_PMC1LR),
+-	(U300_SYSCON_VBASE + U300_SYSCON_PMC1HR),
+-	(U300_SYSCON_VBASE + U300_SYSCON_PMC2R),
+-	(U300_SYSCON_VBASE + U300_SYSCON_PMC3R),
+-	(U300_SYSCON_VBASE + U300_SYSCON_PMC4R)
+-};
+-
+-/* High level functionality */
+-
+-/* Lazy dog:
+- * onmask = {
+- *   {"PMC1LR" mask, "PMC1LR" value},
+- *   {"PMC1HR" mask, "PMC1HR" value},
+- *   {"PMC2R"  mask, "PMC2R"  value},
+- *   {"PMC3R"  mask, "PMC3R"  value},
+- *   {"PMC4R"  mask, "PMC4R"  value}
+- * }
+- */
+-static struct pmx mmc_setting = {
+-	.setting = U300_APP_PMX_MMC_SETTING,
+-	.default_on = false,
+-	.activated = false,
+-	.name = "MMC",
+-	.onmask = {
+-		   {U300_SYSCON_PMC1LR_MMCSD_MASK,
+-		    U300_SYSCON_PMC1LR_MMCSD_MMCSD},
+-		   {0, 0},
+-		   {0, 0},
+-		   {0, 0},
+-		   {U300_SYSCON_PMC4R_APP_MISC_12_MASK,
+-		    U300_SYSCON_PMC4R_APP_MISC_12_APP_GPIO}
+-		   },
+-};
+-
+-static struct pmx spi_setting = {
+-	.setting = U300_APP_PMX_SPI_SETTING,
+-	.default_on = false,
+-	.activated = false,
+-	.name = "SPI",
+-	.onmask = {{0, 0},
+-		   {U300_SYSCON_PMC1HR_APP_SPI_2_MASK |
+-		    U300_SYSCON_PMC1HR_APP_SPI_CS_1_MASK |
+-		    U300_SYSCON_PMC1HR_APP_SPI_CS_2_MASK,
+-		    U300_SYSCON_PMC1HR_APP_SPI_2_SPI |
+-		    U300_SYSCON_PMC1HR_APP_SPI_CS_1_SPI |
+-		    U300_SYSCON_PMC1HR_APP_SPI_CS_2_SPI},
+-		   {0, 0},
+-		   {0, 0},
+-		   {0, 0}
+-		   },
+-};
+-
+-/* Available padmux settings */
+-static struct pmx *pmx_settings[] = {
+-	&mmc_setting,
+-	&spi_setting,
+-};
+-
+-static void update_registers(struct pmx *pmx, bool activate)
+-{
+-	u16 regval, val, mask;
+-	int i;
+-
+-	for (i = 0; i < ARRAY_SIZE(pmx_registers); i++) {
+-		if (activate)
+-			val = pmx->onmask[i].val;
+-		else
+-			val = 0;
+-
+-		mask = pmx->onmask[i].mask;
+-		if (mask != 0) {
+-			regval = readw(pmx_registers[i]);
+-			regval &= ~mask;
+-			regval |= val;
+-			writew(regval, pmx_registers[i]);
+-		}
+-	}
+-}
+-
+-struct pmx *pmx_get(struct device *dev, enum pmx_settings setting)
+-{
+-	int i;
+-	struct pmx *pmx = ERR_PTR(-ENOENT);
+-
+-	if (dev == NULL)
+-		return ERR_PTR(-EINVAL);
+-
+-	mutex_lock(&pmx_mutex);
+-	for (i = 0; i < ARRAY_SIZE(pmx_settings); i++) {
+-
+-		if (setting == pmx_settings[i]->setting) {
+-
+-			if (pmx_settings[i]->dev != NULL) {
+-				WARN(1, "padmux: required setting "
+-				     "in use by another consumer\n");
+-			} else {
+-				pmx = pmx_settings[i];
+-				pmx->dev = dev;
+-				dev_dbg(dev, "padmux: setting nr %d is now "
+-					"bound to %s and ready to use\n",
+-					setting, dev_name(dev));
+-				break;
+-			}
+-		}
+-	}
+-	mutex_unlock(&pmx_mutex);
+-
+-	return pmx;
+-}
+-EXPORT_SYMBOL(pmx_get);
+-
+-int pmx_put(struct device *dev, struct pmx *pmx)
+-{
+-	int i;
+-	int ret = -ENOENT;
+-
+-	if (pmx == NULL || dev == NULL)
+-		return -EINVAL;
+-
+-	mutex_lock(&pmx_mutex);
+-	for (i = 0; i < ARRAY_SIZE(pmx_settings); i++) {
+-
+-		if (pmx->setting == pmx_settings[i]->setting) {
+-
+-			if (dev != pmx->dev) {
+-				WARN(1, "padmux: cannot release handle as "
+-					"it is bound to another consumer\n");
+-				ret = -EINVAL;
+-				break;
+-			} else {
+-				pmx_settings[i]->dev = NULL;
+-				ret = 0;
+-				break;
+-			}
+-		}
+-	}
+-	mutex_unlock(&pmx_mutex);
+-
+-	return ret;
+-}
+-EXPORT_SYMBOL(pmx_put);
+-
+-int pmx_activate(struct device *dev, struct pmx *pmx)
+-{
+-	int i, j, ret;
+-	ret = 0;
+-
+-	if (pmx == NULL || dev == NULL)
+-		return -EINVAL;
+-
+-	mutex_lock(&pmx_mutex);
+-
+-	/* Make sure the required bits are not used */
+-	for (i = 0; i < ARRAY_SIZE(pmx_settings); i++) {
+-
+-		if (pmx_settings[i]->dev == NULL || pmx_settings[i] == pmx)
+-			continue;
+-
+-		for (j = 0; j < ARRAY_SIZE(pmx_registers); j++) {
+-
+-			if (pmx_settings[i]->onmask[j].mask & pmx->
+-				onmask[j].mask) {
+-				/* More than one entry on the same bits */
+-				WARN(1, "padmux: cannot activate "
+-					"setting. Bit conflict with "
+-					"an active setting\n");
+-
+-				ret = -EUSERS;
+-				goto exit;
+-			}
+-		}
+-	}
+-	update_registers(pmx, true);
+-	pmx->activated = true;
+-	dev_dbg(dev, "padmux: setting nr %d is activated\n",
+-		pmx->setting);
+-
+-exit:
+-	mutex_unlock(&pmx_mutex);
+-	return ret;
+-}
+-EXPORT_SYMBOL(pmx_activate);
+-
+-int pmx_deactivate(struct device *dev, struct pmx *pmx)
+-{
+-	int i;
+-	int ret = -ENOENT;
+-
+-	if (pmx == NULL || dev == NULL)
+-		return -EINVAL;
+-
+-	mutex_lock(&pmx_mutex);
+-	for (i = 0; i < ARRAY_SIZE(pmx_settings); i++) {
+-
+-		if (pmx_settings[i]->dev == NULL)
+-			continue;
+-
+-		if (pmx->setting == pmx_settings[i]->setting) {
+-
+-			if (dev != pmx->dev) {
+-				WARN(1, "padmux: cannot deactivate "
+-				     "pmx setting as it was activated "
+-				     "by another consumer\n");
+-
+-				ret = -EBUSY;
+-				continue;
+-			} else {
+-				update_registers(pmx, false);
+-				pmx_settings[i]->dev = NULL;
+-				pmx->activated = false;
+-				ret = 0;
+-				dev_dbg(dev, "padmux: setting nr %d is deactivated",
+-					pmx->setting);
+-				break;
+-			}
+-		}
+-	}
+-	mutex_unlock(&pmx_mutex);
+-
+-	return ret;
+-}
+-EXPORT_SYMBOL(pmx_deactivate);
+-
+-/*
+- * For internal use only. If it is to be exported,
+- * it should be reentrant. Notice that pmx_activate
+- * (i.e. runtime settings) always override default settings.
+- */
+-static int pmx_set_default(void)
+-{
+-	/* Used to identify several entries on the same bits */
+-	u16 modbits[ARRAY_SIZE(pmx_registers)];
+-
+-	int i, j;
+-
+-	memset(modbits, 0, ARRAY_SIZE(pmx_registers) * sizeof(u16));
+-
+-	for (i = 0; i < ARRAY_SIZE(pmx_settings); i++) {
+-
+-		if (!pmx_settings[i]->default_on)
+-			continue;
+-
+-		for (j = 0; j < ARRAY_SIZE(pmx_registers); j++) {
+-
+-			/* Make sure there is only one entry on the same bits */
+-			if (modbits[j] & pmx_settings[i]->onmask[j].mask) {
+-				BUG();
+-				return -EUSERS;
+-			}
+-			modbits[j] |= pmx_settings[i]->onmask[j].mask;
+-		}
+-		update_registers(pmx_settings[i], true);
+-	}
+-	return 0;
+-}
+-
+-#if (defined(CONFIG_DEBUG_FS) && defined(CONFIG_U300_DEBUG))
+-static int pmx_show(struct seq_file *s, void *data)
+-{
+-	int i;
+-	seq_printf(s, "-------------------------------------------------\n");
+-	seq_printf(s, "SETTING     BOUND TO DEVICE               STATE\n");
+-	seq_printf(s, "-------------------------------------------------\n");
+-	mutex_lock(&pmx_mutex);
+-	for (i = 0; i < ARRAY_SIZE(pmx_settings); i++) {
+-		/* Format pmx and device name nicely */
+-		char cdp[33];
+-		int chars;
+-
+-		chars = snprintf(&cdp[0], 17, "%s", pmx_settings[i]->name);
+-		while (chars < 16) {
+-			cdp[chars] = ' ';
+-			chars++;
+-		}
+-		chars = snprintf(&cdp[16], 17, "%s", pmx_settings[i]->dev ?
+-				dev_name(pmx_settings[i]->dev) : "N/A");
+-		while (chars < 16) {
+-			cdp[chars+16] = ' ';
+-			chars++;
+-		}
+-		cdp[32] = '\0';
+-
+-		seq_printf(s,
+-			"%s\t%s\n",
+-			&cdp[0],
+-			pmx_settings[i]->activated ?
+-			"ACTIVATED" : "DEACTIVATED"
+-			);
+-
+-	}
+-	mutex_unlock(&pmx_mutex);
+-	return 0;
+-}
+-
+-static int pmx_open(struct inode *inode, struct file *file)
+-{
+-	return single_open(file, pmx_show, NULL);
+-}
+-
+-static const struct file_operations pmx_operations = {
+-	.owner		= THIS_MODULE,
+-	.open		= pmx_open,
+-	.read		= seq_read,
+-	.llseek		= seq_lseek,
+-	.release	= single_release,
+-};
+-
+-static int __init init_pmx_read_debugfs(void)
+-{
+-	/* Expose a simple debugfs interface to view pmx settings */
+-	(void) debugfs_create_file("padmux", S_IFREG | S_IRUGO,
+-				   NULL, NULL,
+-				   &pmx_operations);
+-	return 0;
+-}
+-
+-/*
+- * This needs to come in after the core_initcall(),
+- * because debugfs is not available until
+- * the subsystems come up.
+- */
+-module_init(init_pmx_read_debugfs);
+-#endif
+-
+-static int __init pmx_init(void)
+-{
+-	int ret;
+-
+-	ret = pmx_set_default();
+-
+-	if (IS_ERR_VALUE(ret))
+-		pr_crit("padmux: default settings could not be set\n");
+-
+-	return 0;
+-}
+-
+-/* Should be initialized before consumers */
+-core_initcall(pmx_init);
+diff --git a/arch/arm/mach-u300/padmux.h b/arch/arm/mach-u300/padmux.h
+deleted file mode 100644
+index 6e8b860..0000000
+--- a/arch/arm/mach-u300/padmux.h
++++ /dev/null
+@@ -1,39 +0,0 @@
+-/*
+- *
+- * arch/arm/mach-u300/padmux.h
+- *
+- *
+- * Copyright (C) 2009 ST-Ericsson AB
+- * License terms: GNU General Public License (GPL) version 2
+- * U300 PADMUX API
+- * Author: Martin Persson <martin.persson@stericsson.com>
+- */
+-
+-#ifndef __MACH_U300_PADMUX_H
+-#define __MACH_U300_PADMUX_H
+-
+-enum pmx_settings {
+-	U300_APP_PMX_MMC_SETTING,
+-	U300_APP_PMX_SPI_SETTING
+-};
+-
+-struct pmx_onmask {
+-	u16 mask;		/* Mask bits */
+-	u16 val;		/* Value when active */
+-};
+-
+-struct pmx {
+-	struct device *dev;
+-	enum pmx_settings setting;
+-	char *name;
+-	bool activated;
+-	bool default_on;
+-	struct pmx_onmask onmask[];
+-};
+-
+-struct pmx *pmx_get(struct device *dev, enum pmx_settings setting);
+-int pmx_put(struct device *dev, struct pmx *pmx);
+-int pmx_activate(struct device *dev, struct pmx *pmx);
+-int pmx_deactivate(struct device *dev, struct pmx *pmx);
+-
+-#endif
+diff --git a/arch/arm/mach-u300/spi.c b/arch/arm/mach-u300/spi.c
+index 7b597e2..a1affac 100644
+--- a/arch/arm/mach-u300/spi.c
++++ b/arch/arm/mach-u300/spi.c
+@@ -14,8 +14,6 @@
+ #include <mach/coh901318.h>
+ #include <mach/dma_channels.h>
+ 
+-#include "padmux.h"
+-
+ /*
+  * The following is for the actual devices on the SSP/SPI bus
+  */
+@@ -95,25 +93,7 @@ static struct pl022_ssp_controller ssp_platform_data = {
+ 
+ void __init u300_spi_init(struct amba_device *adev)
+ {
+-	struct pmx *pmx;
+-
+ 	adev->dev.platform_data = &ssp_platform_data;
+-	/*
+-	 * Setup padmuxing for SPI. Since this must always be
+-	 * compiled into the kernel, pmx is never released.
+-	 */
+-	pmx = pmx_get(&adev->dev, U300_APP_PMX_SPI_SETTING);
+-
+-	if (IS_ERR(pmx))
+-		dev_warn(&adev->dev, "Could not get padmux handle\n");
+-	else {
+-		int ret;
+-
+-		ret = pmx_activate(&adev->dev, pmx);
+-		if (IS_ERR_VALUE(ret))
+-			dev_warn(&adev->dev, "Could not activate padmuxing\n");
+-	}
+-
+ }
+ 
+ void __init u300_spi_register_board_devices(void)
 diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
-new file mode 100644
-index 0000000..7fa0fe0
---- /dev/null
+index 7fa0fe0..8b3d081 100644
+--- a/drivers/pinctrl/Kconfig
 +++ b/drivers/pinctrl/Kconfig
-@@ -0,0 +1,29 @@
-+#
-+# PINCTRL infrastructure and drivers
-+#
-+
-+menuconfig PINCTRL
-+	bool "PINCTRL Support"
-+	depends on SYSFS && EXPERIMENTAL
+@@ -26,4 +26,11 @@ config DEBUG_PINCTRL
+ 	help
+ 	  Say Y here to add some extra checks and diagnostics to PINCTRL calls.
+ 
++config PINMUX_U300
++	bool "U300 pinmux driver"
++	depends on ARCH_U300
++	select PINMUX
 +	help
-+	  This enables the PINCTRL subsystem for controlling pins
-+	  on chip packages, for example multiplexing pins on primarily
-+	  PGA and BGA packages for systems on chip.
++	  Say Y here to enable the U300 pinmux driver
 +
-+	  If unsure, say N.
-+
-+if PINCTRL
-+
-+config PINMUX
-+	bool "Support pinmux controllers"
-+	help
-+	  Say Y here if you want the pincontrol subsystem to handle pin
-+	  multiplexing drivers.
-+
-+config DEBUG_PINCTRL
-+	bool "Debug PINCTRL calls"
-+	depends on DEBUG_KERNEL
-+	help
-+	  Say Y here to add some extra checks and diagnostics to PINCTRL calls.
-+
-+endif
+ endif
 diff --git a/drivers/pinctrl/Makefile b/drivers/pinctrl/Makefile
-new file mode 100644
-index 0000000..596ce9f
---- /dev/null
+index 596ce9f..63d4241 100644
+--- a/drivers/pinctrl/Makefile
 +++ b/drivers/pinctrl/Makefile
-@@ -0,0 +1,6 @@
-+# generic pinmux support
-+
-+ccflags-$(CONFIG_DEBUG_PINMUX)	+= -DDEBUG
-+
-+obj-$(CONFIG_PINCTRL)		+= core.o
-+obj-$(CONFIG_PINMUX)		+= pinmux.o
-diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+@@ -4,3 +4,4 @@ ccflags-$(CONFIG_DEBUG_PINMUX)	+= -DDEBUG
+ 
+ obj-$(CONFIG_PINCTRL)		+= core.o
+ obj-$(CONFIG_PINMUX)		+= pinmux.o
++obj-$(CONFIG_PINMUX_U300)	+= pinmux-u300.o
+diff --git a/drivers/pinctrl/pinmux-u300.c b/drivers/pinctrl/pinmux-u300.c
 new file mode 100644
-index 0000000..4229628
+index 0000000..592f12f
 --- /dev/null
-+++ b/drivers/pinctrl/core.c
-@@ -0,0 +1,632 @@
++++ b/drivers/pinctrl/pinmux-u300.c
+@@ -0,0 +1,1008 @@
 +/*
-+ * Core driver for the pin control subsystem
++ * Driver for the U300 pin controller
 + *
-+ * Copyright (C) 2011 ST-Ericsson SA
-+ * Written on behalf of Linaro for ST-Ericsson
-+ * Based on bits of regulator core, gpio core and clk core
-+ *
++ * Based on the original U300 padmux functions
++ * Copyright (C) 2009-2011 ST-Ericsson AB
++ * Author: Martin Persson <martin.persson@stericsson.com>
 + * Author: Linus Walleij <linus.walleij@linaro.org>
 + *
-+ * License terms: GNU General Public License (GPL) version 2
++ * The DB3350 design and control registers are oriented around pads rather than
++ * pins, so we enumerate the pads we can mux rather than actual pins. The pads
++ * are connected to different pins in different packaging types, so it would
++ * be confusing.
 + */
-+#define pr_fmt(fmt) "pinctrl core: " fmt
-+
-+#include <linux/kernel.h>
 +#include <linux/init.h>
-+#include <linux/device.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/io.h>
 +#include <linux/slab.h>
-+#include <linux/radix-tree.h>
 +#include <linux/err.h>
-+#include <linux/list.h>
-+#include <linux/mutex.h>
-+#include <linux/spinlock.h>
-+#include <linux/sysfs.h>
-+#include <linux/debugfs.h>
-+#include <linux/seq_file.h>
 +#include <linux/pinctrl/pinctrl.h>
-+#include <linux/pinctrl/machine.h>
-+#include "core.h"
-+#include "pinmux.h"
-+
-+/* Global list of pin control devices */
-+static DEFINE_MUTEX(pinctrldev_list_mutex);
-+static LIST_HEAD(pinctrldev_list);
-+
-+/* sysfs interaction */
-+static ssize_t pinctrl_name_show(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	struct pinctrl_dev *pctldev = dev_get_drvdata(dev);
-+
-+	return sprintf(buf, "%s\n", pctldev_get_name(pctldev));
-+}
-+
-+static void pinctrl_dev_release(struct device *dev)
-+{
-+	struct pinctrl_dev *pctldev = dev_get_drvdata(dev);
-+	kfree(pctldev);
-+}
-+
-+static DEVICE_ATTR(name, S_IRUGO, pinctrl_name_show, NULL);
-+
-+static struct attribute *pinctrl_dev_attrs[] = {
-+	&dev_attr_name.attr,
-+	NULL
-+};
-+
-+static struct attribute_group pinctrl_dev_attr_group = {
-+	.attrs = pinctrl_dev_attrs,
-+};
-+
-+static const struct attribute_group *pinctrl_dev_attr_groups[] = {
-+	&pinctrl_dev_attr_group,
-+	NULL
-+};
-+
-+static struct bus_type pinctrl_bus = {
-+	.name = "pinctrl",
-+};
-+
-+static struct device_type pinctrl_type = {
-+	.groups = pinctrl_dev_attr_groups,
-+	.release = pinctrl_dev_release,
-+};
-+
-+const char *pctldev_get_name(struct pinctrl_dev *pctldev)
-+{
-+	/* We're not allowed to register devices without name */
-+	return pctldev->desc->name;
-+}
-+EXPORT_SYMBOL_GPL(pctldev_get_name);
-+
-+void *pctldev_get_drvdata(struct pinctrl_dev *pctldev)
-+{
-+	return pctldev->driver_data;
-+}
-+EXPORT_SYMBOL_GPL(pctldev_get_drvdata);
-+
-+/**
-+ * Looks up a pin control device matching a certain device name or
-+ * pure device pointer.
-+ */
-+struct pinctrl_dev *get_pctldev_from_dev(struct device *dev,
-+					 const char *devname)
-+{
-+	struct pinctrl_dev *pctldev = NULL;
-+	bool found = false;
-+
-+	mutex_lock(&pinctrldev_list_mutex);
-+	list_for_each_entry(pctldev, &pinctrldev_list, node) {
-+		if (dev &&  &pctldev->dev == dev) {
-+			/* Matched on device pointer */
-+			found = true;
-+			break;
-+		}
-+
-+		if (devname &&
-+		    !strcmp(dev_name(&pctldev->dev), devname)) {
-+			/* Matched on device name */
-+			found = true;
-+			break;
-+		}
-+	}
-+	mutex_unlock(&pinctrldev_list_mutex);
-+
-+	if (found)
-+		return pctldev;
-+
-+	return NULL;
-+}
-+
-+struct pin_desc *pin_desc_get(struct pinctrl_dev *pctldev, int pin)
-+{
-+	struct pin_desc *pindesc;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&pctldev->pin_desc_tree_lock, flags);
-+	pindesc = radix_tree_lookup(&pctldev->pin_desc_tree, pin);
-+	spin_unlock_irqrestore(&pctldev->pin_desc_tree_lock, flags);
-+
-+	return pindesc;
-+}
-+
-+/**
-+ * Tell us whether a certain pin exist on a certain pin controller
-+ * or not. Pin lists may be sparse, so some pins may not exist.
-+ * @pctldev: the pin control device to check the pin on
-+ * @pin: pin to check, use the local pin controller index number
-+ */
-+bool pin_is_valid(struct pinctrl_dev *pctldev, int pin)
-+{
-+	struct pin_desc *pindesc;
-+
-+	if (pin < 0)
-+		return false;
-+
-+	pindesc = pin_desc_get(pctldev, pin);
-+	if (pindesc == NULL)
-+		return false;
-+
-+	return true;
-+}
-+EXPORT_SYMBOL_GPL(pin_is_valid);
-+
-+/* Deletes a range of pin descriptors */
-+static void pinctrl_free_pindescs(struct pinctrl_dev *pctldev,
-+				  const struct pinctrl_pin_desc *pins,
-+				  unsigned num_pins)
-+{
-+	int i;
-+
-+	spin_lock(&pctldev->pin_desc_tree_lock);
-+	for (i = 0; i < num_pins; i++) {
-+		struct pin_desc *pindesc;
-+
-+		pindesc = radix_tree_lookup(&pctldev->pin_desc_tree,
-+					    pins[i].number);
-+		if (pindesc != NULL) {
-+			radix_tree_delete(&pctldev->pin_desc_tree,
-+					  pins[i].number);
-+		}
-+		kfree(pindesc);
-+	}
-+	spin_unlock(&pctldev->pin_desc_tree_lock);
-+}
-+
-+static int pinctrl_register_one_pin(struct pinctrl_dev *pctldev,
-+				    unsigned number, const char *name)
-+{
-+	struct pin_desc *pindesc;
-+
-+	pindesc = pin_desc_get(pctldev, number);
-+	if (pindesc != NULL) {
-+		pr_err("pin %d already registered on %s\n", number,
-+		       pctldev->desc->name);
-+		return -EINVAL;
-+	}
-+
-+	pindesc = kzalloc(sizeof(*pindesc), GFP_KERNEL);
-+	if (pindesc == NULL)
-+		return -ENOMEM;
-+	spin_lock_init(&pindesc->lock);
-+
-+	/* Set owner */
-+	pindesc->pctldev = pctldev;
-+
-+	/* Copy optional basic pin info */
-+	if (name)
-+		strlcpy(pindesc->name, name, sizeof(pindesc->name));
-+
-+	spin_lock(&pctldev->pin_desc_tree_lock);
-+	radix_tree_insert(&pctldev->pin_desc_tree, number, pindesc);
-+	spin_unlock(&pctldev->pin_desc_tree_lock);
-+	pr_debug("registered pin %d (%s) on %s\n",
-+		 number, name ? name : "(unnamed)", pctldev->desc->name);
-+	return 0;
-+}
-+
-+static int pinctrl_register_pins(struct pinctrl_dev *pctldev,
-+				 struct pinctrl_pin_desc const *pins,
-+				 unsigned num_descs)
-+{
-+	unsigned i;
-+	int ret = 0;
-+
-+	for (i = 0; i < num_descs; i++) {
-+		ret = pinctrl_register_one_pin(pctldev,
-+					       pins[i].number, pins[i].name);
-+		if (ret)
-+			return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+/**
-+ * pinctrl_match_gpio_range() - check if a certain GPIO pin is in the range of
-+ * a certain pin controller, return the range or NULL
-+ */
-+static struct pinctrl_gpio_range *
-+pinctrl_match_gpio_range(struct pinctrl_dev *pctldev, unsigned gpio)
-+{
-+	struct pinctrl_gpio_range *range = NULL;
-+
-+	/* Loop over the ranges */
-+	mutex_lock(&pctldev->gpio_ranges_lock);
-+	list_for_each_entry(range, &pctldev->gpio_ranges, node) {
-+		/* Check if we're in the valid range */
-+		if (gpio >= range->base &&
-+		    gpio < range->base + range->npins) {
-+			mutex_unlock(&pctldev->gpio_ranges_lock);
-+			return range;
-+		}
-+	}
-+	mutex_unlock(&pctldev->gpio_ranges_lock);
-+
-+	return NULL;
-+}
-+
-+/**
-+ * pinctrl_get_device_gpio_range() - find the pin controller handling a certain
-+ * pin from the pinspace in the GPIO subsystem, return the device and the
-+ * matching GPIO range. Returns negative if the GPIO range could not be found
-+ * in any device
-+ * @gpio: the pin to locate the pin controller for
-+ * @outdev: the pin control device if found
-+ * @outrange: the GPIO range if found
-+ */
-+int pinctrl_get_device_gpio_range(unsigned gpio,
-+				struct pinctrl_dev **outdev,
-+				struct pinctrl_gpio_range **outrange)
-+{
-+	struct pinctrl_dev *pctldev = NULL;
-+
-+	/* Loop over the pin controllers */
-+	mutex_lock(&pinctrldev_list_mutex);
-+	list_for_each_entry(pctldev, &pinctrldev_list, node) {
-+		struct pinctrl_gpio_range *range;
-+
-+		range = pinctrl_match_gpio_range(pctldev, gpio);
-+		if (range != NULL) {
-+			*outdev = pctldev;
-+			*outrange = range;
-+			return 0;
-+		}
-+	}
-+	mutex_unlock(&pinctrldev_list_mutex);
-+
-+	return -EINVAL;
-+}
-+
-+/**
-+ * pinctrl_add_gpio_range() - this adds a range of GPIOs to be handled
-+ * by a certain pin controller. Call this to register handled ranges after
-+ * registering your pin controller.
-+ * @pctldev: pin controller device to add the range to
-+ * @range: the GPIO range to add
-+ */
-+void pinctrl_add_gpio_range(struct pinctrl_dev *pctldev,
-+			    struct pinctrl_gpio_range *range)
-+{
-+	mutex_lock(&pctldev->gpio_ranges_lock);
-+	list_add(&range->node, &pctldev->gpio_ranges);
-+	mutex_unlock(&pctldev->gpio_ranges_lock);
-+}
-+
-+/**
-+ * pinctrl_remove_gpio_range() - removes a range of GPIOs fro a pin controller
-+ * @pctldev: pin controller device to remove the range from
-+ * @range: the GPIO range to remove
-+ */
-+void pinctrl_remove_gpio_range(struct pinctrl_dev *pctldev,
-+			       struct pinctrl_gpio_range *range)
-+{
-+	mutex_lock(&pctldev->gpio_ranges_lock);
-+	list_del(&range->node);
-+	mutex_unlock(&pctldev->gpio_ranges_lock);
-+}
-+
-+#ifdef CONFIG_DEBUG_FS
-+
-+static int pinctrl_pins_show(struct seq_file *s, void *what)
-+{
-+	struct pinctrl_dev *pctldev = s->private;
-+	const struct pinctrl_ops *ops = pctldev->desc->pctlops;
-+	unsigned pin;
-+
-+	seq_printf(s, "registered pins: %d\n", pctldev->desc->npins);
-+	seq_printf(s, "max pin number: %d\n", pctldev->desc->maxpin);
-+
-+	/* The highest pin number need to be included in the loop, thus <= */
-+	for (pin = 0; pin <= pctldev->desc->maxpin; pin++) {
-+		struct pin_desc *desc;
-+
-+		desc = pin_desc_get(pctldev, pin);
-+		/* Pin space may be sparse */
-+		if (desc == NULL)
-+			continue;
-+
-+		seq_printf(s, "pin %d (%s) ", pin,
-+			   desc->name ? desc->name : "unnamed");
-+
-+		/* Driver-specific info per pin */
-+		if (ops->pin_dbg_show)
-+			ops->pin_dbg_show(pctldev, s, pin);
-+
-+		seq_puts(s, "\n");
-+	}
-+
-+	return 0;
-+}
-+
-+static int pinctrl_groups_show(struct seq_file *s, void *what)
-+{
-+	struct pinctrl_dev *pctldev = s->private;
-+	const struct pinctrl_ops *ops = pctldev->desc->pctlops;
-+	unsigned selector = 0;
-+
-+	/* No grouping */
-+	if (!ops)
-+		return 0;
-+
-+	seq_puts(s, "registered pin groups:\n");
-+	while (ops->list_groups(pctldev, selector) >= 0) {
-+		unsigned *pins;
-+		unsigned num_pins;
-+		const char *gname = ops->get_group_name(pctldev, selector);
-+		int ret;
-+		int i;
-+
-+		ret = ops->get_group_pins(pctldev, selector,
-+					  &pins, &num_pins);
-+		if (ret)
-+			seq_printf(s, "%s [ERROR GETTING PINS]\n",
-+				   gname);
-+		else {
-+			seq_printf(s, "group: %s, pins = [ ", gname);
-+			for (i = 0; i < num_pins; i++)
-+				seq_printf(s, "%d ", pins[i]);
-+			seq_puts(s, "]\n");
-+		}
-+		selector++;
-+	}
-+
-+
-+	return 0;
-+}
-+
-+static int pinctrl_gpioranges_show(struct seq_file *s, void *what)
-+{
-+	struct pinctrl_dev *pctldev = s->private;
-+	struct pinctrl_gpio_range *range = NULL;
-+
-+	seq_puts(s, "GPIO ranges handled:\n");
-+
-+	/* Loop over the ranges */
-+	mutex_lock(&pctldev->gpio_ranges_lock);
-+	list_for_each_entry(range, &pctldev->gpio_ranges, node) {
-+		seq_printf(s, "%u: %s [%u - %u]\n", range->id, range->name,
-+			   range->base, (range->base + range->npins - 1));
-+	}
-+	mutex_unlock(&pctldev->gpio_ranges_lock);
-+
-+	return 0;
-+}
-+
-+static int pinctrl_devices_show(struct seq_file *s, void *what)
-+{
-+	struct pinctrl_dev *pctldev;
-+
-+	seq_puts(s, "name [pinmux]\n");
-+	mutex_lock(&pinctrldev_list_mutex);
-+	list_for_each_entry(pctldev, &pinctrldev_list, node) {
-+		seq_printf(s, "%s ", pctldev->desc->name);
-+		if (pctldev->desc->pmxops)
-+			seq_puts(s, "yes");
-+		else
-+			seq_puts(s, "no");
-+		seq_puts(s, "\n");
-+	}
-+	mutex_unlock(&pinctrldev_list_mutex);
-+
-+	return 0;
-+}
-+
-+static int pinctrl_pins_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, pinctrl_pins_show, inode->i_private);
-+}
-+
-+static int pinctrl_groups_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, pinctrl_groups_show, inode->i_private);
-+}
-+
-+static int pinctrl_gpioranges_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, pinctrl_gpioranges_show, inode->i_private);
-+}
-+
-+static int pinctrl_devices_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, pinctrl_devices_show, NULL);
-+}
-+
-+static const struct file_operations pinctrl_pins_ops = {
-+	.open		= pinctrl_pins_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= single_release,
-+};
-+
-+static const struct file_operations pinctrl_groups_ops = {
-+	.open		= pinctrl_groups_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= single_release,
-+};
-+
-+static const struct file_operations pinctrl_gpioranges_ops = {
-+	.open		= pinctrl_gpioranges_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= single_release,
-+};
-+
-+static const struct file_operations pinctrl_devices_ops = {
-+	.open		= pinctrl_devices_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= single_release,
-+};
-+
-+static struct dentry *debugfs_root;
-+
-+static void pinctrl_init_device_debugfs(struct pinctrl_dev *pctldev)
-+{
-+	static struct dentry *device_root;
-+
-+	device_root = debugfs_create_dir(dev_name(&pctldev->dev),
-+					 debugfs_root);
-+	if (IS_ERR(device_root) || !device_root) {
-+		pr_warn("failed to create debugfs directory for %s\n",
-+			dev_name(&pctldev->dev));
-+		return;
-+	}
-+	debugfs_create_file("pins", S_IFREG | S_IRUGO,
-+			    device_root, pctldev, &pinctrl_pins_ops);
-+	debugfs_create_file("pingroups", S_IFREG | S_IRUGO,
-+			    device_root, pctldev, &pinctrl_groups_ops);
-+	debugfs_create_file("gpio-ranges", S_IFREG | S_IRUGO,
-+			    device_root, pctldev, &pinctrl_gpioranges_ops);
-+	pinmux_init_device_debugfs(device_root, pctldev);
-+}
-+
-+static void pinctrl_init_debugfs(void)
-+{
-+	debugfs_root = debugfs_create_dir("pinctrl", NULL);
-+	if (IS_ERR(debugfs_root) || !debugfs_root) {
-+		pr_warn("failed to create debugfs directory\n");
-+		debugfs_root = NULL;
-+		return;
-+	}
-+
-+	debugfs_create_file("pinctrl-devices", S_IFREG | S_IRUGO,
-+			    debugfs_root, NULL, &pinctrl_devices_ops);
-+	pinmux_init_debugfs(debugfs_root);
-+}
-+
-+#else /* CONFIG_DEBUG_FS */
-+
-+static void pinctrl_init_device_debugfs(struct pinctrl_dev *pctldev)
-+{
-+}
-+
-+static void pinctrl_init_debugfs(void)
-+{
-+}
-+
-+#endif
-+
-+/**
-+ * pinctrl_register() - register a pin controller device
-+ * @pctldesc: descriptor for this pin controller
-+ * @dev: parent device for this pin controller
-+ * @driver_data: private pin controller data for this pin controller
-+ */
-+struct pinctrl_dev *pinctrl_register(struct pinctrl_desc *pctldesc,
-+				    struct device *dev, void *driver_data)
-+{
-+	static atomic_t pinmux_no = ATOMIC_INIT(0);
-+	struct pinctrl_dev *pctldev;
-+	int ret;
-+
-+	if (pctldesc == NULL)
-+		return ERR_PTR(-EINVAL);
-+	if (pctldesc->name == NULL)
-+		return ERR_PTR(-EINVAL);
-+
-+	/* If we're implementing pinmuxing, check the ops for sanity */
-+	if (pctldesc->pmxops) {
-+		ret = pinmux_check_ops(pctldesc->pmxops);
-+		if (ret) {
-+			pr_err("%s pinmux ops lacks necessary functions\n",
-+			       pctldesc->name);
-+			return ERR_PTR(ret);
-+		}
-+	}
-+
-+	pctldev = kzalloc(sizeof(struct pinctrl_dev), GFP_KERNEL);
-+	if (pctldev == NULL)
-+		return ERR_PTR(-ENOMEM);
-+
-+	/* Initialize pin control device struct */
-+	pctldev->owner = pctldesc->owner;
-+	pctldev->desc = pctldesc;
-+	pctldev->driver_data = driver_data;
-+	INIT_RADIX_TREE(&pctldev->pin_desc_tree, GFP_KERNEL);
-+	spin_lock_init(&pctldev->pin_desc_tree_lock);
-+	INIT_LIST_HEAD(&pctldev->gpio_ranges);
-+	mutex_init(&pctldev->gpio_ranges_lock);
-+
-+	/* Register device with sysfs */
-+	pctldev->dev.parent = dev;
-+	pctldev->dev.bus = &pinctrl_bus;
-+	pctldev->dev.type = &pinctrl_type;
-+	dev_set_name(&pctldev->dev, "pinctrl.%d",
-+		     atomic_inc_return(&pinmux_no) - 1);
-+	ret = device_register(&pctldev->dev);
-+	if (ret != 0) {
-+		pr_err("error in device registration\n");
-+		put_device(&pctldev->dev);
-+		kfree(pctldev);
-+		goto out_err;
-+	}
-+	dev_set_drvdata(&pctldev->dev, pctldev);
-+
-+	/* Register all the pins */
-+	pr_debug("try to register %d pins on %s...\n",
-+		 pctldesc->npins, pctldesc->name);
-+	ret = pinctrl_register_pins(pctldev, pctldesc->pins, pctldesc->npins);
-+	if (ret) {
-+		pr_err("error during pin registration\n");
-+		pinctrl_free_pindescs(pctldev, pctldesc->pins,
-+				      pctldesc->npins);
-+		goto out_err;
-+	}
-+
-+	pinctrl_init_device_debugfs(pctldev);
-+	mutex_lock(&pinctrldev_list_mutex);
-+	list_add(&pctldev->node, &pinctrldev_list);
-+	mutex_unlock(&pinctrldev_list_mutex);
-+	pinmux_hog_maps(pctldev);
-+	return pctldev;
-+
-+out_err:
-+	put_device(&pctldev->dev);
-+	kfree(pctldev);
-+	return ERR_PTR(ret);
-+}
-+EXPORT_SYMBOL_GPL(pinctrl_register);
-+
-+/**
-+ * pinctrl_unregister() - unregister pinmux
-+ * @pctldev: pin controller to unregister
-+ *
-+ * Called by pinmux drivers to unregister a pinmux.
-+ */
-+void pinctrl_unregister(struct pinctrl_dev *pctldev)
-+{
-+	if (pctldev == NULL)
-+		return;
-+
-+	pinmux_unhog_maps(pctldev);
-+	/* TODO: check that no pinmuxes are still active? */
-+	mutex_lock(&pinctrldev_list_mutex);
-+	list_del(&pctldev->node);
-+	mutex_unlock(&pinctrldev_list_mutex);
-+	device_unregister(&pctldev->dev);
-+	/* Destroy descriptor tree */
-+	pinctrl_free_pindescs(pctldev, pctldev->desc->pins,
-+			      pctldev->desc->npins);
-+	kfree(pctldev);
-+}
-+EXPORT_SYMBOL_GPL(pinctrl_unregister);
-+
-+static int __init pinctrl_init(void)
-+{
-+	int ret;
-+
-+	ret = bus_register(&pinctrl_bus);
-+	if (ret) {
-+		pr_crit("could not register pinctrl bus\n");
-+		return ret;
-+	}
-+
-+	pr_info("initialized pinctrl subsystem\n");
-+	pinctrl_init_debugfs();
-+	return 0;
-+}
-+
-+/* init early since many drivers really need to initialized pinmux early */
-+core_initcall(pinctrl_init);
-diff --git a/drivers/pinctrl/core.h b/drivers/pinctrl/core.h
-new file mode 100644
-index 0000000..698221e
---- /dev/null
-+++ b/drivers/pinctrl/core.h
-@@ -0,0 +1,73 @@
-+/*
-+ * Core private header for the pin control subsystem
-+ *
-+ * Copyright (C) 2011 ST-Ericsson SA
-+ * Written on behalf of Linaro for ST-Ericsson
-+ *
-+ * Author: Linus Walleij <linus.walleij@linaro.org>
-+ *
-+ * License terms: GNU General Public License (GPL) version 2
-+ */
-+
-+/**
-+ * struct pinctrl_dev - pin control class device
-+ * @node: node to include this pin controller in the global pin controller list
-+ * @desc: the pin controller descriptor supplied when initializing this pin
-+ *	controller
-+ * @pin_desc_tree: each pin descriptor for this pin controller is stored in
-+ *	this radix tree
-+ * @pin_desc_tree_lock: lock for the descriptor tree
-+ * @gpio_ranges: a list of GPIO ranges that is handled by this pin controller,
-+ *	ranges are added to this list at runtime
-+ * @gpio_ranges_lock: lock for the GPIO ranges list
-+ * @dev: the device entry for this pin controller
-+ * @owner: module providing the pin controller, used for refcounting
-+ * @driver_data: driver data for drivers registering to the pin controller
-+ *	subsystem
-+ * @pinmux_hogs_lock: lock for the pinmux hog list
-+ * @pinmux_hogs: list of pinmux maps hogged by this device
-+ */
-+struct pinctrl_dev {
-+	struct list_head node;
-+	struct pinctrl_desc *desc;
-+	struct radix_tree_root pin_desc_tree;
-+	spinlock_t pin_desc_tree_lock;
-+	struct list_head gpio_ranges;
-+	struct mutex gpio_ranges_lock;
-+	struct device dev;
-+	struct module *owner;
-+	void *driver_data;
-+#ifdef CONFIG_PINMUX
-+	struct mutex pinmux_hogs_lock;
-+	struct list_head pinmux_hogs;
-+#endif
-+};
-+
-+/**
-+ * struct pin_desc - pin descriptor for each physical pin in the arch
-+ * @pctldev: corresponding pin control device
-+ * @name: a name for the pin, e.g. the name of the pin/pad/finger on a
-+ *	datasheet or such
-+ * @lock: a lock to protect the descriptor structure
-+ * @mux_requested: whether the pin is already requested by pinmux or not
-+ * @mux_function: a named muxing function for the pin that will be passed to
-+ *	subdrivers and shown in debugfs etc
-+ */
-+struct pin_desc {
-+	struct pinctrl_dev *pctldev;
-+	char	name[16];
-+	spinlock_t lock;
-+	/* These fields only added when supporting pinmux drivers */
-+#ifdef CONFIG_PINMUX
-+	bool	mux_requested;
-+	char	mux_function[16];
-+#endif
-+};
-+
-+const char *pctldev_get_devname(struct pinctrl_dev *pctldev);
-+struct pin_desc *pin_desc_get(struct pinctrl_dev *pctldev, int pin);
-+struct pinctrl_dev *get_pctldev_from_dev(struct device *dev,
-+					 const char *dev_name);
-+int pinctrl_get_device_gpio_range(unsigned gpio,
-+				  struct pinctrl_dev **outdev,
-+				  struct pinctrl_gpio_range **outrange);
-diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
-new file mode 100644
-index 0000000..95264bc
---- /dev/null
-+++ b/drivers/pinctrl/pinmux.c
-@@ -0,0 +1,1178 @@
-+/*
-+ * Core driver for the pin muxing portions of the pin control subsystem
-+ *
-+ * Copyright (C) 2011 ST-Ericsson SA
-+ * Written on behalf of Linaro for ST-Ericsson
-+ * Based on bits of regulator core, gpio core and clk core
-+ *
-+ * Author: Linus Walleij <linus.walleij@linaro.org>
-+ *
-+ * License terms: GNU General Public License (GPL) version 2
-+ */
-+#define pr_fmt(fmt) "pinmux core: " fmt
-+
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/device.h>
-+#include <linux/slab.h>
-+#include <linux/radix-tree.h>
-+#include <linux/err.h>
-+#include <linux/list.h>
-+#include <linux/mutex.h>
-+#include <linux/spinlock.h>
-+#include <linux/sysfs.h>
-+#include <linux/debugfs.h>
-+#include <linux/seq_file.h>
-+#include <linux/pinctrl/machine.h>
 +#include <linux/pinctrl/pinmux.h>
-+#include "core.h"
 +
-+/* List of pinmuxes */
-+static DEFINE_MUTEX(pinmux_list_mutex);
-+static LIST_HEAD(pinmux_list);
++#include "pinmux-u300.h"
 +
-+/* List of pinmux hogs */
-+static DEFINE_MUTEX(pinmux_hoglist_mutex);
-+static LIST_HEAD(pinmux_hoglist);
++#define DRIVER_NAME "pinmux-u300"
 +
-+/* Global pinmux maps, we allow one set only */
-+static struct pinmux_map const *pinmux_maps;
-+static unsigned pinmux_maps_num;
-+
-+/**
-+ * struct pinmux_group - group list item for pinmux groups
-+ * @node: pinmux group list node
-+ * @group_selector: the group selector for this group
-+ */
-+struct pinmux_group {
-+	struct list_head node;
-+	unsigned group_selector;
-+};
-+
-+/**
-+ * struct pinmux - per-device pinmux state holder
-+ * @node: global list node
-+ * @dev: the device using this pinmux
-+ * @usecount: the number of active users of this mux setting, used to keep
-+ *	track of nested use cases
-+ * @pins: an array of discrete physical pins used in this mapping, taken
-+ *	from the global pin enumeration space (copied from pinmux map)
-+ * @num_pins: the number of pins in this mapping array, i.e. the number of
-+ *	elements in .pins so we can iterate over that array (copied from
-+ *	pinmux map)
-+ * @pctldev: pin control device handling this pinmux
-+ * @func_selector: the function selector for the pinmux device handling
-+ *	this pinmux
-+ * @groups: the group selectors for the pinmux device and
-+ *	selector combination handling this pinmux, this is a list that
-+ *	will be traversed on all pinmux operations such as
-+ *	get/put/enable/disable
-+ * @mutex: a lock for the pinmux state holder
-+ */
-+struct pinmux {
-+	struct list_head node;
-+	struct device *dev;
-+	unsigned usecount;
-+	struct pinctrl_dev *pctldev;
-+	unsigned func_selector;
-+	struct list_head groups;
-+	struct mutex mutex;
-+};
-+
-+/**
-+ * struct pinmux_hog - a list item to stash mux hogs
-+ * @node: pinmux hog list node
-+ * @map: map entry responsible for this hogging
-+ * @pmx: the pinmux hogged by this item
-+ */
-+struct pinmux_hog {
-+	struct list_head node;
-+	struct pinmux_map const *map;
-+	struct pinmux *pmx;
-+};
-+
-+/**
-+ * pin_request() - request a single pin to be muxed in, typically for GPIO
-+ * @pin: the pin number in the global pin space
-+ * @function: a functional name to give to this pin, passed to the driver
-+ *	so it knows what function to mux in, e.g. the string "gpioNN"
-+ *	means that you want to mux in the pin for use as GPIO number NN
-+ * @gpio: if this request concerns a single GPIO pin
-+ * @gpio_range: the range matching the GPIO pin if this is a request for a
-+ *	single GPIO pin
-+ */
-+static int pin_request(struct pinctrl_dev *pctldev,
-+		       int pin, const char *function, bool gpio,
-+		       struct pinctrl_gpio_range *gpio_range)
-+{
-+	struct pin_desc *desc;
-+	const struct pinmux_ops *ops = pctldev->desc->pmxops;
-+	int status = -EINVAL;
-+
-+	dev_dbg(&pctldev->dev, "request pin %d for %s\n", pin, function);
-+
-+	if (!pin_is_valid(pctldev, pin)) {
-+		dev_err(&pctldev->dev, "pin is invalid\n");
-+		return -EINVAL;
-+	}
-+
-+	if (!function) {
-+		dev_err(&pctldev->dev, "no function name given\n");
-+		return -EINVAL;
-+	}
-+
-+	desc = pin_desc_get(pctldev, pin);
-+	if (desc == NULL) {
-+		dev_err(&pctldev->dev,
-+			"pin is not registered so it cannot be requested\n");
-+		goto out;
-+	}
-+
-+	spin_lock(&desc->lock);
-+	if (desc->mux_requested) {
-+		spin_unlock(&desc->lock);
-+		dev_err(&pctldev->dev,
-+			"pin already requested\n");
-+		goto out;
-+	}
-+	spin_unlock(&desc->lock);
-+
-+	/* Let each pin increase references to this module */
-+	if (!try_module_get(pctldev->owner)) {
-+		dev_err(&pctldev->dev,
-+			"could not increase module refcount for pin %d\n",
-+			pin);
-+		status = -EINVAL;
-+		goto out;
-+	}
-+
-+	/*
-+	 * If there is no kind of request function for the pin we just assume
-+	 * we got it by default and proceed.
-+	 */
-+	if (gpio && ops->gpio_request_enable)
-+		/* This requests and enables a single GPIO pin */
-+		status = ops->gpio_request_enable(pctldev, gpio_range, pin);
-+	else if (ops->request)
-+		status = ops->request(pctldev, pin);
-+	else
-+		status = 0;
-+
-+	if (status) {
-+		dev_err(&pctldev->dev, "->request on device %s failed "
-+		       "for pin %d\n",
-+		       pctldev->desc->name, pin);
-+		goto out;
-+	}
-+
-+	spin_lock(&desc->lock);
-+	desc->mux_requested = true;
-+	strncpy(desc->mux_function, function, sizeof(desc->mux_function));
-+	spin_unlock(&desc->lock);
-+
-+out:
-+	if (status)
-+		dev_err(&pctldev->dev, "pin-%d (%s) status %d\n",
-+		       pin, function ? : "?", status);
-+
-+	return status;
-+}
-+
-+/**
-+ * pin_free() - release a single muxed in pin so something else can be muxed in
-+ *	instead
-+ * @pin: the pin to free
-+ */
-+static void pin_free(struct pinctrl_dev *pctldev, int pin)
-+{
-+	const struct pinmux_ops *ops = pctldev->desc->pmxops;
-+	struct pin_desc *desc;
-+
-+	desc = pin_desc_get(pctldev, pin);
-+	if (desc == NULL) {
-+		dev_err(&pctldev->dev,
-+			"pin is not registered so it cannot be freed\n");
-+		return;
-+	}
-+
-+	if (ops->free)
-+		ops->free(pctldev, pin);
-+
-+	spin_lock(&desc->lock);
-+	desc->mux_requested = false;
-+	desc->mux_function[0] = '\0';
-+	spin_unlock(&desc->lock);
-+	module_put(pctldev->owner);
-+}
-+
-+/**
-+ * pinmux_request_gpio() - request a single pin to be muxed in to be used
-+ *	as a GPIO pin
-+ * @gpio: the GPIO pin number from the GPIO subsystem number space
-+ */
-+int pinmux_request_gpio(unsigned gpio)
-+{
-+	char gpiostr[16];
-+	struct pinctrl_dev *pctldev;
-+	struct pinctrl_gpio_range *range;
-+	int ret;
-+	int pin;
-+
-+	ret = pinctrl_get_device_gpio_range(gpio, &pctldev, &range);
-+	if (ret)
-+		return -EINVAL;
-+
-+	/* Convert to the pin controllers number space */
-+	pin = gpio - range->base;
-+
-+	/* Conjure some name stating what chip and pin this is taken by */
-+	snprintf(gpiostr, 15, "%s:%d", range->name, gpio);
-+
-+	return pin_request(pctldev, pin, gpiostr, true, range);
-+}
-+EXPORT_SYMBOL_GPL(pinmux_request_gpio);
-+
-+/**
-+ * pinmux_free_gpio() - free a single pin, currently muxed in to be used
-+ *	as a GPIO pin
-+ * @gpio: the GPIO pin number from the GPIO subsystem number space
-+ */
-+void pinmux_free_gpio(unsigned gpio)
-+{
-+	struct pinctrl_dev *pctldev;
-+	struct pinctrl_gpio_range *range;
-+	int ret;
-+	int pin;
-+
-+	ret = pinctrl_get_device_gpio_range(gpio, &pctldev, &range);
-+	if (ret)
-+		return;
-+
-+	/* Convert to the pin controllers number space */
-+	pin = gpio - range->base;
-+
-+	pin_free(pctldev, pin);
-+}
-+EXPORT_SYMBOL_GPL(pinmux_free_gpio);
-+
-+/**
-+ * pinmux_register_mappings() - register a set of pinmux mappings
-+ * @maps: the pinmux mappings table to register
-+ * @num_maps: the number of maps in the mapping table
++/*
++ * The DB3350 has 467 pads, I have enumerated the pads clockwise around the
++ * edges of the silicon, finger by finger. LTCORNER upper left is pad 0.
++ * Data taken from the PadRing chart, arranged like this:
 + *
-+ * Only call this once during initialization of your machine, the function is
-+ * tagged as __init and won't be callable after init has completed. The map
-+ * passed into this function will be owned by the pinmux core and cannot be
-+ * free:d.
++ *   0 ..... 104
++ * 466        105
++ *   .        .
++ *   .        .
++ * 358        224
++ *  357 .... 225
 + */
-+int __init
-+pinmux_register_mappings(struct pinmux_map const *maps, unsigned num_maps)
-+{
-+	int i;
++#define U300_NUM_PADS 467
 +
-+	if (pinmux_maps != NULL) {
-+		pr_err("pinmux mappings already registered, you can only "
-+		       "register one set of maps\n");
-+		return -EINVAL;
-+	}
-+
-+	pr_debug("add %d pinmux maps\n", num_maps);
-+	for (i = 0; i < num_maps; i++) {
-+		/* Sanity check the mapping */
-+		if (!maps[i].name) {
-+			pr_err("failed to register map %d: "
-+			       "no map name given\n", i);
-+			return -EINVAL;
-+		}
-+		if (!maps[i].ctrl_dev && !maps[i].ctrl_dev_name) {
-+			pr_err("failed to register map %s (%d): "
-+			       "no pin control device given\n",
-+			       maps[i].name, i);
-+			return -EINVAL;
-+		}
-+		if (!maps[i].function) {
-+			pr_err("failed to register map %s (%d): "
-+			       "no function ID given\n", maps[i].name, i);
-+			return -EINVAL;
-+		}
-+
-+		if (!maps[i].dev && !maps[i].dev_name)
-+			pr_debug("add system map %s function %s with no device\n",
-+				 maps[i].name,
-+				 maps[i].function);
-+		else
-+			pr_debug("register map %s, function %s\n",
-+				 maps[i].name,
-+				 maps[i].function);
-+	}
-+
-+	pinmux_maps = maps;
-+	pinmux_maps_num = num_maps;
-+
-+	return 0;
-+}
++/* Pad names for the pinmux subsystem */
++static const struct pinctrl_pin_desc __refdata u300_pads[] = {
++	/* Pads along the top edge of the chip */
++	PINCTRL_PIN(0, "P PAD VDD 28"),
++	PINCTRL_PIN(1, "P PAD GND 28"),
++	PINCTRL_PIN(2, "PO SIM RST N"),
++	PINCTRL_PIN(3, "VSSIO 25"),
++	PINCTRL_PIN(4, "VSSA ADDA ESDSUB"),
++	PINCTRL_PIN(5, "PWR VSSCOMMON"),
++	PINCTRL_PIN(6, "PI ADC I1 POS"),
++	PINCTRL_PIN(7, "PI ADC I1 NEG"),
++	PINCTRL_PIN(8, "PWR VSSAD0"),
++	PINCTRL_PIN(9, "PWR VCCAD0"),
++	PINCTRL_PIN(10, "PI ADC Q1 NEG"),
++	PINCTRL_PIN(11, "PI ADC Q1 POS"),
++	PINCTRL_PIN(12, "PWR VDDAD"),
++	PINCTRL_PIN(13, "PWR GNDAD"),
++	PINCTRL_PIN(14, "PI ADC I2 POS"),
++	PINCTRL_PIN(15, "PI ADC I2 NEG"),
++	PINCTRL_PIN(16, "PWR VSSAD1"),
++	PINCTRL_PIN(17, "PWR VCCAD1"),
++	PINCTRL_PIN(18, "PI ADC Q2 NEG"),
++	PINCTRL_PIN(19, "PI ADC Q2 POS"),
++	PINCTRL_PIN(20, "VSSA ADDA ESDSUB"),
++	PINCTRL_PIN(21, "PWR VCCGPAD"),
++	PINCTRL_PIN(22, "PI TX POW"),
++	PINCTRL_PIN(23, "PWR VSSGPAD"),
++	PINCTRL_PIN(24, "PO DAC I POS"),
++	PINCTRL_PIN(25, "PO DAC I NEG"),
++	PINCTRL_PIN(26, "PO DAC Q POS"),
++	PINCTRL_PIN(27, "PO DAC Q NEG"),
++	PINCTRL_PIN(28, "PWR VSSDA"),
++	PINCTRL_PIN(29, "PWR VCCDA"),
++	PINCTRL_PIN(30, "VSSA ADDA ESDSUB"),
++	PINCTRL_PIN(31, "P PAD VDDIO 11"),
++	PINCTRL_PIN(32, "PI PLL 26 FILTVDD"),
++	PINCTRL_PIN(33, "PI PLL 26 VCONT"),
++	PINCTRL_PIN(34, "PWR AGNDPLL2V5 32 13"),
++	PINCTRL_PIN(35, "PWR AVDDPLL2V5 32 13"),
++	PINCTRL_PIN(36, "VDDA PLL ESD"),
++	PINCTRL_PIN(37, "VSSA PLL ESD"),
++	PINCTRL_PIN(38, "VSS PLL"),
++	PINCTRL_PIN(39, "VDDC PLL"),
++	PINCTRL_PIN(40, "PWR AGNDPLL2V5 26 60"),
++	PINCTRL_PIN(41, "PWR AVDDPLL2V5 26 60"),
++	PINCTRL_PIN(42, "PWR AVDDPLL2V5 26 208"),
++	PINCTRL_PIN(43, "PWR AGNDPLL2V5 26 208"),
++	PINCTRL_PIN(44, "PWR AVDDPLL2V5 13 208"),
++	PINCTRL_PIN(45, "PWR AGNDPLL2V5 13 208"),
++	PINCTRL_PIN(46, "P PAD VSSIO 11"),
++	PINCTRL_PIN(47, "P PAD VSSIO 12"),
++	PINCTRL_PIN(48, "PI POW RST N"),
++	PINCTRL_PIN(49, "VDDC IO"),
++	PINCTRL_PIN(50, "P PAD VDDIO 16"),
++	PINCTRL_PIN(51, "PO RF WCDMA EN 4"),
++	PINCTRL_PIN(52, "PO RF WCDMA EN 3"),
++	PINCTRL_PIN(53, "PO RF WCDMA EN 2"),
++	PINCTRL_PIN(54, "PO RF WCDMA EN 1"),
++	PINCTRL_PIN(55, "PO RF WCDMA EN 0"),
++	PINCTRL_PIN(56, "PO GSM PA ENABLE"),
++	PINCTRL_PIN(57, "PO RF DATA STRB"),
++	PINCTRL_PIN(58, "PO RF DATA2"),
++	PINCTRL_PIN(59, "PIO RF DATA1"),
++	PINCTRL_PIN(60, "PIO RF DATA0"),
++	PINCTRL_PIN(61, "P PAD VDD 11"),
++	PINCTRL_PIN(62, "P PAD GND 11"),
++	PINCTRL_PIN(63, "P PAD VSSIO 16"),
++	PINCTRL_PIN(64, "P PAD VDDIO 18"),
++	PINCTRL_PIN(65, "PO RF CTRL STRB2"),
++	PINCTRL_PIN(66, "PO RF CTRL STRB1"),
++	PINCTRL_PIN(67, "PO RF CTRL STRB0"),
++	PINCTRL_PIN(68, "PIO RF CTRL DATA"),
++	PINCTRL_PIN(69, "PO RF CTRL CLK"),
++	PINCTRL_PIN(70, "PO TX ADC STRB"),
++	PINCTRL_PIN(71, "PO ANT SW 2"),
++	PINCTRL_PIN(72, "PO ANT SW 3"),
++	PINCTRL_PIN(73, "PO ANT SW 0"),
++	PINCTRL_PIN(74, "PO ANT SW 1"),
++	PINCTRL_PIN(75, "PO M CLKRQ"),
++	PINCTRL_PIN(76, "PI M CLK"),
++	PINCTRL_PIN(77, "PI RTC CLK"),
++	PINCTRL_PIN(78, "P PAD VDD 8"),
++	PINCTRL_PIN(79, "P PAD GND 8"),
++	PINCTRL_PIN(80, "P PAD VSSIO 13"),
++	PINCTRL_PIN(81, "P PAD VDDIO 13"),
++	PINCTRL_PIN(82, "PO SYS 1 CLK"),
++	PINCTRL_PIN(83, "PO SYS 2 CLK"),
++	PINCTRL_PIN(84, "PO SYS 0 CLK"),
++	PINCTRL_PIN(85, "PI SYS 0 CLKRQ"),
++	PINCTRL_PIN(86, "PO PWR MNGT CTRL 1"),
++	PINCTRL_PIN(87, "PO PWR MNGT CTRL 0"),
++	PINCTRL_PIN(88, "PO RESOUT2 RST N"),
++	PINCTRL_PIN(89, "PO RESOUT1 RST N"),
++	PINCTRL_PIN(90, "PO RESOUT0 RST N"),
++	PINCTRL_PIN(91, "PI SERVICE N"),
++	PINCTRL_PIN(92, "P PAD VDD 29"),
++	PINCTRL_PIN(93, "P PAD GND 29"),
++	PINCTRL_PIN(94, "P PAD VSSIO 8"),
++	PINCTRL_PIN(95, "P PAD VDDIO 8"),
++	PINCTRL_PIN(96, "PI EXT IRQ1 N"),
++	PINCTRL_PIN(97, "PI EXT IRQ0 N"),
++	PINCTRL_PIN(98, "PIO DC ON"),
++	PINCTRL_PIN(99, "PIO ACC APP I2C DATA"),
++	PINCTRL_PIN(100, "PIO ACC APP I2C CLK"),
++	PINCTRL_PIN(101, "P PAD VDD 12"),
++	PINCTRL_PIN(102, "P PAD GND 12"),
++	PINCTRL_PIN(103, "P PAD VSSIO 14"),
++	PINCTRL_PIN(104, "P PAD VDDIO 14"),
++	/* Pads along the right edge of the chip */
++	PINCTRL_PIN(105, "PIO APP I2C1 DATA"),
++	PINCTRL_PIN(106, "PIO APP I2C1 CLK"),
++	PINCTRL_PIN(107, "PO KEY OUT0"),
++	PINCTRL_PIN(108, "PO KEY OUT1"),
++	PINCTRL_PIN(109, "PO KEY OUT2"),
++	PINCTRL_PIN(110, "PO KEY OUT3"),
++	PINCTRL_PIN(111, "PO KEY OUT4"),
++	PINCTRL_PIN(112, "PI KEY IN0"),
++	PINCTRL_PIN(113, "PI KEY IN1"),
++	PINCTRL_PIN(114, "PI KEY IN2"),
++	PINCTRL_PIN(115, "P PAD VDDIO 15"),
++	PINCTRL_PIN(116, "P PAD VSSIO 15"),
++	PINCTRL_PIN(117, "P PAD GND 13"),
++	PINCTRL_PIN(118, "P PAD VDD 13"),
++	PINCTRL_PIN(119, "PI KEY IN3"),
++	PINCTRL_PIN(120, "PI KEY IN4"),
++	PINCTRL_PIN(121, "PI KEY IN5"),
++	PINCTRL_PIN(122, "PIO APP PCM I2S1 DATA B"),
++	PINCTRL_PIN(123, "PIO APP PCM I2S1 DATA A"),
++	PINCTRL_PIN(124, "PIO APP PCM I2S1 WS"),
++	PINCTRL_PIN(125, "PIO APP PCM I2S1 CLK"),
++	PINCTRL_PIN(126, "PIO APP PCM I2S0 DATA B"),
++	PINCTRL_PIN(127, "PIO APP PCM I2S0 DATA A"),
++	PINCTRL_PIN(128, "PIO APP PCM I2S0 WS"),
++	PINCTRL_PIN(129, "PIO APP PCM I2S0 CLK"),
++	PINCTRL_PIN(130, "P PAD VDD 17"),
++	PINCTRL_PIN(131, "P PAD GND 17"),
++	PINCTRL_PIN(132, "P PAD VSSIO 19"),
++	PINCTRL_PIN(133, "P PAD VDDIO 19"),
++	PINCTRL_PIN(134, "UART0 RTS"),
++	PINCTRL_PIN(135, "UART0 CTS"),
++	PINCTRL_PIN(136, "UART0 TX"),
++	PINCTRL_PIN(137, "UART0 RX"),
++	PINCTRL_PIN(138, "PIO ACC SPI DO"),
++	PINCTRL_PIN(139, "PIO ACC SPI DI"),
++	PINCTRL_PIN(140, "PIO ACC SPI CS0 N"),
++	PINCTRL_PIN(141, "PIO ACC SPI CS1 N"),
++	PINCTRL_PIN(142, "PIO ACC SPI CS2 N"),
++	PINCTRL_PIN(143, "PIO ACC SPI CLK"),
++	PINCTRL_PIN(144, "PO PDI EXT RST N"),
++	PINCTRL_PIN(145, "P PAD VDDIO 22"),
++	PINCTRL_PIN(146, "P PAD VSSIO 22"),
++	PINCTRL_PIN(147, "P PAD GND 18"),
++	PINCTRL_PIN(148, "P PAD VDD 18"),
++	PINCTRL_PIN(149, "PIO PDI C0"),
++	PINCTRL_PIN(150, "PIO PDI C1"),
++	PINCTRL_PIN(151, "PIO PDI C2"),
++	PINCTRL_PIN(152, "PIO PDI C3"),
++	PINCTRL_PIN(153, "PIO PDI C4"),
++	PINCTRL_PIN(154, "PIO PDI C5"),
++	PINCTRL_PIN(155, "PIO PDI D0"),
++	PINCTRL_PIN(156, "PIO PDI D1"),
++	PINCTRL_PIN(157, "PIO PDI D2"),
++	PINCTRL_PIN(158, "PIO PDI D3"),
++	PINCTRL_PIN(159, "P PAD VDDIO 21"),
++	PINCTRL_PIN(160, "P PAD VSSIO 21"),
++	PINCTRL_PIN(161, "PIO PDI D4"),
++	PINCTRL_PIN(162, "PIO PDI D5"),
++	PINCTRL_PIN(163, "PIO PDI D6"),
++	PINCTRL_PIN(164, "PIO PDI D7"),
++	PINCTRL_PIN(165, "PIO MS INS"),
++	PINCTRL_PIN(166, "MMC DATA DIR LS"),
++	PINCTRL_PIN(167, "MMC DATA 3"),
++	PINCTRL_PIN(168, "MMC DATA 2"),
++	PINCTRL_PIN(169, "MMC DATA 1"),
++	PINCTRL_PIN(170, "MMC DATA 0"),
++	PINCTRL_PIN(171, "MMC CMD DIR LS"),
++	PINCTRL_PIN(172, "P PAD VDD 27"),
++	PINCTRL_PIN(173, "P PAD GND 27"),
++	PINCTRL_PIN(174, "P PAD VSSIO 20"),
++	PINCTRL_PIN(175, "P PAD VDDIO 20"),
++	PINCTRL_PIN(176, "MMC CMD"),
++	PINCTRL_PIN(177, "MMC CLK"),
++	PINCTRL_PIN(178, "PIO APP GPIO 14"),
++	PINCTRL_PIN(179, "PIO APP GPIO 13"),
++	PINCTRL_PIN(180, "PIO APP GPIO 11"),
++	PINCTRL_PIN(181, "PIO APP GPIO 25"),
++	PINCTRL_PIN(182, "PIO APP GPIO 24"),
++	PINCTRL_PIN(183, "PIO APP GPIO 23"),
++	PINCTRL_PIN(184, "PIO APP GPIO 22"),
++	PINCTRL_PIN(185, "PIO APP GPIO 21"),
++	PINCTRL_PIN(186, "PIO APP GPIO 20"),
++	PINCTRL_PIN(187, "P PAD VDD 19"),
++	PINCTRL_PIN(188, "P PAD GND 19"),
++	PINCTRL_PIN(189, "P PAD VSSIO 23"),
++	PINCTRL_PIN(190, "P PAD VDDIO 23"),
++	PINCTRL_PIN(191, "PIO APP GPIO 19"),
++	PINCTRL_PIN(192, "PIO APP GPIO 18"),
++	PINCTRL_PIN(193, "PIO APP GPIO 17"),
++	PINCTRL_PIN(194, "PIO APP GPIO 16"),
++	PINCTRL_PIN(195, "PI CI D1"),
++	PINCTRL_PIN(196, "PI CI D0"),
++	PINCTRL_PIN(197, "PI CI HSYNC"),
++	PINCTRL_PIN(198, "PI CI VSYNC"),
++	PINCTRL_PIN(199, "PI CI EXT CLK"),
++	PINCTRL_PIN(200, "PO CI EXT RST N"),
++	PINCTRL_PIN(201, "P PAD VSSIO 43"),
++	PINCTRL_PIN(202, "P PAD VDDIO 43"),
++	PINCTRL_PIN(203, "PI CI D6"),
++	PINCTRL_PIN(204, "PI CI D7"),
++	PINCTRL_PIN(205, "PI CI D2"),
++	PINCTRL_PIN(206, "PI CI D3"),
++	PINCTRL_PIN(207, "PI CI D4"),
++	PINCTRL_PIN(208, "PI CI D5"),
++	PINCTRL_PIN(209, "PI CI D8"),
++	PINCTRL_PIN(210, "PI CI D9"),
++	PINCTRL_PIN(211, "P PAD VDD 20"),
++	PINCTRL_PIN(212, "P PAD GND 20"),
++	PINCTRL_PIN(213, "P PAD VSSIO 24"),
++	PINCTRL_PIN(214, "P PAD VDDIO 24"),
++	PINCTRL_PIN(215, "P PAD VDDIO 26"),
++	PINCTRL_PIN(216, "PO EMIF 1 A26"),
++	PINCTRL_PIN(217, "PO EMIF 1 A25"),
++	PINCTRL_PIN(218, "P PAD VSSIO 26"),
++	PINCTRL_PIN(219, "PO EMIF 1 A24"),
++	PINCTRL_PIN(220, "PO EMIF 1 A23"),
++	/* Pads along the bottom edge of the chip */
++	PINCTRL_PIN(221, "PO EMIF 1 A22"),
++	PINCTRL_PIN(222, "PO EMIF 1 A21"),
++	PINCTRL_PIN(223, "P PAD VDD 21"),
++	PINCTRL_PIN(224, "P PAD GND 21"),
++	PINCTRL_PIN(225, "P PAD VSSIO 27"),
++	PINCTRL_PIN(226, "P PAD VDDIO 27"),
++	PINCTRL_PIN(227, "PO EMIF 1 A20"),
++	PINCTRL_PIN(228, "PO EMIF 1 A19"),
++	PINCTRL_PIN(229, "PO EMIF 1 A18"),
++	PINCTRL_PIN(230, "PO EMIF 1 A17"),
++	PINCTRL_PIN(231, "P PAD VDDIO 28"),
++	PINCTRL_PIN(232, "P PAD VSSIO 28"),
++	PINCTRL_PIN(233, "PO EMIF 1 A16"),
++	PINCTRL_PIN(234, "PIO EMIF 1 D15"),
++	PINCTRL_PIN(235, "PO EMIF 1 A15"),
++	PINCTRL_PIN(236, "PIO EMIF 1 D14"),
++	PINCTRL_PIN(237, "P PAD VDD 22"),
++	PINCTRL_PIN(238, "P PAD GND 22"),
++	PINCTRL_PIN(239, "P PAD VSSIO 29"),
++	PINCTRL_PIN(240, "P PAD VDDIO 29"),
++	PINCTRL_PIN(241, "PO EMIF 1 A14"),
++	PINCTRL_PIN(242, "PIO EMIF 1 D13"),
++	PINCTRL_PIN(243, "PO EMIF 1 A13"),
++	PINCTRL_PIN(244, "PIO EMIF 1 D12"),
++	PINCTRL_PIN(245, "P PAD VSSIO 30"),
++	PINCTRL_PIN(246, "P PAD VDDIO 30"),
++	PINCTRL_PIN(247, "PO EMIF 1 A12"),
++	PINCTRL_PIN(248, "PIO EMIF 1 D11"),
++	PINCTRL_PIN(249, "PO EMIF 1 A11"),
++	PINCTRL_PIN(250, "PIO EMIF 1 D10"),
++	PINCTRL_PIN(251, "P PAD VSSIO 31"),
++	PINCTRL_PIN(252, "P PAD VDDIO 31"),
++	PINCTRL_PIN(253, "PO EMIF 1 A10"),
++	PINCTRL_PIN(254, "PIO EMIF 1 D09"),
++	PINCTRL_PIN(255, "PO EMIF 1 A09"),
++	PINCTRL_PIN(256, "P PAD VDDIO 32"),
++	PINCTRL_PIN(257, "P PAD VSSIO 32"),
++	PINCTRL_PIN(258, "P PAD GND 24"),
++	PINCTRL_PIN(259, "P PAD VDD 24"),
++	PINCTRL_PIN(260, "PIO EMIF 1 D08"),
++	PINCTRL_PIN(261, "PO EMIF 1 A08"),
++	PINCTRL_PIN(262, "PIO EMIF 1 D07"),
++	PINCTRL_PIN(263, "PO EMIF 1 A07"),
++	PINCTRL_PIN(264, "P PAD VDDIO 33"),
++	PINCTRL_PIN(265, "P PAD VSSIO 33"),
++	PINCTRL_PIN(266, "PIO EMIF 1 D06"),
++	PINCTRL_PIN(267, "PO EMIF 1 A06"),
++	PINCTRL_PIN(268, "PIO EMIF 1 D05"),
++	PINCTRL_PIN(269, "PO EMIF 1 A05"),
++	PINCTRL_PIN(270, "P PAD VDDIO 34"),
++	PINCTRL_PIN(271, "P PAD VSSIO 34"),
++	PINCTRL_PIN(272, "PIO EMIF 1 D04"),
++	PINCTRL_PIN(273, "PO EMIF 1 A04"),
++	PINCTRL_PIN(274, "PIO EMIF 1 D03"),
++	PINCTRL_PIN(275, "PO EMIF 1 A03"),
++	PINCTRL_PIN(276, "P PAD VDDIO 35"),
++	PINCTRL_PIN(277, "P PAD VSSIO 35"),
++	PINCTRL_PIN(278, "P PAD GND 23"),
++	PINCTRL_PIN(279, "P PAD VDD 23"),
++	PINCTRL_PIN(280, "PIO EMIF 1 D02"),
++	PINCTRL_PIN(281, "PO EMIF 1 A02"),
++	PINCTRL_PIN(282, "PIO EMIF 1 D01"),
++	PINCTRL_PIN(283, "PO EMIF 1 A01"),
++	PINCTRL_PIN(284, "P PAD VDDIO 36"),
++	PINCTRL_PIN(285, "P PAD VSSIO 36"),
++	PINCTRL_PIN(286, "PIO EMIF 1 D00"),
++	PINCTRL_PIN(287, "PO EMIF 1 BE1 N"),
++	PINCTRL_PIN(288, "PO EMIF 1 BE0 N"),
++	PINCTRL_PIN(289, "PO EMIF 1 ADV N"),
++	PINCTRL_PIN(290, "P PAD VDDIO 37"),
++	PINCTRL_PIN(291, "P PAD VSSIO 37"),
++	PINCTRL_PIN(292, "PO EMIF 1 SD CKE0"),
++	PINCTRL_PIN(293, "PO EMIF 1 OE N"),
++	PINCTRL_PIN(294, "PO EMIF 1 WE N"),
++	PINCTRL_PIN(295, "P PAD VDDIO 38"),
++	PINCTRL_PIN(296, "P PAD VSSIO 38"),
++	PINCTRL_PIN(297, "PO EMIF 1 CLK"),
++	PINCTRL_PIN(298, "PIO EMIF 1 SD CLK"),
++	PINCTRL_PIN(299, "P PAD VSSIO 45 (not bonded)"),
++	PINCTRL_PIN(300, "P PAD VDDIO 42"),
++	PINCTRL_PIN(301, "P PAD VSSIO 42"),
++	PINCTRL_PIN(302, "P PAD GND 31"),
++	PINCTRL_PIN(303, "P PAD VDD 31"),
++	PINCTRL_PIN(304, "PI EMIF 1 RET CLK"),
++	PINCTRL_PIN(305, "PI EMIF 1 WAIT N"),
++	PINCTRL_PIN(306, "PI EMIF 1 NFIF READY"),
++	PINCTRL_PIN(307, "PO EMIF 1 SD CKE1"),
++	PINCTRL_PIN(308, "PO EMIF 1 CS3 N"),
++	PINCTRL_PIN(309, "P PAD VDD 25"),
++	PINCTRL_PIN(310, "P PAD GND 25"),
++	PINCTRL_PIN(311, "P PAD VSSIO 39"),
++	PINCTRL_PIN(312, "P PAD VDDIO 39"),
++	PINCTRL_PIN(313, "PO EMIF 1 CS2 N"),
++	PINCTRL_PIN(314, "PO EMIF 1 CS1 N"),
++	PINCTRL_PIN(315, "PO EMIF 1 CS0 N"),
++	PINCTRL_PIN(316, "PO ETM TRACE PKT0"),
++	PINCTRL_PIN(317, "PO ETM TRACE PKT1"),
++	PINCTRL_PIN(318, "PO ETM TRACE PKT2"),
++	PINCTRL_PIN(319, "P PAD VDD 30"),
++	PINCTRL_PIN(320, "P PAD GND 30"),
++	PINCTRL_PIN(321, "P PAD VSSIO 44"),
++	PINCTRL_PIN(322, "P PAD VDDIO 44"),
++	PINCTRL_PIN(323, "PO ETM TRACE PKT3"),
++	PINCTRL_PIN(324, "PO ETM TRACE PKT4"),
++	PINCTRL_PIN(325, "PO ETM TRACE PKT5"),
++	PINCTRL_PIN(326, "PO ETM TRACE PKT6"),
++	PINCTRL_PIN(327, "PO ETM TRACE PKT7"),
++	PINCTRL_PIN(328, "PO ETM PIPE STAT0"),
++	PINCTRL_PIN(329, "P PAD VDD 26"),
++	PINCTRL_PIN(330, "P PAD GND 26"),
++	PINCTRL_PIN(331, "P PAD VSSIO 40"),
++	PINCTRL_PIN(332, "P PAD VDDIO 40"),
++	PINCTRL_PIN(333, "PO ETM PIPE STAT1"),
++	PINCTRL_PIN(334, "PO ETM PIPE STAT2"),
++	PINCTRL_PIN(335, "PO ETM TRACE CLK"),
++	PINCTRL_PIN(336, "PO ETM TRACE SYNC"),
++	PINCTRL_PIN(337, "PIO ACC GPIO 33"),
++	PINCTRL_PIN(338, "PIO ACC GPIO 32"),
++	PINCTRL_PIN(339, "PIO ACC GPIO 30"),
++	PINCTRL_PIN(340, "PIO ACC GPIO 29"),
++	PINCTRL_PIN(341, "P PAD VDDIO 17"),
++	PINCTRL_PIN(342, "P PAD VSSIO 17"),
++	PINCTRL_PIN(343, "P PAD GND 15"),
++	PINCTRL_PIN(344, "P PAD VDD 15"),
++	PINCTRL_PIN(345, "PIO ACC GPIO 28"),
++	PINCTRL_PIN(346, "PIO ACC GPIO 27"),
++	PINCTRL_PIN(347, "PIO ACC GPIO 16"),
++	PINCTRL_PIN(348, "PI TAP TMS"),
++	PINCTRL_PIN(349, "PI TAP TDI"),
++	PINCTRL_PIN(350, "PO TAP TDO"),
++	PINCTRL_PIN(351, "PI TAP RST N"),
++	/* Pads along the left edge of the chip */
++	PINCTRL_PIN(352, "PI EMU MODE 0"),
++	PINCTRL_PIN(353, "PO TAP RET CLK"),
++	PINCTRL_PIN(354, "PI TAP CLK"),
++	PINCTRL_PIN(355, "PO EMIF 0 SD CS N"),
++	PINCTRL_PIN(356, "PO EMIF 0 SD CAS N"),
++	PINCTRL_PIN(357, "PO EMIF 0 SD WE N"),
++	PINCTRL_PIN(358, "P PAD VDDIO 1"),
++	PINCTRL_PIN(359, "P PAD VSSIO 1"),
++	PINCTRL_PIN(360, "P PAD GND 1"),
++	PINCTRL_PIN(361, "P PAD VDD 1"),
++	PINCTRL_PIN(362, "PO EMIF 0 SD CKE"),
++	PINCTRL_PIN(363, "PO EMIF 0 SD DQML"),
++	PINCTRL_PIN(364, "PO EMIF 0 SD DQMU"),
++	PINCTRL_PIN(365, "PO EMIF 0 SD RAS N"),
++	PINCTRL_PIN(366, "PIO EMIF 0 D15"),
++	PINCTRL_PIN(367, "PO EMIF 0 A15"),
++	PINCTRL_PIN(368, "PIO EMIF 0 D14"),
++	PINCTRL_PIN(369, "PO EMIF 0 A14"),
++	PINCTRL_PIN(370, "PIO EMIF 0 D13"),
++	PINCTRL_PIN(371, "PO EMIF 0 A13"),
++	PINCTRL_PIN(372, "P PAD VDDIO 2"),
++	PINCTRL_PIN(373, "P PAD VSSIO 2"),
++	PINCTRL_PIN(374, "P PAD GND 2"),
++	PINCTRL_PIN(375, "P PAD VDD 2"),
++	PINCTRL_PIN(376, "PIO EMIF 0 D12"),
++	PINCTRL_PIN(377, "PO EMIF 0 A12"),
++	PINCTRL_PIN(378, "PIO EMIF 0 D11"),
++	PINCTRL_PIN(379, "PO EMIF 0 A11"),
++	PINCTRL_PIN(380, "PIO EMIF 0 D10"),
++	PINCTRL_PIN(381, "PO EMIF 0 A10"),
++	PINCTRL_PIN(382, "PIO EMIF 0 D09"),
++	PINCTRL_PIN(383, "PO EMIF 0 A09"),
++	PINCTRL_PIN(384, "PIO EMIF 0 D08"),
++	PINCTRL_PIN(385, "PO EMIF 0 A08"),
++	PINCTRL_PIN(386, "PIO EMIF 0 D07"),
++	PINCTRL_PIN(387, "PO EMIF 0 A07"),
++	PINCTRL_PIN(388, "P PAD VDDIO 3"),
++	PINCTRL_PIN(389, "P PAD VSSIO 3"),
++	PINCTRL_PIN(390, "P PAD GND 3"),
++	PINCTRL_PIN(391, "P PAD VDD 3"),
++	PINCTRL_PIN(392, "PO EFUSE RDOUT1"),
++	PINCTRL_PIN(393, "PIO EMIF 0 D06"),
++	PINCTRL_PIN(394, "PO EMIF 0 A06"),
++	PINCTRL_PIN(395, "PIO EMIF 0 D05"),
++	PINCTRL_PIN(396, "PO EMIF 0 A05"),
++	PINCTRL_PIN(397, "PIO EMIF 0 D04"),
++	PINCTRL_PIN(398, "PO EMIF 0 A04"),
++	PINCTRL_PIN(399, "A PADS/A VDDCO1v82v5 GND 80U SF LIN VDDCO AF"),
++	PINCTRL_PIN(400, "PWR VDDCO AF"),
++	PINCTRL_PIN(401, "PWR EFUSE HV1"),
++	PINCTRL_PIN(402, "P PAD VSSIO 4"),
++	PINCTRL_PIN(403, "P PAD VDDIO 4"),
++	PINCTRL_PIN(404, "P PAD GND 4"),
++	PINCTRL_PIN(405, "P PAD VDD 4"),
++	PINCTRL_PIN(406, "PIO EMIF 0 D03"),
++	PINCTRL_PIN(407, "PO EMIF 0 A03"),
++	PINCTRL_PIN(408, "PWR EFUSE HV2"),
++	PINCTRL_PIN(409, "PWR EFUSE HV3"),
++	PINCTRL_PIN(410, "PIO EMIF 0 D02"),
++	PINCTRL_PIN(411, "PO EMIF 0 A02"),
++	PINCTRL_PIN(412, "PIO EMIF 0 D01"),
++	PINCTRL_PIN(413, "P PAD VDDIO 5"),
++	PINCTRL_PIN(414, "P PAD VSSIO 5"),
++	PINCTRL_PIN(415, "P PAD GND 5"),
++	PINCTRL_PIN(416, "P PAD VDD 5"),
++	PINCTRL_PIN(417, "PO EMIF 0 A01"),
++	PINCTRL_PIN(418, "PIO EMIF 0 D00"),
++	PINCTRL_PIN(419, "IF 0 SD CLK"),
++	PINCTRL_PIN(420, "APP SPI CLK"),
++	PINCTRL_PIN(421, "APP SPI DO"),
++	PINCTRL_PIN(422, "APP SPI DI"),
++	PINCTRL_PIN(423, "APP SPI CS0"),
++	PINCTRL_PIN(424, "APP SPI CS1"),
++	PINCTRL_PIN(425, "APP SPI CS2"),
++	PINCTRL_PIN(426, "PIO APP GPIO 10"),
++	PINCTRL_PIN(427, "P PAD VDDIO 41"),
++	PINCTRL_PIN(428, "P PAD VSSIO 41"),
++	PINCTRL_PIN(429, "P PAD GND 6"),
++	PINCTRL_PIN(430, "P PAD VDD 6"),
++	PINCTRL_PIN(431, "PIO ACC SDIO0 CMD"),
++	PINCTRL_PIN(432, "PIO ACC SDIO0 CK"),
++	PINCTRL_PIN(433, "PIO ACC SDIO0 D3"),
++	PINCTRL_PIN(434, "PIO ACC SDIO0 D2"),
++	PINCTRL_PIN(435, "PIO ACC SDIO0 D1"),
++	PINCTRL_PIN(436, "PIO ACC SDIO0 D0"),
++	PINCTRL_PIN(437, "PIO USB PU"),
++	PINCTRL_PIN(438, "PIO USB SP"),
++	PINCTRL_PIN(439, "PIO USB DAT VP"),
++	PINCTRL_PIN(440, "PIO USB SE0 VM"),
++	PINCTRL_PIN(441, "PIO USB OE"),
++	PINCTRL_PIN(442, "PIO USB SUSP"),
++	PINCTRL_PIN(443, "P PAD VSSIO 6"),
++	PINCTRL_PIN(444, "P PAD VDDIO 6"),
++	PINCTRL_PIN(445, "PIO USB PUEN"),
++	PINCTRL_PIN(446, "PIO ACC UART0 RX"),
++	PINCTRL_PIN(447, "PIO ACC UART0 TX"),
++	PINCTRL_PIN(448, "PIO ACC UART0 CTS"),
++	PINCTRL_PIN(449, "PIO ACC UART0 RTS"),
++	PINCTRL_PIN(450, "PIO ACC UART3 RX"),
++	PINCTRL_PIN(451, "PIO ACC UART3 TX"),
++	PINCTRL_PIN(452, "PIO ACC UART3 CTS"),
++	PINCTRL_PIN(453, "PIO ACC UART3 RTS"),
++	PINCTRL_PIN(454, "PIO ACC IRDA TX"),
++	PINCTRL_PIN(455, "P PAD VDDIO 7"),
++	PINCTRL_PIN(456, "P PAD VSSIO 7"),
++	PINCTRL_PIN(457, "P PAD GND 7"),
++	PINCTRL_PIN(458, "P PAD VDD 7"),
++	PINCTRL_PIN(459, "PIO ACC IRDA RX"),
++	PINCTRL_PIN(460, "PIO ACC PCM I2S CLK"),
++	PINCTRL_PIN(461, "PIO ACC PCM I2S WS"),
++	PINCTRL_PIN(462, "PIO ACC PCM I2S DATA A"),
++	PINCTRL_PIN(463, "PIO ACC PCM I2S DATA B"),
++	PINCTRL_PIN(464, "PO SIM CLK"),
++	PINCTRL_PIN(465, "PIO ACC IRDA SD"),
++	PINCTRL_PIN(466, "PIO SIM DATA"),
++};
 +
 +/**
-+ * acquire_pins() - acquire all the pins for a certain funcion on a certain
-+ *	pinmux device
-+ * @pctldev: the device to take the pins on
-+ * @func_selector: the function selector to acquire the pins for
-+ * @group_selector: the group selector containing the pins to acquire
++ * @dev: a pointer back to containing device
++ * @virtbase: the offset to the controller in virtual memory
 + */
-+static int acquire_pins(struct pinctrl_dev *pctldev,
-+			unsigned func_selector,
-+			unsigned group_selector)
-+{
-+	const struct pinctrl_ops *pctlops = pctldev->desc->pctlops;
-+	const struct pinmux_ops *pmxops = pctldev->desc->pmxops;
-+	const char *func = pmxops->get_function_name(pctldev,
-+						     func_selector);
-+	unsigned *pins;
-+	unsigned num_pins;
-+	int ret;
-+	int i;
-+
-+	ret = pctlops->get_group_pins(pctldev, group_selector,
-+				      &pins, &num_pins);
-+	if (ret)
-+		return ret;
-+
-+	dev_dbg(&pctldev->dev, "requesting the %u pins from group %u\n",
-+		num_pins, group_selector);
-+
-+	/* Try to allocate all pins in this group, one by one */
-+	for (i = 0; i < num_pins; i++) {
-+		ret = pin_request(pctldev, pins[i], func, false, NULL);
-+		if (ret) {
-+			dev_err(&pctldev->dev,
-+				"could not get pin %d for function %s "
-+				"on device %s - conflicting mux mappings?\n",
-+				pins[i], func ? : "(undefined)",
-+				pctldev_get_name(pctldev));
-+			/* On error release all taken pins */
-+			i--; /* this pin just failed */
-+			for (; i >= 0; i--)
-+				pin_free(pctldev, pins[i]);
-+			return -ENODEV;
-+		}
-+	}
-+	return 0;
-+}
++struct u300_pmx {
++	struct device *dev;
++	struct pinctrl_dev *pctl;
++	u32 phybase;
++	u32 physize;
++	void __iomem *virtbase;
++};
 +
 +/**
-+ * release_pins() - release pins taken by earlier acquirement
-+ * @pctldev: the device to free the pinx on
-+ * @group_selector: the group selector containing the pins to free
++ * u300_pmx_registers - the array of registers read/written for each pinmux
++ * shunt setting
 + */
-+static void release_pins(struct pinctrl_dev *pctldev,
-+			 unsigned group_selector)
-+{
-+	const struct pinctrl_ops *pctlops = pctldev->desc->pctlops;
-+	unsigned *pins;
-+	unsigned num_pins;
-+	int ret;
-+	int i;
-+
-+	ret = pctlops->get_group_pins(pctldev, group_selector,
-+				      &pins, &num_pins);
-+	if (ret) {
-+		dev_err(&pctldev->dev, "could not get pins to release for "
-+			"group selector %d\n",
-+			group_selector);
-+		return;
-+	}
-+	for (i = 0; i < num_pins; i++)
-+		pin_free(pctldev, pins[i]);
-+}
++const u32 u300_pmx_registers[] = {
++	U300_SYSCON_PMC1LR,
++	U300_SYSCON_PMC1HR,
++	U300_SYSCON_PMC2R,
++	U300_SYSCON_PMC3R,
++	U300_SYSCON_PMC4R,
++};
 +
 +/**
-+ * pinmux_get_group_selector() - returns the group selector for a certain
-+ * group name
-+ * @pctldev: the pin controller handling the group
-+ * @pin_group: the pin group to look up
++ * struct u300_pin_group - describes a U300 pin group
++ * @name: the name of this specific pin group
++ * @pins: an array of discrete physical pins used in this group, taken
++ *	from the driver-local pin enumeration space
++ * @num_pins: the number of pins in this group array, i.e. the number of
++ *	elements in .pins so we can iterate over that array
 + */
-+static int pinmux_get_group_selector(struct pinctrl_dev *pctldev,
-+				     const char *pin_group)
-+{
-+	const struct pinctrl_ops *pctlops = pctldev->desc->pctlops;
-+	unsigned group_selector = 0;
-+
-+	while (pctlops->list_groups(pctldev, group_selector) >= 0) {
-+		const char *gname = pctlops->get_group_name(pctldev,
-+							    group_selector);
-+		if (!strcmp(gname, pin_group)) {
-+			dev_dbg(&pctldev->dev,
-+				"found group selector %u for %s\n",
-+				group_selector,
-+				pin_group);
-+			return group_selector;
-+		}
-+
-+		group_selector++;
-+	}
-+
-+	dev_err(&pctldev->dev, "does not have pin group %s\n",
-+		pin_group);
-+
-+	return -EINVAL;
-+}
++struct u300_pin_group {
++	const char *name;
++	const unsigned int *pins;
++	const unsigned num_pins;
++};
 +
 +/**
-+ * pinmux_check_pin_group() - check that the pinmux driver can supply the
-+ * selected pin group for a certain function, returns the group selector if
-+ * the group and function selector will work fine together, else returns
-+ * negative
-+ * @pctldev: device to check the pin group vs function for
-+ * @func_selector: the function selector to check the pin group for, we have
-+ *	already looked this up in the calling function
-+ * @pin_group: the pin group to match to the function
++ * struct pmx_onmask - mask bits to enable/disable padmux
++ * @mask: mask bits to disable
++ * @val: mask bits to enable
++ *
++ * onmask lazy dog:
++ * onmask = {
++ *   {"PMC1LR" mask, "PMC1LR" value},
++ *   {"PMC1HR" mask, "PMC1HR" value},
++ *   {"PMC2R"  mask, "PMC2R"  value},
++ *   {"PMC3R"  mask, "PMC3R"  value},
++ *   {"PMC4R"  mask, "PMC4R"  value}
++ * }
 + */
-+static int pinmux_check_pin_group(struct pinctrl_dev *pctldev,
-+				  unsigned func_selector,
-+				  const char *pin_group)
-+{
-+	const struct pinmux_ops *pmxops = pctldev->desc->pmxops;
-+	const struct pinctrl_ops *pctlops = pctldev->desc->pctlops;
-+	int ret;
++struct u300_pmx_mask {
++	u16 mask;
++	u16 bits;
++};
 +
++/* The chip power pins are VDD, GND, VDDIO and VSSIO */
++static const unsigned power_pins[] = { 0, 1, 3, 31, 46, 47, 49, 50, 61, 62, 63,
++	64, 78, 79, 80, 81, 92, 93, 94, 95, 101, 102, 103, 104, 115, 116, 117,
++	118, 130, 131, 132, 133, 145, 146, 147, 148, 159, 160, 172, 173, 174,
++	175, 187, 188, 189, 190, 201, 202, 211, 212, 213, 214, 215, 218, 223,
++	224, 225, 226, 231, 232, 237, 238, 239, 240, 245, 246, 251, 252, 256,
++	257, 258, 259, 264, 265, 270, 271, 276, 277, 278, 279, 284, 285, 290,
++	291, 295, 296, 299, 300, 301, 302, 303, 309, 310, 311, 312, 319, 320,
++	321, 322, 329, 330, 331, 332, 341, 342, 343, 344, 358, 359, 360, 361,
++	372, 373, 374, 375, 388, 389, 390, 391, 402, 403, 404, 405, 413, 414,
++	415, 416, 427, 428, 429, 430, 443, 444, 455, 456, 457, 458 };
++static const unsigned emif0_pins[] = { 355, 356, 357, 362, 363, 364, 365, 366,
++	367, 368, 369, 370, 371, 376, 377, 378, 379, 380, 381, 382, 383, 384,
++	385, 386, 387, 393, 394, 395, 396, 397, 398, 406, 407, 410, 411, 412,
++	417, 418 };
++static const unsigned emif1_pins[] = { 216, 217, 219, 220, 221, 222, 227, 228,
++	229, 230, 233, 234, 235, 236, 241, 242, 243, 244, 247, 248, 249, 250,
++	253, 254, 255, 260, 261, 262, 263, 266, 267, 268, 269, 272, 273, 274,
++	275, 280, 281, 282, 283, 286, 287, 288, 289, 292, 293, 294, 297, 298,
++	304, 305, 306, 307, 308, 313, 314, 315 };
++static const unsigned uart0_pins[] = { 134, 135, 136, 137 };
++static const unsigned mmc0_pins[] = { 166, 167, 168, 169, 170, 171, 176, 177 };
++static const unsigned spi0_pins[] = { 420, 421, 422, 423, 424, 425 };
++
++static const struct u300_pmx_mask emif0_mask[] = {
++	{0, 0},
++	{0, 0},
++	{0, 0},
++	{0, 0},
++	{0, 0},
++};
++
++static const struct u300_pmx_mask emif1_mask[] = {
 +	/*
-+	 * If the driver does not support different pin groups for the
-+	 * functions, we only support group 0, and assume this exists.
++	 * This connects the SDRAM to CS2 and a NAND flash to
++	 * CS0 on the EMIF.
 +	 */
-+	if (!pctlops || !pctlops->list_groups)
++	{
++		U300_SYSCON_PMC1LR_EMIF_1_CS2_MASK |
++		U300_SYSCON_PMC1LR_EMIF_1_CS1_MASK |
++		U300_SYSCON_PMC1LR_EMIF_1_CS0_MASK |
++		U300_SYSCON_PMC1LR_EMIF_1_MASK,
++		U300_SYSCON_PMC1LR_EMIF_1_CS2_SDRAM |
++		U300_SYSCON_PMC1LR_EMIF_1_CS1_STATIC |
++		U300_SYSCON_PMC1LR_EMIF_1_CS0_NFIF |
++		U300_SYSCON_PMC1LR_EMIF_1_SDRAM0
++	},
++	{0, 0},
++	{0, 0},
++	{0, 0},
++	{0, 0},
++};
++
++static const struct u300_pmx_mask uart0_mask[] = {
++	{0, 0},
++	{
++		U300_SYSCON_PMC1HR_APP_UART0_1_MASK |
++		U300_SYSCON_PMC1HR_APP_UART0_2_MASK,
++		U300_SYSCON_PMC1HR_APP_UART0_1_UART0 |
++		U300_SYSCON_PMC1HR_APP_UART0_2_UART0
++	},
++	{0, 0},
++	{0, 0},
++	{0, 0},
++};
++
++static const struct u300_pmx_mask mmc0_mask[] = {
++	{ U300_SYSCON_PMC1LR_MMCSD_MASK, U300_SYSCON_PMC1LR_MMCSD_MMCSD},
++	{0, 0},
++	{0, 0},
++	{0, 0},
++	{ U300_SYSCON_PMC4R_APP_MISC_12_MASK,
++	  U300_SYSCON_PMC4R_APP_MISC_12_APP_GPIO }
++};
++
++static const struct u300_pmx_mask spi0_mask[] = {
++	{0, 0},
++	{
++		U300_SYSCON_PMC1HR_APP_SPI_2_MASK |
++		U300_SYSCON_PMC1HR_APP_SPI_CS_1_MASK |
++		U300_SYSCON_PMC1HR_APP_SPI_CS_2_MASK,
++		U300_SYSCON_PMC1HR_APP_SPI_2_SPI |
++		U300_SYSCON_PMC1HR_APP_SPI_CS_1_SPI |
++		U300_SYSCON_PMC1HR_APP_SPI_CS_2_SPI
++	},
++	{0, 0},
++	{0, 0},
++	{0, 0}
++};
++
++static const struct u300_pin_group u300_pin_groups[] = {
++	{
++		.name = "powergrp",
++		.pins = power_pins,
++		.num_pins = ARRAY_SIZE(power_pins),
++	},
++	{
++		.name = "emif0grp",
++		.pins = emif0_pins,
++		.num_pins = ARRAY_SIZE(emif0_pins),
++	},
++	{
++		.name = "emif1grp",
++		.pins = emif1_pins,
++		.num_pins = ARRAY_SIZE(emif1_pins),
++	},
++	{
++		.name = "uart0grp",
++		.pins = uart0_pins,
++		.num_pins = ARRAY_SIZE(uart0_pins),
++	},
++	{
++		.name = "mmc0grp",
++		.pins = mmc0_pins,
++		.num_pins = ARRAY_SIZE(mmc0_pins),
++	},
++	{
++		.name = "spi0grp",
++		.pins = spi0_pins,
++		.num_pins = ARRAY_SIZE(spi0_pins),
++	},
++};
++
++static int u300_list_groups(struct pinctrl_dev *pctldev, unsigned selector)
++{
++	if (selector >= ARRAY_SIZE(u300_pin_groups))
++		return -EINVAL;
++	return 0;
++}
++
++static const char *u300_get_group_name(struct pinctrl_dev *pctldev,
++				       unsigned selector)
++{
++	if (selector >= ARRAY_SIZE(u300_pin_groups))
++		return NULL;
++	return u300_pin_groups[selector].name;
++}
++
++static int u300_get_group_pins(struct pinctrl_dev *pctldev, unsigned selector,
++			       unsigned ** const pins,
++			       unsigned * const num_pins)
++{
++	if (selector >= ARRAY_SIZE(u300_pin_groups))
++		return -EINVAL;
++	*pins = (unsigned *) u300_pin_groups[selector].pins;
++	*num_pins = u300_pin_groups[selector].num_pins;
++	return 0;
++}
++
++static void u300_pin_dbg_show(struct pinctrl_dev *pctldev, struct seq_file *s,
++		   unsigned offset)
++{
++	seq_printf(s, " " DRIVER_NAME);
++}
++
++static struct pinctrl_ops u300_pctrl_ops = {
++	.list_groups = u300_list_groups,
++	.get_group_name = u300_get_group_name,
++	.get_group_pins = u300_get_group_pins,
++	.pin_dbg_show = u300_pin_dbg_show,
++};
++
++/*
++ * Here we define the available functions and their corresponding pin groups
++ */
++
++/**
++ * struct u300_pmx_func - describes U300 pinmux functions
++ * @name: the name of this specific function
++ * @groups: corresponding pin groups
++ * @onmask: bits to set to enable this when doing pin muxing
++ */
++struct u300_pmx_func {
++	const char *name;
++	const char * const *groups;
++	const unsigned num_groups;
++	const struct u300_pmx_mask *mask;
++};
++
++static const char * const powergrps[] = { "powergrp" };
++static const char * const emif0grps[] = { "emif0grp" };
++static const char * const emif1grps[] = { "emif1grp" };
++static const char * const uart0grps[] = { "uart0grp" };
++static const char * const mmc0grps[] = { "mmc0grp" };
++static const char * const spi0grps[] = { "spi0grp" };
++
++static const struct u300_pmx_func u300_pmx_functions[] = {
++	{
++		.name = "power",
++		.groups = powergrps,
++		.num_groups = ARRAY_SIZE(powergrps),
++		/* Mask is N/A */
++	},
++	{
++		.name = "emif0",
++		.groups = emif0grps,
++		.num_groups = ARRAY_SIZE(emif0grps),
++		.mask = emif0_mask,
++	},
++	{
++		.name = "emif1",
++		.groups = emif1grps,
++		.num_groups = ARRAY_SIZE(emif1grps),
++		.mask = emif1_mask,
++	},
++	{
++		.name = "uart0",
++		.groups = uart0grps,
++		.num_groups = ARRAY_SIZE(uart0grps),
++		.mask = uart0_mask,
++	},
++	{
++		.name = "mmc0",
++		.groups = mmc0grps,
++		.num_groups = ARRAY_SIZE(mmc0grps),
++		.mask = mmc0_mask,
++	},
++	{
++		.name = "spi0",
++		.groups = spi0grps,
++		.num_groups = ARRAY_SIZE(spi0grps),
++		.mask = spi0_mask,
++	},
++};
++
++static void u300_pmx_endisable(struct u300_pmx *upmx, unsigned selector,
++			       bool enable)
++{
++	u16 regval, val, mask;
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(u300_pmx_registers); i++) {
++		if (enable)
++			val = u300_pmx_functions[selector].mask->bits;
++		else
++			val = 0;
++
++		mask = u300_pmx_functions[selector].mask->mask;
++		if (mask != 0) {
++			regval = readw(upmx->virtbase + u300_pmx_registers[i]);
++			regval &= ~mask;
++			regval |= val;
++			writew(regval, upmx->virtbase + u300_pmx_registers[i]);
++		}
++	}
++}
++
++static int u300_pmx_enable(struct pinctrl_dev *pctldev, unsigned selector,
++			   unsigned group)
++{
++	struct u300_pmx *upmx;
++
++	/* There is nothing to do with the power pins */
++	if (selector == 0)
 +		return 0;
 +
-+	/*
-+	 * Passing NULL (no specific group) will select the first and
-+	 * hopefully only group of pins available for this function.
-+	 */
-+	if (!pin_group) {
-+		char const * const *groups;
-+		unsigned num_groups;
++	upmx = pctldev_get_drvdata(pctldev);
++	u300_pmx_endisable(upmx, selector, true);
 +
-+		ret = pmxops->get_function_groups(pctldev, func_selector,
-+						  &groups, &num_groups);
-+		if (ret)
-+			return ret;
-+		if (num_groups < 1)
-+			return -EINVAL;
-+		ret = pinmux_get_group_selector(pctldev, groups[0]);
-+		if (ret < 0) {
-+			dev_err(&pctldev->dev,
-+				"function %s wants group %s but the pin "
-+				"controller does not seem to have that group\n",
-+				pmxops->get_function_name(pctldev, func_selector),
-+				groups[0]);
-+			return ret;
-+		}
++	return 0;
++}
 +
-+		if (num_groups > 1)
-+			dev_dbg(&pctldev->dev,
-+				"function %s support more than one group, "
-+				"default-selecting first group %s (%d)\n",
-+				pmxops->get_function_name(pctldev, func_selector),
-+				groups[0],
-+				ret);
++static void u300_pmx_disable(struct pinctrl_dev *pctldev, unsigned selector,
++			     unsigned group)
++{
++	struct u300_pmx *upmx;
 +
-+		return ret;
++	/* There is nothing to do with the power pins */
++	if (selector == 0)
++		return;
++
++	upmx = pctldev_get_drvdata(pctldev);
++	u300_pmx_endisable(upmx, selector, false);
++}
++
++static int u300_pmx_list_funcs(struct pinctrl_dev *pctldev, unsigned selector)
++{
++	if (selector >= ARRAY_SIZE(u300_pmx_functions))
++		return -EINVAL;
++	return 0;
++}
++
++static const char *u300_pmx_get_func_name(struct pinctrl_dev *pctldev,
++					  unsigned selector)
++{
++	return u300_pmx_functions[selector].name;
++}
++
++static int u300_pmx_get_groups(struct pinctrl_dev *pctldev, unsigned selector,
++			       const char * const **groups,
++			       unsigned * const num_groups)
++{
++	*groups = u300_pmx_functions[selector].groups;
++	*num_groups = u300_pmx_functions[selector].num_groups;
++	return 0;
++}
++
++static struct pinmux_ops u300_pmx_ops = {
++	.list_functions = u300_pmx_list_funcs,
++	.get_function_name = u300_pmx_get_func_name,
++	.get_function_groups = u300_pmx_get_groups,
++	.enable = u300_pmx_enable,
++	.disable = u300_pmx_disable,
++};
++
++/*
++ * FIXME: this will be set to sane values as this driver engulfs
++ * drivers/gpio/gpio-u300.c and we really know this stuff.
++ */
++static struct pinctrl_gpio_range u300_gpio_range = {
++	.name = "COH901*",
++	.id = 0,
++	.base = 0,
++	.npins = 64,
++};
++
++static struct pinctrl_desc u300_pmx_desc = {
++	.name = DRIVER_NAME,
++	.pins = u300_pads,
++	.npins = ARRAY_SIZE(u300_pads),
++	.maxpin = U300_NUM_PADS-1,
++	.pctlops = &u300_pctrl_ops,
++	.pmxops = &u300_pmx_ops,
++	.owner = THIS_MODULE,
++};
++
++static void __init u300_pmx_dumpregs(struct u300_pmx *upmx)
++{
++	u16 regval;
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(u300_pmx_registers); i++) {
++		regval = readw(upmx->virtbase + u300_pmx_registers[i]);
++		dev_info(upmx->dev, "PMX%u: 0x%04x\n", i, regval);
++	}
++}
++
++static int __init u300_pmx_probe(struct platform_device *pdev)
++{
++	int ret;
++	struct u300_pmx *upmx;
++	struct resource *res;
++
++	/* Create state holders etc for this driver */
++	upmx = kzalloc(sizeof(struct u300_pmx), GFP_KERNEL);
++	if (!upmx)
++		return -ENOMEM;
++
++	upmx->dev = &pdev->dev;
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!res) {
++		ret = -ENOENT;
++		goto out_no_resource;
++	}
++	upmx->phybase = res->start;
++	upmx->physize = resource_size(res);
++
++	if (request_mem_region(upmx->phybase, upmx->physize,
++			       DRIVER_NAME) == NULL) {
++		ret = -EBUSY;
++		goto out_no_memregion;
 +	}
 +
-+	dev_dbg(&pctldev->dev,
-+		"check if we have pin group %s on controller %s\n",
-+		pin_group, pctldev_get_name(pctldev));
-+
-+	ret = pinmux_get_group_selector(pctldev, pin_group);
-+	if (ret < 0) {
-+		dev_dbg(&pctldev->dev,
-+			"%s does not support pin group %s with function %s\n",
-+			pctldev_get_name(pctldev),
-+			pin_group,
-+			pmxops->get_function_name(pctldev, func_selector));
++	upmx->virtbase = ioremap(upmx->phybase, upmx->physize);
++	if (!upmx->virtbase) {
++		ret = -ENOMEM;
++		goto out_no_remap;
 +	}
++
++	upmx->pctl = pinctrl_register(&u300_pmx_desc, &pdev->dev, upmx);
++	if (IS_ERR(upmx->pctl)) {
++		dev_err(&pdev->dev, "could not register U300 pinmux driver\n");
++		ret = PTR_ERR(upmx->pctl);
++		goto out_no_pmx;
++	}
++
++	/* We will handle a range of GPIO pins */
++	pinctrl_add_gpio_range(upmx->pctl, &u300_gpio_range);
++
++	platform_set_drvdata(pdev, upmx);
++
++	u300_pmx_dumpregs(upmx);
++
++	dev_info(&pdev->dev, "initialized U300 pinmux driver\n");
++
++	return 0;
++
++out_no_pmx:
++	iounmap(upmx->virtbase);
++out_no_remap:
++	platform_set_drvdata(pdev, NULL);
++out_no_memregion:
++	release_mem_region(upmx->phybase, upmx->physize);
++out_no_resource:
++	kfree(upmx);
 +	return ret;
 +}
 +
-+/**
-+ * pinmux_search_function() - search the pinmux driver for an applicable
-+ * function with a specific pin group, returns 0 if these can be mapped
-+ * negative otherwise
-+ * @pctldev: device to check for function and position
-+ * @map: function map containing the function and position to look for
-+ * @func_selector: returns the applicable function selector if found
-+ * @group_selector: returns the applicable group selector if found
-+ */
-+static int pinmux_search_function(struct pinctrl_dev *pctldev,
-+				  struct pinmux_map const *map,
-+				  unsigned *func_selector,
-+				  unsigned *group_selector)
++static int __exit u300_pmx_remove(struct platform_device *pdev)
 +{
-+	const struct pinmux_ops *ops = pctldev->desc->pmxops;
-+	unsigned selector = 0;
++	struct u300_pmx *upmx = platform_get_drvdata(pdev);
 +
-+	/* See if this pctldev has this function */
-+	while (ops->list_functions(pctldev, selector) >= 0) {
-+		const char *fname = ops->get_function_name(pctldev,
-+							   selector);
-+		int ret;
-+
-+		if (!strcmp(map->function, fname)) {
-+			/* Found the function, check pin group */
-+			ret = pinmux_check_pin_group(pctldev, selector,
-+						     map->group);
-+			if (ret < 0)
-+				return ret;
-+
-+			/* This function and group selector can be used */
-+			*func_selector = selector;
-+			*group_selector = ret;
-+			return 0;
-+
-+		}
-+		selector++;
-+	}
-+
-+	pr_err("%s does not support function %s\n",
-+	       pctldev_get_name(pctldev), map->function);
-+	return -EINVAL;
-+}
-+
-+/**
-+ * pinmux_enable_muxmap() - enable a map entry for a certain pinmux
-+ */
-+static int pinmux_enable_muxmap(struct pinctrl_dev *pctldev,
-+				struct pinmux *pmx,
-+				struct device *dev,
-+				const char *devname,
-+				struct pinmux_map const *map)
-+{
-+	unsigned func_selector;
-+	unsigned group_selector;
-+	struct pinmux_group *grp;
-+	int ret;
-+
-+	/*
-+	 * Note that we're not locking the pinmux mutex here, because
-+	 * this is only called at pinmux initialization time when it
-+	 * has not been added to any list and thus is not reachable
-+	 * by anyone else.
-+	 */
-+
-+	if (pmx->pctldev && pmx->pctldev != pctldev) {
-+		dev_err(&pctldev->dev,
-+			"different pin control devices given for device %s, "
-+			"function %s\n",
-+			devname,
-+			map->function);
-+		return -EINVAL;
-+	}
-+	pmx->dev = dev;
-+	pmx->pctldev = pctldev;
-+
-+	/* Now go into the driver and try to match a function and group */
-+	ret = pinmux_search_function(pctldev, map, &func_selector,
-+				     &group_selector);
-+	if (ret < 0)
-+		return ret;
-+
-+	/*
-+	 * If the function selector is already set, it needs to be identical,
-+	 * we support several groups with one function but not several
-+	 * functions with one or several groups in the same pinmux.
-+	 */
-+	if (pmx->func_selector != UINT_MAX &&
-+	    pmx->func_selector != func_selector) {
-+		dev_err(&pctldev->dev,
-+			"dual function defines in the map for device %s\n",
-+		       devname);
-+		return -EINVAL;
-+	}
-+	pmx->func_selector = func_selector;
-+
-+	/* Now add this group selector, we may have many of them */
-+	grp = kmalloc(sizeof(struct pinmux_group), GFP_KERNEL);
-+	if (!grp)
-+		return -ENOMEM;
-+	grp->group_selector = group_selector;
-+	ret = acquire_pins(pctldev, func_selector, group_selector);
-+	if (ret) {
-+		kfree(grp);
-+		return ret;
-+	}
-+	list_add(&grp->node, &pmx->groups);
++	pinctrl_remove_gpio_range(upmx->pctl, &u300_gpio_range);
++	pinctrl_unregister(upmx->pctl);
++	iounmap(upmx->virtbase);
++	release_mem_region(upmx->phybase, upmx->physize);
++	platform_set_drvdata(pdev, NULL);
++	kfree(upmx);
 +
 +	return 0;
 +}
 +
-+static void pinmux_free_groups(struct pinmux *pmx)
-+{
-+	struct list_head *node, *tmp;
-+
-+	list_for_each_safe(node, tmp, &pmx->groups) {
-+		struct pinmux_group *grp =
-+			list_entry(node, struct pinmux_group, node);
-+		/* Release all pins taken by this group */
-+		release_pins(pmx->pctldev, grp->group_selector);
-+		list_del(node);
-+		kfree(grp);
-+	}
-+}
-+
-+/**
-+ * pinmux_get() - retrieves the pinmux for a certain device
-+ * @dev: the device to get the pinmux for
-+ * @name: an optional specific mux mapping name or NULL, the name is only
-+ *	needed if you want to have more than one mapping per device, or if you
-+ *	need an anonymous pinmux (not tied to any specific device)
-+ */
-+struct pinmux *pinmux_get(struct device *dev, const char *name)
-+{
-+
-+	struct pinmux_map const *map = NULL;
-+	struct pinctrl_dev *pctldev = NULL;
-+	const char *devname = NULL;
-+	struct pinmux *pmx;
-+	bool found_map;
-+	unsigned num_maps = 0;
-+	int ret = -ENODEV;
-+	int i;
-+
-+	/* We must have dev or ID or both */
-+	if (!dev && !name)
-+		return ERR_PTR(-EINVAL);
-+
-+	if (dev)
-+		devname = dev_name(dev);
-+
-+	pr_debug("get mux %s for device %s\n", name,
-+		 devname ? devname : "(none)");
-+
-+	/*
-+	 * create the state cookie holder struct pinmux for each
-+	 * mapping, this is what consumers will get when requesting
-+	 * a pinmux handle with pinmux_get()
-+	 */
-+	pmx = kzalloc(sizeof(struct pinmux), GFP_KERNEL);
-+	if (pmx == NULL)
-+		return ERR_PTR(-ENOMEM);
-+	mutex_init(&pmx->mutex);
-+	pmx->func_selector = UINT_MAX;
-+	INIT_LIST_HEAD(&pmx->groups);
-+
-+	/* Iterate over the pinmux maps to locate the right ones */
-+	for (i = 0; i < pinmux_maps_num; i++) {
-+		map = &pinmux_maps[i];
-+		found_map = false;
-+
-+		/*
-+		 * First, try to find the pctldev given in the map
-+		 */
-+		pctldev = get_pctldev_from_dev(map->ctrl_dev,
-+					       map->ctrl_dev_name);
-+		if (!pctldev) {
-+			const char *devname = NULL;
-+
-+			if (map->ctrl_dev)
-+				devname = dev_name(map->ctrl_dev);
-+			else if (map->ctrl_dev_name)
-+				devname = map->ctrl_dev_name;
-+
-+			pr_warning("could not find a pinctrl device for pinmux "
-+				   "function %s, fishy, they shall all have one\n",
-+				   map->function);
-+			pr_warning("given pinctrl device name: %s",
-+				   devname ? devname : "UNDEFINED");
-+
-+			/* Continue to check the other mappings anyway... */
-+			continue;
-+		}
-+
-+		pr_debug("in map, found pctldev %s to handle function %s",
-+			 dev_name(&pctldev->dev), map->function);
-+
-+
-+		/*
-+		 * If we're looking for a specific named map, this must match,
-+		 * else we loop and look for the next.
-+		 */
-+		if (name != NULL) {
-+			if (map->name == NULL)
-+				continue;
-+			if (strcmp(map->name, name))
-+				continue;
-+		}
-+
-+		/*
-+		 * This is for the case where no device name is given, we
-+		 * already know that the function name matches from above
-+		 * code.
-+		 */
-+		if (!map->dev_name && (name != NULL))
-+			found_map = true;
-+
-+		/* If the mapping has a device set up it must match */
-+		if (map->dev_name &&
-+		    (!devname || !strcmp(map->dev_name, devname)))
-+			/* MATCH! */
-+			found_map = true;
-+
-+		/* If this map is applicable, then apply it */
-+		if (found_map) {
-+			ret = pinmux_enable_muxmap(pctldev, pmx, dev,
-+						   devname, map);
-+			if (ret) {
-+				pinmux_free_groups(pmx);
-+				kfree(pmx);
-+				return ERR_PTR(ret);
-+			}
-+			num_maps++;
-+		}
-+	}
-+
-+
-+	/* We should have atleast one map, right */
-+	if (!num_maps) {
-+		pr_err("could not find any mux maps for device %s, ID %s\n",
-+		       devname ? devname : "(anonymous)",
-+		       name ? name : "(undefined)");
-+		kfree(pmx);
-+		return ERR_PTR(-EINVAL);
-+	}
-+
-+	pr_debug("found %u mux maps for device %s, UD %s\n",
-+		 num_maps,
-+		 devname ? devname : "(anonymous)",
-+		 name ? name : "(undefined)");
-+
-+	/* Add the pinmux to the global list */
-+	mutex_lock(&pinmux_list_mutex);
-+	list_add(&pmx->node, &pinmux_list);
-+	mutex_unlock(&pinmux_list_mutex);
-+
-+	return pmx;
-+}
-+EXPORT_SYMBOL_GPL(pinmux_get);
-+
-+/**
-+ * pinmux_put() - release a previously claimed pinmux
-+ * @pmx: a pinmux previously claimed by pinmux_get()
-+ */
-+void pinmux_put(struct pinmux *pmx)
-+{
-+	if (pmx == NULL)
-+		return;
-+
-+	mutex_lock(&pmx->mutex);
-+	if (pmx->usecount)
-+		pr_warn("releasing pinmux with active users!\n");
-+	/* Free the groups and all acquired pins */
-+	pinmux_free_groups(pmx);
-+	mutex_unlock(&pmx->mutex);
-+
-+	/* Remove from list */
-+	mutex_lock(&pinmux_list_mutex);
-+	list_del(&pmx->node);
-+	mutex_unlock(&pinmux_list_mutex);
-+
-+	kfree(pmx);
-+}
-+EXPORT_SYMBOL_GPL(pinmux_put);
-+
-+/**
-+ * pinmux_enable() - enable a certain pinmux setting
-+ * @pmx: the pinmux to enable, previously claimed by pinmux_get()
-+ */
-+int pinmux_enable(struct pinmux *pmx)
-+{
-+	int ret = 0;
-+
-+	if (pmx == NULL)
-+		return -EINVAL;
-+	mutex_lock(&pmx->mutex);
-+	if (pmx->usecount++ == 0) {
-+		struct pinctrl_dev *pctldev = pmx->pctldev;
-+		const struct pinmux_ops *ops = pctldev->desc->pmxops;
-+		struct pinmux_group *grp;
-+
-+		list_for_each_entry(grp, &pmx->groups, node) {
-+			ret = ops->enable(pctldev, pmx->func_selector,
-+					  grp->group_selector);
-+			if (ret) {
-+				/*
-+				 * TODO: call disable() on all groups we called
-+				 * enable() on to this point?
-+				 */
-+				pmx->usecount--;
-+				break;
-+			}
-+		}
-+	}
-+	mutex_unlock(&pmx->mutex);
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(pinmux_enable);
-+
-+/**
-+ * pinmux_disable() - disable a certain pinmux setting
-+ * @pmx: the pinmux to disable, previously claimed by pinmux_get()
-+ */
-+void pinmux_disable(struct pinmux *pmx)
-+{
-+	if (pmx == NULL)
-+		return;
-+
-+	mutex_lock(&pmx->mutex);
-+	if (--pmx->usecount == 0) {
-+		struct pinctrl_dev *pctldev = pmx->pctldev;
-+		const struct pinmux_ops *ops = pctldev->desc->pmxops;
-+		struct pinmux_group *grp;
-+
-+		list_for_each_entry(grp, &pmx->groups, node) {
-+			ops->disable(pctldev, pmx->func_selector,
-+				     grp->group_selector);
-+		}
-+	}
-+	mutex_unlock(&pmx->mutex);
-+}
-+EXPORT_SYMBOL_GPL(pinmux_disable);
-+
-+int pinmux_check_ops(const struct pinmux_ops *ops)
-+{
-+	/* Check that we implement required operations */
-+	if (!ops->list_functions ||
-+	    !ops->get_function_name ||
-+	    !ops->get_function_groups ||
-+	    !ops->enable ||
-+	    !ops->disable)
-+		return -EINVAL;
-+
-+	return 0;
-+}
-+
-+/* Hog a single map entry and add to the hoglist */
-+static int pinmux_hog_map(struct pinctrl_dev *pctldev,
-+			  struct pinmux_map const *map)
-+{
-+	struct pinmux_hog *hog;
-+	struct pinmux *pmx;
-+	int ret;
-+
-+	if (map->dev || map->dev_name) {
-+		/*
-+		 * TODO: the day we have device tree support, we can
-+		 * traverse the device tree and hog to specific device nodes
-+		 * without any problems, so then we can hog pinmuxes for
-+		 * all devices that just want a static pin mux at this point.
-+		 */
-+		dev_err(&pctldev->dev, "map %s wants to hog a non-system "
-+			"pinmux, this is not going to work\n", map->name);
-+		return -EINVAL;
-+	}
-+
-+	hog = kzalloc(sizeof(struct pinmux_hog), GFP_KERNEL);
-+	if (!hog)
-+		return -ENOMEM;
-+
-+	pmx = pinmux_get(NULL, map->name);
-+	if (IS_ERR(pmx)) {
-+		kfree(hog);
-+		dev_err(&pctldev->dev,
-+			"could not get the %s pinmux mapping for hogging\n",
-+			map->name);
-+		return PTR_ERR(pmx);
-+	}
-+
-+	ret = pinmux_enable(pmx);
-+	if (ret) {
-+		pinmux_put(pmx);
-+		kfree(hog);
-+		dev_err(&pctldev->dev,
-+			"could not enable the %s pinmux mapping for hogging\n",
-+			map->name);
-+		return ret;
-+	}
-+
-+	hog->map = map;
-+	hog->pmx = pmx;
-+
-+	dev_info(&pctldev->dev, "hogged map %s, function %s\n", map->name,
-+		 map->function);
-+	mutex_lock(&pctldev->pinmux_hogs_lock);
-+	list_add(&hog->node, &pctldev->pinmux_hogs);
-+	mutex_unlock(&pctldev->pinmux_hogs_lock);
-+
-+	return 0;
-+}
-+
-+/**
-+ * pinmux_hog_maps() - hog specific map entries on controller device
-+ * @pctldev: the pin control device to hog entries on
-+ *
-+ * When the pin controllers are registered, there may be some specific pinmux
-+ * map entries that need to be hogged, i.e. get+enabled until the system shuts
-+ * down.
-+ */
-+int pinmux_hog_maps(struct pinctrl_dev *pctldev)
-+{
-+	struct device *dev = &pctldev->dev;
-+	const char *devname = dev_name(dev);
-+	int ret;
-+	int i;
-+
-+	INIT_LIST_HEAD(&pctldev->pinmux_hogs);
-+	mutex_init(&pctldev->pinmux_hogs_lock);
-+
-+	for (i = 0; i < pinmux_maps_num; i++) {
-+		struct pinmux_map const *map = &pinmux_maps[i];
-+
-+		if (((map->ctrl_dev == dev) ||
-+		     !strcmp(map->ctrl_dev_name, devname)) &&
-+		    map->hog_on_boot) {
-+			/* OK time to hog! */
-+			ret = pinmux_hog_map(pctldev, map);
-+			if (ret)
-+				return ret;
-+		}
-+	}
-+	return 0;
-+}
-+
-+/**
-+ * pinmux_hog_maps() - unhog specific map entries on controller device
-+ * @pctldev: the pin control device to unhog entries on
-+ */
-+void pinmux_unhog_maps(struct pinctrl_dev *pctldev)
-+{
-+	struct list_head *node, *tmp;
-+
-+	mutex_lock(&pctldev->pinmux_hogs_lock);
-+	list_for_each_safe(node, tmp, &pctldev->pinmux_hogs) {
-+		struct pinmux_hog *hog =
-+			list_entry(node, struct pinmux_hog, node);
-+		pinmux_disable(hog->pmx);
-+		pinmux_put(hog->pmx);
-+		list_del(node);
-+		kfree(hog);
-+	}
-+	mutex_unlock(&pctldev->pinmux_hogs_lock);
-+}
-+
-+#ifdef CONFIG_DEBUG_FS
-+
-+/* Called from pincontrol core */
-+static int pinmux_functions_show(struct seq_file *s, void *what)
-+{
-+	struct pinctrl_dev *pctldev = s->private;
-+	const struct pinmux_ops *pmxops = pctldev->desc->pmxops;
-+	unsigned func_selector = 0;
-+
-+	while (pmxops->list_functions(pctldev, func_selector) >= 0) {
-+		const char *func = pmxops->get_function_name(pctldev,
-+							  func_selector);
-+		const char * const *groups;
-+		unsigned num_groups;
-+		int ret;
-+		int i;
-+
-+		ret = pmxops->get_function_groups(pctldev, func_selector,
-+						  &groups, &num_groups);
-+		if (ret)
-+			seq_printf(s, "function %s: COULD NOT GET GROUPS\n",
-+				   func);
-+
-+		seq_printf(s, "function: %s, groups = [ ", func);
-+		for (i = 0; i < num_groups; i++)
-+			seq_printf(s, "%s ", groups[i]);
-+		seq_puts(s, "]\n");
-+
-+		func_selector++;
-+
-+	}
-+
-+	return 0;
-+}
-+
-+static int pinmux_pins_show(struct seq_file *s, void *what)
-+{
-+	struct pinctrl_dev *pctldev = s->private;
-+	unsigned pin;
-+
-+	seq_puts(s, "Pinmux settings per pin\n");
-+	seq_puts(s, "Format: pin (name): pinmuxfunction\n");
-+
-+	/* The highest pin number need to be included in the loop, thus <= */
-+	for (pin = 0; pin <= pctldev->desc->maxpin; pin++) {
-+
-+		struct pin_desc *desc;
-+
-+		desc = pin_desc_get(pctldev, pin);
-+		/* Pin space may be sparse */
-+		if (desc == NULL)
-+			continue;
-+
-+		seq_printf(s, "pin %d (%s): %s\n", pin,
-+			   desc->name ? desc->name : "unnamed",
-+			   desc->mux_requested ? desc->mux_function : "UNCLAIMED");
-+	}
-+
-+	return 0;
-+}
-+
-+static int pinmux_hogs_show(struct seq_file *s, void *what)
-+{
-+	struct pinctrl_dev *pctldev = s->private;
-+	struct pinmux_hog *hog;
-+
-+	seq_puts(s, "Pinmux map hogs held by device\n");
-+
-+	list_for_each_entry(hog, &pctldev->pinmux_hogs, node)
-+		seq_printf(s, "%s\n", hog->map->name);
-+
-+	return 0;
-+}
-+
-+static int pinmux_show(struct seq_file *s, void *what)
-+{
-+	struct pinmux *pmx;
-+
-+	seq_puts(s, "Requested pinmuxes and their maps:\n");
-+	list_for_each_entry(pmx, &pinmux_list, node) {
-+		struct pinctrl_dev *pctldev = pmx->pctldev;
-+		const struct pinmux_ops *pmxops;
-+		const struct pinctrl_ops *pctlops;
-+		struct pinmux_group *grp;
-+
-+		if (!pctldev) {
-+			seq_puts(s, "NO PIN CONTROLLER DEVICE\n");
-+			continue;
-+		}
-+
-+		pmxops = pctldev->desc->pmxops;
-+		pctlops = pctldev->desc->pctlops;
-+
-+		seq_printf(s, "device: %s function: %s (%u),",
-+			   pctldev_get_name(pmx->pctldev),
-+			   pmxops->get_function_name(pctldev, pmx->func_selector),
-+			   pmx->func_selector);
-+
-+		seq_printf(s, " groups: [");
-+		list_for_each_entry(grp, &pmx->groups, node) {
-+			seq_printf(s, " %s (%u)",
-+				   pctlops->get_group_name(pctldev, grp->group_selector),
-+				   grp->group_selector);
-+		}
-+		seq_printf(s, " ]");
-+
-+		seq_printf(s, " users: %u map-> %s\n",
-+			   pmx->usecount,
-+			   pmx->dev ? dev_name(pmx->dev) : "(system)");
-+	}
-+
-+	return 0;
-+}
-+
-+static int pinmux_maps_show(struct seq_file *s, void *what)
-+{
-+	int i;
-+
-+	seq_puts(s, "Pinmux maps:\n");
-+
-+	for (i = 0; i < pinmux_maps_num; i++) {
-+		struct pinmux_map const *map = &pinmux_maps[i];
-+
-+		seq_printf(s, "%s:\n", map->name);
-+		if (map->dev || map->dev_name)
-+			seq_printf(s, "  device: %s\n",
-+				   map->dev ? dev_name(map->dev) :
-+				   map->dev_name);
-+		else
-+			seq_printf(s, "  SYSTEM MUX\n");
-+		seq_printf(s, "  controlling device %s\n",
-+			   map->ctrl_dev ? dev_name(map->ctrl_dev) :
-+			   map->ctrl_dev_name);
-+		seq_printf(s, "  function: %s\n", map->function);
-+		seq_printf(s, "  group: %s\n", map->group ? map->group :
-+			   "(default)");
-+	}
-+	return 0;
-+}
-+
-+static int pinmux_functions_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, pinmux_functions_show, inode->i_private);
-+}
-+
-+static int pinmux_pins_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, pinmux_pins_show, inode->i_private);
-+}
-+
-+static int pinmux_hogs_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, pinmux_hogs_show, inode->i_private);
-+}
-+
-+static int pinmux_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, pinmux_show, NULL);
-+}
-+
-+static int pinmux_maps_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, pinmux_maps_show, NULL);
-+}
-+
-+static const struct file_operations pinmux_functions_ops = {
-+	.open		= pinmux_functions_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= single_release,
++static struct platform_driver u300_pmx_driver = {
++	.driver = {
++		.name = DRIVER_NAME,
++		.owner = THIS_MODULE,
++	},
++	.remove = __exit_p(u300_pmx_remove),
 +};
 +
-+static const struct file_operations pinmux_pins_ops = {
-+	.open		= pinmux_pins_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= single_release,
-+};
-+
-+static const struct file_operations pinmux_hogs_ops = {
-+	.open		= pinmux_hogs_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= single_release,
-+};
-+
-+static const struct file_operations pinmux_ops = {
-+	.open		= pinmux_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= single_release,
-+};
-+
-+static const struct file_operations pinmux_maps_ops = {
-+	.open		= pinmux_maps_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= single_release,
-+};
-+
-+void pinmux_init_device_debugfs(struct dentry *devroot,
-+			 struct pinctrl_dev *pctldev)
++static int __init u300_pmx_init(void)
 +{
-+	debugfs_create_file("pinmux-functions", S_IFREG | S_IRUGO,
-+			    devroot, pctldev, &pinmux_functions_ops);
-+	debugfs_create_file("pinmux-pins", S_IFREG | S_IRUGO,
-+			    devroot, pctldev, &pinmux_pins_ops);
-+	debugfs_create_file("pinmux-hogs", S_IFREG | S_IRUGO,
-+			    devroot, pctldev, &pinmux_hogs_ops);
++	return platform_driver_probe(&u300_pmx_driver, u300_pmx_probe);
 +}
++arch_initcall(u300_pmx_init);
 +
-+void pinmux_init_debugfs(struct dentry *subsys_root)
++static void __exit u300_pmx_exit(void)
 +{
-+	debugfs_create_file("pinmuxes", S_IFREG | S_IRUGO,
-+			    subsys_root, NULL, &pinmux_ops);
-+	debugfs_create_file("pinmux-maps", S_IFREG | S_IRUGO,
-+			    subsys_root, NULL, &pinmux_maps_ops);
++	platform_driver_unregister(&u300_pmx_driver);
 +}
++module_exit(u300_pmx_exit);
 +
-+#endif /* CONFIG_DEBUG_FS */
-diff --git a/drivers/pinctrl/pinmux.h b/drivers/pinctrl/pinmux.h
++MODULE_AUTHOR("Linus Walleij <linus.walleij@linaro.org>");
++MODULE_DESCRIPTION("U300 pin control driver");
++MODULE_LICENSE("GPL v2");
+diff --git a/drivers/pinctrl/pinmux-u300.h b/drivers/pinctrl/pinmux-u300.h
 new file mode 100644
-index 0000000..844500b
+index 0000000..490af79
 --- /dev/null
-+++ b/drivers/pinctrl/pinmux.h
-@@ -0,0 +1,47 @@
++++ b/drivers/pinctrl/pinmux-u300.h
+@@ -0,0 +1,141 @@
 +/*
-+ * Internal interface between the core pin control system and the
-+ * pinmux portions
-+ *
-+ * Copyright (C) 2011 ST-Ericsson SA
-+ * Written on behalf of Linaro for ST-Ericsson
-+ * Based on bits of regulator core, gpio core and clk core
-+ *
-+ * Author: Linus Walleij <linus.walleij@linaro.org>
-+ *
-+ * License terms: GNU General Public License (GPL) version 2
++ * Register definitions for the U300 Padmux control registers in the
++ * system controller
 + */
-+#ifdef CONFIG_PINMUX
 +
-+int pinmux_check_ops(const struct pinmux_ops *ops);
-+void pinmux_init_device_debugfs(struct dentry *devroot,
-+				struct pinctrl_dev *pctldev);
-+void pinmux_init_debugfs(struct dentry *subsys_root);
-+int pinmux_hog_maps(struct pinctrl_dev *pctldev);
-+void pinmux_unhog_maps(struct pinctrl_dev *pctldev);
-+
-+#else
-+
-+static inline int pinmux_check_ops(const struct pinmux_ops *ops)
-+{
-+	return 0;
-+}
-+
-+static inline void pinmux_init_device_debugfs(struct dentry *devroot,
-+					      struct pinctrl_dev *pctldev)
-+{
-+}
-+
-+static inline void pinmux_init_debugfs(struct dentry *subsys_root)
-+{
-+}
-+
-+static inline int pinmux_hog_maps(struct pinctrl_dev *pctldev)
-+{
-+	return 0;
-+}
-+
-+static inline void pinmux_unhog_maps(struct pinctrl_dev *pctldev)
-+{
-+}
-+
-+#endif
-diff --git a/include/linux/pinctrl/machine.h b/include/linux/pinctrl/machine.h
-new file mode 100644
-index 0000000..2cd4033
---- /dev/null
-+++ b/include/linux/pinctrl/machine.h
-@@ -0,0 +1,107 @@
-+/*
-+ * Machine interface for the pinctrl subsystem.
-+ *
-+ * Copyright (C) 2011 ST-Ericsson SA
-+ * Written on behalf of Linaro for ST-Ericsson
-+ * Based on bits of regulator core, gpio core and clk core
-+ *
-+ * Author: Linus Walleij <linus.walleij@linaro.org>
-+ *
-+ * License terms: GNU General Public License (GPL) version 2
-+ */
-+#ifndef __LINUX_PINMUX_MACHINE_H
-+#define __LINUX_PINMUX_MACHINE_H
-+
-+/**
-+ * struct pinmux_map - boards/machines shall provide this map for devices
-+ * @name: the name of this specific map entry for the particular machine.
-+ *	This is the second parameter passed to pinmux_get() when you want
-+ *	to have several mappings to the same device
-+ * @ctrl_dev: the pin control device to be used by this mapping, may be NULL
-+ *	if you provide .ctrl_dev_name instead (this is more common)
-+ * @ctrl_dev_name: the name of the device controlling this specific mapping,
-+ *	the name must be the same as in your struct device*, may be NULL if
-+ *	you provide .ctrl_dev instead
-+ * @function: a function in the driver to use for this mapping, the driver
-+ *	will lookup the function referenced by this ID on the specified
-+ *	pin control device
-+ * @group: sometimes a function can map to different pin groups, so this
-+ *	selects a certain specific pin group to activate for the function, if
-+ *	left as NULL, the first applicable group will be used
-+ * @dev: the device using this specific mapping, may be NULL if you provide
-+ *	.dev_name instead (this is more common)
-+ * @dev_name: the name of the device using this specific mapping, the name
-+ *	must be the same as in your struct device*, may be NULL if you
-+ *	provide .dev instead
-+ * @hog_on_boot: if this is set to true, the regulator subsystem will itself
-+ *	hog the mappings as the pinmux device drivers are attched, so this is
-+ *	typically used with system maps (mux mappings without an assigned
-+ *	device) that you want to get hogged and enabled by default as soon as
-+ *	a pinmux device supporting it is registered. These maps will not be
-+ *	disabled and put until the system shuts down.
-+ */
-+struct pinmux_map {
-+	const char *name;
-+	struct device *ctrl_dev;
-+	const char *ctrl_dev_name;
-+	const char *function;
-+	const char *group;
-+	struct device *dev;
-+	const char *dev_name;
-+	const bool hog_on_boot;
-+};
-+
-+/*
-+ * Convenience macro to set a simple map from a certain pin controller and a
-+ * certain function to a named device
-+ */
-+#define PINMUX_MAP(a, b, c, d) \
-+	{ .name = a, .ctrl_dev_name = b, .function = c, .dev_name = d }
-+
-+/*
-+ * Convenience macro to map a system function onto a certain pinctrl device.
-+ * System functions are not assigned to a particular device.
-+ */
-+#define PINMUX_MAP_SYS(a, b, c) \
-+	{ .name = a, .ctrl_dev_name = b, .function = c }
-+
-+/*
-+ * Convenience macro to map a function onto the primary device pinctrl device
-+ * this is especially helpful on systems that have only one pin controller
-+ * or need to set up a lot of mappings on the primary controller.
-+ */
-+#define PINMUX_MAP_PRIMARY(a, b, c) \
-+	{ .name = a, .ctrl_dev_name = "pinctrl.0", .function = b, \
-+	  .dev_name = c }
-+
-+/*
-+ * Convenience macro to map a system function onto the primary pinctrl device.
-+ * System functions are not assigned to a particular device.
-+ */
-+#define PINMUX_MAP_PRIMARY_SYS(a, b) \
-+	{ .name = a, .ctrl_dev_name = "pinctrl.0", .function = b }
-+
-+/*
-+ * Convenience macro to map a system function onto the primary pinctrl device,
-+ * to be hogged by the pinmux core until the system shuts down.
-+ */
-+#define PINMUX_MAP_PRIMARY_SYS_HOG(a, b) \
-+	{ .name = a, .ctrl_dev_name = "pinctrl.0", .function = b, \
-+	  .hog_on_boot = true }
-+
-+
-+#ifdef CONFIG_PINMUX
-+
-+extern int pinmux_register_mappings(struct pinmux_map const *map,
-+				unsigned num_maps);
-+
-+#else
-+
-+static inline int pinmux_register_mappings(struct pinmux_map const *map,
-+					   unsigned num_maps)
-+{
-+	return 0;
-+}
-+
-+#endif /* !CONFIG_PINCTRL */
-+#endif
-diff --git a/include/linux/pinctrl/pinctrl.h b/include/linux/pinctrl/pinctrl.h
-new file mode 100644
-index 0000000..1e6f67e
---- /dev/null
-+++ b/include/linux/pinctrl/pinctrl.h
-@@ -0,0 +1,133 @@
-+/*
-+ * Interface the pinctrl subsystem
-+ *
-+ * Copyright (C) 2011 ST-Ericsson SA
-+ * Written on behalf of Linaro for ST-Ericsson
-+ * This interface is used in the core to keep track of pins.
-+ *
-+ * Author: Linus Walleij <linus.walleij@linaro.org>
-+ *
-+ * License terms: GNU General Public License (GPL) version 2
-+ */
-+#ifndef __LINUX_PINCTRL_PINCTRL_H
-+#define __LINUX_PINCTRL_PINCTRL_H
-+
-+#ifdef CONFIG_PINCTRL
-+
-+#include <linux/radix-tree.h>
-+#include <linux/spinlock.h>
-+#include <linux/list.h>
-+#include <linux/seq_file.h>
-+
-+struct pinctrl_dev;
-+struct pinmux_ops;
-+struct gpio_chip;
-+
-+/**
-+ * struct pinctrl_pin_desc - boards/machines provide information on their
-+ * pins, pads or other muxable units in this struct
-+ * @number: unique pin number from the global pin number space
-+ * @name: a name for this pin
-+ */
-+struct pinctrl_pin_desc {
-+	unsigned number;
-+	const char *name;
-+};
-+
-+/* Convenience macro to define a single named or anonymous pin descriptor */
-+#define PINCTRL_PIN(a, b) { .number = a, .name = b }
-+#define PINCTRL_PIN_ANON(a) { .number = a }
-+
-+/**
-+ * struct pinctrl_gpio_range - each pin controller can provide subranges of
-+ * the GPIO number space to be handled by the controller
-+ * @node: list node for internal use
-+ * @name: a name for the chip in this range
-+ * @id: an ID number for the chip in this range
-+ * @base: base offset of the GPIO range
-+ * @npins: number of pins in the GPIO range, including the base number
-+ * @gc: an optional pointer to a gpio_chip
-+ */
-+struct pinctrl_gpio_range {
-+	struct list_head node;
-+	const char *name;
-+	unsigned int id;
-+	unsigned int base;
-+	unsigned int npins;
-+	struct gpio_chip *gc;
-+};
-+
-+/**
-+ * struct pinctrl_ops - global pin control operations, to be implemented by
-+ * pin controller drivers.
-+ * @list_groups: list the number of selectable named groups available
-+ *	in this pinmux driver, the core will begin on 0 and call this
-+ *	repeatedly as long as it returns >= 0 to enumerate the groups
-+ * @get_group_name: return the group name of the pin group
-+ * @get_group_pins: return an array of pins corresponding to a certain
-+ *	group selector @pins, and the size of the array in @num_pins
-+ * @pin_dbg_show: optional debugfs display hook that will provide per-device
-+ *	info for a certain pin in debugfs
-+ */
-+struct pinctrl_ops {
-+	int (*list_groups) (struct pinctrl_dev *pctldev, unsigned selector);
-+	const char *(*get_group_name) (struct pinctrl_dev *pctldev,
-+				       unsigned selector);
-+	int (*get_group_pins) (struct pinctrl_dev *pctldev,
-+			       unsigned selector,
-+			       unsigned ** const pins,
-+			       unsigned * const num_pins);
-+	void (*pin_dbg_show) (struct pinctrl_dev *pctldev, struct seq_file *s,
-+			  unsigned offset);
-+};
-+
-+/**
-+ * struct pinctrl_desc - pin controller descriptor, register this to pin
-+ * control subsystem
-+ * @name: name for the pin controller
-+ * @pins: an array of pin descriptors describing all the pins handled by
-+ *	this pin controller
-+ * @npins: number of descriptors in the array, usually just ARRAY_SIZE()
-+ *	of the pins field above
-+ * @maxpin: since pin spaces may be sparse, there can he "holes" in the
-+ *	pin range, this attribute gives the maximum pin number in the
-+ *	total range. This should not be lower than npins for example,
-+ *	but may be equal to npins if you have no holes in the pin range.
-+ * @pctlops: pin control operation vtable, to support global concepts like
-+ *	grouping of pins, this is optional.
-+ * @pmxops: pinmux operation vtable, if you support pinmuxing in your driver
-+ * @owner: module providing the pin controller, used for refcounting
-+ */
-+struct pinctrl_desc {
-+	const char *name;
-+	struct pinctrl_pin_desc const *pins;
-+	unsigned int npins;
-+	unsigned int maxpin;
-+	struct pinctrl_ops *pctlops;
-+	struct pinmux_ops *pmxops;
-+	struct module *owner;
-+};
-+
-+/* External interface to pin controller */
-+extern struct pinctrl_dev *pinctrl_register(struct pinctrl_desc *pctldesc,
-+				struct device *dev, void *driver_data);
-+extern void pinctrl_unregister(struct pinctrl_dev *pctldev);
-+extern bool pin_is_valid(struct pinctrl_dev *pctldev, int pin);
-+extern void pinctrl_add_gpio_range(struct pinctrl_dev *pctldev,
-+				struct pinctrl_gpio_range *range);
-+extern void pinctrl_remove_gpio_range(struct pinctrl_dev *pctldev,
-+				struct pinctrl_gpio_range *range);
-+extern const char *pctldev_get_name(struct pinctrl_dev *pctldev);
-+extern void *pctldev_get_drvdata(struct pinctrl_dev *pctldev);
-+#else
-+
-+
-+/* Sufficiently stupid default function when pinctrl is not in use */
-+static inline bool pin_is_valid(struct pinctrl_dev *pctldev, int pin)
-+{
-+	return pin >= 0;
-+}
-+
-+#endif /* !CONFIG_PINCTRL */
-+
-+#endif /* __LINUX_PINCTRL_PINCTRL_H */
-diff --git a/include/linux/pinctrl/pinmux.h b/include/linux/pinctrl/pinmux.h
-new file mode 100644
-index 0000000..b5c2fed
---- /dev/null
-+++ b/include/linux/pinctrl/pinmux.h
-@@ -0,0 +1,124 @@
-+/*
-+ * Interface the pinmux subsystem
-+ *
-+ * Copyright (C) 2011 ST-Ericsson SA
-+ * Written on behalf of Linaro for ST-Ericsson
-+ * Based on bits of regulator core, gpio core and clk core
-+ *
-+ * Author: Linus Walleij <linus.walleij@linaro.org>
-+ *
-+ * License terms: GNU General Public License (GPL) version 2
-+ */
-+#ifndef __LINUX_PINCTRL_PINMUX_H
-+#define __LINUX_PINCTRL_PINMUX_H
-+
-+#include <linux/list.h>
-+#include <linux/seq_file.h>
-+#include "pinctrl.h"
-+
-+/* This struct is private to the core and should be regarded as a cookie */
-+struct pinmux;
-+
-+#ifdef CONFIG_PINMUX
-+
-+struct pinctrl_dev;
-+
-+/**
-+ * struct pinmux_ops - pinmux operations, to be implemented by pin controller
-+ * drivers that support pinmuxing
-+ * @request: called by the core to see if a certain pin can be made available
-+ *	available for muxing. This is called by the core to acquire the pins
-+ *	before selecting any actual mux setting across a function. The driver
-+ *	is allowed to answer "no" by returning a negative error code
-+ * @free: the reverse function of the request() callback, frees a pin after
-+ *	being requested
-+ * @list_functions: list the number of selectable named functions available
-+ *	in this pinmux driver, the core will begin on 0 and call this
-+ *	repeatedly as long as it returns >= 0 to enumerate mux settings
-+ * @get_function_name: return the function name of the muxing selector,
-+ *	called by the core to figure out which mux setting it shall map a
-+ *	certain device to
-+ * @get_function_groups: return an array of groups names (in turn
-+ *	referencing pins) connected to a certain function selector. The group
-+ *	name can be used with the generic @pinctrl_ops to retrieve the
-+ *	actual pins affected. The applicable groups will be returned in
-+ *	@groups and the number of groups in @num_groups
-+ * @enable: enable a certain muxing function with a certain pin group. The
-+ *	driver does not need to figure out whether enabling this function
-+ *	conflicts some other use of the pins in that group, such collisions
-+ *	are handled by the pinmux subsystem. The @func_selector selects a
-+ *	certain function whereas @group_selector selects a certain set of pins
-+ *	to be used. On simple controllers the latter argument may be ignored
-+ * @disable: disable a certain muxing selector with a certain pin group
-+ * @gpio_request_enable: requests and enables GPIO on a certain pin.
-+ *	Implement this only if you can mux every pin individually as GPIO. The
-+ *	affected GPIO range is passed along with an offset into that
-+ *	specific GPIO range - function selectors and pin groups are orthogonal
-+ *	to this, the core will however make sure the pins do not collide
-+ */
-+struct pinmux_ops {
-+	int (*request) (struct pinctrl_dev *pctldev, unsigned offset);
-+	int (*free) (struct pinctrl_dev *pctldev, unsigned offset);
-+	int (*list_functions) (struct pinctrl_dev *pctldev, unsigned selector);
-+	const char *(*get_function_name) (struct pinctrl_dev *pctldev,
-+					  unsigned selector);
-+	int (*get_function_groups) (struct pinctrl_dev *pctldev,
-+				  unsigned selector,
-+				  const char * const **groups,
-+				  unsigned * const num_groups);
-+	int (*enable) (struct pinctrl_dev *pctldev, unsigned func_selector,
-+		       unsigned group_selector);
-+	void (*disable) (struct pinctrl_dev *pctldev, unsigned func_selector,
-+			 unsigned group_selector);
-+	int (*gpio_request_enable) (struct pinctrl_dev *pctldev,
-+				    struct pinctrl_gpio_range *range,
-+				    unsigned offset);
-+};
-+
-+/* External interface to pinmux */
-+extern int pinmux_request_gpio(unsigned gpio);
-+extern void pinmux_free_gpio(unsigned gpio);
-+extern struct pinmux * __must_check pinmux_get(struct device *dev, const char *name);
-+extern void pinmux_put(struct pinmux *pmx);
-+extern int pinmux_enable(struct pinmux *pmx);
-+extern void pinmux_disable(struct pinmux *pmx);
-+extern int pinmux_config(struct pinmux *pmx, u16 param, unsigned long *data);
-+
-+#else /* !CONFIG_PINMUX */
-+
-+static inline int pinmux_request_gpio(unsigned gpio)
-+{
-+	return 0;
-+}
-+
-+static inline void pinmux_free_gpio(unsigned gpio)
-+{
-+}
-+
-+static inline struct pinmux * __must_check pinmux_get(struct device *dev, const char *name)
-+{
-+	return NULL;
-+}
-+
-+static inline void pinmux_put(struct pinmux *pmx)
-+{
-+}
-+
-+static inline int pinmux_enable(struct pinmux *pmx)
-+{
-+	return 0;
-+}
-+
-+static inline void pinmux_disable(struct pinmux *pmx)
-+{
-+}
-+
-+static inline int pinmux_config(struct pinmux *pmx, u16 param,
-+				unsigned long *data)
-+{
-+	return 0;
-+}
-+
-+#endif /* CONFIG_PINMUX */
-+
-+#endif /* __LINUX_PINCTRL_PINMUX_H */
++/* PAD MUX Control register 1 (LOW) 16bit (R/W) */
++#define U300_SYSCON_PMC1LR					0x007C
++#define U300_SYSCON_PMC1LR_MASK					0xFFFF
++#define U300_SYSCON_PMC1LR_CDI_MASK				0xC000
++#define U300_SYSCON_PMC1LR_CDI_CDI				0x0000
++#define U300_SYSCON_PMC1LR_CDI_EMIF				0x4000
++/* For BS335 */
++#define U300_SYSCON_PMC1LR_CDI_CDI2				0x8000
++#define U300_SYSCON_PMC1LR_CDI_WCDMA_APP_GPIO			0xC000
++/* For BS365 */
++#define U300_SYSCON_PMC1LR_CDI_GPIO				0x8000
++#define U300_SYSCON_PMC1LR_CDI_WCDMA				0xC000
++/* Common defs */
++#define U300_SYSCON_PMC1LR_PDI_MASK				0x3000
++#define U300_SYSCON_PMC1LR_PDI_PDI				0x0000
++#define U300_SYSCON_PMC1LR_PDI_EGG				0x1000
++#define U300_SYSCON_PMC1LR_PDI_WCDMA				0x3000
++#define U300_SYSCON_PMC1LR_MMCSD_MASK				0x0C00
++#define U300_SYSCON_PMC1LR_MMCSD_MMCSD				0x0000
++#define U300_SYSCON_PMC1LR_MMCSD_MSPRO				0x0400
++#define U300_SYSCON_PMC1LR_MMCSD_DSP				0x0800
++#define U300_SYSCON_PMC1LR_MMCSD_WCDMA				0x0C00
++#define U300_SYSCON_PMC1LR_ETM_MASK				0x0300
++#define U300_SYSCON_PMC1LR_ETM_ACC				0x0000
++#define U300_SYSCON_PMC1LR_ETM_APP				0x0100
++#define U300_SYSCON_PMC1LR_EMIF_1_CS2_MASK			0x00C0
++#define U300_SYSCON_PMC1LR_EMIF_1_CS2_STATIC			0x0000
++#define U300_SYSCON_PMC1LR_EMIF_1_CS2_NFIF			0x0040
++#define U300_SYSCON_PMC1LR_EMIF_1_CS2_SDRAM			0x0080
++#define U300_SYSCON_PMC1LR_EMIF_1_CS2_STATIC_2GB		0x00C0
++#define U300_SYSCON_PMC1LR_EMIF_1_CS1_MASK			0x0030
++#define U300_SYSCON_PMC1LR_EMIF_1_CS1_STATIC			0x0000
++#define U300_SYSCON_PMC1LR_EMIF_1_CS1_NFIF			0x0010
++#define U300_SYSCON_PMC1LR_EMIF_1_CS1_SDRAM			0x0020
++#define U300_SYSCON_PMC1LR_EMIF_1_CS1_SEMI			0x0030
++#define U300_SYSCON_PMC1LR_EMIF_1_CS0_MASK			0x000C
++#define U300_SYSCON_PMC1LR_EMIF_1_CS0_STATIC			0x0000
++#define U300_SYSCON_PMC1LR_EMIF_1_CS0_NFIF			0x0004
++#define U300_SYSCON_PMC1LR_EMIF_1_CS0_SDRAM			0x0008
++#define U300_SYSCON_PMC1LR_EMIF_1_CS0_SEMI			0x000C
++#define U300_SYSCON_PMC1LR_EMIF_1_MASK				0x0003
++#define U300_SYSCON_PMC1LR_EMIF_1_STATIC			0x0000
++#define U300_SYSCON_PMC1LR_EMIF_1_SDRAM0			0x0001
++#define U300_SYSCON_PMC1LR_EMIF_1_SDRAM1			0x0002
++#define U300_SYSCON_PMC1LR_EMIF_1				0x0003
++/* PAD MUX Control register 2 (HIGH) 16bit (R/W) */
++#define U300_SYSCON_PMC1HR					0x007E
++#define U300_SYSCON_PMC1HR_MASK					0xFFFF
++#define U300_SYSCON_PMC1HR_MISC_2_MASK				0xC000
++#define U300_SYSCON_PMC1HR_MISC_2_APP_GPIO			0x0000
++#define U300_SYSCON_PMC1HR_MISC_2_MSPRO				0x4000
++#define U300_SYSCON_PMC1HR_MISC_2_DSP				0x8000
++#define U300_SYSCON_PMC1HR_MISC_2_AAIF				0xC000
++#define U300_SYSCON_PMC1HR_APP_GPIO_2_MASK			0x3000
++#define U300_SYSCON_PMC1HR_APP_GPIO_2_APP_GPIO			0x0000
++#define U300_SYSCON_PMC1HR_APP_GPIO_2_NFIF			0x1000
++#define U300_SYSCON_PMC1HR_APP_GPIO_2_DSP			0x2000
++#define U300_SYSCON_PMC1HR_APP_GPIO_2_AAIF			0x3000
++#define U300_SYSCON_PMC1HR_APP_GPIO_1_MASK			0x0C00
++#define U300_SYSCON_PMC1HR_APP_GPIO_1_APP_GPIO			0x0000
++#define U300_SYSCON_PMC1HR_APP_GPIO_1_MMC			0x0400
++#define U300_SYSCON_PMC1HR_APP_GPIO_1_DSP			0x0800
++#define U300_SYSCON_PMC1HR_APP_GPIO_1_AAIF			0x0C00
++#define U300_SYSCON_PMC1HR_APP_SPI_CS_2_MASK			0x0300
++#define U300_SYSCON_PMC1HR_APP_SPI_CS_2_APP_GPIO		0x0000
++#define U300_SYSCON_PMC1HR_APP_SPI_CS_2_SPI			0x0100
++#define U300_SYSCON_PMC1HR_APP_SPI_CS_2_AAIF			0x0300
++#define U300_SYSCON_PMC1HR_APP_SPI_CS_1_MASK			0x00C0
++#define U300_SYSCON_PMC1HR_APP_SPI_CS_1_APP_GPIO		0x0000
++#define U300_SYSCON_PMC1HR_APP_SPI_CS_1_SPI			0x0040
++#define U300_SYSCON_PMC1HR_APP_SPI_CS_1_AAIF			0x00C0
++#define U300_SYSCON_PMC1HR_APP_SPI_2_MASK			0x0030
++#define U300_SYSCON_PMC1HR_APP_SPI_2_APP_GPIO			0x0000
++#define U300_SYSCON_PMC1HR_APP_SPI_2_SPI			0x0010
++#define U300_SYSCON_PMC1HR_APP_SPI_2_DSP			0x0020
++#define U300_SYSCON_PMC1HR_APP_SPI_2_AAIF			0x0030
++#define U300_SYSCON_PMC1HR_APP_UART0_2_MASK			0x000C
++#define U300_SYSCON_PMC1HR_APP_UART0_2_APP_GPIO			0x0000
++#define U300_SYSCON_PMC1HR_APP_UART0_2_UART0			0x0004
++#define U300_SYSCON_PMC1HR_APP_UART0_2_NFIF_CS			0x0008
++#define U300_SYSCON_PMC1HR_APP_UART0_2_AAIF			0x000C
++#define U300_SYSCON_PMC1HR_APP_UART0_1_MASK			0x0003
++#define U300_SYSCON_PMC1HR_APP_UART0_1_APP_GPIO			0x0000
++#define U300_SYSCON_PMC1HR_APP_UART0_1_UART0			0x0001
++#define U300_SYSCON_PMC1HR_APP_UART0_1_AAIF			0x0003
++/* Padmux 2 control */
++#define U300_SYSCON_PMC2R					0x100
++#define U300_SYSCON_PMC2R_APP_MISC_0_MASK			0x00C0
++#define U300_SYSCON_PMC2R_APP_MISC_0_APP_GPIO			0x0000
++#define U300_SYSCON_PMC2R_APP_MISC_0_EMIF_SDRAM			0x0040
++#define U300_SYSCON_PMC2R_APP_MISC_0_MMC			0x0080
++#define U300_SYSCON_PMC2R_APP_MISC_0_CDI2			0x00C0
++#define U300_SYSCON_PMC2R_APP_MISC_1_MASK			0x0300
++#define U300_SYSCON_PMC2R_APP_MISC_1_APP_GPIO			0x0000
++#define U300_SYSCON_PMC2R_APP_MISC_1_EMIF_SDRAM			0x0100
++#define U300_SYSCON_PMC2R_APP_MISC_1_MMC			0x0200
++#define U300_SYSCON_PMC2R_APP_MISC_1_CDI2			0x0300
++#define U300_SYSCON_PMC2R_APP_MISC_2_MASK			0x0C00
++#define U300_SYSCON_PMC2R_APP_MISC_2_APP_GPIO			0x0000
++#define U300_SYSCON_PMC2R_APP_MISC_2_EMIF_SDRAM			0x0400
++#define U300_SYSCON_PMC2R_APP_MISC_2_MMC			0x0800
++#define U300_SYSCON_PMC2R_APP_MISC_2_CDI2			0x0C00
++#define U300_SYSCON_PMC2R_APP_MISC_3_MASK			0x3000
++#define U300_SYSCON_PMC2R_APP_MISC_3_APP_GPIO			0x0000
++#define U300_SYSCON_PMC2R_APP_MISC_3_EMIF_SDRAM			0x1000
++#define U300_SYSCON_PMC2R_APP_MISC_3_MMC			0x2000
++#define U300_SYSCON_PMC2R_APP_MISC_3_CDI2			0x3000
++#define U300_SYSCON_PMC2R_APP_MISC_4_MASK			0xC000
++#define U300_SYSCON_PMC2R_APP_MISC_4_APP_GPIO			0x0000
++#define U300_SYSCON_PMC2R_APP_MISC_4_EMIF_SDRAM			0x4000
++#define U300_SYSCON_PMC2R_APP_MISC_4_MMC			0x8000
++#define U300_SYSCON_PMC2R_APP_MISC_4_ACC_GPIO			0xC000
++/* TODO: More SYSCON registers missing */
++#define U300_SYSCON_PMC3R					0x10C
++#define U300_SYSCON_PMC3R_APP_MISC_11_MASK			0xC000
++#define U300_SYSCON_PMC3R_APP_MISC_11_SPI			0x4000
++#define U300_SYSCON_PMC3R_APP_MISC_10_MASK			0x3000
++#define U300_SYSCON_PMC3R_APP_MISC_10_SPI			0x1000
++/* TODO: Missing other configs */
++#define U300_SYSCON_PMC4R					0x168
++#define U300_SYSCON_PMC4R_APP_MISC_12_MASK			0x0003
++#define U300_SYSCON_PMC4R_APP_MISC_12_APP_GPIO			0x0000
++#define U300_SYSCON_PMC4R_APP_MISC_13_MASK			0x000C
++#define U300_SYSCON_PMC4R_APP_MISC_13_CDI			0x0000
++#define U300_SYSCON_PMC4R_APP_MISC_13_SMIA			0x0004
++#define U300_SYSCON_PMC4R_APP_MISC_13_SMIA2			0x0008
++#define U300_SYSCON_PMC4R_APP_MISC_13_APP_GPIO			0x000C
++#define U300_SYSCON_PMC4R_APP_MISC_14_MASK			0x0030
++#define U300_SYSCON_PMC4R_APP_MISC_14_CDI			0x0000
++#define U300_SYSCON_PMC4R_APP_MISC_14_SMIA			0x0010
++#define U300_SYSCON_PMC4R_APP_MISC_14_CDI2			0x0020
++#define U300_SYSCON_PMC4R_APP_MISC_14_APP_GPIO			0x0030
++#define U300_SYSCON_PMC4R_APP_MISC_16_MASK			0x0300
++#define U300_SYSCON_PMC4R_APP_MISC_16_APP_GPIO_13		0x0000
++#define U300_SYSCON_PMC4R_APP_MISC_16_APP_UART1_CTS		0x0100
++#define U300_SYSCON_PMC4R_APP_MISC_16_EMIF_1_STATIC_CS5_N	0x0200
 -- 
 1.7.3.2
 
