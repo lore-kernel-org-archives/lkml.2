@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753563Ab1IPGRv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 02:17:51 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:49551 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753439Ab1IPGRs (ORCPT
+	id S1753695Ab1IPGSA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 02:18:00 -0400
+Received: from mail-gw0-f42.google.com ([74.125.83.42]:64847 "EHLO
+	mail-gw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753588Ab1IPGR5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 02:17:48 -0400
+	Fri, 16 Sep 2011 02:17:57 -0400
 From: "Leonid V. Fedorenchik" <leonidsbox@gmail.com>
 To: Greg Kroah-Hartman <gregkh@suse.de>
 Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
         Hans Verkuil <hverkuil@xs4all.nl>, Joe Perches <joe@perches.com>,
         devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
         "Leonid V. Fedorenchik" <leonidsbox@gmail.com>
-Subject: [PATCH 19/44] Staging: cx25821: Change indent with spaces to tabs 15
-Date: Fri, 16 Sep 2011 14:14:52 +0800
-Message-Id: <1316153717-7272-20-git-send-email-leonidsbox@gmail.com>
+Subject: [PATCH 21/44] Staging: cx25821: Change indent with spaces to tabs 17
+Date: Fri, 16 Sep 2011 14:14:54 +0800
+Message-Id: <1316153717-7272-22-git-send-email-leonidsbox@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1316153717-7272-1-git-send-email-leonidsbox@gmail.com>
 References: <1316153717-7272-1-git-send-email-leonidsbox@gmail.com>
@@ -27,44 +27,42 @@ Change indent with spaces to tabs.
 
 Signed-off-by: Leonid V. Fedorenchik <leonidsbox@gmail.com>
 ---
- drivers/staging/cx25821/cx25821-video.c |   20 ++++++++++----------
- 1 files changed, 10 insertions(+), 10 deletions(-)
+ drivers/staging/cx25821/cx25821-video.c |   22 +++++++++++-----------
+ 1 files changed, 11 insertions(+), 11 deletions(-)
 
 diff --git a/drivers/staging/cx25821/cx25821-video.c b/drivers/staging/cx25821/cx25821-video.c
-index 75bc44e..83872c8 100644
+index e27b224..1815c30 100644
 --- a/drivers/staging/cx25821/cx25821-video.c
 +++ b/drivers/staging/cx25821/cx25821-video.c
-@@ -949,20 +949,20 @@ static int video_release(struct file *file)
- 
- static int vidioc_streamon(struct file *file, void *priv, enum v4l2_buf_type i)
+@@ -987,18 +987,18 @@ static int vidioc_streamoff(struct file *file, void *priv, enum v4l2_buf_type i)
+ static int vidioc_s_fmt_vid_cap(struct file *file, void *priv,
+ 				struct v4l2_format *f)
  {
 -       struct cx25821_fh *fh = priv;
--       struct cx25821_dev *dev = fh->dev;
+-       struct cx25821_dev *dev = ((struct cx25821_fh *)priv)->dev;
 +	struct cx25821_fh *fh = priv;
-+	struct cx25821_dev *dev = fh->dev;
++	struct cx25821_dev *dev = ((struct cx25821_fh *)priv)->dev;
+ 	struct v4l2_mbus_framefmt mbus_fmt;
+-       int err;
+-       int pix_format = PIXEL_FRMT_422;
++	int err;
++	int pix_format = PIXEL_FRMT_422;
  
--       if (unlikely(fh->type != V4L2_BUF_TYPE_VIDEO_CAPTURE))
--	       return -EINVAL;
-+	if (unlikely(fh->type != V4L2_BUF_TYPE_VIDEO_CAPTURE))
-+		return -EINVAL;
+-       if (fh) {
+-	       err = v4l2_prio_check(&dev->channels[fh->channel_id]
+-					       .prio, fh->prio);
+-	       if (0 != err)
+-		       return err;
+-       }
++	if (fh) {
++		err = v4l2_prio_check(&dev->channels[fh->channel_id].prio,
++				      fh->prio);
++		if (0 != err)
++			return err;
++	}
  
--       if (unlikely(i != fh->type))
--	       return -EINVAL;
-+	if (unlikely(i != fh->type))
-+		return -EINVAL;
- 
--       if (unlikely(!cx25821_res_get(dev, fh,
--		       cx25821_get_resource(fh, RESOURCE_VIDEO0))))
--	       return -EBUSY;
-+	if (unlikely(!cx25821_res_get(dev, fh, cx25821_get_resource(fh,
-+						RESOURCE_VIDEO0))))
-+		return -EBUSY;
- 
--       return videobuf_streamon(get_queue(fh));
-+	return videobuf_streamon(get_queue(fh));
- }
- 
- static int vidioc_streamoff(struct file *file, void *priv, enum v4l2_buf_type i)
+        dprintk(2, "%s()\n", __func__);
+        err = cx25821_vidioc_try_fmt_vid_cap(file, priv, f);
 -- 
 1.7.0.4
 
