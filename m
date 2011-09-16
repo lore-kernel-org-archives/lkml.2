@@ -1,74 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755398Ab1IPSIM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 14:08:12 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:52579 "EHLO
+	id S1755492Ab1IPSIR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 14:08:17 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:34611 "EHLO
 	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753796Ab1IPSIL (ORCPT
+	by vger.kernel.org with ESMTP id S1753796Ab1IPSIO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 14:08:11 -0400
-X-Sasl-enc: XCAsfsc9VQ7GDWum1UHImKmvpgL+CfXoW95fsvE4cPPq 1316196490
-Date: Fri, 16 Sep 2011 19:55:52 +0200
+	Fri, 16 Sep 2011 14:08:14 -0400
+X-Sasl-enc: KPVdvnCtWydGt15QPE8fe4Dz+aQPfejxoNvtYAxrYpte 1316196493
+Date: Fri, 16 Sep 2011 20:03:11 +0200
 From: Greg KH <greg@kroah.com>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-mm@kvack.org,
-        ngupta@vflare.org, linux-kernel@vger.kernel.org,
-        francis.moro@gmail.com, Seth Jennings <sjenning@linux.vnet.ibm.com>
-Subject: Re: [PATCH] staging: zcache: fix cleancache crash
-Message-ID: <20110916175552.GA25405@kroah.com>
-References: <a7d17e7e-c6a1-448e-b60f-b79a4ae0c3ba@default>
- <8cb0f464-7e39-4294-9f98-c4c5a66110ba@default>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, Haiyang Zhang <haiyangz@microsoft.com>
+Subject: Re: [PATCH 06/20] Staging: hv: util: Properly handle util services
+ in the util driver
+Message-ID: <20110916180311.GB25531@kroah.com>
+References: <1315936759-20623-1-git-send-email-kys@microsoft.com>
+ <1315936796-20662-1-git-send-email-kys@microsoft.com>
+ <1315936796-20662-6-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <8cb0f464-7e39-4294-9f98-c4c5a66110ba@default>
+In-Reply-To: <1315936796-20662-6-git-send-email-kys@microsoft.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 15, 2011 at 07:16:10AM -0700, Dan Magenheimer wrote:
-> > From: Dan Magenheimer
-> > Sent: Tuesday, September 13, 2011 2:56 PM
-> > To: Seth Jennings; gregkh@suse.de
-> > Cc: devel@driverdev.osuosl.org; linux-mm@kvack.org; ngupta@vflare.org; linux-kernel@vger.kernel.org;
-> > francis.moro@gmail.com
-> > Subject: RE: [PATCH] staging: zcache: fix cleancache crash
-> > 
-> > > From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
-> > > Sent: Tuesday, September 13, 2011 1:19 PM
-> > > To: gregkh@suse.de
-> > > Cc: devel@driverdev.osuosl.org; linux-mm@kvack.org; ngupta@vflare.org; linux-kernel@vger.kernel.org;
-> > > francis.moro@gmail.com; Dan Magenheimer; Seth Jennings
-> > > Subject: [PATCH] staging: zcache: fix cleancache crash
-> > >
-> > > After commit, c5f5c4db, cleancache crashes on the first
-> > > successful get. This was caused by a remaining virt_to_page()
-> > > call in zcache_pampd_get_data_and_free() that only gets
-> > > run in the cleancache path.
-> > >
-> > > The patch converts the virt_to_page() to struct page
-> > > casting like was done for other instances in c5f5c4db.
-> > >
-> > > Based on 3.1-rc4
-> > >
-> > > Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-> > 
-> > Yep, this appears to fix it!  Hopefully Francis can confirm.
-> > 
-> > Greg, ideally apply this additional fix rather than do the revert
-> > of the original patch suggested in https://lkml.org/lkml/2011/9/13/234
-> > 
-> > Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-> 
-> 
-> Greg, Francis has confirmed offlist that Seth's fix below
-> has fixed his issue as well.  Please apply, hopefully as
-> soon as possible and before 3.1 goes final!
+On Tue, Sep 13, 2011 at 10:59:42AM -0700, K. Y. Srinivasan wrote:
+>  static int __init init_hyperv_utils(void)
+>  {
+> -	int ret;
+>  	pr_info("Registering HyperV Utility Driver\n");
 
-Due to the loss of kernel.org, it might miss it, but don't worry, that's
-what stable kernel releases are for :)
-
-thanks,
+All of these "registering" and "unregistering" messages should be
+removed, they do nothing but clutter up the logs and are pointless.  You
+can find this information out any time you want by looking in sysfs
+instead of trying to parse random strings out of the kernel log.
 
 greg k-h
