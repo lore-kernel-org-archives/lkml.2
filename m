@@ -1,84 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754800Ab1IPIim (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 04:38:42 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:45319 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754546Ab1IPIil convert rfc822-to-8bit (ORCPT
+	id S1754906Ab1IPIkB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 04:40:01 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:33147 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754781Ab1IPIj7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 04:38:41 -0400
-Subject: Re: [PATCH] cfs: remove unused 'if' condition checking
-From: Peter Zijlstra <peterz@infradead.org>
-To: Wang Xingchao <xingchao.wang@intel.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, yong.zhang0@gmail.com,
-        Paul Turner <pjt@google.com>
-Date: Fri, 16 Sep 2011 10:38:32 +0200
-In-Reply-To: <1316194552-12019-1-git-send-email-xingchao.wang@intel.com>
-References: <1316194552-12019-1-git-send-email-xingchao.wang@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1316162312.10174.2.camel@twins>
+	Fri, 16 Sep 2011 04:39:59 -0400
+Date: Fri, 16 Sep 2011 18:39:48 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Uwe =?UTF-8?B?S2xlaW5lLUvDtm5pZw==?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Jander <david@protonic.nl>
+Subject: Re: linux-next: build failure after merge of the mfd tree
+Message-Id: <20110916183948.592834d36dfa9871b994fb74@canb.auug.org.au>
+In-Reply-To: <20110916071638.GJ11297@pengutronix.de>
+References: <20110916135523.01ec57f699192230272e99e3@canb.auug.org.au>
+	<20110916071638.GJ11297@pengutronix.de>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__16_Sep_2011_18_39_48_+1000_Vx=.WIOgQHqAPexp"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks, queued it as:
+--Signature=_Fri__16_Sep_2011_18_39_48_+1000_Vx=.WIOgQHqAPexp
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
----
-Subject: sched: Remove redundant test in check_preempt_tick()
-From: Wang Xingchao <xingchao.wang@intel.com>
-Date: Fri, 16 Sep 2011 13:35:52 -0400
+Hi Uwe,
 
-The caller already checks for nr_running > 1, therefore we don't have
-to do so again.
+On Fri, 16 Sep 2011 09:16:38 +0200 Uwe Kleine-K=C3=B6nig <u.kleine-koenig@p=
+engutronix.de> wrote:
+>
+> > Presumably caused by commit 747c98a3660d ("leds: Convert mc13783 driver
+> > to mc13xxx MFD").
+> >=20
+> > I have used the mfd tree from next-20110915 for today.
+> I'd look into the issue, but I don't have 747c98a3660d and I don't know
+> where to get it from. IMHO it would be great if you could push your next
+> tree somewhere.
 
-Signed-off-by: Wang Xingchao <xingchao.wang@intel.com>
-Reviewed-by: Paul Turner <pjt@google.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1316194552-12019-1-git-send-email-xingchao.wang@intel.com
----
- kernel/sched_fair.c |   16 ++++++++--------
- 1 files changed, 8 insertions(+), 8 deletions(-)
+Well, you can get it from the mfd tree (branch for-next of
+git://git.infradead.org/users/sameo/mfd-2.6.git).
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 1ca2cd4..fef0bfd 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -1106,6 +1106,8 @@ static void
- check_preempt_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr)
- {
- 	unsigned long ideal_runtime, delta_exec;
-+	struct sched_entity *se;
-+	s64 delta;
- 
- 	ideal_runtime = sched_slice(cfs_rq, curr);
- 	delta_exec = curr->sum_exec_runtime - curr->prev_sum_exec_runtime;
-@@ -1127,16 +1129,14 @@ check_preempt_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr)
- 	if (delta_exec < sysctl_sched_min_granularity)
- 		return;
- 
--	if (cfs_rq->nr_running > 1) {
--		struct sched_entity *se = __pick_first_entity(cfs_rq);
--		s64 delta = curr->vruntime - se->vruntime;
-+	se = __pick_first_entity(cfs_rq);
-+	delta = curr->vruntime - se->vruntime;
- 
--		if (delta < 0)
--			return;
-+	if (delta < 0)
-+		return;
- 
--		if (delta > ideal_runtime)
--			resched_task(rq_of(cfs_rq)->curr);
--	}
-+	if (delta > ideal_runtime)
-+		resched_task(rq_of(cfs_rq)->curr);
- }
- 
- static void
--- 
-1.7.1
+--Signature=_Fri__16_Sep_2011_18_39_48_+1000_Vx=.WIOgQHqAPexp
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQEcBAEBAgAGBQJOcwtUAAoJEDMEi1NhKgbsM8MH/2w+jXcIUNvoHrlmIT8yFKMS
+i+2Y8uMs+zYf/QxO4bGH/Nt60i51xNVabugpxstulYDaNJ9qdaq8sXBdX0IwAuSx
+ZvJFDfwSTMddtmgJ9jW2OS6J6+tXciV32FWQDXXG7Wkgv4iTov4NJwSBEZWeWfDC
+rOGlEp0MaG7qYiRW9ipYDPLN4tHM7at742gKsJ0y85HyE5O4iFnBubVMzTWMpFhr
+6fRF6hfJEh7HSjBbv6eoWxvXdV4GpI1m+4trLHY/X2qL3tRJdZIt5n4oaqrATD45
+h4hhPKCwnYP8gYqd7Hbi7G+NRwNQ+LI3j3DhO9SsEz2Rp/Hr8yqWgezLTZrZg7I=
+=X63i
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__16_Sep_2011_18_39_48_+1000_Vx=.WIOgQHqAPexp--
