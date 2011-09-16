@@ -1,54 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755207Ab1IPPqx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 11:46:53 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:10411 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752811Ab1IPPqw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 11:46:52 -0400
-From: Andrew Vagin <avagin@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, avagin@openvz.org
-Subject: [PATCH] perf: fix counter of ftrace events
-Date: Fri, 16 Sep 2011 19:46:34 +0400
-Message-Id: <1316187994-670129-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.7.1
+	id S1755269Ab1IPPsV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 11:48:21 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:51592
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754661Ab1IPPsU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Sep 2011 11:48:20 -0400
+Date: Fri, 16 Sep 2011 11:48:15 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        linux-btrfs@vger.kernel.org
+Subject: Re: [PATCH 1/7] BTRFS: Fix lseek return value for error
+Message-ID: <20110916154815.GA27150@infradead.org>
+References: <1316128013-21980-1-git-send-email-andi@firstfloor.org>
+ <1316128013-21980-2-git-send-email-andi@firstfloor.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1316128013-21980-2-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Each event adds some points to its counters. By default it adds 1,
-and a number of points may be transmited in event's parameters.
+On Thu, Sep 15, 2011 at 04:06:47PM -0700, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+> 
+> Introduced by 9a4327ca1f45f82edad7dc0a4e52ce9316e0950c
 
-E.g. sched:sched_stat_runtime adds how long process has been running.
+I think this should go to Chris/Linus ASAP.  But a slightly better
+patch description wouldn't hurt either.
 
-But this functionality was broken by v2.6.31-rc5-392-gf413cdb
-and now the event's parameters doesn't affect on a number of points.
+Also any reason you captialize BTRFS?
 
-TP_perf_assign isn't defined, so __perf_count(c) isn't executed and
-__count is always equal to 1.
-
-Signed-off-by: Andrew Vagin <avagin@openvz.org>
----
- include/trace/ftrace.h |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index 7f89fbf..d6385ee 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -712,6 +712,9 @@ __attribute__((section("_ftrace_events"))) *__event_##call = &event_##call
- #undef __perf_count
- #define __perf_count(c) __count = (c)
- 
-+#undef TP_perf_assign
-+#define TP_perf_assign(args...) args
-+
- #undef DECLARE_EVENT_CLASS
- #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
- static notrace void							\
--- 
-1.7.1
-
+> 
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  fs/btrfs/file.c |   13 +++++++------
+>  1 files changed, 7 insertions(+), 6 deletions(-)
+> 
+> diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
+> index 3c3abff..7ec0a24 100644
+> --- a/fs/btrfs/file.c
+> +++ b/fs/btrfs/file.c
+> @@ -1818,19 +1818,17 @@ static loff_t btrfs_file_llseek(struct file *file, loff_t offset, int origin)
+>  	case SEEK_DATA:
+>  	case SEEK_HOLE:
+>  		ret = find_desired_extent(inode, &offset, origin);
+> -		if (ret) {
+> -			mutex_unlock(&inode->i_mutex);
+> -			return ret;
+> -		}
+> +		if (ret)
+> +			goto error;
+>  	}
+>  
+>  	if (offset < 0 && !(file->f_mode & FMODE_UNSIGNED_OFFSET)) {
+>  		ret = -EINVAL;
+> -		goto out;
+> +		goto error;
+>  	}
+>  	if (offset > inode->i_sb->s_maxbytes) {
+>  		ret = -EINVAL;
+> -		goto out;
+> +		goto error;
+>  	}
+>  
+>  	/* Special lock needed here? */
+> @@ -1841,6 +1839,9 @@ static loff_t btrfs_file_llseek(struct file *file, loff_t offset, int origin)
+>  out:
+>  	mutex_unlock(&inode->i_mutex);
+>  	return offset;
+> +error:
+> +	mutex_unlock(&inode->i_mutex);
+> +	return ret;
+>  }
+>  
+>  const struct file_operations btrfs_file_operations = {
+> -- 
+> 1.7.4.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+---end quoted text---
