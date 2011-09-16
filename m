@@ -1,177 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932145Ab1IPSbx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 14:31:53 -0400
-Received: from shutemov.name ([188.40.19.243]:42185 "EHLO shutemov.name"
+	id S1755867Ab1IPSdf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 14:33:35 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:43743 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755546Ab1IPSbv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 14:31:51 -0400
-Date: Fri, 16 Sep 2011 21:31:50 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Vasiliy Kulikov <segoon@openwall.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Pavel Machek <pavel@ucw.cz>,
-        Andrew Morton <akpm00@gmail.com>, linux-kernel@vger.kernel.org,
-        containers@lists.osdl.org, linux-fsdevel@vger.kernel.org,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Nathan Lynch <ntl@pobox.com>, Zan Lynx <zlynx@acm.org>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>, Tejun Heo <tj@kernel.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>
-Subject: Re: [patch 2/2] fs, proc: Introduce the /proc/<pid>/map_files/
- directory v12
-Message-ID: <20110916183150.GA26226@shutemov.name>
-References: <20110914160724.GA10612@albatros>
- <20110915091417.GA27755@sun>
- <20110915092757.GA23404@albatros>
- <20110915102922.GB27755@sun>
- <20110915105651.GA17575@albatros>
- <20110915201939.GE12040@sun>
- <20110916175618.GA20046@albatros>
- <20110916180731.GB8599@sun>
- <20110916181146.GA20801@albatros>
- <20110916182654.GC8599@sun>
+	id S1754288Ab1IPSde (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Sep 2011 14:33:34 -0400
+Message-ID: <4E739677.4020708@linux.vnet.ibm.com>
+Date: Fri, 16 Sep 2011 13:33:27 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110916182654.GC8599@sun>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Nitin Gupta <ngupta@vflare.org>
+CC: Greg KH <greg@kroah.com>, gregkh@suse.de, devel@driverdev.osuosl.org,
+        dan.magenheimer@oracle.com, cascardo@holoscopio.com,
+        linux-kernel@vger.kernel.org, dave@linux.vnet.ibm.com,
+        linux-mm@kvack.org, brking@linux.vnet.ibm.com, rcj@linux.vnet.ibm.com
+Subject: Re: [PATCH v2 0/3] staging: zcache: xcfmalloc support
+References: <1315404547-20075-1-git-send-email-sjenning@linux.vnet.ibm.com> <20110909203447.GB19127@kroah.com> <4E6ACE5B.9040401@vflare.org> <4E6E18C6.8080900@linux.vnet.ibm.com> <4E6EB802.4070109@vflare.org> <4E6F7DA7.9000706@linux.vnet.ibm.com> <4E6FC8A1.8070902@vflare.org> <4E72284B.2040907@linux.vnet.ibm.com> <4E738B81.2070005@vflare.org>
+In-Reply-To: <4E738B81.2070005@vflare.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 16, 2011 at 10:26:54PM +0400, Cyrill Gorcunov wrote:
-> On Fri, Sep 16, 2011 at 10:11:46PM +0400, Vasiliy Kulikov wrote:
-> ...
-> > 
-> > Yep, with CAP_SYS_ADMIN check there should be no issues here.
-> > 
-> > Reviewed-by: Vasiliy Kulikov <segoon@openwall.com>
-> > 
-> 
-> Here we go. Andrew, should I resend the whole series (ie two patches?)
-> 
-> 	Cyrill
-> ---
-> From: Pavel Emelyanov <xemul@parallels.com>
-> Subject: [PATCH] fs, proc: Introduce the /proc/<pid>/map_files/ directory v14
-> 
-> This one behaves similarly to the /proc/<pid>/fd/ one - it contains symlinks
-> one for each mapping with file, the name of a symlink is "vma->vm_start-vma->vm_end",
-> the target is the file. Opening a symlink results in a file that point exactly
-> to the same inode as them vma's one.
-> 
-> For example the ls -l of some arbitrary /proc/<pid>/map_files/
-> 
->  | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80403000-7f8f80404000 -> /lib64/libc-2.5.so
->  | lr-x------ 1 root root 64 Aug 26 06:40 7f8f8061e000-7f8f80620000 -> /lib64/libselinux.so.1
->  | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80826000-7f8f80827000 -> /lib64/libacl.so.1.1.0
->  | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80a2f000-7f8f80a30000 -> /lib64/librt-2.5.so
->  | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80a30000-7f8f80a4c000 -> /lib64/ld-2.5.so
-> 
-> This *helps* checkpointing process in three ways:
-> 
-> 1. When dumping a task mappings we do know exact file that is mapped by particular
->    region. We do this by opening /proc/$pid/map_files/$address symlink the way we do
->    with file descriptors.
-> 
-> 2. This also helps in determining which anonymous shared mappings are shared with
->    each other by comparing the inodes of them.
-> 
-> 3. When restoring a set of processes in case two of them has a mapping shared, we map
->    the memory by the 1st one and then open its /proc/$pid/map_files/$address file and
->    map it by the 2nd task.
-> 
-> Using /proc/$pid/maps for this is quite inconvenient since it brings repeatable
-> re-reading and reparsing for this text file which slows down restore procedure
-> significantly. Also as being pointed in (3) it is a way easier to use top level
-> shared mapping in children as /proc/$pid/map_files/$address when needed.
-> 
-> v2: (spotted by Tejun Heo)
->  - /proc/<pid>/mfd changed to /proc/<pid>/map_files
->  - find_vma helper is used instead of linear search
->  - routines are re-grouped
->  - d_revalidate is set now
-> 
-> v3:
->  - d_revalidate reworked, now it should drops no longer valid dentries (Tejun Heo)
->  - ptrace_may_access added into proc_map_files_lookup (Vasiliy Kulikov)
->  - because of filldir (which eventually might need to lock mmap_sem)
->    the proc_map_files_readdir() was reworked to call proc_fill_cache()
->    with unlocked mmap_sem
-> 
-> v4: (feedback by Tejun Heo and Vasiliy Kulikov)
->  - instead of saving data in proc_inode we rather make a dentry name
->    to keep both vm_start and vm_end accordingly
->  - d_revalidate now honor task credentials
-> 
-> v5: (feedback by Kirill A. Shutemov)
->  - don't forget to release mmap_sem on error path
-> 
-> v6:
->  - sizeof get used in map_files_info which shrink member a bit on
->    x86-32 (by Kirill A. Shutemov)
->  - map_name_to_addr returns -EINVAL instead of -1
->    which is more appropriate (by Tejun Heo)
-> 
-> v7:
->  - add [get/set]attr handlers for
->    proc_map_files_inode_operations (by Vasiliy Kulikov)
-> 
-> v8:
->  - Kirill A. Shutemov spotted a parasite semicolon
->    which ruined the ptrace_check call, fixed.
-> 
-> v9: (feedback by Andrew Morton)
->  - find_exact_vma moved into include/linux/mm.h as an inline helper
->  - proc_map_files_setattr uses either kmalloc or vmalloc depending
->    on how many objects are to be allocated
->  - no more map_name_to_addr but dname_to_vma_addr introduced instead
->    and it uses sscanf because in one case the find_exact_vma() is used
->    only to confirm existence of vma area the boolean flag is used
->  - fancy justification dropped
->  - still the proc_map_files_get/setattr leaved untouched
->    until additional fd/ patches applied first.
-> 
-> v10: (feedback by Andrew Morton)
->  - flex_arrays are used instead of kmalloc/vmalloc calls
->  - map_files_d_revalidate use ptrace_may_access for
->    security reason (by Vasiliy Kulikov)
-> 
-> v11:
->  - should use fput and drop !ret test from a loop code
->    (feedback by Andrew Morton)
->  - no need for 'used' variable, use existing
->    nr_files with file->pos predicate
->  - if preallocation fails no need to go further,
->    simply release mmap semaphore and jump out
-> 
-> v12:
->  - rework map_files_d_revalidate to make sure
->    the task get released on return (by Vasiliy Kulikov)
-> 
-> v13:
->  - proc_map_files_inode_operations are set to be the same
->    as proc_fd_inode_operations, ie to include .permission
->    pointing to proc_fd_permission
-> 
-> v14: (by Vasiliy Kulikov)
->  - for security reason map_files/ entries are allowed for
->    readers with CAP_SYS_ADMIN credentials granted only
-> 
-> Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
-> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-> Reviewed-by: Vasiliy Kulikov <segoon@openwall.com>
-> CC: Tejun Heo <tj@kernel.org>
-> CC: Vasiliy Kulikov <segoon@openwall.com>
-> CC: "Kirill A. Shutemov" <kirill@shutemov.name>
-> CC: Alexey Dobriyan <adobriyan@gmail.com>
-> CC: Al Viro <viro@ZenIV.linux.org.uk>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: Pavel Machek <pavel@ucw.cz>
+On 09/16/2011 12:46 PM, Nitin Gupta wrote:
+> I think replacing allocator every few weeks isn't a good idea. So, I
+> guess better would be to let me work for about 2 weeks and try the slab
+> based approach.  If nothing works out in this time, then maybe xcfmalloc
+> can be integrated after further testing.
 
-My Reviewed-by is in force.
+Sounds good to me.
 
--- 
- Kirill A. Shutemov
+> 
+> Thanks,
+> Nitin
+> 
+
+Thanks
+--
+Seth
+
