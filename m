@@ -1,147 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754146Ab1IPJmI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 05:42:08 -0400
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:57065 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753130Ab1IPJmG (ORCPT
+	id S1753963Ab1IPJoU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 05:44:20 -0400
+Received: from cluster-d.mailcontrol.com ([85.115.60.190]:56496 "EHLO
+	cluster-d.mailcontrol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752173Ab1IPJoS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 05:42:06 -0400
-From: Tao Ma <tm@tao.ma>
-To: linux-kernel@vger.kernel.org
-Cc: Shaohua Li <shaohua.li@intel.com>, Christoph Hellwig <hch@infradead.org>,
-        Jens Axboe <jaxboe@fusionio.com>
-Subject: [PATCH] block: Remove the control of complete cpu from bio.
-Date: Fri, 16 Sep 2011 17:41:48 +0800
-Message-Id: <1316166108-6465-1-git-send-email-tm@tao.ma>
-X-Mailer: git-send-email 1.7.4.1
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 182.92.247.2 authed with tm@tao.ma}
+	Fri, 16 Sep 2011 05:44:18 -0400
+From: Barry Song <Baohua.Song@csr.com>
+To: <dan.j.williams@intel.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Barry Song <Baohua.Song@csr.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Viresh Kumar <viresh.kumar@st.com>, Vinod Koul <vinod.koul@intel.com>,
+        Piotr Ziecik <kosmo@semihalf.com>, Yong Wang <yong.y.wang@intel.com>,
+        Jaswinder Singh <jassi.brar@samsung.com>,
+        Pelagicore AB <info@pelagicore.com>
+Subject: [PATCH] dmaengine: delete redundant chan_id and chancnt initialization in dma drivers
+Date: Fri, 16 Sep 2011 02:43:19 -0700
+Message-ID: <1316166200-20595-1-git-send-email-Baohua.Song@csr.com>
+X-Mailer: git-send-email 1.7.1
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.125.36.59]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tao Ma <boyu.mt@taobao.com>
+dma_async_device_register will re-init chan_id and chancnt,
+so whatever chan_id and chancnt are set in drivers, they will
+be re-written by dma_async_device_register.
 
-bio originally has the functionality to set the complete cpu, but
-it is broken.
-
-Chirstoph said that "This code is unused, and from the all the
-discussions lately pretty obviously broken.  The only thing keeping
-it serves is creating more confusion and possibly more bugs."
-
-And Jens replied with "We can kill bio_set_completion_cpu(). I'm fine
-with leaving cpu control to the request based drivers, they are the
-only ones that can toggle the setting anyway".
-
-So this patch tries to remove all the work of controling complete cpu
-from a bio.
-
-Cc: Shaohua Li <shaohua.li@intel.com>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Jens Axboe <jaxboe@fusionio.com>
-Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Viresh Kumar <viresh.kumar@st.com>
+Cc: Vinod Koul <vinod.koul@intel.com>
+Cc: Piotr Ziecik <kosmo@semihalf.com>
+Cc: Yong Wang <yong.y.wang@intel.com>
+Cc: Jaswinder Singh <jassi.brar@samsung.com>
+Cc: Pelagicore AB <info@pelagicore.com>
+Signed-off-by: Barry Song <Baohua.Song@csr.com>
 ---
- block/blk-core.c          |    4 +---
- drivers/md/raid1.c        |    1 -
- fs/bio.c                  |    1 -
- include/linux/bio.h       |    8 --------
- include/linux/blk_types.h |   11 ++++-------
- 5 files changed, 5 insertions(+), 20 deletions(-)
+ drivers/dma/at_hdmac.c      |    5 ++---
+ drivers/dma/dw_dmac.c       |    5 ++---
+ drivers/dma/intel_mid_dma.c |    2 --
+ drivers/dma/mpc512x_dma.c   |    1 -
+ drivers/dma/pch_dma.c       |    2 --
+ drivers/dma/pl330.c         |    2 --
+ drivers/dma/timb_dma.c      |    3 +--
+ 7 files changed, 5 insertions(+), 15 deletions(-)
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 90e1ffd..8a57916 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -1200,7 +1200,6 @@ out:
+diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
+index 6a483ea..c1b8c15 100644
+--- a/drivers/dma/at_hdmac.c
++++ b/drivers/dma/at_hdmac.c
+@@ -1260,12 +1260,11 @@ static int __init at_dma_probe(struct platform_device *pdev)
  
- void init_request_from_bio(struct request *req, struct bio *bio)
- {
--	req->cpu = bio->bi_comp_cpu;
- 	req->cmd_type = REQ_TYPE_FS;
+ 	/* initialize channels related values */
+ 	INIT_LIST_HEAD(&atdma->dma_common.channels);
+-	for (i = 0; i < pdata->nr_channels; i++, atdma->dma_common.chancnt++) {
++	for (i = 0; i < pdata->nr_channels; i++) {
+ 		struct at_dma_chan	*atchan = &atdma->chan[i];
  
- 	req->cmd_flags |= bio->bi_rw & REQ_COMMON_MASK;
-@@ -1281,8 +1280,7 @@ get_rq:
- 	 */
- 	init_request_from_bio(req, bio);
+ 		atchan->chan_common.device = &atdma->dma_common;
+ 		atchan->chan_common.cookie = atchan->completed_cookie = 1;
+-		atchan->chan_common.chan_id = i;
+ 		list_add_tail(&atchan->chan_common.device_node,
+ 				&atdma->dma_common.channels);
  
--	if (test_bit(QUEUE_FLAG_SAME_COMP, &q->queue_flags) ||
--	    bio_flagged(bio, BIO_CPU_AFFINE))
-+	if (test_bit(QUEUE_FLAG_SAME_COMP, &q->queue_flags))
- 		req->cpu = raw_smp_processor_id();
+@@ -1308,7 +1307,7 @@ static int __init at_dma_probe(struct platform_device *pdev)
+ 	dev_info(&pdev->dev, "Atmel AHB DMA Controller ( %s%s), %d channels\n",
+ 	  dma_has_cap(DMA_MEMCPY, atdma->dma_common.cap_mask) ? "cpy " : "",
+ 	  dma_has_cap(DMA_SLAVE, atdma->dma_common.cap_mask)  ? "slave " : "",
+-	  atdma->dma_common.chancnt);
++	  pdata->nr_channels);
  
- 	plug = current->plug;
-diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
-index 32323f0..3107bcc 100644
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -2170,7 +2170,6 @@ static sector_t sync_request(mddev_t *mddev, sector_t sector_nr, int *skipped, i
- 		bio->bi_next = NULL;
- 		bio->bi_flags &= ~(BIO_POOL_MASK-1);
- 		bio->bi_flags |= 1 << BIO_UPTODATE;
--		bio->bi_comp_cpu = -1;
- 		bio->bi_rw = READ;
- 		bio->bi_vcnt = 0;
- 		bio->bi_idx = 0;
-diff --git a/fs/bio.c b/fs/bio.c
-index 9bfade8..41c93c7 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -255,7 +255,6 @@ void bio_init(struct bio *bio)
- {
- 	memset(bio, 0, sizeof(*bio));
- 	bio->bi_flags = 1 << BIO_UPTODATE;
--	bio->bi_comp_cpu = -1;
- 	atomic_set(&bio->bi_cnt, 1);
- }
- EXPORT_SYMBOL(bio_init);
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index ce33e68..a3c071c 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -269,14 +269,6 @@ extern void bvec_free_bs(struct bio_set *, struct bio_vec *, unsigned int);
- extern unsigned int bvec_nr_vecs(unsigned short idx);
+ 	dma_async_device_register(&atdma->dma_common);
  
- /*
-- * Allow queuer to specify a completion CPU for this bio
-- */
--static inline void bio_set_completion_cpu(struct bio *bio, unsigned int cpu)
--{
--	bio->bi_comp_cpu = cpu;
--}
--
--/*
-  * bio_set is used to allow other portions of the IO system to
-  * allocate their own private memory pools for bio and iovec structures.
-  * These memory pools in turn all allocate from the bio_slab
-diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-index 32f0076..174bc3a 100644
---- a/include/linux/blk_types.h
-+++ b/include/linux/blk_types.h
-@@ -59,8 +59,6 @@ struct bio {
+diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+index 4d180ca..9bfd6d3 100644
+--- a/drivers/dma/dw_dmac.c
++++ b/drivers/dma/dw_dmac.c
+@@ -1407,12 +1407,11 @@ static int __init dw_probe(struct platform_device *pdev)
+ 	dw->all_chan_mask = (1 << pdata->nr_channels) - 1;
  
- 	unsigned int		bi_max_vecs;	/* max bvl_vecs we can hold */
+ 	INIT_LIST_HEAD(&dw->dma.channels);
+-	for (i = 0; i < pdata->nr_channels; i++, dw->dma.chancnt++) {
++	for (i = 0; i < pdata->nr_channels; i++) {
+ 		struct dw_dma_chan	*dwc = &dw->chan[i];
  
--	unsigned int		bi_comp_cpu;	/* completion CPU */
--
- 	atomic_t		bi_cnt;		/* pin count */
+ 		dwc->chan.device = &dw->dma;
+ 		dwc->chan.cookie = dwc->completed = 1;
+-		dwc->chan.chan_id = i;
+ 		if (pdata->chan_allocation_order == CHAN_ALLOCATION_ASCENDING)
+ 			list_add_tail(&dwc->chan.device_node,
+ 					&dw->dma.channels);
+@@ -1468,7 +1467,7 @@ static int __init dw_probe(struct platform_device *pdev)
+ 	dma_writel(dw, CFG, DW_CFG_DMA_EN);
  
- 	struct bio_vec		*bi_io_vec;	/* the actual vec list */
-@@ -93,11 +91,10 @@ struct bio {
- #define BIO_BOUNCED	5	/* bio is a bounce bio */
- #define BIO_USER_MAPPED 6	/* contains user pages */
- #define BIO_EOPNOTSUPP	7	/* not supported */
--#define BIO_CPU_AFFINE	8	/* complete bio on same CPU as submitted */
--#define BIO_NULL_MAPPED 9	/* contains invalid user pages */
--#define BIO_FS_INTEGRITY 10	/* fs owns integrity data, not block layer */
--#define BIO_QUIET	11	/* Make BIO Quiet */
--#define BIO_MAPPED_INTEGRITY 12/* integrity metadata has been remapped */
-+#define BIO_NULL_MAPPED 8	/* contains invalid user pages */
-+#define BIO_FS_INTEGRITY 9	/* fs owns integrity data, not block layer */
-+#define BIO_QUIET	10	/* Make BIO Quiet */
-+#define BIO_MAPPED_INTEGRITY 11/* integrity metadata has been remapped */
- #define bio_flagged(bio, flag)	((bio)->bi_flags & (1 << (flag)))
+ 	printk(KERN_INFO "%s: DesignWare DMA Controller, %d channels\n",
+-			dev_name(&pdev->dev), dw->dma.chancnt);
++			dev_name(&pdev->dev), pdata->nr_channels);
  
- /*
+ 	dma_async_device_register(&dw->dma);
+ 
+diff --git a/drivers/dma/intel_mid_dma.c b/drivers/dma/intel_mid_dma.c
+index 8a3fdd8..cf74a66 100644
+--- a/drivers/dma/intel_mid_dma.c
++++ b/drivers/dma/intel_mid_dma.c
+@@ -1114,7 +1114,6 @@ static int mid_setup_dma(struct pci_dev *pdev)
+ 
+ 		midch->chan.device = &dma->common;
+ 		midch->chan.cookie =  1;
+-		midch->chan.chan_id = i;
+ 		midch->ch_id = dma->chan_base + i;
+ 		pr_debug("MDMA:Init CH %d, ID %d\n", i, midch->ch_id);
+ 
+@@ -1150,7 +1149,6 @@ static int mid_setup_dma(struct pci_dev *pdev)
+ 	dma_cap_set(DMA_SLAVE, dma->common.cap_mask);
+ 	dma_cap_set(DMA_PRIVATE, dma->common.cap_mask);
+ 	dma->common.dev = &pdev->dev;
+-	dma->common.chancnt = dma->max_chan;
+ 
+ 	dma->common.device_alloc_chan_resources =
+ 					intel_mid_dma_alloc_chan_resources;
+diff --git a/drivers/dma/mpc512x_dma.c b/drivers/dma/mpc512x_dma.c
+index b9bae94..8ba4edc 100644
+--- a/drivers/dma/mpc512x_dma.c
++++ b/drivers/dma/mpc512x_dma.c
+@@ -741,7 +741,6 @@ static int __devinit mpc_dma_probe(struct platform_device *op)
+ 		mchan = &mdma->channels[i];
+ 
+ 		mchan->chan.device = dma;
+-		mchan->chan.chan_id = i;
+ 		mchan->chan.cookie = 1;
+ 		mchan->completed_cookie = mchan->chan.cookie;
+ 
+diff --git a/drivers/dma/pch_dma.c b/drivers/dma/pch_dma.c
+index 1ac8d4b..5b65362 100644
+--- a/drivers/dma/pch_dma.c
++++ b/drivers/dma/pch_dma.c
+@@ -926,7 +926,6 @@ static int __devinit pch_dma_probe(struct pci_dev *pdev,
+ 	}
+ 
+ 	pd->dma.dev = &pdev->dev;
+-	pd->dma.chancnt = nr_channels;
+ 
+ 	INIT_LIST_HEAD(&pd->dma.channels);
+ 
+@@ -935,7 +934,6 @@ static int __devinit pch_dma_probe(struct pci_dev *pdev,
+ 
+ 		pd_chan->chan.device = &pd->dma;
+ 		pd_chan->chan.cookie = 1;
+-		pd_chan->chan.chan_id = i;
+ 
+ 		pd_chan->membase = &regs->desc[i];
+ 
+diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+index 00eee59..7f86e7d 100644
+--- a/drivers/dma/pl330.c
++++ b/drivers/dma/pl330.c
+@@ -747,11 +747,9 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
+ 		spin_lock_init(&pch->lock);
+ 		pch->pl330_chid = NULL;
+ 		pch->chan.device = pd;
+-		pch->chan.chan_id = i;
+ 		pch->dmac = pdmac;
+ 
+ 		/* Add the channel to the DMAC list */
+-		pd->chancnt++;
+ 		list_add_tail(&pch->chan.device_node, &pd->channels);
+ 	}
+ 
+diff --git a/drivers/dma/timb_dma.c b/drivers/dma/timb_dma.c
+index f69f90a..6dbdf45 100644
+--- a/drivers/dma/timb_dma.c
++++ b/drivers/dma/timb_dma.c
+@@ -753,7 +753,7 @@ static int __devinit td_probe(struct platform_device *pdev)
+ 
+ 	INIT_LIST_HEAD(&td->dma.channels);
+ 
+-	for (i = 0; i < pdata->nr_channels; i++, td->dma.chancnt++) {
++	for (i = 0; i < pdata->nr_channels; i++) {
+ 		struct timb_dma_chan *td_chan = &td->channels[i];
+ 		struct timb_dma_platform_data_channel *pchan =
+ 			pdata->channels + i;
+@@ -767,7 +767,6 @@ static int __devinit td_probe(struct platform_device *pdev)
+ 
+ 		td_chan->chan.device = &td->dma;
+ 		td_chan->chan.cookie = 1;
+-		td_chan->chan.chan_id = i;
+ 		spin_lock_init(&td_chan->lock);
+ 		INIT_LIST_HEAD(&td_chan->active_list);
+ 		INIT_LIST_HEAD(&td_chan->queue);
 -- 
 1.7.1
 
+
+
+Member of the CSR plc group of companies. CSR plc registered in England and Wales, registered number 4187346, registered office Churchill House, Cambridge Business Park, Cowley Road, Cambridge, CB4 0WZ, United Kingdom
+More information can be found at www.csr.com. Follow CSR on Twitter at http://twitter.com/CSR_PLC and read our blog at www.csr.com/blog
