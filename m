@@ -1,238 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755884Ab1IQXxd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Sep 2011 19:53:33 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:58404 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755549Ab1IQXxc (ORCPT
+	id S1756244Ab1IQXMS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Sep 2011 19:12:18 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:55733 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755349Ab1IQXMQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Sep 2011 19:53:32 -0400
-Date: Sat, 17 Sep 2011 17:53:28 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, marc.zyngier@arm.com,
-        thomas.abraham@linaro.org, jamie@jamieiles.com, b-cousson@ti.com,
-        shawn.guo@linaro.org, Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH 3/5] of/irq: introduce of_irq_init
-Message-ID: <20110917235328.GA3523@ponder.secretlab.ca>
-References: <1316017900-19918-1-git-send-email-robherring2@gmail.com>
- <1316017900-19918-4-git-send-email-robherring2@gmail.com>
+	Sat, 17 Sep 2011 19:12:16 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Subject: Re: Proposal for a low-level Linux display framework
+Date: Sun, 18 Sep 2011 01:12:14 +0200
+User-Agent: KMail/1.13.7 (Linux/3.0.3-gentoo; KDE/4.7.1; x86_64; ; )
+Cc: Alex Deucher <alexdeucher@gmail.com>, Keith Packard <keithp@keithp.com>,
+        linux-fbdev@vger.kernel.org, linaro-dev@lists.linaro.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Archit Taneja <archit@ti.com>, "Clark, Rob" <rob@ti.com>
+References: <1316088425.11294.78.camel@lappyti> <CADnq5_NnzLtJmSzOgyppnBtv96DRTJ71u6ZSrs56KJ-F5CC-mw@mail.gmail.com> <4E724659.5080709@gmx.de>
+In-Reply-To: <4E724659.5080709@gmx.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1316017900-19918-4-git-send-email-robherring2@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-Id: <201109180112.15896.laurent.pinchart@ideasonboard.com>
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 14, 2011 at 11:31:38AM -0500, Rob Herring wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
+Hi everybody,
+
+On Thursday 15 September 2011 20:39:21 Florian Tobias Schandinat wrote:
+> On 09/15/2011 05:52 PM, Alex Deucher wrote:
+> >
+> > Please don't claim that the DRM developers do not want to cooperate.
+> > I realize that people have strong opinions about existing APIs, put
+> > there has been just as much, if not more obstinacy from the v4l and fb
+> > people.
 > 
-> of_irq_init will scan the devicetree for matching interrupt controller
-> nodes. Then it calls an initialization function for each found controller
-> in the proper order with parent nodes initialized before child nodes.
-> 
-> Based on initial pseudo code from Grant Likely.
-> 
-> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> ---
->  drivers/of/irq.c       |   96 ++++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/of_irq.h |    1 +
->  2 files changed, 97 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/of/irq.c b/drivers/of/irq.c
-> index 9f689f1..a0cd7e8 100644
-> --- a/drivers/of/irq.c
-> +++ b/drivers/of/irq.c
-> @@ -19,10 +19,13 @@
->   */
->  
->  #include <linux/errno.h>
-> +#include <linux/list.h>
-> +#include <linux/list_sort.h>
->  #include <linux/module.h>
->  #include <linux/of.h>
->  #include <linux/of_irq.h>
->  #include <linux/string.h>
-> +#include <linux/slab.h>
->  
->  /* For archs that don't support NO_IRQ (such as x86), provide a dummy value */
->  #ifndef NO_IRQ
-> @@ -386,3 +389,96 @@ int of_irq_to_resource_table(struct device_node *dev, struct resource *res,
->  
->  	return i;
->  }
-> +
-> +struct intc_desc {
-> +	struct list_head	list;
-> +	struct device_node	*dev;
-> +	struct device_node	*parent;
-> +};
-> +
-> +typedef void (*irq_init_cb_t)(struct device_node *, struct device_node *);
-> +
-> +static int __init irq_cmp_intc_desc(void *unused, struct list_head *a,
-> +				    struct list_head *b)
-> +{
-> +	const struct intc_desc *da = list_entry(a, typeof(*da), list);
-> +	const struct intc_desc *db = list_entry(b, typeof(*db), list);
-> +
-> +	/* same parent, so order doesn't matter */
-> +	if (da->parent == db->parent)
-> +		return 0;
-> +
-> +	/* NULL parent comes first */
-> +	if (!da->parent && db->parent)
-> +		return -1;
-> +	if (!db->parent && da->parent)
-> +		return 1;
-> +
-> +	/* parent node must be before child node */
-> +	if (da->dev == db->parent)
-> +		return -1;
-> +	if (db->dev == da->parent)
-> +		return 1;
+> Well, I think it's too late to really fix this thing. We now have 3 APIs in
+> the kernel that have to be kept. Probably the best we can do now is figure
+> out how we can reduce code duplication and do extensions to those APIs in
+> a way that they are compatible with each other or completely independent
+> and can be used across the APIs.
 
-Does sort_list work for relationships 4 or more levels deep?  ie. if
-there was a relationship of A <- B <- C <- D, then B compared with D
-would return 0 from this function which could potentially result in an
-incorrectly ordered list.
+Sorry for jumping late into the discussion. Let me try to shed some new light 
+on this.
 
-The other option for implementing this would be to take the probe
-deferral approach and not try to sort the list, but instead allow
-probe functions to fail & request retry if the parent hasn't yet been
-probed.  I haven't thought enough about it though to say which would
-be the best approach.
+I've been thinking about the DRM/KMS/FB/V4L APIs overlap for quite some time 
+now. All of them have their share of issues, historical nonsense and unique 
+features. I don't think we can pick one of those APIs today and decide to drop 
+the others, but we certainly need to make DRM, KMS, FB and V4L interoperable 
+at various levels. The alternative is to keep ignoring each other and let the 
+market decice. Thinking that the market could pick something like OpenMAX 
+scares me, so I'd rather find a good compromise and move forward.
 
-> +
-> +	return 0;
-> +}
-> +
-> +/**
-> + * of_irq_init - Scan the device tree for matching interrupt controllers and
-> + * call their initialization functions in order with parents first.
-> + * @matches: 0 terminated array of nodes to match and initialization function
-> + * to call on match
-> + */
-> +void __init of_irq_init(const struct of_device_id *matches)
-> +{
-> +	struct device_node *np;
-> +	const struct of_device_id *match;
-> +	struct intc_desc *desc;
-> +	struct intc_desc *temp_desc;
-> +	struct list_head intc_desc_list;
-> +
-> +	INIT_LIST_HEAD(&intc_desc_list);
-> +
-> +	for_each_matching_node(np, matches) {
-> +		if (!of_find_property(np, "interrupt-controller", NULL))
-> +			continue;
-> +		/* Here, we allocate and populate an intc_desc with the node
-> +		* pointer, interrupt-parent device_node etc. */
-> +		desc = kzalloc(sizeof(*desc), GFP_KERNEL);
-> +		if (!desc) {
-> +			WARN_ON(1);
-> +			goto err;
-> +		}
-> +		desc->dev = np;
-> +		desc->parent = of_irq_find_parent(np);
-> +		list_add(&desc->list, &intc_desc_list);
-> +	}
-> +	if (list_empty(&intc_desc_list))
-> +		return;
-> +
-> +	/*
-> +	 * The root irq controller is the one without an interrupt-parent.
-> +	 * That one goes first, followed by the controllers that reference it,
-> +	 * followed by the ones that reference the 2nd level controllers, etc
-> +	 */
+Disclaimer: My DRM/KMS knowledge isn't as good as my FB and V4L knowledge, so 
+please feel free to correct my mistakes.
 
-I don't believe that this actually turns out to be true (and yes I
-know it is how I originally described it).  :-)  When the
-interrupt-parent property is at the root of the tree, then the root
-interrupt controller may very well inherit itself as it's interrupt
-parent, and of_irq_find_parent() will still return a value.  This
-should probably be considered a bug in of_irq_find_parent(), and it
-should return NULL if the parent is itself.
+All our video-related APIs started as solutions to different problems. They 
+all share an important feature: they assume that the devices they control is 
+more or less monolithic. For that reason they expose a single device to 
+userspace, and mix device configuration and data transfer on the same device 
+node.
 
-of_irq_find_parent should probably be implemented thusly (completely
-untested); although the only functional change is the line:
-	return (p == child) ? NULL : p;
+This shortcoming became painful in V4L a couple of years ago. When I started 
+working on the OMAP3 ISP (camera) driver I realized that trying to configure a 
+complex hardware pipeline without exposing its internals to userspace 
+applications wouldn't be possible. DRM, KMS and FB ran into the exact same 
+problem, just more recently, as showed by various RFCs ([1], [2]).
 
-/**
- * of_irq_find_parent - Given a device node, find its interrupt parent node
- * @child: pointer to device node
- *
- * Returns a pointer to the interrupt parent node, or NULL if the
- * interrupt parent could not be determined.
- */
-struct device_node *of_irq_find_parent(struct device_node *child)
-{
-	struct device_node *p, *c = child;
-	const __be32 *parp;
+To fix this issue, the V4L community developed a new API called the Media 
+Controller [3]. In a nutshell, the MC aims at
 
-	if (!of_node_get(c))
-		return NULL;
+- exposing the device topology to userspace as an oriented graph of entities 
+connected with links through pads
 
-	do {
-		p = of_parse_phandle(c, "interrupt-parent", 0);
+- controlling the device topology from userspace by enabling/disabling links
 
-		if (!p && (of_irq_workarounds & OF_IMAP_NO_PHANDLE) &&
-		    of_find_property(c, "interrupt-parent", NULL))
-			p = of_node_get(of_irq_dflt_pic);
+- giving userspace access to per-entity controls
 
-		if (!p)
-			p = of_get_parent(c);
+- configuring formats at individual points in the pipeline from userspace.
 
-		of_node_put(c);
-		c = p;
-	} while (p && !of_find_property(p, "#interrupt-cells", NULL));
+The MC API solves the first two problems. The last two require help from V4L 
+(which has been extended with new MC-aware ioctls), as MC is media-agnostic 
+and can't thus configure video formats.
 
-	return (p == child) ? NULL : p;
-}
+To support this, the V4L subsystem exposes an in-kernel API based around the 
+concept of sub-devices. A single high-level hardware device is handled by 
+multiple sub-devices, possibly controlled by different drivers. For instance, 
+in the OMAP3-based N900 digital camera, the OMAP3 ISP is made of 8 sub-devices 
+(all controlled by the OMAP3 ISP driver), and the two sensors, flash 
+controller and lens controller all have their own sub-device, each of them 
+controlled by its own driver.
 
+All this infrastructure exposes the devices a the graph showed in [4] to 
+applications, and the V4L sub-device API can be used to set formats at 
+individual pads. This allows controlling scaling, cropping, composing and 
+other video-related operations on the pipeline.
 
-> +	list_sort(NULL, &intc_desc_list, irq_cmp_intc_desc);
-> +
-> +	list_for_each_entry_safe(desc, temp_desc, &intc_desc_list, list) {
-> +		match = of_match_node(matches, desc->dev);
-> +		if (match && match->data) {
-> +			irq_init_cb_t irq_init_cb = match->data;
-> +			pr_debug("of_irq_init: init %s @ %p, parent %p\n",
-> +				 match->compatible, desc->dev, desc->parent);
-> +			irq_init_cb(desc->dev, desc->parent);
-> +		}
-> +		list_del(&desc->list);
-> +		kfree(desc);
-> +	}
-> +	return;
-> +
-> +err:
-> +	list_for_each_entry_safe(desc, temp_desc, &intc_desc_list, list) {
-> +		list_del(&desc->list);
-> +		kfree(desc);
-> +	}
-> +}
+With the introduction of the media controller architecture, I now see V4L as 
+being made of three parts.
 
-Overall, I'm pretty happy with how this is looking.  Great job!
+1. The V4L video nodes streaming API, used to manage video buffers memory, map 
+it to userspace, and control video streaming (and data transfers).
 
-g.
+2. The V4L sub-devices API, used to control parameters on individual entities 
+in the graph and configure formats.
 
-> diff --git a/include/linux/of_irq.h b/include/linux/of_irq.h
-> index cd2e61c..032d76c 100644
-> --- a/include/linux/of_irq.h
-> +++ b/include/linux/of_irq.h
-> @@ -73,6 +73,7 @@ extern int of_irq_to_resource_table(struct device_node *dev,
->  		struct resource *res, int nr_irqs);
->  extern struct device_node *of_irq_find_parent(struct device_node *child);
->  
-> +extern void of_irq_init(const struct of_device_id *matches);
->  
->  #endif /* CONFIG_OF_IRQ */
->  #endif /* CONFIG_OF */
-> -- 
-> 1.7.5.4
-> 
+3. The V4L video nodes formats and control API, used to perform the same tasks 
+as the V4L sub-devices API for drivers that don't support the media controller 
+API, or to provide support for pure V4L applications with drivers that support 
+the media controller API.
+
+V4L is made of those three parts, but I believe it helps to think about them 
+individually. With today's (and tomorrow's) devices, DRM, KMS and FB are in a 
+situation similar to what V4L experienced a couple of years ago. They need to 
+give control of complex pipelines to userspace, and I believe this should be 
+done by (logically) splitting DRM, KMS and FB into a pipeline control part and 
+a data flow part, as we did with V4L.
+
+Keeping the monolithic device model and handling pipeline control without 
+exposing the pipeline topology would in my opinion be a mistake. Even if this 
+could support today's hardware, I don't think it would be future-proof. I 
+would rather see the DRM, KMS and FB topologies being exposed to applications 
+by implementing the MC API in DRM, KMS and FB drivers. I'm working on a proof 
+of concept for the FB sh_mobile_lcdc driver and will post patches soon. 
+Something similar can be done for DRM and KMS.
+
+This would leave us with the issue of controlling formats and other parameters 
+on the pipelines. We could keep separate DRM, KMS, FB and V4L APIs for that, 
+but would it really make sense ? I don't think so. Obviously I would be happy 
+to use the V4L API, as we already have a working solution :-) I don't see that 
+as being realistic though, we will probably need to create a central graphics-
+related API here (possibly close to what we already have in V4L if it can 
+fulfil everybody's needs).
+
+To paraphrase Alan, in my semi-perfect world vision the MC API would be used 
+to expose hardware pipelines to userspace, a common graphics API would be used 
+to control parameters on the pipeline shared by DRM, KMS, FB and V4L, the 
+individual APIs would control subsystem-specific parameters and DRM, KMS, FB 
+and V4L would be implemented on top of this to manage memory, command queues 
+and data transfers.
+
+Am I looking too far in the future ?
+
+[1] http://www.mail-archive.com/intel-gfx@lists.freedesktop.org/msg04421.html
+[2] http://www.mail-archive.com/linux-samsung-
+soc@vger.kernel.org/msg06292.html
+[3] http://linuxtv.org/downloads/v4l-dvb-apis/media_common.html
+[4] http://www.ideasonboard.org/media/omap3isp.ps
+
+-- 
+Regards,
+
+Laurent Pinchart
