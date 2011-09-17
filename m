@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932706Ab1IQDjn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 23:39:43 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:48701 "EHLO
+	id S933175Ab1IQDkS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 23:40:18 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:50109 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932364Ab1IQDjk (ORCPT
+	with ESMTP id S932780Ab1IQDjs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 23:39:40 -0400
+	Fri, 16 Sep 2011 23:39:48 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=dkim-signature:from:to:cc:subject:date:message-id:x-mailer:
 	in-reply-to:references:x-system-of-record;
-	b=cEHehgZFtD4ekYSIUTMVlzOoW4TlqAHGMHniO2UNdOfGUeFmKowTCaBBIfX7m4jZU
-	L5F1KaYrkEMSy0t7nzawg==
+	b=OrS3YgG29c8ezMPI5PACKZN2apmrVRac3HKPvvrWEktrKmb7APYd58MvKXJQqWhnC
+	fJwX4h2FxqKLcUMTztBWg==
 From: Michel Lespinasse <walken@google.com>
 To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -23,9 +23,9 @@ Cc: Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
         Hugh Dickins <hughd@google.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Michael Wolf <mjwolf@us.ibm.com>
-Subject: [PATCH 2/8] kstaled: documentation and config option.
-Date: Fri, 16 Sep 2011 20:39:07 -0700
-Message-Id: <1316230753-8693-3-git-send-email-walken@google.com>
+Subject: [PATCH 8/8] kstaled: add incrementally updating stale page count
+Date: Fri, 16 Sep 2011 20:39:13 -0700
+Message-Id: <1316230753-8693-9-git-send-email-walken@google.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1316230753-8693-1-git-send-email-walken@google.com>
 References: <1316230753-8693-1-git-send-email-walken@google.com>
@@ -34,148 +34,296 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Extend memory cgroup documentation do describe the optional idle page
-tracking features, and add the corresponding configuration option.
+Add an incrementally updating stale page count. A new per-cgroup
+memory.stale_page_age file is introduced. After a non-zero number of scan
+cycles is written there, pages that have been idle for at least that number
+of cycles and are currently clean are reported in memory.idle_page_stats
+as being stale. Contrary to the idle_*_clean statistic, this stale page
+count is continually updated - hooks have been added to notice pages being
+accessed or rendered unevictable, at which point the stale page count for
+that cgroup is instantly decremented. The point is to allow userspace to
+quickly respond to increased memory pressure.
 
 
 Signed-off-by: Michel Lespinasse <walken@google.com>
 ---
- Documentation/cgroups/memory.txt |  103 +++++++++++++++++++++++++++++++++++++-
- mm/Kconfig                       |   10 ++++
- 2 files changed, 112 insertions(+), 1 deletions(-)
+ include/linux/page-flags.h |   15 ++++++++
+ include/linux/pagemap.h    |   11 ++++--
+ mm/internal.h              |    1 +
+ mm/memcontrol.c            |   82 ++++++++++++++++++++++++++++++++++++++++++--
+ mm/mlock.c                 |    1 +
+ mm/vmscan.c                |    2 +-
+ 6 files changed, 104 insertions(+), 8 deletions(-)
 
-diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-index 06eb6d9..7ee2eb3 100644
---- a/Documentation/cgroups/memory.txt
-+++ b/Documentation/cgroups/memory.txt
-@@ -672,7 +672,108 @@ At reading, current status of OOM is shown.
- 	under_oom	 0 or 1 (if 1, the memory cgroup is under OOM, tasks may
- 				 be stopped.)
+diff --git a/include/linux/page-flags.h b/include/linux/page-flags.h
+index e964d98..22dbe90 100644
+--- a/include/linux/page-flags.h
++++ b/include/linux/page-flags.h
+@@ -58,6 +58,8 @@
+  *
+  * PG_idle indicates that the page has not been referenced since the last time
+  * kstaled scanned it.
++ *
++ * PG_stale indicates that the page is currently counted as stale.
+  */
  
--11. TODO
-+
-+11. Idle page tracking
-+
-+Idle page tracking works by scanning physical memory at a known rate,
-+finding idle pages, and accounting for them in the cgroup owning them.
-+
-+Idle pages are defined as user pages (either anon or file backed) that have
-+not been accessed for a number of consecutive scans, and are also not
-+currently pinned down (for example by being mlocked).
-+
-+11.1 Usage
-+
-+The first step is to select the global scanning rate:
-+
-+# echo 120 > /sys/kernel/mm/kstaled/scan_seconds	# 2 minutes per scan
-+
-+(At boot time, the default value for /sys/kernel/mm/kstaled/scan_seconds
-+is 0 which means the idle page tracking feature is disabled).
-+
-+Then, the per-cgroup memory.idle_page_stats files get updated at the
-+end of every scan. The relevant fields are:
-+* idle_clean: idle pages that have been untouched for at least one scan cycle,
-+  and are also clean. Being clean and unpinned, such pages are immediately
-+  reclaimable by the MM's LRU algorithms.
-+* idle_dirty_file: idle pages that have been untouched for at least one
-+  scan cycle, are dirty, and are file backed. Such pages are not immediately
-+  reclaimable as writeback needs to occur first.
-+* idle_dirty_swap: idle pages that have been untouched for at least one
-+  scan cycle, are dirty, and would have to be written to swap before being
-+  reclaimed. This includes dirty anon memory, tmpfs files and shm segments.
-+  Note that such pages are counted as idle_dirty_swap regardless of whether
-+  swap is enabled or not on the system.
-+* idle_2_clean, idle_2_dirty_file, idle_2_dirty_swap: same definitions as
-+  above, but for pages that have been untouched for at least two scan cycles.
-+* these fields repeat up to idle_240_clean, idle_240_dirty_file and
-+  idle_240_dirty_swap, allowing one to observe idle pages over a variety
-+  of idle interval lengths. Note that the accounting is cumulative:
-+  pages counted as idle for a given interval length are also counted
-+  as idle for smaller interval lengths.
-+* scans: number of physical memory scans since the cgroup was created.
-+
-+All the above fields are updated exactly once per scan.
-+
-+11.2 Responsiveness guarantees
-+
-+After a user page stops being touched and/or pinned, it takes at least one
-+scan cycle for that page to be considered as idle and accounted as such
-+in one of the idle_clean / idle_dirty_file / idle_dirty_swap counts
-+(or, n scan cycles for the page to be accounted as idle in one of the
-+idle_N_clean / idle_N_dirty_file / idle_N_dirty_swap counts).
-+
-+However, there is no guarantee that pages will be detected that fast.
-+In the worst case, it could take up to two extra scan cycle intervals
-+for a page to be accounted as idle. This is because after userspace stops
-+touching the page, it may take up to one scan interval before we next
-+scan it (at which point the page will be seen as not idle yet since it
-+was touched during the previous scan) and after the page is finally scanned
-+again and detected as idle, it may take up to one extra scan interval before
-+completing the physical memory scan and exporting the updated statistics.
-+
-+Conversely, when userspace touches or pins a page that was previously
-+accounted for as idle, it may take up to two scan intervals before the
-+corresponding statistics are updated. Once again, this is because it may
-+take up to one scan interval before scanning the page and finding it not
-+idle anymore, and up to one extra scan interval before completing the
-+physical memory scan and exporting the updated statistics.
-+
-+11.3 Incremental idle page tracking
-+
-+In some situations, it is desired to obtain faster feedback when
-+previously idle, clean user pages start being touched. Remember that
-+unpinned clean pages are immediately reclaimable by the MM's LRU
-+algorithms. A high number of such pages being idle in a given cgroup
-+indicates that this cgroup is not experiencing high memory pressure.
-+A decrease of that number can be seen as a leading indicator that
-+memory pressure is about to increase, and it may be desired to act
-+upon that indication before the two scan interval measurement delay.
-+
-+The incremental idle page tracking feature can be used for that case.
-+It allows for tracking of idle clean pages only, and only for a
-+predetermined number of scan intervals (no histogram functionality as
-+in the main interface).
-+
-+The desired idle period must first be selected on a per-cgroup basis
-+by writing an integer to the memory.stale_page_age file. The integer
-+is the interval we want pages to be idle for, expressed in scan cycles.
-+For example to check for pages that have been idle for 5 consecutive
-+scan cycles (equivalent to the idle_5_clean statistic), one would
-+write 5 to the memory.stale_page_age file. The default value for the
-+memory.stale_page_age file is 0, which disables the incremental idle
-+page tracking feature.
-+
-+During scanning, clean unpinned pages that have not been touched for the
-+chosen number of scan cycles are incrementally accounted for and reflected
-+in the "stale" statistic in memory.idle_page_stats. Likewise, pages that
-+were previously accounted as stale and are found not to be idle anymore
-+are also incrementally accounted for. Additionally, any pages that are
-+being considered by the LRU replacement algorithm and found to have been
-+touched are also incrementally accounted for.
-+
-+
-+12. TODO
+ /*
+@@ -117,6 +119,7 @@ enum pageflags {
+ #ifdef CONFIG_KSTALED
+ 	PG_young,		/* kstaled cleared pte_young */
+ 	PG_idle,		/* idle since start of kstaled interval */
++	PG_stale,		/* page is counted as stale */
+ #endif
+ 	__NR_PAGEFLAGS,
  
- 1. Add support for accounting huge pages (as a separate controller)
- 2. Make per-cgroup scanner reclaim not-shared pages first
-diff --git a/mm/Kconfig b/mm/Kconfig
-index 8ca47a5..3406a39 100644
---- a/mm/Kconfig
-+++ b/mm/Kconfig
-@@ -370,3 +370,13 @@ config CLEANCACHE
- 	  in a negligible performance hit.
+@@ -293,21 +296,33 @@ PAGEFLAG_FALSE(HWPoison)
  
- 	  If unsure, say Y to enable cleancache
+ PAGEFLAG(Young, young)
+ PAGEFLAG(Idle, idle)
++PAGEFLAG(Stale, stale) TESTSCFLAG(Stale, stale)
 +
-+config KSTALED
-+       depends on CGROUP_MEM_RES_CTLR
-+       bool "Per-cgroup idle page tracking"
-+       help
-+         This feature allows the kernel to report the amount of user pages
-+	 in a cgroup that have not been touched in a given time.
-+	 This information may be used to size the cgroups and/or for
-+	 job placement within a compute cluster.
-+	 See Documentation/cgroups/memory.txt for a more complete description.
++void __set_page_nonstale(struct page *page);
++
++static inline void set_page_nonstale(struct page *page)
++{
++	if (PageStale(page))
++		__set_page_nonstale(page);
++}
+ 
+ static inline void set_page_young(struct page *page)
+ {
++	set_page_nonstale(page);
+ 	if (!PageYoung(page))
+ 		SetPageYoung(page);
+ }
+ 
+ static inline void clear_page_idle(struct page *page)
+ {
++	set_page_nonstale(page);
+ 	if (PageIdle(page))
+ 		ClearPageIdle(page);
+ }
+ 
+ #else /* !CONFIG_KSTALED */
+ 
++static inline void set_page_nonstale(struct page *page) {}
+ static inline void set_page_young(struct page *page) {}
+ static inline void clear_page_idle(struct page *page) {}
+ 
+diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+index 716875e..693dd20 100644
+--- a/include/linux/pagemap.h
++++ b/include/linux/pagemap.h
+@@ -46,11 +46,14 @@ static inline void mapping_clear_unevictable(struct address_space *mapping)
+ 	clear_bit(AS_UNEVICTABLE, &mapping->flags);
+ }
+ 
+-static inline int mapping_unevictable(struct address_space *mapping)
++static inline int mapping_unevictable(struct address_space *mapping,
++				      struct page *page)
+ {
+-	if (mapping)
+-		return test_bit(AS_UNEVICTABLE, &mapping->flags);
+-	return !!mapping;
++	if (mapping && test_bit(AS_UNEVICTABLE, &mapping->flags)) {
++		set_page_nonstale(page);
++		return 1;
++	}
++	return 0;
+ }
+ 
+ static inline gfp_t mapping_gfp_mask(struct address_space * mapping)
+diff --git a/mm/internal.h b/mm/internal.h
+index d071d38..d1cb0d6 100644
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -93,6 +93,7 @@ static inline int is_mlocked_vma(struct vm_area_struct *vma, struct page *page)
+ 		return 0;
+ 
+ 	if (!TestSetPageMlocked(page)) {
++		set_page_nonstale(page);
+ 		inc_zone_page_state(page, NR_MLOCK);
+ 		count_vm_event(UNEVICTABLE_PGMLOCKED);
+ 	}
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index ef406a1..da21830 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -292,6 +292,8 @@ struct mem_cgroup {
+ 	spinlock_t pcp_counter_lock;
+ 
+ #ifdef CONFIG_KSTALED
++	int stale_page_age;
++
+ 	seqcount_t idle_page_stats_lock;
+ 	struct idle_page_stats {
+ 		unsigned long idle_clean;
+@@ -299,6 +301,7 @@ struct mem_cgroup {
+ 		unsigned long idle_dirty_swap;
+ 	} idle_page_stats[NUM_KSTALED_BUCKETS],
+ 	  idle_scan_stats[NUM_KSTALED_BUCKETS];
++	atomic_long_t stale_pages;
+ 	unsigned long idle_page_scans;
+ #endif
+ };
+@@ -2639,6 +2642,13 @@ static int mem_cgroup_move_account(struct page *page,
+ 		preempt_enable();
+ 	}
+ 	mem_cgroup_charge_statistics(from, PageCgroupCache(pc), -nr_pages);
++
++#ifdef CONFIG_KSTALED
++	/* Count page as non-stale */
++	if (PageStale(page) && TestClearPageStale(page))
++		atomic_long_dec(&from->stale_pages);
++#endif
++
+ 	if (uncharge)
+ 		/* This is not "cancel", but cancel_charge does all we need. */
+ 		__mem_cgroup_cancel_charge(from, nr_pages);
+@@ -3067,6 +3077,12 @@ __mem_cgroup_uncharge_common(struct page *page, enum charge_type ctype)
+ 
+ 	mem_cgroup_charge_statistics(mem, PageCgroupCache(pc), -nr_pages);
+ 
++#ifdef CONFIG_KSTALED
++	/* Count page as non-stale */
++	if (PageStale(page) && TestClearPageStale(page))
++		atomic_long_dec(&mem->stale_pages);
++#endif
++
+ 	ClearPageCgroupUsed(pc);
+ 	/*
+ 	 * pc->mem_cgroup is not cleared here. It will be accessed when it's
+@@ -4716,6 +4732,29 @@ static int mem_cgroup_idle_page_stats_read(struct cgroup *cgrp,
+ 		cb->fill(cb, name, stats[bucket].idle_dirty_swap * PAGE_SIZE);
+ 	}
+ 	cb->fill(cb, "scans", scans);
++	cb->fill(cb, "stale",
++		 max(atomic_long_read(&mem->stale_pages), 0L) * PAGE_SIZE);
++
++	return 0;
++}
++
++static u64 mem_cgroup_stale_page_age_read(struct cgroup *cgrp,
++					  struct cftype *cft)
++{
++	struct mem_cgroup *mem = mem_cgroup_from_cont(cgrp);
++
++	return mem->stale_page_age;
++}
++
++static int mem_cgroup_stale_page_age_write(struct cgroup *cgrp,
++					   struct cftype *cft, u64 val)
++{
++	struct mem_cgroup *mem = mem_cgroup_from_cont(cgrp);
++
++	if (val > 255)
++		return -EINVAL;
++
++	mem->stale_page_age = val;
+ 
+ 	return 0;
+ }
+@@ -4796,6 +4835,11 @@ static struct cftype mem_cgroup_files[] = {
+ 		.name = "idle_page_stats",
+ 		.read_map = mem_cgroup_idle_page_stats_read,
+ 	},
++	{
++		.name = "stale_page_age",
++		.read_u64 = mem_cgroup_stale_page_age_read,
++		.write_u64 = mem_cgroup_stale_page_age_write,
++	},
+ #endif
+ };
+ 
+@@ -5716,7 +5760,7 @@ static inline void kstaled_scan_page(struct page *page, u8 *idle_page_age)
+ 		 */
+ 		if (!mapping && !PageSwapCache(page))
+ 			goto out;
+-		else if (mapping_unevictable(mapping))
++		else if (mapping_unevictable(mapping, page))
+ 			goto out;
+ 		else if (PageSwapCache(page) ||
+ 			 mapping_cap_swap_backed(mapping))
+@@ -5751,13 +5795,23 @@ static inline void kstaled_scan_page(struct page *page, u8 *idle_page_age)
+ 
+ 	/* Finally increment the correct statistic for this page. */
+ 	if (!(info.pr_flags & PR_DIRTY) &&
+-	    !PageDirty(page) && !PageWriteback(page))
++	    !PageDirty(page) && !PageWriteback(page)) {
+ 		stats->idle_clean++;
+-	else if (is_file)
++
++		if (mem->stale_page_age && age >= mem->stale_page_age) {
++			if (!PageStale(page) && !TestSetPageStale(page))
++				atomic_long_inc(&mem->stale_pages);
++			goto unlock_page_cgroup_out;
++		}
++	} else if (is_file)
+ 		stats->idle_dirty_file++;
+ 	else
+ 		stats->idle_dirty_swap++;
+ 
++	/* Count page as non-stale */
++	if (PageStale(page) && TestClearPageStale(page))
++		atomic_long_dec(&mem->stale_pages);
++
+  unlock_page_cgroup_out:
+ 	unlock_page_cgroup(pc);
+ 
+@@ -5767,6 +5821,28 @@ static inline void kstaled_scan_page(struct page *page, u8 *idle_page_age)
+ 	put_page(page);
+ }
+ 
++void __set_page_nonstale(struct page *page)
++{
++	struct page_cgroup *pc;
++	struct mem_cgroup *mem;
++
++	/* Locate kstaled stats for the page's cgroup. */
++	pc = lookup_page_cgroup(page);
++	if (!pc)
++		return;
++	lock_page_cgroup(pc);
++	mem = pc->mem_cgroup;
++	if (!PageCgroupUsed(pc))
++		goto out;
++
++	/* Count page as non-stale */
++	if (TestClearPageStale(page))
++		atomic_long_dec(&mem->stale_pages);
++
++out:
++	unlock_page_cgroup(pc);
++}
++
+ static bool kstaled_scan_node(pg_data_t *pgdat, int scan_seconds, bool reset)
+ {
+ 	unsigned long flags;
+diff --git a/mm/mlock.c b/mm/mlock.c
+index 048260c..eac4c32 100644
+--- a/mm/mlock.c
++++ b/mm/mlock.c
+@@ -81,6 +81,7 @@ void mlock_vma_page(struct page *page)
+ 	BUG_ON(!PageLocked(page));
+ 
+ 	if (!TestSetPageMlocked(page)) {
++		set_page_nonstale(page);
+ 		inc_zone_page_state(page, NR_MLOCK);
+ 		count_vm_event(UNEVICTABLE_PGMLOCKED);
+ 		if (!isolate_lru_page(page))
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 7bd9868..752fd21 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -3203,7 +3203,7 @@ int zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+ int page_evictable(struct page *page, struct vm_area_struct *vma)
+ {
+ 
+-	if (mapping_unevictable(page_mapping(page)))
++	if (mapping_unevictable(page_mapping(page), page))
+ 		return 0;
+ 
+ 	if (PageMlocked(page) || (vma && is_mlocked_vma(vma, page)))
 -- 
 1.7.3.1
 
