@@ -1,46 +1,35 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1755424Ab1ILG3Z (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
-        Mon, 12 Sep 2011 02:29:25 -0400
-Received: from mail.shaker.k12.nh.us ([65.175.132.50]:35356 "EHLO
-        mail.shaker.k12.nh.us" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1754813Ab1ILG3M (ORCPT
+        id S1756187Ab1IQTna (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
+        Sat, 17 Sep 2011 15:43:30 -0400
+Received: from mail.coppervalley.bc.ca ([209.52.62.8]:33606 "EHLO
+        mail.coppervalley.bc.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1753981Ab1IQTn3 convert rfc822-to-8bit (ORCPT
         <rfc822;linux-kernel@vger.kernel.org>);
-        Mon, 12 Sep 2011 02:29:12 -0400
-X-Greylist: delayed 1764 seconds by postgrey-1.27 at vger.kernel.org; Mon, 12 Sep 2011 02:29:12 EDT
-Date: Mon, 12 Sep 2011 01:43:58 -0400 (EDT)
-From: Micro Finance Loan Company <ccoulombe@shaker.k12.nh.us>
-Reply-To: Micro Finance Loan Company <microfinancecompany@aol.com>
-Message-ID: <31470434.78911315806238348.JavaMail.root@mail>
-Subject: LOAN SERVICES OFFERED AT 3% INTEREST RATE.
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.6.1]
-X-Mailer: Zimbra 5.0.18_GA_3011.UBUNTU8 (zclient/5.0.18_GA_3011.UBUNTU8)
+        Sat, 17 Sep 2011 15:43:29 -0400
+X-Greylist: delayed 426 seconds by postgrey-1.27 at vger.kernel.org; Sat, 17 Sep 2011 15:43:29 EDT
+Message-ID: <20110917124405.1678293t8mdf1vgg@mail.coppervalley.bc.ca>
+Date: Sat, 17 Sep 2011 12:44:05 -0700
+From: PEPSI BOTTLING COMPANY PLC <francessdaveadmin@skymail.mn>
+Reply-to: marketingmanager2011@hotmail.co.uk
 To: undisclosed-recipients:;
+Subject: YOU HAVE WON!!!
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.4)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 
+Your email has won £500,000.00 POUNDS (Five Hundred Thousand Pounds)  
+from Pepsi online promotions2011,send your Full names, Age,  
+Sex,Occupation,Phone and Address to the Promotion Manager via email at  
+: marketingmanager2011@hotmail.co.uk   for claims. Tel: +447011150911
 
-
--- 
-Dear Sir/ Madam,
- 
-Do you need a loan to pay off some Bills and start up a new Business? if
-Yes, please contact us on our email: microfinancecompany@aol.com with 
-the information Below.
- 
-Your Name:
-Loan Amount:
-Country:
-Age/Sex:
-Contact Address:
-Loan Duration:
-Valid Cell Phone Number:
- 
-Best Regards,
-
-Mr David Mark.
-Loan Officer.
+----------------------------------------------------------------
+This message was sent using IMP, the Internet Messaging Program.
