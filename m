@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932954Ab1IQDkJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 23:40:09 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:50087 "EHLO
+	id S933021Ab1IQDkN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 23:40:13 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:48736 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932772Ab1IQDjo (ORCPT
+	with ESMTP id S932774Ab1IQDjp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 23:39:44 -0400
+	Fri, 16 Sep 2011 23:39:45 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=dkim-signature:from:to:cc:subject:date:message-id:x-mailer:
 	in-reply-to:references:x-system-of-record;
-	b=GjY0+zNbxH2/Tj/wABSEmyoPYelX4CoMyqzpLLlZ1ZULd1l91jxsljgKOC+Q2dvcT
-	bqvUnkinAJC6+52BnF7nQ==
+	b=lF/Zw8ZMEos+0xPKUozU/U2ZihnwsOQ9TvJpv/BpWg4n7llNWXD0kverJgLCHbSKz
+	cJFWF1XpMMnBcAAi9D6vQ==
 From: Michel Lespinasse <walken@google.com>
 To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -23,9 +23,9 @@ Cc: Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
         Hugh Dickins <hughd@google.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Michael Wolf <mjwolf@us.ibm.com>
-Subject: [PATCH 6/8] kstaled: rate limit pages scanned per second.
-Date: Fri, 16 Sep 2011 20:39:11 -0700
-Message-Id: <1316230753-8693-7-git-send-email-walken@google.com>
+Subject: [PATCH 5/8] kstaled: skip non-RAM regions.
+Date: Fri, 16 Sep 2011 20:39:10 -0700
+Message-Id: <1316230753-8693-6-git-send-email-walken@google.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1316230753-8693-1-git-send-email-walken@google.com>
 References: <1316230753-8693-1-git-send-email-walken@google.com>
@@ -34,181 +34,170 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Scan some number of pages from each node every second, instead of trying to
-scan the entime memory at once and being idle for the rest of the configured
-interval.
+Add a pfn_skip_hole function that shrinks the passed input range in order to
+skip over pfn ranges that are known not bo be RAM backed. The x86
+implementation achieves this using e820 tables; other architectures
+use a generic no-op implementation.
 
 
 Signed-off-by: Michel Lespinasse <walken@google.com>
 ---
- include/linux/mmzone.h |    3 ++
- mm/memcontrol.c        |   85 +++++++++++++++++++++++++++++++++++++++---------
- 2 files changed, 72 insertions(+), 16 deletions(-)
+ arch/x86/include/asm/page_types.h |    8 ++++++
+ arch/x86/kernel/e820.c            |   45 +++++++++++++++++++++++++++++++++++++
+ include/linux/mmzone.h            |    6 +++++
+ mm/memcontrol.c                   |   41 +++++++++++++++++++--------------
+ 4 files changed, 83 insertions(+), 17 deletions(-)
 
+diff --git a/arch/x86/include/asm/page_types.h b/arch/x86/include/asm/page_types.h
+index bce688d..b0676c2 100644
+--- a/arch/x86/include/asm/page_types.h
++++ b/arch/x86/include/asm/page_types.h
+@@ -57,6 +57,14 @@ extern unsigned long init_memory_mapping(unsigned long start,
+ extern void initmem_init(void);
+ extern void free_initmem(void);
+ 
++extern void e820_skip_hole(unsigned long *start_pfn, unsigned long *end_pfn);
++
++#define ARCH_HAVE_PFN_SKIP_HOLE 1
++static inline void pfn_skip_hole(unsigned long *start, unsigned long *end)
++{
++	e820_skip_hole(start, end);
++}
++
+ #endif	/* !__ASSEMBLY__ */
+ 
+ #endif	/* _ASM_X86_PAGE_DEFS_H */
+diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+index 3e2ef84..0677873 100644
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -1123,3 +1123,48 @@ void __init memblock_find_dma_reserve(void)
+ 	set_dma_reserve(mem_size_pfn - free_size_pfn);
+ #endif
+ }
++
++/*
++ * The caller wants to skip pfns that are guaranteed to not be valid
++ * memory. Find a stretch of ram between [start_pfn, end_pfn) and
++ * return its pfn range back through start_pfn and end_pfn.
++ */
++
++void e820_skip_hole(unsigned long *start_pfn, unsigned long *end_pfn)
++{
++	unsigned long start = *start_pfn << PAGE_SHIFT;
++	unsigned long end = *end_pfn << PAGE_SHIFT;
++	int i;
++
++	if (start >= end)
++		goto fail;		/* short-circuit e820 checks */
++
++	for (i = 0; i < e820.nr_map; i++) {
++		struct e820entry *ei = &e820.map[i];
++		unsigned long last, addr;
++
++		addr = round_up(ei->addr, PAGE_SIZE);
++		last = round_down(ei->addr + ei->size, PAGE_SIZE);
++
++		if (addr >= end)
++			goto fail;	/* We're done, not found */
++		if (last <= start)
++			continue;	/* Not at start yet, move on */
++		if (ei->type != E820_RAM)
++			continue;	/* Not RAM, move on */
++
++		/*
++		 * We've found RAM. If start is in this e820 range, return
++		 * it, otherwise return the start of this e820 range.
++		 */
++
++		if (addr > start)
++			*start_pfn = addr >> PAGE_SHIFT;
++		if (last < end)
++			*end_pfn = last >> PAGE_SHIFT;
++		return;
++	}
++fail:
++	*start_pfn = *end_pfn;
++	return;				/* No luck, return failure */
++}
 diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 6657106..272fbed 100644
+index 9f7c3eb..6657106 100644
 --- a/include/linux/mmzone.h
 +++ b/include/linux/mmzone.h
-@@ -631,6 +631,9 @@ typedef struct pglist_data {
- 	unsigned long node_present_pages; /* total number of physical pages */
- 	unsigned long node_spanned_pages; /* total size of physical page
- 					     range, including holes */
-+#ifdef CONFIG_KSTALED
-+	unsigned long node_idle_scan_pfn;
+@@ -930,6 +930,12 @@ static inline unsigned long early_pfn_to_nid(unsigned long pfn)
+ #define pfn_to_nid(pfn)		(0)
+ #endif
+ 
++#ifndef ARCH_HAVE_PFN_SKIP_HOLE
++static inline void pfn_skip_hole(unsigned long *start, unsigned long *end)
++{
++}
 +#endif
- 	int node_id;
- 	wait_queue_head_t kswapd_wait;
- 	struct task_struct *kswapd;
++
+ #ifdef CONFIG_SPARSEMEM
+ 
+ /*
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 0fdc278..4a76fdcf 100644
+index aebd45a..0fdc278 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -5617,6 +5617,7 @@ __setup("swapaccount=", enable_swap_account);
- #ifdef CONFIG_KSTALED
- 
- static unsigned int kstaled_scan_seconds;
-+static DEFINE_SPINLOCK(kstaled_scan_seconds_lock);
- static DECLARE_WAIT_QUEUE_HEAD(kstaled_wait);
- 
- static inline void kstaled_scan_page(struct page *page)
-@@ -5728,15 +5729,19 @@ static inline void kstaled_scan_page(struct page *page)
- 	put_page(page);
- }
- 
--static void kstaled_scan_node(pg_data_t *pgdat)
-+static bool kstaled_scan_node(pg_data_t *pgdat, int scan_seconds, bool reset)
+@@ -5731,32 +5731,39 @@ static inline void kstaled_scan_page(struct page *page)
+ static void kstaled_scan_node(pg_data_t *pgdat)
  {
  	unsigned long flags;
--	unsigned long pfn, end;
-+	unsigned long pfn, end, node_end;
+-	unsigned long start, end, pfn;
++	unsigned long pfn, end;
  
  	pgdat_resize_lock(pgdat, &flags);
  
- 	pfn = pgdat->node_start_pfn;
--	end = pfn + pgdat->node_spanned_pages;
-+	node_end = pfn + pgdat->node_spanned_pages;
-+	if (!reset && pfn < pgdat->node_idle_scan_pfn)
-+		pfn = pgdat->node_idle_scan_pfn;
-+	end = min(pfn + DIV_ROUND_UP(pgdat->node_spanned_pages, scan_seconds),
-+		  node_end);
+-	start = pgdat->node_start_pfn;
+-	end = start + pgdat->node_spanned_pages;
++	pfn = pgdat->node_start_pfn;
++	end = pfn + pgdat->node_spanned_pages;
  
- 	while (pfn < end) {
- 		unsigned long contiguous = end;
-@@ -5753,8 +5758,8 @@ static void kstaled_scan_node(pg_data_t *pgdat)
+-	for (pfn = start; pfn < end; pfn++) {
+-		if (need_resched()) {
+-			pgdat_resize_unlock(pgdat, &flags);
+-			cond_resched();
+-			pgdat_resize_lock(pgdat, &flags);
++	while (pfn < end) {
++		unsigned long contiguous = end;
++
++		/* restrict pfn..contiguous to be a RAM backed range */
++		pfn_skip_hole(&pfn, &contiguous);
++
++		for (; pfn < contiguous; pfn++) {
++			if (need_resched()) {
++				pgdat_resize_unlock(pgdat, &flags);
++				cond_resched();
++				pgdat_resize_lock(pgdat, &flags);
+ 
  #ifdef CONFIG_MEMORY_HOTPLUG
- 				/* abort if the node got resized */
- 				if (pfn < pgdat->node_start_pfn ||
--				    end > (pgdat->node_start_pfn +
--					   pgdat->node_spanned_pages))
-+				    node_end > (pgdat->node_start_pfn +
-+						pgdat->node_spanned_pages))
- 					goto abort;
+-			/* abort if the node got resized */
+-			if (pfn < pgdat->node_start_pfn ||
+-			    end > (pgdat->node_start_pfn +
+-				   pgdat->node_spanned_pages))
+-				goto abort;
++				/* abort if the node got resized */
++				if (pfn < pgdat->node_start_pfn ||
++				    end > (pgdat->node_start_pfn +
++					   pgdat->node_spanned_pages))
++					goto abort;
  #endif
- 			}
-@@ -5768,14 +5773,21 @@ static void kstaled_scan_node(pg_data_t *pgdat)
- 
- abort:
- 	pgdat_resize_unlock(pgdat, &flags);
-+
-+	pgdat->node_idle_scan_pfn = pfn;
-+	return pfn >= node_end;
- }
- 
- static int kstaled(void *dummy)
- {
-+	int delayed = 0;
-+	bool reset = true;
-+
- 	while (1) {
- 		int scan_seconds;
- 		int nid;
--		struct mem_cgroup *mem;
-+		long earlier, delta;
-+		bool scan_done;
- 
- 		wait_event_interruptible(kstaled_wait,
- 				 (scan_seconds = kstaled_scan_seconds) > 0);
-@@ -5788,21 +5800,60 @@ static int kstaled(void *dummy)
- 		 */
- 		BUG_ON(scan_seconds <= 0);
- 
--		for_each_mem_cgroup_all(mem)
--			memset(&mem->idle_scan_stats, 0,
--			       sizeof(mem->idle_scan_stats));
-+		earlier = jiffies;
- 
-+		scan_done = true;
- 		for_each_node_state(nid, N_HIGH_MEMORY)
--			kstaled_scan_node(NODE_DATA(nid));
-+			scan_done &= kstaled_scan_node(NODE_DATA(nid),
-+						       scan_seconds, reset);
-+
-+		if (scan_done) {
-+			struct mem_cgroup *mem;
-+
-+			for_each_mem_cgroup_all(mem) {
-+				write_seqcount_begin(&mem->idle_page_stats_lock);
-+				mem->idle_page_stats = mem->idle_scan_stats;
-+				mem->idle_page_scans++;
-+				write_seqcount_end(&mem->idle_page_stats_lock);
-+				memset(&mem->idle_scan_stats, 0,
-+				       sizeof(mem->idle_scan_stats));
+-		}
 +			}
+ 
+-		if (!pfn_valid(pfn))
+-			continue;
++			if (!pfn_valid(pfn))
++				continue;
+ 
+-		kstaled_scan_page(pfn_to_page(pfn));
++			kstaled_scan_page(pfn_to_page(pfn));
 +		}
- 
--		for_each_mem_cgroup_all(mem) {
--			write_seqcount_begin(&mem->idle_page_stats_lock);
--			mem->idle_page_stats = mem->idle_scan_stats;
--			mem->idle_page_scans++;
--			write_seqcount_end(&mem->idle_page_stats_lock);
-+		delta = jiffies - earlier;
-+		if (delta < HZ / 2) {
-+			delayed = 0;
-+			schedule_timeout_interruptible(HZ - delta);
-+		} else {
-+			/*
-+			 * Emergency throttle if we're taking too long.
-+			 * We are supposed to scan an entire slice in 1 second.
-+			 * If we keep taking longer for 10 consecutive times,
-+			 * scale back our scan_seconds.
-+			 *
-+			 * If someone changed kstaled_scan_seconds while we
-+			 * were running, hope they know what they're doing and
-+			 * assume they've eliminated any delays.
-+			 */
-+			bool updated = false;
-+			spin_lock(&kstaled_scan_seconds_lock);
-+			if (scan_seconds != kstaled_scan_seconds)
-+				delayed = 0;
-+			else if (++delayed == 10) {
-+				delayed = 0;
-+				scan_seconds *= 2;
-+				kstaled_scan_seconds = scan_seconds;
-+				updated = true;
-+			}
-+			spin_unlock(&kstaled_scan_seconds_lock);
-+			if (updated)
-+				pr_warning("kstaled taking too long, "
-+					   "scan_seconds now %d\n",
-+					   scan_seconds);
-+			schedule_timeout_interruptible(HZ / 2);
- 		}
- 
--		schedule_timeout_interruptible(scan_seconds * HZ);
-+		reset = scan_done;
  	}
  
- 	BUG();
-@@ -5826,7 +5877,9 @@ static ssize_t kstaled_scan_seconds_store(struct kobject *kobj,
- 	err = strict_strtoul(buf, 10, &input);
- 	if (err)
- 		return -EINVAL;
-+	spin_lock(&kstaled_scan_seconds_lock);
- 	kstaled_scan_seconds = input;
-+	spin_unlock(&kstaled_scan_seconds_lock);
- 	wake_up_interruptible(&kstaled_wait);
- 	return count;
- }
+ abort:
 -- 
 1.7.3.1
 
