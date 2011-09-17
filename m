@@ -1,84 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755960Ab1IRACY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Sep 2011 20:02:24 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:40984 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751050Ab1IRACW (ORCPT
+	id S1755631Ab1IQXYq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Sep 2011 19:24:46 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:45454 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755334Ab1IQXYp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Sep 2011 20:02:22 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Subject: Re: [PATCH] iommu/omap: Fix build error with !IOMMU_SUPPORT
-Date: Sun, 18 Sep 2011 02:02:22 +0200
-User-Agent: KMail/1.13.7 (Linux/3.0.3-gentoo; KDE/4.7.1; x86_64; ; )
-Cc: linux-omap@vger.kernel.org, "Ohad Ben-Cohen" <ohad@wizery.com>,
-        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-References: <1316009259-18052-1-git-send-email-joerg.roedel@amd.com>
-In-Reply-To: <1316009259-18052-1-git-send-email-joerg.roedel@amd.com>
+	Sat, 17 Sep 2011 19:24:45 -0400
+Date: Sat, 17 Sep 2011 17:24:42 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Rob Herring <robherring2@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        marc.zyngier@arm.com, thomas.abraham@linaro.org, jamie@jamieiles.com,
+        b-cousson@ti.com, shawn.guo@linaro.org,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH 2/5] irq: fix existing domain check in irq_domain_add
+Message-ID: <20110917232442.GZ3523@ponder.secretlab.ca>
+References: <1316017900-19918-1-git-send-email-robherring2@gmail.com>
+ <1316017900-19918-3-git-send-email-robherring2@gmail.com>
+ <alpine.LFD.2.02.1109141838510.2723@ionos>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201109180202.23123.laurent.pinchart@ideasonboard.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1109141838510.2723@ionos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joerg,
-
-On Wednesday 14 September 2011 16:07:39 Joerg Roedel wrote:
-> Without this patch it is possible to select the VIDEO_OMAP3
-> driver which then selects OMAP_IOVMM. But the omap iommu
-> driver is not compiled without IOMMU_SUPPORT enabled. Fix
-> that by forcing OMAP_IOMMU and OMAP_IOVMM are enabled before
-> VIDEO_OMAP3 can be selected.
-
-What about making VIDEO_OMAP3 select IOMMU_SUPPORT instead then ? Your patch 
-would make the OMAP3 ISP driver disappear from the menu until IOMMU_SUPPORT 
-gets turned on, which can confuse users.
-
-> Cc: Ohad Ben-Cohen <ohad@wizery.com>
-> Cc: iommu@lists.linux-foundation.org
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
-> ---
->  drivers/iommu/Kconfig       |    4 ++--
->  drivers/media/video/Kconfig |    3 +--
->  2 files changed, 3 insertions(+), 4 deletions(-)
+On Wed, Sep 14, 2011 at 06:44:50PM +0200, Thomas Gleixner wrote:
+> On Wed, 14 Sep 2011, Rob Herring wrote:
 > 
-> diff --git a/drivers/iommu/Kconfig b/drivers/iommu/Kconfig
-> index d901930..ae46776 100644
-> --- a/drivers/iommu/Kconfig
-> +++ b/drivers/iommu/Kconfig
-> @@ -114,8 +114,8 @@ config OMAP_IOMMU
->  	select IOMMU_API
+> > From: Rob Herring <rob.herring@calxeda.com>
+> > 
+> > irq_data will normally exist, so the domain was prevented from being set.
+> > The simple domain code did not hit this as nr_irq is always 0.
+> > 
+> > Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+> > Cc: Grant Likely <grant.likely@secretlab.ca>
+> > Cc: Thomas Gleixner <tglx@linutronix.de>
 > 
->  config OMAP_IOVMM
-> -	tristate
-> -	select OMAP_IOMMU
-> +	tristate "OMAP IO Virtual Memory Manager Support"
-> +	depends on OMAP_IOMMU
-> 
->  config OMAP_IOMMU_DEBUG
->         tristate "Export OMAP IOMMU/IOVMM internals in DebugFS"
-> diff --git a/drivers/media/video/Kconfig b/drivers/media/video/Kconfig
-> index 6a25fad..6201069 100644
-> --- a/drivers/media/video/Kconfig
-> +++ b/drivers/media/video/Kconfig
-> @@ -763,8 +763,7 @@ source "drivers/media/video/m5mols/Kconfig"
-> 
->  config VIDEO_OMAP3
->  	tristate "OMAP 3 Camera support (EXPERIMENTAL)"
-> -	select OMAP_IOVMM
-> -	depends on VIDEO_V4L2 && I2C && VIDEO_V4L2_SUBDEV_API && ARCH_OMAP3 &&
-> EXPERIMENTAL
-> +	depends on OMAP_IOVMM && VIDEO_V4L2 && I2C && VIDEO_V4L2_SUBDEV_API &&
-> ARCH_OMAP3 && EXPERIMENTAL
-> ---help---
->  	  Driver for an OMAP 3 camera controller.
+> I take this and 1/5 through irq/urgent
 
--- 
-Regards,
+Thanks Thomas.
 
-Laurent Pinchart
+g.
+
+> 
+> Thanks,
+> 
+> 	tglx
+> 
+> > ---
+> >  kernel/irq/irqdomain.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+> > index d5828da..84f4110 100644
+> > --- a/kernel/irq/irqdomain.c
+> > +++ b/kernel/irq/irqdomain.c
+> > @@ -29,7 +29,7 @@ void irq_domain_add(struct irq_domain *domain)
+> >  	 */
+> >  	for (hwirq = 0; hwirq < domain->nr_irq; hwirq++) {
+> >  		d = irq_get_irq_data(irq_domain_to_irq(domain, hwirq));
+> > -		if (d || d->domain) {
+> > +		if (d && d->domain) {
+> >  			/* things are broken; just report, don't clean up */
+> >  			WARN(1, "error: irq_desc already assigned to a domain");
+> >  			return;
+> > -- 
+> > 1.7.5.4
+> > 
+> > 
