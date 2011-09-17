@@ -1,111 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755391Ab1IQOx6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Sep 2011 10:53:58 -0400
-Received: from yuna.grokhost.net ([87.117.228.63]:33694 "EHLO
-	yuna.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754155Ab1IQOx4 convert rfc822-to-8bit (ORCPT
+	id S1755440Ab1IQO6P (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Sep 2011 10:58:15 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:52955 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753289Ab1IQO6O convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Sep 2011 10:53:56 -0400
-Subject: Re: iommu_iova leak [inside 3w-9xxx]
-Mime-Version: 1.0 (Apple Message framework v1250.3)
-Content-Type: text/plain; charset=us-ascii
-From: Chris Boot <bootc@bootc.net>
-In-Reply-To: <AD4B8103-C98F-4BC5-9F7F-496D220781F3@bootc.net>
-Date: Sat, 17 Sep 2011 15:29:56 +0100
-Cc: lkml <linux-kernel@vger.kernel.org>, Adam Radford <linuxraid@lsi.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org
+	Sat, 17 Sep 2011 10:58:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <CABb+yY13Xum=nU2eD+DJ7Uv_8ppE+UKFUA6KD_4CP+eDG5rAaQ@mail.gmail.com>
+References: <1316166960-20964-1-git-send-email-Baohua.Song@csr.com> <CABb+yY13Xum=nU2eD+DJ7Uv_8ppE+UKFUA6KD_4CP+eDG5rAaQ@mail.gmail.com>
+From: Barry Song <21cnbao@gmail.com>
+Date: Sat, 17 Sep 2011 22:57:53 +0800
+Message-ID: <CAGsJ_4za8HZ6hoyRyU=NR8TXhN+iFOQvfOeA1F_GTH6h6Zs+=A@mail.gmail.com>
+Subject: Re: [PATCH v2] dmaengine: add CSR SiRFprimaII DMAC driver
+To: Jassi Brar <jassisinghbrar@gmail.com>
+Cc: Barry Song <Baohua.Song@csr.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rongjun Ying <rongjun.ying@csr.com>, vinod.koul@intel.com,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        workgroup.linux@csr.com, Jassi Brar <jaswinder.singh@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-Message-Id: <3A4FADE6-3653-46C5-B225-8200F9DCE35B@bootc.net>
-References: <4E734467.3040703@bootc.net> <1316256305.24257.25.camel@shinybook.infradead.org> <AD4B8103-C98F-4BC5-9F7F-496D220781F3@bootc.net>
-To: "Woodhouse, David" <david.woodhouse@intel.com>
-X-Mailer: Apple Mail (2.1250.3)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 Sep 2011, at 12:57, Chris Boot wrote:
-> On 17 Sep 2011, at 11:45, Woodhouse, David wrote:
->> On Fri, 2011-09-16 at 13:43 +0100, Chris Boot wrote:
->>> In the very short term the number is up and down by a few hundred 
->>> objects but the general trend is constantly upwards. After about 5 days' 
->>> uptime I have some very serious IO slowdowns (narrowed down by a friend 
->>> to SCSI command queueing) with a lot of time spent in
->>> alloc_iova() and rb_prev() according to 'perf top'. Eventually these 
->>> translate into softlockups and the machine becomes almost unusable.
->> 
->> If you're seeing it spend ages in rb_prev() that implies that the
->> mappings are still *active* and in the rbtree, rather than just the the
->> iommu_iova data structure has been leaked.
->> 
->> I suppose it's vaguely possible that we're leaking them in such a way
->> that they remain on the rbtree, perhaps if the deferred unmap is never
->> actually happening... but I think it's a whole lot more likely that the
->> PCI driver is just never bothering to unmap the pages it maps.
->> 
->> If you boot with 'intel_iommu=strict' that will avoid the deferred unmap
->> which is the only likely culprit in the IOMMU code...
-> 
-> 
-> Booting with intel_iommu=on,strict still shows the iommu_iova on a constant increase, so I don't think it's that.
-> 
-> I've bodged the following patch to see if it catches anything obvious. We'll see if anything useful comes of it. Sorry, my mail client kills whitespace.
+2011/9/17 Jassi Brar <jassisinghbrar@gmail.com>:
+> On Fri, Sep 16, 2011 at 3:26 PM, Barry Song <Baohua.Song@csr.com> wrote:
+>
+>> +static int sirfsoc_dma_slave_config(struct sirfsoc_dma_chan *schan,
+>> +       struct dma_slave_config *config)
+>> +{
+>> +       u32 addr, direction;
+>> +       unsigned long flags;
+>> +
+>> +       switch (config->direction) {
+>> +       case DMA_FROM_DEVICE:
+>> +               direction = 0;
+>> +               addr = config->dst_addr;
+>> +               break;
+>> +
+>> +       case DMA_TO_DEVICE:
+>> +               direction = 1;
+>> +               addr = config->src_addr;
+>> +               break;
+>> +
+>> +       default:
+>> +               return -EINVAL;
+>> +       }
+>> +
+>> +       if ((config->src_addr_width != DMA_SLAVE_BUSWIDTH_4_BYTES) ||
+>> +               (config->dst_addr_width != DMA_SLAVE_BUSWIDTH_4_BYTES))
+>> +               return -EINVAL;
+>> +
+>> +       spin_lock_irqsave(&schan->lock, flags);
+>> +       schan->addr = addr;
+>> +       schan->direction = direction;
+>> +       schan->mode = (config->src_maxburst == 4 ? 1 : 0);
+>> +       spin_unlock_irqrestore(&schan->lock, flags);
+>> +
+>> +       return 0;
+>> +}
+> You don't need to pass as much info via dma_slave_config as you do here.
+>
+> dmaxfer_template.src_inc  && !dmaxfer_template.dst_inc  => DMA_TO_DEVICE
+> !dmaxfer_template.src_inc  && dmaxfer_template.dst_inc  => DMA_FROM_DEVICE
 
+it seems direct DMA_TO_DEVICE/DMA_FROM_DEVICE is more feasible and
+explict to me. "dmaxfer_template.src_inc  &&
+!dmaxfer_template.dst_inc" is probably DMA_TO_DEVICE, but it is not
+always true for all scenerios to all kinds of devices. anyway, for my
+case, they are always true. so i can use them.
 
-[patch snipped, it's at http://lkml.org/lkml/2011/9/17/23]
+>
+> Pass addresses using dmaxfer_template.src_start and dmaxfer_template.dst_start
+> instead of dma_slave_config.dst_addr and dma_slave_config.src_addr
+>
+> So, currently you need dma_slave_config only to pass src_addr_width,
+> dst_addr_width and src_maxburst to the dmac driver.
 
-David,
+i agree that can decrease the calling of config. let the genxfer
+decide the address of every transfer should be more flexible.
 
-With a modified version of the patch (as discussed on IRC) which also takes into account mapping of sg lists, I see that the cause of the spurious mappings is the 3ware-9xxx driver (CCs added). The raw WARNING is below. I get a very large number of these one after the other as well, all nearly identical and within the 3w-9xxx driver.
+>
+>
+>> +
+>> +static struct dma_async_tx_descriptor *sirfsoc_dma_prep_slave_sg(
+>> +       struct dma_chan *chan, struct scatterlist *sgl,
+>> +       unsigned int sg_len, enum dma_data_direction direction,
+>> +       unsigned long flags)
+>> +{
+>> +       return NULL;
+>> +}
+>> +
+> In v3 I'll remove the BUG_ON check that requires every SLAVE channel
+> provides device_prep_slave_sg, so you should be able to simply discard
+> this stub.
 
-twa_scsiop_execute_scsi+0x141 is actually twa_map_scsi_sg_data() which has been inlined.
+ok, that is going to make the api better.
 
-Sep 17 13:40:30 tarquin kernel: [ 1447.334024] ------------[ cut here ]------------
-Sep 17 13:40:30 tarquin kernel: [ 1447.347585] WARNING: at drivers/iommu/intel-iommu.c:3088 intel_map_sg+0x1db/0x221()
-Sep 17 13:40:30 tarquin kernel: [ 1447.364894] Hardware name: S1200BTL
-Sep 17 13:40:30 tarquin kernel: [ 1447.377545] Modules linked in: tun ip6table_mangle iptable_mangle xt_DSCP xt_owner iscsi_target_mod target_core_pscsi target_core_file target_core_iblock target_core_mod configfs ip6table_filter ip6_tables iptable_filter ip_tables ebtable_nat ebtables x_tables cpufreq_stats cpufreq_userspace cpufreq_conservative cpufreq_powersave ipmi_watchdog microcode nfsd nfs lockd fscache auth_rpcgss nfs_acl sunrpc bridge stp ext4 jbd2 crc16 dm_snapshot ipmi_si ipmi_devintf ipmi_msghandler acpi_cpufreq mperf coretemp fuse crc32c_intel aesni_intel cryptd aes_x86_64 aes_generic dm_crypt kvm_intel kvm i2c_i801 snd_pcm snd_timer snd soundcore i2c_core snd_page_alloc joydev ftdi_sio usbserial evdev pcspkr processor video button ext3 jbd mbcache btrfs zlib_deflate crc32c libcrc32c dm_mod sg sd_mod crc_t10dif usbhid hid ahci libahci 3w_9xxx thermal libata ehci_hcd fan thermal_sys scsi_mod usbcore e1000e [last unloaded: scsi_wait_scan]
-Sep 17 13:40:30 tarquin kernel: [ 1447.552657] Pid: 0, comm: swapper Not tainted 3.1.0-rc6+ #3
-Sep 17 13:40:30 tarquin kernel: [ 1447.569884] Call Trace:
-Sep 17 13:40:30 tarquin kernel: [ 1447.583468]  <IRQ>  [<ffffffff81047f62>] warn_slowpath_common+0x7e/0x96
-Sep 17 13:40:30 tarquin kernel: [ 1447.602095]  [<ffffffff81047f8f>] warn_slowpath_null+0x15/0x17
-Sep 17 13:40:30 tarquin kernel: [ 1447.619837]  [<ffffffff812756cb>] intel_map_sg+0x1db/0x221
-Sep 17 13:40:30 tarquin kernel: [ 1447.637110]  [<ffffffffa00650c0>] scsi_dma_map+0x80/0x99 [scsi_mod]
-Sep 17 13:40:30 tarquin kernel: [ 1447.655291]  [<ffffffffa00e4675>] twa_scsiop_execute_scsi+0x141/0x3a5 [3w_9xxx]
-Sep 17 13:40:30 tarquin kernel: [ 1447.674875]  [<ffffffffa00e4ded>] twa_scsi_queue+0xd6/0x16a [3w_9xxx]
-Sep 17 13:40:30 tarquin kernel: [ 1447.693424]  [<ffffffffa005d488>] ? scsi_finish_command+0xe8/0xe8 [scsi_mod]
-Sep 17 13:40:30 tarquin kernel: [ 1447.712660]  [<ffffffffa005e620>] scsi_dispatch_cmd+0x192/0x236 [scsi_mod]
-Sep 17 13:40:30 tarquin kernel: [ 1447.731711]  [<ffffffffa0064235>] scsi_request_fn+0x3f5/0x421 [scsi_mod]
-Sep 17 13:40:30 tarquin kernel: [ 1447.750511]  [<ffffffff81194a3f>] __blk_run_queue+0x16/0x18
-Sep 17 13:40:30 tarquin kernel: [ 1447.767974]  [<ffffffffa006388a>] scsi_run_queue+0x1b5/0x21e [scsi_mod]
-Sep 17 13:40:30 tarquin kernel: [ 1447.786632]  [<ffffffffa006494e>] scsi_next_command+0x34/0x45 [scsi_mod]
-Sep 17 13:40:30 tarquin kernel: [ 1447.805337]  [<ffffffffa0064e01>] scsi_io_completion+0x458/0x4d2 [scsi_mod]
-Sep 17 13:40:30 tarquin kernel: [ 1447.824467]  [<ffffffff8127248f>] ? __free_iova+0x71/0x79
-Sep 17 13:40:30 tarquin kernel: [ 1447.841928]  [<ffffffff8134f36b>] ? _raw_spin_unlock_irqrestore+0x12/0x14
-Sep 17 13:40:30 tarquin kernel: [ 1447.860901]  [<ffffffffa005d47f>] scsi_finish_command+0xdf/0xe8 [scsi_mod]
-Sep 17 13:40:30 tarquin kernel: [ 1447.879789]  [<ffffffffa00648ff>] scsi_softirq_done+0x104/0x10d [scsi_mod]
-Sep 17 13:40:30 tarquin kernel: [ 1447.898445]  [<ffffffff8119d5a7>] blk_done_softirq+0x69/0x79
-Sep 17 13:40:30 tarquin kernel: [ 1447.915703]  [<ffffffff810748d7>] ? arch_local_irq_save+0x15/0x1b
-Sep 17 13:40:30 tarquin kernel: [ 1447.933430]  [<ffffffff8104d877>] __do_softirq+0xc2/0x182
-Sep 17 13:40:30 tarquin kernel: [ 1447.950234]  [<ffffffff8134f36b>] ? _raw_spin_unlock_irqrestore+0x12/0x14
-Sep 17 13:40:30 tarquin kernel: [ 1447.968574]  [<ffffffff813568ec>] call_softirq+0x1c/0x30
-Sep 17 13:40:30 tarquin kernel: [ 1447.985226]  [<ffffffff8100fa12>] do_softirq+0x41/0x7f
-Sep 17 13:40:30 tarquin kernel: [ 1448.001673]  [<ffffffff8104dae3>] irq_exit+0x3f/0x9c
-Sep 17 13:40:30 tarquin kernel: [ 1448.017782]  [<ffffffff8100f720>] do_IRQ+0x89/0xa0
-Sep 17 13:40:30 tarquin kernel: [ 1448.033770]  [<ffffffff8134f6ae>] common_interrupt+0x6e/0x6e
-Sep 17 13:40:30 tarquin kernel: [ 1448.050658]  <EOI>  [<ffffffff8100d03a>] ? load_TLS+0xb/0xf
-Sep 17 13:40:30 tarquin kernel: [ 1448.067500]  [<ffffffffa01f6426>] ? arch_local_irq_enable+0x8/0xd [processor]
-Sep 17 13:40:30 tarquin kernel: [ 1448.086229]  [<ffffffffa01f6dad>] acpi_idle_enter_c1+0x88/0xa6 [processor]
-Sep 17 13:40:30 tarquin kernel: [ 1448.104583]  [<ffffffff8126b6c9>] cpuidle_idle_call+0xf9/0x185
-Sep 17 13:40:30 tarquin kernel: [ 1448.121632]  [<ffffffff8100d29d>] cpu_idle+0x9f/0xe3
-Sep 17 13:40:30 tarquin kernel: [ 1448.137603]  [<ffffffff8133255e>] rest_init+0x72/0x74
-Sep 17 13:40:30 tarquin kernel: [ 1448.153605]  [<ffffffff816a5b81>] start_kernel+0x3c0/0x3cb
-Sep 17 13:40:30 tarquin kernel: [ 1448.170074]  [<ffffffff816a52c4>] x86_64_start_reservations+0xaf/0xb3
-Sep 17 13:40:30 tarquin kernel: [ 1448.187796]  [<ffffffff816a5140>] ? early_idt_handlers+0x140/0x140
-Sep 17 13:40:30 tarquin kernel: [ 1448.205156]  [<ffffffff816a53ca>] x86_64_start_kernel+0x102/0x111
-Sep 17 13:40:30 tarquin kernel: [ 1448.222302] ---[ end trace a812f71b71702674 ]---
-
--- 
-Chris Boot
-bootc@bootc.net
-
+-barry
