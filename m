@@ -1,144 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756142Ab1IQTbz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Sep 2011 15:31:55 -0400
-Received: from mga03.intel.com ([143.182.124.21]:37266 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753334Ab1IQTby (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Sep 2011 15:31:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,398,1312182000"; 
-   d="p7s'?scan'208";a="49924922"
-From: "Woodhouse, David" <david.woodhouse@intel.com>
-To: adam radford <aradford@gmail.com>
-CC: Chris Boot <bootc@bootc.net>, lkml <linux-kernel@vger.kernel.org>,
-        Adam Radford <linuxraid@lsi.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: Re: iommu_iova leak [inside 3w-9xxx]
-Thread-Topic: iommu_iova leak [inside 3w-9xxx]
-Thread-Index: AQHMdUmi2JOiV8Q2R0y5sOlK1v97s5VR4twAgAACiwA=
-Date: Sat, 17 Sep 2011 19:31:21 +0000
-Message-ID: <1316287878.2954.5.camel@shinybook.infradead.org>
-References: <4E734467.3040703@bootc.net>
-	 <1316256305.24257.25.camel@shinybook.infradead.org>
-	 <AD4B8103-C98F-4BC5-9F7F-496D220781F3@bootc.net>
-	 <3A4FADE6-3653-46C5-B225-8200F9DCE35B@bootc.net>
-	 <CAHtARFHfxpU1JKu4092ZshvhsrRY-hx_pfnL3_+T32B3ncgWvg@mail.gmail.com>
-In-Reply-To: <CAHtARFHfxpU1JKu4092ZshvhsrRY-hx_pfnL3_+T32B3ncgWvg@mail.gmail.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-GB
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-Content-Type: multipart/signed; micalg=sha1;
-	protocol="application/x-pkcs7-signature"; boundary="=-aKBij1aB42JnhpUtkhjR"
+	id S1756054Ab1IQSYA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Sep 2011 14:24:00 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:35968 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752835Ab1IQSX7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Sep 2011 14:23:59 -0400
 MIME-Version: 1.0
+In-Reply-To: <4E74E3D6.8080401@gmx.de>
+References: <1316088425.11294.78.camel@lappyti>
+	<yunboul7sx7.fsf@aiko.keithp.com>
+	<1316100594.23214.65.camel@deskari>
+	<yun8vpp7qk7.fsf@aiko.keithp.com>
+	<4E72320B.6020000@gmx.de>
+	<CADnq5_NnzLtJmSzOgyppnBtv96DRTJ71u6ZSrs56KJ-F5CC-mw@mail.gmail.com>
+	<4E724659.5080709@gmx.de>
+	<20110915195804.4e6d965b@lxorguk.ukuu.org.uk>
+	<CAMP44s1ywhCV+FaudnwjwJUvj5Cf3_oz1M++kjXxRDGQpJ6-0w@mail.gmail.com>
+	<CAF6AEGu2-O+2KuCrQPJ6-xejg8TCScrFVZSimgkAV_5Xs-bgkg@mail.gmail.com>
+	<4E74C6C3.2000704@gmx.de>
+	<CAPM=9twmPVrBPmUuEuTYHSzjDGHtfsmiVX6cozpAFYEaV-NcCg@mail.gmail.com>
+	<4E74E3D6.8080401@gmx.de>
+Date: Sat, 17 Sep 2011 19:23:57 +0100
+Message-ID: <CAPM=9txHu7mzH8p8g=FmHsjvmAT-aMy-xEFj4odXEvnbs-bhMw@mail.gmail.com>
+Subject: Re: Proposal for a low-level Linux display framework
+From: Dave Airlie <airlied@gmail.com>
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: Rob Clark <rob@ti.com>, Felipe Contreras <felipe.contreras@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linaro-dev@lists.linaro.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Archit Taneja <archit@ti.com>, linux-fbdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-aKBij1aB42JnhpUtkhjR
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+>
+> Is it? Well, okay, I don't want to use any acceleration that can crash my
+> machine, where can I select it, preferably as compile time option? I didn't find
+> such a thing for Intel or Radeon. Don't say, I should rely on userspace here or
+> use fbdev for this.
 
-On Sat, 2011-09-17 at 12:22 -0700, adam radford wrote:
-> If you think 3w-9xxx is not unmapping pages it maps, please re-run
-> with CONFIG_PCI_DMA_DEBUG=3Dy=20
+Just tell the X driver to not use acceleration, and it you won't get
+any acceleration used, then you get complete stability. If a driver
+writer wants to turn off all accel in the kernel driver, it can, its
+not an option we've bothered with for intel or radeon since it really
+makes no sense. To put it simply you don't really seem to understand
+the driver model around KMS. If no userspace app uses acceleration
+then no acceleration features will magically happen. If you want to
+write a simple app against the KMS API like plymouth you can now use
+the dumb ioctls to create and map a buffer that can be made into a
+framebuffer. Also you get hw cursors + modesetting.
 
-Good point; thanks. I'd forgotten about PCI_DMA_DEBUG. Is there a way to
-trigger it other than unloading the module? Doing that may require
-nfsroot...
+> The thing is that the core fbdev API does not expose any acceleration to
+> userspace, maybe some drivers do via IOCTLs, but I hope that are only things
+> that can be done in a sane way, otherwise I'd consider it a bug. The story is
+> different for DRM/KMS, as I understand, as this was primarily for acceleration
+> and only recently got modesetting capabilities.
 
---=20
-                   Sent with MeeGo's ActiveSync support.
-
-David Woodhouse                            Open Source Technology Centre
-David.Woodhouse@intel.com                              Intel Corporation
-
-
-
---=-aKBij1aB42JnhpUtkhjR
-Content-Type: application/x-pkcs7-signature; name="smime.p7s"
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Transfer-Encoding: base64
-
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIO6jCCAz0w
-ggKmoAMCAQICAwWw/zANBgkqhkiG9w0BAQUFADBOMQswCQYDVQQGEwJVUzEQMA4GA1UEChMHRXF1
-aWZheDEtMCsGA1UECxMkRXF1aWZheCBTZWN1cmUgQ2VydGlmaWNhdGUgQXV0aG9yaXR5MB4XDTA2
-MDIxNjE4MDEzMFoXDTE2MDIxOTE4MDEzMFowUjELMAkGA1UEBhMCVVMxGjAYBgNVBAoTEUludGVs
-IENvcnBvcmF0aW9uMScwJQYDVQQDEx5JbnRlbCBFeHRlcm5hbCBCYXNpYyBQb2xpY3kgQ0EwggEi
-MA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDBpd/XOb9QVqEZ8mQ1042TdOIq3ATDIsV2xDyt
-30yLyMR5Wjtus0bn3B+he89BiNO/LP6+rFzEwlD55PlX+HLGIKeNNG97dqyc30FElEUjZzTZFq2N
-4e3kVJ/XAEEgANzV8v9qp7qWwxugPgfc3z9BkYot+CifozexHLb/hEZj+yISCU61kRZvuSQ0E11y
-YL4dRgcglJeaHo3oX57rvIckaLsYV5/1Aj+R8DM1Ppk965XQAKsHfnyT7C4S50T4lVn4lz36wOdN
-Zn/zegG1zp41lnoTFfT4KuKVJH5x7YD1p6KbgJCKLovnujGuohquBNfdXKpZkvz6pGv+iC1HawJd
-AgMBAAGjgaAwgZ0wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBQaxgxKxEdvqNutK/D0Vgaj7TdU
-DDA6BgNVHR8EMzAxMC+gLaArhilodHRwOi8vY3JsLmdlb3RydXN0LmNvbS9jcmxzL3NlY3VyZWNh
-LmNybDAfBgNVHSMEGDAWgBRI5mj5K9KylddH2CMgEE8zmJCf1DAPBgNVHRMBAf8EBTADAQH/MA0G
-CSqGSIb3DQEBBQUAA4GBABMQOK2kVKVIlUWwLTdywJ+e2O+PC/uQltK2F3lRyrPfBn69tOkIP4Sg
-DJOfsxyobIrPLe75kBLw+Dom13OBDp/EMZJZ1CglQfVV8co9mT3aZMjSGGQiMgkJLR3jMfr900fX
-ZKj5XeqCJ+JP0mEhJGEdVCY+FFlksJjV86fDrq1QMIIFijCCBHKgAwIBAgIKYR6AtwAAAAAABzAN
-BgkqhkiG9w0BAQUFADBSMQswCQYDVQQGEwJVUzEaMBgGA1UEChMRSW50ZWwgQ29ycG9yYXRpb24x
-JzAlBgNVBAMTHkludGVsIEV4dGVybmFsIEJhc2ljIFBvbGljeSBDQTAeFw0wOTA1MTUxOTI1MTNa
-Fw0xNTA1MTUxOTM1MTNaMFYxCzAJBgNVBAYTAlVTMRowGAYDVQQKExFJbnRlbCBDb3Jwb3JhdGlv
-bjErMCkGA1UEAxMiSW50ZWwgRXh0ZXJuYWwgQmFzaWMgSXNzdWluZyBDQSAzQTCCASIwDQYJKoZI
-hvcNAQEBBQADggEPADCCAQoCggEBAMGPgGLnOO5IOzlHRfr1XfCVb97V4BR2QVpPZ7CrcIQ+FGa2
-KHD/6dPjwxOIrtFTdfW4BYikdFmxUZVBWRWZ5Vye2cCdGzFWqIEOE1e17nNx1jM8Z6GZEqbDUS+v
-BuPlBFHKQoVm5BaNIHpyn2XZxqwjV9j5/crIfPrCGstk+2ztUhVS8OHEgzO784PgD9pOgBnnAbZH
-mEM1FYYmQ6ibS+gVCHzobDYG+YReRiHpFKWBxpUuP+X0WYFw/Ja1JW7N8pELAFDw0UFBWFgiv1QI
-usdLvSy8mcsLJ5wy050OVcxShqoUxhw/wvyuuoQxvmEPjhRa1C2oSCmGN0003GMhQWMCAwEAAaOC
-AlwwggJYMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFKoWZq+3PVZTYK4Nwu3z7gfLUWB+MAsG
-A1UdDwQEAwIBhjASBgkrBgEEAYI3FQEEBQIDAQABMCMGCSsGAQQBgjcVAgQWBBTCKwhTx+hdMsKC
-gOmWwLgjQsAV+TAZBgkrBgEEAYI3FAIEDB4KAFMAdQBiAEMAQTAfBgNVHSMEGDAWgBQaxgxKxEdv
-qNutK/D0Vgaj7TdUDDCBvQYDVR0fBIG1MIGyMIGvoIGsoIGphk5odHRwOi8vd3d3LmludGVsLmNv
-bS9yZXBvc2l0b3J5L0NSTC9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBQb2xpY3klMjBDQS5j
-cmyGV2h0dHA6Ly9jZXJ0aWZpY2F0ZXMuaW50ZWwuY29tL3JlcG9zaXRvcnkvQ1JML0ludGVsJTIw
-RXh0ZXJuYWwlMjBCYXNpYyUyMFBvbGljeSUyMENBLmNybDCB4wYIKwYBBQUHAQEEgdYwgdMwYwYI
-KwYBBQUHMAKGV2h0dHA6Ly93d3cuaW50ZWwuY29tL3JlcG9zaXRvcnkvY2VydGlmaWNhdGVzL0lu
-dGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMFBvbGljeSUyMENBLmNydDBsBggrBgEFBQcwAoZgaHR0
-cDovL2NlcnRpZmljYXRlcy5pbnRlbC5jb20vcmVwb3NpdG9yeS9jZXJ0aWZpY2F0ZXMvSW50ZWwl
-MjBFeHRlcm5hbCUyMEJhc2ljJTIwUG9saWN5JTIwQ0EuY3J0MA0GCSqGSIb3DQEBBQUAA4IBAQCU
-Y/1d0MS6VPTlIcOho1XWh193PD5kJDJSPdphLHQdM1oKA+whMdIBoY1VzTDDK+C+Ey4Jcyna7fpC
-8uVmn/Rz/i9MZtyc7qezPtZTn9UyORvJmddH+Ox/RycGwe3ags8jUdspECorYOkJyZksnDIlTVUv
-bR7wyY+gGJYqxWXqrcVFEiMsWu8/OIlf7F2gAYMBw1kZ55dn4lWBIM0WqvReWpPvhYeN7Y+3MKEd
-SMkQ7TZiNbfdZ5D/8KfWNMTJ4VHltOgCL1lA5tx/F4R1920skpL5eu3Sj650RUe3rOXsaV5NyJzB
-wB31+1zsmleVdFD0k/Fw9HxXbAQE35ucN/7CMIIGFzCCBP+gAwIBAgIKEIhPUAABAABfaTANBgkq
-hkiG9w0BAQUFADBWMQswCQYDVQQGEwJVUzEaMBgGA1UEChMRSW50ZWwgQ29ycG9yYXRpb24xKzAp
-BgNVBAMTIkludGVsIEV4dGVybmFsIEJhc2ljIElzc3VpbmcgQ0EgM0EwHhcNMTEwNDEyMTIzMzQx
-WhcNMTQwMzI3MTIzMzQxWjBFMRkwFwYDVQQDExBXb29kaG91c2UsIERhdmlkMSgwJgYJKoZIhvcN
-AQkBFhlkYXZpZC53b29kaG91c2VAaW50ZWwuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIB
-CgKCAQEAvxW1JMLaZUeM6Cg2OVV1nfsZOt9x/CjVJ7SBlapefSjUoNT48n58zLK+Q00YxPkIxnwl
-m57dAxSUf/Dqg+C6DOdLknVQILrGeWNSZdC8GQ8HlHz+D5ldgTDY9L1vDM65p1wbXW4R5QfMbooZ
-IQKlyUivGkggwBUpTeeXDOfz5f4m2UW5aCnyG8yhiBUHISAQyXLwQg+iVhBpTqsVvvojybQY8lGF
-Z7U+kgbgBY0HCqOuEmT7Iz/tm4W3dpfh8mFluZUn1fMBvCaC+cdKVV/1lpeUdtMNREH+jKUU49lt
-BblH1qXmEViOvMT4itbfkUSWeWgeI9umMOK4eL31LLepCQIDAQABo4IC9jCCAvIwCwYDVR0PBAQD
-AgeAMDwGCSsGAQQBgjcVBwQvMC0GJSsGAQQBgjcVCIbDjHWEmeVRg/2BKIWOn1OCkcAJZ4HevTmV
-8EMCAWQCAQgwHQYDVR0OBBYEFMcuq9ocKJ7EbWcVlAWTYVXwOsrHMB8GA1UdIwQYMBaAFKoWZq+3
-PVZTYK4Nwu3z7gfLUWB+MIHPBgNVHR8EgccwgcQwgcGggb6ggbuGV2h0dHA6Ly93d3cuaW50ZWwu
-Y29tL3JlcG9zaXRvcnkvQ1JML0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMElzc3VpbmclMjBD
-QSUyMDNBKDEpLmNybIZgaHR0cDovL2NlcnRpZmljYXRlcy5pbnRlbC5jb20vcmVwb3NpdG9yeS9D
-UkwvSW50ZWwlMjBFeHRlcm5hbCUyMEJhc2ljJTIwSXNzdWluZyUyMENBJTIwM0EoMSkuY3JsMIH1
-BggrBgEFBQcBAQSB6DCB5TBsBggrBgEFBQcwAoZgaHR0cDovL3d3dy5pbnRlbC5jb20vcmVwb3Np
-dG9yeS9jZXJ0aWZpY2F0ZXMvSW50ZWwlMjBFeHRlcm5hbCUyMEJhc2ljJTIwSXNzdWluZyUyMENB
-JTIwM0EoMSkuY3J0MHUGCCsGAQUFBzAChmlodHRwOi8vY2VydGlmaWNhdGVzLmludGVsLmNvbS9y
-ZXBvc2l0b3J5L2NlcnRpZmljYXRlcy9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBJc3N1aW5n
-JTIwQ0ElMjAzQSgxKS5jcnQwHwYDVR0lBBgwFgYIKwYBBQUHAwQGCisGAQQBgjcKAwwwKQYJKwYB
-BAGCNxUKBBwwGjAKBggrBgEFBQcDBDAMBgorBgEEAYI3CgMMME8GA1UdEQRIMEagKQYKKwYBBAGC
-NxQCA6AbDBlkYXZpZC53b29kaG91c2VAaW50ZWwuY29tgRlkYXZpZC53b29kaG91c2VAaW50ZWwu
-Y29tMA0GCSqGSIb3DQEBBQUAA4IBAQBxLiiAAGnWEDYYtUaje48WjSbMx8O+TsKX2x1sgi/ilnUR
-evhznvvFGx9hRrTtQ4Sz+hU7nWvoxbSLDVx6vDQ7+wyGo6SzE0MYqwB3EzwO/P8MnpgZTlEmgDeP
-GjYX2IFzp5fG7NNvc6byf8pLjXgn+2wqRLUqrh2PZZ5KKIiicVNT+UOlRIbB2T1WuSVHBMQxhQBr
-rzwwYuyoawJCHHo+eKUE51cSSzkT95K+m0Q6XYGC8tQ3i94nBIaLMIg/GM6K2cYKH3vdu/otvGPl
-j9/HEKo+mktp2A2S5sIwCKlw8nYOaYKe1dpmYtXKfVoOIIZ/LaVEB/XEIEC1x/oPbrH/MYIB6jCC
-AeYCAQEwZDBWMQswCQYDVQQGEwJVUzEaMBgGA1UEChMRSW50ZWwgQ29ycG9yYXRpb24xKzApBgNV
-BAMTIkludGVsIEV4dGVybmFsIEJhc2ljIElzc3VpbmcgQ0EgM0ECChCIT1AAAQAAX2kwCQYFKw4D
-AhoFAKBdMBgGCSqGSIb3DQEJAzELBgkqhkiG9w0BBwEwHAYJKoZIhvcNAQkFMQ8XDTExMDkxNzE5
-MzExOFowIwYJKoZIhvcNAQkEMRYEFG55jSH4CXUmnJKJkDk5Uonzim2zMA0GCSqGSIb3DQEBAQUA
-BIIBAHCLtyhCxsoTD2H+PtXJzWLb6n1GEJ2i8wJHi4bZp+bkz75EguAmF0zv6XKtSd/ivomwG4Do
-rDsVJYbA584iY2dj5XSdufiwC3RTVR9ghHnQmN/GIcrjdNIKdqGZ+ZycDzosyIou2OIa8w+bzS6T
-88E9Kpf1Zs+4s0df8M42mB/XOARo7bDqwqmibLnAK2vMDmzbZ9qcu+7zu98QnzDN2cbG/4j5CKuw
-Tqcjr7ZV5blFKkj28U46pYxhGEpObMjEAZWpjGyoZFi4R6A1AvGSz+1Bw8yNxueC8HpELK8qSv4U
-fynjLuIRmjzN6xbm3DqRIgg0nmFP8UNADsdIaBO0L/YAAAAAAAA=
+The core drm/kms ioctls don't expose acceleration to userspace either,
+again misinformation seems to drive most of your logic. You can't do
+generic useful acceleration from the kernel. A lot of modern GPU
+hardware doesn't even have bitblt engines.
 
 
---=-aKBij1aB42JnhpUtkhjR--
+> It's true that mmap can be PITA, but I don't see any real alternative given that
+> you want directly map video memory, especially on low end systems. And there are
+> ways around it, you can forbid mapping (though probably most userspace wouldn't
+> like it, I guess) or use any other solution like defio.
+> If you'd stop exposing the fbdev userspace interface it'd just harden my opinion
+> that KMS is a piece of trash and that I should avoid hardware that does not have
+> a native framebuffer driver. I think you shouldn't do this, as it's just a
+> disadvantage for your end users, but I personally do not really care.
+
+We've fixed this in KMS, we don't pass direct mappings to userspace
+that we can't tear down and refault. We only provide objects via
+handles. The only place its a problem is where we expose fbdev legacy
+emulation, since we have to fix the pages.
+
+Dave.
