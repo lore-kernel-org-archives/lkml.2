@@ -1,47 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755320Ab1IQPNc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Sep 2011 11:13:32 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:33823 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752400Ab1IQPNa (ORCPT
+	id S1755364Ab1IQPRD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Sep 2011 11:17:03 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:48448 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750832Ab1IQPRB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Sep 2011 11:13:30 -0400
-Message-ID: <4E74B7A9.1070001@gmail.com>
-Date: Sat, 17 Sep 2011 17:07:21 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
+	Sat, 17 Sep 2011 11:17:01 -0400
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] xip: export xip_file_fault
-References: <4E749003.30909@gmail.com> <20110917135346.GA31551@infradead.org>
-In-Reply-To: <20110917135346.GA31551@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAMP44s1ywhCV+FaudnwjwJUvj5Cf3_oz1M++kjXxRDGQpJ6-0w@mail.gmail.com>
+References: <1316088425.11294.78.camel@lappyti>
+	<yunboul7sx7.fsf@aiko.keithp.com>
+	<1316100594.23214.65.camel@deskari>
+	<yun8vpp7qk7.fsf@aiko.keithp.com>
+	<4E72320B.6020000@gmx.de>
+	<CADnq5_NnzLtJmSzOgyppnBtv96DRTJ71u6ZSrs56KJ-F5CC-mw@mail.gmail.com>
+	<4E724659.5080709@gmx.de>
+	<20110915195804.4e6d965b@lxorguk.ukuu.org.uk>
+	<CAMP44s1ywhCV+FaudnwjwJUvj5Cf3_oz1M++kjXxRDGQpJ6-0w@mail.gmail.com>
+Date: Sat, 17 Sep 2011 10:16:57 -0500
+X-Google-Sender-Auth: Ik4N88J8kmGFpyPofS-ENABtrMc
+Message-ID: <CAF6AEGu2-O+2KuCrQPJ6-xejg8TCScrFVZSimgkAV_5Xs-bgkg@mail.gmail.com>
+Subject: Re: Proposal for a low-level Linux display framework
+From: Rob Clark <rob@ti.com>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linaro-dev@lists.linaro.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Archit Taneja <archit@ti.com>, linux-fbdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 17/09/2011 15:53, Christoph Hellwig ha scritto:
-> On Sat, Sep 17, 2011 at 02:18:11PM +0200, Marco Stornelli wrote:
->> From: Marco Stornelli<marco.stornelli@gmail.com>
+On Sat, Sep 17, 2011 at 9:44 AM, Felipe Contreras
+<felipe.contreras@gmail.com> wrote:
+> On Thu, Sep 15, 2011 at 9:58 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>>> One of my biggest problems with KMS is that it has (naturally) a lot more
+>>> complexity than the fb API which leads to instability. Basically it's very
 >>
->> There aren't sufficient sync points for a fs for xip operations. In
->> particular for the mmap case. It can be not sufficient to lock/unlock
->> to do some operation inside get_xip_mem callback. For xip_file_read
->> it's really easy to write a fs specific wrapper, xip_file_write hold
->> i_mutex so no problem. With this patch it's possible to reuse the
->> generic xip_file_fault, using a wrapper function in a fs, without to
->> reinvent the wheel.
+>> It shouldn't do - and a sample of one (your machine) is not a
+>> statistically valid set. Fb is pretty much ununsable in contrast on my
+>> main box, but that's not a statistically valid sample either.
+>>
+>> I'm not that convinced by the complexity either. For a simple video card
+>> setup such as those that the fb layer can kind of cope with (ie linear
+>> buffer, simple mode changes, no client rendering, no vblank flipping,
+>> limited mode management, no serious multi-head) a DRM driver is also
+>> pretty tiny and simple.
 >
-> As usual please send patches to add exports only while adding callers
-> for it.
+> That's not true, many drivers work around the lack of features in the
+> fb API by providing custom interfaces. For example, in omapfb it's
+> possible to use the overlays from user-space, configure some YUV
+> format, do vsink, and multipages just fine:
 >
+> https://github.com/felipec/gst-omapfb/blob/master/omapfb.c
 >
+> It's perfect to render video clips. Of course, it would be even better
+> if those custom interfaces were merged into the fb API.
 
-Actually the module is not currently in mainline even if I hope soon. No 
-problem. I'll resend it at the right moment.
+fwiw, as was mentioned earlier in the thread, there is already an
+effort underway for a standardized overlay interface for KMS:
 
-Marco
+http://lists.freedesktop.org/archives/dri-devel/2011-April/010559.html
+
+Anyways, it is also possible to extend DRM drivers w/ custom API.. and
+even possible extend the fbdev on top of DRM/KMS with custom
+interfaces if you *really* wanted to.  I have some patches somewhere
+that add support a portion of the omapfb ioctls to the fbdev layer in
+omapdrm driver for the benefit of some legacy display test app.  If
+someone really wanted to, I guess there is no reason that you couldn't
+support all of the omapfb custom ioctls.
+
+>From userspace perspective, fbdev doesn't go away.  It is just a
+legacy interface provided on top of DRM/KMS driver mostly via helper
+functions.  With this approach, you get the richer KMS API (and all
+the related plumbing for hotplug, EDID parsing, multi-head support,
+flipping, etc) for userspace stuff that needs that, but can keep the
+fbdev userspace interface for legacy apps.  It is the best of both
+worlds.  There isn't really any good reason to propagate standalone
+fbdev driver anymore.
+
+BR,
+-R
+
+> --
+> Felipe Contreras
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+>
