@@ -1,41 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756144Ab1IQTWO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Sep 2011 15:22:14 -0400
-Received: from mail-vw0-f42.google.com ([209.85.212.42]:42110 "EHLO
-	mail-vw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753334Ab1IQTWN (ORCPT
+	id S1754684Ab1IQSeH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Sep 2011 14:34:07 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:35707 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751352Ab1IQSeF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Sep 2011 15:22:13 -0400
+	Sat, 17 Sep 2011 14:34:05 -0400
+Date: Sat, 17 Sep 2011 22:33:58 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
+        paul@paulmenage.org, lizf@cn.fujitsu.com,
+        kamezawa.hiroyu@jp.fujitsu.com, ebiederm@xmission.com,
+        davem@davemloft.net, gthelen@google.com, netdev@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH v2 4/7] per-cgroup tcp buffers control
+Message-ID: <20110917183358.GB2783@moon>
+References: <1316051175-17780-1-git-send-email-glommer@parallels.com>
+ <1316051175-17780-5-git-send-email-glommer@parallels.com>
+ <20110917181132.GC1658@shutemov.name>
 MIME-Version: 1.0
-In-Reply-To: <3A4FADE6-3653-46C5-B225-8200F9DCE35B@bootc.net>
-References: <4E734467.3040703@bootc.net>
-	<1316256305.24257.25.camel@shinybook.infradead.org>
-	<AD4B8103-C98F-4BC5-9F7F-496D220781F3@bootc.net>
-	<3A4FADE6-3653-46C5-B225-8200F9DCE35B@bootc.net>
-Date: Sat, 17 Sep 2011 12:22:12 -0700
-Message-ID: <CAHtARFHfxpU1JKu4092ZshvhsrRY-hx_pfnL3_+T32B3ncgWvg@mail.gmail.com>
-Subject: Re: iommu_iova leak [inside 3w-9xxx]
-From: adam radford <aradford@gmail.com>
-To: Chris Boot <bootc@bootc.net>
-Cc: "Woodhouse, David" <david.woodhouse@intel.com>,
-        lkml <linux-kernel@vger.kernel.org>, Adam Radford <linuxraid@lsi.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110917181132.GC1658@shutemov.name>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 17, 2011 at 7:29 AM, Chris Boot <bootc@bootc.net> wrote:
-> On 17 Sep 2011, at 12:57, Chris Boot wrote:
->> On 17 Sep 2011, at 11:45, Woodhouse, David wrote:
->>> I suppose it's vaguely possible that we're leaking them in such a way
->>> that they remain on the rbtree, perhaps if the deferred unmap is never
->>> actually happening... but I think it's a whole lot more likely that the
->>> PCI driver is just never bothering to unmap the pages it maps.
+On Sat, Sep 17, 2011 at 09:11:32PM +0300, Kirill A. Shutemov wrote:
+> On Wed, Sep 14, 2011 at 10:46:12PM -0300, Glauber Costa wrote:
+> > +int tcp_init_cgroup_fill(struct proto *prot, struct cgroup *cgrp,
+> > +			 struct cgroup_subsys *ss)
+> > +{
+> > +	prot->enter_memory_pressure	= tcp_enter_memory_pressure;
+> > +	prot->memory_allocated		= memory_allocated_tcp;
+> > +	prot->prot_mem			= tcp_sysctl_mem;
+> > +	prot->sockets_allocated		= sockets_allocated_tcp;
+> > +	prot->memory_pressure		= memory_pressure_tcp;
+> 
+> No fancy formatting, please.
+> 
 
-If you think 3w-9xxx is not unmapping pages it maps, please re-run with
-CONFIG_PCI_DMA_DEBUG=y
+What's wrong with having fancy formatting? It's indeed easier to read
+when members are assigned this way. It's always up to maintainer to
+choose what he prefers, but I see nothing wrong in such style (if only it
+doesn't break the style of the whole file).
 
--Adam
+	Cyrill
