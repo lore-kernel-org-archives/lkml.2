@@ -1,147 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752776Ab1IQLoa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Sep 2011 07:44:30 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:38937 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751799Ab1IQLo3 (ORCPT
+	id S1752919Ab1IQL5w (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Sep 2011 07:57:52 -0400
+Received: from yuna.grokhost.net ([87.117.228.63]:57856 "EHLO
+	yuna.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751311Ab1IQL5u convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Sep 2011 07:44:29 -0400
-Subject: Re: [PATCH v2 10/10] x86, efi: EFI boot stub support
-From: Matt Fleming <matt@console-pimps.org>
-To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-Cc: Matt Domsch <Matt_Domsch@Dell.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Matthew Garrett <mjg@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Mike Waychison <mikew@google.com>, Andi Kleen <andi@firstfloor.org>,
-        "Hargrave, Jordan" <Jordan_Hargrave@Dell.com>
-In-Reply-To: <4E71F33C.2010809@gmail.com>
-References: <1315838094-2307-1-git-send-email-matt@console-pimps.org>
-	 <1315838094-2307-11-git-send-email-matt@console-pimps.org>
-	 <4E6F69A1.9030406@gmail.com>
-	 <1316016478.3466.74.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <20110915045231.GA32136@emperor.us.dell.com> <4E71B196.1060504@gmail.com>
-	 <20110915115255.GA4669@emperor.us.dell.com>  <4E71F33C.2010809@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 17 Sep 2011 12:44:26 +0100
-Message-ID: <1316259866.3578.20.camel@mfleming-mobl1.ger.corp.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Sat, 17 Sep 2011 07:57:50 -0400
+Subject: Re: iommu_iova leak
+Mime-Version: 1.0 (Apple Message framework v1250.3)
+Content-Type: text/plain; charset=us-ascii
+From: Chris Boot <bootc@bootc.net>
+In-Reply-To: <1316256305.24257.25.camel@shinybook.infradead.org>
+Date: Sat, 17 Sep 2011 12:57:42 +0100
+Cc: lkml <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <AD4B8103-C98F-4BC5-9F7F-496D220781F3@bootc.net>
+References: <4E734467.3040703@bootc.net> <1316256305.24257.25.camel@shinybook.infradead.org>
+To: "Woodhouse, David" <david.woodhouse@intel.com>
+X-Mailer: Apple Mail (2.1250.3)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-09-15 at 14:44 +0200, Maarten Lankhorst wrote:
-> Thanks, that makes much more sense. The man page makes mention
-> of extra arguments, but it kind of looked like the way to pass it was by
-> using -u -@ - which didn't work of course. :)
+On 17 Sep 2011, at 11:45, Woodhouse, David wrote:
+> On Fri, 2011-09-16 at 13:43 +0100, Chris Boot wrote:
+>> In the very short term the number is up and down by a few hundred 
+>> objects but the general trend is constantly upwards. After about 5 days' 
+>> uptime I have some very serious IO slowdowns (narrowed down by a friend 
+>> to SCSI command queueing) with a lot of time spent in
+>> alloc_iova() and rb_prev() according to 'perf top'. Eventually these 
+>> translate into softlockups and the machine becomes almost unusable.
 > 
-> So for reference:
-> efibootmgr -L 'EFI Native Linux Boot' -l '\vmlinuz.efi' -d /dev/sdb -u root=/dev/sdb2 console=ttyS0,115200n8
+> If you're seeing it spend ages in rb_prev() that implies that the
+> mappings are still *active* and in the rbtree, rather than just the the
+> iommu_iova data structure has been leaked.
 > 
-> or as ASCII (reads much prettier in efibootmgr -v)
-> efibootmgr -L 'EFI Native Linux Boot' -l '\vmlinuz.efi' -d /dev/sdb root=/dev/sdb2 console=ttyS0,115200n8
+> I suppose it's vaguely possible that we're leaking them in such a way
+> that they remain on the rbtree, perhaps if the deferred unmap is never
+> actually happening... but I think it's a whole lot more likely that the
+> PCI driver is just never bothering to unmap the pages it maps.
 > 
-> This is the fixed patch I'm using for booting native linux kernel,
-> with passing args tested for UCS-2 and ASCII. It seems that
-> options_size can be halved safely, otherwise too much data is
-> copied from input.
+> If you boot with 'intel_iommu=strict' that will avoid the deferred unmap
+> which is the only likely culprit in the IOMMU code...
 
-Thanks for looking at this Maarten. I've been staring at this code for
-far too long to notice buglets like this ;-)
 
-> I keep the first word, since otherwise the first argument is stripped off,
-> and it's probably harmless for the kernel to read something like
-> \vmlinuz.efi when you don't do a direct boot.
-> 
-> Signed-off-by: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-> 
-> diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
-> index 6c34828..f77f9f5 100644
-> --- a/arch/x86/boot/compressed/eboot.c
-> +++ b/arch/x86/boot/compressed/eboot.c
-> @@ -619,12 +619,12 @@ static efi_status_t make_boot_params(struct boot_params *boot_params,
->  	unsigned long cmdline;
->  	u8 nr_entries;
->  	u16 *s2;
-> -	u8 *s1;
-> +	u8 *s1, *s2_8;
->  	int i;
->  
->  	hdr->type_of_loader = 0x21;
->  
-> -	status = low_alloc(options_size, 1, &cmdline);
-> +	status = low_alloc(options_size+1, 1, &cmdline);
->  	if (status != EFI_SUCCESS)
->  		goto fail;
+Booting with intel_iommu=on,strict still shows the iommu_iova on a constant increase, so I don't think it's that.
 
-If no options were passed to the stub then we really don't want to do
-the allocation at all. Speaking of 'options_size', have you tested the
-values that get passed in from image->load_options? Running with the
-OVMF firmware under qemu I get sizes that are always larger than the
-NUL-byte in the argument string. For example, executing "bzImage foo"
-results in image->load_options being 38!
+I've bodged the following patch to see if it catches anything obvious. We'll see if anything useful comes of it. Sorry, my mail client kills whitespace.
 
-Remember that ->options_size represents 16-bit characters and cmdline is
-going to be ASCII. options_size will always be larger than the value we
-need, so there's no need for the +1. At the moment we're actually
-allocating too much memory and that needs to be fixed.
-
-> @@ -633,27 +633,29 @@ static efi_status_t make_boot_params(struct boot_params *boot_params,
->  	/* Convert unicode cmdline to ascii */
->  	s1 = (u8 *)(unsigned long)hdr->cmd_line_ptr;
->  	s2 = (u16 *)options;
-> +	s2_8 = (u8*)options;
->  
-> -	if (s2 && options_size) {
-> -		/* Skip first word, that's the kernel name */
-> -		while (*s2 && *s2 != ' ' && *s2 != '\n') {
-> -			options_size--;
-> -			s2++;
-> -		}
-> -
-> -		/* skip space */
-> -		if (*s2 == ' ') {
-> -			options_size--;
-> -			s2++;
-> -		}
-> -
-> -		while (options_size-- != 0) {
-> +	if (options_size < 2 || !s2) {
-> +		*s1 = '\0';
-> +	} else if (s2_8[1] && s2_8[1] < 0x80 && s2_8[0] < 0x80) {
-> +		/* Passed as ASCII */
-> +		s2 = NULL;
-> +		memcpy(s1, s2_8, options_size);
-> +		hdr->cmdline_size = options_size;
-> +	} else {
-> +		options_size /= 2; /* Passed as UCS-2 */
-> +		while (options_size-- != 0 && *s2) {
->  			*s1++ = *s2++;
->  			hdr->cmdline_size++;
->  		}
-> -
->  		*s1 = '\0';
-> +		s1 = (u8 *)(unsigned long)hdr->cmd_line_ptr;
->  	}
-> +	if (hdr->cmdline_size && s1[hdr->cmdline_size - 1] == '\0')
-> +		hdr->cmdline_size--;
-> +	if (hdr->cmdline_size && s1[hdr->cmdline_size - 1] == '\n')
-> +		hdr->cmdline_size--;
-> +	s1[hdr->cmdline_size] = '\0';
->  
->  	hdr->ramdisk_image = 0;
->  	hdr->ramdisk_size = 0;
-
-Hmm... I'm really not convinced that we need to support ASCII cmdline
-arguments, sorry. efibootmgr has support for UCS-2, so that's what
-should be used.
-
-Thanks for the review!
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index c621c98..aebbd56 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -2724,6 +2724,7 @@ static dma_addr_t __intel_map_single(struct device *hwdev, phys_addr_t paddr,
+        int ret;
+        struct intel_iommu *iommu;
+        unsigned long paddr_pfn = paddr >> PAGE_SHIFT;
++       int dma_map_count;
+ 
+        BUG_ON(dir == DMA_NONE);
+ 
+@@ -2761,6 +2762,9 @@ static dma_addr_t __intel_map_single(struct device *hwdev, phys_addr_t paddr,
+        if (ret)
+                goto error;
+ 
++       dma_map_count = atomic_inc_return(&pdev->dma_map_count);
++       WARN_ON((dma_map_count > 2000) && !(dma_map_count % 1000));
++
+        /* it's a non-present to present mapping. Only flush if caching mode */
+        if (cap_caching_mode(iommu->cap))
+                iommu_flush_iotlb_psi(iommu, domain->id, mm_to_dma_pfn(iova->pfn_lo), size, 1);
+@@ -2892,6 +2896,7 @@ static void intel_unmap_page(struct device *dev, dma_addr_t dev_addr,
+ 
+        pr_debug("Device %s unmapping: pfn %lx-%lx\n",
+                 pci_name(pdev), start_pfn, last_pfn);
++       atomic_dec(&pdev->dma_map_count);
+ 
+        /*  clear the whole page */
+        dma_pte_clear_range(domain, start_pfn, last_pfn);
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index f3f94a5..cb1e86b 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -1108,6 +1108,7 @@ struct pci_dev *alloc_pci_dev(void)
+                return NULL;
+ 
+        INIT_LIST_HEAD(&dev->bus_list);
++       atomic_set(&dev->dma_map_count, 0);
+ 
+        return dev;
+ }
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 8c230cb..d431f39 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -331,6 +331,7 @@ struct pci_dev {
+        int rom_attr_enabled;           /* has display of the rom attribute been enabled? */
+        struct bin_attribute *res_attr[DEVICE_COUNT_RESOURCE]; /* sysfs file for resources */
+        struct bin_attribute *res_attr_wc[DEVICE_COUNT_RESOURCE]; /* sysfs file for WC mapping of resources */
++       atomic_t        dma_map_count;
+ #ifdef CONFIG_PCI_MSI
+        struct list_head msi_list;
+ #endif
 
 -- 
-Matt Fleming, Intel Open Source Technology Center
+Chris Boot
+bootc@bootc.net
 
