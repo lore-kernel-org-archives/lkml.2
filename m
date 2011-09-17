@@ -1,69 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932614Ab1IQBNY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 21:13:24 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:54600 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932227Ab1IQBNX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 21:13:23 -0400
-Date: Sat, 17 Sep 2011 11:13:10 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Temporary input tree
-Message-Id: <20110917111310.8c381f88f422ba887dc3af45@canb.auug.org.au>
-In-Reply-To: <20110916055242.GA17815@core.coreip.homeip.net>
-References: <20110916055242.GA17815@core.coreip.homeip.net>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Sat__17_Sep_2011_11_13_10_+1000_gxmvv9JFwYe4pcRM"
+	id S1756214Ab1IQBtc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 21:49:32 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:41101 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752904Ab1IQBt3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Sep 2011 21:49:29 -0400
+From: John Stultz <john.stultz@linaro.org>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>, gthelen@google.com,
+        tartler@cs.fau.de, Dmitry Fink <Dmitry.Fink@palm.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Eric B Munson <ebmunson@us.ibm.com>,
+        Bruce Ashfield <Bruce.Ashfield@windriver.com>,
+        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org
+Subject: [PATCH 2/2] kconfig: Add merge_config.sh script
+Date: Fri, 16 Sep 2011 18:49:19 -0700
+Message-Id: <1316224159-3556-3-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.7.3.2.146.gca209
+In-Reply-To: <1316224159-3556-1-git-send-email-john.stultz@linaro.org>
+References: <1316224159-3556-1-git-send-email-john.stultz@linaro.org>
+x-cbid: 11091701-8974-0000-0000-000000380850
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sat__17_Sep_2011_11_13_10_+1000_gxmvv9JFwYe4pcRM
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+After noticing almost every distro has their own method of managing
+config fragments, I went looking at some best practices, and wanted
+to try to consolidate some of the different approaches so this fairly
+simple infrastructure can be shared (and new distros/build systems
+don't have to implement yet another config fragment merge script).
 
-Hi Dmitry,
+This script is most influenced by the Windriver tools used in
+the Yocto Project, reusing some portions found there.
 
-On Thu, 15 Sep 2011 22:52:45 -0700 Dmitry Torokhov <dmitry.torokhov@gmail.c=
-om> wrote:
->
-> I've created a temporary input tree at
->=20
->     https://github.com/dtor/input
->=20
-> The structure is the same as original input tree at kernel.org:
-> 'for-linus' branch for current work and 'next' branch for the next merge
-> window.
->=20
-> Stephen, could you switch linux-next to this new location please?
+This script merges multiple config fragments, warning on any
+overrided values. It utilizes olddefconfig to set any unspecified values
+to their default, then finally checks to make sure no specified
+value was dropped due to unsatisfied dependencies.
 
-OK, I will switch to this from Monday, thanks.
+Thanks to Darren Hart for early review and feedback!
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Please let me know if you have any comments or thoughts!
 
---Signature=_Sat__17_Sep_2011_11_13_10_+1000_gxmvv9JFwYe4pcRM
-Content-Type: application/pgp-signature
+CC: gthelen@google.com
+CC: tartler@cs.fau.de
+CC: Dmitry Fink <Dmitry.Fink@palm.com>
+CC: Darren Hart <dvhart@linux.intel.com>
+CC: Eric B Munson <ebmunson@us.ibm.com>
+CC: Bruce Ashfield <Bruce.Ashfield@windriver.com>
+CC: Michal Marek <mmarek@suse.cz>
+CC: linux-kbuild@vger.kernel.org
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ scripts/kconfig/merge_config.sh |   72 +++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 72 insertions(+), 0 deletions(-)
+ create mode 100755 scripts/kconfig/merge_config.sh
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+diff --git a/scripts/kconfig/merge_config.sh b/scripts/kconfig/merge_config.sh
+new file mode 100755
+index 0000000..fa90e49
+--- /dev/null
++++ b/scripts/kconfig/merge_config.sh
+@@ -0,0 +1,72 @@
++#!/bin/sh
++#  merge_config.sh - Takes a list of config fragment values, and merges
++#  them one by one. Provides warnings on overridden values, and specified
++#  values that did not make it to the resulting .config file (due to missed
++#  dependencies or config symbol removal).
++#
++#  Portions reused from kconf_check and generate_cfg:
++#  http://git.yoctoproject.org/cgit/cgit.cgi/yocto-kernel-tools/tree/tools/kconf_check
++#  http://git.yoctoproject.org/cgit/cgit.cgi/yocto-kernel-tools/tree/tools/generate_cfg
++#
++#  Copyright (c) 2009-2010 Wind River Systems, Inc.
++#  Copyright 2011 Linaro
++#
++#  This program is free software; you can redistribute it and/or modify
++#  it under the terms of the GNU General Public License version 2 as
++#  published by the Free Software Foundation.
++#
++#  This program is distributed in the hope that it will be useful,
++#  but WITHOUT ANY WARRANTY; without even the implied warranty of
++#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
++#  See the GNU General Public License for more details.
++
++MERGE_LIST=$*
++
++
++TMP_FILE=$(mktemp ./.tmp.config.XXXXXXXXXX)
++
++# Merge files, printing warnings on overrided values
++for MERGE_FILE in $MERGE_LIST ; do
++	echo "Merging $MERGE_FILE"
++	CFG_LIST=`cat $MERGE_FILE | \
++	  sed 's/^\(# \)\{0,1\}\(CONFIG_[a-zA-Z0-9_]*\)[= ].*/\2/'`
++	for CFG in $CFG_LIST ; do
++		grep -q -w $CFG $TMP_FILE
++		if [ $? == 0 ] ; then
++			PREV_VAL=`grep -w $CFG $TMP_FILE`
++			NEW_VAL=`grep -w $CFG $MERGE_FILE`
++			if [ "x$PREV_VAL" != "x$NEW_VAL" ] ; then
++			echo Value of $CFG is redefined by fragment $MERGE_FILE:
++			echo Previous  value: `grep -w $CFG $TMP_FILE`
++			echo New value:       `grep -w $CFG $MERGE_FILE`
++			echo
++			fi
++			sed -i "/$CFG[ =]/d" $TMP_FILE
++		fi
++	done
++	cat $MERGE_FILE >> $TMP_FILE
++done
++
++
++# Copy the merged file to .config and run olddefconfig
++cp $TMP_FILE .config
++make olddefconfig > /dev/null
++
++
++# Check all specified config values took (might have missed-dependency issues)
++cat $TMP_FILE | while read line; do
++	CFG=`echo $line | \
++		sed 's/^\(# \)\{0,1\}\(CONFIG_[a-zA-Z0-9_]*\)[= ].*/\2/'`
++
++	REQUESTED_VAL=`grep -w -e "$CFG" $TMP_FILE`
++	ACTUAL_VAL=`grep -w -e "$CFG" .config`
++	if [ "x$REQUESTED_VAL" != "x$ACTUAL_VAL" ] ; then
++		echo "Value requested for $CFG not in final .config"
++		echo "Requested value:  $REQUESTED_VAL"
++		echo "Actual value:     $ACTUAL_VAL"
++		echo ""
++	fi
++done
++
++# Cleanup
++rm $TMP_FILE
+-- 
+1.7.3.2.146.gca209
 
-iQEcBAEBAgAGBQJOc/QmAAoJEDMEi1NhKgbscOQH/01sK/ilK60fEbguC4gaVXe6
-qtUOqnkY/4tfT6ehRFQqXfS123D3JdmKDvUycLpSigpQvmqi5ruOhoutfZ132Yf2
-Bmtof5nTZsCkeKexJkTRBOhJwh7FVP6YiHWK3BdJbOprztsLhH/7Yqbo5xHcoRdN
-VO94HI+OB50D8fcYBNw8ufBmNMZsj/MpLbju+pN0waqSjy89P5mssnQEsCIZtQYy
-BloXgq2YBjSr7k5SURLMUW7fS5YlLf5hRttNG9+cqCrV/cdzsYLZ96epMWFhi+Lv
-80FEVREHGw2a1WZFrFBaoutPfC82rp0Xe1dZYEnEjpRzQh3BGrWct93wSUdpckM=
-=NFkn
------END PGP SIGNATURE-----
-
---Signature=_Sat__17_Sep_2011_11_13_10_+1000_gxmvv9JFwYe4pcRM--
