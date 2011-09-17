@@ -1,307 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932181Ab1IQVgX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Sep 2011 17:36:23 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:43911 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752619Ab1IQVgW (ORCPT
+	id S1756234Ab1IQXDG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Sep 2011 19:03:06 -0400
+Received: from shawmail.shawcable.com ([64.59.128.220]:52265 "EHLO
+	mail.shawcable.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755317Ab1IQXDE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Sep 2011 17:36:22 -0400
-Subject: [PATCH] Merge pata_of_platform.c into pata_platform.c
-To: linux-ide@vger.kernel.org, Dave Martin <dave.martin@linaro.org>,
-        linux-kernel@vger.kernel.org
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Sat, 17 Sep 2011 15:36:19 -0600
-Message-ID: <20110917213532.20710.92002.stgit@ponder>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	Sat, 17 Sep 2011 19:03:04 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=W1EbViUdRLrB3xZls61b9cpNy9JNgdRUyrcMJe3sx/g= c=1 sm=1
+ a=EbUuBWHc38EA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10
+ a=k8hqzbHzjweV03hO1KKrVA==:17 a=yPCof4ZbAAAA:8 a=OLL_FvSJAAAA:8
+ a=QyXUC8HyAAAA:8 a=VwQbUJbxAAAA:8 a=RiPh2G5sJ1vWErPw-DQA:9
+ a=9xxq7yMXEqzbMmPOr8sA:7 a=CjuIK1q_8ugA:10 a=mfTLZt5StWkA:10
+ a=x8gzFH9gYPwA:10 a=7DSvI1NPTFQA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+X-IronPort-AV: E=Sophos;i="4.68,399,1312178400"; 
+   d="scan'208";a="378694673"
+X-reinject: true
+References: <1316128013-21980-1-git-send-email-andi@firstfloor.org> <1316128013-21980-2-git-send-email-andi@firstfloor.org> <20110916154815.GA27150@infradead.org> <4E7439EB.7080100@oracle.com>
+In-Reply-To: <4E7439EB.7080100@oracle.com>
+Mime-Version: 1.0 (iPhone Mail 8L1)
+Content-Type: text/plain;
+	charset=us-ascii
+Message-Id: <41C7FF67-8658-4E7F-BB50-E9AAEA1F755C@dilger.ca>
+Content-Transfer-Encoding: 8BIT
+Cc: Christoph Hellwig <hch@infradead.org>, Andi Kleen <andi@firstfloor.org>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <ak@linux.intel.com>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
+X-Mailer: iPhone Mail (8L1)
+From: Andreas Dilger <adilger@dilger.ca>
+Subject: Re: [PATCH 1/7] BTRFS: Fix lseek return value for error
+Date: Sat, 17 Sep 2011 17:03:48 -0600
+To: "jeff.liu@oracle.com" <jeff.liu@oracle.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no need for two drivers anymore
+On 2011-09-17, at 12:10 AM, Jeff Liu <jeff.liu@oracle.com> wrote:
+> I once posted a similar patch for this issue which can be found at:
+> http://www.spinics.net/lists/linux-btrfs/msg12169.html
+> 
+> with an additional improvement if the offset is larger or equal to the
+> file size, return -ENXIO in directly:
+> 
+>                if (offset >= inode->i_size) {
+>                        mutex_unlock(&inode->i_mutex);
+>                        return -ENXIO;
+>                }
 
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-Cc: Dave Martin <dave.martin@linaro.org>
-COMPILE TESTED ONLY
----
-[resend - I flubbed Dave's email address]
+Except that is wrong, because it would then be impossible to write sparse files. 
 
-Dave, as I mentioned in the other thread, this is the patch that I
-hacked together to get rid of pata_of_platform.c.  Can you take over
-on this patch please?
-
- drivers/ata/pata_of_platform.c |  116 ----------------------------------------
- drivers/ata/pata_platform.c    |   60 ++++++++++++++++++---
- include/linux/ata_platform.h   |    9 ---
- 3 files changed, 52 insertions(+), 133 deletions(-)
- delete mode 100644 drivers/ata/pata_of_platform.c
-
-diff --git a/drivers/ata/pata_of_platform.c b/drivers/ata/pata_of_platform.c
-deleted file mode 100644
-index f305400..0000000
---- a/drivers/ata/pata_of_platform.c
-+++ /dev/null
-@@ -1,116 +0,0 @@
--/*
-- * OF-platform PATA driver
-- *
-- * Copyright (c) 2007  MontaVista Software, Inc.
-- *                     Anton Vorontsov <avorontsov@ru.mvista.com>
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License (Version 2) as
-- * published by the Free Software Foundation.
-- */
--
--#include <linux/kernel.h>
--#include <linux/module.h>
--#include <linux/of_platform.h>
--#include <linux/ata_platform.h>
--
--static int __devinit pata_of_platform_probe(struct platform_device *ofdev)
--{
--	int ret;
--	struct device_node *dn = ofdev->dev.of_node;
--	struct resource io_res;
--	struct resource ctl_res;
--	struct resource irq_res;
--	unsigned int reg_shift = 0;
--	int pio_mode = 0;
--	int pio_mask;
--	const u32 *prop;
--
--	ret = of_address_to_resource(dn, 0, &io_res);
--	if (ret) {
--		dev_err(&ofdev->dev, "can't get IO address from "
--			"device tree\n");
--		return -EINVAL;
--	}
--
--	if (of_device_is_compatible(dn, "electra-ide")) {
--		/* Altstatus is really at offset 0x3f6 from the primary window
--		 * on electra-ide. Adjust ctl_res and io_res accordingly.
--		 */
--		ctl_res = io_res;
--		ctl_res.start = ctl_res.start+0x3f6;
--		io_res.end = ctl_res.start-1;
--	} else {
--		ret = of_address_to_resource(dn, 1, &ctl_res);
--		if (ret) {
--			dev_err(&ofdev->dev, "can't get CTL address from "
--				"device tree\n");
--			return -EINVAL;
--		}
--	}
--
--	ret = of_irq_to_resource(dn, 0, &irq_res);
--	if (ret == NO_IRQ)
--		irq_res.start = irq_res.end = 0;
--	else
--		irq_res.flags = 0;
--
--	prop = of_get_property(dn, "reg-shift", NULL);
--	if (prop)
--		reg_shift = *prop;
--
--	prop = of_get_property(dn, "pio-mode", NULL);
--	if (prop) {
--		pio_mode = *prop;
--		if (pio_mode > 6) {
--			dev_err(&ofdev->dev, "invalid pio-mode\n");
--			return -EINVAL;
--		}
--	} else {
--		dev_info(&ofdev->dev, "pio-mode unspecified, assuming PIO0\n");
--	}
--
--	pio_mask = 1 << pio_mode;
--	pio_mask |= (1 << pio_mode) - 1;
--
--	return __pata_platform_probe(&ofdev->dev, &io_res, &ctl_res, &irq_res,
--				     reg_shift, pio_mask);
--}
--
--static int __devexit pata_of_platform_remove(struct platform_device *ofdev)
--{
--	return __pata_platform_remove(&ofdev->dev);
--}
--
--static struct of_device_id pata_of_platform_match[] = {
--	{ .compatible = "ata-generic", },
--	{ .compatible = "electra-ide", },
--	{},
--};
--MODULE_DEVICE_TABLE(of, pata_of_platform_match);
--
--static struct platform_driver pata_of_platform_driver = {
--	.driver = {
--		.name = "pata_of_platform",
--		.owner = THIS_MODULE,
--		.of_match_table = pata_of_platform_match,
--	},
--	.probe		= pata_of_platform_probe,
--	.remove		= __devexit_p(pata_of_platform_remove),
--};
--
--static int __init pata_of_platform_init(void)
--{
--	return platform_driver_register(&pata_of_platform_driver);
--}
--module_init(pata_of_platform_init);
--
--static void __exit pata_of_platform_exit(void)
--{
--	platform_driver_unregister(&pata_of_platform_driver);
--}
--module_exit(pata_of_platform_exit);
--
--MODULE_DESCRIPTION("OF-platform PATA driver");
--MODULE_AUTHOR("Anton Vorontsov <avorontsov@ru.mvista.com>");
--MODULE_LICENSE("GPL");
-diff --git a/drivers/ata/pata_platform.c b/drivers/ata/pata_platform.c
-index 2067308..adc435a 100644
---- a/drivers/ata/pata_platform.c
-+++ b/drivers/ata/pata_platform.c
-@@ -17,6 +17,7 @@
- #include <linux/blkdev.h>
- #include <scsi/scsi_host.h>
- #include <linux/ata.h>
-+#include <linux/of.h>
- #include <linux/libata.h>
- #include <linux/platform_device.h>
- #include <linux/ata_platform.h>
-@@ -176,7 +177,6 @@ int __devinit __pata_platform_probe(struct device *dev,
- 	return ata_host_activate(host, irq, irq ? ata_sff_interrupt : NULL,
- 				 irq_flags, &pata_platform_sht);
- }
--EXPORT_SYMBOL_GPL(__pata_platform_probe);
- 
- /**
-  *	__pata_platform_remove		-	unplug a platform interface
-@@ -185,7 +185,7 @@ EXPORT_SYMBOL_GPL(__pata_platform_probe);
-  *	A platform bus ATA device has been unplugged. Perform the needed
-  *	cleanup. Also called on module unload for any active devices.
-  */
--int __pata_platform_remove(struct device *dev)
-+int __devexit __pata_platform_remove(struct device *dev)
- {
- 	struct ata_host *host = dev_get_drvdata(dev);
- 
-@@ -193,14 +193,28 @@ int __pata_platform_remove(struct device *dev)
- 
- 	return 0;
- }
--EXPORT_SYMBOL_GPL(__pata_platform_remove);
-+
-+#ifdef CONFIG_OF
-+static struct of_device_id pata_platform_match[] = {
-+	{ .compatible = "arm,versatile-ata", },
-+	{ .compatible = "ata-generic", },
-+	{ .compatible = "electra-ide", },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, pata_platform_match);
-+#else
-+#define pata_platform_match NULL
-+#endif
- 
- static int __devinit pata_platform_probe(struct platform_device *pdev)
- {
-+	struct device_node *np = pdev->dev.of_node;
- 	struct resource *io_res;
- 	struct resource *ctl_res;
- 	struct resource *irq_res;
- 	struct pata_platform_info *pp_info = pdev->dev.platform_data;
-+	int local_pio_mask = pio_mask;
-+	u32 reg_shift = 0;
- 
- 	/*
- 	 * Simple resource validation ..
-@@ -224,11 +238,24 @@ static int __devinit pata_platform_probe(struct platform_device *pdev)
- 	 * Then the CTL base
- 	 */
- 	ctl_res = platform_get_resource(pdev, IORESOURCE_IO, 1);
--	if (ctl_res == NULL) {
-+	if (ctl_res == NULL)
- 		ctl_res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
--		if (unlikely(ctl_res == NULL))
--			return -EINVAL;
-+#ifdef CONFIG_OF
-+	if ((ctl_res == NULL) && of_device_is_compatible(np, "electra-ide")) {
-+		/* electra-ide quirk: Altstatus is really at offset 0x3f6 from
-+		 * the primary window. Adjust ctl_res and io_res accordingly. */
-+		ctl_res = devm_kzalloc(&pdev->dev, sizeof(*ctl_res) * 2, GFP_KERNEL);
-+		if (ctl_res) {
-+			ctl_res[0] = *io_res;
-+			ctl_res[1] = *io_res;
-+			io_res = &ctl_res[1];
-+			ctl_res->start += 0x3f6;
-+			io_res->end = ctl_res->start - 1;
-+		}
- 	}
-+#endif
-+	if (unlikely(ctl_res == NULL))
-+		return -EINVAL;
- 
- 	/*
- 	 * And the IRQ
-@@ -237,9 +264,25 @@ static int __devinit pata_platform_probe(struct platform_device *pdev)
- 	if (irq_res)
- 		irq_res->flags = pp_info ? pp_info->irq_flags : 0;
- 
-+	/* Parse device tree data if available */
-+	if (np) {
-+		u32 pio_mode = 0;
-+		of_property_read_u32(np, "reg-shift", &reg_shift);
-+		if (of_property_read_u32(np, "pio-mode", &pio_mode) == 0)
-+			dev_info(&pdev->dev, "pio-mode unspecified, assuming PIO0\n");
-+		if (pio_mode > 6) {
-+			dev_err(&pdev->dev, "invalid pio-mode\n");
-+			return -EINVAL;
-+		}
-+		local_pio_mask = (1 << (pio_mode + 1)) - 1;
-+	}
-+
-+	/* Platform data takes precedence if available */
-+	if (pp_info)
-+		reg_shift = pp_info->ioport_shift;
-+
- 	return __pata_platform_probe(&pdev->dev, io_res, ctl_res, irq_res,
--				     pp_info ? pp_info->ioport_shift : 0,
--				     pio_mask);
-+				     reg_shift, local_pio_mask);
- }
- 
- static int __devexit pata_platform_remove(struct platform_device *pdev)
-@@ -253,6 +296,7 @@ static struct platform_driver pata_platform_driver = {
- 	.driver = {
- 		.name		= DRV_NAME,
- 		.owner		= THIS_MODULE,
-+		.of_match_table = pata_platform_match,
- 	},
- };
- 
-diff --git a/include/linux/ata_platform.h b/include/linux/ata_platform.h
-index 9a26c83..1e83a7f 100644
---- a/include/linux/ata_platform.h
-+++ b/include/linux/ata_platform.h
-@@ -15,15 +15,6 @@ struct pata_platform_info {
- 	unsigned int irq_flags;
- };
- 
--extern int __devinit __pata_platform_probe(struct device *dev,
--					   struct resource *io_res,
--					   struct resource *ctl_res,
--					   struct resource *irq_res,
--					   unsigned int ioport_shift,
--					   int __pio_mask);
--
--extern int __devexit __pata_platform_remove(struct device *dev);
--
- /*
-  * Marvell SATA private data
-  */
-
+> Thanks,
+> -Jeff
+> On 09/16/2011 11:48 PM, Christoph Hellwig wrote:
+> 
+>> On Thu, Sep 15, 2011 at 04:06:47PM -0700, Andi Kleen wrote:
+>>> From: Andi Kleen <ak@linux.intel.com>
+>>> 
+>>> Introduced by 9a4327ca1f45f82edad7dc0a4e52ce9316e0950c
+>> 
+>> I think this should go to Chris/Linus ASAP.  But a slightly better
+>> patch description wouldn't hurt either.
+>> 
+>> Also any reason you captialize BTRFS?
+>> 
+>>> 
+>>> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+>>> ---
+>>> fs/btrfs/file.c |   13 +++++++------
+>>> 1 files changed, 7 insertions(+), 6 deletions(-)
+>>> 
+>>> diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
+>>> index 3c3abff..7ec0a24 100644
+>>> --- a/fs/btrfs/file.c
+>>> +++ b/fs/btrfs/file.c
+>>> @@ -1818,19 +1818,17 @@ static loff_t btrfs_file_llseek(struct file *file, loff_t offset, int origin)
+>>>    case SEEK_DATA:
+>>>    case SEEK_HOLE:
+>>>        ret = find_desired_extent(inode, &offset, origin);
+>>> -        if (ret) {
+>>> -            mutex_unlock(&inode->i_mutex);
+>>> -            return ret;
+>>> -        }
+>>> +        if (ret)
+>>> +            goto error;
+>>>    }
+>>> 
+>>>    if (offset < 0 && !(file->f_mode & FMODE_UNSIGNED_OFFSET)) {
+>>>        ret = -EINVAL;
+>>> -        goto out;
+>>> +        goto error;
+>>>    }
+>>>    if (offset > inode->i_sb->s_maxbytes) {
+>>>        ret = -EINVAL;
+>>> -        goto out;
+>>> +        goto error;
+>>>    }
+>>> 
+>>>    /* Special lock needed here? */
+>>> @@ -1841,6 +1839,9 @@ static loff_t btrfs_file_llseek(struct file *file, loff_t offset, int origin)
+>>> out:
+>>>    mutex_unlock(&inode->i_mutex);
+>>>    return offset;
+>>> +error:
+>>> +    mutex_unlock(&inode->i_mutex);
+>>> +    return ret;
+>>> }
+>>> 
+>>> const struct file_operations btrfs_file_operations = {
+>>> -- 
+>>> 1.7.4.4
+>>> 
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> ---end quoted text---
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
