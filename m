@@ -1,601 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755448Ab1IQOrW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Sep 2011 10:47:22 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:39579 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754625Ab1IQOrI (ORCPT
+	id S1755391Ab1IQOx6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Sep 2011 10:53:58 -0400
+Received: from yuna.grokhost.net ([87.117.228.63]:33694 "EHLO
+	yuna.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754155Ab1IQOx4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Sep 2011 10:47:08 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Frysinger <vapier@gentoo.org>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        David Miller <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
-        Ralf Baechle <ralf@linux-mips.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Paul Mackerras <paulus@samba.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: [PATCH 1/5] nohz: Seperate out irq exit and idle loop dyntick logic
-Date: Sat, 17 Sep 2011 16:39:58 +0200
-Message-Id: <1316270402-19919-2-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1316270402-19919-1-git-send-email-fweisbec@gmail.com>
-References: <1316270402-19919-1-git-send-email-fweisbec@gmail.com>
+	Sat, 17 Sep 2011 10:53:56 -0400
+Subject: Re: iommu_iova leak [inside 3w-9xxx]
+Mime-Version: 1.0 (Apple Message framework v1250.3)
+Content-Type: text/plain; charset=us-ascii
+From: Chris Boot <bootc@bootc.net>
+In-Reply-To: <AD4B8103-C98F-4BC5-9F7F-496D220781F3@bootc.net>
+Date: Sat, 17 Sep 2011 15:29:56 +0100
+Cc: lkml <linux-kernel@vger.kernel.org>, Adam Radford <linuxraid@lsi.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <3A4FADE6-3653-46C5-B225-8200F9DCE35B@bootc.net>
+References: <4E734467.3040703@bootc.net> <1316256305.24257.25.camel@shinybook.infradead.org> <AD4B8103-C98F-4BC5-9F7F-496D220781F3@bootc.net>
+To: "Woodhouse, David" <david.woodhouse@intel.com>
+X-Mailer: Apple Mail (2.1250.3)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The tick_nohz_stop_sched_tick() function, which tries to delay
-the next timer tick as long as possible, can be called from two
-places:
+On 17 Sep 2011, at 12:57, Chris Boot wrote:
+> On 17 Sep 2011, at 11:45, Woodhouse, David wrote:
+>> On Fri, 2011-09-16 at 13:43 +0100, Chris Boot wrote:
+>>> In the very short term the number is up and down by a few hundred 
+>>> objects but the general trend is constantly upwards. After about 5 days' 
+>>> uptime I have some very serious IO slowdowns (narrowed down by a friend 
+>>> to SCSI command queueing) with a lot of time spent in
+>>> alloc_iova() and rb_prev() according to 'perf top'. Eventually these 
+>>> translate into softlockups and the machine becomes almost unusable.
+>> 
+>> If you're seeing it spend ages in rb_prev() that implies that the
+>> mappings are still *active* and in the rbtree, rather than just the the
+>> iommu_iova data structure has been leaked.
+>> 
+>> I suppose it's vaguely possible that we're leaking them in such a way
+>> that they remain on the rbtree, perhaps if the deferred unmap is never
+>> actually happening... but I think it's a whole lot more likely that the
+>> PCI driver is just never bothering to unmap the pages it maps.
+>> 
+>> If you boot with 'intel_iommu=strict' that will avoid the deferred unmap
+>> which is the only likely culprit in the IOMMU code...
+> 
+> 
+> Booting with intel_iommu=on,strict still shows the iommu_iova on a constant increase, so I don't think it's that.
+> 
+> I've bodged the following patch to see if it catches anything obvious. We'll see if anything useful comes of it. Sorry, my mail client kills whitespace.
 
-- From the idle loop to start the dytick idle mode
-- From interrupt exit if we have interrupted the dyntick
-idle mode, so that we reprogram the next tick event in
-case the irq changed some internal state that requires this
-action.
 
-There are only few minor differences between both that
-are handled by that function, driven by the ts->inidle
-cpu variable and the inidle parameter. The whole guarantees
-that we only update the dyntick mode on irq exit if we actually
-interrupted the dyntick idle mode.
+[patch snipped, it's at http://lkml.org/lkml/2011/9/17/23]
 
-Split this function into:
+David,
 
-- tick_nohz_idle_enter(), which sets ts->inidle to 1 and enters
-dynticks idle mode unconditionally if it can.
+With a modified version of the patch (as discussed on IRC) which also takes into account mapping of sg lists, I see that the cause of the spurious mappings is the 3ware-9xxx driver (CCs added). The raw WARNING is below. I get a very large number of these one after the other as well, all nearly identical and within the 3w-9xxx driver.
 
-- tick_nohz_irq_exit() which only updates the dynticks idle mode
-when ts->inidle is set (ie: if tick_nohz_idle_enter() has been called).
+twa_scsiop_execute_scsi+0x141 is actually twa_map_scsi_sg_data() which has been inlined.
 
-To maintain symmetry, tick_nohz_restart_sched_tick() has been renamed
-into tick_nohz_idle_exit().
+Sep 17 13:40:30 tarquin kernel: [ 1447.334024] ------------[ cut here ]------------
+Sep 17 13:40:30 tarquin kernel: [ 1447.347585] WARNING: at drivers/iommu/intel-iommu.c:3088 intel_map_sg+0x1db/0x221()
+Sep 17 13:40:30 tarquin kernel: [ 1447.364894] Hardware name: S1200BTL
+Sep 17 13:40:30 tarquin kernel: [ 1447.377545] Modules linked in: tun ip6table_mangle iptable_mangle xt_DSCP xt_owner iscsi_target_mod target_core_pscsi target_core_file target_core_iblock target_core_mod configfs ip6table_filter ip6_tables iptable_filter ip_tables ebtable_nat ebtables x_tables cpufreq_stats cpufreq_userspace cpufreq_conservative cpufreq_powersave ipmi_watchdog microcode nfsd nfs lockd fscache auth_rpcgss nfs_acl sunrpc bridge stp ext4 jbd2 crc16 dm_snapshot ipmi_si ipmi_devintf ipmi_msghandler acpi_cpufreq mperf coretemp fuse crc32c_intel aesni_intel cryptd aes_x86_64 aes_generic dm_crypt kvm_intel kvm i2c_i801 snd_pcm snd_timer snd soundcore i2c_core snd_page_alloc joydev ftdi_sio usbserial evdev pcspkr processor video button ext3 jbd mbcache btrfs zlib_deflate crc32c libcrc32c dm_mod sg sd_mod crc_t10dif usbhid hid ahci libahci 3w_9xxx thermal libata ehci_hcd fan thermal_sys scsi_mod usbcore e1000e [last unloaded: scsi_wait_scan]
+Sep 17 13:40:30 tarquin kernel: [ 1447.552657] Pid: 0, comm: swapper Not tainted 3.1.0-rc6+ #3
+Sep 17 13:40:30 tarquin kernel: [ 1447.569884] Call Trace:
+Sep 17 13:40:30 tarquin kernel: [ 1447.583468]  <IRQ>  [<ffffffff81047f62>] warn_slowpath_common+0x7e/0x96
+Sep 17 13:40:30 tarquin kernel: [ 1447.602095]  [<ffffffff81047f8f>] warn_slowpath_null+0x15/0x17
+Sep 17 13:40:30 tarquin kernel: [ 1447.619837]  [<ffffffff812756cb>] intel_map_sg+0x1db/0x221
+Sep 17 13:40:30 tarquin kernel: [ 1447.637110]  [<ffffffffa00650c0>] scsi_dma_map+0x80/0x99 [scsi_mod]
+Sep 17 13:40:30 tarquin kernel: [ 1447.655291]  [<ffffffffa00e4675>] twa_scsiop_execute_scsi+0x141/0x3a5 [3w_9xxx]
+Sep 17 13:40:30 tarquin kernel: [ 1447.674875]  [<ffffffffa00e4ded>] twa_scsi_queue+0xd6/0x16a [3w_9xxx]
+Sep 17 13:40:30 tarquin kernel: [ 1447.693424]  [<ffffffffa005d488>] ? scsi_finish_command+0xe8/0xe8 [scsi_mod]
+Sep 17 13:40:30 tarquin kernel: [ 1447.712660]  [<ffffffffa005e620>] scsi_dispatch_cmd+0x192/0x236 [scsi_mod]
+Sep 17 13:40:30 tarquin kernel: [ 1447.731711]  [<ffffffffa0064235>] scsi_request_fn+0x3f5/0x421 [scsi_mod]
+Sep 17 13:40:30 tarquin kernel: [ 1447.750511]  [<ffffffff81194a3f>] __blk_run_queue+0x16/0x18
+Sep 17 13:40:30 tarquin kernel: [ 1447.767974]  [<ffffffffa006388a>] scsi_run_queue+0x1b5/0x21e [scsi_mod]
+Sep 17 13:40:30 tarquin kernel: [ 1447.786632]  [<ffffffffa006494e>] scsi_next_command+0x34/0x45 [scsi_mod]
+Sep 17 13:40:30 tarquin kernel: [ 1447.805337]  [<ffffffffa0064e01>] scsi_io_completion+0x458/0x4d2 [scsi_mod]
+Sep 17 13:40:30 tarquin kernel: [ 1447.824467]  [<ffffffff8127248f>] ? __free_iova+0x71/0x79
+Sep 17 13:40:30 tarquin kernel: [ 1447.841928]  [<ffffffff8134f36b>] ? _raw_spin_unlock_irqrestore+0x12/0x14
+Sep 17 13:40:30 tarquin kernel: [ 1447.860901]  [<ffffffffa005d47f>] scsi_finish_command+0xdf/0xe8 [scsi_mod]
+Sep 17 13:40:30 tarquin kernel: [ 1447.879789]  [<ffffffffa00648ff>] scsi_softirq_done+0x104/0x10d [scsi_mod]
+Sep 17 13:40:30 tarquin kernel: [ 1447.898445]  [<ffffffff8119d5a7>] blk_done_softirq+0x69/0x79
+Sep 17 13:40:30 tarquin kernel: [ 1447.915703]  [<ffffffff810748d7>] ? arch_local_irq_save+0x15/0x1b
+Sep 17 13:40:30 tarquin kernel: [ 1447.933430]  [<ffffffff8104d877>] __do_softirq+0xc2/0x182
+Sep 17 13:40:30 tarquin kernel: [ 1447.950234]  [<ffffffff8134f36b>] ? _raw_spin_unlock_irqrestore+0x12/0x14
+Sep 17 13:40:30 tarquin kernel: [ 1447.968574]  [<ffffffff813568ec>] call_softirq+0x1c/0x30
+Sep 17 13:40:30 tarquin kernel: [ 1447.985226]  [<ffffffff8100fa12>] do_softirq+0x41/0x7f
+Sep 17 13:40:30 tarquin kernel: [ 1448.001673]  [<ffffffff8104dae3>] irq_exit+0x3f/0x9c
+Sep 17 13:40:30 tarquin kernel: [ 1448.017782]  [<ffffffff8100f720>] do_IRQ+0x89/0xa0
+Sep 17 13:40:30 tarquin kernel: [ 1448.033770]  [<ffffffff8134f6ae>] common_interrupt+0x6e/0x6e
+Sep 17 13:40:30 tarquin kernel: [ 1448.050658]  <EOI>  [<ffffffff8100d03a>] ? load_TLS+0xb/0xf
+Sep 17 13:40:30 tarquin kernel: [ 1448.067500]  [<ffffffffa01f6426>] ? arch_local_irq_enable+0x8/0xd [processor]
+Sep 17 13:40:30 tarquin kernel: [ 1448.086229]  [<ffffffffa01f6dad>] acpi_idle_enter_c1+0x88/0xa6 [processor]
+Sep 17 13:40:30 tarquin kernel: [ 1448.104583]  [<ffffffff8126b6c9>] cpuidle_idle_call+0xf9/0x185
+Sep 17 13:40:30 tarquin kernel: [ 1448.121632]  [<ffffffff8100d29d>] cpu_idle+0x9f/0xe3
+Sep 17 13:40:30 tarquin kernel: [ 1448.137603]  [<ffffffff8133255e>] rest_init+0x72/0x74
+Sep 17 13:40:30 tarquin kernel: [ 1448.153605]  [<ffffffff816a5b81>] start_kernel+0x3c0/0x3cb
+Sep 17 13:40:30 tarquin kernel: [ 1448.170074]  [<ffffffff816a52c4>] x86_64_start_reservations+0xaf/0xb3
+Sep 17 13:40:30 tarquin kernel: [ 1448.187796]  [<ffffffff816a5140>] ? early_idt_handlers+0x140/0x140
+Sep 17 13:40:30 tarquin kernel: [ 1448.205156]  [<ffffffff816a53ca>] x86_64_start_kernel+0x102/0x111
+Sep 17 13:40:30 tarquin kernel: [ 1448.222302] ---[ end trace a812f71b71702674 ]---
 
-The point of all this is to micro-optimize the irq exit path (no need
-for local_irq_save there) and to prepare for the split between dynticks
-and rcu extended quiescent state logics. We'll need this split to
-further fix illegal uses of RCU in extended quiescent states.
-
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Frysinger <vapier@gentoo.org>
-Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
-Cc: David Miller <davem@davemloft.net>
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Paul Mundt <lethal@linux-sh.org>
----
- arch/arm/kernel/process.c              |    4 +-
- arch/avr32/kernel/process.c            |    4 +-
- arch/blackfin/kernel/process.c         |    4 +-
- arch/microblaze/kernel/process.c       |    4 +-
- arch/mips/kernel/process.c             |    4 +-
- arch/powerpc/kernel/idle.c             |    4 +-
- arch/powerpc/platforms/iseries/setup.c |    8 ++--
- arch/s390/kernel/process.c             |    4 +-
- arch/sh/kernel/idle.c                  |    4 +-
- arch/sparc/kernel/process_64.c         |    4 +-
- arch/tile/kernel/process.c             |    4 +-
- arch/um/kernel/process.c               |    4 +-
- arch/unicore32/kernel/process.c        |    4 +-
- arch/x86/kernel/process_32.c           |    4 +-
- arch/x86/kernel/process_64.c           |    4 +-
- include/linux/tick.h                   |    9 ++--
- kernel/softirq.c                       |    2 +-
- kernel/time/tick-sched.c               |   85 +++++++++++++++++++-------------
- 18 files changed, 89 insertions(+), 71 deletions(-)
-
-diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
-index 5e1e541..f570e8f 100644
---- a/arch/arm/kernel/process.c
-+++ b/arch/arm/kernel/process.c
-@@ -182,7 +182,7 @@ void cpu_idle(void)
- 
- 	/* endless idle loop with no priority at all */
- 	while (1) {
--		tick_nohz_stop_sched_tick(1);
-+		tick_nohz_idle_enter();
- 		leds_event(led_idle_start);
- 		while (!need_resched()) {
- #ifdef CONFIG_HOTPLUG_CPU
-@@ -208,7 +208,7 @@ void cpu_idle(void)
- 			}
- 		}
- 		leds_event(led_idle_end);
--		tick_nohz_restart_sched_tick();
-+		tick_nohz_idle_exit();
- 		preempt_enable_no_resched();
- 		schedule();
- 		preempt_disable();
-diff --git a/arch/avr32/kernel/process.c b/arch/avr32/kernel/process.c
-index ef5a2a0..6ee7952 100644
---- a/arch/avr32/kernel/process.c
-+++ b/arch/avr32/kernel/process.c
-@@ -34,10 +34,10 @@ void cpu_idle(void)
- {
- 	/* endless idle loop with no priority at all */
- 	while (1) {
--		tick_nohz_stop_sched_tick(1);
-+		tick_nohz_idle_enter();
- 		while (!need_resched())
- 			cpu_idle_sleep();
--		tick_nohz_restart_sched_tick();
-+		tick_nohz_idle_exit();
- 		preempt_enable_no_resched();
- 		schedule();
- 		preempt_disable();
-diff --git a/arch/blackfin/kernel/process.c b/arch/blackfin/kernel/process.c
-index 6a660fa..790b12e 100644
---- a/arch/blackfin/kernel/process.c
-+++ b/arch/blackfin/kernel/process.c
-@@ -88,10 +88,10 @@ void cpu_idle(void)
- #endif
- 		if (!idle)
- 			idle = default_idle;
--		tick_nohz_stop_sched_tick(1);
-+		tick_nohz_idle_enter();
- 		while (!need_resched())
- 			idle();
--		tick_nohz_restart_sched_tick();
-+		tick_nohz_idle_exit();
- 		preempt_enable_no_resched();
- 		schedule();
- 		preempt_disable();
-diff --git a/arch/microblaze/kernel/process.c b/arch/microblaze/kernel/process.c
-index 968648a..80c749b 100644
---- a/arch/microblaze/kernel/process.c
-+++ b/arch/microblaze/kernel/process.c
-@@ -103,10 +103,10 @@ void cpu_idle(void)
- 		if (!idle)
- 			idle = default_idle;
- 
--		tick_nohz_stop_sched_tick(1);
-+		tick_nohz_idle_enter();
- 		while (!need_resched())
- 			idle();
--		tick_nohz_restart_sched_tick();
-+		tick_nohz_idle_exit();
- 
- 		preempt_enable_no_resched();
- 		schedule();
-diff --git a/arch/mips/kernel/process.c b/arch/mips/kernel/process.c
-index d2112d3..d72a0e9 100644
---- a/arch/mips/kernel/process.c
-+++ b/arch/mips/kernel/process.c
-@@ -56,7 +56,7 @@ void __noreturn cpu_idle(void)
- 
- 	/* endless idle loop with no priority at all */
- 	while (1) {
--		tick_nohz_stop_sched_tick(1);
-+		tick_nohz_idle_enter();
- 		while (!need_resched() && cpu_online(cpu)) {
- #ifdef CONFIG_MIPS_MT_SMTC
- 			extern void smtc_idle_loop_hook(void);
-@@ -77,7 +77,7 @@ void __noreturn cpu_idle(void)
- 		     system_state == SYSTEM_BOOTING))
- 			play_dead();
- #endif
--		tick_nohz_restart_sched_tick();
-+		tick_nohz_idle_exit();
- 		preempt_enable_no_resched();
- 		schedule();
- 		preempt_disable();
-diff --git a/arch/powerpc/kernel/idle.c b/arch/powerpc/kernel/idle.c
-index 39a2baa..878572f 100644
---- a/arch/powerpc/kernel/idle.c
-+++ b/arch/powerpc/kernel/idle.c
-@@ -56,7 +56,7 @@ void cpu_idle(void)
- 
- 	set_thread_flag(TIF_POLLING_NRFLAG);
- 	while (1) {
--		tick_nohz_stop_sched_tick(1);
-+		tick_nohz_idle_enter();
- 		while (!need_resched() && !cpu_should_die()) {
- 			ppc64_runlatch_off();
- 
-@@ -93,7 +93,7 @@ void cpu_idle(void)
- 
- 		HMT_medium();
- 		ppc64_runlatch_on();
--		tick_nohz_restart_sched_tick();
-+		tick_nohz_idle_exit();
- 		preempt_enable_no_resched();
- 		if (cpu_should_die())
- 			cpu_die();
-diff --git a/arch/powerpc/platforms/iseries/setup.c b/arch/powerpc/platforms/iseries/setup.c
-index c25a081..e2f5fad 100644
---- a/arch/powerpc/platforms/iseries/setup.c
-+++ b/arch/powerpc/platforms/iseries/setup.c
-@@ -562,7 +562,7 @@ static void yield_shared_processor(void)
- static void iseries_shared_idle(void)
- {
- 	while (1) {
--		tick_nohz_stop_sched_tick(1);
-+		tick_nohz_idle_enter();
- 		while (!need_resched() && !hvlpevent_is_pending()) {
- 			local_irq_disable();
- 			ppc64_runlatch_off();
-@@ -576,7 +576,7 @@ static void iseries_shared_idle(void)
- 		}
- 
- 		ppc64_runlatch_on();
--		tick_nohz_restart_sched_tick();
-+		tick_nohz_idle_exit();
- 
- 		if (hvlpevent_is_pending())
- 			process_iSeries_events();
-@@ -592,7 +592,7 @@ static void iseries_dedicated_idle(void)
- 	set_thread_flag(TIF_POLLING_NRFLAG);
- 
- 	while (1) {
--		tick_nohz_stop_sched_tick(1);
-+		tick_nohz_idle_enter();
- 		if (!need_resched()) {
- 			while (!need_resched()) {
- 				ppc64_runlatch_off();
-@@ -609,7 +609,7 @@ static void iseries_dedicated_idle(void)
- 		}
- 
- 		ppc64_runlatch_on();
--		tick_nohz_restart_sched_tick();
-+		tick_nohz_idle_exit();
- 		preempt_enable_no_resched();
- 		schedule();
- 		preempt_disable();
-diff --git a/arch/s390/kernel/process.c b/arch/s390/kernel/process.c
-index 541a750..db3e930 100644
---- a/arch/s390/kernel/process.c
-+++ b/arch/s390/kernel/process.c
-@@ -90,10 +90,10 @@ static void default_idle(void)
- void cpu_idle(void)
- {
- 	for (;;) {
--		tick_nohz_stop_sched_tick(1);
-+		tick_nohz_idle_enter();
- 		while (!need_resched())
- 			default_idle();
--		tick_nohz_restart_sched_tick();
-+		tick_nohz_idle_exit();
- 		preempt_enable_no_resched();
- 		schedule();
- 		preempt_disable();
-diff --git a/arch/sh/kernel/idle.c b/arch/sh/kernel/idle.c
-index 425d604..a6b9a96 100644
---- a/arch/sh/kernel/idle.c
-+++ b/arch/sh/kernel/idle.c
-@@ -88,7 +88,7 @@ void cpu_idle(void)
- 
- 	/* endless idle loop with no priority at all */
- 	while (1) {
--		tick_nohz_stop_sched_tick(1);
-+		tick_nohz_idle_enter();
- 
- 		while (!need_resched()) {
- 			check_pgt_cache();
-@@ -109,7 +109,7 @@ void cpu_idle(void)
- 			start_critical_timings();
- 		}
- 
--		tick_nohz_restart_sched_tick();
-+		tick_nohz_idle_exit();
- 		preempt_enable_no_resched();
- 		schedule();
- 		preempt_disable();
-diff --git a/arch/sparc/kernel/process_64.c b/arch/sparc/kernel/process_64.c
-index c158a95..1235f63 100644
---- a/arch/sparc/kernel/process_64.c
-+++ b/arch/sparc/kernel/process_64.c
-@@ -95,12 +95,12 @@ void cpu_idle(void)
- 	set_thread_flag(TIF_POLLING_NRFLAG);
- 
- 	while(1) {
--		tick_nohz_stop_sched_tick(1);
-+		tick_nohz_idle_enter();
- 
- 		while (!need_resched() && !cpu_is_offline(cpu))
- 			sparc64_yield(cpu);
- 
--		tick_nohz_restart_sched_tick();
-+		tick_nohz_idle_exit();
- 
- 		preempt_enable_no_resched();
- 
-diff --git a/arch/tile/kernel/process.c b/arch/tile/kernel/process.c
-index 9c45d8b..920e674 100644
---- a/arch/tile/kernel/process.c
-+++ b/arch/tile/kernel/process.c
-@@ -85,7 +85,7 @@ void cpu_idle(void)
- 
- 	/* endless idle loop with no priority at all */
- 	while (1) {
--		tick_nohz_stop_sched_tick(1);
-+		tick_nohz_idle_enter();
- 		while (!need_resched()) {
- 			if (cpu_is_offline(cpu))
- 				BUG();  /* no HOTPLUG_CPU */
-@@ -105,7 +105,7 @@ void cpu_idle(void)
- 				local_irq_enable();
- 			current_thread_info()->status |= TS_POLLING;
- 		}
--		tick_nohz_restart_sched_tick();
-+		tick_nohz_idle_exit();
- 		preempt_enable_no_resched();
- 		schedule();
- 		preempt_disable();
-diff --git a/arch/um/kernel/process.c b/arch/um/kernel/process.c
-index fab4371..046abea 100644
---- a/arch/um/kernel/process.c
-+++ b/arch/um/kernel/process.c
-@@ -245,10 +245,10 @@ void default_idle(void)
- 		if (need_resched())
- 			schedule();
- 
--		tick_nohz_stop_sched_tick(1);
-+		tick_nohz_idle_enter();
- 		nsecs = disable_timer();
- 		idle_sleep(nsecs);
--		tick_nohz_restart_sched_tick();
-+		tick_nohz_idle_exit();
- 	}
- }
- 
-diff --git a/arch/unicore32/kernel/process.c b/arch/unicore32/kernel/process.c
-index ba401df..9999b9a 100644
---- a/arch/unicore32/kernel/process.c
-+++ b/arch/unicore32/kernel/process.c
-@@ -55,7 +55,7 @@ void cpu_idle(void)
- {
- 	/* endless idle loop with no priority at all */
- 	while (1) {
--		tick_nohz_stop_sched_tick(1);
-+		tick_nohz_idle_enter();
- 		while (!need_resched()) {
- 			local_irq_disable();
- 			stop_critical_timings();
-@@ -63,7 +63,7 @@ void cpu_idle(void)
- 			local_irq_enable();
- 			start_critical_timings();
- 		}
--		tick_nohz_restart_sched_tick();
-+		tick_nohz_idle_exit();
- 		preempt_enable_no_resched();
- 		schedule();
- 		preempt_disable();
-diff --git a/arch/x86/kernel/process_32.c b/arch/x86/kernel/process_32.c
-index a3d0dc5..1ab4c58 100644
---- a/arch/x86/kernel/process_32.c
-+++ b/arch/x86/kernel/process_32.c
-@@ -97,7 +97,7 @@ void cpu_idle(void)
- 
- 	/* endless idle loop with no priority at all */
- 	while (1) {
--		tick_nohz_stop_sched_tick(1);
-+		tick_nohz_idle_enter();
- 		while (!need_resched()) {
- 
- 			check_pgt_cache();
-@@ -112,7 +112,7 @@ void cpu_idle(void)
- 			pm_idle();
- 			start_critical_timings();
- 		}
--		tick_nohz_restart_sched_tick();
-+		tick_nohz_idle_exit();
- 		preempt_enable_no_resched();
- 		schedule();
- 		preempt_disable();
-diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
-index ca6f7ab..d7a6418 100644
---- a/arch/x86/kernel/process_64.c
-+++ b/arch/x86/kernel/process_64.c
-@@ -120,7 +120,7 @@ void cpu_idle(void)
- 
- 	/* endless idle loop with no priority at all */
- 	while (1) {
--		tick_nohz_stop_sched_tick(1);
-+		tick_nohz_idle_enter();
- 		while (!need_resched()) {
- 
- 			rmb();
-@@ -145,7 +145,7 @@ void cpu_idle(void)
- 			__exit_idle();
- 		}
- 
--		tick_nohz_restart_sched_tick();
-+		tick_nohz_idle_exit();
- 		preempt_enable_no_resched();
- 		schedule();
- 		preempt_disable();
-diff --git a/include/linux/tick.h b/include/linux/tick.h
-index b232ccc..3f094d4 100644
---- a/include/linux/tick.h
-+++ b/include/linux/tick.h
-@@ -121,14 +121,15 @@ static inline int tick_oneshot_mode_active(void) { return 0; }
- #endif /* !CONFIG_GENERIC_CLOCKEVENTS */
- 
- # ifdef CONFIG_NO_HZ
--extern void tick_nohz_stop_sched_tick(int inidle);
--extern void tick_nohz_restart_sched_tick(void);
-+extern void tick_nohz_idle_enter(void);
-+extern void tick_nohz_idle_exit(void);
-+extern void tick_nohz_irq_exit(void);
- extern ktime_t tick_nohz_get_sleep_length(void);
- extern u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time);
- extern u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time);
- # else
--static inline void tick_nohz_stop_sched_tick(int inidle) { }
--static inline void tick_nohz_restart_sched_tick(void) { }
-+static inline void tick_nohz_idle_enter(void) { }
-+static inline void tick_nohz_idle_exit(void) { }
- static inline ktime_t tick_nohz_get_sleep_length(void)
- {
- 	ktime_t len = { .tv64 = NSEC_PER_SEC/HZ };
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index fca82c3..d2be0e0 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -351,7 +351,7 @@ void irq_exit(void)
- #ifdef CONFIG_NO_HZ
- 	/* Make sure that timer wheel updates are propagated */
- 	if (idle_cpu(smp_processor_id()) && !in_interrupt() && !need_resched())
--		tick_nohz_stop_sched_tick(0);
-+		tick_nohz_irq_exit();
- #endif
- 	preempt_enable_no_resched();
- }
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index eb98e55..c783d95 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -246,42 +246,18 @@ u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time)
- }
- EXPORT_SYMBOL_GPL(get_cpu_iowait_time_us);
- 
--/**
-- * tick_nohz_stop_sched_tick - stop the idle tick from the idle task
-- *
-- * When the next event is more than a tick into the future, stop the idle tick
-- * Called either from the idle loop or from irq_exit() when an idle period was
-- * just interrupted by an interrupt which did not cause a reschedule.
-- */
--void tick_nohz_stop_sched_tick(int inidle)
-+
-+static void tick_nohz_stop_sched_tick(struct tick_sched *ts)
- {
--	unsigned long seq, last_jiffies, next_jiffies, delta_jiffies, flags;
--	struct tick_sched *ts;
-+	unsigned long seq, last_jiffies, next_jiffies, delta_jiffies;
- 	ktime_t last_update, expires, now;
- 	struct clock_event_device *dev = __get_cpu_var(tick_cpu_device).evtdev;
- 	u64 time_delta;
- 	int cpu;
- 
--	local_irq_save(flags);
--
- 	cpu = smp_processor_id();
- 	ts = &per_cpu(tick_cpu_sched, cpu);
- 
--	/*
--	 * Call to tick_nohz_start_idle stops the last_update_time from being
--	 * updated. Thus, it must not be called in the event we are called from
--	 * irq_exit() with the prior state different than idle.
--	 */
--	if (!inidle && !ts->inidle)
--		goto end;
--
--	/*
--	 * Set ts->inidle unconditionally. Even if the system did not
--	 * switch to NOHZ mode the cpu frequency governers rely on the
--	 * update of the idle time accounting in tick_nohz_start_idle().
--	 */
--	ts->inidle = 1;
--
- 	now = tick_nohz_start_idle(cpu, ts);
- 
- 	/*
-@@ -297,10 +273,10 @@ void tick_nohz_stop_sched_tick(int inidle)
- 	}
- 
- 	if (unlikely(ts->nohz_mode == NOHZ_MODE_INACTIVE))
--		goto end;
-+		return;
- 
- 	if (need_resched())
--		goto end;
-+		return;
- 
- 	if (unlikely(local_softirq_pending() && cpu_online(cpu))) {
- 		static int ratelimit;
-@@ -310,7 +286,7 @@ void tick_nohz_stop_sched_tick(int inidle)
- 			       (unsigned int) local_softirq_pending());
- 			ratelimit++;
- 		}
--		goto end;
-+		return;
- 	}
- 
- 	ts->idle_calls++;
-@@ -443,8 +419,49 @@ out:
- 	ts->next_jiffies = next_jiffies;
- 	ts->last_jiffies = last_jiffies;
- 	ts->sleep_length = ktime_sub(dev->next_event, now);
--end:
--	local_irq_restore(flags);
-+}
-+
-+/**
-+ * tick_nohz_idle_enter - stop the idle tick from the idle task
-+ *
-+ * When the next event is more than a tick into the future, stop the idle tick
-+ * Called when we start the idle loop.
-+ */
-+void tick_nohz_idle_enter(void)
-+{
-+	struct tick_sched *ts;
-+
-+	WARN_ON_ONCE(irqs_disabled());
-+
-+	local_irq_disable();
-+
-+	ts = &__get_cpu_var(tick_cpu_sched);
-+	/*
-+	 * set ts->inidle unconditionally. even if the system did not
-+	 * switch to nohz mode the cpu frequency governers rely on the
-+	 * update of the idle time accounting in tick_nohz_start_idle().
-+	 */
-+	ts->inidle = 1;
-+	tick_nohz_stop_sched_tick(ts);
-+
-+	local_irq_enable();
-+}
-+
-+/**
-+ * tick_nohz_irq_exit - update next tick event from interrupt exit
-+ *
-+ * When an interrupt fires while we are idle, it may add,
-+ * modify or delete a timer, enqueue an RCU callback, etc...
-+ * So we need to re-calculate and reprogram the next tick event.
-+ */
-+void tick_nohz_irq_exit(void)
-+{
-+	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
-+
-+	if (!ts->inidle)
-+		return;
-+
-+	tick_nohz_stop_sched_tick(ts);
- }
- 
- /**
-@@ -486,11 +503,11 @@ static void tick_nohz_restart(struct tick_sched *ts, ktime_t now)
- }
- 
- /**
-- * tick_nohz_restart_sched_tick - restart the idle tick from the idle task
-+ * tick_nohz_idle_exit - restart the idle tick from the idle task
-  *
-  * Restart the idle tick when the CPU is woken up from idle
-  */
--void tick_nohz_restart_sched_tick(void)
-+void tick_nohz_idle_exit(void)
- {
- 	int cpu = smp_processor_id();
- 	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
 -- 
-1.7.5.4
+Chris Boot
+bootc@bootc.net
 
