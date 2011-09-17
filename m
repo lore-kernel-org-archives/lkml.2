@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755331Ab1IQN02 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Sep 2011 09:26:28 -0400
-Received: from mailc.microsoft.com ([131.107.115.214]:35762 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754815Ab1IQN0V convert rfc822-to-8bit (ORCPT
+	id S1755255Ab1IQNdk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Sep 2011 09:33:40 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:54950 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754827Ab1IQNdi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Sep 2011 09:26:21 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <greg@kroah.com>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: RE: [PATCH 0000/0020] Staging: hv: Driver cleanup
-Thread-Topic: [PATCH 0000/0020] Staging: hv: Driver cleanup
-Thread-Index: AQHMcjvvHNODfxseJE66gSO66GP0qZVQx8YAgADMiIA=
-Date: Sat, 17 Sep 2011 13:26:20 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E048081E774F@TK5EX14MBXC124.redmond.corp.microsoft.com>
-References: <1315936759-20623-1-git-send-email-kys@microsoft.com>
- <20110916180708.GA32174@kroah.com>
-In-Reply-To: <20110916180708.GA32174@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.32]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sat, 17 Sep 2011 09:33:38 -0400
+X-AuditID: b753bd60-a1286ba000000655-ba-4e74a1b0dca1
+X-AuditID: b753bd60-a1286ba000000655-ba-4e74a1b0dca1
+From: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
+Subject: [PATCH] Return -EIO when xfs_vn_getattr() failed
+To: Alex Elder <aelder@sgi.com>, Christoph Hellwig <hch@infradead.org>
+Cc: xfs-masters@oss.sgi.com, xfs@oss.sgi.com, linux-kernel@vger.kernel.org,
+        yrl.pp-manager.tt@hitachi.com,
+        Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>,
+        Alex Elder <aelder@sgi.com>, Christoph Hellwig <hch@infradead.org>
+Date: Sat, 17 Sep 2011 22:38:38 +0900
+Message-ID: <20110917133838.27791.63070.stgit@ltc219.sdl.hitachi.co.jp>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+An attribute of inode can be fetched via xfs_vn_getattr() in XFS.
+Currently it returns EIO, not negative value, when it failed.
+As a result, the system call returns not negative value even though
+an error occured. The stat(2), ls and mv commands cannot handle this
+error and do not work correctly.
 
+This patch fixes this bug, and returns -EIO, not EIO when an error
+is detected in xfs_vn_getattr().
 
-> -----Original Message-----
-> From: Greg KH [mailto:greg@kroah.com]
-> Sent: Friday, September 16, 2011 2:07 PM
-> To: KY Srinivasan
-> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org
-> Subject: Re: [PATCH 0000/0020] Staging: hv: Driver cleanup
-> 
-> On Tue, Sep 13, 2011 at 10:59:19AM -0700, K. Y. Srinivasan wrote:
-> > Address Greg's VmBus audit comments:
-> >
-> > 	1) Leverage driver_data field in struct hv_vmbus_device_id to
-> > 	   simplify driver code.
-> >
-> > 	2) Make the util driver conform to the Linux Driver Model.
-> >
-> > 	3) Get rid of the ext field in struct hv_device by using the
-> > 	   driver specific data functionality.
-> >
-> > 	4) Implement vmbus specific wrapper functions for setting and getting
-> > 	   driver specific data..
-> >
-> > 	5) Other general cleanup.
-> 
-> I applied 17 of these (i.e. the ones I didn't comment on.)
+Signed-off-by: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
+Cc: Alex Elder <aelder@sgi.com>
+Cc: Christoph Hellwig <hch@infradead.org>
+---
 
-Thanks Greg. Looking at your comments, it looks like the only
-issue in the 3 patches not checked in is related to unnecessary
-messages being put out. I will get the fixed patches out soon.
+ fs/xfs/xfs_iops.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Regards,
-
-K. Y
-
-> 
-> greg k-h
+diff --git a/fs/xfs/xfs_iops.c b/fs/xfs/xfs_iops.c
+index b9c172b..33136d6 100644
+--- a/fs/xfs/xfs_iops.c
++++ b/fs/xfs/xfs_iops.c
+@@ -457,7 +457,7 @@ xfs_vn_getattr(
+ 	trace_xfs_getattr(ip);
+ 
+ 	if (XFS_FORCED_SHUTDOWN(mp))
+-		return XFS_ERROR(EIO);
++		return -XFS_ERROR(EIO);
+ 
+ 	stat->size = XFS_ISIZE(ip);
+ 	stat->dev = inode->i_sb->s_dev;
 
