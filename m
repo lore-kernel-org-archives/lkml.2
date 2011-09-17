@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933079Ab1IQDkQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 23:40:16 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:50097 "EHLO
+	id S932954Ab1IQDkJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 23:40:09 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:50087 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932778Ab1IQDjp (ORCPT
+	with ESMTP id S932772Ab1IQDjo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 23:39:45 -0400
+	Fri, 16 Sep 2011 23:39:44 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=dkim-signature:from:to:cc:subject:date:message-id:x-mailer:
 	in-reply-to:references:x-system-of-record;
-	b=Ci9oqvdqVX+vfyE/HU3VZHCSyQslTP7agohMAHQEPu4vMk7aD7XXfUfseei1Fn/j8
-	9e1dZkZ9n6Nfpmx2UHaCQ==
+	b=GjY0+zNbxH2/Tj/wABSEmyoPYelX4CoMyqzpLLlZ1ZULd1l91jxsljgKOC+Q2dvcT
+	bqvUnkinAJC6+52BnF7nQ==
 From: Michel Lespinasse <walken@google.com>
 To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -23,9 +23,9 @@ Cc: Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
         Hugh Dickins <hughd@google.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Michael Wolf <mjwolf@us.ibm.com>
-Subject: [PATCH 7/8] kstaled: add histogram sampling functionality
-Date: Fri, 16 Sep 2011 20:39:12 -0700
-Message-Id: <1316230753-8693-8-git-send-email-walken@google.com>
+Subject: [PATCH 6/8] kstaled: rate limit pages scanned per second.
+Date: Fri, 16 Sep 2011 20:39:11 -0700
+Message-Id: <1316230753-8693-7-git-send-email-walken@google.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1316230753-8693-1-git-send-email-walken@google.com>
 References: <1316230753-8693-1-git-send-email-walken@google.com>
@@ -34,250 +34,181 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-add statistics for pages that have been idle for 1,2,5,15,30,60,120 or
-240 scan intervals into /dev/cgroup/*/memory.idle_page_stats
+Scan some number of pages from each node every second, instead of trying to
+scan the entime memory at once and being idle for the rest of the configured
+interval.
 
 
 Signed-off-by: Michel Lespinasse <walken@google.com>
 ---
- include/linux/mmzone.h |    2 +
- mm/memcontrol.c        |  103 +++++++++++++++++++++++++++++++++++++++---------
- mm/memory_hotplug.c    |    6 +++
- 3 files changed, 92 insertions(+), 19 deletions(-)
+ include/linux/mmzone.h |    3 ++
+ mm/memcontrol.c        |   85 +++++++++++++++++++++++++++++++++++++++---------
+ 2 files changed, 72 insertions(+), 16 deletions(-)
 
 diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 272fbed..d8eca1b 100644
+index 6657106..272fbed 100644
 --- a/include/linux/mmzone.h
 +++ b/include/linux/mmzone.h
-@@ -633,6 +633,8 @@ typedef struct pglist_data {
+@@ -631,6 +631,9 @@ typedef struct pglist_data {
+ 	unsigned long node_present_pages; /* total number of physical pages */
+ 	unsigned long node_spanned_pages; /* total size of physical page
  					     range, including holes */
- #ifdef CONFIG_KSTALED
- 	unsigned long node_idle_scan_pfn;
-+	u8 *node_idle_page_age;           /* number of scan intervals since
-+					     each page was referenced */
- #endif
++#ifdef CONFIG_KSTALED
++	unsigned long node_idle_scan_pfn;
++#endif
  	int node_id;
  	wait_queue_head_t kswapd_wait;
+ 	struct task_struct *kswapd;
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 4a76fdcf..ef406a1 100644
+index 0fdc278..4a76fdcf 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -207,6 +207,11 @@ struct mem_cgroup_eventfd_list {
- static void mem_cgroup_threshold(struct mem_cgroup *mem);
- static void mem_cgroup_oom_notify(struct mem_cgroup *mem);
+@@ -5617,6 +5617,7 @@ __setup("swapaccount=", enable_swap_account);
+ #ifdef CONFIG_KSTALED
  
-+#ifdef CONFIG_KSTALED
-+static const int kstaled_buckets[] = {1, 2, 5, 15, 30, 60, 120, 240};
-+#define NUM_KSTALED_BUCKETS ARRAY_SIZE(kstaled_buckets)
-+#endif
-+
- /*
-  * The memory controller data structure. The memory controller controls both
-  * page cache and RSS per cgroup. We would eventually like to provide
-@@ -292,7 +297,8 @@ struct mem_cgroup {
- 		unsigned long idle_clean;
- 		unsigned long idle_dirty_file;
- 		unsigned long idle_dirty_swap;
--	} idle_page_stats, idle_scan_stats;
-+	} idle_page_stats[NUM_KSTALED_BUCKETS],
-+	  idle_scan_stats[NUM_KSTALED_BUCKETS];
- 	unsigned long idle_page_scans;
- #endif
- };
-@@ -4686,18 +4692,29 @@ static int mem_cgroup_idle_page_stats_read(struct cgroup *cgrp,
- {
- 	struct mem_cgroup *mem = mem_cgroup_from_cont(cgrp);
- 	unsigned int seqcount;
--	struct idle_page_stats stats;
-+	struct idle_page_stats stats[NUM_KSTALED_BUCKETS];
- 	unsigned long scans;
-+	int bucket;
- 
- 	do {
- 		seqcount = read_seqcount_begin(&mem->idle_page_stats_lock);
--		stats = mem->idle_page_stats;
-+		memcpy(stats, mem->idle_page_stats, sizeof(stats));
- 		scans = mem->idle_page_scans;
- 	} while (read_seqcount_retry(&mem->idle_page_stats_lock, seqcount));
- 
--	cb->fill(cb, "idle_clean", stats.idle_clean * PAGE_SIZE);
--	cb->fill(cb, "idle_dirty_file", stats.idle_dirty_file * PAGE_SIZE);
--	cb->fill(cb, "idle_dirty_swap", stats.idle_dirty_swap * PAGE_SIZE);
-+	for (bucket = 0; bucket < NUM_KSTALED_BUCKETS; bucket++) {
-+		char basename[32], name[32];
-+		if (!bucket)
-+			sprintf(basename, "idle");
-+		else
-+			sprintf(basename, "idle_%d", kstaled_buckets[bucket]);
-+		sprintf(name, "%s_clean", basename);
-+		cb->fill(cb, name, stats[bucket].idle_clean * PAGE_SIZE);
-+		sprintf(name, "%s_dirty_file", basename);
-+		cb->fill(cb, name, stats[bucket].idle_dirty_file * PAGE_SIZE);
-+		sprintf(name, "%s_dirty_swap", basename);
-+		cb->fill(cb, name, stats[bucket].idle_dirty_swap * PAGE_SIZE);
-+	}
- 	cb->fill(cb, "scans", scans);
- 
- 	return 0;
-@@ -5620,12 +5637,25 @@ static unsigned int kstaled_scan_seconds;
- static DEFINE_SPINLOCK(kstaled_scan_seconds_lock);
+ static unsigned int kstaled_scan_seconds;
++static DEFINE_SPINLOCK(kstaled_scan_seconds_lock);
  static DECLARE_WAIT_QUEUE_HEAD(kstaled_wait);
  
--static inline void kstaled_scan_page(struct page *page)
-+static inline struct idle_page_stats *
-+kstaled_idle_stats(struct mem_cgroup *mem, int age)
-+{
-+	int bucket = 0;
-+
-+	while (age >= kstaled_buckets[bucket + 1])
-+		if (++bucket == NUM_KSTALED_BUCKETS - 1)
-+			break;
-+	return mem->idle_scan_stats + bucket;
-+}
-+
-+static inline void kstaled_scan_page(struct page *page, u8 *idle_page_age)
- {
- 	bool is_locked = false;
- 	bool is_file;
- 	struct pr_info info;
- 	struct page_cgroup *pc;
-+	struct mem_cgroup *mem;
-+	int age;
- 	struct idle_page_stats *stats;
+ static inline void kstaled_scan_page(struct page *page)
+@@ -5728,15 +5729,19 @@ static inline void kstaled_scan_page(struct page *page)
+ 	put_page(page);
+ }
  
- 	/*
-@@ -5699,17 +5729,25 @@ static inline void kstaled_scan_page(struct page *page)
- 
- 	/* Find out if the page is idle. Also test for pending mlock. */
- 	page_referenced_kstaled(page, is_locked, &info);
--	if ((info.pr_flags & PR_REFERENCED) || (info.vm_flags & VM_LOCKED))
-+	if ((info.pr_flags & PR_REFERENCED) || (info.vm_flags & VM_LOCKED)) {
-+		*idle_page_age = 0;
- 		goto out;
-+	}
- 
- 	/* Locate kstaled stats for the page's cgroup. */
- 	pc = lookup_page_cgroup(page);
- 	if (!pc)
- 		goto out;
- 	lock_page_cgroup(pc);
-+	mem = pc->mem_cgroup;
- 	if (!PageCgroupUsed(pc))
- 		goto unlock_page_cgroup_out;
--	stats = &pc->mem_cgroup->idle_scan_stats;
-+
-+	/* Page is idle, increment its age and get the right stats bucket */
-+	age = *idle_page_age;
-+	if (age < 255)
-+		*idle_page_age = ++age;
-+	stats = kstaled_idle_stats(mem, age);
- 
- 	/* Finally increment the correct statistic for this page. */
- 	if (!(info.pr_flags & PR_DIRTY) &&
-@@ -5733,11 +5771,22 @@ static bool kstaled_scan_node(pg_data_t *pgdat, int scan_seconds, bool reset)
+-static void kstaled_scan_node(pg_data_t *pgdat)
++static bool kstaled_scan_node(pg_data_t *pgdat, int scan_seconds, bool reset)
  {
  	unsigned long flags;
- 	unsigned long pfn, end, node_end;
-+	u8 *idle_page_age;
+-	unsigned long pfn, end;
++	unsigned long pfn, end, node_end;
  
  	pgdat_resize_lock(pgdat, &flags);
  
-+	if (!pgdat->node_idle_page_age) {
-+		pgdat->node_idle_page_age = vmalloc(pgdat->node_spanned_pages);
-+		if (!pgdat->node_idle_page_age) {
-+			pgdat_resize_unlock(pgdat, &flags);
-+			return false;
-+		}
-+		memset(pgdat->node_idle_page_age, 0, pgdat->node_spanned_pages);
-+	}
-+
  	pfn = pgdat->node_start_pfn;
- 	node_end = pfn + pgdat->node_spanned_pages;
-+	idle_page_age = pgdat->node_idle_page_age - pfn;
- 	if (!reset && pfn < pgdat->node_idle_scan_pfn)
- 		pfn = pgdat->node_idle_scan_pfn;
- 	end = min(pfn + DIV_ROUND_UP(pgdat->node_spanned_pages, scan_seconds),
-@@ -5759,7 +5808,8 @@ static bool kstaled_scan_node(pg_data_t *pgdat, int scan_seconds, bool reset)
+-	end = pfn + pgdat->node_spanned_pages;
++	node_end = pfn + pgdat->node_spanned_pages;
++	if (!reset && pfn < pgdat->node_idle_scan_pfn)
++		pfn = pgdat->node_idle_scan_pfn;
++	end = min(pfn + DIV_ROUND_UP(pgdat->node_spanned_pages, scan_seconds),
++		  node_end);
+ 
+ 	while (pfn < end) {
+ 		unsigned long contiguous = end;
+@@ -5753,8 +5758,8 @@ static void kstaled_scan_node(pg_data_t *pgdat)
+ #ifdef CONFIG_MEMORY_HOTPLUG
  				/* abort if the node got resized */
  				if (pfn < pgdat->node_start_pfn ||
- 				    node_end > (pgdat->node_start_pfn +
--						pgdat->node_spanned_pages))
-+						pgdat->node_spanned_pages) ||
-+				    !pgdat->node_idle_page_age)
+-				    end > (pgdat->node_start_pfn +
+-					   pgdat->node_spanned_pages))
++				    node_end > (pgdat->node_start_pfn +
++						pgdat->node_spanned_pages))
  					goto abort;
  #endif
  			}
-@@ -5767,7 +5817,8 @@ static bool kstaled_scan_node(pg_data_t *pgdat, int scan_seconds, bool reset)
- 			if (!pfn_valid(pfn))
- 				continue;
+@@ -5768,14 +5773,21 @@ static void kstaled_scan_node(pg_data_t *pgdat)
  
--			kstaled_scan_page(pfn_to_page(pfn));
-+			kstaled_scan_page(pfn_to_page(pfn),
-+					  idle_page_age + pfn);
- 		}
- 	}
- 
-@@ -5778,6 +5829,26 @@ abort:
- 	return pfn >= node_end;
+ abort:
+ 	pgdat_resize_unlock(pgdat, &flags);
++
++	pgdat->node_idle_scan_pfn = pfn;
++	return pfn >= node_end;
  }
  
-+static void kstaled_update_stats(struct mem_cgroup *mem)
-+{
-+	struct idle_page_stats tot;
-+	int i;
-+
-+	memset(&tot, 0, sizeof(tot));
-+
-+	write_seqcount_begin(&mem->idle_page_stats_lock);
-+	for (i = NUM_KSTALED_BUCKETS - 1; i >= 0; i--) {
-+		tot.idle_clean      += mem->idle_scan_stats[i].idle_clean;
-+		tot.idle_dirty_file += mem->idle_scan_stats[i].idle_dirty_file;
-+		tot.idle_dirty_swap += mem->idle_scan_stats[i].idle_dirty_swap;
-+		mem->idle_page_stats[i] = tot;
-+	}
-+	mem->idle_page_scans++;
-+	write_seqcount_end(&mem->idle_page_stats_lock);
-+
-+	memset(&mem->idle_scan_stats, 0, sizeof(mem->idle_scan_stats));
-+}
-+
  static int kstaled(void *dummy)
  {
- 	int delayed = 0;
-@@ -5810,14 +5881,8 @@ static int kstaled(void *dummy)
- 		if (scan_done) {
- 			struct mem_cgroup *mem;
++	int delayed = 0;
++	bool reset = true;
++
+ 	while (1) {
+ 		int scan_seconds;
+ 		int nid;
+-		struct mem_cgroup *mem;
++		long earlier, delta;
++		bool scan_done;
  
--			for_each_mem_cgroup_all(mem) {
--				write_seqcount_begin(&mem->idle_page_stats_lock);
--				mem->idle_page_stats = mem->idle_scan_stats;
--				mem->idle_page_scans++;
--				write_seqcount_end(&mem->idle_page_stats_lock);
--				memset(&mem->idle_scan_stats, 0,
--				       sizeof(mem->idle_scan_stats));
--			}
-+			for_each_mem_cgroup_all(mem)
-+				kstaled_update_stats(mem);
+ 		wait_event_interruptible(kstaled_wait,
+ 				 (scan_seconds = kstaled_scan_seconds) > 0);
+@@ -5788,21 +5800,60 @@ static int kstaled(void *dummy)
+ 		 */
+ 		BUG_ON(scan_seconds <= 0);
+ 
+-		for_each_mem_cgroup_all(mem)
+-			memset(&mem->idle_scan_stats, 0,
+-			       sizeof(mem->idle_scan_stats));
++		earlier = jiffies;
+ 
++		scan_done = true;
+ 		for_each_node_state(nid, N_HIGH_MEMORY)
+-			kstaled_scan_node(NODE_DATA(nid));
++			scan_done &= kstaled_scan_node(NODE_DATA(nid),
++						       scan_seconds, reset);
++
++		if (scan_done) {
++			struct mem_cgroup *mem;
++
++			for_each_mem_cgroup_all(mem) {
++				write_seqcount_begin(&mem->idle_page_stats_lock);
++				mem->idle_page_stats = mem->idle_scan_stats;
++				mem->idle_page_scans++;
++				write_seqcount_end(&mem->idle_page_stats_lock);
++				memset(&mem->idle_scan_stats, 0,
++				       sizeof(mem->idle_scan_stats));
++			}
++		}
+ 
+-		for_each_mem_cgroup_all(mem) {
+-			write_seqcount_begin(&mem->idle_page_stats_lock);
+-			mem->idle_page_stats = mem->idle_scan_stats;
+-			mem->idle_page_scans++;
+-			write_seqcount_end(&mem->idle_page_stats_lock);
++		delta = jiffies - earlier;
++		if (delta < HZ / 2) {
++			delayed = 0;
++			schedule_timeout_interruptible(HZ - delta);
++		} else {
++			/*
++			 * Emergency throttle if we're taking too long.
++			 * We are supposed to scan an entire slice in 1 second.
++			 * If we keep taking longer for 10 consecutive times,
++			 * scale back our scan_seconds.
++			 *
++			 * If someone changed kstaled_scan_seconds while we
++			 * were running, hope they know what they're doing and
++			 * assume they've eliminated any delays.
++			 */
++			bool updated = false;
++			spin_lock(&kstaled_scan_seconds_lock);
++			if (scan_seconds != kstaled_scan_seconds)
++				delayed = 0;
++			else if (++delayed == 10) {
++				delayed = 0;
++				scan_seconds *= 2;
++				kstaled_scan_seconds = scan_seconds;
++				updated = true;
++			}
++			spin_unlock(&kstaled_scan_seconds_lock);
++			if (updated)
++				pr_warning("kstaled taking too long, "
++					   "scan_seconds now %d\n",
++					   scan_seconds);
++			schedule_timeout_interruptible(HZ / 2);
  		}
  
- 		delta = jiffies - earlier;
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index c46887b..0b490ac 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -211,6 +211,12 @@ static void grow_pgdat_span(struct pglist_data *pgdat, unsigned long start_pfn,
+-		schedule_timeout_interruptible(scan_seconds * HZ);
++		reset = scan_done;
+ 	}
  
- 	pgdat->node_spanned_pages = max(old_pgdat_end_pfn, end_pfn) -
- 					pgdat->node_start_pfn;
-+#ifdef CONFIG_KSTALED
-+	if (pgdat->node_idle_page_age) {
-+		vfree(pgdat->node_idle_page_age);
-+		pgdat->node_idle_page_age = NULL;
-+	}
-+#endif
+ 	BUG();
+@@ -5826,7 +5877,9 @@ static ssize_t kstaled_scan_seconds_store(struct kobject *kobj,
+ 	err = strict_strtoul(buf, 10, &input);
+ 	if (err)
+ 		return -EINVAL;
++	spin_lock(&kstaled_scan_seconds_lock);
+ 	kstaled_scan_seconds = input;
++	spin_unlock(&kstaled_scan_seconds_lock);
+ 	wake_up_interruptible(&kstaled_wait);
+ 	return count;
  }
- 
- static int __meminit __add_zone(struct zone *zone, unsigned long phys_start_pfn)
 -- 
 1.7.3.1
 
