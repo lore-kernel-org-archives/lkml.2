@@ -1,40 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753289Ab1IQKNh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Sep 2011 06:13:37 -0400
-Received: from edu-smtp-01.edutel.nl ([88.159.1.175]:56983 "EHLO
-	edu-smtp-01.edutel.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750830Ab1IQKNg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Sep 2011 06:13:36 -0400
-X-Greylist: delayed 487 seconds by postgrey-1.27 at vger.kernel.org; Sat, 17 Sep 2011 06:13:35 EDT
-Message-ID: <4E7470E6.2000404@neli.hopto.org>
-Date: Sat, 17 Sep 2011 12:05:26 +0200
-From: Micha Nelissen <micha@neli.hopto.org>
-User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20091109)
+	id S1752697Ab1IQKXu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Sep 2011 06:23:50 -0400
+Received: from tac.ki.iif.hu ([193.6.222.43]:49551 "EHLO tac.ki.iif.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750830Ab1IQKXt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Sep 2011 06:23:49 -0400
+From: Ferenc Wagner <wferi@niif.hu>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: Johannes Berg <johannes@sipsolutions.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: mac80211 regression (deadlock) with built-in ipw2200
+Date: Sat, 17 Sep 2011 12:23:18 +0200
+Message-ID: <877h57jwmh.fsf@tac.ki.iif.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-To: Alexandre Bounine <alexandre.bounine@idt.com>
-CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, Liu Gang <Gang.Liu@freescale.com>
-Subject: Re: [PATCH] RapidIO: documentation update
-References: <1316092759-5460-1-git-send-email-alexandre.bounine@idt.com>
-In-Reply-To: <1316092759-5460-1-git-send-email-alexandre.bounine@idt.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alexandre Bounine wrote:
->  After the host has completed enumeration of the entire network it releases
->  devices by clearing device ID locks (calls rio_clear_locks()). For each endpoint
-> -in the system, it sets the Master Enable bit in the Port General Control CSR
-> +in the system, it sets the Discovered bit in the Port General Control CSR
->  to indicate that enumeration is completed and agents are allowed to execute
->  passive discovery of the network.
+Hi,
 
-The host needs to set both. Without Master Enable an agent is not
-supposed to initiate transactions on the "bus", that's the meaning of
-that bit.
+As pointed out by git-bisect, commit ecb44335 (mac80211: fix
+suspend/resume races with unregister hw) broke booting on my ThinkPad
+R50e. Looks like the rtnl_lock() around rdev->wiphy.registered = true
+leads to a deadlock, possibly because ipw2200 is built-in in my
+config.  Testing with the additional debug patch
 
-Micha
+--- a/net/wireless/core.c
++++ b/net/wireless/core.c
+@@ -616,9 +616,8 @@ int wiphy_register(struct wiphy *wiphy)
+        if (res)
+                goto out_rm_dev;
+ 
+-       rtnl_lock();
++       WARN_ON(rtnl_is_locked());
+        rdev->wiphy.registered = true;
+-       rtnl_unlock();
+        return 0;
+ 
+on top of c455ea4f (rc6+) leads to a working system with
+
+[    1.020738] ipw2200: Intel(R) PRO/Wireless 2200/2915 Network Driver, 1.2.2kmpr
+[    1.020812] ipw2200: Copyright(c) 2003-2006 Intel Corporation
+[    1.023406] ACPI: PCI Interrupt Link [LNKF] enabled at IRQ 11
+[    1.025717] ipw2200 0000:02:02.0: PCI INT A -> Link[LNKF] -> GSI 11 (level, low
+) -> IRQ 11
+[    1.028048] ipw2200: Detected Intel PRO/Wireless 2200BG Network Connection
+[    1.148058] ------------[ cut here ]------------
+[    1.150393] WARNING: at net/wireless/core.c:619 wiphy_register+0x4c1/0x58c()
+[    1.152781] Hardware name: 1834S5G
+[    1.155126] Pid: 1, comm: swapper Not tainted 3.1.0-rc6+ #86
+[    1.157520] Call Trace:
+[    1.159871]  [<c1028b98>] warn_slowpath_common+0x69/0x90
+[    1.162241]  [<c13ee7a8>] ? wiphy_register+0x4c1/0x58c
+[    1.164617]  [<c13ee7a8>] ? wiphy_register+0x4c1/0x58c
+[    1.166924]  [<c1028be1>] warn_slowpath_null+0x22/0x24
+[    1.169230]  [<c13ee7a8>] wiphy_register+0x4c1/0x58c
+[    1.171564]  [<c12daad0>] ? ipw_net_init+0x1e6/0x2d0
+[    1.173890]  [<c12da995>] ipw_net_init+0xab/0x2d0
+[    1.176173]  [<c1375032>] register_netdevice+0x70/0x271
+[    1.178446]  [<c137524e>] register_netdev+0x1b/0x28
+[    1.180688]  [<c142f5b8>] ipw_pci_probe+0x7c3/0x891
+[    1.182892]  [<c11a6f93>] local_pci_probe+0x40/0x9a
+[    1.185086]  [<c11a7c98>] pci_device_probe+0x56/0x71
+[    1.187259]  [<c128c902>] driver_probe_device+0x6c/0x177
+[    1.189453]  [<c11a6ed9>] ? pci_match_device+0x80/0x85
+[    1.191615]  [<c128ca79>] __driver_attach+0x6c/0x6e
+[    1.193794]  [<c128c257>] bus_for_each_dev+0x4a/0x68
+[    1.195936]  [<c128c7b4>] driver_attach+0x1e/0x20
+[    1.198043]  [<c128ca0d>] ? driver_probe_device+0x177/0x177
+[    1.200151]  [<c128bce5>] bus_add_driver+0x186/0x231
+[    1.202247]  [<c11a7b3c>] ? pci_dev_put+0x16/0x16
+[    1.204320]  [<c128cfac>] driver_register+0x6a/0x118
+[    1.206386]  [<c120665f>] ? misc_register+0xc2/0x133
+[    1.208425]  [<c15ee31e>] ? parse_early_options+0x25/0x25
+[    1.210423]  [<c11a7e66>] __pci_register_driver+0x33/0x8c
+[    1.212393]  [<c15ee31e>] ? parse_early_options+0x25/0x25
+[    1.214384]  [<c160e0e8>] ipw_init+0x30/0x75
+[    1.216356]  [<c15ee24c>] do_one_initcall+0x86/0x133
+[    1.218340]  [<c160e0b8>] ? tun_init+0x8b/0x8b
+[    1.220315]  [<c15ee31e>] ? parse_early_options+0x25/0x25
+[    1.222270]  [<c15ee393>] kernel_init+0x75/0x10c
+[    1.224214]  [<c14349b6>] kernel_thread_helper+0x6/0x10
+[    1.226124] ---[ end trace 4ef665623022622c ]---
+[    1.228121] ipw2200: Detected geography ZZR (14 802.11bg channels, 0 802.11a channels)
+
+in dmesg.  It's a shoot in the dark, but register_netdev() issues
+rtnl_lock() before calling register_netdevice(), so wiphy_register()
+can't possibly acquire the rtnl mutex in the same call chain, or can
+it?
+-- 
+Thanks,
+Feri.
