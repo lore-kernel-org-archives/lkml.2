@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933175Ab1IQDkS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 23:40:18 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:50109 "EHLO
+	id S933242Ab1IQDkU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 23:40:20 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:50062 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932780Ab1IQDjs (ORCPT
+	with ESMTP id S932405Ab1IQDjl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 23:39:48 -0400
+	Fri, 16 Sep 2011 23:39:41 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=dkim-signature:from:to:cc:subject:date:message-id:x-mailer:
 	in-reply-to:references:x-system-of-record;
-	b=OrS3YgG29c8ezMPI5PACKZN2apmrVRac3HKPvvrWEktrKmb7APYd58MvKXJQqWhnC
-	fJwX4h2FxqKLcUMTztBWg==
+	b=DtDcMx7TiNe7pZc7aLIqPf/g2pnSS0L11TpRnvw8T3JyrRLSw75aR+laGZFVztQVx
+	Nm+UXta3zF1wQJBH/ANuA==
 From: Michel Lespinasse <walken@google.com>
 To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -23,9 +23,9 @@ Cc: Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
         Hugh Dickins <hughd@google.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Michael Wolf <mjwolf@us.ibm.com>
-Subject: [PATCH 8/8] kstaled: add incrementally updating stale page count
-Date: Fri, 16 Sep 2011 20:39:13 -0700
-Message-Id: <1316230753-8693-9-git-send-email-walken@google.com>
+Subject: [PATCH 3/8] kstaled: page_referenced_kstaled() and supporting infrastructure.
+Date: Fri, 16 Sep 2011 20:39:08 -0700
+Message-Id: <1316230753-8693-4-git-send-email-walken@google.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1316230753-8693-1-git-send-email-walken@google.com>
 References: <1316230753-8693-1-git-send-email-walken@google.com>
@@ -34,296 +34,310 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add an incrementally updating stale page count. A new per-cgroup
-memory.stale_page_age file is introduced. After a non-zero number of scan
-cycles is written there, pages that have been idle for at least that number
-of cycles and are currently clean are reported in memory.idle_page_stats
-as being stale. Contrary to the idle_*_clean statistic, this stale page
-count is continually updated - hooks have been added to notice pages being
-accessed or rendered unevictable, at which point the stale page count for
-that cgroup is instantly decremented. The point is to allow userspace to
-quickly respond to increased memory pressure.
+Add a new page_referenced_kstaled() interface. The desired behavior
+is that page_referenced() returns page references since the last
+page_referenced() call, and page_referenced_kstaled() returns page
+references since the last page_referenced_kstaled() call, but they
+are both independent of each other and do not influence each other.
+
+The following events are counted as kstaled page references:
+- CPU data access to the page (as noticed through pte_young());
+- mark_page_accessed() calls;
+- page being freed / reallocated.
 
 
 Signed-off-by: Michel Lespinasse <walken@google.com>
 ---
- include/linux/page-flags.h |   15 ++++++++
- include/linux/pagemap.h    |   11 ++++--
- mm/internal.h              |    1 +
- mm/memcontrol.c            |   82 ++++++++++++++++++++++++++++++++++++++++++--
- mm/mlock.c                 |    1 +
- mm/vmscan.c                |    2 +-
- 6 files changed, 104 insertions(+), 8 deletions(-)
+ include/linux/page-flags.h |   35 ++++++++++++++++++++++
+ include/linux/rmap.h       |   68 +++++++++++++++++++++++++++++++++++++++----
+ mm/rmap.c                  |   60 +++++++++++++++++++++++++++-----------
+ mm/swap.c                  |    1 +
+ 4 files changed, 139 insertions(+), 25 deletions(-)
 
 diff --git a/include/linux/page-flags.h b/include/linux/page-flags.h
-index e964d98..22dbe90 100644
+index 6081493..e964d98 100644
 --- a/include/linux/page-flags.h
 +++ b/include/linux/page-flags.h
-@@ -58,6 +58,8 @@
-  *
-  * PG_idle indicates that the page has not been referenced since the last time
-  * kstaled scanned it.
+@@ -51,6 +51,13 @@
+  * PG_hwpoison indicates that a page got corrupted in hardware and contains
+  * data with incorrect ECC bits that triggered a machine check. Accessing is
+  * not safe since it may cause another machine check. Don't touch!
 + *
-+ * PG_stale indicates that the page is currently counted as stale.
++ * PG_young indicates that kstaled cleared the young bit on some PTEs pointing
++ * to that page. In order to avoid interacting with the LRU algorithm, we want
++ * the next page_referenced() call to still consider the page young.
++ *
++ * PG_idle indicates that the page has not been referenced since the last time
++ * kstaled scanned it.
   */
  
  /*
-@@ -117,6 +119,7 @@ enum pageflags {
- #ifdef CONFIG_KSTALED
- 	PG_young,		/* kstaled cleared pte_young */
- 	PG_idle,		/* idle since start of kstaled interval */
-+	PG_stale,		/* page is counted as stale */
+@@ -107,6 +114,10 @@ enum pageflags {
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ 	PG_compound_lock,
  #endif
++#ifdef CONFIG_KSTALED
++	PG_young,		/* kstaled cleared pte_young */
++	PG_idle,		/* idle since start of kstaled interval */
++#endif
  	__NR_PAGEFLAGS,
  
-@@ -293,21 +296,33 @@ PAGEFLAG_FALSE(HWPoison)
+ 	/* Filesystems */
+@@ -278,6 +289,30 @@ PAGEFLAG_FALSE(HWPoison)
+ #define __PG_HWPOISON 0
+ #endif
  
- PAGEFLAG(Young, young)
- PAGEFLAG(Idle, idle)
-+PAGEFLAG(Stale, stale) TESTSCFLAG(Stale, stale)
++#ifdef CONFIG_KSTALED
 +
-+void __set_page_nonstale(struct page *page);
++PAGEFLAG(Young, young)
++PAGEFLAG(Idle, idle)
 +
-+static inline void set_page_nonstale(struct page *page)
++static inline void set_page_young(struct page *page)
 +{
-+	if (PageStale(page))
-+		__set_page_nonstale(page);
++	if (!PageYoung(page))
++		SetPageYoung(page);
 +}
++
++static inline void clear_page_idle(struct page *page)
++{
++	if (PageIdle(page))
++		ClearPageIdle(page);
++}
++
++#else /* !CONFIG_KSTALED */
++
++static inline void set_page_young(struct page *page) {}
++static inline void clear_page_idle(struct page *page) {}
++
++#endif /* CONFIG_KSTALED */
++
+ u64 stable_page_flags(struct page *page);
  
- static inline void set_page_young(struct page *page)
+ static inline int PageUptodate(struct page *page)
+diff --git a/include/linux/rmap.h b/include/linux/rmap.h
+index 7c99c6f..27ca023 100644
+--- a/include/linux/rmap.h
++++ b/include/linux/rmap.h
+@@ -74,6 +74,8 @@ struct pr_info {
+ 	unsigned long vm_flags;
+ 	unsigned int pr_flags;
+ #define PR_REFERENCED  1
++#define PR_DIRTY       2
++#define PR_FOR_KSTALED 4
+ };
+ 
+ #ifdef CONFIG_MMU
+@@ -165,8 +167,8 @@ static inline void page_dup_rmap(struct page *page)
+ /*
+  * Called from mm/vmscan.c to handle paging out
+  */
+-void page_referenced(struct page *, int is_locked,
+-		     struct mem_cgroup *cnt, struct pr_info *info);
++void __page_referenced(struct page *, int is_locked,
++		       struct mem_cgroup *cnt, struct pr_info *info);
+ void page_referenced_one(struct page *, struct vm_area_struct *,
+ 			 unsigned long address, unsigned int *mapcount,
+ 			 struct pr_info *info);
+@@ -244,12 +246,10 @@ int rmap_walk(struct page *page, int (*rmap_one)(struct page *,
+ #define anon_vma_prepare(vma)	(0)
+ #define anon_vma_link(vma)	do {} while (0)
+ 
+-static inline void page_referenced(struct page *page, int is_locked,
+-				   struct mem_cgroup *cnt,
+-				   struct pr_info *info)
++static inline void __page_referenced(struct page *page, int is_locked,
++				     struct mem_cgroup *cnt,
++				     struct pr_info *info)
  {
-+	set_page_nonstale(page);
- 	if (!PageYoung(page))
- 		SetPageYoung(page);
+-	info->vm_flags = 0;
+-	info->pr_flags = 0;
  }
  
- static inline void clear_page_idle(struct page *page)
- {
-+	set_page_nonstale(page);
- 	if (PageIdle(page))
- 		ClearPageIdle(page);
- }
+ #define try_to_unmap(page, refs) SWAP_FAIL
+@@ -262,6 +262,60 @@ static inline int page_mkclean(struct page *page)
  
- #else /* !CONFIG_KSTALED */
+ #endif	/* CONFIG_MMU */
  
-+static inline void set_page_nonstale(struct page *page) {}
- static inline void set_page_young(struct page *page) {}
- static inline void clear_page_idle(struct page *page) {}
- 
-diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
-index 716875e..693dd20 100644
---- a/include/linux/pagemap.h
-+++ b/include/linux/pagemap.h
-@@ -46,11 +46,14 @@ static inline void mapping_clear_unevictable(struct address_space *mapping)
- 	clear_bit(AS_UNEVICTABLE, &mapping->flags);
- }
- 
--static inline int mapping_unevictable(struct address_space *mapping)
-+static inline int mapping_unevictable(struct address_space *mapping,
-+				      struct page *page)
- {
--	if (mapping)
--		return test_bit(AS_UNEVICTABLE, &mapping->flags);
--	return !!mapping;
-+	if (mapping && test_bit(AS_UNEVICTABLE, &mapping->flags)) {
-+		set_page_nonstale(page);
-+		return 1;
++/**
++ * page_referenced - test if the page was referenced
++ * @page: the page to test
++ * @is_locked: caller holds lock on the page
++ * @mem_cont: target memory controller
++ * @vm_flags: collect encountered vma->vm_flags who actually referenced the page
++ *
++ * Quick test_and_clear_referenced for all mappings to a page,
++ * returns the number of ptes which referenced the page.
++ */
++static inline void page_referenced(struct page *page,
++				   int is_locked,
++				   struct mem_cgroup *mem_cont,
++				   struct pr_info *info)
++{
++	info->vm_flags = 0;
++	info->pr_flags = 0;
++
++#ifdef CONFIG_KSTALED
++	/*
++	 * Always clear PageYoung at the start of a scanning interval. It will
++	 * get get set if kstaled clears a young bit in a pte reference,
++	 * so that vmscan will still see the page as referenced.
++	 */
++	if (PageYoung(page)) {
++		ClearPageYoung(page);
++		info->pr_flags |= PR_REFERENCED;
 +	}
-+	return 0;
- }
- 
- static inline gfp_t mapping_gfp_mask(struct address_space * mapping)
-diff --git a/mm/internal.h b/mm/internal.h
-index d071d38..d1cb0d6 100644
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -93,6 +93,7 @@ static inline int is_mlocked_vma(struct vm_area_struct *vma, struct page *page)
- 		return 0;
- 
- 	if (!TestSetPageMlocked(page)) {
-+		set_page_nonstale(page);
- 		inc_zone_page_state(page, NR_MLOCK);
- 		count_vm_event(UNEVICTABLE_PGMLOCKED);
- 	}
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index ef406a1..da21830 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -292,6 +292,8 @@ struct mem_cgroup {
- 	spinlock_t pcp_counter_lock;
- 
- #ifdef CONFIG_KSTALED
-+	int stale_page_age;
-+
- 	seqcount_t idle_page_stats_lock;
- 	struct idle_page_stats {
- 		unsigned long idle_clean;
-@@ -299,6 +301,7 @@ struct mem_cgroup {
- 		unsigned long idle_dirty_swap;
- 	} idle_page_stats[NUM_KSTALED_BUCKETS],
- 	  idle_scan_stats[NUM_KSTALED_BUCKETS];
-+	atomic_long_t stale_pages;
- 	unsigned long idle_page_scans;
- #endif
- };
-@@ -2639,6 +2642,13 @@ static int mem_cgroup_move_account(struct page *page,
- 		preempt_enable();
- 	}
- 	mem_cgroup_charge_statistics(from, PageCgroupCache(pc), -nr_pages);
-+
-+#ifdef CONFIG_KSTALED
-+	/* Count page as non-stale */
-+	if (PageStale(page) && TestClearPageStale(page))
-+		atomic_long_dec(&from->stale_pages);
 +#endif
 +
- 	if (uncharge)
- 		/* This is not "cancel", but cancel_charge does all we need. */
- 		__mem_cgroup_cancel_charge(from, nr_pages);
-@@ -3067,6 +3077,12 @@ __mem_cgroup_uncharge_common(struct page *page, enum charge_type ctype)
- 
- 	mem_cgroup_charge_statistics(mem, PageCgroupCache(pc), -nr_pages);
- 
++	__page_referenced(page, is_locked, mem_cont, info);
++}
++
 +#ifdef CONFIG_KSTALED
-+	/* Count page as non-stale */
-+	if (PageStale(page) && TestClearPageStale(page))
-+		atomic_long_dec(&mem->stale_pages);
++static inline void page_referenced_kstaled(struct page *page, bool is_locked,
++					   struct pr_info *info)
++{
++	info->vm_flags = 0;
++	info->pr_flags = PR_FOR_KSTALED;
++
++	/*
++	 * Always set PageIdle at the start of a scanning interval. It will
++	 * get cleared if a young page reference is encountered; otherwise
++	 * the page will be counted as idle at the next kstaled scan cycle.
++	 */
++	if (!PageIdle(page)) {
++		SetPageIdle(page);
++		info->pr_flags |= PR_REFERENCED;
++	}
++
++	__page_referenced(page, is_locked, NULL, info);
++}
 +#endif
 +
- 	ClearPageCgroupUsed(pc);
- 	/*
- 	 * pc->mem_cgroup is not cleared here. It will be accessed when it's
-@@ -4716,6 +4732,29 @@ static int mem_cgroup_idle_page_stats_read(struct cgroup *cgrp,
- 		cb->fill(cb, name, stats[bucket].idle_dirty_swap * PAGE_SIZE);
- 	}
- 	cb->fill(cb, "scans", scans);
-+	cb->fill(cb, "stale",
-+		 max(atomic_long_read(&mem->stale_pages), 0L) * PAGE_SIZE);
-+
-+	return 0;
-+}
-+
-+static u64 mem_cgroup_stale_page_age_read(struct cgroup *cgrp,
-+					  struct cftype *cft)
-+{
-+	struct mem_cgroup *mem = mem_cgroup_from_cont(cgrp);
-+
-+	return mem->stale_page_age;
-+}
-+
-+static int mem_cgroup_stale_page_age_write(struct cgroup *cgrp,
-+					   struct cftype *cft, u64 val)
-+{
-+	struct mem_cgroup *mem = mem_cgroup_from_cont(cgrp);
-+
-+	if (val > 255)
-+		return -EINVAL;
-+
-+	mem->stale_page_age = val;
+ /*
+  * Return values of try_to_unmap
+  */
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 6ff8ecf..91f6d9c 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -678,8 +678,17 @@ void page_referenced_one(struct page *page, struct vm_area_struct *vma,
+ 		}
  
- 	return 0;
- }
-@@ -4796,6 +4835,11 @@ static struct cftype mem_cgroup_files[] = {
- 		.name = "idle_page_stats",
- 		.read_map = mem_cgroup_idle_page_stats_read,
- 	},
-+	{
-+		.name = "stale_page_age",
-+		.read_u64 = mem_cgroup_stale_page_age_read,
-+		.write_u64 = mem_cgroup_stale_page_age_write,
-+	},
- #endif
- };
- 
-@@ -5716,7 +5760,7 @@ static inline void kstaled_scan_page(struct page *page, u8 *idle_page_age)
- 		 */
- 		if (!mapping && !PageSwapCache(page))
- 			goto out;
--		else if (mapping_unevictable(mapping))
-+		else if (mapping_unevictable(mapping, page))
- 			goto out;
- 		else if (PageSwapCache(page) ||
- 			 mapping_cap_swap_backed(mapping))
-@@ -5751,13 +5795,23 @@ static inline void kstaled_scan_page(struct page *page, u8 *idle_page_age)
- 
- 	/* Finally increment the correct statistic for this page. */
- 	if (!(info.pr_flags & PR_DIRTY) &&
--	    !PageDirty(page) && !PageWriteback(page))
-+	    !PageDirty(page) && !PageWriteback(page)) {
- 		stats->idle_clean++;
--	else if (is_file)
-+
-+		if (mem->stale_page_age && age >= mem->stale_page_age) {
-+			if (!PageStale(page) && !TestSetPageStale(page))
-+				atomic_long_inc(&mem->stale_pages);
-+			goto unlock_page_cgroup_out;
+ 		/* go ahead even if the pmd is pmd_trans_splitting() */
+-		if (pmdp_clear_flush_young_notify(vma, address, pmd))
+-			referenced = true;
++		if (!(info->pr_flags & PR_FOR_KSTALED)) {
++			if (pmdp_clear_flush_young_notify(vma, address, pmd)) {
++				referenced = true;
++				clear_page_idle(page);
++			}
++		} else {
++			if (pmdp_test_and_clear_young(vma, address, pmd)) {
++				referenced = true;
++				set_page_young(page);
++			}
 +		}
-+	} else if (is_file)
- 		stats->idle_dirty_file++;
- 	else
- 		stats->idle_dirty_swap++;
+ 		spin_unlock(&mm->page_table_lock);
+ 	} else {
+ 		pte_t *pte;
+@@ -693,6 +702,9 @@ void page_referenced_one(struct page *page, struct vm_area_struct *vma,
+ 		if (!pte)
+ 			return;
  
-+	/* Count page as non-stale */
-+	if (PageStale(page) && TestClearPageStale(page))
-+		atomic_long_dec(&mem->stale_pages);
++		if (pte_dirty(*pte))
++			info->pr_flags |= PR_DIRTY;
 +
-  unlock_page_cgroup_out:
- 	unlock_page_cgroup(pc);
+ 		if (vma->vm_flags & VM_LOCKED) {
+ 			pte_unmap_unlock(pte, ptl);
+ 			*mapcount = 0;	/* break early from loop */
+@@ -700,23 +712,38 @@ void page_referenced_one(struct page *page, struct vm_area_struct *vma,
+ 			return;
+ 		}
  
-@@ -5767,6 +5821,28 @@ static inline void kstaled_scan_page(struct page *page, u8 *idle_page_age)
- 	put_page(page);
+-		if (ptep_clear_flush_young_notify(vma, address, pte)) {
++		if (!(info->pr_flags & PR_FOR_KSTALED)) {
++			if (ptep_clear_flush_young_notify(vma, address, pte)) {
++				/*
++				 * Don't treat a reference through a
++				 * sequentially read mapping as such.
++				 * If the page has been used in another
++				 * mapping, we will catch it; if this other
++				 * mapping is already gone, the unmap path
++				 * will have set PG_referenced or activated
++				 * the page.
++				 */
++				if (likely(!VM_SequentialReadHint(vma)))
++					referenced = true;
++				clear_page_idle(page);
++			}
++		} else {
+ 			/*
+-			 * Don't treat a reference through a sequentially read
+-			 * mapping as such.  If the page has been used in
+-			 * another mapping, we will catch it; if this other
+-			 * mapping is already gone, the unmap path will have
+-			 * set PG_referenced or activated the page.
++			 * Within page_referenced_kstaled():
++			 * skip TLB shootdown & VM_SequentialReadHint heuristic
+ 			 */
+-			if (likely(!VM_SequentialReadHint(vma)))
++			if (ptep_test_and_clear_young(vma, address, pte)) {
+ 				referenced = true;
++				set_page_young(page);
++			}
+ 		}
+ 		pte_unmap_unlock(pte, ptl);
+ 	}
+ 
+ 	/* Pretend the page is referenced if the task has the
+ 	   swap token and is in the middle of a page fault. */
+-	if (mm != current->mm && has_swap_token(mm) &&
++	if (!(info->pr_flags & PR_FOR_KSTALED) &&
++			mm != current->mm && has_swap_token(mm) &&
+ 			rwsem_is_locked(&mm->mmap_sem))
+ 		referenced = true;
+ 
+@@ -828,7 +855,7 @@ static void page_referenced_file(struct page *page,
  }
  
-+void __set_page_nonstale(struct page *page)
-+{
-+	struct page_cgroup *pc;
-+	struct mem_cgroup *mem;
-+
-+	/* Locate kstaled stats for the page's cgroup. */
-+	pc = lookup_page_cgroup(page);
-+	if (!pc)
-+		return;
-+	lock_page_cgroup(pc);
-+	mem = pc->mem_cgroup;
-+	if (!PageCgroupUsed(pc))
-+		goto out;
-+
-+	/* Count page as non-stale */
-+	if (TestClearPageStale(page))
-+		atomic_long_dec(&mem->stale_pages);
-+
-+out:
-+	unlock_page_cgroup(pc);
-+}
-+
- static bool kstaled_scan_node(pg_data_t *pgdat, int scan_seconds, bool reset)
+ /**
+- * page_referenced - test if the page was referenced
++ * __page_referenced - test if the page was referenced
+  * @page: the page to test
+  * @is_locked: caller holds lock on the page
+  * @mem_cont: target memory controller
+@@ -838,16 +865,13 @@ static void page_referenced_file(struct page *page,
+  * Quick test_and_clear_referenced for all mappings to a page,
+  * returns the number of ptes which referenced the page.
+  */
+-void page_referenced(struct page *page,
+-		     int is_locked,
+-		     struct mem_cgroup *mem_cont,
+-		     struct pr_info *info)
++void __page_referenced(struct page *page,
++		       int is_locked,
++		       struct mem_cgroup *mem_cont,
++		       struct pr_info *info)
  {
- 	unsigned long flags;
-diff --git a/mm/mlock.c b/mm/mlock.c
-index 048260c..eac4c32 100644
---- a/mm/mlock.c
-+++ b/mm/mlock.c
-@@ -81,6 +81,7 @@ void mlock_vma_page(struct page *page)
- 	BUG_ON(!PageLocked(page));
+ 	int we_locked = 0;
  
- 	if (!TestSetPageMlocked(page)) {
-+		set_page_nonstale(page);
- 		inc_zone_page_state(page, NR_MLOCK);
- 		count_vm_event(UNEVICTABLE_PGMLOCKED);
- 		if (!isolate_lru_page(page))
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 7bd9868..752fd21 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -3203,7 +3203,7 @@ int zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
- int page_evictable(struct page *page, struct vm_area_struct *vma)
- {
+-	info->vm_flags = 0;
+-	info->pr_flags = 0;
+-
+ 	if (page_mapped(page) && page_rmapping(page)) {
+ 		if (!is_locked && (!PageAnon(page) || PageKsm(page))) {
+ 			we_locked = trylock_page(page);
+diff --git a/mm/swap.c b/mm/swap.c
+index 3a442f1..d65b69e 100644
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -344,6 +344,7 @@ void mark_page_accessed(struct page *page)
+ 	} else if (!PageReferenced(page)) {
+ 		SetPageReferenced(page);
+ 	}
++	clear_page_idle(page);
+ }
  
--	if (mapping_unevictable(page_mapping(page)))
-+	if (mapping_unevictable(page_mapping(page), page))
- 		return 0;
- 
- 	if (PageMlocked(page) || (vma && is_mlocked_vma(vma, page)))
+ EXPORT_SYMBOL(mark_page_accessed);
 -- 
 1.7.3.1
 
