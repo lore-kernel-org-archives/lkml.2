@@ -1,91 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756108Ab1IQTGG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Sep 2011 15:06:06 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:45387 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753455Ab1IQTGD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Sep 2011 15:06:03 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX1/YpXU+wafY/TVzvjKUbl9qaacgk9QwWQXXsOhLy1
-	iGJuN+q7SCmkGS
-Message-ID: <4E74EF98.3060106@gmx.de>
-Date: Sat, 17 Sep 2011 19:06:00 +0000
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110818 Icedove/3.0.11
+	id S1753986Ab1IQTFq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Sep 2011 15:05:46 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:41586 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753334Ab1IQTFp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Sep 2011 15:05:45 -0400
+Date: Sat, 17 Sep 2011 12:05:38 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andy Henroid <andrew.d.henroid@intel.com>,
+        Mike Frysinger <vapier@gentoo.org>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        David Miller <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Paul Mackerras <paulus@samba.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [PATCH 0/5 v3] rcu: Fix some rcu uses in extended quiescent
+ state
+Message-ID: <20110917190538.GE2333@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1316270402-19919-1-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
-To: Dave Airlie <airlied@gmail.com>
-CC: Rob Clark <rob@ti.com>, Felipe Contreras <felipe.contreras@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linaro-dev@lists.linaro.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Archit Taneja <archit@ti.com>, linux-fbdev@vger.kernel.org
-Subject: Re: Proposal for a low-level Linux display framework
-References: <1316088425.11294.78.camel@lappyti>	<yunboul7sx7.fsf@aiko.keithp.com>	<1316100594.23214.65.camel@deskari>	<yun8vpp7qk7.fsf@aiko.keithp.com>	<4E72320B.6020000@gmx.de>	<CADnq5_NnzLtJmSzOgyppnBtv96DRTJ71u6ZSrs56KJ-F5CC-mw@mail.gmail.com>	<4E724659.5080709@gmx.de>	<20110915195804.4e6d965b@lxorguk.ukuu.org.uk>	<CAMP44s1ywhCV+FaudnwjwJUvj5Cf3_oz1M++kjXxRDGQpJ6-0w@mail.gmail.com>	<CAF6AEGu2-O+2KuCrQPJ6-xejg8TCScrFVZSimgkAV_5Xs-bgkg@mail.gmail.com>	<4E74C6C3.2000704@gmx.de>	<CAPM=9twmPVrBPmUuEuTYHSzjDGHtfsmiVX6cozpAFYEaV-NcCg@mail.gmail.com>	<4E74E3D6.8080401@gmx.de> <CAPM=9txHu7mzH8p8g=FmHsjvmAT-aMy-xEFj4odXEvnbs-bhMw@mail.gmail.com>
-In-Reply-To: <CAPM=9txHu7mzH8p8g=FmHsjvmAT-aMy-xEFj4odXEvnbs-bhMw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1316270402-19919-1-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/17/2011 06:23 PM, Dave Airlie wrote:
->>
->> Is it? Well, okay, I don't want to use any acceleration that can crash my
->> machine, where can I select it, preferably as compile time option? I didn't find
->> such a thing for Intel or Radeon. Don't say, I should rely on userspace here or
->> use fbdev for this.
+On Sat, Sep 17, 2011 at 04:39:57PM +0200, Frederic Weisbecker wrote:
+> This is an updated set that tries to fix some illegal uses
+> of RCU that are made in extended quiescent state, ie: between
+> calls of rcu_enter_nohz() and rcu_exit_nohz().
+
+Thank you, Frederic!
+
+I have queued these, and have started testing them.
+
+							Thanx, Paul
+
+> Changes:
 > 
-> Just tell the X driver to not use acceleration, and it you won't get
-> any acceleration used, then you get complete stability. If a driver
-> writer wants to turn off all accel in the kernel driver, it can, its
-> not an option we've bothered with for intel or radeon since it really
-> makes no sense. To put it simply you don't really seem to understand
-> the driver model around KMS. If no userspace app uses acceleration
-> then no acceleration features will magically happen. If you want to
-> write a simple app against the KMS API like plymouth you can now use
-> the dumb ioctls to create and map a buffer that can be made into a
-> framebuffer. Also you get hw cursors + modesetting.
-
-Again, you seem to not understand my reasoning. The "if" is the problem, it's
-the kernels job to ensure stability. Allowing the userspace to decide whether it
-crashes my machine is not acceptable to me.
-I do not claim that it is impossible to write a KMS driver in a way that it does
-not crash, but it seems more difficult than writing an fbdev driver.
-
->> The thing is that the core fbdev API does not expose any acceleration to
->> userspace, maybe some drivers do via IOCTLs, but I hope that are only things
->> that can be done in a sane way, otherwise I'd consider it a bug. The story is
->> different for DRM/KMS, as I understand, as this was primarily for acceleration
->> and only recently got modesetting capabilities.
+> - Restructuring of the changes in nohz core code. We need to handle
+> the case when the tick is not stopped from tick_nohz_idle_enter() but
+> from the irq exit path when the irq happens in idle loop. This should
+> fix the RCU stall Paul detected after applying my patches.
+> The first patch sort of overlaps the simple scope of fixes for RCU
+> but I believe it makes the code slightly more simple and optimized
+> in the end.
 > 
-> The core drm/kms ioctls don't expose acceleration to userspace either,
-> again misinformation seems to drive most of your logic. You can't do
-> generic useful acceleration from the kernel. A lot of modern GPU
-> hardware doesn't even have bitblt engines.
-
-I did not say that it is used directly for acceleration, but wasn't the point of
-DRM to allow acceleration in the first place?
-
->> It's true that mmap can be PITA, but I don't see any real alternative given that
->> you want directly map video memory, especially on low end systems. And there are
->> ways around it, you can forbid mapping (though probably most userspace wouldn't
->> like it, I guess) or use any other solution like defio.
->> If you'd stop exposing the fbdev userspace interface it'd just harden my opinion
->> that KMS is a piece of trash and that I should avoid hardware that does not have
->> a native framebuffer driver. I think you shouldn't do this, as it's just a
->> disadvantage for your end users, but I personally do not really care.
+> - Rename tick_nohz_enter_idle() into tick_nohz_idle_enter() (same for
+> exit). That to stay coherent with usual naming (tips from Peterz on
+> the nohz cpuset patchset that needs similar changes).
 > 
-> We've fixed this in KMS, we don't pass direct mappings to userspace
-> that we can't tear down and refault. We only provide objects via
-> handles. The only place its a problem is where we expose fbdev legacy
-> emulation, since we have to fix the pages.
-
-I guess we could do the same in fbdev. It's probably just that nobody is
-interested in it as we do not really care about memory management.
-
-
-Best regards,
-
-Florian Tobias Schandinat
+> - Remove the rcu_ext_qs parameter from tick_nohz_idle_exit(). We only
+> need it in tick_nohz_idle_enter() because as long as we call
+> rcu_enter_nohz() explicitly, we really want to pair it with an explicit
+> call to rcu_exit_nohz() (and vice versa), to avoid confusion.
+> 
+> There are still the powerpc fixes that are not included. But I would
+> like to first get this set merged in Paul's tree before focusing on
+> the powerpc reported issues.
+> 
+> Frederic Weisbecker (5):
+>   nohz: Seperate out irq exit and idle loop dyntick logic
+>   nohz: Allow rcu extended state handling seperately from tick stop
+>   x86: Enter rcu extended qs after idle notifier call
+>   x86: Call idle notifier after irq_enter()
+>   rcu: Fix early call to rcu_irq_exit()
+> 
+>  arch/arm/kernel/process.c                |    4 +-
+>  arch/avr32/kernel/process.c              |    4 +-
+>  arch/blackfin/kernel/process.c           |    4 +-
+>  arch/microblaze/kernel/process.c         |    4 +-
+>  arch/mips/kernel/process.c               |    4 +-
+>  arch/powerpc/kernel/idle.c               |    4 +-
+>  arch/powerpc/platforms/iseries/setup.c   |    8 +-
+>  arch/s390/kernel/process.c               |    4 +-
+>  arch/sh/kernel/idle.c                    |    4 +-
+>  arch/sparc/kernel/process_64.c           |    4 +-
+>  arch/tile/kernel/process.c               |    4 +-
+>  arch/um/kernel/process.c                 |    4 +-
+>  arch/unicore32/kernel/process.c          |    4 +-
+>  arch/x86/kernel/apic/apic.c              |    6 +-
+>  arch/x86/kernel/apic/io_apic.c           |    2 +-
+>  arch/x86/kernel/cpu/mcheck/mce.c         |    2 +-
+>  arch/x86/kernel/cpu/mcheck/therm_throt.c |    2 +-
+>  arch/x86/kernel/cpu/mcheck/threshold.c   |    2 +-
+>  arch/x86/kernel/irq.c                    |    6 +-
+>  arch/x86/kernel/process_32.c             |    4 +-
+>  arch/x86/kernel/process_64.c             |    9 ++-
+>  include/linux/tick.h                     |   12 ++-
+>  kernel/softirq.c                         |    4 +-
+>  kernel/time/tick-sched.c                 |  110 ++++++++++++++++++++----------
+>  24 files changed, 131 insertions(+), 84 deletions(-)
+> 
+> -- 
+> 1.7.5.4
+> 
