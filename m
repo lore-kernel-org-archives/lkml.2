@@ -1,39 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752533Ab1IQGG2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Sep 2011 02:06:28 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:14543 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751058Ab1IQGG1 (ORCPT
+	id S1753192Ab1IQGIJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Sep 2011 02:08:09 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:48747 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751471Ab1IQGIH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Sep 2011 02:06:27 -0400
-Date: Sat, 17 Sep 2011 08:06:25 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, gthelen@google.com, tartler@cs.fau.de,
-        Dmitry Fink <Dmitry.Fink@palm.com>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Eric B Munson <ebmunson@us.ibm.com>,
-        Bruce Ashfield <Bruce.Ashfield@windriver.com>,
-        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH 1/2] kconfig: Add make olddefconfig
-Message-ID: <20110917060625.GA27128@merkur.ravnborg.org>
-References: <1316224159-3556-1-git-send-email-john.stultz@linaro.org> <1316224159-3556-2-git-send-email-john.stultz@linaro.org>
+	Sat, 17 Sep 2011 02:08:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1316224159-3556-2-git-send-email-john.stultz@linaro.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1301602523-9906-1-git-send-email-omar.ramirez@ti.com>
+References: <1301602523-9906-1-git-send-email-omar.ramirez@ti.com>
+From: Rabin Vincent <rabin@rab.in>
+Date: Sat, 17 Sep 2011 11:37:26 +0530
+X-Google-Sender-Auth: bLlJw2-jdEp4eLgFzQlVJ4YJS4U
+Message-ID: <CAH+eYFBSiL44CMOpgED+TAOTUH_dQMaKKu=hC3ynG0Y2nQ8ekw@mail.gmail.com>
+Subject: Re: [PATCH] ARM: BUG() dies silently
+To: Omar Ramirez Luna <omar.ramirez@ti.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        lak <linux-arm-kernel@lists.infradead.org>,
+        lk <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 16, 2011 at 06:49:18PM -0700, John Stultz wrote:
-> This adds an "olddefconfig" build target, which updates a .config file
-> filling any any absent symbols with the Kconfig default value (note:
-> not the architecture defconfig value).
+On Fri, Apr 1, 2011 at 01:45, Omar Ramirez Luna <omar.ramirez@ti.com> wrote:
+> There are some cases where the code generated for BUG() results
+> into an infinite while loop without causing a null dereference,
+> this ends on a kernel being stuck on a loop and the user without
+> a clue of what happened.
+>
+> E.g.: lib/scatterlist.c : __sg_alloc_table
+>
+>        BUG_ON(nents > max_ents);
+>  438:   9a000000        bls     440 <__sg_alloc_table+0x20>
+>  43c:   eafffffe        b       43c <__sg_alloc_table+0x1c>
+>
+> Adding volatile makes the compiler to avoid optimizations on this
+> code, which makes the panic to occur:
+>
+>        BUG_ON(nents > max_ents);
+>  438:   9a000002        bls     448 <__sg_alloc_table+0x28>
+>  43c:   e3a03000        mov     r3, #0
+>  440:   e5833000        str     r3, [r3]
+>  444:   eafffffc        b       43c <__sg_alloc_table+0x1c>
+>
+> Seen with gnu/linux cs arm-2010q1-202 and arm2010.09-50.
+>
+> Signed-off-by: Omar Ramirez Luna <omar.ramirez@ti.com>
 
-This looks like a shorthand for: make KCONFIG_ALLCONFIG=.config alldefconfig
-Maybe we need the more obvious target - but the functionality is at least now new.
-
-	Sam
+If the "Use generic BUG() handler" patch is only scheduled for the next
+merge window and not for 3.1, can this patch be merged instead for 3.1
+and -stable?  This problem is easily seen with GCC 4.6.
