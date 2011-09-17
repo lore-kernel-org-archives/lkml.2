@@ -1,77 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755853Ab1IQRkn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Sep 2011 13:40:43 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:44645 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752304Ab1IQRkm (ORCPT
+	id S1755878Ab1IQSPz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Sep 2011 14:15:55 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:59599 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752026Ab1IQSPy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Sep 2011 13:40:42 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sat, 17 Sep 2011 19:40:24 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux1394-devel@lists.sourceforge.net
-Subject: [git pull] FireWire fix
-Message-ID: <20110917194024.7866123a@stein>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Sat, 17 Sep 2011 14:15:54 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX19zNxZkl99zN64F+TcouKdZJPO0iOWMXkTq5u3NjD
+	H+FALNpsaguvr9
+Message-ID: <4E74E3D6.8080401@gmx.de>
+Date: Sat, 17 Sep 2011 18:15:50 +0000
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110818 Icedove/3.0.11
+MIME-Version: 1.0
+To: Dave Airlie <airlied@gmail.com>
+CC: Rob Clark <rob@ti.com>, Felipe Contreras <felipe.contreras@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linaro-dev@lists.linaro.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Archit Taneja <archit@ti.com>, linux-fbdev@vger.kernel.org
+Subject: Re: Proposal for a low-level Linux display framework
+References: <1316088425.11294.78.camel@lappyti>	<yunboul7sx7.fsf@aiko.keithp.com>	<1316100594.23214.65.camel@deskari>	<yun8vpp7qk7.fsf@aiko.keithp.com>	<4E72320B.6020000@gmx.de>	<CADnq5_NnzLtJmSzOgyppnBtv96DRTJ71u6ZSrs56KJ-F5CC-mw@mail.gmail.com>	<4E724659.5080709@gmx.de>	<20110915195804.4e6d965b@lxorguk.ukuu.org.uk>	<CAMP44s1ywhCV+FaudnwjwJUvj5Cf3_oz1M++kjXxRDGQpJ6-0w@mail.gmail.com>	<CAF6AEGu2-O+2KuCrQPJ6-xejg8TCScrFVZSimgkAV_5Xs-bgkg@mail.gmail.com>	<4E74C6C3.2000704@gmx.de> <CAPM=9twmPVrBPmUuEuTYHSzjDGHtfsmiVX6cozpAFYEaV-NcCg@mail.gmail.com>
+In-Reply-To: <CAPM=9twmPVrBPmUuEuTYHSzjDGHtfsmiVX6cozpAFYEaV-NcCg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus, please pull from the fixes branch at
+On 09/17/2011 04:47 PM, Dave Airlie wrote:
+>>
+>> I disagree. This depends on the functionality the hardware has, the desired
+>> userspace and the manpower one has to do it. And of course if you just want fb
+>> having fb via DRM/KMS has some overhead/bloat. It's perfectly okay to have just
+>> an fb driver for devices that can't do more anyway.
+>> And fb is no legacy interface but actively developed, just with other goals than
+>> DRM/KMS is, it aims for stability and to provide a direct interface, not needing
+>> any X or wayland crap.
+> 
+> Stability is a total misnomer, whats worse is you know it. If you just
+> want to do software render your whole GUI whether you use KMS or fbdev
+> doesn't matter. Instability is only to do with GPU hardware
+> acceleration, whether fb or kms expose accel doesn't matter. So less
+> attitude please.
 
-    git://git.user.in-berlin.de/s5r6/linux1394.git fixes
+Is it? Well, okay, I don't want to use any acceleration that can crash my
+machine, where can I select it, preferably as compile time option? I didn't find
+such a thing for Intel or Radeon. Don't say, I should rely on userspace here or
+use fbdev for this.
+The thing is that the core fbdev API does not expose any acceleration to
+userspace, maybe some drivers do via IOCTLs, but I hope that are only things
+that can be done in a sane way, otherwise I'd consider it a bug. The story is
+different for DRM/KMS, as I understand, as this was primarily for acceleration
+and only recently got modesetting capabilities.
 
-to receive a hardware quirks flag.  Thanks.
+> fbdev is totally uninteresting for any modern multi-output hardware
+> with an acceleration engine, you can't even memory manage the GPU
+> memory in any useful way, try resizing the fb console dynamically when
+> you've allocated the memory immediately following it in VRAM, you
+> can't as userspace has it direct mapped, with no way to remove the
+> mappings or repage them. Even now I'm still thinking we should do
+> kmscon without exposing the fbdev interface to userspace because the
+> whole mmap semantics are totally broken, look at the recent fb
+> handover race fixes.
 
-Ming Lei (1):
-      firewire: ohci: add no MSI quirk for O2Micro controller
+It's true that mmap can be PITA, but I don't see any real alternative given that
+you want directly map video memory, especially on low end systems. And there are
+ways around it, you can forbid mapping (though probably most userspace wouldn't
+like it, I guess) or use any other solution like defio.
+If you'd stop exposing the fbdev userspace interface it'd just harden my opinion
+that KMS is a piece of trash and that I should avoid hardware that does not have
+a native framebuffer driver. I think you shouldn't do this, as it's just a
+disadvantage for your end users, but I personally do not really care.
 
- drivers/firewire/ohci.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
 
+Regards,
 
-commit f39aa30d7741f40ad964341e9243dbbd7f8ff057
-Author: Ming Lei <ming.lei@canonical.com>
-Date:   Wed Aug 31 10:45:46 2011 +0800
-
-    firewire: ohci: add no MSI quirk for O2Micro controller
-    
-    This fixes https://bugs.launchpad.net/ubuntu/+source/linux/+bug/801719 .
-    
-    An O2Micro PCI Express FireWire controller,
-    "FireWire (IEEE 1394) [0c00]: O2 Micro, Inc. Device [1217:11f7] (rev 05)"
-    which is a combination device together with an SDHCI controller and some
-    sort of storage controller, misses SBP-2 status writes from an attached
-    FireWire HDD.  This problem goes away if MSI is disabled for this
-    FireWire controller.
-    
-    The device reportedly does not require QUIRK_CYCLE_TIMER.
-    
-    Signed-off-by: Ming Lei <ming.lei@canonical.com>
-    Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de> (amended changelog)
-    Cc: <stable@kernel.org>
-
-diff --git a/drivers/firewire/ohci.c b/drivers/firewire/ohci.c
-index 57cd3a4..fd7170a 100644
---- a/drivers/firewire/ohci.c
-+++ b/drivers/firewire/ohci.c
-@@ -290,6 +290,9 @@ static const struct {
- 	{PCI_VENDOR_ID_NEC, PCI_ANY_ID, PCI_ANY_ID,
- 		QUIRK_CYCLE_TIMER},
- 
-+	{PCI_VENDOR_ID_O2, PCI_ANY_ID, PCI_ANY_ID,
-+		QUIRK_NO_MSI},
-+
- 	{PCI_VENDOR_ID_RICOH, PCI_ANY_ID, PCI_ANY_ID,
- 		QUIRK_CYCLE_TIMER},
- 
--- 
-Stefan Richter
--=====-==-== =--= =---=
-http://arcgraph.de/sr/
+Florian Tobias Schandinat
