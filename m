@@ -1,16 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932570Ab1IQDjm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 23:39:42 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:48696 "EHLO
+	id S932706Ab1IQDjn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 23:39:43 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:48701 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932260Ab1IQDjk (ORCPT
+	with ESMTP id S932364Ab1IQDjk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 16 Sep 2011 23:39:40 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:from:to:cc:subject:date:message-id:x-mailer:x-system-of-record;
-	b=i79JSKsUMo/pZgdPWxtWpIAB8623DSttG4i5eMrKaMrhkYB/Gcpa2RKko+oU19Fk9
-	ZboM5olAO0lo1q4n31Vig==
+	h=dkim-signature:from:to:cc:subject:date:message-id:x-mailer:
+	in-reply-to:references:x-system-of-record;
+	b=cEHehgZFtD4ekYSIUTMVlzOoW4TlqAHGMHniO2UNdOfGUeFmKowTCaBBIfX7m4jZU
+	L5F1KaYrkEMSy0t7nzawg==
 From: Michel Lespinasse <walken@google.com>
 To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -22,101 +23,159 @@ Cc: Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
         Hugh Dickins <hughd@google.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Michael Wolf <mjwolf@us.ibm.com>
-Subject: [PATCH 0/8] idle page tracking / working set estimation
-Date: Fri, 16 Sep 2011 20:39:05 -0700
-Message-Id: <1316230753-8693-1-git-send-email-walken@google.com>
+Subject: [PATCH 2/8] kstaled: documentation and config option.
+Date: Fri, 16 Sep 2011 20:39:07 -0700
+Message-Id: <1316230753-8693-3-git-send-email-walken@google.com>
 X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1316230753-8693-1-git-send-email-walken@google.com>
+References: <1316230753-8693-1-git-send-email-walken@google.com>
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please comment on the following patches (which are against the v3.0 kernel).
-We are using these to collect memory utilization statistics for each cgroup
-accross many machines, and optimize job placement accordingly.
+Extend memory cgroup documentation do describe the optional idle page
+tracking features, and add the corresponding configuration option.
 
-The statistics are intended to be compared accross many machines - we
-don't just want to know which cgroup to reclaim from on an individual
-machine, we also need to know which machine is best to target a job onto
-within a large cluster. Also, we try to have a low impact on the normal
-MM algorithms - we think they already do a fine job balancing resources
-on individual machines, so we are not trying to mess up with that here.
 
-Patch 1 introduces no functionality; it modifies the page_referenced API
-so that it can be more easily extended in patch 3.
+Signed-off-by: Michel Lespinasse <walken@google.com>
+---
+ Documentation/cgroups/memory.txt |  103 +++++++++++++++++++++++++++++++++++++-
+ mm/Kconfig                       |   10 ++++
+ 2 files changed, 112 insertions(+), 1 deletions(-)
 
-Patch 2 documents the proposed features, and adds a configuration option
-for these. When the features are compiled in, they are still disabled
-until the administrator sets up the desired scanning interval; however
-the configuration option seems necessary as the features make use of
-3 extra page flags - there is plenty of space for these in 64-bit builds,
-but less so in 32-bit builds...
-
-Patch 3 introduces page_referenced_kstaled(), which is similar to
-page_referenced() but is used for idle page tracking rather than
-for memory reclaimation. Since both functions clear the pte_young bits
-and we don't want them to interfere with each other, two new page flags
-are introduced that track when young pte references have been cleared by
-each of the page_referenced variants. The page_referenced functions are also
-extended to return the dirty status of any pte references encountered.
-
-Patch 4 introduces the 'kstaled' thread that handles idle page tracking.
-The thread starts disabled; one enables it by setting a scanning interval
-in /sys/kernel/mm/kstaled/scan_seconds. It then scans all physical memory
-pages, looking for idle pages - pages that have not been touched since the
-previous scan interval. These pages are further classified into idle_clean
-(which are immediately reclaimable), idle_dirty_swap (which are reclaimable
-if swap is enabled on the system), and idle_dirty_file (which are reclaimable
-after writeback occurs). These statistics are published for each cgroup in
-a new /dev/cgroup/*/memory.idle_page_stats file. We did not use the
-memory.stat file there because we thought these stats are different -
-first, they are meaningless until one sets the scan_seconds value, and
-then they are only updated once per scan interval where the memory.stat
-values are continually updated.
-
-Patch 5 is a small optimization skipping over memory holes.
-
-Patch 6 rate limits the idle page scanning so that it occurs in small
-chunks over the length of the scan interval, rather than all at once.
-
-Patch 7 adds extra functionality to track how long a given page has been
-idle, so that memory.idle_page_stats can report pages that have been
-idle for 1,2,5,15,30,60,120 or 240 consecutive scan intervals.
-
-Patch 8 adds extra functionality in the form of an incremental update
-feature. Here we only report immediately reclaimable idle pages; however
-we don't want to wait for the end of a scan interval to update this number
-if the system experiences a rapid increase in memory pressure.
-
-Michel Lespinasse (8):
-  page_referenced: replace vm_flags parameter with struct pr_info
-  kstaled: documentation and config option.
-  kstaled: page_referenced_kstaled() and supporting infrastructure.
-  kstaled: minimalistic implementation.
-  kstaled: skip non-RAM regions.
-  kstaled: rate limit pages scanned per second.
-  kstaled: add histogram sampling functionality
-  kstaled: add incrementally updating stale page count
-
- Documentation/cgroups/memory.txt  |  103 ++++++++-
- arch/x86/include/asm/page_types.h |    8 +
- arch/x86/kernel/e820.c            |   45 ++++
- include/linux/ksm.h               |    9 +-
- include/linux/mmzone.h            |   11 +
- include/linux/page-flags.h        |   50 ++++
- include/linux/pagemap.h           |   11 +-
- include/linux/rmap.h              |   82 ++++++-
- mm/Kconfig                        |   10 +
- mm/internal.h                     |    1 +
- mm/ksm.c                          |   15 +-
- mm/memcontrol.c                   |  492 +++++++++++++++++++++++++++++++++++++
- mm/memory_hotplug.c               |    6 +
- mm/mlock.c                        |    1 +
- mm/rmap.c                         |  136 ++++++-----
- mm/swap.c                         |    1 +
- mm/vmscan.c                       |   20 +-
- 17 files changed, 904 insertions(+), 97 deletions(-)
-
+diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+index 06eb6d9..7ee2eb3 100644
+--- a/Documentation/cgroups/memory.txt
++++ b/Documentation/cgroups/memory.txt
+@@ -672,7 +672,108 @@ At reading, current status of OOM is shown.
+ 	under_oom	 0 or 1 (if 1, the memory cgroup is under OOM, tasks may
+ 				 be stopped.)
+ 
+-11. TODO
++
++11. Idle page tracking
++
++Idle page tracking works by scanning physical memory at a known rate,
++finding idle pages, and accounting for them in the cgroup owning them.
++
++Idle pages are defined as user pages (either anon or file backed) that have
++not been accessed for a number of consecutive scans, and are also not
++currently pinned down (for example by being mlocked).
++
++11.1 Usage
++
++The first step is to select the global scanning rate:
++
++# echo 120 > /sys/kernel/mm/kstaled/scan_seconds	# 2 minutes per scan
++
++(At boot time, the default value for /sys/kernel/mm/kstaled/scan_seconds
++is 0 which means the idle page tracking feature is disabled).
++
++Then, the per-cgroup memory.idle_page_stats files get updated at the
++end of every scan. The relevant fields are:
++* idle_clean: idle pages that have been untouched for at least one scan cycle,
++  and are also clean. Being clean and unpinned, such pages are immediately
++  reclaimable by the MM's LRU algorithms.
++* idle_dirty_file: idle pages that have been untouched for at least one
++  scan cycle, are dirty, and are file backed. Such pages are not immediately
++  reclaimable as writeback needs to occur first.
++* idle_dirty_swap: idle pages that have been untouched for at least one
++  scan cycle, are dirty, and would have to be written to swap before being
++  reclaimed. This includes dirty anon memory, tmpfs files and shm segments.
++  Note that such pages are counted as idle_dirty_swap regardless of whether
++  swap is enabled or not on the system.
++* idle_2_clean, idle_2_dirty_file, idle_2_dirty_swap: same definitions as
++  above, but for pages that have been untouched for at least two scan cycles.
++* these fields repeat up to idle_240_clean, idle_240_dirty_file and
++  idle_240_dirty_swap, allowing one to observe idle pages over a variety
++  of idle interval lengths. Note that the accounting is cumulative:
++  pages counted as idle for a given interval length are also counted
++  as idle for smaller interval lengths.
++* scans: number of physical memory scans since the cgroup was created.
++
++All the above fields are updated exactly once per scan.
++
++11.2 Responsiveness guarantees
++
++After a user page stops being touched and/or pinned, it takes at least one
++scan cycle for that page to be considered as idle and accounted as such
++in one of the idle_clean / idle_dirty_file / idle_dirty_swap counts
++(or, n scan cycles for the page to be accounted as idle in one of the
++idle_N_clean / idle_N_dirty_file / idle_N_dirty_swap counts).
++
++However, there is no guarantee that pages will be detected that fast.
++In the worst case, it could take up to two extra scan cycle intervals
++for a page to be accounted as idle. This is because after userspace stops
++touching the page, it may take up to one scan interval before we next
++scan it (at which point the page will be seen as not idle yet since it
++was touched during the previous scan) and after the page is finally scanned
++again and detected as idle, it may take up to one extra scan interval before
++completing the physical memory scan and exporting the updated statistics.
++
++Conversely, when userspace touches or pins a page that was previously
++accounted for as idle, it may take up to two scan intervals before the
++corresponding statistics are updated. Once again, this is because it may
++take up to one scan interval before scanning the page and finding it not
++idle anymore, and up to one extra scan interval before completing the
++physical memory scan and exporting the updated statistics.
++
++11.3 Incremental idle page tracking
++
++In some situations, it is desired to obtain faster feedback when
++previously idle, clean user pages start being touched. Remember that
++unpinned clean pages are immediately reclaimable by the MM's LRU
++algorithms. A high number of such pages being idle in a given cgroup
++indicates that this cgroup is not experiencing high memory pressure.
++A decrease of that number can be seen as a leading indicator that
++memory pressure is about to increase, and it may be desired to act
++upon that indication before the two scan interval measurement delay.
++
++The incremental idle page tracking feature can be used for that case.
++It allows for tracking of idle clean pages only, and only for a
++predetermined number of scan intervals (no histogram functionality as
++in the main interface).
++
++The desired idle period must first be selected on a per-cgroup basis
++by writing an integer to the memory.stale_page_age file. The integer
++is the interval we want pages to be idle for, expressed in scan cycles.
++For example to check for pages that have been idle for 5 consecutive
++scan cycles (equivalent to the idle_5_clean statistic), one would
++write 5 to the memory.stale_page_age file. The default value for the
++memory.stale_page_age file is 0, which disables the incremental idle
++page tracking feature.
++
++During scanning, clean unpinned pages that have not been touched for the
++chosen number of scan cycles are incrementally accounted for and reflected
++in the "stale" statistic in memory.idle_page_stats. Likewise, pages that
++were previously accounted as stale and are found not to be idle anymore
++are also incrementally accounted for. Additionally, any pages that are
++being considered by the LRU replacement algorithm and found to have been
++touched are also incrementally accounted for.
++
++
++12. TODO
+ 
+ 1. Add support for accounting huge pages (as a separate controller)
+ 2. Make per-cgroup scanner reclaim not-shared pages first
+diff --git a/mm/Kconfig b/mm/Kconfig
+index 8ca47a5..3406a39 100644
+--- a/mm/Kconfig
++++ b/mm/Kconfig
+@@ -370,3 +370,13 @@ config CLEANCACHE
+ 	  in a negligible performance hit.
+ 
+ 	  If unsure, say Y to enable cleancache
++
++config KSTALED
++       depends on CGROUP_MEM_RES_CTLR
++       bool "Per-cgroup idle page tracking"
++       help
++         This feature allows the kernel to report the amount of user pages
++	 in a cgroup that have not been touched in a given time.
++	 This information may be used to size the cgroups and/or for
++	 job placement within a compute cluster.
++	 See Documentation/cgroups/memory.txt for a more complete description.
 -- 
 1.7.3.1
 
