@@ -1,170 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751417Ab1IQFVl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Sep 2011 01:21:41 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:57053 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750797Ab1IQFVj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Sep 2011 01:21:39 -0400
-Subject: [trivial PATCH] treewide: Correct internal/external typos
-From: Joe Perches <joe@perches.com>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Date: Fri, 16 Sep 2011 22:21:38 -0700
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.1.91- 
+	id S1751799Ab1IQF7I (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Sep 2011 01:59:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44360 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751058Ab1IQF7G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Sep 2011 01:59:06 -0400
+Subject: [net-next RFC V2 PATCH 0/5] Multiqueue support in tun/tap
+To: krkumar2@in.ibm.com, eric.dumazet@gmail.com, mst@redhat.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, davem@davemloft.net
+From: Jason Wang <jasowang@redhat.com>
+Cc: kvm@vger.kernel.org, rusty@rustcorp.com.au, qemu-devel@nongnu.org,
+        mirq-linux@rere.qmqm.pl, joe@perches.com, shemminger@vyatta.com
+Date: Sat, 17 Sep 2011 14:02:04 +0800
+Message-ID: <20110917055639.32666.89940.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-ID: <1316236899.27917.36.camel@Joe-Laptop>
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-And a couple other typos on the same lines.
+Hello all:
 
-Signed-off-by: Joe Perches <joe@perches.com>
+This series brings the V2 of multiqueue tun/tap (V1 in
+http://www.mail-archive.com/kvm@vger.kernel.org/msg59479.html), an
+approach to let tun/tap can benefit from the multicore/multiqueue
+environment by spreading the network loads into differnet
+sockets/queues.
+
+Some quick overview of the design:
+
+- Allowing multiple sockets to be attached to a tun/tap devices.
+- Use RCU to synchronize the data path and system call
+- A simple hash based queue selecting algorithm is used to choose the
+tx queue.
+- Two new ioctls were added for the usespace to attach and detach
+socket to the device.
+- ABI compatibility were maintained, and multiqueue is only enabled
+for tap as kvm is the only user as far as I can see. But it maybe used
+by tun also.
+
+In order to use the multiqueue virio-net in guest, changes of qemu and
+guest driver are also needed. Please refer
+http://www.spinics.net/lists/kvm/msg52808.html for guest drivers
+http://www.spinics.net/lists/kvm/msg52808.html and qemu changes.
+I would also post the a new version of qemu changes soon.
+
+A wiki-page was created to narrate the detail design of all parts
+involved in the multi queue implementation:
+http://www.linux-kvm.org/page/Multiqueue and some basic tests result
+could be seen in this page
+http://www.linux-kvm.org/page/Multiqueue-performance-Sep-13. I would
+post the detail numbers in attachment as the reply of this thread.
+
+Changes from V1:
+
+1 Simplify the sockets array management by not leaving NULL in the
+slot.
+2 Optimization on the tx queue selecting.
+3 Fix the bug in tun_deatch_all()
+
+Some notes on the test result:
+
+The results shows a very well scale for guest receiving and large
+packets sending, but met some regressions at specific conditions:
+
+1 Current implementation suffers from the regression of multiple
+sessions of small packet transmission from guest, this regression
+becomes severs when test it between localhost and guest.
+
+>From the test result, we can see more pio exit were measured, the
+reason is the small number of co-current sessions may not even
+overload a single queue and may brings extra overhead when using
+multiple queues. When we are trying to use multiple connections to
+transmit small packets through single queue, the queue is almost full
+and vhost thread is busy with tx. So guest have more chances to met a
+notification disabled tx queue when it want to transmit packets (high
+number of tx packets per pio exit). But when we transmit packets
+through multiple queue, each queue is not fully utilized and so guest
+have less chance to see a notification disabled queue when
+transmitting packets, so more pio_exits and more vhost thread
+wakup/sleep were found.
+
+As Michael point out, other feature such as PLE may also have help in
+the performance, when we are using single queue, multiple guest vcpus
+may contend on the tx lock which may be captured by PLE and save the
+cpu utilization. But multiple queue can not benefit from it as it
+could get lees lock contention.
+
+The solution for this still needs to be investigated, any suggestions
+are welcomed.
+
+2 Current implementation may also get regression for single session
+packet transmission.
+
+The reason is packets from each flow were not handled by the same
+queue/vhost thread.
+
+Various method could be done to handle this:
+
+2.1 hack the guest driver, and store the queue index into the rxhash and
+use it when choosing tx in guest. This need some hack to store the
+rxhash into sk and pass it in to skb again in
+skb_orphan_try(). sk_rxhash is only used by RPS now, so some more
+clean method is needed.
+
+2.2 hack the tun/tap, add a hash to queue table, and use the hash of the
+skb to store the queue index. This method would introduce more
+overhead and the rxhash would be calculated during each skb reception
+or transmission.
+
+I've tried both 1 and 2, both of them could solve the problem, but
+both of it may introduces regression for multiple sessions. More
+reasonable method is needed.
+
+Please comment, thanks. Any suggestions are welcomed.
+
 ---
- arch/arm/mach-omap2/omap_phy_internal.c    |    2 +-
- arch/arm/mach-pxa/include/mach/tosa.h      |    2 +-
- drivers/media/radio/wl128x/fmdrv_common.c  |    2 +-
- drivers/scsi/lpfc/lpfc_init.c              |    2 +-
- drivers/scsi/mvsas/mv_sas.c                |    2 +-
- drivers/staging/sm7xx/smtcfb.c             |    2 +-
- drivers/staging/tidspbridge/core/_tiomap.h |    2 +-
- drivers/usb/host/ohci-pnx4008.c            |    2 +-
- kernel/trace/trace_entries.h               |    2 +-
- sound/pci/rme9652/hdspm.c                  |    2 +-
- 10 files changed, 10 insertions(+), 10 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/omap_phy_internal.c b/arch/arm/mach-omap2/omap_phy_internal.c
-index 58775e3..824860a 100644
---- a/arch/arm/mach-omap2/omap_phy_internal.c
-+++ b/arch/arm/mach-omap2/omap_phy_internal.c
-@@ -140,7 +140,7 @@ int omap4430_phy_suspend(struct device *dev, int suspend)
- 		/* save the context */
- 		usbotghs_control = __raw_readl(ctrl_base + USBOTGHS_CONTROL);
- 	} else {
--		/* Enable the internel phy clcoks */
-+		/* Enable the internal phy clocks */
- 		omap4430_phy_set_clk(dev, 1);
- 		/* power on the phy */
- 		if (__raw_readl(ctrl_base + CONTROL_DEV_CONF) & PHY_PD) {
-diff --git a/arch/arm/mach-pxa/include/mach/tosa.h b/arch/arm/mach-pxa/include/mach/tosa.h
-index 1272c4b..d8dda48 100644
---- a/arch/arm/mach-pxa/include/mach/tosa.h
-+++ b/arch/arm/mach-pxa/include/mach/tosa.h
-@@ -15,7 +15,7 @@
- 
- /*  TOSA Chip selects  */
- #define TOSA_LCDC_PHYS		PXA_CS4_PHYS
--/* Internel Scoop */
-+/* Internal Scoop */
- #define TOSA_CF_PHYS		(PXA_CS2_PHYS + 0x00800000)
- /* Jacket Scoop */
- #define TOSA_SCOOP_PHYS  	(PXA_CS5_PHYS + 0x00800000)
-diff --git a/drivers/media/radio/wl128x/fmdrv_common.c b/drivers/media/radio/wl128x/fmdrv_common.c
-index 5991ab6..92711eb 100644
---- a/drivers/media/radio/wl128x/fmdrv_common.c
-+++ b/drivers/media/radio/wl128x/fmdrv_common.c
-@@ -1057,7 +1057,7 @@ static void fm_irq_handle_intmsk_cmd_resp(struct fmdev *fmdev)
- 		clear_bit(FM_INTTASK_RUNNING, &fmdev->flag);
- }
- 
--/* Returns availability of RDS data in internel buffer */
-+/* Returns availability of RDS data in internal buffer */
- u32 fmc_is_rds_data_available(struct fmdev *fmdev, struct file *file,
- 				struct poll_table_struct *pts)
- {
-diff --git a/drivers/scsi/lpfc/lpfc_init.c b/drivers/scsi/lpfc/lpfc_init.c
-index a3c8200..9ce90c9 100644
---- a/drivers/scsi/lpfc/lpfc_init.c
-+++ b/drivers/scsi/lpfc/lpfc_init.c
-@@ -4367,7 +4367,7 @@ lpfc_sli4_driver_resource_setup(struct lpfc_hba *phba)
- 	 * Initialize driver internal slow-path work queues
- 	 */
- 
--	/* Driver internel slow-path CQ Event pool */
-+	/* Driver internal slow-path CQ Event pool */
- 	INIT_LIST_HEAD(&phba->sli4_hba.sp_cqe_event_pool);
- 	/* Response IOCB work queue list */
- 	INIT_LIST_HEAD(&phba->sli4_hba.sp_queue_event);
-diff --git a/drivers/scsi/mvsas/mv_sas.c b/drivers/scsi/mvsas/mv_sas.c
-index 4958fef..ff7bd81 100644
---- a/drivers/scsi/mvsas/mv_sas.c
-+++ b/drivers/scsi/mvsas/mv_sas.c
-@@ -1451,7 +1451,7 @@ static int mvs_exec_internal_tmf_task(struct domain_device *dev,
- 
- 		if (res) {
- 			del_timer(&task->timer);
--			mv_printk("executing internel task failed:%d\n", res);
-+			mv_printk("executing internal task failed:%d\n", res);
- 			goto ex_err;
- 		}
- 
-diff --git a/drivers/staging/sm7xx/smtcfb.c b/drivers/staging/sm7xx/smtcfb.c
-index a164fc4..9d452fd 100644
---- a/drivers/staging/sm7xx/smtcfb.c
-+++ b/drivers/staging/sm7xx/smtcfb.c
-@@ -1052,7 +1052,7 @@ static int smtcfb_pci_suspend(struct device *device)
- 
- 	sfb = pci_get_drvdata(pdev);
- 
--	/* set the hw in sleep mode use externel clock and self memory refresh
-+	/* set the hw in sleep mode use external clock and self memory refresh
- 	 * so that we can turn off internal PLLs later on
- 	 */
- 	smtc_seqw(0x20, (smtc_seqr(0x20) | 0xc0));
-diff --git a/drivers/staging/tidspbridge/core/_tiomap.h b/drivers/staging/tidspbridge/core/_tiomap.h
-index 7cb5871..6491af5 100644
---- a/drivers/staging/tidspbridge/core/_tiomap.h
-+++ b/drivers/staging/tidspbridge/core/_tiomap.h
-@@ -200,7 +200,7 @@ static const struct map_l4_peripheral l4_peripheral_table[] = {
-  *  ---------------------------------
-  *  |  (class)  | (module specific) |
-  *
-- *  where  c -> Externel Clock Command: Clk & Autoidle Disable/Enable
-+ *  where  c -> External Clock Command: Clk & Autoidle Disable/Enable
-  *  i -> External Clock ID Timers 5,6,7,8, McBSP1,2 and WDT3
-  */
- 
-diff --git a/drivers/usb/host/ohci-pnx4008.c b/drivers/usb/host/ohci-pnx4008.c
-index 653d6a6..c6ba67b 100644
---- a/drivers/usb/host/ohci-pnx4008.c
-+++ b/drivers/usb/host/ohci-pnx4008.c
-@@ -147,7 +147,7 @@ static void isp1301_configure(void)
- {
- 	/* PNX4008 only supports DAT_SE0 USB mode */
- 	/* PNX4008 R2A requires setting the MAX603 to output 3.6V */
--	/* Power up externel charge-pump */
-+	/* Power up external charge-pump */
- 
- 	i2c_write(MC1_DAT_SE0 | MC1_SPEED_REG, ISP1301_I2C_MODE_CONTROL_1);
- 	i2c_write(~(MC1_DAT_SE0 | MC1_SPEED_REG),
-diff --git a/kernel/trace/trace_entries.h b/kernel/trace/trace_entries.h
-index 9336590..2ad5cd0 100644
---- a/kernel/trace/trace_entries.h
-+++ b/kernel/trace/trace_entries.h
-@@ -31,7 +31,7 @@
-  *	to be deciphered for the format file. Although these macros
-  *	may become out of sync with the internal structure, they
-  *	will create a compile error if it happens. Since the
-- *	internel structures are just tracing helpers, this is not
-+ *	internal structures are just tracing helpers, this is not
-  *	an issue.
-  *
-  *	When an internal structure is used, it should use:
-diff --git a/sound/pci/rme9652/hdspm.c b/sound/pci/rme9652/hdspm.c
-index 493e394..833f901 100644
---- a/sound/pci/rme9652/hdspm.c
-+++ b/sound/pci/rme9652/hdspm.c
-@@ -1416,7 +1416,7 @@ static int hdspm_set_rate(struct hdspm * hdspm, int rate, int called_internally)
- 			    HDSPM_AUTOSYNC_FROM_NONE) {
- 
- 				snd_printk(KERN_WARNING "HDSPM: "
--					   "Detected no Externel Sync \n");
-+					   "Detected no External Sync\n");
- 				not_set = 1;
- 
- 			} else if (rate != external_freq) {
+Jason Wang (5):
+      tuntap: move socket to tun_file
+      tuntap: categorize ioctl
+      tuntap: introduce multiqueue flags
+      tuntap: multiqueue support
+      tuntap: add ioctls to attach or detach a file form tap device
 
 
+ drivers/net/tun.c      |  718 ++++++++++++++++++++++++++++--------------------
+ include/linux/if_tun.h |    5 
+ 2 files changed, 430 insertions(+), 293 deletions(-)
+
+-- 
+Jason Wang
