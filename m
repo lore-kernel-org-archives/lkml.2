@@ -1,65 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755487Ab1IQPDK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Sep 2011 11:03:10 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:59824 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753289Ab1IQPDI (ORCPT
+	id S1755320Ab1IQPNc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Sep 2011 11:13:32 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:33823 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752400Ab1IQPNa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Sep 2011 11:03:08 -0400
-Date: Sat, 17 Sep 2011 16:02:46 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Barry Song <Baohua.Song@csr.com>
-Cc: vinod.koul@intel.com, Arnd Bergmann <arnd@arndb.de>,
-        Jassi Brar <jaswinder.singh@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        workgroup.linux@csr.com, Rongjun Ying <rongjun.ying@csr.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2] dmaengine: add CSR SiRFprimaII DMAC driver
-Message-ID: <20110917150246.GH16381@n2100.arm.linux.org.uk>
-References: <1316166960-20964-1-git-send-email-Baohua.Song@csr.com>
+	Sat, 17 Sep 2011 11:13:30 -0400
+Message-ID: <4E74B7A9.1070001@gmail.com>
+Date: Sat, 17 Sep 2011 17:07:21 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1316166960-20964-1-git-send-email-Baohua.Song@csr.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Christoph Hellwig <hch@infradead.org>
+CC: Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] xip: export xip_file_fault
+References: <4E749003.30909@gmail.com> <20110917135346.GA31551@infradead.org>
+In-Reply-To: <20110917135346.GA31551@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 16, 2011 at 02:56:00AM -0700, Barry Song wrote:
-> +static int sirfsoc_dma_slave_config(struct sirfsoc_dma_chan *schan,
-> +	struct dma_slave_config *config)
-> +{
-> +	u32 addr, direction;
-> +	unsigned long flags;
-> +
-> +	switch (config->direction) {
+Il 17/09/2011 15:53, Christoph Hellwig ha scritto:
+> On Sat, Sep 17, 2011 at 02:18:11PM +0200, Marco Stornelli wrote:
+>> From: Marco Stornelli<marco.stornelli@gmail.com>
+>>
+>> There aren't sufficient sync points for a fs for xip operations. In
+>> particular for the mmap case. It can be not sufficient to lock/unlock
+>> to do some operation inside get_xip_mem callback. For xip_file_read
+>> it's really easy to write a fs specific wrapper, xip_file_write hold
+>> i_mutex so no problem. With this patch it's possible to reuse the
+>> generic xip_file_fault, using a wrapper function in a fs, without to
+>> reinvent the wheel.
+>
+> As usual please send patches to add exports only while adding callers
+> for it.
+>
+>
 
-config->direction is deprecated, please don't use it.
+Actually the module is not currently in mainline even if I hope soon. No 
+problem. I'll resend it at the right moment.
 
-> +	case DMA_FROM_DEVICE:
-> +		direction = 0;
-> +		addr = config->dst_addr;
-> +		break;
-> +
-> +	case DMA_TO_DEVICE:
-> +		direction = 1;
-> +		addr = config->src_addr;
-> +		break;
-> +
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +
-> +	if ((config->src_addr_width != DMA_SLAVE_BUSWIDTH_4_BYTES) ||
-> +		(config->dst_addr_width != DMA_SLAVE_BUSWIDTH_4_BYTES))
-> +		return -EINVAL;
-> +
-> +	spin_lock_irqsave(&schan->lock, flags);
-> +	schan->addr = addr;
-> +	schan->direction = direction;
-> +	schan->mode = (config->src_maxburst == 4 ? 1 : 0);
-
-Please store the source address, destination address, and mode separately
-for each direction.  You should then select from that at prepare time.
+Marco
