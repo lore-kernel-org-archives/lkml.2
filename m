@@ -1,115 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754012Ab1IQGLV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Sep 2011 02:11:21 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:38084 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751784Ab1IQGLU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Sep 2011 02:11:20 -0400
-Message-ID: <4E7439EB.7080100@oracle.com>
-Date: Sat, 17 Sep 2011 14:10:51 +0800
-From: Jeff Liu <jeff.liu@oracle.com>
-Reply-To: jeff.liu@oracle.com
-Organization: Oracle
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	id S1752919Ab1IQHfV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Sep 2011 03:35:21 -0400
+Received: from nef2.ens.fr ([129.199.96.40]:3035 "EHLO nef2.ens.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751545Ab1IQHfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Sep 2011 03:35:20 -0400
+To: linux-kernel@vger.kernel.org
+Subject: Regression between 2.6.35 and 2.6.38 (freeze at resume)
+From: =?utf-8?q?=C3=89ric_Brunet?= <Eric.Brunet@lps.ens.fr>
+Organization: UPMC LPS-ENS
+Date: Sat, 17 Sep 2011 09:35:17 +0200
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: Andi Kleen <andi@firstfloor.org>, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, linux-btrfs@vger.kernel.org
-Subject: Re: [PATCH 1/7] BTRFS: Fix lseek return value for error
-References: <1316128013-21980-1-git-send-email-andi@firstfloor.org> <1316128013-21980-2-git-send-email-andi@firstfloor.org> <20110916154815.GA27150@infradead.org>
-In-Reply-To: <20110916154815.GA27150@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090205.4E7439FC.00BD,ss=1,re=0.000,fgs=0
+Message-Id: <201109170935.17777.Eric.Brunet@lps.ens.fr>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.1.4 (nef2.ens.fr [129.199.96.32]); Sat, 17 Sep 2011 09:35:18 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I once posted a similar patch for this issue which can be found at:
-http://www.spinics.net/lists/linux-btrfs/msg12169.html
+Hello,
 
-with an additional improvement if the offset is larger or equal to the
-file size, return -ENXIO in directly:
+Since I upgraded my Dell E4200 laptop to Fedora 15, I have had some problem 
+with suspend/resume: occasionaly, the computer would freeze on resume. 
+(I suspend by pressing fn-F1. My power manager is the kde plasmoid. I am not 
+completely sure which program(s) get(s) launched with what options when I 
+press fn-F1...)
 
-if (offset >= inode->i_size) {
-                        mutex_unlock(&inode->i_mutex);
-                        return -ENXIO;
-                }
+Most of the times when it happens, it freezes before leaving anything 
+interesting in the logs, and, on some rare occasion, there is a series of 
+WARNING: and a BUG: in the log. 
 
+The computer was working fine with Fedora 14, and is working fine while 
+running Fedora 15 with the latest Fedora 14 kernel (2.6.35.6), so the problem 
+is kernel related. I have seen it with all the Fedora 15 kernels that I have 
+installed from the first one (2.6.38.6) to the latest one (2.6.40.4). I have 
+also seen it with a vanilla 3.0.4 kernel that I compiled, so it is not a 
+problem specific to fedora.
 
-Thanks,
--Jeff
-On 09/16/2011 11:48 PM, Christoph Hellwig wrote:
+The bug does not occur every time. The frequency of occurence depends on the 
+kernel version (nearly always on 2.6.38 and 3.04, every 5 or 10 times on 
+2.6.38).
 
-> On Thu, Sep 15, 2011 at 04:06:47PM -0700, Andi Kleen wrote:
->> From: Andi Kleen <ak@linux.intel.com>
->>
->> Introduced by 9a4327ca1f45f82edad7dc0a4e52ce9316e0950c
-> 
-> I think this should go to Chris/Linus ASAP.  But a slightly better
-> patch description wouldn't hurt either.
-> 
-> Also any reason you captialize BTRFS?
-> 
->>
->> Signed-off-by: Andi Kleen <ak@linux.intel.com>
->> ---
->>  fs/btrfs/file.c |   13 +++++++------
->>  1 files changed, 7 insertions(+), 6 deletions(-)
->>
->> diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
->> index 3c3abff..7ec0a24 100644
->> --- a/fs/btrfs/file.c
->> +++ b/fs/btrfs/file.c
->> @@ -1818,19 +1818,17 @@ static loff_t btrfs_file_llseek(struct file *file, loff_t offset, int origin)
->>  	case SEEK_DATA:
->>  	case SEEK_HOLE:
->>  		ret = find_desired_extent(inode, &offset, origin);
->> -		if (ret) {
->> -			mutex_unlock(&inode->i_mutex);
->> -			return ret;
->> -		}
->> +		if (ret)
->> +			goto error;
->>  	}
->>  
->>  	if (offset < 0 && !(file->f_mode & FMODE_UNSIGNED_OFFSET)) {
->>  		ret = -EINVAL;
->> -		goto out;
->> +		goto error;
->>  	}
->>  	if (offset > inode->i_sb->s_maxbytes) {
->>  		ret = -EINVAL;
->> -		goto out;
->> +		goto error;
->>  	}
->>  
->>  	/* Special lock needed here? */
->> @@ -1841,6 +1839,9 @@ static loff_t btrfs_file_llseek(struct file *file, loff_t offset, int origin)
->>  out:
->>  	mutex_unlock(&inode->i_mutex);
->>  	return offset;
->> +error:
->> +	mutex_unlock(&inode->i_mutex);
->> +	return ret;
->>  }
->>  
->>  const struct file_operations btrfs_file_operations = {
->> -- 
->> 1.7.4.4
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> ---end quoted text---
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+The full relevant logs are on 
+https://bugzilla.redhat.com/show_bug.cgi?id=735404
 
+but in short, the first warning is
 
+WARNING: at lib/list_debug.c:47 __list_del_entry+0x8d/0x98()
+Hardware name: Latitude E4200                  
+list_del corruption, ffff88008b410bb0->next is LIST_POISON1 (dead000000100100)
+Modules linked in: ppdev parport_pc lp parport cpufreq_ondemand acpi_cpufreq 
+freq_table mperf ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter 
+ip6_tables nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack arc4 
+dell_wmi sparse_keymap snd_hda_codec_hdmi snd_hda_codec_idt dell_laptop 
+microcode dcdbas snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device 
+iwlagn uvcvideo i2c_i801 snd_pcm videodev iTCO_wdt joydev iTCO_vendor_support 
+media v4l2_compat_ioctl32 mac80211 e1000e cfg80211 snd_timer snd rfkill 
+soundcore snd_page_alloc ipv6 firewire_ohci sdhci_pci sdhci mmc_core 
+firewire_core crc_itu_t wmi i915 drm_kms_helper drm i2c_algo_bit i2c_core 
+video [last unloaded: scsi_wait_scan]
+Pid: 8798, comm: pm-suspend Not tainted 2.6.40.3-0.fc15.x86_64 #1
+Call Trace:
+ [<ffffffff81054c8e>] warn_slowpath_common+0x83/0x9b
+ [<ffffffff81054d49>] warn_slowpath_fmt+0x46/0x48
+ [<ffffffff812457bd>] __list_del_entry+0x8d/0x98
+ [<ffffffff812457d6>] list_del+0xe/0x2d
+ [<ffffffff813b0b3d>] led_trigger_unregister+0x29/0x9c
+ [<ffffffff813b0bc9>] led_trigger_unregister_simple+0x19/0x26
+ [<ffffffff8138c69e>] power_supply_remove_triggers+0x21/0x8f
+ [<ffffffff8138bafe>] power_supply_unregister+0x1f/0x2c
+ [<ffffffff812af9b2>] sysfs_remove_battery+0x2f/0x3e
+ [<ffffffff812b0461>] battery_notify+0x21/0x2f
+ [<ffffffff8148ad8b>] notifier_call_chain+0x37/0x63
+ [<ffffffff810747a3>] __blocking_notifier_call_chain+0x4b/0x60
+ [<ffffffff810747cc>] blocking_notifier_call_chain+0x14/0x16
+ [<ffffffff81089023>] pm_notifier_call_chain+0x1a/0x33
+ [<ffffffff810898f1>] enter_state+0x10a/0x137
+ [<ffffffff81088f42>] state_store+0xaf/0xc5
+ [<ffffffff81237bd3>] kobj_attr_store+0x17/0x19
+ [<ffffffff8117fe80>] sysfs_write_file+0x111/0x14d
+ [<ffffffff811271ad>] vfs_write+0xac/0xf3
+ [<ffffffff8112739c>] sys_write+0x4a/0x6e
+ [<ffffffff8148e182>] system_call_fastpath+0x16/0x1b
+
+and then all hell breaks loose. 
+
+The warning seems related to battery, and I just want to mention a point which 
+is or is not relevant: when I wake up from the working kernel (2.6.35), the 
+kde battery plasmoid shows the correct power level instantaneously. When I 
+wake up from the non working kernel (2.6.40), the battery plasmoid first 
+displays an empty battery for about one second before displaying the correct 
+power level.
+
+Does that ring a bell to someone ? What could I do to help debug this ?
+
+Thanks
+
+	Eric Brunet
