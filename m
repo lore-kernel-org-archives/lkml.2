@@ -1,87 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755829Ab1IQRfA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Sep 2011 13:35:00 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:51406 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752215Ab1IQRe7 (ORCPT
+	id S1755901Ab1IQRsa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Sep 2011 13:48:30 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:44668 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752277Ab1IQRs3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Sep 2011 13:34:59 -0400
-Date: Sat, 17 Sep 2011 13:34:55 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Rocko Requin <rockorequin@hotmail.com>
-cc: tytso@mit.edu, Kernel development list <linux-kernel@vger.kernel.org>
-Subject: RE: [Bug 25832] kernel crashes when a mounted ext3/4 file system is
- physically removed
-In-Reply-To: <BAY151-W32DCB4BAFEC97DD4913A12A1090@phx.gbl>
-Message-ID: <Pine.LNX.4.44L0.1109171330360.18455-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sat, 17 Sep 2011 13:48:29 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Sat, 17 Sep 2011 19:47:57 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org
+Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: git tree URL for IEEE 1394 (FireWire) kernel subsystem
+Message-ID: <20110917194757.2f561324@stein>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/yvNUBuTSe.W+h=Mip48AavS"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 17 Sep 2011, Rocko Requin wrote:
+--Sig_/yvNUBuTSe.W+h=Mip48AavS
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> > Why were you using gnome-terminal?  You should be running the tests at
-> > a console VT, not under X at all.  Ctrl-Alt-F2 or the equivalent...
-> 
-> Because with Ted's patch it doesn't crash when run from a console VT, even with an X server running.
+Stephen,
 
-That's weird.  Maybe the screen updates change some timing.
+please switch the ieee1394/for-next pull URL to
 
-> > Here's another patch to address the new problem.  You can apply it on 
-> > top of all the other patches.
-> 
-> Attached is the crash log I get with the latest patch applied.
+    git://git.user.in-berlin.de/s5r6/linux1394.git for-next
 
-Okay, more fallout from the same problem.  Here's an updated version of 
-the previous patch.
+until kernel.org springs back into action.  Thanks.
+Current contents relative to mainline:
 
-These are really just bandaid-type fixes.  The people who understand
-the block layer ought to be involved.  If this keeps up much longer
-I'll get in touch with them.
+Ming Lei (1):
+      firewire: ohci: add no MSI quirk for O2Micro controller
 
-Alan Stern
+Stefan Richter (3):
+      firewire: sbp2: remove obsolete reference counting
+      firewire: sbp2: move some code to more sensible places
+      firewire: sbp2: fold two functions into one
 
+Stephan Gatzka (2):
+      firewire: ohci: Move code from the bus reset tasklet into a workqueue
+      firewire: ohci: Add support for TSB41BA3D phy
 
-Index: usb-3.1/block/blk-core.c
-===================================================================
---- usb-3.1.orig/block/blk-core.c
-+++ usb-3.1/block/blk-core.c
-@@ -367,8 +367,10 @@ void blk_cleanup_queue(struct request_qu
- 	queue_flag_set_unlocked(QUEUE_FLAG_DEAD, q);
- 	mutex_unlock(&q->sysfs_lock);
- 
--	if (q->elevator)
-+	if (q->elevator) {
- 		elevator_exit(q->elevator);
-+		q->elevator = NULL;
-+	}
- 
- 	blk_throtl_exit(q);
- 
-Index: usb-3.1/block/elevator.c
-===================================================================
---- usb-3.1.orig/block/elevator.c
-+++ usb-3.1/block/elevator.c
-@@ -769,7 +769,7 @@ void elv_put_request(struct request_queu
- {
- 	struct elevator_queue *e = q->elevator;
- 
--	if (e->ops->elevator_put_req_fn)
-+	if (e && e->ops->elevator_put_req_fn)
- 		e->ops->elevator_put_req_fn(rq);
- }
- 
-@@ -812,7 +812,7 @@ void elv_completed_request(struct reques
- 	 */
- 	if (blk_account_rq(rq)) {
- 		q->in_flight[rq_is_sync(rq)]--;
--		if ((rq->cmd_flags & REQ_SORTED) &&
-+		if ((rq->cmd_flags & REQ_SORTED) && e &&
- 		    e->ops->elevator_completed_req_fn)
- 			e->ops->elevator_completed_req_fn(q, rq);
- 	}
+ drivers/firewire/ohci.c |  206 ++++++++++++++++++++++++++++++++++++--
+ drivers/firewire/sbp2.c |  256 +++++++++++++++++++++----------------------=
+----
+ 2 files changed, 308 insertions(+), 154 deletions(-)
+--=20
+Stefan Richter
+-=3D=3D=3D=3D=3D-=3D=3D-=3D=3D =3D--=3D =3D---=3D
+http://arcgraph.de/sr/
 
+--Sig_/yvNUBuTSe.W+h=Mip48AavS
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
+
+iEYEARECAAYFAk503VIACgkQLjmasfpVluyKegCffd6ThUIH1UmKw7n2kRFmH9NJ
+9zoAmgLQYXIVZYUruu5v5K9jwdAGa8nw
+=qB2S
+-----END PGP SIGNATURE-----
+
+--Sig_/yvNUBuTSe.W+h=Mip48AavS--
