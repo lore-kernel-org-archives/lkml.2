@@ -1,69 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754543Ab1IQMZr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Sep 2011 08:25:47 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:56420 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752503Ab1IQMZq (ORCPT
+	id S1754725Ab1IQMae (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Sep 2011 08:30:34 -0400
+Received: from www17.your-server.de ([213.133.104.17]:59668 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752503Ab1IQMac (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Sep 2011 08:25:46 -0400
-Message-ID: <4E749341.9040101@colorfullife.com>
-Date: Sat, 17 Sep 2011 14:32:01 +0200
-From: Manfred Spraul <manfred@colorfullife.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        David Miller <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Mike Galbraith <efault@gmx.de>
-Subject: Re: [RFC][PATCH 3/3] ipc/sem: Rework wakeup scheme
-References: <20110914133034.687048806@chello.nl> <20110914133750.916911903@chello.nl> <4E7235F6.1030303@colorfullife.com> <1316175497.10174.16.camel@twins>
-In-Reply-To: <1316175497.10174.16.camel@twins>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Sat, 17 Sep 2011 08:30:32 -0400
+Subject: [PATCH] sys_poll: Fix negative timeout values for x86 userland on
+ x86_64 kernels
+From: Thomas Meyer <thomas@m3y3r.de>
+To: Andi Kleen <andi@firstfloor.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Date: Sat, 17 Sep 2011 14:30:25 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
 Content-Transfer-Encoding: 7bit
+Message-ID: <1316262630.5814.9.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/16/2011 02:18 PM, Peter Zijlstra wrote:
-> On Thu, 2011-09-15 at 19:29 +0200, Manfred Spraul wrote:
->> What is broken?
-> So basically sembench was broken and the futex patch is causing spurious
-> wakeups.
->
-> I've got the below patch to fix up the sem code.
->
-> One more question, do the sem wakeups need to be issued in FIFO order?
-> There's a comment in there:
->
->   * User space visible behavior:
->   * - FIFO ordering for semop() operations (just FIFO, not starvation
->   *   protection)
->
-> that seems to suggest the sem ops processing is in FIFO order, but does
-> the user visible effect propagate to the wakeup order?
-I'd ask the question the other way arould:
-Is the wakeup order user visible?
-IMHO: No, the scheduler might reorder the tasks anyway.
+sizeof(int/long) differs on x86 and x86_64, so provide a compat_sys_poll().
 
->
->   	/*
->   	 * If an interrupt occurred we have to clean up the queue
->   	 */
->   	if (timeout&&  jiffies_left == 0)
->   		error = -EAGAIN;
-> +
-> +	if (error == -EINTR&&  !signal_pending(current))
-> +		goto retry;
-> +
->   	unlink_queue(sma,&queue);
->
->   out_unlock_free:
-Good solution.
--ERESTARTNOHAND would be even better, but this is definitively better 
-than the current code.
+Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
+---
+ arch/x86/ia32/ia32entry.S |    2 +-
+ fs/compat.c               |    6 ++++++
+ include/linux/compat.h    |    2 ++
+ 3 files changed, 9 insertions(+), 1 deletions(-)
 
---
-     Manfred
+diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
+index 54edb207..30f4116 100644
+--- a/arch/x86/ia32/ia32entry.S
++++ b/arch/x86/ia32/ia32entry.S
+@@ -671,7 +671,7 @@ ia32_sys_call_table:
+ 	.quad sys_getresuid16	/* 165 */
+ 	.quad sys32_vm86_warning	/* vm86 */ 
+ 	.quad quiet_ni_syscall	/* query_module */
+-	.quad sys_poll
++	.quad compat_sys_poll
+ 	.quad quiet_ni_syscall /* old nfsservctl */
+ 	.quad sys_setresgid16	/* 170 */
+ 	.quad sys_getresgid16
+diff --git a/fs/compat.c b/fs/compat.c
+index 58b1da4..f176fda 100644
+--- a/fs/compat.c
++++ b/fs/compat.c
+@@ -1621,6 +1621,12 @@ asmlinkage long compat_sys_pselect6(int n, compat_ulong_t __user *inp,
+ 				 sigsetsize);
+ }
+ 
++asmlinkage long compat_sys_poll(struct pollfd __user *ufds, unsigned int nfds,
++				int timeout)
++{
++	return sys_poll(ufds, nfds, timeout);
++}
++
+ asmlinkage long compat_sys_ppoll(struct pollfd __user *ufds,
+ 	unsigned int nfds, struct compat_timespec __user *tsp,
+ 	const compat_sigset_t __user *sigmask, compat_size_t sigsetsize)
+diff --git a/include/linux/compat.h b/include/linux/compat.h
+index c6e7523..3bfb30a 100644
+--- a/include/linux/compat.h
++++ b/include/linux/compat.h
+@@ -433,6 +433,8 @@ asmlinkage long compat_sys_pselect6(int n, compat_ulong_t __user *inp,
+ 				    compat_ulong_t __user *exp,
+ 				    struct compat_timespec __user *tsp,
+ 				    void __user *sig);
++asmlinkage long compat_sys_poll(struct pollfd __user *ufds, unsigned int nfds,
++				int timeout);
+ asmlinkage long compat_sys_ppoll(struct pollfd __user *ufds,
+ 				 unsigned int nfds,
+ 				 struct compat_timespec __user *tsp,
+-- 
+1.7.6
+
+
