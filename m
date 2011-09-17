@@ -1,65 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932414Ab1IQA3y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 20:29:54 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:40880 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932145Ab1IQA3x (ORCPT
+	id S1756039Ab1IQAmB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 20:42:01 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:49440 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752896Ab1IQAmA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 20:29:53 -0400
-Date: Sat, 17 Sep 2011 09:29:46 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Ripduman Sohan <Ripduman.Sohan@cl.cam.ac.uk>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org
-Subject: Re: [PATCH] workqueue: Restore cpus_allowed mask for sleeping
- workqueue rescue threads
-Message-ID: <20110917002946.GU29319@htj.dyndns.org>
-References: <1314884193-20454-1-git-send-email-ripduman.sohan@cl.cam.ac.uk>
- <20110902002917.GD2752@htj.dyndns.org>
- <20110915161430.GE1548@tusker>
+	Fri, 16 Sep 2011 20:42:00 -0400
+Date: Sat, 17 Sep 2011 09:41:53 +0900
+From: Tejun Heo <htejun@gmail.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 25/27] Initconst section fixes for percpu
+Message-ID: <20110917004153.GV29319@htj.dyndns.org>
+References: <1316117394-21666-1-git-send-email-andi@firstfloor.org>
+ <1316117394-21666-26-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110915161430.GE1548@tusker>
+In-Reply-To: <1316117394-21666-26-git-send-email-andi@firstfloor.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Ripduman.
+Hello,
 
-On Thu, Sep 15, 2011 at 05:14:30PM +0100, Ripduman Sohan wrote:
-> The rescuer being left bound to the last CPU it was active on is not a
-> problem.  As I pointed out in the commit log the issue is that the
-> allowed_cpus mask is not restored when rescuers return to sleep,
-> rendering inconsistent the presented and actual set of CPUs the
-> process may potentially run on.
+On Thu, Sep 15, 2011 at 01:09:52PM -0700, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
 > 
-> Perhaps an explanation is in order.  I am working on a system where we
-> constantly sample process run-state (including the process
-> Cpus_Allowed field in /proc/<pid>/status) to build a forward plan of
-> where the process _may_ run in the future.  In situations of high
-> memory pressue (common on our setup) where the rescuers ran often the
-> plan begun to significantly deviate from the calculated schedule
-> because rescuer threads were marked as only runnable on a single CPU
-> when in reality they would bounce across CPUs.
+> Cc: tj@kernel.org
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
-But cpus_allowed doesn't mean where the task *may* run in the future.
-It indicates on which cpus the task is allowed to run *now* and it's
-allowed to change.
+ Acked-by: Tejun Heo <tj@kernel.org>
 
-> I've currently put in a special-case exception in our code to account
-> for the fact that rescuer threads may run on _any_ CPU regardless of
-> the current cpus_allowed mask but I thought it would be useful to
-> correct it.  I'm happy to continue with my current approach if you
-> deem the patch irrelevant.
+Andrew, can you please take this one too?
 
-I'm not necessarily against the patch if it helps a valid use case but
-let's do that when and if the use case becomes relevant enough, which
-I don't think it is yet.  Please feel free to raise the issue again
-when the situation changes.
+Thank you very much.
 
-Thank you.
+> ---
+>  include/linux/percpu.h |    2 +-
+>  mm/percpu.c            |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/percpu.h b/include/linux/percpu.h
+> index 9ca008f..2b79f8f 100644
+> --- a/include/linux/percpu.h
+> +++ b/include/linux/percpu.h
+> @@ -107,7 +107,7 @@ enum pcpu_fc {
+>  
+>  	PCPU_FC_NR,
+>  };
+> -extern const char *pcpu_fc_names[PCPU_FC_NR];
+> +extern const char * const pcpu_fc_names[PCPU_FC_NR];
+>  
+>  extern enum pcpu_fc pcpu_chosen_fc;
+>  
+> diff --git a/mm/percpu.c b/mm/percpu.c
+> index bf80e55..15dd9a3 100644
+> --- a/mm/percpu.c
+> +++ b/mm/percpu.c
+> @@ -1344,7 +1344,7 @@ int __init pcpu_setup_first_chunk(const struct pcpu_alloc_info *ai,
+>  
+>  #ifdef CONFIG_SMP
+>  
+> -const char *pcpu_fc_names[PCPU_FC_NR] __initdata = {
+> +const char * const pcpu_fc_names[PCPU_FC_NR] __initconst = {
+>  	[PCPU_FC_AUTO]	= "auto",
+>  	[PCPU_FC_EMBED]	= "embed",
+>  	[PCPU_FC_PAGE]	= "page",
+> -- 
+> 1.7.4.4
 
 -- 
 tejun
