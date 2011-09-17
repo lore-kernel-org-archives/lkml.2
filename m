@@ -1,280 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756142Ab1IQAqN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Sep 2011 20:46:13 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:7362 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752896Ab1IQAqL (ORCPT
+	id S932617Ab1IQBJI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Sep 2011 21:09:08 -0400
+Received: from 184-106-247-128.static.cloud-ips.com ([184.106.247.128]:38294
+	"EHLO cloud01.chad-versace.us" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932362Ab1IQBJH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Sep 2011 20:46:11 -0400
-Message-Id: <093448$3hstsk@wolverine01.qualcomm.com>
-X-IronPort-AV: E=McAfee;i="5400,1158,6471"; a="119437204"
-From: Richard Kuo <rkuo@codeaurora.org>
-Date: Wed, 14 Sep 2011 13:18:45 -0500
-Subject: [PATCH v4 01/36] Hexagon: Add generic headers
-To: linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+	Fri, 16 Sep 2011 21:09:07 -0400
+X-Greylist: delayed 499 seconds by postgrey-1.27 at vger.kernel.org; Fri, 16 Sep 2011 21:09:07 EDT
+X-Spam-Flag: NO
+X-Spam-Score: -1
+Date: Fri, 16 Sep 2011 18:01:02 -0700
+From: Ben Widawsky <ben@bwidawsk.net>
+To: "Keith Packard" <keithp@keithp.com>
+Cc: airlied@gmail.com, Akshay Joshi <me@akshayjoshi.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org
+Subject: Re: Whitespace cleanups in drm/i915
+Message-ID: <20110916180102.79997d61@bwidawsk.net>
+In-Reply-To: <yun8vppw9lu.fsf@aiko.keithp.com>
+References: <yun8vppw9lu.fsf@aiko.keithp.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
-Signed-off-by: Linas Vepstas <linas@codeaurora.org>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
----
- arch/hexagon/include/asm/Kbuild        |   60 +++++++++++++++++++++++
- arch/hexagon/include/asm/bitsperlong.h |   26 ++++++++++
- arch/hexagon/include/asm/mutex.h       |    8 +++
- arch/hexagon/include/asm/setup.h       |   29 +++++++++++
- arch/hexagon/include/asm/user.h        |   83 ++++++++++++++++++++++++++++++++
- 5 files changed, 206 insertions(+), 0 deletions(-)
- create mode 100644 arch/hexagon/include/asm/Kbuild
- create mode 100644 arch/hexagon/include/asm/bitsperlong.h
- create mode 100644 arch/hexagon/include/asm/mutex.h
- create mode 100644 arch/hexagon/include/asm/setup.h
- create mode 100644 arch/hexagon/include/asm/user.h
+On Thu, 15 Sep 2011 18:37:33 -0700
+"Keith Packard" <keithp@keithp.com> wrote:
 
-diff --git a/arch/hexagon/include/asm/Kbuild b/arch/hexagon/include/asm/Kbuild
-new file mode 100644
-index 0000000..2ed3917
---- /dev/null
-+++ b/arch/hexagon/include/asm/Kbuild
-@@ -0,0 +1,60 @@
-+include include/asm-generic/Kbuild.asm
-+
-+header-y += registers.h
-+header-y += ucontext.h
-+
-+generic-y += auxvec.h
-+generic-y += bug.h
-+generic-y += bugs.h
-+generic-y += cpumask.h
-+generic-y += cputime.h
-+generic-y += current.h
-+generic-y += device.h
-+generic-y += div64.h
-+generic-y += emergency-restart.h
-+generic-y += errno.h
-+generic-y += fb.h
-+generic-y += fcntl.h
-+generic-y += ftrace.h
-+generic-y += hardirq.h
-+generic-y += hw_irq.h
-+generic-y += ioctl.h
-+generic-y += ioctls.h
-+generic-y += iomap.h
-+generic-y += ipcbuf.h
-+generic-y += ipc.h
-+generic-y += irq_regs.h
-+generic-y += kdebug.h
-+generic-y += kmap_types.h
-+generic-y += local64.h
-+generic-y += local.h
-+generic-y += local.h
-+generic-y += mman.h
-+generic-y += msgbuf.h
-+generic-y += pci.h
-+generic-y += percpu.h
-+generic-y += poll.h
-+generic-y += posix_types.h
-+generic-y += resource.h
-+generic-y += rwsem.h
-+generic-y += scatterlist.h
-+generic-y += sections.h
-+generic-y += segment.h
-+generic-y += sembuf.h
-+generic-y += shmbuf.h
-+generic-y += shmparam.h
-+generic-y += siginfo.h
-+generic-y += socket.h
-+generic-y += sockios.h
-+generic-y += statfs.h
-+generic-y += stat.h
-+generic-y += termbits.h
-+generic-y += termios.h
-+generic-y += topology.h
-+generic-y += types.h
-+generic-y += ucontext.h
-+generic-y += unaligned.h
-+generic-y += xor.h
-+
-+
-+
-diff --git a/arch/hexagon/include/asm/bitsperlong.h b/arch/hexagon/include/asm/bitsperlong.h
-new file mode 100644
-index 0000000..2701cae
---- /dev/null
-+++ b/arch/hexagon/include/asm/bitsperlong.h
-@@ -0,0 +1,26 @@
-+/*
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#ifndef __ASM_HEXAGON_BITSPERLONG_H
-+#define __ASM_HEXAGON_BITSPERLONG_H
-+
-+#define __BITS_PER_LONG 32
-+
-+#include <asm-generic/bitsperlong.h>
-+
-+#endif
-diff --git a/arch/hexagon/include/asm/mutex.h b/arch/hexagon/include/asm/mutex.h
-new file mode 100644
-index 0000000..58b52de
---- /dev/null
-+++ b/arch/hexagon/include/asm/mutex.h
-@@ -0,0 +1,8 @@
-+/*
-+ * Pull in the generic implementation for the mutex fastpath.
-+ *
-+ * TODO: implement optimized primitives instead, or leave the generic
-+ * implementation in place, or pick the atomic_xchg() based generic
-+ * implementation. (see asm-generic/mutex-xchg.h for details)
-+ */
-+#include <asm-generic/mutex-xchg.h>
-diff --git a/arch/hexagon/include/asm/setup.h b/arch/hexagon/include/asm/setup.h
-new file mode 100644
-index 0000000..3b754c5
---- /dev/null
-+++ b/arch/hexagon/include/asm/setup.h
-@@ -0,0 +1,29 @@
-+/*
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#ifndef _ASM_SETUP_H
-+#define _ASM_SETUP_H
-+
-+#include <linux/init.h>
-+#include <asm-generic/setup.h>
-+
-+extern char external_cmdline_buffer;
-+
-+void __init setup_arch_memory(void);
-+
-+#endif
-diff --git a/arch/hexagon/include/asm/user.h b/arch/hexagon/include/asm/user.h
-new file mode 100644
-index 0000000..5445b60
---- /dev/null
-+++ b/arch/hexagon/include/asm/user.h
-@@ -0,0 +1,83 @@
-+/*
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#ifndef HEXAGON_ASM_USER_H
-+#define HEXAGON_ASM_USER_H
-+
-+#include <asm-generic/user.h>
-+
-+/*
-+ * Layout for registers passed in elf core dumps to userspace.
-+ *
-+ * Basically a rearranged subset of "pt_regs".
-+ *
-+ * Interested parties:  libc, gdb...
-+ */
-+
-+struct user_regs_struct {
-+	unsigned long r0;
-+	unsigned long r1;
-+	unsigned long r2;
-+	unsigned long r3;
-+	unsigned long r4;
-+	unsigned long r5;
-+	unsigned long r6;
-+	unsigned long r7;
-+	unsigned long r8;
-+	unsigned long r9;
-+	unsigned long r10;
-+	unsigned long r11;
-+	unsigned long r12;
-+	unsigned long r13;
-+	unsigned long r14;
-+	unsigned long r15;
-+	unsigned long r16;
-+	unsigned long r17;
-+	unsigned long r18;
-+	unsigned long r19;
-+	unsigned long r20;
-+	unsigned long r21;
-+	unsigned long r22;
-+	unsigned long r23;
-+	unsigned long r24;
-+	unsigned long r25;
-+	unsigned long r26;
-+	unsigned long r27;
-+	unsigned long r28;
-+	unsigned long r29;
-+	unsigned long r30;
-+	unsigned long r31;
-+	unsigned long sa0;
-+	unsigned long lc0;
-+	unsigned long sa1;
-+	unsigned long lc1;
-+	unsigned long m0;
-+	unsigned long m1;
-+	unsigned long usr;
-+	unsigned long p3_0;
-+	unsigned long gp;
-+	unsigned long ugp;
-+	unsigned long pc;
-+	unsigned long cause;
-+	unsigned long badva;
-+	unsigned long pad1;  /* pad out to 48 words total */
-+	unsigned long pad2;  /* pad out to 48 words total */
-+	unsigned long pad3;  /* pad out to 48 words total */
-+};
-+
-+#endif
--- 
-1.7.1
+> 
+> I've got this nice patch from Akshay Joshi that removes almost all of
+> the checkpatch.pl warnings from drm/i915. If I don't merge it now,
+> it's going to go stale and be useless; if I merge it only to
+> drm-intel-next, it will be the source of endless conflicts.
+> 
+> However, it's a huge patch (yes, the code was rather sloppy), and
+> doesn't exactly fit into the "critical patches only please" mode of
+> the current stage of 3.1 development.
+> 
+> I've checked the patch very carefully, using the obvious git diff -b
+> to make sure it really doesn't touch anything but whitespace, but also
+> using objdump -s to compare the output of the compiler. There were no
+> differences found with git-diff -b. The only differences found by
+> objdump are two whitespace changes in some debug output messages in
+> intel_bios.c.
+> 
+> I think I have three choices:
+> 
+>  1) merge the patch and expect complaints from upstream
+> 
+>  2) thank Akshay for his good intentions, discard the patch and hope
+>     that he feels motivated enough to do it all over again in time for
+>     the 3.2 merge window.
+> 
+>  3) thank Akshay for his good intentions and leave the code as-is,
+>     forever to ease back-porting of fixes to older kernel versions.
+> 
+> Frankly, if we're ever going to merge whitespace fixups, this would
+> be a pretty darn good time; drm-intel-fixes and drm-intel-next are
+> in-sync as I haven't started pulling 3.2 code into -next.
+> 
 
+Not that you asked for a vote, but I vote either 1, or 3. In that order.
+Let's either do it now, or never, and have the code slowly migrate over time
+(kind of like Daniel said).
 
---
+My only concern is the 80 characters per line rule. I'd hate to see some of
+those nice readable lines go just because it's > 80.
 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Ben
