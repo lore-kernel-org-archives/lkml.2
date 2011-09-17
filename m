@@ -1,39 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756078Ab1IQTSq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Sep 2011 15:18:46 -0400
-Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:43322 "EHLO
-	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753334Ab1IQTSp (ORCPT
+	id S1756144Ab1IQTWO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Sep 2011 15:22:14 -0400
+Received: from mail-vw0-f42.google.com ([209.85.212.42]:42110 "EHLO
+	mail-vw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753334Ab1IQTWN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Sep 2011 15:18:45 -0400
-X-Greylist: delayed 382 seconds by postgrey-1.27 at vger.kernel.org; Sat, 17 Sep 2011 15:18:45 EDT
-Date: Sat, 17 Sep 2011 21:12:21 +0200
-From: Andreas Mohr <andi@lisas.de>
-To: Arkaprava Basu <arkaprava.basu@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: TLB flush question (x86_64)
-Message-ID: <20110917191221.GA24295@rhlx01.hs-esslingen.de>
+	Sat, 17 Sep 2011 15:22:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAErB21iHz_ToVzfU8aPkY8OW5iMOTPgPMdQBsmxo=5YUCMb6Aw@mail.gmail.com>
-X-Priority: none
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <3A4FADE6-3653-46C5-B225-8200F9DCE35B@bootc.net>
+References: <4E734467.3040703@bootc.net>
+	<1316256305.24257.25.camel@shinybook.infradead.org>
+	<AD4B8103-C98F-4BC5-9F7F-496D220781F3@bootc.net>
+	<3A4FADE6-3653-46C5-B225-8200F9DCE35B@bootc.net>
+Date: Sat, 17 Sep 2011 12:22:12 -0700
+Message-ID: <CAHtARFHfxpU1JKu4092ZshvhsrRY-hx_pfnL3_+T32B3ncgWvg@mail.gmail.com>
+Subject: Re: iommu_iova leak [inside 3w-9xxx]
+From: adam radford <aradford@gmail.com>
+To: Chris Boot <bootc@bootc.net>
+Cc: "Woodhouse, David" <david.woodhouse@intel.com>,
+        lkml <linux-kernel@vger.kernel.org>, Adam Radford <linuxraid@lsi.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sat, Sep 17, 2011 at 7:29 AM, Chris Boot <bootc@bootc.net> wrote:
+> On 17 Sep 2011, at 12:57, Chris Boot wrote:
+>> On 17 Sep 2011, at 11:45, Woodhouse, David wrote:
+>>> I suppose it's vaguely possible that we're leaking them in such a way
+>>> that they remain on the rbtree, perhaps if the deferred unmap is never
+>>> actually happening... but I think it's a whole lot more likely that the
+>>> PCI driver is just never bothering to unmap the pages it maps.
 
-decided to reply since there hasn't been any activity yet.
+If you think 3w-9xxx is not unmapping pages it maps, please re-run with
+CONFIG_PCI_DMA_DEBUG=y
 
-> Is there any particular reason why
-> the entire address space is flushed from the tlb while only a range of
-> virtual address space was supposedly required to be flushed?
-
-While this particular function has actually changed in less medieval
-kernel versions, it would be nice if someone knew an answer to that,
-especially since TLB activity may have grave performance implications.
-
-Andreas Mohr
+-Adam
