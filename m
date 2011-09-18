@@ -1,79 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754688Ab1IROFY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 10:05:24 -0400
-Received: from yuna.grokhost.net ([87.117.228.63]:45707 "EHLO
-	yuna.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752662Ab1IROFX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 10:05:23 -0400
-Subject: Re: iommu_iova leak [inside 3w-9xxx]
-Mime-Version: 1.0 (Apple Message framework v1250.3)
-Content-Type: text/plain; charset=us-ascii
-From: Chris Boot <bootc@bootc.net>
-In-Reply-To: <1316354509.27722.1.camel@dabdike>
-Date: Sun, 18 Sep 2011 15:05:16 +0100
-Cc: "Woodhouse, David" <david.woodhouse@intel.com>,
-        adam radford <aradford@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
-        Adam Radford <linuxraid@lsi.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <B008530A-B1B1-49D2-A3B4-9CD929D948FB@bootc.net>
-References: <4E734467.3040703@bootc.net> <1316256305.24257.25.camel@shinybook.infradead.org> <AD4B8103-C98F-4BC5-9F7F-496D220781F3@bootc.net> <3A4FADE6-3653-46C5-B225-8200F9DCE35B@bootc.net> <CAHtARFHfxpU1JKu4092ZshvhsrRY-hx_pfnL3_+T32B3ncgWvg@mail.gmail.com> <B4A636AC-B127-42DD-BC8C-419D07A83FBD@bootc.net> <1316353140.12001.15.camel@shinybook.infradead.org> <1316354509.27722.1.camel@dabdike>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-X-Mailer: Apple Mail (2.1250.3)
+	id S1753550Ab1IRORN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 10:17:13 -0400
+Received: from mga03.intel.com ([143.182.124.21]:58290 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751905Ab1IRORL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Sep 2011 10:17:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,401,1312182000"; 
+   d="scan'208";a="50111261"
+Date: Sun, 18 Sep 2011 22:17:05 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 10/18] writeback: dirty position control - bdi reserve
+ area
+Message-ID: <20110918141705.GB15366@localhost>
+References: <20110904015305.367445271@intel.com>
+ <20110904020915.942753370@intel.com>
+ <1315318179.14232.3.camel@twins>
+ <20110907123108.GB6862@localhost>
+ <1315822779.26517.23.camel@twins>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="nFreZHaLTZJo0R7j"
+Content-Disposition: inline
+In-Reply-To: <1315822779.26517.23.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18 Sep 2011, at 15:01, James Bottomley wrote:
-> On Sun, 2011-09-18 at 13:39 +0000, Woodhouse, David wrote:
->> On Sun, 2011-09-18 at 13:06 +0100, Chris Boot wrote:
->>> On 17 Sep 2011, at 20:22, adam radford wrote:
->>>> On Sat, Sep 17, 2011 at 7:29 AM, Chris Boot <bootc@bootc.net> wrote:
->>>>> On 17 Sep 2011, at 12:57, Chris Boot wrote:
->>>>>> On 17 Sep 2011, at 11:45, Woodhouse, David wrote:
->>>>>>> I suppose it's vaguely possible that we're leaking them in such a way
->>>>>>> that they remain on the rbtree, perhaps if the deferred unmap is never
->>>>>>> actually happening... but I think it's a whole lot more likely that the
->>>>>>> PCI driver is just never bothering to unmap the pages it maps.
->>>> 
->>>> If you think 3w-9xxx is not unmapping pages it maps, please re-run with
->>>> CONFIG_PCI_DMA_DEBUG=y
->>> 
->>> Adam,
->>> 
->>> I installed a fresh Debian system on a SATA disk connected to the built-in SATA controller, then played with loading/unloading the 3w-9xxx module and doing a few basic things. Without even prodding very much, I got this result:
->>> 
->>> [ 1142.363173] ------------[ cut here ]------------
->>> [ 1142.368507] WARNING: at lib/dma-debug.c:697 dma_debug_device_change+0x172/0x1a6()
->>> [ 1142.377162] Hardware name: S1200BTL
->>> [ 1142.381193] pci 0000:01:00.0: DMA-API: device driver has pending DMA allocations while released from device [count=37]
->>> [ 1142.381194] One of leaked entries details: [device address=0x00000000fff9a000] [size=4096 bytes] [mapped with DMA_TO_DEVICE] [mapped as scather-gather]
->> ...
->>> [ 1142.381254] Mapped at:
->>> [ 1142.381255]  [<ffffffff811c35b1>] debug_dma_map_sg+0x3b/0x140
->>> [ 1142.381256]  [<ffffffffa00cb0db>] scsi_dma_map+0x9b/0xb7 [scsi_mod]
->>> [ 1142.381260]  [<ffffffffa012c675>] twa_scsiop_execute_scsi+0x141/0x3a5 [3w_9xxx]
->>> [ 1142.381263]  [<ffffffffa012ce3b>] twa_scsi_queue+0xd6/0x16a [3w_9xxx]
->>> [ 1142.381265]  [<ffffffffa00c4620>] scsi_dispatch_cmd+0x192/0x236 [scsi_mod]
->> 
->> Seems like a smoking gun to me, although at first glance I can't see an
->> *obvious* leak in the 3w-9xxx code. Adam?
+
+--nFreZHaLTZJo0R7j
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Mon, Sep 12, 2011 at 06:19:38PM +0800, Peter Zijlstra wrote:
+> On Wed, 2011-09-07 at 20:31 +0800, Wu Fengguang wrote:
+> > > > +   x_intercept = min(write_bw, freerun);
+> > > > +   if (bdi_dirty < x_intercept) {
+> > > 
+> > > So the point of the freerun point is that we never throttle before it,
+> > > so basically all the below shouldn't be needed at all, right? 
+> > 
+> > Yes!
+> > 
+> > > > +           if (bdi_dirty > x_intercept / 8) {
+> > > > +                   pos_ratio *= x_intercept;
+> > > > +                   do_div(pos_ratio, bdi_dirty);
+> > > > +           } else
+> > > > +                   pos_ratio *= 8;
+> > > > +   }
+> > > > +
+> > > >     return pos_ratio;
+> > > >  }
 > 
-> Hardly ... all it's saying is that twa_exit doesn't wait for pending I/O
-> to complete, so when you remove the module it tears down in the middle
-> of an I/O.  A bug, yes, but it's not indicative of any sort of leak in
-> the maps/unmaps.
+> Does that mean we can remove this whole block?
+
+Right, if the bdi freerun concept is proved to work fine.
+
+Unfortunately I find it mostly yields lower performance than bdi
+reserve area. Patch is attached. If you would like me try other
+patches, I can easily kick off new tests and redo the comparison.
+
+Here is the nr_written numbers over various JBOD test cases,
+the larger, the better:
+
+bdi-reserve     bdi-freerun    diff    case
+---------------------------------------------------------------------------------------
+38375271        31553807      -17.8%	JBOD-10HDD-6G/xfs-100dd-1M-16p-5895M-20
+30478879        28631491       -6.1%	JBOD-10HDD-6G/xfs-10dd-1M-16p-5895M-20
+29735407        28871956       -2.9%	JBOD-10HDD-6G/xfs-1dd-1M-16p-5895M-20
+30850350        28344165       -8.1%	JBOD-10HDD-6G/xfs-2dd-1M-16p-5895M-20
+17706200        16174684       -8.6%	JBOD-10HDD-thresh=100M/xfs-100dd-1M-16p-5895M-100M
+23374918        14376942      -38.5%	JBOD-10HDD-thresh=100M/xfs-10dd-1M-16p-5895M-100M
+20659278        19640375       -4.9%	JBOD-10HDD-thresh=100M/xfs-1dd-1M-16p-5895M-100M
+22517497        14552321      -35.4%	JBOD-10HDD-thresh=100M/xfs-2dd-1M-16p-5895M-100M
+68287850        61078553      -10.6%	JBOD-10HDD-thresh=2G/xfs-100dd-1M-16p-5895M-2048M
+33835247        32018425       -5.4%	JBOD-10HDD-thresh=2G/xfs-10dd-1M-16p-5895M-2048M
+30187817        29942083       -0.8%	JBOD-10HDD-thresh=2G/xfs-1dd-1M-16p-5895M-2048M
+30563144        30204022       -1.2%	JBOD-10HDD-thresh=2G/xfs-2dd-1M-16p-5895M-2048M
+34476862        34645398       +0.5%	JBOD-10HDD-thresh=4G/xfs-10dd-1M-16p-5895M-4096M
+30326479        30097263       -0.8%	JBOD-10HDD-thresh=4G/xfs-1dd-1M-16p-5895M-4096M
+30446767        30339683       -0.4%	JBOD-10HDD-thresh=4G/xfs-2dd-1M-16p-5895M-4096M
+40793956        45936678      +12.6%	JBOD-10HDD-thresh=800M/xfs-100dd-1M-16p-5895M-800M
+27481305        24867282       -9.5%	JBOD-10HDD-thresh=800M/xfs-10dd-1M-16p-5895M-800M
+25651257        22507406      -12.3%	JBOD-10HDD-thresh=800M/xfs-1dd-1M-16p-5895M-800M
+19849350        21298787       +7.3%	JBOD-10HDD-thresh=800M/xfs-2dd-1M-16p-5895M-800M
+
+raw data by "grep":
+
+JBOD-10HDD-6G/xfs-100dd-1M-16p-5895M-20:10-3.1.0-rc4+/vmstat-end:nr_written 38375271
+JBOD-10HDD-6G/xfs-10dd-1M-16p-5895M-20:10-3.1.0-rc4+/vmstat-end:nr_written 30478879
+JBOD-10HDD-6G/xfs-1dd-1M-16p-5895M-20:10-3.1.0-rc4+/vmstat-end:nr_written 29735407
+JBOD-10HDD-6G/xfs-2dd-1M-16p-5895M-20:10-3.1.0-rc4+/vmstat-end:nr_written 30850350
+JBOD-10HDD-thresh=100M/xfs-100dd-1M-16p-5895M-100M:10-3.1.0-rc4+/vmstat-end:nr_written 17706200
+JBOD-10HDD-thresh=100M/xfs-10dd-1M-16p-5895M-100M:10-3.1.0-rc4+/vmstat-end:nr_written 23374918
+JBOD-10HDD-thresh=100M/xfs-1dd-1M-16p-5895M-100M:10-3.1.0-rc4+/vmstat-end:nr_written 20659278
+JBOD-10HDD-thresh=100M/xfs-2dd-1M-16p-5895M-100M:10-3.1.0-rc4+/vmstat-end:nr_written 22517497
+JBOD-10HDD-thresh=2G/xfs-100dd-1M-16p-5895M-2048M:10-3.1.0-rc4+/vmstat-end:nr_written 68287850
+JBOD-10HDD-thresh=2G/xfs-10dd-1M-16p-5895M-2048M:10-3.1.0-rc4+/vmstat-end:nr_written 33835247
+JBOD-10HDD-thresh=2G/xfs-1dd-1M-16p-5895M-2048M:10-3.1.0-rc4+/vmstat-end:nr_written 30187817
+JBOD-10HDD-thresh=2G/xfs-2dd-1M-16p-5895M-2048M:10-3.1.0-rc4+/vmstat-end:nr_written 30563144
+JBOD-10HDD-thresh=4G/xfs-10dd-1M-16p-5895M-4096M:10-3.1.0-rc4+/vmstat-end:nr_written 34476862
+JBOD-10HDD-thresh=4G/xfs-1dd-1M-16p-5895M-4096M:10-3.1.0-rc4+/vmstat-end:nr_written 30326479
+JBOD-10HDD-thresh=4G/xfs-2dd-1M-16p-5895M-4096M:10-3.1.0-rc4+/vmstat-end:nr_written 30446767
+JBOD-10HDD-thresh=800M/xfs-100dd-1M-16p-5895M-800M:10-3.1.0-rc4+/vmstat-end:nr_written 40793956
+JBOD-10HDD-thresh=800M/xfs-10dd-1M-16p-5895M-800M:10-3.1.0-rc4+/vmstat-end:nr_written 27481305
+JBOD-10HDD-thresh=800M/xfs-1dd-1M-16p-5895M-800M:10-3.1.0-rc4+/vmstat-end:nr_written 25651257
+JBOD-10HDD-thresh=800M/xfs-2dd-1M-16p-5895M-800M:10-3.1.0-rc4+/vmstat-end:nr_written 19849350
+
+JBOD-10HDD-6G/xfs-100dd-1M-16p-5895M-20:10-3.1.0-rc4-bdi-freerun+/vmstat-end:nr_written 31553807
+JBOD-10HDD-6G/xfs-10dd-1M-16p-5895M-20:10-3.1.0-rc4-bdi-freerun+/vmstat-end:nr_written 28631491
+JBOD-10HDD-6G/xfs-1dd-1M-16p-5895M-20:10-3.1.0-rc4-bdi-freerun+/vmstat-end:nr_written 28871956
+JBOD-10HDD-6G/xfs-2dd-1M-16p-5895M-20:10-3.1.0-rc4-bdi-freerun+/vmstat-end:nr_written 28344165
+JBOD-10HDD-thresh=100M/xfs-100dd-1M-16p-5895M-100M:10-3.1.0-rc4-bdi-freerun+/vmstat-end:nr_written 16174684
+JBOD-10HDD-thresh=100M/xfs-10dd-1M-16p-5895M-100M:10-3.1.0-rc4-bdi-freerun+/vmstat-end:nr_written 14376942
+JBOD-10HDD-thresh=100M/xfs-1dd-1M-16p-5895M-100M:10-3.1.0-rc4-bdi-freerun+/vmstat-end:nr_written 19640375
+JBOD-10HDD-thresh=100M/xfs-2dd-1M-16p-5895M-100M:10-3.1.0-rc4-bdi-freerun+/vmstat-end:nr_written 14552321
+JBOD-10HDD-thresh=2G/xfs-100dd-1M-16p-5895M-2048M:10-3.1.0-rc4-bdi-freerun+/vmstat-end:nr_written 61078553
+JBOD-10HDD-thresh=2G/xfs-10dd-1M-16p-5895M-2048M:10-3.1.0-rc4-bdi-freerun+/vmstat-end:nr_written 32018425
+JBOD-10HDD-thresh=2G/xfs-1dd-1M-16p-5895M-2048M:10-3.1.0-rc4-bdi-freerun+/vmstat-end:nr_written 29942083
+JBOD-10HDD-thresh=2G/xfs-2dd-1M-16p-5895M-2048M:10-3.1.0-rc4-bdi-freerun+/vmstat-end:nr_written 30204022
+JBOD-10HDD-thresh=4G/xfs-10dd-1M-16p-5895M-4096M:10-3.1.0-rc4-bdi-freerun+/vmstat-end:nr_written 34645398
+JBOD-10HDD-thresh=4G/xfs-1dd-1M-16p-5895M-4096M:10-3.1.0-rc4-bdi-freerun+/vmstat-end:nr_written 30097263
+JBOD-10HDD-thresh=4G/xfs-2dd-1M-16p-5895M-4096M:10-3.1.0-rc4-bdi-freerun+/vmstat-end:nr_written 30339683
+JBOD-10HDD-thresh=800M/xfs-100dd-1M-16p-5895M-800M:10-3.1.0-rc4-bdi-freerun+/vmstat-end:nr_written 45936678
+JBOD-10HDD-thresh=800M/xfs-10dd-1M-16p-5895M-800M:10-3.1.0-rc4-bdi-freerun+/vmstat-end:nr_written 24867282
+JBOD-10HDD-thresh=800M/xfs-1dd-1M-16p-5895M-800M:10-3.1.0-rc4-bdi-freerun+/vmstat-end:nr_written 22507406
+JBOD-10HDD-thresh=800M/xfs-2dd-1M-16p-5895M-800M:10-3.1.0-rc4-bdi-freerun+/vmstat-end:nr_written 21298787
+
+--nFreZHaLTZJo0R7j
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename=bdi-freerun
+
+Subject: 
+Date: Wed Sep 14 22:57:43 CST 2011
 
 
-James,
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ mm/page-writeback.c |   26 ++++++++------------------
+ 1 file changed, 8 insertions(+), 18 deletions(-)
 
-I don't think that's the case - I had unmounted all filesystems, deactivated all volume groups, and performed a sync before waiting a few seconds and running rmmod. Next time I'll also 'echo 1 > /sys/block/sdX/device/delete' if that's helpful.
+--- linux-next.orig/mm/page-writeback.c	2011-09-14 22:50:33.000000000 +0800
++++ linux-next/mm/page-writeback.c	2011-09-14 22:58:15.000000000 +0800
+@@ -614,22 +614,6 @@ static unsigned long bdi_position_ratio(
+ 	} else
+ 		pos_ratio /= 4;
+ 
+-	/*
+-	 * bdi reserve area, safeguard against dirty pool underrun and disk idle
+-	 *
+-	 * It may push the desired control point of global dirty pages higher
+-	 * than setpoint. It's not necessary in single-bdi case because a
+-	 * minimal pool of @freerun dirty pages will already be guaranteed.
+-	 */
+-	x_intercept = min(write_bw, freerun);
+-	if (bdi_dirty < x_intercept) {
+-		if (bdi_dirty > x_intercept / 8) {
+-			pos_ratio *= x_intercept;
+-			do_div(pos_ratio, bdi_dirty);
+-		} else
+-			pos_ratio *= 8;
+-	}
+-
+ 	return pos_ratio;
+ }
+ 
+@@ -1089,8 +1073,14 @@ static void balance_dirty_pages(struct a
+ 				     nr_dirty, bdi_thresh, bdi_dirty,
+ 				     start_time);
+ 
+-		if (unlikely(!dirty_exceeded && bdi_async_underrun(bdi)))
+-			break;
++		freerun = min(bdi->avg_write_bandwidth + MIN_WRITEBACK_PAGES,
++			      global_dirty_limit - nr_dirty) / 8;
++		if (!dirty_exceeded) {
++			if (unlikely(bdi_dirty < freerun))
++				break;
++			if (unlikely(bdi_async_underrun(bdi)))
++				break;
++		}
+ 
+ 		max_pause = bdi_max_pause(bdi, bdi_dirty);
+ 
 
-Chris
-
--- 
-Chris Boot
-bootc@bootc.net
-
+--nFreZHaLTZJo0R7j--
