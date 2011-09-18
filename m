@@ -1,133 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932502Ab1IRT7e (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 15:59:34 -0400
-Received: from shutemov.name ([188.40.19.243]:55428 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932273Ab1IRT7d convert rfc822-to-8bit (ORCPT
+	id S932531Ab1IRUAD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 16:00:03 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:34273
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932273Ab1IRUAC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 15:59:33 -0400
-Date: Sun, 18 Sep 2011 22:59:32 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Containers <containers@lists.osdl.org>, Li Zefan <lizf@cn.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, Tim Hockin <thockin@hockin.org>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 06/11] cgroups: Add res counter common ancestor searching
-Message-ID: <20110918195932.GD28057@shutemov.name>
-References: <1315869091-18933-1-git-send-email-fweisbec@gmail.com>
- <1315869091-18933-7-git-send-email-fweisbec@gmail.com>
+	Sun, 18 Sep 2011 16:00:02 -0400
+Date: Sun, 18 Sep 2011 15:59:57 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
+Cc: Alex Elder <aelder@sgi.com>, Christoph Hellwig <hch@infradead.org>,
+        yrl.pp-manager.tt@hitachi.com, linux-kernel@vger.kernel.org,
+        xfs@oss.sgi.com, xfs-masters@oss.sgi.com
+Subject: Re: [PATCH] Return -EIO when xfs_vn_getattr() failed
+Message-ID: <20110918195957.GA14899@infradead.org>
+References: <20110917133838.27791.63070.stgit@ltc219.sdl.hitachi.co.jp>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <1315869091-18933-7-git-send-email-fweisbec@gmail.com>
+In-Reply-To: <20110917133838.27791.63070.stgit@ltc219.sdl.hitachi.co.jp>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 13, 2011 at 01:11:26AM +0200, Frederic Weisbecker wrote:
-> Add a new API to find the common ancestor between two resource
-> counters. This includes the passed resource counter themselves.
+On Sat, Sep 17, 2011 at 10:38:38PM +0900, Mitsuo Hayasaka wrote:
+> An attribute of inode can be fetched via xfs_vn_getattr() in XFS.
+> Currently it returns EIO, not negative value, when it failed.
+> As a result, the system call returns not negative value even though
+> an error occured. The stat(2), ls and mv commands cannot handle this
+> error and do not work correctly.
 > 
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Acked-by: Paul Menage <paul@paulmenage.org>
-> Cc: Li Zefan <lizf@cn.fujitsu.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Aditya Kali <adityakali@google.com>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Kay Sievers <kay.sievers@vrfy.org>
-> Cc: Tim Hockin <thockin@hockin.org>
-> Cc: Tejun Heo <tj@kernel.org>
-> ---
->  include/linux/res_counter.h |    3 +++
->  kernel/res_counter.c        |   22 ++++++++++++++++++++++
->  2 files changed, 25 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/res_counter.h b/include/linux/res_counter.h
-> index de4ba29..558f39b 100644
-> --- a/include/linux/res_counter.h
-> +++ b/include/linux/res_counter.h
-> @@ -147,6 +147,9 @@ static inline void res_counter_uncharge(struct res_counter *counter,
->  	res_counter_uncharge_until(counter, NULL, val);
->  }
->  
-> +struct res_counter *res_counter_common_ancestor(struct res_counter *l,
-> +						struct res_counter *r);
-> +
->  /**
->   * res_counter_margin - calculate chargeable space of a counter
->   * @cnt: the counter
-> diff --git a/kernel/res_counter.c b/kernel/res_counter.c
-> index 0cc9c7e..22f07cc 100644
-> --- a/kernel/res_counter.c
-> +++ b/kernel/res_counter.c
-> @@ -91,6 +91,28 @@ void res_counter_uncharge_until(struct res_counter *counter,
->  	local_irq_restore(flags);
->  }
->  
-> +/*
-> + * Walk through r1 and r2 parents and try to find the closest common one
-> + * between both. If none is found, it returns NULL.
-> + */
-> +struct res_counter *
-> +res_counter_common_ancestor(struct res_counter *r1, struct res_counter *r2)
-> +{
-> +	struct res_counter *iter;
-> +
-> +	while (r1) {
-> +		iter = r2;
-> +		while (iter) {
-> +			if (iter == r1)
-> +				return iter;
-> +			iter = iter->parent;
-> +		}
-> +
-> +		r1 = r1->parent;
-> +	}
-> +
-> +	return NULL;
-> +}
+> This patch fixes this bug, and returns -EIO, not EIO when an error
+> is detected in xfs_vn_getattr().
 
-Your implementation is O(n*m).
+Indeed.  Looks good,
 
-What about:
 
-struct res_counter *
-res_counter_common_ancestor(struct res_counter *r1, struct res_counter *r2)
-{
-	struct res_counter *iter;
-	int r1_depth = 0, r2_depth = 0;
+Reviewed-by: Christoph Hellwig <hch@lst.de>
 
-	for (iter = r1; iter; iter = iter->parent)
-		r1_depth++;
-	for (iter = r2; iter; iter = iter->parent)
-		r2_depth++;
-
-	while (r1_depth > r2_depth) {
-		r1 = r1->parent;
-		r1_depth--;
-	}
-	while (r2_depth > r1_depth) {
-		r2 = r2->parent;
-		r2_depth--;
-	}
-
-	while (r1 != r2) {
-		r1 = r1->parent;
-		r2 = r2->parent;
-	}
-
-	return r1;
-}
-
-Untested. It's O(n+m).
-
--- 
- Kirill A. Shutemov
