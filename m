@@ -1,88 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755289Ab1IRQUB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 12:20:01 -0400
-Received: from yuna.grokhost.net ([87.117.228.63]:52714 "EHLO
-	yuna.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754457Ab1IRQT7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 12:19:59 -0400
-Message-ID: <4E761A2B.1020509@bootc.net>
-Date: Sun, 18 Sep 2011 17:19:55 +0100
-From: Chris Boot <bootc@bootc.net>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
+	id S1755484Ab1IRQbY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 12:31:24 -0400
+Received: from mga09.intel.com ([134.134.136.24]:36403 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755233Ab1IRQbX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Sep 2011 12:31:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="49800312"
+Date: Sun, 18 Sep 2011 18:33:51 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Philippe =?iso-8859-1?Q?R=E9tornaz?= <philippe.retornaz@epfl.ch>,
+        linux-arm-kernel@lists.infradead.org,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Jean Delvare <khali@linux-fr.org>, David Jander <david@protonic.nl>,
+        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
+        kernel@pengutronix.de, linux-input@vger.kernel.org
+Subject: Re: [PATCH 0/6] mc13783 cleanup
+Message-ID: <20110918163351.GL32263@sortiz-mobl>
+References: <20110824132740.GA28197@pengutronix.de>
+ <201108250905.13168.philippe.retornaz@epfl.ch>
+ <20110915151213.GE32263@sortiz-mobl>
+ <20110915160321.GA29357@pengutronix.de>
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: "Woodhouse, David" <david.woodhouse@intel.com>,
-        adam radford <aradford@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
-        Adam Radford <linuxraid@lsi.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: Re: iommu_iova leak [inside 3w-9xxx]
-References: <4E734467.3040703@bootc.net>  <1316256305.24257.25.camel@shinybook.infradead.org>  <AD4B8103-C98F-4BC5-9F7F-496D220781F3@bootc.net>  <3A4FADE6-3653-46C5-B225-8200F9DCE35B@bootc.net>  <CAHtARFHfxpU1JKu4092ZshvhsrRY-hx_pfnL3_+T32B3ncgWvg@mail.gmail.com>  <B4A636AC-B127-42DD-BC8C-419D07A83FBD@bootc.net>  <1316353140.12001.15.camel@shinybook.infradead.org>  <1316354509.27722.1.camel@dabdike>  <B008530A-B1B1-49D2-A3B4-9CD929D948FB@bootc.net>  <1316355934.27722.6.camel@dabdike> <1316357780.27722.9.camel@dabdike>
-In-Reply-To: <1316357780.27722.9.camel@dabdike>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110915160321.GA29357@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18/09/2011 15:56, James Bottomley wrote:
-> On Sun, 2011-09-18 at 18:25 +0400, James Bottomley wrote:
->> On Sun, 2011-09-18 at 15:05 +0100, Chris Boot wrote:
->>>> Hardly ... all it's saying is that twa_exit doesn't wait for pending I/O
->>>> to complete, so when you remove the module it tears down in the middle
->>>> of an I/O.  A bug, yes, but it's not indicative of any sort of leak in
->>>> the maps/unmaps.
->>>
->>> James,
->>>
->>> I don't think that's the case - I had unmounted all filesystems, deactivated all volume groups, and performed a sync before waiting a few seconds and running rmmod. Next time I'll also 'echo 1>  /sys/block/sdX/device/delete' if that's helpful.
->> Actually, I take all that back: the driver has a bug in QUEUE_FULL
->> handling: twa_scsi_queue() calls twa_scsiop_execute_scsi(), which maps
->> the dma buffer, but if the card responds QUEUE_FULL it just returns
->> SCSI_MLQUEUE_HOST_BUSY without ever unmapping.  That leg in the code
->> frees the request but also doesn't unmap it.  In fact any error return
->> from twa_scsiop_execute_scsi() seems to have the same problem (but
->> QUEUE_FULL is the only silent one).
->>
->> I trust Adam will fix this.
-> Actually, while Adam's mulling this, try the following.  It should at
-> least confirm we're on the right track.
->
-> James
->
-> ---
->
-> diff --git a/drivers/scsi/3w-9xxx.c b/drivers/scsi/3w-9xxx.c
-> index b7bd5b0..3868ab2 100644
-> --- a/drivers/scsi/3w-9xxx.c
-> +++ b/drivers/scsi/3w-9xxx.c
-> @@ -1800,10 +1800,12 @@ static int twa_scsi_queue_lck(struct scsi_cmnd *SCpnt, void (*done)(struct scsi_
->   	switch (retval) {
->   	case SCSI_MLQUEUE_HOST_BUSY:
->   		twa_free_request_id(tw_dev, request_id);
-> +		twa_unmap_scsi_data(tw_dev, request_id);
->   		break;
->   	case 1:
->   		tw_dev->state[request_id] = TW_S_COMPLETED;
->   		twa_free_request_id(tw_dev, request_id);
-> +		twa_unmap_scsi_data(tw_dev, request_id);
->   		SCpnt->result = (DID_ERROR<<  16);
->   		done(SCpnt);
->   		retval = 0;
+Hi Uwe,
 
-James,
+On Thu, Sep 15, 2011 at 06:03:21PM +0200, Uwe Kleine-König wrote:
+> Hi Samuel,
+> 
+> On Thu, Sep 15, 2011 at 05:12:13PM +0200, Samuel Ortiz wrote:
+> > On Thu, Aug 25, 2011 at 09:05:12AM +0200, Philippe Rétornaz wrote:
+> > > Le mercredi 24 août 2011 15:27:40, Uwe Kleine-König a écrit :
+> > > > Hello,
+> > > > 
+> > > > this series removes the long obsolte mc13783 API after fixing all
+> > > > remaining users.
+> > > 
+> > > I posted a patch last month which was touching this MFD too.
+> > > We will need to synchronize both patch. 
+> > I applied Uwe's patchset now.
+> Thanks.
+> 
+> >                               Could you please sync your code and send me a
+> > patchset that applies on top of:
+> > 
+> > git://git.infradead.org/users/sameo/mfd-2.6.git for-next
+> You can fetch the updated series from
+> 
+> 	git://git.pengutronix.de/git/ukl/linux-2.6.git mc13783
+I merged this one on top of my for-next branch. My MFD tree temporary lives on
+infradead:
 
-After testing quite thoroughly on my test install (lots of parallel 
-e2fsck and an rsync from one LV to another) I couldn't trigger the 
-warning. It's probably too early to tell for sure if this fixes things 
-on my normal workload (I'll be able to tell definitely tomorrow), but it 
-certainly seems much better right now. I'll keep you posted.
+git://git.infradead.org/users/sameo/mfd-2.6.git
 
-Thanks,
-Chris
+Cheers,
+Samuel.
 
 -- 
-Chris Boot
-bootc@bootc.net
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
