@@ -1,67 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932284Ab1IRO4N (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 10:56:13 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:28020 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753894Ab1IRO4M (ORCPT
+	id S1755005Ab1IRO4p (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 10:56:45 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:40782 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753894Ab1IRO4n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 10:56:12 -0400
-Content-Type: text/plain; charset=UTF-8
-From: Chris Mason <chris.mason@oracle.com>
-To: Jeff liu <jeff.liu@oracle.com>
-Cc: Marco Stornelli <marco.stornelli@gmail.com>,
-        Andi Kleen <ak@linux.intel.com>, Andreas Dilger <adilger@dilger.ca>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
-Subject: Re: [PATCH 1/7] BTRFS: Fix lseek return value for error
-In-reply-to: <8444301C-856F-44FA-94A3-D3583DFA0FFB@oracle.com>
-References: <1316128013-21980-1-git-send-email-andi@firstfloor.org> <1316128013-21980-2-git-send-email-andi@firstfloor.org> <20110916154815.GA27150@infradead.org> <4E7439EB.7080100@oracle.com> <41C7FF67-8658-4E7F-BB50-E9AAEA1F755C@dilger.ca> <20110918014608.GA16198@alboin.amr.corp.intel.com> <4E759DE5.3020907@oracle.com> <4E75AEFD.105@gmail.com> <8444301C-856F-44FA-94A3-D3583DFA0FFB@oracle.com>
-Date: Sun, 18 Sep 2011 10:55:49 -0400
-Message-Id: <1316357705-sup-2667@shiny>
-User-Agent: Sup/git
-Content-Transfer-Encoding: 8bit
-X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
-X-CT-RefId: str=0001.0A090203.4E760682.0001,ss=1,re=0.000,fgs=0
+	Sun, 18 Sep 2011 10:56:43 -0400
+Subject: Re: iommu_iova leak [inside 3w-9xxx]
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Chris Boot <bootc@bootc.net>
+Cc: "Woodhouse, David" <david.woodhouse@intel.com>,
+        adam radford <aradford@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
+        Adam Radford <linuxraid@lsi.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+In-Reply-To: <1316355934.27722.6.camel@dabdike>
+References: <4E734467.3040703@bootc.net>
+	 <1316256305.24257.25.camel@shinybook.infradead.org>
+	 <AD4B8103-C98F-4BC5-9F7F-496D220781F3@bootc.net>
+	 <3A4FADE6-3653-46C5-B225-8200F9DCE35B@bootc.net>
+	 <CAHtARFHfxpU1JKu4092ZshvhsrRY-hx_pfnL3_+T32B3ncgWvg@mail.gmail.com>
+	 <B4A636AC-B127-42DD-BC8C-419D07A83FBD@bootc.net>
+	 <1316353140.12001.15.camel@shinybook.infradead.org>
+	 <1316354509.27722.1.camel@dabdike>
+	 <B008530A-B1B1-49D2-A3B4-9CD929D948FB@bootc.net>
+	 <1316355934.27722.6.camel@dabdike>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 18 Sep 2011 18:56:20 +0400
+Message-ID: <1316357780.27722.9.camel@dabdike>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Excerpts from Jeff liu's message of 2011-09-18 06:33:38 -0400:
-> 
-> 在 2011-9-18，下午4:42， Marco Stornelli 写道：
-> 
-> > Il 18/09/2011 09:29, Jeff Liu ha scritto:
-> >> Hi Andreas and Andi,
-> >> 
-> >> Thanks for your comments.
-> >> 
-> >> On 09/18/2011 09:46 AM, Andi Kleen wrote:
-> >> 
-> >>>>> with an additional improvement if the offset is larger or equal to the
-> >>>>> file size, return -ENXIO in directly:
-> >>>>> 
-> >>>>>                if (offset>= inode->i_size) {
-> >>>>>                        mutex_unlock(&inode->i_mutex);
-> >>>>>                        return -ENXIO;
-> >>>>>                }
-> >>>> 
-> >>>> Except that is wrong, because it would then be impossible to write sparse files.
-> >> 
-> >> Per my tryout, except that, if the offset>= source file size, call
-> >> lseek(fd, offset, SEEK_DATA/SEEK_HOLE) against Btrfs will always return
-> >> the total file size rather than -ENXIO.  however, our desired result it
-> >> -ENXIO in this case, Am I right?
-> >> 
+On Sun, 2011-09-18 at 18:25 +0400, James Bottomley wrote:
+> On Sun, 2011-09-18 at 15:05 +0100, Chris Boot wrote: 
+> > > Hardly ... all it's saying is that twa_exit doesn't wait for pending I/O
+> > > to complete, so when you remove the module it tears down in the middle
+> > > of an I/O.  A bug, yes, but it's not indicative of any sort of leak in
+> > > the maps/unmaps.
 > > 
-> > Yes, ENXIO should be the operation result.
+> > 
+> > James,
+> > 
+> > I don't think that's the case - I had unmounted all filesystems, deactivated all volume groups, and performed a sync before waiting a few seconds and running rmmod. Next time I'll also 'echo 1 > /sys/block/sdX/device/delete' if that's helpful.
 > 
-> Thanks for your kind confirmation.
+> Actually, I take all that back: the driver has a bug in QUEUE_FULL
+> handling: twa_scsi_queue() calls twa_scsiop_execute_scsi(), which maps
+> the dma buffer, but if the card responds QUEUE_FULL it just returns
+> SCSI_MLQUEUE_HOST_BUSY without ever unmapping.  That leg in the code
+> frees the request but also doesn't unmap it.  In fact any error return
+> from twa_scsiop_execute_scsi() seems to have the same problem (but
+> QUEUE_FULL is the only silent one).
+> 
+> I trust Adam will fix this.
 
-Thanks everyone, I've put Jeff's last version of this in my queue.
+Actually, while Adam's mulling this, try the following.  It should at
+least confirm we're on the right track.
 
--chris
+James
+
+---
+
+diff --git a/drivers/scsi/3w-9xxx.c b/drivers/scsi/3w-9xxx.c
+index b7bd5b0..3868ab2 100644
+--- a/drivers/scsi/3w-9xxx.c
++++ b/drivers/scsi/3w-9xxx.c
+@@ -1800,10 +1800,12 @@ static int twa_scsi_queue_lck(struct scsi_cmnd *SCpnt, void (*done)(struct scsi_
+ 	switch (retval) {
+ 	case SCSI_MLQUEUE_HOST_BUSY:
+ 		twa_free_request_id(tw_dev, request_id);
++		twa_unmap_scsi_data(tw_dev, request_id);
+ 		break;
+ 	case 1:
+ 		tw_dev->state[request_id] = TW_S_COMPLETED;
+ 		twa_free_request_id(tw_dev, request_id);
++		twa_unmap_scsi_data(tw_dev, request_id);
+ 		SCpnt->result = (DID_ERROR << 16);
+ 		done(SCpnt);
+ 		retval = 0;
+
+
