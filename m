@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755138Ab1IRIdF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 04:33:05 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:42493 "EHLO
+	id S1754710Ab1IRIcr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 04:32:47 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:32936 "EHLO
 	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750753Ab1IRIcz (ORCPT
+	by vger.kernel.org with ESMTP id S1750753Ab1IRIcp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 04:32:55 -0400
-X-Sasl-enc: 5j2G8Vi2NpA4IVJV4vc5edQl7i5UQOlCAKyhiRNVWFPp 1316334771
-Date: Sun, 18 Sep 2011 01:27:36 -0700
+	Sun, 18 Sep 2011 04:32:45 -0400
+X-Sasl-enc: Ni5dUy7IjFzv0PDlJBPnoS5TtPiaj7e7v2fpgATV5ApE 1316334762
+Date: Sun, 18 Sep 2011 01:26:26 -0700
 From: Greg KH <greg@kroah.com>
-To: Jason Baron <jbaron@redhat.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, gregkh@suse.de, joe@perches.com,
-        jim.cromie@gmail.com, bvanassche@acm.org, linux-kernel@vger.kernel.org,
-        davem@davemloft.net, aloisio.almeida@openbossa.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH ] dynamic_debug: call __netdev_printk only for CONFIG_NET
-Message-ID: <20110918082736.GB19444@kroah.com>
-References: <cover.1313085588.git.jbaron@redhat.com>
- <5514795fe63ccfd4b3a80283ed04a526abe3c59d.1313085588.git.jbaron@redhat.com>
- <201109011657.02407.arnd@arndb.de>
- <20110901151817.GA14324@redhat.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: Shaun Kluzek <g0del@bigpond.com>, gregkh@suse.de,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] USB GADGET: u_serial.c: fixed a brace and whitespace
+ coding style issue
+Message-ID: <20110918082626.GA19444@kroah.com>
+References: <20110831072254.GA9706@epione>
+ <4E5F8053.4080603@ru.mvista.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110901151817.GA14324@redhat.com>
+In-Reply-To: <4E5F8053.4080603@ru.mvista.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 01, 2011 at 11:18:18AM -0400, Jason Baron wrote:
-> On Thu, Sep 01, 2011 at 04:57:02PM +0200, Arnd Bergmann wrote:
-> > __netdev_printk is only defined when CONFIG_NET is set. Since we only need
-> > __dynamic_netdev_dbg for network drivers, we can make it conditional on the
-> > same Kconfig symbol.
-> >
+On Thu, Sep 01, 2011 at 04:53:39PM +0400, Sergei Shtylyov wrote:
+> Hello.
 > 
-> Hi,
+> On 31-08-2011 11:22, Shaun Kluzek wrote:
 > 
-> Yes, I've posted a fix for this:
+> >Signed-off-by: Shaun Kluzek<g0del@bigpond.com>
+> >---
+> >  drivers/usb/gadget/u_serial.c |    5 +----
+> >  1 files changed, 1 insertions(+), 4 deletions(-)
 > 
-> https://lkml.org/lkml/2011/8/30/297
+> >diff --git a/drivers/usb/gadget/u_serial.c b/drivers/usb/gadget/u_serial.c
+> >index a8aa469..b86022f 100644
+> >--- a/drivers/usb/gadget/u_serial.c
+> >+++ b/drivers/usb/gadget/u_serial.c
+> >@@ -552,11 +552,8 @@ recycle:
+> >  	/* Push from tty to ldisc; without low_latency set this is handled by
+> >  	 * a workqueue, so we won't get callbacks and can hold port_lock
+> >  	 */
+> >-	if (tty && do_push) {
+> >+	if (tty && do_push)
+> >  		tty_flip_buffer_push(tty);
+> >-	}
+> >-
 > 
-> Hopefully, it will be pulled in soon.
+>    What's wrong with the first empty line here?
+> 
+> >-
 
-As that thread again spun off into confusion, can you please resend the
-end result?
-
-thanks,
+I agree, don't delete all of the spacing here.
 
 greg k-h
