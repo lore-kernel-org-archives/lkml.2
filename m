@@ -1,60 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753831Ab1IROZk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 10:25:40 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:40695 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750780Ab1IROZj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 10:25:39 -0400
-Subject: Re: iommu_iova leak [inside 3w-9xxx]
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Chris Boot <bootc@bootc.net>
-Cc: "Woodhouse, David" <david.woodhouse@intel.com>,
-        adam radford <aradford@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
-        Adam Radford <linuxraid@lsi.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-In-Reply-To: <B008530A-B1B1-49D2-A3B4-9CD929D948FB@bootc.net>
-References: <4E734467.3040703@bootc.net>
-	 <1316256305.24257.25.camel@shinybook.infradead.org>
-	 <AD4B8103-C98F-4BC5-9F7F-496D220781F3@bootc.net>
-	 <3A4FADE6-3653-46C5-B225-8200F9DCE35B@bootc.net>
-	 <CAHtARFHfxpU1JKu4092ZshvhsrRY-hx_pfnL3_+T32B3ncgWvg@mail.gmail.com>
-	 <B4A636AC-B127-42DD-BC8C-419D07A83FBD@bootc.net>
-	 <1316353140.12001.15.camel@shinybook.infradead.org>
-	 <1316354509.27722.1.camel@dabdike>
-	 <B008530A-B1B1-49D2-A3B4-9CD929D948FB@bootc.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 18 Sep 2011 18:25:34 +0400
-Message-ID: <1316355934.27722.6.camel@dabdike>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	id S1753911Ab1IROh2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 10:37:28 -0400
+Received: from mga14.intel.com ([143.182.124.37]:44772 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750780Ab1IROh1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Sep 2011 10:37:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,401,1312182000"; 
+   d="scan'208";a="50114287"
+Date: Sun, 18 Sep 2011 22:37:21 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 10/18] writeback: dirty position control - bdi reserve
+ area
+Message-ID: <20110918143721.GA17240@localhost>
+References: <20110904015305.367445271@intel.com>
+ <20110904020915.942753370@intel.com>
+ <1315318179.14232.3.camel@twins>
+ <20110907123108.GB6862@localhost>
+ <1315822779.26517.23.camel@twins>
+ <20110918141705.GB15366@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110918141705.GB15366@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-09-18 at 15:05 +0100, Chris Boot wrote: 
-> > Hardly ... all it's saying is that twa_exit doesn't wait for pending I/O
-> > to complete, so when you remove the module it tears down in the middle
-> > of an I/O.  A bug, yes, but it's not indicative of any sort of leak in
-> > the maps/unmaps.
+On Sun, Sep 18, 2011 at 10:17:05PM +0800, Wu Fengguang wrote:
+> On Mon, Sep 12, 2011 at 06:19:38PM +0800, Peter Zijlstra wrote:
+> > On Wed, 2011-09-07 at 20:31 +0800, Wu Fengguang wrote:
+> > > > > +   x_intercept = min(write_bw, freerun);
+> > > > > +   if (bdi_dirty < x_intercept) {
+> > > > 
+> > > > So the point of the freerun point is that we never throttle before it,
+> > > > so basically all the below shouldn't be needed at all, right? 
+> > > 
+> > > Yes!
+> > > 
+> > > > > +           if (bdi_dirty > x_intercept / 8) {
+> > > > > +                   pos_ratio *= x_intercept;
+> > > > > +                   do_div(pos_ratio, bdi_dirty);
+> > > > > +           } else
+> > > > > +                   pos_ratio *= 8;
+> > > > > +   }
+> > > > > +
+> > > > >     return pos_ratio;
+> > > > >  }
+> > 
+> > Does that mean we can remove this whole block?
 > 
+> Right, if the bdi freerun concept is proved to work fine.
 > 
-> James,
+> Unfortunately I find it mostly yields lower performance than bdi
+> reserve area. Patch is attached. If you would like me try other
+> patches, I can easily kick off new tests and redo the comparison.
 > 
-> I don't think that's the case - I had unmounted all filesystems, deactivated all volume groups, and performed a sync before waiting a few seconds and running rmmod. Next time I'll also 'echo 1 > /sys/block/sdX/device/delete' if that's helpful.
+> Here is the nr_written numbers over various JBOD test cases,
+> the larger, the better:
+> 
+> bdi-reserve     bdi-freerun    diff    case
+> ---------------------------------------------------------------------------------------
+> 38375271        31553807      -17.8%	JBOD-10HDD-6G/xfs-100dd-1M-16p-5895M-20
+> 30478879        28631491       -6.1%	JBOD-10HDD-6G/xfs-10dd-1M-16p-5895M-20
+> 29735407        28871956       -2.9%	JBOD-10HDD-6G/xfs-1dd-1M-16p-5895M-20
+> 30850350        28344165       -8.1%	JBOD-10HDD-6G/xfs-2dd-1M-16p-5895M-20
+> 17706200        16174684       -8.6%	JBOD-10HDD-thresh=100M/xfs-100dd-1M-16p-5895M-100M
+> 23374918        14376942      -38.5%	JBOD-10HDD-thresh=100M/xfs-10dd-1M-16p-5895M-100M
+> 20659278        19640375       -4.9%	JBOD-10HDD-thresh=100M/xfs-1dd-1M-16p-5895M-100M
+> 22517497        14552321      -35.4%	JBOD-10HDD-thresh=100M/xfs-2dd-1M-16p-5895M-100M
+> 68287850        61078553      -10.6%	JBOD-10HDD-thresh=2G/xfs-100dd-1M-16p-5895M-2048M
+> 33835247        32018425       -5.4%	JBOD-10HDD-thresh=2G/xfs-10dd-1M-16p-5895M-2048M
+> 30187817        29942083       -0.8%	JBOD-10HDD-thresh=2G/xfs-1dd-1M-16p-5895M-2048M
+> 30563144        30204022       -1.2%	JBOD-10HDD-thresh=2G/xfs-2dd-1M-16p-5895M-2048M
+> 34476862        34645398       +0.5%	JBOD-10HDD-thresh=4G/xfs-10dd-1M-16p-5895M-4096M
+> 30326479        30097263       -0.8%	JBOD-10HDD-thresh=4G/xfs-1dd-1M-16p-5895M-4096M
+> 30446767        30339683       -0.4%	JBOD-10HDD-thresh=4G/xfs-2dd-1M-16p-5895M-4096M
+> 40793956        45936678      +12.6%	JBOD-10HDD-thresh=800M/xfs-100dd-1M-16p-5895M-800M
+> 27481305        24867282       -9.5%	JBOD-10HDD-thresh=800M/xfs-10dd-1M-16p-5895M-800M
+> 25651257        22507406      -12.3%	JBOD-10HDD-thresh=800M/xfs-1dd-1M-16p-5895M-800M
+> 19849350        21298787       +7.3%	JBOD-10HDD-thresh=800M/xfs-2dd-1M-16p-5895M-800M
 
-Actually, I take all that back: the driver has a bug in QUEUE_FULL
-handling: twa_scsi_queue() calls twa_scsiop_execute_scsi(), which maps
-the dma buffer, but if the card responds QUEUE_FULL it just returns
-SCSI_MLQUEUE_HOST_BUSY without ever unmapping.  That leg in the code
-frees the request but also doesn't unmap it.  In fact any error return
-from twa_scsiop_execute_scsi() seems to have the same problem (but
-QUEUE_FULL is the only silent one).
+BTW, I also compared the IO-less patchset and the vanilla kernel's
+JBOD performance. Basically, the performance is lightly improved
+under large memory, and reduced a lot in small memory servers.
 
-I trust Adam will fix this.
+ vanillla IO-less  
+--------------------------------------------------------------------------------
+ 31189025 34476862      +10.5%  JBOD-10HDD-thresh=4G/xfs-10dd-1M-16p-5895M-4096M
+ 30441974 30326479       -0.4%  JBOD-10HDD-thresh=4G/xfs-1dd-1M-16p-5895M-4096M
+ 30484578 30446767       -0.1%  JBOD-10HDD-thresh=4G/xfs-2dd-1M-16p-5895M-4096M
 
-James
+ 68532421 68287850       -0.4%  JBOD-10HDD-thresh=2G/xfs-100dd-1M-16p-5895M-2048M
+ 31606793 33835247       +7.1%  JBOD-10HDD-thresh=2G/xfs-10dd-1M-16p-5895M-2048M
+ 30404955 30187817       -0.7%  JBOD-10HDD-thresh=2G/xfs-1dd-1M-16p-5895M-2048M
+ 30425591 30563144       +0.5%  JBOD-10HDD-thresh=2G/xfs-2dd-1M-16p-5895M-2048M
 
+ 40451069 38375271       -5.1%  JBOD-10HDD-6G/xfs-100dd-1M-16p-5895M-20
+ 30903629 30478879       -1.4%  JBOD-10HDD-6G/xfs-10dd-1M-16p-5895M-20
+ 30113560 29735407       -1.3%  JBOD-10HDD-6G/xfs-1dd-1M-16p-5895M-20
+ 30181418 30850350       +2.2%  JBOD-10HDD-6G/xfs-2dd-1M-16p-5895M-20
 
+ 46067335 40793956      -11.4%  JBOD-10HDD-thresh=800M/xfs-100dd-1M-16p-5895M-800M
+ 30425063 27481305       -9.7%  JBOD-10HDD-thresh=800M/xfs-10dd-1M-16p-5895M-800M
+ 28437929 25651257       -9.8%  JBOD-10HDD-thresh=800M/xfs-1dd-1M-16p-5895M-800M
+ 29409406 19849350      -32.5%  JBOD-10HDD-thresh=800M/xfs-2dd-1M-16p-5895M-800M
+
+ 26508063 17706200      -33.2%  JBOD-10HDD-thresh=100M/xfs-100dd-1M-16p-5895M-100M
+ 23767810 23374918       -1.7%  JBOD-10HDD-thresh=100M/xfs-10dd-1M-16p-5895M-100M
+ 28032891 20659278      -26.3%  JBOD-10HDD-thresh=100M/xfs-1dd-1M-16p-5895M-100M
+ 26049973 22517497      -13.6%  JBOD-10HDD-thresh=100M/xfs-2dd-1M-16p-5895M-100M
+
+There are still some itches in JBOD..
+
+Thanks,
+Fengguang
