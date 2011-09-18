@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755378Ab1IRIst (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 04:48:49 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:39805 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750753Ab1IRIsr (ORCPT
+	id S1755011Ab1IRI6j (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 04:58:39 -0400
+Received: from mail-wy0-f170.google.com ([74.125.82.170]:64876 "EHLO
+	mail-wy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754398Ab1IRI6i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 04:48:47 -0400
-Message-ID: <4E75AEFD.105@gmail.com>
-Date: Sun, 18 Sep 2011 10:42:37 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
-MIME-Version: 1.0
-To: jeff.liu@oracle.com
-CC: Andi Kleen <ak@linux.intel.com>, Andreas Dilger <adilger@dilger.ca>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
-Subject: Re: [PATCH 1/7] BTRFS: Fix lseek return value for error
-References: <1316128013-21980-1-git-send-email-andi@firstfloor.org> <1316128013-21980-2-git-send-email-andi@firstfloor.org> <20110916154815.GA27150@infradead.org> <4E7439EB.7080100@oracle.com> <41C7FF67-8658-4E7F-BB50-E9AAEA1F755C@dilger.ca> <20110918014608.GA16198@alboin.amr.corp.intel.com> <4E759DE5.3020907@oracle.com>
-In-Reply-To: <4E759DE5.3020907@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sun, 18 Sep 2011 04:58:38 -0400
+Subject: Re: [PATCH 1/3] sys_poll: Fix negative timeout values for x86
+ userland on x86_64 kernels v2
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Thomas Meyer <thomas@m3y3r.de>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arch@vger.kernel.org
+In-Reply-To: <1316333042.5814.23.camel@localhost.localdomain>
+References: <1316333042.5814.23.camel@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 18 Sep 2011 10:58:26 +0200
+Message-ID: <1316336306.31335.8.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 18/09/2011 09:29, Jeff Liu ha scritto:
-> Hi Andreas and Andi,
->
-> Thanks for your comments.
->
-> On 09/18/2011 09:46 AM, Andi Kleen wrote:
->
->>>> with an additional improvement if the offset is larger or equal to the
->>>> file size, return -ENXIO in directly:
->>>>
->>>>                 if (offset>= inode->i_size) {
->>>>                         mutex_unlock(&inode->i_mutex);
->>>>                         return -ENXIO;
->>>>                 }
->>>
->>> Except that is wrong, because it would then be impossible to write sparse files.
->
-> Per my tryout, except that, if the offset>= source file size, call
-> lseek(fd, offset, SEEK_DATA/SEEK_HOLE) against Btrfs will always return
-> the total file size rather than -ENXIO.  however, our desired result it
-> -ENXIO in this case, Am I right?
->
+Le dimanche 18 septembre 2011 à 10:04 +0200, Thomas Meyer a écrit :
+> size of int and long differs on x86 and x86_64. the ia32 emulation calls
+> directly into the sys_poll function. when the timeout is set to -1
+> the test for sign will fail in sys_poll as the 64bit register is tested.
+> the timeout timer will be set to 0xffffffff milliseconds, but the timer
+> shouldn't get set at all in this situation.
+> 
 
-Yes, ENXIO should be the operation result.
+As I said, you should CC stable@kernel.org team on this patch.
+All previous linux versions had this bug : A program might misbehave
+because of a spurious poll(..., timeout < 0) wakeup.
+
+Could you please refine this Changelog again ?
+
+On 32bit user program, all negative timeout values should not set a
+timout at all, not only 0xffffffff (-1)
+
+man poll states :
+
+The timeout argument specifies an upper limit on the time for which
+poll() will block, in milliseconds.  Specifying a negative value in
+timeout means an infinite timeout.
+
+
+
