@@ -1,81 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756651Ab1IRTXh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 15:23:37 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:58740 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756611Ab1IRTXg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 15:23:36 -0400
-Date: Sun, 18 Sep 2011 21:23:33 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Miller <davem@davemloft.net>, akpm@linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        eric.dumazet@gmail.com
-Subject: Re: [GIT] Networking
-Message-ID: <20110918192333.GA1641@x4.trippels.de>
-References: <20110918.022125.1554085675403900813.davem@davemloft.net>
- <CA+55aFxc1tMCXKBV33PVD5BybTLBpfJAEcObvoQwbwqbKOsp7g@mail.gmail.com>
+	id S1756686Ab1IRTnU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 15:43:20 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:51606 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756636Ab1IRTnT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Sep 2011 15:43:19 -0400
+Message-ID: <4E7649AA.40305@parallels.com>
+Date: Sun, 18 Sep 2011 16:42:34 -0300
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+55aFxc1tMCXKBV33PVD5BybTLBpfJAEcObvoQwbwqbKOsp7g@mail.gmail.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+CC: Cyrill Gorcunov <gorcunov@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <paul@paulmenage.org>, <lizf@cn.fujitsu.com>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, <ebiederm@xmission.com>,
+        <davem@davemloft.net>, <gthelen@google.com>, <netdev@vger.kernel.org>,
+        <linux-mm@kvack.org>
+Subject: Re: [PATCH v2 4/7] per-cgroup tcp buffers control
+References: <1316051175-17780-1-git-send-email-glommer@parallels.com> <1316051175-17780-5-git-send-email-glommer@parallels.com> <20110917181132.GC1658@shutemov.name> <20110917183358.GB2783@moon> <20110918185806.GA28057@shutemov.name>
+In-Reply-To: <20110918185806.GA28057@shutemov.name>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [187.106.51.14]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011.09.18 at 11:06 -0700, Linus Torvalds wrote:
-> 2011/9/17 David Miller <davem@davemloft.net>:
-> >
-> > dpward (2):
-> >      net: Make flow cache namespace-aware
-> >      net: Handle different key sizes between address families in flow cache
-> >
-> > nhorman (1):
-> >      net: don't clear IFF_XMIT_DST_RELEASE in ether_setup
-> >
-> > rajan.aggarwal85@gmail.com (1):
-> >      net/can/af_can.c: Change del_timer to del_timer_sync
-> 
-> Guys, if somebody has such a broken email setup that they don't even
-> show their own name, don't take patches from them.
-> 
-> If you cannot even set up email sanely, there is zero reason to
-> believe that the patch should be good. And if the patch is trivial and
-> you want to take it despite the source of the patch being crap, please
-> spend the five seconds to fix it up.
-> 
-> Proper names are part of the commit message. Don't make it look like
-> crap. I get ugly flashbacks to SVN or CVS when I see stuff like this.
-> Don't do it.
+On 09/18/2011 03:58 PM, Kirill A. Shutemov wrote:
+> On Sat, Sep 17, 2011 at 10:33:58PM +0400, Cyrill Gorcunov wrote:
+>> On Sat, Sep 17, 2011 at 09:11:32PM +0300, Kirill A. Shutemov wrote:
+>>> On Wed, Sep 14, 2011 at 10:46:12PM -0300, Glauber Costa wrote:
+>>>> +int tcp_init_cgroup_fill(struct proto *prot, struct cgroup *cgrp,
+>>>> +			 struct cgroup_subsys *ss)
+>>>> +{
+>>>> +	prot->enter_memory_pressure	= tcp_enter_memory_pressure;
+>>>> +	prot->memory_allocated		= memory_allocated_tcp;
+>>>> +	prot->prot_mem			= tcp_sysctl_mem;
+>>>> +	prot->sockets_allocated		= sockets_allocated_tcp;
+>>>> +	prot->memory_pressure		= memory_pressure_tcp;
+>>>
+>>> No fancy formatting, please.
+>>>
+>>
+>> What's wrong with having fancy formatting? It's indeed easier to read
+>> when members are assigned this way. It's always up to maintainer to
+>> choose what he prefers, but I see nothing wrong in such style (if only it
+>> doesn't break the style of the whole file).
+>
+> You have to remove this indenting if you'll reorganize code (e.g. move
+> part under if(...)).
+> IMO, it reduces code maintainability.
+>
+As I said, I don't care, so I'll change. But I have to say I disagree 
+with your statement.
 
-Plus commit 946cedccbd73874 breaks the build:
+It is a pack of assignments, so if you reorganize this code, two things 
+can happen:
+1) It is not moved to a new ident level -> It keeps being a pack of 
+assignments, and you don't really need to change it.
+2) It is moved to a new ident level -> You have to touch it anyway...
 
-  LD      init/built-in.o
-  LD      .tmp_vmlinux1
-net/built-in.o:sysctl_net.c:function tcp_v4_conn_request: error: undefined reference to 'cookie_v4_init_sequence'
-make: *** [.tmp_vmlinux1] Error 1
-
-commit 946cedccbd7387488d2cee5da92cdfeb28d2e670
-Author: Eric Dumazet <eric.dumazet@gmail.com>
-Date:   Tue Aug 30 03:21:44 2011 +0000
-
-    tcp: Change possible SYN flooding messages
-
-    "Possible SYN flooding on port xxxx " messages can fill logs on servers.
-
-    Change logic to log the message only once per listener, and add two new
-    SNMP counters to track :
-
-    TCPReqQFullDoCookies : number of times a SYNCOOKIE was replied to client
-
-    TCPReqQFullDrop : number of times a SYN request was dropped because
-    syncookies were not enabled.
-
-    Based on a prior patch from Tom Herbert, and suggestions from David.
-
-
--- 
-Markus
