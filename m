@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932210Ab1IRQfP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 12:35:15 -0400
-Received: from mga03.intel.com ([143.182.124.21]:33082 "EHLO mga03.intel.com"
+	id S932302Ab1IRQg2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 12:36:28 -0400
+Received: from mga09.intel.com ([134.134.136.24]:47178 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755383Ab1IRQfO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 12:35:14 -0400
+	id S1755233Ab1IRQg1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Sep 2011 12:36:27 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,401,1312182000"; 
-   d="scan'208";a="50132366"
-Date: Sun, 18 Sep 2011 18:37:53 +0200
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="49645696"
+Date: Sun, 18 Sep 2011 18:39:01 +0200
 From: Samuel Ortiz <samuel.ortiz@intel.com>
 To: Peter Ujfalusi <peter.ujfalusi@ti.com>
 Cc: Dmitry Torokhov <dtor@mail.ru>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org,
         linux-kernel@vger.kernel.org, Misael Lopez Cruz <misael.lopez@ti.com>
-Subject: Re: [PATCH 02/17] MFD: twl6040: Add accessor for revision ID
-Message-ID: <20110918163751.GD7286@sortiz-mobl>
+Subject: Re: [PATCH 04/17] MFD: twl6040: Fix power on GPIO handling
+Message-ID: <20110918163900.GE7286@sortiz-mobl>
 References: <1316090379-30760-1-git-send-email-peter.ujfalusi@ti.com>
- <1316090379-30760-3-git-send-email-peter.ujfalusi@ti.com>
+ <1316090379-30760-5-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
 Content-Disposition: inline
-In-Reply-To: <1316090379-30760-3-git-send-email-peter.ujfalusi@ti.com>
+In-Reply-To: <1316090379-30760-5-git-send-email-peter.ujfalusi@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -32,8 +32,14 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Peter,
 
-On Thu, Sep 15, 2011 at 03:39:24PM +0300, Peter Ujfalusi wrote:
-> For client driver to use, if they need chip resvision information.
+On Thu, Sep 15, 2011 at 03:39:26PM +0300, Peter Ujfalusi wrote:
+> Avoid requesting the audpwron gpio in case of ES1.0
+> revision.
+> In the past we requested the gpio, but we did not
+> free it up, since we made the check for the revision
+> later. This results later checks for gpio validity to
+> fail, leaving the gpio reserved (even after the driver
+> has been removed).
 > 
 > Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 Acked-by: Samuel Ortiz <sameo@linux.intel.com>
