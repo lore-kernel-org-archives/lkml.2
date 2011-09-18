@@ -1,66 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932707Ab1IRWYZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 18:24:25 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:33595 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932589Ab1IRWYY (ORCPT
+	id S932808Ab1IRW0V (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 18:26:21 -0400
+Received: from mailb.microsoft.com ([131.107.115.215]:6467 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932702Ab1IRW0U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 18:24:24 -0400
-Date: Sun, 18 Sep 2011 23:23:29 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Alex Deucher <alexdeucher@gmail.com>,
-        Keith Packard <keithp@keithp.com>, linux-fbdev@vger.kernel.org,
-        linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, Archit Taneja <archit@ti.com>,
-        "Clark, Rob" <rob@ti.com>
-Subject: Re: Proposal for a low-level Linux display framework
-Message-ID: <20110918232329.6ff05d56@lxorguk.ukuu.org.uk>
-In-Reply-To: <201109180112.15896.laurent.pinchart@ideasonboard.com>
-References: <1316088425.11294.78.camel@lappyti>
-	<CADnq5_NnzLtJmSzOgyppnBtv96DRTJ71u6ZSrs56KJ-F5CC-mw@mail.gmail.com>
-	<4E724659.5080709@gmx.de>
-	<201109180112.15896.laurent.pinchart@ideasonboard.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 18 Sep 2011 18:26:20 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Joe Perches <joe@perches.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: RE: [PATCH 1/3] Staging: hv: util: Perform some service specific
+ init/deinit in probe/remove
+Thread-Topic: [PATCH 1/3] Staging: hv: util: Perform some service specific
+ init/deinit in probe/remove
+Thread-Index: AQHMdiW8hLaXXnT3BkWPeihMm/tE45VT4LiA///VuVA=
+Date: Sun, 18 Sep 2011 22:26:19 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E048081E781B@TK5EX14MBXC124.redmond.corp.microsoft.com>
+References: <1316367053-700-1-git-send-email-kys@microsoft.com>
+	 <1316367095-739-1-git-send-email-kys@microsoft.com>
+ <1316368394.4916.2.camel@Joe-Laptop>
+In-Reply-To: <1316368394.4916.2.camel@Joe-Laptop>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.35]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id p8IMQTTF011878
 
-> This would leave us with the issue of controlling formats and other parameters 
-> on the pipelines. We could keep separate DRM, KMS, FB and V4L APIs for that, 
 
-There are some other differences that matter. The exact state and
-behaviour of memory, sequencing of accesses, cache control and management
-are a critical part of DRM for most GPUs, as is the ability to have them
-in swap backed objects and to do memory management of them. Fences and
-the like are a big part of the logic of many renderers and the same
-fencing has to be applied between capture and GPU, and also in some cases
-between playback accelerators (eg MP4 playback) and GPU.
 
-To glue them together I think you'd need to support the use of GEM objects
-(maybe extended) in V4L. That may actually make life cleaner and simpler
-in some respects because GEM objects are refcounted nicely and have
-handles.
+> -----Original Message-----
+> From: Joe Perches [mailto:joe@perches.com]
+> Sent: Sunday, September 18, 2011 1:53 PM
+> To: KY Srinivasan
+> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang
+> Subject: Re: [PATCH 1/3] Staging: hv: util: Perform some service specific
+> init/deinit in probe/remove
+> 
+> On Sun, 2011-09-18 at 10:31 -0700, K. Y. Srinivasan wrote:
+> > In preparation for modifying the util driver to fully conform to the
+> > Linux Driver Model,
+> []
+> > diff --git a/drivers/staging/hv/hv_util.c b/drivers/staging/hv/hv_util.c
+> []
+> >  static const struct hv_vmbus_device_id id_table[] = {
+> >  	/* Shutdown guid */
+> >  	{ VMBUS_DEVICE(0x31, 0x60, 0x0B, 0X0E, 0x13, 0x52, 0x34, 0x49,
+> > -		       0x81, 0x8B, 0x38, 0XD9, 0x0C, 0xED, 0x39, 0xDB) },
+> > +		       0x81, 0x8B, 0x38, 0XD9, 0x0C, 0xED, 0x39, 0xDB)
+> > +	  .driver_data = (unsigned long)&util_shutdown },
+> 
+> Isn't this a kernel_ulong_t ?
 
-DRM and KMS abstract out stuff into what is akin to V4L subdevices for
-the various objects the video card has that matter for display - from
-scanout buffers to the various video outputs, timings and the like.
+Yes; but kernel_ulong_t is unsigned long and this code is compiled only in the kernel.
 
-I don't know what it's like with OMAP but for some of the x86 stuff
-particularly low speed/power stuff the capture devices, GPU and overlays
-tend to be fairly incestuous in order to do things like 1080i/p preview
-while recording from the camera.
+Regards,
 
-GPU is also a bit weird in some ways because while its normally
-nonsensical to do things like use the capture facility one card to drive
-part of another, it's actually rather useful (although not supported
-really by DRM) to do exactly that with GPUs. A simple example is a dual
-headed box with a dumb frame buffer and an accelerated output both of
-which are using memory that can be hit by the accelerated card. Classic
-example being a USB plug in monitor.
+K. Y
+
+> 
+> > +	  .driver_data = (unsigned long)&util_timesynch },
+> 
+> etc.
+> 
+> 
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
