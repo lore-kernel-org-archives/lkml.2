@@ -1,76 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754104Ab1IROr6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 10:47:58 -0400
-Received: from mga14.intel.com ([143.182.124.37]:6821 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752604Ab1IROr5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 10:47:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,401,1312182000"; 
-   d="scan'208";a="50115917"
-Date: Sun, 18 Sep 2011 22:47:51 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 10/18] writeback: dirty position control - bdi reserve
- area
-Message-ID: <20110918144751.GA18645@localhost>
-References: <20110904015305.367445271@intel.com>
- <20110904020915.942753370@intel.com>
- <1315318179.14232.3.camel@twins>
- <20110907123108.GB6862@localhost>
- <1315822779.26517.23.camel@twins>
- <20110918141705.GB15366@localhost>
- <20110918143721.GA17240@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110918143721.GA17240@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932284Ab1IRO4N (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 10:56:13 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:28020 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753894Ab1IRO4M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Sep 2011 10:56:12 -0400
+Content-Type: text/plain; charset=UTF-8
+From: Chris Mason <chris.mason@oracle.com>
+To: Jeff liu <jeff.liu@oracle.com>
+Cc: Marco Stornelli <marco.stornelli@gmail.com>,
+        Andi Kleen <ak@linux.intel.com>, Andreas Dilger <adilger@dilger.ca>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
+Subject: Re: [PATCH 1/7] BTRFS: Fix lseek return value for error
+In-reply-to: <8444301C-856F-44FA-94A3-D3583DFA0FFB@oracle.com>
+References: <1316128013-21980-1-git-send-email-andi@firstfloor.org> <1316128013-21980-2-git-send-email-andi@firstfloor.org> <20110916154815.GA27150@infradead.org> <4E7439EB.7080100@oracle.com> <41C7FF67-8658-4E7F-BB50-E9AAEA1F755C@dilger.ca> <20110918014608.GA16198@alboin.amr.corp.intel.com> <4E759DE5.3020907@oracle.com> <4E75AEFD.105@gmail.com> <8444301C-856F-44FA-94A3-D3583DFA0FFB@oracle.com>
+Date: Sun, 18 Sep 2011 10:55:49 -0400
+Message-Id: <1316357705-sup-2667@shiny>
+User-Agent: Sup/git
+Content-Transfer-Encoding: 8bit
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090203.4E760682.0001,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> BTW, I also compared the IO-less patchset and the vanilla kernel's
-> JBOD performance. Basically, the performance is lightly improved
-> under large memory, and reduced a lot in small memory servers.
+Excerpts from Jeff liu's message of 2011-09-18 06:33:38 -0400:
 > 
->  vanillla IO-less  
-> --------------------------------------------------------------------------------
-[...]
->  26508063 17706200      -33.2%  JBOD-10HDD-thresh=100M/xfs-100dd-1M-16p-5895M-100M
->  23767810 23374918       -1.7%  JBOD-10HDD-thresh=100M/xfs-10dd-1M-16p-5895M-100M
->  28032891 20659278      -26.3%  JBOD-10HDD-thresh=100M/xfs-1dd-1M-16p-5895M-100M
->  26049973 22517497      -13.6%  JBOD-10HDD-thresh=100M/xfs-2dd-1M-16p-5895M-100M
+> 在 2011-9-18，下午4:42， Marco Stornelli 写道：
 > 
-> There are still some itches in JBOD..
+> > Il 18/09/2011 09:29, Jeff Liu ha scritto:
+> >> Hi Andreas and Andi,
+> >> 
+> >> Thanks for your comments.
+> >> 
+> >> On 09/18/2011 09:46 AM, Andi Kleen wrote:
+> >> 
+> >>>>> with an additional improvement if the offset is larger or equal to the
+> >>>>> file size, return -ENXIO in directly:
+> >>>>> 
+> >>>>>                if (offset>= inode->i_size) {
+> >>>>>                        mutex_unlock(&inode->i_mutex);
+> >>>>>                        return -ENXIO;
+> >>>>>                }
+> >>>> 
+> >>>> Except that is wrong, because it would then be impossible to write sparse files.
+> >> 
+> >> Per my tryout, except that, if the offset>= source file size, call
+> >> lseek(fd, offset, SEEK_DATA/SEEK_HOLE) against Btrfs will always return
+> >> the total file size rather than -ENXIO.  however, our desired result it
+> >> -ENXIO in this case, Am I right?
+> >> 
+> > 
+> > Yes, ENXIO should be the operation result.
+> 
+> Thanks for your kind confirmation.
 
-OK, in the dirty_bytes=100M case, I find that the bdi threshold _and_
-writeout bandwidth may drop close to 0 in long periods. This change
-may avoid one bdi being stuck:
+Thanks everyone, I've put Jeff's last version of this in my queue.
 
-        /*
-         * bdi reserve area, safeguard against dirty pool underrun and disk idle
-         *
-         * It may push the desired control point of global dirty pages higher
-         * than setpoint. It's not necessary in single-bdi case because a
-         * minimal pool of @freerun dirty pages will already be guaranteed.
-         */
--       x_intercept = min(write_bw, freerun);
-+       x_intercept = min(write_bw + MIN_WRITEBACK_PAGES, freerun);
-        if (bdi_dirty < x_intercept) {
-                if (bdi_dirty > x_intercept / 8) {
-                        pos_ratio *= x_intercept;
-                        do_div(pos_ratio, bdi_dirty);
-                } else
-                        pos_ratio *= 8;
-        }
-
-Thanks,
-Fengguang
+-chris
