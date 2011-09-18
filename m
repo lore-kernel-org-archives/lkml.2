@@ -1,60 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755707Ab1IRRpb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 13:45:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48631 "EHLO mx1.redhat.com"
+	id S1755858Ab1IRRvQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 13:51:16 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:40594 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755032Ab1IRRpa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 13:45:30 -0400
-Date: Sun, 18 Sep 2011 19:41:17 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <htejun@gmail.com>
-Cc: rjw@sisk.pl, paul@paulmenage.org, lizf@cn.fujitsu.com,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, fweisbec@gmail.com,
-        matthltc@us.ibm.com, akpm@linux-foundation.org,
-        Tejun Heo <tj@kernel.org>, Paul Menage <menage@google.com>
-Subject: Re: [PATCH 4/4] cgroup: always lock threadgroup during migration
-Message-ID: <20110918174117.GB2384@redhat.com>
-References: <1315159280-25032-1-git-send-email-htejun@gmail.com> <1315159280-25032-5-git-send-email-htejun@gmail.com>
+	id S1755272Ab1IRRvO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Sep 2011 13:51:14 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: linux-next: temporary github repository
+Date: Sun, 18 Sep 2011 19:53:22 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc4+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org,
+        Linus <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>
+References: <20110918212535.a1038aa5f0caad9d83e351b2@canb.auug.org.au> <201109181518.35788.rjw@sisk.pl> <20110918233220.91733671ed4fd0ccbc7552f6@canb.auug.org.au>
+In-Reply-To: <20110918233220.91733671ed4fd0ccbc7552f6@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1315159280-25032-5-git-send-email-htejun@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201109181953.22763.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05, Tejun Heo wrote:
->
-> * Remove -ESRCH failure path from cgroup_task_migrate().  With the
->   above changes, it's guaranteed to be called only for live tasks.
+On Sunday, September 18, 2011, Stephen Rothwell wrote:
+> Hi Rafael,
+> 
+> On Sun, 18 Sep 2011 15:18:35 +0200 "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+> >
+> > OK, so the temporary location of the linux-pm tree's linux-next branch is at:
+> > 
+> > git://github.com/rjwysocki/linux-pm.git linux-next
+> 
+> I will switch to this from Monday, thanks.
+> 
+> Just checking that you intentionally dropped a merge of the pm-freezer
+> branch?
 
-I think you can remove another similar check,
+I did, since the original branch is unavailable along with git.kernel.org.
 
-> @@ -2044,6 +2044,10 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
->  	tsk = leader;
->  	i = 0;
->  	do {
-> +		/* @tsk either already exited or can't exit until the end */
-> +		if (tsk->flags & PF_EXITING)
-> +			continue;
-> +
->  		/* as per above, nr_threads may decrease, but not increase. */
->  		BUG_ON(i >= group_size);
->  		get_task_struct(tsk);
-
-And then cgroup_attach_proc() does
-
-	for (i = 0; i < group_size; i++) {
-		...
-		task_lock(tsk);
-		if (tsk->flags & PF_EXITING) {
-			task_unlock(tsk);
-			continue;
-
-Afaics, this is no longer needed.
-
-Oleg.
-
+Thanks,
+Rafael
