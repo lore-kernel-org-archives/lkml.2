@@ -1,52 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755011Ab1IRI6j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 04:58:39 -0400
-Received: from mail-wy0-f170.google.com ([74.125.82.170]:64876 "EHLO
-	mail-wy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754398Ab1IRI6i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 04:58:38 -0400
-Subject: Re: [PATCH 1/3] sys_poll: Fix negative timeout values for x86
- userland on x86_64 kernels v2
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Thomas Meyer <thomas@m3y3r.de>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-arch@vger.kernel.org
-In-Reply-To: <1316333042.5814.23.camel@localhost.localdomain>
-References: <1316333042.5814.23.camel@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 18 Sep 2011 10:58:26 +0200
-Message-ID: <1316336306.31335.8.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	id S1754861Ab1IRJgG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 05:36:06 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:53680 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751167Ab1IRJgE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Sep 2011 05:36:04 -0400
+Date: Sun, 18 Sep 2011 11:35:59 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Brian Gerst <brgerst@gmail.com>
+Cc: Andreas Mohr <andi@lisas.de>, Arkaprava Basu <arkaprava.basu@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: TLB flush question (x86_64)
+Message-ID: <20110918093559.GB28953@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Brian Gerst <brgerst@gmail.com>, Andreas Mohr <andi@lisas.de>,
+	Arkaprava Basu <arkaprava.basu@gmail.com>,
+	linux-kernel@vger.kernel.org
+References: <CAErB21iHz_ToVzfU8aPkY8OW5iMOTPgPMdQBsmxo=5YUCMb6Aw@mail.gmail.com>
+ <20110917191221.GA24295@rhlx01.hs-esslingen.de>
+ <CAMzpN2gNtnRVPreeeUVOCr7_t5j6xx+YGHeJkAgqTS2PyUibbw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAMzpN2gNtnRVPreeeUVOCr7_t5j6xx+YGHeJkAgqTS2PyUibbw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le dimanche 18 septembre 2011 à 10:04 +0200, Thomas Meyer a écrit :
-> size of int and long differs on x86 and x86_64. the ia32 emulation calls
-> directly into the sys_poll function. when the timeout is set to -1
-> the test for sign will fail in sys_poll as the 64bit register is tested.
-> the timeout timer will be set to 0xffffffff milliseconds, but the timer
-> shouldn't get set at all in this situation.
+On Sat, Sep 17, 2011 at 07:37:59PM -0400, Brian Gerst wrote:
+> On Sat, Sep 17, 2011 at 3:12 PM, Andreas Mohr <andi@lisas.de> wrote:
+> > Hi,
+> >
+> > decided to reply since there hasn't been any activity yet.
+> >
+> >> Is there any particular reason why
+> >> the entire address space is flushed from the tlb while only a range of
+> >> virtual address space was supposedly required to be flushed?
+> >
+> > While this particular function has actually changed in less medieval
+> > kernel versions, it would be nice if someone knew an answer to that,
+> > especially since TLB activity may have grave performance implications.
+> >
 > 
+> x86 hardware can only flush single pages or the whole TLB.  It would
+> be possible to loop over a small set of pages and invalidate each one,
+> but the threshold for where that becomes more efficient than flushing
+> everything is difficult to determine.
 
-As I said, you should CC stable@kernel.org team on this patch.
-All previous linux versions had this bug : A program might misbehave
-because of a spurious poll(..., timeout < 0) wakeup.
+... also, TLBs in current CPUs are highly optimized beasts so that the
+cost of a full rewalk is paid only very seldomly by caching even partial
+translations in lower level TLBs (L2), etc.
 
-Could you please refine this Changelog again ?
+And also, flush_tlb_mm ends up modifying CR3 which doesn't flush the
+global mappings.
 
-On 32bit user program, all negative timeout values should not set a
-timout at all, not only 0xffffffff (-1)
-
-man poll states :
-
-The timeout argument specifies an upper limit on the time for which
-poll() will block, in milliseconds.  Specifying a negative value in
-timeout means an infinite timeout.
-
-
-
+-- 
+Regards/Gruss,
+    Boris.
