@@ -1,29 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755567Ab1IRQe2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 12:34:28 -0400
-Received: from mga02.intel.com ([134.134.136.20]:17392 "EHLO mga02.intel.com"
+	id S932210Ab1IRQfP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 12:35:15 -0400
+Received: from mga03.intel.com ([143.182.124.21]:33082 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754992Ab1IRQe1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 12:34:27 -0400
+	id S1755383Ab1IRQfO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Sep 2011 12:35:14 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="49645500"
-Date: Sun, 18 Sep 2011 18:37:07 +0200
+X-IronPort-AV: E=Sophos;i="4.68,401,1312182000"; 
+   d="scan'208";a="50132366"
+Date: Sun, 18 Sep 2011 18:37:53 +0200
 From: Samuel Ortiz <samuel.ortiz@intel.com>
 To: Peter Ujfalusi <peter.ujfalusi@ti.com>
 Cc: Dmitry Torokhov <dtor@mail.ru>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org,
         linux-kernel@vger.kernel.org, Misael Lopez Cruz <misael.lopez@ti.com>
-Subject: Re: [PATCH 01/17] MFD: twl6040: Remove global pointer for
- platform_device
-Message-ID: <20110918163706.GC7286@sortiz-mobl>
+Subject: Re: [PATCH 02/17] MFD: twl6040: Add accessor for revision ID
+Message-ID: <20110918163751.GD7286@sortiz-mobl>
 References: <1316090379-30760-1-git-send-email-peter.ujfalusi@ti.com>
- <1316090379-30760-2-git-send-email-peter.ujfalusi@ti.com>
+ <1316090379-30760-3-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
 Content-Disposition: inline
-In-Reply-To: <1316090379-30760-2-git-send-email-peter.ujfalusi@ti.com>
+In-Reply-To: <1316090379-30760-3-git-send-email-peter.ujfalusi@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -33,10 +32,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Peter,
 
-On Thu, Sep 15, 2011 at 03:39:23PM +0300, Peter Ujfalusi wrote:
-> There is no need to keep global pointer for the platform
-> device, since it is only used for dev_* prints, and the
-> device pointer available within the twl6040 structure.
+On Thu, Sep 15, 2011 at 03:39:24PM +0300, Peter Ujfalusi wrote:
+> For client driver to use, if they need chip resvision information.
 > 
 > Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 Acked-by: Samuel Ortiz <sameo@linux.intel.com>
