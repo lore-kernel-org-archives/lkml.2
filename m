@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754786Ab1IRIYI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 04:24:08 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:34161 "EHLO
+	id S1755138Ab1IRIdF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 04:33:05 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:42493 "EHLO
 	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754167Ab1IRIYF (ORCPT
+	by vger.kernel.org with ESMTP id S1750753Ab1IRIcz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 04:24:05 -0400
-X-Sasl-enc: TB7NMQNl5msJi33emTkptw1XDlFTqjyg9gTSVTn+YsOI 1316334243
-Date: Sun, 18 Sep 2011 01:20:48 -0700
+	Sun, 18 Sep 2011 04:32:55 -0400
+X-Sasl-enc: 5j2G8Vi2NpA4IVJV4vc5edQl7i5UQOlCAKyhiRNVWFPp 1316334771
+Date: Sun, 18 Sep 2011 01:27:36 -0700
 From: Greg KH <greg@kroah.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>, driverdevel <devel@driverdev.osuosl.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ian Abbott <abbotti@mev.co.uk>,
-        Frank Mori Hess <fmhess@users.sourceforge.net>
-Subject: Re: [PATCH] staging: fix comedi build when ISA_DMA_API is enabled
- but COMEDI_PCI is not enabled
-Message-ID: <20110918082048.GA17490@kroah.com>
-References: <4E68E7F9.4020906@xenotime.net>
- <20110912145320.GA28855@kroah.com>
+To: Jason Baron <jbaron@redhat.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, gregkh@suse.de, joe@perches.com,
+        jim.cromie@gmail.com, bvanassche@acm.org, linux-kernel@vger.kernel.org,
+        davem@davemloft.net, aloisio.almeida@openbossa.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH ] dynamic_debug: call __netdev_printk only for CONFIG_NET
+Message-ID: <20110918082736.GB19444@kroah.com>
+References: <cover.1313085588.git.jbaron@redhat.com>
+ <5514795fe63ccfd4b3a80283ed04a526abe3c59d.1313085588.git.jbaron@redhat.com>
+ <201109011657.02407.arnd@arndb.de>
+ <20110901151817.GA14324@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110912145320.GA28855@kroah.com>
+In-Reply-To: <20110901151817.GA14324@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 12, 2011 at 04:53:20PM +0200, Greg KH wrote:
-> On Thu, Sep 08, 2011 at 09:06:17AM -0700, Randy Dunlap wrote:
-> > From: Randy Dunlap <rdunlap@xenotime.net>
-> > 
-> > Fix build when CONFIG_ISA_DMA_API is enabled but
-> > CONFIG_COMEDI_PCI[_DRIVERS] is not enabled.
-> > Fixes these build errors:
-> > 
-> > drivers/staging/comedi/drivers/ni_labpc.c: In function 'labpc_ai_cmd':
-> > drivers/staging/comedi/drivers/ni_labpc.c:1351: error: implicit declaration of function 'labpc_suggest_transfer_size'
-> > drivers/staging/comedi/drivers/ni_labpc.c: At top level:
-> > drivers/staging/comedi/drivers/ni_labpc.c:1802: error: conflicting types for 'labpc_suggest_transfer_size'
-> > drivers/staging/comedi/drivers/ni_labpc.c:1351: note: previous implicit declaration of 'labpc_suggest_transfer_size' was here
-> > 
-> > Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-> > ---
-> > 
-> > Greg, I had previously said that this patch was not needed since
-> > you had merged a larger patch, but I had another build error which
-> > this patch fixes, so it is now needed in mainline.
+On Thu, Sep 01, 2011 at 11:18:18AM -0400, Jason Baron wrote:
+> On Thu, Sep 01, 2011 at 04:57:02PM +0200, Arnd Bergmann wrote:
+> > __netdev_printk is only defined when CONFIG_NET is set. Since we only need
+> > __dynamic_netdev_dbg for network drivers, we can make it conditional on the
+> > same Kconfig symbol.
+> >
 > 
-> So this is needed in Linus's tree now?  Or in linux-next?  It doesn't
-> apply to my staging-next tree so I'm confused.
+> Hi,
+> 
+> Yes, I've posted a fix for this:
+> 
+> https://lkml.org/lkml/2011/8/30/297
+> 
+> Hopefully, it will be pulled in soon.
 
-Now dropped from my to-apply queue.
+As that thread again spun off into confusion, can you please resend the
+end result?
 
-If this is still needed, please resend.
+thanks,
 
 greg k-h
