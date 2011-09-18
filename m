@@ -1,40 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752125Ab1IRKg0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 06:36:26 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:62512 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751504Ab1IRKgZ (ORCPT
+	id S1752070Ab1IRLAp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 07:00:45 -0400
+Received: from mailrelay007.isp.belgacom.be ([195.238.6.173]:39513 "EHLO
+	mailrelay007.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750923Ab1IRLAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 06:36:25 -0400
+	Sun, 18 Sep 2011 07:00:44 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtIFAKfNdU5XQAOS/2dsb2JhbABBpUmBfXiBUwEBBScRHiIBEAsYCRYPCQMCAQIBJx4GDQEHAQGHdbUJhngEmGaMEg
+Message-ID: <4E75CF46.6050706@computer.org>
+Date: Sun, 18 Sep 2011 13:00:22 +0200
+From: Jan Ceuleers <jan.ceuleers@computer.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
 MIME-Version: 1.0
-In-Reply-To: <1316004470-22643-1-git-send-email-robherring2@gmail.com>
-References: <1316004470-22643-1-git-send-email-robherring2@gmail.com>
-Date: Sun, 18 Sep 2011 12:36:24 +0200
-Message-ID: <CACRpkdZdT+Kt0TkypeTZXr3M6JLsy=3Ci8+JM7vO36y9yBZZZQ@mail.gmail.com>
-Subject: Re: [PATCH] MAINTAINERS: update devicetree maintainers
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Kelly Anderson <kelly@silka.with-linux.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH]: fix regulaotry misspelling in net/wireless/reg.c
+References: <4E750964.8060502@silka.with-linux.com>
+In-Reply-To: <4E750964.8060502@silka.with-linux.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 14, 2011 at 2:47 PM, Rob Herring <robherring2@gmail.com> wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
->
-> As requested by Grant, adding myself as an additional devicetree maintainer.
->
-> Also, add Documentation/devicetree to the file list for devicetree.
->
-> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
+On 09/17/2011 10:56 PM, Kelly Anderson wrote:
+> --- ./net/wireless/reg.c.orig    2011-08-29 14:56:30.000000000 -0600
+> +++ ./net/wireless/reg.c    2011-09-17 14:42:38.305715253 -0600
+> @@ -903,7 +903,7 @@ static bool ignore_reg_update(struct wip
+>          initiator != NL80211_REGDOM_SET_BY_COUNTRY_IE &&
+>          !is_world_regdom(last_request->alpha2)) {
+>          REG_DBG_PRINT("Ignoring regulatory request %s "
+> -                  "since the driver requires its own regulaotry "
+> +                  "since the driver requires its own regulatory "
+>                    "domain to be set first",
+>                    reg_initiator_name(initiator));
+>          return true; 
 
-Excellent.
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+This typo exists neither in Linus's linux tree, nor in davem's net and 
+net-next trees.
 
-Thanks,
-Linus Walleij
+Furthermore, your patch was whitespace-damaged.
