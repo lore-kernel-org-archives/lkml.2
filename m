@@ -1,14 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751790Ab1IREyf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 00:54:35 -0400
-Received: from cltv.tinp.net.tw ([58.99.32.3]:50179 "EHLO cltv.tinp.net.tw"
+	id S1751702Ab1IRE7M (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 00:59:12 -0400
+Received: from cltv.tinp.net.tw ([58.99.32.3]:54186 "EHLO cltv.tinp.net.tw"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750753Ab1IREye (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 00:54:34 -0400
-X-Greylist: delayed 3491 seconds by postgrey-1.27 at vger.kernel.org; Sun, 18 Sep 2011 00:54:34 EDT
-Message-ID: <20110918113652.nysd1tgbw4sgwsk8@cltv.tinp.net.tw>
-Date: Sun, 18 Sep 2011 11:36:52 +0800
+	id S1750753Ab1IRE7L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Sep 2011 00:59:11 -0400
+Message-ID: <20110918124645.lisxdbqkmc4sw8kk@cltv.tinp.net.tw>
+Date: Sun, 18 Sep 2011 12:46:45 +0800
 From: United Nation Promo <info@unf.co.uk>
 Reply-to: torobindesk@blumail.org
 To: undisclosed-recipients:;
