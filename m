@@ -1,85 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755005Ab1IRO4p (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 10:56:45 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:40782 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753894Ab1IRO4n (ORCPT
+	id S1754664Ab1IRPCI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 11:02:08 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:34916 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754457Ab1IRPCH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 10:56:43 -0400
-Subject: Re: iommu_iova leak [inside 3w-9xxx]
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Chris Boot <bootc@bootc.net>
-Cc: "Woodhouse, David" <david.woodhouse@intel.com>,
-        adam radford <aradford@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
-        Adam Radford <linuxraid@lsi.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-In-Reply-To: <1316355934.27722.6.camel@dabdike>
-References: <4E734467.3040703@bootc.net>
-	 <1316256305.24257.25.camel@shinybook.infradead.org>
-	 <AD4B8103-C98F-4BC5-9F7F-496D220781F3@bootc.net>
-	 <3A4FADE6-3653-46C5-B225-8200F9DCE35B@bootc.net>
-	 <CAHtARFHfxpU1JKu4092ZshvhsrRY-hx_pfnL3_+T32B3ncgWvg@mail.gmail.com>
-	 <B4A636AC-B127-42DD-BC8C-419D07A83FBD@bootc.net>
-	 <1316353140.12001.15.camel@shinybook.infradead.org>
-	 <1316354509.27722.1.camel@dabdike>
-	 <B008530A-B1B1-49D2-A3B4-9CD929D948FB@bootc.net>
-	 <1316355934.27722.6.camel@dabdike>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 18 Sep 2011 18:56:20 +0400
-Message-ID: <1316357780.27722.9.camel@dabdike>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
+	Sun, 18 Sep 2011 11:02:07 -0400
+Message-ID: <4E7607EC.4060208@xenotime.net>
+Date: Sun, 18 Sep 2011 08:02:04 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
+MIME-Version: 1.0
+To: Greg KH <greg@kroah.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>, driverdevel <devel@driverdev.osuosl.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ian Abbott <abbotti@mev.co.uk>,
+        Frank Mori Hess <fmhess@users.sourceforge.net>
+Subject: Re: [PATCH] staging: fix comedi build when ISA_DMA_API is enabled
+ but COMEDI_PCI is not enabled
+References: <4E68E7F9.4020906@xenotime.net> <20110912145320.GA28855@kroah.com> <20110918082048.GA17490@kroah.com>
+In-Reply-To: <20110918082048.GA17490@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-09-18 at 18:25 +0400, James Bottomley wrote:
-> On Sun, 2011-09-18 at 15:05 +0100, Chris Boot wrote: 
-> > > Hardly ... all it's saying is that twa_exit doesn't wait for pending I/O
-> > > to complete, so when you remove the module it tears down in the middle
-> > > of an I/O.  A bug, yes, but it's not indicative of any sort of leak in
-> > > the maps/unmaps.
-> > 
-> > 
-> > James,
-> > 
-> > I don't think that's the case - I had unmounted all filesystems, deactivated all volume groups, and performed a sync before waiting a few seconds and running rmmod. Next time I'll also 'echo 1 > /sys/block/sdX/device/delete' if that's helpful.
-> 
-> Actually, I take all that back: the driver has a bug in QUEUE_FULL
-> handling: twa_scsi_queue() calls twa_scsiop_execute_scsi(), which maps
-> the dma buffer, but if the card responds QUEUE_FULL it just returns
-> SCSI_MLQUEUE_HOST_BUSY without ever unmapping.  That leg in the code
-> frees the request but also doesn't unmap it.  In fact any error return
-> from twa_scsiop_execute_scsi() seems to have the same problem (but
-> QUEUE_FULL is the only silent one).
-> 
-> I trust Adam will fix this.
+On 09/18/2011 01:20 AM, Greg KH wrote:
+> On Mon, Sep 12, 2011 at 04:53:20PM +0200, Greg KH wrote:
+>> On Thu, Sep 08, 2011 at 09:06:17AM -0700, Randy Dunlap wrote:
+>>> From: Randy Dunlap <rdunlap@xenotime.net>
+>>>
+>>> Fix build when CONFIG_ISA_DMA_API is enabled but
+>>> CONFIG_COMEDI_PCI[_DRIVERS] is not enabled.
+>>> Fixes these build errors:
+>>>
+>>> drivers/staging/comedi/drivers/ni_labpc.c: In function 'labpc_ai_cmd':
+>>> drivers/staging/comedi/drivers/ni_labpc.c:1351: error: implicit declaration of function 'labpc_suggest_transfer_size'
+>>> drivers/staging/comedi/drivers/ni_labpc.c: At top level:
+>>> drivers/staging/comedi/drivers/ni_labpc.c:1802: error: conflicting types for 'labpc_suggest_transfer_size'
+>>> drivers/staging/comedi/drivers/ni_labpc.c:1351: note: previous implicit declaration of 'labpc_suggest_transfer_size' was here
+>>>
+>>> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+>>> ---
+>>>
+>>> Greg, I had previously said that this patch was not needed since
+>>> you had merged a larger patch, but I had another build error which
+>>> this patch fixes, so it is now needed in mainline.
+>>
+>> So this is needed in Linus's tree now?  Or in linux-next?  It doesn't
+>> apply to my staging-next tree so I'm confused.
 
-Actually, while Adam's mulling this, try the following.  It should at
-least confirm we're on the right track.
+Somehow I didn't see the message above.
 
-James
+The patch applies cleanly to Linus' current tree.
+
+> Now dropped from my to-apply queue.
+> 
+> If this is still needed, please resend.
+
+Yes, it is still needed.  Please see below.
 
 ---
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-diff --git a/drivers/scsi/3w-9xxx.c b/drivers/scsi/3w-9xxx.c
-index b7bd5b0..3868ab2 100644
---- a/drivers/scsi/3w-9xxx.c
-+++ b/drivers/scsi/3w-9xxx.c
-@@ -1800,10 +1800,12 @@ static int twa_scsi_queue_lck(struct scsi_cmnd *SCpnt, void (*done)(struct scsi_
- 	switch (retval) {
- 	case SCSI_MLQUEUE_HOST_BUSY:
- 		twa_free_request_id(tw_dev, request_id);
-+		twa_unmap_scsi_data(tw_dev, request_id);
- 		break;
- 	case 1:
- 		tw_dev->state[request_id] = TW_S_COMPLETED;
- 		twa_free_request_id(tw_dev, request_id);
-+		twa_unmap_scsi_data(tw_dev, request_id);
- 		SCpnt->result = (DID_ERROR << 16);
- 		done(SCpnt);
- 		retval = 0;
+Fix build when CONFIG_ISA_DMA_API is enabled but
+CONFIG_COMEDI_PCI[_DRIVERS] is not enabled.
+Fixes these build errors:
 
+drivers/staging/comedi/drivers/ni_labpc.c: In function 'labpc_ai_cmd':
+drivers/staging/comedi/drivers/ni_labpc.c:1351: error: implicit declaration of function 'labpc_suggest_transfer_size'
+drivers/staging/comedi/drivers/ni_labpc.c: At top level:
+drivers/staging/comedi/drivers/ni_labpc.c:1802: error: conflicting types for 'labpc_suggest_transfer_size'
+drivers/staging/comedi/drivers/ni_labpc.c:1351: note: previous implicit declaration of 'labpc_suggest_transfer_size' was here
 
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+---
+ drivers/staging/comedi/drivers/ni_labpc.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+--- lnx-31-rc5.orig/drivers/staging/comedi/drivers/ni_labpc.c
++++ lnx-31-rc5/drivers/staging/comedi/drivers/ni_labpc.c
+@@ -241,8 +241,10 @@ static int labpc_eeprom_write_insn(struc
+ 				   struct comedi_insn *insn,
+ 				   unsigned int *data);
+ static void labpc_adc_timing(struct comedi_device *dev, struct comedi_cmd *cmd);
+-#ifdef CONFIG_COMEDI_PCI
++#ifdef CONFIG_ISA_DMA_API
+ static unsigned int labpc_suggest_transfer_size(struct comedi_cmd cmd);
++#endif
++#ifdef CONFIG_COMEDI_PCI
+ static int labpc_find_device(struct comedi_device *dev, int bus, int slot);
+ #endif
+ static int labpc_dio_mem_callback(int dir, int port, int data,
