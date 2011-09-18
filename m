@@ -1,63 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756271Ab1IRC2d (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Sep 2011 22:28:33 -0400
-Received: from 14.mo1.mail-out.ovh.net ([178.32.97.215]:43504 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752847Ab1IRC2b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Sep 2011 22:28:31 -0400
-X-Greylist: delayed 4223 seconds by postgrey-1.27 at vger.kernel.org; Sat, 17 Sep 2011 22:28:31 EDT
-Date: Sun, 18 Sep 2011 02:47:55 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Leo Yan <leoy@marvell.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Haojian Zhuang <hzhuang1@marvell.com>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
-Subject: Re: [PATCH 2/2] ARM: mmp: add audio sram allocator
-Message-ID: <20110918004755.GD16141@game.jcrosoft.org>
-References: <1312167547-26740-1-git-send-email-leoy@marvell.com>
- <1312167547-26740-3-git-send-email-leoy@marvell.com>
- <20110915143857.GL28104@game.jcrosoft.org>
- <4E72A2A1.1020400@marvell.com>
+	id S1756513Ab1IRDdT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Sep 2011 23:33:19 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:56950 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753699Ab1IRDdQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Sep 2011 23:33:16 -0400
+Message-ID: <4E75664B.9070605@parallels.com>
+Date: Sun, 18 Sep 2011 00:32:27 -0300
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E72A2A1.1020400@marvell.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 4963811215139908410
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -200
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeftddrfeeiucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmneculddquddttddm
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+CC: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
+        <lizf@cn.fujitsu.com>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        <ebiederm@xmission.com>, <davem@davemloft.net>, <gthelen@google.com>,
+        <netdev@vger.kernel.org>, <linux-mm@kvack.org>
+Subject: Re: [PATCH v2 2/7] socket: initial cgroup code.
+References: <1316051175-17780-1-git-send-email-glommer@parallels.com> <1316051175-17780-3-git-send-email-glommer@parallels.com> <20110917175207.GB1658@shutemov.name>
+In-Reply-To: <20110917175207.GB1658@shutemov.name>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [187.106.51.14]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09:13 Fri 16 Sep     , Leo Yan wrote:
-> 
-> 
-> On 09/15/2011 10:38 PM, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> >On 10:59 Mon 01 Aug     , Leo Yan wrote:
-> >>Implement the audio sram allocator with genalloc,
-> >>so that can dynamically allocate the buffer
-> >>to pcm devices as need.
-> >>
-> >>Signed-off-by: Leo Yan<leoy@marvell.com>
-> >this can be more generic nad move to lib/genalloc.c
-> 
-> This is an older version, i have updated the patch same as you said.
-> pls see below link for the latest patch:
-> http://lists.arm.linux.org.uk/lurker/message/20110815.030920.2ad4227b.en.html
-I take a look on it it's the same issue this is not mach specific
+On 09/17/2011 02:52 PM, Kirill A. Shutemov wrote:
+> On Wed, Sep 14, 2011 at 10:46:10PM -0300, Glauber Costa wrote:
+>> We aim to control the amount of kernel memory pinned at any
+>> time by tcp sockets. To lay the foundations for this work,
+>> this patch adds a pointer to the kmem_cgroup to the socket
+>> structure.
+>>
+>> Signed-off-by: Glauber Costa<glommer@parallels.com>
+>> CC: David S. Miller<davem@davemloft.net>
+>> CC: Hiroyouki Kamezawa<kamezawa.hiroyu@jp.fujitsu.com>
+>> CC: Eric W. Biederman<ebiederm@xmission.com>
+>> ---
+>>   include/linux/memcontrol.h |   38 ++++++++++++++++++++++++++++++++++++++
+>>   include/net/sock.h         |    2 ++
+>>   net/core/sock.c            |    3 +++
+>>   3 files changed, 43 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+>> index 3b535db..be457ce 100644
+>> --- a/include/linux/memcontrol.h
+>> +++ b/include/linux/memcontrol.h
+>> @@ -395,5 +395,43 @@ mem_cgroup_print_bad_page(struct page *page)
+>>   }
+>>   #endif
+>>
+>> +#ifdef CONFIG_INET
+>> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+>> +#include<net/sock.h>
+>> +static inline void sock_update_memcg(struct sock *sk)
+>> +{
+>> +	/* right now a socket spends its whole life in the same cgroup */
+>> +	BUG_ON(sk->sk_cgrp);
+>> +
+>> +	rcu_read_lock();
+>> +	sk->sk_cgrp = mem_cgroup_from_task(current);
+>> +
+>> +	/*
+>> +	 * We don't need to protect against anything task-related, because
+>> +	 * we are basically stuck with the sock pointer that won't change,
+>> +	 * even if the task that originated the socket changes cgroups.
+>> +	 *
+>> +	 * What we do have to guarantee, is that the chain leading us to
+>> +	 * the top level won't change under our noses. Incrementing the
+>> +	 * reference count via cgroup_exclude_rmdir guarantees that.
+>> +	 */
+>> +	cgroup_exclude_rmdir(mem_cgroup_css(sk->sk_cgrp));
+>> +	rcu_read_unlock();
+>> +}
+>> +
+>> +static inline void sock_release_memcg(struct sock *sk)
+>> +{
+>> +	cgroup_release_and_wakeup_rmdir(mem_cgroup_css(sk->sk_cgrp));
+>> +}
+>
+> Do we really need to have these functions in the header?
+>
+No, I can move it to memcontrol.c
 
-Best Regards,
-J.
