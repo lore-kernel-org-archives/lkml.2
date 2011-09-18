@@ -1,44 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756446Ab1IRSNq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 14:13:46 -0400
-Received: from lucidpixels.com ([72.73.18.11]:49358 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755469Ab1IRSNp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 14:13:45 -0400
-Date: Sun, 18 Sep 2011 14:13:44 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: linux-kernel@vger.kernel.org
-Subject: Re: 3.1-rc4: LinkUSBi - digitemp/sensors not working : Error 10:
- Read COM Failed
-In-Reply-To: <alpine.DEB.2.02.1109181320500.7278@p34.internal.lan>
-Message-ID: <alpine.DEB.2.02.1109181413120.20777@p34.internal.lan>
-References: <alpine.DEB.2.02.1109181320500.7278@p34.internal.lan>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1756469Ab1IRS22 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 14:28:28 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:60040 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755740Ab1IRS21 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Sep 2011 14:28:27 -0400
+X-Sasl-enc: wuRTVtfaLNK1cYhrQeJ/Y/HjzjSFLQPlKdTtaIjHzz9U 1316370506
+Date: Sun, 18 Sep 2011 11:27:14 -0700
+From: Greg KH <greg@kroah.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Jason Baron <jbaron@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        gregkh@suse.de, joe@perches.com, jim.cromie@gmail.com,
+        bvanassche@acm.org, linux-kernel@vger.kernel.org, davem@davemloft.net,
+        aloisio.almeida@openbossa.org, netdev@vger.kernel.org
+Subject: Re: [PATCH ] dynamic_debug: call __netdev_printk only for CONFIG_NET
+Message-ID: <20110918182714.GA32615@kroah.com>
+References: <cover.1313085588.git.jbaron@redhat.com>
+ <5514795fe63ccfd4b3a80283ed04a526abe3c59d.1313085588.git.jbaron@redhat.com>
+ <201109011657.02407.arnd@arndb.de>
+ <20110901151817.GA14324@redhat.com>
+ <20110918082736.GB19444@kroah.com>
+ <4E76288A.4020801@xenotime.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E76288A.4020801@xenotime.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Sep 18, 2011 at 10:21:14AM -0700, Randy Dunlap wrote:
+> On 09/18/2011 01:27 AM, Greg KH wrote:
+> > On Thu, Sep 01, 2011 at 11:18:18AM -0400, Jason Baron wrote:
+> >> On Thu, Sep 01, 2011 at 04:57:02PM +0200, Arnd Bergmann wrote:
+> >>> __netdev_printk is only defined when CONFIG_NET is set. Since we only need
+> >>> __dynamic_netdev_dbg for network drivers, we can make it conditional on the
+> >>> same Kconfig symbol.
+> >>>
+> >>
+> >> Hi,
+> >>
+> >> Yes, I've posted a fix for this:
+> >>
+> >> https://lkml.org/lkml/2011/8/30/297
+> >>
+> >> Hopefully, it will be pulled in soon.
+> > 
+> > As that thread again spun off into confusion, can you please resend the
+> > end result?
+> 
+> That spinning confusion had nothing to do with the posted & correct patch
+> which could have been applied several weeks ago.
+> 
+> I'm curious:  Do you delete most of your email on a routine basis?
 
+No, only after going through pending patches do I purge them.  And when
+a series of patches generates a thread like this one, where people are
+arguing over the way the macros are named, and no one seems to agree, I
+will take it as the fact that this series was contentious and needs to
+be resent after taking into consideration the original complaints.
 
-On Sun, 18 Sep 2011, Justin Piszcz wrote:
+For me to keep all email threads, based on the amount of email I get[1],
+would be ludicrous.
 
-> Hi,
->
-> I have two LinkUSBi wireless temperature sensors (masters) and both work
-> fine in Windows 7, I got them both to work in Linux once but I did not
-> record how I did it-- does anyone know why the following happens?
->
-> You are only supposed to use digitemp_ds9097u but including all just
-> incase someone mentions trying the other two :)
->
-> --
+greg k-h
 
-This commit seems to have fixed the issue a few kernels ago (based on some
-reading; however with 3.1-rc4 it is still failing, any thoughts?)
-http://git.strongswan.org/?p=linux-dumm.git;a=commit;h=677aeafe19e88c282af74564048243ccabb1c590
-
-Justin.
-
+[1]: http://www.kroah.com/log/linux/get_lots_of_email.html
