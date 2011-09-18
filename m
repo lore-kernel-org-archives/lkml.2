@@ -1,47 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753272Ab1IROXv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 10:23:51 -0400
-Received: from mga14.intel.com ([143.182.124.37]:27116 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750780Ab1IROXt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 10:23:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,401,1312182000"; 
-   d="scan'208";a="50112534"
-Date: Sun, 18 Sep 2011 22:23:44 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 13/18] writeback: limit max dirty pause time
-Message-ID: <20110918142344.GC15366@localhost>
-References: <20110904015305.367445271@intel.com>
- <20110904020916.329482509@intel.com>
- <1315320726.14232.11.camel@twins>
- <20110907023505.GB13755@localhost>
- <1315822951.26517.25.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1315822951.26517.25.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753831Ab1IROZk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 10:25:40 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:40695 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750780Ab1IROZj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Sep 2011 10:25:39 -0400
+Subject: Re: iommu_iova leak [inside 3w-9xxx]
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Chris Boot <bootc@bootc.net>
+Cc: "Woodhouse, David" <david.woodhouse@intel.com>,
+        adam radford <aradford@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
+        Adam Radford <linuxraid@lsi.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+In-Reply-To: <B008530A-B1B1-49D2-A3B4-9CD929D948FB@bootc.net>
+References: <4E734467.3040703@bootc.net>
+	 <1316256305.24257.25.camel@shinybook.infradead.org>
+	 <AD4B8103-C98F-4BC5-9F7F-496D220781F3@bootc.net>
+	 <3A4FADE6-3653-46C5-B225-8200F9DCE35B@bootc.net>
+	 <CAHtARFHfxpU1JKu4092ZshvhsrRY-hx_pfnL3_+T32B3ncgWvg@mail.gmail.com>
+	 <B4A636AC-B127-42DD-BC8C-419D07A83FBD@bootc.net>
+	 <1316353140.12001.15.camel@shinybook.infradead.org>
+	 <1316354509.27722.1.camel@dabdike>
+	 <B008530A-B1B1-49D2-A3B4-9CD929D948FB@bootc.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 18 Sep 2011 18:25:34 +0400
+Message-ID: <1316355934.27722.6.camel@dabdike>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 12, 2011 at 06:22:31PM +0800, Peter Zijlstra wrote:
-> On Wed, 2011-09-07 at 10:35 +0800, Wu Fengguang wrote:
-> > So yeah, the HZ value does impact the minimal available sleep time...
+On Sun, 2011-09-18 at 15:05 +0100, Chris Boot wrote: 
+> > Hardly ... all it's saying is that twa_exit doesn't wait for pending I/O
+> > to complete, so when you remove the module it tears down in the middle
+> > of an I/O.  A bug, yes, but it's not indicative of any sort of leak in
+> > the maps/unmaps.
 > 
-> There's always schedule_hrtimeout() and we could trivially add a
-> io_schedule_hrtimeout() variant if you need it.
+> 
+> James,
+> 
+> I don't think that's the case - I had unmounted all filesystems, deactivated all volume groups, and performed a sync before waiting a few seconds and running rmmod. Next time I'll also 'echo 1 > /sys/block/sdX/device/delete' if that's helpful.
 
-Yeah, we could do that when get done with the basic functions :)
+Actually, I take all that back: the driver has a bug in QUEUE_FULL
+handling: twa_scsi_queue() calls twa_scsiop_execute_scsi(), which maps
+the dma buffer, but if the card responds QUEUE_FULL it just returns
+SCSI_MLQUEUE_HOST_BUSY without ever unmapping.  That leg in the code
+frees the request but also doesn't unmap it.  In fact any error return
+from twa_scsiop_execute_scsi() seems to have the same problem (but
+QUEUE_FULL is the only silent one).
 
-Thanks,
-Fengguang
+I trust Adam will fix this.
+
+James
+
+
