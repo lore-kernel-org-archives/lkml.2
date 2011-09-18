@@ -1,126 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753911Ab1IROh2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 10:37:28 -0400
-Received: from mga14.intel.com ([143.182.124.37]:44772 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750780Ab1IROh1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 10:37:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,401,1312182000"; 
-   d="scan'208";a="50114287"
-Date: Sun, 18 Sep 2011 22:37:21 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 10/18] writeback: dirty position control - bdi reserve
- area
-Message-ID: <20110918143721.GA17240@localhost>
-References: <20110904015305.367445271@intel.com>
- <20110904020915.942753370@intel.com>
- <1315318179.14232.3.camel@twins>
- <20110907123108.GB6862@localhost>
- <1315822779.26517.23.camel@twins>
- <20110918141705.GB15366@localhost>
+	id S1753995Ab1IROlN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 10:41:13 -0400
+Received: from mta11.charter.net ([216.33.127.80]:52542 "EHLO
+	mta11.charter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780Ab1IROlM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Sep 2011 10:41:12 -0400
+X-Authority-Analysis: v=1.1 cv=L1BYdMBFPEvrb1U4o1gj35Y72n0OWZIL8AeNhXtfs6g=
+ c=1 sm=1 a=gKDWx9ZG52YA:10 a=HmTQOF3YR7AA:10 a=jPJDawAOAc8A:10
+ a=wPDyFdB5xvgA:10 a=IkcTkHD0fZMA:10 a=xzrYXqw+0zwiO4gHSXHcAg==:17
+ a=-dj3fEGPH_kRry_Mh-YA:9 a=-ctVORmGu4cKgCSXVwsA:7 a=QEXdDO2ut3YA:10
+ a=xzrYXqw+0zwiO4gHSXHcAg==:117
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110918141705.GB15366@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Sun, 18 Sep 2011 09:41:07 -0500
+From: Greg Dietsche <gregory.dietsche@cuw.edu>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: <linville@tuxdriver.com>, <linux-wireless@vger.kernel.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] iwlegacy: change =?UTF-8?Q?IWL=5FWARN=20to=20IWL?=
+ =?UTF-8?Q?=5FDEBUG=5FHT=20in=20iwl=34=39=36=35=5Ftx=5Fagg=5Fstart?=
+In-Reply-To: <20110908161129.GC2195@redhat.com>
+References: <1314537977-20097-1-git-send-email-Gregory.Dietsche@cuw.edu>
+ <20110829122013.GA3597@redhat.com> <4E5B9533.6000109@cuw.edu>
+ <20110829140032.GA1573@redhat.com> <20110906150131.GA7322@redhat.com>
+ <4E683BBE.3060105@cuw.edu> <20110908161129.GC2195@redhat.com>
+Message-ID: <06325e16d48ae62d4775167377ee7abe@farmergreg.com>
+User-Agent: RoundCube Webmail/0.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 18, 2011 at 10:17:05PM +0800, Wu Fengguang wrote:
-> On Mon, Sep 12, 2011 at 06:19:38PM +0800, Peter Zijlstra wrote:
-> > On Wed, 2011-09-07 at 20:31 +0800, Wu Fengguang wrote:
-> > > > > +   x_intercept = min(write_bw, freerun);
-> > > > > +   if (bdi_dirty < x_intercept) {
-> > > > 
-> > > > So the point of the freerun point is that we never throttle before it,
-> > > > so basically all the below shouldn't be needed at all, right? 
-> > > 
-> > > Yes!
-> > > 
-> > > > > +           if (bdi_dirty > x_intercept / 8) {
-> > > > > +                   pos_ratio *= x_intercept;
-> > > > > +                   do_div(pos_ratio, bdi_dirty);
-> > > > > +           } else
-> > > > > +                   pos_ratio *= 8;
-> > > > > +   }
-> > > > > +
-> > > > >     return pos_ratio;
-> > > > >  }
-> > 
-> > Does that mean we can remove this whole block?
-> 
-> Right, if the bdi freerun concept is proved to work fine.
-> 
-> Unfortunately I find it mostly yields lower performance than bdi
-> reserve area. Patch is attached. If you would like me try other
-> patches, I can easily kick off new tests and redo the comparison.
-> 
-> Here is the nr_written numbers over various JBOD test cases,
-> the larger, the better:
-> 
-> bdi-reserve     bdi-freerun    diff    case
-> ---------------------------------------------------------------------------------------
-> 38375271        31553807      -17.8%	JBOD-10HDD-6G/xfs-100dd-1M-16p-5895M-20
-> 30478879        28631491       -6.1%	JBOD-10HDD-6G/xfs-10dd-1M-16p-5895M-20
-> 29735407        28871956       -2.9%	JBOD-10HDD-6G/xfs-1dd-1M-16p-5895M-20
-> 30850350        28344165       -8.1%	JBOD-10HDD-6G/xfs-2dd-1M-16p-5895M-20
-> 17706200        16174684       -8.6%	JBOD-10HDD-thresh=100M/xfs-100dd-1M-16p-5895M-100M
-> 23374918        14376942      -38.5%	JBOD-10HDD-thresh=100M/xfs-10dd-1M-16p-5895M-100M
-> 20659278        19640375       -4.9%	JBOD-10HDD-thresh=100M/xfs-1dd-1M-16p-5895M-100M
-> 22517497        14552321      -35.4%	JBOD-10HDD-thresh=100M/xfs-2dd-1M-16p-5895M-100M
-> 68287850        61078553      -10.6%	JBOD-10HDD-thresh=2G/xfs-100dd-1M-16p-5895M-2048M
-> 33835247        32018425       -5.4%	JBOD-10HDD-thresh=2G/xfs-10dd-1M-16p-5895M-2048M
-> 30187817        29942083       -0.8%	JBOD-10HDD-thresh=2G/xfs-1dd-1M-16p-5895M-2048M
-> 30563144        30204022       -1.2%	JBOD-10HDD-thresh=2G/xfs-2dd-1M-16p-5895M-2048M
-> 34476862        34645398       +0.5%	JBOD-10HDD-thresh=4G/xfs-10dd-1M-16p-5895M-4096M
-> 30326479        30097263       -0.8%	JBOD-10HDD-thresh=4G/xfs-1dd-1M-16p-5895M-4096M
-> 30446767        30339683       -0.4%	JBOD-10HDD-thresh=4G/xfs-2dd-1M-16p-5895M-4096M
-> 40793956        45936678      +12.6%	JBOD-10HDD-thresh=800M/xfs-100dd-1M-16p-5895M-800M
-> 27481305        24867282       -9.5%	JBOD-10HDD-thresh=800M/xfs-10dd-1M-16p-5895M-800M
-> 25651257        22507406      -12.3%	JBOD-10HDD-thresh=800M/xfs-1dd-1M-16p-5895M-800M
-> 19849350        21298787       +7.3%	JBOD-10HDD-thresh=800M/xfs-2dd-1M-16p-5895M-800M
+On Thu, 8 Sep 2011 18:11:30 +0200, Stanislaw Gruszka wrote:
 
-BTW, I also compared the IO-less patchset and the vanilla kernel's
-JBOD performance. Basically, the performance is lightly improved
-under large memory, and reduced a lot in small memory servers.
+<snip>
 
- vanillla IO-less  
---------------------------------------------------------------------------------
- 31189025 34476862      +10.5%  JBOD-10HDD-thresh=4G/xfs-10dd-1M-16p-5895M-4096M
- 30441974 30326479       -0.4%  JBOD-10HDD-thresh=4G/xfs-1dd-1M-16p-5895M-4096M
- 30484578 30446767       -0.1%  JBOD-10HDD-thresh=4G/xfs-2dd-1M-16p-5895M-4096M
+> The second patch is ok. I'm not sure about first one, but we can get
+> rid of "ctx = il_rxon_ctx_from_vif(vif)" at all, because we have
+> only one context. Removing il_rxon_context structure from
+> iwlegacy driver is my long term plan, you can look at that
+> if you wish.
+Sounds good. I'll let you know if I start to remove the il_rxon_context 
+structure. It looks right now like I might not have much free time in 
+the near future.
 
- 68532421 68287850       -0.4%  JBOD-10HDD-thresh=2G/xfs-100dd-1M-16p-5895M-2048M
- 31606793 33835247       +7.1%  JBOD-10HDD-thresh=2G/xfs-10dd-1M-16p-5895M-2048M
- 30404955 30187817       -0.7%  JBOD-10HDD-thresh=2G/xfs-1dd-1M-16p-5895M-2048M
- 30425591 30563144       +0.5%  JBOD-10HDD-thresh=2G/xfs-2dd-1M-16p-5895M-2048M
-
- 40451069 38375271       -5.1%  JBOD-10HDD-6G/xfs-100dd-1M-16p-5895M-20
- 30903629 30478879       -1.4%  JBOD-10HDD-6G/xfs-10dd-1M-16p-5895M-20
- 30113560 29735407       -1.3%  JBOD-10HDD-6G/xfs-1dd-1M-16p-5895M-20
- 30181418 30850350       +2.2%  JBOD-10HDD-6G/xfs-2dd-1M-16p-5895M-20
-
- 46067335 40793956      -11.4%  JBOD-10HDD-thresh=800M/xfs-100dd-1M-16p-5895M-800M
- 30425063 27481305       -9.7%  JBOD-10HDD-thresh=800M/xfs-10dd-1M-16p-5895M-800M
- 28437929 25651257       -9.8%  JBOD-10HDD-thresh=800M/xfs-1dd-1M-16p-5895M-800M
- 29409406 19849350      -32.5%  JBOD-10HDD-thresh=800M/xfs-2dd-1M-16p-5895M-800M
-
- 26508063 17706200      -33.2%  JBOD-10HDD-thresh=100M/xfs-100dd-1M-16p-5895M-100M
- 23767810 23374918       -1.7%  JBOD-10HDD-thresh=100M/xfs-10dd-1M-16p-5895M-100M
- 28032891 20659278      -26.3%  JBOD-10HDD-thresh=100M/xfs-1dd-1M-16p-5895M-100M
- 26049973 22517497      -13.6%  JBOD-10HDD-thresh=100M/xfs-2dd-1M-16p-5895M-100M
-
-There are still some itches in JBOD..
-
-Thanks,
-Fengguang
+Greg
