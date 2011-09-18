@@ -1,57 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756490Ab1IRRVR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 13:21:17 -0400
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:36240 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756191Ab1IRRVQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 13:21:16 -0400
-Message-ID: <4E76288A.4020801@xenotime.net>
-Date: Sun, 18 Sep 2011 10:21:14 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
+	id S1755722Ab1IRRer (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 13:34:47 -0400
+Received: from lucidpixels.com ([72.73.18.11]:37293 "EHLO lucidpixels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755629Ab1IRReq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Sep 2011 13:34:46 -0400
+Date: Sun, 18 Sep 2011 13:34:45 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: linux-kernel@vger.kernel.org
+Subject: 3.1-rc4: LinkUSBi - digitemp/sensors not working : Error 10: Read
+ COM Failed
+Message-ID: <alpine.DEB.2.02.1109181320500.7278@p34.internal.lan>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Jason Baron <jbaron@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        gregkh@suse.de, joe@perches.com, jim.cromie@gmail.com,
-        bvanassche@acm.org, linux-kernel@vger.kernel.org, davem@davemloft.net,
-        aloisio.almeida@openbossa.org, netdev@vger.kernel.org
-Subject: Re: [PATCH ] dynamic_debug: call __netdev_printk only for CONFIG_NET
-References: <cover.1313085588.git.jbaron@redhat.com> <5514795fe63ccfd4b3a80283ed04a526abe3c59d.1313085588.git.jbaron@redhat.com> <201109011657.02407.arnd@arndb.de> <20110901151817.GA14324@redhat.com> <20110918082736.GB19444@kroah.com>
-In-Reply-To: <20110918082736.GB19444@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/18/2011 01:27 AM, Greg KH wrote:
-> On Thu, Sep 01, 2011 at 11:18:18AM -0400, Jason Baron wrote:
->> On Thu, Sep 01, 2011 at 04:57:02PM +0200, Arnd Bergmann wrote:
->>> __netdev_printk is only defined when CONFIG_NET is set. Since we only need
->>> __dynamic_netdev_dbg for network drivers, we can make it conditional on the
->>> same Kconfig symbol.
->>>
->>
->> Hi,
->>
->> Yes, I've posted a fix for this:
->>
->> https://lkml.org/lkml/2011/8/30/297
->>
->> Hopefully, it will be pulled in soon.
-> 
-> As that thread again spun off into confusion, can you please resend the
-> end result?
+Hi,
 
-That spinning confusion had nothing to do with the posted & correct patch
-which could have been applied several weeks ago.
+I have two LinkUSBi wireless temperature sensors (masters) and both work
+fine in Windows 7, I got them both to work in Linux once but I did not
+record how I did it-- does anyone know why the following happens?
 
-I'm curious:  Do you delete most of your email on a routine basis?
+You are only supposed to use digitemp_ds9097u but including all just
+incase someone mentions trying the other two :)
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+--
+
+Others:
+http://tech.akom.net/archives/60-Fixing-digitemp-with-LinkUSB-on-kernels-after-2.6.32-24.html
+
+(Also tried his patch)
+
+# ./digitemp_DS9097U -s /dev/ttyUSB0 -w
+DigiTemp v3.5.0 Copyright 1996-2007 by Brian C. Lane
+GNU Public License v2.0 - http://www.digitemp.com
+Error 5: DS2480B Adapter Not Detected
+Error 10: Read COM Failed
+Error 10: Read COM Failed
+Error 10: Read COM Failed
+Error 10: Read COM Failed
+Error 10: Read COM Failed
+Error 10: Read COM Failed
+Error 10: Read COM Failed
+Error 10: Read COM Failed
+Error 10: Read COM Failed
+
+More reports:
+https://groups.google.com/forum/#!msg/digitemp/L3weoRnJqvA/IhadSexe0pkJ
+
+--
+
+./digitemp_DS2490 -a -w/dev/ttyUSB1
+DigiTemp v3.5.0 Copyright 1996-2007 by Brian C. Lane
+GNU Public License v2.0 - http://www.digitemp.com
+USB ERROR: owAcquire called with invalid port string
+
+./digitemp_DS9097 -a -w/dev/ttyUSB1
+DigiTemp v3.5.0 Copyright 1996-2007 by Brian C. Lane
+GNU Public License v2.0 - http://www.digitemp.com
+./digitemp_DS9097U -a -w/dev/ttyUSB1
+DigiTemp v3.5.0 Copyright 1996-2007 by Brian C. Lane
+GNU Public License v2.0 - http://www.digitemp.com
+Error 5: DS2480B Adapter Not Detected
+Error 10: Read COM Failed
+Error 10: Read COM Failed
+Error 10: Read COM Failed
+Error 10: Read COM Failed
+Error 10: Read COM Failed
+Error 10: Read COM Failed
+Error 10: Read COM Failed
+Error 10: Read COM Failed
+Error 10: Read COM Failed
+
+--
+
+./digitemp_DS2490 -a -w -sUSB
+DigiTemp v3.5.0 Copyright 1996-2007 by Brian C. Lane
+GNU Public License v2.0 - http://www.digitemp.com
+USB ERROR: Attempted to select invalid port number
+
+./digitemp_DS9097 -a -w -sUSB
+DigiTemp v3.5.0 Copyright 1996-2007 by Brian C. Lane
+GNU Public License v2.0 - http://www.digitemp.com
+Error, serial port 'USB' does not exists!
+./digitemp_DS9097U -a -w -sUSB
+DigiTemp v3.5.0 Copyright 1996-2007 by Brian C. Lane
+GNU Public License v2.0 - http://www.digitemp.com
+Error, serial port 'USB' does not exists!
+
+--
+
+#  digitemp_DS2490 -s /dev/ttyUSB0 -i
+DigiTemp v3.5.0 Copyright 1996-2007 by Brian C. Lane
+GNU Public License v2.0 - http://www.digitemp.com
+USB ERROR: owAcquire called with invalid port string
+
+--
+
+Any variation/etc fails.
+
+--
+
+
+Justin.
+
+
