@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932091Ab1IRSua (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 14:50:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29320 "EHLO mx1.redhat.com"
+	id S1756604Ab1IRS6J (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 14:58:09 -0400
+Received: from shutemov.name ([188.40.19.243]:51082 "EHLO shutemov.name"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755680Ab1IRSu3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 14:50:29 -0400
-Date: Sun, 18 Sep 2011 20:46:13 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <htejun@gmail.com>
-Cc: rjw@sisk.pl, paul@paulmenage.org, lizf@cn.fujitsu.com,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, fweisbec@gmail.com,
-        matthltc@us.ibm.com, akpm@linux-foundation.org,
-        Tejun Heo <tj@kernel.org>, Paul Menage <menage@google.com>,
-        Ben Blum <bblum@andrew.cmu.edu>
-Subject: Re: [PATCH 3/4] threadgroup: extend threadgroup_lock() to cover
-	exit and exec
-Message-ID: <20110918184613.GA6159@redhat.com>
-References: <1315159280-25032-1-git-send-email-htejun@gmail.com> <1315159280-25032-4-git-send-email-htejun@gmail.com> <20110918173723.GA2384@redhat.com>
+	id S1756557Ab1IRS6H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Sep 2011 14:58:07 -0400
+Date: Sun, 18 Sep 2011 21:58:06 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
+        paul@paulmenage.org, lizf@cn.fujitsu.com,
+        kamezawa.hiroyu@jp.fujitsu.com, ebiederm@xmission.com,
+        davem@davemloft.net, gthelen@google.com, netdev@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH v2 4/7] per-cgroup tcp buffers control
+Message-ID: <20110918185806.GA28057@shutemov.name>
+References: <1316051175-17780-1-git-send-email-glommer@parallels.com>
+ <1316051175-17780-5-git-send-email-glommer@parallels.com>
+ <20110917181132.GC1658@shutemov.name>
+ <20110917183358.GB2783@moon>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110918173723.GA2384@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110917183358.GB2783@moon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/18, Oleg Nesterov wrote:
->
-> Of course I am in no position to ack the changes in this code, I do not
-> fell I understand it enough. But afaics this series is fine.
-  ^^^^
-I do not feel ;)
+On Sat, Sep 17, 2011 at 10:33:58PM +0400, Cyrill Gorcunov wrote:
+> On Sat, Sep 17, 2011 at 09:11:32PM +0300, Kirill A. Shutemov wrote:
+> > On Wed, Sep 14, 2011 at 10:46:12PM -0300, Glauber Costa wrote:
+> > > +int tcp_init_cgroup_fill(struct proto *prot, struct cgroup *cgrp,
+> > > +			 struct cgroup_subsys *ss)
+> > > +{
+> > > +	prot->enter_memory_pressure	= tcp_enter_memory_pressure;
+> > > +	prot->memory_allocated		= memory_allocated_tcp;
+> > > +	prot->prot_mem			= tcp_sysctl_mem;
+> > > +	prot->sockets_allocated		= sockets_allocated_tcp;
+> > > +	prot->memory_pressure		= memory_pressure_tcp;
+> > 
+> > No fancy formatting, please.
+> > 
+> 
+> What's wrong with having fancy formatting? It's indeed easier to read
+> when members are assigned this way. It's always up to maintainer to
+> choose what he prefers, but I see nothing wrong in such style (if only it
+> doesn't break the style of the whole file).
 
-> If I am right, afaics the only change 4/4 needs is that it should not add
-> WARN_ON_ONCE(tsk->flags & PF_EXITING) into cgroup_task_migrate().
+You have to remove this indenting if you'll reorganize code (e.g. move
+part under if(...)).
+IMO, it reduces code maintainability.
 
-Hmm. Unless I missed something this WARN_ON_ONCE() is not right anyway,
-because
-
-> - * Call holding cgroup_mutex. May take task_lock of
-> - * the task 'tsk' during call.
-> + * Call with cgroup_mutex and threadgroup locked. May take task_lock of
-> + * @tsk during call.
->   */
->  int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
-
-this is not true, cgroup_attach_proc() has other callers.
-
-cgroup_attach_task_all() is probably fine, tsk should be current.
-
-but cpuset_do_move_task() doesn't look fine at first glance, we can race
-with the exiting task.
-
-And this leads to another question about the cgroup_mutex/threadgroup_lock
-nesting...
-
-Oleg.
-
+-- 
+ Kirill A. Shutemov
