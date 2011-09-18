@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752137Ab1IRLmj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 07:42:39 -0400
-Received: from smtp.domeneshop.no ([194.63.248.54]:43200 "EHLO
-	smtp.domeneshop.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751522Ab1IRLmi (ORCPT
+	id S1752491Ab1IRLvy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 07:51:54 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:50841 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751573Ab1IRLvw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 07:42:38 -0400
-X-Greylist: delayed 320 seconds by postgrey-1.27 at vger.kernel.org; Sun, 18 Sep 2011 07:42:38 EDT
-From: =?us-ascii?Q?Marius_Bjornstad?= <pmb@fa2k.net>
-To: <linux-kernel@vger.kernel.org>
-Subject: Crash in et131x
-Date: Sun, 18 Sep 2011 13:37:14 +0200
-Message-ID: <001501cc75f7$511738b0$f345aa10$@net>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: Acx190jLB3KtPzV9TQGhcj5ZytbGZQ==
-Content-Language: en-gb
+	Sun, 18 Sep 2011 07:51:52 -0400
+Date: Sun, 18 Sep 2011 21:51:44 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: linux-next@vger.kernel.org, linux1394-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: git tree URL for IEEE 1394 (FireWire) kernel subsystem
+Message-Id: <20110918215144.f33db78e54224626c6ee408e@canb.auug.org.au>
+In-Reply-To: <20110917194757.2f561324@stein>
+References: <20110917194757.2f561324@stein>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Sun__18_Sep_2011_21_51_44_+1000_QyqBpOj+nwXcb0Aa"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, 
+--Signature=_Sun__18_Sep_2011_21_51_44_+1000_QyqBpOj+nwXcb0Aa
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'm using an ExpressCard ethernet adapter, using the et131x (staging)
-driver. The system stops responding about 15 min after I connect the NIC. It
-crashes even when I don't transfer any data, but it doesn't crash when it's
-not connected to a switch. There is no debug information on the screen. 
+Hi Stefan,
 
-I'm using 2.6.40.4-5.fc15.x86_64, which is a re-named 3.0 kernel (x86_64 bit
-system). I also tried to build the et131x module from source using 3.1-rc6,
-with the same result. The NIC is a no-name ExpressCard, here is the output
-of lspci -v:
+On Sat, 17 Sep 2011 19:47:57 +0200 Stefan Richter <stefanr@s5r6.in-berlin.d=
+e> wrote:
+>
+> please switch the ieee1394/for-next pull URL to
+>=20
+>     git://git.user.in-berlin.de/s5r6/linux1394.git for-next
+>=20
+> until kernel.org springs back into action.  Thanks.
 
-02:00.0 Ethernet controller: Agere Systems ET-131x PCI-E Ethernet Controller
-(rev 02)
-        Subsystem: Agere Systems ET-131x PCI-E Ethernet Controller
-        Physical Slot: 1
-        Flags: bus master, fast devsel, latency 0, IRQ 17
-        Memory at 80200000 (64-bit, non-prefetchable) [size=2M]
-        [virtual] Expansion ROM at 80400000 [disabled] [size=128K]
-        Capabilities: [40] Power Management version 2
-        Capabilities: [48] Express Endpoint, MSI 00
-        Capabilities: [5c] MSI: Enable- Count=1/1 Maskable- 64bit+
-        Capabilities: [100] Advanced Error Reporting
-        Capabilities: [130] Virtual Channel
-        Capabilities: [14c] Device Serial Number 9a-78-56-34-12-2d-02-00
-        Kernel driver in use: et131x
-        Kernel modules: et131x
+I will switch to this from Monday, thanks.
 
-
+--=20
 Cheers,
-Marius 
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-PS: If you know a gigabit ethernet expresscard that definitely works with
-Linux and is available in Europe, I'd be happy to know.
+--Signature=_Sun__18_Sep_2011_21_51_44_+1000_QyqBpOj+nwXcb0Aa
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQEcBAEBAgAGBQJOddtQAAoJEDMEi1NhKgbsALgH/RK6wnDVUwP04EzoLqj8ndaL
+Rdgs55TxQKXQktzLuhyLgaqe8hZXu0xJoipkQFnuiVPAFFA9ShFSugnDfNEMUcMe
+Tdp9Qu0t6MqjPA1BGSurdXl0BXKp9X/pL1xMiXWFf63inghwANTrHN/CsILH+oG0
+73h0Gn/weLV3O72qlmcxYfsuZR31lVhMPWaJpMGZgixwidsrG/6PEE9SrZalRGPG
+uMTSHRrflxRYo3KrVBe2+jGHEvDRp8Z1kjCb884WvgFABYihnSkMA4OtaFJY2Mzt
+KkCLadu6yYacQXQDumzx/4Mzc50CgETt4LYArnk0Bo8n1iqMosR+ZQ3XN7Si+O0=
+=Knoz
+-----END PGP SIGNATURE-----
+
+--Signature=_Sun__18_Sep_2011_21_51_44_+1000_QyqBpOj+nwXcb0Aa--
