@@ -1,59 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932469Ab1IRTz3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 15:55:29 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:33626 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932273Ab1IRTz1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 15:55:27 -0400
+	id S932461Ab1IRT6D (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 15:58:03 -0400
+Received: from mga11.intel.com ([192.55.52.93]:56455 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932273Ab1IRT6B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Sep 2011 15:58:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,401,1312182000"; 
+   d="scan'208";a="55050834"
+Date: Sun, 18 Sep 2011 22:00:37 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Ming Lei <tom.leiming@gmail.com>, Anand Gadiyar <gadiyar@ti.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Johan Hovold <jhovold@gmail.com>, Kyle Manna <kyle@kylemanna.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Robert Schwebel <r.schwebel@pengutronix.de>
+Subject: [GIT] [3.1] MFD fixes
+Message-ID: <20110918200037.GO32263@sortiz-mobl>
 MIME-Version: 1.0
-In-Reply-To: <20110918194818.GB1641@x4.trippels.de>
-References: <20110918.022125.1554085675403900813.davem@davemloft.net>
- <CA+55aFxc1tMCXKBV33PVD5BybTLBpfJAEcObvoQwbwqbKOsp7g@mail.gmail.com>
- <20110918192333.GA1641@x4.trippels.de> <1316375164.31335.18.camel@edumazet-laptop>
- <20110918194818.GB1641@x4.trippels.de>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 18 Sep 2011 12:55:06 -0700
-X-Google-Sender-Auth: fMOqpScAJqm1EsTS9R0-foHVOzU
-Message-ID: <CA+55aFwmwYXzC_4q+XuEAx3ta6U-jf=NvMcAc-J+4DBxLm8Efg@mail.gmail.com>
-Subject: Re: [GIT] Networking
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, David Miller <davem@davemloft.net>,
-        akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 18, 2011 at 12:48 PM, Markus Trippelsdorf
-<markus@trippelsdorf.de> wrote:
->
-> The following works for me:
+Hi Linus,
 
-No it doesn't. It may *compile* for you, but it doesn't work for you.
-It avoids all the other stuff that tcp_syn_flood_action() also does
-(notably the printout).
+I have a few MFD fixes for 3.1. Among those fixes we have a couple of
+potential build failures for omap-usb-host and wm8350.
 
-The real fix looks to be either:
+Thanks in advance for pulling those in.
 
- - make an empty (inline/macro) cookie_v4_init_sequence() for the
-non-syncookie config case
+The following changes since commit c6a389f123b9f68d605bb7e0f9b32ec1e3e14132:
 
-OR
+  Linux 3.1-rc4 (2011-08-28 21:16:01 -0700)
 
- - change tcp_syn_flood_action() to have an inline wrapper that always
-returns 0 for the non-syncookie config case so that the compiler can
-see statically that when syncookies are disabled, it will always
-return zero.
+are available in the git repository at:
+  git://git.infradead.org/users/sameo/mfd-2.6.git for-linus
 
-Or something like that.
+Anand Gadiyar (1):
+      mfd: Make omap-usb-host TLL mode work again
 
-Tssk. David, linux-next may not be fully operational, but by -rc6 you
-shouldn't have sent me stuff like this that was even *remotely*
-complex anyway.
+Johan Hovold (1):
+      mfd: Fix initialisation of tps65910 interrupts
 
-Stop it.
+Kyle Manna (2):
+      mfd: Copy the device pointer to the twl4030-madc structure
+      mfd: Check for twl4030-madc NULL pointer
 
-                   Linus
+Mark Brown (1):
+      mfd: Fix value of WM8994_CONFIGURE_GPIO
+
+Ming Lei (1):
+      mfd: Fix omap-usb-host build failure
+
+MyungJoo Ham (1):
+      mfd: Set MAX8997 irq pointer
+
+Sascha Hauer (1):
+      mfd: Rename wm8350 static gpio_set_debounce()
+
+ drivers/mfd/max8997.c            |    5 +++++
+ drivers/mfd/omap-usb-host.c      |    2 +-
+ drivers/mfd/tps65910-irq.c       |    2 ++
+ drivers/mfd/twl4030-madc.c       |    5 ++++-
+ drivers/mfd/wm8350-gpio.c        |    4 ++--
+ include/linux/mfd/wm8994/pdata.h |    2 +-
+ 6 files changed, 15 insertions(+), 5 deletions(-)
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
