@@ -1,55 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754042Ab1IRGb1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 02:31:27 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:49872 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752227Ab1IRGbV (ORCPT
+	id S1754840Ab1IRGbq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 02:31:46 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:42718 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753693Ab1IRGbX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 02:31:21 -0400
-Date: Sun, 18 Sep 2011 00:21:44 -0600
+	Sun, 18 Sep 2011 02:31:23 -0400
+Date: Sun, 18 Sep 2011 00:30:26 -0600
 From: Grant Likely <grant.likely@secretlab.ca>
-To: Dave Martin <dave.martin@linaro.org>
-Cc: "Cousson, Benoit" <b-cousson@ti.com>, Rob Herring <robherring2@gmail.com>,
-        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        "jamie@jamieiles.com" <jamie@jamieiles.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, marc.zyngier@arm.com,
+        thomas.abraham@linaro.org, jamie@jamieiles.com, b-cousson@ti.com,
+        shawn.guo@linaro.org, Rob Herring <rob.herring@calxeda.com>
 Subject: Re: [PATCH 5/5] ARM: gic: add OF based initialization
-Message-ID: <20110918062144.GF3523@ponder.secretlab.ca>
+Message-ID: <20110918063026.GH3523@ponder.secretlab.ca>
 References: <1316017900-19918-1-git-send-email-robherring2@gmail.com>
  <1316017900-19918-6-git-send-email-robherring2@gmail.com>
- <CAJuYYwSFu2HC+u2NY41+yw9tEyy85RKa4Dpm3SL+jbwS_OOA0A@mail.gmail.com>
- <4E71CE5D.9030900@ti.com>
- <20110916160939.GA2100@arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110916160939.GA2100@arm.com>
+In-Reply-To: <1316017900-19918-6-git-send-email-robherring2@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 16, 2011 at 05:09:39PM +0100, Dave Martin wrote:
-> For now, we express the mapping by putting an interrupt-map in the
-> core-tile DT, but this feels inelegant as well as wasteful -- expressing
-> "+ 32" using a table which is about 1K in size and duplicates that
-> information 43 times.
+On Wed, Sep 14, 2011 at 11:31:40AM -0500, Rob Herring wrote:
+> From: Rob Herring <rob.herring@calxeda.com>
 > 
-> Using a dedicated irq domain or a fake interrupt controller node to
-> encapsulate the motherboard interrupts feels like a cleaner approach,
-> but for now I'm not clear on the best way to do it.
+> This adds gic initialization using device tree data. The initialization
+> functions are intended to be called by a generic OF interrupt
+> controller parsing function once the right pieces are in place.
+> 
+> PPIs are handled using 3rd cell of interrupts properties to specify the cpu
+> mask the PPI is assigned to.
+> 
+> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+> ---
+>  Documentation/devicetree/bindings/arm/gic.txt |   53 ++++++++++++++++++++++++
+>  arch/arm/common/gic.c                         |   55 +++++++++++++++++++++++--
+>  arch/arm/include/asm/hardware/gic.h           |   10 +++++
+>  3 files changed, 114 insertions(+), 4 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/arm/gic.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/arm/gic.txt b/Documentation/devicetree/bindings/arm/gic.txt
+> new file mode 100644
+> index 0000000..6c513de
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/arm/gic.txt
+> @@ -0,0 +1,53 @@
+> +* ARM Generic Interrupt Controller
+> +
+> +ARM SMP cores are often associated with a GIC, providing per processor
+> +interrupts (PPI), shared processor interrupts (SPI) and software
+> +generated interrupts (SGI).
+> +
+> +Primary GIC is attached directly to the CPU and typically has PPIs and SGIs.
+> +Secondary GICs are cascaded into the upward interrupt controller and do not
+> +have PPIs or SGIs.
+> +
+> +Main node required properties:
+> +
+> +- compatible : should be one of:
+> +	"arm,cortex-a9-gic"
+> +	"arm,arm11mp-gic"
+> +- interrupt-controller : Identifies the node as an interrupt controller
+> +- #interrupt-cells : Specifies the number of cells needed to encode an
+> +  interrupt source.  The type shall be a <u32> and the value shall be 3.
+> +
+> +  The 1st cell is the interrupt number. 0-15 are reserved for SGIs. 16-31 are
+> +  for PPIs.
+> +
+> +  The 2nd cell is the level-sense information, encoded as follows:
+> +                    1 = low-to-high edge triggered
+> +                    2 = high-to-low edge triggered
+> +                    4 = active high level-sensitive
+> +                    8 = active low level-sensitive
+> +
+> +  Only values of 1 and 4 are valid for GIC 1.0 spec.
+> +
+> +  The 3rd cell contains the mask of the cpu number for the interrupt source.
+> +  The cpu mask is only valid for PPIs and shall be 0 for SPIs. This value shall
+> +  be 0 for PPIs.
 
-An irq nexus node would indeed be something to investigate for your
-particular case.  Look for examples of interrupt-map.  It is most
-often used for handling IRQ swizzling on PCI busses.
+THe binding looks good, but I really think the first cell should be
+the mask; followed by the irq number in the 2nd and the flags in the
+3rd.  That would better match with existing practice.
+
+> +
+> +- reg : Specifies base physical address(s) and size of the GIC registers. The
+> +  first 2 values are the GIC distributor register base and size. The 2nd 2
+
+... first region is the GIC distributor...
+
+... The 2nd region is the GIC cpu ...
+
+
+I've only looked at the code changes superficially, but it looks good
+to me.
 
 g.
 
