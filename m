@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752491Ab1IRLvy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 07:51:54 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:50841 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751573Ab1IRLvw (ORCPT
+	id S1752758Ab1IRMDu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 08:03:50 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46928 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751429Ab1IRMDt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 07:51:52 -0400
-Date: Sun, 18 Sep 2011 21:51:44 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Cc: linux-next@vger.kernel.org, linux1394-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: git tree URL for IEEE 1394 (FireWire) kernel subsystem
-Message-Id: <20110918215144.f33db78e54224626c6ee408e@canb.auug.org.au>
-In-Reply-To: <20110917194757.2f561324@stein>
-References: <20110917194757.2f561324@stein>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Sun__18_Sep_2011_21_51_44_+1000_QyqBpOj+nwXcb0Aa"
+	Sun, 18 Sep 2011 08:03:49 -0400
+Date: Sun, 18 Sep 2011 13:03:12 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Rob Herring <robherring2@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, b-cousson@ti.com, marc.zyngier@arm.com,
+        Rob Herring <rob.herring@calxeda.com>, grant.likely@secretlab.ca,
+        thomas.abraham@linaro.org, jamie@jamieiles.com, shawn.guo@linaro.org
+Subject: Re: [PATCH 4/5] ARM: gic: allow irq_start to be 0
+Message-ID: <20110918120312.GL16381@n2100.arm.linux.org.uk>
+References: <1316017900-19918-1-git-send-email-robherring2@gmail.com> <1316017900-19918-5-git-send-email-robherring2@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1316017900-19918-5-git-send-email-robherring2@gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sun__18_Sep_2011_21_51_44_+1000_QyqBpOj+nwXcb0Aa
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Sep 14, 2011 at 11:31:39AM -0500, Rob Herring wrote:
+> From: Rob Herring <rob.herring@calxeda.com>
+> 
+> There's really no need to set irq_start per platform for the primary gic.
+> The SGIs and PPIs are not handled as normal irqs, so how irqs 0-31 are
+> setup doesn't really matter. So allow irq_start to be set to 0 to match
+> the linux irq numbering.
 
-Hi Stefan,
+That's not correct.  The hardware starts numbering SPI IRQs from 32 when
+reading the INTACK register.  The number which gets passed through into
+asm_do_IRQ() will therefore be from 32 and above.
 
-On Sat, 17 Sep 2011 19:47:57 +0200 Stefan Richter <stefanr@s5r6.in-berlin.d=
-e> wrote:
->
-> please switch the ieee1394/for-next pull URL to
->=20
->     git://git.user.in-berlin.de/s5r6/linux1394.git for-next
->=20
-> until kernel.org springs back into action.  Thanks.
+There's several reasons for this:
+1. To avoid IRQ0, which is commonly used to indicate 'no interrupt' to
+   drivers.
+2. To avoid the ISA IRQ range 1-15 which are hard-coded into various
+   drivers (and we want those to fail.)
+3. It's wasteful and pointless to manipulate the IRQ number given that we
+   have sparse irq support.
 
-I will switch to this from Monday, thanks.
+Also, bear in mind that gic_irq(SPI0) needs to return 32 to hit the
+right registers - so you'd have to set gic->irq_start to -32 to make
+SPI0 = IRQ0 work.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Sun__18_Sep_2011_21_51_44_+1000_QyqBpOj+nwXcb0Aa
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOddtQAAoJEDMEi1NhKgbsALgH/RK6wnDVUwP04EzoLqj8ndaL
-Rdgs55TxQKXQktzLuhyLgaqe8hZXu0xJoipkQFnuiVPAFFA9ShFSugnDfNEMUcMe
-Tdp9Qu0t6MqjPA1BGSurdXl0BXKp9X/pL1xMiXWFf63inghwANTrHN/CsILH+oG0
-73h0Gn/weLV3O72qlmcxYfsuZR31lVhMPWaJpMGZgixwidsrG/6PEE9SrZalRGPG
-uMTSHRrflxRYo3KrVBe2+jGHEvDRp8Z1kjCb884WvgFABYihnSkMA4OtaFJY2Mzt
-KkCLadu6yYacQXQDumzx/4Mzc50CgETt4LYArnk0Bo8n1iqMosR+ZQ3XN7Si+O0=
-=Knoz
------END PGP SIGNATURE-----
-
---Signature=_Sun__18_Sep_2011_21_51_44_+1000_QyqBpOj+nwXcb0Aa--
+Finally, the valid range for irq_start is 16 to 32 + the Linux IRQ base
+for the first GIC (SGI) interrupt.  We should probably make gic_init()
+BUG() if its passed values less than 16.
