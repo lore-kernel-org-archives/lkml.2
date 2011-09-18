@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932328Ab1IRQ7c (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 12:59:32 -0400
-Received: from lucidpixels.com ([72.73.18.11]:37503 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755398Ab1IRQ7b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 12:59:31 -0400
-Date: Sun, 18 Sep 2011 12:59:30 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: linux-kernel@vger.kernel.org
-Subject: 3.1-rc4: CIFS VFS: Received no data, expecting 4
-Message-ID: <alpine.DEB.2.02.1109181258480.8689@p34.internal.lan>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1755587Ab1IRRFt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 13:05:49 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:42070 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755398Ab1IRRFs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Sep 2011 13:05:48 -0400
+Date: Sun, 18 Sep 2011 21:05:12 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: kernel-hardening@lists.openwall.com, Kees Cook <kees@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Dan Rosenberg <drosenberg@vsecurity.com>, Theodore Tso <tytso@mit.edu>,
+        Alan Cox <alan@linux.intel.com>, Jesper Juhl <jj@chaosbits.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [kernel-hardening] Re: [RFC PATCH 2/2] mm: restrict access to
+ /proc/slabinfo
+Message-ID: <20110918170512.GA2351@albatros>
+References: <20110910164001.GA2342@albatros>
+ <20110910164134.GA2442@albatros>
+ <20110914192744.GC4529@outflux.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110914192744.GC4529@outflux.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Andrew,
 
-What does this mean and why does it occur?
-(mounted a Windows 7 share)
+On Wed, Sep 14, 2011 at 12:27 -0700, Kees Cook wrote:
+> On Sat, Sep 10, 2011 at 08:41:34PM +0400, Vasiliy Kulikov wrote:
+> > Historically /proc/slabinfo has 0444 permissions and is accessible to
+> > the world.  slabinfo contains rather private information related both to
+> > the kernel and userspace tasks.  Depending on the situation, it might
+> > reveal either private information per se or information useful to make
+> > another targeted attack.  Some examples of what can be learned by
+> > reading/watching for /proc/slabinfo entries:
+> > ...
+> > World readable slabinfo simplifies kernel developers' job of debugging
+> > kernel bugs (e.g. memleaks), but I believe it does more harm than
+> > benefits.  For most users 0444 slabinfo is an unreasonable attack vector.
+> > 
+> > Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+> 
+> Haven't had any mass complaints about the 0400 in Ubuntu (sorry Dave!), so
+> I'm obviously for it.
+> 
+> Reviewed-by: Kees Cook <kees@ubuntu.com>
 
-[ 1090.606501] CIFS VFS: Received no data, expecting 4
-[ 1120.575675] CIFS VFS: Received no data, expecting 4
-[ 1150.544783] CIFS VFS: Received no data, expecting 4
-[ 1180.513925] CIFS VFS: Received no data, expecting 4
-[ 1210.483044] CIFS VFS: Received no data, expecting 4
-[ 1240.452187] CIFS VFS: Received no data, expecting 4
-[ 1270.421345] CIFS VFS: Received no data, expecting 4
-[ 1300.390432] CIFS VFS: Received no data, expecting 4
-[ 1330.359595] CIFS VFS: Received no data, expecting 4
-[ 1360.328755] CIFS VFS: Received no data, expecting 4
-[ 1390.283901] CIFS VFS: Received no data, expecting 4
-[ 1420.249492] CIFS VFS: Received no data, expecting 4
-[ 1450.218690] CIFS VFS: Received no data, expecting 4
-[ 1480.187842] CIFS VFS: Received no data, expecting 4
-[ 1510.156925] CIFS VFS: Received no data, expecting 4
-[ 1540.126080] CIFS VFS: Received no data, expecting 4
-[ 1570.095264] CIFS VFS: Received no data, expecting 4
-[ 1600.064381] CIFS VFS: Received no data, expecting 4
-[ 1630.033567] CIFS VFS: Received no data, expecting 4
-[ 1660.002595] CIFS VFS: Received no data, expecting 4
-[ 1689.971796] CIFS VFS: Received no data, expecting 4
-[ 1719.940916] CIFS VFS: Received no data, expecting 4
-[ 1749.910064] CIFS VFS: Received no data, expecting 4
-[ 1779.879160] CIFS VFS: Received no data, expecting 4
-[ 1809.848347] CIFS VFS: Received no data, expecting 4
-[ 1839.817414] CIFS VFS: Received no data, expecting 4
-[ 1869.786612] CIFS VFS: Received no data, expecting 4
-[ 1899.755742] CIFS VFS: Received no data, expecting 4
-[ 1929.724890] CIFS VFS: Received no data, expecting 4
-[ 1959.694018] CIFS VFS: Received no data, expecting 4
-[ 1989.663177] CIFS VFS: Received no data, expecting 4
-[ 2019.632306] CIFS VFS: Received no data, expecting 4
-[ 2049.601480] CIFS VFS: Received no data, expecting 4
+Looks like the members of the previous slabinfo discussion don't object
+against the patch now and it got two other Reviewed-by responses.  Can
+you merge it as-is or should I probably convince someone else?
 
-Justin.
+Thanks,
 
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
