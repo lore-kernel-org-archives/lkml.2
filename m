@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756513Ab1IRDdT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Sep 2011 23:33:19 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:56950 "EHLO mx2.parallels.com"
+	id S1756552Ab1IRDdl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Sep 2011 23:33:41 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:56965 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753699Ab1IRDdQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Sep 2011 23:33:16 -0400
-Message-ID: <4E75664B.9070605@parallels.com>
-Date: Sun, 18 Sep 2011 00:32:27 -0300
+	id S1753831Ab1IRDdi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Sep 2011 23:33:38 -0400
+Message-ID: <4E756666.9000009@parallels.com>
+Date: Sun, 18 Sep 2011 00:32:54 -0300
 From: Glauber Costa <glommer@parallels.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-CC: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+CC: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
         <lizf@cn.fujitsu.com>, <kamezawa.hiroyu@jp.fujitsu.com>,
         <ebiederm@xmission.com>, <davem@davemloft.net>, <gthelen@google.com>,
         <netdev@vger.kernel.org>, <linux-mm@kvack.org>
-Subject: Re: [PATCH v2 2/7] socket: initial cgroup code.
-References: <1316051175-17780-1-git-send-email-glommer@parallels.com> <1316051175-17780-3-git-send-email-glommer@parallels.com> <20110917175207.GB1658@shutemov.name>
-In-Reply-To: <20110917175207.GB1658@shutemov.name>
+Subject: Re: [PATCH v2 4/7] per-cgroup tcp buffers control
+References: <1316051175-17780-1-git-send-email-glommer@parallels.com> <1316051175-17780-5-git-send-email-glommer@parallels.com> <20110917181132.GC1658@shutemov.name> <20110917183358.GB2783@moon>
+In-Reply-To: <20110917183358.GB2783@moon>
 Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [187.106.51.14]
@@ -26,61 +27,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/17/2011 02:52 PM, Kirill A. Shutemov wrote:
-> On Wed, Sep 14, 2011 at 10:46:10PM -0300, Glauber Costa wrote:
->> We aim to control the amount of kernel memory pinned at any
->> time by tcp sockets. To lay the foundations for this work,
->> this patch adds a pointer to the kmem_cgroup to the socket
->> structure.
+On 09/17/2011 03:33 PM, Cyrill Gorcunov wrote:
+> On Sat, Sep 17, 2011 at 09:11:32PM +0300, Kirill A. Shutemov wrote:
+>> On Wed, Sep 14, 2011 at 10:46:12PM -0300, Glauber Costa wrote:
+>>> +int tcp_init_cgroup_fill(struct proto *prot, struct cgroup *cgrp,
+>>> +			 struct cgroup_subsys *ss)
+>>> +{
+>>> +	prot->enter_memory_pressure	= tcp_enter_memory_pressure;
+>>> +	prot->memory_allocated		= memory_allocated_tcp;
+>>> +	prot->prot_mem			= tcp_sysctl_mem;
+>>> +	prot->sockets_allocated		= sockets_allocated_tcp;
+>>> +	prot->memory_pressure		= memory_pressure_tcp;
 >>
->> Signed-off-by: Glauber Costa<glommer@parallels.com>
->> CC: David S. Miller<davem@davemloft.net>
->> CC: Hiroyouki Kamezawa<kamezawa.hiroyu@jp.fujitsu.com>
->> CC: Eric W. Biederman<ebiederm@xmission.com>
->> ---
->>   include/linux/memcontrol.h |   38 ++++++++++++++++++++++++++++++++++++++
->>   include/net/sock.h         |    2 ++
->>   net/core/sock.c            |    3 +++
->>   3 files changed, 43 insertions(+), 0 deletions(-)
+>> No fancy formatting, please.
 >>
->> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
->> index 3b535db..be457ce 100644
->> --- a/include/linux/memcontrol.h
->> +++ b/include/linux/memcontrol.h
->> @@ -395,5 +395,43 @@ mem_cgroup_print_bad_page(struct page *page)
->>   }
->>   #endif
->>
->> +#ifdef CONFIG_INET
->> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
->> +#include<net/sock.h>
->> +static inline void sock_update_memcg(struct sock *sk)
->> +{
->> +	/* right now a socket spends its whole life in the same cgroup */
->> +	BUG_ON(sk->sk_cgrp);
->> +
->> +	rcu_read_lock();
->> +	sk->sk_cgrp = mem_cgroup_from_task(current);
->> +
->> +	/*
->> +	 * We don't need to protect against anything task-related, because
->> +	 * we are basically stuck with the sock pointer that won't change,
->> +	 * even if the task that originated the socket changes cgroups.
->> +	 *
->> +	 * What we do have to guarantee, is that the chain leading us to
->> +	 * the top level won't change under our noses. Incrementing the
->> +	 * reference count via cgroup_exclude_rmdir guarantees that.
->> +	 */
->> +	cgroup_exclude_rmdir(mem_cgroup_css(sk->sk_cgrp));
->> +	rcu_read_unlock();
->> +}
->> +
->> +static inline void sock_release_memcg(struct sock *sk)
->> +{
->> +	cgroup_release_and_wakeup_rmdir(mem_cgroup_css(sk->sk_cgrp));
->> +}
 >
-> Do we really need to have these functions in the header?
+> What's wrong with having fancy formatting? It's indeed easier to read
+> when members are assigned this way. It's always up to maintainer to
+> choose what he prefers, but I see nothing wrong in such style (if only it
+> doesn't break the style of the whole file).
 >
-No, I can move it to memcontrol.c
+> 	Cyrill
 
+
+I am in agreement with Cyrill, but I really, really don't care...
