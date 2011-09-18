@@ -1,62 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755622Ab1IRPLu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 11:11:50 -0400
-Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:55110 "HELO
-	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755314Ab1IRPLr (ORCPT
+	id S1755368Ab1IRPM6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 11:12:58 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:65204 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753291Ab1IRPM4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 11:11:47 -0400
-Message-ID: <4E760A31.8030807@xenotime.net>
-Date: Sun, 18 Sep 2011 08:11:45 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
+	Sun, 18 Sep 2011 11:12:56 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Richard Kuo <rkuo@codeaurora.org>
+Cc: linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 19/36] Hexagon: Add ptrace support
+Date: Sun, 18 Sep 2011 17:12:20 +0200
+Message-ID: <8620037.RFg8ZznGMK@wuerfel>
+User-Agent: KMail/4.7.1 (Linux/3.0.0-rc1nosema+; KDE/4.7.1; x86_64; ; )
+In-Reply-To: <e97c6e$3hno06@wolverine02.qualcomm.com>
+References: <e97c6e$3hno06@wolverine02.qualcomm.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Jean Delvare <khali@linux-fr.org>, Luciano Coelho <coelho@ti.com>,
-        matti.j.aaltonen@nokia.com, johannes@sipsolutions.net,
-        linux-kernel@vger.kernel.org, sameo@linux.intel.com,
-        mchehab@infradead.org, linux-media@vger.kernel.org,
-        linux-omap@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
-        Grant Likely <grant.likely@secretlab.ca>, Greg KH <greg@kroah.com>
-Subject: Re: [PATCH 1/2] misc: remove CONFIG_MISC_DEVICES
-References: <20110829102732.03f0f05d.rdunlap@xenotime.net> <201109021643.14275.arnd@arndb.de> <20110905144134.2c80c4b9@endymion.delvare> <201109051619.35553.arnd@arndb.de>
-In-Reply-To: <201109051619.35553.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:idS58dCmqM+Qz7dUIyghhnkWltb+Y//9khoOUlpnd2U
+ HgRyA88dyN2UES14MxxAeiBP69SGvjkoRi/xwJRN2GaK8SsLgI
+ HMAhHcDP4TdGQvixe4u4f02k+l9kZv8XkPi5EYI/FWMH3Kn2lw
+ FmVYU+pvCXyo7owXdGPzCgfeUFqNm8HhMhBJQySEv2G8HPk0bd
+ poO/66mNKhwcJEJyMVWK8E3164Ef64ShRttoT8E9mEA7oM65GP
+ 1webH68Q9pQrpGBmQ9LcClYyhwTrnmA6/j+OiBepRVuU7kzta7
+ 0Q4rU/1/BhhSbAAksEBwtkTZ1vg6X4m3+YrxZBir56Q103xtaC
+ mYmKAU74vkDpl0GTsDYY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2011 07:19 AM, Arnd Bergmann wrote:
-> I think it would simply be more consistent to have it enabled all
-> the time. Well, even better would be to move the bulk of the misc
-> drivers to a proper location sorted by their subsystems. A lot of them
-> should never have been merged in their current state IMHO.
+On Wednesday 14 September 2011 13:19:03 Richard Kuo wrote:
+> Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
+> Signed-off-by: Linas Vepstas <linas@codeaurora.org>
 
-
-If it's clear where they belong, then sure, they should be somewhere
-other than drivers/misc/, but I don't see that it's clear for several
-of them.
-
-
-> I think I should finally do what has been  talked about a few times and
-> formally become the maintainer of drivers/char and drivers/misc ;-)
-> 
-> The problem is that I'm not actually a good maintainer, but maybe it's
-> better to just have someone instead of falling back to Andrew or
-> some random subsystem maintainer to send any patches for drivers/misc.
-
-We have fallbacks to Andrew and/or GregKH currently, but GregKH is not
-consistent or timely with applying drivers/misc/ patches.  It deserves better.
-[added him to Cc: list]
-
-So yes, I think that drivers/misc/ (and probably drivers/char/) deserves
-a maintainer, but you are not making a good case for you being that person.
-
-
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Acked-by: Arnd Bergmann <arnd@arndb.de>
