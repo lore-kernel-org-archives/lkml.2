@@ -1,45 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753814Ab1IROni (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 10:43:38 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:39700 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750780Ab1IROnh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 10:43:37 -0400
-Date: Sun, 18 Sep 2011 10:43:36 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Rocko Requin <rockorequin@hotmail.com>
-cc: tytso@mit.edu, <linux-kernel@vger.kernel.org>
-Subject: RE: [Bug 25832] kernel crashes when a mounted ext3/4 file system is
- physically removed
-In-Reply-To: <BAY151-W234D9A977DF076A732C2AAA1080@phx.gbl>
-Message-ID: <Pine.LNX.4.44L0.1109181041070.703-100000@netrider.rowland.org>
+	id S1754104Ab1IROr6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 10:47:58 -0400
+Received: from mga14.intel.com ([143.182.124.37]:6821 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752604Ab1IROr5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Sep 2011 10:47:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,401,1312182000"; 
+   d="scan'208";a="50115917"
+Date: Sun, 18 Sep 2011 22:47:51 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 10/18] writeback: dirty position control - bdi reserve
+ area
+Message-ID: <20110918144751.GA18645@localhost>
+References: <20110904015305.367445271@intel.com>
+ <20110904020915.942753370@intel.com>
+ <1315318179.14232.3.camel@twins>
+ <20110907123108.GB6862@localhost>
+ <1315822779.26517.23.camel@twins>
+ <20110918141705.GB15366@localhost>
+ <20110918143721.GA17240@localhost>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110918143721.GA17240@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 18 Sep 2011, Rocko Requin wrote:
+> BTW, I also compared the IO-less patchset and the vanilla kernel's
+> JBOD performance. Basically, the performance is lightly improved
+> under large memory, and reduced a lot in small memory servers.
+> 
+>  vanillla IO-less  
+> --------------------------------------------------------------------------------
+[...]
+>  26508063 17706200      -33.2%  JBOD-10HDD-thresh=100M/xfs-100dd-1M-16p-5895M-100M
+>  23767810 23374918       -1.7%  JBOD-10HDD-thresh=100M/xfs-10dd-1M-16p-5895M-100M
+>  28032891 20659278      -26.3%  JBOD-10HDD-thresh=100M/xfs-1dd-1M-16p-5895M-100M
+>  26049973 22517497      -13.6%  JBOD-10HDD-thresh=100M/xfs-2dd-1M-16p-5895M-100M
+> 
+> There are still some itches in JBOD..
 
-> That patch worked, thanks - no more kernel crashes!
+OK, in the dirty_bytes=100M case, I find that the bdi threshold _and_
+writeout bandwidth may drop close to 0 in long periods. This change
+may avoid one bdi being stuck:
 
-That's good news.
+        /*
+         * bdi reserve area, safeguard against dirty pool underrun and disk idle
+         *
+         * It may push the desired control point of global dirty pages higher
+         * than setpoint. It's not necessary in single-bdi case because a
+         * minimal pool of @freerun dirty pages will already be guaranteed.
+         */
+-       x_intercept = min(write_bw, freerun);
++       x_intercept = min(write_bw + MIN_WRITEBACK_PAGES, freerun);
+        if (bdi_dirty < x_intercept) {
+                if (bdi_dirty > x_intercept / 8) {
+                        pos_ratio *= x_intercept;
+                        do_div(pos_ratio, bdi_dirty);
+                } else
+                        pos_ratio *= 8;
+        }
 
-> I did see some slightly strange behaviour, though: the umounts issued
-> by the script were not working correctly, so the drive was mounting
-> successively on /dev/sdb1, /dev/sdc1, /dev/sdd1, etc again. After
-> stopping the script, I was able to umount the various mountpoints
-> manually, except for one (not the last one in the list, so not the
-> most recently mounted one) which reported that the device was busy.
-> lsof showed process jbd2/sdj1 three times, once with FD=cwd and
-> TYPE=DIR, another with FD=rtd and TYPE=DIR, and lastly with FD=txt
-> and TYPE=unknown.
-
-Ted may have some ideas on how to find out what part of the unmount
-commands is failing.
-
-Alan Stern
-
+Thanks,
+Fengguang
