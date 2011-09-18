@@ -1,67 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755587Ab1IRRFt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 13:05:49 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:42070 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755398Ab1IRRFs (ORCPT
+	id S1755708Ab1IRRGv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 13:06:51 -0400
+Received: from nm1-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.202]:40370 "HELO
+	nm1-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755264Ab1IRRGt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 13:05:48 -0400
-Date: Sun, 18 Sep 2011 21:05:12 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: kernel-hardening@lists.openwall.com, Kees Cook <kees@ubuntu.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Dan Rosenberg <drosenberg@vsecurity.com>, Theodore Tso <tytso@mit.edu>,
-        Alan Cox <alan@linux.intel.com>, Jesper Juhl <jj@chaosbits.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [kernel-hardening] Re: [RFC PATCH 2/2] mm: restrict access to
- /proc/slabinfo
-Message-ID: <20110918170512.GA2351@albatros>
-References: <20110910164001.GA2342@albatros>
- <20110910164134.GA2442@albatros>
- <20110914192744.GC4529@outflux.net>
+	Sun, 18 Sep 2011 13:06:49 -0400
+X-Yahoo-Newman-Id: 531434.96125.bm@smtp101.mail.gq1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: MPRZm6UVM1ldmZrYmL.mCvkky_Z9v3wHsMfnTUIcRYJTQsg
+ nzG2toOhiENiihFi3so3IT6Sqtef8shpPGQIRrY7z4ZX96GjWDAV2LA0rGVV
+ KdISKCZweeX70vMY.mlREBB99FIoYz.O8cd5ZkxiO8IO8s9kXqIqqaK7p7SQ
+ scJjX45WQ.Jkzo7wu2RXGBgtMDESbB8X03UJ2lDJXfETMvhmcUYtyL1NfUFn
+ 0U51LuqP72nnJFmyOYu.lIXPkVX2240uocnyg28dTTfd9OhI4D52MTa_aZFW
+ x4jVHIp6ek8mBi.X1liP5Jm9BRuSjgz3HWEoJA6dvdqitQQY_hWfnav_f1IX
+ i6h1pPyhECch3q_aNoyl7pyOh9wQmPlpnBCgPk53uGMXzPLooVc7E1Atr9Tz
+ ttKy9sH4LSlY-
+X-Yahoo-SMTP: 5.IS_PuswBC.mPi8prO5_yfUKOrH_QCNAHeJ
+Message-ID: <A6880B8B95264D962DC4A5299F75637A@cvirudst>
+From: "slso" <the_diabolik93@yahoo.com>
+Subject: =?utf-8?B?5Lic5qGD5Zut6IOh5ZCM?=
+Date: Mon, 19 Sep 2011 01:06:41 +0800
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110914192744.GC4529@outflux.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	charset="utf-8"
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2900.5512
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5512
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id p8IH6ubu011180
 
-Hi Andrew,
+ä»£*ç†/ç™¼-ç¥¨ï¼šæ—ï¼ˆå…ˆç”Ÿï¼‰qq;6-4-3-9-9-4-9-3-5 æ‰‹  æœºï¼š136-3277-8608
 
-On Wed, Sep 14, 2011 at 12:27 -0700, Kees Cook wrote:
-> On Sat, Sep 10, 2011 at 08:41:34PM +0400, Vasiliy Kulikov wrote:
-> > Historically /proc/slabinfo has 0444 permissions and is accessible to
-> > the world.  slabinfo contains rather private information related both to
-> > the kernel and userspace tasks.  Depending on the situation, it might
-> > reveal either private information per se or information useful to make
-> > another targeted attack.  Some examples of what can be learned by
-> > reading/watching for /proc/slabinfo entries:
-> > ...
-> > World readable slabinfo simplifies kernel developers' job of debugging
-> > kernel bugs (e.g. memleaks), but I believe it does more harm than
-> > benefits.  For most users 0444 slabinfo is an unreasonable attack vector.
-> > 
-> > Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-> 
-> Haven't had any mass complaints about the 0400 in Ubuntu (sorry Dave!), so
-> I'm obviously for it.
-> 
-> Reviewed-by: Kees Cook <kees@ubuntu.com>
 
-Looks like the members of the previous slabinfo discussion don't object
-against the patch now and it got two other Reviewed-by responses.  Can
-you merge it as-is or should I probably convince someone else?
 
-Thanks,
-
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
