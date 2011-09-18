@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755991Ab1IRRxP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 13:53:15 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:55729 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755699Ab1IRRxO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 13:53:14 -0400
-Subject: Re: [PATCH 1/3] Staging: hv: util: Perform some service specific
- init/deinit in probe/remove
-From: Joe Perches <joe@perches.com>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, Haiyang Zhang <haiyangz@microsoft.com>
-Date: Sun, 18 Sep 2011 10:53:13 -0700
-In-Reply-To: <1316367095-739-1-git-send-email-kys@microsoft.com>
-References: <1316367053-700-1-git-send-email-kys@microsoft.com>
-	 <1316367095-739-1-git-send-email-kys@microsoft.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.1.91- 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1316368394.4916.2.camel@Joe-Laptop>
-Mime-Version: 1.0
+	id S1756074Ab1IRSGb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 14:06:31 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:63932 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755801Ab1IRSG3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Sep 2011 14:06:29 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110918.022125.1554085675403900813.davem@davemloft.net>
+References: <20110918.022125.1554085675403900813.davem@davemloft.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 18 Sep 2011 11:06:08 -0700
+X-Google-Sender-Auth: 3AMe-QgYyOYqRypW2XXxtAQIlNE
+Message-ID: <CA+55aFxc1tMCXKBV33PVD5BybTLBpfJAEcObvoQwbwqbKOsp7g@mail.gmail.com>
+Subject: Re: [GIT] Networking
+To: David Miller <davem@davemloft.net>
+Cc: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-09-18 at 10:31 -0700, K. Y. Srinivasan wrote:
-> In preparation for modifying the util driver to fully conform to the
-> Linux Driver Model,
-[]
-> diff --git a/drivers/staging/hv/hv_util.c b/drivers/staging/hv/hv_util.c
-[]
->  static const struct hv_vmbus_device_id id_table[] = {
->  	/* Shutdown guid */
->  	{ VMBUS_DEVICE(0x31, 0x60, 0x0B, 0X0E, 0x13, 0x52, 0x34, 0x49,
-> -		       0x81, 0x8B, 0x38, 0XD9, 0x0C, 0xED, 0x39, 0xDB) },
-> +		       0x81, 0x8B, 0x38, 0XD9, 0x0C, 0xED, 0x39, 0xDB)
-> +	  .driver_data = (unsigned long)&util_shutdown },
+2011/9/17 David Miller <davem@davemloft.net>:
+>
+> dpward (2):
+>      net: Make flow cache namespace-aware
+>      net: Handle different key sizes between address families in flow cache
+>
+> nhorman (1):
+>      net: don't clear IFF_XMIT_DST_RELEASE in ether_setup
+>
+> rajan.aggarwal85@gmail.com (1):
+>      net/can/af_can.c: Change del_timer to del_timer_sync
 
-Isn't this a kernel_ulong_t ?
+Guys, if somebody has such a broken email setup that they don't even
+show their own name, don't take patches from them.
 
-> +	  .driver_data = (unsigned long)&util_timesynch },
+If you cannot even set up email sanely, there is zero reason to
+believe that the patch should be good. And if the patch is trivial and
+you want to take it despite the source of the patch being crap, please
+spend the five seconds to fix it up.
 
-etc.
+Proper names are part of the commit message. Don't make it look like
+crap. I get ugly flashbacks to SVN or CVS when I see stuff like this.
+Don't do it.
 
-
+                          Linus
