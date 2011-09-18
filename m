@@ -1,78 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932461Ab1IRT6D (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 15:58:03 -0400
-Received: from mga11.intel.com ([192.55.52.93]:56455 "EHLO mga11.intel.com"
+	id S932502Ab1IRT7e (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 15:59:34 -0400
+Received: from shutemov.name ([188.40.19.243]:55428 "EHLO shutemov.name"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932273Ab1IRT6B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 15:58:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,401,1312182000"; 
-   d="scan'208";a="55050834"
-Date: Sun, 18 Sep 2011 22:00:37 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Ming Lei <tom.leiming@gmail.com>, Anand Gadiyar <gadiyar@ti.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Johan Hovold <jhovold@gmail.com>, Kyle Manna <kyle@kylemanna.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Robert Schwebel <r.schwebel@pengutronix.de>
-Subject: [GIT] [3.1] MFD fixes
-Message-ID: <20110918200037.GO32263@sortiz-mobl>
+	id S932273Ab1IRT7d convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Sep 2011 15:59:33 -0400
+Date: Sun, 18 Sep 2011 22:59:32 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Containers <containers@lists.osdl.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, Tim Hockin <thockin@hockin.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 06/11] cgroups: Add res counter common ancestor searching
+Message-ID: <20110918195932.GD28057@shutemov.name>
+References: <1315869091-18933-1-git-send-email-fweisbec@gmail.com>
+ <1315869091-18933-7-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1315869091-18933-7-git-send-email-fweisbec@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Tue, Sep 13, 2011 at 01:11:26AM +0200, Frederic Weisbecker wrote:
+> Add a new API to find the common ancestor between two resource
+> counters. This includes the passed resource counter themselves.
+> 
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Acked-by: Paul Menage <paul@paulmenage.org>
+> Cc: Li Zefan <lizf@cn.fujitsu.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Aditya Kali <adityakali@google.com>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Kay Sievers <kay.sievers@vrfy.org>
+> Cc: Tim Hockin <thockin@hockin.org>
+> Cc: Tejun Heo <tj@kernel.org>
+> ---
+>  include/linux/res_counter.h |    3 +++
+>  kernel/res_counter.c        |   22 ++++++++++++++++++++++
+>  2 files changed, 25 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/res_counter.h b/include/linux/res_counter.h
+> index de4ba29..558f39b 100644
+> --- a/include/linux/res_counter.h
+> +++ b/include/linux/res_counter.h
+> @@ -147,6 +147,9 @@ static inline void res_counter_uncharge(struct res_counter *counter,
+>  	res_counter_uncharge_until(counter, NULL, val);
+>  }
+>  
+> +struct res_counter *res_counter_common_ancestor(struct res_counter *l,
+> +						struct res_counter *r);
+> +
+>  /**
+>   * res_counter_margin - calculate chargeable space of a counter
+>   * @cnt: the counter
+> diff --git a/kernel/res_counter.c b/kernel/res_counter.c
+> index 0cc9c7e..22f07cc 100644
+> --- a/kernel/res_counter.c
+> +++ b/kernel/res_counter.c
+> @@ -91,6 +91,28 @@ void res_counter_uncharge_until(struct res_counter *counter,
+>  	local_irq_restore(flags);
+>  }
+>  
+> +/*
+> + * Walk through r1 and r2 parents and try to find the closest common one
+> + * between both. If none is found, it returns NULL.
+> + */
+> +struct res_counter *
+> +res_counter_common_ancestor(struct res_counter *r1, struct res_counter *r2)
+> +{
+> +	struct res_counter *iter;
+> +
+> +	while (r1) {
+> +		iter = r2;
+> +		while (iter) {
+> +			if (iter == r1)
+> +				return iter;
+> +			iter = iter->parent;
+> +		}
+> +
+> +		r1 = r1->parent;
+> +	}
+> +
+> +	return NULL;
+> +}
 
-I have a few MFD fixes for 3.1. Among those fixes we have a couple of
-potential build failures for omap-usb-host and wm8350.
+Your implementation is O(n*m).
 
-Thanks in advance for pulling those in.
+What about:
 
-The following changes since commit c6a389f123b9f68d605bb7e0f9b32ec1e3e14132:
+struct res_counter *
+res_counter_common_ancestor(struct res_counter *r1, struct res_counter *r2)
+{
+	struct res_counter *iter;
+	int r1_depth = 0, r2_depth = 0;
 
-  Linux 3.1-rc4 (2011-08-28 21:16:01 -0700)
+	for (iter = r1; iter; iter = iter->parent)
+		r1_depth++;
+	for (iter = r2; iter; iter = iter->parent)
+		r2_depth++;
 
-are available in the git repository at:
-  git://git.infradead.org/users/sameo/mfd-2.6.git for-linus
+	while (r1_depth > r2_depth) {
+		r1 = r1->parent;
+		r1_depth--;
+	}
+	while (r2_depth > r1_depth) {
+		r2 = r2->parent;
+		r2_depth--;
+	}
 
-Anand Gadiyar (1):
-      mfd: Make omap-usb-host TLL mode work again
+	while (r1 != r2) {
+		r1 = r1->parent;
+		r2 = r2->parent;
+	}
 
-Johan Hovold (1):
-      mfd: Fix initialisation of tps65910 interrupts
+	return r1;
+}
 
-Kyle Manna (2):
-      mfd: Copy the device pointer to the twl4030-madc structure
-      mfd: Check for twl4030-madc NULL pointer
-
-Mark Brown (1):
-      mfd: Fix value of WM8994_CONFIGURE_GPIO
-
-Ming Lei (1):
-      mfd: Fix omap-usb-host build failure
-
-MyungJoo Ham (1):
-      mfd: Set MAX8997 irq pointer
-
-Sascha Hauer (1):
-      mfd: Rename wm8350 static gpio_set_debounce()
-
- drivers/mfd/max8997.c            |    5 +++++
- drivers/mfd/omap-usb-host.c      |    2 +-
- drivers/mfd/tps65910-irq.c       |    2 ++
- drivers/mfd/twl4030-madc.c       |    5 ++++-
- drivers/mfd/wm8350-gpio.c        |    4 ++--
- include/linux/mfd/wm8994/pdata.h |    2 +-
- 6 files changed, 15 insertions(+), 5 deletions(-)
+Untested. It's O(n+m).
 
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+ Kirill A. Shutemov
