@@ -1,99 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755366Ab1IRJht (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 05:37:49 -0400
-Received: from jacques.telenet-ops.be ([195.130.132.50]:51069 "EHLO
-	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751386Ab1IRJhr convert rfc822-to-8bit (ORCPT
+	id S1752176Ab1IRKeH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 06:34:07 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:42171 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803Ab1IRKeF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 05:37:47 -0400
-Date: Sun, 18 Sep 2011 11:37:45 +0200 (CEST)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linux/m68k <linux-m68k@vger.kernel.org>
-cc: Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        =?ISO-8859-15?Q?Ingo_J=FCrgensmann?= <ij@2011.bluespice.org>,
-        linux-fbdev@vger.kernel.org
-Subject: [PATCH] zorro: Defer device_register() until all devices have been
- identified
-Message-ID: <alpine.DEB.2.00.1109181134450.1714@ayla.of.borg>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+	Sun, 18 Sep 2011 06:34:05 -0400
+Subject: Re: [PATCH 1/7] BTRFS: Fix lseek return value for error
+Mime-Version: 1.0 (Apple Message framework v1082)
+Content-Type: text/plain; charset=GB2312
+From: Jeff liu <jeff.liu@oracle.com>
+In-Reply-To: <4E75AEFD.105@gmail.com>
+Date: Sun, 18 Sep 2011 18:33:38 +0800
+Cc: Andi Kleen <ak@linux.intel.com>, Andreas Dilger <adilger@dilger.ca>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
 Content-Transfer-Encoding: 8BIT
+Message-Id: <8444301C-856F-44FA-94A3-D3583DFA0FFB@oracle.com>
+References: <1316128013-21980-1-git-send-email-andi@firstfloor.org> <1316128013-21980-2-git-send-email-andi@firstfloor.org> <20110916154815.GA27150@infradead.org> <4E7439EB.7080100@oracle.com> <41C7FF67-8658-4E7F-BB50-E9AAEA1F755C@dilger.ca> <20110918014608.GA16198@alboin.amr.corp.intel.com> <4E759DE5.3020907@oracle.com> <4E75AEFD.105@gmail.com>
+To: Marco Stornelli <marco.stornelli@gmail.com>
+X-Mailer: Apple Mail (2.1082)
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090207.4E75C914.0020,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As the Amiga Zorro II address space is limited to 8.5 MiB and Zorro devices
-can contain only one BAR, several Amiga Zorro II expansion boards (mainly
-graphics cards) contain multiple Zorro devices: a small one for the control
-registers and one (or more) for the graphics memory.
 
-The conversion of cirrusfb to the new driver framework introduced a
-regression: the driver contains a zorro_driver for the first Zorro device,
-and uses the (old) zorro_find_device() call to find the second Zorro
-device.
-However, as the Zorro core calls device_register() as soon as a Zorro
-device is identified, it may not have identified the second Zorro device
-belonging to the same physical Zorro expansion card. Hence cirrusfb could
-no longer find the second part of the Picasso II graphics card, causing a
-NULL pointer dereference.
+ÔÚ 2011-9-18£¬ÏÂÎç4:42£¬ Marco Stornelli Ð´µÀ£º
 
-Defer the registration of Zorro devices with the driver framework until
-all Zorro devices have been identified to fix this.
+> Il 18/09/2011 09:29, Jeff Liu ha scritto:
+>> Hi Andreas and Andi,
+>> 
+>> Thanks for your comments.
+>> 
+>> On 09/18/2011 09:46 AM, Andi Kleen wrote:
+>> 
+>>>>> with an additional improvement if the offset is larger or equal to the
+>>>>> file size, return -ENXIO in directly:
+>>>>> 
+>>>>>                if (offset>= inode->i_size) {
+>>>>>                        mutex_unlock(&inode->i_mutex);
+>>>>>                        return -ENXIO;
+>>>>>                }
+>>>> 
+>>>> Except that is wrong, because it would then be impossible to write sparse files.
+>> 
+>> Per my tryout, except that, if the offset>= source file size, call
+>> lseek(fd, offset, SEEK_DATA/SEEK_HOLE) against Btrfs will always return
+>> the total file size rather than -ENXIO.  however, our desired result it
+>> -ENXIO in this case, Am I right?
+>> 
+> 
+> Yes, ENXIO should be the operation result.
 
-Note that the alternative solution (modifying cirrusfb to register a
-zorro_driver for all Zorro devices belonging to a graphics card, instead
-of only for the first one, and adding a synchronization mechanism to defer
-initialization until all have been found), is not an option, as on some
-cards one device may be optional (e.g. the second bank of 2 MiB of
-graphics memory on the Picasso IV in Zorro II mode).
+Thanks for your kind confirmation.
 
-Reported-by: Ingo Jürgensmann <ij@2011.bluespice.org>
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: stable@kernel.org
----
- drivers/zorro/zorro.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/zorro/zorro.c b/drivers/zorro/zorro.c
-index c81f88a..6a52b83 100644
---- a/drivers/zorro/zorro.c
-+++ b/drivers/zorro/zorro.c
-@@ -149,10 +149,10 @@ static int __init amiga_zorro_probe(struct platform_device *pdev)
- 	}
- 	platform_set_drvdata(pdev, bus);
- 
--	/* Register all devices */
- 	pr_info("Zorro: Probing AutoConfig expansion devices: %u device%s\n",
- 		 zorro_num_autocon, zorro_num_autocon == 1 ? "" : "s");
- 
-+	/* First identify all devices ... */
- 	for (i = 0; i < zorro_num_autocon; i++) {
- 		z = &zorro_autocon[i];
- 		z->id = (z->rom.er_Manufacturer<<16) | (z->rom.er_Product<<8);
-@@ -173,6 +173,11 @@ static int __init amiga_zorro_probe(struct platform_device *pdev)
- 		dev_set_name(&z->dev, "%02x", i);
- 		z->dev.parent = &bus->dev;
- 		z->dev.bus = &zorro_bus_type;
-+	}
-+
-+	/* ... then register them */
-+	for (i = 0; i < zorro_num_autocon; i++) {
-+		z = &zorro_autocon[i];
- 		error = device_register(&z->dev);
- 		if (error) {
- 			dev_err(&bus->dev, "Error registering device %s\n",
--- 
-1.7.0.4
+-Jeff
 
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
