@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753995Ab1IROlN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 10:41:13 -0400
-Received: from mta11.charter.net ([216.33.127.80]:52542 "EHLO
-	mta11.charter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780Ab1IROlM (ORCPT
+	id S1753814Ab1IROni (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 10:43:38 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:39700 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750780Ab1IROnh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 10:41:12 -0400
-X-Authority-Analysis: v=1.1 cv=L1BYdMBFPEvrb1U4o1gj35Y72n0OWZIL8AeNhXtfs6g=
- c=1 sm=1 a=gKDWx9ZG52YA:10 a=HmTQOF3YR7AA:10 a=jPJDawAOAc8A:10
- a=wPDyFdB5xvgA:10 a=IkcTkHD0fZMA:10 a=xzrYXqw+0zwiO4gHSXHcAg==:17
- a=-dj3fEGPH_kRry_Mh-YA:9 a=-ctVORmGu4cKgCSXVwsA:7 a=QEXdDO2ut3YA:10
- a=xzrYXqw+0zwiO4gHSXHcAg==:117
+	Sun, 18 Sep 2011 10:43:37 -0400
+Date: Sun, 18 Sep 2011 10:43:36 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Rocko Requin <rockorequin@hotmail.com>
+cc: tytso@mit.edu, <linux-kernel@vger.kernel.org>
+Subject: RE: [Bug 25832] kernel crashes when a mounted ext3/4 file system is
+ physically removed
+In-Reply-To: <BAY151-W234D9A977DF076A732C2AAA1080@phx.gbl>
+Message-ID: <Pine.LNX.4.44L0.1109181041070.703-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Sun, 18 Sep 2011 09:41:07 -0500
-From: Greg Dietsche <gregory.dietsche@cuw.edu>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: <linville@tuxdriver.com>, <linux-wireless@vger.kernel.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] iwlegacy: change =?UTF-8?Q?IWL=5FWARN=20to=20IWL?=
- =?UTF-8?Q?=5FDEBUG=5FHT=20in=20iwl=34=39=36=35=5Ftx=5Fagg=5Fstart?=
-In-Reply-To: <20110908161129.GC2195@redhat.com>
-References: <1314537977-20097-1-git-send-email-Gregory.Dietsche@cuw.edu>
- <20110829122013.GA3597@redhat.com> <4E5B9533.6000109@cuw.edu>
- <20110829140032.GA1573@redhat.com> <20110906150131.GA7322@redhat.com>
- <4E683BBE.3060105@cuw.edu> <20110908161129.GC2195@redhat.com>
-Message-ID: <06325e16d48ae62d4775167377ee7abe@farmergreg.com>
-User-Agent: RoundCube Webmail/0.5.3
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Sep 2011 18:11:30 +0200, Stanislaw Gruszka wrote:
+On Sun, 18 Sep 2011, Rocko Requin wrote:
 
-<snip>
+> That patch worked, thanks - no more kernel crashes!
 
-> The second patch is ok. I'm not sure about first one, but we can get
-> rid of "ctx = il_rxon_ctx_from_vif(vif)" at all, because we have
-> only one context. Removing il_rxon_context structure from
-> iwlegacy driver is my long term plan, you can look at that
-> if you wish.
-Sounds good. I'll let you know if I start to remove the il_rxon_context 
-structure. It looks right now like I might not have much free time in 
-the near future.
+That's good news.
 
-Greg
+> I did see some slightly strange behaviour, though: the umounts issued
+> by the script were not working correctly, so the drive was mounting
+> successively on /dev/sdb1, /dev/sdc1, /dev/sdd1, etc again. After
+> stopping the script, I was able to umount the various mountpoints
+> manually, except for one (not the last one in the list, so not the
+> most recently mounted one) which reported that the device was busy.
+> lsof showed process jbd2/sdj1 three times, once with FD=cwd and
+> TYPE=DIR, another with FD=rtd and TYPE=DIR, and lastly with FD=txt
+> and TYPE=unknown.
+
+Ted may have some ideas on how to find out what part of the unmount
+commands is failing.
+
+Alan Stern
+
