@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756497Ab1ISGdn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 02:33:43 -0400
-Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:39366 "EHLO
-	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751584Ab1ISGdl (ORCPT
+	id S1752703Ab1ISGj4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 02:39:56 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:45073 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751153Ab1ISGjy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 02:33:41 -0400
-Subject: Re: Proposal for a low-level Linux display framework
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Keith Packard <keithp@keithp.com>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linaro-dev@lists.linaro.org, "Clark, Rob" <rob@ti.com>,
-        Archit Taneja <archit@ti.com>
-In-Reply-To: <20110916175326.54567b14@lxorguk.ukuu.org.uk>
-References: <1316088425.11294.78.camel@lappyti>
-	 <yunboul7sx7.fsf@aiko.keithp.com> <1316100594.23214.65.camel@deskari>
-	 <yun8vpp7qk7.fsf@aiko.keithp.com> <1316107275.23214.99.camel@deskari>
-	 <yunfwjxwbjq.fsf@aiko.keithp.com>
-	 <20110916175326.54567b14@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 19 Sep 2011 09:33:34 +0300
-Message-ID: <1316414014.1978.12.camel@deskari>
+	Mon, 19 Sep 2011 02:39:54 -0400
+Date: Mon, 19 Sep 2011 16:39:46 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Amos Kong <kongjianjun@gmail.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Paul Bolle <pebolle@tiscali.nl>
+Subject: linux-next: manual merge of the trivial tree with the kernel-doc
+ tree
+Message-Id: <20110919163946.9165592b447bf5b578146f83@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__19_Sep_2011_16_39_46_+1000_+H9DPu6XkZ52IM+g"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-09-16 at 17:53 +0100, Alan Cox wrote:
-> > I'm not sure a common interface to all of these different
-> > channels makes sense, but surely a DSI library and an aux channel
-> > library would fit nicely alongside the existing DDC library.
-> 
-> DSI and the various other MIPI bits tend to be horribly panel and device
-> specific. In one sense yes its a standard with standard commands,
-> processes, queries etc, on the other a lot of stuff is oriented around
-> the 'its a fixed configuration unit we don't need to have queries' view.
+--Signature=_Mon__19_Sep_2011_16_39_46_+1000_+H9DPu6XkZ52IM+g
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I think it's a bit more complex than that. True, there are MIPI
-standards, for the video there are DPI, DBI, DSI, and for the commands
-there is DCS. And, as you mentioned, many panels need custom
-initialization, or support only parts of the DCS, or have other quirks.
+Hi Jiri,
 
-However, I think the biggest thing to realize here is that DSI
-peripherals can be anything. It's not always so that you have a DSI bus
-and a single panel connected to it. You can have hubs, buffer chips,
-etc.
+Today's linux-next merge of the trivial tree got a conflict in
+Documentation/PCI/pci.txt between commit b814f0357fbe
+("Documentation/PCI/pci.txt: fix a reference doc name") from the
+kernel-doc tree and commit c460578a674f ("Documentation: fix broken
+references") from the trivial tree.
 
-We need DSI peripheral device drivers for those, a single "DSI output"
-driver cannot work. And this is also the most important thing in my
-original proposition.
+It looks like the former supercedes the latter, so I used that.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-> There also tends to be a lot of vendor magic initialisation logic both
-> chipset and device dependant, and often 'plumbing dependant' on SoC
+--Signature=_Mon__19_Sep_2011_16_39_46_+1000_+H9DPu6XkZ52IM+g
+Content-Type: application/pgp-signature
 
-While I have DSI experience with only one SoC, I do believe it'd be
-possible to create a DSI API that would allow us to have platform
-independent DSI peripheral drivers.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Can you share any SoC side DSI peculiarities on Intel's SoCs?
+iQEcBAEBAgAGBQJOduOyAAoJEDMEi1NhKgbsbyMH/0iCWlJSP0Xm5ISJr7sFhbOv
+uagqQeT1QgvURCRXmEezDn/wrYX0rDF9NXXdDnDo/Gx2TD+CGRd0ogpwR0KQ9Uqf
+3/YQBZAFoWVmojo81bEUlkG4GEzD51hiHctzLjvV0n00S5YuPSMU06cyAf6HkErI
+RwYqCtG8VfNVGFOdOKSeWn1rcuLR3dimXUa+H9+lOK1s+KwcCKvDRZ+CAH2xTvyk
+x7O4heFLWp3tkUsZtxP9jQ25kFEXepAOyuXhgdE0WktnHIMN03OXx2ZFMvVIlSsY
+VByodsu2XpHxtdDDUKAxY/y+eXYEsb6qO+1UVgXA+QSsW3nFLiECZqgJgGvjCLg=
+=N59e
+-----END PGP SIGNATURE-----
 
- Tomi
-
-
+--Signature=_Mon__19_Sep_2011_16_39_46_+1000_+H9DPu6XkZ52IM+g--
