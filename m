@@ -1,17 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755859Ab1ISMeE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 08:34:04 -0400
-Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:29618
+	id S1755901Ab1ISMfD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 08:35:03 -0400
+Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:31229
 	"EHLO AM1EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755748Ab1ISMeC (ORCPT
+	by vger.kernel.org with ESMTP id S1755815Ab1ISMfA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 08:34:02 -0400
+	Mon, 19 Sep 2011 08:35:00 -0400
 X-SpamScore: 10
-X-BigFish: VPS10(zzc8kzz1202h10d2nzz8275bhz32i2a8h668h839h93fh67h)
+X-BigFish: VPS10(zzc8kzz1202h10d2nzz8275bhz32i2a8h668h839h67h)
 X-Spam-TCS-SCL: 6:0
 X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPVD:NLI;H:KCHJEXHC01.kpit.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
-X-FB-SS: 0,
 Subject: [PATCH 01/11] MFD: DA9052/53 MFD core module v6
 From: ashishj3 <ashish.jangam@kpitcummins.com>
 Reply-To: <ashish.jangam@kpitcummins.com>
@@ -19,9 +18,9 @@ To: Mark Brown <broonie@opensource.wolfsonmicro.com>
 CC: <sameo@openedhand.com>, <linux-kernel@vger.kernel.org>,
         Dajun <dajun.chen@diasemi.com>, <linaro-dev@lists.linaro.org>,
         <arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 19 Sep 2011 18:02:42 +0530
-Message-ID: <1316435562.344.131.camel@L-0761.kpit.com>
+Content-Type: text/plain; charset="cp1252"
+Date: Mon, 19 Sep 2011 18:03:16 +0530
+Message-ID: <1316435596.344.132.camel@L-0761.kpit.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.10.38.37]
