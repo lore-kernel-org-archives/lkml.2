@@ -1,86 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756814Ab1ISXHi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 19:07:38 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:23858 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268Ab1ISXHh (ORCPT
+	id S1756843Ab1ISXIq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 19:08:46 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:61591 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751268Ab1ISXIo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 19:07:37 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:message-id:date:from:user-agent:
-	mime-version:newsgroups:to:cc:subject:references:in-reply-to:
-	content-type:content-transfer-encoding:x-system-of-record;
-	b=VBttUPMthj7z15/t5+Yb1y77N8DLLnAs8Dmek6Uj/yu11oNsnwnF2Ioz9eWslGiNU
-	dmbOc9YwQlxn23dydgR7g==
-Message-ID: <4E77CB30.3030509@google.com>
-Date: Mon, 19 Sep 2011 16:07:28 -0700
-From: Paul Turner <pjt@google.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
-MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Andi Kleen <andi@firstfloor.org>, Glauber Costa <glommer@parallels.com>,
-        linux-kernel@vger.kernel.org, xemul@parallels.com, paul@paulmenage.org,
-        lizf@cn.fujitsu.com, daniel.lezcano@free.fr, mingo@elte.hu,
-        jbottomley@parallels.com
-Subject: Re: [PATCH 0/9] Per-cgroup /proc/stat
-References: <1316030695-19826-1-git-send-email-glommer@parallels.com>  <1316031196.5040.46.camel@twins> <m2fwjyg9fx.fsf@firstfloor.org> <1316076989.3045.8.camel@twins>
-In-Reply-To: <1316076989.3045.8.camel@twins>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-System-Of-Record: true
+	Mon, 19 Sep 2011 19:08:44 -0400
+Subject: Re: [PATCH 1/2] posix-timers: move global timer id management to
+ signal_struct v4
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, Andi Kleen <ak@linux.intel.com>
+In-Reply-To: <1316472096.2455.27.camel@edumazet-laptop>
+References: <1316468925-16754-1-git-send-email-andi@firstfloor.org>
+	 <1316471007.2455.24.camel@edumazet-laptop>
+	 <20110919223649.GO7761@one.firstfloor.org>
+	 <1316472096.2455.27.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 20 Sep 2011 01:07:05 +0200
+Message-ID: <1316473625.2455.30.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/15/11 01:56, Peter Zijlstra wrote:
-> On Wed, 2011-09-14 at 13:23 -0700, Andi Kleen wrote:
->> Peter Zijlstra<a.p.zijlstra@chello.nl>  writes:
->>>
->>> Guys we should seriously trim back a lot of that code, not grow ever
->>> more and more. The sad fact is that if you build a kernel with
->>> cpu-cgroup support the context switch cost is more than double that of a
->>> kernel without, and then you haven't even started creating cgroups yet.
->>
->> That sounds indeed quite bad. Is it known why it is so costly?
->
-> Mostly because all data structures grow and all code paths grow, some by
-> quite a bit, its spread all over the place, lots of little cuts etc..
->
-> pjt and I tried trimming some of the code paths with static_branch() but
-> didn't really get anywhere.. need to get back to looking at this stuff
-> sometime soon.
+Le mardi 20 septembre 2011 à 00:41 +0200, Eric Dumazet a écrit :
 
-When I get some time I think I'm just going to post a patch[*] that 
-merges the useful _field_ (usage, usage_percpu) from cpuacct into cpu 
-since we are *already* doing the accounting on the entity level making 
-this addition free.
+> I'll provide not a hack but a clean patch for this.
+> 
 
-At that point we could !CONFIG_CGROUP_CPUACCT by default and deprecate 
-the beast without breaking ABI for those who really need it (either 
-because their applications have hard-coded paths or because they really 
-like cgroup user/sys time -- which we COULD duplicate into cpu but I'm 
-inclined not to).
+Here is a draft, just in case. (not even booted, its late here...)
 
-[*]: the only real caveat is how loudly people scream about the code 
-duplication; I think it's worth it if it let's us kill cpuacct in the 
-long run.
+I'll test it tomorrow with a variant of your patch.
 
-Another unrelated optimization on this path I have sitting around in 
-patches/ to push at some point is keeping the left-most entity out of 
-tree; since the worst case is an entity with a lower-vruntime comes 
-along and we insert the previous left-most and the best case is we get 
-to pick it without futzing with the rb-tree.  I think this was good for 
-a percent or two when I hacked it together before.
 
-Another idea I have kicking around for this path is the introduction of 
-a link_entity which bridges over nr_running=1 chains (break it 
-opportunistically when an element in the chain goes to nr_running=2). 
-This one requires some pretty careful accounting around the breaking of 
-a chain though so I'm not touching it until I get the new load tracking 
-code out.  (Incidentally when I benchmarked it before LPC I had it 
-working out to be a little more efficient than the current math good for 
-~2-3% on pipe_test.)
+ include/linux/idr.h |   13 +++++++++++++
+ lib/idr.c           |   32 +++++++++++++++++++++-----------
+ 2 files changed, 34 insertions(+), 11 deletions(-)
 
-- Paul
+diff --git a/include/linux/idr.h b/include/linux/idr.h
+index 255491c..a6b7655 100644
+--- a/include/linux/idr.h
++++ b/include/linux/idr.h
+@@ -64,6 +64,14 @@ struct idr {
+ 	spinlock_t	  lock;
+ };
+ 
++/* special id_free_cnt value to mark idr without freelist */
++#define IDR_NOFREELIST -1
++
++static inline bool idr_nofreelist(const struct idr *idr)
++{
++	return idr->id_free_cnt == IDR_NOFREELIST;
++}
++
+ #define IDR_INIT(name)						\
+ {								\
+ 	.top		= NULL,					\
+@@ -114,6 +122,11 @@ void idr_remove_all(struct idr *idp);
+ void idr_destroy(struct idr *idp);
+ void idr_init(struct idr *idp);
+ 
++static inline void idr_nofreelist_init(struct idr *idp)
++{
++	idr_init(idp);
++	idp->id_free_cnt = IDR_NOFREELIST;
++}
+ 
+ /*
+  * IDA - IDR based id allocator, use when translation from id to
+diff --git a/lib/idr.c b/lib/idr.c
+index db040ce..d4ce74d 100644
+--- a/lib/idr.c
++++ b/lib/idr.c
+@@ -44,6 +44,9 @@ static struct idr_layer *get_from_free_list(struct idr *idp)
+ 	struct idr_layer *p;
+ 	unsigned long flags;
+ 
++	if (idr_nofreelist(idp))
++		return kmem_cache_zalloc(idr_layer_cache, GFP_KERNEL);
++
+ 	spin_lock_irqsave(&idp->lock, flags);
+ 	if ((p = idp->id_free)) {
+ 		idp->id_free = p->ary[0];
+@@ -77,14 +80,17 @@ static void __move_to_free_list(struct idr *idp, struct idr_layer *p)
+ 
+ static void move_to_free_list(struct idr *idp, struct idr_layer *p)
+ {
+-	unsigned long flags;
+-
+-	/*
+-	 * Depends on the return element being zeroed.
+-	 */
+-	spin_lock_irqsave(&idp->lock, flags);
+-	__move_to_free_list(idp, p);
+-	spin_unlock_irqrestore(&idp->lock, flags);
++	if (idr_nofreelist(idp)) {
++		kmem_cache_free(idr_layer_cache, p);
++	} else {
++		unsigned long flags;
++		/*
++		 * Depends on the return element being zeroed.
++		 */
++		spin_lock_irqsave(&idp->lock, flags);
++		__move_to_free_list(idp, p);
++		spin_unlock_irqrestore(&idp->lock, flags);
++	}
+ }
+ 
+ static void idr_mark_full(struct idr_layer **pa, int id)
+@@ -122,6 +128,7 @@ static void idr_mark_full(struct idr_layer **pa, int id)
+  */
+ int idr_pre_get(struct idr *idp, gfp_t gfp_mask)
+ {
++	BUG_ON(idr_nofreelist(idp));
+ 	while (idp->id_free_cnt < IDR_FREE_MAX) {
+ 		struct idr_layer *new;
+ 		new = kmem_cache_zalloc(idr_layer_cache, gfp_mask);
+@@ -243,7 +250,10 @@ build_up:
+ 				p = p->ary[0];
+ 				new->ary[0] = NULL;
+ 				new->bitmap = new->count = 0;
+-				__move_to_free_list(idp, new);
++				if (idr_nofreelist(idp))
++					kmem_cache_free(idr_layer_cache, p);
++				else
++					__move_to_free_list(idp, new);
+ 			}
+ 			spin_unlock_irqrestore(&idp->lock, flags);
+ 			return -1;
+@@ -487,7 +497,7 @@ EXPORT_SYMBOL(idr_remove_all);
+  */
+ void idr_destroy(struct idr *idp)
+ {
+-	while (idp->id_free_cnt) {
++	while (idp->id_free_cnt > 0) {
+ 		struct idr_layer *p = get_from_free_list(idp);
+ 		kmem_cache_free(idr_layer_cache, p);
+ 	}
+@@ -839,7 +849,7 @@ int ida_get_new_above(struct ida *ida, int starting_id, int *p_id)
+ 	 * Throw away extra resources one by one after each successful
+ 	 * allocation.
+ 	 */
+-	if (ida->idr.id_free_cnt || ida->free_bitmap) {
++	if (ida->idr.id_free_cnt > 0 || ida->free_bitmap) {
+ 		struct idr_layer *p = get_from_free_list(&ida->idr);
+ 		if (p)
+ 			kmem_cache_free(idr_layer_cache, p);
+
+
