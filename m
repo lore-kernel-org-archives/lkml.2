@@ -1,68 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755286Ab1ISKXw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 06:23:52 -0400
-Received: from lucidpixels.com ([72.73.18.11]:46032 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755016Ab1ISKXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 06:23:51 -0400
-Date: Mon, 19 Sep 2011 06:23:50 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: linux-kernel@vger.kernel.org
-cc: linux-usb@vger.kernel.org
-Subject: Re: 3.1-rc4: LinkUSBi - digitemp/sensors not working : Error 10:
- Read COM Failed
-In-Reply-To: <alpine.DEB.2.02.1109181413120.20777@p34.internal.lan>
-Message-ID: <alpine.DEB.2.02.1109190623070.18093@p34.internal.lan>
-References: <alpine.DEB.2.02.1109181320500.7278@p34.internal.lan> <alpine.DEB.2.02.1109181413120.20777@p34.internal.lan>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+	id S1755320Ab1ISK2M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 06:28:12 -0400
+Received: from casper.infradead.org ([85.118.1.10]:34686 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755016Ab1ISK2K convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 06:28:10 -0400
+Subject: Re: [PATCH] x86: perf: Clean up perf_event cpu code
+From: Peter Zijlstra <peterz@infradead.org>
+To: Kevin Winchester <kjwinchester@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 19 Sep 2011 12:27:43 +0200
+References: <1314704115.2799.12.camel@twins>
+	 <1314747665-2090-1-git-send-email-kjwinchester@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1316428063.1511.5.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2011-09-02 at 15:32 +0200, Peter Zijlstra wrote:
+> On Tue, 2011-08-30 at 20:41 -0300, Kevin Winchester wrote:
+> > The CPU support for perf events on x86 was implemented via included C files
+> > with #ifdefs.  Clean this up by creating a new header file and compiling
+> > the vendor-specific files as needed.
+> > 
+> > Signed-off-by: Kevin Winchester <kjwinchester@gmail.com>
+> > ---
+> > 
+> > This is now against the tip tree.  I left it all as one big commit for now,
+> > although I can break it up if necessary.  I'm just not sure it would gain much.
+> > 
+> > Again, this is by far the largest out of the handful of patches I have ever
+> > submitted, so please let me know if I am doing anything wrong.
+> > 
+> 
+> I've stuck it in the queue,. seems to work so far.
+> 
+> If Ingo doesn't complain, it ought to show up for the next release
+> someplace ;-)
+
+Ingo found that it failed to build on i386-up, the below delta (already
+folded in the patch) cured things:
 
 
-On Sun, 18 Sep 2011, Justin Piszcz wrote:
+---
+Index: linux-2.6/arch/x86/kernel/cpu/perf_event_intel.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/cpu/perf_event_intel.c
++++ linux-2.6/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -11,6 +11,7 @@
+ #include <linux/slab.h>
+ 
+ #include <asm/hardirq.h>
++#include <asm/apic.h>
+ 
+ #include "perf_event.h"
+ 
+Index: linux-2.6/arch/x86/kernel/cpu/perf_event_p4.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/cpu/perf_event_p4.c
++++ linux-2.6/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -11,6 +11,7 @@
+ 
+ #include <asm/perf_event_p4.h>
+ #include <asm/hardirq.h>
++#include <asm/apic.h>
+ 
+ #include "perf_event.h"
+ 
 
->
->
-> On Sun, 18 Sep 2011, Justin Piszcz wrote:
->
->> Hi,
->> 
->> I have two LinkUSBi wireless temperature sensors (masters) and both work
->> fine in Windows 7, I got them both to work in Linux once but I did not
->> record how I did it-- does anyone know why the following happens?
->> 
->> You are only supposed to use digitemp_ds9097u but including all just
->> incase someone mentions trying the other two :)
->> 
->> --
->
-> This commit seems to have fixed the issue a few kernels ago (based on some
-> reading; however with 3.1-rc4 it is still failing, any thoughts?)
-> http://git.strongswan.org/?p=linux-dumm.git;a=commit;h=677aeafe19e88c282af74564048243ccabb1c590
->
-> Justin.
-
-Looping in linux-usb@
-
-Re:
-
-# ./digitemp_DS9097U -s /dev/ttyUSB0 -w
-DigiTemp v3.5.0 Copyright 1996-2007 by Brian C. Lane
-GNU Public License v2.0 - http://www.digitemp.com
-Error 5: DS2480B Adapter Not Detected
-Error 10: Read COM Failed
-Error 10: Read COM Failed
-Error 10: Read COM Failed
-Error 10: Read COM Failed
-Error 10: Read COM Failed
-Error 10: Read COM Failed
-Error 10: Read COM Failed
-Error 10: Read COM Failed
-Error 10: Read COM Failed
-
-Justin.
