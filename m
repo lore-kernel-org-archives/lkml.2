@@ -1,203 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756654Ab1ISVrI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 17:47:08 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:57515 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756409Ab1ISVrG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 17:47:06 -0400
-Date: Mon, 19 Sep 2011 16:47:00 -0500
-From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: richard@nod.at, Andrew Morton <akpm@google.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>,
-        serge@hallyn.com, serge.hallyn@canonical.com
-Subject: [PATCH] user namespace: usb: make usb urbs user namespace aware
-Message-ID: <20110919214700.GA22300@sergelap>
-References: <20110919214531.GA18085@sergelap>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110919214531.GA18085@sergelap>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756717Ab1ISVsw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 17:48:52 -0400
+Received: from mga03.intel.com ([143.182.124.21]:36717 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756409Ab1ISVsv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 17:48:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,407,1312182000"; 
+   d="scan'208";a="50600778"
+From: Andi Kleen <andi@firstfloor.org>
+To: tglx@linutronix.de
+Cc: linux-kernel@vger.kernel.org, eric.dumazet@gmail.com,
+        akpm@linux-foundation.org, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 2/2] posix-timers: limit the number of posix timers per process v2
+Date: Mon, 19 Sep 2011 14:48:45 -0700
+Message-Id: <1316468925-16754-2-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1316468925-16754-1-git-send-email-andi@firstfloor.org>
+References: <1316468925-16754-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add to the dev_state and alloc_async structures the user namespace
-corresponding to the uid and euid.  Pass these to kill_pid_info_as_uid(),
-which can then implement a proper, user-namespace-aware uid check.
+From: Andi Kleen <ak@linux.intel.com>
 
-Signed-off-by: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: Greg KH <greg@kroah.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Tejun Heo <tj@kernel.org>
+Now this is the main reason I wrote the whole patchkit: previously
+there was no limit on the maximum number of POSIX timers a process
+could allocate.  This limits the amount of unswappable kernel memory
+a process can pin down this way.
+
+With the POSIX timer ids being per process we can do this limit
+per process now without allowing one process DoSing another.
+
+Uses a rlimit to limit the number of timers.
+
+The 1024 default is completely arbitrary, but seems reasonable
+for now.
+
+v2: Use a rlimit instead of sysctl
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- drivers/usb/core/devio.c |   17 +++++++++++++----
- include/linux/sched.h    |    3 ++-
- kernel/signal.c          |   22 ++++++++++++++++------
- 3 files changed, 31 insertions(+), 11 deletions(-)
+ fs/proc/base.c                 |    1 +
+ include/asm-generic/resource.h |    4 +++-
+ include/linux/limits.h         |    1 +
+ kernel/posix-timers.c          |    6 ++++++
+ 4 files changed, 11 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/usb/core/devio.c b/drivers/usb/core/devio.c
-index 37518df..b875a11 100644
---- a/drivers/usb/core/devio.c
-+++ b/drivers/usb/core/devio.c
-@@ -46,6 +46,7 @@
- #include <linux/cdev.h>
- #include <linux/notifier.h>
- #include <linux/security.h>
-+#include <linux/user_namespace.h>
- #include <asm/uaccess.h>
- #include <asm/byteorder.h>
- #include <linux/moduleparam.h>
-@@ -68,6 +69,7 @@ struct dev_state {
- 	wait_queue_head_t wait;     /* wake up if a request completed */
- 	unsigned int discsignr;
- 	struct pid *disc_pid;
-+	struct user_namespace *user_ns;
- 	uid_t disc_uid, disc_euid;
- 	void __user *disccontext;
- 	unsigned long ifclaimed;
-@@ -79,6 +81,7 @@ struct async {
- 	struct list_head asynclist;
- 	struct dev_state *ps;
- 	struct pid *pid;
-+	struct user_namespace *user_ns;
- 	uid_t uid, euid;
- 	unsigned int signr;
- 	unsigned int ifnum;
-@@ -248,6 +251,7 @@ static struct async *alloc_async(unsigned int numisoframes)
- static void free_async(struct async *as)
- {
- 	put_pid(as->pid);
-+	put_user_ns(as->user_ns);
- 	kfree(as->urb->transfer_buffer);
- 	kfree(as->urb->setup_packet);
- 	usb_free_urb(as->urb);
-@@ -396,6 +400,7 @@ static void async_completed(struct urb *urb)
- 	uid_t uid = 0;
- 	uid_t euid = 0;
- 	u32 secid = 0;
-+	struct user_namespace *user_ns;
- 	int signr;
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index 5eb0206..229ec4e 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -511,6 +511,7 @@ static const struct limit_names lnames[RLIM_NLIMITS] = {
+ 	[RLIMIT_NICE] = {"Max nice priority", NULL},
+ 	[RLIMIT_RTPRIO] = {"Max realtime priority", NULL},
+ 	[RLIMIT_RTTIME] = {"Max realtime timeout", "us"},
++	[RLIMIT_POSIX_TIMERS] = {"Max number of POSIX timers", "timers"},
+ };
  
- 	spin_lock(&ps->lock);
-@@ -408,6 +413,7 @@ static void async_completed(struct urb *urb)
- 		sinfo.si_code = SI_ASYNCIO;
- 		sinfo.si_addr = as->userurb;
- 		pid = as->pid;
-+		user_ns = as->user_ns;
- 		uid = as->uid;
- 		euid = as->euid;
- 		secid = as->secid;
-@@ -423,8 +429,8 @@ static void async_completed(struct urb *urb)
- 	spin_unlock(&ps->lock);
+ /* Display limits for a process */
+diff --git a/include/asm-generic/resource.h b/include/asm-generic/resource.h
+index 61fa862..9fde1b5 100644
+--- a/include/asm-generic/resource.h
++++ b/include/asm-generic/resource.h
+@@ -45,7 +45,8 @@
+ 					   0-39 for nice level 19 .. -20 */
+ #define RLIMIT_RTPRIO		14	/* maximum realtime priority */
+ #define RLIMIT_RTTIME		15	/* timeout for RT tasks in us */
+-#define RLIM_NLIMITS		16
++#define RLIMIT_POSIX_TIMERS	16	/* max number of posix timers/process */
++#define RLIM_NLIMITS		17
  
- 	if (signr)
--		kill_pid_info_as_uid(sinfo.si_signo, &sinfo, pid, uid,
--				      euid, secid);
-+		kill_pid_info_as_uid(sinfo.si_signo, &sinfo, pid, user_ns,
-+				     uid, euid, secid);
- 
- 	wake_up(&ps->wait);
- }
-@@ -708,6 +714,7 @@ static int usbdev_open(struct inode *inode, struct file *file)
- 	ps->disc_pid = get_pid(task_pid(current));
- 	ps->disc_uid = cred->uid;
- 	ps->disc_euid = cred->euid;
-+	ps->user_ns = get_user_ns(cred->user_ns);
- 	ps->disccontext = NULL;
- 	ps->ifclaimed = 0;
- 	security_task_getsecid(current, &ps->secid);
-@@ -749,6 +756,7 @@ static int usbdev_release(struct inode *inode, struct file *file)
- 	usb_unlock_device(dev);
- 	usb_put_dev(dev);
- 	put_pid(ps->disc_pid);
-+	put_user_ns(ps->user_ns);
- 
- 	as = async_getcompleted(ps);
- 	while (as) {
-@@ -1262,6 +1270,7 @@ static int proc_do_submiturb(struct dev_state *ps, struct usbdevfs_urb *uurb,
- 	as->signr = uurb->signr;
- 	as->ifnum = ifnum;
- 	as->pid = get_pid(task_pid(current));
-+	as->user_ns = get_user_ns(cred->user_ns);
- 	as->uid = cred->uid;
- 	as->euid = cred->euid;
- 	security_task_getsecid(current, &as->secid);
-@@ -1982,8 +1991,8 @@ static void usbdev_remove(struct usb_device *udev)
- 			sinfo.si_code = SI_ASYNCIO;
- 			sinfo.si_addr = ps->disccontext;
- 			kill_pid_info_as_uid(ps->discsignr, &sinfo,
--					ps->disc_pid, ps->disc_uid,
--					ps->disc_euid, ps->secid);
-+					ps->disc_pid, ps->user_ns,
-+					ps->disc_uid, ps->disc_euid, ps->secid);
- 		}
- 	}
- }
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 4ac2c05..2d47cc2 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2166,7 +2166,8 @@ extern int force_sigsegv(int, struct task_struct *);
- extern int force_sig_info(int, struct siginfo *, struct task_struct *);
- extern int __kill_pgrp_info(int sig, struct siginfo *info, struct pid *pgrp);
- extern int kill_pid_info(int sig, struct siginfo *info, struct pid *pid);
--extern int kill_pid_info_as_uid(int, struct siginfo *, struct pid *, uid_t, uid_t, u32);
-+extern int kill_pid_info_as_uid(int, struct siginfo *, struct pid *,
-+				struct user_namespace *, uid_t, uid_t, u32);
- extern int kill_pgrp(struct pid *pid, int sig, int priv);
- extern int kill_pid(struct pid *pid, int sig, int priv);
- extern int kill_proc_info(int, struct siginfo *, pid_t);
-diff --git a/kernel/signal.c b/kernel/signal.c
-index bb8ce03..4a00eb2 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -1346,13 +1346,26 @@ int kill_proc_info(int sig, struct siginfo *info, pid_t pid)
- 	return error;
+ /*
+  * SuS says limits have to be unsigned.
+@@ -87,6 +88,7 @@
+ 	[RLIMIT_NICE]		= { 0, 0 },				\
+ 	[RLIMIT_RTPRIO]		= { 0, 0 },				\
+ 	[RLIMIT_RTTIME]		= {  RLIM_INFINITY,  RLIM_INFINITY },	\
++	[RLIMIT_POSIX_TIMERS]	= { POSIX_TIMERS_LIM, POSIX_TIMERS_LIM }, \
  }
  
-+static int kill_as_uid_perm(struct task_struct *p,
-+			    struct user_namespace *user_ns, uid_t uid,
-+			    uid_t euid)
-+{
-+	const struct cred *pcred = __task_cred(p);
-+	if (user_ns != pcred->user_ns)
-+		return 0;
-+	if (euid != pcred->suid && euid != pcred->uid &&
-+	    uid  != pcred->suid && uid  != pcred->uid)
-+		return 0;
-+	return 1;
-+}
+ #endif	/* __KERNEL__ */
+diff --git a/include/linux/limits.h b/include/linux/limits.h
+index 2d0f941..634a445 100644
+--- a/include/linux/limits.h
++++ b/include/linux/limits.h
+@@ -14,6 +14,7 @@
+ #define XATTR_NAME_MAX   255	/* # chars in an extended attribute name */
+ #define XATTR_SIZE_MAX 65536	/* size of an extended attribute value (64k) */
+ #define XATTR_LIST_MAX 65536	/* size of extended attribute namelist (64k) */
++#define POSIX_TIMERS_LIM 1024   /* Number of posix timers process (default) */
+ 
+ #define RTSIG_MAX	  32
+ 
+diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
+index f832021..9eb0a68 100644
+--- a/kernel/posix-timers.c
++++ b/kernel/posix-timers.c
+@@ -567,6 +567,12 @@ SYSCALL_DEFINE3(timer_create, const clockid_t, which_clock,
+ 
+ 	it_id_set = IT_ID_SET;
+ 	new_timer->it_id = (timer_t) new_timer_id;
 +
- /* like kill_pid_info(), but doesn't use uid/euid of "current" */
- int kill_pid_info_as_uid(int sig, struct siginfo *info, struct pid *pid,
--		      uid_t uid, uid_t euid, u32 secid)
-+			 struct user_namespace *user_ns, uid_t uid, uid_t euid,
-+			 u32 secid)
- {
- 	int ret = -EINVAL;
- 	struct task_struct *p;
--	const struct cred *pcred;
- 	unsigned long flags;
++	if (new_timer_id >= rlimit(RLIMIT_POSIX_TIMERS)) {
++		error = -EPERM;
++		goto out;
++	}
++
+ 	new_timer->it_clock = which_clock;
+ 	new_timer->it_overrun = -1;
  
- 	if (!valid_signal(sig))
-@@ -1364,10 +1377,7 @@ int kill_pid_info_as_uid(int sig, struct siginfo *info, struct pid *pid,
- 		ret = -ESRCH;
- 		goto out_unlock;
- 	}
--	pcred = __task_cred(p);
--	if (si_fromuser(info) &&
--	    euid != pcred->suid && euid != pcred->uid &&
--	    uid  != pcred->suid && uid  != pcred->uid) {
-+	if (si_fromuser(info) && !kill_as_uid_perm(p, user_ns, uid, euid)) {
- 		ret = -EPERM;
- 		goto out_unlock;
- 	}
 -- 
-1.7.5.4
+1.7.4.4
 
