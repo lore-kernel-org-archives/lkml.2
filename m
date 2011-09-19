@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932372Ab1ISVZR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 17:25:17 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:39374 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932097Ab1ISVZQ (ORCPT
+	id S932781Ab1ISV0u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 17:26:50 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:64682 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932581Ab1ISV0o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 17:25:16 -0400
-Date: Mon, 19 Sep 2011 22:25:02 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH 1/2] ARM: debug: Add CLSP711X_UART1 config choice
-Message-ID: <20110919212502.GB23613@e102144-lin.cambridge.arm.com>
-References: <20110916114140.GA31334@e102144-lin.cambridge.arm.com>
- <1316455300-5752-1-git-send-email-sboyd@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1316455300-5752-1-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 19 Sep 2011 17:26:44 -0400
+X-Authority-Analysis: v=1.1 cv=agqPq5NoKwAPC9P66H7dbYUCjxvmT73as08i4x3aqAA= c=1 sm=0 a=vhdKIqpQuCYA:10 a=iUONPdXu25QA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=NIgmlyQdXp35JIEuWdIA:9 a=EwDInnQkB1lwH7pLuqwA:7 a=jEp0ucaQiEUA:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.83.30
+Message-Id: <20110919212640.343186687@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Mon, 19 Sep 2011 17:20:41 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Christoph Lameter <cl@linux.com>
+Subject: [RFC][PATCH 1/5] x86: Remove const_udelay() caring about which cpu var it uses
+References: <20110919212040.745370781@goodmis.org>
+Content-Disposition: inline; filename=0001-x86-Remove-const_udelay-caring-about-which-cpu-var-i.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+From: Steven Rostedt <srostedt@redhat.com>
 
-On Mon, Sep 19, 2011 at 07:01:39PM +0100, Stephen Boyd wrote:
-> ARM patch 7072/1 (debug: use kconfig choice for selecting
-> DEBUG_LL UART) only allowed CLSP711X_UART2 to be selected because
-> there is no NONE option in a choice menu. Add a UART1 choice so
-> that users can still choose UART1 explicitly.
-> 
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
-> 
-> On 09/16/11 04:41, Will Deacon wrote:
-> > Ah yes. This will need to be added as part of the platform updates to go via
-> > Arnd. It should be easy enough just to have a DEBUG_CLPS711X_UART1 option,
-> > for example, and the platform code will fall back to the first UART.
-> 
-> I couldn't find these patches applied in Arnd's tree so I based it off of
-> Russell's for-next branch.
+The __const_udelay() code originally used raw_smp_processor_id()
+in its calculations for a delaying. Probably because if it were
+to migrate, it would take much longer to do so than the requested
+delay.
 
-Thanks for cooking the patch, it was somewhere on my list of things to do
-this week! I think we also need to fix the DEBUG_DC21285_PORT option as that
-has a similar `if not selected then use a different UART' behaviour. It can be
-fixed in the same way as you have done in this patch.
+Switch from this_cpu_read() to __this_cpu_read() to document that
+the read is racy and we do not care.
 
-Would you like me to take the three patches in with the ones I currently
-have for other platforms (Realview, Samsung, imx) or would you prefer to
-handle these separately? I was planning to send all of the platform bits to
-Arnd once I've got my branches sorted out (been on holiday for the past two
-weeks).
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ arch/x86/lib/delay.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Cheers,
+diff --git a/arch/x86/lib/delay.c b/arch/x86/lib/delay.c
+index fc45ba8..1b9bde5 100644
+--- a/arch/x86/lib/delay.c
++++ b/arch/x86/lib/delay.c
+@@ -121,7 +121,7 @@ inline void __const_udelay(unsigned long xloops)
+ 	asm("mull %%edx"
+ 		:"=d" (xloops), "=&a" (d0)
+ 		:"1" (xloops), "0"
+-		(this_cpu_read(cpu_info.loops_per_jiffy) * (HZ/4)));
++		(__this_cpu_read(cpu_info.loops_per_jiffy) * (HZ/4)));
+ 
+ 	__delay(++xloops);
+ }
+-- 
+1.7.5.4
 
-Will
+
