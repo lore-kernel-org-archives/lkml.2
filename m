@@ -1,71 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753521Ab1ISRWl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 13:22:41 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:60503 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751313Ab1ISRWj (ORCPT
+	id S1754060Ab1ISR01 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 13:26:27 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45181 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752492Ab1ISR00 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 13:22:39 -0400
-Message-ID: <4E777A40.20508@ti.com>
-Date: Mon, 19 Sep 2011 19:22:08 +0200
-From: "Cousson, Benoit" <b-cousson@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: "Munegowda, Keshava" <keshava_mgowda@ti.com>
-CC: Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Balbi, Felipe" <balbi@ti.com>, "Gadiyar, Anand" <gadiyar@ti.com>,
-        "parthab@india.ti.com" <parthab@india.ti.com>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "Hilman, Kevin" <khilman@ti.com>, "paul@pwsan.com" <paul@pwsan.com>,
-        "johnstul@us.ibm.com" <johnstul@us.ibm.com>,
-        "Sripathy, Vishwanath" <vishwanath.bs@ti.com>
-Subject: Re: [PATCH 0/5 v9] mfd: omap: usb: Runtime PM support for EHCI and
- OHCI drivers
-References: <1316092970-2440-1-git-send-email-keshava_mgowda@ti.com> <20110919135653.GR32263@sortiz-mobl> <CAP05o4+AYs07JLio7NgSUOuzSTqiZA45WPDPqAB55u=02vHYWA@mail.gmail.com>
-In-Reply-To: <CAP05o4+AYs07JLio7NgSUOuzSTqiZA45WPDPqAB55u=02vHYWA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 19 Sep 2011 13:26:26 -0400
+From: Stefan Bader <stefan.bader@canonical.com>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Seth Forshee <seth.forshee@canonical.com>, linux-kernel@vger.kernel.org,
+        stable@kernel.org
+Subject: [2.6.32+drm33-longterm] Patch "drm/i915: Fix refleak during eviction." has been added to staging queue
+Date: Mon, 19 Sep 2011 19:26:20 +0200
+Message-Id: <1316453180-11636-1-git-send-email-stefan.bader@canonical.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Keshava,
+This is a note to let you know that I have just added a patch titled
 
-On 9/19/2011 4:01 PM, Munegowda, Keshava wrote:
-> On Mon, Sep 19, 2011 at 7:26 PM, Samuel Ortiz<sameo@linux.intel.com>  wrote:
->> Hi Keshava,
->>
->> On Thu, Sep 15, 2011 at 06:52:45PM +0530, Keshava Munegowda wrote:
->>> From: Keshava Munegowda<Keshava_mgowda@ti.com>
->>>
->>> The Hwmod structures and Runtime PM features are implemented
->>> For EHCI and OHCI drivers of OMAP3 and OMAP4.
->>> The global suspend/resume of EHCI and OHCI
->>> is validated on OMAP3430 sdp board with these patches.
->>>
->>> these patches are rebased to kevin's pm branch and
->>> usbhs latest mainline kernel patches
->>
->> I'm ready to apply this one to my MFD for-next branch. Or do you want it to go
->> through Kevin's tree ?
->>
->> Cheers,
->> Samuel
->
->
-> Thanks samuel;
-> But, patch 1 and 2 requires benoit causson's ack by;
-> so , I am waiting for benoit response on this.
+    drm/i915: Fix refleak during eviction.
 
-I made a couple of comments in the v8, and you did address only half of 
-them. It will be nice to at least answer the remaining points.
+to the drm-next branch of the 2.6.32+drm33-longterm tree which can be found at
 
-Moreover, Paul is the maintainer of the OMAP3 hwmod data file.
+  http://git.kernel.org/?p=linux/kernel/git/smb/linux-2.6.32.y-drm33.z.git;a=shortlog;h=refs/heads/drm-next
+  or
+  http://kernel.ubuntu.com/git?p=smb/linux-2.6.32.y-drm33.z.git;a=shortlog;h=refs/heads/drm-next
 
-Regards,
-Benoit
+If you, or anyone else, feels it should not be added to the drm33-longterm tree,
+please reply to this email not later than 8 days after this email was sent.
+
+Thanks.
+-Stefan
+
+------
+
+>From c56870dc2dc195a0aa99ab2095410d9611dab770 Mon Sep 17 00:00:00 2001
+From: Chris Wilson <chris@chris-wilson.co.uk>
+Date: Tue, 13 Sep 2011 08:46:49 -0500
+Subject: [PATCH 2/2] drm/i915: Fix refleak during eviction.
+
+Now that we hold onto a reference whilst evicting objects, we need to
+be sure that we drop all the references taken -- even on the error
+paths.
+
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+
+BugLink: http://bugs.launchpad.net/bugs/843904
+
+(backported from commit e39a01501b228e1be2037d5bddccae2a820af902 upstream)
+Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+---
+ drivers/gpu/drm/i915/i915_gem_evict.c |   10 ++++++----
+ 1 files changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/gpu/drm/i915/i915_gem_evict.c b/drivers/gpu/drm/i915/i915_gem_evict.c
+index c50c093..9e7f9c6 100644
+--- a/drivers/gpu/drm/i915/i915_gem_evict.c
++++ b/drivers/gpu/drm/i915/i915_gem_evict.c
+@@ -65,7 +65,7 @@ i915_gem_evict_something(struct drm_device *dev, int min_size, unsigned alignmen
+ {
+ 	drm_i915_private_t *dev_priv = dev->dev_private;
+ 	struct list_head eviction_list, unwind_list;
+-	struct drm_i915_gem_object *obj_priv, *tmp_obj_priv;
++	struct drm_i915_gem_object *obj_priv;
+ 	struct list_head *iter;
+ 	int ret = 0;
+
+@@ -157,8 +157,10 @@ found:
+ 	 * scanning, therefore store to be evicted objects on a
+ 	 * temporary list. */
+ 	INIT_LIST_HEAD(&eviction_list);
+-	list_for_each_entry_safe(obj_priv, tmp_obj_priv,
+-				 &unwind_list, evict_list) {
++	while (!list_empty(&unwind_list)) {
++		obj_priv = list_first_entry(&unwind_list,
++					    struct drm_i915_gem_object,
++					    evict_list);
+ 		if (drm_mm_scan_remove_block(obj_priv->gtt_space)) {
+ 			list_move(&obj_priv->evict_list, &eviction_list);
+ 			continue;
+@@ -179,7 +181,7 @@ found:
+ 		drm_gem_object_unreference(obj_priv->obj);
+ 	}
+
+-	return 0;
++	return ret;
+ }
+
+ int
+--
+1.7.4.1
+
