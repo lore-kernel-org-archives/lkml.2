@@ -1,41 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756802Ab1ISDfp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 23:35:45 -0400
-Received: from ozlabs.org ([203.10.76.45]:56704 "EHLO ozlabs.org"
+	id S1756440Ab1ISDfo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 23:35:44 -0400
+Received: from ozlabs.org ([203.10.76.45]:43278 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754529Ab1ISDfm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754017Ab1ISDfm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 18 Sep 2011 23:35:42 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>,
-        Sasha Levin <levinsasha928@gmail.com>
+To: Anthony Liguori <aliguori@us.ibm.com>, Pawel Moll <pawel.moll@arm.com>
 Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH] virtio-net: Read MAC only after initializing MSI-X
-In-Reply-To: <20110820200043.GB5276@redhat.com>
-References: <1313225461-24458-1-git-send-email-levinsasha928@gmail.com> <20110819152335.GA19489@redhat.com> <1313771587.12243.16.camel@lappy> <20110820200043.GB5276@redhat.com>
+        linux-arm-kernel@lists.infradead.org,
+        "Michael S.Tsirkin" <mst@redhat.com>
+Subject: Re: [RFC v3] arm: Add platform bus driver for memory mapped virtio device
+In-Reply-To: <4E7380FD.1030200@us.ibm.com>
+References: <1316191623-3835-1-git-send-email-pawel.moll@arm.com> <4E7380FD.1030200@us.ibm.com>
 User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
-Date: Mon, 19 Sep 2011 13:05:17 +0930
-Message-ID: <871uvdryq2.fsf@rustcorp.com.au>
+Date: Mon, 19 Sep 2011 12:59:33 +0930
+Message-ID: <874o09ryzm.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 20 Aug 2011 23:00:44 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> On Fri, Aug 19, 2011 at 07:33:07PM +0300, Sasha Levin wrote:
-> > Maybe this is better solved by copying the way it was done in PCI itself
-> > with capability linked list?
+On Fri, 16 Sep 2011 12:01:49 -0500, Anthony Liguori <aliguori@us.ibm.com> wrote:
+> On 09/16/2011 11:47 AM, Pawel Moll wrote:
+> > This patch, based on virtio PCI driver, adds support for memory
+> > mapped (platform) virtio  device. This should allow environments
+> > like qemu to use virtio-based block&  network devices.
+> >
+> > One can define and register a platform device which resources
+> > will describe memory mapped control registers and "mailbox"
+> > interrupt. Such device can be also instantiated using the Device
+> > Tree node with compatible property equal "virtio,mmio".
+> >
+> > Cc: Rusty Russell<rusty@rustcorp.com.au>
+> > Cc: Anthony Liguori<aliguori@us.ibm.com>
+> > Cc: Michael S.Tsirkin<mst@redhat.com>
+> > Signed-off-by: Pawel Moll<pawel.moll@arm.com>
 > 
-> There are any number of ways to lay out the structure.  I went for what
-> seemed a simplest one.  For MSI-X the train has left the station.  We
-> can probably still tweak where the high 32 bit features
-> for 64 bit features are.  No idea if it's worth it.
+> Have you written a specification for this device?
+> 
+> Rusty maintains a formal spec for all virtio devices at:
+> 
+> http://ozlabs.org/~rusty/virtio-spec/
+> 
+> The spec should be written before merging the code to make sure that there 
+> aren't future compatibility problems.
 
-Sorry, this has been in the back of my mind.  I think it's a good idea;
-can we use the capability linked list for pre-device specific stuff from
-now on?
+A good idea, but the current spec is for PCI.  I wonder if we should
+move the PCI part out to an appendix and make it more general?
 
-Thanks,
+Meanwhile, perhaps this would be suitable as an appendix.
+
+Cheers,
 Rusty.
