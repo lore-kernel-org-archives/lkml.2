@@ -1,54 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755138Ab1ISKKk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 06:10:40 -0400
-Received: from mga09.intel.com ([134.134.136.24]:9977 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754853Ab1ISKKj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 06:10:39 -0400
-Message-Id: <aefc95$1fgrb6@orsmga001.jf.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="49835366"
-From: Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: [BUG] i915 crashes X Server Constantly on Linux-3.1-rc4 to .rc6
-To: Tarkan Erimer <tarkan.erimer@f-secure.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <4E770FF5.8030207@f-secure.com>
-References: <4E770FF5.8030207@f-secure.com>
-Date: Mon, 19 Sep 2011 11:10:35 +0100
+	id S1755178Ab1ISKMo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 06:12:44 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:60071 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754997Ab1ISKMn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 06:12:43 -0400
+Date: Mon, 19 Sep 2011 11:12:36 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Samuel Ortiz <samuel.ortiz@intel.com>, Dmitry Torokhov <dtor@mail.ru>,
+        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, Misael Lopez Cruz <misael.lopez@ti.com>
+Subject: Re: [alsa-devel] [PATCH 00/17] ASoC: twl6040: Cleanups and fixes
+Message-ID: <20110919101235.GA5467@sirena.org.uk>
+References: <1316090379-30760-1-git-send-email-peter.ujfalusi@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1316090379-30760-1-git-send-email-peter.ujfalusi@ti.com>
+X-Cookie: Pass with care.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Sep 2011 12:48:37 +0300, Tarkan Erimer <tarkan.erimer@f-secure.com> wrote:
-> Hi,
-> 
-> I'm having constant X crashes (Almost every 30 mins.) on Intel Graphics. 
-> Below is the error message after X crashes :
-> 
-> [  113.264775] [drm:ironlake_update_pch_refclk] *ERROR* enabling SSC on PCH
-Sigh. A debugging message left at DRM_ERROR.
+On Thu, Sep 15, 2011 at 03:39:22PM +0300, Peter Ujfalusi wrote:
 
-> [  113.265289] [drm] Changing LVDS panel from (-hsync, -vsync) to 
-> (+hsync, -vsync)
+> The first four patch of this series (the MFD/Input patches) has been already
+> sent to upstream to the relevant lists, but I wanted to include here as well,
+> since I have dependency on that series later on.
+> If it is OK with you, it would be best to merge these MFD/Input changes through
+> the audio tree for 3.2.
 
-This is just an info message as a few kernel releases ago we started
-honouring LVDS sync from the EDID and so we wanted to make sure that no
-regressions correlated with actually doing as we were told.
-
-> [  114.141640] [drm:ironlake_update_pch_refclk] *ERROR* enabling SSC on PCH
-> [ 4955.770011] [drm:intel_disable_transcoder] *ERROR* failed to disable 
-> transcoder
-
-This is one the true error in the midst of this spew.
-
-Aside from the one modesetting error, these messages are all secondary
-to the crash (and are really just debugging spew whilst switching
-modes from X to console, console to X). Can you please attach the
-Xorg.log containing the crash? Or maybe gdm.log etc? Also what happens
-regularly every 30minutes; a particular screensaver or dpms?
--Chris
-
--- 
-Chris Wilson, Intel Open Source Technology Centre
+It'd be really good if you could manage to split this stuff up - this
+series is enormous and it's getting posted rather a lot, much of this
+stuff seems like it could be split out and posted separately.
