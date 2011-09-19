@@ -1,47 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756791Ab1ISDSI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 23:18:08 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:62481 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756708Ab1ISDSD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 23:18:03 -0400
-Subject: Re: [GIT] Networking
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: torvalds@linux-foundation.org, markus@trippelsdorf.de,
-        akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20110918.214540.33131923686632079.davem@davemloft.net>
-References: <CA+55aFwmwYXzC_4q+XuEAx3ta6U-jf=NvMcAc-J+4DBxLm8Efg@mail.gmail.com>
-	 <1316378130.31335.32.camel@edumazet-laptop>
-	 <CA+55aFzHOUaub9WJ7L_LGEGGkKdW-h3eV0MaUsCjdmUBKDGe_w@mail.gmail.com>
-	 <20110918.214540.33131923686632079.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 19 Sep 2011 05:17:56 +0200
-Message-ID: <1316402276.2521.3.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	id S1756752Ab1ISDVQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 23:21:16 -0400
+Received: from mga01.intel.com ([192.55.52.88]:13356 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753610Ab1ISDVO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Sep 2011 23:21:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,403,1312182000"; 
+   d="scan'208";a="55119664"
+From: Huang Ying <ying.huang@intel.com>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
+        ying.huang@intel.com, linux-acpi@vger.kernel.org
+Subject: [PATCH] ACPI, APEI, GHES, Distinguish interleaved error report in kernel log
+Date: Mon, 19 Sep 2011 11:21:03 +0800
+Message-Id: <1316402463-24378-1-git-send-email-ying.huang@intel.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le dimanche 18 septembre 2011 à 21:45 -0400, David Miller a écrit :
-> From: Linus Torvalds <torvalds@linux-foundation.org>
-> Date: Sun, 18 Sep 2011 18:26:33 -0700
-> 
-> > Stop with the "this might just work" crap. Because -rc7 is just too
-> > late to dick around like that.
-> 
-> I'll sort this out.
+In most cases, printk only guarantees messages from different printk
+calling will not be interleaved between each other.  But, one APEI
+GHES hardware error report will involve multiple printk calling,
+normally each for one line.  So it is possible that the hardware error
+report comes from different generic hardware error source will be
+interleaved.
 
-Oh well, I did compile the thing on my slow netbook, not on my usual 16
-core dev machine, and I had to catch a very small window of Internet
-access (my ADSL box collapsed when a thunderstrike hit the church in my
-neighbourhood)
+In this patch, a sequence number is prefixed to each line of error
+report.  So that, even if they are interleaved, they still can be
+distinguished by the prefixed sequence number.
 
-Thanks guys.
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+---
+ drivers/acpi/apei/ghes.c |   16 +++++++++++-----
+ 1 file changed, 11 insertions(+), 5 deletions(-)
 
-
+--- a/drivers/acpi/apei/ghes.c
++++ b/drivers/acpi/apei/ghes.c
+@@ -505,16 +505,22 @@ static void __ghes_print_estatus(const c
+ 				 const struct acpi_hest_generic *generic,
+ 				 const struct acpi_hest_generic_status *estatus)
+ {
++	static atomic_t seqno;
++	int curr_seqno;
++	char pfx_seq[64];
++
+ 	if (pfx == NULL) {
+ 		if (ghes_severity(estatus->error_severity) <=
+ 		    GHES_SEV_CORRECTED)
+-			pfx = KERN_WARNING HW_ERR;
++			pfx = KERN_WARNING;
+ 		else
+-			pfx = KERN_ERR HW_ERR;
++			pfx = KERN_ERR;
+ 	}
++	curr_seqno = atomic_inc_return(&seqno);
++	snprintf(pfx_seq, sizeof(pfx_seq), "%s{%d}" HW_ERR, pfx, curr_seqno);
+ 	printk("%s""Hardware error from APEI Generic Hardware Error Source: %d\n",
+-	       pfx, generic->header.source_id);
+-	apei_estatus_print(pfx, estatus);
++	       pfx_seq, generic->header.source_id);
++	apei_estatus_print(pfx_seq, estatus);
+ }
+ 
+ static int ghes_print_estatus(const char *pfx,
+@@ -801,7 +807,7 @@ static int ghes_notify_nmi(struct notifi
+ 
+ 	if (sev_global >= GHES_SEV_PANIC) {
+ 		oops_begin();
+-		__ghes_print_estatus(KERN_EMERG HW_ERR, ghes_global->generic,
++		__ghes_print_estatus(KERN_EMERG, ghes_global->generic,
+ 				     ghes_global->estatus);
+ 		/* reboot to log the error! */
+ 		if (panic_timeout == 0)
