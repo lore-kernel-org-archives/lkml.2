@@ -1,75 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755631Ab1ISR7e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 13:59:34 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:54502 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754840Ab1ISR7d (ORCPT
+	id S1756078Ab1ISR7w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 13:59:52 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52544 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755983Ab1ISR7v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 13:59:33 -0400
-Date: Mon, 19 Sep 2011 21:58:56 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        kernel-hardening@lists.openwall.com, Kees Cook <kees@ubuntu.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Dan Rosenberg <drosenberg@vsecurity.com>,
-        Theodore Tso <tytso@mit.edu>, Alan Cox <alan@linux.intel.com>,
-        Jesper Juhl <jj@chaosbits.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [kernel-hardening] Re: [RFC PATCH 2/2] mm: restrict access to
- /proc/slabinfo
-Message-ID: <20110919175856.GA4282@albatros>
-References: <20110918170512.GA2351@albatros>
- <CAOJsxLF8DBEC9o9pSwa6c6pMg8ByFBdsDnzg22P3ucQcP98uzA@mail.gmail.com>
- <20110919144657.GA5928@albatros>
- <CAOJsxLG8gW=BLOptpULsaAEwTravADKbNbXp5e9Wd7xVEfR9AQ@mail.gmail.com>
- <20110919155718.GB16272@albatros>
- <CAOJsxLGZm+npcR0YgXSE2wLC2iXCtzYyCdTDCt1LN=Z28Rm_UA@mail.gmail.com>
- <20110919161837.GA2232@albatros>
- <CAOJsxLE2od0f+6cbL2hA_31CbrqS7AUofx5DT2L9fO_7gxH+PQ@mail.gmail.com>
- <20110919173539.GA3751@albatros>
- <CAOJsxLGc0bwCkDtk2PVe7c155a9wVoDAY0CmYDTLg8_bL4qxqg@mail.gmail.com>
+	Mon, 19 Sep 2011 13:59:51 -0400
+Date: Mon, 19 Sep 2011 18:59:49 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
+        Graeme Gregory <gg@slimlogic.co.uk>,
+        Samuel Oritz <sameo@linux.intel.com>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: Re: [PATCH 0/6 v5] Introduce caching support for regmap
+Message-ID: <20110919175948.GD540@opensource.wolfsonmicro.com>
+References: <1316439245-26221-1-git-send-email-dp@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAOJsxLGc0bwCkDtk2PVe7c155a9wVoDAY0CmYDTLg8_bL4qxqg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1316439245-26221-1-git-send-email-dp@opensource.wolfsonmicro.com>
+X-Cookie: Your domestic life may be harmonious.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 19, 2011 at 20:51 +0300, Pekka Enberg wrote:
-> On Mon, Sep 19, 2011 at 8:35 PM, Vasiliy Kulikov <segoon@openwall.com> wrote:
-> >> Yes, but there's no way for users to know where the allocations came from
-> >> if you mix them up with other kmalloc-128 call-sites. That way the number
-> >> of private files will stay private to the user, no? Doesn't that give you even
-> >> better protection against the infoleak?
-> >
-> > No, what it gives us is an obscurity, not a protection.  I'm sure it
-> > highly depends on the specific situation whether an attacker is able to
-> > identify whether the call is from e.g. ecryptfs or from VFS.  Also the
-> > correlation between the number in slabinfo and the real private actions
-> > still exists.
-> 
-> How is the attacker able to identify that we kmalloc()'d from ecryptfs or
-> VFS based on non-root /proc/slabinfo when the slab allocator itself does
-> not have that sort of information if you mix up the allocations?
+On Mon, Sep 19, 2011 at 02:33:59PM +0100, Dimitris Papastamos wrote:
+> This patch series introduces register caching support for regmap.  I've
+> mostly implemented all the suggestions, except the use of a dedicated
+> init function for each of the compress types.
 
-How can you _guarantee_ that they mix?
-
-> Isn't this
-> much stronger protection especially if you combine that with /proc/slabinfo
-> restriction?
-
-I don't see any reason to change allocators if we close slabinfo.
-
-Thanks,
-
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+So, it's really excellent to have this functionality and as it's mostly
+there I've applied this.  As a followup to this I'll post a short series
+which updates things so they work for my test system plus an additional
+driver conversion, I'll squash some of them down into the original
+commits for bisection and leave others separate.  Thanks for doing this
+work, and thanks also to Lars-Peter for his review and testing.
