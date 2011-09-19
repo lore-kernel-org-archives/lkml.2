@@ -1,42 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754305Ab1ISDCH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 23:02:07 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:53316 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753340Ab1ISDCF (ORCPT
+	id S1756685Ab1ISDKb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 23:10:31 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:48458 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753948Ab1ISDKa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 23:02:05 -0400
-Date: Sun, 18 Sep 2011 23:00:56 -0400 (EDT)
-Message-Id: <20110918.230056.538257203944383944.davem@davemloft.net>
-To: jk@ozlabs.org
-Cc: torvalds@linux-foundation.org, david.ward@ll.mit.edu,
-        akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1316401043.2768.52.camel@pororo>
-References: <20110918.210344.570661374586887894.davem@davemloft.net>
-	<CA+55aFyENEpGJmTq55=n0_gDiF6RQmdKw-ts4AdQAFQJ1TkF-Q@mail.gmail.com>
-	<1316401043.2768.52.camel@pororo>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 18 Sep 2011 20:00:58 -0700 (PDT)
+	Sun, 18 Sep 2011 23:10:30 -0400
+MIME-Version: 1.0
+Date: Mon, 19 Sep 2011 12:10:28 +0900
+Message-ID: <CAKYAXd8xd3sCi0CCOH6Y3AR2J2iuDQispCnt0D2mksiAWr=rgw@mail.gmail.com>
+Subject: RFC : mmc : boot partition is set as a read-write.
+From: NamJae Jeon <linkinjeon@gmail.com>
+To: Chris Ball <cjb@laptop.org>, Linus Walleij <linus.ml.walleij@gmail.com>,
+        linux-mmc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeremy Kerr <jk@ozlabs.org>
-Date: Mon, 19 Sep 2011 10:57:23 +0800
+mmc : boot partition is set as a read-write.
 
-> I've found the problem, and committed a fix & testcase:
-> 
->  http://git.ozlabs.org/?p=patchwork;a=commitdiff;h=4bc2c34d
-> 
-> That fix has been applied to the patchwork.ozlabs.org instance, and I've
-> manually updated the incorrect (ie, username-only) entries in the
-> patchwork database.
+There is a case that user directly update boot partition through mmcblk0boot0,1.
+However, the current boot partition is set as a read-only.
+I suggest that boot partition is set as a read-write if there is no
+reason that it should be read-only.
 
-Thanks a bunch Jeremy!
+static int mmc_blk_alloc_parts(struct mmc_card *card, struct mmc_blk_data *md)
+{
+	int ret = 0;
+
+	if (!mmc_card_mmc(card))
+		return 0;
+
+	if (card->ext_csd.boot_size) {
+		ret = mmc_blk_alloc_part(card, md, EXT_CSD_PART_CONFIG_ACC_BOOT0,
+					 card->ext_csd.boot_size >> 9,
+					 false,
+					 "boot0");
+		if (ret)
+			return ret;
+		ret = mmc_blk_alloc_part(card, md, EXT_CSD_PART_CONFIG_ACC_BOOT1,
+					 card->ext_csd.boot_size >> 9,
+					 false,
+					 "boot1");
+		if (ret)
+			return ret;
+	}
+}
+
+Thanks.
