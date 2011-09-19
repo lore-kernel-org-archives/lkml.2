@@ -1,74 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932663Ab1ISSrp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 14:47:45 -0400
-Received: from www.linutronix.de ([62.245.132.108]:57018 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932461Ab1ISSro (ORCPT
+	id S1756589Ab1ISSz5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 14:55:57 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:46669 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753385Ab1ISSzz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 14:47:44 -0400
-Date: Mon, 19 Sep 2011 20:47:41 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT pull] irq fixes for 3.1
-Message-ID: <alpine.LFD.2.02.1109192045410.2723@ionos>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Mon, 19 Sep 2011 14:55:55 -0400
+Date: Mon, 19 Sep 2011 22:55:18 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        kernel-hardening@lists.openwall.com, Kees Cook <kees@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Matt Mackall <mpm@selenic.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Dan Rosenberg <drosenberg@vsecurity.com>,
+        Theodore Tso <tytso@mit.edu>, Alan Cox <alan@linux.intel.com>,
+        Jesper Juhl <jj@chaosbits.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [kernel-hardening] Re: [RFC PATCH 2/2] mm: restrict access to
+ /proc/slabinfo
+Message-ID: <20110919185518.GA5563@albatros>
+References: <20110919144657.GA5928@albatros>
+ <CAOJsxLG8gW=BLOptpULsaAEwTravADKbNbXp5e9Wd7xVEfR9AQ@mail.gmail.com>
+ <20110919155718.GB16272@albatros>
+ <CAOJsxLGZm+npcR0YgXSE2wLC2iXCtzYyCdTDCt1LN=Z28Rm_UA@mail.gmail.com>
+ <20110919161837.GA2232@albatros>
+ <CAOJsxLE2od0f+6cbL2hA_31CbrqS7AUofx5DT2L9fO_7gxH+PQ@mail.gmail.com>
+ <20110919173539.GA3751@albatros>
+ <CAOJsxLGc0bwCkDtk2PVe7c155a9wVoDAY0CmYDTLg8_bL4qxqg@mail.gmail.com>
+ <20110919175856.GA4282@albatros>
+ <CAOJsxLFdNVnW6Faap0UaqZQDQxbA_dEiR2HGdzZtGMJFsVR1WQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOJsxLFdNVnW6Faap0UaqZQDQxbA_dEiR2HGdzZtGMJFsVR1WQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Mon, Sep 19, 2011 at 21:46 +0300, Pekka Enberg wrote:
+> On Mon, Sep 19, 2011 at 8:58 PM, Vasiliy Kulikov <segoon@openwall.com> wrote:
+> >> Isn't this
+> >> much stronger protection especially if you combine that with /proc/slabinfo
+> >> restriction?
+> >
+> > I don't see any reason to change allocators if we close slabinfo.
+> 
+> OK, so what about /proc/meminfo, sysfs, 'perf kmem', and other kernel interfaces
+> through which you can get direct or indirect information about kernel memory
+> allocations?
 
-Please pull the latest irq-fixes-for-linus git tree from:
+Oh, we also have perf...  Given these are separate interfaces, I think
+slab oriented restriction makes more sense.
 
-   git://tesla.tglx.de/git/linux-2.6-tip irq-fixes-for-linus
+So, now we have:
+
+/proc/slabinfo
+/sys/kernel/slab
+/proc/meminfo
+'perf kmem' - not sure what specific files should be guarded
+
+
+Is there another way to get directly or indirectly the information about
+slabs?
+
 
 Thanks,
 
-	tglx
-
------------------->
-Geert Uytterhoeven (1):
-      genirq: Make irq_shutdown() symmetric vs. irq_startup again
-
-Thomas Gleixner (1):
-      x86, iommu: Mark DMAR IRQ as non-threaded
-
-
- drivers/iommu/dmar.c |    2 +-
- kernel/irq/chip.c    |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
-index 3dc9bef..6dcc7e2 100644
---- a/drivers/iommu/dmar.c
-+++ b/drivers/iommu/dmar.c
-@@ -1388,7 +1388,7 @@ int dmar_set_interrupt(struct intel_iommu *iommu)
- 		return ret;
- 	}
- 
--	ret = request_irq(irq, dmar_fault, 0, iommu->name, iommu);
-+	ret = request_irq(irq, dmar_fault, IRQF_NO_THREAD, iommu->name, iommu);
- 	if (ret)
- 		printk(KERN_ERR "IOMMU: can't request irq\n");
- 	return ret;
-diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-index d5a3009..dc5114b 100644
---- a/kernel/irq/chip.c
-+++ b/kernel/irq/chip.c
-@@ -178,7 +178,7 @@ void irq_shutdown(struct irq_desc *desc)
- 	desc->depth = 1;
- 	if (desc->irq_data.chip->irq_shutdown)
- 		desc->irq_data.chip->irq_shutdown(&desc->irq_data);
--	if (desc->irq_data.chip->irq_disable)
-+	else if (desc->irq_data.chip->irq_disable)
- 		desc->irq_data.chip->irq_disable(&desc->irq_data);
- 	else
- 		desc->irq_data.chip->irq_mask(&desc->irq_data);
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
