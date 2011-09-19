@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756157Ab1ISPO2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 11:14:28 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:58719 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753134Ab1ISPO0 (ORCPT
+	id S1756210Ab1ISPPq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 11:15:46 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:2153 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754496Ab1ISPPo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 11:14:26 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Greg KH <greg@kroah.com>
-Subject: Re: [PATCH 1/2] misc: remove CONFIG_MISC_DEVICES
-Date: Mon, 19 Sep 2011 17:14:18 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Randy Dunlap <rdunlap@xenotime.net>, Jean Delvare <khali@linux-fr.org>,
-        Luciano Coelho <coelho@ti.com>, matti.j.aaltonen@nokia.com,
-        johannes@sipsolutions.net, linux-kernel@vger.kernel.org,
-        sameo@linux.intel.com, mchehab@infradead.org,
-        linux-media@vger.kernel.org, linux-omap@vger.kernel.org,
-        Tony Lindgren <tony@atomide.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-References: <20110829102732.03f0f05d.rdunlap@xenotime.net> <2282172.TF7nejTDIZ@wuerfel> <20110919130755.GA9829@kroah.com>
-In-Reply-To: <20110919130755.GA9829@kroah.com>
+	Mon, 19 Sep 2011 11:15:44 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6473"; a="119617390"
+Date: Mon, 19 Sep 2011 10:15:32 -0500
+From: "Linas Vepstas (Code Aurora)" <linas@codeaurora.org>
+To: Dongdong Deng <libfetion@gmail.com>
+Cc: Richard Kuo <rkuo@codeaurora.org>, linux-arch@vger.kernel.org,
+        linux-hexagon@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 31/36] Hexagon: kgdb support files
+Message-ID: <20110919151532.GA6830@codeaurora.org>
+References: <e97c6e$3hno1n@wolverine02.qualcomm.com>
+ <CAGn38=0herzUuFyq7-4irgi8Myq0tibz0FGLiZY0GRq8iiO5kg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201109191714.18334.arnd@arndb.de>
-X-Provags-ID: V02:K0:0/trgz6W5JaqH/I0NMLZ5cID1/+wvDNPcuvO3i+TB6N
- y14qdlLGqXNKrhKWTbgaWlWEl04QFseBLbxEWZcr3XyYXj0gIf
- DrBMOutQWteDKS8ZjML8ecHUBFJatine8qrsw0Amvy3b9I/RP7
- yGU/4j0U/+TToplTiQvVQjtFy0ZvriChxjlDmCcPzVyhXg9+8P
- z3nraNrHU7M1zhtDCVjs7GjC54rm1izl5jBrZCqnUDiawDSh1Z
- 95DspSFKp0p4OhdnArX7qfy5WnoZuBNvrjYKMpngBqbiT8M8KU
- +2HBFAcwKqfNBFa+GQCSxIeO9puazaWZDDrqsyhrh5O+ioPjnq
- 7dSGTaQ0CbUjdyZQ+FqU=
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAGn38=0herzUuFyq7-4irgi8Myq0tibz0FGLiZY0GRq8iiO5kg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 19 September 2011, Greg KH wrote:
-> That sounds good to me, I'll be glad to collect the patches and push
-> them to Linus for both of those trees (might as well keep them in the
-> same git tree, no need to separate them, right?) and I'll rely on you
-> for review and acking them.  Much like I do today for the tty and serial
-> trees.
+On Mon, Sep 19, 2011 at 05:46:09PM +0800, Dongdong Deng wrote:
+> On Thu, Sep 15, 2011 at 2:19 AM, Richard Kuo <rkuo@codeaurora.org> wrote:
+> > +#if 0
+> > +       ret = kgdb_handle_exception(args->trapnr & 0xff, args->signr, args->err,
+> > +                                   regs);
+> > +       if (ret)
+> > +               return NOTIFY_DONE;
+> > +#endif
 > 
-> I'll go set up the trees locally today and when kernel.org opens back
-> up, make them public and add them to linux-next.
+> Hmm,  the key code of invoking kgdb_core was disabled by "#if 0".
 
-Ok, great!
+The Hexagon kgdb implementation is incomplete; I work on it as time
+permits and urgency requires.  I know from direct experience that,
+for kernel bringup and stress testing on new platforms, that kdb is 
+invaluable, being infinitely easier to use than any hardware debugger.
+(cheaper, too)
 
-Thanks,
+This world could use a really cheap, easy-to-setup jtag debugger.
 
-	Arnd
+-- Linas
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
