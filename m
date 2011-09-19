@@ -1,58 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045Ab1ISJKk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 05:10:40 -0400
-Received: from relay.medianet-world.de ([213.157.0.172]:54085 "HELO
-	relay.medianet-world.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753490Ab1ISJKj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 05:10:39 -0400
-X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 Sep 2011 05:10:39 EDT
-Thread-Index: Acx2qw4Ta/TU1S87T3a5AgmxDFUnIg==
-Thread-Topic: [ANNOUNCE] 3.0.4-rt14
-Content-Class: urn:content-classes:message
-Importance: normal
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4862
-From: "Tim Sander" <tim.sander@hbm.com>
-Organization: Hottinger Baldwin Messtechnik
-To: "Thomas Gleixner" <tglx@linutronix.de>,
-        "linux-rt-users" <linux-rt-users@vger.kernel.org>
-Subject: Re: [ANNOUNCE] 3.0.4-rt14
-Date: Mon, 19 Sep 2011 11:03:52 +0200
-User-Agent: KMail/1.13.5 (Linux/3.0.3; KDE/4.4.5; x86_64; ; )
-Cc: "LKML" <linux-kernel@vger.kernel.org>
-References: <alpine.LFD.2.02.1109150047290.2723@ionos>
-In-Reply-To: <alpine.LFD.2.02.1109150047290.2723@ionos>
+	id S1752698Ab1ISJOG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 05:14:06 -0400
+Received: from mga11.intel.com ([192.55.52.93]:42245 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750910Ab1ISJOE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 05:14:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,404,1312182000"; 
+   d="scan'208";a="53107997"
+Message-ID: <4E7707DA.6080504@linux.intel.com>
+Date: Mon, 19 Sep 2011 17:14:02 +0800
+From: Chen Gong <gong.chen@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Type: text/Plain;
-	charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-ID: <201109191103.52843.tim.sander@hbm.com>
-X-OriginalArrivalTime: 19 Sep 2011 09:03:53.0249 (UTC) FILETIME=[0DF42110:01CC76AB]
+To: ak@linux.intel.com, Huang Ying <ying.huang@intel.com>
+CC: "Luck, Tony" <tony.luck@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] add IRQ context simulation in mce-inject
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas
+From: Chen Gong <gong.chen@linux.intel.com>
 
-Thanks for the new release. We've been testing your release here. We found 
-that the minimum timer resolution on a vanilla 3.0.4-rt14 is about 16ms. I 
-tried switching on hr timers but even with them the timer behaviour was the 
-same. So i suspect that there is something strange going on concerning the 
-timers. The tests done where on the pcm04 arm11 platform.
+Current mce-inject can simulate some kinds of scenarios, such as
+one CPU working in process context, and other CPUs working in NMI
+context. To extend the coverage of test range, a new IRQ context
+for other CPUs is added.
 
-Best regards
-Tim
+Signed-off-by: Chen Gong <gong.chen@linux.intel.com>
+---
+  arch/x86/include/asm/mce.h              |    1 +
+  arch/x86/kernel/cpu/mcheck/mce-inject.c |   34 +++++++++++++++++++++++++++---
+  2 files changed, 31 insertions(+), 4 deletions(-)
 
-Hottinger Baldwin Messtechnik GmbH, Im Tiefen See 45, 64293 Darmstadt, Germany | www.hbm.com 
+diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
+index c9321f3..2490e8c 100644
+--- a/arch/x86/include/asm/mce.h
++++ b/arch/x86/include/asm/mce.h
+@@ -54,6 +54,7 @@
+  #define MCJ_CTX_IRQ		2    /* inject context: IRQ */
+  #define MCJ_NMI_BROADCAST	4    /* do NMI broadcasting */
+  #define MCJ_EXCEPTION		8    /* raise as exception */
++#define MCJ_IRQ_BRAODCAST	0x10 /* do IRQ broadcasting */
+   /* Fields are zero when not available */
+  struct mce {
+diff --git a/arch/x86/kernel/cpu/mcheck/mce-inject.c 
+b/arch/x86/kernel/cpu/mcheck/mce-inject.c
+index 0ed633c..8f7a119 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce-inject.c
++++ b/arch/x86/kernel/cpu/mcheck/mce-inject.c
+@@ -17,6 +17,7 @@
+  #include <linux/kernel.h>
+  #include <linux/string.h>
+  #include <linux/fs.h>
++#include <linux/preempt.h>
+  #include <linux/smp.h>
+  #include <linux/notifier.h>
+  #include <linux/kdebug.h>
+@@ -94,6 +95,18 @@ static int mce_raise_notify(struct notifier_block *self,
+  	return NOTIFY_STOP;
+  }
+  +static void mce_irq_ipi(void *info)
++{
++	int cpu = smp_processor_id();
++	struct mce *m = &__get_cpu_var(injectm);
++
++	if (cpumask_test_cpu(cpu, mce_inject_cpumask) &&
++		m->inject_flags & MCJ_EXCEPTION) {
++		cpumask_clear_cpu(cpu, mce_inject_cpumask);
++		raise_exception(m, NULL);
++	}
++}
++
+  static struct notifier_block mce_raise_nb = {
+  	.notifier_call = mce_raise_notify,
+  	.priority = NMI_LOCAL_NORMAL_PRIOR,
+@@ -146,9 +159,10 @@ static void raise_mce(struct mce *m)
+  		return;
+   #ifdef CONFIG_X86_LOCAL_APIC
+-	if (m->inject_flags & MCJ_NMI_BROADCAST) {
++	if (m->inject_flags & (MCJ_IRQ_BRAODCAST | MCJ_NMI_BROADCAST)) {
+  		unsigned long start;
+  		int cpu;
++
+  		get_online_cpus();
+  		cpumask_copy(mce_inject_cpumask, cpu_online_mask);
+  		cpumask_clear_cpu(get_cpu(), mce_inject_cpumask);
+@@ -158,13 +172,25 @@ static void raise_mce(struct mce *m)
+  			    MCJ_CTX(mcpu->inject_flags) != MCJ_CTX_RANDOM)
+  				cpumask_clear_cpu(cpu, mce_inject_cpumask);
+  		}
+-		if (!cpumask_empty(mce_inject_cpumask))
+-			apic->send_IPI_mask(mce_inject_cpumask, NMI_VECTOR);
++		if (!cpumask_empty(mce_inject_cpumask)) {
++			if (m->inject_flags & MCJ_IRQ_BRAODCAST) {
++				/*
++				 * don't wait because mce_irq_ipi is necessary
++				 * to be sync with following raise_local
++				 */
++				preempt_disable();
++				smp_call_function_many(mce_inject_cpumask,
++					mce_irq_ipi, NULL, 0);
++				preempt_enable();
++			} else if (m->inject_flags & MCJ_NMI_BROADCAST)
++				apic->send_IPI_mask(mce_inject_cpumask,
++						NMI_VECTOR);
++		}
+  		start = jiffies;
+  		while (!cpumask_empty(mce_inject_cpumask)) {
+  			if (!time_before(jiffies, start + 2*HZ)) {
+  				printk(KERN_ERR
+-				"Timeout waiting for mce inject NMI %lx\n",
++				"Timeout waiting for mce inject %lx\n",
+  					*cpumask_bits(mce_inject_cpumask));
+  				break;
+  			}
+-- 
+1.7.1
 
-Registered as GmbH (German limited liability corporation) in the commercial register at the local court of Darmstadt, HRB 1147  
-Company domiciled in Darmstadt | CEO: Andreas Huellhorst | Chairman of the board: James Charles Webster
-
-Als Gesellschaft mit beschraenkter Haftung eingetragen im Handelsregister des Amtsgerichts Darmstadt unter HRB 1147 
-Sitz der Gesellschaft: Darmstadt | Geschaeftsfuehrung: Andreas Huellhorst | Aufsichtsratsvorsitzender: James Charles Webster
-
-The information in this email is confidential. It is intended solely for the addressee. If you are not the intended recipient, please let me know and delete this email.
-
-Die in dieser E-Mail enthaltene Information ist vertraulich und lediglich für den Empfaenger bestimmt. Sollten Sie nicht der eigentliche Empfaenger sein, informieren Sie mich bitte kurz und loeschen diese E-Mail.
 
