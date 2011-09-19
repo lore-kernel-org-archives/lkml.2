@@ -1,80 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755041Ab1ISJ42 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 05:56:28 -0400
-Received: from fsmail-out.f-secure.com ([193.110.108.171]:46777 "EHLO
-	fsmail-out.f-secure.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754856Ab1ISJ40 (ORCPT
+	id S932112Ab1ISJ43 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 05:56:29 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:37517 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754900Ab1ISJ40 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 19 Sep 2011 05:56:26 -0400
-X-Greylist: delayed 465 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 Sep 2011 05:56:26 EDT
-Message-ID: <4E770FF5.8030207@f-secure.com>
-Date: Mon, 19 Sep 2011 12:48:37 +0300
-From: Tarkan Erimer <tarkan.erimer@f-secure.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110907 Thunderbird/6.0.2
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:to:cc:subject:message-id:
+	mime-version:content-type:content-disposition:user-agent:x-system-of-record;
+	b=OyFeGU5jaIq9BubOAwd+XWJpFpI7JKovWECHHt/WzvjbOtMf0WrUigXDFUtl8WSQB
+	zY1MVpnKT9aSiQmGK7zUg==
+Date: Mon, 19 Sep 2011 11:56:20 +0200
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, acme@redhat.com, dsahern@gmail.com, mingo@elte.hu
+Subject: [PATCH] perf: fix perf.data endianness detection
+Message-ID: <20110919095620.GA9607@quad>
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [BUG] i915 crashes X Server Constantly on Linux-3.1-rc4 to .rc6
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.4.6813,1.0.211,0.0.0000
- definitions=2011-09-19_02:2011-09-19,2011-09-19,1970-01-01 signatures=0
-X-Proofpoint-Spam-Reason: safe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-I'm having constant X crashes (Almost every 30 mins.) on Intel Graphics. 
-Below is the error message after X crashes :
+The current version of perf detects whether or not
+the perf.data file is written in a different endianness
+using the attr_size field in the header of the file. This
+field represents sizeof(struct perf_event) as known to perf
+record. If the size does not match, then perf tries the
+byte-swapped version. If they match, then the tool assumes
+a different endianness.
 
-[  113.264775] [drm:ironlake_update_pch_refclk] *ERROR* enabling SSC on PCH
-[  113.265289] [drm] Changing LVDS panel from (-hsync, -vsync) to 
-(+hsync, -vsync)
-[  114.141640] [drm:ironlake_update_pch_refclk] *ERROR* enabling SSC on PCH
-[ 4955.770011] [drm:intel_disable_transcoder] *ERROR* failed to disable 
-transcoder
-[ 4955.777420] [drm:ironlake_update_pch_refclk] *ERROR* enabling SSC on PCH
-[ 4955.938453] [drm:ironlake_update_pch_refclk] *ERROR* enabling SSC on PCH
-[ 5255.360508] [drm:ironlake_update_pch_refclk] *ERROR* enabling SSC on PCH
-[ 5255.527867] [drm:ironlake_update_pch_refclk] *ERROR* enabling SSC on PCH
-[ 5744.182746] [drm:ironlake_update_pch_refclk] *ERROR* enabling SSC on PCH
-[ 5744.349049] [drm:ironlake_update_pch_refclk] *ERROR* enabling SSC on PCH
-[ 8536.532605] [drm:ironlake_update_pch_refclk] *ERROR* enabling SSC on PCH
-[ 8536.533128] [drm] Changing LVDS panel from (+hsync, -vsync) to 
-(-hsync, -vsync)
-[ 8536.835206] [drm:ironlake_update_pch_refclk] *ERROR* enabling SSC on PCH
-[ 8605.034788] [drm:ironlake_update_pch_refclk] *ERROR* enabling SSC on PCH
-[ 8605.035302] [drm] Changing LVDS panel from (-hsync, -vsync) to 
-(+hsync, -vsync)
-[ 8606.110388] [drm:ironlake_update_pch_refclk] *ERROR* enabling SSC on PCH
-[ 8869.586751] [drm:ironlake_update_pch_refclk] *ERROR* enabling SSC on PCH
-[ 8869.587264] [drm] Changing LVDS panel from (+hsync, -vsync) to 
-(-hsync, -vsync)
-[ 8869.906322] [drm:ironlake_update_pch_refclk] *ERROR* enabling SSC on PCH
-[ 8950.401958] [drm:ironlake_update_pch_refclk] *ERROR* enabling SSC on PCH
-[ 8950.402472] [drm] Changing LVDS panel from (-hsync, -vsync) to 
-(+hsync, -vsync)
-[ 8951.066084] [drm:ironlake_update_pch_refclk] *ERROR* enabling SSC on PCH
+The issue with the approach is that it assumes the size of
+perf_event_attr always has to match between the file and the
+tool. However, the kernel API is designed to make it possible
+to extend perf_event_attr for new features. Consequently, it
+is not possible to use attr_size to detect endianness.
 
+This patch takes another approach by using the magic number
+written at the beginning of the perf.data file to detect
+endianness mismatch. The magic number is an eight-byte
+signature. The patch introduces a new value for this
+signature. The key difference is that the signature
+is written differently in the file depending on the
+endianness. Thus, by comparing the signature from the file
+with the tool's own signature it is possible to detect if
+the endianness matches. The new signature is "PERFILE2".
 
-Here is VGA info from lspci :
+Backward compatiblity with existing perf.data file is
+ensured.
 
-linux-ou2v:~ # lspci | grep -i vga
-00:02.0 VGA compatible controller: Intel Corporation 2nd Generation Core 
-Processor Family Integrated Graphics Controller (rev 09)
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
 
-And it's Xserver v1.11 and Intel Driver 2.16 with 
-Kernel-3.1.0-rc6-2-desktop (opensuse). Also, this behavior happens from 
-Linux-3.1-rc4 to rc6. At least these are the versions that I tried as 
-3.1. Linux-3.0.x runs fine with same configuration.
-
-
-
-
-
--- 
-Tarkan Erimer
-IT Service Deployment / 3rd Level Support / Snr. Linux Engineer
-
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index b6c1ad1..d824502 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -57,9 +57,20 @@ char *perf_header__find_event(u64 id)
+ 	return NULL;
+ }
+ 
+-static const char *__perf_magic = "PERFFILE";
+-
+-#define PERF_MAGIC	(*(u64 *)__perf_magic)
++/*
++ * magic2 = "PERFILE2"
++ * must be a numerical value to let the endianness
++ * determine the memory layout. That way we are able
++ * to detect endianness when reading the perf.data file
++ * back.
++ *
++ * we check for legacy (PERFFILE) format.
++ */
++static const char *__perf_magic1 = "PERFFILE";
++static const u64 __perf_magic2    = 0x32454c4946524550ULL;
++static const u64 __perf_magic2_sw = 0x50455246494c4532ULL;
++
++#define PERF_MAGIC	(__perf_magic2)
+ 
+ struct perf_file_attr {
+ 	struct perf_event_attr	attr;
+@@ -595,25 +606,57 @@ out_free:
+ 	return err;
+ }
+ 
++static int check_magic_endian(u64 *magic, struct perf_file_header *header,
++			      struct perf_header *ph)
++{
++	int ret;
++
++	/* check for legacy format */
++	ret = memcmp(magic, __perf_magic1, sizeof(*magic));
++	if (ret == 0) {
++		pr_debug("legacy perf.data format\n");
++		if (!header)
++			return -1;
++
++		if (header->attr_size != sizeof(struct perf_file_attr)) {
++			u64 attr_size = bswap_64(header->attr_size);
++
++			if (attr_size != sizeof(struct perf_file_attr))
++				return -1;
++
++			mem_bswap_64(header, offsetof(struct perf_file_header,
++						adds_features));
++			ph->needs_swap = true;
++		}
++		return 0;
++	}
++
++	/* check for our magic (same endianness) */
++	if (*magic == __perf_magic2)
++		return 0;
++
++	/* check for our magic (opposite endianness) */
++	if (*magic != __perf_magic2_sw)
++		return -1;
++
++	ph->needs_swap = true;
++
++	return 0;
++}
++
+ int perf_file_header__read(struct perf_file_header *header,
+ 			   struct perf_header *ph, int fd)
+ {
++	int ret;
++
+ 	lseek(fd, 0, SEEK_SET);
+ 
+-	if (readn(fd, header, sizeof(*header)) <= 0 ||
+-	    memcmp(&header->magic, __perf_magic, sizeof(header->magic)))
++	ret = readn(fd, header, sizeof(*header));
++	if (ret <= 0)
+ 		return -1;
+ 
+-	if (header->attr_size != sizeof(struct perf_file_attr)) {
+-		u64 attr_size = bswap_64(header->attr_size);
+-
+-		if (attr_size != sizeof(struct perf_file_attr))
+-			return -1;
+-
+-		mem_bswap_64(header, offsetof(struct perf_file_header,
+-					    adds_features));
+-		ph->needs_swap = true;
+-	}
++	if (check_magic_endian(&header->magic, header, ph) < 0)
++		return -1;
+ 
+ 	if (header->size != sizeof(*header)) {
+ 		/* Support the previous format */
+@@ -824,8 +867,13 @@ static int perf_file_header__read_pipe(struct perf_pipe_file_header *header,
+ 				       struct perf_header *ph, int fd,
+ 				       bool repipe)
+ {
+-	if (readn(fd, header, sizeof(*header)) <= 0 ||
+-	    memcmp(&header->magic, __perf_magic, sizeof(header->magic)))
++	int ret;
++
++	ret = readn(fd, header, sizeof(*header));
++	if (ret <= 0)
++		return -1;
++
++	 if (check_magic_endian(&header->magic, NULL, ph) < 0)
+ 		return -1;
+ 
+ 	if (repipe && do_write(STDOUT_FILENO, header, sizeof(*header)) < 0)
