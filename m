@@ -1,62 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755728Ab1ISNqK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 09:46:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36790 "EHLO mx2.suse.de"
+	id S1755531Ab1ISNsw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 09:48:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11458 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750920Ab1ISNqI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 09:46:08 -0400
-Date: Mon, 19 Sep 2011 15:46:06 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
-        Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 02/11] mm: vmscan: distinguish global reclaim from global
- LRU scanning
-Message-ID: <20110919134606.GF21847@tiehlicka.suse.cz>
-References: <1315825048-3437-1-git-send-email-jweiner@redhat.com>
- <1315825048-3437-3-git-send-email-jweiner@redhat.com>
- <20110919132344.GE21847@tiehlicka.suse.cz>
+	id S1753266Ab1ISNsv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 09:48:51 -0400
+Date: Mon, 19 Sep 2011 09:48:15 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: Greg KH <greg@kroah.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, gregkh@suse.de, joe@perches.com,
+        jim.cromie@gmail.com, bvanassche@acm.org, linux-kernel@vger.kernel.org,
+        davem@davemloft.net, aloisio.almeida@openbossa.org,
+        netdev@vger.kernel.org, akpm@linux-foundation.org,
+        rdunlap@xenotime.net
+Subject: Re: [PATCH ] dynamic_debug: call __netdev_printk only for CONFIG_NET
+Message-ID: <20110919134814.GA2658@redhat.com>
+References: <cover.1313085588.git.jbaron@redhat.com>
+ <5514795fe63ccfd4b3a80283ed04a526abe3c59d.1313085588.git.jbaron@redhat.com>
+ <201109011657.02407.arnd@arndb.de>
+ <20110901151817.GA14324@redhat.com>
+ <20110918082736.GB19444@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110919132344.GE21847@tiehlicka.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110918082736.GB19444@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 19-09-11 15:23:44, Michal Hocko wrote:
-> On Mon 12-09-11 12:57:19, Johannes Weiner wrote:
-> > The traditional zone reclaim code is scanning the per-zone LRU lists
-> > during direct reclaim and kswapd, and the per-zone per-memory cgroup
-> > LRU lists when reclaiming on behalf of a memory cgroup limit.
+On Sun, Sep 18, 2011 at 01:27:36AM -0700, Greg KH wrote:
+> On Thu, Sep 01, 2011 at 11:18:18AM -0400, Jason Baron wrote:
+> > On Thu, Sep 01, 2011 at 04:57:02PM +0200, Arnd Bergmann wrote:
+> > > __netdev_printk is only defined when CONFIG_NET is set. Since we only need
+> > > __dynamic_netdev_dbg for network drivers, we can make it conditional on the
+> > > same Kconfig symbol.
+> > >
 > > 
-> > Subsequent patches will convert the traditional reclaim code to
-> > reclaim exclusively from the per-memory cgroup LRU lists.  As a
-> > result, using the predicate for which LRU list is scanned will no
-> > longer be appropriate to tell global reclaim from limit reclaim.
+> > Hi,
 > > 
-> > This patch adds a global_reclaim() predicate to tell direct/kswapd
-> > reclaim from memory cgroup limit reclaim and substitutes it in all
-> > places where currently scanning_global_lru() is used for that.
+> > Yes, I've posted a fix for this:
+> > 
+> > https://lkml.org/lkml/2011/8/30/297
+> > 
+> > Hopefully, it will be pulled in soon.
 > 
-> I am wondering about vmscan_swappiness. Shouldn't it use global_reclaim
-> instead?
+> As that thread again spun off into confusion, can you please resend the
+> end result?
+> 
+> thanks,
+> 
+> greg k-h
 
-Ahh, it looks like the next patch does that. Wouldn't it make more sense
-to have that change here? I see that this makes the patch smaller but...
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Hi,
+
+Andrew Morton has pulled these into his -mm tree...so I think the series
+should be all set.
+
+Thanks,
+
+-Jason
