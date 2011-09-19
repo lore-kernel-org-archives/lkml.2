@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932921Ab1ISA7K (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 20:59:10 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:9657 "EHLO relay.sw.ru"
+	id S1756641Ab1ISA6i (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 20:58:38 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:39348 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932770Ab1ISA7G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 20:59:06 -0400
+	id S1752719Ab1ISA6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Sep 2011 20:58:25 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: linux-kernel@vger.kernel.org
 Cc: paul@paulmenage.org, lizf@cn.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com,
         ebiederm@xmission.com, davem@davemloft.net, gthelen@google.com,
         netdev@vger.kernel.org, linux-mm@kvack.org, kirill@shutemov.name,
         Glauber Costa <glommer@parallels.com>
-Subject: [PATCH v3 7/7] Display current tcp memory allocation in kmem cgroup
-Date: Sun, 18 Sep 2011 21:56:45 -0300
-Message-Id: <1316393805-3005-8-git-send-email-glommer@parallels.com>
+Subject: [PATCH v3 2/7] socket: initial cgroup code.
+Date: Sun, 18 Sep 2011 21:56:40 -0300
+Message-Id: <1316393805-3005-3-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <1316393805-3005-1-git-send-email-glommer@parallels.com>
 References: <1316393805-3005-1-git-send-email-glommer@parallels.com>
@@ -22,65 +22,139 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces kmem.tcp_current_memory file, living in the
-kmem_cgroup filesystem. It is a simple read-only file that displays the
-amount of kernel memory currently consumed by the cgroup.
+We aim to control the amount of kernel memory pinned at any
+time by tcp sockets. To lay the foundations for this work,
+this patch adds a pointer to the kmem_cgroup to the socket
+structure.
 
 Signed-off-by: Glauber Costa <glommer@parallels.com>
 CC: David S. Miller <davem@davemloft.net>
 CC: Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>
 CC: Eric W. Biederman <ebiederm@xmission.com>
 ---
- Documentation/cgroups/memory.txt |    1 +
- mm/memcontrol.c                  |   17 +++++++++++++++++
- 2 files changed, 18 insertions(+), 0 deletions(-)
+ include/linux/memcontrol.h |   15 +++++++++++++++
+ include/net/sock.h         |    2 ++
+ mm/memcontrol.c            |   33 +++++++++++++++++++++++++++++++++
+ net/core/sock.c            |    3 +++
+ 4 files changed, 53 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-index 1ffde3e..f5a539d 100644
---- a/Documentation/cgroups/memory.txt
-+++ b/Documentation/cgroups/memory.txt
-@@ -79,6 +79,7 @@ Brief summary of control files.
-  memory.independent_kmem_limit	 # select whether or not kernel memory limits are
- 				   independent of user limits
-  memory.kmem.tcp.max_memory      # set/show hard limit for tcp buf memory
-+ memory.kmem.tcp.current_memory  # show current tcp buf memory allocation
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index 3b535db..2cb9226 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -395,5 +395,20 @@ mem_cgroup_print_bad_page(struct page *page)
+ }
+ #endif
  
- 1. History
++#ifdef CONFIG_INET
++struct sock;
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
++void sock_update_memcg(struct sock *sk);
++void sock_release_memcg(struct sock *sk);
++
++#else
++static inline void sock_update_memcg(struct sock *sk)
++{
++}
++static inline void sock_release_memcg(struct sock *sk)
++{
++}
++#endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
++#endif /* CONFIG_INET */
+ #endif /* _LINUX_MEMCONTROL_H */
  
+diff --git a/include/net/sock.h b/include/net/sock.h
+index 8e4062f..afe1467 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -228,6 +228,7 @@ struct sock_common {
+   *	@sk_security: used by security modules
+   *	@sk_mark: generic packet mark
+   *	@sk_classid: this socket's cgroup classid
++  *	@sk_cgrp: this socket's kernel memory (kmem) cgroup
+   *	@sk_write_pending: a write to stream socket waits to start
+   *	@sk_state_change: callback to indicate change in the state of the sock
+   *	@sk_data_ready: callback to indicate there is data to be processed
+@@ -339,6 +340,7 @@ struct sock {
+ #endif
+ 	__u32			sk_mark;
+ 	u32			sk_classid;
++	struct mem_cgroup	*sk_cgrp;
+ 	void			(*sk_state_change)(struct sock *sk);
+ 	void			(*sk_data_ready)(struct sock *sk, int bytes);
+ 	void			(*sk_write_space)(struct sock *sk);
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index be5ab89..8c015b0 100644
+index d32e931..0a7d335 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -514,12 +514,29 @@ static u64 tcp_read_maxmem(struct cgroup *cgrp, struct cftype *cft)
- 	return ret;
- }
- 
-+static u64 tcp_read_curmem(struct cgroup *cgrp, struct cftype *cft)
-+{
-+	struct mem_cgroup *sg = mem_cgroup_from_cont(cgrp);
-+	u64 ret;
-+
-+	if (!cgroup_lock_live_group(cgrp))
-+		return -ENODEV;
-+	ret = atomic_long_read(&sg->tcp_memory_allocated);
-+
-+	cgroup_unlock();
-+	return ret;
-+}
-+
- static struct cftype tcp_files[] = {
- 	{
- 		.name = "kmem.tcp.max_memory",
- 		.write_u64 = tcp_write_maxmem,
- 		.read_u64 = tcp_read_maxmem,
- 	},
-+	{
-+		.name = "kmem.tcp.current_memory",
-+		.read_u64 = tcp_read_curmem,
-+	},
+@@ -345,6 +345,39 @@ struct mem_cgroup {
+ 	spinlock_t pcp_counter_lock;
  };
  
++/* Writing them here to avoid exposing memcg's inner layout */
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
++#ifdef CONFIG_INET
++#include <net/sock.h>
++
++void sock_update_memcg(struct sock *sk)
++{
++	/* right now a socket spends its whole life in the same cgroup */
++	BUG_ON(sk->sk_cgrp);
++
++	rcu_read_lock();
++	sk->sk_cgrp = mem_cgroup_from_task(current);
++
++	/*
++	 * We don't need to protect against anything task-related, because
++	 * we are basically stuck with the sock pointer that won't change,
++	 * even if the task that originated the socket changes cgroups.
++	 *
++	 * What we do have to guarantee, is that the chain leading us to
++	 * the top level won't change under our noses. Incrementing the
++	 * reference count via cgroup_exclude_rmdir guarantees that.
++	 */
++	cgroup_exclude_rmdir(mem_cgroup_css(sk->sk_cgrp));
++	rcu_read_unlock();
++}
++
++void sock_release_memcg(struct sock *sk)
++{
++	cgroup_release_and_wakeup_rmdir(mem_cgroup_css(sk->sk_cgrp));
++}
++#endif /* CONFIG_INET */
++#endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
++
+ /* Stuffs for move charges at task migration. */
  /*
+  * Types of charges to be moved. "move_charge_at_immitgrate" is treated as a
+diff --git a/net/core/sock.c b/net/core/sock.c
+index 3449df8..54ec8ac 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -125,6 +125,7 @@
+ #include <net/xfrm.h>
+ #include <linux/ipsec.h>
+ #include <net/cls_cgroup.h>
++#include <linux/memcontrol.h>
+ 
+ #include <linux/filter.h>
+ 
+@@ -1139,6 +1140,7 @@ struct sock *sk_alloc(struct net *net, int family, gfp_t priority,
+ 		atomic_set(&sk->sk_wmem_alloc, 1);
+ 
+ 		sock_update_classid(sk);
++		sock_update_memcg(sk);
+ 	}
+ 
+ 	return sk;
+@@ -1170,6 +1172,7 @@ static void __sk_free(struct sock *sk)
+ 		put_cred(sk->sk_peer_cred);
+ 	put_pid(sk->sk_peer_pid);
+ 	put_net(sock_net(sk));
++	sock_release_memcg(sk);
+ 	sk_prot_free(sk->sk_prot_creator, sk);
+ }
+ 
 -- 
 1.7.6
 
