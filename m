@@ -1,54 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932439Ab1ISVy7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 17:54:59 -0400
-Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:44232 "HELO
-	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755133Ab1ISVy6 (ORCPT
+	id S932571Ab1ISVzM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 17:55:12 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:12168 "EHLO
+	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932481Ab1ISVzJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 17:54:58 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: JxFOykMVM1lbLinmh9QuK76f3BAsnjBfOG_clMhj65COczV
- Zh2uw.xKsBhTNtvrWJHQf30UkQxa7oQxk6f6TTSLco1ThSpZOdZCTfRs8iqs
- Uxah45OzC1f_LeW8FFyayABDzzzUUpBbHsBRrmkgA.kxQhnL8Q58GrI97WcG
- _H1yQowIsPY4vYIbsuXy3NgrSSVhvdXOfeKcMBnG6f6jIuQk66jOndm6wYrp
- .TBPE9K945g3h2KFqJRnctTncHDSbyp5HDjiMmD7YRWvKERR_x1tnXq8aFFW
- 3G8zT_PlwhqAySmvIYJH.i1lDaemShC5eUFXqzibL21naQnBjGBLLQO90dB1
- gwa6eCWoWbsijUup8CezPffjNuKgIl9nAQ_J61xvhCZvpHNA-
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Mon, 19 Sep 2011 16:54:55 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-X-X-Sender: cl@router.home
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [RFC][PATCH 4/5] printk: Have wake_up_klogd() use
- __this_cpu_write()
-In-Reply-To: <20110919212641.302263742@goodmis.org>
-Message-ID: <alpine.DEB.2.00.1109191653460.19059@router.home>
-References: <20110919212040.745370781@goodmis.org> <20110919212641.302263742@goodmis.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 19 Sep 2011 17:55:09 -0400
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bhz2fh668h839h)
+X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPVD:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
+Message-ID: <4E77B96D.40101@am.sony.com>
+Date: Mon, 19 Sep 2011 14:51:41 -0700
+From: Frank Rowand <frank.rowand@am.sony.com>
+Reply-To: <frank.rowand@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: <tglx@linutronix.de>, <linux-rt-users@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] preempt-rt: convert blackfin boot_lock to raw
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Sep 2011, Steven Rostedt wrote:
 
-> From: Steven Rostedt <srostedt@redhat.com>
->
-> The wake up code that triggers klogd does not really matter which
-> CPU it enables the wake up on. Every CPU will be doing a printk_tick()
-> and check the current CPU. As long as one of the CPUs triggers the
-> wakeup we are fine. Use __this_cpu_write() instead of this_cpu_write()
-> to show that we do not care.
+The blackfin boot_lock is used by the secondary processor startup code.
+The locking task is the idle thread, which has
+idle->sched_class == &idle_sched_class.
+idle_sched_class->enqueue_task == NULL, so if the idle task blocks on the
+lock, the attempt to wake it when the lock becomes available will fail:
 
-printk_needs_cpu() is always called from context where we have disabled
-interrupts therefore this is safe to do.
+try_to_wake_up()
+   ...
+      activate_task()
+         enqueue_task()
+            p->sched_class->enqueue_task(rq, p, flags)
 
-Reviewed-by: Christoph Lameter <cl@gentwo.org>
+Fix by converting boot_lock to a raw spin lock.
+
+This has not been compile or boot tested.  The fix was needed by arm, this
+patch is for all other instances of "boot_lock" in other architectures.
+
+Signed-off-by: Frank Rowand <frank.rowand@am.sony.com>
+---
+ arch/blackfin/mach-bf561/smp.c |   10 	5 +	5 -	0 !
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+Index: b/arch/blackfin/mach-bf561/smp.c
+===================================================================
+--- a/arch/blackfin/mach-bf561/smp.c
++++ b/arch/blackfin/mach-bf561/smp.c
+@@ -13,7 +13,7 @@
+ #include <asm/dma.h>
+ #include <asm/time.h>
+ 
+-static DEFINE_SPINLOCK(boot_lock);
++static DEFINE_RAW_SPINLOCK(boot_lock);
+ 
+ /*
+  * platform_init_cpus() - Tell the world about how many cores we
+@@ -70,8 +70,8 @@ void __cpuinit platform_secondary_init(u
+ 
+ 	/* We are done with local CPU inits, unblock the boot CPU. */
+ 	set_cpu_online(cpu, true);
+-	spin_lock(&boot_lock);
+-	spin_unlock(&boot_lock);
++	raw_spin_lock(&boot_lock);
++	raw_spin_unlock(&boot_lock);
+ }
+ 
+ int __cpuinit platform_boot_secondary(unsigned int cpu, struct task_struct *idle)
+@@ -80,7 +80,7 @@ int __cpuinit platform_boot_secondary(un
+ 
+ 	printk(KERN_INFO "Booting Core B.\n");
+ 
+-	spin_lock(&boot_lock);
++	raw_spin_lock(&boot_lock);
+ 
+ 	if ((bfin_read_SYSCR() & COREB_SRAM_INIT) == 0) {
+ 		/* CoreB already running, sending ipi to wakeup it */
+@@ -101,7 +101,7 @@ int __cpuinit platform_boot_secondary(un
+ 
+ 	if (cpu_online(cpu)) {
+ 		/* release the lock and let coreb run */
+-		spin_unlock(&boot_lock);
++		raw_spin_unlock(&boot_lock);
+ 		return 0;
+ 	} else
+ 		panic("CPU%u: processor failed to boot\n", cpu);
 
