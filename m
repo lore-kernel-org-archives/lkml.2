@@ -1,94 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756393Ab1ISUiM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 16:38:12 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:40939 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753682Ab1ISUiL (ORCPT
+	id S1756531Ab1ISUom (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 16:44:42 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:54195 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756314Ab1ISUol (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 16:38:11 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Christoph Lameter <cl@gentwo.org>
-Cc: Vasiliy Kulikov <segoon@openwall.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        kernel-hardening@lists.openwall.com, Kees Cook <kees@ubuntu.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Dan Rosenberg <drosenberg@vsecurity.com>,
-        Theodore Tso <tytso@mit.edu>, Alan Cox <alan@linux.intel.com>,
-        Jesper Juhl <jj@chaosbits.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [kernel-hardening] Re: [RFC PATCH 2/2] mm: restrict access to /proc/slabinfo
-In-Reply-To: Your message of "Mon, 19 Sep 2011 15:02:34 CDT."
-             <alpine.DEB.2.00.1109191502040.13103@router.home>
-From: Valdis.Kletnieks@vt.edu
-References: <20110910164134.GA2442@albatros> <20110914192744.GC4529@outflux.net> <20110918170512.GA2351@albatros> <CAOJsxLF8DBEC9o9pSwa6c6pMg8ByFBdsDnzg22P3ucQcP98uzA@mail.gmail.com> <20110919144657.GA5928@albatros> <CAOJsxLG8gW=BLOptpULsaAEwTravADKbNbXp5e9Wd7xVEfR9AQ@mail.gmail.com> <20110919155718.GB16272@albatros> <CAOJsxLGZm+npcR0YgXSE2wLC2iXCtzYyCdTDCt1LN=Z28Rm_UA@mail.gmail.com> <20110919161837.GA2232@albatros> <CAOJsxLE2od0f+6cbL2hA_31CbrqS7AUofx5DT2L9fO_7gxH+PQ@mail.gmail.com> <20110919173539.GA3751@albatros> <alpine.DEB.2.00.1109191249450.10968@router.home> <14587.1316462369@turing-police.cc.vt.edu>
-            <alpine.DEB.2.00.1109191502040.13103@router.home>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1316464598_2864P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+	Mon, 19 Sep 2011 16:44:41 -0400
+Message-ID: <4E77A9B1.1040107@gmail.com>
+Date: Mon, 19 Sep 2011 21:44:33 +0100
+From: Dave Kilroy <kilroyd@googlemail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
+MIME-Version: 1.0
+To: Valdis.Kletnieks@vt.edu
+CC: linux-kernel@vger.kernel.org, greg@kroah.com, pe1dnn@amsat.org
+Subject: Re: [PATCH 3/3] staging: wlags49_h2: Declare support for WEXT 21
+References: <1316462896-17846-1-git-send-email-kilroyd@googlemail.com>            <1316462896-17846-4-git-send-email-kilroyd@googlemail.com> <15411.1316463771@turing-police.cc.vt.edu>
+In-Reply-To: <15411.1316463771@turing-police.cc.vt.edu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Date: Mon, 19 Sep 2011 16:36:38 -0400
-Message-ID: <15820.1316464598@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A02020A.4E77A7D8.010F,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1316464598_2864P
-Content-Type: text/plain; charset=us-ascii
+On 19/09/2011 21:22, Valdis.Kletnieks@vt.edu wrote:
+> On Mon, 19 Sep 2011 21:08:16 BST, David Kilroy said:
+>> There may be a few areas where we don't actually support WE21,
+>> but by doing this it will make it easier to find those places.
+>
+> I'll bite - what happens when we find such a place?  Kernel fails to build, or
+> user has a suboptimal usage experience, or?
 
-On Mon, 19 Sep 2011 15:02:34 CDT, Christoph Lameter said:
-> On Mon, 19 Sep 2011, Valdis.Kletnieks@vt.edu wrote:
-> 
-> > On Mon, 19 Sep 2011 12:51:10 CDT, Christoph Lameter said:
-> >
-> > > IMHO a restriction of access to slab statistics is reasonable in a
-> > > hardened environment. Make it dependent on CONFIG_SECURITY or some such
-> > > thing?
-> >
-> > Probably need to invent a separate Kconfig variable - CONFIG_SECURITY
-> > is probably a way-too-big hammer for this nail. I can see lots of systems
-> > that want to enable that, but won't want to tighten access to slab.
-> 
-> There is already CONFIG_SECURITY_DMESG_RESTRICT. Generalize that setting
-> to include all sorts of other kernel statistics?
+The user would have a sub-optimal experience. iwconfig may not display a 
+few things correctly (ESSID?) in particular scenarios.
 
-The question becomes "What are the chances that a given site either will or
-will not agree with using the same setting for all things aggregated under
-the same option".   I could probably make a good case for a  flag
-called CONFIG_SECURITY_INFOLEAK_RESTRICT that would be a switch
-for "standard perms or root only" for all info-leaking files under /proc and
-/sys.
+The reason I included this patch was that I'm not sure whether 
+wpa-supplicant requires WEXT version to be above a certain threshold to 
+use the events in the previous patch. I'm happy to drop this one if it 
+just works.
 
-The problem is that dmesg has *other* info-leakage issues - but it's not
-internal kernel state, it's stuff like ipfilter messages and potentially
-Selinux messages if auditd isn't running, and of late things like systemd and
-crond like to stick crap in there as well.
+> What are the expected chances that sticking this in linux-next for a cycle will
+> result in most/all of the places being found before this all appears in an
+> official release?  I'm thinking this should probably go in linux-next right after
+> the next merge window closes, to maximize the chances we'll shake it
+> all out during almost 2 cycles before it hits the streets. (And yes, I know
+> it's a staging/ driver - if somebody else says "one cycle is more than enough"
+> I'm OK with that too...)
 
+This hardware is old, and as far as I can tell quite rare. I'd hope we 
+can get some feedback from Henk on the series before applying this patch.
 
---==_Exmh_1316464598_2864P
-Content-Type: application/pgp-signature
+Thanks,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFOd6fWcC3lWbTT17ARAhrsAJsFAFIUkT5hViVm7WwhRAKVtg0RtgCglQCA
-kuFRA1R/2evUZwBiwJgH4HY=
-=cav9
------END PGP SIGNATURE-----
-
---==_Exmh_1316464598_2864P--
-
+Dave.
