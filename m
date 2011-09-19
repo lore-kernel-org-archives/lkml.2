@@ -1,102 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754592Ab1ISLZt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 07:25:49 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:59910 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752740Ab1ISLZs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 07:25:48 -0400
+	id S1754823Ab1ISL03 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 07:26:29 -0400
+Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:58730 "EHLO
+	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753172Ab1ISL01 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 07:26:27 -0400
+From: =?ISO-8859-1?Q?P=E9ter?= Ujfalusi <peter.ujfalusi@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Samuel Ortiz <samuel.ortiz@intel.com>, Dmitry Torokhov <dtor@mail.ru>,
+        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, Misael Lopez Cruz <misael.lopez@ti.com>
+Subject: Re: Re: [PATCH 07/17] ASoC: twl6040: Lower the initial gains
+Date: Mon, 19 Sep 2011 14:26:31 +0300
+Message-ID: <2033664.fWQvF2IA53@barack>
+User-Agent: KMail/4.7.1 (Linux/3.0.4-gentoo; KDE/4.7.1; x86_64; ; )
+In-Reply-To: <20110919110006.GH23727@opensource.wolfsonmicro.com>
+References: <1316090379-30760-1-git-send-email-peter.ujfalusi@ti.com> <1316090379-30760-8-git-send-email-peter.ujfalusi@ti.com> <20110919110006.GH23727@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-In-Reply-To: <1316430878.26662.46.camel@vkoul-udesk3>
-References: <1316166960-20964-1-git-send-email-Baohua.Song@csr.com>
- <1316422774.26662.30.camel@vkoul-udesk3> <5EB3BFCD089AD643B9BB63439F5FD5E9840F3A8D@SHAASIEXM01.ASIA.ROOT.PRI>
- <1316425277.26662.41.camel@vkoul-udesk3> <5EB3BFCD089AD643B9BB63439F5FD5E9840F3B18@SHAASIEXM01.ASIA.ROOT.PRI>
- <1316430878.26662.46.camel@vkoul-udesk3>
-From: Barry Song <21cnbao@gmail.com>
-Date: Mon, 19 Sep 2011 19:25:27 +0800
-Message-ID: <CAGsJ_4y0F7JTwFwesVvbgq1Lupw+a_-EpiTwW9GtXxOauohdVQ@mail.gmail.com>
-Subject: Re: [PATCH v2] dmaengine: add CSR SiRFprimaII DMAC driver
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Barry Song <Barry.Song@csr.com>, Arnd Bergmann <arnd@arndb.de>,
-        Jassi Brar <jaswinder.singh@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        DL-SHA-WorkGroupLinux <Workgroup.Linux@csr.com>,
-        Rongjun Ying <Rongjun.Ying@csr.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/9/19 Vinod Koul <vinod.koul@intel.com>:
-> On Mon, 2011-09-19 at 09:56 +0000, Barry Song wrote:
->> > > > Not sure why you support this, there seem to be no DMA_SLAVE
->> support in
->> > > > this version ate least
->> > >
->> > > Not. I support dma_slave. But I have no prep_slave_sg function
->> since I can
->> > use the gen xfer to replace it.
->> > Yes thats okay...
->> >
->> > Then I have questions on genxfer function...
->> > where are you copying either src or dstn_start address, you seem to
->> > completely ignore them?
->>
->> Since I only support memory->device or device ->memory, and channel
->> number is fixed to every device. Then I actually don't care device
->> address at all. Either src or dst is fixed to the device's address.
-> peripheral address can be fixed, not the memory, where do you copy the
-> memory address?
+On Monday 19 September 2011 12:00:06 Mark Brown wrote:
+> On Thu, Sep 15, 2011 at 03:39:29PM +0300, Peter Ujfalusi wrote:
+> > The default gains on outputs/inputs are set to 0dB.
+> > To be able to handle pop noise better, we need to lower
+> > the gains on controls, where it is possible.
+> 
+> It looks like what you really want to do here is implement support
+> having PGAs able to cache the gain the user has set but hold the gain at
+> zero while the PGA is disabled.
 
-+static int sirfsoc_dma_slave_config(struct sirfsoc_dma_chan *schan,
-+       struct dma_slave_config *config)
-+{
-+       u32 addr, direction;
-+       unsigned long flags;
-+
-+       switch (config->direction) {
-+       case DMA_FROM_DEVICE:
-+               direction = 0;
-+               addr = config->dst_addr;
-+               break;
-+
-+       case DMA_TO_DEVICE:
-+               direction = 1;
-+               addr = config->src_addr;
-+               break;
-+
-+       default:
-+               return -EINVAL;
-+       }
-+  ...
+The twl6040 had support for this, but we did not lowered the initial gain 
+after cold power on.
+This resulted a pop noise at the first time the audio paths had been used.
 
+> This would be generally useful, a lot
+> of older parts liked to have the PGAs muted when powering them.
 
-+static void sirfsoc_dma_execute(struct sirfsoc_dma_chan *schan)
-+{
-+       ...
-+       writel_relaxed(schan->addr >> 2, sdma->base + cid * 0x10 +
-SIRFSOC_DMA_CH_ADDR);
-+}
-+
+I have similar implementation (caching of the output gain values) in the 
+twl4030 - there the reason was to decrease the power consumption.
+We need to have some sort of caching for the gain values, and linking the 
+volume controls to DAPM in order to restore, or turn them off at the correct 
+time.
+In twl4030 case I have custom PGA event handlers for outputs, and I manage the 
+individual output amplifiers through them.
+Here in twl6040 we also have event handlers to do the ramp up/down on the 
+gains. AFAIK some wm* codec have similar code.
 
->>
->> >
->> > Do you support only slave transfers or M2M as well for this driver?
->> > If only slave you might want to check if dma_config_slave is set for
->> > this channel or not.
->>
->> I support only slave transfer. Actually I have dma_config_slave. do
->> you mean I need to check whether slave config cmd is really called
->> before executing dma?
-> Yes
->
->
-> --
-> ~Vinod
->
->
--Barry
+I can take a look at these to find a generic way to handle them.
+
+--
+Péter
