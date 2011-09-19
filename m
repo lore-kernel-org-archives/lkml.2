@@ -1,63 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755513Ab1ISRwB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 13:52:01 -0400
-Received: from mail-vw0-f42.google.com ([209.85.212.42]:49851 "EHLO
-	mail-vw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755320Ab1ISRwA convert rfc822-to-8bit (ORCPT
+	id S1755670Ab1ISRwM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 13:52:12 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:46380 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755320Ab1ISRwH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 13:52:00 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110919173539.GA3751@albatros>
-References: <20110910164134.GA2442@albatros>
-	<20110914192744.GC4529@outflux.net>
-	<20110918170512.GA2351@albatros>
-	<CAOJsxLF8DBEC9o9pSwa6c6pMg8ByFBdsDnzg22P3ucQcP98uzA@mail.gmail.com>
-	<20110919144657.GA5928@albatros>
-	<CAOJsxLG8gW=BLOptpULsaAEwTravADKbNbXp5e9Wd7xVEfR9AQ@mail.gmail.com>
-	<20110919155718.GB16272@albatros>
-	<CAOJsxLGZm+npcR0YgXSE2wLC2iXCtzYyCdTDCt1LN=Z28Rm_UA@mail.gmail.com>
-	<20110919161837.GA2232@albatros>
-	<CAOJsxLE2od0f+6cbL2hA_31CbrqS7AUofx5DT2L9fO_7gxH+PQ@mail.gmail.com>
-	<20110919173539.GA3751@albatros>
-Date: Mon, 19 Sep 2011 20:51:59 +0300
-X-Google-Sender-Auth: yyx_7YX-nWPglLj6WMfADG_ropQ
-Message-ID: <CAOJsxLGc0bwCkDtk2PVe7c155a9wVoDAY0CmYDTLg8_bL4qxqg@mail.gmail.com>
-Subject: Re: [kernel-hardening] Re: [RFC PATCH 2/2] mm: restrict access to /proc/slabinfo
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        kernel-hardening@lists.openwall.com, Kees Cook <kees@ubuntu.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Dan Rosenberg <drosenberg@vsecurity.com>,
-        Theodore Tso <tytso@mit.edu>, Alan Cox <alan@linux.intel.com>,
-        Jesper Juhl <jj@chaosbits.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 19 Sep 2011 13:52:07 -0400
+Date: Mon, 19 Sep 2011 19:52:03 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Chris Mason <chris.mason@oracle.com>
+Cc: Jeff liu <jeff.liu@oracle.com>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        Andi Kleen <ak@linux.intel.com>, Andreas Dilger <adilger@dilger.ca>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
+Subject: Re: [PATCH 1/7] BTRFS: Fix lseek return value for error
+Message-ID: <20110919175203.GK7761@one.firstfloor.org>
+References: <1316128013-21980-1-git-send-email-andi@firstfloor.org> <1316128013-21980-2-git-send-email-andi@firstfloor.org> <20110916154815.GA27150@infradead.org> <4E7439EB.7080100@oracle.com> <41C7FF67-8658-4E7F-BB50-E9AAEA1F755C@dilger.ca> <20110918014608.GA16198@alboin.amr.corp.intel.com> <4E759DE5.3020907@oracle.com> <4E75AEFD.105@gmail.com> <8444301C-856F-44FA-94A3-D3583DFA0FFB@oracle.com> <1316357705-sup-2667@shiny>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1316357705-sup-2667@shiny>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 19, 2011 at 8:35 PM, Vasiliy Kulikov <segoon@openwall.com> wrote:
->> Yes, but there's no way for users to know where the allocations came from
->> if you mix them up with other kmalloc-128 call-sites. That way the number
->> of private files will stay private to the user, no? Doesn't that give you even
->> better protection against the infoleak?
->
-> No, what it gives us is an obscurity, not a protection.  I'm sure it
-> highly depends on the specific situation whether an attacker is able to
-> identify whether the call is from e.g. ecryptfs or from VFS.  Also the
-> correlation between the number in slabinfo and the real private actions
-> still exists.
+> Thanks everyone, I've put Jeff's last version of this in my queue.
 
-How is the attacker able to identify that we kmalloc()'d from ecryptfs or
-VFS based on non-root /proc/slabinfo when the slab allocator itself does
-not have that sort of information if you mix up the allocations? Isn't this
-much stronger protection especially if you combine that with /proc/slabinfo
-restriction?
+Can you post the version you merged? The previous ones all had issues.
 
-                                  Pekka
+-Andi
