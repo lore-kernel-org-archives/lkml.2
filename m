@@ -1,92 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753932Ab1ISOri (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 10:47:38 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:42743 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752722Ab1ISOrh (ORCPT
+	id S1753477Ab1ISOuP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 10:50:15 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:38366 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751049Ab1ISOuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 10:47:37 -0400
-Date: Mon, 19 Sep 2011 18:46:58 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        kernel-hardening@lists.openwall.com, Kees Cook <kees@ubuntu.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Dan Rosenberg <drosenberg@vsecurity.com>,
-        Theodore Tso <tytso@mit.edu>, Alan Cox <alan@linux.intel.com>,
-        Jesper Juhl <jj@chaosbits.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [kernel-hardening] Re: [RFC PATCH 2/2] mm: restrict access to
- /proc/slabinfo
-Message-ID: <20110919144657.GA5928@albatros>
-References: <20110910164001.GA2342@albatros>
- <20110910164134.GA2442@albatros>
- <20110914192744.GC4529@outflux.net>
- <20110918170512.GA2351@albatros>
- <CAOJsxLF8DBEC9o9pSwa6c6pMg8ByFBdsDnzg22P3ucQcP98uzA@mail.gmail.com>
+	Mon, 19 Sep 2011 10:50:13 -0400
+Date: Mon, 19 Sep 2011 17:50:09 +0300 (EEST)
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+X-X-Sender: penberg@localhost6.localdomain6
+To: torvalds@linux-foundation.org
+cc: cl@linux-foundation.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [GIT PULL] SLUB fix for v3.1-rc7
+Message-ID: <alpine.DEB.2.00.1109191748030.7992@localhost6.localdomain6>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAOJsxLF8DBEC9o9pSwa6c6pMg8ByFBdsDnzg22P3ucQcP98uzA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Pekka,
+Hi Linus,
 
-On Mon, Sep 19, 2011 at 17:30 +0300, Pekka Enberg wrote:
-> > On Wed, Sep 14, 2011 at 12:27 -0700, Kees Cook wrote:
-> >> On Sat, Sep 10, 2011 at 08:41:34PM +0400, Vasiliy Kulikov wrote:
-> >> > Historically /proc/slabinfo has 0444 permissions and is accessible to
-> >> > the world.  slabinfo contains rather private information related both to
-> >> > the kernel and userspace tasks.  Depending on the situation, it might
-> >> > reveal either private information per se or information useful to make
-> >> > another targeted attack.  Some examples of what can be learned by
-> >> > reading/watching for /proc/slabinfo entries:
-> >> > ...
-> >> > World readable slabinfo simplifies kernel developers' job of debugging
-> >> > kernel bugs (e.g. memleaks), but I believe it does more harm than
-> >> > benefits.  For most users 0444 slabinfo is an unreasonable attack vector.
-> >> >
-> >> > Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-> 
-> On Sun, Sep 18, 2011 at 8:05 PM, Vasiliy Kulikov <segoon@openwall.com> wrote:
-> >> Haven't had any mass complaints about the 0400 in Ubuntu (sorry Dave!), so
-> >> I'm obviously for it.
-> >>
-> >> Reviewed-by: Kees Cook <kees@ubuntu.com>
-> >
-> > Looks like the members of the previous slabinfo discussion don't object
-> > against the patch now and it got two other Reviewed-by responses.  Can
-> > you merge it as-is or should I probably convince someone else?
-> 
-> We discussed this in March (google for 'Make /proc/slabinfo 0400')
+Here's a one-line SLUB hackbench performance regression fix from Shaohua 
+Li. It's been sitting in linux-next for a while now and wasn't sent to you 
+earlier due to git.kernel.org issues.
 
-Sure, I've read it and included the link in the patch description :)
+                         Pekka
 
-> and
-> concluded that it's not worth it doesn't really protect from anything
+The following changes since commit b0e7031ac08fa0aa242531c8d9a0cf9ae8ee276d:
 
-Closing only slabinfo doesn't add any significant protection against
-kernel heap exploits per se, no objections here.  
+   Merge git://github.com/davem330/net (2011-09-18 11:02:26 -0700)
 
-But as said in the desciption, the reason for this patch is not protecting
-against exploitation heap bugs.  It is a source of infoleaks of kernel
-and userspace activity, which should be forbidden to non-root users.
+are available in the git repository at:
 
-> and causes harm to developers.
+   git@github.com:penberg/linux.git slab/urgent
 
-One note: only to _kernel_ developers.  It means it is a strictly
-debugging feature, which shouldn't be enabled in the production systems.
+Shaohua Li (1):
+       slub: add slab with one free object to partial list tail
 
-Thanks,
-
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+  mm/slub.c |    2 +-
+  1 files changed, 1 insertions(+), 1 deletions(-)
