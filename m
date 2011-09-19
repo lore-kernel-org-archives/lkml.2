@@ -1,63 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755454Ab1ISNaY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 09:30:24 -0400
-Received: from mail-qw0-f42.google.com ([209.85.216.42]:58688 "EHLO
-	mail-qw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753172Ab1ISNaX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 09:30:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110919123100.GJ12765@tamriel.snowman.net>
-References: <1316128013-21980-1-git-send-email-andi@firstfloor.org>
-	<201109161616.50004.andres@anarazel.de>
-	<20110916153620.GA9913@parisc-linux.org>
-	<201109161927.34472.andres@anarazel.de>
-	<20110916200817.GD28519@kvack.org>
-	<20110919123100.GJ12765@tamriel.snowman.net>
-Date: Mon, 19 Sep 2011 09:30:22 -0400
-Message-ID: <CA+Tgmoa6CP7uwEAcu+d1vVfapj0ZhpYh2UPLZwXHg-VRnbc9QQ@mail.gmail.com>
-Subject: Re: [HACKERS] Improve lseek scalability v3
-From: Robert Haas <robertmhaas@gmail.com>
-To: Stephen Frost <sfrost@snowman.net>
-Cc: Benjamin LaHaise <bcrl@kvack.org>, Andres Freund <andres@anarazel.de>,
-        Matthew Wilcox <matthew@wil.cx>, Andi Kleen <andi@firstfloor.org>,
-        viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, pgsql-hackers@postgresql.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1755599Ab1ISNdL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 09:33:11 -0400
+Received: from mga02.intel.com ([134.134.136.20]:58282 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754358Ab1ISNdK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 09:33:10 -0400
+Message-Id: <aefc95$1fih8n@orsmga001.jf.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="49890583"
+From: Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: [BUG] i915 crashes X Server Constantly on Linux-3.1-rc4 to .rc6
+To: Tarkan Erimer <tarkan.erimer@f-secure.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <4E773E65.5040809@f-secure.com>
+References: <4E770FF5.8030207@f-secure.com> <aefc95$1fgrb6@orsmga001.jf.intel.com> <4E773E65.5040809@f-secure.com>
+Date: Mon, 19 Sep 2011 14:33:05 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 19, 2011 at 8:31 AM, Stephen Frost <sfrost@snowman.net> wrote:
-> * Benjamin LaHaise (bcrl@kvack.org) wrote:
->> For such tables, can't Postgres track the size of the file internally?  I'm
->> assuming it's keeping file descriptors open on the tables it manages, in
->> which case when it writes to a file to extend it, the internally stored size
->> could be updated.  Not making a syscall at all would scale far better than
->> even a modified lseek() will perform.
->
-> We'd have to have it in shared memory and have a lock around it, it
-> wouldn't be cheap at all.
+On Mon, 19 Sep 2011 16:06:45 +0300, Tarkan Erimer <tarkan.erimer@f-secure.com> wrote:
+Non-text part: multipart/mixed
+> I did a bit more digging and found out that it mostly happens when 
+> trying to open some flash based sites on Firefox and Chromium. I've 
+> attached Xorg.log, but it seems like no errors related to these crashes. 
+> But kdm.log has some interesting error messages that may be useful. I've 
+> attached kdm.log as well.
 
-In theory, we could implement a lock-free cache.  But I still think it
-would be better to see this fixed on the kernel side.  If we had some
-evidence that all of those lseek() calls were a performance problem
-even when the i_mutex is not seriously contended, then that would be a
-good argument for doing this in user-space, but I haven't seen any
-such evidence.  On the other hand, the numbers I posted show that when
-i_mutex IS contended, it can cause a throughput regression of up to
-90%.  That seems worth fixing.  If it turns out that lseek() is too
-expensive even in the uncontended case or with the i_mutex contention
-removed (or if the Linux community is unwilling to accept the proposed
-fix), then we can (and should) look at further optimizing it within
-PostgreSQL.  My guess, though, is that an unlocked lseek will be fast
-enough that we won't need to worry about installing our own caching
-infrastructure (or at least, there will be plenty of more significant
-performance problems to hunt down first).
+That looks remarkably consistent. Can you please do a quick
+addr2line -e /usr/lib64/xorg/modules/drivers/intel_drv.so 0x3e7ce 0x44d34
+
+Also do you know which particular site triggers the issue?
+-Chris
 
 -- 
-Robert Haas
-EnterpriseDB: http://www.enterprisedb.com
-The Enterprise PostgreSQL Company
+Chris Wilson, Intel Open Source Technology Centre
