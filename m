@@ -1,73 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754450Ab1ISJfk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 05:35:40 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:37300 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753272Ab1ISJfj convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@suse.com:6:1>);
-	Mon, 19 Sep 2011 05:35:39 -0400
-Message-Id: <4E7729040200007800056A2F@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Mon, 19 Sep 2011 10:35:32 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
-Cc: <jeremy.fitzhardinge@citrix.com>, <axboe@kernel.dk>, <stable@kernel.org>,
-        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] Re: [PATCH 3/3] xen-blkfront: If no barrier or
-	 flush is supported, use invalid operation.
-References: <1315593060-20031-1-git-send-email-konrad.wilk@oracle.com>
- <1315593060-20031-3-git-send-email-konrad.wilk@oracle.com>
- <4E6DD8750200007800055ADA@nat28.tlf.novell.com>
- <20110916191514.GA31818@phenom.oracle.com>
-In-Reply-To: <20110916191514.GA31818@phenom.oracle.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1754664Ab1ISJkm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 05:40:42 -0400
+Received: from mga01.intel.com ([192.55.52.88]:3249 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751560Ab1ISJkk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 05:40:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,404,1312182000"; 
+   d="scan'208";a="55210461"
+Date: Mon, 19 Sep 2011 11:43:23 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?iso-8859-1?Q?=22Uwe_Kleine-K=F6nig=22?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: Re: linux-next: build failure after merge of the mfd tree
+Message-ID: <20110919094323.GQ32263@sortiz-mobl>
+References: <20110919161900.99b51989c9a02075e9f4cc93@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20110919161900.99b51989c9a02075e9f4cc93@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 16.09.11 at 21:15, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> On Mon, Sep 12, 2011 at 09:01:25AM +0100, Jan Beulich wrote:
->> >>> On 09.09.11 at 20:31, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
->> > By default we would set the info->flush_op=0, and zero maps
->> > to BLKIF_OP_READ request code. So if the backend did not support
->> > either barrier ('feature-barrier') or flush ('feature-flush-cache')
->> > we would end up using that opcode for the flush/barrier request, meaning
->> > we actually do a READ request. Fortunatly for us, __generic_make_request
->> > checks q->flush_flags and realizes that we don't do FLUSH and removes
->> > the REQ_FLUSH | REQ_FUA so we never end up issuing a READ request
->> > for a flush request. However, other third party implementations of
->> > __make_request might not be so smart, so lets fix this up.
->> 
->> Wouldn't it be better to simply have blkif_queue_request() fail in that
->> case (and then it doesn't matter whether flush_op is set to 0 or -1)?
->> Not the least because older (forward-port) backends stall the incoming
->> queue and are possibly verbose for invalid requests seen.
+Hi Stephen,
+
+On Mon, Sep 19, 2011 at 04:19:00PM +1000, Stephen Rothwell wrote:
+> Hi Samuel,
 > 
-> So like this:
+> After merging the mfd tree, today's linux-next build (x86_64 allmodconfig)
+> failed like this:
+Sorry. I pushed a fix for this. allmodconfig should be clean now.
 
-Yes, this looks small and neat.
+Cheers,
+Samuel.
 
-Acked-by: Jan Beulich <jbeulich@suse.com>
-
-> diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
-> index 468bfec..e9d301c 100644
-> --- a/drivers/block/xen-blkfront.c
-> +++ b/drivers/block/xen-blkfront.c
-> @@ -380,7 +380,9 @@ static void do_blkif_request(struct request_queue *rq)
->  
->  		blk_start_request(req);
->  
-> -		if (req->cmd_type != REQ_TYPE_FS) {
-> +		if ((req->cmd_type != REQ_TYPE_FS) ||
-> +		    ((req->cmd_flags & (REQ_FLUSH | REQ_FUA)) &&
-> +		    !info->flush_op)) {
->  			__blk_end_request_all(req, -EIO);
->  			continue;
->  		}
-
-
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
