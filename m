@@ -1,39 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756456Ab1ISQDe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 12:03:34 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:44135 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756032Ab1ISQDd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 12:03:33 -0400
-Subject: Re: [PATCH 1/9] Remove parent field in cpuacct cgroup
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, xemul@parallels.com, paul@paulmenage.org,
-        lizf@cn.fujitsu.com, daniel.lezcano@free.fr, mingo@elte.hu,
-        jbottomley@parallels.com
-Date: Mon, 19 Sep 2011 18:03:05 +0200
-In-Reply-To: <1316030695-19826-2-git-send-email-glommer@parallels.com>
-References: <1316030695-19826-1-git-send-email-glommer@parallels.com>
-	 <1316030695-19826-2-git-send-email-glommer@parallels.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1316448186.1511.19.camel@twins>
-Mime-Version: 1.0
+	id S1756516Ab1ISQEq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 12:04:46 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:1839 "EHLO MMS3.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756157Ab1ISQEp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 12:04:45 -0400
+X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
+Subject: Re: linux-next: manual merge of the net tree with Linus' tree
+From: "Dmitry Kravkov" <dmitry@broadcom.com>
+Reply-to: dmitry@broadcom.com
+To: "Joe Perches" <joe@perches.com>
+cc: "Stephen Rothwell" <sfr@canb.auug.org.au>,
+        "David Miller" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Yaniv Rosner" <yaniv.rosner@broadcom.com>,
+        "Eilon Greenstein" <eilong@broadcom.com>
+In-Reply-To: <1316447682.6276.5.camel@Joe-Laptop>
+References: <20110919145103.6c3e73edf51599eaa703294a@canb.auug.org.au>
+ <1316415318.26848.4.camel@lb-tlvb-dmitry>
+ <1316447682.6276.5.camel@Joe-Laptop>
+Organization: BROADCOM
+Date: Mon, 19 Sep 2011 19:04:38 +0300
+Message-ID: <1316448278.12042.3.camel@lb-tlvb-dmitry>
+MIME-Version: 1.0
+X-Mailer: Evolution 2.32.2
+X-WSS-ID: 6269B6FB3KO21264998-01-01
+Content-Type: text/plain;
+ charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-09-14 at 17:04 -0300, Glauber Costa wrote:
-> +       for (; ca; ca = parent_ca(ca)) {
+On Mon, 2011-09-19 at 08:54 -0700, Joe Perches wrote:
+> On Mon, 2011-09-19 at 09:55 +0300, Dmitry Kravkov wrote:
+> > On Sun, 2011-09-18 at 21:51 -0700, Stephen Rothwell wrote:
+> > > Today's linux-next merge of the net tree got a conflict in
+> > > drivers/net/ethernet/broadcom/bnx2x/bnx2x_link.c between commit
+> > > c482e6c06461 ("bnx2x: Fix ETS bandwidth") from Linus' tree and commit
+> > > 94f05b0f60de ("bnx2x: Coalesce pr_cont uses and fix DP typos") from the
+> > > net tree.
+> []
+> > Can you use this one instead?
+> > Contains spell fixes and some formatting.
+> 
+> Multiple line format strings lines are bad style and error prone.
+> You introduce broken spacing after string coalescing.
+> 
 
-It might be good to check that the loop condition and null condition in
-the parent_ca() function get folded. Otherwise there's a double branch
-in that loop.
+Contains spell fixes and some formatting
 
-Note that this function is one of the reasons I dislike cpuacct, it adds
-a second cgroup hierarchy traversal to every context switch.
+v2: fix broken spacing
 
-Cache-miss heaven all this.
+Signed-off-by: Dmitry Kravkov <dmitry@broadcom.com>
+---
+Joe, Thanks for noticing that
+---
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_link.c |   30 ++++++++--------------
+ 1 files changed, 11 insertions(+), 19 deletions(-)
+
+diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_link.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_link.c
+index 8e9b87b..5a9444a 100644
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_link.c
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_link.c
+@@ -850,32 +850,24 @@ static int bnx2x_ets_e3b0_get_total_bw(
+ 
+ 	*total_bw = 0 ;
+ 	/* Calculate total BW requested */
+-	for (cos_idx = 0; cos_idx < ets_params->num_of_cos; cos_idx++) {
+-		if (bnx2x_cos_state_bw == ets_params->cos[cos_idx].state) {
++	for (cos_idx = 0; cos_idx < ets_params->num_of_cos; cos_idx++)
++		if (bnx2x_cos_state_bw == ets_params->cos[cos_idx].state)
++			*total_bw +=
++				ets_params->cos[cos_idx].params.bw_params.bw;
+ 
+-			if (0 == ets_params->cos[cos_idx].params.bw_params.bw) {
+-				DP(NETIF_MSG_LINK,
+-				   "bnx2x_ets_E3B0_config BW was set to 0\n");
+-			return -EINVAL;
+-		}
+-		*total_bw +=
+-		    ets_params->cos[cos_idx].params.bw_params.bw;
+-	    }
+-	}
+-
+-	/*Check taotl BW is valid */
++	/* Check total BW is valid */
+ 	if ((100 != *total_bw) || (0 == *total_bw)) {
+ 		if (0 == *total_bw) {
+ 			DP(NETIF_MSG_LINK,
+-			   "bnx2x_ets_E3B0_config toatl BW shouldn't be 0\n");
++			  "bnx2x_ets_E3B0_config total BW shouldn't be 0\n");
+ 			return -EINVAL;
+ 		}
+ 		DP(NETIF_MSG_LINK,
+-		   "bnx2x_ets_E3B0_config toatl BW should be 100\n");
+-		/**
+-		*   We can handle a case whre the BW isn't 100 this can happen
+-		*   if the TC are joined.
+-		*/
++		   "bnx2x_ets_E3B0_config total BW should be 100\n");
++		/*
++		 * We can handle a case where the BW isn't 100 this can happen
++		 * if the TC are joined.
++		 */
+ 	}
+ 	return 0;
+ }
+-- 
+1.7.2.2
+
+
+
+
+
