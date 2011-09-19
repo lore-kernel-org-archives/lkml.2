@@ -1,77 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756752Ab1ISDVQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 23:21:16 -0400
-Received: from mga01.intel.com ([192.55.52.88]:13356 "EHLO mga01.intel.com"
+	id S1756776Ab1ISD2g (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 23:28:36 -0400
+Received: from mga11.intel.com ([192.55.52.93]:64735 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753610Ab1ISDVO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 23:21:14 -0400
+	id S1754017Ab1ISD2f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Sep 2011 23:28:35 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.68,403,1312182000"; 
-   d="scan'208";a="55119664"
-From: Huang Ying <ying.huang@intel.com>
-To: Len Brown <lenb@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        ying.huang@intel.com, linux-acpi@vger.kernel.org
-Subject: [PATCH] ACPI, APEI, GHES, Distinguish interleaved error report in kernel log
-Date: Mon, 19 Sep 2011 11:21:03 +0800
-Message-Id: <1316402463-24378-1-git-send-email-ying.huang@intel.com>
-X-Mailer: git-send-email 1.7.5.4
+   d="scan'208";a="55121843"
+Subject: Re: [PATCHv2] DMAEngine: Define generic transfer request api
+From: Vinod Koul <vinod.koul@intel.com>
+To: Jassi Brar <jaswinder.singh@linaro.org>
+Cc: dan.j.williams@intel.com, linux-kernel@vger.kernel.org,
+        rmk+kernel@arm.linux.org.uk, 21cnbao@gmail.com
+In-Reply-To: <CAJe_ZhdFKbVrx1Xf_Qc=y_bqZc6b_8sbhekRMDbnj+QA4HU21A@mail.gmail.com>
+References: <1313147667-3385-1-git-send-email-jaswinder.singh@linaro.org>
+	 <1316072789-12830-1-git-send-email-jaswinder.singh@linaro.org>
+	 <1316164077.27626.1030.camel@vkoul-udesk3>
+	 <CAJe_Zhd5d7XeuVJpuyNYBmhwBkX_dgi+nngftCO9C589cF1Yqg@mail.gmail.com>
+	 <1316192791.27626.1881.camel@vkoul-udesk3>
+	 <CAJe_ZhdFKbVrx1Xf_Qc=y_bqZc6b_8sbhekRMDbnj+QA4HU21A@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 19 Sep 2011 08:53:58 +0530
+Message-ID: <1316402638.21359.16.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In most cases, printk only guarantees messages from different printk
-calling will not be interleaved between each other.  But, one APEI
-GHES hardware error report will involve multiple printk calling,
-normally each for one line.  So it is possible that the hardware error
-report comes from different generic hardware error source will be
-interleaved.
+On Fri, 2011-09-16 at 23:21 +0530, Jassi Brar wrote:
+> On 16 September 2011 22:36, Vinod Koul <vinod.koul@intel.com> wrote:
+> >> >> Define a new api that could be used for doing fancy data transfers
+> >> >> like interleaved to contiguous copy and vice-versa.
+> >> > Then this is a very specific type of transfer this API supports, so the
+> >> > name generic_xxx is not apt!
+> >>
+> >> Currently it doesn't support every operation, perhaps there will be an
+> >> operation that couldn't ever be merged into this.
+> >> But it does support interleaved(async and slave), memcpy, memset, dma_sg,
+> >> slave_sg, and cyclic.
+> >> Please feel free to suggest a better name.
+> > ATM, this api is for interleaved like dma operation. so
+> > prep_interleaved_dma may be better suited.
+> Well, ok I can live with that.
+> 
+> > Let the generalization be discussed separately...
+> As you wish.
+> 
+> >> >> +/**
+> >> >> + * Generic Transfer Request
+> >> >> + * ------------------------
+> >> >> + * A chunk is collection of contiguous bytes to be transfered.
+> >> >> + * The gap(in bytes) between two chunks is called inter-chunk-gap(ICG).
+> >> >> + * ICGs may or maynot change between chunks.
+> >> >> + * A FRAME is the smallest series of contiguous {chunk,icg} pairs,
+> >> >> + *  that when repeated an integral number of times, specifies the transfer.
+> >> >> + * A transfer template is specification of a Frame, the number of times
+> >> >> + *  it is to be repeated and other per-transfer attributes.
+> >> >> + *
+> >> >> + * Practically, a client driver would have ready a template for each
+> >> >> + *  type of transfer it is going to need during its lifetime and
+> >> >> + *  set only 'src_start' and 'dst_start' before submitting the requests.
+> >> >> + *
+> >> >> + *
+> >> >> + *  |      Frame-1        |       Frame-2       | ~ |       Frame-'numf'  |
+> >> >> + *  |====....==.===...=...|====....==.===...=...| ~ |====....==.===...=...|
+> >> >> + *
+> >> >> + *    ==  Chunk size
+> >> >> + *    ... ICG
+> >> >> + */
+> >> >> +
+> >> >> +/**
+> >> >> + * struct data_chunk - Element of scatter-gather list that makes a frame.
+> >> >> + * @size: Number of bytes to read from source.
+> >> >> + *     size_dst := fn(op, size_src), so doesn't mean much for destination.
+> >> >> + * @icg: Number of bytes to jump after last src/dst address of this
+> >> >> + *    chunk and before first src/dst address for next chunk.
+> >> >> + *    Ignored for dst(assumed 0), if dst_inc is true and dst_sgl is false.
+> >> >> + *    Ignored for src(assumed 0), if src_inc is true and src_sgl is false.
+> >> >> + */
+> >> >> +struct data_chunk {
+> >> >> +     size_t size;
+> >> >> +     size_t icg;
+> >> >> +};
+> >> >> +
+> >> >> +/**
+> >> >> + * struct dmaxfer_template - Template to convey DMAC the transfer pattern
+> >> >> + *    and attributes.
+> >> >> + * @src_start: Bus address of source for the first chunk.
+> >> >> + * @dst_start: Bus address of destination for the first chunk.
+> >> >> + * @src_inc: If the source address increments after reading from it.
+> >> >> + * @dst_inc: If the destination address increments after writing to it.
+> >> >> + * @src_sgl: If the 'icg' of sgl[] applies to Source (scattered read).
+> >> >> + *           Otherwise, source is read contiguously (icg ignored).
+> >> >> + *           Ignored if src_inc is false.
+> >> >> + * @dst_sgl: If the 'icg' of sgl[] applies to Destination (scattered write).
+> >> >> + *           Otherwise, destination is filled contiguously (icg ignored).
+> >> >> + *           Ignored if dst_inc is false.
+> >> >> + * @frm_irq: If the client expects DMAC driver to do callback after each frame.
+This should be specified in the callback field in descriptor..
 
-In this patch, a sequence number is prefixed to each line of error
-report.  So that, even if they are interleaved, they still can be
-distinguished by the prefixed sequence number.
+> >> >> + * @numf: Number of frames in this template.
+> >> >> + * @frame_size: Number of chunks in a frame i.e, size of sgl[].
+> >> >> + * @sgl: Array of {chunk,icg} pairs that make up a frame.
+> >> >> + */
+> >> >> +struct dmaxfer_template {
+> >> >> +     dma_addr_t src_start;
+> >> >> +     dma_addr_t dst_start;
+> >> >> +     bool src_inc;
+> >> >> +     bool dst_inc;
+> >> >> +     bool src_sgl;
+> >> >> +     bool dst_sgl;
+> >> >> +     bool frm_irq;
+> >> >> +     size_t numf;
+> >> >> +     size_t frame_size;
+> >> >> +     struct data_chunk sgl[0];
+> >> >> +};
+> >> > This kind of transfer can be either slave (audio interleaved) based or
+> >> > mem-to-mem (extracting still image from a buffer),
+> >> > How do you propose the dmac know about this is unclear to me
+> >>
+> >> Every 'prepare' callback already passes the channel chosen for the transfer.
+> >> And the DMAC driver already knows if that channel is SLAVE capable or not.
+> > How about above params, you should add they may/may not be valid
+> > depending upon the mode.
+> If you look at the documentation above the 'struct dmaxfer_template', I have
+> already mentioned what params are ignored/invalid when.
+> Or is there something else you want mentioned ?
+How would dmacs decodes these addresses for slave transfers, some maybe
+valid some not based on the direction... a note would be good :)
 
-Signed-off-by: Huang Ying <ying.huang@intel.com>
----
- drivers/acpi/apei/ghes.c |   16 +++++++++++-----
- 1 file changed, 11 insertions(+), 5 deletions(-)
+-- 
+~Vinod
 
---- a/drivers/acpi/apei/ghes.c
-+++ b/drivers/acpi/apei/ghes.c
-@@ -505,16 +505,22 @@ static void __ghes_print_estatus(const c
- 				 const struct acpi_hest_generic *generic,
- 				 const struct acpi_hest_generic_status *estatus)
- {
-+	static atomic_t seqno;
-+	int curr_seqno;
-+	char pfx_seq[64];
-+
- 	if (pfx == NULL) {
- 		if (ghes_severity(estatus->error_severity) <=
- 		    GHES_SEV_CORRECTED)
--			pfx = KERN_WARNING HW_ERR;
-+			pfx = KERN_WARNING;
- 		else
--			pfx = KERN_ERR HW_ERR;
-+			pfx = KERN_ERR;
- 	}
-+	curr_seqno = atomic_inc_return(&seqno);
-+	snprintf(pfx_seq, sizeof(pfx_seq), "%s{%d}" HW_ERR, pfx, curr_seqno);
- 	printk("%s""Hardware error from APEI Generic Hardware Error Source: %d\n",
--	       pfx, generic->header.source_id);
--	apei_estatus_print(pfx, estatus);
-+	       pfx_seq, generic->header.source_id);
-+	apei_estatus_print(pfx_seq, estatus);
- }
- 
- static int ghes_print_estatus(const char *pfx,
-@@ -801,7 +807,7 @@ static int ghes_notify_nmi(struct notifi
- 
- 	if (sev_global >= GHES_SEV_PANIC) {
- 		oops_begin();
--		__ghes_print_estatus(KERN_EMERG HW_ERR, ghes_global->generic,
-+		__ghes_print_estatus(KERN_EMERG, ghes_global->generic,
- 				     ghes_global->estatus);
- 		/* reboot to log the error! */
- 		if (panic_timeout == 0)
