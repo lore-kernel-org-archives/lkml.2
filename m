@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755631Ab1ISTdR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 15:33:17 -0400
-Received: from mail-ew0-f45.google.com ([209.85.215.45]:33911 "EHLO
-	mail-ew0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752552Ab1ISTdQ (ORCPT
+	id S1756328Ab1ISTe7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 15:34:59 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:44587 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755934Ab1ISTe5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 15:33:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110919185518.GA5563@albatros>
-References: <20110919144657.GA5928@albatros>
-	<CAOJsxLG8gW=BLOptpULsaAEwTravADKbNbXp5e9Wd7xVEfR9AQ@mail.gmail.com>
-	<20110919155718.GB16272@albatros>
-	<CAOJsxLGZm+npcR0YgXSE2wLC2iXCtzYyCdTDCt1LN=Z28Rm_UA@mail.gmail.com>
-	<20110919161837.GA2232@albatros>
-	<CAOJsxLE2od0f+6cbL2hA_31CbrqS7AUofx5DT2L9fO_7gxH+PQ@mail.gmail.com>
-	<20110919173539.GA3751@albatros>
-	<CAOJsxLGc0bwCkDtk2PVe7c155a9wVoDAY0CmYDTLg8_bL4qxqg@mail.gmail.com>
-	<20110919175856.GA4282@albatros>
-	<CAOJsxLFdNVnW6Faap0UaqZQDQxbA_dEiR2HGdzZtGMJFsVR1WQ@mail.gmail.com>
-	<20110919185518.GA5563@albatros>
-Date: Mon, 19 Sep 2011 22:33:14 +0300
-X-Google-Sender-Auth: oE1tHnE4iLEPJ9pOZ2UYBgQdlhg
-Message-ID: <CAOJsxLFsmoX777Qui_jBSsv7o0sn2wQ9tY2TeRPyv3ZFvNaRLg@mail.gmail.com>
-Subject: Re: [kernel-hardening] Re: [RFC PATCH 2/2] mm: restrict access to /proc/slabinfo
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        kernel-hardening@lists.openwall.com, Kees Cook <kees@ubuntu.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Dan Rosenberg <drosenberg@vsecurity.com>,
-        Theodore Tso <tytso@mit.edu>, Alan Cox <alan@linux.intel.com>,
-        Jesper Juhl <jj@chaosbits.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 19 Sep 2011 15:34:57 -0400
+Subject: Re: [PATCH 1/2] kconfig: Add make olddefconfig
+From: John Stultz <john.stultz@linaro.org>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: lkml <linux-kernel@vger.kernel.org>, gthelen@google.com, tartler@cs.fau.de,
+        Dmitry Fink <Dmitry.Fink@palm.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Eric B Munson <ebmunson@us.ibm.com>,
+        Bruce Ashfield <Bruce.Ashfield@windriver.com>,
+        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org
+In-Reply-To: <20110917060625.GA27128@merkur.ravnborg.org>
+References: <1316224159-3556-1-git-send-email-john.stultz@linaro.org>
+	 <1316224159-3556-2-git-send-email-john.stultz@linaro.org>
+	 <20110917060625.GA27128@merkur.ravnborg.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 19 Sep 2011 12:34:39 -0700
+Message-ID: <1316460879.3112.16.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 19, 2011 at 9:55 PM, Vasiliy Kulikov <segoon@openwall.com> wrote:
-> Is there another way to get directly or indirectly the information about
-> slabs?
+On Sat, 2011-09-17 at 08:06 +0200, Sam Ravnborg wrote:
+> On Fri, Sep 16, 2011 at 06:49:18PM -0700, John Stultz wrote:
+> > This adds an "olddefconfig" build target, which updates a .config file
+> > filling any any absent symbols with the Kconfig default value (note:
+> > not the architecture defconfig value).
+> 
+> This looks like a shorthand for: make KCONFIG_ALLCONFIG=.config alldefconfig
+> Maybe we need the more obvious target - but the functionality is at least now new.
 
-I didn't check closely but there seems to be some filesystem specific
-stats under /proc at least. No idea how useful those are as attack
-vectors.
+Thanks for pointing that out! 
 
-I also suspect there are per-module knobs under /proc and /sys that
-can be used to get indirect information. Many subsystems have
-implemented their own slab wrappers in the past and they keep popping
-up every now and then.
+Unless anyone feels differently, I'll go ahead and drop this patch and
+will rework my merge_config.sh script to utilize the above.
+
+thanks
+-john
+
+
