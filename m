@@ -1,44 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754664Ab1ISJkm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 05:40:42 -0400
-Received: from mga01.intel.com ([192.55.52.88]:3249 "EHLO mga01.intel.com"
+	id S1754725Ab1ISJln (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 05:41:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20316 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751560Ab1ISJkk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 05:40:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,404,1312182000"; 
-   d="scan'208";a="55210461"
-Date: Mon, 19 Sep 2011 11:43:23 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        =?iso-8859-1?Q?=22Uwe_Kleine-K=F6nig=22?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: Re: linux-next: build failure after merge of the mfd tree
-Message-ID: <20110919094323.GQ32263@sortiz-mobl>
-References: <20110919161900.99b51989c9a02075e9f4cc93@canb.auug.org.au>
+	id S1751736Ab1ISJlm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 05:41:42 -0400
+Message-ID: <4E770EF5.90705@redhat.com>
+Date: Mon, 19 Sep 2011 17:44:21 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110126 Red Hat/3.1.8-1.el6 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110919161900.99b51989c9a02075e9f4cc93@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: krkumar2@in.ibm.com, eric.dumazet@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, davem@davemloft.net,
+        kvm@vger.kernel.org, rusty@rustcorp.com.au, qemu-devel@nongnu.org,
+        mirq-linux@rere.qmqm.pl, joe@perches.com, shemminger@vyatta.com
+Subject: Re: [net-next RFC V2 PATCH 0/5] Multiqueue support in tun/tap
+References: <20110917055639.32666.89940.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com> <20110917191709.GA6127@redhat.com>
+In-Reply-To: <20110917191709.GA6127@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
-
-On Mon, Sep 19, 2011 at 04:19:00PM +1000, Stephen Rothwell wrote:
-> Hi Samuel,
-> 
-> After merging the mfd tree, today's linux-next build (x86_64 allmodconfig)
-> failed like this:
-Sorry. I pushed a fix for this. allmodconfig should be clean now.
-
-Cheers,
-Samuel.
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+On 09/18/2011 03:17 AM, Michael S. Tsirkin wrote:
+> On Sat, Sep 17, 2011 at 02:02:04PM +0800, Jason Wang wrote:
+>> A wiki-page was created to narrate the detail design of all parts
+>> involved in the multi queue implementation:
+>> http://www.linux-kvm.org/page/Multiqueue and some basic tests result
+>> could be seen in this page
+>> http://www.linux-kvm.org/page/Multiqueue-performance-Sep-13. I would
+>> post the detail numbers in attachment as the reply of this thread.
+> Does it make sense to test both with and without RPS in guest?
+>
+I've tested with RPS in guest, but didn't see improvements.
