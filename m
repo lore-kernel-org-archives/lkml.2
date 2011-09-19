@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932721Ab1ISWmT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 18:42:19 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40778 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750806Ab1ISWmS (ORCPT
+	id S932920Ab1ISWmY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 18:42:24 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:45188 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932856Ab1ISWmW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 18:42:18 -0400
-Date: Mon, 19 Sep 2011 23:41:51 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/2] ARM: debug: Add CLSP711X_UART1 config choice
-Message-ID: <20110919224151.GB28237@n2100.arm.linux.org.uk>
-References: <20110916114140.GA31334@e102144-lin.cambridge.arm.com> <1316455300-5752-1-git-send-email-sboyd@codeaurora.org> <20110919212502.GB23613@e102144-lin.cambridge.arm.com> <4E77BE34.6070702@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E77BE34.6070702@codeaurora.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Mon, 19 Sep 2011 18:42:22 -0400
+Subject: Re: [PATCH 1/2] posix-timers: move global timer id management to
+ signal_struct v4
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, Andi Kleen <ak@linux.intel.com>
+In-Reply-To: <20110919223649.GO7761@one.firstfloor.org>
+References: <1316468925-16754-1-git-send-email-andi@firstfloor.org>
+	 <1316471007.2455.24.camel@edumazet-laptop>
+	 <20110919223649.GO7761@one.firstfloor.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 20 Sep 2011 00:41:36 +0200
+Message-ID: <1316472096.2455.27.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 19, 2011 at 03:12:04PM -0700, Stephen Boyd wrote:
-> On 09/19/11 14:25, Will Deacon wrote:
-> > Thanks for cooking the patch, it was somewhere on my list of things to do
-> > this week! I think we also need to fix the DEBUG_DC21285_PORT option as that
-> > has a similar `if not selected then use a different UART' behaviour. It can be
-> > fixed in the same way as you have done in this patch.'
+Le mardi 20 septembre 2011 à 00:36 +0200, Andi Kleen a écrit :
+> > This means idr_pre_get() consumes 6528 bytes of spare space per process,
+> > even if only one posix timer is used.
 > 
-> Ah my eyes glossed over the DC21285 one. Here's one on top of patch 2.
-> Feel free to squash, etc.
+> And? Given the now normal bloat level in the kernel that's small
+> potatoes.
+> 
 
-Err, the DC21285 only has one serial port.
+I see. Oh yes, you work for a known hardware vendor.
 
-Some footbridge platforms expose the DC21285 to the outside world, others
-don't.  Some footbridge platforms have a separate 8250 UART at the standard
-PCI COM1 address, others don't.
+> The idr code is so messy that I don't really want to touch it.
+> 
+> If you think it is that important feel free to do a followon 
+> patch.
+> 
+> If it's that big a problem I'm sure a general solution would
+> be better than some quick hack for a special case.
 
-What DEBUG_DC21285_PORT is selecting between is whether to use the DC21285
-port (when set) or the 8250 at PCI COM1 (when unset).
+I'll provide not a hack but a clean patch for this.
+
+I read once idr code, and its not messy at all.
+
+
+
