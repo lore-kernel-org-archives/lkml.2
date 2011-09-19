@@ -1,70 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756800Ab1ISTPl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 15:15:41 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:59505 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753521Ab1ISTPk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 15:15:40 -0400
-Message-ID: <4E7794B1.5030907@parallels.com>
-Date: Mon, 19 Sep 2011 16:14:57 -0300
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1756816Ab1ISTSh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 15:18:37 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:55872 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756670Ab1ISTSg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 15:18:36 -0400
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: <linux-kernel@vger.kernel.org>, <xemul@parallels.com>,
-        <paul@paulmenage.org>, <lizf@cn.fujitsu.com>, <daniel.lezcano@free.fr>,
-        <jbottomley@parallels.com>
-Subject: Re: [PATCH 1/9] Remove parent field in cpuacct cgroup
-References: <1316030695-19826-1-git-send-email-glommer@parallels.com>     <1316030695-19826-2-git-send-email-glommer@parallels.com>    <1316448186.1511.19.camel@twins> <4E776937.1070108@parallels.com>   <1316449160.6091.5.camel@twins> <4E776E36.6040906@parallels.com>  <1316457343.6091.11.camel@twins> <4E778C0E.5060000@parallels.com> <1316457868.6091.20.camel@twins>
-In-Reply-To: <1316457868.6091.20.camel@twins>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [187.106.51.14]
+In-Reply-To: <CA+55aFwnxOvkS12i97kJcWFrH7n591vxq7vBXKzuROiirnYJ0g@mail.gmail.com>
+References: <20110918170512.GA2351@albatros>
+	<CAOJsxLF8DBEC9o9pSwa6c6pMg8ByFBdsDnzg22P3ucQcP98uzA@mail.gmail.com>
+	<20110919144657.GA5928@albatros>
+	<CAOJsxLG8gW=BLOptpULsaAEwTravADKbNbXp5e9Wd7xVEfR9AQ@mail.gmail.com>
+	<20110919155718.GB16272@albatros>
+	<CAOJsxLGZm+npcR0YgXSE2wLC2iXCtzYyCdTDCt1LN=Z28Rm_UA@mail.gmail.com>
+	<20110919161837.GA2232@albatros>
+	<CAOJsxLE2od0f+6cbL2hA_31CbrqS7AUofx5DT2L9fO_7gxH+PQ@mail.gmail.com>
+	<20110919173539.GA3751@albatros>
+	<CAOJsxLGc0bwCkDtk2PVe7c155a9wVoDAY0CmYDTLg8_bL4qxqg@mail.gmail.com>
+	<20110919175856.GA4282@albatros>
+	<CAOJsxLFdNVnW6Faap0UaqZQDQxbA_dEiR2HGdzZtGMJFsVR1WQ@mail.gmail.com>
+	<CA+55aFwnxOvkS12i97kJcWFrH7n591vxq7vBXKzuROiirnYJ0g@mail.gmail.com>
+Date: Mon, 19 Sep 2011 22:18:34 +0300
+X-Google-Sender-Auth: wk2ilAWS0zDf_rqs2bRuFEHS-ww
+Message-ID: <CAOJsxLE5TMXwAHPks-mvk0EPAHC18fDXf345uZ3umkzNkk7-cQ@mail.gmail.com>
+Subject: Re: [kernel-hardening] Re: [RFC PATCH 2/2] mm: restrict access to /proc/slabinfo
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Vasiliy Kulikov <segoon@openwall.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        kernel-hardening@lists.openwall.com, Kees Cook <kees@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Matt Mackall <mpm@selenic.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Dan Rosenberg <drosenberg@vsecurity.com>,
+        Theodore Tso <tytso@mit.edu>, Alan Cox <alan@linux.intel.com>,
+        Jesper Juhl <jj@chaosbits.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/19/2011 03:44 PM, Peter Zijlstra wrote:
-> On Mon, 2011-09-19 at 15:38 -0300, Glauber Costa wrote:
->> On 09/19/2011 03:35 PM, Peter Zijlstra wrote:
->>> On Mon, 2011-09-19 at 13:30 -0300, Glauber Costa wrote:
->>>> For cpuusage, I am not sure this optimization is a valid one
->>>
->>> I was talking about cpuusage, cpuacct_charge() is called for every
->>> ctxsw/tick.
->>
->> I am not touching it right now.
->
-> See hunk #4 of this particular patch:
->
-> @@ -9302,7 +9308,7 @@ static void cpuacct_charge(struct task_struct *tsk, u64 cputime)
->
-> That's cpuusage muck ;-)
+Hi Linus,
 
-Well, sure. But then, the only thing I am doing in this particular hunk 
-is changing the definition of how to grab a parent... Can easily even be 
-left aside.
-
->>> But even for cpuacct tick stuff, wouldn't you need to sum all your child
->>> cgroups to update the current cgroup? and that up the whole tree?
->>
->> Of course I would. But as I said, it does not need to be done every
->> tick, in case it poses such a cacheline mayhem as you fear.
->>
->> Since we'll only really need those values when someone reads it - which
->> is a far less frequent operation than the tick resolution - and when a
->> cgroup is destroyed - even less frequent operation - it should work well.
+On Mon, Sep 19, 2011 at 9:55 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> Also, quite frankly, your argument that /proc/slabinfo is so important
+> for kernel debugging is bogus. Every time I've complained about the
+> fact that the thing is useless AND ACTIVELY MISLEADING because it
+> mixes up all the slabs (so big numbers for "vm_area_struct" might
+> actually be about some other slab entirely, and *has* been, to the
+> point of people wasting time), the answer has been "whatever".
 >
-> Quite possible, yes. Although if you create a cgroup with 100 subgroups
-> and poll very frequently.. it all depends on the avg use case etc.. and
-> since I don't use any of this stuff someone needs to tell me about how
-> the trade-offs work out in practice.
->
-> So explicit changelogs with numbers and agreements from multiple users
-> go a long way to make me feel good ;-)
+> You can't have it both ways just to argue for the status quo.
 
-Well, thinking again about that, maybe it is not that much of a good 
-idea. systemd is already starting to span a lot of cgroups... and if we 
-update the tree bottom-up, we actually do have a much larger cost, since 
-we need to touch all its breath...
+Well, sure. I was actually planning to rip out SLUB merging completely
+because it makes /proc/slabinfo so useless but never got around doing
+that. Mixing up allocations makes heap exploits harder but there's no
+agreement on how much more difficult (i.e. if it matters at all for brute
+force attacks).
+
+So dunno what's the right thing to do here. Every time I discuss the
+issues with 'security folks' I'm left with more questions than answers...
+Everybody seems to be more interested in closing down kernel ABIs
+rather than making kernel memory allocations more robust against
+attacks.
+
+But anyway, if you feel about this strongly feel free to pick up
+Vasiliy's patch. I think my suggestion of introducing a
+CONFIG_RESTRICT_PROCFS makes most sense because:
+
+  - When we've mucked around with /proc/slabinfo in the past, we have
+    broken setups. (That might be less relevant now.)
+
+  - /proc/slabinfo is not the only source where you can get information
+    on kernel memory allocations (we have one in sysfs and perf kmem).
+
+On Mon, Sep 19, 2011 at 9:55 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> Considering how useless /proc/slabinfo actually is today - exactly
+> because of the misleading mixing - I suspect the right thing to do is
+> to make it root-only.
+>
+> Having some aggregate number in /proc/meminfo would probably be fine.
+>
+> And yes, we probably should avoid giving page-level granularity in
+> /proc/meminfo too. Do it in megabytes instead. None of the information
+> there is really relevant at a page level, everybody just wants rough
+> aggregates.
+
+We have this in /proc/meminfo:
+
+Slab:              20012 kB
+
+Or did you mean something even more specific?
+
+                        Pekka
