@@ -1,64 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753385Ab1ISOp6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 10:45:58 -0400
-Received: from mail.solarflare.com ([216.237.3.220]:1991 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751131Ab1ISOp4 (ORCPT
+	id S1753932Ab1ISOri (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 10:47:38 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:42743 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752722Ab1ISOrh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 10:45:56 -0400
-Subject: Re: [net-next RFC V2 PATCH 0/5] Multiqueue support in tun/tap
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: krkumar2@in.ibm.com, eric.dumazet@gmail.com, mst@redhat.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, davem@davemloft.net,
-        kvm@vger.kernel.org, rusty@rustcorp.com.au, qemu-devel@nongnu.org,
-        mirq-linux@rere.qmqm.pl, joe@perches.com, shemminger@vyatta.com
-In-Reply-To: <20110917055639.32666.89940.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
-References: <20110917055639.32666.89940.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Solarflare Communications
-Date: Mon, 19 Sep 2011 15:45:51 +0100
-Message-ID: <1316443551.2764.9.camel@bwh-desktop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 19 Sep 2011 14:45:56.0271 (UTC) FILETIME=[D6A0C3F0:01CC76DA]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18394.005
-X-TM-AS-Result: No--13.844600-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+	Mon, 19 Sep 2011 10:47:37 -0400
+Date: Mon, 19 Sep 2011 18:46:58 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        kernel-hardening@lists.openwall.com, Kees Cook <kees@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Matt Mackall <mpm@selenic.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Dan Rosenberg <drosenberg@vsecurity.com>,
+        Theodore Tso <tytso@mit.edu>, Alan Cox <alan@linux.intel.com>,
+        Jesper Juhl <jj@chaosbits.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [kernel-hardening] Re: [RFC PATCH 2/2] mm: restrict access to
+ /proc/slabinfo
+Message-ID: <20110919144657.GA5928@albatros>
+References: <20110910164001.GA2342@albatros>
+ <20110910164134.GA2442@albatros>
+ <20110914192744.GC4529@outflux.net>
+ <20110918170512.GA2351@albatros>
+ <CAOJsxLF8DBEC9o9pSwa6c6pMg8ByFBdsDnzg22P3ucQcP98uzA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAOJsxLF8DBEC9o9pSwa6c6pMg8ByFBdsDnzg22P3ucQcP98uzA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-09-17 at 14:02 +0800, Jason Wang wrote:
-[...]
-> 2 Current implementation may also get regression for single session
-> packet transmission.
-> 
-> The reason is packets from each flow were not handled by the same
-> queue/vhost thread.
-> 
-> Various method could be done to handle this:
-> 
-> 2.1 hack the guest driver, and store the queue index into the rxhash and
-> use it when choosing tx in guest. This need some hack to store the
-> rxhash into sk and pass it in to skb again in
-> skb_orphan_try(). sk_rxhash is only used by RPS now, so some more
-> clean method is needed.
-[...]
+Hello Pekka,
 
-I have previously suggested doing this as a general rule.  However, I
-now think we can do much better with accelerated RFS and automatic XPS
-(but the latter is not yet implemented).  For virtio_net, accelerated
-RFS would effectively push the guest's RFS socket map out to the host.
+On Mon, Sep 19, 2011 at 17:30 +0300, Pekka Enberg wrote:
+> > On Wed, Sep 14, 2011 at 12:27 -0700, Kees Cook wrote:
+> >> On Sat, Sep 10, 2011 at 08:41:34PM +0400, Vasiliy Kulikov wrote:
+> >> > Historically /proc/slabinfo has 0444 permissions and is accessible to
+> >> > the world.  slabinfo contains rather private information related both to
+> >> > the kernel and userspace tasks.  Depending on the situation, it might
+> >> > reveal either private information per se or information useful to make
+> >> > another targeted attack.  Some examples of what can be learned by
+> >> > reading/watching for /proc/slabinfo entries:
+> >> > ...
+> >> > World readable slabinfo simplifies kernel developers' job of debugging
+> >> > kernel bugs (e.g. memleaks), but I believe it does more harm than
+> >> > benefits.  For most users 0444 slabinfo is an unreasonable attack vector.
+> >> >
+> >> > Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+> 
+> On Sun, Sep 18, 2011 at 8:05 PM, Vasiliy Kulikov <segoon@openwall.com> wrote:
+> >> Haven't had any mass complaints about the 0400 in Ubuntu (sorry Dave!), so
+> >> I'm obviously for it.
+> >>
+> >> Reviewed-by: Kees Cook <kees@ubuntu.com>
+> >
+> > Looks like the members of the previous slabinfo discussion don't object
+> > against the patch now and it got two other Reviewed-by responses.  Can
+> > you merge it as-is or should I probably convince someone else?
+> 
+> We discussed this in March (google for 'Make /proc/slabinfo 0400')
 
-Ben.
+Sure, I've read it and included the link in the patch description :)
+
+> and
+> concluded that it's not worth it doesn't really protect from anything
+
+Closing only slabinfo doesn't add any significant protection against
+kernel heap exploits per se, no objections here.  
+
+But as said in the desciption, the reason for this patch is not protecting
+against exploitation heap bugs.  It is a source of infoleaks of kernel
+and userspace activity, which should be forbidden to non-root users.
+
+> and causes harm to developers.
+
+One note: only to _kernel_ developers.  It means it is a strictly
+debugging feature, which shouldn't be enabled in the production systems.
+
+Thanks,
 
 -- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
