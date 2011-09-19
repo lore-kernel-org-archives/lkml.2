@@ -1,90 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756609Ab1ISQOE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 12:14:04 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45881 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756445Ab1ISQOB (ORCPT
+	id S1756597Ab1ISQTS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 12:19:18 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:51452 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756381Ab1ISQTR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 12:14:01 -0400
-Date: Mon, 19 Sep 2011 17:13:59 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
-        Graeme Gregory <gg@slimlogic.co.uk>,
-        Samuel Oritz <sameo@linux.intel.com>
-Subject: Re: [PATCH 6/6 v5] regmap: Incorporate the regcache core into regmap
-Message-ID: <20110919161358.GA540@opensource.wolfsonmicro.com>
-References: <1316439245-26221-1-git-send-email-dp@opensource.wolfsonmicro.com>
- <1316439245-26221-7-git-send-email-dp@opensource.wolfsonmicro.com>
- <4E77667D.8030404@metafoo.de>
+	Mon, 19 Sep 2011 12:19:17 -0400
+Date: Mon, 19 Sep 2011 20:18:37 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        kernel-hardening@lists.openwall.com, Kees Cook <kees@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Matt Mackall <mpm@selenic.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Dan Rosenberg <drosenberg@vsecurity.com>,
+        Theodore Tso <tytso@mit.edu>, Alan Cox <alan@linux.intel.com>,
+        Jesper Juhl <jj@chaosbits.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [kernel-hardening] Re: [RFC PATCH 2/2] mm: restrict access to
+ /proc/slabinfo
+Message-ID: <20110919161837.GA2232@albatros>
+References: <20110910164001.GA2342@albatros>
+ <20110910164134.GA2442@albatros>
+ <20110914192744.GC4529@outflux.net>
+ <20110918170512.GA2351@albatros>
+ <CAOJsxLF8DBEC9o9pSwa6c6pMg8ByFBdsDnzg22P3ucQcP98uzA@mail.gmail.com>
+ <20110919144657.GA5928@albatros>
+ <CAOJsxLG8gW=BLOptpULsaAEwTravADKbNbXp5e9Wd7xVEfR9AQ@mail.gmail.com>
+ <20110919155718.GB16272@albatros>
+ <CAOJsxLGZm+npcR0YgXSE2wLC2iXCtzYyCdTDCt1LN=Z28Rm_UA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4E77667D.8030404@metafoo.de>
-X-Cookie: Your domestic life may be harmonious.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAOJsxLGZm+npcR0YgXSE2wLC2iXCtzYyCdTDCt1LN=Z28Rm_UA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 19, 2011 at 05:57:49PM +0200, Lars-Peter Clausen wrote:
-> On 09/19/2011 03:34 PM, Dimitris Papastamos wrote:
+On Mon, Sep 19, 2011 at 19:11 +0300, Pekka Enberg wrote:
+> >> What's different about the patch now?
+> >
+> > The exploitation you're talking about is an exploitation of kernel heap
+> > bugs.  Dan's previous "make slabinfo 0400" patch tried to complicate
+> > attacker's life by hiding information about how many free object are
+> > left in the slab.  With this information an attacker may compute how he
+> > should spray the slab to position slab object to increase his chances of
+> > overwriting specific memory areas - pointers, etc.
+> >
+> > I don't speak about how much/whether closing slabinfo complicates this
+> > task, though.  My idea is orthogonal to the Dan's idea.  I claim that
+> > with 0444 slabinfo any user may get information about in-system activity
+> > that he shouldn't learn.  In short, one may learn precisely when other
+> > user reads directory contents, opens files, how much files there are in
+> > the specific _private_ directory, how much files _private_ ecryptfs or
+> > fuse mount point contains, etc.  This breaks user's assumption that
+> > the number of files in a private directory is a private information.
+> > There are a bit more thoughts in the patch description.
+> 
+> Yes, I read your patch description and I think it's convincing enough
+> to warrant a config option but not changing the default.
+> 
+> However, if the encryptfs and infoleaks really are serious enough to
+> hide /proc/slabinfo, I think you should consider switching over to
+> kmalloc() instead of kmem_cache_alloc() to make sure nobody can
+> gain access to the information.
 
-> > +	if (!map->cache_bypass) {
-> > +		ret = regcache_write(map, reg, val);
-> > +		if (!ret || map->cache_only)
-> > +			return 0;
+kmalloc() is still visible in slabinfo as kmalloc-128 or so.
 
-> The hw write shouldn't be skipped if the cache write is successful. We should
-> only exit here if cache_only is set.
 
-There's a couple of other issues too.  I've already got the following
-patch for this one locally:
+> >> > One note: only to _kernel_ developers.  It means it is a strictly
+> >> > debugging feature, which shouldn't be enabled in the production systems.
+> >>
+> >> It's pretty much _the_ interface for debugging kernel memory leaks in
+> >> production systems and we ask users for it along with /proc/meminfo
+> >> when debugging many memory management related issues. When we
+> >> temporarily dropped /proc/slabinfo with the introduction of SLUB, people
+> >> complained pretty loudly.
+> >
+> > Could you point to the discussion, please?  I cannot find the patch for
+> > 0400 slabinfo even in the linux-history repository.
+> 
+> We dropped the whole file for SLUB:
+> 
+> http://lwn.net/Articles/263337/
 
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -304,7 +304,9 @@ static int _regmap_write(struct regmap *map,
-unsigned int re
- 
-        if (!map->cache_bypass) {
-                ret = regcache_write(map, reg, val);
--               if (!ret || map->cache_only)
-+               if (ret != 0)
-+                       return ret;
-+               if (map->cache_only)
-                        return 0;
-        }
- 
-> I also wonder if we should pass the return value of regcache_write on to the
-> caller if cache_only is set.
+Ah, I've misunderstood you.
 
-Yup.
 
-> Btw. what should happen if both cache_bypass and cache_only are set? Or is that
-> an invalid configuration?
+> [ I didn't find the original discussion that motivated the above
+>   patch but it should be somewhere in LKML archives around
+>   that time. ]
+> 
+> Making it root-only will have pretty much the same kind of
+> out-of-the-box behavior.
+> 
+> >> I'd be willing to consider this patch if it's a config option that's not enabled
+> >> by default; otherwise you need to find someone else to merge the patch.
+> >> You can add some nasty warnings to the Kconfig text to scare the users
+> >> into enabling it. ;-)
+> >
+> > How do you see this CONFIG_ option?  CONFIG_PROCFS_COMPAT_MODES (or _PERMS),
+> > defaults to Y?  If we find more procfs files with dangerous permissions,
+> > we may move it under "ifndef CONFIG_PROCFS_COMPAT_PERMS".
+> 
+> I guess CONFIG_RESTRICT_PROCFS type of thing makes most sense
+> since the problem is not only about SLAB. If you want to make it slab-only
+> config option, I'm fine with that too.
 
-That's not sensible.  Probably BUG_ON().
+OK, then I'll prepare a patch with a configure option, if no other
+objections.
 
-> > @@ -428,6 +446,14 @@ int regmap_read(struct regmap *map, unsigned int reg, unsigned int *val)
+> Please note that you need to restrict sysfs files for SLUB as well.
 
-> >  	mutex_lock(&map->lock);
+Sure.
 
-> > +	if (!map->cache_bypass) {
-> > +		ret = regcache_read(map, reg, val);
-> > +		if (!ret) {
-> > +			mutex_unlock(&map->lock);
-> > +			return 0;
-> > +		}
-> > +	}
+Thank you for the comments!
 
-> This should go into _regmap_read. Otherwise regmap_update_bits will always use
-> a hw read.
-
-Yup, got that too.
-
-> Also if cache_only is set I guess we shouldn't fallback to a hw read.
-
-Probably.  Cache only is *mostly* there for write side stuff, but it'd
-be useful to add this.  I've got a patch to do this.
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
