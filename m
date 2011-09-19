@@ -1,88 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754792Ab1ISRjo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 13:39:44 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:47954 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753055Ab1ISRjn (ORCPT
+	id S932184Ab1ISRpG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 13:45:06 -0400
+Received: from mailout02.t-online.de ([194.25.134.17]:44825 "EHLO
+	mailout02.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932141Ab1ISRpD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 13:39:43 -0400
-Date: Mon, 19 Sep 2011 21:39:05 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Balbir Singh <bsingharora@gmail.com>, Shailabh Nagar <nagar@us.ibm.com>,
-        linux-kernel@vger.kernel.org, security@kernel.org,
-        Eric Paris <eparis@redhat.com>, Stephen Wilson <wilsons@start.ca>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        kernel-hardening@lists.openwall.com
-Subject: Re: [Security] [PATCH 2/2] taskstats: restrict access to user
-Message-ID: <20110919173905.GA3804@albatros>
-References: <1308917362-4795-1-git-send-email-segoon@openwall.com>
- <BANLkTimm7KDEU7WD7jVV=5vAGt2GbjgwGg@mail.gmail.com>
- <20110630075716.GB3377@albatros>
- <BANLkTik0DF5jUhOsP=Pnm+vMbHzEx+3L-Q@mail.gmail.com>
- <BANLkTi=DiVRV9dkTtYgq+CY-kxVs5ecoWw@mail.gmail.com>
- <BANLkTimnP8L3kSoafdTtUhr9CXx9-WDVLQ@mail.gmail.com>
- <CA+55aFxXS9z=NwoYug+qGoYufqN-6dCo4fm5ggTsoDonsMi4Dw@mail.gmail.com>
+	Mon, 19 Sep 2011 13:45:03 -0400
+Reply-To: <dr.abelgreg@live.com>
+From: "DR. ABEL GREG" <inboxmailer12@w71482j2k.homepage.t-online.de>
+Subject: RE: URGENT WITH DETAILS
+Date: Mon, 19 Sep 2011 08:54:45 -0700
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxXS9z=NwoYug+qGoYufqN-6dCo4fm5ggTsoDonsMi4Dw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: multipart/mixed;
+	boundary="----=_NextPart_000_00DD_01C2A9A6.2F5EF85C"
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+Message-ID: <1R5gAv-0k4n680@fwd16.t-online.de>
+X-ID: JT31FvZSwt5qGEem+LqfiCOKUVPkIYEAIo9dAh-3BMH8p8RFOnBDWpToZ5--wRynMDeLRKtP2t
+X-TOI-MSGID: ca5f253e-bcdf-4088-92a8-3a71a1e772f5
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 19, 2011 at 09:40 -0700, Linus Torvalds wrote:
-> diff --git a/kernel/taskstats.c b/kernel/taskstats.c
-> index e19ce1454ee1..5874d4866b3c 100644
-> --- a/kernel/taskstats.c
-> +++ b/kernel/taskstats.c
-> @@ -457,6 +457,8 @@ static int cmd_attr_register_cpumask(struct genl_info *info)
->  	cpumask_var_t mask;
->  	int rc;
->  
-> +	if (!capable(CAP_SYS_ADMIN))
-> +		return -EPERM;
+This is a multi-part message in MIME format.
 
-Shouldn't it simply protect taskstats_user_cmd()?  You may still poll
-the counters with TASKSTATS_CMD_ATTR_PID/TASKSTATS_CMD_ATTR_TGID.
+------=_NextPart_000_00DD_01C2A9A6.2F5EF85C
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
 
-Or ptrace_may_access() in taskstats_user_cmd().
+READ CAREFULLY THE ATTACHED FILE....
 
->  	if (!alloc_cpumask_var(&mask, GFP_KERNEL))
->  		return -ENOMEM;
->  	rc = parse(info->attrs[TASKSTATS_CMD_ATTR_REGISTER_CPUMASK], mask);
-> diff --git a/kernel/tsacct.c b/kernel/tsacct.c
-> index 24dc60d9fa1f..110ca5a03bd6 100644
-> --- a/kernel/tsacct.c
-> +++ b/kernel/tsacct.c
-> @@ -78,6 +78,7 @@ void bacct_add_tsk(struct taskstats *stats, struct task_struct *tsk)
->  
->  #define KB 1024
->  #define MB (1024*KB)
-> +#define KB_MASK (~(KB-1))
->  /*
->   * fill in extended accounting fields
->   */
-> @@ -100,9 +101,9 @@ void xacct_add_tsk(struct taskstats *stats, struct task_struct *p)
->  	stats->read_syscalls	= p->ioac.syscr;
->  	stats->write_syscalls	= p->ioac.syscw;
->  #ifdef CONFIG_TASK_IO_ACCOUNTING
-> -	stats->read_bytes	= p->ioac.read_bytes;
-> -	stats->write_bytes	= p->ioac.write_bytes;
-> -	stats->cancelled_write_bytes = p->ioac.cancelled_write_bytes;
-> +	stats->read_bytes	= p->ioac.read_bytes & KB_MASK;
-> +	stats->write_bytes	= p->ioac.write_bytes & KB_MASK;
-> +	stats->cancelled_write_bytes = p->ioac.cancelled_write_bytes & KB_MASK;
->  #else
->  	stats->read_bytes	= 0;
->  	stats->write_bytes	= 0;
+------=_NextPart_000_00DD_01C2A9A6.2F5EF85C
+Content-Type: application/octet-stream;
+	name="UNITED NATION.txt"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+	filename="UNITED NATION.txt"
 
+VW5pdGVkIE5hdGlvbiBGcmF1ZCBhbmQgTW9uZXkgTGF1bmRlcmluZyBPdmVy
+c2lnaHQgRGVwdCANCkludmVzdGlnYXRpb24vIE1vbml0b3JpbmcvIFJlc29s
+dmUgYW5kIENvbnN1bHQgVW5pdCANCiAgDQpBdHRuOiBCZW5lZmljaWFyeSwg
+DQoNCkkgYW0gQWJlbCBHcmVnIChGc2MsIE1uaSkgVW5pdGVkIE5hdGlvbiBy
+ZXByZXNlbnRhdGl2ZSBmb3IgQWZyaWNhbiBFY29ub21pYyBDcmltZXMsIFNj
+YW0gYW5kIE1vbmV5IExhdW5kZXJpbmcuIA0KICANCkkgd3JpdGUgdG8gYWRk
+cmVzcyB5b3Ugb24gdGhlIGFjY291bnQgb2YgcGV0aXRpb25zIGFkZHJlc3Nl
+ZCB0byB0aGUgVW5pdGVkIE5hdGlvbiBTZWN1cml0eSBDb3VuY2lsIGJ5IGJv
+dGggdGhlIGdvdmVybm1lbnQgb2YgVW5pdGVkIFN0YXRlIG9mIEFtZXJpY2Es
+IEZyYW5jZSwgQnJpdGFpbiByZS1lbmFjdGluZyBhbiBleHBvc2UgdG8gdGhl
+IGNvbG9zc2FsIG1hZ25pdHVkZSBvZiBzY2FtLCBkZWNlaXQgYW5kIG1vbmV5
+IGxhdW5kZXJpbmcgY2FydGVsIHJpbmcgcHJldmFsZW50IHdpdGggY291bnRy
+aWVzIHN1Y2ggYXMgR2FtYmlhLCBOaWdlcmlhLCBHaGFuYSwgQmVuaW4gUmVw
+dWJsaWMsIEVuZ2xhbmQsIFNwYWluIGFuZCBVbml0ZWQgU3RhdGUgb2YgQW1l
+cmljYS4gSXQgd2FzIG9uIGFjY291bnQgb2YgdGhpcyB0aGF0IFVuaXRlZCBO
+YXRpb24gZGVwbG95ZWQgaXRzIEFmcmljYW4gQ29tbWlzc2lvbiBvbiBFY29u
+b21pYyBDcmltZXMgdG8gd2FkZSBpbnRvIHRoaXMgdWdseSB0cmVuZC4gDQog
+IA0KT3VyIEludmVzdGlnYXRpb24gcmV2ZWFsZWQgdGhhdCB0aGlzIHNjYW0g
+aGFzIGJlZW4gZm9yIGEgdmVyeSBsb25nIHRpbWUgYnV0IGFzc3VtZWQgZ2xv
+YmFsIGRpbWVuc2lvbiBpbiB0aGUgbGFzdCBmaWZ0ZWVuIHllYXJzLiBJbiBy
+ZXNwb25zZSB0byB0aGVzZSBwZXRpdGlvbnMgdG8gdGhlIFVOLCB3ZSBoYXZl
+IGJlZW4gZW5nYWdlZCB3aXRoIHRoZSBOaWdlcmlhIGdvdmVybm1lbnQgaW4g
+dGhlIGxhc3QgZml2ZSBtb250aHMsIGRpc2N1c3NpbmcgdGhlIGltcGxpY2F0
+aW9uIG9mIHRoaXMgdWdseSBwYXltZW50IHNjYW0gaW4gTmlnZXJpYS4gVGhl
+IGhpZ2ggcG93ZXJlZCBkZWxlZ2F0aW9uIGZyb20gdGhlIFVOIGhhcyBhY2hp
+ZXZlZCByZW1hcmthYmxlIHByb2dyZXNzIGluIG91ciBkaXNjdXNzaW9uIHdp
+dGggdGhlIEZlZGVyYWwgZ292ZXJubWVudCBvZiBOaWdlcmlhLiANCiAgDQpX
+ZSBhcmUgZmlyc3QgaW4gTmlnZXJpYSBiZWNhdXNlIG91ciBpbnZlc3RpZ2F0
+aW9uIHJldmVhbGVkIHRoYXQgdGhpcyBwYXltZW50IHNjYW0gZnJhdWQgb3Jp
+Z2luYXRlZCBmcm9tIE5pZ2VyaWEuIE5lZWQgbm90IGJlIHJlbWluZGVkIHRo
+YXQgdGhpcyBzYW1lIHNjYW0gaXNzdWUgZm9ybWVkIHRoZSBmdWxjb24gb2Yg
+dGhlIGRpc2N1c3Npb24gYmV0d2VlbiBQcmVzaWRlbnQgR29vZGx1Y2sgSm9u
+YXRoYW4gb2YgTmlnZXJpYSBhbmQgaGlzIFVuaXRlZCBTdGF0ZSBjb3VudGVy
+cGFydCBCYXJyYWNrIE9iYW1hIGR1cmluZyB0aGUgdmlzaXQgb2YgdGhlIGZv
+cm1lciBiZXR3ZWVuIEFwcmlsIGFuZCBKdW5lIDIwMTAgYXMgUHJlc2lkZW50
+IEpvbmF0aGFuIHZpc2l0ZWQgdHdpY2UuIEhlIG9wZW5seSBhc2tlZCB0aGUg
+QW1lcmljYW4gZ292ZXJubWVudCB0byBhc3Npc3QgTmlnZXJpYSBpbiBjYWxt
+aW5nIHRoaXMgdWdseSB2aWNlLiANCiAgDQpJbiB0aGUgbGFzdCBmaXZlIG1v
+bnRocyBvdXIgdGVhbSBoYXZlIHdvcmtlZCBhc3NpZHVvdXNseSB3aXRoIHRo
+ZSBjb29wZXJhdGlvbiBvZiB0aGUgTmlnZXJpYSBnb3Zlcm5tZW50IHRvIHJl
+YWNoIGEgY29tcHJvbWlzZSBjb25zaWRlcmluZyB0aGF0IHRoaXMgd2VsbCBk
+b2N1bWVudGVkIHBheW1lbnQgY2xhaW0gc2NhbSBpcyBhIHN5c3RlbWljIG1l
+dGhvZCB0aHJvdWdoIHdoaWNoIHRoZSBoaWdobHkgcGxhY2VkIE5pZ2VyaWEg
+b2ZmaWNpYWxzIHVzZSBpbiBmbGVlaW5nIG1vbmV5IHVzaW5nIHRoZWlyIHBy
+b3hpZXMgdG8gbWFrZSBjb250YWN0IHRvIHlvdS4gIEluIG91ciBjYW5kaWQg
+cmVzb2x1dGlvbiB3aXRoIHRoZSBnb3Zlcm5tZW50IG9mIHRoZSBGZWRlcmFs
+IFJlcHVibGljIG9mIE5pZ2VyaWEsIGl0IHdhcyB3ZWxsIG5vdGVkIHRoYXQg
+bW9zdCBvZiB0aGUgdmljdGltcyBzcGVudCBlbm9ybW91cyBhbW91bnQgb2Yg
+bW9uZXkgaW4gdGhpcyBzY2FtLCB0aGVyZWZvcmUgc2hvdWxkIGJlIGFkZXF1
+YXRlbHkgY29tcGVuc2F0ZWQuIFByZXNlbnRseSB3ZSBoYXZlIHN0YXJ0ZWQg
+dGhlIHBheW1lbnQgb2YgdGhlIGNvbXBlbnNhdGlvbiBmb3IgdmljdGltcyBh
+cyBhZ3JlZWQgYmV0d2VlbiB0aGUgVU4gYW5kIHRoZSBnb3Zlcm5tZW50IG9m
+IE5pZ2VyaWEuIFRoaXMgY29tbWlzc2lvbiBpcyBwYXlpbmcgb3V0IHRoZSBz
+dW0gb2YgJDUuMk0gdG8gYWxsIHRoZSB2aWN0aW1pemVkIGJlbmVmaWNpYXJp
+ZXMuDQogIA0KQnV0IHRoaXMgcGF5bWVudCB3aWxsIGJlIHJlbGVhc2UgdG8g
+eW91IHZpYSBhbiBBVE0gVmlzYSBDYXJkIHdoaWNoIGhhcyB0byBnbyB0aHJv
+dWdoIEFtZXJpY2FuIEJhbmtlcnMgQXNzb2NpYXRpb24gQmFua2luZyBOZXR3
+b3JrIHJlZ2lzdHJhdGlvbiB0aGF0IHdpbGwgZW5hYmxlIHlvdSBhY2Nlc3Mg
+dGhlIFZpc2EgQ2FyZCBpbiB5b3VyIGNvdW50cnkuIFRoaXMgcmVnaXN0cmF0
+aW9uIGhhcyB0byBiZSBkb25lIGJlZm9yZSB0aGUgVmlzYSBDYXJkIHdpbGwg
+YmUgZGlzcGF0Y2ggdG8geW91ciBhZGRyZXNzLiBDb250YWN0IHRoaXMgb2Zm
+aWNlIHdpdGggdGhlIGJlbGxvdyBwYXJ0aWN1bGFycyB1cmdlbnRseS4NCg0K
+MSkuIFlvdXIgTmFtZXMuLi4uLi4uIA0KMikuIFlvdXIgQWRkcmVzcy4uLi4u
+DQozKS4gWW91ciBEaXJlY3QgUGhvbmUgTnVtYmVyIGZvciBhY2N1cmF0ZSB2
+ZXR0aW5nLiANCjQpLiBZb3VyIElEIENhcmQgLyBPY2N1cGF0aW9uDQoNCg0K
+Q29udGFjdCB1cyBpbW1lZGlhdGVseS4gDQoNCkRyLiBBYmVsIEdyZWcgKEZz
+YywgTW5pKSANClVuaXRlZCBOYXRpb24gcmVwcmVzZW50YXRpdmUgDQpBZnJp
+Y2FuIEVjb25vbWljIENyaW1lcywgU2NhbSBhbmQgTW9uZXkgTGF1bmRlcmlu
+ZyANCkVtYWlsOiB1bml0ZWRuYXRpb25zcmVwQGxpdmUuY29tICANCg==
 
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+------=_NextPart_000_00DD_01C2A9A6.2F5EF85C--
