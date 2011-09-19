@@ -1,81 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756662Ab1ISQbc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 12:31:32 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:56569 "EHLO mx2.parallels.com"
+	id S1756719Ab1ISQfo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 12:35:44 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:34825 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754750Ab1ISQbb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 12:31:31 -0400
-Message-ID: <4E776E36.6040906@parallels.com>
-Date: Mon, 19 Sep 2011 13:30:46 -0300
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
-MIME-Version: 1.0
+	id S1756479Ab1ISQfn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 12:35:43 -0400
+Date: Mon, 19 Sep 2011 22:05:28 +0530
+From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: <linux-kernel@vger.kernel.org>, <xemul@parallels.com>,
-        <paul@paulmenage.org>, <lizf@cn.fujitsu.com>, <daniel.lezcano@free.fr>,
-        <mingo@elte.hu>, <jbottomley@parallels.com>
-Subject: Re: [PATCH 1/9] Remove parent field in cpuacct cgroup
-References: <1316030695-19826-1-git-send-email-glommer@parallels.com>   <1316030695-19826-2-git-send-email-glommer@parallels.com>  <1316448186.1511.19.camel@twins> <4E776937.1070108@parallels.com> <1316449160.6091.5.camel@twins>
-In-Reply-To: <1316449160.6091.5.camel@twins>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [187.106.51.14]
+Cc: Paul Turner <pjt@google.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelianov <xemul@parallels.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: CFS Bandwidth Control - Test results of cgroups tasks pinned vs
+ unpinnede
+Message-ID: <20110919163528.GC21064@linux.vnet.ibm.com>
+Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+References: <20110908151433.GB6587@linux.vnet.ibm.com>
+ <1315571462.26517.9.camel@twins>
+ <20110912101722.GA28950@linux.vnet.ibm.com>
+ <1315830943.26517.36.camel@twins>
+ <20110913041545.GD11100@linux.vnet.ibm.com>
+ <1315923579.5977.14.camel@twins>
+ <20110913180146.GA12723@linux.vnet.ibm.com>
+ <1315938226.4226.11.camel@twins>
+ <4E730568.2030107@google.com>
+ <1316161720.10174.0.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1316161720.10174.0.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/19/2011 01:19 PM, Peter Zijlstra wrote:
-> On Mon, 2011-09-19 at 13:09 -0300, Glauber Costa wrote:
->> On 09/19/2011 01:03 PM, Peter Zijlstra wrote:
->>> On Wed, 2011-09-14 at 17:04 -0300, Glauber Costa wrote:
->>>> +       for (; ca; ca = parent_ca(ca)) {
->>>
->>> It might be good to check that the loop condition and null condition in
->>> the parent_ca() function get folded. Otherwise there's a double branch
->>> in that loop.
->>>
->>> Note that this function is one of the reasons I dislike cpuacct, it adds
->>> a second cgroup hierarchy traversal to every context switch.
->>>
->> Well, it is not that hard to optimize this.
->>
->> Those values are always updated, but they don't really need to, unless
->> they are read.
->>
->> So what we can do, is introduce a marker in the cgroup, representing the
->> last read value. Parent is untouched. We then update parent when 1)
->> reading this value, 2) cgroup destroy, 3) cpu hotplug. (humm, and maybe
->> we don't even need to do it in cpu hotplug, since the per-cpu variables
->> will still be accessible... )
->>
->> How about it ?
->
-> Updating that value would involve iterating all tasks in the entire
-> cgroup subtree nested at whatever cgroup you're wanting to read.
+* Peter Zijlstra <a.p.zijlstra@chello.nl> [2011-09-16 10:28:40]:
 
-No, it would not. Because nothing is stored in the task, all is stored 
-in the cgroup. So it is O(h(n)), where n is the number of cgroups and 
-h(n) the height of the cgroups tree.
+> > I think more compelling here is that it looks like nohz load-balance 
+> > needs more love.
+> 
+> Quite probable,
 
-> The delayed update would be an entire subtree walk, that can be quite
-> expensive.
-But the subtrees are small, because we are talking about the cgroup 
-subtree, wich can grow quite a lot in breadth, but rarely in depth.
+Staring at nohz load-balancer for sometime, I see a potential issue:
 
-> Who wants these numbers and what for and at what frequency?
-> Does that really make sense?
+'first_pick_cpu' and 'second_pick_cpu' can be idle without stopping
+ticks for quite a while. When that happens, they stop bothering to
+kick ilb cpu because of this snippet in nohz_kick_needed():
 
-Whoever wants /proc/stat numbers. Once, or maybe twice a sec would be 
-the normal interval here for most use cases, I guess (top inside a 
-container, for instance).
+   static inline int nohz_kick_needed(struct rq *rq, int cpu)
+   {
 
-Even people doing much more frequent updates here, would not come as 
-close as doing it every tick, therefore making this option cheaper than 
-transversing the tree at each tick.
+	..
 
-Btw, this works for cpuacct. For cpuusage, I am not sure this 
-optimization is a valid one. Since this value is at least intended to 
-provide a basis for cpu capping in the near future (Well, it is not 
-there, but I think it is), it is expected to be used much more 
-frequently by the kernel itself.
+        if (rq->idle_at_tick)
+                return 0;
+
+	..
+
+   }
+
+
+?
+
+- vatsa
