@@ -1,53 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756760Ab1ISTMs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 15:12:48 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:58080 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774Ab1ISTMr (ORCPT
+	id S1756784Ab1ISTOc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 15:14:32 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41063 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753521Ab1ISTOb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 15:12:47 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Stephen Boyd <sboyd@codeaurora.org>, David Brown <davidb@codeaurora.org>,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] msm: platsmp: Mark ioremapped memory as __iomem
-Date: Mon, 19 Sep 2011 21:12:08 +0200
-Message-ID: <3623124.aFHn2mhMMC@wuerfel>
-User-Agent: KMail/4.7.1 (Linux/3.0.0-rc1nosema+; KDE/4.7.1; x86_64; ; )
-In-Reply-To: <1316454844-32733-1-git-send-email-sboyd@codeaurora.org>
-References: <1316454844-32733-1-git-send-email-sboyd@codeaurora.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:DZgNRf4cgJuk2aI8PBgufHGW0ViV8NricGB+cbKtEQ6
- fQAEwvTwPIQCDLaiF7lr8+C3sRQrSCqh0frdGPoqkBWpYlgYkx
- zmivILurJli4WqKlO3VChaVKqtupG2Mmxw9ya94EmaqmiI5i2C
- oeBLSy3tMChAAHmYWBUf9AGYOEK3anllCoOxDn0am23IHXLDYG
- GLZdAXOGwQGRpYVJLO6YU5GxW3DD4hYW12aXtRcmoP+yztnvX4
- CazhtA/ZSeemNKAODN4lUQsZ/vqi2W2RSdLW6+Llv/UrxksaCS
- wWYvnjVtK15JzLcy2zOqWJsdUKacOh8+VEDag8HQmZEeul0vT8
- HkQJNNMxVCeekJdhZX4w=
+	Mon, 19 Sep 2011 15:14:31 -0400
+Subject: Re: [RFC][PATCH 2/3] futex: Reduce hash bucket lock contention
+From: Peter Zijlstra <peterz@infradead.org>
+To: Manfred Spraul <manfred@colorfullife.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        David Miller <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Mike Galbraith <efault@gmx.de>
+Date: Mon, 19 Sep 2011 10:51:47 +0200
+In-Reply-To: <1316417840.10174.46.camel@twins>
+References: <20110914133034.687048806@chello.nl>
+	 <20110914133750.831707072@chello.nl> <1316176490.10174.22.camel@twins>
+	 <4E749937.5090803@colorfullife.com> <1316417840.10174.46.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1316422307.1511.3.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 19 September 2011 10:54:04 Stephen Boyd wrote:
-> Fixes a handful of sparse warnings.
-> 
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  arch/arm/mach-msm/platsmp.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+On Mon, 2011-09-19 at 09:37 +0200, Peter Zijlstra wrote:
+> On Sat, 2011-09-17 at 14:57 +0200, Manfred Spraul wrote:
+> > How do we verify that everything is able to deal with spurious
+> > wakeups?
+> > 
+> Well, I could go audit all 1400+ *schedule*() callsites in the kernel.
+> Or we can rely on the fact that current code can already cause spurious
+> wakeups due to signals.
 
-Hi Stephen,
+Hrmm,. the sem code would have serialized on the IN_WAKER stuff, the
+mutex code would serialize on the ->wait_lock, and the futex code would
+have serialized on the hb lock.
 
-This looks good, and I've got a bunch of similar ones in
-http://git.linaro.org/gitweb?p=people/arnd/linux.git;a=shortlog;h=refs/heads/randconfig
-/msm
+So while it can issue multiple wakeups, those should not leak out of the
+locking primitive.. crap.
 
-Maybe you or David could take a look at those and integrate
-them. I was meaning to send them much earlier, but never
-get around to actually make sure they are all good.
-
-	arnd
+Still wondering why we've got that many schedule() calls in the kernel
+though, clearly we don't have enough blocking primitives or so..
