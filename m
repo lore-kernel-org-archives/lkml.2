@@ -1,90 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932508Ab1ISShK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 14:37:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65413 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932341Ab1ISShH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 14:37:07 -0400
-Date: Mon, 19 Sep 2011 14:36:56 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: ebiederm@xmission.com, mahesh@linux.vnet.ibm.com, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
-Subject: Re: [patch 1/2] kdump: Initialize vmcoreinfo note at startup
-Message-ID: <20110919183656.GC3373@redhat.com>
-References: <20110909102659.320220628@linux.vnet.ibm.com>
- <20110909102732.497569031@linux.vnet.ibm.com>
- <20110915184637.GF32658@redhat.com>
- <1316161277.3507.8.camel@br98xy6r>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1316161277.3507.8.camel@br98xy6r>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932546Ab1ISSh0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 14:37:26 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:44378 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932422Ab1ISShJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 14:37:09 -0400
+Subject: Re: [PATCH 3/9] Include nice values in cpuacct
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, xemul@parallels.com, paul@paulmenage.org,
+        lizf@cn.fujitsu.com, daniel.lezcano@free.fr, jbottomley@parallels.com
+Date: Mon, 19 Sep 2011 20:36:51 +0200
+In-Reply-To: <4E776D31.9090008@parallels.com>
+References: <1316030695-19826-1-git-send-email-glommer@parallels.com>
+	  <1316030695-19826-4-git-send-email-glommer@parallels.com>
+	 <1316449197.6091.6.camel@twins> <4E776D31.9090008@parallels.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1316457411.6091.12.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 16, 2011 at 10:21:17AM +0200, Michael Holzheu wrote:
-> Hello Vivek,
+On Mon, 2011-09-19 at 13:26 -0300, Glauber Costa wrote:
+> On 09/19/2011 01:19 PM, Peter Zijlstra wrote:
+> > On Wed, 2011-09-14 at 17:04 -0300, Glauber Costa wrote:
+> >> Besides user and system.
+> >
+> >
+> > Why!?
+> Because this is the whole purpose of this series. Think that in a 
+> reasonable use case, each cgroup will be tied to a container system. 
+> Each of them wants to have its own statistics, in /proc/stat. The best 
+> way I thought of doing it was to piggyback into cpuacct, instead of 
+> coming up with a 124th accounting mechanism just for that.
 > 
-> On Thu, 2011-09-15 at 14:46 -0400, Vivek Goyal wrote:
-> > On Fri, Sep 09, 2011 at 12:27:00PM +0200, Michael Holzheu wrote:
-> > > From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-> > > 
-> > > Currently the vmcoreinfo note is only initialized in case of kdump. On s390
-> > > it is possible to create kernel dumps with other dump mechanisms than kdump
-> > > (e.g. via hypervisor dump or stand-alone dump tools).
-> > 
-> > Both of these will be invoked through panic notifiers because kdump kernel
-> > is not loaded?
-> 
-> This is only one possibility. The other is that they are invoked
-> manually or by hypervisor watchdog without any Linux kernel involvement.
-> 
-> > 
-> > >For those dumps it
-> > > would also be desirable to include the vmcoreinfo data.
-> > 
-> > Curious that how these two dump schemes make use vmcoreinfo data?
-> 
-> We have a tool named zgetdump. With this tool it is possible to convert
-> dump formats on the fly using fuse. E.g. you can mount a s390
-> stand-alone dump as ELF dump. When this is done, the tool finds the
-> vmcoreinfo in the stand-alone dump via our well known ABI defined
-> address and it creates the respective VMCOREINFO ELF note in the output
-> ELF dump. This then can be used e.g. by makedumpfile for dump filtering.
-> No more need for a vmlinux file with debug information.
+> I also used it do demonstrate how can we easily implement a new feature 
+> found in hypervisors out of it, but this is really just the cherry on top.
 
-Ok, so you basically need it so that makedumpfile can do filtering without
-debug info.
 
-Well, if zgetdump is doing everything and you are stashing away an arch
-specific pointer, I guss you could have saved pointer directly to
-vmcoreinfo_data and then zgetdump could have made an ELF note out of it
-for use of makedumpfile.
+OK, but then amend the changelog with something like:
 
-But anyway, having kernel exported the note does not harm.
-
-> So this will look like the following:
-> 
-> # zgetdump --mount standalone.dump -f elf /mnt
-> # ls /mnt
-> # dump.elf
-> # readelf -n /mnt/dump.elf
-> # ...
->   VMCOREINFO		0x00000474	Unknown note type: (0x00000000)
-> # makedumpfile -c -d 31 /mnt/dump.elf dump.kdump
-
-If you can do this easily, then you really did not need kdump in kernel? 
-Just use stand alone dump to take dump and then do this to filter dump.
-
-But what happens to ELF headers which map kernel virtual address to
-physical addresses? kexec-tools prepares those. So in this case when
-you are capturing the dump, who prepares those? IOW, how does zgetdump
-creates a mapping between kernel virtual and physical addresses?
-
-Thanks
-Vivek
+Since we want to provide a full /proc/stat equivalent for cgroups, also
+implement nice time.
