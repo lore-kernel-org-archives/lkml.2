@@ -1,221 +1,468 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755638Ab1ISMKL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 08:10:11 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:42381 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755033Ab1ISMKJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 08:10:09 -0400
-Message-ID: <4E77310A.3000106@ti.com>
-Date: Mon, 19 Sep 2011 14:09:46 +0200
-From: "Cousson, Benoit" <b-cousson@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
+	id S1755767Ab1ISMWa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 08:22:30 -0400
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:8537
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755703Ab1ISMW3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 08:22:29 -0400
+X-SpamScore: 10
+X-BigFish: VPS10(zzc8kzz1202h10d2nzz8275bhz32i2a8h668h839h93fh66h)
+X-Spam-TCS-SCL: 5:0
+X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPVD:NLI;H:KCHJEXHC01.kpit.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
+Subject: [Patch v3 08/11] Touch: DA9052 touchscreen driver
+From: ashishj3 <ashish.jangam@kpitcummins.com>
+Reply-To: <ashish.jangam@kpitcummins.com>
+To: <dmitry.torokhov@gmail.com>
+CC: <m.grzeschik@pengutronix.de>, <randy.dunlap@oracle.com>,
+        <linaro-dev@lists.linaro.org>, <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Dajun <dajun.chen@diasemi.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 19 Sep 2011 17:52:12 +0530
+Message-ID: <1316434932.344.119.camel@L-0761.kpit.com>
 MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: Thomas Abraham <thomas.abraham@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
-        "jamie@jamieiles.com" <jamie@jamieiles.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH 5/5] ARM: gic: add OF based initialization
-References: <1316017900-19918-1-git-send-email-robherring2@gmail.com> <1316017900-19918-6-git-send-email-robherring2@gmail.com> <CAJuYYwSFu2HC+u2NY41+yw9tEyy85RKa4Dpm3SL+jbwS_OOA0A@mail.gmail.com> <4E71CE5D.9030900@ti.com> <4E71F978.6020402@gmail.com> <4E72030F.1090300@ti.com> <4E722B2D.4050307@gmail.com> <4E76615C.3000005@gmail.com>
-In-Reply-To: <4E76615C.3000005@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.10.38.37]
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/18/2011 11:23 PM, Rob Herring wrote:
-> On 09/15/2011 11:43 AM, Rob Herring wrote:
->> On 09/15/2011 08:52 AM, Cousson, Benoit wrote:
->>> On 9/15/2011 3:11 PM, Rob Herring wrote:
->>>> On 09/15/2011 05:07 AM, Cousson, Benoit wrote:
+This driver add support for DA9052 4-wire resistive ADC interfaced touchscreen
+controller.
 
-[...]
+DA9052 is a MFD therefore this driver depends on DA9052 core driver for core
+functionalities.
 
->>>>> I have another concern on a similar topic.
->>>>>
->>>>> On OMAP4 the SoC interrupts external to the MPU (SPI) have an offset of
->>>>> 32. Only the internal PPI are between 0 and 31.
->>>>>
->>>>> For the moment we add 32 to every SoC interrupts in the irq.h define,
->>>>
->>>> Those defines will not be used in the DT case. So the question is
->>>> whether to add 32 or not in the DT. Since we have just a single node and
->>>> a linear mapping of PPIs and SPIs, the only choice is to have SPIs start
->>>> at 32. And from the h/w definition, SPIs always start at 32, so it's in
->>>> agreement.
->>>
->>> This is a agreement inside the MPUSS, but not outside.
->>> Both Tegra and OMAP4 must add an offset to the HW irq number to deal
->>> with that today.
->>>
->>>>> but I'm assuming that this offset calculation should be done thanks to a
->>>>> dedicated irq domain for the SPI.
->>>>> The real HW physical number start at 0, and thus this is that value that
->>>>> should be in the irq binding of the device.
->>>>>
->>>>> So ideally we should have a irq domain for the PPI starting at 0 and
->>>>> another one for the SPI starting at 32. Or 32 and 64 for the exynos4
->>>>> case, but it looks like the PPI/SPI offset is always 32.
->>>>>
->>>>
->>>> That offset of SPIs is always there. If you have a GIC as a secondary
->>>> controller, It will have 32 reserved interrupts and the register layout
->>>> is exactly the same as a cpu's GIC.
->>>
->>> Yep, but that's the GIC view and not the SoC one. My concern is to have
->>> to tweak the HW number provided by the HW spec in order to add that offset.
->>> If you look at SoC level, the MPUSS is just an IP that can be
->>> potentially replaced by other one that will not have a GIC. In that case
->>> you will not change the IRQ mapping at SoC level.
->>> For example if you replace the Dual-cortexA9 by a single CortexA8, then
->>> all the interrupts will have to be shifted by 32 just because the MPU
->>> subsystem is different.
->>>
->>
->> Is that a realistic case? That would be a new chip and new device tree.
->> You could argue that the whole peripheral subsystem DT could be reused
->> and the numbering needs to be the same. However, there's one thing that
->> would prevent that. The number of interrupt cells is defined by the
->> controller binding. So you have to change the peripheral nodes anyway.
->>
->> It's good that OMAP is trying to standardize the peripheral layout, but
->> in my experience that's not something you can rely on.
->>
->> At some point the interrupt numbering is going to differ from the h/w
->> documentation. If it's not in the DT, then it will be in linux. Right
->> now its just offset of 32, but if irqdescs get assigned on demand as PPC
->> is doing, then there will be no relationship to the documentation.
->>
->>> Since that offset is dependent of the GIC internals and is not exposed
->>> outside the MPUSS, it should not be visible by the SoC IPs. And the HW
->>> spec is exposing exactly that.
->>>
->>>> Since the idea of splitting PPIs for each core out to a flattened linux
->>>> irq map has been abandoned, I see no reason to have more than 1 domain
->>>> with a simple linear translation. Ultimately, domains will do dynamic
->>>> irqdesc allocation and the translation within the gic will be completely
->>>> dynamic.
->>>
->>> I think the only reason to do that is to separate internal MPU
->>> interrupts with the external ones that should not have a clue about the
->>> GIC.
->>
->> I see 2 options (besides leaving it as is):
->>
->> - Revert back to my previous binding where PPIs are a sub-node and a
->> different interrupt parent.
->>
->> - Use the current binding, but allow SPIs to start at 0. We can still
->> distinguish PPIs and SPIs by the cpu mask cell. A cpu mask of 0 is a
->> SPI. If there was ever a reason to have a cpu mask for an SPI, you would
->> not be able to with this scheme.
->>
->> Either way you will still have the above issue with the cell size changing.
->>
-> 
-> I was headed down the path of implementing the 2nd option above, but had
-> a dilemma. What would be the numbering base for PPIs in this case?
-> Should it be 0 in the DT as proposed for SPIs or does it stay at 16?
-
-Both SGI and PPI are internal to the CortexA9 MP core, and referring to the CortexA9 MP core TRM [1], you can see that the PPI# -> ID# mapping is already documented:
-- Private timer, PPI(2) Each Cortex-A9 processor has its own private timers that can generate interrupts, using ID29.
-- Watchdog timers, PPI(3) Each Cortex-A9 processor has its own watchdog timers that can generate interrupts, using ID30.
-
-So in that case, it can makes sense to use the ID. But it is interesting to note that the PPI is identified with a 0 based index number.
-
-> Numbering PPIs at 0 will just cause confusion as will numbering
-> differently from SPIs. There is absolutely no mention of SPI0 or SPIx
-> numbering in the GIC spec. 
-
-Probably because it is the generic GIC spec that focus on internals stuff only, it not an integration spec that will show how the SPIs are connected to the outside world. But it is clear that the SPIs are identified as 0-XXX lines outside the Cortex MP core.
-
-In TRM [1] page 53: Shared Peripheral Interrupts (SPI): SPIs are triggered by events generated on associated interrupt input lines. The Interrupt Controller can support up to 224 interrupt input lines. The interrupt input lines can be configured to be edge sensitive (posedge) or level sensitive (high level).
-SPIs start at ID32.
-
-> All interrupt number references refer to the
-> absolute interrupt ID, not a relative number based on the type. The fact
-> that the Cortex-A9 implementation has interrupt lines numbered equal to
-> the GIC SPI interrupts is an implementation detail of the A9. 
-
-> Other cores could have different arrangement including bringing out PPI
-> interrupts or reserving some SPIs.
-
-Absolutely, that's why we should not use that internal GIC convention to capture external IRQ mapping. It you separate the PPI and the SPI controller, you can allow any kind of internal mapping.
-
-> As there are many users of the GIC, it makes more sense to align with
-> the GIC documentation rather than the documentation of 1 SOC. BTW, I
-> have the exact same issue in our documentation.
-
-It is not about one SoC, this is probably done like that for every other SoCs. I do not have the TRM for the other SoCs, but here is how it is done in various irqs.h file today:
-
-- arch/arm/mach-exynos4/include/mach
-
-/* PPI: Private Peripheral Interrupt */
-#define IRQ_PPI(x)		S5P_IRQ(x+16)
-
-/* SPI: Shared Peripheral Interrupt */
-#define IRQ_SPI(x)		S5P_IRQ(x+32)
-
-#define IRQ_EINT0		IRQ_SPI(16)
-#define IRQ_EINT1		IRQ_SPI(17)
-#define IRQ_EINT2		IRQ_SPI(18)
-#define IRQ_EINT3		IRQ_SPI(19)
-
-
-- arch/arm/mach-tegra/include/mach
-
-/* Primary Interrupt Controller */
-#define INT_PRI_BASE			(INT_GIC_BASE + 32)
-#define INT_TMR1			(INT_PRI_BASE + 0)
-#define INT_TMR2			(INT_PRI_BASE + 1)
-#define INT_RTC				(INT_PRI_BASE + 2)
-#define INT_I2S2			(INT_PRI_BASE + 3)
-
-
-- arch/arm/mach-ux500/include/mach
-
-/* Shared Peripheral Interrupt (SHPI) */
-#define IRQ_SHPI_START			32
-
-#define IRQ_MTU0		(IRQ_SHPI_START + 4)
-
-
-- arch/arm/plat-omap/include/plat
-
-#define OMAP44XX_IRQ_GIC_START			32
-
-#define OMAP44XX_IRQ_PL310			(0 + OMAP44XX_IRQ_GIC_START)
-#define OMAP44XX_IRQ_CTI0			(1 + OMAP44XX_IRQ_GIC_START)
-#define OMAP44XX_IRQ_CTI1			(2 + OMAP44XX_IRQ_GIC_START)
-#define OMAP44XX_IRQ_ELM			(4 + OMAP44XX_IRQ_GIC_START)
-
-
-Every CortexA9 based SoC have to add the 32 offset to the SoC level interrupt number line. The ID numbering scheme is relevant only inside the GIC, but at SoC level only the IRQ lines that entered the MP core are relevant. That ID is a pure internal GIC encoding.
-
-If you refer to the GIC-400 spec [2] (Please note that I do not know what that GIC is exactly...) p 25:
-"SPIs are triggered by events generated on associated interrupt input lines. The GIC-400 can support up to 480 SPIs corresponding to the external IRQS[479:0] signal. The number of SPIs available depends on the implemented configuration of the GIC-400. The permitted values are 0-480, in steps of 32. SPIs start at ID32."
-
-In that case the external IRQS numbering scheme is clear: [479:0], which is exactly what will be seen outside of the MP core.
-
-Having two interrupt controllers, one for SGIs + PPIs starting at 0 (hwirq#) and another one from SPIs starting at 32 (hwirq#), seems to me a much better approach. Moreover, it will avoid exposing a cpumask for SPIs.
-
-Regards,
-Benoit
-
-
-[1] http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0407f/I1006347.html
-
-[2] http://infocenter.arm.com/help/topic/com.arm.doc.ddi0471a/DDI0471A_gic400_r0p0_trm.pdf
-
+Signed-off-by: David Dajun Chen <dchen@diasemi.com>
+Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
+---
+Changes since v3:
+- Remove unrequire type cast
+- Prefix init code with _devinit
+- Remove check for workqueue reschedule
+- tsi_close() to wait for datardy intr completion
+- Remove seperate workqueue
+- Move cancel_work_sync to tsi_close()
+- Check for drv data before tsi priv data allocation
+Changes since v2:
+- Replace kthreads with workqueue
+- Remove kfifos
+- Taken care for bus type
+- Replace da9052_set/clear function with da9052_reg_update
+- Add open and close functionality
+---
+ drivers/input/touchscreen/Kconfig      |    7 +
+ drivers/input/touchscreen/Makefile     |    1 +
+ drivers/input/touchscreen/da9052_tsi.c |  369 ++++++++++++++++++++++++++++++++
+ 3 files changed, 377 insertions(+), 0 deletions(-)
+ create mode 100755 drivers/input/touchscreen/da9052_tsi.c
+diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
+index cabd9e5..a5d2e7b 100644
+--- a/drivers/input/touchscreen/Kconfig
++++ b/drivers/input/touchscreen/Kconfig
+@@ -144,6 +144,13 @@ config TOUCHSCREEN_DA9034
+ 	  Say Y here to enable the support for the touchscreen found
+ 	  on Dialog Semiconductor DA9034 PMIC.
+ 
++config TOUCHSCREEN_DA9052
++	tristate "Dialog DA9052 TSI"
++	depends on PMIC_DA9052
++	help
++	  Say y here to support the touchscreen found on
++	  Dialog Semiconductor DA9052 PMIC
++
+ config TOUCHSCREEN_DYNAPRO
+ 	tristate "Dynapro serial touchscreen"
+ 	select SERIO
+diff --git a/drivers/input/touchscreen/Makefile b/drivers/input/touchscreen/Makefile
+index 282d6f7..a4aeb25 100644
+--- a/drivers/input/touchscreen/Makefile
++++ b/drivers/input/touchscreen/Makefile
+@@ -18,6 +18,7 @@ obj-$(CONFIG_TOUCHSCREEN_BITSY)		+= h3600_ts_input.o
+ obj-$(CONFIG_TOUCHSCREEN_BU21013)       += bu21013_ts.o
+ obj-$(CONFIG_TOUCHSCREEN_CY8CTMG110)	+= cy8ctmg110_ts.o
+ obj-$(CONFIG_TOUCHSCREEN_DA9034)	+= da9034-ts.o
++obj-$(CONFIG_TOUCHSCREEN_DA9052)	+= da9052_tsi.o
+ obj-$(CONFIG_TOUCHSCREEN_DYNAPRO)	+= dynapro.o
+ obj-$(CONFIG_TOUCHSCREEN_HAMPSHIRE)	+= hampshire.o
+ obj-$(CONFIG_TOUCHSCREEN_GUNZE)		+= gunze.o
+diff --git a/drivers/input/touchscreen/da9052_tsi.c b/drivers/input/touchscreen/da9052_tsi.c
+new file mode 100755
+index 0000000..0897340
+--- /dev/null
++++ b/drivers/input/touchscreen/da9052_tsi.c
+@@ -0,0 +1,369 @@
++/*
++ * TSI driver for Dialog DA9052
++ *
++ * Copyright(c) 2011 Dialog Semiconductor Ltd.
++ *
++ * Author: David Dajun Chen <dchen@diasemi.com>
++ *
++ *  This program is free software; you can redistribute  it and/or modify it
++ *  under  the terms of  the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the  License, or (at your
++ *  option) any later version.
++ *
++ */
++#include <linux/module.h>
++#include <linux/input.h>
++#include <linux/delay.h>
++#include <linux/platform_device.h>
++
++#include <linux/mfd/da9052/reg.h>
++#include <linux/mfd/da9052/da9052.h>
++
++#define TSI_PEN_DOWN_STATUS 0x40
++
++struct da9052_tsi_reg {
++	u16	x;
++	u16	y;
++	u16	z;
++};
++
++struct da9052_tsi {
++	struct da9052 *da9052;
++	struct input_dev *dev;
++	struct delayed_work ts_pen_work;
++	int irq_pendwn;
++	int irq_datardy;
++};
++
++static int da9052_ts_start(struct da9052_tsi *tsi)
++{
++	return da9052_reg_update(tsi->da9052, DA9052_TSI_CONT_A_REG,
++				 1 << 0, 1 << 0);
++}
++
++static int da9052_ts_stop(struct da9052_tsi *tsi)
++{
++	return da9052_reg_update(tsi->da9052, DA9052_TSI_CONT_A_REG, 1 << 0, 0);
++}
++
++static irqreturn_t da9052_ts_pendwn_irq(int irq, void *data)
++{
++	struct da9052_tsi *tsi = data;
++	struct da9052 *da9052 = tsi->da9052;
++	int ret;
++
++	/* Mask PEN_DOWN event and unmask TSI_READY event */
++	da9052->events_mask |= DA9052_E_PEN_DOWN;
++	da9052->events_mask &= ~DA9052_E_TSI_READY;
++	ret = da9052_reg_update(da9052, DA9052_IRQ_MASK_B_REG, 0x80, 0x40);
++	if (ret < 0)
++		return IRQ_NONE;
++
++	da9052_ts_start(tsi);
++
++	input_report_key(tsi->dev, BTN_TOUCH, 1);
++	input_sync(tsi->dev);
++
++	return IRQ_HANDLED;
++}
++
++static int da9052_ts_read(struct da9052_tsi *tsi)
++{
++	struct da9052_tsi_reg co_ord = {0, 0, 0};
++	int ret;
++	uint8_t _x, _y, _z, _v;
++
++	ret = da9052_reg_read(tsi->da9052, DA9052_TSI_X_MSB_REG);
++	if (ret < 0)
++		return ret;
++
++	_x = (uint8_t) ret;
++
++	ret = da9052_reg_read(tsi->da9052, DA9052_TSI_Y_MSB_REG);
++	if (ret < 0)
++		return ret;
++
++	_y = (uint8_t) ret;
++
++	ret = da9052_reg_read(tsi->da9052, DA9052_TSI_Z_MSB_REG);
++	if (ret < 0)
++		return ret;
++
++	_z = (uint8_t) ret;
++
++	ret = da9052_reg_read(tsi->da9052, DA9052_TSI_LSB_REG);
++	if (ret < 0)
++		return ret;
++
++	_v = (uint8_t) ret;
++
++	co_ord.x = ((_x << 2) & 0x3fc) | (_v & 0x3);
++	co_ord.y = ((_y << 2) & 0x3fc) | ((_v & 0xc) >> 2);
++	co_ord.z = ((_z << 2) & 0x3fc) | ((_v & 0x30) >> 4);
++
++	input_report_abs(tsi->dev, ABS_X, co_ord.x);
++	input_report_abs(tsi->dev, ABS_Y, co_ord.y);
++	input_report_abs(tsi->dev, ABS_PRESSURE, co_ord.z);
++	input_report_key(tsi->dev, BTN_TOUCH, 1);
++	input_sync(tsi->dev);
++
++	return 0;
++}
++
++static irqreturn_t da9052_ts_datardy_irq(int irq, void *data)
++{
++	struct da9052_tsi *tsi = data;
++
++	da9052_ts_read(tsi);
++	schedule_delayed_work(&tsi->ts_pen_work, HZ/50);
++	return IRQ_HANDLED;
++}
++
++static void da9052_ts_pen_work(struct work_struct *work)
++{
++	struct da9052_tsi *tsi = container_of(work, struct da9052_tsi,
++					      ts_pen_work.work);
++	struct input_dev *ip_dev = tsi->dev;
++	struct da9052 *da9052 = tsi->da9052;
++	int ret;
++
++	ret = da9052_reg_read(tsi->da9052, DA9052_TSI_LSB_REG);
++	if (ret < 0)
++		return;
++
++	if (ret & TSI_PEN_DOWN_STATUS) /* Pen Down */
++		schedule_delayed_work(&tsi->ts_pen_work, HZ/50);
++	else {
++		/* Pen UP */
++		da9052_ts_stop(tsi);
++
++		/* Unmask PEN_DOWN event */
++		da9052->events_mask &= ~DA9052_E_PEN_DOWN;
++		da9052_reg_update(da9052, DA9052_IRQ_MASK_B_REG, 0x40, 0);
++
++		/* Report Pen UP */
++		input_report_abs(ip_dev, ABS_PRESSURE, 0);
++		input_report_key(ip_dev, BTN_TOUCH, 0);
++		input_sync(ip_dev);
++	}
++}
++
++static int __devinit da9052_ts_configure_gpio(struct da9052 *da9052)
++{
++	int ret;
++
++	ret = da9052_reg_update(da9052, DA9052_GPIO_2_3_REG, 0x30, 0);
++	if (ret < 0)
++		return ret;
++
++	ret = da9052_reg_update(da9052, DA9052_GPIO_4_5_REG, 0x33, 0);
++	if (ret < 0)
++		return ret;
++
++	ret = da9052_reg_update(da9052, DA9052_GPIO_6_7_REG, 0x33, 0);
++
++	return ret;
++}
++
++static int __devinit da9052_configure_tsi(struct da9052_tsi *tsi)
++{
++	ssize_t ret;
++	struct da9052 *da9052 = tsi->da9052;
++
++	ret = da9052_ts_configure_gpio(tsi->da9052);
++	if (ret < 0)
++		return ret;
++
++	/* Measure TSI sample every 1ms */
++	ret = da9052_reg_update(tsi->da9052, DA9052_ADC_CONT_REG,
++				1 << 6, 1 << 6);
++	if (ret < 0)
++		return ret;
++
++	/* TSI_DELAY: 3 slots, TSI_SKIP: 0 slots, TSI_MODE: XYZP */
++	ret = da9052_reg_update(tsi->da9052, DA9052_TSI_CONT_A_REG, 0xFC, 0xC0);
++	if (ret < 0)
++		return ret;
++
++	/* Mask TSI_READY event */
++	da9052->events_mask |= DA9052_E_TSI_READY;
++	ret = da9052_reg_update(da9052, DA9052_IRQ_MASK_B_REG, 0, 0x80);
++	if (ret < 0)
++		return ret;
++
++	/*Supply TSIRef through LD09 */
++	ret = da9052_reg_write(tsi->da9052, DA9052_LDO9_REG, 0x59);
++
++	return ret;
++}
++
++static int da9052_ts_input_open(struct input_dev *input_dev)
++{
++	struct da9052_tsi *tsi = input_get_drvdata(input_dev);
++
++	/* Enable Pen Detect Circuit */
++	return da9052_reg_update(tsi->da9052, DA9052_TSI_CONT_A_REG,
++				 1 << 1, 1 << 1);
++}
++
++static void da9052_ts_input_close(struct input_dev *input_dev)
++{
++	struct da9052_tsi *tsi = input_get_drvdata(input_dev);
++
++	cancel_delayed_work_sync(&tsi->ts_pen_work);
++
++	da9052_ts_stop(tsi);
++
++	/* Disable Pen Detect Circuit */
++	da9052_reg_update(tsi->da9052, DA9052_TSI_CONT_A_REG, 1 << 1, 0);
++}
++
++static int __devinit da9052_ts_probe(struct platform_device *pdev)
++{
++	struct da9052_tsi *tsi;
++	struct input_dev *input_dev;
++	struct da9052 *da9052;
++	int ret;
++
++	da9052 = dev_get_drvdata(pdev->dev.parent);
++	if (da9052 == NULL)
++		return -EINVAL;
++
++	tsi = kzalloc(sizeof(struct da9052_tsi), GFP_KERNEL);
++	if (!tsi)
++		return -ENOMEM;
++
++	input_dev = input_allocate_device();
++	if (!input_dev) {
++		dev_err(tsi->da9052->dev, "Failed to allocate input device\n");
++		ret = -ENOMEM;
++		goto err_mem;
++	}
++
++	INIT_DELAYED_WORK(&tsi->ts_pen_work, da9052_ts_pen_work);
++
++	tsi->da9052 = da9052;
++
++	input_dev->id.version = 0x0101;
++	input_dev->id.vendor = 0x15B6;
++	input_dev->id.product = 0x9052;
++	input_dev->id.bustype = tsi->da9052->bustype;
++	input_dev->name = "Dialog DA9052 TouchScreen Driver";
++	input_dev->dev.parent = &pdev->dev;
++	input_dev->open = da9052_ts_input_open;
++	input_dev->close = da9052_ts_input_close;
++	__set_bit(EV_ABS, input_dev->evbit);
++	__set_bit(EV_KEY, input_dev->evbit);
++	__set_bit(BTN_TOUCH, input_dev->keybit);
++	__set_bit(ABS_X, input_dev->absbit);
++	__set_bit(ABS_Y, input_dev->absbit);
++	__set_bit(ABS_PRESSURE, input_dev->absbit);
++
++	input_set_abs_params(input_dev, ABS_X, 0, 1023, 0, 0);
++	input_set_abs_params(input_dev, ABS_Y, 0, 1023, 0, 0);
++	input_set_abs_params(input_dev, ABS_PRESSURE, 0, 1023, 0, 0);
++
++	tsi->dev = input_dev;
++	input_set_drvdata(input_dev, tsi);
++
++	tsi->irq_pendwn = platform_get_irq_byname(pdev, "PENDWN");
++	if (tsi->irq_pendwn < 0) {
++		ret = tsi->irq_pendwn;
++		goto err_input;
++	}
++
++	ret = request_threaded_irq(tsi->da9052->irq_base + tsi->irq_pendwn,
++				   NULL, da9052_ts_pendwn_irq,
++				   IRQF_TRIGGER_LOW | IRQF_ONESHOT,
++				   "PENDWN", tsi);
++	if (ret < 0) {
++		dev_err(tsi->da9052->dev,
++			"Failed to register %s IRQ %d, error = %d\n", "PENDWN",
++			tsi->da9052->irq_base + tsi->irq_pendwn, ret);
++		goto err_input;
++	}
++
++	tsi->irq_datardy = platform_get_irq_byname(pdev, "TSIRDY");
++	if (tsi->irq_datardy < 0) {
++		ret = tsi->irq_datardy;
++		goto err_pendwn_irq;
++	}
++
++	ret = request_threaded_irq(tsi->da9052->irq_base + tsi->irq_datardy,
++				   NULL, da9052_ts_datardy_irq,
++				   IRQF_TRIGGER_LOW | IRQF_ONESHOT,
++				   "TSIRDY", tsi);
++	if (ret < 0) {
++		dev_err(tsi->da9052->dev,
++			"Failed to register %s IRQ %d, error = %d\n", "TSIRDY",
++			tsi->da9052->irq_base + tsi->irq_datardy, ret);
++		goto err_pendwn_irq;
++	}
++
++	ret = da9052_configure_tsi(tsi);
++	if (ret < 0)
++		goto err_datardy_irq;
++
++	ret = input_register_device(tsi->dev);
++	if (ret < 0)
++		goto err_datardy_irq;
++
++	platform_set_drvdata(pdev, tsi);
++
++	return 0;
++
++err_datardy_irq:
++	free_irq(tsi->da9052->irq_base + tsi->irq_datardy, tsi);
++err_pendwn_irq:
++	free_irq(tsi->da9052->irq_base + tsi->irq_pendwn, tsi);
++err_input:
++	input_free_device(input_dev);
++err_mem:
++	kfree(tsi);
++	return ret;
++}
++
++static int  __devexit da9052_ts_remove(struct platform_device *pdev)
++{
++	struct da9052_tsi *tsi = platform_get_drvdata(pdev);
++
++	da9052_reg_write(tsi->da9052, DA9052_LDO9_REG, 0x19);
++
++	free_irq(tsi->da9052->irq_base + tsi->irq_pendwn, tsi);
++	free_irq(tsi->da9052->irq_base + tsi->irq_datardy, tsi);
++
++	input_unregister_device(tsi->dev);
++
++	platform_set_drvdata(pdev, NULL);
++
++	kfree(tsi);
++
++	return 0;
++}
++
++static struct platform_driver da9052_tsi_driver = {
++
++	.probe = da9052_ts_probe,
++	.remove = __devexit_p(da9052_ts_remove),
++	.driver = {
++		.name = "da9052-tsi",
++		.owner = THIS_MODULE,
++	},
++};
++
++static int __init da9052_ts_init(void)
++{
++	return platform_driver_register(&da9052_tsi_driver);
++}
++module_init(da9052_ts_init);
++
++static void __exit da9052_ts_exit(void)
++{
++	platform_driver_unregister(&da9052_tsi_driver);
++}
++module_exit(da9052_ts_exit);
++
++MODULE_DESCRIPTION("Touchscreen driver for Dialog Semiconductor DA9052");
++MODULE_AUTHOR("David Dajun Chen <dchen@diasemi.com>");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:da9052-tsi");
 
 
