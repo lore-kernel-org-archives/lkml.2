@@ -1,120 +1,365 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754834Ab1ISJpb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 05:45:31 -0400
-Received: from mga02.intel.com ([134.134.136.20]:33753 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752021Ab1ISJpa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 05:45:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="50026822"
-Subject: RE: [PATCH v2] dmaengine: add CSR SiRFprimaII DMAC driver
-From: Vinod Koul <vinod.koul@intel.com>
-To: Barry Song <Barry.Song@csr.com>
-Cc: "21cnbao@gmail.com" <21cnbao@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        Jassi Brar <jaswinder.singh@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        DL-SHA-WorkGroupLinux <Workgroup.Linux@csr.com>,
-        Rongjun Ying <Rongjun.Ying@csr.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-In-Reply-To: <5EB3BFCD089AD643B9BB63439F5FD5E9840F3A8D@SHAASIEXM01.ASIA.ROOT.PRI>
-References: <1316166960-20964-1-git-send-email-Baohua.Song@csr.com>
-	 <1316422774.26662.30.camel@vkoul-udesk3>
-	 <5EB3BFCD089AD643B9BB63439F5FD5E9840F3A8D@SHAASIEXM01.ASIA.ROOT.PRI>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 19 Sep 2011 15:11:17 +0530
-Message-ID: <1316425277.26662.41.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S1754872Ab1ISJqO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 05:46:14 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:50098 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752021Ab1ISJqL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 05:46:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <e97c6e$3hno1n@wolverine02.qualcomm.com>
+References: <e97c6e$3hno1n@wolverine02.qualcomm.com>
+Date: Mon, 19 Sep 2011 17:46:09 +0800
+Message-ID: <CAGn38=0herzUuFyq7-4irgi8Myq0tibz0FGLiZY0GRq8iiO5kg@mail.gmail.com>
+Subject: Re: [PATCH v4 31/36] Hexagon: kgdb support files
+From: Dongdong Deng <libfetion@gmail.com>
+To: Richard Kuo <rkuo@codeaurora.org>
+Cc: linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-09-19 at 09:23 +0000, Barry Song wrote:
-> Hi Vinod,
-> Thanks!
-> 
-> > -----Original Message-----
-> > From: Vinod Koul [mailto:vinod.koul@intel.com]
-> > Sent: 2011年9月19日 17:00
-> > To: Barry Song
-> > Cc: Arnd Bergmann; Jassi Brar; Linus Walleij; linux-kernel@vger.kernel.org;
-> > DL-SHA-WorkGroupLinux; Rongjun Ying; linux-arm-kernel@lists.infradead.org
-> > Subject: Re: [PATCH v2] dmaengine: add CSR SiRFprimaII DMAC driver
-> > 
-> > On Fri, 2011-09-16 at 02:56 -0700, Barry Song wrote:
-> > > From: Rongjun Ying <rongjun.ying@csr.com>
-> > >
-> > > Cc: Jassi Brar <jaswinder.singh@linaro.org>
-> > > Cc: Arnd Bergmann <arnd@arndb.de>
-> > > Cc: Linus Walleij <linus.walleij@linaro.org>
-> > > Signed-off-by: Rongjun Ying <rongjun.ying@csr.com>
-> > > Signed-off-by: Barry Song <Baohua.Song@csr.com>
-> > > ---
-> > >  -v2:
-> > >  use generic xfer API from jassi;
-> > >  delete sirf self-defined slave config;
-> > >  fix feedback from vinod;
-> > >  fix filter function: we have two dmac, clients drivers think the chan id as
-> > 0~31;
-> > >  rename regs to base;
-> > >  delete redundant chan_id initialization in probe since dmaengine core will
-> > >  re-write it, refer to my patch too:
-> > >  [PATCH] dmaengine: delete redundant chan_id and chancnt initialization in
-> > dma drivers
-> > >  http://www.spinics.net/lists/kernel/msg1237455.html
-> > >
-> > >  this patch doesn't provide a common way for filter and doesn't use the
-> > jassi's v2 patch.
-> > > +
-> > > +static int sirfsoc_dma_slave_config(struct sirfsoc_dma_chan *schan,
-> > > +	struct dma_slave_config *config)
-> > > +{
-> > > +	u32 addr, direction;
-> > > +	unsigned long flags;
-> > > +
-> > > +	switch (config->direction) {
-> > > +	case DMA_FROM_DEVICE:
-> > > +		direction = 0;
-> > > +		addr = config->dst_addr;
-> > > +		break;
-> > > +
-> > > +	case DMA_TO_DEVICE:
-> > > +		direction = 1;
-> > > +		addr = config->src_addr;
-> > > +		break;
-> > > +
-> > > +	default:
-> > > +		return -EINVAL;
-> > > +	}
-> > > +
-> > > +	if ((config->src_addr_width != DMA_SLAVE_BUSWIDTH_4_BYTES) ||
-> > > +		(config->dst_addr_width != DMA_SLAVE_BUSWIDTH_4_BYTES))
-> > > +		return -EINVAL;
-> > > +
-> > > +	spin_lock_irqsave(&schan->lock, flags);
-> > > +	schan->addr = addr;
-> > > +	schan->direction = direction;
-> > > +	schan->mode = (config->src_maxburst == 4 ? 1 : 0);
-> > > +	spin_unlock_irqrestore(&schan->lock, flags);
-> > Not sure why you support this, there seem to be no DMA_SLAVE support in
-> > this version ate least
-> 
-> Not. I support dma_slave. But I have no prep_slave_sg function since I can use the gen xfer to replace it.
-Yes thats okay...
+On Thu, Sep 15, 2011 at 2:19 AM, Richard Kuo <rkuo@codeaurora.org> wrote:
+> Signed-off-by: Linas Vepstas <linas@codeaurora.org>
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> ---
+>  arch/hexagon/include/asm/kgdb.h |   43 +++++++
+>  arch/hexagon/kernel/kgdb.c      |  247 +++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 290 insertions(+), 0 deletions(-)
+>  create mode 100644 arch/hexagon/include/asm/kgdb.h
+>  create mode 100644 arch/hexagon/kernel/kgdb.c
+>
+> diff --git a/arch/hexagon/include/asm/kgdb.h b/arch/hexagon/include/asm/kgdb.h
+> new file mode 100644
+> index 0000000..9e87797
+> --- /dev/null
+> +++ b/arch/hexagon/include/asm/kgdb.h
+> @@ -0,0 +1,43 @@
+> +/*
+> + * arch/hexagon/include/asm/kgdb.h - Hexagon KGDB Support
+> + *
+> + * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 and
+> + * only version 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+> + * 02110-1301, USA.
+> + */
+> +
+> +#ifndef __HEXAGON_KGDB_H__
+> +#define __HEXAGON_KGDB_H__
+> +
+> +#define BREAK_INSTR_SIZE 4
+> +#define CACHE_FLUSH_IS_SAFE   1
+> +#define BUFMAX       ((NUMREGBYTES * 2) + 512)
+> +
+> +static inline void arch_kgdb_breakpoint(void)
+> +{
+> +       asm("trap0(#0xDB)");
+> +}
+> +
+> +/* Registers:
+> + * 32 gpr + sa0/1 + lc0/1 + m0/1 + gp + ugp + pred + pc = 42 total.
+> + * vm regs = psp+elr+est+badva = 4
+> + * syscall+restart = 2 more
+> + * so 48 = 42 +4 + 2
+> + */
+> +#define DBG_USER_REGS 42
+> +#define DBG_MAX_REG_NUM (DBG_USER_REGS + 6)
+> +#define NUMREGBYTES  (DBG_MAX_REG_NUM*4)
+> +
+> +#endif /* __HEXAGON_KGDB_H__ */
+> diff --git a/arch/hexagon/kernel/kgdb.c b/arch/hexagon/kernel/kgdb.c
+> new file mode 100644
+> index 0000000..603dbba
+> --- /dev/null
+> +++ b/arch/hexagon/kernel/kgdb.c
+> @@ -0,0 +1,247 @@
+> +/*
+> + * arch/hexagon/kernel/kgdb.c - Hexagon KGDB Support
+> + *
+> + * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 and
+> + * only version 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+> + * 02110-1301, USA.
+> + */
+> +
+> +#include <linux/kdebug.h>
+> +#include <linux/kgdb.h>
+> +
+> +/* All registers are 4 bytes, for now */
+> +#define GDB_SIZEOF_REG 4
+> +
+> +/* The register names are used during printing of the regs;
+> + * Keep these at three letters to pretty-print. */
+> +struct dbg_reg_def_t dbg_reg_def[DBG_MAX_REG_NUM] = {
+> +       { " r0", GDB_SIZEOF_REG, offsetof(struct pt_regs, r00)},
+> +       { " r1", GDB_SIZEOF_REG, offsetof(struct pt_regs, r01)},
+> +       { " r2", GDB_SIZEOF_REG, offsetof(struct pt_regs, r02)},
+> +       { " r3", GDB_SIZEOF_REG, offsetof(struct pt_regs, r03)},
+> +       { " r4", GDB_SIZEOF_REG, offsetof(struct pt_regs, r04)},
+> +       { " r5", GDB_SIZEOF_REG, offsetof(struct pt_regs, r05)},
+> +       { " r6", GDB_SIZEOF_REG, offsetof(struct pt_regs, r06)},
+> +       { " r7", GDB_SIZEOF_REG, offsetof(struct pt_regs, r07)},
+> +       { " r8", GDB_SIZEOF_REG, offsetof(struct pt_regs, r08)},
+> +       { " r9", GDB_SIZEOF_REG, offsetof(struct pt_regs, r09)},
+> +       { "r10", GDB_SIZEOF_REG, offsetof(struct pt_regs, r10)},
+> +       { "r11", GDB_SIZEOF_REG, offsetof(struct pt_regs, r11)},
+> +       { "r12", GDB_SIZEOF_REG, offsetof(struct pt_regs, r12)},
+> +       { "r13", GDB_SIZEOF_REG, offsetof(struct pt_regs, r13)},
+> +       { "r14", GDB_SIZEOF_REG, offsetof(struct pt_regs, r14)},
+> +       { "r15", GDB_SIZEOF_REG, offsetof(struct pt_regs, r15)},
+> +       { "r16", GDB_SIZEOF_REG, offsetof(struct pt_regs, r16)},
+> +       { "r17", GDB_SIZEOF_REG, offsetof(struct pt_regs, r17)},
+> +       { "r18", GDB_SIZEOF_REG, offsetof(struct pt_regs, r18)},
+> +       { "r19", GDB_SIZEOF_REG, offsetof(struct pt_regs, r19)},
+> +       { "r20", GDB_SIZEOF_REG, offsetof(struct pt_regs, r20)},
+> +       { "r21", GDB_SIZEOF_REG, offsetof(struct pt_regs, r21)},
+> +       { "r22", GDB_SIZEOF_REG, offsetof(struct pt_regs, r22)},
+> +       { "r23", GDB_SIZEOF_REG, offsetof(struct pt_regs, r23)},
+> +       { "r24", GDB_SIZEOF_REG, offsetof(struct pt_regs, r24)},
+> +       { "r25", GDB_SIZEOF_REG, offsetof(struct pt_regs, r25)},
+> +       { "r26", GDB_SIZEOF_REG, offsetof(struct pt_regs, r26)},
+> +       { "r27", GDB_SIZEOF_REG, offsetof(struct pt_regs, r27)},
+> +       { "r28", GDB_SIZEOF_REG, offsetof(struct pt_regs, r28)},
+> +       { "r29", GDB_SIZEOF_REG, offsetof(struct pt_regs, r29)},
+> +       { "r30", GDB_SIZEOF_REG, offsetof(struct pt_regs, r30)},
+> +       { "r31", GDB_SIZEOF_REG, offsetof(struct pt_regs, r31)},
+> +
+> +       { "usr", GDB_SIZEOF_REG, offsetof(struct pt_regs, usr)},
+> +       { "preds", GDB_SIZEOF_REG, offsetof(struct pt_regs, preds)},
+> +       { " m0", GDB_SIZEOF_REG, offsetof(struct pt_regs, m0)},
+> +       { " m1", GDB_SIZEOF_REG, offsetof(struct pt_regs, m1)},
+> +       { "sa0", GDB_SIZEOF_REG, offsetof(struct pt_regs, sa0)},
+> +       { "sa1", GDB_SIZEOF_REG, offsetof(struct pt_regs, sa1)},
+> +       { "lc0", GDB_SIZEOF_REG, offsetof(struct pt_regs, lc0)},
+> +       { "lc1", GDB_SIZEOF_REG, offsetof(struct pt_regs, lc1)},
+> +       { " gp", GDB_SIZEOF_REG, offsetof(struct pt_regs, gp)},
+> +       { "ugp", GDB_SIZEOF_REG, offsetof(struct pt_regs, ugp)},
+> +       { "psp", GDB_SIZEOF_REG, offsetof(struct pt_regs, hvmer.vmpsp)},
+> +       { "elr", GDB_SIZEOF_REG, offsetof(struct pt_regs, hvmer.vmel)},
+> +       { "est", GDB_SIZEOF_REG, offsetof(struct pt_regs, hvmer.vmest)},
+> +       { "badva", GDB_SIZEOF_REG, offsetof(struct pt_regs, hvmer.vmbadva)},
+> +       { "restart_r0", GDB_SIZEOF_REG, offsetof(struct pt_regs, restart_r0)},
+> +       { "syscall_nr", GDB_SIZEOF_REG, offsetof(struct pt_regs, syscall_nr)},
+> +};
+> +
+> +struct kgdb_arch arch_kgdb_ops = {
+> +       /* trap0(#0xDB) 0x0cdb0054 */
+> +       .gdb_bpt_instr = {0x54, 0x00, 0xdb, 0x0c},
+> +};
+> +
+> +char *dbg_get_reg(int regno, void *mem, struct pt_regs *regs)
+> +{
+> +       if (regno >= DBG_MAX_REG_NUM || regno < 0)
+> +               return NULL;
+> +
+> +       *((unsigned long *) mem) = *((unsigned long *) ((void *)regs +
+> +               dbg_reg_def[regno].offset));
+> +
+> +       return dbg_reg_def[regno].name;
+> +}
+> +
+> +int dbg_set_reg(int regno, void *mem, struct pt_regs *regs)
+> +{
+> +       if (regno >= DBG_MAX_REG_NUM || regno < 0)
+> +               return -EINVAL;
+> +
+> +       *((unsigned long *) ((void *)regs + dbg_reg_def[regno].offset)) =
+> +               *((unsigned long *) mem);
+> +
+> +       return 0;
+> +}
+> +
+> +void kgdb_arch_set_pc(struct pt_regs *regs, unsigned long pc)
+> +{
+> +       instruction_pointer(regs) = pc;
+> +}
+> +
+> +#ifdef CONFIG_SMP
+> +
+> +/**
+> + * kgdb_roundup_cpus - Get other CPUs into a holding pattern
+> + * @flags: Current IRQ state
+> + *
+> + * On SMP systems, we need to get the attention of the other CPUs
+> + * and get them be in a known state.  This should do what is needed
+> + * to get the other CPUs to call kgdb_wait(). Note that on some arches,
+> + * the NMI approach is not used for rounding up all the CPUs. For example,
+> + * in case of MIPS, smp_call_function() is used to roundup CPUs. In
+> + * this case, we have to make sure that interrupts are enabled before
+> + * calling smp_call_function(). The argument to this function is
+> + * the flags that will be used when restoring the interrupts. There is
+> + * local_irq_save() call before kgdb_roundup_cpus().
+> + *
+> + * On non-SMP systems, this is not called.
+> + */
+> +
+> +static void hexagon_kgdb_nmi_hook(void *ignored)
+> +{
+> +       kgdb_nmicallback(raw_smp_processor_id(), get_irq_regs());
+> +}
+> +
+> +void kgdb_roundup_cpus(unsigned long flags)
+> +{
+> +       smp_call_function(hexagon_kgdb_nmi_hook, NULL, 0);
+> +}
+> +#endif
+> +
+> +
+> +/*  Not yet working  */
+> +void sleeping_thread_to_gdb_regs(unsigned long *gdb_regs,
+> +                                struct task_struct *task)
+> +{
+> +       struct pt_regs *thread_regs;
+> +
+> +       if (task == NULL)
+> +               return;
+> +
+> +       /* Initialize to zero */
+> +       memset(gdb_regs, 0, NUMREGBYTES);
+> +
+> +       /* Otherwise, we have only some registers from switch_to() */
+> +       thread_regs = task_pt_regs(task);
+> +       gdb_regs[0] = thread_regs->r00;
+> +}
+> +
+> +/**
+> + * kgdb_arch_handle_exception - Handle architecture specific GDB packets.
+> + * @vector: The error vector of the exception that happened.
+> + * @signo: The signal number of the exception that happened.
+> + * @err_code: The error code of the exception that happened.
+> + * @remcom_in_buffer: The buffer of the packet we have read.
+> + * @remcom_out_buffer: The buffer of %BUFMAX bytes to write a packet into.
+> + * @regs: The &struct pt_regs of the current process.
+> + *
+> + * This function MUST handle the 'c' and 's' command packets,
+> + * as well packets to set / remove a hardware breakpoint, if used.
+> + * If there are additional packets which the hardware needs to handle,
+> + * they are handled here.  The code should return -1 if it wants to
+> + * process more packets, and a %0 or %1 if it wants to exit from the
+> + * kgdb callback.
+> + *
+> + * Not yet working.
+> + */
+> +int kgdb_arch_handle_exception(int vector, int signo, int err_code,
+> +                              char *remcom_in_buffer, char *remcom_out_buffer,
+> +                              struct pt_regs *linux_regs)
+> +{
+> +       switch (remcom_in_buffer[0]) {
+> +       case 's':
+> +       case 'c':
+> +               return 0;
+> +       }
+> +       /* Stay in the debugger. */
+> +       return -1;
+> +}
+> +
+> +static int __kgdb_notify(struct die_args *args, unsigned long cmd)
+> +{
+> +       struct pt_regs *regs = args->regs;
+> +#if 0
+> +       ret = kgdb_handle_exception(args->trapnr & 0xff, args->signr, args->err,
+> +                                   regs);
+> +       if (ret)
+> +               return NOTIFY_DONE;
+> +#endif
 
-Then I have questions on genxfer function...
-where are you copying either src or dstn_start address, you seem to
-completely ignore them?
 
-Do you support only slave transfers or M2M as well for this driver?
-If only slave you might want to check if dma_config_slave is set for
-this channel or not.
 
--- 
-~Vinod
+Hmm,  the key code of invoking kgdb_core was disabled by "#if 0".
 
+Thanks,
+Dongdong
+
+
+
+
+
+
+
+> +       return NOTIFY_STOP;
+> +}
+> +
+> +static int
+> +kgdb_notify(struct notifier_block *self, unsigned long cmd, void *ptr)
+> +{
+> +       unsigned long flags;
+> +       int ret;
+> +
+> +       local_irq_save(flags);
+> +       ret = __kgdb_notify(ptr, cmd);
+> +       local_irq_restore(flags);
+> +
+> +       return ret;
+> +}
+> +
+> +static struct notifier_block kgdb_notifier = {
+> +       .notifier_call = kgdb_notify,
+> +
+> +       /*
+> +        * Lowest-prio notifier priority, we want to be notified last:
+> +        */
+> +       .priority = -INT_MAX,
+> +};
+> +
+> +/**
+> + * kgdb_arch_init - Perform any architecture specific initalization.
+> + *
+> + * This function will handle the initalization of any architecture
+> + * specific callbacks.
+> + */
+> +int kgdb_arch_init(void)
+> +{
+> +       return register_die_notifier(&kgdb_notifier);
+> +}
+> +
+> +/**
+> + * kgdb_arch_exit - Perform any architecture specific uninitalization.
+> + *
+> + * This function will handle the uninitalization of any architecture
+> + * specific callbacks, for dynamic registration and unregistration.
+> + */
+> +void kgdb_arch_exit(void)
+> +{
+> +       unregister_die_notifier(&kgdb_notifier);
+> +}
+> +
+> --
+> 1.7.1
+>
+>
+> --
+>
+> Sent by an employee of the Qualcomm Innovation Center, Inc.
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
