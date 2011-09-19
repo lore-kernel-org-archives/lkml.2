@@ -1,66 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755934Ab1ISRwT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 13:52:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16951 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755708Ab1ISRwP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 13:52:15 -0400
-Date: Mon, 19 Sep 2011 19:51:59 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Lin Ming <mlin@ss.pku.edu.cn>
-Cc: fa.linux.kernel@googlegroups.com, slawomir.czarko@gmail.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Sattler <tsattler@gmx.de>, Johannes Weiner <jweiner@redhat.com>,
-        Mel Gorman <mgorman@suse.de>
-Subject: Re: iotop: khugepaged at 99.99% (2.6.38.3)
-Message-ID: <20110919175159.GL7800@redhat.com>
-References: <fa.FZDTDqnxL4JfQvyaCQTn405rzwM@ifi.uio.no>
- <ee48c89a-1e72-4b35-b9fc-99f4b8ade483@glegroupsg2000goo.googlegroups.com>
- <CAF1ivSY7rHuA_SGpnPkQ2hLwwOTEtDFTn=e_vx1=C_kW3aDjRA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAF1ivSY7rHuA_SGpnPkQ2hLwwOTEtDFTn=e_vx1=C_kW3aDjRA@mail.gmail.com>
+	id S1755418Ab1ISRyI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 13:54:08 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:32769 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754644Ab1ISRyH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 13:54:07 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6474"; a="119669751"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH] msm: platsmp: Mark ioremapped memory as __iomem
+Date: Mon, 19 Sep 2011 10:54:04 -0700
+Message-Id: <1316454844-32733-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.7.rc0.70.g82660
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 15, 2011 at 02:43:32PM +0800, Lin Ming wrote:
-> # cat /proc/`pgrep khugepaged`/io
-> rchar: 0
-> wchar: 0
-> syscr: 0
-> syscw: 0
-> read_bytes: 0
-> write_bytes: 0
-> cancelled_write_bytes: 0
-> 
-> Andrea,
-> 
-> From above output, all fields are zero.
-> Does it mean that transparent huge page was not triggered/used at all?
+Fixes a handful of sparse warnings.
 
-Good idea to check it like that, yes that should confirm no
-->writepage was called by khugepaged through
-compaction->migrate->writepage.
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ arch/arm/mach-msm/platsmp.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-It may have been used for migration, but the compaction code run by
-khugepaged didn't trigger writes, or the write_bytes should have been
-> 0.
+diff --git a/arch/arm/mach-msm/platsmp.c b/arch/arm/mach-msm/platsmp.c
+index 1a1af9e..365ef3f 100644
+--- a/arch/arm/mach-msm/platsmp.c
++++ b/arch/arm/mach-msm/platsmp.c
+@@ -79,7 +79,7 @@ static __cpuinit void prepare_cold_cpu(unsigned int cpu)
+ 	ret = scm_set_boot_addr(virt_to_phys(msm_secondary_startup),
+ 				SCM_FLAG_COLDBOOT_CPU1);
+ 	if (ret == 0) {
+-		void *sc1_base_ptr;
++		void __iomem *sc1_base_ptr;
+ 		sc1_base_ptr = ioremap_nocache(0x00902000, SZ_4K*2);
+ 		if (sc1_base_ptr) {
+ 			writel(0, sc1_base_ptr + VDD_SC1_ARRAY_CLAMP_GFS_CTL);
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-With regard to Slawomir's problem, the kernel
-kernel-PAE-2.6.40.4-5.fc15.i686 includes Mel's fix for the compaction
-scan to stay in the right zone.
-
-Slawomir could you run the command "cat /proc/`pgrep khugepaged`/io"
-as root, so see if there's significant writeout going from khugepaged?
-If there is you can try the patch in the below link.
-
-https://lkml.org/lkml/2011/7/26/103
-
-But the fact it happens on top of VMplayer with a PAE guest, may also
-be a variable to take into account, migrate does quite some pagetable
-work. If VMplayer uses EPT/NTP (do you have EPT/NTP available as VT
-feature in the host /proc/cpuinfo?) it's hard to see how that could be
-related.
