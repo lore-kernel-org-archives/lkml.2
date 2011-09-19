@@ -1,216 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755169Ab1ISUqj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 16:46:39 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:54740 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751049Ab1ISUqh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 16:46:37 -0400
-Message-ID: <4E77AA21.3040304@ti.com>
-Date: Mon, 19 Sep 2011 22:46:25 +0200
-From: "Cousson, Benoit" <b-cousson@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: "Munegowda, Keshava" <keshava_mgowda@ti.com>
-CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+	id S1754792Ab1ISUtx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 16:49:53 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:54457 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752232Ab1ISUtw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 16:49:52 -0400
+Date: Mon, 19 Sep 2011 14:49:48 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Rob Herring <robherring2@gmail.com>
+Cc: "Cousson, Benoit" <b-cousson@ti.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Balbi, Felipe" <balbi@ti.com>, "Gadiyar, Anand" <gadiyar@ti.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "parthab@india.ti.com" <parthab@india.ti.com>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "Hilman, Kevin" <khilman@ti.com>, "paul@pwsan.com" <paul@pwsan.com>,
-        "johnstul@us.ibm.com" <johnstul@us.ibm.com>,
-        "Sripathy, Vishwanath" <vishwanath.bs@ti.com>
-Subject: Re: [PATCH 1/5 v9] arm: omap: usb: ehci and ohci hwmod structures
- for omap4
-References: <1316092970-2440-1-git-send-email-keshava_mgowda@ti.com> <1316092970-2440-2-git-send-email-keshava_mgowda@ti.com>
-In-Reply-To: <1316092970-2440-2-git-send-email-keshava_mgowda@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
+        "jamie@jamieiles.com" <jamie@jamieiles.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH 5/5] ARM: gic: add OF based initialization
+Message-ID: <20110919204948.GB30517@ponder.secretlab.ca>
+References: <1316017900-19918-1-git-send-email-robherring2@gmail.com>
+ <1316017900-19918-6-git-send-email-robherring2@gmail.com>
+ <CAJuYYwSFu2HC+u2NY41+yw9tEyy85RKa4Dpm3SL+jbwS_OOA0A@mail.gmail.com>
+ <4E71CE5D.9030900@ti.com>
+ <4E71F978.6020402@gmail.com>
+ <4E72030F.1090300@ti.com>
+ <4E722B2D.4050307@gmail.com>
+ <4E76615C.3000005@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E76615C.3000005@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Keshava,
+On Sun, Sep 18, 2011 at 04:23:40PM -0500, Rob Herring wrote:
+> On 09/15/2011 11:43 AM, Rob Herring wrote:
+> > I see 2 options (besides leaving it as is):
+> > 
+> > - Revert back to my previous binding where PPIs are a sub-node and a
+> > different interrupt parent.
+> > 
+> > - Use the current binding, but allow SPIs to start at 0. We can still
+> > distinguish PPIs and SPIs by the cpu mask cell. A cpu mask of 0 is a
+> > SPI. If there was ever a reason to have a cpu mask for an SPI, you would
+> > not be able to with this scheme.
+> > 
+> > Either way you will still have the above issue with the cell size changing.
+> > 
+> 
+> I was headed down the path of implementing the 2nd option above, but had
+> a dilemma. What would be the numbering base for PPIs in this case?
+> Should it be 0 in the DT as proposed for SPIs or does it stay at 16?
+> Numbering PPIs at 0 will just cause confusion as will numbering
+> differently from SPIs. There is absolutely no mention of SPI0 or SPIx
+> numbering in the GIC spec. All interrupt number references refer to the
+> absolute interrupt ID, not a relative number based on the type.
 
-I've just replied to your previous v8 version about the comments you 
-didn't take into account.
-I just have one minor nit on that one I missed previously, plus a couple 
-of clarifications.
+Hi Rob,
 
-On 9/15/2011 3:22 PM, Munegowda, Keshava wrote:
-> From: Benoit Cousson<b-cousson@ti.com>
->
-> Following 4 hwmod structures are added:
-> UHH hwmod of usbhs with uhh base address and functional clock,
-> EHCI hwmod with irq and base address,
-> OHCI hwmod with irq and base address,
-> TLL hwmod of usbhs with the TLL base address and irq.
->
-> Signed-off-by: Benoit Cousson<b-cousson@ti.com>
-> Signed-off-by: Keshava Munegowda<keshava_mgowda@ti.com>
-> ---
->   arch/arm/mach-omap2/omap_hwmod_44xx_data.c |  249 +++++++++++++++++++++++++++-
->   1 files changed, 248 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-> index 6201422..f06efa6 100644
-> --- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-> +++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-> @@ -68,6 +68,10 @@ static struct omap_hwmod omap44xx_mmc2_hwmod;
->   static struct omap_hwmod omap44xx_mpu_hwmod;
->   static struct omap_hwmod omap44xx_mpu_private_hwmod;
->   static struct omap_hwmod omap44xx_usb_otg_hs_hwmod;
-> +static struct omap_hwmod omap44xx_usb_host_hs_hwmod;
-> +static struct omap_hwmod omap44xx_usbhs_ohci_hwmod;
-> +static struct omap_hwmod omap44xx_usbhs_ehci_hwmod;
-> +static struct omap_hwmod omap44xx_usb_tll_hs_hwmod;
->
->   /*
->    * Interconnects omap_hwmod structures
-> @@ -5336,6 +5340,244 @@ static struct omap_hwmod omap44xx_wd_timer3_hwmod = {
->   	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP4430),
->   };
->
-> +/*
-> + * 'usb_host_hs' class
-> + * high-speed multi-port usb host controller
-> + */
-> +static struct omap_hwmod_ocp_if omap44xx_usb_host_hs__l3_main_2 = {
-> +	.master		=&omap44xx_usb_host_hs_hwmod,
-> +	.slave		=&omap44xx_l3_main_2_hwmod,
-> +	.clk		= "l3_div_ck",
-> +	.user		= OCP_USER_MPU | OCP_USER_SDMA,
-> +};
-> +
-> +static struct omap_hwmod_class_sysconfig omap44xx_usb_host_hs_sysc = {
-> +	.rev_offs	= 0x0000,
-> +	.sysc_offs	= 0x0010,
-> +	.syss_offs	= 0x0014,
-> +	.sysc_flags	= (SYSC_HAS_MIDLEMODE | SYSC_HAS_SIDLEMODE),
-> +	.idlemodes      = (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
-> +			SIDLE_SMART_WKUP | MSTANDBY_FORCE | MSTANDBY_NO |
-> +			MSTANDBY_SMART | MSTANDBY_SMART_WKUP),
-> +	.sysc_fields	=&omap_hwmod_sysc_type2,
-> +};
-> +
-> +static struct omap_hwmod_class omap44xx_usb_host_hs_hwmod_class = {
-> +	.name = "usbhs_uhh",
-> +	.sysc =&omap44xx_usb_host_hs_sysc,
-> +};
-> +
-> +static struct omap_hwmod_ocp_if *omap44xx_usb_host_hs_masters[] = {
-> +	&omap44xx_usb_host_hs__l3_main_2,
-> +};
-> +
-> +static struct omap_hwmod_addr_space omap44xx_usb_host_hs_addrs[] = {
-> +	{
-> +		.name		= "uhh",
-> +		.pa_start	= 0x4a064000,
-> +		.pa_end		= 0x4a0647ff,
-> +		.flags		= ADDR_TYPE_RT
-> +	},
-> +	{}
-> +};
-> +
-> +static struct omap_hwmod_ocp_if omap44xx_l4_cfg__usb_host_hs = {
-> +	.master		=&omap44xx_l4_cfg_hwmod,
-> +	.slave		=&omap44xx_usb_host_hs_hwmod,
-> +	.clk		= "l4_div_ck",
-> +	.addr		= omap44xx_usb_host_hs_addrs,
-> +	.user		= OCP_USER_MPU | OCP_USER_SDMA,
-> +};
-> +
-> +static struct omap_hwmod_ocp_if *omap44xx_usb_host_hs_slaves[] = {
-> +	&omap44xx_l4_cfg__usb_host_hs,
-> +};
-> +
-> +static struct omap_hwmod omap44xx_usb_host_hs_hwmod = {
-> +	.name		= "usbhs_uhh",
-> +	.class		=&omap44xx_usb_host_hs_hwmod_class,
-> +	.clkdm_name	= "l3_init_clkdm",
-> +	.main_clk	= "usb_host_hs_fck",
-> +	.prcm = {
-> +		.omap4 = {
-> +			.clkctrl_offs = OMAP4_CM_L3INIT_USB_HOST_CLKCTRL_OFFSET,
-> +			.context_offs = OMAP4_RM_L3INIT_USB_HOST_CONTEXT_OFFSET,
-> +			.modulemode   = MODULEMODE_SWCTRL,
-> +		},
-> +	},
-> +	.slaves		= omap44xx_usb_host_hs_slaves,
-> +	.slaves_cnt	= ARRAY_SIZE(omap44xx_usb_host_hs_slaves),
-> +	.masters	= omap44xx_usb_host_hs_masters,
-> +	.masters_cnt	= ARRAY_SIZE(omap44xx_usb_host_hs_masters),
-> +	.flags		= HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY,
+See here[1] and [2] (figures 3.14 and 3.16).  In both cases, there is
+clearly a reference to PPI numbering from 0-15 and SPI numbering from
+0-987 (as inputs to the distributor block).
 
-Why do you need these flags? These flags are reserved for non-standard 
-behavior / HW bugs. I know that this IP is full of various bugs, but it 
-will be nice to add some explanation in the changelog and a small 
-comment here as well.
+[1] http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0416b/Bhacbfdb.html
+[2] http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0416b/Cihebcbg.html
 
-> +	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP4430),
-> +};
-> +
-> +/* 'usbhs_ohci' class */
-> +static struct omap_hwmod_class omap44xx_usbhs_ohci_hwmod_class = {
-> +	.name = "usbhs_ohci",
-> +};
-> +
-> +static struct omap_hwmod_irq_info omap44xx_usbhs_ohci_irqs[] = {
-> +	{ .name = "ohci-irq", .irq = 76 + OMAP44XX_IRQ_GIC_START },
-> +	{ .irq = -1 }
-> +};
-> +
-> +static struct omap_hwmod_addr_space omap44xx_usbhs_ohci_addrs[] = {
-> +	{
-> +		.name		= "ohci",
-> +		.pa_start	= 0x4A064800,
-> +		.pa_end		= 0x4A064BFF,
-
-Nit: Please use lower case for hexa value. This is applicable for the 
-whole patch.
-
-> +		.flags		= ADDR_MAP_ON_INIT
-> +	},
-> +	{}
-> +};
-> +
-> +static struct omap_hwmod_ocp_if omap44xx_l4_cfg__usbhs_ohci = {
-> +	.master		=&omap44xx_l4_cfg_hwmod,
-> +	.slave		=&omap44xx_usbhs_ohci_hwmod,
-> +	.clk		= "l4_div_ck",
-> +	.addr		= omap44xx_usbhs_ohci_addrs,
-> +	.user		= OCP_USER_MPU | OCP_USER_SDMA,
-> +};
-> +
-> +static struct omap_hwmod_ocp_if *omap44xx_usbhs_ohci_slaves[] = {
-> +	&omap44xx_l4_cfg__usbhs_ohci,
-> +};
-> +
-> +static struct omap_hwmod_ocp_if *omap44xx_usbhs_ohci_masters[] = {
-> +	&omap44xx_usb_host_hs__l3_main_2,
-> +};
-> +
-> +static struct omap_hwmod omap44xx_usbhs_ohci_hwmod = {
-> +	.name		= "usbhs_ohci",
-> +	.class		=&omap44xx_usbhs_ohci_hwmod_class,
-> +	.clkdm_name	= "l3_init_clkdm",
-> +	.mpu_irqs	= omap44xx_usbhs_ohci_irqs,
-> +	.slaves		= omap44xx_usbhs_ohci_slaves,
-> +	.slaves_cnt	= ARRAY_SIZE(omap44xx_usbhs_ohci_slaves),
-> +	.masters	= omap44xx_usbhs_ohci_masters,
-> +	.masters_cnt	= ARRAY_SIZE(omap44xx_usbhs_ohci_masters),
-> +	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP4430),
-> +	.flags		= HWMOD_INIT_NO_RESET | HWMOD_NO_IDLEST,
-
-Same question about these flags. Why do you need these? Please add some 
-explanation.
-
-That comment is applicable for the remaining flags. These flags are 
-probably all needed for that kind of IP, but the least you should do is 
-to add some explanation.
-
-Thanks,
-Benoit
+g.
