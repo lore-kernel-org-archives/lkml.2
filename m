@@ -1,42 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755178Ab1ISKMo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 06:12:44 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:60071 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754997Ab1ISKMn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 06:12:43 -0400
-Date: Mon, 19 Sep 2011 11:12:36 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Samuel Ortiz <samuel.ortiz@intel.com>, Dmitry Torokhov <dtor@mail.ru>,
-        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, Misael Lopez Cruz <misael.lopez@ti.com>
-Subject: Re: [alsa-devel] [PATCH 00/17] ASoC: twl6040: Cleanups and fixes
-Message-ID: <20110919101235.GA5467@sirena.org.uk>
-References: <1316090379-30760-1-git-send-email-peter.ujfalusi@ti.com>
+	id S1755286Ab1ISKXw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 06:23:52 -0400
+Received: from lucidpixels.com ([72.73.18.11]:46032 "EHLO lucidpixels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755016Ab1ISKXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 06:23:51 -0400
+Date: Mon, 19 Sep 2011 06:23:50 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: linux-kernel@vger.kernel.org
+cc: linux-usb@vger.kernel.org
+Subject: Re: 3.1-rc4: LinkUSBi - digitemp/sensors not working : Error 10:
+ Read COM Failed
+In-Reply-To: <alpine.DEB.2.02.1109181413120.20777@p34.internal.lan>
+Message-ID: <alpine.DEB.2.02.1109190623070.18093@p34.internal.lan>
+References: <alpine.DEB.2.02.1109181320500.7278@p34.internal.lan> <alpine.DEB.2.02.1109181413120.20777@p34.internal.lan>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1316090379-30760-1-git-send-email-peter.ujfalusi@ti.com>
-X-Cookie: Pass with care.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 15, 2011 at 03:39:22PM +0300, Peter Ujfalusi wrote:
 
-> The first four patch of this series (the MFD/Input patches) has been already
-> sent to upstream to the relevant lists, but I wanted to include here as well,
-> since I have dependency on that series later on.
-> If it is OK with you, it would be best to merge these MFD/Input changes through
-> the audio tree for 3.2.
 
-It'd be really good if you could manage to split this stuff up - this
-series is enormous and it's getting posted rather a lot, much of this
-stuff seems like it could be split out and posted separately.
+On Sun, 18 Sep 2011, Justin Piszcz wrote:
+
+>
+>
+> On Sun, 18 Sep 2011, Justin Piszcz wrote:
+>
+>> Hi,
+>> 
+>> I have two LinkUSBi wireless temperature sensors (masters) and both work
+>> fine in Windows 7, I got them both to work in Linux once but I did not
+>> record how I did it-- does anyone know why the following happens?
+>> 
+>> You are only supposed to use digitemp_ds9097u but including all just
+>> incase someone mentions trying the other two :)
+>> 
+>> --
+>
+> This commit seems to have fixed the issue a few kernels ago (based on some
+> reading; however with 3.1-rc4 it is still failing, any thoughts?)
+> http://git.strongswan.org/?p=linux-dumm.git;a=commit;h=677aeafe19e88c282af74564048243ccabb1c590
+>
+> Justin.
+
+Looping in linux-usb@
+
+Re:
+
+# ./digitemp_DS9097U -s /dev/ttyUSB0 -w
+DigiTemp v3.5.0 Copyright 1996-2007 by Brian C. Lane
+GNU Public License v2.0 - http://www.digitemp.com
+Error 5: DS2480B Adapter Not Detected
+Error 10: Read COM Failed
+Error 10: Read COM Failed
+Error 10: Read COM Failed
+Error 10: Read COM Failed
+Error 10: Read COM Failed
+Error 10: Read COM Failed
+Error 10: Read COM Failed
+Error 10: Read COM Failed
+Error 10: Read COM Failed
+
+Justin.
