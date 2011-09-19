@@ -1,47 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756078Ab1ISP1k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 11:27:40 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:38024 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751981Ab1ISP1j (ORCPT
+	id S1756283Ab1ISPba (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 11:31:30 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:53283 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755300Ab1ISPb2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 11:27:39 -0400
-Date: Mon, 19 Sep 2011 16:27:35 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Thomas Meyer <thomas@m3y3r.de>
-Cc: Ian Kent <raven@themaw.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dhowells@redhat.com
-Subject: Re: [PATCH] Force same size of struct autofs_v5_packet on x86 and
- x86_64
-Message-ID: <20110919152735.GK2203@ZenIV.linux.org.uk>
-References: <1316167604.6545.84.camel@localhost.localdomain>
- <20110916101903.GI2203@ZenIV.linux.org.uk>
- <1316169496.8502.6.camel@perseus.themaw.net>
- <1316332908.5814.22.camel@localhost.localdomain>
- <1316404368.3206.21.camel@perseus.themaw.net>
- <20110919061059.GJ2203@ZenIV.linux.org.uk>
- <CACCE520-D261-4B97-B208-1C44574886BF@m3y3r.de>
+	Mon, 19 Sep 2011 11:31:28 -0400
+From: "Hiremath, Vaibhav" <hvaibhav@ti.com>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        "Ravi, Deepthy" <deepthy.ravi@ti.com>
+CC: "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mchehab@infradead.org" <mchehab@infradead.org>,
+        "g.liakhovetski@gmx.de" <g.liakhovetski@gmx.de>
+Date: Mon, 19 Sep 2011 21:01:02 +0530
+Subject: RE: [PATCH 4/8] ispvideo: Add support for G/S/ENUM_STD ioctl
+Thread-Topic: [PATCH 4/8] ispvideo: Add support for G/S/ENUM_STD ioctl
+Thread-Index: Acx0cW0Yyy/Cm+hrRsiYGyYo2WrJoQCbg9TA
+Message-ID: <19F8576C6E063C45BE387C64729E739404EC8113E2@dbde02.ent.ti.com>
+References: <1315488922-16152-1-git-send-email-deepthy.ravi@ti.com>
+ <201109081921.28051.laurent.pinchart@ideasonboard.com>
+ <ADF30F4D7BDE934D9B632CE7D5C7ACA4047C4D09083D@dbde03.ent.ti.com>
+ <201109161506.16505.laurent.pinchart@ideasonboard.com>
+In-Reply-To: <201109161506.16505.laurent.pinchart@ideasonboard.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACCE520-D261-4B97-B208-1C44574886BF@m3y3r.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 19, 2011 at 11:30:42AM +0200, Thomas Meyer wrote:
 
-> @al: what other autofs4 users are out there besides systemd?
+> -----Original Message-----
+> From: Laurent Pinchart [mailto:laurent.pinchart@ideasonboard.com]
+> Sent: Friday, September 16, 2011 6:36 PM
+> To: Ravi, Deepthy
+> Cc: linux-media@vger.kernel.org; tony@atomide.com; linux@arm.linux.org.uk;
+> linux-omap@vger.kernel.org; linux-arm-kernel@lists.infradead.org; linux-
+> kernel@vger.kernel.org; mchehab@infradead.org; g.liakhovetski@gmx.de;
+> Hiremath, Vaibhav
+> Subject: Re: [PATCH 4/8] ispvideo: Add support for G/S/ENUM_STD ioctl
+> 
+> Hi Deepthy,
+> 
+> On Friday 16 September 2011 15:00:53 Ravi, Deepthy wrote:
+> > On Thursday, September 08, 2011 10:51 PM Laurent Pinchart wrote:
+> > > On Thursday 08 September 2011 15:35:22 Deepthy Ravi wrote:
+> > >> From: Vaibhav Hiremath <hvaibhav@ti.com>
+> > >>
+> > >> In order to support TVP5146 (for that matter any video decoder),
+> > >> it is important to support G/S/ENUM_STD ioctl on /dev/videoX
+> > >> device node.
+> > >
+> > > Why so ? Shouldn't it be queried on the subdev output pad directly ?
+> >
+> > Because standard v4l2 application for analog devices will call these std
+> > ioctls on the streaming device node. So it's done on /dev/video to make
+> the
+> > existing apllication work.
+> 
+> Existing applications can't work with the OMAP3 ISP (and similar complex
+> embedded devices) without userspace support anyway, either in the form of
+> a
+> GStreamer element or a libv4l plugin. I still believe that analog video
+> standard operations should be added to the subdev pad operations and
+> exposed
+> through subdev device nodes, exactly as done with formats.
+> 
+[Hiremath, Vaibhav] Laurent,
 
-	Are you serious?  You *do* realize that autofs is quite usable on
-the benighted systems not infested with that... Fabulous Piece Of Software,
-don't you?  Depending on your distribution, say apt-cache search autofs /
-yum search autofs / whatever your equivalent is and examine the results.
-Plus anything that has demonstrated the lack of taste equal to yours
-and reimplemented that stuff, of course.
+I completely agree with your point that, existing application will not work without setting links properly. But I believe the assumption here is, media-controller should set the links (along with pad formants) and all existing application should work as is. Isn't it?
 
-Sigh...  At least DJB fanboys usually do not ask "what other SMTP
-users are out there besides qmail"...
+The way it is being done currently is, set the format at the pad level which is same as analog standard resolution and use existing application for streaming...
+
+I am ok, if we add s/g/enum_std api support at sub-dev level but this should also be supported on streaming device node.
+
+Thanks,
+Vaibhav
+
+> --
+> Regards,
+> 
+> Laurent Pinchart
