@@ -1,39 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756796Ab1ISEsv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 00:48:51 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:53556 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751000Ab1ISEsu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 00:48:50 -0400
-Message-ID: <4E76CA4C.2050706@cn.fujitsu.com>
-Date: Mon, 19 Sep 2011 12:51:24 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Zhao Jin <cronozhj@gmail.com>
-CC: avi@redhat.com, mtosatti@redhat.com, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH] kvm, mmu: fix incorrect return of spte
-References: <1316405991-14903-1-git-send-email-cronozhj@gmail.com>
-In-Reply-To: <1316405991-14903-1-git-send-email-cronozhj@gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-09-19 12:47:30,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-09-19 12:47:31,
-	Serialize complete at 2011-09-19 12:47:31
+	id S1755759Ab1ISEvI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 00:51:08 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:33705 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750736Ab1ISEvF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 00:51:05 -0400
+Date: Mon, 19 Sep 2011 14:51:03 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yaniv Rosner <yanivr@broadcom.com>,
+        Eilon Greenstein <eilong@broadcom.com>, Joe Perches <joe@perches.com>
+Subject: linux-next: manual merge of the net tree with Linus' tree
+Message-Id: <20110919145103.6c3e73edf51599eaa703294a@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/19/2011 12:19 PM, Zhao Jin wrote:
-> __update_clear_spte_slow should return original spte while the
-> current code returns low half of original spte combined with high
-> half of new spte.
-> 
+Hi all,
 
-Thanks for your fixing.
+Today's linux-next merge of the net tree got a conflict in
+drivers/net/ethernet/broadcom/bnx2x/bnx2x_link.c between commit
+c482e6c06461 ("bnx2x: Fix ETS bandwidth") from Linus' tree and commit
+94f05b0f60de ("bnx2x: Coalesce pr_cont uses and fix DP typos") from the
+net tree.
 
-Reviewed-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+The former removes the code cleaned up by the latter, so I used the
+former (see below).
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/net/ethernet/broadcom/bnx2x/bnx2x_link.c
+index ba15bdc,8e9b87b..0000000
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_link.c
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_link.c
+@@@ -852,20 -852,26 +852,20 @@@ static int bnx2x_ets_e3b0_get_total_bw
+  	/* Calculate total BW requested */
+  	for (cos_idx = 0; cos_idx < ets_params->num_of_cos; cos_idx++) {
+  		if (bnx2x_cos_state_bw == ets_params->cos[cos_idx].state) {
+ -
+ -			if (0 == ets_params->cos[cos_idx].params.bw_params.bw) {
+ -				DP(NETIF_MSG_LINK,
+ -				   "bnx2x_ets_E3B0_config BW was set to 0\n");
+ -			return -EINVAL;
+ +			*total_bw +=
+ +				ets_params->cos[cos_idx].params.bw_params.bw;
+  		}
+ -		*total_bw +=
+ -		    ets_params->cos[cos_idx].params.bw_params.bw;
+ -	    }
+  	}
+  
+ -	/*Check taotl BW is valid */
+ +	/* Check total BW is valid */
+  	if ((100 != *total_bw) || (0 == *total_bw)) {
+  		if (0 == *total_bw) {
+- 			DP(NETIF_MSG_LINK, "bnx2x_ets_E3B0_config toatl BW"
+- 					   "shouldn't be 0\n");
++ 			DP(NETIF_MSG_LINK,
++ 			   "bnx2x_ets_E3B0_config toatl BW shouldn't be 0\n");
+  			return -EINVAL;
+  		}
+- 		DP(NETIF_MSG_LINK, "bnx2x_ets_E3B0_config toatl BW should be"
+- 				   "100\n");
++ 		DP(NETIF_MSG_LINK,
++ 		   "bnx2x_ets_E3B0_config toatl BW should be 100\n");
+  		/**
+  		*   We can handle a case whre the BW isn't 100 this can happen
+  		*   if the TC are joined.
