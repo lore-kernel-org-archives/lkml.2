@@ -1,76 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752967Ab1ISROq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 13:14:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55083 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751981Ab1ISROo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 13:14:44 -0400
-Date: Mon, 19 Sep 2011 10:14:11 -0700
-From: Greg KH <gregkh@suse.de>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH] sysfs: add per pci device msi[x] irq listing (v3)
-Message-ID: <20110919171411.GD31542@suse.de>
-References: <1316025413-5855-1-git-send-email-nhorman@tuxdriver.com>
- <1316447235-31345-1-git-send-email-nhorman@tuxdriver.com>
+	id S1753261Ab1ISRUF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 13:20:05 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:44477 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752685Ab1ISRUD convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 13:20:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1316447235-31345-1-git-send-email-nhorman@tuxdriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFxXS9z=NwoYug+qGoYufqN-6dCo4fm5ggTsoDonsMi4Dw@mail.gmail.com>
+References: <1308917362-4795-1-git-send-email-segoon@openwall.com>
+	<BANLkTimm7KDEU7WD7jVV=5vAGt2GbjgwGg@mail.gmail.com>
+	<20110630075716.GB3377@albatros>
+	<BANLkTik0DF5jUhOsP=Pnm+vMbHzEx+3L-Q@mail.gmail.com>
+	<BANLkTi=DiVRV9dkTtYgq+CY-kxVs5ecoWw@mail.gmail.com>
+	<BANLkTimnP8L3kSoafdTtUhr9CXx9-WDVLQ@mail.gmail.com>
+	<CA+55aFxXS9z=NwoYug+qGoYufqN-6dCo4fm5ggTsoDonsMi4Dw@mail.gmail.com>
+Date: Mon, 19 Sep 2011 22:50:02 +0530
+Message-ID: <CAKTCnzkfNjDJpOwMnhzH0OVZOJWRWgOSyP-n=KyXXZM_M1uq4Q@mail.gmail.com>
+Subject: Re: [Security] [PATCH 2/2] taskstats: restrict access to user
+From: Balbir Singh <bsingharora@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Vasiliy Kulikov <segoon@openwall.com>, Shailabh Nagar <nagar@us.ibm.com>,
+        linux-kernel@vger.kernel.org, security@kernel.org,
+        Eric Paris <eparis@redhat.com>, Stephen Wilson <wilsons@start.ca>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        kernel-hardening@lists.openwall.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 19, 2011 at 11:47:15AM -0400, Neil Horman wrote:
-> So a while back, I wanted to provide a way for irqbalance (and other apps) to
-> definitively map irqs to devices, which, for msi[x] irqs is currently not really
-> possible in user space.  My first attempt wen't not so well:
-> https://lkml.org/lkml/2011/4/21/308
-> 
-> It was plauged by the same issues that prior attempts were, namely that it
-> violated the one-file-one-value sysfs rule.  I wandered off but have recently
-> come back to this.  I've got a new implementation here that exports a new
-> subdirectory for every pci device,  called msi_irqs.  This subdirectory contanis
-> a variable number of numbered subdirectories, in which the number represents an
-> msi irq.  Each numbered subdirectory contains attributes for that irq, which
-> currently is only the mode it is operating in (msi vs. msix).  I think fits
-> within the constraints sysfs requires, and will allow irqbalance to properly map
-> msi irqs to devices without having to rely on rickety, best guess methods like
-> interface name matching.
-> 
-> Change Notes:
-> 
-> (v2)
-> Fixed up Documentation to put new sysfs interface descriptions in the right
-> place, as per request by Greg K-H
-> 
-> Fixed up oops that resulted from removing pci device.  Not 100% sure I did this
-> exactly right, but looking at the crash (triggered by echo 1 >
-> /sys/class/net/eth0/device/remove), it looked as though we were freeing the
-> pci_dev struct prior to all sysfs objects releasing their use of the device.  AS
-> such it seemed most appropriate to hold references on the pci_dev for each msi
-> irq sysfs object that we create, and release them on free accordingly.  With
-> this change in place, I can remove, and add (via rescan) msi enabled devices
-> ad-nauseum without a panic.  Again thanks to Greg K-H
-> 
-> (v3)
-> As per Gregs suggestion, I looked further and noted that in fact, yes, it wasn't
-> producing any errors on remove, but only because I had a refcounting problem,
-> and my new sysfs objects were left orphaned with a dangling refcount.  I've
-> fixed that, added a release method to the new ktype, which now drops the
-> reference I hold on the pci_dev for us and I've validated that all objects I've
-> created, along with the parent directory and pci device are cleaned up and freed
-> by enabling the kobject dyanic_debug set and observing the appropriate release
-> calls.  I can provide the logs if anyone wants to review them specifically.
+On Mon, Sep 19, 2011 at 10:10 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> On Thu, Jun 30, 2011 at 8:02 PM, Balbir Singh <bsingharora@gmail.com> wrote:
+> >>
+> >> So that's why I think it should be marked BROKEN. What applications
+> >> actually depend on this? iotop and what else? Because if it's just
+> >> iotop, I do suspect we might be better off telling people "ok,
+> >> disabling this will break iotop, but quite frankly, you're better off
+> >> without it".
+> >
+> > I beg to differ, due to the reasons above. I'd rather find time and
+> > fix the pending issues (network namespace), you've fixed the pid
+> > namespace issue. I'd also look for exiting listeners
+>
+> So nothing ever happened on this thread, afaik.
+>
+> You can still read sensitive information at a byte granularity with taskstats.
+>
+> Balbir never sent any of the fixes he was supposed to, and none of the
+> namespace issues have gotten fixed.
+>
+> It's now almost three months later, and things are still equally broken.
+>
+> I think we need to just disable TASKSTAT's. Nobody maintains it, it's
+> been a known issue for months, people pointed out problems and even
+> sent patches, and nothing happened.
+>
+> Maybe we can minimize it with the appended patch, but dammit, we need
+> to do *something*. If I don't get any reasonable replies, I'm really
+> going to have to mark this as known-BROKEN, since nothing ever
+> happens, and the "maintainer" clearly doesn't care about security
+> issues.
+>
 
-Wonderful, thanks for doing this, the code now looks fine to me, and if
-the PCI maintainer has no objections to it, feel free to add my:
-	Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
-to it.
+Sorry, I've been bogged down with work issues and have not had time to
+look at it. If someone else wants to take a look while I am busy, I'd
+be happy. The patch you've sent seems reasonable, but I'd suggest a
+changelog
 
-nice job, thanks for sticking with it.
+"Change taskstats user interface, henceforth we need (for security
+purposes) CAP_SYS_ADMIN to receive taskstats
+data on a particular CPU, a subset or all CPUs on the system. The
+patch also rounds the data returned to the KiloByte
+boundary for IO parameters, read_bytes, write_bytes and cancelled_write_bytes"
 
-greg k-h
+Thanks for looking into this.
+Balbir
