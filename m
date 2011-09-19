@@ -1,53 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756209Ab1ISSAC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 14:00:02 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:54226 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755983Ab1ISR77 (ORCPT
+	id S1756254Ab1ISSBs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 14:01:48 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:45642 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755493Ab1ISSBr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 13:59:59 -0400
-Message-ID: <4E778318.5010905@gmail.com>
-Date: Mon, 19 Sep 2011 18:59:52 +0100
-From: Dave Kilroy <kilroyd@googlemail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: henk.de.groot@hetnet.nl
-CC: linux-kernel@vger.kernel.org, greg@kroah.com, pe1dnn@amsat.org
-Subject: Re: [PATCH 00/13] wlags49_h2: Various cleanups
-References: <1316128857-9781-1-git-send-email-kilroyd@googlemail.com> <4E73BB61.7020407@hetnet.nl>
-In-Reply-To: <4E73BB61.7020407@hetnet.nl>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 19 Sep 2011 14:01:47 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6474"; a="119838395"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH 2/2] ARM: debug: Move DEBUG_ICEDCC into the DEBUG_LL choice
+Date: Mon, 19 Sep 2011 11:01:40 -0700
+Message-Id: <1316455300-5752-2-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.7.rc0.70.g82660
+In-Reply-To: <1316455300-5752-1-git-send-email-sboyd@codeaurora.org>
+References: <20110916114140.GA31334@e102144-lin.cambridge.arm.com>
+ <1316455300-5752-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/09/2011 22:10, Henk de Groot wrote:
-> I applied your patches against the current 3.0 linux kernel driver code
-> and compiled it on my Ubuntu 11.04 system (2.6.38-11). I can confirm the
-> modified driver is still working okay using a Thomson Speedtouch 110
-> Wifi card with WEP.
+DEBUG_ICEDCC support is just another DEBUG_LL choice and
+selecting it along with other DEBUG_LL options doesn't make
+much sense. Put it into the DEBUG_LL choice to avoid confusion.
 
-Thanks for confirming this.
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ arch/arm/Kconfig.debug |   24 ++++++++++++------------
+ 1 files changed, 12 insertions(+), 12 deletions(-)
 
-> WPA was - and I guess still is - non functional.
+diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+index a37e646..9661c51 100644
+--- a/arch/arm/Kconfig.debug
++++ b/arch/arm/Kconfig.debug
+@@ -81,6 +81,18 @@ choice
+ 	prompt "Kernel low-level debugging port"
+ 	depends on DEBUG_LL
+ 
++	config DEBUG_ICEDCC
++		bool "Kernel low-level debugging via EmbeddedICE DCC channel"
++		depends on DEBUG_LL
++		help
++		  Say Y here if you want the debug print routines to direct
++		  their output to the EmbeddedICE macrocell's DCC channel using
++		  co-processor 14. This is known to work on the ARM9 style ICE
++		  channel and on the XScale with the PEEDI.
++
++		  It does include a timeout to ensure that the system does not
++		  totally freeze when there is nothing connected to read.
++
+ 	config DEBUG_DC21285_PORT
+ 		bool "Kernel low-level debugging messages via footbridge serial port"
+ 		depends on FOOTBRIDGE
+@@ -114,18 +126,6 @@ config EARLY_PRINTK
+ 	  kernel low-level debugging functions. Add earlyprintk to your
+ 	  kernel parameters to enable this console.
+ 
+-config DEBUG_ICEDCC
+-	bool "Kernel low-level debugging via EmbeddedICE DCC channel"
+-	depends on DEBUG_LL
+-	help
+-	  Say Y here if you want the debug print routines to direct their
+-	  output to the EmbeddedICE macrocell's DCC channel using
+-	  co-processor 14. This is known to work on the ARM9 style ICE
+-	  channel and on the XScale with the PEEDI.
+-
+-	  It does include a timeout to ensure that the system does not
+-	  totally freeze when there is nothing connected to read.
+-
+ config OC_ETM
+ 	bool "On-chip ETM and ETB"
+ 	select ARM_AMBA
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-Do you have any idea why this is happening? If the WPA bits are verbatim 
-from the 7.22 Agere driver this should be functional. I can only think 
-that some WEXT changes have caused this breakage.
-
-> The only known problem (besides WPA) is removal and reinserting the
-> PCMCIA card. It is not recognized anymore on that slot. The card works
-> on a second PCMCIA slot. This is old behaviour and not due to your
-> changes (however this worked with older kernels).
-
-I have less idea about what is happening here, but it sounds like 
-there's insufficient initialisation/cleanup.
-
-If you post (or point me at) a WPA supplicant log (with -ddd) I'll take 
-a look at the problem. I may also submit a patch to remove the unused 
-code in wl_wext.c - it seems trivial to fix up.
-
-
-Dave.
