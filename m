@@ -1,80 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755087Ab1ISRtz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 13:49:55 -0400
-Received: from mail132.messagelabs.com ([216.82.242.115]:18237 "EHLO
-	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754652Ab1ISRty convert rfc822-to-8bit (ORCPT
+	id S1755195Ab1ISRvs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 13:51:48 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:48458 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754840Ab1ISRvq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 13:49:54 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-5.tower-132.messagelabs.com!1316454497!39001032!97
-X-Originating-IP: [216.166.12.72]
-X-StarScan-Version: 6.3.6; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Dan Carpenter <error27@gmail.com>
-CC: "linux-sparse@vger.kernel.org" <linux-sparse@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Date: Mon, 19 Sep 2011 12:49:48 -0500
-Subject: RE: improper sparse warnings in linux kernel build?
-Thread-Topic: improper sparse warnings in linux kernel build?
-Thread-Index: AcxvenpO1HCDzap1QJu1+c1nQ/of3wHeCcbg
-Message-ID: <ADE657CA350FB648AAC2C43247A983F001F39DAED50B@AUSP01VMBX24.collaborationhost.net>
-References: <201109091541.28395.hartleys@visionengravers.com>
- <20110910052719.GC4807@mwanda>
-In-Reply-To: <20110910052719.GC4807@mwanda>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 19 Sep 2011 13:51:46 -0400
+Date: Mon, 19 Sep 2011 23:21:29 +0530
+From: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Paul Turner <pjt@google.com>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelianov <xemul@parallels.com>
+Subject: Re: CFS Bandwidth Control - Test results of cgroups tasks pinned vs
+ unpinnede
+Message-ID: <20110919175129.GA11164@linux.vnet.ibm.com>
+Reply-To: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+References: <1315922848.5977.11.camel@twins>
+ <20110913162119.GA3045@linux.vnet.ibm.com>
+ <1315931775.5977.29.camel@twins>
+ <20110913175425.GB3062@linux.vnet.ibm.com>
+ <1315937995.4226.9.camel@twins>
+ <20110913182841.GO11100@linux.vnet.ibm.com>
+ <1315938646.4226.12.camel@twins>
+ <20110913183502.GP11100@linux.vnet.ibm.com>
+ <20110915175537.GA17701@linux.vnet.ibm.com>
+ <1316123323.4060.24.camel@twins>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1316123323.4060.24.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, September 09, 2011 10:27 PM, Dan Carpenter wrote:
-> On Fri, Sep 09, 2011 at 03:41:28PM -0700, H Hartley Sweeten wrote:
->> I'm not really sure what the DEFINE_PER_CPU macro expands to so I'm not
->> sure if the 'static' in front is actually getting used or if sparse is just
->> confused.
->> 
->> Is this an actual problem in the linux kernel or is sparse just getting
->> tripped up by the DEFINE_PER_CPU macro?
->> 
->
-> I don't have a kernel git archive handy, but probably sparse is
-> correct.  Do a "make arch/x86/kernel/cpu/mcheck/mce_intel.i" and run
-> sparse on the .i file to find the line number that complains.
+* Peter Zijlstra <a.p.zijlstra@chello.nl> [2011-09-15 23:48:43]:
 
-Dan,
+> On Thu, 2011-09-15 at 23:25 +0530, Kamalesh Babulal wrote:
+> > 2.6.38          | 1551  | 48    | 62    | 47    | 50    |
+> > ----------------+-------+-------+-------+-------+-------+
+> > 2.6.39          | 3784  | 457   | 722   | 3209  | 1037  | 
+> 
+> I'd say we wrecked it going from .38 to .39 and only made it worse after
+> that.
 
-The DEFINE_PER_CPU line in that file gets expanded from:
+after reverting the commit 866ab43efd325fae8889ea, of the patches 
+went between .38 and .39 reduces the ping pong of the tasks.
 
-static DEFINE_PER_CPU(mce_banks_t, mce_banks_owned);
+------------------------+-------+-------+-------+-------+-------+
+Kernel			| Run 1	| Run 2	| Run 3	| Run 4	| Run 5	|
+------------------------+-------+-------+-------+-------+-------+
+2.6.39	        	| 1542  | 2172  | 2727  | 120   | 3681  |
+------------------------+-------+-------+-------+-------+-------+
+2.6.39 (with    	|       |       |       |       |       |
+866ab43efd reverted)	| 65	| 78	| 58	| 99 	| 62	|
+------------------------+-------+-------+-------+-------+-------+
+3.1-rc4+tip		|	|	|	|	|	|
+(e467f18f945c)		| 1219	| 2037	| 1943	| 772	| 1701	|
+------------------------+-------+-------+-------+-------+-------+
+3.1-rc4+tip (e467f18f9)	|	|	|	|	|	|
+(866ab43efd reverted)	| 64	| 45	| 59	| 59	| 69	|
+------------------------+-------+-------+-------+-------+-------+
 
-To (line breaks added for readability):
-
-static __attribute__((section(".discard"), unused)) char __pcpu_scope_mce_banks_owned;
-extern __attribute__((section(".discard"), unused)) char __pcpu_unique_mce_banks_owned;
-__attribute__((section(".discard"), unused)) char __pcpu_unique_mce_banks_owned;
-__attribute__((section(".data..percpu" ""))) __attribute__((weak)) __typeof__(mce_banks_t) mce_banks_owned;
-
-
-It looks like the static tag is getting correctly applied to the first variable,
-__pcpu_scope_mce_banks_owned.  The second one, __pcpu_unique_mce_banks_owned, is
-getting tagged extern by the macro so the next __pcpu_unique_mce_banks_owned is ok.
-The last variable, mce_banks_owned, seems to be the problem.
-
-mce_banks_owned appears to be the only variable actually used in the file. I'm not
-sure what the other three are used for.
-
-I think the only way to fix this is by creating a new DEFINE_PER_CPU macro 
-(DEFINE_PER_CPU_STATIC or DEFINE_STATIC_PER_CPU?) that automatically adds the static
-tags correctly.
-
-Regards,
-Hartley
+Thanks,
+Kamalesh.
