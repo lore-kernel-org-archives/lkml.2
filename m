@@ -1,208 +1,334 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756096Ab1ISPHl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 11:07:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61071 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753385Ab1ISPHj convert rfc822-to-8bit (ORCPT
+	id S1755742Ab1ISPJY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 11:09:24 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:18425 "EHLO
+	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751571Ab1ISPJX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 11:07:39 -0400
-Date: Mon, 19 Sep 2011 11:07:29 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "davem@davemloft.net" <davem@davemloft.net>
-Subject: Re: [PATCH v3 04/11] SUNRPC: parametrize svc creation calls with
- portmapper flag
-Message-ID: <20110919110729.33a876ca@tlielax.poochiereds.net>
-In-Reply-To: <4E7756F3.4080601@parallels.com>
-References: <20110913180953.3961.69217.stgit@localhost6.localdomain6>
-	<20110913181351.3961.70207.stgit@localhost6.localdomain6>
-	<20110919100811.0eaa39fe@tlielax.poochiereds.net>
-	<4E7756F3.4080601@parallels.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 19 Sep 2011 11:09:23 -0400
+X-SpamScore: -6
+X-BigFish: VS-6(zz1432N98dKc8kzz1202hzz8275dhz2dh2a8h668h839h944h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-FB-SS: 0,
+Date: Mon, 19 Sep 2011 23:18:24 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        David Miller <davem@davemloft.net>, <patches@linaro.org>
+Subject: Re: [PATCH v2] dt: add of_alias_scan and of_alias_get_id
+Message-ID: <20110919151823.GD28084@S2100-06.ap.freescale.net>
+References: <1313371817-5135-1-git-send-email-shawn.guo@linaro.org>
+ <1313393294-8867-1-git-send-email-shawn.guo@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1313393294-8867-1-git-send-email-shawn.guo@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Sep 2011 18:51:31 +0400
-Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
-
-> 19.09.2011 18:08, Jeff Layton пишет:
-> > On Tue, 13 Sep 2011 22:13:51 +0400
-> > Stanislav Kinsbursky<skinsbursky@parallels.com>  wrote:
-> >
-> >> This new flag ("setup_rpcbind) will be used to detect, that new service will
-> >> send portmapper register calls. For such services we will create rpcbind
-> >> clients and remove all stale portmap registrations.
-> >> Also, svc_rpcb_cleanup() will be set as sv_shutdown callback for such services
-> >> in case of this field wasn't initialized earlier. This will allow to destroy
-> >> rpcbind clients when no other users of them left.
-> >>
-> >> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
-> >>
-> >> ---
-> >>   include/linux/sunrpc/svc.h |    2 ++
-> >>   net/sunrpc/svc.c           |   21 ++++++++++++++-------
-> >>   2 files changed, 16 insertions(+), 7 deletions(-)
-> >>
-> >> diff --git a/include/linux/sunrpc/svc.h b/include/linux/sunrpc/svc.h
-> >> index 223588a..528952a 100644
-> >> --- a/include/linux/sunrpc/svc.h
-> >> +++ b/include/linux/sunrpc/svc.h
-> >> @@ -402,11 +402,13 @@ struct svc_procedure {
-> >>    * Function prototypes.
-> >>    */
-> >>   struct svc_serv *svc_create(struct svc_program *, unsigned int,
-> >> +			    int setup_rpcbind,
-> > 				^^^
-> > 			Instead of adding this parameter, why not
-> > 			base this on the vs_hidden flag in the
-> > 			svc_version? IOW, have a function that looks at
-> > 			all the svc_versions for a particular
-> > 			svc_program, and returns "true" if any of them
-> > 			have vs_hidden unset? The mechanism you're
-> > 			proposing here has the potential to be out of
-> > 			sync with the vs_hidden flag.
-> >
+On Mon, Aug 15, 2011 at 03:28:14PM +0800, Shawn Guo wrote:
+> The patch adds function of_alias_scan to populate a global lookup
+> table with the properties of 'aliases' node and function
+> of_alias_get_id for drivers to find alias id from the lookup table.
 > 
-> Could you, please, clarify me this vs_hidden flag?
-> I understand, that it's used to avoid portmap registration.
-> But as I see, it's set only for nfs_callback_version1. But this svc_version is a 
-> part of nfs4_callback_program with nfs_callback_version4, which is not hidden.
-> Does this flag is missed here? If not, how we can return "true" from your 
-> proposed function if any of them have vs_hidden unset?
+> Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+> [grant.likey: add locking and rework parse loop]
+> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+
+Hi Grant,
+
+Any comments on this patch?
+
+Regards,
+Shawn
+
+> ---
+> Changes since v1:
+>  * Add of_chosen/of_aliases populating and of_alias_scan() invocation
+>    for OF_PROMTREE (non-tested).
 > 
-> Also sockets for this program are created with SVC_SOCK_ANONYMOUS flag and we 
-> will not register any of this program versions with portmapper.
-> Thus, from my pow, this vs_hidden flag affects only svc_unregister. And only 
-> nfs_callback_version1. This looks really strange.
+>  drivers/of/base.c      |  136 ++++++++++++++++++++++++++++++++++++++++++++++++
+>  drivers/of/fdt.c       |   12 +++--
+>  drivers/of/pdt.c       |   12 ++++
+>  include/linux/of.h     |    8 +++
+>  include/linux/of_fdt.h |    1 -
+>  5 files changed, 163 insertions(+), 6 deletions(-)
 > 
-> I.e. if we use this flag only for passing through this versions during 
-> svc_(un)register, and we actually also want to pass through 
-> nfs_callback_version4 as well (but just missed this vs_hidden flag for it), then 
-> with current patch-set we can move this flag from (vs_hidden) svc_version to 
-> svc_program and check it during svc_create instead of my home-brew 
-> "setup_rpcbind" variable.
+> diff --git a/drivers/of/base.c b/drivers/of/base.c
+> index 3ff22e3..5e6ce02 100644
+> --- a/drivers/of/base.c
+> +++ b/drivers/of/base.c
+> @@ -17,14 +17,39 @@
+>   *      as published by the Free Software Foundation; either version
+>   *      2 of the License, or (at your option) any later version.
+>   */
+> +#include <linux/ctype.h>
+>  #include <linux/module.h>
+>  #include <linux/of.h>
+>  #include <linux/spinlock.h>
+>  #include <linux/slab.h>
+>  #include <linux/proc_fs.h>
+>  
+> +/**
+> + * struct alias_prop - Alias property in 'aliases' node
+> + * @link:	List node to link the structure in aliases_lookup list
+> + * @alias:	Alias property name
+> + * @np:		Pointer to device_node that the alias stands for
+> + * @id:		Index value from end of alias name
+> + * @stem:	Alias string without the index
+> + *
+> + * The structure represents one alias property of 'aliases' node as
+> + * an entry in aliases_lookup list.
+> + */
+> +struct alias_prop {
+> +	struct list_head link;
+> +	const char *alias;
+> +	struct device_node *np;
+> +	int id;
+> +	char stem[0];
+> +};
+> +
+> +static LIST_HEAD(aliases_lookup);
+> +
+>  struct device_node *allnodes;
+>  struct device_node *of_chosen;
+> +struct device_node *of_aliases;
+> +
+> +static DEFINE_MUTEX(of_aliases_mutex);
+>  
+>  /* use when traversing tree through the allnext, child, sibling,
+>   * or parent members of struct device_node.
+> @@ -988,3 +1013,114 @@ out_unlock:
+>  }
+>  #endif /* defined(CONFIG_OF_DYNAMIC) */
+>  
+> +static void of_alias_add(struct alias_prop *ap, struct device_node *np,
+> +			 int id, const char *stem, int stem_len)
+> +{
+> +	ap->np = np;
+> +	ap->id = id;
+> +	strncpy(ap->stem, stem, stem_len);
+> +	ap->stem[stem_len] = 0;
+> +	list_add_tail(&ap->link, &aliases_lookup);
+> +	pr_debug("adding DT alias:%s: stem=%s id=%i node=%s\n",
+> +		 ap->alias, ap->stem, ap->id, np ? np->full_name : NULL);
+> +}
+> +
+> +/**
+> + * of_alias_scan - Scan all properties of 'aliases' node
+> + *
+> + * The function scans all the properties of 'aliases' node and populate
+> + * the the global lookup table with the properties.  It returns the
+> + * number of alias_prop found, or error code in error case.
+> + *
+> + * @dt_alloc:	An allocator that provides a virtual address to memory
+> + *		for the resulting tree
+> + */
+> +void of_alias_scan(void * (*dt_alloc)(u64 size, u64 align))
+> +{
+> +	struct property *pp;
+> +
+> +	if (!of_aliases)
+> +		return;
+> +
+> +	for_each_property(pp, of_aliases->properties) {
+> +		const char *start = pp->name;
+> +		const char *end = start + strlen(start);
+> +		struct device_node *np;
+> +		struct alias_prop *ap;
+> +		int id, len;
+> +
+> +		/* Skip those we do not want to proceed */
+> +		if (!strcmp(pp->name, "name") ||
+> +		    !strcmp(pp->name, "phandle") ||
+> +		    !strcmp(pp->name, "linux,phandle"))
+> +			continue;
+> +
+> +		np = of_find_node_by_path(pp->value);
+> +		if (!np)
+> +			continue;
+> +
+> +		/* walk the alias backwards to extract the id and work out
+> +		 * the 'stem' string */
+> +		while (isdigit(*(end-1)) && end > start)
+> +			end--;
+> +		len = end - start;
+> +
+> +		if (kstrtoint(end, 10, &id) < 0)
+> +			continue;
+> +
+> +		/* Allocate an alias_prop with enough space for the stem */
+> +		ap = dt_alloc(sizeof(*ap) + len + 1, 4);
+> +		if (!ap)
+> +			continue;
+> +		ap->alias = start;
+> +		of_alias_add(ap, np, id, start, len);
+> +	}
+> +}
+> +
+> +/**
+> + * of_alias_get_id - Get alias id for the given device_node
+> + * @np:		Pointer to the given device_node
+> + * @stem:	Alias stem of the given device_node
+> + *
+> + * The function travels the lookup table to get alias id for the given
+> + * device_node and alias stem.  It returns the alias id if find it.
+> + * If not, dynamically creates one in the lookup table and returns it,
+> + * or returns error code if fail to create.
+> + */
+> +int of_alias_get_id(struct device_node *np, const char *stem)
+> +{
+> +	struct alias_prop *app;
+> +	int id = 0;
+> +	bool found = false;
+> +
+> +	mutex_lock(&of_aliases_mutex);
+> +	list_for_each_entry(app, &aliases_lookup, link) {
+> +		if (strcmp(app->stem, stem) != 0)
+> +			continue;
+> +
+> +		if (np == app->np) {
+> +			found = true;
+> +			id = app->id;
+> +			break;
+> +		}
+> +
+> +		if (id <= app->id)
+> +			id = app->id + 1;
+> +	}
+> +
+> +	/* If an id is not found, then allocate a new one */
+> +	if (!found) {
+> +		app = kzalloc(sizeof(*app) + strlen(stem) + 1, 4);
+> +		if (!app) {
+> +			id = -ENODEV;
+> +			goto out;
+> +		}
+> +		of_alias_add(app, np, id, stem, strlen(stem));
+> +	}
+> +
+> + out:
+> +	mutex_unlock(&of_aliases_mutex);
+> +
+> +	return id;
+> +}
+> +EXPORT_SYMBOL_GPL(of_alias_get_id);
+> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+> index 65200af..98b6fb1 100644
+> --- a/drivers/of/fdt.c
+> +++ b/drivers/of/fdt.c
+> @@ -404,6 +404,13 @@ static void __unflatten_device_tree(struct boot_param_header *blob,
+>  			   be32_to_cpu(((__be32 *)mem)[size / 4]));
+>  	*allnextp = NULL;
+>  
+> +	/* Get pointer to "/chosen" and "/aliasas" nodes for use everywhere */
+> +	of_chosen = of_find_node_by_path("/chosen");
+> +	if (of_chosen == NULL)
+> +		of_chosen = of_find_node_by_path("/chosen@0");
+> +	of_aliases = of_find_node_by_path("/aliases");
+> +	of_alias_scan(dt_alloc);
+> +
+>  	pr_debug(" <- unflatten_device_tree()\n");
+>  }
+>  
+> @@ -706,11 +713,6 @@ void __init unflatten_device_tree(void)
+>  {
+>  	__unflatten_device_tree(initial_boot_params, &allnodes,
+>  				early_init_dt_alloc_memory_arch);
+> -
+> -	/* Get pointer to OF "/chosen" node for use everywhere */
+> -	of_chosen = of_find_node_by_path("/chosen");
+> -	if (of_chosen == NULL)
+> -		of_chosen = of_find_node_by_path("/chosen@0");
+>  }
+>  
+>  #endif /* CONFIG_OF_EARLY_FLATTREE */
+> diff --git a/drivers/of/pdt.c b/drivers/of/pdt.c
+> index 4d87b5d..686a4b3 100644
+> --- a/drivers/of/pdt.c
+> +++ b/drivers/of/pdt.c
+> @@ -229,6 +229,11 @@ static struct device_node * __init of_pdt_build_tree(struct device_node *parent,
+>  	return ret;
+>  }
+>  
+> +static void *kernel_tree_alloc(u64 size, u64 align)
+> +{
+> +	return prom_early_alloc(size);
+> +}
+> +
+>  void __init of_pdt_build_devicetree(phandle root_node, struct of_pdt_ops *ops)
+>  {
+>  	struct device_node **nextp;
+> @@ -245,4 +250,11 @@ void __init of_pdt_build_devicetree(phandle root_node, struct of_pdt_ops *ops)
+>  	nextp = &allnodes->allnext;
+>  	allnodes->child = of_pdt_build_tree(allnodes,
+>  			of_pdt_prom_ops->getchild(allnodes->phandle), &nextp);
+> +
+> +	/* Get pointer to "/chosen" and "/aliasas" nodes for use everywhere */
+> +	of_chosen = of_find_node_by_path("/chosen");
+> +	if (of_chosen == NULL)
+> +		of_chosen = of_find_node_by_path("/chosen@0");
+> +	of_aliases = of_find_node_by_path("/aliases");
+> +	of_alias_scan(kernel_tree_alloc);
+>  }
+> diff --git a/include/linux/of.h b/include/linux/of.h
+> index 9180dc5..4ea7d81 100644
+> --- a/include/linux/of.h
+> +++ b/include/linux/of.h
+> @@ -68,6 +68,7 @@ struct device_node {
+>  /* Pointer for first entry in chain of all nodes. */
+>  extern struct device_node *allnodes;
+>  extern struct device_node *of_chosen;
+> +extern struct device_node *of_aliases;
+>  extern rwlock_t devtree_lock;
+>  
+>  static inline bool of_have_populated_dt(void)
+> @@ -209,6 +210,9 @@ extern int of_device_is_available(const struct device_node *device);
+>  extern const void *of_get_property(const struct device_node *node,
+>  				const char *name,
+>  				int *lenp);
+> +#define for_each_property(pp, properties) \
+> +	for (pp = properties; pp != NULL; pp = pp->next)
+> +
+>  extern int of_n_addr_cells(struct device_node *np);
+>  extern int of_n_size_cells(struct device_node *np);
+>  extern const struct of_device_id *of_match_node(
+> @@ -221,6 +225,10 @@ extern int of_parse_phandles_with_args(struct device_node *np,
+>  	const char *list_name, const char *cells_name, int index,
+>  	struct device_node **out_node, const void **out_args);
+>  
+> +extern void *early_init_dt_alloc_memory_arch(u64 size, u64 align);
+> +extern void of_alias_scan(void * (*dt_alloc)(u64 size, u64 align));
+> +extern int of_alias_get_id(struct device_node *np, const char *stem);
+> +
+>  extern int of_machine_is_compatible(const char *compat);
+>  
+>  extern int prom_add_property(struct device_node* np, struct property* prop);
+> diff --git a/include/linux/of_fdt.h b/include/linux/of_fdt.h
+> index c84d900..b74b74f 100644
+> --- a/include/linux/of_fdt.h
+> +++ b/include/linux/of_fdt.h
+> @@ -97,7 +97,6 @@ extern void early_init_dt_check_for_initrd(unsigned long node);
+>  extern int early_init_dt_scan_memory(unsigned long node, const char *uname,
+>  				     int depth, void *data);
+>  extern void early_init_dt_add_memory_arch(u64 base, u64 size);
+> -extern void * early_init_dt_alloc_memory_arch(u64 size, u64 align);
+>  extern u64 dt_mem_next_cell(int s, __be32 **cellp);
+>  
+>  /*
+> -- 
+> 1.7.4.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 > 
 
-Agreed. The current situation is a mess, which is why I suggested a
-cleanup and overhaul before you do this...
-
-The vs_hidden flag is intended to show that a particular program
-version should not be registered with (or unregistered from) the
-portmapper. Unfortunately, nothing looks at vs_hidden during
-registration time, only when unregistering (as you mention).
-
-It's quite possible that several svc_versions declared in the kernel do
-not have this set correctly. One thing that would be good is to audit
-each of those.
-
-We currently rely on SVC_SOCK_ANONYMOUS for registration, but that
-wasn't its original intent. It's was just convenient to use it there
-too.
-
-SVC_SOCK_ANONYMOUS was (as best I can tell) originally intended for use
-on temporary sockets that we establish on receive. So for
-instance...when a client connects to nfsd, we need to create a new
-socket for nfsd, but obviously we don't want to register that socket
-with the portmapper (since nfsd should already be registered there).
-SVC_SOCK_ANONYMOUS ensures that that socket is not registered.
-
-The whole scheme could probably use a fundamental re-think. I'm not
-sure I have a great idea to propose in lieu of it, but I think adding
-yet another flag here is probably not the best way to go.
-
-> > 			Also, if you're adding an argument to a
-> > 			function like this, you you really ought to
-> > 			change the callers in the same patch. Otherwise
-> > 			you'll cause a build break if someone tries to
-> > 			bisect and ends up between the patch that
-> > 			changes the function and the one that changes
-> > 			the callers.
-> >
-> >>   			void (*shutdown)(struct svc_serv *));
-> >>   struct svc_rqst *svc_prepare_thread(struct svc_serv *serv,
-> >>   					struct svc_pool *pool);
-> >>   void		   svc_exit_thread(struct svc_rqst *);
-> >>   struct svc_serv *  svc_create_pooled(struct svc_program *, unsigned int,
-> >> +			int setup_rpcbind,
-> >>   			void (*shutdown)(struct svc_serv *),
-> >>   			svc_thread_fn, struct module *);
-> >>   int		   svc_set_num_threads(struct svc_serv *, struct svc_pool *, int);
-> >> diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
-> >> index f31e5cc..03231d5 100644
-> >> --- a/net/sunrpc/svc.c
-> >> +++ b/net/sunrpc/svc.c
-> >> @@ -378,7 +378,7 @@ static void svc_rpcb_cleanup(struct svc_serv *serv)
-> >>    */
-> >>   static struct svc_serv *
-> >>   __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
-> >> -	     void (*shutdown)(struct svc_serv *serv))
-> >> +	     int setup_rpcbind, void (*shutdown)(struct svc_serv *serv))
-> >>   {
-> >>   	struct svc_serv	*serv;
-> >>   	unsigned int vers;
-> >> @@ -437,29 +437,36 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
-> >>   		spin_lock_init(&pool->sp_lock);
-> >>   	}
-> >>
-> >> -	/* Remove any stale portmap registrations */
-> >> -	svc_unregister(serv);
-> >> +	if (setup_rpcbind) {
-> >> +	       	if (svc_rpcb_setup(serv)<  0) {
-> >> +			kfree(serv->sv_pools);
-> >> +			kfree(serv);
-> >> +			return NULL;
-> >> +		}
-> >> +		if (!serv->sv_shutdown)
-> >> +			serv->sv_shutdown = svc_rpcb_cleanup;
-> >> +	}
-> >>
-> >>   	return serv;
-> >>   }
-> >>
-> >>   struct svc_serv *
-> >>   svc_create(struct svc_program *prog, unsigned int bufsize,
-> >> -	   void (*shutdown)(struct svc_serv *serv))
-> >> +	   int setup_rpcbind, void (*shutdown)(struct svc_serv *serv))
-> >>   {
-> >> -	return __svc_create(prog, bufsize, /*npools*/1, shutdown);
-> >> +	return __svc_create(prog, bufsize, /*npools*/1, setup_rpcbind, shutdown);
-> >>   }
-> >>   EXPORT_SYMBOL_GPL(svc_create);
-> >>
-> >>   struct svc_serv *
-> >>   svc_create_pooled(struct svc_program *prog, unsigned int bufsize,
-> >> -		  void (*shutdown)(struct svc_serv *serv),
-> >> +		  int setup_rpcbind, void (*shutdown)(struct svc_serv *serv),
-> >>   		  svc_thread_fn func, struct module *mod)
-> >>   {
-> >>   	struct svc_serv *serv;
-> >>   	unsigned int npools = svc_pool_map_get();
-> >>
-> >> -	serv = __svc_create(prog, bufsize, npools, shutdown);
-> >> +	serv = __svc_create(prog, bufsize, npools, setup_rpcbind, shutdown);
-> >>
-> >>   	if (serv != NULL) {
-> >>   		serv->sv_function = func;
-> >>
-> >> --
-> >> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> >> the body of a message to majordomo@vger.kernel.org
-> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >
-> >
-> 
-> 
-
-
--- 
-Jeff Layton <jlayton@redhat.com>
