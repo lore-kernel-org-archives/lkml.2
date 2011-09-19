@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752685Ab1ISPU3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 11:20:29 -0400
-Received: from mail-ew0-f45.google.com ([209.85.215.45]:39240 "EHLO
-	mail-ew0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750969Ab1ISPU2 convert rfc822-to-8bit (ORCPT
+	id S1754215Ab1ISPXu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 11:23:50 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:35196 "HELO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752246Ab1ISPXt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 11:20:28 -0400
-X-Greylist: delayed 434 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 Sep 2011 11:20:27 EDT
+	Mon, 19 Sep 2011 11:23:49 -0400
+Message-ID: <4E775E95.2020806@arm.com>
+Date: Mon, 19 Sep 2011 16:24:05 +0100
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-In-Reply-To: <20110919144657.GA5928@albatros>
-References: <20110910164001.GA2342@albatros>
-	<20110910164134.GA2442@albatros>
-	<20110914192744.GC4529@outflux.net>
-	<20110918170512.GA2351@albatros>
-	<CAOJsxLF8DBEC9o9pSwa6c6pMg8ByFBdsDnzg22P3ucQcP98uzA@mail.gmail.com>
-	<20110919144657.GA5928@albatros>
-Date: Mon, 19 Sep 2011 18:13:12 +0300
-X-Google-Sender-Auth: xjQgGZjxVmC1s7uyPxjPAPHwyd8
-Message-ID: <CAOJsxLG8gW=BLOptpULsaAEwTravADKbNbXp5e9Wd7xVEfR9AQ@mail.gmail.com>
-Subject: Re: [kernel-hardening] Re: [RFC PATCH 2/2] mm: restrict access to /proc/slabinfo
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        kernel-hardening@lists.openwall.com, Kees Cook <kees@ubuntu.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Dan Rosenberg <drosenberg@vsecurity.com>,
-        Theodore Tso <tytso@mit.edu>, Alan Cox <alan@linux.intel.com>,
-        Jesper Juhl <jj@chaosbits.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH 1/3] genirq: add support for per-cpu dev_id interrupts
+References: <1316105551-17505-1-git-send-email-marc.zyngier@arm.com> <1316105551-17505-2-git-send-email-marc.zyngier@arm.com> <4E767CD6.6090208@codeaurora.org> <4E770B3E.9040401@arm.com> <4E775912.3060502@arm.com> <20110919150526.GV16381@n2100.arm.linux.org.uk>
+In-Reply-To: <20110919150526.GV16381@n2100.arm.linux.org.uk>
+X-Enigmail-Version: 1.2.1
+X-OriginalArrivalTime: 19 Sep 2011 15:23:42.0566 (UTC) FILETIME=[1D71F060:01CC76E0]
+X-MC-Unique: 111091916234616501
+Content-Type: text/plain; charset=WINDOWS-1252
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vasiliy,
+On 19/09/11 16:05, Russell King - ARM Linux wrote:
+> On Mon, Sep 19, 2011 at 04:00:34PM +0100, Marc Zyngier wrote:
+>> Replying to myself after a quick investigation... Looks like the Qualcomm
+>> implementation does exactly what is mentioned above:
+>>
+>> arch/arm/mach-msm/platsmp.c:
+>> void __cpuinit platform_secondary_init(unsigned int cpu)
+>> {
+>> 	/* Configure edge-triggered PPIs */
+>> 	writel(GIC_PPI_EDGE_MASK, MSM_QGIC_DIST_BASE + GIC_DIST_CONFIG + 4);
+>> 	[...]
+>>
+>> The way I understand it, this "MSM_QGIC_DIST_BASE + GIC_DIST_CONFIG + 4"
+>> is a banked register (otherwise we would not do it in platform_secondary_init(),
+>> right?) So doing a set_type() from __setup_irq() would be just wrong. It really
+>> needs to be done on a per-CPU basis.
+> 
+> All the registers to do with the first 32 interrupts in the distributer
+> are banked - the enable, configuration, and priority registers are all
+> only accessible to the specific CPU which owns the PPIs and SGIs.
 
-On Mon, Sep 19, 2011 at 5:46 PM, Vasiliy Kulikov <segoon@openwall.com> wrote:
->> and
->> concluded that it's not worth it doesn't really protect from anything
->
-> Closing only slabinfo doesn't add any significant protection against
-> kernel heap exploits per se, no objections here.
->
-> But as said in the desciption, the reason for this patch is not protecting
-> against exploitation heap bugs.  It is a source of infoleaks of kernel
-> and userspace activity, which should be forbidden to non-root users.
+Indeed. The major difference is that the configuration registers for the
+PPIs seem to be writable on MSM (11MP and A9 have them RO).
 
-Last time we discussed this, the 'extra protection' didn't seem to be
-significant enough to justify disabling an useful kernel debugging
-interface by default.
+	M.
+-- 
+Jazz is not dead. It just smells funny...
 
-What's different about the patch now?
-
->> and causes harm to developers.
->
-> One note: only to _kernel_ developers.  It means it is a strictly
-> debugging feature, which shouldn't be enabled in the production systems.
-
-It's pretty much _the_ interface for debugging kernel memory leaks in
-production systems and we ask users for it along with /proc/meminfo
-when debugging many memory management related issues. When we
-temporarily dropped /proc/slabinfo with the introduction of SLUB, people
-complained pretty loudly.
-
-I'd be willing to consider this patch if it's a config option that's not enabled
-by default; otherwise you need to find someone else to merge the patch.
-You can add some nasty warnings to the Kconfig text to scare the users
-into enabling it. ;-)
-
-                         Pekka
