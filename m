@@ -1,253 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754605Ab1ISJ2M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 05:28:12 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:56285 "HELO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753907Ab1ISJ2L convert rfc822-to-8bit (ORCPT
+	id S1754519Ab1ISJbW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 05:31:22 -0400
+Received: from www17.your-server.de ([213.133.104.17]:43028 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753855Ab1ISJbV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 05:28:11 -0400
-Message-ID: <4E770B3E.9040401@arm.com>
-Date: Mon, 19 Sep 2011 10:28:30 +0100
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
-MIME-Version: 1.0
-To: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC PATCH 1/3] genirq: add support for per-cpu dev_id interrupts
-References: <1316105551-17505-1-git-send-email-marc.zyngier@arm.com> <1316105551-17505-2-git-send-email-marc.zyngier@arm.com> <4E767CD6.6090208@codeaurora.org>
-In-Reply-To: <4E767CD6.6090208@codeaurora.org>
-X-Enigmail-Version: 1.2.1
-X-OriginalArrivalTime: 19 Sep 2011 09:28:05.0604 (UTC) FILETIME=[6F9FEA40:01CC76AE]
-X-MC-Unique: 111091910280801801
-Content-Type: text/plain; charset=WINDOWS-1252
+	Mon, 19 Sep 2011 05:31:21 -0400
+References: <1316167604.6545.84.camel@localhost.localdomain> <20110916101903.GI2203@ZenIV.linux.org.uk> <1316169496.8502.6.camel@perseus.themaw.net> <1316332908.5814.22.camel@localhost.localdomain> <1316404368.3206.21.camel@perseus.themaw.net> <20110919061059.GJ2203@ZenIV.linux.org.uk>
+In-Reply-To: <20110919061059.GJ2203@ZenIV.linux.org.uk>
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+Message-Id: <CACCE520-D261-4B97-B208-1C44574886BF@m3y3r.de>
 Content-Transfer-Encoding: 8BIT
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dhowells@redhat.com
+From: Thomas Meyer <thomas@m3y3r.de>
+Subject: Re: [PATCH] Force same size of struct autofs_v5_packet on x86 and x86_64
+Date: Mon, 19 Sep 2011 11:30:42 +0200
+To: Al Viro <viro@ZenIV.linux.org.uk>, Ian Kent <raven@themaw.net>
+X-Mailer: Apple Mail (2.1084)
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/09/11 00:20, Abhijeet Dharmapurikar wrote:
-> On 09/15/2011 09:52 AM, Marc Zyngier wrote:
->  > The ARM GIC interrupt controller offers per CPU interrupts (PPIs),
->  > which are usually used to connect local timers to each core.
->  > Each CPU has its own private interface to the GIC,
->  > and only sees the PPIs that are directly connect to it.
->  >
->  > While these timers are separate devices and have a separate
->  > interrupt line to a core, they all use the same IRQ number.
->  >
->  > For these devices, request_irq() is not the right API as it
->  > assumes that an IRQ number is visible by a number of CPUs
->  > (through the affinity setting), but makes it very awkward to
->  > express that an IRQ number can be handled by all CPUs, and
->  > yet be a different interrupt line on each CPU, requiring a
->  > different dev_id cookie to be passed back to the handler.
->  >
->  > The *_percpu_irq() functions is designed to overcome these
->  > limitations, by providing a per-cpu dev_id vector:
->  >
->  > int request_percpu_irq(unsigned int irq, irq_handler_t handler,
->  >                 const char *devname, void __percpu *percpu_dev_id);
->  > void free_percpu_irq(unsigned int, void __percpu *);
->  > int setup_percpu_irq(unsigned int irq, struct irqaction *new);
->  > void remove_percpu_irq(unsigned int irq, struct irqaction *act);
->  > void enable_percpu_irq(unsigned int irq);
->  > void disable_percpu_irq(unsigned int irq);
->  >
->  > The API has a number of limitations:
->  > - no interrupt sharing
->  > - no threading
->  > - common handler across all the CPUs
->  >
->  > Once the interrupt is requested using setup_percpu_irq() or
->  > request_percpu_irq(), it must be enabled by each core that wishes
->  > its local interrupt to be delivered.
->  >
->  > Based on an initial patch by Thomas Gleixner.
->  >
->  > Cc: Thomas Gleixner<tglx@linutronix.de>
->  > Signed-off-by: Marc Zyngier<marc.zyngier@arm.com>
->  > ---
->  >   include/linux/interrupt.h |   40 ++++++---
->  >   include/linux/irq.h       |   25 +++++-
->  >   include/linux/irqdesc.h   |    3 +
->  >   kernel/irq/Kconfig        |    4 +
->  >   kernel/irq/chip.c         |   58 +++++++++++++
->  >   kernel/irq/internals.h    |    2 +
->  >   kernel/irq/manage.c       |  209
-> ++++++++++++++++++++++++++++++++++++++++++++-
->  >   kernel/irq/settings.h     |    7 ++
->  >   8 files changed, 332 insertions(+), 16 deletions(-)
->  >
->  > diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
->  > index a103732..f9b7fa3 100644
->  > --- a/include/linux/interrupt.h
->  > +++ b/include/linux/interrupt.h
->  > @@ -95,6 +95,7 @@ typedef irqreturn_t (*irq_handler_t)(int, void *);
->  >    * @flags: flags (see IRQF_* above)
->  >    * @name:  name of the device
->  >    * @dev_id:        cookie to identify the device
->  > + * @percpu_dev_id:  cookie to identify the device
->  >    * @next:  pointer to the next irqaction for shared interrupts
->  >    * @irq:   interrupt number
->  >    * @dir:   pointer to the proc/irq/NN/name entry
->  > @@ -104,17 +105,20 @@ typedef irqreturn_t (*irq_handler_t)(int, void *);
->  >    * @thread_mask:   bitmask for keeping track of @thread activity
->  >    */
->  >   struct irqaction {
->  > -    irq_handler_t handler;
->  > -    unsigned long flags;
->  > -    void *dev_id;
->  > -    struct irqaction *next;
->  > -    int irq;
->  > -    irq_handler_t thread_fn;
->  > -    struct task_struct *thread;
->  > -    unsigned long thread_flags;
->  > -    unsigned long thread_mask;
->  > -    const char *name;
->  > -    struct proc_dir_entry *dir;
->  > +    irq_handler_t           handler;
->  > +    unsigned long           flags;
->  > +    void                    *dev_id;
->  > +#ifdef CONFIG_IRQ_PERCPU_DEVID
->  > +    void __percpu           *percpu_dev_id;
->  > +#endif
->  > +    struct irqaction        *next;
->  > +    int                     irq;
->  > +    irq_handler_t           thread_fn;
->  > +    struct task_struct      *thread;
->  > +    unsigned long           thread_flags;
->  > +    unsigned long           thread_mask;
->  > +    const char              *name;
->  > +    struct proc_dir_entry   *dir;
->  >   } ____cacheline_internodealigned_in_smp;
->  >
->  >   extern irqreturn_t no_action(int cpl, void *dev_id);
->  > @@ -136,6 +140,10 @@ extern int __must_check
->  >   request_any_context_irq(unsigned int irq, irq_handler_t handler,
->  >                      unsigned long flags, const char *name, void *dev_id);
->  >
->  > +extern int __must_check
->  > +request_percpu_irq(unsigned int irq, irq_handler_t handler,
->  > +               const char *devname, void __percpu *percpu_dev_id);
->  > +
->  >   extern void exit_irq_thread(void);
->  >   #else
->  >
->  > @@ -164,10 +172,18 @@ request_any_context_irq(unsigned int irq,
-> irq_handler_t handler,
->  >      return request_irq(irq, handler, flags, name, dev_id);
->  >   }
->  >
->  > +static inline int __must_check
->  > +request_percpu_irq(unsigned int irq, irq_handler_t handler,
->  > +               const char *devname, void __percpu *percpu_dev_id)
->  > +{
->  > +    return request_irq(irq, handler, 0, name, dev_id);
+
+Am 19.09.2011 um 08:10 schrieb Al Viro:
+
+> On Mon, Sep 19, 2011 at 11:52:48AM +0800, Ian Kent wrote:
 > 
-> you probably meant devname here instead of name and also percpu_dev_id
-> instead of dev_id.
-
-Doh. Indeed, thanks for noticing this.
-
->  > +/*
->  > + * Internal function to unregister a percpu irqaction.
->  > + */
->  > +static struct irqaction *__free_percpu_irq(unsigned int irq, void
-> __percpu *dev_id)
->  > +{
->  > +    struct irq_desc *desc = irq_to_desc(irq);
->  > +    struct irqaction *action;
->  > +    unsigned long flags;
->  > +
->  > +    WARN(in_interrupt(), "Trying to free IRQ %d from IRQ context!\n", irq);
->  > +
->  > +    if (!desc)
->  > +            return NULL;
->  > +
->  > +    raw_spin_lock_irqsave(&desc->lock, flags);
->  > +
->  > +    action = desc->action;
->  > +    if (!action || action->percpu_dev_id != dev_id) {
->  > +            WARN(1, "Trying to free already-free IRQ %d\n", irq);
->  > +            raw_spin_unlock_irqrestore(&desc->lock, flags);
->  > +            return NULL;
->  > +    }
->  > +
->  > +    /* Found it - now remove it from the list of entries: */
->  > +    WARN(!cpumask_empty(desc->percpu_enabled),
->  > +         "percpu IRQ %d still enabled on CPU%d!\n",
->  > +         irq, cpumask_first(desc->percpu_enabled));
->  > +    desc->action = NULL;
->  > +
->  > +#ifdef CONFIG_SMP
->  > +    /* make sure affinity_hint is cleaned up */
->  > +    if (WARN_ON_ONCE(desc->affinity_hint))
->  > +            desc->affinity_hint = NULL;
->  > +#endif
->  > +
->  > +    raw_spin_unlock_irqrestore(&desc->lock, flags);
->  > +
->  > +    unregister_handler_proc(irq, action);
->  > +
->  > +    /* Make sure it's not being used on another CPU: */
->  > +    synchronize_irq(irq);
->  > +
->  > +    module_put(desc->owner);
+>>> btw. where are the padding bytes are added? how to tell gcc to display
+>>> this?
+>> 
+>> It's also been a long time since I looked into this so I don't remember
+>> the processor alignment details.
+>> 
+>> Not sure if there is a compiler option that would report this, sorry,
+>> anyone else?
 > 
-> Not sure why is this required. Where is the corresponding try_module_get()?
+> Padding is added in the very end.  The thing is, it's not a misaligned
+> field per se; they all have a natural alignment in there.  It's that
+> __u64 ino has alignment 8 on amd64 and alignment 4 on i386.  So the alignment
+> requirements for the entire structure are different - on amd64 the address
+> of the entire thing must be a multiple of 8 and on i386 it can be any multiple
+> of 4.  IOW, on i386 you can just put them one after another in e.g. an array
+> (the size without any padding is 300 bytes) and on amd64 you need 4 bytes
+> of padding added between them.  I.e. sizeof needs to go up by 4, with the
+> padding added in the end.
 
-A few lines into __setup_irq().
+okay. that's what I thought.
 
->  > +/**
->  > + *  request_percpu_irq - allocate a percpu interrupt line
->  > + *  @irq: Interrupt line to allocate
->  > + *  @handler: Function to be called when the IRQ occurs.
->  > + *            Primary handler for threaded interrupts
->  > + *            If NULL and thread_fn != NULL the default
->  > + *            primary handler is installed
-> 
-> The patch doesnt support threaded percpu interrupts - please set the
-> comment accordingly?
+@Ian: Is the read() from the pipe fd the only way to consume this structure from userspace?
 
-Yup, will fix.
+if so: why not align the size of this structure for x86 and x86_64 to the same size?
 
->  > + *  @devname: An ascii name for the claiming device
->  > + *  @dev_id: A percpu cookie passed back to the handler function
->  > + *
->  > + *  This call allocates interrupt resources, but doesn't
->  > + *  automatically enable the interrupt. It has to be done on each
->  > + *  CPU using enable_percpu_irq().
->  > + *
->  > + *  Dev_id must be globally unique. It is a per-cpu variable, and
->  > + *  the handler gets called with the interrupted CPU's instance of
->  > + *  that variable.
->  > + */
->  > +int request_percpu_irq(unsigned int irq, irq_handler_t handler,
->  > +                   const char *devname, void __percpu *dev_id)
-> 
-> Can we add irqflags argument. I think it will be useful to pass flags,
-> at least the IRQF_TRIGGER_MASK since it ends up calling __setup_irq().
-> The chip could use a set_type callback for ppi's too.
+the systemd compiled for x86_64 will probably work with this change, but does maybe report something like a short read or so, as it currently expects 304 bytes to read.
+i didn't test this yet.
 
-We're entering dangerous territory here. While this would work with the
-GIC (the interrupt type is at the distributor level), you could easily
-imagine an interrupt controller with the PPI configuration at the CPU
-interface level... In that case, calling set_type from __setup_irq()
-would end up doing the wrong thing, and I'd hate the API to give the
-idea it can do things it may not do in the end...
+@al: what other autofs4 users are out there besides systemd?
 
-Furthermore, do we actually have a GIC implementation where PPI
-configuration isn't read-only? I only know about the ARM implementation,
-and the Qualcomm may well be different (the spec says it's
-implementation defined).
-
-Cheers,
-
-	M.
--- 
-Jazz is not dead. It just smells funny...
-
+with kind regards
+thomas
