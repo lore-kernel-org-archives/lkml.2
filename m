@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752981Ab1ISJBk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 05:01:40 -0400
-Received: from symlink.to.noone.org ([85.10.207.172]:34848 "EHLO sym.noone.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752558Ab1ISJBi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 05:01:38 -0400
-Date: Mon, 19 Sep 2011 11:01:37 +0200
-From: Tobias Klauser <tklauser@distanz.ch>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree (input
-	tree related)
-Message-ID: <20110919090137.GM11405@distanz.ch>
-References: <20110919184621.ac27f3d519e397a82efc6d4a@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110919184621.ac27f3d519e397a82efc6d4a@canb.auug.org.au>
-X-Editor: Vi IMproved 7.1
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753634Ab1ISJBp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 05:01:45 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:55729 "HELO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752975Ab1ISJBn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 05:01:43 -0400
+Subject: Re: [RFC v3] arm: Add platform bus driver for memory mapped virtio
+ device
+From: Pawel Moll <pawel.moll@arm.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Anthony Liguori <aliguori@us.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Michael S.Tsirkin" <mst@redhat.com>
+In-Reply-To: <874o09ryzm.fsf@rustcorp.com.au>
+References: <1316191623-3835-1-git-send-email-pawel.moll@arm.com>
+	 <4E7380FD.1030200@us.ibm.com>  <874o09ryzm.fsf@rustcorp.com.au>
+Date: Mon, 19 Sep 2011 10:01:34 +0100
+Message-ID: <1316422894.3014.1.camel@hornet.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1
+X-OriginalArrivalTime: 19 Sep 2011 09:01:34.0946 (UTC) FILETIME=[BB84C420:01CC76AA]
+X-MC-Unique: 111091910013707101
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-09-19 at 10:46:21 +0200, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi all,
+> > Have you written a specification for this device?
+> > 
+> > Rusty maintains a formal spec for all virtio devices at:
+> > 
+> > http://ozlabs.org/~rusty/virtio-spec/
+> > 
+> > The spec should be written before merging the code to make sure that there 
+> > aren't future compatibility problems.
 > 
-> After merging the final tree, today's linux-next build (powerpc allyesconfig)
-> failed like this:
+> A good idea, but the current spec is for PCI.  I wonder if we should
+> move the PCI part out to an appendix and make it more general?
 > 
-> drivers/input/keyboard/gpio_keys.c: In function 'gpio_keys_get_devtree_pdata':
-> drivers/input/keyboard/gpio_keys.c:500:3: warning: passing argument 3 of 'of_property_read_u32' from incompatible pointer type
-> include/linux/of.h:268:19: note: expected 'u32 *' but argument is of type 'const u32 **'
-> drivers/input/keyboard/gpio_keys.c:504:19: warning: assignment makes integer from pointer without a cast
-> drivers/input/keyboard/gpio_keys.c:508:3: warning: passing argument 3 of 'of_property_read_u32' from incompatible pointer type
-> include/linux/of.h:268:19: note: expected 'u32 *' but argument is of type 'const u32 **'
-> drivers/input/keyboard/gpio_keys.c:509:20: warning: assignment makes integer from pointer without a cast
-> drivers/input/keyboard/gpio_keys.c:515:3: warning: passing argument 3 of 'of_property_read_u32' from incompatible pointer type
-> include/linux/of.h:268:19: note: expected 'u32 *' but argument is of type 'const u32 **'
-> drivers/input/keyboard/gpio_keys.c:516:33: warning: assignment makes integer from pointer without a cast
-> drivers/input/keyboard/gpio_keys.c:502:4: error: label 'out_fail' used but not defined
-> drivers/input/keyboard/gpio_keys.c: At top level:
-> drivers/input/keyboard/gpio_keys.c:523:7: error: expected '=', ',', ';', 'asm' or '__attribute__' before '->' token
-> drivers/input/keyboard/gpio_keys.c:525:2: error: expected identifier or '(' before 'return'
-> drivers/input/keyboard/gpio_keys.c:527:9: error: expected '=', ',', ';', 'asm' or '__attribute__' before ':' token
-> drivers/input/keyboard/gpio_keys.c:529:2: error: expected identifier or '(' before 'return'
-> drivers/input/keyboard/gpio_keys.c:530:1: error: expected identifier or '(' before '}' token
-> drivers/input/keyboard/gpio_keys.c: In function 'gpio_keys_get_devtree_pdata':
-> drivers/input/keyboard/gpio_keys.c:521:2: warning: control reaches end of non-void function
-> 
-> Caused by commit d6ba97c9806b ("Input: gpio_keys - use
-> of_property_read_u32()").  Mostly by a brace mismatch.
+> Meanwhile, perhaps this would be suitable as an appendix.
 
-Sorry, my fault. I thought I compile-tested this but obviously didn't.
-I'll send an updated patch to Dmitry.
+Yes, that sounds reasonable. I'll work on this during the week, but in
+the meantime - does the driver look good enough to ask Peter to invest
+his time into QEMU side?
 
-Tobias
+Cheers!
+
+Paweł
+
+
