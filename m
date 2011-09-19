@@ -1,59 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932618Ab1ISXK0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 19:10:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55319 "EHLO mx2.suse.de"
+	id S932864Ab1ISXKa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 19:10:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55327 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751268Ab1ISXKZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 19:10:25 -0400
+	id S932686Ab1ISXK1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 19:10:27 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Sep 19 16:08:33 2011
-Message-Id: <20110919230833.363314137@clark.kroah.org>
+Message-Id: <20110919230833.469891151@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 19 Sep 2011 16:05:10 -0700
+Date: Mon, 19 Sep 2011 16:05:11 -0700
 From: Greg KH <gregkh@suse.de>
-To: torvalds@linux-foundation.org, Greg KH <greg@kroah.com>
+To: torvalds@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>, stable@kernel.org
 Cc: Andiry Xu <andiry.xu@amd.com>
-Subject: [patch 1/3] staging: fix comedi build when ISA_DMA_API is enabled but COMEDI_PCI is not enabled
+Cc: Randy Dunlap <rdunlap@xenotime.net>
+Subject: [patch 2/3] USB: xhci: Set change bit when warm reset change is set.
 In-Reply-To: <20110919230920.GA6555@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+Sometimes, when a USB 3.0 device is disconnected, the Intel Panther Point
+xHCI host controller will report a link state change with the state set
+to "SS.Inactive".  This causes the xHCI host controller to issue a warm
+port reset, which doesn't finish before the USB core times out while
+waiting for it to complete.
 
-Fix build when CONFIG_ISA_DMA_API is enabled but
-CONFIG_COMEDI_PCI[_DRIVERS] is not enabled.
-Fixes these build errors:
+When the warm port reset does complete, and the xHC gives back a port
+status change event, the xHCI driver kicks khubd.  However, it fails to
+set the bit indicating there is a change event for that port because the
+logic in xhci-hub.c doesn't check for the warm port reset bit.
 
-drivers/staging/comedi/drivers/ni_labpc.c: In function 'labpc_ai_cmd':
-drivers/staging/comedi/drivers/ni_labpc.c:1351: error: implicit declaration of function 'labpc_suggest_transfer_size'
-drivers/staging/comedi/drivers/ni_labpc.c: At top level:
-drivers/staging/comedi/drivers/ni_labpc.c:1802: error: conflicting types for 'labpc_suggest_transfer_size'
-drivers/staging/comedi/drivers/ni_labpc.c:1351: note: previous implicit declaration of 'labpc_suggest_transfer_size' was here
+After that, the warm port status change bit is never cleared by the USB
+core, and the xHC stops reporting port status change bits.  (The xHCI spec
+says it shouldn't report more port events until all change bits are
+cleared.)  This means any port changes when a new device is connected will
+never be reported, and the port will seem "dead" until the xHCI driver is
+unloaded and reloaded, or the computer is rebooted.  Fix this by making
+the xHCI driver set the port change bit when a warm port reset change bit
+is set.
 
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+A better solution would be to make the USB core handle warm port reset in
+differently, merging the current code with the standard port reset code
+that does an incremental backoff on the timeout, and tries to complete the
+port reset two more times before giving up.  That more complicated fix
+will be merged next window, and this fix will be backported to stable.
+
+This should be backported to kernels as old as 3.0, since that was the
+first kernel with commit a11496ebf37534177d67222285e8debed7a39788
+"xHCI: warm reset support".
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: stable@kernel.org
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/comedi/drivers/ni_labpc.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/usb/host/xhci-hub.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/staging/comedi/drivers/ni_labpc.c
-+++ b/drivers/staging/comedi/drivers/ni_labpc.c
-@@ -241,8 +241,10 @@ static int labpc_eeprom_write_insn(struc
- 				   struct comedi_insn *insn,
- 				   unsigned int *data);
- static void labpc_adc_timing(struct comedi_device *dev, struct comedi_cmd *cmd);
--#ifdef CONFIG_COMEDI_PCI
-+#ifdef CONFIG_ISA_DMA_API
- static unsigned int labpc_suggest_transfer_size(struct comedi_cmd cmd);
-+#endif
-+#ifdef CONFIG_COMEDI_PCI
- static int labpc_find_device(struct comedi_device *dev, int bus, int slot);
- #endif
- static int labpc_dio_mem_callback(int dir, int port, int data,
+--- a/drivers/usb/host/xhci-hub.c
++++ b/drivers/usb/host/xhci-hub.c
+@@ -761,7 +761,7 @@ int xhci_hub_status_data(struct usb_hcd
+ 	memset(buf, 0, retval);
+ 	status = 0;
+ 
+-	mask = PORT_CSC | PORT_PEC | PORT_OCC | PORT_PLC;
++	mask = PORT_CSC | PORT_PEC | PORT_OCC | PORT_PLC | PORT_WRC;
+ 
+ 	spin_lock_irqsave(&xhci->lock, flags);
+ 	/* For each port, did anything change?  If so, set that bit in buf. */
 
 
