@@ -1,41 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754672Ab1ISRhQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 13:37:16 -0400
-Received: from relay.iisc.ernet.in ([203.200.35.70]:51099 "EHLO
-	relay.iisc.ernet.in" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753863Ab1ISRhO (ORCPT
+	id S1754792Ab1ISRjo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 13:39:44 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:47954 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753055Ab1ISRjn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 13:37:14 -0400
-Message-ID: <38660.10.16.40.12.1316452192.squirrel@sscu.iisc.ernet.in>
-Date: Mon, 19 Sep 2011 22:39:52 +0530 (IST)
-Subject: Mutual Benefit
-From: "Ma Guang Lu" <mag2011lu@yahoo.com.hk>
-Reply-To: guangma2011lu@w.cn
-User-Agent: SquirrelMail/1.4.8-5.el5.centos.10
+	Mon, 19 Sep 2011 13:39:43 -0400
+Date: Mon, 19 Sep 2011 21:39:05 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Balbir Singh <bsingharora@gmail.com>, Shailabh Nagar <nagar@us.ibm.com>,
+        linux-kernel@vger.kernel.org, security@kernel.org,
+        Eric Paris <eparis@redhat.com>, Stephen Wilson <wilsons@start.ca>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        kernel-hardening@lists.openwall.com
+Subject: Re: [Security] [PATCH 2/2] taskstats: restrict access to user
+Message-ID: <20110919173905.GA3804@albatros>
+References: <1308917362-4795-1-git-send-email-segoon@openwall.com>
+ <BANLkTimm7KDEU7WD7jVV=5vAGt2GbjgwGg@mail.gmail.com>
+ <20110630075716.GB3377@albatros>
+ <BANLkTik0DF5jUhOsP=Pnm+vMbHzEx+3L-Q@mail.gmail.com>
+ <BANLkTi=DiVRV9dkTtYgq+CY-kxVs5ecoWw@mail.gmail.com>
+ <BANLkTimnP8L3kSoafdTtUhr9CXx9-WDVLQ@mail.gmail.com>
+ <CA+55aFxXS9z=NwoYug+qGoYufqN-6dCo4fm5ggTsoDonsMi4Dw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
-X-IISc-MailScanner-Information: Please contact the ISP for more information
-X-IISc-MailScanner: Found to be clean
-X-IISc-MailScanner-SpamCheck: not spam, SpamAssassin (cached, score=5.209,
-	required 6.5, ALL_TRUSTED -1.00, BAYES_80 2.00, FREEMAIL_FROM 1.00,
-	FREEMAIL_REPLYTO 2.40, J_CHICKENPOX_21 0.60, LOTS_OF_MONEY 0.00,
-	MR_NOT_ATTRIBUTED_IP 0.20, T_TO_NO_BRKTS_FREEMAIL 0.01)
-X-IISc-MailScanner-SpamScore: sssss
-X-IISc-MailScanner-From: mag2011lu@yahoo.com.hk
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxXS9z=NwoYug+qGoYufqN-6dCo4fm5ggTsoDonsMi4Dw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am Ma Guang Lu,I have a business of $17.3M for you.Reply with personal
-details for info.
+On Mon, Sep 19, 2011 at 09:40 -0700, Linus Torvalds wrote:
+> diff --git a/kernel/taskstats.c b/kernel/taskstats.c
+> index e19ce1454ee1..5874d4866b3c 100644
+> --- a/kernel/taskstats.c
+> +++ b/kernel/taskstats.c
+> @@ -457,6 +457,8 @@ static int cmd_attr_register_cpumask(struct genl_info *info)
+>  	cpumask_var_t mask;
+>  	int rc;
+>  
+> +	if (!capable(CAP_SYS_ADMIN))
+> +		return -EPERM;
+
+Shouldn't it simply protect taskstats_user_cmd()?  You may still poll
+the counters with TASKSTATS_CMD_ATTR_PID/TASKSTATS_CMD_ATTR_TGID.
+
+Or ptrace_may_access() in taskstats_user_cmd().
+
+>  	if (!alloc_cpumask_var(&mask, GFP_KERNEL))
+>  		return -ENOMEM;
+>  	rc = parse(info->attrs[TASKSTATS_CMD_ATTR_REGISTER_CPUMASK], mask);
+> diff --git a/kernel/tsacct.c b/kernel/tsacct.c
+> index 24dc60d9fa1f..110ca5a03bd6 100644
+> --- a/kernel/tsacct.c
+> +++ b/kernel/tsacct.c
+> @@ -78,6 +78,7 @@ void bacct_add_tsk(struct taskstats *stats, struct task_struct *tsk)
+>  
+>  #define KB 1024
+>  #define MB (1024*KB)
+> +#define KB_MASK (~(KB-1))
+>  /*
+>   * fill in extended accounting fields
+>   */
+> @@ -100,9 +101,9 @@ void xacct_add_tsk(struct taskstats *stats, struct task_struct *p)
+>  	stats->read_syscalls	= p->ioac.syscr;
+>  	stats->write_syscalls	= p->ioac.syscw;
+>  #ifdef CONFIG_TASK_IO_ACCOUNTING
+> -	stats->read_bytes	= p->ioac.read_bytes;
+> -	stats->write_bytes	= p->ioac.write_bytes;
+> -	stats->cancelled_write_bytes = p->ioac.cancelled_write_bytes;
+> +	stats->read_bytes	= p->ioac.read_bytes & KB_MASK;
+> +	stats->write_bytes	= p->ioac.write_bytes & KB_MASK;
+> +	stats->cancelled_write_bytes = p->ioac.cancelled_write_bytes & KB_MASK;
+>  #else
+>  	stats->read_bytes	= 0;
+>  	stats->write_bytes	= 0;
+
 
 -- 
-This message has been scanned for viruses and
-dangerous content by MailScanner, and is
-believed to be clean.
-
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
