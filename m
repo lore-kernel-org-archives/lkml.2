@@ -1,55 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756531Ab1ISUom (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 16:44:42 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:54195 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756314Ab1ISUol (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 16:44:41 -0400
-Message-ID: <4E77A9B1.1040107@gmail.com>
-Date: Mon, 19 Sep 2011 21:44:33 +0100
-From: Dave Kilroy <kilroyd@googlemail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
+	id S1755169Ab1ISUqj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 16:46:39 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:54740 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751049Ab1ISUqh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 16:46:37 -0400
+Message-ID: <4E77AA21.3040304@ti.com>
+Date: Mon, 19 Sep 2011 22:46:25 +0200
+From: "Cousson, Benoit" <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
 MIME-Version: 1.0
-To: Valdis.Kletnieks@vt.edu
-CC: linux-kernel@vger.kernel.org, greg@kroah.com, pe1dnn@amsat.org
-Subject: Re: [PATCH 3/3] staging: wlags49_h2: Declare support for WEXT 21
-References: <1316462896-17846-1-git-send-email-kilroyd@googlemail.com>            <1316462896-17846-4-git-send-email-kilroyd@googlemail.com> <15411.1316463771@turing-police.cc.vt.edu>
-In-Reply-To: <15411.1316463771@turing-police.cc.vt.edu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: "Munegowda, Keshava" <keshava_mgowda@ti.com>
+CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Balbi, Felipe" <balbi@ti.com>, "Gadiyar, Anand" <gadiyar@ti.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "parthab@india.ti.com" <parthab@india.ti.com>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "Hilman, Kevin" <khilman@ti.com>, "paul@pwsan.com" <paul@pwsan.com>,
+        "johnstul@us.ibm.com" <johnstul@us.ibm.com>,
+        "Sripathy, Vishwanath" <vishwanath.bs@ti.com>
+Subject: Re: [PATCH 1/5 v9] arm: omap: usb: ehci and ohci hwmod structures
+ for omap4
+References: <1316092970-2440-1-git-send-email-keshava_mgowda@ti.com> <1316092970-2440-2-git-send-email-keshava_mgowda@ti.com>
+In-Reply-To: <1316092970-2440-2-git-send-email-keshava_mgowda@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/09/2011 21:22, Valdis.Kletnieks@vt.edu wrote:
-> On Mon, 19 Sep 2011 21:08:16 BST, David Kilroy said:
->> There may be a few areas where we don't actually support WE21,
->> but by doing this it will make it easier to find those places.
+Keshava,
+
+I've just replied to your previous v8 version about the comments you 
+didn't take into account.
+I just have one minor nit on that one I missed previously, plus a couple 
+of clarifications.
+
+On 9/15/2011 3:22 PM, Munegowda, Keshava wrote:
+> From: Benoit Cousson<b-cousson@ti.com>
 >
-> I'll bite - what happens when we find such a place?  Kernel fails to build, or
-> user has a suboptimal usage experience, or?
+> Following 4 hwmod structures are added:
+> UHH hwmod of usbhs with uhh base address and functional clock,
+> EHCI hwmod with irq and base address,
+> OHCI hwmod with irq and base address,
+> TLL hwmod of usbhs with the TLL base address and irq.
+>
+> Signed-off-by: Benoit Cousson<b-cousson@ti.com>
+> Signed-off-by: Keshava Munegowda<keshava_mgowda@ti.com>
+> ---
+>   arch/arm/mach-omap2/omap_hwmod_44xx_data.c |  249 +++++++++++++++++++++++++++-
+>   1 files changed, 248 insertions(+), 1 deletions(-)
+>
+> diff --git a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+> index 6201422..f06efa6 100644
+> --- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+> +++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+> @@ -68,6 +68,10 @@ static struct omap_hwmod omap44xx_mmc2_hwmod;
+>   static struct omap_hwmod omap44xx_mpu_hwmod;
+>   static struct omap_hwmod omap44xx_mpu_private_hwmod;
+>   static struct omap_hwmod omap44xx_usb_otg_hs_hwmod;
+> +static struct omap_hwmod omap44xx_usb_host_hs_hwmod;
+> +static struct omap_hwmod omap44xx_usbhs_ohci_hwmod;
+> +static struct omap_hwmod omap44xx_usbhs_ehci_hwmod;
+> +static struct omap_hwmod omap44xx_usb_tll_hs_hwmod;
+>
+>   /*
+>    * Interconnects omap_hwmod structures
+> @@ -5336,6 +5340,244 @@ static struct omap_hwmod omap44xx_wd_timer3_hwmod = {
+>   	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP4430),
+>   };
+>
+> +/*
+> + * 'usb_host_hs' class
+> + * high-speed multi-port usb host controller
+> + */
+> +static struct omap_hwmod_ocp_if omap44xx_usb_host_hs__l3_main_2 = {
+> +	.master		=&omap44xx_usb_host_hs_hwmod,
+> +	.slave		=&omap44xx_l3_main_2_hwmod,
+> +	.clk		= "l3_div_ck",
+> +	.user		= OCP_USER_MPU | OCP_USER_SDMA,
+> +};
+> +
+> +static struct omap_hwmod_class_sysconfig omap44xx_usb_host_hs_sysc = {
+> +	.rev_offs	= 0x0000,
+> +	.sysc_offs	= 0x0010,
+> +	.syss_offs	= 0x0014,
+> +	.sysc_flags	= (SYSC_HAS_MIDLEMODE | SYSC_HAS_SIDLEMODE),
+> +	.idlemodes      = (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
+> +			SIDLE_SMART_WKUP | MSTANDBY_FORCE | MSTANDBY_NO |
+> +			MSTANDBY_SMART | MSTANDBY_SMART_WKUP),
+> +	.sysc_fields	=&omap_hwmod_sysc_type2,
+> +};
+> +
+> +static struct omap_hwmod_class omap44xx_usb_host_hs_hwmod_class = {
+> +	.name = "usbhs_uhh",
+> +	.sysc =&omap44xx_usb_host_hs_sysc,
+> +};
+> +
+> +static struct omap_hwmod_ocp_if *omap44xx_usb_host_hs_masters[] = {
+> +	&omap44xx_usb_host_hs__l3_main_2,
+> +};
+> +
+> +static struct omap_hwmod_addr_space omap44xx_usb_host_hs_addrs[] = {
+> +	{
+> +		.name		= "uhh",
+> +		.pa_start	= 0x4a064000,
+> +		.pa_end		= 0x4a0647ff,
+> +		.flags		= ADDR_TYPE_RT
+> +	},
+> +	{}
+> +};
+> +
+> +static struct omap_hwmod_ocp_if omap44xx_l4_cfg__usb_host_hs = {
+> +	.master		=&omap44xx_l4_cfg_hwmod,
+> +	.slave		=&omap44xx_usb_host_hs_hwmod,
+> +	.clk		= "l4_div_ck",
+> +	.addr		= omap44xx_usb_host_hs_addrs,
+> +	.user		= OCP_USER_MPU | OCP_USER_SDMA,
+> +};
+> +
+> +static struct omap_hwmod_ocp_if *omap44xx_usb_host_hs_slaves[] = {
+> +	&omap44xx_l4_cfg__usb_host_hs,
+> +};
+> +
+> +static struct omap_hwmod omap44xx_usb_host_hs_hwmod = {
+> +	.name		= "usbhs_uhh",
+> +	.class		=&omap44xx_usb_host_hs_hwmod_class,
+> +	.clkdm_name	= "l3_init_clkdm",
+> +	.main_clk	= "usb_host_hs_fck",
+> +	.prcm = {
+> +		.omap4 = {
+> +			.clkctrl_offs = OMAP4_CM_L3INIT_USB_HOST_CLKCTRL_OFFSET,
+> +			.context_offs = OMAP4_RM_L3INIT_USB_HOST_CONTEXT_OFFSET,
+> +			.modulemode   = MODULEMODE_SWCTRL,
+> +		},
+> +	},
+> +	.slaves		= omap44xx_usb_host_hs_slaves,
+> +	.slaves_cnt	= ARRAY_SIZE(omap44xx_usb_host_hs_slaves),
+> +	.masters	= omap44xx_usb_host_hs_masters,
+> +	.masters_cnt	= ARRAY_SIZE(omap44xx_usb_host_hs_masters),
+> +	.flags		= HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY,
 
-The user would have a sub-optimal experience. iwconfig may not display a 
-few things correctly (ESSID?) in particular scenarios.
+Why do you need these flags? These flags are reserved for non-standard 
+behavior / HW bugs. I know that this IP is full of various bugs, but it 
+will be nice to add some explanation in the changelog and a small 
+comment here as well.
 
-The reason I included this patch was that I'm not sure whether 
-wpa-supplicant requires WEXT version to be above a certain threshold to 
-use the events in the previous patch. I'm happy to drop this one if it 
-just works.
+> +	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP4430),
+> +};
+> +
+> +/* 'usbhs_ohci' class */
+> +static struct omap_hwmod_class omap44xx_usbhs_ohci_hwmod_class = {
+> +	.name = "usbhs_ohci",
+> +};
+> +
+> +static struct omap_hwmod_irq_info omap44xx_usbhs_ohci_irqs[] = {
+> +	{ .name = "ohci-irq", .irq = 76 + OMAP44XX_IRQ_GIC_START },
+> +	{ .irq = -1 }
+> +};
+> +
+> +static struct omap_hwmod_addr_space omap44xx_usbhs_ohci_addrs[] = {
+> +	{
+> +		.name		= "ohci",
+> +		.pa_start	= 0x4A064800,
+> +		.pa_end		= 0x4A064BFF,
 
-> What are the expected chances that sticking this in linux-next for a cycle will
-> result in most/all of the places being found before this all appears in an
-> official release?  I'm thinking this should probably go in linux-next right after
-> the next merge window closes, to maximize the chances we'll shake it
-> all out during almost 2 cycles before it hits the streets. (And yes, I know
-> it's a staging/ driver - if somebody else says "one cycle is more than enough"
-> I'm OK with that too...)
+Nit: Please use lower case for hexa value. This is applicable for the 
+whole patch.
 
-This hardware is old, and as far as I can tell quite rare. I'd hope we 
-can get some feedback from Henk on the series before applying this patch.
+> +		.flags		= ADDR_MAP_ON_INIT
+> +	},
+> +	{}
+> +};
+> +
+> +static struct omap_hwmod_ocp_if omap44xx_l4_cfg__usbhs_ohci = {
+> +	.master		=&omap44xx_l4_cfg_hwmod,
+> +	.slave		=&omap44xx_usbhs_ohci_hwmod,
+> +	.clk		= "l4_div_ck",
+> +	.addr		= omap44xx_usbhs_ohci_addrs,
+> +	.user		= OCP_USER_MPU | OCP_USER_SDMA,
+> +};
+> +
+> +static struct omap_hwmod_ocp_if *omap44xx_usbhs_ohci_slaves[] = {
+> +	&omap44xx_l4_cfg__usbhs_ohci,
+> +};
+> +
+> +static struct omap_hwmod_ocp_if *omap44xx_usbhs_ohci_masters[] = {
+> +	&omap44xx_usb_host_hs__l3_main_2,
+> +};
+> +
+> +static struct omap_hwmod omap44xx_usbhs_ohci_hwmod = {
+> +	.name		= "usbhs_ohci",
+> +	.class		=&omap44xx_usbhs_ohci_hwmod_class,
+> +	.clkdm_name	= "l3_init_clkdm",
+> +	.mpu_irqs	= omap44xx_usbhs_ohci_irqs,
+> +	.slaves		= omap44xx_usbhs_ohci_slaves,
+> +	.slaves_cnt	= ARRAY_SIZE(omap44xx_usbhs_ohci_slaves),
+> +	.masters	= omap44xx_usbhs_ohci_masters,
+> +	.masters_cnt	= ARRAY_SIZE(omap44xx_usbhs_ohci_masters),
+> +	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP4430),
+> +	.flags		= HWMOD_INIT_NO_RESET | HWMOD_NO_IDLEST,
+
+Same question about these flags. Why do you need these? Please add some 
+explanation.
+
+That comment is applicable for the remaining flags. These flags are 
+probably all needed for that kind of IP, but the least you should do is 
+to add some explanation.
 
 Thanks,
-
-Dave.
+Benoit
