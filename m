@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756546Ab1ISQKU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 12:10:20 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:45360 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756408Ab1ISQKS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 12:10:18 -0400
-Message-ID: <4E776937.1070108@parallels.com>
-Date: Mon, 19 Sep 2011 13:09:27 -0300
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: <linux-kernel@vger.kernel.org>, <xemul@parallels.com>,
-        <paul@paulmenage.org>, <lizf@cn.fujitsu.com>, <daniel.lezcano@free.fr>,
-        <mingo@elte.hu>, <jbottomley@parallels.com>
-Subject: Re: [PATCH 1/9] Remove parent field in cpuacct cgroup
-References: <1316030695-19826-1-git-send-email-glommer@parallels.com>  <1316030695-19826-2-git-send-email-glommer@parallels.com> <1316448186.1511.19.camel@twins>
-In-Reply-To: <1316448186.1511.19.camel@twins>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [187.106.51.14]
+	id S1756566Ab1ISQK6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 12:10:58 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:45237 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756506Ab1ISQK5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 12:10:57 -0400
+Subject: Re: [PATCH 2/9] Make cpuacct fields per cpu variables
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, xemul@parallels.com, paul@paulmenage.org,
+        lizf@cn.fujitsu.com, daniel.lezcano@free.fr, mingo@elte.hu,
+        jbottomley@parallels.com
+In-Reply-To: <1316030695-19826-3-git-send-email-glommer@parallels.com>
+References: <1316030695-19826-1-git-send-email-glommer@parallels.com>
+	 <1316030695-19826-3-git-send-email-glommer@parallels.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 19 Sep 2011 18:10:26 +0200
+Message-ID: <1316448626.1511.24.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 3.0.3- 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/19/2011 01:03 PM, Peter Zijlstra wrote:
-> On Wed, 2011-09-14 at 17:04 -0300, Glauber Costa wrote:
->> +       for (; ca; ca = parent_ca(ca)) {
->
-> It might be good to check that the loop condition and null condition in
-> the parent_ca() function get folded. Otherwise there's a double branch
-> in that loop.
->
-> Note that this function is one of the reasons I dislike cpuacct, it adds
-> a second cgroup hierarchy traversal to every context switch.
->
-Well, it is not that hard to optimize this.
+On Wed, 2011-09-14 at 17:04 -0300, Glauber Costa wrote:
+> @@ -9258,11 +9253,17 @@ static int cpuacct_stats_show(struct cgroup *cgrp, struct cftype *cft,
+>                 struct cgroup_map_cb *cb)
+>  {
+>         struct cpuacct *ca = cgroup_ca(cgrp);
+> -       int i;
+> +       int i, cpu;
+> +       u64 acc[CPUACCT_STAT_NSTATS] = { 0, };
+> +
+> +       for_each_present_cpu(cpu) {
+> +               u64 *vec = per_cpu_ptr(ca->cpustat, cpu);
+> +               for (i = 0; i < CPUACCT_STAT_NSTATS; i++)
+> +                       acc[i] += vec[i];
+> +       }
+>  
+>         for (i = 0; i < CPUACCT_STAT_NSTATS; i++) {
+> -               s64 val = percpu_counter_read(&ca->cpustat[i]);
+> -               val = cputime64_to_clock_t(val);
+> +               s64 val = cputime64_to_clock_t(acc[i]);
+>                 cb->fill(cb, cpuacct_stat_desc[i], val);
+>         }
+>         return 0; 
 
-Those values are always updated, but they don't really need to, unless 
-they are read.
+The changelog doesn't mention this function is a lot more expensive now.
 
-So what we can do, is introduce a marker in the cgroup, representing the 
-last read value. Parent is untouched. We then update parent when 1) 
-reading this value, 2) cgroup destroy, 3) cpu hotplug. (humm, and maybe 
-we don't even need to do it in cpu hotplug, since the per-cpu variables 
-will still be accessible... )
-
-How about it ?
+Someone might have daft software polling this frequently.. at least its
+still fully preemptible so its not much of a problem, but it is
+something to be aware of.
