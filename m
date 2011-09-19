@@ -1,38 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755201Ab1ISLke (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 07:40:34 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50668 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754664Ab1ISLkd (ORCPT
+	id S1755566Ab1ISLz3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 07:55:29 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:49867 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754919Ab1ISLz1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 07:40:33 -0400
-Date: Mon, 19 Sep 2011 12:40:32 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: =?iso-8859-1?Q?P=E9ter?= Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Samuel Ortiz <samuel.ortiz@intel.com>, Dmitry Torokhov <dtor@mail.ru>,
-        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, Misael Lopez Cruz <misael.lopez@ti.com>
-Subject: Re: Re: [PATCH 07/17] ASoC: twl6040: Lower the initial gains
-Message-ID: <20110919114031.GI23727@opensource.wolfsonmicro.com>
-References: <1316090379-30760-1-git-send-email-peter.ujfalusi@ti.com>
- <1316090379-30760-8-git-send-email-peter.ujfalusi@ti.com>
- <20110919110006.GH23727@opensource.wolfsonmicro.com>
- <2033664.fWQvF2IA53@barack>
+	Mon, 19 Sep 2011 07:55:27 -0400
+Date: Mon, 19 Sep 2011 13:55:20 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Cc: Li Yang <leoli@freescale.com>,
+        Pavankumar Kondeti <pkondeti@codeaurora.org>,
+        Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@suse.de>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Chen <peter.chen@freescale.com>,
+        Lin Tony-B19295 <B19295@freescale.com>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Subject: Re: [PATCHv4 00/19] First round in OTG rework
+Message-ID: <20110919115520.GX21769@pengutronix.de>
+References: <1315379772-8830-1-git-send-email-heikki.krogerus@linux.intel.com>
+ <20110912121255.GA2520@xps8300>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <2033664.fWQvF2IA53@barack>
-X-Cookie: You will soon forget this.
+In-Reply-To: <20110912121255.GA2520@xps8300>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 13:51:25 up 89 days, 17:38, 54 users,  load average: 1.06, 1.50,
+ 1.30
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 19, 2011 at 02:26:31PM +0300, Péter Ujfalusi wrote:
+Heikki,
 
-> Here in twl6040 we also have event handlers to do the ramp up/down on the 
-> gains. AFAIK some wm* codec have similar code.
+On Mon, Sep 12, 2011 at 03:12:55PM +0300, Heikki Krogerus wrote:
+> Hi guys,
+> 
+> On Wed, Sep 07, 2011 at 10:15:53AM +0300, Heikki Krogerus wrote:
+> > There were no comments in two weeks, so I'm dropping the RFC. 
+> > Otherwise this is the same as the previous, no changes.
+> > 
+> > Quick summary:
+> > This introduces struct usb_phy and struct usb_otg that
+> > replace struct otg_transceiver. The transceiver and phy
+> > members from struct otg_transceiver are left in struct
+> > usb_phy and otg specific members are moved to struct
+> > usb_otg.
+> > 
+> > So the idea is simply to separate USB PHY handling from OTG.
+> > 
+> > Heikki Krogerus (19):
+> >   usb: otg: Rename otg_transceiver to usb_phy
+> >   usb: otg: Rename usb_otg and usb_xceiv to usb_phy
+> >   usb: otg: Separate otg members from usb_phy
+> >   usb: otg: ab8500: Start using struct usb_otg
+> >   usb: otg: fsl: Start using struct usb_otg
+> >   usb: otg: gpio_vbus: Start using struct usb_otg
+> >   usb: otg: isp1301_omap: Start using struct usb_otg
+> >   usb: otg: msm: Start using struct usb_otg
+> >   usb: otg: langwell: Start using struct usb_otg
+> >   usb: otg: nop: Start using struct usb_otg
+> >   usb: otg: twl4030: Start using struct usb_otg
+> >   usb: otg: twl6030: Start using struct usb_otg
+> >   usb: otg: ulpi: Start using struct usb_otg
+> >   arm: imx: Start using struct usb_otg
+> >   usb: musb: Start using struct usb_otg
+> >   power_supply: Convert all users to new usb_phy
+> >   usb: Convert all users to new usb_phy
+> >   usb: otg: Remove OTG specific members from usb_phy
+> >   usb: otg: Convert all users to pass struct usb_otg for OTG functions
+> 
+> You guys are maintainers of the tranceiver/otg drivers. Can you test
+> these and ACK the patch for your driver if you feel there is nothing
+> wrong with these? I would much appreciate.
 
-WM8350.
+The following is needed to make i.MX compile and work. You renamed
+pdata->otg to pdata->xceiv in the driver, but not in the header file.
+Renaming it would also mean to rename it in the boards using this
+header, that's why I kept the name 'otg' for now instead of renaming
+it to 'xceiv' (or 'phy' which I like better).
+
+Sascha
+
+
+diff --git a/arch/arm/mach-imx/mx31moboard-devboard.c b/arch/arm/mach-imx/mx31moboard-devboard.c
+index cb792d0..f11d0ef 100644
+--- a/arch/arm/mach-imx/mx31moboard-devboard.c
++++ b/arch/arm/mach-imx/mx31moboard-devboard.c
+@@ -177,7 +177,7 @@ static int devboard_isp1105_init(struct usb_phy *otg)
+ }
+ 
+ 
+-static int devboard_isp1105_set_vbus(struct usb_phy *otg, bool on)
++static int devboard_isp1105_set_vbus(struct usb_otg *otg, bool on)
+ {
+ 	if (on)
+ 		gpio_set_value(USBH1_VBUSEN_B, 0);
+diff --git a/arch/arm/mach-imx/mx31moboard-marxbot.c b/arch/arm/mach-imx/mx31moboard-marxbot.c
+index f921e47..0eb1d12 100644
+--- a/arch/arm/mach-imx/mx31moboard-marxbot.c
++++ b/arch/arm/mach-imx/mx31moboard-marxbot.c
+@@ -291,7 +291,7 @@ static int marxbot_isp1105_init(struct usb_phy *otg)
+ }
+ 
+ 
+-static int marxbot_isp1105_set_vbus(struct usb_phy *otg, bool on)
++static int marxbot_isp1105_set_vbus(struct usb_otg *otg, bool on)
+ {
+ 	if (on)
+ 		gpio_set_value(USBH1_VBUSEN_B, 0);
+diff --git a/arch/arm/plat-mxc/include/mach/mxc_ehci.h b/arch/arm/plat-mxc/include/mach/mxc_ehci.h
+index 2c159dc..9ffd1bb 100644
+--- a/arch/arm/plat-mxc/include/mach/mxc_ehci.h
++++ b/arch/arm/plat-mxc/include/mach/mxc_ehci.h
+@@ -44,7 +44,7 @@ struct mxc_usbh_platform_data {
+ 	int (*exit)(struct platform_device *pdev);
+ 
+ 	unsigned int		 portsc;
+-	struct otg_transceiver	*otg;
++	struct usb_phy		*otg;
+ };
+ 
+ int mx51_initialize_usb_hw(int port, unsigned int flags);
+diff --git a/drivers/usb/host/ehci-mxc.c b/drivers/usb/host/ehci-mxc.c
+index 6e32147..cf8f192 100644
+--- a/drivers/usb/host/ehci-mxc.c
++++ b/drivers/usb/host/ehci-mxc.c
+@@ -218,15 +218,15 @@ static int ehci_mxc_drv_probe(struct platform_device *pdev)
+ 	msleep(10);
+ 
+ 	/* Initialize the transceiver */
+-	if (pdata->xceiv) {
+-		pdata->xceiv->io_priv = hcd->regs + ULPI_VIEWPORT_OFFSET;
+-		ret = usb_phy_init(pdata->xceiv);
++	if (pdata->otg) {
++		pdata->otg->io_priv = hcd->regs + ULPI_VIEWPORT_OFFSET;
++		ret = usb_phy_init(pdata->otg);
+ 		if (ret) {
+ 			dev_err(dev, "unable to init transceiver, probably missing\n");
+ 			ret = -ENODEV;
+ 			goto err_add;
+ 		}
+-		ret = otg_set_vbus(pdata->xceiv->otg, 1);
++		ret = otg_set_vbus(pdata->otg->otg, 1);
+ 		if (ret) {
+ 			dev_err(dev, "unable to enable vbus on transceiver\n");
+ 			goto err_add;
+@@ -240,17 +240,17 @@ static int ehci_mxc_drv_probe(struct platform_device *pdev)
+ 	if (ret)
+ 		goto err_add;
+ 
+-	if (pdata->xceiv) {
++	if (pdata->otg) {
+ 		/*
+ 		 * efikamx and efikasb have some hardware bug which is
+ 		 * preventing usb to work unless CHRGVBUS is set.
+ 		 * It's in violation of USB specs
+ 		 */
+ 		if (machine_is_mx51_efikamx() || machine_is_mx51_efikasb()) {
+-			flags = usb_phy_io_read(pdata->xceiv,
++			flags = usb_phy_io_read(pdata->otg,
+ 							ULPI_OTG_CTRL);
+ 			flags |= ULPI_OTG_CTRL_CHRGVBUS;
+-			ret = usb_phy_io_write(pdata->xceiv, flags,
++			ret = usb_phy_io_write(pdata->otg, flags,
+ 							ULPI_OTG_CTRL);
+ 			if (ret) {
+ 				dev_err(dev, "unable to set CHRVBUS\n");
+@@ -298,8 +298,8 @@ static int __exit ehci_mxc_drv_remove(struct platform_device *pdev)
+ 	if (pdata && pdata->exit)
+ 		pdata->exit(pdev);
+ 
+-	if (pdata->xceiv)
+-		usb_phy_shutdown(pdata->xceiv);
++	if (pdata->otg)
++		usb_phy_shutdown(pdata->otg);
+ 
+ 	usb_remove_hcd(hcd);
+ 	iounmap(hcd->regs);
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
