@@ -1,38 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755670Ab1ISRwM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 13:52:12 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:46380 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755320Ab1ISRwH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 13:52:07 -0400
-Date: Mon, 19 Sep 2011 19:52:03 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Chris Mason <chris.mason@oracle.com>
-Cc: Jeff liu <jeff.liu@oracle.com>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        Andi Kleen <ak@linux.intel.com>, Andreas Dilger <adilger@dilger.ca>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
-Subject: Re: [PATCH 1/7] BTRFS: Fix lseek return value for error
-Message-ID: <20110919175203.GK7761@one.firstfloor.org>
-References: <1316128013-21980-1-git-send-email-andi@firstfloor.org> <1316128013-21980-2-git-send-email-andi@firstfloor.org> <20110916154815.GA27150@infradead.org> <4E7439EB.7080100@oracle.com> <41C7FF67-8658-4E7F-BB50-E9AAEA1F755C@dilger.ca> <20110918014608.GA16198@alboin.amr.corp.intel.com> <4E759DE5.3020907@oracle.com> <4E75AEFD.105@gmail.com> <8444301C-856F-44FA-94A3-D3583DFA0FFB@oracle.com> <1316357705-sup-2667@shiny>
-Mime-Version: 1.0
+	id S1755934Ab1ISRwT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 13:52:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16951 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755708Ab1ISRwP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 13:52:15 -0400
+Date: Mon, 19 Sep 2011 19:51:59 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Lin Ming <mlin@ss.pku.edu.cn>
+Cc: fa.linux.kernel@googlegroups.com, slawomir.czarko@gmail.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Sattler <tsattler@gmx.de>, Johannes Weiner <jweiner@redhat.com>,
+        Mel Gorman <mgorman@suse.de>
+Subject: Re: iotop: khugepaged at 99.99% (2.6.38.3)
+Message-ID: <20110919175159.GL7800@redhat.com>
+References: <fa.FZDTDqnxL4JfQvyaCQTn405rzwM@ifi.uio.no>
+ <ee48c89a-1e72-4b35-b9fc-99f4b8ade483@glegroupsg2000goo.googlegroups.com>
+ <CAF1ivSY7rHuA_SGpnPkQ2hLwwOTEtDFTn=e_vx1=C_kW3aDjRA@mail.gmail.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1316357705-sup-2667@shiny>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <CAF1ivSY7rHuA_SGpnPkQ2hLwwOTEtDFTn=e_vx1=C_kW3aDjRA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Thanks everyone, I've put Jeff's last version of this in my queue.
+On Thu, Sep 15, 2011 at 02:43:32PM +0800, Lin Ming wrote:
+> # cat /proc/`pgrep khugepaged`/io
+> rchar: 0
+> wchar: 0
+> syscr: 0
+> syscw: 0
+> read_bytes: 0
+> write_bytes: 0
+> cancelled_write_bytes: 0
+> 
+> Andrea,
+> 
+> From above output, all fields are zero.
+> Does it mean that transparent huge page was not triggered/used at all?
 
-Can you post the version you merged? The previous ones all had issues.
+Good idea to check it like that, yes that should confirm no
+->writepage was called by khugepaged through
+compaction->migrate->writepage.
 
--Andi
+It may have been used for migration, but the compaction code run by
+khugepaged didn't trigger writes, or the write_bytes should have been
+> 0.
+
+With regard to Slawomir's problem, the kernel
+kernel-PAE-2.6.40.4-5.fc15.i686 includes Mel's fix for the compaction
+scan to stay in the right zone.
+
+Slawomir could you run the command "cat /proc/`pgrep khugepaged`/io"
+as root, so see if there's significant writeout going from khugepaged?
+If there is you can try the patch in the below link.
+
+https://lkml.org/lkml/2011/7/26/103
+
+But the fact it happens on top of VMplayer with a PAE guest, may also
+be a variable to take into account, migrate does quite some pagetable
+work. If VMplayer uses EPT/NTP (do you have EPT/NTP available as VT
+feature in the host /proc/cpuinfo?) it's hard to see how that could be
+related.
