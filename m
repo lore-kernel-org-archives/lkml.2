@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754519Ab1ISJbW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 05:31:22 -0400
-Received: from www17.your-server.de ([213.133.104.17]:43028 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753855Ab1ISJbV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 05:31:21 -0400
-References: <1316167604.6545.84.camel@localhost.localdomain> <20110916101903.GI2203@ZenIV.linux.org.uk> <1316169496.8502.6.camel@perseus.themaw.net> <1316332908.5814.22.camel@localhost.localdomain> <1316404368.3206.21.camel@perseus.themaw.net> <20110919061059.GJ2203@ZenIV.linux.org.uk>
-In-Reply-To: <20110919061059.GJ2203@ZenIV.linux.org.uk>
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-Message-Id: <CACCE520-D261-4B97-B208-1C44574886BF@m3y3r.de>
+	id S1754450Ab1ISJfk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 05:35:40 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:37300 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753272Ab1ISJfj convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@suse.com:6:1>);
+	Mon, 19 Sep 2011 05:35:39 -0400
+Message-Id: <4E7729040200007800056A2F@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Mon, 19 Sep 2011 10:35:32 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Cc: <jeremy.fitzhardinge@citrix.com>, <axboe@kernel.dk>, <stable@kernel.org>,
+        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] Re: [PATCH 3/3] xen-blkfront: If no barrier or
+	 flush is supported, use invalid operation.
+References: <1315593060-20031-1-git-send-email-konrad.wilk@oracle.com>
+ <1315593060-20031-3-git-send-email-konrad.wilk@oracle.com>
+ <4E6DD8750200007800055ADA@nat28.tlf.novell.com>
+ <20110916191514.GA31818@phenom.oracle.com>
+In-Reply-To: <20110916191514.GA31818@phenom.oracle.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dhowells@redhat.com
-From: Thomas Meyer <thomas@m3y3r.de>
-Subject: Re: [PATCH] Force same size of struct autofs_v5_packet on x86 and x86_64
-Date: Mon, 19 Sep 2011 11:30:42 +0200
-To: Al Viro <viro@ZenIV.linux.org.uk>, Ian Kent <raven@themaw.net>
-X-Mailer: Apple Mail (2.1084)
-X-Authenticated-Sender: thomas@m3y3r.de
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Am 19.09.2011 um 08:10 schrieb Al Viro:
-
-> On Mon, Sep 19, 2011 at 11:52:48AM +0800, Ian Kent wrote:
-> 
->>> btw. where are the padding bytes are added? how to tell gcc to display
->>> this?
+>>> On 16.09.11 at 21:15, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> On Mon, Sep 12, 2011 at 09:01:25AM +0100, Jan Beulich wrote:
+>> >>> On 09.09.11 at 20:31, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+>> > By default we would set the info->flush_op=0, and zero maps
+>> > to BLKIF_OP_READ request code. So if the backend did not support
+>> > either barrier ('feature-barrier') or flush ('feature-flush-cache')
+>> > we would end up using that opcode for the flush/barrier request, meaning
+>> > we actually do a READ request. Fortunatly for us, __generic_make_request
+>> > checks q->flush_flags and realizes that we don't do FLUSH and removes
+>> > the REQ_FLUSH | REQ_FUA so we never end up issuing a READ request
+>> > for a flush request. However, other third party implementations of
+>> > __make_request might not be so smart, so lets fix this up.
 >> 
->> It's also been a long time since I looked into this so I don't remember
->> the processor alignment details.
->> 
->> Not sure if there is a compiler option that would report this, sorry,
->> anyone else?
+>> Wouldn't it be better to simply have blkif_queue_request() fail in that
+>> case (and then it doesn't matter whether flush_op is set to 0 or -1)?
+>> Not the least because older (forward-port) backends stall the incoming
+>> queue and are possibly verbose for invalid requests seen.
 > 
-> Padding is added in the very end.  The thing is, it's not a misaligned
-> field per se; they all have a natural alignment in there.  It's that
-> __u64 ino has alignment 8 on amd64 and alignment 4 on i386.  So the alignment
-> requirements for the entire structure are different - on amd64 the address
-> of the entire thing must be a multiple of 8 and on i386 it can be any multiple
-> of 4.  IOW, on i386 you can just put them one after another in e.g. an array
-> (the size without any padding is 300 bytes) and on amd64 you need 4 bytes
-> of padding added between them.  I.e. sizeof needs to go up by 4, with the
-> padding added in the end.
+> So like this:
 
-okay. that's what I thought.
+Yes, this looks small and neat.
 
-@Ian: Is the read() from the pipe fd the only way to consume this structure from userspace?
+Acked-by: Jan Beulich <jbeulich@suse.com>
 
-if so: why not align the size of this structure for x86 and x86_64 to the same size?
+> diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+> index 468bfec..e9d301c 100644
+> --- a/drivers/block/xen-blkfront.c
+> +++ b/drivers/block/xen-blkfront.c
+> @@ -380,7 +380,9 @@ static void do_blkif_request(struct request_queue *rq)
+>  
+>  		blk_start_request(req);
+>  
+> -		if (req->cmd_type != REQ_TYPE_FS) {
+> +		if ((req->cmd_type != REQ_TYPE_FS) ||
+> +		    ((req->cmd_flags & (REQ_FLUSH | REQ_FUA)) &&
+> +		    !info->flush_op)) {
+>  			__blk_end_request_all(req, -EIO);
+>  			continue;
+>  		}
 
-the systemd compiled for x86_64 will probably work with this change, but does maybe report something like a short read or so, as it currently expects 304 bytes to read.
-i didn't test this yet.
 
-@al: what other autofs4 users are out there besides systemd?
 
-with kind regards
-thomas
