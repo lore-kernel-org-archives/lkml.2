@@ -1,108 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752722Ab1ISOWK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 10:22:10 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:65243 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752146Ab1ISOWI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 10:22:08 -0400
-Date: Mon, 19 Sep 2011 22:21:50 +0800
-From: Adam Lee <adam8157@gmail.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] allow make ARCH="the machine hardware name"
-Message-ID: <20110919142150.GA2111@adam-laptop>
+	id S1753134Ab1ISOWU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 10:22:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6608 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752098Ab1ISOWR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 10:22:17 -0400
+Date: Mon, 19 Sep 2011 11:21:53 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Zhao Jin <cronozhj@gmail.com>
+Cc: avi@redhat.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH] kvm, mmu: fix incorrect return of spte
+Message-ID: <20110919142153.GA6356@amt.cnet>
+References: <1316405991-14903-1-git-send-email-cronozhj@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="wRRV7LY7NUeQGEoC"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-PGP-Key-ID: D15CA3BE
+In-Reply-To: <1316405991-14903-1-git-send-email-cronozhj@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Sep 19, 2011 at 12:19:51PM +0800, Zhao Jin wrote:
+> __update_clear_spte_slow should return original spte while the
+> current code returns low half of original spte combined with high
+> half of new spte.
+> 
+> Signed-off-by: Zhao Jin <cronozhj@gmail.com>
+> ---
+>  arch/x86/kvm/mmu.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
 
---wRRV7LY7NUeQGEoC
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Applied, thanks.
 
-This patch add support for make ARCH="the machine hardware name"(`uname
--m).
-
-UTS_MACHINE is not always the same as SRCARCH, for example, s390x, we
-should set UTS_MACHINE=s390x, and SRCARCH=s390. This patch makes that
-right when "make ARCH=s390x".
-
-And it avoid some error during invocation of make when ARCH set as
-s390x, ppc64 or some machine hardware name else.
-
-Signed-off-by: Adam Lee <adam8157@gmail.com>
-
---wRRV7LY7NUeQGEoC
-Content-Type: text/x-diff; charset=us-ascii
-Content-Disposition: attachment; filename="allow-make-ARCH-the-machine-hardware-name.patch"
-
----
- Makefile |   41 ++++++++---------------------------------
- 1 files changed, 8 insertions(+), 33 deletions(-)
-
-diff --git a/Makefile b/Makefile
-index 522fa47..bcbfaba 100644
---- a/Makefile
-+++ b/Makefile
-@@ -197,44 +197,19 @@ CROSS_COMPILE	?= $(CONFIG_CROSS_COMPILE:"%"=%)
- 
- # Architecture as present in compile.h
- UTS_MACHINE 	:= $(ARCH)
--SRCARCH 	:= $(ARCH)
- 
--# Additional ARCH settings for x86
--ifeq ($(ARCH),i386)
--        SRCARCH := x86
--endif
--ifeq ($(ARCH),x86_64)
--        SRCARCH := x86
--endif
--
--# Additional ARCH settings for sparc
--ifeq ($(ARCH),sparc32)
--       SRCARCH := sparc
--endif
--ifeq ($(ARCH),sparc64)
--       SRCARCH := sparc
--endif
--
--# Additional ARCH settings for sh
--ifeq ($(ARCH),sh64)
--       SRCARCH := sh
--endif
--
--# Additional ARCH settings for tile
--ifeq ($(ARCH),tilepro)
--       SRCARCH := tile
--endif
--ifeq ($(ARCH),tilegx)
--       SRCARCH := tile
--endif
-+# Where arch specific source located
-+SRCARCH		:= $(shell echo $(ARCH) | \
-+			   sed -e s/i.86/x86/ -e s/x86_64/x86/ \
-+			   -e s/arm.*/arm/ -e s/sa110/arm/ \
-+			   -e s/m68k.*/m68k/ -e s/mips.*/mips/ \
-+			   -e s/parisc64/parisc/ -e s/ppc.*/powerpc/ \
-+			   -e s/s390x/s390/ -e s/sh.*/sh/ -e s/sun4u/sparc/ \
-+			   -e s/sparc.*/sparc/ -e s/tile.*/tile/ )
- 
- # Where to locate arch specific headers
- hdr-arch  := $(SRCARCH)
- 
--ifeq ($(ARCH),m68knommu)
--       hdr-arch  := m68k
--endif
--
- KCONFIG_CONFIG	?= .config
- export KCONFIG_CONFIG
- 
-
---wRRV7LY7NUeQGEoC--
