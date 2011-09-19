@@ -1,173 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753896Ab1ISOvp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 10:51:45 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:47280 "EHLO relay.sw.ru"
+	id S1754662Ab1ISO7T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 10:59:19 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:51030 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751114Ab1ISOvo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 10:51:44 -0400
-Message-ID: <4E7756F3.4080601@parallels.com>
-Date: Mon, 19 Sep 2011 18:51:31 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Lightning/1.0b2 Thunderbird/3.1.13
+	id S1752570Ab1ISO7S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 10:59:18 -0400
+X-Greylist: delayed 1001 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 Sep 2011 10:59:18 EDT
+Message-ID: <4E7754DA.30108@imgtec.com>
+Date: Mon, 19 Sep 2011 15:42:34 +0100
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.10
 MIME-Version: 1.0
-To: Jeff Layton <jlayton@redhat.com>
-CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "davem@davemloft.net" <davem@davemloft.net>
-Subject: Re: [PATCH v3 04/11] SUNRPC: parametrize svc creation calls with
- portmapper flag
-References: <20110913180953.3961.69217.stgit@localhost6.localdomain6>	<20110913181351.3961.70207.stgit@localhost6.localdomain6> <20110919100811.0eaa39fe@tlielax.poochiereds.net>
-In-Reply-To: <20110919100811.0eaa39fe@tlielax.poochiereds.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [RFC PATCH] hidraw: protect hidraw_disconnect() better
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 19 Sep 2011 14:42:35.0325 (UTC) FILETIME=[5EDAD6D0:01CC76DA]
+X-SEF-Processed: 7_3_0_01158__2011_09_19_15_42_36
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-19.09.2011 18:08, Jeff Layton пишет:
-> On Tue, 13 Sep 2011 22:13:51 +0400
-> Stanislav Kinsbursky<skinsbursky@parallels.com>  wrote:
->
->> This new flag ("setup_rpcbind) will be used to detect, that new service will
->> send portmapper register calls. For such services we will create rpcbind
->> clients and remove all stale portmap registrations.
->> Also, svc_rpcb_cleanup() will be set as sv_shutdown callback for such services
->> in case of this field wasn't initialized earlier. This will allow to destroy
->> rpcbind clients when no other users of them left.
->>
->> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
->>
->> ---
->>   include/linux/sunrpc/svc.h |    2 ++
->>   net/sunrpc/svc.c           |   21 ++++++++++++++-------
->>   2 files changed, 16 insertions(+), 7 deletions(-)
->>
->> diff --git a/include/linux/sunrpc/svc.h b/include/linux/sunrpc/svc.h
->> index 223588a..528952a 100644
->> --- a/include/linux/sunrpc/svc.h
->> +++ b/include/linux/sunrpc/svc.h
->> @@ -402,11 +402,13 @@ struct svc_procedure {
->>    * Function prototypes.
->>    */
->>   struct svc_serv *svc_create(struct svc_program *, unsigned int,
->> +			    int setup_rpcbind,
-> 				^^^
-> 			Instead of adding this parameter, why not
-> 			base this on the vs_hidden flag in the
-> 			svc_version? IOW, have a function that looks at
-> 			all the svc_versions for a particular
-> 			svc_program, and returns "true" if any of them
-> 			have vs_hidden unset? The mechanism you're
-> 			proposing here has the potential to be out of
-> 			sync with the vs_hidden flag.
->
+The following patch I think fixes a bug in hidraw_disconnect(). However I'm unsure whether it's safe to call device_destroy with the minors_lock held. can the device_destroy ever end up calling hidraw_release, resulting in recursive locking? I've never seen that happen, but I don't understand the inner workings on device_destroy.
 
-Could you, please, clarify me this vs_hidden flag?
-I understand, that it's used to avoid portmap registration.
-But as I see, it's set only for nfs_callback_version1. But this svc_version is a 
-part of nfs4_callback_program with nfs_callback_version4, which is not hidden.
-Does this flag is missed here? If not, how we can return "true" from your 
-proposed function if any of them have vs_hidden unset?
+The bug can be revealed with SLAB debugging on (poisoning free'd memory), and:
+cat /dev/hw_random > /dev/hidraw0
+then unplug the device. the disconnect is called, the device_destroy seems to cause "cat"'s write syscall to return a timeout error, so it exits/closes, which frees the hidraw because hidraw->exists==0, then the disconnect function writes to hidraw_table[hidraw->minor] which blows up because hidraw->minor has been poisoned with 0x6b6b6b6b.
 
-Also sockets for this program are created with SVC_SOCK_ANONYMOUS flag and we 
-will not register any of this program versions with portmapper.
-Thus, from my pow, this vs_hidden flag affects only svc_unregister. And only 
-nfs_callback_version1. This looks really strange.
+This has been tested on 2.6.39 and appears to fix it, and I'll hopefully be able to test it on the latest kernel tonight.
 
-I.e. if we use this flag only for passing through this versions during 
-svc_(un)register, and we actually also want to pass through 
-nfs_callback_version4 as well (but just missed this vs_hidden flag for it), then 
-with current patch-set we can move this flag from (vs_hidden) svc_version to 
-svc_program and check it during svc_create instead of my home-brew 
-"setup_rpcbind" variable.
+Cheers
+James
 
-> 			Also, if you're adding an argument to a
-> 			function like this, you you really ought to
-> 			change the callers in the same patch. Otherwise
-> 			you'll cause a build break if someone tries to
-> 			bisect and ends up between the patch that
-> 			changes the function and the one that changes
-> 			the callers.
->
->>   			void (*shutdown)(struct svc_serv *));
->>   struct svc_rqst *svc_prepare_thread(struct svc_serv *serv,
->>   					struct svc_pool *pool);
->>   void		   svc_exit_thread(struct svc_rqst *);
->>   struct svc_serv *  svc_create_pooled(struct svc_program *, unsigned int,
->> +			int setup_rpcbind,
->>   			void (*shutdown)(struct svc_serv *),
->>   			svc_thread_fn, struct module *);
->>   int		   svc_set_num_threads(struct svc_serv *, struct svc_pool *, int);
->> diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
->> index f31e5cc..03231d5 100644
->> --- a/net/sunrpc/svc.c
->> +++ b/net/sunrpc/svc.c
->> @@ -378,7 +378,7 @@ static void svc_rpcb_cleanup(struct svc_serv *serv)
->>    */
->>   static struct svc_serv *
->>   __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
->> -	     void (*shutdown)(struct svc_serv *serv))
->> +	     int setup_rpcbind, void (*shutdown)(struct svc_serv *serv))
->>   {
->>   	struct svc_serv	*serv;
->>   	unsigned int vers;
->> @@ -437,29 +437,36 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
->>   		spin_lock_init(&pool->sp_lock);
->>   	}
->>
->> -	/* Remove any stale portmap registrations */
->> -	svc_unregister(serv);
->> +	if (setup_rpcbind) {
->> +	       	if (svc_rpcb_setup(serv)<  0) {
->> +			kfree(serv->sv_pools);
->> +			kfree(serv);
->> +			return NULL;
->> +		}
->> +		if (!serv->sv_shutdown)
->> +			serv->sv_shutdown = svc_rpcb_cleanup;
->> +	}
->>
->>   	return serv;
->>   }
->>
->>   struct svc_serv *
->>   svc_create(struct svc_program *prog, unsigned int bufsize,
->> -	   void (*shutdown)(struct svc_serv *serv))
->> +	   int setup_rpcbind, void (*shutdown)(struct svc_serv *serv))
->>   {
->> -	return __svc_create(prog, bufsize, /*npools*/1, shutdown);
->> +	return __svc_create(prog, bufsize, /*npools*/1, setup_rpcbind, shutdown);
->>   }
->>   EXPORT_SYMBOL_GPL(svc_create);
->>
->>   struct svc_serv *
->>   svc_create_pooled(struct svc_program *prog, unsigned int bufsize,
->> -		  void (*shutdown)(struct svc_serv *serv),
->> +		  int setup_rpcbind, void (*shutdown)(struct svc_serv *serv),
->>   		  svc_thread_fn func, struct module *mod)
->>   {
->>   	struct svc_serv *serv;
->>   	unsigned int npools = svc_pool_map_get();
->>
->> -	serv = __svc_create(prog, bufsize, npools, shutdown);
->> +	serv = __svc_create(prog, bufsize, npools, setup_rpcbind, shutdown);
->>
->>   	if (serv != NULL) {
->>   		serv->sv_function = func;
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
->
+The function hidraw_disconnect() only acquires the hidraw minors_lock
+when clearing the entry in hidraw_table. However the device_destroy()
+call can cause a userland read/write to return with an error. It may
+cause the program to release the file descripter before the disconnect
+is finished. hidraw_disconnect() has already set hidraw->exist to 0,
+which makes hidraw_release() kfree the hidraw structure, which
+hidraw_disconnect() continues to access and even tries to kfree again.
+Similarly if a hidraw_release() occurs after setting hidraw->exist to 0,
+the same thing can happen.
 
+This is fixed by expanding the mutex critical section to cover the whole
+function from setting hidraw->exist to 0 to freeing the hidraw
+structure, preventing a hidraw_release() from interfering.
 
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+---
+ drivers/hid/hidraw.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/hid/hidraw.c b/drivers/hid/hidraw.c
+index c79578b..a8c2b7b 100644
+--- a/drivers/hid/hidraw.c
++++ b/drivers/hid/hidraw.c
+@@ -510,13 +510,12 @@ void hidraw_disconnect(struct hid_device *hid)
+ {
+ 	struct hidraw *hidraw = hid->hidraw;
+ 
++	mutex_lock(&minors_lock);
+ 	hidraw->exist = 0;
+ 
+ 	device_destroy(hidraw_class, MKDEV(hidraw_major, hidraw->minor));
+ 
+-	mutex_lock(&minors_lock);
+ 	hidraw_table[hidraw->minor] = NULL;
+-	mutex_unlock(&minors_lock);
+ 
+ 	if (hidraw->open) {
+ 		hid_hw_close(hid);
+@@ -524,6 +523,7 @@ void hidraw_disconnect(struct hid_device *hid)
+ 	} else {
+ 		kfree(hidraw);
+ 	}
++	mutex_unlock(&minors_lock);
+ }
+ EXPORT_SYMBOL_GPL(hidraw_disconnect);
+ 
 -- 
-Best regards,
-Stanislav Kinsbursky
+1.7.2.3
+
+
