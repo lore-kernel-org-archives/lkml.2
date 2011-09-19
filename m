@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756828Ab1ISWzg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 18:55:36 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:47474 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756734Ab1ISWzf (ORCPT
+	id S932439Ab1ISXDp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 19:03:45 -0400
+Received: from mail131.messagelabs.com ([216.82.242.99]:32016 "EHLO
+	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751053Ab1ISXDo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 18:55:35 -0400
-Content-Type: text/plain; charset=UTF-8
-From: Chris Mason <chris.mason@oracle.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Jeff liu <jeff.liu@oracle.com>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        Andi Kleen <ak@linux.intel.com>, Andreas Dilger <adilger@dilger.ca>,
-        Christoph Hellwig <hch@infradead.org>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
-Subject: Re: [PATCH 1/7] BTRFS: Fix lseek return value for error
-In-reply-to: <20110919195952.GL7761@one.firstfloor.org>
-References: <20110916154815.GA27150@infradead.org> <4E7439EB.7080100@oracle.com> <41C7FF67-8658-4E7F-BB50-E9AAEA1F755C@dilger.ca> <20110918014608.GA16198@alboin.amr.corp.intel.com> <4E759DE5.3020907@oracle.com> <4E75AEFD.105@gmail.com> <8444301C-856F-44FA-94A3-D3583DFA0FFB@oracle.com> <1316357705-sup-2667@shiny> <20110919175203.GK7761@one.firstfloor.org> <1316460509-sup-1132@shiny> <20110919195952.GL7761@one.firstfloor.org>
-Date: Mon, 19 Sep 2011 18:55:13 -0400
-Message-Id: <1316472864-sup-500@shiny>
-User-Agent: Sup/git
-Content-Transfer-Encoding: 8bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4E77C85C.01A8:SCFMA922111,ss=1,re=-4.000,fgs=0
+	Mon, 19 Sep 2011 19:03:44 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-15.tower-131.messagelabs.com!1316473415!1375690!8
+X-Originating-IP: [216.166.12.178]
+X-StarScan-Version: 6.3.6; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86: use the same node_distance for 32 and 64-bit
+Date: Mon, 19 Sep 2011 16:03:14 -0700
+User-Agent: KMail/1.9.9
+CC: <x86@kernel.org>, <tglx@linutronix.de>, <mingo@redhat.com>,
+        <hpa@zytor.com>, <tj@kernel.org>, <yinghai@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201109191603.15560.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Excerpts from Andi Kleen's message of 2011-09-19 15:59:52 -0400:
-> On Mon, Sep 19, 2011 at 03:30:02PM -0400, Chris Mason wrote:
-> > Excerpts from Andi Kleen's message of 2011-09-19 13:52:03 -0400:
-> > > > Thanks everyone, I've put Jeff's last version of this in my queue.
-> > > 
-> > > Can you post the version you merged? The previous ones all had issues.
-> > 
-> > https://github.com/chrismason/linux/commit/48802c8ae2a9d618ec734a61283d645ad527e06c
-> > 
-> > This was the last one sent, I thought it combined all the fixes.
-> 
-> Ok looks good, but it will be all obsolete once my patchkit lseek
-> get in (except for the SEEK_DATA/HOLE hunk)
+The node_distance function is not x86 64-bit specific.  Having the #ifdef
+around the extern function declaration and the #define causes the default
+node_distance macro to be used in asm-generic/topology.h. This also causes
+a sparse warning in arch/x86/mm/numa.c when CONFIG_X86_64 is not set:
 
-Yeah, it's similar to yours except for the hole hunk.  Your gotos are
-fine by me, whatever makes your patch cleaner.
+warning: symbol '__node_distance' was not declared. Should it be static?
 
--chris
+Remove the #ifdef to fix both issues.
+
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+
+---
+
+diff --git a/arch/x86/include/asm/topology.h b/arch/x86/include/asm/topology.h
+index c006924..800f77c 100644
+--- a/arch/x86/include/asm/topology.h
++++ b/arch/x86/include/asm/topology.h
+@@ -130,10 +130,8 @@ extern void setup_node_to_cpumask_map(void);
+ 	.balance_interval	= 1,					\
+ }
+ 
+-#ifdef CONFIG_X86_64
+ extern int __node_distance(int, int);
+ #define node_distance(a, b) __node_distance(a, b)
+-#endif
+ 
+ #else /* !CONFIG_NUMA */
+ 
