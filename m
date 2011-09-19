@@ -1,40 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756676Ab1ISQUN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 12:20:13 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44188 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756381Ab1ISQUL (ORCPT
+	id S1756701Ab1ISQUW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 12:20:22 -0400
+Received: from casper.infradead.org ([85.118.1.10]:40181 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756445Ab1ISQUS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 12:20:11 -0400
-Date: Mon, 19 Sep 2011 17:20:09 +0100
-From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Lars-Peter Clausen <lars@metafoo.de>, linux-kernel@vger.kernel.org,
-        Liam Girdwood <lrg@ti.com>, Graeme Gregory <gg@slimlogic.co.uk>,
-        Samuel Oritz <sameo@linux.intel.com>
-Subject: Re: [PATCH 6/6 v5] regmap: Incorporate the regcache core into
-	regmap
-Message-ID: <20110919162009.GA12324@opensource.wolfsonmicro.com>
-References: <1316439245-26221-1-git-send-email-dp@opensource.wolfsonmicro.com> <1316439245-26221-7-git-send-email-dp@opensource.wolfsonmicro.com> <4E77667D.8030404@metafoo.de> <20110919161358.GA540@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110919161358.GA540@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	Mon, 19 Sep 2011 12:20:18 -0400
+Subject: Re: [PATCH 3/9] Include nice values in cpuacct
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, xemul@parallels.com, paul@paulmenage.org,
+        lizf@cn.fujitsu.com, daniel.lezcano@free.fr, mingo@elte.hu,
+        jbottomley@parallels.com
+Date: Mon, 19 Sep 2011 18:19:57 +0200
+In-Reply-To: <1316030695-19826-4-git-send-email-glommer@parallels.com>
+References: <1316030695-19826-1-git-send-email-glommer@parallels.com>
+	 <1316030695-19826-4-git-send-email-glommer@parallels.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1316449197.6091.6.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 19, 2011 at 05:13:59PM +0100, Mark Brown wrote:
-> On Mon, Sep 19, 2011 at 05:57:49PM +0200, Lars-Peter Clausen wrote:
-> > Btw. what should happen if both cache_bypass and cache_only are set? Or is that
-> > an invalid configuration?
-> 
-> That's not sensible.  Probably BUG_ON().
+On Wed, 2011-09-14 at 17:04 -0300, Glauber Costa wrote:
+> Besides user and system.
 
-Yes this used to be a BUG_ON() on some of the previous versions of the
-patches.
 
-Thanks,
-Dimitris
+Why!? 
