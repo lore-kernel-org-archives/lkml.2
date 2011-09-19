@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932439Ab1ISVU6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 17:20:58 -0400
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:33231 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932259Ab1ISVUz (ORCPT
+	id S932372Ab1ISVZR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 17:25:17 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:39374 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932097Ab1ISVZQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 17:20:55 -0400
-Message-ID: <4E77B235.30403@xenotime.net>
-Date: Mon, 19 Sep 2011 14:20:53 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
+	Mon, 19 Sep 2011 17:25:16 -0400
+Date: Mon, 19 Sep 2011 22:25:02 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 1/2] ARM: debug: Add CLSP711X_UART1 config choice
+Message-ID: <20110919212502.GB23613@e102144-lin.cambridge.arm.com>
+References: <20110916114140.GA31334@e102144-lin.cambridge.arm.com>
+ <1316455300-5752-1-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Sedat Dilek <sedat.dilek@googlemail.com>, linux-edac@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: Re: linux-next: Tree for Sept 19 (i7core_edac)
-References: <20110919190117.f5d02ff24b9ab7dc17035d75@canb.auug.org.au>
-In-Reply-To: <20110919190117.f5d02ff24b9ab7dc17035d75@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1316455300-5752-1-git-send-email-sboyd@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/19/2011 02:01 AM, Stephen Rothwell wrote:
-> Hi all,
+Hi Stephen,
+
+On Mon, Sep 19, 2011 at 07:01:39PM +0100, Stephen Boyd wrote:
+> ARM patch 7072/1 (debug: use kconfig choice for selecting
+> DEBUG_LL UART) only allowed CLSP711X_UART2 to be selected because
+> there is no NONE option in a choice menu. Add a UART1 choice so
+> that users can still choose UART1 explicitly.
 > 
-> The linux-next tree is now available from
-> git://github.com/sfrothwell/linux-next.git as a temporary measure while
-> the kernel.org servers are unavailable.
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
 > 
-> The powerpc allyesconfig build still fails today.
+> On 09/16/11 04:41, Will Deacon wrote:
+> > Ah yes. This will need to be added as part of the platform updates to go via
+> > Arnd. It should be easy enough just to have a DEBUG_CLPS711X_UART1 option,
+> > for example, and the platform code will fall back to the first UART.
 > 
-> Changes since 20110916:
+> I couldn't find these patches applied in Arnd's tree so I based it off of
+> Russell's for-next branch.
 
-i7core_edac.c build still fails on i386:
+Thanks for cooking the patch, it was somewhere on my list of things to do
+this week! I think we also need to fix the DEBUG_DC21285_PORT option as that
+has a similar `if not selected then use a different UART' behaviour. It can be
+fixed in the same way as you have done in this patch.
 
-ERROR: "__udivdi3" [drivers/edac/i7core_edac.ko] undefined!
+Would you like me to take the three patches in with the ones I currently
+have for other platforms (Realview, Samsung, imx) or would you prefer to
+handle these separately? I was planning to send all of the platform bits to
+Arnd once I've got my branches sorted out (been on holiday for the past two
+weeks).
 
-[Untested/buggy ;] Fix was posted by Sedat Dilek here:
-http://marc.info/?l=linux-next&m=131436817426589&w=2
+Cheers,
 
-on Aug. 26.  Just remove the last ')' in 2 places:
-
-+			cache_line_size * 1000000);
-and
-+		1000000 * cache_line_size);
-
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Will
