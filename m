@@ -1,36 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756737Ab1ISBpu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 21:45:50 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:32795 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752301Ab1ISBpt (ORCPT
+	id S1753534Ab1ISCN7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 22:13:59 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:33936 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751757Ab1ISCN6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 21:45:49 -0400
-Date: Sun, 18 Sep 2011 21:45:40 -0400 (EDT)
-Message-Id: <20110918.214540.33131923686632079.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-Cc: eric.dumazet@gmail.com, markus@trippelsdorf.de, akpm@linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CA+55aFzHOUaub9WJ7L_LGEGGkKdW-h3eV0MaUsCjdmUBKDGe_w@mail.gmail.com>
-References: <CA+55aFwmwYXzC_4q+XuEAx3ta6U-jf=NvMcAc-J+4DBxLm8Efg@mail.gmail.com>
-	<1316378130.31335.32.camel@edumazet-laptop>
-	<CA+55aFzHOUaub9WJ7L_LGEGGkKdW-h3eV0MaUsCjdmUBKDGe_w@mail.gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+	Sun, 18 Sep 2011 22:13:58 -0400
+Subject: [GIT PULL] target: Bugfixes for v3.1-rc7
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 18 Sep 2011 19:13:50 -0700
+Message-ID: <1316398430.3622.7.camel@haakon2.linux-iscsi.org>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 18 Sep 2011 18:45:44 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 18 Sep 2011 18:26:33 -0700
+Hi Linus,
 
-> Stop with the "this might just work" crap. Because -rc7 is just too
-> late to dick around like that.
+The following patch series are the pending -rc7 fixes for mainline.  At
+this point we are still tracking down two other outstanding v3.1
+regressions reported by Roland and Martin, but I don't want these
+outstanding issues to hold up the fixes currently in the mainline queue.
 
-I'll sort this out.
+This series includes:
+
+*) A bugfix from Christoph to use a work queue to address breakage in the
+   current tcm_fc(fcoe) I/O path
+*) A bugfix from Kiran to fix tcm_fc(fcoe) DDP offload error conditions
+*) A bugfix from Roland to address list corruption in target core handling of
+   QUEUE_FULL status.
+*) A change to use only hex characters in the binary conversion of
+   vpd_unit_serial for EVPD=0x83 NAA IEEE Registered Extended in target core
+   to address a bug with internal hex2bin() usage, and finally,
+*) A change to explictly disable iSCSI marker parameter key usage in order to
+   remove a potentially dangerous local scope array allocation with markers
+   enabled in the main iscsi-target I/O path.
+*) A bugfix to address iscsi-target sendpage breakage with Padding + DataDigests
+   iovec offsets after the v3.1 struct se_mem -> struct scatterlist conversion.
+
+Please go ahead and pull from the following -rc6 based tree:
+
+   git://linux-iscsi.org/target-pending.git 3.1-rc-fixes
+
+Thanks,
+
+--nab
+
+Christoph Hellwig (1):
+  tcm_fc: Work queue based approach instead of managing own thread and
+    event based mechanism
+
+Kiran Patil (1):
+  tcm_fc: Invalidation of DDP context for FCoE target in error
+    conditions
+
+Nicholas Bellinger (3):
+  target: Skip non hex characters for VPD=0x83 NAA IEEE Registered
+    Extended
+  iscsi-target: Disable markers + remove dangerous local scope array
+    usage
+  iscsi-target: Fix sendpage breakage with proper padding+DataDigest
+    iovec offsets
+
+Roland Dreier (1):
+  target: Fix race between multiple invocations of target_qf_do_work()
+
+ drivers/target/iscsi/iscsi_target_parameters.c |    2 +-
+ drivers/target/iscsi/iscsi_target_util.c       |  270 ++----------------------
+ drivers/target/target_core_cdb.c               |   35 +++-
+ drivers/target/target_core_transport.c         |    9 +-
+ drivers/target/tcm_fc/tcm_fc.h                 |   12 +-
+ drivers/target/tcm_fc/tfc_cmd.c                |   90 +-------
+ drivers/target/tcm_fc/tfc_conf.c               |    7 +-
+ drivers/target/tcm_fc/tfc_io.c                 |   62 +++---
+ 8 files changed, 105 insertions(+), 382 deletions(-)
+
