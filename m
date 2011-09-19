@@ -1,57 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756440Ab1ISDfo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 23:35:44 -0400
-Received: from ozlabs.org ([203.10.76.45]:43278 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754017Ab1ISDfm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 23:35:42 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Anthony Liguori <aliguori@us.ibm.com>, Pawel Moll <pawel.moll@arm.com>
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        linux-arm-kernel@lists.infradead.org,
-        "Michael S.Tsirkin" <mst@redhat.com>
-Subject: Re: [RFC v3] arm: Add platform bus driver for memory mapped virtio device
-In-Reply-To: <4E7380FD.1030200@us.ibm.com>
-References: <1316191623-3835-1-git-send-email-pawel.moll@arm.com> <4E7380FD.1030200@us.ibm.com>
-User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
-Date: Mon, 19 Sep 2011 12:59:33 +0930
-Message-ID: <874o09ryzm.fsf@rustcorp.com.au>
+	id S1756096Ab1ISDv4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 23:51:56 -0400
+Received: from mail-qw0-f42.google.com ([209.85.216.42]:60573 "EHLO
+	mail-qw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753610Ab1ISDvz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Sep 2011 23:51:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <1316002218-3408-1-git-send-email-per.forlin@linaro.org>
+References: <1316002218-3408-1-git-send-email-per.forlin@linaro.org>
+Date: Mon, 19 Sep 2011 12:51:54 +0900
+Message-ID: <CAC5umyiTrU-6VoaMnsFFqyW7_bJToViOdWbwC04PM9LUSxQkRw@mail.gmail.com>
+Subject: Re: [PATCH v3 0/3] mmc: rectify boot param option for fault injection
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: Per Forlin <per.forlin@linaro.org>
+Cc: linaro-dev@lists.linaro.org, Linus Walleij <linus.walleij@linaro.org>,
+        linux-mmc@vger.kernel.org, Chris Ball <cjb@laptop.org>,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Sep 2011 12:01:49 -0500, Anthony Liguori <aliguori@us.ibm.com> wrote:
-> On 09/16/2011 11:47 AM, Pawel Moll wrote:
-> > This patch, based on virtio PCI driver, adds support for memory
-> > mapped (platform) virtio  device. This should allow environments
-> > like qemu to use virtio-based block&  network devices.
-> >
-> > One can define and register a platform device which resources
-> > will describe memory mapped control registers and "mailbox"
-> > interrupt. Such device can be also instantiated using the Device
-> > Tree node with compatible property equal "virtio,mmio".
-> >
-> > Cc: Rusty Russell<rusty@rustcorp.com.au>
-> > Cc: Anthony Liguori<aliguori@us.ibm.com>
-> > Cc: Michael S.Tsirkin<mst@redhat.com>
-> > Signed-off-by: Pawel Moll<pawel.moll@arm.com>
-> 
-> Have you written a specification for this device?
-> 
-> Rusty maintains a formal spec for all virtio devices at:
-> 
-> http://ozlabs.org/~rusty/virtio-spec/
-> 
-> The spec should be written before merging the code to make sure that there 
-> aren't future compatibility problems.
+2011/9/14 Per Forlin <per.forlin@linaro.org>:
+> Akinobu Mita reported that the boot option for mmc fault injection is never
+> compiled in due to a fauly "ifdef KERNEL" that is never set.
+> A correct ifdef would be "ifndef MODULE". This patch set adds a
+> module_param_cb() and thereby no ifndef MODULE is needed.
+> Using a module_param makes it possible to pass default fault attributes for
+> external modules too.
 
-A good idea, but the current spec is for PCI.  I wonder if we should
-move the PCI part out to an appendix and make it more general?
+All patches look good to me.
 
-Meanwhile, perhaps this would be suitable as an appendix.
-
-Cheers,
-Rusty.
+Reviewed-by: Akinobu Mita <akinobu.mita@gmail.com>
