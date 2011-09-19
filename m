@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756685Ab1ISDKb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 23:10:31 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:48458 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753948Ab1ISDKa (ORCPT
+	id S1756679Ab1ISDOD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 23:14:03 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:35817 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753813Ab1ISDOC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 23:10:30 -0400
-MIME-Version: 1.0
-Date: Mon, 19 Sep 2011 12:10:28 +0900
-Message-ID: <CAKYAXd8xd3sCi0CCOH6Y3AR2J2iuDQispCnt0D2mksiAWr=rgw@mail.gmail.com>
-Subject: RFC : mmc : boot partition is set as a read-write.
-From: NamJae Jeon <linkinjeon@gmail.com>
-To: Chris Ball <cjb@laptop.org>, Linus Walleij <linus.ml.walleij@gmail.com>,
-        linux-mmc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Sun, 18 Sep 2011 23:14:02 -0400
+Date: Sun, 18 Sep 2011 23:13:58 -0400 (EDT)
+Message-Id: <20110918.231358.1701611368789467684.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 18 Sep 2011 20:14:00 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mmc : boot partition is set as a read-write.
 
-There is a case that user directly update boot partition through mmcblk0boot0,1.
-However, the current boot partition is set as a read-only.
-I suggest that boot partition is set as a read-write if there is no
-reason that it should be read-only.
+I fixed up Eric's build fix and also there is a fix for a
+reversed test in TCP's DSACK validation from Zheng Yan.
 
-static int mmc_blk_alloc_parts(struct mmc_card *card, struct mmc_blk_data *md)
-{
-	int ret = 0;
+Please pull, thanks a lot!
 
-	if (!mmc_card_mmc(card))
-		return 0;
+The following changes since commit b0e7031ac08fa0aa242531c8d9a0cf9ae8ee276d:
 
-	if (card->ext_csd.boot_size) {
-		ret = mmc_blk_alloc_part(card, md, EXT_CSD_PART_CONFIG_ACC_BOOT0,
-					 card->ext_csd.boot_size >> 9,
-					 false,
-					 "boot0");
-		if (ret)
-			return ret;
-		ret = mmc_blk_alloc_part(card, md, EXT_CSD_PART_CONFIG_ACC_BOOT1,
-					 card->ext_csd.boot_size >> 9,
-					 false,
-					 "boot1");
-		if (ret)
-			return ret;
-	}
-}
+  Merge git://github.com/davem330/net (2011-09-18 11:02:26 -0700)
 
-Thanks.
+are available in the git repository at:
+
+  git://github.com/davem330/net.git master
+
+Eric Dumazet (1):
+      tcp: fix build error if !CONFIG_SYN_COOKIES
+
+Zheng Yan (1):
+      tcp: fix validation of D-SACK
+
+ include/net/tcp.h    |   19 ++++++++++++++++++-
+ net/ipv4/tcp_input.c |    2 +-
+ 2 files changed, 19 insertions(+), 2 deletions(-)
