@@ -1,72 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756553Ab1ISSoN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 14:44:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11381 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755834Ab1ISSoL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 14:44:11 -0400
-Message-ID: <4E778D77.4070207@redhat.com>
-Date: Mon, 19 Sep 2011 12:44:07 -0600
-From: Eric Blake <eblake@redhat.com>
-Organization: Red Hat
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110906 Fedora/3.1.14-1.fc14 Lightning/1.0b3pre Mnenhy/0.8.3 Thunderbird/3.1.14
-MIME-Version: 1.0
-To: Sunil Mushran <sunil.mushran@oracle.com>
-CC: mtk.manpages@gmail.com, Josef Bacik <josef@redhat.com>,
-        linux-man@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Man page doc for SEEK_DATA/SEEK_HOLE
-References: <CAKgNAkhZSb0UfZz7N+gKRQD0r7gnC_3-VCB_ORio8ojczbCDvQ@mail.gmail.com> <4E77827C.3030202@redhat.com> <4E7789A1.4080501@oracle.com>
-In-Reply-To: <4E7789A1.4080501@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S932628Ab1ISSor (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 14:44:47 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51114 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932461Ab1ISSoq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 14:44:46 -0400
+Subject: Re: [PATCH 1/9] Remove parent field in cpuacct cgroup
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, xemul@parallels.com, paul@paulmenage.org,
+        lizf@cn.fujitsu.com, daniel.lezcano@free.fr, mingo@elte.hu,
+        jbottomley@parallels.com
+Date: Mon, 19 Sep 2011 20:44:28 +0200
+In-Reply-To: <4E778C0E.5060000@parallels.com>
+References: <1316030695-19826-1-git-send-email-glommer@parallels.com>
+	    <1316030695-19826-2-git-send-email-glommer@parallels.com>
+	   <1316448186.1511.19.camel@twins> <4E776937.1070108@parallels.com>
+	  <1316449160.6091.5.camel@twins> <4E776E36.6040906@parallels.com>
+	 <1316457343.6091.11.camel@twins> <4E778C0E.5060000@parallels.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1316457868.6091.20.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/19/2011 12:27 PM, Sunil Mushran wrote:
-> On 09/19/2011 10:57 AM, Eric Blake wrote:
->> Also, it seems a shame that the kernel can fail with EINVAL instead of
->> properly emulating SEEK_HOLE and SEEK_DATA even on file systems with
->> no underlying support for reporting holes.
->>
->
-> Why do you say that? If I am reading generic_file_llseek_unlocked()
-> correctly, the default behavior is treat offset < i_size as data.
+On Mon, 2011-09-19 at 15:38 -0300, Glauber Costa wrote:
+> On 09/19/2011 03:35 PM, Peter Zijlstra wrote:
+> > On Mon, 2011-09-19 at 13:30 -0300, Glauber Costa wrote:
+> >> For cpuusage, I am not sure this optimization is a valid one
+> >
+> > I was talking about cpuusage, cpuacct_charge() is called for every
+> > ctxsw/tick.
+> 
+> I am not touching it right now.
 
-The proposed wording states:
+See hunk #4 of this particular patch:
 
->  .B EINVAL
->  .I whence
-> -is not one of
-> -.BR SEEK_SET ,
-> -.BR SEEK_CUR ,
-> -.BR SEEK_END ;
-> -or the resulting file offset would be negative,
-> +is not valid (this error may be returned if
-> +.I whence
-> +is
-> +.BR SEEK_DATA
-> +or
-> +.BR SEEK_HOLE
-> +and the underlying file system does not support the operation).
+@@ -9302,7 +9308,7 @@ static void cpuacct_charge(struct task_struct *tsk, u64 cputime)
 
-I guess it should instead read:
+That's cpuusage muck ;-)
 
-EINVAL whence is not valid (this error may be returned if whence is 
-SEEK_DATA or SEEK_HOLE but the kernel does not support the operation).
+> > But even for cpuacct tick stuff, wouldn't you need to sum all your child
+> > cgroups to update the current cgroup? and that up the whole tree?
+> 
+> Of course I would. But as I said, it does not need to be done every 
+> tick, in case it poses such a cacheline mayhem as you fear.
+> 
+> Since we'll only really need those values when someone reads it - which 
+> is a far less frequent operation than the tick resolution - and when a 
+> cgroup is destroyed - even less frequent operation - it should work well.
 
-Given your argument that new enough kernels understand SEEK_DATA and 
-SEEK_HOLE for all file systems.
+Quite possible, yes. Although if you create a cgroup with 100 subgroups
+and poll very frequently.. it all depends on the avg use case etc.. and
+since I don't use any of this stuff someone needs to tell me about how
+the trade-offs work out in practice.
 
-I agree that EINVAL will occur if you compile against new enough glibc 
-that exposes the constants, but then run against an older kernel that 
-does not yet understand them.  But I want the text to be clarified to be 
-bullet-proof that if I am running against kernel 3.1 or newer, the only 
-way I will ever get EINVAL for these two constants is if I do something 
-else invalid, like a negative offset.
-
--- 
-Eric Blake   eblake@redhat.com    +1-801-349-2682
-Libvirt virtualization library http://libvirt.org
+So explicit changelogs with numbers and agreements from multiple users
+go a long way to make me feel good ;-)
