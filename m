@@ -1,39 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754725Ab1ISJln (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 05:41:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20316 "EHLO mx1.redhat.com"
+	id S1754767Ab1ISJpM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 05:45:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1035 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751736Ab1ISJlm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 05:41:42 -0400
-Message-ID: <4E770EF5.90705@redhat.com>
-Date: Mon, 19 Sep 2011 17:44:21 +0800
+	id S1751736Ab1ISJpK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 05:45:10 -0400
+Subject: [PATCH] macvtap: fix the uninitialized var using in
+	macvtap_alloc_skb()
+To: netdev@vger.kernel.org, mst@redhat.com, davem@davemloft.net,
+        linux-kernel@vger.kernel.org
 From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110126 Red Hat/3.1.8-1.el6 Thunderbird/3.1.8
+Date: Mon, 19 Sep 2011 17:48:31 +0800
+Message-ID: <20110919094830.6272.40503.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: krkumar2@in.ibm.com, eric.dumazet@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, davem@davemloft.net,
-        kvm@vger.kernel.org, rusty@rustcorp.com.au, qemu-devel@nongnu.org,
-        mirq-linux@rere.qmqm.pl, joe@perches.com, shemminger@vyatta.com
-Subject: Re: [net-next RFC V2 PATCH 0/5] Multiqueue support in tun/tap
-References: <20110917055639.32666.89940.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com> <20110917191709.GA6127@redhat.com>
-In-Reply-To: <20110917191709.GA6127@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/18/2011 03:17 AM, Michael S. Tsirkin wrote:
-> On Sat, Sep 17, 2011 at 02:02:04PM +0800, Jason Wang wrote:
->> A wiki-page was created to narrate the detail design of all parts
->> involved in the multi queue implementation:
->> http://www.linux-kvm.org/page/Multiqueue and some basic tests result
->> could be seen in this page
->> http://www.linux-kvm.org/page/Multiqueue-performance-Sep-13. I would
->> post the detail numbers in attachment as the reply of this thread.
-> Does it make sense to test both with and without RPS in guest?
->
-I've tested with RPS in guest, but didn't see improvements.
+Commit d1b08284 use new frag API but would leave f to be used
+uninitialized, this patch fix it.
+
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+ drivers/net/macvtap.c |   12 +++++-------
+ 1 files changed, 5 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+index 7c3f84a..3da5578 100644
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@ -453,7 +453,6 @@ static int zerocopy_sg_from_iovec(struct sk_buff *skb, const struct iovec *from,
+ 	int copy = skb_headlen(skb);
+ 	int size, offset1 = 0;
+ 	int i = 0;
+-	skb_frag_t *f;
+ 
+ 	/* Skip over from offset */
+ 	while (count && (offset >= from->iov_len)) {
+@@ -503,14 +502,13 @@ static int zerocopy_sg_from_iovec(struct sk_buff *skb, const struct iovec *from,
+ 		skb->truesize += len;
+ 		atomic_add(len, &skb->sk->sk_wmem_alloc);
+ 		while (len) {
+-			__skb_fill_page_desc(
+-				skb, i, page[i],
+-				base & ~PAGE_MASK,
+-				min_t(int, len, PAGE_SIZE - f->page_offset));
++			int off = base & ~PAGE_MASK;
++			int size = min_t(int, len, PAGE_SIZE - off);
++			__skb_fill_page_desc(skb, i, page[i], off, size);
+ 			skb_shinfo(skb)->nr_frags++;
+ 			/* increase sk_wmem_alloc */
+-			base += f->size;
+-			len -= f->size;
++			base += size;
++			len -= size;
+ 			i++;
+ 		}
+ 		offset1 = 0;
+
