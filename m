@@ -1,119 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756516Ab1ISQEq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 12:04:46 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:1839 "EHLO MMS3.broadcom.com"
+	id S1756546Ab1ISQKU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 12:10:20 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:45360 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756157Ab1ISQEp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 12:04:45 -0400
-X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
-Subject: Re: linux-next: manual merge of the net tree with Linus' tree
-From: "Dmitry Kravkov" <dmitry@broadcom.com>
-Reply-to: dmitry@broadcom.com
-To: "Joe Perches" <joe@perches.com>
-cc: "Stephen Rothwell" <sfr@canb.auug.org.au>,
-        "David Miller" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Yaniv Rosner" <yaniv.rosner@broadcom.com>,
-        "Eilon Greenstein" <eilong@broadcom.com>
-In-Reply-To: <1316447682.6276.5.camel@Joe-Laptop>
-References: <20110919145103.6c3e73edf51599eaa703294a@canb.auug.org.au>
- <1316415318.26848.4.camel@lb-tlvb-dmitry>
- <1316447682.6276.5.camel@Joe-Laptop>
-Organization: BROADCOM
-Date: Mon, 19 Sep 2011 19:04:38 +0300
-Message-ID: <1316448278.12042.3.camel@lb-tlvb-dmitry>
+	id S1756408Ab1ISQKS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 12:10:18 -0400
+Message-ID: <4E776937.1070108@parallels.com>
+Date: Mon, 19 Sep 2011 13:09:27 -0300
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-X-Mailer: Evolution 2.32.2
-X-WSS-ID: 6269B6FB3KO21264998-01-01
-Content-Type: text/plain;
- charset=utf-8
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: <linux-kernel@vger.kernel.org>, <xemul@parallels.com>,
+        <paul@paulmenage.org>, <lizf@cn.fujitsu.com>, <daniel.lezcano@free.fr>,
+        <mingo@elte.hu>, <jbottomley@parallels.com>
+Subject: Re: [PATCH 1/9] Remove parent field in cpuacct cgroup
+References: <1316030695-19826-1-git-send-email-glommer@parallels.com>  <1316030695-19826-2-git-send-email-glommer@parallels.com> <1316448186.1511.19.camel@twins>
+In-Reply-To: <1316448186.1511.19.camel@twins>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [187.106.51.14]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-09-19 at 08:54 -0700, Joe Perches wrote:
-> On Mon, 2011-09-19 at 09:55 +0300, Dmitry Kravkov wrote:
-> > On Sun, 2011-09-18 at 21:51 -0700, Stephen Rothwell wrote:
-> > > Today's linux-next merge of the net tree got a conflict in
-> > > drivers/net/ethernet/broadcom/bnx2x/bnx2x_link.c between commit
-> > > c482e6c06461 ("bnx2x: Fix ETS bandwidth") from Linus' tree and commit
-> > > 94f05b0f60de ("bnx2x: Coalesce pr_cont uses and fix DP typos") from the
-> > > net tree.
-> []
-> > Can you use this one instead?
-> > Contains spell fixes and some formatting.
-> 
-> Multiple line format strings lines are bad style and error prone.
-> You introduce broken spacing after string coalescing.
-> 
+On 09/19/2011 01:03 PM, Peter Zijlstra wrote:
+> On Wed, 2011-09-14 at 17:04 -0300, Glauber Costa wrote:
+>> +       for (; ca; ca = parent_ca(ca)) {
+>
+> It might be good to check that the loop condition and null condition in
+> the parent_ca() function get folded. Otherwise there's a double branch
+> in that loop.
+>
+> Note that this function is one of the reasons I dislike cpuacct, it adds
+> a second cgroup hierarchy traversal to every context switch.
+>
+Well, it is not that hard to optimize this.
 
-Contains spell fixes and some formatting
+Those values are always updated, but they don't really need to, unless 
+they are read.
 
-v2: fix broken spacing
+So what we can do, is introduce a marker in the cgroup, representing the 
+last read value. Parent is untouched. We then update parent when 1) 
+reading this value, 2) cgroup destroy, 3) cpu hotplug. (humm, and maybe 
+we don't even need to do it in cpu hotplug, since the per-cpu variables 
+will still be accessible... )
 
-Signed-off-by: Dmitry Kravkov <dmitry@broadcom.com>
----
-Joe, Thanks for noticing that
----
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_link.c |   30 ++++++++--------------
- 1 files changed, 11 insertions(+), 19 deletions(-)
-
-diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_link.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_link.c
-index 8e9b87b..5a9444a 100644
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_link.c
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_link.c
-@@ -850,32 +850,24 @@ static int bnx2x_ets_e3b0_get_total_bw(
- 
- 	*total_bw = 0 ;
- 	/* Calculate total BW requested */
--	for (cos_idx = 0; cos_idx < ets_params->num_of_cos; cos_idx++) {
--		if (bnx2x_cos_state_bw == ets_params->cos[cos_idx].state) {
-+	for (cos_idx = 0; cos_idx < ets_params->num_of_cos; cos_idx++)
-+		if (bnx2x_cos_state_bw == ets_params->cos[cos_idx].state)
-+			*total_bw +=
-+				ets_params->cos[cos_idx].params.bw_params.bw;
- 
--			if (0 == ets_params->cos[cos_idx].params.bw_params.bw) {
--				DP(NETIF_MSG_LINK,
--				   "bnx2x_ets_E3B0_config BW was set to 0\n");
--			return -EINVAL;
--		}
--		*total_bw +=
--		    ets_params->cos[cos_idx].params.bw_params.bw;
--	    }
--	}
--
--	/*Check taotl BW is valid */
-+	/* Check total BW is valid */
- 	if ((100 != *total_bw) || (0 == *total_bw)) {
- 		if (0 == *total_bw) {
- 			DP(NETIF_MSG_LINK,
--			   "bnx2x_ets_E3B0_config toatl BW shouldn't be 0\n");
-+			  "bnx2x_ets_E3B0_config total BW shouldn't be 0\n");
- 			return -EINVAL;
- 		}
- 		DP(NETIF_MSG_LINK,
--		   "bnx2x_ets_E3B0_config toatl BW should be 100\n");
--		/**
--		*   We can handle a case whre the BW isn't 100 this can happen
--		*   if the TC are joined.
--		*/
-+		   "bnx2x_ets_E3B0_config total BW should be 100\n");
-+		/*
-+		 * We can handle a case where the BW isn't 100 this can happen
-+		 * if the TC are joined.
-+		 */
- 	}
- 	return 0;
- }
--- 
-1.7.2.2
-
-
-
-
-
+How about it ?
