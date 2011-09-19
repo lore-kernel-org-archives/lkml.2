@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755684Ab1ISPZP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 11:25:15 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:28064 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752246Ab1ISPZN (ORCPT
+	id S1756078Ab1ISP1k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 11:27:40 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:38024 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751981Ab1ISP1j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 11:25:13 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6473"; a="119621104"
-Date: Mon, 19 Sep 2011 10:25:05 -0500
-From: "Linas Vepstas (Code Aurora)" <linas@codeaurora.org>
-To: Pedro Alves <pedro@codesourcery.com>
-Cc: Jonas Bonn <jonas.bonn@gmail.com>, Richard Kuo <rkuo@codeaurora.org>,
-        linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arnd@arndb.de
-Subject: Re: [patch v3 19/36] Hexagon: Add ptrace support
-Message-ID: <20110919152505.GB6830@codeaurora.org>
-References: <20110909010847.294039464@codeaurora.org>
- <20110909211808.GA3150@codeaurora.org>
- <CACM3HyH8P=u9pR0sa2besxsgDN5TUKg_7utLJTwL+hu8Wv48ow@mail.gmail.com>
- <201109101229.58445.pedro@codesourcery.com>
+	Mon, 19 Sep 2011 11:27:39 -0400
+Date: Mon, 19 Sep 2011 16:27:35 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Thomas Meyer <thomas@m3y3r.de>
+Cc: Ian Kent <raven@themaw.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dhowells@redhat.com
+Subject: Re: [PATCH] Force same size of struct autofs_v5_packet on x86 and
+ x86_64
+Message-ID: <20110919152735.GK2203@ZenIV.linux.org.uk>
+References: <1316167604.6545.84.camel@localhost.localdomain>
+ <20110916101903.GI2203@ZenIV.linux.org.uk>
+ <1316169496.8502.6.camel@perseus.themaw.net>
+ <1316332908.5814.22.camel@localhost.localdomain>
+ <1316404368.3206.21.camel@perseus.themaw.net>
+ <20110919061059.GJ2203@ZenIV.linux.org.uk>
+ <CACCE520-D261-4B97-B208-1C44574886BF@m3y3r.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201109101229.58445.pedro@codesourcery.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CACCE520-D261-4B97-B208-1C44574886BF@m3y3r.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 10, 2011 at 12:29:57PM +0100, Pedro Alves wrote:
-> On Saturday 10 September 2011 07:42:26, Jonas Bonn wrote:
-> 
-> > I'm really not an expert on GDB, but I believe it can use either the
-> > PEEK/POKE functions to access regs, or it can use GET/SETREGS; it's an
-> > architecture-dependent configuration.  I think the second variant can
-> > be easily modified to become GET/SETREGSET instead, and the PEEK/POKE
-> > variant wouldn't be needed at all.
-> 
-> Yes, the x86/x86-64 ports or gdb and gdbserver are already
-> using GET/SETREGSET even.
+On Mon, Sep 19, 2011 at 11:30:42AM +0200, Thomas Meyer wrote:
 
-Reading the code, it seemed to only fetch "extended state" in
-this way, and not all of the registers.  Am I mistaken?
+> @al: what other autofs4 users are out there besides systemd?
 
---linas
+	Are you serious?  You *do* realize that autofs is quite usable on
+the benighted systems not infested with that... Fabulous Piece Of Software,
+don't you?  Depending on your distribution, say apt-cache search autofs /
+yum search autofs / whatever your equivalent is and examine the results.
+Plus anything that has demonstrated the lack of taste equal to yours
+and reimplemented that stuff, of course.
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Sigh...  At least DJB fanboys usually do not ask "what other SMTP
+users are out there besides qmail"...
