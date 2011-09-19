@@ -1,136 +1,298 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755962Ab1ISPm0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 11:42:26 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:40487 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751114Ab1ISPmZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 11:42:25 -0400
-Message-ID: <4E7762D4.7090404@parallels.com>
-Date: Mon, 19 Sep 2011 19:42:12 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Lightning/1.0b2 Thunderbird/3.1.13
-MIME-Version: 1.0
-To: Jeff Layton <jlayton@redhat.com>
-CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "davem@davemloft.net" <davem@davemloft.net>
-Subject: Re: [PATCH v3 04/11] SUNRPC: parametrize svc creation calls with
- portmapper flag
-References: <20110913180953.3961.69217.stgit@localhost6.localdomain6>	<20110913181351.3961.70207.stgit@localhost6.localdomain6>	<20110919100811.0eaa39fe@tlielax.poochiereds.net>	<4E7756F3.4080601@parallels.com> <20110919110729.33a876ca@tlielax.poochiereds.net>
-In-Reply-To: <20110919110729.33a876ca@tlielax.poochiereds.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1756382Ab1ISPro (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 11:47:44 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:58276 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756317Ab1ISPrm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 11:47:42 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: linux-kernel@vger.kernel.org
+Cc: Neil Horman <nhorman@tuxdriver.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org
+Subject: [PATCH] sysfs: add per pci device msi[x] irq listing (v3)
+Date: Mon, 19 Sep 2011 11:47:15 -0400
+Message-Id: <1316447235-31345-1-git-send-email-nhorman@tuxdriver.com>
+X-Mailer: git-send-email 1.7.6.2
+In-Reply-To: <1316025413-5855-1-git-send-email-nhorman@tuxdriver.com>
+References: <1316025413-5855-1-git-send-email-nhorman@tuxdriver.com>
+X-Spam-Score: -2.6 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-19.09.2011 19:07, Jeff Layton пишет:
-> On Mon, 19 Sep 2011 18:51:31 +0400
-> Stanislav Kinsbursky<skinsbursky@parallels.com>  wrote:
->
->> 19.09.2011 18:08, Jeff Layton пишет:
->>> On Tue, 13 Sep 2011 22:13:51 +0400
->>> Stanislav Kinsbursky<skinsbursky@parallels.com>   wrote:
->>>
->>>> This new flag ("setup_rpcbind) will be used to detect, that new service will
->>>> send portmapper register calls. For such services we will create rpcbind
->>>> clients and remove all stale portmap registrations.
->>>> Also, svc_rpcb_cleanup() will be set as sv_shutdown callback for such services
->>>> in case of this field wasn't initialized earlier. This will allow to destroy
->>>> rpcbind clients when no other users of them left.
->>>>
->>>> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
->>>>
->>>> ---
->>>>    include/linux/sunrpc/svc.h |    2 ++
->>>>    net/sunrpc/svc.c           |   21 ++++++++++++++-------
->>>>    2 files changed, 16 insertions(+), 7 deletions(-)
->>>>
->>>> diff --git a/include/linux/sunrpc/svc.h b/include/linux/sunrpc/svc.h
->>>> index 223588a..528952a 100644
->>>> --- a/include/linux/sunrpc/svc.h
->>>> +++ b/include/linux/sunrpc/svc.h
->>>> @@ -402,11 +402,13 @@ struct svc_procedure {
->>>>     * Function prototypes.
->>>>     */
->>>>    struct svc_serv *svc_create(struct svc_program *, unsigned int,
->>>> +			    int setup_rpcbind,
->>> 				^^^
->>> 			Instead of adding this parameter, why not
->>> 			base this on the vs_hidden flag in the
->>> 			svc_version? IOW, have a function that looks at
->>> 			all the svc_versions for a particular
->>> 			svc_program, and returns "true" if any of them
->>> 			have vs_hidden unset? The mechanism you're
->>> 			proposing here has the potential to be out of
->>> 			sync with the vs_hidden flag.
->>>
->>
->> Could you, please, clarify me this vs_hidden flag?
->> I understand, that it's used to avoid portmap registration.
->> But as I see, it's set only for nfs_callback_version1. But this svc_version is a
->> part of nfs4_callback_program with nfs_callback_version4, which is not hidden.
->> Does this flag is missed here? If not, how we can return "true" from your
->> proposed function if any of them have vs_hidden unset?
->>
->> Also sockets for this program are created with SVC_SOCK_ANONYMOUS flag and we
->> will not register any of this program versions with portmapper.
->> Thus, from my pow, this vs_hidden flag affects only svc_unregister. And only
->> nfs_callback_version1. This looks really strange.
->>
->> I.e. if we use this flag only for passing through this versions during
->> svc_(un)register, and we actually also want to pass through
->> nfs_callback_version4 as well (but just missed this vs_hidden flag for it), then
->> with current patch-set we can move this flag from (vs_hidden) svc_version to
->> svc_program and check it during svc_create instead of my home-brew
->> "setup_rpcbind" variable.
->>
->
-> Agreed. The current situation is a mess, which is why I suggested a
-> cleanup and overhaul before you do this...
->
-> The vs_hidden flag is intended to show that a particular program
-> version should not be registered with (or unregistered from) the
-> portmapper. Unfortunately, nothing looks at vs_hidden during
-> registration time, only when unregistering (as you mention).
->
-> It's quite possible that several svc_versions declared in the kernel do
-> not have this set correctly. One thing that would be good is to audit
-> each of those.
->
-> We currently rely on SVC_SOCK_ANONYMOUS for registration, but that
-> wasn't its original intent. It's was just convenient to use it there
-> too.
->
-> SVC_SOCK_ANONYMOUS was (as best I can tell) originally intended for use
-> on temporary sockets that we establish on receive. So for
-> instance...when a client connects to nfsd, we need to create a new
-> socket for nfsd, but obviously we don't want to register that socket
-> with the portmapper (since nfsd should already be registered there).
-> SVC_SOCK_ANONYMOUS ensures that that socket is not registered.
->
-> The whole scheme could probably use a fundamental re-think. I'm not
-> sure I have a great idea to propose in lieu of it, but I think adding
-> yet another flag here is probably not the best way to go.
->
+So a while back, I wanted to provide a way for irqbalance (and other apps) to
+definitively map irqs to devices, which, for msi[x] irqs is currently not really
+possible in user space.  My first attempt wen't not so well:
+https://lkml.org/lkml/2011/4/21/308
 
-Ok, thank you, Jeff.
-It looks like no mentions about portmapper are present in RFC's for NFS versions 
-4.* after a brief look.
-This SVC_SOCK_ANONYMOUS is understandable and can't be removed with this 
-patch-set from my pow.
-But now I strongly believe, that we can move this vs_hidden flag from 
-svc_version to svc_program structure and set it for both NFSv4.* programs.
-Hope, someone else will confirm of refute this statement.
+It was plauged by the same issues that prior attempts were, namely that it
+violated the one-file-one-value sysfs rule.  I wandered off but have recently
+come back to this.  I've got a new implementation here that exports a new
+subdirectory for every pci device,  called msi_irqs.  This subdirectory contanis
+a variable number of numbered subdirectories, in which the number represents an
+msi irq.  Each numbered subdirectory contains attributes for that irq, which
+currently is only the mode it is operating in (msi vs. msix).  I think fits
+within the constraints sysfs requires, and will allow irqbalance to properly map
+msi irqs to devices without having to rely on rickety, best guess methods like
+interface name matching.
 
+Change Notes:
 
+(v2)
+Fixed up Documentation to put new sysfs interface descriptions in the right
+place, as per request by Greg K-H
 
+Fixed up oops that resulted from removing pci device.  Not 100% sure I did this
+exactly right, but looking at the crash (triggered by echo 1 >
+/sys/class/net/eth0/device/remove), it looked as though we were freeing the
+pci_dev struct prior to all sysfs objects releasing their use of the device.  AS
+such it seemed most appropriate to hold references on the pci_dev for each msi
+irq sysfs object that we create, and release them on free accordingly.  With
+this change in place, I can remove, and add (via rescan) msi enabled devices
+ad-nauseum without a panic.  Again thanks to Greg K-H
 
+(v3)
+As per Gregs suggestion, I looked further and noted that in fact, yes, it wasn't
+producing any errors on remove, but only because I had a refcounting problem,
+and my new sysfs objects were left orphaned with a dangling refcount.  I've
+fixed that, added a release method to the new ktype, which now drops the
+reference I hold on the pci_dev for us and I've validated that all objects I've
+created, along with the parent directory and pci device are cleaned up and freed
+by enabling the kobject dyanic_debug set and observing the appropriate release
+calls.  I can provide the logs if anyone wants to review them specifically.
+
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+CC: Greg Kroah-Hartman <gregkh@suse.de>
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: linux-pci@vger.kernel.org
+---
+ Documentation/ABI/testing/sysfs-bus-pci |   18 +++++
+ drivers/pci/msi.c                       |  111 +++++++++++++++++++++++++++++++
+ include/linux/msi.h                     |    3 +
+ include/linux/pci.h                     |    1 +
+ 4 files changed, 133 insertions(+), 0 deletions(-)
+
+diff --git a/Documentation/ABI/testing/sysfs-bus-pci b/Documentation/ABI/testing/sysfs-bus-pci
+index 349ecf2..699da99 100644
+--- a/Documentation/ABI/testing/sysfs-bus-pci
++++ b/Documentation/ABI/testing/sysfs-bus-pci
+@@ -66,6 +66,24 @@ Description:
+ 		re-discover previously removed devices.
+ 		Depends on CONFIG_HOTPLUG.
+ 
++What:		/sys/bus/pci/devices/.../msi_irqs/
++Date:		September, 2011
++Contact:	Neil Horman <nhorman@tuxdriver.com>
++Description:
++		The /sys/devices/.../msi_irqs directory contains a variable set
++		subdirectories, with each subdirectory being named after a
++		corresponding msi irq vector allocated to that device.  Each
++		numbered subdirectory N contains attributes of that irq.
++		Note that this directory is not created for device drivers which
++		do not support msi irqs
++
++What:		/sys/bus/pci/devices/.../msi_irqs/<N>/mode
++Date:		September 2011
++Contact:	Neil Horman <nhorman@tuxdriver.com>
++Description:
++		This attribute indicates the mode that the irq vecotor named by
++		the parent directory is in (msi vs. msix)
++
+ What:		/sys/bus/pci/devices/.../remove
+ Date:		January 2009
+ Contact:	Linux PCI developers <linux-pci@vger.kernel.org>
+diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+index 2f10328..73613e2 100644
+--- a/drivers/pci/msi.c
++++ b/drivers/pci/msi.c
+@@ -322,6 +322,8 @@ static void free_msi_irqs(struct pci_dev *dev)
+ 			if (list_is_last(&entry->list, &dev->msi_list))
+ 				iounmap(entry->mask_base);
+ 		}
++		kobject_del(&entry->kobj);
++		kobject_put(&entry->kobj);
+ 		list_del(&entry->list);
+ 		kfree(entry);
+ 	}
+@@ -402,6 +404,98 @@ void pci_restore_msi_state(struct pci_dev *dev)
+ }
+ EXPORT_SYMBOL_GPL(pci_restore_msi_state);
+ 
++
++#define to_msi_attr(obj) container_of(obj, struct msi_attribute, attr)
++#define to_msi_desc(obj) container_of(obj, struct msi_desc, kobj)
++
++struct msi_attribute {
++	struct attribute        attr;
++	ssize_t (*show)(struct msi_desc *entry, struct msi_attribute *attr,
++			char *buf);
++	ssize_t (*store)(struct msi_desc *entry, struct msi_attribute *attr,
++			 const char *buf, size_t count);
++};
++
++static ssize_t show_msi_mode(struct msi_desc *entry, struct msi_attribute *atr,
++			     char *buf)
++{
++	return sprintf(buf, "%s\n", entry->msi_attrib.is_msix ? "msix" : "msi");
++}
++
++static ssize_t msi_irq_attr_show(struct kobject *kobj,
++				 struct attribute *attr, char *buf)
++{
++	struct msi_attribute *attribute = to_msi_attr(attr);
++	struct msi_desc *entry = to_msi_desc(kobj);
++
++	if (!attribute->show)
++		return -EIO;
++
++	return attribute->show(entry, attribute, buf);
++}
++
++static const struct sysfs_ops msi_irq_sysfs_ops = {
++	.show = msi_irq_attr_show,
++};
++
++static struct msi_attribute mode_attribute =
++	__ATTR(mode, S_IRUGO, show_msi_mode, NULL);
++
++
++struct attribute *msi_irq_default_attrs[] = {
++	&mode_attribute.attr,
++	NULL
++};
++
++void msi_kobj_release(struct kobject *kobj)
++{
++	struct msi_desc *entry = to_msi_desc(kobj);
++
++	pci_dev_put(entry->dev);
++}
++
++static struct kobj_type msi_irq_ktype = {
++	.release = msi_kobj_release,
++	.sysfs_ops = &msi_irq_sysfs_ops,
++	.default_attrs = msi_irq_default_attrs,
++};
++
++static int populate_msi_sysfs(struct pci_dev *pdev)
++{
++	struct msi_desc *entry;
++	struct kobject *kobj;
++	int ret;
++	int count = 0;
++
++	pdev->msi_kset = kset_create_and_add("msi_irqs", NULL, &pdev->dev.kobj);
++	if (!pdev->msi_kset)
++		return -ENOMEM;
++
++	list_for_each_entry(entry, &pdev->msi_list, list) {
++		kobj = &entry->kobj;
++		kobj->kset = pdev->msi_kset;
++		pci_dev_get(pdev);
++		ret = kobject_init_and_add(kobj, &msi_irq_ktype, NULL,
++				     "%u", entry->irq);
++		if (ret)
++			goto out_unroll;
++
++		count++;
++	}
++
++	return 0;
++
++out_unroll:
++	list_for_each_entry(entry, &pdev->msi_list, list) {
++		if (!count)
++			break;
++		kobject_del(&entry->kobj);
++		kobject_put(&entry->kobj);
++		count--;
++	}
++	return ret;
++}
++
+ /**
+  * msi_capability_init - configure device's MSI capability structure
+  * @dev: pointer to the pci_dev data structure of MSI device function
+@@ -453,6 +547,13 @@ static int msi_capability_init(struct pci_dev *dev, int nvec)
+ 		return ret;
+ 	}
+ 
++	ret = populate_msi_sysfs(dev);
++	if (ret) {
++		msi_mask_irq(entry, mask, ~mask);
++		free_msi_irqs(dev);
++		return ret;
++	}
++
+ 	/* Set MSI enabled bits	 */
+ 	pci_intx_for_msi(dev, 0);
+ 	msi_set_enable(dev, pos, 1);
+@@ -573,6 +674,12 @@ static int msix_capability_init(struct pci_dev *dev,
+ 
+ 	msix_program_entries(dev, entries);
+ 
++	ret = populate_msi_sysfs(dev);
++	if (ret) {
++		ret = 0;
++		goto error;
++	}
++
+ 	/* Set MSI-X enabled bits and unmask the function */
+ 	pci_intx_for_msi(dev, 0);
+ 	dev->msix_enabled = 1;
+@@ -731,6 +838,8 @@ void pci_disable_msi(struct pci_dev *dev)
+ 
+ 	pci_msi_shutdown(dev);
+ 	free_msi_irqs(dev);
++	kset_unregister(dev->msi_kset);
++	dev->msi_kset = NULL;
+ }
+ EXPORT_SYMBOL(pci_disable_msi);
+ 
+@@ -829,6 +938,8 @@ void pci_disable_msix(struct pci_dev *dev)
+ 
+ 	pci_msix_shutdown(dev);
+ 	free_msi_irqs(dev);
++	kset_unregister(dev->msi_kset);
++	dev->msi_kset = NULL;
+ }
+ EXPORT_SYMBOL(pci_disable_msix);
+ 
+diff --git a/include/linux/msi.h b/include/linux/msi.h
+index 05acced..ce93a34 100644
+--- a/include/linux/msi.h
++++ b/include/linux/msi.h
+@@ -1,6 +1,7 @@
+ #ifndef LINUX_MSI_H
+ #define LINUX_MSI_H
+ 
++#include <linux/kobject.h>
+ #include <linux/list.h>
+ 
+ struct msi_msg {
+@@ -44,6 +45,8 @@ struct msi_desc {
+ 
+ 	/* Last set MSI message */
+ 	struct msi_msg msg;
++
++	struct kobject kobj;
+ };
+ 
+ /*
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index f27893b..fff3961 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -332,6 +332,7 @@ struct pci_dev {
+ 	struct bin_attribute *res_attr_wc[DEVICE_COUNT_RESOURCE]; /* sysfs file for WC mapping of resources */
+ #ifdef CONFIG_PCI_MSI
+ 	struct list_head msi_list;
++	struct kset *msi_kset;
+ #endif
+ 	struct pci_vpd *vpd;
+ #ifdef CONFIG_PCI_IOV
 -- 
-Best regards,
-Stanislav Kinsbursky
+1.7.6.2
+
