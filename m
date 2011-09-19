@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932876Ab1ISWWe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 18:22:34 -0400
-Received: from home.keithp.com ([63.227.221.253]:41905 "EHLO keithp.com"
+	id S932852Ab1ISWWc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 18:22:32 -0400
+Received: from home.keithp.com ([63.227.221.253]:41907 "EHLO keithp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932819Ab1ISWW3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932821Ab1ISWW3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 19 Sep 2011 18:22:29 -0400
 From: Keith Packard <keithp@keithp.com>
 To: Dave Airlie <airlied@redhat.com>
 Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
         intel-gfx@lists.freedesktop.org, Keith Packard <keithp@keithp.com>
-Subject: [PATCH 6/9] drm/i915: Make sure eDP power is on before using aux channel
-Date: Mon, 19 Sep 2011 15:22:00 -0700
-Message-Id: <1316470923-27832-7-git-send-email-keithp@keithp.com>
+Subject: [PATCH 7/9] drm/i915: Correct eDP panel power sequencing delay computations
+Date: Mon, 19 Sep 2011 15:22:01 -0700
+Message-Id: <1316470923-27832-8-git-send-email-keithp@keithp.com>
 X-Mailer: git-send-email 1.7.6.3
 In-Reply-To: <1316470923-27832-1-git-send-email-keithp@keithp.com>
 References: <1316470923-27832-1-git-send-email-keithp@keithp.com>
@@ -20,247 +20,193 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The eDP panel may not be able to respond to aux channel communications
-unless it has power supplied. During mode setting, power may be
-cut-off during panel power sequencing. Make sure that any aux channel
-communications will work by forcing vdd power active as needed.
+Store the panel power sequencing delays in the dp private structure,
+rather than the global device structure. Who knows, maybe we'll get
+more than one eDP device in the future.
 
-This also delays after turning power on and off to ensure that the
-panel is keeping up.
+Look at both the current hardware register settings and the VBT
+specified panel power sequencing timings. Use the maximum of the two
+delays, to make sure things work reliably. If there is no VBT data,
+then those values will be initialized to zero, so we'll just use the
+values as programmed in the hardware.
+
+This patch computes power-up and power-down delays, rather than using
+portions of the appropriate delay values as found in the hardware. The
+eDP specified delay between raising VCC and communicating over the aux
+channel includes both the power rise time (T1) and the aux channel
+communication delay (T3). The eDP specified delay between powering
+down the device and powering it back up includes both the power fall
+time (T11) and the device idle time (T12).
+
+>From the hardware, I'm taking the T3 value from the PP_OFF_DELAYS
+Power_Down_delay value, which is actually documented to be the 'T3
+time sequence' value used 'during power up'. There aren't separate T1
+and T2 values, but there is a combined T1+T2 value in the PP_ON_DELAYS
+register, so I use that instead.
+
+VBT doesn't provide any values for T1 or T2, so we'll always just use
+the hardware value for that.
+
+The panel power up delay is thus T1 + T2 + T3, which should be
+sufficient in all cases.
+
+The panel power down delay is T1 + T2 + T12, using T1+T2 as a proxy
+for T11, which isn't available anywhere.
+
+On the macbook air I'm testing with, this yields a power-up delay of
+over 200ms and a power-down delay of over 600ms. It all works now, but
+we're frobbing these power controls several times during mode setting,
+making the whole process take an awfully long time.
 
 Signed-off-by: Keith Packard <keithp@keithp.com>
 ---
- drivers/gpu/drm/i915/intel_dp.c |   84 +++++++++++++++++++++++++++++---------
- 1 files changed, 64 insertions(+), 20 deletions(-)
+ drivers/gpu/drm/i915/i915_drv.h |    1 -
+ drivers/gpu/drm/i915/intel_dp.c |   56 ++++++++++++++++++++++++++++----------
+ 2 files changed, 41 insertions(+), 16 deletions(-)
 
+diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
+index 7916bd9..bcdf58b 100644
+--- a/drivers/gpu/drm/i915/i915_drv.h
++++ b/drivers/gpu/drm/i915/i915_drv.h
+@@ -672,7 +672,6 @@ typedef struct drm_i915_private {
+ 	unsigned int lvds_border_bits;
+ 	/* Panel fitter placement and size for Ironlake+ */
+ 	u32 pch_pf_pos, pch_pf_size;
+-	int panel_t3, panel_t12;
+ 
+ 	struct drm_crtc *plane_to_crtc_mapping[2];
+ 	struct drm_crtc *pipe_to_crtc_mapping[2];
 diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
-index a983d0f..41b1e05 100644
+index 41b1e05..f1d6105 100644
 --- a/drivers/gpu/drm/i915/intel_dp.c
 +++ b/drivers/gpu/drm/i915/intel_dp.c
-@@ -595,10 +595,15 @@ intel_dp_i2c_aux_ch(struct i2c_adapter *adapter, int mode,
- 	return -EREMOTEIO;
- }
+@@ -59,6 +59,8 @@ struct intel_dp {
+ 	bool is_pch_edp;
+ 	uint8_t	train_set[4];
+ 	uint8_t link_status[DP_LINK_STATUS_SIZE];
++	int panel_power_up_delay;
++	int panel_power_down_delay;
+ };
  
-+static void ironlake_edp_panel_vdd_on(struct intel_dp *intel_dp);
-+static void ironlake_edp_panel_vdd_off(struct intel_dp *intel_dp);
-+
- static int
- intel_dp_i2c_init(struct intel_dp *intel_dp,
- 		  struct intel_connector *intel_connector, const char *name)
- {
-+	int	ret;
-+
- 	DRM_DEBUG_KMS("i2c_init %s\n", name);
- 	intel_dp->algo.running = false;
- 	intel_dp->algo.address = 0;
-@@ -612,7 +617,10 @@ intel_dp_i2c_init(struct intel_dp *intel_dp,
- 	intel_dp->adapter.algo_data = &intel_dp->algo;
- 	intel_dp->adapter.dev.parent = &intel_connector->base.kdev;
- 
--	return i2c_dp_aux_add_bus(&intel_dp->adapter);
-+	ironlake_edp_panel_vdd_on(intel_dp);
-+	ret = i2c_dp_aux_add_bus(&intel_dp->adapter);
-+	ironlake_edp_panel_vdd_off(intel_dp);
-+	return ret;
- }
- 
- static bool
-@@ -830,14 +838,20 @@ static void ironlake_edp_panel_vdd_on(struct intel_dp *intel_dp)
- {
- 	struct drm_device *dev = intel_dp->base.base.dev;
- 	struct drm_i915_private *dev_priv = dev->dev_private;
--	u32 pp;
-+	u32 pp, pp_status;
- 
-+	if (!is_edp(intel_dp))
-+		return;
-+	DRM_DEBUG_KMS("Turn eDP VDD on\n");
- 	/*
- 	 * If the panel wasn't on, make sure there's not a currently
+ /**
+@@ -848,10 +850,6 @@ static void ironlake_edp_panel_vdd_on(struct intel_dp *intel_dp)
  	 * active PP sequence before enabling AUX VDD.
  	 */
--	if (!(I915_READ(PCH_PP_STATUS) & PP_ON))
-+	pp_status = I915_READ(PCH_PP_STATUS);
-+	if (!(pp_status & PP_ON)) {
-+		DRM_DEBUG_KMS("eDP VDD was not on\n");
- 		msleep(dev_priv->panel_t3);
-+	}
+ 	pp_status = I915_READ(PCH_PP_STATUS);
+-	if (!(pp_status & PP_ON)) {
+-		DRM_DEBUG_KMS("eDP VDD was not on\n");
+-		msleep(dev_priv->panel_t3);
+-	}
  
  	pp = I915_READ(PCH_PP_CONTROL);
  	pp &= ~PANEL_UNLOCK_MASK;
-@@ -845,6 +859,9 @@ static void ironlake_edp_panel_vdd_on(struct intel_dp *intel_dp)
- 	pp |= EDP_FORCE_VDD;
- 	I915_WRITE(PCH_PP_CONTROL, pp);
+@@ -861,7 +859,10 @@ static void ironlake_edp_panel_vdd_on(struct intel_dp *intel_dp)
  	POSTING_READ(PCH_PP_CONTROL);
-+	DRM_DEBUG_KMS("PCH_PP_STATUS: 0x%08x PCH_PP_CONTROL: 0x%08x\n",
-+		      I915_READ(PCH_PP_STATUS), I915_READ(PCH_PP_CONTROL));
-+	msleep(1000);
+ 	DRM_DEBUG_KMS("PCH_PP_STATUS: 0x%08x PCH_PP_CONTROL: 0x%08x\n",
+ 		      I915_READ(PCH_PP_STATUS), I915_READ(PCH_PP_CONTROL));
+-	msleep(1000);
++	if (!(pp_status & PP_ON)) {
++		msleep(intel_dp->panel_power_up_delay);
++		DRM_DEBUG_KMS("eDP VDD was not on\n");
++	}
  }
  
  static void ironlake_edp_panel_vdd_off(struct intel_dp *intel_dp)
-@@ -853,6 +870,9 @@ static void ironlake_edp_panel_vdd_off(struct intel_dp *intel_dp)
- 	struct drm_i915_private *dev_priv = dev->dev_private;
- 	u32 pp;
- 
-+	if (!is_edp(intel_dp))
-+		return;
-+	DRM_DEBUG_KMS("Turn eDP VDD off\n");
- 	pp = I915_READ(PCH_PP_CONTROL);
- 	pp &= ~PANEL_UNLOCK_MASK;
- 	pp |= PANEL_UNLOCK_REGS;
-@@ -862,6 +882,9 @@ static void ironlake_edp_panel_vdd_off(struct intel_dp *intel_dp)
+@@ -881,10 +882,9 @@ static void ironlake_edp_panel_vdd_off(struct intel_dp *intel_dp)
+ 	POSTING_READ(PCH_PP_CONTROL);
  
  	/* Make sure sequencer is idle before allowing subsequent activity */
- 	msleep(dev_priv->panel_t12);
-+	DRM_DEBUG_KMS("PCH_PP_STATUS: 0x%08x PCH_PP_CONTROL: 0x%08x\n",
-+		      I915_READ(PCH_PP_STATUS), I915_READ(PCH_PP_CONTROL));
-+	msleep(1000);
+-	msleep(dev_priv->panel_t12);
+ 	DRM_DEBUG_KMS("PCH_PP_STATUS: 0x%08x PCH_PP_CONTROL: 0x%08x\n",
+ 		      I915_READ(PCH_PP_STATUS), I915_READ(PCH_PP_CONTROL));
+-	msleep(1000);
++	msleep(intel_dp->panel_power_down_delay);
  }
  
  /* Returns true if the panel was already on when called */
-@@ -1016,7 +1039,9 @@ static void intel_dp_prepare(struct drm_encoder *encoder)
- 	struct drm_device *dev = encoder->dev;
+@@ -922,8 +922,10 @@ static bool ironlake_edp_panel_on (struct intel_dp *intel_dp)
+ 	return false;
+ }
  
- 	/* Wake up the sink first */
-+	ironlake_edp_panel_vdd_on(intel_dp);
- 	intel_dp_sink_dpms(intel_dp, DRM_MODE_DPMS_ON);
-+	ironlake_edp_panel_vdd_off(intel_dp);
+-static void ironlake_edp_panel_off (struct drm_device *dev)
++static void ironlake_edp_panel_off(struct drm_encoder *encoder)
+ {
++	struct intel_dp *intel_dp = enc_to_intel_dp(encoder);
++	struct drm_device *dev = encoder->dev;
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	u32 pp, idle_off_mask = PP_ON | PP_SEQUENCE_MASK |
+ 		PP_CYCLE_DELAY_ACTIVE | PP_SEQUENCE_STATE_MASK;
+@@ -940,6 +942,7 @@ static void ironlake_edp_panel_off (struct drm_device *dev)
+ 	pp &= ~POWER_TARGET_ON;
+ 	I915_WRITE(PCH_PP_CONTROL, pp);
+ 	POSTING_READ(PCH_PP_CONTROL);
++	msleep(intel_dp->panel_power_down_delay);
+ 
+ 	if (wait_for((I915_READ(PCH_PP_STATUS) & idle_off_mask) == 0, 5000))
+ 		DRM_ERROR("panel off wait timed out: 0x%08x\n",
+@@ -1045,7 +1048,7 @@ static void intel_dp_prepare(struct drm_encoder *encoder)
  
  	if (is_edp(intel_dp)) {
  		ironlake_edp_backlight_off(dev);
-@@ -1034,21 +1059,17 @@ static void intel_dp_commit(struct drm_encoder *encoder)
- 	struct intel_dp *intel_dp = enc_to_intel_dp(encoder);
- 	struct drm_device *dev = encoder->dev;
- 
--	if (is_edp(intel_dp))
--		ironlake_edp_panel_vdd_on(intel_dp);
--
-+	ironlake_edp_panel_vdd_on(intel_dp);
- 	intel_dp_start_link_train(intel_dp);
- 
--	if (is_edp(intel_dp)) {
-+	if (is_edp(intel_dp))
- 		ironlake_edp_panel_on(intel_dp);
--		ironlake_edp_panel_vdd_off(intel_dp);
--	}
- 
- 	intel_dp_complete_link_train(intel_dp);
- 
- 	if (is_edp(intel_dp))
- 		ironlake_edp_backlight_on(dev);
--
-+	ironlake_edp_panel_vdd_off(intel_dp);
- 	intel_dp->dpms_mode = DRM_MODE_DPMS_ON;
- }
- 
-@@ -1060,6 +1081,7 @@ intel_dp_dpms(struct drm_encoder *encoder, int mode)
- 	struct drm_i915_private *dev_priv = dev->dev_private;
- 	uint32_t dp_reg = I915_READ(intel_dp->output_reg);
- 
-+	ironlake_edp_panel_vdd_on(intel_dp);
- 	if (mode != DRM_MODE_DPMS_ON) {
+-		ironlake_edp_panel_off(dev);
++		ironlake_edp_panel_off(encoder);
+ 		if (!is_pch_edp(intel_dp))
+ 			ironlake_edp_pll_on(encoder);
+ 		else
+@@ -1088,7 +1091,7 @@ intel_dp_dpms(struct drm_encoder *encoder, int mode)
+ 		intel_dp_sink_dpms(intel_dp, mode);
+ 		intel_dp_link_down(intel_dp);
  		if (is_edp(intel_dp))
- 			ironlake_edp_backlight_off(dev);
-@@ -1070,20 +1092,17 @@ intel_dp_dpms(struct drm_encoder *encoder, int mode)
+-			ironlake_edp_panel_off(dev);
++			ironlake_edp_panel_off(encoder);
  		if (is_edp(intel_dp) && !is_pch_edp(intel_dp))
  			ironlake_edp_pll_off(encoder);
  	} else {
--		if (is_edp(intel_dp))
--			ironlake_edp_panel_vdd_on(intel_dp);
- 		intel_dp_sink_dpms(intel_dp, mode);
- 		if (!(dp_reg & DP_PORT_EN)) {
- 			intel_dp_start_link_train(intel_dp);
--			if (is_edp(intel_dp)) {
-+			if (is_edp(intel_dp))
- 				ironlake_edp_panel_on(intel_dp);
--				ironlake_edp_panel_vdd_off(intel_dp);
--			}
- 			intel_dp_complete_link_train(intel_dp);
- 		}
- 		if (is_edp(intel_dp))
- 			ironlake_edp_backlight_on(dev);
- 	}
-+	ironlake_edp_panel_vdd_off(intel_dp);
- 	intel_dp->dpms_mode = mode;
- }
- 
-@@ -1710,6 +1729,31 @@ g4x_dp_detect(struct intel_dp *intel_dp)
- 	return intel_dp_detect_dpcd(intel_dp);
- }
- 
-+static struct edid *
-+intel_dp_get_edid(struct drm_connector *connector, struct i2c_adapter *adapter)
-+{
-+	struct intel_dp *intel_dp = intel_attached_dp(connector);
-+	struct edid	*edid;
-+
-+	ironlake_edp_panel_vdd_on(intel_dp);
-+	edid = drm_get_edid(connector, adapter);
-+	ironlake_edp_panel_vdd_off(intel_dp);
-+	return edid;
-+}
-+
-+static int
-+intel_dp_get_edid_modes(struct drm_connector *connector, struct i2c_adapter *adapter)
-+{
-+	struct intel_dp *intel_dp = intel_attached_dp(connector);
-+	int	ret;
-+
-+	ironlake_edp_panel_vdd_on(intel_dp);
-+	ret = intel_ddc_get_modes(connector, adapter);
-+	ironlake_edp_panel_vdd_off(intel_dp);
-+	return ret;
-+}
-+
-+
- /**
-  * Uses CRT_HOTPLUG_EN and CRT_HOTPLUG_STAT to detect DP connection.
-  *
-@@ -1742,7 +1786,7 @@ intel_dp_detect(struct drm_connector *connector, bool force)
- 	if (intel_dp->force_audio) {
- 		intel_dp->has_audio = intel_dp->force_audio > 0;
- 	} else {
--		edid = drm_get_edid(connector, &intel_dp->adapter);
-+		edid = intel_dp_get_edid(connector, &intel_dp->adapter);
- 		if (edid) {
- 			intel_dp->has_audio = drm_detect_monitor_audio(edid);
- 			connector->display_info.raw_edid = NULL;
-@@ -1763,7 +1807,7 @@ static int intel_dp_get_modes(struct drm_connector *connector)
- 	/* We should parse the EDID data and find out if it has an audio sink
- 	 */
- 
--	ret = intel_ddc_get_modes(connector, &intel_dp->adapter);
-+	ret = intel_dp_get_edid_modes(connector, &intel_dp->adapter);
- 	if (ret) {
- 		if (is_edp(intel_dp) && !dev_priv->panel_fixed_mode) {
- 			struct drm_display_mode *newmode;
-@@ -1808,7 +1852,7 @@ intel_dp_detect_audio(struct drm_connector *connector)
- 	struct edid *edid;
- 	bool has_audio = false;
- 
--	edid = drm_get_edid(connector, &intel_dp->adapter);
-+	edid = intel_dp_get_edid(connector, &intel_dp->adapter);
- 	if (edid) {
- 		has_audio = drm_detect_monitor_audio(edid);
- 
-@@ -2068,8 +2112,6 @@ intel_dp_init(struct drm_device *dev, int output_reg)
- 			break;
- 	}
- 
--	intel_dp_i2c_init(intel_dp, intel_connector, name);
--
+@@ -2115,16 +2118,39 @@ intel_dp_init(struct drm_device *dev, int output_reg)
  	/* Cache some DPCD data in the eDP case */
  	if (is_edp(intel_dp)) {
  		bool ret;
-@@ -2101,6 +2143,8 @@ intel_dp_init(struct drm_device *dev, int output_reg)
- 		}
- 	}
+-		u32 pp_on, pp_div;
++		u32 pp_on, pp_off, pp_div;
++		int current_t1_2;
++		int current_t3;
++		int current_t12;
++		int vbt_t3;
++		int vbt_t12;
  
-+	intel_dp_i2c_init(intel_dp, intel_connector, name);
+ 		pp_on = I915_READ(PCH_PP_ON_DELAYS);
++		pp_off = I915_READ(PCH_PP_OFF_DELAYS);
+ 		pp_div = I915_READ(PCH_PP_DIVISOR);
+ 
+ 		/* Get T3 & T12 values (note: VESA not bspec terminology) */
+-		dev_priv->panel_t3 = (pp_on & 0x1fff0000) >> 16;
+-		dev_priv->panel_t3 /= 10; /* t3 in 100us units */
+-		dev_priv->panel_t12 = pp_div & 0xf;
+-		dev_priv->panel_t12 *= 100; /* t12 in 100ms units */
 +
- 	intel_encoder->hot_plug = intel_dp_hot_plug;
++		current_t1_2 = (pp_on & 0x1fff0000) >> 16;
++		current_t1_2 = (current_t1_2 + 9) / 10; /* t1+t2 in 100us units */
++
++		current_t3 = (pp_off & 0x1fff0000) >> 16;
++		current_t3 = (current_t3 + 9) / 10;	/* t3 in 100us units */
++
++		current_t12 = pp_div & 0xf;
++		current_t12 *= 100; /* t12 in 100ms units */
++
++		vbt_t3 = (dev_priv->edp.pps.t3 + 9) / 10;
++		vbt_t12 = (dev_priv->edp.pps.t12 + 9) / 10;
++		DRM_DEBUG_KMS("current t3 %d t12 %d\n",
++			      current_t3, current_t12);
++		DRM_DEBUG_KMS("VBT t3 %d t12 %d\n",
++			      vbt_t3, vbt_t12);
++
++		intel_dp->panel_power_up_delay = current_t1_2 + max(current_t3, vbt_t3);
++		intel_dp->panel_power_down_delay = current_t1_2 + max(current_t12, vbt_t12);
++		DRM_DEBUG_KMS("panel power up delay %d, power down delay %d\n",
++			      intel_dp->panel_power_up_delay, intel_dp->panel_power_down_delay);
  
- 	if (is_edp(intel_dp)) {
+ 		ironlake_edp_panel_vdd_on(intel_dp);
+ 		ret = intel_dp_get_dpcd(intel_dp);
 -- 
 1.7.6.3
 
