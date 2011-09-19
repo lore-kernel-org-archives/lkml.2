@@ -1,33 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755085Ab1ISE3x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 00:29:53 -0400
-Received: from beauty.rexursive.com ([150.101.121.179]:38794 "EHLO
-	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750867Ab1ISE3w (ORCPT
+	id S1754357Ab1ISEl3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 00:41:29 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:49353 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750773Ab1ISEl1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 00:29:52 -0400
-Subject: Re: [PATCH]: Improve performance of LZO hibernation
-From: Bojan Smojver <bojan@rexursive.com>
-To: linux-kernel@vger.kernel.org
-Date: Mon, 19 Sep 2011 14:29:51 +1000
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1316406591.2026.19.camel@shrek.rexursive.com>
+	Mon, 19 Sep 2011 00:41:27 -0400
+Date: Mon, 19 Sep 2011 14:41:20 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: linux-next: manual merge of the net tree with Linus' tree
+Message-Id: <20110919144120.ed99af0f84549069a4a18ad2@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__19_Sep_2011_14_41_20_+1000_AXD.K9FXgxVI11UG"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-09-19 at 14:14 +1000, Bojan Smojver wrote:
-> +       size_t ring = 0, pg = 0, npages,
-> +              have = 0, want = MAP_PAGE_ENTRIES, need, asked = 0; 
+--Signature=_Mon__19_Sep_2011_14_41_20_+1000_AXD.K9FXgxVI11UG
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The want = MAP_PAGE_ENTRIES part is a bug for sure (a leftover from the
-previous version of the patch). The value of want should be set to
-npages, once npages is set after the page allocation loop, of course.
+Hi all,
 
--- 
-Bojan
+Today's linux-next merge of the net tree got a conflict in
+drivers/net/Kconfig between commit 7756332f5b64 ("pch_gbe: support ML7831
+IOH") from Linus' tree and the driver rearrangement patches from the net
+tree.
 
+The changes in the commit from Linus' tree don;t affect fucntionality, so
+I just used the net tree version.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__19_Sep_2011_14_41_20_+1000_AXD.K9FXgxVI11UG
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOdsfwAAoJEDMEi1NhKgbsi1EH/3H+TjAqBIbWD2Zb+YxtXkhW
+7rEsVm4/vf1DhLJaCM7bLjpZQL0YKc1fOaHoVo3KHosesHi5uD8HnrvuaKI8x9Og
+iJAjOV2r9vFpTSCYMxzOj71Zx3SBR6up192q748D2gZL+yJc/PEOwefxB8f7zl7F
+vsGzdYGPM8OKNpXIIMelp3RpRwv90Pg7G/PmEFEITv0bUha3NV4A0LKRZYqGNClx
+X6qmdW0xycOFqf2RpWVfnBbzPIEVpIC5jiiMd/Dy5gLSUhEYBM8O7M9bM93QNRAD
+xAdtW6tVo9avAtrJD4MGLCc88ItLLstKQ1lYAJZu3fhffnqacXXXU/cPhSG4ESg=
+=eEn4
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__19_Sep_2011_14_41_20_+1000_AXD.K9FXgxVI11UG--
