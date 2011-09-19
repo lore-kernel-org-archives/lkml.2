@@ -1,82 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756697Ab1ISSFx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 14:05:53 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38799 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756234Ab1ISSEg (ORCPT
+	id S1756344Ab1ISSLO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 14:11:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22976 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755588Ab1ISSLK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 14:04:36 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 5/5] regmap: Fix hookup of regcache into regmap
-Date: Mon, 19 Sep 2011 19:03:44 +0100
-Message-Id: <1316455424-11173-5-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.6.3
-In-Reply-To: <1316455424-11173-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <20110919175948.GD540@opensource.wolfsonmicro.com>
- <1316455424-11173-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	Mon, 19 Sep 2011 14:11:10 -0400
+Date: Mon, 19 Sep 2011 14:11:01 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "davem@davemloft.net" <davem@davemloft.net>
+Subject: Re: [PATCH v3 04/11] SUNRPC: parametrize svc creation calls with
+ portmapper flag
+Message-ID: <20110919141101.46303e53@tlielax.poochiereds.net>
+In-Reply-To: <4E7762D4.7090404@parallels.com>
+References: <20110913180953.3961.69217.stgit@localhost6.localdomain6>
+	<20110913181351.3961.70207.stgit@localhost6.localdomain6>
+	<20110919100811.0eaa39fe@tlielax.poochiereds.net>
+	<4E7756F3.4080601@parallels.com>
+	<20110919110729.33a876ca@tlielax.poochiereds.net>
+	<4E7762D4.7090404@parallels.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-- Only suppress physical writes if we're in cache only mode
-- Use the cache for all reads, not just internal ones
-- Return -EBUSY if we're in cache only mode.
+On Mon, 19 Sep 2011 19:42:12 +0400
+Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/base/regmap/regmap.c |   21 ++++++++++++---------
- 1 files changed, 12 insertions(+), 9 deletions(-)
+> 19.09.2011 19:07, Jeff Layton пишет:
+> > On Mon, 19 Sep 2011 18:51:31 +0400
+> > Stanislav Kinsbursky<skinsbursky@parallels.com>  wrote:
+> >
+> >> 19.09.2011 18:08, Jeff Layton пишет:
+> >>> On Tue, 13 Sep 2011 22:13:51 +0400
+> >>> Stanislav Kinsbursky<skinsbursky@parallels.com>   wrote:
+> >>>
+> >>>> This new flag ("setup_rpcbind) will be used to detect, that new service will
+> >>>> send portmapper register calls. For such services we will create rpcbind
+> >>>> clients and remove all stale portmap registrations.
+> >>>> Also, svc_rpcb_cleanup() will be set as sv_shutdown callback for such services
+> >>>> in case of this field wasn't initialized earlier. This will allow to destroy
+> >>>> rpcbind clients when no other users of them left.
+> >>>>
+> >>>> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
+> >>>>
+> >>>> ---
+> >>>>    include/linux/sunrpc/svc.h |    2 ++
+> >>>>    net/sunrpc/svc.c           |   21 ++++++++++++++-------
+> >>>>    2 files changed, 16 insertions(+), 7 deletions(-)
+> >>>>
+> >>>> diff --git a/include/linux/sunrpc/svc.h b/include/linux/sunrpc/svc.h
+> >>>> index 223588a..528952a 100644
+> >>>> --- a/include/linux/sunrpc/svc.h
+> >>>> +++ b/include/linux/sunrpc/svc.h
+> >>>> @@ -402,11 +402,13 @@ struct svc_procedure {
+> >>>>     * Function prototypes.
+> >>>>     */
+> >>>>    struct svc_serv *svc_create(struct svc_program *, unsigned int,
+> >>>> +			    int setup_rpcbind,
+> >>> 				^^^
+> >>> 			Instead of adding this parameter, why not
+> >>> 			base this on the vs_hidden flag in the
+> >>> 			svc_version? IOW, have a function that looks at
+> >>> 			all the svc_versions for a particular
+> >>> 			svc_program, and returns "true" if any of them
+> >>> 			have vs_hidden unset? The mechanism you're
+> >>> 			proposing here has the potential to be out of
+> >>> 			sync with the vs_hidden flag.
+> >>>
+> >>
+> >> Could you, please, clarify me this vs_hidden flag?
+> >> I understand, that it's used to avoid portmap registration.
+> >> But as I see, it's set only for nfs_callback_version1. But this svc_version is a
+> >> part of nfs4_callback_program with nfs_callback_version4, which is not hidden.
+> >> Does this flag is missed here? If not, how we can return "true" from your
+> >> proposed function if any of them have vs_hidden unset?
+> >>
+> >> Also sockets for this program are created with SVC_SOCK_ANONYMOUS flag and we
+> >> will not register any of this program versions with portmapper.
+> >> Thus, from my pow, this vs_hidden flag affects only svc_unregister. And only
+> >> nfs_callback_version1. This looks really strange.
+> >>
+> >> I.e. if we use this flag only for passing through this versions during
+> >> svc_(un)register, and we actually also want to pass through
+> >> nfs_callback_version4 as well (but just missed this vs_hidden flag for it), then
+> >> with current patch-set we can move this flag from (vs_hidden) svc_version to
+> >> svc_program and check it during svc_create instead of my home-brew
+> >> "setup_rpcbind" variable.
+> >>
+> >
+> > Agreed. The current situation is a mess, which is why I suggested a
+> > cleanup and overhaul before you do this...
+> >
+> > The vs_hidden flag is intended to show that a particular program
+> > version should not be registered with (or unregistered from) the
+> > portmapper. Unfortunately, nothing looks at vs_hidden during
+> > registration time, only when unregistering (as you mention).
+> >
+> > It's quite possible that several svc_versions declared in the kernel do
+> > not have this set correctly. One thing that would be good is to audit
+> > each of those.
+> >
+> > We currently rely on SVC_SOCK_ANONYMOUS for registration, but that
+> > wasn't its original intent. It's was just convenient to use it there
+> > too.
+> >
+> > SVC_SOCK_ANONYMOUS was (as best I can tell) originally intended for use
+> > on temporary sockets that we establish on receive. So for
+> > instance...when a client connects to nfsd, we need to create a new
+> > socket for nfsd, but obviously we don't want to register that socket
+> > with the portmapper (since nfsd should already be registered there).
+> > SVC_SOCK_ANONYMOUS ensures that that socket is not registered.
+> >
+> > The whole scheme could probably use a fundamental re-think. I'm not
+> > sure I have a great idea to propose in lieu of it, but I think adding
+> > yet another flag here is probably not the best way to go.
+> >
+> 
+> Ok, thank you, Jeff.
+> It looks like no mentions about portmapper are present in RFC's for NFS versions 
+> 4.* after a brief look.
+> This SVC_SOCK_ANONYMOUS is understandable and can't be removed with this 
+> patch-set from my pow.
+> But now I strongly believe, that we can move this vs_hidden flag from 
+> svc_version to svc_program structure and set it for both NFSv4.* programs.
+> Hope, someone else will confirm of refute this statement.
+> 
 
-diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index 602083f..3596465 100644
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -304,7 +304,9 @@ static int _regmap_write(struct regmap *map, unsigned int reg,
- 
- 	if (!map->cache_bypass) {
- 		ret = regcache_write(map, reg, val);
--		if (!ret || map->cache_only)
-+		if (ret != 0)
-+			return ret;
-+		if (map->cache_only)
- 			return 0;
- 	}
- 
-@@ -421,6 +423,15 @@ static int _regmap_read(struct regmap *map, unsigned int reg,
- 	if (!map->format.parse_val)
- 		return -EINVAL;
- 
-+	if (!map->cache_bypass) {
-+		ret = regcache_read(map, reg, val);
-+		if (ret == 0)
-+			return 0;
-+	}
-+
-+	if (map->cache_only)
-+		return -EBUSY;
-+
- 	ret = _regmap_raw_read(map, reg, map->work_buf, map->format.val_bytes);
- 	if (ret == 0) {
- 		*val = map->format.parse_val(map->work_buf);
-@@ -446,14 +457,6 @@ int regmap_read(struct regmap *map, unsigned int reg, unsigned int *val)
- 
- 	mutex_lock(&map->lock);
- 
--	if (!map->cache_bypass) {
--		ret = regcache_read(map, reg, val);
--		if (!ret) {
--			mutex_unlock(&map->lock);
--			return 0;
--		}
--	}
--
- 	ret = _regmap_read(map, reg, val);
- 
- 	mutex_unlock(&map->lock);
+The problem is nfsd. In principle, there's no real reason we have to
+register NFSv4 with the portmapper at all. One could envision a
+setup where a v4-only server doesn't need to run rpcbind at all. Making
+it per-program may hamstring you from doing that later.
+
+It think it would be a good thing to keep it per-version, and it's
+trivial to write a routine to do what I've described. svc_creates only
+happen rarely.
+
+Just walk the pg_vers array for the program and look at each vs_hidden
+value. Return true when you hit one that has vs_hidden unset. Return
+false if none do. Then use that return value to replace your new flag
+in this patch.
+
 -- 
-1.7.6.3
-
+Jeff Layton <jlayton@redhat.com>
