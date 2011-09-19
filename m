@@ -1,69 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752032Ab1ISGPI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 02:15:08 -0400
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:45088 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751071Ab1ISGPH convert rfc822-to-8bit (ORCPT
+	id S1756831Ab1ISGTL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 02:19:11 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:39434 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751153Ab1ISGTJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 02:15:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:subject
-	:cc:date:message-id:mime-version:content-type
-	:content-transfer-encoding; q=dns; s=sasl; b=DWbHznm9poLJ/nJq6F3
-	Y7owF/Z8maADTkB/PIwVqzzX9Di5TtJElwou4Bf6nCHZqNLksP1g1oUwTE/2lQTP
-	bZEp4lKlx6iJd4SUsqoyM8HT68oWaNnxz4ianjakOKszCb16iP/SnqDJQyQmRlFe
-	AZDEU4Wt+tKv8/217ODZ6pmc=
-From: Junio C Hamano <junio@pobox.com>
-To: git@vger.kernel.org
-Subject: [ANNOUNCE] Git 1.7.7.rc2
-cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Date: Sun, 18 Sep 2011 23:15:01 -0700
-Message-ID: <7vfwjtawii.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-X-Pobox-Relay-ID: B6798D06-E286-11E0-989C-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
-Content-Transfer-Encoding: 8BIT
+	Mon, 19 Sep 2011 02:19:09 -0400
+Date: Mon, 19 Sep 2011 16:19:00 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?B?IlV3ZSBLbGVpbmUtS8O2bmlnIg==?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: linux-next: build failure after merge of the mfd tree
+Message-Id: <20110919161900.99b51989c9a02075e9f4cc93@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__19_Sep_2011_16_19_00_+1000_yP30zhevtaqrjYuJ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A release candidate Git 1.7.7.rc2 is available but unfortunately not at
-the usual places. Even so (rather, exactly because it is in unusual
-places, so we are likely to have smaller number of casual observers who
-grab and build them), please test it to help us make the upcoming release
-as solid as we could.
+--Signature=_Mon__19_Sep_2011_16_19_00_+1000_yP30zhevtaqrjYuJ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-A release candidate tarball is found at:
+Hi Samuel,
 
-    http://code.google.com/p/git-core/downloads/list
-  
-and its SHA-1 checksum is:
+After merging the mfd tree, today's linux-next build (x86_64 allmodconfig)
+failed like this:
 
-1e0e035148df279af689131273570a7dde45950b  git-1.7.7.rc2.tar.gz
+drivers/regulator/mc13783-regulator.c: In function 'mc13783_regulator_probe=
+':
+drivers/regulator/mc13783-regulator.c:347:9: error: dereferencing pointer t=
+o incomplete type
+drivers/regulator/mc13783-regulator.c:355:23: error: dereferencing pointer =
+to incomplete type
+drivers/regulator/mc13783-regulator.c:356:21: error: dereferencing pointer =
+to incomplete type
+drivers/regulator/mc13783-regulator.c:358:34: error: dereferencing pointer =
+to incomplete type
+drivers/regulator/mc13783-regulator.c:359:26: error: dereferencing pointer =
+to incomplete type
+drivers/regulator/mc13783-regulator.c: In function 'mc13783_regulator_remov=
+e':
+drivers/regulator/mc13783-regulator.c:390:23: error: dereferencing pointer =
+to incomplete type
 
-Also the following public repositories all have a copy of the v1.7.7-rc2
-tag and the master branch that the tag points at:
+Caused by commit a7e5c9a30148 ("mfd: Remove mc13783 API functions and
+symbols").
 
-	url = git://repo.or.cz/alt-git.git
-	url = https://code.google.com/p/git-core/
-	url = git://git.sourceforge.jp/gitroot/git-core/git.git
-	url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
-	url = https://github.com/gitster/git
+I have used the mfd tree from next-20110915 again today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-----------------------------------------------------------------
+--Signature=_Mon__19_Sep_2011_16_19_00_+1000_yP30zhevtaqrjYuJ
+Content-Type: application/pgp-signature
 
-Changes since v1.7.7-rc1 are as follows:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Bryan Jacobs (1):
-      git-svn: teach git-svn to populate svn:mergeinfo
+iQEcBAEBAgAGBQJOdt7UAAoJEDMEi1NhKgbsTYoIAJz8IVSqQXCp7Yi7tXgoH57h
+f+AUPjudg1egQbZp15PUfhpDbLrbQlPYhcsp9UyRFBuumDRQguidt+tbMQ0ZP1Aj
+nLeCl8EBPVM999KNeVNs76QrY73L9buSZFzQ3pi2vdQrEOJ53K90yU8Gxufc0i4Y
+CahGCN3LUu3uZjRZJzpI1qTq+pEw4Oamv9LmTMMR2fgu37TDMuq2VKnYkEgkdSUF
+3thhEPdcmHvsZfPo+voBFTQKzbz0JsFPYDsoGaHiCTv7Mzf1xuzd4JVKunPDwQZY
+texf+imWhU5NiQYr7JPVLVVZ2RHpD9o1pndhjPtONPBmxwPFTyI/tT+kWSSY6Ig=
+=S7Yc
+-----END PGP SIGNATURE-----
 
-Frédéric Heitzmann (1):
-      Disambiguate duplicate t9160* tests
-
-Junio C Hamano (2):
-      branch --set-upstream: regression fix
-      Git 1.7.7-rc2
-
-Pang Yan Han (1):
-      format-patch: ignore ui.color
+--Signature=_Mon__19_Sep_2011_16_19_00_+1000_yP30zhevtaqrjYuJ--
