@@ -1,69 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754441Ab1ISIsz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 04:48:55 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:63966 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753255Ab1ISIsx (ORCPT
+	id S1754532Ab1ISIuM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 04:50:12 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:60546 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751618Ab1ISIuK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 04:48:53 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Greg KH <greg@kroah.com>, Jean Delvare <khali@linux-fr.org>,
-        Luciano Coelho <coelho@ti.com>, matti.j.aaltonen@nokia.com,
-        johannes@sipsolutions.net, linux-kernel@vger.kernel.org,
-        sameo@linux.intel.com, mchehab@infradead.org,
-        linux-media@vger.kernel.org, linux-omap@vger.kernel.org,
-        Tony Lindgren <tony@atomide.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 1/2] misc: remove CONFIG_MISC_DEVICES
-Date: Mon, 19 Sep 2011 10:47:50 +0200
-Message-ID: <2282172.TF7nejTDIZ@wuerfel>
-User-Agent: KMail/4.7.1 (Linux/3.0.0-rc1nosema+; KDE/4.7.1; x86_64; ; )
-In-Reply-To: <4E763C3C.3050909@xenotime.net>
-References: <20110829102732.03f0f05d.rdunlap@xenotime.net> <20110918152835.GA30696@kroah.com> <4E763C3C.3050909@xenotime.net>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:ME4aDg3y/lvMXd8zaS5Ba8YeuGMHOzxjks1+Vun9v3+
- 8THH1HnwUO0gqLnnOjGYqt9PTCE5TfWwkyVK8LTmvGlIlramg5
- 4uPPHDu8Dxe3b2OAd1KIe2bhUaa/xT7JWSU4bSUYQxKPYP36bY
- ANLhfxKWB4RIVl3M7h2e0KZM5jphWHN86N8f8U2vdo3r+eI7ao
- zt2ZFh6shmzZeGIeJFE1Z4ud+wS0TiXYyXmvWx88A3zAn1owvf
- HmtCphZ2fObDIG9GqotlkvvDAUjtFCZcI33t1L7MglDNVrqtB8
- /d1mcoWC1WjqDpxcTHp8mI0sCvD1pz9/+fJ5lHHOD7lHm188tR
- FHidcO8Ay4C1MhNjwuuo=
+	Mon, 19 Sep 2011 04:50:10 -0400
+From: Ike Panhc <ike.pan@canonical.com>
+To: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Matthew Garrett <mjg@redhat.com>
+Subject: [PATCH 4/5] ideapad: add debugfs support
+Date: Mon, 19 Sep 2011 16:50:05 +0800
+Message-Id: <1316422205-13908-1-git-send-email-ike.pan@canonical.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1315247572-9131-1-git-send-email-ike.pan@canonical.com>
+References: <1315247572-9131-1-git-send-email-ike.pan@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 18 September 2011 11:45:16 Randy Dunlap wrote:
-> >> We have fallbacks to Andrew and/or GregKH currently, but GregKH is not
-> >> consistent or timely with applying drivers/misc/ patches.  It deserves better.
-> >> [added him to Cc: list]
-> > 
-> > I do try to handle patches sent to me for misc/ in time for the
-> > different merge windows as that directory contains drivers that have
-> > moved out of the staging/ directory.
-> > 
-> > But yes, I'm not the overall drivers/misc/ maintainer, do we really need
-> > one?  If so, I can easily start maintaining a development tree for it to
-> > keep it separate for the different driver authors to send me stuff and
-> > start tracking it more "for real" if Arnd doesn't want to do it.
-> 
-> We need for the patches to be applied in a timely manner.
-> Sometimes when there is no real maintainer, that does not happen.
+Add two nodes in debugfs which shows cfg value and its meaning,
+and status info read from VPC2004.
 
-I think the other equally import aspect of maintainership that
-drivers/misc (and drivers/char) needs is someone who says no to
-stuff that doesn't belong there and helps submitters to find a
-proper place where appropriate and to come up with a proper user
-interface abstraction.
+Signed-off-by: Ike Panhc <ike.pan@canonical.com>
+---
+ Documentation/ABI/testing/debugfs-ideapad |   19 ++++
+ drivers/platform/x86/ideapad-laptop.c     |  149 +++++++++++++++++++++++++++++
+ 2 files changed, 168 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/ABI/testing/debugfs-ideapad
 
-I'm definitely willing to do that part.
+diff --git a/Documentation/ABI/testing/debugfs-ideapad b/Documentation/ABI/testing/debugfs-ideapad
+new file mode 100644
+index 0000000..7079c0b
+--- /dev/null
++++ b/Documentation/ABI/testing/debugfs-ideapad
+@@ -0,0 +1,19 @@
++What:		/sys/kernel/debug/ideapad/cfg
++Date:		Sep 2011
++KernelVersion:	3.2
++Contact:	Ike Panhc <ike.pan@canonical.com>
++Description:
++
++cfg shows the return value of _CFG method in VPC2004 device. It tells machine
++capability and what graphic component within the machine.
++
++
++What:		/sys/kernel/debug/ideapad/status
++Date:		Sep 2011
++KernelVersion:	3.2
++Contact:	Ike Panhc <ike.pan@canonical.com>
++Description:
++
++status shows infos we can read and tells its meaning and value.
++
++
+diff --git a/drivers/platform/x86/ideapad-laptop.c b/drivers/platform/x86/ideapad-laptop.c
+index 39a72a8..1a18cc2 100644
+--- a/drivers/platform/x86/ideapad-laptop.c
++++ b/drivers/platform/x86/ideapad-laptop.c
+@@ -34,6 +34,8 @@
+ #include <linux/input/sparse-keymap.h>
+ #include <linux/backlight.h>
+ #include <linux/fb.h>
++#include <linux/debugfs.h>
++#include <linux/seq_file.h>
+ 
+ #define IDEAPAD_RFKILL_DEV_NUM	(3)
+ 
+@@ -71,6 +73,7 @@ struct ideapad_private {
+ 	struct platform_device *platform_device;
+ 	struct input_dev *inputdev;
+ 	struct backlight_device *blightdev;
++	struct dentry *debug;
+ 	unsigned long cfg;
+ };
+ 
+@@ -188,6 +191,149 @@ static int write_ec_cmd(acpi_handle handle, int cmd, unsigned long data)
+ }
+ 
+ /*
++ * debugfs
++ */
++static int debugfs_status_show(struct seq_file *s, void *data)
++{
++	unsigned long value;
++
++	if (!read_ec_data(ideapad_handle, VPCCMD_R_BL_MAX, &value))
++		seq_printf(s, "Backlight max:\t%lu\n", value);
++	if (!read_ec_data(ideapad_handle, VPCCMD_R_BL, &value))
++		seq_printf(s, "Backlight now:\t%lu\n", value);
++	if (!read_ec_data(ideapad_handle, VPCCMD_R_BL_POWER, &value))
++		seq_printf(s, "BL power value:\t%s\n", value ? "On" : "Off");
++	seq_printf(s, "=====================\n");
++
++	if (!read_ec_data(ideapad_handle, VPCCMD_R_RF, &value))
++		seq_printf(s, "Radio status:\t%s(%lu)\n",
++			   value ? "On" : "Off", value);
++	if (!read_ec_data(ideapad_handle, VPCCMD_R_WIFI, &value))
++		seq_printf(s, "Wifi status:\t%s(%lu)\n",
++			   value ? "On" : "Off", value);
++	if (!read_ec_data(ideapad_handle, VPCCMD_R_BT, &value))
++		seq_printf(s, "BT status:\t%s(%lu)\n",
++			   value ? "On" : "Off", value);
++	if (!read_ec_data(ideapad_handle, VPCCMD_R_3G, &value))
++		seq_printf(s, "3G status:\t%s(%lu)\n",
++			   value ? "On" : "Off", value);
++	seq_printf(s, "=====================\n");
++
++	if (!read_ec_data(ideapad_handle, VPCCMD_R_TOUCHPAD, &value))
++		seq_printf(s, "Touchpad status:%s(%lu)\n",
++			   value ? "On" : "Off", value);
++	if (!read_ec_data(ideapad_handle, VPCCMD_R_CAMERA, &value))
++		seq_printf(s, "Camera status:\t%s(%lu)\n",
++			   value ? "On" : "Off", value);
++
++	return 0;
++}
++
++static int debugfs_status_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, debugfs_status_show, NULL);
++}
++
++static const struct file_operations debugfs_status_fops = {
++	.owner = THIS_MODULE,
++	.open = debugfs_status_open,
++	.read = seq_read,
++	.llseek = seq_lseek,
++	.release = single_release,
++};
++
++static int debugfs_cfg_show(struct seq_file *s, void *data)
++{
++	struct ideapad_private *priv = s->private;
++
++	seq_printf(s, "cfg: 0x%.8lX\n\nCapability: ", priv->cfg);
++	if (test_bit(CFG_BT_BIT, &priv->cfg))
++		seq_printf(s, "Bluetooth ");
++	if (test_bit(CFG_3G_BIT, &priv->cfg))
++		seq_printf(s, "3G ");
++	if (test_bit(CFG_WIFI_BIT, &priv->cfg))
++		seq_printf(s, "Wireless ");
++	if (test_bit(CFG_CAMERA_BIT, &priv->cfg))
++		seq_printf(s, "Camera ");
++	seq_printf(s, "\nGraphic: ");
++	switch ((priv->cfg)&0x700) {
++	case 0x100:
++		seq_printf(s, "Intel");
++		break;
++	case 0x200:
++		seq_printf(s, "ATI");
++		break;
++	case 0x300:
++		seq_printf(s, "Nvidia");
++		break;
++	case 0x400:
++		seq_printf(s, "Intel and ATI");
++		break;
++	case 0x500:
++		seq_printf(s, "Intel and Nvidia");
++		break;
++	default:
++		seq_printf(s, "Unknown");
++	}
++	seq_printf(s, "\n");
++
++	return 0;
++}
++
++static int debugfs_cfg_open(struct inode *inode, struct file *file)
++{
++	struct ideapad_private *priv = inode->i_private;
++
++	return single_open(file, debugfs_cfg_show, priv);
++}
++
++static const struct file_operations debugfs_cfg_fops = {
++	.owner = THIS_MODULE,
++	.open = debugfs_cfg_open,
++	.read = seq_read,
++	.llseek = seq_lseek,
++	.release = single_release,
++};
++
++static void ideapad_debugfs_exit(struct ideapad_private *priv)
++{
++	debugfs_remove_recursive(priv->debug);
++	priv->debug = NULL;
++}
++
++static void __devinit ideapad_debugfs_init(struct ideapad_private *priv)
++{
++	struct dentry *node;
++
++	priv->debug = debugfs_create_dir("ideapad", NULL);
++	if (IS_ERR_OR_NULL(priv->debug)) {
++		priv->debug = NULL;
++		pr_err("failed to create debugfs directory");
++		return;
++	}
++
++	node = debugfs_create_file("cfg", S_IRUGO, priv->debug, priv,
++				   &debugfs_cfg_fops);
++	if (IS_ERR_OR_NULL(priv->debug)) {
++		pr_err("failed to create cfg in debugfs");
++		goto errout;
++	}
++
++	node = debugfs_create_file("status", S_IRUGO, priv->debug, NULL,
++				   &debugfs_status_fops);
++	if (IS_ERR_OR_NULL(priv->debug)) {
++		pr_err("failed to create event in debugfs");
++		goto errout;
++	}
++
++	return;
++
++errout:
++	ideapad_debugfs_exit(priv);
++	return;
++}
++
++/*
+  * sysfs
+  */
+ static ssize_t show_ideapad_cam(struct device *dev,
+@@ -598,6 +744,8 @@ static int __devinit ideapad_acpi_add(struct acpi_device *adevice)
+ 			goto backlight_failed;
+ 	}
+ 
++	ideapad_debugfs_init(priv);
++
+ 	return 0;
+ 
+ backlight_failed:
+@@ -620,6 +768,7 @@ static int __devexit ideapad_acpi_remove(struct acpi_device *adevice, int type)
+ 	for (i = 0; i < IDEAPAD_RFKILL_DEV_NUM; i++)
+ 		ideapad_unregister_rfkill(adevice, i);
+ 	ideapad_input_exit(priv);
++	ideapad_debugfs_exit(priv);
+ 	ideapad_platform_exit(priv);
+ 	dev_set_drvdata(&adevice->dev, NULL);
+ 	kfree(priv);
+-- 
+1.7.5.4
 
-Greg, how about we both formally take ownership of driver/{misc,char}
-and you track the patches while I do the bulk of the reviews? You
-are definitely better than me with the patch tracking workflow.
-
-	Arnd
