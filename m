@@ -1,38 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756576Ab1ISAWI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Sep 2011 20:22:08 -0400
-Received: from mailserver.inpa.gov.br ([200.17.53.9]:38374 "EHLO
-	mailserver.inpa.gov.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751209Ab1ISAWG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Sep 2011 20:22:06 -0400
-Message-ID: <52452.74.115.0.4.1316385283.squirrel@webmail.inpa.gov.br>
-Date: Sun, 18 Sep 2011 18:34:43 -0400 (AMT)
-Subject: Dear Sir/Madam
-From: "Fidelity Trust Loan Firm" <anthony@inpa.gov.br>
-Reply-To: fidelity_trust003.firm@mugi.or.id
-User-Agent: SquirrelMail/1.4.13
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+	id S1752346Ab1ISA6U (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Sep 2011 20:58:20 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:23032 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751431Ab1ISA6T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Sep 2011 20:58:19 -0400
+From: Glauber Costa <glommer@parallels.com>
+To: linux-kernel@vger.kernel.org
+Cc: paul@paulmenage.org, lizf@cn.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com,
+        ebiederm@xmission.com, davem@davemloft.net, gthelen@google.com,
+        netdev@vger.kernel.org, linux-mm@kvack.org, kirill@shutemov.name
+Subject: [PATCH v3 0/7]  per-cgroup tcp buffer pressure settings
+Date: Sun, 18 Sep 2011 21:56:38 -0300
+Message-Id: <1316393805-3005-1-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+[[ v3: merge Kirill's suggestions, + a destroy-related bugfix ]]
+
+This patch introduces per-cgroup tcp buffers limitation. This allows
+sysadmins to specify a maximum amount of kernel memory that
+tcp connections can use at any point in time. TCP is the main interest
+in this work, but extending it to other protocols would be easy.
+
+For this to work, I am hooking it into memcg, after the introdution of
+an extension for tracking and controlling objects in kernel memory.
+Since they are usually not found in page granularity, and are fundamentally
+different from userspace memory (not swappable, can't overcommit), they
+need their special place inside the Memory Controller.
+
+Right now, the kmem extension is quite basic, and just lays down the
+basic infrastucture for the ongoing work. 
+
+Although it does not account kernel memory allocated - I preferred to
+keep this series simple and leave accounting to the slab allocations when
+they arrive.
+
+What it does is to piggyback in the memory control mechanism already present in
+/proc/sys/net/ipv4/tcp_mem. There is a soft limit, and a hard limit,
+that will suppress allocation when reached. For each non-root cgroup, however,
+the file kmem.tcp_maxmem will be used to cap those values. 
+
+The usage I have in mind here is containers. Each container will
+define its own values for soft and hard limits, but none of them will
+be possibly bigger than the value the box' sysadmin specified from
+the outside.
+
+To test for any performance impacts of this patch, I used netperf's
+TCP_RR benchmark on localhost, so we can have both recv and snd in action.
+For this iteration, I am using the 1% confidence interval as suggested by Rick.
+
+Command line used was ./src/netperf -t TCP_RR -H localhost -i 30,3 -I 99,1 and the
+results:
+
+Without the patch
+=================
+
+Local /Remote
+Socket Size   Request  Resp.   Elapsed  Trans.
+Send   Recv   Size     Size    Time     Rate
+bytes  Bytes  bytes    bytes   secs.    per sec
+
+16384  87380  1        1       10.00    35367.21
+16384  87380
 
 
+With the patch
+==============
 
-Dear Sir/Madam,
+Local /Remote
+Socket Size   Request  Resp.   Elapsed  Trans.
+Send   Recv   Size     Size    Time     Rate
+bytes  Bytes  bytes    bytes   secs.    per sec
 
-We are Loan specialists helping the needy to gain financial stability
-grant debt consolidation loans, business loans, private loans,interested
-contact us via e-mail:
+16384  87380  1        1       10.00   	35477.10 
+16384  87380
 
-fidelity_trust003.firm@mugi.or.id
+The difference is less than 0.5 %
 
-Alan Johnson.
+A simple test with a 1000 level nesting yields more or less the same
+difference:
+
+1000 level nesting
+==================
+
+Local /Remote
+Socket Size   Request  Resp.   Elapsed  Trans.
+Send   Recv   Size     Size    Time     Rate         
+bytes  Bytes  bytes    bytes   secs.    per sec   
+
+16384  87380  1        1       10.00    35305.21   
+16384  87380 
+
+
+Glauber Costa (7):
+  Basic kernel memory functionality for the Memory Controller
+  socket: initial cgroup code.
+  foundations of per-cgroup memory pressure controlling.
+  per-cgroup tcp buffers control
+  per-netns ipv4 sysctl_tcp_mem
+  tcp buffer limitation: per-cgroup limit
+  Display current tcp memory allocation in kmem cgroup
+
+ Documentation/cgroups/memory.txt |   32 +++-
+ crypto/af_alg.c                  |    7 +-
+ include/linux/memcontrol.h       |   58 ++++++
+ include/net/netns/ipv4.h         |    1 +
+ include/net/sock.h               |  127 ++++++++++++-
+ include/net/tcp.h                |   14 +-
+ include/net/udp.h                |    3 +-
+ include/trace/events/sock.h      |   10 +-
+ init/Kconfig                     |   11 +
+ mm/memcontrol.c                  |  406 ++++++++++++++++++++++++++++++++++++--
+ net/core/sock.c                  |  103 +++++++---
+ net/decnet/af_decnet.c           |   21 ++-
+ net/ipv4/proc.c                  |    7 +-
+ net/ipv4/sysctl_net_ipv4.c       |   71 ++++++-
+ net/ipv4/tcp.c                   |   58 ++++---
+ net/ipv4/tcp_input.c             |   12 +-
+ net/ipv4/tcp_ipv4.c              |   18 +-
+ net/ipv4/tcp_output.c            |    2 +-
+ net/ipv4/tcp_timer.c             |    2 +-
+ net/ipv4/udp.c                   |   20 ++-
+ net/ipv6/tcp_ipv6.c              |   15 +-
+ net/ipv6/udp.c                   |    4 +-
+ net/sctp/socket.c                |   35 +++-
+ 23 files changed, 904 insertions(+), 133 deletions(-)
+
+-- 
+1.7.6
 
