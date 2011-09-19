@@ -1,196 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755566Ab1ISLz3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 07:55:29 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:49867 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754919Ab1ISLz1 (ORCPT
+	id S1755440Ab1ISMHj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 08:07:39 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:58306 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754725Ab1ISMHi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 07:55:27 -0400
-Date: Mon, 19 Sep 2011 13:55:20 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Cc: Li Yang <leoli@freescale.com>,
-        Pavankumar Kondeti <pkondeti@codeaurora.org>,
-        Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@suse.de>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Chen <peter.chen@freescale.com>,
-        Lin Tony-B19295 <B19295@freescale.com>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: Re: [PATCHv4 00/19] First round in OTG rework
-Message-ID: <20110919115520.GX21769@pengutronix.de>
-References: <1315379772-8830-1-git-send-email-heikki.krogerus@linux.intel.com>
- <20110912121255.GA2520@xps8300>
+	Mon, 19 Sep 2011 08:07:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110912121255.GA2520@xps8300>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 13:51:25 up 89 days, 17:38, 54 users,  load average: 1.06, 1.50,
- 1.30
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20110918062144.GF3523@ponder.secretlab.ca>
+References: <1316017900-19918-1-git-send-email-robherring2@gmail.com>
+	<1316017900-19918-6-git-send-email-robherring2@gmail.com>
+	<CAJuYYwSFu2HC+u2NY41+yw9tEyy85RKa4Dpm3SL+jbwS_OOA0A@mail.gmail.com>
+	<4E71CE5D.9030900@ti.com>
+	<20110916160939.GA2100@arm.com>
+	<20110918062144.GF3523@ponder.secretlab.ca>
+Date: Mon, 19 Sep 2011 13:07:37 +0100
+Message-ID: <CA+wbFddVw5+CDMzNXE9Q4-v4kByQmC6xp-rK5e81ChbYFGVe=A@mail.gmail.com>
+Subject: Re: [PATCH 5/5] ARM: gic: add OF based initialization
+From: Dave Martin <dave.martin@linaro.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: "Cousson, Benoit" <b-cousson@ti.com>, Rob Herring <robherring2@gmail.com>,
+        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        "jamie@jamieiles.com" <jamie@jamieiles.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Heikki,
+On Sun, Sep 18, 2011 at 7:21 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> On Fri, Sep 16, 2011 at 05:09:39PM +0100, Dave Martin wrote:
+>> For now, we express the mapping by putting an interrupt-map in the
+>> core-tile DT, but this feels inelegant as well as wasteful -- expressing
+>> "+ 32" using a table which is about 1K in size and duplicates that
+>> information 43 times.
+>>
+>> Using a dedicated irq domain or a fake interrupt controller node to
+>> encapsulate the motherboard interrupts feels like a cleaner approach,
+>> but for now I'm not clear on the best way to do it.
+>
+> An irq nexus node would indeed be something to investigate for your
+> particular case.  Look for examples of interrupt-map.  It is most
+> often used for handling IRQ swizzling on PCI busses.
 
-On Mon, Sep 12, 2011 at 03:12:55PM +0300, Heikki Krogerus wrote:
-> Hi guys,
-> 
-> On Wed, Sep 07, 2011 at 10:15:53AM +0300, Heikki Krogerus wrote:
-> > There were no comments in two weeks, so I'm dropping the RFC. 
-> > Otherwise this is the same as the previous, no changes.
-> > 
-> > Quick summary:
-> > This introduces struct usb_phy and struct usb_otg that
-> > replace struct otg_transceiver. The transceiver and phy
-> > members from struct otg_transceiver are left in struct
-> > usb_phy and otg specific members are moved to struct
-> > usb_otg.
-> > 
-> > So the idea is simply to separate USB PHY handling from OTG.
-> > 
-> > Heikki Krogerus (19):
-> >   usb: otg: Rename otg_transceiver to usb_phy
-> >   usb: otg: Rename usb_otg and usb_xceiv to usb_phy
-> >   usb: otg: Separate otg members from usb_phy
-> >   usb: otg: ab8500: Start using struct usb_otg
-> >   usb: otg: fsl: Start using struct usb_otg
-> >   usb: otg: gpio_vbus: Start using struct usb_otg
-> >   usb: otg: isp1301_omap: Start using struct usb_otg
-> >   usb: otg: msm: Start using struct usb_otg
-> >   usb: otg: langwell: Start using struct usb_otg
-> >   usb: otg: nop: Start using struct usb_otg
-> >   usb: otg: twl4030: Start using struct usb_otg
-> >   usb: otg: twl6030: Start using struct usb_otg
-> >   usb: otg: ulpi: Start using struct usb_otg
-> >   arm: imx: Start using struct usb_otg
-> >   usb: musb: Start using struct usb_otg
-> >   power_supply: Convert all users to new usb_phy
-> >   usb: Convert all users to new usb_phy
-> >   usb: otg: Remove OTG specific members from usb_phy
-> >   usb: otg: Convert all users to pass struct usb_otg for OTG functions
-> 
-> You guys are maintainers of the tranceiver/otg drivers. Can you test
-> these and ACK the patch for your driver if you feel there is nothing
-> wrong with these? I would much appreciate.
+That's what I currently have -- this is logically correct, and it
+works; it just feels like a sledgehammer for cracking this particular
+nut, because we don't really have 43 independent interrupt mappings
+and types.  We have one offset and one type which is applied to all
+the interrupts, and this situation is expected to be the same for all
+variations of this board, except that offset may change.  I suspect
+this situation applies to many platforms -- the number of interrupts
+may in general be much larger than the number of independent mappings.
 
-The following is needed to make i.MX compile and work. You renamed
-pdata->otg to pdata->xceiv in the driver, but not in the header file.
-Renaming it would also mean to rename it in the boards using this
-header, that's why I kept the name 'otg' for now instead of renaming
-it to 'xceiv' (or 'phy' which I like better).
+Another way of looking at the problem is that it's difficult to come
+up with a one-size-fits-all description of interrupt mappings which is
+also efficient.  Requiring a single set of mapping semantics requires
+the mappings to be both rather overspecified for most cases, and
+flattened into a large, structureless table which may become pretty
+large and unwieldy.  If there were 100+ interrupts instead of 43, we'd
+really have to be generating the device tree using a script in order
+for it to be maintainable (which is not necessarily a problem, but can
+be a warning sign)
 
-Sascha
+An alternative approach is to introduce a special interrupt controller
+node which serves as the interrupt-parent for the child domain and
+maps the interrupts with flexible semantics defined by the node's
+bindings; or different kinds of interrupt-map/interrupt-map-mask
+properties could be defined.  Bindings could be added as needed to
+support different cases -- though really we should only expect to have
+a small number at most.  When the interrupt mapping is significantly
+complex, using interrupt-map will probably be the best approach
+anyway.
 
 
-diff --git a/arch/arm/mach-imx/mx31moboard-devboard.c b/arch/arm/mach-imx/mx31moboard-devboard.c
-index cb792d0..f11d0ef 100644
---- a/arch/arm/mach-imx/mx31moboard-devboard.c
-+++ b/arch/arm/mach-imx/mx31moboard-devboard.c
-@@ -177,7 +177,7 @@ static int devboard_isp1105_init(struct usb_phy *otg)
- }
- 
- 
--static int devboard_isp1105_set_vbus(struct usb_phy *otg, bool on)
-+static int devboard_isp1105_set_vbus(struct usb_otg *otg, bool on)
- {
- 	if (on)
- 		gpio_set_value(USBH1_VBUSEN_B, 0);
-diff --git a/arch/arm/mach-imx/mx31moboard-marxbot.c b/arch/arm/mach-imx/mx31moboard-marxbot.c
-index f921e47..0eb1d12 100644
---- a/arch/arm/mach-imx/mx31moboard-marxbot.c
-+++ b/arch/arm/mach-imx/mx31moboard-marxbot.c
-@@ -291,7 +291,7 @@ static int marxbot_isp1105_init(struct usb_phy *otg)
- }
- 
- 
--static int marxbot_isp1105_set_vbus(struct usb_phy *otg, bool on)
-+static int marxbot_isp1105_set_vbus(struct usb_otg *otg, bool on)
- {
- 	if (on)
- 		gpio_set_value(USBH1_VBUSEN_B, 0);
-diff --git a/arch/arm/plat-mxc/include/mach/mxc_ehci.h b/arch/arm/plat-mxc/include/mach/mxc_ehci.h
-index 2c159dc..9ffd1bb 100644
---- a/arch/arm/plat-mxc/include/mach/mxc_ehci.h
-+++ b/arch/arm/plat-mxc/include/mach/mxc_ehci.h
-@@ -44,7 +44,7 @@ struct mxc_usbh_platform_data {
- 	int (*exit)(struct platform_device *pdev);
- 
- 	unsigned int		 portsc;
--	struct otg_transceiver	*otg;
-+	struct usb_phy		*otg;
- };
- 
- int mx51_initialize_usb_hw(int port, unsigned int flags);
-diff --git a/drivers/usb/host/ehci-mxc.c b/drivers/usb/host/ehci-mxc.c
-index 6e32147..cf8f192 100644
---- a/drivers/usb/host/ehci-mxc.c
-+++ b/drivers/usb/host/ehci-mxc.c
-@@ -218,15 +218,15 @@ static int ehci_mxc_drv_probe(struct platform_device *pdev)
- 	msleep(10);
- 
- 	/* Initialize the transceiver */
--	if (pdata->xceiv) {
--		pdata->xceiv->io_priv = hcd->regs + ULPI_VIEWPORT_OFFSET;
--		ret = usb_phy_init(pdata->xceiv);
-+	if (pdata->otg) {
-+		pdata->otg->io_priv = hcd->regs + ULPI_VIEWPORT_OFFSET;
-+		ret = usb_phy_init(pdata->otg);
- 		if (ret) {
- 			dev_err(dev, "unable to init transceiver, probably missing\n");
- 			ret = -ENODEV;
- 			goto err_add;
- 		}
--		ret = otg_set_vbus(pdata->xceiv->otg, 1);
-+		ret = otg_set_vbus(pdata->otg->otg, 1);
- 		if (ret) {
- 			dev_err(dev, "unable to enable vbus on transceiver\n");
- 			goto err_add;
-@@ -240,17 +240,17 @@ static int ehci_mxc_drv_probe(struct platform_device *pdev)
- 	if (ret)
- 		goto err_add;
- 
--	if (pdata->xceiv) {
-+	if (pdata->otg) {
- 		/*
- 		 * efikamx and efikasb have some hardware bug which is
- 		 * preventing usb to work unless CHRGVBUS is set.
- 		 * It's in violation of USB specs
- 		 */
- 		if (machine_is_mx51_efikamx() || machine_is_mx51_efikasb()) {
--			flags = usb_phy_io_read(pdata->xceiv,
-+			flags = usb_phy_io_read(pdata->otg,
- 							ULPI_OTG_CTRL);
- 			flags |= ULPI_OTG_CTRL_CHRGVBUS;
--			ret = usb_phy_io_write(pdata->xceiv, flags,
-+			ret = usb_phy_io_write(pdata->otg, flags,
- 							ULPI_OTG_CTRL);
- 			if (ret) {
- 				dev_err(dev, "unable to set CHRVBUS\n");
-@@ -298,8 +298,8 @@ static int __exit ehci_mxc_drv_remove(struct platform_device *pdev)
- 	if (pdata && pdata->exit)
- 		pdata->exit(pdev);
- 
--	if (pdata->xceiv)
--		usb_phy_shutdown(pdata->xceiv);
-+	if (pdata->otg)
-+		usb_phy_shutdown(pdata->otg);
- 
- 	usb_remove_hcd(hcd);
- 	iounmap(hcd->regs);
+This is just a view for discussion.
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+For now, I'll keep the interrupt-map for VE. since although it feels
+inefficient it is at least obviously correct.
+
+Cheers
+---Dave
