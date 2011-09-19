@@ -1,103 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756774Ab1ISQkl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 12:40:41 -0400
-Received: from mail-wy0-f170.google.com ([74.125.82.170]:52567 "EHLO
-	mail-wy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756737Ab1ISQkk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 12:40:40 -0400
+	id S1756781Ab1ISQmZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 12:42:25 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:54291 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756727Ab1ISQmY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 12:42:24 -0400
+Message-ID: <4E7770BD.6050902@parallels.com>
+Date: Mon, 19 Sep 2011 13:41:33 -0300
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-In-Reply-To: <BANLkTimnP8L3kSoafdTtUhr9CXx9-WDVLQ@mail.gmail.com>
-References: <1308917362-4795-1-git-send-email-segoon@openwall.com>
- <BANLkTimm7KDEU7WD7jVV=5vAGt2GbjgwGg@mail.gmail.com> <20110630075716.GB3377@albatros>
- <BANLkTik0DF5jUhOsP=Pnm+vMbHzEx+3L-Q@mail.gmail.com> <BANLkTi=DiVRV9dkTtYgq+CY-kxVs5ecoWw@mail.gmail.com>
- <BANLkTimnP8L3kSoafdTtUhr9CXx9-WDVLQ@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 19 Sep 2011 09:40:19 -0700
-X-Google-Sender-Auth: 7J9SM9bgBCDAGYlkmDYcNe_W6xU
-Message-ID: <CA+55aFxXS9z=NwoYug+qGoYufqN-6dCo4fm5ggTsoDonsMi4Dw@mail.gmail.com>
-Subject: Re: [Security] [PATCH 2/2] taskstats: restrict access to user
-To: Balbir Singh <bsingharora@gmail.com>
-Cc: Vasiliy Kulikov <segoon@openwall.com>, Shailabh Nagar <nagar@us.ibm.com>,
-        linux-kernel@vger.kernel.org, security@kernel.org,
-        Eric Paris <eparis@redhat.com>, Stephen Wilson <wilsons@start.ca>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        kernel-hardening@lists.openwall.com
-Content-Type: multipart/mixed; boundary=0016e65b62c4caa4d804ad4e00c4
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: <linux-kernel@vger.kernel.org>, <xemul@parallels.com>,
+        <paul@paulmenage.org>, <lizf@cn.fujitsu.com>, <daniel.lezcano@free.fr>,
+        <mingo@elte.hu>, <jbottomley@parallels.com>
+Subject: Re: [PATCH 1/9] Remove parent field in cpuacct cgroup
+References: <1316030695-19826-1-git-send-email-glommer@parallels.com>    <1316030695-19826-2-git-send-email-glommer@parallels.com>   <1316448186.1511.19.camel@twins> <4E776937.1070108@parallels.com>  <1316449160.6091.5.camel@twins> <4E776E36.6040906@parallels.com> <1316450385.6091.9.camel@twins>
+In-Reply-To: <1316450385.6091.9.camel@twins>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [187.106.51.14]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0016e65b62c4caa4d804ad4e00c4
-Content-Type: text/plain; charset=ISO-8859-1
-
-On Thu, Jun 30, 2011 at 8:02 PM, Balbir Singh <bsingharora@gmail.com> wrote:
->>
->> So that's why I think it should be marked BROKEN. What applications
->> actually depend on this? iotop and what else? Because if it's just
->> iotop, I do suspect we might be better off telling people "ok,
->> disabling this will break iotop, but quite frankly, you're better off
->> without it".
+On 09/19/2011 01:39 PM, Peter Zijlstra wrote:
+> On Mon, 2011-09-19 at 13:30 -0300, Glauber Costa wrote:
+>> Since this value is at least intended to
+>> provide a basis for cpu capping in the near future (Well, it is not
+>> there, but I think it is), it is expected to be used much more
+>> frequently by the kernel itself.
 >
-> I beg to differ, due to the reasons above. I'd rather find time and
-> fix the pending issues (network namespace), you've fixed the pid
-> namespace issue. I'd also look for exiting listeners
+> We just merged a bandwidth limiter quite separate from cpuacct.
 
-So nothing ever happened on this thread, afaik.
-
-You can still read sensitive information at a byte granularity with taskstats.
-
-Balbir never sent any of the fixes he was supposed to, and none of the
-namespace issues have gotten fixed.
-
-It's now almost three months later, and things are still equally broken.
-
-I think we need to just disable TASKSTAT's. Nobody maintains it, it's
-been a known issue for months, people pointed out problems and even
-sent patches, and nothing happened.
-
-Maybe we can minimize it with the appended patch, but dammit, we need
-to do *something*. If I don't get any reasonable replies, I'm really
-going to have to mark this as known-BROKEN, since nothing ever
-happens, and the "maintainer" clearly doesn't care about security
-issues.
-
-                         Linus
-
---0016e65b62c4caa4d804ad4e00c4
-Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gsroiqf40
-
-IGtlcm5lbC90YXNrc3RhdHMuYyB8ICAgIDIgKysKIGtlcm5lbC90c2FjY3QuYyAgICB8ICAgIDcg
-KysrKy0tLQogMiBmaWxlcyBjaGFuZ2VkLCA2IGluc2VydGlvbnMoKyksIDMgZGVsZXRpb25zKC0p
-CgpkaWZmIC0tZ2l0IGEva2VybmVsL3Rhc2tzdGF0cy5jIGIva2VybmVsL3Rhc2tzdGF0cy5jCmlu
-ZGV4IGUxOWNlMTQ1NGVlMS4uNTg3NGQ0ODY2YjNjIDEwMDY0NAotLS0gYS9rZXJuZWwvdGFza3N0
-YXRzLmMKKysrIGIva2VybmVsL3Rhc2tzdGF0cy5jCkBAIC00NTcsNiArNDU3LDggQEAgc3RhdGlj
-IGludCBjbWRfYXR0cl9yZWdpc3Rlcl9jcHVtYXNrKHN0cnVjdCBnZW5sX2luZm8gKmluZm8pCiAJ
-Y3B1bWFza192YXJfdCBtYXNrOwogCWludCByYzsKIAorCWlmICghY2FwYWJsZShDQVBfU1lTX0FE
-TUlOKSkKKwkJcmV0dXJuIC1FUEVSTTsKIAlpZiAoIWFsbG9jX2NwdW1hc2tfdmFyKCZtYXNrLCBH
-RlBfS0VSTkVMKSkKIAkJcmV0dXJuIC1FTk9NRU07CiAJcmMgPSBwYXJzZShpbmZvLT5hdHRyc1tU
-QVNLU1RBVFNfQ01EX0FUVFJfUkVHSVNURVJfQ1BVTUFTS10sIG1hc2spOwpkaWZmIC0tZ2l0IGEv
-a2VybmVsL3RzYWNjdC5jIGIva2VybmVsL3RzYWNjdC5jCmluZGV4IDI0ZGM2MGQ5ZmExZi4uMTEw
-Y2E1YTAzYmQ2IDEwMDY0NAotLS0gYS9rZXJuZWwvdHNhY2N0LmMKKysrIGIva2VybmVsL3RzYWNj
-dC5jCkBAIC03OCw2ICs3OCw3IEBAIHZvaWQgYmFjY3RfYWRkX3RzayhzdHJ1Y3QgdGFza3N0YXRz
-ICpzdGF0cywgc3RydWN0IHRhc2tfc3RydWN0ICp0c2spCiAKICNkZWZpbmUgS0IgMTAyNAogI2Rl
-ZmluZSBNQiAoMTAyNCpLQikKKyNkZWZpbmUgS0JfTUFTSyAofihLQi0xKSkKIC8qCiAgKiBmaWxs
-IGluIGV4dGVuZGVkIGFjY291bnRpbmcgZmllbGRzCiAgKi8KQEAgLTEwMCw5ICsxMDEsOSBAQCB2
-b2lkIHhhY2N0X2FkZF90c2soc3RydWN0IHRhc2tzdGF0cyAqc3RhdHMsIHN0cnVjdCB0YXNrX3N0
-cnVjdCAqcCkKIAlzdGF0cy0+cmVhZF9zeXNjYWxscwk9IHAtPmlvYWMuc3lzY3I7CiAJc3RhdHMt
-PndyaXRlX3N5c2NhbGxzCT0gcC0+aW9hYy5zeXNjdzsKICNpZmRlZiBDT05GSUdfVEFTS19JT19B
-Q0NPVU5USU5HCi0Jc3RhdHMtPnJlYWRfYnl0ZXMJPSBwLT5pb2FjLnJlYWRfYnl0ZXM7Ci0Jc3Rh
-dHMtPndyaXRlX2J5dGVzCT0gcC0+aW9hYy53cml0ZV9ieXRlczsKLQlzdGF0cy0+Y2FuY2VsbGVk
-X3dyaXRlX2J5dGVzID0gcC0+aW9hYy5jYW5jZWxsZWRfd3JpdGVfYnl0ZXM7CisJc3RhdHMtPnJl
-YWRfYnl0ZXMJPSBwLT5pb2FjLnJlYWRfYnl0ZXMgJiBLQl9NQVNLOworCXN0YXRzLT53cml0ZV9i
-eXRlcwk9IHAtPmlvYWMud3JpdGVfYnl0ZXMgJiBLQl9NQVNLOworCXN0YXRzLT5jYW5jZWxsZWRf
-d3JpdGVfYnl0ZXMgPSBwLT5pb2FjLmNhbmNlbGxlZF93cml0ZV9ieXRlcyAmIEtCX01BU0s7CiAj
-ZWxzZQogCXN0YXRzLT5yZWFkX2J5dGVzCT0gMDsKIAlzdGF0cy0+d3JpdGVfYnl0ZXMJPSAwOwo=
---0016e65b62c4caa4d804ad4e00c4--
+Note I was talking about cpuusage. Well, in this case, I myself fail
+to see the value of the whole cpuusage thing... Someone that sees 
+further could maybe help us out here? (but this is sideways to the whole 
+discussion we're having anyway)
