@@ -1,88 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756213Ab1ISNHA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 09:07:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60022 "EHLO mx2.suse.de"
+	id S1756201Ab1ISNIU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 09:08:20 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:45442 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756046Ab1ISNG6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 09:06:58 -0400
-Date: Mon, 19 Sep 2011 15:06:57 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Johannes Weiner <jweiner@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
-        Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 01/11] mm: memcg: consolidate hierarchy iteration
- primitives
-Message-ID: <20110919130656.GD21847@tiehlicka.suse.cz>
-References: <1315825048-3437-1-git-send-email-jweiner@redhat.com>
- <1315825048-3437-2-git-send-email-jweiner@redhat.com>
- <20110912223746.GA20765@shutemov.name>
+	id S1755812Ab1ISNIT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 09:08:19 -0400
+Message-ID: <4E773EB2.60504@ti.com>
+Date: Mon, 19 Sep 2011 15:08:02 +0200
+From: "Cousson, Benoit" <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110912223746.GA20765@shutemov.name>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dave Martin <dave.martin@linaro.org>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <robherring2@gmail.com>,
+        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        "jamie@jamieiles.com" <jamie@jamieiles.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 5/5] ARM: gic: add OF based initialization
+References: <1316017900-19918-1-git-send-email-robherring2@gmail.com> <1316017900-19918-6-git-send-email-robherring2@gmail.com> <CAJuYYwSFu2HC+u2NY41+yw9tEyy85RKa4Dpm3SL+jbwS_OOA0A@mail.gmail.com> <4E71CE5D.9030900@ti.com>	<20110916160939.GA2100@arm.com> <20110918062144.GF3523@ponder.secretlab.ca> <CA+wbFddVw5+CDMzNXE9Q4-v4kByQmC6xp-rK5e81ChbYFGVe=A@mail.gmail.com>
+In-Reply-To: <CA+wbFddVw5+CDMzNXE9Q4-v4kByQmC6xp-rK5e81ChbYFGVe=A@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 13-09-11 01:37:46, Kirill A. Shutemov wrote:
-> On Mon, Sep 12, 2011 at 12:57:18PM +0200, Johannes Weiner wrote:
-[...]
-> >  	while (1) {
-> > -		victim = mem_cgroup_select_victim(root_memcg);
-> > -		if (victim == root_memcg) {
-> > +		victim = mem_cgroup_iter(root_memcg, victim, true);
-> > +		if (!victim) {
-> >  			loop++;
-> >  			/*
-> >  			 * We are not draining per cpu cached charges during
-> > @@ -1689,10 +1644,8 @@ static int mem_cgroup_hierarchical_reclaim(struct mem_cgroup *root_memcg,
-> >  				 * anything, it might because there are
-> >  				 * no reclaimable pages under this hierarchy
-> >  				 */
-> > -				if (!check_soft || !total) {
-> > -					css_put(&victim->css);
-> > +				if (!check_soft || !total)
-> >  					break;
-> > -				}
-> >  				/*
-> >  				 * We want to do more targeted reclaim.
-> >  				 * excess >> 2 is not to excessive so as to
-> > @@ -1700,15 +1653,13 @@ static int mem_cgroup_hierarchical_reclaim(struct mem_cgroup *root_memcg,
-> >  				 * coming back to reclaim from this cgroup
-> >  				 */
-> >  				if (total >= (excess >> 2) ||
-> > -					(loop > MEM_CGROUP_MAX_RECLAIM_LOOPS)) {
-> > -					css_put(&victim->css);
-> > +					(loop > MEM_CGROUP_MAX_RECLAIM_LOOPS))
-> >  					break;
-> > -				}
-> >  			}
-> > +			continue;
-> 
-> Souldn't we do
-> 
-> victim = root_memcg;
-> 
-> instead?
+On 9/19/2011 2:07 PM, Dave Martin wrote:
+> On Sun, Sep 18, 2011 at 7:21 AM, Grant Likely<grant.likely@secretlab.ca>  wrote:
+>> On Fri, Sep 16, 2011 at 05:09:39PM +0100, Dave Martin wrote:
+>>> For now, we express the mapping by putting an interrupt-map in the
+>>> core-tile DT, but this feels inelegant as well as wasteful -- expressing
+>>> "+ 32" using a table which is about 1K in size and duplicates that
+>>> information 43 times.
+>>>
+>>> Using a dedicated irq domain or a fake interrupt controller node to
+>>> encapsulate the motherboard interrupts feels like a cleaner approach,
+>>> but for now I'm not clear on the best way to do it.
+>>
+>> An irq nexus node would indeed be something to investigate for your
+>> particular case.  Look for examples of interrupt-map.  It is most
+>> often used for handling IRQ swizzling on PCI busses.
+>
+> That's what I currently have -- this is logically correct, and it
+> works; it just feels like a sledgehammer for cracking this particular
+> nut, because we don't really have 43 independent interrupt mappings
+> and types.  We have one offset and one type which is applied to all
+> the interrupts, and this situation is expected to be the same for all
+> variations of this board, except that offset may change.  I suspect
+> this situation applies to many platforms -- the number of interrupts
+> may in general be much larger than the number of independent mappings.
+>
+> Another way of looking at the problem is that it's difficult to come
+> up with a one-size-fits-all description of interrupt mappings which is
+> also efficient.  Requiring a single set of mapping semantics requires
+> the mappings to be both rather overspecified for most cases, and
+> flattened into a large, structureless table which may become pretty
+> large and unwieldy.  If there were 100+ interrupts instead of 43, we'd
+> really have to be generating the device tree using a script in order
+> for it to be maintainable (which is not necessarily a problem, but can
+> be a warning sign)
 
-You want to save mem_cgroup_iter call?
-Yes it will work... I am not sure it is really an improvement. If we
-just continue we can rely on mem_cgroup_iter doing the right thing.
-Assignment might be not that obvious. But I dunno. 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Yep, this is exactly the issue I was facing when I tried to map the 128 
+interrupts lines of an OMAP4 to the GIC. Adding 128 entries to an 
+interrupt map just to handle a simple linear translation with a constant 
+value of 32 is clearly overkill.
+
+> An alternative approach is to introduce a special interrupt controller
+> node which serves as the interrupt-parent for the child domain and
+> maps the interrupts with flexible semantics defined by the node's
+> bindings; or different kinds of interrupt-map/interrupt-map-mask
+> properties could be defined.  Bindings could be added as needed to
+> support different cases -- though really we should only expect to have
+> a small number at most.  When the interrupt mapping is significantly
+> complex, using interrupt-map will probably be the best approach
+> anyway.
+
+Maybe we can just extend or add a new type of interrupt nexus to handle 
+simple translation. The actual one was done for complex PCI mapping but 
+with a small number of lines to handle. In our case, the mapping is 
+simple, but the number of lines is huge.
+
+Regards,
+Benoit
