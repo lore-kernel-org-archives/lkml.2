@@ -1,96 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753266Ab1ISJKJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 05:10:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25364 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751896Ab1ISJKH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 05:10:07 -0400
-Date: Mon, 19 Sep 2011 11:09:27 +0200 (CEST)
-From: John Kacur <jkacur@redhat.com>
-X-X-Sender: jkacur@localhost6.localdomain6
-To: Thomas Gleixner <tglx@linutronix.de>, linux-rt-users@vger.kernel.org
-cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        linux-kernel@vger.kernel.org
-Subject: =?ISO-8859-7?Q?=5BPATCH=5D_preempt-rt=3A_VERSION_2=3A_Fix_build_error=3A_section_of_=A1tasklist=5Flock=A2_conflicts?=
-Message-ID: <alpine.LFD.2.00.1109191104010.23118@localhost6.localdomain6>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754045Ab1ISJKk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 05:10:40 -0400
+Received: from relay.medianet-world.de ([213.157.0.172]:54085 "HELO
+	relay.medianet-world.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753490Ab1ISJKj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 05:10:39 -0400
+X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 Sep 2011 05:10:39 EDT
+Thread-Index: Acx2qw4Ta/TU1S87T3a5AgmxDFUnIg==
+Thread-Topic: [ANNOUNCE] 3.0.4-rt14
+Content-Class: urn:content-classes:message
+Importance: normal
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4862
+From: "Tim Sander" <tim.sander@hbm.com>
+Organization: Hottinger Baldwin Messtechnik
+To: "Thomas Gleixner" <tglx@linutronix.de>,
+        "linux-rt-users" <linux-rt-users@vger.kernel.org>
+Subject: Re: [ANNOUNCE] 3.0.4-rt14
+Date: Mon, 19 Sep 2011 11:03:52 +0200
+User-Agent: KMail/1.13.5 (Linux/3.0.3; KDE/4.4.5; x86_64; ; )
+Cc: "LKML" <linux-kernel@vger.kernel.org>
+References: <alpine.LFD.2.02.1109150047290.2723@ionos>
+In-Reply-To: <alpine.LFD.2.02.1109150047290.2723@ionos>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-1475679927-1124203029-1316423373=:23118"
+Content-Type: text/Plain;
+	charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-ID: <201109191103.52843.tim.sander@hbm.com>
+X-OriginalArrivalTime: 19 Sep 2011 09:03:53.0249 (UTC) FILETIME=[0DF42110:01CC76AB]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hi Thomas
 
----1475679927-1124203029-1316423373=:23118
-Content-Type: TEXT/PLAIN; charset=ISO-8859-7
-Content-Transfer-Encoding: 8BIT
+Thanks for the new release. We've been testing your release here. We found 
+that the minimum timer resolution on a vanilla 3.0.4-rt14 is about 16ms. I 
+tried switching on hr timers but even with them the timer behaviour was the 
+same. So i suspect that there is something strange going on concerning the 
+timers. The tests done where on the pcm04 arm11 platform.
 
->From 60b91dea371067c529587c504be0543350d1c0e5 Mon Sep 17 00:00:00 2001
-From: John Kacur <jkacur@redhat.com>
-Date: Mon, 19 Sep 2011 10:29:42 +0200
-Subject: [PATCH] =?UTF-8?q?preempt-rt:=20VERSION=202:=20Fix=20build=20error:=20section=20of=20=E2=80=98tasklist=5Flock=E2=80=99=20conflicts=20with=20previous=20declaration?=
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Best regards
+Tim
 
-This fixes the following build error for the preempt-rt kernel.
+Hottinger Baldwin Messtechnik GmbH, Im Tiefen See 45, 64293 Darmstadt, Germany | www.hbm.com 
 
-make kernel/fork.o
-  CC      kernel/fork.o
-kernel/fork.c:90: error: section of ¡tasklist_lock¢ conflicts with previous declaration
-make[2]: *** [kernel/fork.o] Error 1
-make[1]: *** [kernel/fork.o] Error 2
+Registered as GmbH (German limited liability corporation) in the commercial register at the local court of Darmstadt, HRB 1147  
+Company domiciled in Darmstadt | CEO: Andreas Huellhorst | Chairman of the board: James Charles Webster
 
-The rt kernel cache aligns the RWLOCK in DEFINE_RWLOCK by default.
-The non-rt kernels explicitly cache align only the tasklist_lock in
-kernel/fork.c
-That can create a build conflict. This fixes the build problem by making the
-non-rt kernels cache align RWLOCKs by default. The side effect is that
-the other RWLOCKs are also cache aligned for non-rt.
+Als Gesellschaft mit beschraenkter Haftung eingetragen im Handelsregister des Amtsgerichts Darmstadt unter HRB 1147 
+Sitz der Gesellschaft: Darmstadt | Geschaeftsfuehrung: Andreas Huellhorst | Aufsichtsratsvorsitzender: James Charles Webster
 
-This is a short term solution for rt only.
-The longer term solution would be to push the cache aligned DEFINE_RWLOCK
-to mainline. If there are objections, then we could create a
-DEFINE_RWLOCK_CACHE_ALIGNED or something of that nature.
+The information in this email is confidential. It is intended solely for the addressee. If you are not the intended recipient, please let me know and delete this email.
 
-Comments? Objections?
+Die in dieser E-Mail enthaltene Information ist vertraulich und lediglich für den Empfaenger bestimmt. Sollten Sie nicht der eigentliche Empfaenger sein, informieren Sie mich bitte kurz und loeschen diese E-Mail.
 
-Signed-off-by: John Kacur <jkacur@redhat.com>
----
- include/linux/rwlock_types.h |    3 ++-
- kernel/fork.c                |    2 +-
- 2 files changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/rwlock_types.h b/include/linux/rwlock_types.h
-index 5317cd9..d0da966 100644
---- a/include/linux/rwlock_types.h
-+++ b/include/linux/rwlock_types.h
-@@ -47,6 +47,7 @@ typedef struct {
- 				RW_DEP_MAP_INIT(lockname) }
- #endif
- 
--#define DEFINE_RWLOCK(x)	rwlock_t x = __RW_LOCK_UNLOCKED(x)
-+#define DEFINE_RWLOCK(name) \
-+	rwlock_t name __cacheline_aligned_in_smp = __RW_LOCK_UNLOCKED(name)
- 
- #endif /* __LINUX_RWLOCK_TYPES_H */
-diff --git a/kernel/fork.c b/kernel/fork.c
-index aa5fe26..8487ae7 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -87,7 +87,7 @@ int max_threads;		/* tunable limit on nr_threads */
- 
- DEFINE_PER_CPU(unsigned long, process_counts) = 0;
- 
--__cacheline_aligned DEFINE_RWLOCK(tasklist_lock);  /* outer */
-+DEFINE_RWLOCK(tasklist_lock);  /* outer */
- 
- #ifdef CONFIG_PROVE_RCU
- int lockdep_tasklist_lock_is_held(void)
--- 
-1.7.2.3
-
----1475679927-1124203029-1316423373=:23118--
