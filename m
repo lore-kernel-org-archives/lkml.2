@@ -1,106 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756349Ab1ISPdG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 11:33:06 -0400
-Received: from yuna.grokhost.net ([87.117.228.63]:38112 "EHLO
-	yuna.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753477Ab1ISPdE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 11:33:04 -0400
-Message-ID: <4E7760AA.3050004@bootc.net>
-Date: Mon, 19 Sep 2011 16:32:58 +0100
-From: Chris Boot <bootc@bootc.net>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
+	id S1755962Ab1ISPm0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 11:42:26 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:40487 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751114Ab1ISPmZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 11:42:25 -0400
+Message-ID: <4E7762D4.7090404@parallels.com>
+Date: Mon, 19 Sep 2011 19:42:12 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Lightning/1.0b2 Thunderbird/3.1.13
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: "Woodhouse, David" <david.woodhouse@intel.com>,
-        adam radford <aradford@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
-        Adam Radford <linuxraid@lsi.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: Re: iommu_iova leak [inside 3w-9xxx]
-References: <4E734467.3040703@bootc.net>  <1316256305.24257.25.camel@shinybook.infradead.org>  <AD4B8103-C98F-4BC5-9F7F-496D220781F3@bootc.net>  <3A4FADE6-3653-46C5-B225-8200F9DCE35B@bootc.net>  <CAHtARFHfxpU1JKu4092ZshvhsrRY-hx_pfnL3_+T32B3ncgWvg@mail.gmail.com>  <B4A636AC-B127-42DD-BC8C-419D07A83FBD@bootc.net>  <1316353140.12001.15.camel@shinybook.infradead.org>  <1316354509.27722.1.camel@dabdike>  <B008530A-B1B1-49D2-A3B4-9CD929D948FB@bootc.net>  <1316355934.27722.6.camel@dabdike> <1316357780.27722.9.camel@dabdike> <4E761A2B.1020509@bootc.net>
-In-Reply-To: <4E761A2B.1020509@bootc.net>
+To: Jeff Layton <jlayton@redhat.com>
+CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "davem@davemloft.net" <davem@davemloft.net>
+Subject: Re: [PATCH v3 04/11] SUNRPC: parametrize svc creation calls with
+ portmapper flag
+References: <20110913180953.3961.69217.stgit@localhost6.localdomain6>	<20110913181351.3961.70207.stgit@localhost6.localdomain6>	<20110919100811.0eaa39fe@tlielax.poochiereds.net>	<4E7756F3.4080601@parallels.com> <20110919110729.33a876ca@tlielax.poochiereds.net>
+In-Reply-To: <20110919110729.33a876ca@tlielax.poochiereds.net>
 Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18/09/2011 17:19, Chris Boot wrote:
-> On 18/09/2011 15:56, James Bottomley wrote:
->> On Sun, 2011-09-18 at 18:25 +0400, James Bottomley wrote:
->>> On Sun, 2011-09-18 at 15:05 +0100, Chris Boot wrote:
->>>>> Hardly ... all it's saying is that twa_exit doesn't wait for 
->>>>> pending I/O
->>>>> to complete, so when you remove the module it tears down in the 
->>>>> middle
->>>>> of an I/O.  A bug, yes, but it's not indicative of any sort of 
->>>>> leak in
->>>>> the maps/unmaps.
->>>>
->>>> James,
->>>>
->>>> I don't think that's the case - I had unmounted all filesystems, 
->>>> deactivated all volume groups, and performed a sync before waiting 
->>>> a few seconds and running rmmod. Next time I'll also 'echo 1>  
->>>> /sys/block/sdX/device/delete' if that's helpful.
->>> Actually, I take all that back: the driver has a bug in QUEUE_FULL
->>> handling: twa_scsi_queue() calls twa_scsiop_execute_scsi(), which maps
->>> the dma buffer, but if the card responds QUEUE_FULL it just returns
->>> SCSI_MLQUEUE_HOST_BUSY without ever unmapping.  That leg in the code
->>> frees the request but also doesn't unmap it.  In fact any error return
->>> from twa_scsiop_execute_scsi() seems to have the same problem (but
->>> QUEUE_FULL is the only silent one).
+19.09.2011 19:07, Jeff Layton пишет:
+> On Mon, 19 Sep 2011 18:51:31 +0400
+> Stanislav Kinsbursky<skinsbursky@parallels.com>  wrote:
+>
+>> 19.09.2011 18:08, Jeff Layton пишет:
+>>> On Tue, 13 Sep 2011 22:13:51 +0400
+>>> Stanislav Kinsbursky<skinsbursky@parallels.com>   wrote:
 >>>
->>> I trust Adam will fix this.
->> Actually, while Adam's mulling this, try the following.  It should at
->> least confirm we're on the right track.
+>>>> This new flag ("setup_rpcbind) will be used to detect, that new service will
+>>>> send portmapper register calls. For such services we will create rpcbind
+>>>> clients and remove all stale portmap registrations.
+>>>> Also, svc_rpcb_cleanup() will be set as sv_shutdown callback for such services
+>>>> in case of this field wasn't initialized earlier. This will allow to destroy
+>>>> rpcbind clients when no other users of them left.
+>>>>
+>>>> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
+>>>>
+>>>> ---
+>>>>    include/linux/sunrpc/svc.h |    2 ++
+>>>>    net/sunrpc/svc.c           |   21 ++++++++++++++-------
+>>>>    2 files changed, 16 insertions(+), 7 deletions(-)
+>>>>
+>>>> diff --git a/include/linux/sunrpc/svc.h b/include/linux/sunrpc/svc.h
+>>>> index 223588a..528952a 100644
+>>>> --- a/include/linux/sunrpc/svc.h
+>>>> +++ b/include/linux/sunrpc/svc.h
+>>>> @@ -402,11 +402,13 @@ struct svc_procedure {
+>>>>     * Function prototypes.
+>>>>     */
+>>>>    struct svc_serv *svc_create(struct svc_program *, unsigned int,
+>>>> +			    int setup_rpcbind,
+>>> 				^^^
+>>> 			Instead of adding this parameter, why not
+>>> 			base this on the vs_hidden flag in the
+>>> 			svc_version? IOW, have a function that looks at
+>>> 			all the svc_versions for a particular
+>>> 			svc_program, and returns "true" if any of them
+>>> 			have vs_hidden unset? The mechanism you're
+>>> 			proposing here has the potential to be out of
+>>> 			sync with the vs_hidden flag.
+>>>
 >>
->> James
+>> Could you, please, clarify me this vs_hidden flag?
+>> I understand, that it's used to avoid portmap registration.
+>> But as I see, it's set only for nfs_callback_version1. But this svc_version is a
+>> part of nfs4_callback_program with nfs_callback_version4, which is not hidden.
+>> Does this flag is missed here? If not, how we can return "true" from your
+>> proposed function if any of them have vs_hidden unset?
 >>
->> ---
+>> Also sockets for this program are created with SVC_SOCK_ANONYMOUS flag and we
+>> will not register any of this program versions with portmapper.
+>> Thus, from my pow, this vs_hidden flag affects only svc_unregister. And only
+>> nfs_callback_version1. This looks really strange.
 >>
->> diff --git a/drivers/scsi/3w-9xxx.c b/drivers/scsi/3w-9xxx.c
->> index b7bd5b0..3868ab2 100644
->> --- a/drivers/scsi/3w-9xxx.c
->> +++ b/drivers/scsi/3w-9xxx.c
->> @@ -1800,10 +1800,12 @@ static int twa_scsi_queue_lck(struct 
->> scsi_cmnd *SCpnt, void (*done)(struct scsi_
->>       switch (retval) {
->>       case SCSI_MLQUEUE_HOST_BUSY:
->>           twa_free_request_id(tw_dev, request_id);
->> +        twa_unmap_scsi_data(tw_dev, request_id);
->>           break;
->>       case 1:
->>           tw_dev->state[request_id] = TW_S_COMPLETED;
->>           twa_free_request_id(tw_dev, request_id);
->> +        twa_unmap_scsi_data(tw_dev, request_id);
->>           SCpnt->result = (DID_ERROR<<  16);
->>           done(SCpnt);
->>           retval = 0;
+>> I.e. if we use this flag only for passing through this versions during
+>> svc_(un)register, and we actually also want to pass through
+>> nfs_callback_version4 as well (but just missed this vs_hidden flag for it), then
+>> with current patch-set we can move this flag from (vs_hidden) svc_version to
+>> svc_program and check it during svc_create instead of my home-brew
+>> "setup_rpcbind" variable.
+>>
 >
-> James,
+> Agreed. The current situation is a mess, which is why I suggested a
+> cleanup and overhaul before you do this...
 >
-> After testing quite thoroughly on my test install (lots of parallel 
-> e2fsck and an rsync from one LV to another) I couldn't trigger the 
-> warning. It's probably too early to tell for sure if this fixes things 
-> on my normal workload (I'll be able to tell definitely tomorrow), but 
-> it certainly seems much better right now. I'll keep you posted.
+> The vs_hidden flag is intended to show that a particular program
+> version should not be registered with (or unregistered from) the
+> portmapper. Unfortunately, nothing looks at vs_hidden during
+> registration time, only when unregistering (as you mention).
+>
+> It's quite possible that several svc_versions declared in the kernel do
+> not have this set correctly. One thing that would be good is to audit
+> each of those.
+>
+> We currently rely on SVC_SOCK_ANONYMOUS for registration, but that
+> wasn't its original intent. It's was just convenient to use it there
+> too.
+>
+> SVC_SOCK_ANONYMOUS was (as best I can tell) originally intended for use
+> on temporary sockets that we establish on receive. So for
+> instance...when a client connects to nfsd, we need to create a new
+> socket for nfsd, but obviously we don't want to register that socket
+> with the portmapper (since nfsd should already be registered there).
+> SVC_SOCK_ANONYMOUS ensures that that socket is not registered.
+>
+> The whole scheme could probably use a fundamental re-think. I'm not
+> sure I have a great idea to propose in lieu of it, but I think adding
+> yet another flag here is probably not the best way to go.
+>
 
-The patch above certainly seems to fix things for me. After almost 24 
-hours uptime my iommu_iova looks entirely reasonable:
+Ok, thank you, Jeff.
+It looks like no mentions about portmapper are present in RFC's for NFS versions 
+4.* after a brief look.
+This SVC_SOCK_ANONYMOUS is understandable and can't be removed with this 
+patch-set from my pow.
+But now I strongly believe, that we can move this vs_hidden flag from 
+svc_version to svc_program structure and set it for both NFSv4.* programs.
+Hope, someone else will confirm of refute this statement.
 
-iommu_iova           592    885     64   59    1 : tunables  120   60    
-8 : slabdata     15     15     60
 
-We'll see in a few days' time if this resolves my entire performance 
-problem, but I'm nearly 100% confident it does.
 
-Thanks.
-
-Chris
 
 -- 
-Chris Boot
-bootc@bootc.net
-
+Best regards,
+Stanislav Kinsbursky
