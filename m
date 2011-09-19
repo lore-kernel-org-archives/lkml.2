@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756406Ab1ISSVQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 14:21:16 -0400
-Received: from mail-vw0-f42.google.com ([209.85.212.42]:51889 "EHLO
-	mail-vw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754929Ab1ISSVP convert rfc822-to-8bit (ORCPT
+	id S932287Ab1ISS0G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 14:26:06 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56619 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755971Ab1ISS0E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 14:21:15 -0400
+	Mon, 19 Sep 2011 14:26:04 -0400
+Date: Mon, 19 Sep 2011 19:25:44 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Simon Glass <sjg@chromium.org>
+Cc: "Ramirez Luna, Omar" <omar.ramirez@ti.com>, Rabin Vincent <rabin@rab.in>,
+        lk <linux-kernel@vger.kernel.org>,
+        lak <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: BUG() dies silently
+Message-ID: <20110919182544.GY16381@n2100.arm.linux.org.uk>
+References: <1301602523-9906-1-git-send-email-omar.ramirez@ti.com> <CAH+eYFBSiL44CMOpgED+TAOTUH_dQMaKKu=hC3ynG0Y2nQ8ekw@mail.gmail.com> <CAB-zwWi1K8y8fHzy0hgcFPgSfhMrZNfoKQ9xuU00Y1sLg6ZBmw@mail.gmail.com> <20110919144313.GU16381@n2100.arm.linux.org.uk> <20110919165943.GX16381@n2100.arm.linux.org.uk> <CAPnjgZ1JDGt7Dzp9VrRKKApeZ9RT9oqry+UkQZwVCw1P+t9pew@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1316455395.16137.160.camel@nimitz>
-References: <20110910164134.GA2442@albatros>
-	<20110914192744.GC4529@outflux.net>
-	<20110918170512.GA2351@albatros>
-	<CAOJsxLF8DBEC9o9pSwa6c6pMg8ByFBdsDnzg22P3ucQcP98uzA@mail.gmail.com>
-	<20110919144657.GA5928@albatros>
-	<CAOJsxLG8gW=BLOptpULsaAEwTravADKbNbXp5e9Wd7xVEfR9AQ@mail.gmail.com>
-	<20110919155718.GB16272@albatros>
-	<CAOJsxLGZm+npcR0YgXSE2wLC2iXCtzYyCdTDCt1LN=Z28Rm_UA@mail.gmail.com>
-	<20110919161837.GA2232@albatros>
-	<CAOJsxLE2od0f+6cbL2hA_31CbrqS7AUofx5DT2L9fO_7gxH+PQ@mail.gmail.com>
-	<20110919173539.GA3751@albatros>
-	<CAOJsxLGc0bwCkDtk2PVe7c155a9wVoDAY0CmYDTLg8_bL4qxqg@mail.gmail.com>
-	<1316455395.16137.160.camel@nimitz>
-Date: Mon, 19 Sep 2011 21:21:15 +0300
-X-Google-Sender-Auth: iJdEdyTEfjboE8xHOs6keLh5RS4
-Message-ID: <CAOJsxLFe=i=TUbHuppHTSWPE1DXUw_fSujpR4Kn65_aXr4Hrdg@mail.gmail.com>
-Subject: Re: [kernel-hardening] Re: [RFC PATCH 2/2] mm: restrict access to /proc/slabinfo
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: Vasiliy Kulikov <segoon@openwall.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        kernel-hardening@lists.openwall.com, Kees Cook <kees@ubuntu.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Dan Rosenberg <drosenberg@vsecurity.com>,
-        Theodore Tso <tytso@mit.edu>, Alan Cox <alan@linux.intel.com>,
-        Jesper Juhl <jj@chaosbits.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAPnjgZ1JDGt7Dzp9VrRKKApeZ9RT9oqry+UkQZwVCw1P+t9pew@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-09-19 at 20:51 +0300, Pekka Enberg wrote:
->> How is the attacker able to identify that we kmalloc()'d from ecryptfs or
->> VFS based on non-root /proc/slabinfo when the slab allocator itself does
->> not have that sort of information if you mix up the allocations? Isn't this
->> much stronger protection especially if you combine that with /proc/slabinfo
->> restriction?
+On Mon, Sep 19, 2011 at 11:02:08AM -0700, Simon Glass wrote:
+> Hi Russell,
+> 
+> On Mon, Sep 19, 2011 at 9:59 AM, Russell King - ARM Linux
+> <linux@arm.linux.org.uk> wrote:
+> > On Mon, Sep 19, 2011 at 03:43:13PM +0100, Russell King - ARM Linux wrote:
+> >> On Mon, Sep 19, 2011 at 09:26:49AM -0500, Ramirez Luna, Omar wrote:
+> >> > Hi
+> >> >
+> >> > On Sat, Sep 17, 2011 at 1:07 AM, Rabin Vincent <rabin@rab.in> wrote:
+> >> > > If the "Use generic BUG() handler" patch is only scheduled for the next
+> >> > > merge window and not for 3.1, can this patch be merged instead for 3.1
+> >> > > and -stable?  This problem is easily seen with GCC 4.6.
+> >> >
+> >> > I can send it for both and let the maintainers decide.
+> >> >
+> >> > Russell, do you give your ack?
+> >>
+> >> I think it's too large a change for -stable and 3.1 - let's get it into
+> >> 3.2 first, and make sure no one sees any regressions there.  Then we can
+> >> think about submitting it to stable once its proven itself.
+> >
+> > And we're seeing link failures with the patch in the kernel, so it's
+> > *definitely* not stable material as it stands, even if the current code
+> > is a problem for GCC 4.6.
+> >
+> > Regressions trump bug fixes.
+> 
+> Can you point me to the link failures please?
 
-On Mon, Sep 19, 2011 at 9:03 PM, Dave Hansen <dave@linux.vnet.ibm.com> wrote:
-> Mixing it up just adds noise.  It makes the attack somewhat more
-> difficult, but it still leaves open the possibility that the attacker
-> can filter out the noise somehow.
+There's two emails during the last couple of months on lakml:
 
-So that would mean the attacker has somewhat fine-grained control over
-kernel memory allocations, no? Can they use /proc/meminfo to deduce
-the same kind of information? Should we close that down too?
+	3.1-rc1 link failure
 
-                         Pekka
+	Link failures due to __bug_table in current -next
+
+The former I looked into and came to the conclusion that the only way to
+solve it is to stop using asm-generic/vmlinux.lds.S in its entirety and
+go back to hand-coding ARMs vmlinux.lds file.  No one's come forward
+with any better suggestion to fix this, so I'm getting very close to
+having to make a decision over this.  I think I'm going to have to drop
+the generic bug support for the time being.
