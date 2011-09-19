@@ -1,40 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756781Ab1ISQmZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 12:42:25 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:54291 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756727Ab1ISQmY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 12:42:24 -0400
-Message-ID: <4E7770BD.6050902@parallels.com>
-Date: Mon, 19 Sep 2011 13:41:33 -0300
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1756800Ab1ISQtm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 12:49:42 -0400
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:51135 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755013Ab1ISQtl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 12:49:41 -0400
+Message-ID: <4E7772A2.8010000@xenotime.net>
+Date: Mon, 19 Sep 2011 09:49:38 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: <linux-kernel@vger.kernel.org>, <xemul@parallels.com>,
-        <paul@paulmenage.org>, <lizf@cn.fujitsu.com>, <daniel.lezcano@free.fr>,
-        <mingo@elte.hu>, <jbottomley@parallels.com>
-Subject: Re: [PATCH 1/9] Remove parent field in cpuacct cgroup
-References: <1316030695-19826-1-git-send-email-glommer@parallels.com>    <1316030695-19826-2-git-send-email-glommer@parallels.com>   <1316448186.1511.19.camel@twins> <4E776937.1070108@parallels.com>  <1316449160.6091.5.camel@twins> <4E776E36.6040906@parallels.com> <1316450385.6091.9.camel@twins>
-In-Reply-To: <1316450385.6091.9.camel@twins>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+To: Jason Baron <jbaron@redhat.com>
+CC: Greg KH <greg@kroah.com>, Arnd Bergmann <arnd@arndb.de>, gregkh@suse.de,
+        joe@perches.com, jim.cromie@gmail.com, bvanassche@acm.org,
+        linux-kernel@vger.kernel.org, davem@davemloft.net,
+        aloisio.almeida@openbossa.org, netdev@vger.kernel.org,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH ] dynamic_debug: call __netdev_printk only for CONFIG_NET
+References: <cover.1313085588.git.jbaron@redhat.com> <5514795fe63ccfd4b3a80283ed04a526abe3c59d.1313085588.git.jbaron@redhat.com> <201109011657.02407.arnd@arndb.de> <20110901151817.GA14324@redhat.com> <20110918082736.GB19444@kroah.com> <20110919134814.GA2658@redhat.com>
+In-Reply-To: <20110919134814.GA2658@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [187.106.51.14]
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/19/2011 01:39 PM, Peter Zijlstra wrote:
-> On Mon, 2011-09-19 at 13:30 -0300, Glauber Costa wrote:
->> Since this value is at least intended to
->> provide a basis for cpu capping in the near future (Well, it is not
->> there, but I think it is), it is expected to be used much more
->> frequently by the kernel itself.
->
-> We just merged a bandwidth limiter quite separate from cpuacct.
+On 09/19/2011 06:48 AM, Jason Baron wrote:
+> On Sun, Sep 18, 2011 at 01:27:36AM -0700, Greg KH wrote:
+>> On Thu, Sep 01, 2011 at 11:18:18AM -0400, Jason Baron wrote:
+>>> On Thu, Sep 01, 2011 at 04:57:02PM +0200, Arnd Bergmann wrote:
+>>>> __netdev_printk is only defined when CONFIG_NET is set. Since we only need
+>>>> __dynamic_netdev_dbg for network drivers, we can make it conditional on the
+>>>> same Kconfig symbol.
+>>>>
+>>>
+>>> Hi,
+>>>
+>>> Yes, I've posted a fix for this:
+>>>
+>>> https://lkml.org/lkml/2011/8/30/297
+>>>
+>>> Hopefully, it will be pulled in soon.
+>>
+>> As that thread again spun off into confusion, can you please resend the
+>> end result?
+>>
+>> thanks,
+>>
+>> greg k-h
+> 
+> Hi,
+> 
+> Andrew Morton has pulled these into his -mm tree...so I think the series
+> should be all set.
 
-Note I was talking about cpuusage. Well, in this case, I myself fail
-to see the value of the whole cpuusage thing... Someone that sees 
-further could maybe help us out here? (but this is sideways to the whole 
-discussion we're having anyway)
+Good.  The build fix is still needed in today's linux-next (20110919).
+
+
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
