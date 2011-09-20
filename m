@@ -1,140 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752045Ab1ITP6p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 11:58:45 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:39049 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750868Ab1ITP6o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 11:58:44 -0400
-Message-ID: <4E78B825.4020803@parallels.com>
-Date: Tue, 20 Sep 2011 19:58:29 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Lightning/1.0b2 Thunderbird/3.1.13
+	id S1752304Ab1ITP7f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 11:59:35 -0400
+Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:20429 "HELO
+	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750772Ab1ITP7e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 11:59:34 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: DbKvzh8VM1ndc.gwpY1puvdlikS34.OD6IY8KXda4Ar35x6
+ L7pRXs9XDU.U3uKNfaMfag9UtgUcRnoYUjTqvCtyBgMfYYu90oRhIHaX6GhQ
+ t_smj899BFhe7z2Wv5noN4kD5BjSI_Sljlwyw.9sjaC7n3vuLA8wb_XXBHFq
+ qriBc0yrDSBZADEr..yIctNupNsOGkfe.pdlXYjQngnzIv0I2rMpGlb4_HHt
+ FSkdxzkgIpTqYfQvrupAKLng2cJVWC._yS.SEyddzMnTmZ22PxIeouJnR7fH
+ 0UyylJPnqFwMpWJ132YkdoJoq64MdLtZmre7XxGa3ODdNsCVIaHAxKvns0F.
+ 4Lrm6.g.3PMeFN7Qe2SZZCKoTlMWY9VvFOBIkv6L3OEumjqc-
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 20 Sep 2011 10:59:29 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+X-X-Sender: cl@router.home
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Christoph Lameter <cl@linux.com>, Tejun Heo <htejun@gmail.com>
+Subject: Re: [RFC][PATCH 2/5] mm: Switch mod_state() to __this_cpu_read()
+In-Reply-To: <1316531505.29966.57.camel@gandalf.stny.rr.com>
+Message-ID: <alpine.DEB.2.00.1109201055470.8056@router.home>
+References: <20110919212040.745370781@goodmis.org>  <20110919212640.688732950@goodmis.org>  <alpine.DEB.2.00.1109191657150.19059@router.home>  <alpine.LFD.2.02.1109201334590.2723@ionos>  <alpine.DEB.2.00.1109200947100.8056@router.home>
+ <1316531505.29966.57.camel@gandalf.stny.rr.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-CC: Jeff Layton <jlayton@redhat.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "davem@davemloft.net" <davem@davemloft.net>
-Subject: Re: [PATCH v5 1/8] SUNRPC: introduce helpers for reference counted
- rpcbind clients
-References: <20110920101031.9861.18444.stgit@localhost6.localdomain6><20110920101341.9861.51453.stgit@localhost6.localdomain6><4E7899E7.9090809@parallels.com> <20110920102431.58ca1d96@tlielax.poochiereds.net> <2E1EB2CF9ED1CB4AA966F0EB76EAB4430B47FD2C@SACMVEXC2-PRD.hq.netapp.com>
-In-Reply-To: <2E1EB2CF9ED1CB4AA966F0EB76EAB4430B47FD2C@SACMVEXC2-PRD.hq.netapp.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-20.09.2011 18:41, Myklebust, Trond пишет:
->> -----Original Message-----
->> From: Jeff Layton [mailto:jlayton@redhat.com]
->> Sent: Tuesday, September 20, 2011 10:25 AM
->> To: Stanislav Kinsbursky
->> Cc: Myklebust, Trond; linux-nfs@vger.kernel.org; Pavel Emelianov;
->> neilb@suse.de; netdev@vger.kernel.org; linux-kernel@vger.kernel.org;
->> bfields@fieldses.org; davem@davemloft.net
->> Subject: Re: [PATCH v5 1/8] SUNRPC: introduce helpers for reference
->> counted rpcbind clients
->>
->> On Tue, 20 Sep 2011 17:49:27 +0400
->> Stanislav Kinsbursky<skinsbursky@parallels.com>  wrote:
->>
->>> v5: fixed races with rpcb_users in rpcb_get_local()
->>>
->>> This helpers will be used for dynamical creation and destruction of
->>> rpcbind clients.
->>> Variable rpcb_users is actually a counter of lauched RPC services.
-> If
->>> rpcbind clients has been created already, then we just increase
-> rpcb_users.
->>>
->>> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
->>>
->>> ---
->>>    net/sunrpc/rpcb_clnt.c |   53
->> ++++++++++++++++++++++++++++++++++++++++++++++++
->>>    1 files changed, 53 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c index
->>> e45d2fb..5f4a406 100644
->>> --- a/net/sunrpc/rpcb_clnt.c
->>> +++ b/net/sunrpc/rpcb_clnt.c
->>> @@ -114,6 +114,9 @@ static struct rpc_program	rpcb_program;
->>>    static struct rpc_clnt *	rpcb_local_clnt;
->>>    static struct rpc_clnt *	rpcb_local_clnt4;
->>>    +DEFINE_SPINLOCK(rpcb_clnt_lock);
->>> +unsigned int			rpcb_users;
->>> +
->>>    struct rpcbind_args {
->>>    	struct rpc_xprt *	r_xprt;
->>>    @@ -161,6 +164,56 @@ static void rpcb_map_release(void *data)
->>>    	kfree(map);
->>>    }
->>>    +static int rpcb_get_local(void)
->>> +{
->>> +	int cnt;
->>> +
->>> +	spin_lock(&rpcb_clnt_lock);
->>> +	if (rpcb_users)
->>> +		rpcb_users++;
->>> +	cnt = rpcb_users;
->>> +	spin_unlock(&rpcb_clnt_lock);
->>> +
->>> +	return cnt;
->>> +}
->>> +
->>> +void rpcb_put_local(void)
->>> +{
->>> +	struct rpc_clnt *clnt = rpcb_local_clnt;
->>> +	struct rpc_clnt *clnt4 = rpcb_local_clnt4;
->>> +	int shutdown;
->>> +
->>> +	spin_lock(&rpcb_clnt_lock);
->>> +	if (--rpcb_users == 0) {
->>> +		rpcb_local_clnt = NULL;
->>> +		rpcb_local_clnt4 = NULL;
->>> +	}
->>
->> In the function below, you mention that the above pointers are
-> protected by
->> rpcb_create_local_mutex, but it looks like they get reset here without
-> that
->> being held?
->>
->> Might it be simpler to just protect rpcb_users with the
->> rpcb_create_local_mutex and ensure that it's held whenever you call
-> one of
->> these routines? None of these are codepaths are particularly hot.
->
-> Alternatively, if you do
->
-> 	if (rpcb_users == 1) {
-> 		rpcb_local_clnt = NULL;
-> 		rpcb_local_clnt4 = NULL;
-> 		smp_wmb();
-> 		rpcb_users = 0;
-> 	} else
-> 		rpcb_users--;
->
-> then the spinlock protection in rpbc_get_local() is still good enough to
-> guarantee correctness.
+On Tue, 20 Sep 2011, Steven Rostedt wrote:
 
-I don't understand the idea of this code. It guarantees, that if rpcb_users == 
-0, then rpcb_local_clnt == NULL and rpcb_local_clnt4 == NULL.
-But we don't need such guarantee from my pow.
-I.e. if rpcb_users == 0, then it means, that no services running right now.
+> On Tue, 2011-09-20 at 09:51 -0500, Christoph Lameter wrote:
+>
+> > I see that __this_cpu_xx operations may not work as intended in
+> > preemptable contexts and there we could have more changes.
+>
+> Then why do you use it in slub.c?
+>
+> in mm/slab.c slab_alloc():
+>
+> redo:
+>
+> 	/*
+> 	 * Must read kmem_cache cpu data via this cpu ptr. Preemption is
+> 	 * enabled. We may switch back and forth between cpus while
+> 	 * reading from one cpu area. That does not matter as long
+> 	 * as we end up on the original cpu again when doing the cmpxchg.
+> 	 */
+> 	c = __this_cpu_ptr(s->cpu_slab);
+>
+> The __this_cpu_*() is in preempt enabled location. In fact, the three
+> this_cpu_write()'s in acquire_slab() is done within a spinlock and thus
+> with preemption disabled.
 
-For example, processes, destroying those clients, is running on CPU#0.
-On CPU#1, for example, we have another process trying to get those clients and 
-waiting on spinlock. When this process will gain the spinlock, it will see 0 
-users, gain mutex and then try to create new clients. We still have no users on 
-this clients yet. And this process will just reassign whose rpcbind clients 
-pointers (and here we need memmory barrier for sure).
+So the this_cpu_writes could become __this_cpu_writes
 
--- 
-Best regards,
-Stanislav Kinsbursky
+The __this_cpu_ptr operation in slab_alloc is special. We explicitly do
+address calculation and do not care from which per cpu area we fetch
+multiple per cpu data items because we can verify that we are on the same
+per cpu area during the this_cpu_cmpxchg_double operation.
+
+> The point is, people get it wrong all the time. In fact, we should
+> really require that ALL USES of this_cpu_*() must be with preemption
+> disabled. Regardless. Because anytime you touch a per cpu variable,
+
+NO!! This defeats the whole purpose of this_cpu_ops and make the whole
+scheme utterly useless.
+
+> Monkeying around with per cpu data is tricky. If you start doing it in
+> preempt enabled code, you are most certainly about to get it wrong. Why
+> have this super optimization. A preempt_disable() is a single operation
+> that touches cache hot data.
+
+There are trivial cases like counter increments that are not a problem at
+all. Most use cases are those. More complex ones can be developed to avoid
+various overhead in performance critical sections of the kernel.
+
+
