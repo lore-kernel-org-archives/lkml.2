@@ -1,69 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752308Ab1ITPDY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 11:03:24 -0400
-Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:29078 "HELO
-	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751726Ab1ITPDX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 11:03:23 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 3XtGAx8VM1moBN.u_3qsnSmhd7bvLhxWmCfFwL8FIpAa2fW
- IhsPXyZa9FnKXwdcSm.jbpaRxCQ80nyzahGEFiJxHXYRVFkM2pURMNGsA14M
- Oq7Soke1hh1ten_Qgg5ZzR6U.gOm8icEjA.NR5a2TNb_rCJnN69mEzWwZvoM
- WfRsJfrZ4RHvC.jQ5Eixx6jXyjzWTW1sqsgK2ikET_XlJSVatA1hNpTZGWfK
- bjOlUH8JQ_dTtdg2wcdtHtelrLWV2xNbFI9YxkD3l1dWfLAyn6VeW_.FPiqF
- QXgm4Wb7_OkjwoKbo2K54qK1OUnLhFJutOzRvhKycgyyN2zm8Na1fkxE8LMa
- ULwiA8nxISdJv5dy6agOKhTxB5m.8T7wjCiv1JdIoabbd5bXkmlk-
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 20 Sep 2011 10:03:18 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-X-X-Sender: cl@router.home
-To: Thomas Gleixner <tglx@linutronix.de>
-cc: Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Christoph Lameter <cl@linux.com>, Tejun Heo <htejun@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC][PATCH 0/5] Introduce checks for preemptable code for
- this_cpu_read/write()
-In-Reply-To: <alpine.LFD.2.02.1109200933310.2723@ionos>
-Message-ID: <alpine.DEB.2.00.1109201000120.8056@router.home>
-References: <20110919212040.745370781@goodmis.org>  <m2ehzcdkf2.fsf@firstfloor.org> <1316488378.29966.35.camel@gandalf.stny.rr.com> <alpine.LFD.2.02.1109200933310.2723@ionos>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752353Ab1ITPDw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 11:03:52 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:3769 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751633Ab1ITPDv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 11:03:51 -0400
+Message-ID: <4E78AB49.1030303@parallels.com>
+Date: Tue, 20 Sep 2011 19:03:37 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Lightning/1.0b2 Thunderbird/3.1.13
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+CC: "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "davem@davemloft.net" <davem@davemloft.net>
+Subject: Re: [PATCH v4 1/8] SUNRPC: introduce helpers for reference counted
+ rpcbind clients
+References: <20110920101031.9861.18444.stgit@localhost6.localdomain6> <20110920101341.9861.51453.stgit@localhost6.localdomain6> <4E788F8C.20103@netapp.com> <2E1EB2CF9ED1CB4AA966F0EB76EAB4430B47FD10@SACMVEXC2-PRD.hq.netapp.com> <4E789679.1060601@parallels.com> <2E1EB2CF9ED1CB4AA966F0EB76EAB4430B47FD22@SACMVEXC2-PRD.hq.netapp.com> <4E78A4AF.1020303@parallels.com> <2E1EB2CF9ED1CB4AA966F0EB76EAB4430B47FD2B@SACMVEXC2-PRD.hq.netapp.com>
+In-Reply-To: <2E1EB2CF9ED1CB4AA966F0EB76EAB4430B47FD2B@SACMVEXC2-PRD.hq.netapp.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Sep 2011, Thomas Gleixner wrote:
-
-> On Mon, 19 Sep 2011, Steven Rostedt wrote:
-> > On Mon, 2011-09-19 at 19:20 -0700, Andi Kleen wrote:
-> > > Steven Rostedt <rostedt@goodmis.org> writes:
-> > >
-> > > > I just found out that the this_cpu_*() functions do not perform the
-> > > > test to see if the usage is in atomic or not. Thus, the blind
-> > > > conversion of the per_cpu(*, smp_processor_id()) and the get_cpu_var()
-> > > > code to this_cpu_*() introduce the regression to detect the hard
-> > > > to find case where a per cpu variable is used in preempt code that
-> > > > migrates and causes bugs.
+20.09.2011 18:38, Myklebust, Trond пишет:
+>> -----Original Message-----
+>> From: Stanislav Kinsbursky [mailto:skinsbursky@parallels.com]
+>> Sent: Tuesday, September 20, 2011 10:35 AM
+>> To: Myklebust, Trond
+>> Cc: Schumaker, Bryan; linux-nfs@vger.kernel.org; Pavel Emelianov;
+>> neilb@suse.de; netdev@vger.kernel.org; linux-kernel@vger.kernel.org;
+>> bfields@fieldses.org; davem@davemloft.net
+>> Subject: Re: [PATCH v4 1/8] SUNRPC: introduce helpers for reference
+>> counted rpcbind clients
+>>
+>> 20.09.2011 18:14, Myklebust, Trond пишет:
+>>
+>>>>>
+>>>>> Doesn't it  need to be protected by rpcb_clnt_lock too?
+>>>>>
+>>>>
+>>>> Nope from my pow. It's protected by rpcb_create_local_mutex. I.e. no
+>>>> one will change rpcb_users since it's zero. If it's non zero - we
+>>>> willn't get to rpcb_set_local().
+>>>
+>>> OK, so you are saying that the rpcb_users++ below could be replaced by
+>> rpcb_users=1?
+>>>
+>>
+>> Yes, you right.
+>>
+>>> In that case, don't you need a smp_wmb() between the setting of
+>> rpcb_local_clnt/4 and the setting of rpcb_users? Otherwise, how do you
+>> guarantee that rpcb_users != 0 implies rpbc_local_clnt/4 != NULL?
+>>>
+>>
+>> We check rpcb_users under spinlock. Gain spinlock forces memory barrier,
+>> doesn't it?
 >
-> Just for the record. I added some this_cpu_* debug checks to my
-> filesystem eating 2.6.38-rt and guess what: They trigger right away in
-> the FS code and without digging deeper I'm 100% sure, that this is the
-> root cause of the problems I was hunting for weeks. Thanks for wasting
-> my time and racking my nerves.
+> Yes, and so you don't need an smp_rmb() on the reader side. However, you still need to ensure that the processor which _sets_ the rpcb_users and rpcb_local_clnt/4 actually writes them in the correct order.
+>
 
-this_cpu_xx is safe to use in preemptable contexts. So what does this have
-to do with your FS problems?
+Yep, now I understand what are you talking about.
+Will fix both places (set and put).
 
-> Can we please put that on the KS agenda? This definitely needs to be
-> addressed urgently.
-
-Well yes the misunderstanding of per cpu operations was one reason why I
-proposed the discussion on the subject of esoteric kernel synchronization.
-I do not think that it was accepted.
-
+-- 
+Best regards,
+Stanislav Kinsbursky
