@@ -1,103 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751550Ab1ITQDb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 12:03:31 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:55452 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750772Ab1ITQDa (ORCPT
+	id S1752402Ab1ITQFU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 12:05:20 -0400
+Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:49061 "HELO
+	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751056Ab1ITQFT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 12:03:30 -0400
-X-Authority-Analysis: v=1.1 cv=lfM0d0QHaVz67dfwwr9cyIw6NbaGR/pZhMD6XWNi0kk= c=1 sm=0 a=6qbAnu_Q0HoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=AbEZUEoKyYU0kizw9McA:9 a=QoW9K_SRGMBTyI0hbUIA:7 a=PUjeQqilurYA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.83.30
-Subject: Re: [RFC][PATCH 2/5] mm: Switch mod_state() to __this_cpu_read()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Christoph Lameter <cl@gentwo.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+	Tue, 20 Sep 2011 12:05:19 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: ftxZiqsVM1mepOjPAQ7hkqiSbpdgkvYG0hM6F5OCtBDFV8Y
+ VJ8IOjDoyJ5aT07dpKVyktEcPdakrGa6l1JOcmsB2iUlxbSRNzkSpxGLFtKQ
+ 3lZradFIcRHX0mPm0p4WFc_g2KKIIYnYwThOnXGaeAt8bCqqjbyT3Gtsf3Cg
+ zkvRgPef6tOFBWxoxJwzO.XASoKDoGUGeeAcUDCj2xu9UftLjLRIhEmV9ipU
+ SMyqdRspkmhR4YxMq3VXvrgwT2MJ32j1AU8QBBwBT9Y_BIwIR7wix1JWzGA6
+ jRH3SBd33iA5F_PRBlJ_ctyblB16USqKtm5AySxmQr4iMDmv0Z3zu0XoXKSx
+ 4lwkqgntrYh6ieIGMWUu9_ofvniV5FgGy.KYxx4md_qf8gsTZJooTDXI.Rde
+ yHwGdGEA8888QHfEWZdhTncI-
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 20 Sep 2011 11:05:15 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+X-X-Sender: cl@router.home
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Thomas Gleixner <tglx@linutronix.de>, Steven Rostedt <rostedt@goodmis.org>,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
         Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Christoph Lameter <cl@linux.com>, Tejun Heo <htejun@gmail.com>
-In-Reply-To: <alpine.DEB.2.00.1109201055470.8056@router.home>
-References: <20110919212040.745370781@goodmis.org>
-	 <20110919212640.688732950@goodmis.org>
-	 <alpine.DEB.2.00.1109191657150.19059@router.home>
-	 <alpine.LFD.2.02.1109201334590.2723@ionos>
-	 <alpine.DEB.2.00.1109200947100.8056@router.home>
-	 <1316531505.29966.57.camel@gandalf.stny.rr.com>
-	 <alpine.DEB.2.00.1109201055470.8056@router.home>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 20 Sep 2011 12:03:28 -0400
-Message-ID: <1316534608.29966.81.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+        Christoph Lameter <cl@linux.com>, Tejun Heo <htejun@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC][PATCH 0/5] Introduce checks for preemptable code for
+ this_cpu_read/write()
+In-Reply-To: <1316531252.13664.39.camel@twins>
+Message-ID: <alpine.DEB.2.00.1109201102340.8056@router.home>
+References: <20110919212040.745370781@goodmis.org>   <m2ehzcdkf2.fsf@firstfloor.org>  <1316488378.29966.35.camel@gandalf.stny.rr.com>  <alpine.LFD.2.02.1109200933310.2723@ionos>  <alpine.DEB.2.00.1109201000120.8056@router.home>
+ <1316531252.13664.39.camel@twins>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-09-20 at 10:59 -0500, Christoph Lameter wrote:
-> On Tue, 20 Sep 2011, Steven Rostedt wrote:
-> 
-> > On Tue, 2011-09-20 at 09:51 -0500, Christoph Lameter wrote:
+On Tue, 20 Sep 2011, Peter Zijlstra wrote:
+
+> On Tue, 2011-09-20 at 10:03 -0500, Christoph Lameter wrote:
 > >
-> > > I see that __this_cpu_xx operations may not work as intended in
-> > > preemptable contexts and there we could have more changes.
-> >
-> > Then why do you use it in slub.c?
-> >
-> > in mm/slab.c slab_alloc():
-> >
-> > redo:
-> >
-> > 	/*
-> > 	 * Must read kmem_cache cpu data via this cpu ptr. Preemption is
-> > 	 * enabled. We may switch back and forth between cpus while
-> > 	 * reading from one cpu area. That does not matter as long
-> > 	 * as we end up on the original cpu again when doing the cmpxchg.
-> > 	 */
-> > 	c = __this_cpu_ptr(s->cpu_slab);
-> >
-> > The __this_cpu_*() is in preempt enabled location. In fact, the three
-> > this_cpu_write()'s in acquire_slab() is done within a spinlock and thus
-> > with preemption disabled.
-> 
-> So the this_cpu_writes could become __this_cpu_writes
-> 
-> The __this_cpu_ptr operation in slab_alloc is special. We explicitly do
-> address calculation and do not care from which per cpu area we fetch
-> multiple per cpu data items because we can verify that we are on the same
-> per cpu area during the this_cpu_cmpxchg_double operation.
+> > Well yes the misunderstanding of per cpu operations was one reason why I
+> > proposed the discussion on the subject of esoteric kernel synchronization.
+> > I do not think that it was accepted.
+>
+> I don't think anybody here misunderstands it, we're just all very angry
+> that its causing so much problems.
 
-ARGH! You now have special cases that break the sanity of it all? This
-just proves that the design is wrong.
+What problems? RT does not work with it? The memcg confusion?
 
-> 
-> > The point is, people get it wrong all the time. In fact, we should
-> > really require that ALL USES of this_cpu_*() must be with preemption
-> > disabled. Regardless. Because anytime you touch a per cpu variable,
-> 
-> NO!! This defeats the whole purpose of this_cpu_ops and make the whole
-> scheme utterly useless.
+> __this_cpu doesn't have preempt debug checks, and there's a lot of
+> this_cpu usage that really should have been __this_cpu.
 
-The thing is, the whole purpose was broken to begin with. Defeating a
-broken design is a good thing!
-
-> 
-> > Monkeying around with per cpu data is tricky. If you start doing it in
-> > preempt enabled code, you are most certainly about to get it wrong. Why
-> > have this super optimization. A preempt_disable() is a single operation
-> > that touches cache hot data.
-> 
-> There are trivial cases like counter increments that are not a problem at
-> all. Most use cases are those. More complex ones can be developed to avoid
-> various overhead in performance critical sections of the kernel.
-> 
-
-And adding a preempt_disable; this_cpu_inc(); preempt_enable; is not a
-bad thing either.
-
-What benchmarks do you have that shows this helped in anything????
-
--- Steve
+That only works if preemption is disabled when the this_cpu op is being
+invoked.
 
 
