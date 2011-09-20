@@ -1,61 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752402Ab1ITQFU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 12:05:20 -0400
-Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:49061 "HELO
-	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751056Ab1ITQFT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 12:05:19 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: ftxZiqsVM1mepOjPAQ7hkqiSbpdgkvYG0hM6F5OCtBDFV8Y
- VJ8IOjDoyJ5aT07dpKVyktEcPdakrGa6l1JOcmsB2iUlxbSRNzkSpxGLFtKQ
- 3lZradFIcRHX0mPm0p4WFc_g2KKIIYnYwThOnXGaeAt8bCqqjbyT3Gtsf3Cg
- zkvRgPef6tOFBWxoxJwzO.XASoKDoGUGeeAcUDCj2xu9UftLjLRIhEmV9ipU
- SMyqdRspkmhR4YxMq3VXvrgwT2MJ32j1AU8QBBwBT9Y_BIwIR7wix1JWzGA6
- jRH3SBd33iA5F_PRBlJ_ctyblB16USqKtm5AySxmQr4iMDmv0Z3zu0XoXKSx
- 4lwkqgntrYh6ieIGMWUu9_ofvniV5FgGy.KYxx4md_qf8gsTZJooTDXI.Rde
- yHwGdGEA8888QHfEWZdhTncI-
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 20 Sep 2011 11:05:15 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-X-X-Sender: cl@router.home
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Thomas Gleixner <tglx@linutronix.de>, Steven Rostedt <rostedt@goodmis.org>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, Tejun Heo <htejun@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC][PATCH 0/5] Introduce checks for preemptable code for
- this_cpu_read/write()
-In-Reply-To: <1316531252.13664.39.camel@twins>
-Message-ID: <alpine.DEB.2.00.1109201102340.8056@router.home>
-References: <20110919212040.745370781@goodmis.org>   <m2ehzcdkf2.fsf@firstfloor.org>  <1316488378.29966.35.camel@gandalf.stny.rr.com>  <alpine.LFD.2.02.1109200933310.2723@ionos>  <alpine.DEB.2.00.1109201000120.8056@router.home>
- <1316531252.13664.39.camel@twins>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752491Ab1ITQG0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 12:06:26 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:52424 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750806Ab1ITQGZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 12:06:25 -0400
+X-IronPort-AV: E=Sophos;i="4.68,412,1312182000"; 
+   d="scan'208";a="583334134"
+Message-ID: <4E78B9FD.70509@netapp.com>
+Date: Tue, 20 Sep 2011 12:06:21 -0400
+From: Bryan Schumaker <bjschuma@netapp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+CC: Jeff Layton <jlayton@redhat.com>,
+        "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "davem@davemloft.net" <davem@davemloft.net>
+Subject: Re: [PATCH v5 1/8] SUNRPC: introduce helpers for reference counted
+ rpcbind clients
+References: <20110920101031.9861.18444.stgit@localhost6.localdomain6>	<20110920101341.9861.51453.stgit@localhost6.localdomain6>	<4E7899E7.9090809@parallels.com> <20110920102431.58ca1d96@tlielax.poochiereds.net> <4E78A6A1.1000800@parallels.com> <4E78AA09.1000209@netapp.com> <4E78B389.3000307@parallels.com>
+In-Reply-To: <4E78B389.3000307@parallels.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Sep 2011, Peter Zijlstra wrote:
+On 09/20/2011 11:38 AM, Stanislav Kinsbursky wrote:
+> 20.09.2011 18:58, Bryan Schumaker пишет:
+>> On 09/20/2011 10:43 AM, Stanislav Kinsbursky wrote:
+>>> 20.09.2011 18:24, Jeff Layton пишет:
+>>>> On Tue, 20 Sep 2011 17:49:27 +0400
+>>>> Stanislav Kinsbursky<skinsbursky@parallels.com>   wrote:
+>>>>
+>>>>> v5: fixed races with rpcb_users in rpcb_get_local()
+>>>>>
+>>>>> This helpers will be used for dynamical creation and destruction of rpcbind
+>>>>> clients.
+>>>>> Variable rpcb_users is actually a counter of lauched RPC services. If rpcbind
+>>>>> clients has been created already, then we just increase rpcb_users.
+>>>>>
+>>>>> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
+>>>>>
+>>>>> ---
+>>>>>     net/sunrpc/rpcb_clnt.c |   53 ++++++++++++++++++++++++++++++++++++++++++++++++
+>>>>>     1 files changed, 53 insertions(+), 0 deletions(-)
+>>>>>
+>>>>> diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
+>>>>> index e45d2fb..5f4a406 100644
+>>>>> --- a/net/sunrpc/rpcb_clnt.c
+>>>>> +++ b/net/sunrpc/rpcb_clnt.c
+>>>>> @@ -114,6 +114,9 @@ static struct rpc_program    rpcb_program;
+>>>>>     static struct rpc_clnt *    rpcb_local_clnt;
+>>>>>     static struct rpc_clnt *    rpcb_local_clnt4;
+>>>>>     +DEFINE_SPINLOCK(rpcb_clnt_lock);
+>>>>> +unsigned int            rpcb_users;
+>>>>> +
+>>>>>     struct rpcbind_args {
+>>>>>         struct rpc_xprt *    r_xprt;
+>>>>>     @@ -161,6 +164,56 @@ static void rpcb_map_release(void *data)
+>>>>>         kfree(map);
+>>>>>     }
+>>>>>     +static int rpcb_get_local(void)
+>>>>> +{
+>>>>> +    int cnt;
+>>>>> +
+>>>>> +    spin_lock(&rpcb_clnt_lock);
+>>>>> +    if (rpcb_users)
+>>>>> +        rpcb_users++;
+>>>>> +    cnt = rpcb_users;
+>>>>> +    spin_unlock(&rpcb_clnt_lock);
+>>>>> +
+>>>>> +    return cnt;
+>>>>> +}
+>>>>> +
+>>>>> +void rpcb_put_local(void)
+>>>>> +{
+>>>>> +    struct rpc_clnt *clnt = rpcb_local_clnt;
+>>>>> +    struct rpc_clnt *clnt4 = rpcb_local_clnt4;
+>>>>> +    int shutdown;
+>>>>> +
+>>>>> +    spin_lock(&rpcb_clnt_lock);
+>>>>> +    if (--rpcb_users == 0) {
+>>>>> +        rpcb_local_clnt = NULL;
+>>>>> +        rpcb_local_clnt4 = NULL;
+>>>>> +    }
+>>>>
+>>>> In the function below, you mention that the above pointers are
+>>>> protected by rpcb_create_local_mutex, but it looks like they get reset
+>>>> here without that being held?
+>>>>
+>>>
+>>> Assigning of them is protected by rpcb_create_local_mutex.
+>>> Dereferencing of them is protected by rpcb_clnt_lock.
+>>
+>> Shouldn't you be using the same lock for assigning and dereferencing?  Otherwise one thread could change these variables while another is using them.
+> 
+> Probably I wasn't clear with my previous explanation.
+> Actually, we use only spinlock to make sure, that the pointers are valid when we dereferencing them. Synchronization point here is rpcb_users counter.
+> IOW, we use these pointers only from svc code and only after service already started. And with this patch-set we can be sure, that this pointers has been created already to the point, when this service starts.
+> 
+> But when this counter is zero, we can experience races with assigning those pointers. It takes a lot of time, so we use local mutex here instead of spinlock.
+> 
+> Have I answered your question?
 
-> On Tue, 2011-09-20 at 10:03 -0500, Christoph Lameter wrote:
-> >
-> > Well yes the misunderstanding of per cpu operations was one reason why I
-> > proposed the discussion on the subject of esoteric kernel synchronization.
-> > I do not think that it was accepted.
->
-> I don't think anybody here misunderstands it, we're just all very angry
-> that its causing so much problems.
-
-What problems? RT does not work with it? The memcg confusion?
-
-> __this_cpu doesn't have preempt debug checks, and there's a lot of
-> this_cpu usage that really should have been __this_cpu.
-
-That only works if preemption is disabled when the this_cpu op is being
-invoked.
-
+I think I understand now.  Thanks!
+> 
 
