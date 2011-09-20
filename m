@@ -1,80 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752190Ab1ITO57 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 10:57:59 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:54213 "HELO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751081Ab1ITO55 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 10:57:57 -0400
-Date: Tue, 20 Sep 2011 15:57:45 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Nicolas Pitre <nico@fluxnic.net>
-Cc: Laura Abbott <lauraa@codeaurora.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH] arm: Add unwinding annotations for 64bit division
- functions
-Message-ID: <20110920145745.GG8545@e102109-lin.cambridge.arm.com>
-References: <1316470297-5063-1-git-send-email-lauraa@codeaurora.org>
- <alpine.LFD.2.00.1109191913210.12663@xanadu.home>
- <2285dff3fee56758b6279062a5a30dc7.squirrel@www.codeaurora.org>
- <alpine.LFD.2.00.1109200922281.12663@xanadu.home>
+	id S1752218Ab1ITO6Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 10:58:25 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:7444 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751609Ab1ITO6V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 10:58:21 -0400
+X-IronPort-AV: E=Sophos;i="4.68,411,1312182000"; 
+   d="scan'208";a="583305398"
+Message-ID: <4E78AA09.1000209@netapp.com>
+Date: Tue, 20 Sep 2011 10:58:17 -0400
+From: Bryan Schumaker <bjschuma@netapp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1109200922281.12663@xanadu.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 20 Sep 2011 14:57:51.0490 (UTC) FILETIME=[AB584620:01CC77A5]
-X-MC-Unique: 111092015575302701
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+CC: Jeff Layton <jlayton@redhat.com>,
+        "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "davem@davemloft.net" <davem@davemloft.net>
+Subject: Re: [PATCH v5 1/8] SUNRPC: introduce helpers for reference counted
+ rpcbind clients
+References: <20110920101031.9861.18444.stgit@localhost6.localdomain6>	<20110920101341.9861.51453.stgit@localhost6.localdomain6>	<4E7899E7.9090809@parallels.com> <20110920102431.58ca1d96@tlielax.poochiereds.net> <4E78A6A1.1000800@parallels.com>
+In-Reply-To: <4E78A6A1.1000800@parallels.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 20, 2011 at 02:27:01PM +0100, Nicolas Pitre wrote:
-> On Mon, 19 Sep 2011, Laura Abbott wrote:
-> > On Mon, September 19, 2011 4:22 pm, Nicolas Pitre wrote:
-> > > On Mon, 19 Sep 2011, Laura Abbott wrote:
-> > >> @@ -189,7 +191,12 @@ ENTRY(__do_div64)
-> > >>  	moveq	yh, xh
-> > >>  	moveq	xh, #0
-> > >>  	moveq	pc, lr
-> > >> +UNWIND(.fnend)
-> > >>
-> > >> +UNWIND(.fnstart)
-> > >> +UNWIND(.pad #4)
-> > >> +UNWIND(.save {lr})
-> > >> +Ldiv0_64:
-> > >
-> > > Why this phony fnend+fnstart here?
-> >
-> > If a division by 0 occurs, we need to be able to access the saved LR on
-> > the stack which is setup right before calling the __div0 function. This
-> > can't go at the top of __do_div64 because if we try to do a backtrace from
-> > within __do_div64 the annotation won't be correct as the LR was never
-> > saved on the stack.
+On 09/20/2011 10:43 AM, Stanislav Kinsbursky wrote:
+> 20.09.2011 18:24, Jeff Layton пишет:
+>> On Tue, 20 Sep 2011 17:49:27 +0400
+>> Stanislav Kinsbursky<skinsbursky@parallels.com>  wrote:
+>>
+>>> v5: fixed races with rpcb_users in rpcb_get_local()
+>>>
+>>> This helpers will be used for dynamical creation and destruction of rpcbind
+>>> clients.
+>>> Variable rpcb_users is actually a counter of lauched RPC services. If rpcbind
+>>> clients has been created already, then we just increase rpcb_users.
+>>>
+>>> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
+>>>
+>>> ---
+>>>    net/sunrpc/rpcb_clnt.c |   53 ++++++++++++++++++++++++++++++++++++++++++++++++
+>>>    1 files changed, 53 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
+>>> index e45d2fb..5f4a406 100644
+>>> --- a/net/sunrpc/rpcb_clnt.c
+>>> +++ b/net/sunrpc/rpcb_clnt.c
+>>> @@ -114,6 +114,9 @@ static struct rpc_program    rpcb_program;
+>>>    static struct rpc_clnt *    rpcb_local_clnt;
+>>>    static struct rpc_clnt *    rpcb_local_clnt4;
+>>>    +DEFINE_SPINLOCK(rpcb_clnt_lock);
+>>> +unsigned int            rpcb_users;
+>>> +
+>>>    struct rpcbind_args {
+>>>        struct rpc_xprt *    r_xprt;
+>>>    @@ -161,6 +164,56 @@ static void rpcb_map_release(void *data)
+>>>        kfree(map);
+>>>    }
+>>>    +static int rpcb_get_local(void)
+>>> +{
+>>> +    int cnt;
+>>> +
+>>> +    spin_lock(&rpcb_clnt_lock);
+>>> +    if (rpcb_users)
+>>> +        rpcb_users++;
+>>> +    cnt = rpcb_users;
+>>> +    spin_unlock(&rpcb_clnt_lock);
+>>> +
+>>> +    return cnt;
+>>> +}
+>>> +
+>>> +void rpcb_put_local(void)
+>>> +{
+>>> +    struct rpc_clnt *clnt = rpcb_local_clnt;
+>>> +    struct rpc_clnt *clnt4 = rpcb_local_clnt4;
+>>> +    int shutdown;
+>>> +
+>>> +    spin_lock(&rpcb_clnt_lock);
+>>> +    if (--rpcb_users == 0) {
+>>> +        rpcb_local_clnt = NULL;
+>>> +        rpcb_local_clnt4 = NULL;
+>>> +    }
+>>
+>> In the function below, you mention that the above pointers are
+>> protected by rpcb_create_local_mutex, but it looks like they get reset
+>> here without that being held?
+>>
 > 
-> I suppose the debug infrastructure always assume the same stack frame 
-> for the whole function, hence you can't put that .pad and .save right 
-> before the call to __div0 without the .fnstart and have it effective 
-> only there?
+> Assigning of them is protected by rpcb_create_local_mutex.
+> Dereferencing of them is protected by rpcb_clnt_lock.
 
-An element in the unwinding table contains a pointer to the .fnstart
-location and a set of instruction bytecodes (like .save) to the next
-.fnend statement. If more 4 bytecodes (to fit in an int), it contains an
-index to another table with more bytecodes. The elements in the
-unwinding table are sorted by the .fnstart address.
-
-So I think in the above case if we don't have the .fnend/.fnstart for
-Ldiv0_64 we would get all the instructions in the __do_div64 unwinding
-information. I don't think the unwinding bytecode is that smart to allow
-other tricks like checking some conditions.
-
-Unless anyone has a better idea to specify this:
-
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+Shouldn't you be using the same lock for assigning and dereferencing?  Otherwise one thread could change these variables while another is using them.
+> 
+>> Might it be simpler to just protect rpcb_users with the
+>> rpcb_create_local_mutex and ensure that it's held whenever you call one
+>> of these routines? None of these are codepaths are particularly hot.
+>>
+> 
+> I just inherited this lock-mutex logic.
+> Actually, you right. This codepaths are used rarely.
+> But are use sure, that we need to remove this "speed-up" logic if we take into account that it was here already?
+> 
+>>> +    shutdown = !rpcb_users;
+>>> +    spin_unlock(&rpcb_clnt_lock);
+>>> +
+>>> +    if (shutdown) {
+>>> +        /*
+>>> +         * cleanup_rpcb_clnt - remove xprtsock's sysctls, unregister
+>>> +         */
+>>> +        if (clnt4)
+>>> +            rpc_shutdown_client(clnt4);
+>>> +        if (clnt)
+>>> +            rpc_shutdown_client(clnt);
+>>> +    }
+>>> +    return;
+>>> +}
+>>> +
+>>> +static void rpcb_set_local(struct rpc_clnt *clnt, struct rpc_clnt *clnt4)
+>>> +{
+>>> +    /* Protected by rpcb_create_local_mutex */
+>>> +    rpcb_local_clnt = clnt;
+>>> +    rpcb_local_clnt4 = clnt4;
+>>> +    rpcb_users++;
+>>> +    dprintk("RPC:       created new rpcb local clients (rpcb_local_clnt: "
+>>> +            "%p, rpcb_local_clnt4: %p)\n", rpcb_local_clnt,
+>>> +            rpcb_local_clnt4);
+>>> +}
+>>> +
+>>>    /*
+>>>     * Returns zero on success, otherwise a negative errno value
+>>>     * is returned.
+>>> -- 
+>>> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>>
+> 
+> 
 
