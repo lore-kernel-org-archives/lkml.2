@@ -1,127 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300Ab1ITJQi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 05:16:38 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:58279 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755215Ab1ITJQg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 05:16:36 -0400
-Message-ID: <4E7859EC.4070904@linux.vnet.ibm.com>
-Date: Tue, 20 Sep 2011 14:46:28 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1755068Ab1ITJRo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 05:17:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52278 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752442Ab1ITJRm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 05:17:42 -0400
+Date: Tue, 20 Sep 2011 11:17:38 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <jweiner@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
+        Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 03/11] mm: vmscan: distinguish between memcg triggering
+ reclaim and memcg being scanned
+Message-ID: <20110920091738.GD27675@tiehlicka.suse.cz>
+References: <1315825048-3437-1-git-send-email-jweiner@redhat.com>
+ <1315825048-3437-4-git-send-email-jweiner@redhat.com>
+ <20110919142955.GG21847@tiehlicka.suse.cz>
+ <20110920085811.GC11489@redhat.com>
 MIME-Version: 1.0
-To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [BUG] INFO: inconsistent lock state
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110920085811.GC11489@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue 20-09-11 10:58:11, Johannes Weiner wrote:
+> On Mon, Sep 19, 2011 at 04:29:55PM +0200, Michal Hocko wrote:
+> > On Mon 12-09-11 12:57:20, Johannes Weiner wrote:
+[...]
+> > > @@ -1853,13 +1865,13 @@ static int vmscan_swappiness(struct scan_control *sc)
+> > >   *
+> > >   * nr[0] = anon pages to scan; nr[1] = file pages to scan
+> > >   */
+> > > -static void get_scan_count(struct zone *zone, struct scan_control *sc,
+> > > -					unsigned long *nr, int priority)
+> > > +static void get_scan_count(struct mem_cgroup_zone *mz, struct scan_control *sc,
+> > > +			   unsigned long *nr, int priority)
+> > >  {
+> > >  	unsigned long anon, file, free;
+> > >  	unsigned long anon_prio, file_prio;
+> > >  	unsigned long ap, fp;
+> > > -	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
+> > > +	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(mz);
+> > >  	u64 fraction[2], denominator;
+> > >  	enum lru_list l;
+> > >  	int noswap = 0;
+> > 
+> > You can save some patch lines by:
+> > 	struct zone *zone = mz->zone;
+> > and not doing zone => mz->zone changes that follow.
+> 
+> Actually, I really hate that I had to do that local zone variable in
+> other places.  I only did it where it's used so often that it would
+> have changed every other line.  If you insist, I'll change it, but I
+> would prefer to avoid it when possible.
 
-While running kernel compilation along with suspend/resume
-tests using the pm_test framework (at the processors level),
-lockdep reports inconsistent lock state.
-This is with Kernel 3.0.4.
+Just a suggestion feel free to ignore it. I have no preference.
 
-Excerpt of the log:
-kernel: [ 8221.176651] Freezing user space processes ... (elapsed 0.01 seconds) done.
-kernel: [ 8221.247173] Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
-kernel: [ 8221.321962] PM: Preallocating image memory... 
-kernel: [ 8221.768104] =================================
-kernel: [ 8221.806233] [ INFO: inconsistent lock state ]
-kernel: [ 8221.842744] 3.0.4 #1
-kernel: [ 8221.861076] ---------------------------------
-kernel: [ 8221.897583] inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-W} usage.
-kernel: [ 8221.952270] test_processors/5971 [HC0[0]:SC0[0]:HE1:SE1] takes:
-kernel: [ 8222.001872]  (&sb->s_type->i_mutex_key#13){+.+.?.}, at: [<ffffffffa01262ee>] ext4_evict_inode+0x2e/0x3d0 [ext4]
-kernel: [ 8222.086774] {RECLAIM_FS-ON-W} state was registered at:
-kernel: [ 8222.129821]   [<ffffffff810a6033>] mark_held_locks+0x73/0xa0
-kernel: [ 8222.177316]   [<ffffffff810a60ff>] lockdep_trace_alloc+0x9f/0xd0
-kernel: [ 8222.227720]   [<ffffffff81164dd6>] kmem_cache_alloc+0x36/0x1f0
-kernel: [ 8222.276675]   [<ffffffff81191927>] d_alloc+0x27/0x1d0
-kernel: [ 8222.319078]   [<ffffffff811864dd>] d_alloc_and_lookup+0x2d/0x90
-kernel: [ 8222.368755]   [<ffffffff81188473>] do_lookup+0x2b3/0x300
-kernel: [ 8222.413340]   [<ffffffff8118983f>] link_path_walk+0x18f/0x930
-kernel: [ 8222.461564]   [<ffffffff8118a665>] path_lookupat+0x55/0x690
-kernel: [ 8222.508330]   [<ffffffff8118acd1>] do_path_lookup+0x31/0xc0
-kernel: [ 8222.555098]   [<ffffffff8118b9c9>] user_path_at+0x59/0xa0
-kernel: [ 8222.600413]   [<ffffffff8118018c>] vfs_fstatat+0x4c/0x90
-kernel: [ 8222.645001]   [<ffffffff811802fb>] vfs_stat+0x1b/0x20
-kernel: [ 8222.687397]   [<ffffffff81180324>] sys_newstat+0x24/0x50
-kernel: [ 8222.731986]   [<ffffffff8152fa82>] system_call_fastpath+0x16/0x1b
-kernel: [ 8222.783119] irq event stamp: 2109279487
-kernel: [ 8222.815258] hardirqs last  enabled at (2109279487): [<ffffffff81526fe0>] _raw_spin_unlock_irq+0x30/0x40
-kernel: [ 8222.894087] hardirqs last disabled at (2109279486): [<ffffffff8152665f>] _raw_spin_lock_irq+0x1f/0x80
-kernel: [ 8222.971464] softirqs last  enabled at (2109279484): [<ffffffff8106ea7c>] __do_softirq+0x14c/0x250
-kernel: [ 8223.045929] softirqs last disabled at (2109279461): [<ffffffff81530d3c>] call_softirq+0x1c/0x30
-kernel: [ 8223.118941] 
-kernel: [ 8223.118942] other info that might help us debug this:
-kernel: [ 8223.173776]  Possible unsafe locking scenario:
-kernel: [ 8223.173777] 
-kernel: [ 8223.223525]        CPU0
-kernel: [ 8223.244031]        ----
-kernel: [ 8223.264541]   lock(&sb->s_type->i_mutex_key);
-kernel: [ 8223.301204]   <Interrupt>
-kernel: [ 8223.323168]     lock(&sb->s_type->i_mutex_key);
-kernel: [ 8223.361284] 
-kernel: [ 8223.361285]  *** DEADLOCK ***
-kernel: [ 8223.361285] 
-kernel: [ 8223.411172] 5 locks held by test_processors/5971:
-kernel: [ 8223.450586]  #0:  (&buffer->mutex){+.+.+.}, at: [<ffffffff811ee0a4>] sysfs_write_file+0x44/0x170
-kernel: [ 8223.524561]  #1:  (s_active#79){.+.+.+}, at: [<ffffffff811ee12d>] sysfs_write_file+0xcd/0x170
-kernel: [ 8223.596444]  #2:  (pm_mutex){+.+.+.}, at: [<ffffffff810b8a7c>] hibernate+0x1c/0x200
-kernel: [ 8223.660968]  #3:  (shrinker_rwsem){++++..}, at: [<ffffffff8112b98d>] shrink_slab+0x3d/0x1b0
-kernel: [ 8223.731320]  #4:  (iprune_sem){.+.+.-}, at: [<ffffffff81196cc1>] prune_icache+0x31/0x310
-kernel: [ 8223.799493] 
-kernel: [ 8223.799493] stack backtrace:
-kernel: [ 8223.836149] Pid: 5971, comm: test_processors Not tainted 3.0.4 #1
-kernel: [ 8223.887194] Call Trace:
-kernel: [ 8223.907706]  [<ffffffff810a5439>] print_usage_bug+0x179/0x180
-kernel: [ 8223.955846]  [<ffffffff810a5440>] ? print_usage_bug+0x180/0x180
-kernel: [ 8224.005444]  [<ffffffff810a5aae>] mark_lock_irq+0xfe/0x290
-kernel: [ 8224.051402]  [<ffffffff810a5d91>] mark_lock+0x151/0x1f0
-kernel: [ 8224.095182]  [<ffffffff810a5ef6>] mark_irqflags+0xc6/0x190
-kernel: [ 8224.141139]  [<ffffffff810a7624>] __lock_acquire+0x344/0x4f0
-kernel: [ 8224.188555]  [<ffffffff810a7e84>] lock_acquire+0xa4/0x130
-kernel: [ 8224.233792]  [<ffffffffa01262ee>] ? ext4_evict_inode+0x2e/0x3d0 [ext4]
-kernel: [ 8224.288477]  [<ffffffff81524fed>] __mutex_lock_common+0x4d/0x3f0
-kernel: [ 8224.338805]  [<ffffffffa01262ee>] ? ext4_evict_inode+0x2e/0x3d0 [ext4]
-kernel: [ 8224.393486]  [<ffffffff810a190d>] ? trace_hardirqs_off+0xd/0x10
-kernel: [ 8224.443082]  [<ffffffff8109439f>] ? local_clock+0x6f/0x80
-kernel: [ 8224.488323]  [<ffffffffa01262ee>] ? ext4_evict_inode+0x2e/0x3d0 [ext4]
-kernel: [ 8224.543012]  [<ffffffff810a5865>] ? lock_release_holdtime+0x35/0x180
-kernel: [ 8224.596243]  [<ffffffff810a7c99>] ? __lock_release+0x129/0x190
-kernel: [ 8224.645122]  [<ffffffff811966d5>] ? evict+0x75/0x180
-kernel: [ 8224.686721]  [<ffffffff815254fa>] mutex_lock_nested+0x4a/0x60
-kernel: [ 8224.734871]  [<ffffffffa01262ee>] ext4_evict_inode+0x2e/0x3d0 [ext4]
-kernel: [ 8224.788104]  [<ffffffff811966e3>] evict+0x83/0x180
-kernel: [ 8224.828248]  [<ffffffff81196827>] dispose_list+0x47/0x60
-kernel: [ 8224.872752]  [<ffffffff81196de5>] prune_icache+0x155/0x310
-kernel: [ 8224.918708]  [<ffffffff81196fe6>] shrink_icache_memory+0x46/0x50
-kernel: [ 8224.969034]  [<ffffffff8112ba82>] shrink_slab+0x132/0x1b0
-kernel: [ 8225.014268]  [<ffffffff8112db02>] do_try_to_free_pages+0x2d2/0x3c0
-kernel: [ 8225.066044]  [<ffffffff8112dcad>] shrink_all_memory+0xbd/0xf0
-kernel: [ 8225.114192]  [<ffffffff81136d76>] ? next_online_pgdat+0x26/0x50
-kernel: [ 8225.163789]  [<ffffffff810ba6a5>] hibernate_preallocate_memory+0x1e5/0x2a0
-kernel: [ 8225.221379]  [<ffffffff810b896d>] hibernation_snapshot+0x8d/0x180
-kernel: [ 8225.272424]  [<ffffffff810b8b58>] hibernate+0xf8/0x200
-kernel: [ 8225.315476]  [<ffffffff810b6ffc>] state_store+0xec/0x100
-kernel: [ 8225.359984]  [<ffffffff8125f8b7>] kobj_attr_store+0x17/0x20
-kernel: [ 8225.406670]  [<ffffffff811ee146>] sysfs_write_file+0xe6/0x170
-kernel: [ 8225.454809]  [<ffffffff8117afd0>] vfs_write+0xd0/0x1a0
-kernel: [ 8225.497856]  [<ffffffff8117b1a4>] sys_write+0x54/0xa0
-kernel: [ 8225.540180]  [<ffffffff8152fa82>] system_call_fastpath+0x16/0x1b
-kernel: [ 8226.890288] done (allocated 2511433 pages)
-kernel: [ 8226.924630] PM: Allocated 10045732 kbytes in 5.54 seconds (1813.30 MB/s)
+> 
+> > > @@ -2390,6 +2413,18 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem_cont,
+> > >  }
+> > >  #endif
+> > >  
+> > > +static void age_active_anon(struct zone *zone, struct scan_control *sc,
+> > > +			    int priority)
+> > > +{
+> > > +	struct mem_cgroup_zone mz = {
+> > > +		.mem_cgroup = NULL,
+> > > +		.zone = zone,
+> > > +	};
+> > > +
+> > > +	if (inactive_anon_is_low(&mz))
+> > > +		shrink_active_list(SWAP_CLUSTER_MAX, &mz, sc, priority, 0);
+> > > +}
+> > > +
+> > 
+> > I do not like this very much because we are using a similar construct in
+> > shrink_mem_cgroup_zone so we are duplicating that code. 
+> > What about adding age_mem_cgroup_active_anon (something like shrink_zone).
+> 
+> I am not sure I follow and I don't see what could be shared between
+> the zone shrinking and this as there are different exit conditions to
+> the hierarchy walk.  Can you elaborate?
 
+Sorry for not being clear enough. Maybe it is not very much important
+but what about something like:
+
+Index: linus_tree/mm/vmscan.c
+===================================================================
+--- linus_tree.orig/mm/vmscan.c	2011-09-20 11:07:57.000000000 +0200
++++ linus_tree/mm/vmscan.c	2011-09-20 11:12:53.000000000 +0200
+@@ -2041,6 +2041,13 @@ static inline bool should_continue_recla
+ 	}
+ }
  
++static void age_mem_cgroup_active_anon(struct mem_cgroup_zone *mz,
++		struct scan_control *sc, int priority)
++{
++	if (inactive_anon_is_low(mz))
++		shrink_active_list(SWAP_CLUSTER_MAX, mz, sc, priority, 0);
++}
++
+ /*
+  * This is a basic per-zone page freer.  Used by both kswapd and direct reclaim.
+  */
+@@ -2090,8 +2097,7 @@ restart:
+ 	 * Even if we did not try to evict anon pages at all, we want to
+ 	 * rebalance the anon lru active/inactive ratio.
+ 	 */
+-	if (inactive_anon_is_low(mz))
+-		shrink_active_list(SWAP_CLUSTER_MAX, mz, sc, priority, 0);
++	age_mem_cgroup_active_anon(mz, sc, priority);
+ 
+ 	/* reclaim/compaction might need reclaim to continue */
+ 	if (should_continue_reclaim(mz, nr_reclaimed,
+@@ -2421,8 +2427,7 @@ static void age_active_anon(struct zone
+ 		.zone = zone,
+ 	};
+ 
+-	if (inactive_anon_is_low(&mz))
+-		shrink_active_list(SWAP_CLUSTER_MAX, &mz, sc, priority, 0);
++	age_mem_cgroup_active_anon(&mz, sc, priority);
+ }
+ 
+ /*
+
+Thanks
 -- 
-Regards,
-Srivatsa S. Bhat  <srivatsa.bhat@linux.vnet.ibm.com>
-Linux Technology Center,
-IBM India Systems and Technology Lab
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
