@@ -1,96 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752435Ab1ITQAo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 12:00:44 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:51307 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751366Ab1ITQAm (ORCPT
+	id S1752171Ab1ITQCO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 12:02:14 -0400
+Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:40752 "HELO
+	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750806Ab1ITQCN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 12:00:42 -0400
-X-Authority-Analysis: v=1.1 cv=cSzO76bR5tCkfUT9bEmBgR3d7VUusRLeq08eKGxa4EU= c=1 sm=0 a=3kNrfhY1ZosA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=meVymXHHAAAA:8 a=6tZ-v_apZIWo3q58ihwA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.83.30
-Subject: Re: [RFC][PATCH 0/5] Introduce checks for preemptable code for
- this_cpu_read/write()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Christoph Lameter <cl@gentwo.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>
-In-Reply-To: <20110920154610.GB28952@Krystal>
-References: <20110919212040.745370781@goodmis.org>
-	 <alpine.DEB.2.00.1109191644190.19059@router.home>
-	 <1316487977.29966.32.camel@gandalf.stny.rr.com>
-	 <20110920154610.GB28952@Krystal>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 20 Sep 2011 12:00:41 -0400
-Message-ID: <1316534441.29966.79.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 20 Sep 2011 12:02:13 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: lIOFQusVM1n5LUX36DTuhJYr1pQdZsP3QOEjedICgywbdUx
+ Ep8a2jrdmwMB7H8z2VqgvSENAOl6HSCT.rL1S5cP1PDRyrvWd5YEOXTh5TqI
+ GXI18UwQnN4XctFGPDpYfyTFuUFouw58aMrE7jAF4j1xBuxuOMjQrRRg2WtX
+ VbG01DkTMfxg.taK_CWUTiws1uU0lbfPygwhmHciAEhe3NNQ9cJnPU2OFPgH
+ .mkrVDY6Iz2u.VjwMfHAkoJ1i.tgS7_ptbsvh4DXk_LoRgCmLsCKnLaWfjuX
+ h2IrV8qqtcumAJqxF4dmKgO0WYyjoTz4_Xk8wtheM3NwE0JLQ9mjtzCQHCpl
+ nF1p_w24NtouSmHDm6BHpQNgq1Lej4LGnHD9H42Ps3cJHl44qSDdcsUd0wTa
+ tNFDmj.9VeyyPWSAc6P70ZLE-
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 20 Sep 2011 11:02:09 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+X-X-Sender: cl@router.home
+To: Thomas Gleixner <tglx@linutronix.de>
+cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Christoph Lameter <cl@linux.com>, Tejun Heo <htejun@gmail.com>
+Subject: Re: [RFC][PATCH 2/5] mm: Switch mod_state() to __this_cpu_read()
+In-Reply-To: <alpine.LFD.2.02.1109201703560.2723@ionos>
+Message-ID: <alpine.DEB.2.00.1109201059590.8056@router.home>
+References: <20110919212040.745370781@goodmis.org> <20110919212640.688732950@goodmis.org> <alpine.DEB.2.00.1109191657150.19059@router.home> <alpine.LFD.2.02.1109201334590.2723@ionos> <alpine.DEB.2.00.1109200947100.8056@router.home>
+ <alpine.LFD.2.02.1109201703560.2723@ionos>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-09-20 at 11:46 -0400, Mathieu Desnoyers wrote:
-> * Steven Rostedt (rostedt@goodmis.org) wrote:
-> > [ Added Mathieu as I've been discussing this with him on IRC ]
-> [...]
-> > My suggestion is to nuke the __this_cpu*() functions and have them
-> > called this_cpu*(). And change the locations that allow for preemption
-> > enabled to be called preemptsafe_cpu_*() just like the irqsafe_cpu*()
-> > are used.
-> > 
-> > Thoughts?
-> 
-> I fully agreed with this proposal.
-> 
-> this_cpu_*() should be a sane default, which is cases that require
-> preemption to be disabled. Warning about use without preemption disabled
-> is important, because most users will _assume_ that they stay on the
-> same CPU across multiple calls.
-> 
-> preemptsafe_cpu_*() is an optimisation made for those who know that
-> they don't care about having consistent view of the variables across
-> multiple operations, e.g. statistics, or deal with this explicitly, like
-> SLUB. Typical use require either add_return or cmpxchg for validation.
+On Tue, 20 Sep 2011, Thomas Gleixner wrote:
 
-The funny thing is, the few uses where preemption is enabled in slub,
-happens to use the __this_cpu_() version. Which shows me that this whole
-concept is completely flawed.
+> I want to get rid of them alltogether. They are crap by design and
+> prone to be used wrong without a sensible way to detect that.
 
-> 
-> In the past, we used to have something like raw_smp_processor_id()
-> though, for sites where racy use does not matter. So probably having a
-> raw_this_cpu_*() that behaves like "this_cpu_*()" proposed here, but
-> does not check for preemption disabled would also be useful.
-
-I'm going with all users of this_cpu_*() must be used in a preempt
-disabled section. Byte the bullet. I doubt any sane benchmark shows any
-improvement by removing preempt_disable() from small code paths. If a
-longer code path is needed, then the code was probably buggy to begin
-with.
-
-For those cases that really do not care about preemption enabled, maybe
-we could add a single this_cpu() function that allows that.
+Counter increments have been done this way for a very long time. This is
+a pretty well established way of doing things in the kernel that was
+expanded and made better by avoid preempt disable/enable around these per
+cpu pointer increments.
 
 
-this_cpu_snapshot();
+> Right, and that's the main problem. We have no fricking way to debug
+> this, so they should have never been there in the first place. And you
+> simply CANNOT prevent people from getting this wrong w/o proper
+> debugging and annotation. Even YOU and Tejun made bogus conversion w/o
+> noticing, but you expect that others get it right?
 
-This would be the only function that can be used with preemption
-enabled. It is read only (no modification of the variable). It is used
-in cases that you really don't care what CPU you are on. For instance
-the const_udelay() could use this.
+Bogus conversions?
 
-The term "snapshot" should document very nicely that you do not care
-that you migrated in the next moment. As a snapshot is just a quick
-instance of time.
+> So stop defending that trainwreck and help out with fixing the mess
+> you created in a proper and debugable way!
 
-I really mean all other users of this_cpu_*(), including the cmpxchg and
-friends, still need to have preemption disabled.
-
--- Steve
-
+You want debugging to ensure that this_cpu ops always access the intended
+per cpu area? But the point of these operations is to be used in kernel
+locations where the use of any per cpu area is satisfactory.
 
