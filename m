@@ -1,146 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752167Ab1ITOpt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 10:45:49 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:28201 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750919Ab1ITOoA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 10:44:00 -0400
-Message-ID: <4E78A6A1.1000800@parallels.com>
-Date: Tue, 20 Sep 2011 18:43:45 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Lightning/1.0b2 Thunderbird/3.1.13
+	id S1751761Ab1ITOrB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 10:47:01 -0400
+Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:37930 "HELO
+	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750892Ab1ITOrA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 10:47:00 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 0C6TmiwVM1mrP03njhKkwyD5VAqORgVIc41xayyDgdwu9nF
+ IcHfmuVxV45RKmNhIjSyi53CnSoU7cDF1wSFz0mvRn0GNmbX.Vedr_SCdoy8
+ 0GzuWAG5Gi.TZketvImLV1z_4ycEKtv_qX5LF9wKDFGN4hgccgiDu.kfrlLK
+ CyogA_hzc5LLwYY4GpDLbDP_krHfxII_r1Id0ktsgpV0bgeEDRggZjUAieeD
+ z8_SisR3ti_ZDOnHu37AVVf5hd5lk0jDqRo8sjB4YZuIG0SQHalLKXVo65Oz
+ OUzkxbG55w5B5EQvqOG5lKJsQz6u5Pn5.PACPJIPmsR4KNQlE3W3EPHv3Y1F
+ UJforJ5K3gRfJ6uX3HmRWbAEAhIjvhW6N2GVEm7iLFj8SYBM4CmqnK8Y7zBC
+ gLtqQ1tjuYbIGe3G3SO.5Jno-
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 20 Sep 2011 09:46:53 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+X-X-Sender: cl@router.home
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [RFC][PATCH 2/5] mm: Switch mod_state() to __this_cpu_read()
+In-Reply-To: <1316476089.29966.9.camel@gandalf.stny.rr.com>
+Message-ID: <alpine.DEB.2.00.1109200940240.8056@router.home>
+References: <20110919212040.745370781@goodmis.org>  <20110919212640.688732950@goodmis.org>  <alpine.DEB.2.00.1109191657150.19059@router.home> <1316476089.29966.9.camel@gandalf.stny.rr.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Jeff Layton <jlayton@redhat.com>
-CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "davem@davemloft.net" <davem@davemloft.net>
-Subject: Re: [PATCH v5 1/8] SUNRPC: introduce helpers for reference counted
- rpcbind clients
-References: <20110920101031.9861.18444.stgit@localhost6.localdomain6>	<20110920101341.9861.51453.stgit@localhost6.localdomain6>	<4E7899E7.9090809@parallels.com> <20110920102431.58ca1d96@tlielax.poochiereds.net>
-In-Reply-To: <20110920102431.58ca1d96@tlielax.poochiereds.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-20.09.2011 18:24, Jeff Layton пишет:
-> On Tue, 20 Sep 2011 17:49:27 +0400
-> Stanislav Kinsbursky<skinsbursky@parallels.com>  wrote:
->
->> v5: fixed races with rpcb_users in rpcb_get_local()
->>
->> This helpers will be used for dynamical creation and destruction of rpcbind
->> clients.
->> Variable rpcb_users is actually a counter of lauched RPC services. If rpcbind
->> clients has been created already, then we just increase rpcb_users.
->>
->> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
->>
->> ---
->>    net/sunrpc/rpcb_clnt.c |   53 ++++++++++++++++++++++++++++++++++++++++++++++++
->>    1 files changed, 53 insertions(+), 0 deletions(-)
->>
->> diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
->> index e45d2fb..5f4a406 100644
->> --- a/net/sunrpc/rpcb_clnt.c
->> +++ b/net/sunrpc/rpcb_clnt.c
->> @@ -114,6 +114,9 @@ static struct rpc_program	rpcb_program;
->>    static struct rpc_clnt *	rpcb_local_clnt;
->>    static struct rpc_clnt *	rpcb_local_clnt4;
->>    +DEFINE_SPINLOCK(rpcb_clnt_lock);
->> +unsigned int			rpcb_users;
->> +
->>    struct rpcbind_args {
->>    	struct rpc_xprt *	r_xprt;
->>    @@ -161,6 +164,56 @@ static void rpcb_map_release(void *data)
->>    	kfree(map);
->>    }
->>    +static int rpcb_get_local(void)
->> +{
->> +	int cnt;
->> +
->> +	spin_lock(&rpcb_clnt_lock);
->> +	if (rpcb_users)
->> +		rpcb_users++;
->> +	cnt = rpcb_users;
->> +	spin_unlock(&rpcb_clnt_lock);
->> +
->> +	return cnt;
->> +}
->> +
->> +void rpcb_put_local(void)
->> +{
->> +	struct rpc_clnt *clnt = rpcb_local_clnt;
->> +	struct rpc_clnt *clnt4 = rpcb_local_clnt4;
->> +	int shutdown;
->> +
->> +	spin_lock(&rpcb_clnt_lock);
->> +	if (--rpcb_users == 0) {
->> +		rpcb_local_clnt = NULL;
->> +		rpcb_local_clnt4 = NULL;
->> +	}
->
-> In the function below, you mention that the above pointers are
-> protected by rpcb_create_local_mutex, but it looks like they get reset
-> here without that being held?
->
+On Mon, 19 Sep 2011, Steven Rostedt wrote:
 
-Assigning of them is protected by rpcb_create_local_mutex.
-Dereferencing of them is protected by rpcb_clnt_lock.
-
-> Might it be simpler to just protect rpcb_users with the
-> rpcb_create_local_mutex and ensure that it's held whenever you call one
-> of these routines? None of these are codepaths are particularly hot.
+> On Mon, 2011-09-19 at 17:02 -0500, Christoph Lameter wrote:
+> > On Mon, 19 Sep 2011, Steven Rostedt wrote:
+> >
+> > > From: Steven Rostedt <srostedt@redhat.com>
+> > >
+> > > The code in mod_state() is already made to handle the raciness of
+> > > this_cpu_read(). Have the code use __this_cpu_read() instead so
+> > > the debug code does not trigger warnings about it.
+> >
+> > Why would there be a warning triggered? this_cpu_read should take care of
+> > disabling preemption for the read if needed. In fact the fallback case
+> > does do exactly that.
 >
+> What does disabling preemption for just reading the cpu variable help
+> anywhere? Once you read the variable, and enable preemption, you can
+> migrate. Then that info you have could be useless.
 
-I just inherited this lock-mutex logic.
-Actually, you right. This codepaths are used rarely.
-But are use sure, that we need to remove this "speed-up" logic if we take into 
-account that it was here already?
+The effects on just reading are not that severe. We may calculate the
+address of the per cpu variable on one cpu and then be migrated to another
+processor. Then there is an access to the per cpu area of another
+processor which in many cases is harmless and will just cause the
+cacheline to go from exclusive mode into shared mode on the other cpu. The
+next write by the other cpu then brings it back to exclusive mode evicting
+the cacheline from the cpu we migrated to.
 
->> +	shutdown = !rpcb_users;
->> +	spin_unlock(&rpcb_clnt_lock);
->> +
->> +	if (shutdown) {
->> +		/*
->> +		 * cleanup_rpcb_clnt - remove xprtsock's sysctls, unregister
->> +		 */
->> +		if (clnt4)
->> +			rpc_shutdown_client(clnt4);
->> +		if (clnt)
->> +			rpc_shutdown_client(clnt);
->> +	}
->> +	return;
->> +}
->> +
->> +static void rpcb_set_local(struct rpc_clnt *clnt, struct rpc_clnt *clnt4)
->> +{
->> +	/* Protected by rpcb_create_local_mutex */
->> +	rpcb_local_clnt = clnt;
->> +	rpcb_local_clnt4 = clnt4;
->> +	rpcb_users++;
->> +	dprintk("RPC:       created new rpcb local clients (rpcb_local_clnt: "
->> +			"%p, rpcb_local_clnt4: %p)\n", rpcb_local_clnt,
->> +			rpcb_local_clnt4);
->> +}
->> +
->>    /*
->>     * Returns zero on success, otherwise a negative errno value
->>     * is returned.
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+The same conventions are also used for RMV instructions like this_cpu_inc.
+In that case the situation is much more sever. Now we are locklessly
+incrementing a counter in the per cpu area of another cpu. That is a race
+condition that can corrupt the counter data.
+
+> The point is, most places use this_cpu_read(). Adding a "__" or "raw_"
+> prefix usually means that less checks are done. Think of the
+> copy_from_user(). You have __copy_from_user() that does less checks.
+
+Why do you need any checks there? this_cpu_xxx operations should take care
+of preemption.
+
+> Most of the per_cpu() and get_cpu_var() code was blindly replaced with
+> the this_cpu_*() variants. The original code had preemption disabled
+> checks. Now they don't. Which means if you use the this_cpu_read() and
+> then make some decision on it, that read may be useless and buggy.
 >
->
+> We have smp_processor_id() that does the check (and the old per_cpu()
+> and get_cpu_var()). Now we have this_cpu_read() which replaced most of
+> the per_cpu() code in the kernel, making them vulnerable to bugs when
+> preemption is enabled.
 
+this_cpu_xx can only replace a get_cpu_var/per_cpu section where a single
+word is read or updated. If multiple per cpu variables are accessed and
+modified in one go then it is better to keep disabling preemption for
+the whole section and use the __this_cpu_xx operations.
 
--- 
-Best regards,
-Stanislav Kinsbursky
+If there are cases where this was not done correctly then lets fix those.
+
