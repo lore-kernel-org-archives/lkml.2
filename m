@@ -1,117 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752402Ab1ITWR7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 18:17:59 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:44268 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751180Ab1ITWR6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 18:17:58 -0400
-Subject: Re: [PATCH 1/6] toshiba_acpi: Convert to use acpi_driver
-From: Joe Perches <joe@perches.com>
-To: Seth Forshee <seth.forshee@canonical.com>
-Cc: Matthew Garrett <mjg@redhat.com>, Azael Avalos <coproscefalo@gmail.com>,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 20 Sep 2011 15:17:57 -0700
-In-Reply-To: <1316555754-25949-2-git-send-email-seth.forshee@canonical.com>
-References: <1316555754-25949-1-git-send-email-seth.forshee@canonical.com>
-	 <1316555754-25949-2-git-send-email-seth.forshee@canonical.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.1.91- 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1316557078.1903.11.camel@Joe-Laptop>
+	id S1752468Ab1ITWTx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 18:19:53 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:33487 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751762Ab1ITWTw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 18:19:52 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Christoph Lameter <cl@gentwo.org>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [RFC][PATCH 0/5] Introduce checks for preemptable code for this_cpu_read/write()
+In-Reply-To: Your message of "Tue, 20 Sep 2011 11:19:47 EDT."
+             <1316531987.29966.65.camel@gandalf.stny.rr.com>
+From: Valdis.Kletnieks@vt.edu
+References: <20110919212040.745370781@goodmis.org> <alpine.DEB.2.00.1109191644190.19059@router.home> <1316487977.29966.32.camel@gandalf.stny.rr.com> <27409.1316522696@turing-police.cc.vt.edu> <alpine.DEB.2.00.1109200955190.8056@router.home>
+            <1316531987.29966.65.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1316557072_2679P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Tue, 20 Sep 2011 18:17:52 -0400
+Message-ID: <25599.1316557072@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020206.4E791114.00B7,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-09-20 at 16:55 -0500, Seth Forshee wrote:
-> Changes toshiba_acpi to register an acpi driver and eliminates the
-> platform device it was using.
+--==_Exmh_1316557072_2679P
+Content-Type: text/plain; charset=us-ascii
 
-Just trivial comments...
+On Tue, 20 Sep 2011 11:19:47 EDT, Steven Rostedt said:
+> On Tue, 2011-09-20 at 09:57 -0500, Christoph Lameter wrote:
+> 
+> > this_cpu_xx functions are made for those locations that have
+> > preemption enabled. If you can use those function (classic case is a
+> > per cpu counter increment in the network subsystem) then you can avoid
+> > preempt disable/enable or get_cpu/put_cpu.
+> 
+> If the variables are used for a very short time, then the latencies
+> introduced by a simple:
+> 
+> 	var = get_cpu_var(my_var);
+> 	if (var)
+> 		do_something_quick();
+> 	put_cpu_var(my_var);
+> 
+> Otherwise if that do_something_quick(); migrates, it may be doing
+> something it shouldn't be doing!
 
-> diff --git a/drivers/platform/x86/toshiba_acpi.c b/drivers/platform/x86/toshiba_acpi.c
-> +static acpi_status hci_raw(struct toshiba_acpi_dev *dev,
-> +			   const u32 in[HCI_WORDS], u32 out[HCI_WORDS])
-[]
-> @@ -237,85 +234,79 @@ static acpi_status hci_raw(const u32 in[HCI_WORDS], u32 out[HCI_WORDS])
->   * may be useful (such as "not supported").
->   */
->  
-> -static acpi_status hci_write1(u32 reg, u32 in1, u32 * result)
-> +static acpi_status hci_write1(struct toshiba_acpi_dev *dev, u32 reg,
-> +			      u32 in1, u32 *result)
->  {
->  	u32 in[HCI_WORDS] = { HCI_SET, reg, in1, 0, 0, 0 };
+This has the added advantage of making the calling function take the blame
+in latency traces, doesn't it?
 
-A lot of the in[HCI_WORDS] could be static const or const
+--==_Exmh_1316557072_2679P
+Content-Type: application/pgp-signature
 
-	static const u32 in[HCI_WORDS] etc...
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
-> +static acpi_status hci_read1(struct toshiba_acpi_dev *dev, u32 reg,
-> +			     u32 *out1, u32 *result)
->  {
->  	u32 in[HCI_WORDS] = { HCI_GET, reg, 0, 0, 0, 0 };
+iD8DBQFOeREQcC3lWbTT17ARAluuAKDV2kPqEAgeJJZ8tKHi3NMhtLc6/gCcD4Rv
+UXPeTNuf11K6J9iOOiKNPUI=
+=NIQb
+-----END PGP SIGNATURE-----
 
-here too.
-
->  	u32 out[HCI_WORDS];
-> -	acpi_status status = hci_raw(in, out);
-> +	acpi_status status = hci_raw(dev, in, out);
->  	*out1 = out[2];
->  	*result = (status == AE_OK) ? out[0] : HCI_FAILURE;
->  	return status;
->  }
->  
-> -static acpi_status hci_write2(u32 reg, u32 in1, u32 in2, u32 *result)
-> +static acpi_status hci_write2(struct toshiba_acpi_dev *dev, u32 reg,
-> +			      u32 in1, u32 in2, u32 *result)
->  {
->  	u32 in[HCI_WORDS] = { HCI_SET, reg, in1, in2, 0, 0 };
-
-const etc.
-
-> @@ -507,8 +486,13 @@ static int get_lcd(struct backlight_device *bd)
->  
->  static int lcd_proc_show(struct seq_file *m, void *v)
->  {
-> -	int value = get_lcd(NULL);
-> +	struct toshiba_acpi_dev *dev = m->private;
-> +	int value;
-> +
-> +	if (!dev->backlight_dev)
-> +		return -ENODEV;
->  
-> +	value = get_lcd(dev->backlight_dev);
->  	if (value >= 0) {
->  		seq_printf(m, "brightness:              %d\n", value);
->  		seq_printf(m, "brightness_levels:       %d\n",
-
-Some small amount space could be saved by using:
-
-		seq_printf(m, "%-24s %d\n", "brightness:", value);
-		seq_printf(m, "%-24s %d\n", "brightness_levels:", etc...
-[]
-> @@ -675,13 +663,14 @@ static const struct file_operations video_proc_fops = {
->  
->  static int fan_proc_show(struct seq_file *m, void *v)
->  {
-> +	struct toshiba_acpi_dev *dev = m->private;
->  	u32 hci_result;
->  	u32 value;
->  
-> -	hci_read1(HCI_FAN, &value, &hci_result);
-> +	hci_read1(dev, HCI_FAN, &value, &hci_result);
->  	if (hci_result == HCI_SUCCESS) {
->  		seq_printf(m, "running:                 %d\n", (value > 0));
-
-Here too:
-
-		seq_printf(m, "%-24s %d\n", "running:", (value > 0);
-
-> -		seq_printf(m, "force_on:                %d\n", force_fan);
-> +		seq_printf(m, "force_on:                %d\n", dev->force_fan);
-
-etc.
-
+--==_Exmh_1316557072_2679P--
 
