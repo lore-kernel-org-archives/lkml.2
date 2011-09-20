@@ -1,76 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752317Ab1ITQ1O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 12:27:14 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:45555 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750967Ab1ITQ1M convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 12:27:12 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=d9ijK4UDjRgGVLsB5cgF51ZLnUtOsqPTMaf75CeCSAjXnyC5v69fHGGujSvq+8fV6
-	XXLsdTHefrOZ1RJzmgzKA==
-MIME-Version: 1.0
-In-Reply-To: <4E77FBA4.3080907@intel.com>
-References: <1316482741-21799-1-git-send-email-ying.huang@intel.com>
- <1316482741-21799-5-git-send-email-ying.huang@intel.com> <CAErSpo4_syhxOi8jGo5oyrWBimsO7PdsXEky1vwPY_130OuPMA@mail.gmail.com>
- <4E77FBA4.3080907@intel.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 20 Sep 2011 10:26:49 -0600
-Message-ID: <CAErSpo5pUY8g7U0NeUe+Yf+R8kraExZN3Sheo6h+fb9B+RO7rw@mail.gmail.com>
-Subject: Re: [PATCH 4/8] ACPI, APEI, Resolve false conflict between ACPI NVS
- and APEI
-To: Huang Ying <ying.huang@intel.com>
-Cc: Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1752592Ab1ITQ2g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 12:28:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8186 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751517Ab1ITQ2f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 12:28:35 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20110920143942.GB15859@redhat.com>
+References: <20110920143942.GB15859@redhat.com> <20110919214531.GA18085@sergelap> <20110920122202.GA26504@redhat.com> <20110920124419.GA10759@hallyn.com> <20110920134108.GA30749@redhat.com> <20110920143920.GA15859@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: dhowells@redhat.com, "Serge E. Hallyn" <serge@hallyn.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        lkml <linux-kernel@vger.kernel.org>, richard@nod.at,
+        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 1/2] creds: kill __task_cred()->task_is_dead() check
+Date: Tue, 20 Sep 2011 17:27:30 +0100
+Message-ID: <5425.1316536050@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 19, 2011 at 8:34 PM, Huang Ying <ying.huang@intel.com> wrote:
-> On 09/20/2011 10:09 AM, Bjorn Helgaas wrote:
->> On Mon, Sep 19, 2011 at 7:38 PM, Huang Ying <ying.huang@intel.com> wrote:
->>> Some firmware will access memory in ACPI NVS region via APEI.  That
->>> is, instructions in APEI ERST/EINJ table will read/write ACPI NVS
->>> region.  The original resource conflict checking in APEI code will
->>> check memory/ioport accessed by APEI via general resource management
->>> mech.  But ACPI NVS region is marked as busy already, so that the
->>> false resource conflict will prevent APEI ERST/EINJ to work.
->>>
->>> To fix this, this patch excludes ACPI NVS regions when APEI components
->>> request resources.  So that they will not conflict with ACPI NVS
->>> regions.
->>
->> I think this is much, much too complicated.
->>
->> Yinghai's three-line e820.c patch to leave ACPI NVS regions in the
->> iomem_resource tree, but as not busy, is far better.
->
-> ACPI NVS should only be used by firmware or firmware interpreter instead
-> of the ordinary drivers.  So I think that is reasonable to make it busy
-> in iomem resource tree.
+Oleg Nesterov <oleg@redhat.com> wrote:
 
-"My driver is not like ordinary drivers" is a common excuse for adding
-special cases. I don't buy it.
+> From 8f92054e commit:
+> 
+>     Instead, add the following validation condition:
+> 
+>         task->exit_state >= 0
+> 
+>     to permit the access if the target task is dead and therefore unable to change
+>     its own credentials.
+> 
+> OK, but afaics currently this can only help wait_task_zombie() which
+> calls __task_cred() without rcu lock.
+> 
+> Remove this validation and change wait_task_zombie() to use task_uid()
+> instead. This means we do rcu_read_lock() only to shut up the lockdep,
+> but we already do the same in, say, wait_task_stopped().
+> 
+> Unfortunately, we can't kill task_is_dead() right now, it has already
+> found the users in drivers/staging/, and I bet the usage is wrong.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-These patches (3 and 4) add a lot of complexity but I don't believe
-they add any real protection.
+Acked-by: David Howells <dhowells@redhat.com>
 
-Regions are marked busy by their owners, i.e., by drivers that claim
-devices and know how to operate them.  The e820 code is not an owner
-of ACPI NVS regions, so it should not mark them busy.
-
-I don't really think we have a problem here that needs to be solved.
-Ordinary drivers have no way of learning an address in ACPI NVS, so
-they aren't even going to try to use it.
-
-Bjorn
+It simplifies stuff in exchange for the most minor of slowdowns, so fair
+enough.
