@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751268Ab1ITO5h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 10:57:37 -0400
-Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:27341 "HELO
-	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750957Ab1ITO5g (ORCPT
+	id S1752148Ab1ITO5r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 10:57:47 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:44145 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750806Ab1ITO5k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 10:57:36 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: WNyzcNIVM1nkW9setNAA81wBtmufkqVRXuNLHrxxdkH37BJ
- a3CJNpdCujTRpIWWDg68C8S8SK71KVD5il8aqnuxCD8tlPHUBg84cAXR7kPe
- 14HsaG7_7OkCbs6.VgrM8dv_xoZC.OrsjlJsvkv2E6vir9wvSClHF9_FeR_E
- wU6whi8eNEyR_G_2qVLVxT3btKJLRwAiIc3HapRW13x3dmLkS675bOLLY14G
- X8fJYZbqBWlJbxn0nY5Wx.zXt3i13G1k9p.lePqvsPGTxtIB7j_IKLh5FsDp
- 1BaaBokfknWaQFoRngG28Q4UB_Aioo9fB8Ug9HFdbKvfcf6tKQ1nZtGjiZK_
- 2KspIOTbU91hGiZzC7bZagjR8KDNXSfFADTTx1qWOQPI.PLHsQ8Fpi21vnrA
- NlZUmwiWPULPdCgFbtw--
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 20 Sep 2011 09:57:32 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-X-X-Sender: cl@router.home
-To: Valdis.Kletnieks@vt.edu
-cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [RFC][PATCH 0/5] Introduce checks for preemptable code for
- this_cpu_read/write()
-In-Reply-To: <27409.1316522696@turing-police.cc.vt.edu>
-Message-ID: <alpine.DEB.2.00.1109200955190.8056@router.home>
-References: <20110919212040.745370781@goodmis.org> <alpine.DEB.2.00.1109191644190.19059@router.home>            <1316487977.29966.32.camel@gandalf.stny.rr.com> <27409.1316522696@turing-police.cc.vt.edu>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 20 Sep 2011 10:57:40 -0400
+From: Deepthy Ravi <deepthy.ravi@ti.com>
+To: <laurent.pinchart@ideasonboard.com>, <mchehab@infradead.org>,
+        <tony@atomide.com>, <hvaibhav@ti.com>, <linux-media@vger.kernel.org>,
+        <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
+        <kyungmin.park@samsung.com>, <hverkuil@xs4all.nl>,
+        <m.szyprowski@samsung.com>, <g.liakhovetski@gmx.de>,
+        <santosh.shilimkar@ti.com>, <khilman@deeprootsystems.com>,
+        <david.woodhouse@intel.com>, <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <linux-omap@vger.kernel.org>, Deepthy Ravi <deepthy.ravi@ti.com>
+Subject: [PATCH 0/5] OMAP3EVM: Add support for MT9T111 sensor
+Date: Tue, 20 Sep 2011 20:26:47 +0530
+Message-ID: <1316530612-23075-1-git-send-email-deepthy.ravi@ti.com>
+X-Mailer: git-send-email 1.6.2.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Sep 2011, Valdis.Kletnieks@vt.edu wrote:
+This patchset
+	-adds support for MT9T111 sensor on omap3evm.
+	Currently the sensor driver supports only
+	VGA resolution.
+	-enables MT9T111 sensor in omap2plus_defconfig.
 
-> On Mon, 19 Sep 2011 23:06:17 EDT, Steven Rostedt said:
->
-> > It is really confusing to know which version to use. I'm confused by the
-> > this_cpu_*() compared with __this_cpu_*(). I'm guessing that most places
-> > should use __this_cpu*(). But really this_cpu() should be the default,
-> > and the places that can have it outside of preemption should have
-> > another name. Maybe use the raw_this_cpu() or safe_this_cpu(), as there
-> > is an irqsafe_this_cpu(). Maybe make a preemptsafe_cpu_*(). There should
-> > only be a very few locations that are OK to have preemption enabled when
-> > calling the this_cpu() code. Lets have those have the funny names and
-> > not be the default "this_cpu_*()".
+This is applied on top of the following patchset
+http://www.spinics.net/lists/linux-media/msg37270.html 
+which adds YUYV input support for OMAP3ISP.
+---
 
-this_cpu_xx functions are made for those locations that have
-preemption enabled. If you can use those function (classic case is a
-per cpu counter increment in the network subsystem) then you can avoid
-preempt disable/enable or get_cpu/put_cpu.
+Deepthy Ravi (2):
+  ispccdc: Configure CCDC_SYN_MODE register for     UYVY8_2X8 and
+    YUYV8_2X8 formats
+  omap2plus_defconfig: Enable omap3isp and MT9T111     sensor drivers
+
+Vaibhav Hiremath (3):
+  omap3evm: Enable regulators for camera interface
+  [media] v4l: Add mt9t111 sensor driver
+  omap3evm: Add Camera board init/hookup file
+
+ arch/arm/configs/omap2plus_defconfig        |   10 +
+ arch/arm/mach-omap2/Makefile                |    5 +
+ arch/arm/mach-omap2/board-omap3evm-camera.c |  185 ++++
+ arch/arm/mach-omap2/board-omap3evm.c        |   25 +
+ drivers/media/video/Kconfig                 |    7 +
+ drivers/media/video/Makefile                |    1 +
+ drivers/media/video/mt9t111.c               |  793 ++++++++++++++++
+ drivers/media/video/mt9t111_reg.h           | 1367 +++++++++++++++++++++++++++
+ drivers/media/video/omap3isp/ispccdc.c      |   11 +-
+ include/media/mt9t111.h                     |   45 +
+ 10 files changed, 2446 insertions(+), 3 deletions(-)
+ create mode 100644 arch/arm/mach-omap2/board-omap3evm-camera.c
+ create mode 100644 drivers/media/video/mt9t111.c
+ create mode 100644 drivers/media/video/mt9t111_reg.h
+ create mode 100644 include/media/mt9t111.h
 
