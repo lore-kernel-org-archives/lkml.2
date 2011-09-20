@@ -1,69 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755215Ab1ITJUF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 05:20:05 -0400
-Received: from www.linutronix.de ([62.245.132.108]:32932 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754935Ab1ITJUD (ORCPT
+	id S1755239Ab1ITJVz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 05:21:55 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53169 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754955Ab1ITJVy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 05:20:03 -0400
-Date: Tue, 20 Sep 2011 11:19:59 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andi Kleen <andi@firstfloor.org>
-cc: linux-kernel@vger.kernel.org, eric.dumazet@gmail.com,
-        akpm@linux-foundation.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/2] posix-timers: move global timer id management to
- signal_struct v4
-In-Reply-To: <1316468925-16754-1-git-send-email-andi@firstfloor.org>
-Message-ID: <alpine.LFD.2.02.1109201047210.2723@ionos>
-References: <1316468925-16754-1-git-send-email-andi@firstfloor.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Tue, 20 Sep 2011 05:21:54 -0400
+Subject: Re: [PATCH 6/9] Include idle and iowait fields in cpuacct
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, xemul@parallels.com, paul@paulmenage.org,
+        lizf@cn.fujitsu.com, daniel.lezcano@free.fr, mingo@elte.hu,
+        jbottomley@parallels.com
+Date: Tue, 20 Sep 2011 11:21:30 +0200
+In-Reply-To: <1316030695-19826-7-git-send-email-glommer@parallels.com>
+References: <1316030695-19826-1-git-send-email-glommer@parallels.com>
+	 <1316030695-19826-7-git-send-email-glommer@parallels.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1316510490.11841.15.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Sep 2011, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
+On Wed, 2011-09-14 at 17:04 -0300, Glauber Costa wrote:
+> These are slightly different from the others though:
+> (note to reviewers: might be better to put those in a separate
+> array?)
 > 
-> Move the global posix timer ids IDR to signal_struct. This removes
-> a minor global scalability bottleneck and also allows to finally limit
-> the number of process timers in a sane way (see next patch)
-> 
-> I put it into signal_struct following the other posix timer per process
-> structures.
-> 
-> v2: Now with locking again (thanks Eric)
-> v3: Fix the locking too (Eric Dumazet)
-> v4: Use a mutex. Get rid of retry loop.
-> idr_pre_get() is still there to avoid major surgery in lib/idr.c.
-> Random gleixnerfication
+> Since idle/iowait are a property of the system - by definition,
+> no process from any cgroup is running when the system is idle,
+> they are system wide. So what these fields really mean, are baselines
+> for when the cgroup was created. It allows the cgroup to start
+> counting idle/iowait from 0.
 
-I could laugh about that if you've had actually addressed my review
-comments proper.
+Alternatively you can make iowait based on nr_uninterruptible per cgroup
+and count all ticks _this_ cgroup was idle.
 
->  #ifdef CONFIG_SMP
-> @@ -46,6 +48,8 @@ extern struct fs_struct init_fs;
->  	},								\
->  	.cred_guard_mutex =						\
->  		 __MUTEX_INITIALIZER(sig.cred_guard_mutex),		\
-> +	.posix_timers_id = IDR_INIT(posix_timer_id),			\
-> +	.idr_lock	 = __MUTEX_INITIALIZER(init_signals.idr_lock),  \
-
-Hint: I even gave you the proper arguments for both initializers last
-time.
-
-So the above should be: Random sloppyfication.
-
-Andi, seriously. Your signal to noise ratio has become annoying
-again. We've been there before and you are on the verge of entering
-the ignore list again.
-
-Thanks,
-
-	tglx
-
+Now all that would need moar accounting...
