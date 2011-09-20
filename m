@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755898Ab1ITMNj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 08:13:39 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:56076 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755780Ab1ITMNg (ORCPT
+	id S1756007Ab1ITMNu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 08:13:50 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:51426 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755567Ab1ITMNr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 08:13:36 -0400
+	Tue, 20 Sep 2011 08:13:47 -0400
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
 Cc: Steven Rostedt <rostedt@goodmis.org>,
@@ -14,256 +14,122 @@ Cc: Steven Rostedt <rostedt@goodmis.org>,
         Linux-mm <linux-mm@kvack.org>,
         Arnaldo Carvalho de Melo <acme@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Hugh Dickins <hughd@google.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Jonathan Corbet <corbet@lwn.net>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Jim Keniston <jkenisto@linux.vnet.ibm.com>,
         Roland McGrath <roland@hack.frob.com>,
         Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Tue, 20 Sep 2011 17:29:49 +0530
-Message-Id: <20110920115949.25326.2469.sendpatchset@srdronam.in.ibm.com>
+        LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 20 Sep 2011 17:30:06 +0530
+Message-Id: <20110920120006.25326.81787.sendpatchset@srdronam.in.ibm.com>
 In-Reply-To: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com>
 References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com>
-Subject: [PATCH v5 3.1.0-rc4-tip 1/26]   uprobes: Auxillary routines to insert, find, delete uprobes
+Subject: [PATCH v5 3.1.0-rc4-tip 2/26]   Uprobes: Allow multiple consumers for an uprobe.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Uprobes are maintained in a rb-tree indexed by inode and offset (offset
-from the start of the map). For a unique inode, offset combination,
-there can be one unique uprobe in the rbtree. Provide routines that
-insert a given uprobe, find a uprobe given a inode and offset.
+Since there is a unique uprobe for a inode, offset combination, provide
+an ability for users to have more than one consumer for a uprobe.
+
+Each consumer will define a handler and a filter.  Handler specifies the
+routine to run on hitting a probepoint.  Filter allows to selectively run
+the handler on hitting the probepoint.  Handler/Filter will be relevant when
+we handle probehit.
 
 Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 ---
- include/linux/uprobes.h |   35 +++++++++
- kernel/uprobes.c        |  174 +++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 209 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/uprobes.h
- create mode 100644 kernel/uprobes.c
+ include/linux/uprobes.h |   13 +++++++++++++
+ kernel/uprobes.c        |   41 +++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 54 insertions(+), 0 deletions(-)
 
 diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-new file mode 100644
-index 0000000..bfb85c4
---- /dev/null
+index bfb85c4..bf31f7c 100644
+--- a/include/linux/uprobes.h
 +++ b/include/linux/uprobes.h
-@@ -0,0 +1,35 @@
-+#ifndef _LINUX_UPROBES_H
-+#define _LINUX_UPROBES_H
-+/*
-+ * Userspace Probes (UProbes)
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-+ *
-+ * Copyright (C) IBM Corporation, 2008-2011
-+ * Authors:
-+ *	Srikar Dronamraju
-+ *	Jim Keniston
-+ */
+@@ -25,9 +25,22 @@
+ 
+ #include <linux/rbtree.h>
+ 
++struct uprobe_consumer {
++	int (*handler)(struct uprobe_consumer *self, struct pt_regs *regs);
++	/*
++	 * filter is optional; If a filter exists, handler is run
++	 * if and only if filter returns true.
++	 */
++	bool (*filter)(struct uprobe_consumer *self, struct task_struct *task);
 +
-+#include <linux/rbtree.h>
-+
-+struct uprobe {
-+	struct rb_node		rb_node;	/* node in the rb tree */
-+	atomic_t		ref;
-+	struct inode		*inode;		/* Also hold a ref to inode */
-+	loff_t			offset;
++	struct uprobe_consumer *next;
 +};
 +
-+#endif	/* _LINUX_UPROBES_H */
+ struct uprobe {
+ 	struct rb_node		rb_node;	/* node in the rb tree */
+ 	atomic_t		ref;
++	struct rw_semaphore	consumer_rwsem;
++	struct uprobe_consumer	*consumers;
+ 	struct inode		*inode;		/* Also hold a ref to inode */
+ 	loff_t			offset;
+ };
 diff --git a/kernel/uprobes.c b/kernel/uprobes.c
-new file mode 100644
-index 0000000..e452147
---- /dev/null
+index e452147..ba9fd55 100644
+--- a/kernel/uprobes.c
 +++ b/kernel/uprobes.c
-@@ -0,0 +1,174 @@
-+/*
-+ * Userspace Probes (UProbes)
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-+ *
-+ * Copyright (C) IBM Corporation, 2008-2011
-+ * Authors:
-+ *	Srikar Dronamraju
-+ *	Jim Keniston
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/highmem.h>
-+#include <linux/slab.h>
-+#include <linux/uprobes.h>
-+
-+static struct rb_root uprobes_tree = RB_ROOT;
-+static DEFINE_SPINLOCK(uprobes_treelock);	/* serialize (un)register */
-+
-+static int match_uprobe(struct uprobe *l, struct uprobe *r)
+@@ -149,6 +149,7 @@ static struct uprobe *alloc_uprobe(struct inode *inode, loff_t offset)
+ 
+ 	uprobe->inode = igrab(inode);
+ 	uprobe->offset = offset;
++	init_rwsem(&uprobe->consumer_rwsem);
+ 
+ 	/* add to uprobes_tree, sorted on inode:offset */
+ 	cur_uprobe = insert_uprobe(uprobe);
+@@ -162,6 +163,46 @@ static struct uprobe *alloc_uprobe(struct inode *inode, loff_t offset)
+ 	return uprobe;
+ }
+ 
++/* Returns the previous consumer */
++static struct uprobe_consumer *add_consumer(struct uprobe *uprobe,
++				struct uprobe_consumer *consumer)
 +{
-+	if (l->inode < r->inode)
-+		return -1;
-+	if (l->inode > r->inode)
-+		return 1;
-+	else {
-+		if (l->offset < r->offset)
-+			return -1;
-+
-+		if (l->offset > r->offset)
-+			return 1;
-+	}
-+
-+	return 0;
++	down_write(&uprobe->consumer_rwsem);
++	consumer->next = uprobe->consumers;
++	uprobe->consumers = consumer;
++	up_write(&uprobe->consumer_rwsem);
++	return consumer->next;
 +}
 +
-+static struct uprobe *__find_uprobe(struct inode * inode, loff_t offset)
++/*
++ * For uprobe @uprobe, delete the consumer @consumer.
++ * Return true if the @consumer is deleted successfully
++ * or return false.
++ */
++static bool del_consumer(struct uprobe *uprobe,
++				struct uprobe_consumer *consumer)
 +{
-+	struct uprobe u = { .inode = inode, .offset = offset };
-+	struct rb_node *n = uprobes_tree.rb_node;
-+	struct uprobe *uprobe;
-+	int match;
++	struct uprobe_consumer *con;
++	bool ret = false;
 +
-+	while (n) {
-+		uprobe = rb_entry(n, struct uprobe, rb_node);
-+		match = match_uprobe(&u, uprobe);
-+		if (!match) {
-+			atomic_inc(&uprobe->ref);
-+			return uprobe;
++	down_write(&uprobe->consumer_rwsem);
++	con = uprobe->consumers;
++	if (consumer == con) {
++		uprobe->consumers = con->next;
++		ret = true;
++	} else {
++		for (; con; con = con->next) {
++			if (con->next == consumer) {
++				con->next = consumer->next;
++				ret = true;
++				break;
++			}
 +		}
-+		if (match < 0)
-+			n = n->rb_left;
-+		else
-+			n = n->rb_right;
-+
 +	}
-+	return NULL;
++	up_write(&uprobe->consumer_rwsem);
++	return ret;
 +}
 +
-+/*
-+ * Find a uprobe corresponding to a given inode:offset
-+ * Acquires uprobes_treelock
-+ */
-+static struct uprobe *find_uprobe(struct inode * inode, loff_t offset)
-+{
-+	struct uprobe *uprobe;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&uprobes_treelock, flags);
-+	uprobe = __find_uprobe(inode, offset);
-+	spin_unlock_irqrestore(&uprobes_treelock, flags);
-+	return uprobe;
-+}
-+
-+static struct uprobe *__insert_uprobe(struct uprobe *uprobe)
-+{
-+	struct rb_node **p = &uprobes_tree.rb_node;
-+	struct rb_node *parent = NULL;
-+	struct uprobe *u;
-+	int match;
-+
-+	while (*p) {
-+		parent = *p;
-+		u = rb_entry(parent, struct uprobe, rb_node);
-+		match = match_uprobe(uprobe, u);
-+		if (!match) {
-+			atomic_inc(&u->ref);
-+			return u;
-+		}
-+
-+		if (match < 0)
-+			p = &parent->rb_left;
-+		else
-+			p = &parent->rb_right;
-+
-+	}
-+	u = NULL;
-+	rb_link_node(&uprobe->rb_node, parent, p);
-+	rb_insert_color(&uprobe->rb_node, &uprobes_tree);
-+	/* get access + drop ref */
-+	atomic_set(&uprobe->ref, 2);
-+	return u;
-+}
-+
-+/*
-+ * Acquires uprobes_treelock.
-+ * Matching uprobe already exists in rbtree;
-+ *	increment (access refcount) and return the matching uprobe.
-+ *
-+ * No matching uprobe; insert the uprobe in rb_tree;
-+ *	get a double refcount (access + creation) and return NULL.
-+ */
-+static struct uprobe *insert_uprobe(struct uprobe *uprobe)
-+{
-+	unsigned long flags;
-+	struct uprobe *u;
-+
-+	spin_lock_irqsave(&uprobes_treelock, flags);
-+	u = __insert_uprobe(uprobe);
-+	spin_unlock_irqrestore(&uprobes_treelock, flags);
-+	return u;
-+}
-+
-+static void put_uprobe(struct uprobe *uprobe)
-+{
-+	if (atomic_dec_and_test(&uprobe->ref))
-+		kfree(uprobe);
-+}
-+
-+static struct uprobe *alloc_uprobe(struct inode *inode, loff_t offset)
-+{
-+	struct uprobe *uprobe, *cur_uprobe;
-+
-+	uprobe = kzalloc(sizeof(struct uprobe), GFP_KERNEL);
-+	if (!uprobe)
-+		return NULL;
-+
-+	uprobe->inode = igrab(inode);
-+	uprobe->offset = offset;
-+
-+	/* add to uprobes_tree, sorted on inode:offset */
-+	cur_uprobe = insert_uprobe(uprobe);
-+
-+	/* a uprobe exists for this inode:offset combination*/
-+	if (cur_uprobe) {
-+		kfree(uprobe);
-+		uprobe = cur_uprobe;
-+		iput(inode);
-+	}
-+	return uprobe;
-+}
-+
-+static void delete_uprobe(struct uprobe *uprobe)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&uprobes_treelock, flags);
-+	rb_erase(&uprobe->rb_node, &uprobes_tree);
-+	spin_unlock_irqrestore(&uprobes_treelock, flags);
-+	put_uprobe(uprobe);
-+	iput(uprobe->inode);
-+}
+ static void delete_uprobe(struct uprobe *uprobe)
+ {
+ 	unsigned long flags;
