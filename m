@@ -1,87 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755068Ab1ITMiY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 08:38:24 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:55410 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752003Ab1ITMiY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 08:38:24 -0400
-Message-ID: <4E78890D.1000607@parallels.com>
-Date: Tue, 20 Sep 2011 09:37:33 -0300
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1753676Ab1ITMm7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 08:42:59 -0400
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:34597 "EHLO
+	mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752011Ab1ITMm6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 08:42:58 -0400
+Date: Tue, 20 Sep 2011 12:44:20 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        lkml <linux-kernel@vger.kernel.org>, richard@nod.at,
+        Andrew Morton <akpm@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH] user namespace: make signal.c respect user namespaces
+Message-ID: <20110920124419.GA10759@hallyn.com>
+References: <20110919214531.GA18085@sergelap>
+ <20110920122202.GA26504@redhat.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: <linux-kernel@vger.kernel.org>, <xemul@parallels.com>,
-        <paul@paulmenage.org>, <lizf@cn.fujitsu.com>, <daniel.lezcano@free.fr>,
-        <mingo@elte.hu>, <jbottomley@parallels.com>
-Subject: Re: [PATCH 8/9] per-cgroup boot time
-References: <1316030695-19826-1-git-send-email-glommer@parallels.com>  <1316030695-19826-9-git-send-email-glommer@parallels.com> <1316510746.11841.18.camel@twins>
-In-Reply-To: <1316510746.11841.18.camel@twins>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [201.82.134.226]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110920122202.GA26504@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20/2011 06:25 AM, Peter Zijlstra wrote:
-> On Wed, 2011-09-14 at 17:04 -0300, Glauber Costa wrote:
->> Record the time in which the cgroup was created. This can be
->> used to provide a more accurate boottime information in
->> cpuacct.proc.stat.
->>
->> Signed-off-by: Glauber Costa<glommer@parallels.com>
->> ---
->>   kernel/sched.c |    8 +++++++-
->>   1 files changed, 7 insertions(+), 1 deletions(-)
->>
->> diff --git a/kernel/sched.c b/kernel/sched.c
->> index 4611c54..8f254d0 100644
->> --- a/kernel/sched.c
->> +++ b/kernel/sched.c
->> @@ -9120,6 +9120,7 @@ struct cpuacct {
->>   	/* cpuusage holds pointer to a u64-type object on every cpu */
->>   	u64 __percpu *cpuusage;
->>   	u64 __percpu *cpustat;
->> +	struct timespec start_time;
->>   };
->>
->>   struct cgroup_subsys cpuacct_subsys;
->> @@ -9172,6 +9173,8 @@ static struct cgroup_subsys_state *cpuacct_create(
->>   		acct[CPUACCT_STAT_IDLE] = kstat_cpu(i).cpustat.idle;
->>   		acct[CPUACCT_STAT_IOWAIT] = kstat_cpu(i).cpustat.iowait;
->>   	}
->> +
->> +	get_monotonic_boottime(&ca->start_time);
->>   	return&ca->css;
->>
->>   out_free_usage:
->> @@ -9316,13 +9319,16 @@ static int cpuacct_proc_stat(struct cgroup *cgrp, struct cftype *cft,
->>   	unsigned int per_softirq_sums[NR_SOFTIRQS] = {0};
->>   	struct timespec boottime;
->>   	struct cpuacct *ca = cgroup_ca(cgrp);
->> +	struct timespec ts;
->>   	u64 *cpustat;
->>
->>   	user = nice = system = idle = iowait =
->>   		irq = softirq = steal = cputime64_zero;
->>   	guest = guest_nice = cputime64_zero;
->>   	getboottime(&boottime);
->> -	jif = boottime.tv_sec;
->> +	getboottime(&boottime);
->> +	ts = timespec_add(boottime, ca->start_time);
->> +	jif = ts.tv_sec;
->>
->>   	for_each_possible_cpu(i) {
->>   		cpustat = per_cpu_ptr(ca->cpustat, i);
->
->
-> I'm confused, what does it do? You take a boot time timestamp at cgroup
-> creation, add that to all boot-time readings and print the result. How
-> does that make sense? Subtracting the start_time, maybe, that would make
-> the cgroup creation time 0, adding, not so much.
+Quoting Oleg Nesterov (oleg@redhat.com):
+> On 09/19, Serge E. Hallyn wrote:
+> >
+> > __send_signal: convert the uid being sent in SI_USER to the target task's
+> > user namespace.
+> >
+> > do_notify_parent and do_notify_parent_cldstop: map task's uid to parent's
+> >  user namespace
+> >
+> > ptrace_signal: map parent's uid into current's user namespace before
+> > including in signal to current.
+> 
+> And all of them follow the same pattern,
+> 
+> > @@ -1073,7 +1074,8 @@ static int __send_signal(int sig, struct siginfo *info, struct task_struct *t,
+> >  			q->info.si_code = SI_USER;
+> >  			q->info.si_pid = task_tgid_nr_ns(current,
+> >  							task_active_pid_ns(t));
+> > -			q->info.si_uid = current_uid();
+> > +			q->info.si_uid = user_ns_map_uid(task_cred_xxx(t, user_ns),
+> > +					current_cred(), current_uid());
+> 
+> Up to you, but may be we can add a helper? Something like
+> 
+> 	static inline uid_t good_name(struct task_struct *from, struct task_struct *to)
+> 	{
+> 		// the caller does rcu_read_lock() if needed
+> 		const struct cred *from_cred = __task_cred(from);
+> 		return user_ns_map_uid(task_cred_xxx(to, user_ns),
+> 					from_cred, from_cred->uid);
+> 	}
 
-Boot time represent at which times the machine was booted. In this 
-context, at which time the container/cgroup was created. So it have to 
-be an addition.... don't really understand your question
+That looks great, thanks.  I couldn't think it up myself, but now that
+I see it in your email, I see this would be very valuable in helping
+make this code more readable  :)
+
+> As for __send_signal() in particular, I guess we could do
+> 
+> 		q->info.si_uid = from_ancestor_ns ? 0 : current_uid();
+> 
+> instead, but otoh perhaps it is better to use user_ns_map_uid() anyway
+> for consistency.
+
+Yeah I'm torn on this, but actually I think the above with a comment
+explaining it might be better.
+
+> > @@ -2118,11 +2124,16 @@ static int ptrace_signal(int signr, siginfo_t *info,
+> >  	 * have updated *info via PTRACE_SETSIGINFO.
+> >  	 */
+> >  	if (signr != info->si_signo) {
+> > +		const struct cred *pcred;
+> >  		info->si_signo = signr;
+> >  		info->si_errno = 0;
+> >  		info->si_code = SI_USER;
+> >  		info->si_pid = task_pid_vnr(current->parent);
+> > -		info->si_uid = task_uid(current->parent);
+> > +		rcu_read_lock();
+> 
+> In this case please add rcu_read_lock() earlier, before task_pid_vnr().
+> It has the same (theoretical) reasons for rcu lock.
+
+Ah.  I stared at that for some time trying to figure out if I was
+wrong about my needing it since it didn't have that :)  Will do.
+
+Thanks for the feedback, Oleg!
+
+-serge
