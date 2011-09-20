@@ -1,168 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752910Ab1ITKB7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 06:01:59 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:55249 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751509Ab1ITKB5 (ORCPT
+	id S1754509Ab1ITKCU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 06:02:20 -0400
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:25822
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753729Ab1ITKCI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 06:01:57 -0400
-Date: Tue, 20 Sep 2011 12:01:50 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Cc: Li Yang <leoli@freescale.com>,
-        Pavankumar Kondeti <pkondeti@codeaurora.org>,
-        Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@suse.de>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Chen <peter.chen@freescale.com>,
-        Lin Tony-B19295 <B19295@freescale.com>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: Re: [PATCHv4 00/19] First round in OTG rework
-Message-ID: <20110920100150.GW31404@pengutronix.de>
-References: <1315379772-8830-1-git-send-email-heikki.krogerus@linux.intel.com>
- <20110912121255.GA2520@xps8300>
- <20110919115520.GX21769@pengutronix.de>
- <20110920065038.GA28684@xps8300>
+	Tue, 20 Sep 2011 06:02:08 -0400
+X-SpamScore: -18
+X-BigFish: VPS-18(zz1432N98dKzz1202hzz15d4Rz32i668h839h944h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LRTFVE-01-0U7-02
+X-M-MSG: 
+Date: Tue, 20 Sep 2011 12:01:46 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] iommu/omap: Fix build error with !IOMMU_SUPPORT
+Message-ID: <20110920100146.GA2078@amd.com>
+References: <1316009259-18052-1-git-send-email-joerg.roedel@amd.com>
+ <201109180202.23123.laurent.pinchart@ideasonboard.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20110920065038.GA28684@xps8300>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 12:01:41 up 90 days, 15:48, 56 users,  load average: 0.28, 0.36,
- 0.60
+In-Reply-To: <201109180202.23123.laurent.pinchart@ideasonboard.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 20, 2011 at 09:50:38AM +0300, Heikki Krogerus wrote:
-> Hi,
-> 
-> On Mon, Sep 19, 2011 at 01:55:20PM +0200, Sascha Hauer wrote:
-> > The following is needed to make i.MX compile and work. You renamed
-> > pdata->otg to pdata->xceiv in the driver, but not in the header file.
-> > Renaming it would also mean to rename it in the boards using this
-> > header, that's why I kept the name 'otg' for now instead of renaming
-> > it to 'xceiv' (or 'phy' which I like better).
-> 
-> Thanks for the review. Is it OK to make this part of the imx patch?
+Hi Laurent,
 
-Sure.
+On Sat, Sep 17, 2011 at 08:02:22PM -0400, Laurent Pinchart wrote:
+> On Wednesday 14 September 2011 16:07:39 Joerg Roedel wrote:
+> > Without this patch it is possible to select the VIDEO_OMAP3
+> > driver which then selects OMAP_IOVMM. But the omap iommu
+> > driver is not compiled without IOMMU_SUPPORT enabled. Fix
+> > that by forcing OMAP_IOMMU and OMAP_IOVMM are enabled before
+> > VIDEO_OMAP3 can be selected.
+> 
+> What about making VIDEO_OMAP3 select IOMMU_SUPPORT instead then ? Your patch 
+> would make the OMAP3 ISP driver disappear from the menu until IOMMU_SUPPORT 
+> gets turned on, which can confuse users.
 
-Sascha
+Using 'depends on' rather then 'selects' is common standard in Kconfig.
+You can't select PCI drivers without selecting PCI first, for example.
+Further selecting whole drivers implicitly isn't a good idea. This can
+grow out of control very quickly.
 
-> 
-> 
-> > diff --git a/arch/arm/mach-imx/mx31moboard-devboard.c b/arch/arm/mach-imx/mx31moboard-devboard.c
-> > index cb792d0..f11d0ef 100644
-> > --- a/arch/arm/mach-imx/mx31moboard-devboard.c
-> > +++ b/arch/arm/mach-imx/mx31moboard-devboard.c
-> > @@ -177,7 +177,7 @@ static int devboard_isp1105_init(struct usb_phy *otg)
-> >  }
-> >  
-> >  
-> > -static int devboard_isp1105_set_vbus(struct usb_phy *otg, bool on)
-> > +static int devboard_isp1105_set_vbus(struct usb_otg *otg, bool on)
-> >  {
-> >  	if (on)
-> >  		gpio_set_value(USBH1_VBUSEN_B, 0);
-> > diff --git a/arch/arm/mach-imx/mx31moboard-marxbot.c b/arch/arm/mach-imx/mx31moboard-marxbot.c
-> > index f921e47..0eb1d12 100644
-> > --- a/arch/arm/mach-imx/mx31moboard-marxbot.c
-> > +++ b/arch/arm/mach-imx/mx31moboard-marxbot.c
-> > @@ -291,7 +291,7 @@ static int marxbot_isp1105_init(struct usb_phy *otg)
-> >  }
-> >  
-> >  
-> > -static int marxbot_isp1105_set_vbus(struct usb_phy *otg, bool on)
-> > +static int marxbot_isp1105_set_vbus(struct usb_otg *otg, bool on)
-> >  {
-> >  	if (on)
-> >  		gpio_set_value(USBH1_VBUSEN_B, 0);
-> > diff --git a/arch/arm/plat-mxc/include/mach/mxc_ehci.h b/arch/arm/plat-mxc/include/mach/mxc_ehci.h
-> > index 2c159dc..9ffd1bb 100644
-> > --- a/arch/arm/plat-mxc/include/mach/mxc_ehci.h
-> > +++ b/arch/arm/plat-mxc/include/mach/mxc_ehci.h
-> > @@ -44,7 +44,7 @@ struct mxc_usbh_platform_data {
-> >  	int (*exit)(struct platform_device *pdev);
-> >  
-> >  	unsigned int		 portsc;
-> > -	struct otg_transceiver	*otg;
-> > +	struct usb_phy		*otg;
-> >  };
-> >  
-> >  int mx51_initialize_usb_hw(int port, unsigned int flags);
-> > diff --git a/drivers/usb/host/ehci-mxc.c b/drivers/usb/host/ehci-mxc.c
-> > index 6e32147..cf8f192 100644
-> > --- a/drivers/usb/host/ehci-mxc.c
-> > +++ b/drivers/usb/host/ehci-mxc.c
-> > @@ -218,15 +218,15 @@ static int ehci_mxc_drv_probe(struct platform_device *pdev)
-> >  	msleep(10);
-> >  
-> >  	/* Initialize the transceiver */
-> > -	if (pdata->xceiv) {
-> > -		pdata->xceiv->io_priv = hcd->regs + ULPI_VIEWPORT_OFFSET;
-> > -		ret = usb_phy_init(pdata->xceiv);
-> > +	if (pdata->otg) {
-> > +		pdata->otg->io_priv = hcd->regs + ULPI_VIEWPORT_OFFSET;
-> > +		ret = usb_phy_init(pdata->otg);
-> >  		if (ret) {
-> >  			dev_err(dev, "unable to init transceiver, probably missing\n");
-> >  			ret = -ENODEV;
-> >  			goto err_add;
-> >  		}
-> > -		ret = otg_set_vbus(pdata->xceiv->otg, 1);
-> > +		ret = otg_set_vbus(pdata->otg->otg, 1);
-> >  		if (ret) {
-> >  			dev_err(dev, "unable to enable vbus on transceiver\n");
-> >  			goto err_add;
-> > @@ -240,17 +240,17 @@ static int ehci_mxc_drv_probe(struct platform_device *pdev)
-> >  	if (ret)
-> >  		goto err_add;
-> >  
-> > -	if (pdata->xceiv) {
-> > +	if (pdata->otg) {
-> >  		/*
-> >  		 * efikamx and efikasb have some hardware bug which is
-> >  		 * preventing usb to work unless CHRGVBUS is set.
-> >  		 * It's in violation of USB specs
-> >  		 */
-> >  		if (machine_is_mx51_efikamx() || machine_is_mx51_efikasb()) {
-> > -			flags = usb_phy_io_read(pdata->xceiv,
-> > +			flags = usb_phy_io_read(pdata->otg,
-> >  							ULPI_OTG_CTRL);
-> >  			flags |= ULPI_OTG_CTRL_CHRGVBUS;
-> > -			ret = usb_phy_io_write(pdata->xceiv, flags,
-> > +			ret = usb_phy_io_write(pdata->otg, flags,
-> >  							ULPI_OTG_CTRL);
-> >  			if (ret) {
-> >  				dev_err(dev, "unable to set CHRVBUS\n");
-> > @@ -298,8 +298,8 @@ static int __exit ehci_mxc_drv_remove(struct platform_device *pdev)
-> >  	if (pdata && pdata->exit)
-> >  		pdata->exit(pdev);
-> >  
-> > -	if (pdata->xceiv)
-> > -		usb_phy_shutdown(pdata->xceiv);
-> > +	if (pdata->otg)
-> > +		usb_phy_shutdown(pdata->otg);
-> >  
-> >  	usb_remove_hcd(hcd);
-> >  	iounmap(hcd->regs);
-> 
-> -- 
-> heikki
-> 
+Regards,
+
+	Joerg
 
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
