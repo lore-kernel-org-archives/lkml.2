@@ -1,65 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752171Ab1ITQCO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 12:02:14 -0400
-Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:40752 "HELO
-	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750806Ab1ITQCN (ORCPT
+	id S1751550Ab1ITQDb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 12:03:31 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:55452 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750772Ab1ITQDa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 12:02:13 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: lIOFQusVM1n5LUX36DTuhJYr1pQdZsP3QOEjedICgywbdUx
- Ep8a2jrdmwMB7H8z2VqgvSENAOl6HSCT.rL1S5cP1PDRyrvWd5YEOXTh5TqI
- GXI18UwQnN4XctFGPDpYfyTFuUFouw58aMrE7jAF4j1xBuxuOMjQrRRg2WtX
- VbG01DkTMfxg.taK_CWUTiws1uU0lbfPygwhmHciAEhe3NNQ9cJnPU2OFPgH
- .mkrVDY6Iz2u.VjwMfHAkoJ1i.tgS7_ptbsvh4DXk_LoRgCmLsCKnLaWfjuX
- h2IrV8qqtcumAJqxF4dmKgO0WYyjoTz4_Xk8wtheM3NwE0JLQ9mjtzCQHCpl
- nF1p_w24NtouSmHDm6BHpQNgq1Lej4LGnHD9H42Ps3cJHl44qSDdcsUd0wTa
- tNFDmj.9VeyyPWSAc6P70ZLE-
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 20 Sep 2011 11:02:09 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-X-X-Sender: cl@router.home
-To: Thomas Gleixner <tglx@linutronix.de>
-cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+	Tue, 20 Sep 2011 12:03:30 -0400
+X-Authority-Analysis: v=1.1 cv=lfM0d0QHaVz67dfwwr9cyIw6NbaGR/pZhMD6XWNi0kk= c=1 sm=0 a=6qbAnu_Q0HoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=AbEZUEoKyYU0kizw9McA:9 a=QoW9K_SRGMBTyI0hbUIA:7 a=PUjeQqilurYA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.83.30
+Subject: Re: [RFC][PATCH 2/5] mm: Switch mod_state() to __this_cpu_read()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Christoph Lameter <cl@gentwo.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
         Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Christoph Lameter <cl@linux.com>, Tejun Heo <htejun@gmail.com>
-Subject: Re: [RFC][PATCH 2/5] mm: Switch mod_state() to __this_cpu_read()
-In-Reply-To: <alpine.LFD.2.02.1109201703560.2723@ionos>
-Message-ID: <alpine.DEB.2.00.1109201059590.8056@router.home>
-References: <20110919212040.745370781@goodmis.org> <20110919212640.688732950@goodmis.org> <alpine.DEB.2.00.1109191657150.19059@router.home> <alpine.LFD.2.02.1109201334590.2723@ionos> <alpine.DEB.2.00.1109200947100.8056@router.home>
- <alpine.LFD.2.02.1109201703560.2723@ionos>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <alpine.DEB.2.00.1109201055470.8056@router.home>
+References: <20110919212040.745370781@goodmis.org>
+	 <20110919212640.688732950@goodmis.org>
+	 <alpine.DEB.2.00.1109191657150.19059@router.home>
+	 <alpine.LFD.2.02.1109201334590.2723@ionos>
+	 <alpine.DEB.2.00.1109200947100.8056@router.home>
+	 <1316531505.29966.57.camel@gandalf.stny.rr.com>
+	 <alpine.DEB.2.00.1109201055470.8056@router.home>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 20 Sep 2011 12:03:28 -0400
+Message-ID: <1316534608.29966.81.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Sep 2011, Thomas Gleixner wrote:
+On Tue, 2011-09-20 at 10:59 -0500, Christoph Lameter wrote:
+> On Tue, 20 Sep 2011, Steven Rostedt wrote:
+> 
+> > On Tue, 2011-09-20 at 09:51 -0500, Christoph Lameter wrote:
+> >
+> > > I see that __this_cpu_xx operations may not work as intended in
+> > > preemptable contexts and there we could have more changes.
+> >
+> > Then why do you use it in slub.c?
+> >
+> > in mm/slab.c slab_alloc():
+> >
+> > redo:
+> >
+> > 	/*
+> > 	 * Must read kmem_cache cpu data via this cpu ptr. Preemption is
+> > 	 * enabled. We may switch back and forth between cpus while
+> > 	 * reading from one cpu area. That does not matter as long
+> > 	 * as we end up on the original cpu again when doing the cmpxchg.
+> > 	 */
+> > 	c = __this_cpu_ptr(s->cpu_slab);
+> >
+> > The __this_cpu_*() is in preempt enabled location. In fact, the three
+> > this_cpu_write()'s in acquire_slab() is done within a spinlock and thus
+> > with preemption disabled.
+> 
+> So the this_cpu_writes could become __this_cpu_writes
+> 
+> The __this_cpu_ptr operation in slab_alloc is special. We explicitly do
+> address calculation and do not care from which per cpu area we fetch
+> multiple per cpu data items because we can verify that we are on the same
+> per cpu area during the this_cpu_cmpxchg_double operation.
 
-> I want to get rid of them alltogether. They are crap by design and
-> prone to be used wrong without a sensible way to detect that.
+ARGH! You now have special cases that break the sanity of it all? This
+just proves that the design is wrong.
 
-Counter increments have been done this way for a very long time. This is
-a pretty well established way of doing things in the kernel that was
-expanded and made better by avoid preempt disable/enable around these per
-cpu pointer increments.
+> 
+> > The point is, people get it wrong all the time. In fact, we should
+> > really require that ALL USES of this_cpu_*() must be with preemption
+> > disabled. Regardless. Because anytime you touch a per cpu variable,
+> 
+> NO!! This defeats the whole purpose of this_cpu_ops and make the whole
+> scheme utterly useless.
 
+The thing is, the whole purpose was broken to begin with. Defeating a
+broken design is a good thing!
 
-> Right, and that's the main problem. We have no fricking way to debug
-> this, so they should have never been there in the first place. And you
-> simply CANNOT prevent people from getting this wrong w/o proper
-> debugging and annotation. Even YOU and Tejun made bogus conversion w/o
-> noticing, but you expect that others get it right?
+> 
+> > Monkeying around with per cpu data is tricky. If you start doing it in
+> > preempt enabled code, you are most certainly about to get it wrong. Why
+> > have this super optimization. A preempt_disable() is a single operation
+> > that touches cache hot data.
+> 
+> There are trivial cases like counter increments that are not a problem at
+> all. Most use cases are those. More complex ones can be developed to avoid
+> various overhead in performance critical sections of the kernel.
+> 
 
-Bogus conversions?
+And adding a preempt_disable; this_cpu_inc(); preempt_enable; is not a
+bad thing either.
 
-> So stop defending that trainwreck and help out with fixing the mess
-> you created in a proper and debugable way!
+What benchmarks do you have that shows this helped in anything????
 
-You want debugging to ensure that this_cpu ops always access the intended
-per cpu area? But the point of these operations is to be used in kernel
-locations where the use of any per cpu area is satisfactory.
+-- Steve
+
 
