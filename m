@@ -1,115 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752491Ab1ITQG0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 12:06:26 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:52424 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750806Ab1ITQGZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 12:06:25 -0400
-X-IronPort-AV: E=Sophos;i="4.68,412,1312182000"; 
-   d="scan'208";a="583334134"
-Message-ID: <4E78B9FD.70509@netapp.com>
-Date: Tue, 20 Sep 2011 12:06:21 -0400
-From: Bryan Schumaker <bjschuma@netapp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-CC: Jeff Layton <jlayton@redhat.com>,
-        "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "davem@davemloft.net" <davem@davemloft.net>
-Subject: Re: [PATCH v5 1/8] SUNRPC: introduce helpers for reference counted
- rpcbind clients
-References: <20110920101031.9861.18444.stgit@localhost6.localdomain6>	<20110920101341.9861.51453.stgit@localhost6.localdomain6>	<4E7899E7.9090809@parallels.com> <20110920102431.58ca1d96@tlielax.poochiereds.net> <4E78A6A1.1000800@parallels.com> <4E78AA09.1000209@netapp.com> <4E78B389.3000307@parallels.com>
-In-Reply-To: <4E78B389.3000307@parallels.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1752505Ab1ITQHN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 12:07:13 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:49950 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751040Ab1ITQHM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 12:07:12 -0400
+X-Authority-Analysis: v=1.1 cv=agqPq5NoKwAPC9P66H7dbYUCjxvmT73as08i4x3aqAA= c=1 sm=0 a=6qbAnu_Q0HoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=iYnJa5nCYRiJgLvIE2cA:9 a=PUjeQqilurYA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.83.30
+Subject: Re: [RFC][PATCH 2/5] mm: Switch mod_state() to __this_cpu_read()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Christoph Lameter <cl@gentwo.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Christoph Lameter <cl@linux.com>
+In-Reply-To: <alpine.DEB.2.00.1109201038150.8056@router.home>
+References: <20110919212040.745370781@goodmis.org>
+	 <20110919212640.688732950@goodmis.org>
+	 <alpine.DEB.2.00.1109191657150.19059@router.home>
+	 <1316476089.29966.9.camel@gandalf.stny.rr.com>
+	 <alpine.DEB.2.00.1109200940240.8056@router.home>
+	 <1316531769.29966.61.camel@gandalf.stny.rr.com>
+	 <alpine.DEB.2.00.1109201038150.8056@router.home>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 20 Sep 2011 12:07:10 -0400
+Message-ID: <1316534830.29966.84.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20/2011 11:38 AM, Stanislav Kinsbursky wrote:
-> 20.09.2011 18:58, Bryan Schumaker пишет:
->> On 09/20/2011 10:43 AM, Stanislav Kinsbursky wrote:
->>> 20.09.2011 18:24, Jeff Layton пишет:
->>>> On Tue, 20 Sep 2011 17:49:27 +0400
->>>> Stanislav Kinsbursky<skinsbursky@parallels.com>   wrote:
->>>>
->>>>> v5: fixed races with rpcb_users in rpcb_get_local()
->>>>>
->>>>> This helpers will be used for dynamical creation and destruction of rpcbind
->>>>> clients.
->>>>> Variable rpcb_users is actually a counter of lauched RPC services. If rpcbind
->>>>> clients has been created already, then we just increase rpcb_users.
->>>>>
->>>>> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
->>>>>
->>>>> ---
->>>>>     net/sunrpc/rpcb_clnt.c |   53 ++++++++++++++++++++++++++++++++++++++++++++++++
->>>>>     1 files changed, 53 insertions(+), 0 deletions(-)
->>>>>
->>>>> diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
->>>>> index e45d2fb..5f4a406 100644
->>>>> --- a/net/sunrpc/rpcb_clnt.c
->>>>> +++ b/net/sunrpc/rpcb_clnt.c
->>>>> @@ -114,6 +114,9 @@ static struct rpc_program    rpcb_program;
->>>>>     static struct rpc_clnt *    rpcb_local_clnt;
->>>>>     static struct rpc_clnt *    rpcb_local_clnt4;
->>>>>     +DEFINE_SPINLOCK(rpcb_clnt_lock);
->>>>> +unsigned int            rpcb_users;
->>>>> +
->>>>>     struct rpcbind_args {
->>>>>         struct rpc_xprt *    r_xprt;
->>>>>     @@ -161,6 +164,56 @@ static void rpcb_map_release(void *data)
->>>>>         kfree(map);
->>>>>     }
->>>>>     +static int rpcb_get_local(void)
->>>>> +{
->>>>> +    int cnt;
->>>>> +
->>>>> +    spin_lock(&rpcb_clnt_lock);
->>>>> +    if (rpcb_users)
->>>>> +        rpcb_users++;
->>>>> +    cnt = rpcb_users;
->>>>> +    spin_unlock(&rpcb_clnt_lock);
->>>>> +
->>>>> +    return cnt;
->>>>> +}
->>>>> +
->>>>> +void rpcb_put_local(void)
->>>>> +{
->>>>> +    struct rpc_clnt *clnt = rpcb_local_clnt;
->>>>> +    struct rpc_clnt *clnt4 = rpcb_local_clnt4;
->>>>> +    int shutdown;
->>>>> +
->>>>> +    spin_lock(&rpcb_clnt_lock);
->>>>> +    if (--rpcb_users == 0) {
->>>>> +        rpcb_local_clnt = NULL;
->>>>> +        rpcb_local_clnt4 = NULL;
->>>>> +    }
->>>>
->>>> In the function below, you mention that the above pointers are
->>>> protected by rpcb_create_local_mutex, but it looks like they get reset
->>>> here without that being held?
->>>>
->>>
->>> Assigning of them is protected by rpcb_create_local_mutex.
->>> Dereferencing of them is protected by rpcb_clnt_lock.
->>
->> Shouldn't you be using the same lock for assigning and dereferencing?  Otherwise one thread could change these variables while another is using them.
-> 
-> Probably I wasn't clear with my previous explanation.
-> Actually, we use only spinlock to make sure, that the pointers are valid when we dereferencing them. Synchronization point here is rpcb_users counter.
-> IOW, we use these pointers only from svc code and only after service already started. And with this patch-set we can be sure, that this pointers has been created already to the point, when this service starts.
-> 
-> But when this counter is zero, we can experience races with assigning those pointers. It takes a lot of time, so we use local mutex here instead of spinlock.
-> 
-> Have I answered your question?
+On Tue, 2011-09-20 at 10:54 -0500, Christoph Lameter wrote:
 
-I think I understand now.  Thanks!
-> 
+> There are significant advantages for counters and things designed to
+> operate in an environment where the OS can migrate a task at will.
+> Vvmstat and the slub fastpaths exploit these things now and it will be
+> possible with these operations to increase the performance of more
+> subsystems that way. The page allocator comes to mind.
+
+I'm sorry but correctness beats performance every time! What you have
+done seems to be micro optimizations with the sacrifice to correctness.
+
+If you kept the damn this_cpu_*() local to the slab and page allocators,
+we may not have even noticed. But you went ahead and made this a very
+intrusive invasion into the rest of the kernel, and caused bugs to be
+missed everywhere.
+
+-- Steve
+
 
