@@ -1,56 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754298Ab1ITMgz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 08:36:55 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:41528 "EHLO mx2.parallels.com"
+	id S1754835Ab1ITMhJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 08:37:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42350 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753836Ab1ITMgy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 08:36:54 -0400
-Message-ID: <4E7888B8.3080809@parallels.com>
-Date: Tue, 20 Sep 2011 09:36:08 -0300
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1754556Ab1ITMhG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 08:37:06 -0400
+Date: Tue, 20 Sep 2011 14:37:02 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <jweiner@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
+        Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 04/11] mm: memcg: per-priority per-zone hierarchy scan
+ generations
+Message-ID: <20110920123702.GD26791@tiehlicka.suse.cz>
+References: <1315825048-3437-1-git-send-email-jweiner@redhat.com>
+ <1315825048-3437-5-git-send-email-jweiner@redhat.com>
+ <20110920084531.GB27675@tiehlicka.suse.cz>
+ <20110920091032.GD11489@redhat.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: <linux-kernel@vger.kernel.org>, <xemul@parallels.com>,
-        <paul@paulmenage.org>, <lizf@cn.fujitsu.com>, <daniel.lezcano@free.fr>,
-        <mingo@elte.hu>, <jbottomley@parallels.com>
-Subject: Re: [PATCH 6/9] Include idle and iowait fields in cpuacct
-References: <1316030695-19826-1-git-send-email-glommer@parallels.com>  <1316030695-19826-7-git-send-email-glommer@parallels.com> <1316510490.11841.15.camel@twins>
-In-Reply-To: <1316510490.11841.15.camel@twins>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [201.82.134.226]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110920091032.GD11489@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20/2011 06:21 AM, Peter Zijlstra wrote:
-> On Wed, 2011-09-14 at 17:04 -0300, Glauber Costa wrote:
->> These are slightly different from the others though:
->> (note to reviewers: might be better to put those in a separate
->> array?)
->>
->> Since idle/iowait are a property of the system - by definition,
->> no process from any cgroup is running when the system is idle,
->> they are system wide. So what these fields really mean, are baselines
->> for when the cgroup was created. It allows the cgroup to start
->> counting idle/iowait from 0.
->
-> Alternatively you can make iowait based on nr_uninterruptible per cgroup
-> and count all ticks _this_ cgroup was idle.
-You think?
+On Tue 20-09-11 11:10:32, Johannes Weiner wrote:
+> On Tue, Sep 20, 2011 at 10:45:32AM +0200, Michal Hocko wrote:
+> > On Mon 12-09-11 12:57:21, Johannes Weiner wrote:
+> > > Memory cgroup limit reclaim currently picks one memory cgroup out of
+> > > the target hierarchy, remembers it as the last scanned child, and
+> > > reclaims all zones in it with decreasing priority levels.
+> > > 
+> > > The new hierarchy reclaim code will pick memory cgroups from the same
+> > > hierarchy concurrently from different zones and priority levels, it
+> > > becomes necessary that hierarchy roots not only remember the last
+> > > scanned child, but do so for each zone and priority level.
+> > > 
+> > > Furthermore, detecting full hierarchy round-trips reliably will become
+> > > crucial, so instead of counting on one iterator site seeing a certain
+> > > memory cgroup twice, use a generation counter that is increased every
+> > > time the child with the highest ID has been visited.
+> > 
+> > In principle I think the patch is good. I have some concerns about
+> > locking and I would really appreciate some more description (like you
+> > provided in the other email in this thread).
+> 
+> Okay, I'll incorporate that description into the changelog.
 
-Humm,humm... maybe...
-iowait can indeed be seen as a process group characteristic. I was 
-mainly concerned about overhead here, specially for the idle case:
+Thanks!
 
-If we are idle, there is no task context we can draw from, since the 
-task in the cpu is the idle task. So we end up having to touch all 
-cgroups... Or am I missing something?
+> 
+> > > @@ -131,6 +136,8 @@ struct mem_cgroup_per_zone {
+> > >  	struct list_head	lists[NR_LRU_LISTS];
+> > >  	unsigned long		count[NR_LRU_LISTS];
+> > >  
+> > > +	struct mem_cgroup_iter_state iter_state[DEF_PRIORITY + 1];
+> > > +
+> > >  	struct zone_reclaim_stat reclaim_stat;
+> > >  	struct rb_node		tree_node;	/* RB tree node */
+> > >  	unsigned long long	usage_in_excess;/* Set to the value by which */
+> > [...]
+> > > @@ -781,9 +783,15 @@ struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm)
+> > >  	return memcg;
+> > >  }
+> > >  
+> > > +struct mem_cgroup_iter {
+> > 
+> > Wouldn't be mem_cgroup_zone_iter_state a better name. It is true it is
+> > rather long but I find mem_cgroup_iter very confusing because the actual
+> > position is stored in the zone's state. The other thing is that it looks
+> > like we have two iterators in mem_cgroup_iter function now but in fact
+> > the iter parameter is just a state when we start iteration.
+> 
+> Agreed, the naming is unfortunate.  How about
+> mem_cgroup_reclaim_cookie or something comparable?  It's limited to
+> reclaim anyway, hierarchy walkers that do not age the LRU lists should
+> not advance the shared iterator state, so might as well encode it in
+> the name.
 
-Sounds expensive.
+Sounds good.
 
+> 
+> > > +	struct zone *zone;
+> > > +	int priority;
+> > > +	unsigned int generation;
+> > > +};
+> > > +
+> > >  static struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
+> > >  					  struct mem_cgroup *prev,
+> > > -					  bool remember)
+> > > +					  struct mem_cgroup_iter *iter)
+> > 
+> > I would rather see a different name for the last parameter
+> > (iter_state?).
+> 
+> I'm with you on this.  Will think something up.
+> 
+> > > @@ -804,10 +812,20 @@ static struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
+> > >  	}
+> > >  
+> > >  	while (!mem) {
+> > > +		struct mem_cgroup_iter_state *uninitialized_var(is);
+> > >  		struct cgroup_subsys_state *css;
+> > >  
+> > > -		if (remember)
+> > > -			id = root->last_scanned_child;
+> > > +		if (iter) {
+> > > +			int nid = zone_to_nid(iter->zone);
+> > > +			int zid = zone_idx(iter->zone);
+> > > +			struct mem_cgroup_per_zone *mz;
+> > > +
+> > > +			mz = mem_cgroup_zoneinfo(root, nid, zid);
+> > > +			is = &mz->iter_state[iter->priority];
+> > > +			if (prev && iter->generation != is->generation)
+> > > +				return NULL;
+> > > +			id = is->position;
+> > 
+> > Do we need any kind of locking here (spin_lock(&is->lock))?
+> > If two parallel reclaimers start on the same zone and priority they will
+> > see the same position and so bang on the same cgroup.
+> 
+> Note that last_scanned_child wasn't lock-protected before this series,
+> so there is no actual difference.
 
-> Now all that would need moar accounting...
+that's a fair point. Anyway, I think it is worth mentioning this in the
+patch description or in the comment to be clear that this is intentional.
 
+> 
+> I can say, though, that during development I had a lock in there for
+> some time and it didn't make any difference for 32 concurrent
+> reclaimers on a quadcore.  Feel free to evaluate with higher
+> concurrency :)
+
+Thanks!
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
