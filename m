@@ -1,71 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751842Ab1ITVjJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 17:39:09 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:35382 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751194Ab1ITVjH (ORCPT
+	id S1751825Ab1ITVlG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 17:41:06 -0400
+Received: from www.linutronix.de ([62.245.132.108]:46519 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194Ab1ITVlE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 17:39:07 -0400
+	Tue, 20 Sep 2011 17:41:04 -0400
+Date: Tue, 20 Sep 2011 23:41:02 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] irq/irqdomain: change bail out condition for
+ irq_domain_add()
+In-Reply-To: <1316554589-24393-1-git-send-email-bigeasy@linutronix.de>
+Message-ID: <alpine.LFD.2.02.1109202340060.2723@ionos>
+References: <1316554589-24393-1-git-send-email-bigeasy@linutronix.de>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:1aa9:5ff:fe24:37a9]
-In-Reply-To: <201109202301.56983.arnd@arndb.de>
-References: <1316537186-26753-1-git-send-email-swarren@nvidia.com>
-	<20110920180731.GL7781@ponder.secretlab.ca>
-	<201109202134.50242.arnd@arndb.de>
-	<201109202301.56983.arnd@arndb.de>
-Date: Tue, 20 Sep 2011 14:39:06 -0700
-Message-ID: <CAOesGMg4kBH77Ou1xyyVT-Ojxg=9uyxmfsmhbbKquru=j+z6Gg@mail.gmail.com>
-Subject: Re: [PATCH REPOST 1/2] arm/dt: Tegra: Update SDHCI nodes to match bindings
-From: Olof Johansson <olof@lixom.net>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Stephen Warren <swarren@nvidia.com>, nicolas.pitre@linaro.org,
-        Shawn Guo <shawn.guo@linaro.org>, devicetree-discuss@lists.ozlabs.org,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, Chris Ball <cjb@laptop.org>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 20, 2011 at 2:01 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Tuesday 20 September 2011, Arnd Bergmann wrote:
->> On Tuesday 20 September 2011, Grant Likely wrote:
->> > On Tue, Sep 20, 2011 at 07:43:29PM +0200, Arnd Bergmann wrote:
->> > > On Tuesday 20 September 2011, Stephen Warren wrote:
->> > > > The bindings were recently updated to have separate properties for each
->> > > > type of GPIO. Update the Device Tree source to match that.
->> > > >
->> > > > Signed-off-by: Stephen Warren <swarren@nvidia.com>
->> > > > Acked-by: Olof Johansson <olof@lixom.net>
->> > > > ---
->> > > > I'd previously sent these to Grant assuming they'd go in his dt/next branch,
->> > > > but perhaps these should go in through Arnd's arm-soc next/dt branch?
->> > > >
->> > >
->> > > Which tree has the update that changed the bindings? I think it should
->> > > go into the same one.
->> > >
->> > > If it's already upstream, I can take it into the fixes branch.
->> >
->> > Already upstream
->>
->> Ok, I see. I've applied both patches to the fixes branch and will send
->> it out with the next pull request for 3.1 to Linus then.
->
-> Sorry, I just noticed that the second patch is not a bug fix, so I took it out
-> again and kept only patch 1/2 in the fixes branch for 3.1.
->
-> Should I take the other one as well? It's probably better to let that
-> go the proper way through the tegra tree for 3.2, right?
+On Tue, 20 Sep 2011, Sebastian Andrzej Siewior wrote:
 
-Given that you have a public tree right now, and I don't (since
-kernel.org is down), please feel free to start a tegra/for-3.2 branch
-for me and apply it there. I'll base further work on top of that if
-needed.
+> I tried to convert x86 to this infrastructure and I run into
+> |BUG: unable to handle kernel NULL pointer dereference at 00000014
+> 
+> (d || d->domain) is kinda bogus because if d is NULL it will check for
+> d->domain which should fail. It seems that the code needs the irq_data
+> to be present and there should be no irq_domain set yet. This patch does
+> this.
+> 
+> My convert to this infrastructure still does not work with this patch
+> but I have enough for today.
+> 
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> ---
+>  kernel/irq/irqdomain.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+> index d5828da..213089b 100644
+> --- a/kernel/irq/irqdomain.c
+> +++ b/kernel/irq/irqdomain.c
+> @@ -29,7 +29,7 @@ void irq_domain_add(struct irq_domain *domain)
+>  	 */
+>  	for (hwirq = 0; hwirq < domain->nr_irq; hwirq++) {
+>  		d = irq_get_irq_data(irq_domain_to_irq(domain, hwirq));
+> -		if (d || d->domain) {
+> +		if (!d || d->domain) {
+>  			/* things are broken; just report, don't clean up */
+>  			WARN(1, "error: irq_desc already assigned to a domain");
+>  			return;
 
-(There also aren't a whole lot of other patches queued for 3.2 right now).
+I've already queued a similar fix in tip/irq/urgent
 
--Olof
+Thanks,
+
+	tglx
