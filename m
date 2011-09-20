@@ -1,34 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751313Ab1ITTpG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 15:45:06 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:58765 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751038Ab1ITTpE convert rfc822-to-8bit (ORCPT
+	id S1751387Ab1ITTph (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 15:45:37 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:55169 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750892Ab1ITTpg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 15:45:04 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAPoN8K0M2uROGv94Q+bXEkSN47irviPA99jNUBhD6u5qJmm1mA@mail.gmail.com>
-References: <CAPoN8K0M2uROGv94Q+bXEkSN47irviPA99jNUBhD6u5qJmm1mA@mail.gmail.com>
-Date: Tue, 20 Sep 2011 20:45:04 +0100
-Message-ID: <CAPM=9tyEE1Tbr=Wjqr_vJ8jqUjoG97yiXvyFKsV=1AHpfmNeDg@mail.gmail.com>
-Subject: Re: DRM troubles with kernel >=2.6.33
-From: Dave Airlie <airlied@gmail.com>
-To: =?KOI8-R?B?4c7Uz84g7s/XycvP1w==?= <tonn.post@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=KOI8-R
-Content-Transfer-Encoding: 8BIT
+	Tue, 20 Sep 2011 15:45:36 -0400
+Date: Tue, 20 Sep 2011 15:45:28 -0400 (EDT)
+Message-Id: <20110920.154528.2085500980809143629.davem@davemloft.net>
+To: ming.m.lin@intel.com
+Cc: akpm00@gmail.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        jeffrey.t.kirsher@intel.com
+Subject: Re: [PATCH -v2] netconsole: switch init_netconsole() to
+ late_initcall if build-in
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1315903130.3375.7.camel@snb>
+References: <1315899939.3402.2.camel@snb>
+	<20110913010158.1652cdee.akpm@linux-foundation.org>
+	<1315903130.3375.7.camel@snb>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 20 Sep 2011 12:45:34 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/9/20 Антон Новиков <tonn.post@gmail.com>:
-> Hi.
-> I've got laptop dell inspiron 1521 with ati x1270 (rs690).
-> Since kernel version 2.6.33 while I turn KMS on all opengl programms
-> hangs with backtrace like this:
-> ~/ $ gdb `which glxgears`
+From: Lin Ming <ming.m.lin@intel.com>
+Date: Tue, 13 Sep 2011 16:38:50 +0800
 
-Does vblank_mode=0 glxgears work?
+> Subject: [PATCH -v3] netconsole: switch init_netconsole() to late_initcall
+> 
+> Commit 88491d8(drivers/net: Kconfig & Makefile cleanup) causes a
+> regression that netconsole does not work if netconsole and network
+> device driver are build into kernel, because netconsole is linked
+> before network device driver.
+> 
+> Andrew Morton suggested to fix this with initcall ordering.
+> Fixes it by switching init_netconsole() to late_initcall.
+> 
+> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
 
-Dave.
+Applied, thanks.
