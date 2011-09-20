@@ -1,78 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752208Ab1ITPHm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 11:07:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34326 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751498Ab1ITPHl (ORCPT
+	id S1752435Ab1ITPIC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 11:08:02 -0400
+Received: from casper.infradead.org ([85.118.1.10]:60861 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751527Ab1ITPIB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 11:07:41 -0400
-Date: Tue, 20 Sep 2011 10:07:27 -0500
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        lkml <linux-kernel@vger.kernel.org>, richard@nod.at,
-        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 2/2] creds: __task_cred(current) doesn't need
- rcu_read_lock_held()
-Message-ID: <20110920150726.GA6234@peqn>
-References: <20110919214531.GA18085@sergelap>
- <20110920122202.GA26504@redhat.com>
- <20110920124419.GA10759@hallyn.com>
- <20110920134108.GA30749@redhat.com>
- <20110920143920.GA15859@redhat.com>
- <20110920143959.GC15859@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110920143959.GC15859@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 20 Sep 2011 11:08:01 -0400
+Subject: Re: [RFC][PATCH 0/5] Introduce checks for preemptable code for
+ this_cpu_read/write()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Christoph Lameter <cl@gentwo.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Steven Rostedt <rostedt@goodmis.org>,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>, Tejun Heo <htejun@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 20 Sep 2011 17:07:32 +0200
+In-Reply-To: <alpine.DEB.2.00.1109201000120.8056@router.home>
+References: <20110919212040.745370781@goodmis.org>
+	  <m2ehzcdkf2.fsf@firstfloor.org>
+	 <1316488378.29966.35.camel@gandalf.stny.rr.com>
+	 <alpine.LFD.2.02.1109200933310.2723@ionos>
+	 <alpine.DEB.2.00.1109201000120.8056@router.home>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1316531252.13664.39.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Oleg Nesterov (oleg@redhat.com):
-> Change __task_cred(task) to accept "task == current" without
-> rcu_read_lock_held(). This is what current_cred() currently does,
-> and with this change __task_cred() becomes more flexible/usable.
+On Tue, 2011-09-20 at 10:03 -0500, Christoph Lameter wrote:
 > 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> Well yes the misunderstanding of per cpu operations was one reason why I
+> proposed the discussion on the subject of esoteric kernel synchronization.
+> I do not think that it was accepted.
 
-So to check whether I've got this straight, the original __task_cred()
-was allowing rcu read lock to not be held for a non-running task, but
-required rcu read lock if task was running?  With these two patches,
-rcu read lock will not be needed if task == current?
+I don't think anybody here misunderstands it, we're just all very angry
+that its causing so much problems.
 
-If so, then that sounds good to me, and an unconditional rcu_read_lock()
-at wait_task_zombie() seems better than at send_signal()...
+__this_cpu doesn't have preempt debug checks, and there's a lot of
+this_cpu usage that really should have been __this_cpu.
 
-> ---
-> 
->  include/linux/cred.h |    5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
-> 
-> --- 3.1/include/linux/cred.h~2_task_cred_ck_current	2011-09-20 16:28:47.000000000 +0200
-> +++ 3.1/include/linux/cred.h	2011-09-20 16:33:12.000000000 +0200
-> @@ -268,8 +268,7 @@ static inline void put_cred(const struct
->   * Access the subjective credentials of the current task.  RCU-safe,
->   * since nobody else can modify it.
->   */
-> -#define current_cred() \
-> -	rcu_dereference_protected(current->cred, 1)
-> +#define current_cred()	__task_cred(current)
->  
->  /**
->   * __task_cred - Access a task's objective credentials
-> @@ -284,7 +283,7 @@ static inline void put_cred(const struct
->  #define __task_cred(task)						\
->  	({								\
->  		const struct task_struct *__t = (task);			\
-> -		rcu_dereference_check(__t->real_cred, 0);		\
-> +		rcu_dereference_check(__t->real_cred, (__t == current));\
->  	})
->  
->  /**
-> 
+The very fact that a quick scan still reveals actual bugs should be a
+warning sign that this crap doesn't have enough sanity checks.
+
+
