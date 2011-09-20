@@ -1,61 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752357Ab1ITSJC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 14:09:02 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:41593 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750806Ab1ITSJA convert rfc822-to-8bit (ORCPT
+	id S1752590Ab1ITSMH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 14:12:07 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:37112 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751023Ab1ITSMG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 14:09:00 -0400
+	Tue, 20 Sep 2011 14:12:06 -0400
+Date: Tue, 20 Sep 2011 14:12:03 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Christoph Lameter <cl@gentwo.org>,
+        Valdis.Kletnieks@vt.edu, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC][PATCH 0/5] Introduce checks for preemptable code for
+	this_cpu_read/write()
+Message-ID: <20110920181203.GA7909@Krystal>
+References: <27409.1316522696@turing-police.cc.vt.edu> <alpine.DEB.2.00.1109200955190.8056@router.home> <1316531987.29966.65.camel@gandalf.stny.rr.com> <alpine.DEB.2.00.1109201108080.8056@router.home> <1316536260.29966.93.camel@gandalf.stny.rr.com> <1316537808.29966.98.camel@gandalf.stny.rr.com> <1316538541.13664.60.camel@twins> <1316538952.29966.105.camel@gandalf.stny.rr.com> <20110920172531.GA21179@Krystal> <1316541785.29966.108.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-In-Reply-To: <1316537529.31295.14.camel@vkoul-udesk3>
-References: <1316072789-12830-1-git-send-email-jaswinder.singh@linaro.org>
-	<1316520730-3655-1-git-send-email-jaswinder.singh@linaro.org>
-	<1316537529.31295.14.camel@vkoul-udesk3>
-Date: Tue, 20 Sep 2011 23:38:59 +0530
-Message-ID: <CAJe_ZhdB6y--3XuTp7hzrBjkBTUfp5Anta2Z8SMaqbc=z6jMGA@mail.gmail.com>
-Subject: Re: [PATCHv3] DMAEngine: Define interleaved transfer request api
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: dan.j.williams@intel.com, linux-kernel@vger.kernel.org,
-        rmk@arm.linux.org.uk, 21cnbao@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1316541785.29966.108.camel@gandalf.stny.rr.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 14:06:41 up 300 days, 23:09,  7 users,  load average: 0.37, 0.28,
+	0.28
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20 September 2011 22:22, Vinod Koul <vinod.koul@intel.com> wrote:
->>  /**
->>   * enum dma_ctrl_flags - DMA flags to augment operation preparation,
->> @@ -309,6 +376,8 @@ typedef void (*dma_async_tx_callback)(void *dma_async_param);
->>   * @chan: target channel for this operation
->>   * @tx_submit: set the prepared descriptor(s) to be executed by the engine
->>   * @callback: routine to call after this operation is complete
->> + *   And after each frame if the 'frm_irq' flag is set during
->> + *   device_prep_interleaved_dma.
-> Nope, if callback is set it should be called
-What makes you think it won't be called? Note that it starts with _AND_
-'frm_irq' would only cause the callbacks done _additionally_ after each frame.
+* Steven Rostedt (rostedt@goodmis.org) wrote:
+> On Tue, 2011-09-20 at 13:25 -0400, Mathieu Desnoyers wrote:
+> > * Steven Rostedt (rostedt@goodmis.org) wrote:
+> > > On Tue, 2011-09-20 at 19:09 +0200, Peter Zijlstra wrote:
+> > > > On Tue, 2011-09-20 at 12:56 -0400, Steven Rostedt wrote:
+> > > > > random_cpu_*()    // Thomas's idea
+> > > > 
+> > > > I like this one best..
+> > > 
+> > > I like it too, but not really the most appropriate.
+> > > 
+> > > > 
+> > > > But you forgot do deal with the irqsafe_cpu() crap, that's the same
+> > > > brainfart as this_cpu() but more expensive because it frobs IRQ state.
+> > > 
+> > > But irqsafe_cpu_*() doesn't really have any real meaning to me. That is
+> > > something when I see it, I go and read the comments about it. It doesn't
+> > > contain "this_cpu" which is something that seems to explain what it is,
+> > > even though the obvious is not what it is.
+> > 
+> > Throwing ideas from the IRC discussion into the mix (Paul McKenney and I
+> > came up with it at the same time):
+> > 
+> > preempt_protected_percpu_*()
+> > irq_protected_percpu_*()
+> > 
+> > Seems to be quite self-explanatory.
+> > 
+> 
+> For use where the per_cpu data is protected with preemption disabled?
+> But isn't that the default case? Why make it hard to type for when you
+> should use it in the normal case.
+> 
+> It should be hard to type when it is a hack. As I recommended on IRC, we
+> probably should have it as:
+> 
+> use_this_if_you_really_do_not_care_what_cpu_you_are_on_but_are_anal_about_performance_cpu_*()
+> 
+> 1) it is very self descriptive.
+> 2) it would limit the usage as people wont like to have it in their
+> code ;)
 
-And no, DMA_PREP_INTERRUPT can't serve that purpose because that acts at
-only the end of full transfer not a part of it.
+Not quite. What I was proposing more precisely:
 
-> I think frm_irq is not required
-Barry doesn't need it, so yes, I'd better remove it for now and make
-my life easier.
+- this_cpu_*() for the case where the caller needs to disable
+  preemption. This is the default case. This is exactly what you
+  proposed, with WARN_ON debug checks. This could even be "percpu_*()"
+  now that I think of it. There is no real point in the "this_cpu"
+  prefix.
+
+- preempt_protected_percpu_*() and irq_protected_percpu_*() for
+  statistics/slub use. Those primitives disable preemption or irq
+  internally on non-x86 architectures. The caller of these primitives
+  is not required to disable preemption nor irqs.
+
+Thoughts ?
+
+Thanks,
+
+Mathieu
 
 
-> Also for slave transfers, how do we infer direction?
-I already explained to Barry.  Here's it again.
-
-At any time, the dmac driver knows if the channel, on which the xfer is
-prepared/submitted is Slave or not.
-
-SLAVE Transfer
-   dmaxfer_template.src_inc  && !dmaxfer_template.dst_inc  => DMA_TO_DEVICE
-   !dmaxfer_template.src_inc  && dmaxfer_template.dst_inc  => DMA_FROM_DEVICE
-
-Mem->Mem Transfer
-   dmaxfer_template.src_inc  && !dmaxfer_template.dst_inc  => Meaningless
-   !dmaxfer_template.src_inc  && dmaxfer_template.dst_inc  => MemSet
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
