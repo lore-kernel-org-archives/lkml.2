@@ -1,64 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753921Ab1ITHzT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 03:55:19 -0400
-Received: from fsmail-out.f-secure.com ([193.110.108.171]:38451 "EHLO
-	fsmail-out.f-secure.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753283Ab1ITHzS (ORCPT
+	id S1754115Ab1ITIH2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 04:07:28 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:42237 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753976Ab1ITIHZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 03:55:18 -0400
-Message-ID: <4E7846E5.1010909@f-secure.com>
-Date: Tue, 20 Sep 2011 10:55:17 +0300
-From: Tarkan Erimer <tarkan.erimer@f-secure.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110907 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: Chris Wilson <chris@chris-wilson.co.uk>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] i915 crashes X Server Constantly on Linux-3.1-rc4 to .rc6
-References: <4E770FF5.8030207@f-secure.com> <aefc95$1fgrb6@orsmga001.jf.intel.com> <4E773E65.5040809@f-secure.com> <aefc95$1fih8n@orsmga001.jf.intel.com> <4E782C62.507@f-secure.com> <e39f63$1l0gme@fmsmga002.fm.intel.com>
-In-Reply-To: <e39f63$1l0gme@fmsmga002.fm.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.4.6813,1.0.211,0.0.0000
- definitions=2011-09-20_02:2011-09-20,2011-09-20,1970-01-01 signatures=0
-X-Proofpoint-Spam-Reason: safe
+	Tue, 20 Sep 2011 04:07:25 -0400
+Subject: Re: [PATCH 0/5] ppc64 scheduler fixes
+From: Peter Zijlstra <peterz@infradead.org>
+To: Anton Blanchard <anton@samba.org>
+Cc: mingo@elte.hu, benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 20 Sep 2011 10:07:02 +0200
+In-Reply-To: <20110920101938.121098ed@kryten>
+References: <20110725023311.175792493@samba.org>
+	 <1311597702.24752.1.camel@twins> <20110920101938.121098ed@kryten>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1316506022.6091.22.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20/2011 10:34 AM, Chris Wilson wrote:
-> I've tried this on a few 32/64 bit machines (using different chips just
-> in case) on a few different distros. No instant death, I'll keep poking just
-> in case. Since flash is a sw rasteriser and uses ShmPutImage to update
-> its screen contents, these are typically an invalid memcpy. Having the
-> debug symbols would help confirm that and pinpoint which path.
->
-> Going back and checking your Xorg.log, I think you need this fix:
->
-> commit 3565c48c4bb77c836d817de75d098791dbb529d3
-> Author: Chris Wilson<chris@chris-wilson.co.uk>
-> Date:   Wed Sep 14 17:45:41 2011 +0100
->
->      sna: Yet another s/x/y/ typo
->
->      Every time I do a transformation into pixmap space I like to include one
->      of these copy'n'paste errors.
->
->      Reported-by: Paul Neumann<paul104x@yahoo.de>
->      Bugzilla:https://bugs.freedesktop.org/show_bug.cgi?id=40850
->      Signed-off-by: Chris Wilson<chris@chris-wilson.co.u
+On Tue, 2011-09-20 at 10:19 +1000, Anton Blanchard wrote:
+> > Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> 
+> Are you OK if Ben takes this, or would you prefer to send it via the
+> scheduler tree? 
 
-Chris,
+I was expecting Ben to pick it up, and I see he already did so.
 
-Many thanks for your help and debugging. I will try that and then will 
-let you know.
-
-Cheers,
-Tarkan
-
-
-
--- 
-Tarkan Erimer
-IT Service Deployment / 3rd Level Support / Snr. Linux Engineer
-
+Thanks!
