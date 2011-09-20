@@ -1,57 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752640Ab1ITXxF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 19:53:05 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:52355 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752033Ab1ITXxD (ORCPT
+	id S1752702Ab1ITXx0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 19:53:26 -0400
+Received: from students.itb.ac.id ([167.205.1.72]:40514 "EHLO
+	students.itb.ac.id" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752663Ab1ITXxY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 19:53:03 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/sAiMjbRkx4KMfgxR129B4
-Date: Tue, 20 Sep 2011 16:52:54 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Deepthy Ravi <deepthy.ravi@ti.com>, mchehab@infradead.org, hvaibhav@ti.com,
-        linux-media@vger.kernel.org, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, kyungmin.park@samsung.com,
-        hverkuil@xs4all.nl, m.szyprowski@samsung.com, g.liakhovetski@gmx.de,
-        santosh.shilimkar@ti.com, khilman@deeprootsystems.com,
-        david.woodhouse@intel.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-Subject: Re: [PATCH 5/5] omap2plus_defconfig: Enable omap3isp and MT9T111
- sensor drivers
-Message-ID: <20110920235254.GM2937@atomide.com>
-References: <1316530612-23075-1-git-send-email-deepthy.ravi@ti.com>
- <1316530612-23075-6-git-send-email-deepthy.ravi@ti.com>
- <201109210113.49151.laurent.pinchart@ideasonboard.com>
+	Tue, 20 Sep 2011 19:53:24 -0400
+X-Greylist: delayed 1589 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Sep 2011 19:53:24 EDT
+Date: Wed, 21 Sep 2011 06:11:06 +0700 (WIT)
+From: Administrador <rizky.ritonga@students.itb.ac.id>
+Reply-To: "activateyouremail@engineer.com" <activateyouremail@engineer.com>
+Message-ID: <1690020149.23311316560266397.JavaMail.root@students.itb.ac.id>
+Subject: =?utf-8?Q?El_usuario_de_correo_web_-_Confi?=
+ =?utf-8?Q?rme_la_informaci=C3=B3n_Webmail_Abajo?=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201109210113.49151.laurent.pinchart@ideasonboard.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [41.138.242.246]
+X-Mailer: Zimbra 5.0.16_GA_2921.RHEL5_64 (zclient/5.0.16_GA_2921.RHEL5_64)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Laurent Pinchart <laurent.pinchart@ideasonboard.com> [110920 15:40]:
-> >  CONFIG_REGULATOR_TPS65023=y
-> >  CONFIG_REGULATOR_TPS6507X=y
-> > +CONFIG_MEDIA_SUPPORT=y
-> > +CONFIG_MEDIA_CONTROLLER=y
-> > +CONFIG_VIDEO_DEV=y
-> > +CONFIG_VIDEO_V4L2_COMMON=y
-> > +CONFIG_VIDEO_ALLOW_V4L1=y
-> > +CONFIG_VIDEO_V4L1_COMPAT=y
-> > +CONFIG_VIDEO_V4L2_SUBDEV_API=y
-> > +CONFIG_VIDEO_MEDIA=y
-> > +CONFIG_VIDEO_MT9T111=y
-> > +CONFIG_VIDEO_OMAP3=y
-> 
-> Shouldn't they be compiled as modules instead ?
+Attn: Usuario Webmail
 
-Yes, let's not apply this.
+Su cuota de correo ha excedido la cuota establecida / límite. Usted está actualmente en ejecución en 23 GB debido a los archivos y carpetas ocultos en tu buzón de correo, puede que no sea capaz de recibir o enviar mensajes nuevos hasta que vuelva a validar.
 
-Tony
+Rellene el formulario para actualizar su cuenta y para evitar que se ha desactivado de nuestro correo web del databse.
+
+nombre:
+Apellido:
+Fecha de nacimiento:
+Nombre de usuario:
+contraseña:
+Re-Confirmar contraseña:
+
+La falta de validar su cuota puede resultar en la pérdida de importantes
+información en su buzón o causa el acceso limitado a ella.
+
+Webmail Administrador
+Ayuda Webmail Información Unidad @ 2011
