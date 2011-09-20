@@ -1,82 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752910Ab1ITMZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 08:25:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23162 "EHLO mx1.redhat.com"
+	id S1754298Ab1ITMgz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 08:36:55 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:41528 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751444Ab1ITMZ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 08:25:57 -0400
-Date: Tue, 20 Sep 2011 14:22:02 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Serge E. Hallyn" <serge.hallyn@canonical.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, richard@nod.at,
-        Andrew Morton <akpm@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>,
-        serge@hallyn.com
-Subject: Re: [PATCH] user namespace: make signal.c respect user namespaces
-Message-ID: <20110920122202.GA26504@redhat.com>
-References: <20110919214531.GA18085@sergelap>
+	id S1753836Ab1ITMgy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 08:36:54 -0400
+Message-ID: <4E7888B8.3080809@parallels.com>
+Date: Tue, 20 Sep 2011 09:36:08 -0300
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110919214531.GA18085@sergelap>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: <linux-kernel@vger.kernel.org>, <xemul@parallels.com>,
+        <paul@paulmenage.org>, <lizf@cn.fujitsu.com>, <daniel.lezcano@free.fr>,
+        <mingo@elte.hu>, <jbottomley@parallels.com>
+Subject: Re: [PATCH 6/9] Include idle and iowait fields in cpuacct
+References: <1316030695-19826-1-git-send-email-glommer@parallels.com>  <1316030695-19826-7-git-send-email-glommer@parallels.com> <1316510490.11841.15.camel@twins>
+In-Reply-To: <1316510490.11841.15.camel@twins>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [201.82.134.226]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/19, Serge E. Hallyn wrote:
+On 09/20/2011 06:21 AM, Peter Zijlstra wrote:
+> On Wed, 2011-09-14 at 17:04 -0300, Glauber Costa wrote:
+>> These are slightly different from the others though:
+>> (note to reviewers: might be better to put those in a separate
+>> array?)
+>>
+>> Since idle/iowait are a property of the system - by definition,
+>> no process from any cgroup is running when the system is idle,
+>> they are system wide. So what these fields really mean, are baselines
+>> for when the cgroup was created. It allows the cgroup to start
+>> counting idle/iowait from 0.
 >
-> __send_signal: convert the uid being sent in SI_USER to the target task's
-> user namespace.
->
-> do_notify_parent and do_notify_parent_cldstop: map task's uid to parent's
->  user namespace
->
-> ptrace_signal: map parent's uid into current's user namespace before
-> including in signal to current.
+> Alternatively you can make iowait based on nr_uninterruptible per cgroup
+> and count all ticks _this_ cgroup was idle.
+You think?
 
-And all of them follow the same pattern,
+Humm,humm... maybe...
+iowait can indeed be seen as a process group characteristic. I was 
+mainly concerned about overhead here, specially for the idle case:
 
-> @@ -1073,7 +1074,8 @@ static int __send_signal(int sig, struct siginfo *info, struct task_struct *t,
->  			q->info.si_code = SI_USER;
->  			q->info.si_pid = task_tgid_nr_ns(current,
->  							task_active_pid_ns(t));
-> -			q->info.si_uid = current_uid();
-> +			q->info.si_uid = user_ns_map_uid(task_cred_xxx(t, user_ns),
-> +					current_cred(), current_uid());
+If we are idle, there is no task context we can draw from, since the 
+task in the cpu is the idle task. So we end up having to touch all 
+cgroups... Or am I missing something?
 
-Up to you, but may be we can add a helper? Something like
+Sounds expensive.
 
-	static inline uid_t good_name(struct task_struct *from, struct task_struct *to)
-	{
-		// the caller does rcu_read_lock() if needed
-		const struct cred *from_cred = __task_cred(from);
-		return user_ns_map_uid(task_cred_xxx(to, user_ns),
-					from_cred, from_cred->uid);
-	}
 
-As for __send_signal() in particular, I guess we could do
-
-		q->info.si_uid = from_ancestor_ns ? 0 : current_uid();
-
-instead, but otoh perhaps it is better to use user_ns_map_uid() anyway
-for consistency.
-
-> @@ -2118,11 +2124,16 @@ static int ptrace_signal(int signr, siginfo_t *info,
->  	 * have updated *info via PTRACE_SETSIGINFO.
->  	 */
->  	if (signr != info->si_signo) {
-> +		const struct cred *pcred;
->  		info->si_signo = signr;
->  		info->si_errno = 0;
->  		info->si_code = SI_USER;
->  		info->si_pid = task_pid_vnr(current->parent);
-> -		info->si_uid = task_uid(current->parent);
-> +		rcu_read_lock();
-
-In this case please add rcu_read_lock() earlier, before task_pid_vnr().
-It has the same (theoretical) reasons for rcu lock.
-
-Oleg.
+> Now all that would need moar accounting...
 
