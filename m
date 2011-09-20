@@ -1,80 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752062Ab1ITPjx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 11:39:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56446 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751366Ab1ITPjw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 11:39:52 -0400
-Date: Tue, 20 Sep 2011 10:39:44 -0500
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, richard@nod.at,
-        Andrew Morton <akpm@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>,
-        serge@hallyn.com
-Subject: Re: [PATCH] user namespace: make signal.c respect user namespaces
-Message-ID: <20110920153944.GA11531@peqn>
-References: <20110919214531.GA18085@sergelap>
- <20110920122202.GA26504@redhat.com>
+	id S1752272Ab1ITPlA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 11:41:00 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:44406 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751958Ab1ITPk6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 11:40:58 -0400
+Date: Tue, 20 Sep 2011 20:49:03 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hugh Dickins <hughd@google.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 3.1.0-rc4-tip 0/26]   Uprobes patchset with perf
+ probe support
+Message-ID: <20110920151903.GA22802@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20110920133401.GA28550@infradead.org>
+ <20110920141204.GC6568@linux.vnet.ibm.com>
+ <20110920142843.GA9995@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20110920122202.GA26504@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110920142843.GA9995@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 11092015-6078-0000-0000-000000FB841C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Oleg Nesterov (oleg@redhat.com):
-> On 09/19, Serge E. Hallyn wrote:
-> >
-> > __send_signal: convert the uid being sent in SI_USER to the target task's
-> > user namespace.
-> >
-> > do_notify_parent and do_notify_parent_cldstop: map task's uid to parent's
-> >  user namespace
-> >
-> > ptrace_signal: map parent's uid into current's user namespace before
-> > including in signal to current.
-> 
-> And all of them follow the same pattern,
-> 
-> > @@ -1073,7 +1074,8 @@ static int __send_signal(int sig, struct siginfo *info, struct task_struct *t,
-> >  			q->info.si_code = SI_USER;
-> >  			q->info.si_pid = task_tgid_nr_ns(current,
-> >  							task_active_pid_ns(t));
-> > -			q->info.si_uid = current_uid();
-> > +			q->info.si_uid = user_ns_map_uid(task_cred_xxx(t, user_ns),
-> > +					current_cred(), current_uid());
-> 
-> Up to you, but may be we can add a helper? Something like
-> 
-> 	static inline uid_t good_name(struct task_struct *from, struct task_struct *to)
-> 	{
-> 		// the caller does rcu_read_lock() if needed
-> 		const struct cred *from_cred = __task_cred(from);
-> 		return user_ns_map_uid(task_cred_xxx(to, user_ns),
-> 					from_cred, from_cred->uid);
-> 	}
-> 
-> As for __send_signal() in particular, I guess we could do
-> 
-> 		q->info.si_uid = from_ancestor_ns ? 0 : current_uid();
+* Christoph Hellwig <hch@infradead.org> [2011-09-20 10:28:43]:
 
-But wait - can't __send_signal end up being triggered through fcntl
-F_SETSIG+F_SETOWN to another but none-ancestor namespace?  So we
-do actually need to call the full user_ns_map_uid() there.  However,
-the uid sent in ptrace_signal() can (if i'm thinking right) be set
-using
+> On Tue, Sep 20, 2011 at 07:42:04PM +0530, Srikar Dronamraju wrote:
+> > I could use any other inode/file/mapping based sleepable lock that is of
+> > higher order than mmap_sem. Can you please let me know if we have
+> > alternatives.
+> 
+> Please do not overload unrelated locks for this, but add a specific one.
+> 
+> There's two options:
+> 
+>  (a) add it to the inode (conditionally)
+>  (b) use global, hashed locks
+> 
+> I think (b) is good enough as adding/removing probes isn't exactly the
+> most critical fast path.
+> 
 
-	info->si_uid = (current_user_ns() == parent_user_ns()) ?
-			0 : current_uid();
+Agree, I will replace the i_mutex with a uprobes specific hash locks.
+I will make this change as part of next patchset.
 
-Not much of a win performance-wise, but perhaps better by making it
-clear that those are the only possibilities (and overflowuid is not
-possible).
+-- 
+Thanks and Regards
+Srikar
 
-thanks,
--serge
