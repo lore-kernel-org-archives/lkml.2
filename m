@@ -1,58 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751515Ab1ITPTu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 11:19:50 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:46368 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750814Ab1ITPTt (ORCPT
+	id S1751825Ab1ITPUF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 11:20:05 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:37359 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751413Ab1ITPUD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 11:19:49 -0400
-X-Authority-Analysis: v=1.1 cv=lfM0d0QHaVz67dfwwr9cyIw6NbaGR/pZhMD6XWNi0kk= c=1 sm=0 a=3kNrfhY1ZosA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=JVkF00lNCopyRY4spKAA:9 a=PUjeQqilurYA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.83.30
-Subject: Re: [RFC][PATCH 0/5] Introduce checks for preemptable code for
- this_cpu_read/write()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Christoph Lameter <cl@gentwo.org>
-Cc: Valdis.Kletnieks@vt.edu, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-In-Reply-To: <alpine.DEB.2.00.1109200955190.8056@router.home>
-References: <20110919212040.745370781@goodmis.org>
-	 <alpine.DEB.2.00.1109191644190.19059@router.home>
-	 <1316487977.29966.32.camel@gandalf.stny.rr.com>
-	 <27409.1316522696@turing-police.cc.vt.edu>
-	 <alpine.DEB.2.00.1109200955190.8056@router.home>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 20 Sep 2011 11:19:47 -0400
-Message-ID: <1316531987.29966.65.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 20 Sep 2011 11:20:03 -0400
+From: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: linux-kernel@vger.kernel.org, Anton Vorontsov <cbou@mail.ru>,
+        syed rafiuddin <rafiuddin.sayed@gmail.com>,
+        Rodolfo Giometti <giometti@linux.it>
+Cc: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
+Subject: =?UTF-8?q?=5BPATCH=204/7=5D=20bq27x00=3A=20Cache=20energy=20property?=
+Date: Tue, 20 Sep 2011 17:18:50 +0200
+Message-Id: <1316531933-7159-4-git-send-email-pali.rohar@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1316531933-7159-1-git-send-email-pali.rohar@gmail.com>
+References: <1316531933-7159-1-git-send-email-pali.rohar@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-09-20 at 09:57 -0500, Christoph Lameter wrote:
+---
+ drivers/power/bq27x00_battery.c |   53 +++++++++++++++++++--------------------
+ 1 files changed, 26 insertions(+), 27 deletions(-)
 
-> this_cpu_xx functions are made for those locations that have
-> preemption enabled. If you can use those function (classic case is a
-> per cpu counter increment in the network subsystem) then you can avoid
-> preempt disable/enable or get_cpu/put_cpu.
-
-If the variables are used for a very short time, then the latencies
-introduced by a simple:
-
-	var = get_cpu_var(my_var);
-	if (var)
-		do_something_quick();
-	put_cpu_var(my_var);
-
-Otherwise if that do_something_quick(); migrates, it may be doing
-something it shouldn't be doing!
-
--- Steve
+diff --git a/drivers/power/bq27x00_battery.c b/drivers/power/bq27x00_battery.c
+index 6c8dfdb..e9aeb53 100644
+--- a/drivers/power/bq27x00_battery.c
++++ b/drivers/power/bq27x00_battery.c
+@@ -84,6 +84,7 @@ struct bq27x00_reg_cache {
+ 	int charge_full;
+ 	int cycle_count;
+ 	int capacity;
++	int energy;
+ 	int flags;
+ };
+ 
+@@ -225,6 +226,28 @@ static int bq27x00_battery_read_ilmd(struct bq27x00_device_info *di)
+ }
+ 
+ /*
++ * Return the battery Available energy in µWh
++ * Or < 0 if something fails.
++ */
++static int bq27x00_battery_read_energy(struct bq27x00_device_info *di)
++{
++	int ae;
++
++	ae = bq27x00_read(di, BQ27x00_REG_AE, false);
++	if (ae < 0) {
++		dev_err(di->dev, "error reading available energy\n");
++		return ae;
++	}
++
++	if (di->chip == BQ27500)
++		ae *= 1000;
++	else
++		ae = ae * 29200 / BQ27000_RS;
++
++	return ae;
++}
++
++/*
+  * Return the battery Cycle count total
+  * Or < 0 if something fails.
+  */
+@@ -268,12 +291,14 @@ static void bq27x00_update(struct bq27x00_device_info *di)
+ 	if (cache.flags >= 0) {
+ 		if (!is_bq27500 && (cache.flags & BQ27000_FLAG_CI)) {
+ 			cache.capacity = -ENODATA;
++			cache.energy = -ENODATA;
+ 			cache.time_to_empty = -ENODATA;
+ 			cache.time_to_empty_avg = -ENODATA;
+ 			cache.time_to_full = -ENODATA;
+ 			cache.charge_full = -ENODATA;
+ 		} else {
+ 			cache.capacity = bq27x00_battery_read_rsoc(di);
++			cache.energy = bq27x00_battery_read_energy(di);
+ 			cache.time_to_empty = bq27x00_battery_read_time(di, BQ27x00_REG_TTE);
+ 			cache.time_to_empty_avg = bq27x00_battery_read_time(di, BQ27x00_REG_TTECP);
+ 			cache.time_to_full = bq27x00_battery_read_time(di, BQ27x00_REG_TTF);
+@@ -435,32 +460,6 @@ static int bq27x00_battery_voltage(struct bq27x00_device_info *di,
+ 	return 0;
+ }
+ 
+-/*
+- * Return the battery Available energy in µWh
+- * Or < 0 if something fails.
+- */
+-static int bq27x00_battery_energy(struct bq27x00_device_info *di,
+-	union power_supply_propval *val)
+-{
+-	int ae;
+-
+-	ae = bq27x00_read(di, BQ27x00_REG_AE, false);
+-	if (ae < 0) {
+-		dev_err(di->dev, "error reading available energy\n");
+-		return ae;
+-	}
+-
+-	if (di->chip == BQ27500)
+-		ae *= 1000;
+-	else
+-		ae = ae * 29200 / BQ27000_RS;
+-
+-	val->intval = ae;
+-
+-	return 0;
+-}
+-
+-
+ static int bq27x00_simple_value(int value,
+ 	union power_supply_propval *val)
+ {
+@@ -539,7 +538,7 @@ static int bq27x00_battery_get_property(struct power_supply *psy,
+ 		ret = bq27x00_simple_value(di->cache.cycle_count, val);
+ 		break;
+ 	case POWER_SUPPLY_PROP_ENERGY_NOW:
+-		ret = bq27x00_battery_energy(di, val);
++		ret = bq27x00_simple_value(di->cache.energy, val);
+ 		break;
+ 	default:
+ 		return -EINVAL;
+-- 
+1.7.4.1
 
