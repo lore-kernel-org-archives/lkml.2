@@ -1,143 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754917Ab1ITIxH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 04:53:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50967 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751094Ab1ITIxE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 04:53:04 -0400
-Date: Tue, 20 Sep 2011 10:53:02 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
-        Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 01/11] mm: memcg: consolidate hierarchy iteration
- primitives
-Message-ID: <20110920085302.GC27675@tiehlicka.suse.cz>
-References: <1315825048-3437-1-git-send-email-jweiner@redhat.com>
- <1315825048-3437-2-git-send-email-jweiner@redhat.com>
- <20110919125333.GC21847@tiehlicka.suse.cz>
- <20110920084553.GA11489@redhat.com>
+	id S1754947Ab1ITIy4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 04:54:56 -0400
+Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:47566 "EHLO
+	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754131Ab1ITIyx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 04:54:53 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4E7854D8.7000603@cam.ac.uk>
+Date: Tue, 20 Sep 2011 09:54:48 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110901 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110920084553.GA11489@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: Jean Delvare <khali@linux-fr.org>, Stephen Warren <swarren@nvidia.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Ben Dooks <ben-linux@fluff.org>,
+        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
+        Andrew Chew <achew@nvidia.com>, linux-iio@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-i2c@vger.kernel.org,
+        spi-devel-general@lists.sourceforge.net
+Subject: Re: [PATCH V3 1/5] i2c: Add irq_gpio field to struct i2c_client,
+ i2c_board_info.
+References: <1314914676-28397-1-git-send-email-swarren@nvidia.com> <20110902085620.4ad918c4@endymion.delvare> <20110920041629.GC30517@ponder.secretlab.ca>
+In-Reply-To: <20110920041629.GC30517@ponder.secretlab.ca>
+X-Enigmail-Version: 1.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 20-09-11 10:45:53, Johannes Weiner wrote:
-> On Mon, Sep 19, 2011 at 02:53:33PM +0200, Michal Hocko wrote:
-> > Hi,
-> > 
-> > On Mon 12-09-11 12:57:18, Johannes Weiner wrote:
-> > > Memory control groups are currently bolted onto the side of
-> > > traditional memory management in places where better integration would
-> > > be preferrable.  To reclaim memory, for example, memory control groups
-> > > maintain their own LRU list and reclaim strategy aside from the global
-> > > per-zone LRU list reclaim.  But an extra list head for each existing
-> > > page frame is expensive and maintaining it requires additional code.
-> > > 
-> > > This patchset disables the global per-zone LRU lists on memory cgroup
-> > > configurations and converts all its users to operate on the per-memory
-> > > cgroup lists instead.  As LRU pages are then exclusively on one list,
-> > > this saves two list pointers for each page frame in the system:
-> > > 
-> > > page_cgroup array size with 4G physical memory
-> > > 
-> > >   vanilla: [    0.000000] allocated 31457280 bytes of page_cgroup
-> > >   patched: [    0.000000] allocated 15728640 bytes of page_cgroup
-> > > 
-> > > At the same time, system performance for various workloads is
-> > > unaffected:
-> > > 
-> > > 100G sparse file cat, 4G physical memory, 10 runs, to test for code
-> > > bloat in the traditional LRU handling and kswapd & direct reclaim
-> > > paths, without/with the memory controller configured in
-> > > 
-> > >   vanilla: 71.603(0.207) seconds
-> > >   patched: 71.640(0.156) seconds
-> > > 
-> > >   vanilla: 79.558(0.288) seconds
-> > >   patched: 77.233(0.147) seconds
-> > > 
-> > > 100G sparse file cat in 1G memory cgroup, 10 runs, to test for code
-> > > bloat in the traditional memory cgroup LRU handling and reclaim path
-> > > 
-> > >   vanilla: 96.844(0.281) seconds
-> > >   patched: 94.454(0.311) seconds
-> > > 
-> > > 4 unlimited memcgs running kbuild -j32 each, 4G physical memory, 500M
-> > > swap on SSD, 10 runs, to test for regressions in kswapd & direct
-> > > reclaim using per-memcg LRU lists with multiple memcgs and multiple
-> > > allocators within each memcg
-> > > 
-> > >   vanilla: 717.722(1.440) seconds [ 69720.100(11600.835) majfaults ]
-> > >   patched: 714.106(2.313) seconds [ 71109.300(14886.186) majfaults ]
-> > > 
-> > > 16 unlimited memcgs running kbuild, 1900M hierarchical limit, 500M
-> > > swap on SSD, 10 runs, to test for regressions in hierarchical memcg
-> > > setups
-> > > 
-> > >   vanilla: 2742.058(1.992) seconds [ 26479.600(1736.737) majfaults ]
-> > >   patched: 2743.267(1.214) seconds [ 27240.700(1076.063) majfaults ]
-> > 
-> > I guess you want to have this in the first patch to have it for
-> > reference once it gets to the tree, right? I have no objections but it
-> > seems unrelated to the patch and so it might be confusing a bit. I
-> > haven't seen other patches in the series so there is probably no better
-> > place to put this.
+On 09/20/11 05:16, Grant Likely wrote:
+> On Fri, Sep 02, 2011 at 08:56:20AM +0200, Jean Delvare wrote:
+>> Stephen,
+>>
+>> Can you please fix your e-mail client / system / whatever so that your
+>> patch series are no longer sent duplicated?
+>>
+>> On Thu,  1 Sep 2011 16:04:27 -0600, Stephen Warren wrote:
+>>> Some devices use a single pin as both an IRQ and a GPIO. In that case,
+>>> irq_gpio is the GPIO ID for that pin. Not all drivers use this feature.
+>>> Where they do, and the use of this feature is optional, and the system
+>>> wishes to disable this feature, this field must be explicitly set to a
+>>> defined invalid GPIO ID, such as -1.
+>>>
+>>> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+>>> ---
+>>> v3: Also add the field to i2c_board_info, and copy the field from
+>>>     i2c_board_info to i2c_client upon instantiation
+>>
+>> I don't get the idea. The i2c core doesn't make any use of the field,
+>> and that field will only be used by a few drivers amongst the 420+
+>> i2c drivers in the tree. This looks like a waste of memory. What's wrong
+>> with including the new field in the private platform or arch data
+>> structure for drivers which need it?
 > 
-> Andrew usually hand-picks what's of long-term interest from the series
-> description and puts it in the first patch.  I thought I'd save him
-> the trouble.
+> I have to second the concern; but for a different reason.  This
+> shouldn't even remotely be necessary.  If the pin is used as an
+> interrupt, then interrupt controller driver (which I would assume is
+> also the gpio controller driver) should be responsible for setting up
+> the pin so that it can be used correctly as a irq line.  Why does the
+> gpio number need to be explicitly passed?
+The particular driver covered here is somewhat of a false positive.
+It really ought to be rewritten to do everything 'properly' with
+interrupts.  Right now no one with the inclination has the hardware
+to fix it up.
 
-Understood
+The nasty case we are trying to cover is peripherals that use level
+interrupts talking to gpio chips that only do edge triggered ones.
+We use the pin as an irq but have to query it as a gpio to discover
+if the sneaky chip raised it again without it actually going low.
 
-[...]
+There are sometimes work arounds involving polling registers on
+the device to check if the interrupt is active, but give the bus is
+slow, pinging the gpio to find out it's state is often much faster.
 
-> > > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > > index b76011a..912c7c7 100644
-> > > --- a/mm/memcontrol.c
-> > > +++ b/mm/memcontrol.c
-> > > @@ -781,83 +781,75 @@ struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm)
-> > >  	return memcg;
-> > >  }
-> > >  
-> > > -/* The caller has to guarantee "mem" exists before calling this */
-> > 
-> > Shouldn't we have a similar comment that we have to keep a reference to
-> > root if non-NULL. A mention about remember parameter and what is it used
-> > for (hierarchical reclaim) would be helpful as well.
-> 
-> The only thing that dictates the lifetime of a memcg is its reference
-> count, so having a reference count while operating on a memecg is not
-> even a question for all existing memcg-internal callsites.
+So it's a dirty hack for dirty hardware.  Having said that I agree
+that it's a niche case and certainly shouldn't be part of any core
+code, unless it is done right at the core in the generic interrupt
+code and previous discussions suggest that is tricky to say the least!
 
-Fair enough.
 
-> 
-> But I did, in fact, add kernel-doc style documentation to
-> mem_cgroup_iter() when it becomes a public interface in 5/11.  Can you
-> take a look and tell me whether you are okay with that?
-
-OK, I will comment on that patch once I get to it.
-
-[...]
-
-Thanks!
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
