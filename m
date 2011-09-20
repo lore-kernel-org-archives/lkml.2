@@ -1,94 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750973Ab1ITQpd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 12:45:33 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:57657 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750797Ab1ITQpc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 12:45:32 -0400
-Date: Tue, 20 Sep 2011 11:45:24 -0500
-From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, richard@nod.at,
-        Andrew Morton <akpm@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>,
-        serge@hallyn.com
-Subject: Re: [PATCH] user namespace: make signal.c respect user namespaces
-Message-ID: <20110920164524.GA8214@sergelap>
-References: <20110919214531.GA18085@sergelap>
- <20110920122202.GA26504@redhat.com>
- <20110920153944.GA11531@peqn>
- <20110920162455.GB18891@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110920162455.GB18891@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751505Ab1ITQqM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 12:46:12 -0400
+Received: from mga03.intel.com ([143.182.124.21]:63670 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750919Ab1ITQqK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 12:46:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,412,1312182000"; 
+   d="scan'208";a="50968799"
+Subject: Re: [PATCH] dmaengine i.MX DMA/SDMA: add missing include of
+ linux/module.h
+From: Vinod Koul <vinod.koul@intel.com>
+To: axel.lin@gmail.com
+Cc: linux-kernel@vger.kernel.org, Sascha Hauer <s.hauer@pengutronix.de>,
+        Dan Williams <dan.j.williams@intel.com>
+In-Reply-To: <CAF+7xWnQAT+rLTz0tj3j1KyUO4Zq-+V=ggHAJVMROXGWp5FA+w@mail.gmail.com>
+References: <1314688104.23734.1.camel@phoenix>
+	 <1315228918.26251.78.camel@vkoul-udesk3>
+	 <CAF+7xWn+W=T0A02p2t-kCtYX0o5xL3pU+Q2AUOunZmYvGkhaWg@mail.gmail.com>
+	 <1315233379.26251.152.camel@vkoul-udesk3>
+	 <CAF+7xWnQAT+rLTz0tj3j1KyUO4Zq-+V=ggHAJVMROXGWp5FA+w@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 20 Sep 2011 22:12:01 +0530
+Message-ID: <1316536921.31295.6.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Oleg Nesterov (oleg@redhat.com):
-> On 09/20, Serge Hallyn wrote:
-> >
-> > Quoting Oleg Nesterov (oleg@redhat.com):
-> > >
-> > > As for __send_signal() in particular, I guess we could do
-> > >
-> > > 		q->info.si_uid = from_ancestor_ns ? 0 : current_uid();
-> >
-> > But wait - can't __send_signal end up being triggered through fcntl
-> > F_SETSIG+F_SETOWN to another but none-ancestor namespace?
+On Tue, 2011-09-20 at 21:22 +0800, Axel Lin wrote:
+> 2011/9/5 Vinod Koul <vinod.koul@linux.intel.com>:
+> > On Mon, 2011-09-05 at 21:32 +0800, Axel Lin wrote:
+> >> 2011/9/5 Vinod Koul <vinod.koul@linux.intel.com>:
+> >> > On Tue, 2011-08-30 at 15:08 +0800, Axel Lin wrote:
+> >> >> Add missing include of linux/module.h to fix build error.
+> >> > I don't see this build error in my tree (based on rc4), In which config
+> >> > is this seen?
+> >> The patch is against linux-next tree.
+> >> I got the build error by "make imx_v4_v5_defconfig" on linux-next tree
+> >> ( next-20110831 )
+> > Sorry I am not able to find it, can you please point me to archives..
+> Hi Vinod,
+> Currently you can get linux-next tree at
+> git://github.com/sfrothwell/linux-next.git
+> ( http://linux.f-seidel.de/linux-next/pmwiki/pmwiki.php?n=Linux-next.FAQ )
 > 
-> I didn't really check, but afaics send_sigio_to_task/etc never use
-> SEND_SIG_NOINFO. And they shouldn't, there is no the sending process.
-
-(I'm sure you're right - but I'll have to take a closer look for my
-own understanding)
-
-> > do actually need to call the full user_ns_map_uid() there.  However,
-> > the uid sent in ptrace_signal() can (if i'm thinking right) be set
-> > using
-> >
-> > 	info->si_uid = (current_user_ns() == parent_user_ns()) ?
-> > 			0 : current_uid();
-> >
-> > Not much of a win performance-wise, but perhaps better by making it
-> > clear that those are the only possibilities (and overflowuid is not
-> > possible).
+> I still got below build error in today's linux-next tree.
+>   CC      drivers/dma/imx-sdma.o
+> drivers/dma/imx-sdma.c:336: warning: data definition has no type or
+> storage class
+> drivers/dma/imx-sdma.c:336: warning: type defaults to 'int' in
+> declaration of 'MODULE_DEVICE_TABLE'
+> drivers/dma/imx-sdma.c:336: warning: parameter names (without types)
+> in function declaration
+> drivers/dma/imx-sdma.c:343: warning: data definition has no type or
+> storage class
+> drivers/dma/imx-sdma.c:343: warning: type defaults to 'int' in
+> declaration of 'MODULE_DEVICE_TABLE'
+> drivers/dma/imx-sdma.c:343: warning: parameter names (without types)
+> in function declaration
+> drivers/dma/imx-sdma.c: In function 'sdma_get_firmware':
+> drivers/dma/imx-sdma.c:1193: error: 'THIS_MODULE' undeclared (first
+> use in this function)
+> drivers/dma/imx-sdma.c:1193: error: (Each undeclared identifier is
+> reported only once
+> drivers/dma/imx-sdma.c:1193: error: for each function it appears in.)
+> drivers/dma/imx-sdma.c: At top level:
+> drivers/dma/imx-sdma.c:1457: error: expected declaration specifiers or
+> '...' before string constant
+> drivers/dma/imx-sdma.c:1457: warning: data definition has no type or
+> storage class
+> drivers/dma/imx-sdma.c:1457: warning: type defaults to 'int' in
+> declaration of 'MODULE_AUTHOR'
+> drivers/dma/imx-sdma.c:1457: warning: function declaration isn't a prototype
+> drivers/dma/imx-sdma.c:1458: error: expected declaration specifiers or
+> '...' before string constant
+> drivers/dma/imx-sdma.c:1458: warning: data definition has no type or
+> storage class
+> drivers/dma/imx-sdma.c:1458: warning: type defaults to 'int' in
+> declaration of 'MODULE_DESCRIPTION'
+> drivers/dma/imx-sdma.c:1458: warning: function declaration isn't a prototype
+> drivers/dma/imx-sdma.c:1459: error: expected declaration specifiers or
+> '...' before string constant
+> drivers/dma/imx-sdma.c:1459: warning: data definition has no type or
+> storage class
+> drivers/dma/imx-sdma.c:1459: warning: type defaults to 'int' in
+> declaration of 'MODULE_LICENSE'
+> drivers/dma/imx-sdma.c:1459: warning: function declaration isn't a prototype
+> make[2]: *** [drivers/dma/imx-sdma.o] Error 1
+> make[1]: *** [drivers/dma] Error 2
+> make: *** [drivers] Error 2
 > 
-> I think you are right right, except s/==/!=/.
+Can you pls send me your .config?
+-- 
+~Vinod
 
-Yes :)
-
-> This is like send_signal()
-> which can only send the signal down or to the same namespace.
-> 
-> I guess ptrace_signal() can even do
-> 
-> 	info->si_pid = task_pid_vnr(current->parent);
-> 
-> 	if (info->si_pid)	// same namespace
-> 		info->si_uid = current_uid();
-> 	else			// can't see the tracer, we are from the sub-namespace
-> 		info->si_uid = 0;
-> 
-> Whatever you like more.
-
-Except you don't have to split pid and user namespaces at the same
-time.
-
-> And just in case let me repeat, I won't argue if you use
-> user_ns_map_uid/helper for consistency. Without CONFIG_USER_NS it is
-> even better performance-wise (even if we add a helper I guess).
-
-Ok.  On the one hand, using your new mapping helper will make it
-easier to make sure everything is right.  This special code may be
-more educational to the new reader, but isn't as trivial to
-review.
-
-Maybe I'll go with the mapping.
-
-thanks,
--serge
