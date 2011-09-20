@@ -1,86 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755177Ab1ITJOj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 05:14:39 -0400
-Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:60887 "EHLO
-	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752442Ab1ITJOi (ORCPT
+	id S1755189Ab1ITJQY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 05:16:24 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53068 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752387Ab1ITJQX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 05:14:38 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Grant Likely <grant.likely@secretlab.ca>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 2/2] gpio/nomadik: use genirq core to track enablement
-Date: Tue, 20 Sep 2011 10:50:15 +0200
-Message-ID: <1316508615-20351-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.3.2
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 20 Sep 2011 05:16:23 -0400
+Subject: Re: [PATCH 3/4] perf_events: Support a lock_parent event flag
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Date: Tue, 20 Sep 2011 11:16:00 +0200
+In-Reply-To: <1316127412-1912-3-git-send-email-andi@firstfloor.org>
+References: <1316127412-1912-1-git-send-email-andi@firstfloor.org>
+	 <1316127412-1912-3-git-send-email-andi@firstfloor.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1316510160.11841.12.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+On Thu, 2011-09-15 at 15:56 -0700, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+> 
+> Add a new lock_parent flag to the event attribute. When it is set
+> account spinlocks to the parent.  This is similar to how oprofile
+> behaves on x86. This just reuses the oprofile code for this.
+> 
+> The main advantage is that it allows to make more sense of locking
+> problems without requiring full callgraphs.
+> 
+> Right now only implemented on x86.
+> 
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  arch/x86/kernel/cpu/perf_event.c |    3 +++
+>  include/linux/perf_event.h       |    3 ++-
+>  2 files changed, 5 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+> index 373a614..f2caa6e 100644
+> --- a/arch/x86/kernel/cpu/perf_event.c
+> +++ b/arch/x86/kernel/cpu/perf_event.c
+> @@ -1933,6 +1933,9 @@ unsigned long perf_instruction_pointer(struct pt_regs *regs,
+>  	else
+>  		ip = instruction_pointer(regs);
+>  
+> +	if (event->attr.lock_parent)
+> +		ip = __profile_pc(ip, regs);
+> +
+>  	return ip;
+>  }
+>  
+> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+> index f8b93ec..51da085 100644
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -219,8 +219,9 @@ struct perf_event_attr {
+>  				precise_ip     :  2, /* skid constraint       */
+>  				mmap_data      :  1, /* non-exec mmap data    */
+>  				sample_id_all  :  1, /* sample_type all events */
+> +				lock_parent    :  1, /* count locks in parent */
+>  
 
-Currently the Nomadik GPIO driver tracks enabled/disabled interrupt
-status with a local variable, switch to using the interrupt core.
+This all just sucks horridly. So this name tells us we need inherited
+counters so that whenever we encounter a lock it will be accounted in
+the parent process, or whatever -- which doesn't make any sense.
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/gpio/gpio-nomadik.c |   11 ++---------
- 1 files changed, 2 insertions(+), 9 deletions(-)
+Furthermore, the sole reason you want this is because you don't want
+callchains, supposedly because they're too expensive, but then you don't
+say that.
 
-diff --git a/drivers/gpio/gpio-nomadik.c b/drivers/gpio/gpio-nomadik.c
-index 97e9be9..0b7ec12 100644
---- a/drivers/gpio/gpio-nomadik.c
-+++ b/drivers/gpio/gpio-nomadik.c
-@@ -58,7 +58,6 @@ struct nmk_gpio_chip {
- 	u32 rwimsc;
- 	u32 fwimsc;
- 	u32 slpm;
--	u32 enabled;
- 	u32 pull_up;
- };
- 
-@@ -605,11 +604,6 @@ static int nmk_gpio_irq_maskunmask(struct irq_data *d, bool enable)
- 	if (!nmk_chip)
- 		return -EINVAL;
- 
--	if (enable)
--		nmk_chip->enabled |= bitmask;
--	else
--		nmk_chip->enabled &= ~bitmask;
--
- 	clk_enable(nmk_chip->clk);
- 	spin_lock_irqsave(&nmk_gpio_slpm_lock, flags);
- 	spin_lock(&nmk_chip->lock);
-@@ -653,7 +647,7 @@ static int nmk_gpio_irq_set_wake(struct irq_data *d, unsigned int on)
- 	spin_lock_irqsave(&nmk_gpio_slpm_lock, flags);
- 	spin_lock(&nmk_chip->lock);
- 
--	if (!(nmk_chip->enabled & bitmask))
-+	if (irqd_irq_disabled(d))
- 		__nmk_gpio_set_wake(nmk_chip, gpio, on);
- 
- 	if (on)
-@@ -670,7 +664,7 @@ static int nmk_gpio_irq_set_wake(struct irq_data *d, unsigned int on)
- 
- static int nmk_gpio_irq_set_type(struct irq_data *d, unsigned int type)
- {
--	bool enabled;
-+	bool enabled = !irqd_irq_disabled(d);
- 	bool wake = irqd_is_wakeup_set(d);
- 	int gpio;
- 	struct nmk_gpio_chip *nmk_chip;
-@@ -691,7 +685,6 @@ static int nmk_gpio_irq_set_type(struct irq_data *d, unsigned int type)
- 	clk_enable(nmk_chip->clk);
- 	spin_lock_irqsave(&nmk_chip->lock, flags);
- 
--	enabled = !!(nmk_chip->enabled & bitmask);
- 	if (enabled)
- 		__nmk_gpio_irq_modify(nmk_chip, gpio, NORMAL, false);
- 
--- 
-1.7.3.2
-
+How about you provide means of limiting the callchain depth, and then
+frob the in_lock_function() and unwind 1 crap in userspace?
