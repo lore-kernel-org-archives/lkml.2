@@ -1,56 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752494Ab1ITGCN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 02:02:13 -0400
-Received: from fsmail-out.f-secure.com ([193.110.108.171]:52462 "EHLO
-	fsmail-out.f-secure.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752005Ab1ITGCM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 02:02:12 -0400
-Message-ID: <4E782C62.507@f-secure.com>
-Date: Tue, 20 Sep 2011 09:02:10 +0300
-From: Tarkan Erimer <tarkan.erimer@f-secure.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110907 Thunderbird/6.0.2
+	id S1752573Ab1ITGHY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 02:07:24 -0400
+Received: from tservice.ru ([195.178.208.66]:44994 "EHLO tservice.net.ru"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752258Ab1ITGHX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 02:07:23 -0400
+Date: Tue, 20 Sep 2011 10:07:22 +0400
+From: Evgeniy Polyakov <zbr@ioremap.net>
+To: Valdis.Kletnieks@vt.edu
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: POHMELFS is back
+Message-ID: <20110920060722.GC7910@ioremap.net>
+References: <20110919061302.GA19699@ioremap.net>
+ <9891.1316455851@turing-police.cc.vt.edu>
 MIME-Version: 1.0
-To: Chris Wilson <chris@chris-wilson.co.uk>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] i915 crashes X Server Constantly on Linux-3.1-rc4 to .rc6
-References: <4E770FF5.8030207@f-secure.com> <aefc95$1fgrb6@orsmga001.jf.intel.com> <4E773E65.5040809@f-secure.com> <aefc95$1fih8n@orsmga001.jf.intel.com>
-In-Reply-To: <aefc95$1fih8n@orsmga001.jf.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.4.6813,1.0.211,0.0.0000
- definitions=2011-09-20_02:2011-09-20,2011-09-20,1970-01-01 signatures=0
-X-Proofpoint-Spam-Reason: safe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <9891.1316455851@turing-police.cc.vt.edu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/19/2011 04:33 PM, Chris Wilson wrote:
-> That looks remarkably consistent. Can you please do a quick
-> addr2line -e /usr/lib64/xorg/modules/drivers/intel_drv.so 0x3e7ce 0x44d34
->
-> Also do you know which particular site triggers the issue?
-> -Chris
+Code part comments
 
-Hi again Chris,
+On Mon, Sep 19, 2011 at 02:10:51PM -0400, Valdis.Kletnieks@vt.edu (Valdis.Kletnieks@vt.edu) wrote:
+> +static ssize_t pohmelfs_write(struct file *filp, const char __user *buf, size_t len, loff_t *ppos)
+> +{
+> +	ssize_t err;
+> +	struct inode *inode = filp->f_mapping->host;
+> +#if 0
+> +	struct inode *inode = filp->f_mapping->host;
+> 
+> Just remove the #if 0'ed code.
 
-Here is the output as you requested :
+Actually I need to remove other part, it is kind of debugging part :)
 
-linux-ou2v:~ # addr2line -e /usr/lib64/xorg/modules/drivers/intel_drv.so 
-0x3e7ce 0x44d34
-??:0
-??:0
-linux-ou2v:~ #
+> in phhmelfs_fill_inode() (and probably other places):
+> +	pr_info("pohmelfs: %s: ino: %lu inode is regular: %d, dir: %d, link: %d, mode: %o, "
+> 
+> pr_debug please.  pr_info per inode reference is just insane.
 
-At least, there is one particular website that always reproduces the 
-issue and it's :
+Yes, I will clean up all prints for sure
 
-http://www.instru.fi/piilolinssit
+> +void pohmelfs_print_addr(struct sockaddr_storage *addr, const char *fmt, ...)
+> +		pr_info("pohmelfs: %pI4:%d: %s", &sin->sin_addr.s_addr, ntohs(sin->sin_port), ptr);
+> 
+> Gaak.  This apparently gets called *per read*. pr_debug *and* additional
+> "please spam my log" flags please.
 
+Please do not be scared by log prints ,they will be cleanup up for
+release
 
+> +static inline int dnet_id_cmp_str(const unsigned char *id1, const unsigned char *id2)
+> +{
+> +	unsigned int i = 0;
+> +
+> +	for (i*=sizeof(unsigned long); i<DNET_ID_SIZE; ++i) {
+> 
+> strncmp()?
+
+Actually yes
+
+> Also, as a general comment - since this is an interface to Elliptics, which as
+> far as I can tell runs in userspace, would this whole thing make more sense
+> using FUSE?
+
+I tried FUSE about 3 years ago, it had _serious_ problems with
+performance. Disk storage can run in userspace, since it is never
+limited by CPU or copies, but client may not be allowed to waste that
+much resources. 
+
+> I'm also assuming that Elliptics is responsible for all the *hard* parts of
+> distributed filesystems, like quorum management and re-synching after a
+> partition of the network, and so on?  If so, you really need to discuss that
+> some more - in particular how well this all works during failure modes.
+
+Yes, POHMELFS is just an another interface.
+Elliptics uses eventual consistency model, so when replicas go out of
+sync, special checking process starts to bring them back. It also
+recovers missed copy, if we replaced disk/server or added new one.
+
+When some servers go down, all IO is handled by their neighbours
+according to route tabe generated on the first start. When servers are
+turned on again, they start getting those IO requests, and eventual
+consistency process rolls out missed writes. If data is old or missed we
+will switch to another replica.
+
+Thanks a lot for review!
 
 -- 
-Tarkan Erimer
-IT Service Deployment / 3rd Level Support / Snr. Linux Engineer
-
+	Evgeniy Polyakov
