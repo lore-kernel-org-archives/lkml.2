@@ -1,122 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751053Ab1ITNqo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 09:46:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3257 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750810Ab1ITNqm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 09:46:42 -0400
-From: Johannes Weiner <jweiner@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>, Christoph Hellwig <hch@infradead.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Chris Mason <chris.mason@oracle.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, xfs@oss.sgi.com,
-        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch 0/4] 50% faster writing to your USB drive!*
-Date: Tue, 20 Sep 2011 15:45:11 +0200
-Message-Id: <1316526315-16801-1-git-send-email-jweiner@redhat.com>
+	id S1751295Ab1ITNti (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 09:49:38 -0400
+Received: from www.linutronix.de ([62.245.132.108]:37711 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750997Ab1ITNth (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 09:49:37 -0400
+Date: Tue, 20 Sep 2011 15:49:26 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Christoph Lameter <cl@gentwo.org>
+cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Christoph Lameter <cl@linux.com>, Tejun Heo <htejun@gmail.com>
+Subject: Re: [RFC][PATCH 2/5] mm: Switch mod_state() to __this_cpu_read()
+In-Reply-To: <alpine.DEB.2.00.1109191657150.19059@router.home>
+Message-ID: <alpine.LFD.2.02.1109201334590.2723@ionos>
+References: <20110919212040.745370781@goodmis.org> <20110919212640.688732950@goodmis.org> <alpine.DEB.2.00.1109191657150.19059@router.home>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-*if you use ntfs-3g copy files larger than main memory
+On Mon, 19 Sep 2011, Christoph Lameter wrote:
 
-or: per-zone dirty limits
+> On Mon, 19 Sep 2011, Steven Rostedt wrote:
+> 
+> > From: Steven Rostedt <srostedt@redhat.com>
+> >
+> > The code in mod_state() is already made to handle the raciness of
+> > this_cpu_read(). Have the code use __this_cpu_read() instead so
+> > the debug code does not trigger warnings about it.
+> 
+> Why would there be a warning triggered? this_cpu_read should take care of
+> disabling preemption for the read if needed. In fact the fallback case
+> does do exactly that.
 
-There have been several discussions and patches around the issue of
-dirty pages being written from page reclaim, that is, they reach the
-end of the LRU list before they are cleaned.
+And what exactly is the purpose of having a preempt_disable()/enable()
+pair in this_cpu_read()?
 
-Proposed reasons for this are the divergence of dirtying age from page
-cache age, on one hand, and unequal distribution of the globally
-limited dirty memory across the LRU lists of different zones.
+Nothing, AFAICT. And looking at the usage:
 
-Mel's recent patches to reduce writes from reclaim, by simply skipping
-over dirty pages until a certain amount of memory pressure builds up,
-do help quite a bit.  But they can only deal with a limited length of
-runs of dirty pages before kswapd goes to lower priority levels to
-balance the zone and begins writing.
+arch/x86/lib/delay.c:124:               (this_cpu_read(cpu_info.loops_per_jiffy) * (HZ/4)));
 
-The unequal distribution of dirty memory between zones is easily
-observable through the statistics in /proc/zoneinfo, but the test
-results varied between filesystems.  To get an overview of where and
-how often different page cache pages are created and dirtied, I hacked
-together an object tracker that remembers the instantiator of a page
-cache page and associates with it the paths that dirty or activate the
-page, together with counters that indicate how often those operations
-occur.
+Pointless, as we do not care about which loops_per_jiffy we access.
 
-Btrfs, for example, appears to be activating a significant amount of
-regularly written tree data with mark_page_accessed(), even with a
-purely linear, page-aligned write load.  So in addition to the already
-unbounded dirty memory on smaller zones, this is a divergence between
-page age and dirtying age and leads to a situation where the pages
-reclaimed next are not the ones that are also flushed next:
+arch/x86/mm/tlb.c:179:  sender = this_cpu_read(tlb_vector_offset);
 
-		pgactivate
-			     min|  median|     max
-	      xfs:	   5.000|   6.500|  20.000
-	fuse-ntfs:	   5.000|  19.000| 275.000
-	     ext4:	   2.000|  67.000| 810.000 
-	    btrfs:	2915.000|3316.500|5786.000
+Pointless, as all callers have preemption disabled. 
 
-ext4's delalloc, on the other hand, refuses regular write attemps from
-kjournald, but the write index of the inode is still advanced for
-cyclic write ranges and so the pages are not even immediately written
-when the inode is selected again.
+drivers/acpi/processor_throttling.c:719:        if ((this_cpu_read(cpu_info.x86_vendor) != X86_VENDOR_INTEL) ||
+drivers/acpi/processor_throttling.c:740:        if ((this_cpu_read(cpu_info.x86_vendor) != X86_VENDOR_INTEL) ||
 
-I cc'd the filesystem people because it is at least conceivable that
-things could be improved on their side, but I do think the problem is
-mainly with the VM and needs fixing there.
+The conversion was made in commit 9d42a53e with a lousy changelog and
+this_cpu_read() with the given semantics is simply crap as this code
+wants to run on a given cpu as we access msrs which we don't want to
+do in a random fashion. In fact if you had used __this_cpu_read() and
+that code would have contained a debug check then the callchain coming
+up from thermal_cooling_device_cur_state_store() would have triggered
+it AFAICT.
 
-This patch series implements per-zone dirty limits, derived from the
-configured global dirty limits and the individual zone size, that the
-page allocator uses to distribute pages allocated for writing across
-the allowable zones.  Even with pages dirtied out of the inactive LRU
-order this gives page reclaim a minimum number of clean pages on each
-LRU so that balancing a zone should no longer require writeback in the
-common case.
+drivers/dma/dmaengine.c:331:    return this_cpu_read(channel_table[tx_type]->chan);
 
-The previous version included code to wake the flushers and stall the
-allocation on NUMA setups where the load is bound to a node that is in
-itself not large enough to reach the global dirty limits, but I am
-still trying to get it to work reliably and dropped it for now, the
-series has merits even without it.
+Blindly converted w/o noticing the obvious problem with this code
+(even befor the conversion). We just blindly return a channel from the
+cpu on which this happens to be called. Can all the calling code deal
+with possibly being migrated away after that ? If yes, then this wants
+to have a comment. If no, then the calling convention wants to be
+documented.
 
-			Test results
+drivers/input/gameport/gameport.c:124:  return (this_cpu_read(cpu_info.loops_per_jiffy) *
 
-15M DMA + 3246M DMA32 + 504 Normal = 3765M memory
-40% dirty ratio
-16G USB thumb drive
-10 runs of dd if=/dev/zero of=disk/zeroes bs=32k count=$((10 << 15))
+Harmless
 
-		seconds			nr_vmscan_write
-		        (stddev)	       min|     median|        max
-xfs
-vanilla:	 549.747( 3.492)	     0.000|      0.000|      0.000
-patched:	 550.996( 3.802)	     0.000|      0.000|      0.000
+include/linux/interrupt.h:462:  return this_cpu_read(ksoftirqd);
 
-fuse-ntfs
-vanilla:	1183.094(53.178)	 54349.000|  59341.000|  65163.000
-patched:	 558.049(17.914)	     0.000|      0.000|     43.000
+Pointless. This is called from account_system_vtime() and we already
+use __this_cpu_read() in that very function.
 
-btrfs
-vanilla:	 573.679(14.015)	156657.000| 460178.000| 606926.000
-patched:	 563.365(11.368)	     0.000|      0.000|   1362.000
+kernel/irq_work.c:125:  if (this_cpu_read(irq_work_list) == NULL)
 
-ext4
-vanilla:	 561.197(15.782)	     0.000|2725438.000|4143837.000
-patched:	 568.806(17.496)	     0.000|      0.000|      0.000
+Pointless, called from interrupts disabled context
 
-Even though most filesystems already ignore the write request from
-reclaim, we were reluctant in the past to remove it, as it was still
-theoretically our only means to stay on top of the dirty pages on a
-per-zone basis.  This patchset should get us closer to removing the
-dreaded writepage call from page reclaim altogether.
+kernel/sched.c:2013:    latest_ns = this_cpu_read(cpu_hardirq_time);
 
-	Hannes
+Pointless, has interrupts disabled
+
+kernel/sched.c:2028:    latest_ns = this_cpu_read(cpu_softirq_time);
+
+Ditto
+
+mm/memcontrol.c:686:    val = this_cpu_read(mem->stat->events[MEM_CGROUP_EVENTS_COUNT]);
+mm/memcontrol.c:687:    next = this_cpu_read(mem->stat->targets[target]);
+
+Completely broken as Steven pointed out already
+
+mm/memcontrol.c:696:    val = this_cpu_read(mem->stat->events[MEM_CGROUP_EVENTS_COUNT]);
+
+Broken as well, as it writes back to the same per cpu var, unless
+called from atomic contexts.
+
+mm/memcontrol.c:1321:   return this_cpu_read(mem->stat->count[MEM_CGROUP_ON_MOVE]) > 0;
+
+Either broken by returning random data or pointless when called from
+atomic contexts.
+
+mm/vmstat.c:331:                t = this_cpu_read(pcp->stat_threshold);
+mm/vmstat.c:333:                o = this_cpu_read(*p);
+
+Race known and dealt with.
+
+So most of the this_cpu_read() sites are either pointless or broken. I
+suspect that other this_cpu_* stuff has the same problems.
+
+So what's the point of that interface again? Random access to random
+cpu data protected with a preempt_disable/enable() pair to paper over
+the real bugs?
+
+The whole idea of having this_cpu_* which can be called from any
+context is completely stupid as it is just a guarantee for misuse and
+failure.
+
+The best thing is to remove the this_cpu_* hackery alltogether and
+just keep the __this_cpu_* versions (along with proper debugging) and
+git rid of the silly underscores.
+
+> I think it would make more sence if __this_cpu_read() could be made to
+> trigger a warning if used in context where preemption could be off.
+
+It should have had such a warning in the first place and the warning
+needs to yell about preemptible (i.e. unprotected) context and not the
+other way round.
+
+But instead of just slapping smp_processor_id() checks into those
+functions we should add a more sensible debug interface like:
+
+  debug_check_percpu_access()
+
+and the per cpu sections which require protection over a series (1
+.. N) of this_cpu_* operations want to have
+
+  this_cpu_start()
+  this_cpu_end()
+
+or similar annotations around them.
+
+This allows us to do proper analysis of this_cpu usage and makes the
+code understandable.
+
+Thanks,
+
+	tglx
