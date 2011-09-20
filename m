@@ -1,76 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752876Ab1ITSyF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 14:54:05 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:37761 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751387Ab1ITSyD (ORCPT
+	id S1752737Ab1ITSyE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 14:54:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:38735 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751086Ab1ITSyD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 20 Sep 2011 14:54:03 -0400
-X-Authority-Analysis: v=1.1 cv=lfM0d0QHaVz67dfwwr9cyIw6NbaGR/pZhMD6XWNi0kk= c=1 sm=0 a=3kNrfhY1ZosA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=Nmux7nRh03_HI-qwSxUA:9 a=PUjeQqilurYA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.83.30
-Subject: Re: [RFC][PATCH 0/5] Introduce checks for preemptable code for
- this_cpu_read/write()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Christoph Lameter <cl@gentwo.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>
-In-Reply-To: <alpine.DEB.2.00.1109201109470.8056@router.home>
-References: <20110919212040.745370781@goodmis.org>
-	 <alpine.DEB.2.00.1109191644190.19059@router.home>
-	 <1316487977.29966.32.camel@gandalf.stny.rr.com>
-	 <20110920154610.GB28952@Krystal>
-	 <1316534441.29966.79.camel@gandalf.stny.rr.com>
-	 <alpine.DEB.2.00.1109201109470.8056@router.home>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 20 Sep 2011 14:54:01 -0400
-Message-ID: <1316544841.29966.121.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+Date: Tue, 20 Sep 2011 13:53:54 -0500
+From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, richard@nod.at,
+        Andrew Morton <akpm@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>,
+        serge@hallyn.com
+Subject: Re: [PATCH] user namespace: make signal.c respect user namespaces
+Message-ID: <20110920185354.GA19629@sergelap>
+References: <20110919214531.GA18085@sergelap>
+ <20110920174849.GB22317@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110920174849.GB22317@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-09-20 at 11:10 -0500, Christoph Lameter wrote:
-> On Tue, 20 Sep 2011, Steven Rostedt wrote:
+Quoting Oleg Nesterov (oleg@redhat.com):
+> On 09/19, Serge E. Hallyn wrote:
+> >
+> > __send_signal: convert the uid being sent in SI_USER to the target task's
+> > user namespace.
+> >
+> > do_notify_parent and do_notify_parent_cldstop: map task's uid to parent's
+> >  user namespace
+> >
+> > ptrace_signal: map parent's uid into current's user namespace before
+> > including in signal to current.
 > 
-> > I really mean all other users of this_cpu_*(), including the cmpxchg and
-> > friends, still need to have preemption disabled.
+> Btw, what about the other users of ->si_uid? Say, kill() or tkill().
+
+Well, they end up calling __send_signal().
+
+> Looks like, we need a lot of complications to make this correct...
 > 
-> This is argument against the basic design of this_cpu_ops. They were
-> designed to avoid having to disable preemption for single operations on
-> per cpu data. I think this shows a basic misunderstanding of what you are
-> dealing with.
+> As for send_signal(), may be we can simply do
 > 
+> 
+> 	--- x/kernel/signal.c
+> 	+++ x/kernel/signal.c
+> 	@@ -1084,10 +1084,13 @@ static int __send_signal(int sig, struct
+> 				break;
+> 			default:
+> 				copy_siginfo(&q->info, info);
+> 	-			if (from_ancestor_ns)
+> 	-				q->info.si_pid = 0;
+> 				break;
+> 			}
+> 	+
+> 	+		if (unlikely(from_ancestor_ns)) {
+> 	+				q->info.si_pid = 0;
+> 	+				q->info.si_uid = 0;
+> 	+		}
+> 		} else if (!is_si_special(info)) {
+> 			if (sig >= SIGRTMIN && info->si_code != SI_USER) {
+> 				/*
+> 
+> ?
+> 
+> Yes, this "breaks" sys_rt_sigqueueinfo() evem more if it is used
+> to send the signal to the sub-namespace.
 
-BTW, Can you explain to me where the this_cpu_*() ops were designed to
-be used? The only places where "this_cpu_*()" is used in slub.c and
-page_alloc.c have irqs disabled on their use. I thought this was for
-slub and page_alloc?
+Eh, yeah, so we do have to use the user_ns_map_uid(), or rather your
+new helper.
 
-Is this_cpu() made just for statistics? I see it used in the inode code
-for that, and some accounting in the namespace.c code.
+But you sound more alarmed than that.  So I might be missing something.
+You think that user_ns_map_uid() at the locations I identified in
+kernel/signal.c does not suffice?
 
-Note and there's places all over the kernel that uses this_cpu_read()
-and thinks preemption should be disabled. Just look at
-arch/x86/mm/tlb.c:
-
-	/* Caller has disabled preemption */
-	sender = this_cpu_read(tlb_vector_offset);
-
-Why the comment?
-
-My argument is that this_cpu_* is just confusing. Rename your use case
-and keep this_cpu_*() as what you want __this_cpu_*() to be.
-
-Thanks!
-
--- Steve
-
-
-
+-serge
