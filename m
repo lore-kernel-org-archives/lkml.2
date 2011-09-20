@@ -1,180 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754649Ab1ITIqi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 04:46:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63789 "EHLO mx1.redhat.com"
+	id S1754776Ab1ITIrK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 04:47:10 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:9813 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751669Ab1ITIqh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 04:46:37 -0400
-Date: Tue, 20 Sep 2011 10:45:53 +0200
-From: Johannes Weiner <jweiner@redhat.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
-        Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 01/11] mm: memcg: consolidate hierarchy iteration
- primitives
-Message-ID: <20110920084553.GA11489@redhat.com>
-References: <1315825048-3437-1-git-send-email-jweiner@redhat.com>
- <1315825048-3437-2-git-send-email-jweiner@redhat.com>
- <20110919125333.GC21847@tiehlicka.suse.cz>
+	id S1751669Ab1ITIrI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 04:47:08 -0400
+Message-ID: <4E785309.2000807@imgtec.com>
+Date: Tue, 20 Sep 2011 09:47:05 +0100
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110919125333.GC21847@tiehlicka.suse.cz>
+To: David Herrmann <dh.herrmann@googlemail.com>
+CC: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] hidraw: protect hidraw_disconnect() better
+References: <4E7754DA.30108@imgtec.com> <CANq1E4QRkdd_nTORBKshBBX1tn8JxQ1U4OPaogBcrM7mOnuRhQ@mail.gmail.com>
+In-Reply-To: <CANq1E4QRkdd_nTORBKshBBX1tn8JxQ1U4OPaogBcrM7mOnuRhQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 20 Sep 2011 08:47:05.0567 (UTC) FILETIME=[DFBDCEF0:01CC7771]
+X-SEF-Processed: 7_3_0_01158__2011_09_20_09_47_06
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 19, 2011 at 02:53:33PM +0200, Michal Hocko wrote:
-> Hi,
+Hi
+
+On 09/20/2011 09:36 AM, David Herrmann wrote:
+> Hi James
 > 
-> On Mon 12-09-11 12:57:18, Johannes Weiner wrote:
-> > Memory control groups are currently bolted onto the side of
-> > traditional memory management in places where better integration would
-> > be preferrable.  To reclaim memory, for example, memory control groups
-> > maintain their own LRU list and reclaim strategy aside from the global
-> > per-zone LRU list reclaim.  But an extra list head for each existing
-> > page frame is expensive and maintaining it requires additional code.
-> > 
-> > This patchset disables the global per-zone LRU lists on memory cgroup
-> > configurations and converts all its users to operate on the per-memory
-> > cgroup lists instead.  As LRU pages are then exclusively on one list,
-> > this saves two list pointers for each page frame in the system:
-> > 
-> > page_cgroup array size with 4G physical memory
-> > 
-> >   vanilla: [    0.000000] allocated 31457280 bytes of page_cgroup
-> >   patched: [    0.000000] allocated 15728640 bytes of page_cgroup
-> > 
-> > At the same time, system performance for various workloads is
-> > unaffected:
-> > 
-> > 100G sparse file cat, 4G physical memory, 10 runs, to test for code
-> > bloat in the traditional LRU handling and kswapd & direct reclaim
-> > paths, without/with the memory controller configured in
-> > 
-> >   vanilla: 71.603(0.207) seconds
-> >   patched: 71.640(0.156) seconds
-> > 
-> >   vanilla: 79.558(0.288) seconds
-> >   patched: 77.233(0.147) seconds
-> > 
-> > 100G sparse file cat in 1G memory cgroup, 10 runs, to test for code
-> > bloat in the traditional memory cgroup LRU handling and reclaim path
-> > 
-> >   vanilla: 96.844(0.281) seconds
-> >   patched: 94.454(0.311) seconds
-> > 
-> > 4 unlimited memcgs running kbuild -j32 each, 4G physical memory, 500M
-> > swap on SSD, 10 runs, to test for regressions in kswapd & direct
-> > reclaim using per-memcg LRU lists with multiple memcgs and multiple
-> > allocators within each memcg
-> > 
-> >   vanilla: 717.722(1.440) seconds [ 69720.100(11600.835) majfaults ]
-> >   patched: 714.106(2.313) seconds [ 71109.300(14886.186) majfaults ]
-> > 
-> > 16 unlimited memcgs running kbuild, 1900M hierarchical limit, 500M
-> > swap on SSD, 10 runs, to test for regressions in hierarchical memcg
-> > setups
-> > 
-> >   vanilla: 2742.058(1.992) seconds [ 26479.600(1736.737) majfaults ]
-> >   patched: 2743.267(1.214) seconds [ 27240.700(1076.063) majfaults ]
+> On Mon, Sep 19, 2011 at 4:42 PM, James Hogan <james.hogan@imgtec.com> wrote:
+>> The following patch I think fixes a bug in hidraw_disconnect(). However I'm unsure whether it's safe to call device_destroy with the minors_lock held. can the device_destroy ever end up calling hidraw_release, resulting in recursive locking? I've never seen that happen, but I don't understand the inner workings on device_destroy.
+>>
+>> The bug can be revealed with SLAB debugging on (poisoning free'd memory), and:
+>> cat /dev/hw_random > /dev/hidraw0
+>> then unplug the device. the disconnect is called, the device_destroy seems to cause "cat"'s write syscall to return a timeout error, so it exits/closes, which frees the hidraw because hidraw->exists==0, then the disconnect function writes to hidraw_table[hidraw->minor] which blows up because hidraw->minor has been poisoned with 0x6b6b6b6b.
+>>
+>> This has been tested on 2.6.39 and appears to fix it, and I'll hopefully be able to test it on the latest kernel tonight.
+>>
+>> Cheers
+>> James
+>>
+>> The function hidraw_disconnect() only acquires the hidraw minors_lock
+>> when clearing the entry in hidraw_table. However the device_destroy()
+>> call can cause a userland read/write to return with an error. It may
+>> cause the program to release the file descripter before the disconnect
+>> is finished. hidraw_disconnect() has already set hidraw->exist to 0,
+>> which makes hidraw_release() kfree the hidraw structure, which
+>> hidraw_disconnect() continues to access and even tries to kfree again.
+>> Similarly if a hidraw_release() occurs after setting hidraw->exist to 0,
+>> the same thing can happen.
+>>
+>> This is fixed by expanding the mutex critical section to cover the whole
+>> function from setting hidraw->exist to 0 to freeing the hidraw
+>> structure, preventing a hidraw_release() from interfering.
+>>
+>> Signed-off-by: James Hogan <james.hogan@imgtec.com>
+>> ---
+>>  drivers/hid/hidraw.c |    4 ++--
+>>  1 files changed, 2 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/hid/hidraw.c b/drivers/hid/hidraw.c
+>> index c79578b..a8c2b7b 100644
+>> --- a/drivers/hid/hidraw.c
+>> +++ b/drivers/hid/hidraw.c
+>> @@ -510,13 +510,12 @@ void hidraw_disconnect(struct hid_device *hid)
+>>  {
+>>        struct hidraw *hidraw = hid->hidraw;
+>>
+>> +       mutex_lock(&minors_lock);
+>>        hidraw->exist = 0;
+>>
+>>        device_destroy(hidraw_class, MKDEV(hidraw_major, hidraw->minor));
 > 
-> I guess you want to have this in the first patch to have it for
-> reference once it gets to the tree, right? I have no objections but it
-> seems unrelated to the patch and so it might be confusing a bit. I
-> haven't seen other patches in the series so there is probably no better
-> place to put this.
+> This does not destroy any open file descriptor and we haven't
+> registered any kind of hook so hidraw_destroy() will not be called
+> here.
+> This seems safe to me.
+> We also do not check for hidraw->exist on *_open() callback so
+> including this in the critical section seems fine.
 
-Andrew usually hand-picks what's of long-term interest from the series
-description and puts it in the first patch.  I thought I'd save him
-the trouble.
+That's good then. Thanks for checking it.
 
-> > This patch:
-> > 
-> > There are currently two different implementations of iterating over a
-> > memory cgroup hierarchy tree.
-> > 
-> > Consolidate them into one worker function and base the convenience
-> > looping-macros on top of it.
-> > 
-> > Signed-off-by: Johannes Weiner <jweiner@redhat.com>
 > 
-> Looks mostly good. There is just one issue I spotted and I guess we
-> want some comments. After the issue is fixed:
-> Reviewed-by: Michal Hocko <mhocko@suse.cz>
-
-Thanks!
-
-> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > index b76011a..912c7c7 100644
-> > --- a/mm/memcontrol.c
-> > +++ b/mm/memcontrol.c
-> > @@ -781,83 +781,75 @@ struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm)
-> >  	return memcg;
-> >  }
-> >  
-> > -/* The caller has to guarantee "mem" exists before calling this */
+>> -       mutex_lock(&minors_lock);
+>>        hidraw_table[hidraw->minor] = NULL;
+>> -       mutex_unlock(&minors_lock);
+>>
+>>        if (hidraw->open) {
+>>                hid_hw_close(hid);
+>> @@ -524,6 +523,7 @@ void hidraw_disconnect(struct hid_device *hid)
+>>        } else {
+>>                kfree(hidraw);
+>>        }
+>> +       mutex_unlock(&minors_lock);
+>>  }
+>>  EXPORT_SYMBOL_GPL(hidraw_disconnect);
+>>
+>> --
+>> 1.7.2.3
 > 
-> Shouldn't we have a similar comment that we have to keep a reference to
-> root if non-NULL. A mention about remember parameter and what is it used
-> for (hierarchical reclaim) would be helpful as well.
+> Nice catch. I've tested it on linux-next tree and I can confirm the
+> bug. The fix seems ok to me.
 
-The only thing that dictates the lifetime of a memcg is its reference
-count, so having a reference count while operating on a memecg is not
-even a question for all existing memcg-internal callsites.
+Shall I resend without RFC? I'll add Cc: <stable@kernel.org> too if
+there aren't objections.
 
-But I did, in fact, add kernel-doc style documentation to
-mem_cgroup_iter() when it becomes a public interface in 5/11.  Can you
-take a look and tell me whether you are okay with that?
+Thanks
+James
 
-> > @@ -1719,21 +1670,21 @@ static int mem_cgroup_hierarchical_reclaim(struct mem_cgroup *root_memcg,
-> >  		} else
-> >  			ret = try_to_free_mem_cgroup_pages(victim, gfp_mask,
-> >  						noswap);
-> > -		css_put(&victim->css);
-> >  		/*
-> >  		 * At shrinking usage, we can't check we should stop here or
-> >  		 * reclaim more. It's depends on callers. last_scanned_child
-> >  		 * will work enough for keeping fairness under tree.
-> >  		 */
-> >  		if (shrink)
-> > -			return ret;
-> > +			break;
 > 
-> Hmm, we are returning total but it doesn't get set to ret for shrinking
-> case so we are alway returning 0. You want to move the line bellow up.
+> Regards
+> David
 
-Heh, none of the limit shrinkers actually mind the return value.  But
-you are right, of course, nice catch!
-
-Signed-off-by: Johannes Weiner <jweiner@redhat.com>
----
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 912c7c7..316f3ed 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1670,6 +1670,7 @@ static int mem_cgroup_hierarchical_reclaim(struct mem_cgroup *root_memcg,
- 		} else
- 			ret = try_to_free_mem_cgroup_pages(victim, gfp_mask,
- 						noswap);
-+		total += ret;
- 		/*
- 		 * At shrinking usage, we can't check we should stop here or
- 		 * reclaim more. It's depends on callers. last_scanned_child
-@@ -1677,7 +1678,6 @@ static int mem_cgroup_hierarchical_reclaim(struct mem_cgroup *root_memcg,
- 		 */
- 		if (shrink)
- 			break;
--		total += ret;
- 		if (check_soft) {
- 			if (!res_counter_soft_limit_excess(&root_memcg->res))
- 				break;
