@@ -1,40 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752834Ab1ITSlx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 14:41:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48694 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751386Ab1ITSlw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 14:41:52 -0400
-Message-ID: <4E78DE4C.3040703@redhat.com>
-Date: Tue, 20 Sep 2011 14:41:16 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.10
+	id S1752854Ab1ITSmP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 14:42:15 -0400
+Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:42301 "EHLO
+	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751348Ab1ITSmN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 14:42:13 -0400
+Date: Tue, 20 Sep 2011 13:42:08 -0500
+From: Shawn Bohrer <sbohrer@rgmadvisors.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: "Darrick J. Wong" <djwong@us.ibm.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: Stalls during writeback for mmaped I/O on XFS in 3.0
+Message-ID: <20110920184208.GB2119@BohrerMBP.rgmadvisors.com>
+References: <20110915144755.GB2235@BohrerMBP.rgmadvisors.com>
+ <20110915145556.GA19902@infradead.org>
+ <20110915154748.GC2235@BohrerMBP.rgmadvisors.com>
+ <20110916002557.GN11984@tux1.beaverton.ibm.com>
+ <20110916163232.GA2109@BohrerMBP.rgmadvisors.com>
+ <20110920163034.GB18914@infradead.org>
 MIME-Version: 1.0
-To: Johannes Weiner <jweiner@redhat.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Christoph Hellwig <hch@infradead.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Chris Mason <chris.mason@oracle.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, xfs@oss.sgi.com,
-        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 4/4] Btrfs: pass __GFP_WRITE for buffered write page allocations
-References: <1316526315-16801-1-git-send-email-jweiner@redhat.com> <1316526315-16801-5-git-send-email-jweiner@redhat.com>
-In-Reply-To: <1316526315-16801-5-git-send-email-jweiner@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110920163034.GB18914@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20/2011 09:45 AM, Johannes Weiner wrote:
-> Tell the page allocator that pages allocated for a buffered write are
-> expected to become dirty soon.
->
-> Signed-off-by: Johannes Weiner<jweiner@redhat.com>
+On Tue, Sep 20, 2011 at 12:30:34PM -0400, Christoph Hellwig wrote:
+> On Fri, Sep 16, 2011 at 11:32:32AM -0500, Shawn Bohrer wrote:
+> > So for the most part it sounds like this change is needed for DIF/DIX.
+> > Could we only enable the wait_on_page_writeback() if
+> > CONFIG_BLK_DEV_INTEGRITY is set?  Does it make sense to tie these
+> > together?
+> 
+> It will also allow for huge efficiency gains on software raid.  There
+> have been some Lustre patches for that.
+> 
+> > The other thread in this case is the [flush-8:0] daemon writing back
+> > the pages.  So in our case you could see the spikes every time it wakes
+> > up to write back dirty pages.  While we can control this to some
+> > extent with vm.dirty_writeback_centisecs and vm.dirty_expire_centisecs
+> > it essentially impossible to ensure the writeback doesn't coincide
+> > with us writing to the page again.
+> 
+> Can you explain how your use case looks in more details?  Right now
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
+In one case we have an app that receives multicast data from a socket
+and appends it to one of many memory mapped files.  Once it writes the
+data to the end of the file it updates the header to record the new
+size.  Since we update the header page frequently we are very likely
+to encounter a stall here as the header page gets flushed in the
+background.  We also have reader processes that check the file header
+to find the new data since the last time they checked.  A stall in
+updating the header means the readers do not get the latest data.
+
+It is also possible that as we append the data to the file a partially
+filled page at the end of the file could get flushed in the background
+causing a stall since we append in chunks smaller than 4K.  This is
+less likely though because we have tuned our
+vm.dirty_writeback_centisecs and vm.dirty_expire_centisecs so that we
+normally completely fill a page before the OS flushes it.
+
+> for example a mlock removes the page from the lru list and thus stops
+> VM writeback.  If such an interface would be useful for you we could
+> offer an fadvice call that stops writeback entirely, and requires you
+> to force it when you want it.
+
+For the case I described above I'm not sure this would help because
+we don't know the incoming rate of data so even if we force the sync
+it could still cause a stall.
+
+I do have a second application that is also suffering from these
+stalls and I believe we could avoid the stalls by using fadvise to
+disable writeback for a portion of the file and manually sync it
+ourselves.  So this could potentially solve one of my problems.
+
+Thanks,
+Shawn
+
+
+---------------------------------------------------------------
+This email, along with any attachments, is confidential. If you 
+believe you received this message in error, please contact the 
+sender immediately and delete all copies of the message.  
+Thank you.
+
