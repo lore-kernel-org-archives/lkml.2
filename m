@@ -1,101 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752537Ab1ITW3j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 18:29:39 -0400
-Received: from 184-106-247-128.static.cloud-ips.com ([184.106.247.128]:34427
-	"EHLO cloud01.chad-versace.us" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752110Ab1ITW3i (ORCPT
+	id S1752558Ab1ITWey (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 18:34:54 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:38089 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751762Ab1ITWex (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 18:29:38 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -1
-From: Ben Widawsky <ben@bwidawsk.net>
-To: intel-gfx@lists.freedesktop.org
-Cc: Ben Widawsky <ben@bwidawsk.net>, linux-kernel@vger.kernel.org,
-        Dave Airlie <airlied@redhat.com>, Keith Packard <keithp@keithp.com>
-Subject: [PATCH 1/2] drm: Add Panel Self Refresh DP addresses
-Date: Tue, 20 Sep 2011 15:29:47 -0700
-Message-Id: <1316557787-14935-1-git-send-email-ben@bwidawsk.net>
-X-Mailer: git-send-email 1.7.6.1
+	Tue, 20 Sep 2011 18:34:53 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Christoph Lameter <cl@gentwo.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [RFC][PATCH 0/5] Introduce checks for preemptable code for this_cpu_read/write()
+In-Reply-To: Your message of "Tue, 20 Sep 2011 11:08:56 CDT."
+             <alpine.DEB.2.00.1109201108080.8056@router.home>
+From: Valdis.Kletnieks@vt.edu
+References: <20110919212040.745370781@goodmis.org> <alpine.DEB.2.00.1109191644190.19059@router.home> <1316487977.29966.32.camel@gandalf.stny.rr.com> <27409.1316522696@turing-police.cc.vt.edu> <alpine.DEB.2.00.1109200955190.8056@router.home> <1316531987.29966.65.camel@gandalf.stny.rr.com>
+            <alpine.DEB.2.00.1109201108080.8056@router.home>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1316557979_2679P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Tue, 20 Sep 2011 18:32:59 -0400
+Message-ID: <26045.1316557979@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A02020B.4E79149C.00F5,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the addresses and definitions I care about for Panel Self Refresh, as
-documented in the eDP spec.
+--==_Exmh_1316557979_2679P
+Content-Type: text/plain; charset=us-ascii
 
-I'm sending these out before some other patches because this should be a fairly
-simple one to get upstream and not require too much fuss (where the others may
-have some fuss).
+On Tue, 20 Sep 2011 11:08:56 CDT, Christoph Lameter said:
 
-This file is a mess with white spacing. I tried to stay consistent with the
-surrounding code.
+> That is obviously a use case in which this_cpu_xx ops could not be used
+> since we must stay on the same cpu.
 
-Cc: linux-kernel@vger.kernel.org
-Cc: Dave Airlie <airlied@redhat.com>
-Cc: Keith Packard <keithp@keithp.com>
-Signed-off-by: Ben Widawsky <ben@bwidawsk.net>
----
- include/drm/drm_dp_helper.h |   32 ++++++++++++++++++++++++++++++++
- 1 files changed, 32 insertions(+), 0 deletions(-)
+Wow.  I don't think I've ever seen a single sentence scream quite so much
+"totally broken API" in as few words.
 
-diff --git a/include/drm/drm_dp_helper.h b/include/drm/drm_dp_helper.h
-index 91567bb..c29d493 100644
---- a/include/drm/drm_dp_helper.h
-+++ b/include/drm/drm_dp_helper.h
-@@ -74,6 +74,17 @@
- 
- #define DP_TRAINING_AUX_RD_INTERVAL         0x00e
- 
-+#define DP_PSR_SUPPORT                      0x070
-+# define DP_PSR_TRAIN_ON_EXIT               0
-+#define DP_PSR_CAPS                         0x071
-+# define DP_PSR_SETUP_TIME_330              0
-+# define DP_PSR_SETUP_TIME_275              1
-+# define DP_PSR_SETUP_TIME_220              2
-+# define DP_PSR_SETUP_TIME_165              3
-+# define DP_PSR_SETUP_TIME_110              4
-+# define DP_PSR_SETUP_TIME_55               5
-+# define DP_PSR_SETUP_TIME_0                6
-+
- /* link configuration */
- #define	DP_LINK_BW_SET		            0x100
- # define DP_LINK_BW_1_62		    0x06
-@@ -133,6 +144,12 @@
- #define DP_MAIN_LINK_CHANNEL_CODING_SET	    0x108
- # define DP_SET_ANSI_8B10B		    (1 << 0)
- 
-+#define DP_PSR_EN_CFG			    0x170
-+# define DP_PSR_ENABLE			    (1 << 0)
-+# define DP_PSR_MAIN_LIKE_ACTIVE	    (1 << 1)
-+# define DP_PSR_CRC_VERIFICATION	    (1 << 2)
-+# define DP_PSR_FRAME_CAPTURE		    (1 << 3)
-+
- #define DP_LANE0_1_STATUS		    0x202
- #define DP_LANE2_3_STATUS		    0x203
- # define DP_LANE_CR_DONE		    (1 << 0)
-@@ -169,6 +186,21 @@
- # define DP_SET_POWER_D0                    0x1
- # define DP_SET_POWER_D3                    0x2
- 
-+#define DP_PSR_ERROR_STATUS                 0x2006
-+# define DP_PSR_LINK_CRC_ERROR              (1 << 0)
-+# define DP_PSR_RFB_STORAGE_ERROR           (1 << 1)
-+
-+#define DP_PSR_ESI                          0x2007
-+# define DP_PSR_CAPS_CHANGE                 (1 << 0)
-+
-+#define DP_PSR_STATUS                       0x2008
-+# define DP_PSR_SINK_INACTIVE               (1 << 0)
-+# define DP_PSR_SINK_ACTIVE_SRC_SYNCED      (1 << 1)
-+# define DP_PSR_SINK_ACTIVE_RFB             (1 << 2)
-+# define DP_PSR_SINK_ACTIVE_SINK_SYNCED     (1 << 3)
-+# define DP_PSR_SINK_ACTIVE_RESYNC          (1 << 4)
-+# define DP_PSR_SINK_INTERNAL_ERROR         (1 << 7)
-+
- #define MODE_I2C_START	1
- #define MODE_I2C_WRITE	2
- #define MODE_I2C_READ	4
--- 
-1.7.6.1
+
+--==_Exmh_1316557979_2679P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFOeRSbcC3lWbTT17ARAisdAKDIeKiSGpHSxpQkhprNUk4B3JDIewCcDLU+
+O8CFsmIqBEhZSOP4V9Tr9fo=
+=ZWTI
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1316557979_2679P--
 
