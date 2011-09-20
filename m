@@ -1,81 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752742Ab1ITQU6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 12:20:58 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:37431 "EHLO relay.sw.ru"
+	id S1752722Ab1ITQVl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 12:21:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37205 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750772Ab1ITQU5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 12:20:57 -0400
-Message-ID: <4E78BD5B.8090507@parallels.com>
-Date: Tue, 20 Sep 2011 20:20:43 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Lightning/1.0b2 Thunderbird/3.1.13
-MIME-Version: 1.0
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-CC: "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "davem@davemloft.net" <davem@davemloft.net>
-Subject: Re: [PATCH v4 1/8] SUNRPC: introduce helpers for reference counted
- rpcbind clients
-References: <20110920101031.9861.18444.stgit@localhost6.localdomain6> <20110920101341.9861.51453.stgit@localhost6.localdomain6> <4E788F8C.20103@netapp.com> <2E1EB2CF9ED1CB4AA966F0EB76EAB4430B47FD10@SACMVEXC2-PRD.hq.netapp.com> <4E789679.1060601@parallels.com> <2E1EB2CF9ED1CB4AA966F0EB76EAB4430B47FD22@SACMVEXC2-PRD.hq.netapp.com> <4E78A4AF.1020303@parallels.com> <2E1EB2CF9ED1CB4AA966F0EB76EAB4430B47FD2B@SACMVEXC2-PRD.hq.netapp.com>
-In-Reply-To: <2E1EB2CF9ED1CB4AA966F0EB76EAB4430B47FD2B@SACMVEXC2-PRD.hq.netapp.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1752501Ab1ITQSy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 12:18:54 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Sep 20 09:17:35 2011
+Message-Id: <20110920161735.691912980@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Tue, 20 Sep 2011 09:16:10 -0700
+From: Greg KH <gregkh@suse.de>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        greg@kroah.com, Smelov Andrey <xor29a@bk.ru>,
+        stable <stable@kernel.org>
+Subject: [patch 3/8] Platform: samsung_laptop: samsung backlight for R528/R728
+In-Reply-To: <20110920161743.GA32737@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-20.09.2011 18:38, Myklebust, Trond пишет:
->> -----Original Message-----
->> From: Stanislav Kinsbursky [mailto:skinsbursky@parallels.com]
->> Sent: Tuesday, September 20, 2011 10:35 AM
->> To: Myklebust, Trond
->> Cc: Schumaker, Bryan; linux-nfs@vger.kernel.org; Pavel Emelianov;
->> neilb@suse.de; netdev@vger.kernel.org; linux-kernel@vger.kernel.org;
->> bfields@fieldses.org; davem@davemloft.net
->> Subject: Re: [PATCH v4 1/8] SUNRPC: introduce helpers for reference
->> counted rpcbind clients
->>
->> 20.09.2011 18:14, Myklebust, Trond пишет:
->>
->>>>>
->>>>> Doesn't it  need to be protected by rpcb_clnt_lock too?
->>>>>
->>>>
->>>> Nope from my pow. It's protected by rpcb_create_local_mutex. I.e. no
->>>> one will change rpcb_users since it's zero. If it's non zero - we
->>>> willn't get to rpcb_set_local().
->>>
->>> OK, so you are saying that the rpcb_users++ below could be replaced by
->> rpcb_users=1?
->>>
->>
->> Yes, you right.
->>
->>> In that case, don't you need a smp_wmb() between the setting of
->> rpcb_local_clnt/4 and the setting of rpcb_users? Otherwise, how do you
->> guarantee that rpcb_users != 0 implies rpbc_local_clnt/4 != NULL?
->>>
->>
->> We check rpcb_users under spinlock. Gain spinlock forces memory barrier,
->> doesn't it?
->
-> Yes, and so you don't need an smp_rmb() on the reader side. However, you still need to ensure that the processor which _sets_ the rpcb_users and rpcb_local_clnt/4 actually writes them in the correct order.
->
+From: Smelov Andrey <xor29a@bk.ru>
 
-Trond, I've thought again and realized, that even if these writes (rpcb_users 
-and rpbc_local_clnt/4) will be done in reversed order, then no barrier required 
-here.
-Because if we have another process trying to create those clients (it can't use 
-them since it's not started yet) on other CPU, than it's waiting on creation 
-mutex. When it will gain the mutex, we will have required memory barrier for us.
+patch works for me, but I need to add "acpi_backlight=vendor" to kernel
+params
 
-Or I missed something in your explanation?
+Signed-off-by: Smelov Andrey <xor29a@bk.ru>
+Cc: stable <stable@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
--- 
-Best regards,
-Stanislav Kinsbursky
+
+---
+ drivers/platform/x86/samsung-laptop.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+--- a/drivers/platform/x86/samsung-laptop.c
++++ b/drivers/platform/x86/samsung-laptop.c
+@@ -704,6 +704,15 @@ static struct dmi_system_id __initdata s
+ 		},
+ 		.callback = dmi_check_cb,
+ 	},
++	{
++		.ident = "R528/R728",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "R528/R728"),
++			DMI_MATCH(DMI_BOARD_NAME, "R528/R728"),
++		},
++		.callback = dmi_check_cb,
++	},
+ 	{ },
+ };
+ MODULE_DEVICE_TABLE(dmi, samsung_dmi_table);
+
+
