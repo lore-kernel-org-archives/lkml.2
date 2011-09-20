@@ -1,82 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756922Ab1ITAMO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 20:12:14 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:34287 "EHLO
-	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751478Ab1ITAMN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 20:12:13 -0400
-X-SpamScore: -4
-X-BigFish: VPS-4(zz4015Lzz1202hzzz2fh668h839h)
-X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPVD:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
-Message-ID: <4E77DADF.6020608@am.sony.com>
-Date: Mon, 19 Sep 2011 17:14:23 -0700
-From: Tim Bird <tim.bird@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
-MIME-Version: 1.0
-To: "kgdb-bugreport@lists.sourceforge.net" 
-	<kgdb-bugreport@lists.sourceforge.net>
-CC: linux kernel <linux-kernel@vger.kernel.org>
-Subject: kdb - can't set breakpoint by default on x86
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1752028Ab1ITAT6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 20:19:58 -0400
+Received: from ozlabs.org ([203.10.76.45]:44002 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751194Ab1ITAT5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 20:19:57 -0400
+Date: Tue, 20 Sep 2011 10:19:38 +1000
+From: Anton Blanchard <anton@samba.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@elte.hu, benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/5] ppc64 scheduler fixes
+Message-ID: <20110920101938.121098ed@kryten>
+In-Reply-To: <1311597702.24752.1.camel@twins>
+References: <20110725023311.175792493@samba.org>
+	<1311597702.24752.1.camel@twins>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I recently tried using KDB on a 3.0.1 kernel, on an x86 target, using
-a fairly-close-to-default kernel configuration.
 
-I found that I could not set a breakpoint.
-It sets inside KDB, but then fails to apply the breakpoint when
-resuming to user space:
+Hi Peter,
 
+> On Mon, 2011-07-25 at 12:33 +1000, Anton Blanchard wrote:
+> > Here are a set of ppc64 scheduler fixes that help with some
+> > multi node performance issues.
+> 
+> They look fine to me. I'll probably ping you when I'll rip out all
+> that SD_NODES_PER_DOMAIN crap for good, but until then I'm fine with
+> you fiddling it for ppc64.
+> 
+> Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
---------------------------------
-/proc # echo g >sysrq-trigger
-[2689816.806249] SysRq : DEBUG
+Are you OK if Ben takes this, or would you prefer to send it via the
+scheduler tree?
 
-Entering kdb (current=0xc7661d40, pid 511) on processor 0 due to Keyboard Entry
+Anton
+--
 
-[0]kdb> bp sys_sync
-Instruction(i) BP #0 at 0xc111ce70 (sys_sync)
-    is enabled  addr at 00000000c111ce70, hardtype=0 installed=0
+[2/5] sched: Allow SD_NODES_PER_DOMAIN to be overridden
 
-[0]kdb> g
-_kdb_bp_install: failed to set breakpoint at 0xc111ce70
-/proc # sync
-/proc #
---------------------------------
+We want to override the default value of SD_NODES_PER_DOMAIN on ppc64,
+so move it into linux/topology.h.
 
-I discovered that this was due to the text segment being marked
-read-only, by mark_rodata_ro() in arch/x86/mm/init_32.c
+Signed-off-by: Anton Blanchard <anton@samba.org>
 
-This is controlled by CONFIG_DEBUG_RODATA.  With CONFIG_DEBUG_RODATA=y,
-I get the following message on startup:
+---
 
-Write protecting the kernel read-only data: 6245
-
-Also, breakpoints don't work.
-
-Turning this off solves the problem, but seems counter-intuitive.
-CONFIG_DEBUG_RODATA depends on CONFIG_DEBUG_KERNEL.
-
-Should I:
-1) turn off CONFIG_DEBUG_RODATA automatically when CONFIG_KGDB_KDB is set?
-or
-2) make CONFIG_DEBUG_RODATA depend on !KGDB_KDB?
-or
-3) something else more subtle?
-
-Thanks,
- -- Tim
-
-
-=============================
-Tim Bird
-Architecture Group Chair, CE Workgroup of the Linux Foundation
-Senior Staff Engineer, Sony Network Entertainment
-=============================
-
+Index: linux-2.6-work/include/linux/topology.h
+===================================================================
+--- linux-2.6-work.orig/include/linux/topology.h	2011-07-25 11:20:02.588717796 +1000
++++ linux-2.6-work/include/linux/topology.h	2011-07-25 11:26:50.616468376 +1000
+@@ -201,6 +201,10 @@ int arch_update_cpu_topology(void);
+ 	.balance_interval	= 64,					\
+ }
+ 
++#ifndef SD_NODES_PER_DOMAIN
++#define SD_NODES_PER_DOMAIN 16
++#endif
++
+ #ifdef CONFIG_SCHED_BOOK
+ #ifndef SD_BOOK_INIT
+ #error Please define an appropriate SD_BOOK_INIT in include/asm/topology.h!!!
+Index: linux-2.6-work/kernel/sched.c
+===================================================================
+--- linux-2.6-work.orig/kernel/sched.c	2011-07-25 11:20:09.538850173 +1000
++++ linux-2.6-work/kernel/sched.c	2011-07-25 11:26:50.626468565 +1000
+@@ -6938,8 +6938,6 @@ static int __init isolated_cpu_setup(cha
+ 
+ __setup("isolcpus=", isolated_cpu_setup);
+ 
+-#define SD_NODES_PER_DOMAIN 16
+-
+ #ifdef CONFIG_NUMA
+ 
+ /**
