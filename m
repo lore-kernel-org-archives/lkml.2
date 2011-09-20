@@ -1,95 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756881Ab1ITBlG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 21:41:06 -0400
-Received: from gate.crashing.org ([63.228.1.57]:56978 "EHLO gate.crashing.org"
+	id S1756927Ab1ITBlW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 21:41:22 -0400
+Received: from mga02.intel.com ([134.134.136.20]:52041 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756774Ab1ITBjV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 21:39:21 -0400
-Subject: Re: [PATCH 0/5] ppc64 scheduler fixes
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Anton Blanchard <anton@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, mingo@elte.hu,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20110920101938.121098ed@kryten>
-References: <20110725023311.175792493@samba.org>
-	 <1311597702.24752.1.camel@twins>  <20110920101938.121098ed@kryten>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 20 Sep 2011 11:38:48 +1000
-Message-ID: <1316482728.7975.23.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1752543Ab1ITBjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 21:39:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="50392839"
+From: Huang Ying <ying.huang@intel.com>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
+        ying.huang@intel.com, linux-acpi@vger.kernel.org,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [PATCH 1/8] ACPI, APEI, Print resource errors in conventional format
+Date: Tue, 20 Sep 2011 09:38:54 +0800
+Message-Id: <1316482741-21799-2-git-send-email-ying.huang@intel.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1316482741-21799-1-git-send-email-ying.huang@intel.com>
+References: <1316482741-21799-1-git-send-email-ying.huang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-09-20 at 10:19 +1000, Anton Blanchard wrote:
-> Hi Peter,
-> 
-> > On Mon, 2011-07-25 at 12:33 +1000, Anton Blanchard wrote:
-> > > Here are a set of ppc64 scheduler fixes that help with some
-> > > multi node performance issues.
-> > 
-> > They look fine to me. I'll probably ping you when I'll rip out all
-> > that SD_NODES_PER_DOMAIN crap for good, but until then I'm fine with
-> > you fiddling it for ppc64.
-> > 
-> > Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> 
-> Are you OK if Ben takes this, or would you prefer to send it via the
-> scheduler tree?
+From: Bjorn Helgaas <bhelgaas@google.com>
 
-I've already put it in my next branch that I'll stick on github later
-today hopefully :-)
+Use the normal %pR-like format for MMIO and I/O port ranges.
 
-Cheers,
-Ben.
- 
-> Anton
-> --
-> 
-> [2/5] sched: Allow SD_NODES_PER_DOMAIN to be overridden
-> 
-> We want to override the default value of SD_NODES_PER_DOMAIN on ppc64,
-> so move it into linux/topology.h.
-> 
-> Signed-off-by: Anton Blanchard <anton@samba.org>
-> 
-> ---
-> 
-> Index: linux-2.6-work/include/linux/topology.h
-> ===================================================================
-> --- linux-2.6-work.orig/include/linux/topology.h	2011-07-25 11:20:02.588717796 +1000
-> +++ linux-2.6-work/include/linux/topology.h	2011-07-25 11:26:50.616468376 +1000
-> @@ -201,6 +201,10 @@ int arch_update_cpu_topology(void);
->  	.balance_interval	= 64,					\
->  }
->  
-> +#ifndef SD_NODES_PER_DOMAIN
-> +#define SD_NODES_PER_DOMAIN 16
-> +#endif
-> +
->  #ifdef CONFIG_SCHED_BOOK
->  #ifndef SD_BOOK_INIT
->  #error Please define an appropriate SD_BOOK_INIT in include/asm/topology.h!!!
-> Index: linux-2.6-work/kernel/sched.c
-> ===================================================================
-> --- linux-2.6-work.orig/kernel/sched.c	2011-07-25 11:20:09.538850173 +1000
-> +++ linux-2.6-work/kernel/sched.c	2011-07-25 11:26:50.626468565 +1000
-> @@ -6938,8 +6938,6 @@ static int __init isolated_cpu_setup(cha
->  
->  __setup("isolcpus=", isolated_cpu_setup);
->  
-> -#define SD_NODES_PER_DOMAIN 16
-> -
->  #ifdef CONFIG_NUMA
->  
->  /**
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+---
+ drivers/acpi/apei/apei-base.c |    8 ++++----
+ drivers/acpi/apei/einj.c      |   11 ++++++-----
+ 2 files changed, 10 insertions(+), 9 deletions(-)
 
-
+--- a/drivers/acpi/apei/apei-base.c
++++ b/drivers/acpi/apei/apei-base.c
+@@ -460,9 +460,9 @@ int apei_resources_request(struct apei_r
+ 				       desc);
+ 		if (!r) {
+ 			pr_err(APEI_PFX
+-		"Can not request iomem region <%016llx-%016llx> for GARs.\n",
++		"Can not request [mem %#010llx-%#010llx] for %s registers\n",
+ 			       (unsigned long long)res->start,
+-			       (unsigned long long)res->end);
++			       (unsigned long long)res->end - 1, desc);
+ 			res_bak = res;
+ 			goto err_unmap_iomem;
+ 		}
+@@ -472,9 +472,9 @@ int apei_resources_request(struct apei_r
+ 		r = request_region(res->start, res->end - res->start, desc);
+ 		if (!r) {
+ 			pr_err(APEI_PFX
+-		"Can not request ioport region <%016llx-%016llx> for GARs.\n",
++		"Can not request [io  %#06llx-%#06llx] for %s registers\n",
+ 			       (unsigned long long)res->start,
+-			       (unsigned long long)res->end);
++			       (unsigned long long)res->end - 1, desc);
+ 			res_bak = res;
+ 			goto err_unmap_ioport;
+ 		}
+--- a/drivers/acpi/apei/einj.c
++++ b/drivers/acpi/apei/einj.c
+@@ -209,9 +209,10 @@ static int __einj_error_trigger(u64 trig
+ 			       "APEI EINJ Trigger Table");
+ 	if (!r) {
+ 		pr_err(EINJ_PFX
+-	"Can not request iomem region <%016llx-%016llx> for Trigger table.\n",
++	"Can not request [mem %#010llx-%#010llx] for Trigger table\n",
+ 		       (unsigned long long)trigger_paddr,
+-		       (unsigned long long)trigger_paddr+sizeof(*trigger_tab));
++		       (unsigned long long)trigger_paddr +
++			    sizeof(*trigger_tab) - 1);
+ 		goto out;
+ 	}
+ 	trigger_tab = ioremap_cache(trigger_paddr, sizeof(*trigger_tab));
+@@ -232,9 +233,9 @@ static int __einj_error_trigger(u64 trig
+ 			       "APEI EINJ Trigger Table");
+ 	if (!r) {
+ 		pr_err(EINJ_PFX
+-"Can not request iomem region <%016llx-%016llx> for Trigger Table Entry.\n",
+-		       (unsigned long long)trigger_paddr+sizeof(*trigger_tab),
+-		       (unsigned long long)trigger_paddr + table_size);
++"Can not request [mem %#010llx-%#010llx] for Trigger Table Entry\n",
++		       (unsigned long long)trigger_paddr + sizeof(*trigger_tab),
++		       (unsigned long long)trigger_paddr + table_size - 1);
+ 		goto out_rel_header;
+ 	}
+ 	iounmap(trigger_tab);
