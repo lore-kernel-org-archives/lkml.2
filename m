@@ -1,74 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752630Ab1ITQ2t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 12:28:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10826 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751517Ab1ITQ2s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 12:28:48 -0400
-Date: Tue, 20 Sep 2011 18:24:55 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, richard@nod.at,
-        Andrew Morton <akpm@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>,
-        serge@hallyn.com
-Subject: Re: [PATCH] user namespace: make signal.c respect user namespaces
-Message-ID: <20110920162455.GB18891@redhat.com>
-References: <20110919214531.GA18085@sergelap> <20110920122202.GA26504@redhat.com> <20110920153944.GA11531@peqn>
+	id S1751410Ab1ITQam (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 12:30:42 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:38889
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750834Ab1ITQak (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 12:30:40 -0400
+Date: Tue, 20 Sep 2011 12:30:34 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Shawn Bohrer <sbohrer@rgmadvisors.com>
+Cc: "Darrick J. Wong" <djwong@us.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: Stalls during writeback for mmaped I/O on XFS in 3.0
+Message-ID: <20110920163034.GB18914@infradead.org>
+References: <20110915144755.GB2235@BohrerMBP.rgmadvisors.com>
+ <20110915145556.GA19902@infradead.org>
+ <20110915154748.GC2235@BohrerMBP.rgmadvisors.com>
+ <20110916002557.GN11984@tux1.beaverton.ibm.com>
+ <20110916163232.GA2109@BohrerMBP.rgmadvisors.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110920153944.GA11531@peqn>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110916163232.GA2109@BohrerMBP.rgmadvisors.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20, Serge Hallyn wrote:
->
-> Quoting Oleg Nesterov (oleg@redhat.com):
-> >
-> > As for __send_signal() in particular, I guess we could do
-> >
-> > 		q->info.si_uid = from_ancestor_ns ? 0 : current_uid();
->
-> But wait - can't __send_signal end up being triggered through fcntl
-> F_SETSIG+F_SETOWN to another but none-ancestor namespace?
+On Fri, Sep 16, 2011 at 11:32:32AM -0500, Shawn Bohrer wrote:
+> So for the most part it sounds like this change is needed for DIF/DIX.
+> Could we only enable the wait_on_page_writeback() if
+> CONFIG_BLK_DEV_INTEGRITY is set?  Does it make sense to tie these
+> together?
 
-I didn't really check, but afaics send_sigio_to_task/etc never use
-SEND_SIG_NOINFO. And they shouldn't, there is no the sending process.
+It will also allow for huge efficiency gains on software raid.  There
+have been some Lustre patches for that.
 
-> do actually need to call the full user_ns_map_uid() there.  However,
-> the uid sent in ptrace_signal() can (if i'm thinking right) be set
-> using
->
-> 	info->si_uid = (current_user_ns() == parent_user_ns()) ?
-> 			0 : current_uid();
->
-> Not much of a win performance-wise, but perhaps better by making it
-> clear that those are the only possibilities (and overflowuid is not
-> possible).
+> The other thread in this case is the [flush-8:0] daemon writing back
+> the pages.  So in our case you could see the spikes every time it wakes
+> up to write back dirty pages.  While we can control this to some
+> extent with vm.dirty_writeback_centisecs and vm.dirty_expire_centisecs
+> it essentially impossible to ensure the writeback doesn't coincide
+> with us writing to the page again.
 
-I think you are right right, except s/==/!=/. This is like send_signal()
-which can only send the signal down or to the same namespace.
-
-I guess ptrace_signal() can even do
-
-	info->si_pid = task_pid_vnr(current->parent);
-
-	if (info->si_pid)	// same namespace
-		info->si_uid = current_uid();
-	else			// can't see the tracer, we are from the sub-namespace
-		info->si_uid = 0;
-
-Whatever you like more.
-
-And just in case let me repeat, I won't argue if you use
-user_ns_map_uid/helper for consistency. Without CONFIG_USER_NS it is
-even better performance-wise (even if we add a helper I guess).
-
-So this all is up to you.
-
-Oleg.
-
+Can you explain how your use case looks in more details?  Right now
+for example a mlock removes the page from the lru list and thus stops
+VM writeback.  If such an interface would be useful for you we could
+offer an fadvice call that stops writeback entirely, and requires you
+to force it when you want it.
