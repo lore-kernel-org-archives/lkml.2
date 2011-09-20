@@ -1,61 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752696Ab1ITSVq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 14:21:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750814Ab1ITSVo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 14:21:44 -0400
-Date: Tue, 20 Sep 2011 20:17:51 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Serge E. Hallyn" <serge.hallyn@canonical.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, richard@nod.at,
-        Andrew Morton <akpm@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>,
-        serge@hallyn.com
-Subject: Re: [PATCH] user namespace: make signal.c respect user namespaces
-Message-ID: <20110920181751.GC22317@redhat.com>
-References: <20110919214531.GA18085@sergelap> <20110920122202.GA26504@redhat.com> <20110920153944.GA11531@peqn> <20110920162455.GB18891@redhat.com> <20110920164524.GA8214@sergelap>
+	id S1752655Ab1ITS1G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 14:27:06 -0400
+Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:46705
+	"EHLO DB3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751540Ab1ITS1D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 14:27:03 -0400
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-FB-SS: 13,
+From: Timur Tabi <timur@freescale.com>
+To: <greg@kroah.com>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@ozlabs.org>, <linux-console@vger.kernel.org>
+Subject: [PATCH] drivers/tty: don't use the byte channel handle as a parameter in ehv_bytechan.c
+Date: Tue, 20 Sep 2011 13:26:57 -0500
+Message-ID: <1316543217-13769-1-git-send-email-timur@freescale.com>
+X-Mailer: git-send-email 1.7.3.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110920164524.GA8214@sergelap>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20, Serge E. Hallyn wrote:
->
-> Quoting Oleg Nesterov (oleg@redhat.com):
-> >
-> > I didn't really check, but afaics send_sigio_to_task/etc never use
-> > SEND_SIG_NOINFO. And they shouldn't, there is no the sending process.
->
-> (I'm sure you're right -
+The ePAPR hypervisor byte channel console driver only supports one byte
+channel as a console, and the byte channel handle is stored in a global
+variable.  It doesn't make any sense to pass that handle as a parameter
+to the console functions, since these functions already have access to the
+global variable.
 
-I am not that sure, please recheck ;)
+This change also fixes this compilation warning on a 64-bit kernel:
 
-> > I guess ptrace_signal() can even do
-> >
-> > 	info->si_pid = task_pid_vnr(current->parent);
-> >
-> > 	if (info->si_pid)	// same namespace
-> > 		info->si_uid = current_uid();
-> > 	else			// can't see the tracer, we are from the sub-namespace
-> > 		info->si_uid = 0;
-> >
-> > Whatever you like more.
->
-> Except you don't have to split pid and user namespaces at the same
-> time.
+  CC      drivers/tty/ehv_bytechan.o
+drivers/tty/ehv_bytechan.c: In function 'ehv_bc_console_write':
+drivers/tty/ehv_bytechan.c:289:24: warning: cast from pointer to integer of different size
+drivers/tty/ehv_bytechan.c: In function 'ehv_bc_console_init':
+drivers/tty/ehv_bytechan.c:355:24: warning: cast to pointer from integer of different size
 
-Argh, you mean CLONE_NEWUSER? I fotgot about it. And probably
-there is something else which I simply do not know?
+This warning is because the driver is converting the integer byte channel
+handle to/from the void* 'data' field of struct console.  Rather than fix
+the warning, we just eliminate the code altogether.
 
-I got lost. This means send_signal() can't rely on from_parent_ns.
-I have no idea how can we fix sys_kill() without a lot of ugly changes
-then.
+Signed-off-by: Timur Tabi <timur@freescale.com>
+---
+ drivers/tty/ehv_bytechan.c |    7 ++-----
+ 1 files changed, 2 insertions(+), 5 deletions(-)
 
-Oleg.
+diff --git a/drivers/tty/ehv_bytechan.c b/drivers/tty/ehv_bytechan.c
+index e67f70b..b24e6f7 100644
+--- a/drivers/tty/ehv_bytechan.c
++++ b/drivers/tty/ehv_bytechan.c
+@@ -286,7 +286,6 @@ static int ehv_bc_console_byte_channel_send(unsigned int handle, const char *s,
+ static void ehv_bc_console_write(struct console *co, const char *s,
+ 				 unsigned int count)
+ {
+-	unsigned int handle = (unsigned int)co->data;
+ 	char s2[EV_BYTE_CHANNEL_MAX_BYTES];
+ 	unsigned int i, j = 0;
+ 	char c;
+@@ -299,14 +298,14 @@ static void ehv_bc_console_write(struct console *co, const char *s,
+ 
+ 		s2[j++] = c;
+ 		if (j >= (EV_BYTE_CHANNEL_MAX_BYTES - 1)) {
+-			if (ehv_bc_console_byte_channel_send(handle, s2, j))
++			if (ehv_bc_console_byte_channel_send(stdout_bc, s2, j))
+ 				return;
+ 			j = 0;
+ 		}
+ 	}
+ 
+ 	if (j)
+-		ehv_bc_console_byte_channel_send(handle, s2, j);
++		ehv_bc_console_byte_channel_send(stdout_bc, s2, j);
+ }
+ 
+ /*
+@@ -352,8 +351,6 @@ static int __init ehv_bc_console_init(void)
+ 			   CONFIG_PPC_EARLY_DEBUG_EHV_BC_HANDLE);
+ #endif
+ 
+-	ehv_bc_console.data = (void *)stdout_bc;
+-
+ 	/* add_preferred_console() must be called before register_console(),
+ 	   otherwise it won't work.  However, we don't want to enumerate all the
+ 	   byte channels here, either, since we only care about one. */
+-- 
+1.7.3.4
+
 
