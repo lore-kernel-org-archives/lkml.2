@@ -1,65 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093Ab1ITIMP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 04:12:15 -0400
-Received: from mga11.intel.com ([192.55.52.93]:12648 "EHLO mga11.intel.com"
+	id S1754039Ab1ITIPR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 04:15:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48253 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753687Ab1ITIMN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 04:12:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,410,1312182000"; 
-   d="scan'208";a="53489504"
-Subject: Re: [PATCH 16/18] dmaengine/ambhe rest oa-pl08x: Add support for
- sg len greater than one for slave transfers
-From: Vinod Koul <vinod.koul@intel.com>
-To: Viresh Kumar <viresh.kumar@st.com>
-Cc: Pratyush ANAND <pratyush.anand@st.com>,
-        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Bhupesh SHARMA <bhupesh.sharma@st.com>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vipin KUMAR <vipin.kumar@st.com>, Shiraz HASHIM <shiraz.hashim@st.com>,
-        Amit VIRDI <Amit.VIRDI@st.com>,
-        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
-        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
-        Deepak SIKRI <deepak.sikri@st.com>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-In-Reply-To: <4E783243.5000404@st.com>
-References: <cover.1311936523.git.viresh.kumar@st.com>
-	 <5d691ab0c4f447c9f324213d8d740ac61d1739a1.1311936524.git.viresh.kumar@st.com>
-	 <20110814083618.GE4986@n2100.arm.linux.org.uk> <4E4CCF7B.8060704@st.com>
-	 <20110821083306.GA12028@n2100.arm.linux.org.uk> <4E532B19.6000103@st.com>
-	 <4E5715CE.2070806@st.com>
-	 <CACRpkdapSvW=eMSoXTOOA2GyhfBLzq2OuyQcDctPxsnVzvr-4g@mail.gmail.com>
-	 <4E575E75.40603@st.com> <4E5F594D.10203@st.com>
-	 <438BB0150E931F4B9CE701519A4463010871804A4C@bgsmsx502.gar.corp.intel.com>
-	 <CAKnu2Mp3Ui7jZS2kjJykjuzcTzJhiAkoaVxZ2+tQX0banGh6mw@mail.gmail.com>
-	 <4E683B74.5000701@st.com>
-	 <CACRpkdaqTYK5TJL2u+aeOfnzhdtdjxZhyu661eGKrNBOXTUTeA@mail.gmail.com>
-	 <1315518873.6638.7.camel@vkoul-mobl4>
-	 <1316499574.31295.3.camel@vkoul-udesk3>  <4E783243.5000404@st.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 20 Sep 2011 13:38:05 +0530
-Message-ID: <1316506085.31295.4.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1751444Ab1ITIPP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 04:15:15 -0400
+Date: Tue, 20 Sep 2011 10:15:11 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <jweiner@redhat.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
+        Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 04/11] mm: memcg: per-priority per-zone hierarchy scan
+ generations
+Message-ID: <20110920081511.GA27675@tiehlicka.suse.cz>
+References: <1315825048-3437-1-git-send-email-jweiner@redhat.com>
+ <1315825048-3437-5-git-send-email-jweiner@redhat.com>
+ <20110913192759.ff0da031.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110913110301.GB18886@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110913110301.GB18886@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-09-20 at 11:57 +0530, Viresh Kumar wrote:
-> On 9/20/2011 11:49 AM, Vinod Koul wrote:
-> > Applied the remaining two patches for the series to my next
+On Tue 13-09-11 13:03:01, Johannes Weiner wrote:
+> On Tue, Sep 13, 2011 at 07:27:59PM +0900, KAMEZAWA Hiroyuki wrote:
+> > On Mon, 12 Sep 2011 12:57:21 +0200
+> > Johannes Weiner <jweiner@redhat.com> wrote:
+> > 
+> > > Memory cgroup limit reclaim currently picks one memory cgroup out of
+> > > the target hierarchy, remembers it as the last scanned child, and
+> > > reclaims all zones in it with decreasing priority levels.
+> > > 
+> > > The new hierarchy reclaim code will pick memory cgroups from the same
+> > > hierarchy concurrently from different zones and priority levels, it
+> > > becomes necessary that hierarchy roots not only remember the last
+> > > scanned child, but do so for each zone and priority level.
+> > > 
+> > > Furthermore, detecting full hierarchy round-trips reliably will become
+> > > crucial, so instead of counting on one iterator site seeing a certain
+> > > memory cgroup twice, use a generation counter that is increased every
+> > > time the child with the highest ID has been visited.
+> > > 
+> > > Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+> > 
+> > I cannot image how this works. could you illustrate more with easy example ?
 > 
-> Probably there were three patches left, 18/20, 19/20, 20/20 in V3 of my patchset.
-Looks like I had applied patch 20 earlier...
+> Previously, we did
+> 
+> 	mem = mem_cgroup_iter(root)
+> 	  for each priority level:
+> 	    for each zone in zonelist:
+> 
+> and this would reclaim memcg-1-zone-1, memcg-1-zone-2, memcg-1-zone-3
+> etc.
+> 
+> The new code does
+> 
+> 	for each priority level
+> 	  for each zone in zonelist
+>             mem = mem_cgroup_iter(root)
+> 
+> but with a single last_scanned_child per memcg, this would scan
+> memcg-1-zone-1, memcg-2-zone-2, memcg-3-zone-3 etc, which does not
+> make much sense.
+> 
+> Now imagine two reclaimers.  With the old code, the first reclaimer
+> would pick memcg-1 and scan all its zones, the second reclaimer would
+> pick memcg-2 and reclaim all its zones.  Without this patch, the first
+> reclaimer would pick memcg-1 and scan zone-1, the second reclaimer
+> would pick memcg-2 and scan zone-1, then the first reclaimer would
+> pick memcg-3 and scan zone-2.  If the reclaimers are concurrently
+> scanning at different priority levels, things are even worse because
+> one reclaimer may put much more force on the memcgs it gets from
+> mem_cgroup_iter() than the other reclaimer.  They must not share the
+> same iterator.
+> 
+> The generations are needed because the old algorithm did not rely too
+> much on detecting full round-trips.  After every reclaim cycle, it
+> checked the limit and broke out of the loop if enough was reclaimed,
+> no matter how many children were reclaimed from.  The new algorithm is
+> used for global reclaim, where the only exit condition of the
+> hierarchy reclaim is the full roundtrip, because equal pressure needs
+> to be applied to all zones.
 
+Could you fold this into the patch description, please?
 
 -- 
-~Vinod
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
