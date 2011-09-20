@@ -1,108 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754979Ab1ITI6t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 04:58:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55095 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754590Ab1ITI6s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 04:58:48 -0400
-Date: Tue, 20 Sep 2011 10:58:11 +0200
-From: Johannes Weiner <jweiner@redhat.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
-        Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 03/11] mm: vmscan: distinguish between memcg triggering
- reclaim and memcg being scanned
-Message-ID: <20110920085811.GC11489@redhat.com>
-References: <1315825048-3437-1-git-send-email-jweiner@redhat.com>
- <1315825048-3437-4-git-send-email-jweiner@redhat.com>
- <20110919142955.GG21847@tiehlicka.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110919142955.GG21847@tiehlicka.suse.cz>
+	id S1755026Ab1ITJEP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 05:04:15 -0400
+Received: from mtagate7.uk.ibm.com ([194.196.100.167]:56640 "EHLO
+	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754663Ab1ITJEN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 05:04:13 -0400
+Subject: Re: [patch 1/2] kdump: Initialize vmcoreinfo note at startup
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Reply-To: holzheu@linux.vnet.ibm.com
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: ebiederm@xmission.com, mahesh@linux.vnet.ibm.com, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
+In-Reply-To: <20110919183656.GC3373@redhat.com>
+References: <20110909102659.320220628@linux.vnet.ibm.com>
+	 <20110909102732.497569031@linux.vnet.ibm.com>
+	 <20110915184637.GF32658@redhat.com> <1316161277.3507.8.camel@br98xy6r>
+	 <20110919183656.GC3373@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: IBM
+Date: Tue, 20 Sep 2011 11:04:10 +0200
+Message-ID: <1316509450.2793.32.camel@br98xy6r>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 19, 2011 at 04:29:55PM +0200, Michal Hocko wrote:
-> On Mon 12-09-11 12:57:20, Johannes Weiner wrote:
-> > Memory cgroup hierarchies are currently handled completely outside of
-> > the traditional reclaim code, which is invoked with a single memory
-> > cgroup as an argument for the whole call stack.
+Hello Vivek,
+
+On Mon, 2011-09-19 at 14:36 -0400, Vivek Goyal wrote:
+> On Fri, Sep 16, 2011 at 10:21:17AM +0200, Michael Holzheu wrote:
+> > > Curious that how these two dump schemes make use vmcoreinfo data?
 > > 
-> > Subsequent patches will switch this code to do hierarchical reclaim,
-> > so there needs to be a distinction between a) the memory cgroup that
-> > is triggering reclaim due to hitting its limit and b) the memory
-> > cgroup that is being scanned as a child of a).
+> > We have a tool named zgetdump. With this tool it is possible to convert
+> > dump formats on the fly using fuse. E.g. you can mount a s390
+> > stand-alone dump as ELF dump. When this is done, the tool finds the
+> > vmcoreinfo in the stand-alone dump via our well known ABI defined
+> > address and it creates the respective VMCOREINFO ELF note in the output
+> > ELF dump. This then can be used e.g. by makedumpfile for dump filtering.
+> > No more need for a vmlinux file with debug information.
+> 
+> Ok, so you basically need it so that makedumpfile can do filtering without
+> debug info.
+> 
+> Well, if zgetdump is doing everything and you are stashing away an arch
+> specific pointer, I guss you could have saved pointer directly to
+> vmcoreinfo_data and then zgetdump could have made an ELF note out of it
+> for use of makedumpfile.
+
+Yes that would also be an option. But still you have to initialize the
+data at startup.
+
+> But anyway, having kernel exported the note does not harm.
+
+Correct.
+
+> > So this will look like the following:
 > > 
-> > This patch introduces a struct mem_cgroup_zone that contains the
-> > combination of the memory cgroup and the zone being scanned, which is
-> > then passed down the stack instead of the zone argument.
-> > 
-> > Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+> > # zgetdump --mount standalone.dump -f elf /mnt
+> > # ls /mnt
+> > # dump.elf
+> > # readelf -n /mnt/dump.elf
+> > # ...
+> >   VMCOREINFO		0x00000474	Unknown note type: (0x00000000)
+> > # makedumpfile -c -d 31 /mnt/dump.elf dump.kdump
 > 
-> Looks good to me. Some minor comments bellow
-> Anyways:
-> Reviewed-by: Michal Hocko <mhocko@suse.cz>
+> If you can do this easily, then you really did not need kdump in kernel? 
+> Just use stand alone dump to take dump and then do this to filter dump.
 
-Thanks!
+For large systems we still need kdump to do the the filtering while
+dumping. Currently with stand-alone dump tools we first have to dump all
+the memory (which takes a long time) and afterwards do the filtering.
 
-> > @@ -1853,13 +1865,13 @@ static int vmscan_swappiness(struct scan_control *sc)
-> >   *
-> >   * nr[0] = anon pages to scan; nr[1] = file pages to scan
-> >   */
-> > -static void get_scan_count(struct zone *zone, struct scan_control *sc,
-> > -					unsigned long *nr, int priority)
-> > +static void get_scan_count(struct mem_cgroup_zone *mz, struct scan_control *sc,
-> > +			   unsigned long *nr, int priority)
-> >  {
-> >  	unsigned long anon, file, free;
-> >  	unsigned long anon_prio, file_prio;
-> >  	unsigned long ap, fp;
-> > -	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
-> > +	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(mz);
-> >  	u64 fraction[2], denominator;
-> >  	enum lru_list l;
-> >  	int noswap = 0;
-> 
-> You can save some patch lines by:
-> 	struct zone *zone = mz->zone;
-> and not doing zone => mz->zone changes that follow.
+And with kdump we just can reuse all the installer stuff that is already
+available.
 
-Actually, I really hate that I had to do that local zone variable in
-other places.  I only did it where it's used so often that it would
-have changed every other line.  If you insist, I'll change it, but I
-would prefer to avoid it when possible.
+> But what happens to ELF headers which map kernel virtual address to
+> physical addresses? kexec-tools prepares those. So in this case when
+> you are capturing the dump, who prepares those? IOW, how does zgetdump
+> creates a mapping between kernel virtual and physical addresses?
 
-> > @@ -2390,6 +2413,18 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem_cont,
-> >  }
-> >  #endif
-> >  
-> > +static void age_active_anon(struct zone *zone, struct scan_control *sc,
-> > +			    int priority)
-> > +{
-> > +	struct mem_cgroup_zone mz = {
-> > +		.mem_cgroup = NULL,
-> > +		.zone = zone,
-> > +	};
-> > +
-> > +	if (inactive_anon_is_low(&mz))
-> > +		shrink_active_list(SWAP_CLUSTER_MAX, &mz, sc, priority, 0);
-> > +}
-> > +
-> 
-> I do not like this very much because we are using a similar construct in
-> shrink_mem_cgroup_zone so we are duplicating that code. 
-> What about adding age_mem_cgroup_active_anon (something like shrink_zone).
+On s390 we have a 1:1 mapping for the kernel. For the ELF header loads
+created by zgetdump virtual=real.
 
-I am not sure I follow and I don't see what could be shared between
-the zone shrinking and this as there are different exit conditions to
-the hierarchy walk.  Can you elaborate?
+I hope this answers your questions.
+
+So do you agree now with the patch and give us your ACK?
+
+Thanks
+Michael
+
