@@ -1,96 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756760Ab1ITAif (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 20:38:35 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:52703 "EHLO
+	id S1752355Ab1ITAvM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 20:51:12 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:57038 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751626Ab1ITAid convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751868Ab1ITAvK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 20:38:33 -0400
+	Mon, 19 Sep 2011 20:51:10 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:date:
-	message-id:subject:from:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=Qr2WJTM2eLEBUS15ZIT3vdcBZGW1efjUP89JLfzzsUkCAOw6S5RNGW9R3CVX5C4p4
-	XVyxabyOS32aexvRx9snA==
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=g1J72YwncVOUiCVzMLCin+UiWgjJTahSEfGocjhEIs4c0YCB31siXsFjpROHCk26P
+	zmQkBN6hEA1UFaD2D2I7w==
+Date: Mon, 19 Sep 2011 17:51:03 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: H Hartley Sweeten <hartleys@visionengravers.com>,
+        Tejun Heo <htejun@gmail.com>
+cc: linux-kernel@vger.kernel.org, x86@kernel.org, tglx@linutronix.de,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Yinghai Lu <yinghai.lu@oracle.com>
+Subject: Re: [PATCH] x86: use the same node_distance for 32 and 64-bit
+In-Reply-To: <201109191603.15560.hartleys@visionengravers.com>
+Message-ID: <alpine.DEB.2.00.1109191748170.8943@chino.kir.corp.google.com>
+References: <201109191603.15560.hartleys@visionengravers.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20110919175129.GA11164@linux.vnet.ibm.com>
-References: <1315922848.5977.11.camel@twins>
-	<20110913162119.GA3045@linux.vnet.ibm.com>
-	<1315931775.5977.29.camel@twins>
-	<20110913175425.GB3062@linux.vnet.ibm.com>
-	<1315937995.4226.9.camel@twins>
-	<20110913182841.GO11100@linux.vnet.ibm.com>
-	<1315938646.4226.12.camel@twins>
-	<20110913183502.GP11100@linux.vnet.ibm.com>
-	<20110915175537.GA17701@linux.vnet.ibm.com>
-	<1316123323.4060.24.camel@twins>
-	<20110919175129.GA11164@linux.vnet.ibm.com>
-Date: Mon, 19 Sep 2011 17:38:26 -0700
-Message-ID: <CABeCy1bmUK=meSEUYOuOeyP8ZLYDGG1xpNC51jevs-fXHmUUtA@mail.gmail.com>
-Subject: Re: CFS Bandwidth Control - Test results of cgroups tasks pinned vs unpinnede
-From: Venki Pallipadi <venki@google.com>
-To: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Paul Turner <pjt@google.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelianov <xemul@parallels.com>,
-        Ken Chen <kenchen@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 19, 2011 at 10:51 AM, Kamalesh Babulal
-<kamalesh@linux.vnet.ibm.com> wrote:
-> * Peter Zijlstra <a.p.zijlstra@chello.nl> [2011-09-15 23:48:43]:
->
->> On Thu, 2011-09-15 at 23:25 +0530, Kamalesh Babulal wrote:
->> > 2.6.38          | 1551  | 48    | 62    | 47    | 50    |
->> > ----------------+-------+-------+-------+-------+-------+
->> > 2.6.39          | 3784  | 457   | 722   | 3209  | 1037  |
->>
->> I'd say we wrecked it going from .38 to .39 and only made it worse after
->> that.
->
-> after reverting the commit 866ab43efd325fae8889ea, of the patches
-> went between .38 and .39 reduces the ping pong of the tasks.
+On Mon, 19 Sep 2011, H Hartley Sweeten wrote:
 
-There was a side-effect from 866ab43efd325fae8889ea that Ken
-identified and fixed later in commit
-b0432d8f162c7d5d9537b4cb749d44076b76a783. I guess you are seeing the
-same problem...
+> The node_distance function is not x86 64-bit specific.  Having the #ifdef
+> around the extern function declaration and the #define causes the default
+> node_distance macro to be used in asm-generic/topology.h. This also causes
+> a sparse warning in arch/x86/mm/numa.c when CONFIG_X86_64 is not set:
+> 
+> warning: symbol '__node_distance' was not declared. Should it be static?
+> 
+> Remove the #ifdef to fix both issues.
+> 
+> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Yinghai Lu <yinghai@kernel.org>
 
-Thanks,
-Venki
->
-> ------------------------+-------+-------+-------+-------+-------+
-> Kernel                  | Run 1 | Run 2 | Run 3 | Run 4 | Run 5 |
-> ------------------------+-------+-------+-------+-------+-------+
-> 2.6.39                  | 1542  | 2172  | 2727  | 120   | 3681  |
-> ------------------------+-------+-------+-------+-------+-------+
-> 2.6.39 (with            |       |       |       |       |       |
-> 866ab43efd reverted)    | 65    | 78    | 58    | 99    | 62    |
-> ------------------------+-------+-------+-------+-------+-------+
-> 3.1-rc4+tip             |       |       |       |       |       |
-> (e467f18f945c)          | 1219  | 2037  | 1943  | 772   | 1701  |
-> ------------------------+-------+-------+-------+-------+-------+
-> 3.1-rc4+tip (e467f18f9) |       |       |       |       |       |
-> (866ab43efd reverted)   | 64    | 45    | 59    | 59    | 69    |
-> ------------------------+-------+-------+-------+-------+-------+
->
-> Thanks,
-> Kamalesh.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+ [ I think kernel.org emails are still down, so I sent this to
+   htejun@gmail.com instead. ]
+
+Acked-by: David Rientjes <rientjes@google.com>
+
+> ---
+> diff --git a/arch/x86/include/asm/topology.h b/arch/x86/include/asm/topology.h
+> index c006924..800f77c 100644
+> --- a/arch/x86/include/asm/topology.h
+> +++ b/arch/x86/include/asm/topology.h
+> @@ -130,10 +130,8 @@ extern void setup_node_to_cpumask_map(void);
+>  	.balance_interval	= 1,					\
+>  }
+>  
+> -#ifdef CONFIG_X86_64
+>  extern int __node_distance(int, int);
+>  #define node_distance(a, b) __node_distance(a, b)
+> -#endif
+>  
+>  #else /* !CONFIG_NUMA */
+>  
