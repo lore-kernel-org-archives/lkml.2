@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752491Ab1ITLTQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 07:19:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53793 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750814Ab1ITLTP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 07:19:15 -0400
-Date: Tue, 20 Sep 2011 07:22:06 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org, xemul@parallels.com,
-        neilb@suse.de, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bfields@fieldses.org, davem@davemloft.net
-Subject: Re: [PATCH v4 4/8] SUNRPC: setup rpcbind clients if service
- requires it
-Message-ID: <20110920072206.117db4ce@corrin.poochiereds.net>
-In-Reply-To: <20110920101404.9861.83097.stgit@localhost6.localdomain6>
-References: <20110920101031.9861.18444.stgit@localhost6.localdomain6>
-	<20110920101404.9861.83097.stgit@localhost6.localdomain6>
+	id S1753144Ab1ITLTZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 07:19:25 -0400
+Received: from na3sys009aog119.obsmtp.com ([74.125.149.246]:35631 "EHLO
+	na3sys009aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752630Ab1ITLTU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 07:19:20 -0400
+Subject: Re: Re: [alsa-devel] [PATCH 7/8] ASoC: omap-mcpdm: Correct the
+ supported number of channels
+From: Liam Girdwood <lrg@ti.com>
+To: =?ISO-8859-1?Q?P=E9ter?= Ujfalusi <peter.ujfalusi@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: alsa-devel@alsa-project.org, Dmitry Torokhov <dtor@mail.ru>,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        Samuel Ortiz <samuel.ortiz@intel.com>,
+        Misael Lopez Cruz <misael.lopez@ti.com>
+In-Reply-To: <1661734.tddAioOORG@barack>
+References: <1316091561-30899-1-git-send-email-peter.ujfalusi@ti.com>
+	 <20110919221740.GI23179@opensource.wolfsonmicro.com>
+	 <20110920105714.GA14609@sirena.org.uk>  <1661734.tddAioOORG@barack>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 20 Sep 2011 12:19:14 +0100
+Message-ID: <1316517554.8314.0.camel@odin>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Sep 2011 14:14:04 +0400
-Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
-
-> New function ("svc_uses_rpcbind") will be used to detect, that new service will
-> send portmapper register calls. For such services we will create rpcbind
-> clients and remove all stale portmap registrations.
-> Also, svc_rpcb_cleanup() will be set as sv_shutdown callback for such services
-> in case of this field wasn't initialized earlier. This will allow to destroy
-> rpcbind clients when no other users of them left.
+On Tue, 2011-09-20 at 14:10 +0300, Péter Ujfalusi wrote:
+> On Tuesday 20 September 2011 11:57:14 Mark Brown wrote:
+> > No I didn't - I guess this one only applies against Liam's tree
+> > 
+> > Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 > 
-> Note: Currently, any creating service will be detected as portmap user.
-> Probably, this is wrong. But now it depends on program versions "vs_hidden"
-> flag.
+> Hrm, I have used Linus's tree for this series, and AFAIK there were no changes 
+> regarding to McPDM apart from the patches I have submitted.
 > 
+> Could you give me a hint, why it failed?
+> 
+> --
+> Péter
 
-Yes, I think that nfs4_callback_version4 should also have vs_hidden
-set. Currently, it's trying to unregister the service from the
-portmapper on shutdown even though it's not registering it. Basically,
-any service that sets up its sockets with SVC_SOCK_ANONYMOUS should
-also have vs_hidden set on all versions.
+Mark, could you take all these due to my urgent travel.
 
--- 
-Jeff Layton <jlayton@redhat.com>
+Thanks !
+
+Liam
+
