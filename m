@@ -1,130 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751890Ab1ITPCf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 11:02:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55671 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751077Ab1ITPCe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 11:02:34 -0400
-Date: Tue, 20 Sep 2011 17:02:29 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
-        Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 06/11] mm: memcg: remove optimization of keeping the
- root_mem_cgroup LRU lists empty
-Message-ID: <20110920150229.GB3571@tiehlicka.suse.cz>
-References: <1315825048-3437-1-git-send-email-jweiner@redhat.com>
- <1315825048-3437-7-git-send-email-jweiner@redhat.com>
+	id S1752308Ab1ITPDY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 11:03:24 -0400
+Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:29078 "HELO
+	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751726Ab1ITPDX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 11:03:23 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 3XtGAx8VM1moBN.u_3qsnSmhd7bvLhxWmCfFwL8FIpAa2fW
+ IhsPXyZa9FnKXwdcSm.jbpaRxCQ80nyzahGEFiJxHXYRVFkM2pURMNGsA14M
+ Oq7Soke1hh1ten_Qgg5ZzR6U.gOm8icEjA.NR5a2TNb_rCJnN69mEzWwZvoM
+ WfRsJfrZ4RHvC.jQ5Eixx6jXyjzWTW1sqsgK2ikET_XlJSVatA1hNpTZGWfK
+ bjOlUH8JQ_dTtdg2wcdtHtelrLWV2xNbFI9YxkD3l1dWfLAyn6VeW_.FPiqF
+ QXgm4Wb7_OkjwoKbo2K54qK1OUnLhFJutOzRvhKycgyyN2zm8Na1fkxE8LMa
+ ULwiA8nxISdJv5dy6agOKhTxB5m.8T7wjCiv1JdIoabbd5bXkmlk-
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 20 Sep 2011 10:03:18 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+X-X-Sender: cl@router.home
+To: Thomas Gleixner <tglx@linutronix.de>
+cc: Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Christoph Lameter <cl@linux.com>, Tejun Heo <htejun@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC][PATCH 0/5] Introduce checks for preemptable code for
+ this_cpu_read/write()
+In-Reply-To: <alpine.LFD.2.02.1109200933310.2723@ionos>
+Message-ID: <alpine.DEB.2.00.1109201000120.8056@router.home>
+References: <20110919212040.745370781@goodmis.org>  <m2ehzcdkf2.fsf@firstfloor.org> <1316488378.29966.35.camel@gandalf.stny.rr.com> <alpine.LFD.2.02.1109200933310.2723@ionos>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1315825048-3437-7-git-send-email-jweiner@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 12-09-11 12:57:23, Johannes Weiner wrote:
-> root_mem_cgroup, lacking a configurable limit, was never subject to
-> limit reclaim, so the pages charged to it could be kept off its LRU
-> lists.  They would be found on the global per-zone LRU lists upon
-> physical memory pressure and it made sense to avoid uselessly linking
-> them to both lists.
-> 
-> The global per-zone LRU lists are about to go away on memcg-enabled
-> kernels, with all pages being exclusively linked to their respective
-> per-memcg LRU lists.  As a result, pages of the root_mem_cgroup must
-> also be linked to its LRU lists again.
+On Tue, 20 Sep 2011, Thomas Gleixner wrote:
 
-Nevertheless we still do not charge them so this should be mentioned
-here?
+> On Mon, 19 Sep 2011, Steven Rostedt wrote:
+> > On Mon, 2011-09-19 at 19:20 -0700, Andi Kleen wrote:
+> > > Steven Rostedt <rostedt@goodmis.org> writes:
+> > >
+> > > > I just found out that the this_cpu_*() functions do not perform the
+> > > > test to see if the usage is in atomic or not. Thus, the blind
+> > > > conversion of the per_cpu(*, smp_processor_id()) and the get_cpu_var()
+> > > > code to this_cpu_*() introduce the regression to detect the hard
+> > > > to find case where a per cpu variable is used in preempt code that
+> > > > migrates and causes bugs.
+>
+> Just for the record. I added some this_cpu_* debug checks to my
+> filesystem eating 2.6.38-rt and guess what: They trigger right away in
+> the FS code and without digging deeper I'm 100% sure, that this is the
+> root cause of the problems I was hunting for weeks. Thanks for wasting
+> my time and racking my nerves.
 
-> 
-> The overhead is temporary until the double-LRU scheme is going away
-> completely.
-> 
-> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+this_cpu_xx is safe to use in preemptable contexts. So what does this have
+to do with your FS problems?
 
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
+> Can we please put that on the KS agenda? This definitely needs to be
+> addressed urgently.
 
-> ---
->  mm/memcontrol.c |   12 ++----------
->  1 files changed, 2 insertions(+), 10 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 413e1f8..518f640 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -956,8 +956,6 @@ void mem_cgroup_del_lru_list(struct page *page, enum lru_list lru)
->  	mz = page_cgroup_zoneinfo(pc->mem_cgroup, page);
->  	/* huge page split is done under lru_lock. so, we have no races. */
->  	MEM_CGROUP_ZSTAT(mz, lru) -= 1 << compound_order(page);
-> -	if (mem_cgroup_is_root(pc->mem_cgroup))
-> -		return;
->  	VM_BUG_ON(list_empty(&pc->lru));
->  	list_del_init(&pc->lru);
->  }
-> @@ -982,13 +980,11 @@ void mem_cgroup_rotate_reclaimable_page(struct page *page)
->  		return;
->  
->  	pc = lookup_page_cgroup(page);
-> -	/* unused or root page is not rotated. */
-> +	/* unused page is not rotated. */
->  	if (!PageCgroupUsed(pc))
->  		return;
->  	/* Ensure pc->mem_cgroup is visible after reading PCG_USED. */
->  	smp_rmb();
-> -	if (mem_cgroup_is_root(pc->mem_cgroup))
-> -		return;
->  	mz = page_cgroup_zoneinfo(pc->mem_cgroup, page);
->  	list_move_tail(&pc->lru, &mz->lists[lru]);
->  }
-> @@ -1002,13 +998,11 @@ void mem_cgroup_rotate_lru_list(struct page *page, enum lru_list lru)
->  		return;
->  
->  	pc = lookup_page_cgroup(page);
-> -	/* unused or root page is not rotated. */
-> +	/* unused page is not rotated. */
->  	if (!PageCgroupUsed(pc))
->  		return;
->  	/* Ensure pc->mem_cgroup is visible after reading PCG_USED. */
->  	smp_rmb();
-> -	if (mem_cgroup_is_root(pc->mem_cgroup))
-> -		return;
->  	mz = page_cgroup_zoneinfo(pc->mem_cgroup, page);
->  	list_move(&pc->lru, &mz->lists[lru]);
->  }
-> @@ -1040,8 +1034,6 @@ void mem_cgroup_add_lru_list(struct page *page, enum lru_list lru)
->  	/* huge page split is done under lru_lock. so, we have no races. */
->  	MEM_CGROUP_ZSTAT(mz, lru) += 1 << compound_order(page);
->  	SetPageCgroupAcctLRU(pc);
-> -	if (mem_cgroup_is_root(pc->mem_cgroup))
-> -		return;
->  	list_add(&pc->lru, &mz->lists[lru]);
->  }
->  
-> -- 
-> 1.7.6
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Well yes the misunderstanding of per cpu operations was one reason why I
+proposed the discussion on the subject of esoteric kernel synchronization.
+I do not think that it was accepted.
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
