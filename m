@@ -1,36 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752468Ab1ITWTx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 18:19:53 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:33487 "EHLO
+	id S1752523Ab1ITWUn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 18:20:43 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:34142 "EHLO
 	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751762Ab1ITWTw (ORCPT
+	with ESMTP id S1752317Ab1ITWUm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 18:19:52 -0400
+	Tue, 20 Sep 2011 18:20:42 -0400
 X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Christoph Lameter <cl@gentwo.org>, linux-kernel@vger.kernel.org,
+To: Christoph Lameter <cl@gentwo.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
         Ingo Molnar <mingo@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Peter Zijlstra <peterz@infradead.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [RFC][PATCH 0/5] Introduce checks for preemptable code for this_cpu_read/write()
-In-Reply-To: Your message of "Tue, 20 Sep 2011 11:19:47 EDT."
-             <1316531987.29966.65.camel@gandalf.stny.rr.com>
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [RFC][PATCH 2/5] mm: Switch mod_state() to __this_cpu_read()
+In-Reply-To: Your message of "Tue, 20 Sep 2011 10:54:10 CDT."
+             <alpine.DEB.2.00.1109201038150.8056@router.home>
 From: Valdis.Kletnieks@vt.edu
-References: <20110919212040.745370781@goodmis.org> <alpine.DEB.2.00.1109191644190.19059@router.home> <1316487977.29966.32.camel@gandalf.stny.rr.com> <27409.1316522696@turing-police.cc.vt.edu> <alpine.DEB.2.00.1109200955190.8056@router.home>
-            <1316531987.29966.65.camel@gandalf.stny.rr.com>
+References: <20110919212040.745370781@goodmis.org> <20110919212640.688732950@goodmis.org> <alpine.DEB.2.00.1109191657150.19059@router.home> <1316476089.29966.9.camel@gandalf.stny.rr.com> <alpine.DEB.2.00.1109200940240.8056@router.home> <1316531769.29966.61.camel@gandalf.stny.rr.com>
+            <alpine.DEB.2.00.1109201038150.8056@router.home>
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1316557072_2679P";
+Content-Type: multipart/signed; boundary="==_Exmh_1316557142_2679P";
 	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
-Date: Tue, 20 Sep 2011 18:17:52 -0400
-Message-ID: <25599.1316557072@turing-police.cc.vt.edu>
+Date: Tue, 20 Sep 2011 18:19:02 -0400
+Message-ID: <25631.1316557142@turing-police.cc.vt.edu>
 X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
+X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
 X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020206.4E791114.00B7,ss=1,fgs=0,
+	refid=str=0001.0A02020B.4E791168.00C1,ss=1,fgs=0,
 	ip=0.0.0.0,
 	so=2010-07-22 22:03:31,
 	dmn=2009-09-10 00:05:08,
@@ -40,42 +40,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1316557072_2679P
+--==_Exmh_1316557142_2679P
 Content-Type: text/plain; charset=us-ascii
 
-On Tue, 20 Sep 2011 11:19:47 EDT, Steven Rostedt said:
-> On Tue, 2011-09-20 at 09:57 -0500, Christoph Lameter wrote:
-> 
-> > this_cpu_xx functions are made for those locations that have
-> > preemption enabled. If you can use those function (classic case is a
-> > per cpu counter increment in the network subsystem) then you can avoid
-> > preempt disable/enable or get_cpu/put_cpu.
-> 
-> If the variables are used for a very short time, then the latencies
-> introduced by a simple:
-> 
-> 	var = get_cpu_var(my_var);
-> 	if (var)
-> 		do_something_quick();
-> 	put_cpu_var(my_var);
-> 
-> Otherwise if that do_something_quick(); migrates, it may be doing
-> something it shouldn't be doing!
+On Tue, 20 Sep 2011 10:54:10 CDT, Christoph Lameter said:
+> IT DOES!!!! The memcg bug is caused by someone using this_cpu_read and
+> expecting the cpu not to change. this_cpu_xx ops stand on their own and do
+> not guarantee access to the same per cpu area.
 
-This has the added advantage of making the calling function take the blame
-in latency traces, doesn't it?
+As most 6 year olds will tell you, "Well, DUH!".  Maybe if you had called it
+"this_cpu_or_maybe_that_one_over_there_read()", people wouldn't use it wrong.
 
---==_Exmh_1316557072_2679P
+"If people place a nice chocky in their mouth, they don't want their cheeks
+pierced. In any case this is an inadequate description of the sweetmeat. I
+shall have to ask you to accompany me to the station." -- Monty Python.
+
+"inadequate description" hardly begins to cover the design of this API, which
+definitely needs to be taken to the station.
+
+
+--==_Exmh_1316557142_2679P
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 Comment: Exmh version 2.5 07/13/2001
 
-iD8DBQFOeREQcC3lWbTT17ARAluuAKDV2kPqEAgeJJZ8tKHi3NMhtLc6/gCcD4Rv
-UXPeTNuf11K6J9iOOiKNPUI=
-=NIQb
+iD8DBQFOeRFWcC3lWbTT17ARAmB6AJ9AmXFl+zQUScH2FgyoY3gQcAqp0wCcD13c
+xHluKi7tYJbPbcxhaixSYTI=
+=I0Qc
 -----END PGP SIGNATURE-----
 
---==_Exmh_1316557072_2679P--
+--==_Exmh_1316557142_2679P--
 
