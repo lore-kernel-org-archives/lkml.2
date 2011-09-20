@@ -1,57 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752722Ab1ITQVl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 12:21:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37205 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752501Ab1ITQSy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 12:18:54 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Sep 20 09:17:35 2011
-Message-Id: <20110920161735.691912980@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Tue, 20 Sep 2011 09:16:10 -0700
+	id S1752807Ab1ITQV5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 12:21:57 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:51661 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752588Ab1ITQVy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 12:21:54 -0400
+X-Sasl-enc: KbgEF1ZOSEOlAwYQAY+c8/14Sa1cxZ0aDZ7ylL51djqr 1316535531
+Date: Tue, 20 Sep 2011 09:17:43 -0700
 From: Greg KH <gregkh@suse.de>
 To: Matthew Garrett <mjg@redhat.com>
 Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        greg@kroah.com, Smelov Andrey <xor29a@bk.ru>,
-        stable <stable@kernel.org>
-Subject: [patch 3/8] Platform: samsung_laptop: samsung backlight for R528/R728
-In-Reply-To: <20110920161743.GA32737@kroah.com>
+        greg@kroah.com
+Subject: [patch 0/8] Samsung Laptop driver patches - resend
+Message-ID: <20110920161743.GA32737@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Smelov Andrey <xor29a@bk.ru>
+Hi Matthew,
 
-patch works for me, but I need to add "acpi_backlight=vendor" to kernel
-params
+Here is a resend of the samsung-laptop patches, with the correct
+authorship info in it.  Sorry about the last batch, 'quilt mail' strips
+them off when sending them out, despite the information being in the
+original patch.
 
-Signed-off-by: Smelov Andrey <xor29a@bk.ru>
-Cc: stable <stable@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+The patches are against Linus's current tree, but should apply just fine
+to linux-next as well.
 
+If there are any problems with them, please let me know.
 
----
- drivers/platform/x86/samsung-laptop.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+Oh, and if anyone wants to take over maintainership of this driver,
+please let me know.  I no longer have the hardware to be able to test
+any changes for it, which is why this took so long to get pushed out to
+you.
 
---- a/drivers/platform/x86/samsung-laptop.c
-+++ b/drivers/platform/x86/samsung-laptop.c
-@@ -704,6 +704,15 @@ static struct dmi_system_id __initdata s
- 		},
- 		.callback = dmi_check_cb,
- 	},
-+	{
-+		.ident = "R528/R728",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "R528/R728"),
-+			DMI_MATCH(DMI_BOARD_NAME, "R528/R728"),
-+		},
-+		.callback = dmi_check_cb,
-+	},
- 	{ },
- };
- MODULE_DEVICE_TABLE(dmi, samsung_dmi_table);
+thanks,
 
+greg k-h
 
