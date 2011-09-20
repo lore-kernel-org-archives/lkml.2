@@ -1,91 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754222Ab1ITDqJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 23:46:09 -0400
-Received: from mga03.intel.com ([143.182.124.21]:64122 "EHLO mga03.intel.com"
+	id S1756952Ab1ITD4E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 23:56:04 -0400
+Received: from home.keithp.com ([63.227.221.253]:35417 "EHLO keithp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754026Ab1ITDqH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 23:46:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,408,1312182000"; 
-   d="scan'208";a="50701729"
-Subject: Re: [PATCH v2] dmaengine: add CSR SiRFprimaII DMAC driver
-From: Vinod Koul <vinod.koul@intel.com>
-To: Barry Song <21cnbao@gmail.com>
-Cc: Barry Song <Barry.Song@csr.com>, Arnd Bergmann <arnd@arndb.de>,
-        Jassi Brar <jaswinder.singh@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        DL-SHA-WorkGroupLinux <Workgroup.Linux@csr.com>,
-        Rongjun Ying <Rongjun.Ying@csr.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-In-Reply-To: <CAGsJ_4y0F7JTwFwesVvbgq1Lupw+a_-EpiTwW9GtXxOauohdVQ@mail.gmail.com>
-References: <1316166960-20964-1-git-send-email-Baohua.Song@csr.com>
-	 <1316422774.26662.30.camel@vkoul-udesk3>
-	 <5EB3BFCD089AD643B9BB63439F5FD5E9840F3A8D@SHAASIEXM01.ASIA.ROOT.PRI>
-	 <1316425277.26662.41.camel@vkoul-udesk3>
-	 <5EB3BFCD089AD643B9BB63439F5FD5E9840F3B18@SHAASIEXM01.ASIA.ROOT.PRI>
-	 <1316430878.26662.46.camel@vkoul-udesk3>
-	 <CAGsJ_4y0F7JTwFwesVvbgq1Lupw+a_-EpiTwW9GtXxOauohdVQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 20 Sep 2011 09:12:01 +0530
-Message-ID: <1316490121.31295.2.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1754124Ab1ITD4C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 23:56:02 -0400
+From: "Keith Packard" <keithp@keithp.com>
+To: Dave Airlie <airlied@linux.ie>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org,
+        Intel drivers <Intel-gfx@lists.freedesktop.org>
+Subject: [PULL] drm-intel-next
+User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Mon, 19 Sep 2011 20:55:57 -0700
+Message-ID: <yunfwjrhnoy.fsf@aiko.keithp.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-09-19 at 19:25 +0800, Barry Song wrote:
-> 2011/9/19 Vinod Koul <vinod.koul@intel.com>:
-> > On Mon, 2011-09-19 at 09:56 +0000, Barry Song wrote:
-> >> > > > Not sure why you support this, there seem to be no DMA_SLAVE
-> >> support in
-> >> > > > this version ate least
-> >> > >
-> >> > > Not. I support dma_slave. But I have no prep_slave_sg function
-> >> since I can
-> >> > use the gen xfer to replace it.
-> >> > Yes thats okay...
-> >> >
-> >> > Then I have questions on genxfer function...
-> >> > where are you copying either src or dstn_start address, you seem to
-> >> > completely ignore them?
-> >>
-> >> Since I only support memory->device or device ->memory, and channel
-> >> number is fixed to every device. Then I actually don't care device
-> >> address at all. Either src or dst is fixed to the device's address.
-> > peripheral address can be fixed, not the memory, where do you copy the
-> > memory address?
-> 
-> +static int sirfsoc_dma_slave_config(struct sirfsoc_dma_chan *schan,
-> +       struct dma_slave_config *config)
-> +{
-> +       u32 addr, direction;
-> +       unsigned long flags;
-> +
-> +       switch (config->direction) {
-> +       case DMA_FROM_DEVICE:
-> +               direction = 0;
-> +               addr = config->dst_addr;
-> +               break;
-> +
-> +       case DMA_TO_DEVICE:
-> +               direction = 1;
-> +               addr = config->src_addr;
-> +               break;
-> +
-> +       default:
-> +               return -EINVAL;
-> +       }
-> +  ...
-This is wrong. You are treating addresses passed in dma_slave_config as
-memory address. These should be treating this as peripheral address
-(destination in DMA_TO_DEVICE....) and take the memory address from your
-prepare function.
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
--- 
-~Vinod
 
+This is a single patch which cleans up almost all of the whitespace
+errors in the i915 driver. It currently merges cleanly with your fdo
+drm-core-next tree.
+
+I've checked this patch quite carefully, examining the .o files with
+objdump -s to make sure nothing significant changed. The only thing that
+found was a couple of debug messages which had blank space before newlines.
+
+The following changes since commit b6fd41e29dea9c6753b1843a77e50433e6123bcb:
+
+  Linux 3.1-rc6 (2011-09-12 14:02:02 -0700)
+
+are available in the git repository at:
+  git://people.freedesktop.org/~keithp/linux drm-intel-next
+
+Akshay Joshi (1):
+      Drivers: i915: Fix all space related issues.
+
+ drivers/gpu/drm/i915/dvo_ch7017.c       |    2 +-
+ drivers/gpu/drm/i915/dvo_ch7xxx.c       |    4 +-
+ drivers/gpu/drm/i915/dvo_ivch.c         |    6 +-
+ drivers/gpu/drm/i915/dvo_sil164.c       |    2 +-
+ drivers/gpu/drm/i915/dvo_tfp410.c       |   14 +-
+ drivers/gpu/drm/i915/i915_debugfs.c     |   38 +-
+ drivers/gpu/drm/i915/i915_dma.c         |   44 ++--
+ drivers/gpu/drm/i915/i915_drv.c         |   16 +-
+ drivers/gpu/drm/i915/i915_drv.h         |   70 ++--
+ drivers/gpu/drm/i915/i915_gem.c         |   12 +-
+ drivers/gpu/drm/i915/i915_gem_debug.c   |    2 +-
+ drivers/gpu/drm/i915/i915_gem_evict.c   |    2 +-
+ drivers/gpu/drm/i915/i915_irq.c         |    6 +-
+ drivers/gpu/drm/i915/i915_mem.c         |   14 +-
+ drivers/gpu/drm/i915/i915_reg.h         |    8 +-
+ drivers/gpu/drm/i915/i915_suspend.c     |    8 +-
+ drivers/gpu/drm/i915/i915_trace.h       |   46 ++--
+ drivers/gpu/drm/i915/intel_acpi.c       |    2 +-
+ drivers/gpu/drm/i915/intel_bios.c       |    4 +-
+ drivers/gpu/drm/i915/intel_bios.h       |    2 +-
+ drivers/gpu/drm/i915/intel_crt.c        |    2 +-
+ drivers/gpu/drm/i915/intel_display.c    |  222 ++++++------
+ drivers/gpu/drm/i915/intel_dp.c         |   26 +-
+ drivers/gpu/drm/i915/intel_drv.h        |   12 +-
+ drivers/gpu/drm/i915/intel_opregion.c   |   90 +++---
+ drivers/gpu/drm/i915/intel_overlay.c    |  146 ++++----
+ drivers/gpu/drm/i915/intel_panel.c      |    6 +-
+ drivers/gpu/drm/i915/intel_ringbuffer.c |   76 ++--
+ drivers/gpu/drm/i915/intel_ringbuffer.h |    8 +-
+ drivers/gpu/drm/i915/intel_sdvo.c       |  228 +++++++-------
+ drivers/gpu/drm/i915/intel_sdvo_regs.h  |  558 +++++++++++++++------------=
+---
+ drivers/gpu/drm/i915/intel_tv.c         |   58 ++--
+ 32 files changed, 867 insertions(+), 867 deletions(-)
+
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iD8DBQFOeA7NQp8BWwlsTdMRAl3kAKDlWPoCwBrs63PnBTMIMhhWny+PXACfeLhl
+eRSAMcDerI+amcSSVJ+30FU=
+=c7+B
+-----END PGP SIGNATURE-----
+--=-=-=--
