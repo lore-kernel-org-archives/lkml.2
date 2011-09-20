@@ -1,133 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751194Ab1ITOYo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 10:24:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44734 "EHLO mx1.redhat.com"
+	id S1751395Ab1ITOZF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 10:25:05 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:54022 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750784Ab1ITOYn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 10:24:43 -0400
-Date: Tue, 20 Sep 2011 10:24:31 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "davem@davemloft.net" <davem@davemloft.net>
-Subject: Re: [PATCH v5 1/8] SUNRPC: introduce helpers for reference counted
- rpcbind clients
-Message-ID: <20110920102431.58ca1d96@tlielax.poochiereds.net>
-In-Reply-To: <4E7899E7.9090809@parallels.com>
-References: <20110920101031.9861.18444.stgit@localhost6.localdomain6>
-	<20110920101341.9861.51453.stgit@localhost6.localdomain6>
-	<4E7899E7.9090809@parallels.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751081Ab1ITOZD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 10:25:03 -0400
+Date: Tue, 20 Sep 2011 16:24:56 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Christoph Lameter <cl@linux.com>, Greg Thelen <gthelen@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [RFC][PATCH 3/5] memcg: Disable preemption in
+ memcg_check_events()
+Message-ID: <20110920142456.GC17198@cmpxchg.org>
+References: <20110919212040.745370781@goodmis.org>
+ <20110919212641.015320989@goodmis.org>
+ <20110920142031.GB17198@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110920142031.GB17198@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Sep 2011 17:49:27 +0400
-Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
-
-> v5: fixed races with rpcb_users in rpcb_get_local()
+On Tue, Sep 20, 2011 at 04:20:31PM +0200, Johannes Weiner wrote:
+> On Mon, Sep 19, 2011 at 05:20:43PM -0400, Steven Rostedt wrote:
+> > From: Steven Rostedt <srostedt@redhat.com>
+> > 
+> > The code in memcg_check_events() calls this_cpu_read() on
+> > different variables without disabling preemption, and can cause
+> > the calculations to be done from two different CPU variables.
+> > 
+> > Disable preemption throughout the check to keep apples and oranges
+> > from becoming a mixed drink.
 > 
-> This helpers will be used for dynamical creation and destruction of rpcbind
-> clients.
-> Variable rpcb_users is actually a counter of lauched RPC services. If rpcbind
-> clients has been created already, then we just increase rpcb_users.
+> Makes sense, thanks!
 > 
-> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-> 
-> ---
->   net/sunrpc/rpcb_clnt.c |   53 ++++++++++++++++++++++++++++++++++++++++++++++++
->   1 files changed, 53 insertions(+), 0 deletions(-)
-> 
-> diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
-> index e45d2fb..5f4a406 100644
-> --- a/net/sunrpc/rpcb_clnt.c
-> +++ b/net/sunrpc/rpcb_clnt.c
-> @@ -114,6 +114,9 @@ static struct rpc_program	rpcb_program;
->   static struct rpc_clnt *	rpcb_local_clnt;
->   static struct rpc_clnt *	rpcb_local_clnt4;
->   +DEFINE_SPINLOCK(rpcb_clnt_lock);
-> +unsigned int			rpcb_users;
-> +
->   struct rpcbind_args {
->   	struct rpc_xprt *	r_xprt;
->   @@ -161,6 +164,56 @@ static void rpcb_map_release(void *data)
->   	kfree(map);
->   }
->   +static int rpcb_get_local(void)
-> +{
-> +	int cnt;
-> +
-> +	spin_lock(&rpcb_clnt_lock);
-> +	if (rpcb_users)
-> +		rpcb_users++;
-> +	cnt = rpcb_users;
-> +	spin_unlock(&rpcb_clnt_lock);
-> +
-> +	return cnt;
-> +}
-> +
-> +void rpcb_put_local(void)
-> +{
-> +	struct rpc_clnt *clnt = rpcb_local_clnt;
-> +	struct rpc_clnt *clnt4 = rpcb_local_clnt4;
-> +	int shutdown;
-> +
-> +	spin_lock(&rpcb_clnt_lock);
-> +	if (--rpcb_users == 0) {
-> +		rpcb_local_clnt = NULL;
-> +		rpcb_local_clnt4 = NULL;
-> +	}
+> Since the atomic versions are no longer required with preemption
+> disabled explicitely, could you also make the this_cpu ops in
+> __memcg_event_check and __mem_cgroup_target_update non-atomic in the
+> same go?
 
-In the function below, you mention that the above pointers are
-protected by rpcb_create_local_mutex, but it looks like they get reset
-here without that being held?
+Sorry, shouldn't be on you, can you fold this in?
 
-Might it be simpler to just protect rpcb_users with the
-rpcb_create_local_mutex and ensure that it's held whenever you call one
-of these routines? None of these are codepaths are particularly hot.
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
 
-> +	shutdown = !rpcb_users;
-> +	spin_unlock(&rpcb_clnt_lock);
-> +
-> +	if (shutdown) {
-> +		/*
-> +		 * cleanup_rpcb_clnt - remove xprtsock's sysctls, unregister
-> +		 */
-> +		if (clnt4)
-> +			rpc_shutdown_client(clnt4);
-> +		if (clnt)
-> +			rpc_shutdown_client(clnt);
-> +	}
-> +	return;
-> +}
-> +
-> +static void rpcb_set_local(struct rpc_clnt *clnt, struct rpc_clnt *clnt4)
-> +{
-> +	/* Protected by rpcb_create_local_mutex */
-> +	rpcb_local_clnt = clnt;
-> +	rpcb_local_clnt4 = clnt4;
-> +	rpcb_users++;
-> +	dprintk("RPC:       created new rpcb local clients (rpcb_local_clnt: "
-> +			"%p, rpcb_local_clnt4: %p)\n", rpcb_local_clnt,
-> +			rpcb_local_clnt4);
-> +}
-> +
->   /*
->    * Returns zero on success, otherwise a negative errno value
->    * is returned.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
--- 
-Jeff Layton <jlayton@redhat.com>
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index b76011a..9d4ba65 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -683,8 +683,8 @@ static bool __memcg_event_check(struct mem_cgroup *memcg, int target)
+ {
+ 	unsigned long val, next;
+ 
+-	val = this_cpu_read(memcg->stat->events[MEM_CGROUP_EVENTS_COUNT]);
+-	next = this_cpu_read(memcg->stat->targets[target]);
++	val = __this_cpu_read(memcg->stat->events[MEM_CGROUP_EVENTS_COUNT]);
++	next = __this_cpu_read(memcg->stat->targets[target]);
+ 	/* from time_after() in jiffies.h */
+ 	return ((long)next - (long)val < 0);
+ }
+@@ -693,7 +693,7 @@ static void __mem_cgroup_target_update(struct mem_cgroup *memcg, int target)
+ {
+ 	unsigned long val, next;
+ 
+-	val = this_cpu_read(memcg->stat->events[MEM_CGROUP_EVENTS_COUNT]);
++	val = __this_cpu_read(memcg->stat->events[MEM_CGROUP_EVENTS_COUNT]);
+ 
+ 	switch (target) {
+ 	case MEM_CGROUP_TARGET_THRESH:
+@@ -709,7 +709,7 @@ static void __mem_cgroup_target_update(struct mem_cgroup *memcg, int target)
+ 		return;
+ 	}
+ 
+-	this_cpu_write(memcg->stat->targets[target], next);
++	__this_cpu_write(memcg->stat->targets[target], next);
+ }
+ 
+ /*
