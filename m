@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753144Ab1ITLTZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 07:19:25 -0400
-Received: from na3sys009aog119.obsmtp.com ([74.125.149.246]:35631 "EHLO
-	na3sys009aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752630Ab1ITLTU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 07:19:20 -0400
-Subject: Re: Re: [alsa-devel] [PATCH 7/8] ASoC: omap-mcpdm: Correct the
- supported number of channels
-From: Liam Girdwood <lrg@ti.com>
-To: =?ISO-8859-1?Q?P=E9ter?= Ujfalusi <peter.ujfalusi@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: alsa-devel@alsa-project.org, Dmitry Torokhov <dtor@mail.ru>,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        Samuel Ortiz <samuel.ortiz@intel.com>,
-        Misael Lopez Cruz <misael.lopez@ti.com>
-In-Reply-To: <1661734.tddAioOORG@barack>
-References: <1316091561-30899-1-git-send-email-peter.ujfalusi@ti.com>
-	 <20110919221740.GI23179@opensource.wolfsonmicro.com>
-	 <20110920105714.GA14609@sirena.org.uk>  <1661734.tddAioOORG@barack>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 20 Sep 2011 12:19:14 +0100
-Message-ID: <1316517554.8314.0.camel@odin>
+	id S1753044Ab1ITLUw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 07:20:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1033 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751551Ab1ITLUv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 07:20:51 -0400
+Date: Tue, 20 Sep 2011 07:24:06 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org, xemul@parallels.com,
+        neilb@suse.de, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bfields@fieldses.org, davem@davemloft.net
+Subject: Re: [PATCH v4 0/8] SUNRPC: make rpcbind clients allocated and
+ destroyed dynamically
+Message-ID: <20110920072406.378f5ebd@corrin.poochiereds.net>
+In-Reply-To: <20110920101031.9861.18444.stgit@localhost6.localdomain6>
+References: <20110920101031.9861.18444.stgit@localhost6.localdomain6>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-09-20 at 14:10 +0300, Péter Ujfalusi wrote:
-> On Tuesday 20 September 2011 11:57:14 Mark Brown wrote:
-> > No I didn't - I guess this one only applies against Liam's tree
-> > 
-> > Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+On Tue, 20 Sep 2011 14:13:32 +0400
+Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
+
+> v4:
+> 1) creation and destruction on rpcbind clients now depends on service program
+> versions "vs_hidden" flag.
 > 
-> Hrm, I have used Linus's tree for this series, and AFAIK there were no changes 
-> regarding to McPDM apart from the patches I have submitted.
+> This patch is required for further RPC layer virtualization, because rpcbind
+> clients have to be per network namespace.
+> To achive this, we have to untie network namespace from rpcbind clients sockets.
+> The idea of this patch set is to make rpcbind clients non-static. I.e. rpcbind
+> clients will be created during first RPC service creation, and destroyed when
+> last RPC service is stopped.
+> With this patch set rpcbind clients can be virtualized easely.
 > 
-> Could you give me a hint, why it failed?
 > 
-> --
-> Péter
+> The following series consists of:
+> 
+> ---
+> 
+> Stanislav Kinsbursky (8):
+>       SUNRPC: introduce helpers for reference counted rpcbind clients
+>       SUNRPC: use rpcbind reference counting helpers
+>       SUNRPC: introduce svc helpers for prepairing rpcbind infrastructure
+>       SUNRPC: setup rpcbind clients if service requires it
+>       SUNRPC: cleanup service destruction
+>       NFSd: call svc rpcbind cleanup explicitly
+>       SUNRPC: remove rpcbind clients creation during service registering
+>       SUNRPC: remove rpcbind clients destruction on module cleanup
+> 
+> 
+>  fs/nfsd/nfssvc.c            |    2 +
+>  include/linux/sunrpc/clnt.h |    2 +
+>  include/linux/sunrpc/svc.h  |    1 +
+>  net/sunrpc/rpcb_clnt.c      |   85 ++++++++++++++++++++++++++++---------------
+>  net/sunrpc/sunrpc_syms.c    |    3 --
+>  net/sunrpc/svc.c            |   48 +++++++++++++++++++++++-
+>  6 files changed, 105 insertions(+), 36 deletions(-)
+> 
 
-Mark, could you take all these due to my urgent travel.
+Patchset looks good to me. The only remaining thing I think is to set
+vs_hidden on nfs4_callback_version4, but that patch is orthogonal to
+this set.
 
-Thanks !
-
-Liam
-
+Reviewed-by: Jeff Layton <jlayton@redhat.com>
