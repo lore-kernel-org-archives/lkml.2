@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751521Ab1ITO25 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 10:28:57 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:38228
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751081Ab1ITO24 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 10:28:56 -0400
-Date: Tue, 20 Sep 2011 10:28:43 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hugh Dickins <hughd@google.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 3.1.0-rc4-tip 0/26]   Uprobes patchset with perf probe
- support
-Message-ID: <20110920142843.GA9995@infradead.org>
-References: <20110920133401.GA28550@infradead.org>
- <20110920141204.GC6568@linux.vnet.ibm.com>
+	id S1751729Ab1ITOaV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 10:30:21 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:56231 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751541Ab1ITOaP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 10:30:15 -0400
+From: Keshava Munegowda <keshava_mgowda@ti.com>
+To: <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <b-cousson@ti.com>, <paul@pwsan.com>
+CC: Keshava Munegowda <keshava_mgowda@ti.com>, <balbi@ti.com>,
+        <gadiyar@ti.com>, <sameo@linux.intel.com>, <parthab@india.ti.com>,
+        <tony@atomide.com>, <khilman@ti.com>, <johnstul@us.ibm.com>,
+        <vishwanath.bs@ti.com>, Keshava Munegowda <Keshava_mgowda@ti.com>
+Subject: [PATCH 0/5 v10] mfd: omap: usb: Runtime PM support for EHCI and OHCI drivers
+Date: Tue, 20 Sep 2011 19:57:24 +0530
+Message-ID: <1316528849-18247-1-git-send-email-keshava_mgowda@ti.com>
+X-Mailer: git-send-email 1.6.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110920141204.GC6568@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 20, 2011 at 07:42:04PM +0530, Srikar Dronamraju wrote:
-> I could use any other inode/file/mapping based sleepable lock that is of
-> higher order than mmap_sem. Can you please let me know if we have
-> alternatives.
+From: Keshava Munegowda <Keshava_mgowda@ti.com>
 
-Please do not overload unrelated locks for this, but add a specific one.
+The Hwmod structures and Runtime PM features are implemented
+For EHCI and OHCI drivers of OMAP3 and OMAP4.
+The global suspend/resume of EHCI and OHCI
+is validated on OMAP3430 sdp board with these patches.
 
-There's two options:
+these patches are rebased to kevin's pm branch and
+usbhs latest mainline kernel patches
 
- (a) add it to the inode (conditionally)
- (b) use global, hashed locks
+TODO:
+   - Adding pad configurations to Hwmods
+   - Aggressive clock cutting in usb bus suspends
+   - Remote Wakeup implementation using irq-chaining
 
-I think (b) is good enough as adding/removing probes isn't exactly the
-most critical fast path.
+
+Benoit Cousson (1):
+  arm: omap: usb: ehci and ohci hwmod structures for omap4
+
+Keshava Munegowda (4):
+  arm: omap: usb: ehci and ohci hwmod structures for omap3
+  arm: omap: usb: register hwmods of usbhs
+  arm: omap: usb: device name change for the clk names of usbhs
+  mfd: omap: usb: Runtime PM support
+
+ arch/arm/mach-omap2/clock3xxx_data.c       |   26 +-
+ arch/arm/mach-omap2/clock44xx_data.c       |   10 +-
+ arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |  281 +++++++++++
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c |  247 ++++++++++
+ arch/arm/mach-omap2/usb-host.c             |  114 ++---
+ arch/arm/plat-omap/include/plat/usb.h      |    3 -
+ drivers/mfd/omap-usb-host.c                |  733 +++++++++++-----------------
+ drivers/usb/host/ehci-omap.c               |   17 +-
+ drivers/usb/host/ohci-omap3.c              |   18 +-
+ 9 files changed, 891 insertions(+), 558 deletions(-)
 
