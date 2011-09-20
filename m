@@ -1,130 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751192Ab1ITOl5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 10:41:57 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:7305 "EHLO mx2.netapp.com"
+	id S1751510Ab1ITOnV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 10:43:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14286 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750749Ab1ITOlz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 10:41:55 -0400
-X-IronPort-AV: E=Sophos;i="4.68,411,1312182000"; 
-   d="scan'208";a="583300365"
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	id S1750784Ab1ITOnU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 10:43:20 -0400
+Date: Tue, 20 Sep 2011 16:39:20 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Serge E. Hallyn" <serge@hallyn.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        lkml <linux-kernel@vger.kernel.org>, richard@nod.at,
+        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 0/2] (Was: user namespace: make signal.c respect user
+	namespaces)
+Message-ID: <20110920143920.GA15859@redhat.com>
+References: <20110919214531.GA18085@sergelap> <20110920122202.GA26504@redhat.com> <20110920124419.GA10759@hallyn.com> <20110920134108.GA30749@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH v5 1/8] SUNRPC: introduce helpers for reference counted rpcbind clients
-Date: Tue, 20 Sep 2011 07:41:55 -0700
-Message-ID: <2E1EB2CF9ED1CB4AA966F0EB76EAB4430B47FD2C@SACMVEXC2-PRD.hq.netapp.com>
-In-reply-to: <20110920102431.58ca1d96@tlielax.poochiereds.net>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH v5 1/8] SUNRPC: introduce helpers for reference counted rpcbind clients
-Thread-Index: Acx3oQiZh4IGJN+MTPKdodl8ruRZ1gAAhrWw
-References: <20110920101031.9861.18444.stgit@localhost6.localdomain6><20110920101341.9861.51453.stgit@localhost6.localdomain6><4E7899E7.9090809@parallels.com> <20110920102431.58ca1d96@tlielax.poochiereds.net>
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: "Jeff Layton" <jlayton@redhat.com>,
-        "Stanislav Kinsbursky" <skinsbursky@parallels.com>
-Cc: <linux-nfs@vger.kernel.org>, "Pavel Emelianov" <xemul@parallels.com>,
-        <neilb@suse.de>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <bfields@fieldses.org>,
-        <davem@davemloft.net>
-X-OriginalArrivalTime: 20 Sep 2011 14:41:54.0806 (UTC) FILETIME=[711DE160:01CC77A3]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110920134108.GA30749@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Jeff Layton [mailto:jlayton@redhat.com]
-> Sent: Tuesday, September 20, 2011 10:25 AM
-> To: Stanislav Kinsbursky
-> Cc: Myklebust, Trond; linux-nfs@vger.kernel.org; Pavel Emelianov;
-> neilb@suse.de; netdev@vger.kernel.org; linux-kernel@vger.kernel.org;
-> bfields@fieldses.org; davem@davemloft.net
-> Subject: Re: [PATCH v5 1/8] SUNRPC: introduce helpers for reference
-> counted rpcbind clients
-> 
-> On Tue, 20 Sep 2011 17:49:27 +0400
-> Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
-> 
-> > v5: fixed races with rpcb_users in rpcb_get_local()
+On 09/20, Oleg Nesterov wrote:
+>
+> On 09/20, Serge E. Hallyn wrote:
 > >
-> > This helpers will be used for dynamical creation and destruction of
-> > rpcbind clients.
-> > Variable rpcb_users is actually a counter of lauched RPC services.
-If
-> > rpcbind clients has been created already, then we just increase
-rpcb_users.
+> > Quoting Oleg Nesterov (oleg@redhat.com):
+> > >
+> > > 	static inline uid_t good_name(struct task_struct *from, struct task_struct *to)
+> > > 	{
+> > > 		// the caller does rcu_read_lock() if needed
+> > > 		const struct cred *from_cred = __task_cred(from);
+> > > 		return user_ns_map_uid(task_cred_xxx(to, user_ns),
+> > > 					from_cred, from_cred->uid);
+> > > 	}
 > >
-> > Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-> >
-> > ---
-> >   net/sunrpc/rpcb_clnt.c |   53
-> ++++++++++++++++++++++++++++++++++++++++++++++++
-> >   1 files changed, 53 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c index
-> > e45d2fb..5f4a406 100644
-> > --- a/net/sunrpc/rpcb_clnt.c
-> > +++ b/net/sunrpc/rpcb_clnt.c
-> > @@ -114,6 +114,9 @@ static struct rpc_program	rpcb_program;
-> >   static struct rpc_clnt *	rpcb_local_clnt;
-> >   static struct rpc_clnt *	rpcb_local_clnt4;
-> >   +DEFINE_SPINLOCK(rpcb_clnt_lock);
-> > +unsigned int			rpcb_users;
-> > +
-> >   struct rpcbind_args {
-> >   	struct rpc_xprt *	r_xprt;
-> >   @@ -161,6 +164,56 @@ static void rpcb_map_release(void *data)
-> >   	kfree(map);
-> >   }
-> >   +static int rpcb_get_local(void)
-> > +{
-> > +	int cnt;
-> > +
-> > +	spin_lock(&rpcb_clnt_lock);
-> > +	if (rpcb_users)
-> > +		rpcb_users++;
-> > +	cnt = rpcb_users;
-> > +	spin_unlock(&rpcb_clnt_lock);
-> > +
-> > +	return cnt;
-> > +}
-> > +
-> > +void rpcb_put_local(void)
-> > +{
-> > +	struct rpc_clnt *clnt = rpcb_local_clnt;
-> > +	struct rpc_clnt *clnt4 = rpcb_local_clnt4;
-> > +	int shutdown;
-> > +
-> > +	spin_lock(&rpcb_clnt_lock);
-> > +	if (--rpcb_users == 0) {
-> > +		rpcb_local_clnt = NULL;
-> > +		rpcb_local_clnt4 = NULL;
-> > +	}
-> 
-> In the function below, you mention that the above pointers are
-protected by
-> rpcb_create_local_mutex, but it looks like they get reset here without
-that
-> being held?
-> 
-> Might it be simpler to just protect rpcb_users with the
-> rpcb_create_local_mutex and ensure that it's held whenever you call
-one of
-> these routines? None of these are codepaths are particularly hot.
+> > That looks great, thanks.  I couldn't think it up myself, but now that
+> > I see it in your email, I see this would be very valuable in helping
+> > make this code more readable  :)
+>
+> Damn ;) The problem is, "the caller does rcu_read_lock() if needed"
+> can't shut up __rcu_dereference_check(). current_cred() passes c == true
+> to do this.
+>
+> This reminds me, __task_cred()->task_is_dead() should go away. Probably
+> we can replace it with (__t == current). Otherwise send_signal() needs
+> rcu_read_lock() to avoid the warning from lockdep, or the helper needs
+> the unconditional rcu_read_lock().
 
-Alternatively, if you do
+IOW, I think we need 2 simple patches first.
 
-	if (rpcb_users == 1) {
-		rpcb_local_clnt = NULL;
-		rpcb_local_clnt4 = NULL;
-		smp_wmb();
-		rpcb_users = 0;
-	} else
-		rpcb_users--;
+The problem is, I have no idea how can I really test these changes ;)
+David, Paul, may be you can review...
 
-then the spinlock protection in rpbc_get_local() is still good enough to
-guarantee correctness.
+Oleg.
+
