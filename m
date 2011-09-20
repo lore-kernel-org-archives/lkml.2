@@ -1,107 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751919Ab1ITRNg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 13:13:36 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:12292 "EHLO mx2.netapp.com"
+	id S1752011Ab1ITRPD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 13:15:03 -0400
+Received: from mga02.intel.com ([134.134.136.20]:37558 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750994Ab1ITRNe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 13:13:34 -0400
-X-IronPort-AV: E=Sophos;i="4.68,412,1312182000"; 
-   d="scan'208";a="583356816"
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	id S1750994Ab1ITRPB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 13:15:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="50745405"
+Date: Tue, 20 Sep 2011 19:17:42 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, alan@linux.intel.com, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, feng.tang@intel.com,
+        jacob.jun.pan@linux.intel.com
+Subject: Re: [PATCH 1/3] mfd: add Intel MSIC driver
+Message-ID: <20110920171742.GU32263@sortiz-mobl>
+References: <cover.1315399396.git.mika.westerberg@linux.intel.com>
+ <dfff721c25a64c9fe77d3b14772e0b3325f47ff9.1315399396.git.mika.westerberg@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="utf-8"
-Subject: RE: [PATCH v4 1/8] SUNRPC: introduce helpers for reference counted rpcbind clients
-Date: Tue, 20 Sep 2011 10:13:31 -0700
-Message-ID: <2E1EB2CF9ED1CB4AA966F0EB76EAB4430B47FE1E@SACMVEXC2-PRD.hq.netapp.com>
-In-reply-to: <4E78BD5B.8090507@parallels.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH v4 1/8] SUNRPC: introduce helpers for reference counted rpcbind clients
-Thread-Index: Acx3sUxGZ+semtI/RU+Qw38nq4SzfgABYWqA
-References: <20110920101031.9861.18444.stgit@localhost6.localdomain6> <20110920101341.9861.51453.stgit@localhost6.localdomain6> <4E788F8C.20103@netapp.com> <2E1EB2CF9ED1CB4AA966F0EB76EAB4430B47FD10@SACMVEXC2-PRD.hq.netapp.com> <4E789679.1060601@parallels.com> <2E1EB2CF9ED1CB4AA966F0EB76EAB4430B47FD22@SACMVEXC2-PRD.hq.netapp.com> <4E78A4AF.1020303@parallels.com> <2E1EB2CF9ED1CB4AA966F0EB76EAB4430B47FD2B@SACMVEXC2-PRD.hq.netapp.com> <4E78BD5B.8090507@parallels.com>
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: "Stanislav Kinsbursky" <skinsbursky@parallels.com>
-Cc: "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>,
-        <linux-nfs@vger.kernel.org>, "Pavel Emelianov" <xemul@parallels.com>,
-        <neilb@suse.de>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <bfields@fieldses.org>,
-        <davem@davemloft.net>
-X-OriginalArrivalTime: 20 Sep 2011 17:13:32.0294 (UTC) FILETIME=[9FA46260:01CC77B8]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <dfff721c25a64c9fe77d3b14772e0b3325f47ff9.1315399396.git.mika.westerberg@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id p8KHDjFA021968
 
-> -----Original Message-----
-> From: Stanislav Kinsbursky [mailto:skinsbursky@parallels.com]
-> Sent: Tuesday, September 20, 2011 12:21 PM
-> To: Myklebust, Trond
-> Cc: Schumaker, Bryan; linux-nfs@vger.kernel.org; Pavel Emelianov;
-> neilb@suse.de; netdev@vger.kernel.org; linux-kernel@vger.kernel.org;
-> bfields@fieldses.org; davem@davemloft.net
-> Subject: Re: [PATCH v4 1/8] SUNRPC: introduce helpers for reference
-> counted rpcbind clients
+Hi Mika,
+
+On Wed, Sep 07, 2011 at 04:06:50PM +0300, Mika Westerberg wrote:
+> Add support for Intel MSIC chip found on Intel Medfield platforms. This
+> chip embeds several subdevices: audio, ADC, GPIO, power button, etc. The
+> driver creates platform device for each subdevice.
 > 
-> 20.09.2011 18:38, Myklebust, Trond Ð¿Ð¸ÑˆÐµÑ‚:
-> >> -----Original Message-----
-> >> From: Stanislav Kinsbursky [mailto:skinsbursky@parallels.com]
-> >> Sent: Tuesday, September 20, 2011 10:35 AM
-> >> To: Myklebust, Trond
-> >> Cc: Schumaker, Bryan; linux-nfs@vger.kernel.org; Pavel Emelianov;
-> >> neilb@suse.de; netdev@vger.kernel.org; linux-kernel@vger.kernel.org;
-> >> bfields@fieldses.org; davem@davemloft.net
-> >> Subject: Re: [PATCH v4 1/8] SUNRPC: introduce helpers for reference
-> >> counted rpcbind clients
-> >>
-> >> 20.09.2011 18:14, Myklebust, Trond Ð¿Ð¸ÑˆÐµÑ‚:
-> >>
-> >>>>>
-> >>>>> Doesn't it  need to be protected by rpcb_clnt_lock too?
-> >>>>>
-> >>>>
-> >>>> Nope from my pow. It's protected by rpcb_create_local_mutex. I.e.
-> >>>> no one will change rpcb_users since it's zero. If it's non zero -
-> >>>> we willn't get to rpcb_set_local().
-> >>>
-> >>> OK, so you are saying that the rpcb_users++ below could be replaced
-> >>> by
-> >> rpcb_users=1?
-> >>>
-> >>
-> >> Yes, you right.
-> >>
-> >>> In that case, don't you need a smp_wmb() between the setting of
-> >> rpcb_local_clnt/4 and the setting of rpcb_users? Otherwise, how do
-> >> you guarantee that rpcb_users != 0 implies rpbc_local_clnt/4 != NULL?
-> >>>
-> >>
-> >> We check rpcb_users under spinlock. Gain spinlock forces memory
-> >> barrier, doesn't it?
-> >
-> > Yes, and so you don't need an smp_rmb() on the reader side. However,
-> you still need to ensure that the processor which _sets_ the rpcb_users and
-> rpcb_local_clnt/4 actually writes them in the correct order.
-> >
-> 
-> Trond, I've thought again and realized, that even if these writes (rpcb_users
-> and rpbc_local_clnt/4) will be done in reversed order, then no barrier
-> required here.
-> Because if we have another process trying to create those clients (it can't use
-> them since it's not started yet) on other CPU, than it's waiting on creation
-> mutex. When it will gain the mutex, we will have required memory barrier
-> for us.
-> 
-> Or I missed something in your explanation?
+> We also provide an MSIC register access API which should replace the more
+> generic SCU IPC interface currently used. Existing drivers can choose
+> whether they convert to this new API or stick with the SCU IPC interface.
+Looks good overall, I just have a few comments/questions:
 
-You need to ensure that if someone calls rpcb_get_local() and gets a positive result, then they can rely on rpcb_local_clnt/4 being non-zero. Without the write barrier, that is not the case.
 
-Without that guarantee, you can't really ensure that rpcb_put_local() will work as expected either, since it will be possible to trigger the --rpcb_users == 0 case without shutting down rpcb_local_clnt/4 (because clnt/clnt4 == 0).
+> +/*
+> + * Other MSIC related devices which are not directly available via SFI DEVS
+> + * table. 
+Would that mean a broken firmware, or something else I'm missing ?
+It looks odd.
 
-Cheers
-  Trond
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> +/**
+> + * intel_msic_reg_read - read a single MSIC register
+> + * @reg: register to read
+> + * @val: register value is placed here
+> + *
+> + * Read a single register from MSIC. Returns %0 on success and negative
+> + * errno in case of failure.
+> + *
+> + * Function may sleep.
+> + */
+> +int intel_msic_reg_read(unsigned short reg, u8 *val)
+> +{
+> +	return intel_scu_ipc_ioread8(reg, val);
+> +}
+> +EXPORT_SYMBOL_GPL(intel_msic_reg_read);
+> +
+> +/**
+> + * intel_msic_reg_write - write a single MSIC register
+> + * @reg: register to write
+> + * @val: value to write to that register
+> + *
+> + * Write a single MSIC register. Returns 0 on success and negative
+> + * errno in case of failure.
+> + *
+> + * Function may sleep.
+> + */
+> +int intel_msic_reg_write(unsigned short reg, u8 val)
+> +{
+> +	return intel_scu_ipc_iowrite8(reg, val);
+> +}
+> +EXPORT_SYMBOL_GPL(intel_msic_reg_write);
+What is the benefit of those wrappers since you're probably not going to get
+rid of the SCU IPC APIs, right ? What's wrong with the subdevices using the
+SCU IPC API directly ?
+
+
+> +/**
+> + * intel_msic_bulk_read - read an array of registers
+> + * @reg: array of register addresses to read
+> + * @buf: array where the read values are placed
+> + * @count: number of registers to read
+> + *
+> + * Function reads @count registers from the MSIC using addresses passed in
+> + * @reg. Read values are placed in @buf. Reads are performed atomically
+> + * wrt. MSIC.
+> + *
+> + * Returns %0 in case of success and negative errno in case of failure.
+> + *
+> + * Function may sleep.
+> + */
+> +int intel_msic_bulk_read(unsigned short *reg, u8 *buf, size_t count)
+> +{
+> +	if (WARN_ON(count > SCU_IPC_RWBUF_LIMIT))
+> +		return -EINVAL;
+> +
+> +	return intel_scu_ipc_readv(reg, buf, count);
+> +}
+> +EXPORT_SYMBOL_GPL(intel_msic_bulk_read);
+> +
+> +/**
+> + * intel_msic_bulk_write - write an array of values to the MSIC registers
+> + * @reg: array of registers to write
+> + * @buf: values to write to each register
+> + * @count: number of registers to write
+> + *
+> + * Function writes @count registers in @buf to MSIC. Writes are performed
+> + * atomically wrt MSIC. Returns %0 in case of success and negative errno in
+> + * case of failure.
+> + *
+> + * Function may sleep.
+> + */
+> +int intel_msic_bulk_write(unsigned short *reg, u8 *buf, size_t count)
+> +{
+> +	if (WARN_ON(count > SCU_IPC_RWBUF_LIMIT))
+> +		return -EINVAL;
+> +
+> +	return intel_scu_ipc_writev(reg, buf, count);
+> +}
+> +EXPORT_SYMBOL_GPL(intel_msic_bulk_write);
+The 2 routines above make more sense.
+
+
+
+> +static int __devinit intel_msic_init_devices(struct intel_msic *msic)
+> +{
+> +	struct platform_device *pdev = msic->pdev;
+> +	struct intel_msic_platform_data *pdata = pdev->dev.platform_data;
+> +	int ret, i;
+> +
+> +	if (pdata->gpio) {
+> +		struct mfd_cell *cell = &msic_devs[INTEL_MSIC_BLOCK_GPIO];
+> +
+> +		cell->platform_data = pdata->gpio;
+> +		cell->pdata_size = sizeof(*pdata->gpio);
+> +	}
+> +
+> +	if (pdata->ocd) {
+> +		unsigned gpio = pdata->ocd->gpio;
+> +
+> +		ret = gpio_request_one(gpio, GPIOF_IN, "ocd_gpio");
+> +		if (ret) {
+> +			dev_err(&pdev->dev, "failed to register OCD GPIO\n");
+> +			return ret;
+> +		}
+> +
+> +		ret = gpio_to_irq(gpio);
+> +		if (ret < 0) {
+> +			dev_err(&pdev->dev, "no IRQ number for OCD GPIO\n");
+> +			gpio_free(gpio);
+> +			return ret;
+> +		}
+> +
+> +		/* Update the IRQ number for the OCD */
+> +		pdata->irq[INTEL_MSIC_BLOCK_OCD] = ret;
+> +	}
+> +
+> +	for (i = 0; i < ARRAY_SIZE(msic_devs); i++) {
+> +		if (!pdata->irq[i])
+> +			continue;
+I would expect some sort of warning here since it would mean your platform
+code defined a sub device platform data without giving you the right IRQ. And
+afaiu, all of your sub devices must have one.
+
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
