@@ -1,94 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751931Ab1ITQvs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 12:51:48 -0400
-Received: from www.linutronix.de ([62.245.132.108]:41871 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751619Ab1ITQvr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 12:51:47 -0400
-Date: Tue, 20 Sep 2011 18:51:38 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Christoph Lameter <cl@gentwo.org>
-cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Christoph Lameter <cl@linux.com>, Tejun Heo <htejun@gmail.com>
-Subject: Re: [RFC][PATCH 2/5] mm: Switch mod_state() to __this_cpu_read()
-In-Reply-To: <alpine.DEB.2.00.1109201059590.8056@router.home>
-Message-ID: <alpine.LFD.2.02.1109201806220.2723@ionos>
-References: <20110919212040.745370781@goodmis.org> <20110919212640.688732950@goodmis.org> <alpine.DEB.2.00.1109191657150.19059@router.home> <alpine.LFD.2.02.1109201334590.2723@ionos> <alpine.DEB.2.00.1109200947100.8056@router.home> <alpine.LFD.2.02.1109201703560.2723@ionos>
- <alpine.DEB.2.00.1109201059590.8056@router.home>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1751384Ab1ITQ4T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 12:56:19 -0400
+Received: from mga14.intel.com ([143.182.124.37]:2521 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750772Ab1ITQ4S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 12:56:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,412,1312182000"; 
+   d="scan'208";a="18871988"
+Subject: Re: [PATCHv3] DMAEngine: Define interleaved transfer request api
+From: Vinod Koul <vinod.koul@intel.com>
+To: Jassi Brar <jaswinder.singh@linaro.org>
+Cc: dan.j.williams@intel.com, linux-kernel@vger.kernel.org,
+        rmk@arm.linux.org.uk, 21cnbao@gmail.com
+In-Reply-To: <1316520730-3655-1-git-send-email-jaswinder.singh@linaro.org>
+References: <1316072789-12830-1-git-send-email-jaswinder.singh@linaro.org>
+	 <1316520730-3655-1-git-send-email-jaswinder.singh@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 20 Sep 2011 22:22:09 +0530
+Message-ID: <1316537529.31295.14.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Sep 2011, Christoph Lameter wrote:
-
-> On Tue, 20 Sep 2011, Thomas Gleixner wrote:
-> > I want to get rid of them alltogether. They are crap by design and
-> > prone to be used wrong without a sensible way to detect that.
+On Tue, 2011-09-20 at 17:42 +0530, Jassi Brar wrote:
+> Define a new api that could be used for doing fancy data transfers
+> like interleaved to contiguous copy and vice-versa.
+> Traditional SG_list based transfers tend to be very inefficient in
+> such cases as where the interleave and chunk are only a few bytes,
+> which call for a very condensed api to convey pattern of the transfer.
+> This api supports all 4 variants of scatter-gather and contiguous transfer.
 > 
-> Counter increments have been done this way for a very long time. This is
-> a pretty well established way of doing things in the kernel that was
-> expanded and made better by avoid preempt disable/enable around these per
-> cpu pointer increments.
-
-This still can be done, when the functions are actually having
-sensible names and annotations.
-
-> > Right, and that's the main problem. We have no fricking way to debug
-> > this, so they should have never been there in the first place. And you
-> > simply CANNOT prevent people from getting this wrong w/o proper
-> > debugging and annotation. Even YOU and Tejun made bogus conversion w/o
-> > noticing, but you expect that others get it right?
+> Of course, neither can this api help transfers that don't lend to DMA by
+> nature, i.e, scattered tiny read/writes with no periodic pattern.
 > 
-> Bogus conversions?
-
-Is the list I posted not enough?
-
-The usage of this_cpu_read() in functions which require to be called
-with preemption or interrupts disabled is pointless and worse it
-actually removed debug functionality in some places which used
-smp_processor_id() before.
-
-I do not care at all whether this_cpu_read() on x86 does not have the
-preempt_enable/disable() pair, but I care a lot about the correctness
-of the code and debugability.
-
-> > So stop defending that trainwreck and help out with fixing the mess
-> > you created in a proper and debugable way!
+> Also since now we support SLAVE channels that might not provide
+> device_prep_slave_sg callback but device_prep_interleaved_dma,
+> remove the BUG_ON check.
 > 
-> You want debugging to ensure that this_cpu ops always access the intended
-> per cpu area? But the point of these operations is to be used in kernel
-> locations where the use of any per cpu area is satisfactory.
+> Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
+> ---
+> 
+> Changes since v2:
+> 1) Added some notes to documentation.
+> 2) Removed the BUG_ON check that expects every SLAVE channel to
+>    provide a prep_slave_sg, as we are now valid otherwise too.
+> 3) Fixed the DMA_TX_TYPE_END offset - made it last element of enum.
+> 4) Renamed prep_dma_genxfer to prep_interleaved_dma as Vinod wanted.
+> 
+> Changes since v1:
+> 1) Dropped the 'dma_transaction_type' member until we really
+>    merge another type into this api. Instead added special
+>    type for this api - DMA_GENXFER in dma_transaction_type.
+> 2) Renamed 'xfer_template' to 'dmaxfer_template' inorder to
+>    preserve namespace, closer to as suggested by Barry Song.
+> 
+>  Documentation/dmaengine.txt |    8 ++++
+>  drivers/dma/dmaengine.c     |    4 +-
+>  include/linux/dmaengine.h   |   77 +++++++++++++++++++++++++++++++++++++++++-
+>  3 files changed, 85 insertions(+), 4 deletions(-)
+> 
+> diff --git a/Documentation/dmaengine.txt b/Documentation/dmaengine.txt
+> index 94b7e0f..962a2d3 100644
+> --- a/Documentation/dmaengine.txt
+> +++ b/Documentation/dmaengine.txt
+> @@ -75,6 +75,10 @@ The slave DMA usage consists of following steps:
+>     slave_sg	- DMA a list of scatter gather buffers from/to a peripheral
+>     dma_cyclic	- Perform a cyclic DMA operation from/to a peripheral till the
+>  		  operation is explicitly stopped.
+> +   interleaved_dma - This is common to Slave as well as M2M clients. For slave
+> +		 address of devices' fifo could be already known to the driver.
+> +		 Various types of operations could be expressed by setting
+> +		 appropriate values to the 'dmaxfer_template' members.
+>  
+>     A non-NULL return of this transfer API represents a "descriptor" for
+>     the given transaction.
+> @@ -89,6 +93,10 @@ The slave DMA usage consists of following steps:
+>  		struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
+>  		size_t period_len, enum dma_data_direction direction);
+>  
+> +	struct dma_async_tx_descriptor *(*device_prep_interleaved_dma)(
+> +		struct dma_chan *chan, struct dmaxfer_template *xt,
+> +		unsigned long flags);
+> +
+>     The peripheral driver is expected to have mapped the scatterlist for
+>     the DMA operation prior to calling device_prep_slave_sg, and must
+>     keep the scatterlist mapped until the DMA operation has completed.
+> diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
+> index b48967b..a6c6051 100644
+> --- a/drivers/dma/dmaengine.c
+> +++ b/drivers/dma/dmaengine.c
+> @@ -693,12 +693,12 @@ int dma_async_device_register(struct dma_device *device)
+>  		!device->device_prep_dma_interrupt);
+>  	BUG_ON(dma_has_cap(DMA_SG, device->cap_mask) &&
+>  		!device->device_prep_dma_sg);
+> -	BUG_ON(dma_has_cap(DMA_SLAVE, device->cap_mask) &&
+> -		!device->device_prep_slave_sg);
+>  	BUG_ON(dma_has_cap(DMA_CYCLIC, device->cap_mask) &&
+>  		!device->device_prep_dma_cyclic);
+>  	BUG_ON(dma_has_cap(DMA_SLAVE, device->cap_mask) &&
+>  		!device->device_control);
+> +	BUG_ON(dma_has_cap(DMA_INTERLEAVE, device->cap_mask) &&
+> +		!device->device_prep_interleaved_dma);
+>  
+>  	BUG_ON(!device->device_alloc_chan_resources);
+>  	BUG_ON(!device->device_free_chan_resources);
+> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+> index 8fbf40e..fcc85d7 100644
+> --- a/include/linux/dmaengine.h
+> +++ b/include/linux/dmaengine.h
+> @@ -71,11 +71,78 @@ enum dma_transaction_type {
+>  	DMA_ASYNC_TX,
+>  	DMA_SLAVE,
+>  	DMA_CYCLIC,
+> +	DMA_INTERLEAVE,
+> +/* last transaction type for creation of the capabilities mask */
+> +	DMA_TX_TYPE_END,
+>  };
+>  
+> -/* last transaction type for creation of the capabilities mask */
+> -#define DMA_TX_TYPE_END (DMA_CYCLIC + 1)
+> +/**
+> + * Interleaved Transfer Request
+> + * ----------------------------
+> + * A chunk is collection of contiguous bytes to be transfered.
+> + * The gap(in bytes) between two chunks is called inter-chunk-gap(ICG).
+> + * ICGs may or maynot change between chunks.
+> + * A FRAME is the smallest series of contiguous {chunk,icg} pairs,
+> + *  that when repeated an integral number of times, specifies the transfer.
+> + * A transfer template is specification of a Frame, the number of times
+> + *  it is to be repeated and other per-transfer attributes.
+> + *
+> + * Practically, a client driver would have ready a template for each
+> + *  type of transfer it is going to need during its lifetime and
+> + *  set only 'src_start' and 'dst_start' before submitting the requests.
+> + *
+> + *
+> + *  |      Frame-1        |       Frame-2       | ~ |       Frame-'numf'  |
+> + *  |====....==.===...=...|====....==.===...=...| ~ |====....==.===...=...|
+> + *
+> + *    ==  Chunk size
+> + *    ... ICG
+> + */
+>  
+> +/**
+> + * struct data_chunk - Element of scatter-gather list that makes a frame.
+> + * @size: Number of bytes to read from source.
+> + *	  size_dst := fn(op, size_src), so doesn't mean much for destination.
+> + * @icg: Number of bytes to jump after last src/dst address of this
+> + *	 chunk and before first src/dst address for next chunk.
+> + *	 Ignored for dst(assumed 0), if dst_inc is true and dst_sgl is false.
+> + *	 Ignored for src(assumed 0), if src_inc is true and src_sgl is false.
+> + */
+> +struct data_chunk {
+> +	size_t size;
+> +	size_t icg;
+> +};
+> +
+> +/**
+> + * struct dmaxfer_template - Template to convey DMAC the transfer pattern
+> + *	 and attributes.
+> + * @src_start: Bus address of source for the first chunk.
+> + * @dst_start: Bus address of destination for the first chunk.
+> + * @src_inc: If the source address increments after reading from it.
+> + * @dst_inc: If the destination address increments after writing to it.
+> + * @src_sgl: If the 'icg' of sgl[] applies to Source (scattered read).
+> + *		Otherwise, source is read contiguously (icg ignored).
+> + *		Ignored if src_inc is false.
+> + * @dst_sgl: If the 'icg' of sgl[] applies to Destination (scattered write).
+> + *		Otherwise, destination is filled contiguously (icg ignored).
+> + *		Ignored if dst_inc is false.
+> + * @frm_irq: If the client expects DMAC driver to do callback after each frame.
+> + * @numf: Number of frames in this template.
+> + * @frame_size: Number of chunks in a frame i.e, size of sgl[].
+> + * @sgl: Array of {chunk,icg} pairs that make up a frame.
+> + */
+> +struct dmaxfer_template {
+> +	dma_addr_t src_start;
+> +	dma_addr_t dst_start;
+> +	bool src_inc;
+> +	bool dst_inc;
+> +	bool src_sgl;
+> +	bool dst_sgl;
+> +	bool frm_irq;
+> +	size_t numf;
+> +	size_t frame_size;
+> +	struct data_chunk sgl[0];
+> +};
+>  
+>  /**
+>   * enum dma_ctrl_flags - DMA flags to augment operation preparation,
+> @@ -309,6 +376,8 @@ typedef void (*dma_async_tx_callback)(void *dma_async_param);
+>   * @chan: target channel for this operation
+>   * @tx_submit: set the prepared descriptor(s) to be executed by the engine
+>   * @callback: routine to call after this operation is complete
+> + *	And after each frame if the 'frm_irq' flag is set during
+> + *	device_prep_interleaved_dma.
+Nope, if callback is set it should be called, additionally you may use
+the flag DMA_PREP_INTERRUPT (which few dmacs use).
+I think frm_irq is not required, if you need please use
+DMA_PREP_INTERRUPT passed thru flags arg
 
-The point is that the whole design assumes that people get it correct
-and you spent not a split second to provide any means of debugability
-for this. Now you argue in circles about your performance numbers and
-let others deal with the fallout and refuse to think about a sensible
-solution to the problem.
+Also for slave transfers, how do we infer direction?
+>   * @callback_param: general parameter to pass to the callback routine
+>   * ---async_tx api specific fields---
+>   * @next: at completion submit this descriptor
+> @@ -432,6 +501,7 @@ struct dma_tx_state {
+>   * @device_prep_dma_cyclic: prepare a cyclic dma operation suitable for audio.
+>   *	The function takes a buffer of size buf_len. The callback function will
+>   *	be called after period_len bytes have been transferred.
+> + * @device_prep_interleaved_dma: Transfer expression in a generic way.
+>   * @device_control: manipulate all pending operations on a channel, returns
+>   *	zero or error code
+>   * @device_tx_status: poll for transaction completion, the optional
+> @@ -496,6 +566,9 @@ struct dma_device {
+>  	struct dma_async_tx_descriptor *(*device_prep_dma_cyclic)(
+>  		struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
+>  		size_t period_len, enum dma_data_direction direction);
+> +	struct dma_async_tx_descriptor *(*device_prep_interleaved_dma)(
+> +		struct dma_chan *chan, struct dmaxfer_template *xt,
+> +		unsigned long flags);
+>  	int (*device_control)(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+>  		unsigned long arg);
+>  
 
-It does not matter at all what you intended and what people should do,
-but it does matter very much what unintentional and undebugable
-wreckage can be caused by it.
 
-We spent huge efforts to make locks debugable and we still have people
-getting it wrong and you expect that something as complex as the per
-cpu stuff is just correct by definition.
+-- 
+~Vinod
 
-And the problem of this_cpu & co starts with the naming convention.
-
-this_cpu_*() is patently wrong. It should be: random_cpu_*() or
-any_cpu_*(). This way you could have avoided confusion in the first
-place and made it entirely clear what the interfaces are about.
-
-Thanks,
-
-	tglx
