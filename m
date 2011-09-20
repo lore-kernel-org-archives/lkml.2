@@ -1,64 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751001Ab1ITNd5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 09:33:57 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59090 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750765Ab1ITNd4 (ORCPT
+	id S1751155Ab1ITNef (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 09:34:35 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:37907
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750781Ab1ITNee (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 09:33:56 -0400
-Date: Tue, 20 Sep 2011 08:33:49 -0500
-From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, richard@nod.at,
-        Andrew Morton <akpm@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>,
-        serge@hallyn.com
-Subject: Re: [PATCH] user namespace: usb: make usb urbs user namespace aware
-Message-ID: <20110920133349.GA4506@sergelap>
-References: <20110919214531.GA18085@sergelap>
- <20110919214700.GA22300@sergelap>
- <20110920131738.GA29852@redhat.com>
+	Tue, 20 Sep 2011 09:34:34 -0400
+Date: Tue, 20 Sep 2011 09:34:01 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 3.1.0-rc4-tip 0/26]   Uprobes patchset with perf probe
+ support
+Message-ID: <20110920133401.GA28550@infradead.org>
+References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110920131738.GA29852@redhat.com>
+In-Reply-To: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Oleg Nesterov (oleg@redhat.com):
-> On 09/19, Serge E. Hallyn wrote:
-> >
-> > Add to the dev_state and alloc_async structures the user namespace
-> > corresponding to the uid and euid.  Pass these to kill_pid_info_as_uid(),
-> > which can then implement a proper, user-namespace-aware uid check.
-> 
-> IOW, we add the additional "user_namespace *" member/argument, and use
-> it along with uid/euid.
-> 
-> I am not really sure, but can't we simplify this?
-> 
-> > @@ -68,6 +69,7 @@ struct dev_state {
-> >  	wait_queue_head_t wait;     /* wake up if a request completed */
-> >  	unsigned int discsignr;
-> >  	struct pid *disc_pid;
-> > +	struct user_namespace *user_ns;
-> >  	uid_t disc_uid, disc_euid;
-> 
-> Can't we add "const struct cred *disc_cred" and kill disc_uid/disc_euid
-> instead?
-> 
-> Then we redefine kill_pid_info_as_uid() as kill_pid_info_as_cred(...cred...),
-> it can use cred->cred->uid/euid directly.
-> 
-> devio.c does get_cred/put_cred instead of get_user_ns/put_user_ns.
-> 
-> What do you think?
+On Tue, Sep 20, 2011 at 05:29:38PM +0530, Srikar Dronamraju wrote:
+> - Uses i_mutex instead of uprobes_mutex.
 
-Yeah, just as file->f_cred does.  Sounds good.
+What for exactly?  I'm pretty strict against introducing even more
+uses for i_mutex, it's already way to overloaded with different
+meanings.
 
-I'll re-send both these patches with your suggestions applied.  Thanks!
-
--serge
