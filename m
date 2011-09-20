@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754621Ab1ITIeJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 04:34:09 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:44679 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754259Ab1ITIeH convert rfc822-to-8bit (ORCPT
+	id S1754606Ab1ITIfh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 04:35:37 -0400
+Received: from www.linutronix.de ([62.245.132.108]:59814 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754259Ab1ITIfg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 04:34:07 -0400
-Subject: Re: [PATCH 0/9] Per-cgroup /proc/stat
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Paul Turner <pjt@google.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Glauber Costa <glommer@parallels.com>,
-        linux-kernel@vger.kernel.org, xemul@parallels.com, paul@paulmenage.org,
-        lizf@cn.fujitsu.com, daniel.lezcano@free.fr, mingo@elte.hu,
-        jbottomley@parallels.com
-In-Reply-To: <4E77CB30.3030509@google.com>
-References: <1316030695-19826-1-git-send-email-glommer@parallels.com>
-	 <1316031196.5040.46.camel@twins> <m2fwjyg9fx.fsf@firstfloor.org>
-	 <1316076989.3045.8.camel@twins> <4E77CB30.3030509@google.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 20 Sep 2011 10:33:22 +0200
-Message-ID: <1316507602.6091.26.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 3.0.3- 
+	Tue, 20 Sep 2011 04:35:36 -0400
+Date: Tue, 20 Sep 2011 10:35:32 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Borislav Petkov <bp@amd64.org>
+cc: LKML <linux-kernel@vger.kernel.org>, "x86@kernel.org" <x86@kernel.org>,
+        "Rosenfeld, Hans" <Hans.Rosenfeld@amd.com>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+        Mike Travis <travis@sgi.com>
+Subject: Re: [patch 0/3] x86: cache_info: Bugfix and cleanups AMD_NB
+ related
+In-Reply-To: <20110919214457.GA15223@aftab>
+Message-ID: <alpine.LFD.2.02.1109201035080.2723@ionos>
+References: <20110723212603.517924252@linutronix.de> <20110919214457.GA15223@aftab>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-09-19 at 16:07 -0700, Paul Turner wrote:
-> At that point we could !CONFIG_CGROUP_CPUACCT by default and deprecate 
-> the beast without breaking ABI for those who really need it (either 
-> because their applications have hard-coded paths or because they really 
-> like cgroup user/sys time -- which we COULD duplicate into cpu but I'm 
-> inclined not to).
+On Mon, 19 Sep 2011, Borislav Petkov wrote:
+
+> On Sun, Jul 24, 2011 at 05:46:07AM -0400, Thomas Gleixner wrote:
+> > The following series fixes a kfree() problem in the cache_info code
+> > and cleans up the shadow struct mess and gets rid of the atomic
+> > allocation in the smp function call.
+> > 
+> > Thanks,
+> > 
+> > 	tglx
+> > ---
+> >  include/asm/amd_nb.h         |    6 ++
+> >  kernel/cpu/intel_cacheinfo.c |  121 ++++++++++++++-----------------------------
+> >  2 files changed, 47 insertions(+), 80 deletions(-)
 > 
-> [*]: the only real caveat is how loudly people scream about the code 
-> duplication; I think it's worth it if it let's us kill cpuacct in the 
-> long run. 
+> /me wonders whatever happened to those?
 
-Right so this patch is all about extended the stat crap, so that would
-have to be duplicated as well.
-
-IIRC the reason cpuacct is a separate controller, is that it then
-doesn't add the overhead it incurs to the regular cpu controller.
-
-But I figure we could add some control knobs on the cpu cgroup mount to
-enable/disable certain features.
-
-Having two separate cgroup hierarchies for the scheduler is quite daft
-of course.
+queued in tip and they should be in next as well.
