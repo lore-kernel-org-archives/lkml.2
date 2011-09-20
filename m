@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756589Ab1ITMQn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 08:16:43 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:39007 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756047Ab1ITMQk (ORCPT
+	id S1756543Ab1ITMQd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 08:16:33 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:34734 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756394Ab1ITMQa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 08:16:40 -0400
+	Tue, 20 Sep 2011 08:16:30 -0400
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
 Cc: Steven Rostedt <rostedt@goodmis.org>,
@@ -14,49 +14,63 @@ Cc: Steven Rostedt <rostedt@goodmis.org>,
         Linux-mm <linux-mm@kvack.org>,
         Arnaldo Carvalho de Melo <acme@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Jonathan Corbet <corbet@lwn.net>, Hugh Dickins <hughd@google.com>,
-        Christoph Hellwig <hch@infradead.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Jonathan Corbet <corbet@lwn.net>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Jim Keniston <jkenisto@linux.vnet.ibm.com>,
         Roland McGrath <roland@hack.frob.com>,
         Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Tue, 20 Sep 2011 17:33:05 +0530
-Message-Id: <20110920120305.25326.87267.sendpatchset@srdronam.in.ibm.com>
+        LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 20 Sep 2011 17:32:55 +0530
+Message-Id: <20110920120255.25326.50394.sendpatchset@srdronam.in.ibm.com>
 In-Reply-To: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com>
 References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com>
-Subject: [PATCH v5 3.1.0-rc4-tip 15/26]   x86: Define x86_64 specific uprobe_task_arch_info structure
+Subject: [PATCH v5 3.1.0-rc4-tip 14/26]   uprobe: register exception notifier
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On x86_64, need to handle RIP relative instructions, which requires us to
-save and restore a register.
+Use the notifier mechanism to register uprobes exception notifier.
 
-Signed-off-by: Jim Keniston <jkenisto@us.ibm.com>
+Signed-off-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
 Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 ---
- arch/x86/include/asm/uprobes.h |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+ kernel/uprobes.c |   18 ++++++++++++++++++
+ 1 files changed, 18 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
-index 7d9d0a5..2ad2c71 100644
---- a/arch/x86/include/asm/uprobes.h
-+++ b/arch/x86/include/asm/uprobes.h
-@@ -36,8 +36,13 @@ typedef u8 uprobe_opcode_t;
- struct uprobe_arch_info {
- 	unsigned long rip_rela_target_address;
- };
+diff --git a/kernel/uprobes.c b/kernel/uprobes.c
+index 8b6654e..083c577 100644
+--- a/kernel/uprobes.c
++++ b/kernel/uprobes.c
+@@ -30,6 +30,7 @@
+ #include <linux/mmu_notifier.h>	/* set_pte_at_notify */
+ #include <linux/swap.h>		/* try_to_free_swap */
+ #include <linux/ptrace.h>	/* user_enable_single_step */
++#include <linux/kdebug.h>	/* notifier mechanism */
+ #include <linux/uprobes.h>
+ 
+ static struct rb_root uprobes_tree = RB_ROOT;
+@@ -1209,3 +1210,20 @@ int uprobe_post_notifier(struct pt_regs *regs)
+ 	set_thread_flag(TIF_UPROBE);
+ 	return 1;
+ }
 +
-+struct uprobe_task_arch_info {
-+	unsigned long saved_scratch_register;
++struct notifier_block uprobe_exception_nb = {
++	.notifier_call = uprobe_exception_notify,
++	.priority = INT_MAX - 1,	/* notified after kprobes, kgdb */
 +};
- #else
- struct uprobe_arch_info {};
-+struct uprobe_task_arch_info {};
- #endif
- struct uprobe;
- extern int analyze_insn(struct task_struct *tsk, struct uprobe *uprobe);
++
++static int __init init_uprobes(void)
++{
++	return register_die_notifier(&uprobe_exception_nb);
++}
++
++static void __exit exit_uprobes(void)
++{
++}
++
++module_init(init_uprobes);
++module_exit(exit_uprobes);
