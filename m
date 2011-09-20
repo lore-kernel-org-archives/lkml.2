@@ -1,152 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754835Ab1ITMhJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 08:37:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42350 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754556Ab1ITMhG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 08:37:06 -0400
-Date: Tue, 20 Sep 2011 14:37:02 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
-        Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 04/11] mm: memcg: per-priority per-zone hierarchy scan
- generations
-Message-ID: <20110920123702.GD26791@tiehlicka.suse.cz>
-References: <1315825048-3437-1-git-send-email-jweiner@redhat.com>
- <1315825048-3437-5-git-send-email-jweiner@redhat.com>
- <20110920084531.GB27675@tiehlicka.suse.cz>
- <20110920091032.GD11489@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110920091032.GD11489@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754974Ab1ITMhu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 08:37:50 -0400
+Received: from mga05.intel.com ([192.55.52.89]:36730 "EHLO
+	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753969Ab1ITMht (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 08:37:49 -0400
+From: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+Subject: [PATCH] Smack: Use secureexec with SMACK64EXEC
+Date: Tue, 20 Sep 2011 15:37:34 +0300
+Message-Id: <1316522254-23193-1-git-send-email-jarkko.sakkinen@intel.com>
+X-Mailer: git-send-email 1.7.4.1
+Organization: Intel Finland Oy - BIC 0357606-4 - PL 281, 00181 Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 20-09-11 11:10:32, Johannes Weiner wrote:
-> On Tue, Sep 20, 2011 at 10:45:32AM +0200, Michal Hocko wrote:
-> > On Mon 12-09-11 12:57:21, Johannes Weiner wrote:
-> > > Memory cgroup limit reclaim currently picks one memory cgroup out of
-> > > the target hierarchy, remembers it as the last scanned child, and
-> > > reclaims all zones in it with decreasing priority levels.
-> > > 
-> > > The new hierarchy reclaim code will pick memory cgroups from the same
-> > > hierarchy concurrently from different zones and priority levels, it
-> > > becomes necessary that hierarchy roots not only remember the last
-> > > scanned child, but do so for each zone and priority level.
-> > > 
-> > > Furthermore, detecting full hierarchy round-trips reliably will become
-> > > crucial, so instead of counting on one iterator site seeing a certain
-> > > memory cgroup twice, use a generation counter that is increased every
-> > > time the child with the highest ID has been visited.
-> > 
-> > In principle I think the patch is good. I have some concerns about
-> > locking and I would really appreciate some more description (like you
-> > provided in the other email in this thread).
-> 
-> Okay, I'll incorporate that description into the changelog.
+SMACK64EXEC extended attribute allows switching to
+another security context when executing a file.
 
-Thanks!
+This patch enables secureexec bit in ELF auxiliary
+vector so that code cannot be injected from executers
+security context.
 
-> 
-> > > @@ -131,6 +136,8 @@ struct mem_cgroup_per_zone {
-> > >  	struct list_head	lists[NR_LRU_LISTS];
-> > >  	unsigned long		count[NR_LRU_LISTS];
-> > >  
-> > > +	struct mem_cgroup_iter_state iter_state[DEF_PRIORITY + 1];
-> > > +
-> > >  	struct zone_reclaim_stat reclaim_stat;
-> > >  	struct rb_node		tree_node;	/* RB tree node */
-> > >  	unsigned long long	usage_in_excess;/* Set to the value by which */
-> > [...]
-> > > @@ -781,9 +783,15 @@ struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm)
-> > >  	return memcg;
-> > >  }
-> > >  
-> > > +struct mem_cgroup_iter {
-> > 
-> > Wouldn't be mem_cgroup_zone_iter_state a better name. It is true it is
-> > rather long but I find mem_cgroup_iter very confusing because the actual
-> > position is stored in the zone's state. The other thing is that it looks
-> > like we have two iterators in mem_cgroup_iter function now but in fact
-> > the iter parameter is just a state when we start iteration.
-> 
-> Agreed, the naming is unfortunate.  How about
-> mem_cgroup_reclaim_cookie or something comparable?  It's limited to
-> reclaim anyway, hierarchy walkers that do not age the LRU lists should
-> not advance the shared iterator state, so might as well encode it in
-> the name.
+Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+---
+ security/smack/smack.h     |    5 +++++
+ security/smack/smack_lsm.c |   15 ++++++++++++++-
+ 2 files changed, 19 insertions(+), 1 deletions(-)
 
-Sounds good.
-
-> 
-> > > +	struct zone *zone;
-> > > +	int priority;
-> > > +	unsigned int generation;
-> > > +};
-> > > +
-> > >  static struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
-> > >  					  struct mem_cgroup *prev,
-> > > -					  bool remember)
-> > > +					  struct mem_cgroup_iter *iter)
-> > 
-> > I would rather see a different name for the last parameter
-> > (iter_state?).
-> 
-> I'm with you on this.  Will think something up.
-> 
-> > > @@ -804,10 +812,20 @@ static struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
-> > >  	}
-> > >  
-> > >  	while (!mem) {
-> > > +		struct mem_cgroup_iter_state *uninitialized_var(is);
-> > >  		struct cgroup_subsys_state *css;
-> > >  
-> > > -		if (remember)
-> > > -			id = root->last_scanned_child;
-> > > +		if (iter) {
-> > > +			int nid = zone_to_nid(iter->zone);
-> > > +			int zid = zone_idx(iter->zone);
-> > > +			struct mem_cgroup_per_zone *mz;
-> > > +
-> > > +			mz = mem_cgroup_zoneinfo(root, nid, zid);
-> > > +			is = &mz->iter_state[iter->priority];
-> > > +			if (prev && iter->generation != is->generation)
-> > > +				return NULL;
-> > > +			id = is->position;
-> > 
-> > Do we need any kind of locking here (spin_lock(&is->lock))?
-> > If two parallel reclaimers start on the same zone and priority they will
-> > see the same position and so bang on the same cgroup.
-> 
-> Note that last_scanned_child wasn't lock-protected before this series,
-> so there is no actual difference.
-
-that's a fair point. Anyway, I think it is worth mentioning this in the
-patch description or in the comment to be clear that this is intentional.
-
-> 
-> I can say, though, that during development I had a lock in there for
-> some time and it didn't make any difference for 32 concurrent
-> reclaimers on a quadcore.  Feel free to evaluate with higher
-> concurrency :)
-
-Thanks!
+diff --git a/security/smack/smack.h b/security/smack/smack.h
+index 2b6c6a5..e41fb07 100644
+--- a/security/smack/smack.h
++++ b/security/smack/smack.h
+@@ -181,6 +181,11 @@ struct smack_known {
+ #define SMK_NUM_ACCESS_TYPE 4
+ 
+ /*
++ * Passed in the bprm->unsafe field
++ */
++#define SMK_SECUREEXEC_NEEDED 0x8000
++
++/*
+  * Smack audit data; is empty if CONFIG_AUDIT not set
+  * to save some stack
+  */
+diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+index b9c5e14..3ea018d 100644
+--- a/security/smack/smack_lsm.c
++++ b/security/smack/smack_lsm.c
+@@ -465,12 +465,24 @@ static int smack_bprm_set_creds(struct linux_binprm *bprm)
+ 
+ 	isp = dp->d_inode->i_security;
+ 
+-	if (isp->smk_task != NULL)
++	if (isp->smk_task != NULL) {
+ 		tsp->smk_task = isp->smk_task;
++		bprm->unsafe = SMK_SECUREEXEC_NEEDED;
++	}
+ 
+ 	return 0;
+ }
+ 
++int smack_bprm_secureexec(struct linux_binprm *bprm)
++{
++	int ret = cap_bprm_secureexec(bprm);
++
++	if (!ret && (bprm->unsafe & SMK_SECUREEXEC_NEEDED))
++		ret = 1;
++
++	return ret;
++}
++
+ /*
+  * Inode hooks
+  */
+@@ -3409,6 +3421,7 @@ struct security_operations smack_ops = {
+ 	.sb_umount = 			smack_sb_umount,
+ 
+ 	.bprm_set_creds =		smack_bprm_set_creds,
++	.bprm_secureexec =		smack_bprm_secureexec,
+ 
+ 	.inode_alloc_security = 	smack_inode_alloc_security,
+ 	.inode_free_security = 		smack_inode_free_security,
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+1.7.4.1
+
