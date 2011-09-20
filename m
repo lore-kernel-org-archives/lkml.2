@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752625Ab1ITWrA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 18:47:00 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:47057 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752190Ab1ITWq7 (ORCPT
+	id S1751842Ab1ITWzy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 18:55:54 -0400
+Received: from mail3.asdk12.org ([74.114.80.18]:47341 "EHLO
+	itmailgw01.asdk12.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750909Ab1ITWzw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 18:46:59 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAOAWeU55LAXJ/2dsb2JhbABCp2F5gVMBAQQBOhwjBQsIAw4KLhQlAyETFIdjoDuSbQ6GbwScHYhv
-Date: Wed, 21 Sep 2011 08:46:55 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Dmitry Monakhov <dmonakhov@openvz.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        ocfs2-devel@oss.oracle.com, sunil.mushran@oracle.com
-Subject: Re: [PATCH] fs: add FS_IOC_UNRESVSP/FS_IOC_UNRESVSP64 ioctls
-Message-ID: <20110920224655.GJ15688@dastard>
-References: <1316528400-1797-1-git-send-email-dmonakhov@openvz.org>
+	Tue, 20 Sep 2011 18:55:52 -0400
+X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Sep 2011 18:55:52 EDT
+X-AuditID: 0a14003c-b7c78ae00000157b-fa-4e7916723da8
+To: undisclosed-recipients:;
+From: Cantrell_Travis <cantrell_travis@asdk12.org>
+Date: Tue, 20 Sep 2011 14:40:49 -0800
+Subject: =?windows-1256?Q?CONTACT_UPS_ON_EMAIL:_ups-ng@dgoh.org=FE?=
+Thread-Topic: =?windows-1256?Q?CONTACT_UPS_ON_EMAIL:_ups-ng@dgoh.org=FE?=
+Thread-Index: AQHMd+ZYu+9rfXh0u06Vl3CioJCkuw==
+Message-ID: <6AB4CB2B192EFC4BA27A1D3A340135AE1BC3DB4D2B@ITVMAIL02.asdk12.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="windows-1256"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1316528400-1797-1-git-send-email-dmonakhov@openvz.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: H4sIAAAAAAAAA02SbUxTZxTH99z73N7arObKm4+ySNLFZRkDgezD+cCWfZjZdQu4LIssbos2
+	owFiRdMiA7MstcIQxlyxhMZWoVC0dil0hU7NsIQVVlSKgINsUNBpeWkLqxOobDjKKM0Svv1y
+	/i/nfDhCOm5csFtYVFwiUxRL5RKBCIsSku6lKZLKczNatMnQEXBQcK0uwkBnyMLAZc8UBSP1
+	fgFoWhwMzF64LQBTpAQM35ox9Pc4MfjmHBhmHrgF0DHahcG70knBgOU8gt+07QyYdV4GbMs9
+	DDjWRxH82sbCqMPIgi3spKGz18/ABeuiAM5dsiPQWkthXeNkwWnVMdCz1MbA4mIzC80+LQbD
+	4G0aPGEtA+fOTNBwa2aMhtUFC4aFyE0MQ9YGBnxPpykwm20UmNowWK8uUfDD8gwG+8MUmOyf
+	xjBmusTA6tASDeM3vkHQXu1H4F9bYeBRxaAAbjgrWWgNhzBUu7soCBk3zp/y+Fio1VSwoL1v
+	omFh5DECW28O1HkaBOAIGyk4Xxdg4dFKiHrbSvFBQx/Fm67VM/zc81mGn+yOYF7nUGN+6fo8
+	zQ9P/IR4+7IL8U8Hulk+UOVg+fYnapZ/2GVh+Q5XH+Iba72YH1OrKX6w5W/6g1p0WJSdL5MX
+	lcoU+946Kiq8P7Pj5DOmLHjxT0qFZnEN2iYk3BvkH7ubiXESGX5gE9QgkTCOG0DE0TbERoUE
+	7iVy2eBjYkItIs2PA6gGCYUCLou43cVRxNxeshZMjdrjuXfIyNovm44E7gCpDKXEWtLJ1M/d
+	m2vFXA55bu9GUUYba1fuWqko09xOMjHdRMXO4UjrrSE6xokk4IswMX8imayyoZg/gyw/8eIY
+	p5KrzfN0rH8HuXNxGmtQvH5LrX5LRL8lot8SMSL8PUosKjkuLZIXfJGRmS5V5h/LzEo/oSjo
+	QJsP/0L2TXSnLd6FOCGSvCh+9XpZbhwjLVWWH3chIqQlCWKzfmMkzpeWn5YpThxRnJLLlC6U
+	LMSSneImiScnjiuQlsiOyWQnZYr/VUq4bbcKWQ7/+0fL+P56lWr4gOT3D+/lNvp6+xrE/SZD
+	2pfzhwZ37fk4bfvByv17etb3nn3F4r07lfzup3n7Rprm3eIFXWvqy2cbVz/6KuvzT2a/fl//
+	LHjqvWCKJhRO/8zUnrd2pvq07qA6s6owuP2vXUfzfvShATlRKV5PyX7zO2NF2ZXgkTn/IQlW
+	FkozX6MVSul//Lf9a+wDAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 20, 2011 at 06:20:00PM +0400, Dmitry Monakhov wrote:
-> Add ioctl interface for FALLOC_FL_PUNCH_HOLE. Ioctls are synonyms of
-> XFS_IOC_UNRESVSP ioctls. Yes probably one can say than we already have
-> a syscall intercase for fallocate, and in general this is right but:
->  - We already have FS_IOC_RESVSP (synonym of XFS_IOC_RESVSP)
->    and it heavily used. So actually this ioctl is not a
->    brand new one. It just makes RSV/URSV interface complete.
 
-Those exist because filesystems copied them from XFS before
-fallocate() was implemented. They are considered "legacy" interfaces
-and are only kept for compatibility with old applications that were
-using the XFS interfaces before fallocate came along.
+After much attempts to reach you on phone, I deemed it necessary and urgent to contact you via your e-mail and to notify you finally about your outstanding compensation payment.
 
->  - There are miliones lines of userspace code written
->    that can be reused for generic linux filesystems without
->    modification. SGI has open sourced many good stuff which are
->    under rapid development by linux community. For example
->    kernel.org/scm/fs/xfs/xfstests-dev.git  currently is one of
->    most used fs-regression testing suite.
+I have sucessfully deposited your Cashier Check of $2,811,041.00 USD with the United Parcel Service (UPS). I am now in Kenya for my new job.
 
-Yes, but as it xfstests is currently maintained, the correct thing
-to do is to extend it to use fallocate() interfaces so they get
-tested. We've already done this for tools the test suite uses like
-fsx, and there are new fallocate based hole punching tests that
-have been added recently.
+For more info, contact the assigned UPS agent for the delivery of your cashier check.
 
-IMO, no new functionality should use [X]FS_IOC_*RESVSP ioctl
-interfaces, and code that currently uses them should be ported to
-use fallocate.
+United Parcel Service (UPS)
+Contact Name: Collins Abba
+Tel: +234-818-147-7003
+E-mail: ups-ng@dgoh.org<mailto:ups-ng@dgoh.org>
 
->    In other words i've added only 30lines of code, and get great
->    many good tools working for me, IMHO it is good deal.
+Please take note that you will pay a shipping/handling fee of $245.00 USD to UPS.
 
-Such as? I can't think of many tools in the linux ecosystem other
-than XFS specific utilities that actually support hole
-punching through this interface.
+Thanks for your attention.
 
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Poussin Catherine
+Programme Manager
+United Nations Human Settlements Programme
