@@ -1,145 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755068Ab1ITJRo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 05:17:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52278 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752442Ab1ITJRm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 05:17:42 -0400
-Date: Tue, 20 Sep 2011 11:17:38 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
-        Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 03/11] mm: vmscan: distinguish between memcg triggering
- reclaim and memcg being scanned
-Message-ID: <20110920091738.GD27675@tiehlicka.suse.cz>
-References: <1315825048-3437-1-git-send-email-jweiner@redhat.com>
- <1315825048-3437-4-git-send-email-jweiner@redhat.com>
- <20110919142955.GG21847@tiehlicka.suse.cz>
- <20110920085811.GC11489@redhat.com>
+	id S1755215Ab1ITJUF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 05:20:05 -0400
+Received: from www.linutronix.de ([62.245.132.108]:32932 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754935Ab1ITJUD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 05:20:03 -0400
+Date: Tue, 20 Sep 2011 11:19:59 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andi Kleen <andi@firstfloor.org>
+cc: linux-kernel@vger.kernel.org, eric.dumazet@gmail.com,
+        akpm@linux-foundation.org, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/2] posix-timers: move global timer id management to
+ signal_struct v4
+In-Reply-To: <1316468925-16754-1-git-send-email-andi@firstfloor.org>
+Message-ID: <alpine.LFD.2.02.1109201047210.2723@ionos>
+References: <1316468925-16754-1-git-send-email-andi@firstfloor.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110920085811.GC11489@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 20-09-11 10:58:11, Johannes Weiner wrote:
-> On Mon, Sep 19, 2011 at 04:29:55PM +0200, Michal Hocko wrote:
-> > On Mon 12-09-11 12:57:20, Johannes Weiner wrote:
-[...]
-> > > @@ -1853,13 +1865,13 @@ static int vmscan_swappiness(struct scan_control *sc)
-> > >   *
-> > >   * nr[0] = anon pages to scan; nr[1] = file pages to scan
-> > >   */
-> > > -static void get_scan_count(struct zone *zone, struct scan_control *sc,
-> > > -					unsigned long *nr, int priority)
-> > > +static void get_scan_count(struct mem_cgroup_zone *mz, struct scan_control *sc,
-> > > +			   unsigned long *nr, int priority)
-> > >  {
-> > >  	unsigned long anon, file, free;
-> > >  	unsigned long anon_prio, file_prio;
-> > >  	unsigned long ap, fp;
-> > > -	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
-> > > +	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(mz);
-> > >  	u64 fraction[2], denominator;
-> > >  	enum lru_list l;
-> > >  	int noswap = 0;
-> > 
-> > You can save some patch lines by:
-> > 	struct zone *zone = mz->zone;
-> > and not doing zone => mz->zone changes that follow.
+On Mon, 19 Sep 2011, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
 > 
-> Actually, I really hate that I had to do that local zone variable in
-> other places.  I only did it where it's used so often that it would
-> have changed every other line.  If you insist, I'll change it, but I
-> would prefer to avoid it when possible.
-
-Just a suggestion feel free to ignore it. I have no preference.
-
+> Move the global posix timer ids IDR to signal_struct. This removes
+> a minor global scalability bottleneck and also allows to finally limit
+> the number of process timers in a sane way (see next patch)
 > 
-> > > @@ -2390,6 +2413,18 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem_cont,
-> > >  }
-> > >  #endif
-> > >  
-> > > +static void age_active_anon(struct zone *zone, struct scan_control *sc,
-> > > +			    int priority)
-> > > +{
-> > > +	struct mem_cgroup_zone mz = {
-> > > +		.mem_cgroup = NULL,
-> > > +		.zone = zone,
-> > > +	};
-> > > +
-> > > +	if (inactive_anon_is_low(&mz))
-> > > +		shrink_active_list(SWAP_CLUSTER_MAX, &mz, sc, priority, 0);
-> > > +}
-> > > +
-> > 
-> > I do not like this very much because we are using a similar construct in
-> > shrink_mem_cgroup_zone so we are duplicating that code. 
-> > What about adding age_mem_cgroup_active_anon (something like shrink_zone).
+> I put it into signal_struct following the other posix timer per process
+> structures.
 > 
-> I am not sure I follow and I don't see what could be shared between
-> the zone shrinking and this as there are different exit conditions to
-> the hierarchy walk.  Can you elaborate?
+> v2: Now with locking again (thanks Eric)
+> v3: Fix the locking too (Eric Dumazet)
+> v4: Use a mutex. Get rid of retry loop.
+> idr_pre_get() is still there to avoid major surgery in lib/idr.c.
+> Random gleixnerfication
 
-Sorry for not being clear enough. Maybe it is not very much important
-but what about something like:
+I could laugh about that if you've had actually addressed my review
+comments proper.
 
-Index: linus_tree/mm/vmscan.c
-===================================================================
---- linus_tree.orig/mm/vmscan.c	2011-09-20 11:07:57.000000000 +0200
-+++ linus_tree/mm/vmscan.c	2011-09-20 11:12:53.000000000 +0200
-@@ -2041,6 +2041,13 @@ static inline bool should_continue_recla
- 	}
- }
- 
-+static void age_mem_cgroup_active_anon(struct mem_cgroup_zone *mz,
-+		struct scan_control *sc, int priority)
-+{
-+	if (inactive_anon_is_low(mz))
-+		shrink_active_list(SWAP_CLUSTER_MAX, mz, sc, priority, 0);
-+}
-+
- /*
-  * This is a basic per-zone page freer.  Used by both kswapd and direct reclaim.
-  */
-@@ -2090,8 +2097,7 @@ restart:
- 	 * Even if we did not try to evict anon pages at all, we want to
- 	 * rebalance the anon lru active/inactive ratio.
- 	 */
--	if (inactive_anon_is_low(mz))
--		shrink_active_list(SWAP_CLUSTER_MAX, mz, sc, priority, 0);
-+	age_mem_cgroup_active_anon(mz, sc, priority);
- 
- 	/* reclaim/compaction might need reclaim to continue */
- 	if (should_continue_reclaim(mz, nr_reclaimed,
-@@ -2421,8 +2427,7 @@ static void age_active_anon(struct zone
- 		.zone = zone,
- 	};
- 
--	if (inactive_anon_is_low(&mz))
--		shrink_active_list(SWAP_CLUSTER_MAX, &mz, sc, priority, 0);
-+	age_mem_cgroup_active_anon(&mz, sc, priority);
- }
- 
- /*
+>  #ifdef CONFIG_SMP
+> @@ -46,6 +48,8 @@ extern struct fs_struct init_fs;
+>  	},								\
+>  	.cred_guard_mutex =						\
+>  		 __MUTEX_INITIALIZER(sig.cred_guard_mutex),		\
+> +	.posix_timers_id = IDR_INIT(posix_timer_id),			\
+> +	.idr_lock	 = __MUTEX_INITIALIZER(init_signals.idr_lock),  \
 
-Thanks
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Hint: I even gave you the proper arguments for both initializers last
+time.
+
+So the above should be: Random sloppyfication.
+
+Andi, seriously. Your signal to noise ratio has become annoying
+again. We've been there before and you are on the verge of entering
+the ignore list again.
+
+Thanks,
+
+	tglx
+
