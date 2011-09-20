@@ -1,91 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752436Ab1ITV4w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 17:56:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:48891 "EHLO
+	id S1752070Ab1ITV4K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 17:56:10 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:48878 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752014Ab1ITV4Q (ORCPT
+	with ESMTP id S1751150Ab1ITV4I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 17:56:16 -0400
+	Tue, 20 Sep 2011 17:56:08 -0400
 From: Seth Forshee <seth.forshee@canonical.com>
 To: Matthew Garrett <mjg@redhat.com>
 Cc: Azael Avalos <coproscefalo@gmail.com>, platform-driver-x86@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 4/6] toshiba_acpi: Support SPFC as an HCI method
-Date: Tue, 20 Sep 2011 16:55:52 -0500
-Message-Id: <1316555754-25949-5-git-send-email-seth.forshee@canonical.com>
+Subject: [PATCH 0/6] toshiba_acpi: Cleanup and TOS1900 device support
+Date: Tue, 20 Sep 2011 16:55:48 -0500
+Message-Id: <1316555754-25949-1-git-send-email-seth.forshee@canonical.com>
 X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1316555754-25949-1-git-send-email-seth.forshee@canonical.com>
-References: <1316555754-25949-1-git-send-email-seth.forshee@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some Toshiba models, notably those with the TOS1900 device, use
-the SPFC method for HCI calls instead of GHCI. Test for this method
-if GHCI isn't found, and if it exists use it for all HCI calls.
+Hi Matthew,
 
-Signed-off-by: Azael Avalos <coproscefalo@gmail.com>
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
----
- drivers/platform/x86/toshiba_acpi.c |   28 ++++++++++++++++++++++------
- 1 files changed, 22 insertions(+), 6 deletions(-)
+Please consider merging the following patches. They represent a
+signficant cleanup of toshiba_acpi as well as adding support for SPFC as
+an HCI method. The latter provides basic but functional support for the
+TOS1900 devices found on newer Toshiba models, which will serve as a
+good starting point for further enhancements. I've tried to leave the
+details of the hardware interaction unchanged to reduce the risk of
+regression for machines already supported by the driver.
 
-diff --git a/drivers/platform/x86/toshiba_acpi.c b/drivers/platform/x86/toshiba_acpi.c
-index a924c7f..cc629e6 100644
---- a/drivers/platform/x86/toshiba_acpi.c
-+++ b/drivers/platform/x86/toshiba_acpi.c
-@@ -892,11 +892,26 @@ static int toshiba_acpi_remove(struct acpi_device *acpi_dev, int type)
- 	return 0;
- }
- 
-+static const char * __devinit find_hci_method(acpi_handle handle)
-+{
-+	acpi_status status;
-+	acpi_handle hci_handle;
-+
-+	status = acpi_get_handle(handle, "GHCI", &hci_handle);
-+	if (ACPI_SUCCESS(status))
-+		return "GHCI";
-+
-+	status = acpi_get_handle(handle, "SPFC", &hci_handle);
-+	if (ACPI_SUCCESS(status))
-+		return "SPFC";
-+
-+	return NULL;
-+}
-+
- static int __devinit toshiba_acpi_add(struct acpi_device *acpi_dev)
- {
- 	struct toshiba_acpi_dev *dev;
--	acpi_status status;
--	acpi_handle handle;
-+	const char *hci_method;
- 	u32 hci_result;
- 	bool bt_present;
- 	int ret = 0;
-@@ -905,16 +920,17 @@ static int __devinit toshiba_acpi_add(struct acpi_device *acpi_dev)
- 	pr_info("Toshiba Laptop ACPI Extras version %s\n",
- 	       TOSHIBA_ACPI_VERSION);
- 
--	/* simple device detection: look for HCI method */
--	status = acpi_get_handle(acpi_dev->handle, "GHCI", &handle);
--	if (ACPI_FAILURE(status))
-+	hci_method = find_hci_method(acpi_dev->handle);
-+	if (!hci_method) {
-+		pr_err("HCI interface not found\n");
- 		return -ENODEV;
-+	}
- 
- 	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
- 	if (!dev)
- 		return -ENOMEM;
- 	dev->acpi_dev = acpi_dev;
--	dev->method_hci = "GHCI";
-+	dev->method_hci = hci_method;
- 	acpi_dev->driver_data = dev;
- 
- 	if (toshiba_acpi_setup_keyboard(dev))
--- 
-1.7.4.1
+The patches are virtually identical to the RFC series I had sent a while
+back, but with an additional patch to initialize the brightness in the
+backlight device. 
 
+Thanks,
+Seth
