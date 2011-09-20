@@ -1,131 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755347Ab1ITJdW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 05:33:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63691 "EHLO mx1.redhat.com"
+	id S1755104Ab1ITJpu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 05:45:50 -0400
+Received: from mga09.intel.com ([134.134.136.24]:29387 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754744Ab1ITJdV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 05:33:21 -0400
-Date: Tue, 20 Sep 2011 11:10:32 +0200
-From: Johannes Weiner <jweiner@redhat.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
-        Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 04/11] mm: memcg: per-priority per-zone hierarchy scan
- generations
-Message-ID: <20110920091032.GD11489@redhat.com>
-References: <1315825048-3437-1-git-send-email-jweiner@redhat.com>
- <1315825048-3437-5-git-send-email-jweiner@redhat.com>
- <20110920084531.GB27675@tiehlicka.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110920084531.GB27675@tiehlicka.suse.cz>
+	id S1754616Ab1ITJpt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 05:45:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="50226434"
+Subject: Re: [PATCH] dmaengine: delete redundant chan_id and chancnt
+ initialization in dma drivers
+From: Vinod Koul <vinod.koul@intel.com>
+To: Barry Song <Baohua.Song@csr.com>
+Cc: linux-kernel@vger.kernel.org, workgroup.linux@csr.com,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Viresh Kumar <viresh.kumar@st.com>, Piotr Ziecik <kosmo@semihalf.com>,
+        Yong Wang <yong.y.wang@intel.com>,
+        Jaswinder Singh <jassi.brar@samsung.com>,
+        Pelagicore AB <info@pelagicore.com>
+In-Reply-To: <1316081190-29777-1-git-send-email-Baohua.Song@csr.com>
+References: <1316081190-29777-1-git-send-email-Baohua.Song@csr.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 20 Sep 2011 15:11:42 +0530
+Message-ID: <1316511702.31295.5.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 20, 2011 at 10:45:32AM +0200, Michal Hocko wrote:
-> On Mon 12-09-11 12:57:21, Johannes Weiner wrote:
-> > Memory cgroup limit reclaim currently picks one memory cgroup out of
-> > the target hierarchy, remembers it as the last scanned child, and
-> > reclaims all zones in it with decreasing priority levels.
-> > 
-> > The new hierarchy reclaim code will pick memory cgroups from the same
-> > hierarchy concurrently from different zones and priority levels, it
-> > becomes necessary that hierarchy roots not only remember the last
-> > scanned child, but do so for each zone and priority level.
-> > 
-> > Furthermore, detecting full hierarchy round-trips reliably will become
-> > crucial, so instead of counting on one iterator site seeing a certain
-> > memory cgroup twice, use a generation counter that is increased every
-> > time the child with the highest ID has been visited.
+On Thu, 2011-09-15 at 03:06 -0700, Barry Song wrote:
+> dma_async_device_register will re-init chan_id and chancnt,
+> so whatever chan_id and chancnt are set in drivers, they will
+> be re-written by dma_async_device_register.
 > 
-> In principle I think the patch is good. I have some concerns about
-> locking and I would really appreciate some more description (like you
-> provided in the other email in this thread).
+> Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+> Cc: Viresh Kumar <viresh.kumar@st.com>
+> Cc: Vinod Koul <vinod.koul@intel.com>
+> Cc: Piotr Ziecik <kosmo@semihalf.com>
+> Cc: Yong Wang <yong.y.wang@intel.com>
+> Cc: Jaswinder Singh <jassi.brar@samsung.com>
+> Cc: Pelagicore AB <info@pelagicore.com>
+> Signed-off-by: Barry Song <Baohua.Song@csr.com>
 
-Okay, I'll incorporate that description into the changelog.
+Applied, Thanks
 
-> > @@ -131,6 +136,8 @@ struct mem_cgroup_per_zone {
-> >  	struct list_head	lists[NR_LRU_LISTS];
-> >  	unsigned long		count[NR_LRU_LISTS];
-> >  
-> > +	struct mem_cgroup_iter_state iter_state[DEF_PRIORITY + 1];
-> > +
-> >  	struct zone_reclaim_stat reclaim_stat;
-> >  	struct rb_node		tree_node;	/* RB tree node */
-> >  	unsigned long long	usage_in_excess;/* Set to the value by which */
-> [...]
-> > @@ -781,9 +783,15 @@ struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm)
-> >  	return memcg;
-> >  }
-> >  
-> > +struct mem_cgroup_iter {
-> 
-> Wouldn't be mem_cgroup_zone_iter_state a better name. It is true it is
-> rather long but I find mem_cgroup_iter very confusing because the actual
-> position is stored in the zone's state. The other thing is that it looks
-> like we have two iterators in mem_cgroup_iter function now but in fact
-> the iter parameter is just a state when we start iteration.
 
-Agreed, the naming is unfortunate.  How about
-mem_cgroup_reclaim_cookie or something comparable?  It's limited to
-reclaim anyway, hierarchy walkers that do not age the LRU lists should
-not advance the shared iterator state, so might as well encode it in
-the name.
-
-> > +	struct zone *zone;
-> > +	int priority;
-> > +	unsigned int generation;
-> > +};
-> > +
-> >  static struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
-> >  					  struct mem_cgroup *prev,
-> > -					  bool remember)
-> > +					  struct mem_cgroup_iter *iter)
-> 
-> I would rather see a different name for the last parameter
-> (iter_state?).
-
-I'm with you on this.  Will think something up.
-
-> > @@ -804,10 +812,20 @@ static struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
-> >  	}
-> >  
-> >  	while (!mem) {
-> > +		struct mem_cgroup_iter_state *uninitialized_var(is);
-> >  		struct cgroup_subsys_state *css;
-> >  
-> > -		if (remember)
-> > -			id = root->last_scanned_child;
-> > +		if (iter) {
-> > +			int nid = zone_to_nid(iter->zone);
-> > +			int zid = zone_idx(iter->zone);
-> > +			struct mem_cgroup_per_zone *mz;
-> > +
-> > +			mz = mem_cgroup_zoneinfo(root, nid, zid);
-> > +			is = &mz->iter_state[iter->priority];
-> > +			if (prev && iter->generation != is->generation)
-> > +				return NULL;
-> > +			id = is->position;
-> 
-> Do we need any kind of locking here (spin_lock(&is->lock))?
-> If two parallel reclaimers start on the same zone and priority they will
-> see the same position and so bang on the same cgroup.
-
-Note that last_scanned_child wasn't lock-protected before this series,
-so there is no actual difference.
-
-I can say, though, that during development I had a lock in there for
-some time and it didn't make any difference for 32 concurrent
-reclaimers on a quadcore.  Feel free to evaluate with higher
-concurrency :)
+-- 
+~Vinod
 
