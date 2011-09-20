@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751103Ab1ITO4T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 10:56:19 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:55325 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750886Ab1ITO4T convert rfc822-to-8bit (ORCPT
+	id S1751414Ab1ITO4e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 10:56:34 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:34474 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751242Ab1ITO4d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 10:56:19 -0400
-Subject: Re: [RFC][PATCH 4/5] printk: Have wake_up_klogd() use
- __this_cpu_write()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Christoph Lameter <cl@gentwo.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Lameter <cl@linux.com>
-Date: Tue, 20 Sep 2011 16:55:53 +0200
-In-Reply-To: <alpine.DEB.2.00.1109200952460.8056@router.home>
-References: <20110919212040.745370781@goodmis.org>
-	  <20110919212641.302263742@goodmis.org>
-	  <alpine.DEB.2.00.1109191653460.19059@router.home>
-	 <1316475208.29966.2.camel@gandalf.stny.rr.com>
-	 <alpine.DEB.2.00.1109200952460.8056@router.home>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1316530554.13664.35.camel@twins>
-Mime-Version: 1.0
+	Tue, 20 Sep 2011 10:56:33 -0400
+MIME-Version: 1.0
+In-Reply-To: <4E7898E1.5030000@sysgo.com>
+References: <4E7898E1.5030000@sysgo.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 20 Sep 2011 07:56:12 -0700
+X-Google-Sender-Auth: GMMoQKQYsr5v7g3XL_vtmQ8c-ME
+Message-ID: <CA+55aFyFqoYC0mOFHpb7jXWn3bvK855evhw=bHDn5gjJaSc5Ew@mail.gmail.com>
+Subject: Re: [PATCH] init: Carefuly handle loglevel option passed to kernel cmdline.
+To: Alexander Sverdlin <asv@sysgo.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-09-20 at 09:54 -0500, Christoph Lameter wrote:
-> On Mon, 19 Sep 2011, Steven Rostedt wrote:
-> 
-> > Note, just because something is always in a location that preemption is
-> > disabled, does not mean it should use the __this_cpu*() variants.
-> 
-> Why not? If preemption is disabled then the process cannot be migrated to
-> another processor. And thus doing the address calculations and operations
-> on variables step by step is okay.
-> 
-> > Because if things change, it may become a problem later on.
-> 
-> What things may change? Someone calls the function with preemption
-> enabled? 
+On Tue, Sep 20, 2011 at 6:45 AM, Alexander Sverdlin <asv@sysgo.com> wrote:
+>
+> Carefuly handle loglevel option passed to kernel cmdline.
 
-Yes, also, for !x86 you get a redundant preempt_disable/enable pair.
+Ugh. I dislike how you misuse the error numbers - it *happens* to
+work, but we return negative error numbers, not positive ones in the
+kernel.
 
+Also, doing an if/else when one arm does a return just looks overly complicated.
 
+Does this (whitespace-damaged) patch work for you?
+
+                 Linus
+
+---
+ init/main.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
+
+diff --git a/init/main.c b/init/main.c
+index 9c51ee7adf3d..5827722ec491 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -209,7 +209,11 @@ early_param("quiet", quiet_kernel);
+
+ static int __init loglevel(char *str)
+ {
+-       get_option(&str, &console_loglevel);
++       int loglevel;
++
++       if (!get_option(&str, &loglevel))
++               return -EINVAL;
++       console_loglevel = loglevel;
+        return 0;
+ }
