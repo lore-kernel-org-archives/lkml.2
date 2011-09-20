@@ -1,75 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752523Ab1ITWUn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 18:20:43 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:34142 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752317Ab1ITWUm (ORCPT
+	id S1752537Ab1ITW3j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 18:29:39 -0400
+Received: from 184-106-247-128.static.cloud-ips.com ([184.106.247.128]:34427
+	"EHLO cloud01.chad-versace.us" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752110Ab1ITW3i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 18:20:42 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Christoph Lameter <cl@gentwo.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [RFC][PATCH 2/5] mm: Switch mod_state() to __this_cpu_read()
-In-Reply-To: Your message of "Tue, 20 Sep 2011 10:54:10 CDT."
-             <alpine.DEB.2.00.1109201038150.8056@router.home>
-From: Valdis.Kletnieks@vt.edu
-References: <20110919212040.745370781@goodmis.org> <20110919212640.688732950@goodmis.org> <alpine.DEB.2.00.1109191657150.19059@router.home> <1316476089.29966.9.camel@gandalf.stny.rr.com> <alpine.DEB.2.00.1109200940240.8056@router.home> <1316531769.29966.61.camel@gandalf.stny.rr.com>
-            <alpine.DEB.2.00.1109201038150.8056@router.home>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1316557142_2679P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Tue, 20 Sep 2011 18:19:02 -0400
-Message-ID: <25631.1316557142@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A02020B.4E791168.00C1,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Tue, 20 Sep 2011 18:29:38 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -1
+From: Ben Widawsky <ben@bwidawsk.net>
+To: intel-gfx@lists.freedesktop.org
+Cc: Ben Widawsky <ben@bwidawsk.net>, linux-kernel@vger.kernel.org,
+        Dave Airlie <airlied@redhat.com>, Keith Packard <keithp@keithp.com>
+Subject: [PATCH 1/2] drm: Add Panel Self Refresh DP addresses
+Date: Tue, 20 Sep 2011 15:29:47 -0700
+Message-Id: <1316557787-14935-1-git-send-email-ben@bwidawsk.net>
+X-Mailer: git-send-email 1.7.6.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1316557142_2679P
-Content-Type: text/plain; charset=us-ascii
+Add the addresses and definitions I care about for Panel Self Refresh, as
+documented in the eDP spec.
 
-On Tue, 20 Sep 2011 10:54:10 CDT, Christoph Lameter said:
-> IT DOES!!!! The memcg bug is caused by someone using this_cpu_read and
-> expecting the cpu not to change. this_cpu_xx ops stand on their own and do
-> not guarantee access to the same per cpu area.
+I'm sending these out before some other patches because this should be a fairly
+simple one to get upstream and not require too much fuss (where the others may
+have some fuss).
 
-As most 6 year olds will tell you, "Well, DUH!".  Maybe if you had called it
-"this_cpu_or_maybe_that_one_over_there_read()", people wouldn't use it wrong.
+This file is a mess with white spacing. I tried to stay consistent with the
+surrounding code.
 
-"If people place a nice chocky in their mouth, they don't want their cheeks
-pierced. In any case this is an inadequate description of the sweetmeat. I
-shall have to ask you to accompany me to the station." -- Monty Python.
+Cc: linux-kernel@vger.kernel.org
+Cc: Dave Airlie <airlied@redhat.com>
+Cc: Keith Packard <keithp@keithp.com>
+Signed-off-by: Ben Widawsky <ben@bwidawsk.net>
+---
+ include/drm/drm_dp_helper.h |   32 ++++++++++++++++++++++++++++++++
+ 1 files changed, 32 insertions(+), 0 deletions(-)
 
-"inadequate description" hardly begins to cover the design of this API, which
-definitely needs to be taken to the station.
-
-
---==_Exmh_1316557142_2679P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFOeRFWcC3lWbTT17ARAmB6AJ9AmXFl+zQUScH2FgyoY3gQcAqp0wCcD13c
-xHluKi7tYJbPbcxhaixSYTI=
-=I0Qc
------END PGP SIGNATURE-----
-
---==_Exmh_1316557142_2679P--
+diff --git a/include/drm/drm_dp_helper.h b/include/drm/drm_dp_helper.h
+index 91567bb..c29d493 100644
+--- a/include/drm/drm_dp_helper.h
++++ b/include/drm/drm_dp_helper.h
+@@ -74,6 +74,17 @@
+ 
+ #define DP_TRAINING_AUX_RD_INTERVAL         0x00e
+ 
++#define DP_PSR_SUPPORT                      0x070
++# define DP_PSR_TRAIN_ON_EXIT               0
++#define DP_PSR_CAPS                         0x071
++# define DP_PSR_SETUP_TIME_330              0
++# define DP_PSR_SETUP_TIME_275              1
++# define DP_PSR_SETUP_TIME_220              2
++# define DP_PSR_SETUP_TIME_165              3
++# define DP_PSR_SETUP_TIME_110              4
++# define DP_PSR_SETUP_TIME_55               5
++# define DP_PSR_SETUP_TIME_0                6
++
+ /* link configuration */
+ #define	DP_LINK_BW_SET		            0x100
+ # define DP_LINK_BW_1_62		    0x06
+@@ -133,6 +144,12 @@
+ #define DP_MAIN_LINK_CHANNEL_CODING_SET	    0x108
+ # define DP_SET_ANSI_8B10B		    (1 << 0)
+ 
++#define DP_PSR_EN_CFG			    0x170
++# define DP_PSR_ENABLE			    (1 << 0)
++# define DP_PSR_MAIN_LIKE_ACTIVE	    (1 << 1)
++# define DP_PSR_CRC_VERIFICATION	    (1 << 2)
++# define DP_PSR_FRAME_CAPTURE		    (1 << 3)
++
+ #define DP_LANE0_1_STATUS		    0x202
+ #define DP_LANE2_3_STATUS		    0x203
+ # define DP_LANE_CR_DONE		    (1 << 0)
+@@ -169,6 +186,21 @@
+ # define DP_SET_POWER_D0                    0x1
+ # define DP_SET_POWER_D3                    0x2
+ 
++#define DP_PSR_ERROR_STATUS                 0x2006
++# define DP_PSR_LINK_CRC_ERROR              (1 << 0)
++# define DP_PSR_RFB_STORAGE_ERROR           (1 << 1)
++
++#define DP_PSR_ESI                          0x2007
++# define DP_PSR_CAPS_CHANGE                 (1 << 0)
++
++#define DP_PSR_STATUS                       0x2008
++# define DP_PSR_SINK_INACTIVE               (1 << 0)
++# define DP_PSR_SINK_ACTIVE_SRC_SYNCED      (1 << 1)
++# define DP_PSR_SINK_ACTIVE_RFB             (1 << 2)
++# define DP_PSR_SINK_ACTIVE_SINK_SYNCED     (1 << 3)
++# define DP_PSR_SINK_ACTIVE_RESYNC          (1 << 4)
++# define DP_PSR_SINK_INTERNAL_ERROR         (1 << 7)
++
+ #define MODE_I2C_START	1
+ #define MODE_I2C_WRITE	2
+ #define MODE_I2C_READ	4
+-- 
+1.7.6.1
 
