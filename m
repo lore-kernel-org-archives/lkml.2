@@ -1,166 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751287Ab1ITOTj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 10:19:39 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:41648 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750842Ab1ITOTi (ORCPT
+	id S1751267Ab1ITOUu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 10:20:50 -0400
+Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:58811 "EHLO
+	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750890Ab1ITOUs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 10:19:38 -0400
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org, ocfs2-devel@oss.oracle.com,
-        sunil.mushran@oracle.com, Dmitry Monakhov <dmonakhov@openvz.org>
-Subject: [PATCH] fs: add FS_IOC_UNRESVSP/FS_IOC_UNRESVSP64 ioctls
-Date: Tue, 20 Sep 2011 18:20:00 +0400
-Message-Id: <1316528400-1797-1-git-send-email-dmonakhov@openvz.org>
-X-Mailer: git-send-email 1.7.0.4
+	Tue, 20 Sep 2011 10:20:48 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EANKeeE5tgwoK/2dsb2JhbAA5CadceYIBExwjGBccKiUDIROHeQS0CA6DSB+DCASkfA
+Date: Tue, 20 Sep 2011 16:19:44 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
+        Andi Kleen <ak@linux.intel.com>, John Crispin <blogic@openwrt.org>,
+        Naga Chumbalkar <nagananda.chumbalkar@hp.com>,
+        Hartley Sweeten <hsweeten@visionengravers.com>
+Subject: [GIT PULL REQUEST] watchdog - v3.1 - Fixes
+Message-ID: <20110920141944.GU11844@infomag.iguana.be>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add ioctl interface for FALLOC_FL_PUNCH_HOLE. Ioctls are synonyms of
-XFS_IOC_UNRESVSP ioctls. Yes probably one can say than we already have
-a syscall intercase for fallocate, and in general this is right but:
- - We already have FS_IOC_RESVSP (synonym of XFS_IOC_RESVSP)
-   and it heavily used. So actually this ioctl is not a
-   brand new one. It just makes RSV/URSV interface complete.
- - There are miliones lines of userspace code written
-   that can be reused for generic linux filesystems without
-   modification. SGI has open sourced many good stuff which are
-   under rapid development by linux community. For example
-   kernel.org/scm/fs/xfs/xfstests-dev.git  currently is one of
-   most used fs-regression testing suite.
-   In other words i've added only 30lines of code, and get great
-   many good tools working for me, IMHO it is good deal.
+Hi Linus,
 
-Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
----
- fs/compat_ioctl.c      |   24 ++++++++++++++++++++----
- fs/ioctl.c             |   10 +++++++---
- include/linux/falloc.h |    2 ++
- include/linux/fs.h     |    2 +-
- 4 files changed, 30 insertions(+), 8 deletions(-)
+Please do a 
+	git pull git://www.linux-watchdog.org/linux-watchdog.git master
 
-diff --git a/fs/compat_ioctl.c b/fs/compat_ioctl.c
-index 51352de..9fe290c 100644
---- a/fs/compat_ioctl.c
-+++ b/fs/compat_ioctl.c
-@@ -782,11 +782,13 @@ struct space_resv_32 {
- };
- 
- #define FS_IOC_RESVSP_32		_IOW ('X', 40, struct space_resv_32)
-+#define FS_IOC_UNRESVSP_32		_IOW ('X', 41, struct space_resv_32)
- #define FS_IOC_RESVSP64_32	_IOW ('X', 42, struct space_resv_32)
-+#define FS_IOC_UNRESVSP64_32	_IOW ('X', 43, struct space_resv_32)
- 
- /* just account for different alignment */
- static int compat_ioctl_preallocate(struct file *file,
--			struct space_resv_32    __user *p32)
-+				struct space_resv_32 __user *p32, int mode)
- {
- 	struct space_resv	__user *p = compat_alloc_user_space(sizeof(*p));
- 
-@@ -799,7 +801,7 @@ static int compat_ioctl_preallocate(struct file *file,
- 	    copy_in_user(&p->l_pad,	&p32->l_pad,	4*sizeof(u32)))
- 		return -EFAULT;
- 
--	return ioctl_preallocate(file, p);
-+	return ioctl_preallocate(file, p, mode);
- }
- #endif
- 
-@@ -1589,12 +1591,26 @@ asmlinkage long compat_sys_ioctl(unsigned int fd, unsigned int cmd,
- #if defined(CONFIG_IA64) || defined(CONFIG_X86_64)
- 	case FS_IOC_RESVSP_32:
- 	case FS_IOC_RESVSP64_32:
--		error = compat_ioctl_preallocate(filp, compat_ptr(arg));
-+		error = compat_ioctl_preallocate(filp, compat_ptr(arg),
-+			FALLOC_FL_KEEP_SIZE);
-+		goto out_fput;
+This will update the following files:
+
+ hpwdt.c        |    9 +++++----
+ lantiq_wdt.c   |    8 ++++----
+ sbc_epx_c3.c   |    2 +-
+ watchdog_dev.c |   14 +++++++-------
+ 4 files changed, 17 insertions(+), 16 deletions(-)
+
+with these Changes:
+
+Author: Andi Kleen <ak@linux.intel.com>
+Date:   Thu Sep 15 13:09:51 2011 -0700
+
+    watchdog: Initconst section fixes for watchdog
+    
+    Signed-off-by: Andi Kleen <ak@linux.intel.com>
+    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+
+Author: John Crispin <blogic@openwrt.org>
+Date:   Wed Aug 24 10:31:39 2011 +0200
+
+    watchdog: lantiq: fix watchdogs timeout handling
+    
+    The enable function was using the global timeout variable for local operations.
+    This resulted in the value of the global variable being corrupted, thus
+    breaking the code.
+    
+    Signed-off-by: John Crispin <blogic@openwrt.org>
+    Signed-off-by: Thomas Langer <thomas.langer@lantiq.com>
+    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+    Cc: linux-watchdog@vger.kernel.org
+    Cc: linux-mips@linux-mips.org
+
+Author: Naga Chumbalkar <nagananda.chumbalkar@hp.com>
+Date:   Tue Aug 9 22:27:26 2011 +0000
+
+    watchdog: hpwdt: prevent multiple "NMI occurred" messages
+    
+    On platforms with no iCRU support don't print two, (possibly conflicting),
+    "NMI occurred" messages when the firmware is unable to source the NMI.
+    
+    Please note that one of the enhancements to the v1.3.0 hpwdt driver is to panic and allow
+    KDUMP to succeed even on NMIs that are unknown to the platform firmware.
+    
+    Signed-off-by: Naga Chumbalkar <nagananda.chumbalkar@hp.com>
+    Reviewed-by: Thomas Mingarelli <thomas.mingarelli@hp.com>
+    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+
+Author: H Hartley Sweeten <hsweeten@visionengravers.com>
+Date:   Wed Aug 3 15:38:20 2011 -0700
+
+    watchdog: WatchDog Timer Driver Core - use passed watchdog_device
+    
+    Use the passed watchdog_device instead of the static global variable when
+    testing and setting the status in watchdog_ping, watchdog_start, and
+    watchdog_stop.  Note that the callers of these functions are actually
+    passing the static global variable.
+    
+    Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+
+For completeness, I added the overal diff below.
+
+Greetings,
+Wim.
+
+================================================================================
+diff --git a/drivers/watchdog/hpwdt.c b/drivers/watchdog/hpwdt.c
+index 410fba4..809cbda 100644
+--- a/drivers/watchdog/hpwdt.c
++++ b/drivers/watchdog/hpwdt.c
+@@ -494,15 +494,16 @@ static int hpwdt_pretimeout(struct notifier_block *nb, unsigned long ulReason,
+ 		asminline_call(&cmn_regs, cru_rom_addr);
+ 	die_nmi_called = 1;
+ 	spin_unlock_irqrestore(&rom_lock, rom_pl);
 +
-+	case FS_IOC_UNRESVSP_32:
-+	case FS_IOC_UNRESVSP64_32:
-+		error = compat_ioctl_preallocate(filp, compat_ptr(arg),
-+			FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE);
- 		goto out_fput;
- #else
- 	case FS_IOC_RESVSP:
- 	case FS_IOC_RESVSP64:
--		error = ioctl_preallocate(filp, compat_ptr(arg));
-+		error = ioctl_preallocate(filp, compat_ptr(arg),
-+			FALLOC_FL_KEEP_SIZE);
-+		goto out_fput;
-+	case FS_IOC_UNRESVSP:
-+	case FS_IOC_UNRESVSP64:
-+		error = ioctl_preallocate(filp, compat_ptr(arg),
-+					FALLOC_FL_KEEP_SIZE |
-+					FALLOC_FL_PUNCH_HOLE);
- 		goto out_fput;
- #endif
- 
-diff --git a/fs/ioctl.c b/fs/ioctl.c
-index 1d9b9fc..f083fec 100644
---- a/fs/ioctl.c
-+++ b/fs/ioctl.c
-@@ -422,7 +422,7 @@ EXPORT_SYMBOL(generic_block_fiemap);
-  * Only the l_start, l_len and l_whence fields of the 'struct space_resv'
-  * are used here, rest are ignored.
-  */
--int ioctl_preallocate(struct file *filp, void __user *argp)
-+int ioctl_preallocate(struct file *filp, void __user *argp, int mode)
- {
- 	struct inode *inode = filp->f_path.dentry->d_inode;
- 	struct space_resv sr;
-@@ -443,7 +443,7 @@ int ioctl_preallocate(struct file *filp, void __user *argp)
- 		return -EINVAL;
++	if (allow_kdump)
++		hpwdt_stop();
++
+ 	if (!is_icru) {
+ 		if (cmn_regs.u1.ral == 0) {
+-			printk(KERN_WARNING "hpwdt: An NMI occurred, "
++			panic("An NMI occurred, "
+ 				"but unable to determine source.\n");
+ 		}
  	}
+-
+-	if (allow_kdump)
+-		hpwdt_stop();
+ 	panic("An NMI occurred, please see the Integrated "
+ 		"Management Log for details.\n");
  
--	return do_fallocate(filp, FALLOC_FL_KEEP_SIZE, sr.l_start, sr.l_len);
-+	return do_fallocate(filp, mode, sr.l_start, sr.l_len);
+diff --git a/drivers/watchdog/lantiq_wdt.c b/drivers/watchdog/lantiq_wdt.c
+index 7d82ada..102aed0 100644
+--- a/drivers/watchdog/lantiq_wdt.c
++++ b/drivers/watchdog/lantiq_wdt.c
+@@ -51,16 +51,16 @@ static int ltq_wdt_ok_to_close;
+ static void
+ ltq_wdt_enable(void)
+ {
+-	ltq_wdt_timeout = ltq_wdt_timeout *
++	unsigned long int timeout = ltq_wdt_timeout *
+ 			(ltq_io_region_clk_rate / LTQ_WDT_DIVIDER) + 0x1000;
+-	if (ltq_wdt_timeout > LTQ_MAX_TIMEOUT)
+-		ltq_wdt_timeout = LTQ_MAX_TIMEOUT;
++	if (timeout > LTQ_MAX_TIMEOUT)
++		timeout = LTQ_MAX_TIMEOUT;
+ 
+ 	/* write the first password magic */
+ 	ltq_w32(LTQ_WDT_PW1, ltq_wdt_membase + LTQ_WDT_CR);
+ 	/* write the second magic plus the configuration and new timeout */
+ 	ltq_w32(LTQ_WDT_SR_EN | LTQ_WDT_SR_PWD | LTQ_WDT_SR_CLKDIV |
+-		LTQ_WDT_PW2 | ltq_wdt_timeout, ltq_wdt_membase + LTQ_WDT_CR);
++		LTQ_WDT_PW2 | timeout, ltq_wdt_membase + LTQ_WDT_CR);
  }
  
- static int file_ioctl(struct file *filp, unsigned int cmd,
-@@ -459,7 +459,11 @@ static int file_ioctl(struct file *filp, unsigned int cmd,
- 		return put_user(i_size_read(inode) - filp->f_pos, p);
- 	case FS_IOC_RESVSP:
- 	case FS_IOC_RESVSP64:
--		return ioctl_preallocate(filp, p);
-+		return ioctl_preallocate(filp, p, FALLOC_FL_KEEP_SIZE);
-+	case FS_IOC_UNRESVSP:
-+	case FS_IOC_UNRESVSP64:
-+		return ioctl_preallocate(filp, p, FALLOC_FL_KEEP_SIZE |
-+					FALLOC_FL_PUNCH_HOLE);
- 	}
- 
- 	return vfs_ioctl(filp, cmd, arg);
-diff --git a/include/linux/falloc.h b/include/linux/falloc.h
-index 73e0b62..fd1e871 100644
---- a/include/linux/falloc.h
-+++ b/include/linux/falloc.h
-@@ -21,7 +21,9 @@ struct space_resv {
+ static void
+diff --git a/drivers/watchdog/sbc_epx_c3.c b/drivers/watchdog/sbc_epx_c3.c
+index 3066a51..eaca366 100644
+--- a/drivers/watchdog/sbc_epx_c3.c
++++ b/drivers/watchdog/sbc_epx_c3.c
+@@ -173,7 +173,7 @@ static struct notifier_block epx_c3_notifier = {
+ 	.notifier_call = epx_c3_notify_sys,
  };
  
- #define FS_IOC_RESVSP		_IOW('X', 40, struct space_resv)
-+#define FS_IOC_UNRESVSP		_IOW('X', 41, struct space_resv)
- #define FS_IOC_RESVSP64		_IOW('X', 42, struct space_resv)
-+#define FS_IOC_UNRESVSP64	_IOW('X', 43, struct space_resv)
+-static const char banner[] __initdata = KERN_INFO PFX
++static const char banner[] __initconst = KERN_INFO PFX
+ 	"Hardware Watchdog Timer for Winsystems EPX-C3 SBC: 0.1\n";
  
- #endif /* __KERNEL__ */
+ static int __init watchdog_init(void)
+diff --git a/drivers/watchdog/watchdog_dev.c b/drivers/watchdog/watchdog_dev.c
+index d33520d..1199da0 100644
+--- a/drivers/watchdog/watchdog_dev.c
++++ b/drivers/watchdog/watchdog_dev.c
+@@ -59,7 +59,7 @@ static struct watchdog_device *wdd;
  
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 178cdb4..d13709c 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2031,7 +2031,7 @@ extern char * getname(const char __user *);
+ static int watchdog_ping(struct watchdog_device *wddev)
+ {
+-	if (test_bit(WDOG_ACTIVE, &wdd->status)) {
++	if (test_bit(WDOG_ACTIVE, &wddev->status)) {
+ 		if (wddev->ops->ping)
+ 			return wddev->ops->ping(wddev);  /* ping the watchdog */
+ 		else
+@@ -81,12 +81,12 @@ static int watchdog_start(struct watchdog_device *wddev)
+ {
+ 	int err;
  
- /* fs/ioctl.c */
+-	if (!test_bit(WDOG_ACTIVE, &wdd->status)) {
++	if (!test_bit(WDOG_ACTIVE, &wddev->status)) {
+ 		err = wddev->ops->start(wddev);
+ 		if (err < 0)
+ 			return err;
  
--extern int ioctl_preallocate(struct file *filp, void __user *argp);
-+extern int ioctl_preallocate(struct file *filp, void __user *argp, int mode);
+-		set_bit(WDOG_ACTIVE, &wdd->status);
++		set_bit(WDOG_ACTIVE, &wddev->status);
+ 	}
+ 	return 0;
+ }
+@@ -105,18 +105,18 @@ static int watchdog_stop(struct watchdog_device *wddev)
+ {
+ 	int err = -EBUSY;
  
- /* fs/dcache.c */
- extern void __init vfs_caches_init_early(void);
--- 
-1.7.2.3
-
+-	if (test_bit(WDOG_NO_WAY_OUT, &wdd->status)) {
++	if (test_bit(WDOG_NO_WAY_OUT, &wddev->status)) {
+ 		pr_info("%s: nowayout prevents watchdog to be stopped!\n",
+-							wdd->info->identity);
++							wddev->info->identity);
+ 		return err;
+ 	}
+ 
+-	if (test_bit(WDOG_ACTIVE, &wdd->status)) {
++	if (test_bit(WDOG_ACTIVE, &wddev->status)) {
+ 		err = wddev->ops->stop(wddev);
+ 		if (err < 0)
+ 			return err;
+ 
+-		clear_bit(WDOG_ACTIVE, &wdd->status);
++		clear_bit(WDOG_ACTIVE, &wddev->status);
+ 	}
+ 	return 0;
+ }
