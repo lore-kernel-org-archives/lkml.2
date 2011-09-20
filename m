@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752018Ab1ITUYV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 16:24:21 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:59428 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750763Ab1ITUYT (ORCPT
+	id S1752070Ab1ITUYX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 16:24:23 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:57918 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752011Ab1ITUYV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 16:24:19 -0400
+	Tue, 20 Sep 2011 16:24:21 -0400
 From: Rob Herring <robherring2@gmail.com>
 To: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
         linux-kernel@vger.kernel.org
@@ -14,9 +14,9 @@ Cc: grant.likely@secretlab.ca, marc.zyngier@arm.com, thomas.abraham@linaro.org,
         jamie@jamieiles.com, b-cousson@ti.com, shawn.guo@linaro.org,
         dave.martin@linaro.org, linux@arm.linux.org.uk,
         Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH 2/3] of/irq: introduce of_irq_init
-Date: Tue, 20 Sep 2011 15:24:03 -0500
-Message-Id: <1316550244-3655-3-git-send-email-robherring2@gmail.com>
+Subject: [PATCH 3/3] ARM: gic: add OF based initialization
+Date: Tue, 20 Sep 2011 15:24:04 -0500
+Message-Id: <1316550244-3655-4-git-send-email-robherring2@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1316550244-3655-1-git-send-email-robherring2@gmail.com>
 References: <1316550244-3655-1-git-send-email-robherring2@gmail.com>
@@ -26,164 +26,243 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rob Herring <rob.herring@calxeda.com>
 
-of_irq_init will scan the devicetree for matching interrupt controller
-nodes. Then it calls an initialization function for each found controller
-in the proper order with parent nodes initialized before child nodes.
+This adds ARM gic interrupt controller initialization using device tree
+data.
 
-Based on initial pseudo code from Grant Likely.
+The initialization function is intended to be called by of_irq_init
+function like this:
+
+const static struct of_device_id irq_match[] = {
+        { .compatible = "arm,cortex-a9-gic", .data = gic_of_init, },
+        {}
+};
+
+static void __init init_irqs(void)
+{
+        of_irq_init(irq_match);
+}
 
 Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
 ---
- drivers/of/irq.c       |  114 ++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/of_irq.h |    1 +
- 2 files changed, 115 insertions(+), 0 deletions(-)
+ Documentation/devicetree/bindings/arm/gic.txt |   55 +++++++++++++++
+ arch/arm/common/gic.c                         |   89 +++++++++++++++++++++++-
+ arch/arm/include/asm/hardware/gic.h           |   12 ++++
+ 3 files changed, 152 insertions(+), 4 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/gic.txt
 
-diff --git a/drivers/of/irq.c b/drivers/of/irq.c
-index 6a5b5e7..1d51bc7 100644
---- a/drivers/of/irq.c
-+++ b/drivers/of/irq.c
-@@ -19,10 +19,12 @@
-  */
- 
- #include <linux/errno.h>
-+#include <linux/list.h>
- #include <linux/module.h>
- #include <linux/of.h>
- #include <linux/of_irq.h>
- #include <linux/string.h>
-+#include <linux/slab.h>
- 
- /* For archs that don't support NO_IRQ (such as x86), provide a dummy value */
- #ifndef NO_IRQ
-@@ -386,3 +388,115 @@ int of_irq_to_resource_table(struct device_node *dev, struct resource *res,
- 
- 	return i;
- }
+diff --git a/Documentation/devicetree/bindings/arm/gic.txt b/Documentation/devicetree/bindings/arm/gic.txt
+new file mode 100644
+index 0000000..52916b4
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/gic.txt
+@@ -0,0 +1,55 @@
++* ARM Generic Interrupt Controller
 +
-+struct intc_desc {
-+	struct list_head	list;
-+	struct device_node	*dev;
-+	struct device_node	*interrupt_parent;
++ARM SMP cores are often associated with a GIC, providing per processor
++interrupts (PPI), shared processor interrupts (SPI) and software
++generated interrupts (SGI).
++
++Primary GIC is attached directly to the CPU and typically has PPIs and SGIs.
++Secondary GICs are cascaded into the upward interrupt controller and do not
++have PPIs or SGIs.
++
++Main node required properties:
++
++- compatible : should be one of:
++	"arm,cortex-a9-gic"
++	"arm,arm11mp-gic"
++- interrupt-controller : Identifies the node as an interrupt controller
++- #interrupt-cells : Specifies the number of cells needed to encode an
++  interrupt source.  The type shall be a <u32> and the value shall be 3.
++
++  The 1st cell is the interrupt type; 0 for SPI interrupts, 1 for PPI
++  interrupts.
++
++  The 2nd cell contains the interrupt number for the interrupt type.
++  SPI interrupts are in the range [0-987].  PPI interrupts are in the
++  range [0-15].
++
++  The 3rd cell is the flags, encoded as follows:
++	bits[3:0] trigger type and level flags.
++		1 = low-to-high edge triggered
++		2 = high-to-low edge triggered
++		4 = active high level-sensitive
++		8 = active low level-sensitive
++	bits[15:8] PPI interrupt cpu mask.  Each bit corresponds to each of
++	the 8 possible cpus attached to the GIC.  A bit set to '1' indicated
++	the interrupt is wired to that CPU.  Only valid for PPI interrupts.
++
++- reg : Specifies base physical address(s) and size of the GIC registers. The
++  first region is the GIC distributor register base and size. The 2nd region is
++  the GIC cpu interface register base and size.
++
++Optional
++- interrupts	: Interrupt source of the parent interrupt controller. Only
++  present on secondary GICs.
++
++Example:
++
++	intc: interrupt-controller@fff11000 {
++		compatible = "arm,cortex-a9-gic";
++		#interrupt-cells = <3>;
++		#address-cells = <1>;
++		interrupt-controller;
++		reg = <0xfff11000 0x1000>,
++		      <0xfff10100 0x100>;
++	};
++
+diff --git a/arch/arm/common/gic.c b/arch/arm/common/gic.c
+index 666b278..84e69a4 100644
+--- a/arch/arm/common/gic.c
++++ b/arch/arm/common/gic.c
+@@ -28,6 +28,10 @@
+ #include <linux/smp.h>
+ #include <linux/cpumask.h>
+ #include <linux/io.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/of_irq.h>
++#include <linux/irqdomain.h>
+ 
+ #include <asm/irq.h>
+ #include <asm/mach/irq.h>
+@@ -255,6 +259,15 @@ void __init gic_cascade_irq(unsigned int gic_nr, unsigned int irq)
+ 	irq_set_chained_handler(irq, gic_handle_cascade_irq);
+ }
+ 
++static int gic_irq_count(void __iomem *dist_base)
++{
++	int gic_irqs = readl_relaxed(dist_base + GIC_DIST_CTR) & 0x1f;
++	gic_irqs = (gic_irqs + 1) * 32;
++	if (gic_irqs > 1020)
++		gic_irqs = 1020;
++	return gic_irqs;
++}
++
+ static void __init gic_dist_init(struct gic_chip_data *gic,
+ 	unsigned int irq_start)
+ {
+@@ -277,10 +290,7 @@ static void __init gic_dist_init(struct gic_chip_data *gic,
+ 	 * Find out how many interrupts are supported.
+ 	 * The GIC only supports up to 1020 interrupt sources.
+ 	 */
+-	gic_irqs = readl_relaxed(base + GIC_DIST_CTR) & 0x1f;
+-	gic_irqs = (gic_irqs + 1) * 32;
+-	if (gic_irqs > 1020)
+-		gic_irqs = 1020;
++	gic_irqs = gic_irq_count(base);
+ 
+ 	/*
+ 	 * Set all global interrupts to be level triggered, active low.
+@@ -405,3 +415,74 @@ void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
+ 	writel_relaxed(map << 16 | irq, gic_data[0].dist_base + GIC_DIST_SOFTINT);
+ }
+ #endif
++
++#ifdef CONFIG_OF
++static int gic_cnt __initdata = 0;
++
++int gic_irq_domain_dt_translate(struct irq_domain *d,
++			    struct device_node *controller,
++			    const u32 *intspec, unsigned int intsize,
++			    unsigned long *out_hwirq, unsigned int *out_type)
++{
++	struct gic_chip_data *gic_data = d->priv;
++
++	if (d->of_node != controller)
++		return -EINVAL;
++	if (intsize < 3)
++		return -EINVAL;
++
++	*out_hwirq = intspec[1];
++	/*
++	 * We've already skipped over SGIs, so PPIs need no translation.
++	 * For SPIs, we need to skip over 16 PPIs on primary GICs.
++	 */
++	if (!intspec[0] && !gic_data->irq_offset)
++		*out_hwirq += 16;
++
++	*out_type = intspec[2] & IRQ_TYPE_SENSE_MASK;
++	return 0;
++}
++
++struct irq_domain_ops gic_irq_domain_ops = {
++	.dt_translate = gic_irq_domain_dt_translate,
 +};
 +
-+typedef int (*irq_init_cb_t)(struct device_node *, struct device_node *);
-+
-+/**
-+ * of_irq_init - Scan the device tree for matching interrupt controllers and
-+ * call their initialization functions in order with parents first.
-+ * @matches: 0 terminated array of nodes to match and initialization function
-+ * to call on match
-+ */
-+void __init of_irq_init(const struct of_device_id *matches)
++int __init gic_of_init(struct device_node *node, struct device_node *parent)
 +{
-+	struct device_node *np;
-+	struct intc_desc *desc;
-+	struct intc_desc *temp_desc;
-+	struct intc_desc *parent_desc = NULL;
-+	struct list_head intc_desc_list;
-+	struct list_head intc_parent_list;
++	void __iomem *cpu_base;
++	void __iomem *dist_base;
++	int irq;
++	struct irq_domain *domain = &gic_data[gic_cnt].domain;
 +
-+	INIT_LIST_HEAD(&intc_desc_list);
-+	INIT_LIST_HEAD(&intc_parent_list);
++	if (WARN_ON(!node))
++		return -ENODEV;
 +
-+	for_each_matching_node(np, matches) {
-+		if (!of_find_property(np, "interrupt-controller", NULL))
-+			continue;
-+		/* Here, we allocate and populate an intc_desc with the node
-+		* pointer, interrupt-parent device_node etc. */
-+		desc = kzalloc(sizeof(*desc), GFP_KERNEL);
-+		if (!desc) {
-+			WARN_ON(1);
-+			goto err;
-+		}
-+		desc->dev = np;
-+		desc->interrupt_parent = of_irq_find_parent(np);
-+		list_add(&desc->list, &intc_desc_list);
++	dist_base = of_iomap(node, 0);
++	WARN(!dist_base, "unable to map gic dist registers\n");
++
++	cpu_base = of_iomap(node, 1);
++	WARN(!cpu_base, "unable to map gic cpu registers\n");
++
++	domain->nr_irq = gic_irq_count(dist_base);
++	/* subtract off SGIs. Also subtract off PPIs for secondary GICs */
++	if (parent)
++		domain->nr_irq -= 32;
++	else
++		domain->nr_irq -= 16;
++
++	domain->irq_base = irq_alloc_descs(-1, 16, domain->nr_irq, numa_node_id());
++	domain->of_node = of_node_get(node);
++	domain->ops = &gic_irq_domain_ops;
++	domain->priv = &gic_data[gic_cnt];
++	irq_domain_add(domain);
++
++	gic_init(gic_cnt, domain->irq_base, dist_base, cpu_base);
++
++	if (parent) {
++		irq = irq_of_parse_and_map(node, 0);
++		gic_cascade_irq(gic_cnt, irq);
 +	}
-+	if (list_empty(&intc_desc_list))
-+		return;
-+
-+	/*
-+	 * The root irq controller is the one without an interrupt-parent.
-+	 * That one goes first, followed by the controllers that reference it,
-+	 * followed by the ones that reference the 2nd level controllers, etc
-+	 */
-+	while (!list_empty(&intc_desc_list)) {
-+		/*
-+		 * Process all controllers with the current 'parent'.
-+		 * First pass will be looking for NULL as the parent.
-+		 * The assumption is that NULL parent means a root controller.
-+		 */
-+		list_for_each_entry_safe(desc, temp_desc, &intc_desc_list, list) {
-+			const struct of_device_id *match;
-+			int ret;
-+			irq_init_cb_t irq_init_cb;
-+
-+			if (parent_desc &&
-+				(desc->interrupt_parent != parent_desc->dev))
-+				continue;
-+
-+			list_del(&desc->list);
-+			match = of_match_node(matches, desc->dev);
-+			if (!match || !match->data)
-+				continue;
-+
-+			pr_debug("of_irq_init: init %s @ %p, parent %p\n",
-+				 match->compatible,
-+				 desc->dev, desc->interrupt_parent);
-+			irq_init_cb = match->data;
-+			ret = irq_init_cb(desc->dev, desc->interrupt_parent);
-+			if (ret)
-+				continue;
-+
-+			/*
-+			 * This one is now set up; add it to the parent list so
-+			 * its children can get processed in a subsequent pass.
-+			 */
-+			list_add_tail(&desc->list, &intc_parent_list);
-+		}
-+		/*
-+		 * All the direct children for the current parent are
-+		 * processed, so free the parent now.
-+		 */
-+		if (parent_desc)
-+			kfree(parent_desc);
-+
-+		/* Get the next pending parent that might have children */
-+		parent_desc = list_first_entry(&intc_parent_list,
-+					       typeof(*parent_desc), list);
-+		if (list_empty(&intc_parent_list) || !parent_desc) {
-+			pr_debug("of_irq_init: children remain, but no parents\n");
-+			goto err;
-+		}
-+
-+		list_del(&parent_desc->list);
-+	}
-+	return;
-+
-+err:
-+	list_for_each_entry_safe(desc, temp_desc, &intc_parent_list, list) {
-+		list_del(&desc->list);
-+		kfree(desc);
-+	}
-+	list_for_each_entry_safe(desc, temp_desc, &intc_desc_list, list) {
-+		list_del(&desc->list);
-+		kfree(desc);
-+	}
++	gic_cnt++;
++	return 0;
 +}
-diff --git a/include/linux/of_irq.h b/include/linux/of_irq.h
-index cd2e61c..032d76c 100644
---- a/include/linux/of_irq.h
-+++ b/include/linux/of_irq.h
-@@ -73,6 +73,7 @@ extern int of_irq_to_resource_table(struct device_node *dev,
- 		struct resource *res, int nr_irqs);
- extern struct device_node *of_irq_find_parent(struct device_node *child);
++#endif
+diff --git a/arch/arm/include/asm/hardware/gic.h b/arch/arm/include/asm/hardware/gic.h
+index 435d3f8..2862d0e 100644
+--- a/arch/arm/include/asm/hardware/gic.h
++++ b/arch/arm/include/asm/hardware/gic.h
+@@ -33,10 +33,21 @@
+ #define GIC_DIST_SOFTINT		0xf00
  
-+extern void of_irq_init(const struct of_device_id *matches);
+ #ifndef __ASSEMBLY__
++#include <linux/irqdomain.h>
++
+ extern void __iomem *gic_cpu_base_addr;
+ extern struct irq_chip gic_arch_extn;
  
- #endif /* CONFIG_OF_IRQ */
- #endif /* CONFIG_OF */
+ void gic_init(unsigned int, unsigned int, void __iomem *, void __iomem *);
++#ifdef CONFIG_OF
++int gic_of_init(struct device_node *node, struct device_node *parent);
++#else
++static inline void gic_of_init(struct device_node *node,
++			       struct device_node *parent)
++{
++	return -ENODEV;
++}
++#endif
+ void gic_secondary_init(unsigned int);
+ void gic_cascade_irq(unsigned int gic_nr, unsigned int irq);
+ void gic_raise_softirq(const struct cpumask *mask, unsigned int irq);
+@@ -46,6 +57,7 @@ struct gic_chip_data {
+ 	unsigned int irq_offset;
+ 	void __iomem *dist_base;
+ 	void __iomem *cpu_base;
++	struct irq_domain domain;
+ };
+ #endif
+ 
 -- 
 1.7.5.4
 
