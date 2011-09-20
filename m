@@ -1,60 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756911Ab1ISX5U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 19:57:20 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:27908 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751681Ab1ISX5S (ORCPT
+	id S1756922Ab1ITAMO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 20:12:14 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:34287 "EHLO
+	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751478Ab1ITAMN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 19:57:18 -0400
-Content-Type: text/plain; charset=UTF-8
-From: Chris Mason <chris.mason@oracle.com>
-To: "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Btrfs fixes
-Date: Mon, 19 Sep 2011 19:57:08 -0400
-Message-Id: <1316476217-sup-4802@shiny>
-User-Agent: Sup/git
-Content-Transfer-Encoding: 8bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4E77D6DD.0046:SCFMA922111,ss=1,re=-4.000,fgs=0
+	Mon, 19 Sep 2011 20:12:13 -0400
+X-SpamScore: -4
+X-BigFish: VPS-4(zz4015Lzz1202hzzz2fh668h839h)
+X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPVD:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
+Message-ID: <4E77DADF.6020608@am.sony.com>
+Date: Mon, 19 Sep 2011 17:14:23 -0700
+From: Tim Bird <tim.bird@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+MIME-Version: 1.0
+To: "kgdb-bugreport@lists.sourceforge.net" 
+	<kgdb-bugreport@lists.sourceforge.net>
+CC: linux kernel <linux-kernel@vger.kernel.org>
+Subject: kdb - can't set breakpoint by default on x86
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+I recently tried using KDB on a 3.0.1 kernel, on an x86 target, using
+a fairly-close-to-default kernel configuration.
 
-The for-linus branch of the btrfs tree on github:
+I found that I could not set a breakpoint.
+It sets inside KDB, but then fails to apply the breakpoint when
+resuming to user space:
 
-Head commit: a66e7cc626f42de6c745963fe0d807518fa49d39
-git://github.com/chrismason/linux.git for-linus
 
-Has the following fixes.  for-linus is against rc6, since some of these
-are regression fixes for earlier 3.1 btrfs commits.  The most important
-of the bunch is Josef's dentry fix, which avoids enoents if we race with
-multiple procs hitting on the same inode.  This bug is btrfs-specific,
-it came in with his optimization to cache the inode location during
-readdir.
+--------------------------------
+/proc # echo g >sysrq-trigger
+[2689816.806249] SysRq : DEBUG
 
-Li Zefan (3) commits (+9/-5):
-    Btrfs: don't make a file partly checksummed through file clone (+5/-0)
-    Btrfs: don't change inode flag of the dest clone file (+0/-1)
-    Btrfs: fix pages truncation in btrfs_ioctl_clone() (+4/-4)
+Entering kdb (current=0xc7661d40, pid 511) on processor 0 due to Keyboard Entry
 
-Josef Bacik (1) commits (+11/-2):
-    Btrfs: only clear the need lookup flag after the dentry is setup
+[0]kdb> bp sys_sync
+Instruction(i) BP #0 at 0xc111ce70 (sys_sync)
+    is enabled  addr at 00000000c111ce70, hardtype=0 installed=0
 
-Jeff Liu (1) commits (+7/-2):
-    BTRFS: Fix lseek return value for error
+[0]kdb> g
+_kdb_bp_install: failed to set breakpoint at 0xc111ce70
+/proc # sync
+/proc #
+--------------------------------
 
-Hidetoshi Seto (1) commits (+3/-2):
-    btrfs: fix d_off in the first dirent
+I discovered that this was due to the text segment being marked
+read-only, by mark_rodata_ro() in arch/x86/mm/init_32.c
 
-Total: (6) commits (+30/-11)
+This is controlled by CONFIG_DEBUG_RODATA.  With CONFIG_DEBUG_RODATA=y,
+I get the following message on startup:
 
- fs/btrfs/file.c  |    9 +++++++--
- fs/btrfs/inode.c |   18 ++++++++++++++----
- fs/btrfs/ioctl.c |   14 +++++++++-----
- 3 files changed, 30 insertions(+), 11 deletions(-)
+Write protecting the kernel read-only data: 6245
+
+Also, breakpoints don't work.
+
+Turning this off solves the problem, but seems counter-intuitive.
+CONFIG_DEBUG_RODATA depends on CONFIG_DEBUG_KERNEL.
+
+Should I:
+1) turn off CONFIG_DEBUG_RODATA automatically when CONFIG_KGDB_KDB is set?
+or
+2) make CONFIG_DEBUG_RODATA depend on !KGDB_KDB?
+or
+3) something else more subtle?
+
+Thanks,
+ -- Tim
+
+
+=============================
+Tim Bird
+Architecture Group Chair, CE Workgroup of the Linux Foundation
+Senior Staff Engineer, Sony Network Entertainment
+=============================
+
