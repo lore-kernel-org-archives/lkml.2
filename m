@@ -1,118 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751040Ab1ITNFi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 09:05:38 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:43248 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750747Ab1ITNFg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 09:05:36 -0400
-X-IronPort-AV: E=Sophos;i="4.68,411,1312182000"; 
-   d="scan'208";a="583269205"
-Message-ID: <4E788F8C.20103@netapp.com>
-Date: Tue, 20 Sep 2011 09:05:16 -0400
-From: Bryan Schumaker <bjschuma@netapp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-CC: Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org, xemul@parallels.com,
-        neilb@suse.de, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bfields@fieldses.org, davem@davemloft.net
-Subject: Re: [PATCH v4 1/8] SUNRPC: introduce helpers for reference counted
- rpcbind clients
-References: <20110920101031.9861.18444.stgit@localhost6.localdomain6> <20110920101341.9861.51453.stgit@localhost6.localdomain6>
-In-Reply-To: <20110920101341.9861.51453.stgit@localhost6.localdomain6>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1750797Ab1ITNFx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 09:05:53 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:35374 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751037Ab1ITNFv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 09:05:51 -0400
+Subject: Re: [PATCH 6/9] Include idle and iowait fields in cpuacct
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, xemul@parallels.com, paul@paulmenage.org,
+        lizf@cn.fujitsu.com, daniel.lezcano@free.fr, mingo@elte.hu,
+        jbottomley@parallels.com
+Date: Tue, 20 Sep 2011 15:05:28 +0200
+In-Reply-To: <4E788E08.2020707@parallels.com>
+References: <1316030695-19826-1-git-send-email-glommer@parallels.com>
+	   <1316030695-19826-7-git-send-email-glommer@parallels.com>
+	  <1316510490.11841.15.camel@twins> <4E7888B8.3080809@parallels.com>
+	 <1316523502.13664.5.camel@twins> <4E788E08.2020707@parallels.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1316523928.13664.12.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20/2011 06:13 AM, Stanislav Kinsbursky wrote:
-> This helpers will be used for dynamical creation and destruction of rpcbind
-> clients.
-> Variable rpcb_users is actually a counter of lauched RPC services. If rpcbind
-> clients has been created already, then we just increase rpcb_users.
-> 
-> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-> 
-> ---
->  net/sunrpc/rpcb_clnt.c |   50 ++++++++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 50 insertions(+), 0 deletions(-)
-> 
-> diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
-> index e45d2fb..8724780 100644
-> --- a/net/sunrpc/rpcb_clnt.c
-> +++ b/net/sunrpc/rpcb_clnt.c
-> @@ -114,6 +114,9 @@ static struct rpc_program	rpcb_program;
->  static struct rpc_clnt *	rpcb_local_clnt;
->  static struct rpc_clnt *	rpcb_local_clnt4;
->  
-> +DEFINE_SPINLOCK(rpcb_clnt_lock);
-> +unsigned int			rpcb_users;
-> +
->  struct rpcbind_args {
->  	struct rpc_xprt *	r_xprt;
->  
-> @@ -161,6 +164,53 @@ static void rpcb_map_release(void *data)
->  	kfree(map);
->  }
->  
-> +static int rpcb_get_local(void)
-> +{
-> +	spin_lock(&rpcb_clnt_lock);
-> +	if (rpcb_users)
-> +		rpcb_users++;
-> +	spin_unlock(&rpcb_clnt_lock);
-> +
-> +	return rpcb_users;
-        ^^^^^^^^^^^^^^^^^^
-Is it safe to use this variable outside of the rpcb_clnt_lock?
+On Tue, 2011-09-20 at 09:58 -0300, Glauber Costa wrote:
+> On 09/20/2011 09:58 AM, Peter Zijlstra wrote:
+> > On Tue, 2011-09-20 at 09:36 -0300, Glauber Costa wrote:
+> >> On 09/20/2011 06:21 AM, Peter Zijlstra wrote:
+> >>> On Wed, 2011-09-14 at 17:04 -0300, Glauber Costa wrote:
+> >>>> These are slightly different from the others though:
+> >>>> (note to reviewers: might be better to put those in a separate
+> >>>> array?)
+> >>>>
+> >>>> Since idle/iowait are a property of the system - by definition,
+> >>>> no process from any cgroup is running when the system is idle,
+> >>>> they are system wide. So what these fields really mean, are baselines
+> >>>> for when the cgroup was created. It allows the cgroup to start
+> >>>> counting idle/iowait from 0.
+> >>>
+> >>> Alternatively you can make iowait based on nr_uninterruptible per cgroup
+> >>> and count all ticks _this_ cgroup was idle.
+> >> You think?
+> >>
+> >> Humm,humm... maybe...
+> >> iowait can indeed be seen as a process group characteristic. I was
+> >> mainly concerned about overhead here, specially for the idle case:
+> >
+> > The overhead of accounting per cgroup nr_uninterruptible is the worst I
+> > think, that's in the sleep/wakeup paths.
+> >
+> >> If we are idle, there is no task context we can draw from, since the
+> >> task in the cpu is the idle task. So we end up having to touch all
+> >> cgroups... Or am I missing something?
+> >>
+> >> Sounds expensive.
+> >
+> > Count the total number of ticks on the cpu (I think we already have
+> > that) and subtract the number of ticks in this cgroup (I think we also
+> > already have that), which should yield: number of ticks not in this
+> > cgroup, aka number of ticks this cgroup was idle.
+> No , no... remember steal time.
 
-> +}
-> +
-> +void rpcb_put_local(void)
-> +{
-> +	struct rpc_clnt *clnt = rpcb_local_clnt;
-> +	struct rpc_clnt *clnt4 = rpcb_local_clnt4;
-> +	int shutdown;
-> +
-> +	spin_lock(&rpcb_clnt_lock);
-> +	if (--rpcb_users == 0) {
-> +		rpcb_local_clnt = NULL;
-> +		rpcb_local_clnt4 = NULL;
-> +	}
-> +	shutdown = !rpcb_users;
-> +	spin_unlock(&rpcb_clnt_lock);
-> +
-> +	if (shutdown) {
-> +		/*
-> +		 * cleanup_rpcb_clnt - remove xprtsock's sysctls, unregister
-> +		 */
-> +		if (clnt4)
-> +			rpc_shutdown_client(clnt4);
-> +		if (clnt)
-> +			rpc_shutdown_client(clnt);
-> +	}
-> +	return;
-> +}
-> +
-> +static void rpcb_set_local(struct rpc_clnt *clnt, struct rpc_clnt *clnt4)
-> +{
-> +	/* Protected by rpcb_create_local_mutex */
-> +	rpcb_local_clnt = clnt;
-> +	rpcb_local_clnt4 = clnt4;
-> +	rpcb_users++;
-> +	dprintk("RPC:       created new rpcb local clients (rpcb_local_clnt: "
-> +			"%p, rpcb_local_clnt4: %p)\n", rpcb_local_clnt,
-> +			rpcb_local_clnt4);
-> +}
-> +
->  /*
->   * Returns zero on success, otherwise a negative errno value
->   * is returned.
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+Of course I don't.. that's virt stuff, I repress that with all my might.
+But add or subtract steal ticks someplace and it doesn't come out right?
