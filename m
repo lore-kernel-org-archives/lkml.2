@@ -1,78 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752583Ab1ITWkn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 18:40:43 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:37348 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752190Ab1ITWkl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 18:40:41 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:to:cc:subject:message-id:in-reply-to:references:
-	x-mailer:mime-version:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=bCL6uEDcmrDWox84+Rb0lv8zo5B7bNb/l6PbXPWZhhyimX88N0Q5Dcwnz46Gzya+3
-	0QjNCF6YTx6o3IofzwiWQ==
-Date: Tue, 20 Sep 2011 15:40:23 -0700
-From: Andrew Morton <akpm@google.com>
-To: =?UTF-8?Q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
-Subject: Re: [PATCH -next] bcma: needs export.h
-Message-Id: <20110920154023.c90396d8.akpm@google.com>
-In-Reply-To: <CACna6rxGrd-ORWZrc0xsAOKptU_Xj3eGh9qSfX9vJYCPTZrCRg@mail.gmail.com>
-References: <20110920173102.d38155c7defbbc29beaae7c0@canb.auug.org.au>
-	<4E78CFC0.4020003@xenotime.net>
-	<CACna6rxGrd-ORWZrc0xsAOKptU_Xj3eGh9qSfX9vJYCPTZrCRg@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752603Ab1ITWl7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 18:41:59 -0400
+Received: from n1.taur.dk ([217.198.219.102]:44022 "EHLO n1.taur.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752190Ab1ITWl6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 18:41:58 -0400
+Message-ID: <4E79168D.4080201@kasperkp.dk>
+Date: Wed, 21 Sep 2011 00:41:17 +0200
+From: Kasper Pedersen <kernel@kasperkp.dk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.20) Gecko/20110831 Fedora/3.1.12-2.fc14 Thunderbird/3.1.12
+MIME-Version: 1.0
+To: Matt Carlson <mcarlson@broadcom.com>, Michael Chan <mchan@broadcom.com>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] tg3: fix VLAN tagging regression
+References: <4E78FC38.7040903@kasperkp.dk>
+In-Reply-To: <4E78FC38.7040903@kasperkp.dk>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Sep 2011 20:45:57 +0200
-Rafa__ Mi__ecki <zajec5@gmail.com> wrote:
+commit 92cd3a17ce9c719abb4c28dee3438e0c641f8de4
+    tg3: Simplify tx bd assignments
 
-> 2011/9/20 Randy Dunlap <rdunlap@xenotime.net>:
-> > From: Randy Dunlap <rdunlap@xenotime.net>
-> >
-> > bcma/driver_chipcommon_pmu.c needs to include <linux/export.h>,
-> > so add it to the headers that are included by bcma_private.h.
-> 
-> Please take a look at discussion in:
-> [PATCH -next] bcma: main.c needs to include <linux/slab.h>
-> thread (by Andrew).
-> 
-> I believe that according to the discussion, such a includes should be
-> done in .c files.
-> 
-> Andrew: can you comment? Am I right?
+broke VLAN tagging on outbound packets.
+It ifdef'ed BCM_KERNEL_SUPPORTS_8021Q, but this
+is not set anywhere. So vlan never gets set, and
+all packets are sent with vlan=0.
 
-Ordinarily, yes, it is preferable to include the needed .h files from
-within the .c files.  However quite a mumber of kernel subsystems do
-take the #include "everything.h" approach.
+v2: We can just remove the test. vlan_tx_tag_present
+is valid regardless of whether the 802.1q module
+is built.
 
-However, drivers/bcma is a bit odd in that it has bcma_private.h which
-includes delay.h (the everything.h approach) but most .c files
-explicitly include other things, including export.h.
+Tested on BCM5721 rev 11.
 
-There's no real pattern here and yes, I agree that the minimal and more
-typical approach is better.
+Signed-off-by: Kasper Pedersen <kernel@kasperkp.dk>
+---
+ drivers/net/tg3.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
---- a/drivers/bcma/driver_chipcommon_pmu.c~bcma-needs-exporth
-+++ a/drivers/bcma/driver_chipcommon_pmu.c
-@@ -10,6 +10,7 @@
+diff --git a/drivers/net/tg3.c b/drivers/net/tg3.c
+index dc3fbf6..4a1374d 100644
+--- a/drivers/net/tg3.c
++++ b/drivers/net/tg3.c
+@@ -6234,12 +6234,10 @@ static netdev_tx_t tg3_start_xmit(struct sk_buff *skb, struct net_device *dev)
+ 		}
+ 	}
  
- #include "bcma_private.h"
- #include <linux/bcma/bcma.h>
-+#include <linux/export.h>
+-#ifdef BCM_KERNEL_SUPPORTS_8021Q
+ 	if (vlan_tx_tag_present(skb)) {
+ 		base_flags |= TXD_FLAG_VLAN;
+ 		vlan = vlan_tx_tag_get(skb);
+ 	}
+-#endif
  
- static u32 bcma_chipco_pll_read(struct bcma_drv_cc *cc, u32 offset)
- {
-_
+ 	if (tg3_flag(tp, USE_JUMBO_BDFLAG) &&
+ 	    !mss && skb->len > VLAN_ETH_FRAME_LEN)
 
