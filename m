@@ -1,75 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751053Ab1ITNba (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 09:31:30 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38083 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750868Ab1ITNb3 convert rfc822-to-8bit (ORCPT
+	id S1751001Ab1ITNd5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 09:33:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59090 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750765Ab1ITNd4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 09:31:29 -0400
-Subject: Re: [PATCH 8/9] per-cgroup boot time
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, xemul@parallels.com, paul@paulmenage.org,
-        lizf@cn.fujitsu.com, daniel.lezcano@free.fr, mingo@elte.hu,
-        jbottomley@parallels.com
-Date: Tue, 20 Sep 2011 15:31:08 +0200
-In-Reply-To: <4E788FD1.40301@parallels.com>
-References: <1316030695-19826-1-git-send-email-glommer@parallels.com>
-	   <1316030695-19826-9-git-send-email-glommer@parallels.com>
-	  <1316510746.11841.18.camel@twins> <4E78890D.1000607@parallels.com>
-	 <1316523860.13664.11.camel@twins> <4E788FD1.40301@parallels.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1316525468.13664.24.camel@twins>
-Mime-Version: 1.0
+	Tue, 20 Sep 2011 09:33:56 -0400
+Date: Tue, 20 Sep 2011 08:33:49 -0500
+From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, richard@nod.at,
+        Andrew Morton <akpm@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>,
+        serge@hallyn.com
+Subject: Re: [PATCH] user namespace: usb: make usb urbs user namespace aware
+Message-ID: <20110920133349.GA4506@sergelap>
+References: <20110919214531.GA18085@sergelap>
+ <20110919214700.GA22300@sergelap>
+ <20110920131738.GA29852@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110920131738.GA29852@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-09-20 at 10:06 -0300, Glauber Costa wrote:
-> On 09/20/2011 10:04 AM, Peter Zijlstra wrote:
-> > On Tue, 2011-09-20 at 09:37 -0300, Glauber Costa wrote:
+Quoting Oleg Nesterov (oleg@redhat.com):
+> On 09/19, Serge E. Hallyn wrote:
 > >
-> >>>> +	getboottime(&boottime);
-> >>>> +	ts = timespec_add(boottime, ca->start_time);
-> >>>> +	jif = ts.tv_sec;
-> >>>>
-> >>>>    	for_each_possible_cpu(i) {
-> >>>>    		cpustat = per_cpu_ptr(ca->cpustat, i);
-> >>>
-> >>>
-> >>> I'm confused, what does it do? You take a boot time timestamp at cgroup
-> >>> creation, add that to all boot-time readings and print the result. How
-> >>> does that make sense? Subtracting the start_time, maybe, that would make
-> >>> the cgroup creation time 0, adding, not so much.
-> >>
-> >> Boot time represent at which times the machine was booted. In this
-> >> context, at which time the container/cgroup was created. So it have to
-> >> be an addition.... don't really understand your question
-> >
-> > I think we're all properly confused now :-)
-> >
-> > getboottime() gives a time since boot, right?
-> >
-> > You take stamp at cgroup creation: say 50s after boot.
-> >
-> > Then on usage you take a new getboottime() reading (which per definition
-> > is>  50s) and add your 50s that you read previous. This results in the
-> > cgroup having 50s of boot-time _MORE_ than the machine. Say you read at
-> > 123s, you then add your 50s timestamp, resulting in 173s to report.
-> >
-> > If instead you did a subtraction: 123-50=73, you would have reported the
-> > time since cgroup creation.
-> >
-> no.
+> > Add to the dev_state and alloc_async structures the user namespace
+> > corresponding to the uid and euid.  Pass these to kill_pid_info_as_uid(),
+> > which can then implement a proper, user-namespace-aware uid check.
 > 
-> /**
->   * getboottime - Return the real time of system boot.
->   * @ts:         pointer to the timespec to be set
->   *
->   * Returns the wall-time of boot in a timespec.
-> ...
+> IOW, we add the additional "user_namespace *" member/argument, and use
+> it along with uid/euid.
+> 
+> I am not really sure, but can't we simplify this?
+> 
+> > @@ -68,6 +69,7 @@ struct dev_state {
+> >  	wait_queue_head_t wait;     /* wake up if a request completed */
+> >  	unsigned int discsignr;
+> >  	struct pid *disc_pid;
+> > +	struct user_namespace *user_ns;
+> >  	uid_t disc_uid, disc_euid;
+> 
+> Can't we add "const struct cred *disc_cred" and kill disc_uid/disc_euid
+> instead?
+> 
+> Then we redefine kill_pid_info_as_uid() as kill_pid_info_as_cred(...cred...),
+> it can use cred->cred->uid/euid directly.
+> 
+> devio.c does get_cred/put_cred instead of get_user_ns/put_user_ns.
+> 
+> What do you think?
 
-Argh,. ok. 
+Yeah, just as file->f_cred does.  Sounds good.
+
+I'll re-send both these patches with your suggestions applied.  Thanks!
+
+-serge
