@@ -1,119 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751315Ab1ITNQT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 09:16:19 -0400
-Received: from frankvm.xs4all.nl ([83.163.148.79]:39263 "EHLO
-	janus.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750810Ab1ITNQR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 09:16:17 -0400
-Date: Tue, 20 Sep 2011 15:16:16 +0200
-From: Frank van Maarseveen <frankvm@frankvm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Lin Ming <ming.m.lin@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: 3.0.3 kernel BUG at kernel/timer.c:1035
-Message-ID: <20110920131615.GA13278@janus>
-References: <20110824130238.GA24543@janus>
- <20110902011058.c5bad476.akpm@linux-foundation.org>
- <20110905123813.GA29763@janus>
- <CAF1ivSYui_=tHbxHiy15a9wfiphHcpoY+J1MmAJ=dMQsAfEVLw@mail.gmail.com>
- <1315320518.4235.3.camel@hp6530s>
- <20110907102425.GA3423@janus>
- <1315398979.2938.0.camel@hp6530s>
- <20110907143006.0d0922dd.akpm@linux-foundation.org>
+	id S1750810Ab1ITNUE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 09:20:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26624 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750713Ab1ITNUC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 09:20:02 -0400
+Date: Tue, 20 Sep 2011 09:19:52 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Cc: ebiederm@xmission.com, mahesh@linux.vnet.ibm.com, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
+Subject: Re: [patch 1/2] kdump: Initialize vmcoreinfo note at startup
+Message-ID: <20110920131952.GA28830@redhat.com>
+References: <20110909102659.320220628@linux.vnet.ibm.com>
+ <20110909102732.497569031@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110907143006.0d0922dd.akpm@linux-foundation.org>
+In-Reply-To: <20110909102732.497569031@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 07, 2011 at 02:30:06PM -0700, Andrew Morton wrote:
-> On Wed, 07 Sep 2011 20:36:19 +0800
-> Lin Ming <ming.m.lin@intel.com> wrote:
+On Fri, Sep 09, 2011 at 12:27:00PM +0200, Michael Holzheu wrote:
+> From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 > 
-> > On Wed, 2011-09-07 at 18:24 +0800, Frank van Maarseveen wrote:
-> > > On Tue, Sep 06, 2011 at 10:48:38PM +0800, Lin Ming wrote:
-> > > > Does below patch help?
-> > > > 
-> > > > >From a98b874437f871d5ecc3f6fe409b2b474b1f2731 Mon Sep 17 00:00:00 2001
-> > > > From: Lin Ming <ming.m.lin@intel.com>
-> > > > Date: Tue, 6 Sep 2011 22:45:43 +0800
-> > > > Subject: [PATCH] block: delete bdi writeback wakup_timer in blk_cleanup_queue()
-> > > > 
-> > > > Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-> > > > ---
-> > > >  block/blk-core.c |    1 +
-> > > >  1 files changed, 1 insertions(+), 0 deletions(-)
-> > > > 
-> > > > diff --git a/block/blk-core.c b/block/blk-core.c
-> > > > index 90e1ffd..22529a3 100644
-> > > > --- a/block/blk-core.c
-> > > > +++ b/block/blk-core.c
-> > > > @@ -363,6 +363,7 @@ void blk_cleanup_queue(struct request_queue *q)
-> > > >  	blk_sync_queue(q);
-> > > >  
-> > > >  	del_timer_sync(&q->backing_dev_info.laptop_mode_wb_timer);
-> > > > +	del_timer_sync(&q->backing_dev_info.wb.wakeup_timer);
-> > > >  	mutex_lock(&q->sysfs_lock);
-> > > >  	queue_flag_set_unlocked(QUEUE_FLAG_DEAD, q);
-> > > >  	mutex_unlock(&q->sysfs_lock);
-> > > > -- 
-> > > > 1.7.2.3
-> > > > 
-> > > 
-> > > No, bug still present. Stack trace is the same and I double checked that
-> > > it was the new kernel (this time with a lot more debug enabled).
-> > 
-> > Thanks for test.
-> > I'll try to reproduce this bug.
+> Currently the vmcoreinfo note is only initialized in case of kdump. On s390
+> it is possible to create kernel dumps with other dump mechanisms than kdump
+> (e.g. via hypervisor dump or stand-alone dump tools). For those dumps it
+> would also be desirable to include the vmcoreinfo data. To accomplish this,
+> with this patch the vmcoreinfo ELF note is always initialized, not only in
+> case of a (kdump) crash. On s390 we will add an ABI defined pointer at
+> a well known address to vmcoreinfo so that dump analysis tools are able to
+> find this information.
 > 
-> Probably this will "fix" it:
+> Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+
+Looks good to me.
+
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
+
+> ---
+>  kernel/kexec.c |   18 +++++++++---------
+>  1 file changed, 9 insertions(+), 9 deletions(-)
 > 
-> --- a/block/blk-sysfs.c~a
-> +++ a/block/blk-sysfs.c
-> @@ -4,6 +4,7 @@
->  #include <linux/kernel.h>
->  #include <linux/slab.h>
->  #include <linux/module.h>
-> +#include <linux/timer.h>
->  #include <linux/bio.h>
->  #include <linux/blkdev.h>
->  #include <linux/blktrace_api.h>
-> @@ -486,7 +487,7 @@ static void blk_release_queue(struct kob
->  		__blk_queue_free_tags(q);
->  
->  	blk_trace_shutdown(q);
-> -
-> +	del_timer_sync(&q->backing_dev_info.wb.wakeup_timer);
->  	bdi_destroy(&q->backing_dev_info);
->  	kmem_cache_free(blk_requestq_cachep, q);
+> --- a/kernel/kexec.c
+> +++ b/kernel/kexec.c
+> @@ -1392,24 +1392,23 @@ int __init parse_crashkernel(char 		 *cm
 >  }
-> _
-> 
-> Jens, can you please take a look at this regression? 
-> blk_release_queue() is freeing a pending timer.
-
-Yep, this fixes it. This is the recipe I used for triggering the issue
-on 3.0.4 (it can probably be simplified):
-
--	mount an ext[34] formatted USB stick read-write on /mnt, preloaded
-	with a (64k) file "bar" in subdirectory "foo".
--	cat /mnt/foo/bar >/dev/null
--	sleep 30	# or more
--	unplug USB stick
--	issue an "umount -l -f /mnt"
-
-After playing with the 30 second delay parameter (to get more details) the
-kernel somehow ended in a state where the bug was no longer reproducable.
-A reboot made the recipe work again.
-
-
-Thanks,
-
--- 
-Frank
+>  
+>  
+> -
+> -void crash_save_vmcoreinfo(void)
+> +static void update_vmcoreinfo_note(void)
+>  {
+> -	u32 *buf;
+> +	u32 *buf = (u32 *) vmcoreinfo_note;
+>  
+>  	if (!vmcoreinfo_size)
+>  		return;
+> -
+> -	vmcoreinfo_append_str("CRASHTIME=%ld", get_seconds());
+> -
+> -	buf = (u32 *)vmcoreinfo_note;
+> -
+>  	buf = append_elf_note(buf, VMCOREINFO_NOTE_NAME, 0, vmcoreinfo_data,
+>  			      vmcoreinfo_size);
+> -
+>  	final_note(buf);
+>  }
+>  
+> +void crash_save_vmcoreinfo(void)
+> +{
+> +	vmcoreinfo_append_str("CRASHTIME=%ld", get_seconds());
+> +	update_vmcoreinfo_note();
+> +}
+> +
+>  void vmcoreinfo_append_str(const char *fmt, ...)
+>  {
+>  	va_list args;
+> @@ -1495,6 +1494,7 @@ static int __init crash_save_vmcoreinfo_
+>  	VMCOREINFO_NUMBER(PG_swapcache);
+>  
+>  	arch_crash_save_vmcoreinfo();
+> +	update_vmcoreinfo_note();
+>  
+>  	return 0;
+>  }
