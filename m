@@ -1,44 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752702Ab1ITXx0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 19:53:26 -0400
-Received: from students.itb.ac.id ([167.205.1.72]:40514 "EHLO
-	students.itb.ac.id" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752663Ab1ITXxY convert rfc822-to-8bit (ORCPT
+	id S1752667Ab1ITXzh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 19:55:37 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:47277 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752178Ab1ITXzf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 19:53:24 -0400
-X-Greylist: delayed 1589 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Sep 2011 19:53:24 EDT
-Date: Wed, 21 Sep 2011 06:11:06 +0700 (WIT)
-From: Administrador <rizky.ritonga@students.itb.ac.id>
-Reply-To: "activateyouremail@engineer.com" <activateyouremail@engineer.com>
-Message-ID: <1690020149.23311316560266397.JavaMail.root@students.itb.ac.id>
-Subject: =?utf-8?Q?El_usuario_de_correo_web_-_Confi?=
- =?utf-8?Q?rme_la_informaci=C3=B3n_Webmail_Abajo?=
+	Tue, 20 Sep 2011 19:55:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+In-Reply-To: <1316548373-8782-5-git-send-email-zohar@linux.vnet.ibm.com>
+References: <1316548373-8782-1-git-send-email-zohar@linux.vnet.ibm.com>
+	<1316548373-8782-5-git-send-email-zohar@linux.vnet.ibm.com>
+Date: Wed, 21 Sep 2011 02:55:35 +0300
+Message-ID: <CAHp75VcQd9CjCKHVWjb7pDzFWCHMTcpTrzG4hHfiLu27F+Tfmg@mail.gmail.com>
+Subject: Re: [PATCH v1 4/4] target: check hex2bin result
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Arnaud Lacombe <lacombar@gmail.com>, James Morris <jmorris@namei.org>,
+        David Safford <safford@watson.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [41.138.242.246]
-X-Mailer: Zimbra 5.0.16_GA_2921.RHEL5_64 (zclient/5.0.16_GA_2921.RHEL5_64)
-To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Attn: Usuario Webmail
+On Tue, Sep 20, 2011 at 10:52 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> Now that hex2bin does error checking, on error add debugging error msg.
+>
+> Changelog v1:
+> - hex2bin now returns an int
+>
+> Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+> ---
+>  drivers/target/target_core_fabric_lib.c |   11 +++++++++--
+>  1 files changed, 9 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/target/target_core_fabric_lib.c b/drivers/target/target_core_fabric_lib.c
+> index c4ea3a9..17658ca 100644
+> --- a/drivers/target/target_core_fabric_lib.c
+> +++ b/drivers/target/target_core_fabric_lib.c
+> @@ -63,6 +63,7 @@ u32 sas_get_pr_transport_id(
+>        unsigned char *buf)
+>  {
+>        unsigned char *ptr;
+> +       bool ret;
+I'm sorry for this, but I guess you meant int?
+>
+>        /*
+>         * Set PROTOCOL IDENTIFIER to 6h for SAS
 
-Su cuota de correo ha excedido la cuota establecida / límite. Usted está actualmente en ejecución en 23 GB debido a los archivos y carpetas ocultos en tu buzón de correo, puede que no sea capaz de recibir o enviar mensajes nuevos hasta que vuelva a validar.
+> @@ -158,6 +161,8 @@ u32 fc_get_pr_transport_id(
+>        unsigned char *ptr;
+>        int i;
+>        u32 off = 8;
+> +       bool ret;
+Ditto.
+> +
+>        /*
+>         * PROTOCOL IDENTIFIER is 0h for FCP-2
+>         *
+Otherwise have my Acked-by. I think Andrew also will be happy.
 
-Rellene el formulario para actualizar su cuenta y para evitar que se ha desactivado de nuestro correo web del databse.
 
-nombre:
-Apellido:
-Fecha de nacimiento:
-Nombre de usuario:
-contraseña:
-Re-Confirmar contraseña:
-
-La falta de validar su cuota puede resultar en la pérdida de importantes
-información en su buzón o causa el acceso limitado a ella.
-
-Webmail Administrador
-Ayuda Webmail Información Unidad @ 2011
+-- 
+With Best Regards,
+Andy Shevchenko
