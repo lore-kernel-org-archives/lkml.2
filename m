@@ -1,79 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751997Ab1ITEgs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 00:36:48 -0400
-Received: from home.keithp.com ([63.227.221.253]:51782 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750971Ab1ITEgr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 00:36:47 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Dave Airlie <airlied@redhat.com>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        intel-gfx@lists.freedesktop.org, Keith Packard <keithp@keithp.com>
-Subject: [PATCH] drm/i915: FBC off for ironlake, otherwise on by default
-Date: Mon, 19 Sep 2011 21:36:36 -0700
-Message-Id: <1316493396-31555-1-git-send-email-keithp@keithp.com>
-X-Mailer: git-send-email 1.7.6.3
+	id S1751501Ab1ITEkO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 00:40:14 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:42728 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750730Ab1ITEkM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 00:40:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAGsJ_4y0F7JTwFwesVvbgq1Lupw+a_-EpiTwW9GtXxOauohdVQ@mail.gmail.com>
+References: <1316166960-20964-1-git-send-email-Baohua.Song@csr.com>
+	<1316422774.26662.30.camel@vkoul-udesk3>
+	<5EB3BFCD089AD643B9BB63439F5FD5E9840F3A8D@SHAASIEXM01.ASIA.ROOT.PRI>
+	<1316425277.26662.41.camel@vkoul-udesk3>
+	<5EB3BFCD089AD643B9BB63439F5FD5E9840F3B18@SHAASIEXM01.ASIA.ROOT.PRI>
+	<1316430878.26662.46.camel@vkoul-udesk3>
+	<CAGsJ_4y0F7JTwFwesVvbgq1Lupw+a_-EpiTwW9GtXxOauohdVQ@mail.gmail.com>
+Date: Tue, 20 Sep 2011 10:10:11 +0530
+Message-ID: <CAJe_ZhdA17cB4WqoARct98NjDu8OhD76r6_S7JHOMdFDZ17wrA@mail.gmail.com>
+Subject: Re: [PATCH v2] dmaengine: add CSR SiRFprimaII DMAC driver
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: Barry Song <21cnbao@gmail.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, Barry Song <Barry.Song@csr.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        DL-SHA-WorkGroupLinux <Workgroup.Linux@csr.com>,
+        Rongjun Ying <Rongjun.Ying@csr.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make the default FBC behaviour chipset specific, allowing us to turn
-it on by default for everything except Ironlake where it has been
-seen to cause trouble with screen updates.
-
-Signed-off-by: Keith Packard <keithp@keithp.com>
----
- drivers/gpu/drm/i915/i915_drv.c      |    4 ++--
- drivers/gpu/drm/i915/intel_display.c |   10 +++++++++-
- 2 files changed, 11 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/gpu/drm/i915/i915_drv.c b/drivers/gpu/drm/i915/i915_drv.c
-index ce045a8..f07e425 100644
---- a/drivers/gpu/drm/i915/i915_drv.c
-+++ b/drivers/gpu/drm/i915/i915_drv.c
-@@ -67,11 +67,11 @@ module_param_named(i915_enable_rc6, i915_enable_rc6, int, 0600);
- MODULE_PARM_DESC(i915_enable_rc6,
- 		"Enable power-saving render C-state 6 (default: true)");
- 
--unsigned int i915_enable_fbc __read_mostly = 1;
-+unsigned int i915_enable_fbc __read_mostly = -1;
- module_param_named(i915_enable_fbc, i915_enable_fbc, int, 0600);
- MODULE_PARM_DESC(i915_enable_fbc,
- 		"Enable frame buffer compression for power savings "
--		"(default: false)");
-+		"(default: -1 (use per-chip default))");
- 
- unsigned int i915_lvds_downclock __read_mostly = 0;
- module_param_named(lvds_downclock, i915_lvds_downclock, int, 0400);
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index 9fb4a40..bc05deb 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -1799,6 +1799,7 @@ static void intel_update_fbc(struct drm_device *dev)
- 	struct drm_framebuffer *fb;
- 	struct intel_framebuffer *intel_fb;
- 	struct drm_i915_gem_object *obj;
-+	int enable_fbc;
- 
- 	DRM_DEBUG_KMS("\n");
- 
-@@ -1839,7 +1840,14 @@ static void intel_update_fbc(struct drm_device *dev)
- 	intel_fb = to_intel_framebuffer(fb);
- 	obj = intel_fb->obj;
- 
--	if (!i915_enable_fbc) {
-+	enable_fbc = i915_enable_fbc;
-+	if (enable_fbc < 0) {
-+		DRM_DEBUG_KMS("fbc set to per-chip default\n");
-+		enable_fbc = 1;
-+		if (INTEL_INFO(dev)->gen == 5)
-+			enable_fbc = 0;
-+	}
-+	if (!enable_fbc) {
- 		DRM_DEBUG_KMS("fbc disabled per module param (default off)\n");
- 		dev_priv->no_fbc_reason = FBC_MODULE_PARAM;
- 		goto out_disable;
--- 
-1.7.6.3
-
+On 19 September 2011 16:55, Barry Song <21cnbao@gmail.com> wrote:
+> 2011/9/19 Vinod Koul <vinod.koul@intel.com>:
+>> On Mon, 2011-09-19 at 09:56 +0000, Barry Song wrote:
+>>> > > > Not sure why you support this, there seem to be no DMA_SLAVE
+>>> support in
+>>> > > > this version ate least
+>>> > >
+>>> > > Not. I support dma_slave. But I have no prep_slave_sg function
+>>> since I can
+>>> > use the gen xfer to replace it.
+>>> > Yes thats okay...
+>>> >
+>>> > Then I have questions on genxfer function...
+>>> > where are you copying either src or dstn_start address, you seem to
+>>> > completely ignore them?
+>>>
+>>> Since I only support memory->device or device ->memory, and channel
+>>> number is fixed to every device. Then I actually don't care device
+>>> address at all. Either src or dst is fixed to the device's address.
+>> peripheral address can be fixed, not the memory, where do you copy the
+>> memory address?
+>
+> +static int sirfsoc_dma_slave_config(struct sirfsoc_dma_chan *schan,
+> +       struct dma_slave_config *config)
+> +{
+> +       u32 addr, direction;
+> +       unsigned long flags;
+> +
+> +       switch (config->direction) {
+> +       case DMA_FROM_DEVICE:
+> +               direction = 0;
+> +               addr = config->dst_addr;
+> +               break;
+> +
+> +       case DMA_TO_DEVICE:
+> +               direction = 1;
+> +               addr = config->src_addr;
+> +               break;
+> +
+> +       default:
+> +               return -EINVAL;
+> +       }
+> +  ...
+I repeat
+{
+Pass addresses using dmaxfer_template.src_start and dmaxfer_template.dst_start
+instead of dma_slave_config.dst_addr and dma_slave_config.src_addr
+}
