@@ -1,82 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752028Ab1ITAT6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 20:19:58 -0400
-Received: from ozlabs.org ([203.10.76.45]:44002 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751194Ab1ITAT5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 20:19:57 -0400
-Date: Tue, 20 Sep 2011 10:19:38 +1000
-From: Anton Blanchard <anton@samba.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: mingo@elte.hu, benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5] ppc64 scheduler fixes
-Message-ID: <20110920101938.121098ed@kryten>
-In-Reply-To: <1311597702.24752.1.camel@twins>
-References: <20110725023311.175792493@samba.org>
-	<1311597702.24752.1.camel@twins>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756760Ab1ITAWg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 20:22:36 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:45304 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194Ab1ITAWf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 20:22:35 -0400
+MIME-Version: 1.0
+In-Reply-To: <4E77B9E3.40004@gmail.com>
+References: <1316017900-19918-1-git-send-email-robherring2@gmail.com>
+ <1316017900-19918-6-git-send-email-robherring2@gmail.com> <CAJuYYwSFu2HC+u2NY41+yw9tEyy85RKa4Dpm3SL+jbwS_OOA0A@mail.gmail.com>
+ <4E71CE5D.9030900@ti.com> <4E71F978.6020402@gmail.com> <4E72030F.1090300@ti.com>
+ <4E722B2D.4050307@gmail.com> <4E76615C.3000005@gmail.com> <4E77310A.3000106@ti.com>
+ <4E774847.3020104@gmail.com> <CACxGe6v9nd5f5x-eu9hUyAqdS1+p3h6ixyutECYLdNo3ewDH0w@mail.gmail.com>
+ <4E77B9E3.40004@gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Mon, 19 Sep 2011 18:22:15 -0600
+X-Google-Sender-Auth: LxlSOLqljrIEGD24e9kzwia1Uh0
+Message-ID: <CACxGe6vrksxkEhsKm5zWG5P3g0wqOBxsM3yqtP4yk0Us-=EPWw@mail.gmail.com>
+Subject: Re: [PATCH 5/5] ARM: gic: add OF based initialization
+To: Rob Herring <robherring2@gmail.com>
+Cc: "Cousson, Benoit" <b-cousson@ti.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
+        "jamie@jamieiles.com" <jamie@jamieiles.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Sep 19, 2011 at 3:53 PM, Rob Herring <robherring2@gmail.com> wrote:
+> On 09/19/2011 04:14 PM, Grant Likely wrote:
+>> * ARM Generic Interrupt Controller
+>>
+>> ARM SMP cores are often associated with a GIC, providing per processor
+>> interrupts (PPI), shared processor interrupts (SPI) and software
+>> generated interrupts (SGI).
+>>
+>> Primary GIC is attached directly to the CPU and typically has PPIs and SGIs.
+>> Secondary GICs are cascaded into the upward interrupt controller and do not
+>> have PPIs or SGIs.
+>>
+>> Main node required properties:
+>>
+>> - compatible : should be one of:
+>>        "arm,cortex-a9-gic"
+>>        "arm,arm11mp-gic"
+>> - interrupt-controller : Identifies the node as an interrupt controller
+>> - #interrupt-cells : Specifies the number of cells needed to encode an
+>>   interrupt source.  The type shall be a <u32> and the value shall be 3.
+>>
+>>   The 1st cell is the interrupt type; 0 for SPI interrupts, 1 for PPI
+>> interrupts.
+>>   The 2nd cell contains the interrupt number for the interrupt type.
+>> SPI interrupts are in the range [0-987].  PPI interrupts are in the
+>> range [0-15].
+>>   The 3rd cell is the flags, encoded as follows:
+>>         bits[3:0] trigger type and level flags.
+>>                     1 = low-to-high edge triggered
+>>                     2 = high-to-low edge triggered
+>>                     4 = active high level-sensitive
+>>                     8 = active low level-sensitive
+>>         bits[15:8] PPI interrupt cpu mask.  Each bit corresponds to
+>> each of the 8 possible cpus attached to the GIC.  A bit set to '1'
+>> indicated the interrupt is wired to that CPU.  Only valid for PPI
+>> interrupts.
+>>
+> How about a cpu mask of 0 means SPI and non-zero means PPI? Then we can
+> drop the first cell.
 
-Hi Peter,
+Cells are cheap, and it is better to be explicit.  It is certainly
+easier to extend in the future too if the type cell is used.
 
-> On Mon, 2011-07-25 at 12:33 +1000, Anton Blanchard wrote:
-> > Here are a set of ppc64 scheduler fixes that help with some
-> > multi node performance issues.
-> 
-> They look fine to me. I'll probably ping you when I'll rip out all
-> that SD_NODES_PER_DOMAIN crap for good, but until then I'm fine with
-> you fiddling it for ppc64.
-> 
-> Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-
-Are you OK if Ben takes this, or would you prefer to send it via the
-scheduler tree?
-
-Anton
---
-
-[2/5] sched: Allow SD_NODES_PER_DOMAIN to be overridden
-
-We want to override the default value of SD_NODES_PER_DOMAIN on ppc64,
-so move it into linux/topology.h.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-
----
-
-Index: linux-2.6-work/include/linux/topology.h
-===================================================================
---- linux-2.6-work.orig/include/linux/topology.h	2011-07-25 11:20:02.588717796 +1000
-+++ linux-2.6-work/include/linux/topology.h	2011-07-25 11:26:50.616468376 +1000
-@@ -201,6 +201,10 @@ int arch_update_cpu_topology(void);
- 	.balance_interval	= 64,					\
- }
- 
-+#ifndef SD_NODES_PER_DOMAIN
-+#define SD_NODES_PER_DOMAIN 16
-+#endif
-+
- #ifdef CONFIG_SCHED_BOOK
- #ifndef SD_BOOK_INIT
- #error Please define an appropriate SD_BOOK_INIT in include/asm/topology.h!!!
-Index: linux-2.6-work/kernel/sched.c
-===================================================================
---- linux-2.6-work.orig/kernel/sched.c	2011-07-25 11:20:09.538850173 +1000
-+++ linux-2.6-work/kernel/sched.c	2011-07-25 11:26:50.626468565 +1000
-@@ -6938,8 +6938,6 @@ static int __init isolated_cpu_setup(cha
- 
- __setup("isolcpus=", isolated_cpu_setup);
- 
--#define SD_NODES_PER_DOMAIN 16
--
- #ifdef CONFIG_NUMA
- 
- /**
+g.
