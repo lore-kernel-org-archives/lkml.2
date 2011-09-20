@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751314Ab1ITNqv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 09:46:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26207 "EHLO mx1.redhat.com"
+	id S1751364Ab1ITNrK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 09:47:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15993 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750832Ab1ITNqs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 09:46:48 -0400
+	id S1750932Ab1ITNqu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 09:46:50 -0400
 From: Johannes Weiner <jweiner@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Mel Gorman <mgorman@suse.de>, Christoph Hellwig <hch@infradead.org>,
@@ -17,36 +17,48 @@ Cc: Mel Gorman <mgorman@suse.de>, Christoph Hellwig <hch@infradead.org>,
         linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
         linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [patch 4/4] Btrfs: pass __GFP_WRITE for buffered write page allocations
-Date: Tue, 20 Sep 2011 15:45:15 +0200
-Message-Id: <1316526315-16801-5-git-send-email-jweiner@redhat.com>
+Subject: [patch 3/4] mm: filemap: pass __GFP_WRITE from grab_cache_page_write_begin()
+Date: Tue, 20 Sep 2011 15:45:14 +0200
+Message-Id: <1316526315-16801-4-git-send-email-jweiner@redhat.com>
 In-Reply-To: <1316526315-16801-1-git-send-email-jweiner@redhat.com>
 References: <1316526315-16801-1-git-send-email-jweiner@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tell the page allocator that pages allocated for a buffered write are
-expected to become dirty soon.
+Tell the page allocator that pages allocated through
+grab_cache_page_write_begin() are expected to become dirty soon.
 
 Signed-off-by: Johannes Weiner <jweiner@redhat.com>
 ---
- fs/btrfs/file.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ mm/filemap.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
-index e7872e4..ea1b892 100644
---- a/fs/btrfs/file.c
-+++ b/fs/btrfs/file.c
-@@ -1084,7 +1084,7 @@ static noinline int prepare_pages(struct btrfs_root *root, struct file *file,
- again:
- 	for (i = 0; i < num_pages; i++) {
- 		pages[i] = find_or_create_page(inode->i_mapping, index + i,
--					       GFP_NOFS);
-+					       GFP_NOFS | __GFP_WRITE);
- 		if (!pages[i]) {
- 			faili = i - 1;
- 			err = -ENOMEM;
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 645a080..cf0352d 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -2349,8 +2349,11 @@ struct page *grab_cache_page_write_begin(struct address_space *mapping,
+ 					pgoff_t index, unsigned flags)
+ {
+ 	int status;
++	gfp_t gfp_mask;
+ 	struct page *page;
+ 	gfp_t gfp_notmask = 0;
++
++	gfp_mask = mapping_gfp_mask(mapping) | __GFP_WRITE;
+ 	if (flags & AOP_FLAG_NOFS)
+ 		gfp_notmask = __GFP_FS;
+ repeat:
+@@ -2358,7 +2361,7 @@ repeat:
+ 	if (page)
+ 		goto found;
+ 
+-	page = __page_cache_alloc(mapping_gfp_mask(mapping) & ~gfp_notmask);
++	page = __page_cache_alloc(gfp_mask & ~gfp_notmask);
+ 	if (!page)
+ 		return NULL;
+ 	status = add_to_page_cache_lru(page, mapping, index,
 -- 
 1.7.6
 
