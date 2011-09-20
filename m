@@ -1,81 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751387Ab1ITQgg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 12:36:36 -0400
-Received: from home.keithp.com ([63.227.221.253]:36612 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750772Ab1ITQgf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 12:36:35 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>, Dave Airlie <airlied@redhat.com>
-Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH] drm/i915: Enable digital port hotplug on PCH systems
-In-Reply-To: <d08817$1gj40m@azsmga001.ch.intel.com>
-References: <1316533641-13478-1-git-send-email-keithp@keithp.com> <d08817$1gj40m@azsmga001.ch.intel.com>
-User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Tue, 20 Sep 2011 09:36:31 -0700
-Message-ID: <yuniponf9ww.fsf@aiko.keithp.com>
+	id S1750994Ab1ITQjo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 12:39:44 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:52197 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750777Ab1ITQjm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 12:39:42 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=Ypb5VE8RK9Yi1k/Jhc3VX8axZH7aSN8nc8f/xmlTHTgOiPDYTNwzE32VxlP3+al2i
+	f2R6WX4B5Pyt6XRnrRdaw==
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+In-Reply-To: <1316514056.3891.2.camel@mattotaupa>
+References: <1316514056.3891.2.camel@mattotaupa>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 20 Sep 2011 10:39:18 -0600
+Message-ID: <CAErSpo4FACymQXs1fuDwP87_1U2XLTxC=wKLEK2Q0scxhw7R+Q@mail.gmail.com>
+Subject: Re: [PATCH v2] x86/PCI: use host bridge _CRS info on ASUS M2V-MX SE
+To: Paul Menzel <paulepanter@users.sourceforge.net>
+Cc: x86@kernel.org, linux-pci@vger.kernel.org, stable@kernel.org,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+On Tue, Sep 20, 2011 at 4:20 AM, Paul Menzel
+<paulepanter@users.sourceforge.net> wrote:
+> ...
+>
+> Using coreboot [1] with this board the problem does not exist but this quirk also does not affect it either. To be safe though the check is tightened to only take effect when the BIOS from American Megatrends is used.
+>
+>        15:13 < ruik> but coreboot does not need that
+>        15:13 < ruik> because i have there only one root bus
+>        15:13 < ruik> the audio is behind a bridge
 
-On Tue, 20 Sep 2011 17:24:21 +0100, Chris Wilson <chris@chris-wilson.co.uk>=
- wrote:
-> On Tue, 20 Sep 2011 08:47:21 -0700, Keith Packard <keithp@keithp.com> wro=
-te:
-> > We were relying on the BIOS to set these bits, which doesn't always
-> > happen.
->=20
-> Do we need to clear IRQ bits on uninstall, for example to prevent
-> "Interrupt 19: no one cared!" or is that due to a different cause?
+I'd like to know more about this coreboot situation.  Would it be
+possible to get a dmesg log from the system with coreboot?  I'd like
+to see how coreboot configures this device differently.
 
-Probably a good plan, but of course that's separate from turning on the
-hotplug hardware in the PCH. Something like:
+> CC: stable@kernel.org (≥ 2.6.34)
+> CC: Bjorn Helgaas <bhelgaas@google.com>
+> CC: Thomas Gleixner <tglx@linutronix.de>
+> CC: Ingo Molnar <mingo@redhat.com>
+> CC: H. Peter Anvin <hpa@zytor.com>
+> CC: x86@kernel.org
+> CC: Jesse Barnes <jbarnes@virtuousgeek.org>
+> Signed-off-by: Paul Menzel <paulepanter@users.sourceforge.net>
 
-diff --git a/drivers/gpu/drm/i915/i915_irq.c b/drivers/gpu/drm/i915/i915_ir=
-q.c
-index c22823b..adeab2a 100644
-=2D-- a/drivers/gpu/drm/i915/i915_irq.c
-+++ b/drivers/gpu/drm/i915/i915_irq.c
-@@ -2044,6 +2044,10 @@ static void ironlake_irq_uninstall(struct drm_device=
- *dev)
- 	I915_WRITE(GTIMR, 0xffffffff);
- 	I915_WRITE(GTIER, 0x0);
- 	I915_WRITE(GTIIR, I915_READ(GTIIR));
-+
-+	I915_WRITE(SDEIMR, 0xffffffff);
-+	I915_WRITE(SDEIER, 0x0);
-+	I915_WRITE(SDEIIR, I915_READ(SDEIIR));
- }
-=20
- static void i915_driver_irq_uninstall(struct drm_device * dev)
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 
-> More of a general question really. The patch itself looks good and
-> matches against the spec afaics.
+This is fine with me.  I don't think it's the final solution, but I
+think it's worth doing for now.
 
-I was amused to learn that the BIOS on my machine actually turns on the
-hotplug hardware for no good reason, so things 'worked' without this
-code on many machines. I wonder how many DP/DVI/HDMI machines aren't
-actually doing hotplug today...
-
-=2D-=20
-keith.packard@intel.com
-
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iD8DBQFOeMEPQp8BWwlsTdMRArqBAJ9crXczcwb2Zl5rJAQ/8110izZGHACglXyq
-DKRpdqQGKWX0y1xvo++LcHs=
-=Z4iz
------END PGP SIGNATURE-----
---=-=-=--
+Bjorn
