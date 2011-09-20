@@ -1,44 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751427Ab1ITM5f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 08:57:35 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:15137 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751276Ab1ITM5d (ORCPT
+	id S1751527Ab1ITM6o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 08:58:44 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:60589 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751276Ab1ITM6n convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 08:57:33 -0400
-Message-ID: <4E788DA7.3020908@atmel.com>
-Date: Tue, 20 Sep 2011 15:57:11 +0300
-From: Iiro Valkonen <iiro.valkonen@atmel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.21) Gecko/20110831 Lightning/1.0b2 Thunderbird/3.1.13
-MIME-Version: 1.0
-To: Joonyoung Shim <jy0922.shim@samsung.com>
-CC: Daniel Kurtz <djkurtz@chromium.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Yufeng Shen <miletus@chromium.org>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Input: atmel_mxt_ts - Use snprintf for sysfs attribute
- show method
-References: <1316115647-1244-1-git-send-email-djkurtz@chromium.org> <4E729DD4.8010208@samsung.com>
-In-Reply-To: <4E729DD4.8010208@samsung.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 20 Sep 2011 12:57:22.0824 (UTC) FILETIME=[D6B96080:01CC7794]
+	Tue, 20 Sep 2011 08:58:43 -0400
+Subject: Re: [PATCH 6/9] Include idle and iowait fields in cpuacct
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, xemul@parallels.com, paul@paulmenage.org,
+        lizf@cn.fujitsu.com, daniel.lezcano@free.fr, mingo@elte.hu,
+        jbottomley@parallels.com
+Date: Tue, 20 Sep 2011 14:58:22 +0200
+In-Reply-To: <4E7888B8.3080809@parallels.com>
+References: <1316030695-19826-1-git-send-email-glommer@parallels.com>
+	  <1316030695-19826-7-git-send-email-glommer@parallels.com>
+	 <1316510490.11841.15.camel@twins> <4E7888B8.3080809@parallels.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1316523502.13664.5.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 09/16/2011 03:52 AM, Joonyoung Shim wrote:
+On Tue, 2011-09-20 at 09:36 -0300, Glauber Costa wrote:
+> On 09/20/2011 06:21 AM, Peter Zijlstra wrote:
+> > On Wed, 2011-09-14 at 17:04 -0300, Glauber Costa wrote:
+> >> These are slightly different from the others though:
+> >> (note to reviewers: might be better to put those in a separate
+> >> array?)
+> >>
+> >> Since idle/iowait are a property of the system - by definition,
+> >> no process from any cgroup is running when the system is idle,
+> >> they are system wide. So what these fields really mean, are baselines
+> >> for when the cgroup was created. It allows the cgroup to start
+> >> counting idle/iowait from 0.
+> >
+> > Alternatively you can make iowait based on nr_uninterruptible per cgroup
+> > and count all ticks _this_ cgroup was idle.
+> You think?
 > 
-> Iiro, do you have any update plans about atmel touchscreen driver?
+> Humm,humm... maybe...
+> iowait can indeed be seen as a process group characteristic. I was 
+> mainly concerned about overhead here, specially for the idle case:
+
+The overhead of accounting per cgroup nr_uninterruptible is the worst I
+think, that's in the sleep/wakeup paths.
+
+> If we are idle, there is no task context we can draw from, since the 
+> task in the cpu is the idle task. So we end up having to touch all 
+> cgroups... Or am I missing something?
 > 
+> Sounds expensive.
 
-yes, there are plans to update the driver. While I have been on a longish
-vacation, the development work has continued in UK and new patches can be
-expected in the near future.
-
-Regards,
-Iiro
+Count the total number of ticks on the cpu (I think we already have
+that) and subtract the number of ticks in this cgroup (I think we also
+already have that), which should yield: number of ticks not in this
+cgroup, aka number of ticks this cgroup was idle.
