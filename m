@@ -1,50 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755255Ab1ITLf0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 07:35:26 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57609 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752316Ab1ITLfZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 07:35:25 -0400
-Date: Tue, 20 Sep 2011 12:35:22 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: =?iso-8859-1?Q?P=E9ter?= Ujfalusi <peter.ujfalusi@ti.com>
-Cc: alsa-devel@alsa-project.org, Dmitry Torokhov <dtor@mail.ru>,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        Samuel Ortiz <samuel.ortiz@intel.com>,
-        Misael Lopez Cruz <misael.lopez@ti.com>, Liam Girdwood <lrg@ti.com>
-Subject: Re: Re: Re: [alsa-devel] [PATCH 7/8] ASoC: omap-mcpdm: Correct the
- supported number of channels
-Message-ID: <20110920113522.GJ2387@opensource.wolfsonmicro.com>
-References: <1316091561-30899-1-git-send-email-peter.ujfalusi@ti.com>
- <20110920105714.GA14609@sirena.org.uk>
- <1661734.tddAioOORG@barack>
- <1703825.IkgE7UOG84@barack>
+	id S1754496Ab1ITMDu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 08:03:50 -0400
+Received: from mx1.aecom.yu.edu ([129.98.1.51]:52204 "EHLO mx1.aecom.yu.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753910Ab1ITMDt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 08:03:49 -0400
+X-Greylist: delayed 5387 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Sep 2011 08:03:49 EDT
+X-AuditID: 816201a0-99a34bb000001576-1d-4e7861b8ec12
+Message-ID: <85913fffba7ec1e12c6010f9dd42e47c.squirrel@netmail.aecom.yu.edu>
+Date: Tue, 20 Sep 2011 05:49:44 -0400
+Subject: Personal Email Directed To You
+From: "Abbas" <abbasa1965@gmail.com>
+User-Agent: SquirrelMail/1.4.18
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1703825.IkgE7UOG84@barack>
-X-Cookie: You look tired.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 20, 2011 at 02:24:05PM +0300, Péter Ujfalusi wrote:
-> On Tuesday 20 September 2011 14:10:24 Péter Ujfalusi wrote:
+Good day friend,
 
-> > Hrm, I have used Linus's tree for this series, and AFAIK there were no
-> > changes regarding to McPDM apart from the patches I have submitted.
+ This is a personal email directed to you for your consideration alone, I
+request that it remain and be treated as such only. Please
+bear with me for now and do not ask my name. I am a banker with HSBC here
+in Malaysia.
 
-> > Could you give me a hint, why it failed?
+ I have an interesting business proposal for you that will be of immense
+benefit to both of us. Although this may be hard for you to believe,we
+stand to gain 7.2 million USD between us in a matter of days. Please grant
+me the benefit of doubt and hear me out. I need you to signify your
+interest by replying to my email
+(abbasa1965@gmail.com)
 
-> I know why it fails.
-> We need to have the new McPDM driver patches for this to apply.
+ Most importantly, I will need you to promise to keep whatever you learn
+from me between us even if you decide not to go along with me.I will
+make more details available to you on receipt of a positive response from
+you.
 
-I was about to say I was pretty sure it was due to your driver
-rewrite...  Unfortunately I don't have a copy of Liam's tree as it was
-hosted on kernel.org and not in -next so I don't have the current state
-of the OMAP branches.   Liam, can you push somewhere else or otherwise
-send me the latest code?
+Warm regards from Malaysia.
+(abbasa1965@gmail.com)
+
