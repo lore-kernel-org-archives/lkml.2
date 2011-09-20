@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753014Ab1ITGZu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 02:25:50 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:39086 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752127Ab1ITGZr (ORCPT
+	id S1752913Ab1ITG2N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 02:28:13 -0400
+Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:35086 "EHLO
+	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752127Ab1ITG2M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 02:25:47 -0400
-Date: Mon, 19 Sep 2011 23:26:02 -0700
-From: Andrew Morton <akpm00@gmail.com>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        linux-security-module@vger.kernel.org,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        David Safford <safford@watson.ibm.com>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        target-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC][PATCH 1/5] lib: add unpack_hex_byte()
-Message-Id: <20110919232602.ac450450.akpm00@gmail.com>
-In-Reply-To: <CAHp75VefX=KUGarhc9QK41AN6_MbxkrGWMHk7_40g0TMcLhgzg@mail.gmail.com>
-References: <1316177430-13167-1-git-send-email-zohar@linux.vnet.ibm.com>
-	<20110919141911.e13569ab.akpm@google.com>
-	<1316471708.3191.130.camel@localhost.localdomain>
-	<20110919153810.ba0be83a.akpm@google.com>
-	<CAHp75VefX=KUGarhc9QK41AN6_MbxkrGWMHk7_40g0TMcLhgzg@mail.gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 20 Sep 2011 02:28:12 -0400
+Message-ID: <4E783243.5000404@st.com>
+Date: Tue, 20 Sep 2011 11:57:15 +0530
+From: Viresh Kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+MIME-Version: 1.0
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Pratyush ANAND <pratyush.anand@st.com>,
+        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Bhupesh SHARMA <bhupesh.sharma@st.com>,
+        Armando VISCONTI <armando.visconti@st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vipin KUMAR <vipin.kumar@st.com>, Shiraz HASHIM <shiraz.hashim@st.com>,
+        Amit VIRDI <Amit.VIRDI@st.com>,
+        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
+        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
+        Deepak SIKRI <deepak.sikri@st.com>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 16/18] dmaengine/ambhe rest oa-pl08x: Add support for
+ sg len greater than one for slave transfers
+References: <cover.1311936523.git.viresh.kumar@st.com>  <5d691ab0c4f447c9f324213d8d740ac61d1739a1.1311936524.git.viresh.kumar@st.com>  <20110814083618.GE4986@n2100.arm.linux.org.uk> <4E4CCF7B.8060704@st.com>  <20110821083306.GA12028@n2100.arm.linux.org.uk> <4E532B19.6000103@st.com>  <4E5715CE.2070806@st.com>  <CACRpkdapSvW=eMSoXTOOA2GyhfBLzq2OuyQcDctPxsnVzvr-4g@mail.gmail.com>  <4E575E75.40603@st.com> <4E5F594D.10203@st.com>  <438BB0150E931F4B9CE701519A4463010871804A4C@bgsmsx502.gar.corp.intel.com>  <CAKnu2Mp3Ui7jZS2kjJykjuzcTzJhiAkoaVxZ2+tQX0banGh6mw@mail.gmail.com>  <4E683B74.5000701@st.com>  <CACRpkdaqTYK5TJL2u+aeOfnzhdtdjxZhyu661eGKrNBOXTUTeA@mail.gmail.com>  <1315518873.6638.7.camel@vkoul-mobl4> <1316499574.31295.3.camel@vkoul-udesk3>
+In-Reply-To: <1316499574.31295.3.camel@vkoul-udesk3>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Sep 2011 09:04:00 +0300 Andy Shevchenko <andy.shevchenko@gmail.com> wrote:
+On 9/20/2011 11:49 AM, Vinod Koul wrote:
+> Applied the remaining two patches for the series to my next
 
-> On Tue, Sep 20, 2011 at 1:38 AM, Andrew Morton <akpm@google.com> wrote:
-> >> > Finally, the name is poor. __It starts with "unpack_", so it belongs to
-> >> > the "unpack" subsystem. __There's no such thing. __Something like
-> >> > hex_byte_to_bin() would be better.
-> >>
-> >> agreed. __It was suppose to parallel the existing pack_hex_byte().
-> >
-> > hex_byte_pack() :)
-> Have you just proposed to do mass rename of pack_hex_byte() to the
-> hex_byte_pack()?
+Probably there were three patches left, 18/20, 19/20, 20/20 in V3 of my patchset.
 
-It's very minor, but I suppose we should, if someone feels like it.
-
-We should retain a
-
-char * __deprecated pack_hex_byte(char *buf, u8 byte)
-{
-	return hex_byte_pack(buf, byte);
-}
-
-for a few cycles to minimise harm to out-of-tree code.
+-- 
+viresh
