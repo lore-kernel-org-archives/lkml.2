@@ -1,74 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751933Ab1ITOem (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 10:34:42 -0400
-Received: from mtagate3.uk.ibm.com ([194.196.100.163]:59548 "EHLO
-	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751577Ab1ITOej (ORCPT
+	id S1751969Ab1ITOen (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 10:34:43 -0400
+Received: from mtagate1.uk.ibm.com ([194.196.100.161]:51054 "EHLO
+	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751638Ab1ITOej (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 20 Sep 2011 10:34:39 -0400
-Message-Id: <20110920143436.224880681@linux.vnet.ibm.com>
+Message-Id: <20110920143400.776127689@linux.vnet.ibm.com>
 User-Agent: quilt/0.48-1
-Date: Tue, 20 Sep 2011 16:34:02 +0200
+Date: Tue, 20 Sep 2011 16:34:00 +0200
 From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 To: akpm@linux-foundation.org
 Cc: vgoyal@redhat.com, ebiederm@xmission.com, mahesh@linux.vnet.ibm.com,
         schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
         kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
         linux-s390@vger.kernel.org
-Subject: [patch 2/2] s390: Export vmcoreinfo note
-References: <20110920143400.776127689@linux.vnet.ibm.com>
-Content-Disposition: inline; filename=s390-kdump-arch-vmcoreinfo.patch
+Subject: [patch 0/2] kdump: Initialize vmcoreinfo note at startup
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Hello Andrew,
 
-This patch defines for s390 an ABI defined pointer to the vmcoreinfo note at
-a well known address. With this patch tools are able to find this information
-in dumps created by stand-alone or hypervisor dump tools.
+Another common code patch that we would like to have upstream is the vmcoreinfo
+note initialization at Linux startup time. We need that for our traditional
+stand-alone and hypervisor dump tools.
 
-Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
----
- arch/s390/include/asm/lowcore.h |    3 ++-
- arch/s390/kernel/setup.c        |    8 ++++++++
- 2 files changed, 10 insertions(+), 1 deletion(-)
+[1] kdump: Initialize vmcoreinfo note at startup
+[2] s390: Export vmcoreinfo note
 
---- a/arch/s390/include/asm/lowcore.h
-+++ b/arch/s390/include/asm/lowcore.h
-@@ -287,7 +287,8 @@ struct _lowcore {
- 	 */
- 	__u64	ipib;				/* 0x0e00 */
- 	__u32	ipib_checksum;			/* 0x0e08 */
--	__u8	pad_0x0e0c[0x0f00-0x0e0c];	/* 0x0e0c */
-+	__u64	vmcore_info;			/* 0x0e0c */
-+	__u8	pad_0x0e14[0x0f00-0x0e14];	/* 0x0e14 */
- 
- 	/* Extended facility list */
- 	__u64	stfle_fac_list[32];		/* 0x0f00 */
---- a/arch/s390/kernel/setup.c
-+++ b/arch/s390/kernel/setup.c
-@@ -559,6 +559,13 @@ static void __init setup_restart_psw(voi
- 	copy_to_absolute_zero(&S390_lowcore.restart_psw, &psw, sizeof(psw));
- }
- 
-+static void __init setup_vmcoreinfo(void)
-+{
-+	unsigned long ptr = paddr_vmcoreinfo_note();
-+
-+	copy_to_absolute_zero(&S390_lowcore.vmcore_info, &ptr, sizeof(ptr));
-+}
-+
- #ifdef CONFIG_CRASH_DUMP
- 
- /*
-@@ -1019,6 +1026,7 @@ setup_arch(char **cmdline_p)
- 	reserve_crashkernel();
- 	setup_memory();
- 	setup_resources();
-+	setup_vmcoreinfo();
- 	setup_restart_psw();
- 	setup_lowcore();
- 
+I already have discussed this with Vivek and he has acked the common code
+patch [1].
 
+Do you agree that Martin sends these patches together with the kdump page
+table patches (see https://lkml.org/lkml/2011/9/15/55) in the next merge
+window?
+
+Michael
