@@ -1,58 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753171Ab1ITKyh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 06:54:37 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:58621 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750874Ab1ITKyf (ORCPT
+	id S1752125Ab1ITKzT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 06:55:19 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:61252 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750730Ab1ITKzR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 06:54:35 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-Subject: Re: [PATCH] iommu/omap: Fix build error with !IOMMU_SUPPORT
-Date: Tue, 20 Sep 2011 12:54:38 +0200
-User-Agent: KMail/1.13.7 (Linux/3.0.3-gentoo; KDE/4.7.1; x86_64; ; )
-Cc: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "Ohad Ben-Cohen" <ohad@wizery.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1316009259-18052-1-git-send-email-joerg.roedel@amd.com> <201109180202.23123.laurent.pinchart@ideasonboard.com> <20110920100146.GA2078@amd.com>
-In-Reply-To: <20110920100146.GA2078@amd.com>
+	Tue, 20 Sep 2011 06:55:17 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201109201254.39542.laurent.pinchart@ideasonboard.com>
+In-Reply-To: <CAKYAXd9bmw12By6StTL_MRzAGsgG9BOfcvs=TA-nRu_uxMzOcw@mail.gmail.com>
+References: <1316359301-2263-1-git-send-email-linkinjeon@gmail.com>
+	<4E78433F.2050900@stericsson.com>
+	<CA+Wuu-vAx8PkvPgy5mR5Bcg6e+q6Z3XOZtTGwNZgCW4HCrX5KA@mail.gmail.com>
+	<CAKYAXd9bmw12By6StTL_MRzAGsgG9BOfcvs=TA-nRu_uxMzOcw@mail.gmail.com>
+Date: Tue, 20 Sep 2011 16:25:16 +0530
+Message-ID: <CA+Wuu-sK6B_k0+sG_p4JRuHOwO_HVCpNksg-9_TdpzXRS7y0xA@mail.gmail.com>
+Subject: Re: [PATCH] mmc : Use wait_for_completion_timeout() instead of
+ wait_for_completion in case of write.
+From: Murali Krishna Palnati <palnati.muralikrishna@gmail.com>
+To: NamJae Jeon <linkinjeon@gmail.com>
+Cc: Ulf Hansson <ulf.hansson@stericsson.com>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joerg,
+On Tue, Sep 20, 2011 at 4:05 PM, NamJae Jeon <linkinjeon@gmail.com> wrote:
+> yes, I knew. But if card keep holding busy line(data 0) in the middle
+> of DMA operation(multi blocks write),  host driver layer can not know
+> card status in this situation.
 
-On Tuesday 20 September 2011 12:01:46 Roedel, Joerg wrote:
-> On Sat, Sep 17, 2011 at 08:02:22PM -0400, Laurent Pinchart wrote:
-> > On Wednesday 14 September 2011 16:07:39 Joerg Roedel wrote:
-> > > Without this patch it is possible to select the VIDEO_OMAP3
-> > > driver which then selects OMAP_IOVMM. But the omap iommu
-> > > driver is not compiled without IOMMU_SUPPORT enabled. Fix
-> > > that by forcing OMAP_IOMMU and OMAP_IOVMM are enabled before
-> > > VIDEO_OMAP3 can be selected.
-> > 
-> > What about making VIDEO_OMAP3 select IOMMU_SUPPORT instead then ? Your
-> > patch would make the OMAP3 ISP driver disappear from the menu until
-> > IOMMU_SUPPORT gets turned on, which can confuse users.
-> 
-> Using 'depends on' rather then 'selects' is common standard in Kconfig.
-> You can't select PCI drivers without selecting PCI first, for example.
-
-You wouldn't expect a PCI driver to work without PCI support. My concern is 
-that most OMAP3 ISP users won't know that IOMMU supports is required. Feel 
-free to ignore it though :-)
-
-> Further selecting whole drivers implicitly isn't a good idea. This can
-> grow out of control very quickly.
-
--- 
-Regards,
-
-Laurent Pinchart
+The host driver shall start a software timer and indpendently needs to
+watch out for the expiry of the timeout. If the host doesn't hear back
+from the
+controller/DMA engine even after waiting for the specified timeout,
+then the timer handler that gets invoked can then do the necessary
+cleanup and
+inform the MMC core layer that the request failed. Does this sound feasible?
