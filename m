@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756919Ab1ITBja (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 21:39:30 -0400
+	id S1756896Ab1ITBj2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 21:39:28 -0400
 Received: from mga02.intel.com ([134.134.136.20]:52041 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752899Ab1ITBjK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 21:39:10 -0400
+	id S1752421Ab1ITBjJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 21:39:09 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="50392862"
+   d="scan'208";a="50392857"
 From: Huang Ying <ying.huang@intel.com>
 To: Len Brown <lenb@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
         ying.huang@intel.com, linux-acpi@vger.kernel.org
-Subject: [PATCH 4/8] ACPI, APEI, Resolve false conflict between ACPI NVS and APEI
-Date: Tue, 20 Sep 2011 09:38:57 +0800
-Message-Id: <1316482741-21799-5-git-send-email-ying.huang@intel.com>
+Subject: [PATCH 3/8] ACPI, Record ACPI NVS regions
+Date: Tue, 20 Sep 2011 09:38:56 +0800
+Message-Id: <1316482741-21799-4-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1316482741-21799-1-git-send-email-ying.huang@intel.com>
 References: <1316482741-21799-1-git-send-email-ying.huang@intel.com>
@@ -27,75 +27,165 @@ Some firmware will access memory in ACPI NVS region via APEI.  That
 is, instructions in APEI ERST/EINJ table will read/write ACPI NVS
 region.  The original resource conflict checking in APEI code will
 check memory/ioport accessed by APEI via general resource management
-mech.  But ACPI NVS region is marked as busy already, so that the
+mechanism.  But ACPI NVS region is marked as busy already, so that the
 false resource conflict will prevent APEI ERST/EINJ to work.
 
-To fix this, this patch excludes ACPI NVS regions when APEI components
-request resources.  So that they will not conflict with ACPI NVS
-regions.
+To fix this, this patch record ACPI NVS regions, so that we can avoid
+request resources for memory region inside it.
 
-Reported-and-tested-by: Pavel Ivanov <paivanof@gmail.com>
 Signed-off-by: Huang Ying <ying.huang@intel.com>
 ---
- drivers/acpi/apei/apei-base.c |   29 ++++++++++++++++++++++++++++-
- 1 file changed, 28 insertions(+), 1 deletion(-)
+ arch/x86/kernel/e820.c |    4 +--
+ drivers/acpi/Makefile  |    3 +-
+ drivers/acpi/nvs.c     |   53 ++++++++++++++++++++++++++++++++++++++++++++++++-
+ include/linux/acpi.h   |   20 ++++++++++++------
+ 4 files changed, 70 insertions(+), 10 deletions(-)
 
---- a/drivers/acpi/apei/apei-base.c
-+++ b/drivers/acpi/apei/apei-base.c
-@@ -438,8 +438,19 @@ int apei_resources_sub(struct apei_resou
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -713,7 +713,7 @@ void __init e820_mark_nosave_regions(uns
  }
- EXPORT_SYMBOL_GPL(apei_resources_sub);
+ #endif
  
-+static int apei_get_nvs_callback(__u64 start, __u64 size, void *data)
-+{
-+	struct apei_resources *resources = data;
-+	return apei_res_add(&resources->iomem, start, size);
-+}
-+
-+static int apei_get_nvs_resources(struct apei_resources *resources)
-+{
-+	return acpi_nvs_for_each_region(apei_get_nvs_callback, resources);
-+}
-+
- /*
-- * IO memory/port rersource management mechanism is used to check
-+ * IO memory/port resource management mechanism is used to check
-  * whether memory/port area used by GARs conflicts with normal memory
-  * or IO memory/port of devices.
-  */
-@@ -448,12 +459,26 @@ int apei_resources_request(struct apei_r
- {
- 	struct apei_res *res, *res_bak = NULL;
- 	struct resource *r;
-+	struct apei_resources nvs_resources;
- 	int rc;
+-#ifdef CONFIG_HIBERNATION
++#ifdef CONFIG_ACPI
+ /**
+  * Mark ACPI NVS memory region, so that we can save/restore it during
+  * hibernation and the subsequent resume.
+@@ -726,7 +726,7 @@ static int __init e820_mark_nvs_memory(v
+ 		struct e820entry *ei = &e820.map[i];
  
- 	rc = apei_resources_sub(resources, &apei_resources_all);
- 	if (rc)
- 		return rc;
- 
-+	/*
-+	 * Some firmware uses ACPI NVS region, that has been marked as
-+	 * busy, so exclude it from APEI resources to avoid false
-+	 * conflict.
-+	 */
-+	apei_resources_init(&nvs_resources);
-+	rc = apei_get_nvs_resources(&nvs_resources);
-+	if (rc)
-+		goto res_fini;
-+	rc = apei_resources_sub(resources, &nvs_resources);
-+	if (rc)
-+		goto res_fini;
-+
- 	rc = -EINVAL;
- 	list_for_each_entry(res, &resources->iomem, list) {
- 		r = request_mem_region(res->start, res->end - res->start,
-@@ -500,6 +525,8 @@ err_unmap_iomem:
- 			break;
- 		release_mem_region(res->start, res->end - res->start);
+ 		if (ei->type == E820_NVS)
+-			suspend_nvs_register(ei->addr, ei->size);
++			acpi_nvs_register(ei->addr, ei->size);
  	}
-+res_fini:
-+	apei_resources_fini(&nvs_resources);
- 	return rc;
+ 
+ 	return 0;
+--- a/drivers/acpi/Makefile
++++ b/drivers/acpi/Makefile
+@@ -20,11 +20,12 @@ obj-y				+= acpi.o \
+ # All the builtin files are in the "acpi." module_param namespace.
+ acpi-y				+= osl.o utils.o reboot.o
+ acpi-y				+= atomicio.o
++acpi-y				+= nvs.o
+ 
+ # sleep related files
+ acpi-y				+= wakeup.o
+ acpi-y				+= sleep.o
+-acpi-$(CONFIG_ACPI_SLEEP)	+= proc.o nvs.o
++acpi-$(CONFIG_ACPI_SLEEP)	+= proc.o
+ 
+ 
+ #
+--- a/drivers/acpi/nvs.c
++++ b/drivers/acpi/nvs.c
+@@ -15,6 +15,56 @@
+ #include <linux/acpi_io.h>
+ #include <acpi/acpiosxf.h>
+ 
++/* ACPI NVS regions, APEI may use it */
++
++struct nvs_region {
++	__u64 phys_start;
++	__u64 size;
++	struct list_head node;
++};
++
++static LIST_HEAD(nvs_region_list);
++
++#ifdef CONFIG_ACPI_SLEEP
++static int suspend_nvs_register(unsigned long start, unsigned long size);
++#else
++static inline int suspend_nvs_register(unsigned long a, unsigned long b)
++{
++	return 0;
++}
++#endif
++
++int acpi_nvs_register(__u64 start, __u64 size)
++{
++	struct nvs_region *region;
++
++	region = kmalloc(sizeof(*region), GFP_KERNEL);
++	if (!region)
++		return -ENOMEM;
++	region->phys_start = start;
++	region->size = size;
++	list_add_tail(&region->node, &nvs_region_list);
++
++	return suspend_nvs_register(start, size);
++}
++
++int acpi_nvs_for_each_region(int (*func)(__u64 start, __u64 size, void *data),
++			     void *data)
++{
++	int rc;
++	struct nvs_region *region;
++
++	list_for_each_entry(region, &nvs_region_list, node) {
++		rc = func(region->phys_start, region->size, data);
++		if (rc)
++			return rc;
++	}
++
++	return 0;
++}
++
++
++#ifdef CONFIG_ACPI_SLEEP
+ /*
+  * Platforms, like ACPI, may want us to save some memory used by them during
+  * suspend and to restore the contents of this memory during the subsequent
+@@ -41,7 +91,7 @@ static LIST_HEAD(nvs_list);
+  *	things so that the data from page-aligned addresses in this region will
+  *	be copied into separate RAM pages.
+  */
+-int suspend_nvs_register(unsigned long start, unsigned long size)
++static int suspend_nvs_register(unsigned long start, unsigned long size)
+ {
+ 	struct nvs_page *entry, *next;
+ 
+@@ -159,3 +209,4 @@ void suspend_nvs_restore(void)
+ 		if (entry->data)
+ 			memcpy(entry->kaddr, entry->data, entry->size);
  }
- EXPORT_SYMBOL_GPL(apei_resources_request);
++#endif
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -306,6 +306,11 @@ extern acpi_status acpi_pci_osc_control_
+ 					     u32 *mask, u32 req);
+ extern void acpi_early_init(void);
+ 
++extern int acpi_nvs_register(__u64 start, __u64 size);
++
++extern int acpi_nvs_for_each_region(int (*func)(__u64, __u64, void *),
++				    void *data);
++
+ #else	/* !CONFIG_ACPI */
+ 
+ #define acpi_disabled 1
+@@ -348,15 +353,18 @@ static inline int acpi_table_parse(char
+ {
+ 	return -1;
+ }
+-#endif	/* !CONFIG_ACPI */
+ 
+-#ifdef CONFIG_ACPI_SLEEP
+-int suspend_nvs_register(unsigned long start, unsigned long size);
+-#else
+-static inline int suspend_nvs_register(unsigned long a, unsigned long b)
++static inline int acpi_nvs_register(__u64 start, __u64 size)
+ {
+ 	return 0;
+ }
+-#endif
++
++static inline int acpi_nvs_for_each_region(int (*func)(__u64, __u64, void *),
++					   void *data)
++{
++	return 0;
++}
++
++#endif	/* !CONFIG_ACPI */
+ 
+ #endif	/*_LINUX_ACPI_H*/
