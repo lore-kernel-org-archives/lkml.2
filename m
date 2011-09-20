@@ -1,94 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752543Ab1ITK6H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 06:58:07 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:43811 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751409Ab1ITK6F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 06:58:05 -0400
-X-IronPort-AV: E=Sophos;i="4.68,410,1312156800"; 
-   d="scan'208";a="7948920"
-Subject: Re: [PATCH] macvtap: fix the uninitialized var using in
- macvtap_alloc_skb()
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Jason Wang <jasowang@redhat.com>, <netdev@vger.kernel.org>,
-        <davem@davemloft.net>, <linux-kernel@vger.kernel.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Date: Tue, 20 Sep 2011 11:58:03 +0100
-In-Reply-To: <20110919095415.GD4501@redhat.com>
-References: <20110919094830.6272.40503.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
-	 <20110919095415.GD4501@redhat.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3- 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1316516283.3891.27.camel@zakaz.uk.xensource.com>
+	id S1752011Ab1ITLKU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 07:10:20 -0400
+Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:52549 "EHLO
+	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750806Ab1ITLKT convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 07:10:19 -0400
+From: =?ISO-8859-1?Q?P=E9ter?= Ujfalusi <peter.ujfalusi@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: alsa-devel@alsa-project.org, Dmitry Torokhov <dtor@mail.ru>,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        Samuel Ortiz <samuel.ortiz@intel.com>,
+        Misael Lopez Cruz <misael.lopez@ti.com>, Liam Girdwood <lrg@ti.com>
+Subject: Re: Re: [alsa-devel] [PATCH 7/8] ASoC: omap-mcpdm: Correct the supported number of channels
+Date: Tue, 20 Sep 2011 14:10:24 +0300
+Message-ID: <1661734.tddAioOORG@barack>
+User-Agent: KMail/4.7.1 (Linux/3.0.4-gentoo; KDE/4.7.1; x86_64; ; )
+In-Reply-To: <20110920105714.GA14609@sirena.org.uk>
+References: <1316091561-30899-1-git-send-email-peter.ujfalusi@ti.com> <20110919221740.GI23179@opensource.wolfsonmicro.com> <20110920105714.GA14609@sirena.org.uk>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-09-19 at 12:54 +0300, Michael S. Tsirkin wrote:
-> On Mon, Sep 19, 2011 at 05:48:31PM +0800, Jason Wang wrote:
-> > Commit d1b08284 use new frag API but would leave f to be used
-> > uninitialized, this patch fix it.
-> > 
-> > Signed-off-by: Jason Wang <jasowang@redhat.com>
+On Tuesday 20 September 2011 11:57:14 Mark Brown wrote:
+> No I didn't - I guess this one only applies against Liam's tree
 > 
-> Good catch. Makes absolute sense.
-> 
-> Acked-by: Michael S. Tsirkin <mst@redhat.com>
+> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-Agreed. I like this one better than the one I just sent out so:
+Hrm, I have used Linus's tree for this series, and AFAIK there were no changes 
+regarding to McPDM apart from the patches I have submitted.
 
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
+Could you give me a hint, why it failed?
 
-Thanks Jason.
-
-> 
-> > ---
-> >  drivers/net/macvtap.c |   12 +++++-------
-> >  1 files changed, 5 insertions(+), 7 deletions(-)
-> > 
-> > diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-> > index 7c3f84a..3da5578 100644
-> > --- a/drivers/net/macvtap.c
-> > +++ b/drivers/net/macvtap.c
-> > @@ -453,7 +453,6 @@ static int zerocopy_sg_from_iovec(struct sk_buff *skb, const struct iovec *from,
-> >  	int copy = skb_headlen(skb);
-> >  	int size, offset1 = 0;
-> >  	int i = 0;
-> > -	skb_frag_t *f;
-> >  
-> >  	/* Skip over from offset */
-> >  	while (count && (offset >= from->iov_len)) {
-> > @@ -503,14 +502,13 @@ static int zerocopy_sg_from_iovec(struct sk_buff *skb, const struct iovec *from,
-> >  		skb->truesize += len;
-> >  		atomic_add(len, &skb->sk->sk_wmem_alloc);
-> >  		while (len) {
-> > -			__skb_fill_page_desc(
-> > -				skb, i, page[i],
-> > -				base & ~PAGE_MASK,
-> > -				min_t(int, len, PAGE_SIZE - f->page_offset));
-> > +			int off = base & ~PAGE_MASK;
-> > +			int size = min_t(int, len, PAGE_SIZE - off);
-> > +			__skb_fill_page_desc(skb, i, page[i], off, size);
-> >  			skb_shinfo(skb)->nr_frags++;
-> >  			/* increase sk_wmem_alloc */
-> > -			base += f->size;
-> > -			len -= f->size;
-> > +			base += size;
-> > +			len -= size;
-> >  			i++;
-> >  		}
-> >  		offset1 = 0;
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
-
+--
+Péter
