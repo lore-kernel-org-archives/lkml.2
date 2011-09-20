@@ -1,73 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752386Ab1ITRoF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 13:44:05 -0400
-Received: from mail127.messagelabs.com ([216.82.250.115]:60851 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752320Ab1ITRoE convert rfc822-to-8bit (ORCPT
+	id S1752455Ab1ITRoW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 13:44:22 -0400
+Received: from www.linutronix.de ([62.245.132.108]:44458 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752413Ab1ITRoU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 13:44:04 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-15.tower-127.messagelabs.com!1316540634!32224669!26
-X-Originating-IP: [216.166.12.97]
-X-StarScan-Version: 6.3.6; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linus Walleij <linus.walleij@stericsson.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-CC: Linus Walleij <linus.walleij@linaro.org>, Lee Jones <lee.jones@linaro.org>,
-        Ryan Mallon <rmallon@gmail.com>
-Date: Tue, 20 Sep 2011 12:43:50 -0500
-Subject: RE: [PATCH v2] mach-ep93xx: break out GPIO driver specifics
-Thread-Topic: [PATCH v2] mach-ep93xx: break out GPIO driver specifics
-Thread-Index: Acx3cUcwPwElrj+BQYGR1r+XGtG6RgAS2/Tg
-Message-ID: <ADE657CA350FB648AAC2C43247A983F001F39DAED82F@AUSP01VMBX24.collaborationhost.net>
-References: <1316508132-20020-1-git-send-email-linus.walleij@stericsson.com>
-In-Reply-To: <1316508132-20020-1-git-send-email-linus.walleij@stericsson.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 20 Sep 2011 13:44:20 -0400
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: linux-kernel@vger.kernel.org, balbi@ti.com,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [PATCH] x86/dma: make a zero length mapping length not dma capable
+Date: Tue, 20 Sep 2011 19:44:25 +0200
+Message-Id: <1316540665-15622-1-git-send-email-bigeasy@linutronix.de>
+X-Mailer: git-send-email 1.7.6.3
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, September 20, 2011 1:42 AM, Linus Walleij wrote:
->
-> From: Linus Walleij <linus.walleij@linaro.org>
->
-> The <mach/gpio.h> file is included from upper directories
-> and deal with generic GPIO and gpiolib stuff. Break out the
-> platform and driver specific defines and functions into its own
-> header file.
->
-> Cc: Hartley Sweeten <hsweeten@visionengravers.com>
-> Cc: Ryan Mallon <rmallon@gmail.com>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
-> ChangeLog v1->v2:
-> - Move the irq_to_gpio() into the driver since it was the only
->   thing actually using it, as a result the ep93xx gpio.h
->   is trivial and becomes empty.
-> - Putting this into the patch tracker as 7042/2 soon-ish.
-> ---
->  arch/arm/mach-ep93xx/core.c                     |    1 +
->  arch/arm/mach-ep93xx/edb93xx.c                  |    1 +
->  arch/arm/mach-ep93xx/include/mach/gpio-ep93xx.h |  100 +++++++++++++++++++++
->  arch/arm/mach-ep93xx/include/mach/gpio.h        |  105 -----------------------
->  arch/arm/mach-ep93xx/simone.c                   |    2 +-
->  arch/arm/mach-ep93xx/snappercl15.c              |    2 +-
->  drivers/gpio/gpio-ep93xx.c                      |    3 +
->  7 files changed, 107 insertions(+), 107 deletions(-)
->  create mode 100644 arch/arm/mach-ep93xx/include/mach/gpio-ep93xx.h
+The following ooops happens during a call to dma_map_single():
 
-Acked-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+| ------------[ cut here ]------------
+| kernel BUG at lib/swiotlb.c:409!
+| invalid opcode: 0000 [#1] SMP
+| CPU 1
+|
+| RIP: 0010:[<ffffffff811a00c9>]  [<ffffffff811a00c9>] swiotlb_tbl_map_single+0x87/0x1e0
+| Call Trace:
+|  [<ffffffff813170e0>] ? printk+0x43/0x48
+|  [<ffffffff8100d027>] ? load_TLS+0x7/0xa
+|  [<ffffffff811a0261>] ? map_single+0x3f/0x3f
+|  [<ffffffff811a02be>] ? swiotlb_map_page+0x5d/0xcd
+|  [<ffffffff811a0261>] ? map_single+0x3f/0x3f
+|  [<ffffffffa02946ca>] ? dwc3_map_buffer_to_dma+0x8a/0xe2 [dwc3]
 
-Thanks!
+As you know from the line 409 the size parameter was 0. This happens
+because the upper layer sends a zero length packet which the dwc3 driver
+tried to map.
+The memory is not really used and the hardware should not really issue a
+dma request however we must setup a dma descriptor which contains an
+address field and a size field which is set to 0 for the zero length
+packet to be sent. So the unconditional mapping was kinda convenient to
+do. ARM does not complain about length == 0, the swiotlb which is
+used on x86 makes trouble. Looking at other udc drivers, they either
+ignore this case or workaround it by incrementing the size by 1 which
+looks nasty.
+For now I fixed this by not mapping zero packets at all. Anything what I
+should expect from the DMA API? I.e. should it be okay to call
+dma_map_single() with size = 0?
+This patch is untested due to -ENODEV. Changing each implementation of
+dma_map_single() will result in large patch and it is also question if
+this is worth the effort.
+
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ arch/x86/include/asm/dma-mapping.h |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/include/asm/dma-mapping.h b/arch/x86/include/asm/dma-mapping.h
+index d4c419f..e73d921 100644
+--- a/arch/x86/include/asm/dma-mapping.h
++++ b/arch/x86/include/asm/dma-mapping.h
+@@ -65,6 +65,8 @@ static inline bool dma_capable(struct device *dev, dma_addr_t addr, size_t size)
+ {
+ 	if (!dev->dma_mask)
+ 		return 0;
++	if (!size)
++		return 0;
+ 
+ 	return addr + size - 1 <= *dev->dma_mask;
+ }
+-- 
+1.7.6.3
+
