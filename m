@@ -1,34 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752533Ab1ITQHb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 12:07:31 -0400
-Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:27233 "HELO
-	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752208Ab1ITQHa (ORCPT
+	id S1752338Ab1ITQJB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 12:09:01 -0400
+Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:27656 "HELO
+	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751231Ab1ITQJA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 12:07:30 -0400
+	Tue, 20 Sep 2011 12:09:00 -0400
 X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: urmHFAUVM1mJ4wTTrV.pLcrUo2XVYn7u6OVH.LhE.Cr318s
- 4GH8HzJAcEkHOILr2Cd3twIHN4rg8bvnCujETcXWgfo2rBn1AZ8mMuVjL16y
- wY0uXVvD9zTG28zWB.2mLQaAg_k7VwpDYan893rTVpQLUXbV1EpzFSM1wjih
- BPGGaJfyqbZqSATYxjebS3pnSiiWLdIJRY3yuP_os8zyjnXSimx_pOvLLTw6
- MVuZnPjass2IWEaGBT7F44D_mnzw7Iyhk68i2mnvtYNwxNRs9Mhp5cbDVxbm
- 5Ik2e37n84q6vSQIX1NPjsEYhIbZZAI5YzW38y_P0A50J_5mrgnclCixqTRK
- cPldLe7ajJNXKXcoE0wt1MYMkClhCQYeO8fXhXwgammElPKc-
+X-YMail-OSG: Ekfn884VM1m5ADPjx4H2yR1bClw96wcmCs8xQ_50no5xTuf
+ ve0CW2QFLPnC95rBWLjyLQowLgwaQRzoM.8Rc1zNw0uRNbv7_2cf9Tsp4txf
+ a0O_l4lXtxs.K7XC_bHh.SHgbQlhnrs0za9nnEm8e6waa7IfeSM302HSzc.a
+ GygUrFf43_P.xL_bB4VzLbiBrr7Dpu7T.xM.lbPjuOxMEy7op5Cvv.MRuwbB
+ JemG5QTdCHFVl_hdD2QbUKOF.ImqNOaLgqbr8ZWBogeGfktSSD3T75Jf0Z20
+ VBT273pjk1gO9DLoh_OUGb0TL04Zq.fUvHiQ4tioHtFBGS3W9Avb.NOJSKlY
+ 7.z.kDvfnDvlW674LDnlCLf7vi1fHO7qlTngzDUzRfWChlzUhvWec3vicHZ5
+ pj1exx5QydlmsXu8Qh1bbJf8-
 X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 20 Sep 2011 11:07:27 -0500 (CDT)
+Date: Tue, 20 Sep 2011 11:08:56 -0500 (CDT)
 From: Christoph Lameter <cl@gentwo.org>
 X-X-Sender: cl@router.home
 To: Steven Rostedt <rostedt@goodmis.org>
-cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+cc: Valdis.Kletnieks@vt.edu, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Peter Zijlstra <peterz@infradead.org>,
-        Christoph Lameter <cl@linux.com>, Tejun Heo <htejun@gmail.com>
-Subject: Re: [RFC][PATCH 2/5] mm: Switch mod_state() to __this_cpu_read()
-In-Reply-To: <1316534608.29966.81.camel@gandalf.stny.rr.com>
-Message-ID: <alpine.DEB.2.00.1109201105380.8056@router.home>
-References: <20110919212040.745370781@goodmis.org>  <20110919212640.688732950@goodmis.org>  <alpine.DEB.2.00.1109191657150.19059@router.home>  <alpine.LFD.2.02.1109201334590.2723@ionos>  <alpine.DEB.2.00.1109200947100.8056@router.home> 
- <1316531505.29966.57.camel@gandalf.stny.rr.com>  <alpine.DEB.2.00.1109201055470.8056@router.home> <1316534608.29966.81.camel@gandalf.stny.rr.com>
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [RFC][PATCH 0/5] Introduce checks for preemptable code for
+ this_cpu_read/write()
+In-Reply-To: <1316531987.29966.65.camel@gandalf.stny.rr.com>
+Message-ID: <alpine.DEB.2.00.1109201108080.8056@router.home>
+References: <20110919212040.745370781@goodmis.org>  <alpine.DEB.2.00.1109191644190.19059@router.home>  <1316487977.29966.32.camel@gandalf.stny.rr.com>  <27409.1316522696@turing-police.cc.vt.edu>  <alpine.DEB.2.00.1109200955190.8056@router.home>
+ <1316531987.29966.65.camel@gandalf.stny.rr.com>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -38,27 +42,25 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Tue, 20 Sep 2011, Steven Rostedt wrote:
 
-> > NO!! This defeats the whole purpose of this_cpu_ops and make the whole
-> > scheme utterly useless.
+> On Tue, 2011-09-20 at 09:57 -0500, Christoph Lameter wrote:
 >
-> The thing is, the whole purpose was broken to begin with. Defeating a
-> broken design is a good thing!
-
-So then we are not allowed to use segment prefixes in core code to avoid
-preempt enable disable? And to avoid interrupt disabling enabling in
-critical allocator sections?
-
-> > There are trivial cases like counter increments that are not a problem at
-> > all. Most use cases are those. More complex ones can be developed to avoid
-> > various overhead in performance critical sections of the kernel.
-> >
+> > this_cpu_xx functions are made for those locations that have
+> > preemption enabled. If you can use those function (classic case is a
+> > per cpu counter increment in the network subsystem) then you can avoid
+> > preempt disable/enable or get_cpu/put_cpu.
 >
-> And adding a preempt_disable; this_cpu_inc(); preempt_enable; is not a
-> bad thing either.
+> If the variables are used for a very short time, then the latencies
+> introduced by a simple:
+>
+> 	var = get_cpu_var(my_var);
+> 	if (var)
+> 		do_something_quick();
+> 	put_cpu_var(my_var);
+>
+> Otherwise if that do_something_quick(); migrates, it may be doing
+> something it shouldn't be doing!
 
-It defeats the purpose of the whole thing.
-
-> What benchmarks do you have that shows this helped in anything????
-
-The various patchsets that went into the kernel had benchmarks results.
+That is obviously a use case in which this_cpu_xx ops could not be used
+since we must stay on the same cpu. I think there is still a lot of
+confusion on your part. The example here shows it.
 
