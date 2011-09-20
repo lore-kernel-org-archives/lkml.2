@@ -1,94 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751907Ab1ITP3B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 11:29:01 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:57664 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750797Ab1ITP27 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 11:28:59 -0400
-Date: Tue, 20 Sep 2011 08:28:16 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        lkml <linux-kernel@vger.kernel.org>, richard@nod.at,
-        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 1/2] creds: kill __task_cred()->task_is_dead() check
-Message-ID: <20110920152816.GD2380@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110919214531.GA18085@sergelap>
- <20110920122202.GA26504@redhat.com>
- <20110920124419.GA10759@hallyn.com>
- <20110920134108.GA30749@redhat.com>
- <20110920143920.GA15859@redhat.com>
- <20110920143942.GB15859@redhat.com>
+	id S1751808Ab1ITPhQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 11:37:16 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:51491 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750984Ab1ITPhP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 11:37:15 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Kent Overstreet <kent.overstreet@gmail.com>
+Subject: Re: [GIT] Bcache version 12
+Date: Tue, 20 Sep 2011 17:37:05 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, rdunlap@xenotime.net, axboe@kernel.dk,
+        akpm@linux-foundation.org, neilb@suse.de
+References: <20110910064531.GA32536@moria>
+In-Reply-To: <20110910064531.GA32536@moria>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110920143942.GB15859@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201109201737.05515.arnd@arndb.de>
+X-Provags-ID: V02:K0:5rru6ReqY8IKfSHXOWMusal8mqN3t5j2u4dIuUVqTcD
+ CqWDFUFdW/VxRLD/EIpdMFLYBjtp2ryqZyYVcbwigAReKUf26R
+ NMChhGVSkRkcTRthC+FKVKjLqrZ2DC/aKiiQPA4ACK2lyLOmA1
+ Dj8VsVjrnW5O8seOeu/wfxJxFFPFCI5UXK2u4FPNxU6T2jYdrb
+ 2wwtWKjVctvlKQ7+sbprtC4SnxxTpFFvTzc7RBqpjIlmxqVvrU
+ XRLep94+UgB9rgL/dQM/V7qROL/aDJlUP+NRUGSPVaXSsHgvB1
+ R5AlQD1OAndLFVHwPIUtisPJbcI7GL87Ob6RQ/MTkFW0NQl4nm
+ R3KxRij/irOO9GhEj8l0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 20, 2011 at 04:39:42PM +0200, Oleg Nesterov wrote:
-> >From 8f92054e commit:
+On Saturday 10 September 2011, Kent Overstreet wrote:
+> Short overview:
+> Bcache does both writethrough and writeback caching. It presents itself
+> as a new block device, a bit like say md. You can cache an arbitrary
+> number of block devices with a single cache device, and attach and
+> detach things at runtime - it's quite flexible.
 > 
->     Instead, add the following validation condition:
+> It's very fast. It uses a b+ tree for the index, along with a journal to
+> coalesce index updates, and a bunch of other cool tricks like auxiliary
+> binary search trees with software floating point keys to avoid a bunch
+> of random memory accesses when doing binary searches in the btree. It
+> does over 50k iops doing 4k random writes without breaking a sweat,
+> and would do many times that if I had faster hardware.
 > 
->         task->exit_state >= 0
-> 
->     to permit the access if the target task is dead and therefore unable to change
->     its own credentials.
-> 
-> OK, but afaics currently this can only help wait_task_zombie() which
-> calls __task_cred() without rcu lock.
-> 
-> Remove this validation and change wait_task_zombie() to use task_uid()
-> instead. This means we do rcu_read_lock() only to shut up the lockdep,
-> but we already do the same in, say, wait_task_stopped().
-> 
-> Unfortunately, we can't kill task_is_dead() right now, it has already
-> found the users in drivers/staging/, and I bet the usage is wrong.
+> It (configurably) tracks and skips sequential IO, so as to efficiently
+> cache random IO. It's got more cool features than I can remember at this
+> point. It's resilient, handling IO errors from the SSD when possible up
+> to a configurable threshhold, then detaches the cache from the backing
+> device even while you're still using it.
 
->From a first quick scan...
+Hi Kent,
 
-							Thanx, Paul
+What kind of SSD hardware do you target here? I roughly categorize them
+into two classes, the low-end (USB, SDHC, CF, cheap ATA SSD) and the
+high-end (SAS, PCIe, NAS, expensive ATA SSD), which have extremely
+different characteristics. 
 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
-> 
->  include/linux/cred.h |    3 +--
->  kernel/exit.c        |    2 +-
->  2 files changed, 2 insertions(+), 3 deletions(-)
-> 
-> --- 3.1/include/linux/cred.h~1_kill_task_is_dead	2011-09-20 16:28:22.000000000 +0200
-> +++ 3.1/include/linux/cred.h	2011-09-20 16:28:47.000000000 +0200
-> @@ -284,8 +284,7 @@ static inline void put_cred(const struct
->  #define __task_cred(task)						\
->  	({								\
->  		const struct task_struct *__t = (task);			\
-> -		rcu_dereference_check(__t->real_cred,			\
-> -				      task_is_dead(__t));		\
-> +		rcu_dereference_check(__t->real_cred, 0);		\
+I'm mainly interested in the first category, and a brief look at your
+code suggests that this is what you are indeed targetting. If that is
+true, can you name the specific hardware characteristics you require
+as a minimum? I.e. what erase block (bucket) sizes do you support
+(maximum size, non-power-of-two), how many buckets do you have
+open at the same time, and do you guarantee that each bucket is written
+in consecutive order?
 
-The "0" above will make lockdep-RCU complain unconditionally.  My guess
-is that you want rcu_dereference_raw().
+On a different note, we had discussed at the last storage/fs summit about
+using an SSD cache either without a backing store or having the backing
+store on the same drive as the cache in order to optimize traditional
+file system on low-end flash media. Have you considered these scenarios?
+How hard would it be to support this in a meaningful way? My hope is that
+by sacrificing some 10% of the drive size, you would get significantly
+improved performance because you can avoid many internal GC cycles within
+the drive.
 
->  	})
-> 
->  /**
-> --- 3.1/kernel/exit.c~1_kill_task_is_dead	2011-09-20 16:28:22.000000000 +0200
-> +++ 3.1/kernel/exit.c	2011-09-20 16:28:47.000000000 +0200
-> @@ -1191,7 +1191,7 @@ static int wait_task_zombie(struct wait_
->  	unsigned long state;
->  	int retval, status, traced;
->  	pid_t pid = task_pid_vnr(p);
-> -	uid_t uid = __task_cred(p)->uid;
-> +	uid_t uid = task_uid(p);
->  	struct siginfo __user *infop;
-> 
->  	if (!likely(wo->wo_flags & WEXITED))
-> 
+	Arnd
