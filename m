@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751741Ab1ITQqq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 12:46:46 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:38860 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751287Ab1ITQqh (ORCPT
+	id S1751498Ab1ITQuX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 12:50:23 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35654 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750952Ab1ITQuW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 12:46:37 -0400
-From: Stephen Warren <swarren@nvidia.com>
-To: Grant Likely <grant.likely@secretlab.ca>, Arnd Bergmann <arnd@arndb.de>,
-        nicolas.pitre@linaro.org
-Cc: Olof Johansson <olof@lixom.net>, Shawn Guo <shawn.guo@linaro.org>,
-        Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
-        linux-tegra@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH REPOST 2/2] arm/dt: Tegra: Add support-8bit to SDHCI nodes
-Date: Tue, 20 Sep 2011 10:46:26 -0600
-Message-Id: <1316537186-26753-2-git-send-email-swarren@nvidia.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1316537186-26753-1-git-send-email-swarren@nvidia.com>
-References: <1316537186-26753-1-git-send-email-swarren@nvidia.com>
+	Tue, 20 Sep 2011 12:50:22 -0400
+Subject: Re: [RFC][PATCH 0/5] Introduce checks for preemptable code for
+ this_cpu_read/write()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Christoph Lameter <cl@gentwo.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Tue, 20 Sep 2011 18:50:03 +0200
+In-Reply-To: <alpine.DEB.2.00.1109201109470.8056@router.home>
+References: <20110919212040.745370781@goodmis.org>
+	  <alpine.DEB.2.00.1109191644190.19059@router.home>
+	  <1316487977.29966.32.camel@gandalf.stny.rr.com>
+	  <20110920154610.GB28952@Krystal>
+	 <1316534441.29966.79.camel@gandalf.stny.rr.com>
+	 <alpine.DEB.2.00.1109201109470.8056@router.home>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1316537403.13664.59.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For Seaboard's internal eMMC, this makes the difference between a
-5.5MB/s and 10.2MB/s transfer rate. On Harmony, there wasn't any
-measurable difference on my cheap/slow ~2MB/s card.
+On Tue, 2011-09-20 at 11:10 -0500, Christoph Lameter wrote:
+> On Tue, 20 Sep 2011, Steven Rostedt wrote:
+> 
+> > I really mean all other users of this_cpu_*(), including the cmpxchg and
+> > friends, still need to have preemption disabled.
+> 
+> This is argument against the basic design of this_cpu_ops. They were
+> designed to avoid having to disable preemption for single operations on
+> per cpu data. I think this shows a basic misunderstanding of what you are
+> dealing with.
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
- arch/arm/boot/dts/tegra-harmony.dts  |    1 +
- arch/arm/boot/dts/tegra-seaboard.dts |    4 ++++
- 2 files changed, 5 insertions(+), 0 deletions(-)
+But part of that design is that its impossible to verify the
+correctness. This is the part we object to and you keep avoiding.
 
-diff --git a/arch/arm/boot/dts/tegra-harmony.dts b/arch/arm/boot/dts/tegra-harmony.dts
-index e581866..0e225b8 100644
---- a/arch/arm/boot/dts/tegra-harmony.dts
-+++ b/arch/arm/boot/dts/tegra-harmony.dts
-@@ -66,5 +66,6 @@
- 		cd-gpios = <&gpio 58 0>; /* gpio PH2 */
- 		wp-gpios = <&gpio 59 0>; /* gpio PH3 */
- 		power-gpios = <&gpio 70 0>; /* gpio PI6 */
-+		support-8bit;
- 	};
- };
-diff --git a/arch/arm/boot/dts/tegra-seaboard.dts b/arch/arm/boot/dts/tegra-seaboard.dts
-index 64cedca..a72299b 100644
---- a/arch/arm/boot/dts/tegra-seaboard.dts
-+++ b/arch/arm/boot/dts/tegra-seaboard.dts
-@@ -25,4 +25,8 @@
- 		wp-gpios = <&gpio 57 0>; /* gpio PH1 */
- 		power-gpios = <&gpio 70 0>; /* gpio PI6 */
- 	};
-+
-+	sdhci@c8000600 {
-+		support-8bit;
-+	};
- };
--- 
-1.7.0.4
+There is a reason smp_processor_id() warns if its called in a
+preemptible context, all the this_cpu wankery doesn't. It doesn't
+provide a single useful debug feature and in places is designed so that
+its impossible.
+
+Seriously, how can you defend this shitpile with a straight face? Sure
+it make slub go faster, but who gives a flying fuck if it brings the
+rest of the kernel to its knees.
+
 
