@@ -1,106 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754039Ab1ITIPR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 04:15:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48253 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751444Ab1ITIPP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 04:15:15 -0400
-Date: Tue, 20 Sep 2011 10:15:11 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
-        Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 04/11] mm: memcg: per-priority per-zone hierarchy scan
- generations
-Message-ID: <20110920081511.GA27675@tiehlicka.suse.cz>
-References: <1315825048-3437-1-git-send-email-jweiner@redhat.com>
- <1315825048-3437-5-git-send-email-jweiner@redhat.com>
- <20110913192759.ff0da031.kamezawa.hiroyu@jp.fujitsu.com>
- <20110913110301.GB18886@redhat.com>
+	id S1754298Ab1ITI31 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 04:29:27 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:45581 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751509Ab1ITI3Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 04:29:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110913110301.GB18886@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1316417361.1978.48.camel@deskari>
+References: <1316088425.11294.78.camel@lappyti>
+	<yunboul7sx7.fsf@aiko.keithp.com>
+	<1316100594.23214.65.camel@deskari>
+	<yun8vpp7qk7.fsf@aiko.keithp.com>
+	<1316107275.23214.99.camel@deskari>
+	<yunfwjxwbjq.fsf@aiko.keithp.com>
+	<20110916175326.54567b14@lxorguk.ukuu.org.uk>
+	<1316414014.1978.12.camel@deskari>
+	<yunfwjtauqg.fsf@aiko.keithp.com>
+	<1316417361.1978.48.camel@deskari>
+Date: Tue, 20 Sep 2011 10:29:23 +0200
+Message-ID: <CAMeQTsbP-_ut7BA3YQ+qgtqfM1tzM4qn3jxHT8B8_0hdPbP3Jg@mail.gmail.com>
+Subject: Re: Proposal for a low-level Linux display framework
+From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Keith Packard <keithp@keithp.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linaro-dev@lists.linaro.org,
+        "Clark, Rob" <rob@ti.com>, Archit Taneja <archit@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 13-09-11 13:03:01, Johannes Weiner wrote:
-> On Tue, Sep 13, 2011 at 07:27:59PM +0900, KAMEZAWA Hiroyuki wrote:
-> > On Mon, 12 Sep 2011 12:57:21 +0200
-> > Johannes Weiner <jweiner@redhat.com> wrote:
-> > 
-> > > Memory cgroup limit reclaim currently picks one memory cgroup out of
-> > > the target hierarchy, remembers it as the last scanned child, and
-> > > reclaims all zones in it with decreasing priority levels.
-> > > 
-> > > The new hierarchy reclaim code will pick memory cgroups from the same
-> > > hierarchy concurrently from different zones and priority levels, it
-> > > becomes necessary that hierarchy roots not only remember the last
-> > > scanned child, but do so for each zone and priority level.
-> > > 
-> > > Furthermore, detecting full hierarchy round-trips reliably will become
-> > > crucial, so instead of counting on one iterator site seeing a certain
-> > > memory cgroup twice, use a generation counter that is increased every
-> > > time the child with the highest ID has been visited.
-> > > 
-> > > Signed-off-by: Johannes Weiner <jweiner@redhat.com>
-> > 
-> > I cannot image how this works. could you illustrate more with easy example ?
-> 
-> Previously, we did
-> 
-> 	mem = mem_cgroup_iter(root)
-> 	  for each priority level:
-> 	    for each zone in zonelist:
-> 
-> and this would reclaim memcg-1-zone-1, memcg-1-zone-2, memcg-1-zone-3
-> etc.
-> 
-> The new code does
-> 
-> 	for each priority level
-> 	  for each zone in zonelist
->             mem = mem_cgroup_iter(root)
-> 
-> but with a single last_scanned_child per memcg, this would scan
-> memcg-1-zone-1, memcg-2-zone-2, memcg-3-zone-3 etc, which does not
-> make much sense.
-> 
-> Now imagine two reclaimers.  With the old code, the first reclaimer
-> would pick memcg-1 and scan all its zones, the second reclaimer would
-> pick memcg-2 and reclaim all its zones.  Without this patch, the first
-> reclaimer would pick memcg-1 and scan zone-1, the second reclaimer
-> would pick memcg-2 and scan zone-1, then the first reclaimer would
-> pick memcg-3 and scan zone-2.  If the reclaimers are concurrently
-> scanning at different priority levels, things are even worse because
-> one reclaimer may put much more force on the memcgs it gets from
-> mem_cgroup_iter() than the other reclaimer.  They must not share the
-> same iterator.
-> 
-> The generations are needed because the old algorithm did not rely too
-> much on detecting full round-trips.  After every reclaim cycle, it
-> checked the limit and broke out of the loop if enough was reclaimed,
-> no matter how many children were reclaimed from.  The new algorithm is
-> used for global reclaim, where the only exit condition of the
-> hierarchy reclaim is the full roundtrip, because equal pressure needs
-> to be applied to all zones.
+On Mon, Sep 19, 2011 at 9:29 AM, Tomi Valkeinen wrote:
+>> So DSI is more like i2c than the DisplayPort aux channel or DDC. That
+>
+> Well, not quite. DSI is like DisplayPort and DisplayPort aux combined;
+> there's only one bus, DSI, which is used to transfer video data and
+> commands.
+>
+> For DSI video mode, the transfer is somewhat like traditional displays,
+> and video data is send according to a pixel clock as a constant stream.
+> However, before the video stream is enabled the bus can be used in
+> bi-directional communication. And even when the video stream is enabled,
+> there can be other communication in the blanking periods.
 
-Could you fold this into the patch description, please?
+This sounds a lot like SDVO. You communicate with the SDVO chip through
+i2c and then do a bus switch to get to the DDC. You also have the GMBus
+with interrupt support that can help you do the i2c transfers.
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+SDVO supports many connectors and can have multiple in and out channels
+so some setups are a bit complicated.
+
+It would be nice to have a model that fits both DSI and SDVO, and the option
+to configure some of it from userspace.
+
+I thought the purpose of drm_encoder was to abstract hardware like this?
+
+-Patrik
