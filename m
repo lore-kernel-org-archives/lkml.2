@@ -1,91 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756927Ab1ITBlW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 21:41:22 -0400
-Received: from mga02.intel.com ([134.134.136.20]:52041 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752543Ab1ITBjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 21:39:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="50392839"
-From: Huang Ying <ying.huang@intel.com>
-To: Len Brown <lenb@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        ying.huang@intel.com, linux-acpi@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH 1/8] ACPI, APEI, Print resource errors in conventional format
-Date: Tue, 20 Sep 2011 09:38:54 +0800
-Message-Id: <1316482741-21799-2-git-send-email-ying.huang@intel.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1316482741-21799-1-git-send-email-ying.huang@intel.com>
-References: <1316482741-21799-1-git-send-email-ying.huang@intel.com>
+	id S1755050Ab1ITBws (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 21:52:48 -0400
+Received: from mail132.messagelabs.com ([216.82.242.115]:63222 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752275Ab1ITBwr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 21:52:47 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-5.tower-132.messagelabs.com!1316483565!39057611!3
+X-Originating-IP: [216.166.12.69]
+X-StarScan-Version: 6.3.6; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] tps65023-regulator: remove duplicate REG_CTRL2 defines
+Date: Mon, 19 Sep 2011 18:51:39 -0700
+User-Agent: KMail/1.9.9
+CC: <lrg@ti.com>, <broonie@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201109191851.40743.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bjorn Helgaas <bhelgaas@google.com>
+There are two sets of defines for the REG_CTRL2 bitfields and one
+of them has TPS65023_REG_CTRL2_DCDC1 defined incorrectly. Remove
+the duplicates and leave the correct one for TPS65023_REG_CTRL2_DCDC1.
 
-Use the normal %pR-like format for MMIO and I/O port ranges.
+This fixes the following sparse warnings:
 
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Signed-off-by: Huang Ying <ying.huang@intel.com>
+drivers/regulator/tps65023-regulator.c:77:9: warning: preprocessor token TPS65023_REG_CTRL2_DCDC1 redefined
+drivers/regulator/tps65023-regulator.c:70:9: this was the original definition
+
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Liam Girdwood <lrg@ti.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+
 ---
- drivers/acpi/apei/apei-base.c |    8 ++++----
- drivers/acpi/apei/einj.c      |   11 ++++++-----
- 2 files changed, 10 insertions(+), 9 deletions(-)
 
---- a/drivers/acpi/apei/apei-base.c
-+++ b/drivers/acpi/apei/apei-base.c
-@@ -460,9 +460,9 @@ int apei_resources_request(struct apei_r
- 				       desc);
- 		if (!r) {
- 			pr_err(APEI_PFX
--		"Can not request iomem region <%016llx-%016llx> for GARs.\n",
-+		"Can not request [mem %#010llx-%#010llx] for %s registers\n",
- 			       (unsigned long long)res->start,
--			       (unsigned long long)res->end);
-+			       (unsigned long long)res->end - 1, desc);
- 			res_bak = res;
- 			goto err_unmap_iomem;
- 		}
-@@ -472,9 +472,9 @@ int apei_resources_request(struct apei_r
- 		r = request_region(res->start, res->end - res->start, desc);
- 		if (!r) {
- 			pr_err(APEI_PFX
--		"Can not request ioport region <%016llx-%016llx> for GARs.\n",
-+		"Can not request [io  %#06llx-%#06llx] for %s registers\n",
- 			       (unsigned long long)res->start,
--			       (unsigned long long)res->end);
-+			       (unsigned long long)res->end - 1, desc);
- 			res_bak = res;
- 			goto err_unmap_ioport;
- 		}
---- a/drivers/acpi/apei/einj.c
-+++ b/drivers/acpi/apei/einj.c
-@@ -209,9 +209,10 @@ static int __einj_error_trigger(u64 trig
- 			       "APEI EINJ Trigger Table");
- 	if (!r) {
- 		pr_err(EINJ_PFX
--	"Can not request iomem region <%016llx-%016llx> for Trigger table.\n",
-+	"Can not request [mem %#010llx-%#010llx] for Trigger table\n",
- 		       (unsigned long long)trigger_paddr,
--		       (unsigned long long)trigger_paddr+sizeof(*trigger_tab));
-+		       (unsigned long long)trigger_paddr +
-+			    sizeof(*trigger_tab) - 1);
- 		goto out;
- 	}
- 	trigger_tab = ioremap_cache(trigger_paddr, sizeof(*trigger_tab));
-@@ -232,9 +233,9 @@ static int __einj_error_trigger(u64 trig
- 			       "APEI EINJ Trigger Table");
- 	if (!r) {
- 		pr_err(EINJ_PFX
--"Can not request iomem region <%016llx-%016llx> for Trigger Table Entry.\n",
--		       (unsigned long long)trigger_paddr+sizeof(*trigger_tab),
--		       (unsigned long long)trigger_paddr + table_size);
-+"Can not request [mem %#010llx-%#010llx] for Trigger Table Entry\n",
-+		       (unsigned long long)trigger_paddr + sizeof(*trigger_tab),
-+		       (unsigned long long)trigger_paddr + table_size - 1);
- 		goto out_rel_header;
- 	}
- 	iounmap(trigger_tab);
+diff --git a/drivers/regulator/tps65023-regulator.c b/drivers/regulator/tps65023-regulator.c
+index b02c670..9fb4c7b 100644
+--- a/drivers/regulator/tps65023-regulator.c
++++ b/drivers/regulator/tps65023-regulator.c
+@@ -67,13 +67,6 @@
+ #define TPS65023_REG_CTRL2_GO		BIT(7)
+ #define TPS65023_REG_CTRL2_CORE_ADJ	BIT(6)
+ #define TPS65023_REG_CTRL2_DCDC2	BIT(2)
+-#define TPS65023_REG_CTRL2_DCDC1	BIT(2)
+-#define TPS65023_REG_CTRL2_DCDC3	BIT(0)
+-
+-/* REG_CTRL2 bitfields */
+-#define TPS65023_REG_CTRL2_GO		BIT(7)
+-#define TPS65023_REG_CTRL2_CORE_ADJ	BIT(6)
+-#define TPS65023_REG_CTRL2_DCDC2	BIT(2)
+ #define TPS65023_REG_CTRL2_DCDC1	BIT(1)
+ #define TPS65023_REG_CTRL2_DCDC3	BIT(0)
+ 
