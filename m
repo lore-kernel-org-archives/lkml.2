@@ -1,60 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751000Ab1ITPR5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 11:17:57 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:44654 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750757Ab1ITPR4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 11:17:56 -0400
-X-Authority-Analysis: v=1.1 cv=lfM0d0QHaVz67dfwwr9cyIw6NbaGR/pZhMD6XWNi0kk= c=1 sm=0 a=3kNrfhY1ZosA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=XqwhGrQx-02lpYbzHRMA:9 a=PUjeQqilurYA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.83.30
-Subject: Re: [RFC][PATCH 0/5] Introduce checks for preemptable code for
- this_cpu_read/write()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Christoph Lameter <cl@gentwo.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Valdis.Kletnieks@vt.edu,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+	id S1751216Ab1ITPS3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 11:18:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27531 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750806Ab1ITPS2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 11:18:28 -0400
+Date: Tue, 20 Sep 2011 17:14:10 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Serge E. Hallyn" <serge@hallyn.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-In-Reply-To: <alpine.DEB.2.00.1109200957500.8056@router.home>
-References: <20110919212040.745370781@goodmis.org>
-	 <alpine.DEB.2.00.1109191644190.19059@router.home>
-	 <1316487977.29966.32.camel@gandalf.stny.rr.com>
-	 <27409.1316522696@turing-police.cc.vt.edu>
-	 <alpine.LFD.2.02.1109201549520.2723@ionos>
-	 <alpine.DEB.2.00.1109200957500.8056@router.home>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 20 Sep 2011 11:17:54 -0400
-Message-ID: <1316531874.29966.63.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+        David Howells <dhowells@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Tobias Klauser <tklauser@distanz.ch>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Matt Mooney <mfm@muteddisk.com>
+Cc: "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        lkml <linux-kernel@vger.kernel.org>, richard@nod.at,
+        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>
+Subject: drivers/staging/usbip/ abuses task_is_dead/exit_state
+Message-ID: <20110920151410.GA16569@redhat.com>
+References: <20110919214531.GA18085@sergelap> <20110920122202.GA26504@redhat.com> <20110920124419.GA10759@hallyn.com> <20110920134108.GA30749@redhat.com> <20110920143920.GA15859@redhat.com> <20110920143942.GB15859@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110920143942.GB15859@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-09-20 at 09:58 -0500, Christoph Lameter wrote:
-> On Tue, 20 Sep 2011, Thomas Gleixner wrote:
-> 
-> > > What's the latency hit on those very few locations if we simply put our
-> > > collective foot down and not support a preemptable version of this_cpu_*()?
-> > > "Yes, you *could* preempt here, but for our collective sanity that's not
-> > > supported"...
-> >
-> > Full ack.
-> 
-> Latency hit could be very significant in various critical kernel paths.
-> Especially network subsystem, vm event counters etc.
+(add more cc's)
 
-Latency hit is better than incorrect behavior. I tell people working on
--rt all the time. A bug/kernel crash is much worse than a hit in
-latency, as a bug/kernel crash causes a much bigger latency hit than
-anything else.
+On 09/20, Oleg Nesterov wrote:
+>
+> Unfortunately, we can't kill task_is_dead() right now, it has already
+> found the users in drivers/staging/, and I bet the usage is wrong.
 
--- Steve
+It is used by drivers/staging/usbip/
 
+For what? The code:
 
+	if (vdev->ud.tcp_rx && !task_is_dead(vdev->ud.tcp_rx))
+		kthread_stop(vdev->ud.tcp_rx);
+
+And how task_is_dead() can help? This helper is really "special", it
+shouldn't be used anyway. But why do we check ->exit_state? Without
+tasklist the check is racy anyway, the task can exit right after the
+check.
+
+And. It is safe to use kthread_stop(t) even if t has already exited.
+
+OK, this was added by 8547d4cc2b616e4f1dafebe2c673fc986422b506
+"Staging: usbip: vhci-hcd: Do not kill already dead RX/TX kthread"
+
+	When unbinding a device on the host which was still attached on the
+	client, I got a NULL pointer dereference on the client.
+
+Where?
+
+	This turned out
+	to be due to kthread_stop() being called on an already dead kthread.
+
+This should work.
+
+I'm afraid this can only fix the symptom. Probably, the problem is that
+we do not have the reference and thus even task_is_dead(t) is not safe.
+
+This kthread was created by kthread_run(). If it exits, nothing protects
+this task_struct.
+
+In any case, please do not use ->exit_state. It should not be used outside
+of exit.c/etc paths, "exit_state != 0" means "exit_notify() was called".
+
+Oleg.
 
