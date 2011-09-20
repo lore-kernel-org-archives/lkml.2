@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751505Ab1ITO1S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 10:27:18 -0400
-Received: from mail-vw0-f52.google.com ([209.85.212.52]:35175 "EHLO
-	mail-vw0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750777Ab1ITO1Q convert rfc822-to-8bit (ORCPT
+	id S1751521Ab1ITO25 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 10:28:57 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:38228
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751081Ab1ITO24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 10:27:16 -0400
+	Tue, 20 Sep 2011 10:28:56 -0400
+Date: Tue, 20 Sep 2011 10:28:43 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hugh Dickins <hughd@google.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 3.1.0-rc4-tip 0/26]   Uprobes patchset with perf probe
+ support
+Message-ID: <20110920142843.GA9995@infradead.org>
+References: <20110920133401.GA28550@infradead.org>
+ <20110920141204.GC6568@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <1316508629.14514.2.camel@phoenix>
-References: <1316508629.14514.2.camel@phoenix>
-Date: Tue, 20 Sep 2011 16:27:15 +0200
-Message-ID: <CAFULf_xq8E1hvB6sXKfwxo6PS39mN0Xe15nevmNReCtfcJ90tg@mail.gmail.com>
-Subject: Re: [PATCH] usb: musb: OMAP4430: Remove a redundant omap4430_phy_init
- call in usb_musb_init
-From: Bjarne Steinsbo <bsteinsbo@gmail.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110920141204.GC6568@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ref thread starting at http://marc.info/?l=linux-omap&m=131316289211258&w=2
+On Tue, Sep 20, 2011 at 07:42:04PM +0530, Srikar Dronamraju wrote:
+> I could use any other inode/file/mapping based sleepable lock that is of
+> higher order than mmap_sem. Can you please let me know if we have
+> alternatives.
 
-Bjarne Steinsbo
+Please do not overload unrelated locks for this, but add a specific one.
 
-On Tue, Sep 20, 2011 at 10:50 AM, Axel Lin <axel.lin@gmail.com> wrote:
-> Current code calls omap4430_phy_init() twice in usb_musb_init().
-> Calling omap4430_phy_init() once is enough.
-> This patch removes the first omap4430_phy_init() call, which using an
-> uninitialized pointer as parameter.
->
-> This patch elimates below build warning:
-> arch/arm/mach-omap2/usb-musb.c: In function 'usb_musb_init':
-> arch/arm/mach-omap2/usb-musb.c:141: warning: 'dev' may be used uninitialized in this function
->
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  arch/arm/mach-omap2/usb-musb.c |    3 ---
->  1 files changed, 0 insertions(+), 3 deletions(-)
->
-> diff --git a/arch/arm/mach-omap2/usb-musb.c b/arch/arm/mach-omap2/usb-musb.c
-> index a65145b..19e4dac 100644
-> --- a/arch/arm/mach-omap2/usb-musb.c
-> +++ b/arch/arm/mach-omap2/usb-musb.c
-> @@ -137,9 +137,6 @@ void __init usb_musb_init(struct omap_musb_board_data *musb_board_data)
->        musb_plat.mode = board_data->mode;
->        musb_plat.extvbus = board_data->extvbus;
->
-> -       if (cpu_is_omap44xx())
-> -               omap4430_phy_init(dev);
-> -
->        if (cpu_is_omap3517() || cpu_is_omap3505()) {
->                oh_name = "am35x_otg_hs";
->                name = "musb-am35x";
-> --
-> 1.7.4.1
->
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+There's two options:
+
+ (a) add it to the inode (conditionally)
+ (b) use global, hashed locks
+
+I think (b) is good enough as adding/removing probes isn't exactly the
+most critical fast path.
+
