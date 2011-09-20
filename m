@@ -1,183 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752461Ab1ITV5P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 17:57:15 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:48885 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751150Ab1ITV4M (ORCPT
+	id S1752178Ab1ITV6M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 17:58:12 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:2586 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751487Ab1ITV6K convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 17:56:12 -0400
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: Azael Avalos <coproscefalo@gmail.com>, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/6] toshiba_acpi: Fix up return codes
-Date: Tue, 20 Sep 2011 16:55:50 -0500
-Message-Id: <1316555754-25949-3-git-send-email-seth.forshee@canonical.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1316555754-25949-1-git-send-email-seth.forshee@canonical.com>
-References: <1316555754-25949-1-git-send-email-seth.forshee@canonical.com>
+	Tue, 20 Sep 2011 17:58:10 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 20 Sep 2011 14:58:06 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Barry Song <21cnbao@gmail.com>
+CC: Lee Jones <lee.jones@linaro.org>, Joe Perches <joe@perches.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linaro Dev <linaro-dev@lists.linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        David Brown <davidb@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 20 Sep 2011 14:58:05 -0700
+Subject: RE: [PATCH 1/2] drivers: create a pin control subsystem v7
+Thread-Topic: [PATCH 1/2] drivers: create a pin control subsystem v7
+Thread-Index: Acx0aiGDcDUWcDhlRHKpTdK8lkwnLwDdOMAw
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF04B7321751@HQMAIL01.nvidia.com>
+References: <1316175203-10736-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1316175203-10736-1-git-send-email-linus.walleij@stericsson.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many routines are returning success on failure, and those that are
-indicating failure frequently return incorrect error codes. Fix
-these up throughout the driver.
+Linus Walleij wrote at Friday, September 16, 2011 6:13 AM:
+> This creates a subsystem for handling of pin control devices.
+> These are devices that control different aspects of package
+> pins.
 
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
----
- drivers/platform/x86/toshiba_acpi.c |   45 +++++++++++++++-------------------
- 1 files changed, 20 insertions(+), 25 deletions(-)
+I've read through the documentation and header files, but not the .c files,
+and this looks almost perfect as far as I can tell right now. I'll try to
+review the .c files sometime too.
 
-diff --git a/drivers/platform/x86/toshiba_acpi.c b/drivers/platform/x86/toshiba_acpi.c
-index d74c97c..6b281c0 100644
---- a/drivers/platform/x86/toshiba_acpi.c
-+++ b/drivers/platform/x86/toshiba_acpi.c
-@@ -191,7 +191,7 @@ static int write_acpi_int(const char *methodName, int val)
- 	in_objs[0].integer.value = val;
- 
- 	status = acpi_evaluate_object(NULL, (char *)methodName, &params, NULL);
--	return (status == AE_OK);
-+	return (status == AE_OK) ? 0 : -EIO;
- }
- 
- /* Perform a raw HCI call.  Here we don't care about input or output buffer
-@@ -419,7 +419,7 @@ static int bt_rfkill_set_block(void *data, bool blocked)
- 
- 	mutex_lock(&dev->mutex);
- 	if (hci_get_radio_state(dev, &radio_state) != HCI_SUCCESS) {
--		err = -EBUSY;
-+		err = -EIO;
- 		goto out;
- 	}
- 
-@@ -432,7 +432,7 @@ static int bt_rfkill_set_block(void *data, bool blocked)
- 	hci_write2(dev, HCI_WIRELESS, value, HCI_WIRELESS_BT_ATTACH, &result2);
- 
- 	if (result1 != HCI_SUCCESS || result2 != HCI_SUCCESS)
--		err = -EBUSY;
-+		err = -EIO;
- 	else
- 		err = 0;
-  out:
-@@ -478,10 +478,10 @@ static int get_lcd(struct backlight_device *bd)
- 	u32 value;
- 
- 	hci_read1(dev, HCI_LCD_BRIGHTNESS, &value, &hci_result);
--	if (hci_result == HCI_SUCCESS) {
-+	if (hci_result == HCI_SUCCESS)
- 		return (value >> HCI_LCD_BRIGHTNESS_SHIFT);
--	} else
--		return -EFAULT;
-+
-+	return -EIO;
- }
- 
- static int lcd_proc_show(struct seq_file *m, void *v)
-@@ -497,11 +497,11 @@ static int lcd_proc_show(struct seq_file *m, void *v)
- 		seq_printf(m, "brightness:              %d\n", value);
- 		seq_printf(m, "brightness_levels:       %d\n",
- 			     HCI_LCD_BRIGHTNESS_LEVELS);
--	} else {
--		pr_err("Error reading LCD brightness\n");
-+		return 0;
- 	}
- 
--	return 0;
-+	pr_err("Error reading LCD brightness\n");
-+	return -EIO;
- }
- 
- static int lcd_proc_open(struct inode *inode, struct file *file)
-@@ -515,10 +515,7 @@ static int set_lcd(struct toshiba_acpi_dev *dev, int value)
- 
- 	value = value << HCI_LCD_BRIGHTNESS_SHIFT;
- 	hci_write1(dev, HCI_LCD_BRIGHTNESS, value, &hci_result);
--	if (hci_result != HCI_SUCCESS)
--		return -EFAULT;
--
--	return 0;
-+	return hci_result == HCI_SUCCESS ? 0 : -EIO;
- }
- 
- static int set_lcd_status(struct backlight_device *bd)
-@@ -575,11 +572,10 @@ static int video_proc_show(struct seq_file *m, void *v)
- 		seq_printf(m, "lcd_out:                 %d\n", is_lcd);
- 		seq_printf(m, "crt_out:                 %d\n", is_crt);
- 		seq_printf(m, "tv_out:                  %d\n", is_tv);
--	} else {
--		pr_err("Error reading video out status\n");
-+		return 0;
- 	}
- 
--	return 0;
-+	return -EIO;
- }
- 
- static int video_proc_open(struct inode *inode, struct file *file)
-@@ -592,6 +588,7 @@ static ssize_t video_proc_write(struct file *file, const char __user *buf,
- {
- 	struct toshiba_acpi_dev *dev = PDE(file->f_path.dentry->d_inode)->data;
- 	char *cmd, *buffer;
-+	int ret = 0;
- 	int value;
- 	int remain = count;
- 	int lcd_out = -1;
-@@ -644,12 +641,12 @@ static ssize_t video_proc_write(struct file *file, const char __user *buf,
- 		/* To avoid unnecessary video disruption, only write the new
- 		 * video setting if something changed. */
- 		if (new_video_out != video_out)
--			write_acpi_int(METHOD_VIDEO_OUT, new_video_out);
-+			ret = write_acpi_int(METHOD_VIDEO_OUT, new_video_out);
- 	} else {
--		return -EFAULT;
-+		ret = -EIO;
- 	}
- 
--	return count;
-+	return ret ? ret : count;
- }
- 
- static const struct file_operations video_proc_fops = {
-@@ -671,11 +668,10 @@ static int fan_proc_show(struct seq_file *m, void *v)
- 	if (hci_result == HCI_SUCCESS) {
- 		seq_printf(m, "running:                 %d\n", (value > 0));
- 		seq_printf(m, "force_on:                %d\n", dev->force_fan);
--	} else {
--		pr_err("Error reading fan status\n");
-+		return 0;
- 	}
- 
--	return 0;
-+	return -EIO;
- }
- 
- static int fan_proc_open(struct inode *inode, struct file *file)
-@@ -701,7 +697,7 @@ static ssize_t fan_proc_write(struct file *file, const char __user *buf,
- 	    value >= 0 && value <= 1) {
- 		hci_write1(dev, HCI_FAN, value, &hci_result);
- 		if (hci_result != HCI_SUCCESS)
--			return -EFAULT;
-+			return -EIO;
- 		else
- 			dev->force_fan = value;
- 	} else {
-@@ -741,13 +737,12 @@ static int keys_proc_show(struct seq_file *m, void *v)
- 			pr_notice("Re-enabled hotkeys\n");
- 		} else {
- 			pr_err("Error reading hotkey status\n");
--			goto end;
-+			return -EIO;
- 		}
- 	}
- 
- 	seq_printf(m, "hotkey_ready:            %d\n", dev->key_event_valid);
- 	seq_printf(m, "hotkey:                  0x%04x\n", dev->last_key_event);
--end:
- 	return 0;
- }
- 
+I just have one comment:
+
+> diff --git a/include/linux/pinctrl/pinmux.h b/include/linux/pinctrl/pinmux.h
+...
+> +/* External interface to pinmux */
+> +extern int pinmux_request_gpio(unsigned gpio);
+> +extern void pinmux_free_gpio(unsigned gpio);
+> +extern struct pinmux * __must_check pinmux_get(struct device *dev, const char *name);
+> +extern void pinmux_put(struct pinmux *pmx);
+> +extern int pinmux_enable(struct pinmux *pmx);
+> +extern void pinmux_disable(struct pinmux *pmx);
+> +extern int pinmux_config(struct pinmux *pmx, u16 param, unsigned long *data);
+
+That definition of pinmux_config doesn't seem as useful as it could be;
+I'd like the ability to execute pinmux_config on a /named/ group, and I
+can certainly see a use-case for applying it to /named/ pins too.
+
+The issues with applying pinmux_config to a mapping table entry are:
+
+* When there are multiple mapping table entries referenced by one
+pinmux_get, you don't necessarily want to apply the same configuration
+to all of the groups; think of a bus with a combination of low-speed
+output control signals and high-speed input data signals or something
+like that.
+
+* When muxing works in groups, you may want to apply the configuration
+to individual pins rather than the whole groups using in the mapping
+table.
+
 -- 
-1.7.4.1
+nvpublic
 
