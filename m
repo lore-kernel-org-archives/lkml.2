@@ -1,74 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751905Ab1ITRXo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 13:23:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64209 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750919Ab1ITRXn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 13:23:43 -0400
-Message-ID: <4E78CBF7.4060004@redhat.com>
-Date: Tue, 20 Sep 2011 20:23:03 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1751809Ab1ITRZe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 13:25:34 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:42803 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750919Ab1ITRZd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 13:25:33 -0400
+Date: Tue, 20 Sep 2011 13:25:31 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Christoph Lameter <cl@gentwo.org>,
+        Valdis.Kletnieks@vt.edu, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC][PATCH 0/5] Introduce checks for preemptable code for
+	this_cpu_read/write()
+Message-ID: <20110920172531.GA21179@Krystal>
+References: <alpine.DEB.2.00.1109191644190.19059@router.home> <1316487977.29966.32.camel@gandalf.stny.rr.com> <27409.1316522696@turing-police.cc.vt.edu> <alpine.DEB.2.00.1109200955190.8056@router.home> <1316531987.29966.65.camel@gandalf.stny.rr.com> <alpine.DEB.2.00.1109201108080.8056@router.home> <1316536260.29966.93.camel@gandalf.stny.rr.com> <1316537808.29966.98.camel@gandalf.stny.rr.com> <1316538541.13664.60.camel@twins> <1316538952.29966.105.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-To: Don Zickus <dzickus@redhat.com>
-CC: x86@kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Peter Zijlstra <peterz@infradead.org>, ying.huang@intel.com,
-        LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
-        jeremy@goop.org
-Subject: Re: [V5][PATCH 4/6] x86, nmi:  add in logic to handle multiple events
- and unknown NMIs
-References: <1316529792-6560-1-git-send-email-dzickus@redhat.com> <1316529792-6560-5-git-send-email-dzickus@redhat.com>
-In-Reply-To: <1316529792-6560-5-git-send-email-dzickus@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1316538952.29966.105.camel@gandalf.stny.rr.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 13:23:35 up 300 days, 22:26,  7 users,  load average: 0.54, 0.35,
+	0.31
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20/2011 05:43 PM, Don Zickus wrote:
-> Previous patches allow the NMI subsystem to process multipe NMI events
-> in one NMI.  As previously discussed this can cause issues when an event
-> triggered another NMI but is processed in the current NMI.  This causes the
-> next NMI to go unprocessed and become an 'unknown' NMI.
->
-> To handle this, we first have to flag whether or not the NMI handler handled
-> more than one event or not.  If it did, then there exists a chance that
-> the next NMI might be already processed.  Once the NMI is flagged as a
-> candidate to be swallowed, we next look for a back-to-back NMI condition.
->
-> This is determined by looking at the %rip from pt_regs.  If it is the same
-> as the previous NMI, it is assumed the cpu did not have a chance to jump
-> back into a non-NMI context and execute code and instead handled another NMI.
->
-> If both of those conditions are true then we will swallow any unknown NMI.
->
-> There still exists a chance that we accidentally swallow a real unknown NMI,
-> but for now things seem better.
->
-> An optimization has also been added to the nmi notifier rountine.  Because x86
-> can latch up to one NMI while currently processing an NMI, we don't have to
-> worry about executing _all_ the handlers in a standalone NMI.  The idea is
-> if multiple NMIs come in, the second NMI will represent them.  For those
-> back-to-back NMI cases, we have the potentail to drop NMIs.  Therefore only
-> execute all the handlers in the second half of a detected back-to-back NMI.
->
-> V2:
->    - forgot to add the 'read' code for swallow_nmi (went into next patch)
->
-> V3:
->    - redesigned the algorithm to utilize Avi's idea of detecting a back-to-back
->      NMI with %rip.
-> V4:
->    - clean up fixes, like adding 'static', rename save_rip to last_nmi_rip
->
->
+* Steven Rostedt (rostedt@goodmis.org) wrote:
+> On Tue, 2011-09-20 at 19:09 +0200, Peter Zijlstra wrote:
+> > On Tue, 2011-09-20 at 12:56 -0400, Steven Rostedt wrote:
+> > > random_cpu_*()    // Thomas's idea
+> > 
+> > I like this one best..
+> 
+> I like it too, but not really the most appropriate.
+> 
+> > 
+> > But you forgot do deal with the irqsafe_cpu() crap, that's the same
+> > brainfart as this_cpu() but more expensive because it frobs IRQ state.
+> 
+> But irqsafe_cpu_*() doesn't really have any real meaning to me. That is
+> something when I see it, I go and read the comments about it. It doesn't
+> contain "this_cpu" which is something that seems to explain what it is,
+> even though the obvious is not what it is.
 
-Missing a zeroing of last_nmi_rip in the idle path.  Otherwise, as Andi 
-points out, and idle machine will always see NMIs coming in from the 
-hlt/mwait address and detect them as back-to-back NMIs.
+Throwing ideas from the IRC discussion into the mix (Paul McKenney and I
+came up with it at the same time):
+
+preempt_protected_percpu_*()
+irq_protected_percpu_*()
+
+Seems to be quite self-explanatory.
+
+Thanks,
+
+Mathieu
 
 -- 
-error compiling committee.c: too many arguments to function
-
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
