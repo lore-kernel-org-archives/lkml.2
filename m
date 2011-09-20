@@ -1,44 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751741Ab1ITVXy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 17:23:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52610 "EHLO mx1.redhat.com"
+	id S1751560Ab1ITVZv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 17:25:51 -0400
+Received: from n1.taur.dk ([217.198.219.102]:35328 "EHLO n1.taur.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751167Ab1ITVXx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 17:23:53 -0400
-Message-ID: <4E790459.9070903@redhat.com>
-Date: Tue, 20 Sep 2011 17:23:37 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.10
+	id S1750763Ab1ITVZu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 17:25:50 -0400
+X-Greylist: delayed 2171 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Sep 2011 17:25:49 EDT
+Message-ID: <4E78FC38.7040903@kasperkp.dk>
+Date: Tue, 20 Sep 2011 22:48:56 +0200
+From: Kasper Pedersen <kernel@kasperkp.dk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.20) Gecko/20110831 Fedora/3.1.12-2.fc14 Thunderbird/3.1.12
 MIME-Version: 1.0
-To: Michel Lespinasse <walken@google.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Michael Wolf <mjwolf@us.ibm.com>
-Subject: Re: [PATCH 2/8] kstaled: documentation and config option.
-References: <1316230753-8693-1-git-send-email-walken@google.com> <1316230753-8693-3-git-send-email-walken@google.com>
-In-Reply-To: <1316230753-8693-3-git-send-email-walken@google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Matt Carlson <mcarlson@broadcom.com>, Michael Chan <mchan@broadcom.com>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] tg3: fix VLAN tagging regression
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/16/2011 11:39 PM, Michel Lespinasse wrote:
-> Extend memory cgroup documentation do describe the optional idle page
-> tracking features, and add the corresponding configuration option.
->
->
-> Signed-off-by: Michel Lespinasse<walken@google.com>
+commit 92cd3a17ce9c719abb4c28dee3438e0c641f8de4
+    tg3: Simplify tx bd assignments
 
-Acked-by: Rik van Riel <riel@redhat.com>
+broke VLAN tagging on outbound packets.
+It ifdef'ed BCM_KERNEL_SUPPORTS_8021Q, but this
+is not set anywhere. So vlan never gets set, and
+all packets are sent with vlan=0.
 
-(I'm going through these in order, and am assuming the
-docs match the code from the later patches in the series)
+Change to use the CONFIG_VLAN_xxx defines instead.
+Tested on BCM5721 rev 11.
+
+Signed-off-by: Kasper Pedersen <kernel@kasperkp.dk>
+---
+ drivers/net/tg3.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/net/tg3.c b/drivers/net/tg3.c
+index dc3fbf6..a00d21b 100644
+--- a/drivers/net/tg3.c
++++ b/drivers/net/tg3.c
+@@ -6234,7 +6234,7 @@ static netdev_tx_t tg3_start_xmit(struct sk_buff *skb, struct net_device *dev)
+ 		}
+ 	}
+ 
+-#ifdef BCM_KERNEL_SUPPORTS_8021Q
++#if defined(CONFIG_VLAN_8021Q) || defined(CONFIG_VLAN_8021Q_MODULE)
+ 	if (vlan_tx_tag_present(skb)) {
+ 		base_flags |= TXD_FLAG_VLAN;
+ 		vlan = vlan_tx_tag_get(skb);
+
