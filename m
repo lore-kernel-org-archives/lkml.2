@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751842Ab1ITWzy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 18:55:54 -0400
-Received: from mail3.asdk12.org ([74.114.80.18]:47341 "EHLO
+	id S1752146Ab1ITW5x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 18:57:53 -0400
+Received: from mail3.asdk12.org ([74.114.80.18]:60288 "EHLO
 	itmailgw01.asdk12.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750909Ab1ITWzw convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751225Ab1ITW5v convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 18:55:52 -0400
-X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Sep 2011 18:55:52 EDT
-X-AuditID: 0a14003c-b7c78ae00000157b-fa-4e7916723da8
+	Tue, 20 Sep 2011 18:57:51 -0400
+X-AuditID: 0a14003c-b7c78ae00000157b-d0-4e7916c0f280
 To: undisclosed-recipients:;
 From: Cantrell_Travis <cantrell_travis@asdk12.org>
-Date: Tue, 20 Sep 2011 14:40:49 -0800
+Date: Tue, 20 Sep 2011 14:42:06 -0800
 Subject: =?windows-1256?Q?CONTACT_UPS_ON_EMAIL:_ups-ng@dgoh.org=FE?=
 Thread-Topic: =?windows-1256?Q?CONTACT_UPS_ON_EMAIL:_ups-ng@dgoh.org=FE?=
-Thread-Index: AQHMd+ZYu+9rfXh0u06Vl3CioJCkuw==
-Message-ID: <6AB4CB2B192EFC4BA27A1D3A340135AE1BC3DB4D2B@ITVMAIL02.asdk12.org>
+Thread-Index: AQHMd+aG9apbNXDrcEGaInnH7cDEmw==
+Message-ID: <6AB4CB2B192EFC4BA27A1D3A340135AE1BC3DB4D2C@ITVMAIL02.asdk12.org>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -24,24 +23,24 @@ acceptlanguage: en-US
 Content-Type: text/plain; charset="windows-1256"
 Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA02SbUxTZxTH99z73N7arObKm4+ySNLFZRkDgezD+cCWfZjZdQu4LIssbos2
-	owFiRdMiA7MstcIQxlyxhMZWoVC0dil0hU7NsIQVVlSKgINsUNBpeWkLqxOobDjKKM0Svv1y
-	/i/nfDhCOm5csFtYVFwiUxRL5RKBCIsSku6lKZLKczNatMnQEXBQcK0uwkBnyMLAZc8UBSP1
-	fgFoWhwMzF64LQBTpAQM35ox9Pc4MfjmHBhmHrgF0DHahcG70knBgOU8gt+07QyYdV4GbMs9
-	DDjWRxH82sbCqMPIgi3spKGz18/ABeuiAM5dsiPQWkthXeNkwWnVMdCz1MbA4mIzC80+LQbD
-	4G0aPGEtA+fOTNBwa2aMhtUFC4aFyE0MQ9YGBnxPpykwm20UmNowWK8uUfDD8gwG+8MUmOyf
-	xjBmusTA6tASDeM3vkHQXu1H4F9bYeBRxaAAbjgrWWgNhzBUu7soCBk3zp/y+Fio1VSwoL1v
-	omFh5DECW28O1HkaBOAIGyk4Xxdg4dFKiHrbSvFBQx/Fm67VM/zc81mGn+yOYF7nUGN+6fo8
-	zQ9P/IR4+7IL8U8Hulk+UOVg+fYnapZ/2GVh+Q5XH+Iba72YH1OrKX6w5W/6g1p0WJSdL5MX
-	lcoU+946Kiq8P7Pj5DOmLHjxT0qFZnEN2iYk3BvkH7ubiXESGX5gE9QgkTCOG0DE0TbERoUE
-	7iVy2eBjYkItIs2PA6gGCYUCLou43cVRxNxeshZMjdrjuXfIyNovm44E7gCpDKXEWtLJ1M/d
-	m2vFXA55bu9GUUYba1fuWqko09xOMjHdRMXO4UjrrSE6xokk4IswMX8imayyoZg/gyw/8eIY
-	p5KrzfN0rH8HuXNxGmtQvH5LrX5LRL8lot8SMSL8PUosKjkuLZIXfJGRmS5V5h/LzEo/oSjo
-	QJsP/0L2TXSnLd6FOCGSvCh+9XpZbhwjLVWWH3chIqQlCWKzfmMkzpeWn5YpThxRnJLLlC6U
-	LMSSneImiScnjiuQlsiOyWQnZYr/VUq4bbcKWQ7/+0fL+P56lWr4gOT3D+/lNvp6+xrE/SZD
-	2pfzhwZ37fk4bfvByv17etb3nn3F4r07lfzup3n7Rprm3eIFXWvqy2cbVz/6KuvzT2a/fl//
-	LHjqvWCKJhRO/8zUnrd2pvq07qA6s6owuP2vXUfzfvShATlRKV5PyX7zO2NF2ZXgkTn/IQlW
-	FkozX6MVSul//Lf9a+wDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA01SbUxTZxTee+97e0tjs2v5uhEXty5bFowMyEzONmOWhSV3W9BpFpK5mK2T
+	O2QCuhaZuCxBIkEdkGKJxFaktcZS01KBTpuVmq4KlVG+FLLYIqYrIFVWRz9ggVlWaJbw7znn
+	+TjPjyMkJV7BFmFpRSUvr5CVSQUiLErLGN7hzKjek/tb+FXoDloJ6GiOU9ATMlLQ5nlEwFjL
+	nACUV6wUzJ6/JwB9vBI0jQYMbqcDQ+CJFcPMVL8AusftGHxLPQQMGpsQ/KHqpMDQ6qPAEnVS
+	YF0dR/DATMO4VUuDJeYgoefOHAXnTWEBnLnUhUBlqoJVpYMGh6mVAmfETEE4rKNBF1Bh0Azd
+	I8ETU1Fw5pSXhN6ZCRKW540Y5uM2DCOmCxQEFqYJMBgsBOjNGEzXIgTciM5g6Hq8DSbd0xgm
+	9JcoWB6JkPDw1s8IOs/OIZh7sUSB//SQAG456mi4GgthONtvJyCkTdR/5AnQ0KA8TYPqvp6E
+	+bE/EVjuFEKz54IArDEtAU3NQRr8SyHiAxPBPdXcJTh9RwvFPVmZpbjJ23HMtVprMRe5+Yzk
+	Rr2/Iq4r6kLcwuBtmgvWW2mu83ktzT22G2mu23UXcZcbfJibqK0luKEr/5CfNaADol3FfFlp
+	FS9/e/fXosP3ZzYfW6ROPL34F1GDZvE5lCJkmXfY9kWlIIkz2NEpSwKLhBJmELH+fwfoNSKN
+	2cq2aQJUkmhA7Cm3OTEIhQImn+3vr1jTYOYNtm5UQ6zhVKaAHXvRh9YkaczHbF1oWzImh11p
+	7lu/JWYKWZ9xeL0DStxd+t20biWZTNY73U4k+zDs1d4RMonT2WAgTiX16exkvQUl9bls9LkP
+	J/F29pruGZnM38wOXJzGSpSq3hCr3mBRb7CoN1i0CF9H6aWV5bLSspIfcvNyZIriI3n5OUfl
+	Jd1o/eNf2mVDA+ZUF2KESLpJ/NbNE3sklKxKUV3uQqyQlKaJDerESlwsqz7Jy49+JT9exitc
+	KEuIpZnidqmnUMKUyCr5Izx/jJf/zxLClC01SJn14KD9+3NTr++M2GDn1nxn9JDO96l5ZbvK
+	Vjj4E5P95ZuHPmwN76vf++6mjm/bVne4U7RF2Xu9bn3jcb/qm0/2F43EMj/qffnH2YwC08Jk
+	S/nwe6ldl/ne6vf3ff637pcbda8ULL/WZ2f86UFN0ReRxpMpi7aDD2s6fKLdTsl3TeosKVYc
+	luVlk3KF7D9KDNXm7QMAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
