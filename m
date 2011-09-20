@@ -1,83 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755329Ab1ITJ0O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 05:26:14 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:56068 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754744Ab1ITJ0N convert rfc822-to-8bit (ORCPT
+	id S1755388Ab1ITJ2y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 05:28:54 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:46315 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755036Ab1ITJ2w convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 05:26:13 -0400
-Subject: Re: [PATCH 8/9] per-cgroup boot time
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, xemul@parallels.com, paul@paulmenage.org,
-        lizf@cn.fujitsu.com, daniel.lezcano@free.fr, mingo@elte.hu,
-        jbottomley@parallels.com
-Date: Tue, 20 Sep 2011 11:25:46 +0200
-In-Reply-To: <1316030695-19826-9-git-send-email-glommer@parallels.com>
-References: <1316030695-19826-1-git-send-email-glommer@parallels.com>
-	 <1316030695-19826-9-git-send-email-glommer@parallels.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1316510746.11841.18.camel@twins>
-Mime-Version: 1.0
+	Tue, 20 Sep 2011 05:28:52 -0400
+MIME-Version: 1.0
+In-Reply-To: <4E78433F.2050900@stericsson.com>
+References: <1316359301-2263-1-git-send-email-linkinjeon@gmail.com>
+	<4E78433F.2050900@stericsson.com>
+Date: Tue, 20 Sep 2011 14:58:52 +0530
+Message-ID: <CA+Wuu-vAx8PkvPgy5mR5Bcg6e+q6Z3XOZtTGwNZgCW4HCrX5KA@mail.gmail.com>
+Subject: Re: [PATCH] mmc : Use wait_for_completion_timeout() instead of
+ wait_for_completion in case of write.
+From: Murali Krishna Palnati <palnati.muralikrishna@gmail.com>
+To: Ulf Hansson <ulf.hansson@stericsson.com>
+Cc: Namjae Jeon <linkinjeon@gmail.com>, "cjb@laptop.org" <cjb@laptop.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-09-14 at 17:04 -0300, Glauber Costa wrote:
-> Record the time in which the cgroup was created. This can be
-> used to provide a more accurate boottime information in
-> cpuacct.proc.stat.
-> 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> ---
->  kernel/sched.c |    8 +++++++-
->  1 files changed, 7 insertions(+), 1 deletions(-)
-> 
-> diff --git a/kernel/sched.c b/kernel/sched.c
-> index 4611c54..8f254d0 100644
-> --- a/kernel/sched.c
-> +++ b/kernel/sched.c
-> @@ -9120,6 +9120,7 @@ struct cpuacct {
->  	/* cpuusage holds pointer to a u64-type object on every cpu */
->  	u64 __percpu *cpuusage;
->  	u64 __percpu *cpustat;
-> +	struct timespec start_time;
->  };
->  
->  struct cgroup_subsys cpuacct_subsys;
-> @@ -9172,6 +9173,8 @@ static struct cgroup_subsys_state *cpuacct_create(
->  		acct[CPUACCT_STAT_IDLE] = kstat_cpu(i).cpustat.idle;
->  		acct[CPUACCT_STAT_IOWAIT] = kstat_cpu(i).cpustat.iowait;
->  	}
-> +
-> +	get_monotonic_boottime(&ca->start_time);
->  	return &ca->css;
->  
->  out_free_usage:
-> @@ -9316,13 +9319,16 @@ static int cpuacct_proc_stat(struct cgroup *cgrp, struct cftype *cft,
->  	unsigned int per_softirq_sums[NR_SOFTIRQS] = {0};
->  	struct timespec boottime;
->  	struct cpuacct *ca = cgroup_ca(cgrp);
-> +	struct timespec ts;
->  	u64 *cpustat;
->  
->  	user = nice = system = idle = iowait =
->  		irq = softirq = steal = cputime64_zero;
->  	guest = guest_nice = cputime64_zero;
->  	getboottime(&boottime);
-> -	jif = boottime.tv_sec;
-> +	getboottime(&boottime);
-> +	ts = timespec_add(boottime, ca->start_time);
-> +	jif = ts.tv_sec;
->  
->  	for_each_possible_cpu(i) {
->  		cpustat = per_cpu_ptr(ca->cpustat, i);
+On Tue, Sep 20, 2011 at 1:09 PM, Ulf Hansson <ulf.hansson@stericsson.com> wrote:
+>
+> Namjae Jeon wrote:
+>>
+>> host controller can not rise timeout interrupt in write not read in DMA status. because host can just know whether card is finish to program to use busy line. If unstable card is keep holding busy line while writing using DMA.
+>> hang problem happen by wait_for_completion. so I think that mmc driver need some exception to avoid this problem.
+>> I suggest to use wait_for_completion_timeout instead of wait_for_completion.
+>>
+>
+> I see what you are trying to solve, but you can never calculate the timeout for this type of operation in such a way. Your timeout involves the entire data write operation, how can you ever know how long this will take?
+>
+> I think a much better approach is to make you host driver not using "busy signaling" (if that is possible), thus when the DMA job is done call mmc_request_done to finalize the data transfer. The mmc framework will then send a CMD13 (SEND_STATUS) to make sure the data is written before issuing the next request.
+>
+> BR
+> Ulf Hansson
 
 
-I'm confused, what does it do? You take a boot time timestamp at cgroup
-creation, add that to all boot-time readings and print the result. How
-does that make sense? Subtracting the start_time, maybe, that would make
-the cgroup creation time 0, adding, not so much.
+To add to what Hansson mentioned, the timeout mechanism should not be
+implemented at the MMC core layer. If the core layer simply times out
+like this, the host controller driver still remains in the same state
+which is not right. If such a timeout mechanism is needed, it is best
+to implement in the host controller driver layer and inform the core
+layer by calling mmc_request_done() when the time out happens. This
+will also give a chance to the host controller driver to do any
+required clean up at the controller layer so that it is in a known
+good state to handle further requests from the core layer.
+
+Regards,
+Murali Krishna
