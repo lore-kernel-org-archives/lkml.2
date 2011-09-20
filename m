@@ -1,86 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751182Ab1ITNPb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 09:15:31 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:43201 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750849Ab1ITNP1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 09:15:27 -0400
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: linux-security-module@vger.kernel.org
-Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        James Morris <jmorris@namei.org>,
-        David Safford <safford@watson.ibm.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>
-Subject: [PATCH 2/3] trusted-keys: check hex2bin result
-Date: Tue, 20 Sep 2011 09:15:04 -0400
-Message-Id: <1316524505-27272-2-git-send-email-zohar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1316524505-27272-1-git-send-email-zohar@linux.vnet.ibm.com>
-References: <1316524505-27272-1-git-send-email-zohar@linux.vnet.ibm.com>
+	id S1751315Ab1ITNQT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 09:16:19 -0400
+Received: from frankvm.xs4all.nl ([83.163.148.79]:39263 "EHLO
+	janus.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750810Ab1ITNQR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 09:16:17 -0400
+Date: Tue, 20 Sep 2011 15:16:16 +0200
+From: Frank van Maarseveen <frankvm@frankvm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Lin Ming <ming.m.lin@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: 3.0.3 kernel BUG at kernel/timer.c:1035
+Message-ID: <20110920131615.GA13278@janus>
+References: <20110824130238.GA24543@janus>
+ <20110902011058.c5bad476.akpm@linux-foundation.org>
+ <20110905123813.GA29763@janus>
+ <CAF1ivSYui_=tHbxHiy15a9wfiphHcpoY+J1MmAJ=dMQsAfEVLw@mail.gmail.com>
+ <1315320518.4235.3.camel@hp6530s>
+ <20110907102425.GA3423@janus>
+ <1315398979.2938.0.camel@hp6530s>
+ <20110907143006.0d0922dd.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110907143006.0d0922dd.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+On Wed, Sep 07, 2011 at 02:30:06PM -0700, Andrew Morton wrote:
+> On Wed, 07 Sep 2011 20:36:19 +0800
+> Lin Ming <ming.m.lin@intel.com> wrote:
+> 
+> > On Wed, 2011-09-07 at 18:24 +0800, Frank van Maarseveen wrote:
+> > > On Tue, Sep 06, 2011 at 10:48:38PM +0800, Lin Ming wrote:
+> > > > Does below patch help?
+> > > > 
+> > > > >From a98b874437f871d5ecc3f6fe409b2b474b1f2731 Mon Sep 17 00:00:00 2001
+> > > > From: Lin Ming <ming.m.lin@intel.com>
+> > > > Date: Tue, 6 Sep 2011 22:45:43 +0800
+> > > > Subject: [PATCH] block: delete bdi writeback wakup_timer in blk_cleanup_queue()
+> > > > 
+> > > > Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> > > > ---
+> > > >  block/blk-core.c |    1 +
+> > > >  1 files changed, 1 insertions(+), 0 deletions(-)
+> > > > 
+> > > > diff --git a/block/blk-core.c b/block/blk-core.c
+> > > > index 90e1ffd..22529a3 100644
+> > > > --- a/block/blk-core.c
+> > > > +++ b/block/blk-core.c
+> > > > @@ -363,6 +363,7 @@ void blk_cleanup_queue(struct request_queue *q)
+> > > >  	blk_sync_queue(q);
+> > > >  
+> > > >  	del_timer_sync(&q->backing_dev_info.laptop_mode_wb_timer);
+> > > > +	del_timer_sync(&q->backing_dev_info.wb.wakeup_timer);
+> > > >  	mutex_lock(&q->sysfs_lock);
+> > > >  	queue_flag_set_unlocked(QUEUE_FLAG_DEAD, q);
+> > > >  	mutex_unlock(&q->sysfs_lock);
+> > > > -- 
+> > > > 1.7.2.3
+> > > > 
+> > > 
+> > > No, bug still present. Stack trace is the same and I double checked that
+> > > it was the new kernel (this time with a lot more debug enabled).
+> > 
+> > Thanks for test.
+> > I'll try to reproduce this bug.
+> 
+> Probably this will "fix" it:
+> 
+> --- a/block/blk-sysfs.c~a
+> +++ a/block/blk-sysfs.c
+> @@ -4,6 +4,7 @@
+>  #include <linux/kernel.h>
+>  #include <linux/slab.h>
+>  #include <linux/module.h>
+> +#include <linux/timer.h>
+>  #include <linux/bio.h>
+>  #include <linux/blkdev.h>
+>  #include <linux/blktrace_api.h>
+> @@ -486,7 +487,7 @@ static void blk_release_queue(struct kob
+>  		__blk_queue_free_tags(q);
+>  
+>  	blk_trace_shutdown(q);
+> -
+> +	del_timer_sync(&q->backing_dev_info.wb.wakeup_timer);
+>  	bdi_destroy(&q->backing_dev_info);
+>  	kmem_cache_free(blk_requestq_cachep, q);
+>  }
+> _
+> 
+> Jens, can you please take a look at this regression? 
+> blk_release_queue() is freeing a pending timer.
 
-For each hex2bin call in trusted keys, check that the ascii hex string is
-valid.  On failure, return -EINVAL.
+Yep, this fixes it. This is the recipe I used for triggering the issue
+on 3.0.4 (it can probably be simplified):
 
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
----
- security/keys/trusted.c |   15 +++++++++++----
- 1 files changed, 11 insertions(+), 4 deletions(-)
+-	mount an ext[34] formatted USB stick read-write on /mnt, preloaded
+	with a (64k) file "bar" in subdirectory "foo".
+-	cat /mnt/foo/bar >/dev/null
+-	sleep 30	# or more
+-	unplug USB stick
+-	issue an "umount -l -f /mnt"
 
-diff --git a/security/keys/trusted.c b/security/keys/trusted.c
-index 0c33e2e..9b847e1 100644
---- a/security/keys/trusted.c
-+++ b/security/keys/trusted.c
-@@ -779,7 +779,9 @@ static int getoptions(char *c, struct trusted_key_payload *pay,
- 			opt->pcrinfo_len = strlen(args[0].from) / 2;
- 			if (opt->pcrinfo_len > MAX_PCRINFO_SIZE)
- 				return -EINVAL;
--			hex2bin(opt->pcrinfo, args[0].from, opt->pcrinfo_len);
-+			if (!hex2bin(opt->pcrinfo, args[0].from,
-+				     opt->pcrinfo_len))
-+				return -EINVAL;
- 			break;
- 		case Opt_keyhandle:
- 			res = strict_strtoul(args[0].from, 16, &handle);
-@@ -791,12 +793,16 @@ static int getoptions(char *c, struct trusted_key_payload *pay,
- 		case Opt_keyauth:
- 			if (strlen(args[0].from) != 2 * SHA1_DIGEST_SIZE)
- 				return -EINVAL;
--			hex2bin(opt->keyauth, args[0].from, SHA1_DIGEST_SIZE);
-+			if (!hex2bin(opt->keyauth, args[0].from,
-+				     SHA1_DIGEST_SIZE))
-+				return -EINVAL;
- 			break;
- 		case Opt_blobauth:
- 			if (strlen(args[0].from) != 2 * SHA1_DIGEST_SIZE)
- 				return -EINVAL;
--			hex2bin(opt->blobauth, args[0].from, SHA1_DIGEST_SIZE);
-+			if (!hex2bin(opt->blobauth, args[0].from,
-+				     SHA1_DIGEST_SIZE))
-+				return -EINVAL;
- 			break;
- 		case Opt_migratable:
- 			if (*args[0].from == '0')
-@@ -860,7 +866,8 @@ static int datablob_parse(char *datablob, struct trusted_key_payload *p,
- 		p->blob_len = strlen(c) / 2;
- 		if (p->blob_len > MAX_BLOB_SIZE)
- 			return -EINVAL;
--		hex2bin(p->blob, c, p->blob_len);
-+		if (!hex2bin(p->blob, c, p->blob_len))
-+			return -EINVAL;
- 		ret = getoptions(datablob, p, o);
- 		if (ret < 0)
- 			return ret;
+After playing with the 30 second delay parameter (to get more details) the
+kernel somehow ended in a state where the bug was no longer reproducable.
+A reboot made the recipe work again.
+
+
+Thanks,
+
 -- 
-1.7.3.4
-
+Frank
