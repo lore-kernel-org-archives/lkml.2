@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750933Ab1ITNHL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 09:07:11 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:43702 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750746Ab1ITNHJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 09:07:09 -0400
-Message-ID: <4E788FD1.40301@parallels.com>
-Date: Tue, 20 Sep 2011 10:06:25 -0300
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: <linux-kernel@vger.kernel.org>, <xemul@parallels.com>,
-        <paul@paulmenage.org>, <lizf@cn.fujitsu.com>, <daniel.lezcano@free.fr>,
-        <mingo@elte.hu>, <jbottomley@parallels.com>
-Subject: Re: [PATCH 8/9] per-cgroup boot time
-References: <1316030695-19826-1-git-send-email-glommer@parallels.com>   <1316030695-19826-9-git-send-email-glommer@parallels.com>  <1316510746.11841.18.camel@twins> <4E78890D.1000607@parallels.com> <1316523860.13664.11.camel@twins>
-In-Reply-To: <1316523860.13664.11.camel@twins>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [201.82.134.226]
+	id S1751053Ab1ITNHq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 09:07:46 -0400
+Received: from e24smtp04.br.ibm.com ([32.104.18.25]:59859 "EHLO
+	e24smtp04.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750801Ab1ITNHp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 09:07:45 -0400
+From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+To: benh@kernel.crashing.org
+Cc: linux-kernel@vger.kernel.org, nhorman@redhat.com,
+        jesse.brandeburg@intel.com, alexander.h.duyck@intel.com,
+        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH] powerpc: reserve iommu page 0
+Date: Tue, 20 Sep 2011 10:07:24 -0300
+Message-Id: <1316524044-5260-1-git-send-email-cascardo@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.4.4
+x-cbid: 11092013-8936-0000-0000-00000480A5A9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20/2011 10:04 AM, Peter Zijlstra wrote:
-> On Tue, 2011-09-20 at 09:37 -0300, Glauber Costa wrote:
->
->>>> +	getboottime(&boottime);
->>>> +	ts = timespec_add(boottime, ca->start_time);
->>>> +	jif = ts.tv_sec;
->>>>
->>>>    	for_each_possible_cpu(i) {
->>>>    		cpustat = per_cpu_ptr(ca->cpustat, i);
->>>
->>>
->>> I'm confused, what does it do? You take a boot time timestamp at cgroup
->>> creation, add that to all boot-time readings and print the result. How
->>> does that make sense? Subtracting the start_time, maybe, that would make
->>> the cgroup creation time 0, adding, not so much.
->>
->> Boot time represent at which times the machine was booted. In this
->> context, at which time the container/cgroup was created. So it have to
->> be an addition.... don't really understand your question
->
-> I think we're all properly confused now :-)
->
-> getboottime() gives a time since boot, right?
->
-> You take stamp at cgroup creation: say 50s after boot.
->
-> Then on usage you take a new getboottime() reading (which per definition
-> is>  50s) and add your 50s that you read previous. This results in the
-> cgroup having 50s of boot-time _MORE_ than the machine. Say you read at
-> 123s, you then add your 50s timestamp, resulting in 173s to report.
->
-> If instead you did a subtraction: 123-50=73, you would have reported the
-> time since cgroup creation.
->
-no.
+Some devices have a dma-window that starts at the address 0. This allows
+DMA addresses to be mapped to this address and returned to drivers as a
+valid DMA address. Some drivers may not behave well in this case, since
+the address 0 is considered an error or not allocated.
 
-/**
-  * getboottime - Return the real time of system boot.
-  * @ts:         pointer to the timespec to be set
-  *
-  * Returns the wall-time of boot in a timespec.
-...
+The solution to avoid this kind of error from happening is reserve the
+page addressed as 0 so it cannot be allocated for a DMA mapping.
+
+Ben Herrenschmidt deserves the credit for this patch. He pointed out the
+solution and what code would do the job.
+
+Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: linuxppc-dev@lists.ozlabs.org
+---
+ arch/powerpc/kernel/iommu.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/arch/powerpc/kernel/iommu.c b/arch/powerpc/kernel/iommu.c
+index 961bb03..53411bc 100644
+--- a/arch/powerpc/kernel/iommu.c
++++ b/arch/powerpc/kernel/iommu.c
+@@ -501,6 +501,9 @@ struct iommu_table *iommu_init_table(struct iommu_table *tbl, int nid)
+ 	tbl->it_map = page_address(page);
+ 	memset(tbl->it_map, 0, sz);
+ 
++	if (tbl->it_offset == 0)
++		set_bit(0, tbl->it_map);
++		
+ 	tbl->it_hint = 0;
+ 	tbl->it_largehint = tbl->it_halfpoint;
+ 	spin_lock_init(&tbl->it_lock);
+-- 
+1.7.4.4
+
