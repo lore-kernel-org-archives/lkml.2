@@ -1,57 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755432Ab1ITJxZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 05:53:25 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:50392 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755036Ab1ITJxX convert rfc822-to-8bit (ORCPT
+	id S1752910Ab1ITKB7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 06:01:59 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:55249 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751509Ab1ITKB5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 05:53:23 -0400
+	Tue, 20 Sep 2011 06:01:57 -0400
+Date: Tue, 20 Sep 2011 12:01:50 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Cc: Li Yang <leoli@freescale.com>,
+        Pavankumar Kondeti <pkondeti@codeaurora.org>,
+        Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@suse.de>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Chen <peter.chen@freescale.com>,
+        Lin Tony-B19295 <B19295@freescale.com>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Subject: Re: [PATCHv4 00/19] First round in OTG rework
+Message-ID: <20110920100150.GW31404@pengutronix.de>
+References: <1315379772-8830-1-git-send-email-heikki.krogerus@linux.intel.com>
+ <20110912121255.GA2520@xps8300>
+ <20110919115520.GX21769@pengutronix.de>
+ <20110920065038.GA28684@xps8300>
 MIME-Version: 1.0
-In-Reply-To: <20110919171055.GA30517@ponder.secretlab.ca>
-References: <20110917213532.20710.92002.stgit@ponder>
-	<20110919163850.GA2108@arm.com>
-	<20110919171055.GA30517@ponder.secretlab.ca>
-Date: Tue, 20 Sep 2011 10:53:22 +0100
-Message-ID: <CA+wbFddrRDz5sxWcwh3QMXKJDbGDZbhfDeiiRvxdwQ-4D5Ad5g@mail.gmail.com>
-Subject: Re: [PATCH] Merge pata_of_platform.c into pata_platform.c
-From: Dave Martin <dave.martin@linaro.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110920065038.GA28684@xps8300>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 12:01:41 up 90 days, 15:48, 56 users,  load average: 0.28, 0.36,
+ 0.60
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 19, 2011 at 6:10 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Mon, Sep 19, 2011 at 05:39:02PM +0100, Dave Martin wrote:
->> On Sat, Sep 17, 2011 at 03:36:19PM -0600, Grant Likely wrote:
->> > There is no need for two drivers anymore
->> >
->> > Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
->> > Cc: Dave Martin <dave.martin@linaro.org>
->> > COMPILE TESTED ONLY
->> > ---
->> > [resend - I flubbed Dave's email address]
->> >
->> > Dave, as I mentioned in the other thread, this is the patch that I
->> > hacked together to get rid of pata_of_platform.c.  Can you take over
->> > on this patch please?
->>
->> This seems to work for me on vexpress.
->>
->> Can you clarify what you mean by "take over"?
->
-> Adopt it.  Give it a home.  Shepherd it to help it find it's way into
-> mainline.  :-)
->
-> The patch isn't complete.  I've not cleaned up the Kconfig or Makefile
-> and it needs some more due diligence to review and make sure that the
-> pata_of_platform functionality has moved into pata_platform.c.
+On Tue, Sep 20, 2011 at 09:50:38AM +0300, Heikki Krogerus wrote:
+> Hi,
+> 
+> On Mon, Sep 19, 2011 at 01:55:20PM +0200, Sascha Hauer wrote:
+> > The following is needed to make i.MX compile and work. You renamed
+> > pdata->otg to pdata->xceiv in the driver, but not in the header file.
+> > Renaming it would also mean to rename it in the boards using this
+> > header, that's why I kept the name 'otg' for now instead of renaming
+> > it to 'xceiv' (or 'phy' which I like better).
+> 
+> Thanks for the review. Is it OK to make this part of the imx patch?
 
-OK, assume for now that I will own this fow now -- If I get stuck,
-I'll come back to you.
+Sure.
 
-Cheers
----Dave
+Sascha
+
+> 
+> 
+> > diff --git a/arch/arm/mach-imx/mx31moboard-devboard.c b/arch/arm/mach-imx/mx31moboard-devboard.c
+> > index cb792d0..f11d0ef 100644
+> > --- a/arch/arm/mach-imx/mx31moboard-devboard.c
+> > +++ b/arch/arm/mach-imx/mx31moboard-devboard.c
+> > @@ -177,7 +177,7 @@ static int devboard_isp1105_init(struct usb_phy *otg)
+> >  }
+> >  
+> >  
+> > -static int devboard_isp1105_set_vbus(struct usb_phy *otg, bool on)
+> > +static int devboard_isp1105_set_vbus(struct usb_otg *otg, bool on)
+> >  {
+> >  	if (on)
+> >  		gpio_set_value(USBH1_VBUSEN_B, 0);
+> > diff --git a/arch/arm/mach-imx/mx31moboard-marxbot.c b/arch/arm/mach-imx/mx31moboard-marxbot.c
+> > index f921e47..0eb1d12 100644
+> > --- a/arch/arm/mach-imx/mx31moboard-marxbot.c
+> > +++ b/arch/arm/mach-imx/mx31moboard-marxbot.c
+> > @@ -291,7 +291,7 @@ static int marxbot_isp1105_init(struct usb_phy *otg)
+> >  }
+> >  
+> >  
+> > -static int marxbot_isp1105_set_vbus(struct usb_phy *otg, bool on)
+> > +static int marxbot_isp1105_set_vbus(struct usb_otg *otg, bool on)
+> >  {
+> >  	if (on)
+> >  		gpio_set_value(USBH1_VBUSEN_B, 0);
+> > diff --git a/arch/arm/plat-mxc/include/mach/mxc_ehci.h b/arch/arm/plat-mxc/include/mach/mxc_ehci.h
+> > index 2c159dc..9ffd1bb 100644
+> > --- a/arch/arm/plat-mxc/include/mach/mxc_ehci.h
+> > +++ b/arch/arm/plat-mxc/include/mach/mxc_ehci.h
+> > @@ -44,7 +44,7 @@ struct mxc_usbh_platform_data {
+> >  	int (*exit)(struct platform_device *pdev);
+> >  
+> >  	unsigned int		 portsc;
+> > -	struct otg_transceiver	*otg;
+> > +	struct usb_phy		*otg;
+> >  };
+> >  
+> >  int mx51_initialize_usb_hw(int port, unsigned int flags);
+> > diff --git a/drivers/usb/host/ehci-mxc.c b/drivers/usb/host/ehci-mxc.c
+> > index 6e32147..cf8f192 100644
+> > --- a/drivers/usb/host/ehci-mxc.c
+> > +++ b/drivers/usb/host/ehci-mxc.c
+> > @@ -218,15 +218,15 @@ static int ehci_mxc_drv_probe(struct platform_device *pdev)
+> >  	msleep(10);
+> >  
+> >  	/* Initialize the transceiver */
+> > -	if (pdata->xceiv) {
+> > -		pdata->xceiv->io_priv = hcd->regs + ULPI_VIEWPORT_OFFSET;
+> > -		ret = usb_phy_init(pdata->xceiv);
+> > +	if (pdata->otg) {
+> > +		pdata->otg->io_priv = hcd->regs + ULPI_VIEWPORT_OFFSET;
+> > +		ret = usb_phy_init(pdata->otg);
+> >  		if (ret) {
+> >  			dev_err(dev, "unable to init transceiver, probably missing\n");
+> >  			ret = -ENODEV;
+> >  			goto err_add;
+> >  		}
+> > -		ret = otg_set_vbus(pdata->xceiv->otg, 1);
+> > +		ret = otg_set_vbus(pdata->otg->otg, 1);
+> >  		if (ret) {
+> >  			dev_err(dev, "unable to enable vbus on transceiver\n");
+> >  			goto err_add;
+> > @@ -240,17 +240,17 @@ static int ehci_mxc_drv_probe(struct platform_device *pdev)
+> >  	if (ret)
+> >  		goto err_add;
+> >  
+> > -	if (pdata->xceiv) {
+> > +	if (pdata->otg) {
+> >  		/*
+> >  		 * efikamx and efikasb have some hardware bug which is
+> >  		 * preventing usb to work unless CHRGVBUS is set.
+> >  		 * It's in violation of USB specs
+> >  		 */
+> >  		if (machine_is_mx51_efikamx() || machine_is_mx51_efikasb()) {
+> > -			flags = usb_phy_io_read(pdata->xceiv,
+> > +			flags = usb_phy_io_read(pdata->otg,
+> >  							ULPI_OTG_CTRL);
+> >  			flags |= ULPI_OTG_CTRL_CHRGVBUS;
+> > -			ret = usb_phy_io_write(pdata->xceiv, flags,
+> > +			ret = usb_phy_io_write(pdata->otg, flags,
+> >  							ULPI_OTG_CTRL);
+> >  			if (ret) {
+> >  				dev_err(dev, "unable to set CHRVBUS\n");
+> > @@ -298,8 +298,8 @@ static int __exit ehci_mxc_drv_remove(struct platform_device *pdev)
+> >  	if (pdata && pdata->exit)
+> >  		pdata->exit(pdev);
+> >  
+> > -	if (pdata->xceiv)
+> > -		usb_phy_shutdown(pdata->xceiv);
+> > +	if (pdata->otg)
+> > +		usb_phy_shutdown(pdata->otg);
+> >  
+> >  	usb_remove_hcd(hcd);
+> >  	iounmap(hcd->regs);
+> 
+> -- 
+> heikki
+> 
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
