@@ -1,124 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753145Ab1ITCJj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 22:09:39 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:17802 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751046Ab1ITCJi convert rfc822-to-8bit (ORCPT
+	id S1753468Ab1ITCNd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 22:13:33 -0400
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:41441 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752898Ab1ITCNc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 22:09:38 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=QUJY0mnPeI+zz054CBntOpgTa+R1uOcWfIeLG0+WzNtY7hFw3ToXQ0MEhGHe7goUW
-	yqnFd1Pw9Nx8I2rfI0Wlg==
+	Mon, 19 Sep 2011 22:13:32 -0400
+Message-ID: <4E77F6C7.4090509@tao.ma>
+Date: Tue, 20 Sep 2011 10:13:27 +0800
+From: Tao Ma <tm@tao.ma>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <1316482741-21799-5-git-send-email-ying.huang@intel.com>
-References: <1316482741-21799-1-git-send-email-ying.huang@intel.com> <1316482741-21799-5-git-send-email-ying.huang@intel.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 19 Sep 2011 20:09:14 -0600
-Message-ID: <CAErSpo4_syhxOi8jGo5oyrWBimsO7PdsXEky1vwPY_130OuPMA@mail.gmail.com>
-Subject: Re: [PATCH 4/8] ACPI, APEI, Resolve false conflict between ACPI NVS
- and APEI
-To: Huang Ying <ying.huang@intel.com>
-Cc: Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
-        Tony Luck <tony.luck@intel.com>, linux-acpi@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>
+To: Andrew Morton <akpm@google.com>
+CC: linux-kernel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
+        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] fs/direct-io.c: Calcuate fs_count correctly in get_more_blocks.
+References: <1316420739-4734-1-git-send-email-tm@tao.ma> <20110919153149.be4ab3ca.akpm@google.com>
+In-Reply-To: <20110919153149.be4ab3ca.akpm@google.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 182.92.247.2 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 19, 2011 at 7:38 PM, Huang Ying <ying.huang@intel.com> wrote:
-> Some firmware will access memory in ACPI NVS region via APEI.  That
-> is, instructions in APEI ERST/EINJ table will read/write ACPI NVS
-> region.  The original resource conflict checking in APEI code will
-> check memory/ioport accessed by APEI via general resource management
-> mech.  But ACPI NVS region is marked as busy already, so that the
-> false resource conflict will prevent APEI ERST/EINJ to work.
->
-> To fix this, this patch excludes ACPI NVS regions when APEI components
-> request resources.  So that they will not conflict with ACPI NVS
-> regions.
+On 09/20/2011 06:31 AM, Andrew Morton wrote:
+> On Mon, 19 Sep 2011 16:25:39 +0800
+> Tao Ma <tm@tao.ma> wrote:
+> 
+>> In get_more_blocks, we use dio_count to calcuate fs_count and do some
+>> tricky things to increase fs_count if dio_count isn't aligned. But
+>> actually it still has some cornor case that can't be coverd. See the
+>> following example:
+>> ./dio_write foo -s 1024 -w 4096(direct write 4096 bytes at offset 1024).
+>> The same goes if the offset isn't aligned to fs_blocksize.
+>>
+>> In this case, the old calculation counts fs_count to be 1, but actually
+>> we will write into 2 different blocks(if fs_blocksize=4096). The old code
+>> just works, since it will call get_block twice(and may have to allocate
+>> and create extent twice for file systems like ext4). So we'd better call
+>> get_block just once with the proper fs_count.
+> 
+> Has this been carefully tested with more than just ext4?  If so, which?
+ext4 only by xfstests, fs_mark, postmark, ffsb, dbench and sysbench. But
+I can try xfs later. I will update you with the test result.
 
-I think this is much, much too complicated.
-
-Yinghai's three-line e820.c patch to leave ACPI NVS regions in the
-iomem_resource tree, but as not busy, is far better.
-
-Bjorn
-
-> Reported-and-tested-by: Pavel Ivanov <paivanof@gmail.com>
-> Signed-off-by: Huang Ying <ying.huang@intel.com>
-> ---
->  drivers/acpi/apei/apei-base.c |   29 ++++++++++++++++++++++++++++-
->  1 file changed, 28 insertions(+), 1 deletion(-)
->
-> --- a/drivers/acpi/apei/apei-base.c
-> +++ b/drivers/acpi/apei/apei-base.c
-> @@ -438,8 +438,19 @@ int apei_resources_sub(struct apei_resou
->  }
->  EXPORT_SYMBOL_GPL(apei_resources_sub);
->
-> +static int apei_get_nvs_callback(__u64 start, __u64 size, void *data)
-> +{
-> +       struct apei_resources *resources = data;
-> +       return apei_res_add(&resources->iomem, start, size);
-> +}
-> +
-> +static int apei_get_nvs_resources(struct apei_resources *resources)
-> +{
-> +       return acpi_nvs_for_each_region(apei_get_nvs_callback, resources);
-> +}
-> +
->  /*
-> - * IO memory/port rersource management mechanism is used to check
-> + * IO memory/port resource management mechanism is used to check
->  * whether memory/port area used by GARs conflicts with normal memory
->  * or IO memory/port of devices.
->  */
-> @@ -448,12 +459,26 @@ int apei_resources_request(struct apei_r
->  {
->        struct apei_res *res, *res_bak = NULL;
->        struct resource *r;
-> +       struct apei_resources nvs_resources;
->        int rc;
->
->        rc = apei_resources_sub(resources, &apei_resources_all);
->        if (rc)
->                return rc;
->
-> +       /*
-> +        * Some firmware uses ACPI NVS region, that has been marked as
-> +        * busy, so exclude it from APEI resources to avoid false
-> +        * conflict.
-> +        */
-> +       apei_resources_init(&nvs_resources);
-> +       rc = apei_get_nvs_resources(&nvs_resources);
-> +       if (rc)
-> +               goto res_fini;
-> +       rc = apei_resources_sub(resources, &nvs_resources);
-> +       if (rc)
-> +               goto res_fini;
-> +
->        rc = -EINVAL;
->        list_for_each_entry(res, &resources->iomem, list) {
->                r = request_mem_region(res->start, res->end - res->start,
-> @@ -500,6 +525,8 @@ err_unmap_iomem:
->                        break;
->                release_mem_region(res->start, res->end - res->start);
->        }
-> +res_fini:
-> +       apei_resources_fini(&nvs_resources);
->        return rc;
->  }
->  EXPORT_SYMBOL_GPL(apei_resources_request);
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Thanks
+Tao
