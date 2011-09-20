@@ -1,68 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752558Ab1ITWey (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 18:34:54 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:38089 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751762Ab1ITWex (ORCPT
+	id S1752583Ab1ITWkn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 18:40:43 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:37348 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752190Ab1ITWkl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 18:34:53 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Christoph Lameter <cl@gentwo.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [RFC][PATCH 0/5] Introduce checks for preemptable code for this_cpu_read/write()
-In-Reply-To: Your message of "Tue, 20 Sep 2011 11:08:56 CDT."
-             <alpine.DEB.2.00.1109201108080.8056@router.home>
-From: Valdis.Kletnieks@vt.edu
-References: <20110919212040.745370781@goodmis.org> <alpine.DEB.2.00.1109191644190.19059@router.home> <1316487977.29966.32.camel@gandalf.stny.rr.com> <27409.1316522696@turing-police.cc.vt.edu> <alpine.DEB.2.00.1109200955190.8056@router.home> <1316531987.29966.65.camel@gandalf.stny.rr.com>
-            <alpine.DEB.2.00.1109201108080.8056@router.home>
+	Tue, 20 Sep 2011 18:40:41 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:to:cc:subject:message-id:in-reply-to:references:
+	x-mailer:mime-version:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=bCL6uEDcmrDWox84+Rb0lv8zo5B7bNb/l6PbXPWZhhyimX88N0Q5Dcwnz46Gzya+3
+	0QjNCF6YTx6o3IofzwiWQ==
+Date: Tue, 20 Sep 2011 15:40:23 -0700
+From: Andrew Morton <akpm@google.com>
+To: =?UTF-8?Q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
+Subject: Re: [PATCH -next] bcma: needs export.h
+Message-Id: <20110920154023.c90396d8.akpm@google.com>
+In-Reply-To: <CACna6rxGrd-ORWZrc0xsAOKptU_Xj3eGh9qSfX9vJYCPTZrCRg@mail.gmail.com>
+References: <20110920173102.d38155c7defbbc29beaae7c0@canb.auug.org.au>
+	<4E78CFC0.4020003@xenotime.net>
+	<CACna6rxGrd-ORWZrc0xsAOKptU_Xj3eGh9qSfX9vJYCPTZrCRg@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1316557979_2679P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Date: Tue, 20 Sep 2011 18:32:59 -0400
-Message-ID: <26045.1316557979@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A02020B.4E79149C.00F5,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1316557979_2679P
-Content-Type: text/plain; charset=us-ascii
+On Tue, 20 Sep 2011 20:45:57 +0200
+Rafa__ Mi__ecki <zajec5@gmail.com> wrote:
 
-On Tue, 20 Sep 2011 11:08:56 CDT, Christoph Lameter said:
+> 2011/9/20 Randy Dunlap <rdunlap@xenotime.net>:
+> > From: Randy Dunlap <rdunlap@xenotime.net>
+> >
+> > bcma/driver_chipcommon_pmu.c needs to include <linux/export.h>,
+> > so add it to the headers that are included by bcma_private.h.
+> 
+> Please take a look at discussion in:
+> [PATCH -next] bcma: main.c needs to include <linux/slab.h>
+> thread (by Andrew).
+> 
+> I believe that according to the discussion, such a includes should be
+> done in .c files.
+> 
+> Andrew: can you comment? Am I right?
 
-> That is obviously a use case in which this_cpu_xx ops could not be used
-> since we must stay on the same cpu.
+Ordinarily, yes, it is preferable to include the needed .h files from
+within the .c files.  However quite a mumber of kernel subsystems do
+take the #include "everything.h" approach.
 
-Wow.  I don't think I've ever seen a single sentence scream quite so much
-"totally broken API" in as few words.
+However, drivers/bcma is a bit odd in that it has bcma_private.h which
+includes delay.h (the everything.h approach) but most .c files
+explicitly include other things, including export.h.
 
+There's no real pattern here and yes, I agree that the minimal and more
+typical approach is better.
 
---==_Exmh_1316557979_2679P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFOeRSbcC3lWbTT17ARAisdAKDIeKiSGpHSxpQkhprNUk4B3JDIewCcDLU+
-O8CFsmIqBEhZSOP4V9Tr9fo=
-=ZWTI
------END PGP SIGNATURE-----
-
---==_Exmh_1316557979_2679P--
+--- a/drivers/bcma/driver_chipcommon_pmu.c~bcma-needs-exporth
++++ a/drivers/bcma/driver_chipcommon_pmu.c
+@@ -10,6 +10,7 @@
+ 
+ #include "bcma_private.h"
+ #include <linux/bcma/bcma.h>
++#include <linux/export.h>
+ 
+ static u32 bcma_chipco_pll_read(struct bcma_drv_cc *cc, u32 offset)
+ {
+_
 
