@@ -1,116 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751933Ab1ITPjH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 11:39:07 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:31586 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751366Ab1ITPjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 11:39:06 -0400
-Message-ID: <4E78B389.3000307@parallels.com>
-Date: Tue, 20 Sep 2011 19:38:49 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Lightning/1.0b2 Thunderbird/3.1.13
+	id S1752062Ab1ITPjx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 11:39:53 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56446 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751366Ab1ITPjw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 11:39:52 -0400
+Date: Tue, 20 Sep 2011 10:39:44 -0500
+From: Serge Hallyn <serge.hallyn@canonical.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, richard@nod.at,
+        Andrew Morton <akpm@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>,
+        serge@hallyn.com
+Subject: Re: [PATCH] user namespace: make signal.c respect user namespaces
+Message-ID: <20110920153944.GA11531@peqn>
+References: <20110919214531.GA18085@sergelap>
+ <20110920122202.GA26504@redhat.com>
 MIME-Version: 1.0
-To: Bryan Schumaker <bjschuma@netapp.com>
-CC: Jeff Layton <jlayton@redhat.com>,
-        "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "davem@davemloft.net" <davem@davemloft.net>
-Subject: Re: [PATCH v5 1/8] SUNRPC: introduce helpers for reference counted
- rpcbind clients
-References: <20110920101031.9861.18444.stgit@localhost6.localdomain6>	<20110920101341.9861.51453.stgit@localhost6.localdomain6>	<4E7899E7.9090809@parallels.com> <20110920102431.58ca1d96@tlielax.poochiereds.net> <4E78A6A1.1000800@parallels.com> <4E78AA09.1000209@netapp.com>
-In-Reply-To: <4E78AA09.1000209@netapp.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110920122202.GA26504@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-20.09.2011 18:58, Bryan Schumaker пишет:
-> On 09/20/2011 10:43 AM, Stanislav Kinsbursky wrote:
->> 20.09.2011 18:24, Jeff Layton пишет:
->>> On Tue, 20 Sep 2011 17:49:27 +0400
->>> Stanislav Kinsbursky<skinsbursky@parallels.com>   wrote:
->>>
->>>> v5: fixed races with rpcb_users in rpcb_get_local()
->>>>
->>>> This helpers will be used for dynamical creation and destruction of rpcbind
->>>> clients.
->>>> Variable rpcb_users is actually a counter of lauched RPC services. If rpcbind
->>>> clients has been created already, then we just increase rpcb_users.
->>>>
->>>> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
->>>>
->>>> ---
->>>>     net/sunrpc/rpcb_clnt.c |   53 ++++++++++++++++++++++++++++++++++++++++++++++++
->>>>     1 files changed, 53 insertions(+), 0 deletions(-)
->>>>
->>>> diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
->>>> index e45d2fb..5f4a406 100644
->>>> --- a/net/sunrpc/rpcb_clnt.c
->>>> +++ b/net/sunrpc/rpcb_clnt.c
->>>> @@ -114,6 +114,9 @@ static struct rpc_program    rpcb_program;
->>>>     static struct rpc_clnt *    rpcb_local_clnt;
->>>>     static struct rpc_clnt *    rpcb_local_clnt4;
->>>>     +DEFINE_SPINLOCK(rpcb_clnt_lock);
->>>> +unsigned int            rpcb_users;
->>>> +
->>>>     struct rpcbind_args {
->>>>         struct rpc_xprt *    r_xprt;
->>>>     @@ -161,6 +164,56 @@ static void rpcb_map_release(void *data)
->>>>         kfree(map);
->>>>     }
->>>>     +static int rpcb_get_local(void)
->>>> +{
->>>> +    int cnt;
->>>> +
->>>> +    spin_lock(&rpcb_clnt_lock);
->>>> +    if (rpcb_users)
->>>> +        rpcb_users++;
->>>> +    cnt = rpcb_users;
->>>> +    spin_unlock(&rpcb_clnt_lock);
->>>> +
->>>> +    return cnt;
->>>> +}
->>>> +
->>>> +void rpcb_put_local(void)
->>>> +{
->>>> +    struct rpc_clnt *clnt = rpcb_local_clnt;
->>>> +    struct rpc_clnt *clnt4 = rpcb_local_clnt4;
->>>> +    int shutdown;
->>>> +
->>>> +    spin_lock(&rpcb_clnt_lock);
->>>> +    if (--rpcb_users == 0) {
->>>> +        rpcb_local_clnt = NULL;
->>>> +        rpcb_local_clnt4 = NULL;
->>>> +    }
->>>
->>> In the function below, you mention that the above pointers are
->>> protected by rpcb_create_local_mutex, but it looks like they get reset
->>> here without that being held?
->>>
->>
->> Assigning of them is protected by rpcb_create_local_mutex.
->> Dereferencing of them is protected by rpcb_clnt_lock.
->
-> Shouldn't you be using the same lock for assigning and dereferencing?  Otherwise one thread could change these variables while another is using them.
+Quoting Oleg Nesterov (oleg@redhat.com):
+> On 09/19, Serge E. Hallyn wrote:
+> >
+> > __send_signal: convert the uid being sent in SI_USER to the target task's
+> > user namespace.
+> >
+> > do_notify_parent and do_notify_parent_cldstop: map task's uid to parent's
+> >  user namespace
+> >
+> > ptrace_signal: map parent's uid into current's user namespace before
+> > including in signal to current.
+> 
+> And all of them follow the same pattern,
+> 
+> > @@ -1073,7 +1074,8 @@ static int __send_signal(int sig, struct siginfo *info, struct task_struct *t,
+> >  			q->info.si_code = SI_USER;
+> >  			q->info.si_pid = task_tgid_nr_ns(current,
+> >  							task_active_pid_ns(t));
+> > -			q->info.si_uid = current_uid();
+> > +			q->info.si_uid = user_ns_map_uid(task_cred_xxx(t, user_ns),
+> > +					current_cred(), current_uid());
+> 
+> Up to you, but may be we can add a helper? Something like
+> 
+> 	static inline uid_t good_name(struct task_struct *from, struct task_struct *to)
+> 	{
+> 		// the caller does rcu_read_lock() if needed
+> 		const struct cred *from_cred = __task_cred(from);
+> 		return user_ns_map_uid(task_cred_xxx(to, user_ns),
+> 					from_cred, from_cred->uid);
+> 	}
+> 
+> As for __send_signal() in particular, I guess we could do
+> 
+> 		q->info.si_uid = from_ancestor_ns ? 0 : current_uid();
 
-Probably I wasn't clear with my previous explanation.
-Actually, we use only spinlock to make sure, that the pointers are valid when we 
-dereferencing them. Synchronization point here is rpcb_users counter.
-IOW, we use these pointers only from svc code and only after service already 
-started. And with this patch-set we can be sure, that this pointers has been 
-created already to the point, when this service starts.
+But wait - can't __send_signal end up being triggered through fcntl
+F_SETSIG+F_SETOWN to another but none-ancestor namespace?  So we
+do actually need to call the full user_ns_map_uid() there.  However,
+the uid sent in ptrace_signal() can (if i'm thinking right) be set
+using
 
-But when this counter is zero, we can experience races with assigning those 
-pointers. It takes a lot of time, so we use local mutex here instead of spinlock.
+	info->si_uid = (current_user_ns() == parent_user_ns()) ?
+			0 : current_uid();
 
-Have I answered your question?
+Not much of a win performance-wise, but perhaps better by making it
+clear that those are the only possibilities (and overflowuid is not
+possible).
 
--- 
-Best regards,
-Stanislav Kinsbursky
+thanks,
+-serge
