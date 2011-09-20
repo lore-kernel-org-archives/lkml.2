@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752014Ab1ITVOu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 17:14:50 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:60926 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751168Ab1ITVOt (ORCPT
+	id S1752041Ab1ITVUJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 17:20:09 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:55576 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751168Ab1ITVUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 17:14:49 -0400
-Date: Wed, 21 Sep 2011 07:14:40 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Amos Kong <kongjianjun@gmail.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        Paul Bolle <pebolle@tiscali.nl>
-Subject: Re: linux-next: manual merge of the trivial tree with the
- kernel-doc tree
-Message-Id: <20110921071440.b56b5eae5178a3f71bc72e92@canb.auug.org.au>
-In-Reply-To: <alpine.LNX.2.00.1109201504040.13109@pobox.suse.cz>
-References: <20110919163946.9165592b447bf5b578146f83@canb.auug.org.au>
-	<alpine.LNX.2.00.1109201504040.13109@pobox.suse.cz>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__21_Sep_2011_07_14_40_+1000_pPTxpMLEon.Xfvmz"
+	Tue, 20 Sep 2011 17:20:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <yunpqivfbtf.fsf@aiko.keithp.com>
+References: <1316088425.11294.78.camel@lappyti>
+	<yunboul7sx7.fsf@aiko.keithp.com>
+	<1316100594.23214.65.camel@deskari>
+	<yun8vpp7qk7.fsf@aiko.keithp.com>
+	<1316107275.23214.99.camel@deskari>
+	<yunfwjxwbjq.fsf@aiko.keithp.com>
+	<20110916175326.54567b14@lxorguk.ukuu.org.uk>
+	<1316414014.1978.12.camel@deskari>
+	<yunfwjtauqg.fsf@aiko.keithp.com>
+	<1316417361.1978.48.camel@deskari>
+	<CAMeQTsbP-_ut7BA3YQ+qgtqfM1tzM4qn3jxHT8B8_0hdPbP3Jg@mail.gmail.com>
+	<yunpqivfbtf.fsf@aiko.keithp.com>
+Date: Tue, 20 Sep 2011 23:20:05 +0200
+Message-ID: <CAMeQTsazfb6xoA6mm8OMVhkx_RDaxogqEa8yDstqmKUP5Ub+yg@mail.gmail.com>
+Subject: Re: Proposal for a low-level Linux display framework
+From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+To: Keith Packard <keithp@keithp.com>
+Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linaro-dev@lists.linaro.org, "Clark, Rob" <rob@ti.com>,
+        Archit Taneja <archit@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__21_Sep_2011_07_14_40_+1000_pPTxpMLEon.Xfvmz
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Sep 20, 2011 at 5:55 PM, Keith Packard wrote:
+> I'm not sure we need a new abstraction that subsumes both DSI and SDVO,
 
-Hi Jiri,
+Ok. SDVO fits within the current abstraction, but I guess what I'm fishing
+for is more code sharing of encoders. For instance, the SDVO code in GMA500
+could be shared with i915. I'm currently working on copying the i915 SDVO code
+over to GMA500, but sharing it would be even better.
 
-On Tue, 20 Sep 2011 15:04:45 +0200 (CEST) Jiri Kosina <jkosina@suse.cz> wro=
-te:
->
-> I don't know where to get either linux-next or linux-doc at the moment, s=
-o=20
+> but we may need a DSI library that can be used by both DRM and other
+> parts of the kernel.
 
-temporarily, git://github.com/sfrothwell/linux-next.git
+Ok, not sure I understand the complexity of DSI. Can overlay composition
+occur after/at the DSI stage (through MCS perhaps)? Or is it a matter of
+panels requiring special scanout buffer formats that for instance V4L needs
+to know about in order to overlay stuff properly? Or am I getting it all wrong?
 
-> just correct me if I am wrong -- I will just drop the=20
-> Documentation/PCI/pci.txt hunk from c460578a674f in my tree, right?
-
-Yeah, I would guess so (Randy?).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__21_Sep_2011_07_14_40_+1000_pPTxpMLEon.Xfvmz
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOeQJAAAoJEDMEi1NhKgbs1LIH/1ZymLlFmuB/T0IzvTgNF1+L
-8305fNnKwZOEFfLllEfg3pGk1+PUilyz59KIOJKijwr/5fJCzVZ1s6X/NHSuL7wS
-NWf5/A91ZXfKm7+f+laitHv7Y5gxIlR8qEsfN92aj2EAsxAPIdqNwjfWKhvbN/uE
-j99742SiF/+znM42ANsN3HW/VBpjHuL+oghXfstuPtoVMfGuUXKFxEKJfjJV8INX
-ZDtC9o5mzYV05LnW4OtRqj1pZYg0RWtym4b2RC1nS2dmsSQjCc6lxGIVxVquW1K7
-gJDbwE6mexes/tpz6svnl+lVGZp3YDkab2e7B6RTnBZn6xwSw4s1Z8kA+KdpHjw=
-=hC6g
------END PGP SIGNATURE-----
-
---Signature=_Wed__21_Sep_2011_07_14_40_+1000_pPTxpMLEon.Xfvmz--
+Thanks
+-Patrik
