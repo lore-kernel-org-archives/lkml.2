@@ -1,38 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751932Ab1ITVnM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 17:43:12 -0400
-Received: from www.linutronix.de ([62.245.132.108]:46525 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751194Ab1ITVnL (ORCPT
+	id S1751987Ab1ITVwI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 17:52:08 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:59579 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751150Ab1ITVwG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 17:43:11 -0400
-Message-ID: <4E7908EC.9080802@linutronix.de>
-Date: Tue, 20 Sep 2011 23:43:08 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Icedove/3.1.13
+	Tue, 20 Sep 2011 17:52:06 -0400
+Date: Tue, 20 Sep 2011 15:52:02 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org,
+        linux-arm-kernel@lists.infradead.org, Peter Huewe <peterhuewe@gmx.de>
+Subject: Re: [PATCH] spi: Fix builderror in spi-pl022.c
+Message-ID: <20110920215202.GQ7781@ponder.secretlab.ca>
+References: <E1Qvo1q-0000qv-TQ@rmk-PC.arm.linux.org.uk>
+ <1314559619-19923-1-git-send-email-peterhuewe@gmx.de>
+ <CACRpkdb=Bt2j4iMV5NJHmPG8wDi6__CRD6kn_KOoaQ1R6uwrWQ@mail.gmail.com>
+ <CACRpkdbsUMCvBofKjExiB2wCbK9CwpcXr5xmShJ4SHEGAAH4Bw@mail.gmail.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] irq/irqdomain: change bail out condition for irq_domain_add()
-References: <1316554589-24393-1-git-send-email-bigeasy@linutronix.de> <alpine.LFD.2.02.1109202340060.2723@ionos>
-In-Reply-To: <alpine.LFD.2.02.1109202340060.2723@ionos>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdbsUMCvBofKjExiB2wCbK9CwpcXr5xmShJ4SHEGAAH4Bw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20/2011 11:41 PM, Thomas Gleixner wrote:
-> I've already queued a similar fix in tip/irq/urgent
+On Tue, Sep 20, 2011 at 10:45:41PM +0200, Linus Walleij wrote:
+> On Mon, Sep 5, 2011 at 2:45 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> > On Sun, Aug 28, 2011 at 9:26 PM, Peter Huewe <peterhuewe@gmx.de> wrote:
+> >
+> >> This patch fixes a build error, introduced by commit (67fc8b9f, "PM: add
+> >> runtime PM support to core Primecell driver") which unfortunately was a little
+> >> bit incomplete and did contain a typo (11 instead of 22).
+> >> I'm not sure how this patch could have been tested back then, if it
+> >> doesn't even compile ;)
+> >
+> > Grant can you please apply this patch? Right now linux-next is
+> > breaking because of this missing patch...
+> 
+> Ping on this... ignore if it's been picked already.
 
-It is not in master branch of the tip tree.
+It's not a patch that went through my tree, so I cannot pick it up.
 
-> Thanks,
->
-> 	tglx
+g.
 
-Sebastian
