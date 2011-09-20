@@ -1,75 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752255Ab1ITS3i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 14:29:38 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:19649 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751023Ab1ITS3h convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 14:29:37 -0400
-MIME-Version: 1.0
-Message-ID: <a7471ea9-1d24-452a-8e3b-eb5836e8e7d5@default>
-Date: Tue, 20 Sep 2011 11:28:21 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
-        hughd@google.com, ngupta@vflare.org,
-        Konrad Wilk <konrad.wilk@oracle.com>, JBeulich@novell.com,
-        Kurt Hackel <kurt.hackel@oracle.com>, npiggin@kernel.dk,
-        akpm@linux-foundation.org, riel@redhat.com, hannes@cmpxchg.org,
-        matthew@wil.cx, Chris Mason <chris.mason@oracle.com>,
-        kamezawa.hiroyu@jp.fujitsu.com, jackdachef@gmail.com,
-        cyclonusj@gmail.com, levinsasha928@gmail.com
-Subject: RE: [PATCH V10 3/6] mm: frontswap: core frontswap functionality
-References: <20110915213406.GA26369@ca-server1.us.oracle.com
- 4E73674B.6090901@linux.vnet.ibm.com>
-In-Reply-To: <4E73674B.6090901@linux.vnet.ibm.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6557.5001]
+	id S1752685Ab1ITSc7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 14:32:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5704 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751010Ab1ITSc6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 14:32:58 -0400
+Date: Tue, 20 Sep 2011 14:32:55 -0400
+From: Dean Nelson <dnelson@redhat.com>
+To: linux-mm@kvack.org
+Cc: Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Message-Id: <20110920183254.3926.59134.email-sent-by-dnelson@localhost6.localdomain6>
+Subject: [PATCH] HWPOISON: Convert pr_debug()s to pr_info()s
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090206.4E78DB78.006C,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
-> Sent: Friday, September 16, 2011 9:12 AM
-> To: Dan Magenheimer
-> Cc: linux-kernel@vger.kernel.org; linux-mm@kvack.org; jeremy@goop.org; hughd@google.com;
-> ngupta@vflare.org; Konrad Wilk; JBeulich@novell.com; Kurt Hackel; npiggin@kernel.dk; akpm@linux-
-> foundation.org; riel@redhat.com; hannes@cmpxchg.org; matthew@wil.cx; Chris Mason;
-> kamezawa.hiroyu@jp.fujitsu.com; jackdachef@gmail.com; cyclonusj@gmail.com; levinsasha928@gmail.com
-> Subject: Re: [PATCH V10 3/6] mm: frontswap: core frontswap functionality
-> 
-> On 09/15/2011 04:34 PM, Dan Magenheimer wrote:
-> > From: Dan Magenheimer <dan.magenheimer@oracle.com>
-> > Subject: [PATCH V10 3/6] mm: frontswap: core frontswap functionality
-> >
-> > [v10: sjenning@linux.vnet.ibm.com: fix debugfs calls on 32-bit]
-> ...
-> > +#ifdef CONFIG_DEBUG_FS
-> > +	struct dentry *root = debugfs_create_dir("frontswap", NULL);
-> > +	if (root == NULL)
-> > +		return -ENXIO;
-> > +	debugfs_create_u64("gets", S_IRUGO, root, &frontswap_gets);
-> > +	debugfs_create_u64("succ_puts", S_IRUGO, root, &frontswap_succ_puts);
-> > +	debugfs_create_u64("puts", S_IRUGO, root, &frontswap_failed_puts);
-> 
-> Sorry I didn't see this one before :-/  This should be "failed_puts",
-> not "puts".
+Commit fb46e73520940bfc426152cfe5e4a9f1ae3f00b6 authored by Andi Kleen
+converted a number of pr_debug()s to pr_info()s.
 
-Oops, thought I had replied to this but hadn't.
+About the same time additional code with pr_debug()s was added by
+two other commits 8c6c2ecb44667f7204e9d2b89c4c1f42edc5a196 and
+d950b95882f3dc47e86f1496cd3f7fef540d6d6b. And these pr_debug()s
+failed to get converted to pr_info()s.
 
-Thanks for catching that typo.  Unless someone reports something
-else that needs fixing, I will likely just fix that in my git tree
-rather than post a V11.
+This patch converts them as well. And does some minor related
+whitespace cleanup.
+
+Signed-off-by: Dean Nelson <dnelson@redhat.com>
+
+---
+ mm/memory-failure.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index 2b43ba0..edc388d 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1310,7 +1310,7 @@ int unpoison_memory(unsigned long pfn)
+ 		 * to the end.
+ 		 */
+ 		if (PageHuge(page)) {
+-			pr_debug("MCE: Memory failure is now running on free hugepage %#lx\n", pfn);
++			pr_info("MCE: Memory failure is now running on free hugepage %#lx\n", pfn);
+ 			return 0;
+ 		}
+ 		if (TestClearPageHWPoison(p))
+@@ -1419,7 +1419,7 @@ static int soft_offline_huge_page(struct page *page, int flags)
  
-> Other than that, it compiles cleanly here and runs without issue when
-> applied on 3.1-rc4 + fix for cleancache crash.
-
-Thanks for the testing!
-
-Dan
+ 	if (PageHWPoison(hpage)) {
+ 		put_page(hpage);
+-		pr_debug("soft offline: %#lx hugepage already poisoned\n", pfn);
++		pr_info("soft offline: %#lx hugepage already poisoned\n", pfn);
+ 		return -EBUSY;
+ 	}
+ 
+@@ -1433,8 +1433,8 @@ static int soft_offline_huge_page(struct page *page, int flags)
+ 		list_for_each_entry_safe(page1, page2, &pagelist, lru)
+ 			put_page(page1);
+ 
+-		pr_debug("soft offline: %#lx: migration failed %d, type %lx\n",
+-			 pfn, ret, page->flags);
++		pr_info("soft offline: %#lx: migration failed %d, type %lx\n",
++			pfn, ret, page->flags);
+ 		if (ret > 0)
+ 			ret = -EIO;
+ 		return ret;
+@@ -1505,7 +1505,7 @@ int soft_offline_page(struct page *page, int flags)
+ 	}
+ 	if (!PageLRU(page)) {
+ 		pr_info("soft_offline: %#lx: unknown non LRU page type %lx\n",
+-				pfn, page->flags);
++			pfn, page->flags);
+ 		return -EIO;
+ 	}
+ 
+@@ -1566,7 +1566,7 @@ int soft_offline_page(struct page *page, int flags)
+ 		}
+ 	} else {
+ 		pr_info("soft offline: %#lx: isolation failed: %d, page count %d, type %lx\n",
+-				pfn, ret, page_count(page), page->flags);
++			pfn, ret, page_count(page), page->flags);
+ 	}
+ 	if (ret)
+ 		return ret;
