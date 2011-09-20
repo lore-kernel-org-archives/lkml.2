@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753468Ab1ITCNd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 22:13:33 -0400
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:41441 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752898Ab1ITCNc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 22:13:32 -0400
-Message-ID: <4E77F6C7.4090509@tao.ma>
-Date: Tue, 20 Sep 2011 10:13:27 +0800
-From: Tao Ma <tm@tao.ma>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1753447Ab1ITCUb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 22:20:31 -0400
+Received: from mga11.intel.com ([192.55.52.93]:45882 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752185Ab1ITCUa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 22:20:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,408,1312182000"; 
+   d="scan'208";a="53399851"
+From: Andi Kleen <andi@firstfloor.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [RFC][PATCH 0/5] Introduce checks for preemptable code for this_cpu_read/write()
+References: <20110919212040.745370781@goodmis.org>
+Date: Mon, 19 Sep 2011 19:20:17 -0700
+In-Reply-To: <20110919212040.745370781@goodmis.org> (Steven Rostedt's message
+	of "Mon, 19 Sep 2011 17:20:40 -0400")
+Message-ID: <m2ehzcdkf2.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-To: Andrew Morton <akpm@google.com>
-CC: linux-kernel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
-        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] fs/direct-io.c: Calcuate fs_count correctly in get_more_blocks.
-References: <1316420739-4734-1-git-send-email-tm@tao.ma> <20110919153149.be4ab3ca.akpm@google.com>
-In-Reply-To: <20110919153149.be4ab3ca.akpm@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 182.92.247.2 authed with tm@tao.ma}
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20/2011 06:31 AM, Andrew Morton wrote:
-> On Mon, 19 Sep 2011 16:25:39 +0800
-> Tao Ma <tm@tao.ma> wrote:
-> 
->> In get_more_blocks, we use dio_count to calcuate fs_count and do some
->> tricky things to increase fs_count if dio_count isn't aligned. But
->> actually it still has some cornor case that can't be coverd. See the
->> following example:
->> ./dio_write foo -s 1024 -w 4096(direct write 4096 bytes at offset 1024).
->> The same goes if the offset isn't aligned to fs_blocksize.
->>
->> In this case, the old calculation counts fs_count to be 1, but actually
->> we will write into 2 different blocks(if fs_blocksize=4096). The old code
->> just works, since it will call get_block twice(and may have to allocate
->> and create extent twice for file systems like ext4). So we'd better call
->> get_block just once with the proper fs_count.
-> 
-> Has this been carefully tested with more than just ext4?  If so, which?
-ext4 only by xfstests, fs_mark, postmark, ffsb, dbench and sysbench. But
-I can try xfs later. I will update you with the test result.
+Steven Rostedt <rostedt@goodmis.org> writes:
 
-Thanks
-Tao
+> I just found out that the this_cpu_*() functions do not perform the
+> test to see if the usage is in atomic or not. Thus, the blind
+> conversion of the per_cpu(*, smp_processor_id()) and the get_cpu_var()
+> code to this_cpu_*() introduce the regression to detect the hard
+> to find case where a per cpu variable is used in preempt code that
+> migrates and causes bugs.
+
+
+Didn't preempt-rt recently get changed to not migrate in kernel-preempt
+regions. How about just fixing the normal preemption to not do this
+either.
+
+Then all these complications wouldn't be necessary and a whole lot 
+of code related to this could be removed too, and you would still
+have less bugs.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
