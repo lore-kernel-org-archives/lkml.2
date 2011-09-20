@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754858Ab1ITIun (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 04:50:43 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:64334 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752513Ab1ITIul (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 04:50:41 -0400
-Subject: [PATCH] usb: musb: OMAP4430: Remove a redundant omap4430_phy_init
- call in usb_musb_init
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Felipe Balbi <balbi@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 20 Sep 2011 16:50:29 +0800
-Message-ID: <1316508629.14514.2.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1754835Ab1ITIw4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 04:52:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13530 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751094Ab1ITIwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 04:52:54 -0400
+Date: Tue, 20 Sep 2011 10:52:19 +0200
+From: Johannes Weiner <jweiner@redhat.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
+        Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 02/11] mm: vmscan: distinguish global reclaim from global
+ LRU scanning
+Message-ID: <20110920085219.GB11489@redhat.com>
+References: <1315825048-3437-1-git-send-email-jweiner@redhat.com>
+ <1315825048-3437-3-git-send-email-jweiner@redhat.com>
+ <20110919132344.GE21847@tiehlicka.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110919132344.GE21847@tiehlicka.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current code calls omap4430_phy_init() twice in usb_musb_init().
-Calling omap4430_phy_init() once is enough.
-This patch removes the first omap4430_phy_init() call, which using an
-uninitialized pointer as parameter.
+On Mon, Sep 19, 2011 at 03:23:44PM +0200, Michal Hocko wrote:
+> On Mon 12-09-11 12:57:19, Johannes Weiner wrote:
+> > The traditional zone reclaim code is scanning the per-zone LRU lists
+> > during direct reclaim and kswapd, and the per-zone per-memory cgroup
+> > LRU lists when reclaiming on behalf of a memory cgroup limit.
+> > 
+> > Subsequent patches will convert the traditional reclaim code to
+> > reclaim exclusively from the per-memory cgroup LRU lists.  As a
+> > result, using the predicate for which LRU list is scanned will no
+> > longer be appropriate to tell global reclaim from limit reclaim.
+> > 
+> > This patch adds a global_reclaim() predicate to tell direct/kswapd
+> > reclaim from memory cgroup limit reclaim and substitutes it in all
+> > places where currently scanning_global_lru() is used for that.
+> 
+> I am wondering about vmscan_swappiness. Shouldn't it use global_reclaim
+> instead?
 
-This patch elimates below build warning:
-arch/arm/mach-omap2/usb-musb.c: In function 'usb_musb_init':
-arch/arm/mach-omap2/usb-musb.c:141: warning: 'dev' may be used uninitialized in this function
+Thanks for noticing, you are right.  Too many rebases...
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Signed-off-by: Johannes Weiner <jweiner@redhat.com>
 ---
- arch/arm/mach-omap2/usb-musb.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/usb-musb.c b/arch/arm/mach-omap2/usb-musb.c
-index a65145b..19e4dac 100644
---- a/arch/arm/mach-omap2/usb-musb.c
-+++ b/arch/arm/mach-omap2/usb-musb.c
-@@ -137,9 +137,6 @@ void __init usb_musb_init(struct omap_musb_board_data *musb_board_data)
- 	musb_plat.mode = board_data->mode;
- 	musb_plat.extvbus = board_data->extvbus;
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 354f125..c2b0903 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1840,7 +1840,7 @@ static unsigned long shrink_list(enum lru_list lru, unsigned long nr_to_scan,
  
--	if (cpu_is_omap44xx())
--		omap4430_phy_init(dev);
--
- 	if (cpu_is_omap3517() || cpu_is_omap3505()) {
- 		oh_name = "am35x_otg_hs";
- 		name = "musb-am35x";
--- 
-1.7.4.1
-
-
-
+ static int vmscan_swappiness(struct scan_control *sc)
+ {
+-	if (scanning_global_lru(sc))
++	if (global_reclaim(sc))
+ 		return vm_swappiness;
+ 	return mem_cgroup_swappiness(sc->mem_cgroup);
+ }
