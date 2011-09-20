@@ -1,82 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751157Ab1ITTyJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 15:54:09 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:60985 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750784Ab1ITTyH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 15:54:07 -0400
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: linux-security-module@vger.kernel.org
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Arnaud Lacombe <lacombar@gmail.com>, James Morris <jmorris@namei.org>,
-        David Safford <safford@watson.ibm.com>
-Subject: [PATCH v1 4/4] target: check hex2bin result
-Date: Tue, 20 Sep 2011 15:52:53 -0400
-Message-Id: <1316548373-8782-5-git-send-email-zohar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1316548373-8782-1-git-send-email-zohar@linux.vnet.ibm.com>
-References: <1316548373-8782-1-git-send-email-zohar@linux.vnet.ibm.com>
+	id S1751433Ab1ITTzZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 15:55:25 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:43460 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750967Ab1ITTzX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 15:55:23 -0400
+X-Sasl-enc: WOeawUlIrppCuiDxHoQ2nvRxBkICqiH6DyS1onpEunp0 1316548522
+Date: Tue, 20 Sep 2011 12:52:05 -0700
+From: Greg KH <greg@kroah.com>
+To: Dave Kilroy <kilroyd@googlemail.com>
+Cc: Valdis.Kletnieks@vt.edu, linux-kernel@vger.kernel.org, pe1dnn@amsat.org
+Subject: Re: [PATCH 3/3] staging: wlags49_h2: Declare support for WEXT 21
+Message-ID: <20110920195205.GA27739@kroah.com>
+References: <1316462896-17846-1-git-send-email-kilroyd@googlemail.com>
+ <1316462896-17846-4-git-send-email-kilroyd@googlemail.com>
+ <15411.1316463771@turing-police.cc.vt.edu>
+ <4E77A9B1.1040107@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E77A9B1.1040107@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that hex2bin does error checking, on error add debugging error msg.
+On Mon, Sep 19, 2011 at 09:44:33PM +0100, Dave Kilroy wrote:
+> On 19/09/2011 21:22, Valdis.Kletnieks@vt.edu wrote:
+> >On Mon, 19 Sep 2011 21:08:16 BST, David Kilroy said:
+> >>There may be a few areas where we don't actually support WE21,
+> >>but by doing this it will make it easier to find those places.
+> >
+> >I'll bite - what happens when we find such a place?  Kernel fails to build, or
+> >user has a suboptimal usage experience, or?
+> 
+> The user would have a sub-optimal experience. iwconfig may not
+> display a few things correctly (ESSID?) in particular scenarios.
+> 
+> The reason I included this patch was that I'm not sure whether
+> wpa-supplicant requires WEXT version to be above a certain threshold
+> to use the events in the previous patch. I'm happy to drop this one
+> if it just works.
+> 
+> >What are the expected chances that sticking this in linux-next for a cycle will
+> >result in most/all of the places being found before this all appears in an
+> >official release?  I'm thinking this should probably go in linux-next right after
+> >the next merge window closes, to maximize the chances we'll shake it
+> >all out during almost 2 cycles before it hits the streets. (And yes, I know
+> >it's a staging/ driver - if somebody else says "one cycle is more than enough"
+> >I'm OK with that too...)
+> 
+> This hardware is old, and as far as I can tell quite rare. I'd hope
+> we can get some feedback from Henk on the series before applying
+> this patch.
 
-Changelog v1:
-- hex2bin now returns an int
+I've applied the first 2 of these, if you want me to apply the third
+one, please resend it after it's been tested by someone.
 
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
----
- drivers/target/target_core_fabric_lib.c |   11 +++++++++--
- 1 files changed, 9 insertions(+), 2 deletions(-)
+thanks,
 
-diff --git a/drivers/target/target_core_fabric_lib.c b/drivers/target/target_core_fabric_lib.c
-index c4ea3a9..17658ca 100644
---- a/drivers/target/target_core_fabric_lib.c
-+++ b/drivers/target/target_core_fabric_lib.c
-@@ -63,6 +63,7 @@ u32 sas_get_pr_transport_id(
- 	unsigned char *buf)
- {
- 	unsigned char *ptr;
-+	bool ret;
- 
- 	/*
- 	 * Set PROTOCOL IDENTIFIER to 6h for SAS
-@@ -74,7 +75,9 @@ u32 sas_get_pr_transport_id(
- 	 */
- 	ptr = &se_nacl->initiatorname[4]; /* Skip over 'naa. prefix */
- 
--	hex2bin(&buf[4], ptr, 8);
-+	ret = hex2bin(&buf[4], ptr, 8);
-+	if (ret < 0)
-+		pr_debug("sas transport_id: invalid hex string\n");
- 
- 	/*
- 	 * The SAS Transport ID is a hardcoded 24-byte length
-@@ -158,6 +161,8 @@ u32 fc_get_pr_transport_id(
- 	unsigned char *ptr;
- 	int i;
- 	u32 off = 8;
-+	bool ret;
-+
- 	/*
- 	 * PROTOCOL IDENTIFIER is 0h for FCP-2
- 	 *
-@@ -174,7 +179,9 @@ u32 fc_get_pr_transport_id(
- 			i++;
- 			continue;
- 		}
--		hex2bin(&buf[off++], &ptr[i], 1);
-+		ret = hex2bin(&buf[off++], &ptr[i], 1);
-+		if (ret < 0)
-+			pr_debug("fc transport_id: invalid hex string\n");
- 		i += 2;
- 	}
- 	/*
--- 
-1.7.3.4
-
+greg k-h
