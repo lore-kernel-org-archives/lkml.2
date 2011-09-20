@@ -1,60 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751022Ab1ITNFP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 09:05:15 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:41118 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750980Ab1ITNFN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 09:05:13 -0400
-Date: Tue, 20 Sep 2011 14:05:09 +0100
-From: Jamie Iles <jamie@jamieiles.com>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org
-Subject: Re: [PATCH] gpio/mxc: make it work with imx6q
-Message-ID: <20110920130508.GE2962@pulham.picochip.com>
-References: <1316423432-18333-1-git-send-email-shawn.guo@linaro.org>
+	id S1751040Ab1ITNFi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 09:05:38 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:43248 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750747Ab1ITNFg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 09:05:36 -0400
+X-IronPort-AV: E=Sophos;i="4.68,411,1312182000"; 
+   d="scan'208";a="583269205"
+Message-ID: <4E788F8C.20103@netapp.com>
+Date: Tue, 20 Sep 2011 09:05:16 -0400
+From: Bryan Schumaker <bjschuma@netapp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1316423432-18333-1-git-send-email-shawn.guo@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+CC: Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org, xemul@parallels.com,
+        neilb@suse.de, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bfields@fieldses.org, davem@davemloft.net
+Subject: Re: [PATCH v4 1/8] SUNRPC: introduce helpers for reference counted
+ rpcbind clients
+References: <20110920101031.9861.18444.stgit@localhost6.localdomain6> <20110920101341.9861.51453.stgit@localhost6.localdomain6>
+In-Reply-To: <20110920101341.9861.51453.stgit@localhost6.localdomain6>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Shawn,
-
-On Mon, Sep 19, 2011 at 05:10:32PM +0800, Shawn Guo wrote:
-> The imx6q is a Cortex-A9 Quad Core SoC, which has GIC as the primary
-> interrupt controller.  GIC requires gpio irq handler to signal EOI,
-> otherwise system will hang whenever there is a gpio irq triggered.
+On 09/20/2011 06:13 AM, Stanislav Kinsbursky wrote:
+> This helpers will be used for dynamical creation and destruction of rpcbind
+> clients.
+> Variable rpcb_users is actually a counter of lauched RPC services. If rpcbind
+> clients has been created already, then we just increase rpcb_users.
 > 
-> Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> 
 > ---
->  drivers/gpio/gpio-mxc.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
+>  net/sunrpc/rpcb_clnt.c |   50 ++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 50 insertions(+), 0 deletions(-)
 > 
-> diff --git a/drivers/gpio/gpio-mxc.c b/drivers/gpio/gpio-mxc.c
-> index 4340aca..00b4c9c 100644
-> --- a/drivers/gpio/gpio-mxc.c
-> +++ b/drivers/gpio/gpio-mxc.c
-> @@ -233,6 +233,9 @@ static void mx3_gpio_irq_handler(u32 irq, struct irq_desc *desc)
->  	u32 irq_stat;
->  	struct mxc_gpio_port *port = irq_get_handler_data(irq);
+> diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
+> index e45d2fb..8724780 100644
+> --- a/net/sunrpc/rpcb_clnt.c
+> +++ b/net/sunrpc/rpcb_clnt.c
+> @@ -114,6 +114,9 @@ static struct rpc_program	rpcb_program;
+>  static struct rpc_clnt *	rpcb_local_clnt;
+>  static struct rpc_clnt *	rpcb_local_clnt4;
 >  
-> +	if (desc->irq_data.chip->irq_eoi)
-> +		desc->irq_data.chip->irq_eoi(&desc->irq_data);
+> +DEFINE_SPINLOCK(rpcb_clnt_lock);
+> +unsigned int			rpcb_users;
 > +
->  	irq_stat = readl(port->base + GPIO_ISR) & readl(port->base + GPIO_IMR);
+>  struct rpcbind_args {
+>  	struct rpc_xprt *	r_xprt;
 >  
->  	mxc_gpio_irq_handler(port, irq_stat);
-> -- 
-> 1.7.4.1
+> @@ -161,6 +164,53 @@ static void rpcb_map_release(void *data)
+>  	kfree(map);
+>  }
+>  
+> +static int rpcb_get_local(void)
+> +{
+> +	spin_lock(&rpcb_clnt_lock);
+> +	if (rpcb_users)
+> +		rpcb_users++;
+> +	spin_unlock(&rpcb_clnt_lock);
+> +
+> +	return rpcb_users;
+        ^^^^^^^^^^^^^^^^^^
+Is it safe to use this variable outside of the rpcb_clnt_lock?
 
-Could this make use of the chained_irq_enter/chained_irq_exit functions 
-added in 10a8c38 (ARM: 6806/1: irq: introduce entry and exit functions 
-for chained handlers)?
+> +}
+> +
+> +void rpcb_put_local(void)
+> +{
+> +	struct rpc_clnt *clnt = rpcb_local_clnt;
+> +	struct rpc_clnt *clnt4 = rpcb_local_clnt4;
+> +	int shutdown;
+> +
+> +	spin_lock(&rpcb_clnt_lock);
+> +	if (--rpcb_users == 0) {
+> +		rpcb_local_clnt = NULL;
+> +		rpcb_local_clnt4 = NULL;
+> +	}
+> +	shutdown = !rpcb_users;
+> +	spin_unlock(&rpcb_clnt_lock);
+> +
+> +	if (shutdown) {
+> +		/*
+> +		 * cleanup_rpcb_clnt - remove xprtsock's sysctls, unregister
+> +		 */
+> +		if (clnt4)
+> +			rpc_shutdown_client(clnt4);
+> +		if (clnt)
+> +			rpc_shutdown_client(clnt);
+> +	}
+> +	return;
+> +}
+> +
+> +static void rpcb_set_local(struct rpc_clnt *clnt, struct rpc_clnt *clnt4)
+> +{
+> +	/* Protected by rpcb_create_local_mutex */
+> +	rpcb_local_clnt = clnt;
+> +	rpcb_local_clnt4 = clnt4;
+> +	rpcb_users++;
+> +	dprintk("RPC:       created new rpcb local clients (rpcb_local_clnt: "
+> +			"%p, rpcb_local_clnt4: %p)\n", rpcb_local_clnt,
+> +			rpcb_local_clnt4);
+> +}
+> +
+>  /*
+>   * Returns zero on success, otherwise a negative errno value
+>   * is returned.
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Jamie
