@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750964Ab1ITN2S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 09:28:18 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:48882 "EHLO e2.ny.us.ibm.com"
+	id S1750957Ab1ITN3r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 09:29:47 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:48424 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750748Ab1ITN2Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 09:28:16 -0400
-Subject: Re: [RFC v2.1 0/6] evm: digital signature verification extension
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: herbert@gondor.hengli.com.au
-Cc: linux-crypto <linux-crypto@vger.kernel.org>,
-        linux-security-module@vger.kernel.org,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dhowells@redhat.com, Greg KH <greg@kroah.com>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>
-In-Reply-To: <cover.1315921427.git.dmitry.kasatkin@intel.com>
-References: <cover.1315921427.git.dmitry.kasatkin@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 20 Sep 2011 09:24:28 -0400
-Message-ID: <1316525069.3189.4.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+	id S1750720Ab1ITN3q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 09:29:46 -0400
+Message-ID: <4E78951D.1020901@parallels.com>
+Date: Tue, 20 Sep 2011 10:29:01 -0300
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+MIME-Version: 1.0
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: <linux-kernel@vger.kernel.org>, <xemul@parallels.com>,
+        <paul@paulmenage.org>, <lizf@cn.fujitsu.com>, <daniel.lezcano@free.fr>,
+        <jbottomley@parallels.com>
+Subject: Re: [PATCH 6/9] Include idle and iowait fields in cpuacct
+References: <1316030695-19826-1-git-send-email-glommer@parallels.com>    <1316030695-19826-7-git-send-email-glommer@parallels.com>   <1316510490.11841.15.camel@twins> <4E7888B8.3080809@parallels.com>  <1316523502.13664.5.camel@twins> <4E788E08.2020707@parallels.com> <1316523928.13664.12.camel@twins>
+In-Reply-To: <1316523928.13664.12.camel@twins>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
-x-cbid: 11092013-5112-0000-0000-0000007811F3
+X-Originating-IP: [201.82.134.226]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-09-13 at 17:20 +0300, Dmitry Kasatkin wrote: 
-> Hello,
-> 
-> Changes to version 2.0:
-> - MPI patch has been split to smaller in order to go to mailing lists.
->   First 2 patches include only source and header files which are needed
->   to build ksign verification. Headers and sources are split just to
->   meet 100k kernel.org limit.
->   Last patch adds all rest soures from original ported MPI library.
->   
-> Changes to version 1.1:
-> - GnuPG MPI library has been refactored with lindent and checkpatch errors
->   and warnings has been fixed.
-> - creation of evm keyring has been remove. It is done now in user space.
-> - related ksign and evm patches has been squashed.
-> - patch descriptions has been updated.
-> 
-> As EVM patches were recently merged to security-testing-2.6#next,
-> it is a good time to resend evm signature verification patches for active
-> discussion. Last time I forgot --cc linux-crypto. Here it is.
-> 
-> This patchset introduces digital signature extensions for the IMA/EVM kernel
-> integrity subsystem and is applied on the top of the EVM patches posted to
-> LSM mailing list earlier.
+On 09/20/2011 10:05 AM, Peter Zijlstra wrote:
+> On Tue, 2011-09-20 at 09:58 -0300, Glauber Costa wrote:
+>> On 09/20/2011 09:58 AM, Peter Zijlstra wrote:
+>>> On Tue, 2011-09-20 at 09:36 -0300, Glauber Costa wrote:
+>>>> On 09/20/2011 06:21 AM, Peter Zijlstra wrote:
+>>>>> On Wed, 2011-09-14 at 17:04 -0300, Glauber Costa wrote:
+>>>>>> These are slightly different from the others though:
+>>>>>> (note to reviewers: might be better to put those in a separate
+>>>>>> array?)
+>>>>>>
+>>>>>> Since idle/iowait are a property of the system - by definition,
+>>>>>> no process from any cgroup is running when the system is idle,
+>>>>>> they are system wide. So what these fields really mean, are baselines
+>>>>>> for when the cgroup was created. It allows the cgroup to start
+>>>>>> counting idle/iowait from 0.
+>>>>>
+>>>>> Alternatively you can make iowait based on nr_uninterruptible per cgroup
+>>>>> and count all ticks _this_ cgroup was idle.
+>>>> You think?
+>>>>
+>>>> Humm,humm... maybe...
+>>>> iowait can indeed be seen as a process group characteristic. I was
+>>>> mainly concerned about overhead here, specially for the idle case:
+>>>
+>>> The overhead of accounting per cgroup nr_uninterruptible is the worst I
+>>> think, that's in the sleep/wakeup paths.
+>>>
+>>>> If we are idle, there is no task context we can draw from, since the
+>>>> task in the cpu is the idle task. So we end up having to touch all
+>>>> cgroups... Or am I missing something?
+>>>>
+>>>> Sounds expensive.
+>>>
+>>> Count the total number of ticks on the cpu (I think we already have
+>>> that) and subtract the number of ticks in this cgroup (I think we also
+>>> already have that), which should yield: number of ticks not in this
+>>> cgroup, aka number of ticks this cgroup was idle.
+>> No , no... remember steal time.
+>
+> Of course I don't.. that's virt stuff, I repress that with all my might.
+> But add or subtract steal ticks someplace and it doesn't come out right?
 
-Hi Herbert
+That's what I am here for...
 
-Back in March 2011, in preparation for EVM, Dmitry posted the GnuPG MPI
-library patch here on linux-crypto. The reason given for not upstreaming
-the MPI library, at the time, was for lack of an in kernel user
-(http://www.mail-archive.com/linux-crypto@vger.kernel.org/msg05613.html).
-With the recent merging of the EVM patches in linux-next, via
-security-testing-2.6/#next, that is changing.  Any chance of re-opening
-the discussion? 
+But back to your answer:
 
-thanks,
+ >>> Count the total number of ticks on the cpu (I think we already have
+ >>> that) and subtract the number of ticks in this cgroup (I think we also
+ >>> already have that),
 
-Mimi
+Not sure if we have ticks in this cgroup... anyway, it can be done. We 
+need a baseline for what was the tick situation when the cgroup started 
+anyway.
 
