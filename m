@@ -1,115 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751845Ab1ITQvf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 12:51:35 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:15810 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751287Ab1ITQvc convert rfc822-to-8bit (ORCPT
+	id S1751931Ab1ITQvs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 12:51:48 -0400
+Received: from www.linutronix.de ([62.245.132.108]:41871 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751619Ab1ITQvr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 12:51:32 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Tue, 20 Sep 2011 09:51:11 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Ben Dooks <ben-linux@fluff.org>, Arnd Bergmann <arnd@arndb.de>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Dilan Lee <dilee@nvidia.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Colin Cross <ccross@google.com>
-Date: Tue, 20 Sep 2011 09:51:08 -0700
-Subject: RE: [PATCH] i2c/tegra: I2C driver uses the
- suspend_noirq/resume_noirq
-Thread-Topic: [PATCH] i2c/tegra: I2C driver uses the
- suspend_noirq/resume_noirq
-Thread-Index: AcxipYooKUwOWBpMSfeE5QkubxGA9gEi65QgBCD9ZbA=
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF04B73215C9@HQMAIL01.nvidia.com>
-References: <1312586102-27907-1-git-send-email-swarren@nvidia.com>
-	<CAMbhsRScgMaTZ2e3a__OgOrrA6HN9_dkGuuNGaEfP+iqRdjyNQ@mail.gmail.com>
-	<20110806084805.GA18098@sirena.org.uk>
-	<74CDBE0F657A3D45AFBB94109FB122FF04AEA24CC8@HQMAIL01.nvidia.com>
-	<CAMbhsRR2+bhpjhGfUSt9M5tDk1EW2d70yC-tZy27zEgVqtkfSg@mail.gmail.com>
-	<74CDBE0F657A3D45AFBB94109FB122FF04AEA24D09@HQMAIL01.nvidia.com>
-	<CAMbhsRTVm+dUODDgqiekpTrrNnpo9trJNNvOQ2ETCNkneh-L-g@mail.gmail.com>
-	<1313109916.19990.28.camel@finisterre.wolfsonmicro.main>
-	<CAMbhsRShLvyc2XKJAL8PwR0Uj4Pnp9rVt7QyK1qAVxJ-R2PSdQ@mail.gmail.com>
-	<20110812031433.GE10218@opensource.wolfsonmicro.com>
-	<74CDBE0F657A3D45AFBB94109FB122FF04B24A3CA6@HQMAIL01.nvidia.com>
- <CAMbhsRRRa_JV8_LHEvsM2h3e8Hbf1GAcpXz8gdU3wCc8Jgz5gw@mail.gmail.com>
- <74CDBE0F657A3D45AFBB94109FB122FF04B3279D4F@HQMAIL01.nvidia.com>
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF04B3279D4F@HQMAIL01.nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	Tue, 20 Sep 2011 12:51:47 -0400
+Date: Tue, 20 Sep 2011 18:51:38 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Christoph Lameter <cl@gentwo.org>
+cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Christoph Lameter <cl@linux.com>, Tejun Heo <htejun@gmail.com>
+Subject: Re: [RFC][PATCH 2/5] mm: Switch mod_state() to __this_cpu_read()
+In-Reply-To: <alpine.DEB.2.00.1109201059590.8056@router.home>
+Message-ID: <alpine.LFD.2.02.1109201806220.2723@ionos>
+References: <20110919212040.745370781@goodmis.org> <20110919212640.688732950@goodmis.org> <alpine.DEB.2.00.1109191657150.19059@router.home> <alpine.LFD.2.02.1109201334590.2723@ionos> <alpine.DEB.2.00.1109200947100.8056@router.home> <alpine.LFD.2.02.1109201703560.2723@ionos>
+ <alpine.DEB.2.00.1109201059590.8056@router.home>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Warren wrote at Tuesday, August 30, 2011 10:25 AM:
-> Ben, Arnd,
+On Tue, 20 Sep 2011, Christoph Lameter wrote:
+
+> On Tue, 20 Sep 2011, Thomas Gleixner wrote:
+> > I want to get rid of them alltogether. They are crap by design and
+> > prone to be used wrong without a sensible way to detect that.
 > 
-> Could you please ack/nack the patch at the start of this thread for Colin;
-> see below.
+> Counter increments have been done this way for a very long time. This is
+> a pretty well established way of doing things in the kernel that was
+> expanded and made better by avoid preempt disable/enable around these per
+> cpu pointer increments.
 
-Ben, can you please comment on the acceptability of this patch?
+This still can be done, when the functions are actually having
+sensible names and annotations.
 
-Or Arnd, did Mark's most recent explanation of the situation provide enough
-context for you to ack/nak it?
-
-Thanks.
-
-> Thanks.
+> > Right, and that's the main problem. We have no fricking way to debug
+> > this, so they should have never been there in the first place. And you
+> > simply CANNOT prevent people from getting this wrong w/o proper
+> > debugging and annotation. Even YOU and Tejun made bogus conversion w/o
+> > noticing, but you expect that others get it right?
 > 
-> Colin Cross wrote at Wednesday, August 24, 2011 3:34 PM:
-> > On Wed, Aug 24, 2011 at 2:28 PM, Stephen Warren <swarren@nvidia.com> wrote:
-> > > Mark Brown wrote at Thursday, August 11, 2011 9:15 PM:
-> > >> On Thu, Aug 11, 2011 at 07:59:27PM -0700, Colin Cross wrote:
-> > >> > On Thu, Aug 11, 2011 at 5:45 PM, Mark Brown
-> > >>
-> > >> > > For example with ASoC we'd sort all the components before the ASoC card
-> > >> > > without regard for their bus dependencies or any other dependencies they
-> > >> > > have (eg, their regulators). Since the ASoC card is a platform device
-> > >> > > it's likely to have registered early with no regard for where the buses
-> > >> > > the card needs are registered. I'd expect there's a reasonable chance
-> > >> > > it'll actually make things worse in the short term.
-> > >>
-> > >> > You can't just move everything after the card, you have to move
-> > >> > everything after the last device that was probed, and it only works if
-> > >> > nothing depends on any of the devices that are moved.
-> > >>
-> > >> Sorry, I said that the wrong way round due to trying to reply quickly -
-> > >> the card would be the thing that moves since that's the thing that
-> > >> actually does the suspend but we've *no* idea which device we need to
-> > >> move it after.  Since all the function does is a direct move after or
-> > >> before a single device all we can do is pick one and pray that it's the
-> > >> right device.
-> > >
-> > > Colin,
-> > >
-> > > This thread seems to have died down; how should we make progress?
-> > >
-> > > It sounds like the suspend_irq solution is the current de-facto standard;
-> > > not optimal, but all we really have right now and already in use. I could
-> > > certainly see avoiding this solution if it was the first time it was
-> > > employed, but re-using it seems reasonable to me?
-> > >
-> > > Alternatively, are you attending either Linux Plumbers Conference or the
-> > > Kernel Summit? Mark implied this topic might well come up for discussion
-> > > there. Unfortunately, I won't be able to make LPC due to a conflict.
-> > I don't think I'll be able to make it.
-> >
-> > > (and you'd mentioned having the subsystem maintainers weigh in on this;
-> > > which sub-system; IRQ, power, I2C, ...?)
-> >
-> > If Ben says its OK, its fine with me.  Or maybe Arnd wants to weigh in?
+> Bogus conversions?
 
---
-nvpublic
+Is the list I posted not enough?
 
+The usage of this_cpu_read() in functions which require to be called
+with preemption or interrupts disabled is pointless and worse it
+actually removed debug functionality in some places which used
+smp_processor_id() before.
+
+I do not care at all whether this_cpu_read() on x86 does not have the
+preempt_enable/disable() pair, but I care a lot about the correctness
+of the code and debugability.
+
+> > So stop defending that trainwreck and help out with fixing the mess
+> > you created in a proper and debugable way!
+> 
+> You want debugging to ensure that this_cpu ops always access the intended
+> per cpu area? But the point of these operations is to be used in kernel
+> locations where the use of any per cpu area is satisfactory.
+
+The point is that the whole design assumes that people get it correct
+and you spent not a split second to provide any means of debugability
+for this. Now you argue in circles about your performance numbers and
+let others deal with the fallout and refuse to think about a sensible
+solution to the problem.
+
+It does not matter at all what you intended and what people should do,
+but it does matter very much what unintentional and undebugable
+wreckage can be caused by it.
+
+We spent huge efforts to make locks debugable and we still have people
+getting it wrong and you expect that something as complex as the per
+cpu stuff is just correct by definition.
+
+And the problem of this_cpu & co starts with the naming convention.
+
+this_cpu_*() is patently wrong. It should be: random_cpu_*() or
+any_cpu_*(). This way you could have avoided confusion in the first
+place and made it entirely clear what the interfaces are about.
+
+Thanks,
+
+	tglx
