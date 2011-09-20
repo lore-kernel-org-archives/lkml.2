@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751010Ab1ITTfF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 15:35:05 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:50979 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750772Ab1ITTfD (ORCPT
+	id S1751157Ab1ITThL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 15:37:11 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38849 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750823Ab1ITThJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 15:35:03 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH REPOST 1/2] arm/dt: Tegra: Update SDHCI nodes to match bindings
-Date: Tue, 20 Sep 2011 21:34:50 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Stephen Warren <swarren@nvidia.com>, nicolas.pitre@linaro.org,
-        Shawn Guo <shawn.guo@linaro.org>, devicetree-discuss@lists.ozlabs.org,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, Olof Johansson <olof@lixom.net>,
-        Chris Ball <cjb@laptop.org>, linux-arm-kernel@lists.infradead.org
-References: <1316537186-26753-1-git-send-email-swarren@nvidia.com> <201109201943.29510.arnd@arndb.de> <20110920180731.GL7781@ponder.secretlab.ca>
-In-Reply-To: <20110920180731.GL7781@ponder.secretlab.ca>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201109202134.50242.arnd@arndb.de>
-X-Provags-ID: V02:K0:Yq3scPaQd9TNdQIAfojMJCx5L/EuQh2t/yyX9o4DD1Q
- n8F788GIs828dSRAzAxedXBkz9dhLuLMt2dbqhB919xUk0PY19
- 1VIxdJi8KGJzexEoA0jRO6ZT6cnMAUgL8tUJnzoGHy69CMenK5
- r+PPb8LeWWKbpLHibKpl2/JddS4+7ky0oBh7VFUmR9n0dTwpsD
- NYRStpiWsr3rJDWaWdxQisoav5tvDfsFAVqAIeEau+roiwmcOx
- SJwVC7NADBjtoAHavi2eIumh2+qcWf0ZX0eAIWukobvdX+XFJT
- 9+kEQkEn3O0hw6CCb9StaHXOaTRSlHuktfqiTY9X1iUwkxYBGF
- ATuxiwMEy/fSLfLlKPdU=
+	Tue, 20 Sep 2011 15:37:09 -0400
+Subject: Re: [PATCH 3/8] kstaled: page_referenced_kstaled() and supporting
+ infrastructure.
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Michel Lespinasse <walken@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, Michael Wolf <mjwolf@us.ibm.com>,
+        rostedt <rostedt@goodmis.org>
+Date: Tue, 20 Sep 2011 21:36:39 +0200
+In-Reply-To: <1316230753-8693-4-git-send-email-walken@google.com>
+References: <1316230753-8693-1-git-send-email-walken@google.com>
+	 <1316230753-8693-4-git-send-email-walken@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1316547399.13664.65.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 20 September 2011, Grant Likely wrote:
-> On Tue, Sep 20, 2011 at 07:43:29PM +0200, Arnd Bergmann wrote:
-> > On Tuesday 20 September 2011, Stephen Warren wrote:
-> > > The bindings were recently updated to have separate properties for each
-> > > type of GPIO. Update the Device Tree source to match that.
-> > > 
-> > > Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> > > Acked-by: Olof Johansson <olof@lixom.net>
-> > > ---
-> > > I'd previously sent these to Grant assuming they'd go in his dt/next branch,
-> > > but perhaps these should go in through Arnd's arm-soc next/dt branch?
-> > > 
-> > 
-> > Which tree has the update that changed the bindings? I think it should
-> > go into the same one.
-> > 
-> > If it's already upstream, I can take it into the fixes branch.
-> 
-> Already upstream
+On Fri, 2011-09-16 at 20:39 -0700, Michel Lespinasse wrote:
+> +PAGEFLAG(Young, young)
 
-Ok, I see. I've applied both patches to the fixes branch and will send
-it out with the next pull request for 3.1 to Linus then.
+We should probably do something like the below, I couldn't figure out a
+way to make it do multiple functions from one macro though so I picked
+the simple PageFoo test.. 
 
-Thanks,
+I even added an Emacs variant, although I didn't test it..
 
-	Arnd
+---
+ scripts/tags.sh |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/scripts/tags.sh b/scripts/tags.sh
+index 75c5d24f1..b07797a 100755
+--- a/scripts/tags.sh
++++ b/scripts/tags.sh
+@@ -132,7 +132,8 @@ exuberant()
+ 	--regex-asm='/^ENTRY\(([^)]*)\).*/\1/'                  \
+ 	--regex-c='/^SYSCALL_DEFINE[[:digit:]]?\(([^,)]*).*/sys_\1/' \
+ 	--regex-c++='/^TRACE_EVENT\(([^,)]*).*/trace_\1/'		\
+-	--regex-c++='/^DEFINE_EVENT\([^,)]*, *([^,)]*).*/trace_\1/'
++	--regex-c++='/^DEFINE_EVENT\([^,)]*, *([^,)]*).*/trace_\1/'	\
++	--regex-c++='/^PAGEFLAG\(([^,)]*).*/Page\1/'
+ 
+ 	all_kconfigs | xargs $1 -a                              \
+ 	--langdef=kconfig --language-force=kconfig              \
+@@ -154,7 +155,8 @@ emacs()
+ 	--regex='/^ENTRY(\([^)]*\)).*/\1/'                      \
+ 	--regex='/^SYSCALL_DEFINE[0-9]?(\([^,)]*\).*/sys_\1/'   \
+ 	--regex='/^TRACE_EVENT(\([^,)]*\).*/trace_\1/'		\
+-	--regex='/^DEFINE_EVENT([^,)]*, *\([^,)]*\).*/trace_\1/'
++	--regex='/^DEFINE_EVENT([^,)]*, *\([^,)]*\).*/trace_\1/'\
++	--regex='/^PAGEFLAG(\([^,)]*\).*/Page\1/'
+ 
+ 	all_kconfigs | xargs $1 -a                              \
+ 	--regex='/^[ \t]*\(\(menu\)*config\)[ \t]+\([a-zA-Z0-9_]+\)/\3/'
+
