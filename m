@@ -1,85 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752178Ab1ITV6M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 17:58:12 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:2586 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751487Ab1ITV6K convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 17:58:10 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 20 Sep 2011 14:58:06 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Linus Walleij <linus.walleij@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Barry Song <21cnbao@gmail.com>
-CC: Lee Jones <lee.jones@linaro.org>, Joe Perches <joe@perches.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linaro Dev <linaro-dev@lists.linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        David Brown <davidb@codeaurora.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 20 Sep 2011 14:58:05 -0700
-Subject: RE: [PATCH 1/2] drivers: create a pin control subsystem v7
-Thread-Topic: [PATCH 1/2] drivers: create a pin control subsystem v7
-Thread-Index: Acx0aiGDcDUWcDhlRHKpTdK8lkwnLwDdOMAw
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF04B7321751@HQMAIL01.nvidia.com>
-References: <1316175203-10736-1-git-send-email-linus.walleij@stericsson.com>
-In-Reply-To: <1316175203-10736-1-git-send-email-linus.walleij@stericsson.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752246Ab1ITV6g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 17:58:36 -0400
+Received: from n1.taur.dk ([217.198.219.102]:56103 "EHLO n1.taur.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751487Ab1ITV6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 17:58:35 -0400
+Message-ID: <4E790C5E.5000000@kasperkp.dk>
+Date: Tue, 20 Sep 2011 23:57:50 +0200
+From: Kasper Pedersen <kernel@kasperkp.dk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.20) Gecko/20110831 Fedora/3.1.12-2.fc14 Thunderbird/3.1.12
 MIME-Version: 1.0
+To: Jesse Gross <jesse@nicira.com>
+CC: Matt Carlson <mcarlson@broadcom.com>, Michael Chan <mchan@broadcom.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] tg3: fix VLAN tagging regression
+References: <4E78FC38.7040903@kasperkp.dk> <20110920210929.GA9652@mcarlson.broadcom.com> <CAEP_g=9V=5zHqwz710TSuRSqTdo1kqkKF2VEEV6K3Tv1zupegg@mail.gmail.com>
+In-Reply-To: <CAEP_g=9V=5zHqwz710TSuRSqTdo1kqkKF2VEEV6K3Tv1zupegg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Walleij wrote at Friday, September 16, 2011 6:13 AM:
-> This creates a subsystem for handling of pin control devices.
-> These are devices that control different aspects of package
-> pins.
+On 09/20/2011 11:27 PM, Jesse Gross wrote:
 
-I've read through the documentation and header files, but not the .c files,
-and this looks almost perfect as far as I can tell right now. I'll try to
-review the .c files sometime too.
+> On Tue, Sep 20, 2011 at 2:09 PM, Matt Carlson <mcarlson@broadcom.com> wrote:
+>> On Tue, Sep 20, 2011 at 01:48:56PM -0700, Kasper Pedersen wrote:
+>>> commit 92cd3a17ce9c719abb4c28dee3438e0c641f8de4
+>>>     tg3: Simplify tx bd assignments
+>>>
+>>> broke VLAN tagging on outbound packets.
+>>> It ifdef'ed BCM_KERNEL_SUPPORTS_8021Q, but this
+>>> is not set anywhere. So vlan never gets set, and
+>>> all packets are sent with vlan=0.
+>>>
+>>> Change to use the CONFIG_VLAN_xxx defines instead.
+>>> Tested on BCM5721 rev 11.
+>>>
+>>> Signed-off-by: Kasper Pedersen <kernel@kasperkp.dk>
+>>
+>> Yes.  This is correct.
+>>
+>> Acked-by: Matt Carlson <mcarlson@broadcom.com>
+> 
+> Actually, please don't do this.  Those config #define's refer to the
+> 802.1q module that creates vlan devices only.  The rest of the network
+> stack has code for dealing with vlan packets that is not protected by
+> config guards, so there's no reason that drivers should be.  The
+> correct thing to do here is just drop the test altogether and
+> unconditionally include the code.
+> 
 
-I just have one comment:
 
-> diff --git a/include/linux/pinctrl/pinmux.h b/include/linux/pinctrl/pinmux.h
-...
-> +/* External interface to pinmux */
-> +extern int pinmux_request_gpio(unsigned gpio);
-> +extern void pinmux_free_gpio(unsigned gpio);
-> +extern struct pinmux * __must_check pinmux_get(struct device *dev, const char *name);
-> +extern void pinmux_put(struct pinmux *pmx);
-> +extern int pinmux_enable(struct pinmux *pmx);
-> +extern void pinmux_disable(struct pinmux *pmx);
-> +extern int pinmux_config(struct pinmux *pmx, u16 param, unsigned long *data);
+currently testing, and will post a just-remove-ifdef in a few hours,
+assuming it behaves as expected on a no-802.1q-module config.
 
-That definition of pinmux_config doesn't seem as useful as it could be;
-I'd like the ability to execute pinmux_config on a /named/ group, and I
-can certainly see a use-case for applying it to /named/ pins too.
 
-The issues with applying pinmux_config to a mapping table entry are:
+tg3 has one more place where this is done, and it looks as if the code
+in that location doesn't quite mesh with the comment.
 
-* When there are multiple mapping table entries referenced by one
-pinmux_get, you don't necessarily want to apply the same configuration
-to all of the groups; think of a bus with a combination of low-speed
-output control signals and high-speed input data signals or something
-like that.
-
-* When muxing works in groups, you may want to apply the configuration
-to individual pins rather than the whole groups using in the mapping
-table.
-
--- 
-nvpublic
-
+/Kasper Pedersen
