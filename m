@@ -1,63 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752679Ab1ITXNw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 19:13:52 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:37071 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752382Ab1ITXNs (ORCPT
+	id S1752686Ab1ITX0R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 19:26:17 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:52856 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751525Ab1ITX0P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 19:13:48 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/WYfxEwtLUWCIBlCaB/5hV
-Date: Tue, 20 Sep 2011 16:13:40 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Nicolas Pitre <nico@fluxnic.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 00/10] hwspinlock-next
-Message-ID: <20110920231340.GT18894@atomide.com>
-References: <1315846025-11453-1-git-send-email-ohad@wizery.com>
- <CAK=Wgbam6u1bq8fG+oMUhxfWH1g3dU7q+VhPWFEZOLgFMV_3vQ@mail.gmail.com>
+	Tue, 20 Sep 2011 19:26:15 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Deepthy Ravi <deepthy.ravi@ti.com>
+Subject: Re: [PATCH 4/5] ispccdc: Configure CCDC_SYN_MODE register for UYVY8_2X8 and YUYV8_2X8 formats
+Date: Wed, 21 Sep 2011 01:26:19 +0200
+User-Agent: KMail/1.13.7 (Linux/3.0.3-gentoo; KDE/4.7.1; x86_64; ; )
+Cc: mchehab@infradead.org, tony@atomide.com, hvaibhav@ti.com,
+        linux-media@vger.kernel.org, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, kyungmin.park@samsung.com,
+        hverkuil@xs4all.nl, m.szyprowski@samsung.com, g.liakhovetski@gmx.de,
+        santosh.shilimkar@ti.com, khilman@deeprootsystems.com,
+        david.woodhouse@intel.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        Sakari Ailus <sakari.ailus@maxwell.research.nokia.com>
+References: <1316530612-23075-1-git-send-email-deepthy.ravi@ti.com> <1316530612-23075-5-git-send-email-deepthy.ravi@ti.com>
+In-Reply-To: <1316530612-23075-5-git-send-email-deepthy.ravi@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAK=Wgbam6u1bq8fG+oMUhxfWH1g3dU7q+VhPWFEZOLgFMV_3vQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201109210126.20436.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Ohad Ben-Cohen <ohad@wizery.com> [110920 01:34]:
-> On Mon, Sep 12, 2011 at 7:46 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
-> 
-> I'm wondering how hwspinlock updates like this should go upstream.
-> 
-> The first hwspinlock batch was picked by Tony, because it involved a
-> bulk of OMAP changes.
-> 
-> Hwspinlock isn't OMAP-specific anymore though (we gained support for
-> STE's u8500) and the vast majority of changes are in drivers/. We're
-> still very much ARM-related, though this may change too at some point
-> (c6x has a similar "hardware semaphore" peripheral like the u8500
-> does).
-> 
-> Tony, if you're still willing to pick up these updates I'd be happy to
-> send you pull requests of course.
+Hi Deepthy,
 
-I'd prefer for Greg to take these as these are drivers.
+Thanks for the patch.
 
-If he's not taking it at this point based on it being ARM only,
-I can take it then.
+On Tuesday 20 September 2011 16:56:51 Deepthy Ravi wrote:
+> Configure INPMOD and PACK8 fileds of CCDC_SYN_MODE
+> register for UYVY8_2X8 and YUYV8_2X8 formats.
+> 
+> Signed-off-by: Deepthy Ravi <deepthy.ravi@ti.com>
+> ---
+>  drivers/media/video/omap3isp/ispccdc.c |   11 ++++++++---
+>  1 files changed, 8 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/media/video/omap3isp/ispccdc.c
+> b/drivers/media/video/omap3isp/ispccdc.c index 418ba65..1dcf180 100644
+> --- a/drivers/media/video/omap3isp/ispccdc.c
+> +++ b/drivers/media/video/omap3isp/ispccdc.c
+> @@ -985,8 +985,12 @@ static void ccdc_config_sync_if(struct isp_ccdc_device
+> *ccdc,
+> 
+>  	syn_mode &= ~ISPCCDC_SYN_MODE_INPMOD_MASK;
+>  	if (format->code == V4L2_MBUS_FMT_YUYV8_2X8 ||
+> -	    format->code == V4L2_MBUS_FMT_UYVY8_2X8)
+> -		syn_mode |= ISPCCDC_SYN_MODE_INPMOD_YCBCR8;
+> +	    format->code == V4L2_MBUS_FMT_UYVY8_2X8){
+> +		if (pdata && pdata->bt656)
+> +			syn_mode |= ISPCCDC_SYN_MODE_INPMOD_YCBCR8;
+> +		else
+> +			syn_mode |= ISPCCDC_SYN_MODE_INPMOD_YCBCR16;
+> +	}
+>  	else if (format->code == V4L2_MBUS_FMT_YUYV8_1X16 ||
+>  		 format->code == V4L2_MBUS_FMT_UYVY8_1X16)
+>  		syn_mode |= ISPCCDC_SYN_MODE_INPMOD_YCBCR16;
+> @@ -1172,7 +1176,8 @@ static void ccdc_configure(struct isp_ccdc_device
+> *ccdc) syn_mode &= ~ISPCCDC_SYN_MODE_SDR2RSZ;
+> 
+>  	/* Use PACK8 mode for 1byte per pixel formats. */
+> -	if (omap3isp_video_format_info(format->code)->width <= 8)
+> +	if ((omap3isp_video_format_info(format->code)->width <= 8) &&
+> +			(omap3isp_video_format_info(format->code)->bpp <= 8))
 
+I'm not sure to follow you. This will clear the PACK8 bit for the YUYV8_2X8 
+formats. Those formats are 8 bits wide, shouldn't PACK8 be set to store 
+samples on 8 bits instead of 16 bits ?
+
+Is this patch intended to support YUYV8_2X8 sensors in non BT.656 mode with 
+the bridge enabled ? In that case, what would you think about setting the CCDC 
+input format to YUYV8_1X16 instead ? This would better reflect the reality, as 
+the bridge converts YUYV8_2X8 to YUYV8_1X16, and the CCDC is then fed with 
+YUYV8_1X16.
+
+>  		syn_mode |= ISPCCDC_SYN_MODE_PACK8;
+>  	else
+>  		syn_mode &= ~ISPCCDC_SYN_MODE_PACK8;
+
+-- 
 Regards,
 
-Tony
+Laurent Pinchart
