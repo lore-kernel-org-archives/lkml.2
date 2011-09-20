@@ -1,73 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752496Ab1ITRrw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 13:47:52 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:41361 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751609Ab1ITRrv (ORCPT
+	id S1752557Ab1ITRsL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 13:48:11 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:50189 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752513Ab1ITRsI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 13:47:51 -0400
-Subject: [PATCH] perf event, POWER 6: L1 cache read and write access event
- code fix
-From: "Carl E. Love" <cel@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 20 Sep 2011 08:34:07 -0700
-Message-ID: <1316532847.20740.15.camel@oc5652146517.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
-Content-Transfer-Encoding: 7bit
-x-cbid: 11092017-2398-0000-0000-0000005C05AF
+	Tue, 20 Sep 2011 13:48:08 -0400
+Date: Tue, 20 Sep 2011 11:41:55 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, nicolas.pitre@linaro.org,
+        Olof Johansson <olof@lixom.net>, Shawn Guo <shawn.guo@linaro.org>,
+        Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
+        linux-tegra@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH REPOST 2/2] arm/dt: Tegra: Add support-8bit to SDHCI nodes
+Message-ID: <20110920174155.GG7781@ponder.secretlab.ca>
+References: <1316537186-26753-1-git-send-email-swarren@nvidia.com>
+ <1316537186-26753-2-git-send-email-swarren@nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1316537186-26753-2-git-send-email-swarren@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Sep 20, 2011 at 10:46:26AM -0600, Stephen Warren wrote:
+> For Seaboard's internal eMMC, this makes the difference between a
+> 5.5MB/s and 10.2MB/s transfer rate. On Harmony, there wasn't any
+> measurable difference on my cheap/slow ~2MB/s card.
+> 
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
 
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
 
-The current L1 cache read event code 0x80082 only counts for thread 0. The
-event code 0x280030 should be used to count events on thread 0 and 1. The
-patch fixes the event code for the L1 cache read.
-
-The current L1 cache write event code 0x80086 only counts for thread 0. The
-event code 0x180032 should be used to count events on thread 0 and 1. The
-patch fixes the event code for the L1 cache write.
-
-FYI, the documentation lists three event codes for the L1 cache read event
-and three event codes for the L1 cache write event.  The event description
-for the event codes is as follows:
-
-L1 cache read requests	0x80082  LSU 0 only
-L1 cache read requests	0x8008A  LSU 1 only
-L1 cache read requests	0x80030  LSU 1 or LSU 0, counter 2 only.
-
-L1 cache store requests	0x80086  LSU 0 only
-L1 cache store requests	0x8008E  LSU 1 only
-L1 cache store requests	0x80032  LSU 0 or LSU 1, counter 1 only.
-
-There can only be one request from either LSU 0 or 1 active at a time.
-
-Signed-off-by: Carl Love <cel@us.ibm.com>
----
- arch/powerpc/kernel/power6-pmu.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/powerpc/kernel/power6-pmu.c b/arch/powerpc/kernel/power6-pmu.c
-index 03b95e2..0bbc901 100644
---- a/arch/powerpc/kernel/power6-pmu.c
-+++ b/arch/powerpc/kernel/power6-pmu.c
-@@ -487,8 +487,8 @@ static int power6_generic_events[] = {
-  */
- static int power6_cache_events[C(MAX)][C(OP_MAX)][C(RESULT_MAX)] = {
- 	[C(L1D)] = {		/* 	RESULT_ACCESS	RESULT_MISS */
--		[C(OP_READ)] = {	0x80082,	0x80080		},
--		[C(OP_WRITE)] = {	0x80086,	0x80088		},
-+		[C(OP_READ)] = {	0x280030,	0x80080		},
-+		[C(OP_WRITE)] = {	0x180032,	0x80088		},
- 		[C(OP_PREFETCH)] = {	0x810a4,	0		},
- 	},
- 	[C(L1I)] = {		/* 	RESULT_ACCESS	RESULT_MISS */
--- 
-1.7.0.4
-
-
-
+> ---
+>  arch/arm/boot/dts/tegra-harmony.dts  |    1 +
+>  arch/arm/boot/dts/tegra-seaboard.dts |    4 ++++
+>  2 files changed, 5 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/boot/dts/tegra-harmony.dts b/arch/arm/boot/dts/tegra-harmony.dts
+> index e581866..0e225b8 100644
+> --- a/arch/arm/boot/dts/tegra-harmony.dts
+> +++ b/arch/arm/boot/dts/tegra-harmony.dts
+> @@ -66,5 +66,6 @@
+>  		cd-gpios = <&gpio 58 0>; /* gpio PH2 */
+>  		wp-gpios = <&gpio 59 0>; /* gpio PH3 */
+>  		power-gpios = <&gpio 70 0>; /* gpio PI6 */
+> +		support-8bit;
+>  	};
+>  };
+> diff --git a/arch/arm/boot/dts/tegra-seaboard.dts b/arch/arm/boot/dts/tegra-seaboard.dts
+> index 64cedca..a72299b 100644
+> --- a/arch/arm/boot/dts/tegra-seaboard.dts
+> +++ b/arch/arm/boot/dts/tegra-seaboard.dts
+> @@ -25,4 +25,8 @@
+>  		wp-gpios = <&gpio 57 0>; /* gpio PH1 */
+>  		power-gpios = <&gpio 70 0>; /* gpio PI6 */
+>  	};
+> +
+> +	sdhci@c8000600 {
+> +		support-8bit;
+> +	};
+>  };
+> -- 
+> 1.7.0.4
+> 
