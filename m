@@ -1,149 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752218Ab1ITO6Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 10:58:25 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:7444 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751609Ab1ITO6V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 10:58:21 -0400
-X-IronPort-AV: E=Sophos;i="4.68,411,1312182000"; 
-   d="scan'208";a="583305398"
-Message-ID: <4E78AA09.1000209@netapp.com>
-Date: Tue, 20 Sep 2011 10:58:17 -0400
-From: Bryan Schumaker <bjschuma@netapp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1752251Ab1ITO6r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 10:58:47 -0400
+Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:21751 "HELO
+	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751593Ab1ITO6p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 10:58:45 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: qyfaZlkVM1khvTqGRf.fz8GOCDPO2xLRclpmw6V_FWVnAqj
+ PJFMJ7YZYUNXVZFheiNWkB2vywyok1dJPcdtyuXfxai8TKgP__dnB.0eLU10
+ lMi2WmtZbje2t5bREfxrNWvvpVUplcurQx2hz4WUEMpyVZQbfVLluMPrU9K8
+ L_FGiAjQU8bUrL.VdBXEUQOSzBo652dM_Z9v33OgW2Ackwe7liCkZWztbk_w
+ UNFEHSOrmGaBQOCe2JcPAvw_EY7NjIUSEFxGEcONdlm6W_YRgUrGBX.Zza9j
+ CVZgu7nEfdH1VUIfl4iBYFpJI9Yds0lE8SRSxWswHzODC6C.omvW5LPyW4dn
+ KhALfk6hsqj1XJjArgf7FxzMpVEtlZbFrE6qyujvzS5uKkjM-
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 20 Sep 2011 09:58:41 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+X-X-Sender: cl@router.home
+To: Thomas Gleixner <tglx@linutronix.de>
+cc: Valdis.Kletnieks@vt.edu, Steven Rostedt <rostedt@goodmis.org>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [RFC][PATCH 0/5] Introduce checks for preemptable code for
+ this_cpu_read/write()
+In-Reply-To: <alpine.LFD.2.02.1109201549520.2723@ionos>
+Message-ID: <alpine.DEB.2.00.1109200957500.8056@router.home>
+References: <20110919212040.745370781@goodmis.org> <alpine.DEB.2.00.1109191644190.19059@router.home>            <1316487977.29966.32.camel@gandalf.stny.rr.com> <27409.1316522696@turing-police.cc.vt.edu> <alpine.LFD.2.02.1109201549520.2723@ionos>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-CC: Jeff Layton <jlayton@redhat.com>,
-        "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "davem@davemloft.net" <davem@davemloft.net>
-Subject: Re: [PATCH v5 1/8] SUNRPC: introduce helpers for reference counted
- rpcbind clients
-References: <20110920101031.9861.18444.stgit@localhost6.localdomain6>	<20110920101341.9861.51453.stgit@localhost6.localdomain6>	<4E7899E7.9090809@parallels.com> <20110920102431.58ca1d96@tlielax.poochiereds.net> <4E78A6A1.1000800@parallels.com>
-In-Reply-To: <4E78A6A1.1000800@parallels.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20/2011 10:43 AM, Stanislav Kinsbursky wrote:
-> 20.09.2011 18:24, Jeff Layton пишет:
->> On Tue, 20 Sep 2011 17:49:27 +0400
->> Stanislav Kinsbursky<skinsbursky@parallels.com>  wrote:
->>
->>> v5: fixed races with rpcb_users in rpcb_get_local()
->>>
->>> This helpers will be used for dynamical creation and destruction of rpcbind
->>> clients.
->>> Variable rpcb_users is actually a counter of lauched RPC services. If rpcbind
->>> clients has been created already, then we just increase rpcb_users.
->>>
->>> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
->>>
->>> ---
->>>    net/sunrpc/rpcb_clnt.c |   53 ++++++++++++++++++++++++++++++++++++++++++++++++
->>>    1 files changed, 53 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
->>> index e45d2fb..5f4a406 100644
->>> --- a/net/sunrpc/rpcb_clnt.c
->>> +++ b/net/sunrpc/rpcb_clnt.c
->>> @@ -114,6 +114,9 @@ static struct rpc_program    rpcb_program;
->>>    static struct rpc_clnt *    rpcb_local_clnt;
->>>    static struct rpc_clnt *    rpcb_local_clnt4;
->>>    +DEFINE_SPINLOCK(rpcb_clnt_lock);
->>> +unsigned int            rpcb_users;
->>> +
->>>    struct rpcbind_args {
->>>        struct rpc_xprt *    r_xprt;
->>>    @@ -161,6 +164,56 @@ static void rpcb_map_release(void *data)
->>>        kfree(map);
->>>    }
->>>    +static int rpcb_get_local(void)
->>> +{
->>> +    int cnt;
->>> +
->>> +    spin_lock(&rpcb_clnt_lock);
->>> +    if (rpcb_users)
->>> +        rpcb_users++;
->>> +    cnt = rpcb_users;
->>> +    spin_unlock(&rpcb_clnt_lock);
->>> +
->>> +    return cnt;
->>> +}
->>> +
->>> +void rpcb_put_local(void)
->>> +{
->>> +    struct rpc_clnt *clnt = rpcb_local_clnt;
->>> +    struct rpc_clnt *clnt4 = rpcb_local_clnt4;
->>> +    int shutdown;
->>> +
->>> +    spin_lock(&rpcb_clnt_lock);
->>> +    if (--rpcb_users == 0) {
->>> +        rpcb_local_clnt = NULL;
->>> +        rpcb_local_clnt4 = NULL;
->>> +    }
->>
->> In the function below, you mention that the above pointers are
->> protected by rpcb_create_local_mutex, but it looks like they get reset
->> here without that being held?
->>
-> 
-> Assigning of them is protected by rpcb_create_local_mutex.
-> Dereferencing of them is protected by rpcb_clnt_lock.
+On Tue, 20 Sep 2011, Thomas Gleixner wrote:
 
-Shouldn't you be using the same lock for assigning and dereferencing?  Otherwise one thread could change these variables while another is using them.
-> 
->> Might it be simpler to just protect rpcb_users with the
->> rpcb_create_local_mutex and ensure that it's held whenever you call one
->> of these routines? None of these are codepaths are particularly hot.
->>
-> 
-> I just inherited this lock-mutex logic.
-> Actually, you right. This codepaths are used rarely.
-> But are use sure, that we need to remove this "speed-up" logic if we take into account that it was here already?
-> 
->>> +    shutdown = !rpcb_users;
->>> +    spin_unlock(&rpcb_clnt_lock);
->>> +
->>> +    if (shutdown) {
->>> +        /*
->>> +         * cleanup_rpcb_clnt - remove xprtsock's sysctls, unregister
->>> +         */
->>> +        if (clnt4)
->>> +            rpc_shutdown_client(clnt4);
->>> +        if (clnt)
->>> +            rpc_shutdown_client(clnt);
->>> +    }
->>> +    return;
->>> +}
->>> +
->>> +static void rpcb_set_local(struct rpc_clnt *clnt, struct rpc_clnt *clnt4)
->>> +{
->>> +    /* Protected by rpcb_create_local_mutex */
->>> +    rpcb_local_clnt = clnt;
->>> +    rpcb_local_clnt4 = clnt4;
->>> +    rpcb_users++;
->>> +    dprintk("RPC:       created new rpcb local clients (rpcb_local_clnt: "
->>> +            "%p, rpcb_local_clnt4: %p)\n", rpcb_local_clnt,
->>> +            rpcb_local_clnt4);
->>> +}
->>> +
->>>    /*
->>>     * Returns zero on success, otherwise a negative errno value
->>>     * is returned.
->>> -- 
->>> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
->>
-> 
-> 
+> > What's the latency hit on those very few locations if we simply put our
+> > collective foot down and not support a preemptable version of this_cpu_*()?
+> > "Yes, you *could* preempt here, but for our collective sanity that's not
+> > supported"...
+>
+> Full ack.
+
+Latency hit could be very significant in various critical kernel paths.
+Especially network subsystem, vm event counters etc.
 
