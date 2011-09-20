@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751881Ab1ITPnG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 11:43:06 -0400
-Received: from mtagate1.uk.ibm.com ([194.196.100.161]:54168 "EHLO
-	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750806Ab1ITPnE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 11:43:04 -0400
-Date: Tue, 20 Sep 2011 16:42:59 +0100
-From: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Hugh Dickins <hughd@google.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v5 3.1.0-rc4-tip 1/26]   uprobes: Auxillary routines to
- insert, find, delete uprobes
-Message-ID: <20110920154259.GA25610@stefanha-thinkpad.localdomain>
-References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com>
- <20110920115949.25326.2469.sendpatchset@srdronam.in.ibm.com>
+	id S1752107Ab1ITPoK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 11:44:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31692 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751295Ab1ITPoJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 11:44:09 -0400
+Date: Tue, 20 Sep 2011 17:40:15 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        lkml <linux-kernel@vger.kernel.org>, richard@nod.at,
+        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 1/2] creds: kill __task_cred()->task_is_dead() check
+Message-ID: <20110920154015.GB17731@redhat.com>
+References: <20110919214531.GA18085@sergelap> <20110920122202.GA26504@redhat.com> <20110920124419.GA10759@hallyn.com> <20110920134108.GA30749@redhat.com> <20110920143920.GA15859@redhat.com> <20110920143942.GB15859@redhat.com> <20110920152816.GD2380@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110920115949.25326.2469.sendpatchset@srdronam.in.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110920152816.GD2380@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 20, 2011 at 05:29:49PM +0530, Srikar Dronamraju wrote:
-> +static void delete_uprobe(struct uprobe *uprobe)
-> +{
-> +	unsigned long flags;
-> +
-> +	spin_lock_irqsave(&uprobes_treelock, flags);
-> +	rb_erase(&uprobe->rb_node, &uprobes_tree);
-> +	spin_unlock_irqrestore(&uprobes_treelock, flags);
-> +	put_uprobe(uprobe);
-> +	iput(uprobe->inode);
+On 09/20, Paul E. McKenney wrote:
+>
+> On Tue, Sep 20, 2011 at 04:39:42PM +0200, Oleg Nesterov wrote:
+> >
+> > --- 3.1/include/linux/cred.h~1_kill_task_is_dead	2011-09-20 16:28:22.000000000 +0200
+> > +++ 3.1/include/linux/cred.h	2011-09-20 16:28:47.000000000 +0200
+> > @@ -284,8 +284,7 @@ static inline void put_cred(const struct
+> >  #define __task_cred(task)						\
+> >  	({								\
+> >  		const struct task_struct *__t = (task);			\
+> > -		rcu_dereference_check(__t->real_cred,			\
+> > -				      task_is_dead(__t));		\
+> > +		rcu_dereference_check(__t->real_cred, 0);		\
+>
+> The "0" above will make lockdep-RCU complain unconditionally.  My guess
+> is that you want rcu_dereference_raw().
 
-Use-after-free when put_uprobe() kfrees() the uprobe?
+Hmm. I hope you are wrong this time ;)
 
-Stefan
+rcu_dereference_check() checks rcu_read_lock_held(). IOW, with this
+change __task_cred() always requires rcu_read_lock(), and this is
+what the patch wants.
+
+The next one adds " || (task == current" to the rcu_read_lock_held()
+check above.
+
+Oleg.
+
