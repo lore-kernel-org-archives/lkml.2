@@ -1,122 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752671Ab1ITQTG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 12:19:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37225 "EHLO mx2.suse.de"
+	id S1752802Ab1ITQUR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 12:20:17 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:26372 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752576Ab1ITQTE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 12:19:04 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Sep 20 09:17:36 2011
-Message-Id: <20110920161736.016670749@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Tue, 20 Sep 2011 09:16:13 -0700
-From: Greg KH <gregkh@suse.de>
-To: Matthew Garrett <mjg@redhat.com>, Greg KH <greg@kroah.com>
-Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Herrmann <dh.herrmann@googlemail.com>,
-        Jason Stubbs <jasonbstubbs@gmail.com>
-Subject: [patch 6/8] Platform: Brightness quirk for samsung laptop driver
-In-Reply-To: <20110920161743.GA32737@kroah.com>
+	id S1750932Ab1ITQUP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 12:20:15 -0400
+Message-ID: <4E78BD31.8090509@parallels.com>
+Date: Tue, 20 Sep 2011 20:20:01 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Lightning/1.0b2 Thunderbird/3.1.13
+MIME-Version: 1.0
+To: Jeff Layton <jlayton@redhat.com>
+CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "davem@davemloft.net" <davem@davemloft.net>
+Subject: Re: [PATCH v5 1/8] SUNRPC: introduce helpers for reference counted
+ rpcbind clients
+References: <20110920101031.9861.18444.stgit@localhost6.localdomain6>	<20110920101341.9861.51453.stgit@localhost6.localdomain6>	<4E7899E7.9090809@parallels.com>	<20110920102431.58ca1d96@tlielax.poochiereds.net>	<4E78A6A1.1000800@parallels.com> <20110920111112.3f07cd6e@tlielax.poochiereds.net>
+In-Reply-To: <20110920111112.3f07cd6e@tlielax.poochiereds.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jason Stubbs <jasonbstubbs@gmail.com>
+20.09.2011 19:11, Jeff Layton пишет:
+>
+> In general, it's difficult to get locking right, especially when you
+> start mixing multiple locks on related resources. Personally, I'd go
+> with a simpler scheme here. There's not much value in protecting this
+> counter with a spinlock when the other parts need to be protected by a
+> mutex. If you do decide to do it with multiple locks, then please do
+> document in comments how the locking is expected to work.
+>
+> An alternate scheme might be to consider doing this with krefs, but I
+> haven't really considered whether that idiom makes sense here.
+>
 
-On some Samsung laptops the brightness regulation works slightly different.
-All SABI commands except for set_brightness work as expected. The behaviour
-of set_brightness is as follows:
+Jeff, please, have a look at my answer to Bryan Schumaker.
+Does it allay your apprehensions?
 
-- Setting a new brightness will only step one level toward the new brightness
-  level. For example, setting a level of 5 when the current level is 2 will
-  result in a brightness level of 3.
-- A spurious KEY_BRIGHTNESS_UP or KEY_BRIGHTNESS_DOWN event is also generated
-  along with the change in brightness.
-- Neither of the above two issues occur when changing from/to brightness
-  level 0.
-
-This patch adds detection and a non-intrusive workaround for the above issues.
-
-Signed-off-by: Jason Stubbs <jasonbstubbs@gmail.com>
-Tested-by: David Herrmann <dh.herrmann@googlemail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/platform/x86/samsung-laptop.c |   43 ++++++++++++++++++++++++++++++++++
- 1 file changed, 43 insertions(+)
-
---- a/drivers/platform/x86/samsung-laptop.c
-+++ b/drivers/platform/x86/samsung-laptop.c
-@@ -226,6 +226,7 @@ static struct backlight_device *backligh
- static struct mutex sabi_mutex;
- static struct platform_device *sdev;
- static struct rfkill *rfk;
-+static bool has_stepping_quirk;
- 
- static int force;
- module_param(force, bool, 0);
-@@ -382,6 +383,17 @@ static void set_brightness(u8 user_brigh
- {
- 	u8 user_level = user_brightness + sabi_config->min_brightness;
- 
-+	if (has_stepping_quirk && user_level != 0) {
-+		/*
-+		 * short circuit if the specified level is what's already set
-+		 * to prevent the screen from flickering needlessly
-+		 */
-+		if (user_brightness == read_brightness())
-+			return;
-+
-+		sabi_set_command(sabi_config->commands.set_brightness, 0);
-+	}
-+
- 	sabi_set_command(sabi_config->commands.set_brightness, user_level);
- }
- 
-@@ -390,6 +402,34 @@ static int get_brightness(struct backlig
- 	return (int)read_brightness();
- }
- 
-+static void check_for_stepping_quirk(void)
-+{
-+	u8 initial_level = read_brightness();
-+	u8 check_level;
-+
-+	/*
-+	 * Some laptops exhibit the strange behaviour of stepping toward
-+	 * (rather than setting) the brightness except when changing to/from
-+	 * brightness level 0. This behaviour is checked for here and worked
-+	 * around in set_brightness.
-+	 */
-+
-+	if (initial_level <= 2)
-+		check_level = initial_level + 2;
-+	else
-+		check_level = initial_level - 2;
-+
-+	has_stepping_quirk = false;
-+	set_brightness(check_level);
-+
-+	if (read_brightness() != check_level) {
-+		has_stepping_quirk = true;
-+		pr_info("enabled workaround for brightness stepping quirk\n");
-+	}
-+
-+	set_brightness(initial_level);
-+}
-+
- static int update_status(struct backlight_device *bd)
- {
- 	set_brightness(bd->props.brightness);
-@@ -823,6 +863,9 @@ static int __init samsung_init(void)
- 		}
- 	}
- 
-+	/* Check for stepping quirk */
-+	check_for_stepping_quirk();
-+
- 	/* knock up a platform device to hang stuff off of */
- 	sdev = platform_device_register_simple("samsung", -1, NULL, 0);
- 	if (IS_ERR(sdev))
-
-
+-- 
+Best regards,
+Stanislav Kinsbursky
