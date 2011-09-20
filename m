@@ -1,31 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751314Ab1ITPLv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 11:11:51 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:62269 "EHLO
+	id S1750924Ab1ITPQM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 11:16:12 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:42095 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751153Ab1ITPLt (ORCPT
+	with ESMTP id S1750751Ab1ITPQL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 11:11:49 -0400
-X-Authority-Analysis: v=1.1 cv=agqPq5NoKwAPC9P66H7dbYUCjxvmT73as08i4x3aqAA= c=1 sm=0 a=6qbAnu_Q0HoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=mnedE9GFYZFcAmsd1zkA:9 a=7jNFa3_RlBXR0cOYIZUA:7 a=PUjeQqilurYA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
+	Tue, 20 Sep 2011 11:16:11 -0400
+X-Authority-Analysis: v=1.1 cv=cSzO76bR5tCkfUT9bEmBgR3d7VUusRLeq08eKGxa4EU= c=1 sm=0 a=6qbAnu_Q0HoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=KRJPN9EQwMRj6goULc0A:9 a=cJRSa4pm1uBFkfS6-4cA:7 a=PUjeQqilurYA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.83.30
 Subject: Re: [RFC][PATCH 2/5] mm: Switch mod_state() to __this_cpu_read()
 From: Steven Rostedt <rostedt@goodmis.org>
 To: Christoph Lameter <cl@gentwo.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Peter Zijlstra <peterz@infradead.org>,
-        Christoph Lameter <cl@linux.com>, Tejun Heo <htejun@gmail.com>
-In-Reply-To: <alpine.DEB.2.00.1109200947100.8056@router.home>
+        Christoph Lameter <cl@linux.com>
+In-Reply-To: <alpine.DEB.2.00.1109200940240.8056@router.home>
 References: <20110919212040.745370781@goodmis.org>
 	 <20110919212640.688732950@goodmis.org>
 	 <alpine.DEB.2.00.1109191657150.19059@router.home>
-	 <alpine.LFD.2.02.1109201334590.2723@ionos>
-	 <alpine.DEB.2.00.1109200947100.8056@router.home>
+	 <1316476089.29966.9.camel@gandalf.stny.rr.com>
+	 <alpine.DEB.2.00.1109200940240.8056@router.home>
 Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 20 Sep 2011 11:11:45 -0400
-Message-ID: <1316531505.29966.57.camel@gandalf.stny.rr.com>
+Date: Tue, 20 Sep 2011 11:16:09 -0400
+Message-ID: <1316531769.29966.61.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.3 
 Content-Transfer-Encoding: 7bit
@@ -33,57 +34,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-09-20 at 09:51 -0500, Christoph Lameter wrote:
+On Tue, 2011-09-20 at 09:46 -0500, Christoph Lameter wrote:
 
-> I see that __this_cpu_xx operations may not work as intended in
-> preemptable contexts and there we could have more changes.
+> The effects on just reading are not that severe. We may calculate the
+> address of the per cpu variable on one cpu and then be migrated to another
+> processor. Then there is an access to the per cpu area of another
+> processor which in many cases is harmless and will just cause the
+> cacheline to go from exclusive mode into shared mode on the other cpu. The
+> next write by the other cpu then brings it back to exclusive mode evicting
+> the cacheline from the cpu we migrated to.
 
-Then why do you use it in slub.c?
-
-in mm/slab.c slab_alloc():
-
-redo:
-
-	/*
-	 * Must read kmem_cache cpu data via this cpu ptr. Preemption is
-	 * enabled. We may switch back and forth between cpus while
-	 * reading from one cpu area. That does not matter as long
-	 * as we end up on the original cpu again when doing the cmpxchg.
-	 */
-	c = __this_cpu_ptr(s->cpu_slab);
-
-The __this_cpu_*() is in preempt enabled location. In fact, the three
-this_cpu_write()'s in acquire_slab() is done within a spinlock and thus
-with preemption disabled.
+Then what protects another process from touching that same CPU variable?
+Looks very error prone to me.
 
 > 
-> this_cpu ops are single instructions that do not guarantee any consistency
-> with other this_cpu_ops. If you want consistency (same per cpu area data)
-> then preemption needs to be disabled.
+> The same conventions are also used for RMV instructions like this_cpu_inc.
+> In that case the situation is much more sever. Now we are locklessly
+> incrementing a counter in the per cpu area of another cpu. That is a race
+> condition that can corrupt the counter data.
 
-The point is, people get it wrong all the time. In fact, we should
-really require that ALL USES of this_cpu_*() must be with preemption
-disabled. Regardless. Because anytime you touch a per cpu variable,
-there's usually a reason that it is on the cpu you are on. If you don't
-have preemption disabled (and I don't count the silly:
+If you read a per cpu variable with simple this_cpu_read() and then make
+a decision based on that variable, it may be useless in the process if
+you migrate.
 
-#define _this_cpu_generic_read(pcp)					\
-({	typeof(pcp) ret__;						\
-	preempt_disable();						\
-	ret__ = *this_cpu_ptr(&(pcp));					\
-	preempt_enable();						\
-	ret__;								\
-})
+> 
+> > The point is, most places use this_cpu_read(). Adding a "__" or "raw_"
+> > prefix usually means that less checks are done. Think of the
+> > copy_from_user(). You have __copy_from_user() that does less checks.
+> 
+> Why do you need any checks there? this_cpu_xxx operations should take care
+> of preemption.
 
-Which is totally useless), there's probably a bug somewhere in there.
-Just like the code in memcg.
+NO IT DOES NOT!!!! Look at the damn memcg bug and figure it out!
 
-Monkeying around with per cpu data is tricky. If you start doing it in
-preempt enabled code, you are most certainly about to get it wrong. Why
-have this super optimization. A preempt_disable() is a single operation
-that touches cache hot data.
+> 
+> > Most of the per_cpu() and get_cpu_var() code was blindly replaced with
+> > the this_cpu_*() variants. The original code had preemption disabled
+> > checks. Now they don't. Which means if you use the this_cpu_read() and
+> > then make some decision on it, that read may be useless and buggy.
+> >
+> > We have smp_processor_id() that does the check (and the old per_cpu()
+> > and get_cpu_var()). Now we have this_cpu_read() which replaced most of
+> > the per_cpu() code in the kernel, making them vulnerable to bugs when
+> > preemption is enabled.
+> 
+> this_cpu_xx can only replace a get_cpu_var/per_cpu section where a single
+> word is read or updated. If multiple per cpu variables are accessed and
+> modified in one go then it is better to keep disabling preemption for
+> the whole section and use the __this_cpu_xx operations.
 
-I say nuke all users of preempt_enabled per_cpu touching, and be safe.
+And that is what __get_cpu_var() is for.
+
+> 
+> If there are cases where this was not done correctly then lets fix those.
+
+Lets not let this happen in the first place! There's absolutely no
+advantage of not disabling preemption for a period of time while per cpu
+variables are being used. If we annotate this properly, then the -rt
+kernel could handle this in other ways too, to not keep the latency of
+preemption off too long.
 
 -- Steve
 
