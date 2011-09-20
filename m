@@ -1,111 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751410Ab1ITNtn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 09:49:43 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:23206 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751326Ab1ITNtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 09:49:41 -0400
-Message-ID: <4E7899E7.9090809@parallels.com>
-Date: Tue, 20 Sep 2011 17:49:27 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Lightning/1.0b2 Thunderbird/3.1.13
+	id S1751429Ab1ITNvj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 09:51:39 -0400
+Received: from www.linutronix.de ([62.245.132.108]:37870 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750917Ab1ITNvi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 09:51:38 -0400
+Date: Tue, 20 Sep 2011 15:51:32 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Valdis.Kletnieks@vt.edu
+cc: Steven Rostedt <rostedt@goodmis.org>, Christoph Lameter <cl@gentwo.org>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [RFC][PATCH 0/5] Introduce checks for preemptable code for
+ this_cpu_read/write()
+In-Reply-To: <27409.1316522696@turing-police.cc.vt.edu>
+Message-ID: <alpine.LFD.2.02.1109201549520.2723@ionos>
+References: <20110919212040.745370781@goodmis.org> <alpine.DEB.2.00.1109191644190.19059@router.home>            <1316487977.29966.32.camel@gandalf.stny.rr.com> <27409.1316522696@turing-police.cc.vt.edu>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>
-CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "davem@davemloft.net" <davem@davemloft.net>
-Subject: Re: [PATCH v5 1/8] SUNRPC: introduce helpers for reference counted
- rpcbind clients
-References: <20110920101031.9861.18444.stgit@localhost6.localdomain6> <20110920101341.9861.51453.stgit@localhost6.localdomain6>
-In-Reply-To: <20110920101341.9861.51453.stgit@localhost6.localdomain6>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v5: fixed races with rpcb_users in rpcb_get_local()
+On Tue, 20 Sep 2011, Valdis.Kletnieks@vt.edu wrote:
 
-This helpers will be used for dynamical creation and destruction of rpcbind
-clients.
-Variable rpcb_users is actually a counter of lauched RPC services. If rpcbind
-clients has been created already, then we just increase rpcb_users.
+> On Mon, 19 Sep 2011 23:06:17 EDT, Steven Rostedt said:
+> 
+> > It is really confusing to know which version to use. I'm confused by the
+> > this_cpu_*() compared with __this_cpu_*(). I'm guessing that most places
+> > should use __this_cpu*(). But really this_cpu() should be the default,
+> > and the places that can have it outside of preemption should have
+> > another name. Maybe use the raw_this_cpu() or safe_this_cpu(), as there
+> > is an irqsafe_this_cpu(). Maybe make a preemptsafe_cpu_*(). There should
+> > only be a very few locations that are OK to have preemption enabled when
+> > calling the this_cpu() code. Lets have those have the funny names and
+> > not be the default "this_cpu_*()".
+> 
+> What's the latency hit on those very few locations if we simply put our
+> collective foot down and not support a preemptable version of this_cpu_*()?
+> "Yes, you *could* preempt here, but for our collective sanity that's not
+> supported"...
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Full ack.
+ 
+> > All this_cpu*() code, except the funny named ones, should make sure
+> > preemption is disabled, otherwise give a nasty warning. As that is
+> > usually a bug if you are using a per cpu variable and can migrate away.
+> > The next reference to that value may be incorrect.
+> 
+> You get a much prettier diffstat if you just nuke the funny named ones. ;)
 
----
-  net/sunrpc/rpcb_clnt.c |   53 ++++++++++++++++++++++++++++++++++++++++++++++++
-  1 files changed, 53 insertions(+), 0 deletions(-)
+Along with the maze of completely unused incarnations.
+ 
+> But of course it's early morning and I'm still caffeine-deficient and probably
+> overlooking some crucial use case. ;)
 
-diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
-index e45d2fb..5f4a406 100644
---- a/net/sunrpc/rpcb_clnt.c
-+++ b/net/sunrpc/rpcb_clnt.c
-@@ -114,6 +114,9 @@ static struct rpc_program	rpcb_program;
-  static struct rpc_clnt *	rpcb_local_clnt;
-  static struct rpc_clnt *	rpcb_local_clnt4;
-  +DEFINE_SPINLOCK(rpcb_clnt_lock);
-+unsigned int			rpcb_users;
-+
-  struct rpcbind_args {
-  	struct rpc_xprt *	r_xprt;
-  @@ -161,6 +164,56 @@ static void rpcb_map_release(void *data)
-  	kfree(map);
-  }
-  +static int rpcb_get_local(void)
-+{
-+	int cnt;
-+
-+	spin_lock(&rpcb_clnt_lock);
-+	if (rpcb_users)
-+		rpcb_users++;
-+	cnt = rpcb_users;
-+	spin_unlock(&rpcb_clnt_lock);
-+
-+	return cnt;
-+}
-+
-+void rpcb_put_local(void)
-+{
-+	struct rpc_clnt *clnt = rpcb_local_clnt;
-+	struct rpc_clnt *clnt4 = rpcb_local_clnt4;
-+	int shutdown;
-+
-+	spin_lock(&rpcb_clnt_lock);
-+	if (--rpcb_users == 0) {
-+		rpcb_local_clnt = NULL;
-+		rpcb_local_clnt4 = NULL;
-+	}
-+	shutdown = !rpcb_users;
-+	spin_unlock(&rpcb_clnt_lock);
-+
-+	if (shutdown) {
-+		/*
-+		 * cleanup_rpcb_clnt - remove xprtsock's sysctls, unregister
-+		 */
-+		if (clnt4)
-+			rpc_shutdown_client(clnt4);
-+		if (clnt)
-+			rpc_shutdown_client(clnt);
-+	}
-+	return;
-+}
-+
-+static void rpcb_set_local(struct rpc_clnt *clnt, struct rpc_clnt *clnt4)
-+{
-+	/* Protected by rpcb_create_local_mutex */
-+	rpcb_local_clnt = clnt;
-+	rpcb_local_clnt4 = clnt4;
-+	rpcb_users++;
-+	dprintk("RPC:       created new rpcb local clients (rpcb_local_clnt: "
-+			"%p, rpcb_local_clnt4: %p)\n", rpcb_local_clnt,
-+			rpcb_local_clnt4);
-+}
-+
-  /*
-   * Returns zero on success, otherwise a negative errno value
-   * is returned.
+I doubt that.
+
+Thanks,
+
+	tglx
