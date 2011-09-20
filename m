@@ -1,88 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751981Ab1ITGoD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 02:44:03 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:40546 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750735Ab1ITGoB (ORCPT
+	id S1752038Ab1ITGrA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 02:47:00 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:58164 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750735Ab1ITGq6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 02:44:01 -0400
-Subject: Re: [PATCH V3] mtd: Add DiskOnChip G3 support
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Robert Jarzmik <robert.jarzmik@free.fr>
-Cc: dwmw2@infradead.org, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 20 Sep 2011 09:46:37 +0300
-In-Reply-To: <1316454213-22559-1-git-send-email-robert.jarzmik@free.fr>
-References: <1316454213-22559-1-git-send-email-robert.jarzmik@free.fr>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1316501205.4849.36.camel@sauron>
+	Tue, 20 Sep 2011 02:46:58 -0400
+Date: Tue, 20 Sep 2011 16:46:49 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>
+Subject: linux-next: manual merge of the staging tree with Linus' tree
+Message-Id: <20110920164649.b22e95cf65f4678da99a0a81@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__20_Sep_2011_16_46_49_+1000_AA=219hnXcLXvndo"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I really feel unsure about merging this driver because no one reviewed
-it. On the surface it does look neat, though. Could you please CC lkml
-on next submission?
+--Signature=_Tue__20_Sep_2011_16_46_49_+1000_AA=219hnXcLXvndo
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, 2011-09-19 at 19:43 +0200, Robert Jarzmik wrote:
-> +static void doc_delay(struct docg3 *docg3, int nbNOPs)
-> +{
-> +	int i;
-> +
-> +	doc_dbg("NOP x %d\n", nbNOPs);
-> +	for (i = 0; i < nbNOPs; i++)
-> +		doc_writeb(0, DoC_NOP);
-> +}
+Hi Greg,
 
-Why you implement dalaying this way, instead of using udelay/mdelay?
+Today's linux-next merge of the staging tree got a conflict in
+drivers/staging/comedi/drivers/ni_labpc.c between commit c19cc78efe92
+("staging: fix comedi build when ISA_DMA_API is enabled but COMEDI_PCI is
+not enabled") from Linus' tree and commit d6aa8366dde1 ("staging: fix
+comedi build errors") from the staging tree.
 
-> +static int doc_wait_ready(struct docg3 *docg3)
-> +{
-> +	int maxWaitCycles = 100;
-> +
-> +	do {
-> +		doc_delay(docg3, 4);
-> +	} while (!doc_is_ready(docg3) && maxWaitCycles--);
-> +	doc_delay(docg3, 2);
-> +	if (maxWaitCycles > 0)
-> +		return 0;
-> +	else
-> +		return -EIO;
-> +}
+I have used the version from Linus' tree.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-There are things like cpu_relax() which are used in busy-loops - did you
-look at those?
+--Signature=_Tue__20_Sep_2011_16_46_49_+1000_AA=219hnXcLXvndo
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-> +/*
-> + * Debug sysfs entries
-> + */
-> +#ifdef CONFIG_DEBUG_FS
+iQEcBAEBAgAGBQJOeDbZAAoJEDMEi1NhKgbsT/UIAICZIXe5DABxlRKizz7ep0Ja
+A/DU2LVgDAPYuJBves/DqJj9C14zCP719WXDu2N+ZR/9DPwwwZfr5sXPxjGKvUtT
+7a71IqOVC/OEWBqZ0IOuZKUPzutKtzFK3HLcUAbb5cpComxZ6XiSlMGSC5aVcEba
+bacX+UgrqhNiYF4Dw8VW3APGXxYCHEmJoWdhP/2E8hvM5nr4F+goU5Z3pGC+5O7S
+kDgeGHB8qX+sz/8H4EDsiwtgGT34nriWlwq2dBm1EjG+C1kO0rmBqgLmhV/fWvCI
+xyqXkVEMa3WhuQfps/buZxZZtgTvxVjYjMBPClyooIBmmDwTPtvtrGhSUIKhd/M=
+=QYt8
+-----END PGP SIGNATURE-----
 
-You do not need to use CONFIG_DEBUG_FS - debugfs makes all calls to be
-noop if it is not present.
-
-Either remove all macros or use DEBUG
-
-> +#define DEBUGFS_RO_ATTR(name, show_fct) \
-> +	static int name##_open(struct inode *inode, struct file *file) \
-> +	{ return single_open(file, show_fct, inode->i_private); }      \
-> +	static const struct file_operations name##_fops = { \
-> +		.owner = THIS_MODULE, \
-> +		.open = name##_open, \
-> +		.llseek = seq_lseek, \
-> +		.read = seq_read, \
-> +		.release = single_release \
-> +	};
-
-Hmm, looks like something which should be generic, not DoC-specific.
-
--- 
-Best Regards,
-Artem Bityutskiy
-
+--Signature=_Tue__20_Sep_2011_16_46_49_+1000_AA=219hnXcLXvndo--
