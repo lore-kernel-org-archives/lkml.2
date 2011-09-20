@@ -1,154 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751216Ab1ITNfG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 09:35:06 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:5870 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751114Ab1ITNfE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 09:35:04 -0400
-Message-ID: <4E789679.1060601@parallels.com>
-Date: Tue, 20 Sep 2011 17:34:49 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Lightning/1.0b2 Thunderbird/3.1.13
-MIME-Version: 1.0
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-CC: "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "davem@davemloft.net" <davem@davemloft.net>
-Subject: Re: [PATCH v4 1/8] SUNRPC: introduce helpers for reference counted
- rpcbind clients
-References: <20110920101031.9861.18444.stgit@localhost6.localdomain6> <20110920101341.9861.51453.stgit@localhost6.localdomain6> <4E788F8C.20103@netapp.com> <2E1EB2CF9ED1CB4AA966F0EB76EAB4430B47FD10@SACMVEXC2-PRD.hq.netapp.com>
-In-Reply-To: <2E1EB2CF9ED1CB4AA966F0EB76EAB4430B47FD10@SACMVEXC2-PRD.hq.netapp.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1751096Ab1ITNmH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 09:42:07 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:47979 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750747Ab1ITNmF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 09:42:05 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Evgeniy Polyakov <zbr@ioremap.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: POHMELFS is back
+In-Reply-To: Your message of "Tue, 20 Sep 2011 09:58:12 +0400."
+             <20110920055812.GA7910@ioremap.net>
+From: Valdis.Kletnieks@vt.edu
+References: <20110919061302.GA19699@ioremap.net> <9891.1316455851@turing-police.cc.vt.edu>
+            <20110920055812.GA7910@ioremap.net>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1316526117_2734P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Tue, 20 Sep 2011 09:41:57 -0400
+Message-ID: <29686.1316526117@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020201.4E789828.0120,ss=1,fgs=0,
+	ip=71.62.120.57,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-20.09.2011 17:15, Myklebust, Trond пишет:
->> -----Original Message-----
->> From: Schumaker, Bryan
->> Sent: Tuesday, September 20, 2011 9:05 AM
->> To: Stanislav Kinsbursky
->> Cc: Myklebust, Trond; linux-nfs@vger.kernel.org; xemul@parallels.com;
->> neilb@suse.de; netdev@vger.kernel.org; linux-kernel@vger.kernel.org;
->> bfields@fieldses.org; davem@davemloft.net
->> Subject: Re: [PATCH v4 1/8] SUNRPC: introduce helpers for reference
->> counted rpcbind clients
->>
->> On 09/20/2011 06:13 AM, Stanislav Kinsbursky wrote:
->>> This helpers will be used for dynamical creation and destruction of
->>> rpcbind clients.
->>> Variable rpcb_users is actually a counter of lauched RPC services. If
->>> rpcbind clients has been created already, then we just increase rpcb_users.
->>>
->>> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
->>>
->>> ---
->>>   net/sunrpc/rpcb_clnt.c |   50
->> ++++++++++++++++++++++++++++++++++++++++++++++++
->>>   1 files changed, 50 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c index
->>> e45d2fb..8724780 100644
->>> --- a/net/sunrpc/rpcb_clnt.c
->>> +++ b/net/sunrpc/rpcb_clnt.c
->>> @@ -114,6 +114,9 @@ static struct rpc_program	rpcb_program;
->>>   static struct rpc_clnt *	rpcb_local_clnt;
->>>   static struct rpc_clnt *	rpcb_local_clnt4;
->>>
->>> +DEFINE_SPINLOCK(rpcb_clnt_lock);
->>> +unsigned int			rpcb_users;
->>> +
->>>   struct rpcbind_args {
->>>   	struct rpc_xprt *	r_xprt;
->>>
->>> @@ -161,6 +164,53 @@ static void rpcb_map_release(void *data)
->>>   	kfree(map);
->>>   }
->>>
->>> +static int rpcb_get_local(void)
->>> +{
->>> +	spin_lock(&rpcb_clnt_lock);
->>> +	if (rpcb_users)
->>> +		rpcb_users++;
->>> +	spin_unlock(&rpcb_clnt_lock);
->>> +
->>> +	return rpcb_users;
->>          ^^^^^^^^^^^^^^^^^^
->> Is it safe to use this variable outside of the rpcb_clnt_lock?
->>
-> Nope. If rpcb_users was zero in the protected section above, nothing guarantees that it will still be zero here, and so the caller may get the (wrong) impression that the counter was incremented.
+--==_Exmh_1316526117_2734P
+Content-Type: text/plain; charset=us-ascii
+
+On Tue, 20 Sep 2011 09:58:12 +0400, Evgeniy Polyakov said:
+> On Mon, Sep 19, 2011 at 02:10:51PM -0400, Valdis.Kletnieks@vt.edu (Valdis.Kletnieks@vt.edu) wrote:
+> > On Mon, 19 Sep 2011 10:13:02 +0400, Evgeniy Polyakov said:
+> > > more that 4 Gb/s of bandwidth from each datacenter,
+> > Also not at all impressive per-node if we're talking an average of 50 nodes per
+> > data center.  I'm currently waiting for some 10GigE to be provisioned at the
+> > moment because we're targeting close to a giga*byte*/sec per server.
 >
+> If you get 10 times more bandwidth you will not be able to saturate it
+> with 10 times less servers.
 
-Yep, you right. Will fix this races.
+The point is that the solutions we're looking at are able to drive enough I/O
+*per server* that we need to look at 10GigE and Infiniband connections. Your
+numbers currently indicate about 5T of disk and 75 megabit of throughput per
+node, while current solutions are doing about 100T and pushing a 10GigE per
+node.  So you have a *lot* of per-server scaling work to do still...
 
->>> +}
->>> +
->>> +void rpcb_put_local(void)
->>> +{
->>> +	struct rpc_clnt *clnt = rpcb_local_clnt;
->>> +	struct rpc_clnt *clnt4 = rpcb_local_clnt4;
->>> +	int shutdown;
->>> +
->>> +	spin_lock(&rpcb_clnt_lock);
->>> +	if (--rpcb_users == 0) {
->>> +		rpcb_local_clnt = NULL;
->>> +		rpcb_local_clnt4 = NULL;
->>> +	}
->>> +	shutdown = !rpcb_users;
->>> +	spin_unlock(&rpcb_clnt_lock);
->>> +
->>> +	if (shutdown) {
->>> +		/*
->>> +		 * cleanup_rpcb_clnt - remove xprtsock's sysctls, unregister
->>> +		 */
->>> +		if (clnt4)
->>> +			rpc_shutdown_client(clnt4);
->>> +		if (clnt)
->>> +			rpc_shutdown_client(clnt);
->>> +	}
->>> +	return;
->>> +}
->>> +
->>> +static void rpcb_set_local(struct rpc_clnt *clnt, struct rpc_clnt
->>> +*clnt4) {
->>> +	/* Protected by rpcb_create_local_mutex */
->
-> Doesn't it  need to be protected by rpcb_clnt_lock too?
->
+>                                              Scaling to hundreds of server nodes is a
+> good result, since we evenly balance all IO between nodes and no single
+> server is disk or network bound.
 
-Nope from my pow. It's protected by rpcb_create_local_mutex. I.e. no one will 
-change rpcb_users since it's zero. If it's non zero - we willn't get to 
-rpcb_set_local().
+You missed the point. Scaling to hundreds of server nodes is a nice
+*theoretical* result, but one that's not going to get a lot of traction out in
+the real world, where the *per server* scaling matters too.  Which is my boss
+more likely to be willing to spend money on - a solution that has 50 servers
+per datacenter to deliver 4 Gb/sec per data center, or one that is delivering
+that much *per server*? Remember - servers cost money, rack space costs money,
+hardware maintenance contracts cost money, electricity and cooling cost money ,
+network connectivity costs money, sysadmin time to manage each node costs money
+- so in the real world, the solution that uses the smallest number of servers
+to get to the target aggregate is probably going to win.
 
->>> +	rpcb_local_clnt = clnt;
->>> +	rpcb_local_clnt4 = clnt4;
->>> +	rpcb_users++;
-> ^^^^^^^^^^^^^^^^^^^
->
->>> +	dprintk("RPC:       created new rpcb local clients (rpcb_local_clnt: "
->>> +			"%p, rpcb_local_clnt4: %p)\n", rpcb_local_clnt,
->>> +			rpcb_local_clnt4);
->>> +}
->>> +
->>>   /*
->>>    * Returns zero on success, otherwise a negative errno value
->>>    * is returned.
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-nfs"
->>> in the body of a message to majordomo@vger.kernel.org More
->> majordomo
->>> info at  http://vger.kernel.org/majordomo-info.html
->
-> �{.n�+�������+%��lzwm��b�맲��r��zX��߲)���w*jg��������ݢj/���z�ޖ��2�ޙ���&�)ߡ�a�����G���h��j:+v���w�٥
+Looked at differently - if I'm currently targeting multiple gigabytes/sec throughput
+to a petabyte of disk from a half-dozen servers, how big and fast a disk farm
+could I build if I had 50 servers in the room, or 200 across datacenters?
 
+--==_Exmh_1316526117_2734P
+Content-Type: application/pgp-signature
 
--- 
-Best regards,
-Stanislav Kinsbursky
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFOeJglcC3lWbTT17ARAqg0AKCJDlwB75Sk4dhd9glDj35UrAIUZQCg15+H
+Z3Uuyil0lY9pmdLfNqVQ+qQ=
+=HCGy
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1316526117_2734P--
+
