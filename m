@@ -1,92 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751525Ab1ITN7K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 09:59:10 -0400
-Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:37925 "HELO
-	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with SMTP id S1751450Ab1ITN7I (ORCPT
+	id S1751537Ab1ITOBo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 10:01:44 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:33732 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750964Ab1ITOBm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 09:59:08 -0400
-From: Nestor Lopez Casado <nlopezcasad@logitech.com>
-To: Jiri Kosina <jkosina@suse.cz>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ogay@logitech.com, jzanone@logitech.com, dan.carpenter@oracle.com
-Cc: Nestor Lopez Casado <nlopezcasad@logitech.com>
-Subject: [PATCH 1/1] HID: hid-logitech-dj: Out of bound by one bug
-Date: Tue, 20 Sep 2011 15:59:03 +0200
-Message-Id: <1316527143-15123-1-git-send-email-nlopezcasad@logitech.com>
-X-Mailer: git-send-email 1.7.5.3
+	Tue, 20 Sep 2011 10:01:42 -0400
+X-Authority-Analysis: v=1.1 cv=cSzO76bR5tCkfUT9bEmBgR3d7VUusRLeq08eKGxa4EU= c=1 sm=0 a=6qbAnu_Q0HoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=P6AM5y5nkYuoI9OYo8QA:9 a=PUjeQqilurYA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.83.30
+Subject: Re: [RFC][PATCH 2/5] mm: Switch mod_state() to __this_cpu_read()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Christoph Lameter <cl@gentwo.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Christoph Lameter <cl@linux.com>, Tejun Heo <htejun@gmail.com>
+In-Reply-To: <alpine.LFD.2.02.1109201334590.2723@ionos>
+References: <20110919212040.745370781@goodmis.org>
+	 <20110919212640.688732950@goodmis.org>
+	 <alpine.DEB.2.00.1109191657150.19059@router.home>
+	 <alpine.LFD.2.02.1109201334590.2723@ionos>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 20 Sep 2011 10:01:38 -0400
+Message-ID: <1316527298.29966.49.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a bug where a device with index 6 would write out of bounds in
-the array of paired devices.
-This patch fixes that problem.
+On Tue, 2011-09-20 at 15:49 +0200, Thomas Gleixner wrote:
 
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Reviewed-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Reviewed-by: Olivier Gay <ogay@logitech.com>
-Signed-off-by: Nestor Lopez Casado <nlopezcasad@logitech.com>
----
-Hi Jiri, Dan,
+> The best thing is to remove the this_cpu_* hackery alltogether and
+> just keep the __this_cpu_* versions (along with proper debugging) and
+> git rid of the silly underscores.
 
-Many thanks to Dan for reporting that bug. We increased the array size by one.
+I think renaming all the __this_cpu_*() to this_cpu_*() and then
+removing all the current this_cpu_*() usages is the best thing.
 
-Cheers, 
-    Nestor
+That is, make it mandatory that all this_cpu_*() users are with preempt
+disabled.
 
- drivers/hid/hid-logitech-dj.c |    5 +----
- drivers/hid/hid-logitech-dj.h |    5 ++++-
- 2 files changed, 5 insertions(+), 5 deletions(-)
+> 
+> > I think it would make more sence if __this_cpu_read() could be made to
+> > trigger a warning if used in context where preemption could be off.
+> 
+> It should have had such a warning in the first place and the warning
+> needs to yell about preemptible (i.e. unprotected) context and not the
+> other way round.
+> 
+> But instead of just slapping smp_processor_id() checks into those
+> functions we should add a more sensible debug interface like:
+> 
+>   debug_check_percpu_access()
 
-diff --git a/drivers/hid/hid-logitech-dj.c b/drivers/hid/hid-logitech-dj.c
-index 5bb6f42..38b12e4 100644
---- a/drivers/hid/hid-logitech-dj.c
-+++ b/drivers/hid/hid-logitech-dj.c
-@@ -179,9 +179,6 @@ static const u8 hid_reportid_size_map[NUMBER_OF_HID_REPORTS] = {
- 
- #define LOGITECH_DJ_INTERFACE_NUMBER 0x02
- 
--#define DJ_DEVICE_INDEX_MIN 1
--#define DJ_DEVICE_INDEX_MAX 6
--
- static struct hid_ll_driver logi_dj_ll_driver;
- 
- static int logi_dj_output_hidraw_report(struct hid_device *hid, u8 * buf,
-@@ -823,7 +820,7 @@ static void logi_dj_remove(struct hid_device *hdev)
- 	 * have finished and no more raw_event callbacks should arrive after
- 	 * the remove callback was triggered so no locks are put around the
- 	 * code below */
--	for (i = 0; i < DJ_MAX_PAIRED_DEVICES; i++) {
-+	for (i = 0; i < (DJ_MAX_PAIRED_DEVICES + DJ_DEVICE_INDEX_MIN); i++) {
- 		dj_dev = djrcv_dev->paired_dj_devices[i];
- 		if (dj_dev != NULL) {
- 			hid_destroy_device(dj_dev->hdev);
-diff --git a/drivers/hid/hid-logitech-dj.h b/drivers/hid/hid-logitech-dj.h
-index 5982263..fd28a5e 100644
---- a/drivers/hid/hid-logitech-dj.h
-+++ b/drivers/hid/hid-logitech-dj.h
-@@ -27,6 +27,8 @@
- 
- #define DJ_MAX_PAIRED_DEVICES			6
- #define DJ_MAX_NUMBER_NOTIFICATIONS		8
-+#define DJ_DEVICE_INDEX_MIN 			1
-+#define DJ_DEVICE_INDEX_MAX 			6
- 
- #define DJREPORT_SHORT_LENGTH			15
- #define DJREPORT_LONG_LENGTH			32
-@@ -94,7 +96,8 @@ struct dj_report {
- 
- struct dj_receiver_dev {
- 	struct hid_device *hdev;
--	struct dj_device *paired_dj_devices[DJ_MAX_PAIRED_DEVICES];
-+	struct dj_device *paired_dj_devices[DJ_MAX_PAIRED_DEVICES +
-+					    DJ_DEVICE_INDEX_MIN];
- 	struct work_struct work;
- 	struct kfifo notif_fifo;
- 	spinlock_t lock;
--- 
-1.7.5.3
+Sure, I'd do something like that in the this_cpu_*() code. But since
+smp_processor_id() already had the bug triggering. I just did the easy
+approach as more of a proof of concept (hence the RFC in the patch set).
+
+
+> 
+> and the per cpu sections which require protection over a series (1
+> .. N) of this_cpu_* operations want to have
+> 
+>   this_cpu_start()
+>   this_cpu_end()
+> 
+> or similar annotations around them.
+
+I agree about the concept but hate the naming.
+
+On IRC, Peter suggested a local_lock_t type. Give a named protection
+area. I like this approach as we can add debugging infrastructure to
+this concept.
+
+	local_lock_t my_vars;
+
+	local_lock(my_vars);
+	var = this_cpu_read();
+	/* play with var */
+	local_unlock(my_vars);
+
+Peter even suggested for those locations that disable interrupts for
+this work we could document that with:
+
+	local_lock_irqsave(my_vars, flags);
+	[...]
+	local_unlock_irqrestore(my_vars, flags);
+
+This documents nicely the area of the protected variables. The
+local_lock() could simply turn into a preempt_disable(), but we could
+add hooks into lockdep or something to perform other checks. Even have
+sparse or coccinelle find usages of var outside of local_lock(), and
+report them.
+
+As the kernel gets more complex, especially with the focus on scaling to
+huge number of CPUs, and moving towards per_cpu data handling, having
+debugging capabilities of this sort is critical.
+
+> 
+> This allows us to do proper analysis of this_cpu usage and makes the
+> code understandable.
+
+Totally agree!
+
+-- Steve
+
 
