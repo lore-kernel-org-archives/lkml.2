@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756896Ab1ITBj2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Sep 2011 21:39:28 -0400
+	id S1756856Ab1ITBjZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Sep 2011 21:39:25 -0400
 Received: from mga02.intel.com ([134.134.136.20]:52041 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752421Ab1ITBjJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Sep 2011 21:39:09 -0400
+	id S1752826Ab1ITBjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Sep 2011 21:39:07 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="50392857"
+   d="scan'208";a="50392846"
 From: Huang Ying <ying.huang@intel.com>
 To: Len Brown <lenb@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
         ying.huang@intel.com, linux-acpi@vger.kernel.org
-Subject: [PATCH 3/8] ACPI, Record ACPI NVS regions
-Date: Tue, 20 Sep 2011 09:38:56 +0800
-Message-Id: <1316482741-21799-4-git-send-email-ying.huang@intel.com>
+Subject: [PATCH 2/8] ACPI, APEI, Remove table not found message
+Date: Tue, 20 Sep 2011 09:38:55 +0800
+Message-Id: <1316482741-21799-3-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1316482741-21799-1-git-send-email-ying.huang@intel.com>
 References: <1316482741-21799-1-git-send-email-ying.huang@intel.com>
@@ -23,169 +23,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some firmware will access memory in ACPI NVS region via APEI.  That
-is, instructions in APEI ERST/EINJ table will read/write ACPI NVS
-region.  The original resource conflict checking in APEI code will
-check memory/ioport accessed by APEI via general resource management
-mechanism.  But ACPI NVS region is marked as busy already, so that the
-false resource conflict will prevent APEI ERST/EINJ to work.
+Because APEI tables are optional, these message may confuse users, for
+example,
 
-To fix this, this patch record ACPI NVS regions, so that we can avoid
-request resources for memory region inside it.
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/599715
 
+Reported-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Huang Ying <ying.huang@intel.com>
 ---
- arch/x86/kernel/e820.c |    4 +--
- drivers/acpi/Makefile  |    3 +-
- drivers/acpi/nvs.c     |   53 ++++++++++++++++++++++++++++++++++++++++++++++++-
- include/linux/acpi.h   |   20 ++++++++++++------
- 4 files changed, 70 insertions(+), 10 deletions(-)
+ drivers/acpi/apei/einj.c |    5 ++---
+ drivers/acpi/apei/erst.c |    5 ++---
+ drivers/acpi/apei/hest.c |    5 ++---
+ 3 files changed, 6 insertions(+), 9 deletions(-)
 
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -713,7 +713,7 @@ void __init e820_mark_nosave_regions(uns
- }
- #endif
+--- a/drivers/acpi/apei/einj.c
++++ b/drivers/acpi/apei/einj.c
+@@ -466,10 +466,9 @@ static int __init einj_init(void)
  
--#ifdef CONFIG_HIBERNATION
-+#ifdef CONFIG_ACPI
- /**
-  * Mark ACPI NVS memory region, so that we can save/restore it during
-  * hibernation and the subsequent resume.
-@@ -726,7 +726,7 @@ static int __init e820_mark_nvs_memory(v
- 		struct e820entry *ei = &e820.map[i];
+ 	status = acpi_get_table(ACPI_SIG_EINJ, 0,
+ 				(struct acpi_table_header **)&einj_tab);
+-	if (status == AE_NOT_FOUND) {
+-		pr_info(EINJ_PFX "Table is not found!\n");
++	if (status == AE_NOT_FOUND)
+ 		return -ENODEV;
+-	} else if (ACPI_FAILURE(status)) {
++	else if (ACPI_FAILURE(status)) {
+ 		const char *msg = acpi_format_exception(status);
+ 		pr_err(EINJ_PFX "Failed to get table, %s\n", msg);
+ 		return -EINVAL;
+--- a/drivers/acpi/apei/erst.c
++++ b/drivers/acpi/apei/erst.c
+@@ -1110,10 +1110,9 @@ static int __init erst_init(void)
  
- 		if (ei->type == E820_NVS)
--			suspend_nvs_register(ei->addr, ei->size);
-+			acpi_nvs_register(ei->addr, ei->size);
- 	}
+ 	status = acpi_get_table(ACPI_SIG_ERST, 0,
+ 				(struct acpi_table_header **)&erst_tab);
+-	if (status == AE_NOT_FOUND) {
+-		pr_info(ERST_PFX "Table is not found!\n");
++	if (status == AE_NOT_FOUND)
+ 		goto err;
+-	} else if (ACPI_FAILURE(status)) {
++	else if (ACPI_FAILURE(status)) {
+ 		const char *msg = acpi_format_exception(status);
+ 		pr_err(ERST_PFX "Failed to get table, %s\n", msg);
+ 		rc = -EINVAL;
+--- a/drivers/acpi/apei/hest.c
++++ b/drivers/acpi/apei/hest.c
+@@ -221,10 +221,9 @@ void __init acpi_hest_init(void)
  
- 	return 0;
---- a/drivers/acpi/Makefile
-+++ b/drivers/acpi/Makefile
-@@ -20,11 +20,12 @@ obj-y				+= acpi.o \
- # All the builtin files are in the "acpi." module_param namespace.
- acpi-y				+= osl.o utils.o reboot.o
- acpi-y				+= atomicio.o
-+acpi-y				+= nvs.o
- 
- # sleep related files
- acpi-y				+= wakeup.o
- acpi-y				+= sleep.o
--acpi-$(CONFIG_ACPI_SLEEP)	+= proc.o nvs.o
-+acpi-$(CONFIG_ACPI_SLEEP)	+= proc.o
- 
- 
- #
---- a/drivers/acpi/nvs.c
-+++ b/drivers/acpi/nvs.c
-@@ -15,6 +15,56 @@
- #include <linux/acpi_io.h>
- #include <acpi/acpiosxf.h>
- 
-+/* ACPI NVS regions, APEI may use it */
-+
-+struct nvs_region {
-+	__u64 phys_start;
-+	__u64 size;
-+	struct list_head node;
-+};
-+
-+static LIST_HEAD(nvs_region_list);
-+
-+#ifdef CONFIG_ACPI_SLEEP
-+static int suspend_nvs_register(unsigned long start, unsigned long size);
-+#else
-+static inline int suspend_nvs_register(unsigned long a, unsigned long b)
-+{
-+	return 0;
-+}
-+#endif
-+
-+int acpi_nvs_register(__u64 start, __u64 size)
-+{
-+	struct nvs_region *region;
-+
-+	region = kmalloc(sizeof(*region), GFP_KERNEL);
-+	if (!region)
-+		return -ENOMEM;
-+	region->phys_start = start;
-+	region->size = size;
-+	list_add_tail(&region->node, &nvs_region_list);
-+
-+	return suspend_nvs_register(start, size);
-+}
-+
-+int acpi_nvs_for_each_region(int (*func)(__u64 start, __u64 size, void *data),
-+			     void *data)
-+{
-+	int rc;
-+	struct nvs_region *region;
-+
-+	list_for_each_entry(region, &nvs_region_list, node) {
-+		rc = func(region->phys_start, region->size, data);
-+		if (rc)
-+			return rc;
-+	}
-+
-+	return 0;
-+}
-+
-+
-+#ifdef CONFIG_ACPI_SLEEP
- /*
-  * Platforms, like ACPI, may want us to save some memory used by them during
-  * suspend and to restore the contents of this memory during the subsequent
-@@ -41,7 +91,7 @@ static LIST_HEAD(nvs_list);
-  *	things so that the data from page-aligned addresses in this region will
-  *	be copied into separate RAM pages.
-  */
--int suspend_nvs_register(unsigned long start, unsigned long size)
-+static int suspend_nvs_register(unsigned long start, unsigned long size)
- {
- 	struct nvs_page *entry, *next;
- 
-@@ -159,3 +209,4 @@ void suspend_nvs_restore(void)
- 		if (entry->data)
- 			memcpy(entry->kaddr, entry->data, entry->size);
- }
-+#endif
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -306,6 +306,11 @@ extern acpi_status acpi_pci_osc_control_
- 					     u32 *mask, u32 req);
- extern void acpi_early_init(void);
- 
-+extern int acpi_nvs_register(__u64 start, __u64 size);
-+
-+extern int acpi_nvs_for_each_region(int (*func)(__u64, __u64, void *),
-+				    void *data);
-+
- #else	/* !CONFIG_ACPI */
- 
- #define acpi_disabled 1
-@@ -348,15 +353,18 @@ static inline int acpi_table_parse(char
- {
- 	return -1;
- }
--#endif	/* !CONFIG_ACPI */
- 
--#ifdef CONFIG_ACPI_SLEEP
--int suspend_nvs_register(unsigned long start, unsigned long size);
--#else
--static inline int suspend_nvs_register(unsigned long a, unsigned long b)
-+static inline int acpi_nvs_register(__u64 start, __u64 size)
- {
- 	return 0;
- }
--#endif
-+
-+static inline int acpi_nvs_for_each_region(int (*func)(__u64, __u64, void *),
-+					   void *data)
-+{
-+	return 0;
-+}
-+
-+#endif	/* !CONFIG_ACPI */
- 
- #endif	/*_LINUX_ACPI_H*/
+ 	status = acpi_get_table(ACPI_SIG_HEST, 0,
+ 				(struct acpi_table_header **)&hest_tab);
+-	if (status == AE_NOT_FOUND) {
+-		pr_info(HEST_PFX "Table not found.\n");
++	if (status == AE_NOT_FOUND)
+ 		goto err;
+-	} else if (ACPI_FAILURE(status)) {
++	else if (ACPI_FAILURE(status)) {
+ 		const char *msg = acpi_format_exception(status);
+ 		pr_err(HEST_PFX "Failed to get table, %s\n", msg);
+ 		rc = -EINVAL;
