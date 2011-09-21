@@ -1,91 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751775Ab1IUFEv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 01:04:51 -0400
-Received: from rs35.luxsci.com ([66.216.127.90]:47426 "EHLO rs35.luxsci.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751485Ab1IUFEs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 01:04:48 -0400
-X-Greylist: delayed 365 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Sep 2011 01:04:48 EDT
-Message-ID: <4E796EE4.6070704@firmworks.com>
-Date: Tue, 20 Sep 2011 18:58:12 -1000
-From: Mitch Bradley <wmb@firmworks.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
+	id S1751723Ab1IUFLH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 01:11:07 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:41350 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751050Ab1IUFLE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 01:11:04 -0400
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: David Miller <davem@davemloft.net>, dave.martin@linaro.org,
-        linux@arm.linux.org.uk, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/3] GIC OF bindings
-References: <1316550244-3655-1-git-send-email-robherring2@gmail.com> <20110920.224910.1996429830782124690.davem@davemloft.net> <CACxGe6t7Mdr+w+aGFPM2-FEAQaYHuG8Za9dybLgMo-5-whLyNQ@mail.gmail.com>
-In-Reply-To: <CACxGe6t7Mdr+w+aGFPM2-FEAQaYHuG8Za9dybLgMo-5-whLyNQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <20110721165137.GA21345@redhat.com>
+References: <CAK1hOcPFXMoYsP6N6Hx5Qz3J4xj31TmSj7xo6SRVPegNCbhx7g@mail.gmail.com>
+ <20110721165137.GA21345@redhat.com>
+From: Michael Kerrisk <mtk.manpages@gmail.com>
+Date: Wed, 21 Sep 2011 07:10:44 +0200
+Message-ID: <CAKgNAkj8STLfO2t5gejct+yPFkFtFtojVkYKJREiE7S2QHSctg@mail.gmail.com>
+Subject: Re: [PATCH] man ptrace: add extended description of various ptrace quirks
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Michael Kerrisk <mtk.manpages@googlemail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/20/2011 6:14 PM, Grant Likely wrote:
-> On Tue, Sep 20, 2011 at 8:49 PM, David Miller<davem@davemloft.net>  wrote:
->> From: Rob Herring<robherring2@gmail.com>
->> Date: Tue, 20 Sep 2011 15:24:01 -0500
->>
->>> Hopefully, this is the final or near final version of GIC binding support.
->>>
->>> Changes from the previous version:
->>> - SPIs and PPIs are numbered starting at 0. Now the gic has it's own irq
->>>    domain translate function instead of the simple domain one.
->>> - interrupt cell format has changed based on Grant's proposal.
->>> - Dropped "ARM: gic: allow irq_start to be 0". Instead, the first 16 irqs
->>>    are skipped and the domain irq_base adjusted accordingly.
->>> - Added a fix to of_irq_find_parent when the parent == child.
->>> - Renamed intc_desc.parent to intc_desc.interrupt_parent.
->>> - Implemented Grant's algorithm for walking the list of interrupt
->>>    controllers. Added a return value to interrupt init functions, so they
->>>    don't get added to the parent list on a init failure.
->>>
->>> The changes are significant enough that I did not include previous
->>> acked/reviewed/tested-by's.
->>
->> Just out of curiosity where does this "interrupt-parent" property
->> come from?
->>
->> On platforms I am familiar with, the parent path is walked to the root
->> and we stop at device nodes that have "interrupt-map" and
->> "interrupt-map-mask" properties.
->>
->> The map and mask are applied to the "reg" property of the device in
->> question to see which map entry matches, if a match is found the map
->> entry contains the translated interrupt.
->>
->> And this process continues over and over all the way to the root to get
->> the system interrupt that processor actually deals with.
->>
->> The mechanism shown here seems overly simplistic and not able to handle
->> the cases handled by existing OF property schemes in use for several
->> years on real systems.
->
-> interrupt-parent has been implemented for years on powerpc.  I don't
-> know if it was ever an Open Firmware thing, but it is in ePAPR [1],
-> and ARM isn't doing anything novel in that regard.
+Denys,
 
-interrupt-parent has been part of the interrupt mapping spec from the 
-inception of same.
+On Thu, Jul 21, 2011 at 6:51 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 07/21, Denys Vlasenko wrote:
+>>
+>> Deleted several outright false statements:
+>> - pid 1 can be traced
+>> - tracer is not shown as parent in ps output
+>> - PTRACE_ATTACH is not "the same behavior as if tracee had done
+>>   a PTRACE_TRACEME": PTRACE_ATTACH delivers a SIGSTOP.
+>> - SIGSTOP _can_ be injected.
+>
+> Yes, this is correct, thanks.
+>
+>> +Tracer can not assume that tracee ALWAYS ends its life by reporting
+>> +WIFEXITED(status) or WIFSIGNALED(status).
+>> +.LP
+>> +.\" or can it? Do we include such a promise into ptrace API?
+>
+> IIRC, we already discussed this... The traced group leader can
+> disappear during mt-exec, otherwise the tracee can never go away
+> silently.
+>
+>> +Tracer can kill a tracee with ptrace(PTRACE_KILL, pid, 0, 0). This
+>> +operation is deprecated, use kill(SIGKILL) or tgkill(SIGKILL) instead.
+>> +The problem with this operation is that it requires tracee to be in
+>> +signal-delivery-stop, otherwise it may not work (may complete
+>> +successfully but won't kill the tracee),
+>
+> In short, ptrace(PTRACE_KILL) is more or less ptrace(PTRACE_CONT, SIGKILL),
+> but it always returns 0. IOW, it never worked as decribed in the man
+> page. And I guess today nobody can explain why PTRACE_KILL exists.
+>
+> Oleg.
 
-http://www.openfirmware.info/docs/rec.intmap.d09.pdf
+Does your patch need any revision in the light of Oleg's comments?
 
->
-> [1] section 2.4, page 30,
-> https://www.power.org/resources/downloads/Power_ePAPR_APPROVED_v1.1.pdf
->
-> It is true that is cannot handle all situations, but for those
-> interrupt-map is still available.
->
-> g.
-> _______________________________________________
-> devicetree-discuss mailing list
-> devicetree-discuss@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/devicetree-discuss
->
->
+Thanks,
+
+Michael
+
+
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface"; http://man7.org/tlpi/
