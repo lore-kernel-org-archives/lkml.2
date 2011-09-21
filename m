@@ -1,45 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751018Ab1IUOIW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 10:08:22 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:50155 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750766Ab1IUOIV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 10:08:21 -0400
-X-Sasl-enc: jp+kM1JLVM4llS+QaSUFtJdNtPvGVqU2v6/VqDpwJ2A8 1316614100
-Date: Wed, 21 Sep 2011 07:06:23 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hector Martin <hector@marcansoft.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        Andre Heider <a.heider@gmail.com>, Geoff Levand <geoff@infradead.org>
-Subject: Re: linux-next: manual merge of the tty tree with the powerpc tree
-Message-ID: <20110921140623.GA19567@kroah.com>
-References: <20110921150121.9f530384bc0bb6c2268fd9ea@canb.auug.org.au>
+	id S1751243Ab1IUOIp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 10:08:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52530 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751160Ab1IUOIn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 10:08:43 -0400
+Date: Wed, 21 Sep 2011 16:08:41 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <jweiner@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
+        Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 07/11] mm: vmscan: convert unevictable page rescue
+ scanner to per-memcg LRU lists
+Message-ID: <20110921140841.GG8501@tiehlicka.suse.cz>
+References: <1315825048-3437-1-git-send-email-jweiner@redhat.com>
+ <1315825048-3437-8-git-send-email-jweiner@redhat.com>
+ <20110921123354.GC8501@tiehlicka.suse.cz>
+ <20110921134751.GD22516@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110921150121.9f530384bc0bb6c2268fd9ea@canb.auug.org.au>
+In-Reply-To: <20110921134751.GD22516@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 21, 2011 at 03:01:21PM +1000, Stephen Rothwell wrote:
-> Hi Greg,
+On Wed 21-09-11 15:47:51, Johannes Weiner wrote:
+> On Wed, Sep 21, 2011 at 02:33:56PM +0200, Michal Hocko wrote:
+> > On Mon 12-09-11 12:57:24, Johannes Weiner wrote:
+> > > The global per-zone LRU lists are about to go away on memcg-enabled
+> > > kernels, the unevictable page rescue scanner must be able to find its
+> > > pages on the per-memcg LRU lists.
+> > > 
+> > > Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+> > 
+> > The patch is correct but I guess the original implementation of
+> > scan_zone_unevictable_pages is buggy (see bellow). This should be
+> > addressed separatelly, though.
+> > 
+> > Reviewed-by: Michal Hocko <mhocko@suse.cz>
 > 
-> Today's linux-next merge of the tty tree got conflicts in
-> arch/powerpc/include/asm/udbg.h and arch/powerpc/kernel/udbg.c between
-> commit c26afe9e8591 ("powerpc/ps3: Add gelic udbg driver") from the
-> powerpc tree and commit dcd83aaff1c8 ("tty/powerpc: introduce the ePAPR
-> embedded hypervisor byte channel driver") from the tty tree.
+> Thanks for your effort, Michal, I really appreciate it.
+
+you're welcome. You've made really a good job so it is not that hard to
+review.
+
 > 
-> Just context changes.  I fixed it up (see below) and can carry the fix as
-> necessary.
+> > > @@ -3490,32 +3501,40 @@ void scan_mapping_unevictable_pages(struct address_space *mapping)
+> > >  #define SCAN_UNEVICTABLE_BATCH_SIZE 16UL /* arbitrary lock hold batch size */
+> > >  static void scan_zone_unevictable_pages(struct zone *zone)
+> > >  {
+> > > -	struct list_head *l_unevictable = &zone->lru[LRU_UNEVICTABLE].list;
+> > > -	unsigned long scan;
+> > > -	unsigned long nr_to_scan = zone_page_state(zone, NR_UNEVICTABLE);
+> > > -
+> > > -	while (nr_to_scan > 0) {
+> > > -		unsigned long batch_size = min(nr_to_scan,
+> > > -						SCAN_UNEVICTABLE_BATCH_SIZE);
+> > > -
+> > > -		spin_lock_irq(&zone->lru_lock);
+> > > -		for (scan = 0;  scan < batch_size; scan++) {
+> > > -			struct page *page = lru_to_page(l_unevictable);
+> > > +	struct mem_cgroup *mem;
+> > >  
+> > > -			if (!trylock_page(page))
+> > > -				continue;
+> > > +	mem = mem_cgroup_iter(NULL, NULL, NULL);
+> > > +	do {
+> > > +		struct mem_cgroup_zone mz = {
+> > > +			.mem_cgroup = mem,
+> > > +			.zone = zone,
+> > > +		};
+> > > +		unsigned long nr_to_scan;
+> > >  
+> > > -			prefetchw_prev_lru_page(page, l_unevictable, flags);
+> > > +		nr_to_scan = zone_nr_lru_pages(&mz, LRU_UNEVICTABLE);
+> > > +		while (nr_to_scan > 0) {
+> > > +			unsigned long batch_size;
+> > > +			unsigned long scan;
+> > >  
+> > > -			if (likely(PageLRU(page) && PageUnevictable(page)))
+> > > -				check_move_unevictable_page(page, zone);
+> > > +			batch_size = min(nr_to_scan,
+> > > +					 SCAN_UNEVICTABLE_BATCH_SIZE);
+> > > +			spin_lock_irq(&zone->lru_lock);
+> > > +			for (scan = 0; scan < batch_size; scan++) {
+> > > +				struct page *page;
+> > >  
+> > > -			unlock_page(page);
+> > > +				page = lru_tailpage(&mz, LRU_UNEVICTABLE);
+> > > +				if (!trylock_page(page))
+> > > +					continue;
+> > 
+> > We are not moving to the next page so we will try it again in the next
+> > round while we already increased the scan count. In the end we will
+> > missed some pages.
+> 
+> I guess this is about latency.  This code is only executed when the
+> user requests so by writing to a proc-file, check the comment above
+> scan_all_zones_unevictable_pages. I think at one point Lee wanted to
+> move anon pages to the unevictable LRU when no swap is configured, but
+> we have separate anon LRUs now that are not scanned without swap, and
+> I think except for bugs there is no actual need to move these pages by
+> hand, let alone reliably every single page.
 
-Thanks, that looks fine to me.
-
-greg k-h
+OK, fair point. Probably not worth fixing (I will put it on my TODO list
+with a low priority).
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
