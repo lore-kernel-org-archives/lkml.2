@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753585Ab1IUJeZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 05:34:25 -0400
+	id S1753933Ab1IUJjs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 05:39:48 -0400
 Received: from mail-wy0-f180.google.com ([74.125.82.180]:37829 "EHLO
 	mail-wy0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753539Ab1IUJeS (ORCPT
+	with ESMTP id S1752815Ab1IUJdv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 05:34:18 -0400
+	Wed, 21 Sep 2011 05:33:51 -0400
 From: Yong Zhang <yong.zhang0@gmail.com>
 To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de, yong.zhang0@gmail.com, Chris Ball <cjb@laptop.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Ian Molton <ian@mnementh.co.uk>, Tony Lindgren <tony@atomide.com>,
-        Kishore Kadiyala <kishore.kadiyala@ti.com>,
-        Adrian Hunter <adrian.hunter@nokia.com>, Balaji T K <balajitk@ti.com>,
-        linux-omap@vger.kernel.org, linux-mmc@vger.kernel.org
-Subject: [PATCH 37/57] mmc: irq: Remove IRQF_DISABLED
-Date: Wed, 21 Sep 2011 17:28:38 +0800
-Message-Id: <1316597339-29861-38-git-send-email-yong.zhang0@gmail.com>
+Cc: tglx@linutronix.de, yong.zhang0@gmail.com,
+        Armin Schindler <mac@melware.de>, Karsten Keil <isdn@linux-pingi.de>,
+        netdev@vger.kernel.org
+Subject: [PATCH 34/57] ISDN: irq: Remove IRQF_DISABLED
+Date: Wed, 21 Sep 2011 17:28:35 +0800
+Message-Id: <1316597339-29861-35-git-send-email-yong.zhang0@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1316597339-29861-1-git-send-email-yong.zhang0@gmail.com>
 References: <1316597339-29861-1-git-send-email-yong.zhang0@gmail.com>
@@ -35,48 +32,36 @@ So now this flag is a NOOP and can be removed.
 
 Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
 ---
- drivers/mmc/host/omap_hsmmc.c |    5 ++---
- drivers/mmc/host/tmio_mmc.c   |    4 ++--
- 2 files changed, 4 insertions(+), 5 deletions(-)
+ drivers/isdn/hardware/eicon/divasmain.c |    2 +-
+ drivers/isdn/sc/init.c                  |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
-index 21e4a79..75c6395 100644
---- a/drivers/mmc/host/omap_hsmmc.c
-+++ b/drivers/mmc/host/omap_hsmmc.c
-@@ -2015,7 +2015,7 @@ static int __init omap_hsmmc_probe(struct platform_device *pdev)
- 	}
+diff --git a/drivers/isdn/hardware/eicon/divasmain.c b/drivers/isdn/hardware/eicon/divasmain.c
+index f332b60..8a0a831 100644
+--- a/drivers/isdn/hardware/eicon/divasmain.c
++++ b/drivers/isdn/hardware/eicon/divasmain.c
+@@ -481,7 +481,7 @@ void __inline__ outpp(void __iomem *addr, word p)
+ int diva_os_register_irq(void *context, byte irq, const char *name)
+ {
+ 	int result = request_irq(irq, diva_os_irq_wrapper,
+-				 IRQF_DISABLED | IRQF_SHARED, name, context);
++				 IRQF_SHARED, name, context);
+ 	return (result);
+ }
  
- 	/* Request IRQ for MMC operations */
--	ret = request_irq(host->irq, omap_hsmmc_irq, IRQF_DISABLED,
-+	ret = request_irq(host->irq, omap_hsmmc_irq, 0,
- 			mmc_hostname(mmc), host);
- 	if (ret) {
- 		dev_dbg(mmc_dev(host->mmc), "Unable to grab HSMMC IRQ\n");
-@@ -2043,8 +2043,7 @@ static int __init omap_hsmmc_probe(struct platform_device *pdev)
- 	if ((mmc_slot(host).card_detect_irq)) {
- 		ret = request_irq(mmc_slot(host).card_detect_irq,
- 				  omap_hsmmc_cd_handler,
--				  IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING
--					  | IRQF_DISABLED,
-+				  IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
- 				  mmc_hostname(mmc), host);
- 		if (ret) {
- 			dev_dbg(mmc_dev(host->mmc),
-diff --git a/drivers/mmc/host/tmio_mmc.c b/drivers/mmc/host/tmio_mmc.c
-index 44a9668..a4ea102 100644
---- a/drivers/mmc/host/tmio_mmc.c
-+++ b/drivers/mmc/host/tmio_mmc.c
-@@ -88,8 +88,8 @@ static int __devinit tmio_mmc_probe(struct platform_device *pdev)
- 	if (ret)
- 		goto cell_disable;
- 
--	ret = request_irq(irq, tmio_mmc_irq, IRQF_DISABLED |
--			  IRQF_TRIGGER_FALLING, dev_name(&pdev->dev), host);
-+	ret = request_irq(irq, tmio_mmc_irq, IRQF_TRIGGER_FALLING,
-+				dev_name(&pdev->dev), host);
- 	if (ret)
- 		goto host_remove;
- 
+diff --git a/drivers/isdn/sc/init.c b/drivers/isdn/sc/init.c
+index ca710ab..a3127fb 100644
+--- a/drivers/isdn/sc/init.c
++++ b/drivers/isdn/sc/init.c
+@@ -336,7 +336,7 @@ static int __init sc_init(void)
+ 		 */
+ 		sc_adapter[cinst]->interrupt = irq[b];
+ 		if (request_irq(sc_adapter[cinst]->interrupt, interrupt_handler,
+-				IRQF_DISABLED, interface->id,
++				0, interface->id,
+ 				(void *)(unsigned long) cinst))
+ 		{
+ 			kfree(sc_adapter[cinst]->channel);
 -- 
 1.7.4.1
 
