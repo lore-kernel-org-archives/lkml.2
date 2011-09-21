@@ -1,174 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751572Ab1IUOp1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 10:45:27 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:7630 "EHLO SMTP.CITRIX.COM"
+	id S1751656Ab1IUOpn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 10:45:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16311 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751472Ab1IUOp0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 10:45:26 -0400
-X-IronPort-AV: E=Sophos;i="4.68,417,1312171200"; 
-   d="scan'208";a="17573099"
-Message-ID: <4E79F867.2020909@citrix.com>
-Date: Wed, 21 Sep 2011 15:44:55 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110818 Icedove/3.0.11
+	id S1751485Ab1IUOpl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 10:45:41 -0400
+Message-ID: <4E79F88D.8000800@redhat.com>
+Date: Wed, 21 Sep 2011 11:45:33 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: David Vrabel <david.vrabel@citrix.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [Xen-devel] Re: [PATCH 0/6] xen: don't call vmalloc_sync_all()
- when mapping foreign pages
-References: <1316090411-22608-1-git-send-email-david.vrabel@citrix.com> <4E727017.4030001@goop.org>
-In-Reply-To: <4E727017.4030001@goop.org>
-Content-Type: text/plain; charset="ISO-8859-15"
+To: chris2553@googlemail.com
+CC: Dave Young <hidave.darkstar@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        linux-media@vger.kernel.org
+Subject: Re: Oops in 2.6.37-rc{3,4,5}
+References: <201012102234.06446.chris2553@googlemail.com> <20101212084504.GA27059@darkstar> <201012121115.02874.chris2553@googlemail.com>
+In-Reply-To: <201012121115.02874.chris2553@googlemail.com>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/09/11 22:37, Jeremy Fitzhardinge wrote:
-> On 09/15/2011 05:40 AM, David Vrabel wrote:
->> This set of pages avoids the need to call vmalloc_sync_all() when
->> mapping foreign pages.  Two new functions are adding for mapping
->> foreign pages onto RAM pages instead of vmalloc space.
->>
->> [...]
+Em 12-12-2010 09:15, Chris Clayton escreveu:
+> On Sunday 12 December 2010, Dave Young wrote:
+>> On Fri, Dec 10, 2010 at 10:34:06PM +0000, Chris Clayton wrote:
+>>> I'm not subscribed, so please cc me on any reply.
+>>>
+>>> With rc kernels from 2.6.37, X frequently (approx 3 boots out of every 4)
+>>> fails to start. dmesg shows the oops below. I can bisect over the weekend
+>>> - probably Sunday - if no answer comes up in the meantime. I get the same
+>>> oops with rc3, rc and rc5. rc2 doesn't get as far as trying to start X.
+>>> Happy to test patches or provide additional diagnostics, but I'll be off
+>>> line soon until 20:00 or so UK time tomorrow.
 > 
-> But that said, if you want to allocate virtual addresses for mapping
-> granted pages, then alloc_vm_area() is the right thing to use.  You need
-> to make sure you touch the pages from within the kernel before passing
-> those addresses to a hypercall to make sure the mappings are established
-> within the current task (possibly within a no-preempt region to
-> guarantee that nothing odd happens). Or alternatively, you could switch
-> the current pagetable to init_mm for the hypercall (if it isn't already)
-> - since that's the reference pagetable - assuming you're not passing
-> usermode virtual addresses to the hypercall.
+> <snip>
+> 
+>>>
+>>> [drm] Initialized i915 1.6.0 20080730 for 0000:00:02.0 on minor 0
+>>> BUG: unable to handle kernel NULL pointer dereference at   (null)
+>>> IP: [<c13229ef>] __mutex_lock_slowpath+0x9f/0x170
+>>> *pdpt = 0000000034676001 *pde = 0000000000000000
+>>> Oops: 0002 [#1] PREEMPT SMP
+>>> last sysfs file: /sys/module/drm_kms_helper/initstate
+>>> Modules linked in: i915 drm_kms_helper drm fb fbdev cfbcopyarea video
+>>> backlight output cfbimgblt cfbfillrect xt_state iptable_filter
+>>> ipt_MASQUERADE iptable_nat nf_nat nf_conntrack_ipv4 nf_conntrack
+>>> nf_defrag_ipv4 saa7134_alsa tda10048 saa7134_dvb videobuf_dvb dvb_core
+>>> mt20xx tea5767 tda9887 msp3400 gspca_zc3xx gspca_main tda18271 tda8290
+>>> ir_lirc_codec tuner lirc_dev bttv i2c_algo_bit btcx_risc snd_bt87x
+>>> ir_common uhci_hcd ir_core saa7134 v4l2_common videodev v4l1_compat
+>>> ehci_hcd videobuf_dma_sg videobuf_core tveeprom evdev [last unloaded:
+>>> floppy]
+>>>
+>>> Pid: 1725, comm: X Not tainted 2.6.37-rc5+ #476 EG41MF-US2H/EG41MF-US2H
+>>> EIP: 0060:[<c13229ef>] EFLAGS: 00013246 CPU: 3
+>>> EIP is at __mutex_lock_slowpath+0x9f/0x170
+>>> EAX: 00000000 EBX: f4403410 ECX: f4403420 EDX: f4641dd8
+>>> ESI: f4403414 EDI: 00000000 EBP: f4403418 ESP: f4641dd4
+>>>  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+>>> Process X (pid: 1725, ti=f4640000 task=f3c67390 task.ti=f4640000)
+>>> Stack:
+>>>  f3c67390 f4403418 00000000 f46a3800 f4403410 f4fd14f0 f425f600 f4403400
+>>>  c13228a6 f4fd1000 f4fd14f0 f8841b6c c10aabb2 ffffffff 05100004 f4c34000
+>>>  f4df72c0 c10aabf7 f4403410 00000001 f425f600 ffffffed f425f604 f46bfe40
+>>> Call Trace:
+>>>  [<c13228a6>] ? mutex_lock+0x16/0x30
+>>>  [<f8841b6c>] ? bttv_open+0xac/0x280 [bttv]
+>>>  [<c10aabb2>] ? cdev_get+0x52/0x90
+>>>  [<c10aabf7>] ? exact_lock+0x7/0x10
+>>>  [<f87095a7>] ? v4l2_open+0xb7/0xd0 [videodev]
+>>>  [<c10ab2ea>] ? chrdev_open+0xda/0x1b0
+>>>  [<c10a5f25>] ? __dentry_open+0xd5/0x280
+>>>  [<c10a7068>] ? nameidata_to_filp+0x68/0x70
+>>>  [<c10ab210>] ? chrdev_open+0x0/0x1b0
+>>>  [<c10b351f>] ? do_last.clone.32+0x34f/0x5a0
+>>>  [<c10b3af3>] ? do_filp_open+0x383/0x550
+>>>  [<c10b1e58>] ? getname+0x28/0xf0
+>>>  [<c10a70c8>] ? do_sys_open+0x58/0x110
+>>>  [<c10a5d09>] ? filp_close+0x49/0x70
+>>>  [<c10a71ac>] ? sys_open+0x2c/0x40
+>>>  [<c1002d10>] ? sysenter_do_call+0x12/0x26
+>>>  [<c1320000>] ? timer_cpu_notify+0x1b4/0x233
+>>> Code: 83 78 18 63 7f b6 8d b6 00 00 00 00 8d 73 04 8d 6b 08 89 f0 e8 f3
+>>> 10 00 00 8b 43 0c 8d 54 24 04 89 44 24 08 89 53 0c 89 6c 24 04 <89> 10 8b
+>>> 04 24 ba ff ff ff ff 89 44 24 0c 89 d0 87 03 83 f8 01
+>>> EIP: [<c13229ef>] __mutex_lock_slowpath+0x9f/0x170 SS:ESP 0068:f4641dd4
+>>> CR2: 0000000000000000
+>>> ---[ end trace 5ac4e44ad0dc7959 ]---
+> 
+> <snip>
+> 
+>> Could you try following patch?
+>>
+>> --- linux-2.6.orig/drivers/media/video/bt8xx/bttv-driver.c	2010-11-27
+>> 11:21:30.000000000 +0800 +++
+>> linux-2.6/drivers/media/video/bt8xx/bttv-driver.c	2010-12-12
+>> 16:31:39.633333338 +0800 @@ -3291,6 +3291,8 @@ static int bttv_open(struct
+>> file *file)
+>>  	fh = kmalloc(sizeof(*fh), GFP_KERNEL);
+>>  	if (unlikely(!fh))
+>>  		return -ENOMEM;
+>> +
+>> +	mutex_init(&fh->cap.vb_lock);
+>>  	file->private_data = fh;
+>>
+>>  	/*
+> 
+> Yes Dave, that's fixed it thanks. Six successful boots, which never happened 
+> without the patch.
+> 
+> Tested-by: Chris Clayton <chris2553@googlemail.com>
+> 
 
-Making alloc_vm_area() fill in a array of pte_t *'s and passing the pointer
-to the PTE (using the GNTMAP_contains_pte flag) in the hypercall should
-allow Xen to update the PTEs in init_mm directly.
+It seems we missed this patch. It looks right on my eyes, so I'm
+applying it.
 
-However, I'm not sure what to do about ia64 where GNTMAP_contains_pte
-is not supported.  Any ideas?
-
-Here's the untested patch I have so far.
-
-diff --git a/arch/x86/xen/grant-table.c b/arch/x86/xen/grant-table.c
-index 49ba9b5..77348e8 100644
---- a/arch/x86/xen/grant-table.c
-+++ b/arch/x86/xen/grant-table.c
-@@ -71,7 +71,7 @@ int arch_gnttab_map_shared(unsigned long *frames, unsigned long nr_gframes,
- 
- 	if (shared == NULL) {
- 		struct vm_struct *area =
--			alloc_vm_area(PAGE_SIZE * max_nr_gframes);
-+			alloc_vm_area(PAGE_SIZE * max_nr_gframes, NULL);
- 		BUG_ON(area == NULL);
- 		shared = area->addr;
- 		*__shared = shared;
-diff --git a/drivers/xen/xenbus/xenbus_client.c b/drivers/xen/xenbus/xenbus_client.c
-index cdacf92..75eb179 100644
---- a/drivers/xen/xenbus/xenbus_client.c
-+++ b/drivers/xen/xenbus/xenbus_client.c
-@@ -435,19 +435,20 @@ EXPORT_SYMBOL_GPL(xenbus_free_evtchn);
- int xenbus_map_ring_valloc(struct xenbus_device *dev, int gnt_ref, void **vaddr)
- {
- 	struct gnttab_map_grant_ref op = {
--		.flags = GNTMAP_host_map,
-+		.flags = GNTMAP_host_map | GNTMAP_contains_pte,
- 		.ref   = gnt_ref,
- 		.dom   = dev->otherend_id,
- 	};
- 	struct vm_struct *area;
-+	pte_t *pte;
- 
- 	*vaddr = NULL;
- 
--	area = alloc_vm_area(PAGE_SIZE);
-+	area = alloc_vm_area(PAGE_SIZE, &pte);
- 	if (!area)
- 		return -ENOMEM;
- 
--	op.host_addr = (unsigned long)area->addr;
-+	op.host_addr = (unsigned long)pte;
- 
- 	if (HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, &op, 1))
- 		BUG();
-diff --git a/include/linux/vmalloc.h b/include/linux/vmalloc.h
-index 9332e52..1a77252 100644
---- a/include/linux/vmalloc.h
-+++ b/include/linux/vmalloc.h
-@@ -118,7 +118,7 @@ unmap_kernel_range(unsigned long addr, unsigned long size)
- #endif
- 
- /* Allocate/destroy a 'vmalloc' VM area. */
--extern struct vm_struct *alloc_vm_area(size_t size);
-+extern struct vm_struct *alloc_vm_area(size_t size, pte_t **ptes);
- extern void free_vm_area(struct vm_struct *area);
- 
- /* for /dev/kmem */
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index 5016f19..786b4f6 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -2105,23 +2105,30 @@ void  __attribute__((weak)) vmalloc_sync_all(void)
- 
- static int f(pte_t *pte, pgtable_t table, unsigned long addr, void *data)
- {
--	/* apply_to_page_range() does all the hard work. */
-+	pte_t ***p = data;
-+
-+	if (p) {
-+		*(*p) = pte;
-+		(*p)++;
-+	}
- 	return 0;
- }
- 
- /**
-  *	alloc_vm_area - allocate a range of kernel address space
-  *	@size:		size of the area
-+ *	@ptes:		returns the PTEs for the address space
-  *
-  *	Returns:	NULL on failure, vm_struct on success
-  *
-  *	This function reserves a range of kernel address space, and
-  *	allocates pagetables to map that range.  No actual mappings
-- *	are created.  If the kernel address space is not shared
-- *	between processes, it syncs the pagetable across all
-- *	processes.
-+ *	are created.
-+ *
-+ *	If @ptes is non-NULL, pointers to the PTEs (in init_mm)
-+ *	allocated for the VM area are returned.
-  */
--struct vm_struct *alloc_vm_area(size_t size)
-+struct vm_struct *alloc_vm_area(size_t size, pte_t **ptes)
- {
- 	struct vm_struct *area;
- 
-@@ -2135,19 +2142,11 @@ struct vm_struct *alloc_vm_area(size_t size)
- 	 * of kernel virtual address space and mapped into init_mm.
- 	 */
- 	if (apply_to_page_range(&init_mm, (unsigned long)area->addr,
--				area->size, f, NULL)) {
-+				area->size, f, ptes ? &ptes : NULL)) {
- 		free_vm_area(area);
- 		return NULL;
- 	}
- 
--	/*
--	 * If the allocated address space is passed to a hypercall
--	 * before being used then we cannot rely on a page fault to
--	 * trigger an update of the page tables.  So sync all the page
--	 * tables here.
--	 */
--	vmalloc_sync_all();
--
- 	return area;
- }
- EXPORT_SYMBOL_GPL(alloc_vm_area);
-
-David
+Thanks,
+Mauro
