@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753842Ab1IUM4K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 08:56:10 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:49391 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753673Ab1IUM4J (ORCPT
+	id S1753896Ab1IUNBs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 09:01:48 -0400
+Received: from queueout02-winn.ispmail.ntl.com ([81.103.221.56]:54612 "EHLO
+	queueout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753770Ab1IUNBr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 08:56:09 -0400
-Date: Wed, 21 Sep 2011 13:56:07 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Leo Yan <leoy@marvell.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
-Subject: Re: Questions for dummy codec driver
-Message-ID: <20110921125607.GC25620@sirena.org.uk>
-References: <1316502540.4269.1.camel@phoenix>
- <4E794A96.9040206@marvell.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E794A96.9040206@marvell.com>
-X-Cookie: Yow!  Am I having fun yet?
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+	Wed, 21 Sep 2011 09:01:47 -0400
+From: Daniel Drake <dsd@laptop.org>
+To: grant.likely@secretlab.ca
+To: sameo@linux.intel.com
+Cc: linux-kernel@vger.kernel.org
+Cc: devicetree-discuss@lists.ozlabs.org
+Cc: dilinger@queued.net
+Subject: [PATCH 2/3] mfd: link vx855 GPIO cell with device tree
+Message-Id: <20110921120207.AD6719D401D@zog.reactivated.net>
+Date: Wed, 21 Sep 2011 13:02:07 +0100 (BST)
+X-Cloudmark-Analysis: v=1.1 cv=JvdXmxIgLJv2/GthKqHpGJEEHukvLcvELVXUanXFreg= c=1 sm=0 a=fCaE1IvjAYoA:10 a=vJ1w_8FsMGIA:10 a=Op-mwl0xAAAA:8 a=Yw2oxTKiaapzeAHUPnIA:9 a=d4CUUju0HPYA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 21, 2011 at 10:23:18AM +0800, Leo Yan wrote:
+The child driver will then pass the handle to gpiolib, which
+enables device-tree-probed gpio-leds and more.
 
-> I have a question for the dummy codec.
+Signed-off-by: Daniel Drake <dsd@laptop.org>
+---
+ drivers/mfd/vx855.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-Don't start new threads by randomly replying to unrelated mails.
+diff --git a/drivers/mfd/vx855.c b/drivers/mfd/vx855.c
+index d698703..6466c21 100644
+--- a/drivers/mfd/vx855.c
++++ b/drivers/mfd/vx855.c
+@@ -101,6 +101,11 @@ static __devinit int vx855_probe(struct pci_dev *pdev,
+ 	vx855_gpio_resources[1].start = gpio_io_offset + VX855_PMIO_R_GPO;
+ 	vx855_gpio_resources[1].end = vx855_gpio_resources[1].start + 3;
+ 
++#ifdef CONFIG_OF_GPIO
++	vx855_cells[0].of_node = of_find_compatible_node(NULL, NULL,
++							 "via,vx855-gpio");
++#endif
++
+ 	ret = mfd_add_devices(&pdev->dev, -1, vx855_cells, ARRAY_SIZE(vx855_cells),
+ 			NULL, 0);
+ 
+-- 
+1.7.6.2
 
-> As you know, sometimes maybe we only need set the timing from the
-> processor, and codec just only need tx/rx data; So there do not need
-> the codec driver.
-
-Even a dumb CODEC will have some constraints on things like the sample
-rates it can support which need to be conveyed to the framework and
-ideally the audio routing out of the CODEC should be visible for
-integration with any external output drivers or similar.
-
-> After browser the code, there have NO such a dummy codec driver; and
-> for soc-core, there have not such flags to support this situation.
-> Only what i get is sound/soc/codecs/spdif_transciever.c, but it's
-> specific for TI's DaVinci platform.
-
-Not at all, what makes you believe that it is platform specific?
