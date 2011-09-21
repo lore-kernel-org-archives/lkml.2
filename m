@@ -1,74 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751140Ab1IUVYf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 17:24:35 -0400
-Received: from www.linutronix.de ([62.245.132.108]:51206 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750777Ab1IUVYd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 17:24:33 -0400
-Date: Wed, 21 Sep 2011 23:24:30 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Clark Williams <williams@redhat.com>
-cc: RT <linux-rt-users@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Carsten Emde <ce@ceag.ch>,
-        =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        John Kacur <jkacur@redhat.com>
-Subject: Re: rt-tests-0.82 available on github
-In-Reply-To: <20110921155455.61ab4745@redhat.com>
-Message-ID: <alpine.LFD.2.02.1109212313180.2723@ionos>
-References: <20110921155455.61ab4745@redhat.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1751192Ab1IUV0x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 17:26:53 -0400
+Received: from nef2.ens.fr ([129.199.96.40]:3610 "EHLO nef2.ens.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750777Ab1IUV0w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 17:26:52 -0400
+X-Greylist: delayed 2223 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Sep 2011 17:26:52 EDT
+Date: Wed, 21 Sep 2011 22:49:46 +0200
+From: =?iso-8859-1?Q?=C9ric?= Brunet <Eric.Brunet@lps.ens.fr>
+To: linux-kernel@vger.kernel.org
+Subject: Re: Regression between 2.6.35 and 2.6.38 (freeze at resume)
+Message-ID: <20110921204946.GA4304@lps.ens.fr>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.1.4 (nef2.ens.fr [129.199.96.32]); Wed, 21 Sep 2011 22:49:48 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Sep 2011, Clark Williams wrote:
+In-Reply-To: <s5hy5xigjts.wl%tiwai@suse.de>
+References: <201109170935.17777.Eric.Brunet@lps.ens.fr> <201109202206.35705.Eric.Brunet@lps.ens.fr> <s5hy5xigjts.wl%tiwai@suse.de>
 
-> While kernel.org is sorting out the security stuff, the rt-tests code
-> may be pulled from:
-> 
-> 	git://github.com/clrkwllms/rt-tests.git
-> 
-> Note that we're now at version 0.82. Presently I only have the git
-> archive available (no tarballs). 
-> 
-> While investigating latency spikes in the 3.0.x-rt kernels, Thomas
-> spotted a case where an Intel quad-core Xeon was going into deep
-> sleep states and were all fighting to come out of sleep at the same
-> time (and consequently causing a big latency spike in cyclictest). 
-> 
-> While trying to figure out how to prevent deep cstates I remembered a
-> conversation I had with Arjan at the last Plumbers conference in
-> Boston. He mentioned the /dev/cpu_dma_latency interface to the power
-> managment code and that if you opened it and wrote a zero to it, you
-> effectively put the system into "idle=poll" mode until you closed the
-> file descriptor (see: Documentation/power/pm_qos_interface.txt). 
-> 
-> I've added a set_latency_target() function to cyclictest that by
-> default opens /dev/cpu_dma_latency and writes a zero to it, then holds
-> the file descriptor open for the duration of the cyclictest run. This
-> made a *huge* difference on some Intel Xeon's. Without this option, when
-> I was running cyclictest with the -b option, I saw latencies over
-> 300us. When I added it, while tracing I never saw a latency over 30us.
-> Turning of -b, I never saw it go over 10us. I am doing further testing
-> now with other x86_64 systems. 
-> 
-> Of course this is very architecture specific, so YMMV, but I think it's
-> a valid mechanism to be used when measuring latency and I believe a
-> technique that many latency-sensitive applications might use to good
-> effect. 
+>> I'd like to know what I can do to help nail this annoying bug. I am
+>> not sure if I can git bisect it; it is hard to tell offhand if a
+>> kernel is good; it may resume correctly many times before crashing.
+>
+> Did you try the recent 3.1-rc?  There have been a few commits relevant
+> with battery module and PM after 3.0, and I guess this will be the fix
+> for your case, too.
 
-This is not a big surprise as the kernel got more agressive going into
-deep C-states since 2.6.33-rt especially with "intel_idle" on modern
-(Nehalem+) cpus.
+I did try 3.0.4 and it crashed the same way. I'll try 3.1-rc as you
+suggest.
+
+The point is that it worked very well in F14 with 2.6.35 kernels. I was
+trying to find out in which kernel exactly the problems began. I couldn't
+crash 2.6.36, 2.6.37 and 2.6.38 but, today, 2.6.39-rc1 crashed on me. I
+suspect (because there is a small change of behaviour) that the problem
+appears in 2.6.38 even though I haven't crashed it yet. Were there some
+changes in battery and PM around 2.6.38 ?
+
+Anyway, I start now to compile 3.1.
 
 Thanks,
 
-	tglx
+        Éric Brunet
