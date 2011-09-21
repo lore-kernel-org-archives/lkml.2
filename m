@@ -1,64 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753763Ab1IUSEf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 14:04:35 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:59603 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751370Ab1IUSEe (ORCPT
+	id S1753822Ab1IUSFi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 14:05:38 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:2670 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753771Ab1IUSFg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 14:04:34 -0400
-From: Pedro Alves <pedro@codesourcery.com>
-Organization: CodeSourcery
-To: "Linas Vepstas (Code Aurora)" <linas@codeaurora.org>
-Subject: Re: [patch v3 19/36] Hexagon: Add ptrace support
-Date: Wed, 21 Sep 2011 19:04:29 +0100
-User-Agent: KMail/1.13.6 (Linux/2.6.38-11-generic; KDE/4.7.0; x86_64; ; )
-Cc: Jonas Bonn <jonas.bonn@gmail.com>, Richard Kuo <rkuo@codeaurora.org>,
-        linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arnd@arndb.de
-References: <20110909010847.294039464@codeaurora.org> <201109211715.20795.pedro@codesourcery.com> <20110921175009.GA3703@codeaurora.org>
-In-Reply-To: <20110921175009.GA3703@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201109211904.29572.pedro@codesourcery.com>
-X-OriginalArrivalTime: 21 Sep 2011 18:04:31.0974 (UTC) FILETIME=[E9C44060:01CC7888]
+	Wed, 21 Sep 2011 14:05:36 -0400
+From: Vincent Palatin <vpalatin@chromium.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, Alan Stern <stern@rowland.harvard.edu>,
+        Linux PCI <linux-pci@vger.kernel.org>
+Cc: Olof Johansson <olofj@chromium.org>, Sameer Nanda <snanda@chromium.org>,
+        Ming Lei <tom.leiming@gmail.com>, linux-kernel@vger.kernel.org,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [PATCH] PM / Runtime: make PCI traces quieter
+Date: Wed, 21 Sep 2011 11:05:08 -0700
+Message-Id: <1316628308-32580-1-git-send-email-vpalatin@chromium.org>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <CAP_ceTyXLO=mv1Ott=g3mG0y+Q+VUM3N8CA-Fqa-_=uj7LTbmw@mail.gmail.com>
+References: <CAP_ceTyXLO=mv1Ott=g3mG0y+Q+VUM3N8CA-Fqa-_=uj7LTbmw@mail.gmail.com>
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 21 September 2011 18:50:09, Linas Vepstas (Code Aurora) wrote:
-> On Wed, Sep 21, 2011 at 05:15:20PM +0100, Pedro Alves wrote:
-> > > On Sat, Sep 10, 2011 at 12:29:57PM +0100, Pedro Alves wrote:
-> > > > Yes, the x86/x86-64 ports or gdb and gdbserver are already
-> > > > using GET/SETREGSET even.
-> 
-> Thanks; after a bit of initial confusion, I've gotten gdb to
-> work with this, so I'm happy. 
-> 
-> > I wish there was an equivalent of PTRACE_GETREGSET for siginfo...
-> 
-> How? Why?
+When the runtime PM is activated on PCI, if a device switches state frequently
+(e.g. an EHCI controller with autosuspending USB devices connected)
+the PCI configuration traces might be very verbose in the kernel log.
+Let's guard those traces with DEBUG condition.
 
-One of the the cool features of PTRACE_GETREGSET is that it returns
-the regset in the natural layout of the tracee.  So when debugging a 
-32-bit process on a 64-bit kernel, PTRACE_GETREGSET returns the
-regset in 32-bit layout.  Recent enough GDBs can print the siginfo of a
-caught signal (before its delivered with (PTRACE_CONT, sig).
-Try "(gdb) p $_siginfo" on x86.  Trouble is 32-bit processes on 64-bit
-kernels or other biarch setups.  PTRACE_GETSIGINFO returns the siginfo in
-64-bit layout, so GDB gets to try to immitate what the kernel's 32-bit
-compat layer does.  Both for reading and writting siginfo.
-See compat_siginfo_from_siginfo and siginfo_from_compat_siginfo
-at [1].
-The kernel already knows to convert siginfo to the native layout
-of the process -- needed to pass to the user space signal handler
-at least.  But AFAIK, there's no way for the debugger to get at it
-before the signal is actually delivered.
+Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
+---
+ arch/x86/pci/i386.c     |    2 +-
+ drivers/acpi/pci_irq.c  |   10 +++++-----
+ drivers/pci/pci.c       |    5 ++---
+ drivers/pci/setup-res.c |    6 +++---
+ 4 files changed, 11 insertions(+), 12 deletions(-)
 
-[1]
-http://sourceware.org/cgi-bin/cvsweb.cgi/src/gdb/amd64-linux-nat.c?rev=1.35&content-type=text/x-cvsweb-markup&cvsroot=src
-
+diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
+index 494f2e7..eb5d20b 100644
+--- a/arch/x86/pci/i386.c
++++ b/arch/x86/pci/i386.c
+@@ -269,7 +269,7 @@ void pcibios_set_master(struct pci_dev *dev)
+ 		lat = pcibios_max_latency;
+ 	else
+ 		return;
+-	dev_printk(KERN_DEBUG, &dev->dev, "setting latency timer to %d\n", lat);
++	dev_dbg(&dev->dev, "setting latency timer to %d\n", lat);
+ 	pci_write_config_byte(dev, PCI_LATENCY_TIMER, lat);
+ }
+ 
+diff --git a/drivers/acpi/pci_irq.c b/drivers/acpi/pci_irq.c
+index 7f9eba9..0eefa12 100644
+--- a/drivers/acpi/pci_irq.c
++++ b/drivers/acpi/pci_irq.c
+@@ -487,10 +487,10 @@ int acpi_pci_irq_enable(struct pci_dev *dev)
+ 	else
+ 		link_desc[0] = '\0';
+ 
+-	dev_info(&dev->dev, "PCI INT %c%s -> GSI %u (%s, %s) -> IRQ %d\n",
+-		 pin_name(pin), link_desc, gsi,
+-		 (triggering == ACPI_LEVEL_SENSITIVE) ? "level" : "edge",
+-		 (polarity == ACPI_ACTIVE_LOW) ? "low" : "high", dev->irq);
++	dev_dbg(&dev->dev, "PCI INT %c%s -> GSI %u (%s, %s) -> IRQ %d\n",
++		pin_name(pin), link_desc, gsi,
++		(triggering == ACPI_LEVEL_SENSITIVE) ? "level" : "edge",
++		(polarity == ACPI_ACTIVE_LOW) ? "low" : "high", dev->irq);
+ 
+ 	return 0;
+ }
+@@ -524,6 +524,6 @@ void acpi_pci_irq_disable(struct pci_dev *dev)
+ 	 * (e.g. PCI_UNDEFINED_IRQ).
+ 	 */
+ 
+-	dev_info(&dev->dev, "PCI INT %c disabled\n", pin_name(pin));
++	dev_dbg(&dev->dev, "PCI INT %c disabled\n", pin_name(pin));
+ 	acpi_unregister_gsi(gsi);
+ }
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index 0ce6742..d339c30 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -964,7 +964,7 @@ void pci_restore_state(struct pci_dev *dev)
+ 	for (i = 15; i >= 0; i--) {
+ 		pci_read_config_dword(dev, i * 4, &val);
+ 		if (val != dev->saved_config_space[i]) {
+-			dev_printk(KERN_DEBUG, &dev->dev, "restoring config "
++			dev_dbg(&dev->dev, "restoring config "
+ 				"space at offset %#x (was %#x, writing %#x)\n",
+ 				i, val, (int)dev->saved_config_space[i]);
+ 			pci_write_config_dword(dev,i * 4,
+@@ -1531,8 +1531,7 @@ void pci_pme_active(struct pci_dev *dev, bool enable)
+ 	}
+ 
+ out:
+-	dev_printk(KERN_DEBUG, &dev->dev, "PME# %s\n",
+-			enable ? "enabled" : "disabled");
++	dev_dbg(&dev->dev, "PME# %s\n", enable ? "enabled" : "disabled");
+ }
+ 
+ /**
+diff --git a/drivers/pci/setup-res.c b/drivers/pci/setup-res.c
+index 51a9095..3878fe9 100644
+--- a/drivers/pci/setup-res.c
++++ b/drivers/pci/setup-res.c
+@@ -84,9 +84,9 @@ void pci_update_resource(struct pci_dev *dev, int resno)
+ 		}
+ 	}
+ 	res->flags &= ~IORESOURCE_UNSET;
+-	dev_info(&dev->dev, "BAR %d: set to %pR (PCI address [%#llx-%#llx])\n",
+-		 resno, res, (unsigned long long)region.start,
+-		 (unsigned long long)region.end);
++	dev_dbg(&dev->dev, "BAR %d: set to %pR (PCI address [%#llx-%#llx])\n",
++		resno, res, (unsigned long long)region.start,
++		(unsigned long long)region.end);
+ }
+ 
+ int pci_claim_resource(struct pci_dev *dev, int resource)
 -- 
-Pedro Alves
+1.7.3.1
+
