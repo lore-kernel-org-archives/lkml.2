@@ -1,89 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753664Ab1IUR4H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 13:56:07 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:36664 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753211Ab1IUR4F (ORCPT
+	id S1753690Ab1IUR4N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 13:56:13 -0400
+Received: from www.linutronix.de ([62.245.132.108]:50765 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753494Ab1IUR4L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 13:56:05 -0400
-Message-ID: <4E7A252F.2000402@gmail.com>
-Date: Wed, 21 Sep 2011 12:55:59 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110918 Thunderbird/7.0
+	Wed, 21 Sep 2011 13:56:11 -0400
+Date: Wed, 21 Sep 2011 19:56:04 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Oleg Nesterov <oleg@redhat.com>
+cc: Eric Dumazet <eric.dumazet@gmail.com>, Andi Kleen <ak@linux.intel.com>,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 4/4] posix-timers: turn it_signal into it_valid flag
+In-Reply-To: <alpine.LFD.2.02.1109211835550.2723@ionos>
+Message-ID: <alpine.LFD.2.02.1109211954430.2723@ionos>
+References: <20110904165658.GA23948@redhat.com> <20110904202907.GA3404@redhat.com> <20110906031411.GA24024@alboin.amr.corp.intel.com> <20110906145124.GA15390@redhat.com> <1315323596.2899.6.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <alpine.LFD.2.02.1109061823100.2723@ionos>
+ <20110906184926.GA25997@redhat.com> <alpine.LFD.2.02.1109062110090.2723@ionos> <20110906192626.GA27362@redhat.com> <alpine.LFD.2.02.1109062134010.2723@ionos> <20110906220827.GA1800@redhat.com> <alpine.LFD.2.02.1109211835550.2723@ionos>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: "Cousson, Benoit" <b-cousson@ti.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
-        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
-        "jamie@jamieiles.com" <jamie@jamieiles.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "dave.martin@linaro.org" <dave.martin@linaro.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH 3/3] ARM: gic: add OF based initialization
-References: <1316550244-3655-1-git-send-email-robherring2@gmail.com> <1316550244-3655-4-git-send-email-robherring2@gmail.com> <4E7A1BCA.1090006@ti.com>
-In-Reply-To: <4E7A1BCA.1090006@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Benoit,
+On Wed, 21 Sep 2011, Thomas Gleixner wrote:
 
-On 09/21/2011 12:15 PM, Cousson, Benoit wrote:
-> Hi Rob,
+> On Wed, 7 Sep 2011, Oleg Nesterov wrote:
+> > On 09/06, Thomas Gleixner wrote:
+> > >
+> > > On Tue, 6 Sep 2011, Oleg Nesterov wrote:
+> > >
+> > > > But how this can help? Suppose that the task is preempted right
+> > > > after dequeue_signal() drops ->siglock. We need rcu_read_lock()
+> > > > before unlock then, no?
+> > >
+> > > Crap, you are right, but that's fortunately an easy to solve one :)
+> > 
+> > Yes, this is solvable. But I think we can do something better.
+> > 
+> > > > And. This breaks the accounting logic. I mean the patch from Andi
+> > > > which adds the limits.
+> > >
+> > > That's a different problem and really, it does not break it by any
+> > > means. When the timer is released, then the count is decreased and we
+> > > can safely assume that the memory is going to be freed in the next
+> > > grace period.
+> > 
+> > Yes, but this means we need the counter which we do not have.
+> > 
+> > I think we can avoid this problems. Although I am not sure, I am
+> > already sleeping.
+> > 
+> > 	- we add rcu_read_lock() into dequeueu_signal().
+> > 
+> > 	- we add the new "struct k_itimer *my_timer" member into
+> > 	 siginfo._timer. Like _sys_private it is not passed to
+> > 	 user, and perhaps we can kill _sys_private later.
 > 
-> I'm testing that series with OMAP4 but have some issues for the moment :-(
+> sys_private is ugly as hell and we should avoid to add another field
+> to siginfo.
 > 
-> [    0.000000] WARNING: at kernel/irq/irqdomain.c:34 gic_of_init+0x10c/0x180()
-> [    0.000000] error: irq_desc already assigned to a domain
-> [    0.000000] Modules linked in:
-> [    0.000000] [<c001b284>] (unwind_backtrace+0x0/0xf0) from [<c0051c34>] (warn_slowpath_common+0x4c/0x64)
-> [    0.000000] [<c0051c34>] (warn_slowpath_common+0x4c/0x64) from [<c0051ce0>] (warn_slowpath_fmt+0x30/0x40)
-> [    0.000000] [<c0051ce0>] (warn_slowpath_fmt+0x30/0x40) from [<c05f6874>] (gic_of_init+0x10c/0x180)
-> [    0.000000] [<c05f6874>] (gic_of_init+0x10c/0x180) from [<c05fa2e0>] (omap_gic_of_init+0x8/0x28)
-> [    0.000000] [<c05fa2e0>] (omap_gic_of_init+0x8/0x28) from [<c0616b44>] (of_irq_init+0x148/0x28c)
-> [    0.000000] [<c0616b44>] (of_irq_init+0x148/0x28c) from [<c05f3074>] (init_IRQ+0x14/0x1c)
-> [    0.000000] [<c05f3074>] (init_IRQ+0x14/0x1c) from [<c05f0650>] (start_kernel+0x184/0x2fc)
-> [    0.000000] [<c05f0650>] (start_kernel+0x184/0x2fc) from [<80008040>] (0x80008040)
->  
-> I'm not super familiar with all the irq stuff but I'm wondering if there is not something wrong with the test that print that message:
-> 
-> void irq_domain_add(struct irq_domain *domain)
-> {
-> 	struct irq_data *d;
-> 	int hwirq;
-> 
-> 	/*
-> 	 * This assumes that the irq_domain owner has already allocated
-> 	 * the irq_descs.  This block will be removed when support for dynamic
-> 	 * allocation of irq_descs is added to irq_domain.
-> 	 */
-> 	for (hwirq = 0; hwirq < domain->nr_irq; hwirq++) {
-> 		d = irq_get_irq_data(irq_domain_to_irq(domain, hwirq));
-> 		if (d || d->domain) {
-> 			/* things are broken; just report, don't clean up */
-> 			WARN(1, "error: irq_desc already assigned to a domain");
-> 			return;
-> 		}
-> [...]
-> 
-> Is the (d || d->domain) correct? Shouldn't it be (d && d->domain)?
-> 
-> But since that used to work properly, I have some doubt. Moreover the driver will not even get the proper interrupt later...
-> 
-> Do you have any clue?
+> I think we can embed the timer siginfo into k_itimer instead and
 
-I fixed that in the prior series and tglx picked it up, so I did not
-repost. It should hit mainline for 3.1, but I haven't verified if it is
-in yet. Sorry for the confusion, I should have mentioned that.
+That should be sigqeue of course, which has siginfo embedded.
 
-Rob
+Thanks,
 
+	tglx
+ 
