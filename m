@@ -1,123 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752670Ab1IUJGh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 05:06:37 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:42061 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750873Ab1IUJGf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 05:06:35 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: "Ravi, Deepthy" <deepthy.ravi@ti.com>
-Subject: Re: [PATCH 4/5] ispccdc: Configure CCDC_SYN_MODE register for UYVY8_2X8 and YUYV8_2X8 formats
-Date: Wed, 21 Sep 2011 11:06:41 +0200
-User-Agent: KMail/1.13.7 (Linux/3.0.3-gentoo; KDE/4.7.1; x86_64; ; )
-Cc: "mchehab@infradead.org" <mchehab@infradead.org>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "Hiremath, Vaibhav" <hvaibhav@ti.com>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-        "hverkuil@xs4all.nl" <hverkuil@xs4all.nl>,
-        "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
-        "g.liakhovetski@gmx.de" <g.liakhovetski@gmx.de>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        "khilman@deeprootsystems.com" <khilman@deeprootsystems.com>,
-        "david.woodhouse@intel.com" <david.woodhouse@intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Sakari Ailus <sakari.ailus@maxwell.research.nokia.com>
-References: <1316530612-23075-1-git-send-email-deepthy.ravi@ti.com> <201109210126.20436.laurent.pinchart@ideasonboard.com> <ADF30F4D7BDE934D9B632CE7D5C7ACA4047C4D090847@dbde03.ent.ti.com>
-In-Reply-To: <ADF30F4D7BDE934D9B632CE7D5C7ACA4047C4D090847@dbde03.ent.ti.com>
+	id S1752690Ab1IUJIK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 05:08:10 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:16835 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752608Ab1IUJII (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 05:08:08 -0400
+Message-ID: <4E79A95F.8050304@parallels.com>
+Date: Wed, 21 Sep 2011 13:07:43 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Lightning/1.0b2 Thunderbird/3.1.13
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>
+CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "davem@davemloft.net" <davem@davemloft.net>
+Subject: Re: [PATCH v6 1/8] SUNRPC: introduce helpers for reference counted
+ rpcbind clients
+References: <20110920101031.9861.18444.stgit@localhost6.localdomain6> <20110920101341.9861.51453.stgit@localhost6.localdomain6> <4E7899E7.9090809@parallels.com>
+In-Reply-To: <4E7899E7.9090809@parallels.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201109211106.41677.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Deepthy,
+v6:
+1) added write memory barrier to rpcb_set_local to make sure, that rpcbind 
+clients become valid before rpcb_users assignment
+2) explicitly set rpcb_users to 1 instead of incrementing it (looks clearer from 
+my pow).
 
-On Wednesday 21 September 2011 07:32:44 Ravi, Deepthy wrote:
-> On Wednesday, September 21, 2011 4:56 AM Laurent Pinchart wrote:
-> > On Tuesday 20 September 2011 16:56:51 Deepthy Ravi wrote:
-> >> Configure INPMOD and PACK8 fileds of CCDC_SYN_MODE
-> >> register for UYVY8_2X8 and YUYV8_2X8 formats.
-> >> 
-> >> Signed-off-by: Deepthy Ravi <deepthy.ravi@ti.com>
-> >> ---
-> >> 
-> >>  drivers/media/video/omap3isp/ispccdc.c |   11 ++++++++---
-> >>  1 files changed, 8 insertions(+), 3 deletions(-)
-> >> 
-> >> diff --git a/drivers/media/video/omap3isp/ispccdc.c
-> >> b/drivers/media/video/omap3isp/ispccdc.c index 418ba65..1dcf180 100644
-> >> --- a/drivers/media/video/omap3isp/ispccdc.c
-> >> +++ b/drivers/media/video/omap3isp/ispccdc.c
-> >> @@ -985,8 +985,12 @@ static void ccdc_config_sync_if(struct
-> >> isp_ccdc_device
-> >> *ccdc,
-> >> 
-> >>       syn_mode &= ~ISPCCDC_SYN_MODE_INPMOD_MASK;
-> >>       if (format->code == V4L2_MBUS_FMT_YUYV8_2X8 ||
-> >> 
-> >> -         format->code == V4L2_MBUS_FMT_UYVY8_2X8)
-> >> -             syn_mode |= ISPCCDC_SYN_MODE_INPMOD_YCBCR8;
-> >> +         format->code == V4L2_MBUS_FMT_UYVY8_2X8){
-> >> +             if (pdata && pdata->bt656)
-> >> +                     syn_mode |= ISPCCDC_SYN_MODE_INPMOD_YCBCR8;
-> >> +             else
-> >> +                     syn_mode |= ISPCCDC_SYN_MODE_INPMOD_YCBCR16;
-> >> +     }
-> >> 
-> >>       else if (format->code == V4L2_MBUS_FMT_YUYV8_1X16 ||
-> >>       
-> >>                format->code == V4L2_MBUS_FMT_UYVY8_1X16)
-> >>               
-> >>               syn_mode |= ISPCCDC_SYN_MODE_INPMOD_YCBCR16;
-> >> 
-> >> @@ -1172,7 +1176,8 @@ static void ccdc_configure(struct isp_ccdc_device
-> >> *ccdc) syn_mode &= ~ISPCCDC_SYN_MODE_SDR2RSZ;
-> >> 
-> >>       /* Use PACK8 mode for 1byte per pixel formats. */
-> >> 
-> >> -     if (omap3isp_video_format_info(format->code)->width <= 8)
-> >> +     if ((omap3isp_video_format_info(format->code)->width <= 8) &&
-> >> +                     (omap3isp_video_format_info(format->code)->bpp <=
-> >> 8))
-> > 
-> > I'm not sure to follow you. This will clear the PACK8 bit for the
-> > YUYV8_2X8 formats. Those formats are 8 bits wide, shouldn't PACK8 be set
-> > to store samples on 8 bits instead of 16 bits ?
-> > 
-> > Is this patch intended to support YUYV8_2X8 sensors in non BT.656 mode
-> > with the bridge enabled ? In that case, what would you think about setting
-> > the CCDC input format to YUYV8_1X16 instead ? This would better reflect
-> > the reality, as the bridge converts YUYV8_2X8 to YUYV8_1X16, and the CCDC
-> > is then fed with YUYV8_1X16.
-> 
-> Yes this is intended for  YUYV8_2X8 sensors in non BT.656 with 8 to 16 bit
-> bridge enabled. So the data has to be stored as 16 bits per sample. Thats
-> why PACK8 is cleared . I am not sure about using YUYV8_1X16.
+Notice: write memory barrier after zeroing rpcbind clients in rpcb_put_local() 
+is not required, since to users of them left. New user (service) will create new 
+clients before dereferencing them.
 
-My original idea when I wrote the YV support patches was to implement this use 
-case with YUYV8_2X8 at the sensor output and YUYV8_1X16 at the CCDC input. The 
-ISP driver could then enable the bridge automatically. I'm not sure if that's 
-the best solution though, it might be confusing for the users. What I would 
-like to keep, however, is the idea of enabling the bridge automatically.
+This helpers will be used for dynamical creation and destruction of rpcbind
+clients.
+Variable rpcb_users is actually a counter of lauched RPC services. If rpcbind
+clients has been created already, then we just increase rpcb_users.
 
-Sakari, any opinion on this ?
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
-> >>               syn_mode |= ISPCCDC_SYN_MODE_PACK8;
-> >>       else
-> >>               syn_mode &= ~ISPCCDC_SYN_MODE_PACK8;
+---
+  net/sunrpc/rpcb_clnt.c |   54 ++++++++++++++++++++++++++++++++++++++++++++++++
+  1 files changed, 54 insertions(+), 0 deletions(-)
 
--- 
-Regards,
+diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
+index e45d2fb..9fcdb42 100644
+--- a/net/sunrpc/rpcb_clnt.c
++++ b/net/sunrpc/rpcb_clnt.c
+@@ -114,6 +114,9 @@ static struct rpc_program	rpcb_program;
+  static struct rpc_clnt *	rpcb_local_clnt;
+  static struct rpc_clnt *	rpcb_local_clnt4;
 
-Laurent Pinchart
++DEFINE_SPINLOCK(rpcb_clnt_lock);
++unsigned int			rpcb_users;
++
+  struct rpcbind_args {
+  	struct rpc_xprt *	r_xprt;
+
+@@ -161,6 +164,57 @@ static void rpcb_map_release(void *data)
+  	kfree(map);
+  }
+
++static int rpcb_get_local(void)
++{
++	int cnt;
++
++	spin_lock(&rpcb_clnt_lock);
++	if (rpcb_users)
++		rpcb_users++;
++	cnt = rpcb_users;
++	spin_unlock(&rpcb_clnt_lock);
++
++	return cnt;
++}
++
++void rpcb_put_local(void)
++{
++	struct rpc_clnt *clnt = rpcb_local_clnt;
++	struct rpc_clnt *clnt4 = rpcb_local_clnt4;
++	int shutdown;
++
++	spin_lock(&rpcb_clnt_lock);
++	if (--rpcb_users == 0) {
++		rpcb_local_clnt = NULL;
++		rpcb_local_clnt4 = NULL;
++	}
++	shutdown = !rpcb_users;
++	spin_unlock(&rpcb_clnt_lock);
++
++	if (shutdown) {
++		/*
++		 * cleanup_rpcb_clnt - remove xprtsock's sysctls, unregister
++		 */
++		if (clnt4)
++			rpc_shutdown_client(clnt4);
++		if (clnt)
++			rpc_shutdown_client(clnt);
++	}
++	return;
++}
++
++static void rpcb_set_local(struct rpc_clnt *clnt, struct rpc_clnt *clnt4)
++{
++	/* Protected by rpcb_create_local_mutex */
++	rpcb_local_clnt = clnt;
++	rpcb_local_clnt4 = clnt4;
++	smp_wmb();
++	rpcb_users = 1;
++	dprintk("RPC:       created new rpcb local clients (rpcb_local_clnt: "
++			"%p, rpcb_local_clnt4: %p)\n", rpcb_local_clnt,
++			rpcb_local_clnt4);
++}
++
+  /*
+   * Returns zero on success, otherwise a negative errno value
+   * is returned.
