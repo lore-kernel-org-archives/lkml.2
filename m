@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751060Ab1IUOJw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 10:09:52 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:53826 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750810Ab1IUOJu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 10:09:50 -0400
-Message-ID: <4E79F00E.7030306@metafoo.de>
-Date: Wed, 21 Sep 2011 16:09:18 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110818 Icedove/3.0.11
+	id S1751304Ab1IUOKW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 10:10:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59745 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751049Ab1IUOKT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 10:10:19 -0400
+Date: Wed, 21 Sep 2011 16:09:35 +0200
+From: Johannes Weiner <jweiner@redhat.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Rik van Riel <riel@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Dave Chinner <david@fromorbit.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Chris Mason <chris.mason@oracle.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, xfs@oss.sgi.com,
+        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 3/4] mm: filemap: pass __GFP_WRITE from
+ grab_cache_page_write_begin()
+Message-ID: <20110921140935.GF22516@redhat.com>
+References: <1316526315-16801-1-git-send-email-jweiner@redhat.com>
+ <1316526315-16801-4-git-send-email-jweiner@redhat.com>
+ <20110920142553.GA2593@infradead.org>
+ <4E78DD8B.1020605@redhat.com>
+ <20110920184034.GA27353@infradead.org>
 MIME-Version: 1.0
-To: Axel Lin <axel.lin@gmail.com>
-CC: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org
-Subject: Re: [PATCH 3/4] ASoC: Staticise jz4740_pcm_new()
-References: <1316587205.2824.1.camel@phoenix> <1316587310.2824.3.camel@phoenix>
-In-Reply-To: <1316587310.2824.3.camel@phoenix>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110920184034.GA27353@infradead.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/21/2011 08:41 AM, Axel Lin wrote:
-> It is not used outside this driver so no need to make the symbol global.
+On Tue, Sep 20, 2011 at 02:40:34PM -0400, Christoph Hellwig wrote:
+> On Tue, Sep 20, 2011 at 02:38:03PM -0400, Rik van Riel wrote:
+> > On 09/20/2011 10:25 AM, Christoph Hellwig wrote:
+> > >In addition to regular write shouldn't __do_fault and do_wp_page also
+> > >calls this if they are called on file backed mappings?
+> > 
+> > Probably not do_wp_page since it always creates an
+> > anonymous page, which are not very relevant to the
+> > dirty page cache accounting.
 > 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> Well, it doesn't always - but for the case where it doesn't we
+> do not allocate a new page at all so you're right in the end :)
 
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+I think it could be useful to annotate write-fault allocations in
+filemap_fault(), but these pages are mostly allocated in the readahead
+code, so this could turn into a more invasive project.
 
-Thanks.
-
-> ---
->  sound/soc/jz4740/jz4740-pcm.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/sound/soc/jz4740/jz4740-pcm.c b/sound/soc/jz4740/jz4740-pcm.c
-> index a7c9578..d1989cd 100644
-> --- a/sound/soc/jz4740/jz4740-pcm.c
-> +++ b/sound/soc/jz4740/jz4740-pcm.c
-> @@ -299,7 +299,7 @@ static void jz4740_pcm_free(struct snd_pcm *pcm)
->  
->  static u64 jz4740_pcm_dmamask = DMA_BIT_MASK(32);
->  
-> -int jz4740_pcm_new(struct snd_soc_pcm_runtime *rtd)
-> +static int jz4740_pcm_new(struct snd_soc_pcm_runtime *rtd)
->  {
->  	struct snd_card *card = rtd->card->snd_card;
->  	struct snd_soc_dai *dai = rtd->cpu_dai;
-
+It can be done incrementally, however, the series as it stands does
+not require it to be useful.
