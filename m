@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752670Ab1IUHwH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 03:52:07 -0400
-Received: from mail1.sysgo.com ([176.9.26.183]:49104 "EHLO mail1.sysgo.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752409Ab1IUHwF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 03:52:05 -0400
-Subject: [PATCH] init: Carefuly handle loglevel option passed to kernel
- cmdline
-From: Alexander Sverdlin <asv@sysgo.com>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 21 Sep 2011 09:51:40 +0200
-Message-ID: <1316591500.14570.7.camel@alex-vb>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1752738Ab1IUHyG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 03:54:06 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:33213 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752474Ab1IUHyD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 03:54:03 -0400
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+To: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Qi Wang <qi.wang@intel.com>, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com,
+        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Subject: [PATCH 5/7] i2c-eg20t: add stop sequence in case wait-event timeout occurs
+Date: Wed, 21 Sep 2011 16:51:47 +0900
+Message-Id: <1316591509-4433-5-git-send-email-tomoya-linux@dsn.okisemi.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1316591509-4433-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+References: <1316591509-4433-1-git-send-email-tomoya-linux@dsn.okisemi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexander Sverdlin <alexander.sverdlin@sysgo.com>
+add stop sequence in case wait-event timeout in write processing.
+(read processing already had it)
 
-Carefuly handle loglevel option passed to kernel cmdline.
-
-When malformed loglevel value (for example "${abc}") passed to kernel
-cmdline, the loglevel itself is being set to 0. This suppresses all
-following messages, including all the errors and crashes caused by
-other malformed cmdline options. This could make debugging process
-quite tricky. Provided modifications leaves previous value of loglevel
-if the new value is incorrect and report error code in this case.
-
-Signed-off-by: Alexander Sverdlin <alexander.sverdlin@sysgo.com>
+Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 ---
---- linux.old/init/main.c	2011-09-20 15:23:05.038279428 +0200
-+++ linux/init/main.c	2011-09-21 09:39:24.266516051 +0200
-@@ -209,8 +209,19 @@ early_param("quiet", quiet_kernel);
- 
- static int __init loglevel(char *str)
- {
--	get_option(&str, &console_loglevel);
--	return 0;
-+	int tmp_loglevel;
-+
-+	/*
-+	 * Only update loglevel value when correct setting was passed,
-+	 * to prevent blind crashes (when loglevel being set to 0) that
-+	 * are quite hard to debug
-+	 */
-+	if (get_option(&str, &tmp_loglevel)) {
-+		console_loglevel = tmp_loglevel;
-+		return 0;
-+	}
-+
-+	return -EINVAL;
- }
- 
- early_param("loglevel", loglevel);
+ drivers/i2c/busses/i2c-eg20t.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-
+diff --git a/drivers/i2c/busses/i2c-eg20t.c b/drivers/i2c/busses/i2c-eg20t.c
+index b6d910d..ab93d73 100644
+--- a/drivers/i2c/busses/i2c-eg20t.c
++++ b/drivers/i2c/busses/i2c-eg20t.c
+@@ -432,6 +432,7 @@ static s32 pch_i2c_writebytes(struct i2c_adapter *i2c_adap,
+ 		pch_clrbit(adap->pch_base_address, PCH_I2CSR, I2CMIF_BIT);
+ 		return -EAGAIN;
+ 	} else { /* wait-event timeout */
++		pch_i2c_stop(adap);
+ 		return -ETIME;
+ 	}
+ 
+@@ -452,6 +453,7 @@ static s32 pch_i2c_writebytes(struct i2c_adapter *i2c_adap,
+ 			pch_clrbit(adap->pch_base_address, PCH_I2CSR,
+ 				   I2CMIF_BIT);
+ 		} else { /* wait-event timeout */
++			pch_i2c_stop(adap);
+ 			return -ETIME;
+ 		}
+ 	}
+-- 
+1.7.4.4
 
