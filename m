@@ -1,85 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752552Ab1IUGM3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 02:12:29 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:52319 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752385Ab1IUGM1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 02:12:27 -0400
-Date: Wed, 21 Sep 2011 09:12:06 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Christoph Hellwig <hch@lst.de>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [patch] bio: change some signed vars to unsigned
-Message-ID: <20110921061206.GA4999@elgon.mountain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4E798045.0168:SCFMA922111,ss=1,re=-4.000,fgs=0
+	id S1752531Ab1IUGOA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 02:14:00 -0400
+Received: from mga11.intel.com ([192.55.52.93]:52527 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751921Ab1IUGN7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 02:13:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,415,1312182000"; 
+   d="scan'208";a="56019824"
+Subject: Re: [PATCH] dmaengine i.MX DMA/SDMA: add missing include of
+ linux/module.h
+From: Vinod Koul <vinod.koul@intel.com>
+To: axel.lin@gmail.com
+Cc: linux-kernel@vger.kernel.org, Sascha Hauer <s.hauer@pengutronix.de>,
+        Dan Williams <dan.j.williams@intel.com>
+In-Reply-To: <CAF+7xWnkzfX7kWy5K-cHExkYZ-FS8zPXZsjqr2Gu1becbDvRyA@mail.gmail.com>
+References: <1314688104.23734.1.camel@phoenix>
+	 <1315228918.26251.78.camel@vkoul-udesk3>
+	 <CAF+7xWn+W=T0A02p2t-kCtYX0o5xL3pU+Q2AUOunZmYvGkhaWg@mail.gmail.com>
+	 <1315233379.26251.152.camel@vkoul-udesk3>
+	 <CAF+7xWnQAT+rLTz0tj3j1KyUO4Zq-+V=ggHAJVMROXGWp5FA+w@mail.gmail.com>
+	 <1316536921.31295.6.camel@vkoul-udesk3>
+	 <CAF+7xWnkzfX7kWy5K-cHExkYZ-FS8zPXZsjqr2Gu1becbDvRyA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 21 Sep 2011 11:39:46 +0530
+Message-ID: <1316585386.1573.0.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is just a cleanup patch to silence a static checker warning.
+On Wed, 2011-09-21 at 07:50 +0800, Axel Lin wrote:
+> > Can you pls send me your .config?
+> I got the error by "make imx_v4_v5_defconfig; make"
+> 
+> It's available in arch/arm/configs/imx_v4_v5_defconfig.
+Applied, Thanks
 
-The problem is that we cap "nr_iovecs" so it can't be larger than
-"UIO_MAXIOV" but we don't check for negative values.  It turns out
-this is prevented at other layers, but logically it doesn't make
-sense to have negative nr_iovecs so making it unsigned is nicer.
+-- 
+~Vinod
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
-
-diff --git a/fs/bio.c b/fs/bio.c
-index 9bfade8..93e7143 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -338,7 +338,7 @@ static void bio_fs_destructor(struct bio *bio)
-  *	RETURNS:
-  *	Pointer to new bio on success, NULL on failure.
-  */
--struct bio *bio_alloc(gfp_t gfp_mask, int nr_iovecs)
-+struct bio *bio_alloc(gfp_t gfp_mask, unsigned int nr_iovecs)
- {
- 	struct bio *bio = bio_alloc_bioset(gfp_mask, nr_iovecs, fs_bio_set);
- 
-@@ -366,7 +366,7 @@ static void bio_kmalloc_destructor(struct bio *bio)
-  *   %__GFP_WAIT, the allocation is guaranteed to succeed.
-  *
-  **/
--struct bio *bio_kmalloc(gfp_t gfp_mask, int nr_iovecs)
-+struct bio *bio_kmalloc(gfp_t gfp_mask, unsigned int nr_iovecs)
- {
- 	struct bio *bio;
- 
-@@ -697,7 +697,8 @@ static void bio_free_map_data(struct bio_map_data *bmd)
- 	kfree(bmd);
- }
- 
--static struct bio_map_data *bio_alloc_map_data(int nr_segs, int iov_count,
-+static struct bio_map_data *bio_alloc_map_data(int nr_segs,
-+					       unsigned int iov_count,
- 					       gfp_t gfp_mask)
- {
- 	struct bio_map_data *bmd;
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index ce33e68..09867ad 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -211,8 +211,8 @@ extern void bio_pair_release(struct bio_pair *dbio);
- extern struct bio_set *bioset_create(unsigned int, unsigned int);
- extern void bioset_free(struct bio_set *);
- 
--extern struct bio *bio_alloc(gfp_t, int);
--extern struct bio *bio_kmalloc(gfp_t, int);
-+extern struct bio *bio_alloc(gfp_t, unsigned int);
-+extern struct bio *bio_kmalloc(gfp_t, unsigned int);
- extern struct bio *bio_alloc_bioset(gfp_t, int, struct bio_set *);
- extern void bio_put(struct bio *);
- extern void bio_free(struct bio *, struct bio_set *);
