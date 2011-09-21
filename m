@@ -1,75 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751478Ab1IUFB2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 01:01:28 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:39771 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751050Ab1IUFB1 (ORCPT
+	id S1751616Ab1IUFBe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 01:01:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50373 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751050Ab1IUFBc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 01:01:27 -0400
-Date: Wed, 21 Sep 2011 15:01:21 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hector Martin <hector@marcansoft.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>,
-        Andre Heider <a.heider@gmail.com>, Geoff Levand <geoff@infradead.org>
-Subject: linux-next: manual merge of the tty tree with the powerpc tree
-Message-Id: <20110921150121.9f530384bc0bb6c2268fd9ea@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 21 Sep 2011 01:01:32 -0400
+Date: Wed, 21 Sep 2011 00:01:27 -0500
+From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, richard@nod.at,
+        Andrew Morton <akpm@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>,
+        serge@hallyn.com
+Subject: [PATCH] user namespace: usb: make usb urbs user namespace aware (v2)
+Message-ID: <20110921050127.GB6691@sergelap>
+References: <20110919214531.GA18085@sergelap>
+ <20110919214700.GA22300@sergelap>
+ <20110920131738.GA29852@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110920131738.GA29852@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Add to the dev_state and alloc_async structures the user namespace
+corresponding to the uid and euid.  Pass these to kill_pid_info_as_uid(),
+which can then implement a proper, user-namespace-aware uid check.
 
-Today's linux-next merge of the tty tree got conflicts in
-arch/powerpc/include/asm/udbg.h and arch/powerpc/kernel/udbg.c between
-commit c26afe9e8591 ("powerpc/ps3: Add gelic udbg driver") from the
-powerpc tree and commit dcd83aaff1c8 ("tty/powerpc: introduce the ePAPR
-embedded hypervisor byte channel driver") from the tty tree.
+Changelog:
+Sep 20: Per Oleg's suggestion: Instead of caching and passing user namespace,
+	uid, and euid each separately, pass a struct cred.
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
+Signed-off-by: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: Greg KH <greg@kroah.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Tejun Heo <tj@kernel.org>
+---
+ drivers/usb/core/devio.c |   28 ++++++++++++----------------
+ include/linux/sched.h    |    3 ++-
+ kernel/signal.c          |   24 ++++++++++++++++--------
+ 3 files changed, 30 insertions(+), 25 deletions(-)
+
+diff --git a/drivers/usb/core/devio.c b/drivers/usb/core/devio.c
+index 37518df..e53a585 100644
+--- a/drivers/usb/core/devio.c
++++ b/drivers/usb/core/devio.c
+@@ -46,6 +46,7 @@
+ #include <linux/cdev.h>
+ #include <linux/notifier.h>
+ #include <linux/security.h>
++#include <linux/user_namespace.h>
+ #include <asm/uaccess.h>
+ #include <asm/byteorder.h>
+ #include <linux/moduleparam.h>
+@@ -68,7 +69,7 @@ struct dev_state {
+ 	wait_queue_head_t wait;     /* wake up if a request completed */
+ 	unsigned int discsignr;
+ 	struct pid *disc_pid;
+-	uid_t disc_uid, disc_euid;
++	const struct cred *cred;
+ 	void __user *disccontext;
+ 	unsigned long ifclaimed;
+ 	u32 secid;
+@@ -79,7 +80,7 @@ struct async {
+ 	struct list_head asynclist;
+ 	struct dev_state *ps;
+ 	struct pid *pid;
+-	uid_t uid, euid;
++	const struct cred *cred;
+ 	unsigned int signr;
+ 	unsigned int ifnum;
+ 	void __user *userbuffer;
+@@ -248,6 +249,7 @@ static struct async *alloc_async(unsigned int numisoframes)
+ static void free_async(struct async *as)
+ {
+ 	put_pid(as->pid);
++	put_cred(as->cred);
+ 	kfree(as->urb->transfer_buffer);
+ 	kfree(as->urb->setup_packet);
+ 	usb_free_urb(as->urb);
+@@ -393,9 +395,8 @@ static void async_completed(struct urb *urb)
+ 	struct dev_state *ps = as->ps;
+ 	struct siginfo sinfo;
+ 	struct pid *pid = NULL;
+-	uid_t uid = 0;
+-	uid_t euid = 0;
+ 	u32 secid = 0;
++	const struct cred *cred = NULL;
+ 	int signr;
+ 
+ 	spin_lock(&ps->lock);
+@@ -408,8 +409,7 @@ static void async_completed(struct urb *urb)
+ 		sinfo.si_code = SI_ASYNCIO;
+ 		sinfo.si_addr = as->userurb;
+ 		pid = as->pid;
+-		uid = as->uid;
+-		euid = as->euid;
++		cred = as->cred;
+ 		secid = as->secid;
+ 	}
+ 	snoop(&urb->dev->dev, "urb complete\n");
+@@ -423,8 +423,7 @@ static void async_completed(struct urb *urb)
+ 	spin_unlock(&ps->lock);
+ 
+ 	if (signr)
+-		kill_pid_info_as_uid(sinfo.si_signo, &sinfo, pid, uid,
+-				      euid, secid);
++		kill_pid_info_as_cred(sinfo.si_signo, &sinfo, pid, cred, secid);
+ 
+ 	wake_up(&ps->wait);
+ }
+@@ -706,8 +705,7 @@ static int usbdev_open(struct inode *inode, struct file *file)
+ 	init_waitqueue_head(&ps->wait);
+ 	ps->discsignr = 0;
+ 	ps->disc_pid = get_pid(task_pid(current));
+-	ps->disc_uid = cred->uid;
+-	ps->disc_euid = cred->euid;
++	ps->cred = get_cred(cred);
+ 	ps->disccontext = NULL;
+ 	ps->ifclaimed = 0;
+ 	security_task_getsecid(current, &ps->secid);
+@@ -749,6 +747,7 @@ static int usbdev_release(struct inode *inode, struct file *file)
+ 	usb_unlock_device(dev);
+ 	usb_put_dev(dev);
+ 	put_pid(ps->disc_pid);
++	put_cred(ps->cred);
+ 
+ 	as = async_getcompleted(ps);
+ 	while (as) {
+@@ -1048,7 +1047,6 @@ static int proc_do_submiturb(struct dev_state *ps, struct usbdevfs_urb *uurb,
+ 	struct usb_host_endpoint *ep;
+ 	struct async *as;
+ 	struct usb_ctrlrequest *dr = NULL;
+-	const struct cred *cred = current_cred();
+ 	unsigned int u, totlen, isofrmlen;
+ 	int ret, ifnum = -1;
+ 	int is_in;
+@@ -1262,8 +1260,7 @@ static int proc_do_submiturb(struct dev_state *ps, struct usbdevfs_urb *uurb,
+ 	as->signr = uurb->signr;
+ 	as->ifnum = ifnum;
+ 	as->pid = get_pid(task_pid(current));
+-	as->uid = cred->uid;
+-	as->euid = cred->euid;
++	as->cred = get_current_cred();
+ 	security_task_getsecid(current, &as->secid);
+ 	if (!is_in && uurb->buffer_length > 0) {
+ 		if (copy_from_user(as->urb->transfer_buffer, uurb->buffer,
+@@ -1981,9 +1978,8 @@ static void usbdev_remove(struct usb_device *udev)
+ 			sinfo.si_errno = EPIPE;
+ 			sinfo.si_code = SI_ASYNCIO;
+ 			sinfo.si_addr = ps->disccontext;
+-			kill_pid_info_as_uid(ps->discsignr, &sinfo,
+-					ps->disc_pid, ps->disc_uid,
+-					ps->disc_euid, ps->secid);
++			kill_pid_info_as_cred(ps->discsignr, &sinfo,
++					ps->disc_pid, ps->cred, ps->secid);
+ 		}
+ 	}
+ }
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 4ac2c05..57ddb52 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2166,7 +2166,8 @@ extern int force_sigsegv(int, struct task_struct *);
+ extern int force_sig_info(int, struct siginfo *, struct task_struct *);
+ extern int __kill_pgrp_info(int sig, struct siginfo *info, struct pid *pgrp);
+ extern int kill_pid_info(int sig, struct siginfo *info, struct pid *pid);
+-extern int kill_pid_info_as_uid(int, struct siginfo *, struct pid *, uid_t, uid_t, u32);
++extern int kill_pid_info_as_cred(int, struct siginfo *, struct pid *,
++				const struct cred *, u32);
+ extern int kill_pgrp(struct pid *pid, int sig, int priv);
+ extern int kill_pid(struct pid *pid, int sig, int priv);
+ extern int kill_proc_info(int, struct siginfo *, pid_t);
+diff --git a/kernel/signal.c b/kernel/signal.c
+index 466219b..9803707 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -1355,13 +1355,24 @@ int kill_proc_info(int sig, struct siginfo *info, pid_t pid)
+ 	return error;
+ }
+ 
++static int kill_as_cred_perm(const struct cred *cred,
++			     struct task_struct *target)
++{
++	const struct cred *pcred = __task_cred(target);
++	if (cred->user_ns != pcred->user_ns)
++		return 0;
++	if (cred->euid != pcred->suid && cred->euid != pcred->uid &&
++	    cred->uid  != pcred->suid && cred->uid  != pcred->uid)
++		return 0;
++	return 1;
++}
++
+ /* like kill_pid_info(), but doesn't use uid/euid of "current" */
+-int kill_pid_info_as_uid(int sig, struct siginfo *info, struct pid *pid,
+-		      uid_t uid, uid_t euid, u32 secid)
++int kill_pid_info_as_cred(int sig, struct siginfo *info, struct pid *pid,
++			 const struct cred *cred, u32 secid)
+ {
+ 	int ret = -EINVAL;
+ 	struct task_struct *p;
+-	const struct cred *pcred;
+ 	unsigned long flags;
+ 
+ 	if (!valid_signal(sig))
+@@ -1373,10 +1384,7 @@ int kill_pid_info_as_uid(int sig, struct siginfo *info, struct pid *pid,
+ 		ret = -ESRCH;
+ 		goto out_unlock;
+ 	}
+-	pcred = __task_cred(p);
+-	if (si_fromuser(info) &&
+-	    euid != pcred->suid && euid != pcred->uid &&
+-	    uid  != pcred->suid && uid  != pcred->uid) {
++	if (si_fromuser(info) && !kill_as_cred_perm(cred, p)) {
+ 		ret = -EPERM;
+ 		goto out_unlock;
+ 	}
+@@ -1395,7 +1403,7 @@ out_unlock:
+ 	rcu_read_unlock();
+ 	return ret;
+ }
+-EXPORT_SYMBOL_GPL(kill_pid_info_as_uid);
++EXPORT_SYMBOL_GPL(kill_pid_info_as_cred);
+ 
+ /*
+  * kill_something_info() interprets pid in interesting ways just like kill(2).
 -- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+1.7.5.4
 
-diff --cc arch/powerpc/include/asm/udbg.h
-index 6587ec7,5354ae9..0000000
---- a/arch/powerpc/include/asm/udbg.h
-+++ b/arch/powerpc/include/asm/udbg.h
-@@@ -54,9 -54,7 +54,10 @@@ extern void __init udbg_init_40x_realmo
-  extern void __init udbg_init_cpm(void);
-  extern void __init udbg_init_usbgecko(void);
-  extern void __init udbg_init_wsp(void);
- +extern void __init udbg_init_ps3gelic(void);
- +extern void __init udbg_init_debug_opal_raw(void);
- +extern void __init udbg_init_debug_opal_hvsi(void);
-+ extern void __init udbg_init_ehv_bc(void);
-  
-  #endif /* __KERNEL__ */
-  #endif /* _ASM_POWERPC_UDBG_H */
-diff --cc arch/powerpc/kernel/udbg.c
-index 35f9482,b4607a9..0000000
---- a/arch/powerpc/kernel/udbg.c
-+++ b/arch/powerpc/kernel/udbg.c
-@@@ -67,12 -67,8 +67,14 @@@ void __init udbg_early_init(void
-  	udbg_init_usbgecko();
-  #elif defined(CONFIG_PPC_EARLY_DEBUG_WSP)
-  	udbg_init_wsp();
- +#elif defined(CONFIG_PPC_EARLY_DEBUG_PS3GELIC)
- +	udbg_init_ps3gelic();
- +#elif defined(CONFIG_PPC_EARLY_DEBUG_OPAL_RAW)
- +	udbg_init_debug_opal_raw();
- +#elif defined(CONFIG_PPC_EARLY_DEBUG_OPAL_HVSI)
- +	udbg_init_debug_opal_hvsi();
-+ #elif defined(CONFIG_PPC_EARLY_DEBUG_EHV_BC)
-+ 	udbg_init_ehv_bc();
-  #endif
-  
-  #ifdef CONFIG_PPC_EARLY_DEBUG
