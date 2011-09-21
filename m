@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752416Ab1IUV4r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 17:56:47 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:62277 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752355Ab1IUV4m (ORCPT
+	id S1752509Ab1IUV5F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 17:57:05 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:33832 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752449Ab1IUV4w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 17:56:42 -0400
+	Wed, 21 Sep 2011 17:56:52 -0400
 From: jim.cromie@gmail.com
 To: jbaron@redhat.com
 Cc: joe@perches.com, bart.vanassche@gmail.com, greg@kroah.com,
         linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>
-Subject: [PATCH 22/26] dynamic_debug: early return if _ddebug table is empty
-Date: Wed, 21 Sep 2011 15:55:11 -0600
-Message-Id: <1316642115-20029-23-git-send-email-jim.cromie@gmail.com>
+Subject: [PATCH 26/26] scx200_acb: use pr_(info|warn|err|debug) and dynamic-debug facilities
+Date: Wed, 21 Sep 2011 15:55:15 -0600
+Message-Id: <1316642115-20029-27-git-send-email-jim.cromie@gmail.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1316642115-20029-1-git-send-email-jim.cromie@gmail.com>
 References: <1316642115-20029-1-git-send-email-jim.cromie@gmail.com>
@@ -23,61 +23,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jim Cromie <jim.cromie@gmail.com>
 
-if _ddebug table is empty (which shouldn't happen in a CONFIG_DYNAMIC_DEBUG
-build), then warn (BUILD_BUG??) and return early.  This skips empty
-table scan and parsing of setup-string, including the pr_info call
-noting the parse.
+Switch this driver over to using more flexible dynamic-debug facility.
+With previous patch and CONFIG_I2C_DEBUG_BUS=y, we get pr_debug()s
+enabled by default:
+
+root@voyage:~# modprobe scx200_acb
+root@voyage:~# grep scx200_acb /dbg/dynamic_debug/control
+drivers/i2c/busses/scx200_acb.c:419 [scx200_acb]scx200_acb_probe =p "..."
+drivers/i2c/busses/scx200_acb.c:408 [scx200_acb]scx200_acb_probe =p "..."
+drivers/i2c/busses/scx200_acb.c:399 [scx200_acb]scx200_acb_probe =p "..."
+drivers/i2c/busses/scx200_acb.c:584 [scx200_acb]scx200_acb_init =p "..."
+
+The pr_fmt() adds the module name to pr_err() output, the pr_fmt_dbg()
+does the same for pr_debug().  If and when modname is added to the
+dynamic-debug default under DEBUG, we can drop the pr_fmt_dbg().
+
+dynamic_debug:ddebug_add_module: 4 debug prints in module scx200_acb
+scx200_acb: NatSemi SCx200 ACCESS.bus Driver
+scx200_acb: ACBCTL2 readback failed
+scx200_acb: probe failed
+scx200_acb: ACBCTL2 readback failed
+scx200_acb: probe failed
 
 Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
 ---
- lib/dynamic_debug.c |   32 +++++++++++++++++---------------
- 1 files changed, 17 insertions(+), 15 deletions(-)
+ drivers/i2c/busses/scx200_acb.c |   21 +++++++++++----------
+ 1 files changed, 11 insertions(+), 10 deletions(-)
 
-diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index 80b5322..1a8941e 100644
---- a/lib/dynamic_debug.c
-+++ b/lib/dynamic_debug.c
-@@ -1272,23 +1272,25 @@ static int __init dynamic_debug_init(void)
- 	int ret = 0;
- 	int n = 0;
+diff --git a/drivers/i2c/busses/scx200_acb.c b/drivers/i2c/busses/scx200_acb.c
+index 986e5f6..30a2c6b 100644
+--- a/drivers/i2c/busses/scx200_acb.c
++++ b/drivers/i2c/busses/scx200_acb.c
+@@ -23,6 +23,9 @@
+     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
  
--	if (__start___verbose != __stop___verbose) {
--		iter = __start___verbose;
--		modname = iter->modname;
--		iter_start = iter;
--		for (; iter < __stop___verbose; iter++) {
--			if (strcmp(modname, iter->modname)) {
--				ret = ddebug_add_module(iter_start, n, modname);
--				if (ret)
--					goto out_free;
--				n = 0;
--				modname = iter->modname;
--				iter_start = iter;
--			}
--			n++;
-+	if (__start___verbose == __stop___verbose) {
-+		pr_warn("_ddebug table is empty in a CONFIG_DYNAMIC_DEBUG build");
-+		return 1;
-+	}
-+	iter = __start___verbose;
-+	modname = iter->modname;
-+	iter_start = iter;
-+	for (; iter < __stop___verbose; iter++) {
-+		if (strcmp(modname, iter->modname)) {
-+			ret = ddebug_add_module(iter_start, n, modname);
-+			if (ret)
-+				goto out_free;
-+			n = 0;
-+			modname = iter->modname;
-+			iter_start = iter;
- 		}
--		ret = ddebug_add_module(iter_start, n, modname);
-+		n++;
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++#define pr_fmt_dbg(fmt) pr_fmt(fmt)
++
+ #include <linux/module.h>
+ #include <linux/errno.h>
+ #include <linux/kernel.h>
+@@ -37,8 +40,6 @@
+ 
+ #include <linux/scx200.h>
+ 
+-#define NAME "scx200_acb"
+-
+ MODULE_AUTHOR("Christer Weinigel <wingel@nano-system.com>");
+ MODULE_DESCRIPTION("NatSemi SCx200 ACCESS.bus Driver");
+ MODULE_ALIAS("platform:cs5535-smb");
+@@ -398,7 +399,7 @@ static __devinit int scx200_acb_probe(struct scx200_acb_iface *iface)
+ 	outb(0x70, ACBCTL2);
+ 
+ 	if (inb(ACBCTL2) != 0x70) {
+-		pr_debug(NAME ": ACBCTL2 readback failed\n");
++		pr_debug("ACBCTL2 readback failed\n");
+ 		return -ENXIO;
  	}
-+	ret = ddebug_add_module(iter_start, n, modname);
  
- 	/* ddebug_query boot param got passed -> set it up */
- 	if (ddebug_setup_string[0] != '\0') {
+@@ -406,7 +407,7 @@ static __devinit int scx200_acb_probe(struct scx200_acb_iface *iface)
+ 
+ 	val = inb(ACBCTL1);
+ 	if (val) {
+-		pr_debug(NAME ": disabled, but ACBCTL1=0x%02x\n",
++		pr_debug("disabled, but ACBCTL1=0x%02x\n",
+ 			val);
+ 		return -ENXIO;
+ 	}
+@@ -417,7 +418,7 @@ static __devinit int scx200_acb_probe(struct scx200_acb_iface *iface)
+ 
+ 	val = inb(ACBCTL1);
+ 	if ((val & ACBCTL1_NMINTE) != ACBCTL1_NMINTE) {
+-		pr_debug(NAME ": enabled, but NMINTE won't be set, "
++		pr_debug("enabled, but NMINTE won't be set, "
+ 			 "ACBCTL1=0x%02x\n", val);
+ 		return -ENXIO;
+ 	}
+@@ -433,7 +434,7 @@ static __devinit struct scx200_acb_iface *scx200_create_iface(const char *text,
+ 
+ 	iface = kzalloc(sizeof(*iface), GFP_KERNEL);
+ 	if (!iface) {
+-		printk(KERN_ERR NAME ": can't allocate memory\n");
++		pr_err("can't allocate memory\n");
+ 		return NULL;
+ 	}
+ 
+@@ -459,14 +460,14 @@ static int __devinit scx200_acb_create(struct scx200_acb_iface *iface)
+ 
+ 	rc = scx200_acb_probe(iface);
+ 	if (rc) {
+-		printk(KERN_WARNING NAME ": probe failed\n");
++		pr_warn("probe failed\n");
+ 		return rc;
+ 	}
+ 
+ 	scx200_acb_reset(iface);
+ 
+ 	if (i2c_add_adapter(adapter) < 0) {
+-		printk(KERN_ERR NAME ": failed to register\n");
++		pr_err("failed to register\n");
+ 		return -ENODEV;
+ 	}
+ 
+@@ -493,7 +494,7 @@ static struct scx200_acb_iface * __devinit scx200_create_dev(const char *text,
+ 		return NULL;
+ 
+ 	if (!request_region(base, 8, iface->adapter.name)) {
+-		printk(KERN_ERR NAME ": can't allocate io 0x%lx-0x%lx\n",
++		pr_err("can't allocate io 0x%lx-0x%lx\n",
+ 		       base, base + 8 - 1);
+ 		goto errout_free;
+ 	}
+@@ -583,7 +584,7 @@ static __init void scx200_scan_isa(void)
+ 
+ static int __init scx200_acb_init(void)
+ {
+-	pr_debug(NAME ": NatSemi SCx200 ACCESS.bus Driver\n");
++	pr_debug("NatSemi SCx200 ACCESS.bus Driver\n");
+ 
+ 	/* First scan for ISA-based devices */
+ 	scx200_scan_isa();	/* XXX: should we care about errors? */
 -- 
 1.7.4.4
 
