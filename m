@@ -1,233 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752276Ab1IUPcx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 11:32:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33246 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750978Ab1IUPcw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 11:32:52 -0400
-Date: Wed, 21 Sep 2011 17:32:49 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
-        Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 11/11] mm: memcg: remove unused node/section info from
- pc->flags
-Message-ID: <20110921153249.GJ8501@tiehlicka.suse.cz>
-References: <1315825048-3437-1-git-send-email-jweiner@redhat.com>
- <1315825048-3437-12-git-send-email-jweiner@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1315825048-3437-12-git-send-email-jweiner@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752164Ab1IUPeY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 11:34:24 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:33053 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751188Ab1IUPeX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 11:34:23 -0400
+Subject: Re: [V5][PATCH 4/6] x86, nmi:  add in logic to handle multiple
+ events and unknown NMIs
+From: Peter Zijlstra <peterz@infradead.org>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Don Zickus <dzickus@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        "ying.huang@intel.com" <ying.huang@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "avi@redhat.com" <avi@redhat.com>, "jeremy@goop.org" <jeremy@goop.org>
+Date: Wed, 21 Sep 2011 17:33:52 +0200
+In-Reply-To: <20110921151829.GC6063@erda.amd.com>
+References: <1316529792-6560-1-git-send-email-dzickus@redhat.com>
+	 <1316529792-6560-5-git-send-email-dzickus@redhat.com>
+	 <20110921100842.GA6063@erda.amd.com> <20110921140432.GP5795@redhat.com>
+	 <20110921151829.GC6063@erda.amd.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1316619232.24750.2.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 12-09-11 12:57:28, Johannes Weiner wrote:
-> To find the page corresponding to a certain page_cgroup, the pc->flags
-> encoded the node or section ID with the base array to compare the pc
-> pointer to.
-> 
-> Now that the per-memory cgroup LRU lists link page descriptors
-> directly, there is no longer any code that knows the page_cgroup but
-> not the page.
-> 
-> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+On Wed, 2011-09-21 at 17:18 +0200, Robert Richter wrote:
+> 1. The cpu executes some microcode or SMM code.
+> 2. HW triggers the first NMI, an NMI is pending.
+> 3. HW triggers a second NMI, the NMI is still pending.
+> 4. The cpu finished microcode or SMM code.
+> 5. NMI handler is called, no NMI pending anymore.
+> 6. Return from NMI handler. 
 
-Nice.
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Even without SMM, all you need is two different NMI users to trigger
+while an NMI is in flight.
 
-> ---
->  include/linux/page_cgroup.h |   33 ------------------------
->  mm/page_cgroup.c            |   58 ++++++-------------------------------------
->  2 files changed, 8 insertions(+), 83 deletions(-)
-> 
-> diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
-> index 5bae753..aaa60da 100644
-> --- a/include/linux/page_cgroup.h
-> +++ b/include/linux/page_cgroup.h
-> @@ -121,39 +121,6 @@ static inline void move_unlock_page_cgroup(struct page_cgroup *pc,
->  	local_irq_restore(*flags);
->  }
->  
-> -#ifdef CONFIG_SPARSEMEM
-> -#define PCG_ARRAYID_WIDTH	SECTIONS_SHIFT
-> -#else
-> -#define PCG_ARRAYID_WIDTH	NODES_SHIFT
-> -#endif
-> -
-> -#if (PCG_ARRAYID_WIDTH > BITS_PER_LONG - NR_PCG_FLAGS)
-> -#error Not enough space left in pc->flags to store page_cgroup array IDs
-> -#endif
-> -
-> -/* pc->flags: ARRAY-ID | FLAGS */
-> -
-> -#define PCG_ARRAYID_MASK	((1UL << PCG_ARRAYID_WIDTH) - 1)
-> -
-> -#define PCG_ARRAYID_OFFSET	(BITS_PER_LONG - PCG_ARRAYID_WIDTH)
-> -/*
-> - * Zero the shift count for non-existent fields, to prevent compiler
-> - * warnings and ensure references are optimized away.
-> - */
-> -#define PCG_ARRAYID_SHIFT	(PCG_ARRAYID_OFFSET * (PCG_ARRAYID_WIDTH != 0))
-> -
-> -static inline void set_page_cgroup_array_id(struct page_cgroup *pc,
-> -					    unsigned long id)
-> -{
-> -	pc->flags &= ~(PCG_ARRAYID_MASK << PCG_ARRAYID_SHIFT);
-> -	pc->flags |= (id & PCG_ARRAYID_MASK) << PCG_ARRAYID_SHIFT;
-> -}
-> -
-> -static inline unsigned long page_cgroup_array_id(struct page_cgroup *pc)
-> -{
-> -	return (pc->flags >> PCG_ARRAYID_SHIFT) & PCG_ARRAYID_MASK;
-> -}
-> -
->  #else /* CONFIG_CGROUP_MEM_RES_CTLR */
->  struct page_cgroup;
->  
-> diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
-> index 256dee8..2601a65 100644
-> --- a/mm/page_cgroup.c
-> +++ b/mm/page_cgroup.c
-> @@ -11,12 +11,6 @@
->  #include <linux/swapops.h>
->  #include <linux/kmemleak.h>
->  
-> -static void __meminit init_page_cgroup(struct page_cgroup *pc, unsigned long id)
-> -{
-> -	pc->flags = 0;
-> -	set_page_cgroup_array_id(pc, id);
-> -	pc->mem_cgroup = NULL;
-> -}
->  static unsigned long total_usage;
->  
->  #if !defined(CONFIG_SPARSEMEM)
-> @@ -41,24 +35,11 @@ struct page_cgroup *lookup_page_cgroup(struct page *page)
->  	return base + offset;
->  }
->  
-> -struct page *lookup_cgroup_page(struct page_cgroup *pc)
-> -{
-> -	unsigned long pfn;
-> -	struct page *page;
-> -	pg_data_t *pgdat;
-> -
-> -	pgdat = NODE_DATA(page_cgroup_array_id(pc));
-> -	pfn = pc - pgdat->node_page_cgroup + pgdat->node_start_pfn;
-> -	page = pfn_to_page(pfn);
-> -	VM_BUG_ON(pc != lookup_page_cgroup(page));
-> -	return page;
-> -}
-> -
->  static int __init alloc_node_page_cgroup(int nid)
->  {
-> -	struct page_cgroup *base, *pc;
-> +	struct page_cgroup *base;
->  	unsigned long table_size;
-> -	unsigned long start_pfn, nr_pages, index;
-> +	unsigned long nr_pages;
->  
->  	start_pfn = NODE_DATA(nid)->node_start_pfn;
->  	nr_pages = NODE_DATA(nid)->node_spanned_pages;
-> @@ -72,10 +53,6 @@ static int __init alloc_node_page_cgroup(int nid)
->  			table_size, PAGE_SIZE, __pa(MAX_DMA_ADDRESS));
->  	if (!base)
->  		return -ENOMEM;
-> -	for (index = 0; index < nr_pages; index++) {
-> -		pc = base + index;
-> -		init_page_cgroup(pc, nid);
-> -	}
->  	NODE_DATA(nid)->node_page_cgroup = base;
->  	total_usage += table_size;
->  	return 0;
-> @@ -116,31 +93,19 @@ struct page_cgroup *lookup_page_cgroup(struct page *page)
->  	return section->page_cgroup + pfn;
->  }
->  
-> -struct page *lookup_cgroup_page(struct page_cgroup *pc)
-> -{
-> -	struct mem_section *section;
-> -	struct page *page;
-> -	unsigned long nr;
-> -
-> -	nr = page_cgroup_array_id(pc);
-> -	section = __nr_to_section(nr);
-> -	page = pfn_to_page(pc - section->page_cgroup);
-> -	VM_BUG_ON(pc != lookup_page_cgroup(page));
-> -	return page;
-> -}
-> -
->  static void *__meminit alloc_page_cgroup(size_t size, int nid)
->  {
->  	void *addr = NULL;
->  
-> -	addr = alloc_pages_exact_nid(nid, size, GFP_KERNEL | __GFP_NOWARN);
-> +	addr = alloc_pages_exact_nid(nid, size,
-> +				     GFP_KERNEL | __GFP_ZERO | __GFP_NOWARN);
->  	if (addr)
->  		return addr;
->  
->  	if (node_state(nid, N_HIGH_MEMORY))
-> -		addr = vmalloc_node(size, nid);
-> +		addr = vzalloc_node(size, nid);
->  	else
-> -		addr = vmalloc(size);
-> +		addr = vzalloc(size);
->  
->  	return addr;
->  }
-> @@ -163,14 +128,11 @@ static void free_page_cgroup(void *addr)
->  
->  static int __meminit init_section_page_cgroup(unsigned long pfn, int nid)
->  {
-> -	struct page_cgroup *base, *pc;
->  	struct mem_section *section;
-> +	struct page_cgroup *base;
->  	unsigned long table_size;
-> -	unsigned long nr;
-> -	int index;
->  
-> -	nr = pfn_to_section_nr(pfn);
-> -	section = __nr_to_section(nr);
-> +	section = __pfn_to_section(pfn);
->  
->  	if (section->page_cgroup)
->  		return 0;
-> @@ -190,10 +152,6 @@ static int __meminit init_section_page_cgroup(unsigned long pfn, int nid)
->  		return -ENOMEM;
->  	}
->  
-> -	for (index = 0; index < PAGES_PER_SECTION; index++) {
-> -		pc = base + index;
-> -		init_page_cgroup(pc, nr);
-> -	}
->  	/*
->  	 * The passed "pfn" may not be aligned to SECTION.  For the calculation
->  	 * we need to apply a mask.
-> -- 
-> 1.7.6
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Wouldn't be entirely impossible to trigger if you have
+non-fatal-MCE/hardware-NMI-switch/PMI all active.
