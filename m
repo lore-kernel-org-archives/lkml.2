@@ -1,75 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751556Ab1IUWNn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 18:13:43 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:52102 "EHLO e3.ny.us.ibm.com"
+	id S1751781Ab1IUWN5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 18:13:57 -0400
+Received: from plane.gmane.org ([80.91.229.3]:38159 "EHLO plane.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750724Ab1IUWNj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 18:13:39 -0400
-Subject: [RFC][PATCH] show page size in /proc/$pid/numa_maps
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, Dave Hansen <dave@linux.vnet.ibm.com>
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-Date: Wed, 21 Sep 2011 15:13:29 -0700
-Message-Id: <20110921221329.5B7EE5C5@kernel>
-x-cbid: 11092122-8974-0000-0000-00000053D170
+	id S1751674Ab1IUWNy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 18:13:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,419,1312182000"; 
+   d="scan'208";a="59079805"
+From: Andi Kleen <andi@firstfloor.org>
+To: Arnd Bergmann <public-arnd-r2nGTMty4D4@plane.gmane.org>
+Cc: Wolfgang Grandegger 
+	<public-wg-5Yr1BZd7O62+XT7JhA+gdA@plane.gmane.org>,
+        SocketCAN Core Mailing List 
+	<public-socketcan-core-0fE9KPoRgkgATYTw5x5z8w@plane.gmane.org>,
+        Willy Lambert 
+	<public-lambert.willy-Re5JQEeQqe8AvxtiuMwx3w@plane.gmane.org>,
+        public-x86-DgEjT+Ai2ygdnm+yROfE0A@plane.gmane.org,
+        public-Valdis.Kletnieks-PjAqaU27lzQ@plane.gmane.org,
+        LKML <public-linux-kernel-u79uwXL29TY76Z2rM5mHXA@plane.gmane.org>
+Subject: Re: [PATCH] x86_64: permit to configure ISA support also for x86_64 systems
+References: <4E731565.5050307@grandegger.com>
+	<201109201747.50130.arnd@arndb.de> <4E79A146.2040204@grandegger.com>
+	<11382509.BgAkVknI9a@wuerfel>
+Date: Wed, 21 Sep 2011 15:13:42 -0700
+In-Reply-To: <11382509.BgAkVknI9a@wuerfel> (Arnd Bergmann's message of "Wed,
+	21 Sep 2011 11:24:44 +0200")
+Message-ID: <m239fpee7d.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-The output of /proc/$pid/numa_maps is in terms of number of pages
-like anon=22 or dirty=54.  Here's some output:
 
-7f4680000000 default file=/hugetlb/bigfile anon=50 dirty=50 N0=50
-7f7659600000 default file=/anon_hugepage\040(deleted) anon=50 dirty=50 N0=50
-7fff8d425000 default stack anon=50 dirty=50 N0=50
+Arnd Bergmann <arnd-r2nGTMty4D4@public.gmane.org> writes:
+>
+> The other point is that you are probably using inb/outb operations,
+> which I'm trying to provide only on ISA/PCMCIA/PCI based systems in
+> the future. Once I finish that work, you will also need to depend on
+> HAS_IOPORT (which currently means something else).
 
-Looks like we have a stack and a couple of anonymous hugetlbfs
-areas page which both use the same amount of memory.  They don't.
+What does that mean? Most PCs need at least some ioport usage
+during boot.
 
-The 'bigfile' uses 1GB pages and takes up ~50GB of space.  The
-anon_hugepage uses 2MB pages and takes up ~100MB of space while
-the stack uses normal 4k pages.  You can go over to smaps to
-figure out what the page size _really_ is with KernelPageSize
-or MMUPageSize.  But, I think this is a pretty nasty and
-counterintuitive interface as it stands.
-
-The following patch adds a pagemult= field.  It is placed only
-in cases where the VMA's page size differs from the base kernel
-page size.  I'm calling it pagemult to emphasize that it is
-indended to modify the statistics output rather than _really_
-show the page size that the kernel or MMU is using.
-
-Signed-off-by: Dave Haneen <dave@linux.vnet.ibm.com>
----
-
- linux-2.6.git-dave/fs/proc/task_mmu.c |    7 +++++++
- 1 file changed, 7 insertions(+)
-
-diff -puN fs/proc/task_mmu.c~show-page-size fs/proc/task_mmu.c
---- linux-2.6.git/fs/proc/task_mmu.c~show-page-size	2011-09-21 15:05:49.846739432 -0700
-+++ linux-2.6.git-dave/fs/proc/task_mmu.c	2011-09-21 15:10:26.798329158 -0700
-@@ -1007,6 +1007,7 @@ static int show_numa_map(struct seq_file
- 	struct mm_struct *mm = vma->vm_mm;
- 	struct mm_walk walk = {};
- 	struct mempolicy *pol;
-+	unsigned long pagesize_multiplier;
- 	int n;
- 	char buffer[50];
- 
-@@ -1044,6 +1045,12 @@ static int show_numa_map(struct seq_file
- 	if (!md->pages)
- 		goto out;
- 
-+	/* This will only really do something for hugetlbfs pages.
-+	 * Transparent hugepages are still pagemult=1 */
-+	pagesize_multiplier = vma_kernel_pagesize(vma) / PAGE_SIZE;
-+	if (pagesize_multiplier > 1)
-+		seq_printf(m, " pagemult=%lu", pagesize_multiplier);
-+
- 	if (md->anon)
- 		seq_printf(m, " anon=%lu", md->anon);
- 
-_
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only
 
