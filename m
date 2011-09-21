@@ -1,92 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753262Ab1IUQy7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 12:54:59 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:36635 "EHLO
-	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751228Ab1IUQy6 (ORCPT
+	id S1752904Ab1IURBe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 13:01:34 -0400
+Received: from casper.infradead.org ([85.118.1.10]:57196 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751821Ab1IURBc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 12:54:58 -0400
-X-SpamScore: -14
-X-BigFish: VPS-14(zzbb2dK9371K1432N98dKzz1202hzzz32i668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LRVTNI-01-HIC-02
-X-M-MSG: 
-Date: Wed, 21 Sep 2011 18:54:51 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Avi Kivity <avi@redhat.com>
-CC: Don Zickus <dzickus@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "ying.huang@intel.com" <ying.huang@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "jeremy@goop.org" <jeremy@goop.org>
-Subject: Re: [V5][PATCH 4/6] x86, nmi:  add in logic to handle multiple
- events and unknown NMIs
-Message-ID: <20110921165451.GF6063@erda.amd.com>
-References: <1316529792-6560-1-git-send-email-dzickus@redhat.com>
- <1316529792-6560-5-git-send-email-dzickus@redhat.com>
- <20110921100842.GA6063@erda.amd.com>
- <20110921140432.GP5795@redhat.com>
- <20110921151829.GC6063@erda.amd.com>
- <20110921161352.GU5795@redhat.com>
- <4E7A0FD6.3080508@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4E7A0FD6.3080508@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	Wed, 21 Sep 2011 13:01:32 -0400
+Subject: Re: rt14: strace ->  migrate_disable_atomic imbalance
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mike Galbraith <efault@gmx.de>
+Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Miklos Szeredi <miklos@szeredi.hu>
+Date: Wed, 21 Sep 2011 19:01:12 +0200
+In-Reply-To: <1316600230.6628.6.camel@marge.simson.net>
+References: <alpine.LFD.2.02.1109101052340.2723@ionos>
+	 <1315737307.6544.1.camel@marge.simson.net>
+	 <1315817948.26517.16.camel@twins>
+	 <1315835562.6758.3.camel@marge.simson.net>
+	 <1315839187.6758.8.camel@marge.simson.net> <1315926499.5977.19.camel@twins>
+	 <1315927699.6445.6.camel@marge.simson.net> <1315930430.5977.21.camel@twins>
+	 <1316600230.6628.6.camel@marge.simson.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1316624472.24750.32.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21.09.11 12:24:54, Avi Kivity wrote:
-> On 09/21/2011 07:13 PM, Don Zickus wrote:
-> > On Wed, Sep 21, 2011 at 05:18:30PM +0200, Robert Richter wrote:
-> > >  On 21.09.11 10:04:32, Don Zickus wrote:
+On Wed, 2011-09-21 at 12:17 +0200, Mike Galbraith wrote:
+> [  144.212272] ------------[ cut here ]------------
+> [  144.212280] WARNING: at kernel/sched.c:6152 migrate_disable+0x1b6/0x200()
+> [  144.212282] Hardware name: MS-7502
+> [  144.212283] Modules linked in: snd_pcm_oss snd_mixer_oss snd_seq snd_seq_device edd nfsd lockd parport_pc parport nfs_acl auth_rpcgss sunrpc bridge ipv6 stp cpufreq_conservative microcode cpufreq_ondemand cpufreq_userspace cpufreq_powersave acpi_cpufreq mperf nls_iso8859_1 nls_cp437 vfat fat fuse ext3 jbd dm_mod usbmouse usb_storage usbhid snd_hda_codec_realtek usb_libusual uas sr_mod cdrom hid snd_hda_intel e1000e snd_hda_codec kvm_intel snd_hwdep sg snd_pcm kvm i2c_i801 snd_timer snd firewire_ohci firewire_core soundcore snd_page_alloc crc_itu_t button ext4 mbcache jbd2 crc16 uhci_hcd sd_mod ehci_hcd usbcore rtc_cmos ahci libahci libata scsi_mod fan processor thermal
+> [  144.212317] Pid: 6215, comm: strace Not tainted 3.0.4-rt14 #2052
+> [  144.212319] Call Trace:
+> [  144.212323]  [<ffffffff8104662f>] warn_slowpath_common+0x7f/0xc0
+> [  144.212326]  [<ffffffff8104668a>] warn_slowpath_null+0x1a/0x20
+> [  144.212328]  [<ffffffff8103f606>] migrate_disable+0x1b6/0x200
+> [  144.212331]  [<ffffffff8105a2a8>] ptrace_stop+0x128/0x240
+> [  144.212334]  [<ffffffff81057b9b>] ? recalc_sigpending+0x1b/0x50
+> [  144.212337]  [<ffffffff8105b6f1>] get_signal_to_deliver+0x211/0x530
+> [  144.212340]  [<ffffffff81001835>] do_signal+0x75/0x7a0
+> [  144.212342]  [<ffffffff8105ae68>] ? kill_pid_info+0x58/0x80
+> [  144.212344]  [<ffffffff8105c34c>] ? sys_kill+0xac/0x1e0
+> [  144.212347]  [<ffffffff81001fe5>] do_notify_resume+0x65/0x80
+> [  144.212350]  [<ffffffff8135978b>] int_signal+0x12/0x17
+> [  144.212352] ---[ end trace 0000000000000002 ]---
 
-> > >  But in rare cases there is the following:
-> > >
-> > >  1. The cpu executes some microcode or SMM code.
-> > >  2. HW triggers the first NMI, an NMI is pending.
-> > >  3. HW triggers a second NMI, the NMI is still pending.
-> > >  4. The cpu finished microcode or SMM code.
-> > >  5. NMI handler is called, no NMI pending anymore.
-> > >  6. Return from NMI handler.
-> > >
-> > >  In this case the handler is called only once and the second nmi
-> > >  remains unhandled with you implementation.
-> > >
-> > >  I don't see a way how this could be catched without serving all
-> > >  handlers the first time. But as said, in favor of the optimization I
-> > >  think we can live with losing some NMIs.
 
-I have to revise this after thinking more about this. We may not lose
-an nmi for sources where the nmi handler must always reenable the nmi,
-e.g. IBS. Losing one nmi means for IBS that sample generation gets
-stuck.
+Right, that's because of 
+53da1d9456fe7f87a920a78fdbdcf1225d197cb7, I think we simply want a full
+revert of that for -rt.
 
--Robert
-
-> >
-> > Ah, I get it know.  Crap.  Well I think Avi was pushing it to make those
-> > ticket_spin_locks work in virt land.  It seems like we should lean towards
-> > removing the optimization.  Avi?
-> >
-> 
-> Well, in virt land there are no SMIs, and we can guarantee that the 
-> queue length is always two.  So if these rare cases are okay for 
-> upstream, it'll be fine for virt.
-> 
-> -- 
-> error compiling committee.c: too many arguments to function
-> 
-> 
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
 
