@@ -1,159 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751961Ab1IUWm4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 18:42:56 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:21812 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751345Ab1IUWmy (ORCPT
+	id S1752078Ab1IUWnA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 18:43:00 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:21919 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751599Ab1IUWmy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 21 Sep 2011 18:42:54 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: jbeulich@suse.com, linux-kernel@vger.kernel.org,
         xen-devel@lists.xensource.com
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 2/2] xen/pciback: use mutex rather than spinlock in vpci backend
-Date: Wed, 21 Sep 2011 18:42:46 -0400
-Message-Id: <1316644966-19386-3-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 1/2] xen/pciback: Use mutexes when working with Xenbus state transitions.
+Date: Wed, 21 Sep 2011 18:42:45 -0400
+Message-Id: <1316644966-19386-2-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1316644966-19386-1-git-send-email-konrad.wilk@oracle.com>
 References: <1316644966-19386-1-git-send-email-konrad.wilk@oracle.com>
 X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4E7A686B.006F:SCFMA922111,ss=1,re=-4.000,fgs=0
+X-CT-RefId: str=0001.0A020206.4E7A686B.0013:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Similar to the "xen/pciback: use mutex rather than spinlock in passthrough backend"
-this patch converts the vpci backend to use a mutex instead of
-a spinlock. Note that the code taking the lock won't ever get called
-from non-sleepable context
+The caller that orchestrates the state changes is xenwatch_thread
+and it takes a mutex. In our processing of Xenbus states we can take
+the luxery of going to sleep on a mutex, so lets do that and
+also fix this bug:
+
+BUG: sleeping function called from invalid context at /linux/kernel/mutex.c:271
+in_atomic(): 1, irqs_disabled(): 0, pid: 32, name: xenwatch
+2 locks held by xenwatch/32:
+ #0:  (xenwatch_mutex){......}, at: [<ffffffff813856ab>] xenwatch_thread+0x4b/0x180
+ #1:  (&(&pdev->dev_lock)->rlock){......}, at: [<ffffffff8138f05b>] xen_pcibk_disconnect+0x1b/0x80
+Pid: 32, comm: xenwatch Not tainted 3.1.0-rc6-00015-g3ce340d #2
+Call Trace:
+ [<ffffffff810892b2>] __might_sleep+0x102/0x130
+ [<ffffffff8163b90f>] mutex_lock_nested+0x2f/0x50
+ [<ffffffff81382c1c>] unbind_from_irq+0x2c/0x1b0
+ [<ffffffff8110da66>] ? free_irq+0x56/0xb0
+ [<ffffffff81382dbc>] unbind_from_irqhandler+0x1c/0x30
+ [<ffffffff8138f06b>] xen_pcibk_disconnect+0x2b/0x80
+ [<ffffffff81390348>] xen_pcibk_frontend_changed+0xe8/0x140
+ [<ffffffff81387ac2>] xenbus_otherend_changed+0xd2/0x150
+ [<ffffffff810895c1>] ? get_parent_ip+0x11/0x50
+ [<ffffffff81387de0>] frontend_changed+0x10/0x20
+ [<ffffffff81385712>] xenwatch_thread+0xb2/0x180
 
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/xen/xen-pciback/vpci.c |   26 +++++++++++---------------
- 1 files changed, 11 insertions(+), 15 deletions(-)
+ drivers/xen/xen-pciback/pciback.h |    2 +-
+ drivers/xen/xen-pciback/xenbus.c  |   22 +++++++++-------------
+ 2 files changed, 10 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/xen/xen-pciback/vpci.c b/drivers/xen/xen-pciback/vpci.c
-index a778552..01222d7 100644
---- a/drivers/xen/xen-pciback/vpci.c
-+++ b/drivers/xen/xen-pciback/vpci.c
-@@ -8,7 +8,7 @@
- #include <linux/list.h>
- #include <linux/slab.h>
- #include <linux/pci.h>
--#include <linux/spinlock.h>
-+#include <linux/mutex.h>
- #include "pciback.h"
+diff --git a/drivers/xen/xen-pciback/pciback.h b/drivers/xen/xen-pciback/pciback.h
+index d095acd..e9b4011 100644
+--- a/drivers/xen/xen-pciback/pciback.h
++++ b/drivers/xen/xen-pciback/pciback.h
+@@ -29,7 +29,7 @@ struct pci_dev_entry {
  
- #define PCI_SLOT_MAX 32
-@@ -16,7 +16,7 @@
- struct vpci_dev_data {
- 	/* Access to dev_list must be protected by lock */
- 	struct list_head dev_list[PCI_SLOT_MAX];
--	spinlock_t lock;
-+	struct mutex lock;
- };
+ struct xen_pcibk_device {
+ 	void *pci_dev_data;
+-	spinlock_t dev_lock;
++	struct mutex dev_lock;
+ 	struct xenbus_device *xdev;
+ 	struct xenbus_watch be_watch;
+ 	u8 be_watching;
+diff --git a/drivers/xen/xen-pciback/xenbus.c b/drivers/xen/xen-pciback/xenbus.c
+index 522f2da..474d52e 100644
+--- a/drivers/xen/xen-pciback/xenbus.c
++++ b/drivers/xen/xen-pciback/xenbus.c
+@@ -43,7 +43,7 @@ static struct xen_pcibk_device *alloc_pdev(struct xenbus_device *xdev)
+ 	pdev->xdev = xdev;
+ 	dev_set_drvdata(&xdev->dev, pdev);
  
- static inline struct list_head *list_first(struct list_head *head)
-@@ -32,13 +32,12 @@ static struct pci_dev *__xen_pcibk_get_pci_dev(struct xen_pcibk_device *pdev,
- 	struct pci_dev_entry *entry;
- 	struct pci_dev *dev = NULL;
- 	struct vpci_dev_data *vpci_dev = pdev->pci_dev_data;
--	unsigned long flags;
+-	spin_lock_init(&pdev->dev_lock);
++	mutex_init(&pdev->dev_lock);
  
- 	if (domain != 0 || bus != 0)
- 		return NULL;
+ 	pdev->sh_info = NULL;
+ 	pdev->evtchn_irq = INVALID_EVTCHN_IRQ;
+@@ -61,14 +61,12 @@ out:
  
- 	if (PCI_SLOT(devfn) < PCI_SLOT_MAX) {
--		spin_lock_irqsave(&vpci_dev->lock, flags);
-+		mutex_lock(&vpci_dev->lock);
- 
- 		list_for_each_entry(entry,
- 				    &vpci_dev->dev_list[PCI_SLOT(devfn)],
-@@ -49,7 +48,7 @@ static struct pci_dev *__xen_pcibk_get_pci_dev(struct xen_pcibk_device *pdev,
- 			}
- 		}
- 
--		spin_unlock_irqrestore(&vpci_dev->lock, flags);
-+		mutex_unlock(&vpci_dev->lock);
+ static void xen_pcibk_disconnect(struct xen_pcibk_device *pdev)
+ {
+-	spin_lock(&pdev->dev_lock);
+-
++	mutex_lock(&pdev->dev_lock);
+ 	/* Ensure the guest can't trigger our handler before removing devices */
+ 	if (pdev->evtchn_irq != INVALID_EVTCHN_IRQ) {
+ 		unbind_from_irqhandler(pdev->evtchn_irq, pdev);
+ 		pdev->evtchn_irq = INVALID_EVTCHN_IRQ;
  	}
- 	return dev;
+-	spin_unlock(&pdev->dev_lock);
+ 
+ 	/* If the driver domain started an op, make sure we complete it
+ 	 * before releasing the shared memory */
+@@ -76,13 +74,11 @@ static void xen_pcibk_disconnect(struct xen_pcibk_device *pdev)
+ 	/* Note, the workqueue does not use spinlocks at all.*/
+ 	flush_workqueue(xen_pcibk_wq);
+ 
+-	spin_lock(&pdev->dev_lock);
+ 	if (pdev->sh_info != NULL) {
+ 		xenbus_unmap_ring_vfree(pdev->xdev, pdev->sh_info);
+ 		pdev->sh_info = NULL;
+ 	}
+-	spin_unlock(&pdev->dev_lock);
+-
++	mutex_unlock(&pdev->dev_lock);
  }
-@@ -70,7 +69,6 @@ static int __xen_pcibk_add_pci_dev(struct xen_pcibk_device *pdev,
- 	int err = 0, slot, func = -1;
- 	struct pci_dev_entry *t, *dev_entry;
- 	struct vpci_dev_data *vpci_dev = pdev->pci_dev_data;
--	unsigned long flags;
  
- 	if ((dev->class >> 24) == PCI_BASE_CLASS_BRIDGE) {
- 		err = -EFAULT;
-@@ -89,7 +87,7 @@ static int __xen_pcibk_add_pci_dev(struct xen_pcibk_device *pdev,
+ static void free_pdev(struct xen_pcibk_device *pdev)
+@@ -119,9 +115,7 @@ static int xen_pcibk_do_attach(struct xen_pcibk_device *pdev, int gnt_ref,
+ 		goto out;
+ 	}
  
- 	dev_entry->dev = dev;
+-	spin_lock(&pdev->dev_lock);
+ 	pdev->sh_info = vaddr;
+-	spin_unlock(&pdev->dev_lock);
  
--	spin_lock_irqsave(&vpci_dev->lock, flags);
-+	mutex_lock(&vpci_dev->lock);
+ 	err = bind_interdomain_evtchn_to_irqhandler(
+ 		pdev->xdev->otherend_id, remote_evtchn, xen_pcibk_handle_event,
+@@ -131,10 +125,7 @@ static int xen_pcibk_do_attach(struct xen_pcibk_device *pdev, int gnt_ref,
+ 				 "Error binding event channel to IRQ");
+ 		goto out;
+ 	}
+-
+-	spin_lock(&pdev->dev_lock);
+ 	pdev->evtchn_irq = err;
+-	spin_unlock(&pdev->dev_lock);
+ 	err = 0;
  
- 	/* Keep multi-function devices together on the virtual PCI bus */
- 	for (slot = 0; slot < PCI_SLOT_MAX; slot++) {
-@@ -128,7 +126,7 @@ static int __xen_pcibk_add_pci_dev(struct xen_pcibk_device *pdev,
- 			 "No more space on root virtual PCI bus");
+ 	dev_dbg(&pdev->xdev->dev, "Attached!\n");
+@@ -149,6 +140,7 @@ static int xen_pcibk_attach(struct xen_pcibk_device *pdev)
+ 	char *magic = NULL;
  
- unlock:
--	spin_unlock_irqrestore(&vpci_dev->lock, flags);
-+	mutex_unlock(&vpci_dev->lock);
  
- 	/* Publish this device. */
- 	if (!err)
-@@ -144,9 +142,8 @@ static void __xen_pcibk_release_pci_dev(struct xen_pcibk_device *pdev,
- 	int slot;
- 	struct vpci_dev_data *vpci_dev = pdev->pci_dev_data;
- 	struct pci_dev *found_dev = NULL;
--	unsigned long flags;
++	mutex_lock(&pdev->dev_lock);
+ 	/* Make sure we only do this setup once */
+ 	if (xenbus_read_driver_state(pdev->xdev->nodename) !=
+ 	    XenbusStateInitialised)
+@@ -193,6 +185,7 @@ static int xen_pcibk_attach(struct xen_pcibk_device *pdev)
  
--	spin_lock_irqsave(&vpci_dev->lock, flags);
-+	mutex_lock(&vpci_dev->lock);
+ 	dev_dbg(&pdev->xdev->dev, "Connected? %d\n", err);
+ out:
++	mutex_unlock(&pdev->dev_lock);
  
- 	for (slot = 0; slot < PCI_SLOT_MAX; slot++) {
- 		struct pci_dev_entry *e;
-@@ -162,7 +159,7 @@ static void __xen_pcibk_release_pci_dev(struct xen_pcibk_device *pdev,
+ 	kfree(magic);
+ 
+@@ -368,6 +361,7 @@ static int xen_pcibk_reconfigure(struct xen_pcibk_device *pdev)
+ 
+ 	dev_dbg(&pdev->xdev->dev, "Reconfiguring device ...\n");
+ 
++	mutex_lock(&pdev->dev_lock);
+ 	/* Make sure we only reconfigure once */
+ 	if (xenbus_read_driver_state(pdev->xdev->nodename) !=
+ 	    XenbusStateReconfiguring)
+@@ -505,6 +499,7 @@ static int xen_pcibk_reconfigure(struct xen_pcibk_device *pdev)
  	}
  
  out:
--	spin_unlock_irqrestore(&vpci_dev->lock, flags);
-+	mutex_unlock(&vpci_dev->lock);
++	mutex_unlock(&pdev->dev_lock);
+ 	return 0;
+ }
  
- 	if (found_dev)
- 		pcistub_put_pci_dev(found_dev);
-@@ -177,7 +174,7 @@ static int __xen_pcibk_init_devices(struct xen_pcibk_device *pdev)
- 	if (!vpci_dev)
- 		return -ENOMEM;
+@@ -561,6 +556,7 @@ static int xen_pcibk_setup_backend(struct xen_pcibk_device *pdev)
+ 	char dev_str[64];
+ 	char state_str[64];
  
--	spin_lock_init(&vpci_dev->lock);
-+	mutex_init(&vpci_dev->lock);
++	mutex_lock(&pdev->dev_lock);
+ 	/* It's possible we could get the call to setup twice, so make sure
+ 	 * we're not already connected.
+ 	 */
+@@ -641,10 +637,10 @@ static int xen_pcibk_setup_backend(struct xen_pcibk_device *pdev)
+ 				 "Error switching to initialised state!");
  
- 	for (slot = 0; slot < PCI_SLOT_MAX; slot++)
- 		INIT_LIST_HEAD(&vpci_dev->dev_list[slot]);
-@@ -221,10 +218,9 @@ static int __xen_pcibk_get_pcifront_dev(struct pci_dev *pcidev,
- 	struct pci_dev_entry *entry;
- 	struct pci_dev *dev = NULL;
- 	struct vpci_dev_data *vpci_dev = pdev->pci_dev_data;
--	unsigned long flags;
- 	int found = 0, slot;
- 
--	spin_lock_irqsave(&vpci_dev->lock, flags);
-+	mutex_lock(&vpci_dev->lock);
- 	for (slot = 0; slot < PCI_SLOT_MAX; slot++) {
- 		list_for_each_entry(entry,
- 			    &vpci_dev->dev_list[slot],
-@@ -242,7 +238,7 @@ static int __xen_pcibk_get_pcifront_dev(struct pci_dev *pcidev,
- 			}
- 		}
- 	}
--	spin_unlock_irqrestore(&vpci_dev->lock, flags);
-+	mutex_lock(&vpci_dev->lock);
- 	return found;
+ out:
++	mutex_unlock(&pdev->dev_lock);
+ 	if (!err)
+ 		/* see if pcifront is already configured (if not, we'll wait) */
+ 		xen_pcibk_attach(pdev);
+-
+ 	return err;
  }
  
 -- 
