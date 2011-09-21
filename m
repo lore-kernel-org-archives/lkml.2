@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753878Ab1IUSKa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 14:10:30 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:33181 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753848Ab1IUSK1 (ORCPT
+	id S1753612Ab1IUSUv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 14:20:51 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:43157 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750832Ab1IUSUu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 14:10:27 -0400
-Subject: [PATCH] acpi: Fix possible recursive locking in hwregs.c
-From: Rakib Mullick <rakib.mullick@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Len Brown <len.brown@intel.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-acpi@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 22 Sep 2011 00:09:49 +0600
-Message-ID: <1316628589.7341.11.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Wed, 21 Sep 2011 14:20:50 -0400
+X-Sasl-enc: OVR0F5kR4d7ZNCTFWIlpE7q2tYeyH9qvw7rekL16+bKT 1316629249
+Date: Wed, 21 Sep 2011 11:20:24 -0700
+From: Greg KH <greg@kroah.com>
+To: Henk de Groot <henk.de.groot@hetnet.nl>
+Cc: Dave Kilroy <kilroyd@googlemail.com>, Valdis.Kletnieks@vt.edu,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] staging: wlags49_h2: Declare support for WEXT 21
+Message-ID: <20110921182024.GA28863@kroah.com>
+References: <1316462896-17846-1-git-send-email-kilroyd@googlemail.com>
+ <1316462896-17846-4-git-send-email-kilroyd@googlemail.com>
+ <15411.1316463771@turing-police.cc.vt.edu>
+ <4E77A9B1.1040107@gmail.com>
+ <20110920195205.GA27739@kroah.com>
+ <4E78F47B.7000906@hetnet.nl>
+ <20110920210233.GB9447@kroah.com>
+ <4E7A25AA.6000303@hetnet.nl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E7A25AA.6000303@hetnet.nl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Calling pm-suspend might trigger a recursive lock in it's code path. In function acpi_hw_clear_acpi_status, 
-acpi_os_release_lock holds the lock acpi_gbl_hardware_lock before calling acpi_hw_register_write(), then 
-without releasing acpi_gbl_hardware_lock, this function calls acpi_ev_walk_gpe_list, which also tries to 
-hold acpi_gbl_hardware_lock and thus causes possible recursive lock. 
+On Wed, Sep 21, 2011 at 07:58:02PM +0200, Henk de Groot wrote:
+> Op 20-9-2011 23:02, Greg KH schreef:
+> >So, should I apply this patch or not?
+> >
+> >confused,
+> >
+> >greg k-h
+> 
+> It doesn't break anything and is was there to make sure the previous
+> patches work, so yes, why not.
 
-Following patch fixes this scenario by just releasing acpi_gbl_hardware_lock before calling acpi_ev_walk_gpe_list.
+Ok, can someone please resend it then, it's long-gone from my patch
+queue at this point in time.
 
-[This patch was created against 3.0-rc3. Since kernel.org is down, I don't have the updated tree. So, before applying
-it might require some adjustment.]
-
-Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
----
-
-diff --git a/drivers/acpi/acpica/hwregs.c b/drivers/acpi/acpica/hwregs.c
-index 55accb7..e3110ac 100644
---- a/drivers/acpi/acpica/hwregs.c
-+++ b/drivers/acpi/acpica/hwregs.c
-@@ -269,6 +269,9 @@ acpi_status acpi_hw_clear_acpi_status(void)
- 
- 	status = acpi_hw_register_write(ACPI_REGISTER_PM1_STATUS,
- 					ACPI_BITMASK_ALL_FIXED_STATUS);
-+
-+	acpi_os_release_lock(acpi_gbl_hardware_lock, lock_flags);
-+
- 	if (ACPI_FAILURE(status)) {
- 		goto unlock_and_exit;
- 	}
-@@ -278,7 +281,6 @@ acpi_status acpi_hw_clear_acpi_status(void)
- 	status = acpi_ev_walk_gpe_list(acpi_hw_clear_gpe_block, NULL);
- 
-       unlock_and_exit:
--	acpi_os_release_lock(acpi_gbl_hardware_lock, lock_flags);
- 	return_ACPI_STATUS(status);
- }
- 
-
-
+greg k-h
