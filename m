@@ -1,69 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752599Ab1IUHb0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 03:31:26 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:51970 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752504Ab1IUHbZ convert rfc822-to-8bit (ORCPT
+	id S1752627Ab1IUHbh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 03:31:37 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:36185 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752540Ab1IUHb0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 03:31:25 -0400
+	Wed, 21 Sep 2011 03:31:26 -0400
 MIME-Version: 1.0
-In-Reply-To: <1316587903.1573.8.camel@vkoul-udesk3>
-References: <1316072789-12830-1-git-send-email-jaswinder.singh@linaro.org>
-	<1316520730-3655-1-git-send-email-jaswinder.singh@linaro.org>
-	<1316537529.31295.14.camel@vkoul-udesk3>
-	<CAJe_ZhdB6y--3XuTp7hzrBjkBTUfp5Anta2Z8SMaqbc=z6jMGA@mail.gmail.com>
-	<1316586723.1573.4.camel@vkoul-udesk3>
-	<CAJe_Zhc67VR-+YAYaLhbwOF=eo2s7wOkjwvi+kJ5=bGt-YWmqA@mail.gmail.com>
-	<1316587903.1573.8.camel@vkoul-udesk3>
-Date: Wed, 21 Sep 2011 13:01:24 +0530
-Message-ID: <CAJe_ZheO7e0Ft364io86aqnShK11XMTj+iC5eeU_zVCY0fJghw@mail.gmail.com>
-Subject: Re: [PATCHv3] DMAEngine: Define interleaved transfer request api
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: dan.j.williams@intel.com, linux-kernel@vger.kernel.org,
-        rmk@arm.linux.org.uk, 21cnbao@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1316557078.1903.11.camel@Joe-Laptop>
+References: <1316555754-25949-1-git-send-email-seth.forshee@canonical.com>
+	<1316555754-25949-2-git-send-email-seth.forshee@canonical.com>
+	<1316557078.1903.11.camel@Joe-Laptop>
+Date: Wed, 21 Sep 2011 09:31:24 +0200
+Message-ID: <CAHR064g=vu2JXtqpNhdrNbyU6k5Wq5uvA7AYspxTPU6aSpn+rQ@mail.gmail.com>
+Subject: Re: [PATCH 1/6] toshiba_acpi: Convert to use acpi_driver
+From: Corentin Chary <corentin.chary@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Seth Forshee <seth.forshee@canonical.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        Azael Avalos <coproscefalo@gmail.com>,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21 September 2011 12:21, Vinod Koul <vinod.koul@intel.com> wrote:
->> >> > Also for slave transfers, how do we infer direction?
->> >> I already explained to Barry. �Here's it again.
->> >>
->> >> At any time, the dmac driver knows if the channel, on which the xfer is
->> >> prepared/submitted is Slave or not.
->> >>
->> >> SLAVE Transfer
->> >> � �dmaxfer_template.src_inc �&& !dmaxfer_template.dst_inc �=> DMA_TO_DEVICE
->> >> � �!dmaxfer_template.src_inc �&& dmaxfer_template.dst_inc �=> DMA_FROM_DEVICE
->> >>
->> >> Mem->Mem Transfer
->> >> � �dmaxfer_template.src_inc �&& !dmaxfer_template.dst_inc �=> Meaningless
->> >> � �!dmaxfer_template.src_inc �&& dmaxfer_template.dst_inc �=> MemSet
->> > Rather than each driver adding this logic with good chance of screwing
->> > up, care to add this as helper in dmaengine.h
->> >
->> > Ideally, I would have preferred direction to be told explicitly, would
->> > leave it you..
->> >
->> I repeat yet again :- "This api is common to Slave as well as Mem<->Mem"
+On Wed, Sep 21, 2011 at 12:17 AM, Joe Perches <joe@perches.com> wrote:
+> On Tue, 2011-09-20 at 16:55 -0500, Seth Forshee wrote:
+>> Changes toshiba_acpi to register an acpi driver and eliminates the
+>> platform device it was using.
+>
+> Just trivial comments...
+>
+>> diff --git a/drivers/platform/x86/toshiba_acpi.c b/drivers/platform/x86/toshiba_acpi.c
+>> +static acpi_status hci_raw(struct toshiba_acpi_dev *dev,
+>> +                        const u32 in[HCI_WORDS], u32 out[HCI_WORDS])
+> []
+>> @@ -237,85 +234,79 @@ static acpi_status hci_raw(const u32 in[HCI_WORDS], u32 out[HCI_WORDS])
+>>   * may be useful (such as "not supported").
+>>   */
 >>
->> Even if we have slave clients specify DMA_TO/FROM_DEVICE, what
->> flag do you suggest Mem->Mem clients use ?
-> Would it be invalid in that case!!!
-Of course!
-It doesn't make any sense for a mem->mem client asking
-for DMA_FROM_DEVICE when it wanted MemSet.
+>> -static acpi_status hci_write1(u32 reg, u32 in1, u32 * result)
+>> +static acpi_status hci_write1(struct toshiba_acpi_dev *dev, u32 reg,
+>> +                           u32 in1, u32 *result)
+>>  {
+>>       u32 in[HCI_WORDS] = { HCI_SET, reg, in1, 0, 0, 0 };
+>
+> A lot of the in[HCI_WORDS] could be static const or const
+>
+>        static const u32 in[HCI_WORDS] etc...
 
-> Same as few ields in xt_template would be for peripheral case..
-No properly written client would ever pass 'invalid' values for
-xt_template members.
-But _every_ properly written Mem->Mem client would have to
-ask for DMA_TO/FROM_DEVICE, following what you suggest.
+Not static const ! see how reg and in1 are used. const is ok.
 
-Btw, even if we wanted, Memcpy couldn't be represented by
-either DMA_TO_DEVICE or  DMA_FROM_DEVICE, because
-both Src and Dst increments here.
+>
+>> +static acpi_status hci_read1(struct toshiba_acpi_dev *dev, u32 reg,
+>> +                          u32 *out1, u32 *result)
+>>  {
+>>       u32 in[HCI_WORDS] = { HCI_GET, reg, 0, 0, 0, 0 };
+>
+> here too.
+>
+>>       u32 out[HCI_WORDS];
+>> -     acpi_status status = hci_raw(in, out);
+>> +     acpi_status status = hci_raw(dev, in, out);
+>>       *out1 = out[2];
+>>       *result = (status == AE_OK) ? out[0] : HCI_FAILURE;
+>>       return status;
+>>  }
+>>
+>> -static acpi_status hci_write2(u32 reg, u32 in1, u32 in2, u32 *result)
+>> +static acpi_status hci_write2(struct toshiba_acpi_dev *dev, u32 reg,
+>> +                           u32 in1, u32 in2, u32 *result)
+>>  {
+>>       u32 in[HCI_WORDS] = { HCI_SET, reg, in1, in2, 0, 0 };
+>
+> const etc.
+>
+>> @@ -507,8 +486,13 @@ static int get_lcd(struct backlight_device *bd)
+>>
+>>  static int lcd_proc_show(struct seq_file *m, void *v)
+>>  {
+>> -     int value = get_lcd(NULL);
+>> +     struct toshiba_acpi_dev *dev = m->private;
+>> +     int value;
+>> +
+>> +     if (!dev->backlight_dev)
+>> +             return -ENODEV;
+>>
+>> +     value = get_lcd(dev->backlight_dev);
+>>       if (value >= 0) {
+>>               seq_printf(m, "brightness:              %d\n", value);
+>>               seq_printf(m, "brightness_levels:       %d\n",
+>
+> Some small amount space could be saved by using:
+>
+>                seq_printf(m, "%-24s %d\n", "brightness:", value);
+>                seq_printf(m, "%-24s %d\n", "brightness_levels:", etc...
+> []
+>> @@ -675,13 +663,14 @@ static const struct file_operations video_proc_fops = {
+>>
+>>  static int fan_proc_show(struct seq_file *m, void *v)
+>>  {
+>> +     struct toshiba_acpi_dev *dev = m->private;
+>>       u32 hci_result;
+>>       u32 value;
+>>
+>> -     hci_read1(HCI_FAN, &value, &hci_result);
+>> +     hci_read1(dev, HCI_FAN, &value, &hci_result);
+>>       if (hci_result == HCI_SUCCESS) {
+>>               seq_printf(m, "running:                 %d\n", (value > 0));
+>
+> Here too:
+>
+>                seq_printf(m, "%-24s %d\n", "running:", (value > 0);
+>
+>> -             seq_printf(m, "force_on:                %d\n", force_fan);
+>> +             seq_printf(m, "force_on:                %d\n", dev->force_fan);
+>
+> etc.
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe platform-driver-x86" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+
+
+
+-- 
+Corentin Chary
+http://xf.iksaif.net
