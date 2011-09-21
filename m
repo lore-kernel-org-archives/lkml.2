@@ -1,91 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752996Ab1IUQYF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 12:24:05 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:53843 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752819Ab1IUQYC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 12:24:02 -0400
+	id S1753036Ab1IUQZm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 12:25:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49387 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752713Ab1IUQZl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 12:25:41 -0400
+Message-ID: <4E7A0FD6.3080508@redhat.com>
+Date: Wed, 21 Sep 2011 19:24:54 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-In-Reply-To: <20110921155444.GA27121@suse.de>
-References: <1316619573-9104-1-git-send-email-consul.kautuk@gmail.com>
-	<20110921155444.GA27121@suse.de>
-Date: Wed, 21 Sep 2011 21:54:01 +0530
-Message-ID: <CAFPAmTR1bHBronJqVWh_osjJvsPi_gWqJ50Ls-WgCi7CMAViUA@mail.gmail.com>
-Subject: Re: [PATCH 1/1] Trivial: devtmpfsd: Setting task running/interruptible
- states
-From: "kautuk.c @samsung.com" <consul.kautuk@gmail.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Jiri Kosina <trivial@kernel.org>, jkosina@suse.cz,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Don Zickus <dzickus@redhat.com>
+CC: Robert Richter <robert.richter@amd.com>, "x86@kernel.org" <x86@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "ying.huang@intel.com" <ying.huang@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "jeremy@goop.org" <jeremy@goop.org>
+Subject: Re: [V5][PATCH 4/6] x86, nmi:  add in logic to handle multiple events
+ and unknown NMIs
+References: <1316529792-6560-1-git-send-email-dzickus@redhat.com> <1316529792-6560-5-git-send-email-dzickus@redhat.com> <20110921100842.GA6063@erda.amd.com> <20110921140432.GP5795@redhat.com> <20110921151829.GC6063@erda.amd.com> <20110921161352.GU5795@redhat.com>
+In-Reply-To: <20110921161352.GU5795@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
-
-On Wed, Sep 21, 2011 at 9:24 PM, Greg KH <gregkh@suse.de> wrote:
-> On Wed, Sep 21, 2011 at 09:09:33PM +0530, Kautuk Consul wrote:
->> This trivial patch makes the following changes in devtmpfsd() :
+On 09/21/2011 07:13 PM, Don Zickus wrote:
+> On Wed, Sep 21, 2011 at 05:18:30PM +0200, Robert Richter wrote:
+> >  On 21.09.11 10:04:32, Don Zickus wrote:
+> >  >  On Wed, Sep 21, 2011 at 12:08:42PM +0200, Robert Richter wrote:
+> >  >  >  On 20.09.11 10:43:10, Don Zickus wrote:
+> >  >  >  >  @@ -87,6 +87,16 @@ static int notrace __kprobes nmi_handle(unsigned int type, struct pt_regs *regs)
+> >  >  >  >
+> >  >  >  >   		handled += a->handler(type, regs);
+> >  >  >  >
+> >  >  >  >  +		/*
+> >  >  >  >  + 		 * Optimization: only loop once if this is not a
+> >  >  >  >  + 		 * back-to-back NMI.  The idea is nothing is dropped
+> >  >  >  >  + 		 * on the first NMI, only on the second of a back-to-back
+> >  >  >  >  + 		 * NMI.  No need to waste cycles going through all the
+> >  >  >  >  + 		 * handlers.
+> >  >  >  >  + 		 */
+> >  >  >  >  +		if (!b2b&&  handled)
+> >  >  >  >  +			break;
+> >  >  >
+> >  >  >  In rare cases we will lose nmis here.
+> >  >  >
+> >  >  >  We see a back-to-back nmi in the case if a 2 nmi source triggers
+> >  >  >  *after* the nmi handler is entered. Depending on the internal cpu
+> >  >  >  timing influenced by microcode and SMM code execution, the nmi may not
+> >  >  >  entered immediately. So all sources that trigger *before* the nmi
+> >  >  >  handler is entered raise only one nmi with no subsequent nmi.
+> >  >
+> >  >  Right, but that can only happen with the second NMI in the back-to-back
+> >  >  NMI case.  Here the optimization is only for the first NMI, with the
+> >  >  assumption that you will always have a second NMI if multiple sources
+> >  >  trigger, so you can process those in the second iteration (assuming we
+> >  >  correctly detect the back-to-back NMI condition).  Then when the second
+> >  >  NMI comes in, we have no idea how many we dropped to get here so we
+> >  >  process all the handlers based on the assumption we might not have another
+> >  >  NMI behind us to make up for the dropped NMIs.
+> >  >
+> >  >  Unless I misunderstood your point above?
+> >
+> >  No, my point was that a second NMI might not be latched even if there
+> >  are two nmi sources pending.
+> >
+> >  Your logic is correct but assumes you will always receive a second
+> >  nmi. This is not always the case depending on the cpu's internal
+> >  timing. Usually there is the following sequence for back-to-back nmis:
+> >
+> >  1. HW triggers first NMI, an NMI is pending.
+> >  2. NMI handler is called, no NMI pending anymore.
+> >  3. HW triggers a second NMI, an NMI is pending.
+> >  4. Return from NMI handler.
+> >  5. NMI handler is called again to serve the 2nd, no NMI pending anymore.
+> >  6. Return from NMI handler.
+> >
+> >  The above is what your algorithm covers.
+> >
+> >  But in rare cases there is the following:
+> >
+> >  1. The cpu executes some microcode or SMM code.
+> >  2. HW triggers the first NMI, an NMI is pending.
+> >  3. HW triggers a second NMI, the NMI is still pending.
+> >  4. The cpu finished microcode or SMM code.
+> >  5. NMI handler is called, no NMI pending anymore.
+> >  6. Return from NMI handler.
+> >
+> >  In this case the handler is called only once and the second nmi
+> >  remains unhandled with you implementation.
+> >
+> >  I don't see a way how this could be catched without serving all
+> >  handlers the first time. But as said, in favor of the optimization I
+> >  think we can live with losing some NMIs.
 >
-> This is not the definition of "trivial" in that you are changing the
-> logic of the code, not just doing spelling changes.
-
-Well, I didn't really change the performance/functionality so I called
-it trivial.
-
+> Ah, I get it know.  Crap.  Well I think Avi was pushing it to make those
+> ticket_spin_locks work in virt land.  It seems like we should lean towards
+> removing the optimization.  Avi?
 >
->> - Set the state to TASK_INTERRUPTIBLE using __set_current_state
->>   instead of set_current_state as the spin_unlock is an implicit
->>   memory barrier.
->
-> Why?  What is this hurting with the original code?
 
-Nothing really hurting, that's why I called this patch trivial.
-There is an extra memory barrier we have to go through by way of
-set_current_state, which is mb().
-That would lead to more overhead on the parallel pipelines of the processor
-as they will have to cease being parallel for instructions before and after
-the memory barrier despite the fact that the spin_unlock already covers this.
-We can do without this because as per the Documentation/memory-barriers.txt,
-atomic operations and unlocks give reliable ordering to instructions.
+Well, in virt land there are no SMIs, and we can guarantee that the 
+queue length is always two.  So if these rare cases are okay for 
+upstream, it'll be fine for virt.
 
->
->> - After return from schedule(), there is no need to set the current
->>   state to TASK_RUNNING as the wake_up_process() function call will
->>   do this for us.
->
-> Are you sure?
+-- 
+error compiling committee.c: too many arguments to function
 
-Yes. wake_up_process()->ttwu_queue()->ttwu_do_activate()->ttwu_do_wakeup()
-will set the task state to TASK_RUNNING. Before that,
-ttwu_activate()->activate_task()->enqueue_task() will have put the task struct
-onto the run-queue.
-
-Of course, the rq->lock is held during this which does not allow there
-to be any race
-conditions between the above process and the task actually waking up on a CPU
-and then proceeding to execute without its task state set to TASK_RUNNING.
-
->
-> Have you tested this patch and everything works properly?
-
-Yes. It does so on my system. But I did not try any stress tests.
-If you want me to try out any stress test cases I can do so, but I was
-convinced after reading the code, documentation and creating a
-separate kernel module
-with a thread and this kind of state setting behavior and things
-seemed fine then in the sense
-that the thread did not sleep due to the task state being continued to
-be set to
-TASK_INTERRUPTIBLE after returning from the schedule() function.
-
-Please correct me if I am wrong in any technical assumptions or any point which
-I might have overlooked.
-
->
-> greg k-h
->
