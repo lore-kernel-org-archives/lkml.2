@@ -1,95 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751081Ab1IUU5N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 16:57:13 -0400
-Received: from mxin.vub.ac.be ([134.184.129.112]:51530 "EHLO mxin.vub.ac.be"
+	id S1751219Ab1IUU53 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 16:57:29 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:47847 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750849Ab1IUU5L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 16:57:11 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ap4EAO1Nek6GuBhX/2dsb2JhbABChFykBoFTAQEEASNWBQsLGAICJgICVwYBEod3AqMDgiKPRoEshECBEQSYWhKMEg
-Subject: Re: [E1000-devel] e1000e: NIC not working, power management issue?
-From: Frederik Himpe <fhimpe@telenet.be>
-To: jeffrey.t.kirsher@intel.com, linux-kernel@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>
-Cc: "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        Lucas Nussbaum <lucas@lucas-nussbaum.net>,
-        "Ronciak, John" <john.ronciak@intel.com>,
-        John Ronciak <john.ronciak@gmail.com>
-Date: Wed, 21 Sep 2011 22:57:23 +0200
-In-Reply-To: <1316598051.2182.48.camel@jtkirshe-mobl>
-References: <1316032260.6309.1.camel@defected>
-	 <CALWPMBEvwFbP-G+Ojfr_vM2riwG9vax3_3cQ1SzBR4OmdnHnsw@mail.gmail.com>
-	 <20110915044804.GA30817@xanadu.blop.info>
-	 <CALWPMBH0LSZV0yM8_24yANmn+AbscoqwiJKUnWnzGsN6hJdrhw@mail.gmail.com>
-	 <20110915162354.GA5935@xanadu.blop.info>
-	 <D38E8E86660E514AB505863C19C9287C16E92FA6@ORSMSX101.amr.corp.intel.com>
-	 <20110915172927.GA9854@xanadu.blop.info>
-	 <D38E8E86660E514AB505863C19C9287C16E93015@ORSMSX101.amr.corp.intel.com>
-	 <20110915175004.GA11691@xanadu.blop.info>
-	 <D38E8E86660E514AB505863C19C9287C16E934D4@ORSMSX101.amr.corp.intel.com>
-	 <20110916053808.GA4992@xanadu.blop.info>
-	 <alpine.WNT.2.00.1109161020490.3092@jbrandeb-mobl2.amr.corp.intel.com>
-	 <1316545412.19344.5.camel@defected>
-	 <1316598051.2182.48.camel@jtkirshe-mobl>
-Organization: Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3- 
+	id S1751168Ab1IUU51 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 16:57:27 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH] vt/suspend: cleanup #if defined uglyness and fix compile error
+Date: Wed, 21 Sep 2011 22:59:30 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc4+; KDE/4.6.0; x86_64; ; )
+Cc: H Hartley Sweeten <hartleys@visionengravers.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-pm@lists.linux-foundation.org, akpm@linux-foundation.org,
+        gregkh@suse.de, pavel@ucw.cz, len.brown@intel.com, art@ified.ca,
+        jslaby@suse.cz
+References: <201109061404.10301.hartleys@visionengravers.com> <201109071849.43603.arnd@arndb.de>
+In-Reply-To: <201109071849.43603.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-ID: <1316638644.16838.3.camel@defected>
-Mime-Version: 1.0
+Message-Id: <201109212259.30843.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-09-21 at 02:40 -0700, Jeff Kirsher wrote:
-> On Tue, 2011-09-20 at 12:03 -0700, Frederik Himpe wrote:
-> > On Sun, 2011-09-18 at 18:04 +0200, Frederik Himpe wrote:
-> > > On Sun, 2011-09-18 at 17:38 +0200, Frederik Himpe wrote:
-> > > 
-> > > > I also tried some older Debian kernels and 2.6.34-1~experimental.2 is
-> > > > working fine, while 2.6.35-1~experimental.3 (and later kernels I tried)
-> > > > is broken, so I guess the problem started between 2.6.34 and 2.6.35.
-> > > > Maybe I'll try to bisect now...
-> > > 
-> > > Apparently these old kernels do not build anymore with my recent
-> > > toolchain:
-> > > 
-> > >   AS      arch/x86/kernel/entry_64.o
-> > > /tmp/ccksyA7i.s: Assembler messages:
-> > > /tmp/ccksyA7i.s: Error: .size expression for do_hypervisor_callback does
-> > > not evaluate to a constant
-> > > 
-> > > So I'm stuck here.
+On Wednesday, September 07, 2011, Arnd Bergmann wrote:
+> On Tuesday 06 September 2011, H Hartley Sweeten wrote:
+> > rder to cleanup
+> > the #if defined ugliness for the vt suspend support functions. Note that
+> > CONFIG_VT_CONSOLE is already dependant on CONFIG_VT.
 > > 
-> > Any further thing we can do to help this problem getting fixed?
+> > The function pm_set_vt_switch is actually dependant on CONFIG_VT and not
+> > CONFIG_PM_SLEEP. This fixes a compile error when CONFIG_PM_SLEEP is
+> > not set:
 > > 
+> > drivers/tty/vt/vt_ioctl.c:1794: error: redefinition of 'pm_set_vt_switch'
+> > include/linux/suspend.h:17: error: previous definition of 'pm_set_vt_switch' was here
+> > 
+> > Also, remove the incorrect path from the comment in console.c.
+> > 
+> > Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+> > Cc: Arnd Bergmann <arnd@arnd.de>
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Cc: Greg Kroah-Hartman <gregkh@suse.de>
+> > Cc: Pavel Machek <pavel@ucw.cz>
+> > Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> > Cc: Len Brown <len.brown@intel.com>
+> > Cc: Arthur Taylor <art@ified.ca>
+> > Cc: Jiri Slaby <jslaby@suse.cz>
 > 
-> You noted that the problem started between 2.6.34 and 2.6.35, and that
-> you were going to try and bisect to find the "problem" patch.  How is
-> that effort coming along?
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
 
-I cannot successfully build these kernels with my toolchain (see above).
+Applied to linux-pm/linux-next, will be pushed for 3.2.
 
-> It also appears that you copied netdev and lkml on the original email,
-> but they appear to have been dropped from the CC earlier on in this
-> email discussion.  It sounds like it would be prudent to add lkml &
-> netdev back on to the email thread with what Jesse & John have suggested
-> and seen based on the information provided.  This way the power
-> management maintainers are aware of the issue and potentially suggest
-> other possible fix(es) that have not already been suggested.
-
-Added these lists again.
-
-To resume what we have found up to now: when runtime PM is activated for
-the e1000e NIC, it does not wake up when a cable is plugged or when
-ethtool is run. Runtime PM has to be deactivated to get the NIC working
-again. Apparently this problem started between 2.6.34 and 2.6.35. 
-
-
-
--- 
-Frederik Himpe <fhimpe@telenet.be>
-
+Thanks (and sorry for the delay),
+Rafael
