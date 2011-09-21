@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752802Ab1IUKGb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 06:06:31 -0400
-Received: from tservice.net.ru ([195.178.208.66]:32868 "EHLO tservice.net.ru"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752416Ab1IUKGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 06:06:30 -0400
-Date: Wed, 21 Sep 2011 14:06:27 +0400
-From: Evgeniy Polyakov <zbr@ioremap.net>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, Samuel Ortiz <sameo@linux.intel.com>,
-        Andres Salomon <dilinger@queued.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        =?utf-8?Q?Jean-Fran=C3=A7ois?= Dagenais <dagenaisj@sonatest.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Amit Kucheria <amit.kucheria@canonical.com>,
-        Julia Lawall <julia@diku.dk>
-Subject: Re: [PATCH 50/57] w1: irq: Remove IRQF_DISABLED
-Message-ID: <20110921100627.GA15912@ioremap.net>
-References: <1316597339-29861-1-git-send-email-yong.zhang0@gmail.com>
- <1316597339-29861-51-git-send-email-yong.zhang0@gmail.com>
+	id S1752855Ab1IUKGz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 06:06:55 -0400
+Received: from www.linutronix.de ([62.245.132.108]:48845 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752416Ab1IUKGy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 06:06:54 -0400
+Date: Wed, 21 Sep 2011 12:06:49 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Ben Hutchings <ben@decadent.org.uk>
+cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andres Salomon <dilinger@queued.net>, Andy Lutomirski <luto@mit.edu>,
+        Arnaud Lacombe <lacombar@gmail.com>
+Subject: Re: [PATCH] x86-32: Fix alignment of alternative instruction
+ entries
+In-Reply-To: <1316580313.4122.21.camel@deadeye>
+Message-ID: <alpine.LFD.2.02.1109211206130.2723@ionos>
+References: <1316580313.4122.21.camel@deadeye>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1316597339-29861-51-git-send-email-yong.zhang0@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 21, 2011 at 05:28:51PM +0800, Yong Zhang (yong.zhang0@gmail.com) wrote:
-> Since commit [c58543c8: genirq: Run irq handlers with interrupts disabled],
-> We run all interrupt handlers with interrupts disabled
-> and we even check and yell when an interrupt handler
-> returns with interrupts enabled (see commit [b738a50a:
-> genirq: Warn when handler enables interrupts]).
+On Wed, 21 Sep 2011, Ben Hutchings wrote:
+
+> The altinstruction_entry macro was originally used only on x86-64,
+> and assumed 64-bit pointers and alignment.
 > 
-> So now this flag is a NOOP and can be removed.
+> Commit b4ca46e4e82a0a5976fe5eab85be585d75f8202f ("x86-32: Fix boot
+> with CONFIG_X86_INVD_BUG") introduced a use of the macro on x86-32.
+> Before this, the 64-bit pointers had been replaced by 32-bit offsets,
+> so it worked - in at least one case.  However, the alignment is still
+> wrong for x86-32, which can result in zero-padding between entries and
+> a BUG in apply_alternatives.
 
-Looks good, thank you.
-Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
+Fixed in Linus tree already: commit a7f934d4f16144cb
 
--- 
-	Evgeniy Polyakov
+Thanks,
+
+	tglx
