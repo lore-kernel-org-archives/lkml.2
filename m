@@ -1,270 +1,326 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753366Ab1IURQH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 13:16:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11815 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752194Ab1IURQF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 13:16:05 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [patch, v2] aio: allocate kiocbs in batches
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Wed, 21 Sep 2011 13:16:00 -0400
-Message-ID: <x49ipol3jfz.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1753400Ab1IURQW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 13:16:22 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:44634 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752194Ab1IURQU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 13:16:20 -0400
+Message-ID: <4E7A1BCA.1090006@ti.com>
+Date: Wed, 21 Sep 2011 19:15:54 +0200
+From: "Cousson, Benoit" <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Rob Herring <robherring2@gmail.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
+        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
+        "jamie@jamieiles.com" <jamie@jamieiles.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "dave.martin@linaro.org" <dave.martin@linaro.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH 3/3] ARM: gic: add OF based initialization
+References: <1316550244-3655-1-git-send-email-robherring2@gmail.com> <1316550244-3655-4-git-send-email-robherring2@gmail.com>
+In-Reply-To: <1316550244-3655-4-git-send-email-robherring2@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Rob,
 
-In testing aio on a fast storage device, I found that the context lock
-takes up a fair amount of cpu time in the I/O submission path.  The
-reason is that we take it for every I/O submitted (see __aio_get_req).
-Since we know how many I/Os are passed to io_submit, we can preallocate
-the kiocbs in batches, reducing the number of times we take and release
-the lock.  In my testing, I was able to reduce the amount of time spent
-in _raw_spin_lock_irq by .56% (average of 3 runs).  The command I used
-to test this was:
-   aio-stress -O -o 2 -o 3 -r 8 -d 128 -b 32 -i 32 -s 16384 <dev>
+I'm testing that series with OMAP4 but have some issues for the moment :-(
 
-I also tested the patch with various numbers of events passed to
-io_submit, and I ran the xfstests aio group of tests to ensure I didn't
-break anything.
+[    0.000000] WARNING: at kernel/irq/irqdomain.c:34 gic_of_init+0x10c/0x180()
+[    0.000000] error: irq_desc already assigned to a domain
+[    0.000000] Modules linked in:
+[    0.000000] [<c001b284>] (unwind_backtrace+0x0/0xf0) from [<c0051c34>] (warn_slowpath_common+0x4c/0x64)
+[    0.000000] [<c0051c34>] (warn_slowpath_common+0x4c/0x64) from [<c0051ce0>] (warn_slowpath_fmt+0x30/0x40)
+[    0.000000] [<c0051ce0>] (warn_slowpath_fmt+0x30/0x40) from [<c05f6874>] (gic_of_init+0x10c/0x180)
+[    0.000000] [<c05f6874>] (gic_of_init+0x10c/0x180) from [<c05fa2e0>] (omap_gic_of_init+0x8/0x28)
+[    0.000000] [<c05fa2e0>] (omap_gic_of_init+0x8/0x28) from [<c0616b44>] (of_irq_init+0x148/0x28c)
+[    0.000000] [<c0616b44>] (of_irq_init+0x148/0x28c) from [<c05f3074>] (init_IRQ+0x14/0x1c)
+[    0.000000] [<c05f3074>] (init_IRQ+0x14/0x1c) from [<c05f0650>] (start_kernel+0x184/0x2fc)
+[    0.000000] [<c05f0650>] (start_kernel+0x184/0x2fc) from [<80008040>] (0x80008040)
+ 
+I'm not super familiar with all the irq stuff but I'm wondering if there is not something wrong with the test that print that message:
 
-Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+void irq_domain_add(struct irq_domain *domain)
+{
+	struct irq_data *d;
+	int hwirq;
 
----
-Changes from rfc -> v2:
-- folded in akpm's incremental patch which fixes coding style and
-  variable names
-- tried to clarify a comment about a starvation case
-- fixed up my breaking of the handling of that starvation case
-- moved from an on-stack array to a list at the suggestion of akpm
+	/*
+	 * This assumes that the irq_domain owner has already allocated
+	 * the irq_descs.  This block will be removed when support for dynamic
+	 * allocation of irq_descs is added to irq_domain.
+	 */
+	for (hwirq = 0; hwirq < domain->nr_irq; hwirq++) {
+		d = irq_get_irq_data(irq_domain_to_irq(domain, hwirq));
+		if (d || d->domain) {
+			/* things are broken; just report, don't clean up */
+			WARN(1, "error: irq_desc already assigned to a domain");
+			return;
+		}
+[...]
+
+Is the (d || d->domain) correct? Shouldn't it be (d && d->domain)?
+
+But since that used to work properly, I have some doubt. Moreover the driver will not even get the proper interrupt later...
+
+Do you have any clue?
+
+Thanks,
+Benoit
 
 
-diff --git a/fs/aio.c b/fs/aio.c
-index e29ec48..8229329 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -440,8 +440,6 @@ void exit_aio(struct mm_struct *mm)
- static struct kiocb *__aio_get_req(struct kioctx *ctx)
- {
- 	struct kiocb *req = NULL;
--	struct aio_ring *ring;
--	int okay = 0;
- 
- 	req = kmem_cache_alloc(kiocb_cachep, GFP_KERNEL);
- 	if (unlikely(!req))
-@@ -459,39 +457,116 @@ static struct kiocb *__aio_get_req(struct kioctx *ctx)
- 	INIT_LIST_HEAD(&req->ki_run_list);
- 	req->ki_eventfd = NULL;
- 
--	/* Check if the completion queue has enough free space to
--	 * accept an event from this io.
--	 */
-+	return req;
-+}
-+
-+/*
-+ * struct kiocb's are allocated in batches to reduce the number of
-+ * times the ctx lock is acquired and released.
-+ */
-+#define KIOCB_BATCH_SIZE	32
-+struct kiocb_batch {
-+	struct list_head head;
-+	long total;	/* number of requests passed to sys_io_submit */
-+	long allocated;	/* number of requests allocated so far */
-+};
-+
-+static void kiocb_batch_init(struct kiocb_batch *batch, long total)
-+{
-+	INIT_LIST_HEAD(&batch->head);
-+	batch->total = total;
-+	batch->allocated = 0;
-+}
-+
-+static void kiocb_batch_free(struct kiocb_batch *batch)
-+{
-+	struct kiocb *req, *n;
-+
-+	list_for_each_entry_safe(req, n, &batch->head, ki_batch) {
-+		list_del(&req->ki_batch);
-+		kmem_cache_free(kiocb_cachep, req);
-+	}
-+}
-+
-+/*
-+ * Allocate a batch of kiocbs.  This avoids taking and dropping the
-+ * context lock a lot during setup.
-+ */
-+static int kiocb_batch_refill(struct kioctx *ctx, struct kiocb_batch *batch)
-+{
-+	int i;
-+	int to_alloc, avail;
-+	bool called_fput = false;
-+	struct kiocb *req, *n;
-+	struct aio_ring *ring;
-+
-+	to_alloc = min(batch->total - batch->allocated, KIOCB_BATCH_SIZE);
-+	for (i = 0; i < to_alloc; i++) {
-+		req = __aio_get_req(ctx);
-+		if (!req)
-+			/* allocation failed, go with what we've got */
-+			break;
-+		list_add(&req->ki_batch, &batch->head);
-+	}
-+
-+	if (i == 0)
-+		goto out;
-+
-+retry:
- 	spin_lock_irq(&ctx->ctx_lock);
--	ring = kmap_atomic(ctx->ring_info.ring_pages[0], KM_USER0);
--	if (ctx->reqs_active < aio_ring_avail(&ctx->ring_info, ring)) {
-+	ring = kmap_atomic(ctx->ring_info.ring_pages[0]);
-+
-+	avail = aio_ring_avail(&ctx->ring_info, ring) - ctx->reqs_active;
-+	BUG_ON(avail < 0);
-+	if (avail == 0 && !called_fput) {
-+		/*
-+		 * Handle a potential starvation case.  It is possible that
-+		 * we hold the last reference on a struct file, causing us
-+		 * to delay the final fput to non-irq context.  In this case,
-+		 * ctx->reqs_active is artificially high.  Calling the fput
-+		 * routine here may free up a slot in the event completion
-+		 * ring, allowing this allocation to succeed.
-+		 */
-+		spin_unlock_irq(&ctx->ctx_lock);
-+		kunmap_atomic(ring);
-+		aio_fput_routine(NULL);
-+		called_fput = true;
-+		goto retry;
-+	}
-+
-+	if (avail < i) {
-+		/* Trim back the number of requests. */
-+		list_for_each_entry_safe(req, n, &batch->head, ki_batch) {
-+			list_del(&req->ki_batch);
-+			kmem_cache_free(kiocb_cachep, req);
-+			if (--i <= avail)
-+				break;
-+		}
-+	}
-+
-+	batch->allocated += i;
-+	list_for_each_entry(req, &batch->head, ki_batch) {
- 		list_add(&req->ki_list, &ctx->active_reqs);
- 		ctx->reqs_active++;
--		okay = 1;
- 	}
--	kunmap_atomic(ring, KM_USER0);
--	spin_unlock_irq(&ctx->ctx_lock);
- 
--	if (!okay) {
--		kmem_cache_free(kiocb_cachep, req);
--		req = NULL;
--	}
-+	kunmap_atomic(ring);
-+	spin_unlock_irq(&ctx->ctx_lock);
- 
--	return req;
-+out:
-+	return i;
- }
- 
--static inline struct kiocb *aio_get_req(struct kioctx *ctx)
-+static inline struct kiocb *aio_get_req(struct kioctx *ctx,
-+					struct kiocb_batch *batch)
- {
- 	struct kiocb *req;
--	/* Handle a potential starvation case -- should be exceedingly rare as 
--	 * requests will be stuck on fput_head only if the aio_fput_routine is 
--	 * delayed and the requests were the last user of the struct file.
--	 */
--	req = __aio_get_req(ctx);
--	if (unlikely(NULL == req)) {
--		aio_fput_routine(NULL);
--		req = __aio_get_req(ctx);
--	}
-+
-+	if (list_empty(&batch->head))
-+		if (kiocb_batch_refill(ctx, batch) == 0)
-+			return NULL;
-+	req = list_first_entry(&batch->head, struct kiocb, ki_batch);
-+	list_del(&req->ki_batch);
- 	return req;
- }
- 
-@@ -1515,7 +1590,8 @@ static ssize_t aio_setup_iocb(struct kiocb *kiocb, bool compat)
- }
- 
- static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
--			 struct iocb *iocb, bool compat)
-+			 struct iocb *iocb, struct kiocb_batch *batch,
-+			 bool compat)
- {
- 	struct kiocb *req;
- 	struct file *file;
-@@ -1541,7 +1617,7 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
- 	if (unlikely(!file))
- 		return -EBADF;
- 
--	req = aio_get_req(ctx);		/* returns with 2 references to req */
-+	req = aio_get_req(ctx, batch);  /* returns with 2 references to req */
- 	if (unlikely(!req)) {
- 		fput(file);
- 		return -EAGAIN;
-@@ -1621,8 +1697,9 @@ long do_io_submit(aio_context_t ctx_id, long nr,
- {
- 	struct kioctx *ctx;
- 	long ret = 0;
--	int i;
-+	int i = 0;
- 	struct blk_plug plug;
-+	struct kiocb_batch batch;
- 
- 	if (unlikely(nr < 0))
- 		return -EINVAL;
-@@ -1639,6 +1716,8 @@ long do_io_submit(aio_context_t ctx_id, long nr,
- 		return -EINVAL;
- 	}
- 
-+	kiocb_batch_init(&batch, nr);
-+
- 	blk_start_plug(&plug);
- 
- 	/*
-@@ -1659,12 +1738,13 @@ long do_io_submit(aio_context_t ctx_id, long nr,
- 			break;
- 		}
- 
--		ret = io_submit_one(ctx, user_iocb, &tmp, compat);
-+		ret = io_submit_one(ctx, user_iocb, &tmp, &batch, compat);
- 		if (ret)
- 			break;
- 	}
- 	blk_finish_plug(&plug);
- 
-+	kiocb_batch_free(&batch);
- 	put_ioctx(ctx);
- 	return i ? i : ret;
- }
-diff --git a/include/linux/aio.h b/include/linux/aio.h
-index 2dcb72b..2314ad8 100644
---- a/include/linux/aio.h
-+++ b/include/linux/aio.h
-@@ -117,6 +117,7 @@ struct kiocb {
- 
- 	struct list_head	ki_list;	/* the aio core uses this
- 						 * for cancellation */
-+	struct list_head	ki_batch;	/* batch allocation */
- 
- 	/*
- 	 * If the aio_resfd field of the userspace iocb is not zero,
+On 9/20/2011 10:24 PM, Rob Herring wrote:
+> From: Rob Herring<rob.herring@calxeda.com>
+> 
+> This adds ARM gic interrupt controller initialization using device tree
+> data.
+> 
+> The initialization function is intended to be called by of_irq_init
+> function like this:
+> 
+> const static struct of_device_id irq_match[] = {
+>          { .compatible = "arm,cortex-a9-gic", .data = gic_of_init, },
+>          {}
+> };
+> 
+> static void __init init_irqs(void)
+> {
+>          of_irq_init(irq_match);
+> }
+> 
+> Signed-off-by: Rob Herring<rob.herring@calxeda.com>
+> ---
+>   Documentation/devicetree/bindings/arm/gic.txt |   55 +++++++++++++++
+>   arch/arm/common/gic.c                         |   89 +++++++++++++++++++++++-
+>   arch/arm/include/asm/hardware/gic.h           |   12 ++++
+>   3 files changed, 152 insertions(+), 4 deletions(-)
+>   create mode 100644 Documentation/devicetree/bindings/arm/gic.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/arm/gic.txt b/Documentation/devicetree/bindings/arm/gic.txt
+> new file mode 100644
+> index 0000000..52916b4
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/arm/gic.txt
+> @@ -0,0 +1,55 @@
+> +* ARM Generic Interrupt Controller
+> +
+> +ARM SMP cores are often associated with a GIC, providing per processor
+> +interrupts (PPI), shared processor interrupts (SPI) and software
+> +generated interrupts (SGI).
+> +
+> +Primary GIC is attached directly to the CPU and typically has PPIs and SGIs.
+> +Secondary GICs are cascaded into the upward interrupt controller and do not
+> +have PPIs or SGIs.
+> +
+> +Main node required properties:
+> +
+> +- compatible : should be one of:
+> +	"arm,cortex-a9-gic"
+> +	"arm,arm11mp-gic"
+> +- interrupt-controller : Identifies the node as an interrupt controller
+> +- #interrupt-cells : Specifies the number of cells needed to encode an
+> +  interrupt source.  The type shall be a<u32>  and the value shall be 3.
+> +
+> +  The 1st cell is the interrupt type; 0 for SPI interrupts, 1 for PPI
+> +  interrupts.
+> +
+> +  The 2nd cell contains the interrupt number for the interrupt type.
+> +  SPI interrupts are in the range [0-987].  PPI interrupts are in the
+> +  range [0-15].
+> +
+> +  The 3rd cell is the flags, encoded as follows:
+> +	bits[3:0] trigger type and level flags.
+> +		1 = low-to-high edge triggered
+> +		2 = high-to-low edge triggered
+> +		4 = active high level-sensitive
+> +		8 = active low level-sensitive
+> +	bits[15:8] PPI interrupt cpu mask.  Each bit corresponds to each of
+> +	the 8 possible cpus attached to the GIC.  A bit set to '1' indicated
+> +	the interrupt is wired to that CPU.  Only valid for PPI interrupts.
+> +
+> +- reg : Specifies base physical address(s) and size of the GIC registers. The
+> +  first region is the GIC distributor register base and size. The 2nd region is
+> +  the GIC cpu interface register base and size.
+> +
+> +Optional
+> +- interrupts	: Interrupt source of the parent interrupt controller. Only
+> +  present on secondary GICs.
+> +
+> +Example:
+> +
+> +	intc: interrupt-controller@fff11000 {
+> +		compatible = "arm,cortex-a9-gic";
+> +		#interrupt-cells =<3>;
+> +		#address-cells =<1>;
+> +		interrupt-controller;
+> +		reg =<0xfff11000 0x1000>,
+> +		<0xfff10100 0x100>;
+> +	};
+> +
+> diff --git a/arch/arm/common/gic.c b/arch/arm/common/gic.c
+> index 666b278..84e69a4 100644
+> --- a/arch/arm/common/gic.c
+> +++ b/arch/arm/common/gic.c
+> @@ -28,6 +28,10 @@
+>   #include<linux/smp.h>
+>   #include<linux/cpumask.h>
+>   #include<linux/io.h>
+> +#include<linux/of.h>
+> +#include<linux/of_address.h>
+> +#include<linux/of_irq.h>
+> +#include<linux/irqdomain.h>
+> 
+>   #include<asm/irq.h>
+>   #include<asm/mach/irq.h>
+> @@ -255,6 +259,15 @@ void __init gic_cascade_irq(unsigned int gic_nr, unsigned int irq)
+>   	irq_set_chained_handler(irq, gic_handle_cascade_irq);
+>   }
+> 
+> +static int gic_irq_count(void __iomem *dist_base)
+> +{
+> +	int gic_irqs = readl_relaxed(dist_base + GIC_DIST_CTR)&  0x1f;
+> +	gic_irqs = (gic_irqs + 1) * 32;
+> +	if (gic_irqs>  1020)
+> +		gic_irqs = 1020;
+> +	return gic_irqs;
+> +}
+> +
+>   static void __init gic_dist_init(struct gic_chip_data *gic,
+>   	unsigned int irq_start)
+>   {
+> @@ -277,10 +290,7 @@ static void __init gic_dist_init(struct gic_chip_data *gic,
+>   	 * Find out how many interrupts are supported.
+>   	 * The GIC only supports up to 1020 interrupt sources.
+>   	 */
+> -	gic_irqs = readl_relaxed(base + GIC_DIST_CTR)&  0x1f;
+> -	gic_irqs = (gic_irqs + 1) * 32;
+> -	if (gic_irqs>  1020)
+> -		gic_irqs = 1020;
+> +	gic_irqs = gic_irq_count(base);
+> 
+>   	/*
+>   	 * Set all global interrupts to be level triggered, active low.
+> @@ -405,3 +415,74 @@ void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
+>   	writel_relaxed(map<<  16 | irq, gic_data[0].dist_base + GIC_DIST_SOFTINT);
+>   }
+>   #endif
+> +
+> +#ifdef CONFIG_OF
+> +static int gic_cnt __initdata = 0;
+> +
+> +int gic_irq_domain_dt_translate(struct irq_domain *d,
+> +			    struct device_node *controller,
+> +			    const u32 *intspec, unsigned int intsize,
+> +			    unsigned long *out_hwirq, unsigned int *out_type)
+> +{
+> +	struct gic_chip_data *gic_data = d->priv;
+> +
+> +	if (d->of_node != controller)
+> +		return -EINVAL;
+> +	if (intsize<  3)
+> +		return -EINVAL;
+> +
+> +	*out_hwirq = intspec[1];
+> +	/*
+> +	 * We've already skipped over SGIs, so PPIs need no translation.
+> +	 * For SPIs, we need to skip over 16 PPIs on primary GICs.
+> +	 */
+> +	if (!intspec[0]&&  !gic_data->irq_offset)
+> +		*out_hwirq += 16;
+> +
+> +	*out_type = intspec[2]&  IRQ_TYPE_SENSE_MASK;
+> +	return 0;
+> +}
+> +
+> +struct irq_domain_ops gic_irq_domain_ops = {
+> +	.dt_translate = gic_irq_domain_dt_translate,
+> +};
+> +
+> +int __init gic_of_init(struct device_node *node, struct device_node *parent)
+> +{
+> +	void __iomem *cpu_base;
+> +	void __iomem *dist_base;
+> +	int irq;
+> +	struct irq_domain *domain =&gic_data[gic_cnt].domain;
+> +
+> +	if (WARN_ON(!node))
+> +		return -ENODEV;
+> +
+> +	dist_base = of_iomap(node, 0);
+> +	WARN(!dist_base, "unable to map gic dist registers\n");
+> +
+> +	cpu_base = of_iomap(node, 1);
+> +	WARN(!cpu_base, "unable to map gic cpu registers\n");
+> +
+> +	domain->nr_irq = gic_irq_count(dist_base);
+> +	/* subtract off SGIs. Also subtract off PPIs for secondary GICs */
+> +	if (parent)
+> +		domain->nr_irq -= 32;
+> +	else
+> +		domain->nr_irq -= 16;
+> +
+> +	domain->irq_base = irq_alloc_descs(-1, 16, domain->nr_irq, numa_node_id());
+> +	domain->of_node = of_node_get(node);
+> +	domain->ops =&gic_irq_domain_ops;
+> +	domain->priv =&gic_data[gic_cnt];
+> +	irq_domain_add(domain);
+> +
+> +	gic_init(gic_cnt, domain->irq_base, dist_base, cpu_base);
+> +
+> +	if (parent) {
+> +		irq = irq_of_parse_and_map(node, 0);
+> +		gic_cascade_irq(gic_cnt, irq);
+> +	}
+> +	gic_cnt++;
+> +	return 0;
+> +}
+> +#endif
+> diff --git a/arch/arm/include/asm/hardware/gic.h b/arch/arm/include/asm/hardware/gic.h
+> index 435d3f8..2862d0e 100644
+> --- a/arch/arm/include/asm/hardware/gic.h
+> +++ b/arch/arm/include/asm/hardware/gic.h
+> @@ -33,10 +33,21 @@
+>   #define GIC_DIST_SOFTINT		0xf00
+> 
+>   #ifndef __ASSEMBLY__
+> +#include<linux/irqdomain.h>
+> +
+>   extern void __iomem *gic_cpu_base_addr;
+>   extern struct irq_chip gic_arch_extn;
+> 
+>   void gic_init(unsigned int, unsigned int, void __iomem *, void __iomem *);
+> +#ifdef CONFIG_OF
+> +int gic_of_init(struct device_node *node, struct device_node *parent);
+> +#else
+> +static inline void gic_of_init(struct device_node *node,
+> +			       struct device_node *parent)
+> +{
+> +	return -ENODEV;
+> +}
+> +#endif
+>   void gic_secondary_init(unsigned int);
+>   void gic_cascade_irq(unsigned int gic_nr, unsigned int irq);
+>   void gic_raise_softirq(const struct cpumask *mask, unsigned int irq);
+> @@ -46,6 +57,7 @@ struct gic_chip_data {
+>   	unsigned int irq_offset;
+>   	void __iomem *dist_base;
+>   	void __iomem *cpu_base;
+> +	struct irq_domain domain;
+>   };
+>   #endif
+> 
+
