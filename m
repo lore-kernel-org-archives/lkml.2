@@ -1,62 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752302Ab1IUTJY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 15:09:24 -0400
-Received: from imr4.ericy.com ([198.24.6.9]:54860 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751992Ab1IUTJX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 15:09:23 -0400
-Date: Wed, 21 Sep 2011 12:07:45 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Yong Zhang <yong.zhang0@gmail.com>
-CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        Jean Delvare <khali@linux-fr.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Subject: Re: [PATCH 56/57] hwmon: irq: Remove IRQF_DISABLED
-Message-ID: <20110921190745.GA30759@ericsson.com>
-References: <1316597339-29861-1-git-send-email-yong.zhang0@gmail.com>
- <1316597339-29861-57-git-send-email-yong.zhang0@gmail.com>
+	id S1751647Ab1IUTMr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 15:12:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46256 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751010Ab1IUTMq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 15:12:46 -0400
+Date: Wed, 21 Sep 2011 14:12:38 -0500
+From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, richard@nod.at,
+        Andrew Morton <akpm@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>,
+        serge@hallyn.com, Greg KH <greg@kroah.com>
+Subject: Re: [PATCH] user namespace: usb: make usb urbs user namespace aware
+ (v2)
+Message-ID: <20110921191238.GA16720@sergelap>
+References: <20110919214531.GA18085@sergelap>
+ <20110919214700.GA22300@sergelap>
+ <20110920131738.GA29852@redhat.com>
+ <20110921050127.GB6691@sergelap>
+ <20110921183101.GB25590@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1316597339-29861-57-git-send-email-yong.zhang0@gmail.com>
+In-Reply-To: <20110921183101.GB25590@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 21, 2011 at 05:28:57AM -0400, Yong Zhang wrote:
-> Since commit [c58543c8: genirq: Run irq handlers with interrupts disabled],
-> We run all interrupt handlers with interrupts disabled
-> and we even check and yell when an interrupt handler
-> returns with interrupts enabled (see commit [b738a50a:
-> genirq: Warn when handler enables interrupts]).
+Quoting Oleg Nesterov (oleg@redhat.com):
+> On 09/21, Serge E. Hallyn wrote:
+> >
+> > Add to the dev_state and alloc_async structures the user namespace
+> > corresponding to the uid and euid.  Pass these to kill_pid_info_as_uid(),
+> > which can then implement a proper, user-namespace-aware uid check.
 > 
-> So now this flag is a NOOP and can be removed.
+> Looks correct.
 > 
-> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-> ---
->  drivers/hwmon/exynos4_tmu.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> diff --git a/drivers/hwmon/exynos4_tmu.c b/drivers/hwmon/exynos4_tmu.c
-> index 0170c90..faa0884 100644
-> --- a/drivers/hwmon/exynos4_tmu.c
-> +++ b/drivers/hwmon/exynos4_tmu.c
-> @@ -394,7 +394,7 @@ static int __devinit exynos4_tmu_probe(struct platform_device *pdev)
->  	}
->  
->  	ret = request_irq(data->irq, exynos4_tmu_irq,
-> -		IRQF_DISABLED | IRQF_TRIGGER_RISING,
-> +		IRQF_TRIGGER_RISING,
->  		"exynos4-tmu", data);
->  	if (ret) {
->  		dev_err(&pdev->dev, "Failed to request irq: %d\n", data->irq);
-> -- 
+> 
+> But I have off-topic question. And in fact I am a bit confused,
+> please help.
+> 
+> First of all, I assume that CLONE_NEWUSER is the only way to change
+> ->user_ns, right?
 
-Applied.
+Yes.
 
-Thanks,
-Guenter
+> And, looking at copy_creds() I think that cred->user_ns is always
+> equal to cred->user->user_ns. However, grep shows a lot of
+> cred->user->user_ns examples. Why?
+
+Good question.  It's only because cred->user_ns is an optimization
+recently introduced.  I think those can be safely switched over.
+
+> > +static int kill_as_cred_perm(const struct cred *cred,
+> > +			     struct task_struct *target)
+> > +{
+> > +	const struct cred *pcred = __task_cred(target);
+> > +	if (cred->user_ns != pcred->user_ns)
+> > +		return 0;
+> 
+> Should we really fail if cred->user_ns == pcred->user_ns->creator ?
+> (or creator of creator, etc).
+> 
+> IOW, shouldn't this match kill_ok_by_cred() path which (at least
+> cap_capable) checks the ->creator chain when ->user_ns differ?
+
+I'm not sure.  We can relax that later if need be, but as this has to do
+with usb urbs and userspace drivers, I don't think we'll want to.
+Hopefully we can talk with Greg KH about it at some point.  But for now,
+with this patch, all interactions between tasks in the initial user
+namespace will continue as normal, and we're not allowing anything
+untoward between user namespaces, so I think this is best.
+
+Drat.  Greg, sorry about not Cc:ing you on the original patch.  Please
+let me know if you'd like me to resend to you.
+
+thanks,
+-serge
