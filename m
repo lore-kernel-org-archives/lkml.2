@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751195Ab1IUVMK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 17:12:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56401 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750962Ab1IUVMG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 17:12:06 -0400
-Date: Wed, 21 Sep 2011 14:10:07 -0700
-From: Greg KH <gregkh@suse.de>
-To: "kautuk.c @samsung.com" <consul.kautuk@gmail.com>
-Cc: Jiri Kosina <trivial@kernel.org>, jkosina@suse.cz,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] Trivial: devtmpfsd: Setting task
- running/interruptible states
-Message-ID: <20110921211007.GA13605@suse.de>
-References: <1316619573-9104-1-git-send-email-consul.kautuk@gmail.com>
- <20110921155444.GA27121@suse.de>
- <CAFPAmTR1bHBronJqVWh_osjJvsPi_gWqJ50Ls-WgCi7CMAViUA@mail.gmail.com>
+	id S1751297Ab1IUVNJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 17:13:09 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:60608 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750777Ab1IUVNF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 17:13:05 -0400
+Date: Wed, 21 Sep 2011 17:12:59 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] Re: [PATCH] xen/pciback: Use mutexes when working
+ with Xenbus state transitions.
+Message-ID: <20110921211259.GB30029@phenom.oracle.com>
+References: <20110916190601.GA31796@phenom.oracle.com>
+ <4E7738E90200007800056A54@nat28.tlf.novell.com>
+ <4E773D440200007800056A6D@nat28.tlf.novell.com>
+ <20110921210838.GA1016@phenom.oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAFPAmTR1bHBronJqVWh_osjJvsPi_gWqJ50Ls-WgCi7CMAViUA@mail.gmail.com>
+In-Reply-To: <20110921210838.GA1016@phenom.oracle.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A02020B.4E7A535D.009E:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 21, 2011 at 09:54:01PM +0530, kautuk.c @samsung.com wrote:
-> Hi Greg,
+On Wed, Sep 21, 2011 at 05:08:38PM -0400, Konrad Rzeszutek Wilk wrote:
+> On Mon, Sep 19, 2011 at 12:01:56PM +0100, Jan Beulich wrote:
+> > >>> On 19.09.11 at 12:43, "Jan Beulich" <JBeulich@suse.com> wrote:
+> > >>>> On 16.09.11 at 21:06, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> > > 
+> > >> The caller that orchestrates the state changes is xenwatch_thread
+> > >> and it takes a mutex. In our processing of Xenbus states we can take
+> > >> the luxery of going to sleep on a mutex, so lets do that and
+> > > 
+> > > This is only the direct conversion of existing spinlock accesses in
+> > > xenbus.c. However, in the course of converting from the legacy
+> > > implementation you stripped a couple more (in xen_pcibk_attach(),
+> > > xen_pcibk_reconfigure(), and xen_pcibk_setup_backend()), and
+> > 
+> > Actually, xen_pcibk_attach() has its lock taken in xen_pcibk_do_attach(),
+> > so no change needed there.
+> > 
+> > In xen_pcibk_reconfigure() and xen_pcibk_setup_backend() the locking
+> > may be redundant with the one in passthrough.c/vpci.c - is that the
+> > basis upon which you removed the locks taken there?
 > 
-> On Wed, Sep 21, 2011 at 9:24 PM, Greg KH <gregkh@suse.de> wrote:
-> > On Wed, Sep 21, 2011 at 09:09:33PM +0530, Kautuk Consul wrote:
-> >> This trivial patch makes the following changes in devtmpfsd() :
-> >
-> > This is not the definition of "trivial" in that you are changing the
-> > logic of the code, not just doing spelling changes.
-> 
-> Well, I didn't really change the performance/functionality so I called
-> it trivial.
+> No. I believe the reason was much simpler.. it was b/c of this patch (see below).
+> But for the life of me I don't recall what deadlock we could hit.
 
-You changed the code logic, which is not trivial at all in this area.
+You know what.. I think the issue was that I was trying to fix the
+"sleeping on a spinlock" issue and was moving the spinlocks around to fix it.
 
-And actually unneeded from what I can tell, right?
-
-> >
-> >> - Set the state to TASK_INTERRUPTIBLE using __set_current_state
-> >>   instead of set_current_state as the spin_unlock is an implicit
-> >>   memory barrier.
-> >
-> > Why?  What is this hurting with the original code?
-> 
-> Nothing really hurting, that's why I called this patch trivial.
-> There is an extra memory barrier we have to go through by way of
-> set_current_state, which is mb().
-> That would lead to more overhead on the parallel pipelines of the processor
-> as they will have to cease being parallel for instructions before and after
-> the memory barrier despite the fact that the spin_unlock already covers this.
-> We can do without this because as per the Documentation/memory-barriers.txt,
-> atomic operations and unlocks give reliable ordering to instructions.
-
-But the current code is correct, and not hurting anything, and it's not
-on a "fast path" at all, so I'd prefer to keep it as-is and not change
-it for the sake of changing it, so I'm not going to accept this patch,
-sorry.
-
-greg k-h
+.. Without realizing I could have just used a mutex.
