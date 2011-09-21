@@ -1,69 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752482Ab1IUGGA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 02:06:00 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:35679 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752270Ab1IUGF6 (ORCPT
+	id S1752516Ab1IUGMM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 02:12:12 -0400
+Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:51908 "EHLO
+	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752385Ab1IUGML (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 02:05:58 -0400
-Subject: Re: [PATCH V3] mtd: Add DiskOnChip G3 support
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Robert Jarzmik <robert.jarzmik@free.fr>
-Cc: dwmw2@infradead.org, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 21 Sep 2011 09:08:07 +0300
-In-Reply-To: <87fwjrjk10.fsf@free.fr>
-References: <1316454213-22559-1-git-send-email-robert.jarzmik@free.fr>
-	 <1316501205.4849.36.camel@sauron> <87fwjrjk10.fsf@free.fr>
+	Wed, 21 Sep 2011 02:12:11 -0400
+Subject: Re: linux-next: manual merge of the omap_dss2 tree with the
+ arm-soc tree
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tony Lindgren <tony@atomide.com>, Arnd Bergmann <arnd@arndb.de>
+In-Reply-To: <20110921125844.d83e02ba538d7626d6bdefcf@canb.auug.org.au>
+References: <20110921125844.d83e02ba538d7626d6bdefcf@canb.auug.org.au>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1316585325.4849.73.camel@sauron>
+Date: Wed, 21 Sep 2011 09:12:04 +0300
+Message-ID: <1316585524.1949.6.camel@deskari>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-09-20 at 17:44 +0200, Robert Jarzmik wrote:
-> Artem Bityutskiy <dedekind1@gmail.com> writes:
+Hi Stephen,
+
+On Wed, 2011-09-21 at 12:58 +1000, Stephen Rothwell wrote:
+> Hi Tomi,
 > 
-> > I really feel unsure about merging this driver because no one reviewed
-> > it. On the surface it does look neat, though. Could you please CC lkml
-> > on next submission?
-> OK, when we have covered your comments, I'll report a V4 to lkml as well.
+> Today's linux-next merge of the omap_dss2 tree got a conflict in
+> arch/arm/mach-omap2/board-4430sdp.c between commit 8f5b5a41ebc7 ("ARM:
+> OMAP: Introduce SoC specific early_init") from the arm-soc tree and
+> commit 58282610da02 ("OMAP: 4430SDP: Remove unneeded lcd config") from
+> the omap_dss2 tree.
 > 
-> > On Mon, 2011-09-19 at 19:43 +0200, Robert Jarzmik wrote:
-> >> +static void doc_delay(struct docg3 *docg3, int nbNOPs)
-> >> +{
-> >> +	int i;
-> >> +
-> >> +	doc_dbg("NOP x %d\n", nbNOPs);
-> >> +	for (i = 0; i < nbNOPs; i++)
-> >> +		doc_writeb(0, DoC_NOP);
-> >> +}
-> >
-> > Why you implement dalaying this way, instead of using udelay/mdelay?
-> That's from observation, as I have no specification available.
-> 
-> From my understanding, the clock applied to the chip can be variable, but the
-> memory bus writes ensure the necessary time, as the NOP write takes as much time
-> as the DOCG3 decides it to last.
+> Just context changes.  I fixed it up (see below) and can carry the fix as
+> necessary.
 
-OK, would be nice to have this kind of comment in that function.
+Thanks, looks correct.
 
-> >> +	};
-> >
-> > Hmm, looks like something which should be generic, not DoC-specific.
-> True, but it's not available yet.
-> And as it's not available, and I don't think debugfs will accept such a patch, I
-> think I'll leave it here. And if you wish, I'll fill in a separate patch to
-> debugfs, and *if* it's merged, I'll remove that part then.
+ Tomi
 
-Fine with me.
-
--- 
-Best Regards,
-Artem Bityutskiy
 
