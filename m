@@ -1,76 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751723Ab1IUFLH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 01:11:07 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:41350 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751050Ab1IUFLE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 01:11:04 -0400
-MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <20110721165137.GA21345@redhat.com>
-References: <CAK1hOcPFXMoYsP6N6Hx5Qz3J4xj31TmSj7xo6SRVPegNCbhx7g@mail.gmail.com>
- <20110721165137.GA21345@redhat.com>
-From: Michael Kerrisk <mtk.manpages@gmail.com>
-Date: Wed, 21 Sep 2011 07:10:44 +0200
-Message-ID: <CAKgNAkj8STLfO2t5gejct+yPFkFtFtojVkYKJREiE7S2QHSctg@mail.gmail.com>
-Subject: Re: [PATCH] man ptrace: add extended description of various ptrace quirks
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Michael Kerrisk <mtk.manpages@googlemail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1751835Ab1IUFTA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 01:19:00 -0400
+Received: from gate.crashing.org ([63.228.1.57]:32865 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751557Ab1IUFS5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 01:18:57 -0400
+In-Reply-To: <20110920.224910.1996429830782124690.davem@davemloft.net>
+References: <1316550244-3655-1-git-send-email-robherring2@gmail.com> <20110920.224910.1996429830782124690.davem@davemloft.net>
+Mime-Version: 1.0 (Apple Message framework v753.1)
+Content-Type: text/plain; charset=US-ASCII; delsp=yes; format=flowed
+Message-Id: <15B014F7-0085-455D-A641-AA7ADFB68545@kernel.crashing.org>
+Cc: robherring2@gmail.com, dave.martin@linaro.org, linux@arm.linux.org.uk,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        rob.herring@calxeda.com, linux-arm-kernel@lists.infradead.org
+Content-Transfer-Encoding: 7bit
+From: Segher Boessenkool <segher@kernel.crashing.org>
+Subject: Re: [PATCH 0/3] GIC OF bindings
+Date: Wed, 21 Sep 2011 07:16:52 +0200
+To: David Miller <davem@davemloft.net>
+X-Mailer: Apple Mail (2.753.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Denys,
-
-On Thu, Jul 21, 2011 at 6:51 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 07/21, Denys Vlasenko wrote:
->>
->> Deleted several outright false statements:
->> - pid 1 can be traced
->> - tracer is not shown as parent in ps output
->> - PTRACE_ATTACH is not "the same behavior as if tracee had done
->>   a PTRACE_TRACEME": PTRACE_ATTACH delivers a SIGSTOP.
->> - SIGSTOP _can_ be injected.
+> Just out of curiosity where does this "interrupt-parent" property
+> come from?
 >
-> Yes, this is correct, thanks.
->
->> +Tracer can not assume that tracee ALWAYS ends its life by reporting
->> +WIFEXITED(status) or WIFSIGNALED(status).
->> +.LP
->> +.\" or can it? Do we include such a promise into ptrace API?
->
-> IIRC, we already discussed this... The traced group leader can
-> disappear during mt-exec, otherwise the tracee can never go away
-> silently.
->
->> +Tracer can kill a tracee with ptrace(PTRACE_KILL, pid, 0, 0). This
->> +operation is deprecated, use kill(SIGKILL) or tgkill(SIGKILL) instead.
->> +The problem with this operation is that it requires tracee to be in
->> +signal-delivery-stop, otherwise it may not work (may complete
->> +successfully but won't kill the tracee),
->
-> In short, ptrace(PTRACE_KILL) is more or less ptrace(PTRACE_CONT, SIGKILL),
-> but it always returns 0. IOW, it never worked as decribed in the man
-> page. And I guess today nobody can explain why PTRACE_KILL exists.
->
-> Oleg.
+> On platforms I am familiar with, the parent path is walked to the root
+> and we stop at device nodes that have "interrupt-map" and
+> "interrupt-map-mask" properties.
 
-Does your patch need any revision in the light of Oleg's comments?
+"interrupt-parent" is defined in the Open Firmware "interrupt mapping"
+recommended practice, the same place as "interrupt-map" etc. are.
 
-Thanks,
+> The mechanism shown here seems overly simplistic and not able to  
+> handle
+> the cases handled by existing OF property schemes in use for several
+> years on real systems.
 
-Michael
+"interrupt-parent" is only meant to be used for the simple cases.  It's
+quite handy there.  It is also required in all "interrupt-controller"
+nodes that aren't the root of the interrupt tree.
 
 
+Segher
 
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface"; http://man7.org/tlpi/
