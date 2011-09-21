@@ -1,255 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753346Ab1IULEh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 07:04:37 -0400
-Received: from mga09.intel.com ([134.134.136.24]:31562 "EHLO mga09.intel.com"
+	id S1753231Ab1IULLr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 07:11:47 -0400
+Received: from mga03.intel.com ([143.182.124.21]:44178 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752904Ab1IULEf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 07:04:35 -0400
+	id S1752794Ab1IULLq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 07:11:46 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="50835629"
-Subject: Re: [patch 2/4] mm: writeback: distribute write pages across
- allowable zones
-From: Shaohua Li <shaohua.li@intel.com>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Christoph Hellwig <hch@infradead.org>,
-        Dave Chinner <david@fromorbit.com>,
-        "Wu, Fengguang" <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Chris Mason <chris.mason@oracle.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        "xfs@oss.sgi.com" <xfs@oss.sgi.com>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1316526315-16801-3-git-send-email-jweiner@redhat.com>
-References: <1316526315-16801-1-git-send-email-jweiner@redhat.com>
-	 <1316526315-16801-3-git-send-email-jweiner@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 21 Sep 2011 19:04:28 +0800
-Message-ID: <1316603068.2001.3.camel@shli-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+X-IronPort-AV: E=Sophos;i="4.68,416,1312182000"; 
+   d="scan'208";a="19163793"
+Date: Wed, 21 Sep 2011 14:12:20 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, alan@linux.intel.com, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, feng.tang@intel.com,
+        jacob.jun.pan@linux.intel.com
+Subject: Re: [PATCH 1/3] mfd: add Intel MSIC driver
+Message-ID: <20110921111220.GL23578@intel.com>
+References: <cover.1315399396.git.mika.westerberg@linux.intel.com>
+ <dfff721c25a64c9fe77d3b14772e0b3325f47ff9.1315399396.git.mika.westerberg@linux.intel.com>
+ <20110920171742.GU32263@sortiz-mobl>
+ <20110921080717.GK23578@intel.com>
+ <20110921104456.GV32263@sortiz-mobl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110921104456.GV32263@sortiz-mobl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-09-20 at 21:45 +0800, Johannes Weiner wrote:
-> This patch allows allocators to pass __GFP_WRITE when they know in
-> advance that the allocated page will be written to and become dirty
-> soon.  The page allocator will then attempt to distribute those
-> allocations across zones, such that no single zone will end up full of
-> dirty, and thus more or less, unreclaimable pages.
+On Wed, Sep 21, 2011 at 12:44:56PM +0200, Samuel Ortiz wrote:
+> Hi Mika,
 > 
-> The global dirty limits are put in proportion to the respective zone's
-> amount of dirtyable memory and allocations diverted to other zones
-> when the limit is reached.
-> 
-> For now, the problem remains for NUMA configurations where the zones
-> allowed for allocation are in sum not big enough to trigger the global
-> dirty limits, but a future approach to solve this can reuse the
-> per-zone dirty limit infrastructure laid out in this patch to have
-> dirty throttling and the flusher threads consider individual zones.
-> 
-> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
-> ---
->  include/linux/gfp.h       |    4 ++-
->  include/linux/writeback.h |    1 +
->  mm/page-writeback.c       |   66 +++++++++++++++++++++++++++++++++++++-------
->  mm/page_alloc.c           |   22 ++++++++++++++-
->  4 files changed, 80 insertions(+), 13 deletions(-)
-> 
-> diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-> index 3a76faf..50efc7e 100644
-> --- a/include/linux/gfp.h
-> +++ b/include/linux/gfp.h
-> @@ -36,6 +36,7 @@ struct vm_area_struct;
->  #endif
->  #define ___GFP_NO_KSWAPD	0x400000u
->  #define ___GFP_OTHER_NODE	0x800000u
-> +#define ___GFP_WRITE		0x1000000u
->  
->  /*
->   * GFP bitmasks..
-> @@ -85,6 +86,7 @@ struct vm_area_struct;
->  
->  #define __GFP_NO_KSWAPD	((__force gfp_t)___GFP_NO_KSWAPD)
->  #define __GFP_OTHER_NODE ((__force gfp_t)___GFP_OTHER_NODE) /* On behalf of other node */
-> +#define __GFP_WRITE	((__force gfp_t)___GFP_WRITE)	/* Allocator intends to dirty page */
->  
->  /*
->   * This may seem redundant, but it's a way of annotating false positives vs.
-> @@ -92,7 +94,7 @@ struct vm_area_struct;
->   */
->  #define __GFP_NOTRACK_FALSE_POSITIVE (__GFP_NOTRACK)
->  
-> -#define __GFP_BITS_SHIFT 24	/* Room for N __GFP_FOO bits */
-> +#define __GFP_BITS_SHIFT 25	/* Room for N __GFP_FOO bits */
->  #define __GFP_BITS_MASK ((__force gfp_t)((1 << __GFP_BITS_SHIFT) - 1))
->  
->  /* This equals 0, but use constants in case they ever change */
-> diff --git a/include/linux/writeback.h b/include/linux/writeback.h
-> index a5f495f..c96ee0c 100644
-> --- a/include/linux/writeback.h
-> +++ b/include/linux/writeback.h
-> @@ -104,6 +104,7 @@ void laptop_mode_timer_fn(unsigned long data);
->  static inline void laptop_sync_completion(void) { }
->  #endif
->  void throttle_vm_writeout(gfp_t gfp_mask);
-> +bool zone_dirty_ok(struct zone *zone);
->  
->  extern unsigned long global_dirty_limit;
->  
-> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> index 9f896db..1fc714c 100644
-> --- a/mm/page-writeback.c
-> +++ b/mm/page-writeback.c
-> @@ -142,6 +142,22 @@ unsigned long global_dirty_limit;
->  static struct prop_descriptor vm_completions;
->  static struct prop_descriptor vm_dirties;
->  
-> +static unsigned long zone_dirtyable_memory(struct zone *zone)
-> +{
-> +	unsigned long x;
-> +	/*
-> +	 * To keep a reasonable ratio between dirty memory and lowmem,
-> +	 * highmem is not considered dirtyable on a global level.
-> +	 *
-> +	 * But we allow individual highmem zones to hold a potentially
-> +	 * bigger share of that global amount of dirty pages as long
-> +	 * as they have enough free or reclaimable pages around.
-> +	 */
-> +	x = zone_page_state(zone, NR_FREE_PAGES) - zone->totalreserve_pages;
-> +	x += zone_reclaimable_pages(zone);
-> +	return x;
-> +}
-> +
->  /*
->   * Work out the current dirty-memory clamping and background writeout
->   * thresholds.
-> @@ -417,7 +433,7 @@ static unsigned long hard_dirty_limit(unsigned long thresh)
->  }
->  
->  /*
-> - * global_dirty_limits - background-writeback and dirty-throttling thresholds
-> + * dirty_limits - background-writeback and dirty-throttling thresholds
->   *
->   * Calculate the dirty thresholds based on sysctl parameters
->   * - vm.dirty_background_ratio  or  vm.dirty_background_bytes
-> @@ -425,24 +441,35 @@ static unsigned long hard_dirty_limit(unsigned long thresh)
->   * The dirty limits will be lifted by 1/4 for PF_LESS_THROTTLE (ie. nfsd) and
->   * real-time tasks.
->   */
-> -void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty)
-> +static void dirty_limits(struct zone *zone,
-> +			 unsigned long *pbackground,
-> +			 unsigned long *pdirty)
->  {
-> +	unsigned long uninitialized_var(zone_memory);
-> +	unsigned long available_memory;
-> +	unsigned long global_memory;
->  	unsigned long background;
-> -	unsigned long dirty;
-> -	unsigned long uninitialized_var(available_memory);
->  	struct task_struct *tsk;
-> +	unsigned long dirty;
->  
-> -	if (!vm_dirty_bytes || !dirty_background_bytes)
-> -		available_memory = determine_dirtyable_memory();
-> +	global_memory = determine_dirtyable_memory();
-> +	if (zone)
-> +		available_memory = zone_memory = zone_dirtyable_memory(zone);
-> +	else
-> +		available_memory = global_memory;
->  
-> -	if (vm_dirty_bytes)
-> +	if (vm_dirty_bytes) {
->  		dirty = DIV_ROUND_UP(vm_dirty_bytes, PAGE_SIZE);
-> -	else
-> +		if (zone)
-> +			dirty = dirty * zone_memory / global_memory;
-> +	} else
->  		dirty = (vm_dirty_ratio * available_memory) / 100;
->  
-> -	if (dirty_background_bytes)
-> +	if (dirty_background_bytes) {
->  		background = DIV_ROUND_UP(dirty_background_bytes, PAGE_SIZE);
-> -	else
-> +		if (zone)
-> +			background = background * zone_memory / global_memory;
-> +	} else
->  		background = (dirty_background_ratio * available_memory) / 100;
->  
->  	if (background >= dirty)
-> @@ -452,9 +479,15 @@ void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty)
->  		background += background / 4;
->  		dirty += dirty / 4;
->  	}
-> +	if (!zone)
-> +		trace_global_dirty_state(background, dirty);
->  	*pbackground = background;
->  	*pdirty = dirty;
-> -	trace_global_dirty_state(background, dirty);
-> +}
-> +
-> +void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty)
-> +{
-> +	dirty_limits(NULL, pbackground, pdirty);
->  }
->  
->  /**
-> @@ -875,6 +908,17 @@ void throttle_vm_writeout(gfp_t gfp_mask)
->          }
->  }
->  
-> +bool zone_dirty_ok(struct zone *zone)
-> +{
-> +	unsigned long background_thresh, dirty_thresh;
-> +
-> +	dirty_limits(zone, &background_thresh, &dirty_thresh);
-> +
-> +	return zone_page_state(zone, NR_FILE_DIRTY) +
-> +		zone_page_state(zone, NR_UNSTABLE_NFS) +
-> +		zone_page_state(zone, NR_WRITEBACK) <= dirty_thresh;
-> +}
-> +
->  /*
->   * sysctl handler for /proc/sys/vm/dirty_writeback_centisecs
->   */
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 7e8e2ee..3cca043 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -1368,6 +1368,7 @@ failed:
->  #define ALLOC_HARDER		0x10 /* try to alloc harder */
->  #define ALLOC_HIGH		0x20 /* __GFP_HIGH set */
->  #define ALLOC_CPUSET		0x40 /* check for correct cpuset */
-> +#define ALLOC_SLOWPATH		0x80 /* allocator retrying */
->  
->  #ifdef CONFIG_FAIL_PAGE_ALLOC
->  
-> @@ -1667,6 +1668,25 @@ zonelist_scan:
->  		if ((alloc_flags & ALLOC_CPUSET) &&
->  			!cpuset_zone_allowed_softwall(zone, gfp_mask))
->  				continue;
-> +		/*
-> +		 * This may look like it would increase pressure on
-> +		 * lower zones by failing allocations in higher zones
-> +		 * before they are full.  But once they are full, the
-> +		 * allocations fall back to lower zones anyway, and
-> +		 * then this check actually protects the lower zones
-> +		 * from a flood of dirty page allocations.
-if increasing pressure on lower zones isn't a problem since higher zones
-will eventually be full, how about a workload without too many writes,
-so higher zones will not be full. In such case, increasing low zone
-pressure sounds not good.
+> On Wed, Sep 21, 2011 at 11:07:17AM +0300, Mika Westerberg wrote:
+> > > > +/*
+> > > > + * Other MSIC related devices which are not directly available via SFI DEVS
+> > > > + * table. 
+> > > Would that mean a broken firmware, or something else I'm missing ?
+> > > It looks odd.
+> > 
+> > Not all devices in the MSIC are listed in SFI DEVS table. For example
+> > regulators are missing. We currently don't have regulator support for MSIC
+> > but once it is added the devices will be created here.
+> > 
+> > Audio codec is similar - it does not exist in the SFI DEVS table.
+> Ok. So I can expect further patches removing this one then.
 
-Thanks,
-Shaohua
+For the regulators and audio codec, I'm not sure whether we ever get those
+added to the SFI table. But we know that they will be embedded in the MSIC
+chip.
 
+It might be the case that we need to add there more stuff - regulators come
+into mind when we get driver for them.
 
+> 
+> > > > +/**
+> > > > + * intel_msic_reg_read - read a single MSIC register
+> > > > + * @reg: register to read
+> > > > + * @val: register value is placed here
+> > > > + *
+> > > > + * Read a single register from MSIC. Returns %0 on success and negative
+> > > > + * errno in case of failure.
+> > > > + *
+> > > > + * Function may sleep.
+> > > > + */
+> > > > +int intel_msic_reg_read(unsigned short reg, u8 *val)
+> > > > +{
+> > > > +	return intel_scu_ipc_ioread8(reg, val);
+> > > > +}
+> > > > +EXPORT_SYMBOL_GPL(intel_msic_reg_read);
+> > > > +
+> > > > +/**
+> > > > + * intel_msic_reg_write - write a single MSIC register
+> > > > + * @reg: register to write
+> > > > + * @val: value to write to that register
+> > > > + *
+> > > > + * Write a single MSIC register. Returns 0 on success and negative
+> > > > + * errno in case of failure.
+> > > > + *
+> > > > + * Function may sleep.
+> > > > + */
+> > > > +int intel_msic_reg_write(unsigned short reg, u8 val)
+> > > > +{
+> > > > +	return intel_scu_ipc_iowrite8(reg, val);
+> > > > +}
+> > > > +EXPORT_SYMBOL_GPL(intel_msic_reg_write);
+> > > What is the benefit of those wrappers since you're probably not going to get
+> > > rid of the SCU IPC APIs, right ? What's wrong with the subdevices using the
+> > > SCU IPC API directly ?
+> > 
+> > Right, we are not going to get rid of SCU IPC APIs. The idea behind having
+> > these register access wrapper functions is that we are now able to separate
+> > the MSIC subdevices from other SCU IPC usage. In other words we get a bit
+> > cleaner "architecture".
+> I'm not entirely convinced that wrapping around the IPC API gives you a
+> cleaner architecture.
+
+Ok.
+
+> 
+>  
+> > It also allows us to add caching and intercepting register accesses if a
+> > need rises.
+> That would define a real need for this API, yes.
+
+Ok.
+
+> 
+> 
+> > > > +	for (i = 0; i < ARRAY_SIZE(msic_devs); i++) {
+> > > > +		if (!pdata->irq[i])
+> > > > +			continue;
+> > > I would expect some sort of warning here since it would mean your platform
+> > > code defined a sub device platform data without giving you the right IRQ. And
+> > > afaiu, all of your sub devices must have one.
+> > 
+> > The interface for platform data says that if irq is zero, it means that no
+> > platform device is created.
+> > 
+> > For example in patch 3/3 we add the platform data for battery, gpio, audio,
+> > power_button and ocd but the SFI table actually contains more devices. We
+> > don't yet have (upstream) driver for those so there is a little point of
+> > creating platform device for them at this point.
+> 
+> Ok, I see.
+> 
+> So, I'm fine with this patch, at least the MFD part. I'll go ahead and apply
+> it to my for-next branch. I'd appreciate to get ACKs or NACKs for the x86
+> parts from the relevant people though.
+
+Thanks.
+
+I would also like to hear what x86 maintainers think about those parts.
+Hmm, is there some mailing list which I missed or did forgot to Cc someone?
