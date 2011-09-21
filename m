@@ -1,49 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751748Ab1IUGoM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 02:44:12 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:48255 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750788Ab1IUGoK (ORCPT
+	id S1752070Ab1IUGo2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 02:44:28 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:53928 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751685Ab1IUGo0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 02:44:10 -0400
-Date: Wed, 21 Sep 2011 08:44:23 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, Sam Ravnborg <sam@ravnborg.org>,
-        gthelen@google.com, tartler@cs.fau.de,
-        Dmitry Fink <Dmitry.Fink@palm.com>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Eric B Munson <ebmunson@us.ibm.com>,
-        Bruce Ashfield <Bruce.Ashfield@windriver.com>,
-        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH] kconfig: Add merge_config.sh script
-Message-ID: <20110921064423.GA4103@netboy.at.omicron.at>
-References: <1316582561-23066-1-git-send-email-john.stultz@linaro.org>
+	Wed, 21 Sep 2011 02:44:26 -0400
+Date: Wed, 21 Sep 2011 09:44:15 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Ian Lartey <ian@opensource.wolfsonmicro.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: re: mfd: Simulate active high IRQs with wm831x
+Message-ID: <20110921064415.GC4999@elgon.mountain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1316582561-23066-1-git-send-email-john.stultz@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4E7987C7.0102:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 20, 2011 at 10:22:41PM -0700, John Stultz wrote:
-> After noticing almost every distro has their own method of managing
-> config fragments, I went looking at some best practices, and wanted
-> to try to consolidate some of the different approaches so this fairly
-> simple infrastructure can be shared (and new distros/build systems
-> don't have to implement yet another config fragment merge script).
+Hi Mark,
 
-John,
+Smatch complains about d71820b8a8fbe9 "mfd: Simulate active high IRQs
+with wm831x"
 
-I have been wanting to make or find a way to start with an allnoconfig
-and enable a short list of config options (and the options that are
-needed to allow them). I don't want the other defaults at all.
+drivers/mfd/wm831x-irq.c +522 wm831x_irq_thread(67)
+	error: buffer overflow 'wm831x->gpio_level' 16 <= 56
 
-Can I use your script for this? If not, is there another way to go
-about it?
+   518                  /* Simulate an edge triggered IRQ by polling the input
+   519                   * status.  This is sucky but improves interoperability.
+   520                   */
+   521                  if (primary == WM831X_GP_INT &&
+   522                      wm831x->gpio_level[i - WM831X_IRQ_GPIO_1]) {
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   523                          ret = wm831x_reg_read(wm831x, WM831X_GPIO_LEVEL);
+   524                          while (ret & 1 << (i - WM831X_IRQ_GPIO_1)) {
+   525                                  handle_nested_irq(wm831x->irq_base + i);
+   526                                  ret = wm831x_reg_read(wm831x,
+   527                                                        WM831X_GPIO_LEVEL);
+   528                          }
+   529                  }
 
-Thanks,
-Richard
+We're inside a for loop over ARRAY_SIZE(wm831x_irqs) which has 58
+elements (so "i" is 0-57) and we subtract WM831X_IRQ_GPIO_1 (1) which
+gives us a max of 56.  The ->gpio_level[] array only has 16 elements
+so we're reading beyond the end of the array.
+
+In wm831x_irq_set_type() it only sets the first 11 elements of the
+->gpio_level[] array.  Perhaps something similar is needed here.  I
+don't know the code well enough to say.
+
+regards,
+dan carpenter
