@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752781Ab1IUUJV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 16:09:21 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:57340 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751992Ab1IUUJU convert rfc822-to-8bit (ORCPT
+	id S1752886Ab1IUUOm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 16:14:42 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:39144 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751821Ab1IUUOj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 16:09:20 -0400
+	Wed, 21 Sep 2011 16:14:39 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110914150452.GA12638@linux-mips.org>
-References: <20110908220559.GA3040@maxin> <20110914150452.GA12638@linux-mips.org>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 21 Sep 2011 14:08:59 -0600
-X-Google-Sender-Auth: E7i5-atD7WEYz250_aoL6nYCs7g
-Message-ID: <CACxGe6ufZkVvTS-A8j1khkapaMN_3LuztRPSfHmeKqU7saJzWA@mail.gmail.com>
-Subject: Re: [PATCH] mips: mm: tlbex.c: Fix compiler warnings
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: "Maxin B. John" <maxin.john@gmail.com>,
-        David Daney <david.daney@cavium.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Kevin Cernekee <cernekee@gmail.com>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
+X-Originating-IP: [2620:0:1000:1b02:1aa9:5ff:fe24:37a9]
+In-Reply-To: <1316633620-13184-3-git-send-email-swarren@nvidia.com>
+References: <1316633620-13184-1-git-send-email-swarren@nvidia.com>
+	<1316633620-13184-3-git-send-email-swarren@nvidia.com>
+Date: Wed, 21 Sep 2011 13:14:38 -0700
+Message-ID: <CAOesGMhdkrtjvXWHhbLSj804s+CzTthn_hrGafp5K=Va5MTZ=w@mail.gmail.com>
+Subject: Re: [PATCH 3/3] arm/tegra: Move "gpio-names.h" into <mach/gpio-tegra.h>
+From: Olof Johansson <olof@lixom.net>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
+        Erik Gilling <konkers@android.com>,
+        Grant Likely <grant.likely@secretlab.ca>, Chris Ball <cjb@laptop.org>,
+        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 14, 2011 at 9:04 AM, Ralf Baechle <ralf@linux-mips.org> wrote:
-> On Fri, Sep 09, 2011 at 01:06:00AM +0300, Maxin B. John wrote:
->
->>  CC      arch/mips/mm/tlbex.o
->> cc1: warnings being treated as errors
->> arch/mips/mm/tlbex.c: In function 'build_r3000_tlb_modify_handler':
->> arch/mips/mm/tlbex.c:1769: error: 'wr.r1' is used uninitialized in this function
->> arch/mips/mm/tlbex.c:1769: error: 'wr.r2' is used uninitialized in this function
->> arch/mips/mm/tlbex.c:1769: error: 'wr.r3' is used uninitialized in this function
->> make[2]: *** [arch/mips/mm/tlbex.o] Error 1
->> make[1]: *** [arch/mips/mm] Error 2
->> make: *** [arch/mips] Error 2
->
-> This was fixed by 949cb4ca0aa53e97ea5f524536593ad2d2946b73.  The real
-> fix to not pass the wr members to build_pte_modifiable() because they
-> just are not needed.
+Hi,
 
-Which tree is this fix getting merged via?  Will it be in v3.1?
+On Wed, Sep 21, 2011 at 12:33 PM, Stephen Warren <swarren@nvidia.com> wrote:
+> This centralizes all SoC-level GPIO-related definitions into a single
+> header file.
+>
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+>
+>  arch/arm/mach-tegra/gpio-names.h              |  247 -------------------------
+>  arch/arm/mach-tegra/include/mach/gpio-tegra.h |  225 ++++++++++++++++++++++
+>  11 files changed, 226 insertions(+), 257 deletions(-)
+>  delete mode 100644 arch/arm/mach-tegra/gpio-names.h
 
-g.
+The main reason that gpio-names.h was only in the mach directory and
+not under include in the first place, is to discourage use outside of
+the base platform code and board definitions.
+
+There should be no need for drivers and non-mach-tegra code to use the
+file, so doing a current-directory include of it should be OK. Or do
+you have other plans for it?
+
+
+-Olof
