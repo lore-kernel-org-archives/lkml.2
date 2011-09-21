@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753947Ab1IUNKh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 09:10:37 -0400
-Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:42084 "EHLO
-	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753860Ab1IUNKg convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 09:10:36 -0400
-From: =?ISO-8859-1?Q?P=E9ter?= Ujfalusi <peter.ujfalusi@ti.com>
-To: Samuel Ortiz <samuel.ortiz@intel.com>
-Cc: Dmitry Torokhov <dtor@mail.ru>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, Misael Lopez Cruz <misael.lopez@ti.com>,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH 0/8] ASoC/MFD/Input: twl6040: Support for audio driven vibra
-Date: Wed, 21 Sep 2011 16:10:43 +0300
-Message-ID: <4087693.7Xef8rW0nd@barack>
-User-Agent: KMail/4.7.1 (Linux/3.0.4-gentoo; KDE/4.7.1; x86_64; ; )
-In-Reply-To: <1316091561-30899-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1316091561-30899-1-git-send-email-peter.ujfalusi@ti.com>
+	id S1753985Ab1IUNLU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 09:11:20 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:44762 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753860Ab1IUNLS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 09:11:18 -0400
+Date: Wed, 21 Sep 2011 14:10:52 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org,
+        linux-arm-kernel@lists.infradead.org, Peter Huewe <peterhuewe@gmx.de>
+Subject: Re: [PATCH] spi: Fix builderror in spi-pl022.c
+Message-ID: <20110921131052.GG17169@n2100.arm.linux.org.uk>
+References: <E1Qvo1q-0000qv-TQ@rmk-PC.arm.linux.org.uk> <1314559619-19923-1-git-send-email-peterhuewe@gmx.de> <CACRpkdb=Bt2j4iMV5NJHmPG8wDi6__CRD6kn_KOoaQ1R6uwrWQ@mail.gmail.com> <CACRpkdbsUMCvBofKjExiB2wCbK9CwpcXr5xmShJ4SHEGAAH4Bw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdbsUMCvBofKjExiB2wCbK9CwpcXr5xmShJ4SHEGAAH4Bw@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samuel, Dmitry,
+On Tue, Sep 20, 2011 at 10:45:41PM +0200, Linus Walleij wrote:
+> On Mon, Sep 5, 2011 at 2:45 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> > On Sun, Aug 28, 2011 at 9:26 PM, Peter Huewe <peterhuewe@gmx.de> wrote:
+> >
+> >> This patch fixes a build error, introduced by commit (67fc8b9f, "PM: add
+> >> runtime PM support to core Primecell driver") which unfortunately was a little
+> >> bit incomplete and did contain a typo (11 instead of 22).
+> >> I'm not sure how this patch could have been tested back then, if it
+> >> doesn't even compile ;)
+> >
+> > Grant can you please apply this patch? Right now linux-next is
+> > breaking because of this missing patch...
+> 
+> Ping on this... ignore if it's been picked already.
 
-On Thursday 15 September 2011 15:59:13 Peter Ujfalusi wrote:
-> Peter Ujfalusi (8):
->   Input: twl6040: Simplify vibra regsiter definitions
->   MFD: twl6040: Cache the vibra control registers
->   MFD: twl6040: function to query the vibra status for clients
->   Input: twl6040-vibra: Check the selected path for vibra
->   ASoC: twl6040: Fix the number of channels for vibra
->   ASoC: twl6040: Correct supported number of playback channels
->   ASoC: omap-mcpdm: Correct the supported number of channels
->   ASoC: twl6040: Support for vibra output paths
+Isn't it already fixed?  I've had this in my tree for quite some time
+(since 5th September) which should also be in linux-next.
 
-Could you take a look at this series for the MFD/Input parts?
-
-Dmitry: Do you have further comments for patch 4? I will change the error 
-returned to -EBUSY, as Liam was suggesting.
-
-Thank you,
-Péter
+b21c57c ARM: 7079/1: spi: Fix builderror in spi-pl022.c
+612f2eb PM: add runtime PM support to MMCI
+67fc8b9 PM: add runtime PM support to core Primecell driver
