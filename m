@@ -1,45 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752531Ab1IUGOA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 02:14:00 -0400
-Received: from mga11.intel.com ([192.55.52.93]:52527 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751921Ab1IUGN7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 02:13:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,415,1312182000"; 
-   d="scan'208";a="56019824"
-Subject: Re: [PATCH] dmaengine i.MX DMA/SDMA: add missing include of
- linux/module.h
-From: Vinod Koul <vinod.koul@intel.com>
-To: axel.lin@gmail.com
-Cc: linux-kernel@vger.kernel.org, Sascha Hauer <s.hauer@pengutronix.de>,
-        Dan Williams <dan.j.williams@intel.com>
-In-Reply-To: <CAF+7xWnkzfX7kWy5K-cHExkYZ-FS8zPXZsjqr2Gu1becbDvRyA@mail.gmail.com>
-References: <1314688104.23734.1.camel@phoenix>
-	 <1315228918.26251.78.camel@vkoul-udesk3>
-	 <CAF+7xWn+W=T0A02p2t-kCtYX0o5xL3pU+Q2AUOunZmYvGkhaWg@mail.gmail.com>
-	 <1315233379.26251.152.camel@vkoul-udesk3>
-	 <CAF+7xWnQAT+rLTz0tj3j1KyUO4Zq-+V=ggHAJVMROXGWp5FA+w@mail.gmail.com>
-	 <1316536921.31295.6.camel@vkoul-udesk3>
-	 <CAF+7xWnkzfX7kWy5K-cHExkYZ-FS8zPXZsjqr2Gu1becbDvRyA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 21 Sep 2011 11:39:46 +0530
-Message-ID: <1316585386.1573.0.camel@vkoul-udesk3>
+	id S1752180Ab1IUGRG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 02:17:06 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:33913 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751331Ab1IUGRE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 02:17:04 -0400
+Date: Wed, 21 Sep 2011 02:15:51 -0400 (EDT)
+Message-Id: <20110921.021551.1015460502805882165.davem@davemloft.net>
+To: kernel@kasperkp.dk
+Cc: mcarlson@broadcom.com, mchan@broadcom.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] tg3: fix VLAN tagging regression
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4E79168D.4080201@kasperkp.dk>
+References: <4E78FC38.7040903@kasperkp.dk>
+	<4E79168D.4080201@kasperkp.dk>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 20 Sep 2011 23:16:00 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-09-21 at 07:50 +0800, Axel Lin wrote:
-> > Can you pls send me your .config?
-> I got the error by "make imx_v4_v5_defconfig; make"
+From: Kasper Pedersen <kernel@kasperkp.dk>
+Date: Wed, 21 Sep 2011 00:41:17 +0200
+
+> commit 92cd3a17ce9c719abb4c28dee3438e0c641f8de4
+>     tg3: Simplify tx bd assignments
 > 
-> It's available in arch/arm/configs/imx_v4_v5_defconfig.
-Applied, Thanks
+> broke VLAN tagging on outbound packets.
+> It ifdef'ed BCM_KERNEL_SUPPORTS_8021Q, but this
+> is not set anywhere. So vlan never gets set, and
+> all packets are sent with vlan=0.
+> 
+> v2: We can just remove the test. vlan_tx_tag_present
+> is valid regardless of whether the 802.1q module
+> is built.
+> 
+> Tested on BCM5721 rev 11.
+> 
+> Signed-off-by: Kasper Pedersen <kernel@kasperkp.dk>
 
--- 
-~Vinod
-
+Applied.
