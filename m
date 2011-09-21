@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751351Ab1IUN5o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 09:57:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51769 "EHLO mx2.suse.de"
+	id S1751339Ab1IUN6P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 09:58:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18674 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751282Ab1IUN5n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 09:57:43 -0400
-Date: Wed, 21 Sep 2011 15:57:41 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
-        Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 08/11] mm: vmscan: convert global reclaim to per-memcg
- LRU lists
-Message-ID: <20110921135741.GF8501@tiehlicka.suse.cz>
-References: <1315825048-3437-1-git-send-email-jweiner@redhat.com>
- <1315825048-3437-9-git-send-email-jweiner@redhat.com>
- <20110921131045.GD8501@tiehlicka.suse.cz>
- <20110921135142.GE22516@redhat.com>
+	id S1750963Ab1IUN6K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 09:58:10 -0400
+Date: Wed, 21 Sep 2011 09:57:17 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Huang Ying <ying.huang@intel.com>
+Cc: "x86@kernel.org" <x86@kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "avi@redhat.com" <avi@redhat.com>, "jeremy@goop.org" <jeremy@goop.org>
+Subject: Re: [V5][PATCH 4/6] x86, nmi:  add in logic to handle multiple
+ events and unknown NMIs
+Message-ID: <20110921135717.GO5795@redhat.com>
+References: <1316529792-6560-1-git-send-email-dzickus@redhat.com>
+ <1316529792-6560-5-git-send-email-dzickus@redhat.com>
+ <4E79799D.4040507@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110921135142.GE22516@redhat.com>
+In-Reply-To: <4E79799D.4040507@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 21-09-11 15:51:43, Johannes Weiner wrote:
-> On Wed, Sep 21, 2011 at 03:10:45PM +0200, Michal Hocko wrote:
-> > On Mon 12-09-11 12:57:25, Johannes Weiner wrote:
-[...]
-> > > @@ -2451,13 +2445,24 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem_cont,
-> > >  static void age_active_anon(struct zone *zone, struct scan_control *sc,
-> > >  			    int priority)
-> > >  {
-> > > -	struct mem_cgroup_zone mz = {
-> > > -		.mem_cgroup = NULL,
-> > > -		.zone = zone,
-> > > -	};
-> > > +	struct mem_cgroup *mem;
-> > > +
-> > > +	if (!total_swap_pages)
-> > > +		return;
-> > > +
-> > > +	mem = mem_cgroup_iter(NULL, NULL, NULL);
-> > 
-> > Wouldn't be for_each_mem_cgroup more appropriate? Macro is not exported
-> > but probably worth exporting? The same applies for
-> > scan_zone_unevictable_pages from the previous patch.
+On Wed, Sep 21, 2011 at 01:43:57PM +0800, Huang Ying wrote:
+> On 09/20/2011 10:43 PM, Don Zickus wrote:
+> [snip]
+> > @@ -313,7 +359,31 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
+> >  	}
+> >  	raw_spin_unlock(&nmi_reason_lock);
+> >  
+> > -	unknown_nmi_error(reason, regs);
+> > +	/*
+> > +	 * Only one NMI can be latched at a time.  To handle
+> > +	 * this we may process multiple nmi handlers at once to
+> > +	 * cover the case where an NMI is dropped.  The downside
+> > +	 * to this approach is we may process an NMI prematurely,
+> > +	 * while its real NMI is sitting latched.  This will cause
+> > +	 * an unknown NMI on the next run of the NMI processing.
+> > +	 * 
+> > +	 * We tried to flag that condition above, by setting the
+> > +	 * swallow_nmi flag when we process more than one event.
+> > +	 * This condition is also only present on the second half
+> > +	 * of a back-to-back NMI, so we flag that condition too.
+> > +	 *
+> > +	 * If both are true, we assume we already processed this
+> > +	 * NMI previously and we swallow it.  Otherwise we reset
+> > +	 * the logic.
+> > +	 *
+> > +	 * I am sure there are scenarios where we accidentally
+> > +	 * swallow a real 'unknown' NMI.  But this is the best
+> > +	 * we can do for now.
 > 
-> Unfortunately, in generic code, these loops need to be layed out like
-> this for !CONFIG_MEMCG to do the right thing.  mem_cgroup_iter() will
-> return NULL and the loop has to execute exactly once.
+> Why not describe a scenario where we swallow a real 'unknown' NMI?  So
+> that someone working on the code in the future will know the challenge?
 
-Ahh, right you are. I have missed that.
+I can add a couple of lines of comment for that.
 
-> 
-> This is something that will go away once we implement Christoph's
-> suggestion of always having a (skeleton) root_mem_cgroup around, even
-> for !CONFIG_MEMCG.
-
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Thanks,
+Don
