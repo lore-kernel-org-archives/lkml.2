@@ -1,96 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367Ab1IUMCU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 08:02:20 -0400
-Received: from mtaout02-winn.ispmail.ntl.com ([81.103.221.48]:52051 "EHLO
-	mtaout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752778Ab1IUMCT (ORCPT
+	id S1753405Ab1IUMHg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 08:07:36 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:36346 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752778Ab1IUMHe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 08:02:19 -0400
-From: Daniel Drake <dsd@laptop.org>
-To: grant.likely@secretlab.ca
-To: sameo@linux.intel.com
-Cc: linux-kernel@vger.kernel.org
-Cc: devicetree-discuss@lists.ozlabs.org
-Cc: dilinger@queued.net
-Subject: [PATCH 3/3] gpio-vx855: Add device tree binding
-Message-Id: <20110921120214.DFDC79D401E@zog.reactivated.net>
-Date: Wed, 21 Sep 2011 13:02:14 +0100 (BST)
-X-Cloudmark-Analysis: v=1.1 cv=JvdXmxIgLJv2/GthKqHpGJEEHukvLcvELVXUanXFreg= c=1 sm=0 a=VCrGmT02Wj4A:10 a=vJ1w_8FsMGIA:10 a=Op-mwl0xAAAA:8 a=_UoNnL1fUwD3tolMxPYA:9 a=N5X0tRKLBZvUSeZD_0YA:7 a=d4CUUju0HPYA:10 a=Hvu8L8p_BD5S5J0u:21 a=LtNuKInjZTKvg5xP:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+	Wed, 21 Sep 2011 08:07:34 -0400
+Date: Wed, 21 Sep 2011 20:07:24 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, Kyle McMartin <kyle@mcmartin.ca>,
+        Helge Deller <deller@gmx.de>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        linux-parisc@vger.kernel.org
+Subject: Re: [PATCH 40/57] dirvers/parisc: irq: Remove IRQF_DISABLED
+Message-ID: <20110921120724.GA2550@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <1316597339-29861-1-git-send-email-yong.zhang0@gmail.com>
+ <1316597339-29861-41-git-send-email-yong.zhang0@gmail.com>
+ <1316599624.2966.12.camel@dabdike>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1316599624.2966.12.camel@dabdike>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is needed to enable the HDD LED on the OLPC XO-1.5 laptop,
-enabled through devicetree and the gpio-leds driver.
+On Wed, Sep 21, 2011 at 02:07:04PM +0400, James Bottomley wrote:
+> Firstly, we don't need 57 patches doing this ... a single one through
+> the trivial tree should be sufficient (and it can nuke the flag at the
+> same time).
+> 
+> On Wed, 2011-09-21 at 17:28 +0800, Yong Zhang wrote:
+> > Since commit [c58543c8: genirq: Run irq handlers with interrupts disabled],
+> 
+> um, that's commit e58aa3d2d0cc01ad8d6f7f640a0670433f794922
 
-Signed-off-by: Daniel Drake <dsd@laptop.org>
----
- .../devicetree/bindings/gpio/gpio_vx855.txt        |   20 ++++++++++++++++++++
- drivers/gpio/gpio-vx855.c                          |    9 +++++++--
- 2 files changed, 27 insertions(+), 2 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/gpio/gpio_vx855.txt
+Ah, yes, not sure how I make it wrong.
 
-diff --git a/Documentation/devicetree/bindings/gpio/gpio_vx855.txt b/Documentation/devicetree/bindings/gpio/gpio_vx855.txt
-new file mode 100644
-index 0000000..17285a5
---- /dev/null
-+++ b/Documentation/devicetree/bindings/gpio/gpio_vx855.txt
-@@ -0,0 +1,20 @@
-+VIA VX855 GPIO controller
-+
-+Required properties:
-+- compatible : "via,vx855-gpio"
-+- #gpio-cells : Should be two. The first cell is the pin number and the
-+  second cell is used to specify optional parameters:
-+  - bit 0 specifies polarity (0 for normal, 1 for inverted)
-+- gpio-controller : Marks the device node as a GPIO controller.
-+
-+As VIA differentiates between GPI, GPO and GPIO on its 42 available pins,
-+with each pin type restarting numbering at 0, the following numbering scheme
-+is used in the device tree for the pin number:
-+
-+PIN NO		VIA NAME
-+0..13		GPI 0..13
-+14..26		GPO 0..12
-+27..41		GPIO 0..14
-+
-+For example, GPIO 11 (VIA name) is referred to with pin number 38 in the
-+device tree.
-diff --git a/drivers/gpio/gpio-vx855.c b/drivers/gpio/gpio-vx855.c
-index ef5aabd..2c300c9 100644
---- a/drivers/gpio/gpio-vx855.c
-+++ b/drivers/gpio/gpio-vx855.c
-@@ -201,7 +201,8 @@ static const char *vx855gpio_names[NR_VX855_GP] = {
- 	"VX855_GPIO12", "VX855_GPIO13", "VX855_GPIO14"
- };
- 
--static void vx855gpio_gpio_setup(struct vx855_gpio *vg)
-+static void vx855gpio_gpio_setup(struct vx855_gpio *vg,
-+				 struct platform_device *pdev)
- {
- 	struct gpio_chip *c = &vg->gpio;
- 
-@@ -216,6 +217,10 @@ static void vx855gpio_gpio_setup(struct vx855_gpio *vg)
- 	c->ngpio = NR_VX855_GP;
- 	c->can_sleep = 0;
- 	c->names = vx855gpio_names;
-+
-+#ifdef CONFIG_OF_GPIO
-+	c->of_node = pdev->dev.of_node;
-+#endif
- }
- 
- /* This platform device is ordinarily registered by the vx855 mfd driver */
-@@ -264,7 +269,7 @@ static __devinit int vx855gpio_probe(struct platform_device *pdev)
- 	else
- 		vg->gpo_reserved = true;
- 
--	vx855gpio_gpio_setup(vg);
-+	vx855gpio_gpio_setup(vg, pdev);
- 
- 	ret = gpiochip_add(&vg->gpio);
- 	if (ret) {
--- 
-1.7.6.2
-
+Thanks,
+Yong
