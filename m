@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752509Ab1IUPfv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 11:35:51 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:28285 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752494Ab1IUPft (ORCPT
+	id S1752462Ab1IUPgz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 11:36:55 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:44985 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751334Ab1IUPgy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 11:35:49 -0400
-Date: Wed, 21 Sep 2011 11:35:37 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, jaxboe@fusionio.com,
-        lidongyang@novell.com, joe.jin@oracle.com
-Subject: Re: [GIT PULL] (xen) stable/for-jens-3.2 - blkback and blkfront
- patches for 3.2
-Message-ID: <20110921153537.GB1512@phenom.oracle.com>
-References: <20110921150955.GH541@phenom.oracle.com>
- <20110921151732.GA28043@infradead.org>
+	Wed, 21 Sep 2011 11:36:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110921151732.GA28043@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090205.4E7A044D.0204,ss=1,re=0.000,fgs=0
+In-Reply-To: <1315494388-2532-1-git-send-email-consul.kautuk@gmail.com>
+References: <1315494388-2532-1-git-send-email-consul.kautuk@gmail.com>
+Date: Wed, 21 Sep 2011 21:06:52 +0530
+Message-ID: <CAFPAmTSTSE=AxWq=uacq0tEPH2Pe99DEisvsn1k0JN8qv2n4ag@mail.gmail.com>
+Subject: Re: [PATCH 1/1] Trivial: devtmpfs.c: No need to set the task state to TASK_RUNNING
+From: "kautuk.c @samsung.com" <consul.kautuk@gmail.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>, Jiri Kosina <trivial@kernel.org>,
+        jkosina@suse.cz
+Cc: linux-kernel@vger.kernel.org, Kautuk Consul <consul.kautuk@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 21, 2011 at 11:17:32AM -0400, Christoph Hellwig wrote:
-> On Wed, Sep 21, 2011 at 11:09:55AM -0400, Konrad Rzeszutek Wilk wrote:
-> > Hey Jens,
-> > 
-> > Please pull the following git tree in your 3.2 drivers tree:
-> > 
-> >  git pull git://oss.oracle.com/git/kwilk/xen.git stable/for-jens-3.2
-> > 
-> > which has an exciting new feature - the discard ('feature-discard')
-> > aka TRIM/UNMAP. Now they can be passed from the guest to the backend.
-> 
-> What is the design of them?  Do you provide the 'discard zeroes data'
-> flag (mandatory for any kind of relible operation) and 'discard
+Hi,
 
-Hmm, not sure what that is. Is that REQ_SECURE, err BLKDEV_DISCARD_SECURE?
-If so then not in this patchset - but it does not seem like it would dificult
-to add that in? Li, what do you think?
+Please ignore this trivial patch.
+I found one more trivial change which I would like to make in this
+patch, so I'll resend
+this one in a separate email chain.
 
-> granularity / alignment' tunables (very useful)?
+Thanks,
+Kautuk.
 
-The discard granularity/alignment are certainly there. But they are just
-one way (backend tells the guest what they are). Should they be
-more tunable (frontend tells the backend what the values ought to be?)
-
-Li, did I miss anything in my response?
+On Thu, Sep 8, 2011 at 8:36 PM, Kautuk Consul <consul.kautuk@gmail.com> wrote:
+> I think that there should be no need to set the task state to
+> TASK_RUNNING as wake_up_process will do that for us.
+>
+> Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
+> ---
+>  drivers/base/devtmpfs.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/base/devtmpfs.c b/drivers/base/devtmpfs.c
+> index a4760e0..8a3f028 100644
+> --- a/drivers/base/devtmpfs.c
+> +++ b/drivers/base/devtmpfs.c
+> @@ -416,7 +416,6 @@ static int devtmpfsd(void *p)
+>                set_current_state(TASK_INTERRUPTIBLE);
+>                spin_unlock(&req_lock);
+>                schedule();
+> -               __set_current_state(TASK_RUNNING);
+>        }
+>        return 0;
+>  out:
+> --
+> 1.7.4.1
+>
+>
