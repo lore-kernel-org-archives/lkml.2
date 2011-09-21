@@ -1,232 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752311Ab1IUPT0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 11:19:26 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:29311 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752204Ab1IUPTZ (ORCPT
+	id S1752410Ab1IUPTm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 11:19:42 -0400
+Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:5282
+	"EHLO AM1EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751888Ab1IUPTk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 11:19:25 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:from:to:cc:subject:date:message-id:x-mailer:
-	in-reply-to:references:x-system-of-record;
-	b=YUrpG9Etina33L9MoatFmaduHlXLwHFoOqCiASj5BhP/CMelGamjSldCIWemwsxmA
-	ejlZAphJ48Lk5mceqhK6A==
-From: Michal Nazarewicz <mnazarewicz@google.com>
-To: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ankita Garg <ankita@in.ibm.com>,
-        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
-        Arnd Bergmann <arnd@arndb.de>, Jesse Barker <jesse.barker@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Shariq Hasnain <shariq.hasnain@linaro.org>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>
-Subject: [PATCH 1/3] fixup! mm: alloc_contig_freed_pages() added
-Date: Wed, 21 Sep 2011 17:19:05 +0200
-Message-Id: <ea1bc31120e0670a044de6af7b3c67203c178065.1316617681.git.mina86@mina86.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1315505152.3114.9.camel@nimitz>
-References: <1315505152.3114.9.camel@nimitz>
-X-System-Of-Record: true
+	Wed, 21 Sep 2011 11:19:40 -0400
+X-SpamScore: -8
+X-BigFish: VPS-8(zz1432N98dKzz1202hzzz32i668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 0,
+X-WSS-ID: 0LRVP7K-01-7ZI-02
+X-M-MSG: 
+Date: Wed, 21 Sep 2011 17:18:30 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Don Zickus <dzickus@redhat.com>
+CC: "x86@kernel.org" <x86@kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "ying.huang@intel.com" <ying.huang@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "avi@redhat.com" <avi@redhat.com>, "jeremy@goop.org" <jeremy@goop.org>
+Subject: Re: [V5][PATCH 4/6] x86, nmi:  add in logic to handle multiple
+ events and unknown NMIs
+Message-ID: <20110921151829.GC6063@erda.amd.com>
+References: <1316529792-6560-1-git-send-email-dzickus@redhat.com>
+ <1316529792-6560-5-git-send-email-dzickus@redhat.com>
+ <20110921100842.GA6063@erda.amd.com>
+ <20110921140432.GP5795@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20110921140432.GP5795@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Nazarewicz <mina86@mina86.com>
+On 21.09.11 10:04:32, Don Zickus wrote:
+> On Wed, Sep 21, 2011 at 12:08:42PM +0200, Robert Richter wrote:
+> > On 20.09.11 10:43:10, Don Zickus wrote:
+> > > @@ -87,6 +87,16 @@ static int notrace __kprobes nmi_handle(unsigned int type, struct pt_regs *regs)
+> > >  
+> > >  		handled += a->handler(type, regs);
+> > >  
+> > > +		/*
+> > > + 		 * Optimization: only loop once if this is not a 
+> > > + 		 * back-to-back NMI.  The idea is nothing is dropped
+> > > + 		 * on the first NMI, only on the second of a back-to-back
+> > > + 		 * NMI.  No need to waste cycles going through all the
+> > > + 		 * handlers.
+> > > + 		 */
+> > > +		if (!b2b && handled)
+> > > +			break;
+> > 
+> > In rare cases we will lose nmis here.
+> > 
+> > We see a back-to-back nmi in the case if a 2 nmi source triggers
+> > *after* the nmi handler is entered. Depending on the internal cpu
+> > timing influenced by microcode and SMM code execution, the nmi may not
+> > entered immediately. So all sources that trigger *before* the nmi
+> > handler is entered raise only one nmi with no subsequent nmi.
+> 
+> Right, but that can only happen with the second NMI in the back-to-back
+> NMI case.  Here the optimization is only for the first NMI, with the
+> assumption that you will always have a second NMI if multiple sources
+> trigger, so you can process those in the second iteration (assuming we
+> correctly detect the back-to-back NMI condition).  Then when the second
+> NMI comes in, we have no idea how many we dropped to get here so we
+> process all the handlers based on the assumption we might not have another
+> NMI behind us to make up for the dropped NMIs.
+> 
+> Unless I misunderstood your point above?
 
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+No, my point was that a second NMI might not be latched even if there
+are two nmi sources pending.
 
----
- include/linux/page-isolation.h |    4 ++-
- mm/page_alloc.c                |   66 ++++++++++++++++++++++++++++++++++-----
- 2 files changed, 60 insertions(+), 10 deletions(-)
+Your logic is correct but assumes you will always receive a second
+nmi. This is not always the case depending on the cpu's internal
+timing. Usually there is the following sequence for back-to-back nmis:
 
-> On Fri, 2011-08-19 at 16:27 +0200, Marek Szyprowski wrote:
->> +unsigned long alloc_contig_freed_pages(unsigned long start, unsigned  
->> long end,
->> +				       gfp_t flag)
->> +{
->> +	unsigned long pfn = start, count;
->> +	struct page *page;
->> +	struct zone *zone;
->> +	int order;
->> +
->> +	VM_BUG_ON(!pfn_valid(start));
->> +	zone = page_zone(pfn_to_page(start));
+1. HW triggers first NMI, an NMI is pending.
+2. NMI handler is called, no NMI pending anymore.
+3. HW triggers a second NMI, an NMI is pending.
+4. Return from NMI handler.
+5. NMI handler is called again to serve the 2nd, no NMI pending anymore.
+6. Return from NMI handler.
 
-On Thu, 08 Sep 2011 20:05:52 +0200, Dave Hansen <dave@linux.vnet.ibm.com> wrote:
-> This implies that start->end are entirely contained in a single zone.
-> What enforces that?  If some higher layer enforces that, I think we
-> probably need at least a VM_BUG_ON() in here and a comment about who
-> enforces it.
+The above is what your algorithm covers.
 
->> +	spin_lock_irq(&zone->lock);
->> +
->> +	page = pfn_to_page(pfn);
->> +	for (;;) {
->> +		VM_BUG_ON(page_count(page) || !PageBuddy(page));
->> +		list_del(&page->lru);
->> +		order = page_order(page);
->> +		zone->free_area[order].nr_free--;
->> +		rmv_page_order(page);
->> +		__mod_zone_page_state(zone, NR_FREE_PAGES, -(1UL << order));
->> +		pfn  += 1 << order;
->> +		if (pfn >= end)
->> +			break;
->> +		VM_BUG_ON(!pfn_valid(pfn));
->> +		page += 1 << order;
->> +	}
+But in rare cases there is the following:
 
-> This 'struct page *'++ stuff is OK, but only for small, aligned areas.
-> For at least some of the sparsemem modes (non-VMEMMAP), you could walk
-> off of the end of the section_mem_map[] when you cross a MAX_ORDER
-> boundary.  I'd feel a little bit more comfortable if pfn_to_page() was
-> being done each time, or only occasionally when you cross a section
-> boundary.
+1. The cpu executes some microcode or SMM code.
+2. HW triggers the first NMI, an NMI is pending.
+3. HW triggers a second NMI, the NMI is still pending.
+4. The cpu finished microcode or SMM code.
+5. NMI handler is called, no NMI pending anymore.
+6. Return from NMI handler.
 
-Do the attached changes seem to make sense?
+In this case the handler is called only once and the second nmi
+remains unhandled with you implementation.
 
-I wanted to avoid calling pfn_to_page() each time as it seem fairly
-expensive in sparsemem and disctontig modes.  At the same time, the
-macro trickery is so that users of sparsemem-vmemmap and flatmem won't
-have to pay the price.
+I don't see a way how this could be catched without serving all
+handlers the first time. But as said, in favor of the optimization I
+think we can live with losing some NMIs.
 
-diff --git a/include/linux/page-isolation.h b/include/linux/page-isolation.h
-index b2a81fd..003c52f 100644
---- a/include/linux/page-isolation.h
-+++ b/include/linux/page-isolation.h
-@@ -46,11 +46,13 @@ static inline void unset_migratetype_isolate(struct page *page)
- {
- 	__unset_migratetype_isolate(page, MIGRATE_MOVABLE);
- }
-+
-+/* The below functions must be run on a range from a single zone. */
- extern unsigned long alloc_contig_freed_pages(unsigned long start,
- 					      unsigned long end, gfp_t flag);
- extern int alloc_contig_range(unsigned long start, unsigned long end,
- 			      gfp_t flags, unsigned migratetype);
--extern void free_contig_pages(struct page *page, int nr_pages);
-+extern void free_contig_pages(unsigned long pfn, unsigned nr_pages);
- 
- /*
-  * For migration.
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 46e78d4..32fda5d 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -5716,9 +5716,41 @@ out:
- 	spin_unlock_irqrestore(&zone->lock, flags);
- }
- 
-+#if defined(CONFIG_FLATMEM) || defined(CONFIG_SPARSEMEM_VMEMMAP)
-+
-+/*
-+ * In FLATMEM and CONFIG_SPARSEMEM_VMEMMAP we can safely increment the page
-+ * pointer and get the same value as if we were to get by calling
-+ * pfn_to_page() on incremented pfn counter.
-+ */
-+#define __contig_next_page(page, pageblock_left, pfn, increment) \
-+	((page) + (increment))
-+
-+#define __contig_first_page(pageblock_left, pfn) pfn_to_page(pfn)
-+
-+#else
-+
-+/*
-+ * If we cross pageblock boundary, make sure we get a valid page pointer.  If
-+ * we are within pageblock, incrementing the pointer is good enough, and is
-+ * a bit of an optimisation.
-+ */
-+#define __contig_next_page(page, pageblock_left, pfn, increment)	\
-+	(likely((pageblock_left) -= (increment)) ? (page) + (increment)	\
-+	 : (((pageblock_left) = pageblock_nr_pages), pfn_to_page(pfn)))
-+
-+#define __contig_first_page(pageblock_left, pfn) (			\
-+	((pageblock_left) = pageblock_nr_pages -			\
-+		 ((pfn) & (pageblock_nr_pages - 1))),			\
-+	pfn_to_page(pfn))
-+
-+
-+#endif
-+
- unsigned long alloc_contig_freed_pages(unsigned long start, unsigned long end,
- 				       gfp_t flag)
- {
-+	unsigned long pageblock_left __unused;
- 	unsigned long pfn = start, count;
- 	struct page *page;
- 	struct zone *zone;
-@@ -5729,27 +5761,37 @@ unsigned long alloc_contig_freed_pages(unsigned long start, unsigned long end,
- 
- 	spin_lock_irq(&zone->lock);
- 
--	page = pfn_to_page(pfn);
-+	page = __contig_first_page(pageblock_left, pfn);
- 	for (;;) {
--		VM_BUG_ON(page_count(page) || !PageBuddy(page));
-+		VM_BUG_ON(!page_count(page) || !PageBuddy(page) ||
-+			  page_zone(page) != zone);
-+
- 		list_del(&page->lru);
- 		order = page_order(page);
-+		count = 1UL << order;
- 		zone->free_area[order].nr_free--;
- 		rmv_page_order(page);
--		__mod_zone_page_state(zone, NR_FREE_PAGES, -(1UL << order));
--		pfn  += 1 << order;
-+		__mod_zone_page_state(zone, NR_FREE_PAGES, -(long)count);
-+
-+		pfn += count;
- 		if (pfn >= end)
- 			break;
- 		VM_BUG_ON(!pfn_valid(pfn));
--		page += 1 << order;
-+
-+		page = __contig_next_page(page, pageblock_left, pfn, count);
- 	}
- 
- 	spin_unlock_irq(&zone->lock);
- 
- 	/* After this, pages in the range can be freed one be one */
--	page = pfn_to_page(start);
--	for (count = pfn - start; count; --count, ++page)
-+	count = pfn - start;
-+	pfn = start;
-+	page = __contig_first_page(pageblock_left, pfn);
-+	for (; count; --count) {
- 		prep_new_page(page, 0, flag);
-+		++pfn;
-+		page = __contig_next_page(page, pageblock_left, pfn, 1);
-+	}
- 
- 	return pfn;
- }
-@@ -5903,10 +5945,16 @@ done:
- 	return ret;
- }
- 
--void free_contig_pages(struct page *page, int nr_pages)
-+void free_contig_pages(unsigned long pfn, unsigned nr_pages)
- {
--	for (; nr_pages; --nr_pages, ++page)
-+	unsigned long pageblock_left __unused;
-+	struct page *page = __contig_first_page(pageblock_left, pfn);
-+
-+	while (nr_pages--) {
- 		__free_page(page);
-+		++pfn;
-+		page = __contig_next_page(page, pageblock_left, pfn, 1);
-+	}
- }
- 
- #ifdef CONFIG_MEMORY_HOTREMOVE
+-Robert
+
+> > However, as these cases should be very rare, I think we can live with
+> > it in favor of the optimization to jump out the handler chain and save
+> > lot of cpu cycles esp. in the case of heavy PMI load.
+
 -- 
-1.7.3.1
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
