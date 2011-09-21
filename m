@@ -1,51 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752414Ab1IUPfJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 11:35:09 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:38312 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751797Ab1IUPfI (ORCPT
+	id S1752487Ab1IUPfm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 11:35:42 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:7121 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752068Ab1IUPfk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 11:35:08 -0400
-Date: Wed, 21 Sep 2011 16:35:07 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Corentin Chary <corentin.chary@gmail.com>
-Cc: Seth Forshee <seth.forshee@canonical.com>,
-        Azael Avalos <coproscefalo@gmail.com>,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6] toshiba_acpi: Convert to use acpi_driver
-Message-ID: <20110921153507.GB26436@srcf.ucam.org>
-References: <1316555754-25949-1-git-send-email-seth.forshee@canonical.com>
- <1316555754-25949-2-git-send-email-seth.forshee@canonical.com>
- <CAHR064iA1877cF1rmUhX_41U_yjRGs6siswpoMPjs=WEYEm8cQ@mail.gmail.com>
+	Wed, 21 Sep 2011 11:35:40 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6475"; a="120398801"
+Date: Wed, 21 Sep 2011 10:35:38 -0500
+From: Richard Kuo <rkuo@codeaurora.org>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, Linas Vepstas <linas@codeaurora.org>,
+        Arnd Bergmann <arnd@arndb.de>, linux-hexagon@vger.kernel.org
+Subject: Re: [PATCH 55/57] hexagon: irq: Remove IRQF_DISABLED
+Message-ID: <20110921153538.GA6006@codeaurora.org>
+References: <1316597339-29861-1-git-send-email-yong.zhang0@gmail.com>
+ <1316597339-29861-56-git-send-email-yong.zhang0@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAHR064iA1877cF1rmUhX_41U_yjRGs6siswpoMPjs=WEYEm8cQ@mail.gmail.com>
+In-Reply-To: <1316597339-29861-56-git-send-email-yong.zhang0@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 21, 2011 at 09:28:30AM +0200, Corentin Chary wrote:
-> On Tue, Sep 20, 2011 at 11:55 PM, Seth Forshee
-> <seth.forshee@canonical.com> wrote:
-> > Changes toshiba_acpi to register an acpi driver and eliminates the
-> > platform device it was using.
-> 
-> Why to you want to remove the platform device ? If you want to create
-> a sysfs interface later, you'll probably need it. Most of the platform
-> driver I know only use the acpi_device to send proc/netlink events and
-> the platform_device is used everywhere else. (And anyway, it's an x86
-> *platform* driver, not a pure acpi driver).
+Thanks!  I already had that timer fixed in my tree, but I had left out the
+IPI flag.  I will make sure this goes into the next patch series.
 
-There's no hard requirement for a platform device, and given that it's 
-purely using ACPI methods it arguably *is* a pure ACPI driver - Toshiba 
-could use the same interface on an ARM device, if they were feeling 
-excessively enthusiastic. But I've no strong feelings either way.
+
+Thanks again, 
+Richard Kuo
+
+
+On Wed, Sep 21, 2011 at 05:28:56PM +0800, Yong Zhang wrote:
+> Since commit [c58543c8: genirq: Run irq handlers with interrupts disabled],
+> We run all interrupt handlers with interrupts disabled
+> and we even check and yell when an interrupt handler
+> returns with interrupts enabled (see commit [b738a50a:
+> genirq: Warn when handler enables interrupts]).
+> 
+> So now this flag is a NOOP and can be removed.
+> 
+> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+> ---
+>  arch/hexagon/kernel/smp.c  |    2 +-
+>  arch/hexagon/kernel/time.c |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/hexagon/kernel/smp.c b/arch/hexagon/kernel/smp.c
+> index 96bf6c2..ad43649 100644
+> --- a/arch/hexagon/kernel/smp.c
+> +++ b/arch/hexagon/kernel/smp.c
+> @@ -136,7 +136,7 @@ void send_ipi(const struct cpumask *cpumask, enum ipi_message_type msg)
+>  
+>  static struct irqaction ipi_intdesc = {
+>  	.handler = handle_ipi,
+> -	.flags = IRQF_DISABLED | IRQF_TRIGGER_RISING,
+> +	.flags = IRQF_TRIGGER_RISING,
+>  	.name = "ipi_handler"
+>  };
+>  
+> diff --git a/arch/hexagon/kernel/time.c b/arch/hexagon/kernel/time.c
+> index fc8e95c..a4d7b58 100644
+> --- a/arch/hexagon/kernel/time.c
+> +++ b/arch/hexagon/kernel/time.c
+> @@ -181,7 +181,7 @@ static irqreturn_t timer_interrupt(int irq, void *devid)
+>  /*  This should also be pulled from devtree  */
+>  static struct irqaction rtos_timer_intdesc = {
+>  	.handler = timer_interrupt,
+> -	.flags = IRQF_DISABLED | IRQF_TIMER | IRQF_TRIGGER_RISING,
+> +	.flags = IRQF_TIMER | IRQF_TRIGGER_RISING,
+>  	.name = "rtos_timer"
+>  };
+>  
+> -- 
+> 1.7.4.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-hexagon" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
