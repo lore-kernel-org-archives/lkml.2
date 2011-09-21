@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752070Ab1IUGo2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 02:44:28 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:53928 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751685Ab1IUGo0 (ORCPT
+	id S1751818Ab1IUGpo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 02:45:44 -0400
+Received: from mail-wy0-f180.google.com ([74.125.82.180]:36699 "EHLO
+	mail-wy0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751192Ab1IUGpn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 02:44:26 -0400
-Date: Wed, 21 Sep 2011 09:44:15 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Ian Lartey <ian@opensource.wolfsonmicro.com>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: re: mfd: Simulate active high IRQs with wm831x
-Message-ID: <20110921064415.GC4999@elgon.mountain>
+	Wed, 21 Sep 2011 02:45:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4E7987C7.0102:SCFMA922111,ss=1,re=-4.000,fgs=0
+In-Reply-To: <1316586723.1573.4.camel@vkoul-udesk3>
+References: <1316072789-12830-1-git-send-email-jaswinder.singh@linaro.org>
+	<1316520730-3655-1-git-send-email-jaswinder.singh@linaro.org>
+	<1316537529.31295.14.camel@vkoul-udesk3>
+	<CAJe_ZhdB6y--3XuTp7hzrBjkBTUfp5Anta2Z8SMaqbc=z6jMGA@mail.gmail.com>
+	<1316586723.1573.4.camel@vkoul-udesk3>
+Date: Wed, 21 Sep 2011 12:15:42 +0530
+Message-ID: <CAJe_Zhc67VR-+YAYaLhbwOF=eo2s7wOkjwvi+kJ5=bGt-YWmqA@mail.gmail.com>
+Subject: Re: [PATCHv3] DMAEngine: Define interleaved transfer request api
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: dan.j.williams@intel.com, linux-kernel@vger.kernel.org,
+        rmk@arm.linux.org.uk, 21cnbao@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On 21 September 2011 12:02, Vinod Koul <vinod.koul@intel.com> wrote:
+> On Tue, 2011-09-20 at 23:38 +0530, Jassi Brar wrote:
+>> On 20 September 2011 22:22, Vinod Koul <vinod.koul@intel.com> wrote:
+>> > Also for slave transfers, how do we infer direction?
+>> I already explained to Barry.  Here's it again.
+>>
+>> At any time, the dmac driver knows if the channel, on which the xfer is
+>> prepared/submitted is Slave or not.
+>>
+>> SLAVE Transfer
+>>    dmaxfer_template.src_inc  && !dmaxfer_template.dst_inc  => DMA_TO_DEVICE
+>>    !dmaxfer_template.src_inc  && dmaxfer_template.dst_inc  => DMA_FROM_DEVICE
+>>
+>> Mem->Mem Transfer
+>>    dmaxfer_template.src_inc  && !dmaxfer_template.dst_inc  => Meaningless
+>>    !dmaxfer_template.src_inc  && dmaxfer_template.dst_inc  => MemSet
+> Rather than each driver adding this logic with good chance of screwing
+> up, care to add this as helper in dmaengine.h
+>
+> Ideally, I would have preferred direction to be told explicitly, would
+> leave it you..
+>
+I repeat yet again :- "This api is common to Slave as well as Mem<->Mem"
 
-Smatch complains about d71820b8a8fbe9 "mfd: Simulate active high IRQs
-with wm831x"
-
-drivers/mfd/wm831x-irq.c +522 wm831x_irq_thread(67)
-	error: buffer overflow 'wm831x->gpio_level' 16 <= 56
-
-   518                  /* Simulate an edge triggered IRQ by polling the input
-   519                   * status.  This is sucky but improves interoperability.
-   520                   */
-   521                  if (primary == WM831X_GP_INT &&
-   522                      wm831x->gpio_level[i - WM831X_IRQ_GPIO_1]) {
-                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   523                          ret = wm831x_reg_read(wm831x, WM831X_GPIO_LEVEL);
-   524                          while (ret & 1 << (i - WM831X_IRQ_GPIO_1)) {
-   525                                  handle_nested_irq(wm831x->irq_base + i);
-   526                                  ret = wm831x_reg_read(wm831x,
-   527                                                        WM831X_GPIO_LEVEL);
-   528                          }
-   529                  }
-
-We're inside a for loop over ARRAY_SIZE(wm831x_irqs) which has 58
-elements (so "i" is 0-57) and we subtract WM831X_IRQ_GPIO_1 (1) which
-gives us a max of 56.  The ->gpio_level[] array only has 16 elements
-so we're reading beyond the end of the array.
-
-In wm831x_irq_set_type() it only sets the first 11 elements of the
-->gpio_level[] array.  Perhaps something similar is needed here.  I
-don't know the code well enough to say.
-
-regards,
-dan carpenter
+Even if we have slave clients specify DMA_TO/FROM_DEVICE, what
+flag do you suggest Mem->Mem clients use ?
