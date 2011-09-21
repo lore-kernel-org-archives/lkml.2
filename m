@@ -1,272 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750907Ab1IUUq7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 16:46:59 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:54887 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750711Ab1IUUq6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 16:46:58 -0400
-Subject: [PATCH] dt: add of_alias_scan and of_alias_get_id
-To: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-From: Grant Likely <grant.likely@secretlab.ca>
-Cc: Shawn Guo <shawn.guo@linaro.org>, "David S. Miller" <davem@davemloft.net>
-Date: Wed, 21 Sep 2011 14:46:54 -0600
-Message-ID: <20110921204545.19871.99088.stgit@ponder>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1750892Ab1IUUzO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 16:55:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62233 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750713Ab1IUUzL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 16:55:11 -0400
+Date: Wed, 21 Sep 2011 15:54:55 -0500
+From: Clark Williams <williams@redhat.com>
+To: RT <linux-rt-users@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Carsten Emde <ce@ceag.ch>,
+        Uwe =?UTF-8?B?S2xlaW5lLUvDtm5pZw==?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>
+Subject: rt-tests-0.82 available on github
+Message-ID: <20110921155455.61ab4745@redhat.com>
+Organization: Red Hat, Inc
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/vwrDA_NmV7Mf._HrCcKIRhO"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shawn Guo <shawn.guo@linaro.org>
+--Sig_/vwrDA_NmV7Mf._HrCcKIRhO
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-The patch adds function of_alias_scan to populate a global lookup
-table with the properties of 'aliases' node and function
-of_alias_get_id for drivers to find alias id from the lookup table.
+While kernel.org is sorting out the security stuff, the rt-tests code
+may be pulled from:
 
-v3: Split out automatic addition of aliases on id lookup so that it can be
-    debated separately from the core functionality.
-v2: - Add of_chosen/of_aliases populating and of_alias_scan() invocation
-    for OF_PROMTREE.
-    - Add locking
-    - rework parse loop
+	git://github.com/clrkwllms/rt-tests.git
 
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
-Cc: David S. Miller <davem@davemloft.net>
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
----
+Note that we're now at version 0.82. Presently I only have the git
+archive available (no tarballs).=20
 
-David, let me know if this looks okay to you.  I'm still testing this, but
-if all looks good then I'll push it out for Linux next before the end of the
-week.  This version doesn't have the auto-creation of alias entries that
-was controversial before.
+While investigating latency spikes in the 3.0.x-rt kernels, Thomas
+spotted a case where an Intel quad-core Xeon was going into deep
+sleep states and were all fighting to come out of sleep at the same
+time (and consequently causing a big latency spike in cyclictest).=20
 
-g.
+While trying to figure out how to prevent deep cstates I remembered a
+conversation I had with Arjan at the last Plumbers conference in
+Boston. He mentioned the /dev/cpu_dma_latency interface to the power
+managment code and that if you opened it and wrote a zero to it, you
+effectively put the system into "idle=3Dpoll" mode until you closed the
+file descriptor (see: Documentation/power/pm_qos_interface.txt).=20
 
- drivers/of/base.c  |  121 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- drivers/of/fdt.c   |    6 +--
- drivers/of/pdt.c   |    8 +++
- include/linux/of.h |    7 +++
- 4 files changed, 138 insertions(+), 4 deletions(-)
+I've added a set_latency_target() function to cyclictest that by
+default opens /dev/cpu_dma_latency and writes a zero to it, then holds
+the file descriptor open for the duration of the cyclictest run. This
+made a *huge* difference on some Intel Xeon's. Without this option, when
+I was running cyclictest with the -b option, I saw latencies over
+300us. When I added it, while tracing I never saw a latency over 30us.
+Turning of -b, I never saw it go over 10us. I am doing further testing
+now with other x86_64 systems.=20
 
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index 3ff22e3..8abde58 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -17,14 +17,39 @@
-  *      as published by the Free Software Foundation; either version
-  *      2 of the License, or (at your option) any later version.
-  */
-+#include <linux/ctype.h>
- #include <linux/module.h>
- #include <linux/of.h>
- #include <linux/spinlock.h>
- #include <linux/slab.h>
- #include <linux/proc_fs.h>
- 
-+/**
-+ * struct alias_prop - Alias property in 'aliases' node
-+ * @link:	List node to link the structure in aliases_lookup list
-+ * @alias:	Alias property name
-+ * @np:		Pointer to device_node that the alias stands for
-+ * @id:		Index value from end of alias name
-+ * @stem:	Alias string without the index
-+ *
-+ * The structure represents one alias property of 'aliases' node as
-+ * an entry in aliases_lookup list.
-+ */
-+struct alias_prop {
-+	struct list_head link;
-+	const char *alias;
-+	struct device_node *np;
-+	int id;
-+	char stem[0];
-+};
-+
-+static LIST_HEAD(aliases_lookup);
-+
- struct device_node *allnodes;
- struct device_node *of_chosen;
-+struct device_node *of_aliases;
-+
-+static DEFINE_MUTEX(of_aliases_mutex);
- 
- /* use when traversing tree through the allnext, child, sibling,
-  * or parent members of struct device_node.
-@@ -988,3 +1013,99 @@ out_unlock:
- }
- #endif /* defined(CONFIG_OF_DYNAMIC) */
- 
-+static void of_alias_add(struct alias_prop *ap, struct device_node *np,
-+			 int id, const char *stem, int stem_len)
-+{
-+	ap->np = np;
-+	ap->id = id;
-+	strncpy(ap->stem, stem, stem_len);
-+	ap->stem[stem_len] = 0;
-+	list_add_tail(&ap->link, &aliases_lookup);
-+	pr_debug("adding DT alias:%s: stem=%s id=%i node=%s\n",
-+		 ap->alias, ap->stem, ap->id, np ? np->full_name : NULL);
-+}
-+
-+/**
-+ * of_alias_scan - Scan all properties of 'aliases' node
-+ *
-+ * The function scans all the properties of 'aliases' node and populate
-+ * the the global lookup table with the properties.  It returns the
-+ * number of alias_prop found, or error code in error case.
-+ *
-+ * @dt_alloc:	An allocator that provides a virtual address to memory
-+ *		for the resulting tree
-+ */
-+void of_alias_scan(void * (*dt_alloc)(u64 size, u64 align))
-+{
-+	struct property *pp;
-+
-+	of_chosen = of_find_node_by_path("/chosen");
-+	if (of_chosen == NULL)
-+		of_chosen = of_find_node_by_path("/chosen@0");
-+	of_aliases = of_find_node_by_path("/aliases");
-+	if (!of_aliases)
-+		return;
-+
-+	for_each_property(pp, of_aliases->properties) {
-+		const char *start = pp->name;
-+		const char *end = start + strlen(start);
-+		struct device_node *np;
-+		struct alias_prop *ap;
-+		int id, len;
-+
-+		/* Skip those we do not want to proceed */
-+		if (!strcmp(pp->name, "name") ||
-+		    !strcmp(pp->name, "phandle") ||
-+		    !strcmp(pp->name, "linux,phandle"))
-+			continue;
-+
-+		np = of_find_node_by_path(pp->value);
-+		if (!np)
-+			continue;
-+
-+		/* walk the alias backwards to extract the id and work out
-+		 * the 'stem' string */
-+		while (isdigit(*(end-1)) && end > start)
-+			end--;
-+		len = end - start;
-+
-+		if (kstrtoint(end, 10, &id) < 0)
-+			continue;
-+
-+		/* Allocate an alias_prop with enough space for the stem */
-+		ap = dt_alloc(sizeof(*ap) + len + 1, 4);
-+		if (!ap)
-+			continue;
-+		ap->alias = start;
-+		of_alias_add(ap, np, id, start, len);
-+	}
-+}
-+
-+/**
-+ * of_alias_get_id - Get alias id for the given device_node
-+ * @np:		Pointer to the given device_node
-+ * @stem:	Alias stem of the given device_node
-+ *
-+ * The function travels the lookup table to get alias id for the given
-+ * device_node and alias stem.  It returns the alias id if find it.
-+ */
-+int of_alias_get_id(struct device_node *np, const char *stem)
-+{
-+	struct alias_prop *app;
-+	int id = -ENODEV;
-+
-+	mutex_lock(&of_aliases_mutex);
-+	list_for_each_entry(app, &aliases_lookup, link) {
-+		if (strcmp(app->stem, stem) != 0)
-+			continue;
-+
-+		if (np == app->np) {
-+			id = app->id;
-+			break;
-+		}
-+	}
-+	mutex_unlock(&of_aliases_mutex);
-+
-+	return id;
-+}
-+EXPORT_SYMBOL_GPL(of_alias_get_id);
-diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
-index 65200af..aeec35b 100644
---- a/drivers/of/fdt.c
-+++ b/drivers/of/fdt.c
-@@ -707,10 +707,8 @@ void __init unflatten_device_tree(void)
- 	__unflatten_device_tree(initial_boot_params, &allnodes,
- 				early_init_dt_alloc_memory_arch);
- 
--	/* Get pointer to OF "/chosen" node for use everywhere */
--	of_chosen = of_find_node_by_path("/chosen");
--	if (of_chosen == NULL)
--		of_chosen = of_find_node_by_path("/chosen@0");
-+	/* Get pointer to "/chosen" and "/aliasas" nodes for use everywhere */
-+	of_alias_scan(early_init_dt_alloc_memory_arch);
- }
- 
- #endif /* CONFIG_OF_EARLY_FLATTREE */
-diff --git a/drivers/of/pdt.c b/drivers/of/pdt.c
-index 4d87b5d..bc5b399 100644
---- a/drivers/of/pdt.c
-+++ b/drivers/of/pdt.c
-@@ -229,6 +229,11 @@ static struct device_node * __init of_pdt_build_tree(struct device_node *parent,
- 	return ret;
- }
- 
-+static void *kernel_tree_alloc(u64 size, u64 align)
-+{
-+	return prom_early_alloc(size);
-+}
-+
- void __init of_pdt_build_devicetree(phandle root_node, struct of_pdt_ops *ops)
- {
- 	struct device_node **nextp;
-@@ -245,4 +250,7 @@ void __init of_pdt_build_devicetree(phandle root_node, struct of_pdt_ops *ops)
- 	nextp = &allnodes->allnext;
- 	allnodes->child = of_pdt_build_tree(allnodes,
- 			of_pdt_prom_ops->getchild(allnodes->phandle), &nextp);
-+
-+	/* Get pointer to "/chosen" and "/aliasas" nodes for use everywhere */
-+	of_alias_scan(kernel_tree_alloc);
- }
-diff --git a/include/linux/of.h b/include/linux/of.h
-index 9180dc5..8b6383d 100644
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -68,6 +68,7 @@ struct device_node {
- /* Pointer for first entry in chain of all nodes. */
- extern struct device_node *allnodes;
- extern struct device_node *of_chosen;
-+extern struct device_node *of_aliases;
- extern rwlock_t devtree_lock;
- 
- static inline bool of_have_populated_dt(void)
-@@ -209,6 +210,9 @@ extern int of_device_is_available(const struct device_node *device);
- extern const void *of_get_property(const struct device_node *node,
- 				const char *name,
- 				int *lenp);
-+#define for_each_property(pp, properties) \
-+	for (pp = properties; pp != NULL; pp = pp->next)
-+
- extern int of_n_addr_cells(struct device_node *np);
- extern int of_n_size_cells(struct device_node *np);
- extern const struct of_device_id *of_match_node(
-@@ -221,6 +225,9 @@ extern int of_parse_phandles_with_args(struct device_node *np,
- 	const char *list_name, const char *cells_name, int index,
- 	struct device_node **out_node, const void **out_args);
- 
-+extern void of_alias_scan(void * (*dt_alloc)(u64 size, u64 align));
-+extern int of_alias_get_id(struct device_node *np, const char *stem);
-+
- extern int of_machine_is_compatible(const char *compat);
- 
- extern int prom_add_property(struct device_node* np, struct property* prop);
+Of course this is very architecture specific, so YMMV, but I think it's
+a valid mechanism to be used when measuring latency and I believe a
+technique that many latency-sensitive applications might use to good
+effect.=20
 
+Clark
+
+--Sig_/vwrDA_NmV7Mf._HrCcKIRhO
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
+
+iEYEARECAAYFAk56TyAACgkQHyuj/+TTEp1mOwCgwVkhbSEJNGA0T3hlNHrudjEI
+F6oAoLsuVcyZ6uemn2I4aRo+0gi2VwhT
+=fcnr
+-----END PGP SIGNATURE-----
+
+--Sig_/vwrDA_NmV7Mf._HrCcKIRhO--
