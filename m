@@ -1,103 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753971Ab1IUNKt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 09:10:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48790 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753860Ab1IUNKr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 09:10:47 -0400
-Date: Wed, 21 Sep 2011 15:10:45 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
-        Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 08/11] mm: vmscan: convert global reclaim to per-memcg
- LRU lists
-Message-ID: <20110921131045.GD8501@tiehlicka.suse.cz>
-References: <1315825048-3437-1-git-send-email-jweiner@redhat.com>
- <1315825048-3437-9-git-send-email-jweiner@redhat.com>
+	id S1753947Ab1IUNKh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 09:10:37 -0400
+Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:42084 "EHLO
+	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753860Ab1IUNKg convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 09:10:36 -0400
+From: =?ISO-8859-1?Q?P=E9ter?= Ujfalusi <peter.ujfalusi@ti.com>
+To: Samuel Ortiz <samuel.ortiz@intel.com>
+Cc: Dmitry Torokhov <dtor@mail.ru>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, Misael Lopez Cruz <misael.lopez@ti.com>,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCH 0/8] ASoC/MFD/Input: twl6040: Support for audio driven vibra
+Date: Wed, 21 Sep 2011 16:10:43 +0300
+Message-ID: <4087693.7Xef8rW0nd@barack>
+User-Agent: KMail/4.7.1 (Linux/3.0.4-gentoo; KDE/4.7.1; x86_64; ; )
+In-Reply-To: <1316091561-30899-1-git-send-email-peter.ujfalusi@ti.com>
+References: <1316091561-30899-1-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1315825048-3437-9-git-send-email-jweiner@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="ISO-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 12-09-11 12:57:25, Johannes Weiner wrote:
-> The global per-zone LRU lists are about to go away on memcg-enabled
-> kernels, global reclaim must be able to find its pages on the
-> per-memcg LRU lists.
-> 
-> Since the LRU pages of a zone are distributed over all existing memory
-> cgroups, a scan target for a zone is complete when all memory cgroups
-> are scanned for their proportional share of a zone's memory.
-> 
-> The forced scanning of small scan targets from kswapd is limited to
-> zones marked unreclaimable, otherwise kswapd can quickly overreclaim
-> by force-scanning the LRU lists of multiple memory cgroups.
-> 
-> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+Hi Samuel, Dmitry,
 
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
+On Thursday 15 September 2011 15:59:13 Peter Ujfalusi wrote:
+> Peter Ujfalusi (8):
+>   Input: twl6040: Simplify vibra regsiter definitions
+>   MFD: twl6040: Cache the vibra control registers
+>   MFD: twl6040: function to query the vibra status for clients
+>   Input: twl6040-vibra: Check the selected path for vibra
+>   ASoC: twl6040: Fix the number of channels for vibra
+>   ASoC: twl6040: Correct supported number of playback channels
+>   ASoC: omap-mcpdm: Correct the supported number of channels
+>   ASoC: twl6040: Support for vibra output paths
 
-Minor nit bellow
+Could you take a look at this series for the MFD/Input parts?
 
-> ---
->  mm/vmscan.c |   39 ++++++++++++++++++++++-----------------
->  1 files changed, 22 insertions(+), 17 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index bb4d8b8..053609e 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2451,13 +2445,24 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem_cont,
->  static void age_active_anon(struct zone *zone, struct scan_control *sc,
->  			    int priority)
->  {
-> -	struct mem_cgroup_zone mz = {
-> -		.mem_cgroup = NULL,
-> -		.zone = zone,
-> -	};
-> +	struct mem_cgroup *mem;
-> +
-> +	if (!total_swap_pages)
-> +		return;
-> +
-> +	mem = mem_cgroup_iter(NULL, NULL, NULL);
+Dmitry: Do you have further comments for patch 4? I will change the error 
+returned to -EBUSY, as Liam was suggesting.
 
-Wouldn't be for_each_mem_cgroup more appropriate? Macro is not exported
-but probably worth exporting? The same applies for
-scan_zone_unevictable_pages from the previous patch.
-
-> +	do {
-> +		struct mem_cgroup_zone mz = {
-> +			.mem_cgroup = mem,
-> +			.zone = zone,
-> +		};
->  
-> -	if (inactive_anon_is_low(&mz))
-> -		shrink_active_list(SWAP_CLUSTER_MAX, &mz, sc, priority, 0);
-> +		if (inactive_anon_is_low(&mz))
-> +			shrink_active_list(SWAP_CLUSTER_MAX, &mz,
-> +					   sc, priority, 0);
-> +
-> +		mem = mem_cgroup_iter(NULL, mem, NULL);
-> +	} while (mem);
->  }
-
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Thank you,
+Péter
