@@ -1,68 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751932Ab1IUPAi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 11:00:38 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:41707 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751825Ab1IUPAg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 11:00:36 -0400
-X-Sasl-enc: VopK1uHGVVDj9APUpv1rOKi/nBYOYSjala5kPB+0/7t0 1316617235
-Date: Tue, 20 Sep 2011 16:45:15 -0700
-From: Greg KH <greg@kroah.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Ohad Ben-Cohen <ohad@wizery.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Nicolas Pitre <nico@fluxnic.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 00/10] hwspinlock-next
-Message-ID: <20110920234515.GA16276@kroah.com>
-References: <1315846025-11453-1-git-send-email-ohad@wizery.com>
- <CAK=Wgbam6u1bq8fG+oMUhxfWH1g3dU7q+VhPWFEZOLgFMV_3vQ@mail.gmail.com>
- <20110920231340.GT18894@atomide.com>
+	id S1752010Ab1IUPDf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 11:03:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56942 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751950Ab1IUPDd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 11:03:33 -0400
+Date: Wed, 21 Sep 2011 16:03:28 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Johannes Weiner <jweiner@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Chris Mason <chris.mason@oracle.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, xfs@oss.sgi.com,
+        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/4] mm: exclude reserved pages from dirtyable memory
+Message-ID: <20110921150328.GJ4849@suse.de>
+References: <1316526315-16801-1-git-send-email-jweiner@redhat.com>
+ <1316526315-16801-2-git-send-email-jweiner@redhat.com>
+ <20110921140423.GG4849@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20110920231340.GT18894@atomide.com>
+In-Reply-To: <20110921140423.GG4849@suse.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 20, 2011 at 04:13:40PM -0700, Tony Lindgren wrote:
-> * Ohad Ben-Cohen <ohad@wizery.com> [110920 01:34]:
-> > On Mon, Sep 12, 2011 at 7:46 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
+On Wed, Sep 21, 2011 at 03:04:23PM +0100, Mel Gorman wrote:
+> On Tue, Sep 20, 2011 at 03:45:12PM +0200, Johannes Weiner wrote:
+> > The amount of dirtyable pages should not include the total number of
+> > free pages: there is a number of reserved pages that the page
+> > allocator and kswapd always try to keep free.
 > > 
-> > I'm wondering how hwspinlock updates like this should go upstream.
+> > The closer (reclaimable pages - dirty pages) is to the number of
+> > reserved pages, the more likely it becomes for reclaim to run into
+> > dirty pages:
 > > 
-> > The first hwspinlock batch was picked by Tony, because it involved a
-> > bulk of OMAP changes.
+> >        +----------+ ---
+> >        |   anon   |  |
+> >        +----------+  |
+> >        |          |  |
+> >        |          |  -- dirty limit new    -- flusher new
+> >        |   file   |  |                     |
+> >        |          |  |                     |
+> >        |          |  -- dirty limit old    -- flusher old
+> >        |          |                        |
+> >        +----------+                       --- reclaim
+> >        | reserved |
+> >        +----------+
+> >        |  kernel  |
+> >        +----------+
 > > 
-> > Hwspinlock isn't OMAP-specific anymore though (we gained support for
-> > STE's u8500) and the vast majority of changes are in drivers/. We're
-> > still very much ARM-related, though this may change too at some point
-> > (c6x has a similar "hardware semaphore" peripheral like the u8500
-> > does).
+> > Not treating reserved pages as dirtyable on a global level is only a
+> > conceptual fix.  In reality, dirty pages are not distributed equally
+> > across zones and reclaim runs into dirty pages on a regular basis.
 > > 
-> > Tony, if you're still willing to pick up these updates I'd be happy to
-> > send you pull requests of course.
+> > But it is important to get this right before tackling the problem on a
+> > per-zone level, where the distance between reclaim and the dirty pages
+> > is mostly much smaller in absolute numbers.
+> > 
+> > Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+> > ---
+> >  include/linux/mmzone.h |    1 +
+> >  mm/page-writeback.c    |    8 +++++---
+> >  mm/page_alloc.c        |    1 +
+> >  3 files changed, 7 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> > index 1ed4116..e28f8e0 100644
+> > --- a/include/linux/mmzone.h
+> > +++ b/include/linux/mmzone.h
+> > @@ -316,6 +316,7 @@ struct zone {
+> >  	 * sysctl_lowmem_reserve_ratio sysctl changes.
+> >  	 */
+> >  	unsigned long		lowmem_reserve[MAX_NR_ZONES];
+> > +	unsigned long		totalreserve_pages;
+> >  
 > 
-> I'd prefer for Greg to take these as these are drivers.
+> This is nit-picking but totalreserve_pages is a poor name because it's
+> a per-zone value that is one of the lowmem_reserve[] fields instead
+> of a total. After this patch, we have zone->totalreserve_pages and
+> totalreserve_pages but are not related to the same thing.
+> but they are not the same.
+> 
 
-What, am I the catch-all for drivers these days?
+As you correctly pointed out to be on IRC, zone->totalreserve_pages
+is not the lowmem_reserve because it takes the high_wmark into
+account. Sorry about that, I should have kept thinking.  The name is
+still poor though because it does not explain what the value is or
+what it means.
 
-Oh, right, it looks like I am :)
+zone->FOO value needs to be related to lowmem_reserve because this
+	is related to balancing zone usage.
 
-> If he's not taking it at this point based on it being ARM only,
-> I can take it then.
+zone->FOO value should also be related to the high_wmark because
+	this is avoiding writeback from page reclaim
 
-Please do, I don't even have the ability to build them here, as I don't
-have an arm cross-compiler on this travel laptop.
+err....... umm... this?
 
-greg k-h
+	/*
+	 * When allocating a new page that is expected to be
+	 * dirtied soon, the number of free pages and the
+	 * dirty_balance reserve are taken into account. The
+	 * objective is that the globally allowed number of dirty
+	 * pages should be distributed throughout the zones such
+	 * that it is very unlikely that page reclaim will call
+	 * ->writepage.
+	 *
+	 * dirty_balance_reserve takes both lowmem_reserve and
+	 * the high watermark into account. The lowmem_reserve
+	 * is taken into account because we don't want the
+	 * distribution of dirty pages to unnecessarily increase
+	 * lowmem pressure. The watermark is taken into account
+	 * because it's correlated with when kswapd wakes up
+	 * and how long it stays awake.
+	 */
+	unsigned long		dirty_balance_reserve.
+
+-- 
+Mel Gorman
+SUSE Labs
