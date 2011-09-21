@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753293Ab1IUJc3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 05:32:29 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:56712 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753263Ab1IUJcZ (ORCPT
+	id S1753327Ab1IUJcf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 05:32:35 -0400
+Received: from mail-wy0-f180.google.com ([74.125.82.180]:37829 "EHLO
+	mail-wy0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753186Ab1IUJcd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 05:32:25 -0400
+	Wed, 21 Sep 2011 05:32:33 -0400
 From: Yong Zhang <yong.zhang0@gmail.com>
 To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de, yong.zhang0@gmail.com, Chris Zankel <chris@zankel.net>,
-        Torben Hohn <torbenh@gmx.de>
-Subject: [PATCH 22/57] xtensa: irq: Remove IRQF_DISABLED
-Date: Wed, 21 Sep 2011 17:28:23 +0800
-Message-Id: <1316597339-29861-23-git-send-email-yong.zhang0@gmail.com>
+Cc: tglx@linutronix.de, yong.zhang0@gmail.com,
+        John Stultz <johnstul@us.ibm.com>
+Subject: [PATCH 23/57] clocksource: irq: Remove IRQF_DISABLED
+Date: Wed, 21 Sep 2011 17:28:24 +0800
+Message-Id: <1316597339-29861-24-git-send-email-yong.zhang0@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1316597339-29861-1-git-send-email-yong.zhang0@gmail.com>
 References: <1316597339-29861-1-git-send-email-yong.zhang0@gmail.com>
@@ -31,19 +31,91 @@ So now this flag is a NOOP and can be removed.
 
 Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
 ---
- arch/xtensa/kernel/time.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ drivers/clocksource/cs5535-clockevt.c |    2 +-
+ drivers/clocksource/dw_apb_timer.c    |    3 +--
+ drivers/clocksource/sh_cmt.c          |    2 +-
+ drivers/clocksource/sh_mtu2.c         |    2 +-
+ drivers/clocksource/sh_tmu.c          |    2 +-
+ drivers/clocksource/tcb_clksrc.c      |    2 +-
+ 6 files changed, 6 insertions(+), 7 deletions(-)
 
-diff --git a/arch/xtensa/kernel/time.c b/arch/xtensa/kernel/time.c
-index f3e5eb4..2370229 100644
---- a/arch/xtensa/kernel/time.c
-+++ b/arch/xtensa/kernel/time.c
-@@ -54,7 +54,6 @@ static struct clocksource ccount_clocksource = {
- static irqreturn_t timer_interrupt(int irq, void *dev_id);
- static struct irqaction timer_irqaction = {
- 	.handler =	timer_interrupt,
--	.flags =	IRQF_DISABLED,
- 	.name =		"timer",
+diff --git a/drivers/clocksource/cs5535-clockevt.c b/drivers/clocksource/cs5535-clockevt.c
+index b7dab32..2d3715f 100644
+--- a/drivers/clocksource/cs5535-clockevt.c
++++ b/drivers/clocksource/cs5535-clockevt.c
+@@ -133,7 +133,7 @@ static irqreturn_t mfgpt_tick(int irq, void *dev_id)
+ 
+ static struct irqaction mfgptirq  = {
+ 	.handler = mfgpt_tick,
+-	.flags = IRQF_DISABLED | IRQF_NOBALANCING | IRQF_TIMER,
++	.flags = IRQF_NOBALANCING | IRQF_TIMER,
+ 	.name = DRV_NAME,
+ };
+ 
+diff --git a/drivers/clocksource/dw_apb_timer.c b/drivers/clocksource/dw_apb_timer.c
+index 580f870..55eb8ad 100644
+--- a/drivers/clocksource/dw_apb_timer.c
++++ b/drivers/clocksource/dw_apb_timer.c
+@@ -243,8 +243,7 @@ dw_apb_clockevent_init(int cpu, const char *name, unsigned rating,
+ 	dw_ced->irqaction.dev_id	= &dw_ced->ced;
+ 	dw_ced->irqaction.irq		= irq;
+ 	dw_ced->irqaction.flags		= IRQF_TIMER | IRQF_IRQPOLL |
+-					  IRQF_NOBALANCING |
+-					  IRQF_DISABLED;
++					  IRQF_NOBALANCING;
+ 
+ 	dw_ced->eoi = apbt_eoi;
+ 	err = setup_irq(irq, &dw_ced->irqaction);
+diff --git a/drivers/clocksource/sh_cmt.c b/drivers/clocksource/sh_cmt.c
+index ca09bc4..3bc55c4 100644
+--- a/drivers/clocksource/sh_cmt.c
++++ b/drivers/clocksource/sh_cmt.c
+@@ -641,7 +641,7 @@ static int sh_cmt_setup(struct sh_cmt_priv *p, struct platform_device *pdev)
+ 	p->irqaction.name = dev_name(&p->pdev->dev);
+ 	p->irqaction.handler = sh_cmt_interrupt;
+ 	p->irqaction.dev_id = p;
+-	p->irqaction.flags = IRQF_DISABLED | IRQF_TIMER | \
++	p->irqaction.flags = IRQF_TIMER | \
+ 			     IRQF_IRQPOLL  | IRQF_NOBALANCING;
+ 
+ 	/* get hold of clock */
+diff --git a/drivers/clocksource/sh_mtu2.c b/drivers/clocksource/sh_mtu2.c
+index db8d595..0521f03 100644
+--- a/drivers/clocksource/sh_mtu2.c
++++ b/drivers/clocksource/sh_mtu2.c
+@@ -282,7 +282,7 @@ static int sh_mtu2_setup(struct sh_mtu2_priv *p, struct platform_device *pdev)
+ 	p->irqaction.handler = sh_mtu2_interrupt;
+ 	p->irqaction.dev_id = p;
+ 	p->irqaction.irq = irq;
+-	p->irqaction.flags = IRQF_DISABLED | IRQF_TIMER | \
++	p->irqaction.flags = IRQF_TIMER | \
+ 			     IRQF_IRQPOLL  | IRQF_NOBALANCING;
+ 
+ 	/* get hold of clock */
+diff --git a/drivers/clocksource/sh_tmu.c b/drivers/clocksource/sh_tmu.c
+index 079e96a..306d212 100644
+--- a/drivers/clocksource/sh_tmu.c
++++ b/drivers/clocksource/sh_tmu.c
+@@ -385,7 +385,7 @@ static int sh_tmu_setup(struct sh_tmu_priv *p, struct platform_device *pdev)
+ 	p->irqaction.handler = sh_tmu_interrupt;
+ 	p->irqaction.dev_id = p;
+ 	p->irqaction.irq = irq;
+-	p->irqaction.flags = IRQF_DISABLED | IRQF_TIMER | \
++	p->irqaction.flags = IRQF_TIMER | \
+ 			     IRQF_IRQPOLL  | IRQF_NOBALANCING;
+ 
+ 	/* get hold of clock */
+diff --git a/drivers/clocksource/tcb_clksrc.c b/drivers/clocksource/tcb_clksrc.c
+index 79c47e8..1963b93 100644
+--- a/drivers/clocksource/tcb_clksrc.c
++++ b/drivers/clocksource/tcb_clksrc.c
+@@ -175,7 +175,7 @@ static irqreturn_t ch2_irq(int irq, void *handle)
+ 
+ static struct irqaction tc_irqaction = {
+ 	.name		= "tc_clkevt",
+-	.flags		= IRQF_TIMER | IRQF_DISABLED,
++	.flags		= IRQF_TIMER,
+ 	.handler	= ch2_irq,
  };
  
 -- 
