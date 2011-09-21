@@ -1,138 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752052Ab1IUFfv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 01:35:51 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:49785 "EHLO comal.ext.ti.com"
+	id S1752084Ab1IUFge (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 01:36:34 -0400
+Received: from mga14.intel.com ([143.182.124.37]:29492 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751331Ab1IUFft convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 01:35:49 -0400
-From: "Ravi, Deepthy" <deepthy.ravi@ti.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-CC: "mchehab@infradead.org" <mchehab@infradead.org>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "Hiremath, Vaibhav" <hvaibhav@ti.com>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-        "hverkuil@xs4all.nl" <hverkuil@xs4all.nl>,
-        "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
-        "g.liakhovetski@gmx.de" <g.liakhovetski@gmx.de>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        "khilman@deeprootsystems.com" <khilman@deeprootsystems.com>,
-        "david.woodhouse@intel.com" <david.woodhouse@intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Sakari Ailus <sakari.ailus@maxwell.research.nokia.com>
-Date: Wed, 21 Sep 2011 11:02:44 +0530
-Subject: RE: [PATCH 4/5] ispccdc: Configure CCDC_SYN_MODE register for
- UYVY8_2X8 and YUYV8_2X8 formats
-Thread-Topic: [PATCH 4/5] ispccdc: Configure CCDC_SYN_MODE register for
- UYVY8_2X8 and YUYV8_2X8 formats
-Thread-Index: Acx37LPnqqxEaRARShCWrSg14GirGgAMy+ya
-Message-ID: <ADF30F4D7BDE934D9B632CE7D5C7ACA4047C4D090847@dbde03.ent.ti.com>
-References: <1316530612-23075-1-git-send-email-deepthy.ravi@ti.com>
- <1316530612-23075-5-git-send-email-deepthy.ravi@ti.com>,<201109210126.20436.laurent.pinchart@ideasonboard.com>
-In-Reply-To: <201109210126.20436.laurent.pinchart@ideasonboard.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751390Ab1IUFgd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 01:36:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,414,1312182000"; 
+   d="scan'208";a="51208066"
+Message-ID: <4E7977DE.10009@intel.com>
+Date: Wed, 21 Sep 2011 13:36:30 +0800
+From: Huang Ying <ying.huang@intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Iceowl/1.0b2 Icedove/3.1.13
 MIME-Version: 1.0
+To: Don Zickus <dzickus@redhat.com>
+CC: "x86@kernel.org" <x86@kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "avi@redhat.com" <avi@redhat.com>, "jeremy@goop.org" <jeremy@goop.org>
+Subject: Re: [V5][PATCH 2/6] x86, nmi: create new NMI handler routines
+References: <1316529792-6560-1-git-send-email-dzickus@redhat.com> <1316529792-6560-3-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1316529792-6560-3-git-send-email-dzickus@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laurent,
-> ________________________________________
-> From: Laurent Pinchart [laurent.pinchart@ideasonboard.com]
-> Sent: Wednesday, September 21, 2011 4:56 AM
-> To: Ravi, Deepthy
-> Cc: mchehab@infradead.org; tony@atomide.com; Hiremath, Vaibhav;
-> linux-media@vger.kernel.org; linux@arm.linux.org.uk;
-> linux-arm-kernel@lists.infradead.org; kyungmin.park@samsung.com;
-> hverkuil@xs4all.nl; m.szyprowski@samsung.com; g.liakhovetski@gmx.de;
-> Shilimkar, Santosh; khilman@deeprootsystems.com; david.woodhouse@intel.com;
-> akpm@linux-foundation.org; linux-kernel@vger.kernel.org;
-> linux-omap@vger.kernel.org; Sakari Ailus
-> Subject: Re: [PATCH 4/5] ispccdc: Configure CCDC_SYN_MODE register for
-> UYVY8_2X8 and YUYV8_2X8 formats
->
-> Hi Deepthy,
->
-> Thanks for the patch.
->
-> On Tuesday 20 September 2011 16:56:51 Deepthy Ravi wrote:
->> Configure INPMOD and PACK8 fileds of CCDC_SYN_MODE
->> register for UYVY8_2X8 and YUYV8_2X8 formats.
->>
->> Signed-off-by: Deepthy Ravi <deepthy.ravi@ti.com>
->> ---
->>  drivers/media/video/omap3isp/ispccdc.c |   11 ++++++++---
->>  1 files changed, 8 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/media/video/omap3isp/ispccdc.c
->> b/drivers/media/video/omap3isp/ispccdc.c index 418ba65..1dcf180 100644
->> --- a/drivers/media/video/omap3isp/ispccdc.c
->> +++ b/drivers/media/video/omap3isp/ispccdc.c
->> @@ -985,8 +985,12 @@ static void ccdc_config_sync_if(struct
->> isp_ccdc_device
->> *ccdc,
->>
->>       syn_mode &= ~ISPCCDC_SYN_MODE_INPMOD_MASK;
->>       if (format->code == V4L2_MBUS_FMT_YUYV8_2X8 ||
->> -         format->code == V4L2_MBUS_FMT_UYVY8_2X8)
->> -             syn_mode |= ISPCCDC_SYN_MODE_INPMOD_YCBCR8;
->> +         format->code == V4L2_MBUS_FMT_UYVY8_2X8){
->> +             if (pdata && pdata->bt656)
->> +                     syn_mode |= ISPCCDC_SYN_MODE_INPMOD_YCBCR8;
->> +             else
->> +                     syn_mode |= ISPCCDC_SYN_MODE_INPMOD_YCBCR16;
->> +     }
->>       else if (format->code == V4L2_MBUS_FMT_YUYV8_1X16 ||
->>                format->code == V4L2_MBUS_FMT_UYVY8_1X16)
->>               syn_mode |= ISPCCDC_SYN_MODE_INPMOD_YCBCR16;
->> @@ -1172,7 +1176,8 @@ static void ccdc_configure(struct isp_ccdc_device
->> *ccdc) syn_mode &= ~ISPCCDC_SYN_MODE_SDR2RSZ;
->>
->>       /* Use PACK8 mode for 1byte per pixel formats. */
->> -     if (omap3isp_video_format_info(format->code)->width <= 8)
->> +     if ((omap3isp_video_format_info(format->code)->width <= 8) &&
->> +                     (omap3isp_video_format_info(format->code)->bpp <=
->> 8))
->
-> I'm not sure to follow you. This will clear the PACK8 bit for the YUYV8_2X8
-> formats. Those formats are 8 bits wide, shouldn't PACK8 be set to store
-> samples on 8 bits instead of 16 bits ?
->
-> Is this patch intended to support YUYV8_2X8 sensors in non BT.656 mode with
-> the bridge enabled ? In that case, what would you think about setting the
-> CCDC
-> input format to YUYV8_1X16 instead ? This would better reflect the reality,
-> as
-> the bridge converts YUYV8_2X8 to YUYV8_1X16, and the CCDC is then fed with
-> YUYV8_1X16.
->
-[Deepthy Ravi] Yes this is intended for  YUYV8_2X8 sensors in non BT.656 with 8 to 16 bit bridge enabled. So the data has to be stored as 16 bits per sample. Thats why PACK8 is cleared . I am not sure about using YUYV8_1X16. 
+On 09/20/2011 10:43 PM, Don Zickus wrote:
+> The NMI handlers used to rely on the notifier infrastructure.  This worked
+> great until we wanted to support handling multiple events better.
+> 
+> One of the key ideas to the nmi handling is to process _all_ the handlers for
+> each NMI.  The reason behind this switch is because NMIs are edge triggered.
+> If enough NMIs are triggered, then they could be lost because the cpu can
+> only latch at most one NMI (besides the one currently being processed).
+> 
+> In order to deal with this we have decided to process all the NMI handlers
+> for each NMI.  This allows the handlers to determine if they recieved an
+> event or not (the ones that can not determine this will be left to fend
+> for themselves on the unknown NMI list).
+> 
+> As a result of this change it is now possible to have an extra NMI that
+> was destined to be received for an already processed event.  Because the
+> event was processed in the previous NMI, this NMI gets dropped and becomes
+> an 'unknown' NMI.  This of course will cause printks that scare people.
+> 
+> However, we prefer to have extra NMIs as opposed to losing NMIs and as such
+> are have developed a basic mechanism to catch most of them.  That will be
+> a later patch.
+> 
+> To accomplish this idea, I unhooked the nmi handlers from the notifier
+> routines and created a new mechanism loosely based on doIRQ.  The reason
+> for this is the notifier routines have a couple of shortcomings.  One we
+> could't guarantee all future NMI handlers used NOTIFY_OK instead of
+> NOTIFY_STOP.  Second, we couldn't keep track of the number of events being
+> handled in each routine (most only handle one, perf can handle more than one).
+> Third, I wanted to eventually display which nmi handlers are registered in
+> the system in /proc/interrupts to help see who is generating NMIs.
+> 
+> The patch below just implements the new infrastructure but doesn't wire it up
+> yet (that is the next patch).  Its design is based on doIRQ structs and the
+> atomic notifier routines.  So the rcu stuff in the patch isn't entirely untested
+> (as the notifier routines have soaked it) but it should be double checked in
+> case I copied the code wrong.
+> 
+> V2:
+>   - use kstrdup to copy/allocate device name
+>   - fix-up _GPL oops
+> 
+> V3:
+>   - fix leak in register_nmi_handler error path
+>   - removed _raw annotations from rcu_dereference
+> 
+> V4:
+>   - handle kstrndup failure
+> 
+> Signed-off-by: Don Zickus <dzickus@redhat.com>
+> ---
+>  arch/x86/include/asm/nmi.h |   19 +++++
+>  arch/x86/kernel/nmi.c      |  157 ++++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 176 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/nmi.h b/arch/x86/include/asm/nmi.h
+> index 4886a68..6d04b28 100644
+> --- a/arch/x86/include/asm/nmi.h
+> +++ b/arch/x86/include/asm/nmi.h
+> @@ -42,6 +42,25 @@ void arch_trigger_all_cpu_backtrace(void);
+>  #define NMI_LOCAL_NORMAL_PRIOR	(NMI_LOCAL_BIT | NMI_NORMAL_PRIOR)
+>  #define NMI_LOCAL_LOW_PRIOR	(NMI_LOCAL_BIT | NMI_LOW_PRIOR)
+>  
+> +#define NMI_FLAG_FIRST	1
+> +
+> +enum {
+> +	NMI_LOCAL=0,
+> +	NMI_UNKNOWN,
+> +	NMI_EXTERNAL,
+> +	NMI_MAX
+> +};
+> +
+> +#define NMI_DONE	0
+> +#define NMI_HANDLED	1
+> +
+> +typedef int (*nmi_handler_t)(unsigned int, struct pt_regs *);
+> +
+> +int register_nmi_handler(unsigned int, nmi_handler_t, unsigned long,
+> +			 const char *);
+> +
+> +void unregister_nmi_handler(unsigned int, const char *);
+> +
+>  void stop_nmi(void);
+>  void restart_nmi(void);
+>  
+> diff --git a/arch/x86/kernel/nmi.c b/arch/x86/kernel/nmi.c
+> index 68d758a..c2df58a 100644
+> --- a/arch/x86/kernel/nmi.c
+> +++ b/arch/x86/kernel/nmi.c
+> @@ -13,6 +13,9 @@
+>  #include <linux/kprobes.h>
+>  #include <linux/kdebug.h>
+>  #include <linux/nmi.h>
+> +#include <linux/delay.h>
+> +#include <linux/hardirq.h>
+> +#include <linux/slab.h>
+>  
+>  #if defined(CONFIG_EDAC)
+>  #include <linux/edac.h>
+> @@ -21,6 +24,28 @@
+>  #include <linux/atomic.h>
+>  #include <asm/traps.h>
+>  #include <asm/mach_traps.h>
+> +#include <asm/nmi.h>
+> +
+> +#define NMI_MAX_NAMELEN	16
+> +struct nmiaction {
+> +	struct nmiaction __rcu *next;
 
->>               syn_mode |= ISPCCDC_SYN_MODE_PACK8;
->>       else
->>               syn_mode &= ~ISPCCDC_SYN_MODE_PACK8;
->
-> --
-> Regards,
->
-> Laurent Pinchart
->
+Why not just use struct list_head here and use list_xxx_rcu family to
+operate on the list?  IMHO, that will make code simpler without much
+overhead.
 
-
--- 
-Thanks,
-Deepthy Ravi
-
+Best Regards,
+Huang Ying
