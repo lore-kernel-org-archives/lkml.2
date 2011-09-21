@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752180Ab1IUGRG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 02:17:06 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:33913 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751331Ab1IUGRE (ORCPT
+	id S1752331Ab1IUGUc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 02:20:32 -0400
+Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:38085 "EHLO
+	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751863Ab1IUGUb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 02:17:04 -0400
-Date: Wed, 21 Sep 2011 02:15:51 -0400 (EDT)
-Message-Id: <20110921.021551.1015460502805882165.davem@davemloft.net>
-To: kernel@kasperkp.dk
-Cc: mcarlson@broadcom.com, mchan@broadcom.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] tg3: fix VLAN tagging regression
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4E79168D.4080201@kasperkp.dk>
-References: <4E78FC38.7040903@kasperkp.dk>
-	<4E79168D.4080201@kasperkp.dk>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+	Wed, 21 Sep 2011 02:20:31 -0400
+Subject: Re: linux-next: manual merge of the omap_dss2 tree with the arm
+ tree
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Russell King <rmk@arm.linux.org.uk>
+In-Reply-To: <20110921130222.58e566a354feef69f3064d04@canb.auug.org.au>
+References: <20110921130222.58e566a354feef69f3064d04@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 21 Sep 2011 09:13:30 +0300
+Message-ID: <1316585610.1949.8.camel@deskari>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 20 Sep 2011 23:16:00 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kasper Pedersen <kernel@kasperkp.dk>
-Date: Wed, 21 Sep 2011 00:41:17 +0200
+On Wed, 2011-09-21 at 13:02 +1000, Stephen Rothwell wrote:
+> Hi Tomi,
+> 
+> Today's linux-next merge of the omap_dss2 tree got a conflict in
+> drivers/video/omap/lcd_apollon.c drivers/video/omap/lcd_ldp.c
+> drivers/video/omap/lcd_overo.c between commit 1bc857f700fb ("ARM: gpio:
+> omap: convert drivers to use asm/gpio.h rather than mach/gpio.h") from
+> the arm tree and commits db3136b14a2b ("OMAPFB: Remove unused lcd
+> drivers") and 0cde58449424 ("OMAPDSS: Port the Apollon display driver to
+> DSS2") from the omap_dss2 tree.
+> 
+> The latter two commist removed these files, so I did that.
 
-> commit 92cd3a17ce9c719abb4c28dee3438e0c641f8de4
->     tg3: Simplify tx bd assignments
-> 
-> broke VLAN tagging on outbound packets.
-> It ifdef'ed BCM_KERNEL_SUPPORTS_8021Q, but this
-> is not set anywhere. So vlan never gets set, and
-> all packets are sent with vlan=0.
-> 
-> v2: We can just remove the test. vlan_tx_tag_present
-> is valid regardless of whether the 802.1q module
-> is built.
-> 
-> Tested on BCM5721 rev 11.
-> 
-> Signed-off-by: Kasper Pedersen <kernel@kasperkp.dk>
+Thanks, this is also correct.
 
-Applied.
+ Tomi
+
+
