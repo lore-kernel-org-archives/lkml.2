@@ -1,59 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751032Ab1IUU4A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 16:56:00 -0400
-Received: from jcz.nl ([213.196.18.5]:52183 "EHLO jcz.nl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750971Ab1IUUz7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 16:55:59 -0400
-X-Greylist: delayed 441 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Sep 2011 16:55:59 EDT
-From: Jaap Crezee <jaap@jcz.nl>
-To: gregkh@suse.de
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        Jaap Crezee <jaap@jcz.nl>
-Subject: [PATCH] Staging: intel_sst: instel_sst: fixed some coding style issues.
-Date: Wed, 21 Sep 2011 22:48:44 +0200
-Message-Id: <1316638124-6226-1-git-send-email-jaap@jcz.nl>
-X-Mailer: git-send-email 1.7.6.3
+	id S1751133Ab1IUU4S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 16:56:18 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:48355 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751091Ab1IUU4O convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 16:56:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAC7LmnuOieBzq=833UOjbdPfdjQaHWou_keu0_coZ-KCFJ2kaw@mail.gmail.com>
+References: <yun8vppw9lu.fsf@aiko.keithp.com>
+	<CAC7LmnuOieBzq=833UOjbdPfdjQaHWou_keu0_coZ-KCFJ2kaw@mail.gmail.com>
+Date: Wed, 21 Sep 2011 16:56:12 -0400
+Message-ID: <CAOJpy9v=7GZgmEQesL5za9_xhrbgHwNJhhg9cTxVVWWA4fEV2w@mail.gmail.com>
+Subject: Re: Whitespace cleanups in drm/i915
+From: Akshay Joshi <me@akshayjoshi.com>
+To: Eugeni Dodonov <eugeni@dodonov.net>
+Cc: Keith Packard <keithp@keithp.com>, airlied@gmail.com,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed a coding style issue.
+On Sat, Sep 17, 2011 at 4:17 PM, Eugeni Dodonov <eugeni@dodonov.net> wrote:
+> On Thu, Sep 15, 2011 at 22:37, Keith Packard <keithp@keithp.com> wrote:
+>>
+>> I've got this nice patch from Akshay Joshi that removes almost all of
+>> the checkpatch.pl warnings from drm/i915. If I don't merge it now, it's
+>> going to go stale and be useless; if I merge it only to drm-intel-next,
+>> it will be the source of endless conflicts.
+>>
+>> However, it's a huge patch (yes, the code was rather sloppy), and
+>> doesn't exactly fit into the "critical patches only please" mode of the
+>> current stage of 3.1 development.
+>>
+>> I've checked the patch very carefully, using the obvious git diff -b to
+>> make sure it really doesn't touch anything but whitespace, but also
+>> using objdump -s to compare the output of the compiler. There were no
+>> differences found with git-diff -b. The only differences found by
+>> objdump are two whitespace changes in some debug output messages in
+>> intel_bios.c.
+>>
+>> I think I have three choices:
+>>
+>>  1) merge the patch and expect complaints from upstream
+>>
+>>  2) thank Akshay for his good intentions, discard the patch and hope
+>>    that he feels motivated enough to do it all over again in time for
+>>    the 3.2 merge window.
+>>
+>>  3) thank Akshay for his good intentions and leave the code as-is,
+>>    forever to ease back-porting of fixes to older kernel versions.
+>>
+>> Frankly, if we're ever going to merge whitespace fixups, this would be a
+>> pretty darn good time; drm-intel-fixes and drm-intel-next are in-sync as
+>> I haven't started pulling 3.2 code into -next.
+>
+> I think that if we don´t get to push this patch now, we are unlikely to do
+> it in nearby future. And such kind of cleanup is a nice thing to have.
+> So I´d vote for option 1, and then 3, in this order.
+> --
+> Eugeni Dodonov
+>
+>
 
-Signed-off-by: Jaap Crezee <jaap@jcz.nl>
----
- drivers/staging/intel_sst/intel_sst.c |   10 ++++++----
- 1 files changed, 6 insertions(+), 4 deletions(-)
+Have we reached a consensus on this? Just curious.
 
-diff --git a/drivers/staging/intel_sst/intel_sst.c b/drivers/staging/intel_sst/intel_sst.c
-index d892861..c303d85 100644
---- a/drivers/staging/intel_sst/intel_sst.c
-+++ b/drivers/staging/intel_sst/intel_sst.c
-@@ -321,7 +321,7 @@ static int __devinit intel_sst_probe(struct pci_dev *pci,
- 		if (ret) {
- 			pr_err("couldn't register LPE device\n");
- 			goto do_free_misc;
-- 		}
-+		}
- 	} else if (sst_drv_ctx->pci_id == SST_MFLD_PCI_ID) {
- 		u32 csr;
- 
-@@ -524,9 +524,11 @@ int intel_sst_resume(struct pci_dev *pci)
- 	return 0;
- }
- 
--/* The runtime_suspend/resume is pretty much similar to the legacy suspend/resume with the noted exception below:
-- * The PCI core takes care of taking the system through D3hot and restoring it back to D0 and so there is
-- * no need to duplicate that here.
-+/* The runtime_suspend/resume is pretty much similar to the legacy
-+ * suspend/resume with the noted exception below:
-+ * The PCI core takes care of taking the system through D3hot and
-+ * restoring it back to D0 and so there is no need to duplicate
-+ * that here.
-  */
- static int intel_sst_runtime_suspend(struct device *dev)
- {
--- 
-1.7.6.3
-
+Akshay
