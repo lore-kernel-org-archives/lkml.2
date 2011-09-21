@@ -1,123 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753822Ab1IUSFi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 14:05:38 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:2670 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753771Ab1IUSFg (ORCPT
+	id S1753755Ab1IUSHS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 14:07:18 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:44884 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751370Ab1IUSHQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 14:05:36 -0400
-From: Vincent Palatin <vpalatin@chromium.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, Alan Stern <stern@rowland.harvard.edu>,
-        Linux PCI <linux-pci@vger.kernel.org>
-Cc: Olof Johansson <olofj@chromium.org>, Sameer Nanda <snanda@chromium.org>,
-        Ming Lei <tom.leiming@gmail.com>, linux-kernel@vger.kernel.org,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [PATCH] PM / Runtime: make PCI traces quieter
-Date: Wed, 21 Sep 2011 11:05:08 -0700
-Message-Id: <1316628308-32580-1-git-send-email-vpalatin@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <CAP_ceTyXLO=mv1Ott=g3mG0y+Q+VUM3N8CA-Fqa-_=uj7LTbmw@mail.gmail.com>
-References: <CAP_ceTyXLO=mv1Ott=g3mG0y+Q+VUM3N8CA-Fqa-_=uj7LTbmw@mail.gmail.com>
-X-System-Of-Record: true
+	Wed, 21 Sep 2011 14:07:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <1316584875.1949.4.camel@deskari>
+References: <1316088425.11294.78.camel@lappyti>
+	<yunboul7sx7.fsf@aiko.keithp.com>
+	<1316100594.23214.65.camel@deskari>
+	<yun8vpp7qk7.fsf@aiko.keithp.com>
+	<1316107275.23214.99.camel@deskari>
+	<yunfwjxwbjq.fsf@aiko.keithp.com>
+	<20110916175326.54567b14@lxorguk.ukuu.org.uk>
+	<1316414014.1978.12.camel@deskari>
+	<yunfwjtauqg.fsf@aiko.keithp.com>
+	<1316417361.1978.48.camel@deskari>
+	<CAMeQTsbP-_ut7BA3YQ+qgtqfM1tzM4qn3jxHT8B8_0hdPbP3Jg@mail.gmail.com>
+	<yunpqivfbtf.fsf@aiko.keithp.com>
+	<CAMeQTsazfb6xoA6mm8OMVhkx_RDaxogqEa8yDstqmKUP5Ub+yg@mail.gmail.com>
+	<1316584875.1949.4.camel@deskari>
+Date: Wed, 21 Sep 2011 20:07:15 +0200
+Message-ID: <CAMeQTsbCXEb01C4X3nKdNyE5FJuQojaMKbcY1dSk5y3kKwkiXg@mail.gmail.com>
+Subject: Re: Proposal for a low-level Linux display framework
+From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Keith Packard <keithp@keithp.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linaro-dev@lists.linaro.org,
+        "Clark, Rob" <rob@ti.com>, Archit Taneja <archit@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the runtime PM is activated on PCI, if a device switches state frequently
-(e.g. an EHCI controller with autosuspending USB devices connected)
-the PCI configuration traces might be very verbose in the kernel log.
-Let's guard those traces with DEBUG condition.
+On Wed, Sep 21, 2011 at 8:01 AM, Tomi Valkeinen wrote:
+> I don't know what MCS is.
 
-Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
----
- arch/x86/pci/i386.c     |    2 +-
- drivers/acpi/pci_irq.c  |   10 +++++-----
- drivers/pci/pci.c       |    5 ++---
- drivers/pci/setup-res.c |    6 +++---
- 4 files changed, 11 insertions(+), 12 deletions(-)
+MCS is manufacturer specific commands (Manufacturer Command Set).
 
-diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
-index 494f2e7..eb5d20b 100644
---- a/arch/x86/pci/i386.c
-+++ b/arch/x86/pci/i386.c
-@@ -269,7 +269,7 @@ void pcibios_set_master(struct pci_dev *dev)
- 		lat = pcibios_max_latency;
- 	else
- 		return;
--	dev_printk(KERN_DEBUG, &dev->dev, "setting latency timer to %d\n", lat);
-+	dev_dbg(&dev->dev, "setting latency timer to %d\n", lat);
- 	pci_write_config_byte(dev, PCI_LATENCY_TIMER, lat);
- }
- 
-diff --git a/drivers/acpi/pci_irq.c b/drivers/acpi/pci_irq.c
-index 7f9eba9..0eefa12 100644
---- a/drivers/acpi/pci_irq.c
-+++ b/drivers/acpi/pci_irq.c
-@@ -487,10 +487,10 @@ int acpi_pci_irq_enable(struct pci_dev *dev)
- 	else
- 		link_desc[0] = '\0';
- 
--	dev_info(&dev->dev, "PCI INT %c%s -> GSI %u (%s, %s) -> IRQ %d\n",
--		 pin_name(pin), link_desc, gsi,
--		 (triggering == ACPI_LEVEL_SENSITIVE) ? "level" : "edge",
--		 (polarity == ACPI_ACTIVE_LOW) ? "low" : "high", dev->irq);
-+	dev_dbg(&dev->dev, "PCI INT %c%s -> GSI %u (%s, %s) -> IRQ %d\n",
-+		pin_name(pin), link_desc, gsi,
-+		(triggering == ACPI_LEVEL_SENSITIVE) ? "level" : "edge",
-+		(polarity == ACPI_ACTIVE_LOW) ? "low" : "high", dev->irq);
- 
- 	return 0;
- }
-@@ -524,6 +524,6 @@ void acpi_pci_irq_disable(struct pci_dev *dev)
- 	 * (e.g. PCI_UNDEFINED_IRQ).
- 	 */
- 
--	dev_info(&dev->dev, "PCI INT %c disabled\n", pin_name(pin));
-+	dev_dbg(&dev->dev, "PCI INT %c disabled\n", pin_name(pin));
- 	acpi_unregister_gsi(gsi);
- }
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index 0ce6742..d339c30 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -964,7 +964,7 @@ void pci_restore_state(struct pci_dev *dev)
- 	for (i = 15; i >= 0; i--) {
- 		pci_read_config_dword(dev, i * 4, &val);
- 		if (val != dev->saved_config_space[i]) {
--			dev_printk(KERN_DEBUG, &dev->dev, "restoring config "
-+			dev_dbg(&dev->dev, "restoring config "
- 				"space at offset %#x (was %#x, writing %#x)\n",
- 				i, val, (int)dev->saved_config_space[i]);
- 			pci_write_config_dword(dev,i * 4,
-@@ -1531,8 +1531,7 @@ void pci_pme_active(struct pci_dev *dev, bool enable)
- 	}
- 
- out:
--	dev_printk(KERN_DEBUG, &dev->dev, "PME# %s\n",
--			enable ? "enabled" : "disabled");
-+	dev_dbg(&dev->dev, "PME# %s\n", enable ? "enabled" : "disabled");
- }
- 
- /**
-diff --git a/drivers/pci/setup-res.c b/drivers/pci/setup-res.c
-index 51a9095..3878fe9 100644
---- a/drivers/pci/setup-res.c
-+++ b/drivers/pci/setup-res.c
-@@ -84,9 +84,9 @@ void pci_update_resource(struct pci_dev *dev, int resno)
- 		}
- 	}
- 	res->flags &= ~IORESOURCE_UNSET;
--	dev_info(&dev->dev, "BAR %d: set to %pR (PCI address [%#llx-%#llx])\n",
--		 resno, res, (unsigned long long)region.start,
--		 (unsigned long long)region.end);
-+	dev_dbg(&dev->dev, "BAR %d: set to %pR (PCI address [%#llx-%#llx])\n",
-+		resno, res, (unsigned long long)region.start,
-+		(unsigned long long)region.end);
- }
- 
- int pci_claim_resource(struct pci_dev *dev, int resource)
--- 
-1.7.3.1
+> But DSI is just a bi-directional transfer
+> protocol between the SoC and the peripheral, you can send arbitrary data
+> over it.
+>
+> Normally the SoC composes a pixel stream using overlays and whatnot,
+> which goes to the DSI hardware, which then serializes the data and sends
+> it to the peripheral.
+>
+> But you can as well send any data, like commands, and the peripheral can
+> respond with any relevant data.
 
+Ok it makes sense now, and I see how it can get more complicated than SDVO.
+A DSI lib is a good idea and interfaces for stuff like backlight and mechanisms
+for queuing commands that need to go in during blanking.
+
+Thanks for clearing it up
+-Patrik
