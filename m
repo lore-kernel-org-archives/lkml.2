@@ -1,126 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753313Ab1IURGQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 13:06:16 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:57521 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752582Ab1IURGO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 13:06:14 -0400
-Date: Wed, 21 Sep 2011 21:05:27 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Alan Cox <alan@linux.intel.com>
-Cc: Valdis.Kletnieks@vt.edu, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        kernel-hardening@lists.openwall.com, Kees Cook <kees@ubuntu.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Dan Rosenberg <drosenberg@vsecurity.com>,
-        Theodore Tso <tytso@mit.edu>, Jesper Juhl <jj@chaosbits.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg KH <gregkh@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [kernel-hardening] Re: [RFC PATCH 2/2] mm: restrict access to
- /proc/slabinfo
-Message-ID: <20110921170527.GA15869@albatros>
-References: <20110910164001.GA2342@albatros>
- <20110910164134.GA2442@albatros>
- <20110914192744.GC4529@outflux.net>
- <20110918170512.GA2351@albatros>
- <CAOJsxLF8DBEC9o9pSwa6c6pMg8ByFBdsDnzg22P3ucQcP98uzA@mail.gmail.com>
- <20110919144657.GA5928@albatros>
- <14082.1316461507@turing-police.cc.vt.edu>
- <20110919205541.1c44f1a3@bob.linux.org.uk>
+	id S1753330Ab1IURLP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 13:11:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44801 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752194Ab1IURLO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 13:11:14 -0400
+Date: Wed, 21 Sep 2011 13:10:21 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Robert Richter <robert.richter@amd.com>, "x86@kernel.org" <x86@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "ying.huang@intel.com" <ying.huang@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "jeremy@goop.org" <jeremy@goop.org>
+Subject: Re: [V5][PATCH 4/6] x86, nmi:  add in logic to handle multiple
+ events and unknown NMIs
+Message-ID: <20110921171021.GV5795@redhat.com>
+References: <1316529792-6560-1-git-send-email-dzickus@redhat.com>
+ <1316529792-6560-5-git-send-email-dzickus@redhat.com>
+ <20110921100842.GA6063@erda.amd.com>
+ <20110921140432.GP5795@redhat.com>
+ <20110921151829.GC6063@erda.amd.com>
+ <20110921161352.GU5795@redhat.com>
+ <4E7A0FD6.3080508@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110919205541.1c44f1a3@bob.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4E7A0FD6.3080508@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(I have to increase the CC list by CC'ing Greg and perf guys.  The
-motivation for restricting slabinfo is here:
+On Wed, Sep 21, 2011 at 07:24:54PM +0300, Avi Kivity wrote:
+> >>  But in rare cases there is the following:
+> >>
+> >>  1. The cpu executes some microcode or SMM code.
+> >>  2. HW triggers the first NMI, an NMI is pending.
+> >>  3. HW triggers a second NMI, the NMI is still pending.
+> >>  4. The cpu finished microcode or SMM code.
+> >>  5. NMI handler is called, no NMI pending anymore.
+> >>  6. Return from NMI handler.
+> >>
+> >>  In this case the handler is called only once and the second nmi
+> >>  remains unhandled with you implementation.
+> >>
+> >>  I don't see a way how this could be catched without serving all
+> >>  handlers the first time. But as said, in favor of the optimization I
+> >>  think we can live with losing some NMIs.
+> >
+> >Ah, I get it know.  Crap.  Well I think Avi was pushing it to make those
+> >ticket_spin_locks work in virt land.  It seems like we should lean towards
+> >removing the optimization.  Avi?
+> >
+> 
+> Well, in virt land there are no SMIs, and we can guarantee that the
+> queue length is always two.  So if these rare cases are okay for
+> upstream, it'll be fine for virt.
 
-http://www.openwall.com/lists/kernel-hardening/2011/09/10/4)
+Actually I was trying to remember what the argument for the optimization
+was again?  I believe the virt team needed it right?
 
-> Anybody who thinks that debugging tools should be totally disabled on
-> "production" systems probably hasn't spent enough time actually
-> running production systems.
-
-On Mon, Sep 19, 2011 at 20:55 +0100, Alan Cox wrote:
-> Agreed - far better it is simply set root only.
-
-Sorry, I've poorly worded my statement.  Of course I mean root-only
-slabinfo, not totally disable it.
-
-
-So, where are we now?
-
-Linus, Alan, Kees, and Dave are about to simply restrict slabinfo (and
-probably similar interfaces) to root.  Pekka is OK too.
-
-Christoph and Valdis are about to create new CONFIG_ option to be able
-to restrict the access to slabinfo/etc., but with old relaxed
-permissions.
-
-
-IMO having a compatibility with the old tools using slabinfo/meminfo as
-non-root for good things is great, but probably a seamless upgrade
-doesn't worth it in this case.  Instead, we can provide a transition
-instructions to continue to use non-root monitoring tools:
-
-    groupadd meminfo
-    usermod -a -G meminfo $MONITOR_USER
-
-And add these lines to the init scripts between mount /proc and running
-monitoring daemon, for Ubuntu's upstart it should fit in mountall.conf:
-
-    chmod g+r /proc/slabinfo /proc/meminfo
-    chgrp meminfo /proc/slabinfo /proc/meminfo
-
-Then the daemon may watch for memleaks again.  It requires some actions
-from the sysadmin, but no changes to the daemons and it helps to keep
-sane kernel defaults.
-
-Are we OK with this solution?
-
-
-Now about other sources of infoleaks.  Pekka has noticed that the same
-information about slabs is accessible from sysfs and 'perf kmem':
-
-http://www.openwall.com/lists/kernel-hardening/2011/09/19/23
-
-For sysfs the solution is relatively simple - the same __ATTR(..., 0600,
-...) for SLAB_ATTR() (all __ATTR* in mm/*.c?) with the same chmod in
-init scripts.
-
-
-For the perf the situation differs.  AFAICS (please correct me if I'm
-wrong) all performance events are recorded and passed to userspace
-without any security checks.  IOW, every event happened in the current
-process' context is signalled to the current task if requested.  It
-contains k*alloc/kfree, which are the subject of this thread, and
-probably much more infoleaks which simply nobody cared about yet.
-Probably it's time to develop some rules to identify what events are
-safe to signal to user and what are dangerous/private to the
-system/other users (probably, potentially)?  I'm not very familiar with
-perf events and there might be already such mechanisms, but they're just
-not used for memory things, so this is a question to the perf guys.
-
-
-Other sources of similar infoleaks are fs-specific and IMO we should fix
-them after these more "generic" infoleaks (slabinfo, meminfo, sysfs,
-perf).
-
-
-Thanks,
-
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
-
+Cheers,
+Don
