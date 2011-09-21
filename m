@@ -1,120 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752410Ab1IUPTm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 11:19:42 -0400
-Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:5282
-	"EHLO AM1EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751888Ab1IUPTk (ORCPT
+	id S1750927Ab1IUPVS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 11:21:18 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:60747 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750713Ab1IUPVS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 11:19:40 -0400
-X-SpamScore: -8
-X-BigFish: VPS-8(zz1432N98dKzz1202hzzz32i668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-FB-SS: 0,
-X-WSS-ID: 0LRVP7K-01-7ZI-02
-X-M-MSG: 
-Date: Wed, 21 Sep 2011 17:18:30 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Don Zickus <dzickus@redhat.com>
-CC: "x86@kernel.org" <x86@kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "ying.huang@intel.com" <ying.huang@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "avi@redhat.com" <avi@redhat.com>, "jeremy@goop.org" <jeremy@goop.org>
-Subject: Re: [V5][PATCH 4/6] x86, nmi:  add in logic to handle multiple
- events and unknown NMIs
-Message-ID: <20110921151829.GC6063@erda.amd.com>
-References: <1316529792-6560-1-git-send-email-dzickus@redhat.com>
- <1316529792-6560-5-git-send-email-dzickus@redhat.com>
- <20110921100842.GA6063@erda.amd.com>
- <20110921140432.GP5795@redhat.com>
+	Wed, 21 Sep 2011 11:21:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20110921140432.GP5795@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+In-Reply-To: <20110921101857.GA29782@flint.arm.linux.org.uk>
+References: <1316072789-12830-1-git-send-email-jaswinder.singh@linaro.org>
+	<1316520730-3655-1-git-send-email-jaswinder.singh@linaro.org>
+	<1316537529.31295.14.camel@vkoul-udesk3>
+	<CAJe_ZhdB6y--3XuTp7hzrBjkBTUfp5Anta2Z8SMaqbc=z6jMGA@mail.gmail.com>
+	<1316586723.1573.4.camel@vkoul-udesk3>
+	<CAJe_Zhc67VR-+YAYaLhbwOF=eo2s7wOkjwvi+kJ5=bGt-YWmqA@mail.gmail.com>
+	<1316587903.1573.8.camel@vkoul-udesk3>
+	<CAJe_ZheO7e0Ft364io86aqnShK11XMTj+iC5eeU_zVCY0fJghw@mail.gmail.com>
+	<20110921101857.GA29782@flint.arm.linux.org.uk>
+Date: Wed, 21 Sep 2011 20:51:16 +0530
+Message-ID: <CAJe_ZheQFk2mHENVXm+BL8FS72V=br8=xMbc-DPMpxj0dsWD=A@mail.gmail.com>
+Subject: Re: [PATCHv3] DMAEngine: Define interleaved transfer request api
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: Russell King <rmk@arm.linux.org.uk>
+Cc: Vinod Koul <vinod.koul@intel.com>, dan.j.williams@intel.com,
+        linux-kernel@vger.kernel.org, 21cnbao@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21.09.11 10:04:32, Don Zickus wrote:
-> On Wed, Sep 21, 2011 at 12:08:42PM +0200, Robert Richter wrote:
-> > On 20.09.11 10:43:10, Don Zickus wrote:
-> > > @@ -87,6 +87,16 @@ static int notrace __kprobes nmi_handle(unsigned int type, struct pt_regs *regs)
-> > >  
-> > >  		handled += a->handler(type, regs);
-> > >  
-> > > +		/*
-> > > + 		 * Optimization: only loop once if this is not a 
-> > > + 		 * back-to-back NMI.  The idea is nothing is dropped
-> > > + 		 * on the first NMI, only on the second of a back-to-back
-> > > + 		 * NMI.  No need to waste cycles going through all the
-> > > + 		 * handlers.
-> > > + 		 */
-> > > +		if (!b2b && handled)
-> > > +			break;
-> > 
-> > In rare cases we will lose nmis here.
-> > 
-> > We see a back-to-back nmi in the case if a 2 nmi source triggers
-> > *after* the nmi handler is entered. Depending on the internal cpu
-> > timing influenced by microcode and SMM code execution, the nmi may not
-> > entered immediately. So all sources that trigger *before* the nmi
-> > handler is entered raise only one nmi with no subsequent nmi.
-> 
-> Right, but that can only happen with the second NMI in the back-to-back
-> NMI case.  Here the optimization is only for the first NMI, with the
-> assumption that you will always have a second NMI if multiple sources
-> trigger, so you can process those in the second iteration (assuming we
-> correctly detect the back-to-back NMI condition).  Then when the second
-> NMI comes in, we have no idea how many we dropped to get here so we
-> process all the handlers based on the assumption we might not have another
-> NMI behind us to make up for the dropped NMIs.
-> 
-> Unless I misunderstood your point above?
+On 21 September 2011 15:48, Russell King <rmk@arm.linux.org.uk> wrote:
+> On Wed, Sep 21, 2011 at 01:01:24PM +0530, Jassi Brar wrote:
+>> Of course!
+>> It doesn't make any sense for a mem->mem client asking
+>> for DMA_FROM_DEVICE when it wanted MemSet.
+>
+> Yes it does.  For memset, you _are_ DMAing data from the DMA device to
+> memory.  The fact that the data is constant is merely incidental (and
+> a private property of the DMA controller.)
+>
+> Also, this memory *has* to be mapped via the DMA API to ensure coherency,
+> and it *has* to be mapped using DMA_FROM_DEVICE.  Otherwise you won't see
+> the data until effects such as cache eviction have happened (even then
+> you may find your nicely memset'd data is overwritten by dirty cache
+> lines.)
+>
+> So, to say that M2M transfers don't have DMA_FROM_DEVICE/TO_DEVICE
+> properties shows a lack of appreciation for what is actually going on
+> at the hardware level.
+I don't discount that. I just think memory map/unmap'ing should not be
+any business of the dmac driver. It should be handled by either client
+or by some common part of dmaengine api.
+Infact I never really asked 'why' the dmac driver needs to know the
+direction, rather I only tried to explain 'how' it can find out.
 
-No, my point was that a second NMI might not be latched even if there
-are two nmi sources pending.
+Anyways, I am ok if this new api too must support map/unmap'ing of
+buffers on behalf of the client.
 
-Your logic is correct but assumes you will always receive a second
-nmi. This is not always the case depending on the cpu's internal
-timing. Usually there is the following sequence for back-to-back nmis:
+> So, there's _absolutely_ no way that any sane API can ever infer the
+> DMA direction from the source/destination increment specifications.
+> Ignore this at your peril (and you'll find that people will botch
+> around your new API.)
+Yes. But having a 'enum dma_data_direction' flag wouldn't make it
+future-proof either.
 
-1. HW triggers first NMI, an NMI is pending.
-2. NMI handler is called, no NMI pending anymore.
-3. HW triggers a second NMI, an NMI is pending.
-4. Return from NMI handler.
-5. NMI handler is called again to serve the 2nd, no NMI pending anymore.
-6. Return from NMI handler.
+Seems I would have to define something like :-
+enum xfer_direction {
+	MEM_TO_MEM,
+	MEM_TO_DEV,
+	DEV_TO_MEM,
+	DEV_TO_DEV,
+ };
 
-The above is what your algorithm covers.
+And replace every 'enum dma_data_direction' in the dmaengine api
+with 'enum xfer_direction'
 
-But in rare cases there is the following:
-
-1. The cpu executes some microcode or SMM code.
-2. HW triggers the first NMI, an NMI is pending.
-3. HW triggers a second NMI, the NMI is still pending.
-4. The cpu finished microcode or SMM code.
-5. NMI handler is called, no NMI pending anymore.
-6. Return from NMI handler.
-
-In this case the handler is called only once and the second nmi
-remains unhandled with you implementation.
-
-I don't see a way how this could be catched without serving all
-handlers the first time. But as said, in favor of the optimization I
-think we can live with losing some NMIs.
-
--Robert
-
-> > However, as these cases should be very rare, I think we can live with
-> > it in favor of the optimization to jump out the handler chain and save
-> > lot of cpu cycles esp. in the case of heavy PMI load.
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+Thanks.
