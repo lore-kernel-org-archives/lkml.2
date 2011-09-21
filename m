@@ -1,94 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752828Ab1IUQMG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 12:12:06 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:53207 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752436Ab1IUQMD (ORCPT
+	id S1752838Ab1IUQOL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 12:14:11 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:33422 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752436Ab1IUQOJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 12:12:03 -0400
-X-Authority-Analysis: v=1.1 cv=agqPq5NoKwAPC9P66H7dbYUCjxvmT73as08i4x3aqAA= c=1 sm=0 a=3kNrfhY1ZosA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=eNfrWi43AAIueW9vo1oA:9 a=m-EZD___HdxYXRn30cAA:7 a=PUjeQqilurYA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.83.30
-Subject: Re: [RFC][PATCH 0/5] Introduce checks for preemptable code for
- this_cpu_read/write()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Christoph Lameter <cl@gentwo.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>
-In-Reply-To: <alpine.DEB.2.00.1109211046350.14676@router.home>
-References: <20110919212040.745370781@goodmis.org>
-	 <alpine.DEB.2.00.1109191644190.19059@router.home>
-	 <1316487977.29966.32.camel@gandalf.stny.rr.com>
-	 <20110920154610.GB28952@Krystal>
-	 <1316534441.29966.79.camel@gandalf.stny.rr.com>
-	 <alpine.DEB.2.00.1109201109470.8056@router.home>
-	 <1316544841.29966.121.camel@gandalf.stny.rr.com>
-	 <alpine.DEB.2.00.1109211007450.12914@router.home>
-	 <1316619103.29966.139.camel@gandalf.stny.rr.com>
-	 <alpine.DEB.2.00.1109211046350.14676@router.home>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 21 Sep 2011 12:12:01 -0400
-Message-ID: <1316621521.29966.148.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 21 Sep 2011 12:14:09 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19JPr89rOi+oGyVYylJs52B
+Date: Wed, 21 Sep 2011 09:14:06 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 04/10] hwspinlock/core/omap: fix id issues on multiple
+ hwspinlock devices
+Message-ID: <20110921161406.GF2937@atomide.com>
+References: <1315846025-11453-1-git-send-email-ohad@wizery.com>
+ <1315846025-11453-5-git-send-email-ohad@wizery.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1315846025-11453-5-git-send-email-ohad@wizery.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-09-21 at 10:59 -0500, Christoph Lameter wrote:
-> On Wed, 21 Sep 2011, Steven Rostedt wrote:
+* Ohad Ben-Cohen <ohad@wizery.com> [110912 09:14]:
+> hwspinlock devices provide system-wide hardware locks that are used
+> by remote processors that have no other way to achieve synchronization.
 > 
-> > The problem I have with this, is that this does not help at all. We are
-> > back to the word "this_cpu" when you really do mean "any_cpu". We
+> For that to work, each physical lock must have a system-wide unique id
+> number that all processors are familiar with, otherwise they can't
+> possibly assume they're using the same hardware lock.
 > 
-> We mean the current cpu while the instruction is executing.
-
-Yes, again that is a implementation detail not a design one. The
-"current cpu" is nothing more than an optimization. The code is still
-written in a way that it would work if you wrote it to another CPU as
-long as the operation itself was atomic.
-
+> Usually SoCs have a single hwspinlock device, which provides several
+> hwspinlocks, and in this case, they can be trivially numbered 0 to
+> (num-of-locks - 1).
 > 
-> > Again, lets just bite the bullet and rename them to something that is
-> > understandable for everyone. This would make all of us happy.
-> >
-> > I'm not against your code, I'm against the naming convention you decided
-> > to use. It makes it confusing to something that is complex and complex
-> > code needs to try to be a simple as possible.
+> In case boards have several hwspinlocks devices (each of which
+> providing numerous hardware spinlocks) a different base id should be
+> used for each hwspinlock device (they can't all use 0 as a starting
+> id!).
 > 
-> I am certainly open to new ways of structuring the stuff and for any
-> improvement possible. This whole scheme was developed in long discussions
-> over many years. My initial proposal was to use cpu_inc/dec etc. I did
-> what was possible in the context of the various opinions that people had
-> on these matters when the implementations were discussed. The "you" does
-> not apply. It is either "us" or "them" (if you want to distance yourself
-> from this).
+> While this is certainly not common, it's just plain wrong to just
+> silently use 0 as a base id whenever the hwspinlock driver is probed.
+> 
+> This patch provides a hwspinlock_pdata structure, that boards can use
+> to set a different base id for each of the hwspinlock devices they may
+> have, and demonstrates how to use it with the omap hwspinlock driver
+> (ultimately it will be DT which will supply this base_id information).
+> 
+> While we're at it, make sure the hwspinlock core prints an explicit
+> error message in case an hwspinlock is registered with an id number
+> that already exists; this will help users catch such base id issues.
+> 
+> Reported-by: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
 
-Who is this "them"? Currently the only ones that matter to me is the
-mainline kernel developers. They are the ones that have to live with
-this nonsense. If the "them" includes other mainline kernel developers
-that are not on the Cc, please add them. Otherwise, I really don't give
-a flying fart about the "them".
-
-This is all about a naming convention, not the implementation. The
-current naming convention is extremely confusing. As the mistakes that
-have been shown through out the kernel. Worse yet, you removed the debug
-features that have been there forever and don't even care. Just calling
-the users that break the code irresponsible is not going to get you
-anywhere.
-
-We have already talked about bringing this up at Kernel Summit. Too bad
-you wont be there. Make sure one of the "them" is there to defend this
-silly naming convention, otherwise I will push to get all the main
-kernel developers accepting a renaming of this internal API. And
-immediately after the conference I will start sending patches that will
-be accepted.
-
--- Steve
-
-
+Acked-by: Tony Lindgren <tony@atomide.com>
