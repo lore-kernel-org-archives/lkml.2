@@ -1,123 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752690Ab1IUJIK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 05:08:10 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:16835 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752608Ab1IUJII (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 05:08:08 -0400
-Message-ID: <4E79A95F.8050304@parallels.com>
-Date: Wed, 21 Sep 2011 13:07:43 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Lightning/1.0b2 Thunderbird/3.1.13
+	id S1752758Ab1IUJJR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 05:09:17 -0400
+Received: from mail16.svc.cra.dublin.eircom.net ([159.134.118.215]:40726 "HELO
+	mail16.svc.cra.dublin.eircom.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752638Ab1IUJJP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 05:09:15 -0400
+Date: Wed, 21 Sep 2011 10:09:10 +0100 (IST)
+From: artkearney@eircom.net
+Message-ID: <1050352.2586.1316596150931.JavaMail.root@webmailbox301.eircom.net>
+Subject: EMail ID Awarded Nine Hundred And Fifty Thousand British Pounds In
+ The Benz Cash Splash
 MIME-Version: 1.0
-To: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>
-CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "davem@davemloft.net" <davem@davemloft.net>
-Subject: Re: [PATCH v6 1/8] SUNRPC: introduce helpers for reference counted
- rpcbind clients
-References: <20110920101031.9861.18444.stgit@localhost6.localdomain6> <20110920101341.9861.51453.stgit@localhost6.localdomain6> <4E7899E7.9090809@parallels.com>
-In-Reply-To: <4E7899E7.9090809@parallels.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [80.87.92.42]
+X-Mailer: Zimbra 6.0.8_GA_2685 (ZimbraWebClient - IE8 (Win)/6.0.8_GA_2685)
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v6:
-1) added write memory barrier to rpcb_set_local to make sure, that rpcbind 
-clients become valid before rpcb_users assignment
-2) explicitly set rpcb_users to 1 instead of incrementing it (looks clearer from 
-my pow).
 
-Notice: write memory barrier after zeroing rpcbind clients in rpcb_put_local() 
-is not required, since to users of them left. New user (service) will create new 
-clients before dereferencing them.
 
-This helpers will be used for dynamical creation and destruction of rpcbind
-clients.
-Variable rpcb_users is actually a counter of lauched RPC services. If rpcbind
-clients has been created already, then we just increase rpcb_users.
+send details Name, Tel, Address, Country.
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
----
-  net/sunrpc/rpcb_clnt.c |   54 ++++++++++++++++++++++++++++++++++++++++++++++++
-  1 files changed, 54 insertions(+), 0 deletions(-)
-
-diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
-index e45d2fb..9fcdb42 100644
---- a/net/sunrpc/rpcb_clnt.c
-+++ b/net/sunrpc/rpcb_clnt.c
-@@ -114,6 +114,9 @@ static struct rpc_program	rpcb_program;
-  static struct rpc_clnt *	rpcb_local_clnt;
-  static struct rpc_clnt *	rpcb_local_clnt4;
-
-+DEFINE_SPINLOCK(rpcb_clnt_lock);
-+unsigned int			rpcb_users;
-+
-  struct rpcbind_args {
-  	struct rpc_xprt *	r_xprt;
-
-@@ -161,6 +164,57 @@ static void rpcb_map_release(void *data)
-  	kfree(map);
-  }
-
-+static int rpcb_get_local(void)
-+{
-+	int cnt;
-+
-+	spin_lock(&rpcb_clnt_lock);
-+	if (rpcb_users)
-+		rpcb_users++;
-+	cnt = rpcb_users;
-+	spin_unlock(&rpcb_clnt_lock);
-+
-+	return cnt;
-+}
-+
-+void rpcb_put_local(void)
-+{
-+	struct rpc_clnt *clnt = rpcb_local_clnt;
-+	struct rpc_clnt *clnt4 = rpcb_local_clnt4;
-+	int shutdown;
-+
-+	spin_lock(&rpcb_clnt_lock);
-+	if (--rpcb_users == 0) {
-+		rpcb_local_clnt = NULL;
-+		rpcb_local_clnt4 = NULL;
-+	}
-+	shutdown = !rpcb_users;
-+	spin_unlock(&rpcb_clnt_lock);
-+
-+	if (shutdown) {
-+		/*
-+		 * cleanup_rpcb_clnt - remove xprtsock's sysctls, unregister
-+		 */
-+		if (clnt4)
-+			rpc_shutdown_client(clnt4);
-+		if (clnt)
-+			rpc_shutdown_client(clnt);
-+	}
-+	return;
-+}
-+
-+static void rpcb_set_local(struct rpc_clnt *clnt, struct rpc_clnt *clnt4)
-+{
-+	/* Protected by rpcb_create_local_mutex */
-+	rpcb_local_clnt = clnt;
-+	rpcb_local_clnt4 = clnt4;
-+	smp_wmb();
-+	rpcb_users = 1;
-+	dprintk("RPC:       created new rpcb local clients (rpcb_local_clnt: "
-+			"%p, rpcb_local_clnt4: %p)\n", rpcb_local_clnt,
-+			rpcb_local_clnt4);
-+}
-+
-  /*
-   * Returns zero on success, otherwise a negative errno value
-   * is returned.
