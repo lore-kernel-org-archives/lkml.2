@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751262Ab1IUU5k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 16:57:40 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:35807 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750849Ab1IUU5i (ORCPT
+	id S1751165Ab1IUVHm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 17:07:42 -0400
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:56393 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751051Ab1IUVHl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 16:57:38 -0400
-Date: Wed, 21 Sep 2011 16:55:29 -0400 (EDT)
-Message-Id: <20110921.165529.1114257620345857548.davem@davemloft.net>
-To: grant.likely@secretlab.ca
-Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        shawn.guo@linaro.org
-Subject: Re: [PATCH] dt: add of_alias_scan and of_alias_get_id
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110921204545.19871.99088.stgit@ponder>
-References: <20110921204545.19871.99088.stgit@ponder>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Wed, 21 Sep 2011 17:07:41 -0400
+Message-ID: <4E7A521B.50104@xenotime.net>
+Date: Wed, 21 Sep 2011 14:07:39 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
+MIME-Version: 1.0
+To: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
+Subject: [PATCH -next] bcma: main.c and driver_mips.c need linux/export.h
+References: <20110920173102.d38155c7defbbc29beaae7c0@canb.auug.org.au>	<4E78CFC0.4020003@xenotime.net>	<CACna6rxGrd-ORWZrc0xsAOKptU_Xj3eGh9qSfX9vJYCPTZrCRg@mail.gmail.com>	<4E78FCDB.1010002@xenotime.net>	<CACna6rywFitSNkkwo6tNy887vdsoyHG5Cadk6Bb8_qBJ+gc42w@mail.gmail.com>	<4E7A084C.3000304@xenotime.net> <CACna6ryNw+YgTiO5dBSGcTfUabM_yO0LaSsbGpC_X6JrQudnBQ@mail.gmail.com>
+In-Reply-To: <CACna6ryNw+YgTiO5dBSGcTfUabM_yO0LaSsbGpC_X6JrQudnBQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 21 Sep 2011 13:55:31 -0700 (PDT)
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 21 Sep 2011 14:46:54 -0600
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-> From: Shawn Guo <shawn.guo@linaro.org>
-> 
-> The patch adds function of_alias_scan to populate a global lookup
-> table with the properties of 'aliases' node and function
-> of_alias_get_id for drivers to find alias id from the lookup table.
-> 
-> v3: Split out automatic addition of aliases on id lookup so that it can be
->     debated separately from the core functionality.
-> v2: - Add of_chosen/of_aliases populating and of_alias_scan() invocation
->     for OF_PROMTREE.
->     - Add locking
->     - rework parse loop
-> 
-> Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
-> Cc: David S. Miller <davem@davemloft.net>
-> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+main.c and driver_mips.c use EXPORT_SYMBOL() etc.
+so they should include <linux/export.h>.
 
-Looks good:
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+---
+ drivers/bcma/driver_mips.c |    1 +
+ drivers/bcma/main.c        |    1 +
+ 2 files changed, 2 insertions(+)
 
-Acked-by: David S. Miller <davem@davemloft.net>
+--- next-2011-0921.orig/drivers/bcma/driver_mips.c
++++ next-2011-0921/drivers/bcma/driver_mips.c
+@@ -14,6 +14,7 @@
+ 
+ #include <linux/bcma/bcma.h>
+ 
++#include <linux/export.h>
+ #include <linux/serial.h>
+ #include <linux/serial_core.h>
+ #include <linux/serial_reg.h>
+--- next-2011-0921.orig/drivers/bcma/main.c
++++ next-2011-0921/drivers/bcma/main.c
+@@ -7,6 +7,7 @@
+ 
+ #include "bcma_private.h"
+ #include <linux/module.h>
++#include <linux/export.h>
+ #include <linux/bcma/bcma.h>
+ #include <linux/slab.h>
+ 
