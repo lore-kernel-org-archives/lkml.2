@@ -1,80 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753285Ab1IUQqh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 12:46:37 -0400
-Received: from www.linutronix.de ([62.245.132.108]:50586 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753116Ab1IUQqg (ORCPT
+	id S1753262Ab1IUQy7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 12:54:59 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:36635 "EHLO
+	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751228Ab1IUQy6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 12:46:36 -0400
-Date: Wed, 21 Sep 2011 18:46:31 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Oleg Nesterov <oleg@redhat.com>
-cc: Eric Dumazet <eric.dumazet@gmail.com>, Andi Kleen <ak@linux.intel.com>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 4/4] posix-timers: turn it_signal into it_valid flag
-In-Reply-To: <20110906220827.GA1800@redhat.com>
-Message-ID: <alpine.LFD.2.02.1109211835550.2723@ionos>
-References: <20110904165658.GA23948@redhat.com> <20110904202907.GA3404@redhat.com> <20110906031411.GA24024@alboin.amr.corp.intel.com> <20110906145124.GA15390@redhat.com> <1315323596.2899.6.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <alpine.LFD.2.02.1109061823100.2723@ionos>
- <20110906184926.GA25997@redhat.com> <alpine.LFD.2.02.1109062110090.2723@ionos> <20110906192626.GA27362@redhat.com> <alpine.LFD.2.02.1109062134010.2723@ionos> <20110906220827.GA1800@redhat.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 21 Sep 2011 12:54:58 -0400
+X-SpamScore: -14
+X-BigFish: VPS-14(zzbb2dK9371K1432N98dKzz1202hzzz32i668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LRVTNI-01-HIC-02
+X-M-MSG: 
+Date: Wed, 21 Sep 2011 18:54:51 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Avi Kivity <avi@redhat.com>
+CC: Don Zickus <dzickus@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "ying.huang@intel.com" <ying.huang@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "jeremy@goop.org" <jeremy@goop.org>
+Subject: Re: [V5][PATCH 4/6] x86, nmi:  add in logic to handle multiple
+ events and unknown NMIs
+Message-ID: <20110921165451.GF6063@erda.amd.com>
+References: <1316529792-6560-1-git-send-email-dzickus@redhat.com>
+ <1316529792-6560-5-git-send-email-dzickus@redhat.com>
+ <20110921100842.GA6063@erda.amd.com>
+ <20110921140432.GP5795@redhat.com>
+ <20110921151829.GC6063@erda.amd.com>
+ <20110921161352.GU5795@redhat.com>
+ <4E7A0FD6.3080508@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4E7A0FD6.3080508@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Sep 2011, Oleg Nesterov wrote:
-> On 09/06, Thomas Gleixner wrote:
+On 21.09.11 12:24:54, Avi Kivity wrote:
+> On 09/21/2011 07:13 PM, Don Zickus wrote:
+> > On Wed, Sep 21, 2011 at 05:18:30PM +0200, Robert Richter wrote:
+> > >  On 21.09.11 10:04:32, Don Zickus wrote:
+
+> > >  But in rare cases there is the following:
+> > >
+> > >  1. The cpu executes some microcode or SMM code.
+> > >  2. HW triggers the first NMI, an NMI is pending.
+> > >  3. HW triggers a second NMI, the NMI is still pending.
+> > >  4. The cpu finished microcode or SMM code.
+> > >  5. NMI handler is called, no NMI pending anymore.
+> > >  6. Return from NMI handler.
+> > >
+> > >  In this case the handler is called only once and the second nmi
+> > >  remains unhandled with you implementation.
+> > >
+> > >  I don't see a way how this could be catched without serving all
+> > >  handlers the first time. But as said, in favor of the optimization I
+> > >  think we can live with losing some NMIs.
+
+I have to revise this after thinking more about this. We may not lose
+an nmi for sources where the nmi handler must always reenable the nmi,
+e.g. IBS. Losing one nmi means for IBS that sample generation gets
+stuck.
+
+-Robert
+
 > >
-> > On Tue, 6 Sep 2011, Oleg Nesterov wrote:
+> > Ah, I get it know.  Crap.  Well I think Avi was pushing it to make those
+> > ticket_spin_locks work in virt land.  It seems like we should lean towards
+> > removing the optimization.  Avi?
 > >
-> > > But how this can help? Suppose that the task is preempted right
-> > > after dequeue_signal() drops ->siglock. We need rcu_read_lock()
-> > > before unlock then, no?
-> >
-> > Crap, you are right, but that's fortunately an easy to solve one :)
 > 
-> Yes, this is solvable. But I think we can do something better.
+> Well, in virt land there are no SMIs, and we can guarantee that the 
+> queue length is always two.  So if these rare cases are okay for 
+> upstream, it'll be fine for virt.
 > 
-> > > And. This breaks the accounting logic. I mean the patch from Andi
-> > > which adds the limits.
-> >
-> > That's a different problem and really, it does not break it by any
-> > means. When the timer is released, then the count is decreased and we
-> > can safely assume that the memory is going to be freed in the next
-> > grace period.
+> -- 
+> error compiling committee.c: too many arguments to function
 > 
-> Yes, but this means we need the counter which we do not have.
 > 
-> I think we can avoid this problems. Although I am not sure, I am
-> already sleeping.
-> 
-> 	- we add rcu_read_lock() into dequeueu_signal().
-> 
-> 	- we add the new "struct k_itimer *my_timer" member into
-> 	 siginfo._timer. Like _sys_private it is not passed to
-> 	 user, and perhaps we can kill _sys_private later.
 
-sys_private is ugly as hell and we should avoid to add another field
-to siginfo.
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
-I think we can embed the timer siginfo into k_itimer instead and
-provide a proper init function in signal.c. We always allocate a
-siginfo for a timer so we are better of allocating that stuff at once.
-
-That way we can use container_of() and check the timer fields
-directly. That moves sys_private info k_itimer, gets rid of the idr
-lookup and avoids an extra siginfo field.
-
-Further this would allow us to distangle the posixtimer rlimit from
-the sigpending rlimit, once we have that in place.
-
-Thanks,
-
-	tglx
