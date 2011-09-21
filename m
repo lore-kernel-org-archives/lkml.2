@@ -1,78 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750892Ab1IUUzO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 16:55:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62233 "EHLO mx1.redhat.com"
+	id S1751032Ab1IUU4A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 16:56:00 -0400
+Received: from jcz.nl ([213.196.18.5]:52183 "EHLO jcz.nl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750713Ab1IUUzL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 16:55:11 -0400
-Date: Wed, 21 Sep 2011 15:54:55 -0500
-From: Clark Williams <williams@redhat.com>
-To: RT <linux-rt-users@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Carsten Emde <ce@ceag.ch>,
-        Uwe =?UTF-8?B?S2xlaW5lLUvDtm5pZw==?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>
-Subject: rt-tests-0.82 available on github
-Message-ID: <20110921155455.61ab4745@redhat.com>
-Organization: Red Hat, Inc
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/vwrDA_NmV7Mf._HrCcKIRhO"; protocol="application/pgp-signature"
+	id S1750971Ab1IUUz7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 16:55:59 -0400
+X-Greylist: delayed 441 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Sep 2011 16:55:59 EDT
+From: Jaap Crezee <jaap@jcz.nl>
+To: gregkh@suse.de
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        Jaap Crezee <jaap@jcz.nl>
+Subject: [PATCH] Staging: intel_sst: instel_sst: fixed some coding style issues.
+Date: Wed, 21 Sep 2011 22:48:44 +0200
+Message-Id: <1316638124-6226-1-git-send-email-jaap@jcz.nl>
+X-Mailer: git-send-email 1.7.6.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/vwrDA_NmV7Mf._HrCcKIRhO
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Fixed a coding style issue.
 
-While kernel.org is sorting out the security stuff, the rt-tests code
-may be pulled from:
+Signed-off-by: Jaap Crezee <jaap@jcz.nl>
+---
+ drivers/staging/intel_sst/intel_sst.c |   10 ++++++----
+ 1 files changed, 6 insertions(+), 4 deletions(-)
 
-	git://github.com/clrkwllms/rt-tests.git
+diff --git a/drivers/staging/intel_sst/intel_sst.c b/drivers/staging/intel_sst/intel_sst.c
+index d892861..c303d85 100644
+--- a/drivers/staging/intel_sst/intel_sst.c
++++ b/drivers/staging/intel_sst/intel_sst.c
+@@ -321,7 +321,7 @@ static int __devinit intel_sst_probe(struct pci_dev *pci,
+ 		if (ret) {
+ 			pr_err("couldn't register LPE device\n");
+ 			goto do_free_misc;
+- 		}
++		}
+ 	} else if (sst_drv_ctx->pci_id == SST_MFLD_PCI_ID) {
+ 		u32 csr;
+ 
+@@ -524,9 +524,11 @@ int intel_sst_resume(struct pci_dev *pci)
+ 	return 0;
+ }
+ 
+-/* The runtime_suspend/resume is pretty much similar to the legacy suspend/resume with the noted exception below:
+- * The PCI core takes care of taking the system through D3hot and restoring it back to D0 and so there is
+- * no need to duplicate that here.
++/* The runtime_suspend/resume is pretty much similar to the legacy
++ * suspend/resume with the noted exception below:
++ * The PCI core takes care of taking the system through D3hot and
++ * restoring it back to D0 and so there is no need to duplicate
++ * that here.
+  */
+ static int intel_sst_runtime_suspend(struct device *dev)
+ {
+-- 
+1.7.6.3
 
-Note that we're now at version 0.82. Presently I only have the git
-archive available (no tarballs).=20
-
-While investigating latency spikes in the 3.0.x-rt kernels, Thomas
-spotted a case where an Intel quad-core Xeon was going into deep
-sleep states and were all fighting to come out of sleep at the same
-time (and consequently causing a big latency spike in cyclictest).=20
-
-While trying to figure out how to prevent deep cstates I remembered a
-conversation I had with Arjan at the last Plumbers conference in
-Boston. He mentioned the /dev/cpu_dma_latency interface to the power
-managment code and that if you opened it and wrote a zero to it, you
-effectively put the system into "idle=3Dpoll" mode until you closed the
-file descriptor (see: Documentation/power/pm_qos_interface.txt).=20
-
-I've added a set_latency_target() function to cyclictest that by
-default opens /dev/cpu_dma_latency and writes a zero to it, then holds
-the file descriptor open for the duration of the cyclictest run. This
-made a *huge* difference on some Intel Xeon's. Without this option, when
-I was running cyclictest with the -b option, I saw latencies over
-300us. When I added it, while tracing I never saw a latency over 30us.
-Turning of -b, I never saw it go over 10us. I am doing further testing
-now with other x86_64 systems.=20
-
-Of course this is very architecture specific, so YMMV, but I think it's
-a valid mechanism to be used when measuring latency and I believe a
-technique that many latency-sensitive applications might use to good
-effect.=20
-
-Clark
-
---Sig_/vwrDA_NmV7Mf._HrCcKIRhO
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
-
-iEYEARECAAYFAk56TyAACgkQHyuj/+TTEp1mOwCgwVkhbSEJNGA0T3hlNHrudjEI
-F6oAoLsuVcyZ6uemn2I4aRo+0gi2VwhT
-=fcnr
------END PGP SIGNATURE-----
-
---Sig_/vwrDA_NmV7Mf._HrCcKIRhO--
