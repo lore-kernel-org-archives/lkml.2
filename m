@@ -1,76 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751498Ab1IUBOt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 21:14:49 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:62849 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751235Ab1IUBOr (ORCPT
+	id S1751364Ab1IUBYE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 21:24:04 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:42126 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750795Ab1IUBYD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 21:14:47 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAKYAXd8uU+JEqJQZ6a7oBoynpLQ2=+gOk-Ue47y+HZgBsatGRQ@mail.gmail.com>
-References: <1316359301-2263-1-git-send-email-linkinjeon@gmail.com>
-	<4E78433F.2050900@stericsson.com>
-	<CA+Wuu-vAx8PkvPgy5mR5Bcg6e+q6Z3XOZtTGwNZgCW4HCrX5KA@mail.gmail.com>
-	<CAKYAXd9bmw12By6StTL_MRzAGsgG9BOfcvs=TA-nRu_uxMzOcw@mail.gmail.com>
-	<CA+Wuu-sK6B_k0+sG_p4JRuHOwO_HVCpNksg-9_TdpzXRS7y0xA@mail.gmail.com>
-	<CAKYAXd8WiakFVy_ykpbw-Eq+XDgX0NECtJZFDy3WzxtNfJmdkw@mail.gmail.com>
-	<CA+Wuu-vG7QMcRwvi8F4rznQda3OmyEueNGDv=8gXkB6YVBWEaA@mail.gmail.com>
-	<CAKYAXd8uU+JEqJQZ6a7oBoynpLQ2=+gOk-Ue47y+HZgBsatGRQ@mail.gmail.com>
-Date: Wed, 21 Sep 2011 10:14:46 +0900
-Message-ID: <CAKYAXd9ae_b_gq4GwXVjM4XDQAypOpKMEGz2_SN0uyV03OAPkA@mail.gmail.com>
-Subject: Re: [PATCH] mmc : Use wait_for_completion_timeout() instead of
- wait_for_completion in case of write.
-From: NamJae Jeon <linkinjeon@gmail.com>
-To: Murali Krishna Palnati <palnati.muralikrishna@gmail.com>
-Cc: Ulf Hansson <ulf.hansson@stericsson.com>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 20 Sep 2011 21:24:03 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6475"; a="120090945"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>
+Subject: [PATCHv2 2/2] ARM: debug: Move DEBUG_ICEDCC into the DEBUG_LL choice
+Date: Tue, 20 Sep 2011 18:23:28 -0700
+Message-Id: <1316568208-4518-2-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.7.rc0.70.g82660
+In-Reply-To: <1316568208-4518-1-git-send-email-sboyd@codeaurora.org>
+References: <1316568208-4518-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/9/21 NamJae Jeon <linkinjeon@gmail.com>:
-> 2011/9/21 Murali Krishna Palnati <palnati.muralikrishna@gmail.com>:
->> On Tue, Sep 20, 2011 at 7:52 PM, NamJae Jeon <linkinjeon@gmail.com> wrote:
->>> It may be no good choice that sw timer is on host driver. also I don't
->>> know what is different.
->>
->> It helps to have this functionality implemented at host controller
->> layer so that the host layer is informed about this. If we just end
->> the request from the MMC core layer, host controller driver doesnt
->> even kow about that and it remains in the same state processing the
->> request (that already got timed out at core layer). It is good to have
->> the host layer trigger this timeout, do necessary clean up and then
->> duly end the request by informing the core layer by calling
->> mmc_request_done().
->>
->> Let me put the question in this way. If the core layer times out
->> (because of wait_for_completion_timeout) then in the patch that you
->> have submitted, i dont see how the host layer knows about it.
->> Apologize, if i sound like a broken record saying the same thing again
->> and again.
->>
->
-> I understand what you want. So I will add emergency_cleanup for host
-> driver like this.
-> struct mmc_host_ops {
-> ................
-> .................
-> void (*emergency_cleanup)(struct mmc_host *host);
->
-> }
->
-> When timeout error happen, mmc core will call this function as soon as
-> sending stop cmd.
-> And when timeout error happen by wait_for_completion_timeout, calling
-> mmc_request_done is not needed.
->
-> Thanks.
->
+DEBUG_ICEDCC support is just another DEBUG_LL choice and
+selecting it along with other DEBUG_LL options doesn't make
+much sense. Put it into the DEBUG_LL choice to avoid confusion.
 
-I'll follow the opinion of chris.
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Acked-by: Will Deacon <will.deacon@arm.com>
+---
+ arch/arm/Kconfig.debug |   23 +++++++++++------------
+ 1 files changed, 11 insertions(+), 12 deletions(-)
 
-Thanks.
+diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+index 6dbcb00..31896f4 100644
+--- a/arch/arm/Kconfig.debug
++++ b/arch/arm/Kconfig.debug
+@@ -81,6 +81,17 @@ choice
+ 	prompt "Kernel low-level debugging port"
+ 	depends on DEBUG_LL
+ 
++	config DEBUG_ICEDCC
++		bool "Kernel low-level debugging via EmbeddedICE DCC channel"
++		depends on DEBUG_LL
++		help
++		  Say Y here if you want the debug print routines to direct
++		  their output to the EmbeddedICE macrocell's DCC channel using
++		  co-processor 14. This is known to work on the ARM9 style ICE
++		  channel and on the XScale with the PEEDI.
++
++		  It does include a timeout to ensure that the system does not
++		  totally freeze when there is nothing connected to read.
+ 
+ 	config DEBUG_FOOTBRIDGE_COM1
+ 		bool "Kernel low-level debugging messages via footbridge 8250 at PCI COM1"
+@@ -120,18 +131,6 @@ config EARLY_PRINTK
+ 	  kernel low-level debugging functions. Add earlyprintk to your
+ 	  kernel parameters to enable this console.
+ 
+-config DEBUG_ICEDCC
+-	bool "Kernel low-level debugging via EmbeddedICE DCC channel"
+-	depends on DEBUG_LL
+-	help
+-	  Say Y here if you want the debug print routines to direct their
+-	  output to the EmbeddedICE macrocell's DCC channel using
+-	  co-processor 14. This is known to work on the ARM9 style ICE
+-	  channel and on the XScale with the PEEDI.
+-
+-	  It does include a timeout to ensure that the system does not
+-	  totally freeze when there is nothing connected to read.
+-
+ config OC_ETM
+ 	bool "On-chip ETM and ETB"
+ 	select ARM_AMBA
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
