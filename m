@@ -1,106 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752129Ab1IUI21 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 04:28:27 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:27188 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751859Ab1IUI2Y (ORCPT
+	id S1752026Ab1IUIbE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 04:31:04 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:17248 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751047Ab1IUIbC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 04:28:24 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: cjb@laptop.org, linux-mmc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        nicolas.pitre@linaro.org, per.forlin@linaro.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH RESEND] mmc: sdio: rw extended, use a sg entry for each block
-Date: Wed, 21 Sep 2011 11:40:39 +0200
-Message-Id: <1316598039-30238-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.7.3
+	Wed, 21 Sep 2011 04:31:02 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:to:cc:subject:message-id:
+	mime-version:content-type:content-disposition:user-agent:x-system-of-record;
+	b=wtigb7Q/OXpglIia4n4dunBcw7f3YZ+G+Ld6ElsoYIMbCMZ+PlnyhFY251WXuVrHB
+	5hI+qNXcABZjwdfDcudKg==
+Date: Wed, 21 Sep 2011 10:30:55 +0200
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, acme@redhat.com, dsahern@gmail.com, mingo@elte.hu
+Subject: [PATCH] perf: fix perf.data endianness detection (v2)
+Message-ID: <20110921083055.GA5175@quad>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While using io multiple blocks operations, change the way that sg is built:
-use one sg entry for each block instead of aggregating the whole buffer
-in a single sg entry.
-Using a single sg entry for a multiple block command may lead to
-misunderstanding between the sd/mmc and the DMA controllers. In fact, the
-knowledge of the block length will allow both controllers to optimize burst
-sizes on internal bus while dealing with those data.
 
-Use a sg table to store start addresses of blocks within the data buffer.
+The current version of perf detects whether or not
+the perf.data file is written in a different endianness
+using the attr_size field in the header of the file. This
+field represents sizeof(struct perf_event) as known to perf
+record. If the size does not match, then perf tries the
+byte-swapped version. If they match, then the tool assumes
+a different endianness.
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+The issue with the approach is that it assumes the size of
+perf_event_attr always has to match between the file and the
+tool. However, the kernel API is designed to make it possible
+to extend perf_event_attr for new features. Consequently, it
+is not possible to use attr_size to detect endianness.
+
+This patch takes another approach by using the magic number
+written at the beginning of the perf.data file to detect
+endianness mismatch. The magic number is an eight-byte
+signature. The patch introduces a new value for this
+signature. The key difference is that the signature
+is written differently in the file depending on the
+endianness. Thus, by comparing the signature from the file
+with the tool's own signature it is possible to detect if
+the endianness matches. The new signature is "PERFILE2".
+
+Backward compatiblity with existing perf.data file is
+ensured.
+
+This second version fixes a bug in the case of the new
+format with whereby the u64 of the header where not
+swapped when necessary. This new version also factorizes
+the swapping on the u64 portion of the header.
+
+Thanks to David Ahern for testing on big-endian systems.
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
- drivers/mmc/core/sdio_ops.c |   38 +++++++++++++++++++++++++++++---------
- 1 files changed, 29 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/mmc/core/sdio_ops.c b/drivers/mmc/core/sdio_ops.c
-index f087d87..aea6978 100644
---- a/drivers/mmc/core/sdio_ops.c
-+++ b/drivers/mmc/core/sdio_ops.c
-@@ -124,7 +124,7 @@ int mmc_io_rw_extended(struct mmc_card *card, int write, unsigned fn,
- 	struct mmc_request mrq = {0};
- 	struct mmc_command cmd = {0};
- 	struct mmc_data data = {0};
--	struct scatterlist sg;
-+	struct sg_table sgt;
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index b6c1ad1..4fa52d3 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -57,9 +57,20 @@ char *perf_header__find_event(u64 id)
+ 	return NULL;
+ }
  
- 	BUG_ON(!card);
- 	BUG_ON(fn > 7);
-@@ -144,24 +144,44 @@ int mmc_io_rw_extended(struct mmc_card *card, int write, unsigned fn,
- 	cmd.arg |= fn << 28;
- 	cmd.arg |= incr_addr ? 0x04000000 : 0x00000000;
- 	cmd.arg |= addr << 9;
--	if (blocks == 1 && blksz <= 512)
--		cmd.arg |= (blksz == 512) ? 0 : blksz;	/* byte mode */
--	else
--		cmd.arg |= 0x08000000 | blocks;		/* block mode */
-+	if (blocks == 1 && blksz <= 512) {
-+		/* byte mode */
-+		struct scatterlist sg;
+-static const char *__perf_magic = "PERFFILE";
+-
+-#define PERF_MAGIC	(*(u64 *)__perf_magic)
++/*
++ * magic2 = "PERFILE2"
++ * must be a numerical value to let the endianness
++ * determine the memory layout. That way we are able
++ * to detect endianness when reading the perf.data file
++ * back.
++ *
++ * we check for legacy (PERFFILE) format.
++ */
++static const char *__perf_magic1 = "PERFFILE";
++static const u64 __perf_magic2    = 0x32454c4946524550ULL;
++static const u64 __perf_magic2_sw = 0x50455246494c4532ULL;
 +
-+		cmd.arg |= (blksz == 512) ? 0 : blksz;
-+		sg_init_one(&sg, buf, blksz * blocks);
++#define PERF_MAGIC	__perf_magic2
+ 
+ struct perf_file_attr {
+ 	struct perf_event_attr	attr;
+@@ -595,24 +606,59 @@ out_free:
+ 	return err;
+ }
+ 
++static int check_magic_endian(u64 *magic, struct perf_file_header *header,
++			      struct perf_header *ph)
++{
++	int ret;
 +
-+		data.sg = &sg;
-+		data.sg_len = 1;
-+	} else {
-+		/* block mode */
-+		struct scatterlist *sg_ptr;
-+		int i;
++	/* check for legacy format */
++	ret = memcmp(magic, __perf_magic1, sizeof(*magic));
++	if (ret == 0) {
++		pr_debug("legacy perf.data format\n");
++		if (!header)
++			return -1;
 +
-+		cmd.arg |= 0x08000000 | blocks;
-+		if (sg_alloc_table(&sgt, blocks, GFP_KERNEL))
-+			return -ENOMEM;
-+		for_each_sg(sgt.sgl, sg_ptr, sgt.nents, i) {
-+			sg_set_buf(sg_ptr, buf + i * blksz, blksz);
++		if (header->attr_size != sizeof(struct perf_file_attr)) {
++			u64 attr_size = bswap_64(header->attr_size);
++
++			if (attr_size != sizeof(struct perf_file_attr))
++				return -1;
++
++			ph->needs_swap = true;
 +		}
-+
-+		data.sg = sgt.sgl;
-+		data.sg_len = sgt.nents;
++		return 0;
 +	}
 +
- 	cmd.flags = MMC_RSP_SPI_R5 | MMC_RSP_R5 | MMC_CMD_ADTC;
- 
- 	data.blksz = blksz;
- 	data.blocks = blocks;
- 	data.flags = write ? MMC_DATA_WRITE : MMC_DATA_READ;
--	data.sg = &sg;
--	data.sg_len = 1;
--
--	sg_init_one(&sg, buf, blksz * blocks);
- 
- 	mmc_set_data_timeout(&data, card);
- 
- 	mmc_wait_for_req(card->host, &mrq);
- 
-+	if (blocks != 1 || blksz > 512)
-+		sg_free_table(&sgt);
++	/* check magic number with same endianness */
++	if (*magic == __perf_magic2)
++		return 0;
 +
- 	if (cmd.error)
- 		return cmd.error;
- 	if (data.error)
--- 
-1.7.3
-
++	/* check magic number but opposite endianness */
++	if (*magic != __perf_magic2_sw)
++		return -1;
++
++	ph->needs_swap = true;
++
++	return 0;
++}
++
+ int perf_file_header__read(struct perf_file_header *header,
+ 			   struct perf_header *ph, int fd)
+ {
++	int ret;
++
+ 	lseek(fd, 0, SEEK_SET);
+ 
+-	if (readn(fd, header, sizeof(*header)) <= 0 ||
+-	    memcmp(&header->magic, __perf_magic, sizeof(header->magic)))
++	ret = readn(fd, header, sizeof(*header));
++	if (ret <= 0)
+ 		return -1;
+ 
+-	if (header->attr_size != sizeof(struct perf_file_attr)) {
+-		u64 attr_size = bswap_64(header->attr_size);
+-
+-		if (attr_size != sizeof(struct perf_file_attr))
+-			return -1;
++	if (check_magic_endian(&header->magic, header, ph) < 0)
++		return -1;
+ 
++	if (ph->needs_swap) {
+ 		mem_bswap_64(header, offsetof(struct perf_file_header,
+-					    adds_features));
+-		ph->needs_swap = true;
++			     adds_features));
+ 	}
+ 
+ 	if (header->size != sizeof(*header)) {
+@@ -824,8 +870,13 @@ static int perf_file_header__read_pipe(struct perf_pipe_file_header *header,
+ 				       struct perf_header *ph, int fd,
+ 				       bool repipe)
+ {
+-	if (readn(fd, header, sizeof(*header)) <= 0 ||
+-	    memcmp(&header->magic, __perf_magic, sizeof(header->magic)))
++	int ret;
++
++	ret = readn(fd, header, sizeof(*header));
++	if (ret <= 0)
++		return -1;
++
++	 if (check_magic_endian(&header->magic, NULL, ph) < 0)
+ 		return -1;
+ 
+ 	if (repipe && do_write(STDOUT_FILENO, header, sizeof(*header)) < 0)
