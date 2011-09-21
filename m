@@ -1,135 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753520Ab1IUMeD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 08:34:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46211 "EHLO mx2.suse.de"
+	id S1753570Ab1IUMfj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 08:35:39 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:41126 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752529Ab1IUMeB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 08:34:01 -0400
-Date: Wed, 21 Sep 2011 14:33:56 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
-        Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 07/11] mm: vmscan: convert unevictable page rescue
- scanner to per-memcg LRU lists
-Message-ID: <20110921123354.GC8501@tiehlicka.suse.cz>
-References: <1315825048-3437-1-git-send-email-jweiner@redhat.com>
- <1315825048-3437-8-git-send-email-jweiner@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1315825048-3437-8-git-send-email-jweiner@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753440Ab1IUMfh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 08:35:37 -0400
+Subject: Re: [PATCH v1 4/4] target: check hex2bin result (updated)
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: linux-security-module@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Andy Shevchenko <andy.shevchenko@gmail.com>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Arnaud Lacombe <lacombar@gmail.com>, James.Mor@us.ibm.com
+In-Reply-To: <1316548373-8782-5-git-send-email-zohar@linux.vnet.ibm.com>
+References: <1316548373-8782-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <1316548373-8782-5-git-send-email-zohar@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 21 Sep 2011 08:35:31 -0400
+Message-ID: <1316608531.3155.8.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 12-09-11 12:57:24, Johannes Weiner wrote:
-> The global per-zone LRU lists are about to go away on memcg-enabled
-> kernels, the unevictable page rescue scanner must be able to find its
-> pages on the per-memcg LRU lists.
-> 
-> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+Now that hex2bin does error checking, on error add debugging error msg.
 
-The patch is correct but I guess the original implementation of
-scan_zone_unevictable_pages is buggy (see bellow). This should be
-addressed separatelly, though.
+Changelog v1 (update):
+- fixed definition of 'ret'
+- hex2bin now returns an int
 
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Acked-by: Andy Shevchenko <andy.shevchenko@gmail.com>
+---
+ drivers/target/target_core_fabric_lib.c |   12 +++++++++---
+ 1 files changed, 9 insertions(+), 3 deletions(-)
 
-> ---
->  include/linux/memcontrol.h |    3 ++
->  mm/memcontrol.c            |   11 ++++++++
->  mm/vmscan.c                |   61 ++++++++++++++++++++++++++++---------------
->  3 files changed, 54 insertions(+), 21 deletions(-)
-> 
-[...]
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-[...]
-> @@ -3490,32 +3501,40 @@ void scan_mapping_unevictable_pages(struct address_space *mapping)
->  #define SCAN_UNEVICTABLE_BATCH_SIZE 16UL /* arbitrary lock hold batch size */
->  static void scan_zone_unevictable_pages(struct zone *zone)
->  {
-> -	struct list_head *l_unevictable = &zone->lru[LRU_UNEVICTABLE].list;
-> -	unsigned long scan;
-> -	unsigned long nr_to_scan = zone_page_state(zone, NR_UNEVICTABLE);
-> -
-> -	while (nr_to_scan > 0) {
-> -		unsigned long batch_size = min(nr_to_scan,
-> -						SCAN_UNEVICTABLE_BATCH_SIZE);
-> -
-> -		spin_lock_irq(&zone->lru_lock);
-> -		for (scan = 0;  scan < batch_size; scan++) {
-> -			struct page *page = lru_to_page(l_unevictable);
-> +	struct mem_cgroup *mem;
->  
-> -			if (!trylock_page(page))
-> -				continue;
-> +	mem = mem_cgroup_iter(NULL, NULL, NULL);
-> +	do {
-> +		struct mem_cgroup_zone mz = {
-> +			.mem_cgroup = mem,
-> +			.zone = zone,
-> +		};
-> +		unsigned long nr_to_scan;
->  
-> -			prefetchw_prev_lru_page(page, l_unevictable, flags);
-> +		nr_to_scan = zone_nr_lru_pages(&mz, LRU_UNEVICTABLE);
-> +		while (nr_to_scan > 0) {
-> +			unsigned long batch_size;
-> +			unsigned long scan;
->  
-> -			if (likely(PageLRU(page) && PageUnevictable(page)))
-> -				check_move_unevictable_page(page, zone);
-> +			batch_size = min(nr_to_scan,
-> +					 SCAN_UNEVICTABLE_BATCH_SIZE);
-> +			spin_lock_irq(&zone->lru_lock);
-> +			for (scan = 0; scan < batch_size; scan++) {
-> +				struct page *page;
->  
-> -			unlock_page(page);
-> +				page = lru_tailpage(&mz, LRU_UNEVICTABLE);
-> +				if (!trylock_page(page))
-> +					continue;
-
-We are not moving to the next page so we will try it again in the next
-round while we already increased the scan count. In the end we will
-missed some pages.
-
-> +				if (likely(PageLRU(page) &&
-> +					   PageUnevictable(page)))
-> +					check_move_unevictable_page(page, zone);
-> +				unlock_page(page);
-> +			}
-> +			spin_unlock_irq(&zone->lru_lock);
-> +			nr_to_scan -= batch_size;
->  		}
-> -		spin_unlock_irq(&zone->lru_lock);
-> -
-> -		nr_to_scan -= batch_size;
-> -	}
-> +		mem = mem_cgroup_iter(NULL, mem, NULL);
-> +	} while (mem);
->  }
->  
->  
-> -- 
-> 1.7.6
-> 
-
+diff --git a/drivers/target/target_core_fabric_lib.c b/drivers/target/target_core_fabric_lib.c
+index c4ea3a9..39f021b 100644
+--- a/drivers/target/target_core_fabric_lib.c
++++ b/drivers/target/target_core_fabric_lib.c
+@@ -63,6 +63,7 @@ u32 sas_get_pr_transport_id(
+ 	unsigned char *buf)
+ {
+ 	unsigned char *ptr;
++	int ret;
+ 
+ 	/*
+ 	 * Set PROTOCOL IDENTIFIER to 6h for SAS
+@@ -74,7 +75,9 @@ u32 sas_get_pr_transport_id(
+ 	 */
+ 	ptr = &se_nacl->initiatorname[4]; /* Skip over 'naa. prefix */
+ 
+-	hex2bin(&buf[4], ptr, 8);
++	ret = hex2bin(&buf[4], ptr, 8);
++	if (ret < 0)
++		pr_debug("sas transport_id: invalid hex string\n");
+ 
+ 	/*
+ 	 * The SAS Transport ID is a hardcoded 24-byte length
+@@ -156,8 +159,9 @@ u32 fc_get_pr_transport_id(
+ 	unsigned char *buf)
+ {
+ 	unsigned char *ptr;
+-	int i;
++	int i, ret;
+ 	u32 off = 8;
++
+ 	/*
+ 	 * PROTOCOL IDENTIFIER is 0h for FCP-2
+ 	 *
+@@ -174,7 +178,9 @@ u32 fc_get_pr_transport_id(
+ 			i++;
+ 			continue;
+ 		}
+-		hex2bin(&buf[off++], &ptr[i], 1);
++		ret = hex2bin(&buf[off++], &ptr[i], 1);
++		if (ret < 0)
++			pr_debug("fc transport_id: invalid hex string\n");
+ 		i += 2;
+ 	}
+ 	/*
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+1.7.3.4
+
+
