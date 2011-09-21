@@ -1,53 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751230Ab1IUNri (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 09:47:38 -0400
-Received: from mga02.intel.com ([134.134.136.20]:59136 "EHLO mga02.intel.com"
+	id S1751172Ab1IUNs3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 09:48:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9166 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751030Ab1IUNrg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 09:47:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="51478513"
-From: Oren Weil <oren.jer.weil@intel.com>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        tomas.winkler@intel.com, Oren Weil <oren.jer.weil@intel.com>
-Subject: [PATCH 2/2] staging: mei: clean the TODO file from done tasks.
-Date: Wed, 21 Sep 2011 16:45:31 +0300
-Message-Id: <1316612731-20905-2-git-send-email-oren.jer.weil@intel.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1316612731-20905-1-git-send-email-oren.jer.weil@intel.com>
-References: <1316612731-20905-1-git-send-email-oren.jer.weil@intel.com>
+	id S1750844Ab1IUNs2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 09:48:28 -0400
+Date: Wed, 21 Sep 2011 15:47:51 +0200
+From: Johannes Weiner <jweiner@redhat.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
+        Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 07/11] mm: vmscan: convert unevictable page rescue
+ scanner to per-memcg LRU lists
+Message-ID: <20110921134751.GD22516@redhat.com>
+References: <1315825048-3437-1-git-send-email-jweiner@redhat.com>
+ <1315825048-3437-8-git-send-email-jweiner@redhat.com>
+ <20110921123354.GC8501@tiehlicka.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110921123354.GC8501@tiehlicka.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Tomas Winkler <tomas.winkler@intel.com>
-Signed-off-by: Oren Weil <oren.jer.weil@intel.com>
----
- drivers/staging/mei/TODO |   10 ----------
- 1 files changed, 0 insertions(+), 10 deletions(-)
+On Wed, Sep 21, 2011 at 02:33:56PM +0200, Michal Hocko wrote:
+> On Mon 12-09-11 12:57:24, Johannes Weiner wrote:
+> > The global per-zone LRU lists are about to go away on memcg-enabled
+> > kernels, the unevictable page rescue scanner must be able to find its
+> > pages on the per-memcg LRU lists.
+> > 
+> > Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+> 
+> The patch is correct but I guess the original implementation of
+> scan_zone_unevictable_pages is buggy (see bellow). This should be
+> addressed separatelly, though.
+> 
+> Reviewed-by: Michal Hocko <mhocko@suse.cz>
 
-diff --git a/drivers/staging/mei/TODO b/drivers/staging/mei/TODO
-index 3b6a667..7d9a13b 100644
---- a/drivers/staging/mei/TODO
-+++ b/drivers/staging/mei/TODO
-@@ -1,14 +1,4 @@
- TODO:
--	- Create in-kernel Client API. Examples of in-kernel clients are watchdog and AMTHI.
--	- ME Watchdog Driver to expose standard Linux watchdog interface
--	- Rewrite AMTHI to use in-kernel client interface
--	- Cleanup init and probe functions
--	- Review BUG/BUG_ON usage
--	- Cleanup and reorganize header files
--	- Rewrite client data structure
--	- Make state machine more readable
--	- Add mei.txt with driver explanation and it's driver
--	- Fix Kconfig
- 	- Cleanup and split the timer function
- Upon Unstaging:
- 	- move mei.h to include/linux/mei.h
--- 
-1.7.4.1
+Thanks for your effort, Michal, I really appreciate it.
 
+> > @@ -3490,32 +3501,40 @@ void scan_mapping_unevictable_pages(struct address_space *mapping)
+> >  #define SCAN_UNEVICTABLE_BATCH_SIZE 16UL /* arbitrary lock hold batch size */
+> >  static void scan_zone_unevictable_pages(struct zone *zone)
+> >  {
+> > -	struct list_head *l_unevictable = &zone->lru[LRU_UNEVICTABLE].list;
+> > -	unsigned long scan;
+> > -	unsigned long nr_to_scan = zone_page_state(zone, NR_UNEVICTABLE);
+> > -
+> > -	while (nr_to_scan > 0) {
+> > -		unsigned long batch_size = min(nr_to_scan,
+> > -						SCAN_UNEVICTABLE_BATCH_SIZE);
+> > -
+> > -		spin_lock_irq(&zone->lru_lock);
+> > -		for (scan = 0;  scan < batch_size; scan++) {
+> > -			struct page *page = lru_to_page(l_unevictable);
+> > +	struct mem_cgroup *mem;
+> >  
+> > -			if (!trylock_page(page))
+> > -				continue;
+> > +	mem = mem_cgroup_iter(NULL, NULL, NULL);
+> > +	do {
+> > +		struct mem_cgroup_zone mz = {
+> > +			.mem_cgroup = mem,
+> > +			.zone = zone,
+> > +		};
+> > +		unsigned long nr_to_scan;
+> >  
+> > -			prefetchw_prev_lru_page(page, l_unevictable, flags);
+> > +		nr_to_scan = zone_nr_lru_pages(&mz, LRU_UNEVICTABLE);
+> > +		while (nr_to_scan > 0) {
+> > +			unsigned long batch_size;
+> > +			unsigned long scan;
+> >  
+> > -			if (likely(PageLRU(page) && PageUnevictable(page)))
+> > -				check_move_unevictable_page(page, zone);
+> > +			batch_size = min(nr_to_scan,
+> > +					 SCAN_UNEVICTABLE_BATCH_SIZE);
+> > +			spin_lock_irq(&zone->lru_lock);
+> > +			for (scan = 0; scan < batch_size; scan++) {
+> > +				struct page *page;
+> >  
+> > -			unlock_page(page);
+> > +				page = lru_tailpage(&mz, LRU_UNEVICTABLE);
+> > +				if (!trylock_page(page))
+> > +					continue;
+> 
+> We are not moving to the next page so we will try it again in the next
+> round while we already increased the scan count. In the end we will
+> missed some pages.
+
+I guess this is about latency.  This code is only executed when the
+user requests so by writing to a proc-file, check the comment above
+scan_all_zones_unevictable_pages.  I think at one point Lee wanted to
+move anon pages to the unevictable LRU when no swap is configured, but
+we have separate anon LRUs now that are not scanned without swap, and
+I think except for bugs there is no actual need to move these pages by
+hand, let alone reliably every single page.
