@@ -1,52 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753506Ab1IURth (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 13:49:37 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:50608 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751103Ab1IURte (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 13:49:34 -0400
-Date: Wed, 21 Sep 2011 13:40:26 -0400 (EDT)
-Message-Id: <20110921.134026.121607758721728538.davem@davemloft.net>
-To: yong.zhang0@gmail.com
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, perex@perex.cz, leitao@linux.vnet.ibm.com,
-        olof@lixom.net, nico@fluxnic.net, steve.glendinning@smsc.com,
-        geoff@infradead.org, t.sailer@alumni.ethz.ch, jreuter@yaina.de,
-        klaus.kudielka@ieee.org, jpr@f6fbb.org, samuel@sortiz.org,
-        chunkeey@googlemail.com, linville@tuxdriver.com,
-        jeffrey.t.kirsher@intel.com, jpirko@redhat.com, bob.liu@analog.com,
-        grundler@parisc-linux.org, ralf@linux-mips.org, blogic@openwrt.org,
-        marc@tensilica.com, lucas.demarchi@profusion.mobi, joe@perches.com,
-        uclinux-dist-devel@blackfin.uclinux.org, netdev@vger.kernel.org,
-        cbe-oss-dev@lists.ozlabs.org, linux-hams@vger.kernel.org,
-        linux-wireless@vger.kernel.org
-Subject: Re: [PATCH 39/57] net: irq: Remove IRQF_DISABLED
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1316597339-29861-40-git-send-email-yong.zhang0@gmail.com>
-References: <1316597339-29861-1-git-send-email-yong.zhang0@gmail.com>
-	<1316597339-29861-40-git-send-email-yong.zhang0@gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 21 Sep 2011 10:40:43 -0700 (PDT)
+	id S1753560Ab1IURuO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 13:50:14 -0400
+Received: from void.printf.net ([89.145.121.20]:33125 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751103Ab1IURuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 13:50:12 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-mmc@vger.kernel.org
+Subject: New location of mmc-next while kernel.org is down
+Date: Wed, 21 Sep 2011 13:49:49 -0400
+Message-ID: <m2wrd14wg2.fsf@bob.laptop.org>
+User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yong Zhang <yong.zhang0@gmail.com>
-Date: Wed, 21 Sep 2011 17:28:40 +0800
+Hi Stephen,
 
-> Since commit [c58543c8: genirq: Run irq handlers with interrupts disabled],
-> We run all interrupt handlers with interrupts disabled
-> and we even check and yell when an interrupt handler
-> returns with interrupts enabled (see commit [b738a50a:
-> genirq: Warn when handler enables interrupts]).
-> 
-> So now this flag is a NOOP and can be removed.
-> 
-> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+Please switch the mmc-next location for linux-next over to:
 
-Acked-by: David S. Miller <davem@davemloft.net>
+git://dev.laptop.org/users/cjb/mmc mmc-next
+
+Thanks very much,
+
+- Chris.
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
