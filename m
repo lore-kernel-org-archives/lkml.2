@@ -1,68 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752391Ab1IUDfA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 23:35:00 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:41015 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751561Ab1IUDe7 (ORCPT
+	id S1752457Ab1IUDjv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 23:39:51 -0400
+Received: from mail-wy0-f180.google.com ([74.125.82.180]:35498 "EHLO
+	mail-wy0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752386Ab1IUDju convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 23:34:59 -0400
-Date: Wed, 21 Sep 2011 13:34:56 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Russell King <rmk@arm.linux.org.uk>,
-        Viresh Kumar <viresh.kumar@st.com>
-Subject: linux-next: manual merge of the spi tree with the arm tree
-Message-Id: <20110921133456.3072657340220296eec6d7b6@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 20 Sep 2011 23:39:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110920071408.GB26791@tiehlicka.suse.cz>
+References: <1315909531-13419-1-git-send-email-consul.kautuk@gmail.com>
+	<20110920071408.GB26791@tiehlicka.suse.cz>
+Date: Wed, 21 Sep 2011 09:09:47 +0530
+Message-ID: <CAFPAmTQPLPnB8EhZYvcdWFPtmWC+my0M3qoojBsms=0SwQ9XXA@mail.gmail.com>
+Subject: Re: [PATCH 1/1] Trivial: Eliminate the ret variable from mm_take_all_locks
+From: "kautuk.c @samsung.com" <consul.kautuk@gmail.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Shaohua Li <shaohua.li@intel.com>, Jiri Kosina <trivial@kernel.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+Thanks, Michal.
 
-Today's linux-next merge of the spi tree got a conflict in
-drivers/spi/spi-pl022.c between commit 67fc8b9fe70c ("PM: add runtime PM
-support to core Primecell driver") from the arm tree and commit
-4eb389a89154 ("spi/spi-pl022: Resolve formatting issues") from the spi
-tree.
-
-The former removes the lines modified by the latter, so I just removed
-the lines (see below).
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/spi/spi-pl022.c
-index 3520cf9,02b2eda..0000000
---- a/drivers/spi/spi-pl022.c
-+++ b/drivers/spi/spi-pl022.c
-@@@ -2235,8 -2237,11 +2225,10 @@@ pl022_probe(struct amba_device *adev, c
-   err_start_queue:
-   err_init_queue:
-  	destroy_queue(pl022);
-- 	pl022_dma_remove(pl022);
-+ 	if (platform_info->enable_dma)
-+ 		pl022_dma_remove(pl022);
-+ 
-  	free_irq(adev->irq[0], pl022);
- -	pm_runtime_disable(&adev->dev);
-   err_no_irq:
-  	clk_put(pl022->clk);
-   err_no_clk:
-@@@ -2429,9 -2404,10 +2422,8 @@@ static struct amba_driver pl022_driver 
-  	.id_table	= pl022_ids,
-  	.probe		= pl022_probe,
-  	.remove		= __devexit_p(pl022_remove),
- -	.suspend	= pl022_suspend,
- -	.resume		= pl022_resume,
-  };
-  
-- 
-  static int __init pl022_init(void)
-  {
-  	return amba_driver_register(&pl022_driver);
+On Tue, Sep 20, 2011 at 12:44 PM, Michal Hocko <mhocko@suse.cz> wrote:
+> On Tue 13-09-11 15:55:31, Kautuk Consul wrote:
+>> The ret variable is really not needed in mm_take_all_locks as per
+>> the current flow of the mm_take_all_locks function.
+>>
+>> So, eliminating this return variable.
+>>
+>> Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
+>
+> The compiled code seems to be very same - compilers are clever enough to
+> reorganize the code but anyway the code reads better this way.
+>
+> Reviewed-by: Michal Hocko <mhocko@suse.cz>
+>
+>> ---
+>>  mm/mmap.c |    8 +++-----
+>>  1 files changed, 3 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/mm/mmap.c b/mm/mmap.c
+>> index a65efd4..48bc056 100644
+>> --- a/mm/mmap.c
+>> +++ b/mm/mmap.c
+>> @@ -2558,7 +2558,6 @@ int mm_take_all_locks(struct mm_struct *mm)
+>>  {
+>>       struct vm_area_struct *vma;
+>>       struct anon_vma_chain *avc;
+>> -     int ret = -EINTR;
+>>
+>>       BUG_ON(down_read_trylock(&mm->mmap_sem));
+>>
+>> @@ -2579,13 +2578,12 @@ int mm_take_all_locks(struct mm_struct *mm)
+>>                               vm_lock_anon_vma(mm, avc->anon_vma);
+>>       }
+>>
+>> -     ret = 0;
+>> +     return 0;
+>>
+>>  out_unlock:
+>> -     if (ret)
+>> -             mm_drop_all_locks(mm);
+>> +     mm_drop_all_locks(mm);
+>>
+>> -     return ret;
+>> +     return -EINTR;
+>>  }
+>>
+>>  static void vm_unlock_anon_vma(struct anon_vma *anon_vma)
+>> --
+>> 1.7.6
+>>
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
+> --
+> Michal Hocko
+> SUSE Labs
+> SUSE LINUX s.r.o.
+> Lihovarska 1060/12
+> 190 00 Praha 9
+> Czech Republic
+>
