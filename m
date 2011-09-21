@@ -1,96 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752457Ab1IUDjv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 23:39:51 -0400
-Received: from mail-wy0-f180.google.com ([74.125.82.180]:35498 "EHLO
-	mail-wy0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752386Ab1IUDju convert rfc822-to-8bit (ORCPT
+	id S1752516Ab1IUDlo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 23:41:44 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:54766 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752388Ab1IUDlm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 23:39:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110920071408.GB26791@tiehlicka.suse.cz>
-References: <1315909531-13419-1-git-send-email-consul.kautuk@gmail.com>
-	<20110920071408.GB26791@tiehlicka.suse.cz>
-Date: Wed, 21 Sep 2011 09:09:47 +0530
-Message-ID: <CAFPAmTQPLPnB8EhZYvcdWFPtmWC+my0M3qoojBsms=0SwQ9XXA@mail.gmail.com>
-Subject: Re: [PATCH 1/1] Trivial: Eliminate the ret variable from mm_take_all_locks
-From: "kautuk.c @samsung.com" <consul.kautuk@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Shaohua Li <shaohua.li@intel.com>, Jiri Kosina <trivial@kernel.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 20 Sep 2011 23:41:42 -0400
+Subject: Re: [PATCH v1 4/4] target: check hex2bin result
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Arnaud Lacombe <lacombar@gmail.com>, James Morris <jmorris@namei.org>,
+        David Safford <safford@watson.ibm.com>
+In-Reply-To: <CAHp75VcQd9CjCKHVWjb7pDzFWCHMTcpTrzG4hHfiLu27F+Tfmg@mail.gmail.com>
+References: <1316548373-8782-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <1316548373-8782-5-git-send-email-zohar@linux.vnet.ibm.com>
+	 <CAHp75VcQd9CjCKHVWjb7pDzFWCHMTcpTrzG4hHfiLu27F+Tfmg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 20 Sep 2011 23:41:32 -0400
+Message-ID: <1316576492.3287.31.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks, Michal.
+On Wed, 2011-09-21 at 02:55 +0300, Andy Shevchenko wrote:
+> On Tue, Sep 20, 2011 at 10:52 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> > Now that hex2bin does error checking, on error add debugging error msg.
+> >
+> > Changelog v1:
+> > - hex2bin now returns an int
+> >
+> > Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+> > ---
+> >  drivers/target/target_core_fabric_lib.c |   11 +++++++++--
+> >  1 files changed, 9 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/drivers/target/target_core_fabric_lib.c b/drivers/target/target_core_fabric_lib.c
+> > index c4ea3a9..17658ca 100644
+> > --- a/drivers/target/target_core_fabric_lib.c
+> > +++ b/drivers/target/target_core_fabric_lib.c
+> > @@ -63,6 +63,7 @@ u32 sas_get_pr_transport_id(
+> >        unsigned char *buf)
+> >  {
+> >        unsigned char *ptr;
+> > +       bool ret;
+> I'm sorry for this, but I guess you meant int?
 
-On Tue, Sep 20, 2011 at 12:44 PM, Michal Hocko <mhocko@suse.cz> wrote:
-> On Tue 13-09-11 15:55:31, Kautuk Consul wrote:
->> The ret variable is really not needed in mm_take_all_locks as per
->> the current flow of the mm_take_all_locks function.
->>
->> So, eliminating this return variable.
->>
->> Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
->
-> The compiled code seems to be very same - compilers are clever enough to
-> reorganize the code but anyway the code reads better this way.
->
-> Reviewed-by: Michal Hocko <mhocko@suse.cz>
->
->> ---
->>  mm/mmap.c |    8 +++-----
->>  1 files changed, 3 insertions(+), 5 deletions(-)
->>
->> diff --git a/mm/mmap.c b/mm/mmap.c
->> index a65efd4..48bc056 100644
->> --- a/mm/mmap.c
->> +++ b/mm/mmap.c
->> @@ -2558,7 +2558,6 @@ int mm_take_all_locks(struct mm_struct *mm)
->>  {
->>       struct vm_area_struct *vma;
->>       struct anon_vma_chain *avc;
->> -     int ret = -EINTR;
->>
->>       BUG_ON(down_read_trylock(&mm->mmap_sem));
->>
->> @@ -2579,13 +2578,12 @@ int mm_take_all_locks(struct mm_struct *mm)
->>                               vm_lock_anon_vma(mm, avc->anon_vma);
->>       }
->>
->> -     ret = 0;
->> +     return 0;
->>
->>  out_unlock:
->> -     if (ret)
->> -             mm_drop_all_locks(mm);
->> +     mm_drop_all_locks(mm);
->>
->> -     return ret;
->> +     return -EINTR;
->>  }
->>
->>  static void vm_unlock_anon_vma(struct anon_vma *anon_vma)
->> --
->> 1.7.6
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
-> --
-> Michal Hocko
-> SUSE Labs
-> SUSE LINUX s.r.o.
-> Lihovarska 1060/12
-> 190 00 Praha 9
-> Czech Republic
->
+Sigh, yes of course.  As an after thought, I decided to include the
+'target' patch.  :( 
+> >
+> >        /*
+> >         * Set PROTOCOL IDENTIFIER to 6h for SAS
+> 
+> > @@ -158,6 +161,8 @@ u32 fc_get_pr_transport_id(
+> >        unsigned char *ptr;
+> >        int i;
+> >        u32 off = 8;
+> > +       bool ret;
+> Ditto.
+> > +
+> >        /*
+> >         * PROTOCOL IDENTIFIER is 0h for FCP-2
+> >         *
+> Otherwise have my Acked-by. I think Andrew also will be happy.
+
+Thanks for all the reviews/Acks!
+
+Mimi
+
