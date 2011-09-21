@@ -1,79 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751440Ab1IUBnv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Sep 2011 21:43:51 -0400
-Received: from mga01.intel.com ([192.55.52.88]:20761 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750838Ab1IUBnu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Sep 2011 21:43:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,414,1312182000"; 
-   d="scan'208";a="53817493"
-Message-ID: <4E794154.6000605@intel.com>
-Date: Wed, 21 Sep 2011 09:43:48 +0800
-From: Huang Ying <ying.huang@intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Iceowl/1.0b2 Icedove/3.1.13
+	id S1751530Ab1IUByo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Sep 2011 21:54:44 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:37706 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751122Ab1IUBym (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Sep 2011 21:54:42 -0400
+Message-ID: <4E7943DE.3040700@gmail.com>
+Date: Tue, 20 Sep 2011 20:54:38 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110918 Thunderbird/7.0
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH 4/8] ACPI, APEI, Resolve false conflict between ACPI NVS
- and APEI
-References: <1316482741-21799-1-git-send-email-ying.huang@intel.com> <1316482741-21799-5-git-send-email-ying.huang@intel.com> <CAErSpo4_syhxOi8jGo5oyrWBimsO7PdsXEky1vwPY_130OuPMA@mail.gmail.com> <4E77FBA4.3080907@intel.com> <CAErSpo5pUY8g7U0NeUe+Yf+R8kraExZN3Sheo6h+fb9B+RO7rw@mail.gmail.com>
-In-Reply-To: <CAErSpo5pUY8g7U0NeUe+Yf+R8kraExZN3Sheo6h+fb9B+RO7rw@mail.gmail.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, marc.zyngier@arm.com,
+        thomas.abraham@linaro.org, jamie@jamieiles.com, b-cousson@ti.com,
+        shawn.guo@linaro.org, dave.martin@linaro.org, linux@arm.linux.org.uk,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH 3/3] ARM: gic: add OF based initialization
+References: <1316550244-3655-1-git-send-email-robherring2@gmail.com> <1316550244-3655-4-git-send-email-robherring2@gmail.com> <20110920230800.GS7781@ponder.secretlab.ca>
+In-Reply-To: <20110920230800.GS7781@ponder.secretlab.ca>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/21/2011 12:26 AM, Bjorn Helgaas wrote:
-> On Mon, Sep 19, 2011 at 8:34 PM, Huang Ying <ying.huang@intel.com> wrote:
->> On 09/20/2011 10:09 AM, Bjorn Helgaas wrote:
->>> On Mon, Sep 19, 2011 at 7:38 PM, Huang Ying <ying.huang@intel.com> wrote:
->>>> Some firmware will access memory in ACPI NVS region via APEI.  That
->>>> is, instructions in APEI ERST/EINJ table will read/write ACPI NVS
->>>> region.  The original resource conflict checking in APEI code will
->>>> check memory/ioport accessed by APEI via general resource management
->>>> mech.  But ACPI NVS region is marked as busy already, so that the
->>>> false resource conflict will prevent APEI ERST/EINJ to work.
->>>>
->>>> To fix this, this patch excludes ACPI NVS regions when APEI components
->>>> request resources.  So that they will not conflict with ACPI NVS
->>>> regions.
->>>
->>> I think this is much, much too complicated.
->>>
->>> Yinghai's three-line e820.c patch to leave ACPI NVS regions in the
->>> iomem_resource tree, but as not busy, is far better.
+On 09/20/2011 06:08 PM, Grant Likely wrote:
+> On Tue, Sep 20, 2011 at 03:24:04PM -0500, Rob Herring wrote:
+>> From: Rob Herring <rob.herring@calxeda.com>
 >>
->> ACPI NVS should only be used by firmware or firmware interpreter instead
->> of the ordinary drivers.  So I think that is reasonable to make it busy
->> in iomem resource tree.
+>> This adds ARM gic interrupt controller initialization using device tree
+>> data.
+>>
+>> The initialization function is intended to be called by of_irq_init
+>> function like this:
+>>
+>> const static struct of_device_id irq_match[] = {
+>>         { .compatible = "arm,cortex-a9-gic", .data = gic_of_init, },
+>>         {}
+>> };
+>>
+>> static void __init init_irqs(void)
+>> {
+>>         of_irq_init(irq_match);
+>> }
+>>
+>> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+>> ---
+>>  Documentation/devicetree/bindings/arm/gic.txt |   55 +++++++++++++++
+>>  arch/arm/common/gic.c                         |   89 +++++++++++++++++++++++-
+>>  arch/arm/include/asm/hardware/gic.h           |   12 ++++
+>>  3 files changed, 152 insertions(+), 4 deletions(-)
+>>  create mode 100644 Documentation/devicetree/bindings/arm/gic.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/arm/gic.txt b/Documentation/devicetree/bindings/arm/gic.txt
+>> new file mode 100644
+>> index 0000000..52916b4
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/arm/gic.txt
+>> @@ -0,0 +1,55 @@
+>> +* ARM Generic Interrupt Controller
+>> +
+>> +ARM SMP cores are often associated with a GIC, providing per processor
+>> +interrupts (PPI), shared processor interrupts (SPI) and software
+>> +generated interrupts (SGI).
+>> +
+>> +Primary GIC is attached directly to the CPU and typically has PPIs and SGIs.
+>> +Secondary GICs are cascaded into the upward interrupt controller and do not
+>> +have PPIs or SGIs.
+>> +
+>> +Main node required properties:
+>> +
+>> +- compatible : should be one of:
+>> +	"arm,cortex-a9-gic"
+>> +	"arm,arm11mp-gic"
+>> +- interrupt-controller : Identifies the node as an interrupt controller
+>> +- #interrupt-cells : Specifies the number of cells needed to encode an
+>> +  interrupt source.  The type shall be a <u32> and the value shall be 3.
+>> +
+>> +  The 1st cell is the interrupt type; 0 for SPI interrupts, 1 for PPI
+>> +  interrupts.
+>> +
+>> +  The 2nd cell contains the interrupt number for the interrupt type.
+>> +  SPI interrupts are in the range [0-987].  PPI interrupts are in the
+>> +  range [0-15].
+>> +
+>> +  The 3rd cell is the flags, encoded as follows:
+>> +	bits[3:0] trigger type and level flags.
+>> +		1 = low-to-high edge triggered
+>> +		2 = high-to-low edge triggered
+>> +		4 = active high level-sensitive
+>> +		8 = active low level-sensitive
+>> +	bits[15:8] PPI interrupt cpu mask.  Each bit corresponds to each of
+>> +	the 8 possible cpus attached to the GIC.  A bit set to '1' indicated
+>> +	the interrupt is wired to that CPU.  Only valid for PPI interrupts.
+>> +
+>> +- reg : Specifies base physical address(s) and size of the GIC registers. The
+>> +  first region is the GIC distributor register base and size. The 2nd region is
+>> +  the GIC cpu interface register base and size.
+>> +
+>> +Optional
+>> +- interrupts	: Interrupt source of the parent interrupt controller. Only
+>> +  present on secondary GICs.
+>> +
+>> +Example:
+>> +
+>> +	intc: interrupt-controller@fff11000 {
+>> +		compatible = "arm,cortex-a9-gic";
+>> +		#interrupt-cells = <3>;
+>> +		#address-cells = <1>;
+>> +		interrupt-controller;
+>> +		reg = <0xfff11000 0x1000>,
+>> +		      <0xfff10100 0x100>;
+>> +	};
+>> +
 > 
-> "My driver is not like ordinary drivers" is a common excuse for adding
-> special cases. I don't buy it.
+> Ack on the binding.
 > 
-> These patches (3 and 4) add a lot of complexity but I don't believe
-> they add any real protection.
+>> diff --git a/arch/arm/common/gic.c b/arch/arm/common/gic.c
+>> index 666b278..84e69a4 100644
+>> --- a/arch/arm/common/gic.c
+>> +++ b/arch/arm/common/gic.c
+>> @@ -28,6 +28,10 @@
+>>  #include <linux/smp.h>
+>>  #include <linux/cpumask.h>
+>>  #include <linux/io.h>
+>> +#include <linux/of.h>
+>> +#include <linux/of_address.h>
+>> +#include <linux/of_irq.h>
+>> +#include <linux/irqdomain.h>
+>>  
+>>  #include <asm/irq.h>
+>>  #include <asm/mach/irq.h>
+>> @@ -255,6 +259,15 @@ void __init gic_cascade_irq(unsigned int gic_nr, unsigned int irq)
+>>  	irq_set_chained_handler(irq, gic_handle_cascade_irq);
+>>  }
+>>  
+>> +static int gic_irq_count(void __iomem *dist_base)
+>> +{
+>> +	int gic_irqs = readl_relaxed(dist_base + GIC_DIST_CTR) & 0x1f;
+>> +	gic_irqs = (gic_irqs + 1) * 32;
+>> +	if (gic_irqs > 1020)
+>> +		gic_irqs = 1020;
+>> +	return gic_irqs;
+>> +}
+>> +
+>>  static void __init gic_dist_init(struct gic_chip_data *gic,
+>>  	unsigned int irq_start)
+>>  {
+>> @@ -277,10 +290,7 @@ static void __init gic_dist_init(struct gic_chip_data *gic,
+>>  	 * Find out how many interrupts are supported.
+>>  	 * The GIC only supports up to 1020 interrupt sources.
+>>  	 */
+>> -	gic_irqs = readl_relaxed(base + GIC_DIST_CTR) & 0x1f;
+>> -	gic_irqs = (gic_irqs + 1) * 32;
+>> -	if (gic_irqs > 1020)
+>> -		gic_irqs = 1020;
+>> +	gic_irqs = gic_irq_count(base);
+>>  
+>>  	/*
+>>  	 * Set all global interrupts to be level triggered, active low.
+>> @@ -405,3 +415,74 @@ void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
+>>  	writel_relaxed(map << 16 | irq, gic_data[0].dist_base + GIC_DIST_SOFTINT);
+>>  }
+>>  #endif
+>> +
+>> +#ifdef CONFIG_OF
+>> +static int gic_cnt __initdata = 0;
+>> +
+>> +int gic_irq_domain_dt_translate(struct irq_domain *d,
+>> +			    struct device_node *controller,
+>> +			    const u32 *intspec, unsigned int intsize,
+>> +			    unsigned long *out_hwirq, unsigned int *out_type)
+>> +{
+>> +	struct gic_chip_data *gic_data = d->priv;
+>> +
+>> +	if (d->of_node != controller)
+>> +		return -EINVAL;
+>> +	if (intsize < 3)
+>> +		return -EINVAL;
+>> +
+>> +	*out_hwirq = intspec[1];
+>> +	/*
+>> +	 * We've already skipped over SGIs, so PPIs need no translation.
+>> +	 * For SPIs, we need to skip over 16 PPIs on primary GICs.
+>> +	 */
+>> +	if (!intspec[0] && !gic_data->irq_offset)
+>> +		*out_hwirq += 16;
 > 
-> Regions are marked busy by their owners, i.e., by drivers that claim
-> devices and know how to operate them.  The e820 code is not an owner
-> of ACPI NVS regions, so it should not mark them busy.
+> I though that the offset was 32 to get from SPI number to Interrrupt
+> ID?  And that PPI interrupts start at Interrupt ID 16?  Or am I
+> mistaken about the hwirq number that this driver uses internally?
 > 
-> I don't really think we have a problem here that needs to be solved.
-> Ordinary drivers have no way of learning an address in ACPI NVS, so
-> they aren't even going to try to use it.
 
-So what resource conflict checking is for?  If something wrong with
-driver configuration, resource description in ACPI table etc, the driver
-may request iomem inside ACPI NVS regions.
+There's basically 2 cases to handle: primary and secondary controllers.
 
-ACPI NVS regions already have a user, that is the ACPI AML interpreter,
-so it is always busy.
+For primary ctrlrs, the domain irq_base is already 16 to skip over SGIs
+and legacy ISA interrupts. So PPIs don't need any conversion and SPIs
+only need 16 more added. I misspoke previously as it's not quite
+independent of virq numbering because entry-macro-gic.S is still fixed
+GIC ID = Linux virq (or offset of 32 in Exynos case).
 
-Best Regards,
-Huang Ying
+For secondary ctrlrs, the gic code already accounts for 32 offset in ID
+to Linux virq with the irq_offset field which is set to Linux virq base
+- 32. So in this case, no conversion is needed.
+
+I don't really see a better way without breaking non-DT use of the gic.
+
+Rob
