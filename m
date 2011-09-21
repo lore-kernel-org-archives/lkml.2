@@ -1,20 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752979Ab1IUJaX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 05:30:23 -0400
+	id S1752994Ab1IUJad (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 05:30:33 -0400
 Received: from mail-wy0-f180.google.com ([74.125.82.180]:49741 "EHLO
 	mail-wy0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752862Ab1IUJaS (ORCPT
+	with ESMTP id S1752831Ab1IUJa2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 05:30:18 -0400
+	Wed, 21 Sep 2011 05:30:28 -0400
 From: Yong Zhang <yong.zhang0@gmail.com>
 To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de, yong.zhang0@gmail.com,
-        Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Torben Hohn <torbenh@gmx.de>
-Subject: [PATCH 07/57] h8300: irq: Remove IRQF_DISABLED
-Date: Wed, 21 Sep 2011 17:28:08 +0800
-Message-Id: <1316597339-29861-8-git-send-email-yong.zhang0@gmail.com>
+Cc: tglx@linutronix.de, yong.zhang0@gmail.com, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Alan Cox <alan@linux.intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Jeff Mahoney <jeffm@suse.com>,
+        Nick Piggin <npiggin@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>,
+        Joe Perches <joe@perches.com>, Jesper Juhl <jj@chaosbits.net>,
+        John Stultz <johnstul@us.ibm.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Torben Hohn <torbenh@gmx.de>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-ia64@vger.kernel.org
+Subject: [PATCH 08/57] ia64: irq: Remove IRQF_DISABLED
+Date: Wed, 21 Sep 2011 17:28:09 +0800
+Message-Id: <1316597339-29861-9-git-send-email-yong.zhang0@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1316597339-29861-1-git-send-email-yong.zhang0@gmail.com>
 References: <1316597339-29861-1-git-send-email-yong.zhang0@gmail.com>
@@ -32,64 +42,153 @@ So now this flag is a NOOP and can be removed.
 
 Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
 ---
- arch/h8300/kernel/timer/itu.c     |    2 +-
- arch/h8300/kernel/timer/timer16.c |    2 +-
- arch/h8300/kernel/timer/timer8.c  |    2 +-
- arch/h8300/kernel/timer/tpu.c     |    2 +-
- 4 files changed, 4 insertions(+), 4 deletions(-)
+ arch/ia64/hp/sim/simserial.c |    2 +-
+ arch/ia64/kernel/irq_ia64.c  |    4 ----
+ arch/ia64/kernel/mca.c       |    6 ------
+ arch/ia64/kernel/perfmon.c   |    1 -
+ arch/ia64/kernel/time.c      |    2 +-
+ arch/ia64/xen/irq_xen.c      |    3 ---
+ 6 files changed, 2 insertions(+), 16 deletions(-)
 
-diff --git a/arch/h8300/kernel/timer/itu.c b/arch/h8300/kernel/timer/itu.c
-index a2ae5e9..21afa64 100644
---- a/arch/h8300/kernel/timer/itu.c
-+++ b/arch/h8300/kernel/timer/itu.c
-@@ -59,7 +59,7 @@ static irqreturn_t timer_interrupt(int irq, void *dev_id)
- static struct irqaction itu_irq = {
- 	.name		= "itu",
- 	.handler	= timer_interrupt,
--	.flags		= IRQF_DISABLED | IRQF_TIMER,
-+	.flags		= IRQF_TIMER,
+diff --git a/arch/ia64/hp/sim/simserial.c b/arch/ia64/hp/sim/simserial.c
+index bff0824..2fa31be 100644
+--- a/arch/ia64/hp/sim/simserial.c
++++ b/arch/ia64/hp/sim/simserial.c
+@@ -43,7 +43,7 @@
+ 
+ #define NR_PORTS	1	/* only one port for now */
+ 
+-#define IRQ_T(info) ((info->flags & ASYNC_SHARE_IRQ) ? IRQF_SHARED : IRQF_DISABLED)
++#define IRQ_T(info) ((info->flags & ASYNC_SHARE_IRQ) ? IRQF_SHARED : 0)
+ 
+ #define SSC_GETCHAR	21
+ 
+diff --git a/arch/ia64/kernel/irq_ia64.c b/arch/ia64/kernel/irq_ia64.c
+index 782c3a35..80b07ad 100644
+--- a/arch/ia64/kernel/irq_ia64.c
++++ b/arch/ia64/kernel/irq_ia64.c
+@@ -366,7 +366,6 @@ static irqreturn_t smp_irq_move_cleanup_interrupt(int irq, void *dev_id)
+ 
+ static struct irqaction irq_move_irqaction = {
+ 	.handler =	smp_irq_move_cleanup_interrupt,
+-	.flags =	IRQF_DISABLED,
+ 	.name =		"irq_move"
  };
  
- static const int __initdata divide_rate[] = {1, 2, 4, 8};
-diff --git a/arch/h8300/kernel/timer/timer16.c b/arch/h8300/kernel/timer/timer16.c
-index ae0d381..3864531 100644
---- a/arch/h8300/kernel/timer/timer16.c
-+++ b/arch/h8300/kernel/timer/timer16.c
-@@ -54,7 +54,7 @@ static irqreturn_t timer_interrupt(int irq, void *dev_id)
- static struct irqaction timer16_irq = {
- 	.name		= "timer-16",
- 	.handler	= timer_interrupt,
--	.flags		= IRQF_DISABLED | IRQF_TIMER,
-+	.flags		= IRQF_TIMER,
+@@ -604,7 +603,6 @@ static irqreturn_t dummy_handler (int irq, void *dev_id)
+ 
+ static struct irqaction ipi_irqaction = {
+ 	.handler =	handle_IPI,
+-	.flags =	IRQF_DISABLED,
+ 	.name =		"IPI"
  };
  
- static const int __initdata divide_rate[] = {1, 2, 4, 8};
-diff --git a/arch/h8300/kernel/timer/timer8.c b/arch/h8300/kernel/timer/timer8.c
-index 7a1533f..13617fb 100644
---- a/arch/h8300/kernel/timer/timer8.c
-+++ b/arch/h8300/kernel/timer/timer8.c
-@@ -74,7 +74,7 @@ static irqreturn_t timer_interrupt(int irq, void *dev_id)
- static struct irqaction timer8_irq = {
- 	.name		= "timer-8",
- 	.handler	= timer_interrupt,
--	.flags		= IRQF_DISABLED | IRQF_TIMER,
-+	.flags		= IRQF_TIMER,
+@@ -613,13 +611,11 @@ static struct irqaction ipi_irqaction = {
+  */
+ static struct irqaction resched_irqaction = {
+ 	.handler =	dummy_handler,
+-	.flags =	IRQF_DISABLED,
+ 	.name =		"resched"
  };
  
- static const int __initdata divide_rate[] = {8, 64, 8192};
-diff --git a/arch/h8300/kernel/timer/tpu.c b/arch/h8300/kernel/timer/tpu.c
-index 2193a2e..aa5707e 100644
---- a/arch/h8300/kernel/timer/tpu.c
-+++ b/arch/h8300/kernel/timer/tpu.c
-@@ -63,7 +63,7 @@ static irqreturn_t timer_interrupt(int irq, void *dev_id)
- static struct irqaction tpu_irq = {
- 	.name		= "tpu",
- 	.handler	= timer_interrupt,
--	.flags		= IRQF_DISABLED | IRQF_TIMER,
-+	.flags		= IRQF_TIMER,
+ static struct irqaction tlb_irqaction = {
+ 	.handler =	dummy_handler,
+-	.flags =	IRQF_DISABLED,
+ 	.name =		"tlb_flush"
  };
  
- static const int __initdata divide_rate[] = {
+diff --git a/arch/ia64/kernel/mca.c b/arch/ia64/kernel/mca.c
+index 84fb405..3df4fe0 100644
+--- a/arch/ia64/kernel/mca.c
++++ b/arch/ia64/kernel/mca.c
+@@ -1769,38 +1769,32 @@ __setup("disable_cpe_poll", ia64_mca_disable_cpe_polling);
+ 
+ static struct irqaction cmci_irqaction = {
+ 	.handler =	ia64_mca_cmc_int_handler,
+-	.flags =	IRQF_DISABLED,
+ 	.name =		"cmc_hndlr"
+ };
+ 
+ static struct irqaction cmcp_irqaction = {
+ 	.handler =	ia64_mca_cmc_int_caller,
+-	.flags =	IRQF_DISABLED,
+ 	.name =		"cmc_poll"
+ };
+ 
+ static struct irqaction mca_rdzv_irqaction = {
+ 	.handler =	ia64_mca_rendez_int_handler,
+-	.flags =	IRQF_DISABLED,
+ 	.name =		"mca_rdzv"
+ };
+ 
+ static struct irqaction mca_wkup_irqaction = {
+ 	.handler =	ia64_mca_wakeup_int_handler,
+-	.flags =	IRQF_DISABLED,
+ 	.name =		"mca_wkup"
+ };
+ 
+ #ifdef CONFIG_ACPI
+ static struct irqaction mca_cpe_irqaction = {
+ 	.handler =	ia64_mca_cpe_int_handler,
+-	.flags =	IRQF_DISABLED,
+ 	.name =		"cpe_hndlr"
+ };
+ 
+ static struct irqaction mca_cpep_irqaction = {
+ 	.handler =	ia64_mca_cpe_int_caller,
+-	.flags =	IRQF_DISABLED,
+ 	.name =		"cpe_poll"
+ };
+ #endif /* CONFIG_ACPI */
+diff --git a/arch/ia64/kernel/perfmon.c b/arch/ia64/kernel/perfmon.c
+index 89accc6..e807a57 100644
+--- a/arch/ia64/kernel/perfmon.c
++++ b/arch/ia64/kernel/perfmon.c
+@@ -6432,7 +6432,6 @@ pfm_flush_pmds(struct task_struct *task, pfm_context_t *ctx)
+ 
+ static struct irqaction perfmon_irqaction = {
+ 	.handler = pfm_interrupt_handler,
+-	.flags   = IRQF_DISABLED,
+ 	.name    = "perfmon"
+ };
+ 
+diff --git a/arch/ia64/kernel/time.c b/arch/ia64/kernel/time.c
+index 43920de..ef64514 100644
+--- a/arch/ia64/kernel/time.c
++++ b/arch/ia64/kernel/time.c
+@@ -397,7 +397,7 @@ static cycle_t itc_get_cycles(struct clocksource *cs)
+ 
+ static struct irqaction timer_irqaction = {
+ 	.handler =	timer_interrupt,
+-	.flags =	IRQF_DISABLED | IRQF_IRQPOLL,
++	.flags =	IRQF_IRQPOLL,
+ 	.name =		"timer"
+ };
+ 
+diff --git a/arch/ia64/xen/irq_xen.c b/arch/ia64/xen/irq_xen.c
+index b279e14..d794270 100644
+--- a/arch/ia64/xen/irq_xen.c
++++ b/arch/ia64/xen/irq_xen.c
+@@ -113,19 +113,16 @@ xen_resched_handler(int irq, void *dev_id)
+ 
+ static struct irqaction xen_ipi_irqaction = {
+ 	.handler =	handle_IPI,
+-	.flags =	IRQF_DISABLED,
+ 	.name =		"IPI"
+ };
+ 
+ static struct irqaction xen_resched_irqaction = {
+ 	.handler =	xen_resched_handler,
+-	.flags =	IRQF_DISABLED,
+ 	.name =		"resched"
+ };
+ 
+ static struct irqaction xen_tlb_irqaction = {
+ 	.handler =	xen_dummy_handler,
+-	.flags =	IRQF_DISABLED,
+ 	.name =		"tlb_flush"
+ };
+ #endif
 -- 
 1.7.4.1
 
