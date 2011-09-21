@@ -1,27 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753900Ab1IUJgQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 05:36:16 -0400
-Received: from mail-wy0-f180.google.com ([74.125.82.180]:63946 "EHLO
-	mail-wy0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753871Ab1IUJgK (ORCPT
+	id S1753938Ab1IUJg3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 05:36:29 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:62274 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753838Ab1IUJgZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 05:36:10 -0400
+	Wed, 21 Sep 2011 05:36:25 -0400
 From: Yong Zhang <yong.zhang0@gmail.com>
 To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: tglx@linutronix.de, yong.zhang0@gmail.com,
-        Evgeniy Polyakov <zbr@ioremap.net>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Andres Salomon <dilinger@queued.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        =?UTF-8?q?Jean-Fran=C3=A7ois=20Dagenais?= <dagenaisj@sonatest.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Amit Kucheria <amit.kucheria@canonical.com>,
-        Julia Lawall <julia@diku.dk>
-Subject: [PATCH 50/57] w1: irq: Remove IRQF_DISABLED
-Date: Wed, 21 Sep 2011 17:28:51 +0800
-Message-Id: <1316597339-29861-51-git-send-email-yong.zhang0@gmail.com>
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org
+Subject: [PATCH 52/57] xen: irq: Remove IRQF_DISABLED
+Date: Wed, 21 Sep 2011 17:28:53 +0800
+Message-Id: <1316597339-29861-53-git-send-email-yong.zhang0@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1316597339-29861-1-git-send-email-yong.zhang0@gmail.com>
 References: <1316597339-29861-1-git-send-email-yong.zhang0@gmail.com>
@@ -39,36 +34,36 @@ So now this flag is a NOOP and can be removed.
 
 Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
 ---
- drivers/w1/masters/ds1wm.c    |    2 +-
- drivers/w1/masters/omap_hdq.c |    2 +-
+ drivers/xen/evtchn.c       |    2 +-
+ drivers/xen/platform-pci.c |    2 +-
  2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/w1/masters/ds1wm.c b/drivers/w1/masters/ds1wm.c
-index a0c8965..9fa6844 100644
---- a/drivers/w1/masters/ds1wm.c
-+++ b/drivers/w1/masters/ds1wm.c
-@@ -502,7 +502,7 @@ static int ds1wm_probe(struct platform_device *pdev)
- 		irq_set_irq_type(ds1wm_data->irq, IRQ_TYPE_EDGE_FALLING);
+diff --git a/drivers/xen/evtchn.c b/drivers/xen/evtchn.c
+index dbc13e9..95e2507 100644
+--- a/drivers/xen/evtchn.c
++++ b/drivers/xen/evtchn.c
+@@ -265,7 +265,7 @@ static int evtchn_bind_to_user(struct per_user_data *u, int port)
+ 	set_port_user(port, u);
+ 	set_port_enabled(port, true); /* start enabled */
  
- 	ret = request_irq(ds1wm_data->irq, ds1wm_isr,
--			IRQF_DISABLED | IRQF_SHARED, "ds1wm", ds1wm_data);
-+			IRQF_SHARED, "ds1wm", ds1wm_data);
- 	if (ret)
- 		goto err1;
+-	rc = bind_evtchn_to_irqhandler(port, evtchn_interrupt, IRQF_DISABLED,
++	rc = bind_evtchn_to_irqhandler(port, evtchn_interrupt, 0,
+ 				       u->name, (void *)(unsigned long)port);
+ 	if (rc >= 0)
+ 		rc = 0;
+diff --git a/drivers/xen/platform-pci.c b/drivers/xen/platform-pci.c
+index 319dd0a..482beff 100644
+--- a/drivers/xen/platform-pci.c
++++ b/drivers/xen/platform-pci.c
+@@ -84,7 +84,7 @@ static irqreturn_t do_hvm_evtchn_intr(int irq, void *dev_id)
+ static int xen_allocate_irq(struct pci_dev *pdev)
+ {
+ 	return request_irq(pdev->irq, do_hvm_evtchn_intr,
+-			IRQF_DISABLED | IRQF_NOBALANCING | IRQF_TRIGGER_RISING,
++			IRQF_NOBALANCING | IRQF_TRIGGER_RISING,
+ 			"xen-platform-pci", pdev);
+ }
  
-diff --git a/drivers/w1/masters/omap_hdq.c b/drivers/w1/masters/omap_hdq.c
-index 5ef385b..d1ef89d 100644
---- a/drivers/w1/masters/omap_hdq.c
-+++ b/drivers/w1/masters/omap_hdq.c
-@@ -633,7 +633,7 @@ static int __devinit omap_hdq_probe(struct platform_device *pdev)
- 		goto err_irq;
- 	}
- 
--	ret = request_irq(irq, hdq_isr, IRQF_DISABLED, "omap_hdq", hdq_data);
-+	ret = request_irq(irq, hdq_isr, 0, "omap_hdq", hdq_data);
- 	if (ret < 0) {
- 		dev_dbg(&pdev->dev, "could not request irq\n");
- 		goto err_irq;
 -- 
 1.7.4.1
 
