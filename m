@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753647Ab1IUJek (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 05:34:40 -0400
-Received: from mail-wy0-f180.google.com ([74.125.82.180]:37829 "EHLO
-	mail-wy0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753539Ab1IUJeZ (ORCPT
+	id S1753715Ab1IUJe7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 05:34:59 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:51263 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753661Ab1IUJe4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 05:34:25 -0400
+	Wed, 21 Sep 2011 05:34:56 -0400
 From: Yong Zhang <yong.zhang0@gmail.com>
 To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: tglx@linutronix.de, yong.zhang0@gmail.com,
-        David Woodhouse <dwmw2@infradead.org>,
-        Artem Bityutskiy <artem.bityutskiy@intel.com>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Baruch Siach <baruch@tkos.co.il>, Lei Wen <leiwen@marvell.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Andres Salomon <dilinger@queued.net>, linux-mtd@lists.infradead.org
-Subject: [PATCH 38/57] mtd: irq: Remove IRQF_DISABLED
-Date: Wed, 21 Sep 2011 17:28:39 +0800
-Message-Id: <1316597339-29861-39-git-send-email-yong.zhang0@gmail.com>
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>,
+        Joe Perches <joe@perches.com>, linux-pcmcia@lists.infradead.org
+Subject: [PATCH 41/57] pcmcia: irq: Remove IRQF_DISABLED
+Date: Wed, 21 Sep 2011 17:28:42 +0800
+Message-Id: <1316597339-29861-42-git-send-email-yong.zhang0@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1316597339-29861-1-git-send-email-yong.zhang0@gmail.com>
 References: <1316597339-29861-1-git-send-email-yong.zhang0@gmail.com>
@@ -41,51 +37,42 @@ So now this flag is a NOOP and can be removed.
 Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
 Acked-by: Wolfram Sang <w.sang@pengutronix.de>
 ---
- drivers/mtd/nand/mxc_nand.c    |    2 +-
- drivers/mtd/nand/pxa3xx_nand.c |    3 +--
- drivers/mtd/nand/tmio_nand.c   |    2 +-
- 3 files changed, 3 insertions(+), 4 deletions(-)
+ drivers/pcmcia/db1xxx_ss.c  |    4 ++--
+ drivers/pcmcia/soc_common.c |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/mtd/nand/mxc_nand.c b/drivers/mtd/nand/mxc_nand.c
-index 4d4c677..b03eb16 100644
---- a/drivers/mtd/nand/mxc_nand.c
-+++ b/drivers/mtd/nand/mxc_nand.c
-@@ -1191,7 +1191,7 @@ static int __init mxcnd_probe(struct platform_device *pdev)
- 	else
- 		host->irq_control(host, 0);
+diff --git a/drivers/pcmcia/db1xxx_ss.c b/drivers/pcmcia/db1xxx_ss.c
+index 3e49df6..6d76a92 100644
+--- a/drivers/pcmcia/db1xxx_ss.c
++++ b/drivers/pcmcia/db1xxx_ss.c
+@@ -162,12 +162,12 @@ static int db1x_pcmcia_setup_irqs(struct db1x_pcmcia_sock *sock)
+ 	 */
+ 	if (sock->board_type == BOARD_TYPE_DB1200) {
+ 		ret = request_irq(sock->insert_irq, db1200_pcmcia_cdirq,
+-				  IRQF_DISABLED, "pcmcia_insert", sock);
++				  0, "pcmcia_insert", sock);
+ 		if (ret)
+ 			goto out1;
  
--	err = request_irq(host->irq, mxc_nfc_irq, IRQF_DISABLED, DRIVER_NAME, host);
-+	err = request_irq(host->irq, mxc_nfc_irq, 0, DRIVER_NAME, host);
- 	if (err)
- 		goto eirq;
- 
-diff --git a/drivers/mtd/nand/pxa3xx_nand.c b/drivers/mtd/nand/pxa3xx_nand.c
-index 9eb7f87..fabba5c 100644
---- a/drivers/mtd/nand/pxa3xx_nand.c
-+++ b/drivers/mtd/nand/pxa3xx_nand.c
-@@ -1132,8 +1132,7 @@ static int alloc_nand_resource(struct platform_device *pdev)
- 	/* initialize all interrupts to be disabled */
- 	disable_int(info, NDSR_MASK);
- 
--	ret = request_irq(irq, pxa3xx_nand_irq, IRQF_DISABLED,
--			  pdev->name, info);
-+	ret = request_irq(irq, pxa3xx_nand_irq, 0, pdev->name, info);
- 	if (ret < 0) {
- 		dev_err(&pdev->dev, "failed to request IRQ\n");
- 		goto fail_free_buf;
-diff --git a/drivers/mtd/nand/tmio_nand.c b/drivers/mtd/nand/tmio_nand.c
-index beebd95..6e5d6ff 100644
---- a/drivers/mtd/nand/tmio_nand.c
-+++ b/drivers/mtd/nand/tmio_nand.c
-@@ -441,7 +441,7 @@ static int tmio_probe(struct platform_device *dev)
- 	nand_chip->chip_delay = 15;
- 
- 	retval = request_irq(irq, &tmio_irq,
--				IRQF_DISABLED, dev_name(&dev->dev), tmio);
-+				0, dev_name(&dev->dev), tmio);
- 	if (retval) {
- 		dev_err(&dev->dev, "request_irq error %d\n", retval);
- 		goto err_irq;
+ 		ret = request_irq(sock->eject_irq, db1200_pcmcia_cdirq,
+-				  IRQF_DISABLED, "pcmcia_eject", sock);
++				  0, "pcmcia_eject", sock);
+ 		if (ret) {
+ 			free_irq(sock->insert_irq, sock);
+ 			goto out1;
+diff --git a/drivers/pcmcia/soc_common.c b/drivers/pcmcia/soc_common.c
+index a0a9c2a..0493a31 100644
+--- a/drivers/pcmcia/soc_common.c
++++ b/drivers/pcmcia/soc_common.c
+@@ -535,7 +535,7 @@ int soc_pcmcia_request_irqs(struct soc_pcmcia_socket *skt,
+ 		if (irqs[i].sock != skt->nr)
+ 			continue;
+ 		res = request_irq(irqs[i].irq, soc_common_pcmcia_interrupt,
+-				  IRQF_DISABLED, irqs[i].str, skt);
++				  0, irqs[i].str, skt);
+ 		if (res)
+ 			break;
+ 		irq_set_irq_type(irqs[i].irq, IRQ_TYPE_NONE);
 -- 
 1.7.4.1
 
