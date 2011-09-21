@@ -1,100 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752179Ab1IUPFy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 11:05:54 -0400
-Received: from 88-230.252-81.static-ip.oleane.fr ([81.252.230.88]:53512 "EHLO
-	smtp.lii-enac.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751872Ab1IUPEq (ORCPT
+	id S1752049Ab1IUPKF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 11:10:05 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:26576 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751927Ab1IUPKD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 11:04:46 -0400
-X-Greylist: delayed 466 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Sep 2011 11:04:46 EDT
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Benjamin Tissoires <benjamin.tissoires@enac.fr>,
-        Jiri Kosina <jkosina@suse.cz>, Stephane Chatty <chatty@lii-enac.fr>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Subject: [PATCH 1/2] HID: add autodetection of multitouch devices
-Date: Wed, 21 Sep 2011 16:56:54 +0200
-Message-Id: <1316617015-11648-2-git-send-email-benjamin.tissoires@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1316617015-11648-1-git-send-email-benjamin.tissoires@gmail.com>
-References: <1316617015-11648-1-git-send-email-benjamin.tissoires@gmail.com>
+	Wed, 21 Sep 2011 11:10:03 -0400
+Date: Wed, 21 Sep 2011 11:09:55 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: axboe@kernel.dk, linux-kernel@vger.kernel.org, jaxboe@fusionio.com
+Cc: lidongyang@novell.com, joe.jin@oracle.com
+Subject: [GIT PULL] (xen) stable/for-jens-3.2 - blkback and blkfront patches
+ for 3.2
+Message-ID: <20110921150955.GH541@phenom.oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090209.4E79FE47.0167,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As mentioned by http://www.microsoft.com/whdc/device/input/DigitizerDrvs_touch.mspx
-multitouch devices are those that have the input report HID_CONTACTID.
+Hey Jens,
 
-This patch detects this and unload the generic-usb driver.
+Please pull the following git tree in your 3.2 drivers tree:
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
----
- drivers/hid/hid-core.c  |    6 ++++++
- drivers/hid/hid-input.c |   11 +++++++++++
- include/linux/hid.h     |    1 +
- 3 files changed, 18 insertions(+), 0 deletions(-)
+ git pull git://oss.oracle.com/git/kwilk/xen.git stable/for-jens-3.2
 
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index af58e9c..7feac97 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1212,6 +1212,12 @@ int hid_connect(struct hid_device *hdev, unsigned int connect_mask)
- 	if ((connect_mask & HID_CONNECT_HIDINPUT) && !hidinput_connect(hdev,
- 				connect_mask & HID_CONNECT_HIDINPUT_FORCE))
- 		hdev->claimed |= HID_CLAIMED_INPUT;
-+	if (hdev->quirks & HID_QUIRK_MULTITOUCH) {
-+		/* this device should be handled by hid-multitouch, skip it */
-+		hdev->quirks &= ~HID_QUIRK_MULTITOUCH;
-+		return -ENODEV;
-+	}
-+
- 	if ((connect_mask & HID_CONNECT_HIDDEV) && hdev->hiddev_connect &&
- 			!hdev->hiddev_connect(hdev,
- 				connect_mask & HID_CONNECT_HIDDEV_FORCE))
-diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
-index 6559e2e..f333139 100644
---- a/drivers/hid/hid-input.c
-+++ b/drivers/hid/hid-input.c
-@@ -474,6 +474,10 @@ static void hidinput_configure_usage(struct hid_input *hidinput, struct hid_fiel
- 			map_key_clear(BTN_STYLUS2);
- 			break;
- 
-+		case 0x51: /* ContactID */
-+			device->quirks |= HID_QUIRK_MULTITOUCH;
-+			goto unknown;
-+
- 		default:  goto unknown;
- 		}
- 		break;
-@@ -978,6 +982,13 @@ int hidinput_connect(struct hid_device *hid, unsigned int force)
- 		}
- 	}
- 
-+	if (hid->quirks & HID_QUIRK_MULTITOUCH) {
-+		/* generic hid does not know how to handle multitouch devices */
-+		if (hidinput)
-+			goto out_cleanup;
-+		goto out_unwind;
-+	}
-+
- 	if (hidinput && input_register_device(hidinput->input))
- 		goto out_cleanup;
- 
-diff --git a/include/linux/hid.h b/include/linux/hid.h
-index 42f7e2f..e55a0f8 100644
---- a/include/linux/hid.h
-+++ b/include/linux/hid.h
-@@ -312,6 +312,7 @@ struct hid_item {
- #define HID_QUIRK_BADPAD			0x00000020
- #define HID_QUIRK_MULTI_INPUT			0x00000040
- #define HID_QUIRK_HIDINPUT_FORCE		0x00000080
-+#define HID_QUIRK_MULTITOUCH			0x00000100
- #define HID_QUIRK_SKIP_OUTPUT_REPORTS		0x00010000
- #define HID_QUIRK_FULLSPEED_INTERVAL		0x10000000
- #define HID_QUIRK_NO_INIT_REPORTS		0x20000000
--- 
-1.7.4.4
+which has an exciting new feature - the discard ('feature-discard')
+aka TRIM/UNMAP. Now they can be passed from the guest to the backend.
+
+There is also a tiny cleanup patch.
+
+ drivers/block/xen-blkback/blkback.c |   86 +++++++++++++++++++++++-----
+ drivers/block/xen-blkback/common.h  |   95 ++++++++++++++++++++++++------
+ drivers/block/xen-blkback/xenbus.c  |   62 +++++++++++++++++++-
+ drivers/block/xen-blkfront.c        |  109 +++++++++++++++++++++++++++-------
+ include/xen/interface/io/blkif.h    |   36 ++++++++++++
+ 5 files changed, 331 insertions(+), 57 deletions(-)
+
+Joe Jin (1):
+      xen-blkback: fixed indentation and comments
+
+Li Dongyang (4):
+      xen-blkfront: add BLKIF_OP_DISCARD and discard request struct
+      xen-blkback: Implement discard requests ('feature-discard')
+      xen-blkfront: Handle discard requests.
+      xen-blkfront: fix a deadlock while handling discard response
 
