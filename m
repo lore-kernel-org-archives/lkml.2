@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753755Ab1IUSHS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 14:07:18 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:44884 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751370Ab1IUSHQ (ORCPT
+	id S1753837Ab1IUSKY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 14:10:24 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:43931 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753445Ab1IUSKX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 14:07:16 -0400
+	Wed, 21 Sep 2011 14:10:23 -0400
+Date: Wed, 21 Sep 2011 14:04:23 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Christopher S. Aker" <caker@theshore.net>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] Re: kernel BUG at mm/swapfile.c:2527! [was 3.0.0 Xen
+ pv guest - BUG: Unable to handle]
+Message-ID: <20110921180423.GC17357@phenom.oracle.com>
+References: <4E5BA49D.5060800@theshore.net>
+ <20110829150734.GB24825@dumpdata.com>
+ <1314704744.28989.2.camel@zakaz.uk.xensource.com>
+ <4E5E9CDB.3070706@theshore.net>
+ <20110906171319.GB29839@dumpdata.com>
+ <4E6E2E11.1030602@theshore.net>
+ <20110912161127.GB16100@oracle.com>
+ <4E724ACD.1050207@theshore.net>
+ <4E724F64.5080103@theshore.net>
+ <CEE295A1-B386-4A2A-A16C-9AC29DE174E8@theshore.net>
 MIME-Version: 1.0
-In-Reply-To: <1316584875.1949.4.camel@deskari>
-References: <1316088425.11294.78.camel@lappyti>
-	<yunboul7sx7.fsf@aiko.keithp.com>
-	<1316100594.23214.65.camel@deskari>
-	<yun8vpp7qk7.fsf@aiko.keithp.com>
-	<1316107275.23214.99.camel@deskari>
-	<yunfwjxwbjq.fsf@aiko.keithp.com>
-	<20110916175326.54567b14@lxorguk.ukuu.org.uk>
-	<1316414014.1978.12.camel@deskari>
-	<yunfwjtauqg.fsf@aiko.keithp.com>
-	<1316417361.1978.48.camel@deskari>
-	<CAMeQTsbP-_ut7BA3YQ+qgtqfM1tzM4qn3jxHT8B8_0hdPbP3Jg@mail.gmail.com>
-	<yunpqivfbtf.fsf@aiko.keithp.com>
-	<CAMeQTsazfb6xoA6mm8OMVhkx_RDaxogqEa8yDstqmKUP5Ub+yg@mail.gmail.com>
-	<1316584875.1949.4.camel@deskari>
-Date: Wed, 21 Sep 2011 20:07:15 +0200
-Message-ID: <CAMeQTsbCXEb01C4X3nKdNyE5FJuQojaMKbcY1dSk5y3kKwkiXg@mail.gmail.com>
-Subject: Re: Proposal for a low-level Linux display framework
-From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Keith Packard <keithp@keithp.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linaro-dev@lists.linaro.org,
-        "Clark, Rob" <rob@ti.com>, Archit Taneja <archit@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CEE295A1-B386-4A2A-A16C-9AC29DE174E8@theshore.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4E7A2882.00F7:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 21, 2011 at 8:01 AM, Tomi Valkeinen wrote:
-> I don't know what MCS is.
+On Sun, Sep 18, 2011 at 11:05:33AM -0400, Christopher S. Aker wrote:
+> We've discovered a way to reproduce this quite easily!  Fire up a guest, run eatmem with 1M and enough threads to not OOM.
 
-MCS is manufacturer specific commands (Manufacturer Command Set).
+Excellent. Can you also send me your .config to make sure I've the right
+knobs set?
 
-> But DSI is just a bi-directional transfer
-> protocol between the SoC and the peripheral, you can send arbitrary data
-> over it.
->
-> Normally the SoC composes a pixel stream using overlays and whatnot,
-> which goes to the DSI hardware, which then serializes the data and sends
-> it to the peripheral.
->
-> But you can as well send any data, like commands, and the peripheral can
-> respond with any relevant data.
-
-Ok it makes sense now, and I see how it can get more complicated than SDVO.
-A DSI lib is a good idea and interfaces for stuff like backlight and mechanisms
-for queuing commands that need to go in during blanking.
-
-Thanks for clearing it up
--Patrik
+> 
+> http://www.theshore.net/~caker/uml/patches/utils/eatmem.c
+> 
+> On a 1G guest: ./eatmem 1M 900
+> 
+> -Chris
