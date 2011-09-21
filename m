@@ -1,63 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752618Ab1IUUIg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 16:08:36 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:51301 "EHLO
-	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751244Ab1IUUIe (ORCPT
+	id S1752781Ab1IUUJV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 16:09:21 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:57340 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751992Ab1IUUJU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 16:08:34 -0400
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2fh668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPVD:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
-X-FB-SS: 0,
-Message-ID: <4E7A4413.5000307@am.sony.com>
-Date: Wed, 21 Sep 2011 13:07:47 -0700
-From: Tim Bird <tim.bird@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+	Wed, 21 Sep 2011 16:09:20 -0400
 MIME-Version: 1.0
-To: Jason Wessel <jason.wessel@windriver.com>
-CC: "kgdb-bugreport@lists.sourceforge.net" 
-	<kgdb-bugreport@lists.sourceforge.net>,
-        linux kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] kdb: Add message about CONFIG_DEBUG_RODATA on failure to
- install breakpoint
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+In-Reply-To: <20110914150452.GA12638@linux-mips.org>
+References: <20110908220559.GA3040@maxin> <20110914150452.GA12638@linux-mips.org>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 21 Sep 2011 14:08:59 -0600
+X-Google-Sender-Auth: E7i5-atD7WEYz250_aoL6nYCs7g
+Message-ID: <CACxGe6ufZkVvTS-A8j1khkapaMN_3LuztRPSfHmeKqU7saJzWA@mail.gmail.com>
+Subject: Re: [PATCH] mips: mm: tlbex.c: Fix compiler warnings
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: "Maxin B. John" <maxin.john@gmail.com>,
+        David Daney <david.daney@cavium.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Kevin Cernekee <cernekee@gmail.com>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On x86, if CONFIG_DEBUG_RODATA is set, one cannot set breakpoints
-via KDB.  Apparently this is a well-known problem, as at least one distribution
-now ships with both KDB enabled and CONFIG_DEBUG_RODATA=y for security reasons.
+On Wed, Sep 14, 2011 at 9:04 AM, Ralf Baechle <ralf@linux-mips.org> wrote:
+> On Fri, Sep 09, 2011 at 01:06:00AM +0300, Maxin B. John wrote:
+>
+>>  CC      arch/mips/mm/tlbex.o
+>> cc1: warnings being treated as errors
+>> arch/mips/mm/tlbex.c: In function 'build_r3000_tlb_modify_handler':
+>> arch/mips/mm/tlbex.c:1769: error: 'wr.r1' is used uninitialized in this function
+>> arch/mips/mm/tlbex.c:1769: error: 'wr.r2' is used uninitialized in this function
+>> arch/mips/mm/tlbex.c:1769: error: 'wr.r3' is used uninitialized in this function
+>> make[2]: *** [arch/mips/mm/tlbex.o] Error 1
+>> make[1]: *** [arch/mips/mm] Error 2
+>> make: *** [arch/mips] Error 2
+>
+> This was fixed by 949cb4ca0aa53e97ea5f524536593ad2d2946b73.  The real
+> fix to not pass the wr members to build_pte_modifiable() because they
+> just are not needed.
 
-This patch just adds an extra printk message to the breakpoint failure case,
-in order to provide some useful diagnostics to the user.
+Which tree is this fix getting merged via?  Will it be in v3.1?
 
-Signed-off-by: Tim Bird <tim.bird@am.sony.com>
----
- kernel/debug/kdb/kdb_bp.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
-
-diff --git a/kernel/debug/kdb/kdb_bp.c b/kernel/debug/kdb/kdb_bp.c
-index 20059ef..f015e79 100644
---- a/kernel/debug/kdb/kdb_bp.c
-+++ b/kernel/debug/kdb/kdb_bp.c
-@@ -153,6 +153,10 @@ static int _kdb_bp_install(struct pt_regs *regs, kdb_bp_t *bp)
- 	} else {
- 		kdb_printf("%s: failed to set breakpoint at 0x%lx\n",
- 			   __func__, bp->bp_addr);
-+#ifdef CONFIG_DEBUG_RODATA
-+		kdb_printf("May need to disable CONFIG_DEBUG_RODATA in order"
-+			" to set breakpoints\n");
-+#endif
- 		return 1;
- 	}
- 	return 0;
--- 
-1.6.6
-
-
+g.
