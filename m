@@ -1,74 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752320Ab1IUFt5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 01:49:57 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:59452 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752241Ab1IUFty convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 01:49:54 -0400
+	id S1752216Ab1IUFtt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 01:49:49 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:54852 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751883Ab1IUFts (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 01:49:48 -0400
+Message-ID: <4E797B55.20102@cn.fujitsu.com>
+Date: Wed, 21 Sep 2011 13:51:17 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <804BB4B7-E19F-41EE-81A3-25D4389B54B9@dilger.ca>
-References: <1289840876-3546-1-git-send-email-josef@redhat.com>
- <CAKgNAkj-jPR-9hyuxrJ74uu3Kdv9bATrfCUedoty4dJOCh2GcA@mail.gmail.com>
- <CAKgNAkhCptHn_UxReeZeSNaP0yNr+iWYd3fcxrD_PHohqQVxuQ@mail.gmail.com> <804BB4B7-E19F-41EE-81A3-25D4389B54B9@dilger.ca>
-From: Michael Kerrisk <mtk.manpages@gmail.com>
-Date: Wed, 21 Sep 2011 07:49:33 +0200
-Message-ID: <CAKgNAkiGp7stGdxFPgH973gaEwSN28H0uEx4NkNq-ub96Xw=tA@mail.gmail.com>
-Subject: Re: [PATCH] fallocate.2: add FALLOC_FL_PUNCH_HOLE flag definition
-To: Andreas Dilger <adilger@dilger.ca>
-Cc: Josef Bacik <josef@redhat.com>, Eric Gouriou <egouriou@google.com>,
-        inux-man@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Lucian Adrian Grijincu <lucian.grijincu@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Dave Chinner <dchinner@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>, Stephen Wilson <wilsons@start.ca>
+Subject: Re: [PATCH x86,mm]  fix pgt_buf_end when memory hotplug
+References: <4E688C03.7080608@cn.fujitsu.com> <alpine.DEB.2.00.1109081616450.12963@kaball-desktop>
+In-Reply-To: <alpine.DEB.2.00.1109081616450.12963@kaball-desktop>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-09-21 13:48:08,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-09-21 13:48:22,
+	Serialize complete at 2011-09-21 13:48:22
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Andreas,
-
-On Wed, Sep 21, 2011 at 7:25 AM, Andreas Dilger <adilger@dilger.ca> wrote:
-> On 2011-09-20, at 10:11 PM, Michael Kerrisk wrote:
->> Thanks for this patch. As noted in another mail, Lucian also sent a
->> patch for FALLOC_FL_PUNCH_HOLE, and I applied his patch first, and
->> then added some pieces from yours, as well as some of my own edits.
+On 09/08/2011 11:21 PM, Stefano Stabellini wrote:
+> On Thu, 8 Sep 2011, Lai Jiangshan wrote:
 >>
->> However, the addition of a second class of operation to the man page
->> made it clear that some significant restructuring of the page is
->> required. So I substantially reworked the page, including the
->> preexisting material on the default "file allocation" operation (Dave
->> C please note).
+>> When I test memory hotplug, such message is always outputted when hot-adding
+>> a memory block:
 >>
->>  .TP
->> .B EINVAL
->> .I offset
->> was less than 0, or
->> .I len
->> was less than or equal to 0.
->
-> I wasn't sure if this is a bug in the manpage or actually how it is done
-> in the kernel, but it seems this is a kernel implementation issue...
->
-> Does it make sense to return an error if len == 0?  That just adds extra
-> complexity on the part of the application, and doesn't reduce complexity
-> in the kernel (whether the kernel checks for len == 0 and returns 0 or
-> -EINVAL is not any different).  read() and write() and malloc() all allow
-> a length of zero to succeed, since applications may compute this length
-> and sometimes it is zero.
+>> initial kernel pagetable allocation wasted ffffffffffffffff pages
+> 
+> I take you are using tip/x86/mm, because that is the only branch that
+> contains that warning.
 
-Good point. I agree: for comfort of userspace application writers and
-for consistency with related interfaces, len == 0 shouldn't be an
-error.
+No,
+I was using tip/master.
 
-Cheers,
+Thanks,
+Lai
 
-Michael
+> 
+> 
+>> This message comes from init_memory_mapping(), it shows "pgt_buf_end" is
+>> incorrect here, and I found it was caused by alloc_low_page().
+>>
+>> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+>> ---
+>> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+>> index bbaaa00..e138e0a 100644
+>> --- a/arch/x86/mm/init_64.c
+>> +++ b/arch/x86/mm/init_64.c
+>> @@ -317,7 +317,7 @@ void __init cleanup_highmap(void)
+>>  
+>>  static __ref void *alloc_low_page(unsigned long *phys)
+>>  {
+>> -	unsigned long pfn = pgt_buf_end++;
+>> +	unsigned long pfn;
+>>  	void *adr;
+>>  
+>>  	if (after_bootmem) {
+>> @@ -327,6 +327,7 @@ static __ref void *alloc_low_page(unsigned long *phys)
+>>  		return adr;
+>>  	}
+>>  
+>> +	pfn = pgt_buf_end++;
+>>  	if (pfn >= pgt_buf_top)
+>>  		panic("alloc_low_page: ran out of memory");
+> 
+> 
+> This patch makes sense to me. It would also make sense to print the
+> "allocation wasted" warning only if (!after_bootmem).
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface"; http://man7.org/tlpi/
