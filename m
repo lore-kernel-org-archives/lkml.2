@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753419Ab1IUJdM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 05:33:12 -0400
+	id S1753475Ab1IUJde (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 05:33:34 -0400
 Received: from mail-ew0-f46.google.com ([209.85.215.46]:57864 "EHLO
 	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753405Ab1IUJdJ (ORCPT
+	with ESMTP id S1753290Ab1IUJda (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 05:33:09 -0400
+	Wed, 21 Sep 2011 05:33:30 -0400
 From: Yong Zhang <yong.zhang0@gmail.com>
 To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: tglx@linutronix.de, yong.zhang0@gmail.com,
-        Clemens Ladisch <clemens@ladisch.de>, Corey Minyard <minyard@acm.org>,
-        Mark Gross <mark.gross@intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Christian Dietrich 
-	<christian.dietrich@informatik.uni-erlangen.de>,
-        openipmi-developer@lists.sourceforge.net
-Subject: [PATCH 28/57] driver/char: irq: Remove IRQF_DISABLED
-Date: Wed, 21 Sep 2011 17:28:29 +0800
-Message-Id: <1316597339-29861-29-git-send-email-yong.zhang0@gmail.com>
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, Joe Perches <joe@perches.com>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        "Kai.Jiang" <Kai.Jiang@freescale.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Mike Williams <mike@mikebwilliams.com>,
+        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Michal Marek <mmarek@suse.cz>
+Subject: [PATCH 31/57] EDAC: irq: Remove IRQF_DISABLED
+Date: Wed, 21 Sep 2011 17:28:32 +0800
+Message-Id: <1316597339-29861-32-git-send-email-yong.zhang0@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1316597339-29861-1-git-send-email-yong.zhang0@gmail.com>
 References: <1316597339-29861-1-git-send-email-yong.zhang0@gmail.com>
@@ -36,128 +38,105 @@ genirq: Warn when handler enables interrupts]).
 So now this flag is a NOOP and can be removed.
 
 Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-Acked-by: Clemens Ladisch <clemens@ladisch.de>
-Acked-by: Corey Minyard <cminyard@mvista.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
 ---
- drivers/char/hpet.c              |    2 +-
- drivers/char/ipmi/ipmi_si_intf.c |    4 ++--
- drivers/char/nwbutton.c          |    2 +-
- drivers/char/rtc.c               |    4 ++--
- drivers/char/snsc.c              |    2 +-
- drivers/char/snsc_event.c        |    2 +-
- drivers/char/tlclk.c             |    2 +-
- 7 files changed, 9 insertions(+), 9 deletions(-)
+ drivers/edac/mpc85xx_edac.c |    6 +++---
+ drivers/edac/mv64x60_edac.c |    8 ++++----
+ drivers/edac/ppc4xx_edac.c  |    4 ++--
+ 3 files changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/char/hpet.c b/drivers/char/hpet.c
-index c9aeb7f..2a2ecac 100644
---- a/drivers/char/hpet.c
-+++ b/drivers/char/hpet.c
-@@ -532,7 +532,7 @@ static int hpet_ioctl_ieon(struct hpet_dev *devp)
+diff --git a/drivers/edac/mpc85xx_edac.c b/drivers/edac/mpc85xx_edac.c
+index 8af8e86..5cf8620 100644
+--- a/drivers/edac/mpc85xx_edac.c
++++ b/drivers/edac/mpc85xx_edac.c
+@@ -275,7 +275,7 @@ static int __devinit mpc85xx_pci_err_probe(struct platform_device *op)
+ 	if (edac_op_state == EDAC_OPSTATE_INT) {
+ 		pdata->irq = irq_of_parse_and_map(op->dev.of_node, 0);
+ 		res = devm_request_irq(&op->dev, pdata->irq,
+-				       mpc85xx_pci_isr, IRQF_DISABLED,
++				       mpc85xx_pci_isr, 0,
+ 				       "[EDAC] PCI err", pci);
+ 		if (res < 0) {
+ 			printk(KERN_ERR
+@@ -577,7 +577,7 @@ static int __devinit mpc85xx_l2_err_probe(struct platform_device *op)
+ 	if (edac_op_state == EDAC_OPSTATE_INT) {
+ 		pdata->irq = irq_of_parse_and_map(op->dev.of_node, 0);
+ 		res = devm_request_irq(&op->dev, pdata->irq,
+-				       mpc85xx_l2_isr, IRQF_DISABLED,
++				       mpc85xx_l2_isr, 0,
+ 				       "[EDAC] L2 err", edac_dev);
+ 		if (res < 0) {
+ 			printk(KERN_ERR
+@@ -1057,7 +1057,7 @@ static int __devinit mpc85xx_mc_err_probe(struct platform_device *op)
+ 		pdata->irq = irq_of_parse_and_map(op->dev.of_node, 0);
+ 		res = devm_request_irq(&op->dev, pdata->irq,
+ 				       mpc85xx_mc_isr,
+-					IRQF_DISABLED | IRQF_SHARED,
++					IRQF_SHARED,
+ 				       "[EDAC] MC err", mci);
+ 		if (res < 0) {
+ 			printk(KERN_ERR "%s: Unable to request irq %d for "
+diff --git a/drivers/edac/mv64x60_edac.c b/drivers/edac/mv64x60_edac.c
+index 7e5ff36..224d9f1 100644
+--- a/drivers/edac/mv64x60_edac.c
++++ b/drivers/edac/mv64x60_edac.c
+@@ -178,7 +178,7 @@ static int __devinit mv64x60_pci_err_probe(struct platform_device *pdev)
+ 		res = devm_request_irq(&pdev->dev,
+ 				       pdata->irq,
+ 				       mv64x60_pci_isr,
+-				       IRQF_DISABLED,
++				       0,
+ 				       "[EDAC] PCI err",
+ 				       pci);
+ 		if (res < 0) {
+@@ -345,7 +345,7 @@ static int __devinit mv64x60_sram_err_probe(struct platform_device *pdev)
+ 		res = devm_request_irq(&pdev->dev,
+ 				       pdata->irq,
+ 				       mv64x60_sram_isr,
+-				       IRQF_DISABLED,
++				       0,
+ 				       "[EDAC] SRAM err",
+ 				       edac_dev);
+ 		if (res < 0) {
+@@ -540,7 +540,7 @@ static int __devinit mv64x60_cpu_err_probe(struct platform_device *pdev)
+ 		res = devm_request_irq(&pdev->dev,
+ 				       pdata->irq,
+ 				       mv64x60_cpu_isr,
+-				       IRQF_DISABLED,
++				       0,
+ 				       "[EDAC] CPU err",
+ 				       edac_dev);
+ 		if (res < 0) {
+@@ -785,7 +785,7 @@ static int __devinit mv64x60_mc_err_probe(struct platform_device *pdev)
+ 		res = devm_request_irq(&pdev->dev,
+ 				       pdata->irq,
+ 				       mv64x60_mc_isr,
+-				       IRQF_DISABLED,
++				       0,
+ 				       "[EDAC] MC err",
+ 				       mci);
+ 		if (res < 0) {
+diff --git a/drivers/edac/ppc4xx_edac.c b/drivers/edac/ppc4xx_edac.c
+index 3840096..2c36d4a 100644
+--- a/drivers/edac/ppc4xx_edac.c
++++ b/drivers/edac/ppc4xx_edac.c
+@@ -1122,7 +1122,7 @@ ppc4xx_edac_register_irq(struct platform_device *op, struct mem_ctl_info *mci)
  
- 		sprintf(devp->hd_name, "hpet%d", (int)(devp - hpetp->hp_dev));
- 		irq_flags = devp->hd_flags & HPET_SHARED_IRQ
--						? IRQF_SHARED : IRQF_DISABLED;
-+						? IRQF_SHARED : 0;
- 		if (request_irq(irq, hpet_interrupt, irq_flags,
- 				devp->hd_name, (void *)devp)) {
- 			printk(KERN_ERR "hpet: IRQ %d is not free\n", irq);
-diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
-index 9397ab4..44e8da3 100644
---- a/drivers/char/ipmi/ipmi_si_intf.c
-+++ b/drivers/char/ipmi/ipmi_si_intf.c
-@@ -1336,7 +1336,7 @@ static int std_irq_setup(struct smi_info *info)
- 	if (info->si_type == SI_BT) {
- 		rv = request_irq(info->irq,
- 				 si_bt_irq_handler,
--				 IRQF_SHARED | IRQF_DISABLED,
-+				 IRQF_SHARED,
- 				 DEVICE_NAME,
- 				 info);
- 		if (!rv)
-@@ -1346,7 +1346,7 @@ static int std_irq_setup(struct smi_info *info)
- 	} else
- 		rv = request_irq(info->irq,
- 				 si_irq_handler,
--				 IRQF_SHARED | IRQF_DISABLED,
-+				 IRQF_SHARED,
- 				 DEVICE_NAME,
- 				 info);
- 	if (rv) {
-diff --git a/drivers/char/nwbutton.c b/drivers/char/nwbutton.c
-index 04a480f..36aaf43 100644
---- a/drivers/char/nwbutton.c
-+++ b/drivers/char/nwbutton.c
-@@ -220,7 +220,7 @@ static int __init nwbutton_init(void)
- 		return -EBUSY;
- 	}
+ 	status = request_irq(ded_irq,
+ 			     ppc4xx_edac_isr,
+-			     IRQF_DISABLED,
++			     0,
+ 			     "[EDAC] MC ECCDED",
+ 			     mci);
  
--	if (request_irq (IRQ_NETWINDER_BUTTON, button_handler, IRQF_DISABLED,
-+	if (request_irq (IRQ_NETWINDER_BUTTON, button_handler, 0,
- 			"nwbutton", NULL)) {
- 		printk (KERN_WARNING "nwbutton: IRQ %d is not free.\n",
- 				IRQ_NETWINDER_BUTTON);
-diff --git a/drivers/char/rtc.c b/drivers/char/rtc.c
-index ccd124a..d1478cd 100644
---- a/drivers/char/rtc.c
-+++ b/drivers/char/rtc.c
-@@ -228,7 +228,7 @@ static inline unsigned char rtc_is_updating(void)
+@@ -1136,7 +1136,7 @@ ppc4xx_edac_register_irq(struct platform_device *op, struct mem_ctl_info *mci)
  
- #ifdef RTC_IRQ
- /*
-- *	A very tiny interrupt handler. It runs with IRQF_DISABLED set,
-+ *	A very tiny interrupt handler. It runs with irqs disabled,
-  *	but there is possibility of conflicting with the set_rtc_mmss()
-  *	call (the rtc irq and the timer irq can easily run at the same
-  *	time in two different CPUs). So we need to serialize
-@@ -1041,7 +1041,7 @@ no_irq:
- 		rtc_int_handler_ptr = rtc_interrupt;
- 	}
+ 	status = request_irq(sec_irq,
+ 			     ppc4xx_edac_isr,
+-			     IRQF_DISABLED,
++			     0,
+ 			     "[EDAC] MC ECCSEC",
+ 			     mci);
  
--	if (request_irq(RTC_IRQ, rtc_int_handler_ptr, IRQF_DISABLED,
-+	if (request_irq(RTC_IRQ, rtc_int_handler_ptr, 0,
- 			"rtc", NULL)) {
- 		/* Yeah right, seeing as irq 8 doesn't even hit the bus. */
- 		rtc_has_irq = 0;
-diff --git a/drivers/char/snsc.c b/drivers/char/snsc.c
-index 5816b39..d3464ef 100644
---- a/drivers/char/snsc.c
-+++ b/drivers/char/snsc.c
-@@ -108,7 +108,7 @@ scdrv_open(struct inode *inode, struct file *file)
- 	/* hook this subchannel up to the system controller interrupt */
- 	mutex_lock(&scdrv_mutex);
- 	rv = request_irq(SGI_UART_VECTOR, scdrv_interrupt,
--			 IRQF_SHARED | IRQF_DISABLED,
-+			 IRQF_SHARED,
- 			 SYSCTL_BASENAME, sd);
- 	if (rv) {
- 		ia64_sn_irtr_close(sd->sd_nasid, sd->sd_subch);
-diff --git a/drivers/char/snsc_event.c b/drivers/char/snsc_event.c
-index ee15694..a35978c 100644
---- a/drivers/char/snsc_event.c
-+++ b/drivers/char/snsc_event.c
-@@ -292,7 +292,7 @@ scdrv_event_init(struct sysctl_data_s *scd)
- 
- 	/* hook event subchannel up to the system controller interrupt */
- 	rv = request_irq(SGI_UART_VECTOR, scdrv_event_interrupt,
--			 IRQF_SHARED | IRQF_DISABLED,
-+			 IRQF_SHARED,
- 			 "system controller events", event_sd);
- 	if (rv) {
- 		printk(KERN_WARNING "%s: irq request failed (%d)\n",
-diff --git a/drivers/char/tlclk.c b/drivers/char/tlclk.c
-index 0c964cd..771e48e 100644
---- a/drivers/char/tlclk.c
-+++ b/drivers/char/tlclk.c
-@@ -222,7 +222,7 @@ static int tlclk_open(struct inode *inode, struct file *filp)
- 	/* This device is wired through the FPGA IO space of the ATCA blade
- 	 * we can't share this IRQ */
- 	result = request_irq(telclk_interrupt, &tlclk_interrupt,
--			     IRQF_DISABLED, "telco_clock", tlclk_interrupt);
-+			     0, "telco_clock", tlclk_interrupt);
- 	if (result == -EBUSY)
- 		printk(KERN_ERR "tlclk: Interrupt can't be reserved.\n");
- 	else
 -- 
 1.7.4.1
 
