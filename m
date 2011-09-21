@@ -1,71 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751422Ab1IUEvi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 00:51:38 -0400
-Received: from home.keithp.com ([63.227.221.253]:39706 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751050Ab1IUEvi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 00:51:38 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: [Intel-gfx] [PATCH 9/9] drm/i915: Disable eDP VDD in a delayed work proc instead of synchronously
-In-Reply-To: <20110921094759.22423597@jbarnes-x220>
-References: <1316470923-27832-1-git-send-email-keithp@keithp.com> <1316470923-27832-10-git-send-email-keithp@keithp.com> <20110921094759.22423597@jbarnes-x220>
-User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Tue, 20 Sep 2011 21:51:33 -0700
-Message-ID: <yunsjnqfqga.fsf@aiko.keithp.com>
+	id S1751322Ab1IUFA4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 01:00:56 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50363 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750741Ab1IUFAz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 01:00:55 -0400
+Date: Wed, 21 Sep 2011 00:00:47 -0500
+From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, richard@nod.at,
+        Andrew Morton <akpm@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>,
+        serge@hallyn.com
+Subject: [PATCH] user namespace: make signal.c respect user namespaces (v2)
+Message-ID: <20110921050047.GA6691@sergelap>
+References: <20110919214531.GA18085@sergelap>
+ <20110920122202.GA26504@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110920122202.GA26504@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+__send_signal: convert the uid being sent in SI_USER to the target task's
+user namespace.
 
-On Wed, 21 Sep 2011 09:47:59 +0530, Jesse Barnes <jbarnes@virtuousgeek.org>=
- wrote:
+do_notify_parent and do_notify_parent_cldstop: map task's uid to parent's
+ user namespace
 
-> I'm worried this makes our PPS even more complex and hard to follow.
-> I'd rather see VDD AUX applied only when we need it (dpms, mode set and
-> detect; for hotplug we can assume the panel is alive) and that we
-> carefully disable it after waiting for a time after a full PPS on
-> sequence when doing a mode set or dpms on command.
+ptrace_signal: map parent's uid into current's user namespace before
+including in signal to current.
 
-You'll see the fairly long list of places where VDD AUX is needed in my
-other reply; a couple of them could probably be fixed by moving the PPS
-calls around.
+Changelog:
+Sep 20: Inspired by Oleg's suggestion, define map_cred_ns() helper to
+	simplify callers and help make clear what we are translating
+        (which uid into which namespace).  Passing the target task would
+	make callers even easier to read, but we pass in user_ns because
+	current_user_ns() != task_cred_xxx(current, user_ns).
+Sep 20: As recommended by Oleg, also put task_pid_vnr() under rcu_read_lock
+	in ptrace_signal().
 
-> Having all the power stuff at the highest levels would be clearest I
-> think.
+Signed-off-by: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Tejun Heo <tj@kernel.org>
+---
+ kernel/signal.c |   24 ++++++++++++++++++++----
+ 1 files changed, 20 insertions(+), 4 deletions(-)
 
-Yes, making it cleaner would help a ton. There are some basic problems
-with the DRM API that make this hard though -- intel_dp_prepare may not
-ever be followed by a call to intel_dp_commit. That's why I had the VDD
-AUX stuff get turned off by a delayed work proc instead.
+diff --git a/kernel/signal.c b/kernel/signal.c
+index 291c970..466219b 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -27,6 +27,7 @@
+ #include <linux/capability.h>
+ #include <linux/freezer.h>
+ #include <linux/pid_namespace.h>
++#include <linux/user_namespace.h>
+ #include <linux/nsproxy.h>
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/signal.h>
+@@ -1019,6 +1020,15 @@ static inline int legacy_queue(struct sigpending *signals, int sig)
+ 	return (sig < SIGRTMIN) && sigismember(&signals->signal, sig);
+ }
+ 
++/*
++ * map the uid in struct cred into user namespace *ns
++ */
++static inline uid_t map_cred_ns(const struct cred *cred,
++				struct user_namespace *ns)
++{
++	return user_ns_map_uid(ns, cred, cred->uid);
++}
++
+ static int __send_signal(int sig, struct siginfo *info, struct task_struct *t,
+ 			int group, int from_ancestor_ns)
+ {
+@@ -1073,7 +1083,8 @@ static int __send_signal(int sig, struct siginfo *info, struct task_struct *t,
+ 			q->info.si_code = SI_USER;
+ 			q->info.si_pid = task_tgid_nr_ns(current,
+ 							task_active_pid_ns(t));
+-			q->info.si_uid = current_uid();
++			q->info.si_uid = map_cred_ns(current_cred(),
++						     task_cred_xxx(t, user_ns));
+ 			break;
+ 		case (unsigned long) SEND_SIG_PRIV:
+ 			q->info.si_signo = sig;
+@@ -1618,7 +1629,8 @@ bool do_notify_parent(struct task_struct *tsk, int sig)
+ 	 */
+ 	rcu_read_lock();
+ 	info.si_pid = task_pid_nr_ns(tsk, tsk->parent->nsproxy->pid_ns);
+-	info.si_uid = __task_cred(tsk)->uid;
++	info.si_uid = map_cred_ns(__task_cred(tsk),
++				  task_cred_xxx(tsk->parent, user_ns));
+ 	rcu_read_unlock();
+ 
+ 	info.si_utime = cputime_to_clock_t(cputime_add(tsk->utime,
+@@ -1703,7 +1715,8 @@ static void do_notify_parent_cldstop(struct task_struct *tsk,
+ 	 */
+ 	rcu_read_lock();
+ 	info.si_pid = task_pid_nr_ns(tsk, parent->nsproxy->pid_ns);
+-	info.si_uid = __task_cred(tsk)->uid;
++	info.si_uid = map_cred_ns(__task_cred(tsk),
++				  task_cred_xxx(parent, user_ns));
+ 	rcu_read_unlock();
+ 
+ 	info.si_utime = cputime_to_clock_t(tsk->utime);
+@@ -2121,8 +2134,11 @@ static int ptrace_signal(int signr, siginfo_t *info,
+ 		info->si_signo = signr;
+ 		info->si_errno = 0;
+ 		info->si_code = SI_USER;
++		rcu_read_lock();
+ 		info->si_pid = task_pid_vnr(current->parent);
+-		info->si_uid = task_uid(current->parent);
++		info->si_uid = map_cred_ns(__task_cred(current->parent),
++					   current_user_ns());
++		rcu_read_unlock();
+ 	}
+ 
+ 	/* If the (new) signal is now blocked, requeue it.  */
+-- 
+1.7.5.4
 
-Also, leaving VDD AUX high after EDID is fetched means that we can start
-the mode setting immediately, rather than having to wait for the
-power-off/power-on delay (which is really long).
-
-What we could do is force VDD AUX off after the panel gets turned on;
-that would ensure that turning the panel off would actually turn the
-power off, rather than having VDD stay high for some time after that.
-
-=2D-=20
-keith.packard@intel.com
-
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iD8DBQFOeW1WQp8BWwlsTdMRApaaAJwKUX3Y9l0PH+WDXmz7A99jXaza7ACgvOZe
-6VHL4AbzzphbiQs3X+9ypUw=
-=M2kl
------END PGP SIGNATURE-----
---=-=-=--
