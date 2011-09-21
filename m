@@ -1,76 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754024Ab1IUNOa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 09:14:30 -0400
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:50958
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750978Ab1IUNO3 (ORCPT
+	id S1753998Ab1IUNPV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 09:15:21 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37477 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750978Ab1IUNPT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 09:14:29 -0400
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275dhz2dh87h2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-FB-DOMAIN-IP-MATCH: fail
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Jamie Iles <jamie@jamieiles.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <patches@linaro.org>,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: [PATCH] gpio/mxc: add chained_irq_enter/exit() to mx3_gpio_irq_handler()
-Date: Wed, 21 Sep 2011 21:24:04 +0800
-Message-ID: <1316611444-14126-1-git-send-email-shawn.guo@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
+	Wed, 21 Sep 2011 09:15:19 -0400
+Date: Wed, 21 Sep 2011 08:15:14 -0500
+From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
+To: Miquel van Smoorenburg <mikevs@xs4all.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] User namespace: don't allow sysctl in non-init user ns
+Message-ID: <20110921131514.GA2979@sergelap>
+References: <xs4all.20110915194812.GA24348@sergelap>
+ <1316598367.5939.12.camel@n2o.xs4all.nl>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: sigmatel.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1316598367.5939.12.camel@n2o.xs4all.nl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The mx3_gpio_irq_handler() is also called on imx6q which has GIC as
-the primary interrupt controller.  As GIC implements the fasteoi flow
-control, we need to add chained_irq_enter/exit() to
-mx3_gpio_irq_handler() for signaling EOI, otherwise system will hang
-whenever there is a gpio irq triggered.
+Quoting Miquel van Smoorenburg (mikevs@xs4all.net):
+> On Thu, 2011-09-15 at 14:48 -0500, Serge E. Hallyn wrote:
+> > sysctl.c has its own custom uid check, which is not user namespace
+> > aware.  As discovered by Richard, that allows root in a container
+> > privileged access to set all sysctls.
+> > 
+> > To fix that, just refuse access if current is not in init_user_ns.  We
+> > may at some point want to relax that check so that some sysctls are
+> > allowed - for instance dmesg_restrict when syslog is containerized.
+> > 
+> > Signed-off-by: Serge Hallyn <serge.hallyn@canonical.com>
+> > Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+> > Cc: Vasiliy Kulikov <segoon@openwall.com>
+> > Cc: richard@nod.at
+> > ---
+> >  kernel/sysctl.c |    2 ++
+> >  1 files changed, 2 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+> > index 11d65b5..f2b42e2 100644
+> > --- a/kernel/sysctl.c
+> > +++ b/kernel/sysctl.c
+> > @@ -1697,6 +1697,8 @@ void register_sysctl_root(struct ctl_table_root *root)
+> >  
+> >  static int test_perm(int mode, int op)
+> >  {
+> > +	if (current_user_ns() != &init_user_ns)
+> > +		return -EACCES;
+> >  	if (!current_euid())
+> >  		mode >>= 6;
+> >  	else if (in_egroup_p(0))
+> 
+> I haven't tested it, but it looks like this denies access to /proc/sys
+> completely, right ?
 
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
----
-This is the second post of '[PATCH] gpio/mxc: make it work with imx6q'
-to adopt the point given by Jamie.
+True.  Good point.
 
- drivers/gpio/gpio-mxc.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+> Wouldn't it be better to make access read-only ? 
 
-diff --git a/drivers/gpio/gpio-mxc.c b/drivers/gpio/gpio-mxc.c
-index 4340aca..82f7b65 100644
---- a/drivers/gpio/gpio-mxc.c
-+++ b/drivers/gpio/gpio-mxc.c
-@@ -30,6 +30,7 @@
- #include <linux/of.h>
- #include <linux/of_device.h>
- #include <asm-generic/bug.h>
-+#include <asm/mach/irq.h>
- 
- enum mxc_gpio_hwtype {
- 	IMX1_GPIO,	/* runs on i.mx1 */
-@@ -232,10 +233,15 @@ static void mx3_gpio_irq_handler(u32 irq, struct irq_desc *desc)
- {
- 	u32 irq_stat;
- 	struct mxc_gpio_port *port = irq_get_handler_data(irq);
-+	struct irq_chip *chip = irq_get_chip(irq);
-+
-+	chained_irq_enter(chip, desc);
- 
- 	irq_stat = readl(port->base + GPIO_ISR) & readl(port->base + GPIO_IMR);
- 
- 	mxc_gpio_irq_handler(port, irq_stat);
-+
-+	chained_irq_exit(chip, desc);
- }
- 
- /* MX2 has one interrupt *for all* gpio ports */
--- 
-1.7.4.1
+It'd be better, yes.  For the moment we're trying to focus on making sure
+there are no leaks out of the user namespace, so that then we can start
+relaxing.  But I think you're right, this is easy enough to do right
+from the start.
 
+> For example glibc reads from several /proc/sys/... files for sysconf()
+> and pathconf(). That would fail with this patch I think ?
+> 
+> Something like
+> 
+> --- a/kernel/sysctl.c.orig	2011-06-24 00:24:26.000000000 +0200
+> +++ b/kernel/sysctl.c	2011-09-21 11:40:42.961291629 +0200
+> @@ -1892,10 +1892,15 @@
+>  
+>  static int test_perm(int mode, int op)
+>  {
+> -	if (!current_euid())
+> -		mode >>= 6;
+> -	else if (in_egroup_p(0))
+> -		mode >>= 3;
+> +	if (current_user_ns() != &init_user_ns) {
+> +		if (op & MAY_WRITE)
+> +			return -EACCES;
+> +	} else {
+> +		if (!current_euid())
+> +			mode >>= 6;
+> +		else if (in_egroup_p(0))
+> +			mode >>= 3;
+> +	}
+>  	if ((op & ~mode & (MAY_READ|MAY_WRITE|MAY_EXEC)) == 0)
+>  		return 0;
+>  	return -EACCES;
 
+How about the following, slightly changed?  It tries to more precisely
+follow the rule that access from another (non-ancestor) user-ns is
+checked as access from the overflow userid (-1).
+
+	if (current_user_ns() == &init_user_ns) {
+		if (!current_euid())
+			mode >>= 6;
+		else if (in_egroup_p(0))
+			mode >>= 3;
+	}
+  	if ((op & ~mode & (MAY_READ|MAY_WRITE|MAY_EXEC)) == 0)
+  		return 0;
+  	return -EACCES;
+
+Does that make sense?  Yes it does mean that any world-writeable
+files are writeable from a container, but those are the rules
+we'd earlier defined.  (File creation (directory write) has to be
+a special exception only because we don't have a valid owner to
+assign to the new file).
+
+Thanks for pointing this out!
+
+-serge
