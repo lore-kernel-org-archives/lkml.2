@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752576Ab1IUHax (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 03:30:53 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:55754 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752504Ab1IUHav (ORCPT
+	id S1752599Ab1IUHb0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 03:31:26 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:51970 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752504Ab1IUHbZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 03:30:51 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
-        dhowells@redhat.com
-Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V6 00/26]  New ACL format for better NFSv4 acl interoperability
-In-Reply-To: <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-User-Agent: Notmuch/0.8-16-gbdaee77 (http://notmuchmail.org) Emacs/23.2.1 (x86_64-pc-linux-gnu)
-Date: Wed, 21 Sep 2011 13:00:43 +0530
-Message-ID: <878vpi73oc.fsf@skywalker.in.ibm.com>
+	Wed, 21 Sep 2011 03:31:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <1316587903.1573.8.camel@vkoul-udesk3>
+References: <1316072789-12830-1-git-send-email-jaswinder.singh@linaro.org>
+	<1316520730-3655-1-git-send-email-jaswinder.singh@linaro.org>
+	<1316537529.31295.14.camel@vkoul-udesk3>
+	<CAJe_ZhdB6y--3XuTp7hzrBjkBTUfp5Anta2Z8SMaqbc=z6jMGA@mail.gmail.com>
+	<1316586723.1573.4.camel@vkoul-udesk3>
+	<CAJe_Zhc67VR-+YAYaLhbwOF=eo2s7wOkjwvi+kJ5=bGt-YWmqA@mail.gmail.com>
+	<1316587903.1573.8.camel@vkoul-udesk3>
+Date: Wed, 21 Sep 2011 13:01:24 +0530
+Message-ID: <CAJe_ZheO7e0Ft364io86aqnShK11XMTj+iC5eeU_zVCY0fJghw@mail.gmail.com>
+Subject: Re: [PATCHv3] DMAEngine: Define interleaved transfer request api
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: dan.j.williams@intel.com, linux-kernel@vger.kernel.org,
+        rmk@arm.linux.org.uk, 21cnbao@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  5 Sep 2011 22:55:22 +0530, "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
-> Hi,
-> 
-> The following set of patches implements VFS and ext4 changes needed to implement
-> a new acl model for linux. Rich ACLs are an implementation of NFSv4 ACLs,
-> extended by file masks to fit into the standard POSIX file permission model.
-> They are designed to work seamlessly locally as well as across the NFSv4 and
-> CIFS/SMB2 network file system protocols.
-> 
-> A user-space utility for displaying and changing richacls is available at [4]
-> (a number of examples can be found at http://acl.bestbits.at/richacl/examples.html).
-> 
-> [4] git://git.kernel.org/pub/scm/fs/acl/kvaneesh/richacl.git master
-> 
-> To test richacl on ext4 use -o richacl mount option. This mount option may later be
-> dropped in favour of a feature flag.
-> 
-> More details regarding richacl can be found at
-> http://acl.bestbits.at/richacl/
-> 
-> Changes from v5:
-> a) rebase to v3.1-rc4-131-g9e79e3e
-> 
-> NOTE: The kernel changes will be pushed to
-> git://git.kernel.org/pub/scm/linux/kernel/git/kvaneesh/linux-richacl.git richacl
-> when kernel.org is back
-> 
+On 21 September 2011 12:21, Vinod Koul <vinod.koul@intel.com> wrote:
+>> >> > Also for slave transfers, how do we infer direction?
+>> >> I already explained to Barry.  Here's it again.
+>> >>
+>> >> At any time, the dmac driver knows if the channel, on which the xfer is
+>> >> prepared/submitted is Slave or not.
+>> >>
+>> >> SLAVE Transfer
+>> >>    dmaxfer_template.src_inc  && !dmaxfer_template.dst_inc  => DMA_TO_DEVICE
+>> >>    !dmaxfer_template.src_inc  && dmaxfer_template.dst_inc  => DMA_FROM_DEVICE
+>> >>
+>> >> Mem->Mem Transfer
+>> >>    dmaxfer_template.src_inc  && !dmaxfer_template.dst_inc  => Meaningless
+>> >>    !dmaxfer_template.src_inc  && dmaxfer_template.dst_inc  => MemSet
+>> > Rather than each driver adding this logic with good chance of screwing
+>> > up, care to add this as helper in dmaengine.h
+>> >
+>> > Ideally, I would have preferred direction to be told explicitly, would
+>> > leave it you..
+>> >
+>> I repeat yet again :- "This api is common to Slave as well as Mem<->Mem"
+>>
+>> Even if we have slave clients specify DMA_TO/FROM_DEVICE, what
+>> flag do you suggest Mem->Mem clients use ?
+> Would it be invalid in that case!!!
+Of course!
+It doesn't make any sense for a mem->mem client asking
+for DMA_FROM_DEVICE when it wanted MemSet.
 
-I pushed the kernel changes to
+> Same as few ields in xt_template would be for peripheral case..
+No properly written client would ever pass 'invalid' values for
+xt_template members.
+But _every_ properly written Mem->Mem client would have to
+ask for DMA_TO/FROM_DEVICE, following what you suggest.
 
-git://github.com/kvaneesh/linux.git richacl
-
-Userspace code can be found at 
-
-git://github.com/kvaneesh/richacl-tools.git
-
--aneesh
+Btw, even if we wanted, Memcpy couldn't be represented by
+either DMA_TO_DEVICE or  DMA_FROM_DEVICE, because
+both Src and Dst increments here.
