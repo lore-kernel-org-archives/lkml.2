@@ -1,60 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751219Ab1IUU53 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 16:57:29 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:47847 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751168Ab1IUU51 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 16:57:27 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] vt/suspend: cleanup #if defined uglyness and fix compile error
-Date: Wed, 21 Sep 2011 22:59:30 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: H Hartley Sweeten <hartleys@visionengravers.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-pm@lists.linux-foundation.org, akpm@linux-foundation.org,
-        gregkh@suse.de, pavel@ucw.cz, len.brown@intel.com, art@ified.ca,
-        jslaby@suse.cz
-References: <201109061404.10301.hartleys@visionengravers.com> <201109071849.43603.arnd@arndb.de>
-In-Reply-To: <201109071849.43603.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	id S1751262Ab1IUU5k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 16:57:40 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:35807 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750849Ab1IUU5i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 16:57:38 -0400
+Date: Wed, 21 Sep 2011 16:55:29 -0400 (EDT)
+Message-Id: <20110921.165529.1114257620345857548.davem@davemloft.net>
+To: grant.likely@secretlab.ca
+Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        shawn.guo@linaro.org
+Subject: Re: [PATCH] dt: add of_alias_scan and of_alias_get_id
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110921204545.19871.99088.stgit@ponder>
+References: <20110921204545.19871.99088.stgit@ponder>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <201109212259.30843.rjw@sisk.pl>
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 21 Sep 2011 13:55:31 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, September 07, 2011, Arnd Bergmann wrote:
-> On Tuesday 06 September 2011, H Hartley Sweeten wrote:
-> > rder to cleanup
-> > the #if defined ugliness for the vt suspend support functions. Note that
-> > CONFIG_VT_CONSOLE is already dependant on CONFIG_VT.
-> > 
-> > The function pm_set_vt_switch is actually dependant on CONFIG_VT and not
-> > CONFIG_PM_SLEEP. This fixes a compile error when CONFIG_PM_SLEEP is
-> > not set:
-> > 
-> > drivers/tty/vt/vt_ioctl.c:1794: error: redefinition of 'pm_set_vt_switch'
-> > include/linux/suspend.h:17: error: previous definition of 'pm_set_vt_switch' was here
-> > 
-> > Also, remove the incorrect path from the comment in console.c.
-> > 
-> > Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-> > Cc: Arnd Bergmann <arnd@arnd.de>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> > Cc: Pavel Machek <pavel@ucw.cz>
-> > Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-> > Cc: Len Brown <len.brown@intel.com>
-> > Cc: Arthur Taylor <art@ified.ca>
-> > Cc: Jiri Slaby <jslaby@suse.cz>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 21 Sep 2011 14:46:54 -0600
+
+> From: Shawn Guo <shawn.guo@linaro.org>
 > 
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> The patch adds function of_alias_scan to populate a global lookup
+> table with the properties of 'aliases' node and function
+> of_alias_get_id for drivers to find alias id from the lookup table.
+> 
+> v3: Split out automatic addition of aliases on id lookup so that it can be
+>     debated separately from the core functionality.
+> v2: - Add of_chosen/of_aliases populating and of_alias_scan() invocation
+>     for OF_PROMTREE.
+>     - Add locking
+>     - rework parse loop
+> 
+> Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+> Cc: David S. Miller <davem@davemloft.net>
+> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 
-Applied to linux-pm/linux-next, will be pushed for 3.2.
+Looks good:
 
-Thanks (and sorry for the delay),
-Rafael
+Acked-by: David S. Miller <davem@davemloft.net>
