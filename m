@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753757Ab1IUMk1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 08:40:27 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:40780 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753668Ab1IUMk0 (ORCPT
+	id S1753788Ab1IUMtx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 08:49:53 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:40729 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753611Ab1IUMtw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 08:40:26 -0400
-Date: Wed, 21 Sep 2011 13:40:18 +0100
-From: Matthew Garrett <mjg@redhat.com>
-To: Chen Gong <gong.chen@linux.intel.com>
-Cc: tony.luck@intel.com, linux-kernel@vger.kernel.org, mikew@google.com,
-        saguchi@redhat.com
-Subject: Re: [PATCH] efi: Avoid sysfs spew on reboot and panic
-Message-ID: <20110921124018.GA22155@srcf.ucam.org>
-References: <1316552853-2000-1-git-send-email-mjg@redhat.com>
- <4E795A9C.4040508@linux.intel.com>
+	Wed, 21 Sep 2011 08:49:52 -0400
+Date: Wed, 21 Sep 2011 13:49:36 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Daniel Drake <dsd@laptop.org>
+Cc: grant.likely@secretlab.ca, sameo@linux.intel.com,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        dilinger@queued.net
+Subject: Re: [PATCH 1/3] mfd: allow mfd_cell association with device tree
+ node
+Message-ID: <20110921124936.GA25620@sirena.org.uk>
+References: <20110921120148.4A81E9D401D@zog.reactivated.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E795A9C.4040508@linux.intel.com>
+In-Reply-To: <20110921120148.4A81E9D401D@zog.reactivated.net>
+X-Cookie: Yow!  Am I having fun yet?
 User-Agent: Mutt/1.5.20 (2009-06-14)
 X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 21, 2011 at 11:31:40AM +0800, Chen Gong wrote:
-> >  	mutex_lock(&psinfo->buf_mutex);
-> >  	memcpy(psinfo->buf, buf, size);
-> >-	id = psinfo->write(type, 0, size, psinfo);
-> >+	id = psinfo->write(type, 0, KMSG_DUMP_UNKNOWN, size, psinfo);
-> 
-> I can't say it is wrong because no real caller for this function, but I can't
-> say it is right, yet. KMSG_DUMP_UNKNOWN here looks too arbirary. Do you have
-> any reason to use this type here ?
+On Wed, Sep 21, 2011 at 01:01:48PM +0100, Daniel Drake wrote:
 
-If a function calls pstore_write() directly then we have no type to 
-associate with it. It seems worth making this explicit.
+> @@ -37,6 +38,9 @@ struct mfd_cell {
+>  	void			*platform_data;
+>  	size_t			pdata_size;
+>  
+> +	/* association with device tree node (optional) */
+> +	struct device_node	*of_node;
+> +
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+This doesn't seem great as it means that the mfd_cells can't be static
+data, they have to be allocated per device.  Why can't the MFD cells get
+at the OF node by using the parent device in the same way as they
+(mostly) get platform data at the minute?
