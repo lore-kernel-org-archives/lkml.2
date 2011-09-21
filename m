@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753841Ab1IUJfs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 05:35:48 -0400
+	id S1753818Ab1IUJfl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 05:35:41 -0400
 Received: from mail-ew0-f46.google.com ([209.85.215.46]:43407 "EHLO
 	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753542Ab1IUJfn (ORCPT
+	with ESMTP id S1753661Ab1IUJfg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 05:35:43 -0400
+	Wed, 21 Sep 2011 05:35:36 -0400
 From: Yong Zhang <yong.zhang0@gmail.com>
 To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: tglx@linutronix.de, yong.zhang0@gmail.com,
-        Grant Likely <grant.likely@secretlab.ca>,
-        spi-devel-general@lists.sourceforge.net
-Subject: [PATCH 47/57] spi: irq: Remove IRQF_DISABLED
-Date: Wed, 21 Sep 2011 17:28:48 +0800
-Message-Id: <1316597339-29861-48-git-send-email-yong.zhang0@gmail.com>
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Wan ZongShun <mcuos.com@gmail.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        rtc-linux@googlegroups.com, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 46/57] rtc: irq: Remove IRQF_DISABLED
+Date: Wed, 21 Sep 2011 17:28:47 +0800
+Message-Id: <1316597339-29861-47-git-send-email-yong.zhang0@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1316597339-29861-1-git-send-email-yong.zhang0@gmail.com>
 References: <1316597339-29861-1-git-send-email-yong.zhang0@gmail.com>
@@ -31,80 +33,403 @@ genirq: Warn when handler enables interrupts]).
 So now this flag is a NOOP and can be removed.
 
 Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/spi/spi-bfin5xx.c       |    2 +-
- drivers/spi/spi-coldfire-qspi.c |    2 +-
- drivers/spi/spi-ppc4xx.c        |    2 +-
- drivers/spi/spi-sh-msiof.c      |    2 +-
- drivers/spi/spi-sh.c            |    2 +-
- 5 files changed, 5 insertions(+), 5 deletions(-)
+ drivers/rtc/rtc-at91sam9.c  |    2 +-
+ drivers/rtc/rtc-cmos.c      |    2 +-
+ drivers/rtc/rtc-coh901331.c |    2 +-
+ drivers/rtc/rtc-davinci.c   |    2 +-
+ drivers/rtc/rtc-ds1511.c    |    2 +-
+ drivers/rtc/rtc-ds1553.c    |    2 +-
+ drivers/rtc/rtc-lpc32xx.c   |    2 +-
+ drivers/rtc/rtc-mpc5121.c   |    4 ++--
+ drivers/rtc/rtc-mrst.c      |    2 +-
+ drivers/rtc/rtc-mv.c        |    2 +-
+ drivers/rtc/rtc-nuc900.c    |    2 +-
+ drivers/rtc/rtc-omap.c      |    4 ++--
+ drivers/rtc/rtc-pl030.c     |    2 +-
+ drivers/rtc/rtc-pl031.c     |    2 +-
+ drivers/rtc/rtc-puv3.c      |    4 ++--
+ drivers/rtc/rtc-pxa.c       |    4 ++--
+ drivers/rtc/rtc-s3c.c       |    4 ++--
+ drivers/rtc/rtc-sa1100.c    |    4 ++--
+ drivers/rtc/rtc-sh.c        |    8 ++++----
+ drivers/rtc/rtc-stk17ta8.c  |    2 +-
+ drivers/rtc/rtc-tx4939.c    |    2 +-
+ drivers/rtc/rtc-vr41xx.c    |    4 ++--
+ 22 files changed, 32 insertions(+), 32 deletions(-)
 
-diff --git a/drivers/spi/spi-bfin5xx.c b/drivers/spi/spi-bfin5xx.c
-index b8d25f2..3b83ff8 100644
---- a/drivers/spi/spi-bfin5xx.c
-+++ b/drivers/spi/spi-bfin5xx.c
-@@ -1098,7 +1098,7 @@ static int bfin_spi_setup(struct spi_device *spi)
+diff --git a/drivers/rtc/rtc-at91sam9.c b/drivers/rtc/rtc-at91sam9.c
+index a3ad957..0c09e8f 100644
+--- a/drivers/rtc/rtc-at91sam9.c
++++ b/drivers/rtc/rtc-at91sam9.c
+@@ -331,7 +331,7 @@ static int __init at91_rtc_probe(struct platform_device *pdev)
  
- 	if (chip->pio_interrupt && !drv_data->irq_requested) {
- 		ret = request_irq(drv_data->spi_irq, bfin_spi_pio_irq_handler,
--			IRQF_DISABLED, "BFIN_SPI", drv_data);
-+			0, "BFIN_SPI", drv_data);
- 		if (ret) {
- 			dev_err(&spi->dev, "Unable to register spi IRQ\n");
- 			goto error;
-diff --git a/drivers/spi/spi-coldfire-qspi.c b/drivers/spi/spi-coldfire-qspi.c
-index ae2cd1c..7397c4d 100644
---- a/drivers/spi/spi-coldfire-qspi.c
-+++ b/drivers/spi/spi-coldfire-qspi.c
-@@ -487,7 +487,7 @@ static int __devinit mcfqspi_probe(struct platform_device *pdev)
- 		goto fail2;
- 	}
- 
--	status = request_irq(mcfqspi->irq, mcfqspi_irq_handler, IRQF_DISABLED,
-+	status = request_irq(mcfqspi->irq, mcfqspi_irq_handler, 0,
- 			     pdev->name, mcfqspi);
- 	if (status) {
- 		dev_dbg(&pdev->dev, "request_irq failed\n");
-diff --git a/drivers/spi/spi-ppc4xx.c b/drivers/spi/spi-ppc4xx.c
-index b267fd9..8ec43e0 100644
---- a/drivers/spi/spi-ppc4xx.c
-+++ b/drivers/spi/spi-ppc4xx.c
-@@ -514,7 +514,7 @@ static int __init spi_ppc4xx_of_probe(struct platform_device *op)
- 	/* Request IRQ */
- 	hw->irqnum = irq_of_parse_and_map(np, 0);
- 	ret = request_irq(hw->irqnum, spi_ppc4xx_int,
--			  IRQF_DISABLED, "spi_ppc4xx_of", (void *)hw);
-+			  0, "spi_ppc4xx_of", (void *)hw);
+ 	/* register irq handler after we know what name we'll use */
+ 	ret = request_irq(AT91_ID_SYS, at91_rtc_interrupt,
+-				IRQF_DISABLED | IRQF_SHARED,
++				IRQF_SHARED,
+ 				dev_name(&rtc->rtcdev->dev), rtc);
  	if (ret) {
- 		dev_err(dev, "unable to allocate interrupt\n");
- 		goto free_gpios;
-diff --git a/drivers/spi/spi-sh-msiof.c b/drivers/spi/spi-sh-msiof.c
-index 2f61a84..51b14c9 100644
---- a/drivers/spi/spi-sh-msiof.c
-+++ b/drivers/spi/spi-sh-msiof.c
-@@ -636,7 +636,7 @@ static int sh_msiof_spi_probe(struct platform_device *pdev)
- 		goto err2;
+ 		dev_dbg(&pdev->dev, "can't share IRQ %d?\n", AT91_ID_SYS);
+diff --git a/drivers/rtc/rtc-cmos.c b/drivers/rtc/rtc-cmos.c
+index 05beb6c..66d3b14 100644
+--- a/drivers/rtc/rtc-cmos.c
++++ b/drivers/rtc/rtc-cmos.c
+@@ -714,7 +714,7 @@ cmos_do_probe(struct device *dev, struct resource *ports, int rtc_irq)
+ 			rtc_cmos_int_handler = cmos_interrupt;
+ 
+ 		retval = request_irq(rtc_irq, rtc_cmos_int_handler,
+-				IRQF_DISABLED, dev_name(&cmos_rtc.rtc->dev),
++				0, dev_name(&cmos_rtc.rtc->dev),
+ 				cmos_rtc.rtc);
+ 		if (retval < 0) {
+ 			dev_dbg(dev, "IRQ %d is already in use\n", rtc_irq);
+diff --git a/drivers/rtc/rtc-coh901331.c b/drivers/rtc/rtc-coh901331.c
+index 80f9c88..a5b8a0c 100644
+--- a/drivers/rtc/rtc-coh901331.c
++++ b/drivers/rtc/rtc-coh901331.c
+@@ -199,7 +199,7 @@ static int __init coh901331_probe(struct platform_device *pdev)
  	}
  
--	ret = request_irq(i, sh_msiof_spi_irq, IRQF_DISABLED,
-+	ret = request_irq(i, sh_msiof_spi_irq, 0,
- 			  dev_name(&pdev->dev), p);
- 	if (ret) {
- 		dev_err(&pdev->dev, "unable to request irq\n");
-diff --git a/drivers/spi/spi-sh.c b/drivers/spi/spi-sh.c
-index 9eedd71..e0343d4 100644
---- a/drivers/spi/spi-sh.c
-+++ b/drivers/spi/spi-sh.c
-@@ -484,7 +484,7 @@ static int __devinit spi_sh_probe(struct platform_device *pdev)
- 		goto error2;
- 	}
+ 	rtap->irq = platform_get_irq(pdev, 0);
+-	if (request_irq(rtap->irq, coh901331_interrupt, IRQF_DISABLED,
++	if (request_irq(rtap->irq, coh901331_interrupt, 0,
+ 			"RTC COH 901 331 Alarm", rtap)) {
+ 		ret = -EIO;
+ 		goto out_no_irq;
+diff --git a/drivers/rtc/rtc-davinci.c b/drivers/rtc/rtc-davinci.c
+index 755e1fe..14c2109 100644
+--- a/drivers/rtc/rtc-davinci.c
++++ b/drivers/rtc/rtc-davinci.c
+@@ -542,7 +542,7 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
+ 	rtcss_write(davinci_rtc, 0, PRTCSS_RTC_CCTRL);
  
--	ret = request_irq(irq, spi_sh_irq, IRQF_DISABLED, "spi_sh", ss);
-+	ret = request_irq(irq, spi_sh_irq, 0, "spi_sh", ss);
+ 	ret = request_irq(davinci_rtc->irq, davinci_rtc_interrupt,
+-			  IRQF_DISABLED, "davinci_rtc", davinci_rtc);
++			  0, "davinci_rtc", davinci_rtc);
  	if (ret < 0) {
- 		dev_err(&pdev->dev, "request_irq error\n");
- 		goto error3;
+ 		dev_err(dev, "unable to register davinci RTC interrupt\n");
+ 		goto fail4;
+diff --git a/drivers/rtc/rtc-ds1511.c b/drivers/rtc/rtc-ds1511.c
+index 586c244..bbc7c86 100644
+--- a/drivers/rtc/rtc-ds1511.c
++++ b/drivers/rtc/rtc-ds1511.c
+@@ -532,7 +532,7 @@ ds1511_rtc_probe(struct platform_device *pdev)
+ 	if (pdata->irq > 0) {
+ 		rtc_read(RTC_CMD1);
+ 		if (devm_request_irq(&pdev->dev, pdata->irq, ds1511_interrupt,
+-			IRQF_DISABLED | IRQF_SHARED, pdev->name, pdev) < 0) {
++			IRQF_SHARED, pdev->name, pdev) < 0) {
+ 
+ 			dev_warn(&pdev->dev, "interrupt not available.\n");
+ 			pdata->irq = 0;
+diff --git a/drivers/rtc/rtc-ds1553.c b/drivers/rtc/rtc-ds1553.c
+index 1350029..1ef2718 100644
+--- a/drivers/rtc/rtc-ds1553.c
++++ b/drivers/rtc/rtc-ds1553.c
+@@ -320,7 +320,7 @@ static int __devinit ds1553_rtc_probe(struct platform_device *pdev)
+ 		writeb(0, ioaddr + RTC_INTERRUPTS);
+ 		if (devm_request_irq(&pdev->dev, pdata->irq,
+ 				ds1553_rtc_interrupt,
+-				IRQF_DISABLED, pdev->name, pdev) < 0) {
++				0, pdev->name, pdev) < 0) {
+ 			dev_warn(&pdev->dev, "interrupt not available.\n");
+ 			pdata->irq = 0;
+ 		}
+diff --git a/drivers/rtc/rtc-lpc32xx.c b/drivers/rtc/rtc-lpc32xx.c
+index ae16250..ba11a19 100644
+--- a/drivers/rtc/rtc-lpc32xx.c
++++ b/drivers/rtc/rtc-lpc32xx.c
+@@ -287,7 +287,7 @@ static int __devinit lpc32xx_rtc_probe(struct platform_device *pdev)
+ 	if (rtc->irq >= 0) {
+ 		if (devm_request_irq(&pdev->dev, rtc->irq,
+ 				     lpc32xx_rtc_alarm_interrupt,
+-				     IRQF_DISABLED, pdev->name, rtc) < 0) {
++				     0, pdev->name, rtc) < 0) {
+ 			dev_warn(&pdev->dev, "Can't request interrupt.\n");
+ 			rtc->irq = -1;
+ 		} else {
+diff --git a/drivers/rtc/rtc-mpc5121.c b/drivers/rtc/rtc-mpc5121.c
+index da60915..3a683fd 100644
+--- a/drivers/rtc/rtc-mpc5121.c
++++ b/drivers/rtc/rtc-mpc5121.c
+@@ -327,7 +327,7 @@ static int __devinit mpc5121_rtc_probe(struct platform_device *op)
+ 	dev_set_drvdata(&op->dev, rtc);
+ 
+ 	rtc->irq = irq_of_parse_and_map(op->dev.of_node, 1);
+-	err = request_irq(rtc->irq, mpc5121_rtc_handler, IRQF_DISABLED,
++	err = request_irq(rtc->irq, mpc5121_rtc_handler, 0,
+ 						"mpc5121-rtc", &op->dev);
+ 	if (err) {
+ 		dev_err(&op->dev, "%s: could not request irq: %i\n",
+@@ -337,7 +337,7 @@ static int __devinit mpc5121_rtc_probe(struct platform_device *op)
+ 
+ 	rtc->irq_periodic = irq_of_parse_and_map(op->dev.of_node, 0);
+ 	err = request_irq(rtc->irq_periodic, mpc5121_rtc_handler_upd,
+-				IRQF_DISABLED, "mpc5121-rtc_upd", &op->dev);
++				0, "mpc5121-rtc_upd", &op->dev);
+ 	if (err) {
+ 		dev_err(&op->dev, "%s: could not request irq: %i\n",
+ 						__func__, rtc->irq_periodic);
+diff --git a/drivers/rtc/rtc-mrst.c b/drivers/rtc/rtc-mrst.c
+index d335448..507f00e 100644
+--- a/drivers/rtc/rtc-mrst.c
++++ b/drivers/rtc/rtc-mrst.c
+@@ -363,7 +363,7 @@ vrtc_mrst_do_probe(struct device *dev, struct resource *iomem, int rtc_irq)
+ 
+ 	if (rtc_irq) {
+ 		retval = request_irq(rtc_irq, mrst_rtc_irq,
+-				IRQF_DISABLED, dev_name(&mrst_rtc.rtc->dev),
++				0, dev_name(&mrst_rtc.rtc->dev),
+ 				mrst_rtc.rtc);
+ 		if (retval < 0) {
+ 			dev_dbg(dev, "IRQ %d is already in use, err %d\n",
+diff --git a/drivers/rtc/rtc-mv.c b/drivers/rtc/rtc-mv.c
+index 768e2ed..1300962 100644
+--- a/drivers/rtc/rtc-mv.c
++++ b/drivers/rtc/rtc-mv.c
+@@ -273,7 +273,7 @@ static int __devinit mv_rtc_probe(struct platform_device *pdev)
+ 	if (pdata->irq >= 0) {
+ 		writel(0, pdata->ioaddr + RTC_ALARM_INTERRUPT_MASK_REG_OFFS);
+ 		if (devm_request_irq(&pdev->dev, pdata->irq, mv_rtc_interrupt,
+-				     IRQF_DISABLED | IRQF_SHARED,
++				     IRQF_SHARED,
+ 				     pdev->name, pdata) < 0) {
+ 			dev_warn(&pdev->dev, "interrupt not available.\n");
+ 			pdata->irq = -1;
+diff --git a/drivers/rtc/rtc-nuc900.c b/drivers/rtc/rtc-nuc900.c
+index 781068d..b790109 100644
+--- a/drivers/rtc/rtc-nuc900.c
++++ b/drivers/rtc/rtc-nuc900.c
+@@ -269,7 +269,7 @@ static int __devinit nuc900_rtc_probe(struct platform_device *pdev)
+ 
+ 	nuc900_rtc->irq_num = platform_get_irq(pdev, 0);
+ 	if (request_irq(nuc900_rtc->irq_num, nuc900_rtc_interrupt,
+-				IRQF_DISABLED, "nuc900rtc", nuc900_rtc)) {
++				0, "nuc900rtc", nuc900_rtc)) {
+ 		dev_err(&pdev->dev, "NUC900 RTC request irq failed\n");
+ 		err = -EBUSY;
+ 		goto fail4;
+diff --git a/drivers/rtc/rtc-omap.c b/drivers/rtc/rtc-omap.c
+index 7789002..0b614e3 100644
+--- a/drivers/rtc/rtc-omap.c
++++ b/drivers/rtc/rtc-omap.c
+@@ -348,14 +348,14 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
+ 		rtc_write(OMAP_RTC_STATUS_ALARM, OMAP_RTC_STATUS_REG);
+ 
+ 	/* handle periodic and alarm irqs */
+-	if (request_irq(omap_rtc_timer, rtc_irq, IRQF_DISABLED,
++	if (request_irq(omap_rtc_timer, rtc_irq, 0,
+ 			dev_name(&rtc->dev), rtc)) {
+ 		pr_debug("%s: RTC timer interrupt IRQ%d already claimed\n",
+ 			pdev->name, omap_rtc_timer);
+ 		goto fail1;
+ 	}
+ 	if ((omap_rtc_timer != omap_rtc_alarm) &&
+-		(request_irq(omap_rtc_alarm, rtc_irq, IRQF_DISABLED,
++		(request_irq(omap_rtc_alarm, rtc_irq, 0,
+ 			dev_name(&rtc->dev), rtc))) {
+ 		pr_debug("%s: RTC alarm interrupt IRQ%d already claimed\n",
+ 			pdev->name, omap_rtc_alarm);
+diff --git a/drivers/rtc/rtc-pl030.c b/drivers/rtc/rtc-pl030.c
+index 1d28d44..c5afd6f 100644
+--- a/drivers/rtc/rtc-pl030.c
++++ b/drivers/rtc/rtc-pl030.c
+@@ -123,7 +123,7 @@ static int pl030_probe(struct amba_device *dev, const struct amba_id *id)
+ 
+ 	amba_set_drvdata(dev, rtc);
+ 
+-	ret = request_irq(dev->irq[0], pl030_interrupt, IRQF_DISABLED,
++	ret = request_irq(dev->irq[0], pl030_interrupt, 0,
+ 			  "rtc-pl030", rtc);
+ 	if (ret)
+ 		goto err_irq;
+diff --git a/drivers/rtc/rtc-pl031.c b/drivers/rtc/rtc-pl031.c
+index ff1b84b..d2df59d 100644
+--- a/drivers/rtc/rtc-pl031.c
++++ b/drivers/rtc/rtc-pl031.c
+@@ -352,7 +352,7 @@ static int pl031_probe(struct amba_device *adev, const struct amba_id *id)
+ 	}
+ 
+ 	if (request_irq(adev->irq[0], pl031_interrupt,
+-			IRQF_DISABLED, "rtc-pl031", ldata)) {
++			0, "rtc-pl031", ldata)) {
+ 		ret = -EIO;
+ 		goto out_no_irq;
+ 	}
+diff --git a/drivers/rtc/rtc-puv3.c b/drivers/rtc/rtc-puv3.c
+index b3eba3c..378fe4b 100644
+--- a/drivers/rtc/rtc-puv3.c
++++ b/drivers/rtc/rtc-puv3.c
+@@ -164,7 +164,7 @@ static int puv3_rtc_open(struct device *dev)
+ 	int ret;
+ 
+ 	ret = request_irq(puv3_rtc_alarmno, puv3_rtc_alarmirq,
+-			  IRQF_DISABLED,  "pkunity-rtc alarm", rtc_dev);
++			  0,  "pkunity-rtc alarm", rtc_dev);
+ 
+ 	if (ret) {
+ 		dev_err(dev, "IRQ%d error %d\n", puv3_rtc_alarmno, ret);
+@@ -172,7 +172,7 @@ static int puv3_rtc_open(struct device *dev)
+ 	}
+ 
+ 	ret = request_irq(puv3_rtc_tickno, puv3_rtc_tickirq,
+-			  IRQF_DISABLED,  "pkunity-rtc tick", rtc_dev);
++			  0,  "pkunity-rtc tick", rtc_dev);
+ 
+ 	if (ret) {
+ 		dev_err(dev, "IRQ%d error %d\n", puv3_rtc_tickno, ret);
+diff --git a/drivers/rtc/rtc-pxa.c b/drivers/rtc/rtc-pxa.c
+index fc9f499..0075c8f 100644
+--- a/drivers/rtc/rtc-pxa.c
++++ b/drivers/rtc/rtc-pxa.c
+@@ -174,14 +174,14 @@ static int pxa_rtc_open(struct device *dev)
+ 	struct pxa_rtc *pxa_rtc = dev_get_drvdata(dev);
+ 	int ret;
+ 
+-	ret = request_irq(pxa_rtc->irq_1Hz, pxa_rtc_irq, IRQF_DISABLED,
++	ret = request_irq(pxa_rtc->irq_1Hz, pxa_rtc_irq, 0,
+ 			  "rtc 1Hz", dev);
+ 	if (ret < 0) {
+ 		dev_err(dev, "can't get irq %i, err %d\n", pxa_rtc->irq_1Hz,
+ 			ret);
+ 		goto err_irq_1Hz;
+ 	}
+-	ret = request_irq(pxa_rtc->irq_Alrm, pxa_rtc_irq, IRQF_DISABLED,
++	ret = request_irq(pxa_rtc->irq_Alrm, pxa_rtc_irq, 0,
+ 			  "rtc Alrm", dev);
+ 	if (ret < 0) {
+ 		dev_err(dev, "can't get irq %i, err %d\n", pxa_rtc->irq_Alrm,
+diff --git a/drivers/rtc/rtc-s3c.c b/drivers/rtc/rtc-s3c.c
+index 7639ab9..9a073aa 100644
+--- a/drivers/rtc/rtc-s3c.c
++++ b/drivers/rtc/rtc-s3c.c
+@@ -536,14 +536,14 @@ static int __devinit s3c_rtc_probe(struct platform_device *pdev)
+ 	s3c_rtc_setfreq(&pdev->dev, 1);
+ 
+ 	ret = request_irq(s3c_rtc_alarmno, s3c_rtc_alarmirq,
+-			  IRQF_DISABLED,  "s3c2410-rtc alarm", rtc);
++			  0,  "s3c2410-rtc alarm", rtc);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "IRQ%d error %d\n", s3c_rtc_alarmno, ret);
+ 		goto err_alarm_irq;
+ 	}
+ 
+ 	ret = request_irq(s3c_rtc_tickno, s3c_rtc_tickirq,
+-			  IRQF_DISABLED,  "s3c2410-rtc tick", rtc);
++			  0,  "s3c2410-rtc tick", rtc);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "IRQ%d error %d\n", s3c_rtc_tickno, ret);
+ 		free_irq(s3c_rtc_alarmno, rtc);
+diff --git a/drivers/rtc/rtc-sa1100.c b/drivers/rtc/rtc-sa1100.c
+index 0b40bb8..7ca247e 100644
+--- a/drivers/rtc/rtc-sa1100.c
++++ b/drivers/rtc/rtc-sa1100.c
+@@ -161,13 +161,13 @@ static int sa1100_rtc_open(struct device *dev)
+ 	struct platform_device *plat_dev = to_platform_device(dev);
+ 	struct rtc_device *rtc = platform_get_drvdata(plat_dev);
+ 
+-	ret = request_irq(IRQ_RTC1Hz, sa1100_rtc_interrupt, IRQF_DISABLED,
++	ret = request_irq(IRQ_RTC1Hz, sa1100_rtc_interrupt, 0,
+ 		"rtc 1Hz", dev);
+ 	if (ret) {
+ 		dev_err(dev, "IRQ %d already in use.\n", IRQ_RTC1Hz);
+ 		goto fail_ui;
+ 	}
+-	ret = request_irq(IRQ_RTCAlrm, sa1100_rtc_interrupt, IRQF_DISABLED,
++	ret = request_irq(IRQ_RTCAlrm, sa1100_rtc_interrupt, 0,
+ 		"rtc Alrm", dev);
+ 	if (ret) {
+ 		dev_err(dev, "IRQ %d already in use.\n", IRQ_RTCAlrm);
+diff --git a/drivers/rtc/rtc-sh.c b/drivers/rtc/rtc-sh.c
+index 6ac55fd..e55a763 100644
+--- a/drivers/rtc/rtc-sh.c
++++ b/drivers/rtc/rtc-sh.c
+@@ -666,7 +666,7 @@ static int __init sh_rtc_probe(struct platform_device *pdev)
+ 	if (rtc->carry_irq <= 0) {
+ 		/* register shared periodic/carry/alarm irq */
+ 		ret = request_irq(rtc->periodic_irq, sh_rtc_shared,
+-				  IRQF_DISABLED, "sh-rtc", rtc);
++				  0, "sh-rtc", rtc);
+ 		if (unlikely(ret)) {
+ 			dev_err(&pdev->dev,
+ 				"request IRQ failed with %d, IRQ %d\n", ret,
+@@ -676,7 +676,7 @@ static int __init sh_rtc_probe(struct platform_device *pdev)
+ 	} else {
+ 		/* register periodic/carry/alarm irqs */
+ 		ret = request_irq(rtc->periodic_irq, sh_rtc_periodic,
+-				  IRQF_DISABLED, "sh-rtc period", rtc);
++				  0, "sh-rtc period", rtc);
+ 		if (unlikely(ret)) {
+ 			dev_err(&pdev->dev,
+ 				"request period IRQ failed with %d, IRQ %d\n",
+@@ -685,7 +685,7 @@ static int __init sh_rtc_probe(struct platform_device *pdev)
+ 		}
+ 
+ 		ret = request_irq(rtc->carry_irq, sh_rtc_interrupt,
+-				  IRQF_DISABLED, "sh-rtc carry", rtc);
++				  0, "sh-rtc carry", rtc);
+ 		if (unlikely(ret)) {
+ 			dev_err(&pdev->dev,
+ 				"request carry IRQ failed with %d, IRQ %d\n",
+@@ -695,7 +695,7 @@ static int __init sh_rtc_probe(struct platform_device *pdev)
+ 		}
+ 
+ 		ret = request_irq(rtc->alarm_irq, sh_rtc_alarm,
+-				  IRQF_DISABLED, "sh-rtc alarm", rtc);
++				  0, "sh-rtc alarm", rtc);
+ 		if (unlikely(ret)) {
+ 			dev_err(&pdev->dev,
+ 				"request alarm IRQ failed with %d, IRQ %d\n",
+diff --git a/drivers/rtc/rtc-stk17ta8.c b/drivers/rtc/rtc-stk17ta8.c
+index ed3e9b5..5e9adec 100644
+--- a/drivers/rtc/rtc-stk17ta8.c
++++ b/drivers/rtc/rtc-stk17ta8.c
+@@ -329,7 +329,7 @@ static int __devinit stk17ta8_rtc_probe(struct platform_device *pdev)
+ 		writeb(0, ioaddr + RTC_INTERRUPTS);
+ 		if (devm_request_irq(&pdev->dev, pdata->irq,
+ 				stk17ta8_rtc_interrupt,
+-				IRQF_DISABLED | IRQF_SHARED,
++				IRQF_SHARED,
+ 				pdev->name, pdev) < 0) {
+ 			dev_warn(&pdev->dev, "interrupt not available.\n");
+ 			pdata->irq = 0;
+diff --git a/drivers/rtc/rtc-tx4939.c b/drivers/rtc/rtc-tx4939.c
+index aac0ffe..a12bfac 100644
+--- a/drivers/rtc/rtc-tx4939.c
++++ b/drivers/rtc/rtc-tx4939.c
+@@ -266,7 +266,7 @@ static int __init tx4939_rtc_probe(struct platform_device *pdev)
+ 	spin_lock_init(&pdata->lock);
+ 	tx4939_rtc_cmd(pdata->rtcreg, TX4939_RTCCTL_COMMAND_NOP);
+ 	if (devm_request_irq(&pdev->dev, irq, tx4939_rtc_interrupt,
+-			     IRQF_DISABLED, pdev->name, &pdev->dev) < 0)
++			     0, pdev->name, &pdev->dev) < 0)
+ 		return -EBUSY;
+ 	rtc = rtc_device_register(pdev->name, &pdev->dev,
+ 				  &tx4939_rtc_ops, THIS_MODULE);
+diff --git a/drivers/rtc/rtc-vr41xx.c b/drivers/rtc/rtc-vr41xx.c
+index c5698cd..6aef17d 100644
+--- a/drivers/rtc/rtc-vr41xx.c
++++ b/drivers/rtc/rtc-vr41xx.c
+@@ -333,7 +333,7 @@ static int __devinit rtc_probe(struct platform_device *pdev)
+ 		goto err_device_unregister;
+ 	}
+ 
+-	retval = request_irq(aie_irq, elapsedtime_interrupt, IRQF_DISABLED,
++	retval = request_irq(aie_irq, elapsedtime_interrupt, 0,
+ 	                     "elapsed_time", pdev);
+ 	if (retval < 0)
+ 		goto err_device_unregister;
+@@ -342,7 +342,7 @@ static int __devinit rtc_probe(struct platform_device *pdev)
+ 	if (pie_irq <= 0)
+ 		goto err_free_irq;
+ 
+-	retval = request_irq(pie_irq, rtclong1_interrupt, IRQF_DISABLED,
++	retval = request_irq(pie_irq, rtclong1_interrupt, 0,
+ 		             "rtclong1", pdev);
+ 	if (retval < 0)
+ 		goto err_free_irq;
 -- 
 1.7.4.1
 
