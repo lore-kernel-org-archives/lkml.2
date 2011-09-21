@@ -1,69 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754002Ab1IUNYQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 09:24:16 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37156 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753705Ab1IUNYP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 09:24:15 -0400
-Date: Wed, 21 Sep 2011 08:24:12 -0500
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Corentin Chary <corentin.chary@gmail.com>
-Cc: Matthew Garrett <mjg@redhat.com>, Azael Avalos <coproscefalo@gmail.com>,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6] toshiba_acpi: Convert to use acpi_driver
-Message-ID: <20110921132412.GB23254@thinkpad-t410>
-Mail-Followup-To: Corentin Chary <corentin.chary@gmail.com>,
-	Matthew Garrett <mjg@redhat.com>,
-	Azael Avalos <coproscefalo@gmail.com>,
-	platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1316555754-25949-1-git-send-email-seth.forshee@canonical.com>
- <1316555754-25949-2-git-send-email-seth.forshee@canonical.com>
- <CAHR064iA1877cF1rmUhX_41U_yjRGs6siswpoMPjs=WEYEm8cQ@mail.gmail.com>
+	id S1754031Ab1IUNZu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 09:25:50 -0400
+Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:33252 "EHLO
+	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753705Ab1IUNZt convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 09:25:49 -0400
+From: =?ISO-8859-1?Q?P=E9ter?= Ujfalusi <peter.ujfalusi@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Samuel Ortiz <samuel.ortiz@intel.com>, Dmitry Torokhov <dtor@mail.ru>,
+        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, Misael Lopez Cruz <misael.lopez@ti.com>
+Subject: Re: Re: Re: Re: Re: Re: [PATCH 07/17] ASoC: twl6040: Lower the initial gains
+Date: Wed, 21 Sep 2011 16:25:57 +0300
+Message-ID: <2000974.XKjcjOUu0O@barack>
+User-Agent: KMail/4.7.1 (Linux/3.0.4-gentoo; KDE/4.7.1; x86_64; ; )
+In-Reply-To: <20110921131744.GG4374@opensource.wolfsonmicro.com>
+References: <1316090379-30760-1-git-send-email-peter.ujfalusi@ti.com> <2196705.QTf6PguHZl@barack> <20110921131744.GG4374@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHR064iA1877cF1rmUhX_41U_yjRGs6siswpoMPjs=WEYEm8cQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 21, 2011 at 09:28:30AM +0200, Corentin Chary wrote:
-> On Tue, Sep 20, 2011 at 11:55 PM, Seth Forshee
-> <seth.forshee@canonical.com> wrote:
-> > Changes toshiba_acpi to register an acpi driver and eliminates the
-> > platform device it was using.
-> 
-> Why to you want to remove the platform device ? If you want to create
-> a sysfs interface later, you'll probably need it. Most of the platform
-> driver I know only use the acpi_device to send proc/netlink events and
-> the platform_device is used everywhere else. (And anyway, it's an x86
-> *platform* driver, not a pure acpi driver).
+On Wednesday 21 September 2011 14:17:44 Mark Brown wrote:
+> If I haven't commented on patches they're probably fine - normally I'm
+> waiting for review from Liam when this happens.
 
-I removed the platform device because it seems a bit redundant to have
-both, and I don't see what benefit it really provides. I see your point
-that conceptually it makes sense to have it has a platform device,
-although the distinction there is pretty fine.
+He did acked the whole series, I'll add his acked-by to the patches.
 
-Anyway, I guess the cost of keeping the platform device in place is
-pretty small, so I can add it back in if that's desirable.
+> Note that as you're
+> changing stuff you should repost for review anyway.
 
-> > Also eliminates most global
-> > variables, moving them into toshiba_acpi_dev, along with some
-> > other miscellaneous fixes and cleanup.
-> 
-> Good ! Next step would be to deprecate the /proc interface (keeping it
-> for compatibility) and adding a new shinny
-> /sys/platform/device/toshiba-acpi/ interface correctly documented in
-> Documentation/ABI/ :).
+Yes, I know.
+I'll only repost the changed patch (07/17), when I'm ready to not spam the 
+list with the rest.
 
-I was avoiding chainging any userspace interfaces in this first round of
-patches, but deprecating the proc interface is definitely something I'd
-like to do. I don't know if there's any point to moving it to sysfs
-though. Most of it already has sysfs interfaces via device classes, and
-I don't know that there's any value in the rest of it.
-
-Thanks,
-Seth
+--
+Péter
