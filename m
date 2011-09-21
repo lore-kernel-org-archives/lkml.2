@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752641Ab1IUPue (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 11:50:34 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:36132 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752275Ab1IUPuc (ORCPT
+	id S1752651Ab1IUPws (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 11:52:48 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:58939 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752500Ab1IUPwq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 11:50:32 -0400
-Subject: Re: [PATCH] kconfig: Add merge_config.sh script
-From: John Stultz <john.stultz@linaro.org>
-To: Richard Cochran <richardcochran@gmail.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, Sam Ravnborg <sam@ravnborg.org>,
-        gthelen@google.com, tartler@cs.fau.de,
-        Dmitry Fink <Dmitry.Fink@palm.com>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Eric B Munson <ebmunson@us.ibm.com>,
-        Bruce Ashfield <Bruce.Ashfield@windriver.com>,
-        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org
-In-Reply-To: <20110921064423.GA4103@netboy.at.omicron.at>
-References: <1316582561-23066-1-git-send-email-john.stultz@linaro.org>
-	 <20110921064423.GA4103@netboy.at.omicron.at>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 21 Sep 2011 08:18:05 -0700
-Message-ID: <1316618285.3112.204.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Wed, 21 Sep 2011 11:52:46 -0400
+Message-ID: <4E7A084C.3000304@xenotime.net>
+Date: Wed, 21 Sep 2011 08:52:44 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
+MIME-Version: 1.0
+To: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
+Subject: Re: [PATCH -next v2] bcma: driver_chipcommon_pmu.c needs linux/export.h
+References: <20110920173102.d38155c7defbbc29beaae7c0@canb.auug.org.au>	<4E78CFC0.4020003@xenotime.net>	<CACna6rxGrd-ORWZrc0xsAOKptU_Xj3eGh9qSfX9vJYCPTZrCRg@mail.gmail.com>	<4E78FCDB.1010002@xenotime.net> <CACna6rywFitSNkkwo6tNy887vdsoyHG5Cadk6Bb8_qBJ+gc42w@mail.gmail.com>
+In-Reply-To: <CACna6rywFitSNkkwo6tNy887vdsoyHG5Cadk6Bb8_qBJ+gc42w@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-09-21 at 08:44 +0200, Richard Cochran wrote:
-> On Tue, Sep 20, 2011 at 10:22:41PM -0700, John Stultz wrote:
-> > After noticing almost every distro has their own method of managing
-> > config fragments, I went looking at some best practices, and wanted
-> > to try to consolidate some of the different approaches so this fairly
-> > simple infrastructure can be shared (and new distros/build systems
-> > don't have to implement yet another config fragment merge script).
+On 09/20/2011 11:45 PM, Rafał Miłecki wrote:
+> W dniu 20 września 2011 22:51 użytkownik Randy Dunlap
+> <rdunlap@xenotime.net> napisał:
+>> From: Randy Dunlap <rdunlap@xenotime.net>
+>>
+>> bcma/driver_chipcommon_pmu.c needs to include <linux/export.h>
+>> to fix these warnings:
+>>
+>> drivers/bcma/driver_chipcommon_pmu.c:27:1: warning: data definition has no type or storage class
+>> drivers/bcma/driver_chipcommon_pmu.c:27:1: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
+>> drivers/bcma/driver_chipcommon_pmu.c:27:1: warning: parameter names (without types) in function declaration
 > 
-> John,
-> 
-> I have been wanting to make or find a way to start with an allnoconfig
-> and enable a short list of config options (and the options that are
-> needed to allow them). I don't want the other defaults at all.
+> Don't you get the same warning for core.c? Weird...
 
-"make oldnoconfig" provides something close to this, I think. 
+No, I don't.  Stranger things have happened, I'm sure.
 
-> Can I use your script for this? If not, is there another way to go
-> about it?
-
-I guess my script could take an option to use oldnoconfig instead of the
-alldefconfig method.
-
-thanks
--john
+Feel free to add export.h to other files, or do you want me
+to do that?
 
 
-
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
