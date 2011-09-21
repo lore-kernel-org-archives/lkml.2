@@ -1,54 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752556Ab1IUPmN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 11:42:13 -0400
-Received: from mga09.intel.com ([134.134.136.24]:43245 "EHLO mga09.intel.com"
+	id S1752577Ab1IUPmy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 11:42:54 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:3492 "EHLO mms2.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751334Ab1IUPmL convert rfc822-to-8bit (ORCPT
+	id S1752393Ab1IUPmx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 11:42:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="51585857"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Borislav Petkov <bp@amd64.org>
-CC: Han Pingtian <phan@redhat.com>, "mchehab@redhat.com" <mchehab@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        edac-devel <linux-edac@vger.kernel.org>,
-        Mark Grondona <mgrondona@llnl.gov>, Doug Thompson <norsk5@yahoo.com>
-Date: Wed, 21 Sep 2011 08:41:58 -0700
-Subject: RE: [PATCH v2] Fix EDAC sdram_scrub_rate read/write failure
-Thread-Topic: [PATCH v2] Fix EDAC sdram_scrub_rate read/write failure
-Thread-Index: Acx4WqdzA/wNiLZMS+qaFwQfxpf1UQAGjMdg
-Message-ID: <987664A83D2D224EAE907B061CE93D5301EDED362C@orsmsx505.amr.corp.intel.com>
-References: <20110916105856.GA13253@hpt.nay.redhat.com>
- <20110916125326.GA1957@gere.osrc.amd.com>
- <20110919073722.GE2822@hpt.nay.redhat.com> <20110919142055.GF7814@aftab>
- <987664A83D2D224EAE907B061CE93D5301EAB8A5C8@orsmsx505.amr.corp.intel.com>
- <20110921123313.GA29970@aftab>
-In-Reply-To: <20110921123313.GA29970@aftab>
+	Wed, 21 Sep 2011 11:42:53 -0400
+X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
+From: "Jeffrey (Sheng-Hui) Chu" <jeffchu@broadcom.com>
+To: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>,
+        "Jean Delvare" <khali@linux-fr.org>, "Ben Dooks" <ben-linux@fluff.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+cc: "Qi Wang" <qi.wang@intel.com>,
+        "yong.y.wang@intel.com" <yong.y.wang@intel.com>,
+        "joel.clark@intel.com" <joel.clark@intel.com>,
+        "kok.howg.ewe@intel.com" <kok.howg.ewe@intel.com>,
+        "toshiharu-linux@dsn.okisemi.com" <toshiharu-linux@dsn.okisemi.com>
+Date: Wed, 21 Sep 2011 08:42:32 -0700
+Subject: RE: [PATCH 3/7] i2c-eg20t: delete 10bit access processing
+Thread-Topic: [PATCH 3/7] i2c-eg20t: delete 10bit access processing
+Thread-Index: Acx4NAI6yZ+Ry7/DQf2F5wOmPfy2qQAQNniQ
+Message-ID: <B6A520E9CD57404AAFC0831E4FB39541A98073AC7E@IRVEXCHCCR02.corp.ad.broadcom.com>
+References: <1316591509-4433-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+ <1316591509-4433-3-git-send-email-tomoya-linux@dsn.okisemi.com>
+In-Reply-To: <1316591509-4433-3-git-send-email-tomoya-linux@dsn.okisemi.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-cr-hashedpuzzle: D4C0 E3n8 E5dO HGNS Ir1Y LKo0 PL6d S5Tl auRr oQ4C oxUv
- q2ln 2W0v 4fLI 7QCk
- 7+lH;7;YgBwAEAAYQBtAGQANgA0AC4AbwByAGcAOwBsAGkAbgB1AHgALQBlAGQAYQBjAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcAOwBsAGkAbgB1AHgALQBrAGUAcgBuAGUAbABAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnADsAbQBjAGgAZQBoAGEAYgBAAHIAZQBkAGgAYQB0AC4AYwBvAG0AOwBtAGcAcgBvAG4AZABvAG4AYQBAAGwAbABuAGwALgBnAG8AdgA7AG4AbwByAHMAawA1AEAAeQBhAGgAbwBvAC4AYwBvAG0AOwBwAGgAYQBuAEAAcgBlAGQAaABhAHQALgBjAG8AbQA=;Sosha1_v1;7;{778E0338-E3D5-425A-B7BA-BA34759847A2};dABvAG4AeQAuAGwAdQBjAGsAQABpAG4AdABlAGwALgBjAG8AbQA=;Wed,
- 21 Sep 2011 15:41:58
- GMT;UgBFADoAIABbAFAAQQBUAEMASAAgAHYAMgBdACAARgBpAHgAIABFAEQAQQBDACAAcwBkAHIAYQBtAF8AcwBjAHIAdQBiAF8AcgBhAHQAZQAgAHIAZQBhAGQALwB3AHIAaQB0AGUAIABmAGEAaQBsAHUAcgBlAA==
-x-cr-puzzleid: {778E0338-E3D5-425A-B7BA-BA34759847A2}
 acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
+X-WSS-ID: 6264D8E85IS10520914-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> If scrub rate setting is not implemented, we say "No such device." and
-> otherwise on error we say "Invalid argument" which should be clear,
-> IMHO.
+There is i2c device coming out that uses 10-bit address.
 
-That sounds clear to me too.
+Regards,
 
--Tony
+-Jeffrey
+
+-----Original Message-----
+From: linux-i2c-owner@vger.kernel.org [mailto:linux-i2c-owner@vger.kernel.org] On Behalf Of Tomoya MORINAGA
+Sent: Wednesday, September 21, 2011 3:52 AM
+To: Jean Delvare; Ben Dooks; linux-i2c@vger.kernel.org; linux-kernel@vger.kernel.org
+Cc: Qi Wang; yong.y.wang@intel.com; joel.clark@intel.com; kok.howg.ewe@intel.com; toshiharu-linux@dsn.okisemi.com; Tomoya MORINAGA
+Subject: [PATCH 3/7] i2c-eg20t: delete 10bit access processing
+
+Linux I2C core doesn't support 10bit access formally.
+Additionally, we can't test with 10bit mode.
+This patch deletes the 10bit access processing.
+
+Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+---
+ drivers/i2c/busses/i2c-eg20t.c |   27 +++++++--------------------
+ 1 files changed, 7 insertions(+), 20 deletions(-)
+
+diff --git a/drivers/i2c/busses/i2c-eg20t.c b/drivers/i2c/busses/i2c-eg20t.c index 21ade63..a87a878 100644
+--- a/drivers/i2c/busses/i2c-eg20t.c
++++ b/drivers/i2c/busses/i2c-eg20t.c
+@@ -389,8 +389,6 @@ static s32 pch_i2c_writebytes(struct i2c_adapter *i2c_adap,
+ 	u8 *buf;
+ 	u32 length;
+ 	u32 addr;
+-	u32 addr_2_msb;
+-	u32 addr_8_lsb;
+ 	s32 wrcount;
+ 	void __iomem *p = adap->pch_base_address;
+ 
+@@ -410,25 +408,16 @@ static s32 pch_i2c_writebytes(struct i2c_adapter *i2c_adap,
+ 	}
+ 
+ 	if (msgs->flags & I2C_M_TEN) {
+-		addr_2_msb = ((addr & I2C_MSB_2B_MSK) >> 7);
+-		iowrite32(addr_2_msb | TEN_BIT_ADDR_MASK, p + PCH_I2CDR);
+-		if (first)
+-			pch_i2c_start(adap);
+-		if (pch_i2c_wait_for_xfer_complete(adap) == 0 &&
+-		    pch_i2c_getack(adap) == 0) {
+-			addr_8_lsb = (addr & I2C_ADDR_MSK);
+-			iowrite32(addr_8_lsb, p + PCH_I2CDR);
+-		} else {
+-			pch_i2c_stop(adap);
+-			return -ETIME;
+-		}
++		pch_err(adap, "10Bit access is not supported\n");
++		return -EINVAL;
+ 	} else {
+ 		/* set 7 bit slave address and R/W bit as 0 */
+ 		iowrite32(addr << 1, p + PCH_I2CDR);
+-		if (first)
+-			pch_i2c_start(adap);
+ 	}
+ 
++	if (first)
++		pch_i2c_start(adap);
++
+ 	if ((pch_i2c_wait_for_xfer_complete(adap) == 0) &&
+ 	    (pch_i2c_getack(adap) == 0)) {
+ 		for (wrcount = 0; wrcount < length; ++wrcount) { @@ -497,7 +486,6 @@ static s32 pch_i2c_readbytes(struct i2c_adapter *i2c_adap, struct i2c_msg *msgs,
+ 	u32 count;
+ 	u32 length;
+ 	u32 addr;
+-	u32 addr_2_msb;
+ 	void __iomem *p = adap->pch_base_address;
+ 
+ 	length = msgs->len;
+@@ -513,9 +501,8 @@ static s32 pch_i2c_readbytes(struct i2c_adapter *i2c_adap, struct i2c_msg *msgs,
+ 	}
+ 
+ 	if (msgs->flags & I2C_M_TEN) {
+-		addr_2_msb = (((addr & I2C_MSB_2B_MSK) >> 7) | (I2C_RD));
+-		iowrite32(addr_2_msb | TEN_BIT_ADDR_MASK, p + PCH_I2CDR);
+-
++		pch_err(adap, "10Bit access is not supported\n");
++		return -EINVAL;
+ 	} else {
+ 		/* 7 address bits + R/W bit */
+ 		addr = (((addr) << 1) | (I2C_RD));
+--
+1.7.4.4
+
+--
+To unsubscribe from this list: send the line "unsubscribe linux-i2c" in the body of a message to majordomo@vger.kernel.org More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
