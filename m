@@ -1,50 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751192Ab1IUV0x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 17:26:53 -0400
-Received: from nef2.ens.fr ([129.199.96.40]:3610 "EHLO nef2.ens.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750777Ab1IUV0w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 17:26:52 -0400
-X-Greylist: delayed 2223 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Sep 2011 17:26:52 EDT
-Date: Wed, 21 Sep 2011 22:49:46 +0200
-From: =?iso-8859-1?Q?=C9ric?= Brunet <Eric.Brunet@lps.ens.fr>
-To: linux-kernel@vger.kernel.org
-Subject: Re: Regression between 2.6.35 and 2.6.38 (freeze at resume)
-Message-ID: <20110921204946.GA4304@lps.ens.fr>
+	id S1751332Ab1IUVaK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 17:30:10 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:37367 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751161Ab1IUVaH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 17:30:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.1.4 (nef2.ens.fr [129.199.96.32]); Wed, 21 Sep 2011 22:49:48 +0200 (CEST)
+In-Reply-To: <CAMOw1v4mJe-akdgkJ_y755v=kQ1Dj=COeKaOc3qT1EGP=raKYw@mail.gmail.com>
+References: <CACqU3MWoa5eNpgODqAKDSBZOL61OFWVqaKe_cH=bOMbxjRM0rA@mail.gmail.com>
+	<1313818133-25087-1-git-send-email-lucas.demarchi@profusion.mobi>
+	<CAMOw1v4mJe-akdgkJ_y755v=kQ1Dj=COeKaOc3qT1EGP=raKYw@mail.gmail.com>
+Date: Wed, 21 Sep 2011 17:30:05 -0400
+Message-ID: <CACqU3MUNX0VuktboqYA6FxuaHHgqrX=kjNrqGODThFfqg8_61w@mail.gmail.com>
+Subject: Re: [PATCH] kconfig: fix set but not used variables
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Cc: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In-Reply-To: <s5hy5xigjts.wl%tiwai@suse.de>
-References: <201109170935.17777.Eric.Brunet@lps.ens.fr> <201109202206.35705.Eric.Brunet@lps.ens.fr> <s5hy5xigjts.wl%tiwai@suse.de>
+Hi,
 
->> I'd like to know what I can do to help nail this annoying bug. I am
->> not sure if I can git bisect it; it is hard to tell offhand if a
->> kernel is good; it may resume correctly many times before crashing.
+On Wed, Sep 21, 2011 at 4:15 PM, Lucas De Marchi
+<lucas.demarchi@profusion.mobi> wrote:
+> Hi Michal
 >
-> Did you try the recent 3.1-rc?  There have been a few commits relevant
-> with battery module and PM after 3.0, and I guess this will be the fix
-> for your case, too.
+> On Sat, Aug 20, 2011 at 2:28 AM, Lucas De Marchi
+> <lucas.demarchi@profusion.mobi> wrote:
+>> Some variables were being set but never used, which was triggering
+>> warnings in GCC >= 4.6.
+>>
+>> Signed-off-by: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+>> ---
+>>  scripts/kconfig/lxdialog/textbox.c |    3 +--
+>>  1 files changed, 1 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/scripts/kconfig/lxdialog/textbox.c b/scripts/kconfig/lxdialog/textbox.c
+>> index c704712..154c2dd 100644
+>> --- a/scripts/kconfig/lxdialog/textbox.c
+>> +++ b/scripts/kconfig/lxdialog/textbox.c
+>> @@ -320,7 +320,6 @@ static void print_page(WINDOW * win, int height, int width)
+>>  */
+>>  static void print_line(WINDOW * win, int row, int width)
+>>  {
+>> -       int y, x;
+>>        char *line;
+>>
+>>        line = get_line();
+>> @@ -329,10 +328,10 @@ static void print_line(WINDOW * win, int row, int width)
+>>        waddch(win, ' ');
+>>        waddnstr(win, line, MIN(strlen(line), width - 2));
+>>
+>> -       getyx(win, y, x);
+>>        /* Clear 'residue' of previous line */
+>>  #if OLD_NCURSES
+>>        {
+>> +               int x = getcurx(win);
+>>                int i;
+>>                for (i = 0; i < width - x; i++)
+>>                        waddch(win, ' ');
+>> --
+>> 1.7.6
+>
+> Did you apply this patch?
+>
+I picked it in my tree while Michal was AFK. He later on merged that
+in his tree.
 
-I did try 3.0.4 and it crashed the same way. I'll try 3.1-rc as you
-suggest.
-
-The point is that it worked very well in F14 with 2.6.35 kernels. I was
-trying to find out in which kernel exactly the problems began. I couldn't
-crash 2.6.36, 2.6.37 and 2.6.38 but, today, 2.6.39-rc1 crashed on me. I
-suspect (because there is a small change of behaviour) that the problem
-appears in 2.6.38 even though I haven't crashed it yet. Were there some
-changes in battery and PM around 2.6.38 ?
-
-Anyway, I start now to compile 3.1.
-
-Thanks,
-
-        Éric Brunet
+ - Arnaud
