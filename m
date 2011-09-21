@@ -1,48 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753593Ab1IURuR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 13:50:17 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:44242 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750811Ab1IURuP (ORCPT
+	id S1753644Ab1IURza (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 13:55:30 -0400
+Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:3116 "EHLO
+	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752582Ab1IURz3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 13:50:15 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6476"; a="120441479"
-Date: Wed, 21 Sep 2011 12:50:09 -0500
-From: "Linas Vepstas (Code Aurora)" <linas@codeaurora.org>
-To: Pedro Alves <pedro@codesourcery.com>
-Cc: Jonas Bonn <jonas.bonn@gmail.com>, Richard Kuo <rkuo@codeaurora.org>,
-        linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arnd@arndb.de
-Subject: Re: [patch v3 19/36] Hexagon: Add ptrace support
-Message-ID: <20110921175009.GA3703@codeaurora.org>
-References: <20110909010847.294039464@codeaurora.org>
- <201109101229.58445.pedro@codesourcery.com>
- <20110919152505.GB6830@codeaurora.org>
- <201109211715.20795.pedro@codesourcery.com>
+	Wed, 21 Sep 2011 13:55:29 -0400
+Message-ID: <4E7A25AA.6000303@hetnet.nl>
+Date: Wed, 21 Sep 2011 19:58:02 +0200
+From: Henk de Groot <henk.de.groot@hetnet.nl>
+Reply-To: henk.de.groot@hetnet.nl
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201109211715.20795.pedro@codesourcery.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Greg KH <greg@kroah.com>
+CC: Dave Kilroy <kilroyd@googlemail.com>, Valdis.Kletnieks@vt.edu,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] staging: wlags49_h2: Declare support for WEXT 21
+References: <1316462896-17846-1-git-send-email-kilroyd@googlemail.com> <1316462896-17846-4-git-send-email-kilroyd@googlemail.com> <15411.1316463771@turing-police.cc.vt.edu> <4E77A9B1.1040107@gmail.com> <20110920195205.GA27739@kroah.com> <4E78F47B.7000906@hetnet.nl> <20110920210233.GB9447@kroah.com>
+In-Reply-To: <20110920210233.GB9447@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 21 Sep 2011 17:55:27.0193 (UTC) FILETIME=[A50D4490:01CC7887]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 21, 2011 at 05:15:20PM +0100, Pedro Alves wrote:
-> > On Sat, Sep 10, 2011 at 12:29:57PM +0100, Pedro Alves wrote:
-> > > Yes, the x86/x86-64 ports or gdb and gdbserver are already
-> > > using GET/SETREGSET even.
+Op 20-9-2011 23:02, Greg KH schreef:
+> So, should I apply this patch or not?
+>
+> confused,
+>
+> greg k-h
 
-Thanks; after a bit of initial confusion, I've gotten gdb to
-work with this, so I'm happy. 
+It doesn't break anything and is was there to make sure the previous 
+patches work, so yes, why not.
 
-> I wish there was an equivalent of PTRACE_GETREGSET for siginfo...
-
-How? Why?
-
--- Linas
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Henk.
