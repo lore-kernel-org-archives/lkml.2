@@ -1,41 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753064Ab1IUQ3K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 12:29:10 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:50818 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750826Ab1IUQ3J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 12:29:09 -0400
-Date: Wed, 21 Sep 2011 10:29:06 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Daniel Drake <dsd@laptop.org>, sameo@linux.intel.com,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        dilinger@queued.net
-Subject: Re: [PATCH 3/3] gpio-vx855: Add device tree binding
-Message-ID: <20110921162906.GY7781@ponder.secretlab.ca>
-References: <20110921120214.DFDC79D401E@zog.reactivated.net>
- <20110921125051.GB25620@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110921125051.GB25620@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753186Ab1IUQbN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 12:31:13 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:47505 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753097Ab1IUQbL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 12:31:11 -0400
+Subject: Re: [PATCH 1/3] fixup! mm: alloc_contig_freed_pages() added
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Michal Nazarewicz <mnazarewicz@google.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
+        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ankita Garg <ankita@in.ibm.com>,
+        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
+        Arnd Bergmann <arnd@arndb.de>, Jesse Barker <jesse.barker@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Shariq Hasnain <shariq.hasnain@linaro.org>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>
+In-Reply-To: <f57b57f83bc5980e3db7d9d42f91c7e1765b4766.1316622205.git.mina86@mina86.com>
+References: <1316619959.16137.308.camel@nimitz>
+	 <f57b57f83bc5980e3db7d9d42f91c7e1765b4766.1316622205.git.mina86@mina86.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 21 Sep 2011 09:30:51 -0700
+Message-ID: <1316622651.16137.311.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 21, 2011 at 01:50:52PM +0100, Mark Brown wrote:
-> On Wed, Sep 21, 2011 at 01:02:14PM +0100, Daniel Drake wrote:
-> 
-> > +- #gpio-cells : Should be two. The first cell is the pin number and the
-> > +  second cell is used to specify optional parameters:
-> > +  - bit 0 specifies polarity (0 for normal, 1 for inverted)
-> 
-> Shouldn't we just have a property for the polarity?
+On Wed, 2011-09-21 at 18:26 +0200, Michal Nazarewicz wrote:
+> -               page += 1 << order;
+> +
+> +               if (zone_pfn_same_memmap(pfn - count, pfn))
+> +                       page += count;
+> +               else
+> +                       page = pfn_to_page(pfn);
+>         }
 
-A flags cell in gpio specifiers (and irq specifiers for that matter) is
-well established practice.
+That all looks sane to me and should fix the bug I brought up.
 
-g.
+-- Dave
+
