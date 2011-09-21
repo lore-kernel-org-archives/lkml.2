@@ -1,60 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752904Ab1IURBe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 13:01:34 -0400
-Received: from casper.infradead.org ([85.118.1.10]:57196 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751821Ab1IURBc convert rfc822-to-8bit (ORCPT
+	id S1753313Ab1IURGQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 13:06:16 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:57521 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752582Ab1IURGO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 13:01:32 -0400
-Subject: Re: rt14: strace ->  migrate_disable_atomic imbalance
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mike Galbraith <efault@gmx.de>
-Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Miklos Szeredi <miklos@szeredi.hu>
-Date: Wed, 21 Sep 2011 19:01:12 +0200
-In-Reply-To: <1316600230.6628.6.camel@marge.simson.net>
-References: <alpine.LFD.2.02.1109101052340.2723@ionos>
-	 <1315737307.6544.1.camel@marge.simson.net>
-	 <1315817948.26517.16.camel@twins>
-	 <1315835562.6758.3.camel@marge.simson.net>
-	 <1315839187.6758.8.camel@marge.simson.net> <1315926499.5977.19.camel@twins>
-	 <1315927699.6445.6.camel@marge.simson.net> <1315930430.5977.21.camel@twins>
-	 <1316600230.6628.6.camel@marge.simson.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1316624472.24750.32.camel@twins>
-Mime-Version: 1.0
+	Wed, 21 Sep 2011 13:06:14 -0400
+Date: Wed, 21 Sep 2011 21:05:27 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Alan Cox <alan@linux.intel.com>
+Cc: Valdis.Kletnieks@vt.edu, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        kernel-hardening@lists.openwall.com, Kees Cook <kees@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Matt Mackall <mpm@selenic.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Dan Rosenberg <drosenberg@vsecurity.com>,
+        Theodore Tso <tytso@mit.edu>, Jesper Juhl <jj@chaosbits.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg KH <gregkh@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [kernel-hardening] Re: [RFC PATCH 2/2] mm: restrict access to
+ /proc/slabinfo
+Message-ID: <20110921170527.GA15869@albatros>
+References: <20110910164001.GA2342@albatros>
+ <20110910164134.GA2442@albatros>
+ <20110914192744.GC4529@outflux.net>
+ <20110918170512.GA2351@albatros>
+ <CAOJsxLF8DBEC9o9pSwa6c6pMg8ByFBdsDnzg22P3ucQcP98uzA@mail.gmail.com>
+ <20110919144657.GA5928@albatros>
+ <14082.1316461507@turing-police.cc.vt.edu>
+ <20110919205541.1c44f1a3@bob.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110919205541.1c44f1a3@bob.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-09-21 at 12:17 +0200, Mike Galbraith wrote:
-> [  144.212272] ------------[ cut here ]------------
-> [  144.212280] WARNING: at kernel/sched.c:6152 migrate_disable+0x1b6/0x200()
-> [  144.212282] Hardware name: MS-7502
-> [  144.212283] Modules linked in: snd_pcm_oss snd_mixer_oss snd_seq snd_seq_device edd nfsd lockd parport_pc parport nfs_acl auth_rpcgss sunrpc bridge ipv6 stp cpufreq_conservative microcode cpufreq_ondemand cpufreq_userspace cpufreq_powersave acpi_cpufreq mperf nls_iso8859_1 nls_cp437 vfat fat fuse ext3 jbd dm_mod usbmouse usb_storage usbhid snd_hda_codec_realtek usb_libusual uas sr_mod cdrom hid snd_hda_intel e1000e snd_hda_codec kvm_intel snd_hwdep sg snd_pcm kvm i2c_i801 snd_timer snd firewire_ohci firewire_core soundcore snd_page_alloc crc_itu_t button ext4 mbcache jbd2 crc16 uhci_hcd sd_mod ehci_hcd usbcore rtc_cmos ahci libahci libata scsi_mod fan processor thermal
-> [  144.212317] Pid: 6215, comm: strace Not tainted 3.0.4-rt14 #2052
-> [  144.212319] Call Trace:
-> [  144.212323]  [<ffffffff8104662f>] warn_slowpath_common+0x7f/0xc0
-> [  144.212326]  [<ffffffff8104668a>] warn_slowpath_null+0x1a/0x20
-> [  144.212328]  [<ffffffff8103f606>] migrate_disable+0x1b6/0x200
-> [  144.212331]  [<ffffffff8105a2a8>] ptrace_stop+0x128/0x240
-> [  144.212334]  [<ffffffff81057b9b>] ? recalc_sigpending+0x1b/0x50
-> [  144.212337]  [<ffffffff8105b6f1>] get_signal_to_deliver+0x211/0x530
-> [  144.212340]  [<ffffffff81001835>] do_signal+0x75/0x7a0
-> [  144.212342]  [<ffffffff8105ae68>] ? kill_pid_info+0x58/0x80
-> [  144.212344]  [<ffffffff8105c34c>] ? sys_kill+0xac/0x1e0
-> [  144.212347]  [<ffffffff81001fe5>] do_notify_resume+0x65/0x80
-> [  144.212350]  [<ffffffff8135978b>] int_signal+0x12/0x17
-> [  144.212352] ---[ end trace 0000000000000002 ]---
+(I have to increase the CC list by CC'ing Greg and perf guys.  The
+motivation for restricting slabinfo is here:
+
+http://www.openwall.com/lists/kernel-hardening/2011/09/10/4)
+
+> Anybody who thinks that debugging tools should be totally disabled on
+> "production" systems probably hasn't spent enough time actually
+> running production systems.
+
+On Mon, Sep 19, 2011 at 20:55 +0100, Alan Cox wrote:
+> Agreed - far better it is simply set root only.
+
+Sorry, I've poorly worded my statement.  Of course I mean root-only
+slabinfo, not totally disable it.
 
 
-Right, that's because of 
-53da1d9456fe7f87a920a78fdbdcf1225d197cb7, I think we simply want a full
-revert of that for -rt.
+So, where are we now?
 
+Linus, Alan, Kees, and Dave are about to simply restrict slabinfo (and
+probably similar interfaces) to root.  Pekka is OK too.
+
+Christoph and Valdis are about to create new CONFIG_ option to be able
+to restrict the access to slabinfo/etc., but with old relaxed
+permissions.
+
+
+IMO having a compatibility with the old tools using slabinfo/meminfo as
+non-root for good things is great, but probably a seamless upgrade
+doesn't worth it in this case.  Instead, we can provide a transition
+instructions to continue to use non-root monitoring tools:
+
+    groupadd meminfo
+    usermod -a -G meminfo $MONITOR_USER
+
+And add these lines to the init scripts between mount /proc and running
+monitoring daemon, for Ubuntu's upstart it should fit in mountall.conf:
+
+    chmod g+r /proc/slabinfo /proc/meminfo
+    chgrp meminfo /proc/slabinfo /proc/meminfo
+
+Then the daemon may watch for memleaks again.  It requires some actions
+from the sysadmin, but no changes to the daemons and it helps to keep
+sane kernel defaults.
+
+Are we OK with this solution?
+
+
+Now about other sources of infoleaks.  Pekka has noticed that the same
+information about slabs is accessible from sysfs and 'perf kmem':
+
+http://www.openwall.com/lists/kernel-hardening/2011/09/19/23
+
+For sysfs the solution is relatively simple - the same __ATTR(..., 0600,
+...) for SLAB_ATTR() (all __ATTR* in mm/*.c?) with the same chmod in
+init scripts.
+
+
+For the perf the situation differs.  AFAICS (please correct me if I'm
+wrong) all performance events are recorded and passed to userspace
+without any security checks.  IOW, every event happened in the current
+process' context is signalled to the current task if requested.  It
+contains k*alloc/kfree, which are the subject of this thread, and
+probably much more infoleaks which simply nobody cared about yet.
+Probably it's time to develop some rules to identify what events are
+safe to signal to user and what are dangerous/private to the
+system/other users (probably, potentially)?  I'm not very familiar with
+perf events and there might be already such mechanisms, but they're just
+not used for memory things, so this is a question to the perf guys.
+
+
+Other sources of similar infoleaks are fs-specific and IMO we should fix
+them after these more "generic" infoleaks (slabinfo, meminfo, sysfs,
+perf).
+
+
+Thanks,
+
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
 
