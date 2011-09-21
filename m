@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752793Ab1IUJWV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 05:22:21 -0400
-Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:54211 "EHLO
-	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752216Ab1IUJWU convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 05:22:20 -0400
-From: =?ISO-8859-1?Q?P=E9ter?= Ujfalusi <peter.ujfalusi@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Samuel Ortiz <samuel.ortiz@intel.com>, Dmitry Torokhov <dtor@mail.ru>,
-        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, Misael Lopez Cruz <misael.lopez@ti.com>
-Subject: Re: Re: Re: [PATCH 07/17] ASoC: twl6040: Lower the initial gains
-Date: Wed, 21 Sep 2011 12:22:26 +0300
-Message-ID: <2240573.6cRWXtKJB6@barack>
-User-Agent: KMail/4.7.1 (Linux/3.0.4-gentoo; KDE/4.7.1; x86_64; ; )
-In-Reply-To: <20110919114031.GI23727@opensource.wolfsonmicro.com>
-References: <1316090379-30760-1-git-send-email-peter.ujfalusi@ti.com> <2033664.fWQvF2IA53@barack> <20110919114031.GI23727@opensource.wolfsonmicro.com>
+	id S1752806Ab1IUJZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 05:25:27 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:52314 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752247Ab1IUJZ0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 05:25:26 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Wolfgang Grandegger <wg@grandegger.com>
+Cc: SocketCAN Core Mailing List <socketcan-core@lists.berlios.de>,
+        Willy Lambert <lambert.willy@gmail.com>, x86@kernel.org,
+        Valdis.Kletnieks@vt.edu, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86_64: permit to configure ISA support also for x86_64 systems
+Date: Wed, 21 Sep 2011 11:24:44 +0200
+Message-ID: <11382509.BgAkVknI9a@wuerfel>
+User-Agent: KMail/4.7.1 (Linux/3.0.0-rc1nosema+; KDE/4.7.1; x86_64; ; )
+In-Reply-To: <4E79A146.2040204@grandegger.com>
+References: <4E731565.5050307@grandegger.com> <201109201747.50130.arnd@arndb.de> <4E79A146.2040204@grandegger.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:PWPW0BJvhZ0tE13Tkw09QMFktucYHV4pasWhJk9sQE7
+ sT0G2lLNZ7MfPmAslXCIItc+34fQsi5CSS8Uhyt1xX4w+s3l+c
+ SBu5cK0KTXKjWxe28NI/lkWo2HbrYTwBZq5Cjg4MoZofd0BQYP
+ EH7R5/rvuwjyAvYHysH3hKf2u26B1p4hCfsyldkNo2hstjoN6D
+ Z81mP8IWKB6sTcQcoFomWYrJ7uKupftLIiRRGDDS11VON5c0m0
+ SRqMS2xsRyaZozlQdt8bbOUunwgAf6Q61pHPA4+csAZai8zrhG
+ Nmk1wC7D7hC0E/7nsolCwn1zM148CstULfHRTdxkq5dNzh0UXm
+ 8zagnLLjGyWS8ZFBdgTw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 19 September 2011 12:40:32 Mark Brown wrote:
-> On Mon, Sep 19, 2011 at 02:26:31PM +0300, Péter Ujfalusi wrote:
-> > Here in twl6040 we also have event handlers to do the ramp up/down on
-> > the
-> > gains. AFAIK some wm* codec have similar code.
+On Wednesday 21 September 2011 10:33:10 Wolfgang Grandegger wrote:
 > 
-> WM8350.
+> > Since most ISA drivers don't actually use isa_register_driver
+> > (for good or bad), how about changing the Kconfig entry for
+> > the ones you need to 'depends on ISA || PLAT_GRANDEGGER_PC104_ATOM'
+> > or similar?
+> 
+> What should the PLAT_GRANDEGGER_PC104_ATOM be good for? If I replace
+> isa_register_driver() with platform_driver_register(), like the serial
+> 8250 driver does, HAS_IOMEM should be just fine. This would then also
+> avoid the 64-bit trouble expected with old ISA drivers (enabled via
+> ISA). Or have I missed something?
 
-The implementation in twl6040 looks similar to the one in the wm8350 in 
-regards to the ramp code, and caching of the user configured gains.
+I was thinking of the drivers that are for ISA cards but don't actually
+use the isa_register_driver() function. If you have to change the driver
+to a platform driver, you are right.
 
-If you take a look at the wm8350 driver it is also changing the L/R OUT 1/2 
-registers at probe time.
-I don't see any difference in the two.
-Also it seams that wm8350 has the same problem:
-The default after the reset is 0x39 (0 dB)
-In the wm8350 probe it is changed to 0x00 (-57dB)
+The other point is that you are probably using inb/outb operations,
+which I'm trying to provide only on ISA/PCMCIA/PCI based systems in
+the future. Once I finish that work, you will also need to depend on
+HAS_IOPORT (which currently means something else).
 
-The twl6040 already had the ramp up, and down code, but it was missing the 
-initialization part (IOW configuring the lowest gain on the outputs after 
-first power on).
-
-We do have other scenarios covered, but this initialization was missing. This 
-resulted that the _first_ playback has pop noise, but all subsequent playbacks 
-were fine, since we had the runtime fix for this.
-
---
-Péter
+	Arnd
