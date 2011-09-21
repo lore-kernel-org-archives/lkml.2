@@ -1,72 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753414Ab1IUL50 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 07:57:26 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:47110 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752794Ab1IUL5Y (ORCPT
+	id S1753367Ab1IUMCU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 08:02:20 -0400
+Received: from mtaout02-winn.ispmail.ntl.com ([81.103.221.48]:52051 "EHLO
+	mtaout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752778Ab1IUMCT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 07:57:24 -0400
-Subject: Re: [PATCH v2 10/10] x86, efi: EFI boot stub support
-From: Matt Fleming <matt@console-pimps.org>
-To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-Cc: Matt Domsch <Matt_Domsch@Dell.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Matthew Garrett <mjg@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Mike Waychison <mikew@google.com>, Andi Kleen <andi@firstfloor.org>,
-        "Hargrave, Jordan" <Jordan_Hargrave@Dell.com>
-In-Reply-To: <4E748EB2.1000203@gmail.com>
-References: <1315838094-2307-1-git-send-email-matt@console-pimps.org>
-	 <1315838094-2307-11-git-send-email-matt@console-pimps.org>
-	 <4E6F69A1.9030406@gmail.com>
-	 <1316016478.3466.74.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <20110915045231.GA32136@emperor.us.dell.com> <4E71B196.1060504@gmail.com>
-	 <20110915115255.GA4669@emperor.us.dell.com>  <4E71F33C.2010809@gmail.com>
-	 <1316259866.3578.20.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <4E748EB2.1000203@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 21 Sep 2011 12:57:21 +0100
-Message-ID: <1316606241.5262.15.camel@mfleming-mobl1.ger.corp.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Wed, 21 Sep 2011 08:02:19 -0400
+From: Daniel Drake <dsd@laptop.org>
+To: grant.likely@secretlab.ca
+To: sameo@linux.intel.com
+Cc: linux-kernel@vger.kernel.org
+Cc: devicetree-discuss@lists.ozlabs.org
+Cc: dilinger@queued.net
+Subject: [PATCH 3/3] gpio-vx855: Add device tree binding
+Message-Id: <20110921120214.DFDC79D401E@zog.reactivated.net>
+Date: Wed, 21 Sep 2011 13:02:14 +0100 (BST)
+X-Cloudmark-Analysis: v=1.1 cv=JvdXmxIgLJv2/GthKqHpGJEEHukvLcvELVXUanXFreg= c=1 sm=0 a=VCrGmT02Wj4A:10 a=vJ1w_8FsMGIA:10 a=Op-mwl0xAAAA:8 a=_UoNnL1fUwD3tolMxPYA:9 a=N5X0tRKLBZvUSeZD_0YA:7 a=d4CUUju0HPYA:10 a=Hvu8L8p_BD5S5J0u:21 a=LtNuKInjZTKvg5xP:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-09-17 at 14:12 +0200, Maarten Lankhorst wrote:
-> Anyhow it seems the cmdline_size is meant for reading, and setting it
-> is completely ignored, see below. Could we make it a static array so
-> no allocation needs to be done?
+This is needed to enable the HDD LED on the OLPC XO-1.5 laptop,
+enabled through devicetree and the gpio-leds driver.
 
-D'oh. Yeah, you're right, there's no point in updating cmdline_size.
+Signed-off-by: Daniel Drake <dsd@laptop.org>
+---
+ .../devicetree/bindings/gpio/gpio_vx855.txt        |   20 ++++++++++++++++++++
+ drivers/gpio/gpio-vx855.c                          |    9 +++++++--
+ 2 files changed, 27 insertions(+), 2 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/gpio/gpio_vx855.txt
 
-What would be the benefit of making cmdline a static array and skipping
-the allocation? I doubt it would improve boot time, and we'd end up
-making the bzImage larger.
-
-> > Hmm... I'm really not convinced that we need to support ASCII cmdline
-> > arguments, sorry. efibootmgr has support for UCS-2, so that's what
-> > should be used.
-> >
-> I know, but this is nicer for displaying, compare this efibootmgr -v output:
-> 
-> Boot0002* Linux ASCII Boot     HD(...)File(\vmlinuz.efi)root=/dev/sdb2 console=ttyS0,115200n8.
-> Boot0003* Linux UCS-2 Boot     HD(...)File(\vmlinuz.efi)r.o.o.t.=./.d.e.v./.s.d.b.2. .c.o.n.s.o.l.e.=.t.t.y.S.0.,.1.1.5.2.0.0.n.8...
-> 
-> And it's more foolproof, since it's easy to pass strings as
-> ASCII since it's the default, and it would show up readable in efibootmgr.
-
-But if you don't like the output from efibootmgr, you should fix
-efibootmgr, not cram more string manipulation code into the EFI stub.
-
-If there were other cases where an ASCII cmdline was passed to the stub
-I'd be more inclined to support it. But if it's just a case of "the EFI
-boot stub doesn't parse arguments when efibootmgr passes them as ASCII"
-my response is "Pass them as UCS-2 then".
-
+diff --git a/Documentation/devicetree/bindings/gpio/gpio_vx855.txt b/Documentation/devicetree/bindings/gpio/gpio_vx855.txt
+new file mode 100644
+index 0000000..17285a5
+--- /dev/null
++++ b/Documentation/devicetree/bindings/gpio/gpio_vx855.txt
+@@ -0,0 +1,20 @@
++VIA VX855 GPIO controller
++
++Required properties:
++- compatible : "via,vx855-gpio"
++- #gpio-cells : Should be two. The first cell is the pin number and the
++  second cell is used to specify optional parameters:
++  - bit 0 specifies polarity (0 for normal, 1 for inverted)
++- gpio-controller : Marks the device node as a GPIO controller.
++
++As VIA differentiates between GPI, GPO and GPIO on its 42 available pins,
++with each pin type restarting numbering at 0, the following numbering scheme
++is used in the device tree for the pin number:
++
++PIN NO		VIA NAME
++0..13		GPI 0..13
++14..26		GPO 0..12
++27..41		GPIO 0..14
++
++For example, GPIO 11 (VIA name) is referred to with pin number 38 in the
++device tree.
+diff --git a/drivers/gpio/gpio-vx855.c b/drivers/gpio/gpio-vx855.c
+index ef5aabd..2c300c9 100644
+--- a/drivers/gpio/gpio-vx855.c
++++ b/drivers/gpio/gpio-vx855.c
+@@ -201,7 +201,8 @@ static const char *vx855gpio_names[NR_VX855_GP] = {
+ 	"VX855_GPIO12", "VX855_GPIO13", "VX855_GPIO14"
+ };
+ 
+-static void vx855gpio_gpio_setup(struct vx855_gpio *vg)
++static void vx855gpio_gpio_setup(struct vx855_gpio *vg,
++				 struct platform_device *pdev)
+ {
+ 	struct gpio_chip *c = &vg->gpio;
+ 
+@@ -216,6 +217,10 @@ static void vx855gpio_gpio_setup(struct vx855_gpio *vg)
+ 	c->ngpio = NR_VX855_GP;
+ 	c->can_sleep = 0;
+ 	c->names = vx855gpio_names;
++
++#ifdef CONFIG_OF_GPIO
++	c->of_node = pdev->dev.of_node;
++#endif
+ }
+ 
+ /* This platform device is ordinarily registered by the vx855 mfd driver */
+@@ -264,7 +269,7 @@ static __devinit int vx855gpio_probe(struct platform_device *pdev)
+ 	else
+ 		vg->gpo_reserved = true;
+ 
+-	vx855gpio_gpio_setup(vg);
++	vx855gpio_gpio_setup(vg, pdev);
+ 
+ 	ret = gpiochip_add(&vg->gpio);
+ 	if (ret) {
 -- 
-Matt Fleming, Intel Open Source Technology Center
+1.7.6.2
 
