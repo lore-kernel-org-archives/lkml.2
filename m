@@ -1,72 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751133Ab1IUU4S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 16:56:18 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:48355 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751091Ab1IUU4O convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 16:56:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAC7LmnuOieBzq=833UOjbdPfdjQaHWou_keu0_coZ-KCFJ2kaw@mail.gmail.com>
-References: <yun8vppw9lu.fsf@aiko.keithp.com>
-	<CAC7LmnuOieBzq=833UOjbdPfdjQaHWou_keu0_coZ-KCFJ2kaw@mail.gmail.com>
-Date: Wed, 21 Sep 2011 16:56:12 -0400
-Message-ID: <CAOJpy9v=7GZgmEQesL5za9_xhrbgHwNJhhg9cTxVVWWA4fEV2w@mail.gmail.com>
-Subject: Re: Whitespace cleanups in drm/i915
-From: Akshay Joshi <me@akshayjoshi.com>
-To: Eugeni Dodonov <eugeni@dodonov.net>
-Cc: Keith Packard <keithp@keithp.com>, airlied@gmail.com,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1751081Ab1IUU5N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 16:57:13 -0400
+Received: from mxin.vub.ac.be ([134.184.129.112]:51530 "EHLO mxin.vub.ac.be"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750849Ab1IUU5L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 16:57:11 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ap4EAO1Nek6GuBhX/2dsb2JhbABChFykBoFTAQEEASNWBQsLGAICJgICVwYBEod3AqMDgiKPRoEshECBEQSYWhKMEg
+Subject: Re: [E1000-devel] e1000e: NIC not working, power management issue?
+From: Frederik Himpe <fhimpe@telenet.be>
+To: jeffrey.t.kirsher@intel.com, linux-kernel@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>
+Cc: "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        Lucas Nussbaum <lucas@lucas-nussbaum.net>,
+        "Ronciak, John" <john.ronciak@intel.com>,
+        John Ronciak <john.ronciak@gmail.com>
+Date: Wed, 21 Sep 2011 22:57:23 +0200
+In-Reply-To: <1316598051.2182.48.camel@jtkirshe-mobl>
+References: <1316032260.6309.1.camel@defected>
+	 <CALWPMBEvwFbP-G+Ojfr_vM2riwG9vax3_3cQ1SzBR4OmdnHnsw@mail.gmail.com>
+	 <20110915044804.GA30817@xanadu.blop.info>
+	 <CALWPMBH0LSZV0yM8_24yANmn+AbscoqwiJKUnWnzGsN6hJdrhw@mail.gmail.com>
+	 <20110915162354.GA5935@xanadu.blop.info>
+	 <D38E8E86660E514AB505863C19C9287C16E92FA6@ORSMSX101.amr.corp.intel.com>
+	 <20110915172927.GA9854@xanadu.blop.info>
+	 <D38E8E86660E514AB505863C19C9287C16E93015@ORSMSX101.amr.corp.intel.com>
+	 <20110915175004.GA11691@xanadu.blop.info>
+	 <D38E8E86660E514AB505863C19C9287C16E934D4@ORSMSX101.amr.corp.intel.com>
+	 <20110916053808.GA4992@xanadu.blop.info>
+	 <alpine.WNT.2.00.1109161020490.3092@jbrandeb-mobl2.amr.corp.intel.com>
+	 <1316545412.19344.5.camel@defected>
+	 <1316598051.2182.48.camel@jtkirshe-mobl>
+Organization: Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3- 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1316638644.16838.3.camel@defected>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 17, 2011 at 4:17 PM, Eugeni Dodonov <eugeni@dodonov.net> wrote:
-> On Thu, Sep 15, 2011 at 22:37, Keith Packard <keithp@keithp.com> wrote:
->>
->> I've got this nice patch from Akshay Joshi that removes almost all of
->> the checkpatch.pl warnings from drm/i915. If I don't merge it now, it's
->> going to go stale and be useless; if I merge it only to drm-intel-next,
->> it will be the source of endless conflicts.
->>
->> However, it's a huge patch (yes, the code was rather sloppy), and
->> doesn't exactly fit into the "critical patches only please" mode of the
->> current stage of 3.1 development.
->>
->> I've checked the patch very carefully, using the obvious git diff -b to
->> make sure it really doesn't touch anything but whitespace, but also
->> using objdump -s to compare the output of the compiler. There were no
->> differences found with git-diff -b. The only differences found by
->> objdump are two whitespace changes in some debug output messages in
->> intel_bios.c.
->>
->> I think I have three choices:
->>
->>  1) merge the patch and expect complaints from upstream
->>
->>  2) thank Akshay for his good intentions, discard the patch and hope
->>    that he feels motivated enough to do it all over again in time for
->>    the 3.2 merge window.
->>
->>  3) thank Akshay for his good intentions and leave the code as-is,
->>    forever to ease back-porting of fixes to older kernel versions.
->>
->> Frankly, if we're ever going to merge whitespace fixups, this would be a
->> pretty darn good time; drm-intel-fixes and drm-intel-next are in-sync as
->> I haven't started pulling 3.2 code into -next.
->
-> I think that if we don´t get to push this patch now, we are unlikely to do
-> it in nearby future. And such kind of cleanup is a nice thing to have.
-> So I´d vote for option 1, and then 3, in this order.
-> --
-> Eugeni Dodonov
->
->
+On Wed, 2011-09-21 at 02:40 -0700, Jeff Kirsher wrote:
+> On Tue, 2011-09-20 at 12:03 -0700, Frederik Himpe wrote:
+> > On Sun, 2011-09-18 at 18:04 +0200, Frederik Himpe wrote:
+> > > On Sun, 2011-09-18 at 17:38 +0200, Frederik Himpe wrote:
+> > > 
+> > > > I also tried some older Debian kernels and 2.6.34-1~experimental.2 is
+> > > > working fine, while 2.6.35-1~experimental.3 (and later kernels I tried)
+> > > > is broken, so I guess the problem started between 2.6.34 and 2.6.35.
+> > > > Maybe I'll try to bisect now...
+> > > 
+> > > Apparently these old kernels do not build anymore with my recent
+> > > toolchain:
+> > > 
+> > >   AS      arch/x86/kernel/entry_64.o
+> > > /tmp/ccksyA7i.s: Assembler messages:
+> > > /tmp/ccksyA7i.s: Error: .size expression for do_hypervisor_callback does
+> > > not evaluate to a constant
+> > > 
+> > > So I'm stuck here.
+> > 
+> > Any further thing we can do to help this problem getting fixed?
+> > 
+> 
+> You noted that the problem started between 2.6.34 and 2.6.35, and that
+> you were going to try and bisect to find the "problem" patch.  How is
+> that effort coming along?
 
-Have we reached a consensus on this? Just curious.
+I cannot successfully build these kernels with my toolchain (see above).
 
-Akshay
+> It also appears that you copied netdev and lkml on the original email,
+> but they appear to have been dropped from the CC earlier on in this
+> email discussion.  It sounds like it would be prudent to add lkml &
+> netdev back on to the email thread with what Jesse & John have suggested
+> and seen based on the information provided.  This way the power
+> management maintainers are aware of the issue and potentially suggest
+> other possible fix(es) that have not already been suggested.
+
+Added these lists again.
+
+To resume what we have found up to now: when runtime PM is activated for
+the e1000e NIC, it does not wake up when a cable is plugged or when
+ethtool is run. Runtime PM has to be deactivated to get the NIC working
+again. Apparently this problem started between 2.6.34 and 2.6.35. 
+
+
+
+-- 
+Frederik Himpe <fhimpe@telenet.be>
+
