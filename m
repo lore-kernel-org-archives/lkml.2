@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751595Ab1IUGm4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 02:42:56 -0400
-Received: from mail-gw0-f52.google.com ([74.125.83.52]:60375 "EHLO
-	mail-gw0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750850Ab1IUGmz (ORCPT
+	id S1751748Ab1IUGoM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 02:44:12 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:48255 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750788Ab1IUGoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 02:42:55 -0400
-Subject: [PATCH 4/4] ASoC: Staticise nuc900_dma_getposition()
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Wan ZongShun <mcuos.com@gmail.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org
-In-Reply-To: <1316587205.2824.1.camel@phoenix>
-References: <1316587205.2824.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 21 Sep 2011 14:42:49 +0800
-Message-ID: <1316587369.2824.4.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Wed, 21 Sep 2011 02:44:10 -0400
+Date: Wed, 21 Sep 2011 08:44:23 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: lkml <linux-kernel@vger.kernel.org>, Sam Ravnborg <sam@ravnborg.org>,
+        gthelen@google.com, tartler@cs.fau.de,
+        Dmitry Fink <Dmitry.Fink@palm.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Eric B Munson <ebmunson@us.ibm.com>,
+        Bruce Ashfield <Bruce.Ashfield@windriver.com>,
+        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH] kconfig: Add merge_config.sh script
+Message-ID: <20110921064423.GA4103@netboy.at.omicron.at>
+References: <1316582561-23066-1-git-send-email-john.stultz@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1316582561-23066-1-git-send-email-john.stultz@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is not used outside this driver so no need to make the symbol global.
+On Tue, Sep 20, 2011 at 10:22:41PM -0700, John Stultz wrote:
+> After noticing almost every distro has their own method of managing
+> config fragments, I went looking at some best practices, and wanted
+> to try to consolidate some of the different approaches so this fairly
+> simple infrastructure can be shared (and new distros/build systems
+> don't have to implement yet another config fragment merge script).
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- sound/soc/nuc900/nuc900-pcm.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+John,
 
-diff --git a/sound/soc/nuc900/nuc900-pcm.c b/sound/soc/nuc900/nuc900-pcm.c
-index e46d551..4e3626b 100644
---- a/sound/soc/nuc900/nuc900-pcm.c
-+++ b/sound/soc/nuc900/nuc900-pcm.c
-@@ -227,7 +227,7 @@ static int nuc900_dma_trigger(struct snd_pcm_substream *substream, int cmd)
- 	return ret;
- }
- 
--int nuc900_dma_getposition(struct snd_pcm_substream *substream,
-+static int nuc900_dma_getposition(struct snd_pcm_substream *substream,
- 					dma_addr_t *src, dma_addr_t *dst)
- {
- 	struct snd_pcm_runtime *runtime = substream->runtime;
--- 
-1.7.4.1
+I have been wanting to make or find a way to start with an allnoconfig
+and enable a short list of config options (and the options that are
+needed to allow them). I don't want the other defaults at all.
 
+Can I use your script for this? If not, is there another way to go
+about it?
 
-
+Thanks,
+Richard
