@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753933Ab1IUJjs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 05:39:48 -0400
-Received: from mail-wy0-f180.google.com ([74.125.82.180]:37829 "EHLO
-	mail-wy0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752815Ab1IUJdv (ORCPT
+	id S1753502Ab1IUJdn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 05:33:43 -0400
+Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:12548
+	"EHLO DB3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753480Ab1IUJdj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 05:33:51 -0400
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de, yong.zhang0@gmail.com,
-        Armin Schindler <mac@melware.de>, Karsten Keil <isdn@linux-pingi.de>,
-        netdev@vger.kernel.org
-Subject: [PATCH 34/57] ISDN: irq: Remove IRQF_DISABLED
-Date: Wed, 21 Sep 2011 17:28:35 +0800
-Message-Id: <1316597339-29861-35-git-send-email-yong.zhang0@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1316597339-29861-1-git-send-email-yong.zhang0@gmail.com>
-References: <1316597339-29861-1-git-send-email-yong.zhang0@gmail.com>
+	Wed, 21 Sep 2011 05:33:39 -0400
+X-SpamScore: -9
+X-BigFish: VS-9(zz1432N98dKzz1202hzz8275bh8275dhz2dh2a8h668h839h944h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Wed, 21 Sep 2011 17:43:14 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Rob Herring <robherring2@gmail.com>
+CC: <linux-arm-kernel@lists.infradead.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <dave.martin@linaro.org>, <linux@arm.linux.org.uk>, <b-cousson@ti.com>,
+        <marc.zyngier@arm.com>, Rob Herring <rob.herring@calxeda.com>,
+        <grant.likely@secretlab.ca>, <thomas.abraham@linaro.org>,
+        <jamie@jamieiles.com>, <shawn.guo@linaro.org>
+Subject: Re: [PATCH 0/3] GIC OF bindings
+Message-ID: <20110921094313.GD28907@S2100-06.ap.freescale.net>
+References: <1316550244-3655-1-git-send-email-robherring2@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1316550244-3655-1-git-send-email-robherring2@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit [c58543c8: genirq: Run irq handlers with interrupts disabled],
-We run all interrupt handlers with interrupts disabled
-and we even check and yell when an interrupt handler
-returns with interrupts enabled (see commit [b738a50a:
-genirq: Warn when handler enables interrupts]).
+On Tue, Sep 20, 2011 at 03:24:01PM -0500, Rob Herring wrote:
+> From: Rob Herring <rob.herring@calxeda.com>
+> 
+> Hopefully, this is the final or near final version of GIC binding support.
+> 
+> Changes from the previous version:
+> - SPIs and PPIs are numbered starting at 0. Now the gic has it's own irq
+>   domain translate function instead of the simple domain one.
+> - interrupt cell format has changed based on Grant's proposal.
+> - Dropped "ARM: gic: allow irq_start to be 0". Instead, the first 16 irqs
+>   are skipped and the domain irq_base adjusted accordingly.
+> - Added a fix to of_irq_find_parent when the parent == child.
+> - Renamed intc_desc.parent to intc_desc.interrupt_parent.
+> - Implemented Grant's algorithm for walking the list of interrupt
+>   controllers. Added a return value to interrupt init functions, so they
+>   don't get added to the parent list on a init failure.
+> 
+> The changes are significant enough that I did not include previous
+> acked/reviewed/tested-by's.
+> 
+You can add mine back.  On imx6q:
 
-So now this flag is a NOOP and can be removed.
+Tested-by: Shawn Guo <shawn.guo@linaro.org>
 
-Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
----
- drivers/isdn/hardware/eicon/divasmain.c |    2 +-
- drivers/isdn/sc/init.c                  |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+Hopefully, this is the last round of binding scheme change.  There are
+63 nodes in imx6q dts with 'interrupts' property.  I have changed them
+3 times :)
 
-diff --git a/drivers/isdn/hardware/eicon/divasmain.c b/drivers/isdn/hardware/eicon/divasmain.c
-index f332b60..8a0a831 100644
---- a/drivers/isdn/hardware/eicon/divasmain.c
-+++ b/drivers/isdn/hardware/eicon/divasmain.c
-@@ -481,7 +481,7 @@ void __inline__ outpp(void __iomem *addr, word p)
- int diva_os_register_irq(void *context, byte irq, const char *name)
- {
- 	int result = request_irq(irq, diva_os_irq_wrapper,
--				 IRQF_DISABLED | IRQF_SHARED, name, context);
-+				 IRQF_SHARED, name, context);
- 	return (result);
- }
- 
-diff --git a/drivers/isdn/sc/init.c b/drivers/isdn/sc/init.c
-index ca710ab..a3127fb 100644
---- a/drivers/isdn/sc/init.c
-+++ b/drivers/isdn/sc/init.c
-@@ -336,7 +336,7 @@ static int __init sc_init(void)
- 		 */
- 		sc_adapter[cinst]->interrupt = irq[b];
- 		if (request_irq(sc_adapter[cinst]->interrupt, interrupt_handler,
--				IRQF_DISABLED, interface->id,
-+				0, interface->id,
- 				(void *)(unsigned long) cinst))
- 		{
- 			kfree(sc_adapter[cinst]->channel);
 -- 
-1.7.4.1
+Regards,
+Shawn
 
