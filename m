@@ -1,80 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754055Ab1IUN0f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 09:26:35 -0400
-Received: from h1778886.stratoserver.net ([85.214.133.74]:43847 "EHLO
-	h1778886.stratoserver.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753705Ab1IUN0e (ORCPT
+	id S1754090Ab1IUN0q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 09:26:46 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54380 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753705Ab1IUN0o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 09:26:34 -0400
-From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Subject: Re: Proposal for a low-level Linux display framework
-Date: Wed, 21 Sep 2011 15:26:33 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.39-2-amd64; KDE/4.6.4; x86_64; ; )
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linaro-dev@lists.linaro.org,
-        "Clark, Rob" <rob@ti.com>, Archit Taneja <archit@ti.com>,
-        Nishant Kamat <nskamat@ti.com>
-References: <1316088425.11294.78.camel@lappyti>
-In-Reply-To: <1316088425.11294.78.camel@lappyti>
+	Wed, 21 Sep 2011 09:26:44 -0400
+Date: Wed, 21 Sep 2011 14:26:42 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: =?iso-8859-1?Q?P=E9ter?= Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Samuel Ortiz <samuel.ortiz@intel.com>, Dmitry Torokhov <dtor@mail.ru>,
+        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, Misael Lopez Cruz <misael.lopez@ti.com>,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCH 8/8] ASoC: twl6040: Support for vibra output paths
+Message-ID: <20110921132642.GH4374@opensource.wolfsonmicro.com>
+References: <1316091561-30899-1-git-send-email-peter.ujfalusi@ti.com>
+ <1316091561-30899-9-git-send-email-peter.ujfalusi@ti.com>
+ <3085965.EdoSnJ6VqI@barack>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201109211526.33687.heiko@sntech.de>
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <3085965.EdoSnJ6VqI@barack>
+X-Cookie: Your present plans will be successful.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Sep 21, 2011 at 04:12:42PM +0300, Péter Ujfalusi wrote:
+> On Thursday 15 September 2011 15:59:21 Peter Ujfalusi wrote:
 
-Am Donnerstag, 15. September 2011, 14:07:05 schrieb Tomi Valkeinen:
-> Now, I'm quite sure the above framework could work quite well with any
-> OMAP like hardware, with unified memory (i.e. the video buffers are in
-> SDRAM) and 3D chips and similar components are separate. But what I'm
-> not sure is how desktop world's gfx cards change things. Most probably
-> all the above components can be found from there also in some form, but
-> are there some interdependencies between 3D/buffer management/something
-> else and the video output side?
-If I have read your proposal right, it could also help in better supporting 
-epaper-displays. 
+> Can you take a look at this patch?
 
-The current drivers each (re-)implement the deferredIo logic needed to drive 
-such systems (catching and combining updates to the framebuffer) and combine 
-this with the actual display driver which issues specific commands to the 
-display hardware. Also a board-specific driver is needed to implement the 
-actual transport to the display which seems be done via this i80 command 
-protocol over GPIOs or the LCD controllers of SoCs.
+What makes you think I didn't look at the code yet?  To reiterate I'm
+waiting for review from Liam.  He's offline now but wasn't when you
+posted.  
 
-If one were to split this it could be realised like
-
-----------------   ---------------   -------------
-| deferredIOFb | - | DisplayCtrl | - | Transport |
-----------------   ---------------   -------------
-
-An interesting tidbit is that on the ereaders I'm working on the LCD 
-controller should be able to do some sort of pseudo DMA operation.
-The normal way to transmit data to epaper displays is:
-- issue update command with dimension of the regions to update
-- read relevant pixeldata from fb and write it to the i80 in a loop
-- issue stop-update command
-
-On the S3C2416 it could go like:
-- issue update command
-- describe to the lcd controller the source memory region
-- let the lcd controller transmit exactly one frame
-- issue stop update command
-So the transport would need to get the memory addresses of the region to 
-update from the framebuffer driver.
-
-Also this system could possibly use some of the drawing routines from the 
-S3C2416 SoC.
-
-Essentially needed would be a s3c-fb with deferredio-addon and the lcd 
-controller separated from it. I'm still not sure how this all could fit 
-together but I would guess separating framebuffer and display control would 
-help.
-
-
-Heiko 
+I also note that you've left it less than a week since the original
+posting...
