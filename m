@@ -1,88 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751285Ab1IUEX4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 00:23:56 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:23214 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750937Ab1IUEXx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 00:23:53 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=CtOkcNPVp2dteheezfTno8LKdSp3VHof3HIm/sBnaRRdhYD6oonb/5Hk+Opz1/mZI
-	dlWr/2MInGDWjZMP5lHEg==
-MIME-Version: 1.0
-In-Reply-To: <4E794154.6000605@intel.com>
-References: <1316482741-21799-1-git-send-email-ying.huang@intel.com>
- <1316482741-21799-5-git-send-email-ying.huang@intel.com> <CAErSpo4_syhxOi8jGo5oyrWBimsO7PdsXEky1vwPY_130OuPMA@mail.gmail.com>
- <4E77FBA4.3080907@intel.com> <CAErSpo5pUY8g7U0NeUe+Yf+R8kraExZN3Sheo6h+fb9B+RO7rw@mail.gmail.com>
- <4E794154.6000605@intel.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 20 Sep 2011 22:23:29 -0600
-Message-ID: <CAErSpo6-5P0Be1jA6rpu_OYbBkJRsCoAxSjyZ5bygYyDikKQ5g@mail.gmail.com>
-Subject: Re: [PATCH 4/8] ACPI, APEI, Resolve false conflict between ACPI NVS
- and APEI
-To: Huang Ying <ying.huang@intel.com>
-Cc: Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751281Ab1IUEpk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 00:45:40 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:40897 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751007Ab1IUEpg convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 00:45:36 -0400
+Subject: [PATCH] x86-32: Fix alignment of alternative instruction entries
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Andres Salomon <dilinger@queued.net>,
+        Andy Lutomirski <luto@mit.edu>, Arnaud Lacombe <lacombar@gmail.com>
+Date: Wed, 21 Sep 2011 05:45:13 +0100
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1316580313.4122.21.camel@deadeye>
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 20, 2011 at 7:43 PM, Huang Ying <ying.huang@intel.com> wrote:
-> On 09/21/2011 12:26 AM, Bjorn Helgaas wrote:
->> On Mon, Sep 19, 2011 at 8:34 PM, Huang Ying <ying.huang@intel.com> wrote:
->>> On 09/20/2011 10:09 AM, Bjorn Helgaas wrote:
->>>> On Mon, Sep 19, 2011 at 7:38 PM, Huang Ying <ying.huang@intel.com> wrote:
->>>>> Some firmware will access memory in ACPI NVS region via APEI.  That
->>>>> is, instructions in APEI ERST/EINJ table will read/write ACPI NVS
->>>>> region.  The original resource conflict checking in APEI code will
->>>>> check memory/ioport accessed by APEI via general resource management
->>>>> mech.  But ACPI NVS region is marked as busy already, so that the
->>>>> false resource conflict will prevent APEI ERST/EINJ to work.
->>>>>
->>>>> To fix this, this patch excludes ACPI NVS regions when APEI components
->>>>> request resources.  So that they will not conflict with ACPI NVS
->>>>> regions.
->>>>
->>>> I think this is much, much too complicated.
->>>>
->>>> Yinghai's three-line e820.c patch to leave ACPI NVS regions in the
->>>> iomem_resource tree, but as not busy, is far better.
->>>
->>> ACPI NVS should only be used by firmware or firmware interpreter instead
->>> of the ordinary drivers.  So I think that is reasonable to make it busy
->>> in iomem resource tree.
->>
->> "My driver is not like ordinary drivers" is a common excuse for adding
->> special cases. I don't buy it.
->>
->> These patches (3 and 4) add a lot of complexity but I don't believe
->> they add any real protection.
->>
->> Regions are marked busy by their owners, i.e., by drivers that claim
->> devices and know how to operate them.  The e820 code is not an owner
->> of ACPI NVS regions, so it should not mark them busy.
->>
->> I don't really think we have a problem here that needs to be solved.
->> Ordinary drivers have no way of learning an address in ACPI NVS, so
->> they aren't even going to try to use it.
->
-> So what resource conflict checking is for?  If something wrong with
-> driver configuration, resource description in ACPI table etc, the driver
-> may request iomem inside ACPI NVS regions.
->
-> ACPI NVS regions already have a user, that is the ACPI AML interpreter,
-> so it is always busy.
+The altinstruction_entry macro was originally used only on x86-64,
+and assumed 64-bit pointers and alignment.
 
-If the AML interpreter is the user, *it* should mark the regions busy, not e820.
+Commit b4ca46e4e82a0a5976fe5eab85be585d75f8202f ("x86-32: Fix boot
+with CONFIG_X86_INVD_BUG") introduced a use of the macro on x86-32.
+Before this, the 64-bit pointers had been replaced by 32-bit offsets,
+so it worked - in at least one case.  However, the alignment is still
+wrong for x86-32, which can result in zero-padding between entries and
+a BUG in apply_alternatives.
 
-Bjorn
+Reported-by: Andres Salomon <dilinger@queued.net>
+References: http://bugs.debian.org/640964
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ arch/x86/include/asm/alternative-asm.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/include/asm/alternative-asm.h b/arch/x86/include/asm/alternative-asm.h
+index 4554cc6..d00dc2a 100644
+--- a/arch/x86/include/asm/alternative-asm.h
++++ b/arch/x86/include/asm/alternative-asm.h
+@@ -16,7 +16,7 @@
+ #endif
+ 
+ .macro altinstruction_entry orig alt feature orig_len alt_len
+-	.align 8
++	_ASM_ALIGN
+ 	.long \orig - .
+ 	.long \alt - .
+ 	.word \feature
+-- 
+1.7.5.4
+
+
