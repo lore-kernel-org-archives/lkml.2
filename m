@@ -1,76 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752774Ab1IUQFQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 12:05:16 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:15980 "EHLO
-	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752403Ab1IUQFP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 12:05:15 -0400
-X-SpamScore: -11
-X-BigFish: VPS-11(zz936eK1432N98dKzz1202hzzz32i668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-FB-SS: 0,
-X-WSS-ID: 0LRVRB2-01-CTU-02
-X-M-MSG: 
-Date: Wed, 21 Sep 2011 18:04:09 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Don Zickus <dzickus@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        "ying.huang@intel.com" <ying.huang@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "avi@redhat.com" <avi@redhat.com>, "jeremy@goop.org" <jeremy@goop.org>
-Subject: Re: [V5][PATCH 4/6] x86, nmi:  add in logic to handle multiple
- events and unknown NMIs
-Message-ID: <20110921160409.GE6063@erda.amd.com>
-References: <1316529792-6560-1-git-send-email-dzickus@redhat.com>
- <1316529792-6560-5-git-send-email-dzickus@redhat.com>
- <20110921100842.GA6063@erda.amd.com>
- <20110921140432.GP5795@redhat.com>
- <20110921151829.GC6063@erda.amd.com>
- <1316619232.24750.2.camel@twins>
+	id S1752807Ab1IUQF1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 12:05:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35701 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752403Ab1IUQFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 12:05:24 -0400
+Date: Wed, 21 Sep 2011 18:05:18 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <jweiner@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
+        Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 10/11] mm: make per-memcg LRU lists exclusive
+Message-ID: <20110921160518.GK8501@tiehlicka.suse.cz>
+References: <1315825048-3437-1-git-send-email-jweiner@redhat.com>
+ <1315825048-3437-11-git-send-email-jweiner@redhat.com>
+ <20110921152458.GI8501@tiehlicka.suse.cz>
+ <20110921154745.GA25828@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1316619232.24750.2.camel@twins>
+In-Reply-To: <20110921154745.GA25828@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21.09.11 11:33:52, Peter Zijlstra wrote:
-> On Wed, 2011-09-21 at 17:18 +0200, Robert Richter wrote:
-> > 1. The cpu executes some microcode or SMM code.
-> > 2. HW triggers the first NMI, an NMI is pending.
-> > 3. HW triggers a second NMI, the NMI is still pending.
-> > 4. The cpu finished microcode or SMM code.
-> > 5. NMI handler is called, no NMI pending anymore.
-> > 6. Return from NMI handler. 
+On Wed 21-09-11 17:47:45, Johannes Weiner wrote:
+> On Wed, Sep 21, 2011 at 05:24:58PM +0200, Michal Hocko wrote:
+> > On Mon 12-09-11 12:57:27, Johannes Weiner wrote:
+[...]
+> > > @@ -934,115 +954,123 @@ EXPORT_SYMBOL(mem_cgroup_count_vm_event);
+> > >   * When moving account, the page is not on LRU. It's isolated.
+> > >   */
+> > >  
+> > > -struct page *mem_cgroup_lru_to_page(struct zone *zone, struct mem_cgroup *mem,
+> > > -				    enum lru_list lru)
+> > > +/**
+> > > + * mem_cgroup_lru_add_list - account for adding an lru page and return lruvec
+> > > + * @zone: zone of the page
+> > > + * @page: the page
+> > > + * @lru: current lru
+> > > + *
+> > > + * This function accounts for @page being added to @lru, and returns
+> > > + * the lruvec for the given @zone and the memcg @page is charged to.
+> > > + *
+> > > + * The callsite is then responsible for physically linking the page to
+> > > + * the returned lruvec->lists[@lru].
+> > > + */
+> > > +struct lruvec *mem_cgroup_lru_add_list(struct zone *zone, struct page *page,
+> > > +				       enum lru_list lru)
+> > 
+> > I know that names are alway tricky but what about mem_cgroup_acct_lru_add?
+> > Analogously for mem_cgroup_lru_del_list, mem_cgroup_lru_del and
+> > mem_cgroup_lru_move_lists.
 > 
-> Even without SMM, all you need is two different NMI users to trigger
-> while an NMI is in flight.
+> Hmm, but it doesn't just lru-account, it also looks up the right
+> lruvec for the caller to link the page to, so it's not necessarily an
+> improvement, although I agree that the name could be better.
+
+Sorry, I do not have any better idea. I would just like if the name
+didn't suggest that we actually modify the list.
+
 > 
-> Wouldn't be entirely impossible to trigger if you have
-> non-fatal-MCE/hardware-NMI-switch/PMI all active.
+> > > @@ -3615,11 +3593,11 @@ unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
+> > >  static int mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
+> > >  				int node, int zid, enum lru_list lru)
+> > >  {
+> > > -	struct zone *zone;
+> > >  	struct mem_cgroup_per_zone *mz;
+> > > -	struct page_cgroup *pc, *busy;
+> > >  	unsigned long flags, loop;
+> > >  	struct list_head *list;
+> > > +	struct page *busy;
+> > > +	struct zone *zone;
+> > 
+> > Any specific reason to move zone declaration down here? Not that it
+> > matters much. Just curious.
+> 
+> I find this arrangement more readable, I believe Ingo Molnar called it
+> the reverse christmas tree once :-).  Longest lines first, then sort
+> lines of equal length alphabetically.
+> 
+> And since it was basically complete, except for @zone, I just HAD to!
 
-No, I am trying to explain this...
+:)
 
-If hw triggers more than one nmi *before* the nmi handler is entered
-(no matter what the source is), then there will be no back-to-back
-nmi. NMIs are edge triggered and there is only one pending signal (AMD
-cpus). The signal is cleared when entering the handler. If the cpu
-executes microcode or smm code and delays execution of the nmi
-handler, then there is no second call of the handler even if there are
-2 sources for it.
+> 
+> > > @@ -3639,16 +3618,16 @@ static int mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
+> > >  			spin_unlock_irqrestore(&zone->lru_lock, flags);
+> > >  			break;
+> > >  		}
+> > > -		pc = list_entry(list->prev, struct page_cgroup, lru);
+> > > -		if (busy == pc) {
+> > > -			list_move(&pc->lru, list);
+> > > +		page = list_entry(list->prev, struct page, lru);
+> > > +		if (busy == page) {
+> > > +			list_move(&page->lru, list);
+> > >  			busy = NULL;
+> > >  			spin_unlock_irqrestore(&zone->lru_lock, flags);
+> > >  			continue;
+> > >  		}
+> > >  		spin_unlock_irqrestore(&zone->lru_lock, flags);
+> > >  
+> > > -		page = lookup_cgroup_page(pc);
+> > > +		pc = lookup_page_cgroup(page);
+> > 
+> > lookup_page_cgroup might return NULL so we probably want BUG_ON(!pc)
+> > here. We are not very consistent about checking the return value,
+> > though.
+> 
+> I think this is a myth and we should remove all those checks.  How can
+> pages circulate in userspace before they are fully onlined and their
+> page_cgroup buddies allocated?  In this case: how would they have been
+> charged in the first place and sit on a list without a list_head? :-)
 
--Robert
+Yes, that is right. This should never happen (last famous words). I can
+imagine that a memory offlinening bug could cause issues.
 
+Anyway the more appropriate way to handle that would BUG_ON directly in
+lookup_page_cgroup.
 
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
