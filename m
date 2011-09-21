@@ -1,114 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751528Ab1IUOnw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 10:43:52 -0400
-Received: from mailfw02.zoner.fi ([84.34.147.249]:29702 "EHLO
-	mailfw02.zoner.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751282Ab1IUOnu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 10:43:50 -0400
-X-Greylist: delayed 714 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Sep 2011 10:43:50 EDT
-Date: Wed, 21 Sep 2011 17:30:50 +0300
-From: Lasse Collin <lasse.collin@tukaani.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org,
-        Phillip Lougher <phillip@lougher.demon.co.uk>
-Subject: [PATCH] XZ: Fix incorrect XZ_BUF_ERROR
-Message-ID: <20110921173050.5c064a57@tukaani.org>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1751572Ab1IUOp1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 10:45:27 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:7630 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751472Ab1IUOp0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 10:45:26 -0400
+X-IronPort-AV: E=Sophos;i="4.68,417,1312171200"; 
+   d="scan'208";a="17573099"
+Message-ID: <4E79F867.2020909@citrix.com>
+Date: Wed, 21 Sep 2011 15:44:55 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110818 Icedove/3.0.11
+MIME-Version: 1.0
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+CC: David Vrabel <david.vrabel@citrix.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [Xen-devel] Re: [PATCH 0/6] xen: don't call vmalloc_sync_all()
+ when mapping foreign pages
+References: <1316090411-22608-1-git-send-email-david.vrabel@citrix.com> <4E727017.4030001@goop.org>
+In-Reply-To: <4E727017.4030001@goop.org>
+Content-Type: text/plain; charset="ISO-8859-15"
 Content-Transfer-Encoding: 7bit
-X-Antivirus-Scanner: Clean mail though you should still use an Antivirus
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lasse Collin <lasse.collin@tukaani.org>
+On 15/09/11 22:37, Jeremy Fitzhardinge wrote:
+> On 09/15/2011 05:40 AM, David Vrabel wrote:
+>> This set of pages avoids the need to call vmalloc_sync_all() when
+>> mapping foreign pages.  Two new functions are adding for mapping
+>> foreign pages onto RAM pages instead of vmalloc space.
+>>
+>> [...]
+> 
+> But that said, if you want to allocate virtual addresses for mapping
+> granted pages, then alloc_vm_area() is the right thing to use.  You need
+> to make sure you touch the pages from within the kernel before passing
+> those addresses to a hypercall to make sure the mappings are established
+> within the current task (possibly within a no-preempt region to
+> guarantee that nothing odd happens). Or alternatively, you could switch
+> the current pagetable to init_mm for the hypercall (if it isn't already)
+> - since that's the reference pagetable - assuming you're not passing
+> usermode virtual addresses to the hypercall.
 
-xz_dec_run() could incorrectly return XZ_BUF_ERROR if
-all of the following was true:
+Making alloc_vm_area() fill in a array of pte_t *'s and passing the pointer
+to the PTE (using the GNTMAP_contains_pte flag) in the hypercall should
+allow Xen to update the PTEs in init_mm directly.
 
-  - The caller knows how many bytes of output to expect
-    and only provides that much output space.
+However, I'm not sure what to do about ia64 where GNTMAP_contains_pte
+is not supported.  Any ideas?
 
-  - When the last output bytes are decoded, the
-    caller-provided input buffer ends right before
-    the LZMA2 end of payload marker. So LZMA2 won't
-    provide more output anymore, but it won't know it
-    yet and thus won't return XZ_STREAM_END yet.
+Here's the untested patch I have so far.
 
-  - A BCJ filter is in use and it hasn't left any
-    unfiltered bytes in the temp buffer. This can happen
-    with any BCJ filter, but in practice it's more likely
-    with filters other than the x86 BCJ.
-
-This fixes <https://bugzilla.redhat.com/show_bug.cgi?id=735408>
-where Squashfs thinks that a valid file system is corrupt.
-
-This also fixes a similar bug in single-call mode where the
-uncompressed size of a block using BCJ + LZMA2 was 0 bytes
-and caller provided no output space. Many empty .xz files
-don't contain any blocks and thus don't trigger this bug.
-
-This also tweaks a closely related detail: xz_dec_bcj_run()
-could call xz_dec_lzma2_run() to decode into temp buffer when
-it was known to be useless. This was harmless although it
-wasted a minuscule number of CPU cycles.
-
-Signed-off-by: Lasse Collin <lasse.collin@tukaani.org>
-Cc: stable <stable@kernel.org>
----
-
- lib/xz/xz_dec_bcj.c |   27 ++++++++++++++++++++-------
- 1 file changed, 20 insertions(+), 7 deletions(-)
-
-diff -uprN linux-3.0.orig/lib/xz/xz_dec_bcj.c linux-3.0/lib/xz/xz_dec_bcj.c
---- linux-3.0.orig/lib/xz/xz_dec_bcj.c	2011-07-22 05:17:23.000000000 +0300
-+++ linux-3.0/lib/xz/xz_dec_bcj.c	2011-09-21 12:21:25.423439202 +0300
-@@ -441,8 +441,12 @@ XZ_EXTERN enum xz_ret xz_dec_bcj_run(str
- 	 * next filter in the chain. Apply the BCJ filter on the new data
- 	 * in the output buffer. If everything cannot be filtered, copy it
- 	 * to temp and rewind the output buffer position accordingly.
-+	 *
-+	 * This needs to be always run when temp.size == 0 to handle a special
-+	 * case where the output buffer is full and the next filter has no
-+	 * more output coming but hasn't returned XZ_STREAM_END yet.
- 	 */
--	if (s->temp.size < b->out_size - b->out_pos) {
-+	if (s->temp.size < b->out_size - b->out_pos || s->temp.size == 0) {
- 		out_start = b->out_pos;
- 		memcpy(b->out + b->out_pos, s->temp.buf, s->temp.size);
- 		b->out_pos += s->temp.size;
-@@ -465,16 +469,25 @@ XZ_EXTERN enum xz_ret xz_dec_bcj_run(str
- 		s->temp.size = b->out_pos - out_start;
- 		b->out_pos -= s->temp.size;
- 		memcpy(s->temp.buf, b->out + b->out_pos, s->temp.size);
+diff --git a/arch/x86/xen/grant-table.c b/arch/x86/xen/grant-table.c
+index 49ba9b5..77348e8 100644
+--- a/arch/x86/xen/grant-table.c
++++ b/arch/x86/xen/grant-table.c
+@@ -71,7 +71,7 @@ int arch_gnttab_map_shared(unsigned long *frames, unsigned long nr_gframes,
+ 
+ 	if (shared == NULL) {
+ 		struct vm_struct *area =
+-			alloc_vm_area(PAGE_SIZE * max_nr_gframes);
++			alloc_vm_area(PAGE_SIZE * max_nr_gframes, NULL);
+ 		BUG_ON(area == NULL);
+ 		shared = area->addr;
+ 		*__shared = shared;
+diff --git a/drivers/xen/xenbus/xenbus_client.c b/drivers/xen/xenbus/xenbus_client.c
+index cdacf92..75eb179 100644
+--- a/drivers/xen/xenbus/xenbus_client.c
++++ b/drivers/xen/xenbus/xenbus_client.c
+@@ -435,19 +435,20 @@ EXPORT_SYMBOL_GPL(xenbus_free_evtchn);
+ int xenbus_map_ring_valloc(struct xenbus_device *dev, int gnt_ref, void **vaddr)
+ {
+ 	struct gnttab_map_grant_ref op = {
+-		.flags = GNTMAP_host_map,
++		.flags = GNTMAP_host_map | GNTMAP_contains_pte,
+ 		.ref   = gnt_ref,
+ 		.dom   = dev->otherend_id,
+ 	};
+ 	struct vm_struct *area;
++	pte_t *pte;
+ 
+ 	*vaddr = NULL;
+ 
+-	area = alloc_vm_area(PAGE_SIZE);
++	area = alloc_vm_area(PAGE_SIZE, &pte);
+ 	if (!area)
+ 		return -ENOMEM;
+ 
+-	op.host_addr = (unsigned long)area->addr;
++	op.host_addr = (unsigned long)pte;
+ 
+ 	if (HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, &op, 1))
+ 		BUG();
+diff --git a/include/linux/vmalloc.h b/include/linux/vmalloc.h
+index 9332e52..1a77252 100644
+--- a/include/linux/vmalloc.h
++++ b/include/linux/vmalloc.h
+@@ -118,7 +118,7 @@ unmap_kernel_range(unsigned long addr, unsigned long size)
+ #endif
+ 
+ /* Allocate/destroy a 'vmalloc' VM area. */
+-extern struct vm_struct *alloc_vm_area(size_t size);
++extern struct vm_struct *alloc_vm_area(size_t size, pte_t **ptes);
+ extern void free_vm_area(struct vm_struct *area);
+ 
+ /* for /dev/kmem */
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index 5016f19..786b4f6 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -2105,23 +2105,30 @@ void  __attribute__((weak)) vmalloc_sync_all(void)
+ 
+ static int f(pte_t *pte, pgtable_t table, unsigned long addr, void *data)
+ {
+-	/* apply_to_page_range() does all the hard work. */
++	pte_t ***p = data;
 +
-+		/*
-+		 * If there wasn't enough input to the next filter to fill
-+		 * the output buffer with unfiltered data, there's no point
-+		 * to try decoding more data to temp.
-+		 */
-+		if (b->out_pos + s->temp.size < b->out_size)
-+			return XZ_OK;
++	if (p) {
++		*(*p) = pte;
++		(*p)++;
++	}
+ 	return 0;
+ }
+ 
+ /**
+  *	alloc_vm_area - allocate a range of kernel address space
+  *	@size:		size of the area
++ *	@ptes:		returns the PTEs for the address space
+  *
+  *	Returns:	NULL on failure, vm_struct on success
+  *
+  *	This function reserves a range of kernel address space, and
+  *	allocates pagetables to map that range.  No actual mappings
+- *	are created.  If the kernel address space is not shared
+- *	between processes, it syncs the pagetable across all
+- *	processes.
++ *	are created.
++ *
++ *	If @ptes is non-NULL, pointers to the PTEs (in init_mm)
++ *	allocated for the VM area are returned.
+  */
+-struct vm_struct *alloc_vm_area(size_t size)
++struct vm_struct *alloc_vm_area(size_t size, pte_t **ptes)
+ {
+ 	struct vm_struct *area;
+ 
+@@ -2135,19 +2142,11 @@ struct vm_struct *alloc_vm_area(size_t size)
+ 	 * of kernel virtual address space and mapped into init_mm.
+ 	 */
+ 	if (apply_to_page_range(&init_mm, (unsigned long)area->addr,
+-				area->size, f, NULL)) {
++				area->size, f, ptes ? &ptes : NULL)) {
+ 		free_vm_area(area);
+ 		return NULL;
  	}
  
- 	/*
--	 * If we have unfiltered data in temp, try to fill by decoding more
--	 * data from the next filter. Apply the BCJ filter on temp. Then we
--	 * hopefully can fill the actual output buffer by copying filtered
--	 * data from temp. A mix of filtered and unfiltered data may be left
--	 * in temp; it will be taken care on the next call to this function.
-+	 * We have unfiltered data in temp. If the output buffer isn't full
-+	 * yet, try to fill the temp buffer by decoding more data from the
-+	 * next filter. Apply the BCJ filter on temp. Then we hopefully can
-+	 * fill the actual output buffer by copying filtered data from temp.
-+	 * A mix of filtered and unfiltered data may be left in temp; it will
-+	 * be taken care on the next call to this function.
- 	 */
--	if (s->temp.size > 0) {
-+	if (b->out_pos < b->out_size) {
- 		/* Make b->out{,_pos,_size} temporarily point to s->temp. */
- 		s->out = b->out;
- 		s->out_pos = b->out_pos;
+-	/*
+-	 * If the allocated address space is passed to a hypercall
+-	 * before being used then we cannot rely on a page fault to
+-	 * trigger an update of the page tables.  So sync all the page
+-	 * tables here.
+-	 */
+-	vmalloc_sync_all();
+-
+ 	return area;
+ }
+ EXPORT_SYMBOL_GPL(alloc_vm_area);
+
+David
