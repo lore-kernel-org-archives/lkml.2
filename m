@@ -1,192 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751037Ab1IUXEi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 19:04:38 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:10034 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750713Ab1IUXEd (ORCPT
+	id S1751130Ab1IUXL3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 19:11:29 -0400
+Received: from ironport2-out.teksavvy.com ([206.248.154.183]:22306 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750919Ab1IUXL2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 19:04:33 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:to:cc:subject:message-id:in-reply-to:references:
-	x-mailer:mime-version:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=fyf/IWNa39zFTfhQFS6ZlwcKME1gXJNsPJ3Hov7Rt+dNSgCsZ6qxixfbRPIjRcCSR
-	bWCAh94+a02b8HH4RVLxw==
-Date: Wed, 21 Sep 2011 16:02:26 -0700
-From: Andrew Morton <akpm@google.com>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>, Christoph Hellwig <hch@infradead.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Chris Mason <chris.mason@oracle.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, xfs@oss.sgi.com,
-        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [patch 2/4] mm: writeback: distribute write pages across
- allowable zones
-Message-Id: <20110921160226.1bf74494.akpm@google.com>
-In-Reply-To: <1316526315-16801-3-git-send-email-jweiner@redhat.com>
-References: <1316526315-16801-1-git-send-email-jweiner@redhat.com>
-	<1316526315-16801-3-git-send-email-jweiner@redhat.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 21 Sep 2011 19:11:28 -0400
+X-Greylist: delayed 571 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Sep 2011 19:11:28 EDT
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ag0FAEZsek5Ld+Jv/2dsb2JhbABCmSaMXIFneYISHgYcASYWFhgDAgECAREWJA0BBwKrMYd2O4hyhn0EiXGJXI0IhEM
+X-IronPort-AV: E=Sophos;i="4.68,420,1312171200"; 
+   d="scan'208";a="137778488"
+Message-ID: <4E7A6CED.5000501@gmail.com>
+Date: Wed, 21 Sep 2011 19:02:05 -0400
+From: Woody Suwalski <terraluna977@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:6.0.2) Gecko/20110902 Firefox/6.0.2 SeaMonkey/2.3.3
+MIME-Version: 1.0
+To: Chris Wilson <chris@chris-wilson.co.uk>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: i915 blank issue on kernel 3.1.0
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Sep 2011 15:45:13 +0200
-Johannes Weiner <jweiner@redhat.com> wrote:
+Chris, I do not know if it is i915 driver or X'drm or what..
+Problem exists on 3.1.0, no problem on 3.0.3
 
-> This patch allows allocators to pass __GFP_WRITE when they know in
-> advance that the allocated page will be written to and become dirty
-> soon.  The page allocator will then attempt to distribute those
-> allocations across zones, such that no single zone will end up full of
-> dirty, and thus more or less, unreclaimable pages.
+Intel 945GJME 8086:27ac, intel 2.15 x driver, libdrm-intel 2.4.26, 
+Debian wheezy.
 
-Across all zones, or across the zones within the node or what?  Some
-more description of how all this plays with NUMA is needed, please.
 
-> The global dirty limits are put in proportion to the respective zone's
-> amount of dirtyable memory
+Recently I have noticed that on Asus EeePCs once X screensaver kicks in 
+- system is hosed. Screen goes black and I can not wake it - even 
+restarting X does not work, only reboot.
 
-I don't know what this means.  How can a global limit be controlled by
-what is happening within each single zone?  Please describe this design
-concept fully.
+Over ssh I have captured some action from drm.debug=0x0e:
+<7>[  787.953399] [drm:intel_panel_get_backlight], get backlight PWM = 312
+<7>[  787.953421] [drm:intel_panel_set_backlight], set backlight PWM = 0
+<7>[  788.232114] [drm:intel_update_fbc],
+<7>[  788.232125] [drm:i9xx_get_fifo_size], FIFO size - (0x00001d9c) A: 28
+<7>[  788.232134] [drm:intel_calculate_wm], FIFO entries required for 
+mode: 15
+<7>[  788.232142] [drm:intel_calculate_wm], FIFO watermark level: 11
+<7>[  788.232149] [drm:i9xx_get_fifo_size], FIFO size - (0x00001d9c) B: 31
+<7>[  788.232157] [drm:i9xx_update_wm], FIFO watermarks - A: 11, B: 29
+<7>[  788.232165] [drm:i9xx_update_wm], self-refresh entries: 64
+<7>[  788.232171] [drm:i9xx_update_wm], Setting FIFO watermarks - A: 11, 
+B: 29, C: 2, SR 63
+<7>[  788.232180] [drm:i9xx_update_wm], memory self refresh enabled
+<7>[  788.232320] [drm:intel_panel_get_backlight], get backlight PWM = 0
+<7>[  788.232393] [drm:intel_panel_set_backlight], set backlight PWM = 0
+<7>[  788.232623] [drm:intel_panel_set_backlight], set backlight PWM = 0
+<7>[ 1132.017589] [drm:i9xx_get_fifo_size], FIFO size - (0x00001d9c) A: 28
+<7>[ 1132.017614] [drm:intel_calculate_wm], FIFO entries required for 
+mode: 15
+<7>[ 1132.017629] [drm:intel_calculate_wm], FIFO watermark level: 11
+<7>[ 1132.017643] [drm:i9xx_get_fifo_size], FIFO size - (0x00001d9c) B: 31
+<7>[ 1132.017658] [drm:i9xx_update_wm], FIFO watermarks - A: 11, B: 29
+<7>[ 1132.017674] [drm:i9xx_update_wm], self-refresh entries: 64
+<7>[ 1132.017687] [drm:i9xx_update_wm], Setting FIFO watermarks - A: 11, 
+B: 29, C: 2, SR 63
+<7>[ 1132.017704] [drm:i9xx_update_wm], memory self refresh enabled
+<7>[ 1132.036216] [drm:intel_update_fbc],
+<7>[ 1132.036248] [drm:intel_lvds_enable], applying panel-fitter: 8, 0
+<7>[ 1132.038081] [drm:intel_panel_set_backlight], set backlight PWM = 312
+<7>[ 1132.038299] [drm:intel_panel_set_backlight], set backlight PWM = 0
 
-> and allocations diverted to other zones
-> when the limit is reached.
 
-hm.
+It looks that the problem is the last line - sets back to 0???
 
-> For now, the problem remains for NUMA configurations where the zones
-> allowed for allocation are in sum not big enough to trigger the global
-> dirty limits, but a future approach to solve this can reuse the
-> per-zone dirty limit infrastructure laid out in this patch to have
-> dirty throttling and the flusher threads consider individual zones.
-> 
-> ...
->
-> --- a/include/linux/gfp.h
-> +++ b/include/linux/gfp.h
-> @@ -36,6 +36,7 @@ struct vm_area_struct;
->  #endif
->  #define ___GFP_NO_KSWAPD	0x400000u
->  #define ___GFP_OTHER_NODE	0x800000u
-> +#define ___GFP_WRITE		0x1000000u
->  
->  /*
->   * GFP bitmasks..
-> 
-> ...
->
-> +static unsigned long zone_dirtyable_memory(struct zone *zone)
+I have tried to write 312 back to /sys/class/backlight/intel-backlight/  
+bl-power or brightness, and touch uevent - no help.
+On 3.0.3 system I see that there is no /sys/../intel-backlight, just eeepc.
+And on touching a key it produces
+drm:intel_lvds_enable, followed by set backlight PWM=312 (but skips 
+resetting it back to 0 right after enable).
 
-Appears to return the number of pages in a particular zone which are
-considered "dirtyable".  Some discussion of how this decision is made
-would be illuminating.
+So:
+is there a way to fix "intel_panel" to call lvds_enable logic?
+Is there a way to force usage of eeepc backlight instead (as a workaround)?
 
-> +{
-> +	unsigned long x;
-> +	/*
-> +	 * To keep a reasonable ratio between dirty memory and lowmem,
-> +	 * highmem is not considered dirtyable on a global level.
-
-Whereabouts in the kernel is this policy implemented? 
-determine_dirtyable_memory()?  It does (or can) consider highmem
-pages?  Comment seems wrong?
-
-Should we rename determine_dirtyable_memory() to
-global_dirtyable_memory(), to get some sense of its relationship with
-zone_dirtyable_memory()?
-
-> +	 * But we allow individual highmem zones to hold a potentially
-> +	 * bigger share of that global amount of dirty pages as long
-> +	 * as they have enough free or reclaimable pages around.
-> +	 */
-> +	x = zone_page_state(zone, NR_FREE_PAGES) - zone->totalreserve_pages;
-> +	x += zone_reclaimable_pages(zone);
-> +	return x;
-> +}
-> +
-> 
-> ...
->
-> -void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty)
-> +static void dirty_limits(struct zone *zone,
-> +			 unsigned long *pbackground,
-> +			 unsigned long *pdirty)
->  {
-> +	unsigned long uninitialized_var(zone_memory);
-> +	unsigned long available_memory;
-> +	unsigned long global_memory;
->  	unsigned long background;
-> -	unsigned long dirty;
-> -	unsigned long uninitialized_var(available_memory);
->  	struct task_struct *tsk;
-> +	unsigned long dirty;
->  
-> -	if (!vm_dirty_bytes || !dirty_background_bytes)
-> -		available_memory = determine_dirtyable_memory();
-> +	global_memory = determine_dirtyable_memory();
-> +	if (zone)
-> +		available_memory = zone_memory = zone_dirtyable_memory(zone);
-> +	else
-> +		available_memory = global_memory;
->  
-> -	if (vm_dirty_bytes)
-> +	if (vm_dirty_bytes) {
->  		dirty = DIV_ROUND_UP(vm_dirty_bytes, PAGE_SIZE);
-> -	else
-> +		if (zone)
-
-So passing zone==NULL alters dirty_limits()'s behaviour.  Seems that it
-flips the function between global_dirty_limits and zone_dirty_limits?
-
-Would it be better if we actually had separate global_dirty_limits()
-and zone_dirty_limits() rather than a magical mode?
-
-> +			dirty = dirty * zone_memory / global_memory;
-> +	} else
->  		dirty = (vm_dirty_ratio * available_memory) / 100;
->  
-> -	if (dirty_background_bytes)
-> +	if (dirty_background_bytes) {
->  		background = DIV_ROUND_UP(dirty_background_bytes, PAGE_SIZE);
-> -	else
-> +		if (zone)
-> +			background = background * zone_memory / global_memory;
-> +	} else
->  		background = (dirty_background_ratio * available_memory) / 100;
->  
->  	if (background >= dirty)
-> 
-> ...
->
-> +bool zone_dirty_ok(struct zone *zone)
-
-Full description of the return value, please.
-
-> +{
-> +	unsigned long background_thresh, dirty_thresh;
-> +
-> +	dirty_limits(zone, &background_thresh, &dirty_thresh);
-> +
-> +	return zone_page_state(zone, NR_FILE_DIRTY) +
-> +		zone_page_state(zone, NR_UNSTABLE_NFS) +
-> +		zone_page_state(zone, NR_WRITEBACK) <= dirty_thresh;
-> +}
-
-We never needed to calculate &background_thresh,.  I wonder if that
-matters.
-
-> 
-> ...
->
+Thanks, Woody Suwalski
 
