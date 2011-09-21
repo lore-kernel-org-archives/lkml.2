@@ -1,87 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753407Ab1IURYZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 13:24:25 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:60028 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752438Ab1IURYY convert rfc822-to-8bit (ORCPT
+	id S1753412Ab1IUReT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 13:34:19 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:45358 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753150Ab1IUReS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 13:24:24 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:sender:in-reply-to:references:from:
-	date:x-google-sender-auth:message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=fY0tdoIZtaKw6z52F+u02QHIRfQypno2QeXIvpQe8c4TLEBzou6QAuTFDvvF08+yS
-	AhT4yI9c7f06/sY0fjJTw==
+	Wed, 21 Sep 2011 13:34:18 -0400
+Date: Wed, 21 Sep 2011 23:04:11 +0530
+From: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Paul Turner <pjt@google.com>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelianov <xemul@parallels.com>
+Subject: Re: CFS Bandwidth Control - Test results of cgroups tasks pinned vs
+ unpinnede
+Message-ID: <20110921173411.GA6794@linux.vnet.ibm.com>
+Reply-To: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+References: <1315922848.5977.11.camel@twins>
+ <20110913162119.GA3045@linux.vnet.ibm.com>
+ <1315931775.5977.29.camel@twins>
+ <20110913175425.GB3062@linux.vnet.ibm.com>
+ <1315937995.4226.9.camel@twins>
+ <20110913182841.GO11100@linux.vnet.ibm.com>
+ <1315938646.4226.12.camel@twins>
+ <20110913183502.GP11100@linux.vnet.ibm.com>
+ <20110915175537.GA17701@linux.vnet.ibm.com>
+ <1316523320.13664.2.camel@twins>
 MIME-Version: 1.0
-In-Reply-To: <201109192308.06049.rjw@sisk.pl>
-References: <1316211355-2888-1-git-send-email-vpalatin@chromium.org>
- <Pine.LNX.4.44L0.1109170921490.15004-100000@netrider.rowland.org>
- <CAP_ceTzpN3QO8Xx3262Uowbfzf__BDC0P2g_t=UQ6VRCg184Jw@mail.gmail.com> <201109192308.06049.rjw@sisk.pl>
-From: Vincent Palatin <vpalatin@chromium.org>
-Date: Wed, 21 Sep 2011 10:24:01 -0700
-X-Google-Sender-Auth: YCWa0U9wac9fKehbDHZBR32RDUI
-Message-ID: <CAP_ceTyXLO=mv1Ott=g3mG0y+Q+VUM3N8CA-Fqa-_=uj7LTbmw@mail.gmail.com>
-Subject: Re: [RFC] PM / Runtime: decrease verbosity in kernel log
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Olof Johansson <olofj@chromium.org>,
-        Sameer Nanda <snanda@chromium.org>, Ming Lei <tom.leiming@gmail.com>,
-        linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1316523320.13664.2.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 19, 2011 at 14:08, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Monday, September 19, 2011, Vincent Palatin wrote:
->> On Sat, Sep 17, 2011 at 09:23, Alan Stern <stern@rowland.harvard.edu> wrote:
->> > On Fri, 16 Sep 2011, Vincent Palatin wrote:
->> >
->> >> When activating the PCI runtime PM on a laptop, my kernel log is filled with
->> >> messages such as the following ones and can be hardly read to find interesting
->> >> information:
->> >> ehci_hcd 0000:00:1d.7: PME# disabled
->> >> ehci_hcd 0000:00:1d.7: PCI INT A -> GSI 16 (level, low) -> IRQ 16
->> >> ehci_hcd 0000:00:1d.7: setting latency timer to 64
->> >> ehci_hcd 0000:00:1d.7: PCI INT A disabled
->> >> ehci_hcd 0000:00:1d.7: PME# enabled
->> >> ehci_hcd 0000:00:1d.7: BAR 0: set to [mem 0x92205000-0x922053ff] (PCI address [0x92205000-0x922053ff])
->> >> ehci_hcd 0000:00:1d.7: restoring config space at offset 0xf (was 0x100, writing 0x10b)
->> >> ehci_hcd 0000:00:1d.7: restoring config space at offset 0x1 (was 0x2900000, writing 0x2900002)
->> > ...
->> >
->> >> All those messages are triggered by the following cause, the laptop has a USB
->> >> 3G modem with USB autosuspend activated. The USB device will wake up about
->> >> every 30s to do some network related activities. Every time, the modem wakes
->> >> up this triggers the wake up of the attached EHCI/PCI USB host controller
->> >> which reconfigures its PCI interface, then everything go back to a suspended mode.
->> >>
->> >> Having the same 10 lines of log repeated is not really useful, but I probably
->> >> cannot totally remove them since there are somewhat useful for PCI hotplug
->> >> users and other PCI debugging.
->> >> So, my proposal is to create a new dev_printk macro : "dev_printk_norpm" which
->> >> outputs traces only when the device has not the runtime PM activated,
->> >> and guard those traces with it.
->> >> (cf the 2 patches in this thread as a PoC)
->> >
->> > Wouldn't it be easier just to change the existing messages to DEBUG
->> > level?  Or are they more important than that?
->>
->> Yes, I can simply replace all those printk by dev_dbg traces. For my
->> use case, it's perfect.
->> My main concern was people using PCI hotplug, I think, then, their log
->> will remain mostly silent when inserting a card, I don't know if this
->> is acceptable or not.
->
-> I think they don't really need that information except for debugging, right?
+* Peter Zijlstra <a.p.zijlstra@chello.nl> [2011-09-20 14:55:20]:
 
-I think so.
-I will send a new patch with dev_dbg in replacement of the noisy
-printks for PCI messages.
+> On Thu, 2011-09-15 at 23:25 +0530, Kamalesh Babulal wrote:
+> 
+(snip)
+> > rm -rf test*
+> > rm -rf t*
+> 
+> You're insane, right?
 
--- 
-Vincent
+Ofcourse not :-). It's a typo. it should have been 
+rm -rf r* to delete the temporary files created by 
+the original script (Only the part which does the
+se.nr_migrations calculation was posted). 
+
+> > ITERATIONS=60			# No of Iterations to capture the details
+> > NUM_CPUS=$(cat /proc/cpuinfo |grep -i proces|wc -l)
+> > 
+> > NUM_HOGS=$((NUM_CPUS * 2))	# No of hogs threads to invoke
+> > 
+(snip)
+> > for i in $(seq 1 $NUM_HOGS)
+> > do
+> > 	./while$i &
+> 
+> You can kill the above two blocks by doing:
+> 
+> 	while :; do :; done &
+
+Thanks. Got to knew this from your commit 866ab43efd325fae88 previously.
+
+Thanks,
+Kamalesh.
