@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752509Ab1IUV5F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 17:57:05 -0400
+	id S1752315Ab1IUV4j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 17:56:39 -0400
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:33832 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752449Ab1IUV4w (ORCPT
+	with ESMTP id S1752204Ab1IUV4e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 17:56:52 -0400
+	Wed, 21 Sep 2011 17:56:34 -0400
 From: jim.cromie@gmail.com
 To: jbaron@redhat.com
 Cc: joe@perches.com, bart.vanassche@gmail.com, greg@kroah.com,
         linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>
-Subject: [PATCH 26/26] scx200_acb: use pr_(info|warn|err|debug) and dynamic-debug facilities
-Date: Wed, 21 Sep 2011 15:55:15 -0600
-Message-Id: <1316642115-20029-27-git-send-email-jim.cromie@gmail.com>
+Subject: [PATCH 19/26] dynamic_debug: add flags filtering to flags spec
+Date: Wed, 21 Sep 2011 15:55:08 -0600
+Message-Id: <1316642115-20029-20-git-send-email-jim.cromie@gmail.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1316642115-20029-1-git-send-email-jim.cromie@gmail.com>
 References: <1316642115-20029-1-git-send-email-jim.cromie@gmail.com>
@@ -23,127 +23,183 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jim Cromie <jim.cromie@gmail.com>
 
-Switch this driver over to using more flexible dynamic-debug facility.
-With previous patch and CONFIG_I2C_DEBUG_BUS=y, we get pr_debug()s
-enabled by default:
+Change definition of flags spec to [pmflta_]*[-+=][pmflta_]*
+The flags preceding the op are optional filter-flags; if provided,
+they add an additional constraint to call-site matching done
+by ddebug_change; call-sites which do not have all specified flags
+are skipped (additional flags are allowed).
 
-root@voyage:~# modprobe scx200_acb
-root@voyage:~# grep scx200_acb /dbg/dynamic_debug/control
-drivers/i2c/busses/scx200_acb.c:419 [scx200_acb]scx200_acb_probe =p "..."
-drivers/i2c/busses/scx200_acb.c:408 [scx200_acb]scx200_acb_probe =p "..."
-drivers/i2c/busses/scx200_acb.c:399 [scx200_acb]scx200_acb_probe =p "..."
-drivers/i2c/busses/scx200_acb.c:584 [scx200_acb]scx200_acb_init =p "..."
+This allows query/rules like "p+t" to turn on TID logging for all
+currently enabled call-sites, while leaving the others alone.
+This also allows rules like "a-a" to select pending queries and
+remove them from the list.
 
-The pr_fmt() adds the module name to pr_err() output, the pr_fmt_dbg()
-does the same for pr_debug().  If and when modname is added to the
-dynamic-debug default under DEBUG, we can drop the pr_fmt_dbg().
+Also allow 0 flags byte, so that active rules can be completely
+reset by writing "p=" or "p=_".
 
-dynamic_debug:ddebug_add_module: 4 debug prints in module scx200_acb
-scx200_acb: NatSemi SCx200 ACCESS.bus Driver
-scx200_acb: ACBCTL2 readback failed
-scx200_acb: probe failed
-scx200_acb: ACBCTL2 readback failed
-scx200_acb: probe failed
+Patch factors flag-scanning into ddebug_parse_flag_settings(),
+and uses it for both filter-flags and new flags, and adds pr_err()
+where useful.
 
 Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
 ---
- drivers/i2c/busses/scx200_acb.c |   21 +++++++++++----------
- 1 files changed, 11 insertions(+), 10 deletions(-)
+ lib/dynamic_debug.c |   85 +++++++++++++++++++++++++++++++--------------------
+ 1 files changed, 52 insertions(+), 33 deletions(-)
 
-diff --git a/drivers/i2c/busses/scx200_acb.c b/drivers/i2c/busses/scx200_acb.c
-index 986e5f6..30a2c6b 100644
---- a/drivers/i2c/busses/scx200_acb.c
-+++ b/drivers/i2c/busses/scx200_acb.c
-@@ -23,6 +23,9 @@
-     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+#define pr_fmt_dbg(fmt) pr_fmt(fmt)
-+
- #include <linux/module.h>
- #include <linux/errno.h>
- #include <linux/kernel.h>
-@@ -37,8 +40,6 @@
- 
- #include <linux/scx200.h>
- 
--#define NAME "scx200_acb"
--
- MODULE_AUTHOR("Christer Weinigel <wingel@nano-system.com>");
- MODULE_DESCRIPTION("NatSemi SCx200 ACCESS.bus Driver");
- MODULE_ALIAS("platform:cs5535-smb");
-@@ -398,7 +399,7 @@ static __devinit int scx200_acb_probe(struct scx200_acb_iface *iface)
- 	outb(0x70, ACBCTL2);
- 
- 	if (inb(ACBCTL2) != 0x70) {
--		pr_debug(NAME ": ACBCTL2 readback failed\n");
-+		pr_debug("ACBCTL2 readback failed\n");
- 		return -ENXIO;
- 	}
- 
-@@ -406,7 +407,7 @@ static __devinit int scx200_acb_probe(struct scx200_acb_iface *iface)
- 
- 	val = inb(ACBCTL1);
- 	if (val) {
--		pr_debug(NAME ": disabled, but ACBCTL1=0x%02x\n",
-+		pr_debug("disabled, but ACBCTL1=0x%02x\n",
- 			val);
- 		return -ENXIO;
- 	}
-@@ -417,7 +418,7 @@ static __devinit int scx200_acb_probe(struct scx200_acb_iface *iface)
- 
- 	val = inb(ACBCTL1);
- 	if ((val & ACBCTL1_NMINTE) != ACBCTL1_NMINTE) {
--		pr_debug(NAME ": enabled, but NMINTE won't be set, "
-+		pr_debug("enabled, but NMINTE won't be set, "
- 			 "ACBCTL1=0x%02x\n", val);
- 		return -ENXIO;
- 	}
-@@ -433,7 +434,7 @@ static __devinit struct scx200_acb_iface *scx200_create_iface(const char *text,
- 
- 	iface = kzalloc(sizeof(*iface), GFP_KERNEL);
- 	if (!iface) {
--		printk(KERN_ERR NAME ": can't allocate memory\n");
-+		pr_err("can't allocate memory\n");
- 		return NULL;
- 	}
- 
-@@ -459,14 +460,14 @@ static int __devinit scx200_acb_create(struct scx200_acb_iface *iface)
- 
- 	rc = scx200_acb_probe(iface);
- 	if (rc) {
--		printk(KERN_WARNING NAME ": probe failed\n");
-+		pr_warn("probe failed\n");
- 		return rc;
- 	}
- 
- 	scx200_acb_reset(iface);
- 
- 	if (i2c_add_adapter(adapter) < 0) {
--		printk(KERN_ERR NAME ": failed to register\n");
-+		pr_err("failed to register\n");
- 		return -ENODEV;
- 	}
- 
-@@ -493,7 +494,7 @@ static struct scx200_acb_iface * __devinit scx200_create_dev(const char *text,
- 		return NULL;
- 
- 	if (!request_region(base, 8, iface->adapter.name)) {
--		printk(KERN_ERR NAME ": can't allocate io 0x%lx-0x%lx\n",
-+		pr_err("can't allocate io 0x%lx-0x%lx\n",
- 		       base, base + 8 - 1);
- 		goto errout_free;
- 	}
-@@ -583,7 +584,7 @@ static __init void scx200_scan_isa(void)
- 
- static int __init scx200_acb_init(void)
+diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+index 29dbf69..3c9244d 100644
+--- a/lib/dynamic_debug.c
++++ b/lib/dynamic_debug.c
+@@ -191,7 +191,8 @@ static bool query_matches_callsite(struct _ddebug *dp,
+  * were matched.  Called with ddebug_lock held.
+  */
+ static int ddebug_change(const struct ddebug_query *query,
+-			unsigned int flags, unsigned int mask)
++			unsigned int flags, unsigned int mask,
++			unsigned int filter)
  {
--	pr_debug(NAME ": NatSemi SCx200 ACCESS.bus Driver\n");
-+	pr_debug("NatSemi SCx200 ACCESS.bus Driver\n");
+ 	int i;
+ 	struct ddebug_table *dt;
+@@ -213,6 +214,9 @@ static int ddebug_change(const struct ddebug_query *query,
+ 			if (!query_matches_callsite(dp, query))
+ 				continue;
  
- 	/* First scan for ISA-based devices */
- 	scx200_scan_isa();	/* XXX: should we care about errors? */
++			if (filter && (dp->flags & filter) != filter)
++				continue;
++
+ 			nfound++;
+ 
+ 			newflags = (dp->flags & mask) | flags;
+@@ -406,29 +410,9 @@ static int ddebug_parse_query(char *words[], int nwords,
+ 	return 0;
+ }
+ 
+-/*
+- * Parse `str' as a flags specification, format [-+=][p]+.
+- * Sets up *maskp and *flagsp to be used when changing the
+- * flags fields of matched _ddebug's.  Returns 0 on success
+- * or <0 on error.
+- */
+-static int ddebug_parse_flags(const char *str, unsigned int *flagsp,
+-			       unsigned int *maskp)
++static int ddebug_parse_flag_settings(const char *str)
+ {
+-	unsigned flags = 0;
+-	int op = '=', i;
+-
+-	switch (*str) {
+-	case '+':
+-	case '-':
+-	case '=':
+-		op = *str++;
+-		break;
+-	default:
+-		return -EINVAL;
+-	}
+-	if (verbose)
+-		pr_info("op='%c'\n", op);
++	int i, flags = 0;
+ 
+ 	for ( ; *str ; ++str) {
+ 		for (i = ARRAY_SIZE(opt_array) - 1; i >= 0; i--) {
+@@ -437,13 +421,46 @@ static int ddebug_parse_flags(const char *str, unsigned int *flagsp,
+ 				break;
+ 			}
+ 		}
+-		if (i < 0)
++		if (i < 0 && *str) {
++			pr_err("unknown flag: %c\n", *str);
+ 			return -EINVAL;
++		}
+ 	}
+-	if (flags == 0)
++	return flags;
++}
++
++/*
++ * Parse `str' as a flags filter and specification, with format
++ * [pmflta_]*[-+=][pmflta_]+.  Sets up *maskp, *flagsp and *filterp to
++ * be used when changing the flags fields of matched _ddebug's.
++ * Returns 0 on success or <0 on error.
++ */
++static int ddebug_parse_flags(const char *str, unsigned int *flagsp,
++			unsigned int *maskp, unsigned int *filterp)
++{
++	int flags, filter;
++	int op = '=';
++	char *s = strpbrk(str, "+-=");
++
++	if (!s) {
++		pr_err("flags spec missing op, expecting [+-=]\n");
+ 		return -EINVAL;
+-	if (verbose)
+-		pr_info("flags=0x%x\n", flags);
++	} else {
++		op = *s;
++		*s++ = '\0';
++	}
++	filter = ddebug_parse_flag_settings(str);
++	if (filter < 0) {
++		pr_err("flags_filter=0x%x\n", filter);
++		return -EINVAL;
++	}
++	*filterp = filter;
++
++	flags = ddebug_parse_flag_settings(s);
++	if (flags < 0) {
++		pr_err("flags=0x%x\n", flags);
++		return -EINVAL;
++	}
+ 
+ 	/* calculate final *flagsp, *maskp according to mask and op */
+ 	switch (op) {
+@@ -461,7 +478,9 @@ static int ddebug_parse_flags(const char *str, unsigned int *flagsp,
+ 		break;
+ 	}
+ 	if (verbose)
+-		pr_info("*flagsp=0x%x *maskp=0x%x\n", *flagsp, *maskp);
++		pr_info("filter=0x%x op='%c' flags=0x%x *flagsp=0x%x *maskp=0x%x\n",
++			filter, op, flags, *flagsp, *maskp);
++
+ 	return 0;
+ }
+ 
+@@ -563,7 +582,7 @@ static int ddebug_save_pending(struct ddebug_query *query,
+ 
+ static int ddebug_exec_query(char *query_string)
+ {
+-	unsigned int flags = 0, mask = 0;
++	unsigned int flags = 0, mask = 0, filter = 0;
+ 	struct ddebug_query query;
+ #define MAXWORDS 9
+ 	int nwords;
+@@ -575,14 +594,14 @@ static int ddebug_exec_query(char *query_string)
+ 		return -EINVAL;
+ 	if (ddebug_parse_query(words, nwords-1, &query))
+ 		return -EINVAL;
+-	if (ddebug_parse_flags(words[nwords-1], &flags, &mask))
++	if (ddebug_parse_flags(words[nwords-1], &flags, &mask, &filter))
+ 		return -EINVAL;
+ 
+ 	/* actually go and implement the change */
+-	nfound = ddebug_change(&query, flags, mask);
++	nfound = ddebug_change(&query, flags, mask, filter);
+ 	vpr_info_dq((&query), (nfound) ? "applied" : "no-match");
+ 
+-	if (flags & _DPRINTK_FLAGS_APPEND)
++	if (flags & _DPRINTK_FLAGS_APPEND || filter & _DPRINTK_FLAGS_APPEND)
+ 		rc = ddebug_save_pending(&query, flags, mask);
+ 
+ 	return rc;
+@@ -950,7 +969,7 @@ static void apply_pending_queries(struct ddebug_table *dt)
+ 	int nfound;
+ 
+ 	list_for_each_entry_safe(pq, pqnext, &pending_queries, link) {
+-		nfound = ddebug_change(&pq->query, pq->flags, pq->mask);
++		nfound = ddebug_change(&pq->query, pq->flags, pq->mask, 0);
+ 		vpr_info_pq(pq, (nfound) ?
+ 			"applied pending" : "no-match on pending");
+ 	}
 -- 
 1.7.4.4
 
