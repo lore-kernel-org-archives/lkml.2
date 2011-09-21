@@ -1,69 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751195Ab1IUN5Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 09:57:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34433 "EHLO mx1.redhat.com"
+	id S1751351Ab1IUN5o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 09:57:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51769 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750932Ab1IUN5Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 09:57:24 -0400
-Date: Wed, 21 Sep 2011 09:56:33 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Huang Ying <ying.huang@intel.com>
-Cc: "x86@kernel.org" <x86@kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "avi@redhat.com" <avi@redhat.com>, "jeremy@goop.org" <jeremy@goop.org>
-Subject: Re: [V5][PATCH 2/6] x86, nmi: create new NMI handler routines
-Message-ID: <20110921135633.GN5795@redhat.com>
-References: <1316529792-6560-1-git-send-email-dzickus@redhat.com>
- <1316529792-6560-3-git-send-email-dzickus@redhat.com>
- <4E7977DE.10009@intel.com>
+	id S1751282Ab1IUN5n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 09:57:43 -0400
+Date: Wed, 21 Sep 2011 15:57:41 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <jweiner@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
+        Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 08/11] mm: vmscan: convert global reclaim to per-memcg
+ LRU lists
+Message-ID: <20110921135741.GF8501@tiehlicka.suse.cz>
+References: <1315825048-3437-1-git-send-email-jweiner@redhat.com>
+ <1315825048-3437-9-git-send-email-jweiner@redhat.com>
+ <20110921131045.GD8501@tiehlicka.suse.cz>
+ <20110921135142.GE22516@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E7977DE.10009@intel.com>
+In-Reply-To: <20110921135142.GE22516@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 21, 2011 at 01:36:30PM +0800, Huang Ying wrote:
-> On 09/20/2011 10:43 PM, Don Zickus wrote:
-> > index 68d758a..c2df58a 100644
-> > --- a/arch/x86/kernel/nmi.c
-> > +++ b/arch/x86/kernel/nmi.c
-> > @@ -13,6 +13,9 @@
-> >  #include <linux/kprobes.h>
-> >  #include <linux/kdebug.h>
-> >  #include <linux/nmi.h>
-> > +#include <linux/delay.h>
-> > +#include <linux/hardirq.h>
-> > +#include <linux/slab.h>
-> >  
-> >  #if defined(CONFIG_EDAC)
-> >  #include <linux/edac.h>
-> > @@ -21,6 +24,28 @@
-> >  #include <linux/atomic.h>
-> >  #include <asm/traps.h>
-> >  #include <asm/mach_traps.h>
-> > +#include <asm/nmi.h>
-> > +
-> > +#define NMI_MAX_NAMELEN	16
-> > +struct nmiaction {
-> > +	struct nmiaction __rcu *next;
+On Wed 21-09-11 15:51:43, Johannes Weiner wrote:
+> On Wed, Sep 21, 2011 at 03:10:45PM +0200, Michal Hocko wrote:
+> > On Mon 12-09-11 12:57:25, Johannes Weiner wrote:
+[...]
+> > > @@ -2451,13 +2445,24 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem_cont,
+> > >  static void age_active_anon(struct zone *zone, struct scan_control *sc,
+> > >  			    int priority)
+> > >  {
+> > > -	struct mem_cgroup_zone mz = {
+> > > -		.mem_cgroup = NULL,
+> > > -		.zone = zone,
+> > > -	};
+> > > +	struct mem_cgroup *mem;
+> > > +
+> > > +	if (!total_swap_pages)
+> > > +		return;
+> > > +
+> > > +	mem = mem_cgroup_iter(NULL, NULL, NULL);
+> > 
+> > Wouldn't be for_each_mem_cgroup more appropriate? Macro is not exported
+> > but probably worth exporting? The same applies for
+> > scan_zone_unevictable_pages from the previous patch.
 > 
-> Why not just use struct list_head here and use list_xxx_rcu family to
-> operate on the list?  IMHO, that will make code simpler without much
-> overhead.
+> Unfortunately, in generic code, these loops need to be layed out like
+> this for !CONFIG_MEMCG to do the right thing.  mem_cgroup_iter() will
+> return NULL and the loop has to execute exactly once.
 
-Yeah, I just copied and pasted from what was in the notifier chain stuff.
-Even though I don't need the previous pointer, the awkward rcu pointer
-stuff would be a lot simpler to implement and read with those macros.  Let
-me play with it and see what I come up with.
+Ahh, right you are. I have missed that.
 
-Thanks for the suggestion.
+> 
+> This is something that will go away once we implement Christoph's
+> suggestion of always having a (skeleton) root_mem_cgroup around, even
+> for !CONFIG_MEMCG.
 
-Cheers,
-Don
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
