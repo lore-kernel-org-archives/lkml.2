@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753561Ab1IUJeO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 05:34:14 -0400
+	id S1753610Ab1IUJe0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 05:34:26 -0400
 Received: from mail-wy0-f180.google.com ([74.125.82.180]:37829 "EHLO
 	mail-wy0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753315Ab1IUJeJ (ORCPT
+	with ESMTP id S1753515Ab1IUJeM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 05:34:09 -0400
+	Wed, 21 Sep 2011 05:34:12 -0400
 From: Yong Zhang <yong.zhang0@gmail.com>
 To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: tglx@linutronix.de, yong.zhang0@gmail.com,
-        Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 30/57] dmaengine: irq: Remove IRQF_DISABLED
-Date: Wed, 21 Sep 2011 17:28:31 +0800
-Message-Id: <1316597339-29861-31-git-send-email-yong.zhang0@gmail.com>
+        Jiri Slaby <jirislaby@gmail.com>,
+        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 36/57] drivers:misc:irq: Remove IRQF_DISABLED
+Date: Wed, 21 Sep 2011 17:28:37 +0800
+Message-Id: <1316597339-29861-37-git-send-email-yong.zhang0@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1316597339-29861-1-git-send-email-yong.zhang0@gmail.com>
 References: <1316597339-29861-1-git-send-email-yong.zhang0@gmail.com>
@@ -33,62 +33,37 @@ genirq: Warn when handler enables interrupts]).
 So now this flag is a NOOP and can be removed.
 
 Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-Acked-by: Vinod Koul <vinod.koul@linux.intel.com>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/dma/amba-pl08x.c |    2 +-
- drivers/dma/coh901318.c  |    2 +-
- drivers/dma/shdma.c      |    4 ++--
- 3 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/misc/arm-charlcd.c |    2 +-
+ drivers/misc/phantom.c     |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
-index cd8df7f..5337b69 100644
---- a/drivers/dma/amba-pl08x.c
-+++ b/drivers/dma/amba-pl08x.c
-@@ -1866,7 +1866,7 @@ static int pl08x_probe(struct amba_device *adev, const struct amba_id *id)
- 	writel(0x000000FF, pl08x->base + PL080_ERR_CLEAR);
- 	writel(0x000000FF, pl08x->base + PL080_TC_CLEAR);
- 
--	ret = request_irq(adev->irq[0], pl08x_irq, IRQF_DISABLED,
-+	ret = request_irq(adev->irq[0], pl08x_irq, 0,
- 			  DRIVER_NAME, pl08x);
- 	if (ret) {
- 		dev_err(&adev->dev, "%s failed to request interrupt %d\n",
-diff --git a/drivers/dma/coh901318.c b/drivers/dma/coh901318.c
-index 4234f41..1dd9455 100644
---- a/drivers/dma/coh901318.c
-+++ b/drivers/dma/coh901318.c
-@@ -1506,7 +1506,7 @@ static int __init coh901318_probe(struct platform_device *pdev)
- 	if (irq < 0)
- 		goto err_no_irq;
- 
--	err = request_irq(irq, dma_irq_handler, IRQF_DISABLED,
-+	err = request_irq(irq, dma_irq_handler, 0,
- 			  "coh901318", base);
- 	if (err) {
- 		dev_crit(&pdev->dev,
-diff --git a/drivers/dma/shdma.c b/drivers/dma/shdma.c
-index 7f49235..8c137d2 100644
---- a/drivers/dma/shdma.c
-+++ b/drivers/dma/shdma.c
-@@ -1106,7 +1106,7 @@ static void sh_dmae_chan_remove(struct sh_dmae_device *shdev)
- static int __init sh_dmae_probe(struct platform_device *pdev)
- {
- 	struct sh_dmae_pdata *pdata = pdev->dev.platform_data;
--	unsigned long irqflags = IRQF_DISABLED,
-+	unsigned long irqflags = 0,
- 		chan_flag[SH_DMAC_MAX_CHANNELS] = {};
- 	int errirq, chan_irq[SH_DMAC_MAX_CHANNELS];
- 	int err, i, irq_cnt = 0, irqres = 0, irq_cap = 0;
-@@ -1266,7 +1266,7 @@ static int __init sh_dmae_probe(struct platform_device *pdev)
- 				    IORESOURCE_IRQ_SHAREABLE)
- 					chan_flag[irq_cnt] = IRQF_SHARED;
- 				else
--					chan_flag[irq_cnt] = IRQF_DISABLED;
-+					chan_flag[irq_cnt] = 0;
- 				dev_dbg(&pdev->dev,
- 					"Found IRQ %d for channel %d\n",
- 					i, irq_cnt);
+diff --git a/drivers/misc/arm-charlcd.c b/drivers/misc/arm-charlcd.c
+index fe8616a..c0688b03 100644
+--- a/drivers/misc/arm-charlcd.c
++++ b/drivers/misc/arm-charlcd.c
+@@ -297,7 +297,7 @@ static int __init charlcd_probe(struct platform_device *pdev)
+ 	lcd->irq = platform_get_irq(pdev, 0);
+ 	/* If no IRQ is supplied, we'll survive without it */
+ 	if (lcd->irq >= 0) {
+-		if (request_irq(lcd->irq, charlcd_interrupt, IRQF_DISABLED,
++		if (request_irq(lcd->irq, charlcd_interrupt, 0,
+ 				DRIVERNAME, lcd)) {
+ 			ret = -EIO;
+ 			goto out_no_irq;
+diff --git a/drivers/misc/phantom.c b/drivers/misc/phantom.c
+index 21b28fc..7f7c521 100644
+--- a/drivers/misc/phantom.c
++++ b/drivers/misc/phantom.c
+@@ -395,7 +395,7 @@ static int __devinit phantom_probe(struct pci_dev *pdev,
+ 	iowrite32(0, pht->caddr + PHN_IRQCTL);
+ 	ioread32(pht->caddr + PHN_IRQCTL); /* PCI posting */
+ 	retval = request_irq(pdev->irq, phantom_isr,
+-			IRQF_SHARED | IRQF_DISABLED, "phantom", pht);
++			IRQF_SHARED, "phantom", pht);
+ 	if (retval) {
+ 		dev_err(&pdev->dev, "can't establish ISR\n");
+ 		goto err_unmo;
 -- 
 1.7.4.1
 
