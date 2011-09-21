@@ -1,43 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752376Ab1IUPRj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 11:17:39 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:45530
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752042Ab1IUPRi (ORCPT
+	id S1752311Ab1IUPT0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 11:19:26 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:29311 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752204Ab1IUPTZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 11:17:38 -0400
-Date: Wed, 21 Sep 2011 11:17:32 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, jaxboe@fusionio.com,
-        lidongyang@novell.com, joe.jin@oracle.com
-Subject: Re: [GIT PULL] (xen) stable/for-jens-3.2 - blkback and blkfront
- patches for 3.2
-Message-ID: <20110921151732.GA28043@infradead.org>
-References: <20110921150955.GH541@phenom.oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110921150955.GH541@phenom.oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 21 Sep 2011 11:19:25 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:from:to:cc:subject:date:message-id:x-mailer:
+	in-reply-to:references:x-system-of-record;
+	b=YUrpG9Etina33L9MoatFmaduHlXLwHFoOqCiASj5BhP/CMelGamjSldCIWemwsxmA
+	ejlZAphJ48Lk5mceqhK6A==
+From: Michal Nazarewicz <mnazarewicz@google.com>
+To: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ankita Garg <ankita@in.ibm.com>,
+        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
+        Arnd Bergmann <arnd@arndb.de>, Jesse Barker <jesse.barker@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Shariq Hasnain <shariq.hasnain@linaro.org>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>
+Subject: [PATCH 1/3] fixup! mm: alloc_contig_freed_pages() added
+Date: Wed, 21 Sep 2011 17:19:05 +0200
+Message-Id: <ea1bc31120e0670a044de6af7b3c67203c178065.1316617681.git.mina86@mina86.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1315505152.3114.9.camel@nimitz>
+References: <1315505152.3114.9.camel@nimitz>
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 21, 2011 at 11:09:55AM -0400, Konrad Rzeszutek Wilk wrote:
-> Hey Jens,
-> 
-> Please pull the following git tree in your 3.2 drivers tree:
-> 
->  git pull git://oss.oracle.com/git/kwilk/xen.git stable/for-jens-3.2
-> 
-> which has an exciting new feature - the discard ('feature-discard')
-> aka TRIM/UNMAP. Now they can be passed from the guest to the backend.
+From: Michal Nazarewicz <mina86@mina86.com>
 
-What is the design of them?  Do you provide the 'discard zeroes data'
-flag (mandatory for any kind of relible operation) and 'discard
-granularity / alignment' tunables (very useful)?
+Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+
+---
+ include/linux/page-isolation.h |    4 ++-
+ mm/page_alloc.c                |   66 ++++++++++++++++++++++++++++++++++-----
+ 2 files changed, 60 insertions(+), 10 deletions(-)
+
+> On Fri, 2011-08-19 at 16:27 +0200, Marek Szyprowski wrote:
+>> +unsigned long alloc_contig_freed_pages(unsigned long start, unsigned  
+>> long end,
+>> +				       gfp_t flag)
+>> +{
+>> +	unsigned long pfn = start, count;
+>> +	struct page *page;
+>> +	struct zone *zone;
+>> +	int order;
+>> +
+>> +	VM_BUG_ON(!pfn_valid(start));
+>> +	zone = page_zone(pfn_to_page(start));
+
+On Thu, 08 Sep 2011 20:05:52 +0200, Dave Hansen <dave@linux.vnet.ibm.com> wrote:
+> This implies that start->end are entirely contained in a single zone.
+> What enforces that?  If some higher layer enforces that, I think we
+> probably need at least a VM_BUG_ON() in here and a comment about who
+> enforces it.
+
+>> +	spin_lock_irq(&zone->lock);
+>> +
+>> +	page = pfn_to_page(pfn);
+>> +	for (;;) {
+>> +		VM_BUG_ON(page_count(page) || !PageBuddy(page));
+>> +		list_del(&page->lru);
+>> +		order = page_order(page);
+>> +		zone->free_area[order].nr_free--;
+>> +		rmv_page_order(page);
+>> +		__mod_zone_page_state(zone, NR_FREE_PAGES, -(1UL << order));
+>> +		pfn  += 1 << order;
+>> +		if (pfn >= end)
+>> +			break;
+>> +		VM_BUG_ON(!pfn_valid(pfn));
+>> +		page += 1 << order;
+>> +	}
+
+> This 'struct page *'++ stuff is OK, but only for small, aligned areas.
+> For at least some of the sparsemem modes (non-VMEMMAP), you could walk
+> off of the end of the section_mem_map[] when you cross a MAX_ORDER
+> boundary.  I'd feel a little bit more comfortable if pfn_to_page() was
+> being done each time, or only occasionally when you cross a section
+> boundary.
+
+Do the attached changes seem to make sense?
+
+I wanted to avoid calling pfn_to_page() each time as it seem fairly
+expensive in sparsemem and disctontig modes.  At the same time, the
+macro trickery is so that users of sparsemem-vmemmap and flatmem won't
+have to pay the price.
+
+diff --git a/include/linux/page-isolation.h b/include/linux/page-isolation.h
+index b2a81fd..003c52f 100644
+--- a/include/linux/page-isolation.h
++++ b/include/linux/page-isolation.h
+@@ -46,11 +46,13 @@ static inline void unset_migratetype_isolate(struct page *page)
+ {
+ 	__unset_migratetype_isolate(page, MIGRATE_MOVABLE);
+ }
++
++/* The below functions must be run on a range from a single zone. */
+ extern unsigned long alloc_contig_freed_pages(unsigned long start,
+ 					      unsigned long end, gfp_t flag);
+ extern int alloc_contig_range(unsigned long start, unsigned long end,
+ 			      gfp_t flags, unsigned migratetype);
+-extern void free_contig_pages(struct page *page, int nr_pages);
++extern void free_contig_pages(unsigned long pfn, unsigned nr_pages);
+ 
+ /*
+  * For migration.
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 46e78d4..32fda5d 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -5716,9 +5716,41 @@ out:
+ 	spin_unlock_irqrestore(&zone->lock, flags);
+ }
+ 
++#if defined(CONFIG_FLATMEM) || defined(CONFIG_SPARSEMEM_VMEMMAP)
++
++/*
++ * In FLATMEM and CONFIG_SPARSEMEM_VMEMMAP we can safely increment the page
++ * pointer and get the same value as if we were to get by calling
++ * pfn_to_page() on incremented pfn counter.
++ */
++#define __contig_next_page(page, pageblock_left, pfn, increment) \
++	((page) + (increment))
++
++#define __contig_first_page(pageblock_left, pfn) pfn_to_page(pfn)
++
++#else
++
++/*
++ * If we cross pageblock boundary, make sure we get a valid page pointer.  If
++ * we are within pageblock, incrementing the pointer is good enough, and is
++ * a bit of an optimisation.
++ */
++#define __contig_next_page(page, pageblock_left, pfn, increment)	\
++	(likely((pageblock_left) -= (increment)) ? (page) + (increment)	\
++	 : (((pageblock_left) = pageblock_nr_pages), pfn_to_page(pfn)))
++
++#define __contig_first_page(pageblock_left, pfn) (			\
++	((pageblock_left) = pageblock_nr_pages -			\
++		 ((pfn) & (pageblock_nr_pages - 1))),			\
++	pfn_to_page(pfn))
++
++
++#endif
++
+ unsigned long alloc_contig_freed_pages(unsigned long start, unsigned long end,
+ 				       gfp_t flag)
+ {
++	unsigned long pageblock_left __unused;
+ 	unsigned long pfn = start, count;
+ 	struct page *page;
+ 	struct zone *zone;
+@@ -5729,27 +5761,37 @@ unsigned long alloc_contig_freed_pages(unsigned long start, unsigned long end,
+ 
+ 	spin_lock_irq(&zone->lock);
+ 
+-	page = pfn_to_page(pfn);
++	page = __contig_first_page(pageblock_left, pfn);
+ 	for (;;) {
+-		VM_BUG_ON(page_count(page) || !PageBuddy(page));
++		VM_BUG_ON(!page_count(page) || !PageBuddy(page) ||
++			  page_zone(page) != zone);
++
+ 		list_del(&page->lru);
+ 		order = page_order(page);
++		count = 1UL << order;
+ 		zone->free_area[order].nr_free--;
+ 		rmv_page_order(page);
+-		__mod_zone_page_state(zone, NR_FREE_PAGES, -(1UL << order));
+-		pfn  += 1 << order;
++		__mod_zone_page_state(zone, NR_FREE_PAGES, -(long)count);
++
++		pfn += count;
+ 		if (pfn >= end)
+ 			break;
+ 		VM_BUG_ON(!pfn_valid(pfn));
+-		page += 1 << order;
++
++		page = __contig_next_page(page, pageblock_left, pfn, count);
+ 	}
+ 
+ 	spin_unlock_irq(&zone->lock);
+ 
+ 	/* After this, pages in the range can be freed one be one */
+-	page = pfn_to_page(start);
+-	for (count = pfn - start; count; --count, ++page)
++	count = pfn - start;
++	pfn = start;
++	page = __contig_first_page(pageblock_left, pfn);
++	for (; count; --count) {
+ 		prep_new_page(page, 0, flag);
++		++pfn;
++		page = __contig_next_page(page, pageblock_left, pfn, 1);
++	}
+ 
+ 	return pfn;
+ }
+@@ -5903,10 +5945,16 @@ done:
+ 	return ret;
+ }
+ 
+-void free_contig_pages(struct page *page, int nr_pages)
++void free_contig_pages(unsigned long pfn, unsigned nr_pages)
+ {
+-	for (; nr_pages; --nr_pages, ++page)
++	unsigned long pageblock_left __unused;
++	struct page *page = __contig_first_page(pageblock_left, pfn);
++
++	while (nr_pages--) {
+ 		__free_page(page);
++		++pfn;
++		page = __contig_next_page(page, pageblock_left, pfn, 1);
++	}
+ }
+ 
+ #ifdef CONFIG_MEMORY_HOTREMOVE
+-- 
+1.7.3.1
 
