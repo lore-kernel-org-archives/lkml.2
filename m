@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752041Ab1IUFls (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 01:41:48 -0400
-Received: from mga09.intel.com ([134.134.136.24]:33415 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751622Ab1IUFlr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 01:41:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="50583286"
-Message-ID: <4E797913.5050906@intel.com>
-Date: Wed, 21 Sep 2011 13:41:39 +0800
-From: Huang Ying <ying.huang@intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Iceowl/1.0b2 Icedove/3.1.13
+	id S1752026Ab1IUFmF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 01:42:05 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60600 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751622Ab1IUFmC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 01:42:02 -0400
 MIME-Version: 1.0
-To: Don Zickus <dzickus@redhat.com>
-CC: "x86@kernel.org" <x86@kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "avi@redhat.com" <avi@redhat.com>, "jeremy@goop.org" <jeremy@goop.org>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Andi Kleen <ak@linux.intel.com>, Corey Minyard <minyard@acm.org>,
-        Jack Steiner <steiner@sgi.com>, Alan Cox <alan@linux.intel.com>
-Subject: Re: [V5][PATCH 3/6] x86, nmi: wire up NMI handlers to new routines
-References: <1316529792-6560-1-git-send-email-dzickus@redhat.com> <1316529792-6560-4-git-send-email-dzickus@redhat.com>
-In-Reply-To: <1316529792-6560-4-git-send-email-dzickus@redhat.com>
+In-Reply-To: <CAOJsxLHQdf-+HuwVsQtF26oY_oJf3BsVdDi3NyJDi7F0eD03Gw@mail.gmail.com>
+References: <20110910064531.GA32536@moria>
+	<CAOJsxLFPODubVEB3Tjg54C7jDKM8H-RCM_u5kvO1D0kKyjUYXQ@mail.gmail.com>
+	<20110921025545.GB5521@moria>
+	<CAOJsxLHQdf-+HuwVsQtF26oY_oJf3BsVdDi3NyJDi7F0eD03Gw@mail.gmail.com>
+Date: Wed, 21 Sep 2011 08:42:01 +0300
+X-Google-Sender-Auth: Vi14Bv9s2gt4LSn2NovESiuMgSs
+Message-ID: <CAOJsxLGWoGqdv=tdBwWjM9-MD_Qm3ibMSGpp1j-tQLjMW-b-0A@mail.gmail.com>
+Subject: Re: [GIT] Bcache version 12
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+To: Kent Overstreet <kent.overstreet@gmail.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, rdunlap@xenotime.net, axboe@kernel.dk,
+        akpm@linux-foundation.org, neilb@suse.de
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20/2011 10:43 PM, Don Zickus wrote:
-> Just convert all the files that have an nmi handler to the new routines.
-> Most of it is straight forward conversion.  A couple of places needed some
-> tweaking like kgdb which separates the debug notifier from the nmi handler
-> and mce removes a call to notify_die (as I couldn't figure out why it was
-> there).
+On Wed, Sep 21, 2011 at 5:55 AM, Kent Overstreet
+> <kent.overstreet@gmail.com> wrote:
+>> Short version: bcache is for making IO faster.
 
-It is used to call a debugger on a machine check, according to following
-thread:
+On Wed, Sep 21, 2011 at 8:33 AM, Pekka Enberg <penberg@cs.helsinki.fi> wrote:
+> That's helpful...
 
-https://lkml.org/lkml/2010/5/27/114
+Your documentation isn't helpful either:
 
-So maybe we can turn that into a kgdb direct call?
++Say you've got a big slow raid 6, and an X-25E or three. Wouldn't it be
++nice if you could use them as cache... Hence bcache.
 
-Best Regards,
-Huang Ying
+So it's a cool hack but you fail to explain why someone wants to use
+it. You also fail to explain why you decided to implement it the way
+you did instead of making it more like fscache, for example.
+
+Really, why do I need to go digging for this sort of information? It
+feels almost as if you don't want people to review your code...
+
+                        Pekka
