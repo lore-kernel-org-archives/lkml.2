@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753610Ab1IUJe0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 05:34:26 -0400
-Received: from mail-wy0-f180.google.com ([74.125.82.180]:37829 "EHLO
-	mail-wy0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753515Ab1IUJeM (ORCPT
+	id S1753679Ab1IUJeu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 05:34:50 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:47439 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753658Ab1IUJes (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 05:34:12 -0400
+	Wed, 21 Sep 2011 05:34:48 -0400
 From: Yong Zhang <yong.zhang0@gmail.com>
 To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: tglx@linutronix.de, yong.zhang0@gmail.com,
-        Jiri Slaby <jirislaby@gmail.com>,
-        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 36/57] drivers:misc:irq: Remove IRQF_DISABLED
-Date: Wed, 21 Sep 2011 17:28:37 +0800
-Message-Id: <1316597339-29861-37-git-send-email-yong.zhang0@gmail.com>
+        Kyle McMartin <kyle@mcmartin.ca>, Helge Deller <deller@gmx.de>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        linux-parisc@vger.kernel.org
+Subject: [PATCH 40/57] dirvers/parisc: irq: Remove IRQF_DISABLED
+Date: Wed, 21 Sep 2011 17:28:41 +0800
+Message-Id: <1316597339-29861-41-git-send-email-yong.zhang0@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1316597339-29861-1-git-send-email-yong.zhang0@gmail.com>
 References: <1316597339-29861-1-git-send-email-yong.zhang0@gmail.com>
@@ -34,36 +33,22 @@ So now this flag is a NOOP and can be removed.
 
 Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
 ---
- drivers/misc/arm-charlcd.c |    2 +-
- drivers/misc/phantom.c     |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/parisc/superio.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/misc/arm-charlcd.c b/drivers/misc/arm-charlcd.c
-index fe8616a..c0688b03 100644
---- a/drivers/misc/arm-charlcd.c
-+++ b/drivers/misc/arm-charlcd.c
-@@ -297,7 +297,7 @@ static int __init charlcd_probe(struct platform_device *pdev)
- 	lcd->irq = platform_get_irq(pdev, 0);
- 	/* If no IRQ is supplied, we'll survive without it */
- 	if (lcd->irq >= 0) {
--		if (request_irq(lcd->irq, charlcd_interrupt, IRQF_DISABLED,
-+		if (request_irq(lcd->irq, charlcd_interrupt, 0,
- 				DRIVERNAME, lcd)) {
- 			ret = -EIO;
- 			goto out_no_irq;
-diff --git a/drivers/misc/phantom.c b/drivers/misc/phantom.c
-index 21b28fc..7f7c521 100644
---- a/drivers/misc/phantom.c
-+++ b/drivers/misc/phantom.c
-@@ -395,7 +395,7 @@ static int __devinit phantom_probe(struct pci_dev *pdev,
- 	iowrite32(0, pht->caddr + PHN_IRQCTL);
- 	ioread32(pht->caddr + PHN_IRQCTL); /* PCI posting */
- 	retval = request_irq(pdev->irq, phantom_isr,
--			IRQF_SHARED | IRQF_DISABLED, "phantom", pht);
-+			IRQF_SHARED, "phantom", pht);
- 	if (retval) {
- 		dev_err(&pdev->dev, "can't establish ISR\n");
- 		goto err_unmo;
+diff --git a/drivers/parisc/superio.c b/drivers/parisc/superio.c
+index e3b76d4..5e6fd94e 100644
+--- a/drivers/parisc/superio.c
++++ b/drivers/parisc/superio.c
+@@ -274,7 +274,7 @@ superio_init(struct pci_dev *pcidev)
+ 	else
+ 		printk(KERN_ERR PFX "USB regulator not initialized!\n");
+ 
+-	if (request_irq(pdev->irq, superio_interrupt, IRQF_DISABLED,
++	if (request_irq(pdev->irq, superio_interrupt, 0,
+ 			SUPERIO, (void *)sio)) {
+ 
+ 		printk(KERN_ERR PFX "could not get irq\n");
 -- 
 1.7.4.1
 
