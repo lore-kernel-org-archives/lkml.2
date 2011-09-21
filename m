@@ -1,139 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751556Ab1IUPZA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 11:25:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60334 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750757Ab1IUPY7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 11:24:59 -0400
-Date: Wed, 21 Sep 2011 17:24:58 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
-        Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 10/11] mm: make per-memcg LRU lists exclusive
-Message-ID: <20110921152458.GI8501@tiehlicka.suse.cz>
-References: <1315825048-3437-1-git-send-email-jweiner@redhat.com>
- <1315825048-3437-11-git-send-email-jweiner@redhat.com>
+	id S1751506Ab1IUP2Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 11:28:24 -0400
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:10976 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750861Ab1IUP2W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 11:28:22 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18GrCrFCY3hDgYMhWwZd3X0
+Date: Wed, 21 Sep 2011 08:28:13 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Ohad Ben-Cohen <ohad@wizery.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Nicolas Pitre <nico@fluxnic.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 00/10] hwspinlock-next
+Message-ID: <20110921152812.GE2937@atomide.com>
+References: <1315846025-11453-1-git-send-email-ohad@wizery.com>
+ <CAK=Wgbam6u1bq8fG+oMUhxfWH1g3dU7q+VhPWFEZOLgFMV_3vQ@mail.gmail.com>
+ <20110920231340.GT18894@atomide.com>
+ <201109211612.33504.arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1315825048-3437-11-git-send-email-jweiner@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201109211612.33504.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 12-09-11 12:57:27, Johannes Weiner wrote:
-> Now that all code that operated on global per-zone LRU lists is
-> converted to operate on per-memory cgroup LRU lists instead, there is
-> no reason to keep the double-LRU scheme around any longer.
+* Arnd Bergmann <arnd@arndb.de> [110921 06:39]:
+> On Wednesday 21 September 2011, Tony Lindgren wrote:
+> > * Ohad Ben-Cohen <ohad@wizery.com> [110920 01:34]:
+> > > On Mon, Sep 12, 2011 at 7:46 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
+> > > 
+> > > I'm wondering how hwspinlock updates like this should go upstream.
+> > > 
+> > > The first hwspinlock batch was picked by Tony, because it involved a
+> > > bulk of OMAP changes.
+> > > 
+> > > Hwspinlock isn't OMAP-specific anymore though (we gained support for
+> > > STE's u8500) and the vast majority of changes are in drivers/. We're
+> > > still very much ARM-related, though this may change too at some point
+> > > (c6x has a similar "hardware semaphore" peripheral like the u8500
+> > > does).
+> > > 
+> > > Tony, if you're still willing to pick up these updates I'd be happy to
+> > > send you pull requests of course.
+> > 
+> > I'd prefer for Greg to take these as these are drivers.
+> > 
+> > If he's not taking it at this point based on it being ARM only,
+> > I can take it then.
 > 
-> The pc->lru member is removed and page->lru is linked directly to the
-> per-memory cgroup LRU lists, which removes two pointers from a
-> descriptor that exists for every page frame in the system.
+> Sorry for replying late, I had accidentally ignored the entire thread.
 > 
-> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> Signed-off-by: Ying Han <yinghan@google.com>
+> My feeling is that it would be best for Ohad to send these directly
+> to Linus, since it's basically a standalone subsystem and he's listed
+> as the maintainer (well, after this series at least).
 
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-
-Minor comments/questions bellow.
-> ---
->  include/linux/memcontrol.h  |   54 +++-----
->  include/linux/mm_inline.h   |   21 +--
->  include/linux/page_cgroup.h |    1 -
->  mm/memcontrol.c             |  319 ++++++++++++++++++++-----------------------
->  mm/page_cgroup.c            |    1 -
->  mm/swap.c                   |   23 ++-
->  mm/vmscan.c                 |   81 +++++-------
->  7 files changed, 228 insertions(+), 272 deletions(-)
+Ohad can you please try this first? Just please make sure your patches are
+first in next tree before sending in the pull request.
+ 
+> I'm also fine with any of the other paths like
 > 
-[...]
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 465001c..a7d14a5 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-[...]
-> @@ -934,115 +954,123 @@ EXPORT_SYMBOL(mem_cgroup_count_vm_event);
->   * When moving account, the page is not on LRU. It's isolated.
->   */
->  
-> -struct page *mem_cgroup_lru_to_page(struct zone *zone, struct mem_cgroup *mem,
-> -				    enum lru_list lru)
-> +/**
-> + * mem_cgroup_lru_add_list - account for adding an lru page and return lruvec
-> + * @zone: zone of the page
-> + * @page: the page
-> + * @lru: current lru
-> + *
-> + * This function accounts for @page being added to @lru, and returns
-> + * the lruvec for the given @zone and the memcg @page is charged to.
-> + *
-> + * The callsite is then responsible for physically linking the page to
-> + * the returned lruvec->lists[@lru].
-> + */
-> +struct lruvec *mem_cgroup_lru_add_list(struct zone *zone, struct page *page,
-> +				       enum lru_list lru)
+> ohad->GregKH->torvalds
 
-I know that names are alway tricky but what about mem_cgroup_acct_lru_add?
-Analogously for mem_cgroup_lru_del_list, mem_cgroup_lru_del and
-mem_cgroup_lru_move_lists.
+Greg does not prefer that as it's ARM only currently.
 
-[...]
-> @@ -3615,11 +3593,11 @@ unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
->  static int mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
->  				int node, int zid, enum lru_list lru)
->  {
-> -	struct zone *zone;
->  	struct mem_cgroup_per_zone *mz;
-> -	struct page_cgroup *pc, *busy;
->  	unsigned long flags, loop;
->  	struct list_head *list;
-> +	struct page *busy;
-> +	struct zone *zone;
+> ohad->arnd->torvalds
+> ohad->tmlind->torvalds
+> ohad->tmlind->arnd->torvalds
 
-Any specific reason to move zone declaration down here? Not that it
-matters much. Just curious.
+So as a backup plan any of these are also fine with me too.
 
->  	int ret = 0;
->  
->  	zone = &NODE_DATA(node)->node_zones[zid];
-> @@ -3639,16 +3618,16 @@ static int mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
->  			spin_unlock_irqrestore(&zone->lru_lock, flags);
->  			break;
->  		}
-> -		pc = list_entry(list->prev, struct page_cgroup, lru);
-> -		if (busy == pc) {
-> -			list_move(&pc->lru, list);
-> +		page = list_entry(list->prev, struct page, lru);
-> +		if (busy == page) {
-> +			list_move(&page->lru, list);
->  			busy = NULL;
->  			spin_unlock_irqrestore(&zone->lru_lock, flags);
->  			continue;
->  		}
->  		spin_unlock_irqrestore(&zone->lru_lock, flags);
->  
-> -		page = lookup_cgroup_page(pc);
-> +		pc = lookup_page_cgroup(page);
-
-lookup_page_cgroup might return NULL so we probably want BUG_ON(!pc)
-here. We are not very consistent about checking the return value,
-though.
-
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Tony
