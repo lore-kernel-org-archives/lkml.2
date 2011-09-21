@@ -1,180 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752026Ab1IUIbE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 04:31:04 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:17248 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751047Ab1IUIbC (ORCPT
+	id S1751633Ab1IUIdP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 04:33:15 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:39575 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750788Ab1IUIdN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 04:31:02 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:to:cc:subject:message-id:
-	mime-version:content-type:content-disposition:user-agent:x-system-of-record;
-	b=wtigb7Q/OXpglIia4n4dunBcw7f3YZ+G+Ld6ElsoYIMbCMZ+PlnyhFY251WXuVrHB
-	5hI+qNXcABZjwdfDcudKg==
-Date: Wed, 21 Sep 2011 10:30:55 +0200
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, acme@redhat.com, dsahern@gmail.com, mingo@elte.hu
-Subject: [PATCH] perf: fix perf.data endianness detection (v2)
-Message-ID: <20110921083055.GA5175@quad>
+	Wed, 21 Sep 2011 04:33:13 -0400
+X-Auth-Info: iwyUmstsLZ1hDEsaiCGzHyYCnKpkGv8qoOzXZn7+4m4=
+Message-ID: <4E79A146.2040204@grandegger.com>
+Date: Wed, 21 Sep 2011 10:33:10 +0200
+From: Wolfgang Grandegger <wg@grandegger.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-System-Of-Record: true
+To: Arnd Bergmann <arnd@arndb.de>
+CC: SocketCAN Core Mailing List <socketcan-core@lists.berlios.de>,
+        Willy Lambert <lambert.willy@gmail.com>, x86@kernel.org,
+        Valdis.Kletnieks@vt.edu, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86_64: permit to configure ISA support also for x86_64
+ systems
+References: <4E731565.5050307@grandegger.com>	<63081.1316200771@turing-police.cc.vt.edu>	<4E73A419.70907@grandegger.com> <201109201747.50130.arnd@arndb.de>
+In-Reply-To: <201109201747.50130.arnd@arndb.de>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/20/2011 05:47 PM, Arnd Bergmann wrote:
+> On Friday 16 September 2011, Wolfgang Grandegger wrote:
+>> On 09/16/2011 09:19 PM, Valdis.Kletnieks@vt.edu wrote:
+>>> On Fri, 16 Sep 2011 11:22:45 +0200, Wolfgang Grandegger said:
+>>>> There are 64-bit systems out there, like the ATOM N450, which
+>>>> have ISA slots.
+>>>
+>>> That's a scary thought...
+>>
+>> Well. Actually we need it for Intel Atom N450 PC/104-Plus SBCs.
+> 
+> I would assume that you have a small set of ISA add-on cards that
+> you actually need to support, right?
 
-The current version of perf detects whether or not
-the perf.data file is written in a different endianness
-using the attr_size field in the header of the file. This
-field represents sizeof(struct perf_event) as known to perf
-record. If the size does not match, then perf tries the
-byte-swapped version. If they match, then the tool assumes
-a different endianness.
+Yes, various PC/104 compatible boards can be connected to the ISA bus on
+such systems (via PC/104 connector). I personally do only care about the
+CAN devices (as maintainer).
 
-The issue with the approach is that it assumes the size of
-perf_event_attr always has to match between the file and the
-tool. However, the kernel API is designed to make it possible
-to extend perf_event_attr for new features. Consequently, it
-is not possible to use attr_size to detect endianness.
+> Since most ISA drivers don't actually use isa_register_driver
+> (for good or bad), how about changing the Kconfig entry for
+> the ones you need to 'depends on ISA || PLAT_GRANDEGGER_PC104_ATOM'
+> or similar?
 
-This patch takes another approach by using the magic number
-written at the beginning of the perf.data file to detect
-endianness mismatch. The magic number is an eight-byte
-signature. The patch introduces a new value for this
-signature. The key difference is that the signature
-is written differently in the file depending on the
-endianness. Thus, by comparing the signature from the file
-with the tool's own signature it is possible to detect if
-the endianness matches. The new signature is "PERFILE2".
+What should the PLAT_GRANDEGGER_PC104_ATOM be good for? If I replace
+isa_register_driver() with platform_driver_register(), like the serial
+8250 driver does, HAS_IOMEM should be just fine. This would then also
+avoid the 64-bit trouble expected with old ISA drivers (enabled via
+ISA). Or have I missed something?
 
-Backward compatiblity with existing perf.data file is
-ensured.
-
-This second version fixes a bug in the case of the new
-format with whereby the u64 of the header where not
-swapped when necessary. This new version also factorizes
-the swapping on the u64 portion of the header.
-
-Thanks to David Ahern for testing on big-endian systems.
-
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
-
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index b6c1ad1..4fa52d3 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -57,9 +57,20 @@ char *perf_header__find_event(u64 id)
- 	return NULL;
- }
- 
--static const char *__perf_magic = "PERFFILE";
--
--#define PERF_MAGIC	(*(u64 *)__perf_magic)
-+/*
-+ * magic2 = "PERFILE2"
-+ * must be a numerical value to let the endianness
-+ * determine the memory layout. That way we are able
-+ * to detect endianness when reading the perf.data file
-+ * back.
-+ *
-+ * we check for legacy (PERFFILE) format.
-+ */
-+static const char *__perf_magic1 = "PERFFILE";
-+static const u64 __perf_magic2    = 0x32454c4946524550ULL;
-+static const u64 __perf_magic2_sw = 0x50455246494c4532ULL;
-+
-+#define PERF_MAGIC	__perf_magic2
- 
- struct perf_file_attr {
- 	struct perf_event_attr	attr;
-@@ -595,24 +606,59 @@ out_free:
- 	return err;
- }
- 
-+static int check_magic_endian(u64 *magic, struct perf_file_header *header,
-+			      struct perf_header *ph)
-+{
-+	int ret;
-+
-+	/* check for legacy format */
-+	ret = memcmp(magic, __perf_magic1, sizeof(*magic));
-+	if (ret == 0) {
-+		pr_debug("legacy perf.data format\n");
-+		if (!header)
-+			return -1;
-+
-+		if (header->attr_size != sizeof(struct perf_file_attr)) {
-+			u64 attr_size = bswap_64(header->attr_size);
-+
-+			if (attr_size != sizeof(struct perf_file_attr))
-+				return -1;
-+
-+			ph->needs_swap = true;
-+		}
-+		return 0;
-+	}
-+
-+	/* check magic number with same endianness */
-+	if (*magic == __perf_magic2)
-+		return 0;
-+
-+	/* check magic number but opposite endianness */
-+	if (*magic != __perf_magic2_sw)
-+		return -1;
-+
-+	ph->needs_swap = true;
-+
-+	return 0;
-+}
-+
- int perf_file_header__read(struct perf_file_header *header,
- 			   struct perf_header *ph, int fd)
- {
-+	int ret;
-+
- 	lseek(fd, 0, SEEK_SET);
- 
--	if (readn(fd, header, sizeof(*header)) <= 0 ||
--	    memcmp(&header->magic, __perf_magic, sizeof(header->magic)))
-+	ret = readn(fd, header, sizeof(*header));
-+	if (ret <= 0)
- 		return -1;
- 
--	if (header->attr_size != sizeof(struct perf_file_attr)) {
--		u64 attr_size = bswap_64(header->attr_size);
--
--		if (attr_size != sizeof(struct perf_file_attr))
--			return -1;
-+	if (check_magic_endian(&header->magic, header, ph) < 0)
-+		return -1;
- 
-+	if (ph->needs_swap) {
- 		mem_bswap_64(header, offsetof(struct perf_file_header,
--					    adds_features));
--		ph->needs_swap = true;
-+			     adds_features));
- 	}
- 
- 	if (header->size != sizeof(*header)) {
-@@ -824,8 +870,13 @@ static int perf_file_header__read_pipe(struct perf_pipe_file_header *header,
- 				       struct perf_header *ph, int fd,
- 				       bool repipe)
- {
--	if (readn(fd, header, sizeof(*header)) <= 0 ||
--	    memcmp(&header->magic, __perf_magic, sizeof(header->magic)))
-+	int ret;
-+
-+	ret = readn(fd, header, sizeof(*header));
-+	if (ret <= 0)
-+		return -1;
-+
-+	 if (check_magic_endian(&header->magic, NULL, ph) < 0)
- 		return -1;
- 
- 	if (repipe && do_write(STDOUT_FILENO, header, sizeof(*header)) < 0)
+Wolfgang.
