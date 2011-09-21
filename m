@@ -1,104 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752341Ab1IUPbs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 11:31:48 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:50458 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752257Ab1IUPbp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 11:31:45 -0400
-X-Authority-Analysis: v=1.1 cv=agqPq5NoKwAPC9P66H7dbYUCjxvmT73as08i4x3aqAA= c=1 sm=0 a=3kNrfhY1ZosA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=fBl8dBbB_sJAygz42ykA:9 a=ElVYSODfqjMQMkeZ5-cA:7 a=PUjeQqilurYA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.83.30
-Subject: Re: [RFC][PATCH 0/5] Introduce checks for preemptable code for
- this_cpu_read/write()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Christoph Lameter <cl@gentwo.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>
-In-Reply-To: <alpine.DEB.2.00.1109211007450.12914@router.home>
-References: <20110919212040.745370781@goodmis.org>
-	 <alpine.DEB.2.00.1109191644190.19059@router.home>
-	 <1316487977.29966.32.camel@gandalf.stny.rr.com>
-	 <20110920154610.GB28952@Krystal>
-	 <1316534441.29966.79.camel@gandalf.stny.rr.com>
-	 <alpine.DEB.2.00.1109201109470.8056@router.home>
-	 <1316544841.29966.121.camel@gandalf.stny.rr.com>
-	 <alpine.DEB.2.00.1109211007450.12914@router.home>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 21 Sep 2011 11:31:43 -0400
-Message-ID: <1316619103.29966.139.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	id S1752276Ab1IUPcx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 11:32:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33246 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750978Ab1IUPcw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 11:32:52 -0400
+Date: Wed, 21 Sep 2011 17:32:49 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <jweiner@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
+        Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 11/11] mm: memcg: remove unused node/section info from
+ pc->flags
+Message-ID: <20110921153249.GJ8501@tiehlicka.suse.cz>
+References: <1315825048-3437-1-git-send-email-jweiner@redhat.com>
+ <1315825048-3437-12-git-send-email-jweiner@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1315825048-3437-12-git-send-email-jweiner@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-09-21 at 10:16 -0500, Christoph Lameter wrote:
-
-> > My argument is that this_cpu_* is just confusing. Rename your use case
-> > and keep this_cpu_*() as what you want __this_cpu_*() to be.
+On Mon 12-09-11 12:57:28, Johannes Weiner wrote:
+> To find the page corresponding to a certain page_cgroup, the pc->flags
+> encoded the node or section ID with the base array to compare the pc
+> pointer to.
 > 
-> Thought about this a bit last night. I think the main issue are these
-> this_cpu_read() and this_cpu_write() operations since people use those
-> irresponsibly. It usually does not make sense to read a value from a
-> random cpu nor does writing make sense. The situation is different for
-> per cpu counter increments where it does not matter which cpus counter is
-> incremented since we sum them up later anyways.
+> Now that the per-memory cgroup LRU lists link page descriptors
+> directly, there is no longer any code that knows the page_cgroup but
+> not the page.
 > 
-> How about getting rid of this_cpu_read() and this_cpu_write() entirely?
+> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+
+Nice.
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+
+> ---
+>  include/linux/page_cgroup.h |   33 ------------------------
+>  mm/page_cgroup.c            |   58 ++++++-------------------------------------
+>  2 files changed, 8 insertions(+), 83 deletions(-)
 > 
-> Only allow __this_cpu_read and __this_cpu_write. There we check that the
-> caller has disabled preemption.
-
-The problem I have with this, is that this does not help at all. We are
-back to the word "this_cpu" when you really do mean "any_cpu". We
-optimize the implementation to only write to the current cpu we are on,
-but that is an optimization not the design, as the process could migrate
-before and after the call to your this_cpu_*() operation, which makes it
-no longer "this cpu". The bigger view of this design is that
-incrementing a cpu variable and then summing it up, means that you do
-not care which CPU variable you updated. Do not call it "this_cpu"!
-Yes, for optimization sake, we happen to use the current CPU, but if we
-read/wrote to any CPU variable, the algorithm still works. Hence, it is
-not "this_cpu" but "any_cpu".
-
-
+> diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
+> index 5bae753..aaa60da 100644
+> --- a/include/linux/page_cgroup.h
+> +++ b/include/linux/page_cgroup.h
+> @@ -121,39 +121,6 @@ static inline void move_unlock_page_cgroup(struct page_cgroup *pc,
+>  	local_irq_restore(*flags);
+>  }
+>  
+> -#ifdef CONFIG_SPARSEMEM
+> -#define PCG_ARRAYID_WIDTH	SECTIONS_SHIFT
+> -#else
+> -#define PCG_ARRAYID_WIDTH	NODES_SHIFT
+> -#endif
+> -
+> -#if (PCG_ARRAYID_WIDTH > BITS_PER_LONG - NR_PCG_FLAGS)
+> -#error Not enough space left in pc->flags to store page_cgroup array IDs
+> -#endif
+> -
+> -/* pc->flags: ARRAY-ID | FLAGS */
+> -
+> -#define PCG_ARRAYID_MASK	((1UL << PCG_ARRAYID_WIDTH) - 1)
+> -
+> -#define PCG_ARRAYID_OFFSET	(BITS_PER_LONG - PCG_ARRAYID_WIDTH)
+> -/*
+> - * Zero the shift count for non-existent fields, to prevent compiler
+> - * warnings and ensure references are optimized away.
+> - */
+> -#define PCG_ARRAYID_SHIFT	(PCG_ARRAYID_OFFSET * (PCG_ARRAYID_WIDTH != 0))
+> -
+> -static inline void set_page_cgroup_array_id(struct page_cgroup *pc,
+> -					    unsigned long id)
+> -{
+> -	pc->flags &= ~(PCG_ARRAYID_MASK << PCG_ARRAYID_SHIFT);
+> -	pc->flags |= (id & PCG_ARRAYID_MASK) << PCG_ARRAYID_SHIFT;
+> -}
+> -
+> -static inline unsigned long page_cgroup_array_id(struct page_cgroup *pc)
+> -{
+> -	return (pc->flags >> PCG_ARRAYID_SHIFT) & PCG_ARRAYID_MASK;
+> -}
+> -
+>  #else /* CONFIG_CGROUP_MEM_RES_CTLR */
+>  struct page_cgroup;
+>  
+> diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
+> index 256dee8..2601a65 100644
+> --- a/mm/page_cgroup.c
+> +++ b/mm/page_cgroup.c
+> @@ -11,12 +11,6 @@
+>  #include <linux/swapops.h>
+>  #include <linux/kmemleak.h>
+>  
+> -static void __meminit init_page_cgroup(struct page_cgroup *pc, unsigned long id)
+> -{
+> -	pc->flags = 0;
+> -	set_page_cgroup_array_id(pc, id);
+> -	pc->mem_cgroup = NULL;
+> -}
+>  static unsigned long total_usage;
+>  
+>  #if !defined(CONFIG_SPARSEMEM)
+> @@ -41,24 +35,11 @@ struct page_cgroup *lookup_page_cgroup(struct page *page)
+>  	return base + offset;
+>  }
+>  
+> -struct page *lookup_cgroup_page(struct page_cgroup *pc)
+> -{
+> -	unsigned long pfn;
+> -	struct page *page;
+> -	pg_data_t *pgdat;
+> -
+> -	pgdat = NODE_DATA(page_cgroup_array_id(pc));
+> -	pfn = pc - pgdat->node_page_cgroup + pgdat->node_start_pfn;
+> -	page = pfn_to_page(pfn);
+> -	VM_BUG_ON(pc != lookup_page_cgroup(page));
+> -	return page;
+> -}
+> -
+>  static int __init alloc_node_page_cgroup(int nid)
+>  {
+> -	struct page_cgroup *base, *pc;
+> +	struct page_cgroup *base;
+>  	unsigned long table_size;
+> -	unsigned long start_pfn, nr_pages, index;
+> +	unsigned long nr_pages;
+>  
+>  	start_pfn = NODE_DATA(nid)->node_start_pfn;
+>  	nr_pages = NODE_DATA(nid)->node_spanned_pages;
+> @@ -72,10 +53,6 @@ static int __init alloc_node_page_cgroup(int nid)
+>  			table_size, PAGE_SIZE, __pa(MAX_DMA_ADDRESS));
+>  	if (!base)
+>  		return -ENOMEM;
+> -	for (index = 0; index < nr_pages; index++) {
+> -		pc = base + index;
+> -		init_page_cgroup(pc, nid);
+> -	}
+>  	NODE_DATA(nid)->node_page_cgroup = base;
+>  	total_usage += table_size;
+>  	return 0;
+> @@ -116,31 +93,19 @@ struct page_cgroup *lookup_page_cgroup(struct page *page)
+>  	return section->page_cgroup + pfn;
+>  }
+>  
+> -struct page *lookup_cgroup_page(struct page_cgroup *pc)
+> -{
+> -	struct mem_section *section;
+> -	struct page *page;
+> -	unsigned long nr;
+> -
+> -	nr = page_cgroup_array_id(pc);
+> -	section = __nr_to_section(nr);
+> -	page = pfn_to_page(pc - section->page_cgroup);
+> -	VM_BUG_ON(pc != lookup_page_cgroup(page));
+> -	return page;
+> -}
+> -
+>  static void *__meminit alloc_page_cgroup(size_t size, int nid)
+>  {
+>  	void *addr = NULL;
+>  
+> -	addr = alloc_pages_exact_nid(nid, size, GFP_KERNEL | __GFP_NOWARN);
+> +	addr = alloc_pages_exact_nid(nid, size,
+> +				     GFP_KERNEL | __GFP_ZERO | __GFP_NOWARN);
+>  	if (addr)
+>  		return addr;
+>  
+>  	if (node_state(nid, N_HIGH_MEMORY))
+> -		addr = vmalloc_node(size, nid);
+> +		addr = vzalloc_node(size, nid);
+>  	else
+> -		addr = vmalloc(size);
+> +		addr = vzalloc(size);
+>  
+>  	return addr;
+>  }
+> @@ -163,14 +128,11 @@ static void free_page_cgroup(void *addr)
+>  
+>  static int __meminit init_section_page_cgroup(unsigned long pfn, int nid)
+>  {
+> -	struct page_cgroup *base, *pc;
+>  	struct mem_section *section;
+> +	struct page_cgroup *base;
+>  	unsigned long table_size;
+> -	unsigned long nr;
+> -	int index;
+>  
+> -	nr = pfn_to_section_nr(pfn);
+> -	section = __nr_to_section(nr);
+> +	section = __pfn_to_section(pfn);
+>  
+>  	if (section->page_cgroup)
+>  		return 0;
+> @@ -190,10 +152,6 @@ static int __meminit init_section_page_cgroup(unsigned long pfn, int nid)
+>  		return -ENOMEM;
+>  	}
+>  
+> -	for (index = 0; index < PAGES_PER_SECTION; index++) {
+> -		pc = base + index;
+> -		init_page_cgroup(pc, nr);
+> -	}
+>  	/*
+>  	 * The passed "pfn" may not be aligned to SECTION.  For the calculation
+>  	 * we need to apply a mask.
+> -- 
+> 1.7.6
 > 
-> For the rare special cases (are there any?) that are legitimate use cases
-> for this_cpu_read/write we can use manual determination of per cpu
-> pointers and then just do a load via the pointer?
-> 
-> Or alternatively give this_cpu_read and write special names that make
-> their dangerousness clear.
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-Right, we need to change all "this_cpu_*()" operations that are made to
-be safe under preempt enabled areas to "any_cpu_*()". And use
-this_cpu_*() for the current __this_cpu_*().
-
-This would clear up the confusion about using "this_cpu" vs "__this_cpu"
-because "__" is truly meaningless.
-
-> 
-> In the case of slub there are only some this_cpu_write() things that can
-> be __this_cpu_write without a problem.
-> 
-> The __this_cpu_ptr() can become this_cpu_ptr as far as I can tell. This
-> should make it consistent so that we can check for disabled preemption for
-> all __this_cpu thingies.
-
-
-Again, lets just bite the bullet and rename them to something that is
-understandable for everyone. This would make all of us happy.
-
-I'm not against your code, I'm against the naming convention you decided
-to use. It makes it confusing to something that is complex and complex
-code needs to try to be a simple as possible.
-
--- Steve
-
-
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
