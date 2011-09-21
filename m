@@ -1,83 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752409Ab1IUIuy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 04:50:54 -0400
-Received: from www.linutronix.de ([62.245.132.108]:48164 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750873Ab1IUIuw (ORCPT
+	id S1752620Ab1IUI64 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 04:58:56 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:44295 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752449Ab1IUI6y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 04:50:52 -0400
-Date: Wed, 21 Sep 2011 10:50:48 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: akpm@google.com
-cc: cschan@codeaurora.org, john.stultz@linaro.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 2/2] kernel/timer.c: use debugobjects to catch deletion
- of uninitialized timers
-In-Reply-To: <201109202114.p8KLErtg011804@hpaq2.eem.corp.google.com>
-Message-ID: <alpine.LFD.2.02.1109211028060.2723@ionos>
-References: <201109202114.p8KLErtg011804@hpaq2.eem.corp.google.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Wed, 21 Sep 2011 04:58:54 -0400
+X-AuditID: cbfee61a-b7cf1ae00000208e-54-4e79a74c1ea9
+Date: Wed, 21 Sep 2011 17:58:43 +0900
+From: Kyungmin Park <kmpark@infradead.org>
+Subject: [PATCH] mm: compaction: staticize compact_zone_order
+To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Message-id: <20110921085843.GA16233@july>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7BIT
+Content-disposition: inline
+User-Agent: Mutt/1.5.17 (2007-11-01)
+X-OriginalArrivalTime: 21 Sep 2011 08:59:46.0936 (UTC)
+ FILETIME=[CFF73F80:01CC783C]
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christine,
+From: Kyungmin Park <kyungmin.park@samsung.com>
 
-On Tue, 20 Sep 2011, akpm@google.com wrote:
+There's no user to use compact_zone_order. So staticize this function.
 
-> From: Christine Chan <cschan@codeaurora.org>
-> Subject: kernel/timer.c: use debugobjects to catch deletion of uninitialized timers
-> 
-> del_timer_sync() calls debug_object_assert_init() to assert that a timer
-> has been initialized before calling lock_timer_base().  lock_timer_base()
-> would spin forever on a NULL(uninit-ed) base.  The check is added to
-> del_timer() to prevent silent failure, even though it would not get stuck
-> in an infinite loop.
-
-Ok, that makes sense, but the changelog of the debugobjects code wants
-a better explanation.
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+diff --git a/include/linux/compaction.h b/include/linux/compaction.h
+index cc9f7a4..bb2bbdb 100644
+--- a/include/linux/compaction.h
++++ b/include/linux/compaction.h
+@@ -24,8 +24,6 @@ extern unsigned long try_to_compact_pages(struct zonelist *zonelist,
+ 			int order, gfp_t gfp_mask, nodemask_t *mask,
+ 			bool sync);
+ extern unsigned long compaction_suitable(struct zone *zone, int order);
+-extern unsigned long compact_zone_order(struct zone *zone, int order,
+-					gfp_t gfp_mask, bool sync);
  
-> +/*
-> + * fixup_assert_init is called when:
-> + * - an untracked/uninit-ed object is found
-> + */
-> +static int timer_fixup_assert_init(void *addr, enum debug_obj_state state)
-> +{
-> +	struct timer_list *timer = addr;
-> +
-> +	switch (state) {
-> +	case ODEBUG_STATE_NOTAVAILABLE:
-> +		if (timer->entry.prev == TIMER_ENTRY_STATIC) {
-> +			/*
-> +			 * This is not really a fixup. The timer was
-> +			 * statically initialized. We just make sure that it
-> +			 * is tracked in the object tracker.
-> +			 */
-> +			debug_object_init(timer, &timer_debug_descr);
-> +			return 0;
-> +		} else {
-> +			WARN_ON(1);
-> +			init_timer(timer);
-> +			return 1;
-
-Can we please remove the WARN_ON() and use the return value in the
-debugobjects code? That needs a variant of debug_print_object() to give us
-proper state output.
-
-Also the fixup function should check for timer->function == NULL and
-set a default stub callback.
-
-Thinking more about that, we should do the same for the
-timer_fixup_activate() case.
-
-Can you have a stab at that, please?
-
-Thanks,
-
-	tglx
+ /* Do not skip compaction more than 64 times */
+ #define COMPACT_MAX_DEFER_SHIFT 6
+@@ -69,12 +67,6 @@ static inline unsigned long compaction_suitable(struct zone *zone, int order)
+ 	return COMPACT_SKIPPED;
+ }
+ 
+-static inline unsigned long compact_zone_order(struct zone *zone, int order,
+-					       gfp_t gfp_mask, bool sync)
+-{
+-	return COMPACT_CONTINUE;
+-}
+-
+ static inline void defer_compaction(struct zone *zone)
+ {
+ }
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 6cc604b..c17079e 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -586,7 +586,7 @@ out:
+ 	return ret;
+ }
+ 
+-unsigned long compact_zone_order(struct zone *zone,
++static unsigned long compact_zone_order(struct zone *zone,
+ 				 int order, gfp_t gfp_mask,
+ 				 bool sync)
+ {
