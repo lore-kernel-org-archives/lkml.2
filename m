@@ -1,72 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753942Ab1IUNGX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 09:06:23 -0400
-Received: from e24smtp02.br.ibm.com ([32.104.18.86]:52164 "EHLO
-	e24smtp02.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753510Ab1IUNGW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 09:06:22 -0400
-From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-To: benh@kernel.crashing.org
-Cc: linux-kernel@vger.kernel.org, nhorman@redhat.com,
-        jesse.brandeburg@intel.com, alexander.h.duyck@intel.com,
-        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH v2] powerpc: reserve iommu page 0
-Date: Wed, 21 Sep 2011 10:06:12 -0300
-Message-Id: <1316610372-5795-1-git-send-email-cascardo@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.4.4
+	id S1753971Ab1IUNKt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 09:10:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48790 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753860Ab1IUNKr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 09:10:47 -0400
+Date: Wed, 21 Sep 2011 15:10:45 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <jweiner@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
+        Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 08/11] mm: vmscan: convert global reclaim to per-memcg
+ LRU lists
+Message-ID: <20110921131045.GD8501@tiehlicka.suse.cz>
+References: <1315825048-3437-1-git-send-email-jweiner@redhat.com>
+ <1315825048-3437-9-git-send-email-jweiner@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1315825048-3437-9-git-send-email-jweiner@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some devices have a dma-window that starts at the address 0. This allows
-DMA addresses to be mapped to this address and returned to drivers as a
-valid DMA address. Some drivers may not behave well in this case, since
-the address 0 is considered an error or not allocated.
+On Mon 12-09-11 12:57:25, Johannes Weiner wrote:
+> The global per-zone LRU lists are about to go away on memcg-enabled
+> kernels, global reclaim must be able to find its pages on the
+> per-memcg LRU lists.
+> 
+> Since the LRU pages of a zone are distributed over all existing memory
+> cgroups, a scan target for a zone is complete when all memory cgroups
+> are scanned for their proportional share of a zone's memory.
+> 
+> The forced scanning of small scan targets from kswapd is limited to
+> zones marked unreclaimable, otherwise kswapd can quickly overreclaim
+> by force-scanning the LRU lists of multiple memory cgroups.
+> 
+> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
 
-The solution to avoid this kind of error from happening is reserve the
-page addressed as 0 so it cannot be allocated for a DMA mapping.
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
 
-Ben Herrenschmidt deserves the credit for this patch. He pointed out the
-solution and what code would do the job.
+Minor nit bellow
 
-v2:
-Add a comment in the code.
+> ---
+>  mm/vmscan.c |   39 ++++++++++++++++++++++-----------------
+>  1 files changed, 22 insertions(+), 17 deletions(-)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index bb4d8b8..053609e 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2451,13 +2445,24 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem_cont,
+>  static void age_active_anon(struct zone *zone, struct scan_control *sc,
+>  			    int priority)
+>  {
+> -	struct mem_cgroup_zone mz = {
+> -		.mem_cgroup = NULL,
+> -		.zone = zone,
+> -	};
+> +	struct mem_cgroup *mem;
+> +
+> +	if (!total_swap_pages)
+> +		return;
+> +
+> +	mem = mem_cgroup_iter(NULL, NULL, NULL);
 
-Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: linuxppc-dev@lists.ozlabs.org
----
+Wouldn't be for_each_mem_cgroup more appropriate? Macro is not exported
+but probably worth exporting? The same applies for
+scan_zone_unevictable_pages from the previous patch.
 
-Resending, since it was recommended to add a comment about this
-particular code.
+> +	do {
+> +		struct mem_cgroup_zone mz = {
+> +			.mem_cgroup = mem,
+> +			.zone = zone,
+> +		};
+>  
+> -	if (inactive_anon_is_low(&mz))
+> -		shrink_active_list(SWAP_CLUSTER_MAX, &mz, sc, priority, 0);
+> +		if (inactive_anon_is_low(&mz))
+> +			shrink_active_list(SWAP_CLUSTER_MAX, &mz,
+> +					   sc, priority, 0);
+> +
+> +		mem = mem_cgroup_iter(NULL, mem, NULL);
+> +	} while (mem);
+>  }
 
----
- arch/powerpc/kernel/iommu.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
-
-diff --git a/arch/powerpc/kernel/iommu.c b/arch/powerpc/kernel/iommu.c
-index 961bb03..8395301 100644
---- a/arch/powerpc/kernel/iommu.c
-+++ b/arch/powerpc/kernel/iommu.c
-@@ -501,6 +501,14 @@ struct iommu_table *iommu_init_table(struct iommu_table *tbl, int nid)
- 	tbl->it_map = page_address(page);
- 	memset(tbl->it_map, 0, sz);
- 
-+	/*
-+	 * Reserve page 0 so it will not be used for any mappings.
-+	 * This avoids buggy drivers that consider page 0 to be invalid
-+	 * to crash the machine or even lose data.
-+	*/
-+	if (tbl->it_offset == 0)
-+		set_bit(0, tbl->it_map);
-+		
- 	tbl->it_hint = 0;
- 	tbl->it_largehint = tbl->it_halfpoint;
- 	spin_lock_init(&tbl->it_lock);
 -- 
-1.7.4.4
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
