@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754011Ab1IUNQl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 09:16:41 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52561 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750978Ab1IUNQk (ORCPT
+	id S1754050Ab1IUNQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 09:16:59 -0400
+Received: from datura.ac-orleans-tours.fr ([195.83.89.160]:57244 "EHLO
+	datura.ac-orleans-tours.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752233Ab1IUNQ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 09:16:40 -0400
-Date: Wed, 21 Sep 2011 14:16:38 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Daniel Drake <dsd@laptop.org>
-Cc: grant.likely@secretlab.ca, sameo@linux.intel.com,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        dilinger@queued.net
-Subject: Re: [PATCH 1/3] mfd: allow mfd_cell association with device tree node
-Message-ID: <20110921131637.GF4374@opensource.wolfsonmicro.com>
-References: <20110921120148.4A81E9D401D@zog.reactivated.net>
- <20110921124936.GA25620@sirena.org.uk>
- <CAMLZHHQZnajC4e12MjaK3W8WcAB2ZB+6L=5kS5BBFZF=+YWicQ@mail.gmail.com>
+	Wed, 21 Sep 2011 09:16:57 -0400
+X-Greylist: delayed 1529 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Sep 2011 09:16:57 EDT
+From: <Christele.Moussu@ac-orleans-tours.fr>
+Reply-To: ups-cs1@helixnet.cn
+Message-ID: <a4be38b84a04c75f.4e79b389@ac-orleans-tours.fr>
+Date: Wed, 21 Sep 2011 09:51:05 -0300
+X-Mailer: Sun Java(tm) System Messenger Express 6.2-9.13 (built Jul 16
+ 2008)
 MIME-Version: 1.0
+Content-Language: en
+Subject: FYI
+X-Accept-Language: en
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMLZHHQZnajC4e12MjaK3W8WcAB2ZB+6L=5kS5BBFZF=+YWicQ@mail.gmail.com>
-X-Cookie: Your present plans will be successful.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 21, 2011 at 02:02:43PM +0100, Daniel Drake wrote:
 
-> Thanks for reviewing.
-> The data can still be static, not needing allocation, it just has to
-> be modified at runtime. See patch 2.
 
-Right, but that means that you need to take a copy before using it
-otherwise two devices of the same type might get into a fight with each
-other.
+After much attempts to reach you on phone, I deemed it necessary and urgent to contact you via your e-mail address and to notify you finally about your outstanding compensation payment.
 
-> Not sure how the MFD cells could get at the OF node by using the
-> parent device - if the parent device had a OF node, wouldn't this
-> correspond to the parent instead of the child? Also, as far as I can
+During our last annual calculation of your banking activities we have realized that you are eligible to receive a compensation payment of $2,811,041.00 USD.
 
-Well, obviously.  But then with a lot of MFDs (including this one, the
-GPIO driver is entirely specific to the parent) it's not clear that we
-should be splitting the device up in the device tree in the first place
-- our use of MFDs is a Linux implementation detail.  If the child is
-specific to the parent it can cooperate with the parent device happily.
+This compensation is being made to all of you who have suffered loss as a result of fraud, accident or illness.
 
-My suspicion is that for device tree in cases where the MFD really is
-totally independent of the parent we shouldn't need explicit MFD code to
-instantiate the child at all any more in the same way that we should be
-avoiding this for the SoCs.
+For more info, contact the assigned UPS agent for the delivery of your cashier check.
 
-> see, platform data is passed to the child in exactly the same way - by
-> including it in the mfd_cell definition - see mfd_add_device():
+Name: Ford Hamilton
+Tel: +2348072178475
+E-mail:  ups-cs1@helixnet.cn
 
-Indeed, I have the same concerns there.  
+Please take note that you will pay a shipping/handling fee of $95.00 USD to UPS.
+
+Thank you for your patience.
+Moussu Christele
+United Nation Human Settlement Programme
