@@ -1,125 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751435Ab1IUEub (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 00:50:31 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:53127 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751050Ab1IUEu3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 00:50:29 -0400
-Date: Wed, 21 Sep 2011 14:50:23 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Jamie Iles <jamie@jamieiles.com>,
-        Greg KH <greg@kroah.com>
-Subject: linux-next: manual merge of the tty tree with the powerpc tree
-Message-Id: <20110921145023.e38d553e218c8b5a2e71e9d8@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751422Ab1IUEvi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 00:51:38 -0400
+Received: from home.keithp.com ([63.227.221.253]:39706 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751050Ab1IUEvi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 00:51:38 -0400
+From: Keith Packard <keithp@keithp.com>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: [Intel-gfx] [PATCH 9/9] drm/i915: Disable eDP VDD in a delayed work proc instead of synchronously
+In-Reply-To: <20110921094759.22423597@jbarnes-x220>
+References: <1316470923-27832-1-git-send-email-keithp@keithp.com> <1316470923-27832-10-git-send-email-keithp@keithp.com> <20110921094759.22423597@jbarnes-x220>
+User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Tue, 20 Sep 2011 21:51:33 -0700
+Message-ID: <yunsjnqfqga.fsf@aiko.keithp.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-Today's linux-next merge of the tty tree got a conflict in
-drivers/tty/serial/8250.c between commit 7df5659eefad ("serial/8250: Move
-UPIO_TSI to powerpc") from the powerpc tree and commit 4834d0289785
-("tty: serial8250: remove UPIO_DWAPB{,32}") from the tty tree.
+On Wed, 21 Sep 2011 09:47:59 +0530, Jesse Barnes <jbarnes@virtuousgeek.org>=
+ wrote:
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> I'm worried this makes our PPS even more complex and hard to follow.
+> I'd rather see VDD AUX applied only when we need it (dpms, mode set and
+> detect; for hotplug we can assume the panel is alive) and that we
+> carefully disable it after waiting for a time after a full PPS on
+> sequence when doing a mode set or dpms on command.
 
-diff --cc drivers/tty/serial/8250.c
-index 610b8e6,435ce14..0000000
---- a/drivers/tty/serial/8250.c
-+++ b/drivers/tty/serial/8250.c
-@@@ -443,42 -443,24 +443,6 @@@ static void au_serial_out(struct uart_p
-  	__raw_writel(value, p->membase + offset);
-  }
-  
-- /* Save the LCR value so it can be re-written when a Busy Detect IRQ occurs. */
-- static inline void dwapb_save_out_value(struct uart_port *p, int offset,
-- 					int value)
-- {
-- 	struct uart_8250_port *up =
-- 		container_of(p, struct uart_8250_port, port);
-- 
-- 	if (offset == UART_LCR)
-- 		up->lcr = value;
-- }
-- 
-- /* Read the IER to ensure any interrupt is cleared before returning from ISR. */
-- static inline void dwapb_check_clear_ier(struct uart_port *p, int offset)
-- {
-- 	if (offset == UART_TX || offset == UART_IER)
-- 		p->serial_in(p, UART_IER);
-- }
-- 
-- static void dwapb_serial_out(struct uart_port *p, int offset, int value)
-- {
-- 	int save_offset = offset;
-- 	offset = map_8250_out_reg(p, offset) << p->regshift;
-- 	dwapb_save_out_value(p, save_offset, value);
-- 	writeb(value, p->membase + offset);
-- 	dwapb_check_clear_ier(p, save_offset);
-- }
-- 
-- static void dwapb32_serial_out(struct uart_port *p, int offset, int value)
-- {
-- 	int save_offset = offset;
-- 	offset = map_8250_out_reg(p, offset) << p->regshift;
-- 	dwapb_save_out_value(p, save_offset, value);
-- 	writel(value, p->membase + offset);
-- 	dwapb_check_clear_ier(p, save_offset);
-- }
-- 
- -static unsigned int tsi_serial_in(struct uart_port *p, int offset)
- -{
- -	unsigned int tmp;
- -	offset = map_8250_in_reg(p, offset) << p->regshift;
- -	if (offset == UART_IIR) {
- -		tmp = readl(p->membase + (UART_IIR & ~3));
- -		return (tmp >> 16) & 0xff; /* UART_IIR % 4 == 2 */
- -	} else
- -		return readb(p->membase + offset);
- -}
- -
- -static void tsi_serial_out(struct uart_port *p, int offset, int value)
- -{
- -	offset = map_8250_out_reg(p, offset) << p->regshift;
- -	if (!((offset == UART_IER) && (value & UART_IER_UUE)))
- -		writeb(value, p->membase + offset);
- -}
- -
-  static unsigned int io_serial_in(struct uart_port *p, int offset)
-  {
-  	offset = map_8250_in_reg(p, offset) << p->regshift;
-@@@ -517,16 -501,11 +483,6 @@@ static void set_io_from_upio(struct uar
-  		p->serial_out = au_serial_out;
-  		break;
-  
-- 	case UPIO_DWAPB:
-- 		p->serial_in = mem_serial_in;
-- 		p->serial_out = dwapb_serial_out;
-- 		break;
-- 
-- 	case UPIO_DWAPB32:
-- 		p->serial_in = mem32_serial_in;
-- 		p->serial_out = dwapb32_serial_out;
-- 		break;
-- 
- -	case UPIO_TSI:
- -		p->serial_in = tsi_serial_in;
- -		p->serial_out = tsi_serial_out;
- -		break;
- -
-  	default:
-  		p->serial_in = io_serial_in;
-  		p->serial_out = io_serial_out;
+You'll see the fairly long list of places where VDD AUX is needed in my
+other reply; a couple of them could probably be fixed by moving the PPS
+calls around.
+
+> Having all the power stuff at the highest levels would be clearest I
+> think.
+
+Yes, making it cleaner would help a ton. There are some basic problems
+with the DRM API that make this hard though -- intel_dp_prepare may not
+ever be followed by a call to intel_dp_commit. That's why I had the VDD
+AUX stuff get turned off by a delayed work proc instead.
+
+Also, leaving VDD AUX high after EDID is fetched means that we can start
+the mode setting immediately, rather than having to wait for the
+power-off/power-on delay (which is really long).
+
+What we could do is force VDD AUX off after the panel gets turned on;
+that would ensure that turning the panel off would actually turn the
+power off, rather than having VDD stay high for some time after that.
+
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iD8DBQFOeW1WQp8BWwlsTdMRApaaAJwKUX3Y9l0PH+WDXmz7A99jXaza7ACgvOZe
+6VHL4AbzzphbiQs3X+9ypUw=
+=M2kl
+-----END PGP SIGNATURE-----
+--=-=-=--
