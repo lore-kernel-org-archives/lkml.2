@@ -1,72 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752922Ab1IUKJZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 06:09:25 -0400
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:50871
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751478Ab1IUKJX (ORCPT
+	id S1753126Ab1IUKQO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 06:16:14 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:54222 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753002Ab1IUKQL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 06:09:23 -0400
-X-SpamScore: -8
-X-BigFish: VPS-8(zz1432N98dKzz1202hzzz32i668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LRVAVG-01-05F-02
-X-M-MSG: 
-Date: Wed, 21 Sep 2011 12:08:42 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Don Zickus <dzickus@redhat.com>
-CC: "x86@kernel.org" <x86@kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "ying.huang@intel.com" <ying.huang@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "avi@redhat.com" <avi@redhat.com>, "jeremy@goop.org" <jeremy@goop.org>
-Subject: Re: [V5][PATCH 4/6] x86, nmi:  add in logic to handle multiple
- events and unknown NMIs
-Message-ID: <20110921100842.GA6063@erda.amd.com>
-References: <1316529792-6560-1-git-send-email-dzickus@redhat.com>
- <1316529792-6560-5-git-send-email-dzickus@redhat.com>
+	Wed, 21 Sep 2011 06:16:11 -0400
+Date: Wed, 21 Sep 2011 12:16:06 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Yong Zhang <yong.zhang0@gmail.com>
+cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, Chris Ball <cjb@laptop.org>,
+        Ian Molton <ian@mnementh.co.uk>, Tony Lindgren <tony@atomide.com>,
+        Kishore Kadiyala <kishore.kadiyala@ti.com>,
+        Adrian Hunter <adrian.hunter@nokia.com>, Balaji T K <balajitk@ti.com>,
+        linux-omap@vger.kernel.org, linux-mmc@vger.kernel.org
+Subject: Re: [PATCH 37/57] mmc: irq: Remove IRQF_DISABLED
+In-Reply-To: <1316597339-29861-38-git-send-email-yong.zhang0@gmail.com>
+Message-ID: <Pine.LNX.4.64.1109211208440.24024@axis700.grange>
+References: <1316597339-29861-1-git-send-email-yong.zhang0@gmail.com>
+ <1316597339-29861-38-git-send-email-yong.zhang0@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1316529792-6560-5-git-send-email-dzickus@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:9UNrfv2FUsH/zqqV2Di7YSSP+Sm5R6A1CMxmzv42iFC
+ 5LCuzWSVg2BiceYniKiiQATpn3ishlBznAxjkLXygB+FVnHxBk
+ Fxg5cQXVOSC9RUXNB3ZUKwKho/849yQX+NS4pueLBMqq1ta7bc
+ rVJYlMP+PpUoonl7HeY+vjRw0lIJC9vn+gkE33lUyXdX7kVq4z
+ xdLa9qcZwmGa/3FnWJXznEg3Iy9Dt3JnFZAC4W+6zRpD921mfx
+ gZm1SyJDxhEeddRlJPZr7Ijye5q4x0kooEgGHgPBr1mvmScfLa
+ zIIC5lYhzTCGuDMVEk4sDmRtrN0GUTmsdzplXfrOA4cDpjBx+D
+ mWO7ufUF2h9UQvfUzoB//MOFdeBoGpJc72w9ZaT3VLD2iay9i9
+ tOx1DkjRs7xMQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20.09.11 10:43:10, Don Zickus wrote:
-> @@ -87,6 +87,16 @@ static int notrace __kprobes nmi_handle(unsigned int type, struct pt_regs *regs)
+On Wed, 21 Sep 2011, Yong Zhang wrote:
+
+> Since commit [c58543c8: genirq: Run irq handlers with interrupts disabled],
+> We run all interrupt handlers with interrupts disabled
+> and we even check and yell when an interrupt handler
+> returns with interrupts enabled (see commit [b738a50a:
+> genirq: Warn when handler enables interrupts]).
+> 
+> So now this flag is a NOOP and can be removed.
+> 
+> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+> ---
+>  drivers/mmc/host/omap_hsmmc.c |    5 ++---
+>  drivers/mmc/host/tmio_mmc.c   |    4 ++--
+
+For tmio_mmc.c:
+
+Acked-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+
+Thanks
+Guennadi
+
+>  2 files changed, 4 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
+> index 21e4a79..75c6395 100644
+> --- a/drivers/mmc/host/omap_hsmmc.c
+> +++ b/drivers/mmc/host/omap_hsmmc.c
+> @@ -2015,7 +2015,7 @@ static int __init omap_hsmmc_probe(struct platform_device *pdev)
+>  	}
 >  
->  		handled += a->handler(type, regs);
+>  	/* Request IRQ for MMC operations */
+> -	ret = request_irq(host->irq, omap_hsmmc_irq, IRQF_DISABLED,
+> +	ret = request_irq(host->irq, omap_hsmmc_irq, 0,
+>  			mmc_hostname(mmc), host);
+>  	if (ret) {
+>  		dev_dbg(mmc_dev(host->mmc), "Unable to grab HSMMC IRQ\n");
+> @@ -2043,8 +2043,7 @@ static int __init omap_hsmmc_probe(struct platform_device *pdev)
+>  	if ((mmc_slot(host).card_detect_irq)) {
+>  		ret = request_irq(mmc_slot(host).card_detect_irq,
+>  				  omap_hsmmc_cd_handler,
+> -				  IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING
+> -					  | IRQF_DISABLED,
+> +				  IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
+>  				  mmc_hostname(mmc), host);
+>  		if (ret) {
+>  			dev_dbg(mmc_dev(host->mmc),
+> diff --git a/drivers/mmc/host/tmio_mmc.c b/drivers/mmc/host/tmio_mmc.c
+> index 44a9668..a4ea102 100644
+> --- a/drivers/mmc/host/tmio_mmc.c
+> +++ b/drivers/mmc/host/tmio_mmc.c
+> @@ -88,8 +88,8 @@ static int __devinit tmio_mmc_probe(struct platform_device *pdev)
+>  	if (ret)
+>  		goto cell_disable;
 >  
-> +		/*
-> + 		 * Optimization: only loop once if this is not a 
-> + 		 * back-to-back NMI.  The idea is nothing is dropped
-> + 		 * on the first NMI, only on the second of a back-to-back
-> + 		 * NMI.  No need to waste cycles going through all the
-> + 		 * handlers.
-> + 		 */
-> +		if (!b2b && handled)
-> +			break;
+> -	ret = request_irq(irq, tmio_mmc_irq, IRQF_DISABLED |
+> -			  IRQF_TRIGGER_FALLING, dev_name(&pdev->dev), host);
+> +	ret = request_irq(irq, tmio_mmc_irq, IRQF_TRIGGER_FALLING,
+> +				dev_name(&pdev->dev), host);
+>  	if (ret)
+>  		goto host_remove;
+>  
+> -- 
+> 1.7.4.1
+> 
 
-In rare cases we will lose nmis here.
-
-We see a back-to-back nmi in the case if a 2 nmi source triggers
-*after* the nmi handler is entered. Depending on the internal cpu
-timing influenced by microcode and SMM code execution, the nmi may not
-entered immediately. So all sources that trigger *before* the nmi
-handler is entered raise only one nmi with no subsequent nmi.
-
-However, as these cases should be very rare, I think we can live with
-it in favor of the optimization to jump out the handler chain and save
-lot of cpu cycles esp. in the case of heavy PMI load.
-
--Robert
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
