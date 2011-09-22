@@ -1,40 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751531Ab1IVM2f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 08:28:35 -0400
-Received: from mail-c010.mdn.nusa.net.id ([202.162.192.16]:41277 "EHLO
-	smtp1.nusa.net.id" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750978Ab1IVM2d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 08:28:33 -0400
-X-Greylist: delayed 624 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Sep 2011 08:28:33 EDT
-MIME-Version: 1.0
-Date: Thu, 22 Sep 2011 19:17:21 +0700
-From: System Administrator <web.support@gala.net>
-To: undisclosed-recipients:;
-Subject: Web News!!!
-Organization: System Administrator
-Reply-To: system-admin@gala.net
-Message-ID: <3344b15d8574f67150e6c9628f8fa775@localhost>
-User-Agent: RoundCube Webmail/0.3-stable
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+	id S1751643Ab1IVM3O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 08:29:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27444 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751059Ab1IVM3M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Sep 2011 08:29:12 -0400
+Date: Thu, 22 Sep 2011 08:29:05 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Leonardo Chiquitto <leonardo.lists@gmail.com>,
+        David Howells <dhowells@redhat.com>, Ian Kent <raven@themaw.net>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        autofs@linux.kernel.org, linux-nfs@vger.kernel.org
+Subject: Re: [PATCH] vfs: automount should ignore LOOKUP_FOLLOW
+Message-ID: <20110922082905.0d43a8f4@tlielax.poochiereds.net>
+In-Reply-To: <87liu37z3x.fsf@tucsk.pomaz.szeredi.hu>
+References: <87liu37z3x.fsf@tucsk.pomaz.szeredi.hu>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 05 Sep 2011 18:06:26 +0200
+Miklos Szeredi <miklos@szeredi.hu> wrote:
 
+> From: Miklos Szeredi <mszeredi@suse.cz>
+> 
+> Prior to 2.6.38 automount would not trigger on either stat(2) or
+> lstat(2) on the automount point.
+> 
+> After 2.6.38, with the introduction of the ->d_automount()
+> infrastructure, stat(2) and others would start triggering automount
+> while lstat(2), etc. still would not.  This is a regression and a
+> userspace ABI change.
+> 
+> Problem originally reported here:
+> 
+>   http://thread.gmane.org/gmane.linux.kernel.autofs/6098
+> 
+> It appears that there was an attempt at fixing various userspace tools
+> to not trigger the automount.  But since the stat system call is
+> rather common it is impossible to "fix" all userspace.
+> 
+> This patch reverts the original behavior, which is to not trigger on
+> stat(2) and other symlink following syscalls.
+> 
+> Reported-by: Leonardo Chiquitto <leonardo.lists@gmail.com>
+> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+> CC: David Howells <dhowells@redhat.com>
+> CC: Ian Kent <raven@themaw.net>
+> CC: stable@kernel.org
+> ---
+>  fs/namei.c |   33 +++++++++++++++------------------
+>  1 file changed, 15 insertions(+), 18 deletions(-)
+> 
+
+This patch is causing a regression with NFSv4.
+
+When I mount up a filesystem, and do any activity on it, a new
+automount gets triggered on top of the original mountpoint.
+
+The first mount ends up getting the fsid of the pseudo root (fsid=0),
+rather than the correct one for the fs. Once it traverses into the
+actual filesystem the fsid's look different and d_automount gets
+triggered.
+
+I think the problem is that nfs_follow_remote_path() uses
+LOOKUP_FOLLOW, and with the above patch this is now ignored.
+
+Let me know if you need details on how to reproduce this.
 
 -- 
-Dear Webmail Users,
-
-
-Please click this link to verify your account if is still active:
-https://docs.google.com/spreadsheet/viewform?formkey=dFVZU1dUWlptc2ZlUnF4M2tNUlN5RXc6MQ
-
-
-Note: failure to upgrade May lead to the closure of your e-mail.
-
-
-Thank you for using Web mail.
-System Administrator? CMS Web mail GmbH 2011
+Jeff Layton <jlayton@redhat.com>
