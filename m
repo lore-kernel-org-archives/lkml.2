@@ -1,58 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752687Ab1IVKIi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 06:08:38 -0400
-Received: from maxipes.logix.cz ([93.89.80.122]:54782 "EHLO maxipes.logix.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752590Ab1IVKIg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 06:08:36 -0400
-X-Greylist: delayed 1039 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Sep 2011 06:08:35 EDT
-Message-ID: <4E7B04F8.3090500@logix.net.nz>
-Date: Thu, 22 Sep 2011 21:50:48 +1200
-From: Michal Ludvig <mludvig@logix.net.nz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
-MIME-Version: 1.0
-To: Ram Pai <linuxram@us.ibm.com>
-CC: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, weiyang@linux.vnet.ibm.com,
-        wangyun@linux.vnet.ibm.com, shangw@linux.vnet.ibm.com
-Subject: Re: [PATCH] Resource: wrong resource window calculation
-References: <4E5E0A7E.40301@logix.net.nz> <CAErSpo70k6UnhvvOMgQQxJ6BHZOwym=-jaPMvOukAaCr-B0+cQ@mail.gmail.com> <4E5EFFBD.4050201@logix.net.nz> <CAErSpo6bofeiAxeRo_RjXQSnwmcWrdymn0MK8H4_CwqwoeD1jg@mail.gmail.com> <4E634814.4050508@logix.net.nz> <20110909113409.GE2416@ram-ThinkPad-T61> <4E6C05B7.9000904@logix.net.nz> <20110913110646.GB2425@ram-ThinkPad-T61> <4E6F400A.6090909@logix.net.nz> <20110922074858.GG5085@ram-ThinkPad-T61>
-In-Reply-To: <20110922074858.GG5085@ram-ThinkPad-T61>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752726Ab1IVKKx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 06:10:53 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:49772 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752590Ab1IVKKu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Sep 2011 06:10:50 -0400
+X-Authenticated: #3169751
+X-Provags-ID: V01U2FsdGVkX1+jPedX8p6jtTr3kpZDhaXf0hRFU+Z7++uwgqHeYv
+	Hl2CqRteDouy6A
+Date: Thu, 22 Sep 2011 12:10:31 +0200
+From: Matthias Dellweg <2500@gmx.de>
+To: Greg Kroah-Hartman <gregkh@suse.de>, Vasiliy Kulikov <segooon@gmail.com>,
+        Michal Sojka <sojkam1@fel.cvut.cz>, Arnd Bergmann <arnd@arndb.de>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] enable usb control message with class specific request
+Message-ID: <20110922121031.639006d0@horus>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/2011 07:48 PM, Ram Pai wrote:
->    	Resource: wrong resource window calculation
->
-> __find_resource() incorrectly returns a resource window which overlaps an
-> existing allocated window. This happens when the parent's resource-window spans
-> 0x00000000 to 0xffffffff and is entirely allocated to all its children
-> resource-windows.
->
-> __find_resource() looks for gaps in resource allocation among the children
-> resource windows.  When it encounters the last child window it blindly tries
-> the range next to one allocated to the last child. Since the last child's
-> window ends at 0xffffffff the calculation overflows, leading the algorithm to
-> believe that any window in the range 0x0000000 to 0xfffffff is available for
-> allocation. This leads to a conflicting window allocation.
->
-> Michal Ludvig reported this issue seen on his platform. The following patch
-> fixes the problem and has been verified by Michal. I believe this bug has been
-> there for ages. It got exposed by git commit
-> 2bbc6942273b5b3097bd265d82227bdd84b351b2
-> [PATCH] PCI : ability to relocate assigned pci-resources
->
-> Signed-off-by: Ram Pai<linuxram@us.ibm.com>
+Hi!
+Usb devio assumes that the wIndex in every control message apart from
+those flagged as USB_TYPE_VENDOR holds the number of the Interface
+being addressed. This is for example not true for the class specific
+request GET_DEVICE_ID in the printer class:
 
-Tested-by: Michal Ludvig <mludvig@logix.net.nz>
+"The high-byte of the wIndex field is used to specify the zero-based
+interface index. The low-byte of the wIndex field is used to specify
+the zero-based alternate setting." [1]
 
-Works fine on top of 3.1.0-rc7 and solves the problem with my Jetway board.
+In this special case it misinterpretes the alternate setting 1 for the
+interface and tries to claim a nonexisting one. Therefor you won't get
+the printers name.
 
-Thanks Ram!
+The patch below is a minimal approach to fix this. Maybe it should be
+extended to USB_TYPE_RESERVED. Maybe there should be an extended test
+that knows something about specific classes.
 
-M.
+What do you think?
+regards Matthias
+
+[1] http://www.usb.org/developers/devclass_docs/usbprint11.pdf
+
+
+
+>From 724e3b5e8782a584a95d05bb2f44e59743ed3a72 Mon Sep 17 00:00:00 2001
+From: Matthias Dellweg <2500@gmx.de>
+Date: Wed, 21 Sep 2011 21:28:18 +0200
+Subject: [PATCH] drivers/usb/core/devio.c: Relax test in check_ctrlrecip
+
+The generic test for the interface is not valid when the request type is
+class specific.
+
+Signed-off-by: Matthias Dellweg <2500@gmx.de>
+---
+ drivers/usb/core/devio.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/usb/core/devio.c b/drivers/usb/core/devio.c
+index 37518df..4e78768 100644
+--- a/drivers/usb/core/devio.c
++++ b/drivers/usb/core/devio.c
+@@ -615,7 +615,8 @@ static int check_ctrlrecip(struct dev_state *ps, unsigned int requesttype,
+         && ps->dev->state != USB_STATE_ADDRESS
+         && ps->dev->state != USB_STATE_CONFIGURED)
+                return -EHOSTUNREACH;
+-       if (USB_TYPE_VENDOR == (USB_TYPE_MASK & requesttype))
++       if ((USB_TYPE_VENDOR == (USB_TYPE_MASK & requesttype))
++        || (USB_TYPE_CLASS == (USB_TYPE_MASK & requesttype)))
+                return 0;
+ 
+        index &= 0xff;
+-- 
+1.7.6.3
+
