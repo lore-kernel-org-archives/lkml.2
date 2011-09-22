@@ -1,141 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753107Ab1IVKyM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 06:54:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41440 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752979Ab1IVKyJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 06:54:09 -0400
-Date: Thu, 22 Sep 2011 11:54:00 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Chris Mason <chris.mason@oracle.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, xfs@oss.sgi.com,
-        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/4] mm: exclude reserved pages from dirtyable memory
-Message-ID: <20110922105400.GL4849@suse.de>
-References: <1316526315-16801-1-git-send-email-jweiner@redhat.com>
- <1316526315-16801-2-git-send-email-jweiner@redhat.com>
- <20110921140423.GG4849@suse.de>
- <20110921150328.GJ4849@suse.de>
- <20110922090326.GB29046@redhat.com>
+	id S1753119Ab1IVK5P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 06:57:15 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:53968 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752890Ab1IVK5L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Sep 2011 06:57:11 -0400
+Date: Thu, 22 Sep 2011 06:57:06 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org
+Subject: Re: [PATCH] sysfs: add per pci device msi[x] irq listing (v3)
+Message-ID: <20110922105706.GC4051@hmsreliant.think-freely.org>
+References: <1316025413-5855-1-git-send-email-nhorman@tuxdriver.com>
+ <1316447235-31345-1-git-send-email-nhorman@tuxdriver.com>
+ <20110922104902.GA23513@phenom.oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110922090326.GB29046@redhat.com>
+In-Reply-To: <20110922104902.GA23513@phenom.oracle.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.0 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 22, 2011 at 11:03:26AM +0200, Johannes Weiner wrote:
-> On Wed, Sep 21, 2011 at 04:03:28PM +0100, Mel Gorman wrote:
-> > On Wed, Sep 21, 2011 at 03:04:23PM +0100, Mel Gorman wrote:
-> > > On Tue, Sep 20, 2011 at 03:45:12PM +0200, Johannes Weiner wrote:
-> > > > The amount of dirtyable pages should not include the total number of
-> > > > free pages: there is a number of reserved pages that the page
-> > > > allocator and kswapd always try to keep free.
-> > > > 
-> > > > The closer (reclaimable pages - dirty pages) is to the number of
-> > > > reserved pages, the more likely it becomes for reclaim to run into
-> > > > dirty pages:
-> > > > 
-> > > >        +----------+ ---
-> > > >        |   anon   |  |
-> > > >        +----------+  |
-> > > >        |          |  |
-> > > >        |          |  -- dirty limit new    -- flusher new
-> > > >        |   file   |  |                     |
-> > > >        |          |  |                     |
-> > > >        |          |  -- dirty limit old    -- flusher old
-> > > >        |          |                        |
-> > > >        +----------+                       --- reclaim
-> > > >        | reserved |
-> > > >        +----------+
-> > > >        |  kernel  |
-> > > >        +----------+
-> > > > 
-> > > > Not treating reserved pages as dirtyable on a global level is only a
-> > > > conceptual fix.  In reality, dirty pages are not distributed equally
-> > > > across zones and reclaim runs into dirty pages on a regular basis.
-> > > > 
-> > > > But it is important to get this right before tackling the problem on a
-> > > > per-zone level, where the distance between reclaim and the dirty pages
-> > > > is mostly much smaller in absolute numbers.
-> > > > 
-> > > > Signed-off-by: Johannes Weiner <jweiner@redhat.com>
-> > > > ---
-> > > >  include/linux/mmzone.h |    1 +
-> > > >  mm/page-writeback.c    |    8 +++++---
-> > > >  mm/page_alloc.c        |    1 +
-> > > >  3 files changed, 7 insertions(+), 3 deletions(-)
-> > > > 
-> > > > diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> > > > index 1ed4116..e28f8e0 100644
-> > > > --- a/include/linux/mmzone.h
-> > > > +++ b/include/linux/mmzone.h
-> > > > @@ -316,6 +316,7 @@ struct zone {
-> > > >  	 * sysctl_lowmem_reserve_ratio sysctl changes.
-> > > >  	 */
-> > > >  	unsigned long		lowmem_reserve[MAX_NR_ZONES];
-> > > > +	unsigned long		totalreserve_pages;
-> > > >  
-> > > 
-> > > This is nit-picking but totalreserve_pages is a poor name because it's
-> > > a per-zone value that is one of the lowmem_reserve[] fields instead
-> > > of a total. After this patch, we have zone->totalreserve_pages and
-> > > totalreserve_pages but are not related to the same thing.
-> > > but they are not the same.
+On Thu, Sep 22, 2011 at 06:49:02AM -0400, Konrad Rzeszutek Wilk wrote:
+> On Mon, Sep 19, 2011 at 11:47:15AM -0400, Neil Horman wrote:
+> > So a while back, I wanted to provide a way for irqbalance (and other apps) to
+> > definitively map irqs to devices, which, for msi[x] irqs is currently not really
+> > possible in user space.  My first attempt wen't not so well:
+> > https://lkml.org/lkml/2011/4/21/308
 > > 
-> > As you correctly pointed out to be on IRC, zone->totalreserve_pages
-> > is not the lowmem_reserve because it takes the high_wmark into
-> > account. Sorry about that, I should have kept thinking.  The name is
-> > still poor though because it does not explain what the value is or
-> > what it means.
-> > 
-> > zone->FOO value needs to be related to lowmem_reserve because this
-> > 	is related to balancing zone usage.
-> > 
-> > zone->FOO value should also be related to the high_wmark because
-> > 	this is avoiding writeback from page reclaim
-> > 
-> > err....... umm... this?
-> > 
-> > 	/*
-> > 	 * When allocating a new page that is expected to be
-> > 	 * dirtied soon, the number of free pages and the
-> > 	 * dirty_balance reserve are taken into account. The
-> > 	 * objective is that the globally allowed number of dirty
-> > 	 * pages should be distributed throughout the zones such
-> > 	 * that it is very unlikely that page reclaim will call
-> > 	 * ->writepage.
-> > 	 *
-> > 	 * dirty_balance_reserve takes both lowmem_reserve and
-> > 	 * the high watermark into account. The lowmem_reserve
-> > 	 * is taken into account because we don't want the
-> > 	 * distribution of dirty pages to unnecessarily increase
-> > 	 * lowmem pressure. The watermark is taken into account
-> > 	 * because it's correlated with when kswapd wakes up
-> > 	 * and how long it stays awake.
-> > 	 */
-> > 	unsigned long		dirty_balance_reserve.
+> > It was plauged by the same issues that prior attempts were, namely that it
+> > violated the one-file-one-value sysfs rule.  I wandered off but have recently
+> > come back to this.  I've got a new implementation here that exports a new
+> > subdirectory for every pci device,  called msi_irqs.  This subdirectory contanis
+> > a variable number of numbered subdirectories, in which the number represents an
+> > msi irq.  Each numbered subdirectory contains attributes for that irq, which
+> > currently is only the mode it is operating in (msi vs. msix).  I think fits
+> > within the constraints sysfs requires, and will allow irqbalance to properly map
+> > msi irqs to devices without having to rely on rickety, best guess methods like
+> > interface name matching.
 > 
-> Yes, that's much better, thanks.
+> Are there irqbalance patches that correspond to this? Where would they be available?
 > 
-> I assume this is meant the same for both the zone and the global level
-> and we should not mess with totalreserve_pages in either case?
+I've got them here locally, shemminger and I are testing them out, when I'm comfortable with
+them, I'll be comitting them to the public repository at code.google.com
 
-Yes. I'd even suggest changing the name of totalreserve_pages to make
-it clear it is related to overcommit rather than pfmemalloc, dirty
-or any other reserve. i.e. s/totalreserve_pages/overcommit_reserve/
+Note, the changes to support this kernel update in irqbalance is also comming
+with a major gutting that I'm doing of the daemon.  Things like making workload
+bias adjustments based on packets received per interface, since theres no
+guaranteed 1:1 correlation between network interfaces and irqs.  The point being
+that while irq identification will definately be fixed, you might notice other
+behavioral differences that we may or may not want to address.  Bug reports
+would be greatly appreciated at the project site.
 
--- 
-Mel Gorman
-SUSE Labs
+Thanks!
+Neil
+
