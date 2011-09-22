@@ -1,141 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752255Ab1IVIxA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 04:53:00 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:62111 "EHLO song.cn.fujitsu.com"
+	id S1752467Ab1IVIx0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 04:53:26 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:58936 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750978Ab1IVIw5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 04:52:57 -0400
-Message-ID: <4E7AF7EE.70604@cn.fujitsu.com>
-Date: Thu, 22 Sep 2011 16:55:10 +0800
+	id S1751949Ab1IVIxY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Sep 2011 04:53:24 -0400
+Message-ID: <4E7AF808.8080602@cn.fujitsu.com>
+Date: Thu, 22 Sep 2011 16:55:36 +0800
 From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
 To: Avi Kivity <avi@redhat.com>
 CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
         KVM <kvm@vger.kernel.org>
-Subject: [PATCH v4 04/11] KVM: x86: cleanup port-in/port-out emulated
+Subject: [PATCH v4 05/11] KVM: MMU: do not mark accessed bit on pte write
+ path
 References: <4E7AF758.7060900@cn.fujitsu.com>
 In-Reply-To: <4E7AF758.7060900@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-09-22 16:51:35,
+ 2011-09-22 16:52:02,
 	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-09-22 16:51:36,
-	Serialize complete at 2011-09-22 16:51:36
+ 2011-09-22 16:52:02,
+	Serialize complete at 2011-09-22 16:52:02
 Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the same code between emulator_pio_in_emulated and
-emulator_pio_out_emulated
+In current code, the accessed bit is always set when page fault occurred,
+do not need to set it on pte write path
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 ---
- arch/x86/kvm/x86.c |   59 ++++++++++++++++++++++-----------------------------
- 1 files changed, 26 insertions(+), 33 deletions(-)
+ arch/x86/include/asm/kvm_host.h |    1 -
+ arch/x86/kvm/mmu.c              |   22 +---------------------
+ 2 files changed, 1 insertions(+), 22 deletions(-)
 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 727a6af..a69a3e5 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -4327,32 +4327,24 @@ static int kernel_pio(struct kvm_vcpu *vcpu, void *pd)
- 	return r;
- }
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 27a25df..58ea3a7 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -356,7 +356,6 @@ struct kvm_vcpu_arch {
+ 	gfn_t last_pt_write_gfn;
+ 	int   last_pt_write_count;
+ 	u64  *last_pte_updated;
+-	gfn_t last_pte_gfn;
  
--
--static int emulator_pio_in_emulated(struct x86_emulate_ctxt *ctxt,
--				    int size, unsigned short port, void *val,
--				    unsigned int count)
-+static int emulator_pio_in_out(struct kvm_vcpu *vcpu, int size,
-+			       unsigned short port, void *val,
-+			       unsigned int count, bool in)
- {
--	struct kvm_vcpu *vcpu = emul_to_vcpu(ctxt);
--
--	if (vcpu->arch.pio.count)
--		goto data_avail;
--
--	trace_kvm_pio(0, port, size, count);
-+	trace_kvm_pio(!in, port, size, count);
+ 	struct fpu guest_fpu;
+ 	u64 xcr0;
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 4e53d6b..6a35024 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -2206,11 +2206,6 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+ 	if (set_mmio_spte(sptep, gfn, pfn, pte_access))
+ 		return 0;
  
- 	vcpu->arch.pio.port = port;
--	vcpu->arch.pio.in = 1;
-+	vcpu->arch.pio.in = in;
- 	vcpu->arch.pio.count  = count;
- 	vcpu->arch.pio.size = size;
- 
- 	if (!kernel_pio(vcpu, vcpu->arch.pio_data)) {
--	data_avail:
--		memcpy(val, vcpu->arch.pio_data, size * count);
- 		vcpu->arch.pio.count = 0;
- 		return 1;
+-	/*
+-	 * We don't set the accessed bit, since we sometimes want to see
+-	 * whether the guest actually used the pte (in order to detect
+-	 * demand paging).
+-	 */
+ 	spte = PT_PRESENT_MASK;
+ 	if (!speculative)
+ 		spte |= shadow_accessed_mask;
+@@ -2361,10 +2356,8 @@ static void mmu_set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+ 		}
  	}
- 
- 	vcpu->run->exit_reason = KVM_EXIT_IO;
--	vcpu->run->io.direction = KVM_EXIT_IO_IN;
-+	vcpu->run->io.direction = in ? KVM_EXIT_IO_IN : KVM_EXIT_IO_OUT;
- 	vcpu->run->io.size = size;
- 	vcpu->run->io.data_offset = KVM_PIO_PAGE_OFFSET * PAGE_SIZE;
- 	vcpu->run->io.count = count;
-@@ -4361,36 +4353,37 @@ static int emulator_pio_in_emulated(struct x86_emulate_ctxt *ctxt,
- 	return 0;
+ 	kvm_release_pfn_clean(pfn);
+-	if (speculative) {
++	if (speculative)
+ 		vcpu->arch.last_pte_updated = sptep;
+-		vcpu->arch.last_pte_gfn = gfn;
+-	}
  }
  
--static int emulator_pio_out_emulated(struct x86_emulate_ctxt *ctxt,
--				     int size, unsigned short port,
--				     const void *val, unsigned int count)
-+static int emulator_pio_in_emulated(struct x86_emulate_ctxt *ctxt,
-+				    int size, unsigned short port, void *val,
-+				    unsigned int count)
- {
- 	struct kvm_vcpu *vcpu = emul_to_vcpu(ctxt);
-+	int ret;
- 
--	trace_kvm_pio(1, port, size, count);
--
--	vcpu->arch.pio.port = port;
--	vcpu->arch.pio.in = 0;
--	vcpu->arch.pio.count = count;
--	vcpu->arch.pio.size = size;
--
--	memcpy(vcpu->arch.pio_data, val, size * count);
-+	if (vcpu->arch.pio.count)
-+		goto data_avail;
- 
--	if (!kernel_pio(vcpu, vcpu->arch.pio_data)) {
-+	ret = emulator_pio_in_out(vcpu, size, port, val, count, true);
-+	if (ret) {
-+data_avail:
-+		memcpy(val, vcpu->arch.pio_data, size * count);
- 		vcpu->arch.pio.count = 0;
- 		return 1;
- 	}
- 
--	vcpu->run->exit_reason = KVM_EXIT_IO;
--	vcpu->run->io.direction = KVM_EXIT_IO_OUT;
--	vcpu->run->io.size = size;
--	vcpu->run->io.data_offset = KVM_PIO_PAGE_OFFSET * PAGE_SIZE;
--	vcpu->run->io.count = count;
--	vcpu->run->io.port = port;
--
- 	return 0;
+ static void nonpaging_new_cr3(struct kvm_vcpu *vcpu)
+@@ -3532,18 +3525,6 @@ static bool last_updated_pte_accessed(struct kvm_vcpu *vcpu)
+ 	return !!(spte && (*spte & shadow_accessed_mask));
  }
  
-+static int emulator_pio_out_emulated(struct x86_emulate_ctxt *ctxt,
-+				     int size, unsigned short port,
-+				     const void *val, unsigned int count)
-+{
-+	struct kvm_vcpu *vcpu = emul_to_vcpu(ctxt);
-+
-+	memcpy(vcpu->arch.pio_data, val, size * count);
-+	return emulator_pio_in_out(vcpu, size, port, (void *)val, count, false);
-+}
-+
- static unsigned long get_segment_base(struct kvm_vcpu *vcpu, int seg)
- {
- 	return kvm_x86_ops->get_segment_base(vcpu, seg);
+-static void kvm_mmu_access_page(struct kvm_vcpu *vcpu, gfn_t gfn)
+-{
+-	u64 *spte = vcpu->arch.last_pte_updated;
+-
+-	if (spte
+-	    && vcpu->arch.last_pte_gfn == gfn
+-	    && shadow_accessed_mask
+-	    && !(*spte & shadow_accessed_mask)
+-	    && is_shadow_present_pte(*spte))
+-		set_bit(PT_ACCESSED_SHIFT, (unsigned long *)spte);
+-}
+-
+ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+ 		       const u8 *new, int bytes,
+ 		       bool guest_initiated)
+@@ -3614,7 +3595,6 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+ 	++vcpu->kvm->stat.mmu_pte_write;
+ 	trace_kvm_mmu_audit(vcpu, AUDIT_PRE_PTE_WRITE);
+ 	if (guest_initiated) {
+-		kvm_mmu_access_page(vcpu, gfn);
+ 		if (gfn == vcpu->arch.last_pt_write_gfn
+ 		    && !last_updated_pte_accessed(vcpu)) {
+ 			++vcpu->arch.last_pt_write_count;
 -- 
 1.7.5.4
 
