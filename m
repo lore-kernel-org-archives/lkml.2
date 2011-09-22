@@ -1,290 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752632Ab1IVJA2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 05:00:28 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:63555 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751164Ab1IVJAX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 05:00:23 -0400
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Cc: tglx@linutronix.de, yong.zhang0@gmail.com,
-        Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        WANG Cong <xiyou.wangcong@gmail.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Torben Hohn <torbenh@gmx.de>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ralf Baechle <ralf@linux-mips.org>, linux-cris-kernel@axis.com
-Subject: [PATCH 05/55] cris: irq: Remove IRQF_DISABLED
-Date: Thu, 22 Sep 2011 16:58:32 +0800
-Message-Id: <1316681962-8217-6-git-send-email-yong.zhang0@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1316681962-8217-1-git-send-email-yong.zhang0@gmail.com>
-References: <1316681962-8217-1-git-send-email-yong.zhang0@gmail.com>
+	id S1752573Ab1IVJAk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 05:00:40 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:63082 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752012Ab1IVJAf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Sep 2011 05:00:35 -0400
+Message-ID: <4E7AF9B8.4030500@cn.fujitsu.com>
+Date: Thu, 22 Sep 2011 17:02:48 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH v4 03/11] KVM: x86: retry non-page-table writing instructions
+References: <4E7AF758.7060900@cn.fujitsu.com>
+In-Reply-To: <4E7AF758.7060900@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-09-22 16:59:12,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-09-22 16:59:13,
+	Serialize complete at 2011-09-22 16:59:13
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit [e58aa3d2: genirq: Run irq handlers with interrupts disabled],
-We run all interrupt handlers with interrupts disabled
-and we even check and yell when an interrupt handler
-returns with interrupts enabled (see commit [b738a50a:
-genirq: Warn when handler enables interrupts]).
+If the emulation is caused by #PF and it is non-page_table writing instruction,
+it means the VM-EXIT is caused by shadow page protected, we can zap the shadow
+page and retry this instruction directly
 
-So now this flag is a NOOP and can be removed.
+The idea is from Avi
 
-Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 ---
- arch/cris/arch-v10/drivers/gpio.c         |    4 ++--
- arch/cris/arch-v10/drivers/sync_serial.c  |    4 ++--
- arch/cris/arch-v10/kernel/time.c          |    4 ++--
- arch/cris/arch-v32/drivers/mach-a3/gpio.c |    2 +-
- arch/cris/arch-v32/drivers/mach-fs/gpio.c |    4 ++--
- arch/cris/arch-v32/kernel/fasttimer.c     |    2 +-
- arch/cris/arch-v32/kernel/irq.c           |    4 ++--
- arch/cris/arch-v32/kernel/smp.c           |    1 -
- arch/cris/arch-v32/kernel/time.c          |    4 ++--
- arch/cris/arch-v32/mach-a3/arbiter.c      |    4 ++--
- arch/cris/arch-v32/mach-fs/arbiter.c      |    2 +-
- arch/cris/include/arch-v10/arch/irq.h     |    5 +++--
- arch/cris/include/arch-v32/arch/irq.h     |    5 +++--
- arch/cris/kernel/irq.c                    |    3 +--
- 14 files changed, 24 insertions(+), 24 deletions(-)
+ arch/x86/include/asm/kvm_emulate.h |    1 +
+ arch/x86/include/asm/kvm_host.h    |    5 ++++
+ arch/x86/kvm/emulate.c             |    5 ++++
+ arch/x86/kvm/mmu.c                 |   25 ++++++++++++++----
+ arch/x86/kvm/x86.c                 |   47 ++++++++++++++++++++++++++++++++++++
+ 5 files changed, 77 insertions(+), 6 deletions(-)
 
-diff --git a/arch/cris/arch-v10/drivers/gpio.c b/arch/cris/arch-v10/drivers/gpio.c
-index a276f08..c19bc55 100644
---- a/arch/cris/arch-v10/drivers/gpio.c
-+++ b/arch/cris/arch-v10/drivers/gpio.c
-@@ -839,13 +839,13 @@ static int __init gpio_init(void)
- 	 * in some tests.
- 	 */
- 	res = request_irq(TIMER0_IRQ_NBR, gpio_poll_timer_interrupt,
--		IRQF_SHARED | IRQF_DISABLED, "gpio poll", gpio_name);
-+		IRQF_SHARED, "gpio poll", gpio_name);
- 	if (res) {
- 		printk(KERN_CRIT "err: timer0 irq for gpio\n");
- 		return res;
- 	}
- 	res = request_irq(PA_IRQ_NBR, gpio_interrupt,
--		IRQF_SHARED | IRQF_DISABLED, "gpio PA", gpio_name);
-+		IRQF_SHARED, "gpio PA", gpio_name);
- 	if (res)
- 		printk(KERN_CRIT "err: PA irq for gpio\n");
+diff --git a/arch/x86/include/asm/kvm_emulate.h b/arch/x86/include/asm/kvm_emulate.h
+index a026507..9a4acf4 100644
+--- a/arch/x86/include/asm/kvm_emulate.h
++++ b/arch/x86/include/asm/kvm_emulate.h
+@@ -364,6 +364,7 @@ enum x86_intercept {
+ #endif
  
-diff --git a/arch/cris/arch-v10/drivers/sync_serial.c b/arch/cris/arch-v10/drivers/sync_serial.c
-index 466af40..c25fe35 100644
---- a/arch/cris/arch-v10/drivers/sync_serial.c
-+++ b/arch/cris/arch-v10/drivers/sync_serial.c
-@@ -581,7 +581,7 @@ static int sync_serial_open(struct inode *inode, struct file *file)
- 			if (port == &ports[0]) {
- 				if (request_irq(8,
- 						manual_interrupt,
--						IRQF_SHARED | IRQF_DISABLED,
-+						IRQF_SHARED,
- 						"synchronous serial manual irq",
- 						&ports[0])) {
- 					printk(KERN_CRIT "Can't alloc "
-@@ -591,7 +591,7 @@ static int sync_serial_open(struct inode *inode, struct file *file)
- 			} else if (port == &ports[1]) {
- 				if (request_irq(8,
- 						manual_interrupt,
--						IRQF_SHARED | IRQF_DISABLED,
-+						IRQF_SHARED,
- 						"synchronous serial manual irq",
- 						&ports[1])) {
- 					printk(KERN_CRIT "Can't alloc "
-diff --git a/arch/cris/arch-v10/kernel/time.c b/arch/cris/arch-v10/kernel/time.c
-index 20c85b5..7d40c18 100644
---- a/arch/cris/arch-v10/kernel/time.c
-+++ b/arch/cris/arch-v10/kernel/time.c
-@@ -183,12 +183,12 @@ timer_interrupt(int irq, void *dev_id)
+ int x86_decode_insn(struct x86_emulate_ctxt *ctxt, void *insn, int insn_len);
++bool x86_page_table_writing_insn(struct x86_emulate_ctxt *ctxt);
+ #define EMULATION_FAILED -1
+ #define EMULATION_OK 0
+ #define EMULATION_RESTART 1
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 6ab4241..27a25df 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -443,6 +443,9 @@ struct kvm_vcpu_arch {
+ 
+ 	cpumask_var_t wbinvd_dirty_mask;
+ 
++	unsigned long last_retry_eip;
++	unsigned long last_retry_addr;
++
+ 	struct {
+ 		bool halted;
+ 		gfn_t gfns[roundup_pow_of_two(ASYNC_PF_PER_VCPU)];
+@@ -689,6 +692,7 @@ enum emulation_result {
+ #define EMULTYPE_NO_DECODE	    (1 << 0)
+ #define EMULTYPE_TRAP_UD	    (1 << 1)
+ #define EMULTYPE_SKIP		    (1 << 2)
++#define EMULTYPE_RETRY		    (1 << 3)
+ int x86_emulate_instruction(struct kvm_vcpu *vcpu, unsigned long cr2,
+ 			    int emulation_type, void *insn, int insn_len);
+ 
+@@ -753,6 +757,7 @@ void kvm_mmu_flush_tlb(struct kvm_vcpu *vcpu);
+ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+ 		       const u8 *new, int bytes,
+ 		       bool guest_initiated);
++int kvm_mmu_unprotect_page(struct kvm *kvm, gfn_t gfn);
+ int kvm_mmu_unprotect_page_virt(struct kvm_vcpu *vcpu, gva_t gva);
+ void __kvm_mmu_free_some_pages(struct kvm_vcpu *vcpu);
+ int kvm_mmu_load(struct kvm_vcpu *vcpu);
+diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+index a10950a..8547958 100644
+--- a/arch/x86/kvm/emulate.c
++++ b/arch/x86/kvm/emulate.c
+@@ -3702,6 +3702,11 @@ done:
+ 	return (rc != X86EMUL_CONTINUE) ? EMULATION_FAILED : EMULATION_OK;
  }
  
- /* timer is IRQF_SHARED so drivers can add stuff to the timer irq chain
-- * it needs to be IRQF_DISABLED to make the jiffies update work properly
-+ * it needs irqs to be disabled to make the jiffies update work properly
-  */
- 
- static struct irqaction irq2  = {
- 	.handler = timer_interrupt,
--	.flags = IRQF_SHARED | IRQF_DISABLED,
-+	.flags = IRQF_SHARED,
- 	.name = "timer",
- };
- 
-diff --git a/arch/cris/arch-v32/drivers/mach-a3/gpio.c b/arch/cris/arch-v32/drivers/mach-a3/gpio.c
-index c845831..50402d6 100644
---- a/arch/cris/arch-v32/drivers/mach-a3/gpio.c
-+++ b/arch/cris/arch-v32/drivers/mach-a3/gpio.c
-@@ -979,7 +979,7 @@ static int __init gpio_init(void)
- 	CRIS_LED_DISK_WRITE(0);
- 
- 	int res2 = request_irq(GIO_INTR_VECT, gpio_interrupt,
--		IRQF_SHARED | IRQF_DISABLED, "gpio", &alarmlist);
-+		IRQF_SHARED, "gpio", &alarmlist);
- 	if (res2) {
- 		printk(KERN_ERR "err: irq for gpio\n");
- 		return res2;
-diff --git a/arch/cris/arch-v32/drivers/mach-fs/gpio.c b/arch/cris/arch-v32/drivers/mach-fs/gpio.c
-index ee90d26..77b7c49 100644
---- a/arch/cris/arch-v32/drivers/mach-fs/gpio.c
-+++ b/arch/cris/arch-v32/drivers/mach-fs/gpio.c
-@@ -965,11 +965,11 @@ gpio_init(void)
- 	 * in some tests.
- 	 */
- 	if (request_irq(TIMER0_INTR_VECT, gpio_poll_timer_interrupt,
--			IRQF_SHARED | IRQF_DISABLED, "gpio poll", &alarmlist))
-+			IRQF_SHARED, "gpio poll", &alarmlist))
- 		printk(KERN_ERR "timer0 irq for gpio\n");
- 
- 	if (request_irq(GIO_INTR_VECT, gpio_pa_interrupt,
--			IRQF_SHARED | IRQF_DISABLED, "gpio PA", &alarmlist))
-+			IRQF_SHARED, "gpio PA", &alarmlist))
- 		printk(KERN_ERR "PA irq for gpio\n");
- 
- #ifdef CONFIG_ETRAX_VIRTUAL_GPIO
-diff --git a/arch/cris/arch-v32/kernel/fasttimer.c b/arch/cris/arch-v32/kernel/fasttimer.c
-index 111caa1..a75114c 100644
---- a/arch/cris/arch-v32/kernel/fasttimer.c
-+++ b/arch/cris/arch-v32/kernel/fasttimer.c
-@@ -822,7 +822,7 @@ int fast_timer_init(void)
-       fasttimer_proc_entry->read_proc = proc_fasttimer_read;
- #endif /* PROC_FS */
- 		if (request_irq(TIMER0_INTR_VECT, timer_trig_interrupt,
--				IRQF_SHARED | IRQF_DISABLED,
-+				IRQF_SHARED,
- 				"fast timer int", &fast_timer_list))
- 			printk(KERN_ERR "err: fasttimer irq\n");
-     fast_timer_is_init = 1;
-diff --git a/arch/cris/arch-v32/kernel/irq.c b/arch/cris/arch-v32/kernel/irq.c
-index 5ebe6e8..3b718f2 100644
---- a/arch/cris/arch-v32/kernel/irq.c
-+++ b/arch/cris/arch-v32/kernel/irq.c
-@@ -331,8 +331,8 @@ extern void do_IRQ(int irq, struct pt_regs * regs);
- void
- crisv32_do_IRQ(int irq, int block, struct pt_regs* regs)
++bool x86_page_table_writing_insn(struct x86_emulate_ctxt *ctxt)
++{
++	return ctxt->d & PageTable;
++}
++
+ static bool string_insn_completed(struct x86_emulate_ctxt *ctxt)
  {
--	/* Interrupts that may not be moved to another CPU and
--         * are IRQF_DISABLED may skip blocking. This is currently
-+	/* Interrupts that may not be moved to another CPU may
-+	 * skip blocking. This is currently
-          * only valid for the timer IRQ and the IPI and is used
-          * for the timer interrupt to avoid watchdog starvation.
-          */
-diff --git a/arch/cris/arch-v32/kernel/smp.c b/arch/cris/arch-v32/kernel/smp.c
-index 0b99df7..553de03 100644
---- a/arch/cris/arch-v32/kernel/smp.c
-+++ b/arch/cris/arch-v32/kernel/smp.c
-@@ -64,7 +64,6 @@ static irqreturn_t crisv32_ipi_interrupt(int irq, void *dev_id);
- static int send_ipi(int vector, int wait, cpumask_t cpu_mask);
- static struct irqaction irq_ipi  = {
- 	.handler = crisv32_ipi_interrupt,
--	.flags = IRQF_DISABLED,
- 	.name = "ipi",
- };
- 
-diff --git a/arch/cris/arch-v32/kernel/time.c b/arch/cris/arch-v32/kernel/time.c
-index bb978ed..d1f02ff 100644
---- a/arch/cris/arch-v32/kernel/time.c
-+++ b/arch/cris/arch-v32/kernel/time.c
-@@ -221,11 +221,11 @@ static inline irqreturn_t timer_interrupt(int irq, void *dev_id)
+ 	/* The second termination condition only applies for REPE
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index b01afee..4e53d6b 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -1997,7 +1997,7 @@ void kvm_mmu_change_mmu_pages(struct kvm *kvm, unsigned int goal_nr_mmu_pages)
+ 	kvm->arch.n_max_mmu_pages = goal_nr_mmu_pages;
  }
  
- /* Timer is IRQF_SHARED so drivers can add stuff to the timer irq chain.
-- * It needs to be IRQF_DISABLED to make the jiffies update work properly.
-+ * It needs irqs to be disabled to make the jiffies update work properly.
-  */
- static struct irqaction irq_timer = {
- 	.handler = timer_interrupt,
--	.flags = IRQF_SHARED | IRQF_DISABLED,
-+	.flags = IRQF_SHARED,
- 	.name = "timer"
- };
+-static int kvm_mmu_unprotect_page(struct kvm *kvm, gfn_t gfn)
++int kvm_mmu_unprotect_page(struct kvm *kvm, gfn_t gfn)
+ {
+ 	struct kvm_mmu_page *sp;
+ 	struct hlist_node *node;
+@@ -2006,7 +2006,7 @@ static int kvm_mmu_unprotect_page(struct kvm *kvm, gfn_t gfn)
  
-diff --git a/arch/cris/arch-v32/mach-a3/arbiter.c b/arch/cris/arch-v32/mach-a3/arbiter.c
-index 15f5c9d..ab5c421 100644
---- a/arch/cris/arch-v32/mach-a3/arbiter.c
-+++ b/arch/cris/arch-v32/mach-a3/arbiter.c
-@@ -256,11 +256,11 @@ static void crisv32_arbiter_init(void)
- 	crisv32_arbiter_config(1, EXT_REGION, 0);
+ 	pgprintk("%s: looking for gfn %llx\n", __func__, gfn);
+ 	r = 0;
+-
++	spin_lock(&kvm->mmu_lock);
+ 	for_each_gfn_indirect_valid_sp(kvm, sp, gfn, node) {
+ 		pgprintk("%s: gfn %llx role %x\n", __func__, gfn,
+ 			 sp->role.word);
+@@ -2014,8 +2014,11 @@ static int kvm_mmu_unprotect_page(struct kvm *kvm, gfn_t gfn)
+ 		kvm_mmu_prepare_zap_page(kvm, sp, &invalid_list);
+ 	}
+ 	kvm_mmu_commit_zap_page(kvm, &invalid_list);
++	spin_unlock(&kvm->mmu_lock);
++
+ 	return r;
+ }
++EXPORT_SYMBOL_GPL(kvm_mmu_unprotect_page);
  
- 	if (request_irq(MEMARB_FOO_INTR_VECT, crisv32_foo_arbiter_irq,
--			IRQF_DISABLED, "arbiter", NULL))
-+			0, "arbiter", NULL))
- 		printk(KERN_ERR "Couldn't allocate arbiter IRQ\n");
+ static void mmu_unshadow(struct kvm *kvm, gfn_t gfn)
+ {
+@@ -3697,9 +3700,8 @@ int kvm_mmu_unprotect_page_virt(struct kvm_vcpu *vcpu, gva_t gva)
  
- 	if (request_irq(MEMARB_BAR_INTR_VECT, crisv32_bar_arbiter_irq,
--			IRQF_DISABLED, "arbiter", NULL))
-+			0, "arbiter", NULL))
- 		printk(KERN_ERR "Couldn't allocate arbiter IRQ\n");
+ 	gpa = kvm_mmu_gva_to_gpa_read(vcpu, gva, NULL);
  
- #ifndef CONFIG_ETRAX_KGDB
-diff --git a/arch/cris/arch-v32/mach-fs/arbiter.c b/arch/cris/arch-v32/mach-fs/arbiter.c
-index 3f8ebb5..c97f4d8 100644
---- a/arch/cris/arch-v32/mach-fs/arbiter.c
-+++ b/arch/cris/arch-v32/mach-fs/arbiter.c
-@@ -184,7 +184,7 @@ static void crisv32_arbiter_init(void)
- 	crisv32_arbiter_config(EXT_REGION, 0);
- 	crisv32_arbiter_config(INT_REGION, 0);
+-	spin_lock(&vcpu->kvm->mmu_lock);
+ 	r = kvm_mmu_unprotect_page(vcpu->kvm, gpa >> PAGE_SHIFT);
+-	spin_unlock(&vcpu->kvm->mmu_lock);
++
+ 	return r;
+ }
+ EXPORT_SYMBOL_GPL(kvm_mmu_unprotect_page_virt);
+@@ -3720,10 +3722,18 @@ void __kvm_mmu_free_some_pages(struct kvm_vcpu *vcpu)
+ 	kvm_mmu_commit_zap_page(vcpu->kvm, &invalid_list);
+ }
  
--	if (request_irq(MEMARB_INTR_VECT, crisv32_arbiter_irq, IRQF_DISABLED,
-+	if (request_irq(MEMARB_INTR_VECT, crisv32_arbiter_irq, 0,
- 			"arbiter", NULL))
- 		printk(KERN_ERR "Couldn't allocate arbiter IRQ\n");
++static bool is_mmio_page_fault(struct kvm_vcpu *vcpu, gva_t addr)
++{
++	if (vcpu->arch.mmu.direct_map || mmu_is_nested(vcpu))
++		return vcpu_match_mmio_gpa(vcpu, addr);
++
++	return vcpu_match_mmio_gva(vcpu, addr);
++}
++
+ int kvm_mmu_page_fault(struct kvm_vcpu *vcpu, gva_t cr2, u32 error_code,
+ 		       void *insn, int insn_len)
+ {
+-	int r;
++	int r, emulation_type = EMULTYPE_RETRY;
+ 	enum emulation_result er;
  
-diff --git a/arch/cris/include/arch-v10/arch/irq.h b/arch/cris/include/arch-v10/arch/irq.h
-index 7d34594..4f20ed7 100644
---- a/arch/cris/include/arch-v10/arch/irq.h
-+++ b/arch/cris/include/arch-v10/arch/irq.h
-@@ -142,8 +142,9 @@ __asm__ ( \
-  * it here, we would not get the multiple_irq at all.
-  *
-  * The non-blocking here is based on the knowledge that the timer interrupt is 
-- * registred as a fast interrupt (IRQF_DISABLED) so that we _know_ there will not
-- * be an sti() before the timer irq handler is run to acknowledge the interrupt.
-+ * registred as a fast interrupt (called with irqs disabled) so that we _know_
-+ * there will not be an sti() before the timer irq handler is run to acknowledge
-+ * the interrupt.
-  */
+ 	r = vcpu->arch.mmu.page_fault(vcpu, cr2, error_code, false);
+@@ -3735,7 +3745,10 @@ int kvm_mmu_page_fault(struct kvm_vcpu *vcpu, gva_t cr2, u32 error_code,
+ 		goto out;
+ 	}
  
- #define BUILD_TIMER_IRQ(nr,mask) \
-diff --git a/arch/cris/include/arch-v32/arch/irq.h b/arch/cris/include/arch-v32/arch/irq.h
-index b31e998..8076d81 100644
---- a/arch/cris/include/arch-v32/arch/irq.h
-+++ b/arch/cris/include/arch-v32/arch/irq.h
-@@ -103,8 +103,9 @@ __asm__ (				\
-  * if we had BLOCK'edit here, we would not get the multiple_irq at all.
-  *
-  * The non-blocking here is based on the knowledge that the timer interrupt is
-- * registred as a fast interrupt (IRQF_DISABLED) so that we _know_ there will not
-- * be an sti() before the timer irq handler is run to acknowledge the interrupt.
-+ * registred as a fast interrupt (called with irqs disabled) so that we _know_
-+ * there will not be an sti() before the timer irq handler is run to acknowledge
-+ * the interrupt.
-  */
- #define BUILD_TIMER_IRQ(nr, mask) 	\
- void IRQ_NAME(nr);			\
-diff --git a/arch/cris/kernel/irq.c b/arch/cris/kernel/irq.c
-index 788eb22..9fa8e45 100644
---- a/arch/cris/kernel/irq.c
-+++ b/arch/cris/kernel/irq.c
-@@ -40,8 +40,7 @@
- /* called by the assembler IRQ entry functions defined in irq.h
-  * to dispatch the interrupts to registered handlers
-  * interrupts are disabled upon entry - depending on if the
-- * interrupt was registered with IRQF_DISABLED or not, interrupts
-- * are re-enabled or not.
-+ * interrupts are re-enabled or not.
-  */
+-	er = x86_emulate_instruction(vcpu, cr2, 0, insn, insn_len);
++	if (is_mmio_page_fault(vcpu, cr2))
++		emulation_type = 0;
++
++	er = x86_emulate_instruction(vcpu, cr2, emulation_type, insn, insn_len);
  
- asmlinkage void do_IRQ(int irq, struct pt_regs * regs)
+ 	switch (er) {
+ 	case EMULATE_DONE:
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 6b37f18..727a6af 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -4814,6 +4814,50 @@ static bool reexecute_instruction(struct kvm_vcpu *vcpu, gva_t gva)
+ 	return false;
+ }
+ 
++static bool retry_instruction(struct x86_emulate_ctxt *ctxt,
++			      unsigned long cr2,  int emulation_type)
++{
++	struct kvm_vcpu *vcpu = emul_to_vcpu(ctxt);
++	unsigned long last_retry_eip, last_retry_addr, gpa = cr2;
++
++	last_retry_eip = vcpu->arch.last_retry_eip;
++	last_retry_addr = vcpu->arch.last_retry_addr;
++
++	/*
++	 * If the emulation is caused by #PF and it is non-page_table
++	 * writing instruction, it means the VM-EXIT is caused by shadow
++	 * page protected, we can zap the shadow page and retry this
++	 * instruction directly.
++	 *
++	 * Note: if the guest uses a non-page-table modifying instruction
++	 * on the PDE that points to the instruction, then we will unmap
++	 * the instruction and go to an infinite loop. So, we cache the
++	 * last retried eip and the last fault address, if we meet the eip
++	 * and the address again, we can break out of the potential infinite
++	 * loop.
++	 */
++	vcpu->arch.last_retry_eip = vcpu->arch.last_retry_addr = 0;
++
++	if (!(emulation_type & EMULTYPE_RETRY))
++		return false;
++
++	if (x86_page_table_writing_insn(ctxt))
++		return false;
++
++	if (ctxt->eip == last_retry_eip && last_retry_addr == cr2)
++		return false;
++
++	vcpu->arch.last_retry_eip = ctxt->eip;
++	vcpu->arch.last_retry_addr = cr2;
++
++	if (!vcpu->arch.mmu.direct_map)
++		gpa = kvm_mmu_gva_to_gpa_write(vcpu, cr2, NULL);
++
++	kvm_mmu_unprotect_page(vcpu->kvm, gpa >> PAGE_SHIFT);
++
++	return true;
++}
++
+ int x86_emulate_instruction(struct kvm_vcpu *vcpu,
+ 			    unsigned long cr2,
+ 			    int emulation_type,
+@@ -4855,6 +4899,9 @@ int x86_emulate_instruction(struct kvm_vcpu *vcpu,
+ 		return EMULATE_DONE;
+ 	}
+ 
++	if (retry_instruction(ctxt, cr2, emulation_type))
++		return EMULATE_DONE;
++
+ 	/* this is needed for vmware backdoor interface to work since it
+ 	   changes registers values  during IO operation */
+ 	if (vcpu->arch.emulate_regs_need_sync_from_vcpu) {
 -- 
-1.7.4.1
+1.7.5.4
 
