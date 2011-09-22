@@ -1,45 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751845Ab1IVCWH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 22:22:07 -0400
-Received: from mga03.intel.com ([143.182.124.21]:4821 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751717Ab1IVCWC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 22:22:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,420,1312182000"; 
-   d="scan'208";a="52495781"
-Message-ID: <4E7A9BC6.9070608@linux.intel.com>
-Date: Thu, 22 Sep 2011 10:21:58 +0800
-From: Chen Gong <gong.chen@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: Matthew Garrett <mjg@redhat.com>
-CC: tony.luck@intel.com, linux-kernel@vger.kernel.org, mikew@google.com,
-        saguchi@redhat.com
-Subject: Re: [PATCH] efi: Avoid sysfs spew on reboot and panic
-References: <1316552853-2000-1-git-send-email-mjg@redhat.com> <4E795A9C.4040508@linux.intel.com> <20110921124018.GA22155@srcf.ucam.org>
-In-Reply-To: <20110921124018.GA22155@srcf.ucam.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1751859Ab1IVCXN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 22:23:13 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:35414 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750876Ab1IVCXI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 22:23:08 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: Alan Cox <alan@linux.intel.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        kernel-hardening@lists.openwall.com, Kees Cook <kees@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Matt Mackall <mpm@selenic.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Dan Rosenberg <drosenberg@vsecurity.com>,
+        Theodore Tso <tytso@mit.edu>, Jesper Juhl <jj@chaosbits.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg KH <gregkh@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [kernel-hardening] Re: [RFC PATCH 2/2] mm: restrict access to /proc/slabinfo
+In-Reply-To: Your message of "Wed, 21 Sep 2011 21:05:27 +0400."
+             <20110921170527.GA15869@albatros>
+From: Valdis.Kletnieks@vt.edu
+References: <20110910164001.GA2342@albatros> <20110910164134.GA2442@albatros> <20110914192744.GC4529@outflux.net> <20110918170512.GA2351@albatros> <CAOJsxLF8DBEC9o9pSwa6c6pMg8ByFBdsDnzg22P3ucQcP98uzA@mail.gmail.com> <20110919144657.GA5928@albatros> <14082.1316461507@turing-police.cc.vt.edu> <20110919205541.1c44f1a3@bob.linux.org.uk>
+            <20110921170527.GA15869@albatros>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1316658054_3192P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Wed, 21 Sep 2011 22:20:54 -0400
+Message-ID: <26246.1316658054@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020202.4E7A9B8C.00D5,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2011/9/21 20:40, Matthew Garrett 写道:
-> On Wed, Sep 21, 2011 at 11:31:40AM +0800, Chen Gong wrote:
->>>   	mutex_lock(&psinfo->buf_mutex);
->>>   	memcpy(psinfo->buf, buf, size);
->>> -	id = psinfo->write(type, 0, size, psinfo);
->>> +	id = psinfo->write(type, 0, KMSG_DUMP_UNKNOWN, size, psinfo);
->>
->> I can't say it is wrong because no real caller for this function, but I can't
->> say it is right, yet. KMSG_DUMP_UNKNOWN here looks too arbirary. Do you have
->> any reason to use this type here ?
->
-> If a function calls pstore_write() directly then we have no type to
-> associate with it. It seems worth making this explicit.
->
+--==_Exmh_1316658054_3192P
+Content-Type: text/plain; charset=us-ascii
 
-Yep, that's the point. We hope to get a more reasonable method to do it, not
-any assumption.
+On Wed, 21 Sep 2011 21:05:27 +0400, Vasiliy Kulikov said:
+> Sorry, I've poorly worded my statement.  Of course I mean root-only
+> slabinfo, not totally disable it.
+
+Oh, that I can live with.. ;)
+
+> Linus, Alan, Kees, and Dave are about to simply restrict slabinfo (and
+> probably similar interfaces) to root.  Pekka is OK too.
+> 
+> Christoph and Valdis are about to create new CONFIG_ option to be able
+> to restrict the access to slabinfo/etc., but with old relaxed
+> permissions.
+
+I'm OK with a decision to just make the files mode 400 and be done with it,
+since I can always stick a chmod in the startup scripts if it's *really* a problem.
+
+Just that *if* we add a CONFIG_ option, it shouldn't be slabinfo-specific, but
+should cover the *other* identified info-leakers in /proc and /sys as well.
+
+--==_Exmh_1316658054_3192P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFOepuGcC3lWbTT17ARAsq9AJ9E8yOpWF0HzbRTxIDnYJIKMmiEjQCfd4G5
+yzAWYuWP4CsLqZ+6joEb/l8=
+=yxmF
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1316658054_3192P--
+
