@@ -1,73 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753847Ab1IVUSM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 16:18:12 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:37688 "EHLO
+	id S1753869Ab1IVUTT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 16:19:19 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:37250 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751510Ab1IVUSJ (ORCPT
+	by vger.kernel.org with ESMTP id S1753841Ab1IVUTQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 16:18:09 -0400
-X-Sasl-enc: 071IN5QG4LY3NL7rbddzKYmMLt0VNWuiTzL68Ce7VB+G 1316722688
-Date: Thu, 22 Sep 2011 13:18:05 -0700
+	Thu, 22 Sep 2011 16:19:16 -0400
+X-Sasl-enc: XyViYWrJLEPkIT64KpWTk1itRXrgDfHtvkBT9rUD2vBC 1316722756
+Date: Thu, 22 Sep 2011 13:19:09 -0700
 From: Greg KH <greg@kroah.com>
-To: "Winkler, Tomas" <tomas.winkler@intel.com>
-Cc: "Weil, Oren jer" <oren.jer.weil@intel.com>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] staging: mei: clean the TODO file from done tasks.
-Message-ID: <20110922201805.GA13274@kroah.com>
-References: <1316612731-20905-2-git-send-email-oren.jer.weil@intel.com>
- <20110922162953.GA31282@kroah.com>
- <6F5C1D715B2DA5498A628E6B9C124F0401CB6A334F@hasmsx504.ger.corp.intel.com>
- <20110922183139.GA7217@kroah.com>
- <6F5C1D715B2DA5498A628E6B9C124F0401CB6A3370@hasmsx504.ger.corp.intel.com>
- <20110922193805.GA8140@kroah.com>
- <20110922194310.GA8919@kroah.com>
- <6F5C1D715B2DA5498A628E6B9C124F0401CB6A33A3@hasmsx504.ger.corp.intel.com>
- <20110922195449.GA9433@kroah.com>
- <6F5C1D715B2DA5498A628E6B9C124F0401CB6A33C0@hasmsx504.ger.corp.intel.com>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: linux-next: build failure after merge of the v4l-dvb tree
+Message-ID: <20110922201909.GA13347@kroah.com>
+References: <20110922131232.56210b544f587210621ae339@canb.auug.org.au>
+ <4E7B2E43.3080609@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <6F5C1D715B2DA5498A628E6B9C124F0401CB6A33C0@hasmsx504.ger.corp.intel.com>
+In-Reply-To: <4E7B2E43.3080609@infradead.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 22, 2011 at 11:11:38PM +0300, Winkler, Tomas wrote:
-> 
-> 
-> > -----Original Message-----
-> > From: Greg KH [mailto:greg@kroah.com]
-> > Sent: Thursday, September 22, 2011 10:55 PM
-> > To: Winkler, Tomas
-> > Cc: Weil, Oren jer; gregkh@suse.de; devel@driverdev.osuosl.org; linux-
-> > kernel@vger.kernel.org
-> > Subject: Re: [PATCH 2/2] staging: mei: clean the TODO file from done tasks.
-
-Again, please fix your email client.
-
-> > > Please start here
-> > > http://software.intel.com/en-us/blogs/2011/06/01/new-updated-intelr-
-> > am
-> > > t-linux-drivers/
+On Thu, Sep 22, 2011 at 09:46:59AM -0300, Mauro Carvalho Chehab wrote:
+> Em 22-09-2011 00:12, Stephen Rothwell escreveu:
+> > Hi Mauro,
 > > 
-> > That's a pointer to the same driver that is already in the kernel tree, right?
-> > What am I missing here?
+> > After merging the v4l-dvb tree, today's linux-next build (x86_64
+> > allmodconfig) failed like this:
+> > 
+> > drivers/staging/dt3155v4l/dt3155v4l.c: In function 'dt3155_start_acq':
+> > drivers/staging/dt3155v4l/dt3155v4l.c:210:2: error: implicit declaration of function 'vb2_dma_contig_plane_paddr'
+> > drivers/staging/dt3155v4l/dt3155v4l.c: At top level:
+> > drivers/staging/dt3155v4l/dt3155v4l.c:321:2: warning: initialization from incompatible pointer type
+> > drivers/staging/dt3155v4l/dt3155v4l.c:325:2: warning: initialization from incompatible pointer type
+> > 
+> > Casued by commit ba7fcb0c9549 ("[media] media: vb2: dma contig allocator:
+> > use dma_addr instread of paddr").
+> > 
+> > I have used the v4l-dvb tree from next-20110921 for today.
 > 
-> There is LMS there but I guess this links is more updated, they call it driver but actually it is a user space daemon.
+> Hi Stephen,
 > 
-> Anyhow this one should be the latest one http://software.intel.com/en-us/articles/download-the-latest-intel-amt-open-source-drivers/?wapkw=%28Linux+AMT%29
-> It also provides ACU.
+> I think that the right thing to do is to disable the building of this
+> staging driver, if it is not using the current media core API's.
+> 
+> Greg,
+> 
+> If possible, I prefer to merge those staging drivers for the media
+> subsystem via my tree, as it helps me to solve in advance conflicts
+> like that. Maybe we could add a drivers/staging/media tree or
+> drivers/media/staging, and move those beasts to there.
+> 
+> What do you think?
 
-What is "ACU"?
+Yes, I would _LOVE_ a drivers/staging/media/ directory so that I know
+which drivers I am supposed to be ignoring and leaving to you :)
 
-Anyway, we want a good description of just what this driver is exporting
-to userspace, and how it is doing it.  That's the important part here,
-and is what we need to be able to properly review the code if you wish
-to start the process to move out of drivers/staging/
+Just let me know which ones I should move into there and I will do that
+today and let you maintain them all and just forward any emails to you.
+Which will keep issues like this from happening in the future.
 
 thanks,
 
