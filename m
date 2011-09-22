@@ -1,56 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752189Ab1IVDds (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 23:33:48 -0400
-Received: from mga09.intel.com ([134.134.136.24]:16754 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751529Ab1IVDdq convert rfc822-to-8bit (ORCPT
+	id S1752159Ab1IVDfZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 23:35:25 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:36659 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751760Ab1IVDfY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 23:33:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="52330630"
-From: "Ryan Ware" <ware@linux.intel.com>
-To: "'Stephen Smalley'" <sds@tycho.nsa.gov>,
-        "Sakkinen, Jarkko" <jarkko.sakkinen@intel.com>
-Cc: "'Casey Schaufler'" <casey@schaufler-ca.com>,
-        <linux-kernel@vger.kernel.org>,
-        <linux-security-module@vger.kernel.org>
-References: <1316522254-23193-1-git-send-email-jarkko.sakkinen@intel.com> <1316625330.25495.66.camel@moss-pluto>
-In-Reply-To: <1316625330.25495.66.camel@moss-pluto>
-Subject: RE: [PATCH] Smack: Use secureexec with SMACK64EXEC
-Date: Thu, 22 Sep 2011 12:33:40 +0900
-Message-ID: <014c01cc78d8$6e62a790$4b27f6b0$@linux.intel.com>
+	Wed, 21 Sep 2011 23:35:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQHumOaQoXcEaTtAndHV6gpTErxFXADEHtzjlQ5dypA=
-Content-Language: en-us
+In-Reply-To: <CAF1ivSbZf5zgJphyaLeUZfSgz-oPvAY0bG6V2OMeWPS60nsxxQ@mail.gmail.com>
+References: <1316628589.7341.11.camel@localhost.localdomain>
+	<CAF1ivSbZf5zgJphyaLeUZfSgz-oPvAY0bG6V2OMeWPS60nsxxQ@mail.gmail.com>
+Date: Thu, 22 Sep 2011 09:35:23 +0600
+Message-ID: <CADZ9YHhk0idJ6DQOfGmHJtY2RrHyk=D_m-wcOgN1rPp7_ommBg@mail.gmail.com>
+Subject: Re: [PATCH] acpi: Fix possible recursive locking in hwregs.c
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-acpi@vger.kernel.org,
+        Bob Moore <robert.moore@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> 
-> 
-> bprm->unsafe isn't private to your security module, unlike e.g.
-> bprm->cred->security.  And it isn't intended to indicate that a
-> secureexec is being performed, but instead as an indicator that a
-> credential-changing exec may be unsafe.  Which you presently ignore.
-> Defining and setting a new flag in it will have interesting side effects,
-> e.g. consider cap_bprm_secureexec, not to mention being a layering
-> violation and a source of future conflicts.
-> 
-> Why can't your bprm_secureexec hook just test isp->smk_task directly?
-> It can reach it from the bprm.  Or if you don't like testing it twice,
-> then you could always add a flag to your struct referenced by
-> bprm->cred->security, i.e. the smack_task struct.
-> 
-> BTW, there is a lot more to do if you want SMACK64EXEC to be safe.
+On Thu, Sep 22, 2011 at 6:59 AM, Lin Ming <ming.m.lin@intel.com> wrote:
+> On Thu, Sep 22, 2011 at 2:09 AM, Rakib Mullick <rakib.mullick@gmail.com> wrote:
+>> Calling pm-suspend might trigger a recursive lock in it's code path. In function acpi_hw_clear_acpi_status,
+>> acpi_os_release_lock holds the lock acpi_gbl_hardware_lock before calling acpi_hw_register_write(), then
+>> without releasing acpi_gbl_hardware_lock, this function calls acpi_ev_walk_gpe_list, which also tries to
+>> hold acpi_gbl_hardware_lock and thus causes possible recursive lock.
+>
+> No, acpi_ev_walk_gpe_list holds acpi_gbl_gpe_lock.
+>
+Yes, right. Actually, acpi_os_release_lock() tries to hold
+acpi_gbl_gpe_lock without releasing acpi_gbl_hardware_lock. Right?
 
-Thanks for the feedback Stephen.  Could you be more detailed on what else you feel needs to be in place to make SMACK64EXEC safe?
-
-Ryan
-
+Thanks,
+Rakib
