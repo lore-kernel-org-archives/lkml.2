@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751678Ab1IVBtf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 21:49:35 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:36745 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751370Ab1IVBtc (ORCPT
+	id S1751718Ab1IVByU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 21:54:20 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35397 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751135Ab1IVByS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 21:49:32 -0400
-Date: Thu, 22 Sep 2011 11:49:23 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Russell King <rmk@arm.linux.org.uk>
-Subject: linux-next: manual merge of the arm-soc tree with the arm tree
-Message-Id: <20110922114923.86a2325300e87eeaef151b1a@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__22_Sep_2011_11_49_23_+1000_rO/5iovjoJ3ao7hr"
+	Wed, 21 Sep 2011 21:54:18 -0400
+Message-ID: <4E7A9544.9040006@infradead.org>
+Date: Wed, 21 Sep 2011 22:54:12 -0300
+From: Mauro Carvalho Chehab <mchehab@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Arnaud Lacombe <lacombar@gmail.com>, Josh Boyer <jwboyer@gmail.com>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: no tree for Sept 6
+References: <20110906164049.4dd3961cb82800b8d7cc8741@canb.auug.org.au> <CACqU3MXcZ72eYNd=duPYdR_gOe-ejnHoLSMqK_ZU3y=MR2-0+A@mail.gmail.com> <CA+5PVA7CETUa0i3U20ifz5YjXAywTGD2NEQt1GcJz1OwY_DtEg@mail.gmail.com> <CACqU3MXQw4+QyBmCPcO8ZmYu0T6N+DStXBoa=JUv+ej6cWMTnw@mail.gmail.com> <CA+5PVA7Oj9BNTA93m8-rj4a7Ze_N7m3mG0-+GLG1zUSG+ekqJQ@mail.gmail.com> <CACqU3MW3w10LsZvyY4RNQ1-0TgrW39PaGeVnj78bk+p6c=1uFQ@mail.gmail.com> <4E677AF5.7050903@infradead.org> <20110911141958.8e404c8b943af1c73886cee5@canb.auug.org.au>
+In-Reply-To: <20110911141958.8e404c8b943af1c73886cee5@canb.auug.org.au>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__22_Sep_2011_11_49_23_+1000_rO/5iovjoJ3ao7hr
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Em 11-09-2011 01:19, Stephen Rothwell escreveu:
+> Hi Mauro,
+> 
+> On Wed, 07 Sep 2011 11:08:53 -0300 Mauro Carvalho Chehab <mchehab@infradead.org> wrote:
+>>
+>> It seems that we need a backup plan. In my case, I could put the tree
+>> for -next at infradead or at linuxtv, but that means to re-configure
+>> everything at Stephen's side.
+> 
+> That is not a big issue at all.  If you wish to move your tree, just let
+> me know (preferably in a public manner to raise my confidence in its
+> provenance - I am a bit more paranoid, now :-)).
 
-Hi Arnd,
+Hi Stephen,
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-arch/arm/mach-nuc93x/Makefile.boot between commit 86783a0c544d ("ARM:
-7022/1: allow to detect conflicting zreladdrs") from the arm tree and
-commit 6adc1e7ff19d ("ARM: mach-nuc93x: delete") from the arm-soc tree.
+Please replace my media tree (v4l-dvb) by this one:
+	git://linuxtv.org/mchehab/media-next.git
 
-The latter removes the file that the former updates, so i did that.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+I'll set soon a new tree for my edac patches as well.
 
---Signature=_Thu__22_Sep_2011_11_49_23_+1000_rO/5iovjoJ3ao7hr
-Content-Type: application/pgp-signature
+Thank you!
+Mauro
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOepQjAAoJEDMEi1NhKgbsM6UH/jyMR6dF6IgTTOkZMxCREPAm
-LuKgEfOHx/69xS0KGC0AxSPnZDvqYToqzQYqBoNqoTVkoz8zTJzwsgiS4mKfX2WB
-pZpDF9rHx9HFJkvdlYQBcelPi75NJePPW52wAkFbW9Uoz///Qtzzui1NiZ4YHI4M
-HmBMnv1zyBjZr6D6OagsGWOr8dVXqpaHQKtnRwyt22NzdsFo7bnbKm7g/Fu4jBry
-odwlJmx2ctg5S+Z6c01IN3HP8n4A1d7KV6u66j6M8voh7EJqcj9KAq12sZLO/VaT
-Leg6IJquXCdzMM81yR2Epaet5AE2eIyTfdM2oAFJAgdSjMsXjhKw0yWBupj39pY=
-=KK/G
------END PGP SIGNATURE-----
-
---Signature=_Thu__22_Sep_2011_11_49_23_+1000_rO/5iovjoJ3ao7hr--
