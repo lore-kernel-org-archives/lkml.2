@@ -1,60 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752074Ab1IVULN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 16:11:13 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:30481 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751022Ab1IVULJ (ORCPT
+	id S1753771Ab1IVUL4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 16:11:56 -0400
+Received: from mga11.intel.com ([192.55.52.93]:65165 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751022Ab1IVULy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 16:11:09 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; CHARSET=US-ASCII
-Date: Thu, 22 Sep 2011 16:10:35 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Axel Lin <axel.lin@gmail.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: Don't include mach-nuc93x/Kconfig
-In-reply-to: <1316721802-10852-1-git-send-email-swarren@nvidia.com>
-Message-id: <alpine.LFD.2.00.1109221610060.12663@xanadu.home>
-References: <1316721802-10852-1-git-send-email-swarren@nvidia.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Thu, 22 Sep 2011 16:11:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,425,1312182000"; 
+   d="scan'208";a="65270872"
+From: "Winkler, Tomas" <tomas.winkler@intel.com>
+To: Greg KH <greg@kroah.com>
+CC: "Weil, Oren jer" <oren.jer.weil@intel.com>,
+        "gregkh@suse.de" <gregkh@suse.de>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 22 Sep 2011 23:11:38 +0300
+Subject: RE: [PATCH 2/2] staging: mei: clean the TODO file from done tasks.
+Thread-Topic: [PATCH 2/2] staging: mei: clean the TODO file from done tasks.
+Thread-Index: Acx5YYvk5LiniVaAS3GWmBKL+MRvJQAAbugg
+Message-ID: <6F5C1D715B2DA5498A628E6B9C124F0401CB6A33C0@hasmsx504.ger.corp.intel.com>
+References: <1316612731-20905-1-git-send-email-oren.jer.weil@intel.com>
+ <1316612731-20905-2-git-send-email-oren.jer.weil@intel.com>
+ <20110922162953.GA31282@kroah.com>
+ <6F5C1D715B2DA5498A628E6B9C124F0401CB6A334F@hasmsx504.ger.corp.intel.com>
+ <20110922183139.GA7217@kroah.com>
+ <6F5C1D715B2DA5498A628E6B9C124F0401CB6A3370@hasmsx504.ger.corp.intel.com>
+ <20110922193805.GA8140@kroah.com> <20110922194310.GA8919@kroah.com>
+ <6F5C1D715B2DA5498A628E6B9C124F0401CB6A33A3@hasmsx504.ger.corp.intel.com>
+ <20110922195449.GA9433@kroah.com>
+In-Reply-To: <20110922195449.GA9433@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Sep 2011, Stephen Warren wrote:
 
-> Commit 6adc1e7ff19d9befdbb7781b26fff42bb0bc21e2 "ARM: mach-nuc93x: delete"
-> removed support for this sub-architecture, thus deleting that file. So,
-> don't include it. grep indicates no more references to this machine.
+
+> -----Original Message-----
+> From: Greg KH [mailto:greg@kroah.com]
+> Sent: Thursday, September 22, 2011 10:55 PM
+> To: Winkler, Tomas
+> Cc: Weil, Oren jer; gregkh@suse.de; devel@driverdev.osuosl.org; linux-
+> kernel@vger.kernel.org
+> Subject: Re: [PATCH 2/2] staging: mei: clean the TODO file from done tasks.
 > 
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
-
-This is fixed in the latest arm-soc.git.
-
-
-
-
-> ---
->  arch/arm/Kconfig |    2 --
->  1 files changed, 0 insertions(+), 2 deletions(-)
+> On Thu, Sep 22, 2011 at 10:48:52PM +0300, Winkler, Tomas wrote:
+> >
+> >
+> > > -----Original Message-----
+> > > From: Greg KH [mailto:greg@kroah.com]
+> > > Sent: Thursday, September 22, 2011 10:43 PM
+> > > To: Winkler, Tomas
+> > > Cc: Weil, Oren jer; gregkh@suse.de; devel@driverdev.osuosl.org;
+> > > linux- kernel@vger.kernel.org
+> > > Subject: Re: [PATCH 2/2] staging: mei: clean the TODO file from done
+> tasks.
+> > >
+> > > On Thu, Sep 22, 2011 at 12:38:05PM -0700, Greg KH wrote:
+> > > > > I personally don't working with distros, but I believe that SUSE
+> > > > > has major deployment of iAMT (MEI).  Oren may have more info
+> about it.
+> > > >
+> > > > Ah, this one:
+> > > >
+> > > > https://build.opensuse.org/package/show?package=intel-
+> > > iamt&project=ope
+> > > > nSUSE%3A11.4 If so, that package has been dropped by SUSE as it
+> > > > seems to no longer be maintained upstream.  Is this incorrect?
+> > > >
+> > > > Care to point to the proper download location for the lms tarball?
+> > >
+> > > No, sorry, I think that tools uses the old, obsolete, heci kernel
+> > > driver, and not this "mei" driver, right?
+> > >
+> > > Do you have a pointer to any tools that use this interface for this driver?
+> >
+> > Please start here
+> > http://software.intel.com/en-us/blogs/2011/06/01/new-updated-intelr-
+> am
+> > t-linux-drivers/
 > 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index 89bd520..472a7f8 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -969,8 +969,6 @@ source "arch/arm/mach-netx/Kconfig"
->  source "arch/arm/mach-nomadik/Kconfig"
->  source "arch/arm/plat-nomadik/Kconfig"
->  
-> -source "arch/arm/mach-nuc93x/Kconfig"
-> -
->  source "arch/arm/plat-omap/Kconfig"
->  
->  source "arch/arm/mach-omap1/Kconfig"
-> -- 
-> 1.7.0.4
+> That's a pointer to the same driver that is already in the kernel tree, right?
+> What am I missing here?
+
+There is LMS there but I guess this links is more updated, they call it driver but actually it is a user space daemon.
+
+Anyhow this one should be the latest one http://software.intel.com/en-us/articles/download-the-latest-intel-amt-open-source-drivers/?wapkw=%28Linux+AMT%29
+It also provides ACU.
+
+
+ 
+> > There are no direct download links I can provide. I think this was
+> > packaged by SUSE and not by openSUSE, but we really need wait for Oren
+> > to answer that.
 > 
+> I searched the internal SUSE package database and didn't find anything other
+> than the above mentioned intel-iamt tool, which does not seem to work with
+> the mei driver (which makes sense as the mei driver is not in any SUSE
+> product that I can tell.)
+
+Once again, I give you the answer when I have it
+
+Thanks
+Tomas
+
+---------------------------------------------------------------------
+Intel Israel (74) Limited
+
+This e-mail and any attachments may contain confidential material for
+the sole use of the intended recipient(s). Any review or distribution
+by others is strictly prohibited. If you are not the intended
+recipient, please contact the sender and delete all copies.
+
