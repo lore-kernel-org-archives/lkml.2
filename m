@@ -1,64 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751919Ab1IVN25 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 09:28:57 -0400
-Received: from msux-gh1-uea01.nsa.gov ([63.239.65.39]:63671 "EHLO
-	msux-gh1-uea01.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750724Ab1IVN2y (ORCPT
+	id S1752468Ab1IVN3k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 09:29:40 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:48208 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751144Ab1IVN3h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 09:28:54 -0400
-Subject: Re: [PATCH] Smack: Use secureexec with SMACK64EXEC
-From: Stephen Smalley <sds@tycho.nsa.gov>
-To: "Sakkinen, Jarkko" <jarkko.sakkinen@intel.com>
-Cc: Casey Schaufler <casey@schaufler-ca.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-In-Reply-To: <CADjiTvCQp5EHigC60YD5HzshzaUaKWKhPc95WC2sBAjFcGmUUQ@mail.gmail.com>
-References: <1316522254-23193-1-git-send-email-jarkko.sakkinen@intel.com>
-	 <1316625330.25495.66.camel@moss-pluto>
-	 <CADjiTvCQp5EHigC60YD5HzshzaUaKWKhPc95WC2sBAjFcGmUUQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: National Security Agency
-Date: Thu, 22 Sep 2011 09:28:48 -0400
-Message-ID: <1316698128.5731.42.camel@moss-pluto>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Thu, 22 Sep 2011 09:29:37 -0400
+From: Abhilash K V <abhilash.kv@ti.com>
+To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <tony@atomide.com>, <linux@arm.linux.org.uk>, <khilman@ti.com>,
+        <sameo@linux.intel.com>, <santosh.shilimkar@ti.com>, <premi@ti.com>,
+        <david.woodhouse@intel.com>, <christian.gmeiner@gmail.com>,
+        Abhilash K V <abhilash.kv@ti.com>
+Subject: [PATCH v3 3/3] OMAP3: Remove auto-selection of PMICs
+Date: Thu, 22 Sep 2011 18:59:15 +0530
+Message-ID: <1316698155-954-4-git-send-email-abhilash.kv@ti.com>
+X-Mailer: git-send-email 1.6.2.4
+In-Reply-To: <1316698155-954-3-git-send-email-abhilash.kv@ti.com>
+References: <1316698155-954-1-git-send-email-abhilash.kv@ti.com>
+ <1316698155-954-2-git-send-email-abhilash.kv@ti.com>
+ <1316698155-954-3-git-send-email-abhilash.kv@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-09-22 at 10:25 +0300, Sakkinen, Jarkko wrote:
-> On Wed, Sep 21, 2011 at 8:15 PM, Stephen Smalley <sds@tycho.nsa.gov> wrote:
-> > bprm->unsafe isn't private to your security module, unlike e.g.
-> > bprm->cred->security.  And it isn't intended to indicate that a
-> > secureexec is being performed, but instead as an indicator that a
-> > credential-changing exec may be unsafe.  Which you presently ignore.
-> > Defining and setting a new flag in it will have interesting side
-> > effects, e.g. consider cap_bprm_secureexec, not to mention being a
-> > layering violation and a source of future conflicts.
-> >
-> > Why can't your bprm_secureexec hook just test isp->smk_task directly?
-> > It can reach it from the bprm.  Or if you don't like testing it twice,
-> > then you could always add a flag to your struct referenced by
-> > bprm->cred->security, i.e. the smack_task struct.
-> 
-> Thank you. You're absolutely right on this and yes, I can
-> safely just use isp->smk_task. No need for that flag.
-> 
-> BTW, do you know why AppArmor does use similar flag
-> AA_SECURE_X_NEEDED?
+The current implementation almost assumes that only
+TWL4030/TWL5030/TWl6030 are (or can be) used with the
+OMAP processors. This is, however, not true.
 
-No idea.  Sounds wrong to me.
+This patch removes the automatic selection of the PMIC
+from Kconfig.
+All currently used PMICs are now added to omap2plus_defconfig;
+any new PMIC that gets supported in future could now be
+enabled here rather than by changing Kconfig for
+ARCH_OMAP2PLUS_TYPICAL
 
-> > BTW, there is a lot more to do if you want SMACK64EXEC to be safe.
-> 
-> Can you open up this a bit?
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+Signed-off-by: Abhilash K V <abhilash.kv@ti.com>
+---
+ arch/arm/configs/omap2plus_defconfig |    3 +++
+ arch/arm/mach-omap2/Kconfig          |    3 ---
+ drivers/mfd/Kconfig                  |    2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
-I'd suggest studying the SELinux bprm hooks. You don't necessarily have
-to do everything we do, but you at least should understand why we do it
-and what tradeoff you are making by not doing it.
-
+diff --git a/arch/arm/configs/omap2plus_defconfig b/arch/arm/configs/omap2plus_defconfig
+index d5f00d7..076b131 100644
+--- a/arch/arm/configs/omap2plus_defconfig
++++ b/arch/arm/configs/omap2plus_defconfig
+@@ -130,6 +130,9 @@ CONFIG_POWER_SUPPLY=y
+ CONFIG_WATCHDOG=y
+ CONFIG_OMAP_WATCHDOG=y
+ CONFIG_TWL4030_WATCHDOG=y
++CONFIG_MENELAUS=y
++CONFIG_TWL4030_CORE=y
++CONFIG_TWL4030_POWER=y
+ CONFIG_REGULATOR_TWL4030=y
+ CONFIG_REGULATOR_TPS65023=y
+ CONFIG_REGULATOR_TPS6507X=y
+diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
+index 7edf802..d40f6d2 100644
+--- a/arch/arm/mach-omap2/Kconfig
++++ b/arch/arm/mach-omap2/Kconfig
+@@ -15,9 +15,6 @@ config ARCH_OMAP2PLUS_TYPICAL
+ 	select I2C
+ 	select I2C_OMAP
+ 	select MFD_SUPPORT
+-	select MENELAUS if ARCH_OMAP2
+-	select TWL4030_CORE if ARCH_OMAP3 || ARCH_OMAP4
+-	select TWL4030_POWER if ARCH_OMAP3 || ARCH_OMAP4
+ 	help
+ 	  Compile a kernel suitable for booting most boards
+ 
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 21574bd..72e15c8 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -238,7 +238,7 @@ config TWL4030_MADC
+ 
+ config TWL4030_POWER
+ 	bool "Support power resources on TWL4030 family chips"
+-	depends on TWL4030_CORE && ARM
++	depends on TWL4030_CORE
+ 	help
+ 	  Say yes here if you want to use the power resources on the
+ 	  TWL4030 family chips.  Most of these resources are regulators,
 -- 
-Stephen Smalley
-National Security Agency
+1.7.1
 
