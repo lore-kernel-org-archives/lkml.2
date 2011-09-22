@@ -1,52 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751430Ab1IVGiW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 02:38:22 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:32857 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750743Ab1IVGiV (ORCPT
+	id S1751800Ab1IVGim (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 02:38:42 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:57254 "EHLO
+	TX2EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751565Ab1IVGik (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 02:38:21 -0400
+	Thu, 22 Sep 2011 02:38:40 -0400
+X-SpamScore: -5
+X-BigFish: VS-5(z78cMzzz1202hzz8275dhz2dh87h2a8h668h839h65h)
+X-Spam-TCS-SCL: 4:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-FB-DOMAIN-IP-MATCH: fail
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <patches@linaro.org>, Shawn Guo <shawn.guo@linaro.org>
+Subject: [PATCH] serial/imx: add of_alias_get_id() reference back
+Date: Thu, 22 Sep 2011 14:48:13 +0800
+Message-ID: <1316674093-14802-1-git-send-email-shawn.guo@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <20110921204545.19871.99088.stgit@ponder>
+References: <20110921204545.19871.99088.stgit@ponder>
 MIME-Version: 1.0
-In-Reply-To: <CAGsJ_4x-SxYLyuyR9nQ530DhmfYN-Bqc2DOSyAVhM=h3zxCvMw@mail.gmail.com>
-References: <1316166200-20595-1-git-send-email-Baohua.Song@csr.com>
-	<CABb+yY2L=wfRoascoriAcnNMKkV7LbQEHCpp78+rCY=aM46x7A@mail.gmail.com>
-	<CAGsJ_4zURv1_zJ0rwZawa8VSOw0kT9U4-cCCj2Q4-BhV1pdTHA@mail.gmail.com>
-	<CABb+yY3T7JmcLXY-6GYHqF+3SiVK5N0xGzqsE8pv8A+S10hWQw@mail.gmail.com>
-	<CABb+yY3mCHwWx-8gQG75107eWQBT1kPDu59vi9vHU+OQFXq_kg@mail.gmail.com>
-	<CAGsJ_4x-SxYLyuyR9nQ530DhmfYN-Bqc2DOSyAVhM=h3zxCvMw@mail.gmail.com>
-Date: Thu, 22 Sep 2011 12:08:19 +0530
-Message-ID: <CABb+yY3ufFhD6Gf-OqYPpa2k--c8z52fFn6VDEpmc_NgWC04XQ@mail.gmail.com>
-Subject: Re: [PATCH] dmaengine: delete redundant chan_id and chancnt
- initialization in dma drivers
-From: Jassi Brar <jassisinghbrar@gmail.com>
-To: Barry Song <21cnbao@gmail.com>
-Cc: Barry Song <Baohua.Song@csr.com>, Piotr Ziecik <kosmo@semihalf.com>,
-        Vinod Koul <vinod.koul@intel.com>, Pelagicore AB <info@pelagicore.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
-        Yong Wang <yong.y.wang@intel.com>, dan.j.williams@intel.com,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 22, 2011 at 12:01 PM, Barry Song <21cnbao@gmail.com> wrote:
-> 2011/9/22 Jassi Brar <jassisinghbrar@gmail.com>:
->> On Thu, Sep 22, 2011 at 11:11 AM, Jassi Brar <jassisinghbrar@gmail.com> wrote:
->>>
->>>> client drivers can request a specific chan_id just like it can request a gpio.
->>> No dear. That's not gonna fly if we are to have common client drivers
->>> across SoCs.
->>>
->> Btw, I meant you can't simply have clients specify a channel number and
->> get the channel in a portable manner. Clients need to specify the capabilities
->> they need of the channel.
->
-> if the dmac is flexible in design, what you said is right. but the
-> problem is that there are some chips which actually fix one channel to
-> one peripheral.
-Nevertheless it is better to assume the dmac's req-signals could be hacked
-to re-route at even runtime.
-Also it won't work for client drivers that run the same controller on different
-SoC with a different dmac.
+As of_alias_get_id() gets fixed and ready for use, the patch adds the
+of_alias_get_id() reference back to imx serial driver.
+
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+---
+ drivers/tty/serial/imx.c |   13 +++++++++----
+ 1 files changed, 9 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/tty/serial/imx.c b/drivers/tty/serial/imx.c
+index 4a36470..b550cff 100644
+--- a/drivers/tty/serial/imx.c
++++ b/drivers/tty/serial/imx.c
+@@ -1318,17 +1318,22 @@ static int serial_imx_resume(struct platform_device *dev)
+ static int serial_imx_probe_dt(struct imx_port *sport,
+ 		struct platform_device *pdev)
+ {
+-	static int portnum = 0;
+ 	struct device_node *np = pdev->dev.of_node;
+ 	const struct of_device_id *of_id =
+ 			of_match_device(imx_uart_dt_ids, &pdev->dev);
++	int ret;
+ 
+ 	if (!np)
+ 		return -ENODEV;
+ 
+-	sport->port.line = portnum++;
+-	if (sport->port.line >= UART_NR)
+-		return -EINVAL;
++	ret = of_alias_get_id(np, "serial");
++	if (ret < 0) {
++		pr_err("%s: failed to get alias id, errno %d\n",
++			__func__, ret);
++		return -ENODEV;
++	} else {
++		sport->port.line = ret;
++	}
+ 
+ 	if (of_get_property(np, "fsl,uart-has-rtscts", NULL))
+ 		sport->have_rtscts = 1;
+-- 
+1.7.4.1
+
+
