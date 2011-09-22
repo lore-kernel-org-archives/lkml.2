@@ -1,19 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752806Ab1IVJCt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 05:02:49 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:43591 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752494Ab1IVJCn (ORCPT
+	id S1752829Ab1IVJC6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 05:02:58 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:33503 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752494Ab1IVJCw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 05:02:43 -0400
+	Thu, 22 Sep 2011 05:02:52 -0400
 From: Yong Zhang <yong.zhang0@gmail.com>
 To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Cc: tglx@linutronix.de, yong.zhang0@gmail.com,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 20/55] unicore32: Remove IRQF_DISABLED
-Date: Thu, 22 Sep 2011 16:58:47 +0800
-Message-Id: <1316681962-8217-21-git-send-email-yong.zhang0@gmail.com>
+Cc: tglx@linutronix.de, yong.zhang0@gmail.com, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        "Venkatesh Pallipadi (Venki)" <venki@google.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ralf Baechle <ralf@linux-mips.org>, xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org
+Subject: [PATCH 21/55] x86: irq: Remove IRQF_DISABLED
+Date: Thu, 22 Sep 2011 16:58:48 +0800
+Message-Id: <1316681962-8217-22-git-send-email-yong.zhang0@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1316681962-8217-1-git-send-email-yong.zhang0@gmail.com>
 References: <1316681962-8217-1-git-send-email-yong.zhang0@gmail.com>
@@ -31,45 +38,126 @@ So now this flag is a NOOP and can be removed.
 
 Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
 ---
- arch/unicore32/kernel/puv3-nb0916.c |    4 ++--
- arch/unicore32/kernel/time.c        |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ arch/x86/include/asm/floppy.h |    4 ++--
+ arch/x86/kernel/hpet.c        |    2 +-
+ arch/x86/kernel/time.c        |    2 +-
+ arch/x86/xen/smp.c            |    8 ++++----
+ arch/x86/xen/spinlock.c       |    2 +-
+ arch/x86/xen/time.c           |    5 ++---
+ 6 files changed, 11 insertions(+), 12 deletions(-)
 
-diff --git a/arch/unicore32/kernel/puv3-nb0916.c b/arch/unicore32/kernel/puv3-nb0916.c
-index e731c56..951826a 100644
---- a/arch/unicore32/kernel/puv3-nb0916.c
-+++ b/arch/unicore32/kernel/puv3-nb0916.c
-@@ -124,7 +124,7 @@ int __init mach_nb0916_init(void)
+diff --git a/arch/x86/include/asm/floppy.h b/arch/x86/include/asm/floppy.h
+index dbe82a5..22bf4d6 100644
+--- a/arch/x86/include/asm/floppy.h
++++ b/arch/x86/include/asm/floppy.h
+@@ -145,10 +145,10 @@ static int fd_request_irq(void)
+ {
+ 	if (can_use_virtual_dma)
+ 		return request_irq(FLOPPY_IRQ, floppy_hardint,
+-				   IRQF_DISABLED, "floppy", NULL);
++				   0, "floppy", NULL);
+ 	else
+ 		return request_irq(FLOPPY_IRQ, floppy_interrupt,
+-				   IRQF_DISABLED, "floppy", NULL);
++				   0, "floppy", NULL);
+ }
  
- 	if (request_irq(gpio_to_irq(GPI_LCD_CASE_OFF),
- 		&nb0916_lcdcaseoff_handler,
--		IRQF_DISABLED | IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
-+		IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
- 		"NB0916 lcd case off", NULL) < 0) {
+ static unsigned long dma_mem_alloc(unsigned long size)
+diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
+index b946a9e..5c21a30 100644
+--- a/arch/x86/kernel/hpet.c
++++ b/arch/x86/kernel/hpet.c
+@@ -516,7 +516,7 @@ static int hpet_setup_irq(struct hpet_dev *dev)
+ {
  
- 		printk(KERN_DEBUG "LCD-Case-OFF IRQ %d not available\n",
-@@ -132,7 +132,7 @@ int __init mach_nb0916_init(void)
- 	}
+ 	if (request_irq(dev->irq, hpet_interrupt_handler,
+-			IRQF_TIMER | IRQF_DISABLED | IRQF_NOBALANCING,
++			IRQF_TIMER | IRQF_NOBALANCING,
+ 			dev->name, dev))
+ 		return -1;
  
- 	if (request_irq(gpio_to_irq(GPI_OTP_INT), &nb0916_overheat_handler,
--		IRQF_DISABLED | IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
-+		IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
- 		"NB0916 overheating protection", NULL) < 0) {
- 
- 		printk(KERN_DEBUG "Overheating Protection IRQ %d not available\n",
-diff --git a/arch/unicore32/kernel/time.c b/arch/unicore32/kernel/time.c
-index 080710c..d3824b2 100644
---- a/arch/unicore32/kernel/time.c
-+++ b/arch/unicore32/kernel/time.c
-@@ -86,7 +86,7 @@ static struct clocksource cksrc_puv3_oscr = {
- 
- static struct irqaction puv3_timer_irq = {
- 	.name		= "ost0",
--	.flags		= IRQF_DISABLED | IRQF_TIMER | IRQF_IRQPOLL,
-+	.flags		= IRQF_TIMER | IRQF_IRQPOLL,
- 	.handler	= puv3_ost0_interrupt,
- 	.dev_id		= &ckevt_puv3_osmr0,
+diff --git a/arch/x86/kernel/time.c b/arch/x86/kernel/time.c
+index 25046df..0c3fc9a 100644
+--- a/arch/x86/kernel/time.c
++++ b/arch/x86/kernel/time.c
+@@ -55,7 +55,7 @@ EXPORT_SYMBOL(profile_pc);
+ static irqreturn_t timer_interrupt(int irq, void *dev_id);
+ static struct irqaction irq0  = {
+ 	.handler = timer_interrupt,
+-	.flags = IRQF_DISABLED | IRQF_NOBALANCING | IRQF_IRQPOLL | IRQF_TIMER,
++	.flags = IRQF_NOBALANCING | IRQF_IRQPOLL | IRQF_TIMER,
+ 	.name = "timer"
  };
+ 
+diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+index 041d4fe..a375a75 100644
+--- a/arch/x86/xen/smp.c
++++ b/arch/x86/xen/smp.c
+@@ -100,7 +100,7 @@ static int xen_smp_intr_init(unsigned int cpu)
+ 	rc = bind_ipi_to_irqhandler(XEN_RESCHEDULE_VECTOR,
+ 				    cpu,
+ 				    xen_reschedule_interrupt,
+-				    IRQF_DISABLED|IRQF_PERCPU|IRQF_NOBALANCING,
++				    IRQF_PERCPU|IRQF_NOBALANCING,
+ 				    resched_name,
+ 				    NULL);
+ 	if (rc < 0)
+@@ -111,7 +111,7 @@ static int xen_smp_intr_init(unsigned int cpu)
+ 	rc = bind_ipi_to_irqhandler(XEN_CALL_FUNCTION_VECTOR,
+ 				    cpu,
+ 				    xen_call_function_interrupt,
+-				    IRQF_DISABLED|IRQF_PERCPU|IRQF_NOBALANCING,
++				    IRQF_PERCPU|IRQF_NOBALANCING,
+ 				    callfunc_name,
+ 				    NULL);
+ 	if (rc < 0)
+@@ -120,7 +120,7 @@ static int xen_smp_intr_init(unsigned int cpu)
+ 
+ 	debug_name = kasprintf(GFP_KERNEL, "debug%d", cpu);
+ 	rc = bind_virq_to_irqhandler(VIRQ_DEBUG, cpu, xen_debug_interrupt,
+-				     IRQF_DISABLED | IRQF_PERCPU | IRQF_NOBALANCING,
++				     IRQF_PERCPU | IRQF_NOBALANCING,
+ 				     debug_name, NULL);
+ 	if (rc < 0)
+ 		goto fail;
+@@ -130,7 +130,7 @@ static int xen_smp_intr_init(unsigned int cpu)
+ 	rc = bind_ipi_to_irqhandler(XEN_CALL_FUNCTION_SINGLE_VECTOR,
+ 				    cpu,
+ 				    xen_call_function_single_interrupt,
+-				    IRQF_DISABLED|IRQF_PERCPU|IRQF_NOBALANCING,
++				    IRQF_PERCPU|IRQF_NOBALANCING,
+ 				    callfunc_name,
+ 				    NULL);
+ 	if (rc < 0)
+diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
+index cc9b1e1..27882f5 100644
+--- a/arch/x86/xen/spinlock.c
++++ b/arch/x86/xen/spinlock.c
+@@ -354,7 +354,7 @@ void __cpuinit xen_init_lock_cpu(int cpu)
+ 	irq = bind_ipi_to_irqhandler(XEN_SPIN_UNLOCK_VECTOR,
+ 				     cpu,
+ 				     dummy_handler,
+-				     IRQF_DISABLED|IRQF_PERCPU|IRQF_NOBALANCING,
++				     IRQF_PERCPU|IRQF_NOBALANCING,
+ 				     name,
+ 				     NULL);
+ 
+diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
+index 0296a95..9157113 100644
+--- a/arch/x86/xen/time.c
++++ b/arch/x86/xen/time.c
+@@ -408,9 +408,8 @@ void xen_setup_timer(int cpu)
+ 		name = "<timer kasprintf failed>";
+ 
+ 	irq = bind_virq_to_irqhandler(VIRQ_TIMER, cpu, xen_timer_interrupt,
+-				      IRQF_DISABLED|IRQF_PERCPU|
+-				      IRQF_NOBALANCING|IRQF_TIMER|
+-				      IRQF_FORCE_RESUME,
++				      IRQF_PERCPU|IRQF_NOBALANCING|
++				      IRQF_TIMER|IRQF_FORCE_RESUME,
+ 				      name, NULL);
+ 
+ 	evt = &per_cpu(xen_clock_events, cpu);
 -- 
 1.7.4.1
 
