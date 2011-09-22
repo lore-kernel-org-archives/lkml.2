@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753945Ab1IVU5d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 16:57:33 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:32383 "EHLO
+	id S1753961Ab1IVU5n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 16:57:43 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:32416 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753916Ab1IVU53 (ORCPT
+	with ESMTP id S1753835Ab1IVU5b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 16:57:29 -0400
+	Thu, 22 Sep 2011 16:57:31 -0400
 From: Colin Cross <ccross@android.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-fsdevel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
@@ -14,9 +14,9 @@ Cc: linux-fsdevel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
         Andrew Morton <akpm@linux-foundation.org>,
         Alexey Dobriyan <adobriyan@gmail.com>,
         Colin Cross <ccross@android.com>
-Subject: [PATCH 3/3] seq_file: convert seq buffer to vmalloc
-Date: Thu, 22 Sep 2011 13:57:09 -0700
-Message-Id: <1316725029-22737-4-git-send-email-ccross@android.com>
+Subject: [PATCH 2/3] sched_stats: use the new seq_reserve function
+Date: Thu, 22 Sep 2011 13:57:08 -0700
+Message-Id: <1316725029-22737-3-git-send-email-ccross@android.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1316725029-22737-1-git-send-email-ccross@android.com>
 References: <1316725029-22737-1-git-send-email-ccross@android.com>
@@ -25,96 +25,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-seq_files are often used for debugging.  When things are going wrong
-due to failed physically contiguous allocations, the exponentially
-growing physically contiguous allocations in seq_read can make things
-worse.  There is no need for physically contiguous memory, so switch
-to virtually contiguous memory instead.
+Instead of writing directly to private members of the seq_file struct,
+use the new seq_reserve function to specify the predicted size of the
+seq buffer.
 
 Signed-off-by: Colin Cross <ccross@android.com>
 ---
- fs/seq_file.c |   23 ++++++++++-------------
- 1 files changed, 10 insertions(+), 13 deletions(-)
+ fs/proc/stat.c       |   23 ++++++++---------------
+ kernel/sched_stats.h |   18 +++++++++---------
+ 2 files changed, 17 insertions(+), 24 deletions(-)
 
-diff --git a/fs/seq_file.c b/fs/seq_file.c
-index 8d9778c..7045656 100644
---- a/fs/seq_file.c
-+++ b/fs/seq_file.c
-@@ -9,6 +9,7 @@
- #include <linux/module.h>
+diff --git a/fs/proc/stat.c b/fs/proc/stat.c
+index 9758b65..1fdf158 100644
+--- a/fs/proc/stat.c
++++ b/fs/proc/stat.c
+@@ -6,7 +6,6 @@
+ #include <linux/proc_fs.h>
+ #include <linux/sched.h>
  #include <linux/seq_file.h>
- #include <linux/slab.h>
-+#include <linux/vmalloc.h>
- 
- #include <asm/uaccess.h>
- #include <asm/page.h>
-@@ -76,15 +77,11 @@ int seq_reserve(struct seq_file *m, size_t size)
+-#include <linux/slab.h>
+ #include <linux/time.h>
+ #include <linux/irqnr.h>
+ #include <asm/cputime.h>
+@@ -134,24 +133,18 @@ static int show_stat(struct seq_file *p, void *v)
+ static int stat_open(struct inode *inode, struct file *file)
  {
- 	void *buf;
+ 	unsigned size = 4096 * (1 + num_possible_cpus() / 32);
+-	char *buf;
+ 	struct seq_file *m;
+ 	int res;
  
 -	/* don't ask for more than the kmalloc() max size */
 -	if (size > KMALLOC_MAX_SIZE)
 -		size = KMALLOC_MAX_SIZE;
--
 -	buf = kmalloc(size, GFP_KERNEL);
-+	buf = vmalloc(size);
- 	if (!buf)
- 		return -ENOMEM;
- 
--	kfree(m->buf);
-+	vfree(m->buf);
- 	m->buf = buf;
- 	m->size = size;
- 
-@@ -106,7 +103,7 @@ static int traverse(struct seq_file *m, loff_t offset)
- 		return 0;
- 	}
- 	if (!m->buf) {
--		m->buf = kmalloc(m->size = PAGE_SIZE, GFP_KERNEL);
-+		m->buf = vmalloc(m->size = PAGE_SIZE);
- 		if (!m->buf)
- 			return -ENOMEM;
- 	}
-@@ -145,8 +142,8 @@ static int traverse(struct seq_file *m, loff_t offset)
- 
- Eoverflow:
- 	m->op->stop(m, p);
--	kfree(m->buf);
--	m->buf = kmalloc(m->size <<= 1, GFP_KERNEL);
-+	vfree(m->buf);
-+	m->buf = vmalloc(m->size <<= 1);
- 	return !m->buf ? -ENOMEM : -EAGAIN;
+-	if (!buf)
+-		return -ENOMEM;
+-
+ 	res = single_open(file, show_stat, NULL);
+-	if (!res) {
+-		m = file->private_data;
+-		m->buf = buf;
+-		m->size = size;
+-	} else
+-		kfree(buf);
++	if (res)
++		return res;
++
++	m = file->private_data;
++	res = seq_reserve(m, size);
++	if (res)
++		single_release(inode, file);
++
+ 	return res;
  }
  
-@@ -199,7 +196,7 @@ ssize_t seq_read(struct file *file, char __user *buf, size_t size, loff_t *ppos)
- 	m->version = file->f_version;
- 	/* grab buffer if we didn't have one */
- 	if (!m->buf) {
--		m->buf = kmalloc(m->size = PAGE_SIZE, GFP_KERNEL);
-+		m->buf = vmalloc(m->size = PAGE_SIZE);
- 		if (!m->buf)
- 			goto Enomem;
- 	}
-@@ -239,8 +236,8 @@ ssize_t seq_read(struct file *file, char __user *buf, size_t size, loff_t *ppos)
- 		if (m->count < m->size)
- 			goto Fill;
- 		m->op->stop(m, p);
--		kfree(m->buf);
--		m->buf = kmalloc(m->size <<= 1, GFP_KERNEL);
-+		vfree(m->buf);
-+		m->buf = vmalloc(m->size <<= 1);
- 		if (!m->buf)
- 			goto Enomem;
- 		m->count = 0;
-@@ -355,7 +352,7 @@ EXPORT_SYMBOL(seq_lseek);
- int seq_release(struct inode *inode, struct file *file)
+diff --git a/kernel/sched_stats.h b/kernel/sched_stats.h
+index 331e01b..ee05143 100644
+--- a/kernel/sched_stats.h
++++ b/kernel/sched_stats.h
+@@ -74,19 +74,19 @@ static int show_schedstat(struct seq_file *seq, void *v)
+ static int schedstat_open(struct inode *inode, struct file *file)
  {
- 	struct seq_file *m = file->private_data;
--	kfree(m->buf);
-+	vfree(m->buf);
- 	kfree(m);
- 	return 0;
+ 	unsigned int size = PAGE_SIZE * (1 + num_online_cpus() / 32);
+-	char *buf = kmalloc(size, GFP_KERNEL);
+ 	struct seq_file *m;
+ 	int res;
+ 
+-	if (!buf)
+-		return -ENOMEM;
+ 	res = single_open(file, show_schedstat, NULL);
+-	if (!res) {
+-		m = file->private_data;
+-		m->buf = buf;
+-		m->size = size;
+-	} else
+-		kfree(buf);
++	if (res)
++		return res;
++
++
++	m = file->private_data;
++	res = seq_reserve(m, size);
++	if (res)
++		single_release(inode, file);
++
+ 	return res;
  }
+ 
 -- 
 1.7.4.1
 
