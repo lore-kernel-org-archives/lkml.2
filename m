@@ -1,61 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754423Ab1IVXSI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 19:18:08 -0400
-Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:46232 "EHLO
-	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751238Ab1IVXSF convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 19:18:05 -0400
+	id S1754212Ab1IVXTt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 19:19:49 -0400
+Received: from mga11.intel.com ([192.55.52.93]:59207 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753659Ab1IVXTp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Sep 2011 19:19:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,426,1312182000"; 
+   d="scan'208";a="63202699"
+Message-ID: <4E7BC3F4.2070809@linux.intel.com>
+Date: Thu, 22 Sep 2011 16:25:40 -0700
+From: J Freyensee <james_p_freyensee@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-In-Reply-To: <1316730422-20027-1-git-send-email-mturquette@ti.com>
-References: <1316730422-20027-1-git-send-email-mturquette@ti.com>
-From: "Turquette, Mike" <mturquette@ti.com>
-Date: Thu, 22 Sep 2011 16:17:42 -0700
-Message-ID: <CAJOA=zP1+GPYZpqLtGsJYyU4_bZCpznovct+xiCqYcDhxHMH=Q@mail.gmail.com>
-Subject: Re: [PATCH v2 0/7] Add a generic struct clk
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, jeremy.kerr@canonical.com,
-        broonie@opensource.wolfsonmicro.com, tglx@linutronix.de,
-        linus.walleij@stericsson.com, amit.kucheria@linaro.org,
-        dsaxena@linaro.org, patches@linaro.org, linaro-dev@lists.linaro.org,
-        paul@pwsan.com, grant.likely@secretlab.ca, sboyd@quiinc.com,
-        shawn.guo@freescale.com, skannan@quicinc.com, magnus.damm@gmail.com,
-        arnd.bergmann@linaro.org, linux@arm.linux.org.uk, eric.miao@linaro.org,
-        richard.zhao@linaro.org, Mike Turquette <mturquette@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: NamJae Jeon <linkinjeon@gmail.com>
+CC: cjb@laptop.org, linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mmc : general purpose partition support.
+References: <1316705680-1940-1-git-send-email-linkinjeon@gmail.com> <4E7BB1D3.6020208@linux.intel.com> <CAKYAXd-ABNyB53r01f=J4jNxxqVLfKi1nFbBPifZMPXNYnFZ-w@mail.gmail.com>
+In-Reply-To: <CAKYAXd-ABNyB53r01f=J4jNxxqVLfKi1nFbBPifZMPXNYnFZ-w@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 22, 2011 at 3:26 PM, Mike Turquette <mturquette@ti.com> wrote:
-> Hi all,
->
-> The goal of this series is to provide a cross-platform clock framework
-> that platforms can use to model their clock trees and perform common
-> operations on them.  Currently everyone re-invents their own clock tree
-> inside platform code which makes it impossible for drivers to use the
-> clock APIs safely across many platforms and for distro's to compile
-> multi-platform kernels which all redefine struct clk and its operations.
->
-> This is the second version of the common clock patches which were
-> originally posted by Jeremy Kerr and then re-posted with some additional
-> patches by Mark Brown.  Mark's re-post didn't have any changes done to
-> the original four patches from Jeremy which is why this series is "v2".
->
-> The changes in this series are minimal: I've folded in some of Mark's
-> fixes and most of the comments posted to his series as well as rebasing
-> on top of v3.1-rc7.  The design and functionality hasn't changed much
-> since Jeremy posted v1 of this series.  Propagating the rate change up
-> to the parent has been removed from clk_set_rate since that needs some
-> more thought.  I also dropped Mark's change to append a device's name to
-> a clk name since device tree might solve this neatly.  Again more
-> discussion around that would be good.
+On 09/22/2011 04:15 PM, NamJae Jeon wrote:
+> 2011/9/23 J Freyensee<james_p_freyensee@linux.intel.com>:
+>> On 09/22/2011 08:34 AM, Namjae Jeon wrote:
+>>>
+>>> It allows general purpose parition in MMC Device. If it is enable, it will
+>>> make mmcblk0gp1,gp2,gp3,gp4 partition like this.
+>>>
+>>>> cat /proc/paritition
+>>>
+>>>        179 0 847872 mmcblk0
+>>>        179 192 4096 mmcblk0gp4
+>>>        179 160 4096 mmcblk0gp3
+>>>        179 128 4096 mmcblk0gp2
+>>>        179 96  1052672 mmcblk0gp1
+>>>        179 64  1024 mmcblk0boot1
+>>>        179 32  1024 mmcblk0boot0
+>>>
+>>> Signed-off-by: Namjae Jeon<linkinjeon@gmail.com>
+>>> ---
+>>>   drivers/mmc/card/block.c |   36 ++++++++++++++++++++++++++++++++++++
+>>>   drivers/mmc/core/mmc.c   |   42
+>>> ++++++++++++++++++++++++++++++++++++++++++
+>>>   include/linux/mmc/card.h |    4 ++++
+>>>   include/linux/mmc/mmc.h  |    4 ++++
+>>>   4 files changed, 86 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+>>> index 9b90726..074ec55 100644
+>>> --- a/drivers/mmc/card/block.c
+>>> +++ b/drivers/mmc/card/block.c
+>>> @@ -1402,6 +1402,42 @@ static int mmc_blk_alloc_parts(struct mmc_card
+>>> *card, struct mmc_blk_data *md)
+>>>                         return ret;
+>>>         }
+>>>
+>>> +       if (card->ext_csd.gp1_size) {
+>>> +               ret = mmc_blk_alloc_part(card, md,
+>>> EXT_CSD_PART_CONFIG_ACC_GP1,
+>>> +                                       card->ext_csd.gp1_size>>    9,
+>>> +                                       false,
+>>> +                                       "gp1");
+>>> +               if (ret)
+>>> +                       return ret;
+>>> +       }
+>>> +
+>>
+>> if mmc_blk_alloc_part() fails for 'if (card->ext_csd.pt1_size)', why would
+>> you want to give this code the opportunity to call mmc_blk_alloc_part()
+>> again with the next if() below?  If mmc_blk_alloc_part() fails, is it a big
+>> problem, like kzalloc() failing?  If so, I would think you would want to
+>> immediately quit this function and report an error (either use errno value
+>> or pass the value of ret).
+> ->  if card->ext_csd.gp1_size is no zero, it means general purpose
+> partition is enable.
+> and it can set up to 4 partition in specification. so we should check
+> it by next if().
 
-For convenience these patches can be found at:
-git://git.linaro.org/people/mturquette/linux.git
-v3.1-rc7-clkv2
+Please document that in your code.  Please add a function header to this 
+function.
 
-Regards,
-Mike
+>
+>>
+>>> +       if (card->ext_csd.gp2_size) {
+>>> +               ret = mmc_blk_alloc_part(card, md,
+>>> EXT_CSD_PART_CONFIG_ACC_GP2,
+>>> +                                       card->ext_csd.gp2_size>>    9,
+>>> +                                       false,
+>>> +                                       "gp2");
+>>> +               if (ret)
+>>> +                       return ret;
+>>> +       }
+>>> +
+>>> +       if (card->ext_csd.gp3_size) {
+>>> +               ret = mmc_blk_alloc_part(card, md,
+>>> EXT_CSD_PART_CONFIG_ACC_GP3,
+>>> +                                       card->ext_csd.gp3_size>>    9,
+>>> +                                       false,
+>>> +                                       "gp3");
+>>> +               if (ret)
+>>> +                       return ret;
+>>> +       }
+>>> +
+>>> +       if (card->ext_csd.gp4_size) {
+>>> +               ret = mmc_blk_alloc_part(card, md,
+>>> EXT_CSD_PART_CONFIG_ACC_GP4,
+>>> +                                       card->ext_csd.gp4_size>>    9,
+>>> +                                       false,
+>>> +                                       "gp4");
+>>> +               if (ret)
+>>> +                       return ret;
+>>> +       }
+>>> +
+>>>         return ret;
+>>>   }
+>>>
+>>> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
+>>> index 10f5a19..cc31511 100644
+>>> --- a/drivers/mmc/core/mmc.c
+>>> +++ b/drivers/mmc/core/mmc.c
+>>> @@ -393,6 +393,48 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8
+>>> *ext_csd)
+>>>                         card->ext_csd.enhanced_area_offset = -EINVAL;
+>>>                         card->ext_csd.enhanced_area_size = -EINVAL;
+>>>                 }
+>>> +
+>>> +               /*
+>>> +                * General purpose partition Support
+>>> +                */
+>>> +
+>>> +               if (ext_csd[EXT_CSD_PARTITION_SUPPORT]&    0x1) {
+>>> +
+>>> +                       u8 hc_erase_grp_sz =
+>>> +                               ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE];
+>>> +                       u8 hc_wp_grp_sz =
+>>> +                               ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
+>>> +
+>>> +                       card->ext_csd.enhanced_area_en = 1;
+>>> +
+>>> +                       card->ext_csd.gp1_size =
+>>> +                               (ext_csd[145]<<    16) + (ext_csd[144]<<    8)
+>>> +
+>>> +                               ext_csd[143];
+>>> +                       card->ext_csd.gp1_size *=
+>>> +                               (size_t)(hc_erase_grp_sz * hc_wp_grp_sz);
+>>> +                       card->ext_csd.gp1_size<<= 19;
+>>> +
+>>> +                       card->ext_csd.gp2_size =
+>>> +                               (ext_csd[148]<<    16) + (ext_csd[147]<<    8)
+>>> +
+>>> +                               ext_csd[146];
+>>> +                       card->ext_csd.gp2_size *=
+>>> +                               (size_t)(hc_erase_grp_sz * hc_wp_grp_sz);
+>>> +                               card->ext_csd.gp2_size<<= 19;
+>>> +
+>>> +                       card->ext_csd.gp3_size =
+>>> +                               (ext_csd[151]<<    16) + (ext_csd[150]<<    8)
+>>> +
+>>> +                               ext_csd[149];
+>>> +                       card->ext_csd.gp3_size *=
+>>> +                               (size_t)(hc_erase_grp_sz * hc_wp_grp_sz);
+>>> +                       card->ext_csd.gp3_size<<= 19;
+>>> +
+>>> +                       card->ext_csd.gp4_size =
+>>> +                               (ext_csd[154]<<    16) + (ext_csd[153]<<    8)
+>>> +
+>>> +                               ext_csd[152];
+>>> +                       card->ext_csd.gp4_size *=
+>>> +                               (size_t)(hc_erase_grp_sz * hc_wp_grp_sz);
+>>> +                       card->ext_csd.gp4_size<<= 19;
+>>> +               }
+>>>                 card->ext_csd.sec_trim_mult =
+>>>                         ext_csd[EXT_CSD_SEC_TRIM_MULT];
+>>>                 card->ext_csd.sec_erase_mult =
+>>> diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
+>>> index b460fc2..96a98a7 100644
+>>> --- a/include/linux/mmc/card.h
+>>> +++ b/include/linux/mmc/card.h
+>>> @@ -64,6 +64,10 @@ struct mmc_ext_csd {
+>>>         unsigned long long      enhanced_area_offset;   /* Units: Byte */
+>>>         unsigned int            enhanced_area_size;     /* Units: KB */
+>>>         unsigned int            boot_size;              /* in bytes */
+>>> +       unsigned int            gp1_size;               /* in bytes */
+>>> +       unsigned int            gp2_size;               /* in bytes */
+>>> +       unsigned int            gp3_size;               /* in bytes */
+>>> +       unsigned int            gp4_size;               /* in bytes */
+>>>         u8                      raw_partition_support;  /* 160 */
+>>>         u8                      raw_erased_mem_count;   /* 181 */
+>>>         u8                      raw_ext_csd_structure;  /* 194 */
+>>> diff --git a/include/linux/mmc/mmc.h b/include/linux/mmc/mmc.h
+>>> index 5a794cb..380720a 100644
+>>> --- a/include/linux/mmc/mmc.h
+>>> +++ b/include/linux/mmc/mmc.h
+>>> @@ -303,6 +303,10 @@ struct _mmc_csd {
+>>>   #define EXT_CSD_PART_CONFIG_ACC_MASK  (0x7)
+>>>   #define EXT_CSD_PART_CONFIG_ACC_BOOT0 (0x1)
+>>>   #define EXT_CSD_PART_CONFIG_ACC_BOOT1 (0x2)
+>>> +#define EXT_CSD_PART_CONFIG_ACC_GP1    (0x4)
+>>> +#define EXT_CSD_PART_CONFIG_ACC_GP2    (0x5)
+>>> +#define EXT_CSD_PART_CONFIG_ACC_GP3    (0x6)
+>>> +#define EXT_CSD_PART_CONFIG_ACC_GP4    (0x7)
+>>>
+>>>   #define EXT_CSD_CMD_SET_NORMAL                (1<<0)
+>>>   #define EXT_CSD_CMD_SET_SECURE                (1<<1)
+>>
+>>
+>> --
+>> J (James/Jay) Freyensee
+>> Storage Technology Group
+>> Intel Corporation
+>>
+
+
+-- 
+J (James/Jay) Freyensee
+Storage Technology Group
+Intel Corporation
