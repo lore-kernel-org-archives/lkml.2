@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751900Ab1IVE2K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 00:28:10 -0400
-Received: from mga03.intel.com ([143.182.124.21]:2902 "EHLO mga03.intel.com"
+	id S1751921Ab1IVEgD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 00:36:03 -0400
+Received: from home.keithp.com ([63.227.221.253]:59081 "EHLO keithp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751265Ab1IVE2J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 00:28:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,420,1312182000"; 
-   d="scan'208";a="52655724"
-Subject: Re: [PATCH] acpi: Fix possible recursive locking in hwregs.c
-From: Lin Ming <ming.m.lin@intel.com>
-To: Rakib Mullick <rakib.mullick@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Brown, Len" <len.brown@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Moore, Robert" <robert.moore@intel.com>
-In-Reply-To: <CADZ9YHhk0idJ6DQOfGmHJtY2RrHyk=D_m-wcOgN1rPp7_ommBg@mail.gmail.com>
-References: <1316628589.7341.11.camel@localhost.localdomain>
-	 <CAF1ivSbZf5zgJphyaLeUZfSgz-oPvAY0bG6V2OMeWPS60nsxxQ@mail.gmail.com>
-	 <CADZ9YHhk0idJ6DQOfGmHJtY2RrHyk=D_m-wcOgN1rPp7_ommBg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 22 Sep 2011 12:28:07 +0800
-Message-ID: <1316665687.9107.10.camel@minggr>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1750999Ab1IVEf7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Sep 2011 00:35:59 -0400
+From: Keith Packard <keithp@keithp.com>
+To: Woody Suwalski <terraluna977@gmail.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Cc: "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: i915 blank issue on kernel 3.1.0
+In-Reply-To: <4E7A6CED.5000501@gmail.com>
+References: <4E7A6CED.5000501@gmail.com>
+User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Wed, 21 Sep 2011 21:35:54 -0700
+Message-ID: <yun4o05xkgl.fsf@aiko.keithp.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-09-22 at 11:35 +0800, Rakib Mullick wrote:
-> On Thu, Sep 22, 2011 at 6:59 AM, Lin Ming <ming.m.lin@intel.com> wrote:
-> > On Thu, Sep 22, 2011 at 2:09 AM, Rakib Mullick <rakib.mullick@gmail.com> wrote:
-> >> Calling pm-suspend might trigger a recursive lock in it's code path. In function acpi_hw_clear_acpi_status,
-> >> acpi_os_release_lock holds the lock acpi_gbl_hardware_lock before calling acpi_hw_register_write(), then
-> >> without releasing acpi_gbl_hardware_lock, this function calls acpi_ev_walk_gpe_list, which also tries to
-> >> hold acpi_gbl_hardware_lock and thus causes possible recursive lock.
-> >
-> > No, acpi_ev_walk_gpe_list holds acpi_gbl_gpe_lock.
-> >
-> Yes, right. Actually, acpi_os_release_lock() tries to hold
-> acpi_gbl_gpe_lock without releasing acpi_gbl_hardware_lock. Right?
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-Do you mean "acpi_ev_walk_gpe_list() tries to hold
-acpi_gbl_gpe_lock..."?
+On Wed, 21 Sep 2011 19:02:05 -0400, Woody Suwalski <terraluna977@gmail.com>=
+ wrote:
 
-We have below locks sequence. I don't see the problem.
+> Chris, I do not know if it is i915 driver or X'drm or what..
+> Problem exists on 3.1.0, no problem on 3.0.3
 
-acpi_hw_clear_acpi_status:
+Any way you could narrow it down a bit more? A bisect should sort it out
+pretty quickly, given that you've got working code in 3.0 and
+not-working code in 3.1-rc. You can start by manually bisecting across the
+3.1 release candidates, and then narrow it down from there by bisecting
+only across the drivers/gpu/drm/i915 directory.
 
-     <acquire acpi_gbl_hardware_lock>
+=2D-=20
+keith.packard@intel.com
 
-         acpi_ev_walk_gpe_list:
-             <acquire acpi_gbl_gpe_lock>
-             ...
-             <release acpi_gbl_gpe_lock>
-         ...
-     <release acpi_gbl_hardware_lock>
+--=-=-=
+Content-Type: application/pgp-signature
 
-> 
-> Thanks,
-> Rakib
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-
+iD8DBQFOersqQp8BWwlsTdMRAqu7AJ9vGz/TVkm67aG7DKulUo1BiATE5gCeKFL1
+p9XqLyOAA4LUx4+3o2kbL+0=
+=LUuL
+-----END PGP SIGNATURE-----
+--=-=-=--
