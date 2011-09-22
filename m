@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754188Ab1IVXIt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 19:08:49 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:35136 "EHLO
+	id S1754225Ab1IVXI6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 19:08:58 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:48890 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751560Ab1IVXIr (ORCPT
+	by vger.kernel.org with ESMTP id S1754166Ab1IVXIs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 19:08:47 -0400
-X-Sasl-enc: ImgUyfNGtO8w/aijfufIgZbgZRuZ/KQjWr329C6/rf4n 1316732926
-Date: Thu, 22 Sep 2011 16:06:40 -0700
+	Thu, 22 Sep 2011 19:08:48 -0400
+X-Sasl-enc: sl5nVnGYS0hxNedUY7BrWy/kskOWawgFc1muOVSimh6s 1316732927
+Date: Thu, 22 Sep 2011 16:08:44 -0700
 From: Greg KH <greg@kroah.com>
-To: Timur Tabi <timur@freescale.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
-        linux-console@vger.kernel.org
-Subject: Re: [PATCH] drivers/tty: don't use the byte channel handle as a
- parameter in ehv_bytechan.c
-Message-ID: <20110922230640.GA16981@kroah.com>
-References: <1316543217-13769-1-git-send-email-timur@freescale.com>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
+        Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
+        Tobias Klauser <tklauser@distanz.ch>,
+        Sonic Zhang <sonic.zhang@analog.com>,
+        Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Jesper Juhl <jj@chaosbits.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jiri Kosina <jkosina@suse.cz>, linuxppc-dev@lists.ozlabs.org,
+        linux-serial@vger.kernel.org, nios2-dev@sopc.et.ntust.edu.tw,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-cris-kernel@axis.com
+Subject: Re: [PATCH 54/62] TTY: irq: Remove IRQF_DISABLED
+Message-ID: <20110922230844.GA17025@kroah.com>
+References: <1315383059-3673-1-git-send-email-yong.zhang0@gmail.com>
+ <1315383059-3673-55-git-send-email-yong.zhang0@gmail.com>
+ <20110922230420.GA11264@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1316543217-13769-1-git-send-email-timur@freescale.com>
+In-Reply-To: <20110922230420.GA11264@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 20, 2011 at 01:26:57PM -0500, Timur Tabi wrote:
-> The ePAPR hypervisor byte channel console driver only supports one byte
-> channel as a console, and the byte channel handle is stored in a global
-> variable.  It doesn't make any sense to pass that handle as a parameter
-> to the console functions, since these functions already have access to the
-> global variable.
+On Thu, Sep 22, 2011 at 04:04:20PM -0700, Greg KH wrote:
+> On Wed, Sep 07, 2011 at 04:10:51PM +0800, Yong Zhang wrote:
+> > This flag is a NOOP and can be removed now.
+> > 
+> > Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+> > Acked-by: Tobias Klauser <tklauser@distanz.ch>
+> > ---
+> >  drivers/tty/amiserial.c              |    2 +-
+> >  drivers/tty/cyclades.c               |    2 +-
+> >  drivers/tty/hvc/hvc_irq.c            |    2 +-
+> >  drivers/tty/hvc/hvcs.c               |    2 +-
+> >  drivers/tty/hvc/hvsi.c               |    2 +-
+> >  drivers/tty/isicom.c                 |    2 +-
+> >  drivers/tty/serial/68328serial.c     |    2 +-
+> >  drivers/tty/serial/altera_jtaguart.c |    2 +-
+> >  drivers/tty/serial/altera_uart.c     |    2 +-
+> >  drivers/tty/serial/bfin_5xx.c        |    8 ++++----
 > 
-> This change also fixes this compilation warning on a 64-bit kernel:
+> This file isn't in my tree anymore, so I can't apply this :(
 > 
->   CC      drivers/tty/ehv_bytechan.o
-> drivers/tty/ehv_bytechan.c: In function 'ehv_bc_console_write':
-> drivers/tty/ehv_bytechan.c:289:24: warning: cast from pointer to integer of different size
-> drivers/tty/ehv_bytechan.c: In function 'ehv_bc_console_init':
-> drivers/tty/ehv_bytechan.c:355:24: warning: cast to pointer from integer of different size
-> 
-> This warning is because the driver is converting the integer byte channel
-> handle to/from the void* 'data' field of struct console.  Rather than fix
-> the warning, we just eliminate the code altogether.
-> 
-> Signed-off-by: Timur Tabi <timur@freescale.com>
-> ---
->  drivers/tty/ehv_bytechan.c |    7 ++-----
 
-This patch doesn't apply at all to my tty tree, what was it made
-against?
-
-confused,
+Oh nevermind, I see your newer patch, I'll take that one, sorry.
 
 greg k-h
