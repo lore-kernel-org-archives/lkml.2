@@ -1,121 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752772Ab1IVJLs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 05:11:48 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:40391 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751164Ab1IVJAf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 05:00:35 -0400
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Cc: tglx@linutronix.de, yong.zhang0@gmail.com,
-        David Howells <dhowells@redhat.com>, Torben Hohn <torbenh@gmx.de>
-Subject: [PATCH 06/55] frv: irq: Remove IRQF_DISABLED
-Date: Thu, 22 Sep 2011 16:58:33 +0800
-Message-Id: <1316681962-8217-7-git-send-email-yong.zhang0@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1316681962-8217-1-git-send-email-yong.zhang0@gmail.com>
-References: <1316681962-8217-1-git-send-email-yong.zhang0@gmail.com>
+	id S1752527Ab1IVJX4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 05:23:56 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:36978 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751751Ab1IVJXw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Sep 2011 05:23:52 -0400
+Date: Thu, 22 Sep 2011 11:23:47 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Lucas C. Villa Real" <lucasvr@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Wey-Yi Guya <wey-yi.w.guy@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Pekka Enberg <penberg@kernel.org>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [PATCH] Initialize pointer on request_firmware
+Message-ID: <20110922092347.GD17640@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"Lucas C. Villa Real" <lucasvr@gmail.com>,
+	linux-kernel@vger.kernel.org, Wey-Yi Guya <wey-yi.w.guy@intel.com>,
+	Johannes Berg <johannes.berg@intel.com>,
+	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+	Pekka Enberg <penberg@kernel.org>,
+	Greg Kroah-Hartman <gregkh@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20110921235515.7476c5fe.lucasvr@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit [e58aa3d2: genirq: Run irq handlers with interrupts disabled],
-We run all interrupt handlers with interrupts disabled
-and we even check and yell when an interrupt handler
-returns with interrupts enabled (see commit [b738a50a:
-genirq: Warn when handler enables interrupts]).
+On Wed, Sep 21, 2011 at 11:55:15PM -0300, Lucas C. Villa Real wrote:
+> Hello, folks,
+> 
+> I've seen some kernel oopses when suspending my machine. The problem comes from isight_firmware, which assumes that, on error, a call to request_firmware() will initialize the provided pointer to the firmware image to NULL.
+> 
+> The patch below fixes the isight_firmware side of the problem and also ensures that request_firmware() always sets the pointer to NULL on such cases (it currently does that for all except one situation).
+> 
+> Signed-off-by: Lucas C. Villa Real <lucasvr@gobolinux.org>
+> 
+> --- linux-3.0.4/drivers/base/firmware_class.c.orig	2011-09-21 21:03:01.000000000 -0300
+> +++ linux-3.0.4/drivers/base/firmware_class.c	2011-09-21 21:03:13.000000000 -0300
+> @@ -523,6 +523,7 @@ static int _request_firmware(const struc
+>  
+>  	if (WARN_ON(usermodehelper_is_disabled())) {
+>  		dev_err(device, "firmware: %s will not be loaded\n", name);
+> +		*firmware_p = NULL;
+>  		return -EBUSY;
+>  	}
 
-So now this flag is a NOOP and can be removed.
+Looks like f45f3c1f3f616 needs backporting to stable, if it hasn't
+happened yet. Oh, and then there's caca9510ff4e5 too which adds this
+exit path to the goto out label as the rest of the function.
 
-Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-Acked-by: David Howells <dhowells@redhat.com>
----
- arch/frv/kernel/irq-mb93091.c |    8 ++++----
- arch/frv/kernel/irq-mb93093.c |    1 -
- arch/frv/kernel/irq-mb93493.c |    4 ++--
- arch/frv/kernel/time.c        |    1 -
- 4 files changed, 6 insertions(+), 8 deletions(-)
+Adding some more people to Cc.
 
-diff --git a/arch/frv/kernel/irq-mb93091.c b/arch/frv/kernel/irq-mb93091.c
-index 9afc2ea..f4dfc0b 100644
---- a/arch/frv/kernel/irq-mb93091.c
-+++ b/arch/frv/kernel/irq-mb93091.c
-@@ -108,25 +108,25 @@ static irqreturn_t fpga_interrupt(int irq, void *_mask)
- static struct irqaction fpga_irq[4]  = {
- 	[0] = {
- 		.handler	= fpga_interrupt,
--		.flags		= IRQF_DISABLED | IRQF_SHARED,
-+		.flags		= IRQF_SHARED,
- 		.name		= "fpga.0",
- 		.dev_id		= (void *) 0x0028UL,
- 	},
- 	[1] = {
- 		.handler	= fpga_interrupt,
--		.flags		= IRQF_DISABLED | IRQF_SHARED,
-+		.flags		= IRQF_SHARED,
- 		.name		= "fpga.1",
- 		.dev_id		= (void *) 0x0050UL,
- 	},
- 	[2] = {
- 		.handler	= fpga_interrupt,
--		.flags		= IRQF_DISABLED | IRQF_SHARED,
-+		.flags		= IRQF_SHARED,
- 		.name		= "fpga.2",
- 		.dev_id		= (void *) 0x1c00UL,
- 	},
- 	[3] = {
- 		.handler	= fpga_interrupt,
--		.flags		= IRQF_DISABLED | IRQF_SHARED,
-+		.flags		= IRQF_SHARED,
- 		.name		= "fpga.3",
- 		.dev_id		= (void *) 0x6386UL,
- 	}
-diff --git a/arch/frv/kernel/irq-mb93093.c b/arch/frv/kernel/irq-mb93093.c
-index 4d4ad09..bac526d 100644
---- a/arch/frv/kernel/irq-mb93093.c
-+++ b/arch/frv/kernel/irq-mb93093.c
-@@ -106,7 +106,6 @@ static irqreturn_t fpga_interrupt(int irq, void *_mask)
- static struct irqaction fpga_irq[1]  = {
- 	[0] = {
- 		.handler	= fpga_interrupt,
--		.flags		= IRQF_DISABLED,
- 		.name		= "fpga.0",
- 		.dev_id		= (void *) 0x0700UL,
- 	}
-diff --git a/arch/frv/kernel/irq-mb93493.c b/arch/frv/kernel/irq-mb93493.c
-index 4d034c7..b632726 100644
---- a/arch/frv/kernel/irq-mb93493.c
-+++ b/arch/frv/kernel/irq-mb93493.c
-@@ -119,13 +119,13 @@ static irqreturn_t mb93493_interrupt(int irq, void *_piqsr)
- static struct irqaction mb93493_irq[2]  = {
- 	[0] = {
- 		.handler	= mb93493_interrupt,
--		.flags		= IRQF_DISABLED | IRQF_SHARED,
-+		.flags		= IRQF_SHARED,
- 		.name		= "mb93493.0",
- 		.dev_id		= (void *) __addr_MB93493_IQSR(0),
- 	},
- 	[1] = {
- 		.handler	= mb93493_interrupt,
--		.flags		= IRQF_DISABLED | IRQF_SHARED,
-+		.flags		= IRQF_SHARED,
- 		.name		= "mb93493.1",
- 		.dev_id		= (void *) __addr_MB93493_IQSR(1),
- 	}
-diff --git a/arch/frv/kernel/time.c b/arch/frv/kernel/time.c
-index b457de4..332e00b 100644
---- a/arch/frv/kernel/time.c
-+++ b/arch/frv/kernel/time.c
-@@ -44,7 +44,6 @@ static irqreturn_t timer_interrupt(int irq, void *dummy);
- 
- static struct irqaction timer_irq  = {
- 	.handler = timer_interrupt,
--	.flags = IRQF_DISABLED,
- 	.name = "timer",
- };
- 
+>  
+> --- linux-3.0.4/drivers/usb/misc/isight_firmware.c.orig	2011-09-21 20:47:39.000000000 -0300
+> +++ linux-3.0.4/drivers/usb/misc/isight_firmware.c	2011-09-21 20:47:46.000000000 -0300
+> @@ -39,7 +39,7 @@ static int isight_firmware_load(struct u
+>  {
+>  	struct usb_device *dev = interface_to_usbdev(intf);
+>  	int llen, len, req, ret = 0;
+> -	const struct firmware *firmware;
+> +	const struct firmware *firmware = NULL;
+>  	unsigned char *buf = kmalloc(50, GFP_KERNEL);
+>  	unsigned char data[4];
+>  	const u8 *ptr;
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
 -- 
-1.7.4.1
-
+Regards/Gruss,
+    Boris.
