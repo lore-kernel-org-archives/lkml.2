@@ -1,191 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754146Ab1IVWC0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 18:02:26 -0400
-Received: from mga09.intel.com ([134.134.136.24]:62455 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753955Ab1IVWCY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 18:02:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="54020253"
-Message-ID: <4E7BB1D3.6020208@linux.intel.com>
-Date: Thu, 22 Sep 2011 15:08:19 -0700
-From: J Freyensee <james_p_freyensee@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1754160Ab1IVWE3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 18:04:29 -0400
+Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:41642 "EHLO
+	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753955Ab1IVWE0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Sep 2011 18:04:26 -0400
+From: Kevin Hilman <khilman@ti.com>
+To: Abhilash K V <abhilash.kv@ti.com>
+Cc: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, linux@arm.linux.org.uk,
+        sameo@linux.intel.com, tony@atomide.com, christian.gmeiner@gmail.com,
+        santosh.shilimkar@ti.com, premi@ti.com, david.woodhouse@intel.com
+Subject: Re: [PATCH v3 3/3] OMAP3: Remove auto-selection of PMICs
+Organization: Texas Instruments, Inc.
+References: <1316698155-954-1-git-send-email-abhilash.kv@ti.com>
+	<1316698155-954-2-git-send-email-abhilash.kv@ti.com>
+	<1316698155-954-3-git-send-email-abhilash.kv@ti.com>
+	<1316698155-954-4-git-send-email-abhilash.kv@ti.com>
+Date: Thu, 22 Sep 2011 15:04:21 -0700
+In-Reply-To: <1316698155-954-4-git-send-email-abhilash.kv@ti.com> (Abhilash
+	K. V.'s message of "Thu, 22 Sep 2011 18:59:15 +0530")
+Message-ID: <877h50qlne.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
 MIME-Version: 1.0
-To: Namjae Jeon <linkinjeon@gmail.com>
-CC: cjb@laptop.org, linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mmc : general purpose partition support.
-References: <1316705680-1940-1-git-send-email-linkinjeon@gmail.com>
-In-Reply-To: <1316705680-1940-1-git-send-email-linkinjeon@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/2011 08:34 AM, Namjae Jeon wrote:
-> It allows general purpose parition in MMC Device. If it is enable, it will make mmcblk0gp1,gp2,gp3,gp4 partition like this.
+Abhilash K V <abhilash.kv@ti.com> writes:
+
+> The current implementation almost assumes that only
+
+almost?  ;)
+
+> TWL4030/TWL5030/TWl6030 are (or can be) used with the
+> OMAP processors. This is, however, not true.
 >
->> cat /proc/paritition
->        179 0 847872 mmcblk0
->        179 192 4096 mmcblk0gp4
->        179 160 4096 mmcblk0gp3
->        179 128 4096 mmcblk0gp2
->        179 96  1052672 mmcblk0gp1
->        179 64  1024 mmcblk0boot1
->        179 32  1024 mmcblk0boot0
+> This patch removes the automatic selection of the PMIC
+> from Kconfig.
+> All currently used PMICs are now added to omap2plus_defconfig;
+
+I don't think adding them to omap2plus_defconfig is right either, as
+those will get stripped out the next time that file is (re)generated.
+
+> any new PMIC that gets supported in future could now be
+> enabled here rather than by changing Kconfig for
+> ARCH_OMAP2PLUS_TYPICAL
+
+IMO, the right fix is to have the board Kconfig entries select the PMIC
+being used on those boards.  That is the only solution that will scale,
+and also work when using 'make randconfig'.
+
+Kevin
+
 >
-> Signed-off-by: Namjae Jeon<linkinjeon@gmail.com>
+> Signed-off-by: Sanjeev Premi <premi@ti.com>
+> Signed-off-by: Abhilash K V <abhilash.kv@ti.com>
 > ---
->   drivers/mmc/card/block.c |   36 ++++++++++++++++++++++++++++++++++++
->   drivers/mmc/core/mmc.c   |   42 ++++++++++++++++++++++++++++++++++++++++++
->   include/linux/mmc/card.h |    4 ++++
->   include/linux/mmc/mmc.h  |    4 ++++
->   4 files changed, 86 insertions(+), 0 deletions(-)
+>  arch/arm/configs/omap2plus_defconfig |    3 +++
+>  arch/arm/mach-omap2/Kconfig          |    3 ---
+>  drivers/mfd/Kconfig                  |    2 +-
+>  3 files changed, 4 insertions(+), 4 deletions(-)
 >
-> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
-> index 9b90726..074ec55 100644
-> --- a/drivers/mmc/card/block.c
-> +++ b/drivers/mmc/card/block.c
-> @@ -1402,6 +1402,42 @@ static int mmc_blk_alloc_parts(struct mmc_card *card, struct mmc_blk_data *md)
->   			return ret;
->   	}
->
-> +	if (card->ext_csd.gp1_size) {
-> +		ret = mmc_blk_alloc_part(card, md, EXT_CSD_PART_CONFIG_ACC_GP1,
-> +					card->ext_csd.gp1_size>>  9,
-> +					false,
-> +					"gp1");
-> +		if (ret)
-> +			return ret;
-> +	}
-> +
-
-if mmc_blk_alloc_part() fails for 'if (card->ext_csd.pt1_size)', why 
-would you want to give this code the opportunity to call 
-mmc_blk_alloc_part() again with the next if() below?  If 
-mmc_blk_alloc_part() fails, is it a big problem, like kzalloc() failing? 
-  If so, I would think you would want to immediately quit this function 
-and report an error (either use errno value or pass the value of ret).
-
-> +	if (card->ext_csd.gp2_size) {
-> +		ret = mmc_blk_alloc_part(card, md, EXT_CSD_PART_CONFIG_ACC_GP2,
-> +					card->ext_csd.gp2_size>>  9,
-> +					false,
-> +					"gp2");
-> +		if (ret)
-> +			return ret;
-> +	}
-> +
-> +	if (card->ext_csd.gp3_size) {
-> +		ret = mmc_blk_alloc_part(card, md, EXT_CSD_PART_CONFIG_ACC_GP3,
-> +					card->ext_csd.gp3_size>>  9,
-> +					false,
-> +					"gp3");
-> +		if (ret)
-> +			return ret;
-> +	}
-> +
-> +	if (card->ext_csd.gp4_size) {
-> +		ret = mmc_blk_alloc_part(card, md, EXT_CSD_PART_CONFIG_ACC_GP4,
-> +					card->ext_csd.gp4_size>>  9,
-> +					false,
-> +					"gp4");
-> +		if (ret)
-> +			return ret;
-> +	}
-> +
->   	return ret;
->   }
->
-> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
-> index 10f5a19..cc31511 100644
-> --- a/drivers/mmc/core/mmc.c
-> +++ b/drivers/mmc/core/mmc.c
-> @@ -393,6 +393,48 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
->   			card->ext_csd.enhanced_area_offset = -EINVAL;
->   			card->ext_csd.enhanced_area_size = -EINVAL;
->   		}
-> +
-> +		/*
-> +		 * General purpose partition Support
-> +		 */
-> +
-> +		if (ext_csd[EXT_CSD_PARTITION_SUPPORT]&  0x1) {
-> +
-> +			u8 hc_erase_grp_sz =
-> +				ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE];
-> +			u8 hc_wp_grp_sz =
-> +				ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
-> +
-> +			card->ext_csd.enhanced_area_en = 1;
-> +
-> +			card->ext_csd.gp1_size =
-> +				(ext_csd[145]<<  16) + (ext_csd[144]<<  8) +
-> +				ext_csd[143];
-> +			card->ext_csd.gp1_size *=
-> +				(size_t)(hc_erase_grp_sz * hc_wp_grp_sz);
-> +			card->ext_csd.gp1_size<<= 19;
-> +
-> +			card->ext_csd.gp2_size =
-> +				(ext_csd[148]<<  16) + (ext_csd[147]<<  8) +
-> +				ext_csd[146];
-> +			card->ext_csd.gp2_size *=
-> +				(size_t)(hc_erase_grp_sz * hc_wp_grp_sz);
-> +				card->ext_csd.gp2_size<<= 19;
-> +
-> +			card->ext_csd.gp3_size =
-> +				(ext_csd[151]<<  16) + (ext_csd[150]<<  8) +
-> +				ext_csd[149];
-> +			card->ext_csd.gp3_size *=
-> +				(size_t)(hc_erase_grp_sz * hc_wp_grp_sz);
-> +			card->ext_csd.gp3_size<<= 19;
-> +
-> +			card->ext_csd.gp4_size =
-> +				(ext_csd[154]<<  16) + (ext_csd[153]<<  8) +
-> +				ext_csd[152];
-> +			card->ext_csd.gp4_size *=
-> +				(size_t)(hc_erase_grp_sz * hc_wp_grp_sz);
-> +			card->ext_csd.gp4_size<<= 19;
-> +		}
->   		card->ext_csd.sec_trim_mult =
->   			ext_csd[EXT_CSD_SEC_TRIM_MULT];
->   		card->ext_csd.sec_erase_mult =
-> diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
-> index b460fc2..96a98a7 100644
-> --- a/include/linux/mmc/card.h
-> +++ b/include/linux/mmc/card.h
-> @@ -64,6 +64,10 @@ struct mmc_ext_csd {
->   	unsigned long long	enhanced_area_offset;	/* Units: Byte */
->   	unsigned int		enhanced_area_size;	/* Units: KB */
->   	unsigned int		boot_size;		/* in bytes */
-> +	unsigned int		gp1_size;		/* in bytes */
-> +	unsigned int		gp2_size;		/* in bytes */
-> +	unsigned int		gp3_size;		/* in bytes */
-> +	unsigned int		gp4_size;		/* in bytes */
->   	u8			raw_partition_support;	/* 160 */
->   	u8			raw_erased_mem_count;	/* 181 */
->   	u8			raw_ext_csd_structure;	/* 194 */
-> diff --git a/include/linux/mmc/mmc.h b/include/linux/mmc/mmc.h
-> index 5a794cb..380720a 100644
-> --- a/include/linux/mmc/mmc.h
-> +++ b/include/linux/mmc/mmc.h
-> @@ -303,6 +303,10 @@ struct _mmc_csd {
->   #define EXT_CSD_PART_CONFIG_ACC_MASK	(0x7)
->   #define EXT_CSD_PART_CONFIG_ACC_BOOT0	(0x1)
->   #define EXT_CSD_PART_CONFIG_ACC_BOOT1	(0x2)
-> +#define EXT_CSD_PART_CONFIG_ACC_GP1	(0x4)
-> +#define EXT_CSD_PART_CONFIG_ACC_GP2	(0x5)
-> +#define EXT_CSD_PART_CONFIG_ACC_GP3	(0x6)
-> +#define EXT_CSD_PART_CONFIG_ACC_GP4	(0x7)
->
->   #define EXT_CSD_CMD_SET_NORMAL		(1<<0)
->   #define EXT_CSD_CMD_SET_SECURE		(1<<1)
-
-
--- 
-J (James/Jay) Freyensee
-Storage Technology Group
-Intel Corporation
+> diff --git a/arch/arm/configs/omap2plus_defconfig b/arch/arm/configs/omap2plus_defconfig
+> index d5f00d7..076b131 100644
+> --- a/arch/arm/configs/omap2plus_defconfig
+> +++ b/arch/arm/configs/omap2plus_defconfig
+> @@ -130,6 +130,9 @@ CONFIG_POWER_SUPPLY=y
+>  CONFIG_WATCHDOG=y
+>  CONFIG_OMAP_WATCHDOG=y
+>  CONFIG_TWL4030_WATCHDOG=y
+> +CONFIG_MENELAUS=y
+> +CONFIG_TWL4030_CORE=y
+> +CONFIG_TWL4030_POWER=y
+>  CONFIG_REGULATOR_TWL4030=y
+>  CONFIG_REGULATOR_TPS65023=y
+>  CONFIG_REGULATOR_TPS6507X=y
+> diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
+> index 7edf802..d40f6d2 100644
+> --- a/arch/arm/mach-omap2/Kconfig
+> +++ b/arch/arm/mach-omap2/Kconfig
+> @@ -15,9 +15,6 @@ config ARCH_OMAP2PLUS_TYPICAL
+>  	select I2C
+>  	select I2C_OMAP
+>  	select MFD_SUPPORT
+> -	select MENELAUS if ARCH_OMAP2
+> -	select TWL4030_CORE if ARCH_OMAP3 || ARCH_OMAP4
+> -	select TWL4030_POWER if ARCH_OMAP3 || ARCH_OMAP4
+>  	help
+>  	  Compile a kernel suitable for booting most boards
+>  
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> index 21574bd..72e15c8 100644
+> --- a/drivers/mfd/Kconfig
+> +++ b/drivers/mfd/Kconfig
+> @@ -238,7 +238,7 @@ config TWL4030_MADC
+>  
+>  config TWL4030_POWER
+>  	bool "Support power resources on TWL4030 family chips"
+> -	depends on TWL4030_CORE && ARM
+> +	depends on TWL4030_CORE
+>  	help
+>  	  Say yes here if you want to use the power resources on the
+>  	  TWL4030 family chips.  Most of these resources are regulators,
