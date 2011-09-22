@@ -1,132 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751192Ab1IVPQd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 11:16:33 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:48739 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750866Ab1IVPQa (ORCPT
+	id S1751000Ab1IVPSI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 11:18:08 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:55362 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750712Ab1IVPSE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 11:16:30 -0400
-Date: Thu, 22 Sep 2011 11:16:30 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Rocko Requin <rockorequin@hotmail.com>
-cc: Hannes Reinecke <hare@suse.de>, "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        Ben Hutchings <ben@decadent.org.uk>, <jaxboe@fusionio.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        <tytso@mit.edu>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [Bug 25832] kernel crashes when a mounted ext3/4 file system is
- physically removed
-In-Reply-To: <4E7B296D.8020900@suse.de>
-Message-ID: <Pine.LNX.4.44L0.1109221113380.2137-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 22 Sep 2011 11:18:04 -0400
+Subject: Re: [PATCH 1/9] Remove parent field in cpuacct cgroup
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Balbir Singh <bsingharora@gmail.com>
+Cc: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
+        xemul@parallels.com, paul@paulmenage.org, lizf@cn.fujitsu.com,
+        daniel.lezcano@free.fr, mingo@elte.hu, jbottomley@parallels.com
+Date: Thu, 22 Sep 2011 17:17:17 +0200
+In-Reply-To: <CAKTCnzk=i1a3DHrforcaOCBdhjv1xi=5W=eiJiZoK4BNb3wqVw@mail.gmail.com>
+References: <1316030695-19826-1-git-send-email-glommer@parallels.com>
+	 <1316030695-19826-2-git-send-email-glommer@parallels.com>
+	 <1316448186.1511.19.camel@twins> <4E776937.1070108@parallels.com>
+	 <1316449160.6091.5.camel@twins> <4E776E36.6040906@parallels.com>
+	 <1316450385.6091.9.camel@twins> <4E7770BD.6050902@parallels.com>
+	 <1316457653.6091.16.camel@twins> <20110920172930.GA5318@linux.vnet.ibm.com>
+	 <CAKTCnzk=i1a3DHrforcaOCBdhjv1xi=5W=eiJiZoK4BNb3wqVw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1316704637.31429.25.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rocko:
-
-Can you try testing this patch instead of all the patches I sent to 
-you (but keep Ted's patch)?
-
-Alan Stern
-
-On Thu, 22 Sep 2011, Hannes Reinecke wrote:
-
-> On 09/20/2011 09:32 AM, Jun'ichi Nomura wrote:
-> > On 09/19/11 08:00, Ben Hutchings wrote:
-> [ .. ]
-> >>
-> >> There have been reports of this in Debian going back to 2.6.39:
-> >>
-> >> http://bugs.debian.org/631187
-> >> http://bugs.debian.org/636263
-> >> http://bugs.debian.org/642043
-> >>
-> >> Plus possibly related crashes in elv_put_request after CD-ROM removal:
-> >>
-> >> http://bugs.debian.org/633890
-> >> http://bugs.debian.org/634681
-> >> http://bugs.debian.org/636103
-> >>
-> >> The former was also reported in Ubuntu since their 2.6.38-10:
-> >>
-> >> https://bugs.launchpad.net/debian/+source/linux-2.6/+bug/793796
-> >>
-> >> The result of the discussion there was that it appeared to be a
-> >> regression due to commit 86cbfb5607d4b81b1a993ff689bbd2addd5d3a9b 
-> >> ("[SCSI] put stricter guards on queue dead checks") which was also
-> >> included in a stable update for 2.6.38.
-> >>
-> >> There was also a report on bugzilla.kernel.org, though no-one can see
-> >> quite what that says now:
-> >>
-> >> https://bugzilla.kernel.org/show_bug.cgi?id=38842
-> >>
-> >> I also reported most of the above to James Bottomley and linux-scsi
-> >> nearly 2 months ago, to no response.
-> > 
-> > I've reported a similar oops related to the above commit:
-> >   [BUG] Oops when SCSI device under multipath is removed
-> >   https://lkml.org/lkml/2011/8/10/11
-> > 
-> > Elevator being removed is the core of the problem.
-> > And the essential issue seems 2 different models of queue/driver relation
-> > implied by queue_lock.
-> > 
-> > If reverting the commit is not an option,
-> > until somebody comes up to fix the essential issue,
-> > the patch below should close the regressions introduced by the commit.
-> > 
-> Why do you have to do it that complicated?
-> Couldn't we just state that any external lock is being disconnected from
-> queue_lock after blk_cleanup_queue()?
+On Thu, 2011-09-22 at 20:41 +0530, Balbir Singh wrote:
+> On Tue, Sep 20, 2011 at 10:59 PM, Srivatsa Vaddagiri
+> <vatsa@linux.vnet.ibm.com> wrote:
+> > * Peter Zijlstra <a.p.zijlstra@chello.nl> [2011-09-19 20:40:53]:
+> >
+> >> > Note I was talking about cpuusage. Well, in this case, I myself fail
+> >> > to see the value of the whole cpuusage thing...
+> >
+> > If I recall, cpuacct was prototyped by Paul Menage (and later modified
+> > by Balbir) as a way to demonstrate cgroup controller ..It was one
+> > of those "first" cgroups controllers written to demonstrate how cgroups worked.
+> >
+> > With regard to its value, it does provide a handy interface to measure
+> > cpu utilization of cgroups (vs having to manually sum up task's
+> > utilization) and afaik libvirt makes use of it (although I
+> > don't think anyone reads it at "high" frequency).
+> >
 > 
-> Then something like this should suffice here:
+> Android makes heavy use of cpuacct as well. We invented it to do cpu
+> accounting independent of control
 
+But its a massive waste of time to have to iterate a double hierarchy,
+cache-miss heaven.
 
-
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 90e1ffd..a4ac005 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -367,10 +367,8 @@ void blk_cleanup_queue(struct request_queue *q)
-        queue_flag_set_unlocked(QUEUE_FLAG_DEAD, q);
-        mutex_unlock(&q->sysfs_lock);
-
--       if (q->elevator)
--               elevator_exit(q->elevator);
--
--       blk_throtl_exit(q);
-+       if (q->queue_lock != q->__queue_lock)
-+               q->queue_lock = q->__queue_lock;
-
-        blk_put_queue(q);
- }
-diff --git a/block/blk-sysfs.c b/block/blk-sysfs.c
-index 0ee17b5..a5a756b 100644
---- a/block/blk-sysfs.c
-+++ b/block/blk-sysfs.c
-@@ -477,6 +477,11 @@ static void blk_release_queue(struct kobject *kobj)
-
-        blk_sync_queue(q);
-
-+       if (q->elevator)
-+               elevator_exit(q->elevator);
-+
-+       blk_throtl_exit(q);
-+
-        if (rl->rq_pool)
-                mempool_destroy(rl->rq_pool);
- 
-
-> And yeah, I find it pretty annoying, too.
-> 
-> Cheers,
-> 
-> Hannes
-> 
-
+Or so people really have independent cgroups as well? I thought people
+just co-mount all this crap.
