@@ -1,79 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752066Ab1IVMw3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 08:52:29 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:56921 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751838Ab1IVMwZ (ORCPT
+	id S1752153Ab1IVNAs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 09:00:48 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:51813 "HELO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751941Ab1IVNAp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 08:52:25 -0400
-Subject: [PATCH] ASoC: Add Kconfig and Makefile entries for rt5631 codec
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: flove <flove@realtek.com>, Johnny Hsu <johnnyhsu@realtek.com>,
-        Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 22 Sep 2011 20:52:12 +0800
-Message-ID: <1316695932.6704.1.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Thu, 22 Sep 2011 09:00:45 -0400
+Date: Thu, 22 Sep 2011 14:00:31 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: "Jon Medhurst (Tixy)" <jon.medhurst@linaro.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Dave Martin <dave.martin@linaro.org>,
+        Laura Abbott <lauraa@codeaurora.org>, Nicolas Pitre <nico@fluxnic.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] arm: Add unwinding annotations for 64bit division
+ functions
+Message-ID: <20110922130031.GK12025@e102109-lin.cambridge.arm.com>
+References: <1316470297-5063-1-git-send-email-lauraa@codeaurora.org>
+ <alpine.LFD.2.00.1109191913210.12663@xanadu.home>
+ <2285dff3fee56758b6279062a5a30dc7.squirrel@www.codeaurora.org>
+ <20110921113906.GB2872@arm.com>
+ <20110921115553.GF17169@n2100.arm.linux.org.uk>
+ <1316676488.2053.9.camel@linaro1>
+ <CAHkRjk7B4Bmt2g6ptHO3TudXgrkr5rv4b--Hbx-mw7=MO9Q+BQ@mail.gmail.com>
+ <1316689606.2053.29.camel@linaro1>
+ <20110922115713.GJ12025@e102109-lin.cambridge.arm.com>
+ <1316693581.2053.38.camel@linaro1>
+MIME-Version: 1.0
+In-Reply-To: <1316693581.2053.38.camel@linaro1>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 22 Sep 2011 13:00:38.0061 (UTC) FILETIME=[9FEBADD0:01CC7927]
+X-MC-Unique: 111092214004103001
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+On Thu, Sep 22, 2011 at 01:13:01PM +0100, Jon Medhurst (Tixy) wrote:
+> On Thu, 2011-09-22 at 12:57 +0100, Catalin Marinas wrote:
+> > On Thu, Sep 22, 2011 at 12:06:46PM +0100, Jon Medhurst (Tixy) wrote:
+> > > On Thu, 2011-09-22 at 10:48 +0100, Catalin Marinas wrote:
+> > > > We could improve things a bit in the unwinder and assume
+> > > > that if the fault address is the same as the .fnstart address, the
+> > > > return value is always in LR and the SP not affected (that's unwinding
+> > > > bytecode 0xb0). For a few instructions into the function prologue we
+> > > > can't reliably get the unwinding information.
+> > > 
+> > > That would help make it possible to unwind out of kprobes handlers to
+> > > the probed function. The kprobes code itself would need work as well,
+> > > and possibly the undef handler. Do we think it is worthwhile to do
+> > > this? 
+> > 
+> > Does kprobes need to trace beyond the probed function? If not, you get
+> > the address of the probed function via pt_regs anyway, so no need for
+> > unwinding beyond that.
+> 
+> To be honest, I'm not very sure how kprobes get used in the real world.
+> Though, if stack unwinding from their handlers currently doesn't work
+> and people had a usecase for it, we would expect them to complain.
+
+The unwinding fix should be simple (I haven't tested it yet):
+
+8<-----------------------------
+ARM: Ignore the unwinding information for the first instruction in a function
+
+From: Catalin Marinas <catalin.marinas@arm.com>
+
+When backtracing from the first instruction of a function, the prologue
+has not been executed and the unwinding information is not valid. This
+patch checks for this case and just assumes that the return address is
+in LR.
+
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 ---
- sound/soc/codecs/Kconfig  |    4 ++++
- sound/soc/codecs/Makefile |    2 ++
- 2 files changed, 6 insertions(+), 0 deletions(-)
+ arch/arm/kernel/unwind.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
-diff --git a/sound/soc/codecs/Kconfig b/sound/soc/codecs/Kconfig
-index 45c966c..3449431 100644
---- a/sound/soc/codecs/Kconfig
-+++ b/sound/soc/codecs/Kconfig
-@@ -40,6 +40,7 @@ config SND_SOC_ALL_CODECS
- 	select SND_SOC_MAX9850 if I2C
- 	select SND_SOC_MAX9877 if I2C
- 	select SND_SOC_PCM3008
-+	select SND_SOC_RT5631 if I2C
- 	select SND_SOC_SGTL5000 if I2C
- 	select SND_SOC_SN95031 if INTEL_SCU_IPC
- 	select SND_SOC_SPDIF
-@@ -219,6 +220,9 @@ config SND_SOC_MAX9850
- config SND_SOC_PCM3008
-        tristate
+diff --git a/arch/arm/kernel/unwind.c b/arch/arm/kernel/unwind.c
+index d2cb0b3..946face 100644
+--- a/arch/arm/kernel/unwind.c
++++ b/arch/arm/kernel/unwind.c
+@@ -293,6 +293,16 @@ int unwind_frame(struct stackframe *frame)
+ 		return -URC_FAILURE;
+ 	}
  
-+config SND_SOC_RT5631
-+	tristate
++	/*
++	 * Check for backtrace on the first instruction of a function. The
++	 * prologue has not been executed yet and the unwinding information is
++	 * not valid. Assume that the return address is in LR.
++	 */
++	if (idx.addr == frame->pc) {
++		frame->pc = frame->lr;
++		return URC_OK;
++	}
 +
- #Freescale sgtl5000 codec
- config SND_SOC_SGTL5000
- 	tristate
-diff --git a/sound/soc/codecs/Makefile b/sound/soc/codecs/Makefile
-index 4f3ff24..787881b 100644
---- a/sound/soc/codecs/Makefile
-+++ b/sound/soc/codecs/Makefile
-@@ -26,6 +26,7 @@ snd-soc-max98088-objs := max98088.o
- snd-soc-max98095-objs := max98095.o
- snd-soc-max9850-objs := max9850.o
- snd-soc-pcm3008-objs := pcm3008.o
-+snd-soc-rt5631-objs := rt5631.o
- snd-soc-sgtl5000-objs := sgtl5000.o
- snd-soc-alc5623-objs := alc5623.o
- snd-soc-sn95031-objs := sn95031.o
-@@ -126,6 +127,7 @@ obj-$(CONFIG_SND_SOC_MAX98088)	+= snd-soc-max98088.o
- obj-$(CONFIG_SND_SOC_MAX98095)	+= snd-soc-max98095.o
- obj-$(CONFIG_SND_SOC_MAX9850)	+= snd-soc-max9850.o
- obj-$(CONFIG_SND_SOC_PCM3008)	+= snd-soc-pcm3008.o
-+obj-$(CONFIG_SND_SOC_RT5631)	+= snd-soc-rt5631.o
- obj-$(CONFIG_SND_SOC_SGTL5000)  += snd-soc-sgtl5000.o
- obj-$(CONFIG_SND_SOC_SN95031)	+=snd-soc-sn95031.o
- obj-$(CONFIG_SND_SOC_SPDIF)	+= snd-soc-spdif.o
+ 	ctrl.vrs[FP] = frame->fp;
+ 	ctrl.vrs[SP] = frame->sp;
+ 	ctrl.vrs[LR] = frame->lr;
+
 -- 
-1.7.4.1
-
-
+Catalin
 
