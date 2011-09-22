@@ -1,65 +1,428 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753425Ab1IVR6l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 13:58:41 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:40239 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752254Ab1IVR6k (ORCPT
+	id S1753440Ab1IVSBu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 14:01:50 -0400
+Received: from utopia.booyaka.com ([72.9.107.138]:53386 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752254Ab1IVSBq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 13:58:40 -0400
-Date: Thu, 22 Sep 2011 21:57:54 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: kernel-hardening@lists.openwall.com,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 1/2] proc: force dcache drop on unauthorized access
-Message-ID: <20110922175754.GA6558@albatros>
-References: <20110910164001.GA2342@albatros>
+	Thu, 22 Sep 2011 14:01:46 -0400
+Date: Thu, 22 Sep 2011 12:01:45 -0600 (MDT)
+From: Paul Walmsley <paul@pwsan.com>
+To: parthab@india.ti.com, Keshava Munegowda <keshava_mgowda@ti.com>
+cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, b-cousson@ti.com, balbi@ti.com,
+        gadiyar@ti.com, sameo@linux.intel.com, tony@atomide.com,
+        khilman@ti.com, johnstul@us.ibm.com, vishwanath.bs@ti.com
+Subject: Re: [PATCH 2/5 v11] arm: omap: usb: ehci and ohci hwmod structures
+ for omap3
+In-Reply-To: <1316691479-1849-3-git-send-email-keshava_mgowda@ti.com>
+Message-ID: <alpine.DEB.2.00.1109221115320.10719@utopia.booyaka.com>
+References: <1316691479-1849-1-git-send-email-keshava_mgowda@ti.com> <1316691479-1849-2-git-send-email-keshava_mgowda@ti.com> <1316691479-1849-3-git-send-email-keshava_mgowda@ti.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110910164001.GA2342@albatros>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Andrew,
+Hi
 
-On Sat, Sep 10, 2011 at 20:40 +0400, Vasiliy Kulikov wrote:
-> The patch "proc: fix races against execve() of /proc/PID/fd**" is still
-> a partial fix for a setxid problem.  link(2) is a yet another way to
-> identify whether a specific fd is opened by a privileged process.  By
-> calling link(2) against /proc/PID/fd/* an attacker may identify whether
-> the fd number is valid for PID by analysing link(2) return code.
+a few comments
+
+On Thu, 22 Sep 2011, Keshava Munegowda wrote:
+
+> following 4 hwmod structures are added
+> 1. usb_host_hs hwmod of usbhs with uhh base address and functional clock,
+> 2. usb_ehci_hs hwmod with irq and base address,
+> 3. usb_ohci_hs hwmod with irq and base address,
+> 	- the ehci and ohci hwmods does not require functional clock
+> 	  because usb_host_hs has functional clock which is sufficient
+>           to access ehci and ohci address space.
+
+Every hwmod should have a functional clock defined.  If they use the same 
+functional clock as usb_host_hs, then the same main_clk should be listed 
+for ehci/ohci also.
+
+> 4. usb_tll_hs hwmod of usbhs with the TLL base address and irq.
 > 
-> Both getattr() and link() can be used by the attacker iff the dentry is
-> present in the dcache.  In this case ->lookup() is not called and the
-> only way to check ptrace permissions is either operation handler or
-> ->revalidate().  The easiest solution to prevent any unauthorized access
-> to /proc/PID/fd*/ files is to force the dentry drop on each unauthorized
-> access attempt.
+> Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
+> Reviewed-by: Partha Basak <parthab@india.ti.com>
+> ---
+>  arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |  271 ++++++++++++++++++++++++++++
+>  1 files changed, 271 insertions(+), 0 deletions(-)
 > 
-> If an attacker keeps opened fd of /proc/PID/fd/ and dcache contains
-> a specific dentry for some /proc/PID/fd/XXX, any future attemp to use the
-> dentry by the attacker would lead to the dentry drop as a result of a
-> failed ptrace check in ->revalidate().  Then the attacker cannot spawn a
-> dentry for the specific fd number because of ptrace check in ->lookup().
+> diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+> index 59fdb9f..d79f728 100644
+> --- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+> +++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+> @@ -84,6 +84,10 @@ static struct omap_hwmod omap3xxx_mcbsp4_hwmod;
+>  static struct omap_hwmod omap3xxx_mcbsp5_hwmod;
+>  static struct omap_hwmod omap3xxx_mcbsp2_sidetone_hwmod;
+>  static struct omap_hwmod omap3xxx_mcbsp3_sidetone_hwmod;
+> +static struct omap_hwmod omap34xx_usb_host_hs_hwmod;
+> +static struct omap_hwmod omap34xx_usbhs_ohci_hwmod;
+> +static struct omap_hwmod omap34xx_usbhs_ehci_hwmod;
+> +static struct omap_hwmod omap34xx_usb_tll_hs_hwmod;
+>  
+>  /* L3 -> L4_CORE interface */
+>  static struct omap_hwmod_ocp_if omap3xxx_l3_main__l4_core = {
+> @@ -3196,6 +3200,266 @@ static struct omap_hwmod omap3xxx_mmc3_hwmod = {
+>  	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP3430),
+>  };
+>  
+> +/*
+> + * 'usb_host_hs' class
+> + * high-speed multi-port usb host controller
+> + */
+> +static struct omap_hwmod_ocp_if omap34xx_usb_host_hs__l3_main_2 = {
+> +	.master		= &omap34xx_usb_host_hs_hwmod,
+> +	.slave		= &omap3xxx_l3_main_hwmod,
+> +	.clk		= "core_l3_ick",
+> +	.user		= OCP_USER_MPU,
+> +};
+> +
+> +static struct omap_hwmod_class_sysconfig omap34xx_usb_host_hs_sysc = {
+> +	.rev_offs	= 0x0000,
+> +	.sysc_offs	= 0x0010,
+> +	.syss_offs	= 0x0014,
+> +	.sysc_flags	= (SYSC_HAS_MIDLEMODE | SYSC_HAS_SIDLEMODE),
+
+This is missing a bunch of SYSC bits, according to Table 24-152 
+"UHH_SYSCONFIG" of the 34xx public TRM, version ZR.
+
+> +	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
+> +			   MSTANDBY_FORCE | MSTANDBY_NO | MSTANDBY_SMART),
+> +	.sysc_fields	= &omap_hwmod_sysc_type1,
+> +};
+> +
+> +static struct omap_hwmod_class omap34xx_usb_host_hs_hwmod_class = {
+> +	.name = "usb_host_hs",
+> +	.sysc = &omap34xx_usb_host_hs_sysc,
+> +};
+> +
+> +static struct omap_hwmod_ocp_if *omap34xx_usb_host_hs_masters[] = {
+> +	&omap34xx_usb_host_hs__l3_main_2,
+> +};
+> +
+> +static struct omap_hwmod_addr_space omap34xx_usb_host_hs_addrs[] = {
+> +	{
+> +		.name		= "uhh",
+> +		.pa_start	= 0x48064000,
+> +		.pa_end		= 0x480643ff,
+> +		.flags		= ADDR_TYPE_RT
+> +	},
+> +	{}
+> +};
+> +
+> +static struct omap_hwmod_ocp_if omap34xx_l4_cfg__usb_host_hs = {
+> +	.master		= &omap3xxx_l4_core_hwmod,
+> +	.slave		= &omap34xx_usb_host_hs_hwmod,
+> +	.clk		= "l4_ick",
+> +	.addr		= omap34xx_usb_host_hs_addrs,
+> +	.user		= OCP_USER_MPU | OCP_USER_SDMA,
+> +};
+> +
+> +static struct omap_hwmod_ocp_if omap34xx_f128m_cfg__usb_host_hs = {
+> +	.clk		= "usbhost_120m_fck",
+
+This doesn't look right.  This is an interface structure record, so it 
+should be associated with an interface clock.  Is the hardware really 
+using the functional clock as the interface clock?  Or, as seems more 
+likely...
+
+> +	.user		= OCP_USER_MPU,
+> +	.flags		= OCPIF_SWSUP_IDLE,
+
+... is this just a hack?  OCPIF_SWSUP_IDLE is intended to work around 
+hardware autoidle bugs only.  Are you sure this shouldn't be defined as an 
+optional clock instead?
+
+> +};
+> +
+> +static struct omap_hwmod_ocp_if omap34xx_f48m_cfg__usb_host_hs = {
+> +	.clk		= "usbhost_48m_fck",
+> +	.user		= OCP_USER_MPU,
+> +	.flags		= OCPIF_SWSUP_IDLE,
+> +};
+
+Same comments as the above.
+
+> +
+> +static struct omap_hwmod_ocp_if *omap34xx_usb_host_hs_slaves[] = {
+> +	&omap34xx_l4_cfg__usb_host_hs,
+> +	&omap34xx_f128m_cfg__usb_host_hs,
+> +	&omap34xx_f48m_cfg__usb_host_hs,
+> +};
+> +
+> +static struct omap_hwmod omap34xx_usb_host_hs_hwmod = {
+> +	.name		= "usb_host_hs",
+> +	.class		= &omap34xx_usb_host_hs_hwmod_class,
+> +	.main_clk	= "usbhost_ick",
+
+Is this really the main clock?  The main clock is the clock that drives
+the register logic in the IP block.  Looks to me, based on the integration
+document in the 34xx TRM vZR, that this module has a functional clock.  In 
+general, the only time that the main_clk should be an interface clock is 
+when the clock is a combined interface and functional clock.  The mailbox 
+IP block is a classic example.
+
+> +	.prcm = {
+> +		.omap2 = {
+> +			.module_offs = OMAP3430ES2_USBHOST_MOD,
+> +			.prcm_reg_id = 1,
+> +			.module_bit = 0,
+> +			.idlest_reg_id = 1,
+> +			.idlest_idle_bit = 1,
+> +			.idlest_stdby_bit = 0,
+
+These bit shifts should use macros, rather than numbers, which is the 
+existing practice for the other hwmods in the 
+omap_hwmod_3xxx_data.c file.
+
+> +		},
+> +	},
+> +	.slaves		= omap34xx_usb_host_hs_slaves,
+> +	.slaves_cnt	= ARRAY_SIZE(omap34xx_usb_host_hs_slaves),
+> +	.masters	= omap34xx_usb_host_hs_masters,
+> +	.masters_cnt	= ARRAY_SIZE(omap34xx_usb_host_hs_masters),
+> +/*
+> + * The usbhs controller prevents the enter omap to low power mode
+> + * if other than FORCE IDLE and FORCE STANDBY are used.
+> + */
+> +	.flags		= HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY,
+> +	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP3430),
+
+Please rebase this series on Tony's current master branch, which gets rid 
+of the omap_chip structure field.
+
+> +};
+> +
+> +/* 'usb_ohci_hs' class  */
+> +static struct omap_hwmod_class omap34xx_usbhs_ohci_hwmod_class = {
+> +	.name = "usb_ohci_hs",
+> +};
+> +
+> +static struct omap_hwmod_irq_info omap34xx_usbhs_ohci_irqs[] = {
+> +	{ .name = "ohci-irq", .irq = 76 },
+> +	{ .irq = -1 }
+> +};
+> +
+> +static struct omap_hwmod_addr_space omap34xx_usbhs_ohci_addrs[] = {
+> +	{
+> +		.name		= "ohci",
+> +		.pa_start	= 0x48064400,
+> +		.pa_end		= 0x480647ff,
+
+This is missing a 
+
+                .flags          = ADDR_TYPE_RT
+
+since this address range is a register target.
+
+> +	},
+> +	{}
+> +};
+> +
+> +static struct omap_hwmod_ocp_if omap34xx_l4_cfg__usbhs_ohci = {
+> +	.master		= &omap3xxx_l4_core_hwmod,
+> +	.slave		= &omap34xx_usbhs_ohci_hwmod,
+> +	.clk		= "l4_ick",
+> +	.addr		= omap34xx_usbhs_ohci_addrs,
+> +	.user		= OCP_USER_MPU | OCP_USER_SDMA,
+> +};
+> +
+> +static struct omap_hwmod_ocp_if *omap34xx_usbhs_ohci_slaves[] = {
+> +	&omap34xx_l4_cfg__usbhs_ohci,
+> +};
+> +
+> +static struct omap_hwmod omap34xx_usbhs_ohci_hwmod = {
+> +	.name		= "usb_ohci_hs",
+
+This is missing a main_clk.
+
+> +	.class		= &omap34xx_usbhs_ohci_hwmod_class,
+> +	.mpu_irqs	= omap34xx_usbhs_ohci_irqs,
+> +	.slaves		= omap34xx_usbhs_ohci_slaves,
+> +	.slaves_cnt	= ARRAY_SIZE(omap34xx_usbhs_ohci_slaves),
+> +/*
+> + * The ohci hwmod does not has any sysconfig , so
+> + * there is no RESET and IDLE settings.
+> + */
+> +	.flags		= HWMOD_INIT_NO_RESET | HWMOD_NO_IDLEST,
+> +	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP3430),
+> +};
+> +
+> +/* 'usb_ehci_hs' class  */
+> +static struct omap_hwmod_class omap34xx_usbhs_ehci_hwmod_class = {
+> +	.name = "usb_ehci_hs",
+> +};
+> +
+> +static struct omap_hwmod_irq_info omap34xx_usbhs_ehci_irqs[] = {
+> +	{ .name = "ehci-irq", .irq = 77 },
+> +	{ .irq = -1 }
+> +};
+> +
+> +static struct omap_hwmod_addr_space omap34xx_usbhs_ehci_addrs[] = {
+> +	{
+> +		.name		= "ehci",
+> +		.pa_start	= 0x48064800,
+> +		.pa_end		= 0x48064cff,
+
+This is missing a
+
+                .flags          = ADDR_TYPE_RT
+
+since this address range is a register target.
+
+> +	},
+> +	{}
+> +};
+> +
+> +static struct omap_hwmod_ocp_if omap34xx_l4_cfg__usbhs_ehci = {
+> +	.master		= &omap3xxx_l4_core_hwmod,
+> +	.slave		= &omap34xx_usbhs_ehci_hwmod,
+> +	.clk		= "l4_ick",
+> +	.addr		= omap34xx_usbhs_ehci_addrs,
+> +	.user		= OCP_USER_MPU | OCP_USER_SDMA,
+> +};
+> +
+> +static struct omap_hwmod_ocp_if *omap34xx_usbhs_ehci_slaves[] = {
+> +	&omap34xx_l4_cfg__usbhs_ehci,
+> +};
+> +
+> +static struct omap_hwmod omap34xx_usbhs_ehci_hwmod = {
+> +	.name		= "usb_ehci_hs",
+> +	.class		= &omap34xx_usbhs_ehci_hwmod_class,
+
+This is missing a main_clk.
+
+> +	.mpu_irqs	= omap34xx_usbhs_ehci_irqs,
+> +	.slaves		= omap34xx_usbhs_ehci_slaves,
+> +	.slaves_cnt	= ARRAY_SIZE(omap34xx_usbhs_ehci_slaves),
+> +/*
+> + * The ehci hwmod does not has any sysconfig , so
+> + * there is no RESET and IDLE settings.
+> + */
+> +	.flags		= HWMOD_INIT_NO_RESET | HWMOD_NO_IDLEST,
+> +	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP3430),
+> +};
+> +
+> +/*
+> + * 'usb_tll_hs' class
+> + * usb_tll_hs module is the adapter on the usb_host_hs ports
+> + */
+> +static struct omap_hwmod_class_sysconfig omap34xx_usb_tll_hs_sysc = {
+> +	.rev_offs	= 0x0000,
+> +	.sysc_offs	= 0x0010,
+> +	.syss_offs	= 0x0014,
+> +	.sysc_flags	= (SYSC_HAS_AUTOIDLE | SYSC_HAS_SIDLEMODE |
+> +			SYSC_HAS_SOFTRESET | SYSC_HAS_ENAWAKEUP	|
+> +			SYSC_HAS_CLOCKACTIVITY),
+
+These flags should be aligned with the character after the first 
+parenthesis.
+
+> +	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART),
+> +	.sysc_fields	= &omap_hwmod_sysc_type1,
+> +};
+> +
+> +static struct omap_hwmod_class omap34xx_usb_tll_hs_hwmod_class = {
+> +	.name = "usb_tll_hs",
+> +	.sysc = &omap34xx_usb_tll_hs_sysc,
+> +};
+> +
+> +static struct omap_hwmod_irq_info omap34xx_usb_tll_hs_irqs[] = {
+> +	{ .name = "tll-irq", .irq = 78 },
+> +	{ .irq = -1 }
+> +};
+> +
+> +static struct omap_hwmod_addr_space omap34xx_usb_tll_hs_addrs[] = {
+> +	{
+> +		.name		= "tll",
+> +		.pa_start	= 0x48062000,
+> +		.pa_end		= 0x48062fff,
+> +		.flags		= ADDR_TYPE_RT
+> +	},
+> +	{}
+> +};
+> +
+> +static struct omap_hwmod_ocp_if omap34xx_f_cfg__usb_tll_hs = {
+> +	.clk		= "usbtll_fck",
+> +	.user		= OCP_USER_MPU,
+> +	.flags		= OCPIF_SWSUP_IDLE,
+> +};
+
+Same comments as for omap34xx_f128m_cfg__usb_host_hs above.
+
+> +
+> +static struct omap_hwmod_ocp_if omap34xx_l4_cfg__usb_tll_hs = {
+> +	.master		= &omap3xxx_l4_core_hwmod,
+> +	.slave		= &omap34xx_usb_tll_hs_hwmod,
+> +	.clk		= "l4_ick",
+> +	.addr		= omap34xx_usb_tll_hs_addrs,
+> +	.user		= OCP_USER_MPU | OCP_USER_SDMA,
+> +};
+> +
+> +static struct omap_hwmod_ocp_if *omap34xx_usb_tll_hs_slaves[] = {
+> +	&omap34xx_l4_cfg__usb_tll_hs,
+> +	&omap34xx_f_cfg__usb_tll_hs,
+> +};
+> +
+> +static struct omap_hwmod omap34xx_usb_tll_hs_hwmod = {
+> +	.name		= "usb_tll_hs",
+> +	.class		= &omap34xx_usb_tll_hs_hwmod_class,
+> +	.mpu_irqs	= omap34xx_usb_tll_hs_irqs,
+> +	.main_clk	= "usbtll_ick",
+
+Is this really the main clock?  The main clock is the clock that drives 
+the register logic in the IP block.  Looks to me, based on the integration 
+document in the 34xx TRM vZR, that this module has a functional clock.  
+
+> +	.prcm = {
+> +		.omap2 = {
+> +			.module_offs = CORE_MOD,
+> +			.prcm_reg_id = 3,
+> +			.module_bit = 2,
+> +			.idlest_reg_id = 3,
+> +			.idlest_idle_bit = 2,
+
+These bit shifts should use macros, rather than numbers, which is the
+existing practice for the other hwmods in the 
+omap_hwmod_3xxx_data.c file.
+
+> +		},
+> +	},
+> +	.slaves		= omap34xx_usb_tll_hs_slaves,
+> +	.slaves_cnt	= ARRAY_SIZE(omap34xx_usb_tll_hs_slaves),
+> +/*
+> + * The usbhs controller prevents the enter omap to low power mode
+> + * if other than FORCE IDLE for TLL mode too.
+> + */
+> +	.flags		= HWMOD_SWSUP_SIDLE,
+> +	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP3430),
+> +};
+> +
+>  static __initdata struct omap_hwmod *omap3xxx_hwmods[] = {
+>  	&omap3xxx_l3_main_hwmod,
+>  	&omap3xxx_l4_core_hwmod,
+> @@ -3225,6 +3489,13 @@ static __initdata struct omap_hwmod *omap3xxx_hwmods[] = {
+>  	&omap3xxx_uart2_hwmod,
+>  	&omap3xxx_uart3_hwmod,
+>  	&omap3xxx_uart4_hwmod,
+> +
+> +	/* usb host class */
+> +	&omap34xx_usb_host_hs_hwmod,
+> +	&omap34xx_usbhs_ohci_hwmod,
+> +	&omap34xx_usbhs_ehci_hwmod,
+> +	&omap34xx_usb_tll_hs_hwmod,
+> +
+>  	/* dss class */
+>  	&omap3430es1_dss_core_hwmod,
+>  	&omap3xxx_dss_core_hwmod,
+> -- 
+> 1.6.0.4
 > 
-> The dentry drop can be still observed by an attacker by analysing
-> information from /proc/slabinfo, which is addressed in the successive
-> patch.
 
-After (almost) everybody agreed that closing slabinfo and similar is
-a good thing, should I resend these 2 patches (/proc/PID/fd and
-slabinfo) with sysfs addition or you'll take these patches and I'll send
-sysfs patch after them?
 
-Thanks,
-
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+- Paul
