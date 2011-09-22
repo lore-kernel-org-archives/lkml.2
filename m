@@ -1,52 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751384Ab1IVPog (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 11:44:36 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:63409 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750901Ab1IVPoe convert rfc822-to-8bit (ORCPT
+	id S1751486Ab1IVPsl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 11:48:41 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:54541 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750948Ab1IVPsk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 11:44:34 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=HDMEaO5qBbBEdnjy4t97KpAA5IFintnKilRIEOe5lNIPprGrlftAyiVBldN16sziR
-	umZlW7rf7K/QcOVBc/6jw==
+	Thu, 22 Sep 2011 11:48:40 -0400
+Message-ID: <4E7B58D3.5060006@gmail.com>
+Date: Thu, 22 Sep 2011 09:48:35 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-In-Reply-To: <20110922095803.GA4530@shutemov.name>
-References: <1316393805-3005-1-git-send-email-glommer@parallels.com>
- <1316393805-3005-7-git-send-email-glommer@parallels.com> <CAHH2K0Yuji2_2pMdzEaMvRx0KE7OOaoEGT+OK4gJgTcOPKuT9g@mail.gmail.com>
- <20110922095803.GA4530@shutemov.name>
-From: Greg Thelen <gthelen@google.com>
-Date: Thu, 22 Sep 2011 08:44:11 -0700
-Message-ID: <CAHH2K0ZMq_jCGr3m3PZDtmDwHUXnnL-fuQDt-A-SdUKgeK6P6g@mail.gmail.com>
-Subject: Re: [PATCH v3 6/7] tcp buffer limitation: per-cgroup limit
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
-        paul@paulmenage.org, lizf@cn.fujitsu.com,
-        kamezawa.hiroyu@jp.fujitsu.com, ebiederm@xmission.com,
-        davem@davemloft.net, netdev@vger.kernel.org, linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Stephane Eranian <eranian@google.com>, Anton Blanchard <anton@samba.org>
+CC: linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
+        mingo@elte.hu, robert.richter@amd.com, ak@linux.intel.com
+Subject: Re: [PATCH] perf: make perf.data more self-descriptive (v5)
+References: <20110922123128.GA9761@quad> <4E7B55BC.5050303@gmail.com> <CABPqkBSBXenw7AFg-HZY+j0kVAk+cu53S_dF3_GKD8VUGf9UYQ@mail.gmail.com>
+In-Reply-To: <CABPqkBSBXenw7AFg-HZY+j0kVAk+cu53S_dF3_GKD8VUGf9UYQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 22, 2011 at 2:58 AM, Kirill A. Shutemov
-<kirill@shutemov.name> wrote:
-> On Wed, Sep 21, 2011 at 11:01:46PM -0700, Greg Thelen wrote:
->> On Sun, Sep 18, 2011 at 5:56 PM, Glauber Costa <glommer@parallels.com> wrote:
->> > +static inline bool mem_cgroup_is_root(struct mem_cgroup *mem)
->> > +{
->> > + � � � return (mem == root_mem_cgroup);
->> > +}
->> > +
+On 09/22/2011 09:40 AM, Stephane Eranian wrote:
+>>> diff --git a/tools/perf/arch/powerpc/util/header.c b/tools/perf/arch/powerpc/util/header.c
+>>> new file mode 100644
+>>> index 0000000..d4bf958
+>>> --- /dev/null
+>>> +++ b/tools/perf/arch/powerpc/util/header.c
+>>> @@ -0,0 +1,36 @@
+>>> +#include <sys/types.h>
+>>> +#include <unistd.h>
+>>> +#include <stdio.h>
+>>> +#include <stdlib.h>
+>>> +#include <string.h>
+>>> +
+>>> +#include "../../util/header.h"
+>>> +
+>>> +static inline unsigned long mfspr(int rn)
+>>> +{
+>>> +     unsigned long rval;
+>>> +     asm volatile("mfspr %0," __stringify(rn) : "=r" (rval));
+>>> +     return  rval;
+>>> +}
 >>
->> Why are you adding a copy of mem_cgroup_is_root(). �I see one already
->> in v3.0. �Was it deleted in a previous patch?
->
-> mem_cgroup_is_root() moved up in the file.
+>> Fails to compile on powerpc:
+>>
+>> arch/powerpc/util/header.c: In function ‘mfspr’:
+>> arch/powerpc/util/header.c:12: error: expected ‘:’ or ‘)’ before
+>> ‘__stringify’
+>> cc1: warnings being treated as errors
+>> arch/powerpc/util/header.c:9: error: unused parameter ‘rn’
+>> make: *** [/tmp/stephane/arch/powerpc/util/header.o] Error 1
+>> make: *** Waiting for unfinished jobs....
+>>
+> 
+> Argh, I don't have a PPC system, so I made this up (based on libpfm4 code).
+> 
+> Does adding:
+> 
+> #define __stringify_1(x)        #x
+> #define __stringify(x)          __stringify_1(x)
+> 
+> Solve the problem?
 
-Got it.  Thanks.
+No. I added those lines above mfspr(). Now the error is:
+cc1: warnings being treated as errors
+arch/powerpc/util/header.c: In function ‘mfspr’:
+arch/powerpc/util/header.c:11: error: unused parameter ‘rn’
+make: *** [/tmp/stephane/arch/powerpc/util/header.o] Error 1
+make: *** Waiting for unfinished jobs....
+
+which does seem logical given that rn is used in stringify.
+
+Maybe Anton can help with this (cc'ed).
+
+David
