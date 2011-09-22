@@ -1,99 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753231Ab1IVRt5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 13:49:57 -0400
-Received: from mms2.broadcom.com ([216.31.210.18]:4602 "EHLO mms2.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751684Ab1IVRtz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 13:49:55 -0400
-X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
-From: "Jeffrey (Sheng-Hui) Chu" <jeffchu@broadcom.com>
-To: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-cc: "Jean Delvare" <khali@linux-fr.org>, "Ben Dooks" <ben-linux@fluff.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Qi Wang" <qi.wang@intel.com>,
-        "yong.y.wang@intel.com" <yong.y.wang@intel.com>,
-        "joel.clark@intel.com" <joel.clark@intel.com>,
-        "kok.howg.ewe@intel.com" <kok.howg.ewe@intel.com>,
-        "toshiharu-linux@dsn.okisemi.com" <toshiharu-linux@dsn.okisemi.com>,
-        "Aaron Smith" <aarons@broadcom.com>
-Date: Thu, 22 Sep 2011 10:49:39 -0700
-Subject: RE: [PATCH 3/7] i2c-eg20t: delete 10bit access processing
-Thread-Topic: [PATCH 3/7] i2c-eg20t: delete 10bit access processing
-Thread-Index: Acx4vIbyvZ2J7T+mS1665n3FArJG7QAkY9Mw
-Message-ID: <B6A520E9CD57404AAFC0831E4FB39541A98073AF26@IRVEXCHCCR02.corp.ad.broadcom.com>
-References: <1316591509-4433-1-git-send-email-tomoya-linux@dsn.okisemi.com>
- <1316591509-4433-3-git-send-email-tomoya-linux@dsn.okisemi.com>
- <B6A520E9CD57404AAFC0831E4FB39541A98073AC7E@IRVEXCHCCR02.corp.ad.broadcom.com>
- <4E7A7DBA.3020406@dsn.okisemi.com>
-In-Reply-To: <4E7A7DBA.3020406@dsn.okisemi.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-MIME-Version: 1.0
-X-WSS-ID: 6265A9275IS11091039-01-01
-Content-Type: text/plain;
- charset=utf-8
+	id S1753339Ab1IVRvq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 13:51:46 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:44447 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751370Ab1IVRvo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Sep 2011 13:51:44 -0400
+From: Stephen Warren <swarren@nvidia.com>
+To: Ben Dooks <ben-linux@fluff.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Arnd Bergmann <arnd@arndb.de>, Colin Cross <ccross@google.com>,
+        Olof Johansson <olof@lixom.net>, Erik Gilling <konkers@android.com>,
+        linux-i2c@vger.kernel.org, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Dilan Lee <dilee@nvidia.com>, Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH v2] i2c-tegra: Use the suspend_noirq/resume_noirq not suspend/resume
+Date: Thu, 22 Sep 2011 11:51:32 -0600
+Message-Id: <1316713892-357-1-git-send-email-swarren@nvidia.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id p8MHoBLf000496
 
-The device is BCM20791.  Please contact Aaron Smith (aarons@broadcom.com) for evaluation.  
+From: Dilan Lee <dilee@nvidia.com>
 
-By the way, the existing handling of 10-bit address in the patch you intended to delete does not work.  You'll need to fix that before you can test with the device successfully. 
+Various drivers need to use the I2C bus during suspend. Generally, this
+is already supported, since devices are suspended based on (the inverse of)
+probe order, and an I2C-based device can't probe until the I2C bus upon
+which it sits has been probed first.
 
-For the write operation, it's a easy fix:
+However, some subsystems, notably ASoC, do not enjoy such simple bus/child
+probing relationships. In particular, an ASoC machine driver (and hence a
+sound card) may probe very early on before all its required resources are
+available. After all required resources become available, the overall
+machine driver initialization is performed. Suspend of a sound card occurs
+based on the machine driver's probe timing, which may mean suspend occurs
+after an I2C bus has been suspended. In turn, components within the sound
+card suspend when the overall card suspends. If one of those components
+is an I2C device, this may mean the device attempts to suspend after the
+I2C bus it sits upon. Conversely, resume may occur before the I2C bus is
+available. Consequently, I2C accesses during suspend/resume will fail.
 
-@@ -410,25 +408,16 @@ static s32 pch_i2c_writebytes(struct i2c_adapter *i2c_adap,
- 	}
+This causes the following issue:
+
+  We found the register settings of wm8903(an audio codec) can't be modified
+  in snd_soc_suspend since I2C bus has been suspended before snd_soc_suspend.
+
+  Pop noise will occur when system resume from LP0 if the register settings
+  of wm8903 haven't be modified correctly in snd_soc_suspend.
+
+To solve this, the I2C bus driver is modified to use suspend_noirq and
+resume_noirq instead of suspend and resume. This delays the I2C bus suspend
+until after the ASoC card-level suspend, and everything works.
+
+It is acknowledged that this is not an ideal solution. However, this solution
+is the best currently available within the kernel.
+
+Suggested alternatives are:
+
+* Implement an explicit dependency management system within the kernel for
+  device suspend/resume, such that I2C bus would not be suspended before
+  the sound card that requires it. It is reported that Linus rejected this
+  proposal since he wanted suspend ordering to be based on probe ordering.
+
+* Enhance device probing such that the ASoC sound card device could defer
+  its probing until all required resources were available. This would
+  then cause the overall sound card suspend to occur at an appropriate early
+  time. Grant Likely was reported to have been working towards this goal.
+
+[swarren: Rewrote patch description to reflect upstream discussion]
+
+Signed-off-by: Dilan Lee <dilee@nvidia.com>
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+v2: Summarized the email thread in patch description.
+    Added Arnd/Mark's ack/review tags
+
+ drivers/i2c/busses/i2c-tegra.c |   19 +++++++++++++------
+ 1 files changed, 13 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
+index b402435..15ad866 100644
+--- a/drivers/i2c/busses/i2c-tegra.c
++++ b/drivers/i2c/busses/i2c-tegra.c
+@@ -705,8 +705,9 @@ static int tegra_i2c_remove(struct platform_device *pdev)
+ }
  
- 	if (msgs->flags & I2C_M_TEN) {
--		addr_2_msb = ((addr & I2C_MSB_2B_MSK) >> 7);
-+		addr_2_msb = ((addr & I2C_MSB_2B_MSK) >> 7) & 0x06;
+ #ifdef CONFIG_PM
+-static int tegra_i2c_suspend(struct platform_device *pdev, pm_message_t state)
++static int tegra_i2c_suspend_noirq(struct device *dev)
+ {
++	struct platform_device *pdev = to_platform_device(dev);
+ 	struct tegra_i2c_dev *i2c_dev = platform_get_drvdata(pdev);
+ 
+ 	i2c_lock_adapter(&i2c_dev->adapter);
+@@ -716,8 +717,9 @@ static int tegra_i2c_suspend(struct platform_device *pdev, pm_message_t state)
+ 	return 0;
+ }
+ 
+-static int tegra_i2c_resume(struct platform_device *pdev)
++static int tegra_i2c_resume_noirq(struct device *dev)
+ {
++	struct platform_device *pdev = to_platform_device(dev);
+ 	struct tegra_i2c_dev *i2c_dev = platform_get_drvdata(pdev);
+ 	int ret;
+ 
+@@ -736,6 +738,14 @@ static int tegra_i2c_resume(struct platform_device *pdev)
+ 
+ 	return 0;
+ }
++
++static const struct dev_pm_ops tegra_i2c_dev_pm_ops = {
++	.suspend_noirq = tegra_i2c_suspend_noirq,
++	.resume_noirq = tegra_i2c_resume_noirq,
++};
++#define TEGRA_I2C_DEV_PM_OPS (&tegra_i2c_dev_pm_ops)
++#else
++#define TEGRA_I2C_DEV_PM_OPS NULL
+ #endif
+ 
+ #if defined(CONFIG_OF)
+@@ -752,14 +762,11 @@ MODULE_DEVICE_TABLE(of, tegra_i2c_of_match);
+ static struct platform_driver tegra_i2c_driver = {
+ 	.probe   = tegra_i2c_probe,
+ 	.remove  = tegra_i2c_remove,
+-#ifdef CONFIG_PM
+-	.suspend = tegra_i2c_suspend,
+-	.resume  = tegra_i2c_resume,
+-#endif
+ 	.driver  = {
+ 		.name  = "tegra-i2c",
+ 		.owner = THIS_MODULE,
+ 		.of_match_table = tegra_i2c_of_match,
++		.pm    = TEGRA_I2C_DEV_PM_OPS,
+ 	},
+ };
+ 
+-- 
+1.7.0.4
 
-
-For the read operation, static s32 pch_i2c_readbytes(), you'll need to do a write followed by a restart and a read...  please refer to the i2c spec...
-
-Regards,
-
--Jeffrey
-
------Original Message-----
-From: Tomoya MORINAGA [mailto:tomoya-linux@dsn.okisemi.com] 
-Sent: Wednesday, September 21, 2011 8:14 PM
-To: Jeffrey (Sheng-Hui) Chu
-Cc: Jean Delvare; Ben Dooks; linux-i2c@vger.kernel.org; linux-kernel@vger.kernel.org; Qi Wang; yong.y.wang@intel.com; joel.clark@intel.com; kok.howg.ewe@intel.com; toshiharu-linux@dsn.okisemi.com
-Subject: Re: [PATCH 3/7] i2c-eg20t: delete 10bit access processing
-
-(2011/09/22 0:42), Jeffrey (Sheng-Hui) Chu wrote:
-
- > There is i2c device coming out that uses 10-bit address.
-Thank you for your information.
-We want to test 10-bit mode using the device.
-So let me know the device information ?
-
-Anyway, Now, kernel i2c-core is EXPERIMENTAL stage for 10-bit mode like below.
-
-   (Documentation/i2c/ten-bit-addresses)
-    WARNING! The current 10 bit address support is EXPERIMENTAL. There
-   are several places in the code that will cause SEVERE PROBLEMS with
-   10 bit addresses, even though there is some basic handling and
-   hooks. Also,
-   almost no supported adapter handles the 10 bit addresses correctly.
-
-   As soon as a real 10 bit address device is spotted 'in the wild', we
-   can and will add proper support. Right now, 10 bit address devices
-   are defined by the I2C protocol, but we have never seen a single
-   device which supports them.
-
-After kernel supports 10bit-mode formally, we will add the function  to i2c-eg20t again.
-
-Thanks,
-tomoya
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
