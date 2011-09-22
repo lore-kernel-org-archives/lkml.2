@@ -1,56 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751067Ab1IVPLT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 11:11:19 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:38296 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750781Ab1IVPLO (ORCPT
+	id S1751056Ab1IVPMz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 11:12:55 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:48735 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750855Ab1IVPMx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 11:11:14 -0400
+	Thu, 22 Sep 2011 11:12:53 -0400
+Date: Thu, 22 Sep 2011 11:12:51 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Matthias Dellweg <2500@gmx.de>
+cc: Greg Kroah-Hartman <gregkh@suse.de>, Vasiliy Kulikov <segooon@gmail.com>,
+        Michal Sojka <sojkam1@fel.cvut.cz>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] enable usb control message with class specific request
+In-Reply-To: <20110922121031.639006d0@horus>
+Message-ID: <Pine.LNX.4.44L0.1109221100270.2137-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <20110920172930.GA5318@linux.vnet.ibm.com>
-References: <1316030695-19826-1-git-send-email-glommer@parallels.com>
-	<1316030695-19826-2-git-send-email-glommer@parallels.com>
-	<1316448186.1511.19.camel@twins>
-	<4E776937.1070108@parallels.com>
-	<1316449160.6091.5.camel@twins>
-	<4E776E36.6040906@parallels.com>
-	<1316450385.6091.9.camel@twins>
-	<4E7770BD.6050902@parallels.com>
-	<1316457653.6091.16.camel@twins>
-	<20110920172930.GA5318@linux.vnet.ibm.com>
-Date: Thu, 22 Sep 2011 20:41:13 +0530
-Message-ID: <CAKTCnzk=i1a3DHrforcaOCBdhjv1xi=5W=eiJiZoK4BNb3wqVw@mail.gmail.com>
-Subject: Re: [PATCH 1/9] Remove parent field in cpuacct cgroup
-From: Balbir Singh <bsingharora@gmail.com>
-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
-        xemul@parallels.com, paul@paulmenage.org, lizf@cn.fujitsu.com,
-        daniel.lezcano@free.fr, mingo@elte.hu, jbottomley@parallels.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 20, 2011 at 10:59 PM, Srivatsa Vaddagiri
-<vatsa@linux.vnet.ibm.com> wrote:
-> * Peter Zijlstra <a.p.zijlstra@chello.nl> [2011-09-19 20:40:53]:
->
->> > Note I was talking about cpuusage. Well, in this case, I myself fail
->> > to see the value of the whole cpuusage thing...
->
-> If I recall, cpuacct was prototyped by Paul Menage (and later modified
-> by Balbir) as a way to demonstrate cgroup controller ..It was one
-> of those "first" cgroups controllers written to demonstrate how cgroups worked.
->
-> With regard to its value, it does provide a handy interface to measure
-> cpu utilization of cgroups (vs having to manually sum up task's
-> utilization) and afaik libvirt makes use of it (although I
-> don't think anyone reads it at "high" frequency).
->
+On Thu, 22 Sep 2011, Matthias Dellweg wrote:
 
-Android makes heavy use of cpuacct as well. We invented it to do cpu
-accounting independent of control
+> Hi!
+> Usb devio assumes that the wIndex in every control message apart from
+> those flagged as USB_TYPE_VENDOR holds the number of the Interface
+> being addressed. This is for example not true for the class specific
+> request GET_DEVICE_ID in the printer class:
+> 
+> "The high-byte of the wIndex field is used to specify the zero-based
+> interface index. The low-byte of the wIndex field is used to specify
+> the zero-based alternate setting." [1]
+> 
+> In this special case it misinterpretes the alternate setting 1 for the
+> interface and tries to claim a nonexisting one. Therefor you won't get
+> the printers name.
+> 
+> The patch below is a minimal approach to fix this. Maybe it should be
+> extended to USB_TYPE_RESERVED. Maybe there should be an extended test
+> that knows something about specific classes.
+> 
+> What do you think?
+> regards Matthias
+> 
+> [1] http://www.usb.org/developers/devclass_docs/usbprint11.pdf
 
-Balbir
+In this case, it appears that the printer class specification 
+contradicts the USB-2.0 specification.  Section 9.3.1 says (referring 
+to the low-order five bits of bmRequestType):
+
+	Requests may be directed to the device, an interface on the 
+	device, or a specific endpoint on a device. This field also
+	specifies the intended recipient of the request. When an
+	interface or endpoint is specified, the wIndex field identifies
+	the interface or endpoint.
+
+And Figure 9-3 shows that when wIndex is used to specify an interface, 
+the interface number belongs in the low-order byte, not the high-order 
+byte.
+
+I don't think it's safe to relax the test the way you have suggested.
+There are too many other class-specific requests that must be 
+prevented.  Maybe an exception could be added for this one particular 
+case.  Besides, you don't want to remove the test entirely -- you want 
+to use the high-order byte of wIndex instead of the low-order byte.
+
+The printer spec really is spectacularly bad in this respect.  What 
+happens if the printer is a composite device, and the other interface 
+uses the same bmRequestType and bRequest values for its own 
+class-specific purpose, but uses the low-order byte of wIndex to 
+indicate the interface number (as it should).  Then the printer 
+wouldn't know which interface was supposed to respond to the message!
+
+Alan Stern
+
