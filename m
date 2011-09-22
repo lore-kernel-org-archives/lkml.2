@@ -1,43 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752247Ab1IVGcU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 02:32:20 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:55259 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751927Ab1IVGcR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 02:32:17 -0400
-Subject: Re: rt14: strace ->  migrate_disable_atomic imbalance
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mike Galbraith <efault@gmx.de>
-Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Miklos Szeredi <miklos@szeredi.hu>, mingo <mingo@redhat.com>
-In-Reply-To: <1316666782.6184.5.camel@marge.simson.net>
-References: <alpine.LFD.2.02.1109101052340.2723@ionos>
-	 <1315737307.6544.1.camel@marge.simson.net>
-	 <1315817948.26517.16.camel@twins>
-	 <1315835562.6758.3.camel@marge.simson.net>
-	 <1315839187.6758.8.camel@marge.simson.net> <1315926499.5977.19.camel@twins>
-	 <1315927699.6445.6.camel@marge.simson.net> <1315930430.5977.21.camel@twins>
-	 <1316600230.6628.6.camel@marge.simson.net>
-	 <1316631037.24750.39.camel@twins>
-	 <1316666782.6184.5.camel@marge.simson.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 22 Sep 2011 08:31:37 +0200
-Message-ID: <1316673097.27803.0.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 3.0.3- 
+	id S1751331Ab1IVGge (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 02:36:34 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:64656 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750743Ab1IVGgc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Sep 2011 02:36:32 -0400
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: Carsten Emde <C.Emde@osadl.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: [PATCH] ipc:fix the wrong use of schedule_hrtimeout_range_clock()
+Date: Thu, 22 Sep 2011 14:35:23 +0800
+Message-Id: <1316673323-5048-1-git-send-email-gaowanlong@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.7.rc1
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-09-22 14:35:03,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-09-22 14:35:05,
+	Serialize complete at 2011-09-22 14:35:05
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-09-22 at 06:46 +0200, Mike Galbraith wrote:
-> 
-> ..perturbation (100% userspace hog) measurement proggy and jitter
-> measurement proggy pinned to the same cpu makes 100% repeatable boom.
-> 
-> 
-Uh ow... :-) I'd better go have a look then..
+Fix the wrong use of schedule_hrtimeout_range_clock() in wq_sleep(), although
+it is harmless for the syscall mq_timed* now.
+It's introduced by 9ca7d8e.
+
+Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+---
+ ipc/mqueue.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/ipc/mqueue.c b/ipc/mqueue.c
+index ed049ea..2e0ecfc 100644
+--- a/ipc/mqueue.c
++++ b/ipc/mqueue.c
+@@ -449,8 +449,8 @@ static int wq_sleep(struct mqueue_inode_info *info, int sr,
+ 		set_current_state(TASK_INTERRUPTIBLE);
+ 
+ 		spin_unlock(&info->lock);
+-		time = schedule_hrtimeout_range_clock(timeout,
+-		    HRTIMER_MODE_ABS, 0, CLOCK_REALTIME);
++		time = schedule_hrtimeout_range_clock(timeout, 0,
++			HRTIMER_MODE_ABS, CLOCK_REALTIME);
+ 
+ 		while (ewp->state == STATE_PENDING)
+ 			cpu_relax();
+-- 
+1.7.7.rc1
+
