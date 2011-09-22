@@ -1,125 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752165Ab1IVQ21 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 12:28:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43248 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750874Ab1IVQ2Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 12:28:24 -0400
-Message-ID: <4E7B631A.20605@suse.de>
-Date: Thu, 22 Sep 2011 18:32:26 +0200
-From: Hannes Reinecke <hare@suse.de>
-Organization: SUSE Linux Products GmbH
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
+	id S1752220Ab1IVQ36 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 12:29:58 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:49788 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751781Ab1IVQ35 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Sep 2011 12:29:57 -0400
+X-Sasl-enc: mNNRphUxGP2UtbUFOdOQzKm+DqEeUrQgpOFvh1wlHRp0 1316708996
+Date: Thu, 22 Sep 2011 09:29:53 -0700
+From: Greg KH <greg@kroah.com>
+To: Oren Weil <oren.jer.weil@intel.com>
+Cc: gregkh@suse.de, devel@driverdev.osuosl.org, tomas.winkler@intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] staging: mei: clean the TODO file from done tasks.
+Message-ID: <20110922162953.GA31282@kroah.com>
+References: <1316612731-20905-1-git-send-email-oren.jer.weil@intel.com>
+ <1316612731-20905-2-git-send-email-oren.jer.weil@intel.com>
 MIME-Version: 1.0
-To: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Rocko Requin <rockorequin@hotmail.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        Ben Hutchings <ben@decadent.org.uk>, jaxboe@fusionio.com,
-        James Bottomley <James.Bottomley@HansenPartnership.com>, tytso@mit.edu,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [Bug 25832] kernel crashes when a mounted ext3/4 file system
- is physically removed
-References: <4E7B296D.8020900@suse.de> <Pine.LNX.4.44L0.1109221113380.2137-100000@iolanthe.rowland.org> <20110922162047.GD3431@oc1711230544.ibm.com>
-In-Reply-To: <20110922162047.GD3431@oc1711230544.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1316612731-20905-2-git-send-email-oren.jer.weil@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/2011 06:20 PM, Thadeu Lima de Souza Cascardo wrote:
-> On Thu, Sep 22, 2011 at 11:16:30AM -0400, Alan Stern wrote:
->> Rocko:
->>
->> Can you try testing this patch instead of all the patches I sent to 
->> you (but keep Ted's patch)?
->>
->> Alan Stern
->>
->> On Thu, 22 Sep 2011, Hannes Reinecke wrote:
->>
->>> On 09/20/2011 09:32 AM, Jun'ichi Nomura wrote:
->>>> On 09/19/11 08:00, Ben Hutchings wrote:
->>> [ .. ]
->>>>>
->>>>> There have been reports of this in Debian going back to 2.6.39:
->>>>>
->>>>> http://bugs.debian.org/631187
->>>>> http://bugs.debian.org/636263
->>>>> http://bugs.debian.org/642043
->>>>>
->>>>> Plus possibly related crashes in elv_put_request after CD-ROM removal:
->>>>>
->>>>> http://bugs.debian.org/633890
->>>>> http://bugs.debian.org/634681
->>>>> http://bugs.debian.org/636103
->>>>>
->>>>> The former was also reported in Ubuntu since their 2.6.38-10:
->>>>>
->>>>> https://bugs.launchpad.net/debian/+source/linux-2.6/+bug/793796
->>>>>
->>>>> The result of the discussion there was that it appeared to be a
->>>>> regression due to commit 86cbfb5607d4b81b1a993ff689bbd2addd5d3a9b 
->>>>> ("[SCSI] put stricter guards on queue dead checks") which was also
->>>>> included in a stable update for 2.6.38.
->>>>>
->>>>> There was also a report on bugzilla.kernel.org, though no-one can see
->>>>> quite what that says now:
->>>>>
->>>>> https://bugzilla.kernel.org/show_bug.cgi?id=38842
->>>>>
->>>>> I also reported most of the above to James Bottomley and linux-scsi
->>>>> nearly 2 months ago, to no response.
->>>>
->>>> I've reported a similar oops related to the above commit:
->>>>   [BUG] Oops when SCSI device under multipath is removed
->>>>   https://lkml.org/lkml/2011/8/10/11
->>>>
->>>> Elevator being removed is the core of the problem.
->>>> And the essential issue seems 2 different models of queue/driver relation
->>>> implied by queue_lock.
->>>>
->>>> If reverting the commit is not an option,
->>>> until somebody comes up to fix the essential issue,
->>>> the patch below should close the regressions introduced by the commit.
->>>>
->>> Why do you have to do it that complicated?
->>> Couldn't we just state that any external lock is being disconnected from
->>> queue_lock after blk_cleanup_queue()?
->>>
->>> Then something like this should suffice here:
->>
->>
->>
->> diff --git a/block/blk-core.c b/block/blk-core.c
->> index 90e1ffd..a4ac005 100644
->> --- a/block/blk-core.c
->> +++ b/block/blk-core.c
->> @@ -367,10 +367,8 @@ void blk_cleanup_queue(struct request_queue *q)
->>         queue_flag_set_unlocked(QUEUE_FLAG_DEAD, q);
->>         mutex_unlock(&q->sysfs_lock);
->>
->> -       if (q->elevator)
->> -               elevator_exit(q->elevator);
->> -
->> -       blk_throtl_exit(q);
->> +       if (q->queue_lock != q->__queue_lock)
->> +               q->queue_lock = q->__queue_lock;
+On Wed, Sep 21, 2011 at 04:45:31PM +0300, Oren Weil wrote:
+> Acked-by: Tomas Winkler <tomas.winkler@intel.com>
+> Signed-off-by: Oren Weil <oren.jer.weil@intel.com>
+> ---
+>  drivers/staging/mei/TODO |   10 ----------
+>  1 files changed, 0 insertions(+), 10 deletions(-)
 > 
-> That should be &q->__queue_lock.
-> 
-Why, but of course.
-It's been fixed with the official patch
-(cf block: Free queue resources at blk_release_queue())
+> diff --git a/drivers/staging/mei/TODO b/drivers/staging/mei/TODO
+> index 3b6a667..7d9a13b 100644
+> --- a/drivers/staging/mei/TODO
+> +++ b/drivers/staging/mei/TODO
+> @@ -1,14 +1,4 @@
+>  TODO:
+> -	- Create in-kernel Client API. Examples of in-kernel clients are watchdog and AMTHI.
 
-Cheers,
+Did you really do this?
 
-Hannes
--- 
-Dr. Hannes Reinecke              zSeries & Storage
-hare@suse.de                  +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: Markus Rex, HRB 16746 (AG Nürnberg)
+> -	- ME Watchdog Driver to expose standard Linux watchdog interface
+
+And this?
+
+> -	- Rewrite AMTHI to use in-kernel client interface
+
+And this?
+
+> -	- Cleanup init and probe functions
+> -	- Review BUG/BUG_ON usage
+> -	- Cleanup and reorganize header files
+> -	- Rewrite client data structure
+
+And this?
+
+> -	- Make state machine more readable
+> -	- Add mei.txt with driver explanation and it's driver
+
+You really don't describe the kernel/user api here, that needs to be
+well documented as it is a ABI you are creating and we need to know how
+it works.
+
+thanks,
+
+greg k-h
