@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752854Ab1IVRVM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 13:21:12 -0400
-Received: from mailb.microsoft.com ([131.107.115.215]:41574 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752921Ab1IVRVB convert rfc822-to-8bit (ORCPT
+	id S1752999Ab1IVRZr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 13:25:47 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:58598 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751781Ab1IVRZq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 13:21:01 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <gregkh@suse.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: RE: Hyper-V TODO file
-Thread-Topic: Hyper-V TODO file
-Thread-Index: AQHMeUqH30ei4wp9K0mbEHnyw+BQsZVZpNPg
-Date: Thu, 22 Sep 2011 17:20:59 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E048081E935D@TK5EX14MBXC124.redmond.corp.microsoft.com>
-References: <1316708240-25048-1-git-send-email-kys@microsoft.com>
- <20110922170450.GA4490@suse.de>
-In-Reply-To: <20110922170450.GA4490@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.36]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 22 Sep 2011 13:25:46 -0400
+Date: Thu, 22 Sep 2011 11:25:42 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Stephen Warren <swarren@nvidia.com>, Olof Johansson <olof@lixom.net>,
+        Colin Cross <ccross@android.com>, Erik Gilling <konkers@android.com>,
+        Chris Ball <cjb@laptop.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
+Subject: Re: [PATCH 1/3] arm/tegra: Move EN_VDD_1V05_GPIO to board-harmony.h
+Message-ID: <20110922172542.GK17168@ponder.secretlab.ca>
+References: <1316633620-13184-1-git-send-email-swarren@nvidia.com>
+ <CAOesGMisOtEQpcS-hHi-3brpYzJr-UiB6b71c+bwkesPDk9iuA@mail.gmail.com>
+ <20110922081140.GH17169@n2100.arm.linux.org.uk>
+ <74CDBE0F657A3D45AFBB94109FB122FF1739554CBD@HQMAIL01.nvidia.com>
+ <20110922163258.GD8072@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110922163258.GD8072@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@suse.de]
-> Sent: Thursday, September 22, 2011 1:05 PM
-> To: KY Srinivasan
-> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> virtualization@lists.osdl.org
-> Subject: Re: Hyper-V TODO file
+On Thu, Sep 22, 2011 at 05:32:58PM +0100, Russell King - ARM Linux wrote:
+> On Thu, Sep 22, 2011 at 09:31:48AM -0700, Stephen Warren wrote:
+> > Russell King - ARM Linux wrote at Thursday, September 22, 2011 2:12 AM:
+> > > On Wed, Sep 21, 2011 at 01:16:49PM -0700, Olof Johansson wrote:
+> > > > Works for me. Or I could stage it in a topic branch that would be
+> > > > merged after Russell's GPIO tree.
+> > > 
+> > > Holding stuff off from being merged doesn't work.
+> > 
+> > Russell,
+> > 
+> > So I take it I should add the two ack'd patches to the ARM patch system,
+> > and have you pick them up?
 > 
-> On Thu, Sep 22, 2011 at 09:17:20AM -0700, K. Y. Srinivasan wrote:
-> >
-> > Greg,
-> >
-> > With your last checkin of the patches for Hyper-V, I have addressed all of
-> > the issues you had raised as part of the vmbus audit. Should I send you a
-> > patch to update the TODO file to reflect this. Let me know.
-> 
-> Yes, please send patches.
+> That's a workable solution, yes.  I've done that with various other
+> gpio patches from people, and Grant seems happy with that.
 
-Thanks Greg. In addition to the patch to update the TODO file, do you want me to
-send you patches for moving the vmbus and util driver out of staging as well.
+Yes, I'm comfortable with patches going in via other trees when there
+are dependencies.
 
-Regards,
-
-K. Y
+g.
