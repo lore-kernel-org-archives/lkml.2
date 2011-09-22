@@ -1,121 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752313Ab1IVIsR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 04:48:17 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:46051 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752073Ab1IVIsO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 04:48:14 -0400
-Date: Thu, 22 Sep 2011 10:48:11 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Simon Kirby <sim@hostway.ca>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [3.1-rc6] kmalloc(64) leak from IDE
-Message-ID: <20110922084811.GC17640@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Simon Kirby <sim@hostway.ca>, linux-kernel@vger.kernel.org
-References: <20110922072643.GA27232@hostway.ca>
+	id S1752361Ab1IVIub (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 04:50:31 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:62776 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752019Ab1IVIu2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Sep 2011 04:50:28 -0400
+Message-ID: <4E7AF758.7060900@cn.fujitsu.com>
+Date: Thu, 22 Sep 2011 16:52:40 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20110922072643.GA27232@hostway.ca>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH v4 00/11] KVM: x86: optimize for writing guest page
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-09-22 16:49:05,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-09-22 16:49:05,
+	Serialize complete at 2011-09-22 16:49:05
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 22, 2011 at 12:26:44AM -0700, Simon Kirby wrote:
-> All sorts of fun with 3.1-rc!
-> 
-> On an older x86 box still using the IDE code, I'm seeing a kmalloc(64)
-> leak (according to slabtop) that basically OOM'd the box in a few days
-> (640 MB of RAM). This has popped up since 2.6.36, which ran for a long
-> time on this box with no problems. Issues seen on -rc5, so I rebuilt with
-> CONFIG_DEBUG_KMEMLEAK on 9d037a777695993ec7437e5f451647dea7919d4c and
-> /sys/kernel/debug/kmemleak filled up with size 64 traces involving IDE
-> requests. Every trace seems to contain idedisk_prep_fn():
-> 
-> unreferenced object 0xe30c00c0 (size 64):
->   comm "md6_raid1", pid 255, jiffies 4294903935 (age 23889.704s)
->   hex dump (first 32 bytes):
->     00 00 00 00 00 00 00 ea 00 00 00 00 00 00 00 00  ................
->     7e 00 00 00 20 00 00 00 01 00 00 00 00 00 00 00  ~... ...........
->   backtrace:
->     [<c1495c37>] kmemleak_alloc+0x27/0x50
->     [<c10b2f4a>] kmem_cache_alloc_trace+0x8a/0x120
->     [<c131fe47>] idedisk_prep_fn+0x37/0xf0
->     [<c12758b3>] blk_peek_request+0xa3/0x1e0
->     [<c1311f15>] __ide_requeue_and_plug+0x25/0x30
->     [<c131257d>] do_ide_request+0x3d/0x4e0
->     [<c1270ff4>] __blk_run_queue+0x14/0x20
->     [<c127699c>] __make_request+0x21c/0x290
->     [<c1274f26>] generic_make_request+0x1a6/0x490
->     [<c127526c>] submit_bio+0x5c/0xd0
->     [<c13a651b>] md_super_write+0x6b/0x80
->     [<c13a67ec>] md_update_sb+0x2bc/0x540
->     [<c13a7d51>] md_check_recovery+0x2c1/0x5f0
->     [<c138abce>] raid1d+0x2e/0xd90
->     [<c13a58d5>] md_thread+0xe5/0x110
->     [<c1047df4>] kthread+0x74/0x80
-> 
-> unreferenced object 0xc1c3d900 (size 64):
->   comm "hardirq", pid 0, jiffies 5819438 (age 829.636s)
->   hex dump (first 32 bytes):
->     00 00 00 00 00 00 00 ea 00 00 00 00 00 00 00 00  ................
->     7e 00 00 00 20 00 00 00 01 00 00 00 00 00 00 00  ~... ...........
->   backtrace:
->     [<c1495c37>] kmemleak_alloc+0x27/0x50
->     [<c10b2f4a>] kmem_cache_alloc_trace+0x8a/0x120
->     [<c131fe47>] idedisk_prep_fn+0x37/0xf0
->     [<c12758b3>] blk_peek_request+0xa3/0x1e0
->     [<c1311f15>] __ide_requeue_and_plug+0x25/0x30
->     [<c1311f2f>] ide_requeue_and_plug+0xf/0x20
->     [<c1311fb8>] ide_intr+0x78/0x1e0
->     [<c1065c14>] handle_irq_event_percpu+0x54/0x1d0
->     [<c1065dac>] handle_irq_event+0x1c/0x30
->     [<c1067b8c>] handle_level_irq+0x4c/0xa0
->     [<ffffffff>] 0xffffffff
-> 
-> idedisk_prep_fn() seems to allocate a command and return it as
-> rq->special, but I'm not following what happens after that.
+This patchset is against https://github.com/avikivity/kvm.git next branch.
 
-AFAIR, that's blk_peek_request - it calls q->prep_rq_fn which is
-idedisk_prep_fn() and it unconditionally allocates those ide_cmd's
-without freeing them and I can imagine the upper layer requeue one
-request a couple of times back-to-back, leading to the leaks.
-
-So maybe the following could work, it is a stab in the dark for all I
-know:
-
---
-diff --git a/drivers/ide/ide-disk.c b/drivers/ide/ide-disk.c
-index 274798068a54..16f69be820c7 100644
---- a/drivers/ide/ide-disk.c
-+++ b/drivers/ide/ide-disk.c
-@@ -435,7 +435,12 @@ static int idedisk_prep_fn(struct request_queue *q, struct request *rq)
- 	if (!(rq->cmd_flags & REQ_FLUSH))
- 		return BLKPREP_OK;
- 
--	cmd = kzalloc(sizeof(*cmd), GFP_ATOMIC);
-+	if (rq->special) {
-+		cmd = rq->special;
-+		memset(cmd, 0, sizeof(*cmd));
-+	} else {
-+		cmd = kzalloc(sizeof(*cmd), GFP_ATOMIC);
-+	}
- 
- 	/* FIXME: map struct ide_taskfile on rq->cmd[] */
- 	BUG_ON(cmd == NULL);
---
-
-Can you rerun it with kmemleak enabled and check whether it still
-triggers?
-
-Also, I'm sure you know IDE is deprecated, so what are the chances of
-moving this box to libata? Also, can you send me your .config pls?
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
+In this version, some changes come from Avi's comments:
+- fix instruction retried for nested guest
+- skip write-flooding for the sp whose level is 1
+- rename some functions
