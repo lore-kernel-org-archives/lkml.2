@@ -1,258 +1,257 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751817Ab1IVPuG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 11:50:06 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:49197 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499Ab1IVPt7 (ORCPT
+	id S1752003Ab1IVPur (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 11:50:47 -0400
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:42909
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751498Ab1IVPuo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 11:49:59 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, plagnioj@jcrosoft.com,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH for 3.1] ARM: at91: add defconfig for at91sam9g45 family
-Date: Thu, 22 Sep 2011 19:02:14 +0200
-Message-Id: <1316710934-22405-2-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.7.3
-In-Reply-To: <1316710934-22405-1-git-send-email-nicolas.ferre@atmel.com>
-References: <1316710934-22405-1-git-send-email-nicolas.ferre@atmel.com>
+	Thu, 22 Sep 2011 11:50:44 -0400
+X-SpamScore: 1
+X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LRXLA9-02-GCB-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: [PATCH 4/4] PCI: Add support for PASID capability
+Date: Thu, 22 Sep 2011 17:49:11 +0200
+Message-ID: <1316706551-16138-5-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1316706551-16138-1-git-send-email-joerg.roedel@amd.com>
+References: <1316706551-16138-1-git-send-email-joerg.roedel@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Defconfig file for at91sam9g45 SoC family:
-at91sam9g45, at91sam9g46, at91sam9m10, at91sam9m11.
-The Atmel Evaluation Kit for this family is the at91sam9m10g45ek.
+Devices supporting the PASID capability can use multiple
+contexts on an IOMMU at the same time. This patch adds
+support to manage that capability.
 
-It is so useful for automatic compile tests...
-
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- arch/arm/configs/at91sam9g45_defconfig |  214 ++++++++++++++++++++++++++++++++
- 1 files changed, 214 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/configs/at91sam9g45_defconfig
+ drivers/pci/Kconfig      |   11 +++++
+ drivers/pci/ats.c        |  113 ++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/pci-ats.h  |   31 +++++++++++++
+ include/linux/pci_regs.h |    8 +++
+ 4 files changed, 163 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/configs/at91sam9g45_defconfig b/arch/arm/configs/at91sam9g45_defconfig
-new file mode 100644
-index 0000000..c5876d2
---- /dev/null
-+++ b/arch/arm/configs/at91sam9g45_defconfig
-@@ -0,0 +1,214 @@
-+CONFIG_EXPERIMENTAL=y
-+# CONFIG_LOCALVERSION_AUTO is not set
-+# CONFIG_SWAP is not set
-+CONFIG_SYSVIPC=y
-+CONFIG_LOG_BUF_SHIFT=14
-+CONFIG_SYSFS_DEPRECATED=y
-+CONFIG_SYSFS_DEPRECATED_V2=y
-+CONFIG_BLK_DEV_INITRD=y
-+CONFIG_CC_OPTIMIZE_FOR_SIZE=y
-+CONFIG_EMBEDDED=y
-+CONFIG_SLAB=y
-+CONFIG_MODULES=y
-+CONFIG_MODULE_UNLOAD=y
-+# CONFIG_LBDAF is not set
-+# CONFIG_BLK_DEV_BSG is not set
-+# CONFIG_IOSCHED_DEADLINE is not set
-+# CONFIG_IOSCHED_CFQ is not set
-+CONFIG_ARCH_AT91=y
-+CONFIG_ARCH_AT91SAM9G45=y
-+CONFIG_MACH_AT91SAM9M10G45EK=y
-+CONFIG_AT91_PROGRAMMABLE_CLOCKS=y
-+CONFIG_AT91_SLOW_CLOCK=y
-+CONFIG_AEABI=y
-+# CONFIG_OABI_COMPAT is not set
-+CONFIG_LEDS=y
-+CONFIG_LEDS_CPU=y
-+CONFIG_UACCESS_WITH_MEMCPY=y
-+CONFIG_ZBOOT_ROM_TEXT=0x0
-+CONFIG_ZBOOT_ROM_BSS=0x0
-+CONFIG_CMDLINE="mem=128M console=ttyS0,115200 initrd=0x71100000,25165824 root=/dev/ram0 rw"
-+CONFIG_AUTO_ZRELADDR=y
-+# CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
-+CONFIG_NET=y
-+CONFIG_PACKET=y
-+CONFIG_UNIX=y
-+CONFIG_INET=y
-+CONFIG_IP_MULTICAST=y
-+# CONFIG_INET_XFRM_MODE_TRANSPORT is not set
-+# CONFIG_INET_XFRM_MODE_TUNNEL is not set
-+# CONFIG_INET_XFRM_MODE_BEET is not set
-+# CONFIG_INET_DIAG is not set
-+CONFIG_IPV6=y
-+# CONFIG_INET6_XFRM_MODE_TRANSPORT is not set
-+# CONFIG_INET6_XFRM_MODE_TUNNEL is not set
-+# CONFIG_INET6_XFRM_MODE_BEET is not set
-+CONFIG_IPV6_SIT_6RD=y
-+CONFIG_CFG80211=y
-+CONFIG_LIB80211=y
-+CONFIG_MAC80211=y
-+CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
-+CONFIG_DEVTMPFS=y
-+CONFIG_DEVTMPFS_MOUNT=y
-+# CONFIG_STANDALONE is not set
-+# CONFIG_PREVENT_FIRMWARE_BUILD is not set
-+CONFIG_MTD=y
-+CONFIG_MTD_CMDLINE_PARTS=y
-+CONFIG_MTD_CHAR=y
-+CONFIG_MTD_BLOCK=y
-+CONFIG_MTD_DATAFLASH=y
-+CONFIG_MTD_NAND=y
-+CONFIG_MTD_NAND_ATMEL=y
-+CONFIG_MTD_UBI=y
-+CONFIG_BLK_DEV_LOOP=y
-+CONFIG_BLK_DEV_RAM=y
-+CONFIG_BLK_DEV_RAM_COUNT=4
-+CONFIG_BLK_DEV_RAM_SIZE=8192
-+CONFIG_MISC_DEVICES=y
-+CONFIG_ATMEL_PWM=y
-+CONFIG_ATMEL_TCLIB=y
-+CONFIG_SCSI=y
-+CONFIG_BLK_DEV_SD=y
-+CONFIG_SCSI_MULTI_LUN=y
-+# CONFIG_SCSI_LOWLEVEL is not set
-+CONFIG_NETDEVICES=y
-+CONFIG_MII=y
-+CONFIG_DAVICOM_PHY=y
-+CONFIG_NET_ETHERNET=y
-+CONFIG_MACB=y
-+# CONFIG_NETDEV_1000 is not set
-+# CONFIG_NETDEV_10000 is not set
-+CONFIG_LIBERTAS_THINFIRM=m
-+CONFIG_LIBERTAS_THINFIRM_USB=m
-+CONFIG_AT76C50X_USB=m
-+CONFIG_USB_ZD1201=m
-+CONFIG_RTL8187=m
-+CONFIG_ATH_COMMON=m
-+CONFIG_ATH9K=m
-+CONFIG_CARL9170=m
-+CONFIG_B43=m
-+CONFIG_B43_PHY_N=y
-+CONFIG_LIBERTAS=m
-+CONFIG_LIBERTAS_USB=m
-+CONFIG_LIBERTAS_SDIO=m
-+CONFIG_LIBERTAS_SPI=m
-+CONFIG_RT2X00=m
-+CONFIG_RT2500USB=m
-+CONFIG_RT73USB=m
-+CONFIG_RT2800USB=m
-+CONFIG_RT2800USB_RT53XX=y
-+CONFIG_RT2800USB_UNKNOWN=y
-+CONFIG_RTL8192CU=m
-+CONFIG_WL1251=m
-+CONFIG_WL1251_SDIO=m
-+CONFIG_WL12XX_MENU=m
-+CONFIG_WL12XX=m
-+CONFIG_WL12XX_SDIO=m
-+CONFIG_ZD1211RW=m
-+CONFIG_MWIFIEX=m
-+CONFIG_MWIFIEX_SDIO=m
-+CONFIG_INPUT_POLLDEV=m
-+# CONFIG_INPUT_MOUSEDEV_PSAUX is not set
-+CONFIG_INPUT_MOUSEDEV_SCREEN_X=480
-+CONFIG_INPUT_MOUSEDEV_SCREEN_Y=272
-+CONFIG_INPUT_JOYDEV=y
-+CONFIG_INPUT_EVDEV=y
-+# CONFIG_KEYBOARD_ATKBD is not set
-+CONFIG_KEYBOARD_QT1070=m
-+CONFIG_KEYBOARD_QT2160=m
-+CONFIG_KEYBOARD_GPIO=y
-+# CONFIG_INPUT_MOUSE is not set
-+CONFIG_INPUT_TOUCHSCREEN=y
-+CONFIG_TOUCHSCREEN_ATMEL_MXT=m
-+CONFIG_TOUCHSCREEN_ATMEL_TSADCC=y
-+# CONFIG_SERIO is not set
-+CONFIG_LEGACY_PTY_COUNT=4
-+CONFIG_SERIAL_ATMEL=y
-+CONFIG_SERIAL_ATMEL_CONSOLE=y
-+CONFIG_HW_RANDOM=y
-+CONFIG_I2C=y
-+CONFIG_I2C_GPIO=y
-+CONFIG_SPI=y
-+CONFIG_SPI_ATMEL=y
-+# CONFIG_HWMON is not set
-+# CONFIG_MFD_SUPPORT is not set
-+CONFIG_FB=y
-+CONFIG_FB_ATMEL=y
-+CONFIG_FB_UDL=m
-+CONFIG_BACKLIGHT_LCD_SUPPORT=y
-+# CONFIG_LCD_CLASS_DEVICE is not set
-+CONFIG_BACKLIGHT_CLASS_DEVICE=y
-+CONFIG_BACKLIGHT_ATMEL_LCDC=y
-+# CONFIG_BACKLIGHT_GENERIC is not set
-+CONFIG_SOUND=y
-+CONFIG_SND=y
-+CONFIG_SND_SEQUENCER=y
-+CONFIG_SND_MIXER_OSS=y
-+CONFIG_SND_PCM_OSS=y
-+# CONFIG_SND_SUPPORT_OLD_API is not set
-+# CONFIG_SND_VERBOSE_PROCFS is not set
-+# CONFIG_SND_DRIVERS is not set
-+# CONFIG_SND_ARM is not set
-+CONFIG_SND_ATMEL_AC97C=y
-+# CONFIG_SND_SPI is not set
-+CONFIG_SND_USB_AUDIO=m
-+# CONFIG_USB_HID is not set
-+CONFIG_USB=y
-+CONFIG_USB_ANNOUNCE_NEW_DEVICES=y
-+CONFIG_USB_DEVICEFS=y
-+# CONFIG_USB_DEVICE_CLASS is not set
-+CONFIG_USB_EHCI_HCD=y
-+CONFIG_USB_OHCI_HCD=y
-+CONFIG_USB_ACM=y
-+CONFIG_USB_STORAGE=y
-+CONFIG_USB_GADGET=y
-+CONFIG_USB_ATMEL_USBA=m
-+CONFIG_USB_ZERO=m
-+CONFIG_USB_AUDIO=m
-+CONFIG_USB_ETH=m
-+CONFIG_USB_ETH_EEM=y
-+CONFIG_USB_MASS_STORAGE=m
-+CONFIG_USB_G_SERIAL=m
-+CONFIG_USB_CDC_COMPOSITE=m
-+CONFIG_USB_G_MULTI=m
-+CONFIG_USB_G_MULTI_CDC=y
-+CONFIG_MMC=y
-+# CONFIG_MMC_BLOCK_BOUNCE is not set
-+CONFIG_SDIO_UART=m
-+CONFIG_MMC_ATMELMCI=y
-+CONFIG_MMC_ATMELMCI_DMA=y
-+CONFIG_LEDS_ATMEL_PWM=y
-+CONFIG_LEDS_GPIO=y
-+CONFIG_LEDS_TRIGGER_TIMER=y
-+CONFIG_LEDS_TRIGGER_HEARTBEAT=y
-+CONFIG_LEDS_TRIGGER_GPIO=y
-+CONFIG_RTC_CLASS=y
-+CONFIG_RTC_DRV_AT91RM9200=y
-+CONFIG_DMADEVICES=y
-+CONFIG_AT_HDMAC=y
-+CONFIG_DMATEST=m
-+# CONFIG_IOMMU_SUPPORT is not set
-+CONFIG_EXT2_FS=y
-+CONFIG_FANOTIFY=y
-+CONFIG_VFAT_FS=y
-+CONFIG_TMPFS=y
-+CONFIG_JFFS2_FS=y
-+CONFIG_JFFS2_SUMMARY=y
-+CONFIG_CRAMFS=m
-+CONFIG_SQUASHFS=m
-+CONFIG_SQUASHFS_EMBEDDED=y
-+CONFIG_NFS_FS=y
-+CONFIG_NFS_V3=y
-+CONFIG_NLS_CODEPAGE_437=y
-+CONFIG_NLS_CODEPAGE_850=y
-+CONFIG_NLS_ISO8859_1=y
-+CONFIG_STRIP_ASM_SYMS=y
-+# CONFIG_SCHED_DEBUG is not set
-+CONFIG_DEBUG_MEMORY_INIT=y
-+# CONFIG_FTRACE is not set
-+CONFIG_DEBUG_USER=y
-+CONFIG_CRYPTO_ECB=y
-+# CONFIG_CRYPTO_ANSI_CPRNG is not set
-+CONFIG_CRYPTO_USER_API_HASH=m
-+CONFIG_CRYPTO_USER_API_SKCIPHER=m
-+# CONFIG_CRYPTO_HW is not set
+diff --git a/drivers/pci/Kconfig b/drivers/pci/Kconfig
+index fb1e9707..ed7c42e 100644
+--- a/drivers/pci/Kconfig
++++ b/drivers/pci/Kconfig
+@@ -94,6 +94,17 @@ config PCI_PRI
+ 
+ 	  If unsure, say N.
+ 
++config PCI_PASID
++	bool "PCI PASID support"
++	depends on PCI
++	select PCI_ATS
++	help
++	  Devices supporting PASIDs can access multiple address spaces
++	  on an IOMMU at the same time. This option compiles code for
++	  that capability into the kernel.
++
++	  If unsure, say N.
++
+ config PCI_IOAPIC
+ 	bool
+ 	depends on PCI
+diff --git a/drivers/pci/ats.c b/drivers/pci/ats.c
+index bf892a0..f727a09 100644
+--- a/drivers/pci/ats.c
++++ b/drivers/pci/ats.c
+@@ -7,6 +7,7 @@
+  * PCI Express I/O Virtualization (IOV) support.
+  *   Address Translation Service 1.0
+  *   Page Request Interface added by Joerg Roedel <joerg.roedel@amd.com>
++ *   PASID support added by Joerg Roedel <joerg.roedel@amd.com>
+  */
+ 
+ #include <linux/pci-ats.h>
+@@ -323,3 +324,115 @@ int pci_pri_status(struct pci_dev *pdev)
+ }
+ EXPORT_SYMBOL_GPL(pci_pri_status);
+ #endif /* CONFIG_PCI_PRI */
++
++#ifdef CONFIG_PCI_PASID
++/**
++ * pci_enable_pasid - Enable the PASID capability
++ * @pdev: PCI device structure
++ * @features: Features to enable
++ *
++ * Returns 0 on success, negative value on error. This function checks
++ * whether the features are actually supported by the device and returns
++ * an error if not.
++ */
++int pci_enable_pasid(struct pci_dev *pdev, int features)
++{
++	u16 control, supported;
++	int pos;
++
++	pos = pci_find_ext_capability(pdev, PCI_PASID_CAP);
++	if (!pos)
++		return -EINVAL;
++
++	pci_read_config_word(pdev, pos + PCI_PASID_CONTROL_OFF, &control);
++	pci_read_config_word(pdev, pos + PCI_PASID_CAP_OFF,     &supported);
++
++	if (!(supported & PCI_PASID_ENABLE))
++		return -EINVAL;
++
++	supported &= PCI_PASID_EXEC | PCI_PASID_PRIV;
++
++	/* User wants to enable anything unsupported? */
++	if ((supported & features) != features)
++		return -EINVAL;
++
++	control = PCI_PASID_ENABLE | features;
++
++	pci_write_config_word(pdev, pos + PCI_PASID_CONTROL_OFF, control);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(pci_enable_pasid);
++
++/**
++ * pci_disable_pasid - Disable the PASID capability
++ * @pdev: PCI device structure
++ *
++ */
++void pci_disable_pasid(struct pci_dev *pdev)
++{
++	u16 control = 0;
++	int pos;
++
++	pos = pci_find_ext_capability(pdev, PCI_PASID_CAP);
++	if (!pos)
++		return;
++
++	pci_write_config_word(pdev, pos + PCI_PASID_CONTROL_OFF, control);
++}
++EXPORT_SYMBOL_GPL(pci_disable_pasid);
++
++/**
++ * pci_pasid_features - Check which PASID features are supported
++ * @pdev: PCI device structure
++ *
++ * Returns a negative value when no PASI capability is present.
++ * Otherwise is returns a bitmask with supported features. Current
++ * features reported are:
++ * PCI_PASID_ENABLE - PASID capability can be enabled
++ * PCI_PASID_EXEC - Execute permission supported
++ * PCI_PASID_PRIV - Priviledged mode supported
++ */
++int pci_pasid_features(struct pci_dev *pdev)
++{
++	u16 supported;
++	int pos;
++
++	pos = pci_find_ext_capability(pdev, PCI_PASID_CAP);
++	if (!pos)
++		return -EINVAL;
++
++	pci_read_config_word(pdev, pos + PCI_PASID_CAP_OFF, &supported);
++
++	supported &= PCI_PASID_ENABLE | PCI_PASID_EXEC | PCI_PASID_PRIV;
++
++	return supported;
++}
++EXPORT_SYMBOL_GPL(pci_pasid_features);
++
++#define PASID_NUMBER_SHIFT	8
++#define PASID_NUMBER_MASK	(0x1f << PASID_NUMBER_SHIFT)
++/**
++ * pci_max_pasid - Get maximum number of PASIDs supported by device
++ * @pdev: PCI device structure
++ *
++ * Returns negative value when PASID capability is not present.
++ * Otherwise it returns the numer of supported PASIDs.
++ */
++int pci_max_pasids(struct pci_dev *pdev)
++{
++	u16 supported;
++	int pos;
++
++	pos = pci_find_ext_capability(pdev, PCI_PASID_CAP);
++	if (!pos)
++		return -EINVAL;
++
++	pci_read_config_word(pdev, pos + PCI_PASID_CAP_OFF, &supported);
++
++	supported = (supported & PASID_NUMBER_MASK) >> PASID_NUMBER_SHIFT;
++
++	return (1 << supported);
++}
++EXPORT_SYMBOL_GPL(pci_max_pasids);
++#endif /* CONFIG_PCI_PASID */
+diff --git a/include/linux/pci-ats.h b/include/linux/pci-ats.h
+index 0713952..e3d0b38 100644
+--- a/include/linux/pci-ats.h
++++ b/include/linux/pci-ats.h
+@@ -93,4 +93,35 @@ static inline int pci_pri_status(struct pci_dev *pdev)
+ }
+ #endif /* CONFIG_PCI_PRI */
+ 
++#ifdef CONFIG_PCI_PASID
++
++extern int pci_enable_pasid(struct pci_dev *pdev, int features);
++extern void pci_disable_pasid(struct pci_dev *pdev);
++extern int pci_pasid_features(struct pci_dev *pdev);
++extern int pci_max_pasids(struct pci_dev *pdev);
++
++#else  /* CONFIG_PCI_PASID */
++
++static inline int pci_enable_pasid(struct pci_dev *pdev, int features)
++{
++	return -EINVAL;
++}
++
++static inline void pci_disable_pasid(struct pci_dev *pdev)
++{
++}
++
++static inline int pci_pasid_features(struct pci_dev *pdev)
++{
++	return -EINVAL;
++}
++
++static inline int pci_max_pasids(struct pci_dev *pdev)
++{
++	return -EINVAL;
++}
++
++#endif /* CONFIG_PCI_PASID */
++
++
+ #endif /* LINUX_PCI_ATS_H*/
+diff --git a/include/linux/pci_regs.h b/include/linux/pci_regs.h
+index 7fc32af..b5d9657 100644
+--- a/include/linux/pci_regs.h
++++ b/include/linux/pci_regs.h
+@@ -675,6 +675,14 @@
+ #define PCI_PRI_MAX_REQ_OFF	0x08	/* Cap offset for max reqs supported */
+ #define PCI_PRI_ALLOC_REQ_OFF	0x0c	/* Cap offset for max reqs allowed */
+ 
++/* PASID capability */
++#define PCI_PASID_CAP		0x1b    /* PASID capability ID */
++#define PCI_PASID_CAP_OFF	0x04    /* PASID feature register */
++#define PCI_PASID_CONTROL_OFF   0x06    /* PASID control register */
++#define PCI_PASID_ENABLE	0x01	/* Enable/Supported bit */
++#define PCI_PASID_EXEC		0x02	/* Exec permissions Enable/Supported */
++#define PCI_PASID_PRIV		0x04	/* Priviledge Mode Enable/Support */
++
+ /* Single Root I/O Virtualization */
+ #define PCI_SRIOV_CAP		0x04	/* SR-IOV Capabilities */
+ #define  PCI_SRIOV_CAP_VFM	0x01	/* VF Migration Capable */
 -- 
-1.7.3
+1.7.4.1
+
 
