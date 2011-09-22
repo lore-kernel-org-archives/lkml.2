@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753635Ab1IVTS6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 15:18:58 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:35485
-	"HELO p3plsmtps2ded02-02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753583Ab1IVTS5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 15:18:57 -0400
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 1/1] Staging: hv: Update the TODO file
-Date: Thu, 22 Sep 2011 12:40:50 -0700
-Message-Id: <1316720450-26106-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1753675Ab1IVT2g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 15:28:36 -0400
+Received: from [190.102.48.17] ([190.102.48.17]:33842 "EHLO
+	mail.coteautri.net.bo" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1753648Ab1IVT2d convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Sep 2011 15:28:33 -0400
+X-Greylist: delayed 342 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Sep 2011 15:28:33 EDT
+Message-ID: <20110922151610.51314m4st5l9zvy8@webmail.coteautri.net.bo>
+X-Priority: 3 (Normal)
+Date: Thu, 22 Sep 2011 15:16:10 -0400
+From: Irish Lotto Promo <info@irnl.com>
+Reply-to: irish_newsdept@w.cn
+To: undisclosed-recipients:;
+Subject: Re
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.7)
+X-coteautri-MailScanner-Information: Please contact the ISP for more information
+X-coteautri-MailScanner-ID: p8MJKjUk007513
+X-coteautri-MailScanner: Found to be clean
+X-coteautri-MailScanner-From: info@irnl.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that all vmbus audit related comments have been addressed,
-update the TODO file to reflect this.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- drivers/staging/hv/TODO |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/hv/TODO b/drivers/staging/hv/TODO
-index 7c9a93f..fcc57c2 100644
---- a/drivers/staging/hv/TODO
-+++ b/drivers/staging/hv/TODO
-@@ -1,6 +1,4 @@
- TODO:
--	- audit the vmbus to verify it is working properly with the
--	  driver model
- 	- audit the network driver
- 	  - checking for carrier inside open is wrong, network device API
-             confusion??
+You won £750,000 GBP. Send Name, Age, occupation, Country.
+
+Contact Email: irish_newsdept@w.cn
+
+----------------------------------------------------------------
+This message was sent using IMP, the Internet Messaging Program.
+
 -- 
-1.7.4.1
+This message has been scanned for viruses and
+dangerous content by MailScanner, and is
+believed to be clean.
 
