@@ -1,66 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753342Ab1IVWv0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 18:51:26 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:51651 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751104Ab1IVWvZ (ORCPT
+	id S1753742Ab1IVWzc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 18:55:32 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:60569 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751560Ab1IVWz3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 18:51:25 -0400
-X-Greylist: delayed 1564 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Sep 2011 18:51:25 EDT
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/mJu6SHARo4C4vJLJcGyOy
-Date: Thu, 22 Sep 2011 15:25:17 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Kevin Hilman <khilman@ti.com>
-Cc: Abhilash K V <abhilash.kv@ti.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux@arm.linux.org.uk, sameo@linux.intel.com,
-        christian.gmeiner@gmail.com, santosh.shilimkar@ti.com, premi@ti.com,
-        david.woodhouse@intel.com
-Subject: Re: [PATCH v3 3/3] OMAP3: Remove auto-selection of PMICs
-Message-ID: <20110922222517.GX2937@atomide.com>
-References: <1316698155-954-1-git-send-email-abhilash.kv@ti.com>
- <1316698155-954-2-git-send-email-abhilash.kv@ti.com>
- <1316698155-954-3-git-send-email-abhilash.kv@ti.com>
- <1316698155-954-4-git-send-email-abhilash.kv@ti.com>
- <877h50qlne.fsf@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <877h50qlne.fsf@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 22 Sep 2011 18:55:29 -0400
+Date: Thu, 22 Sep 2011 23:54:17 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Colin Cross <ccross@android.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>
+Subject: Re: [PATCH 1/3] fs: seq_file: add seq_reserve
+Message-ID: <20110922235417.6cf88f7d@lxorguk.ukuu.org.uk>
+In-Reply-To: <1316725029-22737-2-git-send-email-ccross@android.com>
+References: <1316725029-22737-1-git-send-email-ccross@android.com>
+	<1316725029-22737-2-git-send-email-ccross@android.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Kevin Hilman <khilman@ti.com> [110922 14:30]:
-> Abhilash K V <abhilash.kv@ti.com> writes:
-> 
-> > The current implementation almost assumes that only
-> 
-> almost?  ;)
-> 
-> > TWL4030/TWL5030/TWl6030 are (or can be) used with the
-> > OMAP processors. This is, however, not true.
-> >
-> > This patch removes the automatic selection of the PMIC
-> > from Kconfig.
-> > All currently used PMICs are now added to omap2plus_defconfig;
-> 
-> I don't think adding them to omap2plus_defconfig is right either, as
-> those will get stripped out the next time that file is (re)generated.
-> 
-> > any new PMIC that gets supported in future could now be
-> > enabled here rather than by changing Kconfig for
-> > ARCH_OMAP2PLUS_TYPICAL
-> 
-> IMO, the right fix is to have the board Kconfig entries select the PMIC
-> being used on those boards.  That is the only solution that will scale,
-> and also work when using 'make randconfig'.
+On Thu, 22 Sep 2011 13:57:07 -0700
+Colin Cross <ccross@android.com> wrote:
 
-Agreed.
+> Adds a seq_reserve function to allow users of the seq_file interface to
+> increase the initial size of the buffer.  Avoids repeated allocations and
+> calls to the show function in cases where large buffers of known size are
+> needed.
 
-Tony
+Would it not be better to have something akin to
+
+
+	void seq_set_buffer(struct seq_file *m, void *ptr, size_t size)
+	{
+		m->buf = ptr;
+		m->size = size;
+		m->private = 1;
+	}
+
+and let the caller simply provide a buffer by any means it wishes (even
+statically) and free it again itself. That keeps the caller fully in
+control when it wishes to be.
+
+Alan
