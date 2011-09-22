@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751959Ab1IVQPZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 12:15:25 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:41569
+	id S1752536Ab1IVQQy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 12:16:54 -0400
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:40040
 	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751197Ab1IVQPU (ORCPT
+	by vger.kernel.org with ESMTP id S1751834Ab1IVQPY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 12:15:20 -0400
+	Thu, 22 Sep 2011 12:15:24 -0400
 X-SpamScore: 1
 X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h839h)
 X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LRXMHG-02-J7R-02
+X-WSS-ID: 0LRXMHG-02-J7Q-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: <iommu@lists.linux-foundation.org>
@@ -20,9 +20,9 @@ CC: Greg Kroah-Hartman <gregkh@suse.de>,
         David Woodhouse <dwmw2@infradead.org>,
         David Brown <davidb@codeaurora.org>, <joro@8bytes.org>,
         <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 05/10] iommu/core: Use bus->iommu_ops in the iommu-api
-Date: Thu, 22 Sep 2011 18:14:57 +0200
-Message-ID: <1316708102-16250-6-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 03/10] iommu/core: Add bus_type parameter to iommu_domain_alloc
+Date: Thu, 22 Sep 2011 18:14:55 +0200
+Message-ID: <1316708102-16250-4-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1316708102-16250-1-git-send-email-joerg.roedel@amd.com>
 References: <1316708102-16250-1-git-send-email-joerg.roedel@amd.com>
@@ -33,103 +33,119 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the per-bus iommu-ops in the functions of the iommu-api
-instead of the global iommu_ops.
+This is necessary to store a pointer to the bus-specific
+iommu_ops in the iommu-domain structure. It will be used
+later to call into bus-specific iommu-ops.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- drivers/iommu/iommu.c |   34 +++++++++++++++++++++++++++-------
- 1 files changed, 27 insertions(+), 7 deletions(-)
+ drivers/iommu/iommu.c              |   14 +++++++++++++-
+ drivers/media/video/omap3isp/isp.c |    2 +-
+ include/linux/iommu.h              |    6 ++++--
+ virt/kvm/iommu.c                   |    2 +-
+ 4 files changed, 19 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
-index 2270127..f2ced4c 100644
+index 3b24a5b..adaee9b 100644
 --- a/drivers/iommu/iommu.c
 +++ b/drivers/iommu/iommu.c
-@@ -83,34 +83,48 @@ EXPORT_SYMBOL_GPL(iommu_domain_alloc);
+@@ -16,6 +16,7 @@
+  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+  */
  
- void iommu_domain_free(struct iommu_domain *domain)
- {
--	iommu_ops->domain_destroy(domain);
-+	if (likely(domain->ops->domain_destroy != NULL))
-+		domain->ops->domain_destroy(domain);
-+
- 	kfree(domain);
++#include <linux/device.h>
+ #include <linux/kernel.h>
+ #include <linux/bug.h>
+ #include <linux/types.h>
+@@ -44,15 +45,26 @@ bool iommu_found(void)
  }
- EXPORT_SYMBOL_GPL(iommu_domain_free);
+ EXPORT_SYMBOL_GPL(iommu_found);
  
- int iommu_attach_device(struct iommu_domain *domain, struct device *dev)
+-struct iommu_domain *iommu_domain_alloc(void)
++struct iommu_domain *iommu_domain_alloc(struct bus_type *bus)
  {
--	return iommu_ops->attach_dev(domain, dev);
-+	if (unlikely(domain->ops->attach_dev == NULL))
-+		return -ENODEV;
-+
-+	return domain->ops->attach_dev(domain, dev);
- }
- EXPORT_SYMBOL_GPL(iommu_attach_device);
+ 	struct iommu_domain *domain;
++	struct iommu_ops *ops;
+ 	int ret;
  
- void iommu_detach_device(struct iommu_domain *domain, struct device *dev)
++	if (bus->iommu_ops)
++		ops = bus->iommu_ops;
++	else
++		ops = iommu_ops;
++
++	if (ops == NULL)
++		return NULL;
++
+ 	domain = kmalloc(sizeof(*domain), GFP_KERNEL);
+ 	if (!domain)
+ 		return NULL;
+ 
++	domain->ops = ops;
++
+ 	ret = iommu_ops->domain_init(domain);
+ 	if (ret)
+ 		goto out_free;
+diff --git a/drivers/media/video/omap3isp/isp.c b/drivers/media/video/omap3isp/isp.c
+index a4baa61..a7ed985 100644
+--- a/drivers/media/video/omap3isp/isp.c
++++ b/drivers/media/video/omap3isp/isp.c
+@@ -2141,7 +2141,7 @@ static int isp_probe(struct platform_device *pdev)
+ 	/* to be removed once iommu migration is complete */
+ 	isp->iommu = to_iommu(isp->iommu_dev);
+ 
+-	isp->domain = iommu_domain_alloc();
++	isp->domain = iommu_domain_alloc(pdev->dev.bus);
+ 	if (!isp->domain) {
+ 		dev_err(isp->dev, "can't alloc iommu domain\n");
+ 		ret = -ENOMEM;
+diff --git a/include/linux/iommu.h b/include/linux/iommu.h
+index 4739e36..3bd6892 100644
+--- a/include/linux/iommu.h
++++ b/include/linux/iommu.h
+@@ -25,10 +25,12 @@
+ #define IOMMU_WRITE	(2)
+ #define IOMMU_CACHE	(4) /* DMA cache coherency */
+ 
++struct iommu_ops;
+ struct bus_type;
+ struct device;
+ 
+ struct iommu_domain {
++	struct iommu_ops *ops;
+ 	void *priv;
+ };
+ 
+@@ -55,7 +57,7 @@ struct iommu_ops {
+ extern void register_iommu(struct iommu_ops *ops);
+ extern void iommu_bus_init(struct bus_type *bus, struct iommu_ops *ops);
+ extern bool iommu_found(void);
+-extern struct iommu_domain *iommu_domain_alloc(void);
++extern struct iommu_domain *iommu_domain_alloc(struct bus_type *bus);
+ extern void iommu_domain_free(struct iommu_domain *domain);
+ extern int iommu_attach_device(struct iommu_domain *domain,
+ 			       struct device *dev);
+@@ -79,7 +81,7 @@ static inline bool iommu_found(void)
+ 	return false;
+ }
+ 
+-static inline struct iommu_domain *iommu_domain_alloc(void)
++static inline struct iommu_domain *iommu_domain_alloc(struct bus_type *bus)
  {
--	iommu_ops->detach_dev(domain, dev);
-+	if (unlikely(domain->ops->detach_dev == NULL))
-+		return;
-+
-+	domain->ops->detach_dev(domain, dev);
+ 	return NULL;
  }
- EXPORT_SYMBOL_GPL(iommu_detach_device);
+diff --git a/virt/kvm/iommu.c b/virt/kvm/iommu.c
+index 78c80f6..20115b1 100644
+--- a/virt/kvm/iommu.c
++++ b/virt/kvm/iommu.c
+@@ -233,7 +233,7 @@ int kvm_iommu_map_guest(struct kvm *kvm)
+ 		return -ENODEV;
+ 	}
  
- phys_addr_t iommu_iova_to_phys(struct iommu_domain *domain,
- 			       unsigned long iova)
- {
--	return iommu_ops->iova_to_phys(domain, iova);
-+	if (unlikely(domain->ops->iova_to_phys == NULL))
-+		return 0;
-+
-+	return domain->ops->iova_to_phys(domain, iova);
- }
- EXPORT_SYMBOL_GPL(iommu_iova_to_phys);
+-	kvm->arch.iommu_domain = iommu_domain_alloc();
++	kvm->arch.iommu_domain = iommu_domain_alloc(&pci_bus_type);
+ 	if (!kvm->arch.iommu_domain)
+ 		return -ENOMEM;
  
- int iommu_domain_has_cap(struct iommu_domain *domain,
- 			 unsigned long cap)
- {
--	return iommu_ops->domain_has_cap(domain, cap);
-+	if (unlikely(domain->ops->domain_has_cap == NULL))
-+		return 0;
-+
-+	return domain->ops->domain_has_cap(domain, cap);
- }
- EXPORT_SYMBOL_GPL(iommu_domain_has_cap);
- 
-@@ -119,11 +133,14 @@ int iommu_map(struct iommu_domain *domain, unsigned long iova,
- {
- 	size_t size;
- 
-+	if (unlikely(domain->ops->map == NULL))
-+		return -ENODEV;
-+
- 	size         = PAGE_SIZE << gfp_order;
- 
- 	BUG_ON(!IS_ALIGNED(iova | paddr, size));
- 
--	return iommu_ops->map(domain, iova, paddr, gfp_order, prot);
-+	return domain->ops->map(domain, iova, paddr, gfp_order, prot);
- }
- EXPORT_SYMBOL_GPL(iommu_map);
- 
-@@ -131,10 +148,13 @@ int iommu_unmap(struct iommu_domain *domain, unsigned long iova, int gfp_order)
- {
- 	size_t size;
- 
-+	if (unlikely(domain->ops->unmap == NULL))
-+		return -ENODEV;
-+
- 	size         = PAGE_SIZE << gfp_order;
- 
- 	BUG_ON(!IS_ALIGNED(iova, size));
- 
--	return iommu_ops->unmap(domain, iova, gfp_order);
-+	return domain->ops->unmap(domain, iova, gfp_order);
- }
- EXPORT_SYMBOL_GPL(iommu_unmap);
 -- 
 1.7.4.1
 
