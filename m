@@ -1,83 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753467Ab1IVO4m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 10:56:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57849 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753216Ab1IVO4k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 10:56:40 -0400
-Date: Thu, 22 Sep 2011 16:52:57 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mike Galbraith <efault@gmx.de>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <miklos@szeredi.hu>, mingo <mingo@redhat.com>
-Subject: Re: rt14: strace ->  migrate_disable_atomic imbalance
-Message-ID: <20110922145257.GA13960@redhat.com>
-References: <alpine.LFD.2.02.1109101052340.2723@ionos> <1315737307.6544.1.camel@marge.simson.net> <1315817948.26517.16.camel@twins> <1315835562.6758.3.camel@marge.simson.net> <1315839187.6758.8.camel@marge.simson.net> <1315926499.5977.19.camel@twins> <1315927699.6445.6.camel@marge.simson.net> <1315930430.5977.21.camel@twins> <1316600230.6628.6.camel@marge.simson.net> <1316691967.31429.9.camel@twins>
+	id S1753485Ab1IVO5e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 10:57:34 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:35945 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753216Ab1IVO5d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Sep 2011 10:57:33 -0400
+X-Auth-Info: XVZEY6USNvzBIP9HUBCPeyurIXmh0IQqzXolZUwteTg=
+Message-ID: <4E7B4CD9.3020404@grandegger.com>
+Date: Thu, 22 Sep 2011 16:57:29 +0200
+From: Wolfgang Grandegger <wg@grandegger.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1316691967.31429.9.camel@twins>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: SocketCAN Core Mailing List <socketcan-core@lists.berlios.de>,
+        Willy Lambert <lambert.willy@gmail.com>, x86@kernel.org,
+        Valdis.Kletnieks@vt.edu, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86_64: permit to configure ISA support also for x86_64
+ systems
+References: <4E731565.5050307@grandegger.com> <11382509.BgAkVknI9a@wuerfel> <4E7AD908.8060101@grandegger.com> <201109221620.07657.arnd@arndb.de>
+In-Reply-To: <201109221620.07657.arnd@arndb.de>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22, Peter Zijlstra wrote:
->
-> +static void wait_task_inactive_sched_in(struct preempt_notifier *n, int cpu)
-> +{
-> +	struct task_struct *p;
-> +	struct wait_task_inactive_blocked *blocked =
-> +		container_of(n, struct wait_task_inactive_blocked, notifier);
-> +
-> +	hlist_del(&n->link);
-> +
-> +	p = ACCESS_ONCE(blocked->waiter);
-> +	blocked->waiter = NULL;
-> +	wake_up_process(p);
-> +}
-> ...
-> +static void
-> +wait_task_inactive_sched_out(struct preempt_notifier *n, struct task_struct *next)
-> +{
-> +	if (current->on_rq) /* we're not inactive yet */
-> +		return;
-> +
-> +	hlist_del(&n->link);
-> +	n->ops = &wait_task_inactive_ops_post;
-> +	hlist_add_head(&n->link, &next->preempt_notifiers);
-> +}
+On 09/22/2011 04:20 PM, Arnd Bergmann wrote:
+> On Thursday 22 September 2011, Wolfgang Grandegger wrote:
+>> On 09/21/2011 11:24 AM, Arnd Bergmann wrote:
+>>> On Wednesday 21 September 2011 10:33:10 Wolfgang Grandegger wrote:
+>>> The other point is that you are probably using inb/outb operations,
+>>> which I'm trying to provide only on ISA/PCMCIA/PCI based systems in
+>>> the future. Once I finish that work, you will also need to depend on
+>>> HAS_IOPORT (which currently means something else).
+>>
+>> OK, the sja1000_isa driver just uses memory mapped access.
+> 
+> According to this it uses both PIO and MMIO:
+> 
+> $ git grep '\(in\|out\|read\|write\)\(b\|w\|l\)' drivers/net/can/sja1000/sja1000_isa.c 
+> drivers/net/can/sja1000/sja1000_isa.c:  return readb(priv->reg_base + reg);
+> drivers/net/can/sja1000/sja1000_isa.c:  writeb(val, priv->reg_base + reg);
+> drivers/net/can/sja1000/sja1000_isa.c:  return inb((unsigned long)priv->reg_base + reg);
+> drivers/net/can/sja1000/sja1000_isa.c:  outb(val, (unsigned long)priv->reg_base + reg);
+> drivers/net/can/sja1000/sja1000_isa.c:  outb(reg, base);
+> drivers/net/can/sja1000/sja1000_isa.c:  return inb(base + 1);
+> drivers/net/can/sja1000/sja1000_isa.c:  outb(reg, base);
+> drivers/net/can/sja1000/sja1000_isa.c:  outb(val, base + 1);
 
-Tricky ;) Yes, the first ->sched_out() is not enough.
+Ah, oh, I forgot. The driver supports both, I/O port and memory mapped
+access.
 
->  unsigned long wait_task_inactive(struct task_struct *p, long match_state)
->  {
-> ...
-> +	rq = task_rq_lock(p, &flags);
-> +	trace_sched_wait_task(p);
-> +	if (!p->on_rq) /* we're already blocked */
-> +		goto done;
+> But don't worry about it, I'll make the right Kconfig annotation when I submit my
+> patches.
 
-This doesn't look right. schedule() clears ->on_rq a long before
-__switch_to/etc.
+OK,
 
-And it seems that we check ->on_cpu above, this is not UP friendly.
-
->
-> -			set_current_state(TASK_UNINTERRUPTIBLE);
-> -			schedule_hrtimeout(&to, HRTIMER_MODE_REL);
-> -			continue;
-> -		}
-> +	hlist_add_head(&blocked.notifier.link, &p->preempt_notifiers);
-> +	task_rq_unlock(rq, p, &flags);
-
-I thought about reimplementing wait_task_inactive() too, but afaics there
-is a problem: why we can't race with p doing register_preempt_notifier() ?
-I guess register_ needs rq->lock too.
-
-Oleg.
-
+Wolfgang.
