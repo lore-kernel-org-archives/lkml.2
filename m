@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753737Ab1IVTnQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 15:43:16 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:36579 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753600Ab1IVTnN (ORCPT
+	id S1753799Ab1IVTpk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 15:45:40 -0400
+Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:52336 "EHLO
+	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753727Ab1IVTpi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 15:43:13 -0400
-X-Sasl-enc: +Vm+l2ps3/8uuLBWhXUPaE7aS40FhSYwNBA+wFvr20zS 1316720593
-Date: Thu, 22 Sep 2011 12:43:10 -0700
-From: Greg KH <greg@kroah.com>
-To: "Winkler, Tomas" <tomas.winkler@intel.com>
-Cc: "Weil, Oren jer" <oren.jer.weil@intel.com>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] staging: mei: clean the TODO file from done tasks.
-Message-ID: <20110922194310.GA8919@kroah.com>
-References: <1316612731-20905-1-git-send-email-oren.jer.weil@intel.com>
- <1316612731-20905-2-git-send-email-oren.jer.weil@intel.com>
- <20110922162953.GA31282@kroah.com>
- <6F5C1D715B2DA5498A628E6B9C124F0401CB6A334F@hasmsx504.ger.corp.intel.com>
- <20110922183139.GA7217@kroah.com>
- <6F5C1D715B2DA5498A628E6B9C124F0401CB6A3370@hasmsx504.ger.corp.intel.com>
- <20110922193805.GA8140@kroah.com>
+	Thu, 22 Sep 2011 15:45:38 -0400
+From: Kevin Hilman <khilman@ti.com>
+To: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+Cc: venki@google.com, ak@linux.intel.com, len.brown@intel.com,
+        peterz@infradead.org, santosh.shilimkar@ti.com, arjan@linux.intel.com,
+        lenb@kernel.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH V6 0/4] cpuidle: Global registration of idle states with per-cpu statistics
+Organization: Texas Instruments, Inc.
+References: <20110922082840.10520.85895.stgit@localhost6.localdomain6>
+Date: Thu, 22 Sep 2011 12:45:32 -0700
+In-Reply-To: <20110922082840.10520.85895.stgit@localhost6.localdomain6>
+	(Deepthi Dharwar's message of "Thu, 22 Sep 2011 13:58:52 +0530")
+Message-ID: <87ty84tl7n.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110922193805.GA8140@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 22, 2011 at 12:38:05PM -0700, Greg KH wrote:
-> > I personally don't working with distros, but I believe that SUSE has
-> > major deployment of iAMT (MEI).  Oren may have more info about it.
-> 
-> Ah, this one:
-> 	https://build.opensuse.org/package/show?package=intel-iamt&project=openSUSE%3A11.4
-> If so, that package has been dropped by SUSE as it seems to no longer be
-> maintained upstream.  Is this incorrect?
-> 
-> Care to point to the proper download location for the lms tarball?
+Deepthi Dharwar <deepthi@linux.vnet.ibm.com> writes:
 
-No, sorry, I think that tools uses the old, obsolete, heci kernel
-driver, and not this "mei" driver, right?
+> The following patch series implements global registration of cpuidle
+> states, and also has the necessary data structure changes to
+> accommodate the per-cpu writable members of the cpuidle_states
+> structure.
 
-Do you have a pointer to any tools that use this interface for this
-driver?
+I reviewed earlier versions of the series, and this version still looks
+good to me.  Any reason it is still RFC?
 
-thanks,
+Reviewed-by: Kevin Hilman <khilman@ti.com>
 
-greg k-h
+and for the OMAP-specific parts,
+
+Acked-by: Kevin Hilman <khilman@ti.com>
+
+Kevin
