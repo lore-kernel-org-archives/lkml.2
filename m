@@ -1,223 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754212Ab1IVXTt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 19:19:49 -0400
-Received: from mga11.intel.com ([192.55.52.93]:59207 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753659Ab1IVXTp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 19:19:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,426,1312182000"; 
-   d="scan'208";a="63202699"
-Message-ID: <4E7BC3F4.2070809@linux.intel.com>
-Date: Thu, 22 Sep 2011 16:25:40 -0700
-From: J Freyensee <james_p_freyensee@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1754233Ab1IVXYc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 19:24:32 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:48854 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753782Ab1IVXYb convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Sep 2011 19:24:31 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:sender:in-reply-to:references:date:
+	x-google-sender-auth:message-id:subject:from:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=aMHet6OKsw44gfDeSC8mngOfiii79CyLEAzRPLIwmBAnppHC/HOW3uzf9A/lyfu8G
+	CNU4YrM0h62rvt9Gg3OzQ==
 MIME-Version: 1.0
-To: NamJae Jeon <linkinjeon@gmail.com>
-CC: cjb@laptop.org, linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mmc : general purpose partition support.
-References: <1316705680-1940-1-git-send-email-linkinjeon@gmail.com> <4E7BB1D3.6020208@linux.intel.com> <CAKYAXd-ABNyB53r01f=J4jNxxqVLfKi1nFbBPifZMPXNYnFZ-w@mail.gmail.com>
-In-Reply-To: <CAKYAXd-ABNyB53r01f=J4jNxxqVLfKi1nFbBPifZMPXNYnFZ-w@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110922235417.6cf88f7d@lxorguk.ukuu.org.uk>
+References: <1316725029-22737-1-git-send-email-ccross@android.com>
+	<1316725029-22737-2-git-send-email-ccross@android.com>
+	<20110922235417.6cf88f7d@lxorguk.ukuu.org.uk>
+Date: Thu, 22 Sep 2011 16:24:21 -0700
+X-Google-Sender-Auth: JfGWPzYPHxpkfiqDaTkX7yEJxGI
+Message-ID: <CAMbhsRQXS_bcvOmN7Bnofr9Ana_6b23rakriQU51RjTcS3=63Q@mail.gmail.com>
+Subject: Re: [PATCH 1/3] fs: seq_file: add seq_reserve
+From: Colin Cross <ccross@android.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/2011 04:15 PM, NamJae Jeon wrote:
-> 2011/9/23 J Freyensee<james_p_freyensee@linux.intel.com>:
->> On 09/22/2011 08:34 AM, Namjae Jeon wrote:
->>>
->>> It allows general purpose parition in MMC Device. If it is enable, it will
->>> make mmcblk0gp1,gp2,gp3,gp4 partition like this.
->>>
->>>> cat /proc/paritition
->>>
->>>        179 0 847872 mmcblk0
->>>        179 192 4096 mmcblk0gp4
->>>        179 160 4096 mmcblk0gp3
->>>        179 128 4096 mmcblk0gp2
->>>        179 96  1052672 mmcblk0gp1
->>>        179 64  1024 mmcblk0boot1
->>>        179 32  1024 mmcblk0boot0
->>>
->>> Signed-off-by: Namjae Jeon<linkinjeon@gmail.com>
->>> ---
->>>   drivers/mmc/card/block.c |   36 ++++++++++++++++++++++++++++++++++++
->>>   drivers/mmc/core/mmc.c   |   42
->>> ++++++++++++++++++++++++++++++++++++++++++
->>>   include/linux/mmc/card.h |    4 ++++
->>>   include/linux/mmc/mmc.h  |    4 ++++
->>>   4 files changed, 86 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
->>> index 9b90726..074ec55 100644
->>> --- a/drivers/mmc/card/block.c
->>> +++ b/drivers/mmc/card/block.c
->>> @@ -1402,6 +1402,42 @@ static int mmc_blk_alloc_parts(struct mmc_card
->>> *card, struct mmc_blk_data *md)
->>>                         return ret;
->>>         }
->>>
->>> +       if (card->ext_csd.gp1_size) {
->>> +               ret = mmc_blk_alloc_part(card, md,
->>> EXT_CSD_PART_CONFIG_ACC_GP1,
->>> +                                       card->ext_csd.gp1_size>>    9,
->>> +                                       false,
->>> +                                       "gp1");
->>> +               if (ret)
->>> +                       return ret;
->>> +       }
->>> +
->>
->> if mmc_blk_alloc_part() fails for 'if (card->ext_csd.pt1_size)', why would
->> you want to give this code the opportunity to call mmc_blk_alloc_part()
->> again with the next if() below?  If mmc_blk_alloc_part() fails, is it a big
->> problem, like kzalloc() failing?  If so, I would think you would want to
->> immediately quit this function and report an error (either use errno value
->> or pass the value of ret).
-> ->  if card->ext_csd.gp1_size is no zero, it means general purpose
-> partition is enable.
-> and it can set up to 4 partition in specification. so we should check
-> it by next if().
-
-Please document that in your code.  Please add a function header to this 
-function.
-
+On Thu, Sep 22, 2011 at 3:54 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> On Thu, 22 Sep 2011 13:57:07 -0700
+> Colin Cross <ccross@android.com> wrote:
 >
->>
->>> +       if (card->ext_csd.gp2_size) {
->>> +               ret = mmc_blk_alloc_part(card, md,
->>> EXT_CSD_PART_CONFIG_ACC_GP2,
->>> +                                       card->ext_csd.gp2_size>>    9,
->>> +                                       false,
->>> +                                       "gp2");
->>> +               if (ret)
->>> +                       return ret;
->>> +       }
->>> +
->>> +       if (card->ext_csd.gp3_size) {
->>> +               ret = mmc_blk_alloc_part(card, md,
->>> EXT_CSD_PART_CONFIG_ACC_GP3,
->>> +                                       card->ext_csd.gp3_size>>    9,
->>> +                                       false,
->>> +                                       "gp3");
->>> +               if (ret)
->>> +                       return ret;
->>> +       }
->>> +
->>> +       if (card->ext_csd.gp4_size) {
->>> +               ret = mmc_blk_alloc_part(card, md,
->>> EXT_CSD_PART_CONFIG_ACC_GP4,
->>> +                                       card->ext_csd.gp4_size>>    9,
->>> +                                       false,
->>> +                                       "gp4");
->>> +               if (ret)
->>> +                       return ret;
->>> +       }
->>> +
->>>         return ret;
->>>   }
->>>
->>> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
->>> index 10f5a19..cc31511 100644
->>> --- a/drivers/mmc/core/mmc.c
->>> +++ b/drivers/mmc/core/mmc.c
->>> @@ -393,6 +393,48 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8
->>> *ext_csd)
->>>                         card->ext_csd.enhanced_area_offset = -EINVAL;
->>>                         card->ext_csd.enhanced_area_size = -EINVAL;
->>>                 }
->>> +
->>> +               /*
->>> +                * General purpose partition Support
->>> +                */
->>> +
->>> +               if (ext_csd[EXT_CSD_PARTITION_SUPPORT]&    0x1) {
->>> +
->>> +                       u8 hc_erase_grp_sz =
->>> +                               ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE];
->>> +                       u8 hc_wp_grp_sz =
->>> +                               ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
->>> +
->>> +                       card->ext_csd.enhanced_area_en = 1;
->>> +
->>> +                       card->ext_csd.gp1_size =
->>> +                               (ext_csd[145]<<    16) + (ext_csd[144]<<    8)
->>> +
->>> +                               ext_csd[143];
->>> +                       card->ext_csd.gp1_size *=
->>> +                               (size_t)(hc_erase_grp_sz * hc_wp_grp_sz);
->>> +                       card->ext_csd.gp1_size<<= 19;
->>> +
->>> +                       card->ext_csd.gp2_size =
->>> +                               (ext_csd[148]<<    16) + (ext_csd[147]<<    8)
->>> +
->>> +                               ext_csd[146];
->>> +                       card->ext_csd.gp2_size *=
->>> +                               (size_t)(hc_erase_grp_sz * hc_wp_grp_sz);
->>> +                               card->ext_csd.gp2_size<<= 19;
->>> +
->>> +                       card->ext_csd.gp3_size =
->>> +                               (ext_csd[151]<<    16) + (ext_csd[150]<<    8)
->>> +
->>> +                               ext_csd[149];
->>> +                       card->ext_csd.gp3_size *=
->>> +                               (size_t)(hc_erase_grp_sz * hc_wp_grp_sz);
->>> +                       card->ext_csd.gp3_size<<= 19;
->>> +
->>> +                       card->ext_csd.gp4_size =
->>> +                               (ext_csd[154]<<    16) + (ext_csd[153]<<    8)
->>> +
->>> +                               ext_csd[152];
->>> +                       card->ext_csd.gp4_size *=
->>> +                               (size_t)(hc_erase_grp_sz * hc_wp_grp_sz);
->>> +                       card->ext_csd.gp4_size<<= 19;
->>> +               }
->>>                 card->ext_csd.sec_trim_mult =
->>>                         ext_csd[EXT_CSD_SEC_TRIM_MULT];
->>>                 card->ext_csd.sec_erase_mult =
->>> diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
->>> index b460fc2..96a98a7 100644
->>> --- a/include/linux/mmc/card.h
->>> +++ b/include/linux/mmc/card.h
->>> @@ -64,6 +64,10 @@ struct mmc_ext_csd {
->>>         unsigned long long      enhanced_area_offset;   /* Units: Byte */
->>>         unsigned int            enhanced_area_size;     /* Units: KB */
->>>         unsigned int            boot_size;              /* in bytes */
->>> +       unsigned int            gp1_size;               /* in bytes */
->>> +       unsigned int            gp2_size;               /* in bytes */
->>> +       unsigned int            gp3_size;               /* in bytes */
->>> +       unsigned int            gp4_size;               /* in bytes */
->>>         u8                      raw_partition_support;  /* 160 */
->>>         u8                      raw_erased_mem_count;   /* 181 */
->>>         u8                      raw_ext_csd_structure;  /* 194 */
->>> diff --git a/include/linux/mmc/mmc.h b/include/linux/mmc/mmc.h
->>> index 5a794cb..380720a 100644
->>> --- a/include/linux/mmc/mmc.h
->>> +++ b/include/linux/mmc/mmc.h
->>> @@ -303,6 +303,10 @@ struct _mmc_csd {
->>>   #define EXT_CSD_PART_CONFIG_ACC_MASK  (0x7)
->>>   #define EXT_CSD_PART_CONFIG_ACC_BOOT0 (0x1)
->>>   #define EXT_CSD_PART_CONFIG_ACC_BOOT1 (0x2)
->>> +#define EXT_CSD_PART_CONFIG_ACC_GP1    (0x4)
->>> +#define EXT_CSD_PART_CONFIG_ACC_GP2    (0x5)
->>> +#define EXT_CSD_PART_CONFIG_ACC_GP3    (0x6)
->>> +#define EXT_CSD_PART_CONFIG_ACC_GP4    (0x7)
->>>
->>>   #define EXT_CSD_CMD_SET_NORMAL                (1<<0)
->>>   #define EXT_CSD_CMD_SET_SECURE                (1<<1)
->>
->>
->> --
->> J (James/Jay) Freyensee
->> Storage Technology Group
->> Intel Corporation
->>
+>> Adds a seq_reserve function to allow users of the seq_file interface to
+>> increase the initial size of the buffer.  Avoids repeated allocations and
+>> calls to the show function in cases where large buffers of known size are
+>> needed.
+>
+> Would it not be better to have something akin to
+>
+>
+>        void seq_set_buffer(struct seq_file *m, void *ptr, size_t size)
+>        {
+>                m->buf = ptr;
+>                m->size = size;
+>                m->private = 1;
+>        }
+>
+> and let the caller simply provide a buffer by any means it wishes (even
+> statically) and free it again itself. That keeps the caller fully in
+> control when it wishes to be.
 
-
--- 
-J (James/Jay) Freyensee
-Storage Technology Group
-Intel Corporation
+What would happen when seq_read overflowed the buffer?  It wouldn't be
+able to reallocate it.
