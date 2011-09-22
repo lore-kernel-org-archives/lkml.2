@@ -1,145 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753684Ab1IVTha (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 15:37:30 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:43131 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753201Ab1IVTh3 convert rfc822-to-8bit (ORCPT
+	id S1753715Ab1IVTiq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 15:38:46 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:54970 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753201Ab1IVTio (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 15:37:29 -0400
+	Thu, 22 Sep 2011 15:38:44 -0400
+X-Sasl-enc: VpVXFfrJcaA2lth3Cyl/hv9o/Kh8dmoLvKDspeVKftTn 1316720323
+Date: Thu, 22 Sep 2011 12:38:05 -0700
+From: Greg KH <greg@kroah.com>
+To: "Winkler, Tomas" <tomas.winkler@intel.com>
+Cc: "Weil, Oren jer" <oren.jer.weil@intel.com>,
+        "gregkh@suse.de" <gregkh@suse.de>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] staging: mei: clean the TODO file from done tasks.
+Message-ID: <20110922193805.GA8140@kroah.com>
+References: <1316612731-20905-1-git-send-email-oren.jer.weil@intel.com>
+ <1316612731-20905-2-git-send-email-oren.jer.weil@intel.com>
+ <20110922162953.GA31282@kroah.com>
+ <6F5C1D715B2DA5498A628E6B9C124F0401CB6A334F@hasmsx504.ger.corp.intel.com>
+ <20110922183139.GA7217@kroah.com>
+ <6F5C1D715B2DA5498A628E6B9C124F0401CB6A3370@hasmsx504.ger.corp.intel.com>
 MIME-Version: 1.0
-X-Originating-IP: [87.66.121.148]
-In-Reply-To: <20110922082840.10520.85895.stgit@localhost6.localdomain6>
-References: <20110922082840.10520.85895.stgit@localhost6.localdomain6>
-Date: Thu, 22 Sep 2011 21:37:27 +0200
-Message-ID: <CAORVsuWX6hQ9Zo_V8GFzzyOYziLmCtVz+DEpv+nqpF1WRPTWCg@mail.gmail.com>
-Subject: Re: [RFC PATCH V6 0/4] cpuidle: Global registration of idle states
- with per-cpu statistics
-From: Jean Pihet <jean.pihet@newoldbits.com>
-To: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-Cc: khilman@ti.com, venki@google.com, ak@linux.intel.com, len.brown@intel.com,
-        peterz@infradead.org, santosh.shilimkar@ti.com, arjan@linux.intel.com,
-        lenb@kernel.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6F5C1D715B2DA5498A628E6B9C124F0401CB6A3370@hasmsx504.ger.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Sep 22, 2011 at 10:06:14PM +0300, Winkler, Tomas wrote:
+> 
+> 
+> > -----Original Message-----
+> > From: Greg KH [mailto:greg@kroah.com]
+> > Sent: Thursday, September 22, 2011 9:32 PM
+> > To: Winkler, Tomas
+> > Cc: Weil, Oren jer; gregkh@suse.de; devel@driverdev.osuosl.org; linux-
+> > kernel@vger.kernel.org
+> > Subject: Re: [PATCH 2/2] staging: mei: clean the TODO file from done tasks.
 
-On Thu, Sep 22, 2011 at 10:28 AM, Deepthi Dharwar
-<deepthi@linux.vnet.ibm.com> wrote:
-> The following patch series implements global registration of cpuidle
-> states, and also has the necessary data structure changes to
-> accommodate the per-cpu writable members of the cpuidle_states
-> structure.
->
-> This patch series had been in discussion earlier and
-> following are the links to the previous discussions.
->
-> v1 --> https://lkml.org/lkml/2011/3/22/161
-> v2 --> https://lkml.org/lkml/2011/1/13/98
-> v3 --> https://lkml.org/lkml/2011/2/8/73
-> v4 --> https://lkml.org/lkml/2011/4/28/312
-> v5 --> https://lkml.org/lkml/2011/6/6/259
->
-> Changes from previous version (V5):
->
->    Rebased the series to 3.1-rc7
->
-> Tests done:
->
->    1. Compile tested for ARM using the following configs: da8xx_omapl_defconfig,
->    exynos4_defconfig, kirkwood_defconfig, omap2plus_defconfig,
->    at91rm9200_defconfig
+Please get a better email client.
 
-Tested OK on OMAP3:
-Signed-off-by: Jean Pihet <j-pihet@ti.com>
+Or at least learn to trim stuff that is not needed at all...
 
->
->    2. Boot tested on x86 nehalem with multiple C-states for both intel_idle
->    and acpi_idle drivers.
->
->    3. Boot tested on T60p thinkpad that has T2600 cpu with multiple C-states.
->    Also tested the case when there is dynamic changes in C-states
->    AC <-> Battery Power switch.
->
-> Brief description of the patches:
->
-> Core change in this series is to split the cpuidle_device structure
-> into two parts, i.e  global and per-cpu basis.
->
-> The per-cpu pieces are mostly generic statistics that can be independent
-> of current running driver. As a result of these changes, there is single
-> copy of cpuidle_states structure and single registration done by one
-> cpu. The low level driver is free to set per-cpu driver data on
-> each cpu if needed using the cpuidle_set_statedata() as the case
-> today. Only in very rare cases asymmetric C-states exist which can be
-> handled within the cpuidle driver. Most architectures do not have
-> asymmetric C-states.
->
-> First two patches in the series facilitate splitting of cpuidle_states
-> and cpuidle_device structure and next two patches do the actual split,
-> change the API's and make existing code follow the changed API.
->
-> [1/4] - Move the idle residency accounting part from cpuidle.c to
-> the respective low level drivers, so that the accounting can
-> be accurately maintained if the driver decides to demote the
-> chosen (suggested) by the governor.
-This is a nice improvement since OMAP heavily uses the state demotion
-in the cpuidle driver, and will use it even more with the per-device
-PM QoS support added.
+> > > > > --- a/drivers/staging/mei/TODO
+> > > > > +++ b/drivers/staging/mei/TODO
+> > > > > @@ -1,14 +1,4 @@
+> > > > >  TODO:
+> > > > > -	- Create in-kernel Client API. Examples of in-kernel clients are
+> > > > watchdog and AMTHI.
+> > > >
+> > > > Did you really do this?
+> > > We came to conclusion, this is not really necessary.
+> > 
+> > Why?  Where was that discussion?
+> 
+> You're right about it  we did it only internally, yet we also produced
+> this requirement internally. Not sure how to address it in this
+> stage.
 
-Thanks & regards,
-Jean
+Once you listed this as an external TODO item, I would hope that you
+would be willing to discuss it externally.  Internal discussions are not
+how Linux kernel development works at all, which of course you know.
 
->
-> [2/4] - removes the cpuidle_device()->prepare API since is is not
-> widely used and the only use case was to allow software
-> demotion using CPUIDLE_FLAG_IGNORE flag.  Both these
-> functions can be absorbed within the cpuidle back-end
-> driver ad hence deprecating the prepare routine and the
-> CPUIDLE_FLAG_IGNORE flag.
->
->    - Ref: https://lkml.org/lkml/2011/3/25/52
->
-> [3/4] - Splits the usage statistics (read/write) part out of
-> cpuidle_state structure, so that the states can become read
-> only and hence made global.
->
-> [4/4] - Most APIs will now need to pass pointer to both global
-> cpuidle_driver and per-cpu cpuidle_device structure.
->
->  arch/arm/mach-at91/cpuidle.c          |   41 +++--
->  arch/arm/mach-davinci/cpuidle.c       |   51 ++++---
->  arch/arm/mach-exynos4/cpuidle.c       |   30 ++--
->  arch/arm/mach-kirkwood/cpuidle.c      |   42 +++---
->  arch/arm/mach-omap2/cpuidle34xx.c     |  133 +++++++++++------
->  arch/sh/kernel/cpu/shmobile/cpuidle.c |   28 ++--
->  drivers/acpi/processor_driver.c       |   20 ---
->  drivers/acpi/processor_idle.c         |  251 +++++++++++++++++++++++++++------
->  drivers/cpuidle/cpuidle.c             |   86 ++++-------
->  drivers/cpuidle/driver.c              |   25 +++
->  drivers/cpuidle/governors/ladder.c    |   41 ++++-
->  drivers/cpuidle/governors/menu.c      |   29 ++--
->  drivers/cpuidle/sysfs.c               |   22 ++-
->  drivers/idle/intel_idle.c             |  130 +++++++++++++----
->  include/acpi/processor.h              |    1
->  include/linux/cpuidle.h               |   52 ++++---
->  16 files changed, 650 insertions(+), 332 deletions(-)
->
->
-> --
->
-> Thanks
->  -Deepthi
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
->
+> > > > > -	- ME Watchdog Driver to expose standard Linux watchdog interface
+> > >
+> > > Yes, this was submitted in the previous batch and it doesn't required
+> > > really decupling as we previously estimated.
+> > 
+> > Ok, good.
+> > 
+> > > > And this?
+> > > >
+> > > > > -	- Rewrite AMTHI to use in-kernel client interface
+> > > >
+> > > > And this?
+> > > This would be only use case for creating API and in this case it would
+> > > just bloat the driver for little benefit.
+> > 
+> > Again, where was that discussion?
+> > 
+> > > Since this le
+> > 
+> > ???
+
+Again, you didn't finish this sentence.
+
+> > > > > -	- Cleanup init and probe functions
+> > > > > -	- Review BUG/BUG_ON usage
+> > > > > -	- Cleanup and reorganize header files
+> > > > > -	- Rewrite client data structure
+> > > >
+> > > > And this?
+> > >
+> > > This was mostly done, you can judge if this is enough.
+> > 
+> > Ok, will look at this later.
+> > 
+> > > > > -	- Make state machine more readable
+> > > > > -	- Add mei.txt with driver explanation and it's driver
+> > > >
+> > > > You really don't describe the kernel/user api here, that needs to be
+> > > > well documented as it is a ABI you are creating and we need to know
+> > > > how it works.
+> > >
+> > > The API is described in the mei.txt that is present in the driver folder.
+> > 
+> > Really?  I see no description of the ioctls and the structures used in them, no
+> > any explaination of any of the sysfs files used in the driver in that file.  Please
+> > fix this up.  The proper format for all sysfs files is described in
+> > Documentation/ABI/README and the ioctls you can also use the same
+> > format.
+> 
+> We don't really use sysfs anymore this is just legacy named wrappers
+> for adding device class, we should fix that.
+> We will address the IOCTLs as well.
+
+Please do.
+
+> > > There was also lengthy discussion about it In LKML during our first
+> > > try to submit the driver. If it is still not clear enough please let
+> > > us know we would happy to fix it as any other gaps.
+> > 
+> > It's not clear at all.  Where is the userspace tools that interact with this driver
+> > that allows me to test that the code works properly?  That would be a good
+> > first step as I do have access to this hardware around here to test with.  Do
+> > any distros already have it packaged anywhere?
+> 
+> In the mei.txt file are links to  freely available APIs.
+
+Links grow stale.  Please document exactly the interface in the kernel
+otherwise we have no idea os what happens here.
+
+> The user space is usually developed by  third parties yet you can get
+> AMT Configuration Utility from http://software.intel.com/.
+
+Do you have a direct link to it?  I tried:
+	http://search.intel.com/Default.aspx?q=amt+configuration+manager&submit=+&c=en_US&results=10&offset=0&categories=&filetypes=&q2=&q3=&q4=&method=edit#q=amt+configuration+manager&submit=+&c=en_US&results=10&categories=93581&method=edit&m=search
+
+yet did not find any software to download.
+
+> We will send the patch to mei.txt that add the link.
+
+Please provide one that actually works :)
+
+> I personally don't working with distros, but I believe that SUSE has
+> major deployment of iAMT (MEI).  Oren may have more info about it.
+
+Ah, this one:
+	https://build.opensuse.org/package/show?package=intel-iamt&project=openSUSE%3A11.4
+If so, that package has been dropped by SUSE as it seems to no longer be
+maintained upstream.  Is this incorrect?
+
+Care to point to the proper download location for the lms tarball?
+
+thanks,
+
+greg k-h
