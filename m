@@ -1,89 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753059Ab1IVR0j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 13:26:39 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:53421 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751881Ab1IVR0g convert rfc822-to-8bit (ORCPT
+	id S1753152Ab1IVR0u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 13:26:50 -0400
+Received: from mail-gw0-f52.google.com ([74.125.83.52]:62269 "EHLO
+	mail-gw0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753101Ab1IVR0s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 13:26:36 -0400
+	Thu, 22 Sep 2011 13:26:48 -0400
+Date: Thu, 22 Sep 2011 11:26:44 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
+        Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>,
+        Chris Ball <cjb@laptop.org>, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org
+Subject: Re: [PATCH 2/3] arm/tegra: Replace <mach/gpio.h> with
+ <mach/gpio-tegra.h>
+Message-ID: <20110922172644.GL17168@ponder.secretlab.ca>
+References: <1316633620-13184-1-git-send-email-swarren@nvidia.com>
+ <1316633620-13184-2-git-send-email-swarren@nvidia.com>
 MIME-Version: 1.0
-In-Reply-To: <CAO+b5-pAY9Qn4OXKnxAHaBSrJi_6nTPOGZ+QgVg9iRdTCmequA@mail.gmail.com>
-References: <CAO+b5-pAY9Qn4OXKnxAHaBSrJi_6nTPOGZ+QgVg9iRdTCmequA@mail.gmail.com>
-From: Bart Van Assche <bvanassche@acm.org>
-Date: Thu, 22 Sep 2011 19:26:14 +0200
-X-Google-Sender-Auth: 94qtz_Utt6CoeZvGCUSIugLV8aM
-Message-ID: <CAO+b5-qxCADmkg+p_xC_AP=FYPELp1+ZqBNQ7PYbHtsAEwivOA@mail.gmail.com>
-Subject: Re: blkdev_issue_discard() hangs forever if the underlying storage
- device is removed
-To: Jens Axboe <jaxboe@fusionio.com>, Mike Snitzer <snitzer@redhat.com>,
-        Lukas Czerner <lczerner@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1316633620-13184-2-git-send-email-swarren@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 27, 2011 at 8:11 AM, Bart Van Assche <bvanassche@acm.org> wrote:
-> Apparently blkdev_issue_discard() never times out, not even if the
-> device has been removed. This is what appeared in the kernel log after
-> device removal (triggered by running mkfs.ext4 on an SRP SCSI device
-> node):
->
-> [ ... ]
+On Wed, Sep 21, 2011 at 01:33:39PM -0600, Stephen Warren wrote:
+> This will eventually allow <mach/gpio.h> to be deleted. This mirrors
+> LinusW's recent equivalent work on various other ARM platforms.
+> 
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
 
-In case anyone is interested, I ran into a similar call stack with
-3.1-rc6 for the truncate_inode_pages() call. I/O was started while the
-SRP connection was fully operational and the call stack was reported
-after ib_srp had invoked scsi_remove_host(). That excludes the ib_srp
-driver as a potential cause of this hang, isn't it ?
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
 
-INFO: task fio:17621 blocked for more than 120 seconds.
-"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-fio             D 000000010003baef     0 17621  17606 0x00000004
- ffff8800952498c8 0000000000000046 ffffffff813d81ef ffffffff81082bee
- ffff880000000000 ffff880095249fd8 ffff880095249fd8 ffff880095249fd8
- ffff8801a8bf4ce0 ffff880095249fd8 ffff880095249fd8 ffff880095248000
-Call Trace:
- [<ffffffff813d81ef>] ? __schedule+0x66f/0x7d0
- [<ffffffff81082bee>] ? mark_held_locks+0x6e/0x130
- [<ffffffff810e04e0>] ? __lock_page+0x70/0x70
- [<ffffffff8103d21f>] schedule+0x3f/0x60
- [<ffffffff813d8440>] io_schedule+0x60/0x80
- [<ffffffff810e04ee>] sleep_on_page+0xe/0x20
- [<ffffffff813d8a4a>] __wait_on_bit_lock+0x5a/0xc0
- [<ffffffff810e2f6f>] ? find_get_pages+0x10f/0x1c0
- [<ffffffff810e2e60>] ? filemap_fault+0x4b0/0x4b0
- [<ffffffff810e04d7>] __lock_page+0x67/0x70
- [<ffffffff81069d10>] ? autoremove_wake_function+0x50/0x50
- [<ffffffff810ee793>] truncate_inode_pages_range+0x493/0x4a0
- [<ffffffff810ee7b5>] truncate_inode_pages+0x15/0x20
- [<ffffffff8116ff07>] kill_bdev+0x37/0x40
- [<ffffffff81170da4>] __blkdev_put+0x74/0x1c0
- [<ffffffff81170f50>] blkdev_put+0x60/0x190
- [<ffffffff811710a4>] blkdev_close+0x24/0x30
- [<ffffffff8113c138>] fput+0xf8/0x230
- [<ffffffff811381d6>] filp_close+0x66/0x90
- [<ffffffff81049302>] put_files_struct+0xf2/0x1d0
- [<ffffffff81049248>] ? put_files_struct+0x38/0x1d0
- [<ffffffff810494a2>] exit_files+0x52/0x60
- [<ffffffff81049978>] do_exit+0x158/0x850
- [<ffffffff8105b2ee>] ? get_signal_to_deliver+0xee/0x5d0
- [<ffffffff813dacb7>] ? _raw_spin_lock_irq+0x17/0x60
- [<ffffffff813db500>] ? _raw_spin_unlock_irq+0x30/0x50
- [<ffffffff8104a30c>] do_group_exit+0x5c/0xd0
- [<ffffffff8105b430>] get_signal_to_deliver+0x230/0x5d0
- [<ffffffff8100219b>] do_signal+0x6b/0x750
- [<ffffffff8106dd02>] ? hrtimer_cancel+0x22/0x30
- [<ffffffff813d9db4>] ? do_nanosleep+0xa4/0xd0
- [<ffffffff8106eb4c>] ? hrtimer_nanosleep+0xac/0x150
- [<ffffffff813e36b1>] ? sysret_signal+0x5/0x3d
- [<ffffffff810028fd>] do_notify_resume+0x5d/0x70
- [<ffffffff811ebe2e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
- [<ffffffff813e38cb>] int_signal+0x12/0x17
-1 lock held by fio/17621:
- #0:  (&bdev->bd_mutex){+.+.+.}, at: [<ffffffff81170d6f>]
-__blkdev_put+0x3f/0x1c0
-
-Bart.
+> ---
+>  arch/arm/mach-tegra/board-harmony.h           |    2 +
+>  arch/arm/mach-tegra/board-paz00.h             |    2 +
+>  arch/arm/mach-tegra/board-seaboard.h          |    2 +
+>  arch/arm/mach-tegra/board-trimslice.h         |    2 +
+>  arch/arm/mach-tegra/include/mach/gpio-tegra.h |   39 +++++++++++++++++++++++++
+>  arch/arm/mach-tegra/include/mach/gpio.h       |   39 -------------------------
+>  arch/arm/mach-tegra/usb_phy.c                 |    1 +
+>  drivers/gpio/gpio-tegra.c                     |    1 +
+>  drivers/mmc/host/sdhci-tegra.c                |    2 +
+>  9 files changed, 51 insertions(+), 39 deletions(-)
+>  create mode 100644 arch/arm/mach-tegra/include/mach/gpio-tegra.h
+> 
+> diff --git a/arch/arm/mach-tegra/board-harmony.h b/arch/arm/mach-tegra/board-harmony.h
+> index 280d203..139d96c 100644
+> --- a/arch/arm/mach-tegra/board-harmony.h
+> +++ b/arch/arm/mach-tegra/board-harmony.h
+> @@ -17,6 +17,8 @@
+>  #ifndef _MACH_TEGRA_BOARD_HARMONY_H
+>  #define _MACH_TEGRA_BOARD_HARMONY_H
+>  
+> +#include <mach/gpio-tegra.h>
+> +
+>  #define HARMONY_GPIO_TPS6586X(_x_)	(TEGRA_NR_GPIOS + (_x_))
+>  #define HARMONY_GPIO_WM8903(_x_)	(HARMONY_GPIO_TPS6586X(4) + (_x_))
+>  
+> diff --git a/arch/arm/mach-tegra/board-paz00.h b/arch/arm/mach-tegra/board-paz00.h
+> index 86057c3..2dc1899 100644
+> --- a/arch/arm/mach-tegra/board-paz00.h
+> +++ b/arch/arm/mach-tegra/board-paz00.h
+> @@ -17,6 +17,8 @@
+>  #ifndef _MACH_TEGRA_BOARD_PAZ00_H
+>  #define _MACH_TEGRA_BOARD_PAZ00_H
+>  
+> +#include <mach/gpio-tegra.h>
+> +
+>  /* SDCARD */
+>  #define TEGRA_GPIO_SD1_CD	TEGRA_GPIO_PV5
+>  #define TEGRA_GPIO_SD1_WP	TEGRA_GPIO_PH1
+> diff --git a/arch/arm/mach-tegra/board-seaboard.h b/arch/arm/mach-tegra/board-seaboard.h
+> index d06c334..4c45d4c 100644
+> --- a/arch/arm/mach-tegra/board-seaboard.h
+> +++ b/arch/arm/mach-tegra/board-seaboard.h
+> @@ -17,6 +17,8 @@
+>  #ifndef _MACH_TEGRA_BOARD_SEABOARD_H
+>  #define _MACH_TEGRA_BOARD_SEABOARD_H
+>  
+> +#include <mach/gpio-tegra.h>
+> +
+>  #define SEABOARD_GPIO_TPS6586X(_x_)	(TEGRA_NR_GPIOS + (_x_))
+>  #define SEABOARD_GPIO_WM8903(_x_)	(SEABOARD_GPIO_TPS6586X(4) + (_x_))
+>  
+> diff --git a/arch/arm/mach-tegra/board-trimslice.h b/arch/arm/mach-tegra/board-trimslice.h
+> index 7a7dee8..50f128d 100644
+> --- a/arch/arm/mach-tegra/board-trimslice.h
+> +++ b/arch/arm/mach-tegra/board-trimslice.h
+> @@ -17,6 +17,8 @@
+>  #ifndef _MACH_TEGRA_BOARD_TRIMSLICE_H
+>  #define _MACH_TEGRA_BOARD_TRIMSLICE_H
+>  
+> +#include <mach/gpio-tegra.h>
+> +
+>  #define TRIMSLICE_GPIO_SD4_CD	TEGRA_GPIO_PP1	/* mmc4 cd */
+>  #define TRIMSLICE_GPIO_SD4_WP	TEGRA_GPIO_PP2	/* mmc4 wp */
+>  
+> diff --git a/arch/arm/mach-tegra/include/mach/gpio-tegra.h b/arch/arm/mach-tegra/include/mach/gpio-tegra.h
+> new file mode 100644
+> index 0000000..87d37fd
+> --- /dev/null
+> +++ b/arch/arm/mach-tegra/include/mach/gpio-tegra.h
+> @@ -0,0 +1,39 @@
+> +/*
+> + * arch/arm/mach-tegra/include/mach/gpio.h
+> + *
+> + * Copyright (C) 2010 Google, Inc.
+> + *
+> + * Author:
+> + *	Erik Gilling <konkers@google.com>
+> + *
+> + * This software is licensed under the terms of the GNU General Public
+> + * License version 2, as published by the Free Software Foundation, and
+> + * may be copied, distributed, and modified under those terms.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + */
+> +
+> +#ifndef __MACH_TEGRA_GPIO_TEGRA_H
+> +#define __MACH_TEGRA_GPIO_TEGRA_H
+> +
+> +#include <linux/types.h>
+> +#include <mach/irqs.h>
+> +
+> +#define TEGRA_NR_GPIOS		INT_GPIO_NR
+> +
+> +#define TEGRA_GPIO_TO_IRQ(gpio) (INT_GPIO_BASE + (gpio))
+> +
+> +struct tegra_gpio_table {
+> +	int	gpio;	/* GPIO number */
+> +	bool	enable;	/* Enable for GPIO at init? */
+> +};
+> +
+> +void tegra_gpio_config(struct tegra_gpio_table *table, int num);
+> +void tegra_gpio_enable(int gpio);
+> +void tegra_gpio_disable(int gpio);
+> +
+> +#endif
+> diff --git a/arch/arm/mach-tegra/include/mach/gpio.h b/arch/arm/mach-tegra/include/mach/gpio.h
+> index 7910d26..e69de29 100644
+> --- a/arch/arm/mach-tegra/include/mach/gpio.h
+> +++ b/arch/arm/mach-tegra/include/mach/gpio.h
+> @@ -1,39 +0,0 @@
+> -/*
+> - * arch/arm/mach-tegra/include/mach/gpio.h
+> - *
+> - * Copyright (C) 2010 Google, Inc.
+> - *
+> - * Author:
+> - *	Erik Gilling <konkers@google.com>
+> - *
+> - * This software is licensed under the terms of the GNU General Public
+> - * License version 2, as published by the Free Software Foundation, and
+> - * may be copied, distributed, and modified under those terms.
+> - *
+> - * This program is distributed in the hope that it will be useful,
+> - * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> - * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> - * GNU General Public License for more details.
+> - *
+> - */
+> -
+> -#ifndef __MACH_TEGRA_GPIO_H
+> -#define __MACH_TEGRA_GPIO_H
+> -
+> -#include <linux/types.h>
+> -#include <mach/irqs.h>
+> -
+> -#define TEGRA_NR_GPIOS		INT_GPIO_NR
+> -
+> -#define TEGRA_GPIO_TO_IRQ(gpio) (INT_GPIO_BASE + (gpio))
+> -
+> -struct tegra_gpio_table {
+> -	int	gpio;	/* GPIO number */
+> -	bool	enable;	/* Enable for GPIO at init? */
+> -};
+> -
+> -void tegra_gpio_config(struct tegra_gpio_table *table, int num);
+> -void tegra_gpio_enable(int gpio);
+> -void tegra_gpio_disable(int gpio);
+> -
+> -#endif
+> diff --git a/arch/arm/mach-tegra/usb_phy.c b/arch/arm/mach-tegra/usb_phy.c
+> index 88081bb..37576a7 100644
+> --- a/arch/arm/mach-tegra/usb_phy.c
+> +++ b/arch/arm/mach-tegra/usb_phy.c
+> @@ -28,6 +28,7 @@
+>  #include <linux/usb/otg.h>
+>  #include <linux/usb/ulpi.h>
+>  #include <asm/mach-types.h>
+> +#include <mach/gpio-tegra.h>
+>  #include <mach/usb_phy.h>
+>  #include <mach/iomap.h>
+>  
+> diff --git a/drivers/gpio/gpio-tegra.c b/drivers/gpio/gpio-tegra.c
+> index df64536..6b65207 100644
+> --- a/drivers/gpio/gpio-tegra.c
+> +++ b/drivers/gpio/gpio-tegra.c
+> @@ -27,6 +27,7 @@
+>  
+>  #include <asm/mach/irq.h>
+>  
+> +#include <mach/gpio-tegra.h>
+>  #include <mach/iomap.h>
+>  #include <mach/suspend.h>
+>  
+> diff --git a/drivers/mmc/host/sdhci-tegra.c b/drivers/mmc/host/sdhci-tegra.c
+> index 67176af..067a4cd 100644
+> --- a/drivers/mmc/host/sdhci-tegra.c
+> +++ b/drivers/mmc/host/sdhci-tegra.c
+> @@ -25,6 +25,8 @@
+>  #include <linux/module.h>
+>  
+>  #include <asm/gpio.h>
+> +
+> +#include <mach/gpio-tegra.h>
+>  #include <mach/sdhci.h>
+>  
+>  #include "sdhci-pltfm.h"
+> -- 
+> 1.7.0.4
+> 
