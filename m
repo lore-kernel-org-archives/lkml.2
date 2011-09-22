@@ -1,126 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751863Ab1IVMgF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 08:36:05 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:51215 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751743Ab1IVMgD (ORCPT
+	id S1751992Ab1IVMrL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 08:47:11 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43176 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751741Ab1IVMrJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 08:36:03 -0400
-Subject: Re: [Bug 25832] kernel crashes when a mounted ext3/4 file system
- is physically removed
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Hannes Reinecke <hare@suse.de>
-Cc: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        Ben Hutchings <ben@decadent.org.uk>, jaxboe@fusionio.com,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Rocko Requin <rockorequin@hotmail.com>, tytso@mit.edu,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-In-Reply-To: <4E7B296D.8020900@suse.de>
-References: <BAY151-W32DCB4BAFEC97DD4913A12A1090@phx.gbl>
-	 <Pine.LNX.4.44L0.1109171330360.18455-100000@netrider.rowland.org>
-	 <1316386825.14749.207.camel@deadeye> <4E7841A4.8040104@ce.jp.nec.com>
-	 <4E7B296D.8020900@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 22 Sep 2011 16:35:57 +0400
-Message-ID: <1316694957.10571.26.camel@dabdike>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
+	Thu, 22 Sep 2011 08:47:09 -0400
+Message-ID: <4E7B2E43.3080609@infradead.org>
+Date: Thu, 22 Sep 2011 09:46:59 -0300
+From: Mauro Carvalho Chehab <mchehab@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <greg@kroah.com>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: linux-next: build failure after merge of the v4l-dvb tree
+References: <20110922131232.56210b544f587210621ae339@canb.auug.org.au>
+In-Reply-To: <20110922131232.56210b544f587210621ae339@canb.auug.org.au>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-09-22 at 14:26 +0200, Hannes Reinecke wrote:
-> On 09/20/2011 09:32 AM, Jun'ichi Nomura wrote:
-> > On 09/19/11 08:00, Ben Hutchings wrote:
-> [ .. ]
-> >>
-> >> There have been reports of this in Debian going back to 2.6.39:
-> >>
-> >> http://bugs.debian.org/631187
-> >> http://bugs.debian.org/636263
-> >> http://bugs.debian.org/642043
-> >>
-> >> Plus possibly related crashes in elv_put_request after CD-ROM removal:
-> >>
-> >> http://bugs.debian.org/633890
-> >> http://bugs.debian.org/634681
-> >> http://bugs.debian.org/636103
-> >>
-> >> The former was also reported in Ubuntu since their 2.6.38-10:
-> >>
-> >> https://bugs.launchpad.net/debian/+source/linux-2.6/+bug/793796
-> >>
-> >> The result of the discussion there was that it appeared to be a
-> >> regression due to commit 86cbfb5607d4b81b1a993ff689bbd2addd5d3a9b 
-> >> ("[SCSI] put stricter guards on queue dead checks") which was also
-> >> included in a stable update for 2.6.38.
-> >>
-> >> There was also a report on bugzilla.kernel.org, though no-one can see
-> >> quite what that says now:
-> >>
-> >> https://bugzilla.kernel.org/show_bug.cgi?id=38842
-> >>
-> >> I also reported most of the above to James Bottomley and linux-scsi
-> >> nearly 2 months ago, to no response.
-> > 
-> > I've reported a similar oops related to the above commit:
-> >   [BUG] Oops when SCSI device under multipath is removed
-> >   https://lkml.org/lkml/2011/8/10/11
-> > 
-> > Elevator being removed is the core of the problem.
-> > And the essential issue seems 2 different models of queue/driver relation
-> > implied by queue_lock.
-> > 
-> > If reverting the commit is not an option,
-> > until somebody comes up to fix the essential issue,
-> > the patch below should close the regressions introduced by the commit.
-> > 
-> Why do you have to do it that complicated?
-> Couldn't we just state that any external lock is being disconnected from
-> queue_lock after blk_cleanup_queue()?
+Em 22-09-2011 00:12, Stephen Rothwell escreveu:
+> Hi Mauro,
 > 
-> Then something like this should suffice here:
+> After merging the v4l-dvb tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
 > 
-> diff --git a/block/blk-core.c b/block/blk-core.c
-> index 90e1ffd..a4ac005 100644
-> --- a/block/blk-core.c
-> +++ b/block/blk-core.c
-> @@ -367,10 +367,8 @@ void blk_cleanup_queue(struct request_queue *q)
->         queue_flag_set_unlocked(QUEUE_FLAG_DEAD, q);
->         mutex_unlock(&q->sysfs_lock);
+> drivers/staging/dt3155v4l/dt3155v4l.c: In function 'dt3155_start_acq':
+> drivers/staging/dt3155v4l/dt3155v4l.c:210:2: error: implicit declaration of function 'vb2_dma_contig_plane_paddr'
+> drivers/staging/dt3155v4l/dt3155v4l.c: At top level:
+> drivers/staging/dt3155v4l/dt3155v4l.c:321:2: warning: initialization from incompatible pointer type
+> drivers/staging/dt3155v4l/dt3155v4l.c:325:2: warning: initialization from incompatible pointer type
 > 
-> -       if (q->elevator)
-> -               elevator_exit(q->elevator);
-> -
-> -       blk_throtl_exit(q);
-> +       if (q->queue_lock != q->__queue_lock)
-> +               q->queue_lock = q->__queue_lock;
+> Casued by commit ba7fcb0c9549 ("[media] media: vb2: dma contig allocator:
+> use dma_addr instread of paddr").
 > 
->         blk_put_queue(q);
->  }
-> diff --git a/block/blk-sysfs.c b/block/blk-sysfs.c
-> index 0ee17b5..a5a756b 100644
-> --- a/block/blk-sysfs.c
-> +++ b/block/blk-sysfs.c
-> @@ -477,6 +477,11 @@ static void blk_release_queue(struct kobject *kobj)
-> 
->         blk_sync_queue(q);
-> 
-> +       if (q->elevator)
-> +               elevator_exit(q->elevator);
-> +
-> +       blk_throtl_exit(q);
-> +
+> I have used the v4l-dvb tree from next-20110921 for today.
 
-OK, I'll buy this one (when you fix the whitespace issue ... you have
-spaces instead of tabs).
+Hi Stephen,
 
-The fact that the lock check/replacement doesn't actually need any
-locking is probably worthy of a comment.
+I think that the right thing to do is to disable the building of this
+staging driver, if it is not using the current media core API's.
 
-James
+Greg,
 
+If possible, I prefer to merge those staging drivers for the media
+subsystem via my tree, as it helps me to solve in advance conflicts
+like that. Maybe we could add a drivers/staging/media tree or
+drivers/media/staging, and move those beasts to there.
 
+What do you think?
+
+Thanks,
+Mauro
