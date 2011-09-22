@@ -1,62 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752887Ab1IVOUl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 10:20:41 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:61270 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752161Ab1IVOUk (ORCPT
+	id S1753238Ab1IVOca (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 10:32:30 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:49228 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752650Ab1IVOc2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 10:20:40 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Wolfgang Grandegger <wg@grandegger.com>
-Subject: Re: [PATCH] x86_64: permit to configure ISA support also for x86_64 systems
-Date: Thu, 22 Sep 2011 16:20:07 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: SocketCAN Core Mailing List <socketcan-core@lists.berlios.de>,
-        Willy Lambert <lambert.willy@gmail.com>, x86@kernel.org,
-        Valdis.Kletnieks@vt.edu, LKML <linux-kernel@vger.kernel.org>
-References: <4E731565.5050307@grandegger.com> <11382509.BgAkVknI9a@wuerfel> <4E7AD908.8060101@grandegger.com>
-In-Reply-To: <4E7AD908.8060101@grandegger.com>
+	Thu, 22 Sep 2011 10:32:28 -0400
+Date: Thu, 22 Sep 2011 10:32:02 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Matthew Wilcox <matthew@wil.cx>
+Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org
+Subject: Re: [PATCH] sysfs: add per pci device msi[x] irq listing (v3)
+Message-ID: <20110922143202.GC13359@shamino.rdu.redhat.com>
+References: <1316025413-5855-1-git-send-email-nhorman@tuxdriver.com>
+ <1316447235-31345-1-git-send-email-nhorman@tuxdriver.com>
+ <20110922135428.GC16740@parisc-linux.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201109221620.07657.arnd@arndb.de>
-X-Provags-ID: V02:K0:5jImCpZgO+wcS2MXjWfF2wviMSZJJqK6wBPo6B8WQyk
- BNRAylEk5yyjZ9A/exiggCK3jWEVVs4Bn3KAZVXw95TxLau4tJ
- NbBfnNNAPA2Pd34d1LUACkOpCcSjPeoJBAomw8wC2WhlA4wSnj
- 775X0f7BXkqiCat8/0lQkKQE5O9KIAvZ3ZQQ2OTSzGic3yTRHt
- hsrI5aIVPhK2t3cKObv7wMMhFHmqwjBS/s05P9knelXiGLU8eo
- VrH0KM1HXgsRgQo/7h4S2ImgrVsLAtmCHLABki6pLIMfAfUB0n
- pqmKO/k9iv4//KJbpWHhCEneAafCgeIU5N8qcsoJHmCqzO9wg5
- SmWC8zLeE6smjWAvm66k=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110922135428.GC16740@parisc-linux.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -3.5 (---)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 22 September 2011, Wolfgang Grandegger wrote:
-> On 09/21/2011 11:24 AM, Arnd Bergmann wrote:
-> > On Wednesday 21 September 2011 10:33:10 Wolfgang Grandegger wrote:
-> > The other point is that you are probably using inb/outb operations,
-> > which I'm trying to provide only on ISA/PCMCIA/PCI based systems in
-> > the future. Once I finish that work, you will also need to depend on
-> > HAS_IOPORT (which currently means something else).
+On Thu, Sep 22, 2011 at 07:54:28AM -0600, Matthew Wilcox wrote:
+> On Mon, Sep 19, 2011 at 11:47:15AM -0400, Neil Horman wrote:
+> > So a while back, I wanted to provide a way for irqbalance (and other apps) to
+> > definitively map irqs to devices, which, for msi[x] irqs is currently not really
+> > possible in user space.  My first attempt wen't not so well:
+> > https://lkml.org/lkml/2011/4/21/308
+> > 
+> > It was plauged by the same issues that prior attempts were, namely that it
+> > violated the one-file-one-value sysfs rule.  I wandered off but have recently
+> > come back to this.  I've got a new implementation here that exports a new
+> > subdirectory for every pci device,  called msi_irqs.  This subdirectory contanis
+> > a variable number of numbered subdirectories, in which the number represents an
+> > msi irq.  Each numbered subdirectory contains attributes for that irq, which
+> > currently is only the mode it is operating in (msi vs. msix).  I think fits
+> > within the constraints sysfs requires, and will allow irqbalance to properly map
+> > msi irqs to devices without having to rely on rickety, best guess methods like
+> > interface name matching.
 > 
-> OK, the sja1000_isa driver just uses memory mapped access.
+> This approach feels like building bigger rockets instead of a space
+> elevator :-)
+> 
+In which case your comments make me think that you're trying to build the
+Death Star instead of buying more tie fighters :)
+https://docs.google.com/viewer?url=http://www.dau.mil/pubscats/ATL%20Docs/Sep-Oct11/Ward.pdf
 
-According to this it uses both PIO and MMIO:
+> What we need is to allow device drivers to ask for per-CPU interrupts,
+> and implement them in terms of MSI-X.  I've made a couple of stabs at
+> implementing this, but haven't got anything working yet.  It would solve
+Yes, IIRC you were trying to do this the first time I proposed this:
+https://lkml.org/lkml/2011/4/21/315
 
-$ git grep '\(in\|out\|read\|write\)\(b\|w\|l\)' drivers/net/can/sja1000/sja1000_isa.c 
-drivers/net/can/sja1000/sja1000_isa.c:  return readb(priv->reg_base + reg);
-drivers/net/can/sja1000/sja1000_isa.c:  writeb(val, priv->reg_base + reg);
-drivers/net/can/sja1000/sja1000_isa.c:  return inb((unsigned long)priv->reg_base + reg);
-drivers/net/can/sja1000/sja1000_isa.c:  outb(val, (unsigned long)priv->reg_base + reg);
-drivers/net/can/sja1000/sja1000_isa.c:  outb(reg, base);
-drivers/net/can/sja1000/sja1000_isa.c:  return inb(base + 1);
-drivers/net/can/sja1000/sja1000_isa.c:  outb(reg, base);
-drivers/net/can/sja1000/sja1000_isa.c:  outb(val, base + 1);
-
-But don't worry about it, I'll make the right Kconfig annotation when I submit my
-patches.
-
-	Arnd
+> a number of problems:
+> 
+Thats great, I don't see how this precludes what I'm trying to do here.  All
+this patch does is expose a definitive relationship between msi irqs and the pci
+devices that allocate them.  The kernel internal model used to allocate msi
+interrupts can change, the kobject creation and removal just has to change with
+it (presumably to create and destroy the msi irq kobjects when the individual
+irqs are allocated/freed, rather than in a batch).  I don't see why we should
+block enhancements to the existing msi implementation until you get new model
+sorted, especially when this feature works equally well, despite the model we
+use internally.
