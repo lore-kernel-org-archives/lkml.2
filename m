@@ -1,55 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751868Ab1IVPuI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 11:50:08 -0400
-Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:9957
-	"EHLO DB3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751718Ab1IVPuC (ORCPT
+	id S1751817Ab1IVPuG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 11:50:06 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:49197 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499Ab1IVPt7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 11:50:02 -0400
-X-SpamScore: -3
-X-BigFish: VPS-3(zz4015Lzz1202hzzz32i668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-FB-SS: 0,
-X-WSS-ID: 0LRXLA7-02-GC1-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 0/4] Support for PRI and PASID capability
-Date: Thu, 22 Sep 2011 17:49:07 +0200
-Message-ID: <1316706551-16138-1-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.4.1
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+	Thu, 22 Sep 2011 11:49:59 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, plagnioj@jcrosoft.com,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH for 3.1] ARM: at91: add defconfig for at91sam9g45 family
+Date: Thu, 22 Sep 2011 19:02:14 +0200
+Message-Id: <1316710934-22405-2-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.3
+In-Reply-To: <1316710934-22405-1-git-send-email-nicolas.ferre@atmel.com>
+References: <1316710934-22405-1-git-send-email-nicolas.ferre@atmel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jesse,
+Defconfig file for at91sam9g45 SoC family:
+at91sam9g45, at91sam9g46, at91sam9m10, at91sam9m11.
+The Atmel Evaluation Kit for this family is the at91sam9m10g45ek.
 
-here is a patch-set that enables support for the PRI and PASID
-capabilities in the Linux PCI core. These capabilities of a PCIe device
-are tightly coupled with ATS, but not with IOV. So these patches start
-by moving the ATS code into its own file: ats.c.
+It is so useful for automatic compile tests...
 
-Support for the other two capabilities is based on that change. Please
-review the patches and let me know of any objections you might have.
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ arch/arm/configs/at91sam9g45_defconfig |  214 ++++++++++++++++++++++++++++++++
+ 1 files changed, 214 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/configs/at91sam9g45_defconfig
 
-Thanks,
-
-	Joerg
-
-Diffstat:
-
- drivers/pci/Kconfig      |   24 +++
- drivers/pci/Makefile     |    1 +
- drivers/pci/ats.c        |  438 ++++++++++++++++++++++++++++++++++++++++++++++
- drivers/pci/iov.c        |  142 ---------------
- include/linux/pci-ats.h  |   75 ++++++++
- include/linux/pci_regs.h |   20 ++
- 6 files changed, 558 insertions(+), 142 deletions(-)
-
+diff --git a/arch/arm/configs/at91sam9g45_defconfig b/arch/arm/configs/at91sam9g45_defconfig
+new file mode 100644
+index 0000000..c5876d2
+--- /dev/null
++++ b/arch/arm/configs/at91sam9g45_defconfig
+@@ -0,0 +1,214 @@
++CONFIG_EXPERIMENTAL=y
++# CONFIG_LOCALVERSION_AUTO is not set
++# CONFIG_SWAP is not set
++CONFIG_SYSVIPC=y
++CONFIG_LOG_BUF_SHIFT=14
++CONFIG_SYSFS_DEPRECATED=y
++CONFIG_SYSFS_DEPRECATED_V2=y
++CONFIG_BLK_DEV_INITRD=y
++CONFIG_CC_OPTIMIZE_FOR_SIZE=y
++CONFIG_EMBEDDED=y
++CONFIG_SLAB=y
++CONFIG_MODULES=y
++CONFIG_MODULE_UNLOAD=y
++# CONFIG_LBDAF is not set
++# CONFIG_BLK_DEV_BSG is not set
++# CONFIG_IOSCHED_DEADLINE is not set
++# CONFIG_IOSCHED_CFQ is not set
++CONFIG_ARCH_AT91=y
++CONFIG_ARCH_AT91SAM9G45=y
++CONFIG_MACH_AT91SAM9M10G45EK=y
++CONFIG_AT91_PROGRAMMABLE_CLOCKS=y
++CONFIG_AT91_SLOW_CLOCK=y
++CONFIG_AEABI=y
++# CONFIG_OABI_COMPAT is not set
++CONFIG_LEDS=y
++CONFIG_LEDS_CPU=y
++CONFIG_UACCESS_WITH_MEMCPY=y
++CONFIG_ZBOOT_ROM_TEXT=0x0
++CONFIG_ZBOOT_ROM_BSS=0x0
++CONFIG_CMDLINE="mem=128M console=ttyS0,115200 initrd=0x71100000,25165824 root=/dev/ram0 rw"
++CONFIG_AUTO_ZRELADDR=y
++# CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
++CONFIG_NET=y
++CONFIG_PACKET=y
++CONFIG_UNIX=y
++CONFIG_INET=y
++CONFIG_IP_MULTICAST=y
++# CONFIG_INET_XFRM_MODE_TRANSPORT is not set
++# CONFIG_INET_XFRM_MODE_TUNNEL is not set
++# CONFIG_INET_XFRM_MODE_BEET is not set
++# CONFIG_INET_DIAG is not set
++CONFIG_IPV6=y
++# CONFIG_INET6_XFRM_MODE_TRANSPORT is not set
++# CONFIG_INET6_XFRM_MODE_TUNNEL is not set
++# CONFIG_INET6_XFRM_MODE_BEET is not set
++CONFIG_IPV6_SIT_6RD=y
++CONFIG_CFG80211=y
++CONFIG_LIB80211=y
++CONFIG_MAC80211=y
++CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
++CONFIG_DEVTMPFS=y
++CONFIG_DEVTMPFS_MOUNT=y
++# CONFIG_STANDALONE is not set
++# CONFIG_PREVENT_FIRMWARE_BUILD is not set
++CONFIG_MTD=y
++CONFIG_MTD_CMDLINE_PARTS=y
++CONFIG_MTD_CHAR=y
++CONFIG_MTD_BLOCK=y
++CONFIG_MTD_DATAFLASH=y
++CONFIG_MTD_NAND=y
++CONFIG_MTD_NAND_ATMEL=y
++CONFIG_MTD_UBI=y
++CONFIG_BLK_DEV_LOOP=y
++CONFIG_BLK_DEV_RAM=y
++CONFIG_BLK_DEV_RAM_COUNT=4
++CONFIG_BLK_DEV_RAM_SIZE=8192
++CONFIG_MISC_DEVICES=y
++CONFIG_ATMEL_PWM=y
++CONFIG_ATMEL_TCLIB=y
++CONFIG_SCSI=y
++CONFIG_BLK_DEV_SD=y
++CONFIG_SCSI_MULTI_LUN=y
++# CONFIG_SCSI_LOWLEVEL is not set
++CONFIG_NETDEVICES=y
++CONFIG_MII=y
++CONFIG_DAVICOM_PHY=y
++CONFIG_NET_ETHERNET=y
++CONFIG_MACB=y
++# CONFIG_NETDEV_1000 is not set
++# CONFIG_NETDEV_10000 is not set
++CONFIG_LIBERTAS_THINFIRM=m
++CONFIG_LIBERTAS_THINFIRM_USB=m
++CONFIG_AT76C50X_USB=m
++CONFIG_USB_ZD1201=m
++CONFIG_RTL8187=m
++CONFIG_ATH_COMMON=m
++CONFIG_ATH9K=m
++CONFIG_CARL9170=m
++CONFIG_B43=m
++CONFIG_B43_PHY_N=y
++CONFIG_LIBERTAS=m
++CONFIG_LIBERTAS_USB=m
++CONFIG_LIBERTAS_SDIO=m
++CONFIG_LIBERTAS_SPI=m
++CONFIG_RT2X00=m
++CONFIG_RT2500USB=m
++CONFIG_RT73USB=m
++CONFIG_RT2800USB=m
++CONFIG_RT2800USB_RT53XX=y
++CONFIG_RT2800USB_UNKNOWN=y
++CONFIG_RTL8192CU=m
++CONFIG_WL1251=m
++CONFIG_WL1251_SDIO=m
++CONFIG_WL12XX_MENU=m
++CONFIG_WL12XX=m
++CONFIG_WL12XX_SDIO=m
++CONFIG_ZD1211RW=m
++CONFIG_MWIFIEX=m
++CONFIG_MWIFIEX_SDIO=m
++CONFIG_INPUT_POLLDEV=m
++# CONFIG_INPUT_MOUSEDEV_PSAUX is not set
++CONFIG_INPUT_MOUSEDEV_SCREEN_X=480
++CONFIG_INPUT_MOUSEDEV_SCREEN_Y=272
++CONFIG_INPUT_JOYDEV=y
++CONFIG_INPUT_EVDEV=y
++# CONFIG_KEYBOARD_ATKBD is not set
++CONFIG_KEYBOARD_QT1070=m
++CONFIG_KEYBOARD_QT2160=m
++CONFIG_KEYBOARD_GPIO=y
++# CONFIG_INPUT_MOUSE is not set
++CONFIG_INPUT_TOUCHSCREEN=y
++CONFIG_TOUCHSCREEN_ATMEL_MXT=m
++CONFIG_TOUCHSCREEN_ATMEL_TSADCC=y
++# CONFIG_SERIO is not set
++CONFIG_LEGACY_PTY_COUNT=4
++CONFIG_SERIAL_ATMEL=y
++CONFIG_SERIAL_ATMEL_CONSOLE=y
++CONFIG_HW_RANDOM=y
++CONFIG_I2C=y
++CONFIG_I2C_GPIO=y
++CONFIG_SPI=y
++CONFIG_SPI_ATMEL=y
++# CONFIG_HWMON is not set
++# CONFIG_MFD_SUPPORT is not set
++CONFIG_FB=y
++CONFIG_FB_ATMEL=y
++CONFIG_FB_UDL=m
++CONFIG_BACKLIGHT_LCD_SUPPORT=y
++# CONFIG_LCD_CLASS_DEVICE is not set
++CONFIG_BACKLIGHT_CLASS_DEVICE=y
++CONFIG_BACKLIGHT_ATMEL_LCDC=y
++# CONFIG_BACKLIGHT_GENERIC is not set
++CONFIG_SOUND=y
++CONFIG_SND=y
++CONFIG_SND_SEQUENCER=y
++CONFIG_SND_MIXER_OSS=y
++CONFIG_SND_PCM_OSS=y
++# CONFIG_SND_SUPPORT_OLD_API is not set
++# CONFIG_SND_VERBOSE_PROCFS is not set
++# CONFIG_SND_DRIVERS is not set
++# CONFIG_SND_ARM is not set
++CONFIG_SND_ATMEL_AC97C=y
++# CONFIG_SND_SPI is not set
++CONFIG_SND_USB_AUDIO=m
++# CONFIG_USB_HID is not set
++CONFIG_USB=y
++CONFIG_USB_ANNOUNCE_NEW_DEVICES=y
++CONFIG_USB_DEVICEFS=y
++# CONFIG_USB_DEVICE_CLASS is not set
++CONFIG_USB_EHCI_HCD=y
++CONFIG_USB_OHCI_HCD=y
++CONFIG_USB_ACM=y
++CONFIG_USB_STORAGE=y
++CONFIG_USB_GADGET=y
++CONFIG_USB_ATMEL_USBA=m
++CONFIG_USB_ZERO=m
++CONFIG_USB_AUDIO=m
++CONFIG_USB_ETH=m
++CONFIG_USB_ETH_EEM=y
++CONFIG_USB_MASS_STORAGE=m
++CONFIG_USB_G_SERIAL=m
++CONFIG_USB_CDC_COMPOSITE=m
++CONFIG_USB_G_MULTI=m
++CONFIG_USB_G_MULTI_CDC=y
++CONFIG_MMC=y
++# CONFIG_MMC_BLOCK_BOUNCE is not set
++CONFIG_SDIO_UART=m
++CONFIG_MMC_ATMELMCI=y
++CONFIG_MMC_ATMELMCI_DMA=y
++CONFIG_LEDS_ATMEL_PWM=y
++CONFIG_LEDS_GPIO=y
++CONFIG_LEDS_TRIGGER_TIMER=y
++CONFIG_LEDS_TRIGGER_HEARTBEAT=y
++CONFIG_LEDS_TRIGGER_GPIO=y
++CONFIG_RTC_CLASS=y
++CONFIG_RTC_DRV_AT91RM9200=y
++CONFIG_DMADEVICES=y
++CONFIG_AT_HDMAC=y
++CONFIG_DMATEST=m
++# CONFIG_IOMMU_SUPPORT is not set
++CONFIG_EXT2_FS=y
++CONFIG_FANOTIFY=y
++CONFIG_VFAT_FS=y
++CONFIG_TMPFS=y
++CONFIG_JFFS2_FS=y
++CONFIG_JFFS2_SUMMARY=y
++CONFIG_CRAMFS=m
++CONFIG_SQUASHFS=m
++CONFIG_SQUASHFS_EMBEDDED=y
++CONFIG_NFS_FS=y
++CONFIG_NFS_V3=y
++CONFIG_NLS_CODEPAGE_437=y
++CONFIG_NLS_CODEPAGE_850=y
++CONFIG_NLS_ISO8859_1=y
++CONFIG_STRIP_ASM_SYMS=y
++# CONFIG_SCHED_DEBUG is not set
++CONFIG_DEBUG_MEMORY_INIT=y
++# CONFIG_FTRACE is not set
++CONFIG_DEBUG_USER=y
++CONFIG_CRYPTO_ECB=y
++# CONFIG_CRYPTO_ANSI_CPRNG is not set
++CONFIG_CRYPTO_USER_API_HASH=m
++CONFIG_CRYPTO_USER_API_SKCIPHER=m
++# CONFIG_CRYPTO_HW is not set
+-- 
+1.7.3
 
