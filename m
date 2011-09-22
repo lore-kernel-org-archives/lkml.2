@@ -1,64 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753081Ab1IVJEl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 05:04:41 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:38518 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752822Ab1IVJEh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 05:04:37 -0400
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Cc: tglx@linutronix.de, yong.zhang0@gmail.com,
-        Hoang-Nam Nguyen <hnguyen@de.ibm.com>,
-        Christoph Raisch <raisch@de.ibm.com>,
-        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org
-Subject: [PATCH 33/55] infiniband: irq: Remove IRQF_DISABLED
-Date: Thu, 22 Sep 2011 16:59:00 +0800
-Message-Id: <1316681962-8217-34-git-send-email-yong.zhang0@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1316681962-8217-1-git-send-email-yong.zhang0@gmail.com>
-References: <1316681962-8217-1-git-send-email-yong.zhang0@gmail.com>
+	id S1753182Ab1IVJKW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 05:10:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56288 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753017Ab1IVJEM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Sep 2011 05:04:12 -0400
+Date: Thu, 22 Sep 2011 11:03:26 +0200
+From: Johannes Weiner <jweiner@redhat.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Chris Mason <chris.mason@oracle.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, xfs@oss.sgi.com,
+        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/4] mm: exclude reserved pages from dirtyable memory
+Message-ID: <20110922090326.GB29046@redhat.com>
+References: <1316526315-16801-1-git-send-email-jweiner@redhat.com>
+ <1316526315-16801-2-git-send-email-jweiner@redhat.com>
+ <20110921140423.GG4849@suse.de>
+ <20110921150328.GJ4849@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110921150328.GJ4849@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit [e58aa3d2: genirq: Run irq handlers with interrupts disabled],
-We run all interrupt handlers with interrupts disabled
-and we even check and yell when an interrupt handler
-returns with interrupts enabled (see commit [b738a50a:
-genirq: Warn when handler enables interrupts]).
+On Wed, Sep 21, 2011 at 04:03:28PM +0100, Mel Gorman wrote:
+> On Wed, Sep 21, 2011 at 03:04:23PM +0100, Mel Gorman wrote:
+> > On Tue, Sep 20, 2011 at 03:45:12PM +0200, Johannes Weiner wrote:
+> > > The amount of dirtyable pages should not include the total number of
+> > > free pages: there is a number of reserved pages that the page
+> > > allocator and kswapd always try to keep free.
+> > > 
+> > > The closer (reclaimable pages - dirty pages) is to the number of
+> > > reserved pages, the more likely it becomes for reclaim to run into
+> > > dirty pages:
+> > > 
+> > >        +----------+ ---
+> > >        |   anon   |  |
+> > >        +----------+  |
+> > >        |          |  |
+> > >        |          |  -- dirty limit new    -- flusher new
+> > >        |   file   |  |                     |
+> > >        |          |  |                     |
+> > >        |          |  -- dirty limit old    -- flusher old
+> > >        |          |                        |
+> > >        +----------+                       --- reclaim
+> > >        | reserved |
+> > >        +----------+
+> > >        |  kernel  |
+> > >        +----------+
+> > > 
+> > > Not treating reserved pages as dirtyable on a global level is only a
+> > > conceptual fix.  In reality, dirty pages are not distributed equally
+> > > across zones and reclaim runs into dirty pages on a regular basis.
+> > > 
+> > > But it is important to get this right before tackling the problem on a
+> > > per-zone level, where the distance between reclaim and the dirty pages
+> > > is mostly much smaller in absolute numbers.
+> > > 
+> > > Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+> > > ---
+> > >  include/linux/mmzone.h |    1 +
+> > >  mm/page-writeback.c    |    8 +++++---
+> > >  mm/page_alloc.c        |    1 +
+> > >  3 files changed, 7 insertions(+), 3 deletions(-)
+> > > 
+> > > diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> > > index 1ed4116..e28f8e0 100644
+> > > --- a/include/linux/mmzone.h
+> > > +++ b/include/linux/mmzone.h
+> > > @@ -316,6 +316,7 @@ struct zone {
+> > >  	 * sysctl_lowmem_reserve_ratio sysctl changes.
+> > >  	 */
+> > >  	unsigned long		lowmem_reserve[MAX_NR_ZONES];
+> > > +	unsigned long		totalreserve_pages;
+> > >  
+> > 
+> > This is nit-picking but totalreserve_pages is a poor name because it's
+> > a per-zone value that is one of the lowmem_reserve[] fields instead
+> > of a total. After this patch, we have zone->totalreserve_pages and
+> > totalreserve_pages but are not related to the same thing.
+> > but they are not the same.
+> 
+> As you correctly pointed out to be on IRC, zone->totalreserve_pages
+> is not the lowmem_reserve because it takes the high_wmark into
+> account. Sorry about that, I should have kept thinking.  The name is
+> still poor though because it does not explain what the value is or
+> what it means.
+> 
+> zone->FOO value needs to be related to lowmem_reserve because this
+> 	is related to balancing zone usage.
+> 
+> zone->FOO value should also be related to the high_wmark because
+> 	this is avoiding writeback from page reclaim
+> 
+> err....... umm... this?
+> 
+> 	/*
+> 	 * When allocating a new page that is expected to be
+> 	 * dirtied soon, the number of free pages and the
+> 	 * dirty_balance reserve are taken into account. The
+> 	 * objective is that the globally allowed number of dirty
+> 	 * pages should be distributed throughout the zones such
+> 	 * that it is very unlikely that page reclaim will call
+> 	 * ->writepage.
+> 	 *
+> 	 * dirty_balance_reserve takes both lowmem_reserve and
+> 	 * the high watermark into account. The lowmem_reserve
+> 	 * is taken into account because we don't want the
+> 	 * distribution of dirty pages to unnecessarily increase
+> 	 * lowmem pressure. The watermark is taken into account
+> 	 * because it's correlated with when kswapd wakes up
+> 	 * and how long it stays awake.
+> 	 */
+> 	unsigned long		dirty_balance_reserve.
 
-So now this flag is a NOOP and can be removed.
+Yes, that's much better, thanks.
 
-Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
----
- drivers/infiniband/hw/ehca/ehca_eq.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/infiniband/hw/ehca/ehca_eq.c b/drivers/infiniband/hw/ehca/ehca_eq.c
-index d9b1bb4..818d721 100644
---- a/drivers/infiniband/hw/ehca/ehca_eq.c
-+++ b/drivers/infiniband/hw/ehca/ehca_eq.c
-@@ -125,7 +125,7 @@ int ehca_create_eq(struct ehca_shca *shca,
- 		tasklet_init(&eq->interrupt_task, ehca_tasklet_eq, (long)shca);
- 
- 		ret = ibmebus_request_irq(eq->ist, ehca_interrupt_eq,
--					  IRQF_DISABLED, "ehca_eq",
-+					  0, "ehca_eq",
- 					  (void *)shca);
- 		if (ret < 0)
- 			ehca_err(ib_dev, "Can't map interrupt handler.");
-@@ -133,7 +133,7 @@ int ehca_create_eq(struct ehca_shca *shca,
- 		tasklet_init(&eq->interrupt_task, ehca_tasklet_neq, (long)shca);
- 
- 		ret = ibmebus_request_irq(eq->ist, ehca_interrupt_neq,
--					  IRQF_DISABLED, "ehca_neq",
-+					  0, "ehca_neq",
- 					  (void *)shca);
- 		if (ret < 0)
- 			ehca_err(ib_dev, "Can't map interrupt handler.");
--- 
-1.7.4.1
-
+I assume this is meant the same for both the zone and the global level
+and we should not mess with totalreserve_pages in either case?
