@@ -1,43 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753330Ab1IVMBk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 08:01:40 -0400
-Received: from fieldses.org ([174.143.236.118]:58088 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752641Ab1IVMBi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 08:01:38 -0400
-Date: Thu, 22 Sep 2011 08:01:29 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: agruen@kernel.org, akpm@linux-foundation.org, dhowells@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V6 00/26]  New ACL format for better NFSv4 acl
- interoperability
-Message-ID: <20110922120129.GC28182@fieldses.org>
-References: <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <878vpi73oc.fsf@skywalker.in.ibm.com>
- <20110921194531.GB23634@fieldses.org>
- <87vcsl5eiq.fsf@skywalker.in.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87vcsl5eiq.fsf@skywalker.in.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753361Ab1IVMKo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 08:10:44 -0400
+Received: from casper.infradead.org ([85.118.1.10]:42726 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751799Ab1IVMKm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Sep 2011 08:10:42 -0400
+Subject: Re: rt14: strace ->  migrate_disable_atomic imbalance
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mike Galbraith <efault@gmx.de>
+Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Miklos Szeredi <miklos@szeredi.hu>, mingo <mingo@redhat.com>
+Date: Thu, 22 Sep 2011 14:09:51 +0200
+In-Reply-To: <1316692534.6284.46.camel@marge.simson.net>
+References: <alpine.LFD.2.02.1109101052340.2723@ionos>
+	 <1315737307.6544.1.camel@marge.simson.net>
+	 <1315817948.26517.16.camel@twins>
+	 <1315835562.6758.3.camel@marge.simson.net>
+	 <1315839187.6758.8.camel@marge.simson.net> <1315926499.5977.19.camel@twins>
+	 <1315927699.6445.6.camel@marge.simson.net> <1315930430.5977.21.camel@twins>
+	 <1316600230.6628.6.camel@marge.simson.net> <1316685640.31429.2.camel@twins>
+	 <1316692534.6284.46.camel@marge.simson.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1316693391.31429.12.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 22, 2011 at 11:01:41AM +0530, Aneesh Kumar K.V wrote:
-> richacl-fullset branch should have the full patchset including nfsd
-> changes. The changes are based on an older kernel version.
+On Thu, 2011-09-22 at 13:55 +0200, Mike Galbraith wrote:
+> On Thu, 2011-09-22 at 12:00 +0200, Peter Zijlstra wrote:
+> 
+> > OK, this one seems to be better.. But its quite vile, not sure I
+> > actually like it anymore.
+> 
+> Well, seemed to work, but I see there's a v3 now.
 
-Got it, thanks!
+Yeah, just posted it for completeness, not sure its actually going
+anywhere since its slower than the current code (although its hard to
+say with the results changing from reboot to reboot), and its still
+quite ugly..
 
-> Currently i
-> am planning to focus on the local file system and VFS changes so that we
-> can get that merged upstream.
 
-Understood.
-
---b.
