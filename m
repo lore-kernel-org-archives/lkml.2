@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753974Ab1IVVGY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 17:06:24 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:52550 "EHLO
+	id S1753999Ab1IVVG2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 17:06:28 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:54270 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753936Ab1IVVGU (ORCPT
+	with ESMTP id S1753936Ab1IVVGZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 17:06:20 -0400
+	Thu, 22 Sep 2011 17:06:25 -0400
 From: Stephen Warren <swarren@nvidia.com>
 To: Russell King <linux@arm.linux.org.uk>
 Cc: Arnd Bergmann <arnd@arndb.de>, Nicolas Pitre <nico@fluxnic.net>,
@@ -17,9 +17,9 @@ Cc: Arnd Bergmann <arnd@arndb.de>, Nicolas Pitre <nico@fluxnic.net>,
         linux-tegra@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH 2/4] arm/dt: Tegra: Add pinmux node to tegra20.dtsi
-Date: Thu, 22 Sep 2011 15:06:05 -0600
-Message-Id: <1316725567-17881-3-git-send-email-swarren@nvidia.com>
+Subject: [PATCH 4/4] arm/tegra: Convert pinmux driver to a platform device
+Date: Thu, 22 Sep 2011 15:06:07 -0600
+Message-Id: <1316725567-17881-5-git-send-email-swarren@nvidia.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1316725567-17881-1-git-send-email-swarren@nvidia.com>
 References: <1316725567-17881-1-git-send-email-swarren@nvidia.com>
@@ -27,45 +27,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a pinmux node to tegra20.dtsi in order to instantiate the future
-pinmux device.
-
 Signed-off-by: Stephen Warren <swarren@nvidia.com>
 ---
 See patch 0000 for details on dependencies.
 
- .../devicetree/bindings/pinmux/pinmux_nvidia.txt   |    5 +++++
- arch/arm/boot/dts/tegra20.dtsi                     |    5 +++++
- 2 files changed, 10 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/pinmux/pinmux_nvidia.txt
+ arch/arm/mach-tegra/pinmux.c |   26 ++++++++++++++++++++++++++
+ 1 files changed, 26 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/pinmux/pinmux_nvidia.txt b/Documentation/devicetree/bindings/pinmux/pinmux_nvidia.txt
-new file mode 100644
-index 0000000..36f82db
---- /dev/null
-+++ b/Documentation/devicetree/bindings/pinmux/pinmux_nvidia.txt
-@@ -0,0 +1,5 @@
-+NVIDIA Tegra 2 pinmux controller
-+
-+Required properties:
-+- compatible : "nvidia,tegra20-pinmux"
-+
-diff --git a/arch/arm/boot/dts/tegra20.dtsi b/arch/arm/boot/dts/tegra20.dtsi
-index 5727595..5921c1d 100644
---- a/arch/arm/boot/dts/tegra20.dtsi
-+++ b/arch/arm/boot/dts/tegra20.dtsi
-@@ -77,6 +77,11 @@
- 		gpio-controller;
- 	};
+diff --git a/arch/arm/mach-tegra/pinmux.c b/arch/arm/mach-tegra/pinmux.c
+index f80d507..46b9d87 100644
+--- a/arch/arm/mach-tegra/pinmux.c
++++ b/arch/arm/mach-tegra/pinmux.c
+@@ -20,6 +20,7 @@
+ #include <linux/errno.h>
+ #include <linux/spinlock.h>
+ #include <linux/io.h>
++#include <linux/platform_device.h>
  
-+	pinmux: pinmux@70000000 {
-+		compatible = "nvidia,tegra20-pinmux";
-+		reg = < 0x70000000 0xc00 >;
-+	};
+ #include <mach/iomap.h>
+ #include <mach/pinmux.h>
+@@ -665,6 +666,31 @@ void tegra_pinmux_config_pullupdown_table(const struct tegra_pingroup_config *co
+ 	}
+ }
+ 
++static int __init tegra_pinmux_probe(struct platform_device *pdev)
++{
++	return 0;
++}
 +
- 	serial@70006000 {
- 		compatible = "nvidia,tegra20-uart";
- 		reg = <0x70006000 0x40>;
++static struct of_device_id tegra_pinmux_of_match[] __devinitdata = {
++	{ .compatible = "nvidia,tegra20-pinmux", },
++	{ },
++};
++
++static struct platform_driver tegra_pinmux_driver = {
++	.driver		= {
++		.name	= "tegra-pinmux",
++		.owner	= THIS_MODULE,
++		.of_match_table = tegra_pinmux_of_match,
++	},
++	.probe		= tegra_pinmux_probe,
++};
++
++static int __init tegra_pinmux_init(void)
++{
++	return platform_driver_register(&tegra_pinmux_driver);
++}
++postcore_initcall(tegra_pinmux_init);
++
+ #ifdef	CONFIG_DEBUG_FS
+ 
+ #include <linux/debugfs.h>
 -- 
 1.7.0.4
 
