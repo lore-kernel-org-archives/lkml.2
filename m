@@ -1,66 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751115Ab1IVP2f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 11:28:35 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:58624 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750948Ab1IVP2b (ORCPT
+	id S1751349Ab1IVPfb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 11:35:31 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:47926 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751197Ab1IVPfa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 11:28:31 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH] i2c/tegra: I2C driver uses the suspend_noirq/resume_noirq
-Date: Thu, 22 Sep 2011 17:28:08 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Ben Dooks <ben-linux@fluff.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Dilan Lee <dilee@nvidia.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Colin Cross <ccross@google.com>
-References: <1312586102-27907-1-git-send-email-swarren@nvidia.com> <74CDBE0F657A3D45AFBB94109FB122FF04B3279D4F@HQMAIL01.nvidia.com> <74CDBE0F657A3D45AFBB94109FB122FF04B73215C9@HQMAIL01.nvidia.com>
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF04B73215C9@HQMAIL01.nvidia.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201109221728.09063.arnd@arndb.de>
-X-Provags-ID: V02:K0:y8yxH2+Q+IdQk9YAucltxaNKR7Lq4uytwVIHt8wpWln
- ovGbxO1R00F+gG/Wx/csQruGdUBFDzfu449IJrVTGjpgsIQB5T
- vaDgo3zMSsZPFP7yrbzR+EbBYleRu4N6OasmcWwVhT2g3lBYGW
- 8NvHpQt7CxPd4sObsxMDAyKhZNlQwN5P9pSzdHYJAxNvrOtgWU
- 3iKottFJ23plMtabrWVOHAZ6gFNBuGtVPfmygjBMdR+3fjvbZ6
- Zd1rBrg8h2+uF2qg5UEPKVVrrKelP6M0+UT+k6zCR04S7XOn2m
- GDi+fcEI7s1E2lEwZ9Sj7rNWh3fP4qVE6QGc5sPzSSlF4kPDcX
- 7BYcPTeGizljSC3LOtj4=
+	Thu, 22 Sep 2011 11:35:30 -0400
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: cjb@laptop.org, linux-mmc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>
+Subject: [PATCH] mmc : general purpose partition support.
+Date: Fri, 23 Sep 2011 00:34:40 +0900
+Message-Id: <1316705680-1940-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 20 September 2011, Stephen Warren wrote:
-> Stephen Warren wrote at Tuesday, August 30, 2011 10:25 AM:
-> > Ben, Arnd,
-> > 
-> > Could you please ack/nack the patch at the start of this thread for Colin;
-> > see below.
-> 
-> Ben, can you please comment on the acceptability of this patch?
-> 
-> Or Arnd, did Mark's most recent explanation of the situation provide enough
-> context for you to ack/nak it?
-> 
+It allows general purpose parition in MMC Device. If it is enable, it will make mmcblk0gp1,gp2,gp3,gp4 partition like this.
 
-After looking through the discussion again, my feeling is that it's ok
-and I think that Mark's word should count more than mine anyway on this
-issue.
+>cat /proc/paritition
+      179 0 847872 mmcblk0
+      179 192 4096 mmcblk0gp4
+      179 160 4096 mmcblk0gp3
+      179 128 4096 mmcblk0gp2
+      179 96  1052672 mmcblk0gp1
+      179 64  1024 mmcblk0boot1
+      179 32  1024 mmcblk0boot0
 
-If you think it helps, you can add my Acked-by, but this is really
-something for Ben to decide. Just resubmit the patch to Ben with an
-an updated changelog that summarises the discussion, in case
-Ben got bored already and put this mail thread into the ignore
-folder...
+Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+---
+ drivers/mmc/card/block.c |   36 ++++++++++++++++++++++++++++++++++++
+ drivers/mmc/core/mmc.c   |   42 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/mmc/card.h |    4 ++++
+ include/linux/mmc/mmc.h  |    4 ++++
+ 4 files changed, 86 insertions(+), 0 deletions(-)
 
-	Arnd
+diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+index 9b90726..074ec55 100644
+--- a/drivers/mmc/card/block.c
++++ b/drivers/mmc/card/block.c
+@@ -1402,6 +1402,42 @@ static int mmc_blk_alloc_parts(struct mmc_card *card, struct mmc_blk_data *md)
+ 			return ret;
+ 	}
+ 
++	if (card->ext_csd.gp1_size) {
++		ret = mmc_blk_alloc_part(card, md, EXT_CSD_PART_CONFIG_ACC_GP1,
++					card->ext_csd.gp1_size >> 9,
++					false,
++					"gp1");
++		if (ret)
++			return ret;
++	}
++
++	if (card->ext_csd.gp2_size) {
++		ret = mmc_blk_alloc_part(card, md, EXT_CSD_PART_CONFIG_ACC_GP2,
++					card->ext_csd.gp2_size >> 9,
++					false,
++					"gp2");
++		if (ret)
++			return ret;
++	}
++
++	if (card->ext_csd.gp3_size) {
++		ret = mmc_blk_alloc_part(card, md, EXT_CSD_PART_CONFIG_ACC_GP3,
++					card->ext_csd.gp3_size >> 9,
++					false,
++					"gp3");
++		if (ret)
++			return ret;
++	}
++
++	if (card->ext_csd.gp4_size) {
++		ret = mmc_blk_alloc_part(card, md, EXT_CSD_PART_CONFIG_ACC_GP4,
++					card->ext_csd.gp4_size >> 9,
++					false,
++					"gp4");
++		if (ret)
++			return ret;
++	}
++
+ 	return ret;
+ }
+ 
+diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
+index 10f5a19..cc31511 100644
+--- a/drivers/mmc/core/mmc.c
++++ b/drivers/mmc/core/mmc.c
+@@ -393,6 +393,48 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
+ 			card->ext_csd.enhanced_area_offset = -EINVAL;
+ 			card->ext_csd.enhanced_area_size = -EINVAL;
+ 		}
++
++		/*
++		 * General purpose partition Support
++		 */
++
++		if (ext_csd[EXT_CSD_PARTITION_SUPPORT] & 0x1) {
++
++			u8 hc_erase_grp_sz =
++				ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE];
++			u8 hc_wp_grp_sz =
++				ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
++
++			card->ext_csd.enhanced_area_en = 1;
++
++			card->ext_csd.gp1_size =
++				(ext_csd[145] << 16) + (ext_csd[144] << 8) +
++				ext_csd[143];
++			card->ext_csd.gp1_size *=
++				(size_t)(hc_erase_grp_sz * hc_wp_grp_sz);
++			card->ext_csd.gp1_size <<= 19;
++
++			card->ext_csd.gp2_size =
++				(ext_csd[148] << 16) + (ext_csd[147] << 8) +
++				ext_csd[146];
++			card->ext_csd.gp2_size *=
++				(size_t)(hc_erase_grp_sz * hc_wp_grp_sz);
++				card->ext_csd.gp2_size <<= 19;
++
++			card->ext_csd.gp3_size =
++				(ext_csd[151] << 16) + (ext_csd[150] << 8) +
++				ext_csd[149];
++			card->ext_csd.gp3_size *=
++				(size_t)(hc_erase_grp_sz * hc_wp_grp_sz);
++			card->ext_csd.gp3_size <<= 19;
++
++			card->ext_csd.gp4_size =
++				(ext_csd[154] << 16) + (ext_csd[153] << 8) +
++				ext_csd[152];
++			card->ext_csd.gp4_size *=
++				(size_t)(hc_erase_grp_sz * hc_wp_grp_sz);
++			card->ext_csd.gp4_size <<= 19;
++		}
+ 		card->ext_csd.sec_trim_mult =
+ 			ext_csd[EXT_CSD_SEC_TRIM_MULT];
+ 		card->ext_csd.sec_erase_mult =
+diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
+index b460fc2..96a98a7 100644
+--- a/include/linux/mmc/card.h
++++ b/include/linux/mmc/card.h
+@@ -64,6 +64,10 @@ struct mmc_ext_csd {
+ 	unsigned long long	enhanced_area_offset;	/* Units: Byte */
+ 	unsigned int		enhanced_area_size;	/* Units: KB */
+ 	unsigned int		boot_size;		/* in bytes */
++	unsigned int		gp1_size;		/* in bytes */
++	unsigned int		gp2_size;		/* in bytes */
++	unsigned int		gp3_size;		/* in bytes */
++	unsigned int		gp4_size;		/* in bytes */
+ 	u8			raw_partition_support;	/* 160 */
+ 	u8			raw_erased_mem_count;	/* 181 */
+ 	u8			raw_ext_csd_structure;	/* 194 */
+diff --git a/include/linux/mmc/mmc.h b/include/linux/mmc/mmc.h
+index 5a794cb..380720a 100644
+--- a/include/linux/mmc/mmc.h
++++ b/include/linux/mmc/mmc.h
+@@ -303,6 +303,10 @@ struct _mmc_csd {
+ #define EXT_CSD_PART_CONFIG_ACC_MASK	(0x7)
+ #define EXT_CSD_PART_CONFIG_ACC_BOOT0	(0x1)
+ #define EXT_CSD_PART_CONFIG_ACC_BOOT1	(0x2)
++#define EXT_CSD_PART_CONFIG_ACC_GP1	(0x4)
++#define EXT_CSD_PART_CONFIG_ACC_GP2	(0x5)
++#define EXT_CSD_PART_CONFIG_ACC_GP3	(0x6)
++#define EXT_CSD_PART_CONFIG_ACC_GP4	(0x7)
+ 
+ #define EXT_CSD_CMD_SET_NORMAL		(1<<0)
+ #define EXT_CSD_CMD_SET_SECURE		(1<<1)
+-- 
+1.7.4.4
+
