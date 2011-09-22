@@ -1,164 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752121Ab1IVDYc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 23:24:32 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:6948 "EHLO sjogate2.atmel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751600Ab1IVDYa convert rfc822-to-8bit (ORCPT
+	id S1752149Ab1IVDZQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 23:25:16 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:39061 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751760Ab1IVDZO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 23:24:30 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Wed, 21 Sep 2011 23:25:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
+In-Reply-To: <20110921211007.GA13605@suse.de>
+References: <1316619573-9104-1-git-send-email-consul.kautuk@gmail.com>
+	<20110921155444.GA27121@suse.de>
+	<CAFPAmTR1bHBronJqVWh_osjJvsPi_gWqJ50Ls-WgCi7CMAViUA@mail.gmail.com>
+	<20110921211007.GA13605@suse.de>
+Date: Thu, 22 Sep 2011 08:55:12 +0530
+Message-ID: <CAFPAmTTBpLEH8pozfTknnLYVGnjTCXooM_eiTr5ZcaE4poWGFg@mail.gmail.com>
+Subject: Re: [PATCH 1/1] Trivial: devtmpfsd: Setting task running/interruptible
+ states
+From: "kautuk.c @samsung.com" <consul.kautuk@gmail.com>
+To: Greg KH <gregkh@suse.de>
+Cc: Jiri Kosina <trivial@kernel.org>, jkosina@suse.cz,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH v2] [media] at91: add code to initialize and manage the ISI_MCK for Atmel ISI driver.
-Date: Thu, 22 Sep 2011 11:23:54 +0800
-Message-ID: <4C79549CB6F772498162A641D92D532802CC5FEC@penmb01.corp.atmel.com>
-In-Reply-To: <4E69E4BF.3030402@atmel.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH v2] [media] at91: add code to initialize and manage the ISI_MCK for Atmel ISI driver.
-Thread-Index: Acxu1/ntLyarh3FdQUmf9kuOk9wu2gJ/ei2A
-References: <1315288601-22384-1-git-send-email-josh.wu@atmel.com> <Pine.LNX.4.64.1109060803590.14818@axis700.grange> <4E69E4BF.3030402@atmel.com>
-From: "Wu, Josh" <Josh.wu@atmel.com>
-To: "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-media@vger.kernel.org>
-Cc: "Guennadi Liakhovetski" <g.liakhovetski@gmx.de>, <plagnioj@jcrosoft.com>,
-        <linux-kernel@vger.kernel.org>
-X-OriginalArrivalTime: 22 Sep 2011 03:23:59.0633 (UTC) FILETIME=[11A68810:01CC78D7]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Nicolas
-
-On Friday, September 09, 2011 6:05 PM, Nicolas Ferre wrote:
-
-> Le 06/09/2011 08:54, Guennadi Liakhovetski :
->> On Tue, 6 Sep 2011, Josh Wu wrote:
->> 
->>> This patch enable the configuration for ISI_MCK, which is provided by programmable clock.
->>>
->>> Signed-off-by: Josh Wu <josh.wu@atmel.com>
->>> ---
->>>  drivers/media/video/atmel-isi.c |   60 ++++++++++++++++++++++++++++++++++++++-
->>>  include/media/atmel-isi.h       |    4 ++
->>>  2 files changed, 63 insertions(+), 1 deletions(-)
->>>
->>> diff --git a/drivers/media/video/atmel-isi.c 
->>> b/drivers/media/video/atmel-isi.c
-
-> [..]
-
->>>  /* 
->>> ---------------------------------------------------------------------
->>> --*/
->>> +/* Initialize ISI_MCK clock, called by atmel_isi_probe() function */ 
->>> +static int initialize_mck(struct platform_device *pdev,
->>> +			struct atmel_isi *isi)
->>> +{
->>> +	struct device *dev = &pdev->dev;
->>> +	struct isi_platform_data *pdata = dev->platform_data;
->>> +	struct clk *pck_parent;
->>> +	int ret;
->>> +
->>> +	if (!strlen(pdata->pck_name) || !strlen(pdata->pck_parent_name))
->>> +		return -EINVAL;
->>> +
->>> +	/* ISI_MCK is provided by PCK clock */
->>> +	isi->mck = clk_get(dev, pdata->pck_name);
->> 
->> I think, it's still not what Russell meant. Look at
->> drivers/mmc/host/atmel-mci.c:
->> 
->> 	host->mck = clk_get(&pdev->dev, "mci_clk");
->> 
->> and in arch/arm/mach-at91/at91sam9g45.c they've got
->> 
->> 	CLKDEV_CON_DEV_ID("mci_clk", "atmel_mci.0", &mmc0_clk),
->> 	CLKDEV_CON_DEV_ID("mci_clk", "atmel_mci.1", &mmc1_clk),
->> 
->> where
->> 
->> #define CLKDEV_CON_DEV_ID(_con_id, _dev_id, _clk)	\
->> 	{						\
->> 		.con_id = _con_id,			\
->> 		.dev_id = _dev_id,			\
->> 		.clk = _clk,				\
->> 	}
->> 
->> I.e., in the device driver (mmc in this case) you only use the 
->> (platform) device instance, whose dev_name(dev) is then matched 
->> against one of clock lookups above, and a connection ID, which is used 
->> in case your device is using more than one clock. In the ISI case, 
->> your pck1 clock, that you seem to need here, doesn't have a clock 
->> lookup object, so, you might have to add one, and then use its connection ID.
->> 
->>> +	if (IS_ERR(isi->mck)) {
->>> +		dev_err(dev, "Failed to get PCK: %s\n", pdata->pck_name);
->>> +		return PTR_ERR(isi->mck);
->>> +	}
->>> +
->>> +	pck_parent = clk_get(dev, pdata->pck_parent_name);
->>> +	if (IS_ERR(pck_parent)) {
->>> +		ret = PTR_ERR(pck_parent);
->>> +		dev_err(dev, "Failed to get PCK parent: %s\n",
->>> +				pdata->pck_parent_name);
->>> +		goto err_init_mck;
->>> +	}
->>> +
->>> +	ret = clk_set_parent(isi->mck, pck_parent);
->> 
->> I'm not entirely sure on this one, but as we had a similar situation 
->> with clocks, we decided to extablish the clock hierarchy in the board 
->> code, and only deal with the actual device clocks in the driver 
->> itself. I.e., we moved all clk_set_parent() and setting up the parent clock into the board.
->> And I do think, this makes more sense, than doing this in the driver, 
->> not all users of this driver will need to manage the parent clock, right?
-
-> Exactly.
+On Thu, Sep 22, 2011 at 2:40 AM, Greg KH <gregkh@suse.de> wrote:
+> On Wed, Sep 21, 2011 at 09:54:01PM +0530, kautuk.c @samsung.com wrote:
+>> Hi Greg,
+>>
+>> On Wed, Sep 21, 2011 at 9:24 PM, Greg KH <gregkh@suse.de> wrote:
+>> > On Wed, Sep 21, 2011 at 09:09:33PM +0530, Kautuk Consul wrote:
+>> >> This trivial patch makes the following changes in devtmpfsd() :
+>> >
+>> > This is not the definition of "trivial" in that you are changing the
+>> > logic of the code, not just doing spelling changes.
+>>
+>> Well, I didn't really change the performance/functionality so I called
+>> it trivial.
 >
-> Josh, for the two comments by Guennadi above, you can take sound/soc/atmel/sam9g20_wm8731.c as an example of using PCK and parent clocks. You will also find how to use named clocks and how to set the programmable clocks rate...
+> You changed the code logic,
 
-According to sam9g20_wm8731.c file, and combined Guennadi and J.C's advices, I'd like to only add clk_set_rate() and enable/disble isi_mck code in ISI driver. 
-Also I will define isi_mck clock in soc chip file(at91sam9g45.c).
-Then I will move all setting up the parent clock code into the at91sam9g45_devices.c, where there are code to add Atmel ISI device.
+Hmm. Not the code logic of devtmpfsd as such but of the loop involved.
 
-I will generate the new version patch for it soon.
+> which is not trivial at all in this area.
 
->>> +	clk_put(pck_parent);
->>> +	if (ret)
->>> +		goto err_init_mck;
->>> +
->>> +	ret = clk_set_rate(isi->mck, pdata->isi_mck_hz);
->>> +	if (ret < 0)
->>> +		goto err_init_mck;
->>> +
->>> +	return 0;
->>> +
->>> +err_init_mck:
->>> +	clk_put(isi->mck);
->>> +	return ret;
->>> +}
->>> +
->>>  static int __devexit atmel_isi_remove(struct platform_device *pdev)  
->>> {
->>>  	struct soc_camera_host *soc_host = to_soc_camera_host(&pdev->dev); 
->>> @@ -897,6 +948,7 @@ static int __devexit atmel_isi_remove(struct platform_device *pdev)
->>>  			isi->fb_descriptors_phys);
->>>  
->>>  	iounmap(isi->regs);
->>> +	clk_put(isi->mck);
->>>  	clk_put(isi->pclk);
->>>  	kfree(isi);
+Ok.
+If you want, maybe I could send another patch for this without marking
+it "trivial".
 
-> [..]
+>
+> And actually unneeded from what I can tell, right?
 
-> Best regards,
-> --
-> Nicolas Ferre
+Well, there *are* 2 overheads.
+As I mentioned, the overheads which I tried to remove by this patch is an extra
+memory barrier as well as setting of the task state to TASK_RUNNING.
+Of course, they are very minimal and that's why I called this change "trivial".
 
-Best Regards,
-Josh Wu
+>
+>> >
+>> >> - Set the state to TASK_INTERRUPTIBLE using __set_current_state
+>> >>   instead of set_current_state as the spin_unlock is an implicit
+>> >>   memory barrier.
+>> >
+>> > Why?  What is this hurting with the original code?
+>>
+>> Nothing really hurting, that's why I called this patch trivial.
+>> There is an extra memory barrier we have to go through by way of
+>> set_current_state, which is mb().
+>> That would lead to more overhead on the parallel pipelines of the processor
+>> as they will have to cease being parallel for instructions before and after
+>> the memory barrier despite the fact that the spin_unlock already covers this.
+>> We can do without this because as per the Documentation/memory-barriers.txt,
+>> atomic operations and unlocks give reliable ordering to instructions.
+>
+> But the current code is correct, and not hurting anything, and it's not
+> on a "fast path" at all, so I'd prefer to keep it as-is and not change
+> it for the sake of changing it, so I'm not going to accept this patch,
+> sorry.
+
+Ok.
+However, I see many changes going in which are purely cosmetic like
+restructuring or clean-up of a function, etc.
+So this is a category of change that lies (in importance) between a
+cosmetic/trivial
+change and a minor logic change.
+Since this patch is still technically correct, do you mean to say that
+this cannot even
+be looked as some sort of a "technical" cleanup ?
+
+Also, I see you did not include my comment about the removal of the setting of
+TASK_RUNNING. Do you at least accept that ?
+If that is so, maybe you could accept the first patch I sent.
+
+Anyway, thanks for the info.
+
+>
+> greg k-h
+>
