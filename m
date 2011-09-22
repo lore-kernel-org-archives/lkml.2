@@ -1,77 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751035Ab1IVFOx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 01:14:53 -0400
-Received: from mail-gw0-f42.google.com ([74.125.83.42]:38504 "EHLO
-	mail-gw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750721Ab1IVFOu convert rfc822-to-8bit (ORCPT
+	id S1751131Ab1IVFQZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 01:16:25 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:38739 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750876Ab1IVFQX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 01:14:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <1316665687.9107.10.camel@minggr>
-References: <1316628589.7341.11.camel@localhost.localdomain>
-	<CAF1ivSbZf5zgJphyaLeUZfSgz-oPvAY0bG6V2OMeWPS60nsxxQ@mail.gmail.com>
-	<CADZ9YHhk0idJ6DQOfGmHJtY2RrHyk=D_m-wcOgN1rPp7_ommBg@mail.gmail.com>
-	<1316665687.9107.10.camel@minggr>
-Date: Thu, 22 Sep 2011 11:14:49 +0600
-Message-ID: <CADZ9YHjheS-j9kLDjCe3LrxLOOJ24ZSGDCgMukPShorJRQzwNQ@mail.gmail.com>
-Subject: Re: [PATCH] acpi: Fix possible recursive locking in hwregs.c
-From: Rakib Mullick <rakib.mullick@gmail.com>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Brown, Len" <len.brown@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Moore, Robert" <robert.moore@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 22 Sep 2011 01:16:23 -0400
+Date: Thu, 22 Sep 2011 15:16:16 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kasper Pedersen <kernel@kasperkp.dk>,
+        Matt Carlson <mcarlson@broadcom.com>
+Subject: linux-next: manual merge of the net tree with Linus' tree
+Message-Id: <20110922151616.95d604bbc0c1a9bbec3dc7cb@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 22, 2011 at 10:28 AM, Lin Ming <ming.m.lin@intel.com> wrote:
-> On Thu, 2011-09-22 at 11:35 +0800, Rakib Mullick wrote:
->> On Thu, Sep 22, 2011 at 6:59 AM, Lin Ming <ming.m.lin@intel.com> wrote:
->> > On Thu, Sep 22, 2011 at 2:09 AM, Rakib Mullick <rakib.mullick@gmail.com> wrote:
->> >> Calling pm-suspend might trigger a recursive lock in it's code path. In function acpi_hw_clear_acpi_status,
->> >> acpi_os_release_lock holds the lock acpi_gbl_hardware_lock before calling acpi_hw_register_write(), then
->> >> without releasing acpi_gbl_hardware_lock, this function calls acpi_ev_walk_gpe_list, which also tries to
->> >> hold acpi_gbl_hardware_lock and thus causes possible recursive lock.
->> >
->> > No, acpi_ev_walk_gpe_list holds acpi_gbl_gpe_lock.
->> >
->> Yes, right. Actually, acpi_os_release_lock() tries to hold
->> acpi_gbl_gpe_lock without releasing acpi_gbl_hardware_lock. Right?
->
-> Do you mean "acpi_ev_walk_gpe_list() tries to hold
-> acpi_gbl_gpe_lock..."?
->
-I wanted to mean, acpi_os_acquire_lock() tries to hold
-acpi_gbl_gpe_lock without releasing acpi_gbl_hardware_lock.  Actually,
-this recursive locking scenario showed up on my modified kernel and
-fails to suspend. But, never happened on mainline kernel. Looking at
-the warning it seems to me that, it's safe to release the
-acpi_gbl_hardware_lock before calling acpi_ev_walk_gpe_list() and also
-solves the problem. Calling acpi_ev_walk_gpe_list() doesn't require
-acpi_gbl_hardware_lock to be held. This is the reason behind the
-patch.
+Hi all,
 
-> We have below locks sequence. I don't see the problem.
->
-> acpi_hw_clear_acpi_status:
->
->     <acquire acpi_gbl_hardware_lock>
->
->         acpi_ev_walk_gpe_list:
->             <acquire acpi_gbl_gpe_lock>
->             ...
->             <release acpi_gbl_gpe_lock>
->         ...
->     <release acpi_gbl_hardware_lock>
->
->>
->> Thanks,
->> Rakib
->
->
->
+Today's linux-next merge of the net tree got a conflict in
+drivers/net/ethernet/broadcom/tg3.c between commit 5c1e688388f6 ("tg3:
+fix VLAN tagging regression") from Linus' tree and commit 93a700a9d20b
+("tg3: Code movement") from the net tree.
+
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/net/ethernet/broadcom/tg3.c
+index 4a1374d,1485013..0000000
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@@ -6234,15 -6734,17 +6734,15 @@@ static netdev_tx_t tg3_start_xmit(struc
+  		}
+  	}
+  
++ 	if (tg3_flag(tp, USE_JUMBO_BDFLAG) &&
++ 	    !mss && skb->len > VLAN_ETH_FRAME_LEN)
++ 		base_flags |= TXD_FLAG_JMB_PKT;
++ 
+ -#ifdef BCM_KERNEL_SUPPORTS_8021Q
+  	if (vlan_tx_tag_present(skb)) {
+  		base_flags |= TXD_FLAG_VLAN;
+  		vlan = vlan_tx_tag_get(skb);
+  	}
+ -#endif
+  
+- 	if (tg3_flag(tp, USE_JUMBO_BDFLAG) &&
+- 	    !mss && skb->len > VLAN_ETH_FRAME_LEN)
+- 		base_flags |= TXD_FLAG_JMB_PKT;
+- 
+  	len = skb_headlen(skb);
+  
+  	mapping = pci_map_single(tp->pdev, skb->data, len, PCI_DMA_TODEVICE);
