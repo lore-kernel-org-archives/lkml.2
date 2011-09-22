@@ -1,57 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752999Ab1IVRZr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 13:25:47 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:58598 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751781Ab1IVRZq (ORCPT
+	id S1753059Ab1IVR0j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 13:26:39 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:53421 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751881Ab1IVR0g convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 13:25:46 -0400
-Date: Thu, 22 Sep 2011 11:25:42 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Stephen Warren <swarren@nvidia.com>, Olof Johansson <olof@lixom.net>,
-        Colin Cross <ccross@android.com>, Erik Gilling <konkers@android.com>,
-        Chris Ball <cjb@laptop.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
-Subject: Re: [PATCH 1/3] arm/tegra: Move EN_VDD_1V05_GPIO to board-harmony.h
-Message-ID: <20110922172542.GK17168@ponder.secretlab.ca>
-References: <1316633620-13184-1-git-send-email-swarren@nvidia.com>
- <CAOesGMisOtEQpcS-hHi-3brpYzJr-UiB6b71c+bwkesPDk9iuA@mail.gmail.com>
- <20110922081140.GH17169@n2100.arm.linux.org.uk>
- <74CDBE0F657A3D45AFBB94109FB122FF1739554CBD@HQMAIL01.nvidia.com>
- <20110922163258.GD8072@n2100.arm.linux.org.uk>
+	Thu, 22 Sep 2011 13:26:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110922163258.GD8072@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAO+b5-pAY9Qn4OXKnxAHaBSrJi_6nTPOGZ+QgVg9iRdTCmequA@mail.gmail.com>
+References: <CAO+b5-pAY9Qn4OXKnxAHaBSrJi_6nTPOGZ+QgVg9iRdTCmequA@mail.gmail.com>
+From: Bart Van Assche <bvanassche@acm.org>
+Date: Thu, 22 Sep 2011 19:26:14 +0200
+X-Google-Sender-Auth: 94qtz_Utt6CoeZvGCUSIugLV8aM
+Message-ID: <CAO+b5-qxCADmkg+p_xC_AP=FYPELp1+ZqBNQ7PYbHtsAEwivOA@mail.gmail.com>
+Subject: Re: blkdev_issue_discard() hangs forever if the underlying storage
+ device is removed
+To: Jens Axboe <jaxboe@fusionio.com>, Mike Snitzer <snitzer@redhat.com>,
+        Lukas Czerner <lczerner@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 22, 2011 at 05:32:58PM +0100, Russell King - ARM Linux wrote:
-> On Thu, Sep 22, 2011 at 09:31:48AM -0700, Stephen Warren wrote:
-> > Russell King - ARM Linux wrote at Thursday, September 22, 2011 2:12 AM:
-> > > On Wed, Sep 21, 2011 at 01:16:49PM -0700, Olof Johansson wrote:
-> > > > Works for me. Or I could stage it in a topic branch that would be
-> > > > merged after Russell's GPIO tree.
-> > > 
-> > > Holding stuff off from being merged doesn't work.
-> > 
-> > Russell,
-> > 
-> > So I take it I should add the two ack'd patches to the ARM patch system,
-> > and have you pick them up?
-> 
-> That's a workable solution, yes.  I've done that with various other
-> gpio patches from people, and Grant seems happy with that.
+On Sat, Aug 27, 2011 at 8:11 AM, Bart Van Assche <bvanassche@acm.org> wrote:
+> Apparently blkdev_issue_discard() never times out, not even if the
+> device has been removed. This is what appeared in the kernel log after
+> device removal (triggered by running mkfs.ext4 on an SRP SCSI device
+> node):
+>
+> [ ... ]
 
-Yes, I'm comfortable with patches going in via other trees when there
-are dependencies.
+In case anyone is interested, I ran into a similar call stack with
+3.1-rc6 for the truncate_inode_pages() call. I/O was started while the
+SRP connection was fully operational and the call stack was reported
+after ib_srp had invoked scsi_remove_host(). That excludes the ib_srp
+driver as a potential cause of this hang, isn't it ?
 
-g.
+INFO: task fio:17621 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+fio             D 000000010003baef     0 17621  17606 0x00000004
+ ffff8800952498c8 0000000000000046 ffffffff813d81ef ffffffff81082bee
+ ffff880000000000 ffff880095249fd8 ffff880095249fd8 ffff880095249fd8
+ ffff8801a8bf4ce0 ffff880095249fd8 ffff880095249fd8 ffff880095248000
+Call Trace:
+ [<ffffffff813d81ef>] ? __schedule+0x66f/0x7d0
+ [<ffffffff81082bee>] ? mark_held_locks+0x6e/0x130
+ [<ffffffff810e04e0>] ? __lock_page+0x70/0x70
+ [<ffffffff8103d21f>] schedule+0x3f/0x60
+ [<ffffffff813d8440>] io_schedule+0x60/0x80
+ [<ffffffff810e04ee>] sleep_on_page+0xe/0x20
+ [<ffffffff813d8a4a>] __wait_on_bit_lock+0x5a/0xc0
+ [<ffffffff810e2f6f>] ? find_get_pages+0x10f/0x1c0
+ [<ffffffff810e2e60>] ? filemap_fault+0x4b0/0x4b0
+ [<ffffffff810e04d7>] __lock_page+0x67/0x70
+ [<ffffffff81069d10>] ? autoremove_wake_function+0x50/0x50
+ [<ffffffff810ee793>] truncate_inode_pages_range+0x493/0x4a0
+ [<ffffffff810ee7b5>] truncate_inode_pages+0x15/0x20
+ [<ffffffff8116ff07>] kill_bdev+0x37/0x40
+ [<ffffffff81170da4>] __blkdev_put+0x74/0x1c0
+ [<ffffffff81170f50>] blkdev_put+0x60/0x190
+ [<ffffffff811710a4>] blkdev_close+0x24/0x30
+ [<ffffffff8113c138>] fput+0xf8/0x230
+ [<ffffffff811381d6>] filp_close+0x66/0x90
+ [<ffffffff81049302>] put_files_struct+0xf2/0x1d0
+ [<ffffffff81049248>] ? put_files_struct+0x38/0x1d0
+ [<ffffffff810494a2>] exit_files+0x52/0x60
+ [<ffffffff81049978>] do_exit+0x158/0x850
+ [<ffffffff8105b2ee>] ? get_signal_to_deliver+0xee/0x5d0
+ [<ffffffff813dacb7>] ? _raw_spin_lock_irq+0x17/0x60
+ [<ffffffff813db500>] ? _raw_spin_unlock_irq+0x30/0x50
+ [<ffffffff8104a30c>] do_group_exit+0x5c/0xd0
+ [<ffffffff8105b430>] get_signal_to_deliver+0x230/0x5d0
+ [<ffffffff8100219b>] do_signal+0x6b/0x750
+ [<ffffffff8106dd02>] ? hrtimer_cancel+0x22/0x30
+ [<ffffffff813d9db4>] ? do_nanosleep+0xa4/0xd0
+ [<ffffffff8106eb4c>] ? hrtimer_nanosleep+0xac/0x150
+ [<ffffffff813e36b1>] ? sysret_signal+0x5/0x3d
+ [<ffffffff810028fd>] do_notify_resume+0x5d/0x70
+ [<ffffffff811ebe2e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+ [<ffffffff813e38cb>] int_signal+0x12/0x17
+1 lock held by fio/17621:
+ #0:  (&bdev->bd_mutex){+.+.+.}, at: [<ffffffff81170d6f>]
+__blkdev_put+0x3f/0x1c0
+
+Bart.
