@@ -1,62 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753485Ab1IVO5e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 10:57:34 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:35945 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753216Ab1IVO5d (ORCPT
+	id S1753475Ab1IVPHx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 11:07:53 -0400
+Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:51052 "EHLO
+	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752254Ab1IVPHu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 10:57:33 -0400
-X-Auth-Info: XVZEY6USNvzBIP9HUBCPeyurIXmh0IQqzXolZUwteTg=
-Message-ID: <4E7B4CD9.3020404@grandegger.com>
-Date: Thu, 22 Sep 2011 16:57:29 +0200
-From: Wolfgang Grandegger <wg@grandegger.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	Thu, 22 Sep 2011 11:07:50 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: SocketCAN Core Mailing List <socketcan-core@lists.berlios.de>,
-        Willy Lambert <lambert.willy@gmail.com>, x86@kernel.org,
-        Valdis.Kletnieks@vt.edu, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86_64: permit to configure ISA support also for x86_64
- systems
-References: <4E731565.5050307@grandegger.com> <11382509.BgAkVknI9a@wuerfel> <4E7AD908.8060101@grandegger.com> <201109221620.07657.arnd@arndb.de>
-In-Reply-To: <201109221620.07657.arnd@arndb.de>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/mixed;
+	boundary="----_=_NextPart_001_01CC7938.DCED52A6"
+Subject: RE: [PATCH] [SCSI] libsas: Allow expander T-T attachments
+Date: Thu, 22 Sep 2011 08:04:00 -0700
+Message-ID: <FC1F9E38C0703341A1A750524E2525A9018AE2C6@XYUS-EX22.xyus.xyratex.com>
+In-Reply-To: <1316691000.10571.6.camel@dabdike>
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH] [SCSI] libsas: Allow expander T-T attachments
+Thread-Index: AQHMeRr33WmlgklpnkO54xmtRA8AbpVZfVlQ
+References: <1311826792.28583.YahooMailNeo@web31811.mail.mud.yahoo.com> <1316691000.10571.6.camel@dabdike>
+From: "Mark Salyzyn" <mark_salyzyn@us.xyratex.com>
+To: "James Bottomley" <jbottomley@parallels.com>,
+        "Luben Tuikov" <ltuikov@yahoo.com>
+Cc: <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "Darrick Wong" <djwong@us.ibm.com>,
+        "Xiangliang Yu" <yuxiangl@marvell.com>,
+        "Jack Wang" <jack_wang@usish.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/2011 04:20 PM, Arnd Bergmann wrote:
-> On Thursday 22 September 2011, Wolfgang Grandegger wrote:
->> On 09/21/2011 11:24 AM, Arnd Bergmann wrote:
->>> On Wednesday 21 September 2011 10:33:10 Wolfgang Grandegger wrote:
->>> The other point is that you are probably using inb/outb operations,
->>> which I'm trying to provide only on ISA/PCMCIA/PCI based systems in
->>> the future. Once I finish that work, you will also need to depend on
->>> HAS_IOPORT (which currently means something else).
->>
->> OK, the sja1000_isa driver just uses memory mapped access.
-> 
-> According to this it uses both PIO and MMIO:
-> 
-> $ git grep '\(in\|out\|read\|write\)\(b\|w\|l\)' drivers/net/can/sja1000/sja1000_isa.c 
-> drivers/net/can/sja1000/sja1000_isa.c:  return readb(priv->reg_base + reg);
-> drivers/net/can/sja1000/sja1000_isa.c:  writeb(val, priv->reg_base + reg);
-> drivers/net/can/sja1000/sja1000_isa.c:  return inb((unsigned long)priv->reg_base + reg);
-> drivers/net/can/sja1000/sja1000_isa.c:  outb(val, (unsigned long)priv->reg_base + reg);
-> drivers/net/can/sja1000/sja1000_isa.c:  outb(reg, base);
-> drivers/net/can/sja1000/sja1000_isa.c:  return inb(base + 1);
-> drivers/net/can/sja1000/sja1000_isa.c:  outb(reg, base);
-> drivers/net/can/sja1000/sja1000_isa.c:  outb(val, base + 1);
+This is a multi-part message in MIME format.
 
-Ah, oh, I forgot. The driver supports both, I/O port and memory mapped
-access.
+------_=_NextPart_001_01CC7938.DCED52A6
+Content-Type: text/plain;
+	charset="utf-8"
+Content-Transfer-Encoding: base64
 
-> But don't worry about it, I'll make the right Kconfig annotation when I submit my
-> patches.
+RW5jbG9zZWQgaXMgYW4gdXBkYXRlZCBwYXRjaCB0aGF0IHBhc3NlcyBjaGVja3BhdGNoLnBs
+IChhIGZldyA4MC1jaGFyYWN0ZXIgbGluZSBlcnJvcnMgaW4gdGhlIG9yaWdpbmFsKSwgbWFp
+bnRhaW4gZXhpc3RpbmcgaW5kZW50IG1lY2hhbmljcyBhbmQgY29udGFpbnMgbXkgJ0Fjaycg
+YW5kIHRoZSByZWNvbW1lbmRlZCBDYyBsaXN0Lg0KDQpXYWl0IGZvciBMdWJlbidzIEFjayBv
+ciBPdmVycmlkZSAoZGVzcGl0ZSB0aGUgZmFjdCBJIHRvb2sgdGhlIGxpYmVydHkgb2YgYWRk
+aW5nIGhpcyBTaWduZWQtb2ZmLWJ5IG9uIHRoZSBjaGVja3BhdGNoIHJlcXVpcmVkIGFkanVz
+dG1lbnRzKS4NCg0KU2luY2VyZWx5IC0tIE1hcmsgU2FseXp5biANCg0KLS0tLS1PcmlnaW5h
+bCBNZXNzYWdlLS0tLS0NCkZyb206IGxpbnV4LXNjc2ktb3duZXJAdmdlci5rZXJuZWwub3Jn
+IFttYWlsdG86bGludXgtc2NzaS1vd25lckB2Z2VyLmtlcm5lbC5vcmddIE9uIEJlaGFsZiBP
+ZiBKYW1lcyBCb3R0b21sZXkNClNlbnQ6IFRodXJzZGF5LCBTZXB0ZW1iZXIgMjIsIDIwMTEg
+NzozMCBBTQ0KVG86IEx1YmVuIFR1aWtvdg0KQ2M6IGxpbnV4LXNjc2lAdmdlci5rZXJuZWwu
+b3JnOyBsaW51eC1rZXJuZWxAdmdlci5rZXJuZWwub3JnDQpTdWJqZWN0OiBSZTogW1BBVENI
+XSBbU0NTSV0gbGlic2FzOiBBbGxvdyBleHBhbmRlciBULVQgYXR0YWNobWVudHMNCg0KT24g
+V2VkLCAyMDExLTA3LTI3IGF0IDIxOjE5IC0wNzAwLCBMdWJlbiBUdWlrb3Ygd3JvdGU6DQo+
+IEFsbG93IGV4cGFuZGVyIHRhYmxlLXRvLXRhYmxlIGF0dGFjaG1lbnRzIGZvcg0KPiBleHBh
+bmRlcnMgdGhhdCBzdXBwb3J0IGl0Lg0KPiANCj4gU2lnbmVkLW9mZi1ieTogTHViZW4gVHVp
+a292IDxsdHVpa292QHlhaG9vLmNvbT4NCg0KT0ssIHNvIG5vdyBJIG5lZWQgYW4gYXBwbHlh
+YmxlIHBhdGNoLCBwbGVhc2UuICBJdCBsb29rcyBsaWtlIHRoZSBtYWlsDQpzZXJ2ZXIgaGFz
+IG1hcHBlZCBhbGwgdGFicyB0byBzcGFjZXMuICBJZiB5b3UgY2FuJ3QgZml4IHRoZSBtYWls
+ZXIsIGp1c3QNCnNlbmRpbmcgdGhlIHBhdGNoIGFzIGFuIGF0dGFjaG1lbnQgaXMgZmluZS4N
+Cg0KSmFtZXMNCg0KTnJ5YljHp3ZeKd66ey5uK3sie2F5HcqH2pksaiBmaHoedwxqOit2d2pt
+IHpaK92iaiIhDQoNCl9fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19f
+X19fX19fX19fX19fX19fX19fX19fX19fX19fX18NClRoaXMgZW1haWwgbWF5IGNvbnRhaW4g
+cHJpdmlsZWdlZCBvciBjb25maWRlbnRpYWwgaW5mb3JtYXRpb24sIHdoaWNoIHNob3VsZCBv
+bmx5IGJlIHVzZWQgZm9yIHRoZSBwdXJwb3NlIGZvciB3aGljaCBpdCB3YXMgc2VudCBieSBY
+eXJhdGV4LiBObyBmdXJ0aGVyIHJpZ2h0cyBvciBsaWNlbnNlcyBhcmUgZ3JhbnRlZCB0byB1
+c2Ugc3VjaCBpbmZvcm1hdGlvbi4gSWYgeW91IGFyZSBub3QgdGhlIGludGVuZGVkIHJlY2lw
+aWVudCBvZiB0aGlzIG1lc3NhZ2UsIHBsZWFzZSBub3RpZnkgdGhlIHNlbmRlciBieSByZXR1
+cm4gYW5kIGRlbGV0ZSBpdC4gWW91IG1heSBub3QgdXNlLCBjb3B5LCBkaXNjbG9zZSBvciBy
+ZWx5IG9uIHRoZSBpbmZvcm1hdGlvbiBjb250YWluZWQgaW4gaXQuDQogDQpJbnRlcm5ldCBl
+bWFpbCBpcyBzdXNjZXB0aWJsZSB0byBkYXRhIGNvcnJ1cHRpb24sIGludGVyY2VwdGlvbiBh
+bmQgdW5hdXRob3Jpc2VkIGFtZW5kbWVudCBmb3Igd2hpY2ggWHlyYXRleCBkb2VzIG5vdCBh
+Y2NlcHQgbGlhYmlsaXR5LiBXaGlsZSB3ZSBoYXZlIHRha2VuIHJlYXNvbmFibGUgcHJlY2F1
+dGlvbnMgdG8gZW5zdXJlIHRoYXQgdGhpcyBlbWFpbCBpcyBmcmVlIG9mIHZpcnVzZXMsIFh5
+cmF0ZXggZG9lcyBub3QgYWNjZXB0IGxpYWJpbGl0eSBmb3IgdGhlIHByZXNlbmNlIG9mIGFu
+eSBjb21wdXRlciB2aXJ1c2VzIGluIHRoaXMgZW1haWwsIG5vciBmb3IgYW55IGxvc3NlcyBj
+YXVzZWQgYXMgYSByZXN1bHQgb2YgdmlydXNlcy4NCiANClh5cmF0ZXggVGVjaG5vbG9neSBM
+aW1pdGVkICgwMzEzNDkxMiksIFJlZ2lzdGVyZWQgaW4gRW5nbGFuZCAmIFdhbGVzLCBSZWdp
+c3RlcmVkIE9mZmljZSwgTGFuZ3N0b25lIFJvYWQsIEhhdmFudCwgSGFtcHNoaXJlLCBQTzkg
+MVNBLg0KIA0KVGhlIFh5cmF0ZXggZ3JvdXAgb2YgY29tcGFuaWVzIGFsc28gaW5jbHVkZXMs
+IFh5cmF0ZXggTHRkLCByZWdpc3RlcmVkIGluIEJlcm11ZGEsIFh5cmF0ZXggSW50ZXJuYXRp
+b25hbCBJbmMsIHJlZ2lzdGVyZWQgaW4gQ2FsaWZvcm5pYSwgWHlyYXRleCAoTWFsYXlzaWEp
+IFNkbiBCaGQgcmVnaXN0ZXJlZCBpbiBNYWxheXNpYSwgWHlyYXRleCBUZWNobm9sb2d5IChX
+dXhpKSBDbyBMdGQgcmVnaXN0ZXJlZCBpbiBUaGUgUGVvcGxlJ3MgUmVwdWJsaWMgb2YgQ2hp
+bmEgYW5kIFh5cmF0ZXggSmFwYW4gTGltaXRlZCByZWdpc3RlcmVkIGluIEphcGFuLg0KX19f
+X19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19f
+X19fX19fX19fX19fXw0KIA0KDQo=
+------_=_NextPart_001_01CC7938.DCED52A6
+Content-Type: application/octet-stream;
+	name="libsas_t2t.patch"
+Content-Transfer-Encoding: base64
+Content-Description: libsas_t2t.patch
+Content-Disposition: attachment;
+	filename="libsas_t2t.patch"
 
-OK,
+QWxsb3cgZXhwYW5kZXIgdGFibGUtdG8tdGFibGUgYXR0YWNobWVudHMgZm9yIGV4cGFuZGVycyB0
+aGF0IHN1cHBvcnQgaXQuIFtMVF0KQWRqdXN0ZWQgdG8gcGFzcyBjaGVja3BhdGNoLnBsLiBbTVNd
+CgpTaWduZWQtb2ZmLWJ5OiBMdWJlbiBUdWlrb3YgPGx0dWlrb3ZAeWFob28uY29tPgpDYzogRGFy
+cmljayBKIFdvbmcgPGRqd29uZ0B1cy5pYm0uY29tPgpDYzogSmFtZXMgQm90dG9tbGV5IDxqYm90
+dG9tbGV5QHBhcmFsbGVscy5jb20+CkNjOiBYaWFuZ2xpYW5nIFl1IDx5dXhpYW5nbEBtYXJ2ZWxs
+LmNvbT4KQ2M6IEphY2sgV2FuZyA8amFja193YW5nQHVzaXNoLmNvbT4KQWNrZWQtYnk6IE1hcmsg
+U2FseXp5biA8bWFya19zYWx5enluQHVzLnh5cmF0ZXguY29tPgoKIGRyaXZlcnMvc2NzaS9saWJz
+YXMvc2FzX2V4cGFuZGVyLmMgfCAgIDI0ICsrKysrKysrKysrKysrKysrKy0tLS0tLQogaW5jbHVk
+ZS9zY3NpL2xpYnNhcy5oICAgICAgICAgICAgICB8ICAgIDMgKysrCiBpbmNsdWRlL3Njc2kvc2Fz
+LmggICAgICAgICAgICAgICAgIHwgICAxNCArKysrKysrKysrKystLQogMyBmaWxlcyBjaGFuZ2Vk
+LCAzMyBpbnNlcnRpb25zKCspLCA4IGRlbGV0aW9ucygtKQoKZGlmZiAtcnVwIHNjc2ktbWlzYy0y
+LjYvZHJpdmVycy9zY3NpL2xpYnNhcy9zYXNfZXhwYW5kZXIuYyBzY3NpLW1pc2MtMi42Lm5ldy9k
+cml2ZXJzL3Njc2kvbGlic2FzL3Nhc19leHBhbmRlci5jCi0tLSBzY3NpLW1pc2MtMi42L2RyaXZl
+cnMvc2NzaS9saWJzYXMvc2FzX2V4cGFuZGVyLmMJMjAxMS0wOC0zMSAwODozMjoyMS4wMDAwMDAw
+MDAgLTA0MDAKKysrIHNjc2ktbWlzYy0yLjYubmV3L2RyaXZlcnMvc2NzaS9saWJzYXMvc2FzX2V4
+cGFuZGVyLmMJMjAxMS0wOS0yMiAxMDo0OTowOC4wMDAwMDAwMDAgLTA0MDAKQEAgLTMyOSw2ICsz
+MjksNyBAQCBzdGF0aWMgdm9pZCBleF9hc3NpZ25fcmVwb3J0X2dlbmVyYWwoc3RyCiAJZGV2LT5l
+eF9kZXYuZXhfY2hhbmdlX2NvdW50ID0gYmUxNl90b19jcHUocmctPmNoYW5nZV9jb3VudCk7CiAJ
+ZGV2LT5leF9kZXYubWF4X3JvdXRlX2luZGV4ZXMgPSBiZTE2X3RvX2NwdShyZy0+cm91dGVfaW5k
+ZXhlcyk7CiAJZGV2LT5leF9kZXYubnVtX3BoeXMgPSBtaW4ocmctPm51bV9waHlzLCAodTgpTUFY
+X0VYUEFOREVSX1BIWVMpOworCWRldi0+ZXhfZGV2LnQydF9zdXBwID0gcmctPnQydF9zdXBwOwog
+CWRldi0+ZXhfZGV2LmNvbmZfcm91dGVfdGFibGUgPSByZy0+Y29uZl9yb3V0ZV90YWJsZTsKIAlk
+ZXYtPmV4X2Rldi5jb25maWd1cmluZyA9IHJnLT5jb25maWd1cmluZzsKIAltZW1jcHkoZGV2LT5l
+eF9kZXYuZW5jbG9zdXJlX2xvZ2ljYWxfaWQsIHJnLT5lbmNsb3N1cmVfbG9naWNhbF9pZCwgOCk7
+CkBAIC0xMTMzLDE1ICsxMTM0LDE3IEBAIHN0YXRpYyB2b2lkIHNhc19wcmludF9wYXJlbnRfdG9w
+b2xvZ3lfYnUKIAl9OwogCXN0cnVjdCBkb21haW5fZGV2aWNlICpwYXJlbnQgPSBjaGlsZC0+cGFy
+ZW50OwogCi0Jc2FzX3ByaW50aygiJXMgZXggJTAxNmxseCBwaHkgMHgleCA8LS0+ICVzIGV4ICUw
+MTZsbHggcGh5IDB4JXggIgotCQkgICAiaGFzICVjOiVjIHJvdXRpbmcgbGluayFcbiIsCisJc2Fz
+X3ByaW50aygiJXMgZXggJTAxNmxseCAoVDJUIHN1cHA6JWQpIHBoeSAweCV4IDwtLT4gJXMgZXgg
+JTAxNmxseCAiCisJCSAgICIoVDJUIHN1cHA6JWQpIHBoeSAweCV4IGhhcyAlYzolYyByb3V0aW5n
+IGxpbmshXG4iLAogCiAJCSAgIGV4X3R5cGVbcGFyZW50LT5kZXZfdHlwZV0sCiAJCSAgIFNBU19B
+RERSKHBhcmVudC0+c2FzX2FkZHIpLAorCQkgICBwYXJlbnQtPmV4X2Rldi50MnRfc3VwcCwKIAkJ
+ICAgcGFyZW50X3BoeS0+cGh5X2lkLAogCiAJCSAgIGV4X3R5cGVbY2hpbGQtPmRldl90eXBlXSwK
+IAkJICAgU0FTX0FERFIoY2hpbGQtPnNhc19hZGRyKSwKKwkJICAgY2hpbGQtPmV4X2Rldi50MnRf
+c3VwcCwKIAkJICAgY2hpbGRfcGh5LT5waHlfaWQsCiAKIAkJICAgcmFfY2hhcltwYXJlbnRfcGh5
+LT5yb3V0aW5nX2F0dHJdLApAQCAtMTIzOCwxMCArMTI0MSwxOSBAQCBzdGF0aWMgaW50IHNhc19j
+aGVja19wYXJlbnRfdG9wb2xvZ3koc3RyCiAJCQkJCXNhc19wcmludF9wYXJlbnRfdG9wb2xvZ3lf
+YnVnKGNoaWxkLCBwYXJlbnRfcGh5LCBjaGlsZF9waHkpOwogCQkJCQlyZXMgPSAtRU5PREVWOwog
+CQkJCX0KLQkJCX0gZWxzZSBpZiAocGFyZW50X3BoeS0+cm91dGluZ19hdHRyID09IFRBQkxFX1JP
+VVRJTkcgJiYKLQkJCQkgICBjaGlsZF9waHktPnJvdXRpbmdfYXR0ciAhPSBTVUJUUkFDVElWRV9S
+T1VUSU5HKSB7Ci0JCQkJc2FzX3ByaW50X3BhcmVudF90b3BvbG9neV9idWcoY2hpbGQsIHBhcmVu
+dF9waHksIGNoaWxkX3BoeSk7Ci0JCQkJcmVzID0gLUVOT0RFVjsKKwkJCX0gZWxzZSBpZiAocGFy
+ZW50X3BoeS0+cm91dGluZ19hdHRyID09IFRBQkxFX1JPVVRJTkcpIHsKKwkJCQlpZiAoY2hpbGRf
+cGh5LT5yb3V0aW5nX2F0dHIgPT0KKwkJCQkJCQlTVUJUUkFDVElWRV9ST1VUSU5HIHx8CisJCQkJ
+ICAgIChjaGlsZF9waHktPnJvdXRpbmdfYXR0ciA9PQorCQkJCQkJCVRBQkxFX1JPVVRJTkcgJiYK
+KwkJCQkgICAgIGNoaWxkX2V4LT50MnRfc3VwcCAmJgorCQkJCSAgICAgcGFyZW50X2V4LT50MnRf
+c3VwcCkpIHsKKwkJCQkJLyogQWxsIGdvb2QgKi87CisJCQkJfSBlbHNlIHsKKwkJCQkJc2FzX3By
+aW50X3BhcmVudF90b3BvbG9neV9idWcoY2hpbGQsCisJCQkJCQlwYXJlbnRfcGh5LCBjaGlsZF9w
+aHkpOworCQkJCQlyZXMgPSAtRU5PREVWOworCQkJCX0KIAkJCX0KIAkJCWJyZWFrOwogCQljYXNl
+IEZBTk9VVF9ERVY6CmRpZmYgLXJ1cCBzY3NpLW1pc2MtMi42L2luY2x1ZGUvc2NzaS9saWJzYXMu
+aCBzY3NpLW1pc2MtMi42Lm5ldy9pbmNsdWRlL3Njc2kvbGlic2FzLmgKLS0tIHNjc2ktbWlzYy0y
+LjYvaW5jbHVkZS9zY3NpL2xpYnNhcy5oCTIwMTEtMDgtMzEgMDg6MzI6MjIuMDAwMDAwMDAwIC0w
+NDAwCisrKyBzY3NpLW1pc2MtMi42Lm5ldy9pbmNsdWRlL3Njc2kvbGlic2FzLmgJMjAxMS0wOS0y
+MiAxMDozODowOC4wMDAwMDAwMDAgLTA0MDAKQEAgLTE0Miw4ICsxNDIsMTEgQEAgc3RydWN0IGV4
+cGFuZGVyX2RldmljZSB7CiAJdTE2ICAgIGV4X2NoYW5nZV9jb3VudDsKIAl1MTYgICAgbWF4X3Jv
+dXRlX2luZGV4ZXM7CiAJdTggICAgIG51bV9waHlzOworCisJdTggICAgIHQydF9zdXBwOjE7CiAJ
+dTggICAgIGNvbmZpZ3VyaW5nOjE7CiAJdTggICAgIGNvbmZfcm91dGVfdGFibGU6MTsKKwogCXU4
+ICAgICBlbmNsb3N1cmVfbG9naWNhbF9pZFs4XTsKIAogCXN0cnVjdCBleF9waHkgKmV4X3BoeTsK
+ZGlmZiAtcnVwIHNjc2ktbWlzYy0yLjYvaW5jbHVkZS9zY3NpL3Nhcy5oIHNjc2ktbWlzYy0yLjYu
+bmV3L2luY2x1ZGUvc2NzaS9zYXMuaAotLS0gc2NzaS1taXNjLTIuNi9pbmNsdWRlL3Njc2kvc2Fz
+LmgJMjAxMS0wOC0zMSAwODozMjoyMi4wMDAwMDAwMDAgLTA0MDAKKysrIHNjc2ktbWlzYy0yLjYu
+bmV3L2luY2x1ZGUvc2NzaS9zYXMuaAkyMDExLTA5LTIyIDEwOjM2OjU0LjAwMDAwMDAwMCAtMDQw
+MApAQCAtMzQxLDcgKzM0MSwxMiBAQCBzdHJ1Y3QgcmVwb3J0X2dlbmVyYWxfcmVzcCB7CiAKIAl1
+OCAgICAgIGNvbmZfcm91dGVfdGFibGU6MTsKIAl1OCAgICAgIGNvbmZpZ3VyaW5nOjE7Ci0JdTgg
+ICAgICBfcl9iOjY7CisJdTggICAgICBjb25maWdfb3RoZXJzOjE7CisJdTggICAgICBvcmVqX3Jl
+dHJ5X3N1cHA6MTsKKwl1OCAgICAgIHN0cF9jb3VudF9hd3Q6MTsKKwl1OCAgICAgIHNlbGZfY29u
+ZmlnOjE7CisJdTggICAgICB6b25lX2NvbmZpZzoxOworCXU4ICAgICAgdDJ0X3N1cHA6MTsKIAog
+CXU4ICAgICAgX3JfYzsKIApAQCAtNTI4LDcgKzUzMywxMiBAQCBzdHJ1Y3QgcmVwb3J0X2dlbmVy
+YWxfcmVzcCB7CiAJdTggICAgICBfcl9hOwogCXU4ICAgICAgbnVtX3BoeXM7CiAKLQl1OCAgICAg
+IF9yX2I6NjsKKwl1OCAgICAgIHQydF9zdXBwOjE7CisJdTggICAgICB6b25lX2NvbmZpZzoxOwor
+CXU4ICAgICAgc2VsZl9jb25maWc6MTsKKwl1OCAgICAgIHN0cF9jb3VudF9hd3Q6MTsKKwl1OCAg
+ICAgIG9yZWpfcmV0cnlfc3VwcDoxOworCXU4ICAgICAgY29uZmlnX290aGVyczoxOwogCXU4ICAg
+ICAgY29uZmlndXJpbmc6MTsKIAl1OCAgICAgIGNvbmZfcm91dGVfdGFibGU6MTsKIAo=
 
-Wolfgang.
+------_=_NextPart_001_01CC7938.DCED52A6--
