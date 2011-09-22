@@ -1,215 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752432Ab1IVQSz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 12:18:55 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:63769 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752021Ab1IVQSv convert rfc822-to-8bit (ORCPT
+	id S1751914Ab1IVQVE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 12:21:04 -0400
+Received: from e24smtp04.br.ibm.com ([32.104.18.25]:59626 "EHLO
+	e24smtp04.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499Ab1IVQVB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 12:18:51 -0400
+	Thu, 22 Sep 2011 12:21:01 -0400
+Date: Thu, 22 Sep 2011 13:20:47 -0300
+From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Rocko Requin <rockorequin@hotmail.com>, Hannes Reinecke <hare@suse.de>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        Ben Hutchings <ben@decadent.org.uk>, jaxboe@fusionio.com,
+        James Bottomley <James.Bottomley@HansenPartnership.com>, tytso@mit.edu,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: [Bug 25832] kernel crashes when a mounted ext3/4 file system is
+ physically removed
+Message-ID: <20110922162047.GD3431@oc1711230544.ibm.com>
+References: <4E7B296D.8020900@suse.de>
+ <Pine.LNX.4.44L0.1109221113380.2137-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <CA9FD86E.25CEB%dmitry.fink@palm.com>
-References: <1316582561-23066-1-git-send-email-john.stultz@linaro.org>
-	<CA9FD86E.25CEB%dmitry.fink@palm.com>
-Date: Thu, 22 Sep 2011 12:18:49 -0400
-Message-ID: <CACqU3MUM20b_KSZ=Ad1XtubaUSqLiMKNv44wWPpXsvVattRCwg@mail.gmail.com>
-Subject: Re: [PATCH] kconfig: Add merge_config.sh script
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: "Dmitry Fink (Palm GBU)" <Dmitry.Fink@palm.com>
-Cc: John Stultz <john.stultz@linaro.org>, lkml <linux-kernel@vger.kernel.org>,
-        Sam Ravnborg <sam@ravnborg.org>,
-        "gthelen@google.com" <gthelen@google.com>,
-        "tartler@cs.fau.de" <tartler@cs.fau.de>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Eric B Munson <ebmunson@us.ibm.com>,
-        Bruce Ashfield <Bruce.Ashfield@windriver.com>,
-        Michal Marek <mmarek@suse.cz>,
-        "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1109221113380.2137-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 11092216-8936-0000-0000-00000487559C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Sep 22, 2011 at 11:16:30AM -0400, Alan Stern wrote:
+> Rocko:
+> 
+> Can you try testing this patch instead of all the patches I sent to 
+> you (but keep Ted's patch)?
+> 
+> Alan Stern
+> 
+> On Thu, 22 Sep 2011, Hannes Reinecke wrote:
+> 
+> > On 09/20/2011 09:32 AM, Jun'ichi Nomura wrote:
+> > > On 09/19/11 08:00, Ben Hutchings wrote:
+> > [ .. ]
+> > >>
+> > >> There have been reports of this in Debian going back to 2.6.39:
+> > >>
+> > >> http://bugs.debian.org/631187
+> > >> http://bugs.debian.org/636263
+> > >> http://bugs.debian.org/642043
+> > >>
+> > >> Plus possibly related crashes in elv_put_request after CD-ROM removal:
+> > >>
+> > >> http://bugs.debian.org/633890
+> > >> http://bugs.debian.org/634681
+> > >> http://bugs.debian.org/636103
+> > >>
+> > >> The former was also reported in Ubuntu since their 2.6.38-10:
+> > >>
+> > >> https://bugs.launchpad.net/debian/+source/linux-2.6/+bug/793796
+> > >>
+> > >> The result of the discussion there was that it appeared to be a
+> > >> regression due to commit 86cbfb5607d4b81b1a993ff689bbd2addd5d3a9b 
+> > >> ("[SCSI] put stricter guards on queue dead checks") which was also
+> > >> included in a stable update for 2.6.38.
+> > >>
+> > >> There was also a report on bugzilla.kernel.org, though no-one can see
+> > >> quite what that says now:
+> > >>
+> > >> https://bugzilla.kernel.org/show_bug.cgi?id=38842
+> > >>
+> > >> I also reported most of the above to James Bottomley and linux-scsi
+> > >> nearly 2 months ago, to no response.
+> > > 
+> > > I've reported a similar oops related to the above commit:
+> > >   [BUG] Oops when SCSI device under multipath is removed
+> > >   https://lkml.org/lkml/2011/8/10/11
+> > > 
+> > > Elevator being removed is the core of the problem.
+> > > And the essential issue seems 2 different models of queue/driver relation
+> > > implied by queue_lock.
+> > > 
+> > > If reverting the commit is not an option,
+> > > until somebody comes up to fix the essential issue,
+> > > the patch below should close the regressions introduced by the commit.
+> > > 
+> > Why do you have to do it that complicated?
+> > Couldn't we just state that any external lock is being disconnected from
+> > queue_lock after blk_cleanup_queue()?
+> > 
+> > Then something like this should suffice here:
+> 
+> 
+> 
+> diff --git a/block/blk-core.c b/block/blk-core.c
+> index 90e1ffd..a4ac005 100644
+> --- a/block/blk-core.c
+> +++ b/block/blk-core.c
+> @@ -367,10 +367,8 @@ void blk_cleanup_queue(struct request_queue *q)
+>         queue_flag_set_unlocked(QUEUE_FLAG_DEAD, q);
+>         mutex_unlock(&q->sysfs_lock);
+> 
+> -       if (q->elevator)
+> -               elevator_exit(q->elevator);
+> -
+> -       blk_throtl_exit(q);
+> +       if (q->queue_lock != q->__queue_lock)
+> +               q->queue_lock = q->__queue_lock;
 
-On Wed, Sep 21, 2011 at 9:20 PM, Dmitry Fink (Palm GBU)
-<Dmitry.Fink@palm.com> wrote:
-> Hi, John
-> Here is another suggestion:
->
-> --- a/scripts/kconfig/merge_config.sh
-> +++ b/scripts/kconfig/merge_config.sh
-> @@ -28,11 +28,11 @@ TMP_FILE=$(mktemp ./.tmp.config.XXXXXXXXXX)
->  # Merge files, printing warnings on overrided values
->  for MERGE_FILE in $MERGE_LIST ; do
->        echo "Merging $MERGE_FILE"
-> -       CFG_LIST=`cat $MERGE_FILE | \
-> +       CFG_LIST=`cat $MERGE_FILE | grep -e "CONFIG_[a-zA-Z0-9_]*" | \
->          sed 's/^\(# \)\{0,1\}\(CONFIG_[a-zA-Z0-9_]*\)[= ].*/\2/'`
-3 process, when only 1 is really needed, the following:
+That should be &q->__queue_lock.
 
-CFG_LIST=`sed '/CONFIG_[a-zA-Z0-9_]*/!d; s/^\(#
-\)\{0,1\}\(CONFIG_[a-zA-Z0-9_]*\)[= ].*/\2/' $MERGE_FILE`
+Regards,
+Cascardo.
 
-should do the job; however, it's completely untested.
-
- - Arnaud
-
->        for CFG in $CFG_LIST ; do
->                grep -q -w $CFG $TMP_FILE
-> @@ -53,7 +53,7 @@ done
->  make KCONFIG_ALLCONFIG=$TMP_FILE alldefconfig
->
->  # Check all specified config values took (might have missed-dependency
-> issues)
-> -cat $TMP_FILE | while read line; do
-> +cat $TMP_FILE | grep -e "CONFIG_[a-zA-Z0-9_]*" | while read line; do
->        CFG=`echo $line | \
->                sed 's/^\(# \)\{0,1\}\(CONFIG_[a-zA-Z0-9_]*\)[= ].*/\2/'`
->
-> The original script chokes on fragments that include empty lines or section
-> comments (and think we do want them in fragments). There might be a nicer
-> way to
-> handle  it, this is the quickest fix I found, feel free to consider a
-> different
-> approach.
->
-> Dmitry
->
->
-> On 9/20/11 10:22 PM, "John Stultz" <john.stultz@linaro.org> wrote:
->
->>After noticing almost every distro has their own method of managing
->>config fragments, I went looking at some best practices, and wanted
->>to try to consolidate some of the different approaches so this fairly
->>simple infrastructure can be shared (and new distros/build systems
->>don't have to implement yet another config fragment merge script).
->>
->>This script is most influenced by the Windriver tools used in
->>the Yocto Project, reusing some portions found there.
->>
->>This script merges multiple config fragments, warning on any
->>overrided values. It then sets any unspecified values to their
->>default, then finally checks to make sure no specified value was
->>dropped due to unsatisfied dependencies.
->>
->>I'm sure I'm sure this implementation won't work for everyone, and
->>I expect it will need to evolve to adapt for various use cases.
->>But I think its a reasonable starting point.
->>
->>v2: Reworked to use alldefconfig instead of the proposed
->>olddefconfig as suggested by Sam Ravnborg.
->>
->>Thanks to Darren Hart for early review and feedback!
->>
->>Please let me know if you have any comments or thoughts!
->>
->>CC: Sam Ravnborg <sam@ravnborg.org>
->>CC: gthelen@google.com
->>CC: tartler@cs.fau.de
->>CC: Dmitry Fink <Dmitry.Fink@palm.com>
->>CC: Darren Hart <dvhart@linux.intel.com>
->>CC: Eric B Munson <ebmunson@us.ibm.com>
->>CC: Bruce Ashfield <Bruce.Ashfield@windriver.com>
->>CC: Michal Marek <mmarek@suse.cz>
->>CC: linux-kbuild@vger.kernel.org
->>Signed-off-by: John Stultz <john.stultz@linaro.org>
->>---
->> scripts/kconfig/merge_config.sh |   71
->>+++++++++++++++++++++++++++++++++++++++
->> 1 files changed, 71 insertions(+), 0 deletions(-)
->> create mode 100755 scripts/kconfig/merge_config.sh
->>
->>diff --git a/scripts/kconfig/merge_config.sh
->>b/scripts/kconfig/merge_config.sh
->>new file mode 100755
->>index 0000000..fda0139
->>--- /dev/null
->>+++ b/scripts/kconfig/merge_config.sh
->>@@ -0,0 +1,71 @@
->>+#!/bin/sh
->>+#  merge_config.sh - Takes a list of config fragment values, and merges
->>+#  them one by one. Provides warnings on overridden values, and specified
->>+#  values that did not make it to the resulting .config file (due to
->>missed
->>+#  dependencies or config symbol removal).
->>+#
->>+#  Portions reused from kconf_check and generate_cfg:
->>+#
->>http://git.yoctoproject.org/cgit/cgit.cgi/yocto-kernel-tools/tree/tools/kc
->>onf_check
->>+#
->>http://git.yoctoproject.org/cgit/cgit.cgi/yocto-kernel-tools/tree/tools/ge
->>nerate_cfg
->>+#
->>+#  Copyright (c) 2009-2010 Wind River Systems, Inc.
->>+#  Copyright 2011 Linaro
->>+#
->>+#  This program is free software; you can redistribute it and/or modify
->>+#  it under the terms of the GNU General Public License version 2 as
->>+#  published by the Free Software Foundation.
->>+#
->>+#  This program is distributed in the hope that it will be useful,
->>+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
->>+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
->>+#  See the GNU General Public License for more details.
->>+
->>+MERGE_LIST=$*
->>+
->>+
->>+TMP_FILE=$(mktemp ./.tmp.config.XXXXXXXXXX)
->>+
->>+# Merge files, printing warnings on overrided values
->>+for MERGE_FILE in $MERGE_LIST ; do
->>+      echo "Merging $MERGE_FILE"
->>+      CFG_LIST=`cat $MERGE_FILE | \
->>+        sed 's/^\(# \)\{0,1\}\(CONFIG_[a-zA-Z0-9_]*\)[= ].*/\2/'`
->>+      for CFG in $CFG_LIST ; do
->>+              grep -q -w $CFG $TMP_FILE
->>+              if [ $? == 0 ] ; then
->>+                      PREV_VAL=`grep -w $CFG $TMP_FILE`
->>+                      NEW_VAL=`grep -w $CFG $MERGE_FILE`
->>+                      if [ "x$PREV_VAL" != "x$NEW_VAL" ] ; then
->>+                      echo Value of $CFG is redefined by fragment $MERGE_FILE:
->>+                      echo Previous  value: `grep -w $CFG $TMP_FILE`
->>+                      echo New value:       `grep -w $CFG $MERGE_FILE`
->>+                      echo
->>+                      fi
->>+                      sed -i "/$CFG[ =]/d" $TMP_FILE
->>+              fi
->>+      done
->>+      cat $MERGE_FILE >> $TMP_FILE
->>+done
->>+
->>+
->>+# Use the merged file as the starting point for alldefconfig
->>+# (Fills in any missing symbols with Kconfig default)
->>+make KCONFIG_ALLCONFIG=$TMP_FILE alldefconfig
->>+
->>+# Check all specified config values took (might have missed-dependency
->>issues)
->>+cat $TMP_FILE | while read line; do
->>+      CFG=`echo $line | \
->>+              sed 's/^\(# \)\{0,1\}\(CONFIG_[a-zA-Z0-9_]*\)[= ].*/\2/'`
->>+
->>+      REQUESTED_VAL=`grep -w -e "$CFG" $TMP_FILE`
->>+      ACTUAL_VAL=`grep -w -e "$CFG" .config`
->>+      if [ "x$REQUESTED_VAL" != "x$ACTUAL_VAL" ] ; then
->>+              echo "Value requested for $CFG not in final .config"
->>+              echo "Requested value:  $REQUESTED_VAL"
->>+              echo "Actual value:     $ACTUAL_VAL"
->>+              echo ""
->>+      fi
->>+done
->>+
->>+# Cleanup
->>+rm $TMP_FILE
->>--
->>1.7.3.2.146.gca209
->
+> 
+>         blk_put_queue(q);
+>  }
+> diff --git a/block/blk-sysfs.c b/block/blk-sysfs.c
+> index 0ee17b5..a5a756b 100644
+> --- a/block/blk-sysfs.c
+> +++ b/block/blk-sysfs.c
+> @@ -477,6 +477,11 @@ static void blk_release_queue(struct kobject *kobj)
+> 
+>         blk_sync_queue(q);
+> 
+> +       if (q->elevator)
+> +               elevator_exit(q->elevator);
+> +
+> +       blk_throtl_exit(q);
+> +
+>         if (rl->rq_pool)
+>                 mempool_destroy(rl->rq_pool);
+> 
+> 
+> > And yeah, I find it pretty annoying, too.
+> > 
+> > Cheers,
+> > 
+> > Hannes
+> > 
+> 
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kbuild" in
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
