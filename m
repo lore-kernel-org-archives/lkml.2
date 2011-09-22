@@ -1,50 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753970Ab1IVVSM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 17:18:12 -0400
-Received: from mailout05.t-online.de ([194.25.134.82]:53105 "EHLO
-	mailout05.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753860Ab1IVVSL (ORCPT
+	id S1753958Ab1IVVTW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 17:19:22 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:44520 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753860Ab1IVVTV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 17:18:11 -0400
-Message-ID: <4E7BA605.3020908@t-online.de>
-Date: Thu, 22 Sep 2011 23:17:57 +0200
-From: =?ISO-8859-1?Q?Richard_Sch=FCtz?= <r.schtz@t-online.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	Thu, 22 Sep 2011 17:19:21 -0400
 MIME-Version: 1.0
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-CC: Nestor Lopez Casado <nlopezcasad@logitech.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, rtitmuss@logitech.com, ogay@logitech.com,
-        jzanone@logitech.com
-Subject: Re: [PATCH v5 1/1] HID: Add full support for Logitech Unifying receivers
-References: <1316018905-4175-1-git-send-email-nlopezcasad@logitech.com> <4E77A221.1060909@t-online.de> <CAN+gG=EcaMrz2w-cVL-cCwi2NNVJ-NXOpOQpbjyFdCwn5+Bn+w@mail.gmail.com>
-In-Reply-To: <CAN+gG=EcaMrz2w-cVL-cCwi2NNVJ-NXOpOQpbjyFdCwn5+Bn+w@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
-X-ID: GEVgcmZ6ghbgMmVqrVltJB1Jkyc7fM633SxLdNVc87E25jTVTC5K1rGEAiO+1XGgyU
-X-TOI-MSGID: a75902ad-39f4-4301-88c7-0e835d05537d
+In-Reply-To: <20110922212909.49966cf4@lxorguk.ukuu.org.uk>
+References: <20110922184614.25419.84606.stgit@ponder> <20110922212909.49966cf4@lxorguk.ukuu.org.uk>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 22 Sep 2011 15:19:01 -0600
+X-Google-Sender-Auth: SH9-8O0JJHjA9OuAl65T8yCaHrw
+Message-ID: <CACxGe6vAQ+_SKc-zH434bdd3akM5S1jB0N7+AFEjgZfX1uNrZQ@mail.gmail.com>
+Subject: Re: [RFC PATCH v3] drivercore: Add driver probe deferral mechanism
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <greg@kroah.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Manjunath GKondaiah <manjunath.gkondaiah@linaro.org>,
+        linux-kernel@vger.kernel.org, Dilan Lee <dilee@nvidia.com>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 22.09.2011 22:48, schrieb Benjamin Tissoires:
-> Hi Richard,
+On Thu, Sep 22, 2011 at 2:29 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> Definitely what is needed for some of the x86 SoC stuff and would let us
+> rip out some of the special case magic for the SCU discovery.
 >
-> here, you'll find a small C program that allows you to do a pairing of
-> a new device to a receiver.
+> First thing that strikes me is driver_bound kicks the processing queue
+> again. That seems odd - surely this isn't needed because any driver that
+> does initialise this time and may allow something else to get going will
+> queue the kick itself. Thus this seems to just add overhead.
+>
+> It all looks a bit O(N²) if we don't expect the drivers that might
+> trigger something else binding to just say 'hey I'm one of the
+> troublemakers'
 
-Thanks.
+The way I read it, absolute worst case is when every device but one
+depends on another device.  In that case I believe it will be
+O(Nlog(N)).  (Every device gets probed on the first pass, but only the
+last one gets probed.  Then it goes through N-1 devices to the result
+of only 1 more device getting probed, then N-2, etc.).  Actual usage
+won't be anywhere near that complexity because there tends to be a
+small number of devices on these SoCs that a lot of other devices
+depend on, so I expect that there will be somewhere on the order of
+3-4 passes for the typical embedded SoCs that I've seen.
 
-Could you also add the possibility to remove a pairing? It would be nice 
-if the program would print the product name of device detected during 
-the pairing process, too.
+driver_bound is used to kick off the process because anytime a new
+device becomes active (bound to a driver), there is a high likelyhood
+that one of the devices in the pending list can now be probed.
+However, the re-probing is performed in a workqueue to make sure that
+it is somewhat serialized to prevent the *entire* pending list to be
+processed for every driver_bound() call.  Instead, by kicking a
+workqueue, it guarantees that all the pending items are retried, but
+kicking the workqueue 6 times doesn't mean that the list is going to
+be processed 6 times.
 
-I think the tool should be distributed somewhere officially. There are 
-probably a lot of people, who would use the Unifying feature under 
-Linux, but don't read the mailing lists.
+In other words, driver_bound will kick off the process, but it doesn't
+actually do the re-probing work.
 
--- 
-Regards,
-Richard Schütz
+g.
