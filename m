@@ -1,62 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751541Ab1IVI0f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 04:26:35 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:47758 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750962Ab1IVI0c (ORCPT
+	id S1751834Ab1IVI34 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 04:29:56 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:56512 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751242Ab1IVI3x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 04:26:32 -0400
-Date: Thu, 22 Sep 2011 18:26:25 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>,
-        Eric Miao <eric.miao@linaro.org>
-Subject: linux-next: manual merge of the akpm with the block tree
-Message-Id: <20110922182625.4a18ee494a0f3bf977fc8ea3@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__22_Sep_2011_18_26_25_+1000_0LA_R4uITtdB8+dF"
+	Thu, 22 Sep 2011 04:29:53 -0400
+Subject: [RFC PATCH V6 0/4] cpuidle: Global registration of idle states with
+ per-cpu statistics
+To: khilman@ti.com, venki@google.com, ak@linux.intel.com, len.brown@intel.com,
+        peterz@infradead.org, santosh.shilimkar@ti.com, arjan@linux.intel.com,
+        lenb@kernel.org
+From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Date: Thu, 22 Sep 2011 13:58:52 +0530
+Message-ID: <20110922082840.10520.85895.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__22_Sep_2011_18_26_25_+1000_0LA_R4uITtdB8+dF
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The following patch series implements global registration of cpuidle
+states, and also has the necessary data structure changes to
+accommodate the per-cpu writable members of the cpuidle_states
+structure.
 
-Hi Andrew,
+This patch series had been in discussion earlier and
+following are the links to the previous discussions.
 
-Today's linux-next merge of the scsi-post-merge tree got a conflict in
-drivers/block/brd.c between commit 5a7bbad27a41 ("block: remove support
-for bio remapping from ->make_request") from the block tree and commit
-4559c71773c5 ("brd_make_request() always returns 0, which doesn't make
-much sense") from the akpm tree.
+v1 --> https://lkml.org/lkml/2011/3/22/161
+v2 --> https://lkml.org/lkml/2011/1/13/98
+v3 --> https://lkml.org/lkml/2011/2/8/73
+v4 --> https://lkml.org/lkml/2011/4/28/312
+v5 --> https://lkml.org/lkml/2011/6/6/259
 
-The former turns function brd_make_request() return void, so the latter
-patch is no longer useful, so I dropped it.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Changes from previous version (V5):
 
---Signature=_Thu__22_Sep_2011_18_26_25_+1000_0LA_R4uITtdB8+dF
-Content-Type: application/pgp-signature
+    Rebased the series to 3.1-rc7
+    
+Tests done:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+    1. Compile tested for ARM using the following configs: da8xx_omapl_defconfig,
+    exynos4_defconfig, kirkwood_defconfig, omap2plus_defconfig, 
+    at91rm9200_defconfig
+      
+    2. Boot tested on x86 nehalem with multiple C-states for both intel_idle
+    and acpi_idle drivers.
 
-iQEcBAEBAgAGBQJOevExAAoJEDMEi1NhKgbsypMIAIVgrknYRAMlLRVugsY/A2DI
-2Xe3gM4Gy1z0Bk6jBTIMt0HCgcEx5G7UwuLE0yr/0W8iQkYYYPnUKR2nqctGg3H1
-8Vc8FuTm5ABqAdA2clRc1LnvEQ4zkZzBWZCCWk9Qe0MEA+XMACyah0yaAL9ecuHE
-X/tAwBUY0d1nek7eM4lIX+lsj1W/I55G/JSzysf3Djm+poy4B1nzH6ONBIkxGn/Q
-c3BUQTgglND3GYApaybc1ljDNxfeOA5Ij3lNXBGCWv+BJHVJaoDS6cxYHTLlOf56
-cZup1MQ6x8+xTBQ9Vy/fNm5ZP1PPhTICgIe0CmZitOfLaol7y3cNiQoJ7L+T1eY=
-=p9AY
------END PGP SIGNATURE-----
+    3. Boot tested on T60p thinkpad that has T2600 cpu with multiple C-states. 
+    Also tested the case when there is dynamic changes in C-states 
+    AC <-> Battery Power switch.
 
---Signature=_Thu__22_Sep_2011_18_26_25_+1000_0LA_R4uITtdB8+dF--
+Brief description of the patches:
+
+Core change in this series is to split the cpuidle_device structure 
+into two parts, i.e  global and per-cpu basis. 
+
+The per-cpu pieces are mostly generic statistics that can be independent 
+of current running driver. As a result of these changes, there is single 
+copy of cpuidle_states structure and single registration done by one 
+cpu. The low level driver is free to set per-cpu driver data on
+each cpu if needed using the cpuidle_set_statedata() as the case
+today. Only in very rare cases asymmetric C-states exist which can be 
+handled within the cpuidle driver. Most architectures do not have 
+asymmetric C-states.
+
+First two patches in the series facilitate splitting of cpuidle_states
+and cpuidle_device structure and next two patches do the actual split,
+change the API's and make existing code follow the changed API.
+
+[1/4] - Move the idle residency accounting part from cpuidle.c to
+the respective low level drivers, so that the accounting can
+be accurately maintained if the driver decides to demote the
+chosen (suggested) by the governor.
+
+[2/4] - removes the cpuidle_device()->prepare API since is is not
+widely used and the only use case was to allow software
+demotion using CPUIDLE_FLAG_IGNORE flag.  Both these
+functions can be absorbed within the cpuidle back-end
+driver ad hence deprecating the prepare routine and the
+CPUIDLE_FLAG_IGNORE flag.
+
+    - Ref: https://lkml.org/lkml/2011/3/25/52
+
+[3/4] - Splits the usage statistics (read/write) part out of
+cpuidle_state structure, so that the states can become read
+only and hence made global.
+
+[4/4] - Most APIs will now need to pass pointer to both global
+cpuidle_driver and per-cpu cpuidle_device structure.
+
+ arch/arm/mach-at91/cpuidle.c          |   41 +++--
+ arch/arm/mach-davinci/cpuidle.c       |   51 ++++---
+ arch/arm/mach-exynos4/cpuidle.c       |   30 ++--
+ arch/arm/mach-kirkwood/cpuidle.c      |   42 +++---
+ arch/arm/mach-omap2/cpuidle34xx.c     |  133 +++++++++++------
+ arch/sh/kernel/cpu/shmobile/cpuidle.c |   28 ++--
+ drivers/acpi/processor_driver.c       |   20 ---
+ drivers/acpi/processor_idle.c         |  251 +++++++++++++++++++++++++++------
+ drivers/cpuidle/cpuidle.c             |   86 ++++-------
+ drivers/cpuidle/driver.c              |   25 +++
+ drivers/cpuidle/governors/ladder.c    |   41 ++++-
+ drivers/cpuidle/governors/menu.c      |   29 ++--
+ drivers/cpuidle/sysfs.c               |   22 ++-
+ drivers/idle/intel_idle.c             |  130 +++++++++++++----
+ include/acpi/processor.h              |    1 
+ include/linux/cpuidle.h               |   52 ++++---
+ 16 files changed, 650 insertions(+), 332 deletions(-)
+
+
+-- 
+
+Thanks
+ -Deepthi
