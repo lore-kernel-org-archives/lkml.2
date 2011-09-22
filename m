@@ -1,79 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751056Ab1IVPMz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 11:12:55 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:48735 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750855Ab1IVPMx (ORCPT
+	id S1751164Ab1IVPNg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 11:13:36 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53699 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750908Ab1IVPNd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 11:12:53 -0400
-Date: Thu, 22 Sep 2011 11:12:51 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Matthias Dellweg <2500@gmx.de>
-cc: Greg Kroah-Hartman <gregkh@suse.de>, Vasiliy Kulikov <segooon@gmail.com>,
-        Michal Sojka <sojkam1@fel.cvut.cz>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] enable usb control message with class specific request
-In-Reply-To: <20110922121031.639006d0@horus>
-Message-ID: <Pine.LNX.4.44L0.1109221100270.2137-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 22 Sep 2011 11:13:33 -0400
+Subject: Re: rt14: strace ->  migrate_disable_atomic imbalance
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <miklos@szeredi.hu>, mingo <mingo@redhat.com>
+Date: Thu, 22 Sep 2011 17:13:08 +0200
+In-Reply-To: <20110922145257.GA13960@redhat.com>
+References: <alpine.LFD.2.02.1109101052340.2723@ionos>
+	 <1315737307.6544.1.camel@marge.simson.net>
+	 <1315817948.26517.16.camel@twins>
+	 <1315835562.6758.3.camel@marge.simson.net>
+	 <1315839187.6758.8.camel@marge.simson.net> <1315926499.5977.19.camel@twins>
+	 <1315927699.6445.6.camel@marge.simson.net> <1315930430.5977.21.camel@twins>
+	 <1316600230.6628.6.camel@marge.simson.net> <1316691967.31429.9.camel@twins>
+	 <20110922145257.GA13960@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1316704389.31429.24.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Sep 2011, Matthias Dellweg wrote:
-
-> Hi!
-> Usb devio assumes that the wIndex in every control message apart from
-> those flagged as USB_TYPE_VENDOR holds the number of the Interface
-> being addressed. This is for example not true for the class specific
-> request GET_DEVICE_ID in the printer class:
+On Thu, 2011-09-22 at 16:52 +0200, Oleg Nesterov wrote:
+> On 09/22, Peter Zijlstra wrote:
+> >
+> > +static void wait_task_inactive_sched_in(struct preempt_notifier *n, int cpu)
+> > +{
+> > +	struct task_struct *p;
+> > +	struct wait_task_inactive_blocked *blocked =
+> > +		container_of(n, struct wait_task_inactive_blocked, notifier);
+> > +
+> > +	hlist_del(&n->link);
+> > +
+> > +	p = ACCESS_ONCE(blocked->waiter);
+> > +	blocked->waiter = NULL;
+> > +	wake_up_process(p);
+> > +}
+> > ...
+> > +static void
+> > +wait_task_inactive_sched_out(struct preempt_notifier *n, struct task_struct *next)
+> > +{
+> > +	if (current->on_rq) /* we're not inactive yet */
+> > +		return;
+> > +
+> > +	hlist_del(&n->link);
+> > +	n->ops = &wait_task_inactive_ops_post;
+> > +	hlist_add_head(&n->link, &next->preempt_notifiers);
+> > +}
 > 
-> "The high-byte of the wIndex field is used to specify the zero-based
-> interface index. The low-byte of the wIndex field is used to specify
-> the zero-based alternate setting." [1]
+> Tricky ;) Yes, the first ->sched_out() is not enough.
+
+Not enough isn't the problem, its ran with rq->lock held and irqs
+disabled, you simply cannot do ttwu() from there.
+
+If we could, the subsequent task_rq_lock() in wait_task_inactive() would
+be enough to serialize against the still in-flight context switch.
+
+One of the problems with doing it from the next sched_in notifier, is
+that next can be idle, and then we do a A -> idle -> B switch, which is
+of course sub-optimal.
+
+> >  unsigned long wait_task_inactive(struct task_struct *p, long match_state)
+> >  {
+> > ...
+> > +	rq = task_rq_lock(p, &flags);
+> > +	trace_sched_wait_task(p);
+> > +	if (!p->on_rq) /* we're already blocked */
+> > +		goto done;
 > 
-> In this special case it misinterpretes the alternate setting 1 for the
-> interface and tries to claim a nonexisting one. Therefor you won't get
-> the printers name.
+> This doesn't look right. schedule() clears ->on_rq a long before
+> __switch_to/etc.
+
+Oh, bugger, yes its before we can drop the rq for idle balance and
+nonsense like that. (!p->on_rq && !p->on_cpu) should suffice I think.
+
+> And it seems that we check ->on_cpu above, this is not UP friendly.
+
+True, but its what the old code did.. and I was seeing performance
+suckage compared to the unpatched kernel (not that the p->on_cpu busy
+wait fixed it)...
+
+> >
+> > -			set_current_state(TASK_UNINTERRUPTIBLE);
+> > -			schedule_hrtimeout(&to, HRTIMER_MODE_REL);
+> > -			continue;
+> > -		}
+> > +	hlist_add_head(&blocked.notifier.link, &p->preempt_notifiers);
+> > +	task_rq_unlock(rq, p, &flags);
 > 
-> The patch below is a minimal approach to fix this. Maybe it should be
-> extended to USB_TYPE_RESERVED. Maybe there should be an extended test
-> that knows something about specific classes.
-> 
-> What do you think?
-> regards Matthias
-> 
-> [1] http://www.usb.org/developers/devclass_docs/usbprint11.pdf
+> I thought about reimplementing wait_task_inactive() too, but afaics there
+> is a problem: why we can't race with p doing register_preempt_notifier() ?
+> I guess register_ needs rq->lock too.
 
-In this case, it appears that the printer class specification 
-contradicts the USB-2.0 specification.  Section 9.3.1 says (referring 
-to the low-order five bits of bmRequestType):
-
-	Requests may be directed to the device, an interface on the 
-	device, or a specific endpoint on a device. This field also
-	specifies the intended recipient of the request. When an
-	interface or endpoint is specified, the wIndex field identifies
-	the interface or endpoint.
-
-And Figure 9-3 shows that when wIndex is used to specify an interface, 
-the interface number belongs in the low-order byte, not the high-order 
-byte.
-
-I don't think it's safe to relax the test the way you have suggested.
-There are too many other class-specific requests that must be 
-prevented.  Maybe an exception could be added for this one particular 
-case.  Besides, you don't want to remove the test entirely -- you want 
-to use the high-order byte of wIndex instead of the low-order byte.
-
-The printer spec really is spectacularly bad in this respect.  What 
-happens if the printer is a composite device, and the other interface 
-uses the same bmRequestType and bRequest values for its own 
-class-specific purpose, but uses the low-order byte of wIndex to 
-indicate the interface number (as it should).  Then the printer 
-wouldn't know which interface was supposed to respond to the message!
-
-Alan Stern
+We can actually, now you mention it.. ->pi_lock would be sufficient and
+less expensive to acquire.
 
