@@ -1,80 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752651Ab1IVQgu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 12:36:50 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:22838 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751886Ab1IVQgt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 12:36:49 -0400
-Date: Thu, 22 Sep 2011 11:54:49 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Li Dongyang <lidongyang@novell.com>
-Cc: Christoph Hellwig <hch@infradead.org>, "axboe@kernel.dk" <axboe@kernel.dk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jaxboe@fusionio.com" <jaxboe@fusionio.com>,
-        "joe.jin@oracle.com" <joe.jin@oracle.com>
-Subject: Re: [GIT PULL] (xen) stable/for-jens-3.2 - blkback and blkfront
- patches for 3.2
-Message-ID: <20110922155449.GA16401@phenom.oracle.com>
-References: <20110921150955.GH541@phenom.oracle.com>
- <20110921151732.GA28043@infradead.org>
- <20110921153537.GB1512@phenom.oracle.com>
- <CAKH3R4_yAhmRE3Lg73gE3iKD_Dcp0u_hr8rHekSyRJVQ02KbGw@mail.gmail.com>
+	id S1752321Ab1IVQl4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 12:41:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37895 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750874Ab1IVQlz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Sep 2011 12:41:55 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [patch, v3] aio: allocate kiocbs in batches
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Thu, 22 Sep 2011 12:41:51 -0400
+Message-ID: <x4962kkh6ls.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKH3R4_yAhmRE3Lg73gE3iKD_Dcp0u_hr8rHekSyRJVQ02KbGw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4E7B6416.01C0:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 22, 2011 at 09:05:17PM +1000, Li Dongyang wrote:
-> On Thursday, September 22, 2011, Konrad Rzeszutek Wilk <
-> konrad.wilk@oracle.com> wrote:
-> > On Wed, Sep 21, 2011 at 11:17:32AM -0400, Christoph Hellwig wrote:
-> >> On Wed, Sep 21, 2011 at 11:09:55AM -0400, Konrad Rzeszutek Wilk wrote:
-> >> > Hey Jens,
-> >> >
-> >> > Please pull the following git tree in your 3.2 drivers tree:
-> >> >
-> >> >  git pull git://oss.oracle.com/git/kwilk/xen.git stable/for-jens-3.2
-> >> >
-> >> > which has an exciting new feature - the discard ('feature-discard')
-> >> > aka TRIM/UNMAP. Now they can be passed from the guest to the backend.
-> >>
-> >> What is the design of them?  Do you provide the 'discard zeroes data'
-> >> flag (mandatory for any kind of relible operation) and 'discard
-> >
-> > Hmm, not sure what that is. Is that REQ_SECURE, err BLKDEV_DISCARD_SECURE?
-> > If so then not in this patchset - but it does not seem like it would
-> dificult
-> > to add that in? Li, what do you think?
-> We deal the discard with 2 ways in the backend depend on what the guest is
-> using:
-> punch the hole on the image, to save some disk usage,
-> or redirect the discard request to phy device.
-> for the hole punching case, we are already DISCARD_SECURE,
-> for the phy dev case, we could add the flag and pass it from blkfront to
-> blkback, and yes
-> That's not difficult, could be added later.
+Hi,
 
-Li, could you implement it please  - on top of the 'stable/for-jens-3.2' patch queue ?
-If it would not be too much trouble of course.
+In testing aio on a fast storage device, I found that the context lock
+takes up a fair amount of cpu time in the I/O submission path.  The
+reason is that we take it for every I/O submitted (see __aio_get_req).
+Since we know how many I/Os are passed to io_submit, we can preallocate
+the kiocbs in batches, reducing the number of times we take and release
+the lock.  In my testing, I was able to reduce the amount of time spent
+in _raw_spin_lock_irq by .56% (average of 3 runs).  The command I used
+to test this was:
+   aio-stress -O -o 2 -o 3 -r 8 -d 128 -b 32 -i 32 -s 16384 <dev>
 
-> >
-> >> granularity / alignment' tunables (very useful)?
-> >
-> > The discard granularity/alignment are certainly there. But they are just
-> > one way (backend tells the guest what they are). Should they be
-> > more tunable (frontend tells the backend what the values ought to be?)
-> >
-> Yes, plz tell more about tunable granularity and alignment, and we can add
-> that later,
-> Thanks a lot
-> > Li, did I miss anything in my response?
-> >
+I also tested the patch with various numbers of events passed to
+io_submit, and I ran the xfstests aio group of tests to ensure I didn't
+break anything.
+
+Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+
+---
+Changes from v2 -> v3:
+- got rid of an extraneous structure member in the kiocb_batch.
+- fixed up some haphazard variable types
+- fixed a build warning
+
+Changes from rfc -> v2:
+- folded in akpm's incremental patch which fixes coding style and
+  variable names
+- tried to clarify a comment about a starvation case
+- fixed up my breaking of the handling of that starvation case
+- moved from an on-stack array to a list at the suggestion of akpm
+
+diff --git a/fs/aio.c b/fs/aio.c
+index e29ec48..f2e65a8 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -440,8 +440,6 @@ void exit_aio(struct mm_struct *mm)
+ static struct kiocb *__aio_get_req(struct kioctx *ctx)
+ {
+ 	struct kiocb *req = NULL;
+-	struct aio_ring *ring;
+-	int okay = 0;
+ 
+ 	req = kmem_cache_alloc(kiocb_cachep, GFP_KERNEL);
+ 	if (unlikely(!req))
+@@ -459,39 +457,114 @@ static struct kiocb *__aio_get_req(struct kioctx *ctx)
+ 	INIT_LIST_HEAD(&req->ki_run_list);
+ 	req->ki_eventfd = NULL;
+ 
+-	/* Check if the completion queue has enough free space to
+-	 * accept an event from this io.
+-	 */
++	return req;
++}
++
++/*
++ * struct kiocb's are allocated in batches to reduce the number of
++ * times the ctx lock is acquired and released.
++ */
++#define KIOCB_BATCH_SIZE	32L
++struct kiocb_batch {
++	struct list_head head;
++	long count; /* number of requests left to allocate */
++};
++
++static void kiocb_batch_init(struct kiocb_batch *batch, long total)
++{
++	INIT_LIST_HEAD(&batch->head);
++	batch->count = total;
++}
++
++static void kiocb_batch_free(struct kiocb_batch *batch)
++{
++	struct kiocb *req, *n;
++
++	list_for_each_entry_safe(req, n, &batch->head, ki_batch) {
++		list_del(&req->ki_batch);
++		kmem_cache_free(kiocb_cachep, req);
++	}
++}
++
++/*
++ * Allocate a batch of kiocbs.  This avoids taking and dropping the
++ * context lock a lot during setup.
++ */
++static int kiocb_batch_refill(struct kioctx *ctx, struct kiocb_batch *batch)
++{
++	unsigned short allocated, to_alloc;
++	long avail;
++	bool called_fput = false;
++	struct kiocb *req, *n;
++	struct aio_ring *ring;
++
++	to_alloc = min(batch->count, KIOCB_BATCH_SIZE);
++	for (allocated = 0; allocated < to_alloc; allocated++) {
++		req = __aio_get_req(ctx);
++		if (!req)
++			/* allocation failed, go with what we've got */
++			break;
++		list_add(&req->ki_batch, &batch->head);
++	}
++
++	if (allocated == 0)
++		goto out;
++
++retry:
+ 	spin_lock_irq(&ctx->ctx_lock);
+-	ring = kmap_atomic(ctx->ring_info.ring_pages[0], KM_USER0);
+-	if (ctx->reqs_active < aio_ring_avail(&ctx->ring_info, ring)) {
++	ring = kmap_atomic(ctx->ring_info.ring_pages[0]);
++
++	avail = aio_ring_avail(&ctx->ring_info, ring) - ctx->reqs_active;
++	BUG_ON(avail < 0);
++	if (avail == 0 && !called_fput) {
++		/*
++		 * Handle a potential starvation case.  It is possible that
++		 * we hold the last reference on a struct file, causing us
++		 * to delay the final fput to non-irq context.  In this case,
++		 * ctx->reqs_active is artificially high.  Calling the fput
++		 * routine here may free up a slot in the event completion
++		 * ring, allowing this allocation to succeed.
++		 */
++		kunmap_atomic(ring);
++		spin_unlock_irq(&ctx->ctx_lock);
++		aio_fput_routine(NULL);
++		called_fput = true;
++		goto retry;
++	}
++
++	if (avail < allocated) {
++		/* Trim back the number of requests. */
++		list_for_each_entry_safe(req, n, &batch->head, ki_batch) {
++			list_del(&req->ki_batch);
++			kmem_cache_free(kiocb_cachep, req);
++			if (--allocated <= avail)
++				break;
++		}
++	}
++
++	batch->count -= allocated;
++	list_for_each_entry(req, &batch->head, ki_batch) {
+ 		list_add(&req->ki_list, &ctx->active_reqs);
+ 		ctx->reqs_active++;
+-		okay = 1;
+ 	}
+-	kunmap_atomic(ring, KM_USER0);
+-	spin_unlock_irq(&ctx->ctx_lock);
+ 
+-	if (!okay) {
+-		kmem_cache_free(kiocb_cachep, req);
+-		req = NULL;
+-	}
++	kunmap_atomic(ring);
++	spin_unlock_irq(&ctx->ctx_lock);
+ 
+-	return req;
++out:
++	return allocated;
+ }
+ 
+-static inline struct kiocb *aio_get_req(struct kioctx *ctx)
++static inline struct kiocb *aio_get_req(struct kioctx *ctx,
++					struct kiocb_batch *batch)
+ {
+ 	struct kiocb *req;
+-	/* Handle a potential starvation case -- should be exceedingly rare as 
+-	 * requests will be stuck on fput_head only if the aio_fput_routine is 
+-	 * delayed and the requests were the last user of the struct file.
+-	 */
+-	req = __aio_get_req(ctx);
+-	if (unlikely(NULL == req)) {
+-		aio_fput_routine(NULL);
+-		req = __aio_get_req(ctx);
+-	}
++
++	if (list_empty(&batch->head))
++		if (kiocb_batch_refill(ctx, batch) == 0)
++			return NULL;
++	req = list_first_entry(&batch->head, struct kiocb, ki_batch);
++	list_del(&req->ki_batch);
+ 	return req;
+ }
+ 
+@@ -1515,7 +1588,8 @@ static ssize_t aio_setup_iocb(struct kiocb *kiocb, bool compat)
+ }
+ 
+ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
+-			 struct iocb *iocb, bool compat)
++			 struct iocb *iocb, struct kiocb_batch *batch,
++			 bool compat)
+ {
+ 	struct kiocb *req;
+ 	struct file *file;
+@@ -1541,7 +1615,7 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
+ 	if (unlikely(!file))
+ 		return -EBADF;
+ 
+-	req = aio_get_req(ctx);		/* returns with 2 references to req */
++	req = aio_get_req(ctx, batch);  /* returns with 2 references to req */
+ 	if (unlikely(!req)) {
+ 		fput(file);
+ 		return -EAGAIN;
+@@ -1621,8 +1695,9 @@ long do_io_submit(aio_context_t ctx_id, long nr,
+ {
+ 	struct kioctx *ctx;
+ 	long ret = 0;
+-	int i;
++	int i = 0;
+ 	struct blk_plug plug;
++	struct kiocb_batch batch;
+ 
+ 	if (unlikely(nr < 0))
+ 		return -EINVAL;
+@@ -1639,6 +1714,8 @@ long do_io_submit(aio_context_t ctx_id, long nr,
+ 		return -EINVAL;
+ 	}
+ 
++	kiocb_batch_init(&batch, nr);
++
+ 	blk_start_plug(&plug);
+ 
+ 	/*
+@@ -1659,12 +1736,13 @@ long do_io_submit(aio_context_t ctx_id, long nr,
+ 			break;
+ 		}
+ 
+-		ret = io_submit_one(ctx, user_iocb, &tmp, compat);
++		ret = io_submit_one(ctx, user_iocb, &tmp, &batch, compat);
+ 		if (ret)
+ 			break;
+ 	}
+ 	blk_finish_plug(&plug);
+ 
++	kiocb_batch_free(&batch);
+ 	put_ioctx(ctx);
+ 	return i ? i : ret;
+ }
+diff --git a/include/linux/aio.h b/include/linux/aio.h
+index 2dcb72b..2314ad8 100644
+--- a/include/linux/aio.h
++++ b/include/linux/aio.h
+@@ -117,6 +117,7 @@ struct kiocb {
+ 
+ 	struct list_head	ki_list;	/* the aio core uses this
+ 						 * for cancellation */
++	struct list_head	ki_batch;	/* batch allocation */
+ 
+ 	/*
+ 	 * If the aio_resfd field of the userspace iocb is not zero,
