@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751331Ab1IVGge (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 02:36:34 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:64656 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750743Ab1IVGgc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 02:36:32 -0400
-From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: Carsten Emde <C.Emde@osadl.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Subject: [PATCH] ipc:fix the wrong use of schedule_hrtimeout_range_clock()
-Date: Thu, 22 Sep 2011 14:35:23 +0800
-Message-Id: <1316673323-5048-1-git-send-email-gaowanlong@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.7.rc1
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-09-22 14:35:03,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-09-22 14:35:05,
-	Serialize complete at 2011-09-22 14:35:05
+	id S1751430Ab1IVGiW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 02:38:22 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:32857 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750743Ab1IVGiV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Sep 2011 02:38:21 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAGsJ_4x-SxYLyuyR9nQ530DhmfYN-Bqc2DOSyAVhM=h3zxCvMw@mail.gmail.com>
+References: <1316166200-20595-1-git-send-email-Baohua.Song@csr.com>
+	<CABb+yY2L=wfRoascoriAcnNMKkV7LbQEHCpp78+rCY=aM46x7A@mail.gmail.com>
+	<CAGsJ_4zURv1_zJ0rwZawa8VSOw0kT9U4-cCCj2Q4-BhV1pdTHA@mail.gmail.com>
+	<CABb+yY3T7JmcLXY-6GYHqF+3SiVK5N0xGzqsE8pv8A+S10hWQw@mail.gmail.com>
+	<CABb+yY3mCHwWx-8gQG75107eWQBT1kPDu59vi9vHU+OQFXq_kg@mail.gmail.com>
+	<CAGsJ_4x-SxYLyuyR9nQ530DhmfYN-Bqc2DOSyAVhM=h3zxCvMw@mail.gmail.com>
+Date: Thu, 22 Sep 2011 12:08:19 +0530
+Message-ID: <CABb+yY3ufFhD6Gf-OqYPpa2k--c8z52fFn6VDEpmc_NgWC04XQ@mail.gmail.com>
+Subject: Re: [PATCH] dmaengine: delete redundant chan_id and chancnt
+ initialization in dma drivers
+From: Jassi Brar <jassisinghbrar@gmail.com>
+To: Barry Song <21cnbao@gmail.com>
+Cc: Barry Song <Baohua.Song@csr.com>, Piotr Ziecik <kosmo@semihalf.com>,
+        Vinod Koul <vinod.koul@intel.com>, Pelagicore AB <info@pelagicore.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        Yong Wang <yong.y.wang@intel.com>, dan.j.williams@intel.com,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the wrong use of schedule_hrtimeout_range_clock() in wq_sleep(), although
-it is harmless for the syscall mq_timed* now.
-It's introduced by 9ca7d8e.
-
-Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
----
- ipc/mqueue.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/ipc/mqueue.c b/ipc/mqueue.c
-index ed049ea..2e0ecfc 100644
---- a/ipc/mqueue.c
-+++ b/ipc/mqueue.c
-@@ -449,8 +449,8 @@ static int wq_sleep(struct mqueue_inode_info *info, int sr,
- 		set_current_state(TASK_INTERRUPTIBLE);
- 
- 		spin_unlock(&info->lock);
--		time = schedule_hrtimeout_range_clock(timeout,
--		    HRTIMER_MODE_ABS, 0, CLOCK_REALTIME);
-+		time = schedule_hrtimeout_range_clock(timeout, 0,
-+			HRTIMER_MODE_ABS, CLOCK_REALTIME);
- 
- 		while (ewp->state == STATE_PENDING)
- 			cpu_relax();
--- 
-1.7.7.rc1
-
+On Thu, Sep 22, 2011 at 12:01 PM, Barry Song <21cnbao@gmail.com> wrote:
+> 2011/9/22 Jassi Brar <jassisinghbrar@gmail.com>:
+>> On Thu, Sep 22, 2011 at 11:11 AM, Jassi Brar <jassisinghbrar@gmail.com> wrote:
+>>>
+>>>> client drivers can request a specific chan_id just like it can request a gpio.
+>>> No dear. That's not gonna fly if we are to have common client drivers
+>>> across SoCs.
+>>>
+>> Btw, I meant you can't simply have clients specify a channel number and
+>> get the channel in a portable manner. Clients need to specify the capabilities
+>> they need of the channel.
+>
+> if the dmac is flexible in design, what you said is right. but the
+> problem is that there are some chips which actually fix one channel to
+> one peripheral.
+Nevertheless it is better to assume the dmac's req-signals could be hacked
+to re-route at even runtime.
+Also it won't work for client drivers that run the same controller on different
+SoC with a different dmac.
