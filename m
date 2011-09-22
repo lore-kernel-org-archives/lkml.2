@@ -1,70 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752220Ab1IVQ36 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 12:29:58 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:49788 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751781Ab1IVQ35 (ORCPT
+	id S1752513Ab1IVQcO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 12:32:14 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:10403 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751781Ab1IVQcM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 12:29:57 -0400
-X-Sasl-enc: mNNRphUxGP2UtbUFOdOQzKm+DqEeUrQgpOFvh1wlHRp0 1316708996
-Date: Thu, 22 Sep 2011 09:29:53 -0700
-From: Greg KH <greg@kroah.com>
-To: Oren Weil <oren.jer.weil@intel.com>
-Cc: gregkh@suse.de, devel@driverdev.osuosl.org, tomas.winkler@intel.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] staging: mei: clean the TODO file from done tasks.
-Message-ID: <20110922162953.GA31282@kroah.com>
-References: <1316612731-20905-1-git-send-email-oren.jer.weil@intel.com>
- <1316612731-20905-2-git-send-email-oren.jer.weil@intel.com>
+	Thu, 22 Sep 2011 12:32:12 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Thu, 22 Sep 2011 09:31:49 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Olof Johansson <olof@lixom.net>
+CC: Colin Cross <ccross@android.com>, Erik Gilling <konkers@android.com>,
+        Grant Likely <grant.likely@secretlab.ca>, Chris Ball <cjb@laptop.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
+Date: Thu, 22 Sep 2011 09:31:48 -0700
+Subject: RE: [PATCH 1/3] arm/tegra: Move EN_VDD_1V05_GPIO to board-harmony.h
+Thread-Topic: [PATCH 1/3] arm/tegra: Move EN_VDD_1V05_GPIO to board-harmony.h
+Thread-Index: Acx4/09E/atAVuf2S9a3x4b5t4cqZgARaUmg
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF1739554CBD@HQMAIL01.nvidia.com>
+References: <1316633620-13184-1-git-send-email-swarren@nvidia.com>
+ <CAOesGMisOtEQpcS-hHi-3brpYzJr-UiB6b71c+bwkesPDk9iuA@mail.gmail.com>
+ <20110922081140.GH17169@n2100.arm.linux.org.uk>
+In-Reply-To: <20110922081140.GH17169@n2100.arm.linux.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1316612731-20905-2-git-send-email-oren.jer.weil@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 21, 2011 at 04:45:31PM +0300, Oren Weil wrote:
-> Acked-by: Tomas Winkler <tomas.winkler@intel.com>
-> Signed-off-by: Oren Weil <oren.jer.weil@intel.com>
-> ---
->  drivers/staging/mei/TODO |   10 ----------
->  1 files changed, 0 insertions(+), 10 deletions(-)
+Russell King - ARM Linux wrote at Thursday, September 22, 2011 2:12 AM:
+> On Wed, Sep 21, 2011 at 01:16:49PM -0700, Olof Johansson wrote:
+> > Works for me. Or I could stage it in a topic branch that would be
+> > merged after Russell's GPIO tree.
 > 
-> diff --git a/drivers/staging/mei/TODO b/drivers/staging/mei/TODO
-> index 3b6a667..7d9a13b 100644
-> --- a/drivers/staging/mei/TODO
-> +++ b/drivers/staging/mei/TODO
-> @@ -1,14 +1,4 @@
->  TODO:
-> -	- Create in-kernel Client API. Examples of in-kernel clients are watchdog and AMTHI.
+> Holding stuff off from being merged doesn't work.
 
-Did you really do this?
+Russell,
 
-> -	- ME Watchdog Driver to expose standard Linux watchdog interface
+So I take it I should add the two ack'd patches to the ARM patch system,
+and have you pick them up?
 
-And this?
+Thanks.
 
-> -	- Rewrite AMTHI to use in-kernel client interface
+> If you have the following commit structure:
+> 
+> A---...-----M1-B-C-M2
+> +---A1-B1-C1'     /
+> +-A2-B2-C2-------'
+> 
+> Now, lets say A2 depends on C1.  Merely delaying the stuff so that M2
+> happens after M1 is insufficient to ensure git state doesn't break.
+> When bisecting, its entirely possible that the bisect algorithm may
+> chose B2 as a potential test candidate.  At that point you end up with
+> A2, but without C1.
+> 
+> The only way to solve this is to have A2 following on from C1 - which
+> of course requires A1..C1 to be declared stable and either pulled into
+> your local tree or for A2..C2 to be submitted to the same tree which
+> A1..C1 are already in.
 
-And this?
+-- 
+nvpupblic
 
-> -	- Cleanup init and probe functions
-> -	- Review BUG/BUG_ON usage
-> -	- Cleanup and reorganize header files
-> -	- Rewrite client data structure
-
-And this?
-
-> -	- Make state machine more readable
-> -	- Add mei.txt with driver explanation and it's driver
-
-You really don't describe the kernel/user api here, that needs to be
-well documented as it is a ABI you are creating and we need to know how
-it works.
-
-thanks,
-
-greg k-h
