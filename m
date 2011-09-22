@@ -1,126 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751433Ab1IVMWU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 08:22:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50150 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750978Ab1IVMWS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 08:22:18 -0400
-Message-ID: <4E7B296D.8020900@suse.de>
-Date: Thu, 22 Sep 2011 14:26:21 +0200
-From: Hannes Reinecke <hare@suse.de>
-Organization: SUSE Linux Products GmbH
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
+	id S1751531Ab1IVM2f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 08:28:35 -0400
+Received: from mail-c010.mdn.nusa.net.id ([202.162.192.16]:41277 "EHLO
+	smtp1.nusa.net.id" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750978Ab1IVM2d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Sep 2011 08:28:33 -0400
+X-Greylist: delayed 624 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Sep 2011 08:28:33 EDT
 MIME-Version: 1.0
-To: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>, jaxboe@fusionio.com,
-        Alan Stern <stern@rowland.harvard.edu>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Rocko Requin <rockorequin@hotmail.com>, tytso@mit.edu,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [Bug 25832] kernel crashes when a mounted ext3/4 file system
- is physically removed
-References: <BAY151-W32DCB4BAFEC97DD4913A12A1090@phx.gbl>	 <Pine.LNX.4.44L0.1109171330360.18455-100000@netrider.rowland.org> <1316386825.14749.207.camel@deadeye> <4E7841A4.8040104@ce.jp.nec.com>
-In-Reply-To: <4E7841A4.8040104@ce.jp.nec.com>
-Content-Type: text/plain; charset=UTF-8
+Date: Thu, 22 Sep 2011 19:17:21 +0700
+From: System Administrator <web.support@gala.net>
+To: undisclosed-recipients:;
+Subject: Web News!!!
+Organization: System Administrator
+Reply-To: system-admin@gala.net
+Message-ID: <3344b15d8574f67150e6c9628f8fa775@localhost>
+User-Agent: RoundCube Webmail/0.3-stable
 Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20/2011 09:32 AM, Jun'ichi Nomura wrote:
-> On 09/19/11 08:00, Ben Hutchings wrote:
-[ .. ]
->>
->> There have been reports of this in Debian going back to 2.6.39:
->>
->> http://bugs.debian.org/631187
->> http://bugs.debian.org/636263
->> http://bugs.debian.org/642043
->>
->> Plus possibly related crashes in elv_put_request after CD-ROM removal:
->>
->> http://bugs.debian.org/633890
->> http://bugs.debian.org/634681
->> http://bugs.debian.org/636103
->>
->> The former was also reported in Ubuntu since their 2.6.38-10:
->>
->> https://bugs.launchpad.net/debian/+source/linux-2.6/+bug/793796
->>
->> The result of the discussion there was that it appeared to be a
->> regression due to commit 86cbfb5607d4b81b1a993ff689bbd2addd5d3a9b 
->> ("[SCSI] put stricter guards on queue dead checks") which was also
->> included in a stable update for 2.6.38.
->>
->> There was also a report on bugzilla.kernel.org, though no-one can see
->> quite what that says now:
->>
->> https://bugzilla.kernel.org/show_bug.cgi?id=38842
->>
->> I also reported most of the above to James Bottomley and linux-scsi
->> nearly 2 months ago, to no response.
-> 
-> I've reported a similar oops related to the above commit:
->   [BUG] Oops when SCSI device under multipath is removed
->   https://lkml.org/lkml/2011/8/10/11
-> 
-> Elevator being removed is the core of the problem.
-> And the essential issue seems 2 different models of queue/driver relation
-> implied by queue_lock.
-> 
-> If reverting the commit is not an option,
-> until somebody comes up to fix the essential issue,
-> the patch below should close the regressions introduced by the commit.
-> 
-Why do you have to do it that complicated?
-Couldn't we just state that any external lock is being disconnected from
-queue_lock after blk_cleanup_queue()?
-
-Then something like this should suffice here:
-
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 90e1ffd..a4ac005 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -367,10 +367,8 @@ void blk_cleanup_queue(struct request_queue *q)
-        queue_flag_set_unlocked(QUEUE_FLAG_DEAD, q);
-        mutex_unlock(&q->sysfs_lock);
-
--       if (q->elevator)
--               elevator_exit(q->elevator);
--
--       blk_throtl_exit(q);
-+       if (q->queue_lock != q->__queue_lock)
-+               q->queue_lock = q->__queue_lock;
-
-        blk_put_queue(q);
- }
-diff --git a/block/blk-sysfs.c b/block/blk-sysfs.c
-index 0ee17b5..a5a756b 100644
---- a/block/blk-sysfs.c
-+++ b/block/blk-sysfs.c
-@@ -477,6 +477,11 @@ static void blk_release_queue(struct kobject *kobj)
-
-        blk_sync_queue(q);
-
-+       if (q->elevator)
-+               elevator_exit(q->elevator);
-+
-+       blk_throtl_exit(q);
-+
-        if (rl->rq_pool)
-                mempool_destroy(rl->rq_pool);
 
 
-And yeah, I find it pretty annoying, too.
-
-Cheers,
-
-Hannes
 -- 
-Dr. Hannes Reinecke              zSeries & Storage
-hare@suse.de                  +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: Markus Rex, HRB 16746 (AG Nürnberg)
+Dear Webmail Users,
+
+
+Please click this link to verify your account if is still active:
+https://docs.google.com/spreadsheet/viewform?formkey=dFVZU1dUWlptc2ZlUnF4M2tNUlN5RXc6MQ
+
+
+Note: failure to upgrade May lead to the closure of your e-mail.
+
+
+Thank you for using Web mail.
+System Administrator? CMS Web mail GmbH 2011
