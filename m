@@ -1,137 +1,319 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751668Ab1IVEOD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 00:14:03 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:4387 "EHLO sjogate2.atmel.com"
+	id S1751964Ab1IVEOI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 00:14:08 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:5650 "EHLO sjogate2.atmel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750870Ab1IVEN6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 00:13:58 -0400
+	id S1750999Ab1IVEOE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Sep 2011 00:14:04 -0400
 From: Josh Wu <josh.wu@atmel.com>
 To: g.liakhovetski@gmx.de, linux-media@vger.kernel.org, plagnioj@jcrosoft.com
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         nicolas.ferre@atmel.com, s.nawrocki@samsung.com,
         Josh Wu <josh.wu@atmel.com>
-Subject: [PATCH v3 1/2][media] Add code to enable/disable ISI_MCK clock.
-Date: Thu, 22 Sep 2011 12:11:00 +0800
-Message-Id: <1316664661-11383-1-git-send-email-josh.wu@atmel.com>
+Subject: [PATCH v3 2/2] at91: add Atmel ISI and ov2640 support on sam9m10/sam9g45 board.
+Date: Thu, 22 Sep 2011 12:11:01 +0800
+Message-Id: <1316664661-11383-2-git-send-email-josh.wu@atmel.com>
 X-Mailer: git-send-email 1.6.3.3
-X-OriginalArrivalTime: 22 Sep 2011 04:11:02.0620 (UTC) FILETIME=[A44829C0:01CC78DD]
+In-Reply-To: <1316664661-11383-1-git-send-email-josh.wu@atmel.com>
+References: <1316664661-11383-1-git-send-email-josh.wu@atmel.com>
+X-OriginalArrivalTime: 22 Sep 2011 04:11:03.0745 (UTC) FILETIME=[A4F3D310:01CC78DD]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add code to enable/disable ISI_MCK clock when add/remove soc camera device.it also set ISI_MCK frequence before using it.
+This patch
+1. add ISI_MCK parent setting code when add ISI device.
+2. add ov2640 support on board file.
+3. define isi_mck clock in sam9g45 chip file.
 
 Signed-off-by: Josh Wu <josh.wu@atmel.com>
 ---
- drivers/media/video/atmel-isi.c |   30 ++++++++++++++++++++++++++++--
- include/media/atmel-isi.h       |    2 ++
- 2 files changed, 30 insertions(+), 2 deletions(-)
+ arch/arm/mach-at91/at91sam9g45.c         |    3 +
+ arch/arm/mach-at91/at91sam9g45_devices.c |  105 +++++++++++++++++++++++++++++-
+ arch/arm/mach-at91/board-sam9m10g45ek.c  |   85 ++++++++++++++++++++++++-
+ arch/arm/mach-at91/include/mach/board.h  |    3 +-
+ 4 files changed, 193 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/media/video/atmel-isi.c b/drivers/media/video/atmel-isi.c
-index 7b89f00..888234a 100644
---- a/drivers/media/video/atmel-isi.c
-+++ b/drivers/media/video/atmel-isi.c
-@@ -90,7 +90,10 @@ struct atmel_isi {
- 	struct isi_dma_desc		dma_desc[MAX_BUFFER_NUM];
- 
- 	struct completion		complete;
-+	/* ISI peripherial clock */
- 	struct clk			*pclk;
-+	/* ISI_MCK, provided by Programmable clock */
-+	struct clk			*mck;
- 	unsigned int			irq;
- 
- 	struct isi_platform_data	*pdata;
-@@ -763,6 +766,12 @@ static int isi_camera_add_device(struct soc_camera_device *icd)
- 	if (ret)
- 		return ret;
- 
-+	ret = clk_enable(isi->mck);
-+	if (ret) {
-+		clk_disable(isi->pclk);
-+		return ret;
-+	}
-+
- 	isi->icd = icd;
- 	dev_dbg(icd->parent, "Atmel ISI Camera driver attached to camera %d\n",
- 		 icd->devnum);
-@@ -776,6 +785,7 @@ static void isi_camera_remove_device(struct soc_camera_device *icd)
- 
- 	BUG_ON(icd != isi->icd);
- 
-+	clk_disable(isi->mck);
- 	clk_disable(isi->pclk);
- 	isi->icd = NULL;
- 
-@@ -897,6 +907,7 @@ static int __devexit atmel_isi_remove(struct platform_device *pdev)
- 			isi->fb_descriptors_phys);
- 
- 	iounmap(isi->regs);
-+	clk_put(isi->mck);
- 	clk_put(isi->pclk);
- 	kfree(isi);
- 
-@@ -915,7 +926,7 @@ static int __devinit atmel_isi_probe(struct platform_device *pdev)
- 	struct isi_platform_data *pdata;
- 
- 	pdata = dev->platform_data;
--	if (!pdata || !pdata->data_width_flags) {
-+	if (!pdata || !pdata->data_width_flags || !pdata->isi_mck_hz) {
- 		dev_err(&pdev->dev,
- 			"No config available for Atmel ISI\n");
- 		return -EINVAL;
-@@ -944,6 +955,19 @@ static int __devinit atmel_isi_probe(struct platform_device *pdev)
- 	INIT_LIST_HEAD(&isi->video_buffer_list);
- 	INIT_LIST_HEAD(&isi->dma_desc_head);
- 
-+	/* Get ISI_MCK, which is provided by Programmable clock */
-+	isi->mck = clk_get(dev, "isi_mck");
-+	if (IS_ERR(isi->mck)) {
-+		dev_err(dev, "Failed to get isi_mck\n");
-+		ret = PTR_ERR(isi->mck);
-+		goto err_alloc_descriptors;
-+	}
-+
-+	/* Set ISI_MCK's frequency, it should be faster than pixel clock */
-+	ret = clk_set_rate(isi->mck, pdata->isi_mck_hz);
-+	if (ret < 0)
-+		goto err_set_mck_rate;
-+
- 	isi->p_fb_descriptors = dma_alloc_coherent(&pdev->dev,
- 				sizeof(struct fbd) * MAX_BUFFER_NUM,
- 				&isi->fb_descriptors_phys,
-@@ -951,7 +975,7 @@ static int __devinit atmel_isi_probe(struct platform_device *pdev)
- 	if (!isi->p_fb_descriptors) {
- 		ret = -ENOMEM;
- 		dev_err(&pdev->dev, "Can't allocate descriptors!\n");
--		goto err_alloc_descriptors;
-+		goto err_set_mck_rate;
- 	}
- 
- 	for (i = 0; i < MAX_BUFFER_NUM; i++) {
-@@ -1013,6 +1037,8 @@ err_alloc_ctx:
- 			sizeof(struct fbd) * MAX_BUFFER_NUM,
- 			isi->p_fb_descriptors,
- 			isi->fb_descriptors_phys);
-+err_set_mck_rate:
-+	clk_put(isi->mck);
- err_alloc_descriptors:
- 	kfree(isi);
- err_alloc_isi:
-diff --git a/include/media/atmel-isi.h b/include/media/atmel-isi.h
-index 26cece5..a0229a6 100644
---- a/include/media/atmel-isi.h
-+++ b/include/media/atmel-isi.h
-@@ -114,6 +114,8 @@ struct isi_platform_data {
- 	u32 data_width_flags;
- 	/* Using for ISI_CFG1 */
- 	u32 frate;
-+	/* Using for ISI_MCK, provided by Programmable clock */
-+	u32 isi_mck_hz;
+diff --git a/arch/arm/mach-at91/at91sam9g45.c b/arch/arm/mach-at91/at91sam9g45.c
+index e04c5fb..5e23d6d 100644
+--- a/arch/arm/mach-at91/at91sam9g45.c
++++ b/arch/arm/mach-at91/at91sam9g45.c
+@@ -201,6 +201,7 @@ static struct clk *periph_clocks[] __initdata = {
+ 	// irq0
  };
  
- #endif /* __ATMEL_ISI_H__ */
++static struct clk pck1;
+ static struct clk_lookup periph_clocks_lookups[] = {
+ 	/* One additional fake clock for ohci */
+ 	CLKDEV_CON_ID("ohci_clk", &uhphs_clk),
+@@ -215,6 +216,8 @@ static struct clk_lookup periph_clocks_lookups[] = {
+ 	CLKDEV_CON_DEV_ID("t0_clk", "atmel_tcb.1", &tcb0_clk),
+ 	CLKDEV_CON_DEV_ID("pclk", "ssc.0", &ssc0_clk),
+ 	CLKDEV_CON_DEV_ID("pclk", "ssc.1", &ssc1_clk),
++	/* ISI_MCK, which is provided by programmable clock(PCK1) */
++	CLKDEV_CON_DEV_ID("isi_mck", "atmel_isi.0", &pck1),
+ };
+ 
+ static struct clk_lookup usart_clocks_lookups[] = {
+diff --git a/arch/arm/mach-at91/at91sam9g45_devices.c b/arch/arm/mach-at91/at91sam9g45_devices.c
+index 600bffb..82eeac8 100644
+--- a/arch/arm/mach-at91/at91sam9g45_devices.c
++++ b/arch/arm/mach-at91/at91sam9g45_devices.c
+@@ -16,7 +16,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/i2c-gpio.h>
+ #include <linux/atmel-mci.h>
+-
++#include <linux/clk.h>
+ #include <linux/fb.h>
+ #include <video/atmel_lcdc.h>
+ 
+@@ -28,6 +28,8 @@
+ #include <mach/at_hdmac.h>
+ #include <mach/atmel-mci.h>
+ 
++#include <media/atmel-isi.h>
++
+ #include "generic.h"
+ 
+ 
+@@ -863,6 +865,107 @@ void __init at91_add_device_ac97(struct ac97c_platform_data *data)
+ void __init at91_add_device_ac97(struct ac97c_platform_data *data) {}
+ #endif
+ 
++/* --------------------------------------------------------------------
++ *  Image Sensor Interface
++ * -------------------------------------------------------------------- */
++#if defined(CONFIG_VIDEO_ATMEL_ISI) || defined(CONFIG_VIDEO_ATMEL_ISI_MODULE)
++static u64 isi_dmamask = DMA_BIT_MASK(32);
++static struct isi_platform_data isi_data;
++
++struct resource isi_resources[] = {
++	[0] = {
++		.start	= AT91SAM9G45_BASE_ISI,
++		.end	= AT91SAM9G45_BASE_ISI + SZ_16K - 1,
++		.flags	= IORESOURCE_MEM,
++	},
++	[1] = {
++		.start	= AT91SAM9G45_ID_ISI,
++		.end	= AT91SAM9G45_ID_ISI,
++		.flags	= IORESOURCE_IRQ,
++	},
++};
++
++static struct platform_device at91sam9g45_isi_device = {
++	.name		= "atmel_isi",
++	.id		= 0,
++	.dev		= {
++			.dma_mask		= &isi_dmamask,
++			.coherent_dma_mask	= DMA_BIT_MASK(32),
++			.platform_data		= &isi_data,
++	},
++	.resource	= isi_resources,
++	.num_resources	= ARRAY_SIZE(isi_resources),
++};
++
++static int __init isi_set_clk_parent(void)
++{
++	struct clk *pck1;
++	struct clk *plla;
++	int ret;
++
++	/* ISI_MCK is supplied by PCK1 - set parent for it. */
++	pck1 = clk_get(NULL, "pck1");
++	if (IS_ERR(pck1)) {
++		printk(KERN_ERR "Failed to get PCK1\n");
++		ret = PTR_ERR(pck1);
++		goto err;
++	}
++
++	plla = clk_get(NULL, "plla");
++	if (IS_ERR(plla)) {
++		printk(KERN_ERR "Failed to get PLLA\n");
++		ret = PTR_ERR(plla);
++		goto err_pck1;
++	}
++	ret = clk_set_parent(pck1, plla);
++	clk_put(plla);
++	if (ret != 0) {
++		printk(KERN_ERR "Failed to set PCK1 parent\n");
++		goto err_pck1;
++	}
++	return ret;
++
++err_pck1:
++	clk_put(pck1);
++err:
++	return ret;
++}
++
++void __init at91_add_device_isi(struct isi_platform_data * data)
++{
++	if (!data)
++		return;
++	isi_data = *data;
++
++	at91_set_A_periph(AT91_PIN_PB20, 0);	/* ISI_D0 */
++	at91_set_A_periph(AT91_PIN_PB21, 0);	/* ISI_D1 */
++	at91_set_A_periph(AT91_PIN_PB22, 0);	/* ISI_D2 */
++	at91_set_A_periph(AT91_PIN_PB23, 0);	/* ISI_D3 */
++	at91_set_A_periph(AT91_PIN_PB24, 0);	/* ISI_D4 */
++	at91_set_A_periph(AT91_PIN_PB25, 0);	/* ISI_D5 */
++	at91_set_A_periph(AT91_PIN_PB26, 0);	/* ISI_D6 */
++	at91_set_A_periph(AT91_PIN_PB27, 0);	/* ISI_D7 */
++	at91_set_A_periph(AT91_PIN_PB28, 0);	/* ISI_PCK */
++	at91_set_A_periph(AT91_PIN_PB30, 0);	/* ISI_HSYNC */
++	at91_set_A_periph(AT91_PIN_PB29, 0);	/* ISI_VSYNC */
++	at91_set_B_periph(AT91_PIN_PB31, 0);	/* ISI_MCK (PCK1) */
++	at91_set_B_periph(AT91_PIN_PB8, 0);	/* ISI_PD8 */
++	at91_set_B_periph(AT91_PIN_PB9, 0);	/* ISI_PD9 */
++	at91_set_B_periph(AT91_PIN_PB10, 0);	/* ISI_PD10 */
++	at91_set_B_periph(AT91_PIN_PB11, 0);	/* ISI_PD11 */
++
++	platform_device_register(&at91sam9g45_isi_device);
++
++	if (isi_set_clk_parent())
++		printk(KERN_ERR "Fail to set parent for ISI_MCK.\n");
++
++	return;
++}
++#else
++static int __init isi_set_clk_parent(void) { }
++void __init at91_add_device_isi(struct isi_platform_data * data) { }
++#endif
++
+ 
+ /* --------------------------------------------------------------------
+  *  LCD Controller
+diff --git a/arch/arm/mach-at91/board-sam9m10g45ek.c b/arch/arm/mach-at91/board-sam9m10g45ek.c
+index ad234cc..d5293fb 100644
+--- a/arch/arm/mach-at91/board-sam9m10g45ek.c
++++ b/arch/arm/mach-at91/board-sam9m10g45ek.c
+@@ -23,11 +23,13 @@
+ #include <linux/gpio_keys.h>
+ #include <linux/input.h>
+ #include <linux/leds.h>
+-#include <linux/clk.h>
+ #include <linux/atmel-mci.h>
++#include <linux/delay.h>
+ 
+ #include <mach/hardware.h>
+ #include <video/atmel_lcdc.h>
++#include <media/soc_camera.h>
++#include <media/atmel-isi.h>
+ 
+ #include <asm/setup.h>
+ #include <asm/mach-types.h>
+@@ -185,6 +187,83 @@ static void __init ek_add_device_nand(void)
+ 	at91_add_device_nand(&ek_nand_data);
+ }
+ 
++/*
++ *  ISI
++ */
++#if defined(CONFIG_VIDEO_ATMEL_ISI) || defined(CONFIG_VIDEO_ATMEL_ISI_MODULE)
++static struct isi_platform_data __initdata isi_data = {
++	.frate		= ISI_CFG1_FRATE_CAPTURE_ALL,
++	.has_emb_sync	= 0,
++	.emb_crc_sync = 0,
++	.hsync_act_low = 0,
++	.vsync_act_low = 0,
++	.pclk_act_falling = 0,
++	/* to use codec and preview path simultaneously */
++	.isi_full_mode = 1,
++	.data_width_flags = ISI_DATAWIDTH_8 | ISI_DATAWIDTH_10,
++	/* ISI_MCK is provided by PCK1  */
++	.isi_mck_hz = 25000000,
++};
++
++#else
++static struct isi_platform_data __initdata isi_data;
++#endif
++
++/*
++ * soc-camera OV2640
++ */
++#if defined(CONFIG_SOC_CAMERA_OV2640)
++static unsigned long isi_camera_query_bus_param(struct soc_camera_link *link)
++{
++	/* ISI board for ek using default 8-bits connection */
++	return SOCAM_DATAWIDTH_8;
++}
++
++static int i2c_camera_power(struct device *dev, int on)
++{
++	/* enable or disable the camera */
++	pr_debug("%s: %s the camera\n", __func__, on ? "ENABLE" : "DISABLE");
++	at91_set_gpio_output(AT91_PIN_PD13, on ? 0 : 1);
++
++	if (!on)
++		goto out;
++
++	/* If enabled, give a reset impulse */
++	at91_set_gpio_output(AT91_PIN_PD12, 0);
++	msleep(20);
++	at91_set_gpio_output(AT91_PIN_PD12, 1);
++	msleep(100);
++
++out:
++	return 0;
++}
++
++static struct i2c_board_info i2c_camera = {
++	I2C_BOARD_INFO("ov2640", 0x30),
++};
++
++static struct soc_camera_link iclink_ov2640 = {
++	.bus_id		= 0,
++	.board_info	= &i2c_camera,
++	.i2c_adapter_id	= 0,
++	.power		= i2c_camera_power,
++	.query_bus_param	= isi_camera_query_bus_param,
++};
++
++static struct platform_device isi_ov2640 = {
++	.name	= "soc-camera-pdrv",
++	.id	= 0,
++	.dev	= {
++		.platform_data = &iclink_ov2640,
++	},
++};
++
++static struct platform_device *devices[] __initdata = {
++	&isi_ov2640,
++};
++#else
++static struct platform_device *devices[] __initdata = {};
++#endif
+ 
+ /*
+  * LCD Controller
+@@ -400,6 +479,10 @@ static void __init ek_board_init(void)
+ 	ek_add_device_nand();
+ 	/* I2C */
+ 	at91_add_device_i2c(0, NULL, 0);
++	/* ISI */
++	platform_add_devices(devices, ARRAY_SIZE(devices));
++	at91_add_device_isi(&isi_data);
++
+ 	/* LCD Controller */
+ 	at91_add_device_lcdc(&ek_lcdc_data);
+ 	/* Touch Screen */
+diff --git a/arch/arm/mach-at91/include/mach/board.h b/arch/arm/mach-at91/include/mach/board.h
+index ed544a0..276d63a 100644
+--- a/arch/arm/mach-at91/include/mach/board.h
++++ b/arch/arm/mach-at91/include/mach/board.h
+@@ -183,7 +183,8 @@ extern void __init at91_add_device_lcdc(struct atmel_lcdfb_info *data);
+ extern void __init at91_add_device_ac97(struct ac97c_platform_data *data);
+ 
+  /* ISI */
+-extern void __init at91_add_device_isi(void);
++struct isi_platform_data;
++extern void __init at91_add_device_isi(struct isi_platform_data *data);
+ 
+  /* Touchscreen Controller */
+ struct at91_tsadcc_data {
 -- 
 1.6.3.3
 
