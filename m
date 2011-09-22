@@ -1,71 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754058Ab1IVVUJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 17:20:09 -0400
-Received: from claw.goop.org ([74.207.240.146]:54635 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753914Ab1IVVUB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754030Ab1IVVUG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 17:20:06 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:45783 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753928Ab1IVVUB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Sep 2011 17:20:01 -0400
-Message-ID: <4E7BA677.9090907@goop.org>
-Date: Thu, 22 Sep 2011 14:19:51 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:sender:in-reply-to:references:date:
+	x-google-sender-auth:message-id:subject:from:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=nfKDn4zz1Vjp3zX6GdzYU0J68c2n02Bh+wgKO4OuAZEh27rrbNx6booU4kTrOYb4M
+	n84NP28cQ5a3YjFpAQV0A==
 MIME-Version: 1.0
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+In-Reply-To: <1316725632.29447.21.camel@Joe-Laptop>
+References: <1316725029-22737-1-git-send-email-ccross@android.com>
+	<1316725029-22737-4-git-send-email-ccross@android.com>
+	<1316725632.29447.21.camel@Joe-Laptop>
+Date: Thu, 22 Sep 2011 14:19:58 -0700
+X-Google-Sender-Auth: Jb0SiaoHzPpkxfPWLi4-sl_X6dw
+Message-ID: <CAMbhsRSNYUF+wMrhu+LMWpSuDrE6o3p_t7Ai5ZOqGDXHs6cTzg@mail.gmail.com>
+Subject: Re: [PATCH 3/3] seq_file: convert seq buffer to vmalloc
+From: Colin Cross <ccross@android.com>
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [Xen-devel] Re: [PATCH 0/6] xen: don't call vmalloc_sync_all()
- when mapping foreign pages
-References: <1316090411-22608-1-git-send-email-david.vrabel@citrix.com> <4E727017.4030001@goop.org> <alpine.DEB.2.00.1109211124050.8700@kaball-desktop> <4E7A3394.3090806@goop.org> <alpine.DEB.2.00.1109221131390.8700@kaball-desktop>
-In-Reply-To: <alpine.DEB.2.00.1109221131390.8700@kaball-desktop>
-X-Enigmail-Version: 1.3.2
+        Alexey Dobriyan <adobriyan@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/2011 04:06 AM, Stefano Stabellini wrote:
-> On Wed, 21 Sep 2011, Jeremy Fitzhardinge wrote:
->> On 09/21/2011 03:42 AM, Stefano Stabellini wrote:
->>> On Thu, 15 Sep 2011, Jeremy Fitzhardinge wrote:
->>>> This series is relying on regular ram mappings are already synced to all
->>>> tasks, but I'm not sure that's necessarily guaranteed (for example, if
->>>> you hotplug new memory into the domain, the new pages won't be mapped
->>>> into every mm unless they're synced).
->>> the series is using GFP_KERNEL, so this problem shouldn't occur, right?
->> What properties do you think GFP_KERNEL guarantees?
-> That the memory is below 4G and always mapped in the kernel 1:1 region.
+On Thu, Sep 22, 2011 at 2:07 PM, Joe Perches <joe@perches.com> wrote:
+> On Thu, 2011-09-22 at 13:57 -0700, Colin Cross wrote:
+>> seq_files are often used for debugging.  When things are going wrong
+>> due to failed physically contiguous allocations, the exponentially
+>> growing physically contiguous allocations in seq_read can make things
+>> worse.  There is no need for physically contiguous memory, so switch
+>> to virtually contiguous memory instead.
+>
+> vmalloc's are relatively expensive.
+> Perhaps use kmalloc when appropriate instead?
+Talking about allocation efficiency in the context of seq_files is
+silly - for a KMALLOC_MAX_SIZE buffer (8MB), you are already going to
+allocate 11 times, with increasingly large buffers, and are likely to
+fail long before you ever get to KMALLOC_MAX_SIZE.
 
-Hm, but that's not quite the same thing as "mapped into every
-pagetable".  Lowmem pages always have a kernel virtual address, and its
-always OK to touch them at any point in kernel code[*] because one can
-rely on the fault handler to create mappings as needed - but that
-doesn't mean they're necessarily mapped by present ptes in the current
-pagetable.
+> []
+>> -     /* don't ask for more than the kmalloc() max size */
+>> -     if (size > KMALLOC_MAX_SIZE)
+>> -             size = KMALLOC_MAX_SIZE;
+>> -
+>> -     buf = kmalloc(size, GFP_KERNEL);
+>> +     buf = vmalloc(size);
+>>       if (!buf)
+>>               return -ENOMEM;
+>
+>        if (size > KMALLOC_MAX_SIZE)
+>                buf = vmalloc(size, GFP_KERNEL)
+>        else
+>                buf = kmalloc(size, GFP_KERNEL);
+KMALLOC_MAX_SIZE is far too big for this.  KMALLOC_MAX_SIZE is the
+maximum allocation that is theoretically possible, but will fail if
+you don't have any completely empty pageblocks.  If I were to put a
+size here, it would probably be order 3, but even that can easily fail
+on a system that has under memory pressure.
 
-[*] - except NMI handlers
+>> +     vfree(m->buf);
+>
+>        if (m->size > KMALLOC_MAX_SIZE)
+>                vfree(m->buf);
+>        else
+>                kfree(m->buf);
+>
+>>       m->buf = buf;
+>>       m->size = size;
+>>
+>> @@ -106,7 +103,7 @@ static int traverse(struct seq_file *m, loff_t offset)
+>>               return 0;
+>>       }
+>>       if (!m->buf) {
+>> -             m->buf = kmalloc(m->size = PAGE_SIZE, GFP_KERNEL);
+>> +             m->buf = vmalloc(m->size = PAGE_SIZE);
+>
+> embedding the set of m->size like this is ugly.
+I agree, but it was there in the original file.  I could clean it up,
+but that should be in a separate patch.
 
-> Regarding memory hotplug it looks like that x86_32 is mapping new memory
-> ZONE_HIGHMEM, therefore avoiding any problems with GFP_KERNEL allocations.
-> On the other hand x86_64 is mapping the memory ZONE_NORMAL and calling
-> init_memory_mapping on the new range right away. AFAICT changes to
-> the 1:1 mapping in init_mm are automatically synced across all mm's
-> because the pgd is shared?
-
-TBH I'm not sure.  vmalloc_sync_one/all does seem to do *something* on
-64-bit, but I was never completely sure what regions of the address
-space were already shared.  I *think* it might be that the pgd and pud
-are not shared, but the pmd down is, so if you add a new pmd you need to
-sync it into all the puds (and puds into pgds if you add a new one of
-those).
-
-But I'd be happier pretending that vmalloc_sync_* just doesn't exist,
-and deal with it at the hypercall level - in the short term, by just
-making sure that the callers touch all those pages before passing them
-into the hypercall.
-
-    J
+> [do the same as above kmalloc/vmalloc based on size]
+>
+> etc.
+>
+>
