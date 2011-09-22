@@ -1,75 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751947Ab1IVCwL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 22:52:11 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:63313 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751760Ab1IVCwI convert rfc822-to-8bit (ORCPT
+	id S1751984Ab1IVCxj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 22:53:39 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:39925 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751760Ab1IVCxh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 22:52:08 -0400
-MIME-Version: 1.0
-In-Reply-To: <4E7A46C0.6010804@am.sony.com>
-References: <4E7A46C0.6010804@am.sony.com>
-Date: Thu, 22 Sep 2011 10:52:06 +0800
-Message-ID: <CAGn38=3WmX0rORerbCapDSD5Gu4tg-Un3ROKpXtrs1DPyqDeFw@mail.gmail.com>
-Subject: Re: [Kgdb-bugreport] [PATCH] kdb: Avoid using dbg_io_ops until it is initialized
-From: Dongdong Deng <libfetion@gmail.com>
-To: Tim Bird <tim.bird@am.sony.com>
-Cc: Jason Wessel <jason.wessel@windriver.com>,
-        "kgdb-bugreport@lists.sourceforge.net" 
-	<kgdb-bugreport@lists.sourceforge.net>,
-        linux kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 21 Sep 2011 22:53:37 -0400
+X-AuditID: cbfee61b-b7b7fae000005864-af-4e7aa32fe325
+Date: Thu, 22 Sep 2011 11:53:35 +0900
+From: mhban <mhban@samsung.com>
+Subject: [PATCH] ARM: futex: fix clobbering oldval
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Michel Lespinasse <walken@google.com>,
+        DavidHowells <dhowells@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>
+Reply-to: mhban@samsung.com
+Message-id: <1316660015.6872.1.camel@puffmine-laptop>
+Organization: SAMSUNG
+MIME-version: 1.0
+X-Mailer: Evolution 2.28.3
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7BIT
+X-OriginalArrivalTime: 22 Sep 2011 02:54:31.0121 (UTC)
+ FILETIME=[F3890410:01CC78D2]
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 22, 2011 at 4:19 AM, Tim Bird <tim.bird@am.sony.com> wrote:
-> This fixes a bug with setting a breakpoint during kdb initialization
-> (from kdb_cmds).  Any call to kdb_printf() before the initialization
-> of the kgdboc serial console driver (which happens much later during
-> bootup than kdb_init), results in kernel panic due to the use of
-> dbg_io_ops before it is initialized.
+This patch fixes clobbering oldval bug. oldval should be preserved for next
+compare operation.
+
+Change-Id: I2a63bc1bdb8de330eb9e1ac02d7da1f77e6e8c3c
+Signed-off-by: Minho Ban <mhban@samsung.com>
+---
+ arch/arm/include/asm/futex.h |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/include/asm/futex.h b/arch/arm/include/asm/futex.h
+index d2d733c..b0f2e8e 100644
+--- a/arch/arm/include/asm/futex.h
++++ b/arch/arm/include/asm/futex.h
+@@ -30,14 +30,14 @@
+ 	__asm__ __volatile__(					\
+ 	"1:	ldrex	%1, [%2]\n"				\
+ 	"	" insn "\n"					\
+-	"2:	strex	%1, %0, [%2]\n"				\
+-	"	teq	%1, #0\n"				\
++	"2:	strex	r5, %0, [%2]\n"				\
++	"	teq	r5, #0\n"				\
+ 	"	bne	1b\n"					\
+ 	"	mov	%0, #0\n"				\
+ 	__futex_atomic_ex_table("%4")				\
+ 	: "=&r" (ret), "=&r" (oldval)				\
+ 	: "r" (uaddr), "r" (oparg), "Ir" (-EFAULT)		\
+-	: "cc", "memory")
++	: "r5", "cc", "memory")
+ 
+ static inline int
+ futex_atomic_cmpxchg_inatomic(u32 *uval, u32 __user *uaddr,
+-- 
+1.7.0.4
 
 
-Did you get the panic for that case?
-
-Dongdong
-
-
->
-> Signed-off-by: Tim Bird <tim.bird@am.sony.com>
-> ---
->  kernel/debug/kdb/kdb_io.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/kernel/debug/kdb/kdb_io.c b/kernel/debug/kdb/kdb_io.c
-> index c9b7f4f..3bc995f 100644
-> --- a/kernel/debug/kdb/kdb_io.c
-> +++ b/kernel/debug/kdb/kdb_io.c
-> @@ -675,7 +675,7 @@ kdb_printit:
->        if (!dbg_kdb_mode && kgdb_connected) {
->                gdbstub_msg_write(kdb_buffer, retlen);
->        } else {
-> -               if (!dbg_io_ops->is_console) {
-> +               if (dbg_io_ops && !dbg_io_ops->is_console) {
->                        len = strlen(kdb_buffer);
->                        cp = kdb_buffer;
->                        while (len--) {
-> --
-> 1.7.2.3
->
->
->
-> ------------------------------------------------------------------------------
-> All the data continuously generated in your IT infrastructure contains a
-> definitive record of customers, application performance, security
-> threats, fraudulent activity and more. Splunk takes this data and makes
-> sense of it. Business sense. IT sense. Common sense.
-> http://p.sf.net/sfu/splunk-d2dcopy1
-> _______________________________________________
-> Kgdb-bugreport mailing list
-> Kgdb-bugreport@lists.sourceforge.net
-> https://lists.sourceforge.net/lists/listinfo/kgdb-bugreport
->
