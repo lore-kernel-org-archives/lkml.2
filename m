@@ -1,136 +1,610 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754214Ab1IVWaR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 18:30:17 -0400
-Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:47442 "EHLO
-	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754099Ab1IVWaN (ORCPT
+	id S1754391Ab1IVWax (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 18:30:53 -0400
+Received: from na3sys009aog123.obsmtp.com ([74.125.149.149]:44415 "EHLO
+	na3sys009aog123.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754186Ab1IVWat (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 18:30:13 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: Abhilash K V <abhilash.kv@ti.com>
-Cc: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <tony@atomide.com>,
-        <linux@arm.linux.org.uk>, <sameo@linux.intel.com>,
-        <santosh.shilimkar@ti.com>, <premi@ti.com>,
-        <david.woodhouse@intel.com>, <christian.gmeiner@gmail.com>
-Subject: Re: [PATCH v3 1/3] AM35x: voltage: Basic initialization
-Organization: Texas Instruments, Inc.
-References: <1316698155-954-1-git-send-email-abhilash.kv@ti.com>
-	<1316698155-954-2-git-send-email-abhilash.kv@ti.com>
-Date: Thu, 22 Sep 2011 15:30:07 -0700
-In-Reply-To: <1316698155-954-2-git-send-email-abhilash.kv@ti.com> (Abhilash
-	K. V.'s message of "Thu, 22 Sep 2011 18:59:13 +0530")
-Message-ID: <877h50p5w0.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Thu, 22 Sep 2011 18:30:49 -0400
+From: Mike Turquette <mturquette@ti.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, jeremy.kerr@canonical.com,
+        broonie@opensource.wolfsonmicro.com, tglx@linutronix.de,
+        linus.walleij@stericsson.com, amit.kucheria@linaro.org,
+        dsaxena@linaro.org, patches@linaro.org, linaro-dev@lists.linaro.org,
+        paul@pwsan.com, grant.likely@secretlab.ca, sboyd@quiinc.com,
+        shawn.guo@freescale.com, skannan@quicinc.com, magnus.damm@gmail.com,
+        arnd.bergmann@linaro.org, linux@arm.linux.org.uk, eric.miao@linaro.org,
+        richard.zhao@linaro.org, Mike Turquette <mturquette@ti.com>
+Subject: [PATCH v2 1/7] clk: Add a generic clock infrastructure
+Date: Thu, 22 Sep 2011 15:26:56 -0700
+Message-Id: <1316730422-20027-2-git-send-email-mturquette@ti.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1316730422-20027-1-git-send-email-mturquette@ti.com>
+References: <1316730422-20027-1-git-send-email-mturquette@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Abhilash,
+From: Jeremy Kerr <jeremy.kerr@canonical.com>
 
-Abhilash K V <abhilash.kv@ti.com> writes:
+We currently have ~21 definitions of struct clk in the ARM architecture,
+each defined on a per-platform basis. This makes it difficult to define
+platform- (or architecture-) independent clock sources without making
+assumptions about struct clk, and impossible to compile two
+platforms with different struct clks into a single image.
 
-> This patch adds the basic initialization of voltage layer
-> for AM35x. Since AM35x doesn't support voltage scaling,
+This change is an effort to unify struct clk where possible, by defining
+a common struct clk, and a set of clock operations. Different clock
+implementations can set their own operations, and have a standard
+interface for generic code. The callback interface is exposed to the
+kernel proper, while the clock implementations only need to be seen by
+the platform internals.
 
-I must admit to still being confused by this series.  
+The interface is split into two halves:
 
-This patch says AM35x doesn't support voltage scaling, and the next
-patch adds PMIC support, and registers it with the voltage layer.
+ * struct clk, which is the generic-device-driver interface. This
+   provides a set of functions which drivers may use to request
+   enable/disable, query or manipulate in a hardware-independent manner.
 
-However, with each voltdm->scalable flag set to false, none of the PMIC
-values will ever be used (by the current voltage layer.)  Do you have
-more patches on top of this that extend the voltage layer to directly
-use the PMIC instead of using VC or VP?
+ * struct clk_hw and struct clk_hw_ops, which is the hardware-specific
+   interface. Clock drivers implement the ops, which allow the core
+   clock code to implement the generic 'struct clk' API.
 
-I'm assuming we have some more assumptions in our current voltage layer
-about the presence of VC/VP that are wrong and need to be fixed.  Now
-that the big voltage layer cleanup is done, I am *very* interested in
-getting rid of any more assumptions we have in that code about how
-devices are hooked up with PMICs.
+This allows us to share clock code among platforms, and makes it
+possible to dynamically create clock devices in platform-independent
+code.
 
-Can you summarize how these devices are using (or want to use) the
-voltage layer?
+Platforms can enable the generic struct clock through
+CONFIG_GENERIC_CLK. In this case, the clock infrastructure consists of a
+common, opaque struct clk, and a set of clock operations (defined per
+type of clock):
 
-Thanks,
+  struct clk_hw_ops {
+  	int		(*prepare)(struct clk_hw *);
+  	void		(*unprepare)(struct clk_hw *);
+  	int		(*enable)(struct clk_hw *);
+  	void		(*disable)(struct clk_hw *);
+  	unsigned long	(*recalc_rate)(struct clk_hw *);
+  	int		(*set_rate)(struct clk_hw *,
+  					unsigned long, unsigned long *);
+  	long		(*round_rate)(struct clk_hw *, unsigned long);
+  	int		(*set_parent)(struct clk_hw *, struct clk *);
+  	struct clk *	(*get_parent)(struct clk_hw *);
+  };
 
-Kevin
+Platform clock code can register a clock through clk_register, passing a
+set of operations, and a pointer to hardware-specific data:
 
-> Many functions have been defined to plug into existing
-> voltage layer.
->
-> Signed-off-by: Sanjeev Premi <premi@ti.com>
-> Signed-off-by: Abhilash K V <abhilash.kv@ti.com>
-> ---
->  arch/arm/mach-omap2/omap_opp_data.h           |    1 +
->  arch/arm/mach-omap2/opp3xxx_data.c            |    9 +++++++++
->  arch/arm/mach-omap2/voltagedomains3xxx_data.c |   10 ++++++++--
->  3 files changed, 18 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/arm/mach-omap2/omap_opp_data.h b/arch/arm/mach-omap2/omap_opp_data.h
-> index c784c12..c7cedf3 100644
-> --- a/arch/arm/mach-omap2/omap_opp_data.h
-> +++ b/arch/arm/mach-omap2/omap_opp_data.h
-> @@ -88,6 +88,7 @@ extern struct omap_volt_data omap34xx_vddmpu_volt_data[];
->  extern struct omap_volt_data omap34xx_vddcore_volt_data[];
->  extern struct omap_volt_data omap36xx_vddmpu_volt_data[];
->  extern struct omap_volt_data omap36xx_vddcore_volt_data[];
-> +extern struct omap_volt_data am35xx_vdd_volt_data[];
->  
->  extern struct omap_volt_data omap44xx_vdd_mpu_volt_data[];
->  extern struct omap_volt_data omap44xx_vdd_iva_volt_data[];
-> diff --git a/arch/arm/mach-omap2/opp3xxx_data.c b/arch/arm/mach-omap2/opp3xxx_data.c
-> index d95f3f9..e4a5ee6 100644
-> --- a/arch/arm/mach-omap2/opp3xxx_data.c
-> +++ b/arch/arm/mach-omap2/opp3xxx_data.c
-> @@ -85,6 +85,15 @@ struct omap_volt_data omap36xx_vddcore_volt_data[] = {
->  	VOLT_DATA_DEFINE(0, 0, 0, 0),
->  };
->  
-> +/* AM35x
-> + *
-> + * Fields related to SmartReflex and Voltage Processor are set to 0.
-> + */
+  struct clk_hw_foo {
+  	struct clk_hw clk;
+  	void __iomem *enable_reg;
+  };
 
-fix multi-line comment style (search for 'multi-line' in Documentation/CodingStyle)
+  #define to_clk_foo(c) offsetof(c, clk_hw_foo, clk)
 
-> +struct omap_volt_data am35xx_vdd_volt_data[] = {
-> +	VOLT_DATA_DEFINE(OMAP3430_VDD_MPU_OPP3_UV, 0x0, 0x0, 0x0),
-> +	VOLT_DATA_DEFINE(0, 0, 0, 0),
-> +};
-> +
->  /* OPP data */
->  
->  static struct omap_opp_def __initdata omap34xx_opp_def_list[] = {
-> diff --git a/arch/arm/mach-omap2/voltagedomains3xxx_data.c b/arch/arm/mach-omap2/voltagedomains3xxx_data.c
-> index 071101d..530082f 100644
-> --- a/arch/arm/mach-omap2/voltagedomains3xxx_data.c
-> +++ b/arch/arm/mach-omap2/voltagedomains3xxx_data.c
-> @@ -85,7 +85,10 @@ void __init omap3xxx_voltagedomains_init(void)
->  	 * XXX Will depend on the process, validation, and binning
->  	 * for the currently-running IC
->  	 */
-> -	if (cpu_is_omap3630()) {
-> +	if (cpu_is_omap3505() || cpu_is_omap3517()) {
-> +		omap3_voltdm_mpu.volt_data = am35xx_vdd_volt_data;
-> +		omap3_voltdm_core.volt_data = am35xx_vdd_volt_data;
-> +	} else if (cpu_is_omap3630()) {
->  		omap3_voltdm_mpu.volt_data = omap36xx_vddmpu_volt_data;
->  		omap3_voltdm_core.volt_data = omap36xx_vddcore_volt_data;
->  	} else {
-> @@ -93,8 +96,11 @@ void __init omap3xxx_voltagedomains_init(void)
->  		omap3_voltdm_core.volt_data = omap34xx_vddcore_volt_data;
->  	}
->  
-> -	for (i = 0; voltdm = voltagedomains_omap3[i], voltdm; i++)
-> +	for (i = 0; voltdm = voltagedomains_omap3[i], voltdm; i++) {
-> +		if (cpu_is_omap3505() || cpu_is_omap3517())
-> +			voltdm->scalable = false;
->  		voltdm->sys_clk.name = sys_clk_name;
-> +	}
->  
->  	voltdm_init(voltagedomains_omap3);
->  };
+  static int clk_foo_enable(struct clk_hw *clk)
+  {
+  	struct clk_foo *foo = to_clk_foo(clk);
+  	raw_writeb(foo->enable_reg, 1);
+  	return 0;
+  }
+
+  struct clk_hw_ops clk_foo_ops = {
+  	.enable = clk_foo_enable,
+  };
+
+And in the platform initialisation code:
+
+  struct clk_foo my_clk_foo;
+
+  void init_clocks(void)
+  {
+  	my_clk_foo.enable_reg = ioremap(...);
+
+  	clk_register(&clk_foo_ops, &my_clk_foo, NULL);
+  }
+
+Changes from Thomas Gleixner <tglx@linutronix.de>.
+
+The common clock definitions are based on a development patch from Ben
+Herrenschmidt <benh@kernel.crashing.org>.
+
+TODO:
+
+ * We don't keep any internal reference to the clock topology at present.
+
+Signed-off-by: Jeremy Kerr <jeremy.kerr@canonical.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Mike Turquette <mturquette@ti.com>
+---
+Changes since v1:
+Create a dummy clk_unregister and prototype/document it and clk_register
+Constify struct clk_hw_ops
+Remove spinlock.h header, include kernel.h
+Use EOPNOTSUPP instead of ENOTSUPP
+Add might_sleep to clk_prepare/clk_unprepare stubs
+Properly init children hlist and child_node
+Whitespace and typo fixes
+
+ drivers/clk/Kconfig  |    3 +
+ drivers/clk/Makefile |    1 +
+ drivers/clk/clk.c    |  232 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/clk/clkdev.c |    7 ++
+ include/linux/clk.h  |  140 +++++++++++++++++++++++++++---
+ 5 files changed, 371 insertions(+), 12 deletions(-)
+ create mode 100644 drivers/clk/clk.c
+
+diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
+index 3530927..c53ed59 100644
+--- a/drivers/clk/Kconfig
++++ b/drivers/clk/Kconfig
+@@ -5,3 +5,6 @@ config CLKDEV_LOOKUP
+ 
+ config HAVE_MACH_CLKDEV
+ 	bool
++
++config GENERIC_CLK
++	bool
+diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+index 07613fa..570d5b9 100644
+--- a/drivers/clk/Makefile
++++ b/drivers/clk/Makefile
+@@ -1,2 +1,3 @@
+ 
+ obj-$(CONFIG_CLKDEV_LOOKUP)	+= clkdev.o
++obj-$(CONFIG_GENERIC_CLK)	+= clk.o
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+new file mode 100644
+index 0000000..1cd7315
+--- /dev/null
++++ b/drivers/clk/clk.c
+@@ -0,0 +1,232 @@
++/*
++ * Copyright (C) 2010-2011 Canonical Ltd <jeremy.kerr@canonical.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * Standard functionality for the common clock API.
++ */
++
++#include <linux/clk.h>
++#include <linux/module.h>
++#include <linux/mutex.h>
++#include <linux/slab.h>
++#include <linux/spinlock.h>
++
++struct clk {
++	const char		*name;
++	const struct clk_hw_ops	*ops;
++	struct clk_hw		*hw;
++	unsigned int		enable_count;
++	unsigned int		prepare_count;
++	struct clk		*parent;
++	unsigned long		rate;
++};
++
++static DEFINE_SPINLOCK(enable_lock);
++static DEFINE_MUTEX(prepare_lock);
++
++static void __clk_unprepare(struct clk *clk)
++{
++	if (!clk)
++		return;
++
++	if (WARN_ON(clk->prepare_count == 0))
++		return;
++
++	if (--clk->prepare_count > 0)
++		return;
++
++	WARN_ON(clk->enable_count > 0);
++
++	if (clk->ops->unprepare)
++		clk->ops->unprepare(clk->hw);
++
++	__clk_unprepare(clk->parent);
++}
++
++void clk_unprepare(struct clk *clk)
++{
++	mutex_lock(&prepare_lock);
++	__clk_unprepare(clk);
++	mutex_unlock(&prepare_lock);
++}
++EXPORT_SYMBOL_GPL(clk_unprepare);
++
++static int __clk_prepare(struct clk *clk)
++{
++	int ret = 0;
++
++	if (!clk)
++		return 0;
++
++	if (clk->prepare_count == 0) {
++		ret = __clk_prepare(clk->parent);
++		if (ret)
++			return ret;
++
++		if (clk->ops->prepare) {
++			ret = clk->ops->prepare(clk->hw);
++			if (ret) {
++				__clk_unprepare(clk->parent);
++				return ret;
++			}
++		}
++	}
++
++	clk->prepare_count++;
++
++	return 0;
++}
++
++int clk_prepare(struct clk *clk)
++{
++	int ret;
++
++	mutex_lock(&prepare_lock);
++	ret = __clk_prepare(clk);
++	mutex_unlock(&prepare_lock);
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(clk_prepare);
++
++static void __clk_disable(struct clk *clk)
++{
++	if (!clk)
++		return;
++
++	if (WARN_ON(clk->enable_count == 0))
++		return;
++
++	if (--clk->enable_count > 0)
++		return;
++
++	if (clk->ops->disable)
++		clk->ops->disable(clk->hw);
++	__clk_disable(clk->parent);
++}
++
++void clk_disable(struct clk *clk)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&enable_lock, flags);
++	__clk_disable(clk);
++	spin_unlock_irqrestore(&enable_lock, flags);
++}
++EXPORT_SYMBOL_GPL(clk_disable);
++
++static int __clk_enable(struct clk *clk)
++{
++	int ret;
++
++	if (!clk)
++		return 0;
++
++	if (WARN_ON(clk->prepare_count == 0))
++		return -ESHUTDOWN;
++
++
++	if (clk->enable_count == 0) {
++		ret = __clk_enable(clk->parent);
++		if (ret)
++			return ret;
++
++		if (clk->ops->enable) {
++			ret = clk->ops->enable(clk->hw);
++			if (ret) {
++				__clk_disable(clk->parent);
++				return ret;
++			}
++		}
++	}
++
++	clk->enable_count++;
++	return 0;
++}
++
++int clk_enable(struct clk *clk)
++{
++	unsigned long flags;
++	int ret;
++
++	spin_lock_irqsave(&enable_lock, flags);
++	ret = __clk_enable(clk);
++	spin_unlock_irqrestore(&enable_lock, flags);
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(clk_enable);
++
++unsigned long clk_get_rate(struct clk *clk)
++{
++	if (!clk)
++		return 0;
++	return clk->rate;
++}
++EXPORT_SYMBOL_GPL(clk_get_rate);
++
++long clk_round_rate(struct clk *clk, unsigned long rate)
++{
++	if (clk && clk->ops->round_rate)
++		return clk->ops->round_rate(clk->hw, rate);
++	return rate;
++}
++EXPORT_SYMBOL_GPL(clk_round_rate);
++
++int clk_set_rate(struct clk *clk, unsigned long rate)
++{
++	/* not yet implemented */
++	return -ENOSYS;
++}
++EXPORT_SYMBOL_GPL(clk_set_rate);
++
++struct clk *clk_get_parent(struct clk *clk)
++{
++	if (!clk)
++		return NULL;
++
++	return clk->parent;
++}
++EXPORT_SYMBOL_GPL(clk_get_parent);
++
++int clk_set_parent(struct clk *clk, struct clk *parent)
++{
++	/* not yet implemented */
++	return -ENOSYS;
++}
++EXPORT_SYMBOL_GPL(clk_set_parent);
++
++struct clk *clk_register(const struct clk_hw_ops *ops, struct clk_hw *hw,
++		const char *name)
++{
++	struct clk *clk;
++
++	clk = kzalloc(sizeof(*clk), GFP_KERNEL);
++	if (!clk)
++		return NULL;
++
++	INIT_HLIST_HEAD(&clk->children);
++	INIT_HLIST_NODE(&clk->child_node);
++
++	clk->name = name;
++	clk->ops = ops;
++	clk->hw = hw;
++	hw->clk = clk;
++
++	/* Query the hardware for parent and initial rate */
++
++	if (clk->ops->get_parent)
++		/* We don't to lock against prepare/enable here, as
++		 * the clock is not yet accessible from anywhere */
++		clk->parent = clk->ops->get_parent(clk->hw);
++
++	if (clk->ops->recalc_rate)
++		clk->rate = clk->ops->recalc_rate(clk->hw);
++
++
++	return clk;
++}
++EXPORT_SYMBOL_GPL(clk_register);
+diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
+index 6db161f..e2a9719 100644
+--- a/drivers/clk/clkdev.c
++++ b/drivers/clk/clkdev.c
+@@ -23,6 +23,13 @@
+ static LIST_HEAD(clocks);
+ static DEFINE_MUTEX(clocks_mutex);
+ 
++/* For USE_COMMON_STRUCT_CLK, these are provided in clk.c, but not exported
++ * through other headers; we don't want them used anywhere but here. */
++#ifdef CONFIG_USE_COMMON_STRUCT_CLK
++extern int __clk_get(struct clk *clk);
++extern void __clk_put(struct clk *clk);
++#endif
++
+ /*
+  * Find the correct struct clk for the device and connection ID.
+  * We do slightly fuzzy matching here:
+diff --git a/include/linux/clk.h b/include/linux/clk.h
+index 1d37f42..d6ae10b 100644
+--- a/include/linux/clk.h
++++ b/include/linux/clk.h
+@@ -3,6 +3,7 @@
+  *
+  *  Copyright (C) 2004 ARM Limited.
+  *  Written by Deep Blue Solutions Limited.
++ *  Copyright (c) 2010-2011 Jeremy Kerr <jeremy.kerr@canonical.com>
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 as
+@@ -11,17 +12,137 @@
+ #ifndef __LINUX_CLK_H
+ #define __LINUX_CLK_H
+ 
++#include <linux/kernel.h>
++#include <linux/errno.h>
++
+ struct device;
+ 
+-/*
+- * The base API.
++struct clk;
++
++#ifdef CONFIG_GENERIC_CLK
++
++struct clk_hw {
++	struct clk *clk;
++};
++
++/**
++ * struct clk_hw_ops -  Callback operations for hardware clocks; these are to
++ * be provided by the clock implementation, and will be called by drivers
++ * through the clk_* API.
++ *
++ * @prepare:	Prepare the clock for enabling. This must not return until
++ *		the clock is fully prepared, and it's safe to call clk_enable.
++ *		This callback is intended to allow clock implementations to
++ *		do any initialisation that may sleep. Called with
++ *		prepare_lock held.
++ *
++ * @unprepare:	Release the clock from its prepared state. This will typically
++ *		undo any work done in the @prepare callback. Called with
++ *		prepare_lock held.
++ *
++ * @enable:	Enable the clock atomically. This must not return until the
++ *		clock is generating a valid clock signal, usable by consumer
++ *		devices. Called with enable_lock held. This function must not
++ *		sleep.
++ *
++ * @disable:	Disable the clock atomically. Called with enable_lock held.
++ *		This function must not sleep.
++ *
++ * @recalc_rate	Recalculate the rate of this clock, by quering hardware
++ *		and/or the clock's parent. Called with the global clock mutex
++ *		held. Optional, but recommended - if this op is not set,
++ *		clk_get_rate will return 0.
++ *
++ * @get_parent	Query the parent of this clock; for clocks with multiple
++ *		possible parents, query the hardware for the current
++ *		parent. Currently only called when the clock is first
++ *		registered.
++ *
++ * The clk_enable/clk_disable and clk_prepare/clk_unprepare pairs allow
++ * implementations to split any work between atomic (enable) and sleepable
++ * (prepare) contexts.  If a clock requires sleeping code to be turned on, this
++ * should be done in clk_prepare. Switching that will not sleep should be done
++ * in clk_enable.
++ *
++ * Typically, drivers will call clk_prepare when a clock may be needed later
++ * (eg. when a device is opened), and clk_enable when the clock is actually
++ * required (eg. from an interrupt). Note that clk_prepare *must* have been
++ * called before clk_enable.
+  */
++struct clk_hw_ops {
++	int		(*prepare)(struct clk_hw *);
++	void		(*unprepare)(struct clk_hw *);
++	int		(*enable)(struct clk_hw *);
++	void		(*disable)(struct clk_hw *);
++	unsigned long	(*recalc_rate)(struct clk_hw *);
++	long		(*round_rate)(struct clk_hw *, unsigned long);
++	struct clk *	(*get_parent)(struct clk_hw *);
++};
+ 
++/**
++ * clk_prepare - prepare clock for atomic enabling.
++ *
++ * @clk: The clock to prepare
++ *
++ * Do any possibly sleeping initialisation on @clk, allowing the clock to be
++ * later enabled atomically (via clk_enable). This function may sleep.
++ */
++int clk_prepare(struct clk *clk);
++
++/**
++ * clk_unprepare - release clock from prepared state
++ *
++ * @clk: The clock to release
++ *
++ * Do any (possibly sleeping) cleanup on clk. This function may sleep.
++ */
++void clk_unprepare(struct clk *clk);
++
++/**
++ * clk_register - register and initialize a new clock
++ *
++ * @ops: ops for the new clock
++ * @hw: struct clk_hw to be passed to the ops of the new clock
++ * @name: name to use for the new clock
++ *
++ * Register a new clock with the clk subsystem.  Returns either a
++ * struct clk for the new clock or a NULL pointer.
++ */
++struct clk *clk_register(const struct clk_hw_ops *ops, struct clk_hw *hw,
++			 const char *name);
++
++/**
++ * clk_unregister - remove a clock
++ *
++ * @clk: clock to unregister
++ *
++ * Remove a clock from the clk subsystem.  This is currently not
++ * implemented but is provided to allow unregistration code to be
++ * written in drivers ready for use when an implementation is
++ * provided.
++ */
++static inline int clk_unregister(struct clk *clk)
++{
++	return -EOPNOTSUPP;
++}
++
++#else /* !CONFIG_GENERIC_CLK */
+ 
+ /*
+- * struct clk - an machine class defined object / cookie.
++ * For !CONFIG_GENERIC_CLK, we don't enforce any atomicity
++ * requirements for clk_enable/clk_disable, so the prepare and unprepare
++ * functions are no-ops
+  */
+-struct clk;
++static inline int clk_prepare(struct clk *clk) {
++	might_sleep();
++	return 0;
++}
++
++static inline void clk_unprepare(struct clk *clk) {
++	might_sleep();
++}
++
++#endif /* !CONFIG_GENERIC_CLK */
+ 
+ /**
+  * clk_get - lookup and obtain a reference to a clock producer.
+@@ -67,6 +188,7 @@ void clk_disable(struct clk *clk);
+ /**
+  * clk_get_rate - obtain the current clock rate (in Hz) for a clock source.
+  *		  This is only valid once the clock source has been enabled.
++ *		  Returns zero if the clock rate is unknown.
+  * @clk: clock source
+  */
+ unsigned long clk_get_rate(struct clk *clk);
+@@ -83,12 +205,6 @@ unsigned long clk_get_rate(struct clk *clk);
+  */
+ void clk_put(struct clk *clk);
+ 
+-
+-/*
+- * The remaining APIs are optional for machine class support.
+- */
+-
+-
+ /**
+  * clk_round_rate - adjust a rate to the exact rate a clock can provide
+  * @clk: clock source
+@@ -97,7 +213,7 @@ void clk_put(struct clk *clk);
+  * Returns rounded clock rate in Hz, or negative errno.
+  */
+ long clk_round_rate(struct clk *clk, unsigned long rate);
+- 
++
+ /**
+  * clk_set_rate - set the clock rate for a clock source
+  * @clk: clock source
+@@ -106,7 +222,7 @@ long clk_round_rate(struct clk *clk, unsigned long rate);
+  * Returns success (0) or negative errno.
+  */
+ int clk_set_rate(struct clk *clk, unsigned long rate);
+- 
++
+ /**
+  * clk_set_parent - set the parent clock source for this clock
+  * @clk: clock source
+-- 
+1.7.4.1
+
