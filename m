@@ -1,248 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752573Ab1IVJAk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 05:00:40 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:63082 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752012Ab1IVJAf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 05:00:35 -0400
-Message-ID: <4E7AF9B8.4030500@cn.fujitsu.com>
-Date: Thu, 22 Sep 2011 17:02:48 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: [PATCH v4 03/11] KVM: x86: retry non-page-table writing instructions
-References: <4E7AF758.7060900@cn.fujitsu.com>
-In-Reply-To: <4E7AF758.7060900@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-09-22 16:59:12,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-09-22 16:59:13,
-	Serialize complete at 2011-09-22 16:59:13
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+	id S1752674Ab1IVJAt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 05:00:49 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:40391 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752012Ab1IVJAn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Sep 2011 05:00:43 -0400
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Cc: tglx@linutronix.de, yong.zhang0@gmail.com,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Torben Hohn <torbenh@gmx.de>
+Subject: [PATCH 07/55] h8300: irq: Remove IRQF_DISABLED
+Date: Thu, 22 Sep 2011 16:58:34 +0800
+Message-Id: <1316681962-8217-8-git-send-email-yong.zhang0@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1316681962-8217-1-git-send-email-yong.zhang0@gmail.com>
+References: <1316681962-8217-1-git-send-email-yong.zhang0@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the emulation is caused by #PF and it is non-page_table writing instruction,
-it means the VM-EXIT is caused by shadow page protected, we can zap the shadow
-page and retry this instruction directly
+Since commit [e58aa3d2: genirq: Run irq handlers with interrupts disabled],
+We run all interrupt handlers with interrupts disabled
+and we even check and yell when an interrupt handler
+returns with interrupts enabled (see commit [b738a50a:
+genirq: Warn when handler enables interrupts]).
 
-The idea is from Avi
+So now this flag is a NOOP and can be removed.
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
 ---
- arch/x86/include/asm/kvm_emulate.h |    1 +
- arch/x86/include/asm/kvm_host.h    |    5 ++++
- arch/x86/kvm/emulate.c             |    5 ++++
- arch/x86/kvm/mmu.c                 |   25 ++++++++++++++----
- arch/x86/kvm/x86.c                 |   47 ++++++++++++++++++++++++++++++++++++
- 5 files changed, 77 insertions(+), 6 deletions(-)
+ arch/h8300/kernel/timer/itu.c     |    2 +-
+ arch/h8300/kernel/timer/timer16.c |    2 +-
+ arch/h8300/kernel/timer/timer8.c  |    2 +-
+ arch/h8300/kernel/timer/tpu.c     |    2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm_emulate.h b/arch/x86/include/asm/kvm_emulate.h
-index a026507..9a4acf4 100644
---- a/arch/x86/include/asm/kvm_emulate.h
-+++ b/arch/x86/include/asm/kvm_emulate.h
-@@ -364,6 +364,7 @@ enum x86_intercept {
- #endif
+diff --git a/arch/h8300/kernel/timer/itu.c b/arch/h8300/kernel/timer/itu.c
+index a2ae5e9..21afa64 100644
+--- a/arch/h8300/kernel/timer/itu.c
++++ b/arch/h8300/kernel/timer/itu.c
+@@ -59,7 +59,7 @@ static irqreturn_t timer_interrupt(int irq, void *dev_id)
+ static struct irqaction itu_irq = {
+ 	.name		= "itu",
+ 	.handler	= timer_interrupt,
+-	.flags		= IRQF_DISABLED | IRQF_TIMER,
++	.flags		= IRQF_TIMER,
+ };
  
- int x86_decode_insn(struct x86_emulate_ctxt *ctxt, void *insn, int insn_len);
-+bool x86_page_table_writing_insn(struct x86_emulate_ctxt *ctxt);
- #define EMULATION_FAILED -1
- #define EMULATION_OK 0
- #define EMULATION_RESTART 1
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 6ab4241..27a25df 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -443,6 +443,9 @@ struct kvm_vcpu_arch {
+ static const int __initdata divide_rate[] = {1, 2, 4, 8};
+diff --git a/arch/h8300/kernel/timer/timer16.c b/arch/h8300/kernel/timer/timer16.c
+index ae0d381..3864531 100644
+--- a/arch/h8300/kernel/timer/timer16.c
++++ b/arch/h8300/kernel/timer/timer16.c
+@@ -54,7 +54,7 @@ static irqreturn_t timer_interrupt(int irq, void *dev_id)
+ static struct irqaction timer16_irq = {
+ 	.name		= "timer-16",
+ 	.handler	= timer_interrupt,
+-	.flags		= IRQF_DISABLED | IRQF_TIMER,
++	.flags		= IRQF_TIMER,
+ };
  
- 	cpumask_var_t wbinvd_dirty_mask;
+ static const int __initdata divide_rate[] = {1, 2, 4, 8};
+diff --git a/arch/h8300/kernel/timer/timer8.c b/arch/h8300/kernel/timer/timer8.c
+index 7a1533f..13617fb 100644
+--- a/arch/h8300/kernel/timer/timer8.c
++++ b/arch/h8300/kernel/timer/timer8.c
+@@ -74,7 +74,7 @@ static irqreturn_t timer_interrupt(int irq, void *dev_id)
+ static struct irqaction timer8_irq = {
+ 	.name		= "timer-8",
+ 	.handler	= timer_interrupt,
+-	.flags		= IRQF_DISABLED | IRQF_TIMER,
++	.flags		= IRQF_TIMER,
+ };
  
-+	unsigned long last_retry_eip;
-+	unsigned long last_retry_addr;
-+
- 	struct {
- 		bool halted;
- 		gfn_t gfns[roundup_pow_of_two(ASYNC_PF_PER_VCPU)];
-@@ -689,6 +692,7 @@ enum emulation_result {
- #define EMULTYPE_NO_DECODE	    (1 << 0)
- #define EMULTYPE_TRAP_UD	    (1 << 1)
- #define EMULTYPE_SKIP		    (1 << 2)
-+#define EMULTYPE_RETRY		    (1 << 3)
- int x86_emulate_instruction(struct kvm_vcpu *vcpu, unsigned long cr2,
- 			    int emulation_type, void *insn, int insn_len);
+ static const int __initdata divide_rate[] = {8, 64, 8192};
+diff --git a/arch/h8300/kernel/timer/tpu.c b/arch/h8300/kernel/timer/tpu.c
+index 2193a2e..aa5707e 100644
+--- a/arch/h8300/kernel/timer/tpu.c
++++ b/arch/h8300/kernel/timer/tpu.c
+@@ -63,7 +63,7 @@ static irqreturn_t timer_interrupt(int irq, void *dev_id)
+ static struct irqaction tpu_irq = {
+ 	.name		= "tpu",
+ 	.handler	= timer_interrupt,
+-	.flags		= IRQF_DISABLED | IRQF_TIMER,
++	.flags		= IRQF_TIMER,
+ };
  
-@@ -753,6 +757,7 @@ void kvm_mmu_flush_tlb(struct kvm_vcpu *vcpu);
- void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
- 		       const u8 *new, int bytes,
- 		       bool guest_initiated);
-+int kvm_mmu_unprotect_page(struct kvm *kvm, gfn_t gfn);
- int kvm_mmu_unprotect_page_virt(struct kvm_vcpu *vcpu, gva_t gva);
- void __kvm_mmu_free_some_pages(struct kvm_vcpu *vcpu);
- int kvm_mmu_load(struct kvm_vcpu *vcpu);
-diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index a10950a..8547958 100644
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -3702,6 +3702,11 @@ done:
- 	return (rc != X86EMUL_CONTINUE) ? EMULATION_FAILED : EMULATION_OK;
- }
- 
-+bool x86_page_table_writing_insn(struct x86_emulate_ctxt *ctxt)
-+{
-+	return ctxt->d & PageTable;
-+}
-+
- static bool string_insn_completed(struct x86_emulate_ctxt *ctxt)
- {
- 	/* The second termination condition only applies for REPE
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index b01afee..4e53d6b 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -1997,7 +1997,7 @@ void kvm_mmu_change_mmu_pages(struct kvm *kvm, unsigned int goal_nr_mmu_pages)
- 	kvm->arch.n_max_mmu_pages = goal_nr_mmu_pages;
- }
- 
--static int kvm_mmu_unprotect_page(struct kvm *kvm, gfn_t gfn)
-+int kvm_mmu_unprotect_page(struct kvm *kvm, gfn_t gfn)
- {
- 	struct kvm_mmu_page *sp;
- 	struct hlist_node *node;
-@@ -2006,7 +2006,7 @@ static int kvm_mmu_unprotect_page(struct kvm *kvm, gfn_t gfn)
- 
- 	pgprintk("%s: looking for gfn %llx\n", __func__, gfn);
- 	r = 0;
--
-+	spin_lock(&kvm->mmu_lock);
- 	for_each_gfn_indirect_valid_sp(kvm, sp, gfn, node) {
- 		pgprintk("%s: gfn %llx role %x\n", __func__, gfn,
- 			 sp->role.word);
-@@ -2014,8 +2014,11 @@ static int kvm_mmu_unprotect_page(struct kvm *kvm, gfn_t gfn)
- 		kvm_mmu_prepare_zap_page(kvm, sp, &invalid_list);
- 	}
- 	kvm_mmu_commit_zap_page(kvm, &invalid_list);
-+	spin_unlock(&kvm->mmu_lock);
-+
- 	return r;
- }
-+EXPORT_SYMBOL_GPL(kvm_mmu_unprotect_page);
- 
- static void mmu_unshadow(struct kvm *kvm, gfn_t gfn)
- {
-@@ -3697,9 +3700,8 @@ int kvm_mmu_unprotect_page_virt(struct kvm_vcpu *vcpu, gva_t gva)
- 
- 	gpa = kvm_mmu_gva_to_gpa_read(vcpu, gva, NULL);
- 
--	spin_lock(&vcpu->kvm->mmu_lock);
- 	r = kvm_mmu_unprotect_page(vcpu->kvm, gpa >> PAGE_SHIFT);
--	spin_unlock(&vcpu->kvm->mmu_lock);
-+
- 	return r;
- }
- EXPORT_SYMBOL_GPL(kvm_mmu_unprotect_page_virt);
-@@ -3720,10 +3722,18 @@ void __kvm_mmu_free_some_pages(struct kvm_vcpu *vcpu)
- 	kvm_mmu_commit_zap_page(vcpu->kvm, &invalid_list);
- }
- 
-+static bool is_mmio_page_fault(struct kvm_vcpu *vcpu, gva_t addr)
-+{
-+	if (vcpu->arch.mmu.direct_map || mmu_is_nested(vcpu))
-+		return vcpu_match_mmio_gpa(vcpu, addr);
-+
-+	return vcpu_match_mmio_gva(vcpu, addr);
-+}
-+
- int kvm_mmu_page_fault(struct kvm_vcpu *vcpu, gva_t cr2, u32 error_code,
- 		       void *insn, int insn_len)
- {
--	int r;
-+	int r, emulation_type = EMULTYPE_RETRY;
- 	enum emulation_result er;
- 
- 	r = vcpu->arch.mmu.page_fault(vcpu, cr2, error_code, false);
-@@ -3735,7 +3745,10 @@ int kvm_mmu_page_fault(struct kvm_vcpu *vcpu, gva_t cr2, u32 error_code,
- 		goto out;
- 	}
- 
--	er = x86_emulate_instruction(vcpu, cr2, 0, insn, insn_len);
-+	if (is_mmio_page_fault(vcpu, cr2))
-+		emulation_type = 0;
-+
-+	er = x86_emulate_instruction(vcpu, cr2, emulation_type, insn, insn_len);
- 
- 	switch (er) {
- 	case EMULATE_DONE:
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 6b37f18..727a6af 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -4814,6 +4814,50 @@ static bool reexecute_instruction(struct kvm_vcpu *vcpu, gva_t gva)
- 	return false;
- }
- 
-+static bool retry_instruction(struct x86_emulate_ctxt *ctxt,
-+			      unsigned long cr2,  int emulation_type)
-+{
-+	struct kvm_vcpu *vcpu = emul_to_vcpu(ctxt);
-+	unsigned long last_retry_eip, last_retry_addr, gpa = cr2;
-+
-+	last_retry_eip = vcpu->arch.last_retry_eip;
-+	last_retry_addr = vcpu->arch.last_retry_addr;
-+
-+	/*
-+	 * If the emulation is caused by #PF and it is non-page_table
-+	 * writing instruction, it means the VM-EXIT is caused by shadow
-+	 * page protected, we can zap the shadow page and retry this
-+	 * instruction directly.
-+	 *
-+	 * Note: if the guest uses a non-page-table modifying instruction
-+	 * on the PDE that points to the instruction, then we will unmap
-+	 * the instruction and go to an infinite loop. So, we cache the
-+	 * last retried eip and the last fault address, if we meet the eip
-+	 * and the address again, we can break out of the potential infinite
-+	 * loop.
-+	 */
-+	vcpu->arch.last_retry_eip = vcpu->arch.last_retry_addr = 0;
-+
-+	if (!(emulation_type & EMULTYPE_RETRY))
-+		return false;
-+
-+	if (x86_page_table_writing_insn(ctxt))
-+		return false;
-+
-+	if (ctxt->eip == last_retry_eip && last_retry_addr == cr2)
-+		return false;
-+
-+	vcpu->arch.last_retry_eip = ctxt->eip;
-+	vcpu->arch.last_retry_addr = cr2;
-+
-+	if (!vcpu->arch.mmu.direct_map)
-+		gpa = kvm_mmu_gva_to_gpa_write(vcpu, cr2, NULL);
-+
-+	kvm_mmu_unprotect_page(vcpu->kvm, gpa >> PAGE_SHIFT);
-+
-+	return true;
-+}
-+
- int x86_emulate_instruction(struct kvm_vcpu *vcpu,
- 			    unsigned long cr2,
- 			    int emulation_type,
-@@ -4855,6 +4899,9 @@ int x86_emulate_instruction(struct kvm_vcpu *vcpu,
- 		return EMULATE_DONE;
- 	}
- 
-+	if (retry_instruction(ctxt, cr2, emulation_type))
-+		return EMULATE_DONE;
-+
- 	/* this is needed for vmware backdoor interface to work since it
- 	   changes registers values  during IO operation */
- 	if (vcpu->arch.emulate_regs_need_sync_from_vcpu) {
+ static const int __initdata divide_rate[] = {
 -- 
-1.7.5.4
+1.7.4.1
 
