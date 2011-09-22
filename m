@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751334Ab1IVPX6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 11:23:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51516 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750736Ab1IVPX4 (ORCPT
+	id S1751115Ab1IVP2f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 11:28:35 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:58624 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750948Ab1IVP2b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 11:23:56 -0400
-Date: Thu, 22 Sep 2011 10:23:46 -0500
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, richard@nod.at,
-        Andrew Morton <akpm@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>,
-        serge@hallyn.com
-Subject: Re: [PATCH] user namespace: make signal.c respect user namespaces
-Message-ID: <20110922152346.GA18731@peqn>
-References: <20110919214531.GA18085@sergelap>
- <20110920174849.GB22317@redhat.com>
- <20110920185354.GA19629@sergelap>
- <20110921175357.GA25590@redhat.com>
+	Thu, 22 Sep 2011 11:28:31 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH] i2c/tegra: I2C driver uses the suspend_noirq/resume_noirq
+Date: Thu, 22 Sep 2011 17:28:08 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Ben Dooks <ben-linux@fluff.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Dilan Lee <dilee@nvidia.com>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Colin Cross <ccross@google.com>
+References: <1312586102-27907-1-git-send-email-swarren@nvidia.com> <74CDBE0F657A3D45AFBB94109FB122FF04B3279D4F@HQMAIL01.nvidia.com> <74CDBE0F657A3D45AFBB94109FB122FF04B73215C9@HQMAIL01.nvidia.com>
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF04B73215C9@HQMAIL01.nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110921175357.GA25590@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201109221728.09063.arnd@arndb.de>
+X-Provags-ID: V02:K0:y8yxH2+Q+IdQk9YAucltxaNKR7Lq4uytwVIHt8wpWln
+ ovGbxO1R00F+gG/Wx/csQruGdUBFDzfu449IJrVTGjpgsIQB5T
+ vaDgo3zMSsZPFP7yrbzR+EbBYleRu4N6OasmcWwVhT2g3lBYGW
+ 8NvHpQt7CxPd4sObsxMDAyKhZNlQwN5P9pSzdHYJAxNvrOtgWU
+ 3iKottFJ23plMtabrWVOHAZ6gFNBuGtVPfmygjBMdR+3fjvbZ6
+ Zd1rBrg8h2+uF2qg5UEPKVVrrKelP6M0+UT+k6zCR04S7XOn2m
+ GDi+fcEI7s1E2lEwZ9Sj7rNWh3fP4qVE6QGc5sPzSSlF4kPDcX
+ 7BYcPTeGizljSC3LOtj4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Oleg Nesterov (oleg@redhat.com):
-> On 09/20, Serge E. Hallyn wrote:
-> >
-> > Quoting Oleg Nesterov (oleg@redhat.com):
-> > > On 09/19, Serge E. Hallyn wrote:
-> > > >
-> > > > __send_signal: convert the uid being sent in SI_USER to the target task's
-> > > > user namespace.
-> > > >
-> > > > do_notify_parent and do_notify_parent_cldstop: map task's uid to parent's
-> > > >  user namespace
-> > > >
-> > > > ptrace_signal: map parent's uid into current's user namespace before
-> > > > including in signal to current.
-> > >
-> > > Btw, what about the other users of ->si_uid? Say, kill() or tkill().
-> >
-> > Well, they end up calling __send_signal().
+On Tuesday 20 September 2011, Stephen Warren wrote:
+> Stephen Warren wrote at Tuesday, August 30, 2011 10:25 AM:
+> > Ben, Arnd,
+> > 
+> > Could you please ack/nack the patch at the start of this thread for Colin;
+> > see below.
 > 
-> Sure. But your patch changes only the __send_signal(SEND_SIG_NOINFO).
-> Note that SEND_SIG_NOINFO is rarely used, and only by kernel.
+> Ben, can you please comment on the acceptability of this patch?
+> 
+> Or Arnd, did Mark's most recent explanation of the situation provide enough
+> context for you to ack/nak it?
+> 
 
-Ah, I was misreading.  I was mistakenly thinking tkill for instance was going
-to be handled by the SEND_SIG_NOINFO case.  I'll fix my patch, thanks!
+After looking through the discussion again, my feeling is that it's ok
+and I think that Mark's word should count more than mine anyway on this
+issue.
 
--serge
+If you think it helps, you can add my Acked-by, but this is really
+something for Ben to decide. Just resubmit the patch to Ben with an
+an updated changelog that summarises the discussion, in case
+Ben got bored already and put this mail thread into the ignore
+folder...
+
+	Arnd
