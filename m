@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751297Ab1IVPUq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 11:20:46 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45482 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750712Ab1IVPUn convert rfc822-to-8bit (ORCPT
+	id S1751334Ab1IVPX6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 11:23:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51516 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750736Ab1IVPX4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 11:20:43 -0400
-Subject: Re: rt14: strace ->  migrate_disable_atomic imbalance
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mike Galbraith <efault@gmx.de>
-Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Miklos Szeredi <miklos@szeredi.hu>, mingo <mingo@redhat.com>
-Date: Thu, 22 Sep 2011 17:20:20 +0200
-In-Reply-To: <1316700327.4831.2.camel@marge.simson.net>
-References: <alpine.LFD.2.02.1109101052340.2723@ionos>
-	 <1315737307.6544.1.camel@marge.simson.net>
-	 <1315817948.26517.16.camel@twins>
-	 <1315835562.6758.3.camel@marge.simson.net>
-	 <1315839187.6758.8.camel@marge.simson.net> <1315926499.5977.19.camel@twins>
-	 <1315927699.6445.6.camel@marge.simson.net> <1315930430.5977.21.camel@twins>
-	 <1316600230.6628.6.camel@marge.simson.net> <1316685640.31429.2.camel@twins>
-	 <1316692534.6284.46.camel@marge.simson.net>
-	 <1316693391.31429.12.camel@twins>
-	 <1316698943.6348.8.camel@marge.simson.net>
-	 <1316700327.4831.2.camel@marge.simson.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1316704820.31429.26.camel@twins>
-Mime-Version: 1.0
+	Thu, 22 Sep 2011 11:23:56 -0400
+Date: Thu, 22 Sep 2011 10:23:46 -0500
+From: Serge Hallyn <serge.hallyn@canonical.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, richard@nod.at,
+        Andrew Morton <akpm@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>,
+        serge@hallyn.com
+Subject: Re: [PATCH] user namespace: make signal.c respect user namespaces
+Message-ID: <20110922152346.GA18731@peqn>
+References: <20110919214531.GA18085@sergelap>
+ <20110920174849.GB22317@redhat.com>
+ <20110920185354.GA19629@sergelap>
+ <20110921175357.GA25590@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110921175357.GA25590@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-09-22 at 16:05 +0200, Mike Galbraith wrote:
-> > strace ./jitter -c 3 -p 99 -f 1000 -t 10 -r
-> > 
+Quoting Oleg Nesterov (oleg@redhat.com):
+> On 09/20, Serge E. Hallyn wrote:
+> >
+> > Quoting Oleg Nesterov (oleg@redhat.com):
+> > > On 09/19, Serge E. Hallyn wrote:
+> > > >
+> > > > __send_signal: convert the uid being sent in SI_USER to the target task's
+> > > > user namespace.
+> > > >
+> > > > do_notify_parent and do_notify_parent_cldstop: map task's uid to parent's
+> > > >  user namespace
+> > > >
+> > > > ptrace_signal: map parent's uid into current's user namespace before
+> > > > including in signal to current.
+> > >
+> > > Btw, what about the other users of ->si_uid? Say, kill() or tkill().
+> >
+> > Well, they end up calling __send_signal().
+> 
+> Sure. But your patch changes only the __send_signal(SEND_SIG_NOINFO).
+> Note that SEND_SIG_NOINFO is rarely used, and only by kernel.
 
-> I thought it was RT specific, but it's not after all, a 3.0.4 distro
-> desktop (preempt) kernel did the same after a bit. 
+Ah, I was misreading.  I was mistakenly thinking tkill for instance was going
+to be handled by the SEND_SIG_NOINFO case.  I'll fix my patch, thanks!
 
-I can't reproduce on a recent -tip, could be my machine, could be -tip,
-let me try more.
+-serge
