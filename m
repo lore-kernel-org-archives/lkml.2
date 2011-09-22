@@ -1,104 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753218Ab1IVR5O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 13:57:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20685 "EHLO mx1.redhat.com"
+	id S1753101Ab1IVR6M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 13:58:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51264 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751370Ab1IVR5N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 13:57:13 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: jens.axboe@fusionio.com
-Cc: linux-kernel@vger.kernel.org
-Subject: blk_classic tracing horribly broken
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Thu, 22 Sep 2011 13:57:11 -0400
-Message-ID: <x491uv8h348.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1752691Ab1IVR6H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Sep 2011 13:58:07 -0400
+Date: Thu, 22 Sep 2011 10:36:18 -0700
+From: Greg KH <gregkh@suse.de>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: Re: Hyper-V TODO file
+Message-ID: <20110922173618.GA5624@suse.de>
+References: <1316708240-25048-1-git-send-email-kys@microsoft.com>
+ <20110922170450.GA4490@suse.de>
+ <6E21E5352C11B742B20C142EB499E048081E935D@TK5EX14MBXC124.redmond.corp.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6E21E5352C11B742B20C142EB499E048081E935D@TK5EX14MBXC124.redmond.corp.microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Sep 22, 2011 at 05:20:59PM +0000, KY Srinivasan wrote:
+> 
+> 
+> > -----Original Message-----
+> > From: Greg KH [mailto:gregkh@suse.de]
+> > Sent: Thursday, September 22, 2011 1:05 PM
+> > To: KY Srinivasan
+> > Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> > virtualization@lists.osdl.org
+> > Subject: Re: Hyper-V TODO file
+> > 
+> > On Thu, Sep 22, 2011 at 09:17:20AM -0700, K. Y. Srinivasan wrote:
+> > >
+> > > Greg,
+> > >
+> > > With your last checkin of the patches for Hyper-V, I have addressed all of
+> > > the issues you had raised as part of the vmbus audit. Should I send you a
+> > > patch to update the TODO file to reflect this. Let me know.
+> > 
+> > Yes, please send patches.
+> 
+> Thanks Greg. In addition to the patch to update the TODO file, do you want me to
+> send you patches for moving the vmbus and util driver out of staging as well.
 
-I've stared at the code for a while, and I've come up empty.  Would
-anyone care to take a stab at fixing this?
+No, I'll do that if we agree that it is ready to do so.
 
-To reproduce:
+thanks,
 
-mount -t debugfs none /sys/kernel/debug
-cd /sys/kernel/debug/tracing
-echo blk > current_tracer
-echo 1 > events/block/enable
-echo 1 > options/blk_classic
-echo 1 > tracing_on
-
-dd if=/dev/<device> of=/dev/null bs=1M count=1 iflag=direct
-cat trace
-
-This is what I see:
-
-# tracer: blk
-#
-# DEV   CPU TIMESTAMP     PID ACT FLG
-#  |     |     |           |   |   |
-Unknown action 52
-Unknown action 52
-Unknown action bce
-Unknown action 52
-Unknown action 52
-Unknown action 52
-Unknown action 52
-Unknown action 52
-Unknown action 52
-Unknown action 0
-Unknown action 0
-Unknown action 0
-Unknown action 0
-Unknown action 0
-Unknown action 0
-Unknown action 0
-Unknown action 0
-Unknown action 0
-Unknown action 0
-Unknown action 0
-Unknown action 0
-Unknown action 0
-  0,0    2   110.941937315  2584  F   R [pgrep]
-Unknown action 52
-Unknown action 52
-Unknown action 231
-Unknown action 0
-Unknown action 0
-Unknown action 0
-Unknown action 0
-  0,0    0   110.949383287  2584  F   R [pgrep]
-Unknown action 52
-Unknown action 52
-Unknown action 7fd1
-Unknown action 0
-Unknown action 0
-Unknown action 0
-Unknown action 0
-  0,0    3   110.984565328  2581  F   R [ps]
-Unknown action 52
-Unknown action 52
-Unknown action 5ad1
-Unknown action 0
-Unknown action 0
-Unknown action 0
-Unknown action 0
-  0,0    3   111.003843579  2581  F   R [ps]
-Unknown action 52
-Unknown action 52
-Unknown action 7551
-Unknown action 0
-Unknown action 0
-Unknown action 0
-Unknown action 0
-
-Cheers,
-Jeff
+greg k-h
