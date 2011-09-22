@@ -1,94 +1,343 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753986Ab1IVU6V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 16:58:21 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:7947 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753908Ab1IVU52 (ORCPT
+	id S1754017Ab1IVVGe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 17:06:34 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:51563
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753958Ab1IVVGY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 16:57:28 -0400
-From: Colin Cross <ccross@android.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Colin Cross <ccross@android.com>
-Subject: [PATCH 1/3] fs: seq_file: add seq_reserve
-Date: Thu, 22 Sep 2011 13:57:07 -0700
-Message-Id: <1316725029-22737-2-git-send-email-ccross@android.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1316725029-22737-1-git-send-email-ccross@android.com>
-References: <1316725029-22737-1-git-send-email-ccross@android.com>
-X-System-Of-Record: true
+	Thu, 22 Sep 2011 17:06:24 -0400
+X-SpamScore: 7
+X-BigFish: VPS7(z5c5ozzz1202hzz8275bhz2fh668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPVD:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
+Message-ID: <4E7BA334.2050003@am.sony.com>
+Date: Thu, 22 Sep 2011 14:05:56 -0700
+From: Frank Rowand <frank.rowand@am.sony.com>
+Reply-To: <frank.rowand@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: <tglx@linutronix.de>, <linux-rt-users@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH V2] preempt-rt: allow immediate Magic SysRq output for PREEMPT_RT_FULL
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds a seq_reserve function to allow users of the seq_file interface to
-increase the initial size of the buffer.  Avoids repeated allocations and
-calls to the show function in cases where large buffers of known size are
-needed.
+Change from V1 to V2:  add drivers/tty/serial/8250.c
 
-Signed-off-by: Colin Cross <ccross@android.com>
+Add a CONFIG option to allow the output from Magic SysRq to be output
+immediately, even if this causes large latencies.
+
+If PREEMPT_RT_FULL, printk() will not try to acquire the console lock
+when interrupts or preemption are disabled.  If the console lock is
+not acquired the printk() output will be buffered, but will not be
+output immediately.  Some drivers call into the Magic SysRq code
+with interrupts or preemption disabled, so the output of Magic SysRq
+will be buffered instead of printing immediately if this option is
+not selected.
+
+Even with this option selected, Magic SysRq output will be delayed
+if the attempt to acquire the console lock fails.
+
+Signed-off-by: Frank Rowand <frank.rowand@am.sony.com>
 ---
- fs/seq_file.c            |   30 ++++++++++++++++++++++++++++++
- include/linux/seq_file.h |    1 +
- 2 files changed, 31 insertions(+), 0 deletions(-)
+ drivers/tty/serial/8250.c                   |    2 	1 +	1 -	0 !
+ drivers/tty/serial/bcm63xx_uart.c           |    2 	1 +	1 -	0 !
+ drivers/tty/serial/cpm_uart/cpm_uart_core.c |    2 	1 +	1 -	0 !
+ drivers/tty/serial/mfd.c                    |    2 	1 +	1 -	0 !
+ drivers/tty/serial/nwpserial.c              |    2 	1 +	1 -	0 !
+ drivers/tty/serial/omap-serial.c            |    2 	1 +	1 -	0 !
+ drivers/tty/serial/sunhv.c                  |    4 	2 +	2 -	0 !
+ drivers/tty/serial/sunsab.c                 |    2 	1 +	1 -	0 !
+ drivers/tty/serial/sunsu.c                  |    2 	1 +	1 -	0 !
+ drivers/tty/serial/sunzilog.c               |    2 	1 +	1 -	0 !
+ drivers/tty/serial/uartlite.c               |    2 	1 +	1 -	0 !
+ drivers/tty/serial/xilinx_uartps.c          |    2 	1 +	1 -	0 !
+ drivers/tty/sysrq.c                         |   23 	23 +	0 -	0 !
+ include/linux/kernel.h                      |    5 	5 +	0 -	0 !
+ kernel/printk.c                             |    4 	2 +	2 -	0 !
+ lib/Kconfig.debug                           |   22 	22 +	0 -	0 !
+ 16 files changed, 65 insertions(+), 15 deletions(-)
 
-diff --git a/fs/seq_file.c b/fs/seq_file.c
-index 05d6b0e..8d9778c 100644
---- a/fs/seq_file.c
-+++ b/fs/seq_file.c
-@@ -62,6 +62,36 @@ int seq_open(struct file *file, const struct seq_operations *op)
+Index: b/drivers/tty/sysrq.c
+===================================================================
+--- a/drivers/tty/sysrq.c
++++ b/drivers/tty/sysrq.c
+@@ -492,6 +492,23 @@ static void __sysrq_put_key_op(int key, 
+                 sysrq_key_table[i] = op_p;
  }
- EXPORT_SYMBOL(seq_open);
  
-+/**
-+ *	seq_reserve -	increase initial buffer for sequential file
-+ *	@m:	target buffer
-+ *	@size: size in bytes to reserve
-+ *
-+ *	seq_reserve() increases the initial size of the seq_file buffer.  Can
-+ *	be used to avoid future allocations and repeated calls to the show
-+ *	function for large buffers of known size.
-+ *	Returns 0 on success, or -ENOMEM if the buffer cannot be allocated.
-+ */
-+int seq_reserve(struct seq_file *m, size_t size)
++#ifdef CONFIG_MAGIC_SYSRQ_FORCE_PRINTK
++
++int sysrq_in_progress;
++
++static void set_sysrq_in_progress(int value)
 +{
-+	void *buf;
-+
-+	/* don't ask for more than the kmalloc() max size */
-+	if (size > KMALLOC_MAX_SIZE)
-+		size = KMALLOC_MAX_SIZE;
-+
-+	buf = kmalloc(size, GFP_KERNEL);
-+	if (!buf)
-+		return -ENOMEM;
-+
-+	kfree(m->buf);
-+	m->buf = buf;
-+	m->size = size;
-+
-+	return 0;
++	sysrq_in_progress = value;
 +}
-+EXPORT_SYMBOL(seq_reserve);
 +
- static int traverse(struct seq_file *m, loff_t offset)
++#else
++
++static void set_sysrq_in_progress(int value)
++{
++}
++
++#endif
++
+ void __handle_sysrq(int key, bool check_mask)
  {
- 	loff_t pos = 0, index;
-diff --git a/include/linux/seq_file.h b/include/linux/seq_file.h
-index 03c0232..ad93319 100644
---- a/include/linux/seq_file.h
-+++ b/include/linux/seq_file.h
-@@ -75,6 +75,7 @@ static inline void seq_commit(struct seq_file *m, int num)
+ 	struct sysrq_key_op *op_p;
+@@ -500,6 +517,9 @@ void __handle_sysrq(int key, bool check_
+ 	unsigned long flags;
  
- char *mangle_path(char *s, char *p, char *esc);
- int seq_open(struct file *, const struct seq_operations *);
-+int seq_reserve(struct seq_file *m, size_t size);
- ssize_t seq_read(struct file *, char __user *, size_t, loff_t *);
- loff_t seq_lseek(struct file *, loff_t, int);
- int seq_release(struct inode *, struct file *);
--- 
-1.7.4.1
+ 	spin_lock_irqsave(&sysrq_key_table_lock, flags);
++
++	set_sysrq_in_progress(1);
++
+ 	/*
+ 	 * Raise the apparent loglevel to maximum so that the sysrq header
+ 	 * is shown to provide the user with positive feedback.  We do not
+@@ -541,6 +561,9 @@ void __handle_sysrq(int key, bool check_
+ 		printk("\n");
+ 		console_loglevel = orig_log_level;
+ 	}
++
++	set_sysrq_in_progress(0);
++
+ 	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
+ }
+ 
+Index: b/include/linux/kernel.h
+===================================================================
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -327,6 +327,11 @@ unsigned long int_sqrt(unsigned long);
+ extern void bust_spinlocks(int yes);
+ extern void wake_up_klogd(void);
+ extern int oops_in_progress;		/* If set, an oops, panic(), BUG() or die() is in progress */
++#ifdef CONFIG_MAGIC_SYSRQ_FORCE_PRINTK
++extern int sysrq_in_progress;
++#else
++#define sysrq_in_progress 0
++#endif
+ extern int panic_timeout;
+ extern int panic_on_oops;
+ extern int panic_on_unrecovered_nmi;
+Index: b/kernel/printk.c
+===================================================================
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -831,8 +831,8 @@ static int console_trylock_for_printk(un
+ 	__releases(&logbuf_lock)
+ {
+ #ifdef CONFIG_PREEMPT_RT_FULL
+-	int lock = !early_boot_irqs_disabled && !irqs_disabled_flags(flags) &&
+-		!preempt_count();
++	int lock = (!early_boot_irqs_disabled && !irqs_disabled_flags(flags) &&
++		!preempt_count()) || sysrq_in_progress;
+ #else
+ 	int lock = 1;
+ #endif
+Index: b/drivers/tty/serial/bcm63xx_uart.c
+===================================================================
+--- a/drivers/tty/serial/bcm63xx_uart.c
++++ b/drivers/tty/serial/bcm63xx_uart.c
+@@ -722,7 +722,7 @@ static void bcm_console_write(struct con
+ 	if (port->sysrq) {
+ 		/* bcm_uart_interrupt() already took the lock */
+ 		locked = 0;
+-	} else if (oops_in_progress) {
++	} else if (oops_in_progress || sysrq_in_progress) {
+ 		locked = spin_trylock(&port->lock);
+ 	} else {
+ 		spin_lock(&port->lock);
+Index: b/drivers/tty/serial/cpm_uart/cpm_uart_core.c
+===================================================================
+--- a/drivers/tty/serial/cpm_uart/cpm_uart_core.c
++++ b/drivers/tty/serial/cpm_uart/cpm_uart_core.c
+@@ -1225,7 +1225,7 @@ static void cpm_uart_console_write(struc
+ {
+ 	struct uart_cpm_port *pinfo = &cpm_uart_ports[co->index];
+ 	unsigned long flags;
+-	int nolock = oops_in_progress;
++	int nolock = oops_in_progress || sysrq_in_progress;
+ 
+ 	if (unlikely(nolock)) {
+ 		local_irq_save(flags);
+Index: b/drivers/tty/serial/mfd.c
+===================================================================
+--- a/drivers/tty/serial/mfd.c
++++ b/drivers/tty/serial/mfd.c
+@@ -1118,7 +1118,7 @@ serial_hsu_console_write(struct console 
+ 	local_irq_save(flags);
+ 	if (up->port.sysrq)
+ 		locked = 0;
+-	else if (oops_in_progress) {
++	else if (oops_in_progress || sysrq_in_progress) {
+ 		locked = spin_trylock(&up->port.lock);
+ 	} else
+ 		spin_lock(&up->port.lock);
+Index: b/drivers/tty/serial/nwpserial.c
+===================================================================
+--- a/drivers/tty/serial/nwpserial.c
++++ b/drivers/tty/serial/nwpserial.c
+@@ -70,7 +70,7 @@ nwpserial_console_write(struct console *
+ 	unsigned long flags;
+ 	int locked = 1;
+ 
+-	if (oops_in_progress)
++	if (oops_in_progress || sysrq_in_progress)
+ 		locked = spin_trylock_irqsave(&up->port.lock, flags);
+ 	else
+ 		spin_lock_irqsave(&up->port.lock, flags);
+Index: b/drivers/tty/serial/omap-serial.c
+===================================================================
+--- a/drivers/tty/serial/omap-serial.c
++++ b/drivers/tty/serial/omap-serial.c
+@@ -949,7 +949,7 @@ serial_omap_console_write(struct console
+ 
+ 	if (up->port.sysrq)
+ 		locked = 0;
+-	else if (oops_in_progress)
++	else if (oops_in_progress || sysrq_in_progress)
+ 		locked = spin_trylock_irqsave(&up->port.lock, flags);
+ 	else
+ 		spin_lock_irqsave(&up->port.lock, flags);
+Index: b/drivers/tty/serial/sunhv.c
+===================================================================
+--- a/drivers/tty/serial/sunhv.c
++++ b/drivers/tty/serial/sunhv.c
+@@ -435,7 +435,7 @@ static void sunhv_console_write_paged(st
+ 	local_irq_save(flags);
+ 	if (port->sysrq) {
+ 		locked = 0;
+-	} else if (oops_in_progress) {
++	} else if (oops_in_progress || sysrq_in_progress) {
+ 		locked = spin_trylock(&port->lock);
+ 	} else
+ 		spin_lock(&port->lock);
+@@ -494,7 +494,7 @@ static void sunhv_console_write_bychar(s
+ 	local_irq_save(flags);
+ 	if (port->sysrq) {
+ 		locked = 0;
+-	} else if (oops_in_progress) {
++	} else if (oops_in_progress || sysrq_in_progress) {
+ 		locked = spin_trylock(&port->lock);
+ 	} else
+ 		spin_lock(&port->lock);
+Index: b/drivers/tty/serial/sunsab.c
+===================================================================
+--- a/drivers/tty/serial/sunsab.c
++++ b/drivers/tty/serial/sunsab.c
+@@ -852,7 +852,7 @@ static void sunsab_console_write(struct 
+ 	local_irq_save(flags);
+ 	if (up->port.sysrq) {
+ 		locked = 0;
+-	} else if (oops_in_progress) {
++	} else if (oops_in_progress || sysrq_in_progress) {
+ 		locked = spin_trylock(&up->port.lock);
+ 	} else
+ 		spin_lock(&up->port.lock);
+Index: b/drivers/tty/serial/sunsu.c
+===================================================================
+--- a/drivers/tty/serial/sunsu.c
++++ b/drivers/tty/serial/sunsu.c
+@@ -1297,7 +1297,7 @@ static void sunsu_console_write(struct c
+ 	local_irq_save(flags);
+ 	if (up->port.sysrq) {
+ 		locked = 0;
+-	} else if (oops_in_progress) {
++	} else if (oops_in_progress || sysrq_in_progress) {
+ 		locked = spin_trylock(&up->port.lock);
+ 	} else
+ 		spin_lock(&up->port.lock);
+Index: b/drivers/tty/serial/sunzilog.c
+===================================================================
+--- a/drivers/tty/serial/sunzilog.c
++++ b/drivers/tty/serial/sunzilog.c
+@@ -1204,7 +1204,7 @@ sunzilog_console_write(struct console *c
+ 	local_irq_save(flags);
+ 	if (up->port.sysrq) {
+ 		locked = 0;
+-	} else if (oops_in_progress) {
++	} else if (oops_in_progress || sysrq_in_progress) {
+ 		locked = spin_trylock(&up->port.lock);
+ 	} else
+ 		spin_lock(&up->port.lock);
+Index: b/drivers/tty/serial/uartlite.c
+===================================================================
+--- a/drivers/tty/serial/uartlite.c
++++ b/drivers/tty/serial/uartlite.c
+@@ -387,7 +387,7 @@ static void ulite_console_write(struct c
+ 	unsigned int ier;
+ 	int locked = 1;
+ 
+-	if (oops_in_progress) {
++	if (oops_in_progress || sysrq_in_progress) {
+ 		locked = spin_trylock_irqsave(&port->lock, flags);
+ 	} else
+ 		spin_lock_irqsave(&port->lock, flags);
+Index: b/drivers/tty/serial/xilinx_uartps.c
+===================================================================
+--- a/drivers/tty/serial/xilinx_uartps.c
++++ b/drivers/tty/serial/xilinx_uartps.c
+@@ -834,7 +834,7 @@ static void xuartps_console_write(struct
+ 	unsigned int imr;
+ 	int locked = 1;
+ 
+-	if (oops_in_progress)
++	if (oops_in_progress || sysrq_in_progress)
+ 		locked = spin_trylock_irqsave(&port->lock, flags);
+ 	else
+ 		spin_lock_irqsave(&port->lock, flags);
+Index: b/lib/Kconfig.debug
+===================================================================
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -62,6 +62,28 @@ config MAGIC_SYSRQ
+ 	  keys are documented in <file:Documentation/sysrq.txt>. Don't say Y
+ 	  unless you really know what this hack does.
+ 
++config MAGIC_SYSRQ_FORCE_PRINTK
++	bool "Force printk from Magic SysRq"
++	depends on MAGIC_SYSRQ && PREEMPT_RT_FULL
++	default n
++	help
++	  Allow the output from Magic SysRq to be output immediately, even if
++	  this causes large latencies.  This can cause performance problems
++	  for real-time processes.
++
++	  If PREEMPT_RT_FULL, printk() will not try to acquire the console lock
++	  when interrupts or preemption are disabled.  If the console lock is
++	  not acquired the printk() output will be buffered, but will not be
++	  output immediately.  Some drivers call into the Magic SysRq code
++	  with interrupts or preemption disabled, so the output of Magic SysRq
++	  will be buffered instead of printing immediately if this option is
++	  not selected.
++
++	  Even with this option selected, Magic SysRq output will be delayed
++	  if the attempt to acquire the console lock fails.
++
++	  Don't say Y unless you really know what this hack does.
++
+ config STRIP_ASM_SYMS
+ 	bool "Strip assembler-generated symbols during link"
+ 	default n
+Index: b/drivers/tty/serial/8250.c
+===================================================================
+--- a/drivers/tty/serial/8250.c
++++ b/drivers/tty/serial/8250.c
+@@ -2898,7 +2898,7 @@ serial8250_console_write(struct console 
+ 	if (unlikely(in_kdb_printk())) {
+ 		locked = 0;
+ 	} else {
+-		if (up->port.sysrq || oops_in_progress)
++		if (up->port.sysrq || oops_in_progress || sysrq_in_progress)
+ 			locked = spin_trylock_irqsave(&up->port.lock, flags);
+ 		else
+ 			spin_lock_irqsave(&up->port.lock, flags);
 
