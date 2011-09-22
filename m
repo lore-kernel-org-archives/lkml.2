@@ -1,40 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093Ab1IVVXf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 17:23:35 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:56277
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753911Ab1IVVXd (ORCPT
+	id S1754023Ab1IVVZV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 17:25:21 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:25911 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753911Ab1IVVZU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 17:23:33 -0400
-Date: Thu, 22 Sep 2011 17:23:28 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Colin Cross <ccross@android.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>
-Subject: Re: [PATCH 0/3] Replace kmalloc with vmalloc in seq_files
-Message-ID: <20110922212328.GA30679@infradead.org>
-References: <1316725029-22737-1-git-send-email-ccross@android.com>
+	Thu, 22 Sep 2011 17:25:20 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:date:
+	message-id:subject:from:to:cc:content-type:x-system-of-record;
+	b=T5tBWVlElLZJ7Hn9JqZl9qNAHonzolFVe5QCVapG58h7eOroi7qY9oRS+HorlwM3w
+	q9AnB4LhZ2B1WZxgsYG+g==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1316725029-22737-1-git-send-email-ccross@android.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <m2pqisjmtw.fsf@firstfloor.org>
+References: <20110922123128.GA9761@quad>
+	<m2pqisjmtw.fsf@firstfloor.org>
+Date: Thu, 22 Sep 2011 23:25:16 +0200
+Message-ID: <CABPqkBTPF0Tqj5BEWanuh5=VYWjY_NuSLx1gAjPr3o1sbJB-JQ@mail.gmail.com>
+Subject: Re: [PATCH] perf: make perf.data more self-descriptive (v5)
+From: Stephane Eranian <eranian@google.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
+        mingo@elte.hu, dsahern@gmail.com, robert.richter@amd.com
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 22, 2011 at 01:57:06PM -0700, Colin Cross wrote:
-> seq_files are often used for debugging data.  When the system is under
-> memory pressure, and dumping debugging data starts trying to allocate
-> large physically contiguous buffers, it often makes the problem worse.
+On Thu, Sep 22, 2011 at 11:20 PM, Andi Kleen <andi@firstfloor.org> wrote:
+> Stephane Eranian <eranian@google.com> writes:
+>
+>> The goal of this patch is to include more information
+>> about the host environment into the perf.data so it is
+>> more self-descriptive. Overtime, profiles are captured
+>> on various machines and it becomes hard to track what
+>> was recorded, on what machine and when.
+>
+> I read it near completely.
+>
+> The only weird thing were the .byte coded push/pops
+> in CPUID.
+>
+That's because it needs to compile for both 32 and 64
+bit ABIs. I cloned my code in libpfm4. Here is the
+comment I have in libpfm4:
+/*
+ * .byte 0x53 == push ebx. it's universal for 32 and 64 bit
+ * .byte 0x5b == pop ebx.
+ * Some gcc's (4.1.2 on Core2) object to pairing push/pop and ebx in
+64 bit mode.
+ * Using the opcode directly avoids this problem.
+ */
+But that may not be true anymore.
 
-Please fix the instances that you see issues with by using the full
-seq_file interface which was designed for his instead of the simplified
-"single" interface that is only designed for small amounts of data.
+> Also the /proc parser doesn't seem very robust,
+> e.g. strstr is not a good way to check for a field.
+>
+> And the code reading /proc lines with fgets should
+> likely use getline()
+>
+Good point, I will fix that.
 
+> Then the bswap code would be much nicer inside a macro.
+>
+> Other than that it looks good.
+>
+Thanks.
