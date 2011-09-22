@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753148Ab1IVJFK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 05:05:10 -0400
+	id S1753152Ab1IVJFV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 05:05:21 -0400
 Received: from mail-wy0-f174.google.com ([74.125.82.174]:33503 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753045Ab1IVJFF (ORCPT
+	with ESMTP id S1752783Ab1IVJFQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 05:05:05 -0400
+	Thu, 22 Sep 2011 05:05:16 -0400
 From: Yong Zhang <yong.zhang0@gmail.com>
 To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Cc: tglx@linutronix.de, yong.zhang0@gmail.com,
-        Jiri Slaby <jirislaby@gmail.com>,
-        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 36/55] drivers:misc:irq: Remove IRQF_DISABLED
-Date: Thu, 22 Sep 2011 16:59:03 +0800
-Message-Id: <1316681962-8217-37-git-send-email-yong.zhang0@gmail.com>
+Cc: tglx@linutronix.de, yong.zhang0@gmail.com, Chris Ball <cjb@laptop.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Ian Molton <ian@mnementh.co.uk>, Tony Lindgren <tony@atomide.com>,
+        Kishore Kadiyala <kishore.kadiyala@ti.com>,
+        Adrian Hunter <adrian.hunter@nokia.com>, Balaji T K <balajitk@ti.com>,
+        linux-omap@vger.kernel.org, linux-mmc@vger.kernel.org
+Subject: [PATCH 37/55] mmc: irq: Remove IRQF_DISABLED
+Date: Thu, 22 Sep 2011 16:59:04 +0800
+Message-Id: <1316681962-8217-38-git-send-email-yong.zhang0@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1316681962-8217-1-git-send-email-yong.zhang0@gmail.com>
 References: <1316681962-8217-1-git-send-email-yong.zhang0@gmail.com>
@@ -33,37 +34,50 @@ genirq: Warn when handler enables interrupts]).
 So now this flag is a NOOP and can be removed.
 
 Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+Acked-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 ---
- drivers/misc/arm-charlcd.c |    2 +-
- drivers/misc/phantom.c     |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/mmc/host/omap_hsmmc.c |    5 ++---
+ drivers/mmc/host/tmio_mmc.c   |    4 ++--
+ 2 files changed, 4 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/misc/arm-charlcd.c b/drivers/misc/arm-charlcd.c
-index fe8616a..c0688b03 100644
---- a/drivers/misc/arm-charlcd.c
-+++ b/drivers/misc/arm-charlcd.c
-@@ -297,7 +297,7 @@ static int __init charlcd_probe(struct platform_device *pdev)
- 	lcd->irq = platform_get_irq(pdev, 0);
- 	/* If no IRQ is supplied, we'll survive without it */
- 	if (lcd->irq >= 0) {
--		if (request_irq(lcd->irq, charlcd_interrupt, IRQF_DISABLED,
-+		if (request_irq(lcd->irq, charlcd_interrupt, 0,
- 				DRIVERNAME, lcd)) {
- 			ret = -EIO;
- 			goto out_no_irq;
-diff --git a/drivers/misc/phantom.c b/drivers/misc/phantom.c
-index 21b28fc..7f7c521 100644
---- a/drivers/misc/phantom.c
-+++ b/drivers/misc/phantom.c
-@@ -395,7 +395,7 @@ static int __devinit phantom_probe(struct pci_dev *pdev,
- 	iowrite32(0, pht->caddr + PHN_IRQCTL);
- 	ioread32(pht->caddr + PHN_IRQCTL); /* PCI posting */
- 	retval = request_irq(pdev->irq, phantom_isr,
--			IRQF_SHARED | IRQF_DISABLED, "phantom", pht);
-+			IRQF_SHARED, "phantom", pht);
- 	if (retval) {
- 		dev_err(&pdev->dev, "can't establish ISR\n");
- 		goto err_unmo;
+diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
+index 21e4a79..75c6395 100644
+--- a/drivers/mmc/host/omap_hsmmc.c
++++ b/drivers/mmc/host/omap_hsmmc.c
+@@ -2015,7 +2015,7 @@ static int __init omap_hsmmc_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	/* Request IRQ for MMC operations */
+-	ret = request_irq(host->irq, omap_hsmmc_irq, IRQF_DISABLED,
++	ret = request_irq(host->irq, omap_hsmmc_irq, 0,
+ 			mmc_hostname(mmc), host);
+ 	if (ret) {
+ 		dev_dbg(mmc_dev(host->mmc), "Unable to grab HSMMC IRQ\n");
+@@ -2043,8 +2043,7 @@ static int __init omap_hsmmc_probe(struct platform_device *pdev)
+ 	if ((mmc_slot(host).card_detect_irq)) {
+ 		ret = request_irq(mmc_slot(host).card_detect_irq,
+ 				  omap_hsmmc_cd_handler,
+-				  IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING
+-					  | IRQF_DISABLED,
++				  IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
+ 				  mmc_hostname(mmc), host);
+ 		if (ret) {
+ 			dev_dbg(mmc_dev(host->mmc),
+diff --git a/drivers/mmc/host/tmio_mmc.c b/drivers/mmc/host/tmio_mmc.c
+index 44a9668..a4ea102 100644
+--- a/drivers/mmc/host/tmio_mmc.c
++++ b/drivers/mmc/host/tmio_mmc.c
+@@ -88,8 +88,8 @@ static int __devinit tmio_mmc_probe(struct platform_device *pdev)
+ 	if (ret)
+ 		goto cell_disable;
+ 
+-	ret = request_irq(irq, tmio_mmc_irq, IRQF_DISABLED |
+-			  IRQF_TRIGGER_FALLING, dev_name(&pdev->dev), host);
++	ret = request_irq(irq, tmio_mmc_irq, IRQF_TRIGGER_FALLING,
++				dev_name(&pdev->dev), host);
+ 	if (ret)
+ 		goto host_remove;
+ 
 -- 
 1.7.4.1
 
