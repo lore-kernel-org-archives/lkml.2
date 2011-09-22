@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753519Ab1IVSNR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 14:13:17 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33503 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753013Ab1IVSNQ (ORCPT
+	id S1753516Ab1IVSOz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 14:14:55 -0400
+Received: from utopia.booyaka.com ([72.9.107.138]:38345 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752189Ab1IVSOy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 14:13:16 -0400
-Date: Thu, 22 Sep 2011 19:13:13 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Stephen Warren <swarren@nvidia.com>, Ben Dooks <ben-linux@fluff.org>,
-        Arnd Bergmann <arnd@arndb.de>, Colin Cross <ccross@google.com>,
-        Olof Johansson <olof@lixom.net>, Erik Gilling <konkers@android.com>,
-        linux-i2c@vger.kernel.org, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Dilan Lee <dilee@nvidia.com>
-Subject: Re: [PATCH v2] i2c-tegra: Use the suspend_noirq/resume_noirq not
- suspend/resume
-Message-ID: <20110922181313.GG5173@opensource.wolfsonmicro.com>
-References: <1316713892-357-1-git-send-email-swarren@nvidia.com>
- <20110922180335.GQ17168@ponder.secretlab.ca>
+	Thu, 22 Sep 2011 14:14:54 -0400
+Date: Thu, 22 Sep 2011 12:14:53 -0600 (MDT)
+From: Paul Walmsley <paul@pwsan.com>
+To: Keshava Munegowda <keshava_mgowda@ti.com>, parthab@india.ti.com
+cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, b-cousson@ti.com, balbi@ti.com,
+        gadiyar@ti.com, sameo@linux.intel.com, tony@atomide.com,
+        khilman@ti.com, johnstul@us.ibm.com, vishwanath.bs@ti.com
+Subject: Re: [PATCH 1/5 v11] arm: omap: usb: ehci and ohci hwmod structures
+ for omap4
+In-Reply-To: <1316691479-1849-2-git-send-email-keshava_mgowda@ti.com>
+Message-ID: <alpine.DEB.2.00.1109221213500.10719@utopia.booyaka.com>
+References: <1316691479-1849-1-git-send-email-keshava_mgowda@ti.com> <1316691479-1849-2-git-send-email-keshava_mgowda@ti.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110922180335.GQ17168@ponder.secretlab.ca>
-X-Cookie: You are always busy.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 22, 2011 at 12:03:35PM -0600, Grant Likely wrote:
-> On Thu, Sep 22, 2011 at 11:51:32AM -0600, Stephen Warren wrote:
+Hi
 
-> > * Implement an explicit dependency management system within the kernel for
-> >   device suspend/resume, such that I2C bus would not be suspended before
-> >   the sound card that requires it. It is reported that Linus rejected this
-> >   proposal since he wanted suspend ordering to be based on probe ordering.
+On Thu, 22 Sep 2011, Keshava Munegowda wrote:
 
-> This really should be revisted.  That was in the context of full
-> system suspend, but we're now in a world of runtime suspend which
-> absolutely does need dependency tracking or reference counting to get
-> the ordering right.
+> Following 4 hwmod structures are added
+> 1. usb_host_hs hwmod of usbhs with uhh base address and functional clock,
+> 2. usb_ehci_hs hwmod with irq and base address,
+> 3. usb_ohci_hs hwmod with irq and base address,
+>    - The ehci and ohci hwmods does not require functional clock
+>      because usb_host_hs has functional clock which is sufficient
+>      to access ehci and ohci address space.
+>    - The usb_ehci_hs and usb_ohci_hs should be two separate hwmods
+>      which should not be combined. This is needed because ehci and
+>      ohci will have separate dedicated ports & in omap4 there is a
+>      clock per port.We should be able to configure the IO-Wakeup
+>      capability of pins specific to EHCI & OHCI separately and depending
+>      on the I/O wakeup event  the  only port clocks corresponding
+>      to the wakeup source will be enabled internally by the usb host driver.
+> 
+> 4. usb_tll_hs hwmod of usbhs with the TLL base address and irq.
 
-FWIW this was one of the bigger issues in the PM miniconference in Santa
-Rosa, though a lot of the discission involved explaining the issues to
-some of the x86 guys and there wasn't mssive progress on solutions.
+Many of the same issues with the OMAP3 data (missing main_clks, missing 
+ADDR_TYPE_RT, etc.) exist with this patch also.
 
-> > * Enhance device probing such that the ASoC sound card device could defer
-> >   its probing until all required resources were available. This would
-> >   then cause the overall sound card suspend to occur at an appropriate early
-> >   time. Grant Likely was reported to have been working towards this goal.
 
-> Yes, I'll send you my current patch for you to look at.  One of the
-> engineers from Linaro is going to be pushing that patch set forward.
-> However, I don't know if it helps with this problem because I believe
-> that the suspend order is based on the implicit probe order of
-> devices, but my patch allows drivers to cause the probe order to get
-> rearranged at runtime.  I don't believe there is a global list showing
-> the order that devices successfully got probed, but I may be wrong
-> here.
-
-Yes, I'm not convinced it'll change anything here.  Though I guess it
-should be a simple matter of programming to move devices around the list
-depending on when they probe.
+- Paul
