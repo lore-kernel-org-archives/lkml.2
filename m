@@ -1,272 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752321Ab1IVQl4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 12:41:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37895 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750874Ab1IVQlz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 12:41:55 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [patch, v3] aio: allocate kiocbs in batches
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Thu, 22 Sep 2011 12:41:51 -0400
-Message-ID: <x4962kkh6ls.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1752632Ab1IVQq5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 12:46:57 -0400
+Received: from nm27-vm0.bullet.mail.ac4.yahoo.com ([98.139.52.244]:24142 "HELO
+	nm27-vm0.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751717Ab1IVQqz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Sep 2011 12:46:55 -0400
+X-Greylist: delayed 317 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Sep 2011 12:46:54 EDT
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 749472.7243.bm@omp1036.mail.ac4.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
+  b=ef6y4FxO7z5zros4QtTLCGqvxWj6zf/Lpo2uA7wue5svczKTQ8yLshtKzF1JpAfzD4AWZBXg6rqNp98kQBKV8BT55yymP27XwU0PRm86OuwwEd5Otb6Ma+amajCMzDV902j6TLxrpcfKFHUd/z+GLdBImFgRoHInKDrYbtAvOyc=;
+X-YMail-OSG: GB5W0VgVM1l2orODZFa.ybN33.RCJ3ooZQHdNwTJvnAIDY0
+ Z5aYIFHGmWsUGS2TE7FztXmOn2ZuojVoHPD8dMjOfTJ2CTX7Ex.7j.j1q8IA
+ VC5VhVUtDU9r_0j.uQseflvRCm8iL.XqFtDbI_KJvR2nz0sKSmUuZx51xmbd
+ ntZa7PWPz1VYhkxjg37xUaUmhGY2BQOYac2qeptsYulkNrIu2TqRkR4iYhyC
+ qbMtj5lqYKlQD_NtCn0ue9jGtg.ZXXS2B8_5yB6voTKxe.rQBOQllkY0HGY_
+ .QqPKk5XoFCBTQrVF9IQx0noyrVvQT8ldYJ4xr7TkEt9gWokFiySGI78KNKR
+ rzpHy5VRQCX3wDij_nr226yg2rCiG._dUn.qKEpXW72iLRbVdXwo8EbNthxg
+ 2Z0huVnrA7ugI.XZ5eAQXRtG7VcKWFVFlTvXbfSu.L_Vzdbpuo_B54qhFj6l
+ U
+X-Mailer: YahooMailWebService/0.8.114.317681
+References: <1311826792.28583.YahooMailNeo@web31811.mail.mud.yahoo.com> <1316691000.10571.6.camel@dabdike>
+Message-ID: <1316709696.61028.YahooMailNeo@web31812.mail.mud.yahoo.com>
+Date: Thu, 22 Sep 2011 09:41:36 -0700 (PDT)
+From: Luben Tuikov <ltuikov@yahoo.com>
+Reply-To: Luben Tuikov <ltuikov@yahoo.com>
+Subject: [RESEND] [PATCH] [SCSI] libsas: Allow expander T-T attachments
+To: James Bottomley <jbottomley@parallels.com>
+Cc: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1316691000.10571.6.camel@dabdike>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/mixed; boundary="0-2111177108-1316709696=:61028"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--0-2111177108-1316709696=:61028
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-In testing aio on a fast storage device, I found that the context lock
-takes up a fair amount of cpu time in the I/O submission path.  The
-reason is that we take it for every I/O submitted (see __aio_get_req).
-Since we know how many I/Os are passed to io_submit, we can preallocate
-the kiocbs in batches, reducing the number of times we take and release
-the lock.  In my testing, I was able to reduce the amount of time spent
-in _raw_spin_lock_irq by .56% (average of 3 runs).  The command I used
-to test this was:
-   aio-stress -O -o 2 -o 3 -r 8 -d 128 -b 32 -i 32 -s 16384 <dev>
+Allow expander table-to-table attachments for=0Aexpanders that support it.=
+=0A=0ASigned-off-by: Luben Tuikov <ltuikov@yahoo.com>=0A---=0A=A0drivers/sc=
+si/libsas/sas_expander.c |=A0=A0 20 ++++++++++++++------=0A=A0include/scsi/=
+libsas.h=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0 |=A0=A0=A0 3 +++=0A=A0inclu=
+de/scsi/sas.h=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0 |=A0=A0 14 ++=
+++++++++++--=0A=A03 files changed, 29 insertions(+), 8 deletions(-)=0A=0Adi=
+ff --git a/drivers/scsi/libsas/sas_expander.c b/drivers/scsi/libsas/sas_exp=
+ander.c=0Aindex f84084b..e8d0115 100644=0A--- a/drivers/scsi/libsas/sas_exp=
+ander.c=0A+++ b/drivers/scsi/libsas/sas_expander.c=0A@@ -329,6 +329,7 @@ st=
+atic void ex_assign_report_general(struct domain_device *dev,=0A=A0=A0=A0=
+=A0 dev->ex_dev.ex_change_count =3D be16_to_cpu(rg->change_count);=0A=A0=A0=
+=A0=A0 dev->ex_dev.max_route_indexes =3D be16_to_cpu(rg->route_indexes);=0A=
+=A0=A0=A0=A0 dev->ex_dev.num_phys =3D min(rg->num_phys, (u8)MAX_EXPANDER_PH=
+YS);=0A+=A0=A0=A0 dev->ex_dev.t2t_supp =3D rg->t2t_supp;=0A=A0=A0=A0=A0 dev=
+->ex_dev.conf_route_table =3D rg->conf_route_table;=0A=A0=A0=A0=A0 dev->ex_=
+dev.configuring =3D rg->configuring;=0A=A0=A0=A0=A0 memcpy(dev->ex_dev.encl=
+osure_logical_id, rg->enclosure_logical_id, 8);=0A@@ -1133,15 +1134,17 @@ s=
+tatic void sas_print_parent_topology_bug(struct domain_device *child,=0A=A0=
+=A0=A0=A0 };=0A=A0=A0=A0=A0 struct domain_device *parent =3D child->parent;=
+=0A=A0=0A-=A0=A0=A0 sas_printk("%s ex %016llx phy 0x%x <--> %s ex %016llx p=
+hy 0x%x "=0A-=A0=A0=A0 =A0=A0=A0 =A0=A0 "has %c:%c routing link!\n",=0A+=A0=
+=A0=A0 sas_printk("%s ex %016llx (T2T supp:%d) phy 0x%x <--> %s ex %016llx =
+"=0A+=A0=A0=A0 =A0=A0=A0 =A0=A0 "(T2T supp:%d) phy 0x%x has %c:%c routing l=
+ink!\n",=0A=A0=0A=A0=A0=A0=A0 =A0=A0=A0 =A0=A0 ex_type[parent->dev_type],=
+=0A=A0=A0=A0=A0 =A0=A0=A0 =A0=A0 SAS_ADDR(parent->sas_addr),=0A+=A0=A0=A0 =
+=A0=A0=A0 =A0=A0 parent->ex_dev.t2t_supp,=0A=A0=A0=A0=A0 =A0=A0=A0 =A0=A0 p=
+arent_phy->phy_id,=0A=A0=0A=A0=A0=A0=A0 =A0=A0=A0 =A0=A0 ex_type[child->dev=
+_type],=0A=A0=A0=A0=A0 =A0=A0=A0 =A0=A0 SAS_ADDR(child->sas_addr),=0A+=A0=
+=A0=A0 =A0=A0=A0 =A0=A0 child->ex_dev.t2t_supp,=0A=A0=A0=A0=A0 =A0=A0=A0 =
+=A0=A0 child_phy->phy_id,=0A=A0=0A=A0=A0=A0=A0 =A0=A0=A0 =A0=A0 ra_char[par=
+ent_phy->routing_attr],=0A@@ -1238,10 +1241,15 @@ static int sas_check_pare=
+nt_topology(struct domain_device *child)=0A=A0=A0=A0=A0 =A0=A0=A0 =A0=A0=A0=
+ =A0=A0=A0 =A0=A0=A0 sas_print_parent_topology_bug(child, parent_phy, child=
+_phy);=0A=A0=A0=A0=A0 =A0=A0=A0 =A0=A0=A0 =A0=A0=A0 =A0=A0=A0 res =3D -ENOD=
+EV;=0A=A0=A0=A0=A0 =A0=A0=A0 =A0=A0=A0 =A0=A0=A0 }=0A-=A0=A0=A0 =A0=A0=A0 =
+=A0=A0=A0 } else if (parent_phy->routing_attr =3D=3D TABLE_ROUTING &&=0A-=
+=A0=A0=A0 =A0=A0=A0 =A0=A0=A0 =A0=A0=A0 =A0=A0 child_phy->routing_attr !=3D=
+ SUBTRACTIVE_ROUTING) {=0A-=A0=A0=A0 =A0=A0=A0 =A0=A0=A0 =A0=A0=A0 sas_prin=
+t_parent_topology_bug(child, parent_phy, child_phy);=0A-=A0=A0=A0 =A0=A0=A0=
+ =A0=A0=A0 =A0=A0=A0 res =3D -ENODEV;=0A+=A0=A0=A0 =A0=A0=A0 =A0=A0=A0 } el=
+se if (parent_phy->routing_attr =3D=3D TABLE_ROUTING) {=0A+=A0=A0=A0 =A0=A0=
+=A0 =A0=A0=A0 =A0=A0=A0 if (child_phy->routing_attr =3D=3D SUBTRACTIVE_ROUT=
+ING ||=0A+=A0=A0=A0 =A0=A0=A0 =A0=A0=A0 =A0=A0=A0 =A0=A0=A0 (child_phy->rou=
+ting_attr =3D=3D TABLE_ROUTING &&=0A+=A0=A0=A0 =A0=A0=A0 =A0=A0=A0 =A0=A0=
+=A0 =A0=A0=A0=A0 child_ex->t2t_supp && parent_ex->t2t_supp)) {=0A+=A0=A0=A0=
+ =A0=A0=A0 =A0=A0=A0 =A0=A0=A0 =A0=A0=A0 /* All good */;=0A+=A0=A0=A0 =A0=
+=A0=A0 =A0=A0=A0 =A0=A0=A0 } else {=0A+=A0=A0=A0 =A0=A0=A0 =A0=A0=A0 =A0=A0=
+=A0 =A0=A0=A0 sas_print_parent_topology_bug(child, parent_phy, child_phy);=
+=0A+=A0=A0=A0 =A0=A0=A0 =A0=A0=A0 =A0=A0=A0 =A0=A0=A0 res =3D -ENODEV;=0A+=
+=A0=A0=A0 =A0=A0=A0 =A0=A0=A0 =A0=A0=A0 }=0A=A0=A0=A0=A0 =A0=A0=A0 =A0=A0=
+=A0 }=0A=A0=A0=A0=A0 =A0=A0=A0 =A0=A0=A0 break;=0A=A0=A0=A0=A0 =A0=A0=A0 ca=
+se FANOUT_DEV:=0Adiff --git a/include/scsi/libsas.h b/include/scsi/libsas.h=
+=0Aindex ee86606..793f80b 100644=0A--- a/include/scsi/libsas.h=0A+++ b/incl=
+ude/scsi/libsas.h=0A@@ -142,8 +142,11 @@ struct expander_device {=0A=A0=A0=
+=A0=A0 u16=A0=A0=A0 ex_change_count;=0A=A0=A0=A0=A0 u16=A0=A0=A0 max_route_=
+indexes;=0A=A0=A0=A0=A0 u8=A0=A0=A0=A0 num_phys;=0A+=0A+=A0=A0=A0 u8=A0=A0=
+=A0=A0 t2t_supp:1;=0A=A0=A0=A0=A0 u8=A0=A0=A0=A0 configuring:1;=0A=A0=A0=A0=
+=A0 u8=A0=A0=A0=A0 conf_route_table:1;=0A+=0A=A0=A0=A0=A0 u8=A0=A0=A0=A0 en=
+closure_logical_id[8];=0A=A0=0A=A0=A0=A0=A0 struct ex_phy *ex_phy;=0Adiff -=
+-git a/include/scsi/sas.h b/include/scsi/sas.h=0Aindex e9fd022..f59f182 100=
+644=0A--- a/include/scsi/sas.h=0A+++ b/include/scsi/sas.h=0A@@ -341,7 +341,=
+12 @@ struct report_general_resp {=0A=A0=0A=A0=A0=A0=A0 u8=A0=A0=A0=A0=A0 c=
+onf_route_table:1;=0A=A0=A0=A0=A0 u8=A0=A0=A0=A0=A0 configuring:1;=0A-=A0=
+=A0=A0 u8=A0=A0=A0=A0=A0 _r_b:6;=0A+=A0=A0=A0 u8=A0=A0=A0 config_others:1;=
+=0A+=A0=A0=A0 u8=A0=A0=A0 orej_retry_supp:1;=0A+=A0=A0=A0 u8=A0=A0=A0 stp_c=
+ont_awt:1;=0A+=A0=A0=A0 u8=A0=A0=A0 self_config:1;=0A+=A0=A0=A0 u8=A0=A0=A0=
+ zone_config:1;=0A+=A0=A0=A0 u8=A0=A0=A0 t2t_supp:1;=0A=A0=0A=A0=A0=A0=A0 u=
+8=A0=A0=A0=A0=A0 _r_c;=0A=A0=0A@@ -528,7 +533,12 @@ struct report_general_r=
+esp {=0A=A0=A0=A0=A0 u8=A0=A0=A0=A0=A0 _r_a;=0A=A0=A0=A0=A0 u8=A0=A0=A0=A0=
+=A0 num_phys;=0A=A0=0A-=A0=A0=A0 u8=A0=A0=A0=A0=A0 _r_b:6;=0A+=A0=A0=A0 u8=
+=A0=A0=A0 t2t_supp:1;=0A+=A0=A0=A0 u8=A0=A0=A0 zone_config:1;=0A+=A0=A0=A0 =
+u8=A0=A0=A0 self_config:1;=0A+=A0=A0=A0 u8=A0=A0=A0 stp_cont_awt:1;=0A+=A0=
+=A0=A0 u8=A0=A0=A0 orej_retry_supp:1;=0A+=A0=A0=A0 u8=A0=A0=A0 config_other=
+s:1;=0A=A0=A0=A0=A0 u8=A0=A0=A0=A0=A0 configuring:1;=0A=A0=A0=A0=A0 u8=A0=
+=A0=A0=A0=A0 conf_route_table:1;=0A=A0=0A-- =0A1.7.2.2.165.gbc382
+--0-2111177108-1316709696=:61028
+Content-Type: application/octet-stream; name="0001-SCSI-libsas-Allow-expander-T-T-attachments.patch"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="0001-SCSI-libsas-Allow-expander-T-T-attachments.patch"
 
-I also tested the patch with various numbers of events passed to
-io_submit, and I ran the xfstests aio group of tests to ensure I didn't
-break anything.
+RnJvbSA3Y2Q3MzMwNDMxNzYxMjdkNTg5MTExNjUzNjlmNGE4OTE0YWM0ZWRk
+IE1vbiBTZXAgMTcgMDA6MDA6MDAgMjAwMQpGcm9tOiBMdWJlbiBUdWlrb3Yg
+PGx0dWlrb3ZAeWFob28uY29tPgpEYXRlOiBXZWQsIDI3IEp1bCAyMDExIDIx
+OjAyOjEyIC0wNzAwClN1YmplY3Q6IFtQQVRDSF0gW1NDU0ldIGxpYnNhczog
+QWxsb3cgZXhwYW5kZXIgVC1UIGF0dGFjaG1lbnRzCgpBbGxvdyBleHBhbmRl
+ciB0YWJsZS10by10YWJsZSBhdHRhY2htZW50cyBmb3IKZXhwYW5kZXJzIHRo
+YXQgc3VwcG9ydCBpdC4KClNpZ25lZC1vZmYtYnk6IEx1YmVuIFR1aWtvdiA8
+bHR1aWtvdkB5YWhvby5jb20+Ci0tLQogZHJpdmVycy9zY3NpL2xpYnNhcy9z
+YXNfZXhwYW5kZXIuYyB8ICAgMjAgKysrKysrKysrKysrKystLS0tLS0KIGlu
+Y2x1ZGUvc2NzaS9saWJzYXMuaCAgICAgICAgICAgICAgfCAgICAzICsrKwog
+aW5jbHVkZS9zY3NpL3Nhcy5oICAgICAgICAgICAgICAgICB8ICAgMTQgKysr
+KysrKysrKysrLS0KIDMgZmlsZXMgY2hhbmdlZCwgMjkgaW5zZXJ0aW9ucygr
+KSwgOCBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9kcml2ZXJzL3Njc2kv
+bGlic2FzL3Nhc19leHBhbmRlci5jIGIvZHJpdmVycy9zY3NpL2xpYnNhcy9z
+YXNfZXhwYW5kZXIuYwppbmRleCBmODQwODRiLi5lOGQwMTE1IDEwMDY0NAot
+LS0gYS9kcml2ZXJzL3Njc2kvbGlic2FzL3Nhc19leHBhbmRlci5jCisrKyBi
+L2RyaXZlcnMvc2NzaS9saWJzYXMvc2FzX2V4cGFuZGVyLmMKQEAgLTMyOSw2
+ICszMjksNyBAQCBzdGF0aWMgdm9pZCBleF9hc3NpZ25fcmVwb3J0X2dlbmVy
+YWwoc3RydWN0IGRvbWFpbl9kZXZpY2UgKmRldiwKIAlkZXYtPmV4X2Rldi5l
+eF9jaGFuZ2VfY291bnQgPSBiZTE2X3RvX2NwdShyZy0+Y2hhbmdlX2NvdW50
+KTsKIAlkZXYtPmV4X2Rldi5tYXhfcm91dGVfaW5kZXhlcyA9IGJlMTZfdG9f
+Y3B1KHJnLT5yb3V0ZV9pbmRleGVzKTsKIAlkZXYtPmV4X2Rldi5udW1fcGh5
+cyA9IG1pbihyZy0+bnVtX3BoeXMsICh1OClNQVhfRVhQQU5ERVJfUEhZUyk7
+CisJZGV2LT5leF9kZXYudDJ0X3N1cHAgPSByZy0+dDJ0X3N1cHA7CiAJZGV2
+LT5leF9kZXYuY29uZl9yb3V0ZV90YWJsZSA9IHJnLT5jb25mX3JvdXRlX3Rh
+YmxlOwogCWRldi0+ZXhfZGV2LmNvbmZpZ3VyaW5nID0gcmctPmNvbmZpZ3Vy
+aW5nOwogCW1lbWNweShkZXYtPmV4X2Rldi5lbmNsb3N1cmVfbG9naWNhbF9p
+ZCwgcmctPmVuY2xvc3VyZV9sb2dpY2FsX2lkLCA4KTsKQEAgLTExMzMsMTUg
+KzExMzQsMTcgQEAgc3RhdGljIHZvaWQgc2FzX3ByaW50X3BhcmVudF90b3Bv
+bG9neV9idWcoc3RydWN0IGRvbWFpbl9kZXZpY2UgKmNoaWxkLAogCX07CiAJ
+c3RydWN0IGRvbWFpbl9kZXZpY2UgKnBhcmVudCA9IGNoaWxkLT5wYXJlbnQ7
+CiAKLQlzYXNfcHJpbnRrKCIlcyBleCAlMDE2bGx4IHBoeSAweCV4IDwtLT4g
+JXMgZXggJTAxNmxseCBwaHkgMHgleCAiCi0JCSAgICJoYXMgJWM6JWMgcm91
+dGluZyBsaW5rIVxuIiwKKwlzYXNfcHJpbnRrKCIlcyBleCAlMDE2bGx4IChU
+MlQgc3VwcDolZCkgcGh5IDB4JXggPC0tPiAlcyBleCAlMDE2bGx4ICIKKwkJ
+ICAgIihUMlQgc3VwcDolZCkgcGh5IDB4JXggaGFzICVjOiVjIHJvdXRpbmcg
+bGluayFcbiIsCiAKIAkJICAgZXhfdHlwZVtwYXJlbnQtPmRldl90eXBlXSwK
+IAkJICAgU0FTX0FERFIocGFyZW50LT5zYXNfYWRkciksCisJCSAgIHBhcmVu
+dC0+ZXhfZGV2LnQydF9zdXBwLAogCQkgICBwYXJlbnRfcGh5LT5waHlfaWQs
+CiAKIAkJICAgZXhfdHlwZVtjaGlsZC0+ZGV2X3R5cGVdLAogCQkgICBTQVNf
+QUREUihjaGlsZC0+c2FzX2FkZHIpLAorCQkgICBjaGlsZC0+ZXhfZGV2LnQy
+dF9zdXBwLAogCQkgICBjaGlsZF9waHktPnBoeV9pZCwKIAogCQkgICByYV9j
+aGFyW3BhcmVudF9waHktPnJvdXRpbmdfYXR0cl0sCkBAIC0xMjM4LDEwICsx
+MjQxLDE1IEBAIHN0YXRpYyBpbnQgc2FzX2NoZWNrX3BhcmVudF90b3BvbG9n
+eShzdHJ1Y3QgZG9tYWluX2RldmljZSAqY2hpbGQpCiAJCQkJCXNhc19wcmlu
+dF9wYXJlbnRfdG9wb2xvZ3lfYnVnKGNoaWxkLCBwYXJlbnRfcGh5LCBjaGls
+ZF9waHkpOwogCQkJCQlyZXMgPSAtRU5PREVWOwogCQkJCX0KLQkJCX0gZWxz
+ZSBpZiAocGFyZW50X3BoeS0+cm91dGluZ19hdHRyID09IFRBQkxFX1JPVVRJ
+TkcgJiYKLQkJCQkgICBjaGlsZF9waHktPnJvdXRpbmdfYXR0ciAhPSBTVUJU
+UkFDVElWRV9ST1VUSU5HKSB7Ci0JCQkJc2FzX3ByaW50X3BhcmVudF90b3Bv
+bG9neV9idWcoY2hpbGQsIHBhcmVudF9waHksIGNoaWxkX3BoeSk7Ci0JCQkJ
+cmVzID0gLUVOT0RFVjsKKwkJCX0gZWxzZSBpZiAocGFyZW50X3BoeS0+cm91
+dGluZ19hdHRyID09IFRBQkxFX1JPVVRJTkcpIHsKKwkJCQlpZiAoY2hpbGRf
+cGh5LT5yb3V0aW5nX2F0dHIgPT0gU1VCVFJBQ1RJVkVfUk9VVElORyB8fAor
+CQkJCSAgICAoY2hpbGRfcGh5LT5yb3V0aW5nX2F0dHIgPT0gVEFCTEVfUk9V
+VElORyAmJgorCQkJCSAgICAgY2hpbGRfZXgtPnQydF9zdXBwICYmIHBhcmVu
+dF9leC0+dDJ0X3N1cHApKSB7CisJCQkJCS8qIEFsbCBnb29kICovOworCQkJ
+CX0gZWxzZSB7CisJCQkJCXNhc19wcmludF9wYXJlbnRfdG9wb2xvZ3lfYnVn
+KGNoaWxkLCBwYXJlbnRfcGh5LCBjaGlsZF9waHkpOworCQkJCQlyZXMgPSAt
+RU5PREVWOworCQkJCX0KIAkJCX0KIAkJCWJyZWFrOwogCQljYXNlIEZBTk9V
+VF9ERVY6CmRpZmYgLS1naXQgYS9pbmNsdWRlL3Njc2kvbGlic2FzLmggYi9p
+bmNsdWRlL3Njc2kvbGlic2FzLmgKaW5kZXggZWU4NjYwNi4uNzkzZjgwYiAx
+MDA2NDQKLS0tIGEvaW5jbHVkZS9zY3NpL2xpYnNhcy5oCisrKyBiL2luY2x1
+ZGUvc2NzaS9saWJzYXMuaApAQCAtMTQyLDggKzE0MiwxMSBAQCBzdHJ1Y3Qg
+ZXhwYW5kZXJfZGV2aWNlIHsKIAl1MTYgICAgZXhfY2hhbmdlX2NvdW50Owog
+CXUxNiAgICBtYXhfcm91dGVfaW5kZXhlczsKIAl1OCAgICAgbnVtX3BoeXM7
+CisKKwl1OCAgICAgdDJ0X3N1cHA6MTsKIAl1OCAgICAgY29uZmlndXJpbmc6
+MTsKIAl1OCAgICAgY29uZl9yb3V0ZV90YWJsZToxOworCiAJdTggICAgIGVu
+Y2xvc3VyZV9sb2dpY2FsX2lkWzhdOwogCiAJc3RydWN0IGV4X3BoeSAqZXhf
+cGh5OwpkaWZmIC0tZ2l0IGEvaW5jbHVkZS9zY3NpL3Nhcy5oIGIvaW5jbHVk
+ZS9zY3NpL3Nhcy5oCmluZGV4IGU5ZmQwMjIuLmY1OWYxODIgMTAwNjQ0Ci0t
+LSBhL2luY2x1ZGUvc2NzaS9zYXMuaAorKysgYi9pbmNsdWRlL3Njc2kvc2Fz
+LmgKQEAgLTM0MSw3ICszNDEsMTIgQEAgc3RydWN0IHJlcG9ydF9nZW5lcmFs
+X3Jlc3AgewogCiAJdTggICAgICBjb25mX3JvdXRlX3RhYmxlOjE7CiAJdTgg
+ICAgICBjb25maWd1cmluZzoxOwotCXU4ICAgICAgX3JfYjo2OworCXU4CWNv
+bmZpZ19vdGhlcnM6MTsKKwl1OAlvcmVqX3JldHJ5X3N1cHA6MTsKKwl1OAlz
+dHBfY29udF9hd3Q6MTsKKwl1OAlzZWxmX2NvbmZpZzoxOworCXU4CXpvbmVf
+Y29uZmlnOjE7CisJdTgJdDJ0X3N1cHA6MTsKIAogCXU4ICAgICAgX3JfYzsK
+IApAQCAtNTI4LDcgKzUzMywxMiBAQCBzdHJ1Y3QgcmVwb3J0X2dlbmVyYWxf
+cmVzcCB7CiAJdTggICAgICBfcl9hOwogCXU4ICAgICAgbnVtX3BoeXM7CiAK
+LQl1OCAgICAgIF9yX2I6NjsKKwl1OAl0MnRfc3VwcDoxOworCXU4CXpvbmVf
+Y29uZmlnOjE7CisJdTgJc2VsZl9jb25maWc6MTsKKwl1OAlzdHBfY29udF9h
+d3Q6MTsKKwl1OAlvcmVqX3JldHJ5X3N1cHA6MTsKKwl1OAljb25maWdfb3Ro
+ZXJzOjE7CiAJdTggICAgICBjb25maWd1cmluZzoxOwogCXU4ICAgICAgY29u
+Zl9yb3V0ZV90YWJsZToxOwogCi0tIAoxLjcuMi4yLjE2NS5nYmMzODIKCg==
 
-Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
 
----
-Changes from v2 -> v3:
-- got rid of an extraneous structure member in the kiocb_batch.
-- fixed up some haphazard variable types
-- fixed a build warning
-
-Changes from rfc -> v2:
-- folded in akpm's incremental patch which fixes coding style and
-  variable names
-- tried to clarify a comment about a starvation case
-- fixed up my breaking of the handling of that starvation case
-- moved from an on-stack array to a list at the suggestion of akpm
-
-diff --git a/fs/aio.c b/fs/aio.c
-index e29ec48..f2e65a8 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -440,8 +440,6 @@ void exit_aio(struct mm_struct *mm)
- static struct kiocb *__aio_get_req(struct kioctx *ctx)
- {
- 	struct kiocb *req = NULL;
--	struct aio_ring *ring;
--	int okay = 0;
- 
- 	req = kmem_cache_alloc(kiocb_cachep, GFP_KERNEL);
- 	if (unlikely(!req))
-@@ -459,39 +457,114 @@ static struct kiocb *__aio_get_req(struct kioctx *ctx)
- 	INIT_LIST_HEAD(&req->ki_run_list);
- 	req->ki_eventfd = NULL;
- 
--	/* Check if the completion queue has enough free space to
--	 * accept an event from this io.
--	 */
-+	return req;
-+}
-+
-+/*
-+ * struct kiocb's are allocated in batches to reduce the number of
-+ * times the ctx lock is acquired and released.
-+ */
-+#define KIOCB_BATCH_SIZE	32L
-+struct kiocb_batch {
-+	struct list_head head;
-+	long count; /* number of requests left to allocate */
-+};
-+
-+static void kiocb_batch_init(struct kiocb_batch *batch, long total)
-+{
-+	INIT_LIST_HEAD(&batch->head);
-+	batch->count = total;
-+}
-+
-+static void kiocb_batch_free(struct kiocb_batch *batch)
-+{
-+	struct kiocb *req, *n;
-+
-+	list_for_each_entry_safe(req, n, &batch->head, ki_batch) {
-+		list_del(&req->ki_batch);
-+		kmem_cache_free(kiocb_cachep, req);
-+	}
-+}
-+
-+/*
-+ * Allocate a batch of kiocbs.  This avoids taking and dropping the
-+ * context lock a lot during setup.
-+ */
-+static int kiocb_batch_refill(struct kioctx *ctx, struct kiocb_batch *batch)
-+{
-+	unsigned short allocated, to_alloc;
-+	long avail;
-+	bool called_fput = false;
-+	struct kiocb *req, *n;
-+	struct aio_ring *ring;
-+
-+	to_alloc = min(batch->count, KIOCB_BATCH_SIZE);
-+	for (allocated = 0; allocated < to_alloc; allocated++) {
-+		req = __aio_get_req(ctx);
-+		if (!req)
-+			/* allocation failed, go with what we've got */
-+			break;
-+		list_add(&req->ki_batch, &batch->head);
-+	}
-+
-+	if (allocated == 0)
-+		goto out;
-+
-+retry:
- 	spin_lock_irq(&ctx->ctx_lock);
--	ring = kmap_atomic(ctx->ring_info.ring_pages[0], KM_USER0);
--	if (ctx->reqs_active < aio_ring_avail(&ctx->ring_info, ring)) {
-+	ring = kmap_atomic(ctx->ring_info.ring_pages[0]);
-+
-+	avail = aio_ring_avail(&ctx->ring_info, ring) - ctx->reqs_active;
-+	BUG_ON(avail < 0);
-+	if (avail == 0 && !called_fput) {
-+		/*
-+		 * Handle a potential starvation case.  It is possible that
-+		 * we hold the last reference on a struct file, causing us
-+		 * to delay the final fput to non-irq context.  In this case,
-+		 * ctx->reqs_active is artificially high.  Calling the fput
-+		 * routine here may free up a slot in the event completion
-+		 * ring, allowing this allocation to succeed.
-+		 */
-+		kunmap_atomic(ring);
-+		spin_unlock_irq(&ctx->ctx_lock);
-+		aio_fput_routine(NULL);
-+		called_fput = true;
-+		goto retry;
-+	}
-+
-+	if (avail < allocated) {
-+		/* Trim back the number of requests. */
-+		list_for_each_entry_safe(req, n, &batch->head, ki_batch) {
-+			list_del(&req->ki_batch);
-+			kmem_cache_free(kiocb_cachep, req);
-+			if (--allocated <= avail)
-+				break;
-+		}
-+	}
-+
-+	batch->count -= allocated;
-+	list_for_each_entry(req, &batch->head, ki_batch) {
- 		list_add(&req->ki_list, &ctx->active_reqs);
- 		ctx->reqs_active++;
--		okay = 1;
- 	}
--	kunmap_atomic(ring, KM_USER0);
--	spin_unlock_irq(&ctx->ctx_lock);
- 
--	if (!okay) {
--		kmem_cache_free(kiocb_cachep, req);
--		req = NULL;
--	}
-+	kunmap_atomic(ring);
-+	spin_unlock_irq(&ctx->ctx_lock);
- 
--	return req;
-+out:
-+	return allocated;
- }
- 
--static inline struct kiocb *aio_get_req(struct kioctx *ctx)
-+static inline struct kiocb *aio_get_req(struct kioctx *ctx,
-+					struct kiocb_batch *batch)
- {
- 	struct kiocb *req;
--	/* Handle a potential starvation case -- should be exceedingly rare as 
--	 * requests will be stuck on fput_head only if the aio_fput_routine is 
--	 * delayed and the requests were the last user of the struct file.
--	 */
--	req = __aio_get_req(ctx);
--	if (unlikely(NULL == req)) {
--		aio_fput_routine(NULL);
--		req = __aio_get_req(ctx);
--	}
-+
-+	if (list_empty(&batch->head))
-+		if (kiocb_batch_refill(ctx, batch) == 0)
-+			return NULL;
-+	req = list_first_entry(&batch->head, struct kiocb, ki_batch);
-+	list_del(&req->ki_batch);
- 	return req;
- }
- 
-@@ -1515,7 +1588,8 @@ static ssize_t aio_setup_iocb(struct kiocb *kiocb, bool compat)
- }
- 
- static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
--			 struct iocb *iocb, bool compat)
-+			 struct iocb *iocb, struct kiocb_batch *batch,
-+			 bool compat)
- {
- 	struct kiocb *req;
- 	struct file *file;
-@@ -1541,7 +1615,7 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
- 	if (unlikely(!file))
- 		return -EBADF;
- 
--	req = aio_get_req(ctx);		/* returns with 2 references to req */
-+	req = aio_get_req(ctx, batch);  /* returns with 2 references to req */
- 	if (unlikely(!req)) {
- 		fput(file);
- 		return -EAGAIN;
-@@ -1621,8 +1695,9 @@ long do_io_submit(aio_context_t ctx_id, long nr,
- {
- 	struct kioctx *ctx;
- 	long ret = 0;
--	int i;
-+	int i = 0;
- 	struct blk_plug plug;
-+	struct kiocb_batch batch;
- 
- 	if (unlikely(nr < 0))
- 		return -EINVAL;
-@@ -1639,6 +1714,8 @@ long do_io_submit(aio_context_t ctx_id, long nr,
- 		return -EINVAL;
- 	}
- 
-+	kiocb_batch_init(&batch, nr);
-+
- 	blk_start_plug(&plug);
- 
- 	/*
-@@ -1659,12 +1736,13 @@ long do_io_submit(aio_context_t ctx_id, long nr,
- 			break;
- 		}
- 
--		ret = io_submit_one(ctx, user_iocb, &tmp, compat);
-+		ret = io_submit_one(ctx, user_iocb, &tmp, &batch, compat);
- 		if (ret)
- 			break;
- 	}
- 	blk_finish_plug(&plug);
- 
-+	kiocb_batch_free(&batch);
- 	put_ioctx(ctx);
- 	return i ? i : ret;
- }
-diff --git a/include/linux/aio.h b/include/linux/aio.h
-index 2dcb72b..2314ad8 100644
---- a/include/linux/aio.h
-+++ b/include/linux/aio.h
-@@ -117,6 +117,7 @@ struct kiocb {
- 
- 	struct list_head	ki_list;	/* the aio core uses this
- 						 * for cancellation */
-+	struct list_head	ki_batch;	/* batch allocation */
- 
- 	/*
- 	 * If the aio_resfd field of the userspace iocb is not zero,
+--0-2111177108-1316709696=:61028--
