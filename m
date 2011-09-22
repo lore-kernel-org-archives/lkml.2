@@ -1,233 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753152Ab1IVR0u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 13:26:50 -0400
-Received: from mail-gw0-f52.google.com ([74.125.83.52]:62269 "EHLO
-	mail-gw0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753101Ab1IVR0s (ORCPT
+	id S1753042Ab1IVR1Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 13:27:25 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:47681 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751881Ab1IVR1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 13:26:48 -0400
-Date: Thu, 22 Sep 2011 11:26:44 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
-        Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>,
-        Chris Ball <cjb@laptop.org>, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org
-Subject: Re: [PATCH 2/3] arm/tegra: Replace <mach/gpio.h> with
- <mach/gpio-tegra.h>
-Message-ID: <20110922172644.GL17168@ponder.secretlab.ca>
-References: <1316633620-13184-1-git-send-email-swarren@nvidia.com>
- <1316633620-13184-2-git-send-email-swarren@nvidia.com>
+	Thu, 22 Sep 2011 13:27:24 -0400
+Date: Thu, 22 Sep 2011 18:26:53 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: mhban <mhban@samsung.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        DavidHowells <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Michel Lespinasse <walken@google.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Chris Metcalf <cmetcalf@tilera.com>
+Subject: Re: [PATCH] ARM: futex: fix clobbering oldval
+Message-ID: <20110922172653.GH13572@e102144-lin.cambridge.arm.com>
+References: <1316660015.6872.1.camel@puffmine-laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1316633620-13184-2-git-send-email-swarren@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1316660015.6872.1.camel@puffmine-laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 21, 2011 at 01:33:39PM -0600, Stephen Warren wrote:
-> This will eventually allow <mach/gpio.h> to be deleted. This mirrors
-> LinusW's recent equivalent work on various other ARM platforms.
-> 
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+Hi,
 
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
+On Thu, Sep 22, 2011 at 03:53:35AM +0100, mhban wrote:
+> This patch fixes clobbering oldval bug. oldval should be preserved for next
+> compare operation.
+> 
+> Change-Id: I2a63bc1bdb8de330eb9e1ac02d7da1f77e6e8c3c
+> Signed-off-by: Minho Ban <mhban@samsung.com>
+
+It would have been nice to have been CC'd on this...
+
+I ran LTP tests on this, so I'm surprised that this was broken (the tests
+passed). Well spotted anyway!
 
 > ---
->  arch/arm/mach-tegra/board-harmony.h           |    2 +
->  arch/arm/mach-tegra/board-paz00.h             |    2 +
->  arch/arm/mach-tegra/board-seaboard.h          |    2 +
->  arch/arm/mach-tegra/board-trimslice.h         |    2 +
->  arch/arm/mach-tegra/include/mach/gpio-tegra.h |   39 +++++++++++++++++++++++++
->  arch/arm/mach-tegra/include/mach/gpio.h       |   39 -------------------------
->  arch/arm/mach-tegra/usb_phy.c                 |    1 +
->  drivers/gpio/gpio-tegra.c                     |    1 +
->  drivers/mmc/host/sdhci-tegra.c                |    2 +
->  9 files changed, 51 insertions(+), 39 deletions(-)
->  create mode 100644 arch/arm/mach-tegra/include/mach/gpio-tegra.h
+>  arch/arm/include/asm/futex.h |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
 > 
-> diff --git a/arch/arm/mach-tegra/board-harmony.h b/arch/arm/mach-tegra/board-harmony.h
-> index 280d203..139d96c 100644
-> --- a/arch/arm/mach-tegra/board-harmony.h
-> +++ b/arch/arm/mach-tegra/board-harmony.h
-> @@ -17,6 +17,8 @@
->  #ifndef _MACH_TEGRA_BOARD_HARMONY_H
->  #define _MACH_TEGRA_BOARD_HARMONY_H
->  
-> +#include <mach/gpio-tegra.h>
-> +
->  #define HARMONY_GPIO_TPS6586X(_x_)	(TEGRA_NR_GPIOS + (_x_))
->  #define HARMONY_GPIO_WM8903(_x_)	(HARMONY_GPIO_TPS6586X(4) + (_x_))
->  
-> diff --git a/arch/arm/mach-tegra/board-paz00.h b/arch/arm/mach-tegra/board-paz00.h
-> index 86057c3..2dc1899 100644
-> --- a/arch/arm/mach-tegra/board-paz00.h
-> +++ b/arch/arm/mach-tegra/board-paz00.h
-> @@ -17,6 +17,8 @@
->  #ifndef _MACH_TEGRA_BOARD_PAZ00_H
->  #define _MACH_TEGRA_BOARD_PAZ00_H
->  
-> +#include <mach/gpio-tegra.h>
-> +
->  /* SDCARD */
->  #define TEGRA_GPIO_SD1_CD	TEGRA_GPIO_PV5
->  #define TEGRA_GPIO_SD1_WP	TEGRA_GPIO_PH1
-> diff --git a/arch/arm/mach-tegra/board-seaboard.h b/arch/arm/mach-tegra/board-seaboard.h
-> index d06c334..4c45d4c 100644
-> --- a/arch/arm/mach-tegra/board-seaboard.h
-> +++ b/arch/arm/mach-tegra/board-seaboard.h
-> @@ -17,6 +17,8 @@
->  #ifndef _MACH_TEGRA_BOARD_SEABOARD_H
->  #define _MACH_TEGRA_BOARD_SEABOARD_H
->  
-> +#include <mach/gpio-tegra.h>
-> +
->  #define SEABOARD_GPIO_TPS6586X(_x_)	(TEGRA_NR_GPIOS + (_x_))
->  #define SEABOARD_GPIO_WM8903(_x_)	(SEABOARD_GPIO_TPS6586X(4) + (_x_))
->  
-> diff --git a/arch/arm/mach-tegra/board-trimslice.h b/arch/arm/mach-tegra/board-trimslice.h
-> index 7a7dee8..50f128d 100644
-> --- a/arch/arm/mach-tegra/board-trimslice.h
-> +++ b/arch/arm/mach-tegra/board-trimslice.h
-> @@ -17,6 +17,8 @@
->  #ifndef _MACH_TEGRA_BOARD_TRIMSLICE_H
->  #define _MACH_TEGRA_BOARD_TRIMSLICE_H
->  
-> +#include <mach/gpio-tegra.h>
-> +
->  #define TRIMSLICE_GPIO_SD4_CD	TEGRA_GPIO_PP1	/* mmc4 cd */
->  #define TRIMSLICE_GPIO_SD4_WP	TEGRA_GPIO_PP2	/* mmc4 wp */
->  
-> diff --git a/arch/arm/mach-tegra/include/mach/gpio-tegra.h b/arch/arm/mach-tegra/include/mach/gpio-tegra.h
-> new file mode 100644
-> index 0000000..87d37fd
-> --- /dev/null
-> +++ b/arch/arm/mach-tegra/include/mach/gpio-tegra.h
-> @@ -0,0 +1,39 @@
-> +/*
-> + * arch/arm/mach-tegra/include/mach/gpio.h
-> + *
-> + * Copyright (C) 2010 Google, Inc.
-> + *
-> + * Author:
-> + *	Erik Gilling <konkers@google.com>
-> + *
-> + * This software is licensed under the terms of the GNU General Public
-> + * License version 2, as published by the Free Software Foundation, and
-> + * may be copied, distributed, and modified under those terms.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + */
-> +
-> +#ifndef __MACH_TEGRA_GPIO_TEGRA_H
-> +#define __MACH_TEGRA_GPIO_TEGRA_H
-> +
-> +#include <linux/types.h>
-> +#include <mach/irqs.h>
-> +
-> +#define TEGRA_NR_GPIOS		INT_GPIO_NR
-> +
-> +#define TEGRA_GPIO_TO_IRQ(gpio) (INT_GPIO_BASE + (gpio))
-> +
-> +struct tegra_gpio_table {
-> +	int	gpio;	/* GPIO number */
-> +	bool	enable;	/* Enable for GPIO at init? */
-> +};
-> +
-> +void tegra_gpio_config(struct tegra_gpio_table *table, int num);
-> +void tegra_gpio_enable(int gpio);
-> +void tegra_gpio_disable(int gpio);
-> +
-> +#endif
-> diff --git a/arch/arm/mach-tegra/include/mach/gpio.h b/arch/arm/mach-tegra/include/mach/gpio.h
-> index 7910d26..e69de29 100644
-> --- a/arch/arm/mach-tegra/include/mach/gpio.h
-> +++ b/arch/arm/mach-tegra/include/mach/gpio.h
-> @@ -1,39 +0,0 @@
-> -/*
-> - * arch/arm/mach-tegra/include/mach/gpio.h
-> - *
-> - * Copyright (C) 2010 Google, Inc.
-> - *
-> - * Author:
-> - *	Erik Gilling <konkers@google.com>
-> - *
-> - * This software is licensed under the terms of the GNU General Public
-> - * License version 2, as published by the Free Software Foundation, and
-> - * may be copied, distributed, and modified under those terms.
-> - *
-> - * This program is distributed in the hope that it will be useful,
-> - * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> - * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> - * GNU General Public License for more details.
-> - *
-> - */
-> -
-> -#ifndef __MACH_TEGRA_GPIO_H
-> -#define __MACH_TEGRA_GPIO_H
-> -
-> -#include <linux/types.h>
-> -#include <mach/irqs.h>
-> -
-> -#define TEGRA_NR_GPIOS		INT_GPIO_NR
-> -
-> -#define TEGRA_GPIO_TO_IRQ(gpio) (INT_GPIO_BASE + (gpio))
-> -
-> -struct tegra_gpio_table {
-> -	int	gpio;	/* GPIO number */
-> -	bool	enable;	/* Enable for GPIO at init? */
-> -};
-> -
-> -void tegra_gpio_config(struct tegra_gpio_table *table, int num);
-> -void tegra_gpio_enable(int gpio);
-> -void tegra_gpio_disable(int gpio);
-> -
-> -#endif
-> diff --git a/arch/arm/mach-tegra/usb_phy.c b/arch/arm/mach-tegra/usb_phy.c
-> index 88081bb..37576a7 100644
-> --- a/arch/arm/mach-tegra/usb_phy.c
-> +++ b/arch/arm/mach-tegra/usb_phy.c
-> @@ -28,6 +28,7 @@
->  #include <linux/usb/otg.h>
->  #include <linux/usb/ulpi.h>
->  #include <asm/mach-types.h>
-> +#include <mach/gpio-tegra.h>
->  #include <mach/usb_phy.h>
->  #include <mach/iomap.h>
->  
-> diff --git a/drivers/gpio/gpio-tegra.c b/drivers/gpio/gpio-tegra.c
-> index df64536..6b65207 100644
-> --- a/drivers/gpio/gpio-tegra.c
-> +++ b/drivers/gpio/gpio-tegra.c
-> @@ -27,6 +27,7 @@
->  
->  #include <asm/mach/irq.h>
->  
-> +#include <mach/gpio-tegra.h>
->  #include <mach/iomap.h>
->  #include <mach/suspend.h>
->  
-> diff --git a/drivers/mmc/host/sdhci-tegra.c b/drivers/mmc/host/sdhci-tegra.c
-> index 67176af..067a4cd 100644
-> --- a/drivers/mmc/host/sdhci-tegra.c
-> +++ b/drivers/mmc/host/sdhci-tegra.c
-> @@ -25,6 +25,8 @@
->  #include <linux/module.h>
->  
->  #include <asm/gpio.h>
-> +
-> +#include <mach/gpio-tegra.h>
->  #include <mach/sdhci.h>
->  
->  #include "sdhci-pltfm.h"
-> -- 
-> 1.7.0.4
-> 
+> diff --git a/arch/arm/include/asm/futex.h b/arch/arm/include/asm/futex.h
+> index d2d733c..b0f2e8e 100644
+> --- a/arch/arm/include/asm/futex.h
+> +++ b/arch/arm/include/asm/futex.h
+> @@ -30,14 +30,14 @@
+>  	__asm__ __volatile__(					\
+>  	"1:	ldrex	%1, [%2]\n"				\
+>  	"	" insn "\n"					\
+> -	"2:	strex	%1, %0, [%2]\n"				\
+> -	"	teq	%1, #0\n"				\
+> +	"2:	strex	r5, %0, [%2]\n"				\
+> +	"	teq	r5, #0\n"				\
+>  	"	bne	1b\n"					\
+>  	"	mov	%0, #0\n"				\
+>  	__futex_atomic_ex_table("%4")				\
+>  	: "=&r" (ret), "=&r" (oldval)				\
+>  	: "r" (uaddr), "r" (oparg), "Ir" (-EFAULT)		\
+> -	: "cc", "memory")
+> +	: "r5", "cc", "memory")
+
+You shouldn't reference r5 directly here, but due to the way the futex code
+is laid out, you can't add an extra output operand without converting the
+code to use named arguments.
+
+I'll post a patch to do that.
+
+Will
