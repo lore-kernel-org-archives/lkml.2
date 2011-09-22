@@ -1,77 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753947Ab1IVVGU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 17:06:20 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:35095 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753841Ab1IVVGQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 17:06:16 -0400
-From: Stephen Warren <swarren@nvidia.com>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>, Nicolas Pitre <nico@fluxnic.net>,
-        Olof Johansson <olof@lixom.net>, Colin Cross <ccross@android.com>,
-        Erik Gilling <konkers@android.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        linux-tegra@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH 0/4] arm/tegra: Convert gpio & pinmux to platform devices
-Date: Thu, 22 Sep 2011 15:06:03 -0600
-Message-Id: <1316725567-17881-1-git-send-email-swarren@nvidia.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1754051Ab1IVVHR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 17:07:17 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:47534 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753866Ab1IVVHN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Sep 2011 17:07:13 -0400
+Subject: Re: [PATCH 3/3] seq_file: convert seq buffer to vmalloc
+From: Joe Perches <joe@perches.com>
+To: Colin Cross <ccross@android.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>
+Date: Thu, 22 Sep 2011 14:07:12 -0700
+In-Reply-To: <1316725029-22737-4-git-send-email-ccross@android.com>
+References: <1316725029-22737-1-git-send-email-ccross@android.com>
+	 <1316725029-22737-4-git-send-email-ccross@android.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.1.91- 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1316725632.29447.21.camel@Joe-Laptop>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series converts the Tegra GPIO and pinmux drivers to be regular
-platform devices.
+On Thu, 2011-09-22 at 13:57 -0700, Colin Cross wrote:
+> seq_files are often used for debugging.  When things are going wrong
+> due to failed physically contiguous allocations, the exponentially
+> growing physically contiguous allocations in seq_read can make things
+> worse.  There is no need for physically contiguous memory, so switch
+> to virtually contiguous memory instead.
 
-The series is extracted from an earlier series I posted that augmented
-these drivers to initialize HW state from the device-tree. I'm holding
-off on that aspect of the changes, since it's not entirely clear to me
-whether the new pinmux API should drive the initial pinmux state setup
-via "system hog" definitions, or whether pinmux drivers should indeed
-do their own thing.
+vmalloc's are relatively expensive.
+Perhaps use kmalloc when appropriate instead?
 
-Dependencies:
-* The patches need to be merged in one branch in order for bisectability.
+[]
+> -	/* don't ask for more than the kmalloc() max size */
+> -	if (size > KMALLOC_MAX_SIZE)
+> -		size = KMALLOC_MAX_SIZE;
+> -
+> -	buf = kmalloc(size, GFP_KERNEL);
+> +	buf = vmalloc(size);
+>  	if (!buf)
+>  		return -ENOMEM;
 
-* At least patch 3 depends on changes in Russell's gpio branch, since it
-  edits a file renamed there. I imagine the series will be merged into
-  that branch.
+	if (size > KMALLOC_MAX_SIZE)
+		buf = vmalloc(size, GFP_KERNEL)
+	else
+		buf = kmalloc(size, GFP_KERNEL);
+	
+> +	vfree(m->buf);
 
-* The whole series is based off next-20110922 plus a couple patches in the
-  ARM patch system (7094, 7095).
+	if (m->size > KMALLOC_MAX_SIZE)
+		vfree(m->buf);
+	else
+		kfree(m->buf);
 
-* This series affects both the GPIO and pinmux drivers. Potentially, the
-  changes to the two driver could be split into separate series, but this
-  would be complicated by the fact patch 1 edits all the board files to
-  make the same change for both GPIO and pinmux; if split up, merging that
-  all back together would cause conflicts.
+>  	m->buf = buf;
+>  	m->size = size;
+>  
+> @@ -106,7 +103,7 @@ static int traverse(struct seq_file *m, loff_t offset)
+>  		return 0;
+>  	}
+>  	if (!m->buf) {
+> -		m->buf = kmalloc(m->size = PAGE_SIZE, GFP_KERNEL);
+> +		m->buf = vmalloc(m->size = PAGE_SIZE);
 
-* Patch 1's changes to board-seaboard-pinmux.c will have some merge
-  conflicts with the patches Peter De Schrijver recently posted to enhance
-  that file to support Ventana; each of our patches will change the context
-  changes in the others' diffs. I'm not sure how best to manage this.
- 
-Stephen Warren (4):
-  arm/tegra: Prep boards for gpio/pinmux conversion to pdevs
-  arm/dt: Tegra: Add pinmux node to tegra20.dtsi
-  gpio/tegra: Convert to a platform device
-  arm/tegra: Convert pinmux driver to a platform device
+embedding the set of m->size like this is ugly.
 
- .../devicetree/bindings/pinmux/pinmux_nvidia.txt   |    5 +++
- arch/arm/boot/dts/tegra20.dtsi                     |    5 +++
- arch/arm/mach-tegra/board-harmony-pinmux.c         |    8 +++++
- arch/arm/mach-tegra/board-paz00-pinmux.c           |    8 +++++
- arch/arm/mach-tegra/board-seaboard-pinmux.c        |    9 ++++-
- arch/arm/mach-tegra/board-trimslice-pinmux.c       |    7 ++++
- arch/arm/mach-tegra/devices.c                      |   10 ++++++
- arch/arm/mach-tegra/devices.h                      |    2 +
- arch/arm/mach-tegra/pinmux.c                       |   26 ++++++++++++++++
- drivers/gpio/gpio-tegra.c                          |   31 +++++++++++++-------
- 10 files changed, 98 insertions(+), 13 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/pinmux/pinmux_nvidia.txt
+[do the same as above kmalloc/vmalloc based on size]
+
+etc.
 
