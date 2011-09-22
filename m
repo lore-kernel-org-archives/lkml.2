@@ -1,47 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751684Ab1IVIX6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 04:23:58 -0400
-Received: from [124.207.24.138] ([124.207.24.138]:57384 "EHLO
-	mail.ss.pku.edu.cn" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1751466Ab1IVIXz (ORCPT
+	id S1751541Ab1IVI0f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 04:26:35 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:47758 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750962Ab1IVI0c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 04:23:55 -0400
-X-Greylist: delayed 410 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Sep 2011 04:23:55 EDT
-MIME-Version: 1.0
-In-Reply-To: <CABJhkKRAO9w85O8f11+V5LoEk08q+S09xDjSXu_bMeb1dSa0Uw@mail.gmail.com>
-References: <CABJhkKRAO9w85O8f11+V5LoEk08q+S09xDjSXu_bMeb1dSa0Uw@mail.gmail.com>
-Date: Thu, 22 Sep 2011 16:16:47 +0800
-Message-ID: <CAF1ivSYKUq_=mp_kx+39E6EJUGqKyb8hrxOyFonE3_SCpQ3kmw@mail.gmail.com>
-Subject: Re: Any kernel fails to load after failed pm-hibernate with 3.0.0
-From: Lin Ming <mlin@ss.pku.edu.cn>
-To: Magnus Leuthner <magnus.leuthner@googlemail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 22 Sep 2011 04:26:32 -0400
+Date: Thu, 22 Sep 2011 18:26:25 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>,
+        Eric Miao <eric.miao@linaro.org>
+Subject: linux-next: manual merge of the akpm with the block tree
+Message-Id: <20110922182625.4a18ee494a0f3bf977fc8ea3@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__22_Sep_2011_18_26_25_+1000_0LA_R4uITtdB8+dF"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 22, 2011 at 4:01 PM, Magnus Leuthner
-<magnus.leuthner@googlemail.com> wrote:
-> Hi,
->
-> I've used pm-hibernate with a custom built 3.0.0 kernel to hibernate
-> the system. The machine just hung there so I had to power it off
-> (Thinkpad X61). Now none of my kernels will boot (neither 2.6.x nor
-> the suspended 3.0.0), after selecing the kernel in the grub menu I get
-> a black screen with the cursor blinking in the left top and no further
-> activity (no disk access etc.). I tried the obvious things like adding
-> in grub the kernel parameters "noresume" or "init=/bin/bash" to no
-> use, same result. The kernel never shows any signs of life after
-> selection in grub :(
->
-> Any help highly appreciated.
+--Signature=_Thu__22_Sep_2011_18_26_25_+1000_0LA_R4uITtdB8+dF
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Does "hibernate=noresume" help?
+Hi Andrew,
 
-Lin Ming
+Today's linux-next merge of the scsi-post-merge tree got a conflict in
+drivers/block/brd.c between commit 5a7bbad27a41 ("block: remove support
+for bio remapping from ->make_request") from the block tree and commit
+4559c71773c5 ("brd_make_request() always returns 0, which doesn't make
+much sense") from the akpm tree.
 
->
-> Kind regards
-> Magnus
+The former turns function brd_make_request() return void, so the latter
+patch is no longer useful, so I dropped it.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__22_Sep_2011_18_26_25_+1000_0LA_R4uITtdB8+dF
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOevExAAoJEDMEi1NhKgbsypMIAIVgrknYRAMlLRVugsY/A2DI
+2Xe3gM4Gy1z0Bk6jBTIMt0HCgcEx5G7UwuLE0yr/0W8iQkYYYPnUKR2nqctGg3H1
+8Vc8FuTm5ABqAdA2clRc1LnvEQ4zkZzBWZCCWk9Qe0MEA+XMACyah0yaAL9ecuHE
+X/tAwBUY0d1nek7eM4lIX+lsj1W/I55G/JSzysf3Djm+poy4B1nzH6ONBIkxGn/Q
+c3BUQTgglND3GYApaybc1ljDNxfeOA5Ij3lNXBGCWv+BJHVJaoDS6cxYHTLlOf56
+cZup1MQ6x8+xTBQ9Vy/fNm5ZP1PPhTICgIe0CmZitOfLaol7y3cNiQoJ7L+T1eY=
+=p9AY
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__22_Sep_2011_18_26_25_+1000_0LA_R4uITtdB8+dF--
