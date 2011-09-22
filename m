@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754554Ab1IVWb5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 18:31:57 -0400
-Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:40891 "EHLO
-	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754336Ab1IVWaw (ORCPT
+	id S1754320Ab1IVWhP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 18:37:15 -0400
+Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:40600 "EHLO
+	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754099Ab1IVWhL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 18:30:52 -0400
+	Thu, 22 Sep 2011 18:37:11 -0400
 From: Mike Turquette <mturquette@ti.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, jeremy.kerr@canonical.com,
@@ -17,9 +17,9 @@ Cc: linux-arm-kernel@lists.infradead.org, jeremy.kerr@canonical.com,
         shawn.guo@freescale.com, skannan@quicinc.com, magnus.damm@gmail.com,
         arnd.bergmann@linaro.org, linux@arm.linux.org.uk, eric.miao@linaro.org,
         richard.zhao@linaro.org, Mike Turquette <mturquette@ti.com>
-Subject: [PATCH v2 2/7] clk: Implement clk_set_rate
-Date: Thu, 22 Sep 2011 15:26:57 -0700
-Message-Id: <1316730422-20027-3-git-send-email-mturquette@ti.com>
+Subject: [PATCH v2 6/7] clk: Add initial WM831x clock driver
+Date: Thu, 22 Sep 2011 15:27:01 -0700
+Message-Id: <1316730422-20027-7-git-send-email-mturquette@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1316730422-20027-1-git-send-email-mturquette@ti.com>
 References: <1316730422-20027-1-git-send-email-mturquette@ti.com>
@@ -27,167 +27,480 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeremy Kerr <jeremy.kerr@canonical.com>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-Implement clk_set_rate by adding a set_rate callback to clk_hw_ops.
-Rates are propagated down the clock tree and recalculated.  Also adds a
-flag for signaling that parents must change rates to achieve the desired
-frequency (upstream propagation).
+The WM831x and WM832x series of PMICs contain a flexible clocking
+subsystem intended to provide always on and system core clocks.  It
+features:
 
-TODO:
-Upstream propagation is not yet implemented.
-Device pre-change and post-change notifications are not implemented, but
-are marked up as FIXME comments.
+- A 32.768kHz crystal oscillator which can optionally be used to pass
+  through an externally generated clock.
+- A FLL which can be clocked from either the 32.768kHz oscillator or
+  the CLKIN pin.
+- A CLKOUT pin which can bring out either the oscillator or the FLL
+  output.
+- The 32.768kHz clock can also optionally be brought out on the GPIO
+  pins of the device.
 
-Signed-off-by: Jeremy Kerr <jeremy.kerr@canonical.com>
+This driver fully supports the 32.768kHz oscillator and CLKOUT.  The FLL
+is supported only in AUTO mode, the full flexibility of the FLL cannot
+currently be used.  The use of clock references other than the internal
+oscillator is not currently supported, and since clk_set_parent() is not
+implemented in the generic clock API the clock tree configuration cannot
+be changed at runtime.
+
+Due to a lack of access to systems where the core SoC has been converted
+to use the generic clock API this driver has been compile tested only.
+
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Mike Turquette <mturquette@ti.com>
 ---
 Changes since v1:
-Remove upstream propagation (for now)
-Rename CLK_SET_RATE_PROPAGATE to CLK_PARENT_RATE_CHANGE
+Changed CLK_SET_RATE_PROPAGATE to CLK_PARENT_RATE_CHANGE
+Converted to clk_register to the original style, without passing in
+	struct device *dev.  This is due to Mark's clock name collision
+	patch being dropped.
 
- drivers/clk/clk.c   |   71 ++++++++++++++++++++++++++++++++++++++++++++++----
- include/linux/clk.h |   12 ++++++++
- 2 files changed, 77 insertions(+), 6 deletions(-)
+ MAINTAINERS              |    1 +
+ drivers/clk/Kconfig      |    5 +
+ drivers/clk/Makefile     |    1 +
+ drivers/clk/clk-wm831x.c |  386 ++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 393 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/clk/clk-wm831x.c
 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 1cd7315..86636c2 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -21,6 +21,8 @@ struct clk {
- 	unsigned int		enable_count;
- 	unsigned int		prepare_count;
- 	struct clk		*parent;
-+	struct hlist_head	children;
-+	struct hlist_node	child_node;
- 	unsigned long		rate;
- };
- 
-@@ -176,10 +178,57 @@ long clk_round_rate(struct clk *clk, unsigned long rate)
- }
- EXPORT_SYMBOL_GPL(clk_round_rate);
- 
+diff --git a/MAINTAINERS b/MAINTAINERS
+index ae8820e..a100ea0 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -7208,6 +7208,7 @@ T:	git git://opensource.wolfsonmicro.com/linux-2.6-audioplus
+ W:	http://opensource.wolfsonmicro.com/content/linux-drivers-wolfson-devices
+ S:	Supported
+ F:	Documentation/hwmon/wm83??
++F:	drivers/clk/clk-wm83*.c
+ F:	drivers/leds/leds-wm83*.c
+ F:	drivers/input/misc/wm831x-on.c
+ F:	drivers/input/touchscreen/wm831x-ts.c
+diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
+index 95b42a3..8aca5ab 100644
+--- a/drivers/clk/Kconfig
++++ b/drivers/clk/Kconfig
+@@ -13,6 +13,7 @@ config GENERIC_CLK_BUILD_TEST
+ 	depends on EXPERIMENTAL && GENERIC_CLK
+ 	select GENERIC_CLK_FIXED
+ 	select GENERIC_CLK_GATE
++	select GENERIC_CLK_WM831X if MFD_WM831X=y
+ 	help
+ 	   Enable all possible generic clock drivers.  This is only
+ 	   useful for improving build coverage, it is not useful for
+@@ -25,3 +26,7 @@ config GENERIC_CLK_FIXED
+ config GENERIC_CLK_GATE
+ 	bool
+ 	depends on GENERIC_CLK
++
++config GENERIC_CLK_WM831X
++	tristate
++	depends on GENERIC_CLK && MFD_WM831X
+diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+index d186446..6628ad5 100644
+--- a/drivers/clk/Makefile
++++ b/drivers/clk/Makefile
+@@ -3,3 +3,4 @@ obj-$(CONFIG_CLKDEV_LOOKUP)	+= clkdev.o
+ obj-$(CONFIG_GENERIC_CLK)	+= clk.o
+ obj-$(CONFIG_GENERIC_CLK_FIXED)	+= clk-fixed.o
+ obj-$(CONFIG_GENERIC_CLK_GATE)	+= clk-gate.o
++obj-$(CONFIG_GENERIC_CLK_WM831X) += clk-wm831x.o
+diff --git a/drivers/clk/clk-wm831x.c b/drivers/clk/clk-wm831x.c
+new file mode 100644
+index 0000000..bfcbcb5
+--- /dev/null
++++ b/drivers/clk/clk-wm831x.c
+@@ -0,0 +1,386 @@
 +/*
-+ * clk_recalc_rates - Given a clock (with a recently updated clk->rate),
-+ *	notify its children that the rate may need to be recalculated, using
-+ *	ops->recalc_rate().
-+ */
-+static void clk_recalc_rates(struct clk *clk)
-+{
-+	struct hlist_node *tmp;
-+	struct clk *child;
-+
-+	if (clk->ops->recalc_rate)
-+		clk->rate = clk->ops->recalc_rate(clk->hw);
-+
-+	/* FIXME add post-rate change notification here */
-+
-+	hlist_for_each_entry(child, tmp, &clk->children, child_node)
-+		clk_recalc_rates(child);
-+}
-+
- int clk_set_rate(struct clk *clk, unsigned long rate)
- {
--	/* not yet implemented */
--	return -ENOSYS;
-+	unsigned long parent_rate, new_rate;
-+	int ret = 0;
-+
-+	if (!clk->ops->set_rate)
-+		return -ENOSYS;
-+
-+	new_rate = rate;
-+
-+	/* prevent racing with updates to the clock topology */
-+	mutex_lock(&prepare_lock);
-+
-+	/* FIXME add pre-rate change notification here */
-+
-+	ret = clk->ops->set_rate(clk->hw, new_rate, &parent_rate);
-+
-+	/* FIXME ignores CLK_PARENT_RATE_CHANGE */
-+	if (ret < 0)
-+		/* FIXME add rate change abort notification here */
-+		goto out;
-+
-+	/*
-+	 * If successful recalculate the rates of the clock, including
-+	 * children.
-+	 */
-+	clk_recalc_rates(clk);
-+
-+out:
-+	mutex_unlock(&prepare_lock);
-+
-+	return ret;
- }
- EXPORT_SYMBOL_GPL(clk_set_rate);
- 
-@@ -216,16 +265,26 @@ struct clk *clk_register(const struct clk_hw_ops *ops, struct clk_hw *hw,
- 	clk->hw = hw;
- 	hw->clk = clk;
- 
--	/* Query the hardware for parent and initial rate */
-+	/*
-+	 * Query the hardware for parent and initial rate. We may alter
-+	 * the clock topology, making this clock available from the parent's
-+	 * children list. So, we need to protect against concurrent
-+	 * accesses through set_rate
-+	 */
-+	mutex_lock(&prepare_lock);
- 
--	if (clk->ops->get_parent)
--		/* We don't to lock against prepare/enable here, as
--		 * the clock is not yet accessible from anywhere */
-+	if (clk->ops->get_parent) {
- 		clk->parent = clk->ops->get_parent(clk->hw);
-+		if (clk->parent)
-+			hlist_add_head(&clk->child_node,
-+					&clk->parent->children);
-+	}
- 
- 	if (clk->ops->recalc_rate)
- 		clk->rate = clk->ops->recalc_rate(clk->hw);
- 
-+	mutex_unlock(&prepare_lock);
-+
- 
- 	return clk;
- }
-diff --git a/include/linux/clk.h b/include/linux/clk.h
-index d6ae10b..0d2cd5e 100644
---- a/include/linux/clk.h
-+++ b/include/linux/clk.h
-@@ -58,6 +58,12 @@ struct clk_hw {
-  *		parent. Currently only called when the clock is first
-  *		registered.
-  *
-+ * @set_rate	Change the rate of this clock. If this callback returns
-+ *		CLK_SET_RATE_PROPAGATE, the rate change will be propagated to
-+ *		the parent clock (which may propagate again). The requested
-+ *		rate of the parent is passed back from the callback in the
-+ *		second 'unsigned long *' argument.
++ * WM831x clock control
 + *
-  * The clk_enable/clk_disable and clk_prepare/clk_unprepare pairs allow
-  * implementations to split any work between atomic (enable) and sleepable
-  * (prepare) contexts.  If a clock requires sleeping code to be turned on, this
-@@ -76,9 +82,15 @@ struct clk_hw_ops {
- 	void		(*disable)(struct clk_hw *);
- 	unsigned long	(*recalc_rate)(struct clk_hw *);
- 	long		(*round_rate)(struct clk_hw *, unsigned long);
-+	int		(*set_rate)(struct clk_hw *,
-+					unsigned long, unsigned long *);
- 	struct clk *	(*get_parent)(struct clk_hw *);
- };
- 
-+enum {
-+	CLK_PARENT_RATE_CHANGE = 1,
++ * Copyright 2011 Wolfson Microelectronics PLC.
++ *
++ * Author: Mark Brown <broonie@opensource.wolfsonmicro.com>
++ *
++ *  This program is free software; you can redistribute  it and/or modify it
++ *  under  the terms of  the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the  License, or (at your
++ *  option) any later version.
++ *
++ */
++
++#include <linux/clk.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/platform_device.h>
++#include <linux/mfd/wm831x/core.h>
++
++struct wm831x_clk {
++	struct wm831x *wm831x;
++	struct clk_hw xtal_hw;
++	struct clk_hw fll_hw;
++	struct clk_hw clkout_hw;
++	bool xtal_ena;
 +};
 +
- /**
-  * clk_prepare - prepare clock for atomic enabling.
-  *
++static int wm831x_xtal_enable(struct clk_hw *hw)
++{
++	struct wm831x_clk *clkdata = container_of(hw, struct wm831x_clk,
++						  xtal_hw);
++
++	if (clkdata->xtal_ena)
++		return 0;
++	else
++		return -EPERM;
++}
++
++static unsigned long wm831x_xtal_recalc_rate(struct clk_hw *hw)
++{
++	struct wm831x_clk *clkdata = container_of(hw, struct wm831x_clk,
++						  xtal_hw);
++
++	if (clkdata->xtal_ena)
++		return 32768;
++	else
++		return 0;
++}
++
++static long wm831x_xtal_round_rate(struct clk_hw *hw, unsigned long rate)
++{
++	return wm831x_xtal_recalc_rate(hw);
++}
++
++static const struct clk_hw_ops wm831x_xtal_ops = {
++	.enable = wm831x_xtal_enable,
++	.recalc_rate = wm831x_xtal_recalc_rate,
++	.round_rate = wm831x_xtal_round_rate,
++};
++
++static const unsigned long wm831x_fll_auto_rates[] = {
++	 2048000,
++	11289600,
++	12000000,
++	12288000,
++	19200000,
++	22579600,
++	24000000,
++	24576000,
++};
++
++static bool wm831x_fll_enabled(struct wm831x *wm831x)
++{
++	int ret;
++
++	ret = wm831x_reg_read(wm831x, WM831X_FLL_CONTROL_1);
++	if (ret < 0) {
++		dev_err(wm831x->dev, "Unable to read FLL_CONTROL_1: %d\n",
++			ret);
++		return true;
++	}
++
++	return ret & WM831X_FLL_ENA;
++}
++
++static int wm831x_fll_prepare(struct clk_hw *hw)
++{
++	struct wm831x_clk *clkdata = container_of(hw, struct wm831x_clk,
++						  fll_hw);
++	struct wm831x *wm831x = clkdata->wm831x;
++	int ret;
++
++	ret = wm831x_set_bits(wm831x, WM831X_FLL_CONTROL_2,
++			      WM831X_FLL_ENA, WM831X_FLL_ENA);
++	if (ret != 0)
++		dev_crit(wm831x->dev, "Failed to enable FLL: %d\n", ret);
++
++	return ret;
++}
++
++static void wm831x_fll_unprepare(struct clk_hw *hw)
++{
++	struct wm831x_clk *clkdata = container_of(hw, struct wm831x_clk,
++						  fll_hw);
++	struct wm831x *wm831x = clkdata->wm831x;
++	int ret;
++
++	ret = wm831x_set_bits(wm831x, WM831X_FLL_CONTROL_2, WM831X_FLL_ENA, 0);
++	if (ret != 0)
++		dev_crit(wm831x->dev, "Failed to disaable FLL: %d\n", ret);
++}
++
++static unsigned long wm831x_fll_recalc_rate(struct clk_hw *hw)
++{
++	struct wm831x_clk *clkdata = container_of(hw, struct wm831x_clk,
++						  fll_hw);
++	struct wm831x *wm831x = clkdata->wm831x;
++	int ret;
++
++	ret = wm831x_reg_read(wm831x, WM831X_CLOCK_CONTROL_2);
++	if (ret < 0) {
++		dev_err(wm831x->dev, "Unable to read CLOCK_CONTROL_2: %d\n",
++			ret);
++		return 0;
++	}
++
++	if (ret & WM831X_FLL_AUTO)
++		return wm831x_fll_auto_rates[ret & WM831X_FLL_AUTO_FREQ_MASK];
++
++	dev_err(wm831x->dev, "FLL only supported in AUTO mode\n");
++	return 0;
++}
++
++static int wm831x_fll_set_rate(struct clk_hw *hw, unsigned long rate,
++			       unsigned long *parent_rate)
++{
++	struct wm831x_clk *clkdata = container_of(hw, struct wm831x_clk,
++						  fll_hw);
++	struct wm831x *wm831x = clkdata->wm831x;
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(wm831x_fll_auto_rates); i++)
++		if (wm831x_fll_auto_rates[i] == rate)
++			break;
++	if (i == ARRAY_SIZE(wm831x_fll_auto_rates))
++		return -EINVAL;
++
++	if (wm831x_fll_enabled(wm831x))
++		return -EPERM;
++
++	return wm831x_set_bits(wm831x, WM831X_CLOCK_CONTROL_2,
++			       WM831X_FLL_AUTO_FREQ_MASK, i);
++}
++
++static struct clk *wm831x_fll_get_parent(struct clk_hw *hw)
++{
++	struct wm831x_clk *clkdata = container_of(hw, struct wm831x_clk,
++						  fll_hw);
++	struct wm831x *wm831x = clkdata->wm831x;
++	int ret;
++
++	/* AUTO mode is always clocked from the crystal */
++	ret = wm831x_reg_read(wm831x, WM831X_CLOCK_CONTROL_2);
++	if (ret < 0) {
++		dev_err(wm831x->dev, "Unable to read CLOCK_CONTROL_2: %d\n",
++			ret);
++		return NULL;
++	}
++
++	if (ret & WM831X_FLL_AUTO)
++		return clkdata->xtal_hw.clk;
++
++	ret = wm831x_reg_read(wm831x, WM831X_FLL_CONTROL_5);
++	if (ret < 0) {
++		dev_err(wm831x->dev, "Unable to read FLL_CONTROL_5: %d\n",
++			ret);
++		return NULL;
++	}
++
++	switch (ret & WM831X_FLL_CLK_SRC_MASK) {
++	case 0:
++		return clkdata->xtal_hw.clk;
++	case 1:
++		dev_warn(wm831x->dev,
++			 "FLL clocked from CLKIN not yet supported\n");
++		return NULL;
++	default:
++		dev_err(wm831x->dev, "Unsupported FLL clock source %d\n",
++			ret & WM831X_FLL_CLK_SRC_MASK);
++		return NULL;
++	}
++}
++
++static const struct clk_hw_ops wm831x_fll_ops = {
++	.prepare = wm831x_fll_prepare,
++	.unprepare = wm831x_fll_unprepare,
++	.recalc_rate = wm831x_fll_recalc_rate,
++	.set_rate = wm831x_fll_set_rate,
++	.get_parent = wm831x_fll_get_parent,
++};
++
++static int wm831x_clkout_prepare(struct clk_hw *hw)
++{
++	struct wm831x_clk *clkdata = container_of(hw, struct wm831x_clk,
++						  clkout_hw);
++	struct wm831x *wm831x = clkdata->wm831x;
++	int ret;
++
++	ret = wm831x_reg_unlock(wm831x);
++	if (ret != 0) {
++		dev_crit(wm831x->dev, "Failed to lock registers: %d\n", ret);
++		return ret;
++	}
++
++	ret = wm831x_set_bits(wm831x, WM831X_CLOCK_CONTROL_1,
++			      WM831X_CLKOUT_ENA, WM831X_CLKOUT_ENA);
++	if (ret != 0)
++		dev_crit(wm831x->dev, "Failed to enable CLKOUT: %d\n", ret);
++
++	wm831x_reg_lock(wm831x);
++
++	return ret;
++}
++
++static void wm831x_clkout_unprepare(struct clk_hw *hw)
++{
++	struct wm831x_clk *clkdata = container_of(hw, struct wm831x_clk,
++						  clkout_hw);
++	struct wm831x *wm831x = clkdata->wm831x;
++	int ret;
++
++	ret = wm831x_reg_unlock(wm831x);
++	if (ret != 0) {
++		dev_crit(wm831x->dev, "Failed to lock registers: %d\n", ret);
++		return;
++	}
++
++	ret = wm831x_set_bits(wm831x, WM831X_CLOCK_CONTROL_1,
++			      WM831X_CLKOUT_ENA, 0);
++	if (ret != 0)
++		dev_crit(wm831x->dev, "Failed to disable CLKOUT: %d\n", ret);
++
++	wm831x_reg_lock(wm831x);
++}
++
++static unsigned long wm831x_clkout_recalc_rate(struct clk_hw *hw)
++{
++	return clk_get_rate(clk_get_parent(hw->clk));
++}
++
++static long wm831x_clkout_round_rate(struct clk_hw *hw, unsigned long rate)
++{
++	return clk_round_rate(clk_get_parent(hw->clk), rate);
++}
++
++static int wm831x_clkout_set_rate(struct clk_hw *hw, unsigned long rate,
++				  unsigned long *parent_rate)
++{
++	*parent_rate = rate;
++	return CLK_PARENT_RATE_CHANGE;
++}
++
++static struct clk *wm831x_clkout_get_parent(struct clk_hw *hw)
++{
++	struct wm831x_clk *clkdata = container_of(hw, struct wm831x_clk,
++						  clkout_hw);
++	struct wm831x *wm831x = clkdata->wm831x;
++	int ret;
++
++	ret = wm831x_reg_read(wm831x, WM831X_CLOCK_CONTROL_1);
++	if (ret < 0) {
++		dev_err(wm831x->dev, "Unable to read CLOCK_CONTROL_1: %d\n",
++			ret);
++		return NULL;
++	}
++
++	if (ret & WM831X_CLKOUT_SRC)
++		return clkdata->xtal_hw.clk;
++	else
++		return clkdata->fll_hw.clk;
++}
++
++static const struct clk_hw_ops wm831x_clkout_ops = {
++	.prepare = wm831x_clkout_prepare,
++	.unprepare = wm831x_clkout_unprepare,
++	.recalc_rate = wm831x_clkout_recalc_rate,
++	.round_rate = wm831x_clkout_round_rate,
++	.set_rate = wm831x_clkout_set_rate,
++	.get_parent = wm831x_clkout_get_parent,
++};
++
++static __devinit int wm831x_clk_probe(struct platform_device *pdev)
++{
++	struct wm831x *wm831x = dev_get_drvdata(pdev->dev.parent);
++	struct wm831x_clk *clkdata;
++	int ret;
++
++	clkdata = kzalloc(sizeof(*clkdata), GFP_KERNEL);
++	if (!clkdata)
++		return -ENOMEM;
++
++	/* XTAL_ENA can only be set via OTP/InstantConfig so just read once */
++	ret = wm831x_reg_read(wm831x, WM831X_CLOCK_CONTROL_2);
++	if (ret < 0) {
++		dev_err(wm831x->dev, "Unable to read CLOCK_CONTROL_2: %d\n",
++			ret);
++		goto err_alloc;
++	}
++	clkdata->xtal_ena = ret & WM831X_XTAL_ENA;
++
++	if (!clk_register(&wm831x_xtal_ops, &clkdata->xtal_hw,
++			  "xtal")) {
++		ret = -EINVAL;
++		goto err_alloc;
++	}
++
++	if (!clk_register(&wm831x_fll_ops, &clkdata->fll_hw,
++			  "fll")) {
++		ret = -EINVAL;
++		goto err_xtal;
++	}
++
++	if (!clk_register(&wm831x_clkout_ops, &clkdata->clkout_hw,
++			  "clkout")) {
++		ret = -EINVAL;
++		goto err_fll;
++	}
++
++	dev_set_drvdata(&pdev->dev, clkdata);
++
++	return 0;
++
++err_fll:
++	clk_unregister(clkdata->fll_hw.clk);
++err_xtal:
++	clk_unregister(clkdata->xtal_hw.clk);
++err_alloc:
++	kfree(clkdata);
++	return ret;
++}
++
++static __devexit int wm831x_clk_remove(struct platform_device *pdev)
++{
++	struct wm831x_clk *clkdata = dev_get_drvdata(&pdev->dev);
++
++	clk_unregister(clkdata->clkout_hw.clk);
++	clk_unregister(clkdata->fll_hw.clk);
++	clk_unregister(clkdata->xtal_hw.clk);
++	kfree(clkdata);
++
++	return 0;
++}
++
++static struct platform_driver wm831x_clk_driver = {
++	.probe = wm831x_clk_probe,
++	.remove = __devexit_p(wm831x_clk_remove),
++	.driver		= {
++		.name	= "wm831x-clk",
++		.owner	= THIS_MODULE,
++	},
++};
++
++static int __init wm831x_clk_init(void)
++{
++	int ret;
++
++	ret = platform_driver_register(&wm831x_clk_driver);
++	if (ret != 0)
++		pr_err("Failed to register WM831x clock driver: %d\n", ret);
++
++	return ret;
++}
++module_init(wm831x_clk_init);
++
++static void __exit wm831x_clk_exit(void)
++{
++	platform_driver_unregister(&wm831x_clk_driver);
++}
++module_exit(wm831x_clk_exit);
++
++/* Module information */
++MODULE_AUTHOR("Mark Brown <broonie@opensource.wolfsonmicro.com>");
++MODULE_DESCRIPTION("WM831x clock driver");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:wm831x-clk");
 -- 
 1.7.4.1
 
