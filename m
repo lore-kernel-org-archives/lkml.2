@@ -1,369 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752096Ab1IVDUd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Sep 2011 23:20:33 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:47930 "EHLO mx2.parallels.com"
+	id S1752121Ab1IVDYc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Sep 2011 23:24:32 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:6948 "EHLO sjogate2.atmel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751760Ab1IVDU3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Sep 2011 23:20:29 -0400
-Message-ID: <4E7AA953.2040204@parallels.com>
-Date: Thu, 22 Sep 2011 00:19:47 -0300
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1751600Ab1IVDYa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Sep 2011 23:24:30 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-To: Balbir Singh <bsingharora@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
-        <lizf@cn.fujitsu.com>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        <ebiederm@xmission.com>, <davem@davemloft.net>, <gthelen@google.com>,
-        <netdev@vger.kernel.org>, <linux-mm@kvack.org>, <kirill@shutemov.name>,
-        Ying Han <yinghan@google.com>
-Subject: Re: [PATCH v3 1/7] Basic kernel memory functionality for the Memory
- Controller
-References: <1316393805-3005-1-git-send-email-glommer@parallels.com> <1316393805-3005-2-git-send-email-glommer@parallels.com> <4E794AA2.9080008@parallels.com> <CAKTCnzmkuL+9ftD5d0Z8b5w+DUSUoLiWqSX_TgGxtRxtoPsxpA@mail.gmail.com>
-In-Reply-To: <CAKTCnzmkuL+9ftD5d0Z8b5w+DUSUoLiWqSX_TgGxtRxtoPsxpA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [201.82.134.226]
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH v2] [media] at91: add code to initialize and manage the ISI_MCK for Atmel ISI driver.
+Date: Thu, 22 Sep 2011 11:23:54 +0800
+Message-ID: <4C79549CB6F772498162A641D92D532802CC5FEC@penmb01.corp.atmel.com>
+In-Reply-To: <4E69E4BF.3030402@atmel.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH v2] [media] at91: add code to initialize and manage the ISI_MCK for Atmel ISI driver.
+Thread-Index: Acxu1/ntLyarh3FdQUmf9kuOk9wu2gJ/ei2A
+References: <1315288601-22384-1-git-send-email-josh.wu@atmel.com> <Pine.LNX.4.64.1109060803590.14818@axis700.grange> <4E69E4BF.3030402@atmel.com>
+From: "Wu, Josh" <Josh.wu@atmel.com>
+To: "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-media@vger.kernel.org>
+Cc: "Guennadi Liakhovetski" <g.liakhovetski@gmx.de>, <plagnioj@jcrosoft.com>,
+        <linux-kernel@vger.kernel.org>
+X-OriginalArrivalTime: 22 Sep 2011 03:23:59.0633 (UTC) FILETIME=[11A68810:01CC78D7]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/2011 12:17 AM, Balbir Singh wrote:
-> On Wed, Sep 21, 2011 at 7:53 AM, Glauber Costa<glommer@parallels.com>  wrote:
->>
->> Hi people,
->>
->> Any insights on this series?
->> Kame, is it inline with your expectations ?
->>
->> Thank you all
->>
->> On 09/18/2011 09:56 PM, Glauber Costa wrote:
+Hi, Nicolas
+
+On Friday, September 09, 2011 6:05 PM, Nicolas Ferre wrote:
+
+> Le 06/09/2011 08:54, Guennadi Liakhovetski :
+>> On Tue, 6 Sep 2011, Josh Wu wrote:
+>> 
+>>> This patch enable the configuration for ISI_MCK, which is provided by programmable clock.
 >>>
->>> This patch lays down the foundation for the kernel memory component
->>> of the Memory Controller.
->>>
->>> As of today, I am only laying down the following files:
->>>
->>>   * memory.independent_kmem_limit
->>>   * memory.kmem.limit_in_bytes (currently ignored)
->>>   * memory.kmem.usage_in_bytes (always zero)
->>>
->>> Signed-off-by: Glauber Costa<glommer@parallels.com>
->>> CC: Paul Menage<paul@paulmenage.org>
->>> CC: Greg Thelen<gthelen@google.com>
+>>> Signed-off-by: Josh Wu <josh.wu@atmel.com>
 >>> ---
->>>   Documentation/cgroups/memory.txt |   30 +++++++++-
->>>   init/Kconfig                     |   11 ++++
->>>   mm/memcontrol.c                  |  115 ++++++++++++++++++++++++++++++++++++--
->>>   3 files changed, 148 insertions(+), 8 deletions(-)
+>>>  drivers/media/video/atmel-isi.c |   60 ++++++++++++++++++++++++++++++++++++++-
+>>>  include/media/atmel-isi.h       |    4 ++
+>>>  2 files changed, 63 insertions(+), 1 deletions(-)
 >>>
->>> diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
->>> index 6f3c598..6f1954a 100644
->>> --- a/Documentation/cgroups/memory.txt
->>> +++ b/Documentation/cgroups/memory.txt
->>> @@ -44,8 +44,9 @@ Features:
->>>    - oom-killer disable knob and oom-notifier
->>>    - Root cgroup has no limit controls.
->>>
->>> - Kernel memory and Hugepages are not under control yet. We just manage
->>> - pages on LRU. To add more controls, we have to take care of performance.
->>> + Hugepages is not under control yet. We just manage pages on LRU. To add more
->>> + controls, we have to take care of performance. Kernel memory support is work
->>> + in progress, and the current version provides basically functionality.
->>>
->>>   Brief summary of control files.
->>>
->>> @@ -56,8 +57,11 @@ Brief summary of control files.
->>>                                  (See 5.5 for details)
->>>    memory.memsw.usage_in_bytes   # show current res_counter usage for memory+Swap
->>>                                  (See 5.5 for details)
->>> + memory.kmem.usage_in_bytes     # show current res_counter usage for kmem only.
->>> +                                (See 2.7 for details)
->>>    memory.limit_in_bytes                 # set/show limit of memory usage
->>>    memory.memsw.limit_in_bytes   # set/show limit of memory+Swap usage
->>> + memory.kmem.limit_in_bytes     # if allowed, set/show limit of kernel memory
->>>    memory.failcnt                        # show the number of memory usage hits limits
->>>    memory.memsw.failcnt          # show the number of memory+Swap hits limits
->>>    memory.max_usage_in_bytes     # show max memory usage recorded
->>> @@ -72,6 +76,9 @@ Brief summary of control files.
->>>    memory.oom_control            # set/show oom controls.
->>>    memory.numa_stat              # show the number of memory usage per numa node
->>>
->>> + memory.independent_kmem_limit  # select whether or not kernel memory limits are
->>> +                                  independent of user limits
->>> +
->>>   1. History
->>>
->>>   The memory controller has a long history. A request for comments for the memory
->>> @@ -255,6 +262,25 @@ When oom event notifier is registered, event will be delivered.
->>>     per-zone-per-cgroup LRU (cgroup's private LRU) is just guarded by
->>>     zone->lru_lock, it has no lock of its own.
->>>
->>> +2.7 Kernel Memory Extension (CONFIG_CGROUP_MEM_RES_CTLR_KMEM)
->>> +
->>> + With the Kernel memory extension, the Memory Controller is able to limit
->>> +the amount of kernel memory used by the system. Kernel memory is fundamentally
->>> +different than user memory, since it can't be swapped out, which makes it
->>> +possible to DoS the system by consuming too much of this precious resource.
->>> +Kernel memory limits are not imposed for the root cgroup.
->>> +
->>> +Memory limits as specified by the standard Memory Controller may or may not
->>> +take kernel memory into consideration. This is achieved through the file
->>> +memory.independent_kmem_limit. A Value different than 0 will allow for kernel
->>> +memory to be controlled separately.
->>> +
->>> +When kernel memory limits are not independent, the limit values set in
->>> +memory.kmem files are ignored.
->>> +
->>> +Currently no soft limit is implemented for kernel memory. It is future work
->>> +to trigger slab reclaim when those limits are reached.
->>> +
->
-> Ying Han was also looking into this (cc'ing her)
->
->>>   3. User Interface
->>>
->>>   0. Configuration
->>> diff --git a/init/Kconfig b/init/Kconfig
->>> index d627783..49e5839 100644
->>> --- a/init/Kconfig
->>> +++ b/init/Kconfig
->>> @@ -689,6 +689,17 @@ config CGROUP_MEM_RES_CTLR_SWAP_ENABLED
->>>           For those who want to have the feature enabled by default should
->>>           select this option (if, for some reason, they need to disable it
->>>           then swapaccount=0 does the trick).
->>> +config CGROUP_MEM_RES_CTLR_KMEM
->>> +       bool "Memory Resource Controller Kernel Memory accounting"
->>> +       depends on CGROUP_MEM_RES_CTLR
->>> +       default y
->>> +       help
->>> +         The Kernel Memory extension for Memory Resource Controller can limit
->>> +         the amount of memory used by kernel objects in the system. Those are
->>> +         fundamentally different from the entities handled by the standard
->>> +         Memory Controller, which are page-based, and can be swapped. Users of
->>> +         the kmem extension can use it to guarantee that no group of processes
->>> +         will ever exhaust kernel resources alone.
->>>
->>>   config CGROUP_PERF
->>>         bool "Enable perf_event per-cpu per-container group (cgroup) monitoring"
->>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->>> index ebd1e86..d32e931 100644
->>> --- a/mm/memcontrol.c
->>> +++ b/mm/memcontrol.c
->>> @@ -73,7 +73,11 @@ static int really_do_swap_account __initdata = 0;
->>>   #define do_swap_account               (0)
->>>   #endif
->>>
->>> -
->>> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
->>> +int do_kmem_account __read_mostly = 1;
->>> +#else
->>> +#define do_kmem_account                0
->>> +#endif
->>>   /*
->>>    * Statistics for memory cgroup.
->>>    */
->>> @@ -270,6 +274,10 @@ struct mem_cgroup {
->>>          */
->>>         struct res_counter memsw;
->>>         /*
->>> +        * the counter to account for kmem usage.
->>> +        */
->>> +       struct res_counter kmem;
->>> +       /*
->>>          * Per cgroup active and inactive list, similar to the
->>>          * per zone LRU lists.
->>>          */
->>> @@ -321,6 +329,11 @@ struct mem_cgroup {
->>>          */
->>>         unsigned long   move_charge_at_immigrate;
->>>         /*
->>> +        * Should kernel memory limits be stabilished independently
->>> +        * from user memory ?
->>> +        */
->>> +       int             kmem_independent;
->>> +       /*
->>>          * percpu counter.
->>>          */
->>>         struct mem_cgroup_stat_cpu *stat;
->>> @@ -388,9 +401,14 @@ enum charge_type {
->>>   };
->>>
->>>   /* for encoding cft->private value on file */
->>> -#define _MEM                   (0)
->>> -#define _MEMSWAP               (1)
->>> -#define _OOM_TYPE              (2)
->>> +
->>> +enum mem_type {
->>> +       _MEM = 0,
->>> +       _MEMSWAP,
->>> +       _OOM_TYPE,
->>> +       _KMEM,
->>> +};
->>> +
->>>   #define MEMFILE_PRIVATE(x, val)       (((x)<<    16) | (val))
->>>   #define MEMFILE_TYPE(val)     (((val)>>    16)&    0xffff)
->>>   #define MEMFILE_ATTR(val)     ((val)&    0xffff)
->>> @@ -3943,10 +3961,15 @@ static inline u64 mem_cgroup_usage(struct mem_cgroup *mem, bool swap)
->>>         u64 val;
->>>
->>>         if (!mem_cgroup_is_root(mem)) {
->>> +               val = 0;
->>> +               if (!mem->kmem_independent)
->>> +                       val = res_counter_read_u64(&mem->kmem, RES_USAGE);
->>>                 if (!swap)
->>> -                       return res_counter_read_u64(&mem->res, RES_USAGE);
->>> +                       val += res_counter_read_u64(&mem->res, RES_USAGE);
->>>                 else
->>> -                       return res_counter_read_u64(&mem->memsw, RES_USAGE);
->>> +                       val += res_counter_read_u64(&mem->memsw, RES_USAGE);
->>> +
->>> +               return val;
->>>         }
->>>
->>>         val = mem_cgroup_recursive_stat(mem, MEM_CGROUP_STAT_CACHE);
->>> @@ -3979,6 +4002,10 @@ static u64 mem_cgroup_read(struct cgroup *cont, struct cftype *cft)
->>>                 else
->>>                         val = res_counter_read_u64(&mem->memsw, name);
->>>                 break;
->>> +       case _KMEM:
->>> +               val = res_counter_read_u64(&mem->kmem, name);
->>> +               break;
->>> +
->>>         default:
->>>                 BUG();
->>>                 break;
->>> @@ -4756,6 +4783,21 @@ static int mem_cgroup_reset_vmscan_stat(struct cgroup *cgrp,
->>>         return 0;
->>>   }
->>>
->>> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
->>> +static u64 kmem_limit_independent_read(struct cgroup *cont, struct cftype *cft)
->>> +{
->>> +       return mem_cgroup_from_cont(cont)->kmem_independent;
->>> +}
->>> +
->>> +static int kmem_limit_independent_write(struct cgroup *cont, struct cftype *cft,
->>> +                                       u64 val)
->>> +{
->>> +       cgroup_lock();
->>> +       mem_cgroup_from_cont(cont)->kmem_independent = !!val;
->>> +       cgroup_unlock();
->>> +       return 0;
->>> +}
->
-> I know we have a lot of pending xxx_from_cont() and struct cgroup
-> *cont, can we move it to memcg notation to be more consistent with our
-> usage. There is a patch to convert old usage
->
->>> +#endif
->>>
->>>   static struct cftype mem_cgroup_files[] = {
->>>         {
->>> @@ -4877,6 +4919,47 @@ static int register_memsw_files(struct cgroup *cont, struct cgroup_subsys *ss)
->>>   }
->>>   #endif
->>>
->>> +
->>> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
->>> +static struct cftype kmem_cgroup_files[] = {
->>> +       {
->>> +               .name = "independent_kmem_limit",
->>> +               .read_u64 = kmem_limit_independent_read,
->>> +               .write_u64 = kmem_limit_independent_write,
->>> +       },
->>> +       {
->>> +               .name = "kmem.usage_in_bytes",
->>> +               .private = MEMFILE_PRIVATE(_KMEM, RES_USAGE),
->>> +               .read_u64 = mem_cgroup_read,
->>> +       },
->>> +       {
->>> +               .name = "kmem.limit_in_bytes",
->>> +               .private = MEMFILE_PRIVATE(_KMEM, RES_LIMIT),
->>> +               .read_u64 = mem_cgroup_read,
->>> +       },
->>> +};
->>> +
->>> +static int register_kmem_files(struct cgroup *cont, struct cgroup_subsys *ss)
->>> +{
->>> +       struct mem_cgroup *mem = mem_cgroup_from_cont(cont);
->>> +       int ret = 0;
->>> +
->>> +       if (!do_kmem_account)
->>> +               return 0;
->>> +
->>> +       if (!mem_cgroup_is_root(mem))
->>> +               ret = cgroup_add_files(cont, ss, kmem_cgroup_files,
->>> +                                       ARRAY_SIZE(kmem_cgroup_files));
->>> +       return ret;
->>> +};
->>> +
->>> +#else
->>> +static int register_kmem_files(struct cgroup *cont, struct cgroup_subsys *ss)
->>> +{
->>> +       return 0;
->>> +}
->>> +#endif
->>> +
->>>   static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *mem, int node)
->>>   {
->>>         struct mem_cgroup_per_node *pn;
->>> @@ -5075,6 +5158,7 @@ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
->>>         if (parent&&    parent->use_hierarchy) {
->>>                 res_counter_init(&mem->res,&parent->res);
->>>                 res_counter_init(&mem->memsw,&parent->memsw);
->>> +               res_counter_init(&mem->kmem,&parent->kmem);
->>>                 /*
->>>                  * We increment refcnt of the parent to ensure that we can
->>>                  * safely access it on res_counter_charge/uncharge.
->>> @@ -5085,6 +5169,7 @@ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
->>>         } else {
->>>                 res_counter_init(&mem->res, NULL);
->>>                 res_counter_init(&mem->memsw, NULL);
->>> +               res_counter_init(&mem->kmem, NULL);
->>>         }
->>>         mem->last_scanned_child = 0;
->>>         mem->last_scanned_node = MAX_NUMNODES;
->>> @@ -5129,6 +5214,10 @@ static int mem_cgroup_populate(struct cgroup_subsys *ss,
->>>
->>>         if (!ret)
->>>                 ret = register_memsw_files(cont, ss);
->>> +
->>> +       if (!ret)
->>> +               ret = register_kmem_files(cont, ss);
->>> +
->>>         return ret;
->>>   }
->>>
->>> @@ -5665,3 +5754,17 @@ static int __init enable_swap_account(char *s)
->>>   __setup("swapaccount=", enable_swap_account);
->>>
->>>   #endif
->>> +
->>> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
->>> +static int __init disable_kmem_account(char *s)
->>> +{
->>> +       /* consider enabled if no parameter or 1 is given */
->>> +       if (!strcmp(s, "1"))
->>> +               do_kmem_account = 1;
->>> +       else if (!strcmp(s, "0"))
->>> +               do_kmem_account = 0;
->>> +       return 1;
->>> +}
->>> +__setup("kmemaccount=", disable_kmem_account);
->>> +
->>> +#endif
->
-> The infrastructure looks OK, we need better integration with
-> statistics for kmem usage.
->
-> Balbir Singh
-Hello Balbir,
+>>> diff --git a/drivers/media/video/atmel-isi.c 
+>>> b/drivers/media/video/atmel-isi.c
 
-Thank you for your comments.
-I agree here. With this patch, however, I am only trying to lay down the 
-foundations needed for the rest of the patches, that touch tcp memory 
-pressure conditions.
+> [..]
 
+>>>  /* 
+>>> ---------------------------------------------------------------------
+>>> --*/
+>>> +/* Initialize ISI_MCK clock, called by atmel_isi_probe() function */ 
+>>> +static int initialize_mck(struct platform_device *pdev,
+>>> +			struct atmel_isi *isi)
+>>> +{
+>>> +	struct device *dev = &pdev->dev;
+>>> +	struct isi_platform_data *pdata = dev->platform_data;
+>>> +	struct clk *pck_parent;
+>>> +	int ret;
+>>> +
+>>> +	if (!strlen(pdata->pck_name) || !strlen(pdata->pck_parent_name))
+>>> +		return -EINVAL;
+>>> +
+>>> +	/* ISI_MCK is provided by PCK clock */
+>>> +	isi->mck = clk_get(dev, pdata->pck_name);
+>> 
+>> I think, it's still not what Russell meant. Look at
+>> drivers/mmc/host/atmel-mci.c:
+>> 
+>> 	host->mck = clk_get(&pdev->dev, "mci_clk");
+>> 
+>> and in arch/arm/mach-at91/at91sam9g45.c they've got
+>> 
+>> 	CLKDEV_CON_DEV_ID("mci_clk", "atmel_mci.0", &mmc0_clk),
+>> 	CLKDEV_CON_DEV_ID("mci_clk", "atmel_mci.1", &mmc1_clk),
+>> 
+>> where
+>> 
+>> #define CLKDEV_CON_DEV_ID(_con_id, _dev_id, _clk)	\
+>> 	{						\
+>> 		.con_id = _con_id,			\
+>> 		.dev_id = _dev_id,			\
+>> 		.clk = _clk,				\
+>> 	}
+>> 
+>> I.e., in the device driver (mmc in this case) you only use the 
+>> (platform) device instance, whose dev_name(dev) is then matched 
+>> against one of clock lookups above, and a connection ID, which is used 
+>> in case your device is using more than one clock. In the ISI case, 
+>> your pck1 clock, that you seem to need here, doesn't have a clock 
+>> lookup object, so, you might have to add one, and then use its connection ID.
+>> 
+>>> +	if (IS_ERR(isi->mck)) {
+>>> +		dev_err(dev, "Failed to get PCK: %s\n", pdata->pck_name);
+>>> +		return PTR_ERR(isi->mck);
+>>> +	}
+>>> +
+>>> +	pck_parent = clk_get(dev, pdata->pck_parent_name);
+>>> +	if (IS_ERR(pck_parent)) {
+>>> +		ret = PTR_ERR(pck_parent);
+>>> +		dev_err(dev, "Failed to get PCK parent: %s\n",
+>>> +				pdata->pck_parent_name);
+>>> +		goto err_init_mck;
+>>> +	}
+>>> +
+>>> +	ret = clk_set_parent(isi->mck, pck_parent);
+>> 
+>> I'm not entirely sure on this one, but as we had a similar situation 
+>> with clocks, we decided to extablish the clock hierarchy in the board 
+>> code, and only deal with the actual device clocks in the driver 
+>> itself. I.e., we moved all clk_set_parent() and setting up the parent clock into the board.
+>> And I do think, this makes more sense, than doing this in the driver, 
+>> not all users of this driver will need to manage the parent clock, right?
 
+> Exactly.
+>
+> Josh, for the two comments by Guennadi above, you can take sound/soc/atmel/sam9g20_wm8731.c as an example of using PCK and parent clocks. You will also find how to use named clocks and how to set the programmable clocks rate...
+
+According to sam9g20_wm8731.c file, and combined Guennadi and J.C's advices, I'd like to only add clk_set_rate() and enable/disble isi_mck code in ISI driver. 
+Also I will define isi_mck clock in soc chip file(at91sam9g45.c).
+Then I will move all setting up the parent clock code into the at91sam9g45_devices.c, where there are code to add Atmel ISI device.
+
+I will generate the new version patch for it soon.
+
+>>> +	clk_put(pck_parent);
+>>> +	if (ret)
+>>> +		goto err_init_mck;
+>>> +
+>>> +	ret = clk_set_rate(isi->mck, pdata->isi_mck_hz);
+>>> +	if (ret < 0)
+>>> +		goto err_init_mck;
+>>> +
+>>> +	return 0;
+>>> +
+>>> +err_init_mck:
+>>> +	clk_put(isi->mck);
+>>> +	return ret;
+>>> +}
+>>> +
+>>>  static int __devexit atmel_isi_remove(struct platform_device *pdev)  
+>>> {
+>>>  	struct soc_camera_host *soc_host = to_soc_camera_host(&pdev->dev); 
+>>> @@ -897,6 +948,7 @@ static int __devexit atmel_isi_remove(struct platform_device *pdev)
+>>>  			isi->fb_descriptors_phys);
+>>>  
+>>>  	iounmap(isi->regs);
+>>> +	clk_put(isi->mck);
+>>>  	clk_put(isi->pclk);
+>>>  	kfree(isi);
+
+> [..]
+
+> Best regards,
+> --
+> Nicolas Ferre
+
+Best Regards,
+Josh Wu
