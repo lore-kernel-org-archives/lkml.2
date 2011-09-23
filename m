@@ -1,78 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752370Ab1IWU3Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 16:29:25 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41770 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752280Ab1IWU3X (ORCPT
+	id S1752271Ab1IWUec (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 16:34:32 -0400
+Received: from mail132.messagelabs.com ([216.82.242.115]:43129 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752047Ab1IWUea (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 16:29:23 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Anton Blanchard <anton@samba.org>,
-        Eric B Munson <emunson@mgebm.net>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 07/12] perf symbols: Synthesize anonymous mmap events
-Date: Fri, 23 Sep 2011 17:26:21 -0300
-Message-Id: <1316809586-28529-8-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1316809586-28529-1-git-send-email-acme@infradead.org>
-References: <1316809586-28529-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 23 Sep 2011 16:34:30 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-2.tower-132.messagelabs.com!1316810059!39606940!20
+X-Originating-IP: [216.166.12.32]
+X-StarScan-Version: 6.3.6; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ecryptfs/inode.c: local functions should be static
+Date: Fri, 23 Sep 2011 13:33:57 -0700
+User-Agent: KMail/1.9.9
+CC: <ecryptfs@vger.kernel.org>, <tyhicks@linux.vnet.ibm.com>,
+        <kirkland@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201109231333.58042.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Anton Blanchard <anton@samba.org>
+This quiets the following sparse noise:
 
-perf_event__synthesize_mmap_events does not create anonymous mmap events
-even though the kernel does. As a result an already running application
-with dynamically created code will not get profiled - all samples end up
-in the unknown bucket.
+warning: symbol 'ecryptfs_getattr_link' was not declared. Should it be static?
+warning: symbol 'ecryptfs_getattr' was not declared. Should it be static?
 
-This patch skips any entries with '[' in the name to avoid adding events
-for special regions (eg the vsyscall page). All other executable mmaps
-are assumed to be anonymous and an event is synthesized.
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+Cc: Dustin Kirkland <kirkland@canonical.com>
 
-Acked-by: Pekka Enberg <penberg@kernel.org>
-Cc: Eric B Munson <emunson@mgebm.net>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>
-Link: http://lkml.kernel.org/r/20110830091506.60b51fe8@kryten
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/event.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 3c1b8a6..437f8ca 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -169,12 +169,17 @@ static int perf_event__synthesize_mmap_events(union perf_event *event,
- 			continue;
- 		pbf += n + 3;
- 		if (*pbf == 'x') { /* vm_exec */
-+			char anonstr[] = "//anon\n";
- 			char *execname = strchr(bf, '/');
+diff --git a/fs/ecryptfs/inode.c b/fs/ecryptfs/inode.c
+index 11f8582..6837d8d 100644
+--- a/fs/ecryptfs/inode.c
++++ b/fs/ecryptfs/inode.c
+@@ -1017,7 +1017,7 @@ out:
+ 	return rc;
+ }
  
- 			/* Catch VDSO */
- 			if (execname == NULL)
- 				execname = strstr(bf, "[vdso]");
+-int ecryptfs_getattr_link(struct vfsmount *mnt, struct dentry *dentry,
++static int ecryptfs_getattr_link(struct vfsmount *mnt, struct dentry *dentry,
+ 			  struct kstat *stat)
+ {
+ 	struct ecryptfs_mount_crypt_stat *mount_crypt_stat;
+@@ -1039,7 +1039,7 @@ int ecryptfs_getattr_link(struct vfsmount *mnt, struct dentry *dentry,
+ 	return rc;
+ }
  
-+			/* Catch anonymous mmaps */
-+			if ((execname == NULL) && !strstr(bf, "["))
-+				execname = anonstr;
-+
- 			if (execname == NULL)
- 				continue;
- 
--- 
-1.6.2.5
-
+-int ecryptfs_getattr(struct vfsmount *mnt, struct dentry *dentry,
++static int ecryptfs_getattr(struct vfsmount *mnt, struct dentry *dentry,
+ 		     struct kstat *stat)
+ {
+ 	struct kstat lower_stat;
