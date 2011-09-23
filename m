@@ -1,80 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752964Ab1IWKNS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 06:13:18 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:50685 "EHLO
-	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752180Ab1IWKNK (ORCPT
+	id S1752970Ab1IWKSW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 06:18:22 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:44281 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752180Ab1IWKST convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 06:13:10 -0400
-X-SpamScore: -2
-X-BigFish: VPS-2(zz98dKzz1202hzzz32i668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-FB-SS: 0,
-X-WSS-ID: 0LRZ0DR-02-2MM-02
-X-M-MSG: 
-Date: Fri, 23 Sep 2011 12:13:05 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Stephane Eranian <eranian@google.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "acme@redhat.com" <acme@redhat.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "dsahern@gmail.com" <dsahern@gmail.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>
-Subject: Re: [PATCH] perf: make perf.data more self-descriptive (v5)
-Message-ID: <20110923101305.GO6063@erda.amd.com>
-References: <20110922123128.GA9761@quad>
+	Fri, 23 Sep 2011 06:18:19 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:date:
+	message-id:subject:from:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=w2DuISSNBCBkaVLy1MuJO+HXWnwfC3eRLqgU8MfXflg5pvawY3B22ZP4KBerzI9yf
+	tlgKWRwj/inbzO0YQLQfA==
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20110922123128.GA9761@quad>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+In-Reply-To: <20110922161523.f5b2193f.akpm@google.com>
+References: <1316230753-8693-1-git-send-email-walken@google.com>
+	<1316230753-8693-7-git-send-email-walken@google.com>
+	<20110922161523.f5b2193f.akpm@google.com>
+Date: Fri, 23 Sep 2011 03:18:13 -0700
+Message-ID: <CANN689GtH_vf-iOJyNjhet8-DXd=ermbmUykNJfKvg0yw=FiWQ@mail.gmail.com>
+Subject: Re: [PATCH 6/8] kstaled: rate limit pages scanned per second.
+From: Michel Lespinasse <walken@google.com>
+To: Andrew Morton <akpm@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Michael Wolf <mjwolf@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22.09.11 08:31:28, Stephane Eranian wrote:
-> We define the following useful new extensions:
->  - HEADER_HOSTNAME: the hostname
->  - HEADER_OSRELEASE: the kernel release number
->  - HEADER_ARCH: the hw architecture
->  - HEADER_CPUDESC: generic CPU description
->  - HEADER_NRCPUS: number of online/avail cpus
->  - HEADER_CMDLINE: perf command line
->  - HEADER_VERSION: perf version
->  - HEADER_TOPOLOGY: cpu topology
->  - HEADER_EVENT_DESC: full event description (attrs)
->  - HEADER_CPUID: easy-to-parse low level CPU identication
+On Thu, Sep 22, 2011 at 4:15 PM, Andrew Morton <akpm@google.com> wrote:
+> On Fri, 16 Sep 2011 20:39:11 -0700
+> Michel Lespinasse <walken@google.com> wrote:
+>
+>> Scan some number of pages from each node every second, instead of trying to
+>> scan the entime memory at once and being idle for the rest of the configured
+>> interval.
+>
+> Well...  why?  The amount of work done per scan interval is the same
+> (actually, it will be slightly increased due to cache evictions).
+>
+> I think we should see a good explanation of what observed problem this
+> hackery^Wtweak is trying to solve.  Once that is revealed, we can
+> compare the proposed solution with one based on thread policy/priority
+> (for example).
 
-Stephane,
+There are two aspects to this:
 
-could we also put in the dynamical pmu mapping? This is important
-esp. for decoding samples of dynamically registered pmus (ibs_op,
-ibs_fetch, uncore, etc.). We need the type/name mapping information in
-the header and the type encoding in the sample, e.g on a system with:
+- some people might find it nicer to have a small amount of load
+during the entire scan interval, rather than some spike when we
+trigger the scanning and some idle time afterwards. That part is
+highly debatable and there are probably better ways to achieve this.
 
- # cat /sys/devices/ibs_fetch/type
- 6
- # cat /sys/devices/ibs_op/type
- 7
+- jitter reduction - if we were to scan the entire memory at once
+without sleeping, the pages that are scanned first would have a fairly
+constant interval between times they are looked at; however if the
+time to scan pages is not constant (it could vary depending on CPU
+load and pages getting allocated and freed) the pages that are scanned
+towards the end of each scan would have a bit more jitter. This effect
+is reduced by trying to scan a fixed number of pages per second.
 
-the header could contain something like:
+> This is all rather unpleasing.
 
- HEADER_DYN_PMUS: ibs_fetch=6, ibs_op=7
+Yeah, this is not my favourite patch in the series :/
 
-Then we can encode the (dynamically generated) type value in the
-sample and a parser may know its origin and format. This way we could
-write costumized data sample parser which may detect the sampling
-format from perf.data.
-
-E.g. perf report could be used to encode IBS data samples without any
-architectural or pmu specific command line.
-
--Robert
+Would it help if I reordered it last in the series, as it seems more
+controversial & the later ones don't functionally depend on it ?
 
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
