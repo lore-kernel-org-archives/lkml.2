@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754886Ab1IWPs2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 11:48:28 -0400
-Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:4333
+	id S1754903Ab1IWPsv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 11:48:51 -0400
+Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:4892
 	"EHLO AM1EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752709Ab1IWPs1 (ORCPT
+	by vger.kernel.org with ESMTP id S1752709Ab1IWPss (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 11:48:27 -0400
+	Fri, 23 Sep 2011 11:48:48 -0400
 X-SpamScore: 1
 X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h839h63h)
 X-Spam-TCS-SCL: 2:0
 X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LRZFSR-01-1CU-02
+X-WSS-ID: 0LRZFSQ-01-1CT-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: <iommu@lists.linux-foundation.org>
@@ -21,9 +21,9 @@ CC: Greg Kroah-Hartman <gregkh@suse.de>,
         David Woodhouse <dwmw2@infradead.org>,
         David Brown <davidb@codeaurora.org>, <joro@8bytes.org>,
         <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 04/10] iommu/core: Convert iommu_found to iommu_present
-Date: Fri, 23 Sep 2011 17:45:50 +0200
-Message-ID: <1316792756-3395-5-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 01/10] iommu/core: Define iommu_ops and register_iommu only with CONFIG_IOMMU_API
+Date: Fri, 23 Sep 2011 17:45:47 +0200
+Message-ID: <1316792756-3395-2-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1316792756-3395-1-git-send-email-joerg.roedel@amd.com>
 References: <1316792756-3395-1-git-send-email-joerg.roedel@amd.com>
@@ -34,121 +34,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With per-bus iommu_ops the iommu_found function needs to
-work on a bus_type too. This patch adds a bus_type parameter
-to that function and converts all call-places.
-The function is also renamed to iommu_present because the
-function now checks if an iommu is present for a given bus
-and does not check for a global iommu anymore.
+This makes it impossible to compile an iommu driver into the
+kernel without selecting CONFIG_IOMMU_API.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- arch/ia64/kvm/kvm-ia64.c |    3 ++-
- arch/x86/kvm/x86.c       |    3 ++-
- drivers/iommu/iommu.c    |    9 ++++++---
- include/linux/iommu.h    |    4 ++--
- virt/kvm/iommu.c         |    2 +-
- 5 files changed, 13 insertions(+), 8 deletions(-)
+ include/linux/iommu.h |    8 +++-----
+ 1 files changed, 3 insertions(+), 5 deletions(-)
 
-diff --git a/arch/ia64/kvm/kvm-ia64.c b/arch/ia64/kvm/kvm-ia64.c
-index 8213efe..43f4c92 100644
---- a/arch/ia64/kvm/kvm-ia64.c
-+++ b/arch/ia64/kvm/kvm-ia64.c
-@@ -33,6 +33,7 @@
- #include <linux/uaccess.h>
- #include <linux/iommu.h>
- #include <linux/intel-iommu.h>
-+#include <linux/pci.h>
- 
- #include <asm/pgtable.h>
- #include <asm/gcc_intrin.h>
-@@ -204,7 +205,7 @@ int kvm_dev_ioctl_check_extension(long ext)
- 		r = KVM_COALESCED_MMIO_PAGE_OFFSET;
- 		break;
- 	case KVM_CAP_IOMMU:
--		r = iommu_found();
-+		r = iommu_present(&pci_bus_type);
- 		break;
- 	default:
- 		r = 0;
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 84a28ea..73c6a42 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -44,6 +44,7 @@
- #include <linux/perf_event.h>
- #include <linux/uaccess.h>
- #include <linux/hash.h>
-+#include <linux/pci.h>
- #include <trace/events/kvm.h>
- 
- #define CREATE_TRACE_POINTS
-@@ -2095,7 +2096,7 @@ int kvm_dev_ioctl_check_extension(long ext)
- 		r = 0;
- 		break;
- 	case KVM_CAP_IOMMU:
--		r = iommu_found();
-+		r = iommu_present(&pci_bus_type);
- 		break;
- 	case KVM_CAP_MCE:
- 		r = KVM_MAX_MCE_BANKS;
-diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
-index 46e1c24..ad8ce1a 100644
---- a/drivers/iommu/iommu.c
-+++ b/drivers/iommu/iommu.c
-@@ -66,11 +66,14 @@ int bus_set_iommu(struct bus_type *bus, struct iommu_ops *ops)
- }
- EXPORT_SYMBOL_GPL(bus_set_iommu);
- 
--bool iommu_found(void)
-+bool iommu_present(struct bus_type *bus)
- {
--	return iommu_ops != NULL;
-+	if (bus->iommu_ops != NULL)
-+		return true;
-+	else
-+		return iommu_ops != NULL;
- }
--EXPORT_SYMBOL_GPL(iommu_found);
-+EXPORT_SYMBOL_GPL(iommu_present);
- 
- struct iommu_domain *iommu_domain_alloc(struct bus_type *bus)
- {
 diff --git a/include/linux/iommu.h b/include/linux/iommu.h
-index c78d068..f56e559 100644
+index 9940319..6470cd8 100644
 --- a/include/linux/iommu.h
 +++ b/include/linux/iommu.h
-@@ -56,7 +56,7 @@ struct iommu_ops {
+@@ -34,6 +34,8 @@ struct iommu_domain {
+ #define IOMMU_CAP_CACHE_COHERENCY	0x1
+ #define IOMMU_CAP_INTR_REMAP		0x2	/* isolates device intrs */
  
++#ifdef CONFIG_IOMMU_API
++
+ struct iommu_ops {
+ 	int (*domain_init)(struct iommu_domain *domain);
+ 	void (*domain_destroy)(struct iommu_domain *domain);
+@@ -49,8 +51,6 @@ struct iommu_ops {
+ 			      unsigned long cap);
+ };
+ 
+-#ifdef CONFIG_IOMMU_API
+-
  extern void register_iommu(struct iommu_ops *ops);
- extern int bus_set_iommu(struct bus_type *bus, struct iommu_ops *ops);
--extern bool iommu_found(void);
-+extern bool iommu_present(struct bus_type *bus);
- extern struct iommu_domain *iommu_domain_alloc(struct bus_type *bus);
- extern void iommu_domain_free(struct iommu_domain *domain);
- extern int iommu_attach_device(struct iommu_domain *domain,
-@@ -76,7 +76,7 @@ extern int iommu_domain_has_cap(struct iommu_domain *domain,
+ extern bool iommu_found(void);
+ extern struct iommu_domain *iommu_domain_alloc(void);
+@@ -70,9 +70,7 @@ extern int iommu_domain_has_cap(struct iommu_domain *domain,
  
- struct iommu_ops {};
+ #else /* CONFIG_IOMMU_API */
  
--static inline bool iommu_found(void)
-+static inline bool iommu_present(struct bus_type *bus)
+-static inline void register_iommu(struct iommu_ops *ops)
+-{
+-}
++struct iommu_ops {};
+ 
+ static inline bool iommu_found(void)
  {
- 	return false;
- }
-diff --git a/virt/kvm/iommu.c b/virt/kvm/iommu.c
-index 20115b1..d149940 100644
---- a/virt/kvm/iommu.c
-+++ b/virt/kvm/iommu.c
-@@ -228,7 +228,7 @@ int kvm_iommu_map_guest(struct kvm *kvm)
- {
- 	int r;
- 
--	if (!iommu_found()) {
-+	if (!iommu_present(&pci_bus_type)) {
- 		printk(KERN_ERR "%s: iommu not found\n", __func__);
- 		return -ENODEV;
- 	}
 -- 
 1.7.4.1
 
