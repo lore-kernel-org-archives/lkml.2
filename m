@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754681Ab1IWOcD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 10:32:03 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:39560 "EHLO
+	id S1754699Ab1IWOcF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 10:32:05 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:39539 "EHLO
 	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754554Ab1IWObb (ORCPT
+	with ESMTP id S1754536Ab1IWObb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 23 Sep 2011 10:31:31 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 08/10] drbd: Introduce protocol version 100 headers
-Date: Fri, 23 Sep 2011 16:31:23 +0200
-Message-Id: <1316788285-17433-9-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 06/10] drbd: Remove some fixed header size assumptions
+Date: Fri, 23 Sep 2011 16:31:21 +0200
+Message-Id: <1316788285-17433-7-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1316788285-17433-1-git-send-email-philipp.reisner@linbit.com>
 References: <1316788285-17433-1-git-send-email-philipp.reisner@linbit.com>
@@ -25,118 +25,179 @@ From: Andreas Gruenbacher <agruen@linbit.com>
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
- drivers/block/drbd/drbd_int.h      |    8 ++++++++
- drivers/block/drbd/drbd_main.c     |   31 +++++++++++++++++++++++++------
- drivers/block/drbd/drbd_receiver.c |   14 ++++++++++++--
- include/linux/drbd.h               |    1 +
- 4 files changed, 46 insertions(+), 8 deletions(-)
+ drivers/block/drbd/drbd_int.h      |   15 +++------------
+ drivers/block/drbd/drbd_main.c     |   25 +++++++++++++++----------
+ drivers/block/drbd/drbd_receiver.c |   29 +++++++++++++++++------------
+ 3 files changed, 35 insertions(+), 34 deletions(-)
 
 diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
-index 9868518..7d679c5 100644
+index c58b327..d8e63c4 100644
 --- a/drivers/block/drbd/drbd_int.h
 +++ b/drivers/block/drbd/drbd_int.h
-@@ -307,6 +307,14 @@ struct p_header95 {
- 	u32	  vol_n_len;	/* big endian: high byte = volume; remaining 24 bit = length */
+@@ -543,19 +543,10 @@ struct p_delay_probe93 {
+ 	u32     offset;  /* usecs the probe got sent after the reference time point */
  } __packed;
  
-+struct p_header100 {
-+	u32	  magic;
-+	u16	  volume;
-+	u16	  command;
-+	u32	  length;
-+	u32	  pad;
-+} __packed;
-+
- extern unsigned int drbd_header_size(struct drbd_tconn *tconn);
+-/* one bitmap packet, including the p_header,
+- * should fit within one _architecture independend_ page.
+- * so we need to use the fixed size 4KiB page size
+- * most architectures have used for a long time.
++/*
++ * Bitmap packets need to fit within a single page on the sender and receiver,
++ * so we are limited to 4 KiB (and not to PAGE_SIZE, which can be bigger).
+  */
+-#define BM_PACKET_PAYLOAD_BYTES (4096 - sizeof(struct p_header))
+-#define BM_PACKET_WORDS (BM_PACKET_PAYLOAD_BYTES/sizeof(long))
+-#define BM_PACKET_VLI_BYTES_MAX (4096 - sizeof(struct p_compressed_bm))
+-#if (PAGE_SIZE < 4096)
+-/* drbd_send_bitmap / receive_bitmap would break horribly */
+-#error "PAGE_SIZE too small"
+-#endif
+-
+ #define DRBD_SOCKET_BUFFER_SIZE 4096
  
- /* these defines must not be changed without changing the protocol version */
+ /**********************************************************************/
 diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
-index 34cdb97..3310986 100644
+index 9e94ead..ee45370 100644
 --- a/drivers/block/drbd/drbd_main.c
 +++ b/drivers/block/drbd/drbd_main.c
-@@ -698,9 +698,15 @@ void drbd_thread_current_set_cpu(struct drbd_thread *thi)
-  */
- unsigned int drbd_header_size(struct drbd_tconn *tconn)
+@@ -1082,8 +1082,9 @@ static void dcbp_set_pad_bits(struct p_compressed_bm *p, int n)
+ }
+ 
+ int fill_bitmap_rle_bits(struct drbd_conf *mdev,
+-	struct p_compressed_bm *p,
+-	struct bm_xfer_ctx *c)
++			 struct p_compressed_bm *p,
++			 unsigned int size,
++			 struct bm_xfer_ctx *c)
  {
--	BUILD_BUG_ON(sizeof(struct p_header80) != sizeof(struct p_header95));
--	BUILD_BUG_ON(!IS_ALIGNED(sizeof(struct p_header80), 8));
--	return sizeof(struct p_header80);
-+	if (tconn->agreed_pro_version >= 100) {
-+		BUILD_BUG_ON(!IS_ALIGNED(sizeof(struct p_header100), 8));
-+		return sizeof(struct p_header100);
-+	} else {
-+		BUILD_BUG_ON(sizeof(struct p_header80) !=
-+			     sizeof(struct p_header95));
-+		BUILD_BUG_ON(!IS_ALIGNED(sizeof(struct p_header80), 8));
-+		return sizeof(struct p_header80);
-+	}
- }
+ 	struct bitstream bs;
+ 	unsigned long plain_bits;
+@@ -1102,8 +1103,8 @@ int fill_bitmap_rle_bits(struct drbd_conf *mdev,
+ 		return 0; /* nothing to do. */
  
- static unsigned int prepare_header80(struct p_header80 *h, enum drbd_packet cmd, int size)
-@@ -719,10 +725,23 @@ static unsigned int prepare_header95(struct p_header95 *h, enum drbd_packet cmd,
- 	return sizeof(struct p_header95);
- }
+ 	/* use at most thus many bytes */
+-	bitstream_init(&bs, p->code, BM_PACKET_VLI_BYTES_MAX, 0);
+-	memset(p->code, 0, BM_PACKET_VLI_BYTES_MAX);
++	bitstream_init(&bs, p->code, size, 0);
++	memset(p->code, 0, size);
+ 	/* plain bits covered in this code string */
+ 	plain_bits = 0;
  
--static unsigned int prepare_header(struct drbd_tconn *tconn, int vnr, void *buffer,
--				   enum drbd_packet cmd, int size)
-+static unsigned int prepare_header100(struct p_header100 *h, enum drbd_packet cmd,
-+				      int size, int vnr)
-+{
-+	h->magic = cpu_to_be32(DRBD_MAGIC_100);
-+	h->volume = cpu_to_be16(vnr);
-+	h->command = cpu_to_be16(cmd);
-+	h->length = cpu_to_be32(size);
-+	h->pad = 0;
-+	return sizeof(struct p_header100);
-+}
+@@ -1185,11 +1186,11 @@ static int
+ send_bitmap_rle_or_plain(struct drbd_conf *mdev, struct bm_xfer_ctx *c)
+ {
+ 	struct drbd_socket *sock = &mdev->tconn->data;
++	unsigned int header_size = drbd_header_size(mdev->tconn);
+ 	struct p_compressed_bm *p = sock->sbuf;
+-	unsigned long num_words;
+ 	int len, err;
+ 
+-	len = fill_bitmap_rle_bits(mdev, p, c);
++	len = fill_bitmap_rle_bits(mdev, p, DRBD_SOCKET_BUFFER_SIZE - sizeof(*p) /* FIXME */, c);
+ 	if (len < 0)
+ 		return -EIO;
+ 
+@@ -1206,9 +1207,14 @@ send_bitmap_rle_or_plain(struct drbd_conf *mdev, struct bm_xfer_ctx *c)
+ 	} else {
+ 		/* was not compressible.
+ 		 * send a buffer full of plain text bits instead. */
++		unsigned int data_size;
++		unsigned long num_words;
+ 		struct p_header *h = sock->sbuf;
+-		num_words = min_t(size_t, BM_PACKET_WORDS, c->bm_words - c->word_offset);
+-		len = num_words * sizeof(long);
 +
-+static unsigned int prepare_header(struct drbd_tconn *tconn, int vnr,
-+				   void *buffer, enum drbd_packet cmd, int size)
++		data_size = DRBD_SOCKET_BUFFER_SIZE - header_size;
++		num_words = min_t(size_t, data_size / sizeof(unsigned long),
++				  c->bm_words - c->word_offset);
++		len = num_words * sizeof(unsigned long);
+ 		if (len)
+ 			drbd_bm_get_lel(mdev, c->word_offset, num_words,
+ 					(unsigned long *)h->payload);
+@@ -1218,7 +1224,7 @@ send_bitmap_rle_or_plain(struct drbd_conf *mdev, struct bm_xfer_ctx *c)
+ 		c->bit_offset = c->word_offset * BITS_PER_LONG;
+ 
+ 		c->packets[1]++;
+-		c->bytes[1] += sizeof(struct p_header80) + len;
++		c->bytes[1] += header_size + len;
+ 
+ 		if (c->bit_offset > c->bm_bits)
+ 			c->bit_offset = c->bm_bits;
+@@ -2526,7 +2532,6 @@ int __init drbd_init(void)
  {
--	if (tconn->agreed_pro_version >= 95)
-+	if (tconn->agreed_pro_version >= 100)
-+		return prepare_header100(buffer, cmd, size, vnr);
-+	else if (tconn->agreed_pro_version >= 95)
- 		return prepare_header95(buffer, cmd, size, vnr);
- 	else
- 		return prepare_header80(buffer, cmd, size);
+ 	int err;
+ 
+-	BUILD_BUG_ON(sizeof(struct p_header80) != sizeof(struct p_header95));
+ 	BUILD_BUG_ON(sizeof(struct p_connection_features) != 80);
+ 
+ 	if (minor_count < DRBD_MINOR_COUNT_MIN || minor_count > DRBD_MINOR_COUNT_MAX) {
 diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
-index 0b0f453..de09cc1 100644
+index 1270af3..d0d1924 100644
 --- a/drivers/block/drbd/drbd_receiver.c
 +++ b/drivers/block/drbd/drbd_receiver.c
-@@ -983,8 +983,18 @@ static int decode_header(struct drbd_tconn *tconn, void *header, struct packet_i
+@@ -3663,16 +3663,19 @@ static int receive_sync_uuid(struct drbd_tconn *tconn, struct packet_info *pi)
+  * code upon failure.
+  */
+ static int
+-receive_bitmap_plain(struct drbd_conf *mdev, unsigned int data_size,
++receive_bitmap_plain(struct drbd_conf *mdev, unsigned int size,
+ 		     struct p_header *h, struct bm_xfer_ctx *c)
  {
- 	unsigned int header_size = drbd_header_size(tconn);
+ 	unsigned long *buffer = (unsigned long *)h->payload;
+-	unsigned num_words = min_t(size_t, BM_PACKET_WORDS, c->bm_words - c->word_offset);
+-	unsigned want = num_words * sizeof(long);
++	unsigned int data_size = DRBD_SOCKET_BUFFER_SIZE -
++				 drbd_header_size(mdev->tconn);
++	unsigned int num_words = min_t(size_t, data_size / sizeof(unsigned long),
++				       c->bm_words - c->word_offset);
++	unsigned int want = num_words * sizeof(unsigned long);
+ 	int err;
  
--	if (header_size == sizeof(struct p_header95) &&
--	    *(__be16 *)header == cpu_to_be16(DRBD_MAGIC_BIG)) {
-+	if (header_size == sizeof(struct p_header100) &&
-+	    *(__be32 *)header == cpu_to_be32(DRBD_MAGIC_100)) {
-+		struct p_header100 *h = header;
-+		if (h->pad != 0) {
-+			conn_err(tconn, "Header padding is not zero\n");
-+			return -EINVAL;
-+		}
-+		pi->vnr = be16_to_cpu(h->volume);
-+		pi->cmd = be16_to_cpu(h->command);
-+		pi->size = be32_to_cpu(h->length);
-+	} else if (header_size == sizeof(struct p_header95) &&
-+		   *(__be16 *)header == cpu_to_be16(DRBD_MAGIC_BIG)) {
- 		struct p_header95 *h = header;
- 		u32 vol_n_len;
+-	if (want != data_size) {
+-		dev_err(DEV, "%s:want (%u) != data_size (%u)\n", __func__, want, data_size);
++	if (want != size) {
++		dev_err(DEV, "%s:want (%u) != size (%u)\n", __func__, want, size);
+ 		return -EIO;
+ 	}
+ 	if (want == 0)
+@@ -3799,11 +3802,13 @@ void INFO_bm_xfer_stats(struct drbd_conf *mdev,
+ 		const char *direction, struct bm_xfer_ctx *c)
+ {
+ 	/* what would it take to transfer it "plaintext" */
+-	unsigned plain = sizeof(struct p_header) *
+-		((c->bm_words+BM_PACKET_WORDS-1)/BM_PACKET_WORDS+1)
+-		+ c->bm_words * sizeof(long);
+-	unsigned total = c->bytes[0] + c->bytes[1];
+-	unsigned r;
++	unsigned int header_size = drbd_header_size(mdev->tconn);
++	unsigned int data_size = DRBD_SOCKET_BUFFER_SIZE - header_size;
++	unsigned int plain =
++		header_size * (DIV_ROUND_UP(c->bm_words, data_size) + 1) +
++		c->bm_words * sizeof(unsigned long);
++	unsigned int total = c->bytes[0] + c->bytes[1];
++	unsigned int r;
  
-diff --git a/include/linux/drbd.h b/include/linux/drbd.h
-index 60d3088..fe8d6ba 100644
---- a/include/linux/drbd.h
-+++ b/include/linux/drbd.h
-@@ -341,6 +341,7 @@ enum drbd_timeout_flag {
+ 	/* total can not be zero. but just in case: */
+ 	if (total == 0)
+@@ -3865,7 +3870,7 @@ static int receive_bitmap(struct drbd_tconn *tconn, struct packet_info *pi)
+ 			 * and the feature is enabled! */
+ 			struct p_compressed_bm *p;
  
- #define DRBD_MAGIC 0x83740267
- #define DRBD_MAGIC_BIG 0x835a
-+#define DRBD_MAGIC_100 0x8620ec20
+-			if (pi->size > BM_PACKET_PAYLOAD_BYTES) {
++			if (pi->size > DRBD_SOCKET_BUFFER_SIZE - drbd_header_size(tconn)) {
+ 				dev_err(DEV, "ReportCBitmap packet too large\n");
+ 				err = -EIO;
+ 				goto out;
+@@ -3888,7 +3893,7 @@ static int receive_bitmap(struct drbd_tconn *tconn, struct packet_info *pi)
+ 		}
  
- /* how I came up with this magic?
-  * base64 decode "actlog==" ;) */
+ 		c.packets[pi->cmd == P_BITMAP]++;
+-		c.bytes[pi->cmd == P_BITMAP] += sizeof(struct p_header) + pi->size;
++		c.bytes[pi->cmd == P_BITMAP] += drbd_header_size(tconn) + pi->size;
+ 
+ 		if (err <= 0) {
+ 			if (err < 0)
 -- 
 1.7.4.1
 
