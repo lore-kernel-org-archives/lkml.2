@@ -1,62 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751715Ab1IWS6o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 14:58:44 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:46004 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751290Ab1IWS6m (ORCPT
+	id S1751762Ab1IWTCz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 15:02:55 -0400
+Received: from mail127.messagelabs.com ([216.82.250.115]:7799 "EHLO
+	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751402Ab1IWTCx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 14:58:42 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org,
-        chris.mason@oracle.com
-Subject: Re: [PATCH] btrfs/extent_map.c: quiet sparse noise
-In-Reply-To: Your message of "Thu, 22 Sep 2011 18:45:56 PDT."
-             <201109221845.56204.hartleys@visionengravers.com>
-From: Valdis.Kletnieks@vt.edu
-References: <201109221845.56204.hartleys@visionengravers.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1316804317_4577P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Fri, 23 Sep 2011 14:58:37 -0400
-Message-ID: <25617.1316804317@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020209.4E7CD6DF.011C,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Fri, 23 Sep 2011 15:02:53 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-11.tower-127.messagelabs.com!1316804302!28782095!341
+X-Originating-IP: [216.166.12.180]
+X-StarScan-Version: 6.3.6; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Joe Perches <joe@perches.com>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+        "chris.mason@oracle.com" <chris.mason@oracle.com>
+Date: Fri, 23 Sep 2011 14:02:27 -0500
+Subject: RE: [PATCH] btrfs/ioctl.c: quiet sparse warnings
+Thread-Topic: [PATCH] btrfs/ioctl.c: quiet sparse warnings
+Thread-Index: Acx6HNqGsHcPnI3zQW2xoY3849N/rAABUvMg
+Message-ID: <ADE657CA350FB648AAC2C43247A983F001F39DBB8425@AUSP01VMBX24.collaborationhost.net>
+References: <201109231107.54227.hartleys@visionengravers.com>
+ <1316801760.28330.5.camel@Joe-Laptop>
+In-Reply-To: <1316801760.28330.5.camel@Joe-Laptop>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id p8NJ32LI006410
 
---==_Exmh_1316804317_4577P
-Content-Type: text/plain; charset=us-ascii
+On Friday, September 23, 2011 11:16 AM, Joe Perches wrote:
+> On Fri, 2011-09-23 at 11:07 -0700, H Hartley Sweeten wrote:
+>> Quiet the following sparse warnings:
+> []
+>> diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
+> []
+>> @@ -2705,7 +2705,7 @@ long btrfs_ioctl_space_info(struct btrfs_root *root, void __user *arg)
+>>  		up_read(&info->groups_sem);
+>>  	}
+>>  
+>> -	user_dest = (struct btrfs_ioctl_space_info *)
+>> +	user_dest = (struct btrfs_ioctl_space_info __user *)
+>>                 (arg + sizeof(struct btrfs_ioctl_space_args));
+>
+>	user_dest = arg;
+>	user_dest++;
+>
+> ?
 
-On Thu, 22 Sep 2011 18:45:56 PDT, H Hartley Sweeten said:
-> Quiet the sparse noise:
-> 
-> warning: symbol '__lookup_extent_mapping' was not declared. Should it be static?
+That produces a new sparse warning:
 
-Patch itself is correct, changelog is bad.  You're not quieting sparse noise,
-you're making a declaration static because it doesn't need external visibility.
+fs/btrfs/ioctl.c: In function ‚Äòbtrfs_ioctl_space_info‚Äô:
+fs/btrfs/ioctl.c:2708: warning: ‚Äòuser_dest‚Äô may be used uninitialized in this function
 
---==_Exmh_1316804317_4577P
-Content-Type: application/pgp-signature
+I guess user_dest could be set at the start of the function.  This would
+also remove the cast of arg in the first copy_from_user.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+Something like this:
 
-iD8DBQFOfNbdcC3lWbTT17ARAvynAKCqgZ+D+5TdpgvcXB8jfkcAvQkUyACffzq4
-4GLdG6v+VgGVHHKUQiSUcno=
-=Vijq
------END PGP SIGNATURE-----
+------
 
---==_Exmh_1316804317_4577P--
+diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
+index 970977a..9e7e5dc 100644
+--- a/fs/btrfs/ioctl.c
++++ b/fs/btrfs/ioctl.c
+@@ -2599,13 +2599,13 @@ static void get_block_group_info(struct list_head *groups_list,
+        }
+ }
+ 
+-long btrfs_ioctl_space_info(struct btrfs_root *root, void __user *arg)
++static long btrfs_ioctl_space_info(struct btrfs_root *root, void __user *arg)
+ {
+        struct btrfs_ioctl_space_args space_args;
+        struct btrfs_ioctl_space_info space;
+        struct btrfs_ioctl_space_info *dest;
+        struct btrfs_ioctl_space_info *dest_orig;
+-       struct btrfs_ioctl_space_info __user *user_dest;
++       struct btrfs_ioctl_space_info __user *user_dest = arg;
+        struct btrfs_space_info *info;
+        u64 types[] = {BTRFS_BLOCK_GROUP_DATA,
+                       BTRFS_BLOCK_GROUP_SYSTEM,
+@@ -2617,9 +2617,7 @@ long btrfs_ioctl_space_info(struct btrfs_root *root, void __user *arg)
+        u64 slot_count = 0;
+        int i, c;
+ 
+-       if (copy_from_user(&space_args,
+-                          (struct btrfs_ioctl_space_args __user *)arg,
+-                          sizeof(space_args)))
++       if (copy_from_user(&space_args, user_dest, sizeof(space_args)))
+                return -EFAULT;
+ 
+        for (i = 0; i < num_types; i++) {
+@@ -2705,8 +2703,7 @@ long btrfs_ioctl_space_info(struct btrfs_root *root, void __user *arg)
+                up_read(&info->groups_sem);
+        }
+ 
+-       user_dest = (struct btrfs_ioctl_space_info *)
+-               (arg + sizeof(struct btrfs_ioctl_space_args));
++       user_dest++;
+ 
+        if (copy_to_user(user_dest, dest_orig, alloc_size))
+                ret = -EFAULT;
 
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
