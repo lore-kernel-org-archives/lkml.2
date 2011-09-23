@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751479Ab1IWFLN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 01:11:13 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:55733 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750802Ab1IWFLL (ORCPT
+	id S1751630Ab1IWFRH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 01:17:07 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:33109 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751380Ab1IWFRE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 01:11:11 -0400
-Subject: [PATCH] ASoC: Remove unneeded mutex_init in wl1273_probe()
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Matti Aaltonen <matti.j.aaltonen@nokia.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 23 Sep 2011 13:10:57 +0800
-Message-ID: <1316754658.3012.3.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Fri, 23 Sep 2011 01:17:04 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110922212146.609065b1@lxorguk.ukuu.org.uk>
+References: <20110922184316.25068.54702.stgit@localhost.localdomain>
+	<CAMuHMdWBz9+TCBUbaOY3HRv=khiDHkRCKdx5e53HCen54RUBVw@mail.gmail.com>
+	<20110922212146.609065b1@lxorguk.ukuu.org.uk>
+Date: Fri, 23 Sep 2011 07:17:03 +0200
+X-Google-Sender-Auth: bmsbuheo5VH0Bg_BxTUgj71JLzw
+Message-ID: <CAMuHMdU0Kd2cwaz3F56LywZDqrBJk3_A6PSTgueStAAuwSDtZQ@mail.gmail.com>
+Subject: Re: [PATCH] gma500: gtt based hardware scrolling console
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: greg@kroah.com, linux-kernel@vger.kernel.org,
+        Linux Fbdev development list <linux-fbdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since f0fba2ad "ASoC: multi-component - ASoC Multi-Component Support",
-snd_soc_register_codec() now does all the codec list and mutex init.
-Thus don't need to call mutex_init(&codec->mutex) in wl1273_probe() any more.
+On Thu, Sep 22, 2011 at 22:21, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>> > +       info->fix.ywrapstep = gtt_roll;
+>>
+>> Do you really want to set this? I didn't see any other wrapping
+>> support in your patch.
+>> However, I guess you can implement wrapping support using the same
+>> mapping trick?
+>
+> It is actually wrapping - it writes the low pages back below the high
+> ones so it works the GTT as a circular buffer - or am I misunderstanding
+> this.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- sound/soc/codecs/wl1273.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+Then it should not set ypanstep to a non-zero value, and set/handle the other
+various *YWRAP flags, to communicate with the frame buffer console driver.
 
-diff --git a/sound/soc/codecs/wl1273.c b/sound/soc/codecs/wl1273.c
-index 5836201..9fa1429 100644
---- a/sound/soc/codecs/wl1273.c
-+++ b/sound/soc/codecs/wl1273.c
-@@ -462,7 +462,6 @@ static int wl1273_probe(struct snd_soc_codec *codec)
- 	wl1273->core = *core;
- 
- 	snd_soc_codec_set_drvdata(codec, wl1273);
--	mutex_init(&codec->mutex);
- 
- 	r = snd_soc_add_controls(codec, wl1273_controls,
- 				 ARRAY_SIZE(wl1273_controls));
--- 
-1.7.4.1
+Panning is moving inside a virtual screen bigger than the visible screen size.
 
+> One thing I wasn't sure of on the fb side. If I've got a display width
+> that is annoying and can't fit on a 4Kbyte stride am I right in thinking
+> I can set this to say 8 and use a 512 byte stride and still get
+> acceleration for the usual font choice ?
 
+Yep, that should work. The console code can use ywrap resp. ypan if the
+font height is a multiple of ywrapstep resp. ypanstep.
 
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
