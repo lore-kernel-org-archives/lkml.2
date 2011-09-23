@@ -1,92 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751390Ab1IWRvQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 13:51:16 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:39463 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750717Ab1IWRvO (ORCPT
+	id S1751326Ab1IWR5i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 13:57:38 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:41857 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751139Ab1IWR5f convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 13:51:14 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Manjunath GKondaiah <manjunath.gkondaiah@linaro.org>,
-        linux-kernel@vger.kernel.org, Dilan Lee <dilee@nvidia.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH v3] drivercore: Add driver probe deferral mechanism
-In-Reply-To: Your message of "Thu, 22 Sep 2011 15:19:01 MDT."
-             <CACxGe6vAQ+_SKc-zH434bdd3akM5S1jB0N7+AFEjgZfX1uNrZQ@mail.gmail.com>
-From: Valdis.Kletnieks@vt.edu
-References: <20110922184614.25419.84606.stgit@ponder> <20110922212909.49966cf4@lxorguk.ukuu.org.uk>
-            <CACxGe6vAQ+_SKc-zH434bdd3akM5S1jB0N7+AFEjgZfX1uNrZQ@mail.gmail.com>
+	Fri, 23 Sep 2011 13:57:35 -0400
+X-Authenticated: #3169751
+X-Provags-ID: V01U2FsdGVkX1/cLQ5BRTzctWANQpR36GGtXWfOKU2vwYnXdmDKm/
+	GM04/7FGOfTzBE
+Date: Fri, 23 Sep 2011 19:57:26 +0200
+From: Matthias Dellweg <2500@gmx.de>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Vasiliy Kulikov <segooon@gmail.com>,
+        Michal Sojka <sojkam1@fel.cvut.cz>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] enable usb control message with class specific request
+Message-ID: <20110923195726.0cf0e8b5@horus>
+In-Reply-To: <Pine.LNX.4.44L0.1109231207160.2059-100000@iolanthe.rowland.org>
+References: <20110923090550.43ec1fd1@horus>
+	<Pine.LNX.4.44L0.1109231207160.2059-100000@iolanthe.rowland.org>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1316800223_4577P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Fri, 23 Sep 2011 13:50:23 -0400
-Message-ID: <7790.1316800223@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020206.4E7CC6E1.00D6,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1316800223_4577P
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: quoted-printable
+Am Fri, 23 Sep 2011 12:16:40 -0400 (EDT)
+schrieb Alan Stern <stern@rowland.harvard.edu>:
+> This is basically okay.  But your mailer has mangled the whitespace.
+> [...]
+> Alan Stern
 
-On Thu, 22 Sep 2011 15:19:01 MDT, Grant Likely said:
-> On Thu, Sep 22, 2011 at 2:29 PM, Alan Cox <alan=40lxorguk.ukuu.org.uk> =
-wrote:
-> > Definitely what is needed for some of the x86 SoC stuff and would let=
- us
-> > rip out some of the special case magic for the SCU discovery.
-> >
-> > First thing that strikes me is driver_bound kicks the processing queu=
-e
-> > again. That seems odd - surely this isn't needed because any driver t=
-hat
-> > does initialise this time and may allow something else to get going w=
-ill
-> > queue the kick itself. Thus this seems to just add overhead.
-> >
-> > It all looks a bit O(N=B2) if we don't expect the drivers that might
-> > trigger something else binding to just say 'hey I'm one of the
-> > troublemakers'
->=20
-> The way I read it, absolute worst case is when every device but one
-> depends on another device.  In that case I believe it will be
-> O(Nlog(N)).  (Every device gets probed on the first pass, but only the
-> last one gets probed.  Then it goes through N-1 devices to the result
-> of only 1 more device getting probed, then N-2, etc.).=20
+OK, hoping that my mailer doesn't get wild again, this is the polished version
+following your suggestions.
+Thanks for your help!
+  Matthias Dellweg
 
-That is indeed O(N**2) not Nlog(N).  The total number of probes is (N+1)(=
-N)/2
-To get it to O(Nlog(N)), you'd have to probe N devices the first pass, N/=
-2 devices
-on the second pass, N/4 on the third, and so on.
+>From b7c4b6f5780296fd0d53d66e08d5bce0dc450b7f Mon Sep 17 00:00:00 2001
+From: Matthias Dellweg <2500@gmx.de>
+Date: Fri, 23 Sep 2011 19:32:39 +0200
+Subject: [PATCH] drivers/usb/core/devio.c: Check for printer class specific
+ request
 
+Signed-off-by: Matthias Dellweg <2500@gmx.de>
+---
+ drivers/usb/core/devio.c |   20 +++++++++++++++++---
+ 1 files changed, 17 insertions(+), 3 deletions(-)
 
---==_Exmh_1316800223_4577P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFOfMbfcC3lWbTT17ARAvHPAKCjO9UPW25w2Vx+0hFs0jUQK3T87QCdFr81
-xTuPM4IAvAXeCJX7xt6rbv0=
-=3pAq
------END PGP SIGNATURE-----
-
---==_Exmh_1316800223_4577P--
+diff --git a/drivers/usb/core/devio.c b/drivers/usb/core/devio.c
+index 37518df..e4175cc 100644
+--- a/drivers/usb/core/devio.c
++++ b/drivers/usb/core/devio.c
+@@ -607,9 +607,10 @@ static int findintfep(struct usb_device *dev, unsigned int ep)
+ }
+ 
+ static int check_ctrlrecip(struct dev_state *ps, unsigned int requesttype,
+-			   unsigned int index)
++			   unsigned int request, unsigned int index)
+ {
+ 	int ret = 0;
++	struct usb_host_interface *alt_setting;
+ 
+ 	if (ps->dev->state != USB_STATE_UNAUTHENTICATED
+ 	 && ps->dev->state != USB_STATE_ADDRESS
+@@ -618,6 +619,18 @@ static int check_ctrlrecip(struct dev_state *ps, unsigned int requesttype,
+ 	if (USB_TYPE_VENDOR == (USB_TYPE_MASK & requesttype))
+ 		return 0;
+ 
++	/*
++	 * check for the special corner case 'get_device_id' in the printer
++	 * class specification, where wIndex is (interface << 8 | altsetting)
++	 */
++	if (requesttype == 0xa1 && request == 0) {
++		alt_setting = usb_find_alt_setting(ps->dev->actconfig,
++						   index >> 8, index & 0xff);
++		if (alt_setting
++		 && alt_setting->desc.bInterfaceClass == USB_CLASS_PRINTER)
++			index >>= 8;
++	}
++
+ 	index &= 0xff;
+ 	switch (requesttype & USB_RECIP_MASK) {
+ 	case USB_RECIP_ENDPOINT:
+@@ -770,7 +783,8 @@ static int proc_control(struct dev_state *ps, void __user *arg)
+ 
+ 	if (copy_from_user(&ctrl, arg, sizeof(ctrl)))
+ 		return -EFAULT;
+-	ret = check_ctrlrecip(ps, ctrl.bRequestType, ctrl.wIndex);
++	ret = check_ctrlrecip(ps, ctrl.bRequestType, ctrl.bRequest,
++			      ctrl.wIndex);
+ 	if (ret)
+ 		return ret;
+ 	wLength = ctrl.wLength;		/* To suppress 64k PAGE_SIZE warning */
+@@ -1100,7 +1114,7 @@ static int proc_do_submiturb(struct dev_state *ps, struct usbdevfs_urb *uurb,
+ 			kfree(dr);
+ 			return -EINVAL;
+ 		}
+-		ret = check_ctrlrecip(ps, dr->bRequestType,
++		ret = check_ctrlrecip(ps, dr->bRequestType, dr->bRequest,
+ 				      le16_to_cpup(&dr->wIndex));
+ 		if (ret) {
+ 			kfree(dr);
+-- 
+1.7.6.3
 
