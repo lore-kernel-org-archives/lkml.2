@@ -1,69 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752590Ab1IWVZz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 17:25:55 -0400
-Received: from casper.infradead.org ([85.118.1.10]:40199 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752105Ab1IWVZy (ORCPT
+	id S1752616Ab1IWWDu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 18:03:50 -0400
+Received: from exprod7og105.obsmtp.com ([64.18.2.163]:33273 "EHLO
+	exprod7og105.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752420Ab1IWWDt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 17:25:54 -0400
-Date: Fri, 23 Sep 2011 18:25:23 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Anton Blanchard <anton@samba.org>,
-        Darren Hart <dvhart@linux.intel.com>, David Ahern <dsahern@gmail.com>,
-        "David S . Miller" <davem@davemloft.net>,
-        Eric B Munson <emunson@mgebm.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ian Munsie <imunsie@au1.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Stephane Eranian <eranian@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [GIT PULL 00/12] perf tools fixes
-Message-ID: <20110923212523.GD27519@ghostprotocols.net>
-References: <1316809586-28529-1-git-send-email-acme@infradead.org> <CA+55aFwVrvMa1z7P5q0kUN3QAwZzTdL1mhLaF7+etHYQm511vA@mail.gmail.com> <CA+55aFysPyDCjs3MTwHBRWVq5OTU=-aWCRiJP=VZL-EdCGNU0w@mail.gmail.com> <20110923211158.GC27519@ghostprotocols.net>
+	Fri, 23 Sep 2011 18:03:49 -0400
+Message-ID: <4E7D0218.7020502@genband.com>
+Date: Fri, 23 Sep 2011 16:03:04 -0600
+From: Chris Friesen <chris.friesen@genband.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110906 Fedora/3.1.14-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.14
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110923211158.GC27519@ghostprotocols.net>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Ricardo Nabinger Sanchez <rnsanchez@taghos.com.br>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: write() on pipe blocking due to in-page fragmentation?
+References: <20110923164226.211a76dc@darkmoor.lan.box>
+In-Reply-To: <20110923164226.211a76dc@darkmoor.lan.box>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 23 Sep 2011 22:03:06.0469 (UTC) FILETIME=[92B25950:01CC7A3C]
+X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-18404.002
+X-TM-AS-Result: No--11.545700-5.000000-31
+X-TM-AS-User-Approved-Sender: No
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Sep 23, 2011 at 06:11:58PM -0300, Arnaldo Carvalho de Melo escreveu:
-> Em Fri, Sep 23, 2011 at 02:05:25PM -0700, Linus Torvalds escreveu:
-> > On Fri, Sep 23, 2011 at 2:03 PM, Linus Torvalds
-> > <torvalds@linux-foundation.org> wrote:
-> > >
-> > > But it obviously doesn't affect the kernel compile. It *does* affect
-> > > the perf tool compile, and util/python.c no longer compiles because
-> > > the byte-swap flag isn't passed to it.
-> > 
-> > This stupid patch makes it compile. But see the comment..
-> 
-> Yes, this is what I was going to push and will if you haven't already
-> done so, did you?
+On 09/23/2011 01:42 PM, Ricardo Nabinger Sanchez wrote:
+> Hello,
+>
+> The simple program attached allocates a pipe, perform a number of
+> writes in it in order to fill the pipe, and then reads that data to
+> empty the pipe.  The argument is used to determine how much data to
+> write per write iteration.
+>
+> Values that are power of 2 up to PIPE_BUF work without any issues.
+> Other values may cause the write() call to block.
 
-Well, its in that branch now.
+> Intuitively, it seems that pages in the pipe are getting fragmented,
+> and eventually it will reach the limit of 16 pages and, if the data is
+> not consumed, will cause writers to block --- even though the data
+> would fit nicely otherwise.
 
-It should be 0 or false for that last parm (swapped) because in the
-python binding we're not processing perf.data files that may have been
-captured on another machine of a different endianness, but an events
-stream in the same machine.
+I suggest reading "man 7 pipe" carefully, looking at the pipe capacity 
+and pipe_buf sections.
 
-Sorry about the noise, there is a problem in the way the python binding
-is built, i.e. it should notice that the header changed and rebuild the
-python binding, I bet this was what made David not notice it :-\
+I suspect that what you're seeing is that due to the atomicity 
+requirements the kernel will not spread a single write over multiple 
+pages, so that when writing 3 bytes at a time each page in the queue has 
+a byte of free space.
 
-You noticed it probably because it was the first build of the tool on
-your local repo or used a new O= output dir.
+Thus, you succeed in writing up to byte 65520 (out of 65536) but 
+anything after that blocks.  Note that 65536-65520=16.
 
-- Arnaldo
+>
+> Is this understanding correct?  If so, is it something that should be
+> fixed in the Linux kernel?
+>
+> Or should the application ensure that data written to the pipe will be
+> done carefully as to not block a writer?
+
+ From the man page:
+
+"Applications should not rely on a particular capacity: an application 
+should be designed so that a reading process consumes data as soon as it 
+is available, so that a writing process does not remain blocked."
+
+Chris
+
+
+-- 
+Chris Friesen
+Software Developer
+GENBAND
+chris.friesen@genband.com
+www.genband.com
