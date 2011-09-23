@@ -1,76 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752072Ab1IWXpW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 19:45:22 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:50082 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750720Ab1IWXpV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 19:45:21 -0400
-Subject: [PATCH REPOST] perf event, POWER 6: L1 cache read and write access
- event code fix]
-From: "Carl E. Love" <cel@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org, pmac@au1.ibm.com, bherren@au1.ibm.com,
-        mingo@elte.hu, peterz@infradead.org, cel@us.ibm.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 23 Sep 2011 16:45:17 -0700
-Message-ID: <1316821517.20740.170.camel@oc5652146517.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
-Content-Transfer-Encoding: 7bit
+	id S1752919Ab1IWXqj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 19:46:39 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:54539 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750967Ab1IWXqi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Sep 2011 19:46:38 -0400
+Date: Fri, 23 Sep 2011 20:46:21 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Anton Blanchard <anton@samba.org>,
+        Darren Hart <dvhart@linux.intel.com>, David Ahern <dsahern@gmail.com>,
+        "David S . Miller" <davem@davemloft.net>,
+        Eric B Munson <emunson@mgebm.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ian Munsie <imunsie@au1.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Stephane Eranian <eranian@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [GIT PULL 00/12] perf tools fixes
+Message-ID: <20110923234621.GC8543@ghostprotocols.net>
+References: <1316809586-28529-1-git-send-email-acme@infradead.org>
+ <CA+55aFwVrvMa1z7P5q0kUN3QAwZzTdL1mhLaF7+etHYQm511vA@mail.gmail.com>
+ <CA+55aFysPyDCjs3MTwHBRWVq5OTU=-aWCRiJP=VZL-EdCGNU0w@mail.gmail.com>
+ <20110923211158.GC27519@ghostprotocols.net>
+ <20110923212523.GD27519@ghostprotocols.net>
+ <CA+55aFwfobHqXYJbKZTn_6Z_wEhqHxpZO4rRMgOUtJW=L5pzYg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwfobHqXYJbKZTn_6Z_wEhqHxpZO4rRMgOUtJW=L5pzYg@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ben, Paul, Peter, Ingo:
+Em Fri, Sep 23, 2011 at 04:12:54PM -0700, Linus Torvalds escreveu:
+> On Fri, Sep 23, 2011 at 2:25 PM, Arnaldo Carvalho de Melo
+> <acme@infradead.org> wrote:
+> >
+> > Sorry about the noise, there is a problem in the way the python binding
+> > is built, i.e. it should notice that the header changed and rebuild the
+> > python binding, I bet this was what made David not notice it :-\
+> 
+> Can you please make sure that gets fixed at some point too? No huge
+> hurry, it can wait for the next merge window, but bugs like that not
+> only cause this kind of stupid compile errors, they also cause really
+> odd "why doesn't it work" problems that people can spend tons and tons
+> of time debugging, because they don't really "exist" - they're just a
+> result of a stale object file that didn't get properly recompiled.
 
-I posted this patch earlier this week.  I seemed to have missed copying
-the message directly to each of you.  I have not seen anything on the
-mailing list so I thought it best to repost the patch.  Thanks.
+Will get that fixed. Its a hell of a lot annoying to me.
+ 
+> > You noticed it probably because it was the first build of the tool on
+> > your local repo or used a new O= output dir.
+> 
+> I do "git clean -dqfx" every once in a while (especially after having
+> done "make allmodconfig" builds before -rc releases etc), and I don't
+> recompile the perf tools very often. So yeah, this was the first build
+> after a cleanout event.
 
-                   Carl Love
----------------------------------------------------------------------
+Thanks for testing it that way. I'll do my best not to fail in such last
+minute -rc tests. <expletives about world-as-whe-known-it-falling-apart>
+removed. :-P
 
-The current L1 cache read event code 0x80082 only counts for thread 0. The
-event code 0x280030 should be used to count events on thread 0 and 1. The
-patch fixes the event code for the L1 cache read.
-
-The current L1 cache write event code 0x80086 only counts for thread 0. The
-event code 0x180032 should be used to count events on thread 0 and 1. The
-patch fixes the event code for the L1 cache write.
-
-FYI, the documentation lists three event codes for the L1 cache read event
-and three event codes for the L1 cache write event.  The event description
-for the event codes is as follows:
-
-L1 cache read requests	0x80082  LSU 0 only
-L1 cache read requests	0x8008A  LSU 1 only
-L1 cache read requests	0x80030  LSU 1 or LSU 0, counter 2 only.
-
-L1 cache store requests	0x80086  LSU 0 only
-L1 cache store requests	0x8008E  LSU 1 only
-L1 cache store requests	0x80032  LSU 0 or LSU 1, counter 1 only.
-
-There can only be one request from either LSU 0 or 1 active at a time.
-
-Signed-off-by: Carl Love <cel@us.ibm.com>
----
- arch/powerpc/kernel/power6-pmu.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/powerpc/kernel/power6-pmu.c b/arch/powerpc/kernel/power6-pmu.c
-index 03b95e2..0bbc901 100644
---- a/arch/powerpc/kernel/power6-pmu.c
-+++ b/arch/powerpc/kernel/power6-pmu.c
-@@ -487,8 +487,8 @@ static int power6_generic_events[] = {
-  */
- static int power6_cache_events[C(MAX)][C(OP_MAX)][C(RESULT_MAX)] = {
- 	[C(L1D)] = {		/* 	RESULT_ACCESS	RESULT_MISS */
--		[C(OP_READ)] = {	0x80082,	0x80080		},
--		[C(OP_WRITE)] = {	0x80086,	0x80088		},
-+		[C(OP_READ)] = {	0x280030,	0x80080		},
-+		[C(OP_WRITE)] = {	0x180032,	0x80088		},
- 		[C(OP_PREFETCH)] = {	0x810a4,	0		},
- 	},
- 	[C(L1I)] = {		/* 	RESULT_ACCESS	RESULT_MISS */
-
-
+- Arnaldo
