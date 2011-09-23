@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751868Ab1IWD46 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 23:56:58 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:52724 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751309Ab1IWD44 convert rfc822-to-8bit (ORCPT
+	id S1750900Ab1IWEWm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 00:22:42 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:48198 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750706Ab1IWEWl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 23:56:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <728441958.616721.1316748325054.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
-References: <1316705680-1940-1-git-send-email-linkinjeon@gmail.com>
-	<728441958.616721.1316748325054.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
-Date: Fri, 23 Sep 2011 12:56:54 +0900
-Message-ID: <CAKYAXd_B9111vCZXhow1pv+9QsUuZYhWZ6Sner8yV2qmOhVcgA@mail.gmail.com>
-Subject: Re: [PATCH] mmc : general purpose partition support.
-From: NamJae Jeon <linkinjeon@gmail.com>
-To: Andrei Warkentin <awarkentin@vmware.com>
-Cc: linux-kernel@vger.kernel.org, cjb@laptop.org, linux-mmc@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 23 Sep 2011 00:22:41 -0400
+Date: Fri, 23 Sep 2011 14:22:33 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Xen Devel <Xen-devel@lists.xensource.com>
+Subject: linux-next: manual merge of the xen-two tree with the xen tree
+Message-Id: <20110923142233.316b994baac3adffcf4afdbc@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/9/23 Andrei Warkentin <awarkentin@vmware.com>:
-> Hi Namjae,
->
-> I scanned over your changes to enable GP partitions, and while I
-> did not yet test your changes, they do appear to be ok.
->
-> Please CC me on the next version of your patch so I can give
-> it a spin and Ack on it.
->
-> I do suggest at least thinking about ways to improve on this. Back
-> when I added boot partition support, I already didn't like the fact
-> that the block driver had to be aware of the eMMC partitions, with all
-> the code duplication and such. By adding four more partitions,
-> you've compounded the problem and now you have six pieces of
-> code that really look the same.
->
-> The core/mmc.c right now scans the size values and stores them
-> in mmc_card, and the block driver is smart enough to know what
-> to do with them. Why not make the block code generic at the expense
-> of keeping an array of structures in mmc_card? The block driver
-> would then just iterate over these and create the additional devices. The partition
-> switch routine would then operate on these structures, and could then be pulled out
-> of the block driver, making it simpler.
->
-> Each physical partition could be described by something like -
-> struct mmc_part {
->    unsigned int size;
->    unsigned int cookie;        /* for mmc, idx used in mmc_switch, part_type from current mmc_blk_data */
->    char name[DISK_NAME_LEN];
->    bool force_ro;              /* to make boot parts RO by default */
-> };
->
-> Just an idea. Clearly, if MMC grows by another 4-5 possible partitions, it's not
-> realistic to be copy-pasting the same block of code, nor would it make sense
-> if/when these types of devices support an arbitrary amount of physical partitions.
->
-> Thanks,
-> A
->
+Hi Konrad,
 
-Okay, I understand what you want. I will try to make patch included
-your suggestion again.
-Thanks for your review.
+Today's linux-next merge of the xen-two tree got a conflict in
+arch/x86/xen/Kconfig between commit 430bdcaf0b96 ("xen: add CPU microcode
+update driver") from the xen tree and commit 10fe570fc167 ("Revert
+"xen/debug: WARN_ON when identity PFN has no _PAGE_IOMAP flag set."")
+from the xen-two tree.
+
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+
+[Jeremy: the xen patch is missing a new-line at the end of the file ...]
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc arch/x86/xen/Kconfig
+index c5d7ccb,ae559fe..0000000
+--- a/arch/x86/xen/Kconfig
++++ b/arch/x86/xen/Kconfig
+@@@ -49,15 -49,3 +49,7 @@@ config XEN_DEBUG_F
+  	help
+  	  Enable statistics output and various tuning options in debugfs.
+  	  Enabling this option may incur a significant performance overhead.
+ +
+- config XEN_DEBUG
+- 	bool "Enable Xen debug checks"
+- 	depends on XEN
+- 	default n
+- 	help
+- 	  Enable various WARN_ON checks in the Xen MMU code.
+- 	  Enabling this option WILL incur a significant performance overhead.
+- 
+ +config MICROCODE_XEN
+ +       def_bool y
+-        depends on XEN_DOM0 && MICROCODE
+++       depends on XEN_DOM0 && MICROCODE
