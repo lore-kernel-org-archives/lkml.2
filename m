@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754689Ab1IWBKo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 21:10:44 -0400
-Received: from mail209.messagelabs.com ([216.82.255.3]:65294 "EHLO
-	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754603Ab1IWBKm (ORCPT
+	id S1754692Ab1IWBMi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 21:12:38 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:23468 "EHLO
+	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753767Ab1IWBMd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 21:10:42 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-11.tower-209.messagelabs.com!1316740237!17001267!9
-X-Originating-IP: [216.166.12.32]
-X-StarScan-Version: 6.3.6; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] mm/huge_memory.c: quiet sparse noise
-Date: Thu, 22 Sep 2011 18:10:05 -0700
-User-Agent: KMail/1.9.9
-CC: <linux-mm@kvack.org>, <akpm@linux-foundation.org>, <aarcange@redhat.com>,
-        <riel@redhat.com>, <jweiner@redhat.com>,
-        <kamezawa.hiroyu@jp.fujitsu.com>
+	Thu, 22 Sep 2011 21:12:33 -0400
+X-SpamScore: -9
+X-BigFish: VS-9(zz1432N98dKzz1202hzz8275dhz2dh2a8h668h839h8e2h8e3h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Tabi Timur-B04825 <B04825@freescale.com>
+To: Greg KH <greg@kroah.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
+        "linux-console@vger.kernel.org" <linux-console@vger.kernel.org>
+Subject: Re: [PATCH] drivers/tty: don't use the byte channel handle as a
+ parameter in ehv_bytechan.c
+Thread-Topic: [PATCH] drivers/tty: don't use the byte channel handle as a
+ parameter in ehv_bytechan.c
+Thread-Index: AQHMd8Lik0aBVkYCE0CzfKVTYPu6BZVaXN4A//+uwoCAAFdVAIAAHOYA
+Date: Fri, 23 Sep 2011 01:11:55 +0000
+Message-ID: <4E7BDCDA.6060506@freescale.com>
+References: <1316543217-13769-1-git-send-email-timur@freescale.com>
+ <20110922230640.GA16981@kroah.com> <4E7BC1A9.5050708@freescale.com>
+ <20110922232828.GA12088@kroah.com>
+In-Reply-To: <20110922232828.GA12088@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:6.0.2)
+ Gecko/20110902 Firefox/6.0.2 SeaMonkey/2.3.3
+x-originating-ip: [68.203.10.197]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <C5C7C787C50EC349BFDFC774FFB5C123@freescale.net>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201109221810.05542.hartleys@visionengravers.com>
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quiet the sparse noise:
+Greg KH wrote:
+>>> >  >  This patch doesn't apply at all to my tty tree, what was it made
+>>> >  >  against?
+>> >
+>> >  An internal repository that supposed to be in-sync with the latest and greatest.
+>> >
+>> >  What's the URL for your tty-next repo?
+> There is no public one due to kernel.org being down.
+>
+> Does your patch apply to linux-next?
 
-warning: symbol 'khugepaged_scan' was not declared. Should it be static?
-warning: context imbalance in 'khugepaged_scan_mm_slot' - unexpected unlock
+It does not, and I see why now.  Looks like the internal tree is not in 
+sync after all.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Johannes Weiner <jweiner@redhat.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+I will post a V2 shortly.
 
----
-
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 6b072bd..44f5763 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -89,7 +89,8 @@ struct khugepaged_scan {
- 	struct list_head mm_head;
- 	struct mm_slot *mm_slot;
- 	unsigned long address;
--} khugepaged_scan = {
-+};
-+static struct khugepaged_scan khugepaged_scan = {
- 	.mm_head = LIST_HEAD_INIT(khugepaged_scan.mm_head),
- };
- 
-@@ -2069,6 +2070,8 @@ static void collect_mm_slot(struct mm_slot *mm_slot)
- 
- static unsigned int khugepaged_scan_mm_slot(unsigned int pages,
- 					    struct page **hpage)
-+	__releases(&khugepaged_mm_lock)
-+	__acquires(&khugepaged_mm_lock)
- {
- 	struct mm_slot *mm_slot;
- 	struct mm_struct *mm;
+-- 
+Timur Tabi
+Linux kernel developer at Freescale
