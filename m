@@ -1,52 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752172Ab1IWGgj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 02:36:39 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:65527 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751091Ab1IWGgi (ORCPT
+	id S1752442Ab1IWGky (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 02:40:54 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53224 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751105Ab1IWGkw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 02:36:38 -0400
-Date: Fri, 23 Sep 2011 09:25:48 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Tim Waugh <tim@cyberelk.net>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch] paride: potential information leak in pg_read()
-Message-ID: <20110923062548.GK4387@elgon.mountain>
+	Fri, 23 Sep 2011 02:40:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4E7C28F3.00BE:SCFMA922111,ss=1,re=-4.000,fgs=0
+In-Reply-To: <20110922123128.GA9761@quad>
+References: <20110922123128.GA9761@quad>
+Date: Fri, 23 Sep 2011 09:40:52 +0300
+X-Google-Sender-Auth: ft2aDNgdSbeh39rzgGL0GJ2xCrc
+Message-ID: <CAOJsxLFDaYxevsH8UYEeZJrz7HCZSg89_XTaXP=hPTTG2HH9=w@mail.gmail.com>
+Subject: Re: [PATCH] perf: make perf.data more self-descriptive (v5)
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
+        mingo@elte.hu, dsahern@gmail.com, robert.richter@amd.com,
+        ak@linux.intel.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Smatch has a new check for Rosenberg type information leaks where
-structs are copied to the user with uninitialized stack data in them.
-i
-In this case, the pg_write_hdr struct has a hole in it.
+On Thu, Sep 22, 2011 at 3:31 PM, Stephane Eranian <eranian@google.com> wrote:
+> # CPU0 sibling cores  : 0-3
+> # CPU0 sibling threads: 0
+> # CPU1 sibling cores  : 0-3
+> # CPU1 sibling threads: 1
+> # CPU2 sibling cores  : 0-3
+> # CPU2 sibling threads: 2
+> # CPU3 sibling cores  : 0-3
+> # CPU3 sibling threads: 3
+> # total memory: 8093212 kB
+> # cpuid : GenuineIntel,6,15,11
 
-struct pg_write_hdr {
-        char                       magic;                /*     0     1 */
-        char                       func;                 /*     1     1 */
-        /* XXX 2 bytes hole, try to pack */
-        int                        dlen;                 /*     4     4 */
-
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-
-diff --git a/drivers/block/paride/pg.c b/drivers/block/paride/pg.c
-index 6b9a200..a79fb4f 100644
---- a/drivers/block/paride/pg.c
-+++ b/drivers/block/paride/pg.c
-@@ -630,6 +630,7 @@ static ssize_t pg_read(struct file *filp, char __user *buf, size_t count, loff_t
- 		if (dev->status & 0x10)
- 			return -ETIME;
- 
-+	memset(&hdr, 0, sizeof(hdr));
- 	hdr.magic = PG_MAGIC;
- 	hdr.dlen = dev->dlen;
- 	copy = 0;
-
+So how important is this information? The output is going to be somewhat
+awkward for very large CPU counts... :-)
