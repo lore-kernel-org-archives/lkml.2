@@ -1,179 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754310Ab1IWOjK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 10:39:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47175 "EHLO mx1.redhat.com"
+	id S1754572Ab1IWOlo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 10:41:44 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:20851 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751602Ab1IWOjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 10:39:06 -0400
-Date: Fri, 23 Sep 2011 16:38:17 +0200
-From: Johannes Weiner <jweiner@redhat.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Chris Mason <chris.mason@oracle.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, xfs@oss.sgi.com,
-        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch 1/4 v2] mm: exclude reserved pages from dirtyable memory
-Message-ID: <20110923143816.GA2606@redhat.com>
-References: <1316526315-16801-1-git-send-email-jweiner@redhat.com>
- <1316526315-16801-2-git-send-email-jweiner@redhat.com>
- <20110921140423.GG4849@suse.de>
- <20110921150328.GJ4849@suse.de>
- <20110922090326.GB29046@redhat.com>
- <20110922105400.GL4849@suse.de>
+	id S1754532Ab1IWOln (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Sep 2011 10:41:43 -0400
+Message-ID: <4E7C9A91.1060301@parallels.com>
+Date: Fri, 23 Sep 2011 18:41:21 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Lightning/1.0b2 Thunderbird/3.1.13
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110922105400.GL4849@suse.de>
+To: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>
+CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "davem@davemloft.net" <davem@davemloft.net>
+Subject: Re: [PATCH v6 1/8] SUNRPC: introduce helpers for reference counted
+ rpcbind clients
+References: <20110920101031.9861.18444.stgit@localhost6.localdomain6> <20110920101341.9861.51453.stgit@localhost6.localdomain6> <4E7899E7.9090809@parallels.com> <4E79A95F.8050304@parallels.com>
+In-Reply-To: <4E79A95F.8050304@parallels.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The amount of dirtyable pages should not include the full number of
-free pages: there is a number of reserved pages that the page
-allocator and kswapd always try to keep free.
+Trond, is this patch version suits you now? Or not?
+Please, comment somehow to let me know, may I proceed with further development 
+or not.
 
-The closer (reclaimable pages - dirty pages) is to the number of
-reserved pages, the more likely it becomes for reclaim to run into
-dirty pages:
+Sorry for disturbing (if so).
 
-       +----------+ ---
-       |   anon   |  |
-       +----------+  |
-       |          |  |
-       |          |  -- dirty limit new    -- flusher new
-       |   file   |  |                     |
-       |          |  |                     |
-       |          |  -- dirty limit old    -- flusher old
-       |          |                        |
-       +----------+                       --- reclaim
-       | reserved |
-       +----------+
-       |  kernel  |
-       +----------+
+21.09.2011 13:07, Stanislav Kinsbursky пишет:
+> v6:
+> 1) added write memory barrier to rpcb_set_local to make sure, that rpcbind
+> clients become valid before rpcb_users assignment
+> 2) explicitly set rpcb_users to 1 instead of incrementing it (looks clearer from
+> my pow).
+>
+> Notice: write memory barrier after zeroing rpcbind clients in rpcb_put_local()
+> is not required, since to users of them left. New user (service) will create new
+> clients before dereferencing them.
+>
+> This helpers will be used for dynamical creation and destruction of rpcbind
+> clients.
+> Variable rpcb_users is actually a counter of lauched RPC services. If rpcbind
+> clients has been created already, then we just increase rpcb_users.
+>
+> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
+>
+> ---
+>    net/sunrpc/rpcb_clnt.c |   54 ++++++++++++++++++++++++++++++++++++++++++++++++
+>    1 files changed, 54 insertions(+), 0 deletions(-)
+>
+> diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
+> index e45d2fb..9fcdb42 100644
+> --- a/net/sunrpc/rpcb_clnt.c
+> +++ b/net/sunrpc/rpcb_clnt.c
+> @@ -114,6 +114,9 @@ static struct rpc_program	rpcb_program;
+>    static struct rpc_clnt *	rpcb_local_clnt;
+>    static struct rpc_clnt *	rpcb_local_clnt4;
+>
+> +DEFINE_SPINLOCK(rpcb_clnt_lock);
+> +unsigned int			rpcb_users;
+> +
+>    struct rpcbind_args {
+>    	struct rpc_xprt *	r_xprt;
+>
+> @@ -161,6 +164,57 @@ static void rpcb_map_release(void *data)
+>    	kfree(map);
+>    }
+>
+> +static int rpcb_get_local(void)
+> +{
+> +	int cnt;
+> +
+> +	spin_lock(&rpcb_clnt_lock);
+> +	if (rpcb_users)
+> +		rpcb_users++;
+> +	cnt = rpcb_users;
+> +	spin_unlock(&rpcb_clnt_lock);
+> +
+> +	return cnt;
+> +}
+> +
+> +void rpcb_put_local(void)
+> +{
+> +	struct rpc_clnt *clnt = rpcb_local_clnt;
+> +	struct rpc_clnt *clnt4 = rpcb_local_clnt4;
+> +	int shutdown;
+> +
+> +	spin_lock(&rpcb_clnt_lock);
+> +	if (--rpcb_users == 0) {
+> +		rpcb_local_clnt = NULL;
+> +		rpcb_local_clnt4 = NULL;
+> +	}
+> +	shutdown = !rpcb_users;
+> +	spin_unlock(&rpcb_clnt_lock);
+> +
+> +	if (shutdown) {
+> +		/*
+> +		 * cleanup_rpcb_clnt - remove xprtsock's sysctls, unregister
+> +		 */
+> +		if (clnt4)
+> +			rpc_shutdown_client(clnt4);
+> +		if (clnt)
+> +			rpc_shutdown_client(clnt);
+> +	}
+> +	return;
+> +}
+> +
+> +static void rpcb_set_local(struct rpc_clnt *clnt, struct rpc_clnt *clnt4)
+> +{
+> +	/* Protected by rpcb_create_local_mutex */
+> +	rpcb_local_clnt = clnt;
+> +	rpcb_local_clnt4 = clnt4;
+> +	smp_wmb();
+> +	rpcb_users = 1;
+> +	dprintk("RPC:       created new rpcb local clients (rpcb_local_clnt: "
+> +			"%p, rpcb_local_clnt4: %p)\n", rpcb_local_clnt,
+> +			rpcb_local_clnt4);
+> +}
+> +
+>    /*
+>     * Returns zero on success, otherwise a negative errno value
+>     * is returned.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-This patch introduces a per-zone dirty reserve that takes both the
-lowmem reserve as well as the high watermark of the zone into account,
-and a global sum of those per-zone values that is subtracted from the
-global amount of dirtyable pages.  The lowmem reserve is unavailable
-to page cache allocations and kswapd tries to keep the high watermark
-free.  We don't want to end up in a situation where reclaim has to
-clean pages in order to balance zones.
 
-Not treating reserved pages as dirtyable on a global level is only a
-conceptual fix.  In reality, dirty pages are not distributed equally
-across zones and reclaim runs into dirty pages on a regular basis.
-
-But it is important to get this right before tackling the problem on a
-per-zone level, where the distance between reclaim and the dirty pages
-is mostly much smaller in absolute numbers.
-
-Signed-off-by: Johannes Weiner <jweiner@redhat.com>
----
- include/linux/mmzone.h |    6 ++++++
- include/linux/swap.h   |    1 +
- mm/page-writeback.c    |    6 ++++--
- mm/page_alloc.c        |   19 +++++++++++++++++++
- 4 files changed, 30 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 1ed4116..37a61e7 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -317,6 +317,12 @@ struct zone {
- 	 */
- 	unsigned long		lowmem_reserve[MAX_NR_ZONES];
- 
-+	/*
-+	 * This is a per-zone reserve of pages that should not be
-+	 * considered dirtyable memory.
-+	 */
-+	unsigned long		dirty_balance_reserve;
-+
- #ifdef CONFIG_NUMA
- 	int node;
- 	/*
-diff --git a/include/linux/swap.h b/include/linux/swap.h
-index b156e80..9021453 100644
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -209,6 +209,7 @@ struct swap_list_t {
- /* linux/mm/page_alloc.c */
- extern unsigned long totalram_pages;
- extern unsigned long totalreserve_pages;
-+extern unsigned long dirty_balance_reserve;
- extern unsigned int nr_free_buffer_pages(void);
- extern unsigned int nr_free_pagecache_pages(void);
- 
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index da6d263..c8acf8a 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -170,7 +170,8 @@ static unsigned long highmem_dirtyable_memory(unsigned long total)
- 			&NODE_DATA(node)->node_zones[ZONE_HIGHMEM];
- 
- 		x += zone_page_state(z, NR_FREE_PAGES) +
--		     zone_reclaimable_pages(z);
-+		     zone_reclaimable_pages(z) -
-+		     zone->dirty_balance_reserve;
- 	}
- 	/*
- 	 * Make sure that the number of highmem pages is never larger
-@@ -194,7 +195,8 @@ static unsigned long determine_dirtyable_memory(void)
- {
- 	unsigned long x;
- 
--	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages();
-+	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages() -
-+	    dirty_balance_reserve;
- 
- 	if (!vm_highmem_is_dirtyable)
- 		x -= highmem_dirtyable_memory(x);
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 1dba05e..f8cba89 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -96,6 +96,14 @@ EXPORT_SYMBOL(node_states);
- 
- unsigned long totalram_pages __read_mostly;
- unsigned long totalreserve_pages __read_mostly;
-+/*
-+ * When calculating the number of globally allowed dirty pages, there
-+ * is a certain number of per-zone reserves that should not be
-+ * considered dirtyable memory.  This is the sum of those reserves
-+ * over all existing zones that contribute dirtyable memory.
-+ */
-+unsigned long dirty_balance_reserve __read_mostly;
-+
- int percpu_pagelist_fraction;
- gfp_t gfp_allowed_mask __read_mostly = GFP_BOOT_MASK;
- 
-@@ -5076,8 +5084,19 @@ static void calculate_totalreserve_pages(void)
- 			if (max > zone->present_pages)
- 				max = zone->present_pages;
- 			reserve_pages += max;
-+			/*
-+			 * Lowmem reserves are not available to
-+			 * GFP_HIGHUSER page cache allocations and
-+			 * kswapd tries to balance zones to their high
-+			 * watermark.  As a result, neither should be
-+			 * regarded as dirtyable memory, to prevent a
-+			 * situation where reclaim has to clean pages
-+			 * in order to balance the zones.
-+			 */
-+			zone->dirty_balance_reserve = max;
- 		}
- 	}
-+	dirty_balance_reserve = reserve_pages;
- 	totalreserve_pages = reserve_pages;
- }
- 
 -- 
-1.7.6.2
-
+Best regards,
+Stanislav Kinsbursky
