@@ -1,86 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754803Ab1IWDDc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 23:03:32 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:54387 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754700Ab1IWDDb convert rfc822-to-8bit (ORCPT
+	id S1751357Ab1IWDW7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 23:22:59 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:54632 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750980Ab1IWDW4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 23:03:31 -0400
-MIME-Version: 1.0
-In-Reply-To: <CABg=csR-JzS0s2h=B9yJDJBsaAJZTR7b5iH-cU1EjQyxAQjd1g@mail.gmail.com>
-References: <CAHzg1A-RCpZz-6YzON4cNzrSVpvEP=BCQx0AzZe1negcu2zo6g@mail.gmail.com>
-	<CABg=csR-JzS0s2h=B9yJDJBsaAJZTR7b5iH-cU1EjQyxAQjd1g@mail.gmail.com>
-Date: Thu, 22 Sep 2011 20:03:30 -0700
-Message-ID: <CAHzg1A950qwmUts4nqKn80izXbxhmzoevg5n3g2C4BbwagmA2g@mail.gmail.com>
-Subject: Re: eMMC low write speed
-From: Praveen G K <praveen.gk@gmail.com>
-To: Qiang LIU <godliuqiang@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 22 Sep 2011 23:22:56 -0400
+Date: Fri, 23 Sep 2011 08:52:43 +0530
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Keith Packard <keithp@keithp.com>
+Cc: Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: [Intel-gfx] [PATCH 9/9] drm/i915: Disable eDP VDD in a delayed
+ work proc instead of synchronously
+Message-ID: <20110923085243.6e4b7b4c@jbarnes-x220>
+In-Reply-To: <yunsjnqfqga.fsf@aiko.keithp.com>
+References: <1316470923-27832-1-git-send-email-keithp@keithp.com>
+	<1316470923-27832-10-git-send-email-keithp@keithp.com>
+	<20110921094759.22423597@jbarnes-x220>
+	<yunsjnqfqga.fsf@aiko.keithp.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 192.55.60.111 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Qiang,
+On Tue, 20 Sep 2011 21:51:33 -0700
+Keith Packard <keithp@keithp.com> wrote:
+> Yes, making it cleaner would help a ton. There are some basic problems
+> with the DRM API that make this hard though -- intel_dp_prepare may
+> not ever be followed by a call to intel_dp_commit. That's why I had
+> the VDD AUX stuff get turned off by a delayed work proc instead.
+> 
+> Also, leaving VDD AUX high after EDID is fetched means that we can
+> start the mode setting immediately, rather than having to wait for the
+> power-off/power-on delay (which is really long).
 
+Yeah agreed.  
 
+> What we could do is force VDD AUX off after the panel gets turned on;
+> that would ensure that turning the panel off would actually turn the
+> power off, rather than having VDD stay high for some time after that.
 
+Yep, that sounds great.
 
-
-On Thu, Sep 22, 2011 at 7:16 PM, Qiang LIU <godliuqiang@gmail.com> wrote:
-> Hi,
->
-> I suggest you change another eMMC card or try SDHC card. It seems like
-> a card issue.
-
-Thanks for the response.  So, do you think this has nothing to do with
-the caching or any such issues, since it is only every 63rd and 64th
-transfer causing this issue?
-
-> What's your environment. Which mode is the host controller, DMA or PIO?
-
-The host controller is in the DMA mode.
-
-> About the bounce buffer, I think is a trade off, if you enlarge its size.
-> Sometimes
-> will rise timeout error (2s, other polling thread won't gain the host
-> controller).
->
-> 2011/9/23 Praveen G K <praveen.gk@gmail.com>
->>
->> Hello all,
->>
->> I am working on the block driver module of the eMMC driver.  I am
->> seeing very low write speed for eMMC transfers.  On further debugging,
->> I observed that every 63rd and 64th transfer takes a long time.  I
->> have tabulated this by noting the time interval between when CMD 25
->> (multi block write command) is sent and when DATA_END interrupt is
->> received.  In normal cases, to transfer 64k (128 blocks of data), it
->> takes about 2.5ms.  But, under the really slow transfer speed cases,
->> it takes about 250-350ms to get the data_end interrupt after the multi
->> block write command is sent.  In some cases, it takes a longer time.
->> This radically reduces the throughput of the transfers.
->>
->> I have also enabled the bounce buffers.  As a side question, can
->> somebody please tell me why the bounce buffer is restricted to 64kB?
->>
->> Thanks in advance for any help that you can provide me on this issue.
->> Also, please include my email id in the cc field when replying to this
->> email since I am not subscribed to this mailing list.
->>
->> Thanks,
->> Praveen Krishnan
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->
->
->
-> --
-> Best Regards
-> Onizuka Eiji
->
+Thanks,
+Jesse
