@@ -1,218 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752017Ab1IWTkP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 15:40:15 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:64805 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751784Ab1IWTkN (ORCPT
+	id S1752071Ab1IWTlx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 15:41:53 -0400
+Received: from mail-01.cse.ucsc.edu ([128.114.48.32]:36886 "EHLO
+	mail-01.cse.ucsc.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751897Ab1IWTlw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 15:40:13 -0400
+	Fri, 23 Sep 2011 15:41:52 -0400
+X-Greylist: delayed 437 seconds by postgrey-1.27 at vger.kernel.org; Fri, 23 Sep 2011 15:41:52 EDT
+Message-ID: <4E7CDF4A.4070207@cs.ucsc.edu>
+Date: Fri, 23 Sep 2011 12:34:34 -0700
+From: Noah Watkins <jayhawk@cs.ucsc.edu>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
 MIME-Version: 1.0
-Date: Fri, 23 Sep 2011 12:40:12 -0700
-Message-ID: <CAB2gnbXPZ1QghWkPtuf42oxD2JhXa4tdedvVvrM0ZTY7HPBW6w@mail.gmail.com>
-Subject: [PATCH v3] ceph: use kernel DNS resolver
-From: Noah Watkins <noahwatkins@gmail.com>
 To: Sage Weil <sage@newdream.net>
-Cc: ceph-devel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+CC: Noah Watkins <noahwatkins@gmail.com>, ceph-devel@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ceph: use kernel DNS resolver
+References: <CAB2gnbVw2_FSWVVmUA1OobE1Ti9Q1w3AP_67=Vo4zwZtQ=gHYg@mail.gmail.com> <Pine.LNX.4.64.1109221426310.19558@cobra.newdream.net> <CAB2gnbVaS=x9hurY0P8x4Ltqh11foOpsMBy2MNt662T2X9+BLQ@mail.gmail.com> <Pine.LNX.4.64.1109231213580.31698@cobra.newdream.net>
+In-Reply-To: <Pine.LNX.4.64.1109231213580.31698@cobra.newdream.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change ceph_parse_ips to take either names given as
-IP addresses or standard hostnames (e.g. localhost).
-The DNS lookup is done using the dns_resolver facility
-similar to its use in AFS, NFS, and CIFS.
+On 09/23/2011 12:15 PM, Sage Weil wrote:
 
-This patch defines CONFIG_CEPH_LIB_USE_DNS_RESOLVER
-that controls if this feature is on or off.
+> So I was actually thinking we could just #ifdef off of 
+> CONFIG_DNS_RESOLVER, but I think your approach might be better because 
+> you'll see it in the config process and turn it on, vs having to dig 
+> through to wherever DNS_RESOLVER lives in kconfig.
 
-Signed-off-by: Noah Watkins <noahwatkins@gmail.com>
----
- net/ceph/Kconfig     |   12 +++++
- net/ceph/messenger.c |  114 ++++++++++++++++++++++++++++++++++++++++++++-----
- 2 files changed, 114 insertions(+), 12 deletions(-)
 
-diff --git a/net/ceph/Kconfig b/net/ceph/Kconfig
-index be683f2..3c10f5d 100644
---- a/net/ceph/Kconfig
-+++ b/net/ceph/Kconfig
-@@ -27,3 +27,15 @@ config CEPH_LIB_PRETTYDEBUG
+Yeh, that was my thinking too. Also, if we just use DNS_RESOLVER then a
+Ceph user would have no way of turning off the feature if another
+required feature had a dependency on DNS_RESOLVER.
 
- 	  If unsure, say N.
+> Maybe it should default y though?
 
-+config CEPH_LIB_USE_DNS_RESOLVER
-+	bool "Use in-kernel support for DNS lookup"
-+	depends on CEPH_LIB
-+	select DNS_RESOLVER
-+	default y
-+	help
-+	  If you say Y here, hostnames (e.g. monitor addresses) will
-+	  be resolved using the CONFIG_DNS_RESOLVER facility.
-+
-+	  For information on how to use CONFIG_DNS_RESOLVER consult
-+	  Documentation/networking/dns_resolver.txt
-+
-diff --git a/net/ceph/messenger.c b/net/ceph/messenger.c
-index c340e2e..947a6f3 100644
---- a/net/ceph/messenger.c
-+++ b/net/ceph/messenger.c
-@@ -11,6 +11,7 @@
- #include <linux/string.h>
- #include <linux/bio.h>
- #include <linux/blkdev.h>
-+#include <linux/dns_resolver.h>
- #include <net/tcp.h>
 
- #include <linux/ceph/libceph.h>
-@@ -1078,6 +1079,101 @@ static void addr_set_port(struct
-sockaddr_storage *ss, int p)
- }
+It definitely doesn't hurt anything. I'll send v3 with default y.
 
- /*
-+ * Unlike other *_pton function semantics, zero indicates success.
-+ */
-+static int ceph_pton(const char *str, size_t len, struct sockaddr_storage *ss,
-+		char delim, const char **ipend)
-+{
-+	struct sockaddr_in *in4 = (void *)ss;
-+	struct sockaddr_in6 *in6 = (void *)ss;
-+
-+	memset(ss, 0, sizeof(*ss));
-+
-+	if (in4_pton(str, len, (u8 *)&in4->sin_addr.s_addr, delim, ipend)) {
-+		ss->ss_family = AF_INET;
-+		return 0;
-+	}
-+
-+	if (in6_pton(str, len, (u8 *)&in6->sin6_addr.s6_addr, delim, ipend)) {
-+		ss->ss_family = AF_INET6;
-+		return 0;
-+	}
-+
-+	return -EINVAL;
-+}
-+
-+/*
-+ * Extract hostname string and resolve using kernel DNS facility.
-+ */
-+#ifdef CONFIG_CEPH_LIB_USE_DNS_RESOLVER
-+static int ceph_dns_resolve_name(const char *name, size_t namelen,
-+		struct sockaddr_storage *ss, char delim, const char **ipend)
-+{
-+	const char *end, *delim_p;
-+	char *colon_p, *ip_addr = NULL;
-+	int ip_len, ret;
-+
-+	/*
-+	 * The end of the hostname occurs immediately preceding the delimiter or
-+	 * the port marker (':') where the delimiter takes precedence.
-+	 */
-+	delim_p = memchr(name, delim, namelen);
-+	colon_p = memchr(name, ':', namelen);
-+
-+	if (delim_p && colon_p)
-+		end = delim_p < colon_p ? delim_p : colon_p;
-+	else if (!delim_p && colon_p)
-+		end = colon_p;
-+	else {
-+		end = delim_p;
-+		if (!end) /* case: hostname:/ */
-+			end = name + namelen;
-+	}
-+
-+	if (end <= name)
-+		return -EINVAL;
-+
-+	/* do dns_resolve upcall */
-+	ip_len = dns_query(NULL, name, end - name, NULL, &ip_addr, NULL);
-+	if (ip_len > 0)
-+		ret = ceph_pton(ip_addr, ip_len, ss, -1, NULL);
-+	else
-+		ret = -ESRCH;
-+
-+	kfree(ip_addr);
-+
-+	*ipend = end;
-+
-+	pr_info("resolve '%.*s' (ret=%d): %s\n", (int)(end - name), name,
-+			ret, ret ? "failed" : ceph_pr_addr(ss));
-+
-+	return ret;
-+}
-+#else
-+static inline int ceph_dns_resolve_name(const char *name, size_t namelen,
-+		struct sockaddr_storage *ss, char delim, const char **ipend)
-+{
-+	return -EINVAL;
-+}
-+#endif
-+
-+/*
-+ * Parse a server name (IP or hostname). If a valid IP address is not found
-+ * then try to extract a hostname to resolve using userspace DNS upcall.
-+ */
-+static int ceph_parse_server_name(const char *name, size_t namelen,
-+			struct sockaddr_storage *ss, char delim, const char **ipend)
-+{
-+	int ret;
-+
-+	ret = ceph_pton(name, namelen, ss, delim, ipend);
-+	if (ret)
-+		ret = ceph_dns_resolve_name(name, namelen, ss, delim, ipend);
-+
-+	return ret;
-+}
-+
-+/*
-  * Parse an ip[:port] list into an addr array.  Use the default
-  * monitor port if a port isn't specified.
-  */
-@@ -1085,15 +1181,13 @@ int ceph_parse_ips(const char *c, const char *end,
- 		   struct ceph_entity_addr *addr,
- 		   int max_count, int *count)
- {
--	int i;
-+	int i, ret = -EINVAL;
- 	const char *p = c;
-
- 	dout("parse_ips on '%.*s'\n", (int)(end-c), c);
- 	for (i = 0; i < max_count; i++) {
- 		const char *ipend;
- 		struct sockaddr_storage *ss = &addr[i].in_addr;
--		struct sockaddr_in *in4 = (void *)ss;
--		struct sockaddr_in6 *in6 = (void *)ss;
- 		int port;
- 		char delim = ',';
-
-@@ -1102,15 +1196,11 @@ int ceph_parse_ips(const char *c, const char *end,
- 			p++;
- 		}
-
--		memset(ss, 0, sizeof(*ss));
--		if (in4_pton(p, end - p, (u8 *)&in4->sin_addr.s_addr,
--			     delim, &ipend))
--			ss->ss_family = AF_INET;
--		else if (in6_pton(p, end - p, (u8 *)&in6->sin6_addr.s6_addr,
--				  delim, &ipend))
--			ss->ss_family = AF_INET6;
--		else
-+		ret = ceph_parse_server_name(p, end - p, ss, delim, &ipend);
-+		if (ret)
- 			goto bad;
-+		ret = -EINVAL;
-+
- 		p = ipend;
-
- 		if (delim == ']') {
-@@ -1155,7 +1245,7 @@ int ceph_parse_ips(const char *c, const char *end,
-
- bad:
- 	pr_err("parse_ips bad ip '%.*s'\n", (int)(end - c), c);
--	return -EINVAL;
-+	return ret;
- }
- EXPORT_SYMBOL(ceph_parse_ips);
-
--- 
-1.7.6.1
+-Noah
