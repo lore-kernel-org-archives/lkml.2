@@ -1,37 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754032Ab1IWNGR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 09:06:17 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:40201 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753912Ab1IWNGQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 09:06:16 -0400
+	id S1754093Ab1IWNGu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 09:06:50 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:39248 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753946Ab1IWNGt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Sep 2011 09:06:49 -0400
+Date: Fri, 23 Sep 2011 14:09:23 +0100 (IST)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm fixes
+Message-ID: <alpine.DEB.2.00.1109231408260.11737@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Date: Fri, 23 Sep 2011 17:06:15 +0400
-Message-ID: <CAJBOZRqQJjPeEa_HBXvpOWRNcRaLvL2zQy=LtDpmBChxh7B24g@mail.gmail.com>
-Subject: READ/RENEW loop bug again?
-From: Vladimir Kozlov <vladimir.kozlov@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-I've found this thread -
-http://linux-nfs.org/pipermail/nfsv4/2010-January/012042.html - trying
-to understand why I've got a huge traffic on NFS server followed by
-killing almost everything by oom-killer.
-It seems that I face the same bug, but using newest kernels in Ubuntu
-10.04 LTS - I had 2.6.32-33-generic-pae, then I tried with
-2.6.38-10-generic-pae (backported from 11.04) but with the same
-problem.
+Hi,
 
-Could you please advice are there any workarounds? I will be hapy to
-give as much information as I can.
+One radeon fix, and one serious radeon revert due to regression.
 
-Kind regards,
+Dave.
 
-Vladimir.
+The following changes since commit d942e43b58dc27b36305bcd374a74f7cc15183a3:
+
+  Merge branch 'for-linus' of git://git.selinuxproject.org/~jmorris/linux-security (2011-09-22 19:57:27 -0700)
+
+are available in the git repository at:
+
+  ssh://people.freedesktop.org/~/linux drm-fixes
+
+Alex Deucher (1):
+      drm/radeon/kms: fix DDIA enable on some rs690 systems
+
+Dave Airlie (1):
+      Revert "drm/radeon/kms: fix typo in r100_blit_copy"
+
+ drivers/gpu/drm/radeon/r100.c            |    4 ++--
+ drivers/gpu/drm/radeon/radeon_encoders.c |    9 ++++++++-
+ 2 files changed, 10 insertions(+), 3 deletions(-)
