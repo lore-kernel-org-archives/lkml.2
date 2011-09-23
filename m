@@ -1,77 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753852Ab1I0Lre (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 07:47:34 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:60244 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753818Ab1I0Lrb convert rfc822-to-8bit (ORCPT
+	id S1753531Ab1I0LnS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 07:43:18 -0400
+Received: from ganesha.gnumonks.org ([213.95.27.120]:40429 "EHLO
+	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753483Ab1I0LnQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 07:47:31 -0400
-Subject: Re: [PATCH v5 3.1.0-rc4-tip 13/26] x86: define a x86 specific
- exception notifier.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Hugh Dickins <hughd@google.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Tue, 27 Sep 2011 13:46:15 +0200
-In-Reply-To: <20110926155252.GA8087@linux.vnet.ibm.com>
-References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com>
-	 <20110920120238.25326.71868.sendpatchset@srdronam.in.ibm.com>
-	 <1317046791.1763.26.camel@twins> <20110926155252.GA8087@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1317123975.15383.43.camel@twins>
-Mime-Version: 1.0
+	Tue, 27 Sep 2011 07:43:16 -0400
+From: KyongHo Cho <pullip.cho@samsung.com>
+To: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Cc: Joerg Roedel <joro@8bytes.org>, Sanghyun Lee <sanghyun75.lee@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        YoungLak Kim <younglak1004.kim@samsung.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>
+Subject: [PATCH 0/3] iommu/exynos: Add iommu driver for Exynos4 SoCs
+Date: Fri, 23 Sep 2011 21:01:44 +0900
+Message-Id: <1316779307-2567-1-git-send-email-pullip.cho@samsung.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-09-26 at 21:22 +0530, Srikar Dronamraju wrote:
-> * Peter Zijlstra <peterz@infradead.org> [2011-09-26 16:19:51]:
-> 
-> > On Tue, 2011-09-20 at 17:32 +0530, Srikar Dronamraju wrote:
-> > > @@ -820,6 +821,19 @@ do_notify_resume(struct pt_regs *regs, void *unused, __u32 thread_info_flags)
-> > >                 mce_notify_process();
-> > >  #endif /* CONFIG_X86_64 && CONFIG_X86_MCE */
-> > >  
-> > > +       if (thread_info_flags & _TIF_UPROBE) {
-> > > +               clear_thread_flag(TIF_UPROBE);
-> > > +#ifdef CONFIG_X86_32
-> > > +               /*
-> > > +                * On x86_32, do_notify_resume() gets called with
-> > > +                * interrupts disabled. Hence enable interrupts if they
-> > > +                * are still disabled.
-> > > +                */
-> > > +               local_irq_enable();
-> > > +#endif
-> > > +               uprobe_notify_resume(regs);
-> > > +       }
-> > > +
-> > >         /* deal with pending signal delivery */
-> > >         if (thread_info_flags & _TIF_SIGPENDING)
-> > >                 do_signal(regs); 
-> > 
-> > It would be good to remove this difference between i386 and x86_64.
-> 
-> 
-> I think, we have already discussed this. I tried getting to know why we
-> have this difference in behaviour. However I havent been able to find
-> the answer.
-> 
-> If you can get somebody to answer this, I would be happy to modify as
-> required.
+Hi.
 
-The Changelog failed to mention this. Afaict there really is no reason
-other than that touching entry_32.S is a pain.
+This patch set enhances System MMU platform device definitions of Exynos
+SoC platforms, adds the implementation of IOMMU API as well as and moves
+Syste MMU driver to the drivers/iommu directory.
+
+The IOMMU driver also implements fault handler that Ohad Ben-Cohen has
+suggeested and iommu_ops per-bus_type that Joerg Roedel suggests.
+
+CONFIG_S5P_SYSTEM_MMU is removed because it is replaceable
+with CONFIG_EXYNOS4_IOMMU.
+
+Diffstat:
+
+arch/arm/mach-exynos4/Kconfig               |    2 -
+arch/arm/mach-exynos4/clock.c               |   43 +-
+arch/arm/mach-exynos4/dev-sysmmu.c          |  281 +++-------
+arch/arm/mach-exynos4/include/mach/irqs.h   |    1 -
+arch/arm/mach-exynos4/include/mach/map.h    |    1 -
+arch/arm/mach-exynos4/include/mach/sysmmu.h |   96 ++--
+arch/arm/mach-exynos4/mach-armlex4210.c     |   24 +-
+arch/arm/mach-exynos4/mach-smdkv310.c       |   28 +-
+arch/arm/plat-s5p/Kconfig                   |    8 -
+arch/arm/plat-s5p/Makefile                  |    1 -
+arch/arm/plat-s5p/include/plat/sysmmu.h     |   95 ---
+arch/arm/plat-s5p/sysmmu.c                  |  312 ----------
+drivers/iommu/Kconfig                       |   14 +
+drivers/iommu/Makefile                      |    1 +
+drivers/iommu/exynos_iommu.c                |  859 +++++++++++++++++++++++++++
+15 files changed, 1084 insertions(+), 682 deletions(-)
+
+
