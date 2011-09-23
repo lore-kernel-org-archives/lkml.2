@@ -1,49 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752794Ab1IWJhM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 05:37:12 -0400
-Received: from nef2.ens.fr ([129.199.96.40]:4046 "EHLO nef2.ens.fr"
+	id S1752836Ab1IWJlV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 05:41:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18969 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752366Ab1IWJhJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 05:37:09 -0400
-Date: Fri, 23 Sep 2011 11:37:04 +0200
-From: =?iso-8859-1?Q?=C9ric?= Brunet <Eric.Brunet@lps.ens.fr>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Regression between 2.6.35 and 2.6.38 (freeze at resume)
-Message-ID: <20110923093704.GB8971@lps.ens.fr>
-References: <201109170935.17777.Eric.Brunet@lps.ens.fr>
- <201109202206.35705.Eric.Brunet@lps.ens.fr>
- <s5hy5xigjts.wl%tiwai@suse.de>
- <20110921200939.5898164EE5@quatramaran.ens.fr>
- <s5hfwjpp2es.wl%tiwai@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <s5hfwjpp2es.wl%tiwai@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.1.4 (nef2.ens.fr [129.199.96.32]); Fri, 23 Sep 2011 11:37:06 +0200 (CEST)
+	id S1752669Ab1IWJlS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Sep 2011 05:41:18 -0400
+From: "Daniel P. Berrange" <berrange@redhat.com>
+To: Neil Brown <neilb@suse.de>
+Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Daniel P. Berrange" <berrange@redhat.com>
+Subject: [PATCH] md: don't delay reboot by 1 second if no MD devices exist
+Date: Fri, 23 Sep 2011 10:40:45 +0100
+Message-Id: <1316770845-18171-1-git-send-email-berrange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: "Daniel P. Berrange" <berrange@redhat.com>
 
-Dans son message du jeudi 22/09/11 à  7:32, Takashi Iwai a écrit:
-> 
-> As mentioned, the series of patches were added first in 3.1-rc.
-> 3.0.x have no these commits.
-> 
-3.1-rc6 crashed on me this morning at resume time. Unfortunately, nothing
-appeared in the logs so I cannot be 100% sure it is the same bug as has
-been hitting me since circa 2.6.38, but it looks the same.
+The md_notify_reboot() method includes a call to mdelay(1000),
+to deal with "exotic SCSI devices" which are too volatile on
+reboot. The delay is unconditional. Even if the machine does
+not have any block devices, let alone MD devices, the kernel
+shutdown sequence is slowed down.
 
-What should I do now ? Run 3.1-rc7 and hope for the best ? Go on with
-3.1-rc6 and hope that I'll get a crash with information in the logs so as
-to make sure it is indeed the same bug ? Or go back to 2.6.38 to try to
-pinpoint the first problematic kernel and (hopefully) the change that
-introduced the problem ?
+1 second does not matter much with physical hardware, but with
+certain virtualization use cases any wasted time in the bootup
+& shutdown sequence counts for alot.
 
-Thanks,
+* drivers/md/md.c: md_notify_reboot() - only impose a delay if
+  there was at least one MD device to be stopped during reboot
 
-	Éric Brunet
+Signed-off-by: Daniel P. Berrange <berrange@redhat.com>
+---
+ drivers/md/md.c |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/md/md.c b/drivers/md/md.c
+index 5404b22..ef7ad8d 100644
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -8059,12 +8059,13 @@ static int md_notify_reboot(struct notifier_block *this,
+ {
+ 	struct list_head *tmp;
+ 	mddev_t *mddev;
++	int need_delay = 0;
+ 
+ 	if ((code == SYS_DOWN) || (code == SYS_HALT) || (code == SYS_POWER_OFF)) {
+ 
+ 		printk(KERN_INFO "md: stopping all md devices.\n");
+ 
+-		for_each_mddev(mddev, tmp)
++		for_each_mddev(mddev, tmp) {
+ 			if (mddev_trylock(mddev)) {
+ 				/* Force a switch to readonly even array
+ 				 * appears to still be in use.  Hence
+@@ -8073,13 +8074,16 @@ static int md_notify_reboot(struct notifier_block *this,
+ 				md_set_readonly(mddev, 100);
+ 				mddev_unlock(mddev);
+ 			}
++			need_delay = 1;
++		}
+ 		/*
+ 		 * certain more exotic SCSI devices are known to be
+ 		 * volatile wrt too early system reboots. While the
+ 		 * right place to handle this issue is the given
+ 		 * driver, we do want to have a safe RAID driver ...
+ 		 */
+-		mdelay(1000*1);
++		if (need_delay)
++			mdelay(1000*1);
+ 	}
+ 	return NOTIFY_DONE;
+ }
+-- 
+1.7.6.2
+
