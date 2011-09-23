@@ -1,57 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751334Ab1IWHTL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 03:19:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49653 "EHLO mx2.suse.de"
+	id S1751385Ab1IWHV1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 03:21:27 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:57247 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751066Ab1IWHTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 03:19:08 -0400
-Subject: Re: [patch] cpusets: allow PF_THREAD_BOUND kworkers to escape from
- a cpuset
-From: Mike Galbraith <mgalbraith@suse.de>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Paul Menage <paul@paulmenage.org>,
-        David Rientjes <rientjes@google.com>
-In-Reply-To: <4E7C2E7F.40307@cn.fujitsu.com>
-References: <1316758874.7393.2.camel@marge.simson.net>
-	 <4E7C2E7F.40307@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 23 Sep 2011 09:19:05 +0200
-Message-ID: <1316762345.8168.4.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	id S1751066Ab1IWHVY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Sep 2011 03:21:24 -0400
+Date: Fri, 23 Sep 2011 09:21:18 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Simon Kirby <sim@hostway.ca>
+Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [3.1-rc6] kmalloc(64) leak from IDE
+Message-ID: <20110923072118.GA13293@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Simon Kirby <sim@hostway.ca>, linux-kernel@vger.kernel.org,
+	linux-acpi@vger.kernel.org
+References: <20110922072643.GA27232@hostway.ca>
+ <20110922084811.GC17640@liondog.tnic>
+ <20110922202337.GB32661@hostway.ca>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20110922202337.GB32661@hostway.ca>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-09-23 at 15:00 +0800, Li Zefan wrote:
+On Thu, Sep 22, 2011 at 01:23:37PM -0700, Simon Kirby wrote:
+> Yes, that seems to have made it stop complaining about the IDE path.
 
-> To make the code more self-explanatory, I think this is a bit better:
+Good, thanks for testing. It would be great if you left it running for
+a couple of days like this to see whether there aren't any other issues
+with the patch. I'll send it with a proper description to Dave soonish
+since this is a real bug.
+
+> All I see from kmemleak now is:
+
+Yep, not IDE-related. Adding linux-acpi.
+
+> unreferenced object 0xe7481a00 (size 256):
+>   comm "swapper", pid 1, jiffies 4294892509 (age 515.560s)
+>   hex dump (first 32 bytes):
+>     00 00 00 28 ff ff ef ff 60 78 4e e7 00 02 00 00  ...(....`xN.....
+>     47 01 f8 0c f8 0c 01 08 00 00 00 00 0c 03 00 00  G...............
+>   backtrace:
+>     [<c1495c47>] kmemleak_alloc+0x27/0x50
+>     [<c10b3563>] __kmalloc+0xf3/0x1c0
+>     [<c149e0b0>] pci_acpi_scan_root+0x11e/0x272
+>     [<c149916b>] acpi_pci_root_add+0x163/0x256
+>     [<c12adddc>] acpi_device_probe+0x3a/0xf4
+>     [<c1302e38>] driver_probe_device+0x68/0x160
+>     [<c1302fb9>] __driver_attach+0x89/0x90
+>     [<c1302718>] bus_for_each_dev+0x48/0x70
+>     [<c1302cc9>] driver_attach+0x19/0x20
+>     [<c130213f>] bus_add_driver+0x17f/0x240
+>     [<c1303345>] driver_register+0x65/0x120
+>     [<c12af273>] acpi_bus_register_driver+0x3a/0x3f
+>     [<c16d421f>] acpi_pci_root_init+0x1b/0x2a
+>     [<c1001030>] do_one_initcall+0x30/0x160
+>     [<c16b920b>] kernel_init+0x78/0x10c
+>     [<c14a1b76>] kernel_thread_helper+0x6/0xd
+> unreferenced object 0xe74e7860 (size 16):
+>   comm "swapper", pid 1, jiffies 4294892509 (age 515.560s)
+>   hex dump (first 16 bytes):
+>     50 43 49 20 42 75 73 20 30 30 30 30 3a 30 30 00  PCI Bus 0000:00.
+>   backtrace:
+>     [<c1495c47>] kmemleak_alloc+0x27/0x50
+>     [<c10b3563>] __kmalloc+0xf3/0x1c0
+>     [<c1290cce>] kvasprintf+0x2e/0x50
+>     [<c1290d01>] kasprintf+0x11/0x20
+>     [<c149e0da>] pci_acpi_scan_root+0x148/0x272
+>     [<c149916b>] acpi_pci_root_add+0x163/0x256
+>     [<c12adddc>] acpi_device_probe+0x3a/0xf4
+>     [<c1302e38>] driver_probe_device+0x68/0x160
+>     [<c1302fb9>] __driver_attach+0x89/0x90
+>     [<c1302718>] bus_for_each_dev+0x48/0x70
+>     [<c1302cc9>] driver_attach+0x19/0x20
+>     [<c130213f>] bus_add_driver+0x17f/0x240
+>     [<c1303345>] driver_register+0x65/0x120
+>     [<c12af273>] acpi_bus_register_driver+0x3a/0x3f
+>     [<c16d421f>] acpi_pci_root_init+0x1b/0x2a
+>     [<c1001030>] do_one_initcall+0x30/0x160
 > 
-> 	if (... && cont != cont->top_cgroup)
+> ...which is probably a separate, non-recurring leak.
 > 
+> > Also, I'm sure you know IDE is deprecated, so what are the chances of
+> > moving this box to libata? Also, can you send me your .config pls?
+> 
+> Yeah, I was going to get around to that eventually. :) Config (and
+> earlier kmemleak output) here: http://0x.ca/sim/ref/3.1-rc6-blue/
 
-Done, your ACK added as well.
+Ok, thanks.
 
-kworkers can be born in a cpuset, leaving them adrift on an unsinkable ship.
-Allow them to be moved to the root cpuset so the cpuset can be destroyed.
-
-Signed-off-by: Mike Galbraith <efault@gmx.de>
-Acked-by: Li Zefan <lizf@cn.fujitsu.com>
-
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 10131fd..b26f4c4 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -1384,7 +1384,7 @@ static int cpuset_can_attach(struct cgroup_subsys *ss, struct cgroup *cont,
- 	 * set_cpus_allowed_ptr() on all attached tasks before cpus_allowed may
- 	 * be changed.
- 	 */
--	if (tsk->flags & PF_THREAD_BOUND)
-+	if (tsk->flags & PF_THREAD_BOUND && cont != cont->top_cgroup)
- 		return -EINVAL;
- 
- 	return 0;
-
-
+-- 
+Regards/Gruss,
+    Boris.
