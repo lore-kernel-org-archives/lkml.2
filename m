@@ -1,87 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754636Ab1IWARA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 20:17:00 -0400
-Received: from utopia.booyaka.com ([72.9.107.138]:56037 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754275Ab1IWAQ5 (ORCPT
+	id S1754642Ab1IWASu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 20:18:50 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:26154 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754275Ab1IWASt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 20:16:57 -0400
-Date: Thu, 22 Sep 2011 18:16:56 -0600 (MDT)
-From: Paul Walmsley <paul@pwsan.com>
-To: "Cousson, Benoit" <b-cousson@ti.com>
-cc: "Munegowda, Keshava" <keshava_mgowda@ti.com>,
-        "parthab@india.ti.com" <parthab@india.ti.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+	Thu, 22 Sep 2011 20:18:49 -0400
+X-AuditID: cbfee61b-b7b7fae000005864-a8-4e7bd067a1ba
+Date: Fri, 23 Sep 2011 09:18:49 +0900
+From: mhban <mhban@samsung.com>
+Subject: Re: [PATCH] ARM: futex: fix clobbering oldval
+In-reply-to: <20110922172653.GH13572@e102144-lin.cambridge.arm.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Balbi, Felipe" <balbi@ti.com>, "Gadiyar, Anand" <gadiyar@ti.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "Hilman, Kevin" <khilman@ti.com>,
-        "johnstul@us.ibm.com" <johnstul@us.ibm.com>,
-        "Sripathy, Vishwanath" <vishwanath.bs@ti.com>
-Subject: Re: [PATCH 1/5 v11] arm: omap: usb: ehci and ohci hwmod structures
- for omap4
-In-Reply-To: <alpine.DEB.2.00.1109221524560.10719@utopia.booyaka.com>
-Message-ID: <alpine.DEB.2.00.1109221814500.10719@utopia.booyaka.com>
-References: <1316691479-1849-1-git-send-email-keshava_mgowda@ti.com> <1316691479-1849-2-git-send-email-keshava_mgowda@ti.com> <alpine.DEB.2.00.1109221213500.10719@utopia.booyaka.com> <4E7B8C68.7020407@ti.com>
- <alpine.DEB.2.00.1109221524560.10719@utopia.booyaka.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+        DavidHowells <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Michel Lespinasse <walken@google.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Chris Metcalf <cmetcalf@tilera.com>
+Reply-to: mhban@samsung.com
+Message-id: <1316737129.6872.17.camel@puffmine-laptop>
+Organization: SAMSUNG
+MIME-version: 1.0
+X-Mailer: Evolution 2.28.3
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7BIT
+References: <1316660015.6872.1.camel@puffmine-laptop>
+ <20110922172653.GH13572@e102144-lin.cambridge.arm.com>
+X-OriginalArrivalTime: 23 Sep 2011 00:19:42.0543 (UTC)
+ FILETIME=[7D863DF0:01CC7986]
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Thu, 2011-09-22 at 18:26 +0100, Will Deacon wrote:
+> Hi,
+> 
+> On Thu, Sep 22, 2011 at 03:53:35AM +0100, mhban wrote:
+> > This patch fixes clobbering oldval bug. oldval should be preserved for next
+> > compare operation.
+> > 
+> > Change-Id: I2a63bc1bdb8de330eb9e1ac02d7da1f77e6e8c3c
+> > Signed-off-by: Minho Ban <mhban@samsung.com>
+> 
+> It would have been nice to have been CC'd on this...
 
-On Thu, 22 Sep 2011, Paul Walmsley wrote:
+Will not miss next time. Thanks.
 
-> On Thu, 22 Sep 2011, Cousson, Benoit wrote:
 > 
-> > ADDR_TYPE_RT is mainly use for sysconfig access inside hwmod core today, so
-> > why should we use it in this case?
+> I ran LTP tests on this, so I'm surprised that this was broken (the tests
+> passed). Well spotted anyway!
 > 
-> Just for consistency, since the flag isn't defined to be 
-> SYSCONFIG-specific.
+> > ---
+> >  arch/arm/include/asm/futex.h |    6 +++---
+> >  1 files changed, 3 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/arch/arm/include/asm/futex.h b/arch/arm/include/asm/futex.h
+> > index d2d733c..b0f2e8e 100644
+> > --- a/arch/arm/include/asm/futex.h
+> > +++ b/arch/arm/include/asm/futex.h
+> > @@ -30,14 +30,14 @@
+> >  	__asm__ __volatile__(					\
+> >  	"1:	ldrex	%1, [%2]\n"				\
+> >  	"	" insn "\n"					\
+> > -	"2:	strex	%1, %0, [%2]\n"				\
+> > -	"	teq	%1, #0\n"				\
+> > +	"2:	strex	r5, %0, [%2]\n"				\
+> > +	"	teq	r5, #0\n"				\
+> >  	"	bne	1b\n"					\
+> >  	"	mov	%0, #0\n"				\
+> >  	__futex_atomic_ex_table("%4")				\
+> >  	: "=&r" (ret), "=&r" (oldval)				\
+> >  	: "r" (uaddr), "r" (oparg), "Ir" (-EFAULT)		\
+> > -	: "cc", "memory")
+> > +	: "r5", "cc", "memory")
 > 
-> That way, if there's another need -- other than SYSCONFIG access -- to 
-> identify the chunk of address space that's used for register access, we 
-> won't have to dig through and possibly repatch the hwmod data, just 
-> because some people didn't want to follow the rule.
+> You shouldn't reference r5 directly here, but due to the way the futex code
+> is laid out, you can't add an extra output operand without converting the
+> code to use named arguments.
 > 
-> If the flag was simply defined to be SYSCONFIG-specific, then you're 
-> right, it wouldn't be needed.
+> I'll post a patch to do that.
 > 
-> > To be honest, I've been confused with that flag for some time :-)
-> >  * ADDR_TYPE_RT: Address space contains module register target data.
-> > Maybe that's my English, but what does "register target data" mean exactly?
-> 
-> The name comes from the L3 section of the 34xx TRM - see for example 
-> section 9.1.1 "Terminology" of the rev ZR TRM.  The L3 has several address 
-> space sections, and whoever wrote that text -- Sonics? -- called the one 
-> with the L3's own internal registers the "register target."  And I was 
-> looking for a name that I did not have to make up, so I personally 
-> wouldn't have to defend the name ;-)
-> 
-> > What was the intent? Providing a way to identify some register vs memory
-> > space?
-> 
-> As you suggest, the original impetus for the flag was to identify which 
-> chunk of address space needs to be mapped by the hwmod code for SYSCONFIG 
-> accesses to work.  On current OMAPs, this seems to be the same thing as 
-> identifying the IP block's primary register area for every module with 
-> SYS* and REVISION registers.  And I probably thought at the time that 
-> specifying the IP block's main register mapping seemed more useful and 
-> generally applicable than designating where the SYSCONFIG register was.  
-> Hence the current definition.
+> Will
 
-Hopefully this should go without saying, but if you think there's a good 
-rationale for renaming this flag to indicate that an address space 
-contains the SYSCONFIG registers, or maybe just changing the 
-documentation for the flag to indicate that, that's fine with me, just 
-send a patch.
+I'm not familiar with gcc inline, thanks for pointing it out.
+
+BTW, my last name is Ban not Ben.
 
 
-- Paul
+Minho
+
+
