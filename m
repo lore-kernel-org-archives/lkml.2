@@ -1,88 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753611Ab1IWMFf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 08:05:35 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:61851 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752415Ab1IWMFe (ORCPT
+	id S1753675Ab1IWMKJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 08:10:09 -0400
+Received: from mailbackup.inode.at ([213.229.60.24]:51482 "EHLO
+	mailbackup.inode.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752538Ab1IWMKG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 08:05:34 -0400
+	Fri, 23 Sep 2011 08:10:06 -0400
+X-Greylist: delayed 961 seconds by postgrey-1.27 at vger.kernel.org; Fri, 23 Sep 2011 08:10:05 EDT
+From: Michael Thalmeier <michael.thalmeier@hale.at>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] mxc_nand: preset_v1_v2: unlock all NAND flash blocks
+Date: Fri, 23 Sep 2011 13:53:44 +0200
+Message-Id: <1316778824-12518-1-git-send-email-michael.thalmeier@hale.at>
+X-Mailer: git-send-email 1.7.6.2
 MIME-Version: 1.0
-In-Reply-To: <e1a466eb82a79c91f3ec103b8308f2f81bfcbd69.1316777398.git.andriy.shevchenko@linux.intel.com>
-References: <e23268a9c837d75a24c2d209f1623c505371eb1d.1316777507.git.andriy.shevchenko@linux.intel.com>
- <e1a466eb82a79c91f3ec103b8308f2f81bfcbd69.1316777398.git.andriy.shevchenko@linux.intel.com>
-From: Denys Vlasenko <vda.linux@googlemail.com>
-Date: Fri, 23 Sep 2011 14:05:13 +0200
-Message-ID: <CAK1hOcNus4RKQOF=eivuCXFEM5Lqb+jBdOD4YrMA_5bL2EB6yA@mail.gmail.com>
-Subject: Re: [PATCH] fat: don't use custom hex_to_bin()
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Content-Type: text/plain; charset=ISO-8859-1
+X-HALE-MailScanner-Information: Please contact the ISP for more information
+X-MailScanner-ID: p8NBroZl005055
+X-HALE-MailScanner: Found to be clean
+X-HALE-MailScanner-From: michael.thalmeier@hale.at
+MailScanner-NULL-Check: 1317383631.54472@KxNHLD3yMKWLP5M7Kx0ctw
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id p8NC5imV004187
 
-On Fri, Sep 23, 2011 at 1:32 PM, Andy Shevchenko
-<andriy.shevchenko@linux.intel.com> wrote:
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-> ---
->  fs/fat/namei_vfat.c |   22 ++++++----------------
->  1 files changed, 6 insertions(+), 16 deletions(-)
->
-> diff --git a/fs/fat/namei_vfat.c b/fs/fat/namei_vfat.c
-> index bb3f29c..09cec4c 100644
-> --- a/fs/fat/namei_vfat.c
-> +++ b/fs/fat/namei_vfat.c
-> @@ -21,6 +21,8 @@
->  #include <linux/slab.h>
->  #include <linux/buffer_head.h>
->  #include <linux/namei.h>
-> +#include <linux/kernel.h>
-> +
->  #include "fat.h"
->
->  /*
-> @@ -505,7 +507,6 @@ xlate_to_uni(const unsigned char *name, int len, unsigned char *outname,
->             struct nls_table *nls)
->  {
->        const unsigned char *ip;
-> -       unsigned char nc;
->        unsigned char *op;
->        unsigned int ec;
->        int i, k, fill;
-> @@ -530,21 +531,10 @@ xlate_to_uni(const unsigned char *name, int len, unsigned char *outname,
->                                                return -EINVAL;
->                                        ec = 0;
->                                        for (k = 1; k < 5; k++) {
-> -                                               nc = ip[k];
-> -                                               ec <<= 4;
-> -                                               if (nc >= '0' && nc <= '9') {
-> -                                                       ec |= nc - '0';
-> -                                                       continue;
-> -                                               }
-> -                                               if (nc >= 'a' && nc <= 'f') {
-> -                                                       ec |= nc - ('a' - 10);
-> -                                                       continue;
-> -                                               }
-> -                                               if (nc >= 'A' && nc <= 'F') {
-> -                                                       ec |= nc - ('A' - 10);
-> -                                                       continue;
-> -                                               }
-> -                                               return -EINVAL;
-> +                                               int val = hex_to_bin(ip[k]);
-> +                                               if (val < 0)
-> +                                                       return -EINVAL;
-> +                                               ec = (ec << 4) | val;
->                                        }
->                                        *op++ = ec & 0xFF;
->                                        *op++ = ec >> 8;
+From: Wolfram Stering <wolfram.stering@hale.at>
 
-Function call per byte? That's expensive!
-Can't we have a function which converts many sequential bytes?
+For NFC v1, the unlock end block address was 0x4000, which would only
+unlock the first 32 blocks of the NAND flash.  Change that value to
+0xffff to unlock all available blocks, as is done for NFC v21 as well.
 
+Signed-off-by: Michael Thalmeier <michael.thalmeier@hale.at>
+---
+ drivers/mtd/nand/mxc_nand.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/mtd/nand/mxc_nand.c b/drivers/mtd/nand/mxc_nand.c
+index 90df34c..5b40786 100644
+--- a/drivers/mtd/nand/mxc_nand.c
++++ b/drivers/mtd/nand/mxc_nand.c
+@@ -849,7 +849,7 @@ static void preset_v1_v2(struct mtd_info *mtd)
+ 		writew(0xffff, NFC_V21_UNLOCKEND_BLKADDR3);
+ 	} else if (nfc_is_v1()) {
+ 		writew(0x0, NFC_V1_UNLOCKSTART_BLKADDR);
+-		writew(0x4000, NFC_V1_UNLOCKEND_BLKADDR);
++		writew(0xffff, NFC_V1_UNLOCKEND_BLKADDR);
+ 	} else
+ 		BUG();
+ 
 -- 
-vda
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+1.7.6.2
+
+
+
+--
+Scanned by MailScanner.
+
