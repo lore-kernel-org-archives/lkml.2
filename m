@@ -1,44 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752487Ab1IWGVU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 02:21:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47733 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752393Ab1IWGVR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 02:21:17 -0400
-Subject: [patch] cpusets: allow PF_THREAD_BOUND kworkers to escape from a
- cpuset
-From: Mike Galbraith <mgalbraith@suse.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Paul Menage <paul@paulmenage.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 23 Sep 2011 08:21:14 +0200
-Message-ID: <1316758874.7393.2.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	id S1752522Ab1IWG2K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 02:28:10 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:31545 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752393Ab1IWG2G convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Sep 2011 02:28:06 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:date:
+	message-id:subject:from:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=bZgz4kwRowhKpw5IIjZ0ywcf/qEoOcaHJrsP4VhpkmjNiTkqqSHktk0wzM0b1kvfv
+	GhWjvKgikhuem8FntEq+Q==
+MIME-Version: 1.0
+In-Reply-To: <20110923032622.GS7761@one.firstfloor.org>
+References: <20110922123128.GA9761@quad>
+	<m2pqisjmtw.fsf@firstfloor.org>
+	<CABPqkBTPF0Tqj5BEWanuh5=VYWjY_NuSLx1gAjPr3o1sbJB-JQ@mail.gmail.com>
+	<20110923032622.GS7761@one.firstfloor.org>
+Date: Fri, 23 Sep 2011 08:28:02 +0200
+Message-ID: <CABPqkBQ-d2bKybG3GTg_jxgO_SGtP_LN-rPP9e3Q1NZ0=cT0Jw@mail.gmail.com>
+Subject: Re: [PATCH] perf: make perf.data more self-descriptive (v5)
+From: Stephane Eranian <eranian@google.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
+        mingo@elte.hu, dsahern@gmail.com, robert.richter@amd.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-kworkers can be born in a cpuset, leaving them adrift on an unsinkable ship.
-Allow them to be moved to the root cpuset so the cpuset can be destroyed.
-
-Signed-off-by: Mike Galbraith <efault@gmx.de>
-
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 10131fd..b26f4c4 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -1384,7 +1384,7 @@ static int cpuset_can_attach(struct cgroup_subsys *ss, struct cgroup *cont,
- 	 * set_cpus_allowed_ptr() on all attached tasks before cpus_allowed may
- 	 * be changed.
- 	 */
--	if (tsk->flags & PF_THREAD_BOUND)
-+	if (tsk->flags & PF_THREAD_BOUND && cont->parent)
- 		return -EINVAL;
- 
- 	return 0;
-
-
+On Fri, Sep 23, 2011 at 5:26 AM, Andi Kleen <andi@firstfloor.org> wrote:
+>>  * .byte 0x53 == push ebx. it's universal for 32 and 64 bit
+>>  * .byte 0x5b == pop ebx.
+>>  * Some gcc's (4.1.2 on Core2) object to pairing push/pop and ebx in
+>> 64 bit mode.
+>
+> What do you mean with "object" ?
+should read 'objects to' meaning 'refuses to'
