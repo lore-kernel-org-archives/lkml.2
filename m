@@ -1,76 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752678Ab1IWJNI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 05:13:08 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:52350 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751995Ab1IWJND (ORCPT
+	id S1752632Ab1IWJRV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 05:17:21 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:39556 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751995Ab1IWJRV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 05:13:03 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=FwOkcRLEf4ec0yo87SC3Xsi4TEpwXQ7KZJif4nyxWZZm2vDqQ7gmQEXv34ZCyflMH
-	Pah6XvB1qpw2IfecEsooQ==
-Date: Fri, 23 Sep 2011 02:12:57 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Mike Galbraith <mgalbraith@suse.de>, Tejun Heo <htejun@gmail.com>
-cc: Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
-        Paul Menage <paul@paulmenage.org>
-Subject: Re: [patch] cpusets: allow PF_THREAD_BOUND kworkers to escape from
- a cpuset
-In-Reply-To: <1316762345.8168.4.camel@marge.simson.net>
-Message-ID: <alpine.DEB.2.00.1109230204270.29350@chino.kir.corp.google.com>
-References: <1316758874.7393.2.camel@marge.simson.net> <4E7C2E7F.40307@cn.fujitsu.com> <1316762345.8168.4.camel@marge.simson.net>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 23 Sep 2011 05:17:21 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+In-Reply-To: <CABPqkBSpqNWJVhRh4bKRK5PGcCdZhzsJzyeQ53Mh4_7fVUm+wg@mail.gmail.com>
+References: <20110922123128.GA9761@quad>
+	<CAOJsxLFDaYxevsH8UYEeZJrz7HCZSg89_XTaXP=hPTTG2HH9=w@mail.gmail.com>
+	<CABPqkBQSBKS+bnLhStzV4PTrE+Qrb1XyeR5FEyn4d+NFZrhuOQ@mail.gmail.com>
+	<CAOJsxLE1L1ffZmuF+2+vYZMTXyvq00pOcP1xvGJuW0TqxQskrA@mail.gmail.com>
+	<CABPqkBSpqNWJVhRh4bKRK5PGcCdZhzsJzyeQ53Mh4_7fVUm+wg@mail.gmail.com>
+Date: Fri, 23 Sep 2011 12:17:20 +0300
+X-Google-Sender-Auth: REw52lrfmmjNTdH4QiH0x4vs0LQ
+Message-ID: <CAOJsxLE_kF2O6FrG7bLHtQKFV_D=PB77jP+aWBp1UERKzO4qng@mail.gmail.com>
+Subject: Re: [PATCH] perf: make perf.data more self-descriptive (v5)
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
+        mingo@elte.hu, dsahern@gmail.com, robert.richter@amd.com,
+        ak@linux.intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Sep 2011, Mike Galbraith wrote:
+On Fri, Sep 23, 2011 at 10:03 AM, Pekka Enberg <penberg@cs.helsinki.fi> wrote:
+>> Well, sure but it blocks rest of the interesting information too. It seems to me
+>> that the CPU information could be truncated to some sane limit by default and
+>> introduce a command line option for users that really want to see all of it.
 
-> Done, your ACK added as well.
-> 
-> kworkers can be born in a cpuset, leaving them adrift on an unsinkable ship.
-> Allow them to be moved to the root cpuset so the cpuset can be destroyed.
-> 
+On Fri, Sep 23, 2011 at 12:04 PM, Stephane Eranian <eranian@google.com> wrote:
+> Ok, so here is a proposal:
+> - reorder the info so one liners appear first
+> - display the "truncated" info by default (no option)
+> - truncated: numa topo, cpu topo, stop after 4 cpus/nodes, print msg
+> to hint at -I option
+> - use -I to print the extended header info report
+>
+> That way we do no introduce two options just for the header information.
+>
+> How about that instead?
 
-Thanks Li for the cc since I introduced this flag.
+Yup, makes sense to me. Up to perf maintainers, of course.
 
-Does this even work?
-
-You've modified cpuset_can_attach() to allow the attach for the cgroup 
-interface, but the actual function that attaches the task in the cpuset 
-code should fail since it does set_cpus_allowed_ptr() which should return 
--EINVAL because of the PF_THREAD_BOUND.  That should have emitted a 
-WARN_ON() if this patch was tested.
-
-kworkers can always move themselves to the root cpuset, so that's probably 
-the better way of handling this than requiring userspace to do so.
-
-And it seems like the workqueue code has a comment specifically about cpu 
-hotplug and why changing their cpumask shouldn't be allowed that was added 
-by Tejun Heo in db7bccf45cb8 ("workqueue: reimplement CPU hotplugging 
-support using trustee").  So let's cc him here as well at his 
-non-kernel.org address.
-
-> Signed-off-by: Mike Galbraith <efault@gmx.de>
-> Acked-by: Li Zefan <lizf@cn.fujitsu.com>
-> 
-> diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-> index 10131fd..b26f4c4 100644
-> --- a/kernel/cpuset.c
-> +++ b/kernel/cpuset.c
-> @@ -1384,7 +1384,7 @@ static int cpuset_can_attach(struct cgroup_subsys *ss, struct cgroup *cont,
->  	 * set_cpus_allowed_ptr() on all attached tasks before cpus_allowed may
->  	 * be changed.
->  	 */
-> -	if (tsk->flags & PF_THREAD_BOUND)
-> +	if (tsk->flags & PF_THREAD_BOUND && cont != cont->top_cgroup)
->  		return -EINVAL;
->  
->  	return 0;
+                         Pekka
