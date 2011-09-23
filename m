@@ -1,59 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752528Ab1IWU43 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 16:56:29 -0400
-Received: from mail131.messagelabs.com ([216.82.242.99]:7219 "EHLO
-	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752326Ab1IWU41 (ORCPT
+	id S1752431Ab1IWVDz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 17:03:55 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:34833 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752093Ab1IWVDy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 16:56:27 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-15.tower-131.messagelabs.com!1316811377!1904756!12
-X-Originating-IP: [216.166.12.32]
-X-StarScan-Version: 6.3.6; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ext3/balloc.c: local functions should be static
-Date: Fri, 23 Sep 2011 13:55:52 -0700
-User-Agent: KMail/1.9.9
-CC: <linux-ext4@vger.kernel.org>, <jack@suse.cz>, <akpm@linux-foundation.org>,
-        <adilger.kernel@dilger.ca>
+	Fri, 23 Sep 2011 17:03:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201109231355.52431.hartleys@visionengravers.com>
+In-Reply-To: <1316809586-28529-1-git-send-email-acme@infradead.org>
+References: <1316809586-28529-1-git-send-email-acme@infradead.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 23 Sep 2011 14:03:34 -0700
+X-Google-Sender-Auth: 98AwEf2w8R2hrNpSEqBiZPhEz-c
+Message-ID: <CA+55aFwVrvMa1z7P5q0kUN3QAwZzTdL1mhLaF7+etHYQm511vA@mail.gmail.com>
+Subject: Re: [GIT PULL 00/12] perf tools fixes
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Anton Blanchard <anton@samba.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Darren Hart <dvhart@linux.intel.com>, David Ahern <dsahern@gmail.com>,
+        "David S . Miller" <davem@davemloft.net>,
+        Eric B Munson <emunson@mgebm.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ian Munsie <imunsie@au1.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Stephane Eranian <eranian@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, yrl.pp-manager.tt@hitachi.com,
+        arnaldo.melo@gmail.com
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This quites the sparse noise:
+On Fri, Sep 23, 2011 at 1:26 PM, Arnaldo Carvalho de Melo
+<acme@infradead.org> wrote:
+>
+>        Please consider pulling from:
+>
+>  git://github.com/acmel/linux.git perf-tools-for-linus
 
-warning: symbol 'ext3_trim_all_free' was not declared. Should it be static?
+Grr. I just did, and then (stupidly) pushed out after checking that my
+kernel compile was fine.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>
+But it obviously doesn't affect the kernel compile. It *does* affect
+the perf tool compile, and util/python.c no longer compiles because
+the byte-swap flag isn't passed to it. So we get
 
----
+  util/python.c: In function ‘pyrf_evlist__read_on_cpu’:
+  util/python.c:806:13: error: too few arguments to function
+‘perf_event__parse_sample’
+  util/event.h:187:5: note: declared here
+  error: command 'gcc' failed with exit status 1
 
-diff --git a/fs/ext3/balloc.c b/fs/ext3/balloc.c
-index 6386d76..8e62ec5 100644
---- a/fs/ext3/balloc.c
-+++ b/fs/ext3/balloc.c
-@@ -1924,9 +1924,10 @@ unsigned long ext3_bg_num_gdb(struct super_block *sb, int group)
-  * reaches any used block. Then issue a TRIM command on this extent and free
-  * the extent in the block bitmap. This is done until whole group is scanned.
-  */
--ext3_grpblk_t ext3_trim_all_free(struct super_block *sb, unsigned int group,
--				ext3_grpblk_t start, ext3_grpblk_t max,
--				ext3_grpblk_t minblocks)
-+static ext3_grpblk_t ext3_trim_all_free(struct super_block *sb,
-+					unsigned int group,
-+					ext3_grpblk_t start, ext3_grpblk_t max,
-+					ext3_grpblk_t minblocks)
- {
- 	handle_t *handle;
- 	ext3_grpblk_t next, free_blocks, bit, freed, count = 0;
+because apparently whoever did that used the new WERROR=0 while doing so.
+
+Grr. So now that totally broken pull got pushed out.
+
+                   Linus
