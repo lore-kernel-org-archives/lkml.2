@@ -1,79 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752836Ab1IWJlV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 05:41:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18969 "EHLO mx1.redhat.com"
+	id S1752804Ab1IWJmX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 05:42:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33200 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752669Ab1IWJlS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 05:41:18 -0400
-From: "Daniel P. Berrange" <berrange@redhat.com>
-To: Neil Brown <neilb@suse.de>
-Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Daniel P. Berrange" <berrange@redhat.com>
-Subject: [PATCH] md: don't delay reboot by 1 second if no MD devices exist
-Date: Fri, 23 Sep 2011 10:40:45 +0100
-Message-Id: <1316770845-18171-1-git-send-email-berrange@redhat.com>
+	id S1752669Ab1IWJmU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Sep 2011 05:42:20 -0400
+Subject: Re: [patch] cpusets: allow PF_THREAD_BOUND kworkers to escape from
+ a cpuset
+From: Mike Galbraith <mgalbraith@suse.de>
+To: David Rientjes <rientjes@google.com>
+Cc: Tejun Heo <htejun@gmail.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, Paul Menage <paul@paulmenage.org>
+In-Reply-To: <alpine.DEB.2.00.1109230204270.29350@chino.kir.corp.google.com>
+References: <1316758874.7393.2.camel@marge.simson.net>
+	 <4E7C2E7F.40307@cn.fujitsu.com> <1316762345.8168.4.camel@marge.simson.net>
+	 <alpine.DEB.2.00.1109230204270.29350@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 23 Sep 2011 11:42:16 +0200
+Message-ID: <1316770936.6641.11.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Daniel P. Berrange" <berrange@redhat.com>
+On Fri, 2011-09-23 at 02:12 -0700, David Rientjes wrote:
+> On Fri, 23 Sep 2011, Mike Galbraith wrote:
+> 
+> > Done, your ACK added as well.
+> > 
+> > kworkers can be born in a cpuset, leaving them adrift on an unsinkable ship.
+> > Allow them to be moved to the root cpuset so the cpuset can be destroyed.
+> > 
+> 
+> Thanks Li for the cc since I introduced this flag.
+> 
+> Does this even work?
 
-The md_notify_reboot() method includes a call to mdelay(1000),
-to deal with "exotic SCSI devices" which are too volatile on
-reboot. The delay is unconditional. Even if the machine does
-not have any block devices, let alone MD devices, the kernel
-shutdown sequence is slowed down.
+Yup, but..
 
-1 second does not matter much with physical hardware, but with
-certain virtualization use cases any wasted time in the bootup
-& shutdown sequence counts for alot.
+> You've modified cpuset_can_attach() to allow the attach for the cgroup 
+> interface, but the actual function that attaches the task in the cpuset 
+> code should fail since it does set_cpus_allowed_ptr() which should return 
+> -EINVAL because of the PF_THREAD_BOUND.  That should have emitted a 
+> WARN_ON() if this patch was tested.
 
-* drivers/md/md.c: md_notify_reboot() - only impose a delay if
-  there was at least one MD device to be stopped during reboot
+..you're right that it warns.  It was tested, but I didn't notice that
+it had griped at me.
 
-Signed-off-by: Daniel P. Berrange <berrange@redhat.com>
----
- drivers/md/md.c |    8 ++++++--
- 1 files changed, 6 insertions(+), 2 deletions(-)
+> kworkers can always move themselves to the root cpuset, so that's probably 
+> the better way of handling this than requiring userspace to do so.
 
-diff --git a/drivers/md/md.c b/drivers/md/md.c
-index 5404b22..ef7ad8d 100644
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -8059,12 +8059,13 @@ static int md_notify_reboot(struct notifier_block *this,
- {
- 	struct list_head *tmp;
- 	mddev_t *mddev;
-+	int need_delay = 0;
- 
- 	if ((code == SYS_DOWN) || (code == SYS_HALT) || (code == SYS_POWER_OFF)) {
- 
- 		printk(KERN_INFO "md: stopping all md devices.\n");
- 
--		for_each_mddev(mddev, tmp)
-+		for_each_mddev(mddev, tmp) {
- 			if (mddev_trylock(mddev)) {
- 				/* Force a switch to readonly even array
- 				 * appears to still be in use.  Hence
-@@ -8073,13 +8074,16 @@ static int md_notify_reboot(struct notifier_block *this,
- 				md_set_readonly(mddev, 100);
- 				mddev_unlock(mddev);
- 			}
-+			need_delay = 1;
-+		}
- 		/*
- 		 * certain more exotic SCSI devices are known to be
- 		 * volatile wrt too early system reboots. While the
- 		 * right place to handle this issue is the given
- 		 * driver, we do want to have a safe RAID driver ...
- 		 */
--		mdelay(1000*1);
-+		if (need_delay)
-+			mdelay(1000*1);
- 	}
- 	return NOTIFY_DONE;
- }
--- 
-1.7.6.2
+kworker is sleeping in a cpuset that the user wants to depopulate and
+destroy.  I wasn't requiring the user to do that, was allowing him to.
+
+> And it seems like the workqueue code has a comment specifically about cpu 
+> hotplug and why changing their cpumask shouldn't be allowed that was added 
+> by Tejun Heo in db7bccf45cb8 ("workqueue: reimplement CPU hotplugging 
+> support using trustee").  So let's cc him here as well at his 
+> non-kernel.org address.
+
+No, we don't want top muck around with their masks.
+
+	-Mike
 
