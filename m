@@ -1,52 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755036Ab1IWPt7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 11:49:59 -0400
-Received: from dubexchange.kentrox.com ([192.228.36.11]:40928 "EHLO
-	dubexchange.corp.kentrox.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754896Ab1IWPt4 (ORCPT
+	id S1754961Ab1IWPtX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 11:49:23 -0400
+Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:5146
+	"EHLO AM1EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754908Ab1IWPsz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 11:49:56 -0400
-From: Jeff Harris <jeff_harris@kentrox.com>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        spi-devel-general@lists.sourceforge.net
-Cc: linux-kernel@vger.kernel.org, Jeff Harris <jeff_harris@kentrox.com>
-Subject: [PATCH] spi: Fix WARN when removing spi-fsl-spi module
-Date: Fri, 23 Sep 2011 11:49:36 -0400
-Message-Id: <1316792976-28498-1-git-send-email-jeff_harris@kentrox.com>
-X-Mailer: git-send-email 1.7.0.5
-X-OriginalArrivalTime: 23 Sep 2011 15:49:44.0914 (UTC) FILETIME=[6A545320:01CC7A08]
+	Fri, 23 Sep 2011 11:48:55 -0400
+X-SpamScore: 1
+X-BigFish: VPS1(zzzz1202hzzz32i668h839h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 0,
+X-WSS-ID: 0LRZFSQ-01-1CS-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: <iommu@lists.linux-foundation.org>
+CC: Greg Kroah-Hartman <gregkh@suse.de>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        David Brown <davidb@codeaurora.org>, <joro@8bytes.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/10 v3] IOMMU: Make iommu_ops per-bus_type
+Date: Fri, 23 Sep 2011 17:45:46 +0200
+Message-ID: <1316792756-3395-1-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.4.1
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If CPM mode is not used, the fsl_dummy_rx variable is never allocated.  When
-the cleanup attempts to free it, the reference count is zero and a WARN is
-generated.  The same CPM mode check used in the initialize is applied to the
-free as well.
+Hi,
 
-Tested on 2.6.33 with the previous spi_mpc8xxx driver.  The renamed
-spi-fsl-spi driver looks to have the same problem.
+here is the third version of the patch-set to make the iommu_ops used in
+the iommu-api a bus_type property. This will allow us to move code out
+of the iommu drivers into generic code and it simplifies the
+implementation of the Alex' device-group property.
 
-Signed-off-by: Jeff Harris <jeff_harris@kentrox.com>
----
- drivers/spi/spi-fsl-spi.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+It converts all iommu drivers to use the new registration interface and
+completly removes the register_iommu interface.
 
-diff --git a/drivers/spi/spi-fsl-spi.c b/drivers/spi/spi-fsl-spi.c
-index d240755..24cacff 100644
---- a/drivers/spi/spi-fsl-spi.c
-+++ b/drivers/spi/spi-fsl-spi.c
-@@ -825,6 +825,9 @@ static void fsl_spi_cpm_free(struct mpc8xxx_spi *mspi)
- {
- 	struct device *dev = mspi->dev;
- 
-+	if (!(mspi->flags & SPI_CPM_MODE))
-+		return;
-+
- 	dma_unmap_single(dev, mspi->dma_dummy_rx, SPI_MRBLR, DMA_FROM_DEVICE);
- 	dma_unmap_single(dev, mspi->dma_dummy_tx, PAGE_SIZE, DMA_TO_DEVICE);
- 	cpm_muram_free(cpm_muram_offset(mspi->tx_bd));
--- 
-1.7.0.5
+Please let me know of any remaining objections. If there are no I would
+be very happy about Acked-By's :)
+
+Regards,
+
+	Joerg
+
+Changes v2->v3:
+	* Moved bus_set_iommu() to drivers/iommu/iommu.c to get rid of
+	  the CONFIG_IOMMU_API #ifdef around it in bus.c
+
+Changes v1->v2:
+
+        * Added kernel-doc comments to bus_set_iommu function
+        * Removed iommu.h include from device.h and added a forward
+          declaration for struct iommu_ops
+
+Diffstat:
+
+ arch/ia64/kvm/kvm-ia64.c           |    3 +-
+ arch/x86/kvm/x86.c                 |    3 +-
+ drivers/iommu/amd_iommu.c          |    2 +-
+ drivers/iommu/intel-iommu.c        |    2 +-
+ drivers/iommu/iommu.c              |   81 ++++++++++++++++++++++++++++--------
+ drivers/iommu/msm_iommu.c          |    2 +-
+ drivers/iommu/omap-iommu.c         |    2 +-
+ drivers/media/video/omap3isp/isp.c |    2 +-
+ include/linux/device.h             |    6 +++
+ include/linux/iommu.h              |   21 +++++----
+ virt/kvm/iommu.c                   |    4 +-
+ 11 files changed, 92 insertions(+), 36 deletions(-)
+
 
