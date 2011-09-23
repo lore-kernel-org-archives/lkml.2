@@ -1,58 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751644Ab1IWIJc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 04:09:32 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55898 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751116Ab1IWIJ1 (ORCPT
+	id S1751821Ab1IWIQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 04:16:59 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:55976 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751167Ab1IWIQ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 04:09:27 -0400
+	Fri, 23 Sep 2011 04:16:57 -0400
 MIME-Version: 1.0
-In-Reply-To: <1316704637.31429.25.camel@twins>
-References: <1316030695-19826-1-git-send-email-glommer@parallels.com>
-	<1316030695-19826-2-git-send-email-glommer@parallels.com>
-	<1316448186.1511.19.camel@twins>
-	<4E776937.1070108@parallels.com>
-	<1316449160.6091.5.camel@twins>
-	<4E776E36.6040906@parallels.com>
-	<1316450385.6091.9.camel@twins>
-	<4E7770BD.6050902@parallels.com>
-	<1316457653.6091.16.camel@twins>
-	<20110920172930.GA5318@linux.vnet.ibm.com>
-	<CAKTCnzk=i1a3DHrforcaOCBdhjv1xi=5W=eiJiZoK4BNb3wqVw@mail.gmail.com>
-	<1316704637.31429.25.camel@twins>
-Date: Fri, 23 Sep 2011 13:39:26 +0530
-Message-ID: <CAKTCnzk_NoBxQypJBsX9O56=F6z_7HdPY1HW=G=2AkM9tpkbaw@mail.gmail.com>
-Subject: Re: [PATCH 1/9] Remove parent field in cpuacct cgroup
-From: Balbir Singh <bsingharora@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
-        xemul@parallels.com, paul@paulmenage.org, lizf@cn.fujitsu.com,
-        daniel.lezcano@free.fr, mingo@elte.hu, jbottomley@parallels.com
+Reply-To: mtk.manpages@gmail.com
+From: Michael Kerrisk <mtk.manpages@gmail.com>
+Date: Fri, 23 Sep 2011 10:16:36 +0200
+Message-ID: <CAKgNAkhR+Httt=S42UEV9TVt6ztcENqSu8fRFZgDjAcy+JynnQ@mail.gmail.com>
+Subject: man-pages-3.34 is released
+To: lkml <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> Android makes heavy use of cpuacct as well. We invented it to do cpu
->> accounting independent of control
->
-> But its a massive waste of time to have to iterate a double hierarchy,
-> cache-miss heaven.
->
+Gidday,
 
-By double hierarchy you mean both cpu and cpuacct? What if they are
-not mounted together?
+I've released man-pages-3.34.tar.gz - man pages for Linux
 
-> Or so people really have independent cgroups as well? I thought people
-> just co-mount all this crap.
->
+Because of the kernel.org problems, the release artifacts are in
+different locations than usual (and some of these changes may become
+permanent):
 
-Please see
-http://code.google.com/p/cgroupmgr/wiki/cgroupsForAndroid
-http://stackoverflow.com/questions/6814207/android-cpuacct-usage-file
+This release tarball is available for download at:
 
-AFAIK, some versions mount cpuacct at /acct and independent of cpu cgroups
+   http://man7.org/linux/man-pages/download/
 
-Balbir
+The online changelog is available at
+http://man7.org/linux/man-pages/changelog.html#release_3.34 (blogged at
+http://linux-man-pages.blogspot.com/2011/09/man-pages-334-is-released.html
+) and the current version of the pages is browsable at
+http://man7.org/linux/man-pages/
+
+A git repository for man-pages can be found on github. You can clone
+the repository with the command:
+
+   git clone https://github.com/mkerrisk/man-pages.git
+
+A few changes in this release that may be of interest to readers of this
+list are listed below.
+
+Cheers,
+
+Michael
+
+==================== Changes in man-pages-3.34 ====================
+
+Released: 2011-09-23, Munich
+
+
+New and rewritten pages
+-----------------------
+
+rt_sigqueueinfo.2
+    Michael Kerrisk  [Stephan Mueller]
+        New page for rt_sigqueueinfo(2) and rt_tgsigqueueinfo(2)
+            This replaces the previous '.so' man page link file for
+            rt_sigqueueinfo.2, which linked to this sigqueue() man page.
+
+cciss.4
+    Stephen M. Cameron
+        New man page for cciss driver
+            I obtained the information in this man page as a consequence
+            of having worked on the cciss driver for the past several years,
+            and having written considerable portions of it.
+    Michael Kerrisk
+        Copyedit by mtk
+
+hpsa.4
+    Stephen M. Cameron
+        New man page for the hpsa driver
+            I obtained the information in this man page as a consequence
+            of being the main author of the hpsa driver.
+    Michael Kerrisk
+        Copyedits my mtk
+
+
+Newly documented interfaces in existing pages
+---------------------------------------------
+
+fstatat.2
+    Michael Kerrisk  [David Howells]
+        Document AT_NO_AUTOMOUNT
+	    This flag was added in Linux 2.6.38.
+
+lseek.2
+    Michael Kerrisk  [Eric Blake, Sunil Mushran]
+        Document SEEK_HOLE and SEEK_DATA
+            These flags, designed for discovering holes in a file,
+            were added in Linux 3.1. Included comments from Eric
+            Blake and Sunil Mushran.
+
+madvise.2
+    Doug Goldstein
+        Add MADV_HUGEPAGE and MADV_NOHUGEPAGE
+            Document the MADV_HUGEPAGE and MADV_NOHUGEPAGE flags added to
+            madvise() in Linux 2.6.38.
+
+
+Changes to individual pages
+---------------------------
+
+prctl.2
+    Paul Pluzhnikov
+        PR_SET_DUMPABLE makes process non-ptrace-attachable
+
+readlink.2
+    Guillem Jover
+        Document using st_size to allocate the buffer
+
+sched_setscheduler.2
+    Michael Kerrisk
+        Document 2.6.39 changes to rules governing changes from
+SCHED_IDLE policy
+            Since Linux 2.6.39, unprivileged processes under the
+            SCHED_IDLE policy can switch to another nonrealtime
+            policy if their nice value falls within the range
+            permitted by their RLIMIT_NICE limit.
+
+sigqueue.3
+    Michael Kerrisk
+        Move this page to section 3
+            Now that the underlying system call rt_sigqueueinfo(2) is
+            properly documented, move sigqueue() to Section 3, since
+            it is really a library function.
+
+feature_test_macros.7
+    Michael Kerrisk
+        Document _ISOC95_SOURCE
+            _ISOC95_SOURCE was added in glibc 2.12 as a means
+            to expose C90 Amendment 1 definitions.
+
+ip.7
+    Benjamin Poirier  [Neil Horman]
+        Improve description of IP_MTU_DISCOVER
+
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface"; http://man7.org/tlpi/
