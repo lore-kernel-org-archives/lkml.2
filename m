@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752631Ab1IWGuS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 02:50:18 -0400
-Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:54129 "EHLO
-	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751067Ab1IWGuN (ORCPT
+	id S1752712Ab1IWGup (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 02:50:45 -0400
+Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:40280 "EHLO
+	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751981Ab1IWGuQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 02:50:13 -0400
+	Fri, 23 Sep 2011 02:50:16 -0400
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: Samuel Ortiz <samuel.ortiz@intel.com>, Dmitry Torokhov <dtor@mail.ru>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Liam Girdwood <lrg@ti.com>
 Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
         Misael Lopez Cruz <misael.lopez@ti.com>, linux-input@vger.kernel.org
-Subject: [PATCH v2 1/6] Input: twl6040: Simplify vibra regsiter definitions
-Date: Fri, 23 Sep 2011 09:49:39 +0300
-Message-Id: <1316760584-27426-2-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH v2 2/6] MFD: twl6040: Cache the vibra control registers
+Date: Fri, 23 Sep 2011 09:49:40 +0300
+Message-Id: <1316760584-27426-3-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.7.6.1
 In-Reply-To: <1316760584-27426-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1316760584-27426-1-git-send-email-peter.ujfalusi@ti.com>
@@ -23,93 +23,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The bits within the two control registers (for left and right channel)
-are identical.
-Use common names for the bits acros the two register.
-Also add the missing definition for the path selection bit.
+The vibra control register will be used from the ASoC codec driver as well.
+In order to avoid latency issues caused by I2C read access, cache the two
+control register within the core driver, so we do not need to reach out
+to the chip to read it back.
 
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
- drivers/input/misc/twl6040-vibra.c |   12 ++++++------
- include/linux/mfd/twl6040.h        |   20 +++++++-------------
- 2 files changed, 13 insertions(+), 19 deletions(-)
+ drivers/mfd/twl6040-core.c  |   19 +++++++++++++++----
+ include/linux/mfd/twl6040.h |    1 +
+ 2 files changed, 16 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/input/misc/twl6040-vibra.c b/drivers/input/misc/twl6040-vibra.c
-index 154b7a3..cb74185 100644
---- a/drivers/input/misc/twl6040-vibra.c
-+++ b/drivers/input/misc/twl6040-vibra.c
-@@ -74,12 +74,12 @@ static irqreturn_t twl6040_vib_irq_handler(int irq, void *data)
- 	if (status & TWL6040_VIBLOCDET) {
- 		dev_warn(info->dev, "Left Vibrator overcurrent detected\n");
- 		twl6040_clear_bits(twl6040, TWL6040_REG_VIBCTLL,
--				   TWL6040_VIBENAL);
-+				   TWL6040_VIBENA);
- 	}
- 	if (status & TWL6040_VIBROCDET) {
- 		dev_warn(info->dev, "Right Vibrator overcurrent detected\n");
- 		twl6040_clear_bits(twl6040, TWL6040_REG_VIBCTLR,
--				   TWL6040_VIBENAR);
-+				   TWL6040_VIBENA);
- 	}
+diff --git a/drivers/mfd/twl6040-core.c b/drivers/mfd/twl6040-core.c
+index 7dc8c47..75987c8 100644
+--- a/drivers/mfd/twl6040-core.c
++++ b/drivers/mfd/twl6040-core.c
+@@ -34,16 +34,24 @@
+ #include <linux/mfd/core.h>
+ #include <linux/mfd/twl6040.h>
  
- 	return IRQ_HANDLED;
-@@ -104,16 +104,16 @@ static void twl6040_vibra_enable(struct vibra_info *info)
- 		 * overcurrent detection
- 		 */
- 		twl6040_reg_write(twl6040, TWL6040_REG_VIBCTLL,
--				  TWL6040_VIBENAL | TWL6040_VIBCTRLL);
-+				  TWL6040_VIBENA | TWL6040_VIBCTRL);
- 		twl6040_reg_write(twl6040, TWL6040_REG_VIBCTLR,
--				  TWL6040_VIBENAR | TWL6040_VIBCTRLR);
-+				  TWL6040_VIBENA | TWL6040_VIBCTRL);
- 		usleep_range(3000, 3500);
++#define VIBRACTRL_MEMBER(reg) ((reg == TWL6040_REG_VIBCTLL) ? 0 : 1)
++
+ int twl6040_reg_read(struct twl6040 *twl6040, unsigned int reg)
+ {
+ 	int ret;
+ 	u8 val = 0;
+ 
+ 	mutex_lock(&twl6040->io_mutex);
+-	ret = twl_i2c_read_u8(TWL_MODULE_AUDIO_VOICE, &val, reg);
+-	if (ret < 0) {
+-		mutex_unlock(&twl6040->io_mutex);
+-		return ret;
++	/* Vibra control registers from cache */
++	if (unlikely(reg == TWL6040_REG_VIBCTLL ||
++		     reg == TWL6040_REG_VIBCTLR)) {
++		val = twl6040->vibra_ctrl_cache[VIBRACTRL_MEMBER(reg)];
++	} else {
++		ret = twl_i2c_read_u8(TWL_MODULE_AUDIO_VOICE, &val, reg);
++		if (ret < 0) {
++			mutex_unlock(&twl6040->io_mutex);
++			return ret;
++		}
  	}
+ 	mutex_unlock(&twl6040->io_mutex);
  
- 	twl6040_reg_write(twl6040, TWL6040_REG_VIBCTLL,
--			  TWL6040_VIBENAL);
-+			  TWL6040_VIBENA);
- 	twl6040_reg_write(twl6040, TWL6040_REG_VIBCTLR,
--			  TWL6040_VIBENAR);
-+			  TWL6040_VIBENA);
+@@ -57,6 +65,9 @@ int twl6040_reg_write(struct twl6040 *twl6040, unsigned int reg, u8 val)
  
- 	info->enabled = true;
- }
+ 	mutex_lock(&twl6040->io_mutex);
+ 	ret = twl_i2c_write_u8(TWL_MODULE_AUDIO_VOICE, val, reg);
++	/* Cache the vibra control registers */
++	if (reg == TWL6040_REG_VIBCTLL || reg == TWL6040_REG_VIBCTLR)
++		twl6040->vibra_ctrl_cache[VIBRACTRL_MEMBER(reg)] = val;
+ 	mutex_unlock(&twl6040->io_mutex);
+ 
+ 	return ret;
 diff --git a/include/linux/mfd/twl6040.h b/include/linux/mfd/twl6040.h
-index d9e05ea..e6c755d 100644
+index e6c755d..2f8585a 100644
 --- a/include/linux/mfd/twl6040.h
 +++ b/include/linux/mfd/twl6040.h
-@@ -125,24 +125,18 @@
- #define TWL6040_HSDACMODE		(1 << 1)
- #define TWL6040_HSDRVMODE		(1 << 3)
+@@ -184,6 +184,7 @@ struct twl6040 {
+ 	int audpwron;
+ 	int power_count;
+ 	int rev;
++	u8 vibra_ctrl_cache[2];
  
--/* VIBCTLL (0x18) fields */
-+/* VIBCTLL/R (0x18/0x1A) fields */
- 
--#define TWL6040_VIBENAL			0x01
--#define TWL6040_VIBCTRLL		0x04
--#define TWL6040_VIBCTRLLP		0x08
--#define TWL6040_VIBCTRLLN		0x10
-+#define TWL6040_VIBENA			(1 << 0)
-+#define TWL6040_VIBSEL			(1 << 1)
-+#define TWL6040_VIBCTRL			(1 << 2)
-+#define TWL6040_VIBCTRL_P		(1 << 3)
-+#define TWL6040_VIBCTRL_N		(1 << 4)
- 
--/* VIBDATL (0x19) fields */
-+/* VIBDATL/R (0x19/0x1B) fields */
- 
- #define TWL6040_VIBDAT_MAX		0x64
- 
--/* VIBCTLR (0x1A) fields */
--
--#define TWL6040_VIBENAR			0x01
--#define TWL6040_VIBCTRLR		0x04
--#define TWL6040_VIBCTRLRP		0x08
--#define TWL6040_VIBCTRLRN		0x10
--
- /* GPOCTL (0x1E) fields */
- 
- #define TWL6040_GPO1			0x01
+ 	int pll;
+ 	unsigned int sysclk;
 -- 
 1.7.6.1
 
