@@ -1,81 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753526Ab1IWLc4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 07:32:56 -0400
-Received: from mga11.intel.com ([192.55.52.93]:40254 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753327Ab1IWLcz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 07:32:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,429,1312182000"; 
-   d="scan'208";a="69029591"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Subject: [PATCH] fat: don't use custom hex_to_bin()
-Date: Fri, 23 Sep 2011 14:32:12 +0300
-Message-Id: <e1a466eb82a79c91f3ec103b8308f2f81bfcbd69.1316777398.git.andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.7.6.3
-In-Reply-To: <e23268a9c837d75a24c2d209f1623c505371eb1d.1316777507.git.andriy.shevchenko@linux.intel.com>
-References: <e23268a9c837d75a24c2d209f1623c505371eb1d.1316777507.git.andriy.shevchenko@linux.intel.com>
+	id S1753519Ab1IWLjh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 07:39:37 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:48991 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753327Ab1IWLjf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Sep 2011 07:39:35 -0400
+X-Authority-Analysis: v=1.1 cv=XWD5/VRj2HUJOhsR8cgmvPBlhMACpZXxseY1Kn/ehQI= c=1 sm=0 a=fpqnIV_ZEzMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=ggbMXSSPus1lnWScO54A:9 a=-Ofyw6oqVC0nW6zrHScA:7 a=PUjeQqilurYA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.83.30
+Subject: Re: [PATCH 21/21] tracing: Add optional percpu buffers for
+ trace_printk()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <1316777306.9084.11.camel@twins>
+References: <20110922220935.537134016@goodmis.org>
+	 <20110922221030.111078233@goodmis.org>  <1316776031.9084.4.camel@twins>
+	 <1316776605.29966.153.camel@gandalf.stny.rr.com>
+	 <1316777306.9084.11.camel@twins>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 23 Sep 2011 07:39:33 -0400
+Message-ID: <1316777973.29966.163.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
----
- fs/fat/namei_vfat.c |   22 ++++++----------------
- 1 files changed, 6 insertions(+), 16 deletions(-)
+On Fri, 2011-09-23 at 13:28 +0200, Peter Zijlstra wrote:
 
-diff --git a/fs/fat/namei_vfat.c b/fs/fat/namei_vfat.c
-index bb3f29c..09cec4c 100644
---- a/fs/fat/namei_vfat.c
-+++ b/fs/fat/namei_vfat.c
-@@ -21,6 +21,8 @@
- #include <linux/slab.h>
- #include <linux/buffer_head.h>
- #include <linux/namei.h>
-+#include <linux/kernel.h>
-+
- #include "fat.h"
- 
- /*
-@@ -505,7 +507,6 @@ xlate_to_uni(const unsigned char *name, int len, unsigned char *outname,
- 	     struct nls_table *nls)
- {
- 	const unsigned char *ip;
--	unsigned char nc;
- 	unsigned char *op;
- 	unsigned int ec;
- 	int i, k, fill;
-@@ -530,21 +531,10 @@ xlate_to_uni(const unsigned char *name, int len, unsigned char *outname,
- 						return -EINVAL;
- 					ec = 0;
- 					for (k = 1; k < 5; k++) {
--						nc = ip[k];
--						ec <<= 4;
--						if (nc >= '0' && nc <= '9') {
--							ec |= nc - '0';
--							continue;
--						}
--						if (nc >= 'a' && nc <= 'f') {
--							ec |= nc - ('a' - 10);
--							continue;
--						}
--						if (nc >= 'A' && nc <= 'F') {
--							ec |= nc - ('A' - 10);
--							continue;
--						}
--						return -EINVAL;
-+						int val = hex_to_bin(ip[k]);
-+						if (val < 0)
-+							return -EINVAL;
-+						ec = (ec << 4) | val;
- 					}
- 					*op++ = ec & 0xFF;
- 					*op++ = ec >> 8;
--- 
-1.7.6.3
+> Of course, printk() is most useless, its too slow, and its definitely
+> not NMI-safe.
+> 
+> If you've only got a single buffer, I don't see why you would need
+> per-cpu recursion detection, just spin_try_lock() the thing and if you
+> fail, bail. But that's not what the changelog said, or at least implied.
+
+Not sure if the raw_spin_locks() had a try lock back when this was
+written. The recursion detection was there from day one, and has nothing
+to do with this patch. Which is why the changelog said nothing about it.
+This patch only is about not having the trace_printk() cause extra
+synchronization. This bit me once as trace_printk() cause a race to
+disappear.
+
+
+> 
+> The possibility of dropping trace output like that is most worrying
+> though. I can imagine myself tearing my hair out trying to make sense of
+> a trace, and then wanting to kick you after finding out it lost the
+> crucial bit.
+
+Understood, but NMIs are always something to be worried about causing
+strange issues.
+
+> 
+> > > better to make all of trace_printk() depend on that extra config, there
+> > > is absolutely 0 point in having a broken and fully serialized trace
+> > > 'fail^wfeature'.
+> > 
+> > Not, having per cpu buffers still doesn't allow NMIs to interrupt
+> > trace_printk(). Otherwise the NMI would just corrupt the current percpu
+> > buffer.
+> 
+> Multiple buffers sounds about right, not sure if you disable interrupts
+> over the normal trace path, but ISTR you don't, so you need
+> task/softirq/irq/nmi buffers per cpu.
+
+trace_printk() does disable interrupts, so it is only an NMI issue.
+
+
+> 
+> Really loosing trace output is not an option, ever (aside from stuff
+> falling of the end of the buffer). Reliability first, performance
+> second.
+> 
+
+Fine, then I'll add (on top of this patch) a CONFIG_TRACE_PRINTK_FULL or
+some such name that will create the per cpu NMI and normal buffers,
+which will not miss any interrupts. I just want to limit the unused
+memory for 99.99999% of users.
+
+I could make the TRACE_PRINTK_FULL not even disable interrupts and have
+the normal/softirq/irq/nmi per cpu buffers. This will be something that
+would *not* be enabled in production.
+
+-- Steve
+
 
