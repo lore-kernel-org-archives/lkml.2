@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751357Ab1IWDW7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 23:22:59 -0400
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:54632 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750980Ab1IWDW4 (ORCPT
+	id S1751537Ab1IWDZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 23:25:28 -0400
+Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:22252 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751000Ab1IWDZZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 23:22:56 -0400
-Date: Fri, 23 Sep 2011 08:52:43 +0530
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Keith Packard <keithp@keithp.com>
-Cc: Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: [Intel-gfx] [PATCH 9/9] drm/i915: Disable eDP VDD in a delayed
- work proc instead of synchronously
-Message-ID: <20110923085243.6e4b7b4c@jbarnes-x220>
-In-Reply-To: <yunsjnqfqga.fsf@aiko.keithp.com>
-References: <1316470923-27832-1-git-send-email-keithp@keithp.com>
-	<1316470923-27832-10-git-send-email-keithp@keithp.com>
-	<20110921094759.22423597@jbarnes-x220>
-	<yunsjnqfqga.fsf@aiko.keithp.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 22 Sep 2011 23:25:25 -0400
+Date: Thu, 22 Sep 2011 20:25:25 -0700 (PDT)
+From: Andrei Warkentin <awarkentin@vmware.com>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: linux-kernel@vger.kernel.org, cjb@laptop.org, linux-mmc@vger.kernel.org
+Message-ID: <728441958.616721.1316748325054.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
+In-Reply-To: <1316705680-1940-1-git-send-email-linkinjeon@gmail.com>
+Subject: Re: [PATCH] mmc : general purpose partition support.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 192.55.60.111 authed with jbarnes@virtuousgeek.org}
+X-Originating-IP: [10.113.62.177]
+X-Mailer: Zimbra 7.1.1_GA_3225 (ZimbraWebClient - SAF3 (Linux)/7.1.1_GA_3225)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Sep 2011 21:51:33 -0700
-Keith Packard <keithp@keithp.com> wrote:
-> Yes, making it cleaner would help a ton. There are some basic problems
-> with the DRM API that make this hard though -- intel_dp_prepare may
-> not ever be followed by a call to intel_dp_commit. That's why I had
-> the VDD AUX stuff get turned off by a delayed work proc instead.
-> 
-> Also, leaving VDD AUX high after EDID is fetched means that we can
-> start the mode setting immediately, rather than having to wait for the
-> power-off/power-on delay (which is really long).
+Hi Namjae,
 
-Yeah agreed.  
+I scanned over your changes to enable GP partitions, and while I 
+did not yet test your changes, they do appear to be ok.
 
-> What we could do is force VDD AUX off after the panel gets turned on;
-> that would ensure that turning the panel off would actually turn the
-> power off, rather than having VDD stay high for some time after that.
+Please CC me on the next version of your patch so I can give
+it a spin and Ack on it.
 
-Yep, that sounds great.
+I do suggest at least thinking about ways to improve on this. Back
+when I added boot partition support, I already didn't like the fact
+that the block driver had to be aware of the eMMC partitions, with all
+the code duplication and such. By adding four more partitions,
+you've compounded the problem and now you have six pieces of 
+code that really look the same.
+
+The core/mmc.c right now scans the size values and stores them
+in mmc_card, and the block driver is smart enough to know what
+to do with them. Why not make the block code generic at the expense
+of keeping an array of structures in mmc_card? The block driver
+would then just iterate over these and create the additional devices. The partition
+switch routine would then operate on these structures, and could then be pulled out
+of the block driver, making it simpler. 
+
+Each physical partition could be described by something like - 
+struct mmc_part {
+    unsigned int size;
+    unsigned int cookie;        /* for mmc, idx used in mmc_switch, part_type from current mmc_blk_data */
+    char name[DISK_NAME_LEN];
+    bool force_ro;              /* to make boot parts RO by default */
+};
+
+Just an idea. Clearly, if MMC grows by another 4-5 possible partitions, it's not
+realistic to be copy-pasting the same block of code, nor would it make sense
+if/when these types of devices support an arbitrary amount of physical partitions.
 
 Thanks,
-Jesse
+A
