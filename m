@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752877Ab1IWW0h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 18:26:37 -0400
-Received: from mail209.messagelabs.com ([216.82.255.3]:56810 "EHLO
-	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752608Ab1IWW0f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 18:26:35 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-13.tower-209.messagelabs.com!1316816791!11235038!4
-X-Originating-IP: [216.166.12.99]
-X-StarScan-Version: 6.3.6; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ext4/ioctl.c: copy_{from,to}_user expect __user pointers
-Date: Fri, 23 Sep 2011 15:25:54 -0700
-User-Agent: KMail/1.9.9
-CC: <linux-ext4@vger.kernel.org>, <tytso@mit.edu>, <adilger.kernel@dilger.ca>
+	id S1752752Ab1IWW2v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 18:28:51 -0400
+Received: from mga11.intel.com ([192.55.52.93]:56194 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752677Ab1IWW2u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Sep 2011 18:28:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,432,1312182000"; 
+   d="scan'208";a="66978260"
+From: Andi Kleen <andi@firstfloor.org>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Don Zickus <dzickus@redhat.com>
+Subject: Re: [V3][PATCH 0/7] perf, x86: Implement AMD IBS
+References: <1316597423-25723-1-git-send-email-robert.richter@amd.com>
+	<1316778523.9084.17.camel@twins> <20110923122014.GP6063@erda.amd.com>
+Date: Fri, 23 Sep 2011 15:28:49 -0700
+In-Reply-To: <20110923122014.GP6063@erda.amd.com> (Robert Richter's message of
+	"Fri, 23 Sep 2011 14:20:14 +0200")
+Message-ID: <m2hb42ki5a.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201109231525.54301.hartleys@visionengravers.com>
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This quiets the sparse noise:
+Robert Richter <robert.richter@amd.com> writes:
+>
+> I think we could extend perf report to parse also ibs samples. The
+> only thing we need for it should be the pmu name/type mapping in the
+> perf.data header and the pmu type in the sample. See my comment on
+> Stephane's patch '[PATCH] perf: make perf.data more self-descriptive
+> (v5)'.
 
-warning: incorrect type in argument 2 (different address spaces)
-   expected void const [noderef] <asn:1>*from
-   got struct fstrim_range *<noident>
-warning: incorrect type in argument 1 (different address spaces)
-   expected void [noderef] <asn:1>*to
-   got struct fstrim_range *<noident>
+I would like to have a similar user tool for Intel PEBS data.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>
+I have some hacks currently to dump more data from the PEBS record and
+it's useful for some situations. I was actually thinking of adapting
+Robert's tool, but integrating it into other tools is fine too.
 
----
+Sometimes a "perf print-samples" to print individual samples
+would be useful too  (it's already possible with -R, but very unfriendly
+without post processing)
 
-diff --git a/fs/ext4/ioctl.c b/fs/ext4/ioctl.c
-index f18bfe3..43759b1 100644
---- a/fs/ext4/ioctl.c
-+++ b/fs/ext4/ioctl.c
-@@ -348,7 +348,7 @@ mext_out:
- 		if (!blk_queue_discard(q))
- 			return -EOPNOTSUPP;
- 
--		if (copy_from_user(&range, (struct fstrim_range *)arg,
-+		if (copy_from_user(&range, (struct fstrim_range __user *)arg,
- 		    sizeof(range)))
- 			return -EFAULT;
- 
-@@ -358,7 +358,7 @@ mext_out:
- 		if (ret < 0)
- 			return ret;
- 
--		if (copy_to_user((struct fstrim_range *)arg, &range,
-+		if (copy_to_user((struct fstrim_range __user *)arg, &range,
- 		    sizeof(range)))
- 			return -EFAULT;
- 
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
