@@ -1,46 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751191Ab1IWRk5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 13:40:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16294 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750717Ab1IWRk4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 13:40:56 -0400
-Date: Fri, 23 Sep 2011 19:36:56 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Serge E. Hallyn" <serge.hallyn@canonical.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, richard@nod.at,
-        Andrew Morton <akpm@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>,
-        serge@hallyn.com
-Subject: Re: [PATCH] user namespace: make signal.c respect user namespaces
-Message-ID: <20110923173656.GA5233@redhat.com>
-References: <20110919214531.GA18085@sergelap> <20110920174849.GB22317@redhat.com> <20110920185354.GA19629@sergelap> <20110921175357.GA25590@redhat.com> <20110923163113.GA3820@sergelap>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110923163113.GA3820@sergelap>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1751220Ab1IWRmU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 13:42:20 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:35223 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750724Ab1IWRmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Sep 2011 13:42:18 -0400
+Subject: Re: [PATCH 25/26] dynamic_debug: add pr_fmt_dbg() for
+ dynamic_pr_debug
+From: Joe Perches <joe@perches.com>
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: jim.cromie@gmail.com, jbaron@redhat.com, greg@kroah.com,
+        linux-kernel@vger.kernel.org
+Date: Fri, 23 Sep 2011 10:42:13 -0700
+In-Reply-To: <CAO+b5-qTB2YW4rpS-sGqgXhFWeaEYrM4k87RonmdAz-2t6asCg@mail.gmail.com>
+References: <1316642115-20029-1-git-send-email-jim.cromie@gmail.com>
+	 <1316642115-20029-26-git-send-email-jim.cromie@gmail.com>
+	 <1316725066.29447.16.camel@Joe-Laptop>
+	 <CAO+b5-qTB2YW4rpS-sGqgXhFWeaEYrM4k87RonmdAz-2t6asCg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.1.91- 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1316799737.5266.32.camel@Joe-Laptop>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23, Serge E. Hallyn wrote:
->
-> It looks like I can fix all the
-> cases
+(resending with minor additions, first email hasn't shown up in 4+ hours)
 
-except ptrace_signal(). Although we can simply ignore this case, imho.
+On Fri, 2011-09-23 at 12:31 +0200, Bart Van Assche wrote:
+> On Thu, Sep 22, 2011 at 10:57 PM, Joe Perches <joe@perches.com> wrote:
+> > Maybe add all the pr_<level> variants too because
+> > some like to prefix __func__ to pr_err but not pr_info
+> > etc.
+> Hi Joe,
 
-> at send_signal()
+Hi Bart.
 
-Yes, I was thinking about this too but didn't have the time to check
-if this can really work.
+> Are you sure it makes sense to introduce all these new macros ?
+> Introducing pr_fmt_dbg() makes sense to me, but the usefulness of the
+> macros proposed above is not clear to me.
 
-> by checking whether si_fromuser(info)
+Probably the most useful application of
+pr_fmt_debug would be to prefix __func__ to
+debug output but not to other pr_<level> uses.
 
-I am not sure... sys_rt_queueinfo() is nasty. Plus we have to handle
-the "fromkernel" case too. May be we can ignore this too.
+dynamic_debug would not be able to detect that
+__func__ duplication except by using vscnprintf
+to a buffer and checking the initial output.
 
-Oleg.
+Perhaps a simpler way to avoid duplication of
+KBUILD_MODNAME ":" in dynamic_debugging is to
+scan the fmt string and move the fmt pointer
+past any leading KBUILD_MODNAME ": " when
+appropriate.
+
+I think these pr_fmt_<level> macros have a
+relatively low overall value but I prefer
+comprehensive implementations rather than
+partial ones.
+
+There are a couple of modules where people
+prefix __func__ to pr_err but not pr_info.
+
+e.g.: drivers/net/ethernet/broadcom/cnic.c
+
+Adding all the #define pr_fmt_<level>s could
+simplify that.
+
+cheers, Joe
 
