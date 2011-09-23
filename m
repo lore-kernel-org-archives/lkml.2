@@ -1,78 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754961Ab1IWPtX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 11:49:23 -0400
-Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:5146
-	"EHLO AM1EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754908Ab1IWPsz (ORCPT
+	id S1754906Ab1IWPvi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 11:51:38 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:35299 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754729Ab1IWPvh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 11:48:55 -0400
-X-SpamScore: 1
-X-BigFish: VPS1(zzzz1202hzzz32i668h839h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-FB-SS: 0,
-X-WSS-ID: 0LRZFSQ-01-1CS-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: <iommu@lists.linux-foundation.org>
-CC: Greg Kroah-Hartman <gregkh@suse.de>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        David Brown <davidb@codeaurora.org>, <joro@8bytes.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH 0/10 v3] IOMMU: Make iommu_ops per-bus_type
-Date: Fri, 23 Sep 2011 17:45:46 +0200
-Message-ID: <1316792756-3395-1-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.4.1
+	Fri, 23 Sep 2011 11:51:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+In-Reply-To: <CAAvzgtZ3aWjpN++3qo1LCS9A+GsNzbnG0vEDqyDG8OHYJeXwuA@mail.gmail.com>
+References: <20110921235515.7476c5fe.lucasvr@gmail.com>
+	<20110922092347.GD17640@liondog.tnic>
+	<20110922171829.GA4863@suse.de>
+	<20110922175406.GA4709@gere.osrc.amd.com>
+	<20110922180327.GA1932@suse.de>
+	<20110922182048.GB4709@gere.osrc.amd.com>
+	<CAAvzgtZ3aWjpN++3qo1LCS9A+GsNzbnG0vEDqyDG8OHYJeXwuA@mail.gmail.com>
+Date: Fri, 23 Sep 2011 12:51:36 -0300
+X-Google-Sender-Auth: uQptI4dR8JD9aRTqGqZMHG_VE6g
+Message-ID: <CAAvzgtZf2pFcKmAvccH4oJuiUJaugWbX1gwng7CK9B2DwN3ocA@mail.gmail.com>
+Subject: Re: [PATCH] Initialize pointer on request_firmware
+From: "Lucas C. Villa Real" <lucasvr@gobolinux.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        Wey-Yi Guya <wey-yi.w.guy@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Pekka Enberg <penberg@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Sep 22, 2011 at 4:05 PM, Lucas C. Villa Real
+<lucasvr@gobolinux.org> wrote:
+> On Thu, Sep 22, 2011 at 3:20 PM, Borislav Petkov <bp@alien8.de> wrote:
+>> On Thu, Sep 22, 2011 at 11:03:27AM -0700, Greg KH wrote:
+>>> The patch was in the 2.6.36 kernel, so by nature of that, 3.0 will also
+>>> have it, right?
+>>
+>> Ok, a colleague of mine gave me 3.0.4 to stare at - and you're right
+>> the patch is there. So what is still missing is caca9510ff4e5 from
+>> upstream which reroutes the exit path so that firmware_p is NULLed
+>> before returning -EBUSY.
+>>
+>> Lucas, can you apply caca9510ff4e5 from upstream and verify it fixes the
+>> issue for ya?
+>
+> Sure. I'll do that tonight and will let you now -- the laptop I'm
+> using right now doesn't suffer from that problem.
 
-here is the third version of the patch-set to make the iommu_ops used in
-the iommu-api a bus_type property. This will allow us to move code out
-of the iommu drivers into generic code and it simplifies the
-implementation of the Alex' device-group property.
+caca9510ff4e5 fixes it. Thanks for the pointer!
 
-It converts all iommu drivers to use the new registration interface and
-completly removes the register_iommu interface.
+Best regards,
 
-Please let me know of any remaining objections. If there are no I would
-be very happy about Acked-By's :)
-
-Regards,
-
-	Joerg
-
-Changes v2->v3:
-	* Moved bus_set_iommu() to drivers/iommu/iommu.c to get rid of
-	  the CONFIG_IOMMU_API #ifdef around it in bus.c
-
-Changes v1->v2:
-
-        * Added kernel-doc comments to bus_set_iommu function
-        * Removed iommu.h include from device.h and added a forward
-          declaration for struct iommu_ops
-
-Diffstat:
-
- arch/ia64/kvm/kvm-ia64.c           |    3 +-
- arch/x86/kvm/x86.c                 |    3 +-
- drivers/iommu/amd_iommu.c          |    2 +-
- drivers/iommu/intel-iommu.c        |    2 +-
- drivers/iommu/iommu.c              |   81 ++++++++++++++++++++++++++++--------
- drivers/iommu/msm_iommu.c          |    2 +-
- drivers/iommu/omap-iommu.c         |    2 +-
- drivers/media/video/omap3isp/isp.c |    2 +-
- include/linux/device.h             |    6 +++
- include/linux/iommu.h              |   21 +++++----
- virt/kvm/iommu.c                   |    4 +-
- 11 files changed, 92 insertions(+), 36 deletions(-)
-
-
+-- 
+Lucas
+"If you're looking for a reason I've a reason to give: pleasure,
+little treasure"
