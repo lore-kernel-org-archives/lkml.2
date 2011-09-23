@@ -1,150 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753088Ab1IWXEB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 19:04:01 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:14049 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752950Ab1IWXD6 (ORCPT
+	id S1753141Ab1IWXEO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 19:04:14 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:48643 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753102Ab1IWXEK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 19:03:58 -0400
-From: Simon Glass <sjg@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, Da Zheng <zhengda@chromium.org>,
-        Da Zheng <zhengda@chromium.com>
-Subject: [RFC PATCH 2/3] bootstage: Insert bootstage_mark to record timing for bootup.
-Date: Fri, 23 Sep 2011 16:03:17 -0700
-Message-Id: <1316818998-30711-3-git-send-email-sjg@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1316818998-30711-1-git-send-email-sjg@chromium.org>
-References: <1316818998-30711-1-git-send-email-sjg@chromium.org>
-X-System-Of-Record: true
+	Fri, 23 Sep 2011 19:04:10 -0400
+Date: Thu, 22 Sep 2011 23:02:55 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: David Daney <david.daney@cavium.com>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <greg@kroah.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org,
+        Manjunath GKondaiah <manjunath.gkondaiah@linaro.org>,
+        Dilan Lee <dilee@nvidia.com>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH v3] drivercore: Add driver probe deferral mechanism
+Message-ID: <20110923050255.GB24631@ponder.secretlab.ca>
+References: <20110922184614.25419.84606.stgit@ponder>
+ <20110922212909.49966cf4@lxorguk.ukuu.org.uk>
+ <4E7BA661.7070903@cavium.com>
+ <20110922234737.05dff9f8@lxorguk.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110922234737.05dff9f8@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Da Zheng <zhengda@chromium.org>
+On Thu, Sep 22, 2011 at 11:47:37PM +0100, Alan Cox wrote:
+> > How would a given driver know that something else is waiting for it?  Or 
+> > would we add the explicit kick to each and every driver in the tree?
+> 
+> I think there are very very few drivers that have this property and don't
+> already implicitly cause a probe by creating a new bus or device.
+> 
+> Those drivers that set something up for another device really should
+> know what is going on because they are making a guarantee that they are
+> ready for the other device to call into them or whatever is going on at
+> some point, either explicitly in the kick or implicitly in returning from
+> their probe method.
 
-From: Da Zheng <zhengda@chromium.org>
+I disagree.  There are lots of situations we're hitting where the
+providing driver and the consuming driver don't have any details about
+each other except for the name/reference of the resource (be it gpio,
+phy, clock, regulator; each with a different API).
 
-This inserts calls to bootstage_mark() to timestamp the kernel moving
-between the different initcall levels.
+Example 1: ALSA SoC complex.  A codec sitting on an i2c bus that gets
+bound to an i2c_driver and attached to a memory-mapped I2S controller
+driven by a platform_driver.  The sound device cannot be created until
+both the i2c codec and the i2s controller are bound to their drivers.
 
-Signed-off-by: Da Zheng <zhengda@chromium.com>
----
- init/bootstage.c |   49 +++++++++++++++++++++++++++++++++++++++++++++++++
- init/main.c      |    7 +++++++
- 2 files changed, 56 insertions(+), 0 deletions(-)
+Example 2: an SDHCI controller which uses a couple of GPIO lines for
+card detect and write protect, but the board designer may choose to
+use any available gpio line, such as on an spi gpio expander.
 
-diff --git a/init/bootstage.c b/init/bootstage.c
-index 79e9761..6f4668f 100644
---- a/init/bootstage.c
-+++ b/init/bootstage.c
-@@ -226,3 +226,52 @@ static int __init bootstage_init(void)
- }
- 
- postcore_initcall(bootstage_init);
-+
-+static int __init post_core_initcall(void)
-+{
-+	bootstage_mark("core_initcall");
-+	return 0;
-+}
-+core_initcall_sync(post_core_initcall);
-+
-+static int __init post_postcore_initcall(void)
-+{
-+	bootstage_mark("postcore_initcall");
-+	return 0;
-+}
-+postcore_initcall_sync(post_postcore_initcall);
-+
-+static int __init post_arch_initcall(void)
-+{
-+	bootstage_mark("arch_initcall");
-+	return 0;
-+}
-+arch_initcall_sync(post_arch_initcall);
-+
-+static int __init post_subsys_initcall(void)
-+{
-+	bootstage_mark("subsys_initcall");
-+	return 0;
-+}
-+subsys_initcall_sync(post_subsys_initcall);
-+
-+static int __init post_fs_initcall(void)
-+{
-+	bootstage_mark("fs_initcall");
-+	return 0;
-+}
-+fs_initcall_sync(post_fs_initcall);
-+
-+static int __init post_device_initcall(void)
-+{
-+	bootstage_mark("device_initcall");
-+	return 0;
-+}
-+device_initcall_sync(post_device_initcall);
-+
-+static int __init post_late_initcall(void)
-+{
-+	bootstage_mark("late_initcall");
-+	return 0;
-+}
-+late_initcall_sync(post_late_initcall);
-diff --git a/init/main.c b/init/main.c
-index 9c51ee7..671d6b7 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -75,6 +75,8 @@
- #include <asm/sections.h>
- #include <asm/cacheflush.h>
- 
-+#include <linux/bootstage.h>
-+
- #ifdef CONFIG_X86_LOCAL_APIC
- #include <asm/smp.h>
- #endif
-@@ -489,6 +491,7 @@ asmlinkage void __init start_kernel(void)
- 	page_address_init();
- 	printk(KERN_NOTICE "%s", linux_banner);
- 	setup_arch(&command_line);
-+	bootstage_mark_early("bootstage_start");
- 	mm_init_owner(&init_mm, &init_task);
- 	mm_init_cpumask(&init_mm);
- 	setup_command_line(command_line);
-@@ -627,6 +630,7 @@ asmlinkage void __init start_kernel(void)
- 	sfi_init_late();
- 
- 	ftrace_init();
-+	bootstage_mark("before_rest_init");
- 
- 	/* Do the rest non-__init'ed, we're now alive */
- 	rest_init();
-@@ -722,6 +726,7 @@ static void __init do_basic_setup(void)
- 	driver_init();
- 	init_irq_proc();
- 	do_ctors();
-+	bootstage_mark("before_initcalls");
- 	do_initcalls();
- }
- 
-@@ -806,6 +811,7 @@ static int __init kernel_init(void * unused)
- 	sched_init_smp();
- 
- 	do_basic_setup();
-+	bootstage_mark("after_basic_setup");
- 
- 	/* Open the /dev/console on the rootfs, this should never fail */
- 	if (sys_open((const char __user *) "/dev/console", O_RDWR, 0) < 0)
-@@ -832,6 +838,7 @@ static int __init kernel_init(void * unused)
- 	 * initmem segments and start the user-mode stuff..
- 	 */
- 
-+	bootstage_mark("before_init_post");
- 	init_post();
- 	return 0;
- }
--- 
-1.7.3.1
+Example 3: An Ethernet controller attached to a phy on a completely
+independent MDIO bus.  The Ethernet driver uses the phylib api to
+access the phy, but cannot do so until after the phy device is bound
+to a driver.
 
+These are three very quickly off the top of my head.  I can easily
+come up with a lot more.
+
+The whole point is that the consumers *don't* and *should not* know anything
+how its required resources are provided. The consumer only knows how
+to request them.  Similarly, providers don't know anything about which
+devices are going to be requesting resources from them.  They can only
+publish what they provide.
+
+Now, if I'm understanding what you're suggesting, we could cause the
+re-probe to be triggered only when new gpio banks, phys, clocks,
+regulators, audio codecs, audio busses, interrupt controllers, and dma
+engines are registered.  This means adding the trigger call to all the
+registration paths we think are relevant.  Personally, I really don't
+think this is going to be worth it given the projected order of
+complexity.  It is because the dependencies could be any interface
+provided by another driver, I don't want to start with limitations on
+exactly which interfaces can use probe deferral.
+
+g.
