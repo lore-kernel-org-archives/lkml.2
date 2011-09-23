@@ -1,38 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754087Ab1IWNZP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 09:25:15 -0400
-Received: from casper.infradead.org ([85.118.1.10]:32816 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753616Ab1IWNZM convert rfc822-to-8bit (ORCPT
+	id S1754129Ab1IWN07 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 09:26:59 -0400
+Received: from mail3.vodafone.ie ([213.233.128.45]:25243 "EHLO
+	mail3.vodafone.ie" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753616Ab1IWN04 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 09:25:12 -0400
-Subject: Re: [PATCH 19/21] tracing: Account for preempt off in
- preempt_schedule()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Fri, 23 Sep 2011 15:24:41 +0200
-In-Reply-To: <1316776749.29966.156.camel@gandalf.stny.rr.com>
-References: <20110922220935.537134016@goodmis.org>
-	 <20110922221029.678324653@goodmis.org>  <1316775648.9084.1.camel@twins>
-	 <1316776749.29966.156.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1316784281.9084.20.camel@twins>
-Mime-Version: 1.0
+	Fri, 23 Sep 2011 09:26:56 -0400
+X-Greylist: delayed 644 seconds by postgrey-1.27 at vger.kernel.org; Fri, 23 Sep 2011 09:26:53 EDT
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AihvAGyFfE4Ko4hn/2dsb2JhbABChF2COYUSg1yXIoFjgU8kCnkFDQINGQJAiCKiQ4E7hxWBIUqIY4EshESBEQSZEYg+gzU
+Message-ID: <9907365.62831316783767621.JavaMail.tomcat@iecsai20>
+Date: Fri, 23 Sep 2011 14:16:07 +0100 (IST)
+From: "Mrs. Xue Chong" <xue_chong@citicbankintl.com>
+Reply-To: mrs.xue_chong@9.cn
+Subject: hi...
+MIME-Version: 1.0
+Content-Type: text/plain;charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-09-23 at 07:19 -0400, Steven Rostedt wrote:
-> Yes, that's the way git usually works
+Is your email valid ? join me for a personal discussion
 
-Its also one of the reasons I hate git. In this case the fixup will live
-in some merge commit and be totally lost to the normal way of things.
 
-I absolutely detest non empty merge commits.
