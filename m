@@ -1,147 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751821Ab1IWIQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 04:16:59 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:55976 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751167Ab1IWIQ5 (ORCPT
+	id S1751938Ab1IWIZh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 04:25:37 -0400
+Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:33104 "EHLO
+	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751426Ab1IWIZc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 04:16:57 -0400
+	Fri, 23 Sep 2011 04:25:32 -0400
+Message-ID: <4E7C425B.1060808@xyratex.com>
+Date: Fri, 23 Sep 2011 12:24:59 +0400
+From: Andrew Perepechko <andrew_perepechko@xyratex.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110918 Thunderbird/7.0
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-From: Michael Kerrisk <mtk.manpages@gmail.com>
-Date: Fri, 23 Sep 2011 10:16:36 +0200
-Message-ID: <CAKgNAkhR+Httt=S42UEV9TVt6ztcENqSu8fRFZgDjAcy+JynnQ@mail.gmail.com>
-Subject: man-pages-3.34 is released
-To: lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Nikitas Angelinas <nikitasangelinas@gmail.com>
+CC: tytso@mit.edu, adilger.kernel@dilger.ca, adilger@whamcloud.com,
+        johann@whamcloud.com, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, nikitas_angelinas@xyratex.com
+Subject: Re: [PATCH 1/2] ext4: MMP: kmmpd should use nodename from init_uts_ns.name,
+ not sysname
+References: <1316737389-5522-1-git-send-email-nikitas_angelinas@xyratex.com> <1316737389-5522-2-git-send-email-nikitas_angelinas@xyratex.com>
+In-Reply-To: <1316737389-5522-2-git-send-email-nikitas_angelinas@xyratex.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 23 Sep 2011 08:25:04.0042 (UTC) FILETIME=[4B4A58A0:01CC79CA]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gidday,
+Hello Nikitas!
 
-I've released man-pages-3.34.tar.gz - man pages for Linux
+It looks like some bits of your patches somehow got dropped.
 
-Because of the kernel.org problems, the release artifacts are in
-different locations than usual (and some of these changes may become
-permanent):
+Andrew
 
-This release tarball is available for download at:
+On 09/23/2011 04:23 AM, Nikitas Angelinas wrote:
+> sysname holds "Linux" by default, i.e. what appears when doing a "uname
+> -s"; nodename should be used to print the machine's hostname, i.e. what
+> is returned when doing a "uname -n" or "hostname", and what
+> gethostname(2)/sethostname(2) manipulate, in order to notify the
+> administrator of the node which is contending to mount the filesystem.
+>
+> Signed-off-by: Nikitas Angelinas<nikitas_angelinas@xyratex.com>
+> Signed-off-by: Andrew Perepechko<andrew_perepechko@xyratex.com>
+> ---
+>   fs/ext4/mmp.c |    2 +-
+>   1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/fs/ext4/mmp.c b/fs/ext4/mmp.c
+> index 9bdef3f..2fca64e 100644
+> --- a/fs/ext4/mmp.c
+> +++ b/fs/ext4/mmp.c
+> @@ -109,7 +109,7 @@ static int kmmpd(void *data)
+>   	mmp->mmp_check_interval = cpu_to_le16(mmp_check_interval);
+>   	bdevname(bh->b_bdev, mmp->mmp_bdevname);
+>
+> -	memcpy(mmp->mmp_nodename, init_utsname()->sysname,
+> +	memcpy(mmp->mmp_nodename, init_utsname()->nodename,
+>   	       sizeof(mmp->mmp_nodename));
+>
+>   	while (!kthread_should_stop()) {
 
-   http://man7.org/linux/man-pages/download/
+______________________________________________________________________
+This email may contain privileged or confidential information, which should only be used for the purpose for which it was sent by Xyratex. No further rights or licenses are granted to use such information. If you are not the intended recipient of this message, please notify the sender by return and delete it. You may not use, copy, disclose or rely on the information contained in it.
+ 
+Internet email is susceptible to data corruption, interception and unauthorised amendment for which Xyratex does not accept liability. While we have taken reasonable precautions to ensure that this email is free of viruses, Xyratex does not accept liability for the presence of any computer viruses in this email, nor for any losses caused as a result of viruses.
+ 
+Xyratex Technology Limited (03134912), Registered in England & Wales, Registered Office, Langstone Road, Havant, Hampshire, PO9 1SA.
+ 
+The Xyratex group of companies also includes, Xyratex Ltd, registered in Bermuda, Xyratex International Inc, registered in California, Xyratex (Malaysia) Sdn Bhd registered in Malaysia, Xyratex Technology (Wuxi) Co Ltd registered in The People's Republic of China and Xyratex Japan Limited registered in Japan.
+______________________________________________________________________
+ 
 
-The online changelog is available at
-http://man7.org/linux/man-pages/changelog.html#release_3.34 (blogged at
-http://linux-man-pages.blogspot.com/2011/09/man-pages-334-is-released.html
-) and the current version of the pages is browsable at
-http://man7.org/linux/man-pages/
-
-A git repository for man-pages can be found on github. You can clone
-the repository with the command:
-
-   git clone https://github.com/mkerrisk/man-pages.git
-
-A few changes in this release that may be of interest to readers of this
-list are listed below.
-
-Cheers,
-
-Michael
-
-==================== Changes in man-pages-3.34 ====================
-
-Released: 2011-09-23, Munich
-
-
-New and rewritten pages
------------------------
-
-rt_sigqueueinfo.2
-    Michael Kerrisk  [Stephan Mueller]
-        New page for rt_sigqueueinfo(2) and rt_tgsigqueueinfo(2)
-            This replaces the previous '.so' man page link file for
-            rt_sigqueueinfo.2, which linked to this sigqueue() man page.
-
-cciss.4
-    Stephen M. Cameron
-        New man page for cciss driver
-            I obtained the information in this man page as a consequence
-            of having worked on the cciss driver for the past several years,
-            and having written considerable portions of it.
-    Michael Kerrisk
-        Copyedit by mtk
-
-hpsa.4
-    Stephen M. Cameron
-        New man page for the hpsa driver
-            I obtained the information in this man page as a consequence
-            of being the main author of the hpsa driver.
-    Michael Kerrisk
-        Copyedits my mtk
-
-
-Newly documented interfaces in existing pages
----------------------------------------------
-
-fstatat.2
-    Michael Kerrisk  [David Howells]
-        Document AT_NO_AUTOMOUNT
-	    This flag was added in Linux 2.6.38.
-
-lseek.2
-    Michael Kerrisk  [Eric Blake, Sunil Mushran]
-        Document SEEK_HOLE and SEEK_DATA
-            These flags, designed for discovering holes in a file,
-            were added in Linux 3.1. Included comments from Eric
-            Blake and Sunil Mushran.
-
-madvise.2
-    Doug Goldstein
-        Add MADV_HUGEPAGE and MADV_NOHUGEPAGE
-            Document the MADV_HUGEPAGE and MADV_NOHUGEPAGE flags added to
-            madvise() in Linux 2.6.38.
-
-
-Changes to individual pages
----------------------------
-
-prctl.2
-    Paul Pluzhnikov
-        PR_SET_DUMPABLE makes process non-ptrace-attachable
-
-readlink.2
-    Guillem Jover
-        Document using st_size to allocate the buffer
-
-sched_setscheduler.2
-    Michael Kerrisk
-        Document 2.6.39 changes to rules governing changes from
-SCHED_IDLE policy
-            Since Linux 2.6.39, unprivileged processes under the
-            SCHED_IDLE policy can switch to another nonrealtime
-            policy if their nice value falls within the range
-            permitted by their RLIMIT_NICE limit.
-
-sigqueue.3
-    Michael Kerrisk
-        Move this page to section 3
-            Now that the underlying system call rt_sigqueueinfo(2) is
-            properly documented, move sigqueue() to Section 3, since
-            it is really a library function.
-
-feature_test_macros.7
-    Michael Kerrisk
-        Document _ISOC95_SOURCE
-            _ISOC95_SOURCE was added in glibc 2.12 as a means
-            to expose C90 Amendment 1 definitions.
-
-ip.7
-    Benjamin Poirier  [Neil Horman]
-        Improve description of IP_MTU_DISCOVER
-
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface"; http://man7.org/tlpi/
