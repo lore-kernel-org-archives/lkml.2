@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752970Ab1IWKSW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 06:18:22 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:44281 "EHLO
+	id S1753071Ab1IWK0f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 06:26:35 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:48623 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752180Ab1IWKST convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753019Ab1IWK0d convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 06:18:19 -0400
+	Fri, 23 Sep 2011 06:26:33 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=dkim-signature:mime-version:in-reply-to:references:date:
 	message-id:subject:from:to:cc:content-type:
 	content-transfer-encoding:x-system-of-record;
-	b=w2DuISSNBCBkaVLy1MuJO+HXWnwfC3eRLqgU8MfXflg5pvawY3B22ZP4KBerzI9yf
-	tlgKWRwj/inbzO0YQLQfA==
+	b=tIfxm7q+yalGNgebs1sR+MwsdXnfqneFoxVPCtH3LUgLQayEZVzGMjUqMKEeZ64QS
+	MyDchcrE/gh9ve4x3HXHw==
 MIME-Version: 1.0
-In-Reply-To: <20110922161523.f5b2193f.akpm@google.com>
+In-Reply-To: <20110922161539.d947e014.akpm@google.com>
 References: <1316230753-8693-1-git-send-email-walken@google.com>
-	<1316230753-8693-7-git-send-email-walken@google.com>
-	<20110922161523.f5b2193f.akpm@google.com>
-Date: Fri, 23 Sep 2011 03:18:13 -0700
-Message-ID: <CANN689GtH_vf-iOJyNjhet8-DXd=ermbmUykNJfKvg0yw=FiWQ@mail.gmail.com>
-Subject: Re: [PATCH 6/8] kstaled: rate limit pages scanned per second.
+	<1316230753-8693-8-git-send-email-walken@google.com>
+	<20110922161539.d947e014.akpm@google.com>
+Date: Fri, 23 Sep 2011 03:26:30 -0700
+Message-ID: <CANN689E7GyTB7RLng9M4aF9vQNOFd8gjLr5fKoWpmOYsM3UJNA@mail.gmail.com>
+Subject: Re: [PATCH 7/8] kstaled: add histogram sampling functionality
 From: Michel Lespinasse <walken@google.com>
 To: Andrew Morton <akpm@google.com>
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
@@ -41,42 +41,28 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Thu, Sep 22, 2011 at 4:15 PM, Andrew Morton <akpm@google.com> wrote:
-> On Fri, 16 Sep 2011 20:39:11 -0700
+> On Fri, 16 Sep 2011 20:39:12 -0700
 > Michel Lespinasse <walken@google.com> wrote:
 >
->> Scan some number of pages from each node every second, instead of trying to
->> scan the entime memory at once and being idle for the rest of the configured
->> interval.
+>> add statistics for pages that have been idle for 1,2,5,15,30,60,120 or
+>> 240 scan intervals into /dev/cgroup/*/memory.idle_page_stats
 >
-> Well...  why?  The amount of work done per scan interval is the same
-> (actually, it will be slightly increased due to cache evictions).
->
-> I think we should see a good explanation of what observed problem this
-> hackery^Wtweak is trying to solve.  Once that is revealed, we can
-> compare the proposed solution with one based on thread policy/priority
-> (for example).
+> Why?  What's the use case for this feature?
 
-There are two aspects to this:
+In the fakenuma implementation of kstaled, we were able to configure a
+different scan rate for each container (which was represented in the
+kernel as a set of fakenuma nodes, rather than a memory cgroup). This
+was used to reclaim memory more agressively from some containers than
+others, by varying the interval after which pages would be considered
+idle.
 
-- some people might find it nicer to have a small amount of load
-during the entire scan interval, rather than some spike when we
-trigger the scanning and some idle time afterwards. That part is
-highly debatable and there are probably better ways to achieve this.
-
-- jitter reduction - if we were to scan the entire memory at once
-without sleeping, the pages that are scanned first would have a fairly
-constant interval between times they are looked at; however if the
-time to scan pages is not constant (it could vary depending on CPU
-load and pages getting allocated and freed) the pages that are scanned
-towards the end of each scan would have a bit more jitter. This effect
-is reduced by trying to scan a fixed number of pages per second.
-
-> This is all rather unpleasing.
-
-Yeah, this is not my favourite patch in the series :/
-
-Would it help if I reordered it last in the series, as it seems more
-controversial & the later ones don't functionally depend on it ?
+In the memcg implementation, scanning is done globally so we can't
+configure a per-cgroup rate. Instead, we track the number of scan
+cycles that each page has been observed to be idle for. At that point,
+we could have a per-cgroup configurable threshold and report pages
+that have been idle for longer than that number of scans; however it
+seemed nicer to provide a full histogram since the information is
+actually available.
 
 -- 
 Michel "Walken" Lespinasse
