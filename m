@@ -1,219 +1,363 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753149Ab1IWXEa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 19:04:30 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:43130 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753108Ab1IWXEM (ORCPT
+	id S1753002Ab1IWXD6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 19:03:58 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:30678 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752962Ab1IWXD4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 19:04:12 -0400
-Date: Thu, 22 Sep 2011 23:14:03 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, marc.zyngier@arm.com,
-        thomas.abraham@linaro.org, jamie@jamieiles.com, b-cousson@ti.com,
-        shawn.guo@linaro.org, Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH v3] of/irq: introduce of_irq_init
-Message-ID: <20110923051403.GC24631@ponder.secretlab.ca>
-References: <1316550244-3655-3-git-send-email-robherring2@gmail.com>
- <1316744473-13158-1-git-send-email-robherring2@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1316744473-13158-1-git-send-email-robherring2@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 23 Sep 2011 19:03:56 -0400
+From: Simon Glass <sjg@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, Da Zheng <zhengda@chromium.org>,
+        Da Zheng <zhengda@chromium.com>
+Subject: [RFC PATCH 1/3] bootstage: Add bootstages to record timing in the kernel.
+Date: Fri, 23 Sep 2011 16:03:16 -0700
+Message-Id: <1316818998-30711-2-git-send-email-sjg@chromium.org>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1316818998-30711-1-git-send-email-sjg@chromium.org>
+References: <1316818998-30711-1-git-send-email-sjg@chromium.org>
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 22, 2011 at 09:21:13PM -0500, Rob Herring wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
-> 
-> of_irq_init will scan the devicetree for matching interrupt controller
-> nodes. Then it calls an initialization function for each found controller
-> in the proper order with parent nodes initialized before child nodes.
-> 
-> Based on initial pseudo code from Grant Likely.
-> 
-> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
+From: Da Zheng <zhengda@chromium.org>
 
-Looking really good, comments below...
+From: Da Zheng <zhengda@chromium.org>
 
-> ---
-> Changes from v2:
-> - add missing kfree's found by Jamie
-> - Implement Grant's comments to simplify the init loop
-> - fix function comments
+We can record timing in the kernel by invoking bootstage_mark() or
+bootstage_mark_early for early stages before memory and timekeeping
+are initialized. It also uses debugfs to interact with the user space.
 
-Nit: put changelog above the s-o-b lines so that it appears in the git
-commit text.
+Signed-off-by: Da Zheng <zhengda@chromium.com>
+---
+ include/linux/bootstage.h |   18 ++++
+ include/linux/timer.h     |    3 +
+ init/Kconfig              |    9 ++
+ init/Makefile             |    1 +
+ init/bootstage.c          |  228 +++++++++++++++++++++++++++++++++++++++++++++
+ kernel/timer.c            |    9 ++
+ 6 files changed, 268 insertions(+), 0 deletions(-)
+ create mode 100644 include/linux/bootstage.h
+ create mode 100644 init/bootstage.c
 
-> 
->  drivers/of/irq.c       |  106 ++++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/of_irq.h |    3 +
->  2 files changed, 109 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/of/irq.c b/drivers/of/irq.c
-> index 6a5b5e7..aedd39b 100644
-> --- a/drivers/of/irq.c
-> +++ b/drivers/of/irq.c
-> @@ -19,10 +19,12 @@
->   */
->  
->  #include <linux/errno.h>
-> +#include <linux/list.h>
->  #include <linux/module.h>
->  #include <linux/of.h>
->  #include <linux/of_irq.h>
->  #include <linux/string.h>
-> +#include <linux/slab.h>
->  
->  /* For archs that don't support NO_IRQ (such as x86), provide a dummy value */
->  #ifndef NO_IRQ
-> @@ -386,3 +388,107 @@ int of_irq_to_resource_table(struct device_node *dev, struct resource *res,
->  
->  	return i;
->  }
-> +
-> +struct intc_desc {
-> +	struct list_head	list;
-> +	struct device_node	*dev;
-> +	struct device_node	*interrupt_parent;
-> +};
-> +
-> +/**
-> + * of_irq_init - Scan and init matching interrupt controllers in DT
-> + * @matches: 0 terminated array of nodes to match and init function to call
-> + *
-> + * This function scans the device tree for matching interrupt controller nodes,
-> + * and calls their initialization functions in order with parents first.
-> + */
-> +void __init of_irq_init(const struct of_device_id *matches)
-> +{
-> +	struct device_node *np, *parent = NULL;
-> +	struct intc_desc *desc, *temp_desc;
-> +	struct list_head intc_desc_list, intc_parent_list;
-> +
-> +	INIT_LIST_HEAD(&intc_desc_list);
-> +	INIT_LIST_HEAD(&intc_parent_list);
-> +
-> +	for_each_matching_node(np, matches) {
-> +		if (!of_find_property(np, "interrupt-controller", NULL))
-> +			continue;
-> +		/* Here, we allocate and populate an intc_desc with the node
-> +		* pointer, interrupt-parent device_node etc. */
+diff --git a/include/linux/bootstage.h b/include/linux/bootstage.h
+new file mode 100644
+index 0000000..08df102
+--- /dev/null
++++ b/include/linux/bootstage.h
+@@ -0,0 +1,18 @@
++#ifndef __BOOTSTAGE_H
++#define __BOOTSTAGE_H
++
++#ifdef CONFIG_BOOTSTAGE
++unsigned long bootstage_mark(const char *name);
++unsigned long bootstage_mark_early(const char *name);
++#else
++static inline unsigned long bootstage_mark(const char *name)
++{
++	return 0;
++}
++static inline unsigned long bootstage_mark_early(const char *name)
++{
++	return 0;
++}
++#endif
++
++#endif
+diff --git a/include/linux/timer.h b/include/linux/timer.h
+index 6abd913..970e283 100644
+--- a/include/linux/timer.h
++++ b/include/linux/timer.h
+@@ -299,4 +299,7 @@ unsigned long __round_jiffies_up_relative(unsigned long j, int cpu);
+ unsigned long round_jiffies_up(unsigned long j);
+ unsigned long round_jiffies_up_relative(unsigned long j);
+ 
++/* Timer for bootstage, for now */
++unsigned long timer_get_us(void);
++
+ #endif
+diff --git a/init/Kconfig b/init/Kconfig
+index d627783..f0f40ea 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -1399,3 +1399,12 @@ config PADATA
+ 	bool
+ 
+ source "kernel/Kconfig.locks"
++
++config BOOTSTAGE
++	bool "Enable timing of boot stages"
++	help
++	  This enables to record the timing of different stages during boot.
++	  The timing in the kernel can be recorded by invoking bootstage_mark().
++	  The timing in the user space can be recorded by writing the stage name
++	  to /sys/kernel/debug/bootstage/mark. A report of information collected
++	  to date is available from /sys/kernel/debug/bootstage/report.
+diff --git a/init/Makefile b/init/Makefile
+index 0bf677a..7bfc047 100644
+--- a/init/Makefile
++++ b/init/Makefile
+@@ -8,6 +8,7 @@ obj-y                          += noinitramfs.o
+ else
+ obj-$(CONFIG_BLK_DEV_INITRD)   += initramfs.o
+ endif
++obj-$(CONFIG_BOOTSTAGE)		+= bootstage.o
+ obj-$(CONFIG_GENERIC_CALIBRATE_DELAY) += calibrate.o
+ 
+ mounts-y			:= do_mounts.o
+diff --git a/init/bootstage.c b/init/bootstage.c
+new file mode 100644
+index 0000000..79e9761
+--- /dev/null
++++ b/init/bootstage.c
+@@ -0,0 +1,228 @@
++#include <linux/debugfs.h>
++#include <linux/mutex.h>
++#include <linux/kernel.h>
++#include <linux/uaccess.h>
++#include <linux/slab.h>
++#include <linux/ktime.h>
++
++#include "linux/bootstage.h"
++
++#define BOOTSTAGE_COUNT 8
++#define MAX_NAME 32
++
++struct bootstage_record {
++	unsigned long time;
++	const char name[MAX_NAME];
++};
++
++static DEFINE_MUTEX(bootstage_mutex);
++
++/*
++ * this array is to record the bootstages at the beginning of
++ * kernel initialization, before memory is initialized.
++ */
++static struct bootstage_record bootstages[BOOTSTAGE_COUNT];
++
++/* the number of timing recorded in the bootstages array */
++static int num_bootstages;
++
++/* the space size of the bootstages array */
++static int cap_bootstages = BOOTSTAGE_COUNT;
++static struct bootstage_record *full_bootstages = bootstages;
++
++static unsigned long __bootstage_mark_early(int idx, const char *name)
++{
++	unsigned long curr = timer_get_us();
++
++	strlcpy(full_bootstages[idx].name, name, MAX_NAME);
++
++	/* this records timing in microseconds. */
++	full_bootstages[idx].time = curr;
++	return full_bootstages[idx].time;
++}
++
++static unsigned long __bootstage_mark(int idx, const char *name)
++{
++	struct timespec ts;
++
++	/* this function can be used only after timekeeping is called. */
++	ktime_get_ts(&ts);
++	strlcpy(full_bootstages[idx].name, name, MAX_NAME);
++
++	/* this records timing in microseconds. */
++	full_bootstages[idx].time = ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
++	return full_bootstages[idx].time;
++}
++
++static inline int __inc_bootstages(void)
++{
++	struct bootstage_record *tmp;
++
++	cap_bootstages *= 2;
++	tmp = kmalloc(sizeof(*tmp) * cap_bootstages, GFP_KERNEL);
++	if (!tmp)
++		return -1;
++	memcpy(tmp, full_bootstages, sizeof(*tmp) * num_bootstages);
++
++	/*
++	 * full_bootstages first points to bootstages,
++	 * which is a static array.
++	 */
++	if (full_bootstages != bootstages)
++		kfree(full_bootstages);
++	full_bootstages = tmp;
++	return 0;
++}
++
++/*
++ * This is used during the initialization of the kernel.
++ */
++unsigned long bootstage_mark(const char *name)
++{
++	unsigned long ret;
++
++	mutex_lock(&bootstage_mutex);
++
++	if (num_bootstages == cap_bootstages) {
++		if (__inc_bootstages() < 0) {
++			mutex_unlock(&bootstage_mutex);
++			return -1;
++		}
++	}
++
++	ret = __bootstage_mark(num_bootstages, name);
++	num_bootstages++;
++
++	mutex_unlock(&bootstage_mutex);
++	return ret;
++}
++
++/*
++ * This is the same as bootstage_mark, but it can be used
++ * before memory and even timekeeping are initialized.
++ */
++unsigned long bootstage_mark_early(const char *name)
++{
++	unsigned long ret = 0;
++
++	mutex_lock(&bootstage_mutex);
++
++	if (num_bootstages < cap_bootstages) {
++		ret = __bootstage_mark_early(num_bootstages, name);
++		num_bootstages++;
++	}
++
++	mutex_unlock(&bootstage_mutex);
++	return ret;
++}
++
++static int get_bootstage_text(char *buf, int size)
++{
++	int i;
++	int written = 0;
++
++	for (i = 0; i < num_bootstages; i++) {
++		int ret = scnprintf(buf + written, size - written, "%s\t%ld\n",
++				full_bootstages[i].name,
++				full_bootstages[i].time);
++		written += ret;
++		if (written == size && i < num_bootstages - 1) {
++			printk(KERN_WARNING "bootstage: buffer exhausted");
++			break;
++		}
++	}
++	return written;
++}
++
++static ssize_t bootstage_read(struct file *file, char __user *buf,
++		size_t count, loff_t *ppos)
++{
++	int err = 0;
++	char *lbuf;
++	int written = 0;
++	int size = (MAX_NAME + 10) * num_bootstages;
++
++	/*
++	 * If the user tries to continue reading,
++	 * return 0 to notify the user all content has been read.
++	 */
++	if (*ppos)
++		return 0;
++
++	lbuf = kmalloc(size, GFP_KERNEL);
++	if (!lbuf)
++		return -ENOMEM;
++
++	mutex_lock(&bootstage_mutex);
++	err = -EFAULT;
++	written = get_bootstage_text(lbuf, size);
++	if (count > written)
++		count = written;
++	if (!copy_to_user(buf, lbuf, count)) {
++		err = count;
++		*ppos += count;
++	}
++
++	mutex_unlock(&bootstage_mutex);
++	kfree(lbuf);
++	return err;
++}
++
++static ssize_t bootstage_write(struct file *file, const char __user *buf,
++		size_t count, loff_t *ppos)
++{
++	char *lbuf;
++	int err = 0;
++
++	lbuf = kmalloc(count + 1, GFP_KERNEL);
++	if (!lbuf)
++		return -ENOMEM;
++	if (copy_from_user(lbuf, buf, count)) {
++		kfree(lbuf);
++		return -EFAULT;
++	}
++
++	/* The input string might end with \n or not end with null. */
++	if (lbuf[count - 1] == '\n')
++		lbuf[count - 1] = '\0';
++	else
++		lbuf[count] = '\0';
++
++	mutex_lock(&bootstage_mutex);
++	if (num_bootstages == cap_bootstages) {
++		if (__inc_bootstages() < 0)
++			err = -EFAULT;
++	}
++	if (err == 0) {
++		__bootstage_mark(num_bootstages, lbuf);
++		num_bootstages++;
++		err = count;
++	}
++	mutex_unlock(&bootstage_mutex);
++	kfree(lbuf);
++	return err;
++}
++
++static const struct file_operations report_operations = {
++	.read	= bootstage_read,
++};
++
++static const struct file_operations mark_operations = {
++	.write	= bootstage_write,
++};
++
++static int __init bootstage_init(void)
++{
++	struct dentry *dir;
++
++	dir = debugfs_create_dir("bootstage", NULL);
++	if (dir && !IS_ERR(dir)) {
++		debugfs_create_file("report", S_IFREG|S_IRUSR|S_IRGRP|S_IROTH,
++				dir, NULL, &report_operations);
++		debugfs_create_file("mark", S_IFREG|S_IWUSR,
++				dir, NULL, &mark_operations);
++	}
++	return 0;
++}
++
++postcore_initcall(bootstage_init);
+diff --git a/kernel/timer.c b/kernel/timer.c
+index 8cff361..cb49e0c 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -1790,3 +1790,12 @@ void usleep_range(unsigned long min, unsigned long max)
+ 	do_usleep_range(min, max);
+ }
+ EXPORT_SYMBOL(usleep_range);
++
++/**
++ * A platform-specific timer to get the time since reset.
++ * It returns the time in microseconds.
++ */
++unsigned long __attribute__((weak)) timer_get_us(void)
++{
++	return 0;
++}
+-- 
+1.7.3.1
 
-nit: weird indenting
-
-> +		desc = kzalloc(sizeof(*desc), GFP_KERNEL);
-> +		if (!desc) {
-> +			WARN_ON(1);
-> +			goto err;
-> +		}
-> +		desc->dev = np;
-> +		desc->interrupt_parent = of_irq_find_parent(np);
-> +		list_add_tail(&desc->list, &intc_desc_list);
-> +	}
-> +	if (list_empty(&intc_desc_list))
-> +		return;
-
-This test in unnecessary
-
-> +
-> +	/*
-> +	 * The root irq controller is the one without an interrupt-parent.
-> +	 * That one goes first, followed by the controllers that reference it,
-> +	 * followed by the ones that reference the 2nd level controllers, etc
-> +	 */
-> +	while (!list_empty(&intc_desc_list)) {
-> +		/*
-> +		 * Process all controllers with the current 'parent'.
-> +		 * First pass will be looking for NULL as the parent.
-> +		 * The assumption is that NULL parent means a root controller.
-> +		 */
-> +		list_for_each_entry_safe(desc, temp_desc, &intc_desc_list, list) {
-> +			const struct of_device_id *match;
-> +			int ret;
-> +			of_irq_init_cb_t irq_init_cb;
-> +
-> +			if (desc->interrupt_parent != parent)
-> +				continue;
-> +
-> +			list_del(&desc->list);
-> +			match = of_match_node(matches, desc->dev);
-> +			if (!match || !match->data) {
-
-match will always be !NULL.  If match_data is NULL; something is
-seriously wrong and the code should WARN().
-
-> +				kfree(desc);
-> +				continue;
-> +			}
-> +
-> +			pr_debug("of_irq_init: init %s @ %p, parent %p\n",
-> +				 match->compatible,
-> +				 desc->dev, desc->interrupt_parent);
-> +			irq_init_cb = match->data;
-> +			ret = irq_init_cb(desc->dev, desc->interrupt_parent);
-> +			if (ret) {
-> +				kfree(desc);
-> +				continue;
-> +			}
-> +
-> +			/*
-> +			 * This one is now set up; add it to the parent list so
-> +			 * its children can get processed in a subsequent pass.
-> +			 */
-> +			list_add_tail(&desc->list, &intc_parent_list);
-> +		}
-> +
-> +		/* Get the next pending parent that might have children */
-> +		desc = list_first_entry(&intc_parent_list, typeof(*desc), list);
-> +		if (list_empty(&intc_parent_list) || !desc) {
-> +			pr_debug("of_irq_init: children remain, but no parents\n");
-
-This is an error condition.  Use pr_err()
-
-> +			break;
-> +		}
-> +		list_del(&desc->list);
-> +		parent = desc->dev;
-> +		kfree(desc);
-> +	}
-> +
-> +	list_for_each_entry_safe(desc, temp_desc, &intc_parent_list, list) {
-> +		list_del(&desc->list);
-> +		kfree(desc);
-> +	}
-> +err:
-> +	list_for_each_entry_safe(desc, temp_desc, &intc_desc_list, list) {
-> +		list_del(&desc->list);
-> +		kfree(desc);
-> +	}
-> +}
-> diff --git a/include/linux/of_irq.h b/include/linux/of_irq.h
-> index cd2e61c..d0307ee 100644
-> --- a/include/linux/of_irq.h
-> +++ b/include/linux/of_irq.h
-> @@ -33,6 +33,8 @@ struct of_irq {
->  	u32 specifier[OF_MAX_IRQ_SPEC]; /* Specifier copy */
->  };
->  
-> +typedef int (*of_irq_init_cb_t)(struct device_node *, struct device_node *);
-> +
->  /*
->   * Workarounds only applied to 32bit powermac machines
->   */
-> @@ -73,6 +75,7 @@ extern int of_irq_to_resource_table(struct device_node *dev,
->  		struct resource *res, int nr_irqs);
->  extern struct device_node *of_irq_find_parent(struct device_node *child);
->  
-> +extern void of_irq_init(const struct of_device_id *matches);
->  
->  #endif /* CONFIG_OF_IRQ */
->  #endif /* CONFIG_OF */
-> -- 
-> 1.7.5.4
-> 
