@@ -1,70 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754779Ab1IWCtn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 22:49:43 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:60325 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754700Ab1IWCtl (ORCPT
+	id S1754793Ab1IWCz2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 22:55:28 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:48387 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754697Ab1IWCz1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 22:49:41 -0400
-Date: Fri, 23 Sep 2011 12:49:34 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the sound tree
-Message-Id: <20110923124934.dfde6643c66d33abdeeeedc9@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+	Thu, 22 Sep 2011 22:55:27 -0400
+Date: Fri, 23 Sep 2011 08:25:13 +0530
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Keith Packard <keithp@keithp.com>
+Cc: Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: [Intel-gfx] [PATCH 6/9] drm/i915: Make sure eDP power is on
+ before using aux channel
+Message-ID: <20110923082513.735b64fe@jbarnes-x220>
+In-Reply-To: <yunvcsmfqpp.fsf@aiko.keithp.com>
+References: <1316470923-27832-1-git-send-email-keithp@keithp.com>
+	<1316470923-27832-7-git-send-email-keithp@keithp.com>
+	<20110921092001.0b65bd3f@jbarnes-x220>
+	<yunvcsmfqpp.fsf@aiko.keithp.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__23_Sep_2011_12_49_34_+1000_c8ZQ2Wul2CE+1Pk+"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 192.55.60.111 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__23_Sep_2011_12_49_34_+1000_c8ZQ2Wul2CE+1Pk+
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 20 Sep 2011 21:45:54 -0700
+Keith Packard <keithp@keithp.com> wrote:
 
-Hi Takashi,
+> On Wed, 21 Sep 2011 09:20:01 +0530, Jesse Barnes
+> <jbarnes@virtuousgeek.org> wrote:
+> 
+> > This one mixes up lots of cleanups plus the EDID read with the power
+> > changes.
+> 
+> I think the cleanups are;
+> 
+>  1) edp checks inside vdd_on and vdd_off to make the other code a bit
+>     easier to read.
+> 
+>  2) Hold VDD on until the end of dp_commit. I think this isn't
+> necessary and could be removed -- once the panel is on, we don't need
+> to hold vdd up.
+> 
+>  3) Hold VDD up through the whole dpms sequence. Also probably
+>     unnecessary.
+> 
+>  4) Move intel_dp_i2c_init past the computation of the power
+> sequencing delays. Necessary as i2c_init makes an i2c transaction,
+> thus powering up the panel.
+> 
+> I can remove the middle two and split the others out if you like.
 
-After merging the sound tree, today's linux-next build ()
-failed like this:
+Yeah that sounds good.  (2) and (3) are ok cleanups, but it would be
+best if they were a separate patch just in case the subtle timing
+change breaks the panel power sequencing state machine.
 
-sound/pci/fm801.c: In function 'snd_fm801_tea575x_get_pins':
-sound/pci/fm801.c:759:2: error: expected ',' or ';' before 'return'
-sound/pci/fm801.c:757:32: warning: unused variable 'gpio'
-sound/pci/fm801.c:756:17: warning: unused variable 'reg'
-sound/pci/fm801.c:761:1: warning: no return statement in function returning=
- non-void
-sound/pci/fm801.c: In function 'snd_fm801_create':
-sound/pci/fm801.c:1251:5: error: implicit declaration of function 'get_tea5=
-7x_gpio'
-sound/pci/fm801.c:1251:5: error: invalid type argument of '->' (have 'int')
+> > I'm worried about the VDD smashing as well; we have lots of
+> > bugs in the PPS hardware around VDD vs full PPS.
+> 
+> Are you worried that we should never have VDD up while running a panel
+> power sequence? As far as I can tell from the eDP specs, bringing VDD
+> up is part of the normal PPS, and the delay from VDD up to other panel
+> sequencing is shorter (T1+T2) than the delay to start using the aux
+> channel that I used in the later patch (T1+T2+T3).
 
-Caused by commit c51a94adef4c ("ALSA: fm801 - Clean up redundant reference =
-to snd_fm801_tea575x_gpios[]").
+No I think:
+  1) VDD AUX override on
+  2) PPS on
+  3) (delay)
+  4) VDD AUX override off
+is safe, I'm just worried about the timing of step (3).
 
-I have used the sound tree from next-20110922 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+> One thing I learned for certain -- we don't want a synchronous delay
+> between turning the panel off and back on. The required interval
+> between these two operations is in units of 100ms; my machine spends
+> 600ms doing this; if we end up doing this in the middle of a mode
+> set, it's gonna be painful.
 
---Signature=_Fri__23_Sep_2011_12_49_34_+1000_c8ZQ2Wul2CE+1Pk+
-Content-Type: application/pgp-signature
+Agree, speeding that up would be nice.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+> Can we replace any of the current VDD hacks with a full PPS? I can
+> easily imagine moving the call to ironlake_edp_panel_on to
+> intel_dp_prepare, except that if if the mode_set fails, dp_commit will
+> not be called (that looks like a potential source of failure at the
+> DRM level to me).
 
-iQEcBAEBAgAGBQJOe/O+AAoJEDMEi1NhKgbslkoH/17lS6RKiTYpMTBek20vixOj
-kChOe9HhZC0goUok6lEAshqVKYZOAvlvDQ4XbJAkCtOmD7XRpQaAqSelzUEoyyIH
-NGgEAmElIfH/+Rfd2uahO6PBySCRYUT2MgbrRyqXdRm6xbI0nT4ybDE3N3PyE1vV
-1Q2h4289cEHRelB13CYlImzyE2xYl4c5hvm6ful6+t4TG4ViEtHsjiEvnKEMi3ws
-Ron68P2KcKgTzb2VqvxD0MNKLDu04oW/eWkv/OZ5A8fmUhuXBcPqjNduqs5WXc7a
-ARDkrBLlKcmNCiXZ5CnjxuAYFeyNUHCtNGHIvUpqsBon1B5I9nw5DltnoQDZ3V8=
-=bHTZ
------END PGP SIGNATURE-----
+Ah yeah this brings back the memories (or is it PTS?).
 
---Signature=_Fri__23_Sep_2011_12_49_34_+1000_c8ZQ2Wul2CE+1Pk+--
+To fix both PCH eDP and CPU eDP in the past, I did have a version that
+only used full PPS and not VDD AUX override.  So it is possible, but
+VDD AUX is a little cleaner since it allows us to keep the registers
+locked potentially (theoretically we only actually want to unlock to
+handle CPU eDP PLL enable/disable bugs and flicker-free panel fitter
+downscaling).
+
+But since we unlock unconditionally now, using full PPS would be ok.
+
+> Getting the panel turned on complete as early as possible seems like a
+> good idea, instead of fussing around with the VDD force bits.
+
+Though we will have to shut it down still; PPS on to get AUX data and
+EDID, then off while we program the mode and train DP, then PPS on
+again.  So I'm not sure it would save much.
+
+> Alternatively, we can eliminate use of the VDD force hack and do a
+> full PPS and simply use the delayed work proc to turn that off when
+> the screen goes idle.
+
+Yeah, I'm liking your delayed work much better now...  Bring up the
+panel early and then just modify the shutdown timeout at various points
+to make sure it stays up from module_init all the way through the final
+mode set (so an initial timeout of 2s or so would probably be
+sufficient).
+
+Another potential optimization is to start trying AUX & i2c
+transactions right after we apply VDD AUX override.  The panel will
+come up much faster than the T* values imply most of the time (varies
+by panel).  And polling the bits can get us into the actual panel
+poking code much faster.
+
+But I think the bottom line is to fix the EDID read (make sure the
+panel is on) and the i2c stuff.  Everything else is just tasty gravy. :)
+
+Also I think the change to prefer EDID over VBT is correct; afaik eDP
+panels are required to have an EDID, so trusting that data over some
+potentially untested VBT data is the right way to go.
+
+Thanks,
+Jesse
+
