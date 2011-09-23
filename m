@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754794Ab1IWPqO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 11:46:14 -0400
-Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:35907
-	"EHLO AM1EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752709Ab1IWPqM (ORCPT
+	id S1754815Ab1IWPqW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 11:46:22 -0400
+Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:39679
+	"EHLO AM1EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752709Ab1IWPqR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 11:46:12 -0400
+	Fri, 23 Sep 2011 11:46:17 -0400
 X-SpamScore: 1
-X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h839h65h)
-X-Spam-TCS-SCL: 4:0
+X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h839h61h)
+X-Spam-TCS-SCL: 0:0
 X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LRZFSQ-02-2CF-02
+X-WSS-ID: 0LRZFSR-02-2CG-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: <iommu@lists.linux-foundation.org>
@@ -21,9 +21,9 @@ CC: Greg Kroah-Hartman <gregkh@suse.de>,
         David Woodhouse <dwmw2@infradead.org>,
         David Brown <davidb@codeaurora.org>, <joro@8bytes.org>,
         <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 02/10] Driver core: Add iommu_ops to bus_type
-Date: Fri, 23 Sep 2011 17:45:48 +0200
-Message-ID: <1316792756-3395-3-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 03/10] iommu/core: Add bus_type parameter to iommu_domain_alloc
+Date: Fri, 23 Sep 2011 17:45:49 +0200
+Message-ID: <1316792756-3395-4-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1316792756-3395-1-git-send-email-joerg.roedel@amd.com>
 References: <1316792756-3395-1-git-send-email-joerg.roedel@amd.com>
@@ -34,111 +34,119 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the starting point to make the iommu_ops used for
-the iommu-api a per-bus-type structure. It is required to
-easily implement bus-specific setup in the iommu-layer.
-The first user will be the iommu-group attribute in sysfs.
+This is necessary to store a pointer to the bus-specific
+iommu_ops in the iommu-domain structure. It will be used
+later to call into bus-specific iommu-ops.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- drivers/iommu/iommu.c  |   31 +++++++++++++++++++++++++++++++
- include/linux/device.h |    6 ++++++
- include/linux/iommu.h  |    2 ++
- 3 files changed, 39 insertions(+), 0 deletions(-)
+ drivers/iommu/iommu.c              |   14 +++++++++++++-
+ drivers/media/video/omap3isp/isp.c |    2 +-
+ include/linux/iommu.h              |    6 ++++--
+ virt/kvm/iommu.c                   |    2 +-
+ 4 files changed, 19 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
-index 30b0644..3343264 100644
+index 3343264..46e1c24 100644
 --- a/drivers/iommu/iommu.c
 +++ b/drivers/iommu/iommu.c
-@@ -34,6 +34,37 @@ void register_iommu(struct iommu_ops *ops)
- 	iommu_ops = ops;
+@@ -16,6 +16,7 @@
+  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+  */
+ 
++#include <linux/device.h>
+ #include <linux/kernel.h>
+ #include <linux/bug.h>
+ #include <linux/types.h>
+@@ -71,15 +72,26 @@ bool iommu_found(void)
  }
+ EXPORT_SYMBOL_GPL(iommu_found);
  
-+static void iommu_bus_init(struct bus_type *bus, struct iommu_ops *ops)
-+{
-+}
-+
-+/**
-+ * bus_set_iommu - set iommu-callbacks for the bus
-+ * @bus: bus.
-+ * @ops: the callbacks provided by the iommu-driver
-+ *
-+ * This function is called by an iommu driver to set the iommu methods
-+ * used for a particular bus. Drivers for devices on that bus can use
-+ * the iommu-api after these ops are registered.
-+ * This special function is needed because IOMMUs are usually devices on
-+ * the bus itself, so the iommu drivers are not initialized when the bus
-+ * is set up. With this function the iommu-driver can set the iommu-ops
-+ * afterwards.
-+ */
-+int bus_set_iommu(struct bus_type *bus, struct iommu_ops *ops)
-+{
-+	if (bus->iommu_ops != NULL)
-+		return -EBUSY;
-+
-+	bus->iommu_ops = ops;
-+
-+	/* Do IOMMU specific setup for this bus-type */
-+	iommu_bus_init(bus, ops);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(bus_set_iommu);
-+
- bool iommu_found(void)
+-struct iommu_domain *iommu_domain_alloc(void)
++struct iommu_domain *iommu_domain_alloc(struct bus_type *bus)
  {
- 	return iommu_ops != NULL;
-diff --git a/include/linux/device.h b/include/linux/device.h
-index c20dfbf..e838e14 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -33,6 +33,7 @@ struct class;
- struct subsys_private;
- struct bus_type;
- struct device_node;
-+struct iommu_ops;
+ 	struct iommu_domain *domain;
++	struct iommu_ops *ops;
+ 	int ret;
  
- struct bus_attribute {
- 	struct attribute	attr;
-@@ -67,6 +68,9 @@ extern void bus_remove_file(struct bus_type *, struct bus_attribute *);
-  * @resume:	Called to bring a device on this bus out of sleep mode.
-  * @pm:		Power management operations of this bus, callback the specific
-  *		device driver's pm-ops.
-+ * @iommu_ops   IOMMU specific operations for this bus, used to attach IOMMU
-+ *              driver implementations to a bus and allow the driver to do
-+ *              bus-specific setup
-  * @p:		The private data of the driver core, only the driver core can
-  *		touch this.
-  *
-@@ -96,6 +100,8 @@ struct bus_type {
- 
- 	const struct dev_pm_ops *pm;
- 
-+	struct iommu_ops *iommu_ops;
++	if (bus->iommu_ops)
++		ops = bus->iommu_ops;
++	else
++		ops = iommu_ops;
 +
- 	struct subsys_private *p;
- };
++	if (ops == NULL)
++		return NULL;
++
+ 	domain = kmalloc(sizeof(*domain), GFP_KERNEL);
+ 	if (!domain)
+ 		return NULL;
  
++	domain->ops = ops;
++
+ 	ret = iommu_ops->domain_init(domain);
+ 	if (ret)
+ 		goto out_free;
+diff --git a/drivers/media/video/omap3isp/isp.c b/drivers/media/video/omap3isp/isp.c
+index a4baa61..a7ed985 100644
+--- a/drivers/media/video/omap3isp/isp.c
++++ b/drivers/media/video/omap3isp/isp.c
+@@ -2141,7 +2141,7 @@ static int isp_probe(struct platform_device *pdev)
+ 	/* to be removed once iommu migration is complete */
+ 	isp->iommu = to_iommu(isp->iommu_dev);
+ 
+-	isp->domain = iommu_domain_alloc();
++	isp->domain = iommu_domain_alloc(pdev->dev.bus);
+ 	if (!isp->domain) {
+ 		dev_err(isp->dev, "can't alloc iommu domain\n");
+ 		ret = -ENOMEM;
 diff --git a/include/linux/iommu.h b/include/linux/iommu.h
-index 6470cd8..dca83d3 100644
+index dca83d3..c78d068 100644
 --- a/include/linux/iommu.h
 +++ b/include/linux/iommu.h
-@@ -25,6 +25,7 @@
+@@ -25,10 +25,12 @@
  #define IOMMU_WRITE	(2)
  #define IOMMU_CACHE	(4) /* DMA cache coherency */
  
-+struct bus_type;
++struct iommu_ops;
+ struct bus_type;
  struct device;
  
  struct iommu_domain {
-@@ -52,6 +53,7 @@ struct iommu_ops {
++	struct iommu_ops *ops;
+ 	void *priv;
  };
  
+@@ -55,7 +57,7 @@ struct iommu_ops {
  extern void register_iommu(struct iommu_ops *ops);
-+extern int bus_set_iommu(struct bus_type *bus, struct iommu_ops *ops);
+ extern int bus_set_iommu(struct bus_type *bus, struct iommu_ops *ops);
  extern bool iommu_found(void);
- extern struct iommu_domain *iommu_domain_alloc(void);
+-extern struct iommu_domain *iommu_domain_alloc(void);
++extern struct iommu_domain *iommu_domain_alloc(struct bus_type *bus);
  extern void iommu_domain_free(struct iommu_domain *domain);
+ extern int iommu_attach_device(struct iommu_domain *domain,
+ 			       struct device *dev);
+@@ -79,7 +81,7 @@ static inline bool iommu_found(void)
+ 	return false;
+ }
+ 
+-static inline struct iommu_domain *iommu_domain_alloc(void)
++static inline struct iommu_domain *iommu_domain_alloc(struct bus_type *bus)
+ {
+ 	return NULL;
+ }
+diff --git a/virt/kvm/iommu.c b/virt/kvm/iommu.c
+index 78c80f6..20115b1 100644
+--- a/virt/kvm/iommu.c
++++ b/virt/kvm/iommu.c
+@@ -233,7 +233,7 @@ int kvm_iommu_map_guest(struct kvm *kvm)
+ 		return -ENODEV;
+ 	}
+ 
+-	kvm->arch.iommu_domain = iommu_domain_alloc();
++	kvm->arch.iommu_domain = iommu_domain_alloc(&pci_bus_type);
+ 	if (!kvm->arch.iommu_domain)
+ 		return -ENOMEM;
+ 
 -- 
 1.7.4.1
 
