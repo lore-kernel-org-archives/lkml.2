@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752774Ab1IWGuj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 02:50:39 -0400
-Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:34886 "EHLO
-	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752580Ab1IWGuS (ORCPT
+	id S1751246Ab1IWG7l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 02:59:41 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:56934 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750918Ab1IWG7i convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 02:50:18 -0400
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Samuel Ortiz <samuel.ortiz@intel.com>, Dmitry Torokhov <dtor@mail.ru>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Misael Lopez Cruz <misael.lopez@ti.com>, linux-input@vger.kernel.org
-Subject: [PATCH v2 0/6] ASoC/MFD/Input: twl6040: Support for audio driven vibra
-Date: Fri, 23 Sep 2011 09:49:38 +0300
-Message-Id: <1316760584-27426-1-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.7.6.1
+	Fri, 23 Sep 2011 02:59:38 -0400
+Message-ID: <4E7C2E7F.40307@cn.fujitsu.com>
+Date: Fri, 23 Sep 2011 15:00:15 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Mike Galbraith <mgalbraith@suse.de>
+CC: LKML <linux-kernel@vger.kernel.org>, Paul Menage <paul@paulmenage.org>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [patch] cpusets: allow PF_THREAD_BOUND kworkers to escape from
+ a cpuset
+References: <1316758874.7393.2.camel@marge.simson.net>
+In-Reply-To: <1316758874.7393.2.camel@marge.simson.net>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-09-23 14:58:08,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-09-23 14:58:10
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+cc David, who added this restriction
 
-Changes since v1:
-- Patches already taken by Mark has been removed
-- Patch 4: Return -EBUSY instead of -EPERM
+于 2011年09月23日 14:21, Mike Galbraith wrote:
+> 
+> kworkers can be born in a cpuset, leaving them adrift on an unsinkable ship.
+> Allow them to be moved to the root cpuset so the cpuset can be destroyed.
+> 
+> Signed-off-by: Mike Galbraith <efault@gmx.de>
+> 
 
-Intro mail form v1:
-The following series adds support for the soc driver to route audio (PCM
-stream) to the vibra ports of the twl6040.
-We have ALSA controls for the vibra source selection (PDM, or Input/FF).
-The route can not be changed from Input/FF to PDM during ongoing effect coming
-from Input/FF.
-The Input/FF driver can not execute new effect, while the vibra source is
-configured to be PDM.
-TO get things working in legacy mode the omap-mcpdm, and twl6040 soc codec
-driver's channel count needed to be fixed.
+I've noticed this long ago, so..
 
-To minimize the need for reads through the I2C bus, the MFD driver will cache
-the vibra control registers.
+Acked-by: Li Zefan <lizf@cn.fujitsu.com>
 
-With this series we can route PCM audio to drive the twl6040 vibra output.
-In order to that we need to play 5 channel audio, and place the vibra sample at
-the 5th channel. This will change with ABE support (change == simplified).
+> diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+> index 10131fd..b26f4c4 100644
+> --- a/kernel/cpuset.c
+> +++ b/kernel/cpuset.c
+> @@ -1384,7 +1384,7 @@ static int cpuset_can_attach(struct cgroup_subsys *ss, struct cgroup *cont,
+>  	 * set_cpus_allowed_ptr() on all attached tasks before cpus_allowed may
+>  	 * be changed.
+>  	 */
+> -	if (tsk->flags & PF_THREAD_BOUND)
+> +	if (tsk->flags & PF_THREAD_BOUND && cont->parent)
 
-The series has been created on top of:
-git://opensource.wolfsonmicro.com/linux-2.6-asoc, for-3.2 branch
+To make the code more self-explanatory, I think this is a bit better:
 
-If there are no objections, it would be good if this series goes via audio.
+	if (... && cont != cont->top_cgroup)
 
-Regards,
-Peter
----
-Peter Ujfalusi (6):
-  Input: twl6040: Simplify vibra regsiter definitions
-  MFD: twl6040: Cache the vibra control registers
-  MFD: twl6040: function to query the vibra status for clients
-  Input: twl6040-vibra: Check the selected path for vibra
-  ASoC: omap-mcpdm: Correct the supported number of channels
-  ASoC: twl6040: Support for vibra output paths
-
- drivers/input/misc/twl6040-vibra.c |   19 ++++++---
- drivers/mfd/twl6040-core.c         |   31 +++++++++++++--
- include/linux/mfd/twl6040.h        |   24 +++++------
- sound/soc/codecs/twl6040.c         |   72 ++++++++++++++++++++++++++++++++++++
- sound/soc/omap/omap-mcpdm.c        |   14 ++++---
- 5 files changed, 131 insertions(+), 29 deletions(-)
-
--- 
-1.7.6.1
-
+>  		return -EINVAL;
+>  
+>  	return 0;
+> 
