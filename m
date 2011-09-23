@@ -1,132 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754511Ab1IWO0S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 10:26:18 -0400
-Received: from mga11.intel.com ([192.55.52.93]:53645 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753466Ab1IWO0Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 10:26:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,430,1312182000"; 
-   d="scan'208";a="69519336"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Pekka Enberg <penberg@kernel.org>, kvm@vger.kernel.org
-Subject: [RFC][PATCH] tools: kvm: don't use custom strtoul for hex numbers
-Date: Fri, 23 Sep 2011 17:25:46 +0300
-Message-Id: <ae9ebfd216b4560d885e3b437d98b93b78e45c1c.1316787913.git.andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.7.6.3
+	id S1754539Ab1IWO1U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 10:27:20 -0400
+Received: from casper.infradead.org ([85.118.1.10]:34127 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753466Ab1IWO1R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Sep 2011 10:27:17 -0400
+Message-ID: <4E7C9736.30707@infradead.org>
+Date: Fri, 23 Sep 2011 11:27:02 -0300
+From: Mauro Carvalho Chehab <mchehab@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+MIME-Version: 1.0
+To: Greg KH <greg@kroah.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: linux-next: build failure after merge of the v4l-dvb tree
+References: <20110922131232.56210b544f587210621ae339@canb.auug.org.au> <4E7B2E43.3080609@infradead.org> <20110922201909.GA13347@kroah.com>
+In-Reply-To: <20110922201909.GA13347@kroah.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: kvm@vger.kernel.org
----
- tools/kvm/util/parse-options.c |   81 ++++++++--------------------------------
- 1 files changed, 16 insertions(+), 65 deletions(-)
+Em 22-09-2011 17:19, Greg KH escreveu:
+> On Thu, Sep 22, 2011 at 09:46:59AM -0300, Mauro Carvalho Chehab wrote:
+>> Em 22-09-2011 00:12, Stephen Rothwell escreveu:
+>>> Hi Mauro,
+>>>
+>>> After merging the v4l-dvb tree, today's linux-next build (x86_64
+>>> allmodconfig) failed like this:
+>>>
+>>> drivers/staging/dt3155v4l/dt3155v4l.c: In function 'dt3155_start_acq':
+>>> drivers/staging/dt3155v4l/dt3155v4l.c:210:2: error: implicit declaration of function 'vb2_dma_contig_plane_paddr'
+>>> drivers/staging/dt3155v4l/dt3155v4l.c: At top level:
+>>> drivers/staging/dt3155v4l/dt3155v4l.c:321:2: warning: initialization from incompatible pointer type
+>>> drivers/staging/dt3155v4l/dt3155v4l.c:325:2: warning: initialization from incompatible pointer type
+>>>
+>>> Casued by commit ba7fcb0c9549 ("[media] media: vb2: dma contig allocator:
+>>> use dma_addr instread of paddr").
+>>>
+>>> I have used the v4l-dvb tree from next-20110921 for today.
+>>
+>> Hi Stephen,
+>>
+>> I think that the right thing to do is to disable the building of this
+>> staging driver, if it is not using the current media core API's.
+>>
+>> Greg,
+>>
+>> If possible, I prefer to merge those staging drivers for the media
+>> subsystem via my tree, as it helps me to solve in advance conflicts
+>> like that. Maybe we could add a drivers/staging/media tree or
+>> drivers/media/staging, and move those beasts to there.
+>>
+>> What do you think?
+> 
+> Yes, I would _LOVE_ a drivers/staging/media/ directory so that I know
+> which drivers I am supposed to be ignoring and leaving to you :)
 
-diff --git a/tools/kvm/util/parse-options.c b/tools/kvm/util/parse-options.c
-index c280379..4f9fdff 100644
---- a/tools/kvm/util/parse-options.c
-+++ b/tools/kvm/util/parse-options.c
-@@ -1,3 +1,4 @@
-+#include <stdlib.h>
- #include <stdio.h>
- #include <string.h>
- #include <unistd.h>
-@@ -39,74 +40,24 @@ static int get_arg(struct parse_opt_ctx_t *p, const struct option *opt,
- 	return 0;
- }
- 
--#define numvalue(c)					\
--	((c) >= 'a' ? (c) - 'a' + 10 :			\
--	 (c) >= 'A' ? (c) - 'A' + 10 : (c) - '0')
--
--static u64 readhex(const char *str, bool *error)
--{
--	char *pos = strchr(str, 'x') + 1;
--	u64 res = 0;
--
--	while (*pos) {
--		unsigned int v = numvalue(*pos);
--		if (v > 16) {
--			*error = true;
--			return 0;
--		}
--
--		res = (res * 16) + v;
--		pos++;
--	}
--
--	*error = false;
--	return res;
--}
--
- static int readnum(const struct option *opt, int flags,
- 		   const char *str, char **end)
- {
--	if (strchr(str, 'x')) {
--		bool error;
--		u64 value;
--
--		value = readhex(str, &error);
--		if (error)
--			goto enotnum;
--
--		switch (opt->type) {
--		case OPTION_INTEGER:
--			*(int *)opt->value = value;
--			break;
--		case OPTION_UINTEGER:
--			*(unsigned int *)opt->value = value;
--			break;
--		case OPTION_LONG:
--			*(long *)opt->value = value;
--			break;
--		case OPTION_U64:
--			*(u64 *)opt->value = value;
--			break;
--		default:
--			goto invcall;
--		}
--	} else {
--		switch (opt->type) {
--		case OPTION_INTEGER:
--			*(int *)opt->value = strtol(str, end, 10);
--			break;
--		case OPTION_UINTEGER:
--			*(unsigned int *)opt->value = strtol(str, end, 10);
--			break;
--		case OPTION_LONG:
--			*(long *)opt->value = strtol(str, end, 10);
--			break;
--		case OPTION_U64:
--			*(u64 *)opt->value = strtoull(str, end, 10);
--			break;
--		default:
--			goto invcall;
--		}
-+	switch (opt->type) {
-+	case OPTION_INTEGER:
-+		*(int *)opt->value = strtol(str, end, 0);
-+		break;
-+	case OPTION_UINTEGER:
-+		*(unsigned int *)opt->value = strtol(str, end, 0);
-+		break;
-+	case OPTION_LONG:
-+		*(long *)opt->value = strtol(str, end, 0);
-+		break;
-+	case OPTION_U64:
-+		*(u64 *)opt->value = strtoull(str, end, 0);
-+		break;
-+	default:
-+		goto invcall;
- 	}
- 
- 	return 0;
--- 
-1.7.6.3
+:)
 
+If you receive any new drivers like the dt3155v4l that include
+one of those files:
+	linux/videodev2.h
+	media/*.h
+	linux/dvb/*.h
+They're dependent on the media core. So, could you please let me know about
+its addition at staging, by either forwarding it to me or adding it at the 
+new staging/media c/c me on your reply?
+
+> Just let me know which ones I should move into there and I will do that
+> today and let you maintain them all and just forward any emails to you.
+> Which will keep issues like this from happening in the future.
+
+At the current linux-next tree, the drivers are media stuff:
+	staging/easycap
+	staging/go7007
+	staging/solo6x10
+	staging/cx25821
+	staging/lirc
+	staging/cxd2099
+	staging/altera-stapl
+	staging/dt3155v4l
+
+>From the above:
+	 staging/tm6000 can be moved to /drivers/media/video, after a final checkpatch
+cleanup patch I've made. However, I have some changesets for it on my -next tree,
+so it is probably wiser if I move it on my tree instead on yours.
+
+	staging/cx25281 can also be moved to drivers/media/video after some codingstyle
+fixups. I think you're received some such patches recently. Not sure if they cover the
+remaining checkpatch.pl significative complains.
+
+	staging/cxd2099 has one problem: it exposes a wrong DVB API for the conditional
+access module, due to the lack of a proper API definition. It is a driver optionally used 
+by some DVB cards, so moving it may require some include fixups. I don't want to move it
+out of staging while we don't have a solution for the API issue. I'm planning to discuss 
+it during the media KS workshop in Plague.
+
+	staging/altera-stapl can be moved to drivers/misc. One include needs to be fixup
+when moving it, as one DVB driver uses it for a couple boards that come with this
+companion chipset.
+
+If you prefer, I can do the git mv patches for those weird stuff.
+
+> 
+> thanks,
+> 
+> greg k-h
+
+Thanks,
+Mauro
