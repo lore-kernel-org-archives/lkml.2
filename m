@@ -1,81 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752655Ab1IWJGN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 05:06:13 -0400
-Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:46279
-	"EHLO AM1EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752266Ab1IWJGL (ORCPT
+	id S1752678Ab1IWJNI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 05:13:08 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:52350 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751995Ab1IWJND (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 05:06:11 -0400
-X-SpamScore: -21
-X-BigFish: VPS-21(zz9371K1432N98dKzz1202hzz15d4R8275bhz32i668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-FB-SS: 0,
-X-WSS-ID: 0LRYX9W-02-2E8-02
-X-M-MSG: 
-Date: Fri, 23 Sep 2011 11:05:57 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-CC: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] iommu/omap: Fix build error with !IOMMU_SUPPORT
-Message-ID: <20110923090557.GB16329@amd.com>
-References: <1316009259-18052-1-git-send-email-joerg.roedel@amd.com>
- <201109180202.23123.laurent.pinchart@ideasonboard.com>
- <20110920100146.GA2078@amd.com>
- <201109201254.39542.laurent.pinchart@ideasonboard.com>
- <CAMP44s2-sBUGsOYzOxTMamOfw+Od4jOWriRinG=qkpt68WvQ9Q@mail.gmail.com>
+	Fri, 23 Sep 2011 05:13:03 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=FwOkcRLEf4ec0yo87SC3Xsi4TEpwXQ7KZJif4nyxWZZm2vDqQ7gmQEXv34ZCyflMH
+	Pah6XvB1qpw2IfecEsooQ==
+Date: Fri, 23 Sep 2011 02:12:57 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Mike Galbraith <mgalbraith@suse.de>, Tejun Heo <htejun@gmail.com>
+cc: Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
+        Paul Menage <paul@paulmenage.org>
+Subject: Re: [patch] cpusets: allow PF_THREAD_BOUND kworkers to escape from
+ a cpuset
+In-Reply-To: <1316762345.8168.4.camel@marge.simson.net>
+Message-ID: <alpine.DEB.2.00.1109230204270.29350@chino.kir.corp.google.com>
+References: <1316758874.7393.2.camel@marge.simson.net> <4E7C2E7F.40307@cn.fujitsu.com> <1316762345.8168.4.camel@marge.simson.net>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <CAMP44s2-sBUGsOYzOxTMamOfw+Od4jOWriRinG=qkpt68WvQ9Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 22, 2011 at 09:48:27AM -0400, Felipe Contreras wrote:
-> On Tue, Sep 20, 2011 at 1:54 PM, Laurent Pinchart
-> <laurent.pinchart@ideasonboard.com> wrote:
-> > On Tuesday 20 September 2011 12:01:46 Roedel, Joerg wrote:
-> >> On Sat, Sep 17, 2011 at 08:02:22PM -0400, Laurent Pinchart wrote:
-> >> > On Wednesday 14 September 2011 16:07:39 Joerg Roedel wrote:
-> >> > > Without this patch it is possible to select the VIDEO_OMAP3
-> >> > > driver which then selects OMAP_IOVMM. But the omap iommu
-> >> > > driver is not compiled without IOMMU_SUPPORT enabled. Fix
-> >> > > that by forcing OMAP_IOMMU and OMAP_IOVMM are enabled before
-> >> > > VIDEO_OMAP3 can be selected.
-> >> >
-> >> > What about making VIDEO_OMAP3 select IOMMU_SUPPORT instead then ? Your
-> >> > patch would make the OMAP3 ISP driver disappear from the menu until
-> >> > IOMMU_SUPPORT gets turned on, which can confuse users.
-> >>
-> >> Using 'depends on' rather then 'selects' is common standard in Kconfig.
-> >> You can't select PCI drivers without selecting PCI first, for example.
-> >
-> > You wouldn't expect a PCI driver to work without PCI support. My concern is
-> > that most OMAP3 ISP users won't know that IOMMU supports is required. Feel
-> > free to ignore it though :-)
+On Fri, 23 Sep 2011, Mike Galbraith wrote:
+
+> Done, your ACK added as well.
 > 
-> I agree with Laurent. As a user, why should I care about IOMMU? I just
-> want this thing.
+> kworkers can be born in a cpuset, leaving them adrift on an unsinkable ship.
+> Allow them to be moved to the root cpuset so the cpuset can be destroyed.
+> 
 
-Because enabling IOMMU can have other side-effects on the system and as
-a user you want to be aware that it is enabled. A user not wanting the
-iommu driver can just disable it then without the need to de-select all
-drivers depending on it first.
+Thanks Li for the cc since I introduced this flag.
 
-	Joerg
+Does this even work?
 
--- 
-AMD Operating System Research Center
+You've modified cpuset_can_attach() to allow the attach for the cgroup 
+interface, but the actual function that attaches the task in the cpuset 
+code should fail since it does set_cpus_allowed_ptr() which should return 
+-EINVAL because of the PF_THREAD_BOUND.  That should have emitted a 
+WARN_ON() if this patch was tested.
 
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+kworkers can always move themselves to the root cpuset, so that's probably 
+the better way of handling this than requiring userspace to do so.
 
+And it seems like the workqueue code has a comment specifically about cpu 
+hotplug and why changing their cpumask shouldn't be allowed that was added 
+by Tejun Heo in db7bccf45cb8 ("workqueue: reimplement CPU hotplugging 
+support using trustee").  So let's cc him here as well at his 
+non-kernel.org address.
+
+> Signed-off-by: Mike Galbraith <efault@gmx.de>
+> Acked-by: Li Zefan <lizf@cn.fujitsu.com>
+> 
+> diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+> index 10131fd..b26f4c4 100644
+> --- a/kernel/cpuset.c
+> +++ b/kernel/cpuset.c
+> @@ -1384,7 +1384,7 @@ static int cpuset_can_attach(struct cgroup_subsys *ss, struct cgroup *cont,
+>  	 * set_cpus_allowed_ptr() on all attached tasks before cpus_allowed may
+>  	 * be changed.
+>  	 */
+> -	if (tsk->flags & PF_THREAD_BOUND)
+> +	if (tsk->flags & PF_THREAD_BOUND && cont != cont->top_cgroup)
+>  		return -EINVAL;
+>  
+>  	return 0;
