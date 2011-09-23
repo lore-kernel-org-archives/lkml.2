@@ -1,155 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753051Ab1IWXD7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 19:03:59 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:30697 "EHLO
+	id S1753055Ab1IWXFb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 19:05:31 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:31269 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752988Ab1IWXD6 (ORCPT
+	with ESMTP id S1752623Ab1IWXFa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 19:03:58 -0400
-From: Simon Glass <sjg@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, Da Zheng <zhengda@chromium.org>,
-        Da Zheng <zhengda@chromium.com>
-Subject: [RFC PATCH 3/3] bootstage: Get u-boot timing from the device tree.
-Date: Fri, 23 Sep 2011 16:03:18 -0700
-Message-Id: <1316818998-30711-4-git-send-email-sjg@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1316818998-30711-1-git-send-email-sjg@chromium.org>
-References: <1316818998-30711-1-git-send-email-sjg@chromium.org>
+	Fri, 23 Sep 2011 19:05:30 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:to:cc:subject:message-id:in-reply-to:references:
+	x-mailer:mime-version:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=pbnKwtUqsU7lRdDMIvrIz7sOpltEqrHp9Ea2+RRIljA8iwfDbTnTrultWylUyb6GG
+	qX1lnQpqnMIC4fRzBycAA==
+Date: Fri, 23 Sep 2011 16:04:45 -0700
+From: Andrew Morton <akpm@google.com>
+To: Austin Boyle <Austin.Boyle@Aviatnet.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>,
+        Joakim Tjernlund <Joakim.Tjernlund@transmode.se>,
+        <rtc-linux@googlegroups.com>, <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2.6.39-rc7] RTC: rtc-ds1307 EEPROM support for ds1388
+ chip
+Message-Id: <20110923160445.68c3098e.akpm@google.com>
+In-Reply-To: <1312151457.24642.5747.camel@pc786-ubu.gnet.global.vpn>
+References: <1306127917.3071.32.camel@pc786-ubu.gnet.global.vpn>
+	<1308024897.2992.39.camel@pc786-ubu.gnet.global.vpn>
+	<20110722145451.78390257.akpm@linux-foundation.org>
+	<1312151457.24642.5747.camel@pc786-ubu.gnet.global.vpn>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Da Zheng <zhengda@chromium.org>
+On Mon, 1 Aug 2011 10:30:57 +1200
+Austin Boyle <Austin.Boyle@Aviatnet.com> wrote:
 
-From: Da Zheng <zhengda@chromium.org>
+> [PATCH 3.0] RTC: EEPROM support for DS1388
+> 
+> This patch adds support for different sized NVRAM, such as
+> the 512 bytes of EEPROM on the DS1388 chip.
 
-The bootstage driver accesses the u-boot timings in the device tree
-and copies them to its array during initialization.
+This patch is causing problems in today's linux-next, with x86_64 allmodconfig:
 
-Signed-off-by: Da Zheng <zhengda@chromium.com>
----
- arch/arm/kernel/time.c    |   29 +++++++++++++++++++++++++++++
- include/linux/bootstage.h |    1 +
- init/bootstage.c          |   36 ++++++++++++++++++++++++++++++++++++
- 3 files changed, 66 insertions(+), 0 deletions(-)
+drivers/rtc/rtc-ds1307.c: In function 'ds1307_probe':
+drivers/rtc/rtc-ds1307.c:796: warning: passing argument 1 of 'i2c_smbus_read_i2c_block_data' from incompatible pointer type
+include/linux/i2c.h:98: note: expected 'const struct i2c_client *' but argument is of type 'struct i2c_client **'
+drivers/rtc/rtc-ds1307.c:949: warning: format '%d' expects type 'int', but argument 3 has type 'size_t'
 
-diff --git a/arch/arm/kernel/time.c b/arch/arm/kernel/time.c
-index cb634c3..524a1f5 100644
---- a/arch/arm/kernel/time.c
-+++ b/arch/arm/kernel/time.c
-@@ -24,6 +24,8 @@
- #include <linux/syscore_ops.h>
- #include <linux/timer.h>
- #include <linux/irq.h>
-+#include <linux/bootstage.h>
-+#include <linux/of.h>
- 
- #include <linux/mc146818rtc.h>
- 
-@@ -156,3 +158,30 @@ void __init time_init(void)
- #endif
- }
- 
-+#ifdef CONFIG_BOOTSTAGE
-+int get_prekernel_timing(void)
-+{
-+	struct device_node *node;
-+	struct device_node *child;
-+	int i = 0;
-+
-+	printk(KERN_INFO "TEST: bootstage_init is called in tegra\n");
-+	node = of_find_node_by_path("/bootstage");
-+	if (node == NULL)
-+		return 0;
-+
-+	for_each_child_of_node(node, child) {
-+		const char *name = of_get_property(child, "name", NULL);
-+		const int *timep = of_get_property(child, "time", NULL);
-+
-+		if (name && timep) {
-+			insert_bootstage(i, name,
-+					(unsigned long) be32_to_cpu(*timep));
-+			i++;
-+		}
-+	}
-+	of_node_put(node);
-+
-+	return 0;
-+}
-+#endif
-diff --git a/include/linux/bootstage.h b/include/linux/bootstage.h
-index 08df102..95e837c 100644
---- a/include/linux/bootstage.h
-+++ b/include/linux/bootstage.h
-@@ -4,6 +4,7 @@
- #ifdef CONFIG_BOOTSTAGE
- unsigned long bootstage_mark(const char *name);
- unsigned long bootstage_mark_early(const char *name);
-+void insert_bootstage(int idx, const char *name, unsigned long time);
- #else
- static inline unsigned long bootstage_mark(const char *name)
- {
-diff --git a/init/bootstage.c b/init/bootstage.c
-index 6f4668f..51f731d 100644
---- a/init/bootstage.c
-+++ b/init/bootstage.c
-@@ -75,6 +75,32 @@ static inline int __inc_bootstages(void)
- }
- 
- /*
-+ * Insert a new bootstage in the slot specified by `idx'.
-+ * If the slot is already used, move it and slots behind it
-+ * before inserting the new bootstage.
-+ */
-+void insert_bootstage(int idx, const char *name, unsigned long time)
-+{
-+	mutex_lock(&bootstage_mutex);
-+
-+	if (num_bootstages == cap_bootstages) {
-+		if (__inc_bootstages() < 0) {
-+			mutex_unlock(&bootstage_mutex);
-+			return;
-+		}
-+	}
-+
-+	if (idx < num_bootstages)
-+		memmove(&full_bootstages[idx + 1], &full_bootstages[idx],
-+			sizeof(*full_bootstages) * (num_bootstages - idx));
-+
-+	strlcpy(full_bootstages[idx].name, name, MAX_NAME);
-+	full_bootstages[idx].time = time;
-+	num_bootstages++;
-+	mutex_unlock(&bootstage_mutex);
-+}
-+
-+/*
-  * This is used during the initialization of the kernel.
-  */
- unsigned long bootstage_mark(const char *name)
-@@ -211,10 +237,20 @@ static const struct file_operations mark_operations = {
- 	.write	= bootstage_write,
- };
- 
-+/*
-+ * Get the timings that were recorded before the kernel is initialized.
-+ */
-+int __attribute__((weak)) get_prekernel_timing(void)
-+{
-+	return 0;
-+}
-+
- static int __init bootstage_init(void)
- {
- 	struct dentry *dir;
- 
-+	get_prekernel_timing();
-+
- 	dir = debugfs_create_dir("bootstage", NULL);
- 	if (dir && !IS_ERR(dir)) {
- 		debugfs_create_file("report", S_IFREG|S_IRUSR|S_IRGRP|S_IROTH,
--- 
-1.7.3.1
-
+Please take a look?  You'll need %z for the printk warning.
