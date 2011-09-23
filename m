@@ -1,68 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752804Ab1IWJmX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 05:42:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33200 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752669Ab1IWJmU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 05:42:20 -0400
-Subject: Re: [patch] cpusets: allow PF_THREAD_BOUND kworkers to escape from
- a cpuset
-From: Mike Galbraith <mgalbraith@suse.de>
-To: David Rientjes <rientjes@google.com>
-Cc: Tejun Heo <htejun@gmail.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, Paul Menage <paul@paulmenage.org>
-In-Reply-To: <alpine.DEB.2.00.1109230204270.29350@chino.kir.corp.google.com>
-References: <1316758874.7393.2.camel@marge.simson.net>
-	 <4E7C2E7F.40307@cn.fujitsu.com> <1316762345.8168.4.camel@marge.simson.net>
-	 <alpine.DEB.2.00.1109230204270.29350@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 23 Sep 2011 11:42:16 +0200
-Message-ID: <1316770936.6641.11.camel@marge.simson.net>
+	id S1752837Ab1IWJwx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 05:52:53 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:49151 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752638Ab1IWJwu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Sep 2011 05:52:50 -0400
+Date: Fri, 23 Sep 2011 19:52:36 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Russell King <rmk+kernel@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, Wan ZongShun <mcuos.com@gmail.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>
+Subject: Re: [linux-next next-20110922] build failure due to missing
+ arch/arm/mach-nuc93x/Kconfig
+Message-Id: <20110923195236.6a885bf02e6161f537d22347@canb.auug.org.au>
+In-Reply-To: <1316697473.6704.4.camel@phoenix>
+References: <1316697473.6704.4.camel@phoenix>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__23_Sep_2011_19_52_36_+1000_C1v/t0nG7DT_hql7"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-09-23 at 02:12 -0700, David Rientjes wrote:
-> On Fri, 23 Sep 2011, Mike Galbraith wrote:
-> 
-> > Done, your ACK added as well.
-> > 
-> > kworkers can be born in a cpuset, leaving them adrift on an unsinkable ship.
-> > Allow them to be moved to the root cpuset so the cpuset can be destroyed.
-> > 
-> 
-> Thanks Li for the cc since I introduced this flag.
-> 
-> Does this even work?
+--Signature=_Fri__23_Sep_2011_19_52_36_+1000_C1v/t0nG7DT_hql7
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yup, but..
+Hi Axel,
 
-> You've modified cpuset_can_attach() to allow the attach for the cgroup 
-> interface, but the actual function that attaches the task in the cpuset 
-> code should fail since it does set_cpus_allowed_ptr() which should return 
-> -EINVAL because of the PF_THREAD_BOUND.  That should have emitted a 
-> WARN_ON() if this patch was tested.
+On Thu, 22 Sep 2011 21:17:53 +0800 Axel Lin <axel.lin@gmail.com> wrote:
+>
+> I got below error with today's linux-next tree (next-20110922).
+>=20
+> $ make menuconfig
+> scripts/kconfig/mconf Kconfig
+> arch/arm/Kconfig:972: can't open file "arch/arm/mach-nuc93x/Kconfig"
+> make[1]: *** [menuconfig] Error 1
+> make: *** [menuconfig] Error 2
 
-..you're right that it warns.  It was tested, but I didn't notice that
-it had griped at me.
+This commit appeared in next-20110922:
 
-> kworkers can always move themselves to the root cpuset, so that's probably 
-> the better way of handling this than requiring userspace to do so.
+commit 6adc1e7ff19d9befdbb7781b26fff42bb0bc21e2
+Author: Nicolas Pitre <nicolas.pitre@linaro.org>
+Date:   Wed Aug 3 15:50:38 2011 +0100
 
-kworker is sleeping in a cpuset that the user wants to depopulate and
-destroy.  I wasn't requiring the user to do that, was allowing him to.
+    ARM: mach-nuc93x: delete
+   =20
+    This architecture received only generic maintenance since December 2009
+    when it was originally submitted, and no actual additional support since
+    then.  It has no defconfig entry either, meaning that it was never built
+    by the ARM KAutobuild.  Incidentally it currently doesn't build either
+    when CONFIG_MACH_NUC932EVB is selected which is the only possible config
+    choice.
+   =20
+    This is therefore dead code and should be removed.  If someone wants to
+    revive this code, it could be retrieved from the Git repository, and
+    ideally be merged in mach-w90x900/ instead.
+   =20
+    Signed-off-by: Nicolas Pitre <nicolas.pitre@linaro.org>
+    Cc: Wan ZongShun <mcuos.com@gmail.com>
+    Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-> And it seems like the workqueue code has a comment specifically about cpu 
-> hotplug and why changing their cpumask shouldn't be allowed that was added 
-> by Tejun Heo in db7bccf45cb8 ("workqueue: reimplement CPU hotplugging 
-> support using trustee").  So let's cc him here as well at his 
-> non-kernel.org address.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-No, we don't want top muck around with their masks.
+--Signature=_Fri__23_Sep_2011_19_52_36_+1000_C1v/t0nG7DT_hql7
+Content-Type: application/pgp-signature
 
-	-Mike
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQEcBAEBAgAGBQJOfFbkAAoJEDMEi1NhKgbsUdsIAJMatBv0uSyRNkgCYg42JK64
+AbChu6socbKmTduhJGq5rMgamy+nOFjJKFbDsyZOJl9S2A1EI/qmbuQ4InLiL3QO
+VBUjYtBNVGZUVG1eZ96b1hL4WJ0/WVfZhHZfr5e+PkSAM7op0KYCZeDdZfzz2Zqe
+5lL3YbTO+f8ocRAD22zuHIXT1w7owQeV+R67ttjQyU1Qych/IKM8kXj0X3tgtR6g
+LypKZnIX9UfaDF0t89PD0aLTqGevDcm4GHZWfC/30bnTae+uBa//RFywGa9BGot+
+kyswmUpkNTwiywYEwg068/20Pe60dfNzoIt7MKgp3t6M4zOfIqJgkN0T6FCAHAI=
+=5JNj
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__23_Sep_2011_19_52_36_+1000_C1v/t0nG7DT_hql7--
