@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753150Ab1IWKdj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 06:33:39 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:59577 "EHLO mail.skyhub.de"
+	id S1753218Ab1IWKsB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 06:48:01 -0400
+Received: from mga14.intel.com ([143.182.124.37]:47025 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753047Ab1IWKdh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 06:33:37 -0400
-Date: Fri, 23 Sep 2011 12:33:39 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: =?utf-8?B?5p2O5pyd5piO?= <chaoming_li@realsil.com.cn>
-Cc: "'Larry Finger'" <Larry.Finger@lwfinger.net>,
-        linux-wireless@vger.kernel.org,
-        "'LKML'" <linux-kernel@vger.kernel.org>
-Subject: Re: =?utf-8?B?562U5aSNOiDnrZTlpI06IOetlA==?= =?utf-8?B?5aSNOg==?=
- 3.1-rc6+ rtl8192se issue
-Message-ID: <20110923103339.GA26078@gere.osrc.amd.com>
-References: <20110915124406.GA14374@gere.osrc.amd.com>
- <4E721871.7040901@lwfinger.net>
- <20110916180323.GA1988@gere.osrc.amd.com>
- <CD4D8CF16C39438E82FE8241C9AF80F4@realsil.com.cn>
- <20110921185816.GA2036@gere.osrc.amd.com>
- <791179BCE62F4954AB936E6CAC9CA977@realsil.com.cn>
- <4E7AAB8B.40900@lwfinger.net>
- <20110922075115.GA17640@liondog.tnic>
- <6452E68488784D0EA32E4BDF1B941EFB@realsil.com.cn>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <6452E68488784D0EA32E4BDF1B941EFB@realsil.com.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753170Ab1IWKr6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Sep 2011 06:47:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,428,1312182000"; 
+   d="scan'208";a="54688447"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 1/2] kernel.h: rename pack_hex_byte to hex_pack_byte
+Date: Fri, 23 Sep 2011 13:47:26 +0300
+Message-Id: <fa146966b0ce1e7f04d59eb27cc0e968f51b22de.1316774801.git.andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.7.6.3
+In-Reply-To: <20110919232602.ac450450.akpm00@gmail.com>
+References: <20110919232602.ac450450.akpm00@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 23, 2011 at 06:21:07PM +0800, 李朝明 wrote:
-> Please set ips =0 and try again..
+As suggested by Andrew Morton in [1] there is better to have most significant
+part first in the function name.
 
-What does that mean?
+[1] https://lkml.org/lkml/2011/9/20/22
 
-I can trigger the grinding-to-a-halt reliably with "ips=0" - it only
-takes a couple of hours of network traffic. Also, I don't want to try
-the driver you sent me because the version in the kernel needs fixing
-not some out-of-tree codebase.
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
+ include/linux/kernel.h |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
 
-So please clarify your request.
-
-Thanks.
-
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 46ac9a5..5022158 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -374,13 +374,18 @@ extern const char hex_asc[];
+ #define hex_asc_lo(x)	hex_asc[((x) & 0x0f)]
+ #define hex_asc_hi(x)	hex_asc[((x) & 0xf0) >> 4]
+ 
+-static inline char *pack_hex_byte(char *buf, u8 byte)
++static inline char *hex_byte_pack(char *buf, u8 byte)
+ {
+ 	*buf++ = hex_asc_hi(byte);
+ 	*buf++ = hex_asc_lo(byte);
+ 	return buf;
+ }
+ 
++static inline char * __deprecated pack_hex_byte(char *buf, u8 byte)
++{
++	return hex_byte_pack(buf, byte);
++}
++
+ extern int hex_to_bin(char ch);
+ extern void hex2bin(u8 *dst, const char *src, size_t count);
+ 
 -- 
-Regards/Gruss,
-Boris.
+1.7.6.3
+
