@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751172Ab1IWRii (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 13:38:38 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:51197 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750957Ab1IWRig convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 13:38:36 -0400
+	id S1751191Ab1IWRk5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 13:40:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16294 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750717Ab1IWRk4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Sep 2011 13:40:56 -0400
+Date: Fri, 23 Sep 2011 19:36:56 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Serge E. Hallyn" <serge.hallyn@canonical.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, richard@nod.at,
+        Andrew Morton <akpm@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>,
+        serge@hallyn.com
+Subject: Re: [PATCH] user namespace: make signal.c respect user namespaces
+Message-ID: <20110923173656.GA5233@redhat.com>
+References: <20110919214531.GA18085@sergelap> <20110920174849.GB22317@redhat.com> <20110920185354.GA19629@sergelap> <20110921175357.GA25590@redhat.com> <20110923163113.GA3820@sergelap>
 MIME-Version: 1.0
-In-Reply-To: <1316788285-17433-8-git-send-email-philipp.reisner@linbit.com>
-References: <1316788285-17433-1-git-send-email-philipp.reisner@linbit.com> <1316788285-17433-8-git-send-email-philipp.reisner@linbit.com>
-From: Kyle Moffett <kyle@moffetthome.net>
-Date: Fri, 23 Sep 2011 13:38:15 -0400
-Message-ID: <CAGZ=bq+XQNGEU1HHBEMWdc-hg-B-=eoKNYobUeGrZeeSq41M_A@mail.gmail.com>
-Subject: Re: [PATCH 07/10] drbd: Remove headers from on-the-wire data
- structures (struct p_*)
-To: Philipp Reisner <philipp.reisner@linbit.com>
-Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        drbd-dev@lists.linbit.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110923163113.GA3820@sergelap>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-On Fri, Sep 23, 2011 at 10:31, Philipp Reisner
-<philipp.reisner@linbit.com> wrote:
-> From: Andreas Gruenbacher <agruen@linbit.com>
+On 09/23, Serge E. Hallyn wrote:
 >
-> Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
-> Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
-> ---
->  drivers/block/drbd/drbd_int.h      |   45 ----------
->  drivers/block/drbd/drbd_main.c     |   44 +++++-----
->  drivers/block/drbd/drbd_receiver.c |  171 ++++++++++++++++++------------------
->  drivers/block/drbd/drbd_worker.c   |    2 +-
+> It looks like I can fix all the
+> cases
 
-This commit is kind of borderline too-big for just a one-line commit message.
+except ptrace_signal(). Although we can simply ignore this case, imho.
 
-It is admittedly very simple (changing the same pointer math in ~50 places),
-but it needs a bit more explanation about why it's helpful or necessary.
+> at send_signal()
 
-I *think* it's because the protocol-100 code will use a different-sized header,
-but that needs to be actually explained somewhere.
+Yes, I was thinking about this too but didn't have the time to check
+if this can really work.
 
-Cheers,
-Kyle Moffett
+> by checking whether si_fromuser(info)
+
+I am not sure... sys_rt_queueinfo() is nasty. Plus we have to handle
+the "fromkernel" case too. May be we can ignore this too.
+
+Oleg.
+
