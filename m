@@ -1,103 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753718Ab1IWMMA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 08:12:00 -0400
-Received: from mga11.intel.com ([192.55.52.93]:43130 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752538Ab1IWML7 convert rfc822-to-8bit (ORCPT
+	id S1753695Ab1IWMXy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 08:23:54 -0400
+Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:37901
+	"EHLO AM1EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753440Ab1IWMXx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 08:11:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,430,1312182000"; 
-   d="scan'208";a="69105788"
-Subject: Re: [PATCH] fat: don't use custom hex_to_bin()
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: linux-kernel@vger.kernel.org, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Date: Fri, 23 Sep 2011 15:11:21 +0300
-In-Reply-To: <CAK1hOcNus4RKQOF=eivuCXFEM5Lqb+jBdOD4YrMA_5bL2EB6yA@mail.gmail.com>
-References: <e23268a9c837d75a24c2d209f1623c505371eb1d.1316777507.git.andriy.shevchenko@linux.intel.com>
-	 <e1a466eb82a79c91f3ec103b8308f2f81bfcbd69.1316777398.git.andriy.shevchenko@linux.intel.com>
-	 <CAK1hOcNus4RKQOF=eivuCXFEM5Lqb+jBdOD4YrMA_5bL2EB6yA@mail.gmail.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1316779881.2676.44.camel@smile>
-Mime-Version: 1.0
+	Fri, 23 Sep 2011 08:23:53 -0400
+X-SpamScore: -20
+X-BigFish: VPS-20(zz146fK1432N1a09M98dK4015Lzz1202hzzz32i668h839h944h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 0,
+X-WSS-ID: 0LRZ6FK-01-2BO-02
+X-M-MSG: 
+Date: Fri, 23 Sep 2011 14:20:14 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Don Zickus <dzickus@redhat.com>
+Subject: Re: [V3][PATCH 0/7] perf, x86: Implement AMD IBS
+Message-ID: <20110923122014.GP6063@erda.amd.com>
+References: <1316597423-25723-1-git-send-email-robert.richter@amd.com>
+ <1316778523.9084.17.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1316778523.9084.17.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-09-23 at 14:05 +0200, Denys Vlasenko wrote: 
-> On Fri, Sep 23, 2011 at 1:32 PM, Andy Shevchenko
-> <andriy.shevchenko@linux.intel.com> wrote:
-> > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> > Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-> > ---
-> >  fs/fat/namei_vfat.c |   22 ++++++----------------
-> >  1 files changed, 6 insertions(+), 16 deletions(-)
-> >
-> > diff --git a/fs/fat/namei_vfat.c b/fs/fat/namei_vfat.c
-> > index bb3f29c..09cec4c 100644
-> > --- a/fs/fat/namei_vfat.c
-> > +++ b/fs/fat/namei_vfat.c
-> > @@ -21,6 +21,8 @@
-> >  #include <linux/slab.h>
-> >  #include <linux/buffer_head.h>
-> >  #include <linux/namei.h>
-> > +#include <linux/kernel.h>
-> > +
-> >  #include "fat.h"
-> >
-> >  /*
-> > @@ -505,7 +507,6 @@ xlate_to_uni(const unsigned char *name, int len, unsigned char *outname,
-> >             struct nls_table *nls)
-> >  {
-> >        const unsigned char *ip;
-> > -       unsigned char nc;
-> >        unsigned char *op;
-> >        unsigned int ec;
-> >        int i, k, fill;
-> > @@ -530,21 +531,10 @@ xlate_to_uni(const unsigned char *name, int len, unsigned char *outname,
-> >                                                return -EINVAL;
-> >                                        ec = 0;
-> >                                        for (k = 1; k < 5; k++) {
-> > -                                               nc = ip[k];
-> > -                                               ec <<= 4;
-> > -                                               if (nc >= '0' && nc <= '9') {
-> > -                                                       ec |= nc - '0';
-> > -                                                       continue;
-> > -                                               }
-> > -                                               if (nc >= 'a' && nc <= 'f') {
-> > -                                                       ec |= nc - ('a' - 10);
-> > -                                                       continue;
-> > -                                               }
-> > -                                               if (nc >= 'A' && nc <= 'F') {
-> > -                                                       ec |= nc - ('A' - 10);
-> > -                                                       continue;
-> > -                                               }
-> > -                                               return -EINVAL;
-> > +                                               int val = hex_to_bin(ip[k]);
-> > +                                               if (val < 0)
-> > +                                                       return -EINVAL;
-> > +                                               ec = (ec << 4) | val;
-> >                                        }
-> >                                        *op++ = ec & 0xFF;
-> >                                        *op++ = ec >> 8;
+On 23.09.11 07:48:43, Peter Zijlstra wrote:
+
+> There was also the thing about putting perf_event_set_period() and
+> perf_event_try_update() in a common library and converting all pmu
+> implementations to use them.
 > 
-> Function call per byte?
-4 times in our case per 16 bit.
+> As well as the for_each_set_bit_continue() thing which you've got
+> queued.
 
-> That's expensive!
-By the way, you can do those optimizations across the kernel. There are
-dozens of places where one or few bytes are converted per half-byte.
+Yeah, I will post separate patches for this.
 
-> Can't we have a function which converts many sequential bytes?
-We have one, but it doesn't return any error. We could wait until Mimi
-integrates his patch series.
+> Anyway, I read through the stuff and it looks about right, so I'll wait
+> for Don to post his NMI infrastructure bits once more (he had some
+> pending changes) and then I'll queue this on top.
+
+Many thanks.
+
+> The only thing I'm not quite sure on is the userspace bits, but those
+> are in the future work section as well, but possibly Ingo has a strong
+> opinion here, sadly he doesn't have email atm :/
+
+With Lin's patch 'perf: Remove perf_event_attr::type check' we already
+can sample with perf record.
+
+I think we could extend perf report to parse also ibs samples. The
+only thing we need for it should be the pmu name/type mapping in the
+perf.data header and the pmu type in the sample. See my comment on
+Stephane's patch '[PATCH] perf: make perf.data more self-descriptive
+(v5)'.
+
+Thanks,
+
+-Robert
 
 
 -- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
