@@ -1,79 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753469Ab1IWLaX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 07:30:23 -0400
-Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:51218 "EHLO
-	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751576Ab1IWLaW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 07:30:22 -0400
-Message-ID: <4E7C6DC0.1020401@xyratex.com>
-Date: Fri, 23 Sep 2011 15:30:08 +0400
-From: Andrew Perepechko <andrew_perepechko@xyratex.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110918 Thunderbird/7.0
+	id S1753503Ab1IWLav (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 07:30:51 -0400
+Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:40116 "EHLO
+	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753425Ab1IWLas convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Sep 2011 07:30:48 -0400
 MIME-Version: 1.0
-To: Nikitas Angelinas <nikitasangelinas@gmail.com>
-CC: tytso@mit.edu, adilger.kernel@dilger.ca, adilger@whamcloud.com,
-        johann@whamcloud.com, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, nikitas_angelinas@xyratex.com
-Subject: Re: [PATCH 1/2] ext4: MMP: kmmpd should use nodename from init_uts_ns.name,
- not sysname
-References: <1316737389-5522-1-git-send-email-nikitas_angelinas@xyratex.com> <1316737389-5522-2-git-send-email-nikitas_angelinas@xyratex.com> <4E7C425B.1060808@xyratex.com>
-In-Reply-To: <4E7C425B.1060808@xyratex.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 23 Sep 2011 11:30:12.0581 (UTC) FILETIME=[287EE150:01CC79E4]
+In-Reply-To: <alpine.DEB.2.00.1109221524560.10719@utopia.booyaka.com>
+References: <1316691479-1849-1-git-send-email-keshava_mgowda@ti.com>
+	<1316691479-1849-2-git-send-email-keshava_mgowda@ti.com>
+	<alpine.DEB.2.00.1109221213500.10719@utopia.booyaka.com>
+	<4E7B8C68.7020407@ti.com>
+	<alpine.DEB.2.00.1109221524560.10719@utopia.booyaka.com>
+Date: Fri, 23 Sep 2011 17:00:47 +0530
+Message-ID: <CAP05o4+DT8hL8A_e6WBpV9ptZ4XYYKgM=UQa8uiRH2ox6ZP-4A@mail.gmail.com>
+Subject: Re: [PATCH 1/5 v11] arm: omap: usb: ehci and ohci hwmod structures
+ for omap4
+From: "Munegowda, Keshava" <keshava_mgowda@ti.com>
+To: Paul Walmsley <paul@pwsan.com>
+Cc: "Cousson, Benoit" <b-cousson@ti.com>,
+        "parthab@india.ti.com" <parthab@india.ti.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Balbi, Felipe" <balbi@ti.com>, "Gadiyar, Anand" <gadiyar@ti.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "Hilman, Kevin" <khilman@ti.com>,
+        "johnstul@us.ibm.com" <johnstul@us.ibm.com>,
+        "Sripathy, Vishwanath" <vishwanath.bs@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Never mind, they are not relevant.
-
-Andrew
-
-On 09/23/2011 12:24 PM, Andrew Perepechko wrote:
-> Hello Nikitas!
+> So I'd suggest one of two approaches:
 >
-> It looks like some bits of your patches somehow got dropped.
->
-> Andrew
->
-> On 09/23/2011 04:23 AM, Nikitas Angelinas wrote:
->> sysname holds "Linux" by default, i.e. what appears when doing a "uname
->> -s"; nodename should be used to print the machine's hostname, i.e. what
->> is returned when doing a "uname -n" or "hostname", and what
->> gethostname(2)/sethostname(2) manipulate, in order to notify the
->> administrator of the node which is contending to mount the filesystem.
->>
->> Signed-off-by: Nikitas Angelinas<nikitas_angelinas@xyratex.com>
->> Signed-off-by: Andrew Perepechko<andrew_perepechko@xyratex.com>
->> ---
->>   fs/ext4/mmp.c |    2 +-
->>   1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/fs/ext4/mmp.c b/fs/ext4/mmp.c
->> index 9bdef3f..2fca64e 100644
->> --- a/fs/ext4/mmp.c
->> +++ b/fs/ext4/mmp.c
->> @@ -109,7 +109,7 @@ static int kmmpd(void *data)
->>       mmp->mmp_check_interval = cpu_to_le16(mmp_check_interval);
->>       bdevname(bh->b_bdev, mmp->mmp_bdevname);
->>
->> -    memcpy(mmp->mmp_nodename, init_utsname()->sysname,
->> +    memcpy(mmp->mmp_nodename, init_utsname()->nodename,
->>              sizeof(mmp->mmp_nodename));
->>
->>       while (!kthread_should_stop()) {
->
+> 1. If the pin muxing can follow the PM runtime status of the UHH IP block,
+>   then the pin mux data should be associated with the UHH hwmod.
 
-______________________________________________________________________
-This email may contain privileged or confidential information, which should only be used for the purpose for which it was sent by Xyratex. No further rights or licenses are granted to use such information. If you are not the intended recipient of this message, please notify the sender by return and delete it. You may not use, copy, disclose or rely on the information contained in it.
- 
-Internet email is susceptible to data corruption, interception and unauthorised amendment for which Xyratex does not accept liability. While we have taken reasonable precautions to ensure that this email is free of viruses, Xyratex does not accept liability for the presence of any computer viruses in this email, nor for any losses caused as a result of viruses.
- 
-Xyratex Technology Limited (03134912), Registered in England & Wales, Registered Office, Langstone Road, Havant, Hampshire, PO9 1SA.
- 
-The Xyratex group of companies also includes, Xyratex Ltd, registered in Bermuda, Xyratex International Inc, registered in California, Xyratex (Malaysia) Sdn Bhd registered in Malaysia, Xyratex Technology (Wuxi) Co Ltd registered in The People's Republic of China and Xyratex Japan Limited registered in Japan.
-______________________________________________________________________
- 
 
+No, the mux is applicable only to ehci and ohci , where as
+sysconfig is applicable to uhh ( usb_host_hs class).
+
+
+> 2. If the pin muxing must follow the EHCI/OHCI IP block PM runtime status,
+>   then drivers/mfd/omap-usb-host.c is what should be handling the
+>   remuxing.  omap-usb-host.c can set the dev_pm_ops of the EHCI/OHCI
+>   platform_devices to point to functions either in
+>   arch/arm/mach-omap2/usb-host.c, or local functions that call into
+>   mach-omap2/usb-host.c functions to handle pin remuxing.  (Those
+>   function pointers should be provided to the MFD driver in some clean way,
+>   like via platform_data.)
+
+The dev_pm_ops of ehci should exist in  /drivers/usb/host/ehci-omap.c and
+dev_pm_ops of phci should exist in  /drivers/usb/host/ohci-omap3.c.
+In the existing design, the omap-usb-host.c host can not access the
+platform driver
+of ehci and ohci.
+But, through function pointers it is possible to send the platform
+data to ehci and ohci
+drivers to handle pin remuxing; but we will not able to use tero's
+patches; and it will prevent
+our future design activity for remote wakeup of ehci and ohci.
+
+please let me know if you have thoughts on this.
+
+
+Regards
+Keshava
