@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752476Ab1IWU1A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 16:27:00 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:35458 "EHLO
+	id S1752345Ab1IWU2M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 16:28:12 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:35597 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752465Ab1IWU04 (ORCPT
+	with ESMTP id S1752186Ab1IWU07 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 16:26:56 -0400
+	Fri, 23 Sep 2011 16:26:59 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Darren Hart <dvhart@linux.intel.com>,
-        Ingo Molnar <mingo@elte.hu>,
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Anton Blanchard <anton@samba.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 12/12] perf tools: Add support for disabling -Werror via WERROR=0
-Date: Fri, 23 Sep 2011 17:26:26 -0300
-Message-Id: <1316809586-28529-13-git-send-email-acme@infradead.org>
+Subject: [PATCH 09/12] perf tool: Fix endianness handling of u32 data in samples
+Date: Fri, 23 Sep 2011 17:26:23 -0300
+Message-Id: <1316809586-28529-10-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1316809586-28529-1-git-send-email-acme@infradead.org>
 References: <1316809586-28529-1-git-send-email-acme@infradead.org>
@@ -24,59 +28,201 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Darren Hart <dvhart@linux.intel.com>
+From: David Ahern <dsahern@gmail.com>
 
-GCC often introduces new warnings with lots of false positives -
-breaking -Werror builds. WERROR=0 allows one to build perf without much
-fuss - while still encouraging people to send patches to avoid the fuss
-of having to type WERROR=0.
+Currently, analyzing PPC data files on x86 the cpu field is always 0 and
+the tid and pid are backwards. For example, analyzing a PPC file on PPC
+the pid/tid fields show:
 
-Bisecting back to commits that produce a (mostly harmless) warning on
-some compilers is more difficult. With WERROR=0 one could bisect without
-worrying about harmless warnings.
+        rsyslogd  1210/1212
 
+and analyzing the same PPC file using an x86 perf binary shows:
+
+        rsyslogd  1212/1210
+
+The problem is that the swap_op method for samples is
+perf_event__all64_swap which assumes all elements in the sample_data
+struct are u64s. cpu, tid and pid are u32s and need to be handled
+individually. Given that the swap is done before the sample is parsed,
+the simplest solution is to undo the 64-bit swap of those elements when
+the sample is parsed and do the proper swap.
+
+The RAW data field is generic and perf cannot have programmatic knowledge
+of how to treat that data. Instead a warning is given to the user.
+
+Thanks to Anton Blanchard for providing a data file for a mult-CPU
+PPC system so I could verify the fix for the CPU fields.
+
+v3 -> v4:
+- fixed use of WARN_ONCE
+
+v2 -> v3:
+- used WARN_ONCE for message regarding raw data
+- removed struct wrapper around union
+- fixed whitespace issues
+
+v1 -> v2:
+- added a union for undoing the byte-swap on u64 and redoing swap on
+  u32's to address compiler errors (see git commit 65014ab3)
+
+Cc: Anton Blanchard <anton@samba.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
-Link: http://lkml.kernel.org/r/eac06c7cc4920e5d4830417d466161fb26c7359c.1315514559.git.dvhart@linux.intel.com
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Link: http://lkml.kernel.org/r/1315321946-16993-1-git-send-email-dsahern@gmail.com
+Signed-off-by: David Ahern <dsahern@gmail.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile |    9 ++++++++-
- 1 files changed, 8 insertions(+), 1 deletions(-)
+ tools/perf/builtin-test.c |    2 +-
+ tools/perf/util/event.h   |    2 +-
+ tools/perf/util/evsel.c   |   54 +++++++++++++++++++++++++++++++++++---------
+ tools/perf/util/session.h |    3 +-
+ 4 files changed, 47 insertions(+), 14 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 3b8f7b8..e9d5c27 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -30,6 +30,8 @@ endif
- # Define EXTRA_CFLAGS=-m64 or EXTRA_CFLAGS=-m32 as appropriate for cross-builds.
- #
- # Define NO_DWARF if you do not want debug-info analysis feature at all.
-+#
-+# Define WERROR=0 to disable treating any warnings as errors.
+diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+index 55f4c76..efe696f 100644
+--- a/tools/perf/builtin-test.c
++++ b/tools/perf/builtin-test.c
+@@ -561,7 +561,7 @@ static int test__basic_mmap(void)
+ 		}
  
- $(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
- 	@$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
-@@ -63,6 +65,11 @@ ifeq ($(ARCH),x86_64)
- 	endif
- endif
+ 		err = perf_event__parse_sample(event, attr.sample_type, sample_size,
+-					       false, &sample);
++					       false, &sample, false);
+ 		if (err) {
+ 			pr_err("Can't parse sample, err = %d\n", err);
+ 			goto out_munmap;
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index 1d7f664..357a85b 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -186,6 +186,6 @@ const char *perf_event__name(unsigned int id);
  
-+# Treat warnings as errors unless directed not to
-+ifneq ($(WERROR),0)
-+	CFLAGS_WERROR := -Werror
-+endif
+ int perf_event__parse_sample(const union perf_event *event, u64 type,
+ 			     int sample_size, bool sample_id_all,
+-			     struct perf_sample *sample);
++			     struct perf_sample *sample, bool swapped);
+ 
+ #endif /* __PERF_RECORD_H */
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index a03a36b..c5748c5 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -7,6 +7,8 @@
+  * Released under the GPL v2. (and only v2, not any later version)
+  */
+ 
++#include <byteswap.h>
++#include "asm/bug.h"
+ #include "evsel.h"
+ #include "evlist.h"
+ #include "util.h"
+@@ -342,10 +344,20 @@ static bool sample_overlap(const union perf_event *event,
+ 
+ int perf_event__parse_sample(const union perf_event *event, u64 type,
+ 			     int sample_size, bool sample_id_all,
+-			     struct perf_sample *data)
++			     struct perf_sample *data, bool swapped)
+ {
+ 	const u64 *array;
+ 
++	/*
++	 * used for cross-endian analysis. See git commit 65014ab3
++	 * for why this goofiness is needed.
++	 */
++	union {
++		u64 val64;
++		u32 val32[2];
++	} u;
 +
- #
- # Include saner warnings here, which can catch bugs:
- #
-@@ -95,7 +102,7 @@ ifndef PERF_DEBUG
-   CFLAGS_OPTIMIZE = -O6
- endif
++
+ 	data->cpu = data->pid = data->tid = -1;
+ 	data->stream_id = data->id = data->time = -1ULL;
  
--CFLAGS = -fno-omit-frame-pointer -ggdb3 -Wall -Wextra -std=gnu99 -Werror $(CFLAGS_OPTIMIZE) -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS)
-+CFLAGS = -fno-omit-frame-pointer -ggdb3 -Wall -Wextra -std=gnu99 $(CFLAGS_WERROR) $(CFLAGS_OPTIMIZE) -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS)
- EXTLIBS = -lpthread -lrt -lelf -lm
- ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
- ALL_LDFLAGS = $(LDFLAGS)
+@@ -366,9 +378,16 @@ int perf_event__parse_sample(const union perf_event *event, u64 type,
+ 	}
+ 
+ 	if (type & PERF_SAMPLE_TID) {
+-		u32 *p = (u32 *)array;
+-		data->pid = p[0];
+-		data->tid = p[1];
++		u.val64 = *array;
++		if (swapped) {
++			/* undo swap of u64, then swap on individual u32s */
++			u.val64 = bswap_64(u.val64);
++			u.val32[0] = bswap_32(u.val32[0]);
++			u.val32[1] = bswap_32(u.val32[1]);
++		}
++
++		data->pid = u.val32[0];
++		data->tid = u.val32[1];
+ 		array++;
+ 	}
+ 
+@@ -395,8 +414,15 @@ int perf_event__parse_sample(const union perf_event *event, u64 type,
+ 	}
+ 
+ 	if (type & PERF_SAMPLE_CPU) {
+-		u32 *p = (u32 *)array;
+-		data->cpu = *p;
++
++		u.val64 = *array;
++		if (swapped) {
++			/* undo swap of u64, then swap on individual u32s */
++			u.val64 = bswap_64(u.val64);
++			u.val32[0] = bswap_32(u.val32[0]);
++		}
++
++		data->cpu = u.val32[0];
+ 		array++;
+ 	}
+ 
+@@ -423,18 +449,24 @@ int perf_event__parse_sample(const union perf_event *event, u64 type,
+ 	}
+ 
+ 	if (type & PERF_SAMPLE_RAW) {
+-		u32 *p = (u32 *)array;
++		u.val64 = *array;
++		if (WARN_ONCE(swapped,
++			      "Endianness of raw data not corrected!\n")) {
++			/* undo swap of u64, then swap on individual u32s */
++			u.val64 = bswap_64(u.val64);
++			u.val32[0] = bswap_32(u.val32[0]);
++			u.val32[1] = bswap_32(u.val32[1]);
++		}
+ 
+ 		if (sample_overlap(event, array, sizeof(u32)))
+ 			return -EFAULT;
+ 
+-		data->raw_size = *p;
+-		p++;
++		data->raw_size = u.val32[0];
+ 
+-		if (sample_overlap(event, p, data->raw_size))
++		if (sample_overlap(event, &u.val32[1], data->raw_size))
+ 			return -EFAULT;
+ 
+-		data->raw_data = p;
++		data->raw_data = &u.val32[1];
+ 	}
+ 
+ 	return 0;
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index 170601e..974d0cb 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -162,7 +162,8 @@ static inline int perf_session__parse_sample(struct perf_session *session,
+ {
+ 	return perf_event__parse_sample(event, session->sample_type,
+ 					session->sample_size,
+-					session->sample_id_all, sample);
++					session->sample_id_all, sample,
++					session->header.needs_swap);
+ }
+ 
+ struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
 -- 
 1.6.2.5
 
