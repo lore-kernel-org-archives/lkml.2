@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753418Ab1IWLQu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 07:16:50 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:65252 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753170Ab1IWLQs (ORCPT
+	id S1753416Ab1IWLRy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 07:17:54 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:53809 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753170Ab1IWLRw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 07:16:48 -0400
-X-Authority-Analysis: v=1.1 cv=cSzO76bR5tCkfUT9bEmBgR3d7VUusRLeq08eKGxa4EU= c=1 sm=0 a=fpqnIV_ZEzMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=1vXkE6-Bn8A6jeki7ywA:9 a=ik1467uiI_qTl8JufQcA:7 a=PUjeQqilurYA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.83.30
-Subject: Re: [PATCH 21/21] tracing: Add optional percpu buffers for
- trace_printk()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <1316776031.9084.4.camel@twins>
-References: <20110922220935.537134016@goodmis.org>
-	 <20110922221030.111078233@goodmis.org>  <1316776031.9084.4.camel@twins>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 23 Sep 2011 07:16:45 -0400
-Message-ID: <1316776605.29966.153.camel@gandalf.stny.rr.com>
+	Fri, 23 Sep 2011 07:17:52 -0400
+Subject: Re: [PATCH 5/5] ptrace: implement PTRACE_LISTEN
+From: Matt Fleming <matt@console-pimps.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: oleg@redhat.com, vda.linux@googlemail.com, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com,
+        pedro@codesourcery.com
+In-Reply-To: <1308043218-23619-6-git-send-email-tj@kernel.org>
+References: <1308043218-23619-1-git-send-email-tj@kernel.org>
+	 <1308043218-23619-6-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 23 Sep 2011 12:17:30 +0100
+Message-ID: <1316776650.5262.26.camel@mfleming-mobl1.ger.corp.intel.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-09-23 at 13:07 +0200, Peter Zijlstra wrote:
-> On Fri, 2011-09-23 at 13:02 +0200, Peter Zijlstra wrote:
-> > On Thu, 2011-09-22 at 18:09 -0400, Steven Rostedt wrote:
-> > > 
-> > > Currently, trace_printk() uses a single buffer to write into
-> > > to calculate the size and format needed to save the trace. To
-> > > do this safely in an SMP environment, a spin_lock() is taken
-> > > to only allow one writer at a time to the buffer. But this could
-> > > also affect what is being traced, and add synchronization that
-> > > would not be there otherwise. 
-> > 
-> > so trace_printk() isn't NMI safe? #$%@^%@@$%@
+On Tue, 2011-06-14 at 11:20 +0200, Tejun Heo wrote:
 
-It is NMI safe, always was (I use it there too). It has a percpu
-recursion detection (always has), thus if an NMI interrupts a current
-trace_printk(), the NMI trace_printk() will not print. I could add an
-NMI buffer to allow NMIs to print, but so far, we don't usually have
-issues with trace_printk(). Heck, I'm not sure printk() wont cause
-issues in NMIs. I think trace_printk() is still safer than printk.
+[...]
 
-> 
-> better to make all of trace_printk() depend on that extra config, there
-> is absolutely 0 point in having a broken and fully serialized trace
-> 'fail^wfeature'.
+> +	case PTRACE_LISTEN:
+> +		/*
+> +		 * Listen for events.  Tracee must be in STOP.  It's not
+> +		 * resumed per-se but is not considered to be in TRACED by
+> +		 * wait(2) or ptrace(2).  If an async event (e.g. group
+> +		 * stop state change) happens, tracee will enter STOP trap
+> +		 * again.  Alternatively, ptracer can issue INTERRUPT to
+> +		 * finish listening and re-trap tracee into STOP.
+> +		 */
+> +		if (unlikely(!seized || !lock_task_sighand(child, &flags)))
+> +			break;
+> +
+> +		si = child->last_siginfo;
+> +		if (unlikely(!si || si->si_code >> 8 != PTRACE_EVENT_STOP))
+> +			break;
 
-Not, having per cpu buffers still doesn't allow NMIs to interrupt
-trace_printk(). Otherwise the NMI would just corrupt the current percpu
-buffer.
+I've only just noticed this. You really don't want to break out of the
+switch while holding sighand->siglock. This should read,
 
--- Steve
+		if (unlikely(!si || si->si_code >> 8 != PTRACE_EVENT_STOP)) {
+			unlock_task_sighand(child, &flags);
+			break;
+		}
 
+-- 
+Matt Fleming, Intel Open Source Technology Center
 
