@@ -1,284 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753809Ab1IWMey (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 08:34:54 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:50737 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753638Ab1IWMew convert rfc822-to-8bit (ORCPT
+	id S1753905Ab1IWMoh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 08:44:37 -0400
+Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:45194 "EHLO
+	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753841Ab1IWMoe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 08:34:52 -0400
-From: "Koyamangalath, Abhilash" <abhilash.kv@ti.com>
-To: "Hilman, Kevin" <khilman@ti.com>
-CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        "Premi, Sanjeev" <premi@ti.com>,
-        "david.woodhouse@intel.com" <david.woodhouse@intel.com>,
-        "christian.gmeiner@gmail.com" <christian.gmeiner@gmail.com>
-Date: Fri, 23 Sep 2011 18:03:02 +0530
-Subject: RE: [PATCH v3 1/3] AM35x: voltage: Basic initialization
-Thread-Topic: [PATCH v3 1/3] AM35x: voltage: Basic initialization
-Thread-Index: Acx5dzPlqFQd0vVwRjG751ZO4QG02wAdbu4D
-Message-ID: <FCCFB4CDC6E5564B9182F639FC356087037AF843EC@dbde02.ent.ti.com>
-References: <1316698155-954-1-git-send-email-abhilash.kv@ti.com>
-	<1316698155-954-2-git-send-email-abhilash.kv@ti.com>,<877h50p5w0.fsf@ti.com>
-In-Reply-To: <877h50p5w0.fsf@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Fri, 23 Sep 2011 08:44:34 -0400
+Subject: Oops in ecryptfs (apparently) with 3.1-rc6
+From: Luciano Coelho <coelho@ti.com>
+To: ecryptfs@vger.kernel.org, tyhicks@linux.vnet.ibm.com,
+        kirkland@canonical.com
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 23 Sep 2011 15:44:29 +0300
+Message-ID: <1316781869.4051.7.camel@cumari>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi Kevin
+Hi,
 
-On Fri, Sep 23, 2011 at 4:00 AM, Hilman, Kevin wrote:
-> Hi Abhilash,
->
-> Abhilash K V <abhilash.kv@ti.com> writes:
->
->> This patch adds the basic initialization of voltage layer
->> for AM35x. Since AM35x doesn't support voltage scaling,
->
-> I must admit to still being confused by this series.
->
-> This patch says AM35x doesn't support voltage scaling, and the next
-> patch adds PMIC support, and registers it with the voltage layer.
->
-> However, with each voltdm->scalable flag set to false, none of the PMIC
-> values will ever be used (by the current voltage layer.)  Do you have
-> more patches on top of this that extend the voltage layer to directly
-> use the PMIC instead of using VC or VP?
->
-> I'm assuming we have some more assumptions in our current voltage layer
-> about the presence of VC/VP that are wrong and need to be fixed.  Now
-> that the big voltage layer cleanup is done, I am *very* interested in
-> getting rid of any more assumptions we have in that code about how
-> devices are hooked up with PMICs.
->
-> Can you summarize how these devices are using (or want to use) the
-> voltage layer?
-[Abhilash K V] Your concerns are grave and am trying to address most,
-however these are the only points I can make outright:
+I just got this oops on my PC, while running 3.1-rc6 normally:
 
-- AM35x has just one voltage domain, so I tried having only one entry in 
-voltagedomains_omap3[ ]  ( and calling it "mpu_core", maybe or "mpu" or "core" ?).
-Either ways, some power-domain, say mpu_pwrdm would try looking for the "mpu_iva"
-volt-domain and return error, this happens for most powerdomains as their constituent 
-volt-domains are hard-coded (and so unavailable on am35xx). Changing the code (which
-will be massive) there going against our initial premise that am35xx is still a "type of"
-omap3 SoC.
+[255264.517298] Oops: 0000 [#1] SMP 
+[255264.517301] CPU 4 
+[255264.517303] Modules linked in: nls_iso8859_1 nls_cp437 vfat fat dm_crypt pl2303 ftdi_sio usbserial cryptd aes_x86_64 aes_generic binfmt_misc snd_hda_codec_analog nvidia(P) snd_hda_intel snd_hda_codec snd_hwdep snd_pcm snd_seq_midi psmouse snd_rawmidi snd_seq_midi_event snd_seq snd_timer dell_wmi nfsd exportfs snd_seq_device serio_raw nfs sparse_keymap snd soundcore snd_page_alloc i7core_edac edac_core ppdev lp dcdbas lockd fscache auth_rpcgss nfs_acl sunrpc parport_pc parport usb_storage usbhid hid tg3
+[255264.517341] 
+[255264.517343] Pid: 18110, comm: cat Tainted: P            3.1.0-rc6-custom #2 Dell Inc. Precision WorkStation T3500  /09KPNV
+[255264.517348] RIP: 0010:[<ffffffff8125dddd>]  [<ffffffff8125dddd>] ecryptfs_decrypt_extent+0x13d/0x360
+[255264.517353] RSP: 0018:ffff88031c03db78  EFLAGS: 00010246
+[255264.517356] RAX: 0000000000000000 RBX: ffff88031c03db88 RCX: 0000000000000000
+[255264.517358] RDX: 0000000000000010 RSI: ffff880170bd1ae0 RDI: 0000000000000000
+[255264.517361] RBP: ffff88031c03dc38 R08: 0000000000000000 R09: ffff88031c03db88
+[255264.517363] R10: 0000000000000000 R11: 0000000000000000 R12: ffff880170bd1a70
+[255264.517366] R13: 0000000000001000 R14: ffffea0008351cc0 R15: ffff880170bd1b60
+[255264.517369] FS:  00002b38b966bb20(0000) GS:ffff880333280000(0000) knlGS:0000000000000000
+[255264.517372] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[255264.517374] CR2: 0000000000000010 CR3: 000000010b9e6000 CR4: 00000000000006e0
+[255264.517377] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[255264.517379] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[255264.517382] Process cat (pid: 18110, threadinfo ffff88031c03c000, task ffff88005f920000)
+[255264.517385] Stack:
+[255264.517386]  0000000000000000 0000000000000000 ffffea0008351cc2 0000100000000000
+[255264.517391]  0000000000000000 0000000000000000 ffffea000964c302 0000100000000000
+[255264.517395]  0000000000000000 0000000000000000 0000000000000000 ffff88031c03dbe8
+[255264.517399] Call Trace:
+[255264.517406]  [<ffffffff81163f35>] ? vfs_read+0xc5/0x190
+[255264.517409]  [<ffffffff8125e0b2>] ecryptfs_decrypt_page+0xb2/0x190
+[255264.517413]  [<ffffffff8125bb08>] ecryptfs_readpage+0xd8/0x120
+[255264.517418]  [<ffffffff8110daf4>] generic_file_aio_read+0x234/0x740
+[255264.517424]  [<ffffffff8125863c>] ecryptfs_read_update_atime+0x1c/0x60
+[255264.517428]  [<ffffffff811637fa>] do_sync_read+0xda/0x120
+[255264.517434]  [<ffffffff81286a3b>] ? security_file_permission+0x8b/0x90
+[255264.517438]  [<ffffffff81163f35>] vfs_read+0xc5/0x190
+[255264.517441]  [<ffffffff81164101>] sys_read+0x51/0x90
+[255264.517446]  [<ffffffff815dc082>] system_call_fastpath+0x16/0x1b
+[255264.517448] Code: 98 41 0f af c5 89 85 58 ff ff ff 49 8b 44 24 40 48 89 45 90 e8 c5 4d 37 00 49 8b 44 24 40 49 8b 54 24 20 49 8d 74 24 70 48 89 c7 <ff> 50 10 85 c0 0f 85 40 01 00 00 31 c0 44 89 ea 48 c7 c6 50 cf 
+[255264.517481] RIP  [<ffffffff8125dddd>] ecryptfs_decrypt_extent+0x13d/0x360
+[255264.517485]  RSP <ffff88031c03db78>
+[255264.517487] CR2: 0000000000000010
+[255264.517490] ---[ end trace 6beaa9aa4bd67546 ]---
 
-- TPS65023 PMIC code was originally included as a starting point to support a omap34xx
- (with SR disabled maybe) with power supplied by a TPS65023. Yes,I agree that since 
- this looks more of like hypothetical scenario right now and so we can do
- without the addition of file pmic_tps65023.c for now as it doesn't provide any support for
- scaling.
+My machine is a Dell Precision T3500 with an Intel Xeon quadcore,
+running Ubuntu 10.10.
 
+I didn't do anything different from what I usually do.  This happened
+while I started a cross-compilation of a kernel for ARM.  I had been
+running this kernel for about 8 days without a problem, until this
+happened.
 
--Abhilash
->
-> Thanks,
->
-> Kevin
->
->> Many functions have been defined to plug into existing
->> voltage layer.
->>
->> Signed-off-by: Sanjeev Premi <premi@ti.com>
->> Signed-off-by: Abhilash K V <abhilash.kv@ti.com>
->> ---
->>  arch/arm/mach-omap2/omap_opp_data.h           |    1 +
->>  arch/arm/mach-omap2/opp3xxx_data.c            |    9 +++++++++
->>  arch/arm/mach-omap2/voltagedomains3xxx_data.c |   10 ++++++++--
->>  3 files changed, 18 insertions(+), 2 deletions(-)
->>
->> diff --git a/arch/arm/mach-omap2/omap_opp_data.h b/arch/arm/mach-omap2/omap_opp_data.h
->> index c784c12..c7cedf3 100644
->> --- a/arch/arm/mach-omap2/omap_opp_data.h
->> +++ b/arch/arm/mach-omap2/omap_opp_data.h
->> @@ -88,6 +88,7 @@ extern struct omap_volt_data omap34xx_vddmpu_volt_data[];
->>  extern struct omap_volt_data omap34xx_vddcore_volt_data[];
->>  extern struct omap_volt_data omap36xx_vddmpu_volt_data[];
->>  extern struct omap_volt_data omap36xx_vddcore_volt_data[];
->> +extern struct omap_volt_data am35xx_vdd_volt_data[];
->>
->>  extern struct omap_volt_data omap44xx_vdd_mpu_volt_data[];
->>  extern struct omap_volt_data omap44xx_vdd_iva_volt_data[];
->> diff --git a/arch/arm/mach-omap2/opp3xxx_data.c b/arch/arm/mach-omap2/opp3xxx_data.c
->> index d95f3f9..e4a5ee6 100644
->> --- a/arch/arm/mach-omap2/opp3xxx_data.c
->> +++ b/arch/arm/mach-omap2/opp3xxx_data.c
->> @@ -85,6 +85,15 @@ struct omap_volt_data omap36xx_vddcore_volt_data[] = {
->>       VOLT_DATA_DEFINE(0, 0, 0, 0),
->>  };
->>
->> +/* AM35x
->> + *
->> + * Fields related to SmartReflex and Voltage Processor are set to 0.
->> + */
->
-> fix multi-line comment style (search for 'multi-line' in Documentation/CodingStyle)
->
->> +struct omap_volt_data am35xx_vdd_volt_data[] = {
->> +     VOLT_DATA_DEFINE(OMAP3430_VDD_MPU_OPP3_UV, 0x0, 0x0, 0x0),
->> +     VOLT_DATA_DEFINE(0, 0, 0, 0),
->> +};
->> +
->>  /* OPP data */
->>
->>  static struct omap_opp_def __initdata omap34xx_opp_def_list[] = {
->> diff --git a/arch/arm/mach-omap2/voltagedomains3xxx_data.c b/arch/arm/mach-omap2/voltagedomains3xxx_data.c
->> index 071101d..530082f 100644
->> --- a/arch/arm/mach-omap2/voltagedomains3xxx_data.c
->> +++ b/arch/arm/mach-omap2/voltagedomains3xxx_data.c
->> @@ -85,7 +85,10 @@ void __init omap3xxx_voltagedomains_init(void)
->>        * XXX Will depend on the process, validation, and binning
->>        * for the currently-running IC
->>        */
->> -     if (cpu_is_omap3630()) {
->> +     if (cpu_is_omap3505() || cpu_is_omap3517()) {
->> +             omap3_voltdm_mpu.volt_data = am35xx_vdd_volt_data;
->> +             omap3_voltdm_core.volt_data = am35xx_vdd_volt_data;
->> +     } else if (cpu_is_omap3630()) {
->>               omap3_voltdm_mpu.volt_data = omap36xx_vddmpu_volt_data;
->>               omap3_voltdm_core.volt_data = omap36xx_vddcore_volt_data;
->>       } else {
->> @@ -93,8 +96,11 @@ void __init omap3xxx_voltagedomains_init(void)
->>               omap3_voltdm_core.volt_data = omap34xx_vddcore_volt_data;
->>       }
->>
->> -     for (i = 0; voltdm = voltagedomains_omap3[i], voltdm; i++)
->> +     for (i = 0; voltdm = voltagedomains_omap3[i], voltdm; i++) {
->> +             if (cpu_is_omap3505() || cpu_is_omap3517())
->> +                     voltdm->scalable = false;
->>               voltdm->sys_clk.name = sys_clk_name;
->> +     }
->>
->>       voltdm_init(voltagedomains_omap3);
->>  };
->
+-- 
+Cheers,
+Luca.
 
-
-________________________________________
-From: Hilman, Kevin
-Sent: Friday, September 23, 2011 4:00 AM
-To: Koyamangalath, Abhilash
-Cc: linux-omap@vger.kernel.org; linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org; tony@atomide.com; linux@arm.linux.org.uk; sameo@linux.intel.com; Shilimkar, Santosh; Premi, Sanjeev; david.woodhouse@intel.com; christian.gmeiner@gmail.com
-Subject: Re: [PATCH v3 1/3] AM35x: voltage: Basic initialization
-
-Hi Abhilash,
-
-Abhilash K V <abhilash.kv@ti.com> writes:
-
-> This patch adds the basic initialization of voltage layer
-> for AM35x. Since AM35x doesn't support voltage scaling,
-
-I must admit to still being confused by this series.
-
-This patch says AM35x doesn't support voltage scaling, and the next
-patch adds PMIC support, and registers it with the voltage layer.
-
-However, with each voltdm->scalable flag set to false, none of the PMIC
-values will ever be used (by the current voltage layer.)  Do you have
-more patches on top of this that extend the voltage layer to directly
-use the PMIC instead of using VC or VP?
-
-I'm assuming we have some more assumptions in our current voltage layer
-about the presence of VC/VP that are wrong and need to be fixed.  Now
-that the big voltage layer cleanup is done, I am *very* interested in
-getting rid of any more assumptions we have in that code about how
-devices are hooked up with PMICs.
-
-Can you summarize how these devices are using (or want to use) the
-voltage layer?
-
-Thanks,
-
-Kevin
-
-> Many functions have been defined to plug into existing
-> voltage layer.
->
-> Signed-off-by: Sanjeev Premi <premi@ti.com>
-> Signed-off-by: Abhilash K V <abhilash.kv@ti.com>
-> ---
->  arch/arm/mach-omap2/omap_opp_data.h           |    1 +
->  arch/arm/mach-omap2/opp3xxx_data.c            |    9 +++++++++
->  arch/arm/mach-omap2/voltagedomains3xxx_data.c |   10 ++++++++--
->  3 files changed, 18 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/arm/mach-omap2/omap_opp_data.h b/arch/arm/mach-omap2/omap_opp_data.h
-> index c784c12..c7cedf3 100644
-> --- a/arch/arm/mach-omap2/omap_opp_data.h
-> +++ b/arch/arm/mach-omap2/omap_opp_data.h
-> @@ -88,6 +88,7 @@ extern struct omap_volt_data omap34xx_vddmpu_volt_data[];
->  extern struct omap_volt_data omap34xx_vddcore_volt_data[];
->  extern struct omap_volt_data omap36xx_vddmpu_volt_data[];
->  extern struct omap_volt_data omap36xx_vddcore_volt_data[];
-> +extern struct omap_volt_data am35xx_vdd_volt_data[];
->
->  extern struct omap_volt_data omap44xx_vdd_mpu_volt_data[];
->  extern struct omap_volt_data omap44xx_vdd_iva_volt_data[];
-> diff --git a/arch/arm/mach-omap2/opp3xxx_data.c b/arch/arm/mach-omap2/opp3xxx_data.c
-> index d95f3f9..e4a5ee6 100644
-> --- a/arch/arm/mach-omap2/opp3xxx_data.c
-> +++ b/arch/arm/mach-omap2/opp3xxx_data.c
-> @@ -85,6 +85,15 @@ struct omap_volt_data omap36xx_vddcore_volt_data[] = {
->       VOLT_DATA_DEFINE(0, 0, 0, 0),
->  };
->
-> +/* AM35x
-> + *
-> + * Fields related to SmartReflex and Voltage Processor are set to 0.
-> + */
-
-fix multi-line comment style (search for 'multi-line' in Documentation/CodingStyle)
-
-> +struct omap_volt_data am35xx_vdd_volt_data[] = {
-> +     VOLT_DATA_DEFINE(OMAP3430_VDD_MPU_OPP3_UV, 0x0, 0x0, 0x0),
-> +     VOLT_DATA_DEFINE(0, 0, 0, 0),
-> +};
-> +
->  /* OPP data */
->
->  static struct omap_opp_def __initdata omap34xx_opp_def_list[] = {
-> diff --git a/arch/arm/mach-omap2/voltagedomains3xxx_data.c b/arch/arm/mach-omap2/voltagedomains3xxx_data.c
-> index 071101d..530082f 100644
-> --- a/arch/arm/mach-omap2/voltagedomains3xxx_data.c
-> +++ b/arch/arm/mach-omap2/voltagedomains3xxx_data.c
-> @@ -85,7 +85,10 @@ void __init omap3xxx_voltagedomains_init(void)
->        * XXX Will depend on the process, validation, and binning
->        * for the currently-running IC
->        */
-> -     if (cpu_is_omap3630()) {
-> +     if (cpu_is_omap3505() || cpu_is_omap3517()) {
-> +             omap3_voltdm_mpu.volt_data = am35xx_vdd_volt_data;
-> +             omap3_voltdm_core.volt_data = am35xx_vdd_volt_data;
-> +     } else if (cpu_is_omap3630()) {
->               omap3_voltdm_mpu.volt_data = omap36xx_vddmpu_volt_data;
->               omap3_voltdm_core.volt_data = omap36xx_vddcore_volt_data;
->       } else {
-> @@ -93,8 +96,11 @@ void __init omap3xxx_voltagedomains_init(void)
->               omap3_voltdm_core.volt_data = omap34xx_vddcore_volt_data;
->       }
->
-> -     for (i = 0; voltdm = voltagedomains_omap3[i], voltdm; i++)
-> +     for (i = 0; voltdm = voltagedomains_omap3[i], voltdm; i++) {
-> +             if (cpu_is_omap3505() || cpu_is_omap3517())
-> +                     voltdm->scalable = false;
->               voltdm->sys_clk.name = sys_clk_name;
-> +     }
->
->       voltdm_init(voltagedomains_omap3);
->  };
