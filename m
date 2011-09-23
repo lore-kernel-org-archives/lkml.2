@@ -1,77 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754719Ab1IWBjI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 21:39:08 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:54963 "EHLO
-	mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754681Ab1IWBjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 21:39:06 -0400
-Date: Fri, 23 Sep 2011 01:40:31 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: "Serge E. Hallyn" <serge.hallyn@canonical.com>
-Cc: Miquel van Smoorenburg <mikevs@xs4all.net>, linux-kernel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>, richard@nod.at,
-        akpm@linux-foundation.org
-Subject: [PATCH] User namespace: don't allow sysctl in non-init user ns (v2)
-Message-ID: <20110923014031.GA27781@hallyn.com>
-References: <xs4all.20110915194812.GA24348@sergelap>
- <1316598367.5939.12.camel@n2o.xs4all.nl>
- <20110921131514.GA2979@sergelap>
+	id S1754725Ab1IWBkP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 21:40:15 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:64195 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753659Ab1IWBkM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Sep 2011 21:40:12 -0400
+Date: Fri, 23 Sep 2011 09:40:02 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Roland Dreier <roland@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        tglx@linutronix.de, Hoang-Nam Nguyen <hnguyen@de.ibm.com>,
+        Christoph Raisch <raisch@de.ibm.com>,
+        Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org
+Subject: Re: [PATCH 33/55] infiniband: irq: Remove IRQF_DISABLED
+Message-ID: <20110923014002.GA21500@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <1316681962-8217-1-git-send-email-yong.zhang0@gmail.com>
+ <1316681962-8217-34-git-send-email-yong.zhang0@gmail.com>
+ <CAL1RGDWoNpFyTi5PaA8sfsEts4GLm_LzPC+tTmu6EPbkndx=NQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20110921131514.GA2979@sergelap>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAL1RGDWoNpFyTi5PaA8sfsEts4GLm_LzPC+tTmu6EPbkndx=NQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sysctl.c has its own custom uid check, which is not user namespace
-aware.  As discovered by Richard, that allows root in a container
-privileged access to set all sysctls.
+On Thu, Sep 22, 2011 at 09:56:07AM -0700, Roland Dreier wrote:
+> Is someone taking this whole series, or should I take the ehca part?
 
-To fix that, don't compare uid or groups if current is not in the
-initial user namespace.  We may at some point want to relax that check
-so that some sysctls are allowed - for instance dmesg_restrict when
-syslog is containerized.
+You could take it and Thomas will take the leftovers.
 
-Changelog:
-Sep 22: As Miquel van Smoorenburg pointed out, rather than always
-	refusing access if not in initial user_ns, we should allow
-	world access rights to sysctl files.  We just want to prevent
-	a task in a non-init user namespace from getting the root user
-	or group access rights.
+> (I know the ehca guys already acked this)
 
-Signed-off-by: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Vasiliy Kulikov <segoon@openwall.com>
-Cc: richard@nod.at
-Cc: Miquel van Smoorenburg <mikevs@xs4all.net>
----
- kernel/sysctl.c |   10 ++++++----
- 1 files changed, 6 insertions(+), 4 deletions(-)
+Yeah, so I mentioned it in the cover letter :)
 
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 11d65b5..95988dc 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -1697,10 +1697,12 @@ void register_sysctl_root(struct ctl_table_root *root)
- 
- static int test_perm(int mode, int op)
- {
--	if (!current_euid())
--		mode >>= 6;
--	else if (in_egroup_p(0))
--		mode >>= 3;
-+	if (current_user_ns() == &init_user_ns) {
-+		if (!current_euid())
-+			mode >>= 6;
-+		else if (in_egroup_p(0))
-+			mode >>= 3;
-+	}
- 	if ((op & ~mode & (MAY_READ|MAY_WRITE|MAY_EXEC)) == 0)
- 		return 0;
- 	return -EACCES;
--- 
-1.7.0.4
-
+Thanks,
+Yong
