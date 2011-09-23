@@ -1,83 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752902Ab1IWXcJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 19:32:09 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:54349 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752284Ab1IWXcI (ORCPT
+	id S1753013Ab1IWXcj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 19:32:39 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:52887 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752950Ab1IWXci (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 19:32:08 -0400
-Date: Fri, 23 Sep 2011 17:32:04 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Michael Thalmeier <michael.thalmeier@hale.at>
-Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] spi: detect wrong transfer->len values
-Message-ID: <20110923233204.GJ24631@ponder.secretlab.ca>
-References: <1316779158-12578-1-git-send-email-michael.thalmeier@hale.at>
+	Fri, 23 Sep 2011 19:32:38 -0400
+Date: Fri, 23 Sep 2011 20:31:58 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Anton Blanchard <anton@samba.org>,
+        Darren Hart <dvhart@linux.intel.com>, David Ahern <dsahern@gmail.com>,
+        "David S . Miller" <davem@davemloft.net>,
+        Eric B Munson <emunson@mgebm.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ian Munsie <imunsie@au1.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Stephane Eranian <eranian@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [GIT PULL 00/12] perf tools fixes
+Message-ID: <20110923233158.GB8543@ghostprotocols.net>
+References: <1316809586-28529-1-git-send-email-acme@infradead.org>
+ <CA+55aFwVrvMa1z7P5q0kUN3QAwZzTdL1mhLaF7+etHYQm511vA@mail.gmail.com>
+ <CA+55aFysPyDCjs3MTwHBRWVq5OTU=-aWCRiJP=VZL-EdCGNU0w@mail.gmail.com>
+ <20110923211158.GC27519@ghostprotocols.net>
+ <20110923212523.GD27519@ghostprotocols.net>
+ <CA+55aFwfobHqXYJbKZTn_6Z_wEhqHxpZO4rRMgOUtJW=L5pzYg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1316779158-12578-1-git-send-email-michael.thalmeier@hale.at>
+In-Reply-To: <CA+55aFwfobHqXYJbKZTn_6Z_wEhqHxpZO4rRMgOUtJW=L5pzYg@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 23, 2011 at 01:59:18PM +0200, Michael Thalmeier wrote:
-> From: Helmut Raiger <helmut.raiger@hale.at>
+Em Fri, Sep 23, 2011 at 04:12:54PM -0700, Linus Torvalds escreveu:
+> On Fri, Sep 23, 2011 at 2:25 PM, Arnaldo Carvalho de Melo
+> <acme@infradead.org> wrote:
+> >
+> > Sorry about the noise, there is a problem in the way the python binding
+> > is built, i.e. it should notice that the header changed and rebuild the
+> > python binding, I bet this was what made David not notice it :-\
 > 
-> 
-> Signed-off-by: Michael Thalmeier <michael.thalmeier@hale.at>
-> ---
->  drivers/spi/spi.c |   12 +++++++++++-
->  1 files changed, 11 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-> index 4d1b9f5..70adac3 100644
-> --- a/drivers/spi/spi.c
-> +++ b/drivers/spi/spi.c
-> @@ -760,6 +760,17 @@ EXPORT_SYMBOL_GPL(spi_setup);
->  static int __spi_async(struct spi_device *spi, struct spi_message *message)
->  {
->  	struct spi_master *master = spi->master;
-> +	struct spi_transfer *xfer;
-> +
-> +	/* check if number of bytes relates to bits per word mode */
-> +	list_for_each_entry(xfer, &message->transfers, transfer_list) {
-> +		u8 bpw = xfer->bits_per_word ?
-> +				xfer->bits_per_word : spi->bits_per_word;
-> +
-> +		if ((bpw == 16 && (xfer->len & 1)) ||
-> +			(bpw == 32 && (xfer->len & 3)))
-> +			return -EINVAL;
-> +	}
+> Can you please make sure that gets fixed at some point too? No huge
+> hurry, it can wait for the next merge window, but bugs like that not
+> only cause this kind of stupid compile errors, they also cause really
+> odd "why doesn't it work" problems that people can spend tons and tons
+> of time debugging, because they don't really "exist" - they're just a
+> result of a stale object file that didn't get properly recompiled.
 
-Rather than turning this into a hard fail; you should make it a
-WARN_ONCE().  I wouldn't be surprised if a lot of drivers have the bad
-behaviour, and applying this patch could have far reaching
-consequences, including boards failing to boot.
-
-g.
-
->  
->  	/* Half-duplex links include original MicroWire, and ones with
->  	 * only one data pin like SPI_3WIRE (switches direction) or where
-> @@ -768,7 +779,6 @@ static int __spi_async(struct spi_device *spi, struct spi_message *message)
->  	 */
->  	if ((master->flags & SPI_MASTER_HALF_DUPLEX)
->  			|| (spi->mode & SPI_3WIRE)) {
-> -		struct spi_transfer *xfer;
-
-Unrelated change?
-
->  		unsigned flags = master->flags;
->  
->  		list_for_each_entry(xfer, &message->transfers, transfer_list) {
-> -- 
-> 1.7.6.2
+At the top of the fix-it todo-list, not only because it annoys you, but
+also because it annoys the hell out of me :-\
+ 
+> > You noticed it probably because it was the first build of the tool on
+> > your local repo or used a new O= output dir.
 > 
-> 
-> 
-> --
-> Scanned by MailScanner.
-> 
+> I do "git clean -dqfx" every once in a while (especially after having
+> done "make allmodconfig" builds before -rc releases etc), and I don't
+> recompile the perf tools very often. So yeah, this was the first build
+> after a cleanout event.
+
+I'll get it fixed if none of the make guys out there do me this favor.
+:-\
+
+- Arnaldo
