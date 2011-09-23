@@ -1,117 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752778Ab1IWQJR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 12:09:17 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:31024 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751257Ab1IWQJN convert rfc822-to-8bit (ORCPT
+	id S1753058Ab1IWQQo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 12:16:44 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:50971 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751959Ab1IWQQl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 12:09:13 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=xvECi45eqQhhu7NN4yz6aHNmZIck0SbzNKh1orWcGF52sJHxv69AC1fjmJ8yOaive
-	UMKrzNLw7k3r55X+BzGjw==
+	Fri, 23 Sep 2011 12:16:41 -0400
+Date: Fri, 23 Sep 2011 12:16:40 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Matthias Dellweg <2500@gmx.de>
+cc: Greg Kroah-Hartman <gregkh@suse.de>, Vasiliy Kulikov <segooon@gmail.com>,
+        Michal Sojka <sojkam1@fel.cvut.cz>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] enable usb control message with class specific request
+In-Reply-To: <20110923090550.43ec1fd1@horus>
+Message-ID: <Pine.LNX.4.44L0.1109231207160.2059-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <j5iab7$j8m$1@dough.gmane.org>
-References: <20110922072643.GA27232@hostway.ca> <20110922084811.GC17640@liondog.tnic>
- <20110922202337.GB32661@hostway.ca> <20110923072118.GA13293@liondog.tnic> <j5iab7$j8m$1@dough.gmane.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 23 Sep 2011 10:08:49 -0600
-Message-ID: <CAErSpo4H9_Fwyic9crHTGwWaDk5bevK7r6pTb+tpMFxHZ2MajQ@mail.gmail.com>
-Subject: Re: [3.1-rc6] kmalloc(64) leak from IDE
-To: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 23, 2011 at 9:58 AM, Bernd Schubert
-<bernd.schubert@itwm.fraunhofer.de> wrote:
-> On 09/23/2011 09:21 AM, Borislav Petkov wrote:
->>
->> On Thu, Sep 22, 2011 at 01:23:37PM -0700, Simon Kirby wrote:
->>>
->>> Yes, that seems to have made it stop complaining about the IDE path.
->>
->> Good, thanks for testing. It would be great if you left it running for
->> a couple of days like this to see whether there aren't any other issues
->> with the patch. I'll send it with a proper description to Dave soonish
->> since this is a real bug.
->>
->>> All I see from kmemleak now is:
->>
->> Yep, not IDE-related. Adding linux-acpi.
->
->
->>
->>> unreferenced object 0xe7481a00 (size 256):
->>>   comm "swapper", pid 1, jiffies 4294892509 (age 515.560s)
->>>   hex dump (first 32 bytes):
->>>     00 00 00 28 ff ff ef ff 60 78 4e e7 00 02 00 00  ...(....`xN.....
->>>     47 01 f8 0c f8 0c 01 08 00 00 00 00 0c 03 00 00  G...............
->>>   backtrace:
->>>     [<c1495c47>] kmemleak_alloc+0x27/0x50
->>>     [<c10b3563>] __kmalloc+0xf3/0x1c0
->>>     [<c149e0b0>] pci_acpi_scan_root+0x11e/0x272
->>>     [<c149916b>] acpi_pci_root_add+0x163/0x256
->>>     [<c12adddc>] acpi_device_probe+0x3a/0xf4
->>>     [<c1302e38>] driver_probe_device+0x68/0x160
->>>     [<c1302fb9>] __driver_attach+0x89/0x90
->>>     [<c1302718>] bus_for_each_dev+0x48/0x70
->>>     [<c1302cc9>] driver_attach+0x19/0x20
->>>     [<c130213f>] bus_add_driver+0x17f/0x240
->>>     [<c1303345>] driver_register+0x65/0x120
->>>     [<c12af273>] acpi_bus_register_driver+0x3a/0x3f
->>>     [<c16d421f>] acpi_pci_root_init+0x1b/0x2a
->>>     [<c1001030>] do_one_initcall+0x30/0x160
->>>     [<c16b920b>] kernel_init+0x78/0x10c
->>>     [<c14a1b76>] kernel_thread_helper+0x6/0xd
->>> unreferenced object 0xe74e7860 (size 16):
->>>   comm "swapper", pid 1, jiffies 4294892509 (age 515.560s)
->>>   hex dump (first 16 bytes):
->>>     50 43 49 20 42 75 73 20 30 30 30 30 3a 30 30 00  PCI Bus 0000:00.
->>>   backtrace:
->>>     [<c1495c47>] kmemleak_alloc+0x27/0x50
->>>     [<c10b3563>] __kmalloc+0xf3/0x1c0
->>>     [<c1290cce>] kvasprintf+0x2e/0x50
->>>     [<c1290d01>] kasprintf+0x11/0x20
->>>     [<c149e0da>] pci_acpi_scan_root+0x148/0x272
->>>     [<c149916b>] acpi_pci_root_add+0x163/0x256
->>>     [<c12adddc>] acpi_device_probe+0x3a/0xf4
->>>     [<c1302e38>] driver_probe_device+0x68/0x160
->>>     [<c1302fb9>] __driver_attach+0x89/0x90
->>>     [<c1302718>] bus_for_each_dev+0x48/0x70
->>>     [<c1302cc9>] driver_attach+0x19/0x20
->>>     [<c130213f>] bus_add_driver+0x17f/0x240
->>>     [<c1303345>] driver_register+0x65/0x120
->>>     [<c12af273>] acpi_bus_register_driver+0x3a/0x3f
->>>     [<c16d421f>] acpi_pci_root_init+0x1b/0x2a
->>>     [<c1001030>] do_one_initcall+0x30/0x160
->>>
->>> ...which is probably a separate, non-recurring leak.
->>>
->>>> Also, I'm sure you know IDE is deprecated, so what are the chances of
->>>> moving this box to libata? Also, can you send me your .config pls?
->>>
->>> Yeah, I was going to get around to that eventually. :) Config (and
->>> earlier kmemleak output) here: http://0x.ca/sim/ref/3.1-rc6-blue/
->>
->> Ok, thanks.
->>
->
-> I think I reported those already some time ago:
->
-> https://lkml.org/lkml/2011/6/21/95
+On Fri, 23 Sep 2011, Matthias Dellweg wrote:
 
-Rats.  And you even posted a patch
-(https://lkml.org/lkml/2011/6/21/132).  I was cc'd, but unfortunately
-to an old email address that no longer works.  I'll follow up on it
-and make sure it's fixed (probably in 3.2 since it's minor and we're
-so late in 3.1).
+> Am Thu, 22 Sep 2011 23:56:56 +0200
+> schrieb Matthias Dellweg <2500@gmx.de>:
+> 
+> > +       if ((requesttype == 0xa1) && (request == 0x00)
+> > +        && (usb_find_alt_setting(ps->dev->actconfig, index >> 8,
+> > index & 0xff)
+> > +        ->desc.bInterfaceClass == USB_CLASS_PRINTER))
+> > +               index >>= 8;
+> 
+> I just woke up and realised this is a very bad idea if there is no such
+> setting...
+> So here's the next version I'd like to propose for comments:
 
-Bjorn
+This is basically okay.  But your mailer has mangled the whitespace.
+
+> diff --git a/drivers/usb/core/devio.c b/drivers/usb/core/devio.c
+> index 37518df..d2efc97 100644
+> --- a/drivers/usb/core/devio.c
+> +++ b/drivers/usb/core/devio.c
+> @@ -607,9 +607,10 @@ static int findintfep(struct usb_device *dev, unsigned int ep)
+>  }
+>  
+>  static int check_ctrlrecip(struct dev_state *ps, unsigned int requesttype,
+> -                          unsigned int index)
+> +                          unsigned int request, unsigned int index)
+>  {
+>         int ret = 0;
+> +       struct usb_host_interface *alt_setting;
+>  
+>         if (ps->dev->state != USB_STATE_UNAUTHENTICATED
+>          && ps->dev->state != USB_STATE_ADDRESS
+> @@ -618,6 +619,15 @@ static int check_ctrlrecip(struct dev_state *ps, unsigned int requesttype,
+>         if (USB_TYPE_VENDOR == (USB_TYPE_MASK & requesttype))
+>                 return 0;
+>  
+> +       /* check for the special corner case 'get_device_id' in the printer class specification,
+> +        * where wIndex is (configuration << 8 | altsetting) */
+
+Here and below, you should fit lines into 80 columns.  And the closing
+*/ should be on a separate line (many people like to put the opening /*
+on a separate line too).
+
+Also, the high byte of wIndex is interface, not configuration.
+
+> +       if ((requesttype == 0xa1) && (request == 0x00))
+
+Nested parens not needed.  And the request value should be given in
+decimal, like it is in the spec.
+
+> +       {
+
+The open paren should be at the end of the "if" line, not on a line of
+its own.
+
+> +               alt_setting = usb_find_alt_setting(ps->dev->actconfig, index >> 8, index & 0xff);
+> +               if (alt_setting && (alt_setting->desc.bInterfaceClass == USB_CLASS_PRINTER))
+> +                       index >>= 8;
+> +       }
+> +
+>         index &= 0xff;
+>         switch (requesttype & USB_RECIP_MASK) {
+>         case USB_RECIP_ENDPOINT:
+> @@ -770,7 +780,7 @@ static int proc_control(struct dev_state *ps, void __user *arg)
+>  
+>         if (copy_from_user(&ctrl, arg, sizeof(ctrl)))
+>                 return -EFAULT;
+> -       ret = check_ctrlrecip(ps, ctrl.bRequestType, ctrl.wIndex);
+> +       ret = check_ctrlrecip(ps, ctrl.bRequestType, ctrl.bRequest, ctrl.wIndex);
+>         if (ret)
+>                 return ret;
+>         wLength = ctrl.wLength;         /* To suppress 64k PAGE_SIZE warning */
+> @@ -1100,7 +1110,7 @@ static int proc_do_submiturb(struct dev_state *ps, struct usbdevfs_urb *uurb,
+>                         kfree(dr);
+>                         return -EINVAL;
+>                 }
+> -               ret = check_ctrlrecip(ps, dr->bRequestType,
+> +               ret = check_ctrlrecip(ps, dr->bRequestType, dr->bRequest,
+>                                       le16_to_cpup(&dr->wIndex));
+>                 if (ret) {
+>                         kfree(dr);
+
+Alan Stern
+
