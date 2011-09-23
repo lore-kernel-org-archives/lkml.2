@@ -1,194 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754737Ab1IWCVY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 22:21:24 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:56375 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754235Ab1IWCVX (ORCPT
+	id S1754755Ab1IWCkm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 22:40:42 -0400
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:51772 "EHLO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753669Ab1IWCkl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 22:21:23 -0400
-From: Rob Herring <robherring2@gmail.com>
-To: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Cc: grant.likely@secretlab.ca, marc.zyngier@arm.com, thomas.abraham@linaro.org,
-        jamie@jamieiles.com, b-cousson@ti.com, shawn.guo@linaro.org,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH v3] of/irq: introduce of_irq_init
-Date: Thu, 22 Sep 2011 21:21:13 -0500
-Message-Id: <1316744473-13158-1-git-send-email-robherring2@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1316550244-3655-3-git-send-email-robherring2@gmail.com>
-References: <1316550244-3655-3-git-send-email-robherring2@gmail.com>
+	Thu, 22 Sep 2011 22:40:41 -0400
+From: Haojian Zhuang <hzhuang1@marvell.com>
+To: Eric Miao <eric.y.miao@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+CC: Linus Walleij <linus.walleij@stericsson.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>
+Date: Thu, 22 Sep 2011 19:37:09 -0700
+Subject: RE: [PATCH 15/19] plat-pxa: break out GPIO driver specifics
+Thread-Topic: [PATCH 15/19] plat-pxa: break out GPIO driver specifics
+Thread-Index: Acx4Z4VPM62LkPzUQa6wRyhL22dL2gBMiJYA
+Message-ID: <25B60CDC2F704E4E9D88FFD52780CB4C05E9AF9F8B@SC-VEXCH1.marvell.com>
+References: <1312978697-18572-1-git-send-email-linus.walleij@stericsson.com>
+ <CAMPhdO9eL_Sdq-=TCami=CkwWeYR3XeF0K=n9L0uzjS88YTsRA@mail.gmail.com>
+ <CACRpkdbGfhZnLaP9p27T1qbD0NVsW7Spp9ZVbR6zEGBSFU+M9g@mail.gmail.com>
+ <CAMPhdO-3AY-S6dsW4FU2qB5G_7ffqcpj7x3hD-T=uhBvSAzKBQ@mail.gmail.com>
+In-Reply-To: <CAMPhdO-3AY-S6dsW4FU2qB5G_7ffqcpj7x3hD-T=uhBvSAzKBQ@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id p8N2f9Tp002097
 
-From: Rob Herring <rob.herring@calxeda.com>
 
-of_irq_init will scan the devicetree for matching interrupt controller
-nodes. Then it calls an initialization function for each found controller
-in the proper order with parent nodes initialized before child nodes.
 
-Based on initial pseudo code from Grant Likely.
+>-----Original Message-----
+>From: Eric Miao [mailto:eric.y.miao@gmail.com]
+>Sent: 2011å¹´9æœˆ21æ—¥ 10:05 PM
+>To: Linus Walleij; Haojian Zhuang
+>Cc: Linus Walleij; Grant Likely; linux-kernel@vger.kernel.org; linux-
+>arm-kernel@lists.infradead.org; Lee Jones; Russell King
+>Subject: Re: [PATCH 15/19] plat-pxa: break out GPIO driver specifics
+>
+>On Tue, Sep 20, 2011 at 4:45 PM, Linus Walleij <linus.walleij@linaro.org>
+>wrote:
+>> On Wed, Aug 10, 2011 at 4:38 PM, Eric Miao <eric.y.miao@gmail.com>
+>wrote:
+>>> On Wed, Aug 10, 2011 at 8:18 PM, Linus Walleij
+>>> <linus.walleij@stericsson.com> wrote:
+>>>> From: Linus Walleij <linus.walleij@linaro.org>
+>>>>
+>>>> The <mach/gpio.h> file is included from upper directories
+>>>> and deal with generic GPIO and gpiolib stuff. Break out the
+>>>> platform and driver specific defines and functions into its own
+>>>> header file.
+>>>>
+>>>> Cc: Eric Miao <eric.y.miao@gmail.com>
+>>>> Cc: Russell King <linux@arm.linux.org.uk>
+>>>> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+>>>
+>>> I think there is better way around this, am working on it with
+>several
+>>> patches already, will release soon.
+>>
+>> Anything happening on this front or shall I update this patch set?
+>
+>Hi Linus,
+>
+>Several cleanup patches in my local tree but I didn't manage to find
+>time to finish the series. Please go ahead update the patch set. We
+>can fix the problems later.
+>
+>Haojian,
+>
+>Could you help on generalize the GPIO support code for PXA? Generally,
+>the goals are:
+>
+>1. independent of <mach/gpio.h>, i.e. no #include <mach/gpio.h> so
+>to support multiple sub-arch in a single kernel, that's to say -
+>possible
+>to build a single kernel supporting both mach-pxa/ and mach-mmp/
+>
+>2. as a result of 1), independent of <plat/gpio.h>
+>
+OK. I'll follow this.
 
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
----
-Changes from v2:
-- add missing kfree's found by Jamie
-- Implement Grant's comments to simplify the init loop
-- fix function comments
-
- drivers/of/irq.c       |  106 ++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/of_irq.h |    3 +
- 2 files changed, 109 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/of/irq.c b/drivers/of/irq.c
-index 6a5b5e7..aedd39b 100644
---- a/drivers/of/irq.c
-+++ b/drivers/of/irq.c
-@@ -19,10 +19,12 @@
-  */
- 
- #include <linux/errno.h>
-+#include <linux/list.h>
- #include <linux/module.h>
- #include <linux/of.h>
- #include <linux/of_irq.h>
- #include <linux/string.h>
-+#include <linux/slab.h>
- 
- /* For archs that don't support NO_IRQ (such as x86), provide a dummy value */
- #ifndef NO_IRQ
-@@ -386,3 +388,107 @@ int of_irq_to_resource_table(struct device_node *dev, struct resource *res,
- 
- 	return i;
- }
-+
-+struct intc_desc {
-+	struct list_head	list;
-+	struct device_node	*dev;
-+	struct device_node	*interrupt_parent;
-+};
-+
-+/**
-+ * of_irq_init - Scan and init matching interrupt controllers in DT
-+ * @matches: 0 terminated array of nodes to match and init function to call
-+ *
-+ * This function scans the device tree for matching interrupt controller nodes,
-+ * and calls their initialization functions in order with parents first.
-+ */
-+void __init of_irq_init(const struct of_device_id *matches)
-+{
-+	struct device_node *np, *parent = NULL;
-+	struct intc_desc *desc, *temp_desc;
-+	struct list_head intc_desc_list, intc_parent_list;
-+
-+	INIT_LIST_HEAD(&intc_desc_list);
-+	INIT_LIST_HEAD(&intc_parent_list);
-+
-+	for_each_matching_node(np, matches) {
-+		if (!of_find_property(np, "interrupt-controller", NULL))
-+			continue;
-+		/* Here, we allocate and populate an intc_desc with the node
-+		* pointer, interrupt-parent device_node etc. */
-+		desc = kzalloc(sizeof(*desc), GFP_KERNEL);
-+		if (!desc) {
-+			WARN_ON(1);
-+			goto err;
-+		}
-+		desc->dev = np;
-+		desc->interrupt_parent = of_irq_find_parent(np);
-+		list_add_tail(&desc->list, &intc_desc_list);
-+	}
-+	if (list_empty(&intc_desc_list))
-+		return;
-+
-+	/*
-+	 * The root irq controller is the one without an interrupt-parent.
-+	 * That one goes first, followed by the controllers that reference it,
-+	 * followed by the ones that reference the 2nd level controllers, etc
-+	 */
-+	while (!list_empty(&intc_desc_list)) {
-+		/*
-+		 * Process all controllers with the current 'parent'.
-+		 * First pass will be looking for NULL as the parent.
-+		 * The assumption is that NULL parent means a root controller.
-+		 */
-+		list_for_each_entry_safe(desc, temp_desc, &intc_desc_list, list) {
-+			const struct of_device_id *match;
-+			int ret;
-+			of_irq_init_cb_t irq_init_cb;
-+
-+			if (desc->interrupt_parent != parent)
-+				continue;
-+
-+			list_del(&desc->list);
-+			match = of_match_node(matches, desc->dev);
-+			if (!match || !match->data) {
-+				kfree(desc);
-+				continue;
-+			}
-+
-+			pr_debug("of_irq_init: init %s @ %p, parent %p\n",
-+				 match->compatible,
-+				 desc->dev, desc->interrupt_parent);
-+			irq_init_cb = match->data;
-+			ret = irq_init_cb(desc->dev, desc->interrupt_parent);
-+			if (ret) {
-+				kfree(desc);
-+				continue;
-+			}
-+
-+			/*
-+			 * This one is now set up; add it to the parent list so
-+			 * its children can get processed in a subsequent pass.
-+			 */
-+			list_add_tail(&desc->list, &intc_parent_list);
-+		}
-+
-+		/* Get the next pending parent that might have children */
-+		desc = list_first_entry(&intc_parent_list, typeof(*desc), list);
-+		if (list_empty(&intc_parent_list) || !desc) {
-+			pr_debug("of_irq_init: children remain, but no parents\n");
-+			break;
-+		}
-+		list_del(&desc->list);
-+		parent = desc->dev;
-+		kfree(desc);
-+	}
-+
-+	list_for_each_entry_safe(desc, temp_desc, &intc_parent_list, list) {
-+		list_del(&desc->list);
-+		kfree(desc);
-+	}
-+err:
-+	list_for_each_entry_safe(desc, temp_desc, &intc_desc_list, list) {
-+		list_del(&desc->list);
-+		kfree(desc);
-+	}
-+}
-diff --git a/include/linux/of_irq.h b/include/linux/of_irq.h
-index cd2e61c..d0307ee 100644
---- a/include/linux/of_irq.h
-+++ b/include/linux/of_irq.h
-@@ -33,6 +33,8 @@ struct of_irq {
- 	u32 specifier[OF_MAX_IRQ_SPEC]; /* Specifier copy */
- };
- 
-+typedef int (*of_irq_init_cb_t)(struct device_node *, struct device_node *);
-+
- /*
-  * Workarounds only applied to 32bit powermac machines
-  */
-@@ -73,6 +75,7 @@ extern int of_irq_to_resource_table(struct device_node *dev,
- 		struct resource *res, int nr_irqs);
- extern struct device_node *of_irq_find_parent(struct device_node *child);
- 
-+extern void of_irq_init(const struct of_device_id *matches);
- 
- #endif /* CONFIG_OF_IRQ */
- #endif /* CONFIG_OF */
--- 
-1.7.5.4
-
+>Thanks
+>- eric
+>
+>>
+>> Yours,
+>> Linus Walleij
+>>
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
