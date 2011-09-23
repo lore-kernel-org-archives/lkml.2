@@ -1,105 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754863Ab1IWP6v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 11:58:51 -0400
-Received: from lo.gmane.org ([80.91.229.12]:47259 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754812Ab1IWP6u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 11:58:50 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
-Subject: Re: [3.1-rc6] kmalloc(64) leak from IDE
-Date: Fri, 23 Sep 2011 17:58:31 +0200
-Message-ID: <j5iab7$j8m$1@dough.gmane.org>
-References: <20110922072643.GA27232@hostway.ca> <20110922084811.GC17640@liondog.tnic> <20110922202337.GB32661@hostway.ca> <20110923072118.GA13293@liondog.tnic>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: tc-gate2.pci.uni-heidelberg.de
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110419 Thunderbird/3.1.9
-In-Reply-To: <20110923072118.GA13293@liondog.tnic>
-Cc: linux-acpi@vger.kernel.org
+	id S1754867Ab1IWQC5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 12:02:57 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:41737 "HELO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754776Ab1IWQC4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Sep 2011 12:02:56 -0400
+From: Marc Zyngier <marc.zyngier@arm.com>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Bryan Huntsman <bryanh@codeaurora.org>,
+        David Brown <davidb@codeaurora.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>
+Subject: [PATCH v3 0/3] genirq: handling GIC per-cpu interrupts
+Date: Fri, 23 Sep 2011 17:03:05 +0100
+Message-Id: <1316793788-14500-1-git-send-email-marc.zyngier@arm.com>
+X-Mailer: git-send-email 1.7.0.4
+X-OriginalArrivalTime: 23 Sep 2011 16:02:49.0818 (UTC) FILETIME=[3E2B2BA0:01CC7A0A]
+X-MC-Unique: 111092317025203701
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id p8NG3Alh005782
 
-On 09/23/2011 09:21 AM, Borislav Petkov wrote:
-> On Thu, Sep 22, 2011 at 01:23:37PM -0700, Simon Kirby wrote:
->> Yes, that seems to have made it stop complaining about the IDE path.
->
-> Good, thanks for testing. It would be great if you left it running for
-> a couple of days like this to see whether there aren't any other issues
-> with the patch. I'll send it with a proper description to Dave soonish
-> since this is a real bug.
->
->> All I see from kmemleak now is:
->
-> Yep, not IDE-related. Adding linux-acpi.
+The current GIC per-cpu interrupts (aka PPIs) suffer from a number of
+problems:
 
+- They use a completely separate scheme to handle the interrupts,
+  mostly because the PPI concept doesn't really match the kernel view
+  of an interrupt.
+- PPIs can only be used by the timer code, unless we add more low-level
+  assembly code.
+- The local timer code can only be used by devices generating PPIs,
+  and not SPIs.
+- At least one platform (msm) has started implementing its own
+  alternative scheme.
+- Some low-level code gets duplicated, as usual...
 
->
->> unreferenced object 0xe7481a00 (size 256):
->>    comm "swapper", pid 1, jiffies 4294892509 (age 515.560s)
->>    hex dump (first 32 bytes):
->>      00 00 00 28 ff ff ef ff 60 78 4e e7 00 02 00 00  ...(....`xN.....
->>      47 01 f8 0c f8 0c 01 08 00 00 00 00 0c 03 00 00  G...............
->>    backtrace:
->>      [<c1495c47>] kmemleak_alloc+0x27/0x50
->>      [<c10b3563>] __kmalloc+0xf3/0x1c0
->>      [<c149e0b0>] pci_acpi_scan_root+0x11e/0x272
->>      [<c149916b>] acpi_pci_root_add+0x163/0x256
->>      [<c12adddc>] acpi_device_probe+0x3a/0xf4
->>      [<c1302e38>] driver_probe_device+0x68/0x160
->>      [<c1302fb9>] __driver_attach+0x89/0x90
->>      [<c1302718>] bus_for_each_dev+0x48/0x70
->>      [<c1302cc9>] driver_attach+0x19/0x20
->>      [<c130213f>] bus_add_driver+0x17f/0x240
->>      [<c1303345>] driver_register+0x65/0x120
->>      [<c12af273>] acpi_bus_register_driver+0x3a/0x3f
->>      [<c16d421f>] acpi_pci_root_init+0x1b/0x2a
->>      [<c1001030>] do_one_initcall+0x30/0x160
->>      [<c16b920b>] kernel_init+0x78/0x10c
->>      [<c14a1b76>] kernel_thread_helper+0x6/0xd
->> unreferenced object 0xe74e7860 (size 16):
->>    comm "swapper", pid 1, jiffies 4294892509 (age 515.560s)
->>    hex dump (first 16 bytes):
->>      50 43 49 20 42 75 73 20 30 30 30 30 3a 30 30 00  PCI Bus 0000:00.
->>    backtrace:
->>      [<c1495c47>] kmemleak_alloc+0x27/0x50
->>      [<c10b3563>] __kmalloc+0xf3/0x1c0
->>      [<c1290cce>] kvasprintf+0x2e/0x50
->>      [<c1290d01>] kasprintf+0x11/0x20
->>      [<c149e0da>] pci_acpi_scan_root+0x148/0x272
->>      [<c149916b>] acpi_pci_root_add+0x163/0x256
->>      [<c12adddc>] acpi_device_probe+0x3a/0xf4
->>      [<c1302e38>] driver_probe_device+0x68/0x160
->>      [<c1302fb9>] __driver_attach+0x89/0x90
->>      [<c1302718>] bus_for_each_dev+0x48/0x70
->>      [<c1302cc9>] driver_attach+0x19/0x20
->>      [<c130213f>] bus_add_driver+0x17f/0x240
->>      [<c1303345>] driver_register+0x65/0x120
->>      [<c12af273>] acpi_bus_register_driver+0x3a/0x3f
->>      [<c16d421f>] acpi_pci_root_init+0x1b/0x2a
->>      [<c1001030>] do_one_initcall+0x30/0x160
->>
->> ...which is probably a separate, non-recurring leak.
->>
->>> Also, I'm sure you know IDE is deprecated, so what are the chances of
->>> moving this box to libata? Also, can you send me your .config pls?
->>
->> Yeah, I was going to get around to that eventually. :) Config (and
->> earlier kmemleak output) here: http://0x.ca/sim/ref/3.1-rc6-blue/
->
-> Ok, thanks.
->
+The proposed solution is to handle the PPIs using the same path as
+SPIs. A new core API is added to deal with per-cpu interrupts in a
+less awkward way. The local timer code is updated to reflect these
+changes.
 
-I think I reported those already some time ago:
+The core API changes are based on an initial idea by Thomas Gleixner.
 
-https://lkml.org/lkml/2011/6/21/95
+Tested on ARM Versatile Express (Cortex A15), ARM RealView PB11MP,
+OMAP4 (Panda) and Tegra (Harmony). Patch series against next-20110923.
 
+>From v2:
+- Fixed !GENERIC_HARDIRQS build
+- Fixed request_percpu_irq documentation
 
-Cheers,
-Bernd
+>From v1:
+- General tidy-up after Thomas' review. I've kept the config option
+  for the time being until we can sort out the anonymous union
+  problem.
+
+Marc Zyngier (3):
+  genirq: add support for per-cpu dev_id interrupts
+  ARM: gic: consolidate PPI handling
+  ARM: gic, local timers: use the request_percpu_irq() interface
+
+ arch/arm/common/Kconfig                           |    1 +
+ arch/arm/common/gic.c                             |   38 +++-
+ arch/arm/include/asm/entry-macro-multi.S          |    7 -
+ arch/arm/include/asm/hardirq.h                    |    3 -
+ arch/arm/include/asm/hardware/entry-macro-gic.S   |   19 +--
+ arch/arm/include/asm/hardware/gic.h               |    1 -
+ arch/arm/include/asm/localtimer.h                 |   19 +-
+ arch/arm/include/asm/smp.h                        |    5 -
+ arch/arm/include/asm/smp_twd.h                    |    2 +-
+ arch/arm/kernel/irq.c                             |    3 -
+ arch/arm/kernel/smp.c                             |   33 +----
+ arch/arm/kernel/smp_twd.c                         |   47 +++++-
+ arch/arm/mach-exynos4/include/mach/entry-macro.S  |    6 +-
+ arch/arm/mach-exynos4/mct.c                       |    5 -
+ arch/arm/mach-msm/board-msm8x60.c                 |   11 -
+ arch/arm/mach-msm/include/mach/entry-macro-qgic.S |   73 +-------
+ arch/arm/mach-msm/timer.c                         |   69 ++++---
+ arch/arm/mach-omap2/include/mach/entry-macro.S    |   14 +--
+ arch/arm/mach-shmobile/entry-intc.S               |    3 -
+ arch/arm/mach-shmobile/include/mach/entry-macro.S |    3 -
+ include/linux/interrupt.h                         |   40 +++-
+ include/linux/irq.h                               |   16 ++-
+ include/linux/irqdesc.h                           |    1 +
+ kernel/irq/Kconfig                                |    4 +
+ kernel/irq/chip.c                                 |   54 ++++++
+ kernel/irq/internals.h                            |    2 +
+ kernel/irq/irqdesc.c                              |   25 +++
+ kernel/irq/manage.c                               |  206 ++++++++++++++++++++-
+ kernel/irq/settings.h                             |    7 +
+ 29 files changed, 468 insertions(+), 249 deletions(-)
+
 
