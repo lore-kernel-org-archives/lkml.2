@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754716Ab1IWBqK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 21:46:10 -0400
-Received: from mail132.messagelabs.com ([216.82.242.115]:48322 "EHLO
-	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752619Ab1IWBqH (ORCPT
+	id S1754752Ab1IWBrV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 21:47:21 -0400
+Received: from sr-smtp.usish.com ([210.5.144.203]:51091 "EHLO
+	sr-smtp.usish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752866Ab1IWBrT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 21:46:07 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-7.tower-132.messagelabs.com!1316742366!39435830!1
-X-Originating-IP: [216.166.12.178]
-X-StarScan-Version: 6.3.6; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] btrfs/extent_map.c: quiet sparse noise
-Date: Thu, 22 Sep 2011 18:45:56 -0700
-User-Agent: KMail/1.9.9
-CC: <linux-btrfs@vger.kernel.org>, <chris.mason@oracle.com>
+	Thu, 22 Sep 2011 21:47:19 -0400
+X-Greylist: delayed 750 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Sep 2011 21:47:18 EDT
+From: "Jack Wang" <jack_wang@usish.com>
+To: "'Dan Williams'" <dan.j.williams@intel.com>,
+        "'Luben Tuikov'" <ltuikov@yahoo.com>
+Cc: "'James Bottomley'" <jbottomley@parallels.com>,
+        <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+References: <1311826792.28583.YahooMailNeo@web31811.mail.mud.yahoo.com><1316691000.10571.6.camel@dabdike><1316709696.61028.YahooMailNeo@web31812.mail.mud.yahoo.com> <CAA9_cmfy0yttyAXZmY=MubRKOqT+uOescR=+J=y5jc_KfPbA8Q@mail.gmail.com>
+Subject: Re: [RESEND] [PATCH] [SCSI] libsas: Allow expander T-T attachments
+Date: Fri, 23 Sep 2011 09:47:34 +0800
+Message-ID: <0D45A68DB11C430A9AFCD5BFEC284C5F@usish.com.cn>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201109221845.56204.hartleys@visionengravers.com>
+X-Mailer: Microsoft Office Outlook 11
+Thread-Index: Acx5TwYuoLhpvE6rSd+85raoWFeSXQAQ6QPA
+In-Reply-To: <CAA9_cmfy0yttyAXZmY=MubRKOqT+uOescR=+J=y5jc_KfPbA8Q@mail.gmail.com>
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6109
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quiet the sparse noise:
+Re: [RESEND] [PATCH] [SCSI] libsas: Allow expander T-T attachments
+> 
+> On Thu, Sep 22, 2011 at 9:41 AM, Luben Tuikov <ltuikov@yahoo.com> wrote:
+> > Allow expander table-to-table attachments for
+> > expanders that support it.
+> >
+> > Signed-off-by: Luben Tuikov <ltuikov@yahoo.com>
+> 
+> Acked-by: Dan Williams <dan.j.williams@intel.com>
 
-warning: symbol '__lookup_extent_mapping' was not declared. Should it be static?
+[Jack Wang] Acked-by: Jack Wang <jack_wang@usish.com>
+> 
+> ...and can we tag this for -stable.  It meets the 100 line count and
+> "New device IDs and quirks are also accepted." constraints.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Chris Mason <chris.mason@oracle.com>
-linux-btrfs@vger.kernel.org
-linux-kernel@vger.kernel.org
-
----
-
-diff --git a/fs/btrfs/extent_map.c b/fs/btrfs/extent_map.c
-index 7c97b33..48004fe 100644
---- a/fs/btrfs/extent_map.c
-+++ b/fs/btrfs/extent_map.c
-@@ -282,7 +282,7 @@ static u64 range_end(u64 start, u64 len)
- 	return start + len;
- }
- 
--struct extent_map *__lookup_extent_mapping(struct extent_map_tree *tree,
-+static struct extent_map *__lookup_extent_mapping(struct extent_map_tree *tree,
- 					   u64 start, u64 len, int strict)
- {
- 	struct extent_map *em;
