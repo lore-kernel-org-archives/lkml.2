@@ -1,32 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752310Ab1IWIoW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 04:44:22 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:50585 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751902Ab1IWIoQ (ORCPT
+	id S1752190Ab1IWIoP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 04:44:15 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40209 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751902Ab1IWIoO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 04:44:16 -0400
+	Fri, 23 Sep 2011 04:44:14 -0400
+Date: Fri, 23 Sep 2011 09:43:48 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: mhban <mhban@samsung.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        DavidHowells <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Michel Lespinasse <walken@google.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Chris Metcalf <cmetcalf@tilera.com>
+Subject: Re: [PATCH] ARM: futex: fix clobbering oldval
+Message-ID: <20110923084348.GA5468@e102144-lin.cambridge.arm.com>
+References: <1316660015.6872.1.camel@puffmine-laptop>
+ <20110922172653.GH13572@e102144-lin.cambridge.arm.com>
+ <1316737129.6872.17.camel@puffmine-laptop>
 MIME-Version: 1.0
-Date: Fri, 23 Sep 2011 10:44:15 +0200
-Message-ID: <CADDKRnA+i3Tq5AF80fpnL7PFj-73+_R1N+9W7=a+iBwjMNqwWQ@mail.gmail.com>
-Subject: [v3.1-rc7]: Radeon regression
-From: =?ISO-8859-1?Q?J=F6rg_Otte?= <jrg.otte@googlemail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alex Deucher <alexander.deucher@amd.com>, Dave Airlie <airlied@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1316737129.6872.17.camel@puffmine-laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With v3.1-rc7 I'm seeing only garbage on the desktop.
+On Fri, Sep 23, 2011 at 01:18:49AM +0100, mhban wrote:
+> On Thu, 2011-09-22 at 18:26 +0100, Will Deacon wrote:
+> > 
+> > It would have been nice to have been CC'd on this...
+> 
+> Will not miss next time. Thanks.
 
-The following reverts help:
-d8751cdb4cb7e4017c83d1832b4eb720b017e9aa revert "drm/radeon/kms: fix
-typo in r100_blit_copy"
-2e84ca5b63b2224447a99d29ba8e6419a6a9e506 revert "drm/radeon/kms: Make
-GPU/CPU page size handling consistent in blit code (v2)"
+Thanks. You can use scripts/get_maintainer.pl to get a list of people to
+email.
 
-This is a Thinkpad T43 with:
-01:00.0 VGA compatible controller: ATI Technologies Inc M22 [Mobility
-Radeon X300]
+> > 
+> > You shouldn't reference r5 directly here, but due to the way the futex code
+> > is laid out, you can't add an extra output operand without converting the
+> > code to use named arguments.
+> > 
+> > I'll post a patch to do that.
+> > 
+> > Will
+> 
+> I'm not familiar with gcc inline, thanks for pointing it out.
+
+There's a good guide for ARM here:
+
+http://www.ethernut.de/en/documents/arm-inline-asm.html
+
+> BTW, my last name is Ban not Ben.
+
+Oops, I'll update my reported-by to spell that correctly.
+
+Cheers,
+
+Will
