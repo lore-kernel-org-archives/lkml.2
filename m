@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754903Ab1IWPsv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 11:48:51 -0400
-Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:4892
-	"EHLO AM1EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752709Ab1IWPss (ORCPT
+	id S1754930Ab1IWPsz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 11:48:55 -0400
+Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:56256
+	"EHLO AM1EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754910Ab1IWPsw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 11:48:48 -0400
+	Fri, 23 Sep 2011 11:48:52 -0400
 X-SpamScore: 1
-X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h839h63h)
-X-Spam-TCS-SCL: 2:0
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LRZFSQ-01-1CT-02
+X-BigFish: VPS1(zzzz1202hzz8275bh8275dhz32i668h839h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 0,
+X-WSS-ID: 0LRZFSS-02-2CI-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: <iommu@lists.linux-foundation.org>
@@ -21,9 +22,9 @@ CC: Greg Kroah-Hartman <gregkh@suse.de>,
         David Woodhouse <dwmw2@infradead.org>,
         David Brown <davidb@codeaurora.org>, <joro@8bytes.org>,
         <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 01/10] iommu/core: Define iommu_ops and register_iommu only with CONFIG_IOMMU_API
-Date: Fri, 23 Sep 2011 17:45:47 +0200
-Message-ID: <1316792756-3395-2-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 07/10] iommu/vt-d: Use bus_set_iommu instead of register_iommu
+Date: Fri, 23 Sep 2011 17:45:53 +0200
+Message-ID: <1316792756-3395-8-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1316792756-3395-1-git-send-email-joerg.roedel@amd.com>
 References: <1316792756-3395-1-git-send-email-joerg.roedel@amd.com>
@@ -34,47 +35,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This makes it impossible to compile an iommu driver into the
-kernel without selecting CONFIG_IOMMU_API.
+Convert the Intel IOMMU driver to use the new interface for
+publishing the iommu_ops.
 
+Cc: David Woodhouse <dwmw2@infradead.org>
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- include/linux/iommu.h |    8 +++-----
- 1 files changed, 3 insertions(+), 5 deletions(-)
+ drivers/iommu/intel-iommu.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/iommu.h b/include/linux/iommu.h
-index 9940319..6470cd8 100644
---- a/include/linux/iommu.h
-+++ b/include/linux/iommu.h
-@@ -34,6 +34,8 @@ struct iommu_domain {
- #define IOMMU_CAP_CACHE_COHERENCY	0x1
- #define IOMMU_CAP_INTR_REMAP		0x2	/* isolates device intrs */
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index c621c98..2d53c3d 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -3486,7 +3486,7 @@ int __init intel_iommu_init(void)
  
-+#ifdef CONFIG_IOMMU_API
-+
- struct iommu_ops {
- 	int (*domain_init)(struct iommu_domain *domain);
- 	void (*domain_destroy)(struct iommu_domain *domain);
-@@ -49,8 +51,6 @@ struct iommu_ops {
- 			      unsigned long cap);
- };
+ 	init_iommu_pm_ops();
  
--#ifdef CONFIG_IOMMU_API
--
- extern void register_iommu(struct iommu_ops *ops);
- extern bool iommu_found(void);
- extern struct iommu_domain *iommu_domain_alloc(void);
-@@ -70,9 +70,7 @@ extern int iommu_domain_has_cap(struct iommu_domain *domain,
+-	register_iommu(&intel_iommu_ops);
++	bus_set_iommu(&pci_bus_type, &intel_iommu_ops);
  
- #else /* CONFIG_IOMMU_API */
+ 	bus_register_notifier(&pci_bus_type, &device_nb);
  
--static inline void register_iommu(struct iommu_ops *ops)
--{
--}
-+struct iommu_ops {};
- 
- static inline bool iommu_found(void)
- {
 -- 
 1.7.4.1
 
