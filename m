@@ -1,99 +1,662 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754867Ab1IWQC5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 12:02:57 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:41737 "HELO
+	id S1754898Ab1IWQDF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 12:03:05 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:41796 "HELO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754776Ab1IWQC4 (ORCPT
+	with SMTP id S1754776Ab1IWQC6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 12:02:56 -0400
+	Fri, 23 Sep 2011 12:02:58 -0400
 From: Marc Zyngier <marc.zyngier@arm.com>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Bryan Huntsman <bryanh@codeaurora.org>,
-        David Brown <davidb@codeaurora.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>
-Subject: [PATCH v3 0/3] genirq: handling GIC per-cpu interrupts
-Date: Fri, 23 Sep 2011 17:03:05 +0100
-Message-Id: <1316793788-14500-1-git-send-email-marc.zyngier@arm.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH v3 1/3] genirq: add support for per-cpu dev_id interrupts
+Date: Fri, 23 Sep 2011 17:03:06 +0100
+Message-Id: <1316793788-14500-2-git-send-email-marc.zyngier@arm.com>
 X-Mailer: git-send-email 1.7.0.4
-X-OriginalArrivalTime: 23 Sep 2011 16:02:49.0818 (UTC) FILETIME=[3E2B2BA0:01CC7A0A]
-X-MC-Unique: 111092317025203701
+In-Reply-To: <1316793788-14500-1-git-send-email-marc.zyngier@arm.com>
+References: <1316793788-14500-1-git-send-email-marc.zyngier@arm.com>
+X-OriginalArrivalTime: 23 Sep 2011 16:02:50.0271 (UTC) FILETIME=[3E704AF0:01CC7A0A]
+X-MC-Unique: 111092317025507801
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id p8NG3Alh005782
+X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id p8NG3CHO005786
 
-The current GIC per-cpu interrupts (aka PPIs) suffer from a number of
-problems:
+The ARM GIC interrupt controller offers per CPU interrupts (PPIs),
+which are usually used to connect local timers to each core.
+Each CPU has its own private interface to the GIC,
+and only sees the PPIs that are directly connect to it.
 
-- They use a completely separate scheme to handle the interrupts,
-  mostly because the PPI concept doesn't really match the kernel view
-  of an interrupt.
-- PPIs can only be used by the timer code, unless we add more low-level
-  assembly code.
-- The local timer code can only be used by devices generating PPIs,
-  and not SPIs.
-- At least one platform (msm) has started implementing its own
-  alternative scheme.
-- Some low-level code gets duplicated, as usual...
+While these timers are separate devices and have a separate
+interrupt line to a core, they all use the same IRQ number.
 
-The proposed solution is to handle the PPIs using the same path as
-SPIs. A new core API is added to deal with per-cpu interrupts in a
-less awkward way. The local timer code is updated to reflect these
-changes.
+For these devices, request_irq() is not the right API as it
+assumes that an IRQ number is visible by a number of CPUs
+(through the affinity setting), but makes it very awkward to
+express that an IRQ number can be handled by all CPUs, and
+yet be a different interrupt line on each CPU, requiring a
+different dev_id cookie to be passed back to the handler.
 
-The core API changes are based on an initial idea by Thomas Gleixner.
+The *_percpu_irq() functions is designed to overcome these
+limitations, by providing a per-cpu dev_id vector:
 
-Tested on ARM Versatile Express (Cortex A15), ARM RealView PB11MP,
-OMAP4 (Panda) and Tegra (Harmony). Patch series against next-20110923.
+int request_percpu_irq(unsigned int irq, irq_handler_t handler,
+		   const char *devname, void __percpu *percpu_dev_id);
+void free_percpu_irq(unsigned int, void __percpu *);
+int setup_percpu_irq(unsigned int irq, struct irqaction *new);
+void remove_percpu_irq(unsigned int irq, struct irqaction *act);
+void enable_percpu_irq(unsigned int irq);
+void disable_percpu_irq(unsigned int irq);
 
->From v2:
-- Fixed !GENERIC_HARDIRQS build
-- Fixed request_percpu_irq documentation
+The API has a number of limitations:
+- no interrupt sharing
+- no threading
+- common handler across all the CPUs
 
->From v1:
-- General tidy-up after Thomas' review. I've kept the config option
-  for the time being until we can sort out the anonymous union
-  problem.
+Once the interrupt is requested using setup_percpu_irq() or
+request_percpu_irq(), it must be enabled by each core that wishes
+its local interrupt to be delivered.
 
-Marc Zyngier (3):
-  genirq: add support for per-cpu dev_id interrupts
-  ARM: gic: consolidate PPI handling
-  ARM: gic, local timers: use the request_percpu_irq() interface
+Based on an initial patch by Thomas Gleixner.
 
- arch/arm/common/Kconfig                           |    1 +
- arch/arm/common/gic.c                             |   38 +++-
- arch/arm/include/asm/entry-macro-multi.S          |    7 -
- arch/arm/include/asm/hardirq.h                    |    3 -
- arch/arm/include/asm/hardware/entry-macro-gic.S   |   19 +--
- arch/arm/include/asm/hardware/gic.h               |    1 -
- arch/arm/include/asm/localtimer.h                 |   19 +-
- arch/arm/include/asm/smp.h                        |    5 -
- arch/arm/include/asm/smp_twd.h                    |    2 +-
- arch/arm/kernel/irq.c                             |    3 -
- arch/arm/kernel/smp.c                             |   33 +----
- arch/arm/kernel/smp_twd.c                         |   47 +++++-
- arch/arm/mach-exynos4/include/mach/entry-macro.S  |    6 +-
- arch/arm/mach-exynos4/mct.c                       |    5 -
- arch/arm/mach-msm/board-msm8x60.c                 |   11 -
- arch/arm/mach-msm/include/mach/entry-macro-qgic.S |   73 +-------
- arch/arm/mach-msm/timer.c                         |   69 ++++---
- arch/arm/mach-omap2/include/mach/entry-macro.S    |   14 +--
- arch/arm/mach-shmobile/entry-intc.S               |    3 -
- arch/arm/mach-shmobile/include/mach/entry-macro.S |    3 -
- include/linux/interrupt.h                         |   40 +++-
- include/linux/irq.h                               |   16 ++-
- include/linux/irqdesc.h                           |    1 +
- kernel/irq/Kconfig                                |    4 +
- kernel/irq/chip.c                                 |   54 ++++++
- kernel/irq/internals.h                            |    2 +
- kernel/irq/irqdesc.c                              |   25 +++
- kernel/irq/manage.c                               |  206 ++++++++++++++++++++-
- kernel/irq/settings.h                             |    7 +
- 29 files changed, 468 insertions(+), 249 deletions(-)
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+---
+ include/linux/interrupt.h |   40 +++++++---
+ include/linux/irq.h       |   16 ++++-
+ include/linux/irqdesc.h   |    1 +
+ kernel/irq/Kconfig        |    4 +
+ kernel/irq/chip.c         |   54 ++++++++++++
+ kernel/irq/internals.h    |    2 +
+ kernel/irq/irqdesc.c      |   25 ++++++
+ kernel/irq/manage.c       |  206 ++++++++++++++++++++++++++++++++++++++++++++-
+ kernel/irq/settings.h     |    7 ++
+ 9 files changed, 339 insertions(+), 16 deletions(-)
+
+diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+index a103732..85d07ce 100644
+--- a/include/linux/interrupt.h
++++ b/include/linux/interrupt.h
+@@ -95,6 +95,7 @@ typedef irqreturn_t (*irq_handler_t)(int, void *);
+  * @flags:	flags (see IRQF_* above)
+  * @name:	name of the device
+  * @dev_id:	cookie to identify the device
++ * @percpu_dev_id:	cookie to identify the device
+  * @next:	pointer to the next irqaction for shared interrupts
+  * @irq:	interrupt number
+  * @dir:	pointer to the proc/irq/NN/name entry
+@@ -104,17 +105,20 @@ typedef irqreturn_t (*irq_handler_t)(int, void *);
+  * @thread_mask:	bitmask for keeping track of @thread activity
+  */
+ struct irqaction {
+-	irq_handler_t handler;
+-	unsigned long flags;
+-	void *dev_id;
+-	struct irqaction *next;
+-	int irq;
+-	irq_handler_t thread_fn;
+-	struct task_struct *thread;
+-	unsigned long thread_flags;
+-	unsigned long thread_mask;
+-	const char *name;
+-	struct proc_dir_entry *dir;
++	irq_handler_t		handler;
++	unsigned long		flags;
++	void			*dev_id;
++#ifdef CONFIG_IRQ_PERCPU_DEVID
++	void __percpu		*percpu_dev_id;
++#endif
++	struct irqaction	*next;
++	int			irq;
++	irq_handler_t		thread_fn;
++	struct task_struct	*thread;
++	unsigned long		thread_flags;
++	unsigned long		thread_mask;
++	const char		*name;
++	struct proc_dir_entry	*dir;
+ } ____cacheline_internodealigned_in_smp;
+ 
+ extern irqreturn_t no_action(int cpl, void *dev_id);
+@@ -136,6 +140,10 @@ extern int __must_check
+ request_any_context_irq(unsigned int irq, irq_handler_t handler,
+ 			unsigned long flags, const char *name, void *dev_id);
+ 
++extern int __must_check
++request_percpu_irq(unsigned int irq, irq_handler_t handler,
++		   const char *devname, void __percpu *percpu_dev_id);
++
+ extern void exit_irq_thread(void);
+ #else
+ 
+@@ -164,10 +172,18 @@ request_any_context_irq(unsigned int irq, irq_handler_t handler,
+ 	return request_irq(irq, handler, flags, name, dev_id);
+ }
+ 
++static inline int __must_check
++request_percpu_irq(unsigned int irq, irq_handler_t handler,
++		   const char *devname, void __percpu *percpu_dev_id)
++{
++	return request_irq(irq, handler, 0, devname, percpu_dev_id);
++}
++
+ static inline void exit_irq_thread(void) { }
+ #endif
+ 
+ extern void free_irq(unsigned int, void *);
++extern void free_percpu_irq(unsigned int, void __percpu *);
+ 
+ struct device;
+ 
+@@ -207,7 +223,9 @@ extern void devm_free_irq(struct device *dev, unsigned int irq, void *dev_id);
+ 
+ extern void disable_irq_nosync(unsigned int irq);
+ extern void disable_irq(unsigned int irq);
++extern void disable_percpu_irq(unsigned int irq);
+ extern void enable_irq(unsigned int irq);
++extern void enable_percpu_irq(unsigned int irq);
+ 
+ /* The following three functions are for the core kernel use only. */
+ #ifdef CONFIG_GENERIC_HARDIRQS
+diff --git a/include/linux/irq.h b/include/linux/irq.h
+index 73e31ab..59e49c8 100644
+--- a/include/linux/irq.h
++++ b/include/linux/irq.h
+@@ -66,6 +66,7 @@ typedef	void (*irq_preflow_handler_t)(struct irq_data *data);
+  * IRQ_NO_BALANCING		- Interrupt cannot be balanced (affinity set)
+  * IRQ_MOVE_PCNTXT		- Interrupt can be migrated from process context
+  * IRQ_NESTED_TRHEAD		- Interrupt nests into another thread
++ * IRQ_PER_CPU_DEVID		- Dev_id is a per-cpu variable
+  */
+ enum {
+ 	IRQ_TYPE_NONE		= 0x00000000,
+@@ -88,12 +89,13 @@ enum {
+ 	IRQ_MOVE_PCNTXT		= (1 << 14),
+ 	IRQ_NESTED_THREAD	= (1 << 15),
+ 	IRQ_NOTHREAD		= (1 << 16),
++	IRQ_PER_CPU_DEVID	= (1 << 17),
+ };
+ 
+ #define IRQF_MODIFY_MASK	\
+ 	(IRQ_TYPE_SENSE_MASK | IRQ_NOPROBE | IRQ_NOREQUEST | \
+ 	 IRQ_NOAUTOEN | IRQ_MOVE_PCNTXT | IRQ_LEVEL | IRQ_NO_BALANCING | \
+-	 IRQ_PER_CPU | IRQ_NESTED_THREAD)
++	 IRQ_PER_CPU | IRQ_NESTED_THREAD | IRQ_NOTHREAD | IRQ_PER_CPU_DEVID)
+ 
+ #define IRQ_NO_BALANCING_MASK	(IRQ_PER_CPU | IRQ_NO_BALANCING)
+ 
+@@ -367,6 +369,8 @@ enum {
+ struct irqaction;
+ extern int setup_irq(unsigned int irq, struct irqaction *new);
+ extern void remove_irq(unsigned int irq, struct irqaction *act);
++extern int setup_percpu_irq(unsigned int irq, struct irqaction *new);
++extern void remove_percpu_irq(unsigned int irq, struct irqaction *act);
+ 
+ extern void irq_cpu_online(void);
+ extern void irq_cpu_offline(void);
+@@ -394,6 +398,7 @@ extern void handle_edge_irq(unsigned int irq, struct irq_desc *desc);
+ extern void handle_edge_eoi_irq(unsigned int irq, struct irq_desc *desc);
+ extern void handle_simple_irq(unsigned int irq, struct irq_desc *desc);
+ extern void handle_percpu_irq(unsigned int irq, struct irq_desc *desc);
++extern void handle_percpu_devid_irq(unsigned int irq, struct irq_desc *desc);
+ extern void handle_bad_irq(unsigned int irq, struct irq_desc *desc);
+ extern void handle_nested_irq(unsigned int irq);
+ 
+@@ -422,6 +427,8 @@ static inline void irq_set_chip_and_handler(unsigned int irq, struct irq_chip *c
+ 	irq_set_chip_and_handler_name(irq, chip, handle, NULL);
+ }
+ 
++extern int irq_set_percpu_devid(unsigned int irq);
++
+ extern void
+ __irq_set_handler(unsigned int irq, irq_flow_handler_t handle, int is_chained,
+ 		  const char *name);
+@@ -483,6 +490,13 @@ static inline void irq_set_nested_thread(unsigned int irq, bool nest)
+ 		irq_clear_status_flags(irq, IRQ_NESTED_THREAD);
+ }
+ 
++static inline void irq_set_percpu_devid_flags(unsigned int irq)
++{
++	irq_set_status_flags(irq,
++			     IRQ_NOAUTOEN | IRQ_PER_CPU | IRQ_NOTHREAD |
++			     IRQ_NOPROBE | IRQ_PER_CPU_DEVID);
++}
++
+ /* Handle dynamic irq creation and destruction */
+ extern unsigned int create_irq_nr(unsigned int irq_want, int node);
+ extern int create_irq(void);
+diff --git a/include/linux/irqdesc.h b/include/linux/irqdesc.h
+index 150134a..281ccd1 100644
+--- a/include/linux/irqdesc.h
++++ b/include/linux/irqdesc.h
+@@ -53,6 +53,7 @@ struct irq_desc {
+ 	unsigned long		last_unhandled;	/* Aging timer for unhandled count */
+ 	unsigned int		irqs_unhandled;
+ 	raw_spinlock_t		lock;
++	cpumask_var_t		*percpu_enabled;
+ #ifdef CONFIG_SMP
+ 	const struct cpumask	*affinity_hint;
+ 	struct irq_affinity_notify *affinity_notify;
+diff --git a/kernel/irq/Kconfig b/kernel/irq/Kconfig
+index 5a38bf4..75c0631 100644
+--- a/kernel/irq/Kconfig
++++ b/kernel/irq/Kconfig
+@@ -60,6 +60,10 @@ config IRQ_DOMAIN
+ config IRQ_FORCED_THREADING
+        bool
+ 
++# Support per CPU dev id
++config IRQ_PERCPU_DEVID
++	bool
++
+ config SPARSE_IRQ
+ 	bool "Support sparse irq numbering"
+ 	depends on HAVE_SPARSE_IRQ
+diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+index dc5114b..38942d8 100644
+--- a/kernel/irq/chip.c
++++ b/kernel/irq/chip.c
+@@ -204,6 +204,26 @@ void irq_disable(struct irq_desc *desc)
+ 	}
+ }
+ 
++#ifdef CONFIG_IRQ_PERCPU_DEVID
++void irq_percpu_enable(struct irq_desc *desc, unsigned int cpu)
++{
++	if (desc->irq_data.chip->irq_enable)
++		desc->irq_data.chip->irq_enable(&desc->irq_data);
++	else
++		desc->irq_data.chip->irq_unmask(&desc->irq_data);
++	cpumask_set_cpu(cpu, *desc->percpu_enabled);
++}
++
++void irq_percpu_disable(struct irq_desc *desc, unsigned int cpu)
++{
++	if (desc->irq_data.chip->irq_disable) {
++		desc->irq_data.chip->irq_disable(&desc->irq_data);
++		irq_state_set_masked(desc);
++	}
++	cpumask_clear_cpu(cpu, *desc->percpu_enabled);
++}
++#endif
++
+ static inline void mask_ack_irq(struct irq_desc *desc)
+ {
+ 	if (desc->irq_data.chip->irq_mask_ack)
+@@ -544,6 +564,40 @@ handle_percpu_irq(unsigned int irq, struct irq_desc *desc)
+ 		chip->irq_eoi(&desc->irq_data);
+ }
+ 
++#ifdef CONFIG_IRQ_PERCPU_DEVID
++/**
++ * handle_percpu_devid_irq - Per CPU local irq handler with per cpu dev ids
++ * @irq:	the interrupt number
++ * @desc:	the interrupt description structure for this irq
++ *
++ * Per CPU interrupts on SMP machines without locking requirements. Same as
++ * handle_percpu_irq() above but with the following extras:
++ *
++ * action->percpu_dev_id is a pointer to percpu variables which
++ * contain the real device id for the cpu on which this handler is
++ * called
++ */
++void handle_percpu_devid_irq(unsigned int irq, struct irq_desc *desc)
++{
++	struct irq_chip *chip = irq_desc_get_chip(desc);
++	struct irqaction *action = desc->action;
++	void *dev_id = __this_cpu_ptr(action->percpu_dev_id);
++	irqreturn_t res;
++
++	kstat_incr_irqs_this_cpu(irq, desc);
++
++	if (chip->irq_ack)
++		chip->irq_ack(&desc->irq_data);
++
++	trace_irq_handler_entry(irq, action);
++	res = action->handler(irq, dev_id);
++	trace_irq_handler_exit(irq, action, res);
++
++	if (chip->irq_eoi)
++		chip->irq_eoi(&desc->irq_data);
++}
++#endif
++
+ void
+ __irq_set_handler(unsigned int irq, irq_flow_handler_t handle, int is_chained,
+ 		  const char *name)
+diff --git a/kernel/irq/internals.h b/kernel/irq/internals.h
+index 6546431..04f8d5a 100644
+--- a/kernel/irq/internals.h
++++ b/kernel/irq/internals.h
+@@ -71,6 +71,8 @@ extern int irq_startup(struct irq_desc *desc);
+ extern void irq_shutdown(struct irq_desc *desc);
+ extern void irq_enable(struct irq_desc *desc);
+ extern void irq_disable(struct irq_desc *desc);
++extern void irq_percpu_enable(struct irq_desc *desc, unsigned int cpu);
++extern void irq_percpu_disable(struct irq_desc *desc, unsigned int cpu);
+ extern void mask_irq(struct irq_desc *desc);
+ extern void unmask_irq(struct irq_desc *desc);
+ 
+diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
+index 039b889..fa93f4d 100644
+--- a/kernel/irq/irqdesc.c
++++ b/kernel/irq/irqdesc.c
+@@ -443,6 +443,31 @@ void __irq_put_desc_unlock(struct irq_desc *desc, unsigned long flags, bool bus)
+ 		chip_bus_sync_unlock(desc);
+ }
+ 
++#ifdef CONFIG_IRQ_PERCPU_DEVID
++int irq_set_percpu_devid(unsigned int irq)
++{
++	struct irq_desc *desc = irq_to_desc(irq);
++
++	if (!desc)
++		return -EINVAL;
++
++	if (desc->percpu_enabled)
++		return -EINVAL;
++
++	desc->percpu_enabled = kzalloc(sizeof(*desc->percpu_enabled), GFP_KERNEL);
++		
++	if (!desc->percpu_enabled ||
++	    !zalloc_cpumask_var(desc->percpu_enabled, GFP_KERNEL)) {
++		kfree(desc->percpu_enabled);
++		desc->percpu_enabled = NULL;
++		return -ENOMEM;
++	}
++
++	irq_set_percpu_devid_flags(irq);
++	return 0;
++}
++#endif
++
+ /**
+  * dynamic_irq_cleanup - cleanup a dynamically allocated irq
+  * @irq:	irq number to initialize
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 7e1a3ed..2e05d92 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -1121,6 +1121,8 @@ int setup_irq(unsigned int irq, struct irqaction *act)
+ 	int retval;
+ 	struct irq_desc *desc = irq_to_desc(irq);
+ 
++	if (WARN_ON(irq_settings_is_per_cpu_devid(desc)))
++		return -EINVAL;
+ 	chip_bus_lock(desc);
+ 	retval = __setup_irq(irq, desc, act);
+ 	chip_bus_sync_unlock(desc);
+@@ -1129,7 +1131,7 @@ int setup_irq(unsigned int irq, struct irqaction *act)
+ }
+ EXPORT_SYMBOL_GPL(setup_irq);
+ 
+- /*
++/*
+  * Internal function to unregister an irqaction - used to free
+  * regular and special interrupts that are part of the architecture.
+  */
+@@ -1227,7 +1229,10 @@ static struct irqaction *__free_irq(unsigned int irq, void *dev_id)
+  */
+ void remove_irq(unsigned int irq, struct irqaction *act)
+ {
+-	__free_irq(irq, act->dev_id);
++	struct irq_desc *desc = irq_to_desc(irq);
++
++	if (desc && !WARN_ON(irq_settings_is_per_cpu_devid(desc)))
++	    __free_irq(irq, act->dev_id);
+ }
+ EXPORT_SYMBOL_GPL(remove_irq);
+ 
+@@ -1249,7 +1254,7 @@ void free_irq(unsigned int irq, void *dev_id)
+ {
+ 	struct irq_desc *desc = irq_to_desc(irq);
+ 
+-	if (!desc)
++	if (!desc || WARN_ON(irq_settings_is_per_cpu_devid(desc)))
+ 		return;
+ 
+ #ifdef CONFIG_SMP
+@@ -1327,7 +1332,8 @@ int request_threaded_irq(unsigned int irq, irq_handler_t handler,
+ 	if (!desc)
+ 		return -EINVAL;
+ 
+-	if (!irq_settings_can_request(desc))
++	if (!irq_settings_can_request(desc) ||
++	    WARN_ON(irq_settings_is_per_cpu_devid(desc)))
+ 		return -EINVAL;
+ 
+ 	if (!handler) {
+@@ -1412,3 +1418,195 @@ int request_any_context_irq(unsigned int irq, irq_handler_t handler,
+ 	return !ret ? IRQC_IS_HARDIRQ : ret;
+ }
+ EXPORT_SYMBOL_GPL(request_any_context_irq);
++
++#ifdef CONFIG_IRQ_PERCPU_DEVID
++void enable_percpu_irq(unsigned int irq)
++{
++	unsigned int cpu = smp_processor_id();
++	unsigned long flags;
++	struct irq_desc *desc = irq_get_desc_buslock(irq, &flags);
++
++	if (!desc)
++		return;
++
++	irq_percpu_enable(desc, cpu);
++	irq_put_desc_busunlock(desc, flags);
++}
++EXPORT_SYMBOL_GPL(enable_percpu_irq);
++
++void disable_percpu_irq(unsigned int irq)
++{
++	unsigned int cpu = smp_processor_id();
++	unsigned long flags;
++	struct irq_desc *desc = irq_get_desc_buslock(irq, &flags);
++
++	if (!desc)
++		return;
++
++	irq_percpu_disable(desc, cpu);
++	irq_put_desc_busunlock(desc, flags);
++}
++EXPORT_SYMBOL_GPL(disable_percpu_irq);
++
++/*
++ * Internal function to unregister a percpu irqaction.
++ */
++static struct irqaction *__free_percpu_irq(unsigned int irq, void __percpu *dev_id)
++{
++	struct irq_desc *desc = irq_to_desc(irq);
++	struct irqaction *action;
++	unsigned long flags;
++
++	WARN(in_interrupt(), "Trying to free IRQ %d from IRQ context!\n", irq);
++
++	if (!desc)
++		return NULL;
++
++	raw_spin_lock_irqsave(&desc->lock, flags);
++
++	action = desc->action;
++	if (!action || action->percpu_dev_id != dev_id) {
++		WARN(1, "Trying to free already-free IRQ %d\n", irq);
++		goto bad;
++	}
++
++	if (!cpumask_empty(*desc->percpu_enabled)) {
++		WARN(1, "percpu IRQ %d still enabled on CPU%d!\n",
++		     irq, cpumask_first(*desc->percpu_enabled));
++		goto bad;
++	}
++
++	/* Found it - now remove it from the list of entries: */
++	desc->action = NULL;
++
++	raw_spin_unlock_irqrestore(&desc->lock, flags);
++
++	unregister_handler_proc(irq, action);
++
++	module_put(desc->owner);
++	return action;
++
++bad:
++	raw_spin_unlock_irqrestore(&desc->lock, flags);
++	return NULL;
++}
++
++/**
++ *	remove_percpu_irq - free a per-cpu interrupt
++ *	@irq: Interrupt line to free
++ *	@act: irqaction for the interrupt
++ *
++ * Used to remove interrupts statically setup by the early boot process.
++ */
++void remove_percpu_irq(unsigned int irq, struct irqaction *act)
++{
++	struct irq_desc *desc = irq_to_desc(irq);
++
++	if (desc && irq_settings_is_per_cpu_devid(desc))
++	    __free_percpu_irq(irq, act->percpu_dev_id);
++}
++EXPORT_SYMBOL_GPL(remove_percpu_irq);
++
++/**
++ *	free_percpu_irq - free an interrupt allocated with request_percpu_irq
++ *	@irq: Interrupt line to free
++ *	@dev_id: Device identity to free
++ *
++ *	Remove a percpu interrupt handler. The handler is removed, but
++ *	the interrupt line is not disabled. This must be done on each
++ *	CPU before calling this function. The function does not return
++ *	until any executing interrupts for this IRQ have completed.
++ *
++ *	This function must not be called from interrupt context.
++ */
++void free_percpu_irq(unsigned int irq, void __percpu *dev_id)
++{
++	struct irq_desc *desc = irq_to_desc(irq);
++
++	if (!desc || !irq_settings_is_per_cpu_devid(desc))
++		return;
++
++#ifdef CONFIG_SMP
++	if (WARN_ON(desc->affinity_notify))
++		desc->affinity_notify = NULL;
++#endif
++
++	chip_bus_lock(desc);
++	kfree(__free_percpu_irq(irq, dev_id));
++	chip_bus_sync_unlock(desc);
++}
++EXPORT_SYMBOL_GPL(free_percpu_irq);
++
++/**
++ *	setup_percpu_irq - setup a per-cpu interrupt
++ *	@irq: Interrupt line to setup
++ *	@act: irqaction for the interrupt
++ *
++ * Used to statically setup per-cpu interrupts in the early boot process.
++ */
++int setup_percpu_irq(unsigned int irq, struct irqaction *act)
++{
++	int retval;
++	struct irq_desc *desc = irq_to_desc(irq);
++
++	if (!irq_settings_is_per_cpu_devid(desc))
++		return -EINVAL;
++	chip_bus_lock(desc);
++	retval = __setup_irq(irq, desc, act);
++	chip_bus_sync_unlock(desc);
++
++	return retval;
++}
++EXPORT_SYMBOL_GPL(setup_percpu_irq);
++
++/**
++ *	request_percpu_irq - allocate a percpu interrupt line
++ *	@irq: Interrupt line to allocate
++ *	@handler: Function to be called when the IRQ occurs.
++ *	@devname: An ascii name for the claiming device
++ *	@dev_id: A percpu cookie passed back to the handler function
++ *
++ *	This call allocates interrupt resources, but doesn't
++ *	automatically enable the interrupt. It has to be done on each
++ *	CPU using enable_percpu_irq().
++ *
++ *	Dev_id must be globally unique. It is a per-cpu variable, and
++ *	the handler gets called with the interrupted CPU's instance of
++ *	that variable.
++ */
++int request_percpu_irq(unsigned int irq, irq_handler_t handler,
++		       const char *devname, void __percpu *dev_id)
++{
++	struct irqaction *action;
++	struct irq_desc *desc;
++	int retval;
++
++	if (!dev_id)
++		return -EINVAL;
++
++	desc = irq_to_desc(irq);
++	if (!desc || !irq_settings_can_request(desc) ||
++	    !irq_settings_is_per_cpu_devid(desc))
++		return -EINVAL;
++
++	action = kzalloc(sizeof(struct irqaction), GFP_KERNEL);
++	if (!action)
++		return -ENOMEM;
++
++	action->handler = handler;
++	action->flags = IRQF_PERCPU;
++	action->name = devname;
++	action->percpu_dev_id = dev_id;
++
++	chip_bus_lock(desc);
++	retval = __setup_irq(irq, desc, action);
++	chip_bus_sync_unlock(desc);
++
++	if (retval)
++		kfree(action);
++
++	return retval;
++}
++EXPORT_SYMBOL_GPL(request_percpu_irq);
++
++#endif
+diff --git a/kernel/irq/settings.h b/kernel/irq/settings.h
+index f166783..1162f10 100644
+--- a/kernel/irq/settings.h
++++ b/kernel/irq/settings.h
+@@ -13,6 +13,7 @@ enum {
+ 	_IRQ_MOVE_PCNTXT	= IRQ_MOVE_PCNTXT,
+ 	_IRQ_NO_BALANCING	= IRQ_NO_BALANCING,
+ 	_IRQ_NESTED_THREAD	= IRQ_NESTED_THREAD,
++	_IRQ_PER_CPU_DEVID	= IRQ_PER_CPU_DEVID,
+ 	_IRQF_MODIFY_MASK	= IRQF_MODIFY_MASK,
+ };
+ 
+@@ -24,6 +25,7 @@ enum {
+ #define IRQ_NOTHREAD		GOT_YOU_MORON
+ #define IRQ_NOAUTOEN		GOT_YOU_MORON
+ #define IRQ_NESTED_THREAD	GOT_YOU_MORON
++#define IRQ_PER_CPU_DEVID	GOT_YOU_MORON
+ #undef IRQF_MODIFY_MASK
+ #define IRQF_MODIFY_MASK	GOT_YOU_MORON
+ 
+@@ -39,6 +41,11 @@ static inline bool irq_settings_is_per_cpu(struct irq_desc *desc)
+ 	return desc->status_use_accessors & _IRQ_PER_CPU;
+ }
+ 
++static inline bool irq_settings_is_per_cpu_devid(struct irq_desc *desc)
++{
++	return desc->status_use_accessors & _IRQ_PER_CPU_DEVID;
++}
++
+ static inline void irq_settings_set_per_cpu(struct irq_desc *desc)
+ {
+ 	desc->status_use_accessors |= _IRQ_PER_CPU;
+-- 
+1.7.0.4
 
 
