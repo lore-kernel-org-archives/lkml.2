@@ -1,81 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754706Ab1IWBdW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 21:33:22 -0400
-Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:26469
-	"EHLO AM1EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754519Ab1IWBdV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 21:33:21 -0400
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h668h839h65h)
-X-Spam-TCS-SCL: 4:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-FB-SS: 0,
-From: Timur Tabi <timur@freescale.com>
-To: <greg@kroah.com>, <linuxppc-dev@ozlabs.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] [v2] drivers/tty: don't use the byte channel handle as a parameter in ehv_bytechan.c
-Date: Thu, 22 Sep 2011 20:33:13 -0500
-Message-ID: <1316741593-24262-1-git-send-email-timur@freescale.com>
-X-Mailer: git-send-email 1.7.4.4
+	id S1754719Ab1IWBjI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 21:39:08 -0400
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:54963 "EHLO
+	mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754681Ab1IWBjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Sep 2011 21:39:06 -0400
+Date: Fri, 23 Sep 2011 01:40:31 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: "Serge E. Hallyn" <serge.hallyn@canonical.com>
+Cc: Miquel van Smoorenburg <mikevs@xs4all.net>, linux-kernel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>, richard@nod.at,
+        akpm@linux-foundation.org
+Subject: [PATCH] User namespace: don't allow sysctl in non-init user ns (v2)
+Message-ID: <20110923014031.GA27781@hallyn.com>
+References: <xs4all.20110915194812.GA24348@sergelap>
+ <1316598367.5939.12.camel@n2o.xs4all.nl>
+ <20110921131514.GA2979@sergelap>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110921131514.GA2979@sergelap>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ePAPR hypervisor byte channel console driver only supports one byte
-channel as a console, and the byte channel handle is stored in a global
-variable.  It doesn't make any sense to pass that handle as a parameter
-to the console functions, since these functions already have access to the
-global variable.
+sysctl.c has its own custom uid check, which is not user namespace
+aware.  As discovered by Richard, that allows root in a container
+privileged access to set all sysctls.
 
-Signed-off-by: Timur Tabi <timur@freescale.com>
+To fix that, don't compare uid or groups if current is not in the
+initial user namespace.  We may at some point want to relax that check
+so that some sysctls are allowed - for instance dmesg_restrict when
+syslog is containerized.
+
+Changelog:
+Sep 22: As Miquel van Smoorenburg pointed out, rather than always
+	refusing access if not in initial user_ns, we should allow
+	world access rights to sysctl files.  We just want to prevent
+	a task in a non-init user namespace from getting the root user
+	or group access rights.
+
+Signed-off-by: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Vasiliy Kulikov <segoon@openwall.com>
+Cc: richard@nod.at
+Cc: Miquel van Smoorenburg <mikevs@xs4all.net>
 ---
- drivers/tty/ehv_bytechan.c |    7 ++-----
- 1 files changed, 2 insertions(+), 5 deletions(-)
+ kernel/sysctl.c |   10 ++++++----
+ 1 files changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/tty/ehv_bytechan.c b/drivers/tty/ehv_bytechan.c
-index f733718..1595dba 100644
---- a/drivers/tty/ehv_bytechan.c
-+++ b/drivers/tty/ehv_bytechan.c
-@@ -282,7 +282,6 @@ static int ehv_bc_console_byte_channel_send(unsigned int handle, const char *s,
- static void ehv_bc_console_write(struct console *co, const char *s,
- 				 unsigned int count)
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 11d65b5..95988dc 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -1697,10 +1697,12 @@ void register_sysctl_root(struct ctl_table_root *root)
+ 
+ static int test_perm(int mode, int op)
  {
--	unsigned int handle = (uintptr_t)co->data;
- 	char s2[EV_BYTE_CHANNEL_MAX_BYTES];
- 	unsigned int i, j = 0;
- 	char c;
-@@ -295,14 +294,14 @@ static void ehv_bc_console_write(struct console *co, const char *s,
- 
- 		s2[j++] = c;
- 		if (j >= (EV_BYTE_CHANNEL_MAX_BYTES - 1)) {
--			if (ehv_bc_console_byte_channel_send(handle, s2, j))
-+			if (ehv_bc_console_byte_channel_send(stdout_bc, s2, j))
- 				return;
- 			j = 0;
- 		}
- 	}
- 
- 	if (j)
--		ehv_bc_console_byte_channel_send(handle, s2, j);
-+		ehv_bc_console_byte_channel_send(stdout_bc, s2, j);
- }
- 
- /*
-@@ -348,8 +347,6 @@ static int __init ehv_bc_console_init(void)
- 			   CONFIG_PPC_EARLY_DEBUG_EHV_BC_HANDLE);
- #endif
- 
--	ehv_bc_console.data = (void *)(uintptr_t)stdout_bc;
--
- 	/* add_preferred_console() must be called before register_console(),
- 	   otherwise it won't work.  However, we don't want to enumerate all the
- 	   byte channels here, either, since we only care about one. */
+-	if (!current_euid())
+-		mode >>= 6;
+-	else if (in_egroup_p(0))
+-		mode >>= 3;
++	if (current_user_ns() == &init_user_ns) {
++		if (!current_euid())
++			mode >>= 6;
++		else if (in_egroup_p(0))
++			mode >>= 3;
++	}
+ 	if ((op & ~mode & (MAY_READ|MAY_WRITE|MAY_EXEC)) == 0)
+ 		return 0;
+ 	return -EACCES;
 -- 
-1.7.4.4
-
+1.7.0.4
 
