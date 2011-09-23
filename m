@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751227Ab1IWE6U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 00:58:20 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:47895 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750833Ab1IWE6R convert rfc822-to-8bit (ORCPT
+	id S1751363Ab1IWFDg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 01:03:36 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:34961 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750833Ab1IWFDe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 00:58:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFxm86xohU4nSuDWe_Ru9SU79x1sLHNdm4nFHyJNH4=mBQ@mail.gmail.com>
-References: <alpine.DEB.2.00.1109222140510.8856@ayla.of.borg>
-	<CA+55aFxm86xohU4nSuDWe_Ru9SU79x1sLHNdm4nFHyJNH4=mBQ@mail.gmail.com>
-Date: Fri, 23 Sep 2011 06:58:17 +0200
-X-Google-Sender-Auth: zx9ytRPIr9dn1spIgF-yRDrRhOA
-Message-ID: <CAMuHMdUnVr+mYr4hgbfSi9n5iMmHGxTK-_E8y-sKn=HOiEAkMw@mail.gmail.com>
-Subject: Re: [PATCH] zorro: Defer device_register() until all devices have
- been identified
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        =?UTF-8?Q?Ingo_J=C3=BCrgensmann?= <ij@2011.bluespice.org>,
-        "Linux/m68k" <linux-m68k@vger.kernel.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 23 Sep 2011 01:03:34 -0400
+Date: Fri, 23 Sep 2011 15:03:28 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Adrian Hunter <adrian.hunter@intel.com>, Chris Ball <cjb@laptop.org>
+Subject: linux-next: manual merge of the moduleh tree with the mmc tree
+Message-Id: <20110923150328.8fdbd13d7386d843ac382e2f@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 22, 2011 at 22:01, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Thu, Sep 22, 2011 at 12:47 PM, Geert Uytterhoeven
-> <geert@linux-m68k.org> wrote:
->>
->> Authorization code F68KAMYRULEZ.
->
-> EUNAUTHORIZED.
+Hi Paul,
 
-I thought we used negative error codes? ;-)
+Today's linux-next merge of the moduleh tree got a conflict in
+drivers/mmc/host/sdhci-pci.c between commit 28f7cbd110e0 ("mmc:
+sdhci-pci: add eMMC hardware reset support") from the mmc tree and commit
+a93136688a2e ("mmc: Add module.h to drivers/mmc users assuming implicit
+presence") from the moduleh tree.
 
-> But applied anyway,
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
 
-Thanks!
+[Chris: Of course, this file should be including module.h anyway ...]
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+diff --cc drivers/mmc/host/sdhci-pci.c
+index 3b30c51,2551326..0000000
+--- a/drivers/mmc/host/sdhci-pci.c
++++ b/drivers/mmc/host/sdhci-pci.c
+@@@ -21,8 -21,7 +21,9 @@@
+  #include <linux/mmc/host.h>
+  #include <linux/scatterlist.h>
+  #include <linux/io.h>
+ +#include <linux/gpio.h>
+ +#include <linux/sfi.h>
++ #include <linux/module.h>
+  
+  #include "sdhci.h"
+  
