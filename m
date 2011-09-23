@@ -1,41 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750864Ab1IWR06 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 13:26:58 -0400
-Received: from web92101.mail.cnh.yahoo.com ([203.209.250.106]:44404 "HELO
-	web92101.mail.cnh.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750717Ab1IWR05 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 13:26:57 -0400
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Fri, 23 Sep 2011 13:26:57 EDT
-X-YMail-OSG: kLcvJVsVM1ko9eiKUUwY58czl31dqJhjKzXJjYIofw7V4ji
- BEtZwf7ExDzeIKHzn5sJj9DnipdVRk3ZimbRCPgXb3Q9L_zMr7.GDJweMi.2
- BDAGlyHOcZXZSCXeAUvdGChSiNB46c5bHMwKZ29YxhgBIjI4UoRHeXWKaLDK
- DWgp5LTa.UCDcxdZ5oeFta2qX0nSqVN4TaSbdp7WCofPJ.M7QEBXR5vhBpY5
- I9D4C7XawqUHyJvf9.4sh6ihq4fCL6qsk5Hp_66WiX5wlN.IrLt7W4RzfEOk
- SCXqeelIqz2.4QfROIw8CpZNPo_oZfc3cd4xZOHBlgQKRmpus.unqLNOlagX
- WIIJOu8Zzi5ogdJm3bHfd0kj6za8n6_N0rp1llJ.f7nEd9oBuJjVSi6haRgh
- l69D.xIk0Z06nP9VHgeGWc5bXOY5exFnDAiVsqaShz8KumUtO7cNxMGg9QjJ
- W2UiEDfvxEhKgox26GUNDUAjipni_lX5hdiHuZsTPb81k69S_8GJFuGjwi2N
- _sUHD0yb0ZYVbIEf78OMp
-X-RocketYMMF: kabilaaisha405@yahoo.cn
-X-Mailer: YahooMailClassic/14.0.5 YahooMailWebService/0.8.114.317681
-Message-ID: <1316798415.92616.YahooMailClassic@web92101.mail.cnh.yahoo.com>
-Date: Sat, 24 Sep 2011 01:20:15 +0800 (CST)
-From: Sukura Ozuahm <ozuahm@excite.co.jp>
-Reply-To: sukura_ozuahm@yahoo.co.jp
-Subject: Good Day,
-To: undisclosed recipients:;
+	id S1751045Ab1IWR1L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 13:27:11 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:17006 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750981Ab1IWR1H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Sep 2011 13:27:07 -0400
+X-IronPort-AV: E=Sophos;i="4.68,431,1312182000"; 
+   d="scan'208";a="584292070"
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+	charset="utf-8"
+Subject: RE: [PATCH v6 1/8] SUNRPC: introduce helpers for reference counted rpcbind clients
+Date: Fri, 23 Sep 2011 10:26:49 -0700
+Message-ID: <2E1EB2CF9ED1CB4AA966F0EB76EAB4430B54DB89@SACMVEXC2-PRD.hq.netapp.com>
+In-Reply-To: <4E7C9A91.1060301@parallels.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH v6 1/8] SUNRPC: introduce helpers for reference counted rpcbind clients
+Thread-Index: Acx5/vFtCkjj9qZjTvmMtGpWEKwqQgAFt0ww
+References: <20110920101031.9861.18444.stgit@localhost6.localdomain6> <20110920101341.9861.51453.stgit@localhost6.localdomain6> <4E7899E7.9090809@parallels.com> <4E79A95F.8050304@parallels.com> <4E7C9A91.1060301@parallels.com>
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: "Stanislav Kinsbursky" <skinsbursky@parallels.com>
+Cc: <linux-nfs@vger.kernel.org>, "Pavel Emelianov" <xemul@parallels.com>,
+        <neilb@suse.de>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <bfields@fieldses.org>,
+        <davem@davemloft.net>
+X-OriginalArrivalTime: 23 Sep 2011 17:26:50.0977 (UTC) FILETIME=[FAEEFD10:01CC7A15]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id p8NHRKur006058
 
-Good Day,
+> -----Original Message-----
+> From: Stanislav Kinsbursky [mailto:skinsbursky@parallels.com]
+> Sent: Friday, September 23, 2011 10:41 AM
+> To: Myklebust, Trond
+> Cc: linux-nfs@vger.kernel.org; Pavel Emelianov; neilb@suse.de;
+> netdev@vger.kernel.org; linux-kernel@vger.kernel.org;
+> bfields@fieldses.org; davem@davemloft.net
+> Subject: Re: [PATCH v6 1/8] SUNRPC: introduce helpers for reference
+> counted rpcbind clients
+> 
+> Trond, is this patch version suits you now? Or not?
+> Please, comment somehow to let me know, may I proceed with further
+> development or not.
 
-How are you and your family,i am sorry for bagging in to your privacy.I am Miss Sukura Zarani Ozuahm.am 22yrs, a student and only child of Mr.& Mrs.Ibrahim Mohammed Ozuahm.please i am seeking for your assistance in retrieval and transfer of my inherited fund to your country and to further my studies.(USD$9.300.000) dollas i wait for your reply for more information thank you and GOD bless you.
+Hi Stanislav,
 
-Yours Sincerely,
-Miss Sukura Zarani Ozuahm.
+Yes, this version of the patch looks safe to me.
+
+Cheers
+  Trond
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
