@@ -1,220 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751478Ab1IWSsp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 14:48:45 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:40655 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750736Ab1IWSso (ORCPT
+	id S1751528Ab1IWStH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 14:49:07 -0400
+Received: from mail209.messagelabs.com ([216.82.255.3]:38202 "EHLO
+	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750736Ab1IWStF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 14:48:44 -0400
+	Fri, 23 Sep 2011 14:49:05 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-9.tower-209.messagelabs.com!1316803635!17101929!42
+X-Originating-IP: [216.166.12.69]
+X-StarScan-Version: 6.3.6; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] btrfs/delayed-inode.c: quiet sparse noise
+Date: Fri, 23 Sep 2011 11:48:37 -0700
+User-Agent: KMail/1.9.9
+CC: <linux-btrfs@vger.kernel.org>, <chris.mason@oracle.com>
 MIME-Version: 1.0
-Date: Fri, 23 Sep 2011 11:48:42 -0700
-Message-ID: <CAB2gnbUSnTmLkUoPFQJBTSh4PSMPmD_ud9fr2zAS3afxJf5LPQ@mail.gmail.com>
-Subject: [PATCH v2] ceph: use kernel DNS resolver
-From: Noah Watkins <noahwatkins@gmail.com>
-To: Sage Weil <sage@newdream.net>
-Cc: ceph-devel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201109231148.38095.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change ceph_parse_ips to take either names given as
-IP addresses or standard hostnames (e.g. localhost).
-The DNS lookup is done using the dns_resolver facility
-similar to its use in AFS, NFS, and CIFS.
+Quiet the following sparse noise:
 
-This patch defines CONFIG_CEPH_LIB_USE_DNS_RESOLVER
-that controls if this feature is on or off.
+warning: symbol 'btrfs_first_delayed_node' was not declared. Should it be static?
+warning: symbol 'btrfs_next_delayed_node' was not declared. Should it be static?
+warning: symbol 'btrfs_first_prepared_delayed_node' was not declared. Should it be static?
+warning: symbol 'btrfs_alloc_delayed_item' was not declared. Should it be static?
+warning: symbol '__btrfs_lookup_delayed_insertion_item' was not declared. Should it be static?
+warning: symbol '__btrfs_lookup_delayed_deletion_item' was not declared. Should it be static?
+warning: symbol '__btrfs_search_delayed_insertion_item' was not declared. Should it be static?
+warning: symbol '__btrfs_search_delayed_deletion_item' was not declared. Should it be static?
+warning: symbol '__btrfs_first_delayed_insertion_item' was not declared. Should it be static?
+warning: symbol '__btrfs_first_delayed_deletion_item' was not declared. Should it be static?
+warning: symbol '__btrfs_next_delayed_item' was not declared. Should it be static?
 
-Signed-off-by: Noah Watkins <noahwatkins@gmail.com>
+The functions __btrfs_lookup_delayed_deletion_item,
+__btrfs_search_delayed_insertion_item, and __btrfs_search_delayed_deletion_item
+are not currently being used by the code. They may be eventually, so make them
+inline to for to now make sparse happy and allow the linker to discard them.
+
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Chris Mason <chris.mason@oracle.com>
+
 ---
- net/ceph/Kconfig     |   14 ++++++
- net/ceph/messenger.c |  114 ++++++++++++++++++++++++++++++++++++++++++++-----
- 2 files changed, 116 insertions(+), 12 deletions(-)
 
-diff --git a/net/ceph/Kconfig b/net/ceph/Kconfig
-index be683f2..cc04dd6 100644
---- a/net/ceph/Kconfig
-+++ b/net/ceph/Kconfig
-@@ -27,3 +27,17 @@ config CEPH_LIB_PRETTYDEBUG
-
- 	  If unsure, say N.
-
-+config CEPH_LIB_USE_DNS_RESOLVER
-+	bool "Use in-kernel support for DNS lookup"
-+	depends on CEPH_LIB
-+	select DNS_RESOLVER
-+	default n
-+	help
-+	  If you say Y here, hostnames (e.g. monitor addresses) will
-+	  be resolved using the CONFIG_DNS_RESOLVER facility.
-+
-+	  For information on how to use CONFIG_DNS_RESOLVER consult
-+	  Documentation/networking/dns_resolver.txt
-+
-+	  If unsure, say N.
-+
-diff --git a/net/ceph/messenger.c b/net/ceph/messenger.c
-index c340e2e..947a6f3 100644
---- a/net/ceph/messenger.c
-+++ b/net/ceph/messenger.c
-@@ -11,6 +11,7 @@
- #include <linux/string.h>
- #include <linux/bio.h>
- #include <linux/blkdev.h>
-+#include <linux/dns_resolver.h>
- #include <net/tcp.h>
-
- #include <linux/ceph/libceph.h>
-@@ -1078,6 +1079,101 @@ static void addr_set_port(struct
-sockaddr_storage *ss, int p)
+diff --git a/fs/btrfs/delayed-inode.c b/fs/btrfs/delayed-inode.c
+index b52c672..5d3c397 100644
+--- a/fs/btrfs/delayed-inode.c
++++ b/fs/btrfs/delayed-inode.c
+@@ -199,8 +199,8 @@ static void btrfs_dequeue_delayed_node(struct btrfs_delayed_root *root,
+ 	spin_unlock(&root->lock);
  }
-
- /*
-+ * Unlike other *_pton function semantics, zero indicates success.
-+ */
-+static int ceph_pton(const char *str, size_t len, struct sockaddr_storage *ss,
-+		char delim, const char **ipend)
-+{
-+	struct sockaddr_in *in4 = (void *)ss;
-+	struct sockaddr_in6 *in6 = (void *)ss;
-+
-+	memset(ss, 0, sizeof(*ss));
-+
-+	if (in4_pton(str, len, (u8 *)&in4->sin_addr.s_addr, delim, ipend)) {
-+		ss->ss_family = AF_INET;
-+		return 0;
-+	}
-+
-+	if (in6_pton(str, len, (u8 *)&in6->sin6_addr.s6_addr, delim, ipend)) {
-+		ss->ss_family = AF_INET6;
-+		return 0;
-+	}
-+
-+	return -EINVAL;
-+}
-+
-+/*
-+ * Extract hostname string and resolve using kernel DNS facility.
-+ */
-+#ifdef CONFIG_CEPH_LIB_USE_DNS_RESOLVER
-+static int ceph_dns_resolve_name(const char *name, size_t namelen,
-+		struct sockaddr_storage *ss, char delim, const char **ipend)
-+{
-+	const char *end, *delim_p;
-+	char *colon_p, *ip_addr = NULL;
-+	int ip_len, ret;
-+
-+	/*
-+	 * The end of the hostname occurs immediately preceding the delimiter or
-+	 * the port marker (':') where the delimiter takes precedence.
-+	 */
-+	delim_p = memchr(name, delim, namelen);
-+	colon_p = memchr(name, ':', namelen);
-+
-+	if (delim_p && colon_p)
-+		end = delim_p < colon_p ? delim_p : colon_p;
-+	else if (!delim_p && colon_p)
-+		end = colon_p;
-+	else {
-+		end = delim_p;
-+		if (!end) /* case: hostname:/ */
-+			end = name + namelen;
-+	}
-+
-+	if (end <= name)
-+		return -EINVAL;
-+
-+	/* do dns_resolve upcall */
-+	ip_len = dns_query(NULL, name, end - name, NULL, &ip_addr, NULL);
-+	if (ip_len > 0)
-+		ret = ceph_pton(ip_addr, ip_len, ss, -1, NULL);
-+	else
-+		ret = -ESRCH;
-+
-+	kfree(ip_addr);
-+
-+	*ipend = end;
-+
-+	pr_info("resolve '%.*s' (ret=%d): %s\n", (int)(end - name), name,
-+			ret, ret ? "failed" : ceph_pr_addr(ss));
-+
-+	return ret;
-+}
-+#else
-+static inline int ceph_dns_resolve_name(const char *name, size_t namelen,
-+		struct sockaddr_storage *ss, char delim, const char **ipend)
-+{
-+	return -EINVAL;
-+}
-+#endif
-+
-+/*
-+ * Parse a server name (IP or hostname). If a valid IP address is not found
-+ * then try to extract a hostname to resolve using userspace DNS upcall.
-+ */
-+static int ceph_parse_server_name(const char *name, size_t namelen,
-+			struct sockaddr_storage *ss, char delim, const char **ipend)
-+{
-+	int ret;
-+
-+	ret = ceph_pton(name, namelen, ss, delim, ipend);
-+	if (ret)
-+		ret = ceph_dns_resolve_name(name, namelen, ss, delim, ipend);
-+
-+	return ret;
-+}
-+
-+/*
-  * Parse an ip[:port] list into an addr array.  Use the default
-  * monitor port if a port isn't specified.
-  */
-@@ -1085,15 +1181,13 @@ int ceph_parse_ips(const char *c, const char *end,
- 		   struct ceph_entity_addr *addr,
- 		   int max_count, int *count)
+ 
+-struct btrfs_delayed_node *btrfs_first_delayed_node(
+-			struct btrfs_delayed_root *delayed_root)
++static struct btrfs_delayed_node *
++btrfs_first_delayed_node(struct btrfs_delayed_root *delayed_root)
  {
--	int i;
-+	int i, ret = -EINVAL;
- 	const char *p = c;
-
- 	dout("parse_ips on '%.*s'\n", (int)(end-c), c);
- 	for (i = 0; i < max_count; i++) {
- 		const char *ipend;
- 		struct sockaddr_storage *ss = &addr[i].in_addr;
--		struct sockaddr_in *in4 = (void *)ss;
--		struct sockaddr_in6 *in6 = (void *)ss;
- 		int port;
- 		char delim = ',';
-
-@@ -1102,15 +1196,11 @@ int ceph_parse_ips(const char *c, const char *end,
- 			p++;
- 		}
-
--		memset(ss, 0, sizeof(*ss));
--		if (in4_pton(p, end - p, (u8 *)&in4->sin_addr.s_addr,
--			     delim, &ipend))
--			ss->ss_family = AF_INET;
--		else if (in6_pton(p, end - p, (u8 *)&in6->sin6_addr.s6_addr,
--				  delim, &ipend))
--			ss->ss_family = AF_INET6;
--		else
-+		ret = ceph_parse_server_name(p, end - p, ss, delim, &ipend);
-+		if (ret)
- 			goto bad;
-+		ret = -EINVAL;
-+
- 		p = ipend;
-
- 		if (delim == ']') {
-@@ -1155,7 +1245,7 @@ int ceph_parse_ips(const char *c, const char *end,
-
- bad:
- 	pr_err("parse_ips bad ip '%.*s'\n", (int)(end - c), c);
--	return -EINVAL;
-+	return ret;
+ 	struct list_head *p;
+ 	struct btrfs_delayed_node *node = NULL;
+@@ -218,8 +218,8 @@ out:
+ 	return node;
  }
- EXPORT_SYMBOL(ceph_parse_ips);
-
--- 
-1.7.6.1
+ 
+-struct btrfs_delayed_node *btrfs_next_delayed_node(
+-						struct btrfs_delayed_node *node)
++static struct btrfs_delayed_node *
++btrfs_next_delayed_node(struct btrfs_delayed_node *node)
+ {
+ 	struct btrfs_delayed_root *delayed_root;
+ 	struct list_head *p;
+@@ -279,8 +279,8 @@ static inline void btrfs_release_delayed_node(struct btrfs_delayed_node *node)
+ 	__btrfs_release_delayed_node(node, 0);
+ }
+ 
+-struct btrfs_delayed_node *btrfs_first_prepared_delayed_node(
+-					struct btrfs_delayed_root *delayed_root)
++static struct btrfs_delayed_node *
++btrfs_first_prepared_delayed_node(struct btrfs_delayed_root *delayed_root)
+ {
+ 	struct list_head *p;
+ 	struct btrfs_delayed_node *node = NULL;
+@@ -305,7 +305,7 @@ static inline void btrfs_release_prepared_delayed_node(
+ 	__btrfs_release_delayed_node(node, 1);
+ }
+ 
+-struct btrfs_delayed_item *btrfs_alloc_delayed_item(u32 data_len)
++static struct btrfs_delayed_item *btrfs_alloc_delayed_item(u32 data_len)
+ {
+ 	struct btrfs_delayed_item *item;
+ 	item = kmalloc(sizeof(*item) + data_len, GFP_NOFS);
+@@ -380,9 +380,9 @@ static struct btrfs_delayed_item *__btrfs_lookup_delayed_item(
+ 	return NULL;
+ }
+ 
+-struct btrfs_delayed_item *__btrfs_lookup_delayed_insertion_item(
+-					struct btrfs_delayed_node *delayed_node,
+-					struct btrfs_key *key)
++static struct btrfs_delayed_item *
++__btrfs_lookup_delayed_insertion_item(struct btrfs_delayed_node *delayed_node,
++				      struct btrfs_key *key)
+ {
+ 	struct btrfs_delayed_item *item;
+ 
+@@ -391,9 +391,9 @@ struct btrfs_delayed_item *__btrfs_lookup_delayed_insertion_item(
+ 	return item;
+ }
+ 
+-struct btrfs_delayed_item *__btrfs_lookup_delayed_deletion_item(
+-					struct btrfs_delayed_node *delayed_node,
+-					struct btrfs_key *key)
++static inline struct btrfs_delayed_item *
++__btrfs_lookup_delayed_deletion_item(struct btrfs_delayed_node *delayed_node,
++				     struct btrfs_key *key)
+ {
+ 	struct btrfs_delayed_item *item;
+ 
+@@ -402,9 +402,9 @@ struct btrfs_delayed_item *__btrfs_lookup_delayed_deletion_item(
+ 	return item;
+ }
+ 
+-struct btrfs_delayed_item *__btrfs_search_delayed_insertion_item(
+-					struct btrfs_delayed_node *delayed_node,
+-					struct btrfs_key *key)
++static inline struct btrfs_delayed_item *
++__btrfs_search_delayed_insertion_item(struct btrfs_delayed_node *delayed_node,
++				      struct btrfs_key *key)
+ {
+ 	struct btrfs_delayed_item *item, *next;
+ 
+@@ -416,9 +416,9 @@ struct btrfs_delayed_item *__btrfs_search_delayed_insertion_item(
+ 	return item;
+ }
+ 
+-struct btrfs_delayed_item *__btrfs_search_delayed_deletion_item(
+-					struct btrfs_delayed_node *delayed_node,
+-					struct btrfs_key *key)
++static inline struct btrfs_delayed_item *
++__btrfs_search_delayed_deletion_item(struct btrfs_delayed_node *delayed_node,
++				     struct btrfs_key *key)
+ {
+ 	struct btrfs_delayed_item *item, *next;
+ 
+@@ -525,8 +525,8 @@ static void btrfs_release_delayed_item(struct btrfs_delayed_item *item)
+ 	}
+ }
+ 
+-struct btrfs_delayed_item *__btrfs_first_delayed_insertion_item(
+-					struct btrfs_delayed_node *delayed_node)
++static struct btrfs_delayed_item *
++__btrfs_first_delayed_insertion_item(struct btrfs_delayed_node *delayed_node)
+ {
+ 	struct rb_node *p;
+ 	struct btrfs_delayed_item *item = NULL;
+@@ -538,8 +538,8 @@ struct btrfs_delayed_item *__btrfs_first_delayed_insertion_item(
+ 	return item;
+ }
+ 
+-struct btrfs_delayed_item *__btrfs_first_delayed_deletion_item(
+-					struct btrfs_delayed_node *delayed_node)
++static struct btrfs_delayed_item *
++__btrfs_first_delayed_deletion_item(struct btrfs_delayed_node *delayed_node)
+ {
+ 	struct rb_node *p;
+ 	struct btrfs_delayed_item *item = NULL;
+@@ -551,8 +551,8 @@ struct btrfs_delayed_item *__btrfs_first_delayed_deletion_item(
+ 	return item;
+ }
+ 
+-struct btrfs_delayed_item *__btrfs_next_delayed_item(
+-						struct btrfs_delayed_item *item)
++static struct btrfs_delayed_item *
++__btrfs_next_delayed_item(struct btrfs_delayed_item *item)
+ {
+ 	struct rb_node *p;
+ 	struct btrfs_delayed_item *next = NULL;
