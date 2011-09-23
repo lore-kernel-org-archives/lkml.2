@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753191Ab1IWGuw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 02:50:52 -0400
-Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:37877 "EHLO
-	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752687Ab1IWGu2 (ORCPT
+	id S1753255Ab1IWGuz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 02:50:55 -0400
+Received: from na3sys009aog123.obsmtp.com ([74.125.149.149]:34994 "EHLO
+	na3sys009aog123.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752653Ab1IWGu1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 02:50:28 -0400
+	Fri, 23 Sep 2011 02:50:27 -0400
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: Samuel Ortiz <samuel.ortiz@intel.com>, Dmitry Torokhov <dtor@mail.ru>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Liam Girdwood <lrg@ti.com>
 Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
         Misael Lopez Cruz <misael.lopez@ti.com>, linux-input@vger.kernel.org
-Subject: [PATCH v2 5/6] ASoC: omap-mcpdm: Correct the supported number of channels
-Date: Fri, 23 Sep 2011 09:49:43 +0300
-Message-Id: <1316760584-27426-6-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH v2 6/6] ASoC: twl6040: Support for vibra output paths
+Date: Fri, 23 Sep 2011 09:49:44 +0300
+Message-Id: <1316760584-27426-7-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.7.6.1
 In-Reply-To: <1316760584-27426-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1316760584-27426-1-git-send-email-peter.ujfalusi@ti.com>
@@ -23,56 +23,155 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OMAP4 McPDM supports 5 downlink (playback), and
-3 uplink (capture) channels.
+twl6040 have two vibra output drivers.
+They can be operated with audio stream coming through
+the PDM interface (fifth channel).
+The vibra outputs can be controlled via the input/FF
+driver as well.
+Selection between the two mode is implemented within
+the codec driver, the input/FF driver can only operate if
+the routing is set to "Input FF".
+Changing from "Input FF" to "Audio PDM" mode is protected
+as well: The switchin can only be done, if there is no
+running effect from the input/FF.
 
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
- sound/soc/omap/omap-mcpdm.c |   14 ++++++++------
- 1 files changed, 8 insertions(+), 6 deletions(-)
+ sound/soc/codecs/twl6040.c |   72 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 72 insertions(+), 0 deletions(-)
 
-diff --git a/sound/soc/omap/omap-mcpdm.c b/sound/soc/omap/omap-mcpdm.c
-index 159a5e9..2c9fa51 100644
---- a/sound/soc/omap/omap-mcpdm.c
-+++ b/sound/soc/omap/omap-mcpdm.c
-@@ -299,15 +299,17 @@ static int omap_mcpdm_dai_hw_params(struct snd_pcm_substream *substream,
+diff --git a/sound/soc/codecs/twl6040.c b/sound/soc/codecs/twl6040.c
+index 68e52c9..e767cf1 100644
+--- a/sound/soc/codecs/twl6040.c
++++ b/sound/soc/codecs/twl6040.c
+@@ -903,6 +903,23 @@ static int twl6040_get_volsw_2r(struct snd_kcontrol *kcontrol,
+ 		{.reg = reg_left, .rreg = reg_right, .shift = xshift, \
+ 		 .rshift = xshift, .max = xmax, .invert = xinvert}, }
  
- 	channels = params_channels(params);
- 	switch (channels) {
-+	case 5:
-+		if (stream == SNDRV_PCM_STREAM_CAPTURE)
-+			/* up to 3 channels for capture */
-+			return -EINVAL;
-+		link_mask |= 1 << 4;
- 	case 4:
- 		if (stream == SNDRV_PCM_STREAM_CAPTURE)
--			/* up to 2 channels for capture */
-+			/* up to 3 channels for capture */
- 			return -EINVAL;
- 		link_mask |= 1 << 3;
- 	case 3:
--		if (stream == SNDRV_PCM_STREAM_CAPTURE)
--			/* up to 2 channels for capture */
--			return -EINVAL;
- 		link_mask |= 1 << 2;
- 	case 2:
- 		link_mask |= 1 << 1;
-@@ -403,13 +405,13 @@ static struct snd_soc_dai_driver omap_mcpdm_dai = {
- 	.remove_order = SND_SOC_COMP_ORDER_EARLY,
- 	.playback = {
- 		.channels_min = 1,
--		.channels_max = 4,
-+		.channels_max = 5,
- 		.rates = OMAP_MCPDM_RATES,
- 		.formats = OMAP_MCPDM_FORMATS,
- 	},
- 	.capture = {
- 		.channels_min = 1,
--		.channels_max = 2,
-+		.channels_max = 3,
- 		.rates = OMAP_MCPDM_RATES,
- 		.formats = OMAP_MCPDM_FORMATS,
- 	},
++static int twl6040_soc_dapm_put_vibra_enum(struct snd_kcontrol *kcontrol,
++	struct snd_ctl_elem_value *ucontrol)
++{
++	struct snd_soc_dapm_widget_list *wlist = snd_kcontrol_chip(kcontrol);
++	struct snd_soc_dapm_widget *widget = wlist->widgets[0];
++	struct snd_soc_codec *codec = widget->codec;
++	struct soc_enum *e = (struct soc_enum *)kcontrol->private_value;
++	unsigned int val;
++
++	/* Do not allow changes while Input/FF efect is running */
++	val = twl6040_read_reg_volatile(codec, e->reg);
++	if (val & TWL6040_VIBENA && !(val & TWL6040_VIBSEL))
++		return -EBUSY;
++
++	return snd_soc_dapm_put_enum_double(kcontrol, ucontrol);
++}
++
+ /*
+  * MICATT volume control:
+  * from -6 to 0 dB in 6 dB steps
+@@ -974,6 +991,19 @@ static const struct soc_enum twl6040_hf_enum[] = {
+ 			twl6040_hf_texts),
+ };
+ 
++static const char *twl6040_vibrapath_texts[] = {
++	"Input FF", "Audio PDM"
++};
++
++static const struct soc_enum twl6040_vibra_enum[] = {
++	SOC_ENUM_SINGLE(TWL6040_REG_VIBCTLL, 1,
++			ARRAY_SIZE(twl6040_vibrapath_texts),
++			twl6040_vibrapath_texts),
++	SOC_ENUM_SINGLE(TWL6040_REG_VIBCTLR, 1,
++			ARRAY_SIZE(twl6040_vibrapath_texts),
++			twl6040_vibrapath_texts),
++};
++
+ static const struct snd_kcontrol_new amicl_control =
+ 	SOC_DAPM_ENUM("Route", twl6040_enum[0]);
+ 
+@@ -1003,6 +1033,17 @@ static const struct snd_kcontrol_new auxl_switch_control =
+ static const struct snd_kcontrol_new auxr_switch_control =
+ 	SOC_DAPM_SINGLE("Switch", TWL6040_REG_HFRCTL, 6, 1, 0);
+ 
++/* Vibra playback switches */
++static const struct snd_kcontrol_new vibral_mux_controls =
++	SOC_DAPM_ENUM_EXT("Route", twl6040_vibra_enum[0],
++		snd_soc_dapm_get_enum_double,
++		twl6040_soc_dapm_put_vibra_enum);
++
++static const struct snd_kcontrol_new vibrar_mux_controls =
++	SOC_DAPM_ENUM_EXT("Route", twl6040_vibra_enum[1],
++		snd_soc_dapm_get_enum_double,
++		twl6040_soc_dapm_put_vibra_enum);
++
+ /* Headset power mode */
+ static const char *twl6040_power_mode_texts[] = {
+ 	"Low-Power", "High-Perfomance",
+@@ -1113,6 +1154,8 @@ static const struct snd_soc_dapm_widget twl6040_dapm_widgets[] = {
+ 	SND_SOC_DAPM_OUTPUT("EP"),
+ 	SND_SOC_DAPM_OUTPUT("AUXL"),
+ 	SND_SOC_DAPM_OUTPUT("AUXR"),
++	SND_SOC_DAPM_OUTPUT("VIBRAL"),
++	SND_SOC_DAPM_OUTPUT("VIBRAR"),
+ 
+ 	/* Analog input muxes for the capture amplifiers */
+ 	SND_SOC_DAPM_MUX("Analog Left Capture Route",
+@@ -1165,6 +1208,9 @@ static const struct snd_soc_dapm_widget twl6040_dapm_widgets[] = {
+ 			TWL6040_REG_HFRCTL, 0, 0,
+ 			twl6040_power_mode_event,
+ 			SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_POST_PMD),
++	/* Virtual DAC for vibra path (DL4 channel) */
++	SND_SOC_DAPM_DAC("VIBRA DAC", "Vibra Playback",
++			SND_SOC_NOPM, 0, 0),
+ 
+ 	SND_SOC_DAPM_MUX("Handsfree Left Playback",
+ 			SND_SOC_NOPM, 0, 0, &hfl_mux_controls),
+@@ -1176,6 +1222,11 @@ static const struct snd_soc_dapm_widget twl6040_dapm_widgets[] = {
+ 	SND_SOC_DAPM_MUX("Headset Right Playback",
+ 			SND_SOC_NOPM, 0, 0, &hsr_mux_controls),
+ 
++	SND_SOC_DAPM_MUX("Vibra Left Playback", SND_SOC_NOPM, 0, 0,
++			&vibral_mux_controls),
++	SND_SOC_DAPM_MUX("Vibra Right Playback", SND_SOC_NOPM, 0, 0,
++			&vibrar_mux_controls),
++
+ 	SND_SOC_DAPM_SWITCH("Earphone Playback", SND_SOC_NOPM, 0, 0,
+ 			&ep_path_enable_control),
+ 	SND_SOC_DAPM_SWITCH("AUXL Playback", SND_SOC_NOPM, 0, 0,
+@@ -1204,6 +1255,15 @@ static const struct snd_soc_dapm_widget twl6040_dapm_widgets[] = {
+ 			TWL6040_REG_EARCTL, 0, 0, NULL, 0,
+ 			twl6040_power_mode_event,
+ 			SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_POST_PMD),
++	SND_SOC_DAPM_OUT_DRV("Vibra Left Driver",
++			TWL6040_REG_VIBCTLL, 0, 0, NULL, 0),
++	SND_SOC_DAPM_OUT_DRV("Vibra Right Driver",
++			TWL6040_REG_VIBCTLR, 0, 0, NULL, 0),
++
++	SND_SOC_DAPM_SUPPLY("Vibra Left Control", TWL6040_REG_VIBCTLL, 2, 0,
++			    NULL, 0),
++	SND_SOC_DAPM_SUPPLY("Vibra Right Control", TWL6040_REG_VIBCTLR, 2, 0,
++			    NULL, 0),
+ 
+ 	/* Analog playback PGAs */
+ 	SND_SOC_DAPM_PGA("HF Left PGA",
+@@ -1270,6 +1330,18 @@ static const struct snd_soc_dapm_route intercon[] = {
+ 
+ 	{"AUXL", NULL, "AUXL Playback"},
+ 	{"AUXR", NULL, "AUXR Playback"},
++
++	/* Vibrator paths */
++	{"Vibra Left Playback", "Audio PDM", "VIBRA DAC"},
++	{"Vibra Right Playback", "Audio PDM", "VIBRA DAC"},
++
++	{"Vibra Left Driver", NULL, "Vibra Left Playback"},
++	{"Vibra Right Driver", NULL, "Vibra Right Playback"},
++	{"Vibra Left Driver", NULL, "Vibra Left Control"},
++	{"Vibra Right Driver", NULL, "Vibra Right Control"},
++
++	{"VIBRAL", NULL, "Vibra Left Driver"},
++	{"VIBRAR", NULL, "Vibra Right Driver"},
+ };
+ 
+ static int twl6040_add_widgets(struct snd_soc_codec *codec)
 -- 
 1.7.6.1
 
