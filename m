@@ -1,65 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754485Ab1IWOgM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 10:36:12 -0400
-Received: from casper.infradead.org ([85.118.1.10]:34288 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753501Ab1IWOgI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 10:36:08 -0400
-Subject: Re: [PATCH 1/9] Remove parent field in cpuacct cgroup
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Balbir Singh <bsingharora@gmail.com>
-Cc: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
-        xemul@parallels.com, paul@paulmenage.org, lizf@cn.fujitsu.com,
-        daniel.lezcano@free.fr, mingo@elte.hu, jbottomley@parallels.com
-Date: Fri, 23 Sep 2011 16:35:26 +0200
-In-Reply-To: <CAKTCnzk_NoBxQypJBsX9O56=F6z_7HdPY1HW=G=2AkM9tpkbaw@mail.gmail.com>
-References: <1316030695-19826-1-git-send-email-glommer@parallels.com>
-	 <1316030695-19826-2-git-send-email-glommer@parallels.com>
-	 <1316448186.1511.19.camel@twins> <4E776937.1070108@parallels.com>
-	 <1316449160.6091.5.camel@twins> <4E776E36.6040906@parallels.com>
-	 <1316450385.6091.9.camel@twins> <4E7770BD.6050902@parallels.com>
-	 <1316457653.6091.16.camel@twins> <20110920172930.GA5318@linux.vnet.ibm.com>
-	 <CAKTCnzk=i1a3DHrforcaOCBdhjv1xi=5W=eiJiZoK4BNb3wqVw@mail.gmail.com>
-	 <1316704637.31429.25.camel@twins>
-	 <CAKTCnzk_NoBxQypJBsX9O56=F6z_7HdPY1HW=G=2AkM9tpkbaw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1316788526.9084.45.camel@twins>
-Mime-Version: 1.0
+	id S1754310Ab1IWOjK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 10:39:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47175 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751602Ab1IWOjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Sep 2011 10:39:06 -0400
+Date: Fri, 23 Sep 2011 16:38:17 +0200
+From: Johannes Weiner <jweiner@redhat.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Chris Mason <chris.mason@oracle.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, xfs@oss.sgi.com,
+        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch 1/4 v2] mm: exclude reserved pages from dirtyable memory
+Message-ID: <20110923143816.GA2606@redhat.com>
+References: <1316526315-16801-1-git-send-email-jweiner@redhat.com>
+ <1316526315-16801-2-git-send-email-jweiner@redhat.com>
+ <20110921140423.GG4849@suse.de>
+ <20110921150328.GJ4849@suse.de>
+ <20110922090326.GB29046@redhat.com>
+ <20110922105400.GL4849@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110922105400.GL4849@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-09-23 at 13:39 +0530, Balbir Singh wrote:
-> >> Android makes heavy use of cpuacct as well. We invented it to do cpu
-> >> accounting independent of control
-> >
-> > But its a massive waste of time to have to iterate a double hierarchy,
-> > cache-miss heaven.
-> >
-> 
-> By double hierarchy you mean both cpu and cpuacct? 
+The amount of dirtyable pages should not include the full number of
+free pages: there is a number of reserved pages that the page
+allocator and kswapd always try to keep free.
 
-Yes
+The closer (reclaimable pages - dirty pages) is to the number of
+reserved pages, the more likely it becomes for reclaim to run into
+dirty pages:
 
-> What if they are not mounted together?
+       +----------+ ---
+       |   anon   |  |
+       +----------+  |
+       |          |  |
+       |          |  -- dirty limit new    -- flusher new
+       |   file   |  |                     |
+       |          |  |                     |
+       |          |  -- dirty limit old    -- flusher old
+       |          |                        |
+       +----------+                       --- reclaim
+       | reserved |
+       +----------+
+       |  kernel  |
+       +----------+
 
-I was asking if there was a real reason not to have that.
+This patch introduces a per-zone dirty reserve that takes both the
+lowmem reserve as well as the high watermark of the zone into account,
+and a global sum of those per-zone values that is subtracted from the
+global amount of dirtyable pages.  The lowmem reserve is unavailable
+to page cache allocations and kswapd tries to keep the high watermark
+free.  We don't want to end up in a situation where reclaim has to
+clean pages in order to balance zones.
 
-> > Or so people really have independent cgroups as well? I thought people
-> > just co-mount all this crap.
-> >
-> 
-> Please see
-> http://code.google.com/p/cgroupmgr/wiki/cgroupsForAndroid
-> http://stackoverflow.com/questions/6814207/android-cpuacct-usage-file
-> 
-> AFAIK, some versions mount cpuacct at /acct and independent of cpu cgroups
+Not treating reserved pages as dirtyable on a global level is only a
+conceptual fix.  In reality, dirty pages are not distributed equally
+across zones and reclaim runs into dirty pages on a regular basis.
 
-They do now, but can that be fixed? Is there a sane use-case?
+But it is important to get this right before tackling the problem on a
+per-zone level, where the distance between reclaim and the dirty pages
+is mostly much smaller in absolute numbers.
 
-Overhead really must come down of all this crap.
+Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+---
+ include/linux/mmzone.h |    6 ++++++
+ include/linux/swap.h   |    1 +
+ mm/page-writeback.c    |    6 ++++--
+ mm/page_alloc.c        |   19 +++++++++++++++++++
+ 4 files changed, 30 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 1ed4116..37a61e7 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -317,6 +317,12 @@ struct zone {
+ 	 */
+ 	unsigned long		lowmem_reserve[MAX_NR_ZONES];
+ 
++	/*
++	 * This is a per-zone reserve of pages that should not be
++	 * considered dirtyable memory.
++	 */
++	unsigned long		dirty_balance_reserve;
++
+ #ifdef CONFIG_NUMA
+ 	int node;
+ 	/*
+diff --git a/include/linux/swap.h b/include/linux/swap.h
+index b156e80..9021453 100644
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -209,6 +209,7 @@ struct swap_list_t {
+ /* linux/mm/page_alloc.c */
+ extern unsigned long totalram_pages;
+ extern unsigned long totalreserve_pages;
++extern unsigned long dirty_balance_reserve;
+ extern unsigned int nr_free_buffer_pages(void);
+ extern unsigned int nr_free_pagecache_pages(void);
+ 
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index da6d263..c8acf8a 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -170,7 +170,8 @@ static unsigned long highmem_dirtyable_memory(unsigned long total)
+ 			&NODE_DATA(node)->node_zones[ZONE_HIGHMEM];
+ 
+ 		x += zone_page_state(z, NR_FREE_PAGES) +
+-		     zone_reclaimable_pages(z);
++		     zone_reclaimable_pages(z) -
++		     zone->dirty_balance_reserve;
+ 	}
+ 	/*
+ 	 * Make sure that the number of highmem pages is never larger
+@@ -194,7 +195,8 @@ static unsigned long determine_dirtyable_memory(void)
+ {
+ 	unsigned long x;
+ 
+-	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages();
++	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages() -
++	    dirty_balance_reserve;
+ 
+ 	if (!vm_highmem_is_dirtyable)
+ 		x -= highmem_dirtyable_memory(x);
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 1dba05e..f8cba89 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -96,6 +96,14 @@ EXPORT_SYMBOL(node_states);
+ 
+ unsigned long totalram_pages __read_mostly;
+ unsigned long totalreserve_pages __read_mostly;
++/*
++ * When calculating the number of globally allowed dirty pages, there
++ * is a certain number of per-zone reserves that should not be
++ * considered dirtyable memory.  This is the sum of those reserves
++ * over all existing zones that contribute dirtyable memory.
++ */
++unsigned long dirty_balance_reserve __read_mostly;
++
+ int percpu_pagelist_fraction;
+ gfp_t gfp_allowed_mask __read_mostly = GFP_BOOT_MASK;
+ 
+@@ -5076,8 +5084,19 @@ static void calculate_totalreserve_pages(void)
+ 			if (max > zone->present_pages)
+ 				max = zone->present_pages;
+ 			reserve_pages += max;
++			/*
++			 * Lowmem reserves are not available to
++			 * GFP_HIGHUSER page cache allocations and
++			 * kswapd tries to balance zones to their high
++			 * watermark.  As a result, neither should be
++			 * regarded as dirtyable memory, to prevent a
++			 * situation where reclaim has to clean pages
++			 * in order to balance the zones.
++			 */
++			zone->dirty_balance_reserve = max;
+ 		}
+ 	}
++	dirty_balance_reserve = reserve_pages;
+ 	totalreserve_pages = reserve_pages;
+ }
+ 
+-- 
+1.7.6.2
+
