@@ -1,48 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754410Ab1IWOLi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 10:11:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62367 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752662Ab1IWOLh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 10:11:37 -0400
-Date: Fri, 23 Sep 2011 11:11:13 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, anton@samba.org,
-        Peter Zijlstra <peterz@infradead.org>, mingo@elte.hu,
-        ak@linux.intel.com, Robert Richter <robert.richter@amd.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
+	id S1754435Ab1IWONB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 10:13:01 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39667 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751541Ab1IWONA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Sep 2011 10:13:00 -0400
 Subject: Re: [PATCH 2/4] perf symbols: /proc/kallsyms does not sort module
-	symbols
-Message-ID: <20110923141113.GA27519@ghostprotocols.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBR5ie5yJAB1xTCfQoZroFZWna42=iptmB_Cwt3hCuyQ=w@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
+ symbols
+From: Peter Zijlstra <peterz@infradead.org>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Stephane Eranian <eranian@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        anton@samba.org, mingo@elte.hu, ak@linux.intel.com,
+        Robert Richter <robert.richter@amd.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 23 Sep 2011 16:12:29 +0200
+In-Reply-To: <20110923141113.GA27519@ghostprotocols.net>
+References: <20110923141113.GA27519@ghostprotocols.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1316787149.9084.43.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Sep 23, 2011 at 03:59:33PM +0200, Stephane Eranian escreveu:
-> Hi,
+On Fri, 2011-09-23 at 11:11 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Fri, Sep 23, 2011 at 03:59:33PM +0200, Stephane Eranian escreveu:
+> > Hi,
+> > 
+> > What's the status of this patch?
+> > 
+> > It is not in 3.1.0-rc7. It is needed!
+> > 
+> > I ran into serious issues (bogus symbols) with a profile where
+> > kernel modules were stressed and it boiled down to kallsyms__parse()
+> > being broken because /proc/kallsyms is assumed sorted when it actually
+> > is NOT.
 > 
-> What's the status of this patch?
+> Its all here:
 > 
-> It is not in 3.1.0-rc7. It is needed!
+> https://github.com/acmel/linux/commits/perf/urgent
 > 
-> I ran into serious issues (bogus symbols) with a profile where
-> kernel modules were stressed and it boiled down to kallsyms__parse()
-> being broken because /proc/kallsyms is assumed sorted when it actually
-> is NOT.
+> I was waiting for Ingo, Peter, can you take a look and see if you agree
+> with the patches there then I can ask Linus to pull it, ok?
 
-Its all here:
-
-https://github.com/acmel/linux/commits/perf/urgent
-
-I was waiting for Ingo, Peter, can you take a look and see if you agree
-with the patches there then I can ask Linus to pull it, ok?
-
-- Arnaldo
+Looks all-right, ship it! :-)
