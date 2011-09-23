@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754692Ab1IWBMi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 21:12:38 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:23468 "EHLO
-	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753767Ab1IWBMd convert rfc822-to-8bit (ORCPT
+	id S1754696Ab1IWBP1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 21:15:27 -0400
+Received: from mail127.messagelabs.com ([216.82.250.115]:37279 "EHLO
+	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752673Ab1IWBP0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 21:12:33 -0400
-X-SpamScore: -9
-X-BigFish: VS-9(zz1432N98dKzz1202hzz8275dhz2dh2a8h668h839h8e2h8e3h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Tabi Timur-B04825 <B04825@freescale.com>
-To: Greg KH <greg@kroah.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
-        "linux-console@vger.kernel.org" <linux-console@vger.kernel.org>
-Subject: Re: [PATCH] drivers/tty: don't use the byte channel handle as a
- parameter in ehv_bytechan.c
-Thread-Topic: [PATCH] drivers/tty: don't use the byte channel handle as a
- parameter in ehv_bytechan.c
-Thread-Index: AQHMd8Lik0aBVkYCE0CzfKVTYPu6BZVaXN4A//+uwoCAAFdVAIAAHOYA
-Date: Fri, 23 Sep 2011 01:11:55 +0000
-Message-ID: <4E7BDCDA.6060506@freescale.com>
-References: <1316543217-13769-1-git-send-email-timur@freescale.com>
- <20110922230640.GA16981@kroah.com> <4E7BC1A9.5050708@freescale.com>
- <20110922232828.GA12088@kroah.com>
-In-Reply-To: <20110922232828.GA12088@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:6.0.2)
- Gecko/20110902 Firefox/6.0.2 SeaMonkey/2.3.3
-x-originating-ip: [68.203.10.197]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <C5C7C787C50EC349BFDFC774FFB5C123@freescale.net>
-Content-Transfer-Encoding: 7BIT
+	Thu, 22 Sep 2011 21:15:26 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-15.tower-127.messagelabs.com!1316740520!32530569!17
+X-Originating-IP: [216.166.12.32]
+X-StarScan-Version: 6.3.6; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] mm/page_cgroup.c: quiet sparse noise
+Date: Thu, 22 Sep 2011 18:15:08 -0700
+User-Agent: KMail/1.9.9
+CC: <linux-mm@kvack.org>, <containers@lists.linux-foundation.org>,
+        <paul@paulmenage.org>, <lizf@cn.fujitsu.com>, <bsingharora@gmail.com>,
+        <nishimura@mxp.nes.nec.co.jp>, <kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201109221815.08891.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH wrote:
->>> >  >  This patch doesn't apply at all to my tty tree, what was it made
->>> >  >  against?
->> >
->> >  An internal repository that supposed to be in-sync with the latest and greatest.
->> >
->> >  What's the URL for your tty-next repo?
-> There is no public one due to kernel.org being down.
->
-> Does your patch apply to linux-next?
+Quite the sparse noise:
 
-It does not, and I see why now.  Looks like the internal tree is not in 
-sync after all.
+warning: symbol 'swap_cgroup_ctrl' was not declared. Should it be static?
 
-I will post a V2 shortly.
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Paul Menage <paul@paulmenage.org>
+Cc: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Balbir Singh <bsingharora@gmail.com>
+Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
--- 
-Timur Tabi
-Linux kernel developer at Freescale
+---
+
+diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
+index 6bdc67d..eead840 100644
+--- a/mm/page_cgroup.c
++++ b/mm/page_cgroup.c
+@@ -357,7 +357,7 @@ struct swap_cgroup_ctrl {
+ 	spinlock_t	lock;
+ };
+ 
+-struct swap_cgroup_ctrl swap_cgroup_ctrl[MAX_SWAPFILES];
++static struct swap_cgroup_ctrl swap_cgroup_ctrl[MAX_SWAPFILES];
+ 
+ struct swap_cgroup {
+ 	unsigned short		id;
