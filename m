@@ -1,45 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753114Ab1IWXh4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 19:37:56 -0400
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:44158 "EHLO
+	id S1753189Ab1IWXls (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 19:41:48 -0400
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:45718 "EHLO
 	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752656Ab1IWXhz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 19:37:55 -0400
+	id S1751900Ab1IWXlr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Sep 2011 19:41:47 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:subject
 	:cc:date:message-id:mime-version:content-type; q=dns; s=sasl; b=
-	mWoojL97QZ8zv3FDTnx35WHSWJ855MRu4udj84sbxAYEuqQrv2FbNHvYmvdnVsae
-	Mh87t76s5k4tm1FmBuFh4jMmtO1imHT7pmR5wJ2oBgY6SiWmHDL5FtvU9CaEcpTF
-	vXgCCiForRKZBiUYiJaMWue3iCXaoD95ZaGc8voiR+Q=
+	LIOuGEAeImvVeTxEBqm8SO2fXUJhJuX78g1r1WIVI7CVRyw7rC1/vHW1KtAlgLOf
+	nltFR20qkycoZvvsxaKB7qtSjPxvBPH3Q9NPg4OwDpmlN91Tqu6lf9lrf4FO3hu/
+	4GNvWKcYRuSzfHIKlix5pmOqy+GdDjYjr5JO89uk0wA=
 From: Junio C Hamano <gitster@pobox.com>
 To: git@vger.kernel.org
-Subject: [ANNOUNCE] Git 1.7.6.4
+Subject: [ANNOUNCE] Git 1.7.7.rc3
 cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Date: Fri, 23 Sep 2011 16:37:53 -0700
-Message-ID: <7vlitesucu.fsf@alter.siamese.dyndns.org>
+Date: Fri, 23 Sep 2011 16:41:44 -0700
+Message-ID: <7vhb42su6f.fsf@alter.siamese.dyndns.org>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: 0F313188-E63D-11E0-A84D-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+X-Pobox-Relay-ID: 99768EC4-E63D-11E0-9D0F-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The latest maintenance release Git 1.7.6.4 is available but not at the
+A release candidate Git 1.7.7.rc3 is available for testing but not at the
 usual places.
 
-The release tarballs are found at:
+The tarball is found at:
 
     http://code.google.com/p/git-core/downloads/list
 
-and their SHA-1 checksums are:
+and its SHA-1 checksum is:
 
-df91e2c32d6097ab1c9d0edc56dd8cecb4e9b686  git-1.7.6.4.tar.gz
-6abd985e24b6585284cef7fae2e3046ba9201356  git-htmldocs-1.7.6.4.tar.gz
-c6f6d92f4005a7eccaf89e851c45768c18f7e65a  git-manpages-1.7.6.4.tar.gz
+c6ba05a833cab49dd66dd1e252306e187effbf2b  git-1.7.7.rc3.tar.gz
 
-Also the following public repositories all have a copy of the v1.7.6.4
-tag and the maint branch that the tag points at:
+Also the following public repositories all have a copy of the v1.7.7-rc3
+tag and the master branch that the tag points at:
 
         url = git://repo.or.cz/alt-git.git
         url = https://code.google.com/p/git-core/
@@ -47,36 +45,27 @@ tag and the maint branch that the tag points at:
         url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
         url = https://github.com/gitster/git
 
+I had to make a quick fix for a recent regression directly on master, and
+I would like to cook it for a few days, so the final has to wait til mid
+next week.
 
-Git v1.7.6.4 Release Notes
-==========================
+Until then please help testing to find other regressions.
 
-Fixes since v1.7.6.3
---------------------
+----------------------------------------------------------------
 
- * The error reporting logic of "git am" when the command is fed a file
-   whose mail-storage format is unknown was fixed.
+Changes since v1.7.7-rc2 are as follows:
 
- * "git branch --set-upstream @{-1} foo" did not expand @{-1} correctly.
+Allan Caffee (1):
+      describe: Refresh the index when run with --dirty
 
- * "git check-ref-format --print" used to parrot a candidate string that
-   began with a slash (e.g. /refs/heads/master) without stripping it, to make
-   the result a suitably normalized string the caller can append to "$GIT_DIR/".
+Jay Soffian (1):
+      git-mergetool: check return value from read
 
- * "git clone" failed to clone locally from a ".git" file that itself
-   is not a directory but is a pointer to one.
+Jeff King (1):
+      t4014: clean up format.thread config after each test
 
- * "git clone" from a local repository that borrows from another
-   object store using a relative path in its objects/info/alternates
-   file did not adjust the alternates in the resulting repository.
+Junio C Hamano (3):
+      Git 1.7.6.4
+      merge-recursive: Do not look at working tree during a virtual ancestor merge
+      Git 1.7.7-rc3
 
- * "git describe --dirty" did not refresh the index before checking the
-   state of the working tree files.
-
- * "git ls-files ../$path" that is run from a subdirectory reported errors
-   incorrectly when there is no such path that matches the given pathspec.
-
- * "git mergetool" could loop forever prompting when nothing can be read
-   from the standard input.
-
-Also contains minor fixes and documentation updates.
