@@ -1,139 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754572Ab1IWOlo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 10:41:44 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:20851 "EHLO relay.sw.ru"
+	id S1754672Ab1IWOmL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 10:42:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58894 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754532Ab1IWOln (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 10:41:43 -0400
-Message-ID: <4E7C9A91.1060301@parallels.com>
-Date: Fri, 23 Sep 2011 18:41:21 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Lightning/1.0b2 Thunderbird/3.1.13
+	id S1754568Ab1IWOmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Sep 2011 10:42:08 -0400
+Date: Fri, 23 Sep 2011 16:41:07 +0200
+From: Johannes Weiner <jweiner@redhat.com>
+To: Andrew Morton <akpm@google.com>
+Cc: Mel Gorman <mgorman@suse.de>, Christoph Hellwig <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Chris Mason <chris.mason@oracle.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, xfs@oss.sgi.com,
+        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [patch 1/2/4] mm: writeback: cleanups in preparation for per-zone
+ dirty limits
+Message-ID: <20110923144107.GB2606@redhat.com>
+References: <1316526315-16801-1-git-send-email-jweiner@redhat.com>
+ <1316526315-16801-3-git-send-email-jweiner@redhat.com>
+ <20110921160226.1bf74494.akpm@google.com>
+ <20110922085242.GA29046@redhat.com>
 MIME-Version: 1.0
-To: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>
-CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "davem@davemloft.net" <davem@davemloft.net>
-Subject: Re: [PATCH v6 1/8] SUNRPC: introduce helpers for reference counted
- rpcbind clients
-References: <20110920101031.9861.18444.stgit@localhost6.localdomain6> <20110920101341.9861.51453.stgit@localhost6.localdomain6> <4E7899E7.9090809@parallels.com> <4E79A95F.8050304@parallels.com>
-In-Reply-To: <4E79A95F.8050304@parallels.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110922085242.GA29046@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Trond, is this patch version suits you now? Or not?
-Please, comment somehow to let me know, may I proceed with further development 
-or not.
+On Thu, Sep 22, 2011 at 10:52:42AM +0200, Johannes Weiner wrote:
+> On Wed, Sep 21, 2011 at 04:02:26PM -0700, Andrew Morton wrote:
+> > Should we rename determine_dirtyable_memory() to
+> > global_dirtyable_memory(), to get some sense of its relationship with
+> > zone_dirtyable_memory()?
+> 
+> Sounds good.
 
-Sorry for disturbing (if so).
+---
 
-21.09.2011 13:07, Stanislav Kinsbursky пишет:
-> v6:
-> 1) added write memory barrier to rpcb_set_local to make sure, that rpcbind
-> clients become valid before rpcb_users assignment
-> 2) explicitly set rpcb_users to 1 instead of incrementing it (looks clearer from
-> my pow).
->
-> Notice: write memory barrier after zeroing rpcbind clients in rpcb_put_local()
-> is not required, since to users of them left. New user (service) will create new
-> clients before dereferencing them.
->
-> This helpers will be used for dynamical creation and destruction of rpcbind
-> clients.
-> Variable rpcb_users is actually a counter of lauched RPC services. If rpcbind
-> clients has been created already, then we just increase rpcb_users.
->
-> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
->
-> ---
->    net/sunrpc/rpcb_clnt.c |   54 ++++++++++++++++++++++++++++++++++++++++++++++++
->    1 files changed, 54 insertions(+), 0 deletions(-)
->
-> diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
-> index e45d2fb..9fcdb42 100644
-> --- a/net/sunrpc/rpcb_clnt.c
-> +++ b/net/sunrpc/rpcb_clnt.c
-> @@ -114,6 +114,9 @@ static struct rpc_program	rpcb_program;
->    static struct rpc_clnt *	rpcb_local_clnt;
->    static struct rpc_clnt *	rpcb_local_clnt4;
->
-> +DEFINE_SPINLOCK(rpcb_clnt_lock);
-> +unsigned int			rpcb_users;
-> +
->    struct rpcbind_args {
->    	struct rpc_xprt *	r_xprt;
->
-> @@ -161,6 +164,57 @@ static void rpcb_map_release(void *data)
->    	kfree(map);
->    }
->
-> +static int rpcb_get_local(void)
-> +{
-> +	int cnt;
-> +
-> +	spin_lock(&rpcb_clnt_lock);
-> +	if (rpcb_users)
-> +		rpcb_users++;
-> +	cnt = rpcb_users;
-> +	spin_unlock(&rpcb_clnt_lock);
-> +
-> +	return cnt;
-> +}
-> +
-> +void rpcb_put_local(void)
-> +{
-> +	struct rpc_clnt *clnt = rpcb_local_clnt;
-> +	struct rpc_clnt *clnt4 = rpcb_local_clnt4;
-> +	int shutdown;
-> +
-> +	spin_lock(&rpcb_clnt_lock);
-> +	if (--rpcb_users == 0) {
-> +		rpcb_local_clnt = NULL;
-> +		rpcb_local_clnt4 = NULL;
-> +	}
-> +	shutdown = !rpcb_users;
-> +	spin_unlock(&rpcb_clnt_lock);
-> +
-> +	if (shutdown) {
-> +		/*
-> +		 * cleanup_rpcb_clnt - remove xprtsock's sysctls, unregister
-> +		 */
-> +		if (clnt4)
-> +			rpc_shutdown_client(clnt4);
-> +		if (clnt)
-> +			rpc_shutdown_client(clnt);
-> +	}
-> +	return;
-> +}
-> +
-> +static void rpcb_set_local(struct rpc_clnt *clnt, struct rpc_clnt *clnt4)
-> +{
-> +	/* Protected by rpcb_create_local_mutex */
-> +	rpcb_local_clnt = clnt;
-> +	rpcb_local_clnt4 = clnt4;
-> +	smp_wmb();
-> +	rpcb_users = 1;
-> +	dprintk("RPC:       created new rpcb local clients (rpcb_local_clnt: "
-> +			"%p, rpcb_local_clnt4: %p)\n", rpcb_local_clnt,
-> +			rpcb_local_clnt4);
-> +}
-> +
->    /*
->     * Returns zero on success, otherwise a negative errno value
->     * is returned.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+The next patch will introduce per-zone dirty limiting functions in
+addition to the traditional global dirty limiting.
 
+Rename determine_dirtyable_memory() to global_dirtyable_memory()
+before adding the zone-specific version, and fix up its documentation.
 
+Also, move the functions to determine the dirtyable memory and the
+function to calculate the dirty limit based on that together so that
+their relationship is more apparent and that they can be commented on
+as a group.
+
+Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+---
+ mm/page-writeback.c |   92 +++++++++++++++++++++++++-------------------------
+ 1 files changed, 46 insertions(+), 46 deletions(-)
+
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index c8acf8a..78604a6 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -186,12 +186,12 @@ static unsigned long highmem_dirtyable_memory(unsigned long total)
+ }
+ 
+ /**
+- * determine_dirtyable_memory - amount of memory that may be used
++ * global_dirtyable_memory - number of globally dirtyable pages
+  *
+- * Returns the numebr of pages that can currently be freed and used
+- * by the kernel for direct mappings.
++ * Returns the global number of pages potentially available for dirty
++ * page cache.  This is the base value for the global dirty limits.
+  */
+-static unsigned long determine_dirtyable_memory(void)
++static unsigned long global_dirtyable_memory(void)
+ {
+ 	unsigned long x;
+ 
+@@ -205,6 +205,47 @@ static unsigned long determine_dirtyable_memory(void)
+ }
+ 
+ /*
++ * global_dirty_limits - background-writeback and dirty-throttling thresholds
++ *
++ * Calculate the dirty thresholds based on sysctl parameters
++ * - vm.dirty_background_ratio  or  vm.dirty_background_bytes
++ * - vm.dirty_ratio             or  vm.dirty_bytes
++ * The dirty limits will be lifted by 1/4 for PF_LESS_THROTTLE (ie. nfsd) and
++ * real-time tasks.
++ */
++void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty)
++{
++	unsigned long background;
++	unsigned long dirty;
++	unsigned long uninitialized_var(available_memory);
++	struct task_struct *tsk;
++
++	if (!vm_dirty_bytes || !dirty_background_bytes)
++		available_memory = global_dirtyable_memory();
++
++	if (vm_dirty_bytes)
++		dirty = DIV_ROUND_UP(vm_dirty_bytes, PAGE_SIZE);
++	else
++		dirty = (vm_dirty_ratio * available_memory) / 100;
++
++	if (dirty_background_bytes)
++		background = DIV_ROUND_UP(dirty_background_bytes, PAGE_SIZE);
++	else
++		background = (dirty_background_ratio * available_memory) / 100;
++
++	if (background >= dirty)
++		background = dirty / 2;
++	tsk = current;
++	if (tsk->flags & PF_LESS_THROTTLE || rt_task(tsk)) {
++		background += background / 4;
++		dirty += dirty / 4;
++	}
++	*pbackground = background;
++	*pdirty = dirty;
++	trace_global_dirty_state(background, dirty);
++}
++
++/*
+  * couple the period to the dirty_ratio:
+  *
+  *   period/2 ~ roundup_pow_of_two(dirty limit)
+@@ -216,7 +257,7 @@ static int calc_period_shift(void)
+ 	if (vm_dirty_bytes)
+ 		dirty_total = vm_dirty_bytes / PAGE_SIZE;
+ 	else
+-		dirty_total = (vm_dirty_ratio * determine_dirtyable_memory()) /
++		dirty_total = (vm_dirty_ratio * global_dirtyable_memory()) /
+ 				100;
+ 	return 2 + ilog2(dirty_total - 1);
+ }
+@@ -416,47 +457,6 @@ static unsigned long hard_dirty_limit(unsigned long thresh)
+ 	return max(thresh, global_dirty_limit);
+ }
+ 
+-/*
+- * global_dirty_limits - background-writeback and dirty-throttling thresholds
+- *
+- * Calculate the dirty thresholds based on sysctl parameters
+- * - vm.dirty_background_ratio  or  vm.dirty_background_bytes
+- * - vm.dirty_ratio             or  vm.dirty_bytes
+- * The dirty limits will be lifted by 1/4 for PF_LESS_THROTTLE (ie. nfsd) and
+- * real-time tasks.
+- */
+-void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty)
+-{
+-	unsigned long background;
+-	unsigned long dirty;
+-	unsigned long uninitialized_var(available_memory);
+-	struct task_struct *tsk;
+-
+-	if (!vm_dirty_bytes || !dirty_background_bytes)
+-		available_memory = determine_dirtyable_memory();
+-
+-	if (vm_dirty_bytes)
+-		dirty = DIV_ROUND_UP(vm_dirty_bytes, PAGE_SIZE);
+-	else
+-		dirty = (vm_dirty_ratio * available_memory) / 100;
+-
+-	if (dirty_background_bytes)
+-		background = DIV_ROUND_UP(dirty_background_bytes, PAGE_SIZE);
+-	else
+-		background = (dirty_background_ratio * available_memory) / 100;
+-
+-	if (background >= dirty)
+-		background = dirty / 2;
+-	tsk = current;
+-	if (tsk->flags & PF_LESS_THROTTLE || rt_task(tsk)) {
+-		background += background / 4;
+-		dirty += dirty / 4;
+-	}
+-	*pbackground = background;
+-	*pdirty = dirty;
+-	trace_global_dirty_state(background, dirty);
+-}
+-
+ /**
+  * bdi_dirty_limit - @bdi's share of dirty throttling threshold
+  * @bdi: the backing_dev_info to query
 -- 
-Best regards,
-Stanislav Kinsbursky
+1.7.6.2
+
