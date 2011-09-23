@@ -1,50 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754435Ab1IWONB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 10:13:01 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39667 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751541Ab1IWONA convert rfc822-to-8bit (ORCPT
+	id S1754470Ab1IWOQe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 10:16:34 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:45009 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754399Ab1IWOQc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 10:13:00 -0400
-Subject: Re: [PATCH 2/4] perf symbols: /proc/kallsyms does not sort module
- symbols
-From: Peter Zijlstra <peterz@infradead.org>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Stephane Eranian <eranian@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        anton@samba.org, mingo@elte.hu, ak@linux.intel.com,
-        Robert Richter <robert.richter@amd.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 23 Sep 2011 16:12:29 +0200
-In-Reply-To: <20110923141113.GA27519@ghostprotocols.net>
-References: <20110923141113.GA27519@ghostprotocols.net>
-Content-Type: text/plain; charset="UTF-8"
+	Fri, 23 Sep 2011 10:16:32 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=XTHNZSBTKpWph2qodqtFhkYoc8JwgbfPB6tDFEMHP4Zc2Z64kY+jSx+GRkvNWt0eG
+	UunxfdK8D7S/ikwWrepFg==
+MIME-Version: 1.0
+In-Reply-To: <4E7C39FB.3050707@huawei.com>
+References: <4E714FAA.8060708@huawei.com> <CAErSpo5gV7AspUQp7_JOFuY0c0YnFWxj2TKUX-r6-0dVkj5FPA@mail.gmail.com>
+ <CAErSpo71cC5=K7DXYs+aEnU2J91TX7ys8bpnUSmdob1dgdaBSg@mail.gmail.com> <4E7C39FB.3050707@huawei.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 23 Sep 2011 08:16:08 -0600
+Message-ID: <CAErSpo4KwLfcD0HHh6XQD36rmYbZuHVHrH31wdouWqwFakMdRw@mail.gmail.com>
+Subject: Re: [PATCH v4] acpi: Fix CPU hot removal problem
+To: "canquan.shen" <shencanquan@huawei.com>
+Cc: len.brown@intel.com, "shemminger@vyatta.com" <shemminger@vyatta.com>,
+        "yakui.zhao@intel.com" <yakui.zhao@intel.com>,
+        "xiaowei.yang@huawei.com" <xiaowei.yang@huawei.com>,
+        hanweidong <hanweidong@huawei.com>, linqiangmin@huawei.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        khalid.aziz@hp.com
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1316787149.9084.43.camel@twins>
-Mime-Version: 1.0
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-09-23 at 11:11 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Fri, Sep 23, 2011 at 03:59:33PM +0200, Stephane Eranian escreveu:
-> > Hi,
-> > 
-> > What's the status of this patch?
-> > 
-> > It is not in 3.1.0-rc7. It is needed!
-> > 
-> > I ran into serious issues (bogus symbols) with a profile where
-> > kernel modules were stressed and it boiled down to kallsyms__parse()
-> > being broken because /proc/kallsyms is assumed sorted when it actually
-> > is NOT.
-> 
-> Its all here:
-> 
-> https://github.com/acmel/linux/commits/perf/urgent
-> 
-> I was waiting for Ingo, Peter, can you take a look and see if you agree
-> with the patches there then I can ask Linus to pull it, ok?
+On Fri, Sep 23, 2011 at 1:49 AM, canquan.shen <shencanquan@huawei.com> wrote:
+> On 2011/9/23 0:53, Bjorn Helgaas wrote:
+>>
+>> On Wed, Sep 14, 2011 at 8:56 PM, Bjorn Helgaas<bhelgaas@google.com>
+>>  wrote:
+>>>
+>>> On Wed, Sep 14, 2011 at 7:06 PM, canquan.shen<shencanquan@huawei.com>
+>>>  wrote:
+>>>>
+>>>> We run linux as a guest in Xen environment. When we used the xen tools
+>>>> (xm vcpu-set<n>) to hot add and remove vcpu to and from the guest, we
+>>>> encountered the failure on vcpu removal. We found the reason is that it
+>>>> didn't go to really remove cpu in the cpu removal code path.
+>>>>
+>>>> This patch adds acpi_bus_trim in acpi_process_hotplug_notify to fix this
+>>>> issue. With this patch, it works fine for us.
+>>>>
+>>>> Signed-off-by:Canquan Shen<shencanquan@huawei.com>
+>>>
+>>> Reviewed-by: Bjorn Helgaas<bhelgaas@google.com>
+>>
+>> On second thought, let's think about this a bit more.
+>>
+>> As I mentioned before, I have a long-term goal to move the hotplug
+>> flow out of drivers and into the ACPI core.  That will be easier if
+>> the code in the drivers is as generic as possible.
+>>
+>> The dock and acpiphp hot-remove code calls acpi_bus_trim(), then
+>> evaluates _EJ0.  The core acpi_bus_hot_remove_device() function
+>> already does both acpi_bus_trim() and _EJ0.  This function is
+>> currently only used when we write to sysfs "eject" files, but I wonder
+>> if we should use it in acpi_processor_hotplug_notify() as well.
+>>
+>> That would get us one step closer to removing this gunk from the
+>> drivers and having acpi_bus_notify() look something like this:
+>>
+>>     case ACPI_NOTIFY_EJECT_REQUEST:
+>>         driver->ops.remove(device);
+>>         acpi_bus_hot_remove_device(device);
+>>         break;
+>>
+>> There is a description of a CPU hot-remove that does include _EJ0
+>> methods in the "DIG64 Hot-Plug&  Partitioning Flows Specification"
+>> [1], sec 2.2.4.  I know this document is Itanium-oriented, but this
+>> part seems fairly generic and it's the only description of the process
+>> I've seen so far.
+>>
+>> So would using acpi_bus_hot_remove_device() instead of acpi_bus_trim()
+>> also solve your problem, Canquan?
+>>
+> Yes. It can solve my problem.
+> I fully aggree to replace acpi_bus_hot_remove_device() to acpi_bus_trim().
+> Initially I insert the acpi_bus_hot_remove_device() in acpi_bus_notify
+> function . lately I think I should give a chance for user,and so send
+>  KOBJ_OFFLINE message to the udvev module.
+>
+> But why add the  driver->ops.remove(device) before
+> acpi_bus_hot_remove_device(device).  it can be called in
+> acpi_bus_hot_remove_device code path as bellowing:
+>    acpi_bus_trim
+>        acpi_bus_remove
+>            device_release_driver
+>                __device_release_driver
+>                        acpi_device_remove
+>                                acpi_drv->ops.remove
 
-Looks all-right, ship it! :-)
+OK.  Maybe the future acpi_bus_notify() code would be even simpler.
+The point is that the ACPI core should handle the notification, call
+the driver's .remove() method, and do whatever namespace cleanup is
+required (i.e., acpi_bus_trim()).  None of this should be in the
+driver itself.
+
+Can you re-post your patch, using acpi_bus_hot_remove_device() instead
+of acpi_bus_trim()?  Please include Khalid's tweak, too, so we don't
+print warnings for CPUs that don't supply _EJ0 methods.
+
+Bjorn
