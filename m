@@ -1,142 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751380Ab1IWRtK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 13:49:10 -0400
-Received: from mailgw1.uni-kl.de ([131.246.120.220]:44924 "EHLO
-	mailgw1.uni-kl.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750789Ab1IWRtI (ORCPT
+	id S1751390Ab1IWRvQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 13:51:16 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:39463 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750717Ab1IWRvO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 13:49:08 -0400
-Message-ID: <4E7CC690.20700@itwm.fraunhofer.de>
-Date: Fri, 23 Sep 2011 19:49:04 +0200
-From: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110419 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [3.1-rc6] kmalloc(64) leak from IDE
-References: <20110922072643.GA27232@hostway.ca> <20110922084811.GC17640@liondog.tnic> <20110922202337.GB32661@hostway.ca> <20110923072118.GA13293@liondog.tnic> <j5iab7$j8m$1@dough.gmane.org> <CAErSpo4H9_Fwyic9crHTGwWaDk5bevK7r6pTb+tpMFxHZ2MajQ@mail.gmail.com> <4E7CB522.6080208@itwm.fraunhofer.de> <CAErSpo5xK8iExuaNdHejRBjVYEXAjbyJ8V0FGZA0QUA8LB-wFA@mail.gmail.com>
-In-Reply-To: <CAErSpo5xK8iExuaNdHejRBjVYEXAjbyJ8V0FGZA0QUA8LB-wFA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Fri, 23 Sep 2011 13:51:14 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <greg@kroah.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Manjunath GKondaiah <manjunath.gkondaiah@linaro.org>,
+        linux-kernel@vger.kernel.org, Dilan Lee <dilee@nvidia.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH v3] drivercore: Add driver probe deferral mechanism
+In-Reply-To: Your message of "Thu, 22 Sep 2011 15:19:01 MDT."
+             <CACxGe6vAQ+_SKc-zH434bdd3akM5S1jB0N7+AFEjgZfX1uNrZQ@mail.gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <20110922184614.25419.84606.stgit@ponder> <20110922212909.49966cf4@lxorguk.ukuu.org.uk>
+            <CACxGe6vAQ+_SKc-zH434bdd3akM5S1jB0N7+AFEjgZfX1uNrZQ@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1316800223_4577P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
-X-ITWM-CharSet: ISO-8859-1
-X-ITWM-Scanned-By: mail2.itwm.fhg.de
+Date: Fri, 23 Sep 2011 13:50:23 -0400
+Message-ID: <7790.1316800223@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020206.4E7CC6E1.00D6,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2011 06:40 PM, Bjorn Helgaas wrote:
-> On Fri, Sep 23, 2011 at 10:34 AM, Bernd Schubert
-> <bernd.schubert@itwm.fraunhofer.de>  wrote:
->> On 09/23/2011 06:08 PM, Bjorn Helgaas wrote:
->>>
->>> On Fri, Sep 23, 2011 at 9:58 AM, Bernd Schubert
->>> <bernd.schubert@itwm.fraunhofer.de>    wrote:
->>>>
->>>> On 09/23/2011 09:21 AM, Borislav Petkov wrote:
->>>>>
->>>>> On Thu, Sep 22, 2011 at 01:23:37PM -0700, Simon Kirby wrote:
->>>>>>
->>>>>> Yes, that seems to have made it stop complaining about the IDE path.
->>>>>
->>>>> Good, thanks for testing. It would be great if you left it running for
->>>>> a couple of days like this to see whether there aren't any other issues
->>>>> with the patch. I'll send it with a proper description to Dave soonish
->>>>> since this is a real bug.
->>>>>
->>>>>> All I see from kmemleak now is:
->>>>>
->>>>> Yep, not IDE-related. Adding linux-acpi.
->>>>
->>>>
->>>>>
->>>>>> unreferenced object 0xe7481a00 (size 256):
->>>>>>    comm "swapper", pid 1, jiffies 4294892509 (age 515.560s)
->>>>>>    hex dump (first 32 bytes):
->>>>>>      00 00 00 28 ff ff ef ff 60 78 4e e7 00 02 00 00  ...(....`xN.....
->>>>>>      47 01 f8 0c f8 0c 01 08 00 00 00 00 0c 03 00 00  G...............
->>>>>>    backtrace:
->>>>>>      [<c1495c47>] kmemleak_alloc+0x27/0x50
->>>>>>      [<c10b3563>] __kmalloc+0xf3/0x1c0
->>>>>>      [<c149e0b0>] pci_acpi_scan_root+0x11e/0x272
->>>>>>      [<c149916b>] acpi_pci_root_add+0x163/0x256
->>>>>>      [<c12adddc>] acpi_device_probe+0x3a/0xf4
->>>>>>      [<c1302e38>] driver_probe_device+0x68/0x160
->>>>>>      [<c1302fb9>] __driver_attach+0x89/0x90
->>>>>>      [<c1302718>] bus_for_each_dev+0x48/0x70
->>>>>>      [<c1302cc9>] driver_attach+0x19/0x20
->>>>>>      [<c130213f>] bus_add_driver+0x17f/0x240
->>>>>>      [<c1303345>] driver_register+0x65/0x120
->>>>>>      [<c12af273>] acpi_bus_register_driver+0x3a/0x3f
->>>>>>      [<c16d421f>] acpi_pci_root_init+0x1b/0x2a
->>>>>>      [<c1001030>] do_one_initcall+0x30/0x160
->>>>>>      [<c16b920b>] kernel_init+0x78/0x10c
->>>>>>      [<c14a1b76>] kernel_thread_helper+0x6/0xd
->>>>>> unreferenced object 0xe74e7860 (size 16):
->>>>>>    comm "swapper", pid 1, jiffies 4294892509 (age 515.560s)
->>>>>>    hex dump (first 16 bytes):
->>>>>>      50 43 49 20 42 75 73 20 30 30 30 30 3a 30 30 00  PCI Bus 0000:00.
->>>>>>    backtrace:
->>>>>>      [<c1495c47>] kmemleak_alloc+0x27/0x50
->>>>>>      [<c10b3563>] __kmalloc+0xf3/0x1c0
->>>>>>      [<c1290cce>] kvasprintf+0x2e/0x50
->>>>>>      [<c1290d01>] kasprintf+0x11/0x20
->>>>>>      [<c149e0da>] pci_acpi_scan_root+0x148/0x272
->>>>>>      [<c149916b>] acpi_pci_root_add+0x163/0x256
->>>>>>      [<c12adddc>] acpi_device_probe+0x3a/0xf4
->>>>>>      [<c1302e38>] driver_probe_device+0x68/0x160
->>>>>>      [<c1302fb9>] __driver_attach+0x89/0x90
->>>>>>      [<c1302718>] bus_for_each_dev+0x48/0x70
->>>>>>      [<c1302cc9>] driver_attach+0x19/0x20
->>>>>>      [<c130213f>] bus_add_driver+0x17f/0x240
->>>>>>      [<c1303345>] driver_register+0x65/0x120
->>>>>>      [<c12af273>] acpi_bus_register_driver+0x3a/0x3f
->>>>>>      [<c16d421f>] acpi_pci_root_init+0x1b/0x2a
->>>>>>      [<c1001030>] do_one_initcall+0x30/0x160
->>>>>>
->>>>>> ...which is probably a separate, non-recurring leak.
->>>>>>
->>>>>>> Also, I'm sure you know IDE is deprecated, so what are the chances of
->>>>>>> moving this box to libata? Also, can you send me your .config pls?
->>>>>>
->>>>>> Yeah, I was going to get around to that eventually. :) Config (and
->>>>>> earlier kmemleak output) here: http://0x.ca/sim/ref/3.1-rc6-blue/
->>>>>
->>>>> Ok, thanks.
->>>>>
->>>>
->>>> I think I reported those already some time ago:
->>>>
->>>> https://lkml.org/lkml/2011/6/21/95
->>>
->>> Rats.  And you even posted a patch
->>> (https://lkml.org/lkml/2011/6/21/132).  I was cc'd, but unfortunately
->>> to an old email address that no longer works.  I'll follow up on it
->>> and make sure it's fixed (probably in 3.2 since it's minor and we're
->>> so late in 3.1).
->>
->> Ah great, I thought you are simply too busy to look into it. We are all just
->> changing our mail addresses too often :)
->>
->> Do you mind if I ping you directly once kernel.org is up again? We have a
->> few test systems here, that fail to boot with recent kernels (just a system
->> hard reset). The issue was introduced in between 2.6.27 and 2.6.32 and it is
->> pci mmconfig related, probably due to a troublesome acpi bios. I filled a
->> bugzilla some time ago and never got a responds on it. But I also need to
->> update it with my latest finding...
->
-> Please do, and you don't need to wait for kernel.org to come back
-> (though it'd be good to include any bugzilla URLs if you know them).
-> Just email me and copy linux-pci (since it seems PCI
-> MMCONFIG-related), and we can try to make some progress.  It's very
-> important to fix regressions as quickly as possible.
+--==_Exmh_1316800223_4577P
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Hmm, I tried to analyze it already and I don't have the text and 
-attachments I sent to the bugzilla ready on my disk to send it again. So 
-it would be really good if we could wait just a little bit longer (I 
-posted it several months ago already). I also found some kind of 
-workaround for us and need the systems right now for our own development...
+On Thu, 22 Sep 2011 15:19:01 MDT, Grant Likely said:
+> On Thu, Sep 22, 2011 at 2:29 PM, Alan Cox <alan=40lxorguk.ukuu.org.uk> =
+wrote:
+> > Definitely what is needed for some of the x86 SoC stuff and would let=
+ us
+> > rip out some of the special case magic for the SCU discovery.
+> >
+> > First thing that strikes me is driver_bound kicks the processing queu=
+e
+> > again. That seems odd - surely this isn't needed because any driver t=
+hat
+> > does initialise this time and may allow something else to get going w=
+ill
+> > queue the kick itself. Thus this seems to just add overhead.
+> >
+> > It all looks a bit O(N=B2) if we don't expect the drivers that might
+> > trigger something else binding to just say 'hey I'm one of the
+> > troublemakers'
+>=20
+> The way I read it, absolute worst case is when every device but one
+> depends on another device.  In that case I believe it will be
+> O(Nlog(N)).  (Every device gets probed on the first pass, but only the
+> last one gets probed.  Then it goes through N-1 devices to the result
+> of only 1 more device getting probed, then N-2, etc.).=20
+
+That is indeed O(N**2) not Nlog(N).  The total number of probes is (N+1)(=
+N)/2
+To get it to O(Nlog(N)), you'd have to probe N devices the first pass, N/=
+2 devices
+on the second pass, N/4 on the third, and so on.
 
 
-Thanks,
-Bernd
+--==_Exmh_1316800223_4577P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFOfMbfcC3lWbTT17ARAvHPAKCjO9UPW25w2Vx+0hFs0jUQK3T87QCdFr81
+xTuPM4IAvAXeCJX7xt6rbv0=
+=3pAq
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1316800223_4577P--
+
