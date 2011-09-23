@@ -1,60 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754906Ab1IWPvi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 11:51:38 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:35299 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754729Ab1IWPvh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 11:51:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAAvzgtZ3aWjpN++3qo1LCS9A+GsNzbnG0vEDqyDG8OHYJeXwuA@mail.gmail.com>
-References: <20110921235515.7476c5fe.lucasvr@gmail.com>
-	<20110922092347.GD17640@liondog.tnic>
-	<20110922171829.GA4863@suse.de>
-	<20110922175406.GA4709@gere.osrc.amd.com>
-	<20110922180327.GA1932@suse.de>
-	<20110922182048.GB4709@gere.osrc.amd.com>
-	<CAAvzgtZ3aWjpN++3qo1LCS9A+GsNzbnG0vEDqyDG8OHYJeXwuA@mail.gmail.com>
-Date: Fri, 23 Sep 2011 12:51:36 -0300
-X-Google-Sender-Auth: uQptI4dR8JD9aRTqGqZMHG_VE6g
-Message-ID: <CAAvzgtZf2pFcKmAvccH4oJuiUJaugWbX1gwng7CK9B2DwN3ocA@mail.gmail.com>
-Subject: Re: [PATCH] Initialize pointer on request_firmware
-From: "Lucas C. Villa Real" <lucasvr@gobolinux.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        Wey-Yi Guya <wey-yi.w.guy@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Pekka Enberg <penberg@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754908Ab1IWPzP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 11:55:15 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:33456 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754767Ab1IWPzL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Sep 2011 11:55:11 -0400
+Subject: Re: [RFC][PATCH] show page size in /proc/$pid/numa_maps
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: David Rientjes <rientjes@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+In-Reply-To: <alpine.DEB.2.00.1109221339520.31548@chino.kir.corp.google.com>
+References: <20110921221329.5B7EE5C5@kernel>
+	 <alpine.DEB.2.00.1109221339520.31548@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 23 Sep 2011 08:54:28 -0700
+Message-ID: <1316793268.16137.481.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 22, 2011 at 4:05 PM, Lucas C. Villa Real
-<lucasvr@gobolinux.org> wrote:
-> On Thu, Sep 22, 2011 at 3:20 PM, Borislav Petkov <bp@alien8.de> wrote:
->> On Thu, Sep 22, 2011 at 11:03:27AM -0700, Greg KH wrote:
->>> The patch was in the 2.6.36 kernel, so by nature of that, 3.0 will also
->>> have it, right?
->>
->> Ok, a colleague of mine gave me 3.0.4 to stare at - and you're right
->> the patch is there. So what is still missing is caca9510ff4e5 from
->> upstream which reroutes the exit path so that firmware_p is NULLed
->> before returning -EBUSY.
->>
->> Lucas, can you apply caca9510ff4e5 from upstream and verify it fixes the
->> issue for ya?
->
-> Sure. I'll do that tonight and will let you now -- the laptop I'm
-> using right now doesn't suffer from that problem.
+On Thu, 2011-09-22 at 13:43 -0700, David Rientjes wrote:
+> Why not just add a pagesize={4K,2M,1G,...} field for every output? 
 
-caca9510ff4e5 fixes it. Thanks for the pointer!
+I think it's a bit misleading.  With THP at least we have 2M pages in
+the MMU, but we're reporting in 4k units.
 
-Best regards,
+I certainly considered doing just what you're suggesting, though.  It's
+definitely not a bad idea.  Certainly much more clear.
 
--- 
-Lucas
-"If you're looking for a reason I've a reason to give: pleasure,
-little treasure"
+-- Dave
+
