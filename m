@@ -1,55 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751610Ab1IWSuV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 14:50:21 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:48429 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751407Ab1IWSuT (ORCPT
+	id S1751659Ab1IWSvJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 14:51:09 -0400
+Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:44141 "EHLO
+	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751457Ab1IWSvH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 14:50:19 -0400
-Date: Fri, 23 Sep 2011 19:46:10 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Luben Tuikov <ltuikov@yahoo.com>,
-        Mark Salyzyn <mark_salyzyn@us.xyratex.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Darrick Wong <djwong@us.ibm.com>, Xiangliang Yu <yuxiangl@marvell.com>,
-        Jack Wang <jack_wang@usish.com>
-Subject: Re: [PATCH] [SCSI] libsas: Allow expander T-T attachments
-Message-ID: <20110923194610.069cdca0@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110923184213.GA25639@infradead.org>
-References: <1311826792.28583.YahooMailNeo@web31811.mail.mud.yahoo.com>
-	<1316691000.10571.6.camel@dabdike>
-	<FC1F9E38C0703341A1A750524E2525A9018AE2C6@XYUS-EX22.xyus.xyratex.com>
-	<1316709319.79868.YahooMailNeo@web31804.mail.mud.yahoo.com>
-	<20110922170344.GA23095@infradead.org>
-	<1316711469.65475.YahooMailNeo@web31806.mail.mud.yahoo.com>
-	<20110923184213.GA25639@infradead.org>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 23 Sep 2011 14:51:07 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=K6fnQZae8TPX1i0cofjQtTsb/A4CHt4xfMPVU6P219U= c=1 sm=1
+ a=_RzpKRR_PHMA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10
+ a=k8hqzbHzjweV03hO1KKrVA==:17 a=UVCYoMOkAAAA:8 a=VwQbUJbxAAAA:8
+ a=2Jna2N92cdG9PdF7F9MA:9 a=6D-siESdAuNEP4lNeUQA:7 a=CjuIK1q_8ugA:10
+ a=x8gzFH9gYPwA:10 a=TP3bHbW6IrwA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Subject: Re: [PATCH 1/2] ext4: MMP: kmmpd should use nodename from init_uts_ns.name, not sysname
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+From: Andreas Dilger <adilger.kernel@dilger.ca>
+In-Reply-To: <1316737389-5522-2-git-send-email-nikitas_angelinas@xyratex.com>
+Date: Fri, 23 Sep 2011 12:51:05 -0600
+Cc: Johann Lombardi <johann@whamcloud.com>,
+        Ext4 Developers List <linux-ext4@vger.kernel.org>,
+        linux-kernel Kernel <linux-kernel@vger.kernel.org>,
+        Nikitas Angelinas <nikitas_angelinas@xyratex.com>,
+        andrew_perepechko@xyratex.com
 Content-Transfer-Encoding: 7bit
+Message-Id: <83CFA343-D1F7-4FD7-B2F1-DAC638FF7C91@dilger.ca>
+References: <1316737389-5522-1-git-send-email-nikitas_angelinas@xyratex.com> <1316737389-5522-2-git-send-email-nikitas_angelinas@xyratex.com>
+To: Nikitas Angelinas <nikitasangelinas@gmail.com>,
+        Theodore Tso <tytso@mit.edu>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Sep 2011 14:42:13 -0400
-Christoph Hellwig <hch@infradead.org> wrote:
-
-> On Thu, Sep 22, 2011 at 10:11:09AM -0700, Luben Tuikov wrote:
-> > >From the original author yes, (unless he's dead or something like that). Not from someone else, when the original author is available.
-> > 
-> > 
-> > When have your had a patch of yours being re-spun and submitted from someone else? Please point to a marc.info thread.
+On 2011-09-22, at 6:23 PM, Nikitas Angelinas wrote:
+> sysname holds "Linux" by default, i.e. what appears when doing a "uname
+> -s"; nodename should be used to print the machine's hostname, i.e. what
+> is returned when doing a "uname -n" or "hostname", and what
+> gethostname(2)/sethostname(2) manipulate, in order to notify the
+> administrator of the node which is contending to mount the filesystem.
 > 
-> I'm not going to look them up for you, but if you care enough you'll
-> find plenty of XFS commits from me that got edited and resent or sent on
-> by Alex or Dave (or others earlier). 
+> Signed-off-by: Nikitas Angelinas <nikitas_angelinas@xyratex.com>
+> Signed-off-by: Andrew Perepechko <andrew_perepechko@xyratex.com>
 
-Likewise I've done it for various things passing through me in the past.
-Generally the reply I get is "thanks".
+This looks to have crept in with the port of the patch to RHEL6, which
+required the code to stop accessing system_utsname directly and instead
+using the init_utsname() helper to access the structure.  That version
+of the patch was contributed by an external developer, so I can't really
+say why it was done, probably just an oversight.  In our RHEL5 patch it
+used to be:
 
-Alan
+       memcpy(mmp->mmp_nodename, system_utsname.nodename,
+              sizeof(mmp->mmp_nodename));
+
+You can add Acked-by: Andreas Dilger <adilger@dilger.ca>.
+
+Thanks for the fix.
+
+> ---
+> fs/ext4/mmp.c |    2 +-
+> 1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/fs/ext4/mmp.c b/fs/ext4/mmp.c
+> index 9bdef3f..2fca64e 100644
+> --- a/fs/ext4/mmp.c
+> +++ b/fs/ext4/mmp.c
+> @@ -109,7 +109,7 @@ static int kmmpd(void *data)
+> 	mmp->mmp_check_interval = cpu_to_le16(mmp_check_interval);
+> 	bdevname(bh->b_bdev, mmp->mmp_bdevname);
+> 
+> -	memcpy(mmp->mmp_nodename, init_utsname()->sysname,
+> +	memcpy(mmp->mmp_nodename, init_utsname()->nodename,
+> 	       sizeof(mmp->mmp_nodename));
+> 
+> 	while (!kthread_should_stop()) {
+> -- 
+> 1.7.4.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+Cheers, Andreas
+
+
+
+
+
