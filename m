@@ -1,56 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752058Ab1IWFwM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 01:52:12 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:48420 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751882Ab1IWFwJ convert rfc822-to-8bit (ORCPT
+	id S1752189Ab1IWGQL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 02:16:11 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:51000 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751325Ab1IWGQJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 01:52:09 -0400
+	Fri, 23 Sep 2011 02:16:09 -0400
+Date: Fri, 23 Sep 2011 09:16:01 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [patch] dma/timberdale: free_irq() on an error path
+Message-ID: <20110923061601.GB4387@elgon.mountain>
 MIME-Version: 1.0
-In-Reply-To: <201109221815.08891.hartleys@visionengravers.com>
-References: <201109221815.08891.hartleys@visionengravers.com>
-Date: Fri, 23 Sep 2011 11:22:08 +0530
-Message-ID: <CAKTCnznRZbcsnHyV=+-DDd2fkAZ+kqyqrCoos+4ZmBxGBPNQYg@mail.gmail.com>
-Subject: Re: [PATCH] mm/page_cgroup.c: quiet sparse noise
-From: Balbir Singh <bsingharora@gmail.com>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        containers@lists.linux-foundation.org, paul@paulmenage.org,
-        lizf@cn.fujitsu.com, nishimura@mxp.nes.nec.co.jp,
-        kamezawa.hiroyu@jp.fujitsu.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4E7C2427.007C:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 23, 2011 at 6:45 AM, H Hartley Sweeten
-<hartleys@visionengravers.com> wrote:
-> Quite the sparse noise:
->
-> warning: symbol 'swap_cgroup_ctrl' was not declared. Should it be static?
->
-> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-> Cc: Paul Menage <paul@paulmenage.org>
-> Cc: Li Zefan <lizf@cn.fujitsu.com>
-> Cc: Balbir Singh <bsingharora@gmail.com>
-> Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->
-> ---
->
-> diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
-> index 6bdc67d..eead840 100644
-> --- a/mm/page_cgroup.c
-> +++ b/mm/page_cgroup.c
-> @@ -357,7 +357,7 @@ struct swap_cgroup_ctrl {
->        spinlock_t      lock;
->  };
->
-> -struct swap_cgroup_ctrl swap_cgroup_ctrl[MAX_SWAPFILES];
-> +static struct swap_cgroup_ctrl swap_cgroup_ctrl[MAX_SWAPFILES];
+There was an error path that skipped the free_irq() step by mistake.
 
-Seems reasonable
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-Acked-by: Balbir Singh <bsingharora@gmail.com>
+diff --git a/drivers/dma/timb_dma.c b/drivers/dma/timb_dma.c
+index 6dbdf45..a4a398f 100644
+--- a/drivers/dma/timb_dma.c
++++ b/drivers/dma/timb_dma.c
+@@ -762,7 +762,7 @@ static int __devinit td_probe(struct platform_device *pdev)
+ 		if ((i % 2) == pchan->rx) {
+ 			dev_err(&pdev->dev, "Wrong channel configuration\n");
+ 			err = -EINVAL;
+-			goto err_tasklet_kill;
++			goto err_free_irq;
+ 		}
+ 
+ 		td_chan->chan.device = &td->dma;
