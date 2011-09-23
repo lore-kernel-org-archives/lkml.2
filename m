@@ -1,81 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752727Ab1IWOXU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 10:23:20 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:41405 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754184Ab1IWOXR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 10:23:17 -0400
-X-Authority-Analysis: v=1.1 cv=XWD5/VRj2HUJOhsR8cgmvPBlhMACpZXxseY1Kn/ehQI= c=1 sm=0 a=Ywaum0S5s4cA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=VwQbUJbxAAAA:8 a=D19gQVrFAAAA:8 a=meVymXHHAAAA:8 a=pGLkceISAAAA:8 a=20KFwNOVAAAA:8 a=V3-2FqCaaBK9AZDFpw0A:9 a=6b_CGfRNH-esSdOCBMMA:7 a=QEXdDO2ut3YA:10 a=LI9Vle30uBYA:10 a=jeBq3FmKZ4MA:10 a=MSl-tDqOz04A:10 a=jEp0ucaQiEUA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.83.30
-Subject: Re: [PATCH 1/2] tracing: Kill uninitialized warning in
- trace_printk.c
-From: Steven Rostedt <rostedt@goodmis.org>
-To: penberg@cs.helsinki.fi
-Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-In-Reply-To: <1316787547-1971-1-git-send-email-penberg@cs.helsinki.fi>
-References: <1316787547-1971-1-git-send-email-penberg@cs.helsinki.fi>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 23 Sep 2011 10:23:14 -0400
-Message-ID: <1316787794.29966.190.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 8bit
+	id S1754511Ab1IWO0S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 10:26:18 -0400
+Received: from mga11.intel.com ([192.55.52.93]:53645 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753466Ab1IWO0Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Sep 2011 10:26:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,430,1312182000"; 
+   d="scan'208";a="69519336"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Pekka Enberg <penberg@kernel.org>, kvm@vger.kernel.org
+Subject: [RFC][PATCH] tools: kvm: don't use custom strtoul for hex numbers
+Date: Fri, 23 Sep 2011 17:25:46 +0300
+Message-Id: <ae9ebfd216b4560d885e3b437d98b93b78e45c1c.1316787913.git.andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.7.6.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-09-23 at 17:19 +0300, penberg@cs.helsinki.fi wrote:
-> From: Pekka Enberg <penberg@kernel.org>
-> 
-> This patch kill the following bogus warning issued by GCC by shuffling the code
-> around:
-> 
->     CC      fs/ext4/balloc.o
->   kernel/trace/trace_printk.c: In function ‘module_trace_bprintk_format_notify’:
->   kernel/trace/trace_printk.c:65:14: warning: ‘fmt’ may be used uninitialized in this function [-Wuninitialized]
->   kernel/trace/trace_printk.c:52:8: note: ‘fmt’ was declared here
-> 
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: kvm@vger.kernel.org
+---
+ tools/kvm/util/parse-options.c |   81 ++++++++--------------------------------
+ 1 files changed, 16 insertions(+), 65 deletions(-)
 
-NAK, I have a fix I just posted yesterday ;)
-
-https://lkml.org/lkml/2011/9/22/402
-
--- Steve
-
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Signed-off-by: Pekka Enberg <penberg@kernel.org>
-> ---
->  kernel/trace/trace_printk.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/trace/trace_printk.c b/kernel/trace/trace_printk.c
-> index 1f06468..25e34f5 100644
-> --- a/kernel/trace/trace_printk.c
-> +++ b/kernel/trace/trace_printk.c
-> @@ -49,7 +49,7 @@ static
->  void hold_module_trace_bprintk_format(const char **start, const char **end)
->  {
->  	const char **iter;
-> -	char *fmt;
-> +	char *fmt = NULL;
->  
->  	mutex_lock(&btrace_mutex);
->  	for (iter = start; iter < end; iter++) {
-> @@ -62,7 +62,7 @@ void hold_module_trace_bprintk_format(const char **start, const char **end)
->  		tb_fmt = kmalloc(sizeof(*tb_fmt), GFP_KERNEL);
->  		if (tb_fmt)
->  			fmt = kmalloc(strlen(*iter) + 1, GFP_KERNEL);
-> -		if (tb_fmt && fmt) {
-> +		if (fmt) {
->  			list_add_tail(&tb_fmt->list, &trace_bprintk_fmt_list);
->  			strcpy(fmt, *iter);
->  			tb_fmt->fmt = fmt;
-
+diff --git a/tools/kvm/util/parse-options.c b/tools/kvm/util/parse-options.c
+index c280379..4f9fdff 100644
+--- a/tools/kvm/util/parse-options.c
++++ b/tools/kvm/util/parse-options.c
+@@ -1,3 +1,4 @@
++#include <stdlib.h>
+ #include <stdio.h>
+ #include <string.h>
+ #include <unistd.h>
+@@ -39,74 +40,24 @@ static int get_arg(struct parse_opt_ctx_t *p, const struct option *opt,
+ 	return 0;
+ }
+ 
+-#define numvalue(c)					\
+-	((c) >= 'a' ? (c) - 'a' + 10 :			\
+-	 (c) >= 'A' ? (c) - 'A' + 10 : (c) - '0')
+-
+-static u64 readhex(const char *str, bool *error)
+-{
+-	char *pos = strchr(str, 'x') + 1;
+-	u64 res = 0;
+-
+-	while (*pos) {
+-		unsigned int v = numvalue(*pos);
+-		if (v > 16) {
+-			*error = true;
+-			return 0;
+-		}
+-
+-		res = (res * 16) + v;
+-		pos++;
+-	}
+-
+-	*error = false;
+-	return res;
+-}
+-
+ static int readnum(const struct option *opt, int flags,
+ 		   const char *str, char **end)
+ {
+-	if (strchr(str, 'x')) {
+-		bool error;
+-		u64 value;
+-
+-		value = readhex(str, &error);
+-		if (error)
+-			goto enotnum;
+-
+-		switch (opt->type) {
+-		case OPTION_INTEGER:
+-			*(int *)opt->value = value;
+-			break;
+-		case OPTION_UINTEGER:
+-			*(unsigned int *)opt->value = value;
+-			break;
+-		case OPTION_LONG:
+-			*(long *)opt->value = value;
+-			break;
+-		case OPTION_U64:
+-			*(u64 *)opt->value = value;
+-			break;
+-		default:
+-			goto invcall;
+-		}
+-	} else {
+-		switch (opt->type) {
+-		case OPTION_INTEGER:
+-			*(int *)opt->value = strtol(str, end, 10);
+-			break;
+-		case OPTION_UINTEGER:
+-			*(unsigned int *)opt->value = strtol(str, end, 10);
+-			break;
+-		case OPTION_LONG:
+-			*(long *)opt->value = strtol(str, end, 10);
+-			break;
+-		case OPTION_U64:
+-			*(u64 *)opt->value = strtoull(str, end, 10);
+-			break;
+-		default:
+-			goto invcall;
+-		}
++	switch (opt->type) {
++	case OPTION_INTEGER:
++		*(int *)opt->value = strtol(str, end, 0);
++		break;
++	case OPTION_UINTEGER:
++		*(unsigned int *)opt->value = strtol(str, end, 0);
++		break;
++	case OPTION_LONG:
++		*(long *)opt->value = strtol(str, end, 0);
++		break;
++	case OPTION_U64:
++		*(u64 *)opt->value = strtoull(str, end, 0);
++		break;
++	default:
++		goto invcall;
+ 	}
+ 
+ 	return 0;
+-- 
+1.7.6.3
 
