@@ -1,82 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753113Ab1IWKbo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 06:31:44 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:43060 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753036Ab1IWKbn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 06:31:43 -0400
+	id S1753150Ab1IWKdj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 06:33:39 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:59577 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753047Ab1IWKdh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Sep 2011 06:33:37 -0400
+Date: Fri, 23 Sep 2011 12:33:39 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: =?utf-8?B?5p2O5pyd5piO?= <chaoming_li@realsil.com.cn>
+Cc: "'Larry Finger'" <Larry.Finger@lwfinger.net>,
+        linux-wireless@vger.kernel.org,
+        "'LKML'" <linux-kernel@vger.kernel.org>
+Subject: Re: =?utf-8?B?562U5aSNOiDnrZTlpI06IOetlA==?= =?utf-8?B?5aSNOg==?=
+ 3.1-rc6+ rtl8192se issue
+Message-ID: <20110923103339.GA26078@gere.osrc.amd.com>
+References: <20110915124406.GA14374@gere.osrc.amd.com>
+ <4E721871.7040901@lwfinger.net>
+ <20110916180323.GA1988@gere.osrc.amd.com>
+ <CD4D8CF16C39438E82FE8241C9AF80F4@realsil.com.cn>
+ <20110921185816.GA2036@gere.osrc.amd.com>
+ <791179BCE62F4954AB936E6CAC9CA977@realsil.com.cn>
+ <4E7AAB8B.40900@lwfinger.net>
+ <20110922075115.GA17640@liondog.tnic>
+ <6452E68488784D0EA32E4BDF1B941EFB@realsil.com.cn>
 MIME-Version: 1.0
-In-Reply-To: <1316725066.29447.16.camel@Joe-Laptop>
-References: <1316642115-20029-1-git-send-email-jim.cromie@gmail.com>
- <1316642115-20029-26-git-send-email-jim.cromie@gmail.com> <1316725066.29447.16.camel@Joe-Laptop>
-From: Bart Van Assche <bvanassche@acm.org>
-Date: Fri, 23 Sep 2011 12:31:22 +0200
-X-Google-Sender-Auth: Jh4A7w_wOul_Xc0eVctB5t69cbM
-Message-ID: <CAO+b5-qTB2YW4rpS-sGqgXhFWeaEYrM4k87RonmdAz-2t6asCg@mail.gmail.com>
-Subject: Re: [PATCH 25/26] dynamic_debug: add pr_fmt_dbg() for dynamic_pr_debug
-To: Joe Perches <joe@perches.com>
-Cc: jim.cromie@gmail.com, jbaron@redhat.com, greg@kroah.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <6452E68488784D0EA32E4BDF1B941EFB@realsil.com.cn>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 22, 2011 at 10:57 PM, Joe Perches <joe@perches.com> wrote:
-> On Wed, 2011-09-21 at 15:55 -0600, jim.cromie@gmail.com wrote:
->> dynamic_pr_debug can add module, function, file, and line selectively,
-> []
->> diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
-> []
->> +#ifndef pr_fmt_dbg
->> +#define pr_fmt_dbg(fmt) fmt
->> +#endif
-> []
->> +#ifndef pr_fmt_dbg
->> +#define pr_fmt_dbg(fmt) pr_fmt(fmt)
->> +#endif
->
-> This might better be placed in printk.h just
-> once.
->
-> I think pr_fmt_debug is better than pr_fmt_dbg
-> because the function/macro is named pr_debug.
->
-> Maybe add all the pr_<level> variants too because
-> some like to prefix __func__ to pr_err but not pr_info
-> etc.
->
-> #ifndef pr_fmt_emerg
-> #define pr_fmt_emerg(fmt) pr_fmt(fmt)
-> #endif
-> #ifndef pr_fmt_crit
-> #define pr_fmt_crit(fmt) pr_fmt(fmt)
-> #endif
-> #ifndef pr_fmt_alert
-> #define pr_fmt_alert(fmt) pr_fmt(fmt)
-> #endif
-> #ifndef pr_fmt_err
-> #define pr_fmt_err(fmt) pr_fmt(fmt)
-> #endif
-> #ifndef pr_fmt_notice
-> #define pr_fmt_notice(fmt) pr_fmt(fmt)
-> #endif
-> #ifndef pr_fmt_warn
-> #define pr_fmt_warn(fmt) pr_fmt(fmt)
-> #endif
-> #ifndef pr_fmt_info
-> #define pr_fmt_info(fmt) pr_fmt(fmt)
-> #endif
-> #ifndef pr_fmt_debug
-> #define pr_fmt_debug(fmt) pr_fmt(fmt)
-> #endif
+On Fri, Sep 23, 2011 at 06:21:07PM +0800, 李朝明 wrote:
+> Please set ips =0 and try again..
 
-Hi Joe,
+What does that mean?
 
-Are you sure it makes sense to introduce all these new macros ?
-Introducing pr_fmt_dbg() makes sense to me, but the usefulness of the
-macros proposed above is not clear to me.
+I can trigger the grinding-to-a-halt reliably with "ips=0" - it only
+takes a couple of hours of network traffic. Also, I don't want to try
+the driver you sent me because the version in the kernel needs fixing
+not some out-of-tree codebase.
 
-Bart.
+So please clarify your request.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
