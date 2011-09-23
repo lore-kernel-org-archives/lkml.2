@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752190Ab1IWIoP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 04:44:15 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40209 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751902Ab1IWIoO (ORCPT
+	id S1752569Ab1IWIoo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 04:44:44 -0400
+Received: from cuervo.frsf.utn.edu.ar ([190.114.206.130]:58092 "EHLO
+	mail.frsf.utn.edu.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752074Ab1IWIol (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 04:44:14 -0400
-Date: Fri, 23 Sep 2011 09:43:48 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: mhban <mhban@samsung.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        DavidHowells <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Michel Lespinasse <walken@google.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: Re: [PATCH] ARM: futex: fix clobbering oldval
-Message-ID: <20110923084348.GA5468@e102144-lin.cambridge.arm.com>
-References: <1316660015.6872.1.camel@puffmine-laptop>
- <20110922172653.GH13572@e102144-lin.cambridge.arm.com>
- <1316737129.6872.17.camel@puffmine-laptop>
+	Fri, 23 Sep 2011 04:44:41 -0400
+X-Greylist: delayed 1960 seconds by postgrey-1.27 at vger.kernel.org; Fri, 23 Sep 2011 04:44:40 EDT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1316737129.6872.17.camel@puffmine-laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 8bit
+Date: Fri, 23 Sep 2011 06:02:05 -0200
+From: univerzita Karlova <x@karlin.mff.cuni.cz>
+To: undisclosed-recipients:;
+Subject: =?UTF-8?Q?administrativn=C3=AD=20zpr=C3=A1vy?=
+Organization: univerzita Karlova
+Reply-To: <sasaa@ml.lt>
+Mail-Reply-To: <sasaa@ml.lt>
+Message-ID: <61baf702012b58a56e5024a86a480963@frsf.utn.edu.ar>
+User-Agent: Roundcube Webmail/0.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 23, 2011 at 01:18:49AM +0100, mhban wrote:
-> On Thu, 2011-09-22 at 18:26 +0100, Will Deacon wrote:
-> > 
-> > It would have been nice to have been CC'd on this...
-> 
-> Will not miss next time. Thanks.
 
-Thanks. You can use scripts/get_maintainer.pl to get a list of people to
-email.
 
-> > 
-> > You shouldn't reference r5 directly here, but due to the way the futex code
-> > is laid out, you can't add an extra output operand without converting the
-> > code to use named arguments.
-> > 
-> > I'll post a patch to do that.
-> > 
-> > Will
-> 
-> I'm not familiar with gcc inline, thanks for pointing it out.
+-- 
+Vážení karlin.mff.cuni.cz účastníka,
 
-There's a good guide for ARM here:
+Ukončení vašeho karlin.mff.cuni.cz a související poštovním účtem 
+probíhá, jsme v současné době provádí upgrade na náš systém vzhledem k 
+tomu, že to přišlo na naše upozornění, že jedna nebo více z našich 
+předplatitelů zavádějí velmi silný virus do našeho systému a to 
+ovlivňuje naši síť.
 
-http://www.ethernut.de/en/documents/arm-inline-asm.html
+Snažíme se zjistit konkrétní osobu. Z tohoto důvodu se všichni 
+účastníci jsou povinni poskytnout své uživatelské jméno a heslo pro nás 
+pro ověření a je zúčtováno proti tomuto viru. Nedodržení povede k 
+ukončení vašeho účtu v příštích 48 hodin.
 
-> BTW, my last name is Ban not Ben.
+Informace k odeslání;
 
-Oops, I'll update my reported-by to spell that correctly.
+* Uživatelské jméno E-mail} {: (.................) (povinné)
+* Heslo :(..........................)( povinné)
+* Datum narození: (...........................)( nepovinné)
+* Země nebo území: (...................)( nepovinné)
 
-Cheers,
+Doufat, aby vám lépe sloužily ..
 
-Will
+S pozdravem,
+univerzita Karlova
+************************************************** 
+******************************************
+Jedná se o administrativní zprávy ze serveru karlin.mff.cuni.cz. To 
+není spam. Čas od času se karlin.mff.cuni.cz server, posílat zprávy 
+například pro komunikaci důležité informace o vašem předplatném.
+************************************************** 
+******************************************
+
+
