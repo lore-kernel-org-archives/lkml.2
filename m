@@ -1,73 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752157Ab1IWUS1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 16:18:27 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:7566 "EHLO
+	id S1752184Ab1IWUU5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 16:20:57 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:54162 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751947Ab1IWUS0 (ORCPT
+	with ESMTP id S1752140Ab1IWUU4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 16:18:26 -0400
+	Fri, 23 Sep 2011 16:20:56 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:to:cc:subject:message-id:in-reply-to:references:
-	x-mailer:mime-version:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=eB/S6gaXZ0RW9oxZNkCRpBSovZGYHIfvQ3ZDN6T0i5+gv2XvXiIy08w9R7mOt72PW
-	ALXyc5EPfFOl+z30l49vA==
-Date: Fri, 23 Sep 2011 13:18:19 -0700
-From: Andrew Morton <akpm@google.com>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] kernel.h: rename pack_hex_byte to hex_pack_byte
-Message-Id: <20110923131819.fdaed4ab.akpm@google.com>
-In-Reply-To: <fa146966b0ce1e7f04d59eb27cc0e968f51b22de.1316774801.git.andriy.shevchenko@linux.intel.com>
-References: <20110919232602.ac450450.akpm00@gmail.com>
-	<fa146966b0ce1e7f04d59eb27cc0e968f51b22de.1316774801.git.andriy.shevchenko@linux.intel.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=KPAFvbYV+UWYv+ThOv3YaPR+SF4sAxlbQlnpA468Dj6fgdLasoH+qOMf5+ha792Dk
+	pJ4hwV/D+eI5Lw1Nyj4kg==
+Date: Fri, 23 Sep 2011 13:20:51 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Mike Galbraith <efault@gmx.de>
+cc: Tejun Heo <htejun@gmail.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, Paul Menage <paul@paulmenage.org>
+Subject: Re: [patch] cpusets: allow PF_THREAD_BOUND kworkers to escape from
+ a cpuset
+In-Reply-To: <1316788392.6544.33.camel@marge.simson.net>
+Message-ID: <alpine.DEB.2.00.1109231304310.11347@chino.kir.corp.google.com>
+References: <1316758874.7393.2.camel@marge.simson.net> <4E7C2E7F.40307@cn.fujitsu.com> <1316762345.8168.4.camel@marge.simson.net> <alpine.DEB.2.00.1109230204270.29350@chino.kir.corp.google.com> <1316770936.6641.11.camel@marge.simson.net>
+ <1316775204.7562.9.camel@marge.simson.net> <alpine.DEB.2.00.1109230619410.666@chino.kir.corp.google.com> <1316788392.6544.33.camel@marge.simson.net>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Sep 2011 13:47:26 +0300
-Andy Shevchenko <andriy.shevchenko@linux.intel.com> wrote:
+On Fri, 23 Sep 2011, Mike Galbraith wrote:
 
-> As suggested by Andrew Morton in [1] there is better to have most significant
-> part first in the function name.
+> I don't see why it's a kworker code problem.  The kworker code couldn't
+> care less about cpusets.  But I don't care who fixes it or how.
 > 
-> [1] https://lkml.org/lkml/2011/9/20/22
+
+The problem is that PF_THREAD_BOUND means that nothing other than the task 
+itself may change the set of allowed cpus to be different.  For this 
+reason, they have always been declined to be moved amongst cpusets because 
+even though their bound cpu may be a subset of the cpuset's cpumask at the 
+time of attach, that cpuset mask may subsequently change and therefore try 
+to force the PF_THREAD_BOUND off the cpu it is bound to resulting in an 
+inconsistency between the cpuset's mask and an attached task's mask.
+
+Allowing a PF_THREAD_BOUND thread to move to the root cpuset isn't so much 
+of a problem because it's guaranteed to never exclude the bound cpu, but 
+the problem already exists if the kworker is in the child cpuset and 
+userspace attempts to change the mems of that cpuset to be disjoint.  That 
+results in an inconsistency because the scheduler will refuse it.
+
+> cpusets: disallow moving kthreadd into a cpuset.
 > 
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> ---
->  include/linux/kernel.h |    7 ++++++-
->  1 files changed, 6 insertions(+), 1 deletions(-)
+> If kthreadd is moved into a cpuset, it's child may then acquire
+> PF_THREAD_BOUND and become trapped, making it's cpuset immortal.
 > 
-> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-> index 46ac9a5..5022158 100644
-> --- a/include/linux/kernel.h
-> +++ b/include/linux/kernel.h
-> @@ -374,13 +374,18 @@ extern const char hex_asc[];
->  #define hex_asc_lo(x)	hex_asc[((x) & 0x0f)]
->  #define hex_asc_hi(x)	hex_asc[((x) & 0xf0) >> 4]
+> Signed-off-by: Mike Galbraith <efault@gmx.de>
+> 
+> diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+> index 10131fd..0d9cd04 100644
+> --- a/kernel/cpuset.c
+> +++ b/kernel/cpuset.c
+> @@ -59,6 +59,7 @@
+>  #include <linux/mutex.h>
+>  #include <linux/workqueue.h>
+>  #include <linux/cgroup.h>
+> +#include <linux/kthread.h>
 >  
-> -static inline char *pack_hex_byte(char *buf, u8 byte)
-> +static inline char *hex_byte_pack(char *buf, u8 byte)
->  {
->  	*buf++ = hex_asc_hi(byte);
->  	*buf++ = hex_asc_lo(byte);
->  	return buf;
->  }
+>  /*
+>   * Workqueue for cpuset related tasks.
+> @@ -1382,9 +1383,10 @@ static int cpuset_can_attach(struct cgroup_subsys *ss, struct cgroup *cont,
+>  	 * set of allowed nodes is unnecessary.  Thus, cpusets are not
+>  	 * applicable for such threads.  This prevents checking for success of
+>  	 * set_cpus_allowed_ptr() on all attached tasks before cpus_allowed may
+> -	 * be changed.
+> +	 * be changed.  We also disallow attaching kthreadd, to prevent it's
+> +	 * child from becoming trapped should it then acquire PF_THREAD_BOUND.
+>  	 */
+> -	if (tsk->flags & PF_THREAD_BOUND)
+> +	if (tsk->flags & PF_THREAD_BOUND || tsk == kthreadd_task)
+>  		return -EINVAL;
 >  
-> +static inline char * __deprecated pack_hex_byte(char *buf, u8 byte)
-> +{
-> +	return hex_byte_pack(buf, byte);
-> +}
-> +
+>  	return 0;
 
-err, no thanks.  That's just going to hit everyone with great
-screenfuls of compile warnings while waiting for someone else to fix
-them up.
+I like this much better, let's wait to hear from Tejun because he may 
+shead some light on whether PF_THREAD_BOUND is really necessary for 
+kworkers at all times.
 
+Thanks.
