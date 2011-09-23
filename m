@@ -1,73 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753615Ab1IWMAf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 08:00:35 -0400
-Received: from mga02.intel.com ([134.134.136.20]:36126 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752240Ab1IWMAe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 08:00:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="54943521"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH] tools: perf: remove yet another strtoull()
-Date: Fri, 23 Sep 2011 15:00:02 +0300
-Message-Id: <531ef146db5c382e1fd6d72612c49542382c9c7f.1316779196.git.andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.7.6.3
+	id S1753611Ab1IWMFf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 08:05:35 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:61851 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752415Ab1IWMFe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Sep 2011 08:05:34 -0400
+MIME-Version: 1.0
+In-Reply-To: <e1a466eb82a79c91f3ec103b8308f2f81bfcbd69.1316777398.git.andriy.shevchenko@linux.intel.com>
+References: <e23268a9c837d75a24c2d209f1623c505371eb1d.1316777507.git.andriy.shevchenko@linux.intel.com>
+ <e1a466eb82a79c91f3ec103b8308f2f81bfcbd69.1316777398.git.andriy.shevchenko@linux.intel.com>
+From: Denys Vlasenko <vda.linux@googlemail.com>
+Date: Fri, 23 Sep 2011 14:05:13 +0200
+Message-ID: <CAK1hOcNus4RKQOF=eivuCXFEM5Lqb+jBdOD4YrMA_5bL2EB6yA@mail.gmail.com>
+Subject: Re: [PATCH] fat: don't use custom hex_to_bin()
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id p8NC5imV004187
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
----
- tools/perf/util/symbol.c |   22 +---------------------
- 1 files changed, 1 insertions(+), 21 deletions(-)
+On Fri, Sep 23, 2011 at 1:32 PM, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+> ---
+>  fs/fat/namei_vfat.c |   22 ++++++----------------
+>  1 files changed, 6 insertions(+), 16 deletions(-)
+>
+> diff --git a/fs/fat/namei_vfat.c b/fs/fat/namei_vfat.c
+> index bb3f29c..09cec4c 100644
+> --- a/fs/fat/namei_vfat.c
+> +++ b/fs/fat/namei_vfat.c
+> @@ -21,6 +21,8 @@
+>  #include <linux/slab.h>
+>  #include <linux/buffer_head.h>
+>  #include <linux/namei.h>
+> +#include <linux/kernel.h>
+> +
+>  #include "fat.h"
+>
+>  /*
+> @@ -505,7 +507,6 @@ xlate_to_uni(const unsigned char *name, int len, unsigned char *outname,
+>             struct nls_table *nls)
+>  {
+>        const unsigned char *ip;
+> -       unsigned char nc;
+>        unsigned char *op;
+>        unsigned int ec;
+>        int i, k, fill;
+> @@ -530,21 +531,10 @@ xlate_to_uni(const unsigned char *name, int len, unsigned char *outname,
+>                                                return -EINVAL;
+>                                        ec = 0;
+>                                        for (k = 1; k < 5; k++) {
+> -                                               nc = ip[k];
+> -                                               ec <<= 4;
+> -                                               if (nc >= '0' && nc <= '9') {
+> -                                                       ec |= nc - '0';
+> -                                                       continue;
+> -                                               }
+> -                                               if (nc >= 'a' && nc <= 'f') {
+> -                                                       ec |= nc - ('a' - 10);
+> -                                                       continue;
+> -                                               }
+> -                                               if (nc >= 'A' && nc <= 'F') {
+> -                                                       ec |= nc - ('A' - 10);
+> -                                                       continue;
+> -                                               }
+> -                                               return -EINVAL;
+> +                                               int val = hex_to_bin(ip[k]);
+> +                                               if (val < 0)
+> +                                                       return -EINVAL;
+> +                                               ec = (ec << 4) | val;
+>                                        }
+>                                        *op++ = ec & 0xFF;
+>                                        *op++ = ec >> 8;
 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 245e60d..a4cafed 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -2556,17 +2556,6 @@ int machines__create_kernel_maps(struct rb_root *machines, pid_t pid)
- 	return machine__create_kernel_maps(machine);
- }
- 
--static int hex(char ch)
--{
--	if ((ch >= '0') && (ch <= '9'))
--		return ch - '0';
--	if ((ch >= 'a') && (ch <= 'f'))
--		return ch - 'a' + 10;
--	if ((ch >= 'A') && (ch <= 'F'))
--		return ch - 'A' + 10;
--	return -1;
--}
--
- /*
-  * While we find nice hex chars, build a long_val.
-  * Return number of chars processed.
-@@ -2574,17 +2563,8 @@ static int hex(char ch)
- int hex2u64(const char *ptr, u64 *long_val)
- {
- 	const char *p = ptr;
--	*long_val = 0;
--
--	while (*p) {
--		const int hex_val = hex(*p);
- 
--		if (hex_val < 0)
--			break;
--
--		*long_val = (*long_val << 4) | hex_val;
--		p++;
--	}
-+	*long_val = strtoull(ptr, &p, 16);
- 
- 	return p - ptr;
- }
+Function call per byte? That's expensive!
+Can't we have a function which converts many sequential bytes?
+
 -- 
-1.7.6.3
-
+vda
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
