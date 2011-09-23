@@ -1,260 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754617Ab1IWAN0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Sep 2011 20:13:26 -0400
-Received: from mga01.intel.com ([192.55.52.88]:18569 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754275Ab1IWANY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Sep 2011 20:13:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,426,1312182000"; 
-   d="scan'208";a="63476597"
-Message-ID: <4E7BD079.6070309@linux.intel.com>
-Date: Thu, 22 Sep 2011 17:19:05 -0700
-From: J Freyensee <james_p_freyensee@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1754636Ab1IWARA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Sep 2011 20:17:00 -0400
+Received: from utopia.booyaka.com ([72.9.107.138]:56037 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754275Ab1IWAQ5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Sep 2011 20:16:57 -0400
+Date: Thu, 22 Sep 2011 18:16:56 -0600 (MDT)
+From: Paul Walmsley <paul@pwsan.com>
+To: "Cousson, Benoit" <b-cousson@ti.com>
+cc: "Munegowda, Keshava" <keshava_mgowda@ti.com>,
+        "parthab@india.ti.com" <parthab@india.ti.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Balbi, Felipe" <balbi@ti.com>, "Gadiyar, Anand" <gadiyar@ti.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "Hilman, Kevin" <khilman@ti.com>,
+        "johnstul@us.ibm.com" <johnstul@us.ibm.com>,
+        "Sripathy, Vishwanath" <vishwanath.bs@ti.com>
+Subject: Re: [PATCH 1/5 v11] arm: omap: usb: ehci and ohci hwmod structures
+ for omap4
+In-Reply-To: <alpine.DEB.2.00.1109221524560.10719@utopia.booyaka.com>
+Message-ID: <alpine.DEB.2.00.1109221814500.10719@utopia.booyaka.com>
+References: <1316691479-1849-1-git-send-email-keshava_mgowda@ti.com> <1316691479-1849-2-git-send-email-keshava_mgowda@ti.com> <alpine.DEB.2.00.1109221213500.10719@utopia.booyaka.com> <4E7B8C68.7020407@ti.com>
+ <alpine.DEB.2.00.1109221524560.10719@utopia.booyaka.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: NamJae Jeon <linkinjeon@gmail.com>
-CC: cjb@laptop.org, linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mmc : general purpose partition support.
-References: <1316705680-1940-1-git-send-email-linkinjeon@gmail.com> <4E7BB1D3.6020208@linux.intel.com> <CAKYAXd-ABNyB53r01f=J4jNxxqVLfKi1nFbBPifZMPXNYnFZ-w@mail.gmail.com> <4E7BC3F4.2070809@linux.intel.com> <CAKYAXd9jP9AkDfw6Vm0o5GUE07abkHdQQ42YPNQ7ezYY=Fthkg@mail.gmail.com>
-In-Reply-To: <CAKYAXd9jP9AkDfw6Vm0o5GUE07abkHdQQ42YPNQ7ezYY=Fthkg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/2011 04:58 PM, NamJae Jeon wrote:
-> 2011/9/23 J Freyensee<james_p_freyensee@linux.intel.com>:
->> On 09/22/2011 04:15 PM, NamJae Jeon wrote:
->>>
->>> 2011/9/23 J Freyensee<james_p_freyensee@linux.intel.com>:
->>>>
->>>> On 09/22/2011 08:34 AM, Namjae Jeon wrote:
->>>>>
->>>>> It allows general purpose parition in MMC Device. If it is enable, it
->>>>> will
->>>>> make mmcblk0gp1,gp2,gp3,gp4 partition like this.
->>>>>
->>>>>> cat /proc/paritition
->>>>>
->>>>>        179 0 847872 mmcblk0
->>>>>        179 192 4096 mmcblk0gp4
->>>>>        179 160 4096 mmcblk0gp3
->>>>>        179 128 4096 mmcblk0gp2
->>>>>        179 96  1052672 mmcblk0gp1
->>>>>        179 64  1024 mmcblk0boot1
->>>>>        179 32  1024 mmcblk0boot0
->>>>>
->>>>> Signed-off-by: Namjae Jeon<linkinjeon@gmail.com>
->>>>> ---
->>>>>   drivers/mmc/card/block.c |   36 ++++++++++++++++++++++++++++++++++++
->>>>>   drivers/mmc/core/mmc.c   |   42
->>>>> ++++++++++++++++++++++++++++++++++++++++++
->>>>>   include/linux/mmc/card.h |    4 ++++
->>>>>   include/linux/mmc/mmc.h  |    4 ++++
->>>>>   4 files changed, 86 insertions(+), 0 deletions(-)
->>>>>
->>>>> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
->>>>> index 9b90726..074ec55 100644
->>>>> --- a/drivers/mmc/card/block.c
->>>>> +++ b/drivers/mmc/card/block.c
->>>>> @@ -1402,6 +1402,42 @@ static int mmc_blk_alloc_parts(struct mmc_card
->>>>> *card, struct mmc_blk_data *md)
->>>>>                         return ret;
->>>>>         }
->>>>>
->>>>> +       if (card->ext_csd.gp1_size) {
->>>>> +               ret = mmc_blk_alloc_part(card, md,
->>>>> EXT_CSD_PART_CONFIG_ACC_GP1,
->>>>> +                                       card->ext_csd.gp1_size>>      9,
->>>>> +                                       false,
->>>>> +                                       "gp1");
->>>>> +               if (ret)
->>>>> +                       return ret;
->>>>> +       }
->>>>> +
->>>>
->>>> if mmc_blk_alloc_part() fails for 'if (card->ext_csd.pt1_size)', why
->>>> would
->>>> you want to give this code the opportunity to call mmc_blk_alloc_part()
->>>> again with the next if() below?  If mmc_blk_alloc_part() fails, is it a
->>>> big
->>>> problem, like kzalloc() failing?  If so, I would think you would want to
->>>> immediately quit this function and report an error (either use errno
->>>> value
->>>> or pass the value of ret).
->>>
->>> ->    if card->ext_csd.gp1_size is no zero, it means general purpose
->>> partition is enable.
->>> and it can set up to 4 partition in specification. so we should check
->>> it by next if().
->>
->> Please document that in your code.  Please add a function header to this
->> function.
-> I will add comments at this code.  I don't understand why a function
-> header should be added yet.
+Hi
 
-One or the other.
+On Thu, 22 Sep 2011, Paul Walmsley wrote:
 
-but a function comment header should be added at some point.  Yes, the 
-mmc subsystem is pretty legacy, but any new work that gets added to the 
-kernel is usually has higher standards for stuff like not just adding 
-function header comments but putting them in a certain format...at least 
-this is what I went through when I had things accepted upstream.
+> On Thu, 22 Sep 2011, Cousson, Benoit wrote:
+> 
+> > ADDR_TYPE_RT is mainly use for sysconfig access inside hwmod core today, so
+> > why should we use it in this case?
+> 
+> Just for consistency, since the flag isn't defined to be 
+> SYSCONFIG-specific.
+> 
+> That way, if there's another need -- other than SYSCONFIG access -- to 
+> identify the chunk of address space that's used for register access, we 
+> won't have to dig through and possibly repatch the hwmod data, just 
+> because some people didn't want to follow the rule.
+> 
+> If the flag was simply defined to be SYSCONFIG-specific, then you're 
+> right, it wouldn't be needed.
+> 
+> > To be honest, I've been confused with that flag for some time :-)
+> >  * ADDR_TYPE_RT: Address space contains module register target data.
+> > Maybe that's my English, but what does "register target data" mean exactly?
+> 
+> The name comes from the L3 section of the 34xx TRM - see for example 
+> section 9.1.1 "Terminology" of the rev ZR TRM.  The L3 has several address 
+> space sections, and whoever wrote that text -- Sonics? -- called the one 
+> with the L3's own internal registers the "register target."  And I was 
+> looking for a name that I did not have to make up, so I personally 
+> wouldn't have to defend the name ;-)
+> 
+> > What was the intent? Providing a way to identify some register vs memory
+> > space?
+> 
+> As you suggest, the original impetus for the flag was to identify which 
+> chunk of address space needs to be mapped by the hwmod code for SYSCONFIG 
+> accesses to work.  On current OMAPs, this seems to be the same thing as 
+> identifying the IP block's primary register area for every module with 
+> SYS* and REVISION registers.  And I probably thought at the time that 
+> specifying the IP block's main register mapping seemed more useful and 
+> generally applicable than designating where the SYSCONFIG register was.  
+> Hence the current definition.
 
->
->>
->>>
->>>>
->>>>> +       if (card->ext_csd.gp2_size) {
->>>>> +               ret = mmc_blk_alloc_part(card, md,
->>>>> EXT_CSD_PART_CONFIG_ACC_GP2,
->>>>> +                                       card->ext_csd.gp2_size>>      9,
->>>>> +                                       false,
->>>>> +                                       "gp2");
->>>>> +               if (ret)
->>>>> +                       return ret;
->>>>> +       }
->>>>> +
->>>>> +       if (card->ext_csd.gp3_size) {
->>>>> +               ret = mmc_blk_alloc_part(card, md,
->>>>> EXT_CSD_PART_CONFIG_ACC_GP3,
->>>>> +                                       card->ext_csd.gp3_size>>      9,
->>>>> +                                       false,
->>>>> +                                       "gp3");
->>>>> +               if (ret)
->>>>> +                       return ret;
->>>>> +       }
->>>>> +
->>>>> +       if (card->ext_csd.gp4_size) {
->>>>> +               ret = mmc_blk_alloc_part(card, md,
->>>>> EXT_CSD_PART_CONFIG_ACC_GP4,
->>>>> +                                       card->ext_csd.gp4_size>>      9,
->>>>> +                                       false,
->>>>> +                                       "gp4");
->>>>> +               if (ret)
->>>>> +                       return ret;
->>>>> +       }
->>>>> +
->>>>>         return ret;
->>>>>   }
->>>>>
->>>>> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
->>>>> index 10f5a19..cc31511 100644
->>>>> --- a/drivers/mmc/core/mmc.c
->>>>> +++ b/drivers/mmc/core/mmc.c
->>>>> @@ -393,6 +393,48 @@ static int mmc_read_ext_csd(struct mmc_card *card,
->>>>> u8
->>>>> *ext_csd)
->>>>>                         card->ext_csd.enhanced_area_offset = -EINVAL;
->>>>>                         card->ext_csd.enhanced_area_size = -EINVAL;
->>>>>                 }
->>>>> +
->>>>> +               /*
->>>>> +                * General purpose partition Support
->>>>> +                */
->>>>> +
->>>>> +               if (ext_csd[EXT_CSD_PARTITION_SUPPORT]&      0x1) {
->>>>> +
->>>>> +                       u8 hc_erase_grp_sz =
->>>>> +                               ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE];
->>>>> +                       u8 hc_wp_grp_sz =
->>>>> +                               ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
->>>>> +
->>>>> +                       card->ext_csd.enhanced_area_en = 1;
->>>>> +
->>>>> +                       card->ext_csd.gp1_size =
->>>>> +                               (ext_csd[145]<<      16) + (ext_csd[144]<<
->>>>>     8)
->>>>> +
->>>>> +                               ext_csd[143];
->>>>> +                       card->ext_csd.gp1_size *=
->>>>> +                               (size_t)(hc_erase_grp_sz *
->>>>> hc_wp_grp_sz);
->>>>> +                       card->ext_csd.gp1_size<<= 19;
->>>>> +
->>>>> +                       card->ext_csd.gp2_size =
->>>>> +                               (ext_csd[148]<<      16) + (ext_csd[147]<<
->>>>>     8)
->>>>> +
->>>>> +                               ext_csd[146];
->>>>> +                       card->ext_csd.gp2_size *=
->>>>> +                               (size_t)(hc_erase_grp_sz *
->>>>> hc_wp_grp_sz);
->>>>> +                               card->ext_csd.gp2_size<<= 19;
->>>>> +
->>>>> +                       card->ext_csd.gp3_size =
->>>>> +                               (ext_csd[151]<<      16) + (ext_csd[150]<<
->>>>>     8)
->>>>> +
->>>>> +                               ext_csd[149];
->>>>> +                       card->ext_csd.gp3_size *=
->>>>> +                               (size_t)(hc_erase_grp_sz *
->>>>> hc_wp_grp_sz);
->>>>> +                       card->ext_csd.gp3_size<<= 19;
->>>>> +
->>>>> +                       card->ext_csd.gp4_size =
->>>>> +                               (ext_csd[154]<<      16) + (ext_csd[153]<<
->>>>>     8)
->>>>> +
->>>>> +                               ext_csd[152];
->>>>> +                       card->ext_csd.gp4_size *=
->>>>> +                               (size_t)(hc_erase_grp_sz *
->>>>> hc_wp_grp_sz);
->>>>> +                       card->ext_csd.gp4_size<<= 19;
->>>>> +               }
->>>>>                 card->ext_csd.sec_trim_mult =
->>>>>                         ext_csd[EXT_CSD_SEC_TRIM_MULT];
->>>>>                 card->ext_csd.sec_erase_mult =
->>>>> diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
->>>>> index b460fc2..96a98a7 100644
->>>>> --- a/include/linux/mmc/card.h
->>>>> +++ b/include/linux/mmc/card.h
->>>>> @@ -64,6 +64,10 @@ struct mmc_ext_csd {
->>>>>         unsigned long long      enhanced_area_offset;   /* Units: Byte */
->>>>>         unsigned int            enhanced_area_size;     /* Units: KB */
->>>>>         unsigned int            boot_size;              /* in bytes */
->>>>> +       unsigned int            gp1_size;               /* in bytes */
->>>>> +       unsigned int            gp2_size;               /* in bytes */
->>>>> +       unsigned int            gp3_size;               /* in bytes */
->>>>> +       unsigned int            gp4_size;               /* in bytes */
->>>>>         u8                      raw_partition_support;  /* 160 */
->>>>>         u8                      raw_erased_mem_count;   /* 181 */
->>>>>         u8                      raw_ext_csd_structure;  /* 194 */
->>>>> diff --git a/include/linux/mmc/mmc.h b/include/linux/mmc/mmc.h
->>>>> index 5a794cb..380720a 100644
->>>>> --- a/include/linux/mmc/mmc.h
->>>>> +++ b/include/linux/mmc/mmc.h
->>>>> @@ -303,6 +303,10 @@ struct _mmc_csd {
->>>>>   #define EXT_CSD_PART_CONFIG_ACC_MASK  (0x7)
->>>>>   #define EXT_CSD_PART_CONFIG_ACC_BOOT0 (0x1)
->>>>>   #define EXT_CSD_PART_CONFIG_ACC_BOOT1 (0x2)
->>>>> +#define EXT_CSD_PART_CONFIG_ACC_GP1    (0x4)
->>>>> +#define EXT_CSD_PART_CONFIG_ACC_GP2    (0x5)
->>>>> +#define EXT_CSD_PART_CONFIG_ACC_GP3    (0x6)
->>>>> +#define EXT_CSD_PART_CONFIG_ACC_GP4    (0x7)
->>>>>
->>>>>   #define EXT_CSD_CMD_SET_NORMAL                (1<<0)
->>>>>   #define EXT_CSD_CMD_SET_SECURE                (1<<1)
->>>>
->>>>
->>>> --
->>>> J (James/Jay) Freyensee
->>>> Storage Technology Group
->>>> Intel Corporation
->>>>
->>
->>
->> --
->> J (James/Jay) Freyensee
->> Storage Technology Group
->> Intel Corporation
->>
+Hopefully this should go without saying, but if you think there's a good 
+rationale for renaming this flag to indicate that an address space 
+contains the SYSCONFIG registers, or maybe just changing the 
+documentation for the flag to indicate that, that's fine with me, just 
+send a patch.
 
 
--- 
-J (James/Jay) Freyensee
-Storage Technology Group
-Intel Corporation
+- Paul
