@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754296Ab1IWMt6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 08:49:58 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:51270 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754139Ab1IWMsp convert rfc822-to-8bit (ORCPT
+	id S1754135Ab1IWMso (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 08:48:44 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:56108 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754102Ab1IWMsk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 08:48:45 -0400
-thread-index: Acx57w46qd2UBr+eQea15UEKkjL37Q==
+	Fri, 23 Sep 2011 08:48:40 -0400
+thread-index: Acx57woeMDfjltDNQzeaMrMI8YocEQ==
 Content-Transfer-Encoding: 8BIT
 Content-Class: urn:content-classes:message
 Importance: normal
 X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4657
 From: Tero Kristo <t-kristo@ti.com>
 To: <linux-omap@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        "Govindraj.R" <govindraj.raja@ti.com>
-Subject: [PATCHv9 15/18] TEMP: OMAP3: pm: remove serial resume / idle calls from idle path
-Date: Fri, 23 Sep 2011 15:46:23 +0300
-Message-ID: <1316781986-30642-16-git-send-email-t-kristo@ti.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCHv9 09/18] omap3: pm: use prcm chain handler
+Date: Fri, 23 Sep 2011 15:46:17 +0300
+Message-ID: <1316781986-30642-10-git-send-email-t-kristo@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1316781986-30642-1-git-send-email-t-kristo@ti.com>
 References: <1316781986-30642-1-git-send-email-t-kristo@ti.com>
@@ -28,71 +27,176 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is no longer needed as it will be handled within serial driver itself.
-This part should be properly handled with serial runtime support.
+PM interrupt handling is now done through the PRCM chain handler. The
+interrupt handling logic is also split in two parts, to server IO and
+WKUP events separately. This allows us to handle IO chain events in a
+clean way.
 
 Signed-off-by: Tero Kristo <t-kristo@ti.com>
-Cc: Govindraj.R <govindraj.raja@ti.com>
 ---
- arch/arm/mach-omap2/pm34xx.c |   19 -------------------
- 1 files changed, 0 insertions(+), 19 deletions(-)
+ arch/arm/mach-omap2/pm34xx.c |  104 +++++++++++++++---------------------------
+ 1 files changed, 37 insertions(+), 67 deletions(-)
 
 diff --git a/arch/arm/mach-omap2/pm34xx.c b/arch/arm/mach-omap2/pm34xx.c
-index 4bbf1cd..46c209d 100644
+index 7255d9b..712fd15 100644
 --- a/arch/arm/mach-omap2/pm34xx.c
 +++ b/arch/arm/mach-omap2/pm34xx.c
-@@ -341,18 +341,9 @@ void omap_sram_idle(void)
- 		omap3_enable_io_chain();
- 	}
+@@ -29,6 +29,7 @@
+ #include <linux/delay.h>
+ #include <linux/slab.h>
+ #include <linux/console.h>
++#include <linux/mfd/omap-prm.h>
+ #include <trace/events/power.h>
  
--	/* Block console output in case it is on one of the OMAP UARTs */
--	if (!is_suspending())
--		if (per_next_state < PWRDM_POWER_ON ||
--		    core_next_state < PWRDM_POWER_ON)
--			if (!console_trylock())
--				goto console_still_active;
--
- 	/* PER */
- 	if (per_next_state < PWRDM_POWER_ON) {
- 		per_going_off = (per_next_state == PWRDM_POWER_OFF) ? 1 : 0;
--		omap_uart_prepare_idle(2);
--		omap_uart_prepare_idle(3);
- 		omap2_gpio_prepare_for_idle(per_going_off);
- 		if (per_next_state == PWRDM_POWER_OFF)
- 				omap3_per_save_context();
-@@ -360,8 +351,6 @@ void omap_sram_idle(void)
+ #include <asm/suspend.h>
+@@ -198,7 +199,7 @@ static void omap3_save_secure_ram_context(void)
+  * that any peripheral wake-up events occurring while attempting to
+  * clear the PM_WKST_x are detected and cleared.
+  */
+-static int prcm_clear_mod_irqs(s16 module, u8 regs)
++static int prcm_clear_mod_irqs(s16 module, u8 regs, u32 ignore_bits)
+ {
+ 	u32 wkst, fclk, iclk, clken;
+ 	u16 wkst_off = (regs == 3) ? OMAP3430ES2_PM_WKST3 : PM_WKST1;
+@@ -210,6 +211,7 @@ static int prcm_clear_mod_irqs(s16 module, u8 regs)
  
- 	/* CORE */
- 	if (core_next_state < PWRDM_POWER_ON) {
--		omap_uart_prepare_idle(0);
--		omap_uart_prepare_idle(1);
- 		if (core_next_state == PWRDM_POWER_OFF) {
- 			omap3_core_save_context();
- 			omap3_cm_save_context();
-@@ -408,8 +397,6 @@ void omap_sram_idle(void)
- 			omap3_sram_restore_context();
- 			omap2_sms_restore_context();
+ 	wkst = omap2_prm_read_mod_reg(module, wkst_off);
+ 	wkst &= omap2_prm_read_mod_reg(module, grpsel_off);
++	wkst &= ~ignore_bits;
+ 	if (wkst) {
+ 		iclk = omap2_cm_read_mod_reg(module, iclk_off);
+ 		fclk = omap2_cm_read_mod_reg(module, fclk_off);
+@@ -225,6 +227,7 @@ static int prcm_clear_mod_irqs(s16 module, u8 regs)
+ 			omap2_cm_set_mod_reg_bits(clken, module, fclk_off);
+ 			omap2_prm_write_mod_reg(wkst, module, wkst_off);
+ 			wkst = omap2_prm_read_mod_reg(module, wkst_off);
++			wkst &= ~ignore_bits;
+ 			c++;
  		}
--		omap_uart_resume_idle(0);
--		omap_uart_resume_idle(1);
- 		if (core_next_state == PWRDM_POWER_OFF)
- 			omap2_prm_clear_mod_reg_bits(OMAP3430_AUTO_OFF_MASK,
- 					       OMAP3430_GR_MOD,
-@@ -423,14 +410,8 @@ void omap_sram_idle(void)
- 		omap2_gpio_resume_after_idle();
- 		if (per_prev_state == PWRDM_POWER_OFF)
- 			omap3_per_restore_context();
--		omap_uart_resume_idle(2);
--		omap_uart_resume_idle(3);
+ 		omap2_cm_write_mod_reg(iclk, module, iclk_off);
+@@ -234,76 +237,35 @@ static int prcm_clear_mod_irqs(s16 module, u8 regs)
+ 	return c;
+ }
+ 
+-static int _prcm_int_handle_wakeup(void)
++static irqreturn_t _prcm_int_handle_io(int irq, void *unused)
+ {
+ 	int c;
+ 
+-	c = prcm_clear_mod_irqs(WKUP_MOD, 1);
+-	c += prcm_clear_mod_irqs(CORE_MOD, 1);
+-	c += prcm_clear_mod_irqs(OMAP3430_PER_MOD, 1);
+-	if (omap_rev() > OMAP3430_REV_ES1_0) {
+-		c += prcm_clear_mod_irqs(CORE_MOD, 3);
+-		c += prcm_clear_mod_irqs(OMAP3430ES2_USBHOST_MOD, 1);
+-	}
++	c = prcm_clear_mod_irqs(WKUP_MOD, 1,
++		~(OMAP3430_ST_IO_MASK | OMAP3430_ST_IO_CHAIN_MASK));
+ 
+-	return c;
++	return c ? IRQ_HANDLED : IRQ_NONE;
+ }
+ 
+-/*
+- * PRCM Interrupt Handler
+- *
+- * The PRM_IRQSTATUS_MPU register indicates if there are any pending
+- * interrupts from the PRCM for the MPU. These bits must be cleared in
+- * order to clear the PRCM interrupt. The PRCM interrupt handler is
+- * implemented to simply clear the PRM_IRQSTATUS_MPU in order to clear
+- * the PRCM interrupt. Please note that bit 0 of the PRM_IRQSTATUS_MPU
+- * register indicates that a wake-up event is pending for the MPU and
+- * this bit can only be cleared if the all the wake-up events latched
+- * in the various PM_WKST_x registers have been cleared. The interrupt
+- * handler is implemented using a do-while loop so that if a wake-up
+- * event occurred during the processing of the prcm interrupt handler
+- * (setting a bit in the corresponding PM_WKST_x register and thus
+- * preventing us from clearing bit 0 of the PRM_IRQSTATUS_MPU register)
+- * this would be handled.
+- */
+-static irqreturn_t prcm_interrupt_handler (int irq, void *dev_id)
++static irqreturn_t _prcm_int_handle_wakeup(int irq, void *unused)
+ {
+-	u32 irqenable_mpu, irqstatus_mpu;
+-	int c = 0;
+-
+-	irqenable_mpu = omap2_prm_read_mod_reg(OCP_MOD,
+-					 OMAP3_PRM_IRQENABLE_MPU_OFFSET);
+-	irqstatus_mpu = omap2_prm_read_mod_reg(OCP_MOD,
+-					 OMAP3_PRM_IRQSTATUS_MPU_OFFSET);
+-	irqstatus_mpu &= irqenable_mpu;
+-
+-	do {
+-		if (irqstatus_mpu & (OMAP3430_WKUP_ST_MASK |
+-				     OMAP3430_IO_ST_MASK)) {
+-			c = _prcm_int_handle_wakeup();
+-
+-			/*
+-			 * Is the MPU PRCM interrupt handler racing with the
+-			 * IVA2 PRCM interrupt handler ?
+-			 */
+-			WARN(c == 0, "prcm: WARNING: PRCM indicated MPU wakeup "
+-			     "but no wakeup sources are marked\n");
+-		} else {
+-			/* XXX we need to expand our PRCM interrupt handler */
+-			WARN(1, "prcm: WARNING: PRCM interrupt received, but "
+-			     "no code to handle it (%08x)\n", irqstatus_mpu);
+-		}
+-
+-		omap2_prm_write_mod_reg(irqstatus_mpu, OCP_MOD,
+-					OMAP3_PRM_IRQSTATUS_MPU_OFFSET);
+-
+-		irqstatus_mpu = omap2_prm_read_mod_reg(OCP_MOD,
+-					OMAP3_PRM_IRQSTATUS_MPU_OFFSET);
+-		irqstatus_mpu &= irqenable_mpu;
++	int c;
+ 
+-	} while (irqstatus_mpu);
++	/*
++	 * Clear all except ST_IO and ST_IO_CHAIN for wkup module,
++	 * these are handled in a separate handler to avoid acking
++	 * IO events before parsing in mux code
++	 */
++	c = prcm_clear_mod_irqs(WKUP_MOD, 1,
++		OMAP3430_ST_IO_MASK | OMAP3430_ST_IO_CHAIN_MASK);
++	c += prcm_clear_mod_irqs(CORE_MOD, 1, 0);
++	c += prcm_clear_mod_irqs(OMAP3430_PER_MOD, 1, 0);
++	if (omap_rev() > OMAP3430_REV_ES1_0) {
++		c += prcm_clear_mod_irqs(CORE_MOD, 3, 0);
++		c += prcm_clear_mod_irqs(OMAP3430ES2_USBHOST_MOD, 1, 0);
++	}
+ 
+-	return IRQ_HANDLED;
++	return c ? IRQ_HANDLED : IRQ_NONE;
+ }
+ 
+ static void omap34xx_save_context(u32 *save)
+@@ -876,12 +838,20 @@ static int __init omap3_pm_init(void)
+ 	 * supervised mode for powerdomains */
+ 	prcm_setup_regs();
+ 
+-	ret = request_irq(INT_34XX_PRCM_MPU_IRQ,
+-			  (irq_handler_t)prcm_interrupt_handler,
+-			  IRQF_DISABLED, "prcm", NULL);
++	ret = request_irq(omap_prcm_event_to_irq("wkup"),
++		_prcm_int_handle_wakeup, 0, "pm_wkup", NULL);
++
++	if (ret) {
++		printk(KERN_ERR "Failed to request pm_wkup irq\n");
++		goto err1;
++	}
++
++	/* IO interrupt is shared with mux code */
++	ret = request_irq(omap_prcm_event_to_irq("io"),
++		_prcm_int_handle_io, IRQF_SHARED, "pm_io", omap3_pm_init);
++
+ 	if (ret) {
+-		printk(KERN_ERR "request_irq failed to register for 0x%x\n",
+-		       INT_34XX_PRCM_MPU_IRQ);
++		printk(KERN_ERR "Failed to request pm_io irq\n");
+ 		goto err1;
  	}
  
--	if (!is_suspending())
--		console_unlock();
--
--console_still_active:
- 	/* Disable IO-PAD and IO-CHAIN wakeup */
- 	if (omap3_has_io_wakeup() &&
- 	    (per_next_state < PWRDM_POWER_ON ||
 -- 
 1.7.4.1
 
