@@ -1,184 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751528Ab1IWStH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 14:49:07 -0400
-Received: from mail209.messagelabs.com ([216.82.255.3]:38202 "EHLO
-	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750736Ab1IWStF (ORCPT
+	id S1751610Ab1IWSuV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 14:50:21 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:48429 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751407Ab1IWSuT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 14:49:05 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-9.tower-209.messagelabs.com!1316803635!17101929!42
-X-Originating-IP: [216.166.12.69]
-X-StarScan-Version: 6.3.6; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] btrfs/delayed-inode.c: quiet sparse noise
-Date: Fri, 23 Sep 2011 11:48:37 -0700
-User-Agent: KMail/1.9.9
-CC: <linux-btrfs@vger.kernel.org>, <chris.mason@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Fri, 23 Sep 2011 14:50:19 -0400
+Date: Fri, 23 Sep 2011 19:46:10 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Luben Tuikov <ltuikov@yahoo.com>,
+        Mark Salyzyn <mark_salyzyn@us.xyratex.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Darrick Wong <djwong@us.ibm.com>, Xiangliang Yu <yuxiangl@marvell.com>,
+        Jack Wang <jack_wang@usish.com>
+Subject: Re: [PATCH] [SCSI] libsas: Allow expander T-T attachments
+Message-ID: <20110923194610.069cdca0@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110923184213.GA25639@infradead.org>
+References: <1311826792.28583.YahooMailNeo@web31811.mail.mud.yahoo.com>
+	<1316691000.10571.6.camel@dabdike>
+	<FC1F9E38C0703341A1A750524E2525A9018AE2C6@XYUS-EX22.xyus.xyratex.com>
+	<1316709319.79868.YahooMailNeo@web31804.mail.mud.yahoo.com>
+	<20110922170344.GA23095@infradead.org>
+	<1316711469.65475.YahooMailNeo@web31806.mail.mud.yahoo.com>
+	<20110923184213.GA25639@infradead.org>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201109231148.38095.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quiet the following sparse noise:
+On Fri, 23 Sep 2011 14:42:13 -0400
+Christoph Hellwig <hch@infradead.org> wrote:
 
-warning: symbol 'btrfs_first_delayed_node' was not declared. Should it be static?
-warning: symbol 'btrfs_next_delayed_node' was not declared. Should it be static?
-warning: symbol 'btrfs_first_prepared_delayed_node' was not declared. Should it be static?
-warning: symbol 'btrfs_alloc_delayed_item' was not declared. Should it be static?
-warning: symbol '__btrfs_lookup_delayed_insertion_item' was not declared. Should it be static?
-warning: symbol '__btrfs_lookup_delayed_deletion_item' was not declared. Should it be static?
-warning: symbol '__btrfs_search_delayed_insertion_item' was not declared. Should it be static?
-warning: symbol '__btrfs_search_delayed_deletion_item' was not declared. Should it be static?
-warning: symbol '__btrfs_first_delayed_insertion_item' was not declared. Should it be static?
-warning: symbol '__btrfs_first_delayed_deletion_item' was not declared. Should it be static?
-warning: symbol '__btrfs_next_delayed_item' was not declared. Should it be static?
+> On Thu, Sep 22, 2011 at 10:11:09AM -0700, Luben Tuikov wrote:
+> > >From the original author yes, (unless he's dead or something like that). Not from someone else, when the original author is available.
+> > 
+> > 
+> > When have your had a patch of yours being re-spun and submitted from someone else? Please point to a marc.info thread.
+> 
+> I'm not going to look them up for you, but if you care enough you'll
+> find plenty of XFS commits from me that got edited and resent or sent on
+> by Alex or Dave (or others earlier). 
 
-The functions __btrfs_lookup_delayed_deletion_item,
-__btrfs_search_delayed_insertion_item, and __btrfs_search_delayed_deletion_item
-are not currently being used by the code. They may be eventually, so make them
-inline to for to now make sparse happy and allow the linker to discard them.
+Likewise I've done it for various things passing through me in the past.
+Generally the reply I get is "thanks".
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Chris Mason <chris.mason@oracle.com>
-
----
-
-diff --git a/fs/btrfs/delayed-inode.c b/fs/btrfs/delayed-inode.c
-index b52c672..5d3c397 100644
---- a/fs/btrfs/delayed-inode.c
-+++ b/fs/btrfs/delayed-inode.c
-@@ -199,8 +199,8 @@ static void btrfs_dequeue_delayed_node(struct btrfs_delayed_root *root,
- 	spin_unlock(&root->lock);
- }
- 
--struct btrfs_delayed_node *btrfs_first_delayed_node(
--			struct btrfs_delayed_root *delayed_root)
-+static struct btrfs_delayed_node *
-+btrfs_first_delayed_node(struct btrfs_delayed_root *delayed_root)
- {
- 	struct list_head *p;
- 	struct btrfs_delayed_node *node = NULL;
-@@ -218,8 +218,8 @@ out:
- 	return node;
- }
- 
--struct btrfs_delayed_node *btrfs_next_delayed_node(
--						struct btrfs_delayed_node *node)
-+static struct btrfs_delayed_node *
-+btrfs_next_delayed_node(struct btrfs_delayed_node *node)
- {
- 	struct btrfs_delayed_root *delayed_root;
- 	struct list_head *p;
-@@ -279,8 +279,8 @@ static inline void btrfs_release_delayed_node(struct btrfs_delayed_node *node)
- 	__btrfs_release_delayed_node(node, 0);
- }
- 
--struct btrfs_delayed_node *btrfs_first_prepared_delayed_node(
--					struct btrfs_delayed_root *delayed_root)
-+static struct btrfs_delayed_node *
-+btrfs_first_prepared_delayed_node(struct btrfs_delayed_root *delayed_root)
- {
- 	struct list_head *p;
- 	struct btrfs_delayed_node *node = NULL;
-@@ -305,7 +305,7 @@ static inline void btrfs_release_prepared_delayed_node(
- 	__btrfs_release_delayed_node(node, 1);
- }
- 
--struct btrfs_delayed_item *btrfs_alloc_delayed_item(u32 data_len)
-+static struct btrfs_delayed_item *btrfs_alloc_delayed_item(u32 data_len)
- {
- 	struct btrfs_delayed_item *item;
- 	item = kmalloc(sizeof(*item) + data_len, GFP_NOFS);
-@@ -380,9 +380,9 @@ static struct btrfs_delayed_item *__btrfs_lookup_delayed_item(
- 	return NULL;
- }
- 
--struct btrfs_delayed_item *__btrfs_lookup_delayed_insertion_item(
--					struct btrfs_delayed_node *delayed_node,
--					struct btrfs_key *key)
-+static struct btrfs_delayed_item *
-+__btrfs_lookup_delayed_insertion_item(struct btrfs_delayed_node *delayed_node,
-+				      struct btrfs_key *key)
- {
- 	struct btrfs_delayed_item *item;
- 
-@@ -391,9 +391,9 @@ struct btrfs_delayed_item *__btrfs_lookup_delayed_insertion_item(
- 	return item;
- }
- 
--struct btrfs_delayed_item *__btrfs_lookup_delayed_deletion_item(
--					struct btrfs_delayed_node *delayed_node,
--					struct btrfs_key *key)
-+static inline struct btrfs_delayed_item *
-+__btrfs_lookup_delayed_deletion_item(struct btrfs_delayed_node *delayed_node,
-+				     struct btrfs_key *key)
- {
- 	struct btrfs_delayed_item *item;
- 
-@@ -402,9 +402,9 @@ struct btrfs_delayed_item *__btrfs_lookup_delayed_deletion_item(
- 	return item;
- }
- 
--struct btrfs_delayed_item *__btrfs_search_delayed_insertion_item(
--					struct btrfs_delayed_node *delayed_node,
--					struct btrfs_key *key)
-+static inline struct btrfs_delayed_item *
-+__btrfs_search_delayed_insertion_item(struct btrfs_delayed_node *delayed_node,
-+				      struct btrfs_key *key)
- {
- 	struct btrfs_delayed_item *item, *next;
- 
-@@ -416,9 +416,9 @@ struct btrfs_delayed_item *__btrfs_search_delayed_insertion_item(
- 	return item;
- }
- 
--struct btrfs_delayed_item *__btrfs_search_delayed_deletion_item(
--					struct btrfs_delayed_node *delayed_node,
--					struct btrfs_key *key)
-+static inline struct btrfs_delayed_item *
-+__btrfs_search_delayed_deletion_item(struct btrfs_delayed_node *delayed_node,
-+				     struct btrfs_key *key)
- {
- 	struct btrfs_delayed_item *item, *next;
- 
-@@ -525,8 +525,8 @@ static void btrfs_release_delayed_item(struct btrfs_delayed_item *item)
- 	}
- }
- 
--struct btrfs_delayed_item *__btrfs_first_delayed_insertion_item(
--					struct btrfs_delayed_node *delayed_node)
-+static struct btrfs_delayed_item *
-+__btrfs_first_delayed_insertion_item(struct btrfs_delayed_node *delayed_node)
- {
- 	struct rb_node *p;
- 	struct btrfs_delayed_item *item = NULL;
-@@ -538,8 +538,8 @@ struct btrfs_delayed_item *__btrfs_first_delayed_insertion_item(
- 	return item;
- }
- 
--struct btrfs_delayed_item *__btrfs_first_delayed_deletion_item(
--					struct btrfs_delayed_node *delayed_node)
-+static struct btrfs_delayed_item *
-+__btrfs_first_delayed_deletion_item(struct btrfs_delayed_node *delayed_node)
- {
- 	struct rb_node *p;
- 	struct btrfs_delayed_item *item = NULL;
-@@ -551,8 +551,8 @@ struct btrfs_delayed_item *__btrfs_first_delayed_deletion_item(
- 	return item;
- }
- 
--struct btrfs_delayed_item *__btrfs_next_delayed_item(
--						struct btrfs_delayed_item *item)
-+static struct btrfs_delayed_item *
-+__btrfs_next_delayed_item(struct btrfs_delayed_item *item)
- {
- 	struct rb_node *p;
- 	struct btrfs_delayed_item *next = NULL;
+Alan
