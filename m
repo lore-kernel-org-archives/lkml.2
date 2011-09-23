@@ -1,69 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752126Ab1IWUQI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 16:16:08 -0400
-Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:11235
-	"EHLO DB3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751784Ab1IWUQG (ORCPT
+	id S1752157Ab1IWUS1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 16:18:27 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:7566 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751947Ab1IWUS0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 16:16:06 -0400
-X-SpamScore: -10
-X-BigFish: VPS-10(z5c5ozbb2dK148cM1432N98dKzz1202hzzz2fh668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPVD:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
-X-FB-SS: 0,
-Message-ID: <4E7CE8E0.5070604@am.sony.com>
-Date: Fri, 23 Sep 2011 13:15:28 -0700
-From: Frank Rowand <frank.rowand@am.sony.com>
-Reply-To: <frank.rowand@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>
-CC: "Rowand, Frank" <Frank_Rowand@sonyusa.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2] preempt-rt: allow immediate Magic SysRq output for
- PREEMPT_RT_FULL
-References: <4E7BA334.2050003@am.sony.com> <7186.1316799377@turing-police.cc.vt.edu>
-In-Reply-To: <7186.1316799377@turing-police.cc.vt.edu>
-Content-Type: text/plain; charset="ISO-8859-1"
+	Fri, 23 Sep 2011 16:18:26 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:to:cc:subject:message-id:in-reply-to:references:
+	x-mailer:mime-version:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=eB/S6gaXZ0RW9oxZNkCRpBSovZGYHIfvQ3ZDN6T0i5+gv2XvXiIy08w9R7mOt72PW
+	ALXyc5EPfFOl+z30l49vA==
+Date: Fri, 23 Sep 2011 13:18:19 -0700
+From: Andrew Morton <akpm@google.com>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] kernel.h: rename pack_hex_byte to hex_pack_byte
+Message-Id: <20110923131819.fdaed4ab.akpm@google.com>
+In-Reply-To: <fa146966b0ce1e7f04d59eb27cc0e968f51b22de.1316774801.git.andriy.shevchenko@linux.intel.com>
+References: <20110919232602.ac450450.akpm00@gmail.com>
+	<fa146966b0ce1e7f04d59eb27cc0e968f51b22de.1316774801.git.andriy.shevchenko@linux.intel.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/11 10:36, Valdis.Kletnieks@vt.edu wrote:
-> On Thu, 22 Sep 2011 14:05:56 PDT, Frank Rowand said:
->> Change from V1 to V2:  add drivers/tty/serial/8250.c
-> 
->>  drivers/tty/serial/cpm_uart/cpm_uart_core.c |    2 	1 +	1 -	0 !
->>  drivers/tty/serial/mfd.c                    |    2 	1 +	1 -	0 !
->>  drivers/tty/serial/nwpserial.c              |    2 	1 +	1 -	0 !
->>  drivers/tty/serial/omap-serial.c            |    2 	1 +	1 -	0 !
->>  drivers/tty/serial/sunhv.c                  |    4 	2 +	2 -	0 !
->>  drivers/tty/serial/sunsab.c                 |    2 	1 +	1 -	0 !
->>  drivers/tty/serial/sunsu.c                  |    2 	1 +	1 -	0 !
->>  drivers/tty/serial/sunzilog.c               |    2 	1 +	1 -	0 !
->>  drivers/tty/serial/uartlite.c               |    2 	1 +	1 -	0 !
->>  drivers/tty/serial/xilinx_uartps.c          |    2 	1 +	1 -	0 !
-> 
->>  	if (up->port.sysrq)
->>  		locked = 0;
->> -	else if (oops_in_progress) {
->> +	else if (oops_in_progress || sysrq_in_progress) {
->>  		locked = spin_trylock(&up->port.lock);
->>  	} else
->>  		spin_lock(&up->port.lock);
-> 
-> Is it time to create a helper function for this chunk of code that appears
-> in almost identical form in a dozen drivers?
+On Fri, 23 Sep 2011 13:47:26 +0300
+Andy Shevchenko <andriy.shevchenko@linux.intel.com> wrote:
 
-Thanks for pointing that out.  The "if (up->port.sysrq)" in this pattern
-already handles the case that I was trying to deal with in all of those
-drivers, except cpm_uart_core.c, so I was able to remove all the other
-drivers from V3 of the patch.
+> As suggested by Andrew Morton in [1] there is better to have most significant
+> part first in the function name.
+> 
+> [1] https://lkml.org/lkml/2011/9/20/22
+> 
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> ---
+>  include/linux/kernel.h |    7 ++++++-
+>  1 files changed, 6 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+> index 46ac9a5..5022158 100644
+> --- a/include/linux/kernel.h
+> +++ b/include/linux/kernel.h
+> @@ -374,13 +374,18 @@ extern const char hex_asc[];
+>  #define hex_asc_lo(x)	hex_asc[((x) & 0x0f)]
+>  #define hex_asc_hi(x)	hex_asc[((x) & 0xf0) >> 4]
+>  
+> -static inline char *pack_hex_byte(char *buf, u8 byte)
+> +static inline char *hex_byte_pack(char *buf, u8 byte)
+>  {
+>  	*buf++ = hex_asc_hi(byte);
+>  	*buf++ = hex_asc_lo(byte);
+>  	return buf;
+>  }
+>  
+> +static inline char * __deprecated pack_hex_byte(char *buf, u8 byte)
+> +{
+> +	return hex_byte_pack(buf, byte);
+> +}
+> +
 
--Frank
+err, no thanks.  That's just going to hit everyone with great
+screenfuls of compile warnings while waiting for someone else to fix
+them up.
 
