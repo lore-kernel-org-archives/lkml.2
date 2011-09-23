@@ -1,48 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752120Ab1IWUEW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 16:04:22 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:62611 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751937Ab1IWUEV (ORCPT
+	id S1752126Ab1IWUQI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 16:16:08 -0400
+Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:11235
+	"EHLO DB3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751784Ab1IWUQG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 16:04:21 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=MM0ZX079wmvWaPAptw9WbYVi5izDSkoCu6nAsJS6ClinoKt7ZTFI2Lj52J62IgX15
-	AN4oR9mazYx5e7tsksjqg==
-Date: Fri, 23 Sep 2011 13:04:12 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH] show page size in /proc/$pid/numa_maps
-In-Reply-To: <1316793268.16137.481.camel@nimitz>
-Message-ID: <alpine.DEB.2.00.1109231256540.11347@chino.kir.corp.google.com>
-References: <20110921221329.5B7EE5C5@kernel> <alpine.DEB.2.00.1109221339520.31548@chino.kir.corp.google.com> <1316793268.16137.481.camel@nimitz>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 23 Sep 2011 16:16:06 -0400
+X-SpamScore: -10
+X-BigFish: VPS-10(z5c5ozbb2dK148cM1432N98dKzz1202hzzz2fh668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPVD:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
+X-FB-SS: 0,
+Message-ID: <4E7CE8E0.5070604@am.sony.com>
+Date: Fri, 23 Sep 2011 13:15:28 -0700
+From: Frank Rowand <frank.rowand@am.sony.com>
+Reply-To: <frank.rowand@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+To: "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>
+CC: "Rowand, Frank" <Frank_Rowand@sonyusa.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2] preempt-rt: allow immediate Magic SysRq output for
+ PREEMPT_RT_FULL
+References: <4E7BA334.2050003@am.sony.com> <7186.1316799377@turing-police.cc.vt.edu>
+In-Reply-To: <7186.1316799377@turing-police.cc.vt.edu>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Sep 2011, Dave Hansen wrote:
+On 09/23/11 10:36, Valdis.Kletnieks@vt.edu wrote:
+> On Thu, 22 Sep 2011 14:05:56 PDT, Frank Rowand said:
+>> Change from V1 to V2:  add drivers/tty/serial/8250.c
+> 
+>>  drivers/tty/serial/cpm_uart/cpm_uart_core.c |    2 	1 +	1 -	0 !
+>>  drivers/tty/serial/mfd.c                    |    2 	1 +	1 -	0 !
+>>  drivers/tty/serial/nwpserial.c              |    2 	1 +	1 -	0 !
+>>  drivers/tty/serial/omap-serial.c            |    2 	1 +	1 -	0 !
+>>  drivers/tty/serial/sunhv.c                  |    4 	2 +	2 -	0 !
+>>  drivers/tty/serial/sunsab.c                 |    2 	1 +	1 -	0 !
+>>  drivers/tty/serial/sunsu.c                  |    2 	1 +	1 -	0 !
+>>  drivers/tty/serial/sunzilog.c               |    2 	1 +	1 -	0 !
+>>  drivers/tty/serial/uartlite.c               |    2 	1 +	1 -	0 !
+>>  drivers/tty/serial/xilinx_uartps.c          |    2 	1 +	1 -	0 !
+> 
+>>  	if (up->port.sysrq)
+>>  		locked = 0;
+>> -	else if (oops_in_progress) {
+>> +	else if (oops_in_progress || sysrq_in_progress) {
+>>  		locked = spin_trylock(&up->port.lock);
+>>  	} else
+>>  		spin_lock(&up->port.lock);
+> 
+> Is it time to create a helper function for this chunk of code that appears
+> in almost identical form in a dozen drivers?
 
-> > Why not just add a pagesize={4K,2M,1G,...} field for every output? 
-> 
-> I think it's a bit misleading.  With THP at least we have 2M pages in
-> the MMU, but we're reporting in 4k units.
-> 
-> I certainly considered doing just what you're suggesting, though.  It's
-> definitely not a bad idea.  Certainly much more clear.
-> 
+Thanks for pointing that out.  The "if (up->port.sysrq)" in this pattern
+already handles the case that I was trying to deal with in all of those
+drivers, except cpm_uart_core.c, so I was able to remove all the other
+drivers from V3 of the patch.
 
-Een though the code is in task_mmu.c, I think that /proc/pid/numa_maps 
-should be more representative of the state of vmas where any 
-pagesize={4K,2M,1G,...} would be true rather than whether or not the mmu 
-sees tham as large or small pages.  I actually don't see much difference 
-between anon=50 pagemult=512 and anon=50 pagesize=2M, but I'd definitely 
-recommend printing the field for every vma.
+-Frank
+
