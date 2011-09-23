@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751280Ab1IWRnN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 13:43:13 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:39426 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751135Ab1IWRnM convert rfc822-to-8bit (ORCPT
+	id S1751313Ab1IWRoo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 13:44:44 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:26106 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750776Ab1IWRoo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 13:43:12 -0400
+	Fri, 23 Sep 2011 13:44:44 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6477"; a="121088953"
+Date: Fri, 23 Sep 2011 10:44:42 -0700
+From: David Brown <davidb@codeaurora.org>
+To: Joerg Roedel <joerg.roedel@amd.com>
+Cc: iommu@lists.linux-foundation.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        David Brown <davidb@codeaurora.org>, joro@8bytes.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 09/10] iommu/msm: Use bus_set_iommu instead of
+ register_iommu
+Message-ID: <20110923174442.GB6480@huya.qualcomm.com>
+References: <1316792756-3395-1-git-send-email-joerg.roedel@amd.com>
+ <1316792756-3395-10-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
-In-Reply-To: <1316788285-17433-9-git-send-email-philipp.reisner@linbit.com>
-References: <1316788285-17433-1-git-send-email-philipp.reisner@linbit.com> <1316788285-17433-9-git-send-email-philipp.reisner@linbit.com>
-From: Kyle Moffett <kyle@moffetthome.net>
-Date: Fri, 23 Sep 2011 13:42:52 -0400
-Message-ID: <CAGZ=bqJMKZ=MK+GXSXWCPVCecXHQv_15AT9Dxq2wxfcA_gNdMA@mail.gmail.com>
-Subject: Re: [PATCH 08/10] drbd: Introduce protocol version 100 headers
-To: Philipp Reisner <philipp.reisner@linbit.com>
-Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        drbd-dev@lists.linbit.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1316792756-3395-10-git-send-email-joerg.roedel@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-On Fri, Sep 23, 2011 at 10:31, Philipp Reisner
-<philipp.reisner@linbit.com> wrote:
-> From: Andreas Gruenbacher <agruen@linbit.com>
->
-> Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
-> Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
+On Fri, Sep 23, 2011 at 05:45:55PM +0200, Joerg Roedel wrote:
+> Convert the MSM IOMMU driver for ARM to use the new
+> interface for publishing the iommu_ops.
+> 
+> Cc: David Brown <davidb@codeaurora.org>
+> Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 > ---
->  drivers/block/drbd/drbd_int.h      |    8 ++++++++
->  drivers/block/drbd/drbd_main.c     |   31 +++++++++++++++++++++++++------
->  drivers/block/drbd/drbd_receiver.c |   14 ++++++++++++--
->  include/linux/drbd.h               |    1 +
->  4 files changed, 46 insertions(+), 8 deletions(-)
->
-> diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
-> index 9868518..7d679c5 100644
-> --- a/drivers/block/drbd/drbd_int.h
-> +++ b/drivers/block/drbd/drbd_int.h
-> @@ -307,6 +307,14 @@ struct p_header95 {
->        u32       vol_n_len;    /* big endian: high byte = volume; remaining 24 bit = length */
->  } __packed;
->
-> +struct p_header100 {
-> +       u32       magic;
-> +       u16       volume;
-> +       u16       command;
-> +       u32       length;
-> +       u32       pad;
-> +} __packed;
-> +
+>  drivers/iommu/msm_iommu.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/iommu/msm_iommu.c b/drivers/iommu/msm_iommu.c
+> index d1733f6..5865dd2 100644
+> --- a/drivers/iommu/msm_iommu.c
+> +++ b/drivers/iommu/msm_iommu.c
+> @@ -728,7 +728,7 @@ static void __init setup_iommu_tex_classes(void)
+>  static int __init msm_iommu_init(void)
+>  {
+>  	setup_iommu_tex_classes();
+> -	register_iommu(&msm_iommu_ops);
+> +	bus_set_iommu(&platform_bus_type, &msm_iommu_ops);
+>  	return 0;
+>  }
 
-This commit also needs additional log message text,
-specifically something that indicates what is new and
-different between the protocol 95 and protocol 100
-headers.  (IE: Why was the change made?)
+Acked-by: David Brown <davidb@codeaurora.org>
 
-Cheers,
-Kyle Moffett
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
