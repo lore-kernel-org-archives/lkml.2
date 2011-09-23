@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752830Ab1IWWZn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 18:25:43 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:20296 "EHLO relay.sw.ru"
+	id S1752810Ab1IWWZm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 18:25:42 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:19180 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752608Ab1IWWZl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752610Ab1IWWZl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 23 Sep 2011 18:25:41 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: linux-kernel@vger.kernel.org
 Cc: paul@paulmenage.org, lizf@cn.fujitsu.com, daniel.lezcano@free.fr,
         a.p.zijlstra@chello.nl, jbottomley@parallels.com,
-        Glauber Costa <glommer@parallels.com>,
-        Balbir Singh <bsingharora@gmail.com>
-Subject: [RFD 7/9] provide a version of cpuacct statistics inside cpu cgroup
-Date: Fri, 23 Sep 2011 19:20:30 -0300
-Message-Id: <1316816432-9237-8-git-send-email-glommer@parallels.com>
+        Glauber Costa <glommer@parallels.com>
+Subject: [RFD 5/9] per-cgroup boot time
+Date: Fri, 23 Sep 2011 19:20:28 -0300
+Message-Id: <1316816432-9237-6-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <1316816432-9237-1-git-send-email-glommer@parallels.com>
 References: <1316816432-9237-1-git-send-email-glommer@parallels.com>
@@ -22,86 +21,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For users interested in using the information currently displayed
-at cpuacct.stat, we provide it inside the cpu cgroup.
-
-This have the advantage of accounting this information only once,
-instead of twice, when there is no need to have an independent group
-of tasks for controlling and accounting, leading to a lot less overhead.
+Record the time in which the cgroup was created. This can be
+used to provide a more accurate boottime information in
+cpuacct.proc.stat.
 
 Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Balbir Singh <bsingharora@gmail.com>
 ---
- kernel/sched.c |   42 +++++++++++++++++++++++++++++++++++++-----
- 1 files changed, 37 insertions(+), 5 deletions(-)
+ kernel/sched.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
 diff --git a/kernel/sched.c b/kernel/sched.c
-index 8a510ab..b687441 100644
+index 9c6e44e..7612410 100644
 --- a/kernel/sched.c
 +++ b/kernel/sched.c
-@@ -9296,6 +9296,39 @@ int cpu_cgroup_proc_stat(struct cgroup *cgrp, struct cftype *cft, struct seq_fil
- 
- 
- 
-+static const char *cpuacct_stat_desc[] = {
-+	[CPUACCT_STAT_USER] = "user",
-+	[CPUACCT_STAT_SYSTEM] = "system",
-+};
-+
-+static int cpu_cgroup_stats_show(struct cgroup *cgrp, struct cftype *cft,
-+		struct cgroup_map_cb *cb)
-+{
-+	struct task_group *tg = cgroup_tg(cgrp);
-+	int cpu;
-+	s64 val = 0;
-+
-+	for_each_online_cpu(cpu) {
-+		struct kernel_stat *kstat = per_cpu_ptr(tg->cpustat, cpu);
-+		val += kstat->cpustat[USER];
-+		val += kstat->cpustat[NICE];
-+	}
-+	val = cputime64_to_clock_t(val);
-+	cb->fill(cb, cpuacct_stat_desc[CPUACCT_STAT_USER], val);
-+
-+	val = 0;
-+	for_each_online_cpu(cpu) {
-+		struct kernel_stat *kstat = per_cpu_ptr(tg->cpustat, cpu);
-+		val += kstat->cpustat[SYSTEM];
-+		val += kstat->cpustat[IRQ];
-+		val += kstat->cpustat[SOFTIRQ];
-+	}
-+
-+	val = cputime64_to_clock_t(val);
-+	cb->fill(cb, cpuacct_stat_desc[CPUACCT_STAT_SYSTEM], val);
-+
-+	return 0;
-+}
- static struct cftype cpu_files[] = {
- #ifdef CONFIG_FAIR_GROUP_SCHED
- 	{
-@@ -9320,6 +9353,10 @@ static struct cftype cpu_files[] = {
- 		.name = "proc.stat",
- 		.read_seq_string = cpu_cgroup_proc_stat,
- 	},
-+	{
-+		.name = "stat",
-+		.read_map = cpu_cgroup_stats_show,
-+	},
+@@ -280,6 +280,7 @@ struct task_group {
+ #endif
+ 	unsigned long total_forks;
+ 	struct kernel_stat __percpu *cpustat;
++	struct timespec start_time;
  };
  
- static int cpu_cgroup_populate(struct cgroup_subsys *ss, struct cgroup *cont)
-@@ -9503,11 +9540,6 @@ static int cpuacct_percpu_seq_read(struct cgroup *cgroup, struct cftype *cft,
- 	return 0;
- }
+ /* task_group_lock serializes the addition/removal of task groups */
+@@ -8141,6 +8142,7 @@ void __init sched_init(void)
+ 	INIT_LIST_HEAD(&root_task_group.siblings);
+ 	autogroup_init(&init_task);
  
--static const char *cpuacct_stat_desc[] = {
--	[CPUACCT_STAT_USER] = "user",
--	[CPUACCT_STAT_SYSTEM] = "system",
--};
--
- static int cpuacct_stats_show(struct cgroup *cgrp, struct cftype *cft,
- 		struct cgroup_map_cb *cb)
- {
++	root_task_group.start_time = (struct timespec){0, 0};
+ 	root_task_group.cpustat = alloc_percpu(struct kernel_stat);
+ 	/* Failing that early an allocation means we're screwed anyway */
+ 	BUG_ON(!root_task_group.cpustat);
+@@ -8619,6 +8621,8 @@ struct task_group *sched_create_group(struct task_group *parent)
+ 		kstat->cpustat[IOWAIT_BASE] = root_kstat->cpustat[IOWAIT];
+ 	}
+ 
++	get_monotonic_boottime(&tg->start_time);
++
+ 	spin_lock_irqsave(&task_group_lock, flags);
+ 	list_add_rcu(&tg->list, &task_groups);
+ 
+@@ -9154,6 +9158,7 @@ int cpu_cgroup_proc_stat(struct cgroup *cgrp, struct cftype *cft, struct seq_fil
+ 		irq = softirq = steal = cputime64_zero;
+ 	guest = guest_nice = cputime64_zero;
+ 	getboottime(&boottime);
++	boottime = timespec_add(boottime, tg->start_time);
+ 	jif = boottime.tv_sec;
+ 
+ 	for_each_possible_cpu(i) {
 -- 
 1.7.6
 
