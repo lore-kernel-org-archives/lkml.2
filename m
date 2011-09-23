@@ -1,196 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752376Ab1IWUnh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 16:43:37 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:54820 "EHLO
-	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752322Ab1IWUng (ORCPT
+	id S1752280Ab1IWUrH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 16:47:07 -0400
+Received: from mail132.messagelabs.com ([216.82.242.115]:46126 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751900Ab1IWUrF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 16:43:36 -0400
-X-SpamScore: 7
-X-BigFish: VPS7(z5c5ozzz1202hzz8275bhz2fh668h839h)
-X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPVD:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
-Message-ID: <4E7CEF60.5020508@am.sony.com>
-Date: Fri, 23 Sep 2011 13:43:12 -0700
-From: Frank Rowand <frank.rowand@am.sony.com>
-Reply-To: <frank.rowand@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+	Fri, 23 Sep 2011 16:47:05 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-11.tower-132.messagelabs.com!1316810822!39614100!5
+X-Originating-IP: [216.166.12.31]
+X-StarScan-Version: 6.3.6; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] exofs/super.c: local functions should be static
+Date: Fri, 23 Sep 2011 13:46:51 -0700
+User-Agent: KMail/1.9.9
+CC: <osd-dev@open-osd.org>, <bharrosh@panasas.com>, <bhalevy@panasas.com>
 MIME-Version: 1.0
-To: "tglx@linutronix.de" <tglx@linutronix.de>
-CC: <linux-rt-users@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH V3] preempt-rt: allow immediate Magic SysRq output for PREEMPT_RT_FULL
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+Content-Disposition: inline
+Message-ID: <201109231346.51759.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This quiets the following sparse noise:
 
-(Resend, adding CCs.)
+warning: symbol 'exofs_sync_fs' was not declared. Should it be static?
+warning: symbol 'exofs_free_sbi' was not declared. Should it be static?
+warning: symbol 'exofs_get_parent' was not declared. Should it be static?
 
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Benny Halevy <bhalevy@panasas.com>
 
-Change from V2 to V3:
-   - Put sysrq_in_progress in sysrq.h instead of kernel.h
-   - Did not need to test for sysrq_in_progress in most drivers because
-     they already test for port->sysrq.  The oddball driver is
-     drivers/tty/serial/cpm_uart/cpm_uart_core.c, which does not test
-     for port->sysrq.
-
-Add a CONFIG option to allow the output from Magic SysRq to be output
-immediately, even if this causes large latencies.
-
-If PREEMPT_RT_FULL, printk() will not try to acquire the console lock
-when interrupts or preemption are disabled.  If the console lock is
-not acquired the printk() output will be buffered, but will not be
-output immediately.  Some drivers call into the Magic SysRq code
-with interrupts or preemption disabled, so the output of Magic SysRq
-will be buffered instead of printing immediately if this option is
-not selected.
-
-Even with this option selected, Magic SysRq output will be delayed
-if the attempt to acquire the console lock fails.
-
-Signed-off-by: Frank Rowand <frank.rowand@am.sony.com>
 ---
- drivers/tty/serial/cpm_uart/cpm_uart_core.c |    2 	1 +	1 -	0 !
- drivers/tty/sysrq.c                         |   23 	23 +	0 -	0 !
- include/linux/sysrq.h                       |    5 	5 +	0 -	0 !
- kernel/printk.c                             |    5 	3 +	2 -	0 !
- lib/Kconfig.debug                           |   22 	22 +	0 -	0 !
- 5 files changed, 54 insertions(+), 3 deletions(-)
 
-Index: b/drivers/tty/sysrq.c
-===================================================================
---- a/drivers/tty/sysrq.c
-+++ b/drivers/tty/sysrq.c
-@@ -492,6 +492,23 @@ static void __sysrq_put_key_op(int key, 
-                 sysrq_key_table[i] = op_p;
+diff --git a/fs/exofs/super.c b/fs/exofs/super.c
+index 9049e27..8c900d4 100644
+--- a/fs/exofs/super.c
++++ b/fs/exofs/super.c
+@@ -356,7 +356,7 @@ static const struct export_operations exofs_export_ops;
+ /*
+  * Write the superblock to the OSD
+  */
+-int exofs_sync_fs(struct super_block *sb, int wait)
++static int exofs_sync_fs(struct super_block *sb, int wait)
+ {
+ 	struct exofs_sb_info *sbi;
+ 	struct exofs_fscb *fscb;
+@@ -430,7 +430,7 @@ static void _exofs_print_device(const char *msg, const char *dev_path,
+ 		msg, dev_path ?: "", odi->osdname, _LLU(pid));
  }
  
-+#ifdef CONFIG_MAGIC_SYSRQ_FORCE_PRINTK
-+
-+int sysrq_in_progress;
-+
-+static void set_sysrq_in_progress(int value)
-+{
-+	sysrq_in_progress = value;
-+}
-+
-+#else
-+
-+static void set_sysrq_in_progress(int value)
-+{
-+}
-+
-+#endif
-+
- void __handle_sysrq(int key, bool check_mask)
+-void exofs_free_sbi(struct exofs_sb_info *sbi)
++static void exofs_free_sbi(struct exofs_sb_info *sbi)
  {
- 	struct sysrq_key_op *op_p;
-@@ -500,6 +517,9 @@ void __handle_sysrq(int key, bool check_
- 	unsigned long flags;
+ 	while (sbi->comps.numdevs) {
+ 		int i = --sbi->comps.numdevs;
+@@ -969,7 +969,7 @@ static const struct super_operations exofs_sops = {
+  * EXPORT OPERATIONS
+  *****************************************************************************/
  
- 	spin_lock_irqsave(&sysrq_key_table_lock, flags);
-+
-+	set_sysrq_in_progress(1);
-+
- 	/*
- 	 * Raise the apparent loglevel to maximum so that the sysrq header
- 	 * is shown to provide the user with positive feedback.  We do not
-@@ -541,6 +561,9 @@ void __handle_sysrq(int key, bool check_
- 		printk("\n");
- 		console_loglevel = orig_log_level;
- 	}
-+
-+	set_sysrq_in_progress(0);
-+
- 	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
- }
- 
-Index: b/kernel/printk.c
-===================================================================
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -21,6 +21,7 @@
- #include <linux/tty.h>
- #include <linux/tty_driver.h>
- #include <linux/console.h>
-+#include <linux/sysrq.h>
- #include <linux/init.h>
- #include <linux/jiffies.h>
- #include <linux/nmi.h>
-@@ -831,8 +832,8 @@ static int console_trylock_for_printk(un
- 	__releases(&logbuf_lock)
+-struct dentry *exofs_get_parent(struct dentry *child)
++static struct dentry *exofs_get_parent(struct dentry *child)
  {
- #ifdef CONFIG_PREEMPT_RT_FULL
--	int lock = !early_boot_irqs_disabled && !irqs_disabled_flags(flags) &&
--		!preempt_count();
-+	int lock = (!early_boot_irqs_disabled && !irqs_disabled_flags(flags) &&
-+		!preempt_count()) || sysrq_in_progress;
- #else
- 	int lock = 1;
- #endif
-Index: b/drivers/tty/serial/cpm_uart/cpm_uart_core.c
-===================================================================
---- a/drivers/tty/serial/cpm_uart/cpm_uart_core.c
-+++ b/drivers/tty/serial/cpm_uart/cpm_uart_core.c
-@@ -1225,7 +1225,7 @@ static void cpm_uart_console_write(struc
- {
- 	struct uart_cpm_port *pinfo = &cpm_uart_ports[co->index];
- 	unsigned long flags;
--	int nolock = oops_in_progress;
-+	int nolock = oops_in_progress || sysrq_in_progress;
+ 	unsigned long ino = exofs_parent_ino(child);
  
- 	if (unlikely(nolock)) {
- 		local_irq_save(flags);
-Index: b/lib/Kconfig.debug
-===================================================================
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -62,6 +62,28 @@ config MAGIC_SYSRQ
- 	  keys are documented in <file:Documentation/sysrq.txt>. Don't say Y
- 	  unless you really know what this hack does.
- 
-+config MAGIC_SYSRQ_FORCE_PRINTK
-+	bool "Force printk from Magic SysRq"
-+	depends on MAGIC_SYSRQ && PREEMPT_RT_FULL
-+	default n
-+	help
-+	  Allow the output from Magic SysRq to be output immediately, even if
-+	  this causes large latencies.  This can cause performance problems
-+	  for real-time processes.
-+
-+	  If PREEMPT_RT_FULL, printk() will not try to acquire the console lock
-+	  when interrupts or preemption are disabled.  If the console lock is
-+	  not acquired the printk() output will be buffered, but will not be
-+	  output immediately.  Some drivers call into the Magic SysRq code
-+	  with interrupts or preemption disabled, so the output of Magic SysRq
-+	  will be buffered instead of printing immediately if this option is
-+	  not selected.
-+
-+	  Even with this option selected, Magic SysRq output will be delayed
-+	  if the attempt to acquire the console lock fails.
-+
-+	  Don't say Y unless you really know what this hack does.
-+
- config STRIP_ASM_SYMS
- 	bool "Strip assembler-generated symbols during link"
- 	default n
-Index: b/include/linux/sysrq.h
-===================================================================
---- a/include/linux/sysrq.h
-+++ b/include/linux/sysrq.h
-@@ -38,6 +38,11 @@ struct sysrq_key_op {
- 	int enable_mask;
- };
- 
-+#ifdef CONFIG_MAGIC_SYSRQ_FORCE_PRINTK
-+extern int sysrq_in_progress;
-+#else
-+#define sysrq_in_progress 0
-+#endif
- #ifdef CONFIG_MAGIC_SYSRQ
- 
- /* Generic SysRq interface -- you may call it from any device driver, supplying
-
