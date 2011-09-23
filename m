@@ -1,62 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752707Ab1IWJVI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 05:21:08 -0400
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:48632 "EHLO
-	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752342Ab1IWJVD (ORCPT
+	id S1752742Ab1IWJcB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 05:32:01 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:60287 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752366Ab1IWJcA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 05:21:03 -0400
-Date: Fri, 23 Sep 2011 05:20:51 -0400 (EDT)
-From: CAI Qian <caiqian@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jon Mason <mason@myri.com>, Jordan_Hargrave@dell.com,
-        esse Barnes <jbarnes@virtuousgeek.org>
-Subject: regression introduced by "PCI: Set PCI-E Max Payload Size on fabric" patch
-Message-ID: <d2d13c8a-47f9-40b1-bd80-caa7b3b42a6d@zmail06.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <93c96b10-219e-4310-80ae-04508db2623c@zmail06.collab.prod.int.phx2.redhat.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	Fri, 23 Sep 2011 05:32:00 -0400
 MIME-Version: 1.0
-X-Originating-IP: [10.66.13.193]
-X-Mailer: Zimbra 7.1.2_GA_3268 (ZimbraWebClient - FF3.0 (Linux)/7.1.2_GA_3268)
+In-Reply-To: <CAKgNAkj8STLfO2t5gejct+yPFkFtFtojVkYKJREiE7S2QHSctg@mail.gmail.com>
+References: <CAK1hOcPFXMoYsP6N6Hx5Qz3J4xj31TmSj7xo6SRVPegNCbhx7g@mail.gmail.com>
+ <20110721165137.GA21345@redhat.com> <CAKgNAkj8STLfO2t5gejct+yPFkFtFtojVkYKJREiE7S2QHSctg@mail.gmail.com>
+From: Denys Vlasenko <vda.linux@googlemail.com>
+Date: Fri, 23 Sep 2011 11:31:39 +0200
+Message-ID: <CAK1hOcNV+Gn2VsMk5zF40J3dw8kkgqQkpphOowa_KiHFd=uR-w@mail.gmail.com>
+Subject: Re: [PATCH] man ptrace: add extended description of various ptrace quirks
+To: mtk.manpages@gmail.com
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Michael Kerrisk <mtk.manpages@googlemail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After reverted this commit,
+On Wed, Sep 21, 2011 at 7:10 AM, Michael Kerrisk <mtk.manpages@gmail.com> wrote:
+>>> +Tracer can not assume that tracee ALWAYS ends its life by reporting
+>>> +WIFEXITED(status) or WIFSIGNALED(status).
+>>> +.LP
+>>> +.\" or can it? Do we include such a promise into ptrace API?
+>>
+>> IIRC, we already discussed this... The traced group leader can
+>> disappear during mt-exec, otherwise the tracee can never go away
+>> silently.
 
-b03e7495a862b028294f59fc87286d6d78ee7fa1
-PCI: Set PCI-E Max Payload Size on fabric
+>From userspace perspective, traced group leader doesn't go away
+silently, it's execing thread who goes away silently.
 
-A server with qla2xxx is able to boot the latest mainly kernel.
+> Does your patch need any revision in the light of Oleg's comments?
 
-QLogic Fibre Channel HBA Driver: 8.03.07.03-k
-qla2xxx 0000:06:02.0: PCI INT A -> GSI 17 (level, low) -> IRQ 17
-qla2xxx 0000:06:02.0: Found an ISP2422, irq 17, iobase 0xf9dfe000
-qla2xxx 0000:06:02.0: Configuring PCI space...
-qla2xxx 0000:06:02.0: Configure NVRAM parameters...
-qla2xxx 0000:06:02.0: Verifying loaded RISC code...
-qla2xxx 0000:06:02.0: FW: Loading via request-firmware...
-qla2xxx 0000:06:02.0: Allocated (64 KB) for EFT...
-qla2xxx 0000:06:02.0: Allocated (773 KB) for firmware dump...
-scsi1 : qla2xxx
+No, it does not. Please commit it to manpage git.
 
-Otherwise, it hung right here.
-
-scsi0 : ioc0: LSISAS1064E B1, FwRev=011b5700h, Ports=1, MaxQ=277, IRQ=19
-mptsas: ioc0: attaching ssp device: fw_channel 0, fw_id 5, phy 0, sas_addr 0x5000cca0007ed401
-scsi scan: INQUIRY result too short (5), using 36
-scsi 0:0:0:0: Direct-Access                                    PQ: 0 ANSI: 0
-mptsas: ioc0: attaching ssp device: fw_channel 0, fw_id 4, phy 1, sas_addr 0x5000c50017501eb1
-scsi 0:0:1:0: Direct-Access     IBM-ESXS ST9146803SS      B536 PQ: 0 ANSI: 5
-mptsas: ioc0: attaching raid volume, channel 1, id 3
-scsi 0:1:3:0: Direct-Access     LSILOGIC Logical Volume   3000 PQ: 0 ANSI: 2
-sd 0:1:3:0: [sda] 285155328 512-byte logical blocks: (145 GB/135 GiB)
-sd 0:1:3:0: [sda] Write Protect is off
-sd 0:1:3:0: [sda] Got wrong page
-sd 0:1:3:0: [sda] Assuming drive cache: write through
-sd 0:1:3:0: [sda] Got wrong page
-sd 0:1:3:0: [sda] Assuming drive cache: write through
-
-CAI Qian
+-- 
+vda
