@@ -1,63 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752201Ab1IWUWd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 16:22:33 -0400
-Received: from mail132.messagelabs.com ([216.82.242.115]:47942 "EHLO
-	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752047Ab1IWUWc (ORCPT
+	id S1752348Ab1IWU0i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 16:26:38 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39406 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752205Ab1IWU0g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 16:22:32 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-6.tower-132.messagelabs.com!1316809270!28822663!95
-X-Originating-IP: [216.166.12.97]
-X-StarScan-Version: 6.3.6; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ceph/mds_client.c: quiet sparse noise
-Date: Fri, 23 Sep 2011 13:22:11 -0700
-User-Agent: KMail/1.9.9
-CC: <ceph-devel@vger.kernel.org>, <sage@newdream.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201109231322.12090.hartleys@visionengravers.com>
+	Fri, 23 Sep 2011 16:26:36 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Anton Blanchard <anton@samba.org>,
+        Eric B Munson <emunson@mgebm.net>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 04/12] perf symbols: Preserve symbol scope when parsing /proc/kallsyms
+Date: Fri, 23 Sep 2011 17:26:18 -0300
+Message-Id: <1316809586-28529-5-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1316809586-28529-1-git-send-email-acme@infradead.org>
+References: <1316809586-28529-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quiet the following sparse noise:
+From: Anton Blanchard <anton@samba.org>
 
-warning: symbol 'get_nonsnap_parent' was not declared. Should it be static?
-warning: symbol 'done_closing_sessions' was not declared. Should it be static?
+kallsyms__parse capitalises the symbol type, so every symbol is marked
+global. Remove this and fix symbol_type__is_a to handle both local and
+global symbols.
 
-Local functions don't need external visability. Make them static.
-
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Sage Weil <sage@newdream.net>
-
+Cc: Eric B Munson <emunson@mgebm.net>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/20110824065243.077125989@samba.org
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
+ tools/perf/util/symbol.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/fs/ceph/mds_client.c b/fs/ceph/mds_client.c
-index 2712e8f..9ec5d1e 100644
---- a/fs/ceph/mds_client.c
-+++ b/fs/ceph/mds_client.c
-@@ -619,7 +619,7 @@ static void __unregister_request(struct ceph_mds_client *mdsc,
-  *
-  * Called under mdsc->mutex.
-  */
--struct dentry *get_nonsnap_parent(struct dentry *dentry)
-+static struct dentry *get_nonsnap_parent(struct dentry *dentry)
- {
- 	/*
- 	 * we don't need to worry about protecting the d_parent access
-@@ -3154,7 +3154,7 @@ void ceph_mdsc_sync(struct ceph_mds_client *mdsc)
- /*
-  * true if all sessions are closed, or we force unmount
-  */
--bool done_closing_sessions(struct ceph_mds_client *mdsc)
-+static bool done_closing_sessions(struct ceph_mds_client *mdsc)
- {
- 	int i, n = 0;
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index f119e85..0d94ddb 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -74,11 +74,13 @@ static void dso__set_sorted_by_name(struct dso *dso, enum map_type type)
  
+ bool symbol_type__is_a(char symbol_type, enum map_type map_type)
+ {
++	symbol_type = toupper(symbol_type);
++
+ 	switch (map_type) {
+ 	case MAP__FUNCTION:
+ 		return symbol_type == 'T' || symbol_type == 'W';
+ 	case MAP__VARIABLE:
+-		return symbol_type == 'D' || symbol_type == 'd';
++		return symbol_type == 'D';
+ 	default:
+ 		return false;
+ 	}
+@@ -463,7 +465,7 @@ int kallsyms__parse(const char *filename, void *arg,
+ 		if (len + 2 >= line_len)
+ 			continue;
+ 
+-		symbol_type = toupper(line[len]);
++		symbol_type = line[len];
+ 		len += 2;
+ 		symbol_name = line + len;
+ 		len = line_len - len;
+-- 
+1.6.2.5
+
