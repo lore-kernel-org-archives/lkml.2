@@ -1,50 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752858Ab1IWW0Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 18:26:24 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:3848 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752608Ab1IWW0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 18:26:22 -0400
-From: Glauber Costa <glommer@parallels.com>
-To: linux-kernel@vger.kernel.org
-Cc: paul@paulmenage.org, lizf@cn.fujitsu.com, daniel.lezcano@free.fr,
-        a.p.zijlstra@chello.nl, jbottomley@parallels.com,
-        Glauber Costa <glommer@parallels.com>,
-        Balbir Singh <bsingharora@gmail.com>
-Subject: [RFD 9/9] Change CPUACCT to default n
-Date: Fri, 23 Sep 2011 19:20:32 -0300
-Message-Id: <1316816432-9237-10-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1316816432-9237-1-git-send-email-glommer@parallels.com>
-References: <1316816432-9237-1-git-send-email-glommer@parallels.com>
+	id S1752877Ab1IWW0h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 18:26:37 -0400
+Received: from mail209.messagelabs.com ([216.82.255.3]:56810 "EHLO
+	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752608Ab1IWW0f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Sep 2011 18:26:35 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-13.tower-209.messagelabs.com!1316816791!11235038!4
+X-Originating-IP: [216.166.12.99]
+X-StarScan-Version: 6.3.6; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ext4/ioctl.c: copy_{from,to}_user expect __user pointers
+Date: Fri, 23 Sep 2011 15:25:54 -0700
+User-Agent: KMail/1.9.9
+CC: <linux-ext4@vger.kernel.org>, <tytso@mit.edu>, <adilger.kernel@dilger.ca>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201109231525.54301.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we're providing all cpuacct capability in cpu cgroup,
-default CPUACCT to n. We still maintain it for compatiblity for
-anyone that need an independent set of tasks to be managed by it
-relatively to cpu cgroup, but encourage the use of cpucgroup for that.
+This quiets the sparse noise:
 
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Balbir Singh <bsingharora@gmail.com>
+warning: incorrect type in argument 2 (different address spaces)
+   expected void const [noderef] <asn:1>*from
+   got struct fstrim_range *<noident>
+warning: incorrect type in argument 1 (different address spaces)
+   expected void [noderef] <asn:1>*to
+   got struct fstrim_range *<noident>
+
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>
+
 ---
- init/Kconfig |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/init/Kconfig b/init/Kconfig
-index d627783..891d6c1 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -626,6 +626,7 @@ config PROC_PID_CPUSET
+diff --git a/fs/ext4/ioctl.c b/fs/ext4/ioctl.c
+index f18bfe3..43759b1 100644
+--- a/fs/ext4/ioctl.c
++++ b/fs/ext4/ioctl.c
+@@ -348,7 +348,7 @@ mext_out:
+ 		if (!blk_queue_discard(q))
+ 			return -EOPNOTSUPP;
  
- config CGROUP_CPUACCT
- 	bool "Simple CPU accounting cgroup subsystem"
-+	default n
- 	help
- 	  Provides a simple Resource Controller for monitoring the
- 	  total CPU consumed by the tasks in a cgroup.
--- 
-1.7.6
-
+-		if (copy_from_user(&range, (struct fstrim_range *)arg,
++		if (copy_from_user(&range, (struct fstrim_range __user *)arg,
+ 		    sizeof(range)))
+ 			return -EFAULT;
+ 
+@@ -358,7 +358,7 @@ mext_out:
+ 		if (ret < 0)
+ 			return ret;
+ 
+-		if (copy_to_user((struct fstrim_range *)arg, &range,
++		if (copy_to_user((struct fstrim_range __user *)arg, &range,
+ 		    sizeof(range)))
+ 			return -EFAULT;
+ 
