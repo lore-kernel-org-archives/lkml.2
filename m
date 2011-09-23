@@ -1,79 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751064Ab1IWRhD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 13:37:03 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:57316 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750762Ab1IWRhA (ORCPT
+	id S1751104Ab1IWRiL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 13:38:11 -0400
+Received: from peace.netnation.com ([204.174.223.2]:59914 "EHLO
+	peace.netnation.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750826Ab1IWRiJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 13:37:00 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: frank.rowand@am.sony.com
-Cc: tglx@linutronix.de, linux-rt-users@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] preempt-rt: allow immediate Magic SysRq output for PREEMPT_RT_FULL
-In-Reply-To: Your message of "Thu, 22 Sep 2011 14:05:56 PDT."
-             <4E7BA334.2050003@am.sony.com>
-From: Valdis.Kletnieks@vt.edu
-References: <4E7BA334.2050003@am.sony.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1316799377_4577P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Fri, 23 Sep 2011 13:36:17 -0400
-Message-ID: <7186.1316799377@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020204.4E7CC393.007A,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Fri, 23 Sep 2011 13:38:09 -0400
+Date: Fri, 23 Sep 2011 10:38:08 -0700
+From: Simon Kirby <sim@hostway.ca>
+To: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org
+Subject: Re: [3.1-rc6] kmalloc(64) leak from IDE
+Message-ID: <20110923173808.GB26481@hostway.ca>
+References: <20110922072643.GA27232@hostway.ca> <20110922084811.GC17640@liondog.tnic> <20110922202337.GB32661@hostway.ca> <20110923072118.GA13293@liondog.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110923072118.GA13293@liondog.tnic>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1316799377_4577P
-Content-Type: text/plain; charset=us-ascii
+On Fri, Sep 23, 2011 at 09:21:18AM +0200, Borislav Petkov wrote:
 
-On Thu, 22 Sep 2011 14:05:56 PDT, Frank Rowand said:
-> Change from V1 to V2:  add drivers/tty/serial/8250.c
+> On Thu, Sep 22, 2011 at 01:23:37PM -0700, Simon Kirby wrote:
+> > Yes, that seems to have made it stop complaining about the IDE path.
+> 
+> Good, thanks for testing. It would be great if you left it running for
+> a couple of days like this to see whether there aren't any other issues
+> with the patch. I'll send it with a proper description to Dave soonish
+> since this is a real bug.
 
->  drivers/tty/serial/cpm_uart/cpm_uart_core.c |    2 	1 +	1 -	0 !
->  drivers/tty/serial/mfd.c                    |    2 	1 +	1 -	0 !
->  drivers/tty/serial/nwpserial.c              |    2 	1 +	1 -	0 !
->  drivers/tty/serial/omap-serial.c            |    2 	1 +	1 -	0 !
->  drivers/tty/serial/sunhv.c                  |    4 	2 +	2 -	0 !
->  drivers/tty/serial/sunsab.c                 |    2 	1 +	1 -	0 !
->  drivers/tty/serial/sunsu.c                  |    2 	1 +	1 -	0 !
->  drivers/tty/serial/sunzilog.c               |    2 	1 +	1 -	0 !
->  drivers/tty/serial/uartlite.c               |    2 	1 +	1 -	0 !
->  drivers/tty/serial/xilinx_uartps.c          |    2 	1 +	1 -	0 !
+It has been up 22 hours now without breaking. I suppose you're worried
+about the old command being used after it gets reused. Would it help to
+bisect the regression to see how it used to work? That would let us know
+how many stable kernels to patch, too.
 
->  	if (up->port.sysrq)
->  		locked = 0;
-> -	else if (oops_in_progress) {
-> +	else if (oops_in_progress || sysrq_in_progress) {
->  		locked = spin_trylock(&up->port.lock);
->  	} else
->  		spin_lock(&up->port.lock);
-
-Is it time to create a helper function for this chunk of code that appears
-in almost identical form in a dozen drivers?
-
---==_Exmh_1316799377_4577P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFOfMORcC3lWbTT17ARAk7NAJ4wqIbhIfDMRACv1Orkhp6dZedVjwCbBJ9t
-EiyvDJoaO2ICQ9s/u/IFZlw=
-=ToPM
------END PGP SIGNATURE-----
-
---==_Exmh_1316799377_4577P--
-
+Simon-
