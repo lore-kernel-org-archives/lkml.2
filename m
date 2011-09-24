@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753200Ab1IXCOZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 22:14:25 -0400
-Received: from home.kolivas.org ([59.167.196.135]:41088 "EHLO mine.kolivas.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753111Ab1IXCOY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 22:14:24 -0400
-From: Con Kolivas <kernel@kolivas.org>
-To: Andi Kleen <andi@firstfloor.org>
-Subject: Re: BFS cpu scheduler and skip list implementation
-Date: Sat, 24 Sep 2011 12:14:21 +1000
-User-Agent: KMail/1.13.6 (Linux/2.6.38.4-ck1; KDE/4.6.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <201109240945.58879.kernel@kolivas.org> <m28vpeka65.fsf@firstfloor.org>
-In-Reply-To: <m28vpeka65.fsf@firstfloor.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201109241214.21458.kernel@kolivas.org>
+	id S1753333Ab1IXCWg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 22:22:36 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:33135 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753312Ab1IXCWf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Sep 2011 22:22:35 -0400
+From: jgq516@gmail.com
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: jgq516@gmail.com
+Subject: [PATCH 1/2] net/fec: replace hardcoded irq num with macro.
+Date: Sat, 24 Sep 2011 10:19:43 +0800
+Message-Id: <1316830784-17108-1-git-send-email-jgq516@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 24 Sep 2011 11:21:06 Andi Kleen wrote:
-> Con Kolivas <kernel@kolivas.org> writes:
-> > +struct nodeStructure {
-> > +	int level;	/* Levels in this structure */
-> > +	keyType key;
-> > +	valueType value;
-> > +	skiplist_node *next[16];
-> > +	skiplist_node *prev[16];
-> > +};
-> 
-> That's 128 byte / 2 cache lines, not too bad, but it limits
-> the maximum number of tasks that can be efficiently handled
-> (my guess to around 64k with maxlevel == 16, but someone may
-> correct me on that)
+From: Xiao Jiang <jgq516@gmail.com>
 
-Thanks very much for your informed comments. Do you mean once 64k of tasks are 
-queued concurrently, or after 64k of entries have gone in +/- been removed?
+Don't use hardcoded irq num and replace it with
+FEC_IRQ_NUM macro.
 
-Con
+Signed-off-by: Xiao Jiang <jgq516@gmail.com>
+---
+ drivers/net/fec.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/net/fec.c b/drivers/net/fec.c
+index e8266cc..5705def 100644
+--- a/drivers/net/fec.c
++++ b/drivers/net/fec.c
+@@ -170,6 +170,8 @@ MODULE_PARM_DESC(macaddr, "FEC Ethernet MAC address");
+ #define PKT_MINBUF_SIZE		64
+ #define PKT_MAXBLR_SIZE		1520
+ 
++/* This device has up to three irqs on some platforms */
++#define FEC_IRQ_NUM			3
+ 
+ /*
+  * The 5270/5271/5280/5282/532x RX control register also contains maximum frame
+@@ -1503,8 +1505,7 @@ fec_probe(struct platform_device *pdev)
+ 
+ 	fec_reset_phy(pdev);
+ 
+-	/* This device has up to three irqs on some platforms */
+-	for (i = 0; i < 3; i++) {
++	for (i = 0; i < FEC_IRQ_NUM; i++) {
+ 		irq = platform_get_irq(pdev, i);
+ 		if (i && irq < 0)
+ 			break;
+@@ -1549,7 +1550,7 @@ failed_init:
+ 	clk_disable(fep->clk);
+ 	clk_put(fep->clk);
+ failed_clk:
+-	for (i = 0; i < 3; i++) {
++	for (i = 0; i < FEC_IRQ_NUM; i++) {
+ 		irq = platform_get_irq(pdev, i);
+ 		if (irq > 0)
+ 			free_irq(irq, ndev);
 -- 
--ck
+1.7.0.4
+
