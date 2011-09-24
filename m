@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751797Ab1IXQQY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Sep 2011 12:16:24 -0400
-Received: from stargate.chelsio.com ([67.207.112.58]:19038 "EHLO
-	stargate.chelsio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751295Ab1IXQQX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Sep 2011 12:16:23 -0400
-From: Divy Le Ray <divy@chelsio.com>
-Subject: [PATCH net-2.6] cxgb4: Fix EEH on IBM P7IOC
-To: davem@davemloft.net
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, dm@chelsio.com,
-        swise@opengridcomputing.com, kxie@chelsio.com
-Date: Sat, 24 Sep 2011 09:11:31 -0700
-Message-ID: <20110924161130.18521.39558.stgit@speedy5.asicdesigners.com>
-User-Agent: StGIT/0.14.2
+	id S1751911Ab1IXQlP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Sep 2011 12:41:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11099 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751759Ab1IXQlN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Sep 2011 12:41:13 -0400
+Date: Sat, 24 Sep 2011 18:37:09 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Serge E. Hallyn" <serge.hallyn@canonical.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, richard@nod.at,
+        Andrew Morton <akpm@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>,
+        serge@hallyn.com
+Subject: Re: [PATCH] user namespace: make signal.c respect user namespaces
+Message-ID: <20110924163709.GA6776@redhat.com>
+References: <20110919214531.GA18085@sergelap> <20110920174849.GB22317@redhat.com> <20110920185354.GA19629@sergelap> <20110921175357.GA25590@redhat.com> <20110923163113.GA3820@sergelap> <20110923173656.GA5233@redhat.com> <20110923212025.GA21330@sergelap>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110923212025.GA21330@sergelap>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Divy Le Ray <divy@chelsio.com>
+On 09/23, Serge E. Hallyn wrote:
+>
+> Quoting Oleg Nesterov (oleg@redhat.com):
+> > On 09/23, Serge E. Hallyn wrote:
+> > >
+> > > It looks like I can fix all the
+> > > cases
+> >
+> > except ptrace_signal(). Although we can simply ignore this case, imho.
+>
+> ptrace_signal() calls send_signal() though.
 
-Fix EEH recovery on new P Series platform by
-requesting fundamental reset.
+Confused... I meant the "if (signr != info->si_signo)" case. This is
+simple, and I only meant that this case is not that important.
 
-Signed-off-by: Divy Le Ray <divy@chelsio.com>
----
+> > > by checking whether si_fromuser(info)
+> >
+> > I am not sure... sys_rt_queueinfo() is nasty. Plus we have to handle
+> > the "fromkernel" case too. May be we can ignore this too.
+>
+> sys_rt_tgsigqueueinfo() still seems to go through send_signal().
 
- drivers/net/cxgb4/cxgb4_main.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+Yes. But how can you fix si_uid? We do not even know if it exists.
+Please look at siginfo/_uid, there is a union. We can't know what
+the caller of sys_rt_sigqueueinfo() puts in this location.
 
-
-diff --git a/drivers/net/cxgb4/cxgb4_main.c b/drivers/net/cxgb4/cxgb4_main.c
-index c9957b7..b4efa29 100644
---- a/drivers/net/cxgb4/cxgb4_main.c
-+++ b/drivers/net/cxgb4/cxgb4_main.c
-@@ -3712,6 +3712,9 @@ static int __devinit init_one(struct pci_dev *pdev,
- 		setup_debugfs(adapter);
- 	}
- 
-+	/* PCIe EEH recovery on powerpc platforms needs fundamental reset */
-+	pdev->needs_freset = 1;
-+
- 	if (is_offload(adapter))
- 		attach_ulds(adapter);
- 
+Oleg.
 
