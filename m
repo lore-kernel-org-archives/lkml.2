@@ -1,106 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753184Ab1IXAHs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 20:07:48 -0400
-Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:12653 "EHLO
-	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750845Ab1IXAHr convert rfc822-to-8bit (ORCPT
+	id S1753219Ab1IXAUc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 20:20:32 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:46804 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752603Ab1IXAU3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 20:07:47 -0400
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=spIDwyjlQeA37PGBClaBvybXw6PK+FHXdMQjp+Oau1w= c=1 sm=1
- a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10 a=k8hqzbHzjweV03hO1KKrVA==:17
- a=GvflK4NoIVehMWtrRX4A:9 a=TzaR8g0-Fitn-rwhj7gA:7 a=CjuIK1q_8ugA:10
- a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-Subject: Re: [RFC] jbd2 metadata checksumming
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Andreas Dilger <adilger@dilger.ca>
-In-Reply-To: <20110923225135.GN12086@tux1.beaverton.ibm.com>
-Date: Fri, 23 Sep 2011 18:07:46 -0600
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Joel Becker <jlbec@evilplan.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <4FFF8C58-425B-431C-9144-0A6B7568A39F@dilger.ca>
-References: <20110923225135.GN12086@tux1.beaverton.ibm.com>
-To: djwong@us.ibm.com
-X-Mailer: Apple Mail (2.1084)
+	Fri, 23 Sep 2011 20:20:29 -0400
+Date: Sat, 24 Sep 2011 08:20:12 +0800
+From: "canquan.shen" <shencanquan@huawei.com>
+Subject: Re: [PATCH v4] acpi: Fix CPU hot removal problem
+In-reply-to: <CAErSpo4KwLfcD0HHh6XQD36rmYbZuHVHrH31wdouWqwFakMdRw@mail.gmail.com>
+X-Originating-IP: [10.166.80.130]
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: len.brown@intel.com, "shemminger@vyatta.com" <shemminger@vyatta.com>,
+        "yakui.zhao@intel.com" <yakui.zhao@intel.com>,
+        "xiaowei.yang@huawei.com" <xiaowei.yang@huawei.com>,
+        hanweidong <hanweidong@huawei.com>, linqiangmin@huawei.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        khalid.aziz@hp.com
+Message-id: <4E7D223C.1040809@huawei.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7BIT
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:6.0.2) Gecko/20110902
+ Thunderbird/6.0.2
+X-CFilter-Loop: Reflected
+References: <4E714FAA.8060708@huawei.com>
+ <CAErSpo5gV7AspUQp7_JOFuY0c0YnFWxj2TKUX-r6-0dVkj5FPA@mail.gmail.com>
+ <CAErSpo71cC5=K7DXYs+aEnU2J91TX7ys8bpnUSmdob1dgdaBSg@mail.gmail.com>
+ <4E7C39FB.3050707@huawei.com>
+ <CAErSpo4KwLfcD0HHh6XQD36rmYbZuHVHrH31wdouWqwFakMdRw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-09-23, at 4:51 PM, Darrick J. Wong wrote:
-> While I'm working on adding metadata checksumming to ext4, I figured that I
-> ought to look into the similar feature in jbd2.  At first I thought I'd simply
-> change the default crc algorithm to crc32c and update the field in the commit
-> block, but then it was suggested to me that I move that field into the journal
-> superblock so that during recovery we don't have to scan ahead through the
-> transaction to find the commit block so that we can learn the algorithm type.
-> 
-> Doing that seems to require a format change to the superblock to add that
-> field.  I think that adding the crc-type field to the superblock is a rocompat
-> change since we're not changing existing fields, just adding fields.  It looks
-> like the kernel and e2fsprogs code both reject a journal if they find unknown
-> rocompat bits set.  (Using a journal in ro mode is not useful.)
-
-The question is whether the "rejected journal" means that it is ignored
-during recovery and not replayed at all, or if it prevents mounting?  If it
-is ignored and not replayed, but mount continues, that would lead to filesystem
-corruption, very bad.
-
-If it prevents mounting, and needs an updated kernel and/or e2fsprogs to
-clear (presumably the kernel will not enable this itself unless told to
-do so by EXT4_FEATURE_INCOMPAT_METADATA_CSUM), that is not so bad, and
-will still allow downgrading to an older kernel as long as the journal is
-replayed.
-
-> I decided to dig deeper to see what exactly the journal checksum covers.  It
-> appears to me that the superblock, revocation blocks, and commit blocks are not
-> covered by a checksum.  Revocation blocks ought to be checksummed because a
-> lost write involving the second sector of a suitably large revocation block
-> could result in the wrong blocks being skipped during recovery.  It seems like
-> it would be easy to extend the current journal_checksum feature to cover the
-> commit block, and adding a checksum to the superblock seems trivial.
-> 
-> Lastly, if I'm already making change, I might as well bake the journal UUID
-> into the checksum as well.  The transaction ID is already in each metadata
-> block by virtue of the common block header.
-> 
-> So to summarize, I propose:
-> 
-> 1. Adding a JBD2_FEATURE_ROCOMPAT_CHECKSUM_V2 field, which provides:
-> 2. A u8 field at offset 0x50 in the superblock which identifies the checksum
->   algorithm that's in use;
-> 3. A u32 field at offset 0x54 in the superblock to hold the superblock's
->   checksum;
-
-Why not put it at the end of the superblock, so that it can cover the whole
-thing?
-
-> 4. Changing the revocation block code to put a checksum in the 4 bytes
->   following the revocation data, and to ensure those 4 bytes always exist;
-
-It would be easier to see the changes if you included the structs.
-
-> 5. Adding the journal UUID to each checksum computation;
-> 6. Extend the commit checksum to cover the commit block itself, with the commit
->   block checksum field zeroed during the computation, of course;
-> 7. Changing the default algorithm to crc32c; and
-> 8. Updating ext4 to enable both checksum fields at journal load time, if the
->   user supplies the journal_checksum mount option.
-
-Probably this should also be conditional on the ext4 code using the
-EXT4_FEATURE_INCOMPAT_METADATA_CSUM, so that we know the kernel will
-be able to recover, and the user has explicitly requested this.
-
-There is a mechanism for the ext4 code to pass features to the jbd2 code
-already, so this shouldn't be a problem.
-
-
-Cheers, Andreas
-
-
-
-
+On 2011/9/23 22:16, Bjorn Helgaas wrote:
+> On Fri, Sep 23, 2011 at 1:49 AM, canquan.shen<shencanquan@huawei.com>  wrote:
+>> On 2011/9/23 0:53, Bjorn Helgaas wrote:
+>>>
+>>> On Wed, Sep 14, 2011 at 8:56 PM, Bjorn Helgaas<bhelgaas@google.com>
+>>>   wrote:
+>>>>
+>>>> On Wed, Sep 14, 2011 at 7:06 PM, canquan.shen<shencanquan@huawei.com>
+>>>>   wrote:
+>>>>>
+>>>>> We run linux as a guest in Xen environment. When we used the xen tools
+>>>>> (xm vcpu-set<n>) to hot add and remove vcpu to and from the guest, we
+>>>>> encountered the failure on vcpu removal. We found the reason is that it
+>>>>> didn't go to really remove cpu in the cpu removal code path.
+>>>>>
+>>>>> This patch adds acpi_bus_trim in acpi_process_hotplug_notify to fix this
+>>>>> issue. With this patch, it works fine for us.
+>>>>>
+>>>>> Signed-off-by:Canquan Shen<shencanquan@huawei.com>
+>>>>
+>>>> Reviewed-by: Bjorn Helgaas<bhelgaas@google.com>
+>>>
+>>> On second thought, let's think about this a bit more.
+>>>
+>>> As I mentioned before, I have a long-term goal to move the hotplug
+>>> flow out of drivers and into the ACPI core.  That will be easier if
+>>> the code in the drivers is as generic as possible.
+>>>
+>>> The dock and acpiphp hot-remove code calls acpi_bus_trim(), then
+>>> evaluates _EJ0.  The core acpi_bus_hot_remove_device() function
+>>> already does both acpi_bus_trim() and _EJ0.  This function is
+>>> currently only used when we write to sysfs "eject" files, but I wonder
+>>> if we should use it in acpi_processor_hotplug_notify() as well.
+>>>
+>>> That would get us one step closer to removing this gunk from the
+>>> drivers and having acpi_bus_notify() look something like this:
+>>>
+>>>      case ACPI_NOTIFY_EJECT_REQUEST:
+>>>          driver->ops.remove(device);
+>>>          acpi_bus_hot_remove_device(device);
+>>>          break;
+>>>
+>>> There is a description of a CPU hot-remove that does include _EJ0
+>>> methods in the "DIG64 Hot-Plug&    Partitioning Flows Specification"
+>>> [1], sec 2.2.4.  I know this document is Itanium-oriented, but this
+>>> part seems fairly generic and it's the only description of the process
+>>> I've seen so far.
+>>>
+>>> So would using acpi_bus_hot_remove_device() instead of acpi_bus_trim()
+>>> also solve your problem, Canquan?
+>>>
+>> Yes. It can solve my problem.
+>> I fully aggree to replace acpi_bus_hot_remove_device() to acpi_bus_trim().
+>> Initially I insert the acpi_bus_hot_remove_device() in acpi_bus_notify
+>> function . lately I think I should give a chance for user,and so send
+>>   KOBJ_OFFLINE message to the udvev module.
+>>
+>> But why add the  driver->ops.remove(device) before
+>> acpi_bus_hot_remove_device(device).  it can be called in
+>> acpi_bus_hot_remove_device code path as bellowing:
+>>     acpi_bus_trim
+>>         acpi_bus_remove
+>>             device_release_driver
+>>                 __device_release_driver
+>>                         acpi_device_remove
+>>                                 acpi_drv->ops.remove
+>
+> OK.  Maybe the future acpi_bus_notify() code would be even simpler.
+> The point is that the ACPI core should handle the notification, call
+> the driver's .remove() method, and do whatever namespace cleanup is
+> required (i.e., acpi_bus_trim()).  None of this should be in the
+> driver itself.
+>
+> Can you re-post your patch, using acpi_bus_hot_remove_device() instead
+> of acpi_bus_trim()?  Please include Khalid's tweak, too, so we don't
+> print warnings for CPUs that don't supply _EJ0 methods.
+>
+> Bjorn
+>
+> .
+>
+OK. I will modify it and re-post the patch which will include Khalid's 
+tweak.  and Thank Khalid for attention this patch.
 
