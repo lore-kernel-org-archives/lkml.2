@@ -1,75 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751280Ab1IXLyn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Sep 2011 07:54:43 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:22680 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751056Ab1IXLyk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Sep 2011 07:54:40 -0400
-Date: Sat, 24 Sep 2011 13:53:35 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Ben Dooks <ben-linux@fluff.org>
-Cc: Yong Zhang <yong.zhang0@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, tglx@linutronix.de,
-        Sonic Zhang <sonic.zhang@analog.com>,
-        Alessandro Rubini <rubini@unipv.it>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        STEricsson <STEricsson_nomadik_linux@list.st.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Barry Song <21cnbao@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        "Justin P. Mattock" <justinmattock@gmail.com>,
-        Joe Perches <joe@perches.com>, Dave Airlie <airlied@linux.ie>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Nobuhiro Iwamatsu <iwamatsu@nigauri.org>,
-        Magnus Damm <damm@opensource.se>,
-        uclinux-dist-devel@blackfin.uclinux.org, linux-i2c@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 32/55] i2c: irq: Remove IRQF_DISABLED
-Message-ID: <20110924135335.2be8d1be@endymion.delvare>
-In-Reply-To: <1316681962-8217-33-git-send-email-yong.zhang0@gmail.com>
-References: <1316681962-8217-1-git-send-email-yong.zhang0@gmail.com>
-	<1316681962-8217-33-git-send-email-yong.zhang0@gmail.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751332Ab1IXMR0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Sep 2011 08:17:26 -0400
+Received: from tn-76-7-162-101.sta.embarqhsd.net ([76.7.162.101]:35178 "EHLO
+	animx.eu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751056Ab1IXMRY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Sep 2011 08:17:24 -0400
+Date: Sat, 24 Sep 2011 08:17:23 -0400
+From: Wakko Warner <wakko@animx.eu.org>
+To: linux-kernel@vger.kernel.org
+Subject: Re: radeon KMS (R100) on dell inspiron 5100 blank screen
+Message-ID: <20110924121723.GB9344@animx.eu.org>
+Mail-Followup-To: linux-kernel@vger.kernel.org
+References: <20110908015105.GA31062@animx.eu.org>
+ <20110908020235.GA582@animx.eu.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110908020235.GA582@animx.eu.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Sep 2011 16:58:59 +0800, Yong Zhang wrote:
-> Since commit [e58aa3d2: genirq: Run irq handlers with interrupts disabled],
-> We run all interrupt handlers with interrupts disabled
-> and we even check and yell when an interrupt handler
-> returns with interrupts enabled (see commit [b738a50a:
-> genirq: Warn when handler enables interrupts]).
-> 
-> So now this flag is a NOOP and can be removed.
-> 
-> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-> Acked-by: Wolfram Sang <w.sang@pengutronix.de>
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> Acked-by: Barry Song <21cnbao@gmail.com>
-> ---
->  drivers/i2c/busses/i2c-bfin-twi.c   |    4 ++--
->  drivers/i2c/busses/i2c-designware.c |    2 +-
->  drivers/i2c/busses/i2c-highlander.c |    2 +-
->  drivers/i2c/busses/i2c-nomadik.c    |    2 +-
->  drivers/i2c/busses/i2c-nuc900.c     |    2 +-
->  drivers/i2c/busses/i2c-pmcmsp.c     |    2 +-
->  drivers/i2c/busses/i2c-s3c2410.c    |    2 +-
->  drivers/i2c/busses/i2c-sh7760.c     |    2 +-
->  drivers/i2c/busses/i2c-sh_mobile.c  |    2 +-
->  drivers/i2c/busses/i2c-stu300.c     |    2 +-
->  10 files changed, 11 insertions(+), 11 deletions(-)
+Wakko Warner wrote:
+> My previous message, I stated in the subject line that this was a 5150. 
+> This is an inspiron 5100.
 
-Ben, I'll let you pick this patch as it only touches drivers which are
-under your responsibility. This will limit the risk of conflicts
-between our trees.
+Noone?
 
+> Wakko Warner wrote:
+> > I have fbcon compiled into the kernel, radeon as a module.  I have no
+> > framebuffer modules compiled.  The KMS has never worked on this system with
+> > any kernel I've compiled (2.6.33 and up).
+> > 
+> > Here's the relevent dmesg:
+> > 
+> > [drm] radeon defaulting to kernel modesetting.
+> > [drm] radeon kernel modesetting enabled.
+> > [drm] initializing kernel modesetting (RV200 0x1002:0x4C57).
+> > [drm] register mmio base: 0xFCFF0000
+> > [drm] register mmio size: 65536
+> > radeon 0000:01:00.0: Invalid ROM contents
+> > radeon 0000:01:00.0: Invalid ROM contents
+> > [drm:radeon_get_bios] *ERROR* Unable to locate a BIOS ROM
+> > [drm] Using generic clock info
+> > agpgart-intel 0000:00:00.0: AGP 2.0 bridge
+> > agpgart-intel 0000:00:00.0: putting AGP V2 device into 4x mode
+> > radeon 0000:01:00.0: putting AGP V2 device into 4x mode
+> > radeon 0000:01:00.0: GTT: 128M 0xE0000000 - 0xE7FFFFFF
+> > radeon 0000:01:00.0: VRAM: 128M 0x00000000E8000000 - 0x00000000EFFFFFFF (32M used)
+> > [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
+> > [drm] Driver supports precise vblank timestamp query.
+> > [drm] radeon: irq initialized.
+> > [drm] Detected VRAM RAM=128M, BAR=128M
+> > [drm] RAM width 64bits DDR
+> > [TTM] Zone  kernel: Available graphics memory: 443880 kiB.
+> > [TTM] Zone highmem: Available graphics memory: 1037694 kiB.
+> > [TTM] Initializing pool allocator.
+> > [drm] radeon: 32M of VRAM memory ready
+> > [drm] radeon: 128M of GTT memory ready.
+> > radeon 0000:01:00.0: WB disabled
+> > [drm] Loading R100 Microcode
+> > [drm] radeon: ring at 0x00000000E0001000
+> > [drm] ring test succeeded in 1 usecs
+> > [drm] radeon: ib pool ready.
+> > [drm] ib test succeeded in 0 usecs
+> > [drm] Connector Table: 1 (generic)
+> > [drm] No panel info found in BIOS
+> > [drm] Panel info derived from registers
+> > [drm] Panel Size 1400x1050
+> > [drm] radeon legacy LVDS backlight initialized
+> > [drm] No TV DAC info found in BIOS
+> > [drm] Radeon Display Connectors
+> > [drm] Connector 0:
+> > [drm]   LVDS
+> > [drm]   Encoders:
+> > [drm]     LCD1: INTERNAL_LVDS
+> > [drm] Connector 1:
+> > [drm]   VGA
+> > [drm]   DDC: 0x60 0x60 0x60 0x60 0x60 0x60 0x60 0x60
+> > [drm]   Encoders:
+> > [drm]     CRT1: INTERNAL_DAC1
+> > [drm] Connector 2:
+> > [drm]   S-video
+> > [drm]   Encoders:
+> > [drm]     TV1: INTERNAL_DAC2
+> > [drm] fb mappable at 0xE8040000
+> > [drm] vram apper at 0xE8000000
+> > [drm] size 1478656
+> > [drm] fb depth is 8
+> > [drm]    pitch is 1408
+> > [drm:drm_calc_timestamping_constants] *ERROR* crtc 10: Can't calculate constants, dotclock = 0!
+> > Console: switching to colour frame buffer device 175x65
+> > fb0: radeondrmfb frame buffer device
+> > drm: registered panic notifier
+> > [drm] Initialized radeon 2.10.0 20080528 for 0000:01:00.0 on minor 0
+> -- 
+>  Microsoft has beaten Volkswagen's world record.  Volkswagen only created 22
+>  million bugs.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 -- 
-Jean Delvare
+ Microsoft has beaten Volkswagen's world record.  Volkswagen only created 22
+ million bugs.
