@@ -1,86 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357Ab1IXCXf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 22:23:35 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:47775 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751995Ab1IXCXe (ORCPT
+	id S1753300Ab1IXCes (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 22:34:48 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:35649 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753225Ab1IXCer (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 22:23:34 -0400
-From: jgq516@gmail.com
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: jgq516@gmail.com
-Subject: [PATCH 2/2] net/fec: add poll controller function for fec nic
-Date: Sat, 24 Sep 2011 10:19:44 +0800
-Message-Id: <1316830784-17108-2-git-send-email-jgq516@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1316830784-17108-1-git-send-email-jgq516@gmail.com>
-References: <1316830784-17108-1-git-send-email-jgq516@gmail.com>
+	Fri, 23 Sep 2011 22:34:47 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:x-system-of-record;
+	b=CBFS9lMVnw5pQ0mkJnmtHL7JiO5cgJbGb8o/YaVTKsqbKzfcnBFLcgolVCrzr11Dv
+	VZBdQU+Vy2/heSj/skRgg==
+MIME-Version: 1.0
+In-Reply-To: <1316825684.6387.5.camel@gandalf.stny.rr.com>
+References: <1316825684.6387.5.camel@gandalf.stny.rr.com>
+From: Greg Thelen <gthelen@google.com>
+Date: Fri, 23 Sep 2011 19:34:23 -0700
+Message-ID: <CAHH2K0Z_MsVceOjoFwT=qORSsKrFWjs_V602NMtPBysasJLEww@mail.gmail.com>
+Subject: Re: [PATCH] memcg: Fix race condition in memcg_check_events() with
+ this_cpu usage
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        PeterZijlstra <peterz@infradead.org>, ChristophLameter <cl@linux.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xiao Jiang <jgq516@gmail.com>
+On Fri, Sep 23, 2011 at 5:54 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> From: Steven Rostedt <srostedt@redhat.com>
+>
+> The code in memcg_check_events() calls this_cpu_read() on
+> different variables without disabling preemption, and can cause
+> the calculations to be done from two different CPU variables.
+>
+> Disable preemption throughout the check to keep apples and oranges
+> from becoming a mixed drink.
+>
+> [ Added this_cpu to __this_cpu conversion by Johannes ]
+>
+> Cc: Greg Thelen <gthelen@google.com>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: Balbir Singh <balbir@linux.vnet.ibm.com>
+> Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Christoph Lameter <cl@linux.com>
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> Link: http://lkml.kernel.org/r/20110919212641.015320989@goodmis.org
 
-Add poll controller function for fec nic.
+Looks good to me.  Thanks.
 
-Signed-off-by: Xiao Jiang <jgq516@gmail.com>
----
- drivers/net/fec.c |   27 +++++++++++++++++++++++++++
- 1 files changed, 27 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/net/fec.c b/drivers/net/fec.c
-index 5705def..00eb5c7 100644
---- a/drivers/net/fec.c
-+++ b/drivers/net/fec.c
-@@ -235,6 +235,7 @@ struct fec_enet_private {
- 	int	link;
- 	int	full_duplex;
- 	struct	completion mdio_done;
-+	int	irq[FEC_IRQ_NUM];
- };
- 
- /* FEC MII MMFR bits definition */
-@@ -1323,6 +1324,29 @@ fec_set_mac_address(struct net_device *ndev, void *p)
- 	return 0;
- }
- 
-+#ifdef CONFIG_NET_POLL_CONTROLLER
-+/*
-+ * fec_poll_controller: FEC Poll controller function
-+ * @dev: The FEC network adapter
-+ *
-+ * Polled functionality used by netconsole and others in non interrupt mode
-+ *
-+ */
-+void fec_poll_controller(struct net_device *dev)
-+{
-+	int i;
-+	struct fec_enet_private *fep = netdev_priv(dev);
-+
-+	for (i = 0; i < FEC_IRQ_NUM; i++) {
-+		if (fep->irq[i] > 0) {
-+			disable_irq(fep->irq[i]);
-+			fec_enet_interrupt(fep->irq[i], dev);
-+			enable_irq(fep->irq[i]);
-+		}
-+	}
-+}
-+#endif
-+
- static const struct net_device_ops fec_netdev_ops = {
- 	.ndo_open		= fec_enet_open,
- 	.ndo_stop		= fec_enet_close,
-@@ -1333,6 +1357,9 @@ static const struct net_device_ops fec_netdev_ops = {
- 	.ndo_tx_timeout		= fec_timeout,
- 	.ndo_set_mac_address	= fec_set_mac_address,
- 	.ndo_do_ioctl		= fec_enet_ioctl,
-+#ifdef CONFIG_NET_POLL_CONTROLLER
-+	.ndo_poll_controller    = fec_poll_controller,
-+#endif
- };
- 
-  /*
--- 
-1.7.0.4
-
+Reviewed-by: Greg Thelen <gthelen@google.com>
