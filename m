@@ -1,113 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752862Ab1IXAyq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 20:54:46 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:63508 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751086Ab1IXAyp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 20:54:45 -0400
-X-Authority-Analysis: v=1.1 cv=cSzO76bR5tCkfUT9bEmBgR3d7VUusRLeq08eKGxa4EU= c=1 sm=0 a=K65SvNqAmvUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=20KFwNOVAAAA:8 a=1XWaLZrsAAAA:8 a=omOdbC7AAAAA:8 a=VnNF1IyMAAAA:8 a=Z4Rwk6OoAAAA:8 a=JfrnYn6hAAAA:8 a=NufY4J3AAAAA:8 a=ufHFDILaAAAA:8 a=meVymXHHAAAA:8 a=VwQbUJbxAAAA:8 a=mdeRhl1Et48XbF9MCOAA:9 a=lojrGcaCD2Pt7u4eO_MA:7 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=UTB_XpHje0EA:10 a=jbrJJM5MRmoA:10 a=Zh68SRI7RUMA:10 a=3Rfx1nUSh_UA:10 a=re9sYKne76oA:10 a=l7ZknGph1ugA:10 a=jeBq3FmKZ4MA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.83.30
-Subject: [PATCH] memcg: Fix race condition in memcg_check_events() with
- this_cpu usage
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Greg Thelen <gthelen@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        PeterZijlstra <peterz@infradead.org>, ChristophLameter <cl@linux.com>
-Date: Fri, 23 Sep 2011 20:54:42 -0400
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.0.3- 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1316825684.6387.5.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
+	id S1753155Ab1IXBVJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 21:21:09 -0400
+Received: from mga02.intel.com ([134.134.136.20]:40869 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751447Ab1IXBVH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Sep 2011 21:21:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="55406114"
+From: Andi Kleen <andi@firstfloor.org>
+To: Con Kolivas <kernel@kolivas.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: BFS cpu scheduler and skip list implementation
+References: <201109240945.58879.kernel@kolivas.org>
+Date: Fri, 23 Sep 2011 18:21:06 -0700
+In-Reply-To: <201109240945.58879.kernel@kolivas.org> (Con Kolivas's message of
+	"Sat, 24 Sep 2011 09:45:58 +1000")
+Message-ID: <m28vpeka65.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
+Con Kolivas <kernel@kolivas.org> writes:
 
-The code in memcg_check_events() calls this_cpu_read() on
-different variables without disabling preemption, and can cause
-the calculations to be done from two different CPU variables.
+> Many of you may know about Skip lists as an alternative to balanced binary 
+> search trees. They feature O(log n) insertion, lookup and removal of table 
+> entries. Anyway I've been looking for some time at the O(n) lookup of BFS 
+> (which is O(1) insertion and removal) to try and find a solution that didn't 
+> cost us at the desktop level since O(n) of small numbers of n is very fast. 
+> The problem is of course at higher numbers of n (or server type loads), where 
+> it gets linearly slower, and the cache trashing aspect of scanning linked 
+> lists becomes expensive.
 
-Disable preemption throughout the check to keep apples and oranges
-from becoming a mixed drink.
+The big problem with skiplists is that it is hard to resize the pointer
+arrays: so you either waste a lot of memory/cache or you have a highest
+limit after which they start performing poorly.
 
-[ Added this_cpu to __this_cpu conversion by Johannes ]
+I investigated them some time ago to replace the non scalable rbtrees
+we have currently, but got discouraged by these problems.
 
-Cc: Greg Thelen <gthelen@google.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Balbir Singh <balbir@linux.vnet.ibm.com>
-Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Christoph Lameter <cl@linux.com>
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/20110919212641.015320989@goodmis.org
----
- mm/memcontrol.c |   10 ++++++----
- 1 files changed, 6 insertions(+), 4 deletions(-)
+> +struct nodeStructure {
+> +	int level;	/* Levels in this structure */
+> +	keyType key;
+> +	valueType value;
+> +	skiplist_node *next[16];
+> +	skiplist_node *prev[16];
+> +};
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 3508777..f823fc8 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -683,8 +683,8 @@ static bool __memcg_event_check(struct mem_cgroup *mem, int target)
- {
- 	unsigned long val, next;
- 
--	val = this_cpu_read(mem->stat->events[MEM_CGROUP_EVENTS_COUNT]);
--	next = this_cpu_read(mem->stat->targets[target]);
-+	val = __this_cpu_read(mem->stat->events[MEM_CGROUP_EVENTS_COUNT]);
-+	next = __this_cpu_read(mem->stat->targets[target]);
- 	/* from time_after() in jiffies.h */
- 	return ((long)next - (long)val < 0);
- }
-@@ -693,7 +693,7 @@ static void __mem_cgroup_target_update(struct mem_cgroup *mem, int target)
- {
- 	unsigned long val, next;
- 
--	val = this_cpu_read(mem->stat->events[MEM_CGROUP_EVENTS_COUNT]);
-+	val = __this_cpu_read(mem->stat->events[MEM_CGROUP_EVENTS_COUNT]);
- 
- 	switch (target) {
- 	case MEM_CGROUP_TARGET_THRESH:
-@@ -709,7 +709,7 @@ static void __mem_cgroup_target_update(struct mem_cgroup *mem, int target)
- 		return;
- 	}
- 
--	this_cpu_write(mem->stat->targets[target], next);
-+	__this_cpu_write(mem->stat->targets[target], next);
- }
- 
- /*
-@@ -718,6 +718,7 @@ static void __mem_cgroup_target_update(struct mem_cgroup *mem, int target)
-  */
- static void memcg_check_events(struct mem_cgroup *mem, struct page *page)
- {
-+	preempt_disable();
- 	/* threshold event is triggered in finer grain than soft limit */
- 	if (unlikely(__memcg_event_check(mem, MEM_CGROUP_TARGET_THRESH))) {
- 		mem_cgroup_threshold(mem);
-@@ -737,6 +738,7 @@ static void memcg_check_events(struct mem_cgroup *mem, struct page *page)
- 		}
- #endif
- 	}
-+	preempt_enable();
- }
- 
- static struct mem_cgroup *mem_cgroup_from_cont(struct cgroup *cont)
+That's 128 byte / 2 cache lines, not too bad, but it limits
+the maximum number of tasks that can be efficiently handled
+(my guess to around 64k with maxlevel == 16, but someone may
+correct me on that)
+
+-Andi
+
 -- 
-1.7.3.4
-
-
-
+ak@linux.intel.com -- Speaking for myself only
