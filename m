@@ -1,79 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753274Ab1IXClh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Sep 2011 22:41:37 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:50394 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753032Ab1IXClg (ORCPT
+	id S1753327Ab1IXDHZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Sep 2011 23:07:25 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:56515 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753140Ab1IXDHY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Sep 2011 22:41:36 -0400
-X-Authority-Analysis: v=1.1 cv=lfM0d0QHaVz67dfwwr9cyIw6NbaGR/pZhMD6XWNi0kk= c=1 sm=0 a=OuXuCX0A07wA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=1XWaLZrsAAAA:8 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=omOdbC7AAAAA:8 a=VnNF1IyMAAAA:8 a=pGLkceISAAAA:8 a=Z4Rwk6OoAAAA:8 a=JfrnYn6hAAAA:8 a=NufY4J3AAAAA:8 a=ufHFDILaAAAA:8 a=VwQbUJbxAAAA:8 a=XRgG1S5bOetsobFjeh8A:9 a=PUjeQqilurYA:10 a=UTB_XpHje0EA:10 a=jeBq3FmKZ4MA:10 a=jEp0ucaQiEUA:10 a=MSl-tDqOz04A:10 a=jbrJJM5MRmoA:10 a=Zh68SRI7RUMA:10 a=3Rfx1nUSh_UA:10 a=re9sYKne76oA:10 a=l7ZknGph1ugA:10 a=aUmrPQVLkos04fXW:21 a=CCsZalvXGc49xW1j:21 a=17wjrS5wAhQaEczCPkpxpQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.83.30
-Subject: Re: [PATCH] memcg: Fix race condition in memcg_check_events() with
- this_cpu usage
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Greg Thelen <gthelen@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        bsingharora@gmail.com, Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        PeterZijlstra <peterz@infradead.org>, ChristophLameter <cl@linux.com>
-Date: Fri, 23 Sep 2011 22:41:32 -0400
-In-Reply-To: <CAHH2K0agLygD6cREazsTquCT=Whx97RxxhOneWpVF1cHwMwp3A@mail.gmail.com>
-References: <1316825684.6387.5.camel@gandalf.stny.rr.com>
-	 <CAHH2K0Z_MsVceOjoFwT=qORSsKrFWjs_V602NMtPBysasJLEww@mail.gmail.com>
-	 <CAHH2K0agLygD6cREazsTquCT=Whx97RxxhOneWpVF1cHwMwp3A@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.0.3- 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1316832094.6387.11.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
+	Fri, 23 Sep 2011 23:07:24 -0400
+Date: Sat, 24 Sep 2011 12:07:18 +0900
+From: Tejun Heo <tj@kernel.org>
+To: Gilad Ben-Yossef <gilad@benyossef.com>
+Cc: Ripduman Sohan <Ripduman.Sohan@cl.cam.ac.uk>, linux-kernel@vger.kernel.org,
+        peterz@infradead.org
+Subject: Re: [PATCH] workqueue: Restore cpus_allowed mask for sleeping
+ workqueue rescue threads
+Message-ID: <20110924030718.GA29319@htj.dyndns.org>
+References: <1314884193-20454-1-git-send-email-ripduman.sohan@cl.cam.ac.uk>
+ <20110902002917.GD2752@htj.dyndns.org>
+ <20110915161430.GE1548@tusker>
+ <CAOtvUMf0Dx04Piw8bx2oD+F9ttiBP_xCpin7fTvoQqs_dn=ZRQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOtvUMf0Dx04Piw8bx2oD+F9ttiBP_xCpin7fTvoQqs_dn=ZRQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-09-23 at 19:39 -0700, Greg Thelen wrote:
-> cc: updated Balbir Singh email address
+Hello,
+
+On Sun, Sep 18, 2011 at 09:36:57AM +0300, Gilad Ben-Yossef wrote:
+> There is at least one use case where I think this can be a problem -
+> cpu isolation.
 > 
-> On Fri, Sep 23, 2011 at 7:34 PM, Greg Thelen <gthelen@google.com> wrote:
-> > On Fri, Sep 23, 2011 at 5:54 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> >> From: Steven Rostedt <srostedt@redhat.com>
-> >>
-> >> The code in memcg_check_events() calls this_cpu_read() on
-> >> different variables without disabling preemption, and can cause
-> >> the calculations to be done from two different CPU variables.
-> >>
-> >> Disable preemption throughout the check to keep apples and oranges
-> >> from becoming a mixed drink.
-> >>
-> >> [ Added this_cpu to __this_cpu conversion by Johannes ]
-> >>
-> >> Cc: Greg Thelen <gthelen@google.com>
-> >> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> >> Cc: Balbir Singh <balbir@linux.vnet.ibm.com>
-> 
-> Correction:
-> Cc: Balbir Singh <bsingharora@gmail.com>
+> If you decide to partition your CPU to give some group of processes a
+> set of CPUs all to their own (using cgroups/cpuset for example) having
+> non related bound processes really gets in the way. You would really
+> want to migrate away non related tasks from the isolated cpuset and
+> having a bound kernel thread prevents that.
 
-Thanks, I was starting to hate that "return mail to sender" thing.
+Hmm... I don't think this has much to do with CPU isolation.
+Workqueue rescuers are reactively invoked to resolve possible resource
+deadlock.  It doesn't initiate operations on itself while CPU
+isolation requires moving all sources of unwanted activites off the
+isolated CPUs.  Having idle rescuers not bound to any CPU might look
+prettier but wouldn't help anything - it's not an activity source and
+the 'wanted' activities on the isolated CPU also require rescuers for
+forward progress guarantee.
 
--- Steve
+Thanks.
 
-> 
-> >> Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-> >> Cc: Andrew Morton <akpm@linux-foundation.org>
-> >> Cc: Thomas Gleixner <tglx@linutronix.de>
-> >> Cc: Peter Zijlstra <peterz@infradead.org>
-> >> Cc: Christoph Lameter <cl@linux.com>
-> >> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> >> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> >> Link: http://lkml.kernel.org/r/20110919212641.015320989@goodmis.org
-> >
-> > Looks good to me.  Thanks.
-> >
-> > Reviewed-by: Greg Thelen <gthelen@google.com>
-> >
-
-
+-- 
+tejun
