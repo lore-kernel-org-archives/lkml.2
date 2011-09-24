@@ -1,67 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753776Ab1I0LpD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 07:45:03 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54658 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753729Ab1I0LpA convert rfc822-to-8bit (ORCPT
+	id S1753555Ab1I0Ln1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 07:43:27 -0400
+Received: from ganesha.gnumonks.org ([213.95.27.120]:40473 "EHLO
+	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753549Ab1I0LnV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 07:45:00 -0400
-Subject: Re: [PATCH v5 3.1.0-rc4-tip 17/26]   x86: arch specific hooks for
- pre/post singlestep handling.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Jonathan Corbet <corbet@lwn.net>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Tue, 27 Sep 2011 13:44:12 +0200
-In-Reply-To: <20110926163426.GA15435@linux.vnet.ibm.com>
-References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com>
-	 <20110920120325.25326.11641.sendpatchset@srdronam.in.ibm.com>
-	 <1317047033.1763.27.camel@twins>
-	 <20110926163426.GA15435@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1317123853.15383.41.camel@twins>
-Mime-Version: 1.0
+	Tue, 27 Sep 2011 07:43:21 -0400
+From: KyongHo Cho <pullip.cho@samsung.com>
+To: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Cc: Joerg Roedel <joro@8bytes.org>, Sanghyun Lee <sanghyun75.lee@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        YoungLak Kim <younglak1004.kim@samsung.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>, KyongHo Cho <pullip.cho@samsung.com>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: [PATCH 4/4] iommu/exynos: Use bus_set_iommu instead of register_iommu
+Date: Sat, 24 Sep 2011 11:02:50 +0900
+Message-Id: <1316829770-21949-5-git-send-email-pullip.cho@samsung.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1316829770-21949-1-git-send-email-pullip.cho@samsung.com>
+References: <1316829770-21949-1-git-send-email-pullip.cho@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-09-26 at 22:04 +0530, Srikar Dronamraju wrote:
-> * Peter Zijlstra <peterz@infradead.org> [2011-09-26 16:23:53]:
-> 
-> > On Tue, 2011-09-20 at 17:33 +0530, Srikar Dronamraju wrote:
-> > > +fail:
-> > > +       pr_warn_once("uprobes: Failed to adjust return address after"
-> > > +               " single-stepping call instruction;"
-> > > +               " pid=%d, sp=%#lx\n", current->pid, sp);
-> > > +       return -EFAULT; 
-> > 
-> > So how can that happen? Single-Step while someone unmapped the stack?
-> 
-> We do a copy_to_user, copy_from_user just above this,
+This replaces register_iommu() with bus_set_iommu() according to the
+suggestion of Joerg Roedel.
 
-I saw that,
+Cc: Joerg Roedel <joerg.roedel@amd.com>
+Signed-off-by: KyongHo Cho <pullip.cho@samsung.com>
+---
+ drivers/iommu/exynos_iommu.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
->  Now if either of
-> them fail, we have no choice but to Bail out.
+diff --git a/drivers/iommu/exynos_iommu.c b/drivers/iommu/exynos_iommu.c
+index fe5b5d8..148e238 100644
+--- a/drivers/iommu/exynos_iommu.c
++++ b/drivers/iommu/exynos_iommu.c
+@@ -852,7 +852,7 @@ static int __init exynos_iommu_init(void)
+ 	if (!l2table_cachep)
+ 		return -ENOMEM;
+ 
+-	register_iommu(&exynos_iommu_ops);
++	bus_set_iommu(&platform_bus_type, &omap_iommu_ops);
+ 
+ 	return 0;
+ }
+-- 
+1.7.1
 
-Agreed,
-
->  What caused this EFault may not be under Uprobes's Control.
-
-I never said it was.. All I asked is what (outside of uprobe) was done
-to cause this, and why is this particular error important enough to
-warrant a warn.
