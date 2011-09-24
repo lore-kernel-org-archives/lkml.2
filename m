@@ -1,127 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751733Ab1IXE46 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Sep 2011 00:56:58 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:25070 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751372Ab1IXE45 (ORCPT
+	id S1752585Ab1IXE5R (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Sep 2011 00:57:17 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:54770 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752031Ab1IXE5F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Sep 2011 00:56:57 -0400
+	Sat, 24 Sep 2011 00:57:05 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
         jeremy@goop.org
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 2/3] xen/p2m: Make debug/xen/mmu/p2m visible again.
-Date: Fri, 23 Sep 2011 22:28:18 -0400
-Message-Id: <1316831299-4144-3-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 1/3] Revert "xen/debug: WARN_ON when identity PFN has no _PAGE_IOMAP flag set."
+Date: Fri, 23 Sep 2011 22:28:17 -0400
+Message-Id: <1316831299-4144-2-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1316831299-4144-1-git-send-email-konrad.wilk@oracle.com>
 References: <1316831299-4144-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090205.4E7D6315.014F,ss=1,re=0.000,fgs=0
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090208.4E7D631D.0069,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We dropped a lot of the MMU debugfs in favour of using
-tracing API - but there is one which just provides
-mostly static information that was made invisible by this change.
+We don' use it anymore and there are more false positives.
 
-Bring it back.
+This reverts commit fc25151d9ac7d809239fe68de0a1490b504bb94a.
 
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/include/asm/xen/page.h |    3 ---
- arch/x86/xen/mmu.c              |   14 --------------
- arch/x86/xen/p2m.c              |   35 ++++++++++++++++++++++++++++++++---
- 3 files changed, 32 insertions(+), 20 deletions(-)
+ arch/x86/xen/Kconfig |    8 --------
+ arch/x86/xen/mmu.c   |   38 --------------------------------------
+ 2 files changed, 0 insertions(+), 46 deletions(-)
 
-diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
-index 64a619d..bc12c12 100644
---- a/arch/x86/include/asm/xen/page.h
-+++ b/arch/x86/include/asm/xen/page.h
-@@ -53,9 +53,6 @@ extern int m2p_remove_override(struct page *page, bool clear_pte);
- extern struct page *m2p_find_override(unsigned long mfn);
- extern unsigned long m2p_find_override_pfn(unsigned long mfn, unsigned long pfn);
- 
--#ifdef CONFIG_XEN_DEBUG_FS
--extern int p2m_dump_show(struct seq_file *m, void *v);
--#endif
- static inline unsigned long pfn_to_mfn(unsigned long pfn)
- {
- 	unsigned long mfn;
+diff --git a/arch/x86/xen/Kconfig b/arch/x86/xen/Kconfig
+index 5cc821c..ae559fe 100644
+--- a/arch/x86/xen/Kconfig
++++ b/arch/x86/xen/Kconfig
+@@ -49,11 +49,3 @@ config XEN_DEBUG_FS
+ 	help
+ 	  Enable statistics output and various tuning options in debugfs.
+ 	  Enabling this option may incur a significant performance overhead.
+-
+-config XEN_DEBUG
+-	bool "Enable Xen debug checks"
+-	depends on XEN
+-	default n
+-	help
+-	  Enable various WARN_ON checks in the Xen MMU code.
+-	  Enabling this option WILL incur a significant performance overhead.
 diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index 3c9aecd..4df0444 100644
+index f987bde..3c9aecd 100644
 --- a/arch/x86/xen/mmu.c
 +++ b/arch/x86/xen/mmu.c
-@@ -2362,17 +2362,3 @@ out:
- 	return err;
+@@ -495,41 +495,6 @@ static pte_t xen_make_pte(pteval_t pte)
  }
- EXPORT_SYMBOL_GPL(xen_remap_domain_mfn_range);
--
--#ifdef CONFIG_XEN_DEBUG_FS
--static int p2m_dump_open(struct inode *inode, struct file *filp)
--{
--	return single_open(filp, p2m_dump_show, NULL);
--}
--
--static const struct file_operations p2m_dump_fops = {
--	.open		= p2m_dump_open,
--	.read		= seq_read,
--	.llseek		= seq_lseek,
--	.release	= single_release,
--};
--#endif /* CONFIG_XEN_DEBUG_FS */
-diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-index 58efeb9..cc2f8dc 100644
---- a/arch/x86/xen/p2m.c
-+++ b/arch/x86/xen/p2m.c
-@@ -782,8 +782,9 @@ unsigned long m2p_find_override_pfn(unsigned long mfn, unsigned long pfn)
- EXPORT_SYMBOL_GPL(m2p_find_override_pfn);
+ PV_CALLEE_SAVE_REGS_THUNK(xen_make_pte);
  
- #ifdef CONFIG_XEN_DEBUG_FS
+-#ifdef CONFIG_XEN_DEBUG
+-pte_t xen_make_pte_debug(pteval_t pte)
+-{
+-	phys_addr_t addr = (pte & PTE_PFN_MASK);
+-	phys_addr_t other_addr;
+-	bool io_page = false;
+-	pte_t _pte;
 -
--int p2m_dump_show(struct seq_file *m, void *v)
-+#include <linux/debugfs.h>
-+#include "debugfs.h"
-+static int p2m_dump_show(struct seq_file *m, void *v)
- {
- 	static const char * const level_name[] = { "top", "middle",
- 						"entry", "abnormal" };
-@@ -856,4 +857,32 @@ int p2m_dump_show(struct seq_file *m, void *v)
- #undef TYPE_PFN
- #undef TYPE_UNKNOWN
- }
+-	if (pte & _PAGE_IOMAP)
+-		io_page = true;
+-
+-	_pte = xen_make_pte(pte);
+-
+-	if (!addr)
+-		return _pte;
+-
+-	if (io_page &&
+-	    (xen_initial_domain() || addr >= ISA_END_ADDRESS)) {
+-		other_addr = pfn_to_mfn(addr >> PAGE_SHIFT) << PAGE_SHIFT;
+-		WARN_ONCE(addr != other_addr,
+-			"0x%lx is using VM_IO, but it is 0x%lx!\n",
+-			(unsigned long)addr, (unsigned long)other_addr);
+-	} else {
+-		pteval_t iomap_set = (_pte.pte & PTE_FLAGS_MASK) & _PAGE_IOMAP;
+-		other_addr = (_pte.pte & PTE_PFN_MASK);
+-		WARN_ONCE((addr == other_addr) && (!io_page) && (!iomap_set),
+-			"0x%lx is missing VM_IO (and wasn't fixed)!\n",
+-			(unsigned long)addr);
+-	}
+-
+-	return _pte;
+-}
+-PV_CALLEE_SAVE_REGS_THUNK(xen_make_pte_debug);
 -#endif
-+
-+static int p2m_dump_open(struct inode *inode, struct file *filp)
-+{
-+	return single_open(filp, p2m_dump_show, NULL);
-+}
-+
-+static const struct file_operations p2m_dump_fops = {
-+	.open		= p2m_dump_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= single_release,
-+};
-+
-+static struct dentry *d_mmu_debug;
-+
-+static int __init xen_p2m_debugfs(void)
-+{
-+	struct dentry *d_xen = xen_init_debugfs();
-+
-+	if (d_xen == NULL)
-+		return -ENOMEM;
-+
-+	d_mmu_debug = debugfs_create_dir("mmu", d_xen);
-+
-+	debugfs_create_file("p2m", 0600, d_mmu_debug, NULL, &p2m_dump_fops);
-+	return 0;
-+}
-+fs_initcall(xen_p2m_debugfs);
-+#endif /* CONFIG_XEN_DEBUG_FS */
+-
+ static pgd_t xen_make_pgd(pgdval_t pgd)
+ {
+ 	pgd = pte_pfn_to_mfn(pgd);
+@@ -1988,9 +1953,6 @@ void __init xen_ident_map_ISA(void)
+ 
+ static void __init xen_post_allocator_init(void)
+ {
+-#ifdef CONFIG_XEN_DEBUG
+-	pv_mmu_ops.make_pte = PV_CALLEE_SAVE(xen_make_pte_debug);
+-#endif
+ 	pv_mmu_ops.set_pte = xen_set_pte;
+ 	pv_mmu_ops.set_pmd = xen_set_pmd;
+ 	pv_mmu_ops.set_pud = xen_set_pud;
 -- 
 1.7.4.1
 
