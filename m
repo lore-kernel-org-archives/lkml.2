@@ -1,90 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751243Ab1IXGxj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Sep 2011 02:53:39 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:37573 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750766Ab1IXGxi (ORCPT
+	id S1751660Ab1IXHPF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Sep 2011 03:15:05 -0400
+Received: from utopia.booyaka.com ([72.9.107.138]:46726 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751426Ab1IXHPD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Sep 2011 02:53:38 -0400
-Date: Sat, 24 Sep 2011 08:53:32 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: rtc-linux@googlegroups.com
-Cc: Austin Boyle <Austin.Boyle@Aviatnet.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Joakim Tjernlund <Joakim.Tjernlund@transmode.se>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [rtc-linux] Re: [PATCH 2.6.39-rc7] RTC: rtc-ds1307 EEPROM
- support for ds1388 chip
-Message-ID: <20110924065332.GA19721@pengutronix.de>
-References: <1306127917.3071.32.camel@pc786-ubu.gnet.global.vpn>
- <1308024897.2992.39.camel@pc786-ubu.gnet.global.vpn>
- <20110722145451.78390257.akpm@linux-foundation.org>
- <1312151457.24642.5747.camel@pc786-ubu.gnet.global.vpn>
- <20110923160445.68c3098e.akpm@google.com>
+	Sat, 24 Sep 2011 03:15:03 -0400
+Date: Sat, 24 Sep 2011 01:15:01 -0600 (MDT)
+From: Paul Walmsley <paul@pwsan.com>
+To: "Munegowda, Keshava" <keshava_mgowda@ti.com>
+cc: parthab@india.ti.com, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        b-cousson@ti.com, balbi@ti.com, gadiyar@ti.com, sameo@linux.intel.com,
+        tony@atomide.com, khilman@ti.com, johnstul@us.ibm.com,
+        vishwanath.bs@ti.com
+Subject: Re: [PATCH 2/5 v11] arm: omap: usb: ehci and ohci hwmod structures
+ for omap3
+In-Reply-To: <CAP05o4+Zc2z6sBOX_rQeoDQ9PneypcLRCyBbaaB2m+ZjeXZnaw@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1109240101120.22872@utopia.booyaka.com>
+References: <1316691479-1849-1-git-send-email-keshava_mgowda@ti.com> <1316691479-1849-2-git-send-email-keshava_mgowda@ti.com> <1316691479-1849-3-git-send-email-keshava_mgowda@ti.com> <alpine.DEB.2.00.1109221115320.10719@utopia.booyaka.com>
+ <CAP05o4+Zc2z6sBOX_rQeoDQ9PneypcLRCyBbaaB2m+ZjeXZnaw@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="k1lZvvs/B4yU6o8G"
-Content-Disposition: inline
-In-Reply-To: <20110923160445.68c3098e.akpm@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: MULTIPART/MIXED; BOUNDARY="155748971-1671404457-1316848501=:22872"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
---k1lZvvs/B4yU6o8G
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+--155748971-1671404457-1316848501=:22872
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 
-On Fri, Sep 23, 2011 at 04:04:45PM -0700, Andrew Morton wrote:
-> On Mon, 1 Aug 2011 10:30:57 +1200
-> Austin Boyle <Austin.Boyle@Aviatnet.com> wrote:
+On Fri, 23 Sep 2011, Munegowda, Keshava wrote:
+
+> On Thu, Sep 22, 2011 at 11:31 PM, Paul Walmsley <paul@pwsan.com> wrote:
+> >
+> > On Thu, 22 Sep 2011, Keshava Munegowda wrote:
+> >> 4. usb_tll_hs hwmod of usbhs with the TLL base address and irq.
+> >>
+> >> Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
+> >> Reviewed-by: Partha Basak <parthab@india.ti.com>
+> >> ---
+> >> =A0arch/arm/mach-omap2/omap_hwmod_3xxx_data.c | =A0271 +++++++++++++++=
++++++++++++++
+> >> =A01 files changed, 271 insertions(+), 0 deletions(-)
+> >>
+> >> diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mac=
+h-omap2/omap_hwmod_3xxx_data.c
+> >> index 59fdb9f..d79f728 100644
+> >> --- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+> >> +++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+
+> >> +static struct omap_hwmod_ocp_if omap34xx_f128m_cfg__usb_host_hs =3D {
+> >> + =A0 =A0 .clk =A0 =A0 =A0 =A0 =A0 =A0=3D "usbhost_120m_fck",
+> >
+> > This doesn't look right. =A0This is an interface structure record, so i=
+t
+> > should be associated with an interface clock. =A0Is the hardware really
+> > using the functional clock as the interface clock? =A0Or, as seems more
+> > likely...
 >=20
-> > [PATCH 3.0] RTC: EEPROM support for DS1388
-> >=20
-> > This patch adds support for different sized NVRAM, such as
-> > the 512 bytes of EEPROM on the DS1388 chip.
 >=20
-> This patch is causing problems in today's linux-next, with x86_64 allmodc=
-onfig:
+> Agreed, how about:
+>=20
+> main clock: usbhost_120m_fck
+> optional f clock: usbhost_48m_fck
 
-Sorry, I missed the patch so far. The whole approach is not correct.
+Assuming the interface clock is enabled, which one of these clocks is=20
+needed for UHH register accesses to complete successfully?
 
-The EEPROM uses a different I2C slave address (0x69+0x6a) than the RTC (0x6=
-8).
-So, you should be able to use the ds1307-driver on address 0x68 (maybe with
-minor modifications, didn't check that) and the eeprom part using the
-at24-driver on address 0x69, selecting the 24c02-type. Despite saving redun=
-dant
-code, at24 handles peculiarities of EEPROMs much better. Can you please rep=
-ort
-if that works for you?
+> interface clock: usbhost_ick.
+>=20
+>=20
+>=20
+> >> + =A0 =A0 .user =A0 =A0 =A0 =A0 =A0 =3D OCP_USER_MPU,
+> >> + =A0 =A0 .flags =A0 =A0 =A0 =A0 =A0=3D OCPIF_SWSUP_IDLE,
+> >
+> > ... is this just a hack? =A0OCPIF_SWSUP_IDLE is intended to work around
+> > hardware autoidle bugs only. =A0Are you sure this shouldn't be defined =
+as an
+> > optional clock instead?
+>=20
+> yes ! it was causeing resets, hence you this flag.
 
-Regards,
+usbhost_120m_fck is not an interface clock.  That is probably what was
+causing the problem you describe.
 
-   Wolfram
+> >> +static struct omap_hwmod omap34xx_usb_host_hs_hwmod =3D {
+> >> + =A0 =A0 .name =A0 =A0 =A0 =A0 =A0 =3D "usb_host_hs",
+> >> + =A0 =A0 .class =A0 =A0 =A0 =A0 =A0=3D &omap34xx_usb_host_hs_hwmod_cl=
+ass,
+> >> + =A0 =A0 .main_clk =A0 =A0 =A0 =3D "usbhost_ick",
+> >
+> > Is this really the main clock? =A0The main clock is the clock that driv=
+es
+> > the register logic in the IP block. =A0Looks to me, based on the integr=
+ation
+> > document in the 34xx TRM vZR, that this module has a functional clock. =
+=A0In
+> > general, the only time that the main_clk should be an interface clock i=
+s
+> > when the clock is a combined interface and functional clock. =A0The mai=
+lbox
+> > IP block is a classic example.
+>=20
+> As I mentioned above;  I can make
+>=20
+> main clock: usbhost_120m_fck
+> optional f clock: usbhost_48m_fck
+> interface clock: usbhost_ick.
+>=20
+> do you agree?
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+The interface clock should definitely be usbhost_ick, no doubt about it.
 
---k1lZvvs/B4yU6o8G
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+But, as I mentioned above, to determine which functional clock should be=20
+the main clock, you first need to know which of those two clocks need to=20
+be enabled for register accesses to that module to succeed.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+I did this work a few years ago, by trial and error since it was largely=20
+undocumented.  It was needed since the OMAP3 clk_enable() code waits for=20
+the PRCM to request that the IP block exit idle before returning. =20
+You might want to take a look at arch/arm/mach-omap2/clock3xxx_data.c.
 
-iEYEARECAAYFAk59fmwACgkQD27XaX1/VRs+gQCgiyUY8nT7azjCZk1Xg7WYGUcl
-Pg0AoKLsX4uEcNzH53EH7041q+4x64fX
-=OLDR
------END PGP SIGNATURE-----
+> >> +static struct omap_hwmod omap34xx_usb_tll_hs_hwmod =3D {
+> >> + =A0 =A0 .name =A0 =A0 =A0 =A0 =A0 =3D "usb_tll_hs",
+> >> + =A0 =A0 .class =A0 =A0 =A0 =A0 =A0=3D &omap34xx_usb_tll_hs_hwmod_cla=
+ss,
+> >> + =A0 =A0 .mpu_irqs =A0 =A0 =A0 =3D omap34xx_usb_tll_hs_irqs,
+> >> + =A0 =A0 .main_clk =A0 =A0 =A0 =3D "usbtll_ick",
+> >
+> > Is this really the main clock? =A0The main clock is the clock that driv=
+es
+> > the register logic in the IP block. =A0Looks to me, based on the integr=
+ation
+> > document in the 34xx TRM vZR, that this module has a functional clock.
+>=20
+> I can make
+>=20
+> main clock: usbtll_fck
+> interface clock: usbtll_ick.
+>=20
+> do you agree?
 
---k1lZvvs/B4yU6o8G--
+Doesn't that make more sense?
+
+
+- Paul
+--155748971-1671404457-1316848501=:22872--
