@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751729Ab1IXPvY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Sep 2011 11:51:24 -0400
-Received: from cuervo.frsf.utn.edu.ar ([190.114.206.130]:40192 "EHLO
-	mail.frsf.utn.edu.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751385Ab1IXPvV (ORCPT
+	id S1751797Ab1IXQQY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Sep 2011 12:16:24 -0400
+Received: from stargate.chelsio.com ([67.207.112.58]:19038 "EHLO
+	stargate.chelsio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751295Ab1IXQQX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Sep 2011 11:51:21 -0400
-X-Greylist: delayed 1589 seconds by postgrey-1.27 at vger.kernel.org; Sat, 24 Sep 2011 11:51:21 EDT
+	Sat, 24 Sep 2011 12:16:23 -0400
+From: Divy Le Ray <divy@chelsio.com>
+Subject: [PATCH net-2.6] cxgb4: Fix EEH on IBM P7IOC
+To: davem@davemloft.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, dm@chelsio.com,
+        swise@opengridcomputing.com, kxie@chelsio.com
+Date: Sat, 24 Sep 2011 09:11:31 -0700
+Message-ID: <20110924161130.18521.39558.stgit@speedy5.asicdesigners.com>
+User-Agent: StGIT/0.14.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 8bit
-Date: Sat, 24 Sep 2011 13:14:36 -0200
-From: Univerzita Karlova <service@karlin.mff.cuni.cz>
-To: undisclosed-recipients:;
-Subject: Administrative Message
-Organization: Univerzita Karlova
-Reply-To: <konss_001@mail.goo.ne.jp>
-Mail-Reply-To: <konss_001@mail.goo.ne.jp>
-Message-ID: <a8ac5af4035ea65f6cae84fce9a02ce6@frsf.utn.edu.ar>
-User-Agent: Roundcube Webmail/0.5.2
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Divy Le Ray <divy@chelsio.com>
+
+Fix EEH recovery on new P Series platform by
+requesting fundamental reset.
+
+Signed-off-by: Divy Le Ray <divy@chelsio.com>
+---
+
+ drivers/net/cxgb4/cxgb4_main.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
 
--- 
-Vážený karlin.mff.cuni.cz účastníka,
-
-UKONČENÍ vašeho karlin.mff.cuni.cz & související účet internetové pošty 
-jsou průběžně, jsme v současné době provádějí upgrade na náš systém tím, 
-že to naše oznámení, že jeden nebo více našich předplatitelů zavádějí 
-velmi silný virus do našeho systému a to ovlivňuje naši síť.
-
-Se snažíme zjistit konkrétní osoby. Z tohoto důvodu všichni účastníci 
-jsou povinni poskytnout své uživatelské jméno a heslo pro nás k ověření 
-a je zrušeno proti tomuto viru. Neplnění může vést k ukončení vašeho 
-účtu v následujících 48 hodin.
-
-Informace k odeslání;
-
-* Uživatelské jméno {E-mail}: (.................)(Povinné)
-* Password:(..........................)(Povinné)
-* Datum narození: (...........................)(volitelné)
-* Země nebo území: (...................)(volitelné)
-
-Doufal, že tě lépe sloužit.
-
-S pozdravem
-Univerzita Karlova
-********************************************************************************************
-Je to administrativní zprávy ze serveru karlin.mff.cuni.cz. To není 
-Nevyžádaná pošta. Čas od času na time,karlin.mff.cuni.cz server odešle 
-vás takových zpráv se sdělí důležité informace o předplatném.
-********************************************************************************************
-
+diff --git a/drivers/net/cxgb4/cxgb4_main.c b/drivers/net/cxgb4/cxgb4_main.c
+index c9957b7..b4efa29 100644
+--- a/drivers/net/cxgb4/cxgb4_main.c
++++ b/drivers/net/cxgb4/cxgb4_main.c
+@@ -3712,6 +3712,9 @@ static int __devinit init_one(struct pci_dev *pdev,
+ 		setup_debugfs(adapter);
+ 	}
+ 
++	/* PCIe EEH recovery on powerpc platforms needs fundamental reset */
++	pdev->needs_freset = 1;
++
+ 	if (is_offload(adapter))
+ 		attach_ulds(adapter);
+ 
 
