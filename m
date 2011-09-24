@@ -1,67 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751799Ab1IXGah (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Sep 2011 02:30:37 -0400
-Received: from utopia.booyaka.com ([72.9.107.138]:56220 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751063Ab1IXGaf (ORCPT
+	id S1751243Ab1IXGxj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Sep 2011 02:53:39 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:37573 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750766Ab1IXGxi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Sep 2011 02:30:35 -0400
-Date: Sat, 24 Sep 2011 00:30:33 -0600 (MDT)
-From: Paul Walmsley <paul@pwsan.com>
-To: "Munegowda, Keshava" <keshava_mgowda@ti.com>
-cc: parthab@india.ti.com, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        b-cousson@ti.com, balbi@ti.com, gadiyar@ti.com, sameo@linux.intel.com,
-        tony@atomide.com, khilman@ti.com, johnstul@us.ibm.com,
-        vishwanath.bs@ti.com
-Subject: Re: [PATCH 2/5 v11] arm: omap: usb: ehci and ohci hwmod structures
- for omap3
-In-Reply-To: <CAP05o4+Zc2z6sBOX_rQeoDQ9PneypcLRCyBbaaB2m+ZjeXZnaw@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1109240020510.22872@utopia.booyaka.com>
-References: <1316691479-1849-1-git-send-email-keshava_mgowda@ti.com> <1316691479-1849-2-git-send-email-keshava_mgowda@ti.com> <1316691479-1849-3-git-send-email-keshava_mgowda@ti.com> <alpine.DEB.2.00.1109221115320.10719@utopia.booyaka.com>
- <CAP05o4+Zc2z6sBOX_rQeoDQ9PneypcLRCyBbaaB2m+ZjeXZnaw@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Sat, 24 Sep 2011 02:53:38 -0400
+Date: Sat, 24 Sep 2011 08:53:32 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: rtc-linux@googlegroups.com
+Cc: Austin Boyle <Austin.Boyle@Aviatnet.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Joakim Tjernlund <Joakim.Tjernlund@transmode.se>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [rtc-linux] Re: [PATCH 2.6.39-rc7] RTC: rtc-ds1307 EEPROM
+ support for ds1388 chip
+Message-ID: <20110924065332.GA19721@pengutronix.de>
+References: <1306127917.3071.32.camel@pc786-ubu.gnet.global.vpn>
+ <1308024897.2992.39.camel@pc786-ubu.gnet.global.vpn>
+ <20110722145451.78390257.akpm@linux-foundation.org>
+ <1312151457.24642.5747.camel@pc786-ubu.gnet.global.vpn>
+ <20110923160445.68c3098e.akpm@google.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="k1lZvvs/B4yU6o8G"
+Content-Disposition: inline
+In-Reply-To: <20110923160445.68c3098e.akpm@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Sep 2011, Munegowda, Keshava wrote:
 
-> On Thu, Sep 22, 2011 at 11:31 PM, Paul Walmsley <paul@pwsan.com> wrote:
-> 
-> But the question arises here , why do we need these ehci and ohci as two 
-> different hwmods containing only irq and base address? It is required 
-> for future - to implement remote wakeup feature for ehci and ohci ports 
-> depending on irq-chain handler patches by Tero. Separate hwmods for ehci 
-> and ohci are needed to enable prcm chain-handler to uniquely identify 
-> the wakeup source as ehci or ohci and call only the corresponding 
-> interrupt handler. We will be using omap_hwmod_mux_init for ehci and 
-> ohci hwmods to enable I/O wakeup capability for respective IO-pads. 
-> Depending on the particular wakeup source(ehci/ohci), the corresponding 
-> ehci or ohci irq handler will be called.
-> 
-> If ehci and ohci are combined with usbhs hwmod as a single hwmod , then 
-> for every wakeup (either ehci or ohci port wakeup) only the first 
-> interrupt handler will be called (please look at the function 
-> omap_hwmod_mux_handle_irq of
-> 
-> /arch/arm/mach-omap2/mux.c file ; in tero's latest patch:
-> http://www.mail-archive.com/linux-omap@vger.kernel.org/msg53139.html)
-> , so in this
-> case, if ehci interrupt is the first interrupt , then even for ohci wakeup
-> , only ehci interrupt will get called; which will break the functionality.
+--k1lZvvs/B4yU6o8G
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Any reason why this couldn't be handled either by:
+On Fri, Sep 23, 2011 at 04:04:45PM -0700, Andrew Morton wrote:
+> On Mon, 1 Aug 2011 10:30:57 +1200
+> Austin Boyle <Austin.Boyle@Aviatnet.com> wrote:
+>=20
+> > [PATCH 3.0] RTC: EEPROM support for DS1388
+> >=20
+> > This patch adds support for different sized NVRAM, such as
+> > the 512 bytes of EEPROM on the DS1388 chip.
+>=20
+> This patch is causing problems in today's linux-next, with x86_64 allmodc=
+onfig:
 
-1. adding an IRQ number field to struct omap_hwmod_mux_info, and changing
-_omap_hwmod_mux_handle_irq() to raise that IRQ number?
+Sorry, I missed the patch so far. The whole approach is not correct.
 
-or 
+The EEPROM uses a different I2C slave address (0x69+0x6a) than the RTC (0x6=
+8).
+So, you should be able to use the ds1307-driver on address 0x68 (maybe with
+minor modifications, didn't check that) and the eeprom part using the
+at24-driver on address 0x69, selecting the 24c02-type. Despite saving redun=
+dant
+code, at24 handles peculiarities of EEPROMs much better. Can you please rep=
+ort
+if that works for you?
 
-2. using shared interrupts?
+Regards,
 
+   Wolfram
 
-- Paul
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--k1lZvvs/B4yU6o8G
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk59fmwACgkQD27XaX1/VRs+gQCgiyUY8nT7azjCZk1Xg7WYGUcl
+Pg0AoKLsX4uEcNzH53EH7041q+4x64fX
+=OLDR
+-----END PGP SIGNATURE-----
+
+--k1lZvvs/B4yU6o8G--
