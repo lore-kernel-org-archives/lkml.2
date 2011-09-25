@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752078Ab1IYLL4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Sep 2011 07:11:56 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:64218 "EHLO
+	id S1752113Ab1IYLQi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Sep 2011 07:16:38 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:60922 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751967Ab1IYLLz (ORCPT
+	with ESMTP id S1751894Ab1IYLQh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Sep 2011 07:11:55 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Thomas Meyer <thomas@m3y3r.de>
-Cc: gregkh@suse.de, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Support compat_ioctl get/set termios_locked
-Date: Sun, 25 Sep 2011 13:11:14 +0200
-Message-ID: <2272244.eQGJoCfPBm@wuerfel>
-User-Agent: KMail/4.7.1 (Linux/3.0.0-rc1nosema+; KDE/4.7.1; x86_64; ; )
-In-Reply-To: <1316854289.1696.6.camel@localhost.localdomain>
-References: <1316854289.1696.6.camel@localhost.localdomain>
+	Sun, 25 Sep 2011 07:16:37 -0400
+Date: Sun, 25 Sep 2011 13:16:41 +0200
+From: Heinz Diehl <htd@fritha.org>
+To: Con Kolivas <kernel@kolivas.org>
+Cc: Heinz Diehl <htd@fancy-poultry.org>, linux-kernel@vger.kernel.org
+Subject: Re: BFS cpu scheduler and skip list implementation
+Message-ID: <20110925111641.GA1903@fritha.org>
+References: <201109240945.58879.kernel@kolivas.org>
+ <20110925090417.GA19813@fancy-poultry.org>
+ <201109251913.28120.kernel@kolivas.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:98O5Eiiu7UN5maYSueL3oMnnhCtoz71OAMixDgAKTTP
- bQRTO4QyLok+D4oM5xm6yHaakWr48J8AmRt90i6p4Q4lcglLOd
- SeDIej2FK+FeOjq62jEwzQgGe9HUu31h3jSOuElA3HTDBolPN0
- bBSUq8lgfBG6+RJWX2B+fVHtBDuYP9KY4b4C/9ZG5pVt6geWT6
- CTNyFEO5aFqdGAdOrBiOu7vWdgoANN4mF4NmCYKBTn1hYzEFfn
- Sm7CbFWy+S165yFDX6sYKI7ujvKjDUeD+3Lm9sgmdmUjhscdpM
- D4mv1hMu2DepnZD3v+NgAdKadI1rm0TF3AhcvXmzYTiVYpiV5M
- KfMNI24J5UQQTYdaZvL4=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201109251913.28120.kernel@kolivas.org>
+Organization: private site
+X-OpenPGP-KeyID: 0xE9002778
+X-OpenPGP-Fingerprint: C661 CE20 7105 B0DB 49B5  CDB2 298C 801B E900 2778
+X-OpenPGP-URL: http://www.fritha.org/htd.asc
+User-Agent: Mutt/1.5.21+46 (b01d63af6fea) (2011-07-01)
+X-Provags-ID: V02:K0:YEgtPMwn4//DZ4GEctwoTo8r+cf4ETRg/QB68M3YjsS
+ sh5DAEH4vAS/9LamlIQtA+JJDnnzAP8yXiljrQyJ5nd/v6nAgl
+ 20NJN58lJGdgJdPTSlPp25x4j2/bp/fC+T3FtNcg5FhKD1TvEV
+ pZHiJkLyJICseYG2P1P6YjkFqNjbBG1j90JG3swFF+iILEPGYI
+ hDFJMvzXfuAZF271M5nsaS673/l1XfnLlhtI11mHbp73k6/VQ1
+ ewk8w7MolcqmzYLSk038hTJ3IO0XF6pBa9PfXY7F7VPxARIs3f
+ TKWSZZkA8r1mOKf3sojCO4oam8VHmGf2dblOhrVZlXcyN/cgaA
+ TrJhdtIuqlP1rLHv93gAAXX61sO8txWDl+SBM+ONY
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 24 September 2011 10:51:24 Thomas Meyer wrote:
-> When running a Fedora 15 (x86) on an x86_64 kernel, in the boot process
-> plymouthd complains about those two missing ioctls:
-> [    2.581783] ioctl32(plymouthd:186): Unknown cmd fd(10) cmd(00005457){t:'T';sz:0} arg(ffb6a5d0) on /dev/tty1
-> [    2.581803] ioctl32(plymouthd:186): Unknown cmd fd(10) cmd(00005456){t:'T';sz:0} arg(ffb6a680) on /dev/tty1
-> 
-> both ioctl functions work on the 'struct termios', which has the same
-> size (36 bytes) on x86 and x86_64, so it's just a matter of converting the
-> pointer from userland.
-> 
-> Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
+On 25.09.2011, Con Kolivas wrote: 
 
-Hi Thomas,
+> I'm guessing you did not configure in the BFS CPU scheduler, which is pretty 
+> much mandatory with this patch.
 
-This looks ok for n_tty, but the same commands are supported for some
-(all?) other tty line disciplines as well, and they remain broken
-after your patch.
+Of course, I did:
 
-I think it would be better to handle this in the common tty_compat_ioctl()
-function before calling into the line discipline's compat_ioctl function.
+[root@wildsau ~]# cat /usr/src/linux/.config | grep BFS
+CONFIG_SCHED_BFS=y
+CONFIG_HUGETLBFS=y
+CONFIG_BFS_FS=m
 
-It would also be nice to move similar commands from fs/compat_ioctl.c into
-the same place. The easiest solution would be to add the two missing command
-in fs/compat_ioctl.c, but I would prefer getting stuff out of there instead.
 
-	Arnd
