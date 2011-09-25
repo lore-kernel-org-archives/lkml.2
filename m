@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753253Ab1IYWIl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Sep 2011 18:08:41 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:55055 "EHLO ogre.sisk.pl"
+	id S1753272Ab1IYW6Y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Sep 2011 18:58:24 -0400
+Received: from home.keithp.com ([63.227.221.253]:56510 "EHLO keithp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751023Ab1IYWIj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Sep 2011 18:08:39 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Christoph <cr2005@u-club.de>
-Subject: Re: [PATCH] PM / Freezer: Freeze filesystems while freezing processes (v2)
-Date: Mon, 26 Sep 2011 00:10:50 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: Dave Chinner <david@fromorbit.com>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Pavel Machek <pavel@ucw.cz>, Nigel Cunningham <nigel@tuxonice.net>,
-        Christoph Hellwig <hch@infradead.org>, xfs@oss.sgi.com,
-        LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
-        "Theodore Ts'o" <tytso@mit.edu>, linux-fsdevel@vger.kernel.org
-References: <4E1C70AD.1010101@u-club.de> <201109251532.20025.rjw@sisk.pl> <4E7FA3C7.5050503@u-club.de>
-In-Reply-To: <4E7FA3C7.5050503@u-club.de>
+	id S1753248Ab1IYW6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Sep 2011 18:58:23 -0400
+From: Keith Packard <keithp@keithp.com>
+To: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: drm/i915: problems after closing/opening lid
+In-Reply-To: <gibou8tkk4.fsf@mx10.gouders.net>
+References: <gibou8tkk4.fsf@mx10.gouders.net>
+User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Sun, 25 Sep 2011 15:58:06 -0700
+Message-ID: <yunk48wkz5t.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201109260010.50649.rjw@sisk.pl>
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, September 25, 2011, Christoph wrote:
-> On 25.09.2011 15:32, Rafael J. Wysocki wrote:
-> > On Sunday, September 25, 2011, Christoph wrote:
-> >> test results of the patch below:
-> >> 
-> >> 1. real machine
-> >> 
-> >> suspends fine but on wakeup, after loading image: hard reset. nvidia
-> >> gpu => disabled compitz  => wakeup worked two times.
-> > 
-> > Hmm, so there's a separate bug related to NVidia I guess.
-> 
-> Maybe.
-> 
-> Just made another test: the machine (macbook) woke up, loaded image, thaw.
-> It got stuck at vt#1, displaying console with login. Cursor blinking, but
-> no (usb) keyboard or network enabled. Bricked?!!
-> 
-> 
-> On the other hand I've got another box with nvidia gpu:
-> 
-> debian5 32bit
-> 2.6.38.2+ #3 SMP Fri Apr 1
-> nvidia 260.19.36
-> 
-> It's up since I compiled the kernel: I use it twice a week and I kept it
-> freezed all the time. It was solid rock until today: hard reset on resume.
-> WTF? (I remember this version combo was stable on the macbook but the
-> kernel lacks a solid wireless driver).
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-If that's an x86_64 system, there is a known bug causing problems like
-this to happen.  There's a patch fixing it, but not conclusive:
-http://marc.info/?l=linux-kernel&m=131653513414314&w=2
+On Sun, 25 Sep 2011 22:48:43 +0200, Dirk Gouders <gouders@et.bocholt.fh-gel=
+senkirchen.de> wrote:
 
-Thanks,
-Rafael
+> I bisected this to commit 9aa73a51c91cb0d0af4caaa9823969c1a1179a12.
+> I played with the params that were inverted in that commit and if I
+> change both or one of them via command line, there is no problem, the
+> problem only occurs if both of them have the new values.
+
+You should be good if you run the drm-intel-fixes branch of my repo at
+
+        git://people.freedesktop.org/~keithp/linux
+
+That disables FBC on your Ironlake GPU.
+
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iD8DBQFOf7H+Qp8BWwlsTdMRAk1UAKCpsxPJUHvUqBSrEavOX6LJeA6GYACfSWwo
+e+zjEGFEUWgFNys/sW0o/9c=
+=oCAB
+-----END PGP SIGNATURE-----
+--=-=-=--
