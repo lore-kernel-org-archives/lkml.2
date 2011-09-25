@@ -1,51 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752753Ab1IYNhR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Sep 2011 09:37:17 -0400
-Received: from nm15-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.208]:26818 "HELO
-	nm15-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752539Ab1IYNhP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Sep 2011 09:37:15 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 167795.40146.bm@omp1004.mail.sp2.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type;
-  b=OgyIi3x+l0sHXCBGS7DiQ7jiDPH85OKUt6WOJbvx3UkR57+F+ser96PFftIpX4rohj/8tCBCDCgibkv9LFVOsdZ3FOp2NH9RXsQpbhSdkRRY6HvWUMiwa7mB9UFhL7VxfpfyWzPz8Sm0K5CGNYjEcTvNE4kTORjQVHSETfRvquw=;
-X-YMail-OSG: 5lLiL1MVM1lq88zw32VJt5SIafkfwtcM9Kccd8MEaWtyyWT
- zhnY6xXgsqM8oIF8VBcnLdG8TpMd5H6dm2BC11G5pN1qd_uWiPIqPO20Wsf_
- GZKYURfDRb2n4j.tqGrCei7_31LCMJU3vVFTv7UohZsR_O8dXs0upcAf56m7
- v2969niLvf08yXdcnzKx4N.tsVblO5DuL_Rkvd0hw2wxNeoRbTZzi6YYBsiL
- DhiGPz7vorc_yOKw49ILpKSt_yxSfR0na9tp5CZCqwzxfbV6nuL80vW1WItU
- 4YFiPtzDppBufQnFeYgkdgTFa9SS2ic54O7DVMNHOkYRF_uh4POA5QDrcjQr
- awnusVTmXSmU5WnhGlSTYRerAJS7Wlg8pIwm6odYXCL6hvYN4rGESQgVMvzx
- knjOumNrGjZuUpac1JB54du3fJ5R70xEFyAuvLOVEu6x2MJLriikOZjgT730
- Bo7YShEQHnQh6ojhjHU5.HUkdr5VnibQWAOcXl3QkLie4_x_zm_JVlC.6_4J
- fMcrFXJl092cW5hg38xMmiw3YIXDr0j1BswvrOoERbWdlBw--
-X-Mailer: YahooMailWebService/0.8.114.317681
-Message-ID: <1316957834.67111.YahooMailNeo@web130112.mail.mud.yahoo.com>
-Date: Sun, 25 Sep 2011 06:37:14 -0700 (PDT)
-From: Alex Davis <alex14641@yahoo.com>
-Reply-To: Alex Davis <alex14641@yahoo.com>
-Subject: Re:  Regression: i915 blank issue on kernel 3.1.0-rc3
-To: "terraluna977@gmail.com" <terraluna977@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+	id S1752784Ab1IYNh7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Sep 2011 09:37:59 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:54577 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752539Ab1IYNh6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Sep 2011 09:37:58 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Dave Chinner <david@fromorbit.com>
+Subject: [Update][PATCH] PM / Hibernate: Freeze kernel threads after preallocating memory
+Date: Sun, 25 Sep 2011 15:40:09 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc4+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Pavel Machek <pavel@ucw.cz>, Nigel Cunningham <nigel@tuxonice.net>,
+        Christoph Hellwig <hch@infradead.org>, Christoph <cr2005@u-club.de>,
+        xfs@oss.sgi.com, LKML <linux-kernel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
+        linux-fsdevel@vger.kernel.org
+References: <4E1C70AD.1010101@u-club.de> <20110807001446.GI3162@dastard> <201109250056.12545.rjw@sisk.pl>
+In-Reply-To: <201109250056.12545.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201109251540.09487.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
+There is a problem with the current ordering of hibernate code which
+leads to deadlocks in some filesystems' memory shrinkers.  Namely,
+some filesystems use freezable kernel threads that are inactive when
+the hibernate memory preallocation is carried out.  Those same
+filesystems use memory shrinkers that may be triggered by the
+hibernate memory preallocation.  If those memory shrinkers wait for
+the frozen kernel threads, the hibernate process deadlocks (this
+happens with XFS, for one example).
 
-I'm having the same problem.
+Apparently, it is not technically viable to redesign the filesystems
+in question to avoid the situation described above, so the only
+possible solution of this issue is to defer the freezing of kernel
+threads until the hibernate memory preallocation is done, which is
+implemented by this change.
 
-http://marc.info/?l=linux-kernel&m=131695739702141&w=2
+Unfortunately, this requires the memory preallocation to be done
+before the "prepare" stage of device freeze, so after this change the
+only way drivers can allocate additional memory for their freeze
+routines in a clean way is to use PM notifiers.
 
-Please keep me on the CC list for this thread.
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ Documentation/power/devices.txt |    4 ----
+ include/linux/freezer.h         |    4 +++-
+ kernel/power/hibernate.c        |   12 ++++++++----
+ kernel/power/power.h            |    3 ++-
+ kernel/power/process.c          |   30 ++++++++++++++++++++----------
+ 5 files changed, 33 insertions(+), 20 deletions(-)
 
-Thanks.
-
-
-I code, therefore I am
+Index: linux/kernel/power/process.c
+===================================================================
+--- linux.orig/kernel/power/process.c
++++ linux/kernel/power/process.c
+@@ -135,7 +135,7 @@ static int try_to_freeze_tasks(bool sig_
+ }
+ 
+ /**
+- *	freeze_processes - tell processes to enter the refrigerator
++ * freeze_processes - Signal user space processes to enter the refrigerator.
+  */
+ int freeze_processes(void)
+ {
+@@ -143,20 +143,30 @@ int freeze_processes(void)
+ 
+ 	printk("Freezing user space processes ... ");
+ 	error = try_to_freeze_tasks(true);
+-	if (error)
+-		goto Exit;
+-	printk("done.\n");
++	if (!error) {
++		printk("done.");
++		oom_killer_disable();
++	}
++	printk("\n");
++	BUG_ON(in_atomic());
++
++	return error;
++}
++
++/**
++ * freeze_kernel_threads - Make freezable kernel threads go to the refrigerator.
++ */
++int freeze_kernel_threads(void)
++{
++	int error;
+ 
+ 	printk("Freezing remaining freezable tasks ... ");
+ 	error = try_to_freeze_tasks(false);
+-	if (error)
+-		goto Exit;
+-	printk("done.");
++	if (!error)
++		printk("done.");
+ 
+-	oom_killer_disable();
+- Exit:
+-	BUG_ON(in_atomic());
+ 	printk("\n");
++	BUG_ON(in_atomic());
+ 
+ 	return error;
+ }
+Index: linux/include/linux/freezer.h
+===================================================================
+--- linux.orig/include/linux/freezer.h
++++ linux/include/linux/freezer.h
+@@ -49,6 +49,7 @@ extern int thaw_process(struct task_stru
+ 
+ extern void refrigerator(void);
+ extern int freeze_processes(void);
++extern int freeze_kernel_threads(void);
+ extern void thaw_processes(void);
+ 
+ static inline int try_to_freeze(void)
+@@ -171,7 +172,8 @@ static inline void clear_freeze_flag(str
+ static inline int thaw_process(struct task_struct *p) { return 1; }
+ 
+ static inline void refrigerator(void) {}
+-static inline int freeze_processes(void) { BUG(); return 0; }
++static inline int freeze_processes(void) { return -ENOSYS; }
++static inline int freeze_kernel_threads(void) { return -ENOSYS; }
+ static inline void thaw_processes(void) {}
+ 
+ static inline int try_to_freeze(void) { return 0; }
+Index: linux/kernel/power/power.h
+===================================================================
+--- linux.orig/kernel/power/power.h
++++ linux/kernel/power/power.h
+@@ -228,7 +228,8 @@ extern int pm_test_level;
+ #ifdef CONFIG_SUSPEND_FREEZER
+ static inline int suspend_freeze_processes(void)
+ {
+-	return freeze_processes();
++	int error = freeze_processes();
++	return error ? : freeze_kernel_threads();
+ }
+ 
+ static inline void suspend_thaw_processes(void)
+Index: linux/kernel/power/hibernate.c
+===================================================================
+--- linux.orig/kernel/power/hibernate.c
++++ linux/kernel/power/hibernate.c
+@@ -334,13 +334,17 @@ int hibernation_snapshot(int platform_mo
+ 	if (error)
+ 		goto Close;
+ 
+-	error = dpm_prepare(PMSG_FREEZE);
+-	if (error)
+-		goto Complete_devices;
+-
+ 	/* Preallocate image memory before shutting down devices. */
+ 	error = hibernate_preallocate_memory();
+ 	if (error)
++		goto Close;
++
++	error = freeze_kernel_threads();
++	if (error)
++		goto Close;
++
++	error = dpm_prepare(PMSG_FREEZE);
++	if (error)
+ 		goto Complete_devices;
+ 
+ 	suspend_console();
+Index: linux/Documentation/power/devices.txt
+===================================================================
+--- linux.orig/Documentation/power/devices.txt
++++ linux/Documentation/power/devices.txt
+@@ -279,10 +279,6 @@ When the system goes into the standby or
+ 	time.)  Unlike the other suspend-related phases, during the prepare
+ 	phase the device tree is traversed top-down.
+ 
+-	In addition to that, if device drivers need to allocate additional
+-	memory to be able to hadle device suspend correctly, that should be
+-	done in the prepare phase.
+-
+ 	After the prepare callback method returns, no new children may be
+ 	registered below the device.  The method may also prepare the device or
+ 	driver in some way for the upcoming system power transition (for
