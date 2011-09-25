@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751917Ab1IYI4K (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Sep 2011 04:56:10 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:36494 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751701Ab1IYI4I (ORCPT
+	id S1752000Ab1IYI4X (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Sep 2011 04:56:23 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:57690 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751492Ab1IYI4T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Sep 2011 04:56:08 -0400
+	Sun, 25 Sep 2011 04:56:19 -0400
 From: Gilad Ben-Yossef <gilad@benyossef.com>
 To: linux-kernel@vger.kernel.org
 Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
@@ -16,9 +16,9 @@ Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
         Chris Metcalf <cmetcalf@tilera.com>, linux-mm@kvack.org,
         Christoph Lameter <cl@linux-foundation.org>,
         Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>
-Subject: [PATCH 3/5] tile: Move tile to use generic on_each_cpu_mask
-Date: Sun, 25 Sep 2011 11:54:48 +0300
-Message-Id: <1316940890-24138-4-git-send-email-gilad@benyossef.com>
+Subject: [PATCH 5/5] slub: Only IPI CPUs that have per cpu obj to flush
+Date: Sun, 25 Sep 2011 11:54:50 +0300
+Message-Id: <1316940890-24138-6-git-send-email-gilad@benyossef.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1316940890-24138-1-git-send-email-gilad@benyossef.com>
 References: <1316940890-24138-1-git-send-email-gilad@benyossef.com>
@@ -26,8 +26,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The API is the same as the tile private one, so just remove
-the private version of the functions
+Try to send IPI to flush per cpu objects back to free lists
+to CPUs to seems to have such objects.
+
+The check which CPU to IPI is racy but we don't care since
+asking a CPU without per cpu objects to flush does no
+damage and as far as I can tell the flush_all by itself is
+racy against allocs on remote CPUs anyway, so if you meant
+the flush_all to be determinstic, you had to arrange for
+locking regardless.
 
 Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
 CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
@@ -39,65 +46,35 @@ CC: Christoph Lameter <cl@linux-foundation.org>
 CC: Pekka Enberg <penberg@kernel.org>
 CC: Matt Mackall <mpm@selenic.com>
 ---
- arch/tile/include/asm/smp.h |    7 -------
- arch/tile/kernel/smp.c      |   19 -------------------
- 2 files changed, 0 insertions(+), 26 deletions(-)
+ mm/slub.c |   15 ++++++++++++++-
+ 1 files changed, 14 insertions(+), 1 deletions(-)
 
-diff --git a/arch/tile/include/asm/smp.h b/arch/tile/include/asm/smp.h
-index 532124a..1aa759a 100644
---- a/arch/tile/include/asm/smp.h
-+++ b/arch/tile/include/asm/smp.h
-@@ -43,10 +43,6 @@ void evaluate_message(int tag);
- /* Boot a secondary cpu */
- void online_secondary(void);
+diff --git a/mm/slub.c b/mm/slub.c
+index 9f662d7..8baae30 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -1948,7 +1948,20 @@ static void flush_cpu_slab(void *d)
  
--/* Call a function on a specified set of CPUs (may include this one). */
--extern void on_each_cpu_mask(const struct cpumask *mask,
--			     void (*func)(void *), void *info, bool wait);
--
- /* Topology of the supervisor tile grid, and coordinates of boot processor */
- extern HV_Topology smp_topology;
- 
-@@ -91,9 +87,6 @@ void print_disabled_cpus(void);
- 
- #else /* !CONFIG_SMP */
- 
--#define on_each_cpu_mask(mask, func, info, wait)		\
--  do { if (cpumask_test_cpu(0, (mask))) func(info); } while (0)
--
- #define smp_master_cpu		0
- #define smp_height		1
- #define smp_width		1
-diff --git a/arch/tile/kernel/smp.c b/arch/tile/kernel/smp.c
-index c52224d..a44e103 100644
---- a/arch/tile/kernel/smp.c
-+++ b/arch/tile/kernel/smp.c
-@@ -87,25 +87,6 @@ void send_IPI_allbutself(int tag)
- 	send_IPI_many(&mask, tag);
+ static void flush_all(struct kmem_cache *s)
+ {
+-	on_each_cpu(flush_cpu_slab, s, 1);
++	cpumask_var_t cpus;
++	struct kmem_cache_cpu *c;
++	int cpu;
++
++	if (likely(zalloc_cpumask_var(&cpus, GFP_ATOMIC))) {
++		for_each_online_cpu(cpu) {
++			c = per_cpu_ptr(s->cpu_slab, cpu);
++			if (c && c->page)
++				cpumask_set_cpu(cpu, cpus);
++		}
++		on_each_cpu_mask(cpus, flush_cpu_slab, s, 1);
++		free_cpumask_var(cpus);
++	} else
++		on_each_cpu(flush_cpu_slab, s, 1);
  }
  
--
--/*
-- * Provide smp_call_function_mask, but also run function locally
-- * if specified in the mask.
-- */
--void on_each_cpu_mask(const struct cpumask *mask, void (*func)(void *),
--		      void *info, bool wait)
--{
--	int cpu = get_cpu();
--	smp_call_function_many(mask, func, info, wait);
--	if (cpumask_test_cpu(cpu, mask)) {
--		local_irq_disable();
--		func(info);
--		local_irq_enable();
--	}
--	put_cpu();
--}
--
--
  /*
-  * Functions related to starting/stopping cpus.
-  */
 -- 
 1.7.0.4
 
