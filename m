@@ -1,66 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753211Ab1IYVaB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Sep 2011 17:30:01 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:10198 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752840Ab1IYVaA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Sep 2011 17:30:00 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=subject:to:from:cc:date:message-id:user-agent:
-	mime-version:content-type:content-transfer-encoding:x-system-of-record;
-	b=rguXGr3pYNRi0hbTV0lgMxqZs/UVSvHLccLPXV6rnoWSeaf2L8xzzNKAF/uucTioy
-	eLI2Ylc/MGKPF8AQ5lnIw==
-Subject: [PATCH] x86: mpparse: fix mp_bus_not_pci handling
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Dan McGrath <troubledaemon@gmail.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, stable@kernel.org#2.6.26+,
-        Jonathan Nieder <jrnieder@gmail.com>,
-        Alexey Starikovskiy <astarikovskiy@suse.de>
-Date: Sun, 25 Sep 2011 15:29:00 -0600
-Message-ID: <20110925212900.10713.67058.stgit@bhelgaas.mtv.corp.google.com>
-User-Agent: StGit/0.15
+	id S1753236Ab1IYV5g (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Sep 2011 17:57:36 -0400
+Received: from mail.uscreen.net ([62.67.233.10]:41928 "EHLO mail.uscreen.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751023Ab1IYV5f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Sep 2011 17:57:35 -0400
+Message-ID: <4E7FA3C7.5050503@u-club.de>
+Date: Sun, 25 Sep 2011 23:57:27 +0200
+From: Christoph <cr2005@u-club.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110818 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Dave Chinner <david@fromorbit.com>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Pavel Machek <pavel@ucw.cz>, Nigel Cunningham <nigel@tuxonice.net>,
+        Christoph Hellwig <hch@infradead.org>, xfs@oss.sgi.com,
+        LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
+        "Theodore Ts'o" <tytso@mit.edu>, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] PM / Freezer: Freeze filesystems while freezing processes
+ (v2)
+References: <4E1C70AD.1010101@u-club.de> <201109250056.12545.rjw@sisk.pl> <4E7F04B7.4020002@u-club.de> <201109251532.20025.rjw@sisk.pl>
+In-Reply-To: <201109251532.20025.rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-2
 Content-Transfer-Encoding: 7bit
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dan bisected a Dell PowerEdge 4200 boot regression to commit f8924e770.
-Prior to that commit, 32-bit kernels set mp_bus_not_pci for all buses
-except PCI.  Afterwards, we set mp_bus_not_pci only for ISA.  But ISA is
-not the only non-PCI bus, so it's better to always set mp_bus_not_pci
-and clear it only for PCI.
+On 25.09.2011 15:32, Rafael J. Wysocki wrote:
+> On Sunday, September 25, 2011, Christoph wrote:
+>> test results of the patch below:
+>> 
+>> 1. real machine
+>> 
+>> suspends fine but on wakeup, after loading image: hard reset. nvidia
+>> gpu => disabled compitz  => wakeup worked two times.
+> 
+> Hmm, so there's a separate bug related to NVidia I guess.
 
-The workaround was to boot with "noapic".  Dan verified that with this
-patch, his system boots without "noapic".
+Maybe.
 
-Reference: http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=586494
-Reported-and-tested-by: Dan McGrath <troubledaemon@gmail.com>
-Cc: Alexey Starikovskiy <astarikovskiy@suse.de>
-Cc: stable@kernel.org # 2.6.26+
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
----
- arch/x86/kernel/mpparse.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Just made another test: the machine (macbook) woke up, loaded image, thaw.
+It got stuck at vt#1, displaying console with login. Cursor blinking, but
+no (usb) keyboard or network enabled. Bricked?!!
 
-diff --git a/arch/x86/kernel/mpparse.c b/arch/x86/kernel/mpparse.c
-index 9103b89..0741b062 100644
---- a/arch/x86/kernel/mpparse.c
-+++ b/arch/x86/kernel/mpparse.c
-@@ -95,8 +95,8 @@ static void __init MP_bus_info(struct mpc_bus *m)
- 	}
- #endif
- 
-+	set_bit(m->busid, mp_bus_not_pci);
- 	if (strncmp(str, BUSTYPE_ISA, sizeof(BUSTYPE_ISA) - 1) == 0) {
--		set_bit(m->busid, mp_bus_not_pci);
- #if defined(CONFIG_EISA) || defined(CONFIG_MCA)
- 		mp_bus_id_to_type[m->busid] = MP_BUS_ISA;
- #endif
 
+On the other hand I've got another box with nvidia gpu:
+
+debian5 32bit
+2.6.38.2+ #3 SMP Fri Apr 1
+nvidia 260.19.36
+
+It's up since I compiled the kernel: I use it twice a week and I kept it
+freezed all the time. It was solid rock until today: hard reset on resume.
+WTF? (I remember this version combo was stable on the macbook but the
+kernel lacks a solid wireless driver).
+
+There are a stupid situation where you can't debug. What else can go
+wrong? This is off topic but it's a cute kernel crash while I gave the
+nouveau driver a chance:
+
+http://events.ccc.de/camp/2011/wiki/File:Dome22.jpg
+
+chris
+
+http://events.ccc.de/camp/2011/wiki/DomeTent
+
+> 
+>> 2. virtualbox / stress test / xfs and ext4
+>> 
+>> on 3rd resume, it booted up "normal" like this:
+>> 
+>> [    3.351813] Freeing unused kernel memory: 568k freed [
+>> 3.460973] Freeing unused kernel memory: 284k freed
+>> 
+>> [   17.328356] PM: Preparing processes for restore.
+>> 
+
+...
