@@ -1,69 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752571Ab1IYM7w (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Sep 2011 08:59:52 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:60818 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752363Ab1IYM7u convert rfc822-to-8bit (ORCPT
+	id S1752585Ab1IYNGc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Sep 2011 09:06:32 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:59790 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752363Ab1IYNGb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Sep 2011 08:59:50 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=aKIG7wupdW+HZ9Ic2m4iIYxjomwK+gY5pUsw5rZgK3SDZY6pIOlnPp3gSET5X0kGC
-	ROVpluwJSZwIDqLSXom8A==
+	Sun, 25 Sep 2011 09:06:31 -0400
+Date: Sun, 25 Sep 2011 15:06:25 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, Dipankar Sarma <dipankar@in.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: Re: linux-next-20110923: warning kernel/rcutree.c:1833
+Message-ID: <20110925130622.GA9205@somewhere.redhat.com>
+References: <20110925002409.GA24220@shutemov.name>
+ <20110925050826.GC2995@linux.vnet.ibm.com>
+ <20110925112637.GA19298@shutemov.name>
 MIME-Version: 1.0
-In-Reply-To: <1316818998-30711-3-git-send-email-sjg@chromium.org>
-References: <1316818998-30711-1-git-send-email-sjg@chromium.org> <1316818998-30711-3-git-send-email-sjg@chromium.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Sun, 25 Sep 2011 06:59:27 -0600
-Message-ID: <CAErSpo6PFPLRAfPd_myJXrGdYofOR82YXy6U4YZEfp-bfXhQuA@mail.gmail.com>
-Subject: Re: [RFC PATCH 2/3] bootstage: Insert bootstage_mark to record timing
- for bootup.
-To: Simon Glass <sjg@chromium.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Da Zheng <zhengda@chromium.org>, Da Zheng <zhengda@chromium.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110925112637.GA19298@shutemov.name>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 23, 2011 at 5:03 PM, Simon Glass <sjg@chromium.org> wrote:
-> From: Da Zheng <zhengda@chromium.org>
->
-> From: Da Zheng <zhengda@chromium.org>
->
-> This inserts calls to bootstage_mark() to timestamp the kernel moving
-> between the different initcall levels.
->
-> Signed-off-by: Da Zheng <zhengda@chromium.com>
-> ---
->  init/bootstage.c |   49 +++++++++++++++++++++++++++++++++++++++++++++++++
->  init/main.c      |    7 +++++++
->  2 files changed, 56 insertions(+), 0 deletions(-)
->
-> diff --git a/init/bootstage.c b/init/bootstage.c
-> index 79e9761..6f4668f 100644
-> --- a/init/bootstage.c
-> +++ b/init/bootstage.c
-> @@ -226,3 +226,52 @@ static int __init bootstage_init(void)
->  }
->
->  postcore_initcall(bootstage_init);
-> +
-> +static int __init post_core_initcall(void)
-> +{
-> +       bootstage_mark("core_initcall");
-> +       return 0;
-> +}
-> +core_initcall_sync(post_core_initcall);
+On Sun, Sep 25, 2011 at 02:26:37PM +0300, Kirill A. Shutemov wrote:
+> On Sat, Sep 24, 2011 at 10:08:26PM -0700, Paul E. McKenney wrote:
+> > On Sun, Sep 25, 2011 at 03:24:09AM +0300, Kirill A. Shutemov wrote:
+> > > [   29.974288] ------------[ cut here ]------------
+> > > [   29.974308] WARNING: at /home/kas/git/public/linux-next/kernel/rcutree.c:1833 rcu_needs_cpu+0xff
+> > > [   29.974316] Hardware name: HP EliteBook 8440p
+> > > [   29.974321] Modules linked in: ip6table_filter ip6_tables ebtable_nat ebtables ipt_MASQUERADE iple_mangle xt_tcpudp iptable_filter ip_tables x_tables bridge stp llc rfcomm bnep acpi_cpufreq mperfckd fscache auth_rpcgss nfs_acl sunrpc ext2 loop kvm_intel kvm snd_hda_codec_hdmi snd_hda_codec_idtideodev media v4l2_compat_ioctl32 snd_seq bluetooth drm_kms_helper snd_timer tpm_infineon snd_seq_drt tpm_tis hp_accel intel_ips soundcore lis3lv02d tpm rfkill i2c_algo_bit snd_page_alloc i2c_core c16 sha256_generic aesni_intel cryptd aes_x86_64 aes_generic cbc dm_crypt dm_mod sg sr_mod sd_mod cd thermal_sys [last unloaded: scsi_wait_scan]
+> > > [   29.974517] Pid: 0, comm: kworker/0:1 Not tainted 3.1.0-rc7-next-20110923 #2
+> > > [   29.974521] Call Trace:
+> > > [   29.974525]  <IRQ>  [<ffffffff8104d72a>] warn_slowpath_common+0x7a/0xb0
+> > > [   29.974540]  [<ffffffff8104d775>] warn_slowpath_null+0x15/0x20
+> > > [   29.974546]  [<ffffffff810bffdf>] rcu_needs_cpu+0xff/0x110
+> > > [   29.974555]  [<ffffffff8108396f>] tick_nohz_stop_sched_tick+0x13f/0x3d0
+> > > [   29.974563]  [<ffffffff814329c0>] ? notifier_call_chain+0x70/0x70
+> > > [   29.974571]  [<ffffffff81055622>] irq_exit+0xa2/0xd0
+> > > [   29.974578]  [<ffffffff8101ee75>] smp_apic_timer_interrupt+0x85/0x1c0
+> > > [   29.974585]  [<ffffffff814329c0>] ? notifier_call_chain+0x70/0x70
+> > > [   29.974592]  [<ffffffff81436e1e>] apic_timer_interrupt+0x6e/0x80
+> > > [   29.974596]  <EOI>  [<ffffffff81297abd>] ? acpi_hw_read+0x4a/0x51
+> > > [   29.974609]  [<ffffffff81087a07>] ? lock_acquire+0xa7/0x160
+> > > [   29.974615]  [<ffffffff814329c0>] ? notifier_call_chain+0x70/0x70
+> > > [   29.974622]  [<ffffffff81432a16>] __atomic_notifier_call_chain+0x56/0xb0
+> > > [   29.974631]  [<ffffffff814329c0>] ? notifier_call_chain+0x70/0x70
+> > > [   29.974642]  [<ffffffff8130ebb6>] ? cpuidle_idle_call+0x106/0x350
+> > > [   29.974651]  [<ffffffff81432a81>] atomic_notifier_call_chain+0x11/0x20
+> > > [   29.974661]  [<ffffffff81001233>] cpu_idle+0xe3/0x120
+> > > [   29.974672]  [<ffffffff8141e34b>] start_secondary+0x1fd/0x204
+> > > [   29.974681] ---[ end trace 6c1d44095a3bb7c5 ]---
+> > 
+> > Do the following help?
+> > 
+> > 	https://lkml.org/lkml/2011/9/17/47
+> > 	https://lkml.org/lkml/2011/9/17/45
+> > 	https://lkml.org/lkml/2011/9/17/43
+> 
+> Yes. Thanks.
 
-I'm sure you considered just instrumenting do_one_initcall() rather
-than adding these individual initcall marks?  That would get you a lot
-more timestamps (maybe too many), and would help identify individual
-drivers, which I suspect will be common offenders.
+I believe that doesn't really fix the issue. But the warning is not
+easy to trigger. You simply haven't hit it by chance after applying
+the patches.
 
-Bjorn
+This happens when the idle notifier callchain is called in idle
+and is interrupted in the middle. So we have called rcu_read_lock()
+but haven't yet released with rcu_read_unlock(), and in the end
+of the interrupt we call tick_nohz_stop_sched_tick() -> rcu_needs_cpu()
+which is illegal while in an rcu read side critical section.
+
+No idea how to solve that. Any use of RCU after the tick gets stopped
+is concerned here. If it is really required that rcu_needs_cpu() can't
+be called in an rcu read side critical sectionn then it's not going
+to be easy to fix.
+
+But I don't really understand that requirement. rcu_needs_cpu() simply
+checks if we don't have callbacks to handle. So I don't understand how
+read side is concerned. It's rather the write side.
+The rule I can imagine instead is: don't call __call_rcu() once the tick is
+stopped.
+
+But I'm certainly missing something.
+
+Paul?
