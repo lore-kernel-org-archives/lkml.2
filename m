@@ -1,40 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751973Ab1IYJvd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Sep 2011 05:51:33 -0400
-Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:3035 "EHLO
-	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751762Ab1IYJvc (ORCPT
+	id S1752007Ab1IYKqe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Sep 2011 06:46:34 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:41761 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751149Ab1IYKqd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Sep 2011 05:51:32 -0400
-Message-ID: <4E7EFA42.4030608@hetnet.nl>
-Date: Sun, 25 Sep 2011 11:54:10 +0200
-From: Henk de Groot <henk.de.groot@hetnet.nl>
-Reply-To: henk.de.groot@hetnet.nl
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
+	Sun, 25 Sep 2011 06:46:33 -0400
+Message-ID: <4E7F034C.7090609@gmail.com>
+Date: Sun, 25 Sep 2011 16:02:44 +0530
+From: Navin P <zicrim@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.21) Gecko/20110831 Lightning/1.0b2 Thunderbird/3.1.13
 MIME-Version: 1.0
-To: David Kilroy <kilroyd@googlemail.com>
-CC: linux-kernel@vger.kernel.org, greg@kroah.com
-Subject: Re: [PATCH 0/4] staging: wlags49_h2: WEXT cleanups
-References: <1316935821-6980-1-git-send-email-kilroyd@googlemail.com>
-In-Reply-To: <1316935821-6980-1-git-send-email-kilroyd@googlemail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: linux-kernel@vger.kernel.org
+CC: marek.vasut@gmail.com, kernel-janitors@vger.kernel.org
+Subject: [PATCH] Remove const keyword from matrix_keypad.c
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 25 Sep 2011 09:51:29.0955 (UTC) FILETIME=[B3295F30:01CC7B68]
-X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Op 25-9-2011 9:30, David Kilroy schreef:
-> These are some fixes found while verifying the driver has been updated
-> for changes between WEXT v15 and 21. IOCTLs used for WEP look like
-> they should work. WPA related IOCTLS look like more work is needed
-> (but WPA is known to be be broken with this driver).
+ Remove the const keyword as SIMPLE_DEV_PMS_OPS already defines a const struct.
+ Signed-off-by: Navin P <zicrim@gmail.com>
 
-Patches applied to test driver (only 3/4 failed because I applied the 
-v15->v21 patch before). Driver compiles and runs okay using WEP as it did 
-before. Tested on kernel 2.6.38-11-generic #50-Ubuntu.
+---
+ drivers/input/keyboard/matrix_keypad.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Henk.
+diff --git a/drivers/input/keyboard/matrix_keypad.c b/drivers/input/keyboard/matrix_keypad.c
+index b02e426..c127658 100644
+--- a/drivers/input/keyboard/matrix_keypad.c
++++ b/drivers/input/keyboard/matrix_keypad.c
+@@ -294,7 +294,7 @@ static int matrix_keypad_resume(struct device *dev)
+ 	return 0;
+ }
+ 
+-static const SIMPLE_DEV_PM_OPS(matrix_keypad_pm_ops,
++static SIMPLE_DEV_PM_OPS(matrix_keypad_pm_ops,
+ 				matrix_keypad_suspend, matrix_keypad_resume);
+ #endif
+ 
+-- 
+1.7.0.4
+
 
