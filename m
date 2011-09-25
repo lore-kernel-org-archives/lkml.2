@@ -1,41 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752208Ab1IYLTO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Sep 2011 07:19:14 -0400
-Received: from home.kolivas.org ([59.167.196.135]:42494 "EHLO mine.kolivas.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751202Ab1IYLTN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Sep 2011 07:19:13 -0400
-From: Con Kolivas <kernel@kolivas.org>
-To: Heinz Diehl <htd@fritha.org>
-Subject: Re: BFS cpu scheduler and skip list implementation
-Date: Sun, 25 Sep 2011 21:19:10 +1000
-User-Agent: KMail/1.13.6 (Linux/2.6.38.4-ck1; KDE/4.6.2; x86_64; ; )
-Cc: Heinz Diehl <htd@fancy-poultry.org>, linux-kernel@vger.kernel.org
-References: <201109240945.58879.kernel@kolivas.org> <201109251913.28120.kernel@kolivas.org> <20110925111641.GA1903@fritha.org>
-In-Reply-To: <20110925111641.GA1903@fritha.org>
+	id S1752300Ab1IYLXM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Sep 2011 07:23:12 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:48432 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751149Ab1IYLXL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Sep 2011 07:23:11 -0400
+Message-ID: <4E7F0BE2.5070707@gmail.com>
+Date: Sun, 25 Sep 2011 16:39:22 +0530
+From: Navin P <zicrim@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.21) Gecko/20110831 Lightning/1.0b2 Thunderbird/3.1.13
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: linux-kernel@vger.kernel.org
+CC: kernel-janitors@vger.kernel.org, sameo@linux.intel.com,
+        rabin.vincent@stericsson.com, hanumath.prasad@stericsson.com
+Subject: [PATCH] Remove redundant const in tc3589x.c
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201109252119.10798.kernel@kolivas.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 25 Sep 2011 21:16:41 Heinz Diehl wrote:
-> On 25.09.2011, Con Kolivas wrote:
-> > I'm guessing you did not configure in the BFS CPU scheduler, which is
-> > pretty much mandatory with this patch.
-> 
-> Of course, I did:
-> 
-> [root@wildsau ~]# cat /usr/src/linux/.config | grep BFS
-> CONFIG_SCHED_BFS=y
-> CONFIG_HUGETLBFS=y
-> CONFIG_BFS_FS=m
+ Remove the redundant const as SIMPLE_DEV_PM_OPS defines const
+ struct.
+ Signed-off-by: Navin P <zicrim@gmail.com>
 
-Can you send me your config then please? Offlist is fine.
+---
+ drivers/mfd/tc3589x.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
+diff --git a/drivers/mfd/tc3589x.c b/drivers/mfd/tc3589x.c
+index c27e515..e87020f 100644
+--- a/drivers/mfd/tc3589x.c
++++ b/drivers/mfd/tc3589x.c
+@@ -385,7 +385,7 @@ static int tc3589x_resume(struct device *dev)
+ 	return ret;
+ }
+ 
+-static const SIMPLE_DEV_PM_OPS(tc3589x_dev_pm_ops, tc3589x_suspend,
++static SIMPLE_DEV_PM_OPS(tc3589x_dev_pm_ops, tc3589x_suspend,
+ 						tc3589x_resume);
+ 
+ static const struct i2c_device_id tc3589x_id[] = {
 -- 
--ck
+1.7.0.4
+
+
