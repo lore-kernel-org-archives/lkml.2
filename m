@@ -1,35 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753151Ab1IYTIZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Sep 2011 15:08:25 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:54565 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752997Ab1IYTIN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Sep 2011 15:08:13 -0400
+	id S1753154Ab1IYUJs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Sep 2011 16:09:48 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:49535 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752418Ab1IYUJr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Sep 2011 16:09:47 -0400
+Date: Sun, 25 Sep 2011 22:09:42 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Wizard <wizarddewhite@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: Seems the comment of find_next_system_ram() is not exact
+Message-ID: <20110925200942.GA23489@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Wizard <wizarddewhite@gmail.com>, linux-kernel@vger.kernel.org,
+	KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+References: <CAOkaeLJTeewFWpHCVBqNwmuL7nEbFYnrQ86SQOO7fVg_Uc3Q4Q@mail.gmail.com>
+ <20110925094222.GA11289@liondog.tnic>
+ <CAOkaeLJHE-BVM+KOpB5hd0Jd_wyk0-XY=Qhzk+0j_U9opCbr-g@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <6aa9922954a7119f0199d80e29c3edc7885b8e40.1316789582.git.andriy.shevchenko@linux.intel.com>
-References: <ae9ebfd216b4560d885e3b437d98b93b78e45c1c.1316787913.git.andriy.shevchenko@linux.intel.com>
-	<6aa9922954a7119f0199d80e29c3edc7885b8e40.1316789582.git.andriy.shevchenko@linux.intel.com>
-Date: Sun, 25 Sep 2011 22:08:12 +0300
-X-Google-Sender-Auth: Ib_GMKArEz0BWtWbJbRzms97VU0
-Message-ID: <CAOJsxLHv3nMy0-+7Ba2n-EGYdeaS7jvHYoz1n+CY29q4NWRbEg@mail.gmail.com>
-Subject: Re: [RFC][PATCHv2] tools: kvm: don't use custom strtoul for hex numbers
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, KVM General <kvm@vger.kernel.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        Sasha Levin <levinsasha928@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAOkaeLJHE-BVM+KOpB5hd0Jd_wyk0-XY=Qhzk+0j_U9opCbr-g@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 23, 2011 at 5:53 PM, Andy Shevchenko
-<andriy.shevchenko@linux.intel.com> wrote:
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> Cc: Pekka Enberg <penberg@kernel.org>
-> Cc: kvm@vger.kernel.org
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+On Sun, Sep 25, 2011 at 11:02:47PM +0800, Wizard wrote:
 
-Applied, thanks!
+Hi,
+
+please do not top-post when replying to messages.
+
+> Thanks for your reply and for your suggestion to use "git annotate".
+> I learned a lot from you.
+> 
+> I see the commit by KAMEZAWA. While still not know why he change
+> code this way to cover the overlap case.
+> 
+> I find the function is introduced in 2842f11419704f8707fffc82e10d2263427fc130.
+> While the mm/memory_hotplug.c is chaged during this period.
+> If I want to view the code at that moment, I should use git checkout
+> 2842f11419704f8707fffc82e10d2263427fc130?
+
+No need, you can simply do
+
+git show 2842f11419704f8707fffc82e10d2263427fc130:kernel/resource.c
+
+as with every other git commit and file tracked by git.
+
+HTH.
+
+-- 
+Regards/Gruss,
+    Boris.
