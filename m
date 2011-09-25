@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751854Ab1IYI4E (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Sep 2011 04:56:04 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:52423 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751808Ab1IYI4C (ORCPT
+	id S1751796Ab1IYIz5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Sep 2011 04:55:57 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:57690 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751756Ab1IYIz4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Sep 2011 04:56:02 -0400
+	Sun, 25 Sep 2011 04:55:56 -0400
 From: Gilad Ben-Yossef <gilad@benyossef.com>
 To: linux-kernel@vger.kernel.org
 Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
@@ -16,9 +16,9 @@ Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
         Chris Metcalf <cmetcalf@tilera.com>, linux-mm@kvack.org,
         Christoph Lameter <cl@linux-foundation.org>,
         Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>
-Subject: [PATCH 2/5] arm: Move arm over to generic on_each_cpu_mask
-Date: Sun, 25 Sep 2011 11:54:47 +0300
-Message-Id: <1316940890-24138-3-git-send-email-gilad@benyossef.com>
+Subject: [PATCH 1/5] smp: Introduce a generic on_each_cpu_mask function
+Date: Sun, 25 Sep 2011 11:54:46 +0300
+Message-Id: <1316940890-24138-2-git-send-email-gilad@benyossef.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1316940890-24138-1-git-send-email-gilad@benyossef.com>
 References: <1316940890-24138-1-git-send-email-gilad@benyossef.com>
@@ -26,7 +26,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Note the generic version has the mask as first parameter
+on_each_cpu_mask calls a function on processors specified my cpumask,
+which may include the local processor.
+
+All the limitation specified in smp_call_function_many apply.
 
 Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
 CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
@@ -38,61 +41,70 @@ CC: Christoph Lameter <cl@linux-foundation.org>
 CC: Pekka Enberg <penberg@kernel.org>
 CC: Matt Mackall <mpm@selenic.com>
 ---
- arch/arm/kernel/smp_tlb.c |   20 +++++---------------
- 1 files changed, 5 insertions(+), 15 deletions(-)
+ include/linux/smp.h |   14 ++++++++++++++
+ kernel/smp.c        |   20 ++++++++++++++++++++
+ 2 files changed, 34 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/kernel/smp_tlb.c b/arch/arm/kernel/smp_tlb.c
-index 7dcb352..02c5d2c 100644
---- a/arch/arm/kernel/smp_tlb.c
-+++ b/arch/arm/kernel/smp_tlb.c
-@@ -13,18 +13,6 @@
- #include <asm/smp_plat.h>
- #include <asm/tlbflush.h>
- 
--static void on_each_cpu_mask(void (*func)(void *), void *info, int wait,
--	const struct cpumask *mask)
--{
--	preempt_disable();
--
--	smp_call_function_many(mask, func, info, wait);
--	if (cpumask_test_cpu(smp_processor_id(), mask))
--		func(info);
--
--	preempt_enable();
--}
--
- /**********************************************************************/
+diff --git a/include/linux/smp.h b/include/linux/smp.h
+index 8cc38d3..02a8377 100644
+--- a/include/linux/smp.h
++++ b/include/linux/smp.h
+@@ -102,6 +102,13 @@ static inline void call_function_init(void) { }
+ int on_each_cpu(smp_call_func_t func, void *info, int wait);
  
  /*
-@@ -87,7 +75,7 @@ void flush_tlb_all(void)
- void flush_tlb_mm(struct mm_struct *mm)
- {
- 	if (tlb_ops_need_broadcast())
--		on_each_cpu_mask(ipi_flush_tlb_mm, mm, 1, mm_cpumask(mm));
-+		on_each_cpu_mask(mm_cpumask(mm), ipi_flush_tlb_mm, mm, 1);
- 	else
- 		local_flush_tlb_mm(mm);
++ * Call a function on processors specified by mask, which might include
++ * the local one.
++ */
++void on_each_cpu_mask(const struct cpumask *mask, void (*func)(void *),
++		void *info, bool wait);
++
++/*
+  * Mark the boot cpu "online" so that it can call console drivers in
+  * printk() and can access its per-cpu storage.
+  */
+@@ -132,6 +139,13 @@ static inline int up_smp_call_function(smp_call_func_t func, void *info)
+ 		local_irq_enable();		\
+ 		0;				\
+ 	})
++#define on_each_cpu_mask(mask, func, info, wait) \
++	if (cpumask_test_cpu(0, (mask))) {	\
++		local_irq_disable();		\
++		func(info);			\
++		local_irq_enable();		\
++	}
++
+ static inline void smp_send_reschedule(int cpu) { }
+ #define num_booting_cpus()			1
+ #define smp_prepare_boot_cpu()			do {} while (0)
+diff --git a/kernel/smp.c b/kernel/smp.c
+index fb67dfa..df37c08 100644
+--- a/kernel/smp.c
++++ b/kernel/smp.c
+@@ -701,3 +701,23 @@ int on_each_cpu(void (*func) (void *info), void *info, int wait)
+ 	return ret;
  }
-@@ -98,7 +86,8 @@ void flush_tlb_page(struct vm_area_struct *vma, unsigned long uaddr)
- 		struct tlb_args ta;
- 		ta.ta_vma = vma;
- 		ta.ta_start = uaddr;
--		on_each_cpu_mask(ipi_flush_tlb_page, &ta, 1, mm_cpumask(vma->vm_mm));
-+		on_each_cpu_mask(mm_cpumask(vma->vm_mm), ipi_flush_tlb_page,
-+					&ta, 1);
- 	} else
- 		local_flush_tlb_page(vma, uaddr);
- }
-@@ -121,7 +110,8 @@ void flush_tlb_range(struct vm_area_struct *vma,
- 		ta.ta_vma = vma;
- 		ta.ta_start = start;
- 		ta.ta_end = end;
--		on_each_cpu_mask(ipi_flush_tlb_range, &ta, 1, mm_cpumask(vma->vm_mm));
-+		on_each_cpu_mask(mm_cpumask(vma->vm_mm), ipi_flush_tlb_range,
-+					&ta, 1);
- 	} else
- 		local_flush_tlb_range(vma, start, end);
- }
+ EXPORT_SYMBOL(on_each_cpu);
++
++/*
++ * Call a function on processors specified by cpumask, which may include
++ * the local processor. All the limitation specified in smp_call_function_many
++ * apply.
++ */
++void on_each_cpu_mask(const struct cpumask *mask, void (*func)(void *),
++			void *info, bool wait)
++{
++	int cpu = get_cpu();
++
++	smp_call_function_many(mask, func, info, wait);
++	if (cpumask_test_cpu(cpu, mask)) {
++		local_irq_disable();
++		func(info);
++		local_irq_enable();
++	}
++	put_cpu();
++}
++EXPORT_SYMBOL(on_each_cpu_mask);
 -- 
 1.7.0.4
 
