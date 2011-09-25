@@ -1,49 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752300Ab1IYLXM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Sep 2011 07:23:12 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:48432 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751149Ab1IYLXL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Sep 2011 07:23:11 -0400
-Message-ID: <4E7F0BE2.5070707@gmail.com>
-Date: Sun, 25 Sep 2011 16:39:22 +0530
-From: Navin P <zicrim@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.21) Gecko/20110831 Lightning/1.0b2 Thunderbird/3.1.13
+	id S1752408Ab1IYL0j (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Sep 2011 07:26:39 -0400
+Received: from shutemov.name ([188.40.19.243]:33792 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752341Ab1IYL0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Sep 2011 07:26:38 -0400
+Date: Sun, 25 Sep 2011 14:26:37 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: Re: linux-next-20110923: warning kernel/rcutree.c:1833
+Message-ID: <20110925112637.GA19298@shutemov.name>
+References: <20110925002409.GA24220@shutemov.name>
+ <20110925050826.GC2995@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: kernel-janitors@vger.kernel.org, sameo@linux.intel.com,
-        rabin.vincent@stericsson.com, hanumath.prasad@stericsson.com
-Subject: [PATCH] Remove redundant const in tc3589x.c
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110925050826.GC2995@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Remove the redundant const as SIMPLE_DEV_PM_OPS defines const
- struct.
- Signed-off-by: Navin P <zicrim@gmail.com>
+On Sat, Sep 24, 2011 at 10:08:26PM -0700, Paul E. McKenney wrote:
+> On Sun, Sep 25, 2011 at 03:24:09AM +0300, Kirill A. Shutemov wrote:
+> > [   29.974288] ------------[ cut here ]------------
+> > [   29.974308] WARNING: at /home/kas/git/public/linux-next/kernel/rcutree.c:1833 rcu_needs_cpu+0xff
+> > [   29.974316] Hardware name: HP EliteBook 8440p
+> > [   29.974321] Modules linked in: ip6table_filter ip6_tables ebtable_nat ebtables ipt_MASQUERADE iple_mangle xt_tcpudp iptable_filter ip_tables x_tables bridge stp llc rfcomm bnep acpi_cpufreq mperfckd fscache auth_rpcgss nfs_acl sunrpc ext2 loop kvm_intel kvm snd_hda_codec_hdmi snd_hda_codec_idtideodev media v4l2_compat_ioctl32 snd_seq bluetooth drm_kms_helper snd_timer tpm_infineon snd_seq_drt tpm_tis hp_accel intel_ips soundcore lis3lv02d tpm rfkill i2c_algo_bit snd_page_alloc i2c_core c16 sha256_generic aesni_intel cryptd aes_x86_64 aes_generic cbc dm_crypt dm_mod sg sr_mod sd_mod cd thermal_sys [last unloaded: scsi_wait_scan]
+> > [   29.974517] Pid: 0, comm: kworker/0:1 Not tainted 3.1.0-rc7-next-20110923 #2
+> > [   29.974521] Call Trace:
+> > [   29.974525]  <IRQ>  [<ffffffff8104d72a>] warn_slowpath_common+0x7a/0xb0
+> > [   29.974540]  [<ffffffff8104d775>] warn_slowpath_null+0x15/0x20
+> > [   29.974546]  [<ffffffff810bffdf>] rcu_needs_cpu+0xff/0x110
+> > [   29.974555]  [<ffffffff8108396f>] tick_nohz_stop_sched_tick+0x13f/0x3d0
+> > [   29.974563]  [<ffffffff814329c0>] ? notifier_call_chain+0x70/0x70
+> > [   29.974571]  [<ffffffff81055622>] irq_exit+0xa2/0xd0
+> > [   29.974578]  [<ffffffff8101ee75>] smp_apic_timer_interrupt+0x85/0x1c0
+> > [   29.974585]  [<ffffffff814329c0>] ? notifier_call_chain+0x70/0x70
+> > [   29.974592]  [<ffffffff81436e1e>] apic_timer_interrupt+0x6e/0x80
+> > [   29.974596]  <EOI>  [<ffffffff81297abd>] ? acpi_hw_read+0x4a/0x51
+> > [   29.974609]  [<ffffffff81087a07>] ? lock_acquire+0xa7/0x160
+> > [   29.974615]  [<ffffffff814329c0>] ? notifier_call_chain+0x70/0x70
+> > [   29.974622]  [<ffffffff81432a16>] __atomic_notifier_call_chain+0x56/0xb0
+> > [   29.974631]  [<ffffffff814329c0>] ? notifier_call_chain+0x70/0x70
+> > [   29.974642]  [<ffffffff8130ebb6>] ? cpuidle_idle_call+0x106/0x350
+> > [   29.974651]  [<ffffffff81432a81>] atomic_notifier_call_chain+0x11/0x20
+> > [   29.974661]  [<ffffffff81001233>] cpu_idle+0xe3/0x120
+> > [   29.974672]  [<ffffffff8141e34b>] start_secondary+0x1fd/0x204
+> > [   29.974681] ---[ end trace 6c1d44095a3bb7c5 ]---
+> 
+> Do the following help?
+> 
+> 	https://lkml.org/lkml/2011/9/17/47
+> 	https://lkml.org/lkml/2011/9/17/45
+> 	https://lkml.org/lkml/2011/9/17/43
 
----
- drivers/mfd/tc3589x.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Yes. Thanks.
 
-diff --git a/drivers/mfd/tc3589x.c b/drivers/mfd/tc3589x.c
-index c27e515..e87020f 100644
---- a/drivers/mfd/tc3589x.c
-+++ b/drivers/mfd/tc3589x.c
-@@ -385,7 +385,7 @@ static int tc3589x_resume(struct device *dev)
- 	return ret;
- }
- 
--static const SIMPLE_DEV_PM_OPS(tc3589x_dev_pm_ops, tc3589x_suspend,
-+static SIMPLE_DEV_PM_OPS(tc3589x_dev_pm_ops, tc3589x_suspend,
- 						tc3589x_resume);
- 
- static const struct i2c_device_id tc3589x_id[] = {
 -- 
-1.7.0.4
-
-
+ Kirill A. Shutemov
