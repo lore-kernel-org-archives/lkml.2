@@ -1,116 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752770Ab1IYNfJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Sep 2011 09:35:09 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:54563 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752649Ab1IYNfF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Sep 2011 09:35:05 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Nigel Cunningham <nigel@tuxonice.net>
-Subject: Re: [PATCH] PM / Freezer: Freeze filesystems while freezing processes (v2)
-Date: Sun, 25 Sep 2011 15:37:16 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: Dave Chinner <david@fromorbit.com>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Pavel Machek <pavel@ucw.cz>, Christoph Hellwig <hch@infradead.org>,
-        Christoph <cr2005@u-club.de>, xfs@oss.sgi.com,
-        LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
-        "Theodore Ts'o" <tytso@mit.edu>, linux-fsdevel@vger.kernel.org
-References: <4E1C70AD.1010101@u-club.de> <201109250056.12545.rjw@sisk.pl> <4E7EBCF7.8090906@tuxonice.net>
-In-Reply-To: <4E7EBCF7.8090906@tuxonice.net>
+	id S1752753Ab1IYNhR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Sep 2011 09:37:17 -0400
+Received: from nm15-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.208]:26818 "HELO
+	nm15-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752539Ab1IYNhP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Sep 2011 09:37:15 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 167795.40146.bm@omp1004.mail.sp2.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type;
+  b=OgyIi3x+l0sHXCBGS7DiQ7jiDPH85OKUt6WOJbvx3UkR57+F+ser96PFftIpX4rohj/8tCBCDCgibkv9LFVOsdZ3FOp2NH9RXsQpbhSdkRRY6HvWUMiwa7mB9UFhL7VxfpfyWzPz8Sm0K5CGNYjEcTvNE4kTORjQVHSETfRvquw=;
+X-YMail-OSG: 5lLiL1MVM1lq88zw32VJt5SIafkfwtcM9Kccd8MEaWtyyWT
+ zhnY6xXgsqM8oIF8VBcnLdG8TpMd5H6dm2BC11G5pN1qd_uWiPIqPO20Wsf_
+ GZKYURfDRb2n4j.tqGrCei7_31LCMJU3vVFTv7UohZsR_O8dXs0upcAf56m7
+ v2969niLvf08yXdcnzKx4N.tsVblO5DuL_Rkvd0hw2wxNeoRbTZzi6YYBsiL
+ DhiGPz7vorc_yOKw49ILpKSt_yxSfR0na9tp5CZCqwzxfbV6nuL80vW1WItU
+ 4YFiPtzDppBufQnFeYgkdgTFa9SS2ic54O7DVMNHOkYRF_uh4POA5QDrcjQr
+ awnusVTmXSmU5WnhGlSTYRerAJS7Wlg8pIwm6odYXCL6hvYN4rGESQgVMvzx
+ knjOumNrGjZuUpac1JB54du3fJ5R70xEFyAuvLOVEu6x2MJLriikOZjgT730
+ Bo7YShEQHnQh6ojhjHU5.HUkdr5VnibQWAOcXl3QkLie4_x_zm_JVlC.6_4J
+ fMcrFXJl092cW5hg38xMmiw3YIXDr0j1BswvrOoERbWdlBw--
+X-Mailer: YahooMailWebService/0.8.114.317681
+Message-ID: <1316957834.67111.YahooMailNeo@web130112.mail.mud.yahoo.com>
+Date: Sun, 25 Sep 2011 06:37:14 -0700 (PDT)
+From: Alex Davis <alex14641@yahoo.com>
+Reply-To: Alex Davis <alex14641@yahoo.com>
+Subject: Re:  Regression: i915 blank issue on kernel 3.1.0-rc3
+To: "terraluna977@gmail.com" <terraluna977@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201109251537.16446.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, September 25, 2011, Nigel Cunningham wrote:
-> Hi.
-> 
-> On 25/09/11 08:56, Rafael J. Wysocki wrote:
-> > On Sunday, August 07, 2011, Dave Chinner wrote:
-> >> On Sat, Aug 06, 2011 at 11:17:18PM +0200, Rafael J. Wysocki wrote:
-> >>> From: Rafael J. Wysocki <rjw@sisk.pl>
-> >>>
-> >>> Freeze all filesystems during the freezing of tasks by calling
-> >>> freeze_bdev() for each of them and thaw them during the thawing
-> >>> of tasks with the help of thaw_bdev().
-> >>>
-> >>> This is needed by hibernation, because some filesystems (e.g. XFS)
-> >>> deadlock with the preallocation of memory used by it if the memory
-> >>> pressure caused by it is too heavy.
-> >>>
-> >>> The additional benefit of this change is that, if something goes
-> >>> wrong after filesystems have been frozen, they will stay in a
-> >>> consistent state and journal replays won't be necessary (e.g. after
-> >>> a failing suspend or resume).  In particular, this should help to
-> >>> solve a long-standing issue that in some cases during resume from
-> >>> hibernation the boot loader causes the journal to be replied for the
-> >>> filesystem containing the kernel image and initrd causing it to
-> >>> become inconsistent with the information stored in the hibernation
-> >>> image.
-> >>>
-> >>> This change is based on earlier work by Nigel Cunningham.
-> >>>
-> >>> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> >>> ---
-> > 
-> > Below is an alternative fix, the changelog pretty much explains the idea.
-> > 
-> > I've tested it on Toshiba Portege R500, but I don't have an XFS partition
-> > to verify that it really helps, so I'd appreciate it if someone able to
-> > reproduce the original issue could test it and report back.
-> > 
-> > Thanks,
-> > Rafael
-> > 
-> > ---
-> > From: Rafael J. Wysocki <rjw@sisk.pl>
-> > Subject: PM / Hibernate: Freeze kernel threads after preallocating memory
-> > 
-> > There is a problem with the current ordering of hibernate code which
-> > leads to deadlocks in some filesystems' memory shrinkers.  Namely,
-> > some filesystems use freezable kernel threads that are inactive when
-> > the hibernate memory preallocation is carried out.  Those same
-> > filesystems use memory shrinkers that may be triggered by the
-> > hibernate memory preallocation.  If those memory shrinkers wait for
-> > the frozen kernel threads, the hibernate process deadlocks (this
-> > happens with XFS, for one example).
-> > 
-> > Apparently, it is not technically viable to redesign the filesystems
-> > in question to avoid the situation described above, so the only
-> > possible solution of this issue is to defer the freezing of kernel
-> > threads until the hibernate memory preallocation is done, which is
-> > implemented by this change.
-> > 
-> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> 
-> TuxOnIce has the following logic at the moment: Freeze all threads.
-> Calculate whether we have enough memory for the image, thaw kernel
-> threads only, free memory and try again if it looks like we don't have
-> enough.
 
-Well, it seems that the freezing of kernel threads in the first step
-is not necessary.  You can do (1) freeze user space, (2) check if there's
-enough free memory, (3) free memory if necessary, (4) freeze kernel
-threads instead.  Which is what my patch does, actually. :-)
 
-> I've never heard of a deadlock, though I suppose one would be
-> possible if you had the added complication of userspace
-> drivers/filesystems - it would be good to be able to distinguish and
-> thaw them.
+I'm having the same problem.
 
-Yes, there is a known problem with FUSE in that area.
+http://marc.info/?l=linux-kernel&m=131695739702141&w=2
 
-> It does this prior to the atomic copy, using a user-supplied estimate of
-> the amount of memory drivers will need - the actual amount used is show
-> in debugging info at the end of the cycle. Apart from that, if you have
-> everything else frozen, everything else is pretty deterministic
-> (assuming you don't have any memory leaks in your image-writing code).
+Please keep me on the CC list for this thread.
 
-Thanks,
-Rafael
+Thanks.
+
+
+I code, therefore I am
