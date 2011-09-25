@@ -1,112 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751278Ab1IYFcs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Sep 2011 01:32:48 -0400
-Received: from tuxonice.net ([96.126.116.212]:36583 "EHLO mail.tuxonice.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751109Ab1IYFcr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Sep 2011 01:32:47 -0400
-Message-ID: <4E7EBCF7.8090906@tuxonice.net>
-Date: Sun, 25 Sep 2011 15:32:39 +1000
-From: Nigel Cunningham <nigel@tuxonice.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.21) Gecko/20110831 Lightning/1.0b2 Thunderbird/3.1.13
+	id S1751325Ab1IYGC1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Sep 2011 02:02:27 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:41327 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751030Ab1IYGC0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Sep 2011 02:02:26 -0400
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Dave Chinner <david@fromorbit.com>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Pavel Machek <pavel@ucw.cz>, Christoph Hellwig <hch@infradead.org>,
-        Christoph <cr2005@u-club.de>, xfs@oss.sgi.com,
-        LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
-        "Theodore Ts'o" <tytso@mit.edu>, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] PM / Freezer: Freeze filesystems while freezing processes
- (v2)
-References: <4E1C70AD.1010101@u-club.de> <201108062317.19033.rjw@sisk.pl> <20110807001446.GI3162@dastard> <201109250056.12545.rjw@sisk.pl>
-In-Reply-To: <201109250056.12545.rjw@sisk.pl>
-X-TagToolbar-Keys: D20110925153239743
+X-Originating-IP: [212.179.42.66]
+In-Reply-To: <20110924030718.GA29319@htj.dyndns.org>
+References: <1314884193-20454-1-git-send-email-ripduman.sohan@cl.cam.ac.uk>
+	<20110902002917.GD2752@htj.dyndns.org>
+	<20110915161430.GE1548@tusker>
+	<CAOtvUMf0Dx04Piw8bx2oD+F9ttiBP_xCpin7fTvoQqs_dn=ZRQ@mail.gmail.com>
+	<20110924030718.GA29319@htj.dyndns.org>
+Date: Sun, 25 Sep 2011 09:02:25 +0300
+Message-ID: <CAOtvUMeGddgQK==K09uCVHOn8gbW2PaUaCiWhhOCNx8pvy8QiQ@mail.gmail.com>
+Subject: Re: [PATCH] workqueue: Restore cpus_allowed mask for sleeping
+ workqueue rescue threads
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Ripduman Sohan <Ripduman.Sohan@cl.cam.ac.uk>, linux-kernel@vger.kernel.org,
+        peterz@infradead.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+Hi,
 
-On 25/09/11 08:56, Rafael J. Wysocki wrote:
-> On Sunday, August 07, 2011, Dave Chinner wrote:
->> On Sat, Aug 06, 2011 at 11:17:18PM +0200, Rafael J. Wysocki wrote:
->>> From: Rafael J. Wysocki <rjw@sisk.pl>
->>>
->>> Freeze all filesystems during the freezing of tasks by calling
->>> freeze_bdev() for each of them and thaw them during the thawing
->>> of tasks with the help of thaw_bdev().
->>>
->>> This is needed by hibernation, because some filesystems (e.g. XFS)
->>> deadlock with the preallocation of memory used by it if the memory
->>> pressure caused by it is too heavy.
->>>
->>> The additional benefit of this change is that, if something goes
->>> wrong after filesystems have been frozen, they will stay in a
->>> consistent state and journal replays won't be necessary (e.g. after
->>> a failing suspend or resume).  In particular, this should help to
->>> solve a long-standing issue that in some cases during resume from
->>> hibernation the boot loader causes the journal to be replied for the
->>> filesystem containing the kernel image and initrd causing it to
->>> become inconsistent with the information stored in the hibernation
->>> image.
->>>
->>> This change is based on earlier work by Nigel Cunningham.
->>>
->>> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
->>> ---
-> 
-> Below is an alternative fix, the changelog pretty much explains the idea.
-> 
-> I've tested it on Toshiba Portege R500, but I don't have an XFS partition
-> to verify that it really helps, so I'd appreciate it if someone able to
-> reproduce the original issue could test it and report back.
-> 
-> Thanks,
-> Rafael
-> 
-> ---
-> From: Rafael J. Wysocki <rjw@sisk.pl>
-> Subject: PM / Hibernate: Freeze kernel threads after preallocating memory
-> 
-> There is a problem with the current ordering of hibernate code which
-> leads to deadlocks in some filesystems' memory shrinkers.  Namely,
-> some filesystems use freezable kernel threads that are inactive when
-> the hibernate memory preallocation is carried out.  Those same
-> filesystems use memory shrinkers that may be triggered by the
-> hibernate memory preallocation.  If those memory shrinkers wait for
-> the frozen kernel threads, the hibernate process deadlocks (this
-> happens with XFS, for one example).
-> 
-> Apparently, it is not technically viable to redesign the filesystems
-> in question to avoid the situation described above, so the only
-> possible solution of this issue is to defer the freezing of kernel
-> threads until the hibernate memory preallocation is done, which is
-> implemented by this change.
-> 
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+On Sat, Sep 24, 2011 at 6:07 AM, Tejun Heo <tj@kernel.org> wrote:
+> On Sun, Sep 18, 2011 at 09:36:57AM +0300, Gilad Ben-Yossef wrote:
+>> There is at least one use case where I think this can be a problem -
+>> cpu isolation.
+>>
+>> If you decide to partition your CPU to give some group of processes a
+>> set of CPUs all to their own (using cgroups/cpuset for example) having
+>> non related bound processes really gets in the way. You would really
+>> want to migrate away non related tasks from the isolated cpuset and
+>> having a bound kernel thread prevents that.
+>
+> Hmm... I don't think this has much to do with CPU isolation.
+> Workqueue rescuers are reactively invoked to resolve possible resource
+> deadlock.  It doesn't initiate operations on itself while CPU
+> isolation requires moving all sources of unwanted activites off the
+> isolated CPUs.  Having idle rescuers not bound to any CPU might look
+> prettier but wouldn't help anything - it's not an activity source and
+> the 'wanted' activities on the isolated CPU also require rescuers for
+> forward progress guarantee.
+>
 
-TuxOnIce has the following logic at the moment: Freeze all threads.
-Calculate whether we have enough memory for the image, thaw kernel
-threads only, free memory and try again if it looks like we don't have
-enough. I've never heard of a deadlock, though I suppose one would be
-possible if you had the added complication of userspace
-drivers/filesystems - it would be good to be able to distinguish and
-thaw them.
+Thank you for taking the time to answer my query :-)
 
-It does this prior to the atomic copy, using a user-supplied estimate of
-the amount of memory drivers will need - the actual amount used is show
-in debugging info at the end of the cycle. Apart from that, if you have
-everything else frozen, everything else is pretty deterministic
-(assuming you don't have any memory leaks in your image-writing code).
+I agree there is no real problem with having an additional task bound
+to an "isolated"
+CPU so long that it does not run and of course that if a task on an
+isolated CPU initiated
+activity that resulted in requiring the services of a rescuer
+workqueue thread it most certainly
+needs to run there and that is fine.
 
-Regards,
+I guess my question is - apart form running on the isolated CPU, does
+the fact that the
+rescuer thread is bound there can cause activity on that CPU
+originating from a foreign CPU,
+such as for example running an IPI handler in order to migrate it there?
 
-Nigel
+If the answer is negative I agree there is no issue.
+
+You do raise another valid point though - that having the rescuer
+workqueue thread bound to an isolated
+CPU is "less pretty". Right now it means that someone viewing the set
+of tasks in a cpuset, for example,
+need to figure out for each task "stuck" on the root set what is it,
+why it is bound (and to which CPU) and
+if that is a problem. I wonder what we can do to help with that.
+
+Thanks,
+Gilad
+
+
+
+> Thanks.
+>
+> --
+> tejun
+>
+
+
+
 -- 
-Evolution (n): A hypothetical process whereby improbable
-events occur with alarming frequency, order arises from chaos, and
-no one is given credit.
+Gilad Ben-Yossef
+Chief Coffee Drinker
+gilad@benyossef.com
+Israel Cell: +972-52-8260388
+US Cell: +1-973-8260388
+http://benyossef.com
+
+"I've seen things you people wouldn't believe. Goto statements used to
+implement co-routines. I watched C structures being stored in
+registers. All those moments will be lost in time... like tears in
+rain... Time to die. "
