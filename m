@@ -1,103 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751248Ab1IYFaV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Sep 2011 01:30:21 -0400
-Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:52961 "EHLO
-	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751109Ab1IYFaU convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Sep 2011 01:30:20 -0400
+	id S1751278Ab1IYFcs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Sep 2011 01:32:48 -0400
+Received: from tuxonice.net ([96.126.116.212]:36583 "EHLO mail.tuxonice.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751109Ab1IYFcr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Sep 2011 01:32:47 -0400
+Message-ID: <4E7EBCF7.8090906@tuxonice.net>
+Date: Sun, 25 Sep 2011 15:32:39 +1000
+From: Nigel Cunningham <nigel@tuxonice.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.21) Gecko/20110831 Lightning/1.0b2 Thunderbird/3.1.13
 MIME-Version: 1.0
-In-Reply-To: <20110925040836.GP24631@ponder.secretlab.ca>
-References: <1316730422-20027-1-git-send-email-mturquette@ti.com>
- <1316730422-20027-7-git-send-email-mturquette@ti.com> <20110925040836.GP24631@ponder.secretlab.ca>
-From: "Turquette, Mike" <mturquette@ti.com>
-Date: Sat, 24 Sep 2011 22:29:59 -0700
-Message-ID: <CAJOA=zOf6LjHjsZKYvyurSoRNo3Kb35TJqjNsZbauox4TBtsFg@mail.gmail.com>
-Subject: Re: [PATCH v2 6/7] clk: Add initial WM831x clock driver
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        jeremy.kerr@canonical.com, broonie@opensource.wolfsonmicro.com,
-        tglx@linutronix.de, linus.walleij@stericsson.com,
-        amit.kucheria@linaro.org, dsaxena@linaro.org, patches@linaro.org,
-        linaro-dev@lists.linaro.org, paul@pwsan.com, sboyd@quiinc.com,
-        shawn.guo@freescale.com, skannan@quicinc.com, magnus.damm@gmail.com,
-        arnd.bergmann@linaro.org, linux@arm.linux.org.uk, eric.miao@linaro.org,
-        richard.zhao@linaro.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Dave Chinner <david@fromorbit.com>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Pavel Machek <pavel@ucw.cz>, Christoph Hellwig <hch@infradead.org>,
+        Christoph <cr2005@u-club.de>, xfs@oss.sgi.com,
+        LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
+        "Theodore Ts'o" <tytso@mit.edu>, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] PM / Freezer: Freeze filesystems while freezing processes
+ (v2)
+References: <4E1C70AD.1010101@u-club.de> <201108062317.19033.rjw@sisk.pl> <20110807001446.GI3162@dastard> <201109250056.12545.rjw@sisk.pl>
+In-Reply-To: <201109250056.12545.rjw@sisk.pl>
+X-TagToolbar-Keys: D20110925153239743
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 24, 2011 at 9:08 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Thu, Sep 22, 2011 at 03:27:01PM -0700, Mike Turquette wrote:
->> From: Mark Brown <broonie@opensource.wolfsonmicro.com>
->>
->> The WM831x and WM832x series of PMICs contain a flexible clocking
->> subsystem intended to provide always on and system core clocks.  It
->> features:
->>
->> - A 32.768kHz crystal oscillator which can optionally be used to pass
->>   through an externally generated clock.
->> - A FLL which can be clocked from either the 32.768kHz oscillator or
->>   the CLKIN pin.
->> - A CLKOUT pin which can bring out either the oscillator or the FLL
->>   output.
->> - The 32.768kHz clock can also optionally be brought out on the GPIO
->>   pins of the device.
->>
->> This driver fully supports the 32.768kHz oscillator and CLKOUT.  The FLL
->> is supported only in AUTO mode, the full flexibility of the FLL cannot
->> currently be used.  The use of clock references other than the internal
->> oscillator is not currently supported, and since clk_set_parent() is not
->> implemented in the generic clock API the clock tree configuration cannot
->> be changed at runtime.
->>
->> Due to a lack of access to systems where the core SoC has been converted
->> to use the generic clock API this driver has been compile tested only.
->>
->> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
->> Signed-off-by: Mike Turquette <mturquette@ti.com>
->
-> A few minor comments below.  Otherwise looks fine to me.
->
->> +static __devinit int wm831x_clk_probe(struct platform_device *pdev)
->> +{
->> +     struct wm831x *wm831x = dev_get_drvdata(pdev->dev.parent);
->> +     struct wm831x_clk *clkdata;
->> +     int ret;
->> +
->> +     clkdata = kzalloc(sizeof(*clkdata), GFP_KERNEL);
->
-> If devm_kzalloc() is used, then all the kfree unwinding can be
-> dropped.
->
->> +static int __init wm831x_clk_init(void)
->> +{
->> +     int ret;
->> +
->> +     ret = platform_driver_register(&wm831x_clk_driver);
->> +     if (ret != 0)
->> +             pr_err("Failed to register WM831x clock driver: %d\n", ret);
->> +
->> +     return ret;
->
-> No need for this song-and-dance.  The driver core is pretty well
-> debugged.  Just use "return platform_driver_register(...);"
+Hi.
 
-Grant,
+On 25/09/11 08:56, Rafael J. Wysocki wrote:
+> On Sunday, August 07, 2011, Dave Chinner wrote:
+>> On Sat, Aug 06, 2011 at 11:17:18PM +0200, Rafael J. Wysocki wrote:
+>>> From: Rafael J. Wysocki <rjw@sisk.pl>
+>>>
+>>> Freeze all filesystems during the freezing of tasks by calling
+>>> freeze_bdev() for each of them and thaw them during the thawing
+>>> of tasks with the help of thaw_bdev().
+>>>
+>>> This is needed by hibernation, because some filesystems (e.g. XFS)
+>>> deadlock with the preallocation of memory used by it if the memory
+>>> pressure caused by it is too heavy.
+>>>
+>>> The additional benefit of this change is that, if something goes
+>>> wrong after filesystems have been frozen, they will stay in a
+>>> consistent state and journal replays won't be necessary (e.g. after
+>>> a failing suspend or resume).  In particular, this should help to
+>>> solve a long-standing issue that in some cases during resume from
+>>> hibernation the boot loader causes the journal to be replied for the
+>>> filesystem containing the kernel image and initrd causing it to
+>>> become inconsistent with the information stored in the hibernation
+>>> image.
+>>>
+>>> This change is based on earlier work by Nigel Cunningham.
+>>>
+>>> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+>>> ---
+> 
+> Below is an alternative fix, the changelog pretty much explains the idea.
+> 
+> I've tested it on Toshiba Portege R500, but I don't have an XFS partition
+> to verify that it really helps, so I'd appreciate it if someone able to
+> reproduce the original issue could test it and report back.
+> 
+> Thanks,
+> Rafael
+> 
+> ---
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+> Subject: PM / Hibernate: Freeze kernel threads after preallocating memory
+> 
+> There is a problem with the current ordering of hibernate code which
+> leads to deadlocks in some filesystems' memory shrinkers.  Namely,
+> some filesystems use freezable kernel threads that are inactive when
+> the hibernate memory preallocation is carried out.  Those same
+> filesystems use memory shrinkers that may be triggered by the
+> hibernate memory preallocation.  If those memory shrinkers wait for
+> the frozen kernel threads, the hibernate process deadlocks (this
+> happens with XFS, for one example).
+> 
+> Apparently, it is not technically viable to redesign the filesystems
+> in question to avoid the situation described above, so the only
+> possible solution of this issue is to defer the freezing of kernel
+> threads until the hibernate memory preallocation is done, which is
+> implemented by this change.
+> 
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 
-Thanks for the review.
+TuxOnIce has the following logic at the moment: Freeze all threads.
+Calculate whether we have enough memory for the image, thaw kernel
+threads only, free memory and try again if it looks like we don't have
+enough. I've never heard of a deadlock, though I suppose one would be
+possible if you had the added complication of userspace
+drivers/filesystems - it would be good to be able to distinguish and
+thaw them.
 
-Mark,
-
-I know you're not carrying this whole set of patches but do you want
-to rework this and resend or do you just want me to fix it up?
-Changes are trivial if you don't want to touch it.
+It does this prior to the atomic copy, using a user-supplied estimate of
+the amount of memory drivers will need - the actual amount used is show
+in debugging info at the end of the cycle. Apart from that, if you have
+everything else frozen, everything else is pretty deterministic
+(assuming you don't have any memory leaks in your image-writing code).
 
 Regards,
-Mike
 
-> g.
->
+Nigel
+-- 
+Evolution (n): A hypothetical process whereby improbable
+events occur with alarming frequency, order arises from chaos, and
+no one is given credit.
