@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752000Ab1IYI4X (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Sep 2011 04:56:23 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:57690 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751492Ab1IYI4T (ORCPT
+	id S1751961Ab1IYI4S (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Sep 2011 04:56:18 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:40991 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751701Ab1IYI4O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Sep 2011 04:56:19 -0400
+	Sun, 25 Sep 2011 04:56:14 -0400
 From: Gilad Ben-Yossef <gilad@benyossef.com>
 To: linux-kernel@vger.kernel.org
 Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
@@ -16,9 +16,9 @@ Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
         Chris Metcalf <cmetcalf@tilera.com>, linux-mm@kvack.org,
         Christoph Lameter <cl@linux-foundation.org>,
         Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>
-Subject: [PATCH 5/5] slub: Only IPI CPUs that have per cpu obj to flush
-Date: Sun, 25 Sep 2011 11:54:50 +0300
-Message-Id: <1316940890-24138-6-git-send-email-gilad@benyossef.com>
+Subject: [PATCH 4/5] mm: Only IPI CPUs to drain local pages if they exist
+Date: Sun, 25 Sep 2011 11:54:49 +0300
+Message-Id: <1316940890-24138-5-git-send-email-gilad@benyossef.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1316940890-24138-1-git-send-email-gilad@benyossef.com>
 References: <1316940890-24138-1-git-send-email-gilad@benyossef.com>
@@ -26,15 +26,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Try to send IPI to flush per cpu objects back to free lists
-to CPUs to seems to have such objects.
-
-The check which CPU to IPI is racy but we don't care since
-asking a CPU without per cpu objects to flush does no
-damage and as far as I can tell the flush_all by itself is
-racy against allocs on remote CPUs anyway, so if you meant
-the flush_all to be determinstic, you had to arrange for
-locking regardless.
+Use a cpumask to track CPUs with per-cpu pages in any zone
+and only send an IPI requesting CPUs to drain these pages
+to the buddy allocator if they actually have pages.
 
 Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
 CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
@@ -46,35 +40,165 @@ CC: Christoph Lameter <cl@linux-foundation.org>
 CC: Pekka Enberg <penberg@kernel.org>
 CC: Matt Mackall <mpm@selenic.com>
 ---
- mm/slub.c |   15 ++++++++++++++-
- 1 files changed, 14 insertions(+), 1 deletions(-)
+ mm/page_alloc.c |   53 ++++++++++++++++++++++++++++++++++++++++++++---------
+ 1 files changed, 44 insertions(+), 9 deletions(-)
 
-diff --git a/mm/slub.c b/mm/slub.c
-index 9f662d7..8baae30 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -1948,7 +1948,20 @@ static void flush_cpu_slab(void *d)
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 6e8ecb6..3c079ab 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -62,6 +62,10 @@
+ #include <asm/div64.h>
+ #include "internal.h"
  
- static void flush_all(struct kmem_cache *s)
- {
--	on_each_cpu(flush_cpu_slab, s, 1);
-+	cpumask_var_t cpus;
-+	struct kmem_cache_cpu *c;
-+	int cpu;
++/* Which CPUs have per cpu pages  */
++cpumask_var_t cpus_with_pcp;
++static DEFINE_PER_CPU(long, total_cpu_pcp_count);
 +
-+	if (likely(zalloc_cpumask_var(&cpus, GFP_ATOMIC))) {
-+		for_each_online_cpu(cpu) {
-+			c = per_cpu_ptr(s->cpu_slab, cpu);
-+			if (c && c->page)
-+				cpumask_set_cpu(cpu, cpus);
-+		}
-+		on_each_cpu_mask(cpus, flush_cpu_slab, s, 1);
-+		free_cpumask_var(cpus);
-+	} else
-+		on_each_cpu(flush_cpu_slab, s, 1);
+ #ifdef CONFIG_USE_PERCPU_NUMA_NODE_ID
+ DEFINE_PER_CPU(int, numa_node);
+ EXPORT_PER_CPU_SYMBOL(numa_node);
+@@ -224,6 +228,25 @@ EXPORT_SYMBOL(nr_online_nodes);
+ 
+ int page_group_by_mobility_disabled __read_mostly;
+ 
++static inline void inc_pcp_count(int cpu, struct per_cpu_pages *pcp, int count)
++{
++	if (unlikely(!total_cpu_pcp_count))
++		cpumask_set_cpu(cpu, cpus_with_pcp);
++
++	total_cpu_pcp_count += count;
++	pcp->count += count;
++}
++
++static inline void dec_pcp_count(int cpu, struct per_cpu_pages *pcp, int count)
++{
++	pcp->count -= count;
++	total_cpu_pcp_count -= count;
++
++	if (unlikely(!total_cpu_pcp_count))
++		cpumask_clear_cpu(cpu, cpus_with_pcp);
++}
++
++
+ static void set_pageblock_migratetype(struct page *page, int migratetype)
+ {
+ 
+@@ -1072,7 +1095,7 @@ void drain_zone_pages(struct zone *zone, struct per_cpu_pages *pcp)
+ 	else
+ 		to_drain = pcp->count;
+ 	free_pcppages_bulk(zone, to_drain, pcp);
+-	pcp->count -= to_drain;
++	dec_pcp_count(smp_processor_id(), pcp, to_drain);
+ 	local_irq_restore(flags);
+ }
+ #endif
+@@ -1099,7 +1122,7 @@ static void drain_pages(unsigned int cpu)
+ 		pcp = &pset->pcp;
+ 		if (pcp->count) {
+ 			free_pcppages_bulk(zone, pcp->count, pcp);
+-			pcp->count = 0;
++			dec_pcp_count(cpu, pcp, pcp->count);
+ 		}
+ 		local_irq_restore(flags);
+ 	}
+@@ -1118,7 +1141,7 @@ void drain_local_pages(void *arg)
+  */
+ void drain_all_pages(void)
+ {
+-	on_each_cpu(drain_local_pages, NULL, 1);
++	on_each_cpu_mask(cpus_with_pcp, drain_local_pages, NULL, 1);
  }
  
- /*
+ #ifdef CONFIG_HIBERNATION
+@@ -1166,7 +1189,7 @@ void free_hot_cold_page(struct page *page, int cold)
+ 	struct zone *zone = page_zone(page);
+ 	struct per_cpu_pages *pcp;
+ 	unsigned long flags;
+-	int migratetype;
++	int migratetype, cpu;
+ 	int wasMlocked = __TestClearPageMlocked(page);
+ 
+ 	if (!free_pages_prepare(page, 0))
+@@ -1194,15 +1217,16 @@ void free_hot_cold_page(struct page *page, int cold)
+ 		migratetype = MIGRATE_MOVABLE;
+ 	}
+ 
++	cpu = smp_processor_id();
+ 	pcp = &this_cpu_ptr(zone->pageset)->pcp;
+ 	if (cold)
+ 		list_add_tail(&page->lru, &pcp->lists[migratetype]);
+ 	else
+ 		list_add(&page->lru, &pcp->lists[migratetype]);
+-	pcp->count++;
++	inc_pcp_count(cpu, pcp, 1);
+ 	if (pcp->count >= pcp->high) {
+ 		free_pcppages_bulk(zone, pcp->batch, pcp);
+-		pcp->count -= pcp->batch;
++		dec_pcp_count(cpu, pcp, pcp->batch);
+ 	}
+ 
+ out:
+@@ -1305,9 +1329,10 @@ again:
+ 		pcp = &this_cpu_ptr(zone->pageset)->pcp;
+ 		list = &pcp->lists[migratetype];
+ 		if (list_empty(list)) {
+-			pcp->count += rmqueue_bulk(zone, 0,
++			inc_pcp_count(smp_processor_id(), pcp,
++					rmqueue_bulk(zone, 0,
+ 					pcp->batch, list,
+-					migratetype, cold);
++					migratetype, cold));
+ 			if (unlikely(list_empty(list)))
+ 				goto failed;
+ 		}
+@@ -1318,7 +1343,7 @@ again:
+ 			page = list_entry(list->next, struct page, lru);
+ 
+ 		list_del(&page->lru);
+-		pcp->count--;
++		dec_pcp_count(smp_processor_id(), pcp, 1);
+ 	} else {
+ 		if (unlikely(gfp_flags & __GFP_NOFAIL)) {
+ 			/*
+@@ -3553,6 +3578,8 @@ static int zone_batchsize(struct zone *zone)
+ #endif
+ }
+ 
++/* NOTE: If you call this function it is very likely you want to clear
++   cpus_with_pcp as well. */
+ static void setup_pageset(struct per_cpu_pageset *p, unsigned long batch)
+ {
+ 	struct per_cpu_pages *pcp;
+@@ -3591,6 +3618,8 @@ static void setup_zone_pageset(struct zone *zone)
+ 
+ 	zone->pageset = alloc_percpu(struct per_cpu_pageset);
+ 
++	cpumask_clear(cpus_with_pcp);
++
+ 	for_each_possible_cpu(cpu) {
+ 		struct per_cpu_pageset *pcp = per_cpu_ptr(zone->pageset, cpu);
+ 
+@@ -3613,6 +3642,10 @@ void __init setup_per_cpu_pageset(void)
+ 
+ 	for_each_populated_zone(zone)
+ 		setup_zone_pageset(zone);
++
++	/* Allocate the cpus_with_pcp var if CONFIG_CPUMASK_OFFSTACK */
++	zalloc_cpumask_var(&cpus_with_pcp, GFP_NOWAIT);
++
+ }
+ 
+ static noinline __init_refok
+@@ -3664,6 +3697,8 @@ static int __zone_pcp_update(void *data)
+ 	int cpu;
+ 	unsigned long batch = zone_batchsize(zone), flags;
+ 
++	cpumask_clear(cpus_with_pcp);
++
+ 	for_each_possible_cpu(cpu) {
+ 		struct per_cpu_pageset *pset;
+ 		struct per_cpu_pages *pcp;
 -- 
 1.7.0.4
 
