@@ -1,67 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752741Ab1IYNeu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Sep 2011 09:34:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31742 "EHLO mx1.redhat.com"
+	id S1752770Ab1IYNfJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Sep 2011 09:35:09 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:54563 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752649Ab1IYNet (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Sep 2011 09:34:49 -0400
-Date: Sun, 25 Sep 2011 15:34:06 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, a.p.zijlstra@chello.nl,
-        mingo@elte.hu, paulus@samba.org, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, Neil Horman <nhorman@tuxdriver.com>
-Subject: Re: [PATCH] perf tools: Fix tracing info recording
-Message-ID: <20110925133406.GB2702@jolsa.brq.redhat.com>
-References: <1314022997-9217-1-git-send-email-jolsa@redhat.com>
- <1314023913.2307.63.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <20110822145210.GA8694@jolsa.brq.redhat.com>
- <1314028266.2307.93.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <20110822160713.GA10134@jolsa.brq.redhat.com>
- <20110829132037.GB27261@ghostprotocols.net>
- <20110829134147.GD1918@jolsa.redhat.com>
- <20110829142547.GC27261@ghostprotocols.net>
- <20110914135840.GC2719@jolsa.brq.redhat.com>
- <20110921153016.GB1811@somewhere>
+	id S1752649Ab1IYNfF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Sep 2011 09:35:05 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Nigel Cunningham <nigel@tuxonice.net>
+Subject: Re: [PATCH] PM / Freezer: Freeze filesystems while freezing processes (v2)
+Date: Sun, 25 Sep 2011 15:37:16 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc4+; KDE/4.6.0; x86_64; ; )
+Cc: Dave Chinner <david@fromorbit.com>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Pavel Machek <pavel@ucw.cz>, Christoph Hellwig <hch@infradead.org>,
+        Christoph <cr2005@u-club.de>, xfs@oss.sgi.com,
+        LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
+        "Theodore Ts'o" <tytso@mit.edu>, linux-fsdevel@vger.kernel.org
+References: <4E1C70AD.1010101@u-club.de> <201109250056.12545.rjw@sisk.pl> <4E7EBCF7.8090906@tuxonice.net>
+In-Reply-To: <4E7EBCF7.8090906@tuxonice.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110921153016.GB1811@somewhere>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201109251537.16446.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 21, 2011 at 05:30:24PM +0200, Frederic Weisbecker wrote:
-> On Wed, Sep 14, 2011 at 03:58:40PM +0200, Jiri Olsa wrote:
-> > The tracing information is part of the perf data file. It contains
-> > several files from within the tracing debugfs and procs directories.
-> > 
-> > Beside some static header files, for each tracing event the format
-> > file is added. The /proc/kallsyms file is also added.
-> > 
-> > The tracing data are stored with preceeding size. This is causing some
-> > dificulties for pipe output, since there's no way to tell debugfs/proc
-> > file size before reading it. So, for pipe output, all the debugfs files
-> > were read twice. Once to get the overall size and once to store the
-> > content itself. This can cause problem in case any of these file
-> > changed, within the storage time.
-> > 
-> > Fixing this behaviour by using temp file in case of pipe output. The
-> > debugfs/proc files are being read only once, ensuring the integrity of
-> > the tracing data.
-> > 
-> > Also changing the way the event files are searched by quering specified
-> > event files directly, instead of walking the events directory.
-> > 
-> > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+On Sunday, September 25, 2011, Nigel Cunningham wrote:
+> Hi.
 > 
-> Looks good overall, but I have some comments about details:
+> On 25/09/11 08:56, Rafael J. Wysocki wrote:
+> > On Sunday, August 07, 2011, Dave Chinner wrote:
+> >> On Sat, Aug 06, 2011 at 11:17:18PM +0200, Rafael J. Wysocki wrote:
+> >>> From: Rafael J. Wysocki <rjw@sisk.pl>
+> >>>
+> >>> Freeze all filesystems during the freezing of tasks by calling
+> >>> freeze_bdev() for each of them and thaw them during the thawing
+> >>> of tasks with the help of thaw_bdev().
+> >>>
+> >>> This is needed by hibernation, because some filesystems (e.g. XFS)
+> >>> deadlock with the preallocation of memory used by it if the memory
+> >>> pressure caused by it is too heavy.
+> >>>
+> >>> The additional benefit of this change is that, if something goes
+> >>> wrong after filesystems have been frozen, they will stay in a
+> >>> consistent state and journal replays won't be necessary (e.g. after
+> >>> a failing suspend or resume).  In particular, this should help to
+> >>> solve a long-standing issue that in some cases during resume from
+> >>> hibernation the boot loader causes the journal to be replied for the
+> >>> filesystem containing the kernel image and initrd causing it to
+> >>> become inconsistent with the information stored in the hibernation
+> >>> image.
+> >>>
+> >>> This change is based on earlier work by Nigel Cunningham.
+> >>>
+> >>> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> >>> ---
+> > 
+> > Below is an alternative fix, the changelog pretty much explains the idea.
+> > 
+> > I've tested it on Toshiba Portege R500, but I don't have an XFS partition
+> > to verify that it really helps, so I'd appreciate it if someone able to
+> > reproduce the original issue could test it and report back.
+> > 
+> > Thanks,
+> > Rafael
+> > 
+> > ---
+> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> > Subject: PM / Hibernate: Freeze kernel threads after preallocating memory
+> > 
+> > There is a problem with the current ordering of hibernate code which
+> > leads to deadlocks in some filesystems' memory shrinkers.  Namely,
+> > some filesystems use freezable kernel threads that are inactive when
+> > the hibernate memory preallocation is carried out.  Those same
+> > filesystems use memory shrinkers that may be triggered by the
+> > hibernate memory preallocation.  If those memory shrinkers wait for
+> > the frozen kernel threads, the hibernate process deadlocks (this
+> > happens with XFS, for one example).
+> > 
+> > Apparently, it is not technically viable to redesign the filesystems
+> > in question to avoid the situation described above, so the only
+> > possible solution of this issue is to defer the freezing of kernel
+> > threads until the hibernate memory preallocation is done, which is
+> > implemented by this change.
+> > 
+> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> 
+> TuxOnIce has the following logic at the moment: Freeze all threads.
+> Calculate whether we have enough memory for the image, thaw kernel
+> threads only, free memory and try again if it looks like we don't have
+> enough.
 
-hi,
-thanks for comments,
-I'll make the changes and send out new version soon
+Well, it seems that the freezing of kernel threads in the first step
+is not necessary.  You can do (1) freeze user space, (2) check if there's
+enough free memory, (3) free memory if necessary, (4) freeze kernel
+threads instead.  Which is what my patch does, actually. :-)
 
-jirka
+> I've never heard of a deadlock, though I suppose one would be
+> possible if you had the added complication of userspace
+> drivers/filesystems - it would be good to be able to distinguish and
+> thaw them.
+
+Yes, there is a known problem with FUSE in that area.
+
+> It does this prior to the atomic copy, using a user-supplied estimate of
+> the amount of memory drivers will need - the actual amount used is show
+> in debugging info at the end of the cycle. Apart from that, if you have
+> everything else frozen, everything else is pretty deterministic
+> (assuming you don't have any memory leaks in your image-writing code).
+
+Thanks,
+Rafael
