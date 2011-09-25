@@ -1,208 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752543Ab1IYMrM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Sep 2011 08:47:12 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:38493 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752356Ab1IYMrL convert rfc822-to-8bit (ORCPT
+	id S1752551Ab1IYMyv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Sep 2011 08:54:51 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:39719 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752363Ab1IYMyu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Sep 2011 08:47:11 -0400
-X-Authenticated: #3169751
-X-Provags-ID: V01U2FsdGVkX1+PqqIE0E6PAseiS+I5i8ie7nlHlFhawIgzN45JKp
-	iWI1o/vpmgs9QR
-Date: Sun, 25 Sep 2011 14:46:51 +0200
-From: Matthias Dellweg <2500@gmx.de>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Alan Stern <stern@rowland.harvard.edu>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] enable usb control message with class specific request
-Message-ID: <20110925144651.0ed3daaf@horus>
-In-Reply-To: <Pine.LNX.4.44L0.1109231427280.2059-100000@iolanthe.rowland.org>
-References: <20110923195726.0cf0e8b5@horus>
-	<Pine.LNX.4.44L0.1109231427280.2059-100000@iolanthe.rowland.org>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-X-Y-GMX-Trusted: 0
+	Sun, 25 Sep 2011 08:54:50 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:x-system-of-record;
+	b=THq2lsaoXOZc76nyVHdWFpKnsyipMFQDLVuO6Pmv8Wf4Ssiz0TSy2/Q//b7bA5yXn
+	REZK5LvBX4AMnVuY1QZIw==
+MIME-Version: 1.0
+In-Reply-To: <1316818998-30711-1-git-send-email-sjg@chromium.org>
+References: <1316818998-30711-1-git-send-email-sjg@chromium.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Sun, 25 Sep 2011 06:54:26 -0600
+Message-ID: <CAErSpo63fYmQVRO2O3sB37k6rAo7Qttdh1xo=WH+QwcVb+neGg@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/3] Add accurate boot timing to a Linux system
+To: Simon Glass <sjg@chromium.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Fri, 23 Sep 2011 14:31:40 -0400 (EDT)
-schrieb Alan Stern <stern@rowland.harvard.edu>:
+On Fri, Sep 23, 2011 at 5:03 PM, Simon Glass <sjg@chromium.org> wrote:
+> This experimental patch set adds boot timing to a Linux system. The
+> timing starts with the boot loader and extends through the kernel into
+> user space to the completion of the boot process. The timing starts when
+> the system leaves reset, not later when the kernel starts.
+>
+> The concept is:
+> - Boot loader records a timestamp for key events during its operation
+> - These timestamps are passed to Linux, which adds more as it boots
+> - These timestamps are made available to user space, where more
+> timestamps are added as init does its job
+> - Finally the whole record is collected by a user-space script run at
+> the end of init. This is fed back through some mechanism to monitor
+> boot time in the field.
 
-> On Fri, 23 Sep 2011, Matthias Dellweg wrote:
-> 
-> > Am Fri, 23 Sep 2011 12:16:40 -0400 (EDT)
-> > schrieb Alan Stern <stern@rowland.harvard.edu>:
-> > > This is basically okay.  But your mailer has mangled the
-> > > whitespace. [...]
-> > > Alan Stern
-> > 
-> > OK, hoping that my mailer doesn't get wild again, this is the
-> > polished version following your suggestions.
-> > Thanks for your help!
-> >   Matthias Dellweg
-> > 
-> > From b7c4b6f5780296fd0d53d66e08d5bce0dc450b7f Mon Sep 17 00:00:00
-> > 2001 From: Matthias Dellweg <2500@gmx.de>
-> > Date: Fri, 23 Sep 2011 19:32:39 +0200
-> > Subject: [PATCH] drivers/usb/core/devio.c: Check for printer class
-> > specific request
-> > 
-> > Signed-off-by: Matthias Dellweg <2500@gmx.de>
-> > ---
-> >  drivers/usb/core/devio.c |   20 +++++++++++++++++---
-> >  1 files changed, 17 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/drivers/usb/core/devio.c b/drivers/usb/core/devio.c
-> > index 37518df..e4175cc 100644
-> > --- a/drivers/usb/core/devio.c
-> > +++ b/drivers/usb/core/devio.c
-> > @@ -607,9 +607,10 @@ static int findintfep(struct usb_device *dev,
-> > unsigned int ep) }
-> >  
-> >  static int check_ctrlrecip(struct dev_state *ps, unsigned int
-> > requesttype,
-> > -			   unsigned int index)
-> > +			   unsigned int request, unsigned int
-> > index) {
-> >  	int ret = 0;
-> > +	struct usb_host_interface *alt_setting;
-> >  
-> >  	if (ps->dev->state != USB_STATE_UNAUTHENTICATED
-> >  	 && ps->dev->state != USB_STATE_ADDRESS
-> > @@ -618,6 +619,18 @@ static int check_ctrlrecip(struct dev_state
-> > *ps, unsigned int requesttype, if (USB_TYPE_VENDOR ==
-> > (USB_TYPE_MASK & requesttype)) return 0;
-> >  
-> > +	/*
-> > +	 * check for the special corner case 'get_device_id' in
-> > the printer
-> > +	 * class specification, where wIndex is (interface << 8 |
-> > altsetting)
-> > +	 */
-> > +	if (requesttype == 0xa1 && request == 0) {
-> > +		alt_setting =
-> > usb_find_alt_setting(ps->dev->actconfig,
-> > +						   index >> 8,
-> > index & 0xff);
-> > +		if (alt_setting
-> > +		 && alt_setting->desc.bInterfaceClass ==
-> > USB_CLASS_PRINTER)
-> > +			index >>= 8;
-> > +	}
-> > +
-> >  	index &= 0xff;
-> >  	switch (requesttype & USB_RECIP_MASK) {
-> >  	case USB_RECIP_ENDPOINT:
-> > @@ -770,7 +783,8 @@ static int proc_control(struct dev_state *ps,
-> > void __user *arg) 
-> >  	if (copy_from_user(&ctrl, arg, sizeof(ctrl)))
-> >  		return -EFAULT;
-> > -	ret = check_ctrlrecip(ps, ctrl.bRequestType, ctrl.wIndex);
-> > +	ret = check_ctrlrecip(ps, ctrl.bRequestType, ctrl.bRequest,
-> > +			      ctrl.wIndex);
-> >  	if (ret)
-> >  		return ret;
-> >  	wLength = ctrl.wLength;		/* To suppress 64k
-> > PAGE_SIZE warning */ @@ -1100,7 +1114,7 @@ static int
-> > proc_do_submiturb(struct dev_state *ps, struct usbdevfs_urb *uurb,
-> > kfree(dr); return -EINVAL;
-> >  		}
-> > -		ret = check_ctrlrecip(ps, dr->bRequestType,
-> > +		ret = check_ctrlrecip(ps, dr->bRequestType,
-> > dr->bRequest, le16_to_cpup(&dr->wIndex));
-> >  		if (ret) {
-> >  			kfree(dr);
-> > 
-> 
-> This looks fine to me.  Greg may ask you for a non-empty patch
-> description when you submit it to him.
-> 
-> Acked-by: Alan Stern <stern@rowland.harvard.edu>
-> 
-> Alan Stern
+I think this is a cool idea.  It's quite difficult to extract this
+sort of information today, and making it easily and consistently
+available should help focus attention and improve things.
 
-Hi Greg,
-I hear you are the right person to ask for including this patch.
-The relevant section in the printer class spec is 4.2.1. I believe this
-is a really special corner case, because I did not find another such
-'violation' of the common usb spec on a quick search.
-The hardware I tested this patch with is a Prolific 
-USB->Centronics cable (067b:2305).
-  Matthias Dellweg
+There are difficult issues about which clock to use, how to correlate
+bootloader & kernel timestamps, how to make sure the timestamps stay
+sensible even when we use hwclock, ntp, etc., but I think it's worth
+pushing on this to see how far you can go.
 
->From 5bdb64cbee0b2f353d3bc444c147ba78f34a1f69 Mon Sep 17 00:00:00 2001
-From: Matthias Dellweg <2500@gmx.de>
-Date: Sun, 25 Sep 2011 14:26:25 +0200
-Subject: [PATCH] usb/core/devio.c: Check for printer class specific request
-
-In the usb printer class specific request get_device_id the value of
-wIndex is (interface << 8 | altsetting) instead of just interface.
-This enables the detection of some printers with libusb.
-
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Matthias Dellweg <2500@gmx.de>
----
- drivers/usb/core/devio.c |   21 ++++++++++++++++++---
- 1 files changed, 18 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/usb/core/devio.c b/drivers/usb/core/devio.c
-index 37518df..1d73709 100644
---- a/drivers/usb/core/devio.c
-+++ b/drivers/usb/core/devio.c
-@@ -607,9 +607,10 @@ static int findintfep(struct usb_device *dev, unsigned int ep)
- }
- 
- static int check_ctrlrecip(struct dev_state *ps, unsigned int requesttype,
--                          unsigned int index)
-+                          unsigned int request, unsigned int index)
- {
-        int ret = 0;
-+       struct usb_host_interface *alt_setting;
- 
-        if (ps->dev->state != USB_STATE_UNAUTHENTICATED
-         && ps->dev->state != USB_STATE_ADDRESS
-@@ -618,6 +619,19 @@ static int check_ctrlrecip(struct dev_state *ps, unsigned int requesttype,
-        if (USB_TYPE_VENDOR == (USB_TYPE_MASK & requesttype))
-                return 0;
- 
-+       /*
-+        * check for the special corner case 'get_device_id' in the printer
-+        * class specification, where wIndex is (interface << 8 | altsetting)
-+        * instead of just interface
-+        */
-+       if (requesttype == 0xa1 && request == 0) {
-+               alt_setting = usb_find_alt_setting(ps->dev->actconfig,
-+                                                  index >> 8, index & 0xff);
-+               if (alt_setting
-+                && alt_setting->desc.bInterfaceClass == USB_CLASS_PRINTER)
-+                       index >>= 8;
-+       }
-+
-        index &= 0xff;
-        switch (requesttype & USB_RECIP_MASK) {
-        case USB_RECIP_ENDPOINT:
-@@ -770,7 +784,8 @@ static int proc_control(struct dev_state *ps, void __user *arg)
- 
-        if (copy_from_user(&ctrl, arg, sizeof(ctrl)))
-                return -EFAULT;
--       ret = check_ctrlrecip(ps, ctrl.bRequestType, ctrl.wIndex);
-+       ret = check_ctrlrecip(ps, ctrl.bRequestType, ctrl.bRequest,
-+                             ctrl.wIndex);
-        if (ret)
-                return ret;
-        wLength = ctrl.wLength;         /* To suppress 64k PAGE_SIZE warning */
-@@ -1100,7 +1115,7 @@ static int proc_do_submiturb(struct dev_state *ps, struct usbdevfs_urb *uurb,
-                        kfree(dr);
-                        return -EINVAL;
-                }
--               ret = check_ctrlrecip(ps, dr->bRequestType,
-+               ret = check_ctrlrecip(ps, dr->bRequestType, dr->bRequest,
-                                      le16_to_cpup(&dr->wIndex));
-                if (ret) {
-                        kfree(dr);
--- 
-1.7.6.3
+Bjorn
