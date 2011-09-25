@@ -1,191 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752784Ab1IYNh7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Sep 2011 09:37:59 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:54577 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752539Ab1IYNh6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Sep 2011 09:37:58 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Dave Chinner <david@fromorbit.com>
-Subject: [Update][PATCH] PM / Hibernate: Freeze kernel threads after preallocating memory
-Date: Sun, 25 Sep 2011 15:40:09 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Pavel Machek <pavel@ucw.cz>, Nigel Cunningham <nigel@tuxonice.net>,
-        Christoph Hellwig <hch@infradead.org>, Christoph <cr2005@u-club.de>,
-        xfs@oss.sgi.com, LKML <linux-kernel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
-        linux-fsdevel@vger.kernel.org
-References: <4E1C70AD.1010101@u-club.de> <20110807001446.GI3162@dastard> <201109250056.12545.rjw@sisk.pl>
-In-Reply-To: <201109250056.12545.rjw@sisk.pl>
+	id S1752802Ab1IYNkW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Sep 2011 09:40:22 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:42266 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752736Ab1IYNkU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Sep 2011 09:40:20 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201109251540.09487.rjw@sisk.pl>
+In-Reply-To: <CAD+V5YLrs91Cjj-EXbjREhs+sQnEjR=q5n3OXtEB0kFQ88p5Pw@mail.gmail.com>
+References: <1316845316-5765-1-git-send-email-keguang.zhang@gmail.com>
+	<CAD+V5YLrs91Cjj-EXbjREhs+sQnEjR=q5n3OXtEB0kFQ88p5Pw@mail.gmail.com>
+Date: Sun, 25 Sep 2011 07:40:18 -0600
+Message-ID: <CACoURw540BQgs4457uEtkGf41-uLbbubGBP23qnvT4W-MNJqOQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] MIPS: Add basic support for Loongson1B (UPDATED)
+From: Shane McDonald <mcdonald.shane@gmail.com>
+To: wu zhangjin <wuzhangjin@gmail.com>
+Cc: keguang.zhang@gmail.com, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, ralf@linux-mips.org, r0bertz@gentoo.org,
+        chenj@lemote.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+>> diff --git a/arch/mips/include/asm/mach-loongson1/regs-clk.h b/arch/mips/include/asm/mach-loongson1/regs-clk.h
+>> new file mode 100644
+>> index 0000000..7a09d6a
+>> --- /dev/null
+>> +++ b/arch/mips/include/asm/mach-loongson1/regs-clk.h
+>> @@ -0,0 +1,32 @@
+>> +/*
+>> + * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
+>> + *
+>> + * Loongson1 Clock Register Definitions.
+>> + *
+>> + * This program is free software; you can redistribute  it and/or modify it
+>> + * under  the terms of  the GNU General  Public License as published by the
+>> + * Free Software Foundation;  either version 2 of the  License, or (at your
+>> + * option) any later version.
+>> + */
+>> +
+>> +#ifndef __ASM_MACH_LOONGSON1_REGS_CLK_H
+>> +#define __ASM_MACH_LOONGSON1_REGS_CLK_H
+>> +
+>> +#define LS1_CLK_REG(x)         ((void __iomem *)(LOONGSON1_CLK_BASE + (x)))
+>
+> "volatile" keyword may be required for __iomem access, the same to the
+> following similar usage.
+>
+> Considering a scene is(LS1_XXX_REG(X) doesn't really exist):
+>
+> LS1_XXX_REG(X) = 0;              /* put cpu into idle and wait interrupt */
+> LS1_XXX_REG(X) = 7;              /* recover the cpu frequency to the highest */
+>
+> If no "volatile" keyword indicated, the above two lines will be
+> intelligently but wrongly removed by compiler.
 
-There is a problem with the current ordering of hibernate code which
-leads to deadlocks in some filesystems' memory shrinkers.  Namely,
-some filesystems use freezable kernel threads that are inactive when
-the hibernate memory preallocation is carried out.  Those same
-filesystems use memory shrinkers that may be triggered by the
-hibernate memory preallocation.  If those memory shrinkers wait for
-the frozen kernel threads, the hibernate process deadlocks (this
-happens with XFS, for one example).
+No -- please see Documentation/volatile-considered-harmful.txt,
+particularly the paragraph starting at line 49.  This macro
+is only being used as an argument to __raw_readl,
+as it should be.
 
-Apparently, it is not technically viable to redesign the filesystems
-in question to avoid the situation described above, so the only
-possible solution of this issue is to defer the freezing of kernel
-threads until the hibernate memory preallocation is done, which is
-implemented by this change.
-
-Unfortunately, this requires the memory preallocation to be done
-before the "prepare" stage of device freeze, so after this change the
-only way drivers can allocate additional memory for their freeze
-routines in a clean way is to use PM notifiers.
-
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- Documentation/power/devices.txt |    4 ----
- include/linux/freezer.h         |    4 +++-
- kernel/power/hibernate.c        |   12 ++++++++----
- kernel/power/power.h            |    3 ++-
- kernel/power/process.c          |   30 ++++++++++++++++++++----------
- 5 files changed, 33 insertions(+), 20 deletions(-)
-
-Index: linux/kernel/power/process.c
-===================================================================
---- linux.orig/kernel/power/process.c
-+++ linux/kernel/power/process.c
-@@ -135,7 +135,7 @@ static int try_to_freeze_tasks(bool sig_
- }
- 
- /**
-- *	freeze_processes - tell processes to enter the refrigerator
-+ * freeze_processes - Signal user space processes to enter the refrigerator.
-  */
- int freeze_processes(void)
- {
-@@ -143,20 +143,30 @@ int freeze_processes(void)
- 
- 	printk("Freezing user space processes ... ");
- 	error = try_to_freeze_tasks(true);
--	if (error)
--		goto Exit;
--	printk("done.\n");
-+	if (!error) {
-+		printk("done.");
-+		oom_killer_disable();
-+	}
-+	printk("\n");
-+	BUG_ON(in_atomic());
-+
-+	return error;
-+}
-+
-+/**
-+ * freeze_kernel_threads - Make freezable kernel threads go to the refrigerator.
-+ */
-+int freeze_kernel_threads(void)
-+{
-+	int error;
- 
- 	printk("Freezing remaining freezable tasks ... ");
- 	error = try_to_freeze_tasks(false);
--	if (error)
--		goto Exit;
--	printk("done.");
-+	if (!error)
-+		printk("done.");
- 
--	oom_killer_disable();
-- Exit:
--	BUG_ON(in_atomic());
- 	printk("\n");
-+	BUG_ON(in_atomic());
- 
- 	return error;
- }
-Index: linux/include/linux/freezer.h
-===================================================================
---- linux.orig/include/linux/freezer.h
-+++ linux/include/linux/freezer.h
-@@ -49,6 +49,7 @@ extern int thaw_process(struct task_stru
- 
- extern void refrigerator(void);
- extern int freeze_processes(void);
-+extern int freeze_kernel_threads(void);
- extern void thaw_processes(void);
- 
- static inline int try_to_freeze(void)
-@@ -171,7 +172,8 @@ static inline void clear_freeze_flag(str
- static inline int thaw_process(struct task_struct *p) { return 1; }
- 
- static inline void refrigerator(void) {}
--static inline int freeze_processes(void) { BUG(); return 0; }
-+static inline int freeze_processes(void) { return -ENOSYS; }
-+static inline int freeze_kernel_threads(void) { return -ENOSYS; }
- static inline void thaw_processes(void) {}
- 
- static inline int try_to_freeze(void) { return 0; }
-Index: linux/kernel/power/power.h
-===================================================================
---- linux.orig/kernel/power/power.h
-+++ linux/kernel/power/power.h
-@@ -228,7 +228,8 @@ extern int pm_test_level;
- #ifdef CONFIG_SUSPEND_FREEZER
- static inline int suspend_freeze_processes(void)
- {
--	return freeze_processes();
-+	int error = freeze_processes();
-+	return error ? : freeze_kernel_threads();
- }
- 
- static inline void suspend_thaw_processes(void)
-Index: linux/kernel/power/hibernate.c
-===================================================================
---- linux.orig/kernel/power/hibernate.c
-+++ linux/kernel/power/hibernate.c
-@@ -334,13 +334,17 @@ int hibernation_snapshot(int platform_mo
- 	if (error)
- 		goto Close;
- 
--	error = dpm_prepare(PMSG_FREEZE);
--	if (error)
--		goto Complete_devices;
--
- 	/* Preallocate image memory before shutting down devices. */
- 	error = hibernate_preallocate_memory();
- 	if (error)
-+		goto Close;
-+
-+	error = freeze_kernel_threads();
-+	if (error)
-+		goto Close;
-+
-+	error = dpm_prepare(PMSG_FREEZE);
-+	if (error)
- 		goto Complete_devices;
- 
- 	suspend_console();
-Index: linux/Documentation/power/devices.txt
-===================================================================
---- linux.orig/Documentation/power/devices.txt
-+++ linux/Documentation/power/devices.txt
-@@ -279,10 +279,6 @@ When the system goes into the standby or
- 	time.)  Unlike the other suspend-related phases, during the prepare
- 	phase the device tree is traversed top-down.
- 
--	In addition to that, if device drivers need to allocate additional
--	memory to be able to hadle device suspend correctly, that should be
--	done in the prepare phase.
--
- 	After the prepare callback method returns, no new children may be
- 	registered below the device.  The method may also prepare the device or
- 	driver in some way for the upcoming system power transition (for
+Shane
