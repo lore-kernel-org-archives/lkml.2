@@ -1,98 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752506Ab1IYMZT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Sep 2011 08:25:19 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:51151 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752449Ab1IYMZR (ORCPT
+	id S1752543Ab1IYMrM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Sep 2011 08:47:12 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:38493 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752356Ab1IYMrL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Sep 2011 08:25:17 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:x-system-of-record;
-	b=pBrZH/Jum2R89PlunH4WLD7vFspUeCIurbVaIb38vR3hYl5R9MfLXc0iNjrFh/AXN
-	eTX24ZPVlW9A06xwRzYMw==
-MIME-Version: 1.0
-In-Reply-To: <20110925002831.GA32152@elie>
-References: <CAK82gMF0EbPiTATjPZ2-K5fCtuJHAXH2aJgpwCD5CRDLS2YpqQ@mail.gmail.com>
- <20110925002831.GA32152@elie>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Sun, 25 Sep 2011 06:24:54 -0600
-Message-ID: <CAErSpo6xBT=WD44sw28cxUf=DeFgAw7i=FZqBG-OR68V6NbqAg@mail.gmail.com>
-Subject: Re: Possible PNP issue on Dell PowerEdge 4200 unless noapic used
-To: Jonathan Nieder <jrnieder@gmail.com>
-Cc: trouble daemon <troubledaemon@gmail.com>, Adam Belay <abelay@mit.edu>,
-        linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=000e0cd5cfe26a4ff004adc322f7
-X-System-Of-Record: true
+	Sun, 25 Sep 2011 08:47:11 -0400
+X-Authenticated: #3169751
+X-Provags-ID: V01U2FsdGVkX1+PqqIE0E6PAseiS+I5i8ie7nlHlFhawIgzN45JKp
+	iWI1o/vpmgs9QR
+Date: Sun, 25 Sep 2011 14:46:51 +0200
+From: Matthias Dellweg <2500@gmx.de>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Alan Stern <stern@rowland.harvard.edu>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] enable usb control message with class specific request
+Message-ID: <20110925144651.0ed3daaf@horus>
+In-Reply-To: <Pine.LNX.4.44L0.1109231427280.2059-100000@iolanthe.rowland.org>
+References: <20110923195726.0cf0e8b5@horus>
+	<Pine.LNX.4.44L0.1109231427280.2059-100000@iolanthe.rowland.org>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---000e0cd5cfe26a4ff004adc322f7
-Content-Type: text/plain; charset=ISO-8859-1
+Am Fri, 23 Sep 2011 14:31:40 -0400 (EDT)
+schrieb Alan Stern <stern@rowland.harvard.edu>:
 
-[Resending since gmail made it HTML, which LKML thinks is spam.  sigh]
+> On Fri, 23 Sep 2011, Matthias Dellweg wrote:
+> 
+> > Am Fri, 23 Sep 2011 12:16:40 -0400 (EDT)
+> > schrieb Alan Stern <stern@rowland.harvard.edu>:
+> > > This is basically okay.  But your mailer has mangled the
+> > > whitespace. [...]
+> > > Alan Stern
+> > 
+> > OK, hoping that my mailer doesn't get wild again, this is the
+> > polished version following your suggestions.
+> > Thanks for your help!
+> >   Matthias Dellweg
+> > 
+> > From b7c4b6f5780296fd0d53d66e08d5bce0dc450b7f Mon Sep 17 00:00:00
+> > 2001 From: Matthias Dellweg <2500@gmx.de>
+> > Date: Fri, 23 Sep 2011 19:32:39 +0200
+> > Subject: [PATCH] drivers/usb/core/devio.c: Check for printer class
+> > specific request
+> > 
+> > Signed-off-by: Matthias Dellweg <2500@gmx.de>
+> > ---
+> >  drivers/usb/core/devio.c |   20 +++++++++++++++++---
+> >  1 files changed, 17 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/drivers/usb/core/devio.c b/drivers/usb/core/devio.c
+> > index 37518df..e4175cc 100644
+> > --- a/drivers/usb/core/devio.c
+> > +++ b/drivers/usb/core/devio.c
+> > @@ -607,9 +607,10 @@ static int findintfep(struct usb_device *dev,
+> > unsigned int ep) }
+> >  
+> >  static int check_ctrlrecip(struct dev_state *ps, unsigned int
+> > requesttype,
+> > -			   unsigned int index)
+> > +			   unsigned int request, unsigned int
+> > index) {
+> >  	int ret = 0;
+> > +	struct usb_host_interface *alt_setting;
+> >  
+> >  	if (ps->dev->state != USB_STATE_UNAUTHENTICATED
+> >  	 && ps->dev->state != USB_STATE_ADDRESS
+> > @@ -618,6 +619,18 @@ static int check_ctrlrecip(struct dev_state
+> > *ps, unsigned int requesttype, if (USB_TYPE_VENDOR ==
+> > (USB_TYPE_MASK & requesttype)) return 0;
+> >  
+> > +	/*
+> > +	 * check for the special corner case 'get_device_id' in
+> > the printer
+> > +	 * class specification, where wIndex is (interface << 8 |
+> > altsetting)
+> > +	 */
+> > +	if (requesttype == 0xa1 && request == 0) {
+> > +		alt_setting =
+> > usb_find_alt_setting(ps->dev->actconfig,
+> > +						   index >> 8,
+> > index & 0xff);
+> > +		if (alt_setting
+> > +		 && alt_setting->desc.bInterfaceClass ==
+> > USB_CLASS_PRINTER)
+> > +			index >>= 8;
+> > +	}
+> > +
+> >  	index &= 0xff;
+> >  	switch (requesttype & USB_RECIP_MASK) {
+> >  	case USB_RECIP_ENDPOINT:
+> > @@ -770,7 +783,8 @@ static int proc_control(struct dev_state *ps,
+> > void __user *arg) 
+> >  	if (copy_from_user(&ctrl, arg, sizeof(ctrl)))
+> >  		return -EFAULT;
+> > -	ret = check_ctrlrecip(ps, ctrl.bRequestType, ctrl.wIndex);
+> > +	ret = check_ctrlrecip(ps, ctrl.bRequestType, ctrl.bRequest,
+> > +			      ctrl.wIndex);
+> >  	if (ret)
+> >  		return ret;
+> >  	wLength = ctrl.wLength;		/* To suppress 64k
+> > PAGE_SIZE warning */ @@ -1100,7 +1114,7 @@ static int
+> > proc_do_submiturb(struct dev_state *ps, struct usbdevfs_urb *uurb,
+> > kfree(dr); return -EINVAL;
+> >  		}
+> > -		ret = check_ctrlrecip(ps, dr->bRequestType,
+> > +		ret = check_ctrlrecip(ps, dr->bRequestType,
+> > dr->bRequest, le16_to_cpup(&dr->wIndex));
+> >  		if (ret) {
+> >  			kfree(dr);
+> > 
+> 
+> This looks fine to me.  Greg may ask you for a non-empty patch
+> description when you submit it to him.
+> 
+> Acked-by: Alan Stern <stern@rowland.harvard.edu>
+> 
+> Alan Stern
 
-On Sat, Sep 24, 2011 at 6:28 PM, Jonathan Nieder <jrnieder@gmail.com> wrote:
->
-> (just cc-ing linux-kernel so any work on this gets archived)
-> trouble daemon wrote:
->
-> > Greetings,
-> >
-> > Hello Adam and Bjorn. I am sending this email to you as suggested by
-> > Jonathan regarding a problem that I was having with Linux on a pair of
-> > old Dell PowerEdge 4200 machines that I own (yes, they still run!).
-> >
-> > I have left the most recent reply between Jonathan and I quoted below,
-> > but you can find the original bug report at the Debian bug tracker
-> > under bug #586494 [1]. As a brief recap, I have been required to use
-> > the noapic kernel option in these systems in order to allow them to
-> > boot, and appears to have originated after a commit to the kernel
-> > relating to EISA (although it has come to my attention now that PNP
-> > may be related as well).
-> >
-> > As suggested, I have attached a copy of the "quick & dirty" config I
-> > used for a vanilla 3.1.0-rc7 kernel I compiled, along with the boot
-> > log of the machine, and a diff against the apic log of a working boot
-> > of the same kernel when using noapic. One thing that I should mention
-> > is that on these dells, I also usually use the pnpbios=off option to
-> > hide the pesky warnings on boot, in addition to noapic.
-> >
-> > I hope these logs help you in some way. If there is anything else you
-> > might be interested in knowing or testing, don't hesitate to ask!
->
-> Original report: http://thread.gmane.org/gmane.linux.kernel/1000807
-> Logs: http://bugs.debian.org/cgi-bin/bugreport.cgi?msg=86;bug=586494
->
-> > Dan McGrath
-> >
-> > PS - Not a problem Jonathan, thanks!
-> >
-> > [1] http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=586494
+Hi Greg,
+I hear you are the right person to ask for including this patch.
+The relevant section in the printer class spec is 4.2.1. I believe this
+is a really special corner case, because I did not find another such
+'violation' of the common usb spec on a quick search.
+The hardware I tested this patch with is a Prolific 
+USB->Centronics cable (067b:2305).
+  Matthias Dellweg
 
-Dan, can you try the attached patch?  I'm not an MPS expert, but from
-inspecting f8924e770, it seems suspect that we used to always set the
-mp_bus_not_pci bit, then clear it if we found a PCI bus.  After
-f8924e770, we set mp_bus_not_pci for ISA buses, clear it for PCI
-buses, and leave it alone otherwise.
+>From 5bdb64cbee0b2f353d3bc444c147ba78f34a1f69 Mon Sep 17 00:00:00 2001
+From: Matthias Dellweg <2500@gmx.de>
+Date: Sun, 25 Sep 2011 14:26:25 +0200
+Subject: [PATCH] usb/core/devio.c: Check for printer class specific request
 
---000e0cd5cfe26a4ff004adc322f7
-Content-Type: application/octet-stream; name=mps-fix
-Content-Disposition: attachment; filename=mps-fix
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gt0038me0
+In the usb printer class specific request get_device_id the value of
+wIndex is (interface << 8 | altsetting) instead of just interface.
+This enables the detection of some printers with libusb.
 
-Y29tbWl0IDdlZDFjMWY0NGJjNThkOWU2YTAxZDdlOTcwYThhZDI1ZWNlM2RmMDYKQXV0aG9yOiBC
-am9ybiBIZWxnYWFzIDxiaGVsZ2Fhc0Bnb29nbGUuY29tPgpEYXRlOiAgIFN1biBTZXAgMjUgMDY6
-MDk6MzEgMjAxMSAtMDYwMAoKZGlmZiAtLWdpdCBhL2FyY2gveDg2L2tlcm5lbC9tcHBhcnNlLmMg
-Yi9hcmNoL3g4Ni9rZXJuZWwvbXBwYXJzZS5jCmluZGV4IDkxMDNiODkuLjA3NDFiMDYyIDEwMDY0
-NAotLS0gYS9hcmNoL3g4Ni9rZXJuZWwvbXBwYXJzZS5jCisrKyBiL2FyY2gveDg2L2tlcm5lbC9t
-cHBhcnNlLmMKQEAgLTk1LDggKzk1LDggQEAgc3RhdGljIHZvaWQgX19pbml0IE1QX2J1c19pbmZv
-KHN0cnVjdCBtcGNfYnVzICptKQogCX0KICNlbmRpZgogCisJc2V0X2JpdChtLT5idXNpZCwgbXBf
-YnVzX25vdF9wY2kpOwogCWlmIChzdHJuY21wKHN0ciwgQlVTVFlQRV9JU0EsIHNpemVvZihCVVNU
-WVBFX0lTQSkgLSAxKSA9PSAwKSB7Ci0JCXNldF9iaXQobS0+YnVzaWQsIG1wX2J1c19ub3RfcGNp
-KTsKICNpZiBkZWZpbmVkKENPTkZJR19FSVNBKSB8fCBkZWZpbmVkKENPTkZJR19NQ0EpCiAJCW1w
-X2J1c19pZF90b190eXBlW20tPmJ1c2lkXSA9IE1QX0JVU19JU0E7CiAjZW5kaWYK
---000e0cd5cfe26a4ff004adc322f7--
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Matthias Dellweg <2500@gmx.de>
+---
+ drivers/usb/core/devio.c |   21 ++++++++++++++++++---
+ 1 files changed, 18 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/usb/core/devio.c b/drivers/usb/core/devio.c
+index 37518df..1d73709 100644
+--- a/drivers/usb/core/devio.c
++++ b/drivers/usb/core/devio.c
+@@ -607,9 +607,10 @@ static int findintfep(struct usb_device *dev, unsigned int ep)
+ }
+ 
+ static int check_ctrlrecip(struct dev_state *ps, unsigned int requesttype,
+-                          unsigned int index)
++                          unsigned int request, unsigned int index)
+ {
+        int ret = 0;
++       struct usb_host_interface *alt_setting;
+ 
+        if (ps->dev->state != USB_STATE_UNAUTHENTICATED
+         && ps->dev->state != USB_STATE_ADDRESS
+@@ -618,6 +619,19 @@ static int check_ctrlrecip(struct dev_state *ps, unsigned int requesttype,
+        if (USB_TYPE_VENDOR == (USB_TYPE_MASK & requesttype))
+                return 0;
+ 
++       /*
++        * check for the special corner case 'get_device_id' in the printer
++        * class specification, where wIndex is (interface << 8 | altsetting)
++        * instead of just interface
++        */
++       if (requesttype == 0xa1 && request == 0) {
++               alt_setting = usb_find_alt_setting(ps->dev->actconfig,
++                                                  index >> 8, index & 0xff);
++               if (alt_setting
++                && alt_setting->desc.bInterfaceClass == USB_CLASS_PRINTER)
++                       index >>= 8;
++       }
++
+        index &= 0xff;
+        switch (requesttype & USB_RECIP_MASK) {
+        case USB_RECIP_ENDPOINT:
+@@ -770,7 +784,8 @@ static int proc_control(struct dev_state *ps, void __user *arg)
+ 
+        if (copy_from_user(&ctrl, arg, sizeof(ctrl)))
+                return -EFAULT;
+-       ret = check_ctrlrecip(ps, ctrl.bRequestType, ctrl.wIndex);
++       ret = check_ctrlrecip(ps, ctrl.bRequestType, ctrl.bRequest,
++                             ctrl.wIndex);
+        if (ret)
+                return ret;
+        wLength = ctrl.wLength;         /* To suppress 64k PAGE_SIZE warning */
+@@ -1100,7 +1115,7 @@ static int proc_do_submiturb(struct dev_state *ps, struct usbdevfs_urb *uurb,
+                        kfree(dr);
+                        return -EINVAL;
+                }
+-               ret = check_ctrlrecip(ps, dr->bRequestType,
++               ret = check_ctrlrecip(ps, dr->bRequestType, dr->bRequest,
+                                      le16_to_cpup(&dr->wIndex));
+                if (ret) {
+                        kfree(dr);
+-- 
+1.7.6.3
