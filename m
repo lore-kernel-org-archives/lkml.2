@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752120Ab1IYLBg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Sep 2011 07:01:36 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:56363 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752074Ab1IYLBd (ORCPT
+	id S1752078Ab1IYLL4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Sep 2011 07:11:56 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:64218 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751967Ab1IYLLz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Sep 2011 07:01:33 -0400
-From: Ohad Ben-Cohen <ohad@wizery.com>
-To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Cc: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Joerg Roedel <Joerg.Roedel@amd.com>,
-        <iommu@lists.linux-foundation.org>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-kernel@vger.kernel.org>, Cousson Benoit <b-cousson@ti.com>,
-        Kevin Hilman <khilman@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: [RFC 1/5] ARM: dev_archdata: add private iommu extension
-Date: Sun, 25 Sep 2011 13:58:53 +0300
-Message-Id: <1316948337-7924-2-git-send-email-ohad@wizery.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1316948337-7924-1-git-send-email-ohad@wizery.com>
-References: <1316948337-7924-1-git-send-email-ohad@wizery.com>
+	Sun, 25 Sep 2011 07:11:55 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Thomas Meyer <thomas@m3y3r.de>
+Cc: gregkh@suse.de, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Support compat_ioctl get/set termios_locked
+Date: Sun, 25 Sep 2011 13:11:14 +0200
+Message-ID: <2272244.eQGJoCfPBm@wuerfel>
+User-Agent: KMail/4.7.1 (Linux/3.0.0-rc1nosema+; KDE/4.7.1; x86_64; ; )
+In-Reply-To: <1316854289.1696.6.camel@localhost.localdomain>
+References: <1316854289.1696.6.camel@localhost.localdomain>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:98O5Eiiu7UN5maYSueL3oMnnhCtoz71OAMixDgAKTTP
+ bQRTO4QyLok+D4oM5xm6yHaakWr48J8AmRt90i6p4Q4lcglLOd
+ SeDIej2FK+FeOjq62jEwzQgGe9HUu31h3jSOuElA3HTDBolPN0
+ bBSUq8lgfBG6+RJWX2B+fVHtBDuYP9KY4b4C/9ZG5pVt6geWT6
+ CTNyFEO5aFqdGAdOrBiOu7vWdgoANN4mF4NmCYKBTn1hYzEFfn
+ Sm7CbFWy+S165yFDX6sYKI7ujvKjDUeD+3Lm9sgmdmUjhscdpM
+ D4mv1hMu2DepnZD3v+NgAdKadI1rm0TF3AhcvXmzYTiVYpiV5M
+ KfMNI24J5UQQTYdaZvL4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a private iommu pointer to the ARM-specific arch data in the
-device struct, which will be used to attach iommu-specific data
-to devices which require iommu support.
+On Saturday 24 September 2011 10:51:24 Thomas Meyer wrote:
+> When running a Fedora 15 (x86) on an x86_64 kernel, in the boot process
+> plymouthd complains about those two missing ioctls:
+> [    2.581783] ioctl32(plymouthd:186): Unknown cmd fd(10) cmd(00005457){t:'T';sz:0} arg(ffb6a5d0) on /dev/tty1
+> [    2.581803] ioctl32(plymouthd:186): Unknown cmd fd(10) cmd(00005456){t:'T';sz:0} arg(ffb6a680) on /dev/tty1
+> 
+> both ioctl functions work on the 'struct termios', which has the same
+> size (36 bytes) on x86 and x86_64, so it's just a matter of converting the
+> pointer from userland.
+> 
+> Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 
-Different iommu implementations (on different platforms) will attach
-different types of data to this pointer, so 'void *' is currently used
-(the downside is reduced typesafety).
+Hi Thomas,
 
-Note: ia64, x86 and sparc have this exact iommu extension as well, and
-if others are likely to adopt it too, we might want to consider
-adding this to the device struct itself directly.
+This looks ok for n_tty, but the same commands are supported for some
+(all?) other tty line disciplines as well, and they remain broken
+after your patch.
 
-Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Grant Likely <grant.likely@secretlab.ca>
----
- arch/arm/include/asm/device.h |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+I think it would be better to handle this in the common tty_compat_ioctl()
+function before calling into the line discipline's compat_ioctl function.
 
-diff --git a/arch/arm/include/asm/device.h b/arch/arm/include/asm/device.h
-index 9f390ce..6615f03 100644
---- a/arch/arm/include/asm/device.h
-+++ b/arch/arm/include/asm/device.h
-@@ -10,6 +10,9 @@ struct dev_archdata {
- #ifdef CONFIG_DMABOUNCE
- 	struct dmabounce_device_info *dmabounce;
- #endif
-+#ifdef CONFIG_IOMMU_API
-+	void *iommu; /* private IOMMU data */
-+#endif
- };
- 
- struct pdev_archdata {
--- 
-1.7.4.1
+It would also be nice to move similar commands from fs/compat_ioctl.c into
+the same place. The easiest solution would be to add the two missing command
+in fs/compat_ioctl.c, but I would prefer getting stuff out of there instead.
 
+	Arnd
