@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751611Ab1IYAYN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Sep 2011 20:24:13 -0400
-Received: from shutemov.name ([188.40.19.243]:48480 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750978Ab1IYAYM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Sep 2011 20:24:12 -0400
-Date: Sun, 25 Sep 2011 03:24:09 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: linux-kernel@vger.kernel.org
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: linux-next-20110923: warning kernel/rcutree.c:1833
-Message-ID: <20110925002409.GA24220@shutemov.name>
+	id S1752684Ab1IYA2m (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Sep 2011 20:28:42 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:53013 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751964Ab1IYA2l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Sep 2011 20:28:41 -0400
+Date: Sat, 24 Sep 2011 19:28:32 -0500
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: trouble daemon <troubledaemon@gmail.com>
+Cc: Adam Belay <abelay@mit.edu>, Bjorn Helgaas <bhelgaas@google.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Possible PNP issue on Dell PowerEdge 4200 unless noapic used
+Message-ID: <20110925002831.GA32152@elie>
+References: <CAK82gMF0EbPiTATjPZ2-K5fCtuJHAXH2aJgpwCD5CRDLS2YpqQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAK82gMF0EbPiTATjPZ2-K5fCtuJHAXH2aJgpwCD5CRDLS2YpqQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21+46 (b01d63af6fea) (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[   29.974288] ------------[ cut here ]------------
-[   29.974308] WARNING: at /home/kas/git/public/linux-next/kernel/rcutree.c:1833 rcu_needs_cpu+0xff
-[   29.974316] Hardware name: HP EliteBook 8440p
-[   29.974321] Modules linked in: ip6table_filter ip6_tables ebtable_nat ebtables ipt_MASQUERADE iple_mangle xt_tcpudp iptable_filter ip_tables x_tables bridge stp llc rfcomm bnep acpi_cpufreq mperfckd fscache auth_rpcgss nfs_acl sunrpc ext2 loop kvm_intel kvm snd_hda_codec_hdmi snd_hda_codec_idtideodev media v4l2_compat_ioctl32 snd_seq bluetooth drm_kms_helper snd_timer tpm_infineon snd_seq_drt tpm_tis hp_accel intel_ips soundcore lis3lv02d tpm rfkill i2c_algo_bit snd_page_alloc i2c_core c16 sha256_generic aesni_intel cryptd aes_x86_64 aes_generic cbc dm_crypt dm_mod sg sr_mod sd_mod cd thermal_sys [last unloaded: scsi_wait_scan]
-[   29.974517] Pid: 0, comm: kworker/0:1 Not tainted 3.1.0-rc7-next-20110923 #2
-[   29.974521] Call Trace:
-[   29.974525]  <IRQ>  [<ffffffff8104d72a>] warn_slowpath_common+0x7a/0xb0
-[   29.974540]  [<ffffffff8104d775>] warn_slowpath_null+0x15/0x20
-[   29.974546]  [<ffffffff810bffdf>] rcu_needs_cpu+0xff/0x110
-[   29.974555]  [<ffffffff8108396f>] tick_nohz_stop_sched_tick+0x13f/0x3d0
-[   29.974563]  [<ffffffff814329c0>] ? notifier_call_chain+0x70/0x70
-[   29.974571]  [<ffffffff81055622>] irq_exit+0xa2/0xd0
-[   29.974578]  [<ffffffff8101ee75>] smp_apic_timer_interrupt+0x85/0x1c0
-[   29.974585]  [<ffffffff814329c0>] ? notifier_call_chain+0x70/0x70
-[   29.974592]  [<ffffffff81436e1e>] apic_timer_interrupt+0x6e/0x80
-[   29.974596]  <EOI>  [<ffffffff81297abd>] ? acpi_hw_read+0x4a/0x51
-[   29.974609]  [<ffffffff81087a07>] ? lock_acquire+0xa7/0x160
-[   29.974615]  [<ffffffff814329c0>] ? notifier_call_chain+0x70/0x70
-[   29.974622]  [<ffffffff81432a16>] __atomic_notifier_call_chain+0x56/0xb0
-[   29.974631]  [<ffffffff814329c0>] ? notifier_call_chain+0x70/0x70
-[   29.974642]  [<ffffffff8130ebb6>] ? cpuidle_idle_call+0x106/0x350
-[   29.974651]  [<ffffffff81432a81>] atomic_notifier_call_chain+0x11/0x20
-[   29.974661]  [<ffffffff81001233>] cpu_idle+0xe3/0x120
-[   29.974672]  [<ffffffff8141e34b>] start_secondary+0x1fd/0x204
-[   29.974681] ---[ end trace 6c1d44095a3bb7c5 ]---
+(just cc-ing linux-kernel so any work on this gets archived)
+trouble daemon wrote:
 
--- 
- Kirill A. Shutemov
+> Greetings,
+>
+> Hello Adam and Bjorn. I am sending this email to you as suggested by
+> Jonathan regarding a problem that I was having with Linux on a pair of
+> old Dell PowerEdge 4200 machines that I own (yes, they still run!).
+>
+> I have left the most recent reply between Jonathan and I quoted below,
+> but you can find the original bug report at the Debian bug tracker
+> under bug #586494 [1]. As a brief recap, I have been required to use
+> the noapic kernel option in these systems in order to allow them to
+> boot, and appears to have originated after a commit to the kernel
+> relating to EISA (although it has come to my attention now that PNP
+> may be related as well).
+>
+> As suggested, I have attached a copy of the "quick & dirty" config I
+> used for a vanilla 3.1.0-rc7 kernel I compiled, along with the boot
+> log of the machine, and a diff against the apic log of a working boot
+> of the same kernel when using noapic. One thing that I should mention
+> is that on these dells, I also usually use the pnpbios=off option to
+> hide the pesky warnings on boot, in addition to noapic.
+>
+> I hope these logs help you in some way. If there is anything else you
+> might be interested in knowing or testing, don't hesitate to ask!
+
+Original report: http://thread.gmane.org/gmane.linux.kernel/1000807
+Logs: http://bugs.debian.org/cgi-bin/bugreport.cgi?msg=86;bug=586494
+
+> Dan McGrath
+>
+> PS - Not a problem Jonathan, thanks!
+>
+> [1] http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=586494
