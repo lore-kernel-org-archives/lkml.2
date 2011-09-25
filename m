@@ -1,84 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753064Ab1IYQhj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Sep 2011 12:37:39 -0400
-Received: from mail.kaapeli.fi ([84.20.139.148]:58201 "EHLO mail.kaapeli.fi"
+	id S1753095Ab1IYQsM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Sep 2011 12:48:12 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:49092 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752960Ab1IYQhi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Sep 2011 12:37:38 -0400
-Message-ID: <4E7F58BB.5080803@iki.fi>
-Date: Sun, 25 Sep 2011 19:37:15 +0300
-From: Jyrki Kuoppala <jkp@iki.fi>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
+	id S1753055Ab1IYQsK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Sep 2011 12:48:10 -0400
+Date: Sun, 25 Sep 2011 09:48:04 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>, linux-kernel@vger.kernel.org,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: Re: linux-next-20110923: warning kernel/rcutree.c:1833
+Message-ID: <20110925164804.GD2995@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110925002409.GA24220@shutemov.name>
+ <20110925050826.GC2995@linux.vnet.ibm.com>
+ <20110925112637.GA19298@shutemov.name>
+ <20110925130622.GA9205@somewhere.redhat.com>
 MIME-Version: 1.0
-To: Carlos Corbacho <carlos@strangeworlds.co.uk>
-CC: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-Subject: Re: [PATCH] Fix to qt1010 tuner frequency selection (media/dvb)
-References: <4E528FAE.5060801@iki.fi> <5010154.A6jI82beuA@valkyrie>
-In-Reply-To: <5010154.A6jI82beuA@valkyrie>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110925130622.GA9205@somewhere.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I haven't gotten any feedback, and didn't see any comments on the lists 
-(though I've checked them only occasionally), so I think you're probably 
-right it fell between the cracks.
+On Sun, Sep 25, 2011 at 03:06:25PM +0200, Frederic Weisbecker wrote:
+> On Sun, Sep 25, 2011 at 02:26:37PM +0300, Kirill A. Shutemov wrote:
+> > On Sat, Sep 24, 2011 at 10:08:26PM -0700, Paul E. McKenney wrote:
+> > > On Sun, Sep 25, 2011 at 03:24:09AM +0300, Kirill A. Shutemov wrote:
+> > > > [   29.974288] ------------[ cut here ]------------
+> > > > [   29.974308] WARNING: at /home/kas/git/public/linux-next/kernel/rcutree.c:1833 rcu_needs_cpu+0xff
+> > > > [   29.974316] Hardware name: HP EliteBook 8440p
+> > > > [   29.974321] Modules linked in: ip6table_filter ip6_tables ebtable_nat ebtables ipt_MASQUERADE iple_mangle xt_tcpudp iptable_filter ip_tables x_tables bridge stp llc rfcomm bnep acpi_cpufreq mperfckd fscache auth_rpcgss nfs_acl sunrpc ext2 loop kvm_intel kvm snd_hda_codec_hdmi snd_hda_codec_idtideodev media v4l2_compat_ioctl32 snd_seq bluetooth drm_kms_helper snd_timer tpm_infineon snd_seq_drt tpm_tis hp_accel intel_ips soundcore lis3lv02d tpm rfkill i2c_algo_bit snd_page_alloc i2c_core c16 sha256_generic aesni_intel cryptd aes_x86_64 aes_generic cbc dm_crypt dm_mod sg sr_mod sd_mod cd thermal_sys [last unloaded: scsi_wait_scan]
+> > > > [   29.974517] Pid: 0, comm: kworker/0:1 Not tainted 3.1.0-rc7-next-20110923 #2
+> > > > [   29.974521] Call Trace:
+> > > > [   29.974525]  <IRQ>  [<ffffffff8104d72a>] warn_slowpath_common+0x7a/0xb0
+> > > > [   29.974540]  [<ffffffff8104d775>] warn_slowpath_null+0x15/0x20
+> > > > [   29.974546]  [<ffffffff810bffdf>] rcu_needs_cpu+0xff/0x110
+> > > > [   29.974555]  [<ffffffff8108396f>] tick_nohz_stop_sched_tick+0x13f/0x3d0
+> > > > [   29.974563]  [<ffffffff814329c0>] ? notifier_call_chain+0x70/0x70
+> > > > [   29.974571]  [<ffffffff81055622>] irq_exit+0xa2/0xd0
+> > > > [   29.974578]  [<ffffffff8101ee75>] smp_apic_timer_interrupt+0x85/0x1c0
+> > > > [   29.974585]  [<ffffffff814329c0>] ? notifier_call_chain+0x70/0x70
+> > > > [   29.974592]  [<ffffffff81436e1e>] apic_timer_interrupt+0x6e/0x80
+> > > > [   29.974596]  <EOI>  [<ffffffff81297abd>] ? acpi_hw_read+0x4a/0x51
+> > > > [   29.974609]  [<ffffffff81087a07>] ? lock_acquire+0xa7/0x160
+> > > > [   29.974615]  [<ffffffff814329c0>] ? notifier_call_chain+0x70/0x70
+> > > > [   29.974622]  [<ffffffff81432a16>] __atomic_notifier_call_chain+0x56/0xb0
+> > > > [   29.974631]  [<ffffffff814329c0>] ? notifier_call_chain+0x70/0x70
+> > > > [   29.974642]  [<ffffffff8130ebb6>] ? cpuidle_idle_call+0x106/0x350
+> > > > [   29.974651]  [<ffffffff81432a81>] atomic_notifier_call_chain+0x11/0x20
+> > > > [   29.974661]  [<ffffffff81001233>] cpu_idle+0xe3/0x120
+> > > > [   29.974672]  [<ffffffff8141e34b>] start_secondary+0x1fd/0x204
+> > > > [   29.974681] ---[ end trace 6c1d44095a3bb7c5 ]---
+> > > 
+> > > Do the following help?
+> > > 
+> > > 	https://lkml.org/lkml/2011/9/17/47
+> > > 	https://lkml.org/lkml/2011/9/17/45
+> > > 	https://lkml.org/lkml/2011/9/17/43
+> > 
+> > Yes. Thanks.
+> 
+> I believe that doesn't really fix the issue. But the warning is not
+> easy to trigger. You simply haven't hit it by chance after applying
+> the patches.
+> 
+> This happens when the idle notifier callchain is called in idle
+> and is interrupted in the middle. So we have called rcu_read_lock()
+> but haven't yet released with rcu_read_unlock(), and in the end
+> of the interrupt we call tick_nohz_stop_sched_tick() -> rcu_needs_cpu()
+> which is illegal while in an rcu read side critical section.
+> 
+> No idea how to solve that. Any use of RCU after the tick gets stopped
+> is concerned here. If it is really required that rcu_needs_cpu() can't
+> be called in an rcu read side critical sectionn then it's not going
+> to be easy to fix.
+> 
+> But I don't really understand that requirement. rcu_needs_cpu() simply
+> checks if we don't have callbacks to handle. So I don't understand how
+> read side is concerned. It's rather the write side.
+> The rule I can imagine instead is: don't call __call_rcu() once the tick is
+> stopped.
+> 
+> But I'm certainly missing something.
+> 
+> Paul?
 
-Jyrki
+This is required for RCU_FAST_NO_HZ, which checks to see whether the
+current CPU can accelerate the current grace period so as to enter
+dyntick-idle mode sooner than it would otherwise.  This takes effect
+in the situation where rcu_needs_cpu() sees that there are callbacks.
+It then notes a quiescent state (which is illegal in an RCU read-side
+critical section), calls force_quiescent_state(), and so on.  For this
+to work, the current CPU must be in an RCU read-side critical section.
 
+If this cannot be made to work, another option is to call a new RCU
+function in the case where rcu_needs_cpu() returned false, but after
+the RCU read-side critical section has exited.  This new RCU function
+could then attempt to rearrange RCU so as to allow the CPU to enter
+dyntick-idle mode more quickly.  It is more important for this to
+happen when the CPU is going idle than when it is executing a user
+process.
 
-25.09.2011 19:13, Carlos Corbacho kirjoitti:
-> On Monday 22 Aug 2011 20:19:42 Jyrki Kuoppala wrote:
->> The patch fixes frequency selection for some UHF frequencies e.g.
->> channel 32 (562 MHz) on the qt1010 tuner. The tuner is used e.g. in the
->> MSI Mega Sky dvb-t stick ("MSI Mega Sky 55801 DVB-T USB2.0")
->>
->> One example of problem reports of the bug this fixes can be read at
->> http://www.freak-search.com/de/thread/330303/linux-dvb_tuning_problem_with_s
->> ome_frequencies_qt1010,_dvb
->>
->> Applies to kernel versions 2.6.38.8, 2.6.39.4, 3.0.3 and 3.1-rc2.
->>
->> Signed-off-by: Jyrki Kuoppala<jkp@iki.fi>
-> Cc: stable@kernel.org
-> Tested-by: Carlos Corbacho<carlos@strangeworlds.co.uk>
->
-> This patch means I can now finally tune to all the BBC channels (which are on
-> channel 31 (554 MHz) in my area). This should definitely go to stable, as I've
-> also seen other similar reports for users who can't tune to various channels
-> in the affected ranges here using qt1010.
->
-> Mauro - I don't see this one in your git tree in the 3.2 branch, or in the
-> temporary linuxtv patchwork, so I'm assuming this one fell between the cracks?
->
-> -Carlos
->
->> diff -upr linux-source-2.6.38.orig/drivers/media/common/tuners/qt1010.c
->> linux-source-2.6.38/drivers/media/common/tuners/qt1010.c
->> --- linux-source-2.6.38.orig/drivers/media/common/tuners/qt1010.c
->> 2011-03-15 03:20:32.000000000 +0200
->> +++ linux-source-2.6.38/drivers/media/common/tuners/qt1010.c
->> 2011-08-21 23:16:38.209580365 +0300
->> @@ -198,9 +198,10 @@ static int qt1010_set_params(struct dvb_
->>
->>        /* 22 */
->>        if      (freq<  450000000) rd[15].val = 0xd0; /* 450 MHz */
->> -    else if (freq<  482000000) rd[15].val = 0xd1; /* 482 MHz */
->> +    else if (freq<  482000000) rd[15].val = 0xd2; /* 482 MHz */
->>        else if (freq<  514000000) rd[15].val = 0xd4; /* 514 MHz */
->> -    else if (freq<  546000000) rd[15].val = 0xd7; /* 546 MHz */
->> +    else if (freq<  546000000) rd[15].val = 0xd6; /* 546 MHz */
->> +    else if (freq<  578000000) rd[15].val = 0xd8; /* 578 MHz */
->>        else if (freq<  610000000) rd[15].val = 0xda; /* 610 MHz */
->>        else                       rd[15].val = 0xd0;
->>
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+So, is this doable?
 
+							Thanx, Paul
