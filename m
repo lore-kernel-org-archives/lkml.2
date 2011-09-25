@@ -1,67 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752568Ab1IYMzV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Sep 2011 08:55:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25836 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752348Ab1IYMzT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Sep 2011 08:55:19 -0400
-Message-ID: <4E7F248A.2050004@redhat.com>
-Date: Sun, 25 Sep 2011 15:54:34 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1752571Ab1IYM7w (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Sep 2011 08:59:52 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:60818 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752363Ab1IYM7u convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Sep 2011 08:59:50 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=aKIG7wupdW+HZ9Ic2m4iIYxjomwK+gY5pUsw5rZgK3SDZY6pIOlnPp3gSET5X0kGC
+	ROVpluwJSZwIDqLSXom8A==
 MIME-Version: 1.0
-To: Robert Richter <robert.richter@amd.com>
-CC: Don Zickus <dzickus@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "ying.huang@intel.com" <ying.huang@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "jeremy@goop.org" <jeremy@goop.org>
-Subject: Re: [V5][PATCH 4/6] x86, nmi:  add in logic to handle multiple events
- and unknown NMIs
-References: <1316529792-6560-1-git-send-email-dzickus@redhat.com> <1316529792-6560-5-git-send-email-dzickus@redhat.com> <20110921100842.GA6063@erda.amd.com> <20110921140432.GP5795@redhat.com> <20110921151829.GC6063@erda.amd.com> <20110921161352.GU5795@redhat.com> <4E7A0FD6.3080508@redhat.com> <20110921165451.GF6063@erda.amd.com>
-In-Reply-To: <20110921165451.GF6063@erda.amd.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1316818998-30711-3-git-send-email-sjg@chromium.org>
+References: <1316818998-30711-1-git-send-email-sjg@chromium.org> <1316818998-30711-3-git-send-email-sjg@chromium.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Sun, 25 Sep 2011 06:59:27 -0600
+Message-ID: <CAErSpo6PFPLRAfPd_myJXrGdYofOR82YXy6U4YZEfp-bfXhQuA@mail.gmail.com>
+Subject: Re: [RFC PATCH 2/3] bootstage: Insert bootstage_mark to record timing
+ for bootup.
+To: Simon Glass <sjg@chromium.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Da Zheng <zhengda@chromium.org>, Da Zheng <zhengda@chromium.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/21/2011 07:54 PM, Robert Richter wrote:
-> On 21.09.11 12:24:54, Avi Kivity wrote:
-> >  On 09/21/2011 07:13 PM, Don Zickus wrote:
-> >  >  On Wed, Sep 21, 2011 at 05:18:30PM +0200, Robert Richter wrote:
-> >  >  >   On 21.09.11 10:04:32, Don Zickus wrote:
+On Fri, Sep 23, 2011 at 5:03 PM, Simon Glass <sjg@chromium.org> wrote:
+> From: Da Zheng <zhengda@chromium.org>
 >
-> >  >  >   But in rare cases there is the following:
-> >  >  >
-> >  >  >   1. The cpu executes some microcode or SMM code.
-> >  >  >   2. HW triggers the first NMI, an NMI is pending.
-> >  >  >   3. HW triggers a second NMI, the NMI is still pending.
-> >  >  >   4. The cpu finished microcode or SMM code.
-> >  >  >   5. NMI handler is called, no NMI pending anymore.
-> >  >  >   6. Return from NMI handler.
-> >  >  >
-> >  >  >   In this case the handler is called only once and the second nmi
-> >  >  >   remains unhandled with you implementation.
-> >  >  >
-> >  >  >   I don't see a way how this could be catched without serving all
-> >  >  >   handlers the first time. But as said, in favor of the optimization I
-> >  >  >   think we can live with losing some NMIs.
+> From: Da Zheng <zhengda@chromium.org>
 >
-> I have to revise this after thinking more about this. We may not lose
-> an nmi for sources where the nmi handler must always reenable the nmi,
-> e.g. IBS. Losing one nmi means for IBS that sample generation gets
-> stuck.
+> This inserts calls to bootstage_mark() to timestamp the kernel moving
+> between the different initcall levels.
 >
+> Signed-off-by: Da Zheng <zhengda@chromium.com>
+> ---
+>  init/bootstage.c |   49 +++++++++++++++++++++++++++++++++++++++++++++++++
+>  init/main.c      |    7 +++++++
+>  2 files changed, 56 insertions(+), 0 deletions(-)
+>
+> diff --git a/init/bootstage.c b/init/bootstage.c
+> index 79e9761..6f4668f 100644
+> --- a/init/bootstage.c
+> +++ b/init/bootstage.c
+> @@ -226,3 +226,52 @@ static int __init bootstage_init(void)
+>  }
+>
+>  postcore_initcall(bootstage_init);
+> +
+> +static int __init post_core_initcall(void)
+> +{
+> +       bootstage_mark("core_initcall");
+> +       return 0;
+> +}
+> +core_initcall_sync(post_core_initcall);
 
-Well, that pretty much kills the whole idea.  This thing has to be reliable.
+I'm sure you considered just instrumenting do_one_initcall() rather
+than adding these individual initcall marks?  That would get you a lot
+more timestamps (maybe too many), and would help identify individual
+drivers, which I suspect will be common offenders.
 
-I'll ask Intel if they can guarantee a length 2 queue on their 
-processors (or maybe Andi you can find this out).
-
--- 
-error compiling committee.c: too many arguments to function
-
+Bjorn
