@@ -1,90 +1,267 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752680Ab1IYN3n (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Sep 2011 09:29:43 -0400
-Received: from nm27-vm2.bullet.mail.ne1.yahoo.com ([98.138.91.215]:44199 "HELO
-	nm27-vm2.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752559Ab1IYN3l convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Sep 2011 09:29:41 -0400
-X-Greylist: delayed 376 seconds by postgrey-1.27 at vger.kernel.org; Sun, 25 Sep 2011 09:29:41 EDT
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 895205.97770.bm@omp1001.mail.ne1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=yjhy7iDv9Q36DF4ju66mNbV7Gi+nmQ4nR3vgKE0Ou3vHixgCvZu+TPwWu5wwCd+oJNjs+gNQW9AH6jqglF+A8gYoZw6xKKfPOkeLXgBgAJBWZ1h4HcX93ouMQmb9h3sLXD8WtLk9hPvS8lF6SU63NGYbFdTsAg9roLBdwXvYQoE=;
-X-YMail-OSG: h1NSgqQVM1m_vmUKSeen3dsIeNGlppF7yhOMCMvWBbHTyQz
- CHe9Fr3vZr_QCs.1uZBhUG2UWHd7iQPInI2M0xCzx.UcL_9G7YaBAo17xMHo
- FuOiGllq0eQ_EIaCR9TRXtu5MmfHNFyhPjYHp_DH1hs589Z9SiD5w_QT7NLo
- HjjQ_FwceXPf4MH3aAgE8ZUUxx0mnejTa25zPIdTV4rqM51d3_S2FR9as5xg
- vg1Aj8Ey5swILvSzsnfc7KJ6y1THxs2sxm.gMMRJ_EtS._XR_1ZZMjOUope8
- 4Uj7wlK1EIaCj6_RF2CBD1YdRLziSPkV_uf1j.xdrK.WN0WKneOqPEq_Aq.j
- B_cfR3owBZxeyofCgk4kqmo3W.1nKF7aurMtkP3YpHseNBoqKVd5ASqNgqwZ
- i.jc7_LdySFpHWD2NLZeret6bZ5V3v8oJTYyyG3cRjogODEb2IrakNjSbv1r
- 4a55up4vLnQlNz7mIDYAhCOw2_DPFrhC5gzJRBKkRjgeJZoqY8vGNyFRGDfv
- r0hJSdst03zzf4m7SwTfoUtlPmcI-
-X-Mailer: YahooMailWebService/0.8.114.317681
-References: <1316478488.72684.YahooMailNeo@web130114.mail.mud.yahoo.com> <1316868946.61433.YahooMailNeo@web130123.mail.mud.yahoo.com> <yunvcsim1wk.fsf@aiko.keithp.com> <1316877222.89367.YahooMailNeo@web130124.mail.mud.yahoo.com> <yunsjnln8it.fsf@aiko.keithp.com>
-Message-ID: <1316957004.77729.YahooMailNeo@web130108.mail.mud.yahoo.com>
-Date: Sun, 25 Sep 2011 06:23:24 -0700 (PDT)
-From: Alex Davis <alex14641@yahoo.com>
-Reply-To: Alex Davis <alex14641@yahoo.com>
-Subject: Re: [Regression] Laptop screen dark when lid closed and reopened.with 3.1
-To: Keith Packard <keithp@keithp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <yunsjnln8it.fsf@aiko.keithp.com>
+	id S1752722Ab1IYNaM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Sep 2011 09:30:12 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:54539 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752559Ab1IYNaJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Sep 2011 09:30:09 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Christoph <cr2005@u-club.de>
+Subject: Re: [PATCH] PM / Freezer: Freeze filesystems while freezing processes (v2)
+Date: Sun, 25 Sep 2011 15:32:19 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc4+; KDE/4.6.0; x86_64; ; )
+Cc: Dave Chinner <david@fromorbit.com>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Pavel Machek <pavel@ucw.cz>, Nigel Cunningham <nigel@tuxonice.net>,
+        Christoph Hellwig <hch@infradead.org>, xfs@oss.sgi.com,
+        LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
+        "Theodore Ts'o" <tytso@mit.edu>, linux-fsdevel@vger.kernel.org
+References: <4E1C70AD.1010101@u-club.de> <201109250056.12545.rjw@sisk.pl> <4E7F04B7.4020002@u-club.de>
+In-Reply-To: <4E7F04B7.4020002@u-club.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201109251532.20025.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From: Keith Packard <keithp@keithp.com>
->To: Alex Davis <alex14641@yahoo.com>; "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
->Cc:
->Sent: Saturday, September 24, 2011 1:40 PM
->Subject: Re: [Regression] Laptop screen dark when lid closed and reopened.with 3.1
->
->On Sat, 24 Sep 2011 08:13:42 -0700 (PDT), Alex Davis <alex14641@yahoo.com> wrote:
->
->> One good thing about the 3.1 kernels is that I now have the /sys/class/backlight/intel_backlight directory
->> in addition to /sys/class/backlight/dell_backlight. With intel_backlight, I can control the LCD brightness;
->> dell_backlight never worked, neither in 3.0 or 3.1.
->
->Can you tell if the screen is blank with the backlight on, or is the
->screen drawn correctly and the backlight off?
->
->If the screen is blank but the backlight is on, then you may want a
->patch which is on my drm-intel-fixes branch.
->
->git://anongit.freedesktop.org/~keithp/linux
->
->If the screen is drawn, but the backlight is off, you may want to try
->reverting the native backlight patch:
->
->aaa6fd2a004147bf32fce05720938236de3361d9
->
->Author: Matthew Garrett <mjg@redhat.com>  2011-08-12 03:11:33
->Committer: Keith Packard <keithp@keithp.com>  2011-08-15 12:10:25
->Parent: 302983e9059e9ef5de3ca7671918eeb237c5971e (drm/i915/pch: Fix integer math bugs in panel fitting)
->
->Not all systems expose a firmware or platform mechanism for changing the backlight intensity on i915, so add native driver support.
->
->-- 
->keith.packard@intel.com
+On Sunday, September 25, 2011, Christoph wrote:
+> test results of the patch below:
+> 
+> 1. real machine
+> 
+> suspends fine but on wakeup, after loading image: hard reset.
+> nvidia gpu => disabled compitz  => wakeup worked two times.
 
-Action: close lid, open lid, and press return key.
+Hmm, so there's a separate bug related to NVidia I guess.
 
-Result with 3.0.x: password dialog appears. This is the correct result.
+> 2. virtualbox / stress test / xfs and ext4
+> 
+> on 3rd resume, it booted up "normal" like this:
+> 
+> [    3.351813] Freeing unused kernel memory: 568k freed
+> [    3.460973] Freeing unused kernel memory: 284k freed
+> 
+> [   17.328356] PM: Preparing processes for restore.
+> 
+> [   17.328357] Freezing user space processes ...
+> [   37.345414] Freezing of tasks failed after 20.01 seconds (1 tasks
+> refusing to freeze, wq_busy=0):
+> [   37.475244]  ffff88001f06fd68 0000000000000086 0000000000000000
+> 0000000000000000
+> [   37.526163]  ffff88001f06e010 ffff88001f4c4410 0000000000012ec0
+> ffff88001f06ffd8
+> [   37.580110]  ffff88001f06ffd8 0000000000012ec0 ffffffff8160d020
+> ffff88001f4c4410
+> [   37.626167] Call Trace:
+> [   37.626769]  [<ffffffff81049944>] schedule+0x55/0x57
+> [   37.674925]  [<ffffffff81360dbe>] __mutex_lock_common+0x117/0x178
+> [   37.792559]  [<ffffffff81113ef2>] ? user_path_at+0x61/0x90
+> [   37.888501]  [<ffffffff81360e35>] __mutex_lock_slowpath+0x16/0x18
+> [   37.986966]  [<ffffffff81360efb>] mutex_lock+0x1e/0x32
+> [   38.086931]  [<ffffffffa00a4d43>] show_manufacturer+0x23/0x51 [usbcore]
+> [   38.212500]  [<ffffffff8125cd44>] dev_attr_show+0x22/0x49
+> [   38.282319]  [<ffffffff810c6f8c>] ? __get_free_pages+0x9/0x38
+> [   38.397449]  [<ffffffff8115febb>] sysfs_read_file+0xa9/0x12b
+> [   38.491607]  [<ffffffff81107ff6>] vfs_read+0xa6/0x102
+> [   38.541994]  [<ffffffff81105ebf>] ? do_sys_open+0xee/0x100
+> [   38.564907]  [<ffffffff8110810b>] sys_read+0x45/0x6c
+> [   38.578397]  [<ffffffff81368412>] system_call_fastpath+0x16/0x1b
+> [   38.590083]
+> [   38.598046] Restarting tasks ... done.
+> [   38.660448] XFS (sda3): Mounting Filesystem
+> 
+> restarted the test runs, increased delay between awake and sleep from 20
+> to 25 sec:
+> 
+> 36 time successful hibernate+resume so far.
 
-Result with git://anongit.freedesktop.org/~keithp/linux: screen is dark.
-Manually adjusting the brightness reveals a functioning mouse cursor, but
-no password dialog. Switching to a text console and back to the X session
-reveals the dialog.
+OK, cool.  Thanks for testing!
 
-Result with 3.1rc7 with aaa6fd2a004147bf32fce05720938236de3361d9 reverted:
-screen with a functioning mouse cursor, but no password dialog. Switching
-to a text console and back to the X session reveals the dialog. Brightness
-cannot be controlled.
+Rafael
+
+
+> On 25.09.2011 00:56, Rafael J. Wysocki wrote:
+> > On Sunday, August 07, 2011, Dave Chinner wrote:
+> >> On Sat, Aug 06, 2011 at 11:17:18PM +0200, Rafael J. Wysocki wrote:
+> >>> From: Rafael J. Wysocki <rjw@sisk.pl>
+> >>>
+> >>> Freeze all filesystems during the freezing of tasks by calling
+> >>> freeze_bdev() for each of them and thaw them during the thawing
+> >>> of tasks with the help of thaw_bdev().
+> >>>
+> >>> This is needed by hibernation, because some filesystems (e.g. XFS)
+> >>> deadlock with the preallocation of memory used by it if the memory
+> >>> pressure caused by it is too heavy.
+> >>>
+> >>> The additional benefit of this change is that, if something goes
+> >>> wrong after filesystems have been frozen, they will stay in a
+> >>> consistent state and journal replays won't be necessary (e.g. after
+> >>> a failing suspend or resume).  In particular, this should help to
+> >>> solve a long-standing issue that in some cases during resume from
+> >>> hibernation the boot loader causes the journal to be replied for the
+> >>> filesystem containing the kernel image and initrd causing it to
+> >>> become inconsistent with the information stored in the hibernation
+> >>> image.
+> >>>
+> >>> This change is based on earlier work by Nigel Cunningham.
+> >>>
+> >>> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> >>> ---
+> > 
+> > Below is an alternative fix, the changelog pretty much explains the idea.
+> > 
+> > I've tested it on Toshiba Portege R500, but I don't have an XFS partition
+> > to verify that it really helps, so I'd appreciate it if someone able to
+> > reproduce the original issue could test it and report back.
+> > 
+> > Thanks,
+> > Rafael
+> > 
+> > ---
+> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> > Subject: PM / Hibernate: Freeze kernel threads after preallocating memory
+> > 
+> > There is a problem with the current ordering of hibernate code which
+> > leads to deadlocks in some filesystems' memory shrinkers.  Namely,
+> > some filesystems use freezable kernel threads that are inactive when
+> > the hibernate memory preallocation is carried out.  Those same
+> > filesystems use memory shrinkers that may be triggered by the
+> > hibernate memory preallocation.  If those memory shrinkers wait for
+> > the frozen kernel threads, the hibernate process deadlocks (this
+> > happens with XFS, for one example).
+> > 
+> > Apparently, it is not technically viable to redesign the filesystems
+> > in question to avoid the situation described above, so the only
+> > possible solution of this issue is to defer the freezing of kernel
+> > threads until the hibernate memory preallocation is done, which is
+> > implemented by this change.
+> > 
+> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> > ---
+> >  include/linux/freezer.h  |    4 +++-
+> >  kernel/power/hibernate.c |   12 ++++++++----
+> >  kernel/power/power.h     |    3 ++-
+> >  kernel/power/process.c   |   30 ++++++++++++++++++++----------
+> >  4 files changed, 33 insertions(+), 16 deletions(-)
+> > 
+> > Index: linux/kernel/power/process.c
+> > ===================================================================
+> > --- linux.orig/kernel/power/process.c
+> > +++ linux/kernel/power/process.c
+> > @@ -135,7 +135,7 @@ static int try_to_freeze_tasks(bool sig_
+> >  }
+> >  
+> >  /**
+> > - *	freeze_processes - tell processes to enter the refrigerator
+> > + * freeze_processes - Signal user space processes to enter the refrigerator.
+> >   */
+> >  int freeze_processes(void)
+> >  {
+> > @@ -143,20 +143,30 @@ int freeze_processes(void)
+> >  
+> >  	printk("Freezing user space processes ... ");
+> >  	error = try_to_freeze_tasks(true);
+> > -	if (error)
+> > -		goto Exit;
+> > -	printk("done.\n");
+> > +	if (!error) {
+> > +		printk("done.");
+> > +		oom_killer_disable();
+> > +	}
+> > +	printk("\n");
+> > +	BUG_ON(in_atomic());
+> > +
+> > +	return error;
+> > +}
+> > +
+> > +/**
+> > + * freeze_kernel_threads - Make freezable kernel threads go to the refrigerator.
+> > + */
+> > +int freeze_kernel_threads(void)
+> > +{
+> > +	int error;
+> >  
+> >  	printk("Freezing remaining freezable tasks ... ");
+> >  	error = try_to_freeze_tasks(false);
+> > -	if (error)
+> > -		goto Exit;
+> > -	printk("done.");
+> > +	if (!error)
+> > +		printk("done.");
+> >  
+> > -	oom_killer_disable();
+> > - Exit:
+> > -	BUG_ON(in_atomic());
+> >  	printk("\n");
+> > +	BUG_ON(in_atomic());
+> >  
+> >  	return error;
+> >  }
+> > Index: linux/include/linux/freezer.h
+> > ===================================================================
+> > --- linux.orig/include/linux/freezer.h
+> > +++ linux/include/linux/freezer.h
+> > @@ -49,6 +49,7 @@ extern int thaw_process(struct task_stru
+> >  
+> >  extern void refrigerator(void);
+> >  extern int freeze_processes(void);
+> > +extern int freeze_kernel_threads(void);
+> >  extern void thaw_processes(void);
+> >  
+> >  static inline int try_to_freeze(void)
+> > @@ -171,7 +172,8 @@ static inline void clear_freeze_flag(str
+> >  static inline int thaw_process(struct task_struct *p) { return 1; }
+> >  
+> >  static inline void refrigerator(void) {}
+> > -static inline int freeze_processes(void) { BUG(); return 0; }
+> > +static inline int freeze_processes(void) { return -ENOSYS; }
+> > +static inline int freeze_kernel_threads(void) { return -ENOSYS; }
+> >  static inline void thaw_processes(void) {}
+> >  
+> >  static inline int try_to_freeze(void) { return 0; }
+> > Index: linux/kernel/power/power.h
+> > ===================================================================
+> > --- linux.orig/kernel/power/power.h
+> > +++ linux/kernel/power/power.h
+> > @@ -228,7 +228,8 @@ extern int pm_test_level;
+> >  #ifdef CONFIG_SUSPEND_FREEZER
+> >  static inline int suspend_freeze_processes(void)
+> >  {
+> > -	return freeze_processes();
+> > +	int error = freeze_processes();
+> > +	return error ? : freeze_kernel_threads();
+> >  }
+> >  
+> >  static inline void suspend_thaw_processes(void)
+> > Index: linux/kernel/power/hibernate.c
+> > ===================================================================
+> > --- linux.orig/kernel/power/hibernate.c
+> > +++ linux/kernel/power/hibernate.c
+> > @@ -334,13 +334,17 @@ int hibernation_snapshot(int platform_mo
+> >  	if (error)
+> >  		goto Close;
+> >  
+> > -	error = dpm_prepare(PMSG_FREEZE);
+> > -	if (error)
+> > -		goto Complete_devices;
+> > -
+> >  	/* Preallocate image memory before shutting down devices. */
+> >  	error = hibernate_preallocate_memory();
+> >  	if (error)
+> > +		goto Close;
+> > +
+> > +	error = freeze_kernel_threads();
+> > +	if (error)
+> > +		goto Close;
+> > +
+> > +	error = dpm_prepare(PMSG_FREEZE);
+> > +	if (error)
+> >  		goto Complete_devices;
+> >  
+> >  	suspend_console();
+> 
+
