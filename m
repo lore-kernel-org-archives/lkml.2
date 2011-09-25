@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751788Ab1IYI60 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Sep 2011 04:58:26 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:45887 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751554Ab1IYI6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Sep 2011 04:58:25 -0400
-Date: Sun, 25 Sep 2011 10:58:18 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Simon Kirby <sim@hostway.ca>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [3.1-rc6] kmalloc(64) leak from IDE
-Message-ID: <20110925085818.GA10947@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Simon Kirby <sim@hostway.ca>, linux-kernel@vger.kernel.org
-References: <20110922072643.GA27232@hostway.ca>
- <20110922084811.GC17640@liondog.tnic>
- <20110922202337.GB32661@hostway.ca>
- <20110923072118.GA13293@liondog.tnic>
- <20110923173808.GB26481@hostway.ca>
+	id S1751758Ab1IYJER (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Sep 2011 05:04:17 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:55946 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751583Ab1IYJEQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Sep 2011 05:04:16 -0400
+Date: Sun, 25 Sep 2011 11:04:17 +0200
+From: Heinz Diehl <htd@fancy-poultry.org>
+To: linux-kernel@vger.kernel.org
+Cc: kernel@kolivas.org
+Subject: Re: BFS cpu scheduler and skip list implementation
+Message-ID: <20110925090417.GA19813@fancy-poultry.org>
+References: <201109240945.58879.kernel@kolivas.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110923173808.GB26481@hostway.ca>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201109240945.58879.kernel@kolivas.org>
+Organization: private site
+X-OpenPGP-KeyID: 0xE9002778
+X-OpenPGP-Fingerprint: C661 CE20 7105 B0DB 49B5  CDB2 298C 801B E900 2778
+X-OpenPGP-URL: http://www.fritha.org/htd.asc
+User-Agent: Mutt/1.5.21+46 (b01d63af6fea) (2011-07-01)
+X-Provags-ID: V02:K0:Bmzdu3Ej4epmSrKS+5CCiZo3hnaC07XtwdUaIh+8Yap
+ RUbxgV7mlj9uUc9oOkPJKcYYFWMcur55H8YrEL4j8PIsPFol+x
+ JCCbTZSbZG6+EJxrflT9FS7A9CLkueOv+OcveyIyeqJelgbPJm
+ AKuoBmeJstnhSg66EGFIwkjPLsKh9u8ormGUSXvcuWWw/LgjSl
+ vw0dUrdYgKabP4GS9mwh2j1osdHYgeYeOyS+RDJbW7lCtQH2aj
+ 6zA4MhKaw7YL4xIt4s+fI/sGVRMnyKmrvYKNeBULaw96Vk8FZS
+ kqFpavARDLePrEU/ItACb0hVYHw569ycm/sQNYzMBtAZ1MMwCQ
+ Tx8bzdEuUV8hUIdJaPgENe6C50lzfjx7cJW/o0Mb/
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 23, 2011 at 10:38:08AM -0700, Simon Kirby wrote:
-> On Fri, Sep 23, 2011 at 09:21:18AM +0200, Borislav Petkov wrote:
-> 
-> > On Thu, Sep 22, 2011 at 01:23:37PM -0700, Simon Kirby wrote:
-> > > Yes, that seems to have made it stop complaining about the IDE path.
-> > 
-> > Good, thanks for testing. It would be great if you left it running for
-> > a couple of days like this to see whether there aren't any other issues
-> > with the patch. I'll send it with a proper description to Dave soonish
-> > since this is a real bug.
-> 
-> It has been up 22 hours now without breaking.
+On 24.09.2011, Con Kolivas wrote: 
 
-Good.
+> Try it out, see what you think.
 
-> I suppose you're worried about the old command being used after it
-> gets reused.
+Your patch applies cleanly to 3.0.4 vanilla, but compilation fails:
 
-Nah, we clear the old command before reusing it and when the request is
-done, it gets freed, AFAICT, but...
+[....]
+/usr/src/linux-3.0.4/usr/include/linux/sched.h:1504: userspace cannot reference function or variable defined in the kernel
+/usr/src/linux-3.0.4/usr/include/linux/sched.h:1505: userspace cannot reference function or variable defined in the kernel
+/usr/src/linux-3.0.4/usr/include/linux/sched.h:1507: userspace cannot reference function or variable defined in the kernel
+/usr/src/linux-3.0.4/usr/include/linux/sched.h:1508: userspace cannot reference function or variable defined in the kernel
+/usr/src/linux-3.0.4/usr/include/linux/sched.h:1511: userspace cannot reference function or variable defined in the kernel
+/usr/src/linux-3.0.4/usr/include/linux/sched.h:1513: userspace cannot reference function or variable defined in the kernel
+/usr/src/linux-3.0.4/usr/include/linux/sched.h:1514: userspace cannot reference function or variable defined in the kernel
+/usr/src/linux-3.0.4/usr/include/linux/sched.h:1516: userspace cannot reference function or variable defined in the kernel
+/usr/src/linux-3.0.4/usr/include/linux/sched.h:1517: userspace cannot reference function or variable defined in the kernel
+/usr/src/linux-3.0.4/usr/include/linux/sched.h:1521: userspace cannot reference function or variable defined in the kernel
+/usr/src/linux-3.0.4/usr/include/linux/sched.h:1567: userspace cannot reference function or variable defined in the kernel
+/usr/src/linux-3.0.4/usr/include/linux/sched.h:1568: userspace cannot reference function or variable defined in the kernel
+/usr/src/linux-3.0.4/usr/include/linux/soundcard.h:1054: userspace cannot reference function or variable defined in the kernel
+make[3]: *** [/usr/src/linux-3.0.4/usr/include/linux/.check] Error 123
+make[2]: *** [linux] Error 2
+make[1]: *** [headers_check] Error 2
+make: *** [vmlinux] Error 2
 
-> Would it help to bisect the regression to see how it used to work?
-> That would let us know how many stable kernels to patch, too.
-
-backporting it to -stable is a good point. I'll add the proper tagging
-to the patch.
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
