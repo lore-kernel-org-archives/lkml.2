@@ -1,157 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751056Ab1IYFF0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Sep 2011 01:05:26 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:62876 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750846Ab1IYFFZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Sep 2011 01:05:25 -0400
-From: Johannes Thumshirn <morbidrsa@googlemail.com>
-To: gregkh@suse.de, abbotti@mev.co.uk, fmhess@users.sourceforge.net
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        Johannes Thumshirn <morbidrsa@googlemail.com>
-Subject: [PATCH] staging: comedi: Added log subjects to printk()s in pcmmio
-Date: Sun, 25 Sep 2011 06:49:12 +0200
-Message-Id: <1316926152-7258-1-git-send-email-morbidrsa@googlemail.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1750975Ab1IYFIb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Sep 2011 01:08:31 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:37176 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750750Ab1IYFIa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Sep 2011 01:08:30 -0400
+Date: Sat, 24 Sep 2011 22:08:26 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: Re: linux-next-20110923: warning kernel/rcutree.c:1833
+Message-ID: <20110925050826.GC2995@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110925002409.GA24220@shutemov.name>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110925002409.GA24220@shutemov.name>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added log subject to printk()s in drivers/staging/comedi/drivers/pcmmio.c.
+On Sun, Sep 25, 2011 at 03:24:09AM +0300, Kirill A. Shutemov wrote:
+> [   29.974288] ------------[ cut here ]------------
+> [   29.974308] WARNING: at /home/kas/git/public/linux-next/kernel/rcutree.c:1833 rcu_needs_cpu+0xff
+> [   29.974316] Hardware name: HP EliteBook 8440p
+> [   29.974321] Modules linked in: ip6table_filter ip6_tables ebtable_nat ebtables ipt_MASQUERADE iple_mangle xt_tcpudp iptable_filter ip_tables x_tables bridge stp llc rfcomm bnep acpi_cpufreq mperfckd fscache auth_rpcgss nfs_acl sunrpc ext2 loop kvm_intel kvm snd_hda_codec_hdmi snd_hda_codec_idtideodev media v4l2_compat_ioctl32 snd_seq bluetooth drm_kms_helper snd_timer tpm_infineon snd_seq_drt tpm_tis hp_accel intel_ips soundcore lis3lv02d tpm rfkill i2c_algo_bit snd_page_alloc i2c_core c16 sha256_generic aesni_intel cryptd aes_x86_64 aes_generic cbc dm_crypt dm_mod sg sr_mod sd_mod cd thermal_sys [last unloaded: scsi_wait_scan]
+> [   29.974517] Pid: 0, comm: kworker/0:1 Not tainted 3.1.0-rc7-next-20110923 #2
+> [   29.974521] Call Trace:
+> [   29.974525]  <IRQ>  [<ffffffff8104d72a>] warn_slowpath_common+0x7a/0xb0
+> [   29.974540]  [<ffffffff8104d775>] warn_slowpath_null+0x15/0x20
+> [   29.974546]  [<ffffffff810bffdf>] rcu_needs_cpu+0xff/0x110
+> [   29.974555]  [<ffffffff8108396f>] tick_nohz_stop_sched_tick+0x13f/0x3d0
+> [   29.974563]  [<ffffffff814329c0>] ? notifier_call_chain+0x70/0x70
+> [   29.974571]  [<ffffffff81055622>] irq_exit+0xa2/0xd0
+> [   29.974578]  [<ffffffff8101ee75>] smp_apic_timer_interrupt+0x85/0x1c0
+> [   29.974585]  [<ffffffff814329c0>] ? notifier_call_chain+0x70/0x70
+> [   29.974592]  [<ffffffff81436e1e>] apic_timer_interrupt+0x6e/0x80
+> [   29.974596]  <EOI>  [<ffffffff81297abd>] ? acpi_hw_read+0x4a/0x51
+> [   29.974609]  [<ffffffff81087a07>] ? lock_acquire+0xa7/0x160
+> [   29.974615]  [<ffffffff814329c0>] ? notifier_call_chain+0x70/0x70
+> [   29.974622]  [<ffffffff81432a16>] __atomic_notifier_call_chain+0x56/0xb0
+> [   29.974631]  [<ffffffff814329c0>] ? notifier_call_chain+0x70/0x70
+> [   29.974642]  [<ffffffff8130ebb6>] ? cpuidle_idle_call+0x106/0x350
+> [   29.974651]  [<ffffffff81432a81>] atomic_notifier_call_chain+0x11/0x20
+> [   29.974661]  [<ffffffff81001233>] cpu_idle+0xe3/0x120
+> [   29.974672]  [<ffffffff8141e34b>] start_secondary+0x1fd/0x204
+> [   29.974681] ---[ end trace 6c1d44095a3bb7c5 ]---
 
-Signed-off-by: Johannes Thumshirn <morbidrsa@googlemail.com>
----
- drivers/staging/comedi/drivers/pcmmio.c |   34 +++++++++++++++---------------
- 1 files changed, 17 insertions(+), 17 deletions(-)
+Do the following help?
 
-diff --git a/drivers/staging/comedi/drivers/pcmmio.c b/drivers/staging/comedi/drivers/pcmmio.c
-index f2e88e5..3ad04aa 100644
---- a/drivers/staging/comedi/drivers/pcmmio.c
-+++ b/drivers/staging/comedi/drivers/pcmmio.c
-@@ -371,7 +371,7 @@ static int pcmmio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	iobase = it->options[0];
- 	irq[0] = it->options[1];
- 
--	printk("comedi%d: %s: io: %lx ", dev->minor, driver.driver_name,
-+	printk(KERN_INFO "comedi%d: %s: io: %lx ", dev->minor, driver.driver_name,
- 	       iobase);
- 
- 	dev->iobase = iobase;
-@@ -379,7 +379,7 @@ static int pcmmio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	if (!iobase || !request_region(iobase,
- 				       thisboard->total_iosize,
- 				       driver.driver_name)) {
--		printk("I/O port conflict\n");
-+		printk(KERN_ERR "I/O port conflict\n");
- 		return -EIO;
- 	}
- 
-@@ -394,7 +394,7 @@ static int pcmmio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
-  * convenient macro defined in comedidev.h.
-  */
- 	if (alloc_private(dev, sizeof(struct pcmmio_private)) < 0) {
--		printk("cannot allocate private data structure\n");
-+		printk(KERN_ERR "cannot allocate private data structure\n");
- 		return -ENOMEM;
- 	}
- 
-@@ -417,7 +417,7 @@ static int pcmmio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	    kcalloc(n_subdevs, sizeof(struct pcmmio_subdev_private),
- 		    GFP_KERNEL);
- 	if (!devpriv->sprivs) {
--		printk("cannot allocate subdevice private data structures\n");
-+		printk(KERN_ERR "cannot allocate subdevice private data structures\n");
- 		return -ENOMEM;
- 	}
- 	/*
-@@ -427,7 +427,7 @@ static int pcmmio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	 * Allocate 1 AI + 1 AO + 2 DIO subdevs (24 lines per DIO)
- 	 */
- 	if (alloc_subdevices(dev, n_subdevs) < 0) {
--		printk("cannot allocate subdevice data structures\n");
-+		printk(KERN_ERR "cannot allocate subdevice data structures\n");
- 		return -ENOMEM;
- 	}
- 
-@@ -557,14 +557,14 @@ static int pcmmio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 				 */
- 
- 	if (irq[0]) {
--		printk("irq: %u ", irq[0]);
-+		printk(KERN_DEBUG "irq: %u ", irq[0]);
- 		if (thisboard->dio_num_asics == 2 && irq[1])
--			printk("second ASIC irq: %u ", irq[1]);
-+			printk(KERN_DEBUG "second ASIC irq: %u ", irq[1]);
- 	} else {
--		printk("(IRQ mode disabled) ");
-+		printk(KERN_INFO "(IRQ mode disabled) ");
- 	}
- 
--	printk("attached\n");
-+	printk(KERN_INFO "attached\n");
- 
- 	return 1;
- }
-@@ -581,7 +581,7 @@ static int pcmmio_detach(struct comedi_device *dev)
- {
- 	int i;
- 
--	printk("comedi%d: %s: remove\n", dev->minor, driver.driver_name);
-+	printk(KERN_INFO "comedi%d: %s: remove\n", dev->minor, driver.driver_name);
- 	if (dev->iobase)
- 		release_region(dev->iobase, thisboard->total_iosize);
- 
-@@ -622,7 +622,7 @@ static int pcmmio_dio_insn_bits(struct comedi_device *dev,
- 
- #ifdef DAMMIT_ITS_BROKEN
- 	/* DEBUG */
--	printk("write mask: %08x  data: %08x\n", data[0], data[1]);
-+	printk(KERN_DEBUG "write mask: %08x  data: %08x\n", data[0], data[1]);
- #endif
- 
- 	s->state = 0;
-@@ -644,9 +644,9 @@ static int pcmmio_dio_insn_bits(struct comedi_device *dev,
- #ifdef DAMMIT_ITS_BROKEN
- 		/* DEBUG */
- 		printk
--		    ("byte %d wmb %02x db %02x offset %02d io %04x, data_in %02x ",
--		     byte_no, (unsigned)write_mask_byte, (unsigned)data_byte,
--		     offset, ioaddr, (unsigned)byte);
-+		    (KERN_DEBUG "byte %d wmb %02x db %02x offset %02d io %04x,"
-+		     " data_in %02x ", byte_no, (unsigned)write_mask_byte,
-+		     (unsigned)data_byte, offset, ioaddr, (unsigned)byte);
- #endif
- 
- 		if (write_mask_byte) {
-@@ -663,7 +663,7 @@ static int pcmmio_dio_insn_bits(struct comedi_device *dev,
- 		}
- #ifdef DAMMIT_ITS_BROKEN
- 		/* DEBUG */
--		printk("data_out_byte %02x\n", (unsigned)byte);
-+		printk(KERN_DEBUG "data_out_byte %02x\n", (unsigned)byte);
- #endif
- 		/* save the digital input lines for this byte.. */
- 		s->state |= ((unsigned int)byte) << offset;
-@@ -674,7 +674,7 @@ static int pcmmio_dio_insn_bits(struct comedi_device *dev,
- 
- #ifdef DAMMIT_ITS_BROKEN
- 	/* DEBUG */
--	printk("s->state %08x data_out %08x\n", s->state, data[1]);
-+	printk(KERN_DEBUG "s->state %08x data_out %08x\n", s->state, data[1]);
- #endif
- 
- 	return 2;
-@@ -886,7 +886,7 @@ static irqreturn_t interrupt_pcmmio(int irq, void *d)
- 				 * with commands..
- 				 */
- 				printk
--				    ("PCMMIO DEBUG: got edge detect interrupt %d asic %d which_chans: %06x\n",
-+				    (KERN_DEBUG "got edge detect interrupt %d asic %d which_chans: %06x\n",
- 				     irq, asic, triggered);
- 				for (s = dev->subdevices + 2;
- 				     s < dev->subdevices + dev->n_subdevices;
--- 
-1.7.4.1
+	https://lkml.org/lkml/2011/9/17/47
+	https://lkml.org/lkml/2011/9/17/45
+	https://lkml.org/lkml/2011/9/17/43
 
+							Thanx, Paul
