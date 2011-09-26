@@ -1,93 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751581Ab1IZPNH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 11:13:07 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:48092 "EHLO imr3.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751105Ab1IZPNG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 11:13:06 -0400
-Subject: [GIT PULL] hwmon fixes for 3.1
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Reply-To: guenter.roeck@ericsson.com
-To: torvalds@linux-foundation.org
-CC: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="=-XHL6YmKMEo7cPPG8p5xy"
-Organization: Ericsson
-Date: Mon, 26 Sep 2011 08:11:38 -0700
-Message-ID: <1317049898.3888.53.camel@groeck-laptop>
+	id S1751676Ab1IZPPs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 11:15:48 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:63486 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751207Ab1IZPPr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 11:15:47 -0400
+Message-ID: <4E8098B2.8000705@colorfullife.com>
+Date: Mon, 26 Sep 2011 17:22:26 +0200
+From: Manfred Spraul <manfred@colorfullife.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Mike Galbraith <efault@gmx.de>
+Subject: Re: [PATCH 3/3] [RFC] ipc/sem.c: replace busy loop with completion
+References: <1316885838-12026-1-git-send-email-manfred@colorfullife.com> <1317024050.9084.62.camel@twins>
+In-Reply-To: <1317024050.9084.62.camel@twins>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-XHL6YmKMEo7cPPG8p5xy
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On 09/26/2011 10:00 AM, Peter Zijlstra wrote:
+> On Sat, 2011-09-24 at 19:37 +0200, Manfred Spraul wrote:
+>
+> 	sma = sem_lock(ns, semid);
+>
+>> @@ -1456,8 +1414,17 @@ sleep_again:
+>>          /*
+>>           * Wait until it's guaranteed that no wakeup_sem_queue_do() is ongoing.
+>>           */
+>> -       error = get_queue_result(&queue);
+>> -
+>> +       error = queue.status;
+>> +       if (error != -EINTR) {
+>> +               /* If there is a return code, then we can leave immediately. */
+>> +               if (!IS_ERR(sma)) {
+>> +                       sem_unlock(sma);
+>> +               }
+>> +               /* Except that we must wait for the hands-off */
+>> +               wait_for_completion(&queue.done);
+>> +               goto out_free;
+> 		you just lost a sem_unlock() in the IS_ERR() case.
+>
+>> +       }
+If IS_ERR(), then sem_lock() failed - thus there must be no unlock.
 
-Hi Linus,
-
-Please pull hwmon subsystem fixes for Linux 3.1 from:
-
-    git://github.com/groeck/linux.git hwmon-for-linus
-
-Thanks,
-Guenter Roeck
-
-------
-
-The following changes since commit
-d93dc5c4478c1fd5de85a3e8aece9aad7bbae044:
-
-  Linux 3.1-rc7 (2011-09-21 16:58:15 -0700)
-
-are available in the git repository at:
-  git://github.com/groeck/linux.git hwmon-for-linus
-
-Chris Peterson (1):
-      hwmon: (w83791d) rename prototype parameter from 'register' to
-'reg'
-
-Guenter Roeck (1):
-      hwmon: (coretemp) Don't use threshold registers for tempX_max
-
-Jan Beulich (3):
-      hwmon: (coretemp) don't use kernel assigned CPU number as platform
-device ID
-      hwmon: (coretemp) constify static data
-      hwmon: (coretemp) remove struct platform_data * parameter from
-create_core_data()
-
-Jean Delvare (2):
-      hwmon: (coretemp) Drop duplicate function get_pkg_tjmax
-      hwmon: (coretemp) Let the user force TjMax
-
-Roland Stigge (1):
-      hwmon: (ds620) Fix handling of negative temperatures
-
- Documentation/hwmon/coretemp |   14 +--
- drivers/hwmon/coretemp.c     |  193
-+++++++++---------------------------------
- drivers/hwmon/ds620.c        |    2 +-
- drivers/hwmon/w83791d.c      |    4 +-
- 4 files changed, 47 insertions(+), 166 deletions(-)
-
-
---=-XHL6YmKMEo7cPPG8p5xy
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAABAgAGBQJOgJYnAAoJEANmWzN1g3l3fPQH/R3i6Fe+h9KQFvmwOvSMean7
-q9TW4GEYh9dafxY1+voUR1sr9U1Jq4h3rgL34CZqTU/UOyUBHyFhGUfywPmjVROj
-/0hFPnDRZOmGlAh4boX0OOnlmlbyni3pcx7rJCi0aNMuXs7hRfV2gOXtdrCfkOKW
-UHZuMF3k3lcTdYXk1vWDCVRsTUvR2DXJzxwHDNNquVL/StHrcq325+ktQNT9H6Zm
-FLtGdcWJKsNkg6oiFaw6ETNKclTSa0H6T9BbvjyjRgSOmp6ghKc++1hFi0GPbZsi
-c1zoYLENCTFmO5fJXHa/4YmTJ6Ujq5Ts4fOwB5Ldp6WgOVkoJkwm3NdWuAdg7eU=
-=726f
------END PGP SIGNATURE-----
-
---=-XHL6YmKMEo7cPPG8p5xy--
+--
+     Manfred
