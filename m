@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752530Ab1IZWee (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 18:34:34 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:36867 "EHLO e5.ny.us.ibm.com"
+	id S1752563Ab1IZWfN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 18:35:13 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:40559 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751836Ab1IZWec (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 18:34:32 -0400
-Date: Mon, 26 Sep 2011 15:34:26 -0700
+	id S1751836Ab1IZWfL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 18:35:11 -0400
+Date: Mon, 26 Sep 2011 15:35:04 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: "Kirill A. Shutemov" <kirill@shutemov.name>, linux-kernel@vger.kernel.org,
@@ -15,7 +15,7 @@ Cc: "Kirill A. Shutemov" <kirill@shutemov.name>, linux-kernel@vger.kernel.org,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Lai Jiangshan <laijs@cn.fujitsu.com>
 Subject: Re: linux-next-20110923: warning kernel/rcutree.c:1833
-Message-ID: <20110926223426.GO2399@linux.vnet.ibm.com>
+Message-ID: <20110926223504.GP2399@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
 References: <20110925002409.GA24220@shutemov.name>
  <20110925050826.GC2995@linux.vnet.ibm.com>
@@ -26,18 +26,19 @@ References: <20110925002409.GA24220@shutemov.name>
  <CAFTL4hy4t4z2GX=Tj5wjVv=BSGaSbcspDw3FGUy_2uK=9HU_2A@mail.gmail.com>
  <20110926012611.GJ2995@linux.vnet.ibm.com>
  <20110926014118.GA25861@linux.vnet.ibm.com>
- <20110926093938.GE18553@somewhere>
+ <20110926094203.GF18553@somewhere>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110926093938.GE18553@somewhere>
+In-Reply-To: <20110926094203.GF18553@somewhere>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 11092622-5112-0000-0000-0000009DE994
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 26, 2011 at 11:39:41AM +0200, Frederic Weisbecker wrote:
+On Mon, Sep 26, 2011 at 11:42:06AM +0200, Frederic Weisbecker wrote:
 > On Sun, Sep 25, 2011 at 06:41:18PM -0700, Paul E. McKenney wrote:
 > > On Sun, Sep 25, 2011 at 06:26:11PM -0700, Paul E. McKenney wrote:
 > > > On Mon, Sep 26, 2011 at 03:10:33AM +0200, Frederic Weisbecker wrote:
@@ -90,39 +91,18 @@ On Mon, Sep 26, 2011 at 11:39:41AM +0200, Frederic Weisbecker wrote:
 > > RCU read-side critical section only when called from an interrupt that
 > > interrupted an RCU read-side critical section (keeping in mind that the
 > > idle loop is a quiescent state regardless of preemption)?
-> 
-> Yeah. rcu_needs_cpu() can be called from an irq that either interrupted
-> an rcu read side critical section or a bh one. But not a sched one if
-> we forbid rcu sched uses in the preempt offset race windows I described
-> in a previous mail.
-
-But can't I just assume that if rcu_needs_cpu is invoked within
-a second-level interrupt handler that it might be in any type of
-RCU read-side critical section?  I could determine this by checking
-RCU's dyntick-idle nesting state.
-
-Such checks are not necessary if CONFIG_NO_HZ=n because in that
-case rcu_needs_cpu() is just checking the callback queues, with
-no assumptions about quiescent states.
-
+> > 
 > > If so, I should be able to do the appropriate checks within
 > > rcu_needs_cpu().
 > 
-> Right. But to know if you interrupted an rcu read side, don't you
-> need a specific counter when !CONFIG_PREEMPT?
+> It sounds better to me if you can do all the checks from rcu_needs_cpu()
+> so that all you need is to wait for another jiffy to escape the read side
+> critical section.
+> 
+> Doing something from the read side exit path would require some weird
+> trickiness.
 
-Not if it is OK to assume that rcu_needs_cpu() can only be called from
-within an RCU read-side interrupt handler if it is invoked from within a
-second-level interrupt handler or if it interrupted some non-dyntick-idle
-process-level code.
-
-So, is this assumption valid?
+Agreed, I really do want to avoid checks in rcu_read_unlock().
 
 							Thanx, Paul
 
-> > The reason I didn't think of this earlier was that I thought that
-> > rcu_needs_cpu() could be invoked from the idle notifier, which is itself
-> > in an RCU read-side critical section.
-> > 
-> > 								Thanx, Paul
-> 
