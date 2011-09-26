@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752950Ab1IZLWE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 07:22:04 -0400
+	id S1753457Ab1IZLYk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 07:24:40 -0400
 Received: from mga09.intel.com ([134.134.136.24]:13482 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752891Ab1IZLWA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 07:22:00 -0400
+	id S1752718Ab1IZLWD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 07:22:03 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="56486051"
+   d="scan'208";a="56486068"
 From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 To: Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@suse.de>
 Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
         Peter Chen <peter.chen@freescale.com>,
         Lin Tony-B19295 <B19295@freescale.com>,
         Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: [PATCHv5 10/19] usb: otg: nop: Start using struct usb_otg
-Date: Mon, 26 Sep 2011 14:21:23 +0300
-Message-Id: <1317036092-3000-11-git-send-email-heikki.krogerus@linux.intel.com>
+Subject: [PATCHv5 11/19] usb: otg: twl4030: Start using struct usb_otg
+Date: Mon, 26 Sep 2011 14:21:24 +0300
+Message-Id: <1317036092-3000-12-git-send-email-heikki.krogerus@linux.intel.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1317036092-3000-1-git-send-email-heikki.krogerus@linux.intel.com>
 References: <1317036092-3000-1-git-send-email-heikki.krogerus@linux.intel.com>
@@ -30,138 +30,204 @@ of usb_phy members.
 
 Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 ---
- drivers/usb/otg/nop-usb-xceiv.c |   64 ++++++++++++++++++--------------------
- 1 files changed, 30 insertions(+), 34 deletions(-)
+ drivers/usb/otg/twl4030-usb.c |   77 +++++++++++++++++++++++------------------
+ 1 files changed, 43 insertions(+), 34 deletions(-)
 
-diff --git a/drivers/usb/otg/nop-usb-xceiv.c b/drivers/usb/otg/nop-usb-xceiv.c
-index 6a0c102..37ce4d3 100644
---- a/drivers/usb/otg/nop-usb-xceiv.c
-+++ b/drivers/usb/otg/nop-usb-xceiv.c
-@@ -33,7 +33,7 @@
- #include <linux/slab.h>
+diff --git a/drivers/usb/otg/twl4030-usb.c b/drivers/usb/otg/twl4030-usb.c
+index 9eed1f3..4151004 100644
+--- a/drivers/usb/otg/twl4030-usb.c
++++ b/drivers/usb/otg/twl4030-usb.c
+@@ -144,7 +144,7 @@
+ #define GPIO_USB_4PIN_ULPI_2430C	(3 << 0)
  
- struct nop_usb_xceiv {
+ struct twl4030_usb {
 -	struct usb_phy		otg;
 +	struct usb_phy		xceiv;
  	struct device		*dev;
+ 
+ 	/* TWL4030 internal USB regulator supplies */
+@@ -166,7 +166,7 @@ struct twl4030_usb {
  };
  
-@@ -58,51 +58,37 @@ void usb_nop_xceiv_unregister(void)
- }
- EXPORT_SYMBOL(usb_nop_xceiv_unregister);
+ /* internal define on top of container_of */
+-#define xceiv_to_twl(x)		container_of((x), struct twl4030_usb, otg)
++#define xceiv_to_twl(x)		container_of((x), struct twl4030_usb, xceiv)
  
--static inline struct nop_usb_xceiv *xceiv_to_nop(struct usb_phy *x)
--{
--	return container_of(x, struct nop_usb_xceiv, otg);
--}
--
- static int nop_set_suspend(struct usb_phy *x, int suspend)
+ /*-------------------------------------------------------------------------*/
+ 
+@@ -250,6 +250,7 @@ static enum usb_phy_events twl4030_usb_linkstat(struct twl4030_usb *twl)
  {
+ 	int	status;
+ 	int	linkstat = USB_EVENT_NONE;
++	struct usb_otg *otg = twl->xceiv.otg;
+ 
+ 	twl->vbus_supplied = false;
+ 
+@@ -281,7 +282,7 @@ static enum usb_phy_events twl4030_usb_linkstat(struct twl4030_usb *twl)
+ 	dev_dbg(twl->dev, "HW_CONDITIONS 0x%02x/%d; link %d\n",
+ 			status, status, linkstat);
+ 
+-	twl->otg.last_event = linkstat;
++	twl->xceiv.last_event = linkstat;
+ 
+ 	/* REVISIT this assumes host and peripheral controllers
+ 	 * are registered, and that both are active...
+@@ -290,11 +291,11 @@ static enum usb_phy_events twl4030_usb_linkstat(struct twl4030_usb *twl)
+ 	spin_lock_irq(&twl->lock);
+ 	twl->linkstat = linkstat;
+ 	if (linkstat == USB_EVENT_ID) {
+-		twl->otg.default_a = true;
+-		twl->otg.state = USB_PHY_STATE_A_IDLE;
++		otg->default_a = true;
++		twl->xceiv.state = USB_PHY_STATE_A_IDLE;
+ 	} else {
+-		twl->otg.default_a = false;
+-		twl->otg.state = USB_PHY_STATE_B_IDLE;
++		otg->default_a = false;
++		twl->xceiv.state = USB_PHY_STATE_B_IDLE;
+ 	}
+ 	spin_unlock_irq(&twl->lock);
+ 
+@@ -520,8 +521,8 @@ static irqreturn_t twl4030_usb_irq(int irq, void *_twl)
+ 		else
+ 			twl4030_phy_resume(twl);
+ 
+-		atomic_notifier_call_chain(&twl->otg.notifier, status,
+-				twl->otg.gadget);
++		atomic_notifier_call_chain(&twl->xceiv.notifier, status,
++				twl->xceiv.otg->gadget);
+ 	}
+ 	sysfs_notify(&twl->dev->kobj, NULL, "vbus");
+ 
+@@ -542,8 +543,8 @@ static void twl4030_usb_phy_init(struct twl4030_usb *twl)
+ 			twl->asleep = 0;
+ 		}
+ 
+-		atomic_notifier_call_chain(&twl->otg.notifier, status,
+-				twl->otg.gadget);
++		atomic_notifier_call_chain(&twl->xceiv.notifier, status,
++				twl->xceiv.otg->gadget);
+ 	}
+ 	sysfs_notify(&twl->dev->kobj, NULL, "vbus");
+ }
+@@ -560,33 +561,27 @@ static int twl4030_set_suspend(struct usb_phy *x, int suspend)
  	return 0;
  }
  
--static int nop_set_peripheral(struct usb_phy *x,
+-static int twl4030_set_peripheral(struct usb_phy *x,
 -		struct usb_gadget *gadget)
-+static int nop_set_peripheral(struct usb_otg *otg, struct usb_gadget *gadget)
++static int twl4030_set_peripheral(struct usb_otg *otg,
++					struct usb_gadget *gadget)
  {
--	struct nop_usb_xceiv *nop;
+-	struct twl4030_usb *twl;
 -
 -	if (!x)
 +	if (!otg)
  		return -ENODEV;
  
--	nop = xceiv_to_nop(x);
--
- 	if (!gadget) {
--		nop->otg.gadget = NULL;
-+		otg->gadget = NULL;
- 		return -ENODEV;
- 	}
- 
--	nop->otg.gadget = gadget;
--	nop->otg.state = USB_PHY_STATE_B_IDLE;
+-	twl = xceiv_to_twl(x);
+-	twl->otg.gadget = gadget;
 +	otg->gadget = gadget;
-+	otg->xceiv->state = USB_PHY_STATE_B_IDLE;
+ 	if (!gadget)
+-		twl->otg.state = USB_PHY_STATE_UNDEFINED;
++		otg->xceiv->state = USB_PHY_STATE_UNDEFINED;
+ 
  	return 0;
  }
  
--static int nop_set_host(struct usb_phy *x, struct usb_bus *host)
-+static int nop_set_host(struct usb_otg *otg, struct usb_bus *host)
+-static int twl4030_set_host(struct usb_phy *x, struct usb_bus *host)
++static int twl4030_set_host(struct usb_otg *otg, struct usb_bus *host)
  {
--	struct nop_usb_xceiv *nop;
+-	struct twl4030_usb *twl;
 -
 -	if (!x)
 +	if (!otg)
  		return -ENODEV;
  
--	nop = xceiv_to_nop(x);
--
- 	if (!host) {
--		nop->otg.host = NULL;
-+		otg->host = NULL;
- 		return -ENODEV;
- 	}
- 
--	nop->otg.host = host;
+-	twl = xceiv_to_twl(x);
+-	twl->otg.host = host;
 +	otg->host = host;
+ 	if (!host)
+-		twl->otg.state = USB_PHY_STATE_UNDEFINED;
++		otg->xceiv->state = USB_PHY_STATE_UNDEFINED;
+ 
  	return 0;
  }
+@@ -596,6 +591,7 @@ static int __devinit twl4030_usb_probe(struct platform_device *pdev)
+ 	struct twl4030_usb_data *pdata = pdev->dev.platform_data;
+ 	struct twl4030_usb	*twl;
+ 	int			status, err;
++	struct usb_otg		*otg;
  
-@@ -115,15 +101,23 @@ static int __devinit nop_usb_xceiv_probe(struct platform_device *pdev)
- 	if (!nop)
+ 	if (!pdata) {
+ 		dev_dbg(&pdev->dev, "platform_data not available\n");
+@@ -606,16 +602,26 @@ static int __devinit twl4030_usb_probe(struct platform_device *pdev)
+ 	if (!twl)
  		return -ENOMEM;
  
-+	nop->xceiv.otg = kzalloc(sizeof *nop->xceiv.otg, GFP_KERNEL);
-+	if (!nop->xceiv.otg) {
-+		kfree(nop);
++	otg = kzalloc(sizeof *otg, GFP_KERNEL);
++	if (!otg) {
++		kfree(twl);
 +		return -ENOMEM;
 +	}
 +
- 	nop->dev		= &pdev->dev;
--	nop->otg.dev		= nop->dev;
--	nop->otg.label		= "nop-xceiv";
--	nop->otg.state		= USB_PHY_STATE_UNDEFINED;
--	nop->otg.set_host	= nop_set_host;
--	nop->otg.set_peripheral	= nop_set_peripheral;
--	nop->otg.set_suspend	= nop_set_suspend;
--
--	err = otg_set_transceiver(&nop->otg);
-+	nop->xceiv.dev		= nop->dev;
-+	nop->xceiv.label	= "nop-xceiv";
-+	nop->xceiv.set_suspend	= nop_set_suspend;
-+	nop->xceiv.state	= USB_PHY_STATE_UNDEFINED;
+ 	twl->dev		= &pdev->dev;
+ 	twl->irq		= platform_get_irq(pdev, 0);
+-	twl->otg.dev		= twl->dev;
+-	twl->otg.label		= "twl4030";
+-	twl->otg.set_host	= twl4030_set_host;
+-	twl->otg.set_peripheral	= twl4030_set_peripheral;
+-	twl->otg.set_suspend	= twl4030_set_suspend;
+ 	twl->usb_mode		= pdata->usb_mode;
+ 	twl->vbus_supplied	= false;
+-	twl->asleep = 1;
++	twl->asleep		= 1;
 +
-+	nop->xceiv.otg->xceiv		= &nop->xceiv;
-+	nop->xceiv.otg->set_host	= nop_set_host;
-+	nop->xceiv.otg->set_peripheral	= nop_set_peripheral;
++	twl->xceiv.dev		= twl->dev;
++	twl->xceiv.label	= "twl4030";
++	twl->xceiv.otg		= otg;
++	twl->xceiv.set_suspend	= twl4030_set_suspend;
 +
-+	err = usb_set_transceiver(&nop->xceiv);
++	otg->xceiv		= &twl->xceiv;
++	otg->set_host		= twl4030_set_host;
++	otg->set_peripheral	= twl4030_set_peripheral;
+ 
+ 	/* init spinlock for workqueue */
+ 	spin_lock_init(&twl->lock);
+@@ -623,16 +629,17 @@ static int __devinit twl4030_usb_probe(struct platform_device *pdev)
+ 	err = twl4030_usb_ldo_init(twl);
  	if (err) {
- 		dev_err(&pdev->dev, "can't register transceiver, err: %d\n",
- 			err);
-@@ -132,10 +126,11 @@ static int __devinit nop_usb_xceiv_probe(struct platform_device *pdev)
+ 		dev_err(&pdev->dev, "ldo init failed\n");
++		kfree(otg);
+ 		kfree(twl);
+ 		return err;
+ 	}
+-	otg_set_transceiver(&twl->otg);
++	usb_set_transceiver(&twl->xceiv);
  
- 	platform_set_drvdata(pdev, nop);
+ 	platform_set_drvdata(pdev, twl);
+ 	if (device_create_file(&pdev->dev, &dev_attr_vbus))
+ 		dev_warn(&pdev->dev, "could not create sysfs file\n");
  
--	ATOMIC_INIT_NOTIFIER_HEAD(&nop->otg.notifier);
-+	ATOMIC_INIT_NOTIFIER_HEAD(&nop->xceiv.notifier);
+-	ATOMIC_INIT_NOTIFIER_HEAD(&twl->otg.notifier);
++	ATOMIC_INIT_NOTIFIER_HEAD(&twl->xceiv.notifier);
  
- 	return 0;
- exit:
-+	kfree(nop->xceiv.otg);
- 	kfree(nop);
- 	return err;
- }
-@@ -144,9 +139,10 @@ static int __devexit nop_usb_xceiv_remove(struct platform_device *pdev)
- {
- 	struct nop_usb_xceiv *nop = platform_get_drvdata(pdev);
+ 	/* Our job is to use irqs and status from the power module
+ 	 * to keep the transceiver disabled when nothing's connected.
+@@ -649,6 +656,7 @@ static int __devinit twl4030_usb_probe(struct platform_device *pdev)
+ 	if (status < 0) {
+ 		dev_dbg(&pdev->dev, "can't get IRQ %d, err %d\n",
+ 			twl->irq, status);
++		kfree(otg);
+ 		kfree(twl);
+ 		return status;
+ 	}
+@@ -693,6 +701,7 @@ static int __exit twl4030_usb_remove(struct platform_device *pdev)
+ 	regulator_put(twl->usb1v8);
+ 	regulator_put(twl->usb3v1);
  
--	otg_set_transceiver(NULL);
-+	usb_set_transceiver(NULL);
- 
- 	platform_set_drvdata(pdev, NULL);
-+	kfree(nop->xceiv.otg);
- 	kfree(nop);
++	kfree(twl->xceiv.otg);
+ 	kfree(twl);
  
  	return 0;
 -- 
