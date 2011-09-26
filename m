@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753063Ab1IZLWI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 07:22:08 -0400
-Received: from mga09.intel.com ([134.134.136.24]:13482 "EHLO mga09.intel.com"
+	id S1753329Ab1IZLW1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 07:22:27 -0400
+Received: from mga09.intel.com ([134.134.136.24]:22239 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752891Ab1IZLWF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 07:22:05 -0400
+	id S1753218Ab1IZLWY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 07:22:24 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="56486083"
+   d="scan'208";a="56486126"
 From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 To: Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@suse.de>
 Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
         Peter Chen <peter.chen@freescale.com>,
         Lin Tony-B19295 <B19295@freescale.com>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Hema HK <hemahk@ti.com>
-Subject: [PATCHv5 12/19] usb: otg: twl6030: Start using struct usb_otg
-Date: Mon, 26 Sep 2011 14:21:25 +0300
-Message-Id: <1317036092-3000-13-git-send-email-heikki.krogerus@linux.intel.com>
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Subject: [PATCHv5 15/19] usb: musb: Start using struct usb_otg
+Date: Mon, 26 Sep 2011 14:21:28 +0300
+Message-Id: <1317036092-3000-16-git-send-email-heikki.krogerus@linux.intel.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1317036092-3000-1-git-send-email-heikki.krogerus@linux.intel.com>
 References: <1317036092-3000-1-git-send-email-heikki.krogerus@linux.intel.com>
@@ -30,266 +29,317 @@ Use struct usb_otg members with OTG specific functions instead
 of usb_phy members.
 
 Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Tested-by: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Hema HK <hemahk@ti.com>
 ---
- drivers/usb/otg/twl6030-usb.c |  105 ++++++++++++++++++++++------------------
- 1 files changed, 58 insertions(+), 47 deletions(-)
+ drivers/usb/musb/am35x.c        |    5 +++--
+ drivers/usb/musb/da8xx.c        |    5 +++--
+ drivers/usb/musb/davinci.c      |    7 ++++---
+ drivers/usb/musb/musb_core.c    |   11 ++++++-----
+ drivers/usb/musb/musb_virthub.c |    9 ++++++---
+ drivers/usb/musb/omap2430.c     |    5 +++--
+ drivers/usb/musb/tusb6010.c     |   14 ++++++++------
+ 7 files changed, 33 insertions(+), 23 deletions(-)
 
-diff --git a/drivers/usb/otg/twl6030-usb.c b/drivers/usb/otg/twl6030-usb.c
-index 720ab7d..843c47d 100644
---- a/drivers/usb/otg/twl6030-usb.c
-+++ b/drivers/usb/otg/twl6030-usb.c
-@@ -87,7 +87,7 @@
- #define	VBUS_DET			BIT(2)
- 
- struct twl6030_usb {
--	struct usb_phy		otg;
-+	struct usb_phy		xceiv;
- 	struct device		*dev;
- 
- 	/* for vbus reporting with irqs disabled */
-@@ -107,7 +107,7 @@ struct twl6030_usb {
- 	unsigned long		features;
- };
- 
--#define xceiv_to_twl(x)		container_of((x), struct twl6030_usb, otg)
-+#define xceiv_to_twl(x)		container_of((x), struct twl6030_usb, xceiv)
- 
- /*-------------------------------------------------------------------------*/
- 
-@@ -194,9 +194,9 @@ static int twl6030_phy_suspend(struct usb_phy *x, int suspend)
- 	return 0;
- }
- 
--static int twl6030_start_srp(struct usb_phy *x)
-+static int twl6030_start_srp(struct usb_otg *otg)
- {
--	struct twl6030_usb *twl = xceiv_to_twl(x);
-+	struct twl6030_usb *twl = xceiv_to_twl(otg->xceiv);
- 
- 	twl6030_writeb(twl, TWL_MODULE_USB, 0x24, USB_VBUS_CTRL_SET);
- 	twl6030_writeb(twl, TWL_MODULE_USB, 0x84, USB_VBUS_CTRL_SET);
-@@ -272,6 +272,7 @@ static DEVICE_ATTR(vbus, 0444, twl6030_usb_vbus_show, NULL);
- static irqreturn_t twl6030_usb_irq(int irq, void *_twl)
- {
- 	struct twl6030_usb *twl = _twl;
-+	struct usb_otg *otg = twl->xceiv.otg;
- 	int status;
- 	u8 vbus_state, hw_state;
- 
-@@ -284,18 +285,18 @@ static irqreturn_t twl6030_usb_irq(int irq, void *_twl)
- 			regulator_enable(twl->usb3v3);
- 			twl->asleep = 1;
- 			status = USB_EVENT_VBUS;
--			twl->otg.default_a = false;
--			twl->otg.state = USB_PHY_STATE_B_IDLE;
-+			otg->default_a = false;
-+			twl->xceiv.state = USB_PHY_STATE_B_IDLE;
- 			twl->linkstat = status;
--			twl->otg.last_event = status;
--			atomic_notifier_call_chain(&twl->otg.notifier,
--						status, twl->otg.gadget);
-+			twl->xceiv.last_event = status;
-+			atomic_notifier_call_chain(&twl->xceiv.notifier,
-+						status, otg->gadget);
+diff --git a/drivers/usb/musb/am35x.c b/drivers/usb/musb/am35x.c
+index ee1c43e..8325ecf 100644
+--- a/drivers/usb/musb/am35x.c
++++ b/drivers/usb/musb/am35x.c
+@@ -226,6 +226,7 @@ static irqreturn_t am35x_musb_interrupt(int irq, void *hci)
+ 	struct device *dev = musb->controller;
+ 	struct musb_hdrc_platform_data *plat = dev->platform_data;
+ 	struct omap_musb_board_data *data = plat->board_data;
++	struct usb_otg *otg = musb->xceiv->otg;
+ 	unsigned long flags;
+ 	irqreturn_t ret = IRQ_NONE;
+ 	u32 epintr, usbintr;
+@@ -289,14 +290,14 @@ static irqreturn_t am35x_musb_interrupt(int irq, void *hci)
+ 			WARNING("VBUS error workaround (delay coming)\n");
+ 		} else if (is_host_enabled(musb) && drvvbus) {
+ 			MUSB_HST_MODE(musb);
+-			musb->xceiv->default_a = 1;
++			otg->default_a = 1;
+ 			musb->xceiv->state = USB_PHY_STATE_A_WAIT_VRISE;
+ 			portstate(musb->port1_status |= USB_PORT_STAT_POWER);
+ 			del_timer(&otg_workaround);
  		} else {
- 			status = USB_EVENT_NONE;
- 			twl->linkstat = status;
--			twl->otg.last_event = status;
--			atomic_notifier_call_chain(&twl->otg.notifier,
--						status, twl->otg.gadget);
-+			twl->xceiv.last_event = status;
-+			atomic_notifier_call_chain(&twl->xceiv.notifier,
-+						status, otg->gadget);
- 			if (twl->asleep) {
- 				regulator_disable(twl->usb3v3);
- 				twl->asleep = 0;
-@@ -310,6 +311,7 @@ static irqreturn_t twl6030_usb_irq(int irq, void *_twl)
- static irqreturn_t twl6030_usbotg_irq(int irq, void *_twl)
+ 			musb->is_active = 0;
+ 			MUSB_DEV_MODE(musb);
+-			musb->xceiv->default_a = 0;
++			otg->default_a = 0;
+ 			musb->xceiv->state = USB_PHY_STATE_B_IDLE;
+ 			portstate(musb->port1_status &= ~USB_PORT_STAT_POWER);
+ 		}
+diff --git a/drivers/usb/musb/da8xx.c b/drivers/usb/musb/da8xx.c
+index fc982fa..61813b5 100644
+--- a/drivers/usb/musb/da8xx.c
++++ b/drivers/usb/musb/da8xx.c
+@@ -294,6 +294,7 @@ static irqreturn_t da8xx_musb_interrupt(int irq, void *hci)
  {
- 	struct twl6030_usb *twl = _twl;
-+	struct usb_otg *otg = twl->xceiv.otg;
- 	int status = USB_EVENT_NONE;
- 	u8 hw_state;
+ 	struct musb		*musb = hci;
+ 	void __iomem		*reg_base = musb->ctrl_base;
++	struct usb_otg		*otg = musb->xceiv->otg;
+ 	unsigned long		flags;
+ 	irqreturn_t		ret = IRQ_NONE;
+ 	u32			status;
+@@ -351,14 +352,14 @@ static irqreturn_t da8xx_musb_interrupt(int irq, void *hci)
+ 			WARNING("VBUS error workaround (delay coming)\n");
+ 		} else if (is_host_enabled(musb) && drvvbus) {
+ 			MUSB_HST_MODE(musb);
+-			musb->xceiv->default_a = 1;
++			otg->default_a = 1;
+ 			musb->xceiv->state = USB_PHY_STATE_A_WAIT_VRISE;
+ 			portstate(musb->port1_status |= USB_PORT_STAT_POWER);
+ 			del_timer(&otg_workaround);
+ 		} else {
+ 			musb->is_active = 0;
+ 			MUSB_DEV_MODE(musb);
+-			musb->xceiv->default_a = 0;
++			otg->default_a = 0;
+ 			musb->xceiv->state = USB_PHY_STATE_B_IDLE;
+ 			portstate(musb->port1_status &= ~USB_PORT_STAT_POWER);
+ 		}
+diff --git a/drivers/usb/musb/davinci.c b/drivers/usb/musb/davinci.c
+index c1f4998e..b2daf1c 100644
+--- a/drivers/usb/musb/davinci.c
++++ b/drivers/usb/musb/davinci.c
+@@ -268,6 +268,7 @@ static irqreturn_t davinci_musb_interrupt(int irq, void *__hci)
+ 	unsigned long	flags;
+ 	irqreturn_t	retval = IRQ_NONE;
+ 	struct musb	*musb = __hci;
++	struct usb_otg	*otg = musb->xceiv->otg;
+ 	void __iomem	*tibase = musb->ctrl_base;
+ 	struct cppi	*cppi;
+ 	u32		tmp;
+@@ -334,14 +335,14 @@ static irqreturn_t davinci_musb_interrupt(int irq, void *__hci)
+ 			WARNING("VBUS error workaround (delay coming)\n");
+ 		} else if (is_host_enabled(musb) && drvvbus) {
+ 			MUSB_HST_MODE(musb);
+-			musb->xceiv->default_a = 1;
++			otg->default_a = 1;
+ 			musb->xceiv->state = USB_PHY_STATE_A_WAIT_VRISE;
+ 			portstate(musb->port1_status |= USB_PORT_STAT_POWER);
+ 			del_timer(&otg_workaround);
+ 		} else {
+ 			musb->is_active = 0;
+ 			MUSB_DEV_MODE(musb);
+-			musb->xceiv->default_a = 0;
++			otg->default_a = 0;
+ 			musb->xceiv->state = USB_PHY_STATE_B_IDLE;
+ 			portstate(musb->port1_status &= ~USB_PORT_STAT_POWER);
+ 		}
+@@ -467,7 +468,7 @@ static int davinci_musb_exit(struct musb *musb)
+ 	davinci_musb_source_power(musb, 0 /*off*/, 1);
  
-@@ -323,12 +325,12 @@ static irqreturn_t twl6030_usbotg_irq(int irq, void *_twl)
- 		twl6030_writeb(twl, TWL_MODULE_USB, USB_ID_INT_EN_HI_SET,
- 								0x10);
- 		status = USB_EVENT_ID;
--		twl->otg.default_a = true;
--		twl->otg.state = USB_PHY_STATE_A_IDLE;
-+		otg->default_a = true;
-+		twl->xceiv.state = USB_PHY_STATE_A_IDLE;
- 		twl->linkstat = status;
--		twl->otg.last_event = status;
--		atomic_notifier_call_chain(&twl->otg.notifier, status,
--							twl->otg.gadget);
-+		twl->xceiv.last_event = status;
-+		atomic_notifier_call_chain(&twl->xceiv.notifier, status,
-+							otg->gadget);
- 	} else  {
- 		twl6030_writeb(twl, TWL_MODULE_USB, USB_ID_INT_EN_HI_CLR,
- 								0x10);
-@@ -340,18 +342,15 @@ static irqreturn_t twl6030_usbotg_irq(int irq, void *_twl)
- 	return IRQ_HANDLED;
- }
+ 	/* delay, to avoid problems with module reload */
+-	if (is_host_enabled(musb) && musb->xceiv->default_a) {
++	if (is_host_enabled(musb) && musb->xceiv->otg->default_a) {
+ 		int	maxdelay = 30;
+ 		u8	devctl, warn = 0;
  
--static int twl6030_set_peripheral(struct usb_phy *x,
--		struct usb_gadget *gadget)
-+static int twl6030_set_peripheral(struct usb_otg *otg,
-+					struct usb_gadget *gadget)
+diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
+index e7c97e6..f9edf2c 100644
+--- a/drivers/usb/musb/musb_core.c
++++ b/drivers/usb/musb/musb_core.c
+@@ -415,6 +415,7 @@ void musb_hnp_stop(struct musb *musb)
+ static irqreturn_t musb_stage0_irq(struct musb *musb, u8 int_usb,
+ 				u8 devctl, u8 power)
  {
--	struct twl6030_usb *twl;
--
--	if (!x)
-+	if (!otg)
- 		return -ENODEV;
++	struct usb_otg *otg = musb->xceiv->otg;
+ 	irqreturn_t handled = IRQ_NONE;
  
--	twl = xceiv_to_twl(x);
--	twl->otg.gadget = gadget;
-+	otg->gadget = gadget;
- 	if (!gadget)
--		twl->otg.state = USB_PHY_STATE_UNDEFINED;
-+		otg->xceiv->state = USB_PHY_STATE_UNDEFINED;
+ 	dev_dbg(musb->controller, "<== Power=%02x, DevCtl=%02x, int_usb=0x%x\n", power, devctl,
+@@ -631,7 +632,7 @@ static irqreturn_t musb_stage0_irq(struct musb *musb, u8 int_usb,
+ 		case USB_PHY_STATE_B_PERIPHERAL:
+ 			musb_g_suspend(musb);
+ 			musb->is_active = is_otg_enabled(musb)
+-					&& musb->xceiv->gadget->b_hnp_enable;
++					&& otg->gadget->b_hnp_enable;
+ 			if (musb->is_active) {
+ 				musb->xceiv->state = USB_PHY_STATE_B_WAIT_ACON;
+ 				dev_dbg(musb->controller, "HNP: Setting timer for b_ase0_brst\n");
+@@ -648,7 +649,7 @@ static irqreturn_t musb_stage0_irq(struct musb *musb, u8 int_usb,
+ 		case USB_PHY_STATE_A_HOST:
+ 			musb->xceiv->state = USB_PHY_STATE_A_SUSPEND;
+ 			musb->is_active = is_otg_enabled(musb)
+-					&& musb->xceiv->host->b_hnp_enable;
++					&& otg->host->b_hnp_enable;
+ 			break;
+ 		case USB_PHY_STATE_B_HOST:
+ 			/* Transition to B_PERIPHERAL, see 6.8.2.6 p 44 */
+@@ -1974,7 +1975,7 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
  
- 	return 0;
- }
-@@ -392,9 +391,9 @@ static void otg_set_vbus_work(struct work_struct *data)
- 							CHARGERUSB_CTRL1);
- }
+ 		if (is_otg_enabled(musb))
+ 			hcd->self.otg_port = 1;
+-		musb->xceiv->host = &hcd->self;
++		musb->xceiv->otg->host = &hcd->self;
+ 		hcd->power_budget = 2 * (plat->power ? : 250);
  
--static int twl6030_set_vbus(struct usb_phy *x, bool enabled)
-+static int twl6030_set_vbus(struct usb_otg *otg, bool enabled)
+ 		/* program PHY to use external vBus if required */
+@@ -1993,7 +1994,7 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
+ 		struct usb_hcd	*hcd = musb_to_hcd(musb);
+ 
+ 		MUSB_HST_MODE(musb);
+-		musb->xceiv->default_a = 1;
++		musb->xceiv->otg->default_a = 1;
+ 		musb->xceiv->state = USB_PHY_STATE_A_IDLE;
+ 
+ 		status = usb_add_hcd(musb_to_hcd(musb), -1, 0);
+@@ -2008,7 +2009,7 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
+ 
+ 	} else /* peripheral is enabled */ {
+ 		MUSB_DEV_MODE(musb);
+-		musb->xceiv->default_a = 0;
++		musb->xceiv->otg->default_a = 0;
+ 		musb->xceiv->state = USB_PHY_STATE_B_IDLE;
+ 
+ 		status = musb_gadget_setup(musb);
+diff --git a/drivers/usb/musb/musb_virthub.c b/drivers/usb/musb/musb_virthub.c
+index b36e704..b757395 100644
+--- a/drivers/usb/musb/musb_virthub.c
++++ b/drivers/usb/musb/musb_virthub.c
+@@ -47,6 +47,7 @@
+ 
+ static void musb_port_suspend(struct musb *musb, bool do_suspend)
  {
--	struct twl6030_usb *twl = xceiv_to_twl(x);
-+	struct twl6030_usb *twl = xceiv_to_twl(otg->xceiv);
++	struct usb_otg	*otg = musb->xceiv->otg;
+ 	u8		power;
+ 	void __iomem	*mbase = musb->mregs;
  
- 	twl->vbus_enable = enabled;
- 	schedule_work(&twl->set_vbus_work);
-@@ -402,17 +401,14 @@ static int twl6030_set_vbus(struct usb_phy *x, bool enabled)
- 	return 0;
- }
+@@ -81,7 +82,7 @@ static void musb_port_suspend(struct musb *musb, bool do_suspend)
+ 		case USB_PHY_STATE_A_HOST:
+ 			musb->xceiv->state = USB_PHY_STATE_A_SUSPEND;
+ 			musb->is_active = is_otg_enabled(musb)
+-					&& musb->xceiv->host->b_hnp_enable;
++					&& otg->host->b_hnp_enable;
+ 			if (musb->is_active)
+ 				mod_timer(&musb->otg_timer, jiffies
+ 					+ msecs_to_jiffies(
+@@ -91,7 +92,7 @@ static void musb_port_suspend(struct musb *musb, bool do_suspend)
+ 		case USB_PHY_STATE_B_HOST:
+ 			musb->xceiv->state = USB_PHY_STATE_B_WAIT_ACON;
+ 			musb->is_active = is_otg_enabled(musb)
+-					&& musb->xceiv->host->b_hnp_enable;
++					&& otg->host->b_hnp_enable;
+ 			musb_platform_try_idle(musb, 0);
+ 			break;
+ 		default:
+@@ -179,6 +180,8 @@ static void musb_port_reset(struct musb *musb, bool do_reset)
  
--static int twl6030_set_host(struct usb_phy *x, struct usb_bus *host)
-+static int twl6030_set_host(struct usb_otg *otg, struct usb_bus *host)
+ void musb_root_disconnect(struct musb *musb)
  {
--	struct twl6030_usb *twl;
--
--	if (!x)
-+	if (!otg)
- 		return -ENODEV;
- 
--	twl = xceiv_to_twl(x);
--	twl->otg.host = host;
-+	otg->host = host;
- 	if (!host)
--		twl->otg.state = USB_PHY_STATE_UNDEFINED;
-+		otg->xceiv->state = USB_PHY_STATE_UNDEFINED;
- 	return 0;
- }
- 
-@@ -421,6 +417,7 @@ static int __devinit twl6030_usb_probe(struct platform_device *pdev)
- 	struct twl6030_usb	*twl;
- 	int			status, err;
- 	struct twl4030_usb_data *pdata;
-+	struct usb_otg		*otg;
- 	struct device *dev = &pdev->dev;
- 	pdata = dev->platform_data;
- 
-@@ -428,19 +425,29 @@ static int __devinit twl6030_usb_probe(struct platform_device *pdev)
- 	if (!twl)
- 		return -ENOMEM;
- 
-+	otg = kzalloc(sizeof *otg, GFP_KERNEL);
-+	if (!otg) {
-+		kfree(twl);
-+		return -ENOMEM;
-+	}
++	struct usb_otg	*otg = musb->xceiv->otg;
 +
- 	twl->dev		= &pdev->dev;
- 	twl->irq1		= platform_get_irq(pdev, 0);
- 	twl->irq2		= platform_get_irq(pdev, 1);
- 	twl->features		= pdata->features;
--	twl->otg.dev		= twl->dev;
--	twl->otg.label		= "twl6030";
--	twl->otg.set_host	= twl6030_set_host;
--	twl->otg.set_peripheral	= twl6030_set_peripheral;
--	twl->otg.set_vbus	= twl6030_set_vbus;
--	twl->otg.init		= twl6030_phy_init;
--	twl->otg.shutdown	= twl6030_phy_shutdown;
--	twl->otg.set_suspend	= twl6030_phy_suspend;
--	twl->otg.start_srp	= twl6030_start_srp;
-+
-+	twl->xceiv.dev		= twl->dev;
-+	twl->xceiv.label	= "twl6030";
-+	twl->xceiv.otg		= otg;
-+	twl->xceiv.init		= twl6030_phy_init;
-+	twl->xceiv.shutdown	= twl6030_phy_shutdown;
-+	twl->xceiv.set_suspend	= twl6030_phy_suspend;
-+
-+	otg->xceiv		= &twl->xceiv;
-+	otg->set_host		= twl6030_set_host;
-+	otg->set_peripheral	= twl6030_set_peripheral;
-+	otg->set_vbus		= twl6030_set_vbus;
-+	otg->start_srp		= twl6030_start_srp;
+ 	musb->port1_status = USB_PORT_STAT_POWER
+ 			| (USB_PORT_STAT_C_CONNECTION << 16);
  
- 	/* init spinlock for workqueue */
- 	spin_lock_init(&twl->lock);
-@@ -448,16 +455,17 @@ static int __devinit twl6030_usb_probe(struct platform_device *pdev)
- 	err = twl6030_usb_ldo_init(twl);
- 	if (err) {
- 		dev_err(&pdev->dev, "ldo init failed\n");
-+		kfree(otg);
- 		kfree(twl);
- 		return err;
- 	}
--	otg_set_transceiver(&twl->otg);
-+	usb_set_transceiver(&twl->xceiv);
+@@ -188,7 +191,7 @@ void musb_root_disconnect(struct musb *musb)
+ 	switch (musb->xceiv->state) {
+ 	case USB_PHY_STATE_A_SUSPEND:
+ 		if (is_otg_enabled(musb)
+-				&& musb->xceiv->host->b_hnp_enable) {
++				&& otg->host->b_hnp_enable) {
+ 			musb->xceiv->state = USB_PHY_STATE_A_PERIPHERAL;
+ 			musb->g.is_a_peripheral = 1;
+ 			break;
+diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
+index 2cd9408..0879a2b 100644
+--- a/drivers/usb/musb/omap2430.c
++++ b/drivers/usb/musb/omap2430.c
+@@ -133,6 +133,7 @@ static void omap2430_musb_try_idle(struct musb *musb, unsigned long timeout)
  
- 	platform_set_drvdata(pdev, twl);
- 	if (device_create_file(&pdev->dev, &dev_attr_vbus))
- 		dev_warn(&pdev->dev, "could not create sysfs file\n");
+ static void omap2430_musb_set_vbus(struct musb *musb, int is_on)
+ {
++	struct usb_otg	*otg = musb->xceiv->otg;
+ 	u8		devctl;
+ 	unsigned long timeout = jiffies + msecs_to_jiffies(1000);
+ 	int ret = 1;
+@@ -168,7 +169,7 @@ static void omap2430_musb_set_vbus(struct musb *musb, int is_on)
+ 				otg_set_vbus(musb->xceiv, 1);
+ 		} else {
+ 			musb->is_active = 1;
+-			musb->xceiv->default_a = 1;
++			otg->default_a = 1;
+ 			musb->xceiv->state = USB_PHY_STATE_A_WAIT_VRISE;
+ 			devctl |= MUSB_DEVCTL_SESSION;
+ 			MUSB_HST_MODE(musb);
+@@ -180,7 +181,7 @@ static void omap2430_musb_set_vbus(struct musb *musb, int is_on)
+ 		 * jumping right to B_IDLE...
+ 		 */
  
--	ATOMIC_INIT_NOTIFIER_HEAD(&twl->otg.notifier);
-+	ATOMIC_INIT_NOTIFIER_HEAD(&twl->xceiv.notifier);
+-		musb->xceiv->default_a = 0;
++		otg->default_a = 0;
+ 		musb->xceiv->state = USB_PHY_STATE_B_IDLE;
+ 		devctl &= ~MUSB_DEVCTL_SESSION;
  
- 	INIT_WORK(&twl->set_vbus_work, otg_set_vbus_work);
+diff --git a/drivers/usb/musb/tusb6010.c b/drivers/usb/musb/tusb6010.c
+index d7cae3d..3c7dd53 100644
+--- a/drivers/usb/musb/tusb6010.c
++++ b/drivers/usb/musb/tusb6010.c
+@@ -292,7 +292,7 @@ static int tusb_draw_power(struct usb_phy *x, unsigned mA)
+ 	 * The actual current usage would be very board-specific.  For now,
+ 	 * it's simpler to just use an aggregate (also board-specific).
+ 	 */
+-	if (x->default_a || mA < (musb->min_power << 1))
++	if (x->otg->default_a || mA < (musb->min_power << 1))
+ 		mA = 0;
  
-@@ -469,6 +477,7 @@ static int __devinit twl6030_usb_probe(struct platform_device *pdev)
- 		dev_err(&pdev->dev, "can't get IRQ %d, err %d\n",
- 			twl->irq1, status);
- 		device_remove_file(twl->dev, &dev_attr_vbus);
-+		kfree(otg);
- 		kfree(twl);
- 		return status;
- 	}
-@@ -481,14 +490,15 @@ static int __devinit twl6030_usb_probe(struct platform_device *pdev)
- 			twl->irq2, status);
- 		free_irq(twl->irq1, twl);
- 		device_remove_file(twl->dev, &dev_attr_vbus);
-+		kfree(otg);
- 		kfree(twl);
- 		return status;
- 	}
+ 	reg = musb_readl(tbase, TUSB_PRCM_MNGMT);
+@@ -509,6 +509,7 @@ static void tusb_musb_set_vbus(struct musb *musb, int is_on)
+ 	void __iomem	*tbase = musb->ctrl_base;
+ 	u32		conf, prcm, timer;
+ 	u8		devctl;
++	struct usb_otg	*otg = musb->xceiv->otg;
  
- 	twl->asleep = 0;
- 	pdata->phy_init(dev);
--	twl6030_phy_suspend(&twl->otg, 0);
--	twl6030_enable_irq(&twl->otg);
-+	twl6030_phy_suspend(&twl->xceiv, 0);
-+	twl6030_enable_irq(&twl->xceiv);
- 	dev_info(&pdev->dev, "Initialized TWL6030 USB module\n");
+ 	/* HDRC controls CPEN, but beware current surges during device
+ 	 * connect.  They can trigger transient overcurrent conditions
+@@ -521,7 +522,7 @@ static void tusb_musb_set_vbus(struct musb *musb, int is_on)
  
- 	return 0;
-@@ -512,6 +522,7 @@ static int __exit twl6030_usb_remove(struct platform_device *pdev)
- 	pdata->phy_exit(twl->dev);
- 	device_remove_file(twl->dev, &dev_attr_vbus);
- 	cancel_work_sync(&twl->set_vbus_work);
-+	kfree(twl->xceiv.otg);
- 	kfree(twl);
+ 	if (is_on) {
+ 		timer = OTG_TIMER_MS(OTG_TIME_A_WAIT_VRISE);
+-		musb->xceiv->default_a = 1;
++		otg->default_a = 1;
+ 		musb->xceiv->state = USB_PHY_STATE_A_WAIT_VRISE;
+ 		devctl |= MUSB_DEVCTL_SESSION;
  
- 	return 0;
+@@ -547,11 +548,11 @@ static void tusb_musb_set_vbus(struct musb *musb, int is_on)
+ 				musb->xceiv->state = USB_PHY_STATE_A_IDLE;
+ 			}
+ 			musb->is_active = 0;
+-			musb->xceiv->default_a = 1;
++			otg->default_a = 1;
+ 			MUSB_HST_MODE(musb);
+ 		} else {
+ 			musb->is_active = 0;
+-			musb->xceiv->default_a = 0;
++			otg->default_a = 0;
+ 			musb->xceiv->state = USB_PHY_STATE_B_IDLE;
+ 			MUSB_DEV_MODE(musb);
+ 		}
+@@ -643,6 +644,7 @@ tusb_otg_ints(struct musb *musb, u32 int_src, void __iomem *tbase)
+ {
+ 	u32		otg_stat = musb_readl(tbase, TUSB_DEV_OTG_STAT);
+ 	unsigned long	idle_timeout = 0;
++	struct usb_otg	*otg = musb->xceiv->otg;
+ 
+ 	/* ID pin */
+ 	if ((int_src & TUSB_INT_SRC_ID_STATUS_CHNG)) {
+@@ -653,7 +655,7 @@ tusb_otg_ints(struct musb *musb, u32 int_src, void __iomem *tbase)
+ 		else
+ 			default_a = is_host_enabled(musb);
+ 		dev_dbg(musb->controller, "Default-%c\n", default_a ? 'A' : 'B');
+-		musb->xceiv->default_a = default_a;
++		otg->default_a = default_a;
+ 		tusb_musb_set_vbus(musb, default_a);
+ 
+ 		/* Don't allow idling immediately */
+@@ -665,7 +667,7 @@ tusb_otg_ints(struct musb *musb, u32 int_src, void __iomem *tbase)
+ 	if (int_src & TUSB_INT_SRC_VBUS_SENSE_CHNG) {
+ 
+ 		/* B-dev state machine:  no vbus ~= disconnect */
+-		if ((is_otg_enabled(musb) && !musb->xceiv->default_a)
++		if ((is_otg_enabled(musb) && !otg->default_a)
+ 				|| !is_host_enabled(musb)) {
+ 			/* ? musb_root_disconnect(musb); */
+ 			musb->port1_status &=
 -- 
 1.7.4.1
 
