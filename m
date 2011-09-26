@@ -1,33 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752190Ab1IZI66 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 04:58:58 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42108 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750851Ab1IZI6z (ORCPT
+	id S1752123Ab1IZI77 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 04:59:59 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35078 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751191Ab1IZI76 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 04:58:55 -0400
-Date: Mon, 26 Sep 2011 09:58:53 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Roy Huang <roy.huang@analog.com>,
-        Cliff Cai <cliff.cai@analog.com>, Liam Girdwood <lrg@ti.com>,
-        alsa-devel@alsa-project.org
-Subject: Re: [PATCH] ASoC: Drop exporting ad1980_dai
-Message-ID: <20110926085853.GC2946@opensource.wolfsonmicro.com>
-References: <1316861023.11157.4.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1316861023.11157.4.camel@phoenix>
-X-Cookie: You are always busy.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 26 Sep 2011 04:59:58 -0400
+Subject: Re: [V6][PATCH 4/6] x86, nmi:  add in logic to handle multiple
+ events and unknown NMIs
+From: Peter Zijlstra <peterz@infradead.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: x86@kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
+        LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
+        avi@redhat.com, jeremy@goop.org
+Date: Mon, 26 Sep 2011 10:59:14 +0200
+In-Reply-To: <1316805435-14832-5-git-send-email-dzickus@redhat.com>
+References: <1316805435-14832-1-git-send-email-dzickus@redhat.com>
+	 <1316805435-14832-5-git-send-email-dzickus@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1317027554.9084.71.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 24, 2011 at 06:43:43PM +0800, Axel Lin wrote:
-> ad1980_dai is not used outside this driver,
-> thus drop exporting it.
+On Fri, 2011-09-23 at 15:17 -0400, Don Zickus wrote:
+> +       /*
+> +        * Use 'false' as back-to-back NMIs are dealt with one level up.
+> +        * Of course this makes having multiple 'unknown' handlers useless
+> +        * as only the first one is ever run (unless it can actually determine
+> +        * if it caused the NMI)
+> +        */
+> +       handled = nmi_handle(NMI_UNKNOWN, regs, false); 
 
-Applied, thanks.
+Shouldn't we then also add something like:
+
+WARN_ON_ONCE(type == NMI_UNKNOWN && !list_empty(&desc->head));
+
+to __setup_nmi()?
+
+
