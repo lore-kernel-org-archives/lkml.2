@@ -1,96 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751947Ab1IZO0Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 10:26:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11292 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751380Ab1IZO0X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 10:26:23 -0400
-Date: Mon, 26 Sep 2011 16:25:41 +0200
-From: Johannes Weiner <jweiner@redhat.com>
-To: "kautuk.c @samsung.com" <consul.kautuk@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [patch] mm: remove sysctl to manually rescue unevictable pages
-Message-ID: <20110926142540.GE14333@redhat.com>
-References: <1316948380-1879-1-git-send-email-consul.kautuk@gmail.com>
- <20110926112944.GC14333@redhat.com>
- <CAFPAmTQPiHU8AKnQvzMM5KiQr1GnUY+Yf8PwVC6++QK8u149Ew@mail.gmail.com>
- <CAFPAmTQbHhj8wodFEutpstXdQ6Kc2_qRV6Pe69ngHwz1erF29Q@mail.gmail.com>
+	id S1751698Ab1IZO2R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 10:28:17 -0400
+Received: from na3sys009aog119.obsmtp.com ([74.125.149.246]:32823 "EHLO
+	na3sys009aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751169Ab1IZO2P convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 10:28:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAFPAmTQbHhj8wodFEutpstXdQ6Kc2_qRV6Pe69ngHwz1erF29Q@mail.gmail.com>
+In-Reply-To: <alpine.DEB.2.00.1109240101120.22872@utopia.booyaka.com>
+References: <1316691479-1849-1-git-send-email-keshava_mgowda@ti.com>
+	<1316691479-1849-2-git-send-email-keshava_mgowda@ti.com>
+	<1316691479-1849-3-git-send-email-keshava_mgowda@ti.com>
+	<alpine.DEB.2.00.1109221115320.10719@utopia.booyaka.com>
+	<CAP05o4+Zc2z6sBOX_rQeoDQ9PneypcLRCyBbaaB2m+ZjeXZnaw@mail.gmail.com>
+	<alpine.DEB.2.00.1109240101120.22872@utopia.booyaka.com>
+Date: Mon, 26 Sep 2011 19:51:40 +0530
+Message-ID: <CAP05o4+uwuFL8XNFG-wmUW8voYQ4kywyU9Qn-Mng7kv=TzZm9w@mail.gmail.com>
+Subject: Re: [PATCH 2/5 v11] arm: omap: usb: ehci and ohci hwmod structures
+ for omap3
+From: "Munegowda, Keshava" <keshava_mgowda@ti.com>
+To: Paul Walmsley <paul@pwsan.com>
+Cc: parthab@india.ti.com, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        b-cousson@ti.com, balbi@ti.com, gadiyar@ti.com, sameo@linux.intel.com,
+        tony@atomide.com, khilman@ti.com, johnstul@us.ibm.com,
+        vishwanath.bs@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 26, 2011 at 05:59:39PM +0530, kautuk.c @samsung.com wrote:
-> On Mon, Sep 26, 2011 at 5:40 PM, kautuk.c @samsung.com
-> <consul.kautuk@gmail.com> wrote:
-> > On Mon, Sep 26, 2011 at 4:59 PM, Johannes Weiner <jweiner@redhat.com> wrote:
-> >> On Sun, Sep 25, 2011 at 04:29:40PM +0530, Kautuk Consul wrote:
-> >>> write_scan_unavictable_node checks the value req returned by
-> >>> strict_strtoul and returns 1 if req is 0.
-> >>>
-> >>> However, when strict_strtoul returns 0, it means successful conversion
-> >>> of buf to unsigned long.
-> >>>
-> >>> Due to this, the function was not proceeding to scan the zones for
-> >>> unevictable pages even though we write a valid value to the
-> >>> scan_unevictable_pages sys file.
-> >>
-> >> Given that there is not a real reason for this knob (anymore) and that
-> >> it apparently never really worked since the day it was introduced, how
-> >> about we just drop all that code instead?
-> >>
-> >>        Hannes
-> >>
-> >> ---
-> >> From: Johannes Weiner <jweiner@redhat.com>
-> >> Subject: mm: remove sysctl to manually rescue unevictable pages
-> >>
-> >> At one point, anonymous pages were supposed to go on the unevictable
-> >> list when no swap space was configured, and the idea was to manually
-> >> rescue those pages after adding swap and making them evictable again.
-> >> But nowadays, swap-backed pages on the anon LRU list are not scanned
-> >> without available swap space anyway, so there is no point in moving
-> >> them to a separate list anymore.
-> >
-> > Is this code only for anonymous pages ?
-> > It seems to look at all pages in the zone both file as well as anon.
-> >
-> >>
-> >> The manual rescue could also be used in case pages were stranded on
-> >> the unevictable list due to race conditions.  But the code has been
-> >> around for a while now and newly discovered bugs should be properly
-> >> reported and dealt with instead of relying on such a manual fixup.
-> >
-> > What you say seems to be all right for anon pages, but what about file
-> > pages ?
-> > I'm not sure about how this could happen, but what if some file-system caused
-> > a file cache page to be set to evictable or reclaimable without
-> > actually removing
-> > that page from the unevictable list ?
-> 
-> What I would like to also add is that while the transition of an anon
-> page from and
-> to the unevictable lists is straight-forward, should we make the same assumption
-> about file cache pages ?
+On Sat, Sep 24, 2011 at 12:45 PM, Paul Walmsley <paul@pwsan.com> wrote:
+> On Fri, 23 Sep 2011, Munegowda, Keshava wrote:
+>
+>> On Thu, Sep 22, 2011 at 11:31 PM, Paul Walmsley <paul@pwsan.com> wrote:
+>> >
+>> > On Thu, 22 Sep 2011, Keshava Munegowda wrote:
+>> >> 4. usb_tll_hs hwmod of usbhs with the TLL base address and irq.
+>> >>
+>> >> Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
+>> >> Reviewed-by: Partha Basak <parthab@india.ti.com>
+>> >> ---
+>> >>  arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |  271 ++++++++++++++++++++++++++++
+>> >>  1 files changed, 271 insertions(+), 0 deletions(-)
+>> >>
+>> >> diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+>> >> index 59fdb9f..d79f728 100644
+>> >> --- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+>> >> +++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+>
+>> >> +static struct omap_hwmod_ocp_if omap34xx_f128m_cfg__usb_host_hs = {
+>> >> +     .clk            = "usbhost_120m_fck",
+>> >
+>> > This doesn't look right.  This is an interface structure record, so it
+>> > should be associated with an interface clock.  Is the hardware really
+>> > using the functional clock as the interface clock?  Or, as seems more
+>> > likely...
+>>
+>>
+>> Agreed, how about:
+>>
+>> main clock: usbhost_120m_fck
+>> optional f clock: usbhost_48m_fck
+>
+> Assuming the interface clock is enabled, which one of these clocks is
+> needed for UHH register accesses to complete successfully?
 
-We should make no assumptions if our code base is open source :-)
 
-> I am not sure about this, but could a file-system cause this kind of a problem
-> independent of the mlocking behaviour of a user-mode app ?
+it is usbhost_48m_fck ;
+so,
+main clock: usbhost_48m_fck
+optional clock : usbhost_120m_fck
 
-Currently, I only see shmem and ramfs meddling with unevictability
-outside of mlock and they both look correct to me.
+do you agree?
 
-I'd say that if a filesystem required this knob and user-intervention
-for the VM to behave correctly, it needs fixing.
+>
+>> interface clock: usbhost_ick.
+>>
+>>
+>>
+>> >> +     .user           = OCP_USER_MPU,
+>> >> +     .flags          = OCPIF_SWSUP_IDLE,
+>> >
+>> > ... is this just a hack?  OCPIF_SWSUP_IDLE is intended to work around
+>> > hardware autoidle bugs only.  Are you sure this shouldn't be defined as an
+>> > optional clock instead?
+>>
+>> yes ! it was causeing resets, hence you this flag.
+>
+> usbhost_120m_fck is not an interface clock.  That is probably what was
+> causing the problem you describe.
+
+yes , you are right ! its not an interface clock.
+
+
+>
+>> >> +static struct omap_hwmod omap34xx_usb_host_hs_hwmod = {
+>> >> +     .name           = "usb_host_hs",
+>> >> +     .class          = &omap34xx_usb_host_hs_hwmod_class,
+>> >> +     .main_clk       = "usbhost_ick",
+>> >
+>> > Is this really the main clock?  The main clock is the clock that drives
+>> > the register logic in the IP block.  Looks to me, based on the integration
+>> > document in the 34xx TRM vZR, that this module has a functional clock.  In
+>> > general, the only time that the main_clk should be an interface clock is
+>> > when the clock is a combined interface and functional clock.  The mailbox
+>> > IP block is a classic example.
+>>
+>> As I mentioned above;  I can make
+>>
+>> main clock: usbhost_120m_fck
+>> optional f clock: usbhost_48m_fck
+>> interface clock: usbhost_ick.
+>>
+>> do you agree?
+>
+> The interface clock should definitely be usbhost_ick, no doubt about it.
+>
+> But, as I mentioned above, to determine which functional clock should be
+> the main clock, you first need to know which of those two clocks need to
+> be enabled for register accesses to that module to succeed.
+>
+> I did this work a few years ago, by trial and error since it was largely
+> undocumented.  It was needed since the OMAP3 clk_enable() code waits for
+> the PRCM to request that the IP block exit idle before returning.
+> You might want to take a look at arch/arm/mach-omap2/clock3xxx_data.c.
+>
+>> >> +static struct omap_hwmod omap34xx_usb_tll_hs_hwmod = {
+>> >> +     .name           = "usb_tll_hs",
+>> >> +     .class          = &omap34xx_usb_tll_hs_hwmod_class,
+>> >> +     .mpu_irqs       = omap34xx_usb_tll_hs_irqs,
+>> >> +     .main_clk       = "usbtll_ick",
+>> >
+>> > Is this really the main clock?  The main clock is the clock that drives
+>> > the register logic in the IP block.  Looks to me, based on the integration
+>> > document in the 34xx TRM vZR, that this module has a functional clock.
+>>
+>> I can make
+>>
+>> main clock: usbtll_fck
+>> interface clock: usbtll_ick.
+>>
+>> do you agree?
+>
+> Doesn't that make more sense?
+
+yes, I will do this change.
+
+
+keshava
