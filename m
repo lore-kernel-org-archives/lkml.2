@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752943Ab1IZLZy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 07:25:54 -0400
-Received: from mga09.intel.com ([134.134.136.24]:27103 "EHLO mga09.intel.com"
+	id S1753348Ab1IZL0Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 07:26:25 -0400
+Received: from mga09.intel.com ([134.134.136.24]:8582 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752241Ab1IZLVv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 07:21:51 -0400
+	id S1752502Ab1IZLVo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 07:21:44 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="56485957"
+   d="scan'208";a="56485861"
 From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 To: Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@suse.de>
 Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
         Peter Chen <peter.chen@freescale.com>,
         Lin Tony-B19295 <B19295@freescale.com>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Philipp Zabel <philipp.zabel@gmail.com>
-Subject: [PATCHv5 06/19] usb: otg: gpio_vbus: Start using struct usb_otg
-Date: Mon, 26 Sep 2011 14:21:19 +0300
-Message-Id: <1317036092-3000-7-git-send-email-heikki.krogerus@linux.intel.com>
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Subject: [PATCHv5 03/19] usb: otg: Separate otg members from usb_phy
+Date: Mon, 26 Sep 2011 14:21:16 +0300
+Message-Id: <1317036092-3000-4-git-send-email-heikki.krogerus@linux.intel.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1317036092-3000-1-git-send-email-heikki.krogerus@linux.intel.com>
 References: <1317036092-3000-1-git-send-email-heikki.krogerus@linux.intel.com>
@@ -26,201 +25,313 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use struct usb_otg members with OTG specific functions instead
-of usb_phy members.
+Introducing struct otg and collecting otg specific members
+to it from struct usb_phy. There are no changes to
+struct usb_phy at this stage. This also renames
+transceiver specific functions, and offers aliases for the
+old otg ones.
 
 Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Cc: Philipp Zabel <philipp.zabel@gmail.com>
 ---
- drivers/usb/otg/gpio_vbus.c |   61 +++++++++++++++++++++++++-----------------
- 1 files changed, 36 insertions(+), 25 deletions(-)
+ drivers/usb/otg/otg.c   |   18 ++++----
+ include/linux/usb/otg.h |   96 ++++++++++++++++++++++++++++++++++++++--------
+ 2 files changed, 88 insertions(+), 26 deletions(-)
 
-diff --git a/drivers/usb/otg/gpio_vbus.c b/drivers/usb/otg/gpio_vbus.c
-index 14f48e8..548720c 100644
---- a/drivers/usb/otg/gpio_vbus.c
-+++ b/drivers/usb/otg/gpio_vbus.c
-@@ -31,7 +31,7 @@
-  * Needs to be loaded before the UDC driver that will use it.
+diff --git a/drivers/usb/otg/otg.c b/drivers/usb/otg/otg.c
+index c6f2bed..5fcc020 100644
+--- a/drivers/usb/otg/otg.c
++++ b/drivers/usb/otg/otg.c
+@@ -17,7 +17,7 @@
+ static struct usb_phy *xceiv;
+ 
+ /**
+- * otg_get_transceiver - find the (single) OTG transceiver
++ * usb_get_transceiver - find the (single) OTG transceiver
+  *
+  * Returns the transceiver driver, after getting a refcount to it; or
+  * null if there is no such transceiver.  The caller is responsible for
+@@ -25,45 +25,45 @@ static struct usb_phy *xceiv;
+  *
+  * For use by USB host and peripheral drivers.
   */
- struct gpio_vbus_data {
--	struct usb_phy		otg;
-+	struct usb_phy		xceiv;
- 	struct device          *dev;
- 	struct regulator       *vbus_draw;
- 	int			vbus_draw_enabled;
-@@ -97,7 +97,7 @@ static void gpio_vbus_work(struct work_struct *work)
- 	struct gpio_vbus_mach_info *pdata = gpio_vbus->dev->platform_data;
- 	int gpio;
- 
--	if (!gpio_vbus->otg.gadget)
-+	if (!gpio_vbus->xceiv.otg->gadget)
- 		return;
- 
- 	/* Peripheral controllers which manage the pullup themselves won't have
-@@ -107,8 +107,8 @@ static void gpio_vbus_work(struct work_struct *work)
- 	 */
- 	gpio = pdata->gpio_pullup;
- 	if (is_vbus_powered(pdata)) {
--		gpio_vbus->otg.state = USB_PHY_STATE_B_PERIPHERAL;
--		usb_gadget_vbus_connect(gpio_vbus->otg.gadget);
-+		gpio_vbus->xceiv.state = USB_PHY_STATE_B_PERIPHERAL;
-+		usb_gadget_vbus_connect(gpio_vbus->xceiv.otg->gadget);
- 
- 		/* drawing a "unit load" is *always* OK, except for OTG */
- 		set_vbus_draw(gpio_vbus, 100);
-@@ -123,8 +123,8 @@ static void gpio_vbus_work(struct work_struct *work)
- 
- 		set_vbus_draw(gpio_vbus, 0);
- 
--		usb_gadget_vbus_disconnect(gpio_vbus->otg.gadget);
--		gpio_vbus->otg.state = USB_PHY_STATE_B_IDLE;
-+		usb_gadget_vbus_disconnect(gpio_vbus->xceiv.otg->gadget);
-+		gpio_vbus->xceiv.state = USB_PHY_STATE_B_IDLE;
- 	}
- }
- 
-@@ -134,12 +134,13 @@ static irqreturn_t gpio_vbus_irq(int irq, void *data)
- 	struct platform_device *pdev = data;
- 	struct gpio_vbus_mach_info *pdata = pdev->dev.platform_data;
- 	struct gpio_vbus_data *gpio_vbus = platform_get_drvdata(pdev);
-+	struct usb_otg *otg = gpio_vbus->xceiv.otg;
- 
- 	dev_dbg(&pdev->dev, "VBUS %s (gadget: %s)\n",
- 		is_vbus_powered(pdata) ? "supplied" : "inactive",
--		gpio_vbus->otg.gadget ? gpio_vbus->otg.gadget->name : "none");
-+		otg->gadget ? otg->gadget->name : "none");
- 
--	if (gpio_vbus->otg.gadget)
-+	if (otg->gadget)
- 		schedule_work(&gpio_vbus->work);
- 
- 	return IRQ_HANDLED;
-@@ -148,15 +149,15 @@ static irqreturn_t gpio_vbus_irq(int irq, void *data)
- /* OTG transceiver interface */
- 
- /* bind/unbind the peripheral controller */
--static int gpio_vbus_set_peripheral(struct usb_phy *otg,
--				struct usb_gadget *gadget)
-+static int gpio_vbus_set_peripheral(struct usb_otg *otg,
-+					struct usb_gadget *gadget)
+-struct usb_phy *otg_get_transceiver(void)
++struct usb_phy *usb_get_transceiver(void)
  {
- 	struct gpio_vbus_data *gpio_vbus;
- 	struct gpio_vbus_mach_info *pdata;
- 	struct platform_device *pdev;
- 	int gpio, irq;
- 
--	gpio_vbus = container_of(otg, struct gpio_vbus_data, otg);
-+	gpio_vbus = container_of(otg->xceiv, struct gpio_vbus_data, xceiv);
- 	pdev = to_platform_device(gpio_vbus->dev);
- 	pdata = gpio_vbus->dev->platform_data;
- 	irq = gpio_to_irq(pdata->gpio_vbus);
-@@ -173,7 +174,7 @@ static int gpio_vbus_set_peripheral(struct usb_phy *otg,
- 		set_vbus_draw(gpio_vbus, 0);
- 
- 		usb_gadget_vbus_disconnect(otg->gadget);
--		otg->state = USB_PHY_STATE_UNDEFINED;
-+		otg->xceiv->state = USB_PHY_STATE_UNDEFINED;
- 
- 		otg->gadget = NULL;
- 		return 0;
-@@ -188,23 +189,23 @@ static int gpio_vbus_set_peripheral(struct usb_phy *otg,
+ 	if (xceiv)
+ 		get_device(xceiv->dev);
+ 	return xceiv;
  }
+-EXPORT_SYMBOL(otg_get_transceiver);
++EXPORT_SYMBOL(usb_get_transceiver);
  
- /* effective for B devices, ignored for A-peripheral */
--static int gpio_vbus_set_power(struct usb_phy *otg, unsigned mA)
-+static int gpio_vbus_set_power(struct usb_phy *xceiv, unsigned mA)
+ /**
+- * otg_put_transceiver - release the (single) OTG transceiver
++ * usb_put_transceiver - release the (single) OTG transceiver
+  * @x: the transceiver returned by otg_get_transceiver()
+  *
+  * Releases a refcount the caller received from otg_get_transceiver().
+  *
+  * For use by USB host and peripheral drivers.
+  */
+-void otg_put_transceiver(struct usb_phy *x)
++void usb_put_transceiver(struct usb_phy *x)
  {
- 	struct gpio_vbus_data *gpio_vbus;
+ 	if (x)
+ 		put_device(x->dev);
+ }
+-EXPORT_SYMBOL(otg_put_transceiver);
++EXPORT_SYMBOL(usb_put_transceiver);
  
--	gpio_vbus = container_of(otg, struct gpio_vbus_data, otg);
-+	gpio_vbus = container_of(xceiv, struct gpio_vbus_data, xceiv);
- 
--	if (otg->state == USB_PHY_STATE_B_PERIPHERAL)
-+	if (xceiv->state == USB_PHY_STATE_B_PERIPHERAL)
- 		set_vbus_draw(gpio_vbus, mA);
+ /**
+- * otg_set_transceiver - declare the (single) OTG transceiver
++ * usb_set_transceiver - declare the (single) OTG transceiver
+  * @x: the USB OTG transceiver to be used; or NULL
+  *
+  * This call is exclusively for use by transceiver drivers, which
+  * coordinate the activities of drivers for host and peripheral
+  * controllers, and in some cases for VBUS current regulation.
+  */
+-int otg_set_transceiver(struct usb_phy *x)
++int usb_set_transceiver(struct usb_phy *x)
+ {
+ 	if (xceiv && x)
+ 		return -EBUSY;
+ 	xceiv = x;
  	return 0;
  }
+-EXPORT_SYMBOL(otg_set_transceiver);
++EXPORT_SYMBOL(usb_set_transceiver);
  
- /* for non-OTG B devices: set/clear transceiver suspend mode */
--static int gpio_vbus_set_suspend(struct usb_phy *otg, int suspend)
-+static int gpio_vbus_set_suspend(struct usb_phy *xceiv, int suspend)
+ const char *usb_phy_state_string(enum usb_phy_state state)
  {
- 	struct gpio_vbus_data *gpio_vbus;
+diff --git a/include/linux/usb/otg.h b/include/linux/usb/otg.h
+index 926e04c..34dea9b 100644
+--- a/include/linux/usb/otg.h
++++ b/include/linux/usb/otg.h
+@@ -48,11 +48,36 @@ struct usb_phy;
+ /* for transceivers connected thru an ULPI interface, the user must
+  * provide access ops
+  */
+-struct otg_io_access_ops {
++struct usb_phy_io_ops {
+ 	int (*read)(struct usb_phy *x, u32 reg);
+ 	int (*write)(struct usb_phy *x, u32 val, u32 reg);
+ };
  
--	gpio_vbus = container_of(otg, struct gpio_vbus_data, otg);
-+	gpio_vbus = container_of(xceiv, struct gpio_vbus_data, xceiv);
++struct usb_otg {
++	u8			default_a;
++
++	struct usb_phy		*xceiv;
++	struct usb_bus		*host;
++	struct usb_gadget	*gadget;
++
++	/* bind/unbind the host controller */
++	int	(*set_host)(struct usb_otg *otg, struct usb_bus *host);
++
++	/* bind/unbind the peripheral controller */
++	int	(*set_peripheral)(struct usb_otg *otg,
++					struct usb_gadget *gadget);
++
++	/* effective for A-peripheral, ignored for B devices */
++	int	(*set_vbus)(struct usb_otg *otg, bool enabled);
++
++	/* for B devices only:  start session with A-Host */
++	int	(*start_srp)(struct usb_otg *otg);
++
++	/* start or continue HNP role switch */
++	int	(*start_hnp)(struct usb_otg *otg);
++
++};
++
+ /*
+  * the otg driver needs to interact with both device side and host side
+  * usb controllers.  it decides which controller is active at a given
+@@ -68,11 +93,13 @@ struct usb_phy {
+ 	enum usb_phy_state	state;
+ 	enum usb_phy_events	last_event;
  
- 	/* draw max 0 mA from vbus in suspend mode; or the previously
- 	 * recorded amount of current if not suspended
-@@ -212,7 +213,7 @@ static int gpio_vbus_set_suspend(struct usb_phy *otg, int suspend)
- 	 * NOTE: high powered configs (mA > 100) may draw up to 2.5 mA
- 	 * if they're wake-enabled ... we don't handle that yet.
- 	 */
--	return gpio_vbus_set_power(otg, suspend ? 0 : gpio_vbus->mA);
-+	return gpio_vbus_set_power(xceiv, suspend ? 0 : gpio_vbus->mA);
++	struct usb_otg		*otg;
++
+ 	struct usb_bus		*host;
+ 	struct usb_gadget	*gadget;
+ 
+-	struct otg_io_access_ops	*io_ops;
+-	void __iomem			*io_priv;
++	struct usb_phy_io_ops	*io_ops;
++	void __iomem		*io_priv;
+ 
+ 	/* for notification of usb_phy_events */
+ 	struct atomic_notifier_head	notifier;
+@@ -115,7 +142,7 @@ struct usb_phy {
+ 
+ 
+ /* for board-specific init logic */
+-extern int otg_set_transceiver(struct usb_phy *);
++extern int usb_set_transceiver(struct usb_phy *);
+ 
+ #if defined(CONFIG_NOP_USB_XCEIV) || (defined(CONFIG_NOP_USB_XCEIV_MODULE) && defined(MODULE))
+ /* sometimes transceivers are accessed only through e.g. ULPI */
+@@ -132,7 +159,7 @@ static inline void usb_nop_xceiv_unregister(void)
+ #endif
+ 
+ /* helpers for direct access thru low-level io interface */
+-static inline int otg_io_read(struct usb_phy *x, u32 reg)
++static inline int usb_phy_io_read(struct usb_phy *x, u32 reg)
+ {
+ 	if (x->io_ops && x->io_ops->read)
+ 		return x->io_ops->read(x, reg);
+@@ -140,7 +167,7 @@ static inline int otg_io_read(struct usb_phy *x, u32 reg)
+ 	return -EINVAL;
  }
  
- /* platform driver interface */
-@@ -232,13 +233,21 @@ static int __init gpio_vbus_probe(struct platform_device *pdev)
- 	if (!gpio_vbus)
- 		return -ENOMEM;
- 
-+	gpio_vbus->xceiv.otg = kzalloc(sizeof(struct usb_otg), GFP_KERNEL);
-+	if (!gpio_vbus->xceiv.otg) {
-+		kfree(gpio_vbus);
-+		return -ENOMEM;
-+	}
-+
- 	platform_set_drvdata(pdev, gpio_vbus);
- 	gpio_vbus->dev = &pdev->dev;
--	gpio_vbus->otg.label = "gpio-vbus";
--	gpio_vbus->otg.state = USB_PHY_STATE_UNDEFINED;
--	gpio_vbus->otg.set_peripheral = gpio_vbus_set_peripheral;
--	gpio_vbus->otg.set_power = gpio_vbus_set_power;
--	gpio_vbus->otg.set_suspend = gpio_vbus_set_suspend;
-+	gpio_vbus->xceiv.label = "gpio-vbus";
-+	gpio_vbus->xceiv.set_power = gpio_vbus_set_power;
-+	gpio_vbus->xceiv.set_suspend = gpio_vbus_set_suspend;
-+	gpio_vbus->xceiv.state = USB_PHY_STATE_UNDEFINED;
-+
-+	gpio_vbus->xceiv.otg->xceiv = &gpio_vbus->xceiv;
-+	gpio_vbus->xceiv.otg->set_peripheral = gpio_vbus_set_peripheral;
- 
- 	err = gpio_request(gpio, "vbus_detect");
- 	if (err) {
-@@ -287,7 +296,7 @@ static int __init gpio_vbus_probe(struct platform_device *pdev)
- 	}
- 
- 	/* only active when a gadget is registered */
--	err = otg_set_transceiver(&gpio_vbus->otg);
-+	err = usb_set_transceiver(&gpio_vbus->xceiv);
- 	if (err) {
- 		dev_err(&pdev->dev, "can't register transceiver, err: %d\n",
- 			err);
-@@ -303,6 +312,7 @@ err_irq:
- 	gpio_free(pdata->gpio_vbus);
- err_gpio:
- 	platform_set_drvdata(pdev, NULL);
-+	kfree(gpio_vbus->xceiv.otg);
- 	kfree(gpio_vbus);
- 	return err;
+-static inline int otg_io_write(struct usb_phy *x, u32 val, u32 reg)
++static inline int usb_phy_io_write(struct usb_phy *x, u32 val, u32 reg)
+ {
+ 	if (x->io_ops && x->io_ops->write)
+ 		return x->io_ops->write(x, val, reg);
+@@ -149,7 +176,7 @@ static inline int otg_io_write(struct usb_phy *x, u32 val, u32 reg)
  }
-@@ -315,13 +325,14 @@ static int __exit gpio_vbus_remove(struct platform_device *pdev)
  
- 	regulator_put(gpio_vbus->vbus_draw);
+ static inline int
+-otg_init(struct usb_phy *x)
++usb_phy_init(struct usb_phy *x)
+ {
+ 	if (x->init)
+ 		return x->init(x);
+@@ -158,7 +185,7 @@ otg_init(struct usb_phy *x)
+ }
  
--	otg_set_transceiver(NULL);
-+	usb_set_transceiver(NULL);
+ static inline void
+-otg_shutdown(struct usb_phy *x)
++usb_phy_shutdown(struct usb_phy *x)
+ {
+ 	if (x->shutdown)
+ 		x->shutdown(x);
+@@ -166,16 +193,16 @@ otg_shutdown(struct usb_phy *x)
  
- 	free_irq(gpio_to_irq(gpio), &pdev->dev);
- 	if (gpio_is_valid(pdata->gpio_pullup))
- 		gpio_free(pdata->gpio_pullup);
- 	gpio_free(gpio);
- 	platform_set_drvdata(pdev, NULL);
-+	kfree(gpio_vbus->xceiv.otg);
- 	kfree(gpio_vbus);
+ /* for usb host and peripheral controller drivers */
+ #ifdef CONFIG_USB_OTG_UTILS
+-extern struct usb_phy *otg_get_transceiver(void);
+-extern void otg_put_transceiver(struct usb_phy *);
++extern struct usb_phy *usb_get_transceiver(void);
++extern void usb_put_transceiver(struct usb_phy *);
+ extern const char *usb_phy_state_string(enum usb_phy_state state);
+ #else
+-static inline struct usb_phy *otg_get_transceiver(void)
++static inline struct usb_phy *usb_get_transceiver(void)
+ {
+ 	return NULL;
+ }
  
- 	return 0;
+-static inline void otg_put_transceiver(struct usb_phy *x)
++static inline void usb_put_transceiver(struct usb_phy *x)
+ {
+ }
+ 
+@@ -189,6 +216,9 @@ static inline const char *usb_phy_state_string(enum usb_phy_state state)
+ static inline int
+ otg_start_hnp(struct usb_phy *x)
+ {
++	if (x->otg && x->otg->start_hnp)
++		return x->otg->start_hnp(x->otg);
++
+ 	return x->start_hnp(x);
+ }
+ 
+@@ -196,6 +226,9 @@ otg_start_hnp(struct usb_phy *x)
+ static inline int
+ otg_set_vbus(struct usb_phy *x, bool enabled)
+ {
++	if (x->otg && x->otg->set_vbus)
++		return x->otg->set_vbus(x->otg, enabled);
++
+ 	return x->set_vbus(x, enabled);
+ }
+ 
+@@ -203,6 +236,9 @@ otg_set_vbus(struct usb_phy *x, bool enabled)
+ static inline int
+ otg_set_host(struct usb_phy *x, struct usb_bus *host)
+ {
++	if (x->otg && x->otg->set_host)
++		return x->otg->set_host(x->otg, host);
++
+ 	return x->set_host(x, host);
+ }
+ 
+@@ -212,18 +248,23 @@ otg_set_host(struct usb_phy *x, struct usb_bus *host)
+ static inline int
+ otg_set_peripheral(struct usb_phy *x, struct usb_gadget *periph)
+ {
++	if (x->otg && x->otg->set_peripheral)
++		return x->otg->set_peripheral(x->otg, periph);
++
+ 	return x->set_peripheral(x, periph);
+ }
+ 
+ static inline int
+-otg_set_power(struct usb_phy *x, unsigned mA)
++usb_phy_set_power(struct usb_phy *x, unsigned mA)
+ {
+-	return x->set_power(x, mA);
++	if (x && x->set_power)
++		return x->set_power(x, mA);
++	return 0;
+ }
+ 
+ /* Context: can sleep */
+ static inline int
+-otg_set_suspend(struct usb_phy *x, int suspend)
++usb_phy_set_suspend(struct usb_phy *x, int suspend)
+ {
+ 	if (x->set_suspend != NULL)
+ 		return x->set_suspend(x, suspend);
+@@ -234,18 +275,21 @@ otg_set_suspend(struct usb_phy *x, int suspend)
+ static inline int
+ otg_start_srp(struct usb_phy *x)
+ {
++	if (x->otg && x->otg->start_srp)
++		return x->otg->start_srp(x->otg);
++
+ 	return x->start_srp(x);
+ }
+ 
+ /* notifiers */
+ static inline int
+-otg_register_notifier(struct usb_phy *x, struct notifier_block *nb)
++usb_register_notifier(struct usb_phy *x, struct notifier_block *nb)
+ {
+ 	return atomic_notifier_chain_register(&x->notifier, nb);
+ }
+ 
+ static inline void
+-otg_unregister_notifier(struct usb_phy *x, struct notifier_block *nb)
++usb_unregister_notifier(struct usb_phy *x, struct notifier_block *nb)
+ {
+ 	atomic_notifier_chain_unregister(&x->notifier, nb);
+ }
+@@ -253,4 +297,22 @@ otg_unregister_notifier(struct usb_phy *x, struct notifier_block *nb)
+ /* for OTG controller drivers (and maybe other stuff) */
+ extern int usb_bus_start_enum(struct usb_bus *bus, unsigned port_num);
+ 
++/* Temporary aliases for transceiver functions */
++#define otg_set_transceiver(x) usb_set_transceiver(x)
++#define otg_get_transceiver() usb_get_transceiver()
++#define otg_put_transceiver(x) usb_put_transceiver(x)
++
++#define otg_io_read(x, a) usb_phy_io_read(x, a)
++#define otg_io_write(x, a, b) usb_phy_io_write(x, a, b)
++
++#define otg_init(x) usb_phy_init(x)
++#define otg_shutdown(x) usb_phy_shutdown(x)
++#define otg_set_power(x, a) usb_phy_set_power(x, a)
++#define otg_set_suspend(x, a) usb_phy_set_suspend(x, a)
++
++#define otg_register_notifier(x, a) usb_register_notifier(x, a)
++#define otg_unregister_notifier(x, a) usb_unregiser_notifier(x, a)
++
++#define otg_io_access_ops usb_phy_io_ops
++
+ #endif /* __LINUX_USB_OTG_H */
 -- 
 1.7.4.1
 
