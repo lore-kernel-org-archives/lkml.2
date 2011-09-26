@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753436Ab1IZLZA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 07:25:00 -0400
-Received: from mga09.intel.com ([134.134.136.24]:13482 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752786Ab1IZLV7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752807Ab1IZLV7 (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 26 Sep 2011 07:21:59 -0400
+Received: from mga09.intel.com ([134.134.136.24]:27103 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752590Ab1IZLVx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 07:21:53 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="56486027"
+   d="scan'208";a="56485974"
 From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 To: Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@suse.de>
 Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
         Peter Chen <peter.chen@freescale.com>,
         Lin Tony-B19295 <B19295@freescale.com>,
         Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: [PATCHv5 09/19] usb: otg: langwell: Start using struct usb_otg
-Date: Mon, 26 Sep 2011 14:21:22 +0300
-Message-Id: <1317036092-3000-10-git-send-email-heikki.krogerus@linux.intel.com>
+Subject: [PATCHv5 07/19] usb: otg: isp1301_omap: Start using struct usb_otg
+Date: Mon, 26 Sep 2011 14:21:20 +0300
+Message-Id: <1317036092-3000-8-git-send-email-heikki.krogerus@linux.intel.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1317036092-3000-1-git-send-email-heikki.krogerus@linux.intel.com>
 References: <1317036092-3000-1-git-send-email-heikki.krogerus@linux.intel.com>
@@ -30,1080 +30,725 @@ of usb_phy members.
 
 Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 ---
- drivers/usb/otg/langwell_otg.c    |  333 ++++++++++++++++++++-----------------
- include/linux/usb/intel_mid_otg.h |    6 +-
- 2 files changed, 180 insertions(+), 159 deletions(-)
+ drivers/usb/otg/isp1301_omap.c |  236 +++++++++++++++++++++-------------------
+ 1 files changed, 123 insertions(+), 113 deletions(-)
 
-diff --git a/drivers/usb/otg/langwell_otg.c b/drivers/usb/otg/langwell_otg.c
-index 54ab373..d6bd9c4 100644
---- a/drivers/usb/otg/langwell_otg.c
-+++ b/drivers/usb/otg/langwell_otg.c
-@@ -55,11 +55,10 @@ static void langwell_otg_remove(struct pci_dev *pdev);
- static int langwell_otg_suspend(struct pci_dev *pdev, pm_message_t message);
- static int langwell_otg_resume(struct pci_dev *pdev);
- 
--static int langwell_otg_set_host(struct usb_phy *otg,
--				struct usb_bus *host);
--static int langwell_otg_set_peripheral(struct usb_phy *otg,
-+static int langwell_otg_set_host(struct usb_otg *otg, struct usb_bus *host);
-+static int langwell_otg_set_peripheral(struct usb_otg *otg,
- 				struct usb_gadget *gadget);
--static int langwell_otg_start_srp(struct usb_phy *otg);
-+static int langwell_otg_start_srp(struct usb_otg *otg);
- 
- static const struct pci_device_id pci_ids[] = {{
- 	.class =        ((PCI_CLASS_SERIAL_USB << 8) | 0xfe),
-@@ -118,15 +117,14 @@ void langwell_update_transceiver(void)
- }
- EXPORT_SYMBOL(langwell_update_transceiver);
- 
--static int langwell_otg_set_host(struct usb_phy *otg,
--					struct usb_bus *host)
-+static int langwell_otg_set_host(struct usb_otg *otg, struct usb_bus *host)
- {
- 	otg->host = host;
- 
- 	return 0;
- }
- 
--static int langwell_otg_set_peripheral(struct usb_phy *otg,
-+static int langwell_otg_set_peripheral(struct usb_otg *otg,
- 					struct usb_gadget *gadget)
- {
- 	otg->gadget = gadget;
-@@ -141,7 +139,7 @@ static int langwell_otg_set_power(struct usb_phy *otg,
- }
- 
- /* A-device drives vbus, controlled through IPC commands */
--static int langwell_otg_set_vbus(struct usb_phy *otg, bool enabled)
-+static int langwell_otg_set_vbus(struct usb_otg *otg, bool enabled)
- {
- 	struct langwell_otg		*lnw = the_transceiver;
- 	u8				sub_id;
-@@ -180,7 +178,7 @@ static void langwell_otg_chrg_vbus(int on)
- }
- 
- /* Start SRP */
--static int langwell_otg_start_srp(struct usb_phy *otg)
-+static int langwell_otg_start_srp(struct usb_otg *otg)
- {
- 	struct langwell_otg		*lnw = the_transceiver;
- 	struct intel_mid_otg_xceiv	*iotg = &lnw->iotg;
-@@ -205,9 +203,9 @@ static int langwell_otg_start_srp(struct usb_phy *otg)
- 	writel(val, iotg->base + CI_OTGSC);
- 
- 	/* Start VBus SRP, drive vbus to generate VBus pulse */
--	iotg->otg.set_vbus(&iotg->otg, true);
-+	otg->set_vbus(otg, true);
- 	msleep(15);
--	iotg->otg.set_vbus(&iotg->otg, false);
-+	otg->set_vbus(otg, false);
- 
- 	/* Enable interrupt - b_sess_vld*/
- 	val = readl(iotg->base + CI_OTGSC);
-@@ -237,7 +235,7 @@ static void langwell_otg_loc_sof(int on)
- 
- 	dev_dbg(lnw->dev, "%s ---> %s\n", __func__, on ? "suspend" : "resume");
- 
--	hcd = bus_to_hcd(lnw->iotg.otg.host);
-+	hcd = bus_to_hcd(lnw->iotg.xceiv.otg->host);
- 	if (on)
- 		err = hcd->driver->bus_resume(hcd);
- 	else
-@@ -672,6 +670,7 @@ static void init_hsm(void)
- {
- 	struct langwell_otg		*lnw = the_transceiver;
- 	struct intel_mid_otg_xceiv	*iotg = &lnw->iotg;
-+	struct usb_otg			*otg = iotg->xceiv.otg;
- 	u32				val32;
- 
- 	/* read OTGSC after reset */
-@@ -681,14 +680,14 @@ static void init_hsm(void)
- 	/* set init state */
- 	if (val32 & OTGSC_ID) {
- 		iotg->hsm.id = 1;
--		iotg->otg.default_a = 0;
-+		otg->default_a = 0;
- 		set_client_mode();
--		iotg->otg.state = USB_PHY_STATE_B_IDLE;
-+		otg->xceiv->state = USB_PHY_STATE_B_IDLE;
- 	} else {
- 		iotg->hsm.id = 0;
--		iotg->otg.default_a = 1;
-+		otg->default_a = 1;
- 		set_host_mode();
--		iotg->otg.state = USB_PHY_STATE_A_IDLE;
-+		otg->xceiv->state = USB_PHY_STATE_A_IDLE;
- 	}
- 
- 	/* set session indicator */
-@@ -832,6 +831,7 @@ static int langwell_otg_iotg_notify(struct notifier_block *nb,
- {
- 	struct langwell_otg		*lnw = the_transceiver;
- 	struct intel_mid_otg_xceiv	*iotg = data;
-+	struct usb_otg			*otg = iotg->xceiv.otg;
- 	int				flag = 0;
- 
- 	if (iotg == NULL)
-@@ -843,7 +843,7 @@ static int langwell_otg_iotg_notify(struct notifier_block *nb,
- 	switch (action) {
- 	case MID_OTG_NOTIFY_CONNECT:
- 		dev_dbg(lnw->dev, "Lnw OTG Notify Connect Event\n");
--		if (iotg->otg.default_a == 1)
-+		if (otg->default_a == 1)
- 			iotg->hsm.b_conn = 1;
- 		else
- 			iotg->hsm.a_conn = 1;
-@@ -851,7 +851,7 @@ static int langwell_otg_iotg_notify(struct notifier_block *nb,
- 		break;
- 	case MID_OTG_NOTIFY_DISCONN:
- 		dev_dbg(lnw->dev, "Lnw OTG Notify Disconnect Event\n");
--		if (iotg->otg.default_a == 1)
-+		if (otg->default_a == 1)
- 			iotg->hsm.b_conn = 0;
- 		else
- 			iotg->hsm.a_conn = 0;
-@@ -859,7 +859,7 @@ static int langwell_otg_iotg_notify(struct notifier_block *nb,
- 		break;
- 	case MID_OTG_NOTIFY_HSUSPEND:
- 		dev_dbg(lnw->dev, "Lnw OTG Notify Host Bus suspend Event\n");
--		if (iotg->otg.default_a == 1)
-+		if (otg->default_a == 1)
- 			iotg->hsm.a_suspend_req = 1;
- 		else
- 			iotg->hsm.b_bus_req = 0;
-@@ -867,13 +867,13 @@ static int langwell_otg_iotg_notify(struct notifier_block *nb,
- 		break;
- 	case MID_OTG_NOTIFY_HRESUME:
- 		dev_dbg(lnw->dev, "Lnw OTG Notify Host Bus resume Event\n");
--		if (iotg->otg.default_a == 1)
-+		if (otg->default_a == 1)
- 			iotg->hsm.b_bus_resume = 1;
- 		flag = 1;
- 		break;
- 	case MID_OTG_NOTIFY_CSUSPEND:
- 		dev_dbg(lnw->dev, "Lnw OTG Notify Client Bus suspend Event\n");
--		if (iotg->otg.default_a == 1) {
-+		if (otg->default_a == 1) {
- 			if (iotg->hsm.b_bus_suspend_vld == 2) {
- 				iotg->hsm.b_bus_suspend = 1;
- 				iotg->hsm.b_bus_suspend_vld = 0;
-@@ -891,7 +891,7 @@ static int langwell_otg_iotg_notify(struct notifier_block *nb,
- 		break;
- 	case MID_OTG_NOTIFY_CRESUME:
- 		dev_dbg(lnw->dev, "Lnw OTG Notify Client Bus resume Event\n");
--		if (iotg->otg.default_a == 0)
-+		if (otg->default_a == 0)
- 			iotg->hsm.a_bus_suspend = 0;
- 		flag = 0;
- 		break;
-@@ -926,31 +926,33 @@ static void langwell_otg_work(struct work_struct *work)
- {
- 	struct langwell_otg		*lnw;
- 	struct intel_mid_otg_xceiv	*iotg;
-+	struct usb_otg			*otg;
- 	int				retval;
- 	struct pci_dev			*pdev;
- 
- 	lnw = container_of(work, struct langwell_otg, work);
- 	iotg = &lnw->iotg;
- 	pdev = to_pci_dev(lnw->dev);
-+	otg = iotg->xceiv.otg;
- 
- 	dev_dbg(lnw->dev, "%s: old state = %s\n", __func__,
--			usb_phy_state_string(iotg->otg.state));
-+			usb_phy_state_string(otg->xceiv->state));
- 
--	switch (iotg->otg.state) {
-+	switch (otg->xceiv->state) {
- 	case USB_PHY_STATE_UNDEFINED:
- 	case USB_PHY_STATE_B_IDLE:
- 		if (!iotg->hsm.id) {
- 			langwell_otg_del_timer(b_srp_init_tmr);
- 			del_timer_sync(&lnw->hsm_timer);
- 
--			iotg->otg.default_a = 1;
-+			otg->default_a = 1;
- 			iotg->hsm.a_srp_det = 0;
- 
- 			langwell_otg_chrg_vbus(0);
- 			set_host_mode();
- 			langwell_otg_phy_low_power(1);
- 
--			iotg->otg.state = USB_PHY_STATE_A_IDLE;
-+			otg->xceiv->state = USB_PHY_STATE_A_IDLE;
- 			langwell_update_transceiver();
- 		} else if (iotg->hsm.b_sess_vld) {
- 			langwell_otg_del_timer(b_srp_init_tmr);
-@@ -961,7 +963,7 @@ static void langwell_otg_work(struct work_struct *work)
- 
- 			if (lnw->iotg.start_peripheral) {
- 				lnw->iotg.start_peripheral(&lnw->iotg);
--				iotg->otg.state = USB_PHY_STATE_B_PERIPHERAL;
-+				otg->xceiv->state = USB_PHY_STATE_B_PERIPHERAL;
- 			} else
- 				dev_dbg(lnw->dev, "client driver not loaded\n");
- 
-@@ -987,7 +989,7 @@ static void langwell_otg_work(struct work_struct *work)
- 
- 				/* Start SRP */
- 				langwell_otg_add_timer(b_srp_init_tmr);
--				iotg->otg.start_srp(&iotg->otg);
-+				otg->start_srp(otg);
- 				langwell_otg_del_timer(b_srp_init_tmr);
- 				langwell_otg_add_ktimer(TB_SRP_FAIL_TMR);
- 
-@@ -998,28 +1000,28 @@ static void langwell_otg_work(struct work_struct *work)
- 		break;
- 	case USB_PHY_STATE_B_SRP_INIT:
- 		if (!iotg->hsm.id) {
--			iotg->otg.default_a = 1;
-+			otg->default_a = 1;
- 			iotg->hsm.a_srp_det = 0;
- 
- 			/* Turn off VBus */
--			iotg->otg.set_vbus(&iotg->otg, false);
-+			otg->set_vbus(otg, false);
- 			langwell_otg_chrg_vbus(0);
- 			set_host_mode();
- 			langwell_otg_phy_low_power(1);
--			iotg->otg.state = USB_PHY_STATE_A_IDLE;
-+			otg->xceiv->state = USB_PHY_STATE_A_IDLE;
- 			langwell_update_transceiver();
- 		} else if (iotg->hsm.b_sess_vld) {
- 			langwell_otg_chrg_vbus(0);
- 			if (lnw->iotg.start_peripheral) {
- 				lnw->iotg.start_peripheral(&lnw->iotg);
--				iotg->otg.state = USB_PHY_STATE_B_PERIPHERAL;
-+				otg->xceiv->state = USB_PHY_STATE_B_PERIPHERAL;
- 			} else
- 				dev_dbg(lnw->dev, "client driver not loaded\n");
- 		}
- 		break;
- 	case USB_PHY_STATE_B_PERIPHERAL:
- 		if (!iotg->hsm.id) {
--			iotg->otg.default_a = 1;
-+			otg->default_a = 1;
- 			iotg->hsm.a_srp_det = 0;
- 
- 			langwell_otg_chrg_vbus(0);
-@@ -1032,7 +1034,7 @@ static void langwell_otg_work(struct work_struct *work)
- 
- 			set_host_mode();
- 			langwell_otg_phy_low_power(1);
--			iotg->otg.state = USB_PHY_STATE_A_IDLE;
-+			otg->xceiv->state = USB_PHY_STATE_A_IDLE;
- 			langwell_update_transceiver();
- 		} else if (!iotg->hsm.b_sess_vld) {
- 			iotg->hsm.b_hnp_enable = 0;
-@@ -1043,9 +1045,9 @@ static void langwell_otg_work(struct work_struct *work)
- 				dev_dbg(lnw->dev,
- 					"client driver has been removed.\n");
- 
--			iotg->otg.state = USB_PHY_STATE_B_IDLE;
--		} else if (iotg->hsm.b_bus_req && iotg->otg.gadget &&
--					iotg->otg.gadget->b_hnp_enable &&
-+			otg->xceiv->state = USB_PHY_STATE_B_IDLE;
-+		} else if (iotg->hsm.b_bus_req && otg->gadget &&
-+					otg->gadget->b_hnp_enable &&
- 					iotg->hsm.a_bus_suspend) {
- 
- 			if (lnw->iotg.stop_peripheral)
-@@ -1059,7 +1061,7 @@ static void langwell_otg_work(struct work_struct *work)
- 
- 			if (lnw->iotg.start_host) {
- 				lnw->iotg.start_host(&lnw->iotg);
--				iotg->otg.state = USB_PHY_STATE_B_WAIT_ACON;
-+				otg->xceiv->state = USB_PHY_STATE_B_WAIT_ACON;
- 			} else
- 				dev_dbg(lnw->dev,
- 						"host driver not loaded.\n");
-@@ -1074,7 +1076,7 @@ static void langwell_otg_work(struct work_struct *work)
- 			/* delete hsm timer for b_ase0_brst_tmr */
- 			del_timer_sync(&lnw->hsm_timer);
- 
--			iotg->otg.default_a = 1;
-+			otg->default_a = 1;
- 			iotg->hsm.a_srp_det = 0;
- 
- 			langwell_otg_chrg_vbus(0);
-@@ -1088,7 +1090,7 @@ static void langwell_otg_work(struct work_struct *work)
- 
- 			set_host_mode();
- 			langwell_otg_phy_low_power(1);
--			iotg->otg.state = USB_PHY_STATE_A_IDLE;
-+			otg->xceiv->state = USB_PHY_STATE_A_IDLE;
- 			langwell_update_transceiver();
- 		} else if (!iotg->hsm.b_sess_vld) {
- 			/* delete hsm timer for b_ase0_brst_tmr */
-@@ -1108,13 +1110,13 @@ static void langwell_otg_work(struct work_struct *work)
- 
- 			set_client_mode();
- 			langwell_otg_phy_low_power(1);
--			iotg->otg.state = USB_PHY_STATE_B_IDLE;
-+			otg->xceiv->state = USB_PHY_STATE_B_IDLE;
- 		} else if (iotg->hsm.a_conn) {
- 			/* delete hsm timer for b_ase0_brst_tmr */
- 			del_timer_sync(&lnw->hsm_timer);
- 
- 			langwell_otg_HAAR(0);
--			iotg->otg.state = USB_PHY_STATE_B_HOST;
-+			otg->xceiv->state = USB_PHY_STATE_B_HOST;
- 			langwell_update_transceiver();
- 		} else if (iotg->hsm.a_bus_resume ||
- 				iotg->hsm.b_ase0_brst_tmout) {
-@@ -1139,13 +1141,13 @@ static void langwell_otg_work(struct work_struct *work)
- 				dev_dbg(lnw->dev,
- 					"client driver not loaded.\n");
- 
--			iotg->otg.state = USB_PHY_STATE_B_PERIPHERAL;
-+			otg->xceiv->state = USB_PHY_STATE_B_PERIPHERAL;
- 		}
- 		break;
- 
- 	case USB_PHY_STATE_B_HOST:
- 		if (!iotg->hsm.id) {
--			iotg->otg.default_a = 1;
-+			otg->default_a = 1;
- 			iotg->hsm.a_srp_det = 0;
- 
- 			langwell_otg_chrg_vbus(0);
-@@ -1158,7 +1160,7 @@ static void langwell_otg_work(struct work_struct *work)
- 
- 			set_host_mode();
- 			langwell_otg_phy_low_power(1);
--			iotg->otg.state = USB_PHY_STATE_A_IDLE;
-+			otg->xceiv->state = USB_PHY_STATE_A_IDLE;
- 			langwell_update_transceiver();
- 		} else if (!iotg->hsm.b_sess_vld) {
- 			iotg->hsm.b_hnp_enable = 0;
-@@ -1173,7 +1175,7 @@ static void langwell_otg_work(struct work_struct *work)
- 
- 			set_client_mode();
- 			langwell_otg_phy_low_power(1);
--			iotg->otg.state = USB_PHY_STATE_B_IDLE;
-+			otg->xceiv->state = USB_PHY_STATE_B_IDLE;
- 		} else if ((!iotg->hsm.b_bus_req) ||
- 				(!iotg->hsm.a_conn)) {
- 			iotg->hsm.b_bus_req = 0;
-@@ -1193,33 +1195,33 @@ static void langwell_otg_work(struct work_struct *work)
- 				dev_dbg(lnw->dev,
- 						"client driver not loaded.\n");
- 
--			iotg->otg.state = USB_PHY_STATE_B_PERIPHERAL;
-+			otg->xceiv->state = USB_PHY_STATE_B_PERIPHERAL;
- 		}
- 		break;
- 
- 	case USB_PHY_STATE_A_IDLE:
--		iotg->otg.default_a = 1;
-+		otg->default_a = 1;
- 		if (iotg->hsm.id) {
--			iotg->otg.default_a = 0;
-+			otg->default_a = 0;
- 			iotg->hsm.b_bus_req = 0;
- 			iotg->hsm.vbus_srp_up = 0;
- 
- 			langwell_otg_chrg_vbus(0);
- 			set_client_mode();
- 			langwell_otg_phy_low_power(1);
--			iotg->otg.state = USB_PHY_STATE_B_IDLE;
-+			otg->xceiv->state = USB_PHY_STATE_B_IDLE;
- 			langwell_update_transceiver();
- 		} else if (!iotg->hsm.a_bus_drop &&
- 			(iotg->hsm.a_srp_det || iotg->hsm.a_bus_req)) {
- 			langwell_otg_phy_low_power(0);
- 
- 			/* Turn on VBus */
--			iotg->otg.set_vbus(&iotg->otg, true);
-+			otg->set_vbus(otg, true);
- 
- 			iotg->hsm.vbus_srp_up = 0;
- 			iotg->hsm.a_wait_vrise_tmout = 0;
- 			langwell_otg_add_timer(a_wait_vrise_tmr);
--			iotg->otg.state = USB_PHY_STATE_A_WAIT_VRISE;
-+			otg->xceiv->state = USB_PHY_STATE_A_WAIT_VRISE;
- 			langwell_update_transceiver();
- 		} else if (!iotg->hsm.a_bus_drop && iotg->hsm.a_sess_vld) {
- 			iotg->hsm.vbus_srp_up = 1;
-@@ -1228,12 +1230,12 @@ static void langwell_otg_work(struct work_struct *work)
- 			langwell_otg_phy_low_power(0);
- 
- 			/* Turn on VBus */
--			iotg->otg.set_vbus(&iotg->otg, true);
-+			otg->set_vbus(otg, true);
- 			iotg->hsm.a_srp_det = 1;
- 			iotg->hsm.vbus_srp_up = 0;
- 			iotg->hsm.a_wait_vrise_tmout = 0;
- 			langwell_otg_add_timer(a_wait_vrise_tmr);
--			iotg->otg.state = USB_PHY_STATE_A_WAIT_VRISE;
-+			otg->xceiv->state = USB_PHY_STATE_A_WAIT_VRISE;
- 			langwell_update_transceiver();
- 		} else if (!iotg->hsm.a_sess_vld &&
- 				!iotg->hsm.vbus_srp_up) {
-@@ -1244,13 +1246,13 @@ static void langwell_otg_work(struct work_struct *work)
- 		if (iotg->hsm.id) {
- 			langwell_otg_del_timer(a_wait_vrise_tmr);
- 			iotg->hsm.b_bus_req = 0;
--			iotg->otg.default_a = 0;
-+			otg->default_a = 0;
- 
- 			/* Turn off VBus */
--			iotg->otg.set_vbus(&iotg->otg, false);
-+			otg->set_vbus(otg, false);
- 			set_client_mode();
- 			langwell_otg_phy_low_power_wait(1);
--			iotg->otg.state = USB_PHY_STATE_B_IDLE;
-+			otg->xceiv->state = USB_PHY_STATE_B_IDLE;
- 		} else if (iotg->hsm.a_vbus_vld) {
- 			langwell_otg_del_timer(a_wait_vrise_tmr);
- 			iotg->hsm.b_conn = 0;
-@@ -1262,7 +1264,7 @@ static void langwell_otg_work(struct work_struct *work)
- 			}
- 
- 			langwell_otg_add_ktimer(TA_WAIT_BCON_TMR);
--			iotg->otg.state = USB_PHY_STATE_A_WAIT_BCON;
-+			otg->xceiv->state = USB_PHY_STATE_A_WAIT_BCON;
- 		} else if (iotg->hsm.a_wait_vrise_tmout) {
- 			iotg->hsm.b_conn = 0;
- 			if (iotg->hsm.a_vbus_vld) {
-@@ -1274,13 +1276,13 @@ static void langwell_otg_work(struct work_struct *work)
- 					break;
- 				}
- 				langwell_otg_add_ktimer(TA_WAIT_BCON_TMR);
--				iotg->otg.state = USB_PHY_STATE_A_WAIT_BCON;
-+				otg->xceiv->state = USB_PHY_STATE_A_WAIT_BCON;
- 			} else {
- 
- 				/* Turn off VBus */
--				iotg->otg.set_vbus(&iotg->otg, false);
-+				otg->set_vbus(otg, false);
- 				langwell_otg_phy_low_power_wait(1);
--				iotg->otg.state = USB_PHY_STATE_A_VBUS_ERR;
-+				otg->xceiv->state = USB_PHY_STATE_A_VBUS_ERR;
- 			}
- 		}
- 		break;
-@@ -1289,7 +1291,7 @@ static void langwell_otg_work(struct work_struct *work)
- 			/* delete hsm timer for a_wait_bcon_tmr */
- 			del_timer_sync(&lnw->hsm_timer);
- 
--			iotg->otg.default_a = 0;
-+			otg->default_a = 0;
- 			iotg->hsm.b_bus_req = 0;
- 
- 			if (lnw->iotg.stop_host)
-@@ -1299,10 +1301,10 @@ static void langwell_otg_work(struct work_struct *work)
- 					"host driver has been removed.\n");
- 
- 			/* Turn off VBus */
--			iotg->otg.set_vbus(&iotg->otg, false);
-+			otg->set_vbus(otg, false);
- 			set_client_mode();
- 			langwell_otg_phy_low_power_wait(1);
--			iotg->otg.state = USB_PHY_STATE_B_IDLE;
-+			otg->xceiv->state = USB_PHY_STATE_B_IDLE;
- 			langwell_update_transceiver();
- 		} else if (!iotg->hsm.a_vbus_vld) {
- 			/* delete hsm timer for a_wait_bcon_tmr */
-@@ -1315,9 +1317,9 @@ static void langwell_otg_work(struct work_struct *work)
- 					"host driver has been removed.\n");
- 
- 			/* Turn off VBus */
--			iotg->otg.set_vbus(&iotg->otg, false);
-+			otg->set_vbus(otg, false);
- 			langwell_otg_phy_low_power_wait(1);
--			iotg->otg.state = USB_PHY_STATE_A_VBUS_ERR;
-+			otg->xceiv->state = USB_PHY_STATE_A_VBUS_ERR;
- 		} else if (iotg->hsm.a_bus_drop ||
- 				(iotg->hsm.a_wait_bcon_tmout &&
- 				!iotg->hsm.a_bus_req)) {
-@@ -1331,21 +1333,21 @@ static void langwell_otg_work(struct work_struct *work)
- 					"host driver has been removed.\n");
- 
- 			/* Turn off VBus */
--			iotg->otg.set_vbus(&iotg->otg, false);
--			iotg->otg.state = USB_PHY_STATE_A_WAIT_VFALL;
-+			otg->set_vbus(otg, false);
-+			otg->xceiv->state = USB_PHY_STATE_A_WAIT_VFALL;
- 		} else if (iotg->hsm.b_conn) {
- 			/* delete hsm timer for a_wait_bcon_tmr */
- 			del_timer_sync(&lnw->hsm_timer);
- 
- 			iotg->hsm.a_suspend_req = 0;
--			iotg->otg.state = USB_PHY_STATE_A_HOST;
--			if (iotg->hsm.a_srp_det && iotg->otg.host &&
--					!iotg->otg.host->b_hnp_enable) {
-+			otg->xceiv->state = USB_PHY_STATE_A_HOST;
-+			if (iotg->hsm.a_srp_det && otg->host &&
-+					!otg->host->b_hnp_enable) {
- 				/* SRP capable peripheral-only device */
- 				iotg->hsm.a_bus_req = 1;
- 				iotg->hsm.a_srp_det = 0;
--			} else if (!iotg->hsm.a_bus_req && iotg->otg.host &&
--					iotg->otg.host->b_hnp_enable) {
-+			} else if (!iotg->hsm.a_bus_req && otg->host &&
-+					otg->host->b_hnp_enable) {
- 				/* It is not safe enough to do a fast
- 				 * transition from A_WAIT_BCON to
- 				 * A_SUSPEND */
-@@ -1369,9 +1371,9 @@ static void langwell_otg_work(struct work_struct *work)
- 				/* clear PHCD to enable HW timer */
- 				langwell_otg_phy_low_power(0);
- 				langwell_otg_add_timer(a_aidl_bdis_tmr);
--				iotg->otg.state = USB_PHY_STATE_A_SUSPEND;
--			} else if (!iotg->hsm.a_bus_req && iotg->otg.host &&
--				!iotg->otg.host->b_hnp_enable) {
-+				otg->xceiv->state = USB_PHY_STATE_A_SUSPEND;
-+			} else if (!iotg->hsm.a_bus_req && otg->host &&
-+				!otg->host->b_hnp_enable) {
- 				if (lnw->iotg.stop_host)
- 					lnw->iotg.stop_host(&lnw->iotg);
- 				else
-@@ -1379,14 +1381,14 @@ static void langwell_otg_work(struct work_struct *work)
- 						"host driver removed.\n");
- 
- 				/* Turn off VBus */
--				iotg->otg.set_vbus(&iotg->otg, false);
--				iotg->otg.state = USB_PHY_STATE_A_WAIT_VFALL;
-+				otg->set_vbus(otg, false);
-+				otg->xceiv->state = USB_PHY_STATE_A_WAIT_VFALL;
- 			}
- 		}
- 		break;
- 	case USB_PHY_STATE_A_HOST:
- 		if (iotg->hsm.id) {
--			iotg->otg.default_a = 0;
-+			otg->default_a = 0;
- 			iotg->hsm.b_bus_req = 0;
- 
- 			if (lnw->iotg.stop_host)
-@@ -1396,14 +1398,14 @@ static void langwell_otg_work(struct work_struct *work)
- 					"host driver has been removed.\n");
- 
- 			/* Turn off VBus */
--			iotg->otg.set_vbus(&iotg->otg, false);
-+			otg->set_vbus(otg, false);
- 			set_client_mode();
- 			langwell_otg_phy_low_power_wait(1);
--			iotg->otg.state = USB_PHY_STATE_B_IDLE;
-+			otg->xceiv->state = USB_PHY_STATE_B_IDLE;
- 			langwell_update_transceiver();
- 		} else if (iotg->hsm.a_bus_drop ||
--				(iotg->otg.host &&
--				!iotg->otg.host->b_hnp_enable &&
-+				(otg->host &&
-+				!otg->host->b_hnp_enable &&
- 					!iotg->hsm.a_bus_req)) {
- 			if (lnw->iotg.stop_host)
- 				lnw->iotg.stop_host(&lnw->iotg);
-@@ -1412,8 +1414,8 @@ static void langwell_otg_work(struct work_struct *work)
- 					"host driver has been removed.\n");
- 
- 			/* Turn off VBus */
--			iotg->otg.set_vbus(&iotg->otg, false);
--			iotg->otg.state = USB_PHY_STATE_A_WAIT_VFALL;
-+			otg->set_vbus(otg, false);
-+			otg->xceiv->state = USB_PHY_STATE_A_WAIT_VFALL;
- 		} else if (!iotg->hsm.a_vbus_vld) {
- 			if (lnw->iotg.stop_host)
- 				lnw->iotg.stop_host(&lnw->iotg);
-@@ -1422,11 +1424,11 @@ static void langwell_otg_work(struct work_struct *work)
- 					"host driver has been removed.\n");
- 
- 			/* Turn off VBus */
--			iotg->otg.set_vbus(&iotg->otg, false);
-+			otg->set_vbus(otg, false);
- 			langwell_otg_phy_low_power_wait(1);
--			iotg->otg.state = USB_PHY_STATE_A_VBUS_ERR;
--		} else if (iotg->otg.host &&
--				iotg->otg.host->b_hnp_enable &&
-+			otg->xceiv->state = USB_PHY_STATE_A_VBUS_ERR;
-+		} else if (otg->host &&
-+				otg->host->b_hnp_enable &&
- 				!iotg->hsm.a_bus_req) {
- 			/* Set HABA to enable hardware assistance to signal
- 			 *  A-connect after receiver B-disconnect. Hardware
-@@ -1449,10 +1451,10 @@ static void langwell_otg_work(struct work_struct *work)
- 			/* clear PHCD to enable HW timer */
- 			langwell_otg_phy_low_power(0);
- 			langwell_otg_add_timer(a_aidl_bdis_tmr);
--			iotg->otg.state = USB_PHY_STATE_A_SUSPEND;
-+			otg->xceiv->state = USB_PHY_STATE_A_SUSPEND;
- 		} else if (!iotg->hsm.b_conn || !iotg->hsm.a_bus_req) {
- 			langwell_otg_add_ktimer(TA_WAIT_BCON_TMR);
--			iotg->otg.state = USB_PHY_STATE_A_WAIT_BCON;
-+			otg->xceiv->state = USB_PHY_STATE_A_WAIT_BCON;
- 		}
- 		break;
- 	case USB_PHY_STATE_A_SUSPEND:
-@@ -1460,7 +1462,7 @@ static void langwell_otg_work(struct work_struct *work)
- 			langwell_otg_del_timer(a_aidl_bdis_tmr);
- 			langwell_otg_HABA(0);
- 			free_irq(pdev->irq, iotg->base);
--			iotg->otg.default_a = 0;
-+			otg->default_a = 0;
- 			iotg->hsm.b_bus_req = 0;
- 
- 			if (lnw->iotg.stop_host)
-@@ -1470,10 +1472,10 @@ static void langwell_otg_work(struct work_struct *work)
- 					"host driver has been removed.\n");
- 
- 			/* Turn off VBus */
--			iotg->otg.set_vbus(&iotg->otg, false);
-+			otg->set_vbus(otg, false);
- 			set_client_mode();
- 			langwell_otg_phy_low_power(1);
--			iotg->otg.state = USB_PHY_STATE_B_IDLE;
-+			otg->xceiv->state = USB_PHY_STATE_B_IDLE;
- 			langwell_update_transceiver();
- 		} else if (iotg->hsm.a_bus_req ||
- 				iotg->hsm.b_bus_resume) {
-@@ -1482,7 +1484,7 @@ static void langwell_otg_work(struct work_struct *work)
- 			free_irq(pdev->irq, iotg->base);
- 			iotg->hsm.a_suspend_req = 0;
- 			langwell_otg_loc_sof(1);
--			iotg->otg.state = USB_PHY_STATE_A_HOST;
-+			otg->xceiv->state = USB_PHY_STATE_A_HOST;
- 		} else if (iotg->hsm.a_aidl_bdis_tmout ||
- 				iotg->hsm.a_bus_drop) {
- 			langwell_otg_del_timer(a_aidl_bdis_tmr);
-@@ -1495,10 +1497,10 @@ static void langwell_otg_work(struct work_struct *work)
- 					"host driver has been removed.\n");
- 
- 			/* Turn off VBus */
--			iotg->otg.set_vbus(&iotg->otg, false);
--			iotg->otg.state = USB_PHY_STATE_A_WAIT_VFALL;
--		} else if (!iotg->hsm.b_conn && iotg->otg.host &&
--				iotg->otg.host->b_hnp_enable) {
-+			otg->set_vbus(otg, false);
-+			otg->xceiv->state = USB_PHY_STATE_A_WAIT_VFALL;
-+		} else if (!iotg->hsm.b_conn && otg->host &&
-+				otg->host->b_hnp_enable) {
- 			langwell_otg_del_timer(a_aidl_bdis_tmr);
- 			langwell_otg_HABA(0);
- 			free_irq(pdev->irq, iotg->base);
-@@ -1520,7 +1522,7 @@ static void langwell_otg_work(struct work_struct *work)
- 					"client driver not loaded.\n");
- 
- 			langwell_otg_add_ktimer(TB_BUS_SUSPEND_TMR);
--			iotg->otg.state = USB_PHY_STATE_A_PERIPHERAL;
-+			otg->xceiv->state = USB_PHY_STATE_A_PERIPHERAL;
- 			break;
- 		} else if (!iotg->hsm.a_vbus_vld) {
- 			langwell_otg_del_timer(a_aidl_bdis_tmr);
-@@ -1533,16 +1535,16 @@ static void langwell_otg_work(struct work_struct *work)
- 					"host driver has been removed.\n");
- 
- 			/* Turn off VBus */
--			iotg->otg.set_vbus(&iotg->otg, false);
-+			otg->set_vbus(otg, false);
- 			langwell_otg_phy_low_power_wait(1);
--			iotg->otg.state = USB_PHY_STATE_A_VBUS_ERR;
-+			otg->xceiv->state = USB_PHY_STATE_A_VBUS_ERR;
- 		}
- 		break;
- 	case USB_PHY_STATE_A_PERIPHERAL:
- 		if (iotg->hsm.id) {
- 			/* delete hsm timer for b_bus_suspend_tmr */
- 			del_timer_sync(&lnw->hsm_timer);
--			iotg->otg.default_a = 0;
-+			otg->default_a = 0;
- 			iotg->hsm.b_bus_req = 0;
- 			if (lnw->iotg.stop_peripheral)
- 				lnw->iotg.stop_peripheral(&lnw->iotg);
-@@ -1551,10 +1553,10 @@ static void langwell_otg_work(struct work_struct *work)
- 					"client driver has been removed.\n");
- 
- 			/* Turn off VBus */
--			iotg->otg.set_vbus(&iotg->otg, false);
-+			otg->set_vbus(otg, false);
- 			set_client_mode();
- 			langwell_otg_phy_low_power_wait(1);
--			iotg->otg.state = USB_PHY_STATE_B_IDLE;
-+			otg->xceiv->state = USB_PHY_STATE_B_IDLE;
- 			langwell_update_transceiver();
- 		} else if (!iotg->hsm.a_vbus_vld) {
- 			/* delete hsm timer for b_bus_suspend_tmr */
-@@ -1567,9 +1569,9 @@ static void langwell_otg_work(struct work_struct *work)
- 					"client driver has been removed.\n");
- 
- 			/* Turn off VBus */
--			iotg->otg.set_vbus(&iotg->otg, false);
-+			otg->set_vbus(otg, false);
- 			langwell_otg_phy_low_power_wait(1);
--			iotg->otg.state = USB_PHY_STATE_A_VBUS_ERR;
-+			otg->xceiv->state = USB_PHY_STATE_A_VBUS_ERR;
- 		} else if (iotg->hsm.a_bus_drop) {
- 			/* delete hsm timer for b_bus_suspend_tmr */
- 			del_timer_sync(&lnw->hsm_timer);
-@@ -1581,8 +1583,8 @@ static void langwell_otg_work(struct work_struct *work)
- 					"client driver has been removed.\n");
- 
- 			/* Turn off VBus */
--			iotg->otg.set_vbus(&iotg->otg, false);
--			iotg->otg.state = USB_PHY_STATE_A_WAIT_VFALL;
-+			otg->set_vbus(otg, false);
-+			otg->xceiv->state = USB_PHY_STATE_A_WAIT_VFALL;
- 		} else if (iotg->hsm.b_bus_suspend) {
- 			/* delete hsm timer for b_bus_suspend_tmr */
- 			del_timer_sync(&lnw->hsm_timer);
-@@ -1599,7 +1601,7 @@ static void langwell_otg_work(struct work_struct *work)
- 				dev_dbg(lnw->dev,
- 						"host driver not loaded.\n");
- 			langwell_otg_add_ktimer(TA_WAIT_BCON_TMR);
--			iotg->otg.state = USB_PHY_STATE_A_WAIT_BCON;
-+			otg->xceiv->state = USB_PHY_STATE_A_WAIT_BCON;
- 		} else if (iotg->hsm.b_bus_suspend_tmout) {
- 			u32	val;
- 			val = readl(lnw->iotg.base + CI_PORTSC1);
-@@ -1618,24 +1620,24 @@ static void langwell_otg_work(struct work_struct *work)
- 				dev_dbg(lnw->dev,
- 						"host driver not loaded.\n");
- 			langwell_otg_add_ktimer(TA_WAIT_BCON_TMR);
--			iotg->otg.state = USB_PHY_STATE_A_WAIT_BCON;
-+			otg->xceiv->state = USB_PHY_STATE_A_WAIT_BCON;
- 		}
- 		break;
- 	case USB_PHY_STATE_A_VBUS_ERR:
- 		if (iotg->hsm.id) {
--			iotg->otg.default_a = 0;
-+			otg->default_a = 0;
- 			iotg->hsm.a_clr_err = 0;
- 			iotg->hsm.a_srp_det = 0;
- 			set_client_mode();
- 			langwell_otg_phy_low_power(1);
--			iotg->otg.state = USB_PHY_STATE_B_IDLE;
-+			otg->xceiv->state = USB_PHY_STATE_B_IDLE;
- 			langwell_update_transceiver();
- 		} else if (iotg->hsm.a_clr_err) {
- 			iotg->hsm.a_clr_err = 0;
- 			iotg->hsm.a_srp_det = 0;
- 			reset_otg();
- 			init_hsm();
--			if (iotg->otg.state == USB_PHY_STATE_A_IDLE)
-+			if (otg->xceiv->state == USB_PHY_STATE_A_IDLE)
- 				langwell_update_transceiver();
- 		} else {
- 			/* FW will clear PHCD bit when any VBus
-@@ -1645,23 +1647,23 @@ static void langwell_otg_work(struct work_struct *work)
- 		break;
- 	case USB_PHY_STATE_A_WAIT_VFALL:
- 		if (iotg->hsm.id) {
--			iotg->otg.default_a = 0;
-+			otg->default_a = 0;
- 			set_client_mode();
- 			langwell_otg_phy_low_power(1);
--			iotg->otg.state = USB_PHY_STATE_B_IDLE;
-+			otg->xceiv->state = USB_PHY_STATE_B_IDLE;
- 			langwell_update_transceiver();
- 		} else if (iotg->hsm.a_bus_req) {
- 
- 			/* Turn on VBus */
--			iotg->otg.set_vbus(&iotg->otg, true);
-+			otg->set_vbus(otg, true);
- 			iotg->hsm.a_wait_vrise_tmout = 0;
- 			langwell_otg_add_timer(a_wait_vrise_tmr);
--			iotg->otg.state = USB_PHY_STATE_A_WAIT_VRISE;
-+			otg->xceiv->state = USB_PHY_STATE_A_WAIT_VRISE;
- 		} else if (!iotg->hsm.a_sess_vld) {
- 			iotg->hsm.a_srp_det = 0;
- 			set_host_mode();
- 			langwell_otg_phy_low_power(1);
--			iotg->otg.state = USB_PHY_STATE_A_IDLE;
-+			otg->xceiv->state = USB_PHY_STATE_A_IDLE;
- 		}
- 		break;
- 	default:
-@@ -1669,7 +1671,7 @@ static void langwell_otg_work(struct work_struct *work)
- 	}
- 
- 	dev_dbg(lnw->dev, "%s: new state = %s\n", __func__,
--			usb_phy_state_string(iotg->otg.state));
-+			usb_phy_state_string(otg->xceiv->state));
- }
- 
- static ssize_t
-@@ -1713,17 +1715,18 @@ show_hsm(struct device *_dev, struct device_attribute *attr, char *buf)
- {
- 	struct langwell_otg		*lnw = the_transceiver;
- 	struct intel_mid_otg_xceiv	*iotg = &lnw->iotg;
-+	struct usb_otg			*otg = iotg->xceiv.otg;
- 	char				*next;
- 	unsigned			size, t;
- 
- 	next = buf;
- 	size = PAGE_SIZE;
- 
--	if (iotg->otg.host)
--		iotg->hsm.a_set_b_hnp_en = iotg->otg.host->b_hnp_enable;
-+	if (otg->host)
-+		iotg->hsm.a_set_b_hnp_en = otg->host->b_hnp_enable;
- 
--	if (iotg->otg.gadget)
--		iotg->hsm.b_hnp_enable = iotg->otg.gadget->b_hnp_enable;
-+	if (otg->gadget)
-+		iotg->hsm.b_hnp_enable = otg->gadget->b_hnp_enable;
- 
- 	t = scnprintf(next, size,
- 		"\n"
-@@ -1755,7 +1758,7 @@ show_hsm(struct device *_dev, struct device_attribute *attr, char *buf)
- 		"b_bus_req = \t%d\n"
- 		"b_bus_suspend_tmout = \t%d\n"
- 		"b_bus_suspend_vld = \t%d\n",
--		usb_phy_state_string(iotg->otg.state),
-+		usb_phy_state_string(otg->xceiv->state),
- 		iotg->hsm.a_bus_resume,
- 		iotg->hsm.a_bus_suspend,
- 		iotg->hsm.a_conn,
-@@ -1814,8 +1817,9 @@ set_a_bus_req(struct device *dev, struct device_attribute *attr,
- {
- 	struct langwell_otg		*lnw = the_transceiver;
- 	struct intel_mid_otg_xceiv	*iotg = &lnw->iotg;
-+	struct usb_otg			*otg = iotg->xceiv.otg;
- 
--	if (!iotg->otg.default_a)
-+	if (!otg->default_a)
- 		return -1;
- 	if (count > 2)
- 		return -1;
-@@ -1861,8 +1865,9 @@ set_a_bus_drop(struct device *dev, struct device_attribute *attr,
- {
- 	struct langwell_otg		*lnw = the_transceiver;
- 	struct intel_mid_otg_xceiv	*iotg = &lnw->iotg;
-+	struct usb_otg			*otg = iotg->xceiv.otg;
- 
--	if (!iotg->otg.default_a)
-+	if (!otg->default_a)
- 		return -1;
- 	if (count > 2)
- 		return -1;
-@@ -1907,8 +1912,9 @@ set_b_bus_req(struct device *dev, struct device_attribute *attr,
- {
- 	struct langwell_otg		*lnw = the_transceiver;
- 	struct intel_mid_otg_xceiv	*iotg = &lnw->iotg;
-+	struct usb_otg			*otg = iotg->xceiv.otg;
- 
--	if (iotg->otg.default_a)
-+	if (otg->default_a)
- 		return -1;
- 
- 	if (count > 2)
-@@ -1935,8 +1941,9 @@ set_a_clr_err(struct device *dev, struct device_attribute *attr,
- {
- 	struct langwell_otg		*lnw = the_transceiver;
- 	struct intel_mid_otg_xceiv	*iotg = &lnw->iotg;
-+	struct usb_otg			*otg = iotg->xceiv.otg;
- 
--	if (!iotg->otg.default_a)
-+	if (!otg->default_a)
- 		return -1;
- 	if (count > 2)
- 		return -1;
-@@ -1974,6 +1981,7 @@ static int langwell_otg_probe(struct pci_dev *pdev,
- 	int			retval;
- 	u32			val32;
- 	struct langwell_otg	*lnw;
-+	struct usb_otg		*otg;
- 	char			qname[] = "langwell_otg_queue";
- 
- 	retval = 0;
-@@ -1988,6 +1996,15 @@ static int langwell_otg_probe(struct pci_dev *pdev,
- 		retval = -ENOMEM;
- 		goto done;
- 	}
-+
-+	otg = kzalloc(sizeof *otg, GFP_KERNEL);
-+	if (otg == NULL) {
-+		kfree(lnw);
-+		retval = -ENOMEM;
-+		goto done;
-+	}
-+
-+	lnw->iotg.xceiv.otg = otg;
- 	the_transceiver = lnw;
- 
- 	/* control register: BAR 0 */
-@@ -2036,16 +2053,18 @@ static int langwell_otg_probe(struct pci_dev *pdev,
- 
- 	/* OTG common part */
- 	lnw->dev = &pdev->dev;
--	lnw->iotg.otg.dev = lnw->dev;
--	lnw->iotg.otg.label = driver_name;
--	lnw->iotg.otg.set_host = langwell_otg_set_host;
--	lnw->iotg.otg.set_peripheral = langwell_otg_set_peripheral;
--	lnw->iotg.otg.set_power = langwell_otg_set_power;
--	lnw->iotg.otg.set_vbus = langwell_otg_set_vbus;
--	lnw->iotg.otg.start_srp = langwell_otg_start_srp;
--	lnw->iotg.otg.state = USB_PHY_STATE_UNDEFINED;
--
--	if (otg_set_transceiver(&lnw->iotg.otg)) {
-+	lnw->iotg.xceiv.dev = lnw->dev;
-+	lnw->iotg.xceiv.label = driver_name;
-+	lnw->iotg.xceiv.set_power = langwell_otg_set_power;
-+	lnw->iotg.xceiv.state = USB_PHY_STATE_UNDEFINED;
-+
-+	otg->xceiv = &lnw->iotg.xceiv;
-+	otg->set_host = langwell_otg_set_host;
-+	otg->set_peripheral = langwell_otg_set_peripheral;
-+	otg->set_vbus = langwell_otg_set_vbus;
-+	otg->start_srp = langwell_otg_start_srp;
-+
-+	if (usb_set_transceiver(&lnw->iotg.xceiv)) {
- 		dev_dbg(lnw->dev, "can't set transceiver\n");
- 		retval = -EBUSY;
- 		goto err;
-@@ -2107,7 +2126,7 @@ static int langwell_otg_probe(struct pci_dev *pdev,
- 		goto err;
- 	}
- 
--	if (lnw->iotg.otg.state == USB_PHY_STATE_A_IDLE)
-+	if (otg->xceiv->state == USB_PHY_STATE_A_IDLE)
- 		langwell_update_transceiver();
- 
- 	return 0;
-@@ -2145,11 +2164,12 @@ static void langwell_otg_remove(struct pci_dev *pdev)
- 		release_mem_region(pci_resource_start(pdev, 0),
- 				pci_resource_len(pdev, 0));
- 
--	otg_set_transceiver(NULL);
-+	usb_set_transceiver(NULL);
- 	pci_disable_device(pdev);
- 	sysfs_remove_group(&pdev->dev.kobj, &debug_dev_attr_group);
- 	device_remove_file(&pdev->dev, &dev_attr_hsm);
- 	device_remove_file(&pdev->dev, &dev_attr_registers);
-+	kfree(lnw->iotg.xceiv.otg);
- 	kfree(lnw);
- 	lnw = NULL;
- }
-@@ -2165,6 +2185,7 @@ static int langwell_otg_suspend(struct pci_dev *pdev, pm_message_t message)
- {
- 	struct langwell_otg		*lnw = the_transceiver;
- 	struct intel_mid_otg_xceiv	*iotg = &lnw->iotg;
-+	struct usb_otg			*otg = lnw->iotg.xceiv.otg;
- 	int				ret = 0;
- 
- 	/* Disbale OTG interrupts */
-@@ -2179,9 +2200,9 @@ static int langwell_otg_suspend(struct pci_dev *pdev, pm_message_t message)
- 	lnw->qwork = NULL;
- 
- 	/* start actions */
--	switch (iotg->otg.state) {
-+	switch (otg->xceiv->state) {
- 	case USB_PHY_STATE_A_WAIT_VFALL:
--		iotg->otg.state = USB_PHY_STATE_A_IDLE;
-+		otg->xceiv->state = USB_PHY_STATE_A_IDLE;
- 	case USB_PHY_STATE_A_IDLE:
- 	case USB_PHY_STATE_B_IDLE:
- 	case USB_PHY_STATE_A_VBUS_ERR:
-@@ -2192,8 +2213,8 @@ static int langwell_otg_suspend(struct pci_dev *pdev, pm_message_t message)
- 		iotg->hsm.a_srp_det = 0;
- 
- 		/* Turn off VBus */
--		iotg->otg.set_vbus(&iotg->otg, false);
--		iotg->otg.state = USB_PHY_STATE_A_IDLE;
-+		otg->set_vbus(otg, false);
-+		otg->xceiv->state = USB_PHY_STATE_A_IDLE;
- 		transceiver_suspend(pdev);
- 		break;
- 	case USB_PHY_STATE_A_WAIT_BCON:
-@@ -2206,8 +2227,8 @@ static int langwell_otg_suspend(struct pci_dev *pdev, pm_message_t message)
- 		iotg->hsm.a_srp_det = 0;
- 
- 		/* Turn off VBus */
--		iotg->otg.set_vbus(&iotg->otg, false);
--		iotg->otg.state = USB_PHY_STATE_A_IDLE;
-+		otg->set_vbus(otg, false);
-+		otg->xceiv->state = USB_PHY_STATE_A_IDLE;
- 		transceiver_suspend(pdev);
- 		break;
- 	case USB_PHY_STATE_A_HOST:
-@@ -2219,9 +2240,9 @@ static int langwell_otg_suspend(struct pci_dev *pdev, pm_message_t message)
- 		iotg->hsm.a_srp_det = 0;
- 
- 		/* Turn off VBus */
--		iotg->otg.set_vbus(&iotg->otg, false);
-+		otg->set_vbus(otg, false);
- 
--		iotg->otg.state = USB_PHY_STATE_A_IDLE;
-+		otg->xceiv->state = USB_PHY_STATE_A_IDLE;
- 		transceiver_suspend(pdev);
- 		break;
- 	case USB_PHY_STATE_A_SUSPEND:
-@@ -2234,8 +2255,8 @@ static int langwell_otg_suspend(struct pci_dev *pdev, pm_message_t message)
- 		iotg->hsm.a_srp_det = 0;
- 
- 		/* Turn off VBus */
--		iotg->otg.set_vbus(&iotg->otg, false);
--		iotg->otg.state = USB_PHY_STATE_A_IDLE;
-+		otg->set_vbus(otg, false);
-+		otg->xceiv->state = USB_PHY_STATE_A_IDLE;
- 		transceiver_suspend(pdev);
- 		break;
- 	case USB_PHY_STATE_A_PERIPHERAL:
-@@ -2249,8 +2270,8 @@ static int langwell_otg_suspend(struct pci_dev *pdev, pm_message_t message)
- 		iotg->hsm.a_srp_det = 0;
- 
- 		/* Turn off VBus */
--		iotg->otg.set_vbus(&iotg->otg, false);
--		iotg->otg.state = USB_PHY_STATE_A_IDLE;
-+		otg->set_vbus(otg, false);
-+		otg->xceiv->state = USB_PHY_STATE_A_IDLE;
- 		transceiver_suspend(pdev);
- 		break;
- 	case USB_PHY_STATE_B_HOST:
-@@ -2259,7 +2280,7 @@ static int langwell_otg_suspend(struct pci_dev *pdev, pm_message_t message)
- 		else
- 			dev_dbg(&pdev->dev, "host driver has been removed.\n");
- 		iotg->hsm.b_bus_req = 0;
--		iotg->otg.state = USB_PHY_STATE_B_IDLE;
-+		otg->xceiv->state = USB_PHY_STATE_B_IDLE;
- 		transceiver_suspend(pdev);
- 		break;
- 	case USB_PHY_STATE_B_PERIPHERAL:
-@@ -2268,7 +2289,7 @@ static int langwell_otg_suspend(struct pci_dev *pdev, pm_message_t message)
- 		else
- 			dev_dbg(&pdev->dev,
- 				"client driver has been removed.\n");
--		iotg->otg.state = USB_PHY_STATE_B_IDLE;
-+		otg->xceiv->state = USB_PHY_STATE_B_IDLE;
- 		transceiver_suspend(pdev);
- 		break;
- 	case USB_PHY_STATE_B_WAIT_ACON:
-@@ -2282,7 +2303,7 @@ static int langwell_otg_suspend(struct pci_dev *pdev, pm_message_t message)
- 		else
- 			dev_dbg(&pdev->dev, "host driver has been removed.\n");
- 		iotg->hsm.b_bus_req = 0;
--		iotg->otg.state = USB_PHY_STATE_B_IDLE;
-+		otg->xceiv->state = USB_PHY_STATE_B_IDLE;
- 		transceiver_suspend(pdev);
- 		break;
- 	default:
-diff --git a/include/linux/usb/intel_mid_otg.h b/include/linux/usb/intel_mid_otg.h
-index 756cf55..08687cb 100644
---- a/include/linux/usb/intel_mid_otg.h
-+++ b/include/linux/usb/intel_mid_otg.h
-@@ -108,7 +108,7 @@ struct iotg_ulpi_access_ops {
-  * purpose.
-  */
- struct intel_mid_otg_xceiv {
+diff --git a/drivers/usb/otg/isp1301_omap.c b/drivers/usb/otg/isp1301_omap.c
+index 175922a..4645970 100644
+--- a/drivers/usb/otg/isp1301_omap.c
++++ b/drivers/usb/otg/isp1301_omap.c
+@@ -52,7 +52,7 @@ MODULE_DESCRIPTION("ISP1301 USB OTG Transceiver Driver");
+ MODULE_LICENSE("GPL");
+ 
+ struct isp1301 {
 -	struct usb_phy		otg;
 +	struct usb_phy		xceiv;
- 	struct otg_hsm		hsm;
+ 	struct i2c_client	*client;
+ 	void			(*i2c_release)(struct device *dev);
  
- 	/* base address */
-@@ -147,9 +147,9 @@ struct intel_mid_otg_xceiv {
+@@ -236,7 +236,7 @@ isp1301_clear_bits(struct isp1301 *isp, u8 reg, u8 bits)
  
- };
- static inline
--struct intel_mid_otg_xceiv *otg_to_mid_xceiv(struct usb_phy *otg)
-+struct intel_mid_otg_xceiv *otg_to_mid_xceiv(struct usb_phy *xceiv)
+ static inline const char *state_name(struct isp1301 *isp)
  {
--	return container_of(otg, struct intel_mid_otg_xceiv, otg);
-+	return container_of(xceiv, struct intel_mid_otg_xceiv, xceiv);
+-	return usb_phy_state_string(isp->otg.state);
++	return usb_phy_state_string(isp->xceiv.state);
  }
  
- #define MID_OTG_NOTIFY_CONNECT		0x0001
+ /*-------------------------------------------------------------------------*/
+@@ -251,7 +251,7 @@ static inline const char *state_name(struct isp1301 *isp)
+ 
+ static void power_down(struct isp1301 *isp)
+ {
+-	isp->otg.state = USB_PHY_STATE_UNDEFINED;
++	isp->xceiv.state = USB_PHY_STATE_UNDEFINED;
+ 
+ 	// isp1301_set_bits(isp, ISP1301_MODE_CONTROL_2, MC2_GLOBAL_PWR_DN);
+ 	isp1301_set_bits(isp, ISP1301_MODE_CONTROL_1, MC1_SUSPEND);
+@@ -280,13 +280,13 @@ static int host_suspend(struct isp1301 *isp)
+ #else
+ 	struct device	*dev;
+ 
+-	if (!isp->otg.host)
++	if (!isp->xceiv.otg->host)
+ 		return -ENODEV;
+ 
+ 	/* Currently ASSUMES only the OTG port matters;
+ 	 * other ports could be active...
+ 	 */
+-	dev = isp->otg.host->controller;
++	dev = isp->xceiv.otg->host->controller;
+ 	return dev->driver->suspend(dev, 3, 0);
+ #endif
+ }
+@@ -298,20 +298,20 @@ static int host_resume(struct isp1301 *isp)
+ #else
+ 	struct device	*dev;
+ 
+-	if (!isp->otg.host)
++	if (!isp->xceiv.otg->host)
+ 		return -ENODEV;
+ 
+-	dev = isp->otg.host->controller;
++	dev = isp->xceiv.otg->host->controller;
+ 	return dev->driver->resume(dev, 0);
+ #endif
+ }
+ 
+ static int gadget_suspend(struct isp1301 *isp)
+ {
+-	isp->otg.gadget->b_hnp_enable = 0;
+-	isp->otg.gadget->a_hnp_support = 0;
+-	isp->otg.gadget->a_alt_hnp_support = 0;
+-	return usb_gadget_vbus_disconnect(isp->otg.gadget);
++	isp->xceiv.otg->gadget->b_hnp_enable = 0;
++	isp->xceiv.otg->gadget->a_hnp_support = 0;
++	isp->xceiv.otg->gadget->a_alt_hnp_support = 0;
++	return usb_gadget_vbus_disconnect(isp->xceiv.otg->gadget);
+ }
+ 
+ /*-------------------------------------------------------------------------*/
+@@ -341,19 +341,19 @@ static void a_idle(struct isp1301 *isp, const char *tag)
+ {
+ 	u32 l;
+ 
+-	if (isp->otg.state == USB_PHY_STATE_A_IDLE)
++	if (isp->xceiv.state == USB_PHY_STATE_A_IDLE)
+ 		return;
+ 
+-	isp->otg.default_a = 1;
+-	if (isp->otg.host) {
+-		isp->otg.host->is_b_host = 0;
++	isp->xceiv.otg->default_a = 1;
++	if (isp->xceiv.otg->host) {
++		isp->xceiv.otg->host->is_b_host = 0;
+ 		host_suspend(isp);
+ 	}
+-	if (isp->otg.gadget) {
+-		isp->otg.gadget->is_a_peripheral = 1;
++	if (isp->xceiv.otg->gadget) {
++		isp->xceiv.otg->gadget->is_a_peripheral = 1;
+ 		gadget_suspend(isp);
+ 	}
+-	isp->otg.state = USB_PHY_STATE_A_IDLE;
++	isp->xceiv.state = USB_PHY_STATE_A_IDLE;
+ 	l = omap_readl(OTG_CTRL) & OTG_XCEIV_OUTPUTS;
+ 	omap_writel(l, OTG_CTRL);
+ 	isp->last_otg_ctrl = l;
+@@ -365,19 +365,19 @@ static void b_idle(struct isp1301 *isp, const char *tag)
+ {
+ 	u32 l;
+ 
+-	if (isp->otg.state == USB_PHY_STATE_B_IDLE)
++	if (isp->xceiv.state == USB_PHY_STATE_B_IDLE)
+ 		return;
+ 
+-	isp->otg.default_a = 0;
+-	if (isp->otg.host) {
+-		isp->otg.host->is_b_host = 1;
++	isp->xceiv.otg->default_a = 0;
++	if (isp->xceiv.otg->host) {
++		isp->xceiv.otg->host->is_b_host = 1;
+ 		host_suspend(isp);
+ 	}
+-	if (isp->otg.gadget) {
+-		isp->otg.gadget->is_a_peripheral = 0;
++	if (isp->xceiv.otg->gadget) {
++		isp->xceiv.otg->gadget->is_a_peripheral = 0;
+ 		gadget_suspend(isp);
+ 	}
+-	isp->otg.state = USB_PHY_STATE_B_IDLE;
++	isp->xceiv.state = USB_PHY_STATE_B_IDLE;
+ 	l = omap_readl(OTG_CTRL) & OTG_XCEIV_OUTPUTS;
+ 	omap_writel(l, OTG_CTRL);
+ 	isp->last_otg_ctrl = l;
+@@ -478,7 +478,7 @@ static void check_state(struct isp1301 *isp, const char *tag)
+ 	default:
+ 		break;
+ 	}
+-	if (isp->otg.state == state && !extra)
++	if (isp->xceiv.state == state && !extra)
+ 		return;
+ 	pr_debug("otg: %s FSM %s/%02x, %s, %06x\n", tag,
+ 		usb_phy_state_string(state), fsm, state_name(isp),
+@@ -502,22 +502,23 @@ static void update_otg1(struct isp1301 *isp, u8 int_src)
+ 
+ 	if (int_src & INTR_SESS_VLD)
+ 		otg_ctrl |= OTG_ASESSVLD;
+-	else if (isp->otg.state == USB_PHY_STATE_A_WAIT_VFALL) {
++	else if (isp->xceiv.state == USB_PHY_STATE_A_WAIT_VFALL) {
+ 		a_idle(isp, "vfall");
+ 		otg_ctrl &= ~OTG_CTRL_BITS;
+ 	}
+ 	if (int_src & INTR_VBUS_VLD)
+ 		otg_ctrl |= OTG_VBUSVLD;
+ 	if (int_src & INTR_ID_GND) {		/* default-A */
+-		if (isp->otg.state == USB_PHY_STATE_B_IDLE
+-				|| isp->otg.state == USB_PHY_STATE_UNDEFINED) {
++		if (isp->xceiv.state == USB_PHY_STATE_B_IDLE
++				|| isp->xceiv.state
++					== USB_PHY_STATE_UNDEFINED) {
+ 			a_idle(isp, "init");
+ 			return;
+ 		}
+ 	} else {				/* default-B */
+ 		otg_ctrl |= OTG_ID;
+-		if (isp->otg.state == USB_PHY_STATE_A_IDLE
+-				|| isp->otg.state == USB_PHY_STATE_UNDEFINED) {
++		if (isp->xceiv.state == USB_PHY_STATE_A_IDLE
++			|| isp->xceiv.state == USB_PHY_STATE_UNDEFINED) {
+ 			b_idle(isp, "init");
+ 			return;
+ 		}
+@@ -551,14 +552,14 @@ static void otg_update_isp(struct isp1301 *isp)
+ 	isp->last_otg_ctrl = otg_ctrl;
+ 	otg_ctrl = otg_ctrl & OTG_XCEIV_INPUTS;
+ 
+-	switch (isp->otg.state) {
++	switch (isp->xceiv.state) {
+ 	case USB_PHY_STATE_B_IDLE:
+ 	case USB_PHY_STATE_B_PERIPHERAL:
+ 	case USB_PHY_STATE_B_SRP_INIT:
+ 		if (!(otg_ctrl & OTG_PULLUP)) {
+ 			// if (otg_ctrl & OTG_B_HNPEN) {
+-			if (isp->otg.gadget->b_hnp_enable) {
+-				isp->otg.state = USB_PHY_STATE_B_WAIT_ACON;
++			if (isp->xceiv.otg->gadget->b_hnp_enable) {
++				isp->xceiv.state = USB_PHY_STATE_B_WAIT_ACON;
+ 				pr_debug("  --> b_wait_acon\n");
+ 			}
+ 			goto pulldown;
+@@ -585,10 +586,10 @@ pulldown:
+ 		else clr |= ISP; \
+ 		} while (0)
+ 
+-	if (!(isp->otg.host))
++	if (!(isp->xceiv.otg->host))
+ 		otg_ctrl &= ~OTG_DRV_VBUS;
+ 
+-	switch (isp->otg.state) {
++	switch (isp->xceiv.state) {
+ 	case USB_PHY_STATE_A_SUSPEND:
+ 		if (otg_ctrl & OTG_DRV_VBUS) {
+ 			set |= OTG1_VBUS_DRV;
+@@ -599,7 +600,7 @@ pulldown:
+ 
+ 		/* FALLTHROUGH */
+ 	case USB_PHY_STATE_A_VBUS_ERR:
+-		isp->otg.state = USB_PHY_STATE_A_WAIT_VFALL;
++		isp->xceiv.state = USB_PHY_STATE_A_WAIT_VFALL;
+ 		pr_debug("  --> a_wait_vfall\n");
+ 		/* FALLTHROUGH */
+ 	case USB_PHY_STATE_A_WAIT_VFALL:
+@@ -608,7 +609,7 @@ pulldown:
+ 		break;
+ 	case USB_PHY_STATE_A_IDLE:
+ 		if (otg_ctrl & OTG_DRV_VBUS) {
+-			isp->otg.state = USB_PHY_STATE_A_WAIT_VRISE;
++			isp->xceiv.state = USB_PHY_STATE_A_WAIT_VRISE;
+ 			pr_debug("  --> a_wait_vrise\n");
+ 		}
+ 		/* FALLTHROUGH */
+@@ -628,17 +629,17 @@ pulldown:
+ 	if (otg_change & OTG_PULLUP) {
+ 		u32 l;
+ 
+-		switch (isp->otg.state) {
++		switch (isp->xceiv.state) {
+ 		case USB_PHY_STATE_B_IDLE:
+ 			if (clr & OTG1_DP_PULLUP)
+ 				break;
+-			isp->otg.state = USB_PHY_STATE_B_PERIPHERAL;
++			isp->xceiv.state = USB_PHY_STATE_B_PERIPHERAL;
+ 			pr_debug("  --> b_peripheral\n");
+ 			break;
+ 		case USB_PHY_STATE_A_SUSPEND:
+ 			if (clr & OTG1_DP_PULLUP)
+ 				break;
+-			isp->otg.state = USB_PHY_STATE_A_PERIPHERAL;
++			isp->xceiv.state = USB_PHY_STATE_A_PERIPHERAL;
+ 			pr_debug("  --> a_peripheral\n");
+ 			break;
+ 		default:
+@@ -659,6 +660,7 @@ static irqreturn_t omap_otg_irq(int irq, void *_isp)
+ 	u32		otg_ctrl;
+ 	int		ret = IRQ_NONE;
+ 	struct isp1301	*isp = _isp;
++	struct usb_otg	*otg = isp->xceiv.otg;
+ 
+ 	/* update ISP1301 transceiver from OTG controller */
+ 	if (otg_irq & OPRT_CHG) {
+@@ -675,7 +677,7 @@ static irqreturn_t omap_otg_irq(int irq, void *_isp)
+ 		 * remote wakeup (SRP, normal) using their own timer
+ 		 * to give "check cable and A-device" messages.
+ 		 */
+-		if (isp->otg.state == USB_PHY_STATE_B_SRP_INIT)
++		if (isp->xceiv.state == USB_PHY_STATE_B_SRP_INIT)
+ 			b_idle(isp, "srp_timeout");
+ 
+ 		omap_writew(B_SRP_TMROUT, OTG_IRQ_SRC);
+@@ -693,7 +695,7 @@ static irqreturn_t omap_otg_irq(int irq, void *_isp)
+ 		omap_writel(otg_ctrl, OTG_CTRL);
+ 
+ 		/* subset of b_peripheral()... */
+-		isp->otg.state = USB_PHY_STATE_B_PERIPHERAL;
++		isp->xceiv.state = USB_PHY_STATE_B_PERIPHERAL;
+ 		pr_debug("  --> b_peripheral\n");
+ 
+ 		omap_writew(B_HNP_FAIL, OTG_IRQ_SRC);
+@@ -705,9 +707,9 @@ static irqreturn_t omap_otg_irq(int irq, void *_isp)
+ 				state_name(isp), omap_readl(OTG_CTRL));
+ 
+ 		isp1301_defer_work(isp, WORK_UPDATE_OTG);
+-		switch (isp->otg.state) {
++		switch (isp->xceiv.state) {
+ 		case USB_PHY_STATE_A_IDLE:
+-			if (!isp->otg.host)
++			if (!otg->host)
+ 				break;
+ 			isp1301_defer_work(isp, WORK_HOST_RESUME);
+ 			otg_ctrl = omap_readl(OTG_CTRL);
+@@ -736,7 +738,7 @@ static irqreturn_t omap_otg_irq(int irq, void *_isp)
+ 		otg_ctrl |= OTG_BUSDROP;
+ 		otg_ctrl &= ~OTG_A_BUSREQ & OTG_CTRL_MASK & ~OTG_XCEIV_INPUTS;
+ 		omap_writel(otg_ctrl, OTG_CTRL);
+-		isp->otg.state = USB_PHY_STATE_A_WAIT_VFALL;
++		isp->xceiv.state = USB_PHY_STATE_A_WAIT_VFALL;
+ 
+ 		omap_writew(A_REQ_TMROUT, OTG_IRQ_SRC);
+ 		ret = IRQ_HANDLED;
+@@ -750,7 +752,7 @@ static irqreturn_t omap_otg_irq(int irq, void *_isp)
+ 		otg_ctrl |= OTG_BUSDROP;
+ 		otg_ctrl &= ~OTG_A_BUSREQ & OTG_CTRL_MASK & ~OTG_XCEIV_INPUTS;
+ 		omap_writel(otg_ctrl, OTG_CTRL);
+-		isp->otg.state = USB_PHY_STATE_A_VBUS_ERR;
++		isp->xceiv.state = USB_PHY_STATE_A_VBUS_ERR;
+ 
+ 		omap_writew(A_VBUS_ERR, OTG_IRQ_SRC);
+ 		ret = IRQ_HANDLED;
+@@ -771,7 +773,7 @@ static irqreturn_t omap_otg_irq(int irq, void *_isp)
+ 
+ 		/* role is peripheral */
+ 		if (otg_ctrl & OTG_DRIVER_SEL) {
+-			switch (isp->otg.state) {
++			switch (isp->xceiv.state) {
+ 			case USB_PHY_STATE_A_IDLE:
+ 				b_idle(isp, __func__);
+ 				break;
+@@ -787,20 +789,20 @@ static irqreturn_t omap_otg_irq(int irq, void *_isp)
+ 				omap_writel(otg_ctrl | OTG_A_BUSREQ, OTG_CTRL);
+ 			}
+ 
+-			if (isp->otg.host) {
+-				switch (isp->otg.state) {
++			if (otg->host) {
++				switch (isp->xceiv.state) {
+ 				case USB_PHY_STATE_B_WAIT_ACON:
+-					isp->otg.state = USB_PHY_STATE_B_HOST;
++					isp->xceiv.state = USB_PHY_STATE_B_HOST;
+ 					pr_debug("  --> b_host\n");
+ 					kick = 1;
+ 					break;
+ 				case USB_PHY_STATE_A_WAIT_BCON:
+-					isp->otg.state = USB_PHY_STATE_A_HOST;
++					isp->xceiv.state = USB_PHY_STATE_A_HOST;
+ 					pr_debug("  --> a_host\n");
+ 					break;
+ 				case USB_PHY_STATE_A_PERIPHERAL:
+-					isp->otg.state =
+-						USB_PHY_STATE_A_WAIT_BCON;
++					isp->xceiv.state
++						= USB_PHY_STATE_A_WAIT_BCON;
+ 					pr_debug("  --> a_wait_bcon\n");
+ 					break;
+ 				default:
+@@ -814,8 +816,7 @@ static irqreturn_t omap_otg_irq(int irq, void *_isp)
+ 		ret = IRQ_HANDLED;
+ 
+ 		if (kick)
+-			usb_bus_start_enum(isp->otg.host,
+-						isp->otg.host->otg_port);
++			usb_bus_start_enum(otg->host, otg->host->otg_port);
+ 	}
+ 
+ 	check_state(isp, __func__);
+@@ -931,7 +932,7 @@ static void b_peripheral(struct isp1301 *isp)
+ 	l = omap_readl(OTG_CTRL) & OTG_XCEIV_OUTPUTS;
+ 	omap_writel(l, OTG_CTRL);
+ 
+-	usb_gadget_vbus_connect(isp->otg.gadget);
++	usb_gadget_vbus_connect(isp->xceiv.otg->gadget);
+ 
+ #ifdef	CONFIG_USB_OTG
+ 	enable_vbus_draw(isp, 8);
+@@ -941,7 +942,7 @@ static void b_peripheral(struct isp1301 *isp)
+ 	/* UDC driver just set OTG_BSESSVLD */
+ 	isp1301_set_bits(isp, ISP1301_OTG_CONTROL_1, OTG1_DP_PULLUP);
+ 	isp1301_clear_bits(isp, ISP1301_OTG_CONTROL_1, OTG1_DP_PULLDOWN);
+-	isp->otg.state = USB_PHY_STATE_B_PERIPHERAL;
++	isp->xceiv.state = USB_PHY_STATE_B_PERIPHERAL;
+ 	pr_debug("  --> b_peripheral\n");
+ 	dump_regs(isp, "2periph");
+ #endif
+@@ -949,8 +950,9 @@ static void b_peripheral(struct isp1301 *isp)
+ 
+ static void isp_update_otg(struct isp1301 *isp, u8 stat)
+ {
++	struct usb_otg		*otg = isp->xceiv.otg;
+ 	u8			isp_stat, isp_bstat;
+-	enum usb_phy_state	state = isp->otg.state;
++	enum usb_phy_state	state = isp->xceiv.state;
+ 
+ 	if (stat & INTR_BDIS_ACON)
+ 		pr_debug("OTG:  BDIS_ACON, %s\n", state_name(isp));
+@@ -958,7 +960,7 @@ static void isp_update_otg(struct isp1301 *isp, u8 stat)
+ 	/* start certain state transitions right away */
+ 	isp_stat = isp1301_get_u8(isp, ISP1301_INTERRUPT_SOURCE);
+ 	if (isp_stat & INTR_ID_GND) {
+-		if (isp->otg.default_a) {
++		if (otg->default_a) {
+ 			switch (state) {
+ 			case USB_PHY_STATE_B_IDLE:
+ 				a_idle(isp, "idle");
+@@ -973,7 +975,7 @@ static void isp_update_otg(struct isp1301 *isp, u8 stat)
+ 				 * when HNP is used.
+ 				 */
+ 				if (isp_stat & INTR_VBUS_VLD)
+-					isp->otg.state = USB_PHY_STATE_A_HOST;
++					isp->xceiv.state = USB_PHY_STATE_A_HOST;
+ 				break;
+ 			case USB_PHY_STATE_A_WAIT_VFALL:
+ 				if (!(isp_stat & INTR_SESS_VLD))
+@@ -981,8 +983,8 @@ static void isp_update_otg(struct isp1301 *isp, u8 stat)
+ 				break;
+ 			default:
+ 				if (!(isp_stat & INTR_VBUS_VLD))
+-					isp->otg.state =
+-						USB_PHY_STATE_A_VBUS_ERR;
++					isp->xceiv.state
++						= USB_PHY_STATE_A_VBUS_ERR;
+ 				break;
+ 			}
+ 			isp_bstat = isp1301_get_u8(isp, ISP1301_OTG_STATUS);
+@@ -991,14 +993,14 @@ static void isp_update_otg(struct isp1301 *isp, u8 stat)
+ 			case USB_PHY_STATE_B_PERIPHERAL:
+ 			case USB_PHY_STATE_B_HOST:
+ 			case USB_PHY_STATE_B_WAIT_ACON:
+-				usb_gadget_vbus_disconnect(isp->otg.gadget);
++				usb_gadget_vbus_disconnect(otg->gadget);
+ 				break;
+ 			default:
+ 				break;
+ 			}
+ 			if (state != USB_PHY_STATE_A_IDLE)
+ 				a_idle(isp, "id");
+-			if (isp->otg.host && state == USB_PHY_STATE_A_IDLE)
++			if (otg->host && state == USB_PHY_STATE_A_IDLE)
+ 				isp1301_defer_work(isp, WORK_HOST_RESUME);
+ 			isp_bstat = 0;
+ 		}
+@@ -1008,10 +1010,10 @@ static void isp_update_otg(struct isp1301 *isp, u8 stat)
+ 		/* if user unplugged mini-A end of cable,
+ 		 * don't bypass A_WAIT_VFALL.
+ 		 */
+-		if (isp->otg.default_a) {
++		if (otg->default_a) {
+ 			switch (state) {
+ 			default:
+-				isp->otg.state = USB_PHY_STATE_A_WAIT_VFALL;
++				isp->xceiv.state = USB_PHY_STATE_A_WAIT_VFALL;
+ 				break;
+ 			case USB_PHY_STATE_A_WAIT_VFALL:
+ 				state = USB_PHY_STATE_A_IDLE;
+@@ -1024,7 +1026,7 @@ static void isp_update_otg(struct isp1301 *isp, u8 stat)
+ 				host_suspend(isp);
+ 				isp1301_clear_bits(isp, ISP1301_MODE_CONTROL_1,
+ 						MC1_BDIS_ACON_EN);
+-				isp->otg.state = USB_PHY_STATE_B_IDLE;
++				isp->xceiv.state = USB_PHY_STATE_B_IDLE;
+ 				l = omap_readl(OTG_CTRL) & OTG_CTRL_MASK;
+ 				l &= ~OTG_CTRL_BITS;
+ 				omap_writel(l, OTG_CTRL);
+@@ -1035,7 +1037,7 @@ static void isp_update_otg(struct isp1301 *isp, u8 stat)
+ 		}
+ 		isp_bstat = isp1301_get_u8(isp, ISP1301_OTG_STATUS);
+ 
+-		switch (isp->otg.state) {
++		switch (isp->xceiv.state) {
+ 		case USB_PHY_STATE_B_PERIPHERAL:
+ 		case USB_PHY_STATE_B_WAIT_ACON:
+ 		case USB_PHY_STATE_B_HOST:
+@@ -1057,7 +1059,7 @@ static void isp_update_otg(struct isp1301 *isp, u8 stat)
+ 			omap_writel(l, OTG_CTRL);
+ 			/* FALLTHROUGH */
+ 		case USB_PHY_STATE_B_IDLE:
+-			if (isp->otg.gadget && (isp_bstat & OTG_B_SESS_VLD)) {
++			if (otg->gadget && (isp_bstat & OTG_B_SESS_VLD)) {
+ #ifdef	CONFIG_USB_OTG
+ 				update_otg1(isp, isp_stat);
+ 				update_otg2(isp, isp_bstat);
+@@ -1075,7 +1077,7 @@ static void isp_update_otg(struct isp1301 *isp, u8 stat)
+ 		}
+ 	}
+ 
+-	if (state != isp->otg.state)
++	if (state != isp->xceiv.state)
+ 		pr_debug("  isp, %s -> %s\n",
+ 				usb_phy_state_string(state), state_name(isp));
+ 
+@@ -1133,10 +1135,10 @@ isp1301_work(struct work_struct *work)
+ 			 * skip A_WAIT_VRISE; hc transitions invisibly
+ 			 * skip A_WAIT_BCON; same.
+ 			 */
+-			switch (isp->otg.state) {
++			switch (isp->xceiv.state) {
+ 			case USB_PHY_STATE_A_WAIT_BCON:
+ 			case USB_PHY_STATE_A_WAIT_VRISE:
+-				isp->otg.state = USB_PHY_STATE_A_HOST;
++				isp->xceiv.state = USB_PHY_STATE_A_HOST;
+ 				pr_debug("  --> a_host\n");
+ 				otg_ctrl = omap_readl(OTG_CTRL);
+ 				otg_ctrl |= OTG_A_BUSREQ;
+@@ -1145,7 +1147,7 @@ isp1301_work(struct work_struct *work)
+ 				omap_writel(otg_ctrl, OTG_CTRL);
+ 				break;
+ 			case USB_PHY_STATE_B_WAIT_ACON:
+-				isp->otg.state = USB_PHY_STATE_B_HOST;
++				isp->xceiv.state = USB_PHY_STATE_B_HOST;
+ 				pr_debug("  --> b_host (acon)\n");
+ 				break;
+ 			case USB_PHY_STATE_B_HOST:
+@@ -1206,6 +1208,7 @@ static void isp1301_release(struct device *dev)
+ 	/* ugly -- i2c hijacks our memory hook to wait_for_completion() */
+ 	if (isp->i2c_release)
+ 		isp->i2c_release(dev);
++	kfree(isp->xceiv.otg);
+ 	kfree (isp);
+ }
+ 
+@@ -1276,9 +1279,9 @@ static int isp1301_otg_enable(struct isp1301 *isp)
+ 
+ /* add or disable the host device+driver */
+ static int
+-isp1301_set_host(struct usb_phy *otg, struct usb_bus *host)
++isp1301_set_host(struct usb_otg *otg, struct usb_bus *host)
+ {
+-	struct isp1301	*isp = container_of(otg, struct isp1301, otg);
++	struct isp1301	*isp = container_of(otg->xceiv, struct isp1301, xceiv);
+ 
+ 	if (!otg || isp != the_transceiver)
+ 		return -ENODEV;
+@@ -1286,21 +1289,21 @@ isp1301_set_host(struct usb_phy *otg, struct usb_bus *host)
+ 	if (!host) {
+ 		omap_writew(0, OTG_IRQ_EN);
+ 		power_down(isp);
+-		isp->otg.host = NULL;
++		otg->host = NULL;
+ 		return 0;
+ 	}
+ 
+ #ifdef	CONFIG_USB_OTG
+-	isp->otg.host = host;
++	otg->host = host;
+ 	dev_dbg(&isp->client->dev, "registered host\n");
+ 	host_suspend(isp);
+-	if (isp->otg.gadget)
++	if (otg->gadget)
+ 		return isp1301_otg_enable(isp);
+ 	return 0;
+ 
+ #elif	!defined(CONFIG_USB_GADGET_OMAP)
+ 	// FIXME update its refcount
+-	isp->otg.host = host;
++	otg->host = host;
+ 
+ 	power_up(isp);
+ 
+@@ -1332,9 +1335,9 @@ isp1301_set_host(struct usb_phy *otg, struct usb_bus *host)
+ }
+ 
+ static int
+-isp1301_set_peripheral(struct usb_phy *otg, struct usb_gadget *gadget)
++isp1301_set_peripheral(struct usb_otg *otg, struct usb_gadget *gadget)
+ {
+-	struct isp1301	*isp = container_of(otg, struct isp1301, otg);
++	struct isp1301	*isp = container_of(otg->xceiv, struct isp1301, xceiv);
+ #ifndef	CONFIG_USB_OTG
+ 	u32 l;
+ #endif
+@@ -1344,24 +1347,24 @@ isp1301_set_peripheral(struct usb_phy *otg, struct usb_gadget *gadget)
+ 
+ 	if (!gadget) {
+ 		omap_writew(0, OTG_IRQ_EN);
+-		if (!isp->otg.default_a)
++		if (!otg->default_a)
+ 			enable_vbus_draw(isp, 0);
+-		usb_gadget_vbus_disconnect(isp->otg.gadget);
+-		isp->otg.gadget = NULL;
++		usb_gadget_vbus_disconnect(otg->gadget);
++		otg->gadget = NULL;
+ 		power_down(isp);
+ 		return 0;
+ 	}
+ 
+ #ifdef	CONFIG_USB_OTG
+-	isp->otg.gadget = gadget;
++	otg->gadget = gadget;
+ 	dev_dbg(&isp->client->dev, "registered gadget\n");
+ 	/* gadget driver may be suspended until vbus_connect () */
+-	if (isp->otg.host)
++	if (otg->host)
+ 		return isp1301_otg_enable(isp);
+ 	return 0;
+ 
+ #elif	!defined(CONFIG_USB_OHCI_HCD) && !defined(CONFIG_USB_OHCI_HCD_MODULE)
+-	isp->otg.gadget = gadget;
++	otg->gadget = gadget;
+ 	// FIXME update its refcount
+ 
+ 	l = omap_readl(OTG_CTRL) & OTG_CTRL_MASK;
+@@ -1370,7 +1373,7 @@ isp1301_set_peripheral(struct usb_phy *otg, struct usb_gadget *gadget)
+ 	omap_writel(l, OTG_CTRL);
+ 
+ 	power_up(isp);
+-	isp->otg.state = USB_PHY_STATE_B_IDLE;
++	isp->xceiv.state = USB_PHY_STATE_B_IDLE;
+ 
+ 	if (machine_is_omap_h2() || machine_is_omap_h3())
+ 		isp1301_set_bits(isp, ISP1301_MODE_CONTROL_1, MC1_DAT_SE0);
+@@ -1411,13 +1414,13 @@ isp1301_set_power(struct usb_phy *dev, unsigned mA)
+ }
+ 
+ static int
+-isp1301_start_srp(struct usb_phy *dev)
++isp1301_start_srp(struct usb_otg *otg)
+ {
+-	struct isp1301	*isp = container_of(dev, struct isp1301, otg);
++	struct isp1301	*isp = container_of(otg->xceiv, struct isp1301, xceiv);
+ 	u32		otg_ctrl;
+ 
+-	if (!dev || isp != the_transceiver
+-			|| isp->otg.state != USB_PHY_STATE_B_IDLE)
++	if (!otg || isp != the_transceiver
++			|| isp->xceiv.state != USB_PHY_STATE_B_IDLE)
+ 		return -ENODEV;
+ 
+ 	otg_ctrl = omap_readl(OTG_CTRL);
+@@ -1427,7 +1430,7 @@ isp1301_start_srp(struct usb_phy *dev)
+ 	otg_ctrl |= OTG_B_BUSREQ;
+ 	otg_ctrl &= ~OTG_A_BUSREQ & OTG_CTRL_MASK;
+ 	omap_writel(otg_ctrl, OTG_CTRL);
+-	isp->otg.state = USB_PHY_STATE_B_SRP_INIT;
++	isp->xceiv.state = USB_PHY_STATE_B_SRP_INIT;
+ 
+ 	pr_debug("otg: SRP, %s ... %06x\n", state_name(isp),
+ 			omap_readl(OTG_CTRL));
+@@ -1438,27 +1441,26 @@ isp1301_start_srp(struct usb_phy *dev)
+ }
+ 
+ static int
+-isp1301_start_hnp(struct usb_phy *dev)
++isp1301_start_hnp(struct usb_otg *otg)
+ {
+ #ifdef	CONFIG_USB_OTG
+-	struct isp1301	*isp = container_of(dev, struct isp1301, otg);
++	struct isp1301	*isp = container_of(otg->xceiv, struct isp1301, xceiv);
+ 	u32 l;
+ 
+-	if (!dev || isp != the_transceiver)
++	if (!otg || isp != the_transceiver)
+ 		return -ENODEV;
+-	if (isp->otg.default_a && (isp->otg.host == NULL
+-			|| !isp->otg.host->b_hnp_enable))
++	if (otg->default_a && (otg->host == NULL || !otg->host->b_hnp_enable))
+ 		return -ENOTCONN;
+-	if (!isp->otg.default_a && (isp->otg.gadget == NULL
+-			|| !isp->otg.gadget->b_hnp_enable))
++	if (!otg->default_a && (otg->gadget == NULL
++			|| !otg->gadget->b_hnp_enable))
+ 		return -ENOTCONN;
+ 
+ 	/* We want hardware to manage most HNP protocol timings.
+ 	 * So do this part as early as possible...
+ 	 */
+-	switch (isp->otg.state) {
++	switch (isp->xceiv.state) {
+ 	case USB_PHY_STATE_B_HOST:
+-		isp->otg.state = USB_PHY_STATE_B_PERIPHERAL;
++		isp->xceiv.state = USB_PHY_STATE_B_PERIPHERAL;
+ 		/* caller will suspend next */
+ 		break;
+ 	case USB_PHY_STATE_A_HOST:
+@@ -1468,7 +1470,7 @@ isp1301_start_hnp(struct usb_phy *dev)
+ 				MC1_BDIS_ACON_EN);
+ #endif
+ 		/* caller must suspend then clear A_BUSREQ */
+-		usb_gadget_vbus_connect(isp->otg.gadget);
++		usb_gadget_vbus_connect(otg->gadget);
+ 		l = omap_readl(OTG_CTRL);
+ 		l |= OTG_A_SETB_HNPEN;
+ 		omap_writel(l, OTG_CTRL);
+@@ -1505,6 +1507,12 @@ isp1301_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
+ 	if (!isp)
+ 		return 0;
+ 
++	isp->xceiv.otg = kzalloc(sizeof *isp->xceiv.otg, GFP_KERNEL);
++	if (!isp->xceiv.otg) {
++		kfree(isp);
++		return 0;
++	}
++
+ 	INIT_WORK(&isp->work, isp1301_work);
+ 	init_timer(&isp->timer);
+ 	isp->timer.function = isp1301_timer;
+@@ -1578,14 +1586,15 @@ isp1301_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
+ 		goto fail;
+ 	}
+ 
+-	isp->otg.dev = &i2c->dev;
+-	isp->otg.label = DRIVER_NAME;
++	isp->xceiv.dev = &i2c->dev;
++	isp->xceiv.label = DRIVER_NAME;
++	isp->xceiv.set_power = isp1301_set_power,
+ 
+-	isp->otg.set_host = isp1301_set_host,
+-	isp->otg.set_peripheral = isp1301_set_peripheral,
+-	isp->otg.set_power = isp1301_set_power,
+-	isp->otg.start_srp = isp1301_start_srp,
+-	isp->otg.start_hnp = isp1301_start_hnp,
++	isp->xceiv.otg->xceiv = &isp->xceiv;
++	isp->xceiv.otg->set_host = isp1301_set_host,
++	isp->xceiv.otg->set_peripheral = isp1301_set_peripheral,
++	isp->xceiv.otg->start_srp = isp1301_start_srp,
++	isp->xceiv.otg->start_hnp = isp1301_start_hnp,
+ 
+ 	enable_vbus_draw(isp, 0);
+ 	power_down(isp);
+@@ -1603,7 +1612,7 @@ isp1301_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
+ 	dev_dbg(&i2c->dev, "scheduled timer, %d min\n", TIMER_MINUTES);
+ #endif
+ 
+-	status = otg_set_transceiver(&isp->otg);
++	status = usb_set_transceiver(&isp->xceiv);
+ 	if (status < 0)
+ 		dev_err(&i2c->dev, "can't register transceiver, %d\n",
+ 			status);
+@@ -1611,6 +1620,7 @@ isp1301_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
+ 	return 0;
+ 
+ fail:
++	kfree(isp->xceiv.otg);
+ 	kfree(isp);
+ 	return -ENODEV;
+ }
+@@ -1641,7 +1651,7 @@ subsys_initcall(isp_init);
+ static void __exit isp_exit(void)
+ {
+ 	if (the_transceiver)
+-		otg_set_transceiver(NULL);
++		usb_set_transceiver(NULL);
+ 	i2c_del_driver(&isp1301_driver);
+ }
+ module_exit(isp_exit);
 -- 
 1.7.4.1
 
