@@ -1,279 +1,277 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752868Ab1IZL0Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 07:26:24 -0400
-Received: from mga09.intel.com ([134.134.136.24]:47567 "EHLO mga09.intel.com"
+	id S1752571Ab1IZLaY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 07:30:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59526 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752506Ab1IZLVq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 07:21:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="56485892"
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@suse.de>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Chen <peter.chen@freescale.com>,
-        Lin Tony-B19295 <B19295@freescale.com>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: [PATCHv5 04/19] usb: otg: ab8500: Start using struct usb_otg
-Date: Mon, 26 Sep 2011 14:21:17 +0300
-Message-Id: <1317036092-3000-5-git-send-email-heikki.krogerus@linux.intel.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1317036092-3000-1-git-send-email-heikki.krogerus@linux.intel.com>
-References: <1317036092-3000-1-git-send-email-heikki.krogerus@linux.intel.com>
+	id S1751921Ab1IZLaX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 07:30:23 -0400
+Date: Mon, 26 Sep 2011 13:29:45 +0200
+From: Johannes Weiner <jweiner@redhat.com>
+To: Kautuk Consul <consul.kautuk@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: [patch] mm: remove sysctl to manually rescue unevictable pages
+Message-ID: <20110926112944.GC14333@redhat.com>
+References: <1316948380-1879-1-git-send-email-consul.kautuk@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1316948380-1879-1-git-send-email-consul.kautuk@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use struct usb_otg members with OTG specific functions instead
-of usb_phy members.
+On Sun, Sep 25, 2011 at 04:29:40PM +0530, Kautuk Consul wrote:
+> write_scan_unavictable_node checks the value req returned by
+> strict_strtoul and returns 1 if req is 0.
+> 
+> However, when strict_strtoul returns 0, it means successful conversion
+> of buf to unsigned long.
+> 
+> Due to this, the function was not proceeding to scan the zones for
+> unevictable pages even though we write a valid value to the 
+> scan_unevictable_pages sys file.
 
-Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Acked-by: Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>
+Given that there is not a real reason for this knob (anymore) and that
+it apparently never really worked since the day it was introduced, how
+about we just drop all that code instead?
+
+	Hannes
+
 ---
- drivers/usb/otg/ab8500-usb.c |   87 +++++++++++++++++++++++-------------------
- 1 files changed, 48 insertions(+), 39 deletions(-)
+From: Johannes Weiner <jweiner@redhat.com>
+Subject: mm: remove sysctl to manually rescue unevictable pages
 
-diff --git a/drivers/usb/otg/ab8500-usb.c b/drivers/usb/otg/ab8500-usb.c
-index 366c3af..3d659c3 100644
---- a/drivers/usb/otg/ab8500-usb.c
-+++ b/drivers/usb/otg/ab8500-usb.c
-@@ -68,7 +68,7 @@ enum ab8500_usb_link_status {
- };
+At one point, anonymous pages were supposed to go on the unevictable
+list when no swap space was configured, and the idea was to manually
+rescue those pages after adding swap and making them evictable again.
+But nowadays, swap-backed pages on the anon LRU list are not scanned
+without available swap space anyway, so there is no point in moving
+them to a separate list anymore.
+
+The manual rescue could also be used in case pages were stranded on
+the unevictable list due to race conditions.  But the code has been
+around for a while now and newly discovered bugs should be properly
+reported and dealt with instead of relying on such a manual fixup.
+
+Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+---
+ drivers/base/node.c  |    3 -
+ include/linux/swap.h |   16 ------
+ kernel/sysctl.c      |    7 ---
+ mm/vmscan.c          |  130 --------------------------------------------------
+ 4 files changed, 0 insertions(+), 156 deletions(-)
+
+diff --git a/drivers/base/node.c b/drivers/base/node.c
+index 9e58e71..b9d6e93 100644
+--- a/drivers/base/node.c
++++ b/drivers/base/node.c
+@@ -278,8 +278,6 @@ int register_node(struct node *node, int num, struct node *parent)
+ 		sysdev_create_file(&node->sysdev, &attr_distance);
+ 		sysdev_create_file_optional(&node->sysdev, &attr_vmstat);
  
- struct ab8500_usb {
--	struct usb_phy otg;
-+	struct usb_phy xceiv;
- 	struct device *dev;
- 	int irq_num_id_rise;
- 	int irq_num_id_fall;
-@@ -84,7 +84,7 @@ struct ab8500_usb {
+-		scan_unevictable_register_node(node);
+-
+ 		hugetlb_register_node(node);
  
- static inline struct ab8500_usb *xceiv_to_ab(struct usb_phy *x)
- {
--	return container_of(x, struct ab8500_usb, otg);
-+	return container_of(x, struct ab8500_usb, xceiv);
- }
+ 		compaction_register_node(node);
+@@ -303,7 +301,6 @@ void unregister_node(struct node *node)
+ 	sysdev_remove_file(&node->sysdev, &attr_distance);
+ 	sysdev_remove_file_optional(&node->sysdev, &attr_vmstat);
  
- static void ab8500_usb_wd_workaround(struct ab8500_usb *ab)
-@@ -169,8 +169,8 @@ static int ab8500_usb_link_status_update(struct ab8500_usb *ab)
- 		/* TODO: Disable regulators. */
- 		ab8500_usb_host_phy_dis(ab);
- 		ab8500_usb_peri_phy_dis(ab);
--		ab->otg.state = USB_PHY_STATE_B_IDLE;
--		ab->otg.default_a = false;
-+		ab->xceiv.state = USB_PHY_STATE_B_IDLE;
-+		ab->xceiv.otg->default_a = false;
- 		ab->vbus_draw = 0;
- 		event = USB_EVENT_NONE;
- 		break;
-@@ -181,22 +181,22 @@ static int ab8500_usb_link_status_update(struct ab8500_usb *ab)
- 	case USB_LINK_HOST_CHG_NM:
- 	case USB_LINK_HOST_CHG_HS:
- 	case USB_LINK_HOST_CHG_HS_CHIRP:
--		if (ab->otg.gadget) {
-+		if (ab->xceiv.otg->gadget) {
- 			/* TODO: Enable regulators. */
- 			ab8500_usb_peri_phy_en(ab);
--			v = ab->otg.gadget;
-+			v = ab->xceiv.otg->gadget;
- 		}
- 		event = USB_EVENT_VBUS;
- 		break;
+-	scan_unevictable_unregister_node(node);
+ 	hugetlb_unregister_node(node);		/* no-op, if memoryless node */
  
- 	case USB_LINK_HM_IDGND:
--		if (ab->otg.host) {
-+		if (ab->xceiv.otg->host) {
- 			/* TODO: Enable regulators. */
- 			ab8500_usb_host_phy_en(ab);
--			v = ab->otg.host;
-+			v = ab->xceiv.otg->host;
- 		}
--		ab->otg.state = USB_PHY_STATE_A_IDLE;
--		ab->otg.default_a = true;
-+		ab->xceiv.state = USB_PHY_STATE_A_IDLE;
-+		ab->xceiv.otg->default_a = true;
- 		event = USB_EVENT_ID;
- 		break;
+ 	sysdev_unregister(&node->sysdev);
+diff --git a/include/linux/swap.h b/include/linux/swap.h
+index b156e80..a6a9ee5 100644
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -276,22 +276,6 @@ static inline int zone_reclaim(struct zone *z, gfp_t mask, unsigned int order)
+ extern int page_evictable(struct page *page, struct vm_area_struct *vma);
+ extern void scan_mapping_unevictable_pages(struct address_space *);
  
-@@ -212,7 +212,7 @@ static int ab8500_usb_link_status_update(struct ab8500_usb *ab)
- 		break;
+-extern unsigned long scan_unevictable_pages;
+-extern int scan_unevictable_handler(struct ctl_table *, int,
+-					void __user *, size_t *, loff_t *);
+-#ifdef CONFIG_NUMA
+-extern int scan_unevictable_register_node(struct node *node);
+-extern void scan_unevictable_unregister_node(struct node *node);
+-#else
+-static inline int scan_unevictable_register_node(struct node *node)
+-{
+-	return 0;
+-}
+-static inline void scan_unevictable_unregister_node(struct node *node)
+-{
+-}
+-#endif
+-
+ extern int kswapd_run(int nid);
+ extern void kswapd_stop(int nid);
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 4f057f9..0d66092 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -1325,13 +1325,6 @@ static struct ctl_table vm_table[] = {
+ 		.extra2		= &one,
+ 	},
+ #endif
+-	{
+-		.procname	= "scan_unevictable_pages",
+-		.data		= &scan_unevictable_pages,
+-		.maxlen		= sizeof(scan_unevictable_pages),
+-		.mode		= 0644,
+-		.proc_handler	= scan_unevictable_handler,
+-	},
+ #ifdef CONFIG_MEMORY_FAILURE
+ 	{
+ 		.procname	= "memory_failure_early_kill",
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 7502726..c99a097 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -3396,133 +3396,3 @@ void scan_mapping_unevictable_pages(struct address_space *mapping)
  	}
  
--	atomic_notifier_call_chain(&ab->otg.notifier, event, v);
-+	atomic_notifier_call_chain(&ab->xceiv.notifier, event, v);
- 
- 	return 0;
  }
-@@ -262,27 +262,27 @@ static void ab8500_usb_phy_disable_work(struct work_struct *work)
- 	struct ab8500_usb *ab = container_of(work, struct ab8500_usb,
- 						phy_dis_work);
- 
--	if (!ab->otg.host)
-+	if (!ab->xceiv.otg->host)
- 		ab8500_usb_host_phy_dis(ab);
- 
--	if (!ab->otg.gadget)
-+	if (!ab->xceiv.otg->gadget)
- 		ab8500_usb_peri_phy_dis(ab);
- }
- 
--static int ab8500_usb_set_power(struct usb_phy *otg, unsigned mA)
-+static int ab8500_usb_set_power(struct usb_phy *xceiv, unsigned mA)
- {
- 	struct ab8500_usb *ab;
- 
--	if (!otg)
-+	if (!xceiv)
- 		return -ENODEV;
- 
--	ab = xceiv_to_ab(otg);
-+	ab = xceiv_to_ab(xceiv);
- 
- 	ab->vbus_draw = mA;
- 
- 	if (mA)
--		atomic_notifier_call_chain(&ab->otg.notifier,
--				USB_EVENT_ENUMERATED, ab->otg.gadget);
-+		atomic_notifier_call_chain(&ab->xceiv.notifier,
-+				USB_EVENT_ENUMERATED, ab->xceiv.otg->gadget);
- 	return 0;
- }
- 
-@@ -296,15 +296,15 @@ static int ab8500_usb_set_suspend(struct usb_phy *x, int suspend)
- 	return 0;
- }
- 
--static int ab8500_usb_set_peripheral(struct usb_phy *otg,
--		struct usb_gadget *gadget)
-+static int ab8500_usb_set_peripheral(struct usb_otg *otg,
-+					struct usb_gadget *gadget)
- {
- 	struct ab8500_usb *ab;
- 
- 	if (!otg)
- 		return -ENODEV;
- 
--	ab = xceiv_to_ab(otg);
-+	ab = xceiv_to_ab(otg->xceiv);
- 
- 	/* Some drivers call this function in atomic context.
- 	 * Do not update ab8500 registers directly till this
-@@ -313,11 +313,11 @@ static int ab8500_usb_set_peripheral(struct usb_phy *otg,
- 
- 	if (!gadget) {
- 		/* TODO: Disable regulators. */
--		ab->otg.gadget = NULL;
-+		otg->gadget = NULL;
- 		schedule_work(&ab->phy_dis_work);
- 	} else {
--		ab->otg.gadget = gadget;
--		ab->otg.state = USB_PHY_STATE_B_IDLE;
-+		otg->gadget = gadget;
-+		otg->xceiv->state = USB_PHY_STATE_B_IDLE;
- 
- 		/* Phy will not be enabled if cable is already
- 		 * plugged-in. Schedule to enable phy.
-@@ -329,15 +329,14 @@ static int ab8500_usb_set_peripheral(struct usb_phy *otg,
- 	return 0;
- }
- 
--static int ab8500_usb_set_host(struct usb_phy *otg,
--					struct usb_bus *host)
-+static int ab8500_usb_set_host(struct usb_otg *otg, struct usb_bus *host)
- {
- 	struct ab8500_usb *ab;
- 
- 	if (!otg)
- 		return -ENODEV;
- 
--	ab = xceiv_to_ab(otg);
-+	ab = xceiv_to_ab(otg->xceiv);
- 
- 	/* Some drivers call this function in atomic context.
- 	 * Do not update ab8500 registers directly till this
-@@ -346,10 +345,10 @@ static int ab8500_usb_set_host(struct usb_phy *otg,
- 
- 	if (!host) {
- 		/* TODO: Disable regulators. */
--		ab->otg.host = NULL;
-+		otg->host = NULL;
- 		schedule_work(&ab->phy_dis_work);
- 	} else {
--		ab->otg.host = host;
-+		otg->host = host;
- 		/* Phy will not be enabled if cable is already
- 		 * plugged-in. Schedule to enable phy.
- 		 * Use same delay to avoid any race condition.
-@@ -488,19 +487,27 @@ static int __devinit ab8500_usb_probe(struct platform_device *pdev)
- 	if (!ab)
- 		return -ENOMEM;
- 
-+	ab->xceiv.otg = kzalloc(sizeof *ab->xceiv.otg, GFP_KERNEL);
-+	if (!ab->xceiv.otg) {
-+		kfree(ab);
-+		return -ENOMEM;
-+	}
-+
- 	ab->dev			= &pdev->dev;
- 	ab->rev			= rev;
--	ab->otg.dev		= ab->dev;
--	ab->otg.label		= "ab8500";
--	ab->otg.state		= USB_PHY_STATE_UNDEFINED;
--	ab->otg.set_host	= ab8500_usb_set_host;
--	ab->otg.set_peripheral	= ab8500_usb_set_peripheral;
--	ab->otg.set_suspend	= ab8500_usb_set_suspend;
--	ab->otg.set_power	= ab8500_usb_set_power;
-+	ab->xceiv.dev		= ab->dev;
-+	ab->xceiv.label		= "ab8500";
-+	ab->xceiv.set_suspend	= ab8500_usb_set_suspend;
-+	ab->xceiv.set_power	= ab8500_usb_set_power;
-+	ab->xceiv.state		= USB_PHY_STATE_UNDEFINED;
-+
-+	ab->xceiv.otg->xceiv		= &ab->xceiv;
-+	ab->xceiv.otg->set_host		= ab8500_usb_set_host;
-+	ab->xceiv.otg->set_peripheral	= ab8500_usb_set_peripheral;
- 
- 	platform_set_drvdata(pdev, ab);
- 
--	ATOMIC_INIT_NOTIFIER_HEAD(&ab->otg.notifier);
-+	ATOMIC_INIT_NOTIFIER_HEAD(&ab->xceiv.notifier);
- 
- 	/* v1: Wait for link status to become stable.
- 	 * all: Updates form set_host and set_peripheral as they are atomic.
-@@ -520,7 +527,7 @@ static int __devinit ab8500_usb_probe(struct platform_device *pdev)
- 	if (err < 0)
- 		goto fail0;
- 
--	err = otg_set_transceiver(&ab->otg);
-+	err = usb_set_transceiver(&ab->xceiv);
- 	if (err) {
- 		dev_err(&pdev->dev, "Can't register transceiver\n");
- 		goto fail1;
-@@ -532,6 +539,7 @@ static int __devinit ab8500_usb_probe(struct platform_device *pdev)
- fail1:
- 	ab8500_usb_irq_free(ab);
- fail0:
-+	kfree(ab->xceiv.otg);
- 	kfree(ab);
- 	return err;
- }
-@@ -546,13 +554,14 @@ static int __devexit ab8500_usb_remove(struct platform_device *pdev)
- 
- 	cancel_work_sync(&ab->phy_dis_work);
- 
--	otg_set_transceiver(NULL);
-+	usb_set_transceiver(NULL);
- 
- 	ab8500_usb_host_phy_dis(ab);
- 	ab8500_usb_peri_phy_dis(ab);
- 
- 	platform_set_drvdata(pdev, NULL);
- 
-+	kfree(ab->xceiv.otg);
- 	kfree(ab);
- 
- 	return 0;
+-
+-/**
+- * scan_zone_unevictable_pages - check unevictable list for evictable pages
+- * @zone - zone of which to scan the unevictable list
+- *
+- * Scan @zone's unevictable LRU lists to check for pages that have become
+- * evictable.  Move those that have to @zone's inactive list where they
+- * become candidates for reclaim, unless shrink_inactive_zone() decides
+- * to reactivate them.  Pages that are still unevictable are rotated
+- * back onto @zone's unevictable list.
+- */
+-#define SCAN_UNEVICTABLE_BATCH_SIZE 16UL /* arbitrary lock hold batch size */
+-static void scan_zone_unevictable_pages(struct zone *zone)
+-{
+-	struct list_head *l_unevictable = &zone->lru[LRU_UNEVICTABLE].list;
+-	unsigned long scan;
+-	unsigned long nr_to_scan = zone_page_state(zone, NR_UNEVICTABLE);
+-
+-	while (nr_to_scan > 0) {
+-		unsigned long batch_size = min(nr_to_scan,
+-						SCAN_UNEVICTABLE_BATCH_SIZE);
+-
+-		spin_lock_irq(&zone->lru_lock);
+-		for (scan = 0;  scan < batch_size; scan++) {
+-			struct page *page = lru_to_page(l_unevictable);
+-
+-			if (!trylock_page(page))
+-				continue;
+-
+-			prefetchw_prev_lru_page(page, l_unevictable, flags);
+-
+-			if (likely(PageLRU(page) && PageUnevictable(page)))
+-				check_move_unevictable_page(page, zone);
+-
+-			unlock_page(page);
+-		}
+-		spin_unlock_irq(&zone->lru_lock);
+-
+-		nr_to_scan -= batch_size;
+-	}
+-}
+-
+-
+-/**
+- * scan_all_zones_unevictable_pages - scan all unevictable lists for evictable pages
+- *
+- * A really big hammer:  scan all zones' unevictable LRU lists to check for
+- * pages that have become evictable.  Move those back to the zones'
+- * inactive list where they become candidates for reclaim.
+- * This occurs when, e.g., we have unswappable pages on the unevictable lists,
+- * and we add swap to the system.  As such, it runs in the context of a task
+- * that has possibly/probably made some previously unevictable pages
+- * evictable.
+- */
+-static void scan_all_zones_unevictable_pages(void)
+-{
+-	struct zone *zone;
+-
+-	for_each_zone(zone) {
+-		scan_zone_unevictable_pages(zone);
+-	}
+-}
+-
+-/*
+- * scan_unevictable_pages [vm] sysctl handler.  On demand re-scan of
+- * all nodes' unevictable lists for evictable pages
+- */
+-unsigned long scan_unevictable_pages;
+-
+-int scan_unevictable_handler(struct ctl_table *table, int write,
+-			   void __user *buffer,
+-			   size_t *length, loff_t *ppos)
+-{
+-	proc_doulongvec_minmax(table, write, buffer, length, ppos);
+-
+-	if (write && *(unsigned long *)table->data)
+-		scan_all_zones_unevictable_pages();
+-
+-	scan_unevictable_pages = 0;
+-	return 0;
+-}
+-
+-#ifdef CONFIG_NUMA
+-/*
+- * per node 'scan_unevictable_pages' attribute.  On demand re-scan of
+- * a specified node's per zone unevictable lists for evictable pages.
+- */
+-
+-static ssize_t read_scan_unevictable_node(struct sys_device *dev,
+-					  struct sysdev_attribute *attr,
+-					  char *buf)
+-{
+-	return sprintf(buf, "0\n");	/* always zero; should fit... */
+-}
+-
+-static ssize_t write_scan_unevictable_node(struct sys_device *dev,
+-					   struct sysdev_attribute *attr,
+-					const char *buf, size_t count)
+-{
+-	struct zone *node_zones = NODE_DATA(dev->id)->node_zones;
+-	struct zone *zone;
+-	unsigned long res;
+-	unsigned long req = strict_strtoul(buf, 10, &res);
+-
+-	if (!req)
+-		return 1;	/* zero is no-op */
+-
+-	for (zone = node_zones; zone - node_zones < MAX_NR_ZONES; ++zone) {
+-		if (!populated_zone(zone))
+-			continue;
+-		scan_zone_unevictable_pages(zone);
+-	}
+-	return 1;
+-}
+-
+-
+-static SYSDEV_ATTR(scan_unevictable_pages, S_IRUGO | S_IWUSR,
+-			read_scan_unevictable_node,
+-			write_scan_unevictable_node);
+-
+-int scan_unevictable_register_node(struct node *node)
+-{
+-	return sysdev_create_file(&node->sysdev, &attr_scan_unevictable_pages);
+-}
+-
+-void scan_unevictable_unregister_node(struct node *node)
+-{
+-	sysdev_remove_file(&node->sysdev, &attr_scan_unevictable_pages);
+-}
+-#endif
 -- 
-1.7.4.1
+1.7.6.2
 
