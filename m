@@ -1,54 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753162Ab1IZJ4O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 05:56:14 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45510 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753021Ab1IZJ4M (ORCPT
+	id S1753090Ab1IZKAw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 06:00:52 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:58141 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752887Ab1IZKAv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 05:56:12 -0400
-Date: Mon, 26 Sep 2011 10:56:11 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: ashishj3 <ashish.jangam@kpitcummins.com>
-Cc: sameo@openedhand.com, linux-kernel@vger.kernel.org,
-        Dajun <dajun.chen@diasemi.com>, linaro-dev@lists.linaro.org,
-        arnd@arndb.de
-Subject: Re: [PATCH 01/11] MFD: DA9052/53 MFD core module v6
-Message-ID: <20110926095611.GA15452@opensource.wolfsonmicro.com>
-References: <1316435596.344.132.camel@L-0761.kpit.com>
+	Mon, 26 Sep 2011 06:00:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1316435596.344.132.camel@L-0761.kpit.com>
-X-Cookie: Chess tonight.
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Date: Mon, 26 Sep 2011 19:00:49 +0900
+X-Google-Sender-Auth: CPQqS11QDVhHAzsMHAntJjl74D0
+Message-ID: <CAHQjnOMCU26ELOpn7h7hcju-s970SSG5E545rPgCpw3_LkkAhA@mail.gmail.com>
+Subject: [PATCH 0/4 v2] iommu/exynos: Add IOMMU and Enhance System MMU driver
+ for Exynos4
+From: KyongHo Cho <pullip.cho@samsung.com>
+To: Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
+        iommu@lists.linux-foundation.org,
+        Linux-Kernel <linux-kernel@vger.kernel.org>
+Cc: Russell King <linux@arm.linux.org.uk>, Joerg Roedel <joerg.roedel@amd.com>,
+        Sanghyun Lee <sanghyun75.lee@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Younglak Kim <younglak1004.kim@samsung.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 19, 2011 at 06:03:16PM +0530, ashishj3 wrote:
-> The DA9052/53 is a highly integrated PMIC subsystem with supply domain flexibility
-> to support wide range of high performance application.
-> 
-> It provides voltage regulators, GPIO controller, Touch Screen, RTC, Battery
-> control and other functionality.
+This is the second try of submitting patches about IOMMU/System MMU
+driver for Exynos4 SoCs with the fixes of the following problems
+pointed by Russell King.:
+ - Missing unlocking a spinlock in exynos_iommu_attach_dev().
+ - atomic_t -> int in sysmmu_drvdata.activations
+ - sysmmu_platdata -> sysmmu_drvdata
+ - Change in error messages in irq handler
+ - Removed casting in format of error message
+ - omap_iommu_ops -> exynos_iommu_ops in the last patch.
 
-So, this looks good.  However...
+First 2 patches enhance System MMU platform device definition:
+ - Removed System MMU for MDMA0 in LCD block because it is not used.
+  Use MDMA2 in TOP block.
+ - Removed System MMU ID. Instead a System MMU is bound to a device that
+  the System MMU is dedicated during machin initialization. If a device
+  driver wants to handle System MMU, it must bind its device with System
+  MMU with sysmmu_set_owner().
+ - clkdev
+ - System MMU device driver is removed from arch/arm/plat-s5p to move it
+  to driver/iommu directory.
+Last 2 patches implements IOMMU API:
+ - Implements IOMMU API and System MMU driver that is moved from
+  arch/arm/plat-s5p.
+ - Implements fault handling that is suggested by Ohad.
+ - Used bus_set_iommu instead of register_iommu that is suggested by Joerg.
 
-> +static struct regmap_config da9052_regmap_config = {
-> +	.reg_bits = 8,
-> +	.val_bits = 8,
-> +};
-> +
-> +static int da9052_spi_probe(struct spi_device *spi)
+Regards,
+Cho KyongHo.
 
-...having reviewed previous versions of your driver I believe you need
-to set either or both of read_flag_mask or write_flag_mask your regmap
-config (these have been added in -next) - previous versions of your
-driver had code which was trying to bodge this in, you've removed this
-code but not added any use of the generic facility so I rather suspect
-that currently the driver doesn't work with SPI.
+Diffstats:
 
-Samuel, as a fix will depend on -next regmap I guess it makes sense for
-me to apply this if a new version is provided before the next merge
-window?
+arch/arm/mach-exynos4/Kconfig               |    2 -
+arch/arm/mach-exynos4/clock.c               |   43 +-
+arch/arm/mach-exynos4/dev-sysmmu.c          |  270 ++------
+arch/arm/mach-exynos4/include/mach/irqs.h   |    1 -
+arch/arm/mach-exynos4/include/mach/map.h    |    1 -
+arch/arm/mach-exynos4/include/mach/sysmmu.h |   85 ++-
+arch/arm/mach-exynos4/mach-armlex4210.c     |   24 +-
+arch/arm/mach-exynos4/mach-smdkv310.c       |   28 +-
+arch/arm/plat-s5p/Kconfig                   |    8 -
+arch/arm/plat-s5p/Makefile                  |    1 -
+arch/arm/plat-s5p/include/plat/sysmmu.h     |   95 ---
+arch/arm/plat-s5p/sysmmu.c                  |  312 ---------
+drivers/iommu/Kconfig                       |   14 +
+drivers/iommu/Makefile                      |    1 +
+drivers/iommu/exynos_iommu.c                |  933 +++++++++++++++++++++++++++
+15 files changed, 1134 insertions(+), 684 deletions(-)
