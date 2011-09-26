@@ -1,51 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752634Ab1IZJ2P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 05:28:15 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:59725 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752331Ab1IZJ2O (ORCPT
+	id S1752660Ab1IZJaE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 05:30:04 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:34382 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752331Ab1IZJaD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 05:28:14 -0400
+	Mon, 26 Sep 2011 05:30:03 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAOtvUMeMsd0Jk1k4wP9Y+7NW3FYZZAqV1-cRj5Zt4+eaugWoPg@mail.gmail.com>
-References: <1316940890-24138-1-git-send-email-gilad@benyossef.com>
-	<1316940890-24138-6-git-send-email-gilad@benyossef.com>
-	<1317022420.9084.57.camel@twins>
-	<CAOtvUMeMsd0Jk1k4wP9Y+7NW3FYZZAqV1-cRj5Zt4+eaugWoPg@mail.gmail.com>
-Date: Mon, 26 Sep 2011 12:28:14 +0300
-X-Google-Sender-Auth: 0mIErioAomvl7-GyXYmqRT2zL08
-Message-ID: <CAOJsxLECbRHq=amSkNZGDx+rSMkE0Hd2VvCs=vyFcxPQpfxL_g@mail.gmail.com>
-Subject: Re: [PATCH 5/5] slub: Only IPI CPUs that have per cpu obj to flush
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: Gilad Ben-Yossef <gilad@benyossef.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Chris Metcalf <cmetcalf@tilera.com>, linux-mm@kvack.org,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>
+In-Reply-To: <CAD+V5YLEStps68UK2NXLNh4ktGnv==WxXxWjjVJsRhk-XUp+Jw@mail.gmail.com>
+References: <1316845316-5765-1-git-send-email-keguang.zhang@gmail.com>
+	<1316845316-5765-2-git-send-email-keguang.zhang@gmail.com>
+	<CAD+V5YLEStps68UK2NXLNh4ktGnv==WxXxWjjVJsRhk-XUp+Jw@mail.gmail.com>
+Date: Mon, 26 Sep 2011 17:30:02 +0800
+Message-ID: <CAJhJPsV9n_4YtbrMwT7Zd7sSyF2zxc5TFKsf0af9U0FiMWJq0A@mail.gmail.com>
+Subject: Re: [PATCH 2/2] MIPS: Add defconfig for Loongson1B (UPDATED)
+From: Kelvin Cheung <keguang.zhang@gmail.com>
+To: wu zhangjin <wuzhangjin@gmail.com>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        ralf@linux-mips.org, r0bertz@gentoo.org, chenj@lemote.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 26, 2011 at 11:35 AM, Gilad Ben-Yossef <gilad@benyossef.com> wrote:
->> Right, having to do that for_each_oneline_cpu() loop only to then IPI
->> them can cause a massive cacheline bounce fest.. Ideally you'd want to
->> keep a cpumask per kmem_cache, although I bet the memory overhead of
->> that isn't attractive.
+2011/9/25, wu zhangjin <wuzhangjin@gmail.com>:
+> On Sat, Sep 24, 2011 at 2:21 PM,  <keguang.zhang@gmail.com> wrote:
+>> From: Kelvin Cheung <keguang.zhang@gmail.com>
 >>
->> Also, what Pekka says, having that alloc here isn't good either.
+>> This patch adds defconfig for Loongson1B.
+>>
+>> Signed-off-by: Kelvin Cheung <keguang.zhang@gmail.com>
+>> ---
+>>  arch/mips/configs/ls1b_defconfig |   95
+>> ++++++++++++++++++++++++++++++++++++++
+>>  1 files changed, 95 insertions(+), 0 deletions(-)
+>>  create mode 100644 arch/mips/configs/ls1b_defconfig
+>>
+>> diff --git a/arch/mips/configs/ls1b_defconfig
+>> b/arch/mips/configs/ls1b_defconfig
+>> new file mode 100644
+>> index 0000000..f7c48f5
+>> --- /dev/null
+>> +++ b/arch/mips/configs/ls1b_defconfig
+>> @@ -0,0 +1,95 @@
+>> +CONFIG_MACH_LOONGSON1=y
+>> +CONFIG_HIGH_RES_TIMERS=y
+>> +CONFIG_PREEMPT_VOLUNTARY=y
 >
-> Yes, the alloc in the flush_all path definitively needs to go. I
-> wonder if just to resolve that allocating the mask per cpu and not in
-> kmem_cache itself is not better - after all, all we need is a single
-> mask per cpu when we wish to do a flush_all and no per cache. The
-> memory overhead of that is slightly better. This doesn't cover the
-> cahce bounce issue.
+> What is the target market of 1B?
+>
+> Seems CONFIG_PREEMPT_VOLUNTARY is for Desktop, CONFIG_PREEMPT is
+> better for low-latency desktop
+> and even for some real time applications.
 
-I'm fine with whatever works for you as long as you don't add a
-kmalloc() call in flush_all().
+Replaced with CONFIG_PREEMPT in the new patch.
 
-                        Pekka
+>> +CONFIG_KEXEC=y
+>
+> Did you validate kexec support on your 1B board?
+>
+> According to my previous experiment, The kexec support of 32bit
+> Loongson2F requires more patches,
+> those patches are available in the following git repo:
+>
+> http://dev.lemote.com/cgit/linux-loongson-community.git/log/?h=tiny36
+>
+> or
+>
+> git://dev.lemote.com/linux-loongson-community.git tiny36
+
+Removed in the new patch.
+
+>> +# CONFIG_SECCOMP is not set
+>> +CONFIG_EXPERIMENTAL=y
+>> +# CONFIG_LOCALVERSION_AUTO is not set
+>> +CONFIG_SYSVIPC=y
+>> +CONFIG_BSD_PROCESS_ACCT=y
+>> +CONFIG_BSD_PROCESS_ACCT_V3=y
+>> +CONFIG_IKCONFIG=y
+>> +CONFIG_IKCONFIG_PROC=y
+>> +CONFIG_LOG_BUF_SHIFT=16
+>> +CONFIG_BLK_DEV_INITRD=y
+>> +CONFIG_RD_BZIP2=y
+>> +CONFIG_RD_LZMA=y
+>> +CONFIG_RD_XZ=y
+>> +CONFIG_RD_LZO=y
+>
+> Not sure why you need all of these 4 compression algorithms, LZO is
+> the fastest one, LZMA has the largest compression ratio.
+
+Fixed in the new patch.
+
+>> +CONFIG_EXPERT=y
+>> +CONFIG_KALLSYMS_ALL=y
+>> +CONFIG_PERF_EVENTS=y
+>> +# CONFIG_COMPAT_BRK is not set
+>> +CONFIG_MODULES=y
+>> +CONFIG_MODULE_UNLOAD=y
+>> +CONFIG_MODVERSIONS=y
+>> +# CONFIG_LBDAF is not set
+>> +# CONFIG_BLK_DEV_BSG is not set
+>> +# CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
+>> +# CONFIG_SUSPEND is not set
+>> +CONFIG_NET=y
+>> +CONFIG_PACKET=y
+>> +CONFIG_UNIX=y
+>> +CONFIG_INET=y
+>> +CONFIG_IP_PNP=y
+>> +CONFIG_IP_PNP_DHCP=y
+>> +CONFIG_SYN_COOKIES=y
+>> +# CONFIG_INET_XFRM_MODE_TRANSPORT is not set
+>> +# CONFIG_INET_XFRM_MODE_TUNNEL is not set
+>> +# CONFIG_INET_XFRM_MODE_BEET is not set
+>> +# CONFIG_INET_DIAG is not set
+>> +# CONFIG_IPV6 is not set
+>> +# CONFIG_WIRELESS is not set
+>> +CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
+>> +CONFIG_DEVTMPFS=y
+>> +CONFIG_DEVTMPFS_MOUNT=y
+>> +# CONFIG_STANDALONE is not set
+>> +CONFIG_BLK_DEV_LOOP=y
+>> +# CONFIG_INPUT_MOUSEDEV is not set
+>> +# CONFIG_INPUT_KEYBOARD is not set
+>> +# CONFIG_INPUT_MOUSE is not set
+>> +# CONFIG_SERIO is not set
+>> +CONFIG_VT_HW_CONSOLE_BINDING=y
+>> +CONFIG_LEGACY_PTY_COUNT=8
+>> +# CONFIG_DEVKMEM is not set
+>> +CONFIG_SERIAL_8250=y
+>> +CONFIG_SERIAL_8250_CONSOLE=y
+>> +CONFIG_SERIAL_8250_RUNTIME_UARTS=1
+>> +# CONFIG_HW_RANDOM is not set
+>> +CONFIG_RAMOOPS=y
+>> +# CONFIG_HWMON is not set
+>> +# CONFIG_MFD_SUPPORT is not set
+>> +# CONFIG_VGA_CONSOLE is not set
+>> +# CONFIG_HID_SUPPORT is not set
+>> +# CONFIG_USB_SUPPORT is not set
+>> +# CONFIG_IOMMU_SUPPORT is not set
+>> +CONFIG_EXT2_FS=y
+>> +CONFIG_EXT2_FS_XATTR=y
+>> +CONFIG_EXT2_FS_POSIX_ACL=y
+>> +CONFIG_EXT2_FS_SECURITY=y
+>> +CONFIG_EXT3_FS=y
+>> +CONFIG_EXT3_FS_POSIX_ACL=y
+>> +CONFIG_EXT3_FS_SECURITY=y
+>
+> Seems we have EXT4 now, but PMON may not support it currently ;)
+>
+>> +# CONFIG_DNOTIFY is not set
+>> +CONFIG_PROC_KCORE=y
+>> +CONFIG_TMPFS=y
+>> +CONFIG_TMPFS_POSIX_ACL=y
+>> +# CONFIG_MISC_FILESYSTEMS is not set
+>> +# CONFIG_NETWORK_FILESYSTEMS is not set
+>> +# CONFIG_ENABLE_WARN_DEPRECATED is not set
+>> +# CONFIG_ENABLE_MUST_CHECK is not set
+>> +CONFIG_UNUSED_SYMBOLS=y
+>> +CONFIG_DEBUG_FS=y
+>> +CONFIG_DETECT_HUNG_TASK=y
+>> +CONFIG_SCHEDSTATS=y
+>> +CONFIG_TIMER_STATS=y
+>> +CONFIG_DEBUG_INFO=y
+>> +CONFIG_DEBUG_MEMORY_INIT=y
+>> +CONFIG_BOOT_PRINTK_DELAY=y
+>> +CONFIG_SYSCTL_SYSCALL_CHECK=y
+>> +# CONFIG_FTRACE is not set
+>> +CONFIG_KGDB=y
+>> +CONFIG_KGDB_LOW_LEVEL_TRAP=y
+>> +CONFIG_KGDB_KDB=y
+>
+> If this config is for product, the above debug support may be not required.
+
+Removed in the new patch.
+
+> Best Regards,
+> Wu Zhangjin
+>
+>> +CONFIG_KDB_KEYBOARD=y
+>> +# CONFIG_EARLY_PRINTK is not set
+>> --
+>> 1.7.4.1
+>>
+>>
+>
+
+
+-- 
+Best Regards!
+Kelvin
