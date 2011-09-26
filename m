@@ -1,89 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751203Ab1IZFcE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 01:32:04 -0400
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:35770 "EHLO
-	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751078Ab1IZFcD (ORCPT
+	id S1751299Ab1IZG0g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 02:26:36 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:59575 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751103Ab1IZG0f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 01:32:03 -0400
-Date: Mon, 26 Sep 2011 01:31:40 -0400 (EDT)
-From: CAI Qian <caiqian@redhat.com>
-To: Jon Mason <mason@myri.com>
-Cc: linux-kernel@vger.kernel.org, Jordan Hargrave <Jordan_Hargrave@dell.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: regression introduced by "PCI: Set PCI-E Max Payload Size on fabric" patch
-Message-ID: <0900cbc2-1551-4bf6-b7fd-4273c1641651@zmail06.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <CAMaF-rMFrx_hLq9u7WDL8=9fpBtKkFEiiumXH+Ps=UnRx7W9ag@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	Mon, 26 Sep 2011 02:26:35 -0400
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>
+Cc: linux-kernel@vger.kernel.org, kernel@pengutronix.de,
+        linux-arm-kernel@lists.infradead.org,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [PATCH] dma/imx-sdma+imx-dma: explicitly #include <linux/module.h>
+Date: Mon, 26 Sep 2011 08:26:19 +0200
+Message-Id: <1317018379-8897-1-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 1.7.6.3
 MIME-Version: 1.0
-X-Originating-IP: [10.66.13.193]
-X-Mailer: Zimbra 7.1.2_GA_3268 (ZimbraWebClient - FF3.0 (Linux)/7.1.2_GA_3268)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is needed after commit
 
+	include: replace linux/module.h with "struct module" wherever possible
 
------ Original Message -----
-> 
-> 
-> 
-> On Fri, Sep 23, 2011 at 4:20 AM, CAI Qian < caiqian@redhat.com >
-> wrote:
-> 
-> 
-> After reverted this commit,
-> 
-> b03e7495a862b028294f59fc87286d6d78ee7fa1
-> PCI: Set PCI-E Max Payload Size on fabric
-> 
-> A server with qla2xxx is able to boot the latest mainly kernel.
-> 
-> 
-> 
-> What kernel version? This should be fixed in v3.1-rc6.
-It was v3.1-rc4, and confirmed it was gone for the latest -rc7 version.
-It was apparently I checked out a slight old tree. Sorry for the
-false alarm.
+(currently 25215aa in next).
 
-CAI Qian
-> 
-> 
-> 
-> QLogic Fibre Channel HBA Driver: 8.03.07.03-k
-> qla2xxx 0000:06:02.0: PCI INT A -> GSI 17 (level, low) -> IRQ 17
-> qla2xxx 0000:06:02.0: Found an ISP2422, irq 17, iobase 0xf9dfe000
-> qla2xxx 0000:06:02.0: Configuring PCI space...
-> qla2xxx 0000:06:02.0: Configure NVRAM parameters...
-> qla2xxx 0000:06:02.0: Verifying loaded RISC code...
-> qla2xxx 0000:06:02.0: FW: Loading via request-firmware...
-> qla2xxx 0000:06:02.0: Allocated (64 KB) for EFT...
-> qla2xxx 0000:06:02.0: Allocated (773 KB) for firmware dump...
-> scsi1 : qla2xxx
-> 
-> Otherwise, it hung right here.
-> 
-> scsi0 : ioc0: LSISAS1064E B1, FwRev=011b5700h, Ports=1, MaxQ=277,
-> IRQ=19
-> mptsas: ioc0: attaching ssp device: fw_channel 0, fw_id 5, phy 0,
-> sas_addr 0x5000cca0007ed401
-> scsi scan: INQUIRY result too short (5), using 36
-> scsi 0:0:0:0: Direct-Access PQ: 0 ANSI: 0
-> mptsas: ioc0: attaching ssp device: fw_channel 0, fw_id 4, phy 1,
-> sas_addr 0x5000c50017501eb1
-> scsi 0:0:1:0: Direct-Access IBM-ESXS ST9146803SS B536 PQ: 0 ANSI: 5
-> mptsas: ioc0: attaching raid volume, channel 1, id 3
-> scsi 0:1:3:0: Direct-Access LSILOGIC Logical Volume 3000 PQ: 0 ANSI:
-> 2
-> sd 0:1:3:0: [sda] 285155328 512-byte logical blocks: (145 GB/135 GiB)
-> sd 0:1:3:0: [sda] Write Protect is off
-> sd 0:1:3:0: [sda] Got wrong page
-> sd 0:1:3:0: [sda] Assuming drive cache: write through
-> sd 0:1:3:0: [sda] Got wrong page
-> sd 0:1:3:0: [sda] Assuming drive cache: write through
-> 
-> CAI Qian
-> 
-> 
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+---
+Hello,
+
+maybe it's sensible for Paul to take that before his commit?
+
+Best regards
+Uwe
+
+ drivers/dma/imx-dma.c  |    1 +
+ drivers/dma/imx-sdma.c |    1 +
+ 2 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
+index d99f71c..3732de8 100644
+--- a/drivers/dma/imx-dma.c
++++ b/drivers/dma/imx-dma.c
+@@ -23,6 +23,7 @@
+ #include <linux/slab.h>
+ #include <linux/platform_device.h>
+ #include <linux/dmaengine.h>
++#include <linux/module.h>
+ 
+ #include <asm/irq.h>
+ #include <mach/dma-v1.h>
+diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
+index b5cc27d..86fb6e5 100644
+--- a/drivers/dma/imx-sdma.c
++++ b/drivers/dma/imx-sdma.c
+@@ -34,6 +34,7 @@
+ #include <linux/dmaengine.h>
+ #include <linux/of.h>
+ #include <linux/of_device.h>
++#include <linux/module.h>
+ 
+ #include <asm/irq.h>
+ #include <mach/sdma.h>
+-- 
+1.7.6.3
+
