@@ -1,186 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752114Ab1IZJDF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 05:03:05 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:58909 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136Ab1IZJDC (ORCPT
+	id S1752269Ab1IZJDI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 05:03:08 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:19954 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751136Ab1IZJDF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 05:03:02 -0400
+	Mon, 26 Sep 2011 05:03:05 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=kJ8FmCs/wol9QtftvBho9szkd8PbA9w9noNmI0D8aWaPdyzOtR4K63rquMhmvnGlR
+	dbYVQTpVh/FWyGUtBh6mg==
+Date: Mon, 26 Sep 2011 02:02:59 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Michal Hocko <mhocko@suse.cz>
+cc: Oleg Nesterov <oleg@redhat.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH 2/2] oom: give bonus to frozen processes
+In-Reply-To: <20110926083555.GD10156@tiehlicka.suse.cz>
+Message-ID: <alpine.DEB.2.00.1109260157270.1389@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1108241226550.31357@chino.kir.corp.google.com> <20110825091920.GA22564@tiehlicka.suse.cz> <20110825151818.GA4003@redhat.com> <20110825164758.GB22564@tiehlicka.suse.cz> <alpine.DEB.2.00.1108251404130.18747@chino.kir.corp.google.com>
+ <20110826070946.GA7280@tiehlicka.suse.cz> <20110826085610.GA9083@tiehlicka.suse.cz> <alpine.DEB.2.00.1108260218050.14732@chino.kir.corp.google.com> <20110826095356.GB9083@tiehlicka.suse.cz> <alpine.DEB.2.00.1108261110020.13943@chino.kir.corp.google.com>
+ <20110926083555.GD10156@tiehlicka.suse.cz>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <CAD+V5YLEStps68UK2NXLNh4ktGnv==WxXxWjjVJsRhk-XUp+Jw@mail.gmail.com>
-References: <1316845316-5765-1-git-send-email-keguang.zhang@gmail.com>
-	<1316845316-5765-2-git-send-email-keguang.zhang@gmail.com>
-	<CAD+V5YLEStps68UK2NXLNh4ktGnv==WxXxWjjVJsRhk-XUp+Jw@mail.gmail.com>
-Date: Mon, 26 Sep 2011 17:03:01 +0800
-Message-ID: <CAJhJPsWZZ2H84pqJ-qguANP_4uYm_zF7OROwkCE2_+4Vcrha4g@mail.gmail.com>
-Subject: Re: [PATCH 2/2] MIPS: Add defconfig for Loongson1B (UPDATED)
-From: Kelvin Cheung <keguang.zhang@gmail.com>
-To: wu zhangjin <wuzhangjin@gmail.com>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        ralf@linux-mips.org, r0bertz@gentoo.org, chenj@lemote.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/9/25, wu zhangjin <wuzhangjin@gmail.com>:
-> On Sat, Sep 24, 2011 at 2:21 PM,  <keguang.zhang@gmail.com> wrote:
->> From: Kelvin Cheung <keguang.zhang@gmail.com>
->>
->> This patch adds defconfig for Loongson1B.
->>
->> Signed-off-by: Kelvin Cheung <keguang.zhang@gmail.com>
->> ---
->>  arch/mips/configs/ls1b_defconfig |   95
->> ++++++++++++++++++++++++++++++++++++++
->>  1 files changed, 95 insertions(+), 0 deletions(-)
->>  create mode 100644 arch/mips/configs/ls1b_defconfig
->>
->> diff --git a/arch/mips/configs/ls1b_defconfig
->> b/arch/mips/configs/ls1b_defconfig
->> new file mode 100644
->> index 0000000..f7c48f5
->> --- /dev/null
->> +++ b/arch/mips/configs/ls1b_defconfig
->> @@ -0,0 +1,95 @@
->> +CONFIG_MACH_LOONGSON1=y
->> +CONFIG_HIGH_RES_TIMERS=y
->> +CONFIG_PREEMPT_VOLUNTARY=y
->
-> What is the target market of 1B?
->
-> Seems CONFIG_PREEMPT_VOLUNTARY is for Desktop, CONFIG_PREEMPT is
-> better for low-latency desktop
-> and even for some real time applications.
+On Mon, 26 Sep 2011, Michal Hocko wrote:
 
-Replaced with CONFIG_PREEMPT.
+> Let's try it with a heuristic change first. If you really do not like
+> it, we can move to oom_scode_adj. I like the heuristic change little bit
+> more because it is at the same place as the root bonus.
 
->> +CONFIG_KEXEC=y
->
-> Did you validate kexec support on your 1B board?
->
-> According to my previous experiment, The kexec support of 32bit
-> Loongson2F requires more patches,
-> those patches are available in the following git repo:
->
-> http://dev.lemote.com/cgit/linux-loongson-community.git/log/?h=tiny36
->
-> or
->
-> git://dev.lemote.com/linux-loongson-community.git tiny36
->
->> +# CONFIG_SECCOMP is not set
->> +CONFIG_EXPERIMENTAL=y
->> +# CONFIG_LOCALVERSION_AUTO is not set
->> +CONFIG_SYSVIPC=y
->> +CONFIG_BSD_PROCESS_ACCT=y
->> +CONFIG_BSD_PROCESS_ACCT_V3=y
->> +CONFIG_IKCONFIG=y
->> +CONFIG_IKCONFIG_PROC=y
->> +CONFIG_LOG_BUF_SHIFT=16
->> +CONFIG_BLK_DEV_INITRD=y
->> +CONFIG_RD_BZIP2=y
->> +CONFIG_RD_LZMA=y
->> +CONFIG_RD_XZ=y
->> +CONFIG_RD_LZO=y
->
-> Not sure why you need all of these 4 compression algorithms, LZO is
-> the fastest one, LZMA has the largest compression ratio.
->
->> +CONFIG_EXPERT=y
->> +CONFIG_KALLSYMS_ALL=y
->> +CONFIG_PERF_EVENTS=y
->> +# CONFIG_COMPAT_BRK is not set
->> +CONFIG_MODULES=y
->> +CONFIG_MODULE_UNLOAD=y
->> +CONFIG_MODVERSIONS=y
->> +# CONFIG_LBDAF is not set
->> +# CONFIG_BLK_DEV_BSG is not set
->> +# CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
->> +# CONFIG_SUSPEND is not set
->> +CONFIG_NET=y
->> +CONFIG_PACKET=y
->> +CONFIG_UNIX=y
->> +CONFIG_INET=y
->> +CONFIG_IP_PNP=y
->> +CONFIG_IP_PNP_DHCP=y
->> +CONFIG_SYN_COOKIES=y
->> +# CONFIG_INET_XFRM_MODE_TRANSPORT is not set
->> +# CONFIG_INET_XFRM_MODE_TUNNEL is not set
->> +# CONFIG_INET_XFRM_MODE_BEET is not set
->> +# CONFIG_INET_DIAG is not set
->> +# CONFIG_IPV6 is not set
->> +# CONFIG_WIRELESS is not set
->> +CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
->> +CONFIG_DEVTMPFS=y
->> +CONFIG_DEVTMPFS_MOUNT=y
->> +# CONFIG_STANDALONE is not set
->> +CONFIG_BLK_DEV_LOOP=y
->> +# CONFIG_INPUT_MOUSEDEV is not set
->> +# CONFIG_INPUT_KEYBOARD is not set
->> +# CONFIG_INPUT_MOUSE is not set
->> +# CONFIG_SERIO is not set
->> +CONFIG_VT_HW_CONSOLE_BINDING=y
->> +CONFIG_LEGACY_PTY_COUNT=8
->> +# CONFIG_DEVKMEM is not set
->> +CONFIG_SERIAL_8250=y
->> +CONFIG_SERIAL_8250_CONSOLE=y
->> +CONFIG_SERIAL_8250_RUNTIME_UARTS=1
->> +# CONFIG_HW_RANDOM is not set
->> +CONFIG_RAMOOPS=y
->> +# CONFIG_HWMON is not set
->> +# CONFIG_MFD_SUPPORT is not set
->> +# CONFIG_VGA_CONSOLE is not set
->> +# CONFIG_HID_SUPPORT is not set
->> +# CONFIG_USB_SUPPORT is not set
->> +# CONFIG_IOMMU_SUPPORT is not set
->> +CONFIG_EXT2_FS=y
->> +CONFIG_EXT2_FS_XATTR=y
->> +CONFIG_EXT2_FS_POSIX_ACL=y
->> +CONFIG_EXT2_FS_SECURITY=y
->> +CONFIG_EXT3_FS=y
->> +CONFIG_EXT3_FS_POSIX_ACL=y
->> +CONFIG_EXT3_FS_SECURITY=y
->
-> Seems we have EXT4 now, but PMON may not support it currently ;)
->
->> +# CONFIG_DNOTIFY is not set
->> +CONFIG_PROC_KCORE=y
->> +CONFIG_TMPFS=y
->> +CONFIG_TMPFS_POSIX_ACL=y
->> +# CONFIG_MISC_FILESYSTEMS is not set
->> +# CONFIG_NETWORK_FILESYSTEMS is not set
->> +# CONFIG_ENABLE_WARN_DEPRECATED is not set
->> +# CONFIG_ENABLE_MUST_CHECK is not set
->> +CONFIG_UNUSED_SYMBOLS=y
->> +CONFIG_DEBUG_FS=y
->> +CONFIG_DETECT_HUNG_TASK=y
->> +CONFIG_SCHEDSTATS=y
->> +CONFIG_TIMER_STATS=y
->> +CONFIG_DEBUG_INFO=y
->> +CONFIG_DEBUG_MEMORY_INIT=y
->> +CONFIG_BOOT_PRINTK_DELAY=y
->> +CONFIG_SYSCTL_SYSCALL_CHECK=y
->> +# CONFIG_FTRACE is not set
->> +CONFIG_KGDB=y
->> +CONFIG_KGDB_LOW_LEVEL_TRAP=y
->> +CONFIG_KGDB_KDB=y
->
-> If this config is for product, the above debug support may be not required.
->
-> Best Regards,
-> Wu Zhangjin
->
->> +CONFIG_KDB_KEYBOARD=y
->> +# CONFIG_EARLY_PRINTK is not set
->> --
->> 1.7.4.1
->>
->>
->
+The problem with the bonus is that, as mentioned previously, it doesn't 
+protect against ANYTHING for the case you're trying to fix.  This won't 
+panic the machine because all killable threads are guaranteed to have a 
+non-zero badness score, but it's a very valid configuration to have either
 
+ - all eligible threads (system-wide, shared cpuset, shared mempolicy 
+   nodes) are frozen, or
 
--- 
-Best Regards!
-Kelvin
+ - all eligible frozen threads use <5% of memory whereas all other 
+   eligible killable threads use 1% of available memory.
+
+and that means the oom killer will repeatedly select those threads and the 
+livelock still exists unless you can guarantee that they are successfully 
+thawed, that thawing them in all situations is safe, and that once thawed 
+they will make a timely exit.
+
+Additionally, I don't think biasing against frozen tasks makes sense from 
+a heusritic standpoint of the oom killer.  Why would we want give 
+non-frozen tasks that are actually getting work done a preference over a 
+task that is frozen and doing absolutely nothing?  It seems like that's 
+backwards and that we'd actually prefer killing the task doing nothing so 
+it can free its memory.
