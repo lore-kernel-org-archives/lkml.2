@@ -1,69 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752988Ab1IZThl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 15:37:41 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:49459 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752907Ab1IZThk (ORCPT
+	id S1753036Ab1IZTiP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 15:38:15 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:40892 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752958Ab1IZTiN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 15:37:40 -0400
-Date: Mon, 26 Sep 2011 20:37:33 +0100
-From: Jamie Iles <jamie@jamieiles.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Jamie Iles <jamie@jamieiles.com>, Mike Turquette <mturquette@ti.com>,
-        linux-kernel@vger.kernel.org, paul@pwsan.com,
-        linaro-dev@lists.linaro.org, linus.walleij@stericsson.com,
-        patches@linaro.org, eric.miao@linaro.org,
-        broonie@opensource.wolfsonmicro.com, magnus.damm@gmail.com,
-        arnd.bergmann@linaro.org, skannan@quicinc.com, linux@arm.linux.org.uk,
-        jeremy.kerr@canonical.com, tglx@linutronix.de,
-        linux-arm-kernel@lists.infradead.org, sboyd@quiinc.com
-Subject: Re: [PATCH v2 4/7] clk: Add simple gated clock
-Message-ID: <20110926193733.GC9194@gallagher>
-References: <1316730422-20027-1-git-send-email-mturquette@ti.com>
- <1316730422-20027-5-git-send-email-mturquette@ti.com>
- <4E80C564.3050004@gmail.com>
- <20110926184024.GB9194@gallagher>
- <4E80CE28.9030103@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E80CE28.9030103@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 26 Sep 2011 15:38:13 -0400
+Subject: Re: [PATCH 1/2] virtio-net: Verify page list size before fitting
+ into skb
+From: Sasha Levin <levinsasha928@gmail.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        kvm@vger.kernel.org
+In-Reply-To: <20110926184445.GA22278@redhat.com>
+References: <1317058869-19276-1-git-send-email-levinsasha928@gmail.com>
+	 <20110926184445.GA22278@redhat.com>
+Content-Type: text/plain; charset="us-ascii"
+Date: Mon, 26 Sep 2011 22:37:22 +0300
+Message-ID: <1317065842.20885.3.camel@lappy>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 26, 2011 at 02:10:32PM -0500, Rob Herring wrote:
-> On 09/26/2011 01:40 PM, Jamie Iles wrote:
-> > On Mon, Sep 26, 2011 at 01:33:08PM -0500, Rob Herring wrote:
-> >>> +static void clk_gate_set_bit(struct clk_hw *clk)
-> >>> +{
-> >>> +	struct clk_gate *gate = to_clk_gate(clk);
-> >>> +	u32 reg;
-> >>> +
-> >>> +	reg = __raw_readl(gate->reg);
-> >>> +	reg |= BIT(gate->bit_idx);
-> >>> +	__raw_writel(reg, gate->reg);
-> >>
-> >> Don't these read-mod-writes need a spinlock around it?
-> >>
-> >> It's possible to have an enable bits and dividers in the same register.
-> >> If you did a set_rate and while doing an enable/disable, there would be
-> >> a problem. Also, it may be 2 different clocks in the same register, so
-> >> the spinlock needs to be shared and not per clock.
+On Mon, 2011-09-26 at 21:44 +0300, Michael S. Tsirkin wrote:
+> On Mon, Sep 26, 2011 at 08:41:08PM +0300, Sasha Levin wrote:
+> > This patch verifies that the length of a buffer stored in a linked list
+> > of pages is small enough to fit into a skb.
 > > 
-> > Well the prepare lock will be held here and I believe that would be 
-> > sufficient.
+> > If the size is larger than a max size of a skb, it means that we shouldn't
+> > go ahead building skbs anyway since we won't be able to send the buffer as
+> > the user requested.
+> > 
+> > Cc: Rusty Russell <rusty@rustcorp.com.au>
+> > Cc: "Michael S. Tsirkin" <mst@redhat.com>
+> > Cc: virtualization@lists.linux-foundation.org
+> > Cc: netdev@vger.kernel.org
+> > Cc: kvm@vger.kernel.org
+> > Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
 > 
-> No, the enable spinlock is protecting enable/disable. But set_rate is
-> protected by the prepare mutex. So you clearly don't need locking if you
-> have a register of only 1 bit enables. If you have a register accessed
-> by both enable/disable and prepare/unprepare/set_rate, then you need
-> some protection.
+> Interesting.  This is a theoretical issue, correct?
+> Not a crash you actually see.
 
-OK fair point, but I would guess that if you had a clock like this then 
-you probably wouldn't use this simple gated clock would you?  (speaking 
-from my world where we have quite simple clocks ;-))
+Actually it was an actual crash caused when our virtio-net driver in kvm
+tools did funny things and passed '(u32)-1' length as a buffer length to
+the guest kernel.
 
-Jamie
+> This crash would mean device is giving us packets
+> that are way too large. Avoiding crashes even in the face of
+> a misbehaved device is a good idea, but should
+> we print a diagnostic to a system log?
+> Maybe rate-limited or print once to avoid filling
+> up the disk. Other places in driver print with pr_debug
+> I'm not sure that's right but better than nothing.
+
+Yup, I'll add some debug info.
+
+> > ---
+> >  drivers/net/virtio_net.c |    3 +++
+> >  1 files changed, 3 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> > index 0c7321c..64e0717 100644
+> > --- a/drivers/net/virtio_net.c
+> > +++ b/drivers/net/virtio_net.c
+> > @@ -165,6 +165,9 @@ static struct sk_buff *page_to_skb(struct virtnet_info *vi,
+> >  	unsigned int copy, hdr_len, offset;
+> >  	char *p;
+> >  
+> > +	if (len > MAX_SKB_FRAGS * PAGE_SIZE)
+> 
+> unlikely()?
+> 
+> Also, this seems too aggressive: at this point len includes the header
+> and the linear part. The right place for this
+> test is probably where we fill in the frags, just before
+> while (len)
+> 
+> The whole can only happen when mergeable buffers
+> are disabled, right?
+
+>From what I understand it can happen whenever you're going to build a
+skb longer than PAGE_SIZE.
+
+-- 
+
+Sasha.
+
