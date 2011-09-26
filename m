@@ -1,142 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752103Ab1IZRi3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 13:38:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11036 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751658Ab1IZRi2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 13:38:28 -0400
-Date: Mon, 26 Sep 2011 19:34:56 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <htejun@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: 3.1 && ptrace/jobctl problems
-Message-ID: <20110926173456.GA18216@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752190Ab1IZRme (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 13:42:34 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:35093 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751617Ab1IZRmc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 13:42:32 -0400
+From: Sasha Levin <levinsasha928@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Sasha Levin <levinsasha928@gmail.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: [PATCH 1/2] virtio-net: Verify page list size before fitting into skb
+Date: Mon, 26 Sep 2011 20:41:08 +0300
+Message-Id: <1317058869-19276-1-git-send-email-levinsasha928@gmail.com>
+X-Mailer: git-send-email 1.7.6.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+This patch verifies that the length of a buffer stored in a linked list
+of pages is small enough to fit into a skb.
 
-Can't understand how did we miss this, but WARN_ON_ONCE(!ptrace)
-in do_signal_stop() is not right. Debugger can resume the stopped
-task, and it can clone the _untraced_ thread running in the stopped
-group.
+If the size is larger than a max size of a skb, it means that we shouldn't
+go ahead building skbs anyway since we won't be able to send the buffer as
+the user requested.
 
-And even if the new thread is auto-attached, we have the problems
-with JOBCTL_STOP_SIGMASK.
-
-I do not want to discuss the "proper" solution here. I think the
-necessary changes are simple, but I do not think this is the 3.1
-material, and 3.1 needs some trivial fix.
-
-What do you think about the patch below? I am going to send it to
-Linus unless you see something wrong.
-
-
-
-
-And I'd like to explain why I prefer to add the (temporary) hack
-into __ptrace_unlink() instead of adding
-
-	if (unlikely(ptrace) && current->ptrace) {
-		...
-		child->jobctl = current->jobctl & JOBCTL_STOP_SIGMASK;
-		...
-	}
-
-into ptrace_init_task(). I think that jobctl & JOBCTL_STOP_SIGMASK"
-should be cleanuped. Look, once we set JOBCTL_STOP_SIGMASK we never
-clear it. Yes, this doesn't really matter but this can hide an error,
-for example this can "fool" the WARN_ON(!signr) in do_jobctl_trap().
-Imho, at least SIGCONT should clear this part of ->jobctl. IOW, it
-should be non-zero only if/when it has effect.
-
-That is why I do not want to change ptrace_init_task() until we
-decide what should we do with CLONE_THREAD && SIGNAL_STOP_STOPPED,
-to avoid the bogus (jobctl & JOBCTL_STOP_SIGMASK) != 0. IOW I prefer
-the change in __ptrace_unlink() to catch the other possible problems
-like this.
-
-Also, I'd like to defend 6634ae10
-"ptrace_init_task: initialize child->jobctl explicitly" which can
-be blamed for the 2nd problem. Afaics, this change is really needed
-and it fixes the bug. The changelog says "Currently this is harmless"
-but this is not right, dup_task_struct() can happen between SIGSTOP and
-SIGCONT, in this case the child can have the wrong JOBCTL_STOP_PENDING.
-
-So, what do you think?
-
-Oleg.
-
--------------------------------------------------------------------------------
-[PATCH for 3.1] ptrace_unlink: ensure JOBCTL_STOP_SIGMASK is not zero
-
-This is the temporary simple fix for 3.1, we need more changes in this
-area.
-
-1. do_signal_stop() assumes that the running untraced thread in the
-   stopped thread group is not possible. This was our goal but it is
-   not yet achieved: a stopped-but-resumed tracee can clone the running
-   thread which can initiate another group-stop.
-
-   Remove WARN_ON_ONCE(!current->ptrace).
-
-2. A new thread always starts with ->jobctl = 0. If it is auto-attached
-   and this group is stopped, __ptrace_unlink() sets JOBCTL_STOP_PENDING
-   but JOBCTL_STOP_SIGMASK part is zero, this triggers WANR_ON(!signr)
-   in do_jobctl_trap() if another debugger attaches.
-
-   Change __ptrace_unlink() to set the artificial SIGSTOP for report.
-
-   Alternatively we could change ptrace_init_task() to copy signr from
-   current, but this means we can copy it for no reason and hide the
-   possible similar problems.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: virtualization@lists.linux-foundation.org
+Cc: netdev@vger.kernel.org
+Cc: kvm@vger.kernel.org
+Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
 ---
+ drivers/net/virtio_net.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
- kernel/signal.c |    2 --
- kernel/ptrace.c |   13 ++++++++++++-
- 2 files changed, 12 insertions(+), 3 deletions(-)
-
---- 3.1/kernel/signal.c~2_traced_stop_and_clone	2011-09-25 19:14:32.000000000 +0200
-+++ 3.1/kernel/signal.c	2011-09-25 19:53:54.000000000 +0200
-@@ -1986,8 +1986,6 @@ static bool do_signal_stop(int signr)
- 		 */
- 		if (!(sig->flags & SIGNAL_STOP_STOPPED))
- 			sig->group_exit_code = signr;
--		else
--			WARN_ON_ONCE(!current->ptrace);
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index 0c7321c..64e0717 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -165,6 +165,9 @@ static struct sk_buff *page_to_skb(struct virtnet_info *vi,
+ 	unsigned int copy, hdr_len, offset;
+ 	char *p;
  
- 		sig->group_stop_count = 0;
- 
---- 3.1/kernel/ptrace.c~2_traced_stop_and_clone	2011-09-25 19:40:57.000000000 +0200
-+++ 3.1/kernel/ptrace.c	2011-09-25 20:05:25.000000000 +0200
-@@ -96,9 +96,20 @@ void __ptrace_unlink(struct task_struct 
- 	 */
- 	if (!(child->flags & PF_EXITING) &&
- 	    (child->signal->flags & SIGNAL_STOP_STOPPED ||
--	     child->signal->group_stop_count))
-+	     child->signal->group_stop_count)) {
- 		child->jobctl |= JOBCTL_STOP_PENDING;
- 
-+		/*
-+		 * This is only possible if this thread was cloned by the
-+		 * traced task running in the stopped group, set the signal
-+		 * for the future reports.
-+		 * FIXME: we should change ptrace_init_task() to handle this
-+		 * case.
-+		 */
-+		if (!(child->jobctl & JOBCTL_STOP_SIGMASK))
-+			child->jobctl |= SIGSTOP;
-+	}
++	if (len > MAX_SKB_FRAGS * PAGE_SIZE)
++		return NULL;
 +
- 	/*
- 	 * If transition to TASK_STOPPED is pending or in TASK_TRACED, kick
- 	 * @child in the butt.  Note that @resume should be used iff @child
+ 	p = page_address(page);
+ 
+ 	/* copy small packet so we can reuse these pages for small data */
+-- 
+1.7.6.1
 
