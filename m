@@ -1,43 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753189Ab1IZUKX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 16:10:23 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:48853 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752432Ab1IZUKW (ORCPT
+	id S1753085Ab1IZURg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 16:17:36 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:60171 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751077Ab1IZURf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 16:10:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAK3HsqvkpEiDWcCP_+eO0va4+io7pVV-aWCzQ1=DdpPi_jxy6g@mail.gmail.com>
-References: <CANLaLhaEnyPchqOPp65Y0hvotM30E5daX=XNG=fAAmf1dchxCA@mail.gmail.com>
- <20110926111522.2a053ceb@lxorguk.ukuu.org.uk> <CAK3HsqvkpEiDWcCP_+eO0va4+io7pVV-aWCzQ1=DdpPi_jxy6g@mail.gmail.com>
-From: Mike Snitzer <snitzer@gmail.com>
-Date: Mon, 26 Sep 2011 16:09:50 -0400
-Message-ID: <CAMM=eLdTkpV_oy7+N2QVeqmm4t0WkAJXUmGkxWcb=X8Vp81x7A@mail.gmail.com>
-Subject: Re: Detection of Advanced Format drives
-To: Joshua Scoggins <theoretically.x64@gmail.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Arun <engineerarun@gmail.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 26 Sep 2011 16:17:35 -0400
+Subject: Re: [PATCH 0/6] [RFC] Proposal for optimistic suspend idea.
+From: Peter Zijlstra <peterz@infradead.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: lkml <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        arve@android.com, markgross@thegnar.org,
+        Alan Stern <stern@rowland.harvard.edu>, amit.kucheria@linaro.org,
+        farrowg@sg.ibm.com, "Dmitry Fink (Palm GBU)" <Dmitry.Fink@palm.com>,
+        linux-pm@lists.linux-foundation.org, khilman@ti.com,
+        Magnus Damm <damm@opensource.se>, mjg@redhat.com,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Mon, 26 Sep 2011 22:16:04 +0200
+In-Reply-To: <1317064434-1829-1-git-send-email-john.stultz@linaro.org>
+References: <1317064434-1829-1-git-send-email-john.stultz@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1317068164.1763.39.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 26, 2011 at 3:48 PM, Joshua Scoggins
-<theoretically.x64@gmail.com> wrote:
-> Keep in mind that some AF drives will not report their actual sector
-> sizes. I have this issue with the WD AV-25 series. This is to provide
-> compatibility with older operating systems that don't support AF
-> drives. These are called generation 1 devices. Newer drives will
-> directly report their sector size as 4096 through the drive identify
-> data older ones will say 512. At that point you just need to do a
-> google search to see if it's AF or not.
+On Mon, 2011-09-26 at 12:13 -0700, John Stultz wrote:
+> 
+> For now, I'd just be interested in what folks think about the concept with
+> regards to the wakelock discussions. Where it might not be sufficient? Or
+> what other disadvantages might it have? Are there any varients to this
+> idea that would be better? 
 
-Linux should publish the discrepancy with these <disk> specific sysfs files:
+I would like to know why people still think wakelocks are remotely sane?
 
-/sys/block/<disk>/queue/logical_block_size=512
-/sys/block/<disk>/queue/physical_block_size=4096
+>From where I'm sitting they're utter crap.. _WHY_ do you need to suspend
+anything? What's wrong with regular idle?
 
-But are you saying you have an AF disk that doesn't publish this
-discrepancy via the IDENTIFY DEVICE (ATA) or READ CAPACITY 16 (SCSI)
-command?
+So no, you've got a massive major NAK for anything touching the
+scheduler for this utter braindamage.
