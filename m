@@ -1,109 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751347Ab1IZNgf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 09:36:35 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:46134 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750952Ab1IZNge (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 09:36:34 -0400
-X-Authority-Analysis: v=1.1 cv=lfM0d0QHaVz67dfwwr9cyIw6NbaGR/pZhMD6XWNi0kk= c=1 sm=0 a=v1jNb7L17ooA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=TDnvZG57wSb01ToM4ykA:9 a=kXKlPUSn6gp_LzTj8SUA:7 a=PUjeQqilurYA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.83.30
-Subject: Re: [PATCHv2 1/2] perf tools: Collect tracing event data files
- directly
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: acme@redhat.com, eric.dumazet@gmail.com, fweisbec@gmail.com,
-        a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        linux-kernel@vger.kernel.org, nhorman@tuxdriver.com
-Date: Mon, 26 Sep 2011 09:36:31 -0400
-In-Reply-To: <1317028312-5156-2-git-send-email-jolsa@redhat.com>
-References: <20110925133406.GB2702@jolsa.brq.redhat.com>
-	 <1317028312-5156-1-git-send-email-jolsa@redhat.com>
-	 <1317028312-5156-2-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.0.3- 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1317044192.26514.1.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
+	id S1751334Ab1IZNiy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 09:38:54 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:34923 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750952Ab1IZNix (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 09:38:53 -0400
+Date: Mon, 26 Sep 2011 18:53:37 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>, Hugh Dickins <hughd@google.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v5 3.1.0-rc4-tip 3/26]   Uprobes: register/unregister
+ probes.
+Message-ID: <20110926132337.GA13535@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com>
+ <20110920120022.25326.35868.sendpatchset@srdronam.in.ibm.com>
+ <1317042900.1763.7.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1317042900.1763.7.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-09-26 at 11:11 +0200, Jiri Olsa wrote:
-> Changing the way the event files are searched by quering specified
-> event files directly, instead of walking the events directory.
+* Peter Zijlstra <peterz@infradead.org> [2011-09-26 15:15:00]:
+
+> On Tue, 2011-09-20 at 17:30 +0530, Srikar Dronamraju wrote:
 > 
-> Hopefully this way is more straightforward and faster.
+> > +static struct vma_info *__find_next_vma_info(struct list_head *head,
+> > +			loff_t offset, struct address_space *mapping,
+> > +			struct vma_info *vi)
+> > +{
+> > +	struct prio_tree_iter iter;
+> > +	struct vm_area_struct *vma;
+> > +	struct vma_info *tmpvi;
+> > +	loff_t vaddr;
+> > +	unsigned long pgoff = offset >> PAGE_SHIFT;
+> > +	int existing_vma;
+> > +
+> > +	vma_prio_tree_foreach(vma, &iter, &mapping->i_mmap, pgoff, pgoff) {
+> > +		if (!vma || !valid_vma(vma))
+> > +			return NULL;
+> > +
+> > +		existing_vma = 0;
+> > +		vaddr = vma->vm_start + offset;
+> > +		vaddr -= vma->vm_pgoff << PAGE_SHIFT;
+> > +		list_for_each_entry(tmpvi, head, probe_list) {
+> > +			if (tmpvi->mm == vma->vm_mm && tmpvi->vaddr == vaddr) {
+> > +				existing_vma = 1;
+> > +				break;
+> > +			}
+> > +		}
+> > +		if (!existing_vma &&
+> > +				atomic_inc_not_zero(&vma->vm_mm->mm_users)) {
+> > +			vi->mm = vma->vm_mm;
+> > +			vi->vaddr = vaddr;
+> > +			list_add(&vi->probe_list, head);
+> > +			return vi;
+> 
+> The the sole purpose of actually having that list is the above linear
+> was to test if we've already had this one?
+> 
+> Does that really matter? After all, if the probe is already installed
+> installing it again will return with -EEXIST, which should be easy
+> enough to deal with.
+> 
 
-Have you looked at my code I posted earlier that uses the libparsevents?
+No, There is a possibility of going in a forever loop.
+Since the the priotree can change when we drop the mapping->mutex, we
+dont pass the hint to vma_prio_tree_foreach.
+So we might keep getting the same vma again and again.
 
-It uses globs such that you could do -e sched:sched* and it will enable
-all sched events.
+> > +		}
+> > +	}
+> > +	return NULL;
+> > +}
+> > +
+> > +/*
+> > + * Iterate in the rmap prio tree  and find a vma where a probe has not
+> > + * yet been inserted.
+> > + */
+> > +static struct vma_info *find_next_vma_info(struct list_head *head,
+> > +			loff_t offset, struct address_space *mapping)
+> > +{
+> > +	struct vma_info *vi, *retvi;
+> > +	vi = kzalloc(sizeof(struct vma_info), GFP_KERNEL);
+> > +	if (!vi)
+> > +		return ERR_PTR(-ENOMEM);
+> > +
+> > +	INIT_LIST_HEAD(&vi->probe_list);
+> 
+> weird place for the INIT_LIST_HEAD, I would have expected it near where
+> the rest of vi is initialized, although it looks to be superfluous
+> anyway, since list_add() can handle an uninitialized entry.
+> 
+> 
+> > +	mutex_lock(&mapping->i_mmap_mutex);
+> > +	retvi = __find_next_vma_info(head, offset, mapping, vi);
+> > +	mutex_unlock(&mapping->i_mmap_mutex);
+> > +
+> > +	if (!retvi)
+> > +		kfree(vi);
+> > +	return retvi;
+> > +}
+> > +
+> > +static int __register_uprobe(struct inode *inode, loff_t offset,
+> > +				struct uprobe *uprobe)
+> > +{
+> > +	struct list_head try_list;
+> > +	struct vm_area_struct *vma;
+> > +	struct address_space *mapping;
+> > +	struct vma_info *vi, *tmpvi;
+> > +	struct mm_struct *mm;
+> > +	int ret = 0;
+> > +
+> > +	mapping = inode->i_mapping;
+> > +	INIT_LIST_HEAD(&try_list);
+> > +	while ((vi = find_next_vma_info(&try_list, offset,
+> > +							mapping)) != NULL) {
+> > +		if (IS_ERR(vi)) {
+> > +			ret = -ENOMEM;
+> > +			break;
+> > +		}
+> 
+> Here we hold neither i_mmap_mutex nor mmap_sem, so everything can change
+> under our feet. See below..
+> 
+> > +		mm = vi->mm;
+> > +		down_read(&mm->mmap_sem);
+> > +		vma = find_vma(mm, (unsigned long) vi->vaddr);
+> > +		if (!vma || !valid_vma(vma)) {
+> 
+> No validation if its indeed the same vma you found earlier? At the very
+> least we should validate the vma returned from find_vma() is indeed a
+> mapping of the inode we're after and that the offset is still to be
+> found at vaddr.
+> 
 
--- Steve
+Yes, this can be done.
 
+> > +			list_del(&vi->probe_list);
+> > +			kfree(vi);
+> > +			up_read(&mm->mmap_sem);
+> > +			mmput(mm);
+> > +			continue;
+> > +		}
+> > +		ret = install_breakpoint(mm);
+> > +		if (ret && (ret != -ESRCH || ret != -EEXIST)) {
+> > +			up_read(&mm->mmap_sem);
+> > +			mmput(mm);
+> > +			break;
+> > +		}
+> 
+> Right, so you already deal with -EEXIST, so why do we need that list at
+> all then?
+> 
+> Aah, its to make fwd progress, without it we would keep retrying the
+> same vma over and over,.. hmm?
+> 
 
+Yes.
 
-> +	 * and one safety byte ;)
-> +	 */
-> +	file = malloc_or_die(strlen(path) + strlen(sys) +
-> +			     strlen(name) + strlen("format") + 5);
->  
-> -		free(format);
-> -	}
-> -	closedir(dir);
-> +	sprintf(file, "%s/%s/%s/format", path, sys, name);
-> +	return file;
->  }
->  
-> -static void read_ftrace_files(struct tracepoint_path *tps)
-> +static void put_format_file(char *file)
->  {
-> -	char *path;
-> -
-> -	path = get_tracing_file("events/ftrace");
-> -
-> -	copy_event_system(path, tps);
-> -
-> -	put_tracing_file(path);
-> +	free(file);
->  }
->  
-> -static bool system_in_tp_list(char *sys, struct tracepoint_path *tps)
-> +/*
-> + * Walk tracepoint event objects and store them.
-> + * Only those matching the sys parameter are stored
-> + * and marked as done.
-> + */
-> +static void read_event_files_system(struct tracepoint_path *tps,
-> +				    const char *sys)
->  {
-> +	off_t count_pos;
-> +	u32 count = 0;
-> +
-> +	/* Place for number of events under single system. */
-> +	count_pos = lseek(output_fd, 0, SEEK_CUR);
-> +	write_or_die(&count, 4);
-> +
->  	while (tps) {
-> -		if (!strcmp(sys, tps->system))
-> -			return true;
-> +		if ((!tps->done) &&
-> +		    (!strcmp(sys, tps->system))) {
-> +			char *file;
-> +
-> +			file = get_format_file(tps->system, tps->name);
-> +			if (file) {
-> +				record_file(file, 8);
-> +				count++;
-> +			}
-> +
-> +			put_format_file(file);
-> +			tps->done = 1;
-> +		}
-> +
->  		tps = tps->next;
+> > +		ret = 0;
+> > +		up_read(&mm->mmap_sem);
+> > +		mmput(mm);
+> > +	}
+> > +	list_for_each_entry_safe(vi, tmpvi, &try_list, probe_list) {
+> > +		list_del(&vi->probe_list);
+> > +		kfree(vi);
+> > +	}
+> > +	return ret;
+> > +}
+> 
 
-
+-- 
+Thanks and Regards
+Srikar
