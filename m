@@ -1,47 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752917Ab1IZJqA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 05:46:00 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:43010
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752677Ab1IZJp7 (ORCPT
+	id S1752944Ab1IZJqc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 05:46:32 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35905 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752831Ab1IZJqb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 05:45:59 -0400
-Date: Mon, 26 Sep 2011 05:45:54 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [patch]mm: add more blk plug
-Message-ID: <20110926094554.GA30827@infradead.org>
-References: <1317004226.29510.172.camel@sli10-conroe>
- <20110926073025.GB21079@infradead.org>
- <1317022727.29510.175.camel@sli10-conroe>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1317022727.29510.175.camel@sli10-conroe>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 26 Sep 2011 05:46:31 -0400
+Subject: Re: [PATCH 5/5] slub: Only IPI CPUs that have per cpu obj to flush
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Gilad Ben-Yossef <gilad@benyossef.com>
+Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Chris Metcalf <cmetcalf@tilera.com>, linux-mm@kvack.org,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>
+Date: Mon, 26 Sep 2011 11:45:52 +0200
+In-Reply-To: <CAOtvUMeMsd0Jk1k4wP9Y+7NW3FYZZAqV1-cRj5Zt4+eaugWoPg@mail.gmail.com>
+References: <1316940890-24138-1-git-send-email-gilad@benyossef.com>
+	 <1316940890-24138-6-git-send-email-gilad@benyossef.com>
+	 <1317022420.9084.57.camel@twins>
+	 <CAOtvUMeMsd0Jk1k4wP9Y+7NW3FYZZAqV1-cRj5Zt4+eaugWoPg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1317030352.9084.76.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 26, 2011 at 03:38:47PM +0800, Shaohua Li wrote:
-> On Mon, 2011-09-26 at 15:30 +0800, Christoph Hellwig wrote:
-> > On Mon, Sep 26, 2011 at 10:30:26AM +0800, Shaohua Li wrote:
-> > > Some filesystems implement .writepages. We don't have blk plug
-> > > in such filesystems for .writepages.
-> > 
-> > Please add the plugging in the actual ->writepages instances.
-> there are several filesystems have ->writepages. Can you share an hint
-> why we don't add plugging in the do_writepages?
+On Mon, 2011-09-26 at 11:35 +0300, Gilad Ben-Yossef wrote:
+> Yes, the alloc in the flush_all path definitively needs to go. I
+> wonder if just to resolve that allocating the mask per cpu and not in
+> kmem_cache itself is not better - after all, all we need is a single
+> mask per cpu when we wish to do a flush_all and no per cache. The
+> memory overhead of that is slightly better. This doesn't cover the
+> cahce bounce issue.
+> 
+> My thoughts regarding that were that since the flush_all() was a
+> rather rare operation it is preferable to do some more
+> work/interference here, if it allows us to avoid having to do more
+> work in the hotter alloc/dealloc paths, especially since it allows us
+> to have less IPIs that I figured are more intrusive then cacheline
+> steals (are they?)
+> 
+> After all, for each CPU that actually needs to do a flush, we are
+> making the flush a bit more expensive because of the cache bounce just
+> before we send the IPI, but that IPI and further operations are an
+> expensive operations anyway. For CPUs that don't need to do a flush, I
+> replaced an IPI for a cacheline(s) steal. I figured it was still a
+> good bargain
 
-Because do_writepages is completely generic code with no knowledge of
-block I/O.  I really don't want to have block plugging be intimately
-tied into core VM/writeback code all over.  We've been there with
-->sync_page, and it was a major pain - nevermind the additional (small)
-overhead for the not block based filesystems.
+Hard to tell really, I've never really worked with these massive
+machines, biggest I've got is 2 nodes and for that I think your
+for_each_online_cpu() loop might indeed still be a win when compared to
+extra accounting on the alloc/free paths.
+
+The problem with a per-cpu cpumask is that you need to disable
+preemption over the whole for_each_online_cpu() scan and that's not
+really sane on very large machines as that can easily take a very long
+time indeed.
 
