@@ -1,46 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753216Ab1IZKP0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 06:15:26 -0400
-Received: from alice.et.bocholt.fh-gelsenkirchen.de ([193.175.197.63]:60433
-	"EHLO alice.et.bocholt.fh-gelsenkirchen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752312Ab1IZKPY (ORCPT
+	id S1753248Ab1IZKQi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 06:16:38 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:54127 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753136Ab1IZKQh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 06:15:24 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.3 alice.et.bocholt.fh-gelsenkirchen.de p8QAFAQF012787
-From: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
-To: Keith Packard <keithp@keithp.com>
+	Mon, 26 Sep 2011 06:16:37 -0400
+Date: Mon, 26 Sep 2011 11:15:22 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Arun <engineerarun@gmail.com>
 Cc: linux-kernel@vger.kernel.org
-Subject: Re: drm/i915: problems after closing/opening lid
-In-Reply-To: <yunk48wkz5t.fsf@aiko.keithp.com> (Keith Packard's message of
-	"Sun, 25 Sep 2011 15:58:06 -0700")
-References: <gibou8tkk4.fsf@mx10.gouders.net>
-	<yunk48wkz5t.fsf@aiko.keithp.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-Date: Mon, 26 Sep 2011 12:15:09 +0200
-Message-ID: <gioby73902.fsf@karga.hank.lab>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Greylist: Sender succeeded STARTTLS authentication, not delayed by milter-greylist-4.2.3 (alice.et.bocholt.fh-gelsenkirchen.de [192.168.0.63]); Mon, 26 Sep 2011 12:15:12 +0200 (CEST)
+Subject: Re: Detection of Advanced Format drives
+Message-ID: <20110926111522.2a053ceb@lxorguk.ukuu.org.uk>
+In-Reply-To: <CANLaLhaEnyPchqOPp65Y0hvotM30E5daX=XNG=fAAmf1dchxCA@mail.gmail.com>
+References: <CANLaLhaEnyPchqOPp65Y0hvotM30E5daX=XNG=fAAmf1dchxCA@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Keith Packard <keithp@keithp.com> writes:
+On Mon, 26 Sep 2011 15:25:52 +0530
+Arun <engineerarun@gmail.com> wrote:
 
-> On Sun, 25 Sep 2011 22:48:43 +0200, Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de> wrote:
->
->> I bisected this to commit 9aa73a51c91cb0d0af4caaa9823969c1a1179a12.
->> I played with the params that were inverted in that commit and if I
->> change both or one of them via command line, there is no problem, the
->> problem only occurs if both of them have the new values.
->
-> You should be good if you run the drm-intel-fixes branch of my repo at
->
->         git://people.freedesktop.org/~keithp/linux
->
-> That disables FBC on your Ironlake GPU.
+> Is there any way to detect the Advanced Format hard drives with 4K
+> sector size? I understand that above kernel v. 2.6.31 it is supported.
+> But is it possible detect automatically if the drive is an AF drive
+> and how?
 
-Thanks, Keith, with that branch the problem has gone.
+It's in the drive identify data (see the ATA 8 specification documents)
 
-Dirk
