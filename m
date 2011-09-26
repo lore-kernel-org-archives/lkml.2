@@ -1,71 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692Ab1IZCNO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Sep 2011 22:13:14 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:44377 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751139Ab1IZCNN (ORCPT
+	id S1751154Ab1IZCSb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Sep 2011 22:18:31 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:62637 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750800Ab1IZCS3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Sep 2011 22:13:13 -0400
-Subject: [PATCH v2] mtd: r852: make r852_pm_ops static
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Maxim Levitsky <maximlevitsky@gmail.com>,
-        Artem Bityutskiy <artem.bityutskiy@intel.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 26 Sep 2011 10:13:03 +0800
-Message-ID: <1317003183.6468.1.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Sun, 25 Sep 2011 22:18:29 -0400
+Message-ID: <4E7FE0A4.4050105@cn.fujitsu.com>
+Date: Mon, 26 Sep 2011 10:17:08 +0800
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Reply-To: gaowanlong@cn.fujitsu.com
+Organization: FNST
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110322 Red Hat/3.1.9-3.el6_0 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: KyongHo Cho <pullip.cho@samsung.com>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ohad@wizery.com" <ohad@wizery.com>,
+        =?UTF-8?B?6rmA6rWt7KeE?= <kgene.kim@samsung.com>,
+        "joerg.roedel@amd.com" <joerg.roedel@amd.com>,
+        =?UTF-8?B?6rmA7JiB6529?= <younglak1004.kim@samsung.com>,
+        =?UTF-8?B?7J207IOB?= =?UTF-8?B?7ZiE?= 
+	<sanghyun75.lee@samsung.com>
+Subject: Re: [PATCH 3/4] iommu/exynos: Add iommu driver for Exynos4 Platforms
+References: <5525949.50001316849744994.JavaMail.weblogic@epml24>	<20110924093851.GB17169@n2100.arm.linux.org.uk> <CAHQjnOPMRQetGF5VnwsMD=_JxWC5C-LQ5WRyZhPs2HtCzis2Tg@mail.gmail.com>
+In-Reply-To: <CAHQjnOPMRQetGF5VnwsMD=_JxWC5C-LQ5WRyZhPs2HtCzis2Tg@mail.gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-09-26 10:16:43,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-09-26 10:16:54
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is not used outside this driver so no need to make the symbol global.
-Also make r852_suspend and r852_resume static.
+On 09/26/2011 08:44 AM, KyongHo Cho wrote:
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
-v2: Also make r852_suspend and r852_resume static
-
- drivers/mtd/nand/r852.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/mtd/nand/r852.c b/drivers/mtd/nand/r852.c
-index cae2e01..f20f393 100644
---- a/drivers/mtd/nand/r852.c
-+++ b/drivers/mtd/nand/r852.c
-@@ -1027,7 +1027,7 @@ void r852_shutdown(struct pci_dev *pci_dev)
- }
- 
- #ifdef CONFIG_PM
--int r852_suspend(struct device *device)
-+static int r852_suspend(struct device *device)
- {
- 	struct r852_device *dev = pci_get_drvdata(to_pci_dev(device));
- 
-@@ -1048,7 +1048,7 @@ int r852_suspend(struct device *device)
- 	return 0;
- }
- 
--int r852_resume(struct device *device)
-+static int r852_resume(struct device *device)
- {
- 	struct r852_device *dev = pci_get_drvdata(to_pci_dev(device));
- 
-@@ -1092,7 +1092,7 @@ static const struct pci_device_id r852_pci_id_tbl[] = {
- 
- MODULE_DEVICE_TABLE(pci, r852_pci_id_tbl);
- 
--SIMPLE_DEV_PM_OPS(r852_pm_ops, r852_suspend, r852_resume);
-+static SIMPLE_DEV_PM_OPS(r852_pm_ops, r852_suspend, r852_resume);
- 
- static struct pci_driver r852_pci_driver = {
- 	.name		= DRV_NAME,
--- 
-1.7.4.1
+> Hi.
+> 
+> On Sat, Sep 24, 2011 at 6:38 PM, Russell King - ARM Linux
+> <linux@arm.linux.org.uk> wrote:
+>> On Sat, Sep 24, 2011 at 07:35:45AM +0000, 조경호 wrote:
+>>> +# EXYNOS IOMMU support
+>>> +config EXYNOS_IOMMU
+>>> + bool "Exynos IOMMU Support"
+>>> + depends on ARCH_EXYNOS4
+>>> + select IOMMU_API
+>>> + select EXYNOS4_DEV_SYSMMU
+>>> + help
+>>
+>> Looks like your mailer converted tabs to one space.  This makes it more
+>> difficult to read this patch as a whole.  Don't expect good reviews as
+>> long as your mailer breaks stuff in this way.
+> Sorry for that :(
+> I will try another way to send patches correctly.
 
 
+Use *git send-email* instead.
 
+Thanks
