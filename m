@@ -1,43 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751501Ab1IZHBN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 03:01:13 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:47311 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933Ab1IZHBM (ORCPT
+	id S1751439Ab1IZHKU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 03:10:20 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:53365 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933Ab1IZHKT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 03:01:12 -0400
-Subject: Re: [PATCH] mxc_nand: preset_v1_v2: unlock all NAND flash blocks
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Michael Thalmeier <michael.thalmeier@hale.at>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>, linux-mtd@lists.infradead.org,
+	Mon, 26 Sep 2011 03:10:19 -0400
+MIME-Version: 1.0
+X-Originating-IP: [93.173.133.94]
+In-Reply-To: <1316792756-3395-9-git-send-email-joerg.roedel@amd.com>
+References: <1316792756-3395-1-git-send-email-joerg.roedel@amd.com> <1316792756-3395-9-git-send-email-joerg.roedel@amd.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Mon, 26 Sep 2011 10:09:58 +0300
+Message-ID: <CAK=WgbbZKa2orya_ijJ3vBeyERN2FYCKaSyn8gs=qsqJRC=kbQ@mail.gmail.com>
+Subject: Re: [PATCH 08/10] iommu/omap: Use bus_set_iommu instead of register_iommu
+To: Joerg Roedel <joerg.roedel@amd.com>
+Cc: iommu@lists.linux-foundation.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        David Brown <davidb@codeaurora.org>, joro@8bytes.org,
         linux-kernel@vger.kernel.org
-Date: Mon, 26 Sep 2011 10:03:59 +0300
-In-Reply-To: <1316778824-12518-1-git-send-email-michael.thalmeier@hale.at>
-References: <1316778824-12518-1-git-send-email-michael.thalmeier@hale.at>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1317020649.9442.1.camel@sauron>
-Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-09-23 at 13:53 +0200, Michael Thalmeier wrote:
-> From: Wolfram Stering <wolfram.stering@hale.at>
-> 
-> For NFC v1, the unlock end block address was 0x4000, which would only
-> unlock the first 32 blocks of the NAND flash.  Change that value to
-> 0xffff to unlock all available blocks, as is done for NFC v21 as well.
-> 
-> Signed-off-by: Michael Thalmeier <michael.thalmeier@hale.at>
+On Fri, Sep 23, 2011 at 6:45 PM, Joerg Roedel <joerg.roedel@amd.com> wrote:
+> -       register_iommu(&omap_iommu_ops);
+> +       bus_set_iommu(&platform_bus_type, &omap_iommu_ops);
 
-Pushed to l2-mtd-2.6.git tree, thanks!
+I'm not sure it makes a lot of sense to bind the iommu ops to the platform bus.
 
--- 
-Best Regards,
-Artem Bityutskiy
+Unlike the pci bus, the platform bus is not really a hardware bus:
+it's some kind of a catch-all pseudo bus which is mostly used to to
+describe a collection of autonomous peripherals on an SoC.
 
+As a result, IOMMU users on an SoC might actually not belong to the
+platform bus.
+
+More specifically, I'm not sure how this would work out with the
+upcoming generic IOMMU-based DMA API, which might be used by those
+non-platform-bus users.
+
+That said, the generic DMA API is not here yet, and nothing
+immediately breaks for us by doing this change, so if this helps you
+guys with the x86/pci iommu drivers than I'm ok with it: we can always
+change/fix this later when real issues come up with this model.
