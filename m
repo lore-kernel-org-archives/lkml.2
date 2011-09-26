@@ -1,73 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752129Ab1IZOkd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 10:40:33 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:7396 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752045Ab1IZOkb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 10:40:31 -0400
-Message-ID: <4E808EA6.4000301@gmail.com>
-Date: Mon, 26 Sep 2011 18:39:34 +0400
-From: Andrew Vagin <avagin@gmail.com>
-Reply-To: avagin@gmail.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Lightning/1.0b2 Thunderbird/3.1.7
+	id S1752086Ab1IZOl4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 10:41:56 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:50906 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751909Ab1IZOly convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 10:41:54 -0400
 MIME-Version: 1.0
-To: Glauber Costa <glommer@parallels.com>
-CC: linux-kernel@vger.kernel.org, paul@paulmenage.org, lizf@cn.fujitsu.com,
-        kamezawa.hiroyu@jp.fujitsu.com, ebiederm@xmission.com,
-        davem@davemloft.net, gthelen@google.com, netdev@vger.kernel.org,
-        linux-mm@kvack.org, kirill@shutemov.name
-Subject: Re: [PATCH v3 4/7] per-cgroup tcp buffers control
-References: <1316393805-3005-1-git-send-email-glommer@parallels.com> <1316393805-3005-5-git-send-email-glommer@parallels.com>
-In-Reply-To: <1316393805-3005-5-git-send-email-glommer@parallels.com>
-Content-Type: text/plain; charset=KOI8-R; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1317028849-13198-1-git-send-email-mcree@orcon.net.nz>
+References: <1317028849-13198-1-git-send-email-mcree@orcon.net.nz>
+From: Matt Turner <mattst88@gmail.com>
+Date: Mon, 26 Sep 2011 10:41:34 -0400
+Message-ID: <CAEdQ38GMtvqU7BN-EUg+Hy77ZLA=+A2oFpkv1EQQJthwRBhBsA@mail.gmail.com>
+Subject: Re: [PATCH 0/2] alpha: implement missing syscalls
+To: Michael Cree <mcree@orcon.net.nz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-alpha@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can't change net.ipv4.tcp_mem if a cgroup with memory controller 
-isn't mounted.
-
-[root@dhcp-10-30-20-19 ~]# sysctl -w net.ipv4.tcp_mem="3 2 3"
-error: "Invalid argument" setting key "net.ipv4.tcp_mem"
-
-It's because tcp_max_memory is initialized in mem_cgroup_populate:
-
-mem_cgroup_populate->register_kmem_files->sockets_populate->tcp_init_cgroup
-
-> +int sockets_populate(struct cgroup *cgrp, struct cgroup_subsys *ss)
-> +{
-> +	struct proto *proto;
-> +	int ret = 0;
-> +
-> +	read_lock(&proto_list_lock);
-> +	list_for_each_entry(proto,&proto_list, node) {
-> +		if (proto->init_cgroup)
-> +			ret |= proto->init_cgroup(proto, cgrp, ss);
-> +	}
-> +	if (!ret)
-> +		goto out;
-> +
-> +	list_for_each_entry_continue_reverse(proto,&proto_list, node)
-> +		if (proto->destroy_cgroup)
-> +			proto->destroy_cgroup(proto, cgrp, ss);
-> +
-> +out:
-> +	read_unlock(&proto_list_lock);
-> +	return ret;
-> +}
-
-> @@ -198,6 +203,21 @@ static int ipv4_tcp_mem(ctl_table *ctl, int write,
->   	if (ret)
->   		return ret;
+On Mon, Sep 26, 2011 at 5:20 AM, Michael Cree <mcree@orcon.net.nz> wrote:
+> Andrew,
 >
-> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-> +	rcu_read_lock();
-> +	cg = mem_cgroup_from_task(current);
-> +	for (i = 0; i<  3; i++)
-> +		if (vec[i]>  tcp_max_memory(cg)) {
-> +			rcu_read_unlock();
-> +			return -EINVAL;
-> +		}
+> Patches to implement missing syscalls on Alpha follow.  I am sending to you
+> as the first one (the accept4 syscall) is really urgent and I am assuming
+> that Matt's alpha-next repository is out of action at the moment.  If
+> acceptable please forward to Linus.
+>
+> I have tested the accept4 syscall with the test code in commit
+> de11defebf0000.
+>
+> The accept4 patch should also be sent to the stable queue. It would be good
+> to get that into 3.0.x as that is the kernel currently in Debian Unstable
+> where the missing accept4 syscall is starting to cause havoc.
+>
+> Cheers
+> Michael.
+>
+> Michael Cree (2):
+>  alpha: Wire up accept4 syscall.
+>  alpha: Wire up sendmmsg syscall
+>
+>  arch/alpha/include/asm/unistd.h |    4 +++-
+>  arch/alpha/kernel/systbls.S     |    2 ++
+>  2 files changed, 5 insertions(+), 1 deletions(-)
+>
+> --
 
+Both patches are
+Reviewed-by: Matt Turner <mattst88@gmail.com>
+
+Andrew, if you'd be so kind to take these, I'd be grateful.
+
+Thanks,
+Matt
