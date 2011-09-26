@@ -1,86 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752472Ab1IZS3E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 14:29:04 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:6086 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751607Ab1IZS3D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 14:29:03 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 26 Sep 2011 11:29:02 -0700
-Subject: Re: [PATCH v2] net:rfkill: add a gpio setup function into GPIO
- rfkill
-From: Rhyland Klein <rklein@nvidia.com>
-To: Sangwook Lee <sangwook.lee@linaro.org>
-Cc: Johannes Berg <johannes@sipsolutions.net>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1317051787-24142-1-git-send-email-sangwook.lee@linaro.org>
-References: <1317051787-24142-1-git-send-email-sangwook.lee@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 26 Sep 2011 11:27:17 -0700
-Message-ID: <1317061637.31414.1.camel@rklein-linux2>
+	id S1752526Ab1IZSax (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 14:30:53 -0400
+Received: from lo.gmane.org ([80.91.229.12]:36954 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751456Ab1IZSaw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 14:30:52 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Mark Wielaard <mjw@redhat.com>
+Subject: Re: [PATCH v5 3.1.0-rc4-tip 8/26]   x86: analyze instruction and determine fixups.
+Date: Mon, 26 Sep 2011 18:30:36 +0000 (UTC)
+Message-ID: <loom.20110926T174216-443@post.gmane.org>
+References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com> <20110920120127.25326.71509.sendpatchset@srdronam.in.ibm.com> <20110920171310.GC27959@stefanha-thinkpad.localdomain> <20110920181225.GA5149@infradead.org> <20110920205317.GA1508@stefanha-thinkpad.localdomain>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 92.254.121.210 (Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20100101 Firefox/7.0)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-09-26 at 08:43 -0700, Sangwook Lee wrote:
-> Add a gpio setup function which gives a chance to set up
-> platform specific configuration such as pin multiplexing,
-> input/output direction at the runtime or booting time.
+Stefan Hajnoczi <stefanha <at> linux.vnet.ibm.com> writes:
+> On Tue, Sep 20, 2011 at 02:12:25PM -0400, Christoph Hellwig wrote:
+> > Do we now have sdt.h support for uprobes?  That's one of the killer
+> > features that always seemed to get postponed.
 > 
-> Signed-off-by: Sangwook Lee <sangwook.lee@linaro.org>
-> 
-> v2:
-> - fixed the return type after checking gpio_runtime_setup
-> ---
->  include/linux/rfkill-gpio.h |    2 ++
->  net/rfkill/rfkill-gpio.c    |    8 ++++++++
->  2 files changed, 10 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/rfkill-gpio.h b/include/linux/rfkill-gpio.h
-> index a175d05..786e7bb 100644
-> --- a/include/linux/rfkill-gpio.h
-> +++ b/include/linux/rfkill-gpio.h
-> @@ -30,6 +30,7 @@
->   * @reset_gpio:		GPIO which is used for reseting rfkill switch
->   * @shutdown_gpio:	GPIO which is used for shutdown of rfkill switch
->   * @power_clk_name:	[optional] name of clk to turn off while blocked
-> + * @gpio_runtime_setup:	set up platform specific gpio configuration
->   */
->  
->  struct rfkill_gpio_platform_data {
-> @@ -38,6 +39,7 @@ struct rfkill_gpio_platform_data {
->  	int			shutdown_gpio;
->  	const char		*power_clk_name;
->  	enum rfkill_type	type;
-> +	int	(*gpio_runtime_setup)(struct platform_device *);
->  };
->  
->  #endif /* __RFKILL_GPIO_H */
-> diff --git a/net/rfkill/rfkill-gpio.c b/net/rfkill/rfkill-gpio.c
-> index 256c5dd..96a910c 100644
-> --- a/net/rfkill/rfkill-gpio.c
-> +++ b/net/rfkill/rfkill-gpio.c
-> @@ -101,6 +101,14 @@ static int rfkill_gpio_probe(struct platform_device *pdev)
->  	if (!rfkill)
->  		return -ENOMEM;
->  
-> +	if (pdata->gpio_runtime_setup) {
-> +		ret = pdata->gpio_runtime_setup(pdev);
-> +		if (ret) {
-> +			pr_warn("%s: can't set up gpio\n", __func__);
-> +			return ret;
-> +		}
-> +	}
-> +
->  	rfkill->pdata = pdata;
->  
->  	len = strlen(pdata->name);
+> Not yet but it's a question of doing roughly what SystemTap does to
+> parse the appropriate ELF sections and then putting those probes into
+> uprobes.
 
-Acked-by Rhyland Klein <rklein@nvidia.com>
+GDB now also implements this:
+http://sourceware.org/ml/gdb-patches/2011-04/msg00036.html
+
+Roland also posted a simple C based parser when he first suggested
+the new format:
+http://www.sourceware.org/ml/systemtap/2010-q3/msg00145.html
+
+There is a complete description of the elf note section, argument format
+and semaphore handling at:
+http://sourceware.org/systemtap/wiki/UserSpaceProbeImplementation
+
+Cheers,
+
+Mark
 
