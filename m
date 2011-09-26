@@ -1,123 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751541Ab1IZOTa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 10:19:30 -0400
-Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:52296 "EHLO
-	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751150Ab1IZOT1 (ORCPT
+	id S1751610Ab1IZOTq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 10:19:46 -0400
+Received: from cernmx32.cern.ch ([137.138.144.178]:56778 "EHLO
+	CERNMX32.cern.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751206Ab1IZOTo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 10:19:27 -0400
+	Mon, 26 Sep 2011 10:19:44 -0400
+Date: Mon, 26 Sep 2011 16:16:03 +0200
+From: Manohar Vanga <manohar.vanga@cern.ch>
+To: "Emilio G. Cota" <cota@braap.org>
+CC: <gregkh@suse.de>, <martyn.welch@ge.com>, <devel@driverdev.osuosl.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] staging: vme: make match() driver specific to
+ improve non-VME64x support
+Message-ID: <20110926141603.GB16310@becoht-mvanga>
+Mail-Followup-To: "Emilio G. Cota" <cota@braap.org>, gregkh@suse.de,
+	martyn.welch@ge.com, devel@driverdev.osuosl.org,
+	linux-kernel@vger.kernel.org
+References: <1314868526-13230-1-git-send-email-manohar.vanga@cern.ch>
+ <1314868526-13230-4-git-send-email-manohar.vanga@cern.ch>
+ <20110901222631.GA1835@t61>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1109240020510.22872@utopia.booyaka.com>
-References: <1316691479-1849-1-git-send-email-keshava_mgowda@ti.com>
-	<1316691479-1849-2-git-send-email-keshava_mgowda@ti.com>
-	<1316691479-1849-3-git-send-email-keshava_mgowda@ti.com>
-	<alpine.DEB.2.00.1109221115320.10719@utopia.booyaka.com>
-	<CAP05o4+Zc2z6sBOX_rQeoDQ9PneypcLRCyBbaaB2m+ZjeXZnaw@mail.gmail.com>
-	<alpine.DEB.2.00.1109240020510.22872@utopia.booyaka.com>
-Date: Mon, 26 Sep 2011 19:49:23 +0530
-Message-ID: <CAP05o4Lwk2uUz5ou84GQsrsBdjW-FEYP-55pBzH+a74hP4g1Dw@mail.gmail.com>
-Subject: Re: [PATCH 2/5 v11] arm: omap: usb: ehci and ohci hwmod structures
- for omap3
-From: "Munegowda, Keshava" <keshava_mgowda@ti.com>
-To: Paul Walmsley <paul@pwsan.com>, Tero Kristo <t-kristo@ti.com>,
-        b-cousson@ti.com, balbi@ti.com, parthab@india.ti.com
-Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gadiyar@ti.com, sameo@linux.intel.com,
-        tony@atomide.com, khilman@ti.com, johnstul@us.ibm.com,
-        vishwanath.bs@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20110901222631.GA1835@t61>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [137.138.192.18]
+Keywords: CERN SpamKiller Note: -50
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 24, 2011 at 12:00 PM, Paul Walmsley <paul@pwsan.com> wrote:
-> On Fri, 23 Sep 2011, Munegowda, Keshava wrote:
->
->> On Thu, Sep 22, 2011 at 11:31 PM, Paul Walmsley <paul@pwsan.com> wrote:
->>
->> But the question arises here , why do we need these ehci and ohci as two
->> different hwmods containing only irq and base address? It is required
->> for future - to implement remote wakeup feature for ehci and ohci ports
->> depending on irq-chain handler patches by Tero. Separate hwmods for ehci
->> and ohci are needed to enable prcm chain-handler to uniquely identify
->> the wakeup source as ehci or ohci and call only the corresponding
->> interrupt handler. We will be using omap_hwmod_mux_init for ehci and
->> ohci hwmods to enable I/O wakeup capability for respective IO-pads.
->> Depending on the particular wakeup source(ehci/ohci), the corresponding
->> ehci or ohci irq handler will be called.
->>
->> If ehci and ohci are combined with usbhs hwmod as a single hwmod , then
->> for every wakeup (either ehci or ohci port wakeup) only the first
->> interrupt handler will be called (please look at the function
->> omap_hwmod_mux_handle_irq of
->>
->> /arch/arm/mach-omap2/mux.c file ; in tero's latest patch:
->> http://www.mail-archive.com/linux-omap@vger.kernel.org/msg53139.html)
->> , so in this
->> case, if ehci interrupt is the first interrupt , then even for ohci wakeup
->> , only ehci interrupt will get called; which will break the functionality.
->
-> Any reason why this couldn't be handled either by:
->
-> 1. adding an IRQ number field to struct omap_hwmod_mux_info, and changing
-> _omap_hwmod_mux_handle_irq() to raise that IRQ number?
+Hey Emilio,
 
+> > +	/* Initialize the list for bridge devices */
+> > +	INIT_LIST_HEAD(&tsi148_bridge->devices);
+> > +
+> 
+> Probably it makes more sense to handle this in vme.c:vme_add_bus(), since
+> the particular bridge drivers do not manage at all the device list.
 
-yes, it is possible by changing the existing irq-chain handler by tero Kristo
+I thought of doing this but decided to go the other way for some forgotten
+reason. I think it was the fact that there would be a gap between allocation
+and initialization that bothered me.
 
-I am looping tero too.
+Anyway, I've changed it and it is now done in vme_add_bus().
 
-So here are new requirements for the irq-chain handler
+> > -#define USER_BUS_MAX                  1
+> > +#define VME_USER_BUS_MAX	1
+> 
+> this could be another patch, but duh..
 
-1. The hwmod should have have option to have multiple mux structures
+Done.
 
-This is something like:
+> >  int vme_register_bridge(struct vme_bridge *bridge)
+> >  {
+> > -	struct vme_dev *vdev;
+> > -	int retval;
+> > -	int i;
+> > +	return vme_add_bus(bridge);
+> > +}
+> > +EXPORT_SYMBOL(vme_register_bridge);
+> 
+> Consider sending a subsequent patch cleaning up functions like these.
+> But don't do it in this patch; this patch, if anything, needs to go
+> on a diet.
+> 
+> > -	retval = vme_add_bus(bridge);
+> > -	if (retval)
+> > -		return retval;
+> > +void vme_unregister_bridge(struct vme_bridge *bridge)
+> > +{
+> > +	vme_remove_bus(bridge);
+> > +}
+> > +EXPORT_SYMBOL(vme_unregister_bridge);
+> 
+> ditto
 
-The existing mux structure definition in omap_hwmod [file:
-/arch/arm/plat-omap/include/plat/omap_hwmod.h ] structure
+I'm not sure I understood this entirely. This replaces the old function
+with the new one. There isn't any cleanup here. Or did I understand something
+wrongly?
 
-	struct omap_hwmod_mux_info	*mux;
+> > +/* - Driver Registration --------------------------------------------------- */
+> 
+> I know you're keeping this comment from what's already in the file,
+> but personally I simply find it distracting.
 
-it should changed to
+Well there are others as well, so I've left it there for now.
 
-	struct omap_hwmod_mux_info	**pmux;
-         U32                                            mux_cnt;
+> > +		} else
+> > +			device_unregister(&vdev->dev);
+> > +	}
+> > +	return 0;
+> >  
+> > -err_reg:
+> > +err_dev_reg:
+> 
+> Leaving the previous label would be better, it's easier to review.
+> 
+> >  	kfree(vdev);
+> > -err_devalloc:
+> > -	while (--i >= 0) {
+> > -		vdev = bridge->dev[i];
+> > +err_alloc:
+> 
+> ditto
 
+Done.
 
-pmux - pointers to mux ; array of mux structures.
-mux_cnt - number of mux per hwmod.
+> > -int vme_register_driver(struct vme_driver *drv)
+> > +int vme_register_driver(struct vme_driver *drv, unsigned int ndevs)
+> >  {
+> > +	int err;
+> > +
+> >  	drv->driver.name = drv->name;
+> >  	drv->driver.bus = &vme_bus_type;
+> > +	INIT_LIST_HEAD(&drv->devices);
+> > +
+> > +	err = driver_register(&drv->driver);
+> > +	if (err)
+> > +		return err;
+> >  
+> > -	return driver_register(&drv->driver);
+> > +	err = __vme_register_driver(drv, ndevs);
+> > +	if (err)
+> > +		vme_unregister_driver(drv);
+> 
+> If __vme_register_driver() fails, we can be sure the created devices
+> (and their corresponding lists) have been cleaned up before the
+> function returned the failure. So here it seems clearer to call
+> unregister_driver().
 
+Agreed. Fixed in the resend.
 
-2. The mux  omap_hwmod_mux_info  structure should have new member
-called irq, like as follows:
+> >  void vme_unregister_driver(struct vme_driver *drv)
+> >  {
+> > +	struct vme_dev *dev, *dev_tmp;
+> > +
+> > +	list_for_each_entry_safe(dev, dev_tmp, &drv->devices, drv_list) {
+> > +		list_del(&dev->drv_list);
+> > +		list_del(&dev->bridge_list);
+> > +		device_unregister(&dev->dev);
+> > +	}
+> 
+> All code operating on both lists is protected by vme_buses_lock, except the
+> one in this function, which seems dangerous. vme_unregister_driver may race
+> with vme_unregister_bridge. We need to acquire the lock here too.
 
-struct omap_hwmod_mux_info {
-	int				nr_pads;
-	...
-        ....
-        u32                           irq;
+Fixed.
 
-};
+> >  struct vme_device_id {
+> > +	int num;
+> >  	int bus;
+> >  	int slot;
+> 
+> As I mentioned earlier, AFAICT the slot field is meaningless now.
+> Consider submitting a subsequent patch that removes it.
 
-Upon wakeup of the I/O pad of the mux , the irq-chain handler should
-invoke the irq handler of the irq numbered <map_hwmod_mux_info.irq>
+Done. See resend.
 
-3.  There should be "SOME WAY" to supply the irqs  from hwmod
-structure (omap_hwmod) to mux structure (omap_hwmod_mux_info)
+> >  int vme_slot_get(struct vme_dev *);
+> 
+> AFAICT this is an exported symbol that after this patch has no callers
+> and no meaning. Consider submitting a subsequent patch that removes it,
+> possibly together with the removal of struct vme_device_id.slot.
+> btw remember to update the documentation, I'm sure I'd forget.
 
+This returns the geographical location of the bridge device. Would this
+be useful for VME64x crates? I see it isn't used anywhere so I can't imagine
+when it might be needed. Maybe Martyn can clarify?
 
-if you , tero and other opensource people are aligned on the proposed
-changes on the irq-handler ;
-then it is possible to have two hwmods ( usbhs and tll) for usbhost driver.
-please let me know you comments on the above approach.
-
-
->
-> or
->
-> 2. using shared interrupts?
->
->
-> - Paul
->
+-- 
+/manohar
