@@ -1,261 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752966Ab1IZTci (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 15:32:38 -0400
-Received: from nm36-vm0.bullet.mail.ne1.yahoo.com ([98.138.229.112]:35551 "HELO
-	nm36-vm0.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752931Ab1IZTch (ORCPT
+	id S1752962Ab1IZTgG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 15:36:06 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:50105 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752865Ab1IZTgE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 15:32:37 -0400
-X-Greylist: delayed 345 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Sep 2011 15:32:36 EDT
-X-Yahoo-Newman-Id: 951465.12921.bm@omp1044.mail.ne1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: F_oL7cAVM1nM.Im5JwJZTJjm13NASuH0Q95n7WDzEZiqpdw
- 9n3izy3wZlFjELUIte4q31qpJc4VWJCtsrSVAcHngQmbIK1BBYiwe825OX4H
- mLD6dV6lZeTq6.xUT00vQITsXpxPcXHsS4GD3UeBGHgJa4Q.WovqbZuW7JM5
- Zzj5Ms9oOjEcra97t.0hlVzAwvR8hkP92X2Sp96knYQA.ZGki_7Q4LoicMM.
- mBL1Yx15gZS..e4TALIv8zftYDr2HWmEJh9ptfk6tfwtm4GwulNRdyVATsaA
- OpiX5uPHkW_y6o_ss317c79WBi9yMAhBIsUSJr7.6v7Z.4eSWV9wWG._nS7O
- xTAqe20F9OH6.aDLukPDHj1jBbqjSGurbCpxbJ.ZE0YwtBX0SruzsrDKNuLV
- WjrKmZjzGCjaYq1TJwv7z0SxHvD5dLBTVlFMIlmav46oQpETGt9TYnLhfk4M
- y160M71lUWIp_Zz2ibFsmjNmrRRHjULXRZ4g1eYP5L08M7XxjYB4Jc6ZM.jA
- NsxQm0ouSoAOrn6jgHYd6i8nzg6Ael60gFSFNsYsSNieY_vB6fg--
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-Message-ID: <4E80D1F9.7010904@schaufler-ca.com>
-Date: Mon, 26 Sep 2011 12:26:49 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
+	Mon, 26 Sep 2011 15:36:04 -0400
+Date: Mon, 26 Sep 2011 15:34:53 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        stable@kernel.org
+Subject: Is: [PATCH] x86/paravirt: PTE updates in k(un)map_atomic need to be
+ synchronous, regardless of lazy_mmu mode. Was: Re: [PATCH] x86/paravirt:
+ Partially revert "remove lazy mode in interrupts"
+Message-ID: <20110926193453.GA9717@phenom.oracle.com>
+References: <1317042797-19975-1-git-send-email-konrad.wilk@oracle.com>
+ <4E80A6BD.3070703@goop.org>
 MIME-Version: 1.0
-To: Casey Schaufler <casey@schaufler-ca.com>
-CC: LKLM <linux-kernel@vger.kernel.org>,
-        LSM <linux-security-module@vger.kernel.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>
-Subject: Re: [PATCH] Smack: Repair processing of fcntl
-References: <4E779AF6.3030105@schaufler-ca.com>
-In-Reply-To: <4E779AF6.3030105@schaufler-ca.com>
-X-Enigmail-Version: 1.3.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E80A6BD.3070703@goop.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090204.4E80D3F2.0046,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/19/2011 12:41 PM, Casey Schaufler wrote:
->
-> Al Viro pointed out that the processing of fcntl done
-> by Smack appeared poorly designed. He was right. There
-> are three things that required change. Most obviously,
-> the list of commands that really imply writing is limited
-> to those involving file locking and signal handling.
-> The initialization if the file security blob was
-> incomplete, requiring use of a heretofore unused LSM hook.
-> Finally, the audit information coming from a helper
-> masked the identity of the LSM hook. This patch corrects
-> all three of these defects.
->
-> This is targeted for the smack-next tree pending comments.
->
-> Signed-off-by: Casey Schaufler <casey@schaufler-ca.com>
+On Mon, Sep 26, 2011 at 09:22:21AM -0700, Jeremy Fitzhardinge wrote:
+> On 09/26/2011 06:13 AM, Konrad Rzeszutek Wilk wrote:
+> > which has git commit b8bcfe997e46150fedcc3f5b26b846400122fdd9.
+> >
+> > The unintended consequence of removing the flushing of MMU
+> > updates when doing kmap_atomic (or kunmap_atomic) is that we can
+> > hit a dereference bug when processing a "fork()" under a heavy loaded
+> > machine. Specifically we can hit:
+> 
+> The patch is all OK, but I wouldn't have headlined it as a "partial
+> revert" - the important point is that the pte updates in k(un)map_atomic
+> need to be synchronous, regardless of whether we're in lazy_mmu mode.
+> 
+> The fact that b8bcfe997e4 introduced the problem is interesting to note,
+> but only somewhat relevant to the analysis of what's being fixed here.
 
-Applied to gitorious.org/smack-next/kernel.git
+Good point. How about
 
->
-> ---
->  security/smack/smack_lsm.c |   67 +++++++++++++++++++++++++++----------------
->  1 files changed, 42 insertions(+), 25 deletions(-)
->
-> diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-> index b9c5e14..a0d3eaa 100644
-> --- a/security/smack/smack_lsm.c
-> +++ b/security/smack/smack_lsm.c
-> @@ -1088,36 +1088,31 @@ static int smack_file_lock(struct file *file, unsigned int cmd)
->   * @cmd: what action to check
->   * @arg: unused
->   *
-> + * Generally these operations are harmless.
-> + * File locking operations present an obvious mechanism
-> + * for passing information, so they require write access.
-> + *
->   * Returns 0 if current has access, error code otherwise
->   */
->  static int smack_file_fcntl(struct file *file, unsigned int cmd,
->  			    unsigned long arg)
->  {
->  	struct smk_audit_info ad;
-> -	int rc;
-> +	int rc = 0;
->  
-> -	smk_ad_init(&ad, __func__, LSM_AUDIT_DATA_PATH);
-> -	smk_ad_setfield_u_fs_path(&ad, file->f_path);
->  
->  	switch (cmd) {
-> -	case F_DUPFD:
-> -	case F_GETFD:
-> -	case F_GETFL:
->  	case F_GETLK:
-> -	case F_GETOWN:
-> -	case F_GETSIG:
-> -		rc = smk_curacc(file->f_security, MAY_READ, &ad);
-> -		break;
-> -	case F_SETFD:
-> -	case F_SETFL:
->  	case F_SETLK:
->  	case F_SETLKW:
->  	case F_SETOWN:
->  	case F_SETSIG:
-> +		smk_ad_init(&ad, __func__, LSM_AUDIT_DATA_PATH);
-> +		smk_ad_setfield_u_fs_path(&ad, file->f_path);
->  		rc = smk_curacc(file->f_security, MAY_WRITE, &ad);
->  		break;
->  	default:
-> -		rc = smk_curacc(file->f_security, MAY_READWRITE, &ad);
-> +		break;
->  	}
->  
->  	return rc;
-> @@ -1315,6 +1310,24 @@ static int smack_file_receive(struct file *file)
->  	return smk_curacc(file->f_security, may, &ad);
->  }
->  
-> +/**
-> + * smack_dentry_open - Smack dentry open processing
-> + * @file: the object
-> + * @cred: unused
-> + *
-> + * Set the security blob in the file structure.
-> + *
-> + * Returns 0
-> + */
-> +static int smack_dentry_open(struct file *file, const struct cred *cred)
-> +{
-> +	struct inode_smack *isp = file->f_path.dentry->d_inode->i_security;
-> +
-> +	file->f_security = isp->smk_inode;
-> +
-> +	return 0;
-> +}
-> +
->  /*
->   * Task hooks
->   */
-> @@ -1455,15 +1468,17 @@ static int smack_kernel_create_files_as(struct cred *new,
->  /**
->   * smk_curacc_on_task - helper to log task related access
->   * @p: the task object
-> - * @access : the access requested
-> + * @access: the access requested
-> + * @caller: name of the calling function for audit
->   *
->   * Return 0 if access is permitted
->   */
-> -static int smk_curacc_on_task(struct task_struct *p, int access)
-> +static int smk_curacc_on_task(struct task_struct *p, int access,
-> +				const char *caller)
->  {
->  	struct smk_audit_info ad;
->  
-> -	smk_ad_init(&ad, __func__, LSM_AUDIT_DATA_TASK);
-> +	smk_ad_init(&ad, caller, LSM_AUDIT_DATA_TASK);
->  	smk_ad_setfield_u_tsk(&ad, p);
->  	return smk_curacc(smk_of_task(task_security(p)), access, &ad);
->  }
-> @@ -1477,7 +1492,7 @@ static int smk_curacc_on_task(struct task_struct *p, int access)
->   */
->  static int smack_task_setpgid(struct task_struct *p, pid_t pgid)
->  {
-> -	return smk_curacc_on_task(p, MAY_WRITE);
-> +	return smk_curacc_on_task(p, MAY_WRITE, __func__);
->  }
->  
->  /**
-> @@ -1488,7 +1503,7 @@ static int smack_task_setpgid(struct task_struct *p, pid_t pgid)
->   */
->  static int smack_task_getpgid(struct task_struct *p)
->  {
-> -	return smk_curacc_on_task(p, MAY_READ);
-> +	return smk_curacc_on_task(p, MAY_READ, __func__);
->  }
->  
->  /**
-> @@ -1499,7 +1514,7 @@ static int smack_task_getpgid(struct task_struct *p)
->   */
->  static int smack_task_getsid(struct task_struct *p)
->  {
-> -	return smk_curacc_on_task(p, MAY_READ);
-> +	return smk_curacc_on_task(p, MAY_READ, __func__);
->  }
->  
->  /**
-> @@ -1527,7 +1542,7 @@ static int smack_task_setnice(struct task_struct *p, int nice)
->  
->  	rc = cap_task_setnice(p, nice);
->  	if (rc == 0)
-> -		rc = smk_curacc_on_task(p, MAY_WRITE);
-> +		rc = smk_curacc_on_task(p, MAY_WRITE, __func__);
->  	return rc;
->  }
->  
-> @@ -1544,7 +1559,7 @@ static int smack_task_setioprio(struct task_struct *p, int ioprio)
->  
->  	rc = cap_task_setioprio(p, ioprio);
->  	if (rc == 0)
-> -		rc = smk_curacc_on_task(p, MAY_WRITE);
-> +		rc = smk_curacc_on_task(p, MAY_WRITE, __func__);
->  	return rc;
->  }
->  
-> @@ -1556,7 +1571,7 @@ static int smack_task_setioprio(struct task_struct *p, int ioprio)
->   */
->  static int smack_task_getioprio(struct task_struct *p)
->  {
-> -	return smk_curacc_on_task(p, MAY_READ);
-> +	return smk_curacc_on_task(p, MAY_READ, __func__);
->  }
->  
->  /**
-> @@ -1573,7 +1588,7 @@ static int smack_task_setscheduler(struct task_struct *p)
->  
->  	rc = cap_task_setscheduler(p);
->  	if (rc == 0)
-> -		rc = smk_curacc_on_task(p, MAY_WRITE);
-> +		rc = smk_curacc_on_task(p, MAY_WRITE, __func__);
->  	return rc;
->  }
->  
-> @@ -1585,7 +1600,7 @@ static int smack_task_setscheduler(struct task_struct *p)
->   */
->  static int smack_task_getscheduler(struct task_struct *p)
->  {
-> -	return smk_curacc_on_task(p, MAY_READ);
-> +	return smk_curacc_on_task(p, MAY_READ, __func__);
->  }
->  
->  /**
-> @@ -1596,7 +1611,7 @@ static int smack_task_getscheduler(struct task_struct *p)
->   */
->  static int smack_task_movememory(struct task_struct *p)
->  {
-> -	return smk_curacc_on_task(p, MAY_WRITE);
-> +	return smk_curacc_on_task(p, MAY_WRITE, __func__);
->  }
->  
->  /**
-> @@ -3440,6 +3455,8 @@ struct security_operations smack_ops = {
->  	.file_send_sigiotask = 		smack_file_send_sigiotask,
->  	.file_receive = 		smack_file_receive,
->  
-> +	.dentry_open =			smack_dentry_open,
-> +
->  	.cred_alloc_blank =		smack_cred_alloc_blank,
->  	.cred_free =			smack_cred_free,
->  	.cred_prepare =			smack_cred_prepare,
->
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+>From 09966678dd645b68a422c9bf0223b13e73387302 Mon Sep 17 00:00:00 2001
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Fri, 23 Sep 2011 17:02:29 -0400
+Subject: [PATCH] x86/paravirt: PTE updates in k(un)map_atomic need to be synchronous, regardless of lazy_mmu mode.
+
+This patch fixes an outstanding issue that has been reported since 2.6.37.
+Under a heavy loaded machine processing "fork()" calls could keepover with:
+
+BUG: unable to handle kernel paging request at f573fc8c
+IP: [<c01abc54>] swap_count_continued+0x104/0x180
+*pdpt = 000000002a3b9027 *pde = 0000000001bed067 *pte = 0000000000000000
+Oops: 0000 [#1] SMP
+Modules linked in:
+Pid: 1638, comm: apache2 Not tainted 3.0.4-linode37 #1
+EIP: 0061:[<c01abc54>] EFLAGS: 00210246 CPU: 3
+EIP is at swap_count_continued+0x104/0x180
+.. snip..
+Call Trace:
+ [<c01ac222>] ? __swap_duplicate+0xc2/0x160
+ [<c01040f7>] ? pte_mfn_to_pfn+0x87/0xe0
+ [<c01ac2e4>] ? swap_duplicate+0x14/0x40
+ [<c01a0a6b>] ? copy_pte_range+0x45b/0x500
+ [<c01a0ca5>] ? copy_page_range+0x195/0x200
+ [<c01328c6>] ? dup_mmap+0x1c6/0x2c0
+ [<c0132cf8>] ? dup_mm+0xa8/0x130
+ [<c013376a>] ? copy_process+0x98a/0xb30
+ [<c013395f>] ? do_fork+0x4f/0x280
+ [<c01573b3>] ? getnstimeofday+0x43/0x100
+ [<c010f770>] ? sys_clone+0x30/0x40
+ [<c06c048d>] ? ptregs_clone+0x15/0x48
+ [<c06bfb71>] ? syscall_call+0x7/0xb
+
+The problem is that in copy_page_range we turn lazy mode on, and then
+in swap_entry_free we call swap_count_continued which ends up in:
+
+         map = kmap_atomic(page, KM_USER0) + offset;
+
+and then later we touch *map.
+
+Since we are running in batched mode (lazy) we don't actually set up the
+PTE mappings and the kmap_atomic is not done synchronously and ends up
+trying to dereference a page that has not been set.
+
+Looking at kmap_atomic_prot_pfn, it uses 'arch_flush_lazy_mmu_mode' and
+doing the same in kmap_atomic_prot and __kunmap_atomic makes the problem
+go away.
+
+Interestingly, git commit b8bcfe997e46150fedcc3f5b26b846400122fdd9
+removed part of this to fix an interrupt issue - but it went to far
+and did not consider this scenario.
+
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: Ingo Molnar <mingo@redhat.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>
+CC: x86@kernel.org
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+CC: stable@kernel.org
+[v1: Redid the commit description per Jeremy's apt suggestion]
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/mm/highmem_32.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/mm/highmem_32.c b/arch/x86/mm/highmem_32.c
+index b499626..f4f29b1 100644
+--- a/arch/x86/mm/highmem_32.c
++++ b/arch/x86/mm/highmem_32.c
+@@ -45,6 +45,7 @@ void *kmap_atomic_prot(struct page *page, pgprot_t prot)
+ 	vaddr = __fix_to_virt(FIX_KMAP_BEGIN + idx);
+ 	BUG_ON(!pte_none(*(kmap_pte-idx)));
+ 	set_pte(kmap_pte-idx, mk_pte(page, prot));
++	arch_flush_lazy_mmu_mode();
+ 
+ 	return (void *)vaddr;
+ }
+@@ -88,6 +89,7 @@ void __kunmap_atomic(void *kvaddr)
+ 		 */
+ 		kpte_clear_flush(kmap_pte-idx, vaddr);
+ 		kmap_atomic_idx_pop();
++		arch_flush_lazy_mmu_mode();
+ 	}
+ #ifdef CONFIG_DEBUG_HIGHMEM
+ 	else {
+-- 
+1.7.4.1
 
