@@ -1,80 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752750Ab1IZVnm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 17:43:42 -0400
-Received: from nm26.access.bullet.mail.mud.yahoo.com ([66.94.237.91]:46897
-	"HELO nm26.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752517Ab1IZVnl (ORCPT
+	id S1752751Ab1IZVrl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 17:47:41 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40244 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752517Ab1IZVrk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 17:43:41 -0400
-X-Yahoo-Newman-Id: 618020.27316.bm@smtp101.biz.mail.bf1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 11EFkRkVM1n32zVLNWKmVEvR.3Km4mv7q0iz99P8uDnwtUN
- XehKFJLaF4JtxSqdoRVWRIDkv2lMFrFNqKwex78ihfHMdaR80LU8qxuWNHfP
- 0Ox4ZeYv4uD_PezRP0NnRZus7W7bp33qVwyPUm9pAG_CxLLP1K5j3oSyIkQ3
- VgFAwt4OwjNJN0RpWplKXOKDy3f9zmgDAtxIfMud7zfCthrbD7yYB3AFS3e1
- ZXqqIItudpUPtH65zPIJOkDoL8ve5pAr_hsaYe5MY3MLHUROwT_8i.a_bmHf
- 61hEkQYriUbwVbWkKGrL_gKvQKwiQ2G_Wi7.SIZaXrYos3zf5Wv_Dbaam0EQ
- 8bWIxSMHvjf8mpi4yjWf3Ynr5mkFeZKhWKhh9yMYPH0GDususi03n_KBaF0I
- mC1y7t1G5jmvRzZFw45KS.xpMBapzwtj_GgR.RBI-
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-Message-ID: <4E80F20B.9050608@schaufler-ca.com>
-Date: Mon, 26 Sep 2011 14:43:39 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
+	Mon, 26 Sep 2011 17:47:40 -0400
+Date: Mon, 26 Sep 2011 22:47:38 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Leo Yan <leoy@marvell.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
+Subject: Re: Questions for dummy codec driver
+Message-ID: <20110926214738.GA3517@opensource.wolfsonmicro.com>
+References: <1316502540.4269.1.camel@phoenix>
+ <4E794A96.9040206@marvell.com>
+ <20110921125607.GC25620@sirena.org.uk>
+ <4E7A9276.803@marvell.com>
 MIME-Version: 1.0
-To: LKLM <linux-kernel@vger.kernel.org>,
-        LSM <linux-security-module@vger.kernel.org>,
-        Casey Schaufler <casey@schaufler-ca.com>
-Subject: [PATCH] Smack: Provide information for UDS getsockopt(SO_PEERCRED)
-X-Enigmail-Version: 1.3.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E7A9276.803@marvell.com>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Sep 22, 2011 at 09:42:14AM +0800, Leo Yan wrote:
 
+> On our platform, there have some devices (like hdmi/bt) do not need
+> config from the CODEC driver, they have their own s/w stack and
+> interface to configure; for the audio driver, just need to set the
+> I2S/PCM timing for them. So if there have a common dummy codec
+> driver, then it can meet our requirement well. Otherwise, there will
+> have some duplicate codes for these dummy codecs.
 
-This patch is targeted for the smack-next tree.
-
-This patch takes advantage of the recent changes for performance
-and points the packet labels on UDS connect at the output label of
-the far side. This makes getsockopt(...SO_PEERCRED...) function
-properly. Without this change the getsockopt does not provide any
-information.
-
-Signed-off-by: Casey Schaufler <casey@schaufler-ca.com>
----
-
- security/smack/smack_lsm.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
-
-diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-index 2e71c3f..7d29351 100644
---- a/security/smack/smack_lsm.c
-+++ b/security/smack/smack_lsm.c
-@@ -2767,6 +2767,7 @@ static int smack_unix_stream_connect(struct sock *sock,
- {
- 	struct socket_smack *ssp = sock->sk_security;
- 	struct socket_smack *osp = other->sk_security;
-+	struct socket_smack *nsp = newsk->sk_security;
- 	struct smk_audit_info ad;
- 	int rc = 0;
- 
-@@ -2776,6 +2777,14 @@ static int smack_unix_stream_connect(struct sock *sock,
- 	if (!capable(CAP_MAC_OVERRIDE))
- 		rc = smk_access(ssp->smk_out, osp->smk_in, MAY_WRITE, &ad);
- 
-+	/*
-+	 * Cross reference the peer labels for SO_PEERSEC.
-+	 */
-+	if (rc == 0) {
-+		nsp->smk_packet = ssp->smk_out;
-+		ssp->smk_packet = osp->smk_out;
-+	}
-+
- 	return rc;
- }
- 
-
+The general thought here has been that for dumb CODECs the boilerplate
+is sufficiently small and simple to mean that the discoverability from
+writing a skeletal driver outweighs the cost of having it kicking around
+- while there is some boilerplate there it's easier for someone to grab
+and use this code than it is to work out how exactly to translate the
+datasheets into code each time they encounter the part.  However, a
+sufficiently well written generic driver would maintain that advantage
+while reducing the duplication.
