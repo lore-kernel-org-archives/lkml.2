@@ -1,48 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753392Ab1IZMCD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 08:02:03 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:60940 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752671Ab1IZMCB (ORCPT
+	id S1753228Ab1IZMFO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 08:05:14 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:33149 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752671Ab1IZMFN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 08:02:01 -0400
-Date: Mon, 26 Sep 2011 17:31:05 +0530
-From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Venki Pallipadi <venki@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1] sched: fix nohz idle load balancer issues
-Message-ID: <20110926120105.GA8593@linux.vnet.ibm.com>
-Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-References: <20110926115049.GA22604@linux.vnet.ibm.com>
+	Mon, 26 Sep 2011 08:05:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20110926115049.GA22604@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 11092612-3270-0000-0000-0000006BF7CE
+X-Originating-IP: [212.179.42.66]
+In-Reply-To: <1317030352.9084.76.camel@twins>
+References: <1316940890-24138-1-git-send-email-gilad@benyossef.com>
+	<1316940890-24138-6-git-send-email-gilad@benyossef.com>
+	<1317022420.9084.57.camel@twins>
+	<CAOtvUMeMsd0Jk1k4wP9Y+7NW3FYZZAqV1-cRj5Zt4+eaugWoPg@mail.gmail.com>
+	<1317030352.9084.76.camel@twins>
+Date: Mon, 26 Sep 2011 15:05:12 +0300
+Message-ID: <CAOtvUMdfGsPq2aaW2SOXkVvhpOKk8nLhjKGU90YGp07w_vy9Vw@mail.gmail.com>
+Subject: Re: [PATCH 5/5] slub: Only IPI CPUs that have per cpu obj to flush
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Chris Metcalf <cmetcalf@tilera.com>, linux-mm@kvack.org,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com> [2011-09-26 17:20:49]:
+On Mon, Sep 26, 2011 at 12:45 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Mon, 2011-09-26 at 11:35 +0300, Gilad Ben-Yossef wrote:
+>> Yes, the alloc in the flush_all path definitively needs to go. I
+>> wonder if just to resolve that allocating the mask per cpu and not in
+>> kmem_cache itself is not better - after all, all we need is a single
+>> mask per cpu when we wish to do a flush_all and no per cache. The
+>> memory overhead of that is slightly better. This doesn't cover the
+>> cahce bounce issue.
+>>
+>> My thoughts regarding that were that since the flush_all() was a
+>> rather rare operation it is preferable to do some more
+>> work/interference here, if it allows us to avoid having to do more
+>> work in the hotter alloc/dealloc paths, especially since it allows us
+>> to have less IPIs that I figured are more intrusive then cacheline
+>> steals (are they?)
+>>
+>> After all, for each CPU that actually needs to do a flush, we are
+>> making the flush a bit more expensive because of the cache bounce just
+>> before we send the IPI, but that IPI and further operations are an
+>> expensive operations anyway. For CPUs that don't need to do a flush, I
+>> replaced an IPI for a cacheline(s) steal. I figured it was still a
+>> good bargain
+>
+> Hard to tell really, I've never really worked with these massive
+> machines, biggest I've got is 2 nodes and for that I think your
+> for_each_online_cpu() loop might indeed still be a win when compared to
+> extra accounting on the alloc/free paths.
 
-> @@ -4695,8 +4719,11 @@ static inline int nohz_kick_needed(struc
->  	second_pick_cpu = atomic_read(&nohz.second_pick_cpu);
->  
->  	if (first_pick_cpu < nr_cpu_ids && first_pick_cpu != cpu &&
-> -	    second_pick_cpu < nr_cpu_ids && second_pick_cpu != cpu)
-> +	    second_pick_cpu < nr_cpu_ids && second_pick_cpu != cpu) {
-> +		if (rq->nr_running > 1)
-> +			return 1;
->  		return 0;
-> +	}
+ I've worked on the SGI Altix which supports up to 1,024 cores in a
+single Linux instance, although my dev. machine
+at the time only had 32 cores, if I remember correctly,  but I still
+don't know the answer either... :-)
 
-I should have added a comment to explain this change ..will do it in
-next version (along with any other changes suggested).
+> The problem with a per-cpu cpumask is that you need to disable
+> preemption over the whole for_each_online_cpu() scan and that's not
+> really sane on very large machines as that can easily take a very long
+> time indeed.
 
-- vatsa
+hmm... I might be thick, but why disable the preemption with the
+per-cpu cpumask at all?
+Are you worried about re-entering flush_all()? because I don't think
+that is a problem -
 
+Let's say we're in the middle of flush_all doing for_each_online_cpu
+and updating our cpumask
+and then we get preempted and go again into flush_all again. We'll run
+over whatever values we
+started to put into the cpumask and do the IPIs. When we get back to
+our original context
+we'll continue updating the tail of the cpumask and send IPIs based on
+the updated mask again.
+
+True, we'll end up sending the IPI twice to the head of the cpumask
+(the part we managed to update
+in the first part of flush_all before the preemption), but that's
+doesn't really do any harm and it is still
+better then what we have now - in a flush_all preempting flush_all,
+we're 100% sure to double IPI all the
+processors in the system currently.
+
+Actually, continuing the same line of though - why not have only  one
+single global cpumask  that we update
+in flush_all before sending the IPI? Using the same reasoning, it
+might get updated in parallel from one
+processor when  we IPI from another or being doubly updated in
+parallel in a few - but we don't really care as
+long as cpumask_set_cpu() does its work atomically and
+on_each_cpu_mask() is OK with the cpumask
+changing under its feet (which I believe both are). We might end up
+doing the IPIs based on more updated
+values then the one that "our" for_each_online_cpu() walk calculated,
+but that isn't a problem.
+
+Sure, it will generate some cacheline bouncing for the global cpumask
+variable if several processor do flush_all()
+in parallel, but that's supposed to be rare and frankly, if more then
+one CPU is about send a bunch of cross system
+IPIs you're bound for hell more then some cacheline bouncing anyway.
+
+Does that makes sense or have I've gone over board with this concept? :-)
+
+Thanks,
+Gilad
+
+-- 
+Gilad Ben-Yossef
+Chief Coffee Drinker
+gilad@benyossef.com
+Israel Cell: +972-52-8260388
+US Cell: +1-973-8260388
+http://benyossef.com
+
+"I've seen things you people wouldn't believe. Goto statements used to
+implement co-routines. I watched C structures being stored in
+registers. All those moments will be lost in time... like tears in
+rain... Time to die. "
