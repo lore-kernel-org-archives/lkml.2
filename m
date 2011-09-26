@@ -1,108 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752563Ab1IZWfN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 18:35:13 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:40559 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751836Ab1IZWfL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 18:35:11 -0400
-Date: Mon, 26 Sep 2011 15:35:04 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>, linux-kernel@vger.kernel.org,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: Re: linux-next-20110923: warning kernel/rcutree.c:1833
-Message-ID: <20110926223504.GP2399@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110925002409.GA24220@shutemov.name>
- <20110925050826.GC2995@linux.vnet.ibm.com>
- <20110925112637.GA19298@shutemov.name>
- <20110925130622.GA9205@somewhere.redhat.com>
- <20110925164804.GD2995@linux.vnet.ibm.com>
- <20110926010418.GA18553@somewhere>
- <CAFTL4hy4t4z2GX=Tj5wjVv=BSGaSbcspDw3FGUy_2uK=9HU_2A@mail.gmail.com>
- <20110926012611.GJ2995@linux.vnet.ibm.com>
- <20110926014118.GA25861@linux.vnet.ibm.com>
- <20110926094203.GF18553@somewhere>
+	id S1752611Ab1IZWiE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 18:38:04 -0400
+Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:44416 "EHLO
+	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751986Ab1IZWiD convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 18:38:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110926094203.GF18553@somewhere>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 11092622-5112-0000-0000-0000009DE994
+In-Reply-To: <20110926193733.GC9194@gallagher>
+References: <1316730422-20027-1-git-send-email-mturquette@ti.com>
+ <1316730422-20027-5-git-send-email-mturquette@ti.com> <4E80C564.3050004@gmail.com>
+ <20110926184024.GB9194@gallagher> <4E80CE28.9030103@gmail.com> <20110926193733.GC9194@gallagher>
+From: "Turquette, Mike" <mturquette@ti.com>
+Date: Mon, 26 Sep 2011 15:37:41 -0700
+Message-ID: <CAJOA=zMA8q-acr=BGWrpC9iLSR3E8Y0ybH4sZ=FOn54zQ7TJKw@mail.gmail.com>
+Subject: Re: [PATCH v2 4/7] clk: Add simple gated clock
+To: Jamie Iles <jamie@jamieiles.com>
+Cc: Rob Herring <robherring2@gmail.com>, linux-kernel@vger.kernel.org,
+        paul@pwsan.com, linaro-dev@lists.linaro.org,
+        linus.walleij@stericsson.com, patches@linaro.org, eric.miao@linaro.org,
+        broonie@opensource.wolfsonmicro.com, magnus.damm@gmail.com,
+        arnd.bergmann@linaro.org, skannan@quicinc.com, linux@arm.linux.org.uk,
+        jeremy.kerr@canonical.com, tglx@linutronix.de,
+        linux-arm-kernel@lists.infradead.org, sboyd@quiinc.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 26, 2011 at 11:42:06AM +0200, Frederic Weisbecker wrote:
-> On Sun, Sep 25, 2011 at 06:41:18PM -0700, Paul E. McKenney wrote:
-> > On Sun, Sep 25, 2011 at 06:26:11PM -0700, Paul E. McKenney wrote:
-> > > On Mon, Sep 26, 2011 at 03:10:33AM +0200, Frederic Weisbecker wrote:
-> > > > 2011/9/26 Frederic Weisbecker <fweisbec@gmail.com>:
-> > > > > On Sun, Sep 25, 2011 at 09:48:04AM -0700, Paul E. McKenney wrote:
-> > > > >> This is required for RCU_FAST_NO_HZ, which checks to see whether the
-> > > > >> current CPU can accelerate the current grace period so as to enter
-> > > > >> dyntick-idle mode sooner than it would otherwise.  This takes effect
-> > > > >> in the situation where rcu_needs_cpu() sees that there are callbacks.
-> > > > >> It then notes a quiescent state (which is illegal in an RCU read-side
-> > > > >> critical section), calls force_quiescent_state(), and so on.  For this
-> > > > >> to work, the current CPU must be in an RCU read-side critical section.
-> > > > >
-> > > > > You mean it must *not* be in an RCU read-side critical section (ie: in a
-> > > > > quiescent state)?
-> > > > >
-> > > > > That assumption at least fails anytime in idle for the RCU
-> > > > > sched flavour given that preemption is disabled in the idle loop.
-> > > > >
-> > > > >> If this cannot be made to work, another option is to call a new RCU
-> > > > >> function in the case where rcu_needs_cpu() returned false, but after
-> > > > >> the RCU read-side critical section has exited.
-> > > > >
-> > > > > You mean when rcu_needs_cpu() returns true (when we have callbacks
-> > > > > enqueued)?
-> > > > >
-> > > > >> This new RCU function
-> > > > >> could then attempt to rearrange RCU so as to allow the CPU to enter
-> > > > >> dyntick-idle mode more quickly.  It is more important for this to
-> > > > >> happen when the CPU is going idle than when it is executing a user
-> > > > >> process.
-> > > > >>
-> > > > >> So, is this doable?
-> > > > >
-> > > > > At least not when we have RCU sched callbacks enqueued, given preemption
-> > > > > is disabled. But that sounds plausible in order to accelerate the switch
-> > > > > to dyntick-idle mode when we only have rcu and/or rcu bh callbacks.
-> > > > 
-> > > > But the RCU sched case could be dealt with if we embrace every use of
-> > > > it with rcu_read_lock_sched() and rcu_read_unlock_sched(), or some light
-> > > > version that just increases a local counter that rcu_needs_cpu() could check.
-> > > > 
-> > > > It's an easy thing to add: we can ensure preempt is disabled when we call it
-> > > > and we can force rcu_dereference_sched() to depend on it.
-> > > 
-> > > Or just check to see if this is the first level of interrupt from the
-> > > idle task after the scheduler is up.
-> > 
-> > Hmmm...  Is it the case that rcu_needs_cpu() gets called from within an
-> > RCU read-side critical section only when called from an interrupt that
-> > interrupted an RCU read-side critical section (keeping in mind that the
-> > idle loop is a quiescent state regardless of preemption)?
-> > 
-> > If so, I should be able to do the appropriate checks within
-> > rcu_needs_cpu().
-> 
-> It sounds better to me if you can do all the checks from rcu_needs_cpu()
-> so that all you need is to wait for another jiffy to escape the read side
-> critical section.
-> 
-> Doing something from the read side exit path would require some weird
-> trickiness.
+On Mon, Sep 26, 2011 at 12:37 PM, Jamie Iles <jamie@jamieiles.com> wrote:
+> On Mon, Sep 26, 2011 at 02:10:32PM -0500, Rob Herring wrote:
+>> On 09/26/2011 01:40 PM, Jamie Iles wrote:
+>> > On Mon, Sep 26, 2011 at 01:33:08PM -0500, Rob Herring wrote:
+>> >>> +static void clk_gate_set_bit(struct clk_hw *clk)
+>> >>> +{
+>> >>> + struct clk_gate *gate = to_clk_gate(clk);
+>> >>> + u32 reg;
+>> >>> +
+>> >>> + reg = __raw_readl(gate->reg);
+>> >>> + reg |= BIT(gate->bit_idx);
+>> >>> + __raw_writel(reg, gate->reg);
+>> >>
+>> >> Don't these read-mod-writes need a spinlock around it?
+>> >>
+>> >> It's possible to have an enable bits and dividers in the same register.
+>> >> If you did a set_rate and while doing an enable/disable, there would be
+>> >> a problem. Also, it may be 2 different clocks in the same register, so
+>> >> the spinlock needs to be shared and not per clock.
+>> >
+>> > Well the prepare lock will be held here and I believe that would be
+>> > sufficient.
+>>
+>> No, the enable spinlock is protecting enable/disable. But set_rate is
+>> protected by the prepare mutex. So you clearly don't need locking if you
+>> have a register of only 1 bit enables. If you have a register accessed
+>> by both enable/disable and prepare/unprepare/set_rate, then you need
+>> some protection.
+>
+> OK fair point, but I would guess that if you had a clock like this then
+> you probably wouldn't use this simple gated clock would you?  (speaking
+> from my world where we have quite simple clocks ;-))
 
-Agreed, I really do want to avoid checks in rcu_read_unlock().
+I think it is a safe assumption that if a register controls both
+enable/disable and some programmable divider then,
 
-							Thanx, Paul
+1) those controls are probably for the same clock
+2) that clock won't be using the cookie-cutter gated-clock
+implementation anyways
 
+Rob, do you feel these assumptions are OK and locking can remain the
+same in this patch?
+
+Regards,
+Mike
+
+> Jamie
+>
