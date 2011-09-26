@@ -1,42 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752501Ab1IZP0h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 11:26:37 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59025 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752045Ab1IZP0g (ORCPT
+	id S1751857Ab1IZP0w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 11:26:52 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:49049 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751046Ab1IZP0v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 11:26:36 -0400
-Date: Mon, 26 Sep 2011 16:26:34 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Grant Likely <grant.likely@secretlab.ca>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <greg@kroah.com>, linux-kernel@vger.kernel.org,
-        Manjunath GKondaiah <manjunath.gkondaiah@linaro.org>,
-        Dilan Lee <dilee@nvidia.com>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH v3] drivercore: Add driver probe deferral mechanism
-Message-ID: <20110926152634.GN2946@opensource.wolfsonmicro.com>
-References: <20110922184614.25419.84606.stgit@ponder>
- <20110926141643.GK2946@opensource.wolfsonmicro.com>
- <20110926151210.GO22455@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110926151210.GO22455@n2100.arm.linux.org.uk>
-X-Cookie: You are always busy.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 26 Sep 2011 11:26:51 -0400
+X-Authority-Analysis: v=1.1 cv=lfM0d0QHaVz67dfwwr9cyIw6NbaGR/pZhMD6XWNi0kk= c=1 sm=0 a=lt9i076Wqa4A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=Hkz9nI-ESCQZV4ay8xYA:9 a=nZH5pUFlx90dsmdSqP8A:7 a=PUjeQqilurYA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.83.30
+Subject: Re: [PATCH 2/3][RT] sched: Do not compare cpu masks in scheduler
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Clark Williams <williams@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Mon, 26 Sep 2011 11:26:50 -0400
+In-Reply-To: <20110926150946.844914281@goodmis.org>
+References: <20110926150835.107371360@goodmis.org>
+	 <20110926150946.844914281@goodmis.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3- 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1317050811.26514.7.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 26, 2011 at 04:12:10PM +0100, Russell King - ARM Linux wrote:
-> On Mon, Sep 26, 2011 at 03:16:43PM +0100, Mark Brown wrote:
+On Mon, 2011-09-26 at 11:08 -0400, Steven Rostedt wrote:
 
-> > used but it's not a blocker for anything.  Devices doing this would need
-> > some way to figure out if they should -EBUSY or fail otherwise.
+Grumble. Quilt seemed to have ignored the From: Peter ... part. 
 
-> Just to avoid confusion - ITYM -EAGAIN there.  -EBUSY is already used
-> by drivers to mean "someone else claimed a resource I need" be it the
-> IO region or an IRQ resource...
+The last two patches are Peter's not mine. I took his changes from a
+patch he gave me on top of my patch.
 
-Yes, I do - sorry.
+-- Steve
+
+> plain text document attachment
+> (peterz-migrate-disable-no-cpu-compare.patch)
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> 
+> Index: linux-rt.git/kernel/sched.c
+> ===================================================================
+> --- linux-rt.git.orig/kernel/sched.c
+> +++ linux-rt.git/kernel/sched.c
+> @@ -4235,16 +4235,12 @@ static inline void update_migrate_disabl
+>  	 */
+>  	mask = tsk_cpus_allowed(p);
+>  
+> -	WARN_ON(!cpumask_test_cpu(smp_processor_id(), mask));
+> +	if (p->sched_class->set_cpus_allowed)
+> +		p->sched_class->set_cpus_allowed(p, mask);
+> +	p->rt.nr_cpus_allowed = cpumask_weight(mask);
+>  
+> -	if (!cpumask_equal(&p->cpus_allowed, mask)) {
+> -		if (p->sched_class->set_cpus_allowed)
+> -			p->sched_class->set_cpus_allowed(p, mask);
+> -		p->rt.nr_cpus_allowed = cpumask_weight(mask);
+> -
+> -		/* Let migrate_enable know to fix things back up */
+> -		p->migrate_disable |= MIGRATE_DISABLE_SET_AFFIN;
+> -	}
+> +	/* Let migrate_enable know to fix things back up */
+> +	p->migrate_disable |= MIGRATE_DISABLE_SET_AFFIN;
+>  }
+>  
+>  void migrate_disable(void)
+
+
