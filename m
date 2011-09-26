@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752687Ab1IZLVw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 07:21:52 -0400
+	id S1752875Ab1IZLWA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 07:22:00 -0400
 Received: from mga09.intel.com ([134.134.136.24]:27103 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752590Ab1IZLVt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 07:21:49 -0400
+	id S1752718Ab1IZLV4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 07:21:56 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="56485930"
+   d="scan'208";a="56486001"
 From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 To: Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@suse.de>
 Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
         Peter Chen <peter.chen@freescale.com>,
         Lin Tony-B19295 <B19295@freescale.com>,
         Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Li Yang <leoli@freescale.com>
-Subject: [PATCHv5 05/19] usb: otg: fsl: Start using struct usb_otg
-Date: Mon, 26 Sep 2011 14:21:18 +0300
-Message-Id: <1317036092-3000-6-git-send-email-heikki.krogerus@linux.intel.com>
+        Pavankumar Kondeti <pkondeti@codeaurora.org>
+Subject: [PATCHv5 08/19] usb: otg: msm: Start using struct usb_otg
+Date: Mon, 26 Sep 2011 14:21:21 +0300
+Message-Id: <1317036092-3000-9-git-send-email-heikki.krogerus@linux.intel.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1317036092-3000-1-git-send-email-heikki.krogerus@linux.intel.com>
 References: <1317036092-3000-1-git-send-email-heikki.krogerus@linux.intel.com>
@@ -30,443 +30,1163 @@ Use struct usb_otg members with OTG specific functions instead
 of usb_phy members.
 
 Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Cc: Li Yang <leoli@freescale.com>
+Cc: Pavankumar Kondeti <pkondeti@codeaurora.org>
 ---
- drivers/usb/otg/fsl_otg.c |  118 +++++++++++++++++++++++++-------------------
- drivers/usb/otg/fsl_otg.h |    2 +-
- drivers/usb/otg/otg_fsm.c |   22 ++++----
- drivers/usb/otg/otg_fsm.h |    2 +-
- 4 files changed, 80 insertions(+), 64 deletions(-)
+ drivers/usb/otg/msm_otg.c     |  398 +++++++++++++++++++++--------------------
+ include/linux/usb/msm_hsusb.h |    2 +-
+ 2 files changed, 206 insertions(+), 194 deletions(-)
 
-diff --git a/drivers/usb/otg/fsl_otg.c b/drivers/usb/otg/fsl_otg.c
-index 76125f7..70bb428 100644
---- a/drivers/usb/otg/fsl_otg.c
-+++ b/drivers/usb/otg/fsl_otg.c
-@@ -275,7 +275,7 @@ void b_srp_end(unsigned long foo)
- 	fsl_otg_dischrg_vbus(0);
- 	srp_wait_done = 1;
+diff --git a/drivers/usb/otg/msm_otg.c b/drivers/usb/otg/msm_otg.c
+index c468db6..eb1e34c 100644
+--- a/drivers/usb/otg/msm_otg.c
++++ b/drivers/usb/otg/msm_otg.c
+@@ -69,9 +69,9 @@ static int msm_hsusb_init_vddcx(struct msm_otg *motg, int init)
+ 	int ret = 0;
  
--	if ((fsl_otg_dev->otg.state == USB_PHY_STATE_B_SRP_INIT) &&
-+	if ((fsl_otg_dev->xceiv.state == USB_PHY_STATE_B_SRP_INIT) &&
- 	    fsl_otg_dev->fsm.b_sess_vld)
- 		fsl_otg_dev->fsm.b_srp_done = 1;
- }
-@@ -288,7 +288,7 @@ void b_srp_end(unsigned long foo)
- void a_wait_enum(unsigned long foo)
- {
- 	VDBG("a_wait_enum timeout\n");
--	if (!fsl_otg_dev->otg.host->b_hnp_enable)
-+	if (!fsl_otg_dev->xceiv.otg->host->b_hnp_enable)
- 		fsl_otg_add_timer(a_wait_enum_tmr);
- 	else
- 		otg_statemachine(&fsl_otg_dev->fsm);
-@@ -452,14 +452,15 @@ void otg_reset_controller(void)
- /* Call suspend/resume routines in host driver */
- int fsl_otg_start_host(struct otg_fsm *fsm, int on)
- {
--	struct usb_phy *xceiv = fsm->transceiver;
-+	struct usb_otg *otg = fsm->otg;
- 	struct device *dev;
--	struct fsl_otg *otg_dev = container_of(xceiv, struct fsl_otg, otg);
-+	struct fsl_otg *otg_dev = container_of(otg->xceiv, struct fsl_otg,
-+						xceiv);
- 	u32 retval = 0;
- 
--	if (!xceiv->host)
-+	if (!otg->host)
- 		return -ENODEV;
--	dev = xceiv->host->controller;
-+	dev = otg->host->controller;
- 
- 	/*
- 	 * Update a_vbus_vld state as a_vbus_vld int is disabled
-@@ -518,14 +519,14 @@ end:
-  */
- int fsl_otg_start_gadget(struct otg_fsm *fsm, int on)
- {
--	struct usb_phy *xceiv = fsm->transceiver;
-+	struct usb_otg *otg = fsm->otg;
- 	struct device *dev;
- 
--	if (!xceiv->gadget || !xceiv->gadget->dev.parent)
-+	if (!otg->gadget || !otg->gadget->dev.parent)
- 		return -ENODEV;
- 
- 	VDBG("gadget %s\n", on ? "on" : "off");
--	dev = xceiv->gadget->dev.parent;
-+	dev = otg->gadget->dev.parent;
- 
- 	if (on) {
- 		if (dev->driver->resume)
-@@ -542,14 +543,15 @@ int fsl_otg_start_gadget(struct otg_fsm *fsm, int on)
-  * Called by initialization code of host driver.  Register host controller
-  * to the OTG.  Suspend host for OTG role detection.
-  */
--static int fsl_otg_set_host(struct usb_phy *otg_p, struct usb_bus *host)
-+static int fsl_otg_set_host(struct usb_otg *otg, struct usb_bus *host)
- {
--	struct fsl_otg *otg_dev = container_of(otg_p, struct fsl_otg, otg);
-+	struct fsl_otg *otg_dev = container_of(otg->xceiv, struct fsl_otg,
-+						xceiv);
- 
--	if (!otg_p || otg_dev != fsl_otg_dev)
-+	if (!otg || otg_dev != fsl_otg_dev)
- 		return -ENODEV;
- 
--	otg_p->host = host;
-+	otg->host = host;
- 
- 	otg_dev->fsm.a_bus_drop = 0;
- 	otg_dev->fsm.a_bus_req = 1;
-@@ -557,8 +559,8 @@ static int fsl_otg_set_host(struct usb_phy *otg_p, struct usb_bus *host)
- 	if (host) {
- 		VDBG("host off......\n");
- 
--		otg_p->host->otg_port = fsl_otg_initdata.otg_port;
--		otg_p->host->is_b_host = otg_dev->fsm.id;
-+		otg->host->otg_port = fsl_otg_initdata.otg_port;
-+		otg->host->is_b_host = otg_dev->fsm.id;
- 		/*
- 		 * must leave time for khubd to finish its thing
- 		 * before yanking the host driver out from under it,
-@@ -574,7 +576,7 @@ static int fsl_otg_set_host(struct usb_phy *otg_p, struct usb_bus *host)
- 			/* Mini-A cable connected */
- 			struct otg_fsm *fsm = &otg_dev->fsm;
- 
--			otg_p->state = USB_PHY_STATE_UNDEFINED;
-+			otg->xceiv->state = USB_PHY_STATE_UNDEFINED;
- 			fsm->protocol = PROTO_UNDEF;
+ 	if (init) {
+-		hsusb_vddcx = regulator_get(motg->otg.dev, "HSUSB_VDDCX");
++		hsusb_vddcx = regulator_get(motg->xceiv.dev, "HSUSB_VDDCX");
+ 		if (IS_ERR(hsusb_vddcx)) {
+-			dev_err(motg->otg.dev, "unable to get hsusb vddcx\n");
++			dev_err(motg->xceiv.dev, "unable to get hsusb vddcx\n");
+ 			return PTR_ERR(hsusb_vddcx);
  		}
+ 
+@@ -79,7 +79,7 @@ static int msm_hsusb_init_vddcx(struct msm_otg *motg, int init)
+ 				USB_PHY_VDD_DIG_VOL_MIN,
+ 				USB_PHY_VDD_DIG_VOL_MAX);
+ 		if (ret) {
+-			dev_err(motg->otg.dev, "unable to set the voltage "
++			dev_err(motg->xceiv.dev, "unable to set the voltage "
+ 					"for hsusb vddcx\n");
+ 			regulator_put(hsusb_vddcx);
+ 			return ret;
+@@ -87,18 +87,18 @@ static int msm_hsusb_init_vddcx(struct msm_otg *motg, int init)
+ 
+ 		ret = regulator_enable(hsusb_vddcx);
+ 		if (ret) {
+-			dev_err(motg->otg.dev, "unable to enable hsusb vddcx\n");
++			dev_err(motg->xceiv.dev, "unable to enable hsusb vddcx\n");
+ 			regulator_put(hsusb_vddcx);
+ 		}
+ 	} else {
+ 		ret = regulator_set_voltage(hsusb_vddcx, 0,
+ 			USB_PHY_VDD_DIG_VOL_MAX);
+ 		if (ret)
+-			dev_err(motg->otg.dev, "unable to set the voltage "
++			dev_err(motg->xceiv.dev, "unable to set the voltage "
+ 					"for hsusb vddcx\n");
+ 		ret = regulator_disable(hsusb_vddcx);
+ 		if (ret)
+-			dev_err(motg->otg.dev, "unable to disable hsusb vddcx\n");
++			dev_err(motg->xceiv.dev, "unable to disable hsusb vddcx\n");
+ 
+ 		regulator_put(hsusb_vddcx);
  	}
-@@ -587,29 +589,30 @@ static int fsl_otg_set_host(struct usb_phy *otg_p, struct usb_bus *host)
+@@ -111,40 +111,40 @@ static int msm_hsusb_ldo_init(struct msm_otg *motg, int init)
+ 	int rc = 0;
+ 
+ 	if (init) {
+-		hsusb_3p3 = regulator_get(motg->otg.dev, "HSUSB_3p3");
++		hsusb_3p3 = regulator_get(motg->xceiv.dev, "HSUSB_3p3");
+ 		if (IS_ERR(hsusb_3p3)) {
+-			dev_err(motg->otg.dev, "unable to get hsusb 3p3\n");
++			dev_err(motg->xceiv.dev, "unable to get hsusb 3p3\n");
+ 			return PTR_ERR(hsusb_3p3);
+ 		}
+ 
+ 		rc = regulator_set_voltage(hsusb_3p3, USB_PHY_3P3_VOL_MIN,
+ 				USB_PHY_3P3_VOL_MAX);
+ 		if (rc) {
+-			dev_err(motg->otg.dev, "unable to set voltage level "
++			dev_err(motg->xceiv.dev, "unable to set voltage level "
+ 					"for hsusb 3p3\n");
+ 			goto put_3p3;
+ 		}
+ 		rc = regulator_enable(hsusb_3p3);
+ 		if (rc) {
+-			dev_err(motg->otg.dev, "unable to enable the hsusb 3p3\n");
++			dev_err(motg->xceiv.dev, "unable to enable the hsusb 3p3\n");
+ 			goto put_3p3;
+ 		}
+-		hsusb_1p8 = regulator_get(motg->otg.dev, "HSUSB_1p8");
++		hsusb_1p8 = regulator_get(motg->xceiv.dev, "HSUSB_1p8");
+ 		if (IS_ERR(hsusb_1p8)) {
+-			dev_err(motg->otg.dev, "unable to get hsusb 1p8\n");
++			dev_err(motg->xceiv.dev, "unable to get hsusb 1p8\n");
+ 			rc = PTR_ERR(hsusb_1p8);
+ 			goto disable_3p3;
+ 		}
+ 		rc = regulator_set_voltage(hsusb_1p8, USB_PHY_1P8_VOL_MIN,
+ 				USB_PHY_1P8_VOL_MAX);
+ 		if (rc) {
+-			dev_err(motg->otg.dev, "unable to set voltage level "
++			dev_err(motg->xceiv.dev, "unable to set voltage level "
+ 					"for hsusb 1p8\n");
+ 			goto put_1p8;
+ 		}
+ 		rc = regulator_enable(hsusb_1p8);
+ 		if (rc) {
+-			dev_err(motg->otg.dev, "unable to enable the hsusb 1p8\n");
++			dev_err(motg->xceiv.dev, "unable to enable the hsusb 1p8\n");
+ 			goto put_1p8;
+ 		}
+ 
+@@ -235,9 +235,9 @@ static int msm_hsusb_ldo_set_mode(int on)
+ 	return ret < 0 ? ret : 0;
  }
  
- /* Called by initialization code of udc.  Register udc to OTG. */
--static int fsl_otg_set_peripheral(struct usb_phy *otg_p,
--				  struct usb_gadget *gadget)
-+static int fsl_otg_set_peripheral(struct usb_otg *otg,
-+					struct usb_gadget *gadget)
+-static int ulpi_read(struct usb_phy *otg, u32 reg)
++static int ulpi_read(struct usb_phy *xceiv, u32 reg)
  {
--	struct fsl_otg *otg_dev = container_of(otg_p, struct fsl_otg, otg);
-+	struct fsl_otg *otg_dev = container_of(otg->xceiv, struct fsl_otg,
-+						xceiv);
+-	struct msm_otg *motg = container_of(otg, struct msm_otg, otg);
++	struct msm_otg *motg = container_of(xceiv, struct msm_otg, xceiv);
+ 	int cnt = 0;
  
- 	VDBG("otg_dev 0x%x\n", (int)otg_dev);
- 	VDBG("fsl_otg_dev 0x%x\n", (int)fsl_otg_dev);
- 
--	if (!otg_p || otg_dev != fsl_otg_dev)
-+	if (!otg || otg_dev != fsl_otg_dev)
- 		return -ENODEV;
- 
- 	if (!gadget) {
--		if (!otg_dev->otg.default_a)
--			otg_p->gadget->ops->vbus_draw(otg_p->gadget, 0);
--		usb_gadget_vbus_disconnect(otg_dev->otg.gadget);
--		otg_dev->otg.gadget = 0;
-+		if (!otg->default_a)
-+			otg->gadget->ops->vbus_draw(otg->gadget, 0);
-+		usb_gadget_vbus_disconnect(otg->gadget);
-+		otg->gadget = 0;
- 		otg_dev->fsm.b_bus_req = 0;
- 		otg_statemachine(&otg_dev->fsm);
- 		return 0;
+ 	/* initiate read operation */
+@@ -253,16 +253,16 @@ static int ulpi_read(struct usb_phy *otg, u32 reg)
  	}
  
--	otg_p->gadget = gadget;
--	otg_p->gadget->is_a_peripheral = !otg_dev->fsm.id;
-+	otg->gadget = gadget;
-+	otg->gadget->is_a_peripheral = !otg_dev->fsm.id;
- 
- 	otg_dev->fsm.b_bus_req = 1;
- 
-@@ -625,11 +628,11 @@ static int fsl_otg_set_peripheral(struct usb_phy *otg_p,
+ 	if (cnt >= ULPI_IO_TIMEOUT_USEC) {
+-		dev_err(otg->dev, "ulpi_read: timeout %08x\n",
++		dev_err(xceiv->dev, "ulpi_read: timeout %08x\n",
+ 			readl(USB_ULPI_VIEWPORT));
+ 		return -ETIMEDOUT;
+ 	}
+ 	return ULPI_DATA_READ(readl(USB_ULPI_VIEWPORT));
  }
  
- /* Set OTG port power, only for B-device */
--static int fsl_otg_set_power(struct usb_phy *otg_p, unsigned mA)
-+static int fsl_otg_set_power(struct usb_phy *xceiv, unsigned mA)
+-static int ulpi_write(struct usb_phy *otg, u32 val, u32 reg)
++static int ulpi_write(struct usb_phy *xceiv, u32 val, u32 reg)
  {
- 	if (!fsl_otg_dev)
- 		return -ENODEV;
--	if (otg_p->state == USB_PHY_STATE_B_PERIPHERAL)
-+	if (xceiv->state == USB_PHY_STATE_B_PERIPHERAL)
- 		pr_info("FSL OTG: Draw %d mA\n", mA);
+-	struct msm_otg *motg = container_of(otg, struct msm_otg, otg);
++	struct msm_otg *motg = container_of(xceiv, struct msm_otg, xceiv);
+ 	int cnt = 0;
+ 
+ 	/* initiate write operation */
+@@ -279,13 +279,13 @@ static int ulpi_write(struct usb_phy *otg, u32 val, u32 reg)
+ 	}
+ 
+ 	if (cnt >= ULPI_IO_TIMEOUT_USEC) {
+-		dev_err(otg->dev, "ulpi_write: timeout\n");
++		dev_err(xceiv->dev, "ulpi_write: timeout\n");
+ 		return -ETIMEDOUT;
+ 	}
+ 	return 0;
+ }
+ 
+-static struct otg_io_access_ops msm_otg_io_ops = {
++static struct usb_phy_io_ops msm_otg_io_ops = {
+ 	.read = ulpi_read,
+ 	.write = ulpi_write,
+ };
+@@ -299,9 +299,9 @@ static void ulpi_init(struct msm_otg *motg)
+ 		return;
+ 
+ 	while (seq[0] >= 0) {
+-		dev_vdbg(motg->otg.dev, "ulpi: write 0x%02x to 0x%02x\n",
++		dev_vdbg(motg->xceiv.dev, "ulpi: write 0x%02x to 0x%02x\n",
+ 				seq[0], seq[1]);
+-		ulpi_write(&motg->otg, seq[0], seq[1]);
++		ulpi_write(&motg->xceiv, seq[0], seq[1]);
+ 		seq += 2;
+ 	}
+ }
+@@ -313,11 +313,11 @@ static int msm_otg_link_clk_reset(struct msm_otg *motg, bool assert)
+ 	if (assert) {
+ 		ret = clk_reset(motg->clk, CLK_RESET_ASSERT);
+ 		if (ret)
+-			dev_err(motg->otg.dev, "usb hs_clk assert failed\n");
++			dev_err(motg->xceiv.dev, "usb hs_clk assert failed\n");
+ 	} else {
+ 		ret = clk_reset(motg->clk, CLK_RESET_DEASSERT);
+ 		if (ret)
+-			dev_err(motg->otg.dev, "usb hs_clk deassert failed\n");
++			dev_err(motg->xceiv.dev, "usb hs_clk deassert failed\n");
+ 	}
+ 	return ret;
+ }
+@@ -328,13 +328,13 @@ static int msm_otg_phy_clk_reset(struct msm_otg *motg)
+ 
+ 	ret = clk_reset(motg->phy_reset_clk, CLK_RESET_ASSERT);
+ 	if (ret) {
+-		dev_err(motg->otg.dev, "usb phy clk assert failed\n");
++		dev_err(motg->xceiv.dev, "usb phy clk assert failed\n");
+ 		return ret;
+ 	}
+ 	usleep_range(10000, 12000);
+ 	ret = clk_reset(motg->phy_reset_clk, CLK_RESET_DEASSERT);
+ 	if (ret)
+-		dev_err(motg->otg.dev, "usb phy clk deassert failed\n");
++		dev_err(motg->xceiv.dev, "usb phy clk deassert failed\n");
+ 	return ret;
+ }
+ 
+@@ -358,7 +358,7 @@ static int msm_otg_phy_reset(struct msm_otg *motg)
+ 	writel(val | PORTSC_PTS_ULPI, USB_PORTSC);
+ 
+ 	for (retries = 3; retries > 0; retries--) {
+-		ret = ulpi_write(&motg->otg, ULPI_FUNC_CTRL_SUSPENDM,
++		ret = ulpi_write(&motg->xceiv, ULPI_FUNC_CTRL_SUSPENDM,
+ 				ULPI_CLR(ULPI_FUNC_CTRL));
+ 		if (!ret)
+ 			break;
+@@ -375,7 +375,7 @@ static int msm_otg_phy_reset(struct msm_otg *motg)
+ 		return ret;
+ 
+ 	for (retries = 3; retries > 0; retries--) {
+-		ret = ulpi_read(&motg->otg, ULPI_DEBUG);
++		ret = ulpi_read(&motg->xceiv, ULPI_DEBUG);
+ 		if (ret != -ETIMEDOUT)
+ 			break;
+ 		ret = msm_otg_phy_clk_reset(motg);
+@@ -385,14 +385,14 @@ static int msm_otg_phy_reset(struct msm_otg *motg)
+ 	if (!retries)
+ 		return -ETIMEDOUT;
+ 
+-	dev_info(motg->otg.dev, "phy_reset: success\n");
++	dev_info(motg->xceiv.dev, "phy_reset: success\n");
+ 	return 0;
+ }
+ 
+ #define LINK_RESET_TIMEOUT_USEC		(250 * 1000)
+-static int msm_otg_reset(struct usb_phy *otg)
++static int msm_otg_reset(struct usb_phy *xceiv)
+ {
+-	struct msm_otg *motg = container_of(otg, struct msm_otg, otg);
++	struct msm_otg *motg = container_of(xceiv, struct msm_otg, xceiv);
+ 	struct msm_otg_platform_data *pdata = motg->pdata;
+ 	int cnt = 0;
+ 	int ret;
+@@ -401,7 +401,7 @@ static int msm_otg_reset(struct usb_phy *otg)
+ 
+ 	ret = msm_otg_phy_reset(motg);
+ 	if (ret) {
+-		dev_err(otg->dev, "phy_reset failed\n");
++		dev_err(xceiv->dev, "phy_reset failed\n");
+ 		return ret;
+ 	}
+ 
+@@ -435,8 +435,8 @@ static int msm_otg_reset(struct usb_phy *otg)
+ 			val |= OTGSC_BSVIE;
+ 		}
+ 		writel(val, USB_OTGSC);
+-		ulpi_write(otg, ulpi_val, ULPI_USB_INT_EN_RISE);
+-		ulpi_write(otg, ulpi_val, ULPI_USB_INT_EN_FALL);
++		ulpi_write(xceiv, ulpi_val, ULPI_USB_INT_EN_RISE);
++		ulpi_write(xceiv, ulpi_val, ULPI_USB_INT_EN_FALL);
+ 	}
  
  	return 0;
-@@ -658,12 +661,13 @@ static void fsl_otg_event(struct work_struct *work)
+@@ -448,8 +448,8 @@ static int msm_otg_reset(struct usb_phy *otg)
+ #ifdef CONFIG_PM_SLEEP
+ static int msm_otg_suspend(struct msm_otg *motg)
+ {
+-	struct usb_phy *otg = &motg->otg;
+-	struct usb_bus *bus = otg->host;
++	struct usb_phy *xceiv = &motg->xceiv;
++	struct usb_bus *bus = xceiv->otg->host;
+ 	struct msm_otg_platform_data *pdata = motg->pdata;
+ 	int cnt = 0;
+ 
+@@ -475,10 +475,10 @@ static int msm_otg_suspend(struct msm_otg *motg)
+ 	 */
+ 
+ 	if (motg->pdata->phy_type == CI_45NM_INTEGRATED_PHY) {
+-		ulpi_read(otg, 0x14);
++		ulpi_read(xceiv, 0x14);
+ 		if (pdata->otg_control == OTG_PHY_CONTROL)
+-			ulpi_write(otg, 0x01, 0x30);
+-		ulpi_write(otg, 0x08, 0x09);
++			ulpi_write(xceiv, 0x01, 0x30);
++		ulpi_write(xceiv, 0x08, 0x09);
+ 	}
+ 
+ 	/*
+@@ -495,8 +495,8 @@ static int msm_otg_suspend(struct msm_otg *motg)
+ 	}
+ 
+ 	if (cnt >= PHY_SUSPEND_TIMEOUT_USEC) {
+-		dev_err(otg->dev, "Unable to suspend PHY\n");
+-		msm_otg_reset(otg);
++		dev_err(xceiv->dev, "Unable to suspend PHY\n");
++		msm_otg_reset(xceiv);
+ 		enable_irq(motg->irq);
+ 		return -ETIMEDOUT;
+ 	}
+@@ -528,7 +528,7 @@ static int msm_otg_suspend(struct msm_otg *motg)
+ 		msm_hsusb_config_vddcx(0);
+ 	}
+ 
+-	if (device_may_wakeup(otg->dev))
++	if (device_may_wakeup(xceiv->dev))
+ 		enable_irq_wake(motg->irq);
+ 	if (bus)
+ 		clear_bit(HCD_FLAG_HW_ACCESSIBLE, &(bus_to_hcd(bus))->flags);
+@@ -536,15 +536,15 @@ static int msm_otg_suspend(struct msm_otg *motg)
+ 	atomic_set(&motg->in_lpm, 1);
+ 	enable_irq(motg->irq);
+ 
+-	dev_info(otg->dev, "USB in low power mode\n");
++	dev_info(xceiv->dev, "USB in low power mode\n");
+ 
+ 	return 0;
  }
  
- /* B-device start SRP */
--static int fsl_otg_start_srp(struct usb_phy *otg_p)
-+static int fsl_otg_start_srp(struct usb_otg *otg)
+ static int msm_otg_resume(struct msm_otg *motg)
  {
--	struct fsl_otg *otg_dev = container_of(otg_p, struct fsl_otg, otg);
-+	struct fsl_otg *otg_dev = container_of(otg->xceiv, struct fsl_otg,
-+						xceiv);
+-	struct usb_phy *otg = &motg->otg;
+-	struct usb_bus *bus = otg->host;
++	struct usb_phy *xceiv = &motg->xceiv;
++	struct usb_bus *bus = xceiv->otg->host;
+ 	int cnt = 0;
+ 	unsigned temp;
  
--	if (!otg_p || otg_dev != fsl_otg_dev
--	    || otg_p->state != USB_PHY_STATE_B_IDLE)
-+	if (!otg || otg_dev != fsl_otg_dev
-+	    || otg->xceiv->state != USB_PHY_STATE_B_IDLE)
- 		return -ENODEV;
+@@ -592,13 +592,13 @@ static int msm_otg_resume(struct msm_otg *motg)
+ 		 * PHY. USB state can not be restored. Re-insertion
+ 		 * of USB cable is the only way to get USB working.
+ 		 */
+-		dev_err(otg->dev, "Unable to resume USB."
++		dev_err(xceiv->dev, "Unable to resume USB."
+ 				"Re-plugin the cable\n");
+-		msm_otg_reset(otg);
++		msm_otg_reset(xceiv);
+ 	}
  
- 	otg_dev->fsm.b_bus_req = 1;
-@@ -673,11 +677,12 @@ static int fsl_otg_start_srp(struct usb_phy *otg_p)
+ skip_phy_resume:
+-	if (device_may_wakeup(otg->dev))
++	if (device_may_wakeup(xceiv->dev))
+ 		disable_irq_wake(motg->irq);
+ 	if (bus)
+ 		set_bit(HCD_FLAG_HW_ACCESSIBLE, &(bus_to_hcd(bus))->flags);
+@@ -607,11 +607,11 @@ skip_phy_resume:
+ 
+ 	if (motg->async_int) {
+ 		motg->async_int = 0;
+-		pm_runtime_put(otg->dev);
++		pm_runtime_put(xceiv->dev);
+ 		enable_irq(motg->irq);
+ 	}
+ 
+-	dev_info(otg->dev, "USB exited from low power mode\n");
++	dev_info(xceiv->dev, "USB exited from low power mode\n");
+ 
+ 	return 0;
+ }
+@@ -623,13 +623,13 @@ static void msm_otg_notify_charger(struct msm_otg *motg, unsigned mA)
+ 		return;
+ 
+ 	/* TODO: Notify PMIC about available current */
+-	dev_info(motg->otg.dev, "Avail curr from USB = %u\n", mA);
++	dev_info(motg->xceiv.dev, "Avail curr from USB = %u\n", mA);
+ 	motg->cur_power = mA;
  }
  
- /* A_host suspend will call this function to start hnp */
--static int fsl_otg_start_hnp(struct usb_phy *otg_p)
-+static int fsl_otg_start_hnp(struct usb_otg *otg)
+-static int msm_otg_set_power(struct usb_phy *otg, unsigned mA)
++static int msm_otg_set_power(struct usb_phy *xceiv, unsigned mA)
  {
--	struct fsl_otg *otg_dev = container_of(otg_p, struct fsl_otg, otg);
-+	struct fsl_otg *otg_dev = container_of(otg->xceiv, struct fsl_otg,
-+						xceiv);
+-	struct msm_otg *motg = container_of(otg, struct msm_otg, otg);
++	struct msm_otg *motg = container_of(xceiv, struct msm_otg, xceiv);
  
--	if (!otg_p || otg_dev != fsl_otg_dev)
-+	if (!otg || otg_dev != fsl_otg_dev)
+ 	/*
+ 	 * Gadget driver uses set_power method to notify about the
+@@ -644,19 +644,19 @@ static int msm_otg_set_power(struct usb_phy *otg, unsigned mA)
+ 	return 0;
+ }
+ 
+-static void msm_otg_start_host(struct usb_phy *otg, int on)
++static void msm_otg_start_host(struct usb_phy *xceiv, int on)
+ {
+-	struct msm_otg *motg = container_of(otg, struct msm_otg, otg);
++	struct msm_otg *motg = container_of(xceiv, struct msm_otg, xceiv);
+ 	struct msm_otg_platform_data *pdata = motg->pdata;
+ 	struct usb_hcd *hcd;
+ 
+-	if (!otg->host)
++	if (!xceiv->otg->host)
+ 		return;
+ 
+-	hcd = bus_to_hcd(otg->host);
++	hcd = bus_to_hcd(xceiv->otg->host);
+ 
+ 	if (on) {
+-		dev_dbg(otg->dev, "host on\n");
++		dev_dbg(xceiv->dev, "host on\n");
+ 
+ 		if (pdata->vbus_power)
+ 			pdata->vbus_power(1);
+@@ -671,7 +671,7 @@ static void msm_otg_start_host(struct usb_phy *otg, int on)
+ 		usb_add_hcd(hcd, hcd->irq, IRQF_SHARED);
+ #endif
+ 	} else {
+-		dev_dbg(otg->dev, "host off\n");
++		dev_dbg(xceiv->dev, "host off\n");
+ 
+ #ifdef CONFIG_USB
+ 		usb_remove_hcd(hcd);
+@@ -683,9 +683,9 @@ static void msm_otg_start_host(struct usb_phy *otg, int on)
+ 	}
+ }
+ 
+-static int msm_otg_set_host(struct usb_phy *otg, struct usb_bus *host)
++static int msm_otg_set_host(struct usb_otg *otg, struct usb_bus *host)
+ {
+-	struct msm_otg *motg = container_of(otg, struct msm_otg, otg);
++	struct msm_otg *motg = container_of(otg->xceiv, struct msm_otg, xceiv);
+ 	struct usb_hcd *hcd;
+ 
+ 	/*
+@@ -693,16 +693,16 @@ static int msm_otg_set_host(struct usb_phy *otg, struct usb_bus *host)
+ 	 * only peripheral configuration.
+ 	 */
+ 	if (motg->pdata->mode == USB_PERIPHERAL) {
+-		dev_info(otg->dev, "Host mode is not supported\n");
++		dev_info(otg->xceiv->dev, "Host mode is not supported\n");
  		return -ENODEV;
+ 	}
  
- 	DBG("start_hnp...n");
-@@ -698,7 +703,7 @@ static int fsl_otg_start_hnp(struct usb_phy *otg_p)
- irqreturn_t fsl_otg_isr(int irq, void *dev_id)
+ 	if (!host) {
+-		if (otg->state == USB_PHY_STATE_A_HOST) {
+-			pm_runtime_get_sync(otg->dev);
+-			msm_otg_start_host(otg, 0);
++		if (otg->xceiv->state == USB_PHY_STATE_A_HOST) {
++			pm_runtime_get_sync(otg->xceiv->dev);
++			msm_otg_start_host(otg->xceiv, 0);
+ 			otg->host = NULL;
+-			otg->state = USB_PHY_STATE_UNDEFINED;
++			otg->xceiv->state = USB_PHY_STATE_UNDEFINED;
+ 			schedule_work(&motg->sm_work);
+ 		} else {
+ 			otg->host = NULL;
+@@ -715,30 +715,30 @@ static int msm_otg_set_host(struct usb_phy *otg, struct usb_bus *host)
+ 	hcd->power_budget = motg->pdata->power_budget;
+ 
+ 	otg->host = host;
+-	dev_dbg(otg->dev, "host driver registered w/ tranceiver\n");
++	dev_dbg(otg->xceiv->dev, "host driver registered w/ tranceiver\n");
+ 
+ 	/*
+ 	 * Kick the state machine work, if peripheral is not supported
+ 	 * or peripheral is already registered with us.
+ 	 */
+ 	if (motg->pdata->mode == USB_HOST || otg->gadget) {
+-		pm_runtime_get_sync(otg->dev);
++		pm_runtime_get_sync(otg->xceiv->dev);
+ 		schedule_work(&motg->sm_work);
+ 	}
+ 
+ 	return 0;
+ }
+ 
+-static void msm_otg_start_peripheral(struct usb_phy *otg, int on)
++static void msm_otg_start_peripheral(struct usb_phy *xceiv, int on)
  {
- 	struct otg_fsm *fsm = &((struct fsl_otg *)dev_id)->fsm;
--	struct usb_phy *otg = &((struct fsl_otg *)dev_id)->otg;
-+	struct usb_otg *otg = ((struct fsl_otg *)dev_id)->xceiv.otg;
- 	u32 otg_int_src, otg_sc;
+-	struct msm_otg *motg = container_of(otg, struct msm_otg, otg);
++	struct msm_otg *motg = container_of(xceiv, struct msm_otg, xceiv);
+ 	struct msm_otg_platform_data *pdata = motg->pdata;
  
- 	otg_sc = fsl_readl(&usb_dr_regs->otgsc);
-@@ -774,6 +779,12 @@ static int fsl_otg_conf(struct platform_device *pdev)
- 	if (!fsl_otg_tc)
+-	if (!otg->gadget)
++	if (!xceiv->otg->gadget)
+ 		return;
+ 
+ 	if (on) {
+-		dev_dbg(otg->dev, "gadget on\n");
++		dev_dbg(xceiv->dev, "gadget on\n");
+ 		/*
+ 		 * Some boards have a switch cotrolled by gpio
+ 		 * to enable/disable internal HUB. Disable internal
+@@ -746,36 +746,36 @@ static void msm_otg_start_peripheral(struct usb_phy *otg, int on)
+ 		 */
+ 		if (pdata->setup_gpio)
+ 			pdata->setup_gpio(USB_PHY_STATE_B_PERIPHERAL);
+-		usb_gadget_vbus_connect(otg->gadget);
++		usb_gadget_vbus_connect(xceiv->otg->gadget);
+ 	} else {
+-		dev_dbg(otg->dev, "gadget off\n");
+-		usb_gadget_vbus_disconnect(otg->gadget);
++		dev_dbg(xceiv->dev, "gadget off\n");
++		usb_gadget_vbus_disconnect(xceiv->otg->gadget);
+ 		if (pdata->setup_gpio)
+ 			pdata->setup_gpio(USB_PHY_STATE_UNDEFINED);
+ 	}
+ 
+ }
+ 
+-static int msm_otg_set_peripheral(struct usb_phy *otg,
+-			struct usb_gadget *gadget)
++static int msm_otg_set_peripheral(struct usb_otg *otg,
++					struct usb_gadget *gadget)
+ {
+-	struct msm_otg *motg = container_of(otg, struct msm_otg, otg);
++	struct msm_otg *motg = container_of(otg->xceiv, struct msm_otg, xceiv);
+ 
+ 	/*
+ 	 * Fail peripheral registration if this board can support
+ 	 * only host configuration.
+ 	 */
+ 	if (motg->pdata->mode == USB_HOST) {
+-		dev_info(otg->dev, "Peripheral mode is not supported\n");
++		dev_info(otg->xceiv->dev, "Peripheral mode is not supported\n");
+ 		return -ENODEV;
+ 	}
+ 
+ 	if (!gadget) {
+-		if (otg->state == USB_PHY_STATE_B_PERIPHERAL) {
+-			pm_runtime_get_sync(otg->dev);
+-			msm_otg_start_peripheral(otg, 0);
++		if (otg->xceiv->state == USB_PHY_STATE_B_PERIPHERAL) {
++			pm_runtime_get_sync(otg->xceiv->dev);
++			msm_otg_start_peripheral(otg->xceiv, 0);
+ 			otg->gadget = NULL;
+-			otg->state = USB_PHY_STATE_UNDEFINED;
++			otg->xceiv->state = USB_PHY_STATE_UNDEFINED;
+ 			schedule_work(&motg->sm_work);
+ 		} else {
+ 			otg->gadget = NULL;
+@@ -784,14 +784,14 @@ static int msm_otg_set_peripheral(struct usb_phy *otg,
+ 		return 0;
+ 	}
+ 	otg->gadget = gadget;
+-	dev_dbg(otg->dev, "peripheral driver registered w/ tranceiver\n");
++	dev_dbg(otg->xceiv->dev, "peripheral driver registered w/ tranceiver\n");
+ 
+ 	/*
+ 	 * Kick the state machine work, if host is not supported
+ 	 * or host is already registered with us.
+ 	 */
+ 	if (motg->pdata->mode == USB_PERIPHERAL || otg->host) {
+-		pm_runtime_get_sync(otg->dev);
++		pm_runtime_get_sync(otg->xceiv->dev);
+ 		schedule_work(&motg->sm_work);
+ 	}
+ 
+@@ -800,17 +800,17 @@ static int msm_otg_set_peripheral(struct usb_phy *otg,
+ 
+ static bool msm_chg_check_secondary_det(struct msm_otg *motg)
+ {
+-	struct usb_phy *otg = &motg->otg;
++	struct usb_phy *xceiv = &motg->xceiv;
+ 	u32 chg_det;
+ 	bool ret = false;
+ 
+ 	switch (motg->pdata->phy_type) {
+ 	case CI_45NM_INTEGRATED_PHY:
+-		chg_det = ulpi_read(otg, 0x34);
++		chg_det = ulpi_read(xceiv, 0x34);
+ 		ret = chg_det & (1 << 4);
+ 		break;
+ 	case SNPS_28NM_INTEGRATED_PHY:
+-		chg_det = ulpi_read(otg, 0x87);
++		chg_det = ulpi_read(xceiv, 0x87);
+ 		ret = chg_det & 1;
+ 		break;
+ 	default:
+@@ -821,38 +821,38 @@ static bool msm_chg_check_secondary_det(struct msm_otg *motg)
+ 
+ static void msm_chg_enable_secondary_det(struct msm_otg *motg)
+ {
+-	struct usb_phy *otg = &motg->otg;
++	struct usb_phy *xceiv = &motg->xceiv;
+ 	u32 chg_det;
+ 
+ 	switch (motg->pdata->phy_type) {
+ 	case CI_45NM_INTEGRATED_PHY:
+-		chg_det = ulpi_read(otg, 0x34);
++		chg_det = ulpi_read(xceiv, 0x34);
+ 		/* Turn off charger block */
+ 		chg_det |= ~(1 << 1);
+-		ulpi_write(otg, chg_det, 0x34);
++		ulpi_write(xceiv, chg_det, 0x34);
+ 		udelay(20);
+ 		/* control chg block via ULPI */
+ 		chg_det &= ~(1 << 3);
+-		ulpi_write(otg, chg_det, 0x34);
++		ulpi_write(xceiv, chg_det, 0x34);
+ 		/* put it in host mode for enabling D- source */
+ 		chg_det &= ~(1 << 2);
+-		ulpi_write(otg, chg_det, 0x34);
++		ulpi_write(xceiv, chg_det, 0x34);
+ 		/* Turn on chg detect block */
+ 		chg_det &= ~(1 << 1);
+-		ulpi_write(otg, chg_det, 0x34);
++		ulpi_write(xceiv, chg_det, 0x34);
+ 		udelay(20);
+ 		/* enable chg detection */
+ 		chg_det &= ~(1 << 0);
+-		ulpi_write(otg, chg_det, 0x34);
++		ulpi_write(xceiv, chg_det, 0x34);
+ 		break;
+ 	case SNPS_28NM_INTEGRATED_PHY:
+ 		/*
+ 		 * Configure DM as current source, DP as current sink
+ 		 * and enable battery charging comparators.
+ 		 */
+-		ulpi_write(otg, 0x8, 0x85);
+-		ulpi_write(otg, 0x2, 0x85);
+-		ulpi_write(otg, 0x1, 0x85);
++		ulpi_write(xceiv, 0x8, 0x85);
++		ulpi_write(xceiv, 0x2, 0x85);
++		ulpi_write(xceiv, 0x1, 0x85);
+ 		break;
+ 	default:
+ 		break;
+@@ -861,17 +861,17 @@ static void msm_chg_enable_secondary_det(struct msm_otg *motg)
+ 
+ static bool msm_chg_check_primary_det(struct msm_otg *motg)
+ {
+-	struct usb_phy *otg = &motg->otg;
++	struct usb_phy *xceiv = &motg->xceiv;
+ 	u32 chg_det;
+ 	bool ret = false;
+ 
+ 	switch (motg->pdata->phy_type) {
+ 	case CI_45NM_INTEGRATED_PHY:
+-		chg_det = ulpi_read(otg, 0x34);
++		chg_det = ulpi_read(xceiv, 0x34);
+ 		ret = chg_det & (1 << 4);
+ 		break;
+ 	case SNPS_28NM_INTEGRATED_PHY:
+-		chg_det = ulpi_read(otg, 0x87);
++		chg_det = ulpi_read(xceiv, 0x87);
+ 		ret = chg_det & 1;
+ 		break;
+ 	default:
+@@ -882,23 +882,23 @@ static bool msm_chg_check_primary_det(struct msm_otg *motg)
+ 
+ static void msm_chg_enable_primary_det(struct msm_otg *motg)
+ {
+-	struct usb_phy *otg = &motg->otg;
++	struct usb_phy *xceiv = &motg->xceiv;
+ 	u32 chg_det;
+ 
+ 	switch (motg->pdata->phy_type) {
+ 	case CI_45NM_INTEGRATED_PHY:
+-		chg_det = ulpi_read(otg, 0x34);
++		chg_det = ulpi_read(xceiv, 0x34);
+ 		/* enable chg detection */
+ 		chg_det &= ~(1 << 0);
+-		ulpi_write(otg, chg_det, 0x34);
++		ulpi_write(xceiv, chg_det, 0x34);
+ 		break;
+ 	case SNPS_28NM_INTEGRATED_PHY:
+ 		/*
+ 		 * Configure DP as current source, DM as current sink
+ 		 * and enable battery charging comparators.
+ 		 */
+-		ulpi_write(otg, 0x2, 0x85);
+-		ulpi_write(otg, 0x1, 0x85);
++		ulpi_write(xceiv, 0x2, 0x85);
++		ulpi_write(xceiv, 0x1, 0x85);
+ 		break;
+ 	default:
+ 		break;
+@@ -907,17 +907,17 @@ static void msm_chg_enable_primary_det(struct msm_otg *motg)
+ 
+ static bool msm_chg_check_dcd(struct msm_otg *motg)
+ {
+-	struct usb_phy *otg = &motg->otg;
++	struct usb_phy *xceiv = &motg->xceiv;
+ 	u32 line_state;
+ 	bool ret = false;
+ 
+ 	switch (motg->pdata->phy_type) {
+ 	case CI_45NM_INTEGRATED_PHY:
+-		line_state = ulpi_read(otg, 0x15);
++		line_state = ulpi_read(xceiv, 0x15);
+ 		ret = !(line_state & 1);
+ 		break;
+ 	case SNPS_28NM_INTEGRATED_PHY:
+-		line_state = ulpi_read(otg, 0x87);
++		line_state = ulpi_read(xceiv, 0x87);
+ 		ret = line_state & 2;
+ 		break;
+ 	default:
+@@ -928,17 +928,17 @@ static bool msm_chg_check_dcd(struct msm_otg *motg)
+ 
+ static void msm_chg_disable_dcd(struct msm_otg *motg)
+ {
+-	struct usb_phy *otg = &motg->otg;
++	struct usb_phy *xceiv = &motg->xceiv;
+ 	u32 chg_det;
+ 
+ 	switch (motg->pdata->phy_type) {
+ 	case CI_45NM_INTEGRATED_PHY:
+-		chg_det = ulpi_read(otg, 0x34);
++		chg_det = ulpi_read(xceiv, 0x34);
+ 		chg_det &= ~(1 << 5);
+-		ulpi_write(otg, chg_det, 0x34);
++		ulpi_write(xceiv, chg_det, 0x34);
+ 		break;
+ 	case SNPS_28NM_INTEGRATED_PHY:
+-		ulpi_write(otg, 0x10, 0x86);
++		ulpi_write(xceiv, 0x10, 0x86);
+ 		break;
+ 	default:
+ 		break;
+@@ -947,19 +947,19 @@ static void msm_chg_disable_dcd(struct msm_otg *motg)
+ 
+ static void msm_chg_enable_dcd(struct msm_otg *motg)
+ {
+-	struct usb_phy *otg = &motg->otg;
++	struct usb_phy *xceiv = &motg->xceiv;
+ 	u32 chg_det;
+ 
+ 	switch (motg->pdata->phy_type) {
+ 	case CI_45NM_INTEGRATED_PHY:
+-		chg_det = ulpi_read(otg, 0x34);
++		chg_det = ulpi_read(xceiv, 0x34);
+ 		/* Turn on D+ current source */
+ 		chg_det |= (1 << 5);
+-		ulpi_write(otg, chg_det, 0x34);
++		ulpi_write(xceiv, chg_det, 0x34);
+ 		break;
+ 	case SNPS_28NM_INTEGRATED_PHY:
+ 		/* Data contact detection enable */
+-		ulpi_write(otg, 0x10, 0x85);
++		ulpi_write(xceiv, 0x10, 0x85);
+ 		break;
+ 	default:
+ 		break;
+@@ -968,32 +968,32 @@ static void msm_chg_enable_dcd(struct msm_otg *motg)
+ 
+ static void msm_chg_block_on(struct msm_otg *motg)
+ {
+-	struct usb_phy *otg = &motg->otg;
++	struct usb_phy *xceiv = &motg->xceiv;
+ 	u32 func_ctrl, chg_det;
+ 
+ 	/* put the controller in non-driving mode */
+-	func_ctrl = ulpi_read(otg, ULPI_FUNC_CTRL);
++	func_ctrl = ulpi_read(xceiv, ULPI_FUNC_CTRL);
+ 	func_ctrl &= ~ULPI_FUNC_CTRL_OPMODE_MASK;
+ 	func_ctrl |= ULPI_FUNC_CTRL_OPMODE_NONDRIVING;
+-	ulpi_write(otg, func_ctrl, ULPI_FUNC_CTRL);
++	ulpi_write(xceiv, func_ctrl, ULPI_FUNC_CTRL);
+ 
+ 	switch (motg->pdata->phy_type) {
+ 	case CI_45NM_INTEGRATED_PHY:
+-		chg_det = ulpi_read(otg, 0x34);
++		chg_det = ulpi_read(xceiv, 0x34);
+ 		/* control chg block via ULPI */
+ 		chg_det &= ~(1 << 3);
+-		ulpi_write(otg, chg_det, 0x34);
++		ulpi_write(xceiv, chg_det, 0x34);
+ 		/* Turn on chg detect block */
+ 		chg_det &= ~(1 << 1);
+-		ulpi_write(otg, chg_det, 0x34);
++		ulpi_write(xceiv, chg_det, 0x34);
+ 		udelay(20);
+ 		break;
+ 	case SNPS_28NM_INTEGRATED_PHY:
+ 		/* Clear charger detecting control bits */
+-		ulpi_write(otg, 0x3F, 0x86);
++		ulpi_write(xceiv, 0x3F, 0x86);
+ 		/* Clear alt interrupt latch and enable bits */
+-		ulpi_write(otg, 0x1F, 0x92);
+-		ulpi_write(otg, 0x1F, 0x95);
++		ulpi_write(xceiv, 0x1F, 0x92);
++		ulpi_write(xceiv, 0x1F, 0x95);
+ 		udelay(100);
+ 		break;
+ 	default:
+@@ -1003,32 +1003,32 @@ static void msm_chg_block_on(struct msm_otg *motg)
+ 
+ static void msm_chg_block_off(struct msm_otg *motg)
+ {
+-	struct usb_phy *otg = &motg->otg;
++	struct usb_phy *xceiv = &motg->xceiv;
+ 	u32 func_ctrl, chg_det;
+ 
+ 	switch (motg->pdata->phy_type) {
+ 	case CI_45NM_INTEGRATED_PHY:
+-		chg_det = ulpi_read(otg, 0x34);
++		chg_det = ulpi_read(xceiv, 0x34);
+ 		/* Turn off charger block */
+ 		chg_det |= ~(1 << 1);
+-		ulpi_write(otg, chg_det, 0x34);
++		ulpi_write(xceiv, chg_det, 0x34);
+ 		break;
+ 	case SNPS_28NM_INTEGRATED_PHY:
+ 		/* Clear charger detecting control bits */
+-		ulpi_write(otg, 0x3F, 0x86);
++		ulpi_write(xceiv, 0x3F, 0x86);
+ 		/* Clear alt interrupt latch and enable bits */
+-		ulpi_write(otg, 0x1F, 0x92);
+-		ulpi_write(otg, 0x1F, 0x95);
++		ulpi_write(xceiv, 0x1F, 0x92);
++		ulpi_write(xceiv, 0x1F, 0x95);
+ 		break;
+ 	default:
+ 		break;
+ 	}
+ 
+ 	/* put the controller in normal mode */
+-	func_ctrl = ulpi_read(otg, ULPI_FUNC_CTRL);
++	func_ctrl = ulpi_read(xceiv, ULPI_FUNC_CTRL);
+ 	func_ctrl &= ~ULPI_FUNC_CTRL_OPMODE_MASK;
+ 	func_ctrl |= ULPI_FUNC_CTRL_OPMODE_NORMAL;
+-	ulpi_write(otg, func_ctrl, ULPI_FUNC_CTRL);
++	ulpi_write(xceiv, func_ctrl, ULPI_FUNC_CTRL);
+ }
+ 
+ #define MSM_CHG_DCD_POLL_TIME		(100 * HZ/1000) /* 100 msec */
+@@ -1038,14 +1038,14 @@ static void msm_chg_block_off(struct msm_otg *motg)
+ static void msm_chg_detect_work(struct work_struct *w)
+ {
+ 	struct msm_otg *motg = container_of(w, struct msm_otg, chg_work.work);
+-	struct usb_phy *otg = &motg->otg;
++	struct usb_phy *xceiv = &motg->xceiv;
+ 	bool is_dcd, tmout, vout;
+ 	unsigned long delay;
+ 
+-	dev_dbg(otg->dev, "chg detection work\n");
++	dev_dbg(xceiv->dev, "chg detection work\n");
+ 	switch (motg->chg_state) {
+ 	case USB_CHG_STATE_UNDEFINED:
+-		pm_runtime_get_sync(otg->dev);
++		pm_runtime_get_sync(xceiv->dev);
+ 		msm_chg_block_on(motg);
+ 		msm_chg_enable_dcd(motg);
+ 		motg->chg_state = USB_CHG_STATE_WAIT_FOR_DCD;
+@@ -1088,7 +1088,7 @@ static void msm_chg_detect_work(struct work_struct *w)
+ 		motg->chg_state = USB_CHG_STATE_DETECTED;
+ 	case USB_CHG_STATE_DETECTED:
+ 		msm_chg_block_off(motg);
+-		dev_dbg(otg->dev, "charger = %d\n", motg->chg_type);
++		dev_dbg(xceiv->dev, "charger = %d\n", motg->chg_type);
+ 		schedule_work(&motg->sm_work);
+ 		return;
+ 	default:
+@@ -1152,22 +1152,22 @@ static void msm_otg_init_sm(struct msm_otg *motg)
+ static void msm_otg_sm_work(struct work_struct *w)
+ {
+ 	struct msm_otg *motg = container_of(w, struct msm_otg, sm_work);
+-	struct usb_phy *otg = &motg->otg;
++	struct usb_otg *otg = motg->xceiv.otg;
+ 
+-	switch (otg->state) {
++	switch (otg->xceiv->state) {
+ 	case USB_PHY_STATE_UNDEFINED:
+-		dev_dbg(otg->dev, "USB_PHY_STATE_UNDEFINED state\n");
+-		msm_otg_reset(otg);
++		dev_dbg(otg->xceiv->dev, "USB_PHY_STATE_UNDEFINED state\n");
++		msm_otg_reset(otg->xceiv);
+ 		msm_otg_init_sm(motg);
+-		otg->state = USB_PHY_STATE_B_IDLE;
++		otg->xceiv->state = USB_PHY_STATE_B_IDLE;
+ 		/* FALL THROUGH */
+ 	case USB_PHY_STATE_B_IDLE:
+-		dev_dbg(otg->dev, "USB_PHY_STATE_B_IDLE state\n");
++		dev_dbg(otg->xceiv->dev, "USB_PHY_STATE_B_IDLE state\n");
+ 		if (!test_bit(ID, &motg->inputs) && otg->host) {
+ 			/* disable BSV bit */
+ 			writel(readl(USB_OTGSC) & ~OTGSC_BSVIE, USB_OTGSC);
+-			msm_otg_start_host(otg, 1);
+-			otg->state = USB_PHY_STATE_A_HOST;
++			msm_otg_start_host(otg->xceiv, 1);
++			otg->xceiv->state = USB_PHY_STATE_A_HOST;
+ 		} else if (test_bit(B_SESS_VLD, &motg->inputs)) {
+ 			switch (motg->chg_state) {
+ 			case USB_CHG_STATE_UNDEFINED:
+@@ -1182,13 +1182,15 @@ static void msm_otg_sm_work(struct work_struct *w)
+ 				case USB_CDP_CHARGER:
+ 					msm_otg_notify_charger(motg,
+ 							IDEV_CHG_MAX);
+-					msm_otg_start_peripheral(otg, 1);
+-					otg->state = USB_PHY_STATE_B_PERIPHERAL;
++					msm_otg_start_peripheral(otg->xceiv, 1);
++					otg->xceiv->state
++						= USB_PHY_STATE_B_PERIPHERAL;
+ 					break;
+ 				case USB_SDP_CHARGER:
+ 					msm_otg_notify_charger(motg, IUNIT);
+-					msm_otg_start_peripheral(otg, 1);
+-					otg->state = USB_PHY_STATE_B_PERIPHERAL;
++					msm_otg_start_peripheral(otg->xceiv, 1);
++					otg->xceiv->state
++						= USB_PHY_STATE_B_PERIPHERAL;
+ 					break;
+ 				default:
+ 					break;
+@@ -1204,34 +1206,34 @@ static void msm_otg_sm_work(struct work_struct *w)
+ 			 * is incremented in charger detection work.
+ 			 */
+ 			if (cancel_delayed_work_sync(&motg->chg_work)) {
+-				pm_runtime_put_sync(otg->dev);
+-				msm_otg_reset(otg);
++				pm_runtime_put_sync(otg->xceiv->dev);
++				msm_otg_reset(otg->xceiv);
+ 			}
+ 			msm_otg_notify_charger(motg, 0);
+ 			motg->chg_state = USB_CHG_STATE_UNDEFINED;
+ 			motg->chg_type = USB_INVALID_CHARGER;
+ 		}
+-		pm_runtime_put_sync(otg->dev);
++		pm_runtime_put_sync(otg->xceiv->dev);
+ 		break;
+ 	case USB_PHY_STATE_B_PERIPHERAL:
+-		dev_dbg(otg->dev, "USB_PHY_STATE_B_PERIPHERAL state\n");
++		dev_dbg(otg->xceiv->dev, "USB_PHY_STATE_B_PERIPHERAL state\n");
+ 		if (!test_bit(B_SESS_VLD, &motg->inputs) ||
+ 				!test_bit(ID, &motg->inputs)) {
+ 			msm_otg_notify_charger(motg, 0);
+-			msm_otg_start_peripheral(otg, 0);
++			msm_otg_start_peripheral(otg->xceiv, 0);
+ 			motg->chg_state = USB_CHG_STATE_UNDEFINED;
+ 			motg->chg_type = USB_INVALID_CHARGER;
+-			otg->state = USB_PHY_STATE_B_IDLE;
+-			msm_otg_reset(otg);
++			otg->xceiv->state = USB_PHY_STATE_B_IDLE;
++			msm_otg_reset(otg->xceiv);
+ 			schedule_work(w);
+ 		}
+ 		break;
+ 	case USB_PHY_STATE_A_HOST:
+-		dev_dbg(otg->dev, "USB_PHY_STATE_A_HOST state\n");
++		dev_dbg(otg->xceiv->dev, "USB_PHY_STATE_A_HOST state\n");
+ 		if (test_bit(ID, &motg->inputs)) {
+-			msm_otg_start_host(otg, 0);
+-			otg->state = USB_PHY_STATE_B_IDLE;
+-			msm_otg_reset(otg);
++			msm_otg_start_host(otg->xceiv, 0);
++			otg->xceiv->state = USB_PHY_STATE_B_IDLE;
++			msm_otg_reset(otg->xceiv);
+ 			schedule_work(w);
+ 		}
+ 		break;
+@@ -1243,13 +1245,13 @@ static void msm_otg_sm_work(struct work_struct *w)
+ static irqreturn_t msm_otg_irq(int irq, void *data)
+ {
+ 	struct msm_otg *motg = data;
+-	struct usb_phy *otg = &motg->otg;
++	struct usb_phy *xceiv = &motg->xceiv;
+ 	u32 otgsc = 0;
+ 
+ 	if (atomic_read(&motg->in_lpm)) {
+ 		disable_irq_nosync(irq);
+ 		motg->async_int = 1;
+-		pm_runtime_get(otg->dev);
++		pm_runtime_get(xceiv->dev);
+ 		return IRQ_HANDLED;
+ 	}
+ 
+@@ -1262,15 +1264,15 @@ static irqreturn_t msm_otg_irq(int irq, void *data)
+ 			set_bit(ID, &motg->inputs);
+ 		else
+ 			clear_bit(ID, &motg->inputs);
+-		dev_dbg(otg->dev, "ID set/clear\n");
+-		pm_runtime_get_noresume(otg->dev);
++		dev_dbg(xceiv->dev, "ID set/clear\n");
++		pm_runtime_get_noresume(xceiv->dev);
+ 	} else if ((otgsc & OTGSC_BSVIS) && (otgsc & OTGSC_BSVIE)) {
+ 		if (otgsc & OTGSC_BSV)
+ 			set_bit(B_SESS_VLD, &motg->inputs);
+ 		else
+ 			clear_bit(B_SESS_VLD, &motg->inputs);
+-		dev_dbg(otg->dev, "BSV set/clear\n");
+-		pm_runtime_get_noresume(otg->dev);
++		dev_dbg(xceiv->dev, "BSV set/clear\n");
++		pm_runtime_get_noresume(xceiv->dev);
+ 	}
+ 
+ 	writel(otgsc, USB_OTGSC);
+@@ -1281,9 +1283,9 @@ static irqreturn_t msm_otg_irq(int irq, void *data)
+ static int msm_otg_mode_show(struct seq_file *s, void *unused)
+ {
+ 	struct msm_otg *motg = s->private;
+-	struct usb_phy *otg = &motg->otg;
++	struct usb_otg *otg = motg->xceiv.otg;
+ 
+-	switch (otg->state) {
++	switch (otg->xceiv->state) {
+ 	case USB_PHY_STATE_A_HOST:
+ 		seq_printf(s, "host\n");
+ 		break;
+@@ -1309,7 +1311,7 @@ static ssize_t msm_otg_mode_write(struct file *file, const char __user *ubuf,
+ 	struct seq_file *s = file->private_data;
+ 	struct msm_otg *motg = s->private;
+ 	char buf[16];
+-	struct usb_phy *otg = &motg->otg;
++	struct usb_otg *otg = motg->xceiv.otg;
+ 	int status = count;
+ 	enum usb_mode_type req_mode;
+ 
+@@ -1333,7 +1335,7 @@ static ssize_t msm_otg_mode_write(struct file *file, const char __user *ubuf,
+ 
+ 	switch (req_mode) {
+ 	case USB_NONE:
+-		switch (otg->state) {
++		switch (otg->xceiv->state) {
+ 		case USB_PHY_STATE_A_HOST:
+ 		case USB_PHY_STATE_B_PERIPHERAL:
+ 			set_bit(ID, &motg->inputs);
+@@ -1344,7 +1346,7 @@ static ssize_t msm_otg_mode_write(struct file *file, const char __user *ubuf,
+ 		}
+ 		break;
+ 	case USB_PERIPHERAL:
+-		switch (otg->state) {
++		switch (otg->xceiv->state) {
+ 		case USB_PHY_STATE_B_IDLE:
+ 		case USB_PHY_STATE_A_HOST:
+ 			set_bit(ID, &motg->inputs);
+@@ -1355,7 +1357,7 @@ static ssize_t msm_otg_mode_write(struct file *file, const char __user *ubuf,
+ 		}
+ 		break;
+ 	case USB_HOST:
+-		switch (otg->state) {
++		switch (otg->xceiv->state) {
+ 		case USB_PHY_STATE_B_IDLE:
+ 		case USB_PHY_STATE_B_PERIPHERAL:
+ 			clear_bit(ID, &motg->inputs);
+@@ -1368,7 +1370,7 @@ static ssize_t msm_otg_mode_write(struct file *file, const char __user *ubuf,
+ 		goto out;
+ 	}
+ 
+-	pm_runtime_get_sync(otg->dev);
++	pm_runtime_get_sync(otg->xceiv->dev);
+ 	schedule_work(&motg->sm_work);
+ out:
+ 	return status;
+@@ -1414,7 +1416,7 @@ static int __init msm_otg_probe(struct platform_device *pdev)
+ 	int ret = 0;
+ 	struct resource *res;
+ 	struct msm_otg *motg;
+-	struct usb_phy *otg;
++	struct usb_phy *xceiv;
+ 
+ 	dev_info(&pdev->dev, "msm_otg probe\n");
+ 	if (!pdev->dev.platform_data) {
+@@ -1428,9 +1430,15 @@ static int __init msm_otg_probe(struct platform_device *pdev)
  		return -ENOMEM;
+ 	}
  
-+	fsl_otg_tc->xceiv.otg = kzalloc(sizeof(struct usb_otg), GFP_KERNEL);
-+	if (!fsl_otg_tc->xceiv.otg) {
-+		kfree(fsl_otg_tc);
++	motg->xceiv.otg = kzalloc(sizeof(struct usb_otg), GFP_KERNEL);
++	if (!motg->xceiv.otg) {
++		dev_err(&pdev->dev, "unable to allocate msm_otg\n");
 +		return -ENOMEM;
 +	}
 +
- 	INIT_DELAYED_WORK(&fsl_otg_tc->otg_event, fsl_otg_event);
+ 	motg->pdata = pdev->dev.platform_data;
+-	otg = &motg->otg;
+-	otg->dev = &pdev->dev;
++	xceiv = &motg->xceiv;
++	xceiv->dev = &pdev->dev;
  
- 	INIT_LIST_HEAD(&active_timers);
-@@ -788,17 +799,19 @@ static int fsl_otg_conf(struct platform_device *pdev)
- 	fsl_otg_tc->fsm.ops = &fsl_otg_ops;
+ 	motg->phy_reset_clk = clk_get(&pdev->dev, "usb_phy_clk");
+ 	if (IS_ERR(motg->phy_reset_clk)) {
+@@ -1538,16 +1546,18 @@ static int __init msm_otg_probe(struct platform_device *pdev)
+ 		goto disable_clks;
+ 	}
  
- 	/* initialize the otg structure */
--	fsl_otg_tc->otg.label = DRIVER_DESC;
--	fsl_otg_tc->otg.set_host = fsl_otg_set_host;
--	fsl_otg_tc->otg.set_peripheral = fsl_otg_set_peripheral;
--	fsl_otg_tc->otg.set_power = fsl_otg_set_power;
--	fsl_otg_tc->otg.start_hnp = fsl_otg_start_hnp;
--	fsl_otg_tc->otg.start_srp = fsl_otg_start_srp;
-+	fsl_otg_tc->xceiv.label = DRIVER_DESC;
-+	fsl_otg_tc->xceiv.set_power = fsl_otg_set_power;
+-	otg->init = msm_otg_reset;
+-	otg->set_host = msm_otg_set_host;
+-	otg->set_peripheral = msm_otg_set_peripheral;
+-	otg->set_power = msm_otg_set_power;
++	xceiv->init = msm_otg_reset;
++	xceiv->set_power = msm_otg_set_power;
 +
-+	fsl_otg_tc->xceiv.otg->xceiv = &fsl_otg_tc->xceiv;
-+	fsl_otg_tc->xceiv.otg->set_host = fsl_otg_set_host;
-+	fsl_otg_tc->xceiv.otg->set_peripheral = fsl_otg_set_peripheral;
-+	fsl_otg_tc->xceiv.otg->start_hnp = fsl_otg_start_hnp;
-+	fsl_otg_tc->xceiv.otg->start_srp = fsl_otg_start_srp;
++	xceiv->io_ops = &msm_otg_io_ops;
  
- 	fsl_otg_dev = fsl_otg_tc;
+-	otg->io_ops = &msm_otg_io_ops;
++	xceiv->otg->xceiv = &motg->xceiv;
++	xceiv->otg->set_host = msm_otg_set_host;
++	xceiv->otg->set_peripheral = msm_otg_set_peripheral;
  
- 	/* Store the otg transceiver */
--	status = otg_set_transceiver(&fsl_otg_tc->otg);
-+	status = usb_set_transceiver(&fsl_otg_tc->xceiv);
- 	if (status) {
- 		pr_warn(FSL_OTG_NAME ": unable to register OTG transceiver.\n");
- 		goto err;
-@@ -807,6 +820,7 @@ static int fsl_otg_conf(struct platform_device *pdev)
- 	return 0;
- err:
- 	fsl_otg_uninit_timers();
-+	kfree(fsl_otg_tc->xceiv.otg);
- 	kfree(fsl_otg_tc);
- 	return status;
+-	ret = otg_set_transceiver(&motg->otg);
++	ret = usb_set_transceiver(&motg->xceiv);
+ 	if (ret) {
+-		dev_err(&pdev->dev, "otg_set_transceiver failed\n");
++		dev_err(&pdev->dev, "usb_set_transceiver failed\n");
+ 		goto free_irq;
+ 	}
+ 
+@@ -1591,6 +1601,7 @@ put_clk:
+ put_phy_reset_clk:
+ 	clk_put(motg->phy_reset_clk);
+ free_motg:
++	kfree(motg->xceiv.otg);
+ 	kfree(motg);
+ 	return ret;
  }
-@@ -815,19 +829,19 @@ err:
- int usb_otg_start(struct platform_device *pdev)
+@@ -1598,10 +1609,10 @@ free_motg:
+ static int __devexit msm_otg_remove(struct platform_device *pdev)
  {
- 	struct fsl_otg *p_otg;
--	struct usb_phy *otg_trans = otg_get_transceiver();
-+	struct usb_phy *otg_trans = usb_get_transceiver();
- 	struct otg_fsm *fsm;
- 	int status;
- 	struct resource *res;
- 	u32 temp;
- 	struct fsl_usb2_platform_data *pdata = pdev->dev.platform_data;
+ 	struct msm_otg *motg = platform_get_drvdata(pdev);
+-	struct usb_phy *otg = &motg->otg;
++	struct usb_phy *xceiv = &motg->xceiv;
+ 	int cnt = 0;
  
--	p_otg = container_of(otg_trans, struct fsl_otg, otg);
-+	p_otg = container_of(otg_trans, struct fsl_otg, xceiv);
- 	fsm = &p_otg->fsm;
+-	if (otg->host || otg->gadget)
++	if (xceiv->otg->host || xceiv->otg->gadget)
+ 		return -EBUSY;
  
- 	/* Initialize the state machine structure with default values */
- 	SET_OTG_STATE(otg_trans, USB_PHY_STATE_UNDEFINED);
--	fsm->transceiver = &p_otg->otg;
-+	fsm->otg = p_otg->xceiv.otg;
- 
- 	/* We don't require predefined MEM/IRQ resource index */
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-@@ -857,9 +871,10 @@ int usb_otg_start(struct platform_device *pdev)
- 	status = request_irq(p_otg->irq, fsl_otg_isr,
- 				IRQF_SHARED, driver_name, p_otg);
- 	if (status) {
--		dev_dbg(p_otg->otg.dev, "can't get IRQ %d, error %d\n",
-+		dev_dbg(p_otg->xceiv.dev, "can't get IRQ %d, error %d\n",
- 			p_otg->irq, status);
- 		iounmap(p_otg->dr_mem_map);
-+		kfree(p_otg->xceiv.otg);
- 		kfree(p_otg);
- 		return status;
- 	}
-@@ -919,10 +934,10 @@ int usb_otg_start(struct platform_device *pdev)
- 	 * Also: record initial state of ID pin
- 	 */
- 	if (fsl_readl(&p_otg->dr_mem_map->otgsc) & OTGSC_STS_USB_ID) {
--		p_otg->otg.state = USB_PHY_STATE_UNDEFINED;
-+		p_otg->xceiv.state = USB_PHY_STATE_UNDEFINED;
- 		p_otg->fsm.id = 1;
- 	} else {
--		p_otg->otg.state = USB_PHY_STATE_A_IDLE;
-+		p_otg->xceiv.state = USB_PHY_STATE_A_IDLE;
- 		p_otg->fsm.id = 0;
- 	}
- 
-@@ -978,7 +993,7 @@ static int show_fsl_usb2_otg_state(struct device *dev,
- 	/* State */
- 	t = scnprintf(next, size,
- 		      "OTG state: %s\n\n",
--		      usb_phy_state_string(fsl_otg_dev->otg.state));
-+		      usb_phy_state_string(fsl_otg_dev->xceiv.state));
- 	size -= t;
- 	next += t;
- 
-@@ -1124,12 +1139,13 @@ static int __devexit fsl_otg_remove(struct platform_device *pdev)
- {
- 	struct fsl_usb2_platform_data *pdata = pdev->dev.platform_data;
+ 	msm_otg_debugfs_cleanup();
+@@ -1613,14 +1624,14 @@ static int __devexit msm_otg_remove(struct platform_device *pdev)
+ 	device_init_wakeup(&pdev->dev, 0);
+ 	pm_runtime_disable(&pdev->dev);
  
 -	otg_set_transceiver(NULL);
 +	usb_set_transceiver(NULL);
- 	free_irq(fsl_otg_dev->irq, fsl_otg_dev);
+ 	free_irq(motg->irq, motg);
  
- 	iounmap((void *)usb_dr_regs);
+ 	/*
+ 	 * Put PHY in low power mode.
+ 	 */
+-	ulpi_read(otg, 0x14);
+-	ulpi_write(otg, 0x08, 0x09);
++	ulpi_read(xceiv, 0x14);
++	ulpi_write(xceiv, 0x08, 0x09);
  
- 	fsl_otg_uninit_timers();
-+	kfree(fsl_otg_dev->xceiv.otg);
- 	kfree(fsl_otg_dev);
+ 	writel(readl(USB_PORTSC) | PORTSC_PHCD, USB_PORTSC);
+ 	while (cnt < PHY_SUSPEND_TIMEOUT_USEC) {
+@@ -1630,7 +1641,7 @@ static int __devexit msm_otg_remove(struct platform_device *pdev)
+ 		cnt++;
+ 	}
+ 	if (cnt >= PHY_SUSPEND_TIMEOUT_USEC)
+-		dev_err(otg->dev, "Unable to suspend PHY\n");
++		dev_err(xceiv->dev, "Unable to suspend PHY\n");
  
- 	device_remove_file(&pdev->dev, &dev_attr_fsl_usb2_otg_state);
-diff --git a/drivers/usb/otg/fsl_otg.h b/drivers/usb/otg/fsl_otg.h
-index 33f3997..a474ae2 100644
---- a/drivers/usb/otg/fsl_otg.h
-+++ b/drivers/usb/otg/fsl_otg.h
-@@ -369,7 +369,7 @@ inline struct fsl_otg_timer *otg_timer_initializer
- }
+ 	clk_disable(motg->pclk);
+ 	clk_disable(motg->clk);
+@@ -1651,6 +1662,7 @@ static int __devexit msm_otg_remove(struct platform_device *pdev)
+ 	if (motg->core_clk)
+ 		clk_put(motg->core_clk);
  
- struct fsl_otg {
++	kfree(motg->xceiv.otg);
+ 	kfree(motg);
+ 
+ 	return 0;
+@@ -1660,7 +1672,7 @@ static int __devexit msm_otg_remove(struct platform_device *pdev)
+ static int msm_otg_runtime_idle(struct device *dev)
+ {
+ 	struct msm_otg *motg = dev_get_drvdata(dev);
+-	struct usb_phy *otg = &motg->otg;
++	struct usb_otg *otg = motg->xceiv.otg;
+ 
+ 	dev_dbg(dev, "OTG runtime idle\n");
+ 
+@@ -1670,7 +1682,7 @@ static int msm_otg_runtime_idle(struct device *dev)
+ 	 * This 1 sec delay also prevents entering into LPM immediately
+ 	 * after asynchronous interrupt.
+ 	 */
+-	if (otg->state != USB_PHY_STATE_UNDEFINED)
++	if (otg->xceiv->state != USB_PHY_STATE_UNDEFINED)
+ 		pm_schedule_suspend(dev, 1000);
+ 
+ 	return -EAGAIN;
+diff --git a/include/linux/usb/msm_hsusb.h b/include/linux/usb/msm_hsusb.h
+index e25ee7a..fb7f047 100644
+--- a/include/linux/usb/msm_hsusb.h
++++ b/include/linux/usb/msm_hsusb.h
+@@ -160,7 +160,7 @@ struct msm_otg_platform_data {
+  *               detection process.
+  */
+ struct msm_otg {
 -	struct usb_phy otg;
 +	struct usb_phy xceiv;
- 	struct otg_fsm fsm;
- 	struct usb_dr_mmap *dr_mem_map;
- 	struct delayed_work otg_event;
-diff --git a/drivers/usb/otg/otg_fsm.c b/drivers/usb/otg/otg_fsm.c
-index b2feb07..7d94871 100644
---- a/drivers/usb/otg/otg_fsm.c
-+++ b/drivers/usb/otg/otg_fsm.c
-@@ -117,10 +117,10 @@ void otg_leave_state(struct otg_fsm *fsm, enum usb_phy_state old_state)
- int otg_set_state(struct otg_fsm *fsm, enum usb_phy_state new_state)
- {
- 	state_changed = 1;
--	if (fsm->transceiver->state == new_state)
-+	if (fsm->otg->xceiv->state == new_state)
- 		return 0;
- 	VDBG("Set state: %s\n", usb_phy_state_string(new_state));
--	otg_leave_state(fsm, fsm->transceiver->state);
-+	otg_leave_state(fsm, fsm->otg->xceiv->state);
- 	switch (new_state) {
- 	case USB_PHY_STATE_B_IDLE:
- 		otg_drv_vbus(fsm, 0);
-@@ -155,8 +155,8 @@ int otg_set_state(struct otg_fsm *fsm, enum usb_phy_state new_state)
- 		otg_loc_conn(fsm, 0);
- 		otg_loc_sof(fsm, 1);
- 		otg_set_protocol(fsm, PROTO_HOST);
--		usb_bus_start_enum(fsm->transceiver->host,
--				fsm->transceiver->host->otg_port);
-+		usb_bus_start_enum(fsm->otg->host,
-+				fsm->otg->host->otg_port);
- 		break;
- 	case USB_PHY_STATE_A_IDLE:
- 		otg_drv_vbus(fsm, 0);
-@@ -221,7 +221,7 @@ int otg_set_state(struct otg_fsm *fsm, enum usb_phy_state new_state)
- 		break;
- 	}
- 
--	fsm->transceiver->state = new_state;
-+	fsm->otg->xceiv->state = new_state;
- 	return 0;
- }
- 
-@@ -233,7 +233,7 @@ int otg_statemachine(struct otg_fsm *fsm)
- 
- 	spin_lock_irqsave(&fsm->lock, flags);
- 
--	state = fsm->transceiver->state;
-+	state = fsm->otg->xceiv->state;
- 	state_changed = 0;
- 	/* State machine state change judgement */
- 
-@@ -248,7 +248,7 @@ int otg_statemachine(struct otg_fsm *fsm)
- 	case USB_PHY_STATE_B_IDLE:
- 		if (!fsm->id)
- 			otg_set_state(fsm, USB_PHY_STATE_A_IDLE);
--		else if (fsm->b_sess_vld && fsm->transceiver->gadget)
-+		else if (fsm->b_sess_vld && fsm->otg->gadget)
- 			otg_set_state(fsm, USB_PHY_STATE_B_PERIPHERAL);
- 		else if (fsm->b_bus_req && fsm->b_sess_end && fsm->b_se0_srp)
- 			otg_set_state(fsm, USB_PHY_STATE_B_SRP_INIT);
-@@ -260,7 +260,7 @@ int otg_statemachine(struct otg_fsm *fsm)
- 	case USB_PHY_STATE_B_PERIPHERAL:
- 		if (!fsm->id || !fsm->b_sess_vld)
- 			otg_set_state(fsm, USB_PHY_STATE_B_IDLE);
--		else if (fsm->b_bus_req && fsm->transceiver->
-+		else if (fsm->b_bus_req && fsm->otg->
- 				gadget->b_hnp_enable && fsm->a_bus_suspend)
- 			otg_set_state(fsm, USB_PHY_STATE_B_WAIT_ACON);
- 		break;
-@@ -302,7 +302,7 @@ int otg_statemachine(struct otg_fsm *fsm)
- 		break;
- 	case USB_PHY_STATE_A_HOST:
- 		if ((!fsm->a_bus_req || fsm->a_suspend_req) &&
--				fsm->transceiver->host->b_hnp_enable)
-+				fsm->otg->host->b_hnp_enable)
- 			otg_set_state(fsm, USB_PHY_STATE_A_SUSPEND);
- 		else if (fsm->id || !fsm->b_conn || fsm->a_bus_drop)
- 			otg_set_state(fsm, USB_PHY_STATE_A_WAIT_BCON);
-@@ -310,9 +310,9 @@ int otg_statemachine(struct otg_fsm *fsm)
- 			otg_set_state(fsm, USB_PHY_STATE_A_VBUS_ERR);
- 		break;
- 	case USB_PHY_STATE_A_SUSPEND:
--		if (!fsm->b_conn && fsm->transceiver->host->b_hnp_enable)
-+		if (!fsm->b_conn && fsm->otg->host->b_hnp_enable)
- 			otg_set_state(fsm, USB_PHY_STATE_A_PERIPHERAL);
--		else if (!fsm->b_conn && !fsm->transceiver->host->b_hnp_enable)
-+		else if (!fsm->b_conn && !fsm->otg->host->b_hnp_enable)
- 			otg_set_state(fsm, USB_PHY_STATE_A_WAIT_BCON);
- 		else if (fsm->a_bus_req || fsm->b_bus_resume)
- 			otg_set_state(fsm, USB_PHY_STATE_A_HOST);
-diff --git a/drivers/usb/otg/otg_fsm.h b/drivers/usb/otg/otg_fsm.h
-index 5e589ae..c30a2e1 100644
---- a/drivers/usb/otg/otg_fsm.h
-+++ b/drivers/usb/otg/otg_fsm.h
-@@ -82,7 +82,7 @@ struct otg_fsm {
- 	int loc_sof;
- 
- 	struct otg_fsm_ops *ops;
--	struct usb_phy *transceiver;
-+	struct usb_otg *otg;
- 
- 	/* Current usb protocol used: 0:undefine; 1:host; 2:client */
- 	int protocol;
+ 	struct msm_otg_platform_data *pdata;
+ 	int irq;
+ 	struct clk *clk;
 -- 
 1.7.4.1
 
