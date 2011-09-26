@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752603Ab1IZJVf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 05:21:35 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:38516 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752512Ab1IZJVe (ORCPT
+	id S1752590Ab1IZJWk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 05:22:40 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:28924 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752333Ab1IZJWj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 05:21:34 -0400
+	Mon, 26 Sep 2011 05:22:39 -0400
+Message-ID: <4E804440.7030709@atmel.com>
+Date: Mon, 26 Sep 2011 11:22:08 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
 MIME-Version: 1.0
-In-Reply-To: <CAK=Wgbazwz9PRJSpZjopwxJ-PO88FtajmbXL=pVKDHOr1t61fQ@mail.gmail.com>
-References: <15669786.49881316849426265.JavaMail.weblogic@epml24>
-	<CAK=WgbYnGjPKs6_nmFRGfMnbh_7wDR-0QcptAGaqDKVOo-x3cg@mail.gmail.com>
-	<CAHQjnOOtVHUS3KmBz7LdO88fLQyLA6f-w3ye9nAH0Bx+zh38XA@mail.gmail.com>
-	<CAK=Wgbazwz9PRJSpZjopwxJ-PO88FtajmbXL=pVKDHOr1t61fQ@mail.gmail.com>
-Date: Mon, 26 Sep 2011 18:21:32 +0900
-X-Google-Sender-Auth: 8xJw_mlUrcPUNTIn_n_1s-vUWUs
-Message-ID: <CAHQjnON7dksupFeAYLuYXX2PhgjX-GXEGJiy0dRTmpoBjbURVg@mail.gmail.com>
-Subject: Re: [PATCH 3/4] iommu/exynos: Add iommu driver for Exynos4 Platforms
-From: KyongHo Cho <pullip.cho@samsung.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "joerg.roedel@amd.com" <joerg.roedel@amd.com>,
-        =?UTF-8?B?7J207IOB7ZiE?= <sanghyun75.lee@samsung.com>,
-        =?UTF-8?B?6rmA6rWt7KeE?= <kgene.kim@samsung.com>,
-        =?UTF-8?B?6rmA7JiB6529?= <younglak1004.kim@samsung.com>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+CC: Guennadi Liakhovetski <g.liakhovetski@gmx.de>, Josh Wu <josh.wu@atmel.com>,
+        linux-kernel@vger.kernel.org, s.nawrocki@samsung.com,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
+Subject: Re: [PATCH v3 2/2] at91: add Atmel ISI and ov2640 support on sam9m10/sam9g45
+ board.
+References: <1316664661-11383-1-git-send-email-josh.wu@atmel.com> <1316664661-11383-2-git-send-email-josh.wu@atmel.com> <Pine.LNX.4.64.1109220911500.11164@axis700.grange> <20110924052609.GI29998@game.jcrosoft.org>
+In-Reply-To: <20110924052609.GI29998@game.jcrosoft.org>
+X-Enigmail-Version: 1.3.2
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 26, 2011 at 6:05 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
-> On Mon, Sep 26, 2011 at 11:58 AM, KyongHo Cho <pullip.cho@samsung.com> wrote:
->> As you've noticed, it is default behavior for iommu fault.
->
-> Then why not add it to the IOMMU core ? it's quite generic and can be
-> useful for others, too.
->
-Every fault in IOMMU (System MMU) is an error logically
-and must not happen in our multimedia device drivers
-because, our device drivers always construct page table completely
-before address translation in System MMU
-and TLB loads translation information automatically when TLB miss.
+Le 24/09/2011 07:26, Jean-Christophe PLAGNIOL-VILLARD :
+> On 09:35 Thu 22 Sep     , Guennadi Liakhovetski wrote:
+>> On Thu, 22 Sep 2011, Josh Wu wrote:
+>>
+>>> This patch
+>>> 1. add ISI_MCK parent setting code when add ISI device.
+>>> 2. add ov2640 support on board file.
+>>> 3. define isi_mck clock in sam9g45 chip file.
+>>>
+>>> Signed-off-by: Josh Wu <josh.wu@atmel.com>
+>>> ---
+>>>  arch/arm/mach-at91/at91sam9g45.c         |    3 +
+>>>  arch/arm/mach-at91/at91sam9g45_devices.c |  105 +++++++++++++++++++++++++++++-
+>>>  arch/arm/mach-at91/board-sam9m10g45ek.c  |   85 ++++++++++++++++++++++++-
+>>>  arch/arm/mach-at91/include/mach/board.h  |    3 +-
+>>
+>> Personally, I think, it would be better to separate this into two patches 
+>> at least: one for at91 core and one for the specific board, but that's up 
+>> to arch maintainers to decide.
+>>
+>> You also want to patch arch/arm/mach-at91/at91sam9263_devices.c, don't 
+>> you?
+> agreed
 
-I am not sure if the default behavior of MMU fault in our IOMMU driver
-is also correct for other IOMMU drivers.
+No, I am not sure. The IP is not the same between 9263 and 9g45/9m10. So
+this inclusion will not apply.
 
-BTW,
-I think we need more fault type than IOMMU_FAULT_READ and IOMMU_FAULT_WRITE.
-We have page fault, access fault(read, write), security fault
-and bus error (translated physical address is not available)
+Best regards,
+-- 
+Nicolas Ferre
 
-> Thanks,
-> Ohad.
-
-Thank you.
-Cho KyongHo.
