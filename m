@@ -1,43 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751747Ab1IZHgv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 03:36:51 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:42714 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750808Ab1IZHgu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 03:36:50 -0400
-Subject: Re: [PATCH 5/5] slub: Only IPI CPUs that have per cpu obj to flush
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: Gilad Ben-Yossef <gilad@benyossef.com>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Chris Metcalf <cmetcalf@tilera.com>, linux-mm@kvack.org,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>
-Date: Mon, 26 Sep 2011 09:36:05 +0200
-In-Reply-To: <CAOJsxLEHHJyPnCngQceRW04PLKFa3RUQEbc3rLwiOPXa7XZNeQ@mail.gmail.com>
-References: <1316940890-24138-1-git-send-email-gilad@benyossef.com>
-	 <1316940890-24138-6-git-send-email-gilad@benyossef.com>
-	 <CAOJsxLEHHJyPnCngQceRW04PLKFa3RUQEbc3rLwiOPXa7XZNeQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1317022565.9084.60.camel@twins>
-Mime-Version: 1.0
+	id S1751655Ab1IZHxp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 03:53:45 -0400
+Received: from co202.xi-lite.net ([149.6.83.202]:44726 "EHLO co202.xi-lite.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750931Ab1IZHxo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 03:53:44 -0400
+Message-ID: <4E802F7D.9000006@parrot.com>
+Date: Mon, 26 Sep 2011 09:53:33 +0200
+From: Matthieu CASTET <matthieu.castet@parrot.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100228)
+MIME-Version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Simon Glass <sjg@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH 0/3] Add accurate boot timing to a Linux system
+References: <1316818998-30711-1-git-send-email-sjg@chromium.org> <20110924083203.GZ17169@n2100.arm.linux.org.uk>
+In-Reply-To: <20110924083203.GZ17169@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-09-26 at 09:54 +0300, Pekka Enberg wrote:
+Hi,
+
+Russell King - ARM Linux a écrit :
+> On Fri, Sep 23, 2011 at 04:03:15PM -0700, Simon Glass wrote:
+>> An accurate timer is required to make the numbers meaningful. Many
+>> modern platforms have a microsecond timer. This patch set uses a
+>> function called timer_get_us() to read the timer.
 > 
-> AFAICT, flush_all() isn't all that performance sensitive. Why do we
-> want to reduce IPIs here? 
+> Not another 'get a time value' function.  Why do we need soo many?
+> We have - at least:
+> 
+> ktime_get (and various flavours of it)
+> do_gettimeofday
+> getnstimeofday
+> sched_clock
+> 
+> Do we really need yet another one which will have to be multiplexed
+> amongst platforms, requiring scaling and so forth from whatever the
+> platform provides?
+> 
+> Remember that ARM timers are virtually all MMIO mapped, which means
+> they don't work during early kernel bringup when the MMU mappings for
+> the hardware have not been setup.  (That's the reason stuff like
+> sched_clock for printk doesn't work early.)
+Doesn't cortexA-8 (and A9 ?) have a cycle counter that can be read by
+coprocessor 15 ?
 
-Because it can wake up otherwise idle CPUs, wasting power. Or for the
-case I care more about, unnecessarily perturb a CPU that didn't actually
-have anything to flush but was running something, introducing jitter.
+Couldn't we use that counter for early stuff on those architectures ?
 
-on_each_cpu() things are bad when you have a ton of CPUs (which is
-pretty normal these days). 
+
+Matthieu
