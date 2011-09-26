@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751339Ab1IZIKH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 04:10:07 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:48204 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751046Ab1IZIKG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 04:10:06 -0400
-MIME-Version: 1.0
-X-Originating-IP: [212.179.42.66]
-In-Reply-To: <CAOJsxLEHHJyPnCngQceRW04PLKFa3RUQEbc3rLwiOPXa7XZNeQ@mail.gmail.com>
-References: <1316940890-24138-1-git-send-email-gilad@benyossef.com>
-	<1316940890-24138-6-git-send-email-gilad@benyossef.com>
-	<CAOJsxLEHHJyPnCngQceRW04PLKFa3RUQEbc3rLwiOPXa7XZNeQ@mail.gmail.com>
-Date: Mon, 26 Sep 2011 11:10:05 +0300
-Message-ID: <CAOtvUMcTBhT2rWq-CYViPj1_oP1LGpb9SoSjctRRZZYPSfxWfg@mail.gmail.com>
-Subject: Re: [PATCH 5/5] slub: Only IPI CPUs that have per cpu obj to flush
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Chris Metcalf <cmetcalf@tilera.com>, linux-mm@kvack.org,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751549Ab1IZI0I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 04:26:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12059 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750975Ab1IZI0F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 04:26:05 -0400
+Subject: Re: [PATCH] gfs2/inode.c: local functions should be static
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, cluster-devel@redhat.com
+In-Reply-To: <201109231551.32939.hartleys@visionengravers.com>
+References: <201109231551.32939.hartleys@visionengravers.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Mon, 26 Sep 2011 09:27:38 +0100
+Message-ID: <1317025658.2744.0.camel@menhir>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-On Mon, Sep 26, 2011 at 9:54 AM, Pekka Enberg <penberg@cs.helsinki.fi> wrote:
+On Fri, 2011-09-23 at 15:51 -0700, H Hartley Sweeten wrote:
+> Quiets the sparse noise:
+> 
+> warning: symbol 'gfs2_initxattrs' was not declared. Should it be static?
+> 
+Where did you find this function? It is not in the upstream gfs2 code...
+
+Steve.
+
+> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+> Cc: Steven Whitehouse <swhiteho@redhat.com>
+> 
+> ---
+> 
+> diff --git a/fs/gfs2/inode.c b/fs/gfs2/inode.c
+> index 5431de9..5f2b157 100644
+> --- a/fs/gfs2/inode.c
+> +++ b/fs/gfs2/inode.c
+> @@ -624,7 +624,7 @@ fail:
+>  	return error;
+>  }
+>  
+> -int gfs2_initxattrs(struct inode *inode, const struct xattr *xattr_array,
+> +static int gfs2_initxattrs(struct inode *inode, const struct xattr *xattr_array,
+>  		    void *fs_info)
+>  {
+>  	const struct xattr *xattr;
 
 
->  Also, I'm somewhat unhappy about introducing
-> memory allocations in memory shrinking code paths. If we really want
-> to do this, can we preallocate cpumask in struct kmem_cache, for
-> example?
-
-Yes, I will.
-
-Thanks!
-Gilad.
-
-
--- 
-Gilad Ben-Yossef
-Chief Coffee Drinker
-gilad@benyossef.com
-Israel Cell: +972-52-8260388
-US Cell: +1-973-8260388
-http://benyossef.com
-
-"I've seen things you people wouldn't believe. Goto statements used to
-implement co-routines. I watched C structures being stored in
-registers. All those moments will be lost in time... like tears in
-rain... Time to die. "
