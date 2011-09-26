@@ -1,84 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751322Ab1IZOTT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 10:19:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47709 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751150Ab1IZOTS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 10:19:18 -0400
-Date: Mon, 26 Sep 2011 16:18:34 +0200
-From: Johannes Weiner <jweiner@redhat.com>
-To: "kautuk.c @samsung.com" <consul.kautuk@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [patch] mm: remove sysctl to manually rescue unevictable pages
-Message-ID: <20110926141834.GD14333@redhat.com>
-References: <1316948380-1879-1-git-send-email-consul.kautuk@gmail.com>
- <20110926112944.GC14333@redhat.com>
- <CAFPAmTQPiHU8AKnQvzMM5KiQr1GnUY+Yf8PwVC6++QK8u149Ew@mail.gmail.com>
+	id S1751541Ab1IZOTa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 10:19:30 -0400
+Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:52296 "EHLO
+	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751150Ab1IZOT1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 10:19:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAFPAmTQPiHU8AKnQvzMM5KiQr1GnUY+Yf8PwVC6++QK8u149Ew@mail.gmail.com>
+In-Reply-To: <alpine.DEB.2.00.1109240020510.22872@utopia.booyaka.com>
+References: <1316691479-1849-1-git-send-email-keshava_mgowda@ti.com>
+	<1316691479-1849-2-git-send-email-keshava_mgowda@ti.com>
+	<1316691479-1849-3-git-send-email-keshava_mgowda@ti.com>
+	<alpine.DEB.2.00.1109221115320.10719@utopia.booyaka.com>
+	<CAP05o4+Zc2z6sBOX_rQeoDQ9PneypcLRCyBbaaB2m+ZjeXZnaw@mail.gmail.com>
+	<alpine.DEB.2.00.1109240020510.22872@utopia.booyaka.com>
+Date: Mon, 26 Sep 2011 19:49:23 +0530
+Message-ID: <CAP05o4Lwk2uUz5ou84GQsrsBdjW-FEYP-55pBzH+a74hP4g1Dw@mail.gmail.com>
+Subject: Re: [PATCH 2/5 v11] arm: omap: usb: ehci and ohci hwmod structures
+ for omap3
+From: "Munegowda, Keshava" <keshava_mgowda@ti.com>
+To: Paul Walmsley <paul@pwsan.com>, Tero Kristo <t-kristo@ti.com>,
+        b-cousson@ti.com, balbi@ti.com, parthab@india.ti.com
+Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gadiyar@ti.com, sameo@linux.intel.com,
+        tony@atomide.com, khilman@ti.com, johnstul@us.ibm.com,
+        vishwanath.bs@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 26, 2011 at 05:40:52PM +0530, kautuk.c @samsung.com wrote:
-> On Mon, Sep 26, 2011 at 4:59 PM, Johannes Weiner <jweiner@redhat.com> wrote:
-> > On Sun, Sep 25, 2011 at 04:29:40PM +0530, Kautuk Consul wrote:
-> >> write_scan_unavictable_node checks the value req returned by
-> >> strict_strtoul and returns 1 if req is 0.
-> >>
-> >> However, when strict_strtoul returns 0, it means successful conversion
-> >> of buf to unsigned long.
-> >>
-> >> Due to this, the function was not proceeding to scan the zones for
-> >> unevictable pages even though we write a valid value to the
-> >> scan_unevictable_pages sys file.
-> >
-> > Given that there is not a real reason for this knob (anymore) and that
-> > it apparently never really worked since the day it was introduced, how
-> > about we just drop all that code instead?
-> >
-> >        Hannes
-> >
-> > ---
-> > From: Johannes Weiner <jweiner@redhat.com>
-> > Subject: mm: remove sysctl to manually rescue unevictable pages
-> >
-> > At one point, anonymous pages were supposed to go on the unevictable
-> > list when no swap space was configured, and the idea was to manually
-> > rescue those pages after adding swap and making them evictable again.
-> > But nowadays, swap-backed pages on the anon LRU list are not scanned
-> > without available swap space anyway, so there is no point in moving
-> > them to a separate list anymore.
-> 
-> Is this code only for anonymous pages ?
-> It seems to look at all pages in the zone both file as well as anon.
+On Sat, Sep 24, 2011 at 12:00 PM, Paul Walmsley <paul@pwsan.com> wrote:
+> On Fri, 23 Sep 2011, Munegowda, Keshava wrote:
+>
+>> On Thu, Sep 22, 2011 at 11:31 PM, Paul Walmsley <paul@pwsan.com> wrote:
+>>
+>> But the question arises here , why do we need these ehci and ohci as two
+>> different hwmods containing only irq and base address? It is required
+>> for future - to implement remote wakeup feature for ehci and ohci ports
+>> depending on irq-chain handler patches by Tero. Separate hwmods for ehci
+>> and ohci are needed to enable prcm chain-handler to uniquely identify
+>> the wakeup source as ehci or ohci and call only the corresponding
+>> interrupt handler. We will be using omap_hwmod_mux_init for ehci and
+>> ohci hwmods to enable I/O wakeup capability for respective IO-pads.
+>> Depending on the particular wakeup source(ehci/ohci), the corresponding
+>> ehci or ohci irq handler will be called.
+>>
+>> If ehci and ohci are combined with usbhs hwmod as a single hwmod , then
+>> for every wakeup (either ehci or ohci port wakeup) only the first
+>> interrupt handler will be called (please look at the function
+>> omap_hwmod_mux_handle_irq of
+>>
+>> /arch/arm/mach-omap2/mux.c file ; in tero's latest patch:
+>> http://www.mail-archive.com/linux-omap@vger.kernel.org/msg53139.html)
+>> , so in this
+>> case, if ehci interrupt is the first interrupt , then even for ohci wakeup
+>> , only ehci interrupt will get called; which will break the functionality.
+>
+> Any reason why this couldn't be handled either by:
+>
+> 1. adding an IRQ number field to struct omap_hwmod_mux_info, and changing
+> _omap_hwmod_mux_handle_irq() to raise that IRQ number?
 
-The code scans both, but the usecase I described was moving swapbacked
-pages from the unevictable list after configuring swap space.
 
-> > The manual rescue could also be used in case pages were stranded on
-> > the unevictable list due to race conditions.  But the code has been
-> > around for a while now and newly discovered bugs should be properly
-> > reported and dealt with instead of relying on such a manual fixup.
-> 
-> What you say seems to be all right for anon pages, but what about file
-> pages ?
-> I'm not sure about how this could happen, but what if some file-system caused
-> a file cache page to be set to evictable or reclaimable without
-> actually removing
-> that page from the unevictable list ?
+yes, it is possible by changing the existing irq-chain handler by tero Kristo
 
-Currently, unevictable file pages come from ramfs, shmem, and mlock.
-ramfs never makes them evictable.  shmem, after making an inode
-evictable again, scans the that inode's address_space and rescues the
-pages it finds.  munlock synchroneously rescues the pages vma's range.
+I am looping tero too.
+
+So here are new requirements for the irq-chain handler
+
+1. The hwmod should have have option to have multiple mux structures
+
+This is something like:
+
+The existing mux structure definition in omap_hwmod [file:
+/arch/arm/plat-omap/include/plat/omap_hwmod.h ] structure
+
+	struct omap_hwmod_mux_info	*mux;
+
+it should changed to
+
+	struct omap_hwmod_mux_info	**pmux;
+         U32                                            mux_cnt;
+
+
+pmux - pointers to mux ; array of mux structures.
+mux_cnt - number of mux per hwmod.
+
+
+2. The mux  omap_hwmod_mux_info  structure should have new member
+called irq, like as follows:
+
+struct omap_hwmod_mux_info {
+	int				nr_pads;
+	...
+        ....
+        u32                           irq;
+
+};
+
+Upon wakeup of the I/O pad of the mux , the irq-chain handler should
+invoke the irq handler of the irq numbered <map_hwmod_mux_info.irq>
+
+3.  There should be "SOME WAY" to supply the irqs  from hwmod
+structure (omap_hwmod) to mux structure (omap_hwmod_mux_info)
+
+
+if you , tero and other opensource people are aligned on the proposed
+changes on the irq-handler ;
+then it is possible to have two hwmods ( usbhs and tll) for usbhost driver.
+please let me know you comments on the above approach.
+
+
+>
+> or
+>
+> 2. using shared interrupts?
+>
+>
+> - Paul
+>
