@@ -1,166 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752701Ab1IZWpV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 18:45:21 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:57007 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751480Ab1IZWpU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 18:45:20 -0400
-Message-ID: <4E810058.8080305@parallels.com>
-Date: Mon, 26 Sep 2011 19:44:40 -0300
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1752750Ab1IZWpg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 18:45:36 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:34172 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752611Ab1IZWpf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 18:45:35 -0400
+X-Sasl-enc: k0YL037wXT8aS5oxFXJk4uAKdpA1CwUDutAfxmwjO9R7 1317077134
+Date: Mon, 26 Sep 2011 15:34:30 -0700
+From: Greg KH <greg@kroah.com>
+To: Matthias Dellweg <2500@gmx.de>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb/core/devio.c: Check for printer class specific
+ request
+Message-ID: <20110926223430.GA21960@kroah.com>
+References: <20110923195726.0cf0e8b5@horus>
+ <Pine.LNX.4.44L0.1109231427280.2059-100000@iolanthe.rowland.org>
+ <20110925144651.0ed3daaf@horus>
 MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
-        <lizf@cn.fujitsu.com>, <ebiederm@xmission.com>, <davem@davemloft.net>,
-        <gthelen@google.com>, <netdev@vger.kernel.org>, <linux-mm@kvack.org>,
-        <kirill@shutemov.name>
-Subject: Re: [PATCH v3 1/7] Basic kernel memory functionality for the Memory
- Controller
-References: <1316393805-3005-1-git-send-email-glommer@parallels.com> <1316393805-3005-2-git-send-email-glommer@parallels.com> <20110926193451.b419f630.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110926193451.b419f630.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [201.82.135.174]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110925144651.0ed3daaf@horus>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>   #endif
->>
->> -
->> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
->> +int do_kmem_account __read_mostly = 1;
->> +#else
->> +#define do_kmem_account		0
->> +#endif
->
->
-> Hmm, do we really need this boot option ?
->  From my experience to have swap-accounting boot option,
-> this scares us ;) I think config is enough.
+On Sun, Sep 25, 2011 at 02:46:51PM +0200, Matthias Dellweg wrote:
+> From: Matthias Dellweg <2500@gmx.de>
+> 
+> In the usb printer class specific request get_device_id the value of
+> wIndex is (interface << 8 | altsetting) instead of just interface.
+> This enables the detection of some printers with libusb.
+> 
+> The hardware I tested this patch with is a Prolific
+> USB->Centronics cable (067b:2305).
+> 
+> Acked-by: Alan Stern <stern@rowland.harvard.edu>
+> Signed-off-by: Matthias Dellweg <2500@gmx.de>
+> Cc: stable <stable@kernel.org>
+> ---
+>  drivers/usb/core/devio.c |   21 ++++++++++++++++++---
+>  1 files changed, 18 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/usb/core/devio.c b/drivers/usb/core/devio.c
+> index 37518df..1d73709 100644
+> --- a/drivers/usb/core/devio.c
+> +++ b/drivers/usb/core/devio.c
+> @@ -607,9 +607,10 @@ static int findintfep(struct usb_device *dev, unsigned int ep)
+>  }
+>  
+>  static int check_ctrlrecip(struct dev_state *ps, unsigned int requesttype,
+> -                          unsigned int index)
+> +                          unsigned int request, unsigned int index)
+>  {
+>         int ret = 0;
+> +       struct usb_host_interface *alt_setting;
+>  
+>         if (ps->dev->state != USB_STATE_UNAUTHENTICATED
+>          && ps->dev->state != USB_STATE_ADDRESS
 
-If no one else wants it, I can remove it. I personally
-don't need it, just wanted to follow the convention laid down by swap here.
+All of the tabs were stripped out of this email, making it impossible to
+apply it :(
 
->
->
->
->>   /*
->>    * Statistics for memory cgroup.
->>    */
->> @@ -270,6 +274,10 @@ struct mem_cgroup {
->>   	 */
->>   	struct res_counter memsw;
->>   	/*
->> +	 * the counter to account for kmem usage.
->> +	 */
->> +	struct res_counter kmem;
->> +	/*
->>   	 * Per cgroup active and inactive list, similar to the
->>   	 * per zone LRU lists.
->>   	 */
->> @@ -321,6 +329,11 @@ struct mem_cgroup {
->>   	 */
->>   	unsigned long 	move_charge_at_immigrate;
->>   	/*
->> +	 * Should kernel memory limits be stabilished independently
->> +	 * from user memory ?
->> +	 */
->> +	int		kmem_independent;
->> +	/*
->>   	 * percpu counter.
->>   	 */
->>   	struct mem_cgroup_stat_cpu *stat;
->> @@ -388,9 +401,14 @@ enum charge_type {
->>   };
->>
->>   /* for encoding cft->private value on file */
->> -#define _MEM			(0)
->> -#define _MEMSWAP		(1)
->> -#define _OOM_TYPE		(2)
->> +
->> +enum mem_type {
->> +	_MEM = 0,
->> +	_MEMSWAP,
->> +	_OOM_TYPE,
->> +	_KMEM,
->> +};
->> +
->
-> ok, nice clean up.
->
->
->>   #define MEMFILE_PRIVATE(x, val)	(((x)<<  16) | (val))
->>   #define MEMFILE_TYPE(val)	(((val)>>  16)&  0xffff)
->>   #define MEMFILE_ATTR(val)	((val)&  0xffff)
->> @@ -3943,10 +3961,15 @@ static inline u64 mem_cgroup_usage(struct mem_cgroup *mem, bool swap)
->>   	u64 val;
->>
->>   	if (!mem_cgroup_is_root(mem)) {
->> +		val = 0;
->> +		if (!mem->kmem_independent)
->> +			val = res_counter_read_u64(&mem->kmem, RES_USAGE);
->
->>   		if (!swap)
->> -			return res_counter_read_u64(&mem->res, RES_USAGE);
->> +			val += res_counter_read_u64(&mem->res, RES_USAGE);
->>   		else
->> -			return res_counter_read_u64(&mem->memsw, RES_USAGE);
->> +			val += res_counter_read_u64(&mem->memsw, RES_USAGE);
->> +
->> +		return val;
->>   	}
->>
->>   	val = mem_cgroup_recursive_stat(mem, MEM_CGROUP_STAT_CACHE);
->> @@ -3979,6 +4002,10 @@ static u64 mem_cgroup_read(struct cgroup *cont, struct cftype *cft)
->>   		else
->>   			val = res_counter_read_u64(&mem->memsw, name);
->>   		break;
->> +	case _KMEM:
->> +		val = res_counter_read_u64(&mem->kmem, name);
->> +		break;
->> +
->>   	default:
->>   		BUG();
->>   		break;
->> @@ -4756,6 +4783,21 @@ static int mem_cgroup_reset_vmscan_stat(struct cgroup *cgrp,
->>   	return 0;
->>   }
->>
->> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
->> +static u64 kmem_limit_independent_read(struct cgroup *cont, struct cftype *cft)
->> +{
->> +	return mem_cgroup_from_cont(cont)->kmem_independent;
->> +}
->> +
->> +static int kmem_limit_independent_write(struct cgroup *cont, struct cftype *cft,
->> +					u64 val)
->> +{
->> +	cgroup_lock();
->> +	mem_cgroup_from_cont(cont)->kmem_independent = !!val;
->> +	cgroup_unlock();
->
-> Hm. This code allows that parent/child can have different settings.
-> Could you add parent-child check as..
->
-> "If parent sets use_hierarchy==1, children must have the same kmem_independent value
-> with parant's one."
-Agree.
-> How do you think ? I think a hierarchy must have the same config.
-Yes, I think this is reasonable.
+Care to fix this up and resend it so that I can apply it?
 
->
-> BTW...I don't like naming a little ;)
->
-> memory->consolidated/shared/?????_kmem_accounting ?
-> Or
-> memory->kmem_independent_accounting ?
->
-> or some better naming ?
+thanks,
 
-I can go with kmem_independent_accounting if you like, it is fine
-by me.
-
-
+greg k-h
