@@ -1,66 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753149Ab1IZT5M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 15:57:12 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:55469 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752908Ab1IZT5J (ORCPT
+	id S1753161Ab1IZT61 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 15:58:27 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:37829 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752662Ab1IZT60 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 15:57:09 -0400
-Date: Mon, 26 Sep 2011 20:57:04 +0100
-From: Jamie Iles <jamie@jamieiles.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        marc.zyngier@arm.com, thomas.abraham@linaro.org, jamie@jamieiles.com,
-        b-cousson@ti.com, shawn.guo@linaro.org, dave.martin@linaro.org,
-        linux@arm.linux.org.uk, Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH 3/3] ARM: gic: add OF based initialization
-Message-ID: <20110926195704.GD9194@gallagher>
-References: <1316550244-3655-1-git-send-email-robherring2@gmail.com>
- <1316550244-3655-4-git-send-email-robherring2@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1316550244-3655-4-git-send-email-robherring2@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 26 Sep 2011 15:58:26 -0400
+Subject: Re: [PATCH 1/2] virtio-net: Verify page list size before fitting
+ into skb
+From: Sasha Levin <levinsasha928@gmail.com>
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        kvm@vger.kernel.org
+In-Reply-To: <CAOJsxLHQZCvRQMcs08GZgDgR9AwtePdr=t7kos6XfMF_dgxZGw@mail.gmail.com>
+References: <1317058869-19276-1-git-send-email-levinsasha928@gmail.com>
+	 <20110926184445.GA22278@redhat.com> <1317065842.20885.3.camel@lappy>
+	 <CAOJsxLHQZCvRQMcs08GZgDgR9AwtePdr=t7kos6XfMF_dgxZGw@mail.gmail.com>
+Content-Type: text/plain; charset="us-ascii"
+Date: Mon, 26 Sep 2011 22:57:35 +0300
+Message-ID: <1317067055.20885.5.camel@lappy>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rob,
+On Mon, 2011-09-26 at 22:45 +0300, Pekka Enberg wrote:
+> On Mon, Sep 26, 2011 at 10:37 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
+> >> Interesting.  This is a theoretical issue, correct?
+> >> Not a crash you actually see.
+> >
+> > Actually it was an actual crash caused when our virtio-net driver in kvm
+> > tools did funny things and passed '(u32)-1' length as a buffer length to
+> > the guest kernel.
+> 
+> I'm not sure what Michael means with "theoretical issue" here. Can the guest
+> driver assume that the hypervisor doesn't attempt to do nasty things?
 
-On Tue, Sep 20, 2011 at 03:24:04PM -0500, Rob Herring wrote:
-[...]
-> +int __init gic_of_init(struct device_node *node, struct device_node *parent)
-> +{
-> +	void __iomem *cpu_base;
-> +	void __iomem *dist_base;
-> +	int irq;
-> +	struct irq_domain *domain = &gic_data[gic_cnt].domain;
-> +
-> +	if (WARN_ON(!node))
-> +		return -ENODEV;
-> +
-> +	dist_base = of_iomap(node, 0);
-> +	WARN(!dist_base, "unable to map gic dist registers\n");
-> +
-> +	cpu_base = of_iomap(node, 1);
-> +	WARN(!cpu_base, "unable to map gic cpu registers\n");
-> +
-> +	domain->nr_irq = gic_irq_count(dist_base);
-> +	/* subtract off SGIs. Also subtract off PPIs for secondary GICs */
-> +	if (parent)
-> +		domain->nr_irq -= 32;
-> +	else
-> +		domain->nr_irq -= 16;
-> +
-> +	domain->irq_base = irq_alloc_descs(-1, 16, domain->nr_irq, numa_node_id());
+afaik if the hypervisor can access the vcpus and the memory of the
+guest, this shouldn't be a security issue - more of a bug prevention
+issue.
 
-The way I understand irq_alloc_descs() (probably not very well) is that 
-having the irq parameter < 0 and the from parameter 16 means that it 
-needs to find domain->nr_irq descs starting from at least 16.  But if 
-the base is greater than 16, does this still work with the gic entry 
-macros as they are?
+I guess it'll be interesting the other way around, when it's the guest
+that passes this buggy information to the hypervisor.
 
-Jamie
+-- 
+
+Sasha.
+
