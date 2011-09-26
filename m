@@ -1,53 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753110Ab1IZTss (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 15:48:48 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:50664 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752573Ab1IZTsr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 15:48:47 -0400
+	id S1752703Ab1IZTy7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 15:54:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27471 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751385Ab1IZTy6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 15:54:58 -0400
+Date: Mon, 26 Sep 2011 22:55:41 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH 1/2] virtio-net: Verify page list size before fitting
+ into skb
+Message-ID: <20110926195541.GA23086@redhat.com>
+References: <1317058869-19276-1-git-send-email-levinsasha928@gmail.com>
+ <20110926184445.GA22278@redhat.com>
+ <1317065842.20885.3.camel@lappy>
 MIME-Version: 1.0
-In-Reply-To: <20110926111522.2a053ceb@lxorguk.ukuu.org.uk>
-References: <CANLaLhaEnyPchqOPp65Y0hvotM30E5daX=XNG=fAAmf1dchxCA@mail.gmail.com>
-	<20110926111522.2a053ceb@lxorguk.ukuu.org.uk>
-Date: Mon, 26 Sep 2011 12:48:46 -0700
-Message-ID: <CAK3HsqvkpEiDWcCP_+eO0va4+io7pVV-aWCzQ1=DdpPi_jxy6g@mail.gmail.com>
-Subject: Re: Detection of Advanced Format drives
-From: Joshua Scoggins <theoretically.x64@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Arun <engineerarun@gmail.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1317065842.20885.3.camel@lappy>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Keep in mind that some AF drives will not report their actual sector
-sizes. I have this issue with the WD AV-25 series. This is to provide
-compatibility with older operating systems that don't support AF
-drives. These are called generation 1 devices. Newer drives will
-directly report their sector size as 4096 through the drive identify
-data older ones will say 512. At that point you just need to do a
-google search to see if it's AF or not.
+On Mon, Sep 26, 2011 at 10:37:22PM +0300, Sasha Levin wrote:
+> On Mon, 2011-09-26 at 21:44 +0300, Michael S. Tsirkin wrote:
+> > On Mon, Sep 26, 2011 at 08:41:08PM +0300, Sasha Levin wrote:
+> > > This patch verifies that the length of a buffer stored in a linked list
+> > > of pages is small enough to fit into a skb.
+> > > 
+> > > If the size is larger than a max size of a skb, it means that we shouldn't
+> > > go ahead building skbs anyway since we won't be able to send the buffer as
+> > > the user requested.
+> > > 
+> > > Cc: Rusty Russell <rusty@rustcorp.com.au>
+> > > Cc: "Michael S. Tsirkin" <mst@redhat.com>
+> > > Cc: virtualization@lists.linux-foundation.org
+> > > Cc: netdev@vger.kernel.org
+> > > Cc: kvm@vger.kernel.org
+> > > Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> > 
+> > Interesting.  This is a theoretical issue, correct?
+> > Not a crash you actually see.
+> 
+> Actually it was an actual crash caused when our virtio-net driver in kvm
+> tools did funny things and passed '(u32)-1' length as a buffer length to
+> the guest kernel.
+> 
+> > This crash would mean device is giving us packets
+> > that are way too large. Avoiding crashes even in the face of
+> > a misbehaved device is a good idea, but should
+> > we print a diagnostic to a system log?
+> > Maybe rate-limited or print once to avoid filling
+> > up the disk. Other places in driver print with pr_debug
+> > I'm not sure that's right but better than nothing.
+> 
+> Yup, I'll add some debug info.
+> 
+> > > ---
+> > >  drivers/net/virtio_net.c |    3 +++
+> > >  1 files changed, 3 insertions(+), 0 deletions(-)
+> > > 
+> > > diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> > > index 0c7321c..64e0717 100644
+> > > --- a/drivers/net/virtio_net.c
+> > > +++ b/drivers/net/virtio_net.c
+> > > @@ -165,6 +165,9 @@ static struct sk_buff *page_to_skb(struct virtnet_info *vi,
+> > >  	unsigned int copy, hdr_len, offset;
+> > >  	char *p;
+> > >  
+> > > +	if (len > MAX_SKB_FRAGS * PAGE_SIZE)
+> > 
+> > unlikely()?
+> > 
+> > Also, this seems too aggressive: at this point len includes the header
+> > and the linear part. The right place for this
+> > test is probably where we fill in the frags, just before
+> > while (len)
+> > 
+> > The whole can only happen when mergeable buffers
+> > are disabled, right?
+> 
+> >From what I understand it can happen whenever you're going to build a
+> skb longer than PAGE_SIZE.
 
--Josh
+Hmm how exactly?  With mergeable buffers this only gets
+the length of the 1st chunk which is up to 4K unless the driver
+is buggy ...
 
-
-On Mon, Sep 26, 2011 at 3:15 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> On Mon, 26 Sep 2011 15:25:52 +0530
-> Arun <engineerarun@gmail.com> wrote:
->
->> Is there any way to detect the Advanced Format hard drives with 4K
->> sector size? I understand that above kernel v. 2.6.31 it is supported.
->> But is it possible detect automatically if the drive is an AF drive
->> and how?
->
-> It's in the drive identify data (see the ATA 8 specification documents)
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+> -- 
+> 
+> Sasha.
