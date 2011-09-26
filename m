@@ -1,35 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751865Ab1IZHah (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 03:30:37 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:42507
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751755Ab1IZHad (ORCPT
+	id S1751432Ab1IZH35 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 03:29:57 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33892 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750808Ab1IZH34 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 03:30:33 -0400
-Date: Mon, 26 Sep 2011 03:30:25 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [patch]mm: add more blk plug
-Message-ID: <20110926073025.GB21079@infradead.org>
-References: <1317004226.29510.172.camel@sli10-conroe>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1317004226.29510.172.camel@sli10-conroe>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 26 Sep 2011 03:29:56 -0400
+Subject: Re: [PATCH 4/5] mm: Only IPI CPUs to drain local pages if they exist
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Gilad Ben-Yossef <gilad@benyossef.com>
+Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Chris Metcalf <cmetcalf@tilera.com>, linux-mm@kvack.org,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>
+Date: Mon, 26 Sep 2011 09:29:25 +0200
+In-Reply-To: <1316940890-24138-5-git-send-email-gilad@benyossef.com>
+References: <1316940890-24138-1-git-send-email-gilad@benyossef.com>
+	 <1316940890-24138-5-git-send-email-gilad@benyossef.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1317022165.9084.54.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 26, 2011 at 10:30:26AM +0800, Shaohua Li wrote:
-> Some filesystems implement .writepages. We don't have blk plug
-> in such filesystems for .writepages.
+On Sun, 2011-09-25 at 11:54 +0300, Gilad Ben-Yossef wrote:
+> +/* NOTE: If you call this function it is very likely you want to clear
+> +   cpus_with_pcp as well. */
+>  static void setup_pageset(struct per_cpu_pageset *p, unsigned long batch)
+>  { 
 
-Please add the plugging in the actual ->writepages instances.
+  /*
+   * Multi-line comment
+   * style is like
+   * this.
+   */
+
 
