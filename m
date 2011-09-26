@@ -1,74 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751432Ab1IZKpp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 06:45:45 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36738 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122Ab1IZKpo convert rfc822-to-8bit (ORCPT
+	id S1751754Ab1IZKxF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 06:53:05 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44639 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751281Ab1IZKxD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 06:45:44 -0400
-Subject: Re: [PATCH 4/7] nohz: Allow rcu extended quiescent state handling
- seperately from tick stop
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Mike Frysinger <vapier@gentoo.org>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        David Miller <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
-        Ralf Baechle <ralf@linux-mips.org>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Paul Mackerras <paulus@samba.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Paul Mundt <lethal@linux-sh.org>
-Date: Mon, 26 Sep 2011 12:44:44 +0200
-In-Reply-To: <1317032352-25571-5-git-send-email-fweisbec@gmail.com>
-References: <1317032352-25571-1-git-send-email-fweisbec@gmail.com>
-	 <1317032352-25571-5-git-send-email-fweisbec@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1317033884.9084.79.camel@twins>
+	Mon, 26 Sep 2011 06:53:03 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 26 Sep 2011 19:52:13 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Balbir Singh <bsingharora@gmail.com>, Greg Thelen <gthelen@google.com>,
+        <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
+        <lizf@cn.fujitsu.com>, <ebiederm@xmission.com>, <davem@davemloft.net>,
+        <netdev@vger.kernel.org>, <linux-mm@kvack.org>, <kirill@shutemov.name>
+Subject: Re: [PATCH v3 2/7] socket: initial cgroup code.
+Message-Id: <20110926195213.12da87b4.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4E7DECF0.9050804@parallels.com>
+References: <1316393805-3005-1-git-send-email-glommer@parallels.com>
+	<1316393805-3005-3-git-send-email-glommer@parallels.com>
+	<CAHH2K0YgkG2J_bO+U9zbZYhTTqSLvr6NtxKxN8dRtfHs=iB8iA@mail.gmail.com>
+	<4E7A342B.5040608@parallels.com>
+	<CAHH2K0Z_2LJPL0sLVHqkh_6b_BLQnknULTB9a9WfEuibk5kONg@mail.gmail.com>
+	<CAKTCnz=59HuEg9T-USi5oKSK=F+vr2QxCA17+i-rGj73k49rzw@mail.gmail.com>
+	<4E7DECF0.9050804@parallels.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-09-26 at 12:19 +0200, Frederic Weisbecker wrote:
-> It is assumed that rcu won't be used once we switch to tickless
-> mode and until we restart the tick. However this is not always
-> true, as in x86-64 where we dereference the idle notifiers after
-> the tick is stopped.
+On Sat, 24 Sep 2011 11:45:04 -0300
+Glauber Costa <glommer@parallels.com> wrote:
+
+> On 09/22/2011 12:09 PM, Balbir Singh wrote:
+> > On Thu, Sep 22, 2011 at 11:30 AM, Greg Thelen<gthelen@google.com>  wrote:
+> >> On Wed, Sep 21, 2011 at 11:59 AM, Glauber Costa<glommer@parallels.com>  wrote:
+> >>> Right now I am working under the assumption that tasks are long lived inside
+> >>> the cgroup. Migration potentially introduces some nasty locking problems in
+> >>> the mem_schedule path.
+> >>>
+> >>> Also, unless I am missing something, the memcg already has the policy of
+> >>> not carrying charges around, probably because of this very same complexity.
+> >>>
+> >>> True that at least it won't EBUSY you... But I think this is at least a way
+> >>> to guarantee that the cgroup under our nose won't disappear in the middle of
+> >>> our allocations.
+> >>
+> >> Here's the memcg user page behavior using the same pattern:
+> >>
+> >> 1. user page P is allocate by task T in memcg M1
+> >> 2. T is moved to memcg M2.  The P charge is left behind still charged
+> >> to M1 if memory.move_charge_at_immigrate=0; or the charge is moved to
+> >> M2 if memory.move_charge_at_immigrate=1.
+> >> 3. rmdir M1 will try to reclaim P (if P was left in M1).  If unable to
+> >> reclaim, then P is recharged to parent(M1).
+> >>
+> >
+> > We also have some magic in page_referenced() to remove pages
+> > referenced from different containers. What we do is try not to
+> > penalize a cgroup if another cgroup is referencing this page and the
+> > page under consideration is being reclaimed from the cgroup that
+> > touched it.
+> >
+> > Balbir Singh
+> Do you guys see it as a showstopper for this series to be merged, or can 
+> we just TODO it ?
 > 
-> To prepare for fixing this, add a parameter to tick_nohz_enter_idle()
-> named "rcu_ext_qs" that tells whether we want to enter RCU extended
-> quiescent state at the same time we stop the tick.
+
+In my experience, 'I can't rmdir cgroup.' is always an important/difficult
+problem. The users cannot know where the accouting is leaking other than
+kmem.usage_in_bytes or memory.usage_in_bytes. and can't fix the issue.
+
+please add EXPERIMENTAL to Kconfig until this is fixed.
+
+> I can push a proposal for it, but it would be done in a separate patch 
+> anyway. Also, we may be in better conditions to fix this when the slab 
+> part is merged - since it will likely have the same problems...
 > 
-> If no use of RCU is made in the idle loop between
-> tick_nohz_enter_idle() and tick_nohz_exit_idle() calls, the parameter
-> must be set to true and the arch doesn't need to call rcu_enter_nohz()
-> and rcu_exit_nohz() explicitly.
-> 
-> Otherwise the parameter must be set to false and the arch is
-> responsible of calling:
-> 
-> - rcu_enter_nohz() after its last use of RCU before the CPU is put
-> to sleep.
-> - rcu_exit_nohz() before the first use of RCU after the CPU is woken
-> up. 
 
-I can't say this really makes sense:
+Yes. considering sockets which can be shared between tasks(cgroups)
+you'll finally need
+  - owner task of socket 
+  - account moving callback
 
-  tick_nohz_idle_enter(false);
+Or disallow task moving once accounted.
 
-reads like, don't enter nohz state, not: enter nohz state but don't
-enter rcu-nohz state.
 
-I realize you want to keep the per-arch frobbing low, but since you're
-already touching all of them, I think its more important to keep the
-functions readable.
+Thanks,
+-Kame
 
-Why not simply fully split nohz and rcu and modify all idle routines
-with both calls?
+
+
+
+
+
+
+
