@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752123Ab1IZWPe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 18:15:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43380 "EHLO mx2.suse.de"
+	id S1752322Ab1IZWPn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 18:15:43 -0400
+Received: from 8bytes.org ([88.198.83.132]:53433 "EHLO 8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751799Ab1IZWPd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 18:15:33 -0400
-Date: Mon, 26 Sep 2011 15:15:11 -0700
-From: Greg KH <gregkh@suse.de>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Tejun Heo <htejun@gmail.com>, Luke Macken <lmacken@redhat.com>,
-        stable@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH stable-3.0] ptrace: don't clear GROUP_STOP_SIGMASK on
- double-stop
-Message-ID: <20110926221511.GB19769@suse.de>
-References: <20110926170632.GA16936@redhat.com>
+	id S1751799Ab1IZWPl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 18:15:41 -0400
+Date: Tue, 27 Sep 2011 00:15:39 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Joerg Roedel <joerg.roedel@amd.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] PCI: Add support for PASID capability
+Message-ID: <20110926221539.GG15002@8bytes.org>
+References: <1316706551-16138-1-git-send-email-joerg.roedel@amd.com> <1316706551-16138-5-git-send-email-joerg.roedel@amd.com> <CAErSpo7Vb7avbsP3eG=3huCewW4QBL7oMoXr2TjMCaWEvFgB0Q@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110926170632.GA16936@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAErSpo7Vb7avbsP3eG=3huCewW4QBL7oMoXr2TjMCaWEvFgB0Q@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 26, 2011 at 07:06:32PM +0200, Oleg Nesterov wrote:
-> https://bugzilla.redhat.com/show_bug.cgi?id=740121
+On Mon, Sep 26, 2011 at 02:58:58PM -0600, Bjorn Helgaas wrote:
+> On Thu, Sep 22, 2011 at 9:49 AM, Joerg Roedel <joerg.roedel@amd.com> wrote:
+> > Devices supporting the PASID capability can use multiple
+> > contexts on an IOMMU at the same time. This patch adds
+> > support to manage that capability.
 > 
-> 1. Luke Macken triggered WARN_ON(!(group_stop & GROUP_STOP_SIGMASK))
->    in do_signal_stop().
+> These all look reasonable to me.
 > 
->    This is because do_signal_stop() clears GROUP_STOP_SIGMASK part
->    unconditionally but doesn't update it if task_is_stopped().
-> 
-> 2. Looking at this problem I noticed that WARN_ON_ONCE(!ptrace) is
->    not right, a stopped-but-resumed tracee can clone the untraced
->    thread in the SIGNAL_STOP_STOPPED group, the new thread can start
->    another group-stop.
-> 
->    Remove this warning, we need more fixes to make it true.
-> 
-> Reported-by: Luke Macken <lmacken@redhat.com>
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> Is there anything else useful you could say in the PASID Kconfig help
+> text?  I'm guessing it stands for "PCI Address Space ID" or something,
+> but I have no idea why I might want to enable it.
 
-Is this fix in Linus's tree already?  If so, what's the git commit id?
+PASID stands for Process Address Space ID, it basically allows a PCI
+device to access multiple IO address spaces at the same time using an
+IOMMU. Users should enable it when they want to compile an IOMMU driver
+into the kernel that supports PASIDs for the translated devices.
+I'll add all that information to the Kconfig help. Thanks a lot for your
+feedback :)
 
-If not, please take a look at Documentation/stable_kernel_rules.txt for
-how to properly submit a patch to the stable tree.
+> I didn't coordinate very well with Jesse.  I'm hoping he'll be back
+> before the 3.2 merge window, but I think we have a few patches queued
+> up now, and it might be useful to have them in linux-next for a while
+> before he returns.  I'll look into that.
 
-thanks,
+Great, thanks again.
 
-greg k-h
+Regards,
+
+	Joerg
+
