@@ -1,45 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753191Ab1IZKBx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 06:01:53 -0400
-Received: from mga03.intel.com ([143.182.124.21]:19764 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752927Ab1IZKBv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 06:01:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,442,1312182000"; 
-   d="scan'208";a="55614667"
-Date: Mon, 26 Sep 2011 12:04:41 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, kernel@pengutronix.de
-Subject: Re: [PATCH] mfd/mc13xxx: fix a sparse warning about mc13xxx_chipname
- not being declared
-Message-ID: <20110926100441.GG32263@sortiz-mobl>
-References: <1316807502-27374-1-git-send-email-u.kleine-koenig@pengutronix.de>
+	id S1753218Ab1IZKDm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 06:03:42 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:33617 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753182Ab1IZKDl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 06:03:41 -0400
+Date: Mon, 26 Sep 2011 13:03:19 +0300 (EEST)
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+X-X-Sender: penberg@tux.localdomain
+To: Gilad Ben-Yossef <gilad@benyossef.com>
+cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Chris Metcalf <cmetcalf@tilera.com>, linux-mm@kvack.org,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Matt Mackall <mpm@selenic.com>
+Subject: Re: [PATCH 5/5] slub: Only IPI CPUs that have per cpu obj to flush
+In-Reply-To: <CAOtvUMfnrtonwbCn4j=weA-kjf4K0SG2YRwZ-Cy5XONNWyN_pQ@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1109261300200.15514@tux.localdomain>
+References: <1316940890-24138-1-git-send-email-gilad@benyossef.com> <1316940890-24138-6-git-send-email-gilad@benyossef.com> <CAOJsxLEHHJyPnCngQceRW04PLKFa3RUQEbc3rLwiOPXa7XZNeQ@mail.gmail.com> <1317022565.9084.60.camel@twins>
+ <CAOtvUMfnrtonwbCn4j=weA-kjf4K0SG2YRwZ-Cy5XONNWyN_pQ@mail.gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1316807502-27374-1-git-send-email-u.kleine-koenig@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Uwe,
+On Mon, 26 Sep 2011, Gilad Ben-Yossef wrote:
+> Peter basically already answered better then I could :-)
+>
+> All I have to add is an example -
+>
+> flush_all() is called for each kmem_cahce_destroy(). So every cache
+> being destroyed dynamically ends up sending an IPI to each CPU in the
+> system, regardless if the cache has ever been used there.
+>
+> For example, if you close the Infinband ipath driver char device file,
+> the close file ops calls kmem_cache_destroy().So, if I understand
+> correctly, running some infiniband config tool on one a single CPU
+> dedicated to system tasks might interrupt the rest of the 127 CPUs I
+> dedicated to some CPU intensive task. This is the scenario I'm
+> tryingto avoid.
+>
+> I suspect there is a good chance that every line in the output of "git
+> grep kmem_cache_destroy linux/ | grep '\->'" has a similar scenario
+> (there are 42 of them).
+>
+> I hope this sheds some light on the motive of the work.
 
-On Fri, Sep 23, 2011 at 09:51:42PM +0200, Uwe Kleine-König wrote:
-> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> ---
->  drivers/mfd/mc13xxx-core.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-Thanks, patch applied.
+Sure.
 
-Cheers,
-Samuel.
+If you write down such information in the changelog for future patches, I 
+don't need to waste your time asking for an explanation. ;-)
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+ 			Pekka
