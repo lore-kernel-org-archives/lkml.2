@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750833Ab1IZEDE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 00:03:04 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:57252 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750717Ab1IZEDC (ORCPT
+	id S1750948Ab1IZEW5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 00:22:57 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:13141 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750856Ab1IZEW4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 00:03:02 -0400
-Date: Mon, 26 Sep 2011 14:02:53 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Doron Cohen <doronc@siano-ms.com>
-Subject: linux-next: build failure after merge of the v4l-dvb tree
-Message-Id: <20110926140253.59d8e295b5b7afdd84c054a1@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__26_Sep_2011_14_02_53_+1000_uvPR528Q4r.BT9IL"
+	Mon, 26 Sep 2011 00:22:56 -0400
+X-AuditID: cbfee61b-b7b7fae000005864-dc-4e7ffe1ed16d
+Date: Mon, 26 Sep 2011 13:22:54 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+Subject: RE: Samsung GPIO changes break boot on Cragganmore
+In-reply-to: <20110922135351.GC5173@opensource.wolfsonmicro.com>
+To: "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>,
+        "'Grant Likely'" <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Message-id: <00d301cc7c03$f6813230$e3839690$%kim@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=US-ASCII
+Content-language: ko
+Content-transfer-encoding: 7BIT
+Thread-index: Acx5LxKjz4yJu5fwQb+8EZJpmB2AXwCvDkOw
+References: <20110922135351.GC5173@opensource.wolfsonmicro.com>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__26_Sep_2011_14_02_53_+1000_uvPR528Q4r.BT9IL
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Mark Brown wrote:
+> 
+> Hi,
+> 
+> Something in the recent GPIO changes have broken the boot for me on
+> Cragganmore (S3C6410 based) systems.  The boot dies before any console
+> output is produced so it's hard to isolate exactly what went wrong but
+> backing out:
+> 
+>    5ec7414 ARM: SAMSUNG: Remove useless Samsung GPIO related CONFIGs
+>    7c15788 ARM: SAMSUNG: Update the name of regarding Samsung GPIO
+>    bedcda6 gpio/samsung: gpio-samsung.c to support Samsung GPIOs
+> 
+> fixes the system boot for me.  The diff is rather substantial so it's
+> hard to check by eyeball unfortunately.
+> 
+Hi Mark,
 
-Hi Mauro,
+Oh, ok. Let me test on SMDK6410 and will fix soon.
 
-After merging the v4l-dvb tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+Thanks.
 
-ERROR: "sms_dbg" [drivers/media/dvb/siano/smsusb.ko] undefined!
-ERROR: "sms_dbg" [drivers/media/dvb/siano/smsdvb.ko] undefined!
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
 
-Caused by commit ea3709435c7f ("[media] siano: apply debug flag to module
-level").
-
-Relevant config:
-CONFIG_SMS_SIANO_MDTV=3Dm
-CONFIG_SMS_USB_DRV=3Dm
-CONFIG_SMS_SDIO_DRV=3Dm
-
-I have used the veriosn of the v4l-dvb tree from next-20110921 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__26_Sep_2011_14_02_53_+1000_uvPR528Q4r.BT9IL
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOf/ltAAoJEDMEi1NhKgbsjPUH/1OLFM/FYyzxs9UPmgR9K0YC
-asPLCCJzWTsMfgx3dllCY2rlBeKxLrKGoyRY4GOMXECTC7t5tmjsm/TT33PI8qcI
-YUf7GfZrm8RIq6LdpTNIXJxlOVlFse/Xgv4fxMmOldOWTzMqzmj3ezN+U3hSwDvn
-nFE+TxDpuW1UWpMryxSRybiBPtVD+HqaVJCgi0xBq3QwgXSIJX57fxTABKjBR39x
-WE/L7HoKBspGIWAb1yjZ5o2HqqA9KODIK/chf0MWO+5pBGRY+vLAT04eRjUGg6yh
-SZ/KItuDjsOMCrKKUZTQ46ktUh3DrrW3mDGITkAccX5UCopX1y/Sm67tOf26Z5U=
-=IJkL
------END PGP SIGNATURE-----
-
---Signature=_Mon__26_Sep_2011_14_02_53_+1000_uvPR528Q4r.BT9IL--
