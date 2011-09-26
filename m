@@ -1,93 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752287Ab1IZOuO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 10:50:14 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:56079 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750965Ab1IZOuN convert rfc822-to-8bit (ORCPT
+	id S1752053Ab1IZOzL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 10:55:11 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:41644 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499Ab1IZOzJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 10:50:13 -0400
+	Mon, 26 Sep 2011 10:55:09 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAK=WgbaOwe8Q19tpZMeHdvyCj8fcV194zA-oSD20tF7j7_MvpQ@mail.gmail.com>
-References: <15669786.49881316849426265.JavaMail.weblogic@epml24>
-	<CAK=WgbYnGjPKs6_nmFRGfMnbh_7wDR-0QcptAGaqDKVOo-x3cg@mail.gmail.com>
-	<CAHQjnOOtVHUS3KmBz7LdO88fLQyLA6f-w3ye9nAH0Bx+zh38XA@mail.gmail.com>
-	<CAK=Wgbazwz9PRJSpZjopwxJ-PO88FtajmbXL=pVKDHOr1t61fQ@mail.gmail.com>
-	<CAHQjnON7dksupFeAYLuYXX2PhgjX-GXEGJiy0dRTmpoBjbURVg@mail.gmail.com>
-	<CAK=WgbaOwe8Q19tpZMeHdvyCj8fcV194zA-oSD20tF7j7_MvpQ@mail.gmail.com>
-Date: Mon, 26 Sep 2011 23:48:41 +0900
-X-Google-Sender-Auth: jbCCYnOah0zSv-r-IyNHPoS8HBw
-Message-ID: <CAHQjnOM_KTiqzYnePScMHQ3bg5X1wqa4zu6=1A1z7UWeDxVZvQ@mail.gmail.com>
-Subject: Re: [PATCH 3/4] iommu/exynos: Add iommu driver for Exynos4 Platforms
-From: KyongHo Cho <pullip.cho@samsung.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "joerg.roedel@amd.com" <joerg.roedel@amd.com>,
-        =?UTF-8?B?7J207IOB7ZiE?= <sanghyun75.lee@samsung.com>,
-        =?UTF-8?B?6rmA6rWt7KeE?= <kgene.kim@samsung.com>,
-        =?UTF-8?B?6rmA7JiB6529?= <younglak1004.kim@samsung.com>
+In-Reply-To: <20110926142540.GE14333@redhat.com>
+References: <1316948380-1879-1-git-send-email-consul.kautuk@gmail.com>
+	<20110926112944.GC14333@redhat.com>
+	<CAFPAmTQPiHU8AKnQvzMM5KiQr1GnUY+Yf8PwVC6++QK8u149Ew@mail.gmail.com>
+	<CAFPAmTQbHhj8wodFEutpstXdQ6Kc2_qRV6Pe69ngHwz1erF29Q@mail.gmail.com>
+	<20110926142540.GE14333@redhat.com>
+Date: Mon, 26 Sep 2011 20:25:06 +0530
+Message-ID: <CAFPAmTTHHk7PWeYRfTHe+g0UwDC4JGYWc8M7_RZ9_poVQGJg6w@mail.gmail.com>
+Subject: Re: [patch] mm: remove sysctl to manually rescue unevictable pages
+From: "kautuk.c @samsung.com" <consul.kautuk@gmail.com>
+To: Johannes Weiner <jweiner@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 26, 2011 at 6:36 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
-
-> It seems your default behavior just prints an error message with the
-> details of the fault (addresses, flags, etc..). We can probably have
-> this unified.
+On Mon, Sep 26, 2011 at 7:55 PM, Johannes Weiner <jweiner@redhat.com> wrote:
+> On Mon, Sep 26, 2011 at 05:59:39PM +0530, kautuk.c @samsung.com wrote:
+>> On Mon, Sep 26, 2011 at 5:40 PM, kautuk.c @samsung.com
+>> <consul.kautuk@gmail.com> wrote:
+>> > On Mon, Sep 26, 2011 at 4:59 PM, Johannes Weiner <jweiner@redhat.com> wrote:
+>> >> On Sun, Sep 25, 2011 at 04:29:40PM +0530, Kautuk Consul wrote:
+>> >>> write_scan_unavictable_node checks the value req returned by
+>> >>> strict_strtoul and returns 1 if req is 0.
+>> >>>
+>> >>> However, when strict_strtoul returns 0, it means successful conversion
+>> >>> of buf to unsigned long.
+>> >>>
+>> >>> Due to this, the function was not proceeding to scan the zones for
+>> >>> unevictable pages even though we write a valid value to the
+>> >>> scan_unevictable_pages sys file.
+>> >>
+>> >> Given that there is not a real reason for this knob (anymore) and that
+>> >> it apparently never really worked since the day it was introduced, how
+>> >> about we just drop all that code instead?
+>> >>
+>> >>        Hannes
+>> >>
+>> >> ---
+>> >> From: Johannes Weiner <jweiner@redhat.com>
+>> >> Subject: mm: remove sysctl to manually rescue unevictable pages
+>> >>
+>> >> At one point, anonymous pages were supposed to go on the unevictable
+>> >> list when no swap space was configured, and the idea was to manually
+>> >> rescue those pages after adding swap and making them evictable again.
+>> >> But nowadays, swap-backed pages on the anon LRU list are not scanned
+>> >> without available swap space anyway, so there is no point in moving
+>> >> them to a separate list anymore.
+>> >
+>> > Is this code only for anonymous pages ?
+>> > It seems to look at all pages in the zone both file as well as anon.
+>> >
+>> >>
+>> >> The manual rescue could also be used in case pages were stranded on
+>> >> the unevictable list due to race conditions.  But the code has been
+>> >> around for a while now and newly discovered bugs should be properly
+>> >> reported and dealt with instead of relying on such a manual fixup.
+>> >
+>> > What you say seems to be all right for anon pages, but what about file
+>> > pages ?
+>> > I'm not sure about how this could happen, but what if some file-system caused
+>> > a file cache page to be set to evictable or reclaimable without
+>> > actually removing
+>> > that page from the unevictable list ?
+>>
+>> What I would like to also add is that while the transition of an anon
+>> page from and
+>> to the unevictable lists is straight-forward, should we make the same assumption
+>> about file cache pages ?
 >
-> In case you want to print exonys-specific info when the fault is not
-> handled by upper layers, we can change report_iommu_fault() to return
-> an error whenever a handler is not installed. This way
-> exynos_sysmmu_irq() can easily tell whether to proceed with the
-> default behavior or not, without installing a fault handler in the
-> driver:
+> We should make no assumptions if our code base is open source :-)
 >
-> diff --git a/include/linux/iommu.h b/include/linux/iommu.h
-> index 297893f..dc4b282 100644
-> --- a/include/linux/iommu.h
-> +++ b/include/linux/iommu.h
-> @@ -103,7 +103,7 @@ extern void iommu_set_fault_handler(struct iommu_domain *dom
->  static inline int report_iommu_fault(struct iommu_domain *domain,
->                struct device *dev, unsigned long iova, int flags)
->  {
-> -       int ret = 0;
-> +       int ret = -EFAULT;
+>> I am not sure about this, but could a file-system cause this kind of a problem
+>> independent of the mlocking behaviour of a user-mode app ?
 >
-That looks better for me :)
-However, I think the irq handler need to identify if the return value
-is an error
-returned by a fault handler or a notice that no fault handler is installed.
-
-I am sorry but I still think that
-installing default fault handler is quite simple and straightforward.
-
-Providing generic default behavior for all architectures is also good
-if it is available for other architectures.
-My intention with the default behavior for unrecoverable fault from IOMMU is
-to show what the problem is, where the problem caused and
-thus, providing a hint  to solve or catch the problem
-for the device drivers and the developers.
-
->> BTW,
->> I think we need more fault type than IOMMU_FAULT_READ and IOMMU_FAULT_WRITE.
->> We have page fault, access fault(read, write), security fault
->> and bus error (translated physical address is not available)
+> Currently, I only see shmem and ramfs meddling with unevictability
+> outside of mlock and they both look correct to me.
 >
-> Initially we had a argument for the type of the fault, but dropped it
-> because it was not used. Feel free to add it back if you need it.
->
-OK. thanks.
+> I'd say that if a filesystem required this knob and user-intervention
+> for the VM to behave correctly, it needs fixing.
 
-> Thanks,
-> Ohad.
+Yes I agree. Otherwise that kind of defeats the overall purpose of
+open-source. :)
 
-Thank you.
-Cho KyongHo.
+Thanks for review and the info.
