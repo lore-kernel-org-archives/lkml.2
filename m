@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752127Ab1IZLTg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 07:19:36 -0400
-Received: from casper.infradead.org ([85.118.1.10]:37238 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751909Ab1IZLTf convert rfc822-to-8bit (ORCPT
+	id S1752269Ab1IZLTk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 07:19:40 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:35197 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751909Ab1IZLTh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 07:19:35 -0400
+	Mon, 26 Sep 2011 07:19:37 -0400
 Subject: Re: [PATCH v5 3.1.0-rc4-tip 1/26]   uprobes: Auxillary routines to
  insert, find, delete uprobes
 From: Peter Zijlstra <peterz@infradead.org>
-To: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux-mm <linux-mm@kvack.org>,
         Arnaldo Carvalho de Melo <acme@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Andi Kleen <andi@firstfloor.org>, Hugh Dickins <hughd@google.com>,
@@ -24,39 +24,52 @@ Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
         Roland McGrath <roland@hack.frob.com>,
         Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>
-Date: Mon, 26 Sep 2011 13:18:38 +0200
-In-Reply-To: <20110920154259.GA25610@stefanha-thinkpad.localdomain>
+Date: Mon, 26 Sep 2011 13:18:40 +0200
+In-Reply-To: <20110920115949.25326.2469.sendpatchset@srdronam.in.ibm.com>
 References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com>
 	 <20110920115949.25326.2469.sendpatchset@srdronam.in.ibm.com>
-	 <20110920154259.GA25610@stefanha-thinkpad.localdomain>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
 X-Mailer: Evolution 3.0.3- 
-Message-ID: <1317035918.9084.83.camel@twins>
+Message-ID: <1317035920.9084.84.camel@twins>
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-09-20 at 16:42 +0100, Stefan Hajnoczi wrote:
-> On Tue, Sep 20, 2011 at 05:29:49PM +0530, Srikar Dronamraju wrote:
-> > +static void delete_uprobe(struct uprobe *uprobe)
-> > +{
-> > +	unsigned long flags;
-> > +
-> > +	spin_lock_irqsave(&uprobes_treelock, flags);
-> > +	rb_erase(&uprobe->rb_node, &uprobes_tree);
-> > +	spin_unlock_irqrestore(&uprobes_treelock, flags);
-> > +	put_uprobe(uprobe);
-> > +	iput(uprobe->inode);
-> 
-> Use-after-free when put_uprobe() kfrees() the uprobe?
+On Tue, 2011-09-20 at 17:29 +0530, Srikar Dronamraju wrote:
+> +static struct uprobe *__insert_uprobe(struct uprobe *uprobe)
+> +{
+> +       struct rb_node **p = &uprobes_tree.rb_node;
+> +       struct rb_node *parent = NULL;
+> +       struct uprobe *u;
+> +       int match;
+> +
+> +       while (*p) {
+> +               parent = *p;
+> +               u = rb_entry(parent, struct uprobe, rb_node);
+> +               match = match_uprobe(uprobe, u);
+> +               if (!match) {
+> +                       atomic_inc(&u->ref);
+> +                       return u;
+> +               }
+> +
+> +               if (match < 0)
+> +                       p = &parent->rb_left;
+> +               else
+> +                       p = &parent->rb_right;
+> +
+> +       }
+> +       u = NULL;
+> +       rb_link_node(&uprobe->rb_node, parent, p);
+> +       rb_insert_color(&uprobe->rb_node, &uprobes_tree);
+> +       /* get access + drop ref */
+> +       atomic_set(&uprobe->ref, 2);
+> +       return u;
+> +} 
 
-I suspect the caller still has one, and this was the reference for being
-part of the tree. But yes, that could do with a comment.
+If you ever want to make a 'lockless' lookup work you need to set the
+refcount of the new object before its fully visible, instead of after.
 
-The comment near atomic_set() in __insert_uprobe() isn't too clear
-either. /* get access + drop ref */, would naively seem +1 -1 = 0,
-instead of +1 +1 = 2.
-
-
+Now much of a problem now since its fully serialized by that
+uprobes_treelock thing.
