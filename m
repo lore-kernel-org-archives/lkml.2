@@ -1,78 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751744Ab1IZH7i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 03:59:38 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:33135 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750855Ab1IZH7h convert rfc822-to-8bit (ORCPT
+	id S1751713Ab1IZIBW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 04:01:22 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36165 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751010Ab1IZIBV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 03:59:37 -0400
-MIME-Version: 1.0
-X-Originating-IP: [93.173.133.94]
-In-Reply-To: <15669786.49881316849426265.JavaMail.weblogic@epml24>
-References: <15669786.49881316849426265.JavaMail.weblogic@epml24>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Mon, 26 Sep 2011 10:59:16 +0300
-Message-ID: <CAK=WgbYnGjPKs6_nmFRGfMnbh_7wDR-0QcptAGaqDKVOo-x3cg@mail.gmail.com>
-Subject: Re: [PATCH 3/4] iommu/exynos: Add iommu driver for Exynos4 Platforms
-To: pullip.cho@samsung.com
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "joerg.roedel@amd.com" <joerg.roedel@amd.com>,
-        =?UTF-8?B?7J207IOB7ZiE?= <sanghyun75.lee@samsung.com>,
-        =?UTF-8?B?6rmA6rWt7KeE?= <kgene.kim@samsung.com>,
-        =?UTF-8?B?6rmA7JiB6529?= <younglak1004.kim@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 26 Sep 2011 04:01:21 -0400
+Subject: Re: [PATCH 3/3] [RFC] ipc/sem.c: replace busy loop with completion
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Manfred Spraul <manfred@colorfullife.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Mike Galbraith <efault@gmx.de>
+Date: Mon, 26 Sep 2011 10:00:49 +0200
+In-Reply-To: <1316885838-12026-1-git-send-email-manfred@colorfullife.com>
+References: <1316885838-12026-1-git-send-email-manfred@colorfullife.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1317024050.9084.62.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/9/24 조경호 <pullip.cho@samsung.com>:
-> This is the System MMU driver and IOMMU API implementation for
-> Exynos4 SOC platforms. Exynos4 platforms has more than 10 System
-> MMUs dedicated for each multimedia accellerators.
->
-> Signed-off-by: KyongHo Cho <pullip.cho@samsung.com>
-...
-> +static int exynos_iommu_fault_handler(struct iommu_domain *domain,
-> +                       struct device *dev, unsigned long iova, int flags)
-> +{
-> +       struct exynos_iommu_domain *priv = domain->priv;
-> +
-> +       dev_err(priv->dev, "%s occured at %p(Page table base: %p)\n",
-> +                               sysmmu_fault_name[flags], (void *)iova,
-> +                               (void *)(__pa(priv->pgtable)));
-> +       dev_err(priv->dev, "\t\tGenerating Kernel OOPS...\n");
-> +       dev_err(priv->dev, "\t\tbecause it is unrecoverable.\n");
-> +       dev_err(priv->dev,
-> +               "\t\tSet Fault handler with iommu_set_fault_handler().\n");
-> +       dev_err(priv->dev, "\t\tto handle System MMU fault.\n");
-> +
-> +       BUG();
-> +
-> +       return 0;
-> +}
-> +
-> +static int exynos_iommu_domain_init(struct iommu_domain *domain)
-> +{
-...
-> +       iommu_set_fault_handler(domain, &exynos_iommu_fault_handler);
+On Sat, 2011-09-24 at 19:37 +0200, Manfred Spraul wrote:
 
-It doesn't make a lot of sense to set an iommu fault handler here; the
-intention of iommu_set_fault_handler() is to allow upper layers to do
-that.
+	sma = sem_lock(ns, semid);
 
-Moreover, exynos_sysmmu_irq() anyway knows whenever a fault occurs, so
-calling report_iommu_fault() just to have it call into the driver
-again seems redundant.
+> @@ -1456,8 +1414,17 @@ sleep_again:
+>         /*
+>          * Wait until it's guaranteed that no wakeup_sem_queue_do() is ongoing.
+>          */
+> -       error = get_queue_result(&queue);
+> -
+> +       error = queue.status;
+> +       if (error != -EINTR) {
+> +               /* If there is a return code, then we can leave immediately. */
+> +               if (!IS_ERR(sma)) {
+> +                       sem_unlock(sma);
+> +               }
+> +               /* Except that we must wait for the hands-off */
+> +               wait_for_completion(&queue.done);
+> +               goto out_free;
 
-If you want an exynos-specific behavior to occur whenever there's an
-iommu fault, you should do that in exynos_sysmmu_irq itself. If you
-just want a generic default logging behavior to occur whenever there's
-no other fault handler installed, you might even want to consider
-adding it to the IOMMU core.
+		you just lost a sem_unlock() in the IS_ERR() case.
+
+> +       } 
