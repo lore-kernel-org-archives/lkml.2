@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752190Ab1IZRme (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 13:42:34 -0400
+	id S1752274Ab1IZRmi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 13:42:38 -0400
 Received: from mail-ey0-f174.google.com ([209.85.215.174]:35093 "EHLO
 	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751617Ab1IZRmc (ORCPT
+	with ESMTP id S1751990Ab1IZRme (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 13:42:32 -0400
+	Mon, 26 Sep 2011 13:42:34 -0400
 From: Sasha Levin <levinsasha928@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Sasha Levin <levinsasha928@gmail.com>,
@@ -14,20 +14,18 @@ Cc: Sasha Levin <levinsasha928@gmail.com>,
         "Michael S. Tsirkin" <mst@redhat.com>,
         virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
         kvm@vger.kernel.org
-Subject: [PATCH 1/2] virtio-net: Verify page list size before fitting into skb
-Date: Mon, 26 Sep 2011 20:41:08 +0300
-Message-Id: <1317058869-19276-1-git-send-email-levinsasha928@gmail.com>
+Subject: [PATCH 2/2] virtio-net: Prevent NULL dereference
+Date: Mon, 26 Sep 2011 20:41:09 +0300
+Message-Id: <1317058869-19276-2-git-send-email-levinsasha928@gmail.com>
 X-Mailer: git-send-email 1.7.6.1
+In-Reply-To: <1317058869-19276-1-git-send-email-levinsasha928@gmail.com>
+References: <1317058869-19276-1-git-send-email-levinsasha928@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch verifies that the length of a buffer stored in a linked list
-of pages is small enough to fit into a skb.
-
-If the size is larger than a max size of a skb, it means that we shouldn't
-go ahead building skbs anyway since we won't be able to send the buffer as
-the user requested.
+This patch prevents a NULL dereference when the user has passed a length
+longer than an actual buffer to virtio-net.
 
 Cc: Rusty Russell <rusty@rustcorp.com.au>
 Cc: "Michael S. Tsirkin" <mst@redhat.com>
@@ -36,23 +34,22 @@ Cc: netdev@vger.kernel.org
 Cc: kvm@vger.kernel.org
 Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
 ---
- drivers/net/virtio_net.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ drivers/net/virtio_net.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index 0c7321c..64e0717 100644
+index 64e0717..8d32c1e 100644
 --- a/drivers/net/virtio_net.c
 +++ b/drivers/net/virtio_net.c
-@@ -165,6 +165,9 @@ static struct sk_buff *page_to_skb(struct virtnet_info *vi,
- 	unsigned int copy, hdr_len, offset;
- 	char *p;
+@@ -198,7 +198,7 @@ static struct sk_buff *page_to_skb(struct virtnet_info *vi,
+ 	len -= copy;
+ 	offset += copy;
  
-+	if (len > MAX_SKB_FRAGS * PAGE_SIZE)
-+		return NULL;
-+
- 	p = page_address(page);
- 
- 	/* copy small packet so we can reuse these pages for small data */
+-	while (len) {
++	while (len && page) {
+ 		set_skb_frag(skb, page, offset, &len);
+ 		page = (struct page *)page->private;
+ 		offset = 0;
 -- 
 1.7.6.1
 
