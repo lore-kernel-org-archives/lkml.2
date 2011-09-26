@@ -1,215 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752813Ab1IZTSd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 15:18:33 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:63430 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752687Ab1IZTSc (ORCPT
+	id S1752871Ab1IZTY5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 15:24:57 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:47001 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751348Ab1IZTY4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 15:18:32 -0400
-Date: Mon, 26 Sep 2011 23:17:38 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Serge Hallyn <serge@hallyn.com>
-Cc: akpm@osdl.org, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        containers@lists.linux-foundation.org, dhowells@redhat.com,
-        ebiederm@xmission.com, rdunlap@xenotime.net,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        kernel-hardening@lists.openwall.com
-Subject: Re: [PATCH 01/15] add Documentation/namespaces/user_namespace.txt
- (v3)
-Message-ID: <20110926191737.GA4562@albatros>
-References: <1314993400-6910-1-git-send-email-serge@hallyn.com>
- <1314993400-6910-4-git-send-email-serge@hallyn.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1314993400-6910-4-git-send-email-serge@hallyn.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 26 Sep 2011 15:24:56 -0400
+From: Rob Herring <robherring2@gmail.com>
+To: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Cc: grant.likely@secretlab.ca, marc.zyngier@arm.com, thomas.abraham@linaro.org,
+        jamie@jamieiles.com, b-cousson@ti.com, shawn.guo@linaro.org,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: [PATCH v4] of/irq: introduce of_irq_init
+Date: Mon, 26 Sep 2011 14:24:43 -0500
+Message-Id: <1317065083-23573-1-git-send-email-robherring2@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1316744473-13158-1-git-send-email-robherring2@gmail.com>
+References: <1316744473-13158-1-git-send-email-robherring2@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc'ed kernel-hardening)
+From: Rob Herring <rob.herring@calxeda.com>
 
+of_irq_init will scan the devicetree for matching interrupt controller
+nodes. Then it calls an initialization function for each found controller
+in the proper order with parent nodes initialized before child nodes.
 
-Hi Serge,
+Based on initial pseudo code from Grant Likely.
 
-I didn't deeply studied the patches yet (sorry!), but I have some
-long-term question about the technique in general.  I couldn't find
-answers to the questions in the documentation.
+Changes in v4:
+- Drop unnecessary empty list check
+- Be more verbose on errors
+- Simplify "if (!desc) WARN_ON(1)" to "if (WARN_ON(!desc))"
 
-First, the patches by design expose much kernel code to unprivileged
-userspace processes.  This code doesn't expect malformed data (e.g. VFS,
-specific filesystems, block layer, char drivers, sysadmin part of LSMs,
-etc. etc.).  By relaxing permission rules you greatly increase attack
-surface of the kernel from unprivileged users.  Are you (or somebody
-else) planning to audit this code?
+Changes in v3:
+- add missing kfree's found by Jamie
+- Implement Grant's comments to simplify the init loop
+- fix function comments
 
-Also, will it be possible to somehow restrict what specific kernel
-facilities are accessible from users (IOW, what root emulation
-limitations are in action)?  It is userful from both points of sysadmin,
-who might not want to allow users to do such things, and from the
-security POV in sense of attack surface reduction.
+Changes in v2:
+- Complete re-write of list searching code from Grant Likely
 
-The patches explicitly enable some features for users on white list
-basis.  It's possible to do it for simple cases, but what are you going
-to do with multiplexing functions where there is a permission check
-before the actual multiplexing?  FS, networking drivers, etc.  Are you
-going to do the same thing as net_namespace does? - For each multiplexed
-entity create bool ->ns_aware which is false by default for all
-"untrusted"/not prepared protocols and is true for audited/prepared
-protocols.  Or probably you have something else in mind?
+Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+---
+ drivers/of/irq.c       |  107 ++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/of_irq.h |    3 +
+ 2 files changed, 110 insertions(+), 0 deletions(-)
 
-Thanks,
-
-On Fri, Sep 02, 2011 at 19:56 +0000, Serge Hallyn wrote:
-> From: "Serge E. Hallyn" <serge@hallyn.com>
-> 
-> Quoting David Howells (dhowells@redhat.com):
-> > Randy Dunlap <rdunlap@xenotime.net> wrote:
-> >
-> > > > +Any task in or resource belonging to the initial user namespace will, to this
-> > > > +new task, appear to belong to UID and GID -1 - which is usually known as
-> > >
-> > > that extra hyphen is confusing.  how about:
-> > >
-> > >                               to UID and GID -1, which is
-> >
-> > 'which are'.
-> >
-> > David
-> 
-> This will hold some info about the design.  Currently it contains
-> future todos, issues and questions.
-> 
-> Changelog:
->    jul 26: incorporate feedback from David Howells.
->    jul 29: incorporate feedback from Randy Dunlap.
-> 
-> Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
-> Cc: Eric W. Biederman <ebiederm@xmission.com>
-> Cc: David Howells <dhowells@redhat.com>
-> Cc: Randy Dunlap <rdunlap@xenotime.net>
-> ---
->  Documentation/namespaces/user_namespace.txt |  107 +++++++++++++++++++++++++++
->  1 files changed, 107 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/namespaces/user_namespace.txt
-> 
-> diff --git a/Documentation/namespaces/user_namespace.txt b/Documentation/namespaces/user_namespace.txt
-> new file mode 100644
-> index 0000000..b0bc480
-> --- /dev/null
-> +++ b/Documentation/namespaces/user_namespace.txt
-> @@ -0,0 +1,107 @@
-> +Description
-> +===========
-> +
-> +Traditionally, each task is owned by a user ID (UID) and belongs to one or more
-> +groups (GID).  Both are simple numeric IDs, though userspace usually translates
-> +them to names.  The user namespace allows tasks to have different views of the
-> +UIDs and GIDs associated with tasks and other resources.  (See 'UID mapping'
-> +below for more.)
-> +
-> +The user namespace is a simple hierarchical one.  The system starts with all
-> +tasks belonging to the initial user namespace.  A task creates a new user
-> +namespace by passing the CLONE_NEWUSER flag to clone(2).  This requires the
-> +creating task to have the CAP_SETUID, CAP_SETGID, and CAP_CHOWN capabilities,
-> +but it does not need to be running as root.  The clone(2) call will result in a
-> +new task which to itself appears to be running as UID and GID 0, but to its
-> +creator seems to have the creator's credentials.
-> +
-> +To this new task, any resource belonging to the initial user namespace will
-> +appear to belong to user and group 'nobody', which are UID and GID -1.
-> +Permission to open such files will be granted according to world access
-> +permissions.  UID comparisons and group membership checks will return false,
-> +and privilege will be denied.
-> +
-> +When a task belonging to (for example) userid 500 in the initial user namespace
-> +creates a new user namespace, even though the new task will see itself as
-> +belonging to UID 0, any task in the initial user namespace will see it as
-> +belonging to UID 500.  Therefore, UID 500 in the initial user namespace will be
-> +able to kill the new task.  Files created by the new user will (eventually) be
-> +seen by tasks in its own user namespace as belonging to UID 0, but to tasks in
-> +the initial user namespace as belonging to UID 500.
-> +
-> +Note that this userid mapping for the VFS is not yet implemented, though the
-> +lkml and containers mailing list archives will show several previous
-> +prototypes.  In the end, those got hung up waiting on the concept of targeted
-> +capabilities to be developed, which, thanks to the insight of Eric Biederman,
-> +they finally did.
-> +
-> +Relationship between the User namespace and other namespaces
-> +============================================================
-> +
-> +Other namespaces, such as UTS and network, are owned by a user namespace.  When
-> +such a namespace is created, it is assigned to the user namespace of the task
-> +by which it was created.  Therefore, attempts to exercise privilege to
-> +resources in, for instance, a particular network namespace, can be properly
-> +validated by checking whether the caller has the needed privilege (i.e.
-> +CAP_NET_ADMIN) targeted to the user namespace which owns the network namespace.
-> +This is done using the ns_capable() function.
-> +
-> +As an example, if a new task is cloned with a private user namespace but
-> +no private network namespace, then the task's network namespace is owned
-> +by the parent user namespace.  The new task has no privilege to the
-> +parent user namespace, so it will not be able to create or configure
-> +network devices.  If, instead, the task were cloned with both private
-> +user and network namespaces, then the private network namespace is owned
-> +by the private user namespace, and so root in the new user namespace
-> +will have privilege targeted to the network namespace.  It will be able
-> +to create and configure network devices.
-> +
-> +UID Mapping
-> +===========
-> +The current plan (see 'flexible UID mapping' at
-> +https://wiki.ubuntu.com/UserNamespace) is:
-> +
-> +The UID/GID stored on disk will be that in the init_user_ns.  Most likely
-> +UID/GID in other namespaces will be stored in xattrs.  But Eric was advocating
-> +(a few years ago) leaving the details up to filesystems while providing a lib/
-> +stock implementation.  See the thread around here:
-> +http://www.mail-archive.com/devel@openvz.org/msg09331.html
-> +
-> +
-> +Working notes
-> +=============
-> +Capability checks for actions related to syslog must be against the
-> +init_user_ns until syslog is containerized.
-> +
-> +Same is true for reboot and power, control groups, devices, and time.
-> +
-> +Perf actions (kernel/event/core.c for instance) will always be constrained to
-> +init_user_ns.
-> +
-> +Q:
-> +Is accounting considered properly containerized with respect to pidns?  (it
-> +appears to be).  If so, then we can change the capable() check in
-> +kernel/acct.c to 'ns_capable(current_pid_ns()->user_ns, CAP_PACCT)'
-> +
-> +Q:
-> +For things like nice and schedaffinity, we could allow root in a container to
-> +control those, and leave only cgroups to constrain the container.  I'm not sure
-> +whether that is right, or whether it violates admin expectations.
-> +
-> +I deferred some of commoncap.c.  I'm punting on xattr stuff as they take
-> +dentries, not inodes.
-> +
-> +For drivers/tty/tty_io.c and drivers/tty/vt/vt.c, we'll want to (for some of
-> +them) target the capability checks at the user_ns owning the tty.  That will
-> +have to wait until we get userns owning files straightened out.
-> +
-> +We need to figure out how to label devices.  Should we just toss a user_ns
-> +right into struct device?
-> +
-> +capable(CAP_MAC_ADMIN) checks are always to be against init_user_ns, unless
-> +some day LSMs were to be containerized, near zero chance.
-> +
-> +inode_owner_or_capable() should probably take an optional ns and cap parameter.
-> +If cap is 0, then CAP_FOWNER is checked.  If ns is NULL, we derive the ns from
-> +inode.  But if ns is provided, then callers who need to derive
-> +inode_userns(inode) anyway can save a few cycles.
-> -- 
-> 1.7.5.4
-
+diff --git a/drivers/of/irq.c b/drivers/of/irq.c
+index 6a5b5e7..6d3dd39 100644
+--- a/drivers/of/irq.c
++++ b/drivers/of/irq.c
+@@ -19,10 +19,12 @@
+  */
+ 
+ #include <linux/errno.h>
++#include <linux/list.h>
+ #include <linux/module.h>
+ #include <linux/of.h>
+ #include <linux/of_irq.h>
+ #include <linux/string.h>
++#include <linux/slab.h>
+ 
+ /* For archs that don't support NO_IRQ (such as x86), provide a dummy value */
+ #ifndef NO_IRQ
+@@ -386,3 +388,108 @@ int of_irq_to_resource_table(struct device_node *dev, struct resource *res,
+ 
+ 	return i;
+ }
++
++struct intc_desc {
++	struct list_head	list;
++	struct device_node	*dev;
++	struct device_node	*interrupt_parent;
++};
++
++/**
++ * of_irq_init - Scan and init matching interrupt controllers in DT
++ * @matches: 0 terminated array of nodes to match and init function to call
++ *
++ * This function scans the device tree for matching interrupt controller nodes,
++ * and calls their initialization functions in order with parents first.
++ */
++void __init of_irq_init(const struct of_device_id *matches)
++{
++	struct device_node *np, *parent = NULL;
++	struct intc_desc *desc, *temp_desc;
++	struct list_head intc_desc_list, intc_parent_list;
++
++	INIT_LIST_HEAD(&intc_desc_list);
++	INIT_LIST_HEAD(&intc_parent_list);
++
++	for_each_matching_node(np, matches) {
++		if (!of_find_property(np, "interrupt-controller", NULL))
++			continue;
++		/*
++		 * Here, we allocate and populate an intc_desc with the node
++		 * pointer, interrupt-parent device_node etc.
++		 */
++		desc = kzalloc(sizeof(*desc), GFP_KERNEL);
++		if (WARN_ON(!desc))
++			goto err;
++
++		desc->dev = np;
++		desc->interrupt_parent = of_irq_find_parent(np);
++		list_add_tail(&desc->list, &intc_desc_list);
++	}
++
++	/*
++	 * The root irq controller is the one without an interrupt-parent.
++	 * That one goes first, followed by the controllers that reference it,
++	 * followed by the ones that reference the 2nd level controllers, etc.
++	 */
++	while (!list_empty(&intc_desc_list)) {
++		/*
++		 * Process all controllers with the current 'parent'.
++		 * First pass will be looking for NULL as the parent.
++		 * The assumption is that NULL parent means a root controller.
++		 */
++		list_for_each_entry_safe(desc, temp_desc, &intc_desc_list, list) {
++			const struct of_device_id *match;
++			int ret;
++			of_irq_init_cb_t irq_init_cb;
++
++			if (desc->interrupt_parent != parent)
++				continue;
++
++			list_del(&desc->list);
++			match = of_match_node(matches, desc->dev);
++			if (WARN(!match->data,
++			    "of_irq_init: no init function for %s\n",
++			    match->compatible)) {
++				kfree(desc);
++				continue;
++			}
++
++			pr_debug("of_irq_init: init %s @ %p, parent %p\n",
++				 match->compatible,
++				 desc->dev, desc->interrupt_parent);
++			irq_init_cb = match->data;
++			ret = irq_init_cb(desc->dev, desc->interrupt_parent);
++			if (ret) {
++				kfree(desc);
++				continue;
++			}
++
++			/*
++			 * This one is now set up; add it to the parent list so
++			 * its children can get processed in a subsequent pass.
++			 */
++			list_add_tail(&desc->list, &intc_parent_list);
++		}
++
++		/* Get the next pending parent that might have children */
++		desc = list_first_entry(&intc_parent_list, typeof(*desc), list);
++		if (list_empty(&intc_parent_list) || !desc) {
++			pr_err("of_irq_init: children remain, but no parents\n");
++			break;
++		}
++		list_del(&desc->list);
++		parent = desc->dev;
++		kfree(desc);
++	}
++
++	list_for_each_entry_safe(desc, temp_desc, &intc_parent_list, list) {
++		list_del(&desc->list);
++		kfree(desc);
++	}
++err:
++	list_for_each_entry_safe(desc, temp_desc, &intc_desc_list, list) {
++		list_del(&desc->list);
++		kfree(desc);
++	}
++}
+diff --git a/include/linux/of_irq.h b/include/linux/of_irq.h
+index cd2e61c..d0307ee 100644
+--- a/include/linux/of_irq.h
++++ b/include/linux/of_irq.h
+@@ -33,6 +33,8 @@ struct of_irq {
+ 	u32 specifier[OF_MAX_IRQ_SPEC]; /* Specifier copy */
+ };
+ 
++typedef int (*of_irq_init_cb_t)(struct device_node *, struct device_node *);
++
+ /*
+  * Workarounds only applied to 32bit powermac machines
+  */
+@@ -73,6 +75,7 @@ extern int of_irq_to_resource_table(struct device_node *dev,
+ 		struct resource *res, int nr_irqs);
+ extern struct device_node *of_irq_find_parent(struct device_node *child);
+ 
++extern void of_irq_init(const struct of_device_id *matches);
+ 
+ #endif /* CONFIG_OF_IRQ */
+ #endif /* CONFIG_OF */
 -- 
-Vasiliy
+1.7.5.4
+
