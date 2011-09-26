@@ -1,52 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751464Ab1IZPMd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 11:12:33 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:59058 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751105Ab1IZPMc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 11:12:32 -0400
-Date: Mon, 26 Sep 2011 16:12:10 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <greg@kroah.com>, linux-kernel@vger.kernel.org,
-        Manjunath GKondaiah <manjunath.gkondaiah@linaro.org>,
-        Dilan Lee <dilee@nvidia.com>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH v3] drivercore: Add driver probe deferral mechanism
-Message-ID: <20110926151210.GO22455@n2100.arm.linux.org.uk>
-References: <20110922184614.25419.84606.stgit@ponder> <20110926141643.GK2946@opensource.wolfsonmicro.com>
+	id S1751581Ab1IZPNH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 11:13:07 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:48092 "EHLO imr3.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751105Ab1IZPNG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 11:13:06 -0400
+Subject: [GIT PULL] hwmon fixes for 3.1
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+Reply-To: guenter.roeck@ericsson.com
+To: torvalds@linux-foundation.org
+CC: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="=-XHL6YmKMEo7cPPG8p5xy"
+Organization: Ericsson
+Date: Mon, 26 Sep 2011 08:11:38 -0700
+Message-ID: <1317049898.3888.53.camel@groeck-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110926141643.GK2946@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Mailer: Evolution 2.32.2 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 26, 2011 at 03:16:43PM +0100, Mark Brown wrote:
-> On Thu, Sep 22, 2011 at 12:51:23PM -0600, Grant Likely wrote:
-> > Allow drivers to report at probe time that they cannot get all the resources
-> > required by the device, and should be retried at a later time.
-> 
-> > This should completely solve the problem of getting devices
-> > initialized in the right order.  Right now this is mostly handled by
-> > mucking about with initcall ordering which is a complete hack, and
-> > doesn't even remotely handle the case where device drivers are in
-> > modules.  This approach completely sidesteps the issues by allowing
-> > driver registration to occur in any order, and any driver can request
-> > to be retried after a few more other drivers get probed.
-> 
-> So, one issue I did think of the other day while putting some support in
-> the regulator core for using this: what happens with devices which can
-> optionally use a resource but don't rely on it?  One example here is
-> that a lot of the MMC drivers have an optional regulator to control some
-> of the supplies for the cards.  If the reglator isn't there it won't be
-> used but it's not a blocker for anything.  Devices doing this would need
-> some way to figure out if they should -EBUSY or fail otherwise.
+--=-XHL6YmKMEo7cPPG8p5xy
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Just to avoid confusion - ITYM -EAGAIN there.  -EBUSY is already used
-by drivers to mean "someone else claimed a resource I need" be it the
-IO region or an IRQ resource...
+Hi Linus,
+
+Please pull hwmon subsystem fixes for Linux 3.1 from:
+
+    git://github.com/groeck/linux.git hwmon-for-linus
+
+Thanks,
+Guenter Roeck
+
+------
+
+The following changes since commit
+d93dc5c4478c1fd5de85a3e8aece9aad7bbae044:
+
+  Linux 3.1-rc7 (2011-09-21 16:58:15 -0700)
+
+are available in the git repository at:
+  git://github.com/groeck/linux.git hwmon-for-linus
+
+Chris Peterson (1):
+      hwmon: (w83791d) rename prototype parameter from 'register' to
+'reg'
+
+Guenter Roeck (1):
+      hwmon: (coretemp) Don't use threshold registers for tempX_max
+
+Jan Beulich (3):
+      hwmon: (coretemp) don't use kernel assigned CPU number as platform
+device ID
+      hwmon: (coretemp) constify static data
+      hwmon: (coretemp) remove struct platform_data * parameter from
+create_core_data()
+
+Jean Delvare (2):
+      hwmon: (coretemp) Drop duplicate function get_pkg_tjmax
+      hwmon: (coretemp) Let the user force TjMax
+
+Roland Stigge (1):
+      hwmon: (ds620) Fix handling of negative temperatures
+
+ Documentation/hwmon/coretemp |   14 +--
+ drivers/hwmon/coretemp.c     |  193
++++++++++---------------------------------
+ drivers/hwmon/ds620.c        |    2 +-
+ drivers/hwmon/w83791d.c      |    4 +-
+ 4 files changed, 47 insertions(+), 166 deletions(-)
+
+
+--=-XHL6YmKMEo7cPPG8p5xy
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAABAgAGBQJOgJYnAAoJEANmWzN1g3l3fPQH/R3i6Fe+h9KQFvmwOvSMean7
+q9TW4GEYh9dafxY1+voUR1sr9U1Jq4h3rgL34CZqTU/UOyUBHyFhGUfywPmjVROj
+/0hFPnDRZOmGlAh4boX0OOnlmlbyni3pcx7rJCi0aNMuXs7hRfV2gOXtdrCfkOKW
+UHZuMF3k3lcTdYXk1vWDCVRsTUvR2DXJzxwHDNNquVL/StHrcq325+ktQNT9H6Zm
+FLtGdcWJKsNkg6oiFaw6ETNKclTSa0H6T9BbvjyjRgSOmp6ghKc++1hFi0GPbZsi
+c1zoYLENCTFmO5fJXHa/4YmTJ6Ujq5Ts4fOwB5Ldp6WgOVkoJkwm3NdWuAdg7eU=
+=726f
+-----END PGP SIGNATURE-----
+
+--=-XHL6YmKMEo7cPPG8p5xy--
