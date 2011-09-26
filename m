@@ -1,47 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751528Ab1IZHRi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 03:17:38 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:33225 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750725Ab1IZHRh (ORCPT
+	id S1751588Ab1IZHVy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 03:21:54 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33785 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751280Ab1IZHVx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 03:17:37 -0400
-From: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
-To: khali@linux-fr.org, ben-linux@fluff.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, tomoya-linux@dsn.okisemi.com,
-        Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
-Subject: [PATCH] i2c-eg20t: modified the setting of transfer rate.
-Date: Mon, 26 Sep 2011 16:16:23 +0900
-Message-Id: <1317021383-11742-1-git-send-email-toshiharu-linux@dsn.okisemi.com>
-X-Mailer: git-send-email 1.7.4.4
+	Mon, 26 Sep 2011 03:21:53 -0400
+Subject: Re: [PATCH 0/5] Reduce cross CPU IPI interference
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Gilad Ben-Yossef <gilad@benyossef.com>
+Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Chris Metcalf <cmetcalf@tilera.com>, linux-mm@kvack.org,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>
+Date: Mon, 26 Sep 2011 09:20:59 +0200
+In-Reply-To: <1316940890-24138-1-git-send-email-gilad@benyossef.com>
+References: <1316940890-24138-1-git-send-email-gilad@benyossef.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1317021659.9084.51.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch modified the setting value of
-I2C Bus Transfer Rate Setting Counter regisrer.
+On Sun, 2011-09-25 at 11:54 +0300, Gilad Ben-Yossef wrote:
+> This first version creates an on_each_cpu_mask infrastructure API
 
-Signed-off-by: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
----
- drivers/i2c/busses/i2c-eg20t.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-eg20t.c b/drivers/i2c/busses/i2c-eg20t.c
-index ce1a32b..6b46892 100644
---- a/drivers/i2c/busses/i2c-eg20t.c
-+++ b/drivers/i2c/busses/i2c-eg20t.c
-@@ -242,7 +242,7 @@ static void pch_i2c_init(struct i2c_algo_pch_data *adap)
- 	if (pch_clk > PCH_MAX_CLK)
- 		pch_clk = 62500;
- 
--	pch_i2cbc = (pch_clk + (pch_i2c_speed * 4)) / pch_i2c_speed * 8;
-+	pch_i2cbc = (pch_clk + (pch_i2c_speed * 4)) / (pch_i2c_speed * 8);
- 	/* Set transfer speed in I2CBC */
- 	iowrite32(pch_i2cbc, p + PCH_I2CBC);
- 
--- 
-1.7.4.4
-
+But we already have the existing smp_call_function_many() doing that.
+The on_each_cpu() thing is mostly a hysterical relic and could be
+completely depricated
