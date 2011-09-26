@@ -1,45 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753085Ab1IZURg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 16:17:36 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:60171 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077Ab1IZURf convert rfc822-to-8bit (ORCPT
+	id S1753218Ab1IZUSl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 16:18:41 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:59544 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752808Ab1IZUSk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 16:17:35 -0400
-Subject: Re: [PATCH 0/6] [RFC] Proposal for optimistic suspend idea.
-From: Peter Zijlstra <peterz@infradead.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        arve@android.com, markgross@thegnar.org,
-        Alan Stern <stern@rowland.harvard.edu>, amit.kucheria@linaro.org,
-        farrowg@sg.ibm.com, "Dmitry Fink (Palm GBU)" <Dmitry.Fink@palm.com>,
-        linux-pm@lists.linux-foundation.org, khilman@ti.com,
-        Magnus Damm <damm@opensource.se>, mjg@redhat.com,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Mon, 26 Sep 2011 22:16:04 +0200
-In-Reply-To: <1317064434-1829-1-git-send-email-john.stultz@linaro.org>
-References: <1317064434-1829-1-git-send-email-john.stultz@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1317068164.1763.39.camel@twins>
-Mime-Version: 1.0
+	Mon, 26 Sep 2011 16:18:40 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6481"; a="121708600"
+Date: Mon, 26 Sep 2011 13:18:36 -0700
+From: David Brown <davidb@codeaurora.org>
+To: Marc Zyngier <marc.zyngier@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        David Brown <davidb@codeaurora.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH v3 0/3] genirq: handling GIC per-cpu interrupts
+Message-ID: <20110926201836.GA27355@huya.qualcomm.com>
+References: <1316793788-14500-1-git-send-email-marc.zyngier@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1316793788-14500-1-git-send-email-marc.zyngier@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-09-26 at 12:13 -0700, John Stultz wrote:
+On Fri, Sep 23, 2011 at 05:03:05PM +0100, Marc Zyngier wrote:
+
+> Tested on ARM Versatile Express (Cortex A15), ARM RealView PB11MP,
+> OMAP4 (Panda) and Tegra (Harmony). Patch series against next-20110923.
 > 
-> For now, I'd just be interested in what folks think about the concept with
-> regards to the wakelock discussions. Where it might not be sufficient? Or
-> what other disadvantages might it have? Are there any varients to this
-> idea that would be better? 
+> From v2:
+> - Fixed !GENERIC_HARDIRQS build
+> - Fixed request_percpu_irq documentation
+> 
+> From v1:
+> - General tidy-up after Thomas' review. I've kept the config option
+>   for the time being until we can sort out the anonymous union
+>   problem.
+> 
+> Marc Zyngier (3):
+>   genirq: add support for per-cpu dev_id interrupts
+>   ARM: gic: consolidate PPI handling
+>   ARM: gic, local timers: use the request_percpu_irq() interface
 
-I would like to know why people still think wakelocks are remotely sane?
+I've tested this on an MSM8660 based off of next-20110926.
 
->From where I'm sitting they're utter crap.. _WHY_ do you need to suspend
-anything? What's wrong with regular idle?
+Tested-by: David Brown <davidb@codeaurora.org>
+Acked-by: David Brown <davidb@codeaurora.org>
 
-So no, you've got a massive major NAK for anything touching the
-scheduler for this utter braindamage.
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
