@@ -1,132 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752722Ab1IZJcl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 05:32:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57347 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752543Ab1IZJck (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 05:32:40 -0400
-Date: Mon, 26 Sep 2011 11:32:37 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: David Rientjes <rientjes@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Tejun Heo <tj@kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH 1/2] oom: do not live lock on frozen tasks
-Message-ID: <20110926093237.GF10156@tiehlicka.suse.cz>
-References: <alpine.DEB.2.00.1108251404130.18747@chino.kir.corp.google.com>
- <20110826070946.GA7280@tiehlicka.suse.cz>
- <20110826085610.GA9083@tiehlicka.suse.cz>
- <alpine.DEB.2.00.1108260218050.14732@chino.kir.corp.google.com>
- <20110826095356.GB9083@tiehlicka.suse.cz>
- <alpine.DEB.2.00.1108261110020.13943@chino.kir.corp.google.com>
- <20110926082837.GC10156@tiehlicka.suse.cz>
- <alpine.DEB.2.00.1109260154510.1389@chino.kir.corp.google.com>
- <20110926091440.GE10156@tiehlicka.suse.cz>
- <20110926182536.9020bb5c.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1752745Ab1IZJdJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 05:33:09 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:62337 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752543Ab1IZJdH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 05:33:07 -0400
+Date: Mon, 26 Sep 2011 11:32:53 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Josh Wu <josh.wu@atmel.com>, linux-kernel@vger.kernel.org,
+        s.nawrocki@samsung.com, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org
+Subject: Re: [PATCH v3 2/2] at91: add Atmel ISI and ov2640 support on
+ sam9m10/sam9g45 board.
+In-Reply-To: <4E804440.7030709@atmel.com>
+Message-ID: <Pine.LNX.4.64.1109261130270.9168@axis700.grange>
+References: <1316664661-11383-1-git-send-email-josh.wu@atmel.com>
+ <1316664661-11383-2-git-send-email-josh.wu@atmel.com>
+ <Pine.LNX.4.64.1109220911500.11164@axis700.grange> <20110924052609.GI29998@game.jcrosoft.org>
+ <4E804440.7030709@atmel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110926182536.9020bb5c.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:NARq7eXkWuOw3OT1qjomIjcbKBqj/MSJcJeGkMo5bgu
+ eLyCu5a7wB3ohzoihDjM5/OFwUk/fIvRMOyRPVjRf1uDUaRDiU
+ WUyiiupVolgExluTvoQtnWL5Ptr9MoNy77QJEoP1nmcOP85tkX
+ Fl7pRo/cwgiOiscPkheaCIbYRgAB9x2MFXJe218EYA+Ju7aCJO
+ 0/DKQQUtDXrljimXdYVAXwPmv31r+7uS+7TSdR/M54CDLRQr56
+ Ijo+wJKv0dHu2dYPpv/kRUhmUzosvpVQi52Zp6a3YVjD+dnNjh
+ Sn2luMiHHkIi4Rgxi4soPanhFML9QFNZ2545/0Gcnleodj+ogg
+ VzOTJBivTPrnELBXULNvy/w0Oyboeo0hlRtultzXGOG+f/uZBH
+ GtdW+3nZtckvA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 26-09-11 18:25:36, KAMEZAWA Hiroyuki wrote:
-> On Mon, 26 Sep 2011 11:14:40 +0200
-> Michal Hocko <mhocko@suse.cz> wrote:
+Hi Nicolas
+
+On Mon, 26 Sep 2011, Nicolas Ferre wrote:
+
+> Le 24/09/2011 07:26, Jean-Christophe PLAGNIOL-VILLARD :
+> > On 09:35 Thu 22 Sep     , Guennadi Liakhovetski wrote:
+> >> On Thu, 22 Sep 2011, Josh Wu wrote:
+> >>
+> >>> This patch
+> >>> 1. add ISI_MCK parent setting code when add ISI device.
+> >>> 2. add ov2640 support on board file.
+> >>> 3. define isi_mck clock in sam9g45 chip file.
+> >>>
+> >>> Signed-off-by: Josh Wu <josh.wu@atmel.com>
+> >>> ---
+> >>>  arch/arm/mach-at91/at91sam9g45.c         |    3 +
+> >>>  arch/arm/mach-at91/at91sam9g45_devices.c |  105 +++++++++++++++++++++++++++++-
+> >>>  arch/arm/mach-at91/board-sam9m10g45ek.c  |   85 ++++++++++++++++++++++++-
+> >>>  arch/arm/mach-at91/include/mach/board.h  |    3 +-
+> >>
+> >> Personally, I think, it would be better to separate this into two patches 
+> >> at least: one for at91 core and one for the specific board, but that's up 
+> >> to arch maintainers to decide.
+> >>
+> >> You also want to patch arch/arm/mach-at91/at91sam9263_devices.c, don't 
+> >> you?
+> > agreed
 > 
-> > On Mon 26-09-11 01:56:57, David Rientjes wrote:
-> > > On Mon, 26 Sep 2011, Michal Hocko wrote:
-> > > 
-> > > > diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-> > > > index 626303b..b9774f3 100644
-> > > > --- a/mm/oom_kill.c
-> > > > +++ b/mm/oom_kill.c
-> > > > @@ -32,6 +32,7 @@
-> > > >  #include <linux/mempolicy.h>
-> > > >  #include <linux/security.h>
-> > > >  #include <linux/ptrace.h>
-> > > > +#include <linux/freezer.h>
-> > > >  
-> > > >  int sysctl_panic_on_oom;
-> > > >  int sysctl_oom_kill_allocating_task;
-> > > > @@ -451,6 +452,9 @@ static int oom_kill_task(struct task_struct *p, struct mem_cgroup *mem)
-> > > >  				task_pid_nr(q), q->comm);
-> > > >  			task_unlock(q);
-> > > >  			force_sig(SIGKILL, q);
-> > > > +
-> > > > +			if (frozen(q))
-> > > > +				thaw_process(q);
-> > > >  		}
-> > > >  
-> > > >  	set_tsk_thread_flag(p, TIF_MEMDIE);
-> > > 
-> > > This is in the wrong place, oom_kill_task() iterates over all threads that 
-> > > are _not_ in the same thread group as the chosen thread and kills them 
-> > > without giving them access to memory reserves.  The chosen task, p, could 
-> > > still be frozen and may not exit.
-> > 
-> > Ahh, right you are. I ave missed that one. Updated patch bellow.
-> > 
-> > > 
-> > > Once that's fixed, feel free to add my
-> > > 
-> > > 	Acked-by: David Rientjes <rientjes@google.com>
-> > 
-> > Thanks
-> > 
-> > > 
-> > > once Rafael sends his acked-by or reviewed-by.
-> > ---
-> > From f935ed4558c2fb033ef5c14e02b28e12a615f80e Mon Sep 17 00:00:00 2001
-> > From: Michal Hocko <mhocko@suse.cz>
-> > Date: Fri, 16 Sep 2011 11:23:15 +0200
-> > Subject: [PATCH] oom: do not live lock on frozen tasks
-> > 
-> > Konstantin Khlebnikov has reported (https://lkml.org/lkml/2011/8/23/45)
-> > that OOM can end up in a live lock if select_bad_process picks up a frozen
-> > task.
-> > Unfortunately we cannot mark such processes as unkillable to ignore them
-> > because we could panic the system even though there is a chance that
-> > somebody could thaw the process so we can make a forward process (e.g. a
-> > process from another cpuset or with a different nodemask).
-> > 
-> > Let's thaw an OOM selected frozen process right after we've sent fatal
-> > signal from oom_kill_task.
-> > Thawing is safe if the frozen task doesn't access any suspended device
-> > (e.g. by ioctl) on the way out to the userspace where we handle the
-> > signal and die. Note, we are not interested in the kernel threads because
-> > they are not oom killable.
-> > 
-> > Accessing suspended devices by a userspace processes shouldn't be an
-> > issue because devices are suspended only after userspace is already
-> > frozen and oom is disabled at that time.
-> > 
-> > run_guest (drivers/lguest/core.c) calls try_to_freeze with an user
-> > context but it seems it is able to cope with signals because it
-> > explicitly checks for pending signals so we should be safe.
-> > 
-> > Other than that userspace accesses the fridge only from the
-> > signal handling routines so we are able to handle SIGKILL without any
-> > negative side effects.
-> > 
-> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> > Reported-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> 
-> Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> No, I am not sure. The IP is not the same between 9263 and 9g45/9m10. So
+> this inclusion will not apply.
+
+Sorry, that's not what I meant. This patch changes a function declaration:
+
+diff --git a/arch/arm/mach-at91/include/mach/board.h b/arch/arm/mach-at91/include/mach/board.h
+index ed544a0..276d63a 100644
+--- a/arch/arm/mach-at91/include/mach/board.h
++++ b/arch/arm/mach-at91/include/mach/board.h
+@@ -183,7 +183,8 @@ extern void __init at91_add_device_lcdc(struct 
+atmel_lcdfb_info *data);
+ extern void __init at91_add_device_ac97(struct ac97c_platform_data 
+*data);
+ 
+  /* ISI */
+-extern void __init at91_add_device_isi(void);
++struct isi_platform_data;
++extern void __init at91_add_device_isi(struct isi_platform_data *data);
+ 
+  /* Touchscreen Controller */
+ struct at91_tsadcc_data {
+
+but doesn't change that function implementation in at91sam9263_devices.c, 
+which will break compilation, AFAICS.
 
 Thanks
-
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
