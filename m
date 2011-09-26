@@ -1,34 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752045Ab1IZMrN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 08:47:13 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:47133 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751305Ab1IZMrL (ORCPT
+	id S1751172Ab1IZMv7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 08:51:59 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41480 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750764Ab1IZMv6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 08:47:11 -0400
+	Mon, 26 Sep 2011 08:51:58 -0400
+Date: Mon, 26 Sep 2011 13:51:55 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] Add gpio based voltage switching regulator
+Message-ID: <20110926125155.GH2946@opensource.wolfsonmicro.com>
+References: <201109260852.19859.heiko@sntech.de>
 MIME-Version: 1.0
-In-Reply-To: <7vhb42su6f.fsf@alter.siamese.dyndns.org>
-References: <7vhb42su6f.fsf@alter.siamese.dyndns.org>
-Date: Mon, 26 Sep 2011 14:47:09 +0200
-Message-ID: <CACBZZX77ZhdS1cyiYpjJcuvSnJsv15FUumPWeZOcwh_b41c2FQ@mail.gmail.com>
-Subject: Re: [ANNOUNCE] Git 1.7.7.rc3
-From: =?UTF-8?B?w4Z2YXIgQXJuZmrDtnLDsCBCamFybWFzb24=?= <avarab@gmail.com>
-To: Junio C Hamano <gitster@pobox.com>
-Cc: git@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201109260852.19859.heiko@sntech.de>
+X-Cookie: You are always busy.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 24, 2011 at 01:41, Junio C Hamano <gitster@pobox.com> wrote:
+On Mon, Sep 26, 2011 at 08:52:18AM +0200, Heiko Stübner wrote:
 
-> Also the following public repositories all have a copy of the v1.7.7-rc3
-> tag and the master branch that the tag points at:
+> This patch adds support for regulators that can switch between
+> two voltage levels by setting a gpio.
 
-The 1.7.7-rc* series still doesn't compile on older Red Hat machines
-because 4c1be38b4a236403a329187acb70591a7fd92150 hasn't been included
-in it.
+This really should be scalable beyond two voltages, or at least prepared
+for that possibility.
 
-Could you please include that in the final 1.7.7? It would be a PITA
-to have to work around that.
+> Handling of set_voltage calls with a range that fits neither the
+> low nor the high voltage is determined by the inbetween_high
+> option. When set to 1 the high voltage is used, on 0 the low
+> voltage is used and on -EINVAL an error is returned, disallowing
+> the usage of the voltage range.
+
+No, don't do this.  If you can't set the requested voltage then fail.
+This is not in the least bit driver specific.
+
+> I'm not hung up on the "inbetween handling", in fact at the moment it
+> seems to not belong there. But I'm not sure on how to handle
+> frequency tables like
+> 	[0] = { 1000000, 1150000 },
+> 	[1] = { 1150000, 1250000 },
+> 	[2] = { 1250000, 1350000 },
+> I.e. the middle value should use the voltage in 2 for switch regulators,
+> but the defined value for more intelligent ones.
+
+I'm afraid I can't parse this, sorry.
+
+> @@ -0,0 +1,320 @@
+> +/*
+> + * switched.c
+
+This needs a better name.
+
+Otherwise this looks good, the main thing is the ability to support more
+voltages.
