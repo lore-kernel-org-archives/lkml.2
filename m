@@ -1,89 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751716Ab1IZIfY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 04:35:24 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:37173 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499Ab1IZIfX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 04:35:23 -0400
+	id S1751849Ab1IZIf6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 04:35:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54132 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751501Ab1IZIf5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 04:35:57 -0400
+Date: Mon, 26 Sep 2011 10:35:55 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: [PATCH 2/2] oom: give bonus to frozen processes
+Message-ID: <20110926083555.GD10156@tiehlicka.suse.cz>
+References: <alpine.DEB.2.00.1108241226550.31357@chino.kir.corp.google.com>
+ <20110825091920.GA22564@tiehlicka.suse.cz>
+ <20110825151818.GA4003@redhat.com>
+ <20110825164758.GB22564@tiehlicka.suse.cz>
+ <alpine.DEB.2.00.1108251404130.18747@chino.kir.corp.google.com>
+ <20110826070946.GA7280@tiehlicka.suse.cz>
+ <20110826085610.GA9083@tiehlicka.suse.cz>
+ <alpine.DEB.2.00.1108260218050.14732@chino.kir.corp.google.com>
+ <20110826095356.GB9083@tiehlicka.suse.cz>
+ <alpine.DEB.2.00.1108261110020.13943@chino.kir.corp.google.com>
 MIME-Version: 1.0
-X-Originating-IP: [212.179.42.66]
-In-Reply-To: <1317022420.9084.57.camel@twins>
-References: <1316940890-24138-1-git-send-email-gilad@benyossef.com>
-	<1316940890-24138-6-git-send-email-gilad@benyossef.com>
-	<1317022420.9084.57.camel@twins>
-Date: Mon, 26 Sep 2011 11:35:21 +0300
-Message-ID: <CAOtvUMeMsd0Jk1k4wP9Y+7NW3FYZZAqV1-cRj5Zt4+eaugWoPg@mail.gmail.com>
-Subject: Re: [PATCH 5/5] slub: Only IPI CPUs that have per cpu obj to flush
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Chris Metcalf <cmetcalf@tilera.com>, linux-mm@kvack.org,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1108261110020.13943@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 26, 2011 at 10:33 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Sun, 2011-09-25 at 11:54 +0300, Gilad Ben-Yossef wrote:
->> +       if (likely(zalloc_cpumask_var(&cpus, GFP_ATOMIC))) {
->> +               for_each_online_cpu(cpu) {
->> +                       c = per_cpu_ptr(s->cpu_slab, cpu);
->> +                       if (c && c->page)
->> +                               cpumask_set_cpu(cpu, cpus);
->> +               }
->> +               on_each_cpu_mask(cpus, flush_cpu_slab, s, 1);
->> +               free_cpumask_var(cpus);
->
-> Right, having to do that for_each_oneline_cpu() loop only to then IPI
-> them can cause a massive cacheline bounce fest.. Ideally you'd want to
-> keep a cpumask per kmem_cache, although I bet the memory overhead of
-> that isn't attractive.
->
-> Also, what Pekka says, having that alloc here isn't good either.
+On Fri 26-08-11 11:13:40, David Rientjes wrote:
+> On Fri, 26 Aug 2011, Michal Hocko wrote:
+[...]
+> > I am not saying the bonus is necessary, though. It depends on what
+> > the freezer is used for (e.g. freeze a process which went wild and
+> > debug what went wrong wouldn't welcome that somebody killed it or other
+> > (mis)use which relies on D state).
+[...]
+> If it actually does come down to a heuristic change, then it need not 
+> happen in the oom killer: the freezing code would need to use 
+> test_set_oom_score_adj() to temporarily reduce the oom_score_adj for that 
+> task until it comes out of the refrigerator.  We already use that in ksm 
+> and swapoff to actually prefer threads, but we can use it to bias against 
+> threads as well.
 
-Yes, the alloc in the flush_all path definitively needs to go. I
-wonder if just to resolve that allocating the mask per cpu and not in
-kmem_cache itself is not better - after all, all we need is a single
-mask per cpu when we wish to do a flush_all and no per cache. The
-memory overhead of that is slightly better. This doesn't cover the
-cahce bounce issue.
+Let's try it with a heuristic change first. If you really do not like
+it, we can move to oom_scode_adj. I like the heuristic change little bit
+more because it is at the same place as the root bonus.
+---
+>From 2f8fbab922f353eebaa9fa1c5fcb59a59cf2f441 Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Fri, 16 Sep 2011 15:51:25 +0200
+Subject: [PATCH 2/2] oom: give bonus to frozen processes
 
-My thoughts regarding that were that since the flush_all() was a
-rather rare operation it is preferable to do some more
-work/interference here, if it allows us to avoid having to do more
-work in the hotter alloc/dealloc paths, especially since it allows us
-to have less IPIs that I figured are more intrusive then cacheline
-steals (are they?)
+We do not want to kill frozen processes if there are some processes that
+could be killed instead. Frozen tasks are in uninterruptible sleep and
+somebody might rely on that.
+Let's give those tasks a bonus so that they would be selected only when
+really necessary. The size of the bonus is questionable but let's start
+with the same bonus we give to root processes.
 
-After all, for each CPU that actually needs to do a flush, we are
-making the flush a bit more expensive because of the cache bounce just
-before we send the IPI, but that IPI and further operations are an
-expensive operations anyway. For CPUs that don't need to do a flush, I
-replaced an IPI for a cacheline(s) steal. I figured it was still a
-good bargain
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ include/linux/oom.h |    6 ++++++
+ mm/oom_kill.c       |   10 +++++++++-
+ 2 files changed, 15 insertions(+), 1 deletions(-)
 
-I will spin a new patch that moves this to kmem_cache if you believe
-this is the right way to go.
-
-Thanks!
-Gilad
+diff --git a/include/linux/oom.h b/include/linux/oom.h
+index 13b7b02e..960e2de 100644
+--- a/include/linux/oom.h
++++ b/include/linux/oom.h
+@@ -13,6 +13,12 @@
+ #define OOM_ADJUST_MAX 15
+ 
+ /*
++ * Bonus (3%) for a task that shouldn't be killed unless necessary.
++ * We give this bonus to root and frozen tasks currently.
++ */
++#define OOM_BONUS 30
++
++/*
+  * /proc/<pid>/oom_score_adj set to OOM_SCORE_ADJ_MIN disables oom killing for
+  * pid.
+  */
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index b9774f3..4aea1b3 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -205,7 +205,15 @@ unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *mem,
+ 	 * implementation used by LSMs.
+ 	 */
+ 	if (has_capability_noaudit(p, CAP_SYS_ADMIN))
+-		points -= 30;
++		points -= OOM_BONUS;
++
++	/*
++	 * Do not try to kill frozen tasks unless there is nothing else to kill.
++	 * We do not want to give it 1 point because we still want to select a good
++	 * candidate among all frozen tasks. Let's give it a reasonable bonus.
++	 */
++	if (frozen(p))
++		points -= OOM_BONUS;
+ 
+ 	/*
+ 	 * /proc/pid/oom_score_adj ranges from -1000 to +1000 such that it may
+-- 
+1.7.5.4
 
 
 -- 
-Gilad Ben-Yossef
-Chief Coffee Drinker
-gilad@benyossef.com
-Israel Cell: +972-52-8260388
-US Cell: +1-973-8260388
-http://benyossef.com
-
-"I've seen things you people wouldn't believe. Goto statements used to
-implement co-routines. I watched C structures being stored in
-registers. All those moments will be lost in time... like tears in
-rain... Time to die. "
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
