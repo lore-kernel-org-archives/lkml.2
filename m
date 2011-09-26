@@ -1,210 +1,349 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751399Ab1IZNkq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 09:40:46 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:48999 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145Ab1IZNkp (ORCPT
+	id S1751464Ab1IZNnI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 09:43:08 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:44353 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933Ab1IZNnG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 09:40:45 -0400
-X-Authority-Analysis: v=1.1 cv=XWD5/VRj2HUJOhsR8cgmvPBlhMACpZXxseY1Kn/ehQI= c=1 sm=0 a=gtOWHpAUYCwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=pGLkceISAAAA:8 a=JUDzVgYUmskaudF2YpsA:9 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.83.30
-Subject: Re: [RFC PATCH 1/2] PM/runtime: introduce trace points for tracing
- rpm_* functions
-From: Steven Rostedt <rostedt@goodmis.org>
-To: tom.leiming@gmail.com
-Cc: rjw@sisk.pl, stern@rowland.harvard.edu,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        mingo@redhat.com, fweisbec@gmail.com
-Date: Mon, 26 Sep 2011 09:40:43 -0400
-In-Reply-To: <1316664701-15273-1-git-send-email-tom.leiming@gmail.com>
-References: <1316664701-15273-1-git-send-email-tom.leiming@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.0.3- 
+	Mon, 26 Sep 2011 09:43:06 -0400
+Message-ID: <4E808166.7090807@gmail.com>
+Date: Mon, 26 Sep 2011 07:43:02 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+MIME-Version: 1.0
+To: Jiri Olsa <jolsa@redhat.com>
+CC: acme@redhat.com, eric.dumazet@gmail.com, fweisbec@gmail.com,
+        a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        linux-kernel@vger.kernel.org, rostedt@goodmis.org,
+        nhorman@tuxdriver.com
+Subject: Re: [PATCHv2 1/2] perf tools: Collect tracing event data files directly
+References: <20110925133406.GB2702@jolsa.brq.redhat.com> <1317028312-5156-1-git-send-email-jolsa@redhat.com> <1317028312-5156-2-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1317028312-5156-2-git-send-email-jolsa@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-ID: <1317044445.26514.5.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-09-22 at 12:11 +0800, tom.leiming@gmail.com wrote:
-> From: Ming Lei <tom.leiming@gmail.com>
+
+
+On 09/26/2011 03:11 AM, Jiri Olsa wrote:
+> Changing the way the event files are searched by quering specified
+> event files directly, instead of walking the events directory.
 > 
-> This patch introduces 3 trace points to prepare for tracing
-> rpm_idle/rpm_suspend/rpm_resume functions, so we can use these
-> trace points to replace the current dev_dbg().
+> Hopefully this way is more straightforward and faster.
 > 
-> Signed-off-by: Ming Lei <tom.leiming@gmail.com>
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 > ---
->  include/trace/events/rpm.h |   98 ++++++++++++++++++++++++++++++++++++++++++++
->  kernel/trace/Makefile      |    1 +
->  kernel/trace/rpm-traces.c  |   21 +++++++++
->  3 files changed, 120 insertions(+), 0 deletions(-)
->  create mode 100644 include/trace/events/rpm.h
->  create mode 100644 kernel/trace/rpm-traces.c
+>  tools/perf/util/parse-events.h     |    1 +
+>  tools/perf/util/trace-event-info.c |  231 +++++++++++++++--------------------
+>  2 files changed, 100 insertions(+), 132 deletions(-)
 > 
-> diff --git a/include/trace/events/rpm.h b/include/trace/events/rpm.h
-> new file mode 100644
-> index 0000000..ecd40bb
-> --- /dev/null
-> +++ b/include/trace/events/rpm.h
-> @@ -0,0 +1,98 @@
-> +
-> +#undef TRACE_SYSTEM
-> +#define TRACE_SYSTEM rpm
-> +
-> +#if !defined(_TRACE_RUNTIME_POWER_H) || defined(TRACE_HEADER_MULTI_READ)
-> +#define _TRACE_RUNTIME_POWER_H
-> +
-> +#include <linux/ktime.h>
-> +#include <linux/tracepoint.h>
-> +#include <linux/device.h>
-> +
+> diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
+> index 2f8e375..1ea02ad 100644
+> --- a/tools/perf/util/parse-events.h
+> +++ b/tools/perf/util/parse-events.h
+> @@ -15,6 +15,7 @@ struct option;
+>  struct tracepoint_path {
+>  	char *system;
+>  	char *name;
+> +	bool done;
+>  	struct tracepoint_path *next;
+>  };
+>  
+> diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
+> index 3403f81..cf8f89e 100644
+> --- a/tools/perf/util/trace-event-info.c
+> +++ b/tools/perf/util/trace-event-info.c
+> @@ -238,136 +238,98 @@ static void read_header_files(void)
+>  	put_tracing_file(path);
+>  }
+>  
+> -static bool name_in_tp_list(char *sys, struct tracepoint_path *tps)
+> +static char *get_format_file(char *sys, char *name)
+>  {
+> -	while (tps) {
+> -		if (!strcmp(sys, tps->name))
+> -			return true;
+> -		tps = tps->next;
+> -	}
+> -
+> -	return false;
+> -}
+> -
+> -static void copy_event_system(const char *sys, struct tracepoint_path *tps)
+> -{
+> -	struct dirent *dent;
+> -	struct stat st;
+> -	char *format;
+> -	DIR *dir;
+> -	int count = 0;
+> -	int ret;
+> -
+> -	dir = opendir(sys);
+> -	if (!dir)
+> -		die("can't read directory '%s'", sys);
+> -
+> -	while ((dent = readdir(dir))) {
+> -		if (dent->d_type != DT_DIR ||
+> -		    strcmp(dent->d_name, ".") == 0 ||
+> -		    strcmp(dent->d_name, "..") == 0 ||
+> -		    !name_in_tp_list(dent->d_name, tps))
+> -			continue;
+> -		format = malloc_or_die(strlen(sys) + strlen(dent->d_name) + 10);
+> -		sprintf(format, "%s/%s/format", sys, dent->d_name);
+> -		ret = stat(format, &st);
+> -		free(format);
+> -		if (ret < 0)
+> -			continue;
+> -		count++;
+> -	}
+> -
+> -	write_or_die(&count, 4);
+> +	char *file, *path;
+>  
+> -	rewinddir(dir);
+> -	while ((dent = readdir(dir))) {
+> -		if (dent->d_type != DT_DIR ||
+> -		    strcmp(dent->d_name, ".") == 0 ||
+> -		    strcmp(dent->d_name, "..") == 0 ||
+> -		    !name_in_tp_list(dent->d_name, tps))
+> -			continue;
+> -		format = malloc_or_die(strlen(sys) + strlen(dent->d_name) + 10);
+> -		sprintf(format, "%s/%s/format", sys, dent->d_name);
+> -		ret = stat(format, &st);
+> +	path = get_tracing_file("events");
+> +	if (!path)
+> +		return NULL;
+>  
+> -		if (ret >= 0)
+> -			record_file(format, 8);
+> +	/*
+> +	 * The '+ 5' is for '/' we add to the patch, plus NULL byte,
+> +	 * and one safety byte ;)
+> +	 */
+> +	file = malloc_or_die(strlen(path) + strlen(sys) +
+> +			     strlen(name) + strlen("format") + 5);
+
+Why not go the simple route and just use PATH_MAX?
+
+David
+
+
+>  
+> -		free(format);
+> -	}
+> -	closedir(dir);
+> +	sprintf(file, "%s/%s/%s/format", path, sys, name);
+> +	return file;
+>  }
+>  
+> -static void read_ftrace_files(struct tracepoint_path *tps)
+> +static void put_format_file(char *file)
+>  {
+> -	char *path;
+> -
+> -	path = get_tracing_file("events/ftrace");
+> -
+> -	copy_event_system(path, tps);
+> -
+> -	put_tracing_file(path);
+> +	free(file);
+>  }
+>  
+> -static bool system_in_tp_list(char *sys, struct tracepoint_path *tps)
 > +/*
-> + * The rpm_internal events are used for tracing some important
-> + * runtime pm internal functions.
+> + * Walk tracepoint event objects and store them.
+> + * Only those matching the sys parameter are stored
+> + * and marked as done.
 > + */
-> +DECLARE_EVENT_CLASS(rpm_internal,
+> +static void read_event_files_system(struct tracepoint_path *tps,
+> +				    const char *sys)
+>  {
+> +	off_t count_pos;
+> +	u32 count = 0;
 > +
-> +	TP_PROTO(struct device *dev, int flags),
+> +	/* Place for number of events under single system. */
+> +	count_pos = lseek(output_fd, 0, SEEK_CUR);
+> +	write_or_die(&count, 4);
 > +
-> +	TP_ARGS(dev, flags),
+>  	while (tps) {
+> -		if (!strcmp(sys, tps->system))
+> -			return true;
+> +		if ((!tps->done) &&
+> +		    (!strcmp(sys, tps->system))) {
+> +			char *file;
 > +
-> +	TP_STRUCT__entry(
-> +		__field(        const char *,   name            )
-> +		__field(        int,            flags           )
-> +		__field(        int ,   	usage_count	)
-> +		__field(        int ,   	disable_depth   )
-> +		__field(        int ,   	runtime_auto	)
-> +		__field(        int ,   	request_pending	)
-> +		__field(        int ,   	irq_safe	)
-> +		__field(        int ,   	child_count 	)
-> +	),
+> +			file = get_format_file(tps->system, tps->name);
+> +			if (file) {
+> +				record_file(file, 8);
+> +				count++;
+> +			}
 > +
-> +	TP_fast_assign(
-> +		__entry->name = dev_name(dev);
-
-Don't use pointers, you must copy the name here. Otherwise, if the trace
-is read after the device has left, you will be referencing a invalid
-pointer and possible crash the kernel.
-
-We have ways to express dynamic string fields. Use them.
-
-> +		__entry->flags = flags;
-> +		__entry->usage_count = atomic_read(
-> +			&dev->power.usage_count);
-> +		__entry->disable_depth = dev->power.disable_depth;
-> +		__entry->runtime_auto = dev->power.runtime_auto;
-> +		__entry->request_pending = dev->power.request_pending;
-> +		__entry->irq_safe = dev->power.irq_safe;
-> +		__entry->child_count = atomic_read(
-> +			&dev->power.child_count);
-> +	),
+> +			put_format_file(file);
+> +			tps->done = 1;
+> +		}
 > +
-> +	TP_printk("%s flags-%x cnt-%-2d dep-%-2d auto-%-1d p-%-1d"
-> +			" irq-%-1d child-%d",
-> +			__entry->name, __entry->flags,
-> +			__entry->usage_count,
-> +			__entry->disable_depth,
-> +			__entry->runtime_auto,
-> +			__entry->request_pending,
-> +			__entry->irq_safe,
-> +			__entry->child_count
-> +		 )
-> +);
-> +DEFINE_EVENT(rpm_internal, rpm_suspend,
-> +
-> +	TP_PROTO(struct device *dev, int flags),
-> +
-> +	TP_ARGS(dev, flags)
-> +);
-> +DEFINE_EVENT(rpm_internal, rpm_resume,
-> +
-> +	TP_PROTO(struct device *dev, int flags),
-> +
-> +	TP_ARGS(dev, flags)
-> +);
-> +DEFINE_EVENT(rpm_internal, rpm_idle,
-> +
-> +	TP_PROTO(struct device *dev, int flags),
-> +
-> +	TP_ARGS(dev, flags)
-> +);
-> +
-> +TRACE_EVENT(rpm_return_int,
-> +	TP_PROTO(struct device *dev, const char *func, int ret),
-> +	TP_ARGS(dev, func, ret),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(	const char *,		name		)
-> +		__field(	const char *,		func		)
-> +		__field(	int,			ret		)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->name = dev_name(dev);
-
-Same here.
-
-> +		__entry->ret = ret;
-> +		__entry->func = func;
-
-And here. But as this is just __func__, you could use %pS and save the
-pointer to the function. This is acceptable as kallsyms will will used
-to find the function, and instead pass in __THIS_IP__ to the tracepoint.
-
--- Steve
-
-
-> +	),
-> +
-> +	TP_printk("%s:%s ret=%d", __entry->func, __entry->name, __entry->ret)
-> +);
-> +
-> +#endif /* _TRACE_RUNTIME_POWER_H */
-> +
-> +/* This part must be outside protection */
-> +#include <trace/define_trace.h>
-> diff --git a/kernel/trace/Makefile b/kernel/trace/Makefile
-> index 761c510..56bdab5 100644
-> --- a/kernel/trace/Makefile
-> +++ b/kernel/trace/Makefile
-> @@ -53,6 +53,7 @@ endif
->  obj-$(CONFIG_EVENT_TRACING) += trace_events_filter.o
->  obj-$(CONFIG_KPROBE_EVENT) += trace_kprobe.o
->  obj-$(CONFIG_TRACEPOINTS) += power-traces.o
-> +obj-$(CONFIG_TRACEPOINTS) += rpm-traces.o
->  ifeq ($(CONFIG_TRACING),y)
->  obj-$(CONFIG_KGDB_KDB) += trace_kdb.o
->  endif
-> diff --git a/kernel/trace/rpm-traces.c b/kernel/trace/rpm-traces.c
-> new file mode 100644
-> index 0000000..998949e
-> --- /dev/null
-> +++ b/kernel/trace/rpm-traces.c
-> @@ -0,0 +1,21 @@
+>  		tps = tps->next;
+>  	}
+>  
+> -	return false;
+> +	if (pwrite(output_fd, &count, 4, count_pos) < 0)
+> +		die("pwrite");
+>  }
+>  
 > +/*
-> + * Power trace points
+> + * We have all needed tracepoint event files stored in
+> + * the tracepoint_path objects.
 > + *
-> + * Copyright (C) 2009 Ming Lei <tom.leiming@gmail.com>
+> + * - first we store ftrace system events
+> + * - then we walk all '!done' event objects
+> + *   and process them
 > + */
+>  static void read_event_files(struct tracepoint_path *tps)
+>  {
+> -	struct dirent *dent;
+> -	struct stat st;
+> -	char *path;
+> -	char *sys;
+> -	DIR *dir;
+> -	int count = 0;
+> -	int ret;
+> -
+> -	path = get_tracing_file("events");
+> +	off_t count_pos;
+> +	u32 count = 0;
+>  
+> -	dir = opendir(path);
+> -	if (!dir)
+> -		die("can't read directory '%s'", path);
+> -
+> -	while ((dent = readdir(dir))) {
+> -		if (dent->d_type != DT_DIR ||
+> -		    strcmp(dent->d_name, ".") == 0 ||
+> -		    strcmp(dent->d_name, "..") == 0 ||
+> -		    strcmp(dent->d_name, "ftrace") == 0 ||
+> -		    !system_in_tp_list(dent->d_name, tps))
+> -			continue;
+> -		count++;
+> -	}
+> +	read_event_files_system(tps, "ftrace");
+>  
+> +	/* systems count */
+> +	count_pos = lseek(output_fd, 0, SEEK_CUR);
+>  	write_or_die(&count, 4);
+>  
+> -	rewinddir(dir);
+> -	while ((dent = readdir(dir))) {
+> -		if (dent->d_type != DT_DIR ||
+> -		    strcmp(dent->d_name, ".") == 0 ||
+> -		    strcmp(dent->d_name, "..") == 0 ||
+> -		    strcmp(dent->d_name, "ftrace") == 0 ||
+> -		    !system_in_tp_list(dent->d_name, tps))
+> -			continue;
+> -		sys = malloc_or_die(strlen(path) + strlen(dent->d_name) + 2);
+> -		sprintf(sys, "%s/%s", path, dent->d_name);
+> -		ret = stat(sys, &st);
+> -		if (ret >= 0) {
+> -			write_or_die(dent->d_name, strlen(dent->d_name) + 1);
+> -			copy_event_system(sys, tps);
+> +	while (tps) {
+> +		if (!tps->done) {
+> +			write_or_die(tps->system, strlen(tps->system) + 1);
+> +			read_event_files_system(tps, tps->system);
+> +			count++;
+>  		}
+> -		free(sys);
 > +
-> +#include <linux/string.h>
-> +#include <linux/types.h>
-> +#include <linux/workqueue.h>
-> +#include <linux/sched.h>
-> +#include <linux/module.h>
-> +#include <linux/usb.h>
+> +		tps = tps->next;
+>  	}
+>  
+> -	closedir(dir);
+> -	put_tracing_file(path);
+> +	if (pwrite(output_fd, &count, 4, count_pos) < 0)
+> +		die("write");
+>  }
+>  
+>  static void read_proc_kallsyms(void)
+> @@ -387,6 +349,37 @@ static void read_proc_kallsyms(void)
+>  	record_file(path, 4);
+>  }
+>  
+> +static void tracing_data_header(void)
+> +{
+> +	char buf[50];
 > +
-> +#define CREATE_TRACE_POINTS
-> +#include <trace/events/rpm.h>
+> +	/* just guessing this is someone's birthday.. ;) */
+> +	buf[0] = 23;
+> +	buf[1] = 8;
+> +	buf[2] = 68;
+> +	memcpy(buf + 3, "tracing", 7);
 > +
-> +EXPORT_TRACEPOINT_SYMBOL_GPL(rpm_return_int);
-> +EXPORT_TRACEPOINT_SYMBOL_GPL(rpm_idle);
-> +EXPORT_TRACEPOINT_SYMBOL_GPL(rpm_suspend);
-> +EXPORT_TRACEPOINT_SYMBOL_GPL(rpm_resume);
+> +	write_or_die(buf, 10);
 > +
-
-
+> +	write_or_die(VERSION, strlen(VERSION) + 1);
+> +
+> +	/* save endian */
+> +	if (bigendian())
+> +		buf[0] = 1;
+> +	else
+> +		buf[0] = 0;
+> +
+> +	write_or_die(buf, 1);
+> +
+> +	/* save size of long */
+> +	buf[0] = sizeof(long);
+> +	write_or_die(buf, 1);
+> +
+> +	/* save page_size */
+> +	page_size = sysconf(_SC_PAGESIZE);
+> +	write_or_die(&page_size, 4);
+> +}
+> +
+>  static void read_ftrace_printk(void)
+>  {
+>  	unsigned int size;
+> @@ -441,7 +434,6 @@ bool have_tracepoints(struct list_head *pattrs)
+>  
+>  int read_tracing_data(int fd, struct list_head *pattrs)
+>  {
+> -	char buf[BUFSIZ];
+>  	struct tracepoint_path *tps = get_tracepoints_path(pattrs);
+>  
+>  	/*
+> @@ -452,33 +444,8 @@ int read_tracing_data(int fd, struct list_head *pattrs)
+>  
+>  	output_fd = fd;
+>  
+> -	buf[0] = 23;
+> -	buf[1] = 8;
+> -	buf[2] = 68;
+> -	memcpy(buf + 3, "tracing", 7);
+> -
+> -	write_or_die(buf, 10);
+> -
+> -	write_or_die(VERSION, strlen(VERSION) + 1);
+> -
+> -	/* save endian */
+> -	if (bigendian())
+> -		buf[0] = 1;
+> -	else
+> -		buf[0] = 0;
+> -
+> -	write_or_die(buf, 1);
+> -
+> -	/* save size of long */
+> -	buf[0] = sizeof(long);
+> -	write_or_die(buf, 1);
+> -
+> -	/* save page_size */
+> -	page_size = sysconf(_SC_PAGESIZE);
+> -	write_or_die(&page_size, 4);
+> -
+> +	tracing_data_header();
+>  	read_header_files();
+> -	read_ftrace_files(tps);
+>  	read_event_files(tps);
+>  	read_proc_kallsyms();
+>  	read_ftrace_printk();
