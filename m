@@ -1,157 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752510Ab1IZWaQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 18:30:16 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:43179 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752096Ab1IZWaO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 18:30:14 -0400
-Date: Mon, 26 Sep 2011 15:30:10 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>, linux-kernel@vger.kernel.org,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: Re: linux-next-20110923: warning kernel/rcutree.c:1833
-Message-ID: <20110926223010.GN2399@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110925002409.GA24220@shutemov.name>
- <20110925050826.GC2995@linux.vnet.ibm.com>
- <20110925112637.GA19298@shutemov.name>
- <20110925130622.GA9205@somewhere.redhat.com>
- <20110925164804.GD2995@linux.vnet.ibm.com>
- <20110926010418.GA18553@somewhere>
- <20110926012501.GI2995@linux.vnet.ibm.com>
- <20110926084949.GC18553@somewhere>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110926084949.GC18553@somewhere>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752364Ab1IZWdl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 18:33:41 -0400
+Received: from caiajhbdcbef.dreamhost.com ([208.97.132.145]:43961 "EHLO
+	homiemail-a1.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751433Ab1IZWdk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 18:33:40 -0400
+Subject: Re: Bug: ACPI, scheduling while atomic (was Re: [PATCH 0/4] sched:
+ Make sleep inside atomic detection work on !PREEMPT)
+From: Davidlohr Bueso <dave@gnu.org>
+Reply-To: dave@gnu.org
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <20110824205745.cd3f5f6c.rdunlap@xenotime.net>
+References: <1307555315-30989-1-git-send-email-fweisbec@gmail.com>
+	 <20110608224939.GC25771@somewhere.redhat.com>
+	 <20110824205745.cd3f5f6c.rdunlap@xenotime.net>
+Content-Type: text/plain; charset="UTF-8"
+Organization: GNU
+Date: Mon, 26 Sep 2011 19:33:34 -0300
+Message-ID: <1317076414.2896.7.camel@offbook>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 26, 2011 at 10:49:53AM +0200, Frederic Weisbecker wrote:
-> On Sun, Sep 25, 2011 at 06:25:01PM -0700, Paul E. McKenney wrote:
-> > On Mon, Sep 26, 2011 at 03:04:21AM +0200, Frederic Weisbecker wrote:
-> > > On Sun, Sep 25, 2011 at 09:48:04AM -0700, Paul E. McKenney wrote:
-> > > > On Sun, Sep 25, 2011 at 03:06:25PM +0200, Frederic Weisbecker wrote:
-> > > > > On Sun, Sep 25, 2011 at 02:26:37PM +0300, Kirill A. Shutemov wrote:
-> > > > > > On Sat, Sep 24, 2011 at 10:08:26PM -0700, Paul E. McKenney wrote:
-> > > > > > > On Sun, Sep 25, 2011 at 03:24:09AM +0300, Kirill A. Shutemov wrote:
-> > > > > > > > [   29.974288] ------------[ cut here ]------------
-> > > > > > > > [   29.974308] WARNING: at /home/kas/git/public/linux-next/kernel/rcutree.c:1833 rcu_needs_cpu+0xff
-> > > > > > > > [   29.974316] Hardware name: HP EliteBook 8440p
-> > > > > > > > [   29.974321] Modules linked in: ip6table_filter ip6_tables ebtable_nat ebtables ipt_MASQUERADE iple_mangle xt_tcpudp iptable_filter ip_tables x_tables bridge stp llc rfcomm bnep acpi_cpufreq mperfckd fscache auth_rpcgss nfs_acl sunrpc ext2 loop kvm_intel kvm snd_hda_codec_hdmi snd_hda_codec_idtideodev media v4l2_compat_ioctl32 snd_seq bluetooth drm_kms_helper snd_timer tpm_infineon snd_seq_drt tpm_tis hp_accel intel_ips soundcore lis3lv02d tpm rfkill i2c_algo_bit snd_page_alloc i2c_core c16 sha256_generic aesni_intel cryptd aes_x86_64 aes_generic cbc dm_crypt dm_mod sg sr_mod sd_mod cd thermal_sys [last unloaded: scsi_wait_scan]
-> > > > > > > > [   29.974517] Pid: 0, comm: kworker/0:1 Not tainted 3.1.0-rc7-next-20110923 #2
-> > > > > > > > [   29.974521] Call Trace:
-> > > > > > > > [   29.974525]  <IRQ>  [<ffffffff8104d72a>] warn_slowpath_common+0x7a/0xb0
-> > > > > > > > [   29.974540]  [<ffffffff8104d775>] warn_slowpath_null+0x15/0x20
-> > > > > > > > [   29.974546]  [<ffffffff810bffdf>] rcu_needs_cpu+0xff/0x110
-> > > > > > > > [   29.974555]  [<ffffffff8108396f>] tick_nohz_stop_sched_tick+0x13f/0x3d0
-> > > > > > > > [   29.974563]  [<ffffffff814329c0>] ? notifier_call_chain+0x70/0x70
-> > > > > > > > [   29.974571]  [<ffffffff81055622>] irq_exit+0xa2/0xd0
-> > > > > > > > [   29.974578]  [<ffffffff8101ee75>] smp_apic_timer_interrupt+0x85/0x1c0
-> > > > > > > > [   29.974585]  [<ffffffff814329c0>] ? notifier_call_chain+0x70/0x70
-> > > > > > > > [   29.974592]  [<ffffffff81436e1e>] apic_timer_interrupt+0x6e/0x80
-> > > > > > > > [   29.974596]  <EOI>  [<ffffffff81297abd>] ? acpi_hw_read+0x4a/0x51
-> > > > > > > > [   29.974609]  [<ffffffff81087a07>] ? lock_acquire+0xa7/0x160
-> > > > > > > > [   29.974615]  [<ffffffff814329c0>] ? notifier_call_chain+0x70/0x70
-> > > > > > > > [   29.974622]  [<ffffffff81432a16>] __atomic_notifier_call_chain+0x56/0xb0
-> > > > > > > > [   29.974631]  [<ffffffff814329c0>] ? notifier_call_chain+0x70/0x70
-> > > > > > > > [   29.974642]  [<ffffffff8130ebb6>] ? cpuidle_idle_call+0x106/0x350
-> > > > > > > > [   29.974651]  [<ffffffff81432a81>] atomic_notifier_call_chain+0x11/0x20
-> > > > > > > > [   29.974661]  [<ffffffff81001233>] cpu_idle+0xe3/0x120
-> > > > > > > > [   29.974672]  [<ffffffff8141e34b>] start_secondary+0x1fd/0x204
-> > > > > > > > [   29.974681] ---[ end trace 6c1d44095a3bb7c5 ]---
-> > > > > > > 
-> > > > > > > Do the following help?
-> > > > > > > 
-> > > > > > > 	https://lkml.org/lkml/2011/9/17/47
-> > > > > > > 	https://lkml.org/lkml/2011/9/17/45
-> > > > > > > 	https://lkml.org/lkml/2011/9/17/43
-> > > > > > 
-> > > > > > Yes. Thanks.
-> > > > > 
-> > > > > I believe that doesn't really fix the issue. But the warning is not
-> > > > > easy to trigger. You simply haven't hit it by chance after applying
-> > > > > the patches.
-> > > > > 
-> > > > > This happens when the idle notifier callchain is called in idle
-> > > > > and is interrupted in the middle. So we have called rcu_read_lock()
-> > > > > but haven't yet released with rcu_read_unlock(), and in the end
-> > > > > of the interrupt we call tick_nohz_stop_sched_tick() -> rcu_needs_cpu()
-> > > > > which is illegal while in an rcu read side critical section.
-> > > > > 
-> > > > > No idea how to solve that. Any use of RCU after the tick gets stopped
-> > > > > is concerned here. If it is really required that rcu_needs_cpu() can't
-> > > > > be called in an rcu read side critical sectionn then it's not going
-> > > > > to be easy to fix.
-> > > > > 
-> > > > > But I don't really understand that requirement. rcu_needs_cpu() simply
-> > > > > checks if we don't have callbacks to handle. So I don't understand how
-> > > > > read side is concerned. It's rather the write side.
-> > > > > The rule I can imagine instead is: don't call __call_rcu() once the tick is
-> > > > > stopped.
-> > > > > 
-> > > > > But I'm certainly missing something.
-> > > > > 
-> > > > > Paul?
-> > > > 
-> > > > This is required for RCU_FAST_NO_HZ, which checks to see whether the
-> > > > current CPU can accelerate the current grace period so as to enter
-> > > > dyntick-idle mode sooner than it would otherwise.  This takes effect
-> > > > in the situation where rcu_needs_cpu() sees that there are callbacks.
-> > > > It then notes a quiescent state (which is illegal in an RCU read-side
-> > > > critical section), calls force_quiescent_state(), and so on.  For this
-> > > > to work, the current CPU must be in an RCU read-side critical section.
-> > > 
-> > > You mean it must *not* be in an RCU read-side critical section (ie: in a
-> > > quiescent state)?
-> > 
-> > Yes, you are right, it must -not- be in an RCU read-side critical section.
-> > 
-> > > That assumption at least fails anytime in idle for the RCU
-> > > sched flavour given that preemption is disabled in the idle loop.
-> > 
-> > Except that the idle loop is a quiescent state.
-> > 
-> > > > If this cannot be made to work, another option is to call a new RCU
-> > > > function in the case where rcu_needs_cpu() returned false, but after
-> > > > the RCU read-side critical section has exited.
-> > > 
-> > > You mean when rcu_needs_cpu() returns true (when we have callbacks
-> > > enqueued)?
-> > 
-> > Yes.  I definitely am having problems with polarity this weekend.  :-/
-> > 
-> > > > This new RCU function
-> > > > could then attempt to rearrange RCU so as to allow the CPU to enter
-> > > > dyntick-idle mode more quickly.  It is more important for this to
-> > > > happen when the CPU is going idle than when it is executing a user
-> > > > process.
-> > > > 
-> > > > So, is this doable?
-> > > 
-> > > At least not when we have RCU sched callbacks enqueued, given preemption
-> > > is disabled. But that sounds plausible in order to accelerate the switch
-> > > to dyntick-idle mode when we only have rcu and/or rcu bh callbacks.
-> > 
-> > Again, the idle loop is a quiescent state for RCU-sched.
+On Wed, 2011-08-24 at 20:57 -0700, Randy Dunlap wrote:
+> On Thu, 9 Jun 2011 00:49:41 +0200 Frederic Weisbecker wrote:
 > 
-> We need to add an idle_cpu() check in rcu_read_lock_sched_held()
-> and rcu_read_lock_bh_held().
+> > On Wed, Jun 08, 2011 at 07:48:31PM +0200, Frederic Weisbecker wrote:
+> > > Aside it may mostly avoid the need for a specific PROVE_RCU
+> > > check when we sleep inside an rcu read side critical section.
+> > > 
+> > > Better make sleeping inside atomic sections work everywhere.
+> > 
+> > BTW, it has led to detect a bug in the ACPI code. It happens in
+> > !CONFIG_PREEMPT:
+> > 
+> > [    0.160187] BUG: scheduling while atomic: swapper/0/0x10000002
+> > [    0.166016] no locks held by swapper/0.
+> > [    0.170014] Modules linked in:
+> > [    0.173107] Pid: 0, comm: swapper Not tainted 2.6.39+ #124
+> > [    0.180014] Call Trace:
+> > [    0.182481]  [<ffffffff81048685>] __schedule_bug+0x85/0x90
+> > [    0.187967]  [<ffffffff817da98c>] schedule+0x75c/0xa40
+> > [    0.190022]  [<ffffffff8109a1fd>] ? trace_hardirqs_on+0xd/0x10
+> > [    0.200023]  [<ffffffff813879c0>] ? acpi_ps_free_op+0x22/0x24
+> > [    0.205776]  [<ffffffff810554a5>] __cond_resched+0x25/0x40
+> > [    0.210022]  [<ffffffff817daf3b>] _cond_resched+0x2b/0x40
+> > [    0.215420]  [<ffffffff81386cbe>] acpi_ps_complete_op+0x262/0x278
+> > [    0.220023]  [<ffffffff813874df>] acpi_ps_parse_loop+0x80b/0x960
+> > [    0.230023]  [<ffffffff81386607>] acpi_ps_parse_aml+0x98/0x274
+> > [    0.235859]  [<ffffffff81384cbb>] acpi_ns_one_complete_parse+0x103/0x120
+> > [    0.240021]  [<ffffffff810886da>] ? up+0x2a/0x50
+> > [    0.244641]  [<ffffffff81384cf3>] acpi_ns_parse_table+0x1b/0x34
+> > [    0.250022]  [<ffffffff8138242a>] acpi_ns_load_table+0x4a/0x8c
+> > [    0.260023]  [<ffffffff8138947c>] acpi_load_tables+0x9c/0x15d
+> > [    0.265774]  [<ffffffff81d0b0f8>] acpi_early_init+0x6c/0xf7
+> > [    0.270022]  [<ffffffff81cd8d31>] start_kernel+0x400/0x415
+> > [    0.275508]  [<ffffffff81cd8346>] x86_64_start_reservations+0x131/0x135
+> > [    0.280022]  [<ffffffff81cd844d>] x86_64_start_kernel+0x103/0x112
+> > 
+> > ACPI_PREEMPTION_POINT() is called from acpi_ps_complete_op() and schedules
+> > if !PREEMPT. But preemption is disabled as we are in early bootup.
+> 
+> This still happens in 3.1-rc[123].
+> Was there a patch for it?
+> 
 
-OK, but just to make sure...  For this to work, the idle notifiers would
-need to be invoked from outside of the idle task.  If the idle notifiers
-are instead invoked from idle-task context, then RCU needs to get more
-precise about what it thinks of as "idle", probably via a per-CPU variable
-that gets set and cleared within each idle loop.
+And still in -rc7. I was looking at Paul's github
+(https://github.com/paulmckrcu/linux/) but can't find it.
 
-/me reminisces about the time when the definition of "idle" seemed so
-simple...  ;-)
+> ---
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-							Thanx, Paul
+
