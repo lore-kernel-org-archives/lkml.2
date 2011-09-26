@@ -1,193 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751334Ab1IZNiy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 09:38:54 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:34923 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750952Ab1IZNix (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 09:38:53 -0400
-Date: Mon, 26 Sep 2011 18:53:37 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jonathan Corbet <corbet@lwn.net>, Hugh Dickins <hughd@google.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v5 3.1.0-rc4-tip 3/26]   Uprobes: register/unregister
- probes.
-Message-ID: <20110926132337.GA13535@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com>
- <20110920120022.25326.35868.sendpatchset@srdronam.in.ibm.com>
- <1317042900.1763.7.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1317042900.1763.7.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751399Ab1IZNkq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 09:40:46 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:48999 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751145Ab1IZNkp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 09:40:45 -0400
+X-Authority-Analysis: v=1.1 cv=XWD5/VRj2HUJOhsR8cgmvPBlhMACpZXxseY1Kn/ehQI= c=1 sm=0 a=gtOWHpAUYCwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=pGLkceISAAAA:8 a=JUDzVgYUmskaudF2YpsA:9 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.83.30
+Subject: Re: [RFC PATCH 1/2] PM/runtime: introduce trace points for tracing
+ rpm_* functions
+From: Steven Rostedt <rostedt@goodmis.org>
+To: tom.leiming@gmail.com
+Cc: rjw@sisk.pl, stern@rowland.harvard.edu,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        mingo@redhat.com, fweisbec@gmail.com
+Date: Mon, 26 Sep 2011 09:40:43 -0400
+In-Reply-To: <1316664701-15273-1-git-send-email-tom.leiming@gmail.com>
+References: <1316664701-15273-1-git-send-email-tom.leiming@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3- 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1317044445.26514.5.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <peterz@infradead.org> [2011-09-26 15:15:00]:
+On Thu, 2011-09-22 at 12:11 +0800, tom.leiming@gmail.com wrote:
+> From: Ming Lei <tom.leiming@gmail.com>
+> 
+> This patch introduces 3 trace points to prepare for tracing
+> rpm_idle/rpm_suspend/rpm_resume functions, so we can use these
+> trace points to replace the current dev_dbg().
+> 
+> Signed-off-by: Ming Lei <tom.leiming@gmail.com>
+> ---
+>  include/trace/events/rpm.h |   98 ++++++++++++++++++++++++++++++++++++++++++++
+>  kernel/trace/Makefile      |    1 +
+>  kernel/trace/rpm-traces.c  |   21 +++++++++
+>  3 files changed, 120 insertions(+), 0 deletions(-)
+>  create mode 100644 include/trace/events/rpm.h
+>  create mode 100644 kernel/trace/rpm-traces.c
+> 
+> diff --git a/include/trace/events/rpm.h b/include/trace/events/rpm.h
+> new file mode 100644
+> index 0000000..ecd40bb
+> --- /dev/null
+> +++ b/include/trace/events/rpm.h
+> @@ -0,0 +1,98 @@
+> +
+> +#undef TRACE_SYSTEM
+> +#define TRACE_SYSTEM rpm
+> +
+> +#if !defined(_TRACE_RUNTIME_POWER_H) || defined(TRACE_HEADER_MULTI_READ)
+> +#define _TRACE_RUNTIME_POWER_H
+> +
+> +#include <linux/ktime.h>
+> +#include <linux/tracepoint.h>
+> +#include <linux/device.h>
+> +
+> +/*
+> + * The rpm_internal events are used for tracing some important
+> + * runtime pm internal functions.
+> + */
+> +DECLARE_EVENT_CLASS(rpm_internal,
+> +
+> +	TP_PROTO(struct device *dev, int flags),
+> +
+> +	TP_ARGS(dev, flags),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(        const char *,   name            )
+> +		__field(        int,            flags           )
+> +		__field(        int ,   	usage_count	)
+> +		__field(        int ,   	disable_depth   )
+> +		__field(        int ,   	runtime_auto	)
+> +		__field(        int ,   	request_pending	)
+> +		__field(        int ,   	irq_safe	)
+> +		__field(        int ,   	child_count 	)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->name = dev_name(dev);
 
-> On Tue, 2011-09-20 at 17:30 +0530, Srikar Dronamraju wrote:
-> 
-> > +static struct vma_info *__find_next_vma_info(struct list_head *head,
-> > +			loff_t offset, struct address_space *mapping,
-> > +			struct vma_info *vi)
-> > +{
-> > +	struct prio_tree_iter iter;
-> > +	struct vm_area_struct *vma;
-> > +	struct vma_info *tmpvi;
-> > +	loff_t vaddr;
-> > +	unsigned long pgoff = offset >> PAGE_SHIFT;
-> > +	int existing_vma;
-> > +
-> > +	vma_prio_tree_foreach(vma, &iter, &mapping->i_mmap, pgoff, pgoff) {
-> > +		if (!vma || !valid_vma(vma))
-> > +			return NULL;
-> > +
-> > +		existing_vma = 0;
-> > +		vaddr = vma->vm_start + offset;
-> > +		vaddr -= vma->vm_pgoff << PAGE_SHIFT;
-> > +		list_for_each_entry(tmpvi, head, probe_list) {
-> > +			if (tmpvi->mm == vma->vm_mm && tmpvi->vaddr == vaddr) {
-> > +				existing_vma = 1;
-> > +				break;
-> > +			}
-> > +		}
-> > +		if (!existing_vma &&
-> > +				atomic_inc_not_zero(&vma->vm_mm->mm_users)) {
-> > +			vi->mm = vma->vm_mm;
-> > +			vi->vaddr = vaddr;
-> > +			list_add(&vi->probe_list, head);
-> > +			return vi;
-> 
-> The the sole purpose of actually having that list is the above linear
-> was to test if we've already had this one?
-> 
-> Does that really matter? After all, if the probe is already installed
-> installing it again will return with -EEXIST, which should be easy
-> enough to deal with.
-> 
+Don't use pointers, you must copy the name here. Otherwise, if the trace
+is read after the device has left, you will be referencing a invalid
+pointer and possible crash the kernel.
 
-No, There is a possibility of going in a forever loop.
-Since the the priotree can change when we drop the mapping->mutex, we
-dont pass the hint to vma_prio_tree_foreach.
-So we might keep getting the same vma again and again.
+We have ways to express dynamic string fields. Use them.
 
-> > +		}
-> > +	}
-> > +	return NULL;
-> > +}
-> > +
-> > +/*
-> > + * Iterate in the rmap prio tree  and find a vma where a probe has not
-> > + * yet been inserted.
-> > + */
-> > +static struct vma_info *find_next_vma_info(struct list_head *head,
-> > +			loff_t offset, struct address_space *mapping)
-> > +{
-> > +	struct vma_info *vi, *retvi;
-> > +	vi = kzalloc(sizeof(struct vma_info), GFP_KERNEL);
-> > +	if (!vi)
-> > +		return ERR_PTR(-ENOMEM);
-> > +
-> > +	INIT_LIST_HEAD(&vi->probe_list);
-> 
-> weird place for the INIT_LIST_HEAD, I would have expected it near where
-> the rest of vi is initialized, although it looks to be superfluous
-> anyway, since list_add() can handle an uninitialized entry.
-> 
-> 
-> > +	mutex_lock(&mapping->i_mmap_mutex);
-> > +	retvi = __find_next_vma_info(head, offset, mapping, vi);
-> > +	mutex_unlock(&mapping->i_mmap_mutex);
-> > +
-> > +	if (!retvi)
-> > +		kfree(vi);
-> > +	return retvi;
-> > +}
-> > +
-> > +static int __register_uprobe(struct inode *inode, loff_t offset,
-> > +				struct uprobe *uprobe)
-> > +{
-> > +	struct list_head try_list;
-> > +	struct vm_area_struct *vma;
-> > +	struct address_space *mapping;
-> > +	struct vma_info *vi, *tmpvi;
-> > +	struct mm_struct *mm;
-> > +	int ret = 0;
-> > +
-> > +	mapping = inode->i_mapping;
-> > +	INIT_LIST_HEAD(&try_list);
-> > +	while ((vi = find_next_vma_info(&try_list, offset,
-> > +							mapping)) != NULL) {
-> > +		if (IS_ERR(vi)) {
-> > +			ret = -ENOMEM;
-> > +			break;
-> > +		}
-> 
-> Here we hold neither i_mmap_mutex nor mmap_sem, so everything can change
-> under our feet. See below..
-> 
-> > +		mm = vi->mm;
-> > +		down_read(&mm->mmap_sem);
-> > +		vma = find_vma(mm, (unsigned long) vi->vaddr);
-> > +		if (!vma || !valid_vma(vma)) {
-> 
-> No validation if its indeed the same vma you found earlier? At the very
-> least we should validate the vma returned from find_vma() is indeed a
-> mapping of the inode we're after and that the offset is still to be
-> found at vaddr.
-> 
+> +		__entry->flags = flags;
+> +		__entry->usage_count = atomic_read(
+> +			&dev->power.usage_count);
+> +		__entry->disable_depth = dev->power.disable_depth;
+> +		__entry->runtime_auto = dev->power.runtime_auto;
+> +		__entry->request_pending = dev->power.request_pending;
+> +		__entry->irq_safe = dev->power.irq_safe;
+> +		__entry->child_count = atomic_read(
+> +			&dev->power.child_count);
+> +	),
+> +
+> +	TP_printk("%s flags-%x cnt-%-2d dep-%-2d auto-%-1d p-%-1d"
+> +			" irq-%-1d child-%d",
+> +			__entry->name, __entry->flags,
+> +			__entry->usage_count,
+> +			__entry->disable_depth,
+> +			__entry->runtime_auto,
+> +			__entry->request_pending,
+> +			__entry->irq_safe,
+> +			__entry->child_count
+> +		 )
+> +);
+> +DEFINE_EVENT(rpm_internal, rpm_suspend,
+> +
+> +	TP_PROTO(struct device *dev, int flags),
+> +
+> +	TP_ARGS(dev, flags)
+> +);
+> +DEFINE_EVENT(rpm_internal, rpm_resume,
+> +
+> +	TP_PROTO(struct device *dev, int flags),
+> +
+> +	TP_ARGS(dev, flags)
+> +);
+> +DEFINE_EVENT(rpm_internal, rpm_idle,
+> +
+> +	TP_PROTO(struct device *dev, int flags),
+> +
+> +	TP_ARGS(dev, flags)
+> +);
+> +
+> +TRACE_EVENT(rpm_return_int,
+> +	TP_PROTO(struct device *dev, const char *func, int ret),
+> +	TP_ARGS(dev, func, ret),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(	const char *,		name		)
+> +		__field(	const char *,		func		)
+> +		__field(	int,			ret		)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->name = dev_name(dev);
 
-Yes, this can be done.
+Same here.
 
-> > +			list_del(&vi->probe_list);
-> > +			kfree(vi);
-> > +			up_read(&mm->mmap_sem);
-> > +			mmput(mm);
-> > +			continue;
-> > +		}
-> > +		ret = install_breakpoint(mm);
-> > +		if (ret && (ret != -ESRCH || ret != -EEXIST)) {
-> > +			up_read(&mm->mmap_sem);
-> > +			mmput(mm);
-> > +			break;
-> > +		}
-> 
-> Right, so you already deal with -EEXIST, so why do we need that list at
-> all then?
-> 
-> Aah, its to make fwd progress, without it we would keep retrying the
-> same vma over and over,.. hmm?
-> 
+> +		__entry->ret = ret;
+> +		__entry->func = func;
 
-Yes.
+And here. But as this is just __func__, you could use %pS and save the
+pointer to the function. This is acceptable as kallsyms will will used
+to find the function, and instead pass in __THIS_IP__ to the tracepoint.
 
-> > +		ret = 0;
-> > +		up_read(&mm->mmap_sem);
-> > +		mmput(mm);
-> > +	}
-> > +	list_for_each_entry_safe(vi, tmpvi, &try_list, probe_list) {
-> > +		list_del(&vi->probe_list);
-> > +		kfree(vi);
-> > +	}
-> > +	return ret;
-> > +}
-> 
+-- Steve
 
--- 
-Thanks and Regards
-Srikar
+
+> +	),
+> +
+> +	TP_printk("%s:%s ret=%d", __entry->func, __entry->name, __entry->ret)
+> +);
+> +
+> +#endif /* _TRACE_RUNTIME_POWER_H */
+> +
+> +/* This part must be outside protection */
+> +#include <trace/define_trace.h>
+> diff --git a/kernel/trace/Makefile b/kernel/trace/Makefile
+> index 761c510..56bdab5 100644
+> --- a/kernel/trace/Makefile
+> +++ b/kernel/trace/Makefile
+> @@ -53,6 +53,7 @@ endif
+>  obj-$(CONFIG_EVENT_TRACING) += trace_events_filter.o
+>  obj-$(CONFIG_KPROBE_EVENT) += trace_kprobe.o
+>  obj-$(CONFIG_TRACEPOINTS) += power-traces.o
+> +obj-$(CONFIG_TRACEPOINTS) += rpm-traces.o
+>  ifeq ($(CONFIG_TRACING),y)
+>  obj-$(CONFIG_KGDB_KDB) += trace_kdb.o
+>  endif
+> diff --git a/kernel/trace/rpm-traces.c b/kernel/trace/rpm-traces.c
+> new file mode 100644
+> index 0000000..998949e
+> --- /dev/null
+> +++ b/kernel/trace/rpm-traces.c
+> @@ -0,0 +1,21 @@
+> +/*
+> + * Power trace points
+> + *
+> + * Copyright (C) 2009 Ming Lei <tom.leiming@gmail.com>
+> + */
+> +
+> +#include <linux/string.h>
+> +#include <linux/types.h>
+> +#include <linux/workqueue.h>
+> +#include <linux/sched.h>
+> +#include <linux/module.h>
+> +#include <linux/usb.h>
+> +
+> +#define CREATE_TRACE_POINTS
+> +#include <trace/events/rpm.h>
+> +
+> +EXPORT_TRACEPOINT_SYMBOL_GPL(rpm_return_int);
+> +EXPORT_TRACEPOINT_SYMBOL_GPL(rpm_idle);
+> +EXPORT_TRACEPOINT_SYMBOL_GPL(rpm_suspend);
+> +EXPORT_TRACEPOINT_SYMBOL_GPL(rpm_resume);
+> +
+
+
