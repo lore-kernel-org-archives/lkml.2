@@ -1,55 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752274Ab1IZRmi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 13:42:38 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:35093 "EHLO
+	id S1752294Ab1IZRtC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 13:49:02 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:41190 "EHLO
 	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751990Ab1IZRme (ORCPT
+	with ESMTP id S1750997Ab1IZRtA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 13:42:34 -0400
-From: Sasha Levin <levinsasha928@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        kvm@vger.kernel.org
-Subject: [PATCH 2/2] virtio-net: Prevent NULL dereference
-Date: Mon, 26 Sep 2011 20:41:09 +0300
-Message-Id: <1317058869-19276-2-git-send-email-levinsasha928@gmail.com>
-X-Mailer: git-send-email 1.7.6.1
-In-Reply-To: <1317058869-19276-1-git-send-email-levinsasha928@gmail.com>
-References: <1317058869-19276-1-git-send-email-levinsasha928@gmail.com>
+	Mon, 26 Sep 2011 13:49:00 -0400
+To: =?iso-8859-15?q?=C6var_Arnfj=F6r=F0_Bjarmason?= <avarab@gmail.com>
+Cc: Junio C Hamano <gitster@pobox.com>, git@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [ANNOUNCE] Git 1.7.7.rc3
+References: <7vhb42su6f.fsf@alter.siamese.dyndns.org>
+	<CACBZZX77ZhdS1cyiYpjJcuvSnJsv15FUumPWeZOcwh_b41c2FQ@mail.gmail.com>
+From: Jakub Narebski <jnareb@gmail.com>
+Date: Mon, 26 Sep 2011 10:48:56 -0700 (PDT)
+In-Reply-To: <CACBZZX77ZhdS1cyiYpjJcuvSnJsv15FUumPWeZOcwh_b41c2FQ@mail.gmail.com>
+Message-ID: <m3bou7p542.fsf@localhost.localdomain>
+User-Agent: Gnus/5.09 (Gnus v5.9.0) Emacs/21.4
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch prevents a NULL dereference when the user has passed a length
-longer than an actual buffer to virtio-net.
+Ævar Arnfjörð Bjarmason wrote:
+> On Sat, Sep 24, 2011 at 01:41, Junio C Hamano <gitster@pobox.com> wrote:
+> 
+> > Also the following public repositories all have a copy of the v1.7.7-rc3
+> > tag and the master branch that the tag points at:
+> 
+> The 1.7.7-rc* series still doesn't compile on older Red Hat machines
+> because 4c1be38b4a236403a329187acb70591a7fd92150 hasn't been included
+> in it.
+> 
+> Could you please include that in the final 1.7.7? It would be a PITA
+> to have to work around that.
 
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: virtualization@lists.linux-foundation.org
-Cc: netdev@vger.kernel.org
-Cc: kvm@vger.kernel.org
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
----
- drivers/net/virtio_net.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+It looks like I was too optimistic in
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index 64e0717..8d32c1e 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -198,7 +198,7 @@ static struct sk_buff *page_to_skb(struct virtnet_info *vi,
- 	len -= copy;
- 	offset += copy;
- 
--	while (len) {
-+	while (len && page) {
- 		set_skb_frag(skb, page, offset, &len);
- 		page = (struct page *)page->private;
- 		offset = 0;
+  "Re: What's cooking in git.git (Sep 2011, #06; Wed, 21)"
+  http://thread.gmane.org/gmane.comp.version-control.git/181885/focus=181935
+
+JN> Yes, that is what I mean... but that it is only because I use old
+JN> version of asciidoc (7.1.2).
+JN>  
+JN> "make doc" (which is part of "make rpm") fails on my box with
+JN> 
+JN>       ASCIIDOC gitnamespaces.html
+JN>   ERROR: gitnamespaces.txt: line 9: second section must be named SYNOPSIS
+JN>   make[1]: *** [gitnamespaces.html] Error 1
+JN> 
+JN> > If the reason the documentation fix for "master" is needed is because a
+JN> > new feature scheduled for the upcoming release has broken documentation,
+JN> > then wouldn't we need the fix before the release, whether you are working
+JN> > on your patch or not? How can it be not urgent if that is the case?
+JN> > 
+JN> > On my boxes with recent Debian, Ubuntu, and F14, I am not suffering from
+JN> > the lack of the workaround, but if distros need the workaround, then the
+JN> > time to apply it is now, not post release.
+JN> 
+JN> I don't think _modern_ distributions need this workaround... asciidoc 8.4.5
+JN> which fixed the issue with "Synopsis" section was released 2009-05-24:
+JN> 
+JN> http://www.methods.co.nz/asciidoc/CHANGELOG.html
+JN> 
+JN>   Version 8.4.5 (2009-05-24)
+JN>   --------------------------
+JN>   Additions and changes
+JN>   ~~~~~~~~~~~~~~~~~~~~~
+JN> 
+JN>     * Added manpage "Name" and "Synopsis" section title customization to
+JN>       languages configuration files.
+JN>     * "Synopsis" manpage section no longer mandatory.
+JN>   [...]
+
 -- 
-1.7.6.1
-
+Jakub Narębski
