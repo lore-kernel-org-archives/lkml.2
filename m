@@ -1,171 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753339Ab1IZAun (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Sep 2011 20:50:43 -0400
-Received: from mga11.intel.com ([192.55.52.93]:20045 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753121Ab1IZAum (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Sep 2011 20:50:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,441,1312182000"; 
-   d="scan'208";a="67368164"
-Subject: Re: [patch]cfq-iosched: delete deep seeky queue idle logic
-From: Shaohua Li <shaohua.li@intel.com>
-To: Corrado Zoccolo <czoccolo@gmail.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Maxim Patlasov <maxim.patlasov@gmail.com>,
-        Jens Axboe <jaxboe@fusionio.com>, lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <CADX3swq0qURdi7VYLAVbsAmX5psPrzq-uvbqANsnLkHO0xcOMQ@mail.gmail.com>
-References: <1316142577.29510.130.camel@sli10-conroe>
-	 <CADX3swqrpz+=JSk8gQf6tDRZ25Z9FOnJbTyiCrZAM6LiJSmoGA@mail.gmail.com>
-	 <1316155239.29510.148.camel@sli10-conroe>
-	 <CADX3swqAq=zpFtWogbuRnARjjZK753esKihs3tzLQkbiRE2y0Q@mail.gmail.com>
-	 <1316603780.2001.12.camel@shli-laptop>
-	 <CADX3swq0qURdi7VYLAVbsAmX5psPrzq-uvbqANsnLkHO0xcOMQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 26 Sep 2011 08:55:27 +0800
-Message-ID: <1316998527.29510.158.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1753355Ab1IZBE2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Sep 2011 21:04:28 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:54528 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753326Ab1IZBE1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Sep 2011 21:04:27 -0400
+Date: Mon, 26 Sep 2011 03:04:21 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>, linux-kernel@vger.kernel.org,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: Re: linux-next-20110923: warning kernel/rcutree.c:1833
+Message-ID: <20110926010418.GA18553@somewhere>
+References: <20110925002409.GA24220@shutemov.name>
+ <20110925050826.GC2995@linux.vnet.ibm.com>
+ <20110925112637.GA19298@shutemov.name>
+ <20110925130622.GA9205@somewhere.redhat.com>
+ <20110925164804.GD2995@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110925164804.GD2995@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-09-23 at 13:50 +0800, Corrado Zoccolo wrote:
-> Il giorno 21/set/2011 13:16, "Shaohua Li" <shaohua.li@intel.com> ha
-> scritto:
-> >
-> > On Sat, 2011-09-17 at 03:25 +0800, Corrado Zoccolo wrote:
-> > > On Fri, Sep 16, 2011 at 8:40 AM, Shaohua Li <shaohua.li@intel.com>
-> wrote:
-> > > > On Fri, 2011-09-16 at 14:04 +0800, Corrado Zoccolo wrote:
-> > > >> On Fri, Sep 16, 2011 at 5:09 AM, Shaohua Li
-> <shaohua.li@intel.com> wrote:
-> > > >> > Recently Maxim and I discussed why his aiostress workload
-> performs poorly. If
-> > > >> > you didn't follow the discussion, here are the issues we
-> found:
-> > > >> > 1. cfq seeky dection isn't good. Assume a task accesses
-> sector A, B, C, D, A+1,
-> > > >> > B+1, C+1, D+1, A+2...Accessing A, B, C, D is random. cfq will
-> detect the queue
-> > > >> > as seeky, but since when accessing A+1, A+1 is already in
-> disk cache, this
-> > > >> > should be detected as sequential really. Not sure if any real
-> workload has such
-> > > >> > access patern, and seems not easy to have a clean fix too.
-> Any idea for this?
-> > > >>
-> > > >> Not all disks will cache 4 independent streams, we can't make
-> that
-> > > >> assumption in cfq.
-> > > > sure thing. we can't make such assumption. I'm thinking if we
-> should
-> > > > move the seeky detection in request finish. If time between two
-> requests
-> > > > finish is short, we thought the queue is sequential. This will
-> make the
-> > > > detection adaptive. but seems time measurement isn't easy.
-> > > >
-> > > >> The current behaviour of assuming it as seeky should work well
-> enough,
-> > > >> in fact it will be put in the seeky tree, and it can enjoy the
-> seeky
-> > > >> tree quantum of time. If the second round takes a short time,
-> it will
-> > > >> be able to schedule a third round again after the idle time.
-> > > >> If there are other seeky processes competing for the tree, the
-> cache
-> > > >> can be cleared by the time it gets back to your 4 streams
-> process, so
-> > > >> it will behave exactly as a seeky process from cfq point of
-> view.
-> > > >> If the various accesses were submitted in parallel, the deep
-> seeky
-> > > >> queue logic should kick in and make sure the process gets a
-> sequential
-> > > >> quantum, rather than sharing it with other seeky processes, so
-> > > >> depending on your disk, it could perform better.
-> > > > yes, the idle logic makes it ok, but sounds like "make things
-> wrong
-> > > > first (in seeky detection) and then fix it later (the idle
-> logic)".
-> > > >
-> > > >> > 2. deep seeky queue idle. This makes raid performs poorly. I
-> would think we
-> > > >> > revert the logic. Deep queue is more popular with high end
-> hardware. In such
-> > > >> > hardware, we'd better not do idle.
-> > > >> > Note, currently we set a queue's slice after the first
-> request is finished.
-> > > >> > This means the drive already idles a little time. If the
-> queue is truely deep,
-> > > >> > new requests should already come in, so idle isn't required.
-> > > > What did you think about this? Assume seeky request takes long
-> time, so
-> > > > the queue is already idling for a little time.
-> > > I don't think I understand. If cfq doesn't idle, it will dispatch
-> an
-> > > other request from the same or an other queue (if present)
-> > > immediately, until all possible in-flight requests are sent. Now,
-> you
-> > > depend on NCQ for the order requests are handled, so you cannot
-> > > guarantee fairness any more.
-> > >
-> > > >
-> > > >> > Looks Vivek used to post a patch to rever it, but it gets
-> ignored.
-> > > >> >
-> http://us.generation-nt.com/patch-cfq-iosched-revert-logic-deep-queues-help-198339681.html
-> > > >> I get a 404 here. I think you are seeing only one half of the
-> medal.
-> > > >> That logic is there mainly to ensure fairness between deep
-> seeky
-> > > >> processes and normal seeky processes that want low latency.
-> > > > didn't understand it. The logic doesn't protect non-deep
-> process. how
-> > > > could it make the normal seeky process have low latency? or did
-> you have
-> > > > a test case for this, so I can analyze?
-> > > > I tried a workload with one task drives depth 4 and one task
-> drives
-> > > > depth 16. Appears the behavior isn't changed w/wo the logic.
-> > sorry for the delay.
-> >
-> > > Try a workload with one shallow seeky queue and one deep (16) one,
-> on
-> > > a single spindle NCQ disk.
-> > > I think the behaviour when I submitted my patch was that both were
-> > > getting 100ms slice (if this is not happening, probably some
-> > > subsequent patch broke it).
-> > > If you remove idling, they will get disk time roughly in
-> proportion
-> > > 16:1, i.e. pretty unfair.
-> > I thought you are talking about a workload with one thread depth 4,
-> and
-> > the other thread depth 16. I did some tests here. In an old kernel,
-> > without the deep seeky idle logic, the threads have disk time in
-> > proportion 1:5. With it, they get almost equal disk time. SO this
-> > reaches your goal. In a latest kernel, w/wo the logic, there is no
-> big
-> > difference (the 16 depth thread get about 5x more disk time). With
-> the
-> > logic, the depth 4 thread gets equal disk time in first several
-> slices.
-> > But after an idle expiration(mostly because current block plug hold
-> > requests in task list and didn't add them to elevator), the queue
-> never
-> > gets detected as deep, because the queue dispatch request one by
-> one. So
-> > the logic is already broken for some time (maybe since block plug is
-> > added).
-> Could be that dispatching requests one by one is harming the
-> performance, then?
-Not really. Say 4 requests are running, the task dispatches a request
-after one previous request is completed. requests are dispatching one by
-one but there are still 4 requests running at any time. Checking the
-in_flight requests are more precise for the deep detection.
+On Sun, Sep 25, 2011 at 09:48:04AM -0700, Paul E. McKenney wrote:
+> On Sun, Sep 25, 2011 at 03:06:25PM +0200, Frederic Weisbecker wrote:
+> > On Sun, Sep 25, 2011 at 02:26:37PM +0300, Kirill A. Shutemov wrote:
+> > > On Sat, Sep 24, 2011 at 10:08:26PM -0700, Paul E. McKenney wrote:
+> > > > On Sun, Sep 25, 2011 at 03:24:09AM +0300, Kirill A. Shutemov wrote:
+> > > > > [   29.974288] ------------[ cut here ]------------
+> > > > > [   29.974308] WARNING: at /home/kas/git/public/linux-next/kernel/rcutree.c:1833 rcu_needs_cpu+0xff
+> > > > > [   29.974316] Hardware name: HP EliteBook 8440p
+> > > > > [   29.974321] Modules linked in: ip6table_filter ip6_tables ebtable_nat ebtables ipt_MASQUERADE iple_mangle xt_tcpudp iptable_filter ip_tables x_tables bridge stp llc rfcomm bnep acpi_cpufreq mperfckd fscache auth_rpcgss nfs_acl sunrpc ext2 loop kvm_intel kvm snd_hda_codec_hdmi snd_hda_codec_idtideodev media v4l2_compat_ioctl32 snd_seq bluetooth drm_kms_helper snd_timer tpm_infineon snd_seq_drt tpm_tis hp_accel intel_ips soundcore lis3lv02d tpm rfkill i2c_algo_bit snd_page_alloc i2c_core c16 sha256_generic aesni_intel cryptd aes_x86_64 aes_generic cbc dm_crypt dm_mod sg sr_mod sd_mod cd thermal_sys [last unloaded: scsi_wait_scan]
+> > > > > [   29.974517] Pid: 0, comm: kworker/0:1 Not tainted 3.1.0-rc7-next-20110923 #2
+> > > > > [   29.974521] Call Trace:
+> > > > > [   29.974525]  <IRQ>  [<ffffffff8104d72a>] warn_slowpath_common+0x7a/0xb0
+> > > > > [   29.974540]  [<ffffffff8104d775>] warn_slowpath_null+0x15/0x20
+> > > > > [   29.974546]  [<ffffffff810bffdf>] rcu_needs_cpu+0xff/0x110
+> > > > > [   29.974555]  [<ffffffff8108396f>] tick_nohz_stop_sched_tick+0x13f/0x3d0
+> > > > > [   29.974563]  [<ffffffff814329c0>] ? notifier_call_chain+0x70/0x70
+> > > > > [   29.974571]  [<ffffffff81055622>] irq_exit+0xa2/0xd0
+> > > > > [   29.974578]  [<ffffffff8101ee75>] smp_apic_timer_interrupt+0x85/0x1c0
+> > > > > [   29.974585]  [<ffffffff814329c0>] ? notifier_call_chain+0x70/0x70
+> > > > > [   29.974592]  [<ffffffff81436e1e>] apic_timer_interrupt+0x6e/0x80
+> > > > > [   29.974596]  <EOI>  [<ffffffff81297abd>] ? acpi_hw_read+0x4a/0x51
+> > > > > [   29.974609]  [<ffffffff81087a07>] ? lock_acquire+0xa7/0x160
+> > > > > [   29.974615]  [<ffffffff814329c0>] ? notifier_call_chain+0x70/0x70
+> > > > > [   29.974622]  [<ffffffff81432a16>] __atomic_notifier_call_chain+0x56/0xb0
+> > > > > [   29.974631]  [<ffffffff814329c0>] ? notifier_call_chain+0x70/0x70
+> > > > > [   29.974642]  [<ffffffff8130ebb6>] ? cpuidle_idle_call+0x106/0x350
+> > > > > [   29.974651]  [<ffffffff81432a81>] atomic_notifier_call_chain+0x11/0x20
+> > > > > [   29.974661]  [<ffffffff81001233>] cpu_idle+0xe3/0x120
+> > > > > [   29.974672]  [<ffffffff8141e34b>] start_secondary+0x1fd/0x204
+> > > > > [   29.974681] ---[ end trace 6c1d44095a3bb7c5 ]---
+> > > > 
+> > > > Do the following help?
+> > > > 
+> > > > 	https://lkml.org/lkml/2011/9/17/47
+> > > > 	https://lkml.org/lkml/2011/9/17/45
+> > > > 	https://lkml.org/lkml/2011/9/17/43
+> > > 
+> > > Yes. Thanks.
+> > 
+> > I believe that doesn't really fix the issue. But the warning is not
+> > easy to trigger. You simply haven't hit it by chance after applying
+> > the patches.
+> > 
+> > This happens when the idle notifier callchain is called in idle
+> > and is interrupted in the middle. So we have called rcu_read_lock()
+> > but haven't yet released with rcu_read_unlock(), and in the end
+> > of the interrupt we call tick_nohz_stop_sched_tick() -> rcu_needs_cpu()
+> > which is illegal while in an rcu read side critical section.
+> > 
+> > No idea how to solve that. Any use of RCU after the tick gets stopped
+> > is concerned here. If it is really required that rcu_needs_cpu() can't
+> > be called in an rcu read side critical sectionn then it's not going
+> > to be easy to fix.
+> > 
+> > But I don't really understand that requirement. rcu_needs_cpu() simply
+> > checks if we don't have callbacks to handle. So I don't understand how
+> > read side is concerned. It's rather the write side.
+> > The rule I can imagine instead is: don't call __call_rcu() once the tick is
+> > stopped.
+> > 
+> > But I'm certainly missing something.
+> > 
+> > Paul?
+> 
+> This is required for RCU_FAST_NO_HZ, which checks to see whether the
+> current CPU can accelerate the current grace period so as to enter
+> dyntick-idle mode sooner than it would otherwise.  This takes effect
+> in the situation where rcu_needs_cpu() sees that there are callbacks.
+> It then notes a quiescent state (which is illegal in an RCU read-side
+> critical section), calls force_quiescent_state(), and so on.  For this
+> to work, the current CPU must be in an RCU read-side critical section.
 
-Thanks,
-Shaohua
+You mean it must *not* be in an RCU read-side critical section (ie: in a
+quiescent state)?
 
+That assumption at least fails anytime in idle for the RCU
+sched flavour given that preemption is disabled in the idle loop.
+
+> If this cannot be made to work, another option is to call a new RCU
+> function in the case where rcu_needs_cpu() returned false, but after
+> the RCU read-side critical section has exited.
+
+You mean when rcu_needs_cpu() returns true (when we have callbacks
+enqueued)?
+
+> This new RCU function
+> could then attempt to rearrange RCU so as to allow the CPU to enter
+> dyntick-idle mode more quickly.  It is more important for this to
+> happen when the CPU is going idle than when it is executing a user
+> process.
+> 
+> So, is this doable?
+
+At least not when we have RCU sched callbacks enqueued, given preemption
+is disabled. But that sounds plausible in order to accelerate the switch
+to dyntick-idle mode when we only have rcu and/or rcu bh callbacks.
+
+So if I understand correctly we would check if we are in an rcu read side
+critical section when we call rcu_needs_cpu(). If so then we keep
+the tick alive. Afterward when we exit the rcu read side critical section
+(rcu_read_unlock/local_bh_enable), we notice that specific state and
+we try to accelerate the rcu callbacks processing from there to switch
+to dynticks idle mode, right?
+
+So that requires some specific counter in rcu_read_lock() for the
+!CONFIG_PREEMPT case so that we know if we are interrupting an
+rcu read side critical section from rcu_needs_cpu(). For the
+bh case we probably can just check in_softirq().
+
+Also if we know we are interrupting a read side section, why not just
+keep the tick alive and retry the next tick? Interrupting such
+section looks rare enough that it wouldn't have much impact
+and that avoids specific hooks in rcu_read_unlock() and local_bh_enable().
