@@ -1,50 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526Ab1IZSax (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 14:30:53 -0400
-Received: from lo.gmane.org ([80.91.229.12]:36954 "EHLO lo.gmane.org"
+	id S1752543Ab1IZSck (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 14:32:40 -0400
+Received: from claw.goop.org ([74.207.240.146]:33003 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751456Ab1IZSaw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 14:30:52 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Mark Wielaard <mjw@redhat.com>
-Subject: Re: [PATCH v5 3.1.0-rc4-tip 8/26]   x86: analyze instruction and determine fixups.
-Date: Mon, 26 Sep 2011 18:30:36 +0000 (UTC)
-Message-ID: <loom.20110926T174216-443@post.gmane.org>
-References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com> <20110920120127.25326.71509.sendpatchset@srdronam.in.ibm.com> <20110920171310.GC27959@stefanha-thinkpad.localdomain> <20110920181225.GA5149@infradead.org> <20110920205317.GA1508@stefanha-thinkpad.localdomain>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1751837Ab1IZScj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 14:32:39 -0400
+Message-ID: <4E80C545.1070404@goop.org>
+Date: Mon, 26 Sep 2011 11:32:37 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: "H. Peter Anvin" <hpa@zytor.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Could you reinstate ticketlock cleanups in tip.git
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 92.254.121.210 (Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20100101 Firefox/7.0)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stefan Hajnoczi <stefanha <at> linux.vnet.ibm.com> writes:
-> On Tue, Sep 20, 2011 at 02:12:25PM -0400, Christoph Hellwig wrote:
-> > Do we now have sdt.h support for uprobes?  That's one of the killer
-> > features that always seemed to get postponed.
-> 
-> Not yet but it's a question of doing roughly what SystemTap does to
-> parse the appropriate ELF sections and then putting those probes into
-> uprobes.
+Hi Thomas,
 
-GDB now also implements this:
-http://sourceware.org/ml/gdb-patches/2011-04/msg00036.html
+Could you reinstate the ticketlock cleanup series in tip.git (I think it
+was in x86/spinlocks) from
+    git://github.com/jsgf/linux-xen.git upstream/ticketlock-cleanup
 
-Roland also posted a simple C based parser when he first suggested
-the new format:
-http://www.sourceware.org/ml/systemtap/2010-q3/msg00145.html
+This branch is the final result of all the discussions and revisions and
+is ready for the next merge window.  It's the one that's been in
+linux-next for a couple of weeks (at least), and won't cause any
+conflicts there.
 
-There is a complete description of the elf note section, argument format
-and semaphore handling at:
-http://sourceware.org/systemtap/wiki/UserSpaceProbeImplementation
+Or if you prefer I can submit it myself for next merge window.
 
-Cheers,
-
-Mark
-
+Thanks,
+    J
