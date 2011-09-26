@@ -1,71 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752005Ab1IZQAF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 12:00:05 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:55040 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751630Ab1IZQAD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 12:00:03 -0400
+	id S1752021Ab1IZQDW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 12:03:22 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:53076 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751625Ab1IZQDV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 12:03:21 -0400
+Date: Mon, 26 Sep 2011 09:02:06 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Mike Frysinger <vapier@gentoo.org>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        David Miller <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
+        Ralf Baechle <ralf@linux-mips.org>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Paul Mackerras <paulus@samba.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [PATCH 4/7] nohz: Allow rcu extended quiescent state handling
+ seperately from tick stop
+Message-ID: <20110926160205.GB2399@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1317032352-25571-1-git-send-email-fweisbec@gmail.com>
+ <1317032352-25571-5-git-send-email-fweisbec@gmail.com>
+ <1317033884.9084.79.camel@twins>
 MIME-Version: 1.0
-X-Originating-IP: [93.173.133.94]
-In-Reply-To: <CAHQjnOM_KTiqzYnePScMHQ3bg5X1wqa4zu6=1A1z7UWeDxVZvQ@mail.gmail.com>
-References: <15669786.49881316849426265.JavaMail.weblogic@epml24>
- <CAK=WgbYnGjPKs6_nmFRGfMnbh_7wDR-0QcptAGaqDKVOo-x3cg@mail.gmail.com>
- <CAHQjnOOtVHUS3KmBz7LdO88fLQyLA6f-w3ye9nAH0Bx+zh38XA@mail.gmail.com>
- <CAK=Wgbazwz9PRJSpZjopwxJ-PO88FtajmbXL=pVKDHOr1t61fQ@mail.gmail.com>
- <CAHQjnON7dksupFeAYLuYXX2PhgjX-GXEGJiy0dRTmpoBjbURVg@mail.gmail.com>
- <CAK=WgbaOwe8Q19tpZMeHdvyCj8fcV194zA-oSD20tF7j7_MvpQ@mail.gmail.com> <CAHQjnOM_KTiqzYnePScMHQ3bg5X1wqa4zu6=1A1z7UWeDxVZvQ@mail.gmail.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Mon, 26 Sep 2011 18:59:42 +0300
-Message-ID: <CAK=WgbYzZKTRRf6hk=L5ZvXmFAUpq66Ud3F7xh2-8j6zSvAq9g@mail.gmail.com>
-Subject: Re: [PATCH 3/4] iommu/exynos: Add iommu driver for Exynos4 Platforms
-To: KyongHo Cho <pullip.cho@samsung.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "joerg.roedel@amd.com" <joerg.roedel@amd.com>,
-        =?UTF-8?B?7J207IOB7ZiE?= <sanghyun75.lee@samsung.com>,
-        =?UTF-8?B?6rmA6rWt7KeE?= <kgene.kim@samsung.com>,
-        =?UTF-8?B?6rmA7JiB6529?= <younglak1004.kim@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1317033884.9084.79.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 26, 2011 at 5:48 PM, KyongHo Cho <pullip.cho@samsung.com> wrote:
-> I am sorry but I still think that
-> installing default fault handler is quite simple and straightforward.
+On Mon, Sep 26, 2011 at 12:44:44PM +0200, Peter Zijlstra wrote:
+> On Mon, 2011-09-26 at 12:19 +0200, Frederic Weisbecker wrote:
+> > It is assumed that rcu won't be used once we switch to tickless
+> > mode and until we restart the tick. However this is not always
+> > true, as in x86-64 where we dereference the idle notifiers after
+> > the tick is stopped.
+> > 
+> > To prepare for fixing this, add a parameter to tick_nohz_enter_idle()
+> > named "rcu_ext_qs" that tells whether we want to enter RCU extended
+> > quiescent state at the same time we stop the tick.
+> > 
+> > If no use of RCU is made in the idle loop between
+> > tick_nohz_enter_idle() and tick_nohz_exit_idle() calls, the parameter
+> > must be set to true and the arch doesn't need to call rcu_enter_nohz()
+> > and rcu_exit_nohz() explicitly.
+> > 
+> > Otherwise the parameter must be set to false and the arch is
+> > responsible of calling:
+> > 
+> > - rcu_enter_nohz() after its last use of RCU before the CPU is put
+> > to sleep.
+> > - rcu_exit_nohz() before the first use of RCU after the CPU is woken
+> > up. 
+> 
+> I can't say this really makes sense:
+> 
+>   tick_nohz_idle_enter(false);
+> 
+> reads like, don't enter nohz state, not: enter nohz state but don't
+> enter rcu-nohz state.
+> 
+> I realize you want to keep the per-arch frobbing low, but since you're
+> already touching all of them, I think its more important to keep the
+> functions readable.
+> 
+> Why not simply fully split nohz and rcu and modify all idle routines
+> with both calls?
 
-... and abusing the IOMMU API.
+This might well be the correct thing to do, but one thing that gives
+me pause is that some architectures have a large number of idle routines.
+If such an architecture can use tick_nohz_idle_enter(true), then that
+architecture needs only one change rather than one change to each of
+potentially many idle loops.
 
-Please don't do that. Interfaces are written for specific goals, and
-this one was added for IOMMU users, not drivers. Just like all the
-other map/unmap/attach/... APIs.
+Would your readability concerns be addressed by something like the
+following?
 
-By using this from the IOMMU driver itself, you are adding burden on
-future development and evolution of this API. As use cases
-materialize, we will have to change it to support them, while
-considering existing use cases. Using this API inappropriately will
-make our life harder later on.
+#define RCU_NO_HZ_LATER 0
+#define RCU_NO_HZ_NOW   1
 
-Moreover, I'm really not sure how exactly are you going to use this.
+Then we would have one of the following:
 
-If you're having an IOMMU user which installs its own fault handler,
-then this is all moot since the default behavior you provide here will
-be overridden.
-If you're not having an IOMMU user which installs its own fault
-handler, then just provide the default behavior in your irq handler,
-regardless whether you report the fault to the IOMMU core or not. Or
-only when it fails. and yes, we can provide different error values for
-different scenarios. it's not rocket science :).
+	tick_nohz_idle_enter(RCU_NO_HZ_LATER);
+	tick_nohz_idle_enter(RCU_NO_HZ_NOW);
 
-Really, there's a myriad of ways to do this right. Please explain your
-exact settings/use-case and I'll gladly help you find a clean
-solution.
-
-Thanks,
-Ohad.
+							Thanx, Paul
