@@ -1,193 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752665Ab1IZSka (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 14:40:30 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:48702 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752601Ab1IZSk3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 14:40:29 -0400
-Date: Mon, 26 Sep 2011 19:40:24 +0100
-From: Jamie Iles <jamie@jamieiles.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Mike Turquette <mturquette@ti.com>, linux-kernel@vger.kernel.org,
-        paul@pwsan.com, linaro-dev@lists.linaro.org,
-        linus.walleij@stericsson.com, patches@linaro.org, eric.miao@linaro.org,
-        broonie@opensource.wolfsonmicro.com, magnus.damm@gmail.com,
-        arnd.bergmann@linaro.org, Jamie Iles <jamie@jamieiles.com>,
-        skannan@quicinc.com, linux@arm.linux.org.uk, jeremy.kerr@canonical.com,
-        tglx@linutronix.de, linux-arm-kernel@lists.infradead.org,
-        sboyd@quiinc.com
-Subject: Re: [PATCH v2 4/7] clk: Add simple gated clock
-Message-ID: <20110926184024.GB9194@gallagher>
-References: <1316730422-20027-1-git-send-email-mturquette@ti.com>
- <1316730422-20027-5-git-send-email-mturquette@ti.com>
- <4E80C564.3050004@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E80C564.3050004@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752660Ab1IZSn5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 14:43:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8276 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752375Ab1IZSn4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 14:43:56 -0400
+Subject: [Fwd: Followup on ARM Minisummit at 2011 LPC]
+From: Jon Masters <jcm@redhat.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary="=-47bg/4jUmAL7nbaJBh1J"
+Organization: Red Hat, Inc.
+Date: Mon, 26 Sep 2011 14:41:13 -0400
+Message-ID: <1317062473.6038.1788.camel@constitution.bos.jonmasters.org>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rob,
 
-On Mon, Sep 26, 2011 at 01:33:08PM -0500, Rob Herring wrote:
-> Mike,
-> 
-> On 09/22/2011 05:26 PM, Mike Turquette wrote:
-> > From: Jeremy Kerr <jeremy.kerr@canonical.com>
-> > 
-> > Signed-off-by: Jeremy Kerr <jeremy.kerr@canonical.com>
-> > Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> > Signed-off-by: Jamie Iles <jamie@jamieiles.com>
-> > Signed-off-by: Mike Turquette <mturquette@ti.com>
-> > ---
-> > Changes since v1:
-> > Add copyright header
-> > Fold in Jamie's patch for set-to-disable clks
-> > Use BIT macro instead of shift
-> > 
-> >  drivers/clk/Kconfig    |    4 ++
-> >  drivers/clk/Makefile   |    1 +
-> >  drivers/clk/clk-gate.c |   78 ++++++++++++++++++++++++++++++++++++++++++++++++
-> >  include/linux/clk.h    |   13 ++++++++
-> >  4 files changed, 96 insertions(+), 0 deletions(-)
-> >  create mode 100644 drivers/clk/clk-gate.c
-> > 
-> > diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
-> > index d8313d7..a78967c 100644
-> > --- a/drivers/clk/Kconfig
-> > +++ b/drivers/clk/Kconfig
-> > @@ -12,3 +12,7 @@ config GENERIC_CLK
-> >  config GENERIC_CLK_FIXED
-> >  	bool
-> >  	depends on GENERIC_CLK
-> > +
-> > +config GENERIC_CLK_GATE
-> > +	bool
-> > +	depends on GENERIC_CLK
-> > diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-> > index 9a3325a..d186446 100644
-> > --- a/drivers/clk/Makefile
-> > +++ b/drivers/clk/Makefile
-> > @@ -2,3 +2,4 @@
-> >  obj-$(CONFIG_CLKDEV_LOOKUP)	+= clkdev.o
-> >  obj-$(CONFIG_GENERIC_CLK)	+= clk.o
-> >  obj-$(CONFIG_GENERIC_CLK_FIXED)	+= clk-fixed.o
-> > +obj-$(CONFIG_GENERIC_CLK_GATE)	+= clk-gate.o
-> > diff --git a/drivers/clk/clk-gate.c b/drivers/clk/clk-gate.c
-> > new file mode 100644
-> > index 0000000..a1d8e79
-> > --- /dev/null
-> > +++ b/drivers/clk/clk-gate.c
-> > @@ -0,0 +1,78 @@
-> > +/*
-> > + * Copyright (C) 2010-2011 Canonical Ltd <jeremy.kerr@canonical.com>
-> > + *
-> > + * This program is free software; you can redistribute it and/or modify
-> > + * it under the terms of the GNU General Public License version 2 as
-> > + * published by the Free Software Foundation.
-> > + *
-> > + * Simple clk gate implementation
-> > + */
-> > +
-> > +#include <linux/clk.h>
-> > +#include <linux/module.h>
-> > +#include <asm/io.h>
-> 
-> use linux/io.h
-> 
-> > +
-> > +#define to_clk_gate(clk) container_of(clk, struct clk_gate, hw)
-> > +
-> > +static unsigned long clk_gate_get_rate(struct clk_hw *clk)
-> > +{
-> > +	return clk_get_rate(clk_get_parent(clk->clk));
-> > +}
-> > +
-> > +static void clk_gate_set_bit(struct clk_hw *clk)
-> > +{
-> > +	struct clk_gate *gate = to_clk_gate(clk);
-> > +	u32 reg;
-> > +
-> > +	reg = __raw_readl(gate->reg);
-> > +	reg |= BIT(gate->bit_idx);
-> > +	__raw_writel(reg, gate->reg);
-> 
-> Don't these read-mod-writes need a spinlock around it?
-> 
-> It's possible to have an enable bits and dividers in the same register.
-> If you did a set_rate and while doing an enable/disable, there would be
-> a problem. Also, it may be 2 different clocks in the same register, so
-> the spinlock needs to be shared and not per clock.
+--=-47bg/4jUmAL7nbaJBh1J
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 
-Well the prepare lock will be held here and I believe that would be 
-sufficient.
+Folks,
 
-> > +}
-> > +
-> > +static void clk_gate_clear_bit(struct clk_hw *clk)
-> > +{
-> > +	struct clk_gate *gate = to_clk_gate(clk);
-> > +	u32 reg;
-> > +
-> > +	reg = __raw_readl(gate->reg);
-> > +	reg &= ~BIT(gate->bit_idx);
-> > +	__raw_writel(reg, gate->reg);
-> > +}
-> > +
-> > +static int clk_gate_enable_set(struct clk_hw *clk)
-> > +{
-> > +	clk_gate_set_bit(clk);
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static void clk_gate_disable_clear(struct clk_hw *clk)
-> > +{
-> > +	clk_gate_clear_bit(clk);
-> > +}
-> > +
-> > +struct clk_hw_ops clk_gate_set_enable_ops = {
-> 
-> const?
+This is a courtesy forward because the conversation was (briefly) on
+LKML before and I would like to make sure we are inclusive. If you have
+comments and so on, please do not reply to this mail. Instead, please
+sign up to the cross-distro list hosted by Linaro and send it there:
 
-Yup.
+http://lists.linaro.org/mailman/listinfo/cross-distro
 
-> > +	.recalc_rate = clk_gate_get_rate,
-> > +	.enable = clk_gate_enable_set,
-> > +	.disable = clk_gate_disable_clear,
-> > +};
-> > +EXPORT_SYMBOL_GPL(clk_gate_set_enable_ops);
-> > +
-> > +static int clk_gate_enable_clear(struct clk_hw *clk)
-> > +{
-> > +	clk_gate_clear_bit(clk);
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static void clk_gate_disable_set(struct clk_hw *clk)
-> > +{
-> > +	clk_gate_set_bit(clk);
-> > +}
-> 
-> Are these wrapper functions really needed? Just assign set_bit and
-> clear_bit functions directly to the ops structs. Only the ops struct
-> name is exposed to the user.
+Thanks,
 
-I used the wrappers because the .enable method has to return an int, but 
-the disable needs to return void.  It's either that or open code the 
-set/clear in each.
+Jon.
 
-> > +
-> > +struct clk_hw_ops clk_gate_set_disable_ops = {
-> 
-> const?
 
-Yes.
+--=-47bg/4jUmAL7nbaJBh1J
+Content-Disposition: inline
+Content-Description: Forwarded message - Followup on ARM Minisummit at 2011
+ LPC
+Content-Type: message/rfc822
 
-Jamie
+Subject: Followup on ARM Minisummit at 2011 LPC
+From: Jon Masters <jcm@redhat.com>
+To: cross-distro <cross-distro@lists.linaro.org>
+Cc: David Rusling <david.rusling@linaro.org>, Konstantinos Margaritis
+ <konstantinos.margaritis@linaro.org>, Riku Voipio <riku.voipio@linaro.org>,
+ Grant Likely <grant.likely@secretlab.ca>, Philippe Robin
+ <Philippe.Robin@arm.com>, octo@linaro.org, Steve McIntyre
+ <steve.mcintyre@linaro.org>, adconrad@ubuntu.com, andrew.stubbs@linaro.org,
+ "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat, Inc.
+Date: Mon, 26 Sep 2011 14:37:40 -0400
+Message-ID: <1317062260.6038.1779.camel@constitution.bos.jonmasters.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
+
+[ Please forward this to anyone else who should get a copy - and ask
+them to signup to cross-distro@linaro because that's where we'll talk ]
+
+Folks,
+
+At the 2011 Linux Plumbers Conference in Santa Rosa, we held an ARM
+minisummit to discuss a few cross-distribution issues surrounding the
+"hard float" ABI for v7, and the ARM device and OS ecosystem in general.
+This mail is intended to summarize the key actions from that meeting.
+
+1). We discussed some of the different distributions (Debian, ChromeOS,
+Fedora, MeeGo, Mozilla, Ubuntu, etc.). We all agree on a common notion
+of what "hard float" means: it's the ARM AAPCS hardware floating point
+stuff in section 6, with the -d16 register set of the VFPv3 being used.
+Although there is some possibility to standardize v6, we decided we are
+interested only in the present and future at this point (and that's v7).
+
+Some use Thumb2, some don't, but interworking allows for that (we in
+Fedora accidentally built a few packages with Thumb2 and will be undoing
+that without users even noticing). NEON is similarly an optional feature
+(supported by hwcaps) and not a required part of the core ABI. So it's
+really just the ABI that we all care about, and we all agree on it.
+
+For toolchain folks, this means we all agree on the following:
+
+--with-float=hard --with-fpu=vfpv3-d16 --with-abi=aapcs-linux
+
+(some of us may target different optimizations, etc. of course but that
+is down to an application to decide whether it cares only about Cortex+)
+
+2). We agreed on the importance of cross-distro binary compatibility. It
+seems a number of distributions are excited by Debian's multi-arch
+approach (as am I), but not all of us will be moving to it any time
+soon. In the shorter term, if the runtime linker will have a special
+path, we can work around that with symlinks, but it's a kludge. Our
+preferred goal (from the meeting) is that everyone use this target:
+
+arm-linux-gnueabihf
+
+(Red Hat toolchains will include the vendor, but it is dropped by
+autotools when actually generating the paths and comparisons). I will
+advocate for Fedora ARM to switch to this target when possible, and in
+the interim will try to ensure we can establish some symlinks for the
+ability to run binaries compiled against Debian and Ubuntu on Fedora. I
+don't know what our timeline will be for this, but it's not something
+that's really landed everywhere yet. We at least agree on paths now!
+
+3). We agree that it is a good idea to do LSB. Adam Conrad (Canonical)
+and I agreed to represent community interests in driving this. We do
+know that we'll be preferring OpenGL ES 2.0 over OpenGL (same namespace
+within the library means one default choice is required). There will be
+many other things :) We agree that the main benefit to pursuing LSB is
+that it promotes the idea of working together and being compatible. It
+may be that we don't have the same level of compliance on ARM, but some
+level of conformance to some common standard(s) is a good start! :)
+
+4). We decided that we should have a standing Cross Distro meeting at
+Linaro Connect events, beginning with the next one in November. We will
+also facilitate a "show and tell" for apps at Connect, and have an
+opportunity to demo different distributions. We will add a specific
+session at the next Connect to continue this discussion.
+
+Finally, we agreed we should keep the conversation going. I apologize
+for being a little tardy in sending this mail, but I want to kickstart
+further discussion and get this ball rolling again. I'll ping Adam about
+LSB (and thanks again to Jesse for the deep dive on GL). Meanwhile,
+David can grab ownership of organizing the Cross Distro meeting at
+Connect (I would like to assist). Anyone else got actions?
+
+Jon.
+
+
+--=-47bg/4jUmAL7nbaJBh1J--
+
