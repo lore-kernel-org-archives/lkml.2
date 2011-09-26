@@ -1,153 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751698Ab1IZO2R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 10:28:17 -0400
-Received: from na3sys009aog119.obsmtp.com ([74.125.149.246]:32823 "EHLO
-	na3sys009aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751169Ab1IZO2P convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 10:28:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1109240101120.22872@utopia.booyaka.com>
-References: <1316691479-1849-1-git-send-email-keshava_mgowda@ti.com>
-	<1316691479-1849-2-git-send-email-keshava_mgowda@ti.com>
-	<1316691479-1849-3-git-send-email-keshava_mgowda@ti.com>
-	<alpine.DEB.2.00.1109221115320.10719@utopia.booyaka.com>
-	<CAP05o4+Zc2z6sBOX_rQeoDQ9PneypcLRCyBbaaB2m+ZjeXZnaw@mail.gmail.com>
-	<alpine.DEB.2.00.1109240101120.22872@utopia.booyaka.com>
-Date: Mon, 26 Sep 2011 19:51:40 +0530
-Message-ID: <CAP05o4+uwuFL8XNFG-wmUW8voYQ4kywyU9Qn-Mng7kv=TzZm9w@mail.gmail.com>
-Subject: Re: [PATCH 2/5 v11] arm: omap: usb: ehci and ohci hwmod structures
- for omap3
-From: "Munegowda, Keshava" <keshava_mgowda@ti.com>
-To: Paul Walmsley <paul@pwsan.com>
-Cc: parthab@india.ti.com, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        b-cousson@ti.com, balbi@ti.com, gadiyar@ti.com, sameo@linux.intel.com,
-        tony@atomide.com, khilman@ti.com, johnstul@us.ibm.com,
-        vishwanath.bs@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1751821Ab1IZO3d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 10:29:33 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:37180 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751315Ab1IZO3c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 10:29:32 -0400
+Subject: Re: [PATCH] net:rfkill: add a gpio setup function into GPIO rfkill
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Sangwook Lee <sangwook.lee@linaro.org>
+Cc: Rhyland Klein <rklein@nvidia.com>, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1317046972-18570-1-git-send-email-sangwook.lee@linaro.org> (sfid-20110926_162515_088596_55377D64)
+References: <1317046972-18570-1-git-send-email-sangwook.lee@linaro.org>
+	 (sfid-20110926_162515_088596_55377D64)
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 26 Sep 2011 16:29:24 +0200
+Message-ID: <1317047364.11511.2.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 24, 2011 at 12:45 PM, Paul Walmsley <paul@pwsan.com> wrote:
-> On Fri, 23 Sep 2011, Munegowda, Keshava wrote:
->
->> On Thu, Sep 22, 2011 at 11:31 PM, Paul Walmsley <paul@pwsan.com> wrote:
->> >
->> > On Thu, 22 Sep 2011, Keshava Munegowda wrote:
->> >> 4. usb_tll_hs hwmod of usbhs with the TLL base address and irq.
->> >>
->> >> Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
->> >> Reviewed-by: Partha Basak <parthab@india.ti.com>
->> >> ---
->> >>  arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |  271 ++++++++++++++++++++++++++++
->> >>  1 files changed, 271 insertions(+), 0 deletions(-)
->> >>
->> >> diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
->> >> index 59fdb9f..d79f728 100644
->> >> --- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
->> >> +++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
->
->> >> +static struct omap_hwmod_ocp_if omap34xx_f128m_cfg__usb_host_hs = {
->> >> +     .clk            = "usbhost_120m_fck",
->> >
->> > This doesn't look right.  This is an interface structure record, so it
->> > should be associated with an interface clock.  Is the hardware really
->> > using the functional clock as the interface clock?  Or, as seems more
->> > likely...
->>
->>
->> Agreed, how about:
->>
->> main clock: usbhost_120m_fck
->> optional f clock: usbhost_48m_fck
->
-> Assuming the interface clock is enabled, which one of these clocks is
-> needed for UHH register accesses to complete successfully?
+On Mon, 2011-09-26 at 15:22 +0100, Sangwook Lee wrote:
+> Add a gpio setup function which gives a chance to set up
+> platform specific configuration such as pin multiplexing,
+> input/output direction at the runtime or booting time.
+> 
+> Signed-off-by: Sangwook Lee <sangwook.lee@linaro.org>
+> ---
+>  include/linux/rfkill-gpio.h |    2 ++
+>  net/rfkill/rfkill-gpio.c    |    8 ++++++++
+>  2 files changed, 10 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/rfkill-gpio.h b/include/linux/rfkill-gpio.h
+> index a175d05..786e7bb 100644
+> --- a/include/linux/rfkill-gpio.h
+> +++ b/include/linux/rfkill-gpio.h
+> @@ -30,6 +30,7 @@
+>   * @reset_gpio:		GPIO which is used for reseting rfkill switch
+>   * @shutdown_gpio:	GPIO which is used for shutdown of rfkill switch
+>   * @power_clk_name:	[optional] name of clk to turn off while blocked
+> + * @gpio_runtime_setup:	set up platform specific gpio configuration
+>   */
+>  
+>  struct rfkill_gpio_platform_data {
+> @@ -38,6 +39,7 @@ struct rfkill_gpio_platform_data {
+>  	int			shutdown_gpio;
+>  	const char		*power_clk_name;
+>  	enum rfkill_type	type;
+> +	int	(*gpio_runtime_setup)(struct platform_device *);
+>  };
+>  
+>  #endif /* __RFKILL_GPIO_H */
+> diff --git a/net/rfkill/rfkill-gpio.c b/net/rfkill/rfkill-gpio.c
+> index 256c5dd..d6cec90 100644
+> --- a/net/rfkill/rfkill-gpio.c
+> +++ b/net/rfkill/rfkill-gpio.c
+> @@ -101,6 +101,14 @@ static int rfkill_gpio_probe(struct platform_device *pdev)
+>  	if (!rfkill)
+>  		return -ENOMEM;
+>  
+> +	if (pdata->gpio_runtime_setup) {
+> +		ret = pdata->gpio_runtime_setup(pdev);
+> +		if (ret) {
+> +			pr_warn("%s: can't set up gpio\n", __func__);
+> +			return -EINVAL;
 
+Wouldn't you want to return ret?
 
-it is usbhost_48m_fck ;
-so,
-main clock: usbhost_48m_fck
-optional clock : usbhost_120m_fck
+johannes
 
-do you agree?
-
->
->> interface clock: usbhost_ick.
->>
->>
->>
->> >> +     .user           = OCP_USER_MPU,
->> >> +     .flags          = OCPIF_SWSUP_IDLE,
->> >
->> > ... is this just a hack?  OCPIF_SWSUP_IDLE is intended to work around
->> > hardware autoidle bugs only.  Are you sure this shouldn't be defined as an
->> > optional clock instead?
->>
->> yes ! it was causeing resets, hence you this flag.
->
-> usbhost_120m_fck is not an interface clock.  That is probably what was
-> causing the problem you describe.
-
-yes , you are right ! its not an interface clock.
-
-
->
->> >> +static struct omap_hwmod omap34xx_usb_host_hs_hwmod = {
->> >> +     .name           = "usb_host_hs",
->> >> +     .class          = &omap34xx_usb_host_hs_hwmod_class,
->> >> +     .main_clk       = "usbhost_ick",
->> >
->> > Is this really the main clock?  The main clock is the clock that drives
->> > the register logic in the IP block.  Looks to me, based on the integration
->> > document in the 34xx TRM vZR, that this module has a functional clock.  In
->> > general, the only time that the main_clk should be an interface clock is
->> > when the clock is a combined interface and functional clock.  The mailbox
->> > IP block is a classic example.
->>
->> As I mentioned above;  I can make
->>
->> main clock: usbhost_120m_fck
->> optional f clock: usbhost_48m_fck
->> interface clock: usbhost_ick.
->>
->> do you agree?
->
-> The interface clock should definitely be usbhost_ick, no doubt about it.
->
-> But, as I mentioned above, to determine which functional clock should be
-> the main clock, you first need to know which of those two clocks need to
-> be enabled for register accesses to that module to succeed.
->
-> I did this work a few years ago, by trial and error since it was largely
-> undocumented.  It was needed since the OMAP3 clk_enable() code waits for
-> the PRCM to request that the IP block exit idle before returning.
-> You might want to take a look at arch/arm/mach-omap2/clock3xxx_data.c.
->
->> >> +static struct omap_hwmod omap34xx_usb_tll_hs_hwmod = {
->> >> +     .name           = "usb_tll_hs",
->> >> +     .class          = &omap34xx_usb_tll_hs_hwmod_class,
->> >> +     .mpu_irqs       = omap34xx_usb_tll_hs_irqs,
->> >> +     .main_clk       = "usbtll_ick",
->> >
->> > Is this really the main clock?  The main clock is the clock that drives
->> > the register logic in the IP block.  Looks to me, based on the integration
->> > document in the 34xx TRM vZR, that this module has a functional clock.
->>
->> I can make
->>
->> main clock: usbtll_fck
->> interface clock: usbtll_ick.
->>
->> do you agree?
->
-> Doesn't that make more sense?
-
-yes, I will do this change.
-
-
-keshava
