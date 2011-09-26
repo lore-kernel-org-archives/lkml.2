@@ -1,95 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752113Ab1IZWAT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 18:00:19 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:34847 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750741Ab1IZWAR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 18:00:17 -0400
-Date: Mon, 26 Sep 2011 23:00:13 +0100
-From: Jamie Iles <jamie@jamieiles.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Jamie Iles <jamie@jamieiles.com>, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        grant.likely@secretlab.ca, marc.zyngier@arm.com,
-        thomas.abraham@linaro.org, b-cousson@ti.com, shawn.guo@linaro.org,
-        dave.martin@linaro.org, linux@arm.linux.org.uk,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH 3/3] ARM: gic: add OF based initialization
-Message-ID: <20110926220013.GF9194@gallagher>
-References: <1316550244-3655-1-git-send-email-robherring2@gmail.com>
- <1316550244-3655-4-git-send-email-robherring2@gmail.com>
- <20110926195704.GD9194@gallagher>
- <4E80E547.2080004@gmail.com>
- <20110926211127.GE9194@gallagher>
- <4E80EF61.2000509@gmail.com>
+	id S1751954Ab1IZWBH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 18:01:07 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:38367 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750750Ab1IZWBG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 18:01:06 -0400
+Message-ID: <4E80F613.8050603@ti.com>
+Date: Tue, 27 Sep 2011 00:00:51 +0200
+From: "Cousson, Benoit" <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E80EF61.2000509@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Paul Walmsley <paul@pwsan.com>
+CC: "Munegowda, Keshava" <keshava_mgowda@ti.com>,
+        "parthab@india.ti.com" <parthab@india.ti.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Balbi, Felipe" <balbi@ti.com>, "Gadiyar, Anand" <gadiyar@ti.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "Hilman, Kevin" <khilman@ti.com>,
+        "johnstul@us.ibm.com" <johnstul@us.ibm.com>,
+        "Sripathy, Vishwanath" <vishwanath.bs@ti.com>
+Subject: Re: [PATCH 1/5 v11] arm: omap: usb: ehci and ohci hwmod structures
+ for omap4
+References: <1316691479-1849-1-git-send-email-keshava_mgowda@ti.com> <1316691479-1849-2-git-send-email-keshava_mgowda@ti.com> <alpine.DEB.2.00.1109221213500.10719@utopia.booyaka.com> <4E7B8C68.7020407@ti.com> <alpine.DEB.2.00.1109221524560.10719@utopia.booyaka.com>
+In-Reply-To: <alpine.DEB.2.00.1109221524560.10719@utopia.booyaka.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 26, 2011 at 04:32:17PM -0500, Rob Herring wrote:
-> On 09/26/2011 04:11 PM, Jamie Iles wrote:
-> > On Mon, Sep 26, 2011 at 03:49:11PM -0500, Rob Herring wrote:
-> >> On 09/26/2011 02:57 PM, Jamie Iles wrote:
-> >>> Hi Rob,
-> >>>
-> >>> On Tue, Sep 20, 2011 at 03:24:04PM -0500, Rob Herring wrote:
-> >>> [...]
-> >>>> +int __init gic_of_init(struct device_node *node, struct device_node *parent)
-> >>>> +{
-> >>>> +	void __iomem *cpu_base;
-> >>>> +	void __iomem *dist_base;
-> >>>> +	int irq;
-> >>>> +	struct irq_domain *domain = &gic_data[gic_cnt].domain;
-> >>>> +
-> >>>> +	if (WARN_ON(!node))
-> >>>> +		return -ENODEV;
-> >>>> +
-> >>>> +	dist_base = of_iomap(node, 0);
-> >>>> +	WARN(!dist_base, "unable to map gic dist registers\n");
-> >>>> +
-> >>>> +	cpu_base = of_iomap(node, 1);
-> >>>> +	WARN(!cpu_base, "unable to map gic cpu registers\n");
-> >>>> +
-> >>>> +	domain->nr_irq = gic_irq_count(dist_base);
-> >>>> +	/* subtract off SGIs. Also subtract off PPIs for secondary GICs */
-> >>>> +	if (parent)
-> >>>> +		domain->nr_irq -= 32;
-> >>>> +	else
-> >>>> +		domain->nr_irq -= 16;
-> >>>> +
-> >>>> +	domain->irq_base = irq_alloc_descs(-1, 16, domain->nr_irq, numa_node_id());
-> >>>
-> >>> The way I understand irq_alloc_descs() (probably not very well) is that 
-> >>> having the irq parameter < 0 and the from parameter 16 means that it 
-> >>> needs to find domain->nr_irq descs starting from at least 16.  But if 
-> >>> the base is greater than 16, does this still work with the gic entry 
-> >>> macros as they are?
-> >>
-> >> No, but that would only happen if a platform calls irq_alloc_descs prior
-> >> to this code. The root controller must be initialized first (for other
-> >> reasons as well). There are no calls to irq_alloc_descs in arch/arm.
-> >>
-> >> With the MULTI_IRQ GIC support Marc Z is working on, we could make the
-> >> GIC irq mapping be completely dynamic. Although, there's probably not
-> >> much reason to do so for the root controller.
-> > 
-> > OK, that makes sense.  I think that if you were to do 
-> > irq_alloc_descs(16, 16, domain->nr_irqs, num_node_id()) then that will 
-> > guarantee the descriptors start from 16 (if they are available) which is 
-> > probably nicer.
-> > 
-> That would break secondary GICs though as it would always fail. For
-> secondary GIC, we skip SGIs and PPIs and allocate the first available
-> block of irq_desc's.
+Hi Paul,
 
-Ahh, OK that makes sense.  Thanks for the explanation Rob!  That'll 
-hopefully help me with a common VIC binding.
+On 9/23/2011 1:31 AM, Paul Walmsley wrote:
+> Hi
+>
+> On Thu, 22 Sep 2011, Cousson, Benoit wrote:
+>
+>> ADDR_TYPE_RT is mainly use for sysconfig access inside hwmod core today, so
+>> why should we use it in this case?
+>
+> Just for consistency, since the flag isn't defined to be
+> SYSCONFIG-specific.
+>
+> That way, if there's another need -- other than SYSCONFIG access -- to
+> identify the chunk of address space that's used for register access, we
+> won't have to dig through and possibly repatch the hwmod data, just
+> because some people didn't want to follow the rule.
+>
+> If the flag was simply defined to be SYSCONFIG-specific, then you're
+> right, it wouldn't be needed.
+>
+>> To be honest, I've been confused with that flag for some time :-)
+>>   * ADDR_TYPE_RT: Address space contains module register target data.
+>> Maybe that's my English, but what does "register target data" mean exactly?
+>
+> The name comes from the L3 section of the 34xx TRM - see for example
+> section 9.1.1 "Terminology" of the rev ZR TRM.  The L3 has several address
+> space sections, and whoever wrote that text -- Sonics? -- called the one
+> with the L3's own internal registers the "register target."  And I was
+> looking for a name that I did not have to make up, so I personally
+> wouldn't have to defend the name ;-)
 
-Jamie
+OK, so the registers target is not even the IP itself but the 4k memory 
+space before every L3/L4 IPs?
+
+>> What was the intent? Providing a way to identify some register vs memory
+>> space?
+>
+> As you suggest, the original impetus for the flag was to identify which
+> chunk of address space needs to be mapped by the hwmod code for SYSCONFIG
+> accesses to work.  On current OMAPs, this seems to be the same thing as
+> identifying the IP block's primary register area for every module with
+> SYS* and REVISION registers.  And I probably thought at the time that
+> specifying the IP block's main register mapping seemed more useful and
+> generally applicable than designating where the SYSCONFIG register was.
+> Hence the current definition.
+
+I think we are lucky that the sysconfig is always in the first memory 
+region in the case of multiple address spaces like for the usb_host. 
+This is clearly something we will have to enforce in the future, 
+especially in the strongly order DT world :-)
+
+>> Regarding main_clk, I do not think that some internal IPs like ohci/ehci
+>> should have a main_clk, since this is not visible at that level.
+>
+> Do you not agree that every IP block that contains sequential logic on
+> current and foreseeable future SoCs must have some clock signal to drive
+> that logic?
+
+Yes I do. My point was that some time we cannot necessarily identify 
+this clock or this clock is not relevant due to the container around it.
+
+> The idea of the main_clk was not intended to be PRCM or OCP or even
+> OMAP-specific.  It's just intended to represent a clock that is used to
+> drive the register logic inside the IP block.  Therefore it must be
+> enabled before any register access may occur.  Even if clock gating is
+> handled by some higher-level interface (e.g., at the IP block level), the
+> main_clk has a rate, so it also implies an upper limit on how quickly
+> register operations can occur.  I suppose that all of the IP block's
+> clocks could be "optional clocks," but we know that every IP block with
+> registers requires at least one clock to work, and that should be the
+> main_clk.
+
+OK, I'm too PRCM centric... A clock that is not clearly represented by 
+the PRCM should not necessarily exist in the current hwmod 
+representation for my PRCM centric point of view :-). And in this case, 
+enabling the clock might not be enough since this is the modulemode that 
+does matter in OMAP4. That's why I'd rather not put any clock instead of 
+a clock that will anyway not be enough to do anything useful due to the 
+dependency with the container.
+
+Exposing too many fake nodes might lead to false interpretation and some 
+increase of the apparent complexity wrt the real HW capacity.
+
+Bottom-line, I'm not opposed to add such information, but I'd rather 
+populate the real HW information available and not extrapolate too much 
+if this does not bring some real advantage.
+
+Regards,
+Benoit
+
+
