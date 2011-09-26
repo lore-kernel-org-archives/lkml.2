@@ -1,81 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751170Ab1IZF1b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 01:27:31 -0400
-Received: from mail.uscreen.net ([62.67.233.10]:52186 "EHLO mail.uscreen.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751078Ab1IZF1a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 01:27:30 -0400
-Message-ID: <4E800D38.8000903@u-club.de>
-Date: Mon, 26 Sep 2011 07:27:20 +0200
-From: Christoph <cr2005@u-club.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110818 Icedove/3.0.11
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: "Theodore Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>,
-        xfs@oss.sgi.com, Christoph Hellwig <hch@infradead.org>,
-        Nigel Cunningham <nigel@tuxonice.net>, Pavel Machek <pavel@ucw.cz>,
-        linux-fsdevel@vger.kernel.org,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        linux-ext4@vger.kernel.org
-Subject: Re: [PATCH] PM / Freezer: Freeze filesystems while freezing processes
- (v2)
-References: <4E1C70AD.1010101@u-club.de> <201109251532.20025.rjw@sisk.pl>	<4E7FA3C7.5050503@u-club.de> <201109260010.50649.rjw@sisk.pl>
-In-Reply-To: <201109260010.50649.rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751203Ab1IZFcE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 01:32:04 -0400
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:35770 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751078Ab1IZFcD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 01:32:03 -0400
+Date: Mon, 26 Sep 2011 01:31:40 -0400 (EDT)
+From: CAI Qian <caiqian@redhat.com>
+To: Jon Mason <mason@myri.com>
+Cc: linux-kernel@vger.kernel.org, Jordan Hargrave <Jordan_Hargrave@dell.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: regression introduced by "PCI: Set PCI-E Max Payload Size on fabric" patch
+Message-ID: <0900cbc2-1551-4bf6-b7fd-4273c1641651@zmail06.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <CAMaF-rMFrx_hLq9u7WDL8=9fpBtKkFEiiumXH+Ps=UnRx7W9ag@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+X-Originating-IP: [10.66.13.193]
+X-Mailer: Zimbra 7.1.2_GA_3268 (ZimbraWebClient - FF3.0 (Linux)/7.1.2_GA_3268)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On 26.09.2011 00:10, Rafael J. Wysocki wrote:
-> On Sunday, September 25, 2011, Christoph wrote:
->> On 25.09.2011 15:32, Rafael J. Wysocki wrote:
->>> On Sunday, September 25, 2011, Christoph wrote:
->>>> test results of the patch below:
->>>>
->>>> 1. real machine
->>>>
->>>> suspends fine but on wakeup, after loading image: hard reset. nvidia
->>>> gpu => disabled compitz  => wakeup worked two times.
->>>
->>> Hmm, so there's a separate bug related to NVidia I guess.
->>
->> Maybe.
->>
->> Just made another test: the machine (macbook) woke up, loaded image, thaw.
->> It got stuck at vt#1, displaying console with login. Cursor blinking, but
->> no (usb) keyboard or network enabled. Bricked?!!
->>
->>
->> On the other hand I've got another box with nvidia gpu:
->>
->> debian5 32bit
->> 2.6.38.2+ #3 SMP Fri Apr 1
->> nvidia 260.19.36
->>
->> It's up since I compiled the kernel: I use it twice a week and I kept it
->> freezed all the time. It was solid rock until today: hard reset on resume.
->> WTF? (I remember this version combo was stable on the macbook but the
->> kernel lacks a solid wireless driver).
+
+----- Original Message -----
 > 
-> If that's an x86_64 system, there is a known bug causing problems like
-> this to happen.  There's a patch fixing it, but not conclusive:
-> http://marc.info/?l=linux-kernel&m=131653513414314&w=2
-
-very good. seems to fix resume, at least the 2 times I tested so far.
-
-tx! :)
-
-chris
-
-
 > 
-> Thanks,
-> Rafael
 > 
-> _______________________________________________
-> xfs mailing list
-> xfs@oss.sgi.com
-> http://oss.sgi.com/mailman/listinfo/xfs
+> On Fri, Sep 23, 2011 at 4:20 AM, CAI Qian < caiqian@redhat.com >
+> wrote:
+> 
+> 
+> After reverted this commit,
+> 
+> b03e7495a862b028294f59fc87286d6d78ee7fa1
+> PCI: Set PCI-E Max Payload Size on fabric
+> 
+> A server with qla2xxx is able to boot the latest mainly kernel.
+> 
+> 
+> 
+> What kernel version? This should be fixed in v3.1-rc6.
+It was v3.1-rc4, and confirmed it was gone for the latest -rc7 version.
+It was apparently I checked out a slight old tree. Sorry for the
+false alarm.
+
+CAI Qian
+> 
+> 
+> 
+> QLogic Fibre Channel HBA Driver: 8.03.07.03-k
+> qla2xxx 0000:06:02.0: PCI INT A -> GSI 17 (level, low) -> IRQ 17
+> qla2xxx 0000:06:02.0: Found an ISP2422, irq 17, iobase 0xf9dfe000
+> qla2xxx 0000:06:02.0: Configuring PCI space...
+> qla2xxx 0000:06:02.0: Configure NVRAM parameters...
+> qla2xxx 0000:06:02.0: Verifying loaded RISC code...
+> qla2xxx 0000:06:02.0: FW: Loading via request-firmware...
+> qla2xxx 0000:06:02.0: Allocated (64 KB) for EFT...
+> qla2xxx 0000:06:02.0: Allocated (773 KB) for firmware dump...
+> scsi1 : qla2xxx
+> 
+> Otherwise, it hung right here.
+> 
+> scsi0 : ioc0: LSISAS1064E B1, FwRev=011b5700h, Ports=1, MaxQ=277,
+> IRQ=19
+> mptsas: ioc0: attaching ssp device: fw_channel 0, fw_id 5, phy 0,
+> sas_addr 0x5000cca0007ed401
+> scsi scan: INQUIRY result too short (5), using 36
+> scsi 0:0:0:0: Direct-Access PQ: 0 ANSI: 0
+> mptsas: ioc0: attaching ssp device: fw_channel 0, fw_id 4, phy 1,
+> sas_addr 0x5000c50017501eb1
+> scsi 0:0:1:0: Direct-Access IBM-ESXS ST9146803SS B536 PQ: 0 ANSI: 5
+> mptsas: ioc0: attaching raid volume, channel 1, id 3
+> scsi 0:1:3:0: Direct-Access LSILOGIC Logical Volume 3000 PQ: 0 ANSI:
+> 2
+> sd 0:1:3:0: [sda] 285155328 512-byte logical blocks: (145 GB/135 GiB)
+> sd 0:1:3:0: [sda] Write Protect is off
+> sd 0:1:3:0: [sda] Got wrong page
+> sd 0:1:3:0: [sda] Assuming drive cache: write through
+> sd 0:1:3:0: [sda] Got wrong page
+> sd 0:1:3:0: [sda] Assuming drive cache: write through
+> 
+> CAI Qian
+> 
+> 
