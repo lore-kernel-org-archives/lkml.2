@@ -1,64 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752944Ab1IZJqc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 05:46:32 -0400
-Received: from casper.infradead.org ([85.118.1.10]:35905 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752831Ab1IZJqb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 05:46:31 -0400
-Subject: Re: [PATCH 5/5] slub: Only IPI CPUs that have per cpu obj to flush
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Gilad Ben-Yossef <gilad@benyossef.com>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Chris Metcalf <cmetcalf@tilera.com>, linux-mm@kvack.org,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>
-Date: Mon, 26 Sep 2011 11:45:52 +0200
-In-Reply-To: <CAOtvUMeMsd0Jk1k4wP9Y+7NW3FYZZAqV1-cRj5Zt4+eaugWoPg@mail.gmail.com>
-References: <1316940890-24138-1-git-send-email-gilad@benyossef.com>
-	 <1316940890-24138-6-git-send-email-gilad@benyossef.com>
-	 <1317022420.9084.57.camel@twins>
-	 <CAOtvUMeMsd0Jk1k4wP9Y+7NW3FYZZAqV1-cRj5Zt4+eaugWoPg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1317030352.9084.76.camel@twins>
-Mime-Version: 1.0
+	id S1752975Ab1IZJqh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 05:46:37 -0400
+Received: from mga11.intel.com ([192.55.52.93]:59728 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752951Ab1IZJqf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 05:46:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,442,1312182000"; 
+   d="scan'208";a="70708029"
+Date: Mon, 26 Sep 2011 11:49:25 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Mattias Wallin <mattias.wallin@stericsson.com>
+Subject: Re: [PATCH 0/4] AB5500 core patches
+Message-ID: <20110926094925.GE32263@sortiz-mobl>
+References: <1316672529-7630-1-git-send-email-linus.walleij@stericsson.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1316672529-7630-1-git-send-email-linus.walleij@stericsson.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-09-26 at 11:35 +0300, Gilad Ben-Yossef wrote:
-> Yes, the alloc in the flush_all path definitively needs to go. I
-> wonder if just to resolve that allocating the mask per cpu and not in
-> kmem_cache itself is not better - after all, all we need is a single
-> mask per cpu when we wish to do a flush_all and no per cache. The
-> memory overhead of that is slightly better. This doesn't cover the
-> cahce bounce issue.
+Hi Linus,
+
+On Thu, Sep 22, 2011 at 08:22:09AM +0200, Linus Walleij wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
 > 
-> My thoughts regarding that were that since the flush_all() was a
-> rather rare operation it is preferable to do some more
-> work/interference here, if it allows us to avoid having to do more
-> work in the hotter alloc/dealloc paths, especially since it allows us
-> to have less IPIs that I figured are more intrusive then cacheline
-> steals (are they?)
+> Mattias is on leave, so I've broken out debugfs portions of the
+> AB5500 driver as an add-on patch at Sam's request.
 > 
-> After all, for each CPU that actually needs to do a flush, we are
-> making the flush a bit more expensive because of the cache bounce just
-> before we send the IPI, but that IPI and further operations are an
-> expensive operations anyway. For CPUs that don't need to do a flush, I
-> replaced an IPI for a cacheline(s) steal. I figured it was still a
-> good bargain
+> Now I'm also deleting the unused AB3550 driver. Let's keep to the
+> drivers that are actually being used.
+I appreciate. All 4 patches applied, thanks.
 
-Hard to tell really, I've never really worked with these massive
-machines, biggest I've got is 2 nodes and for that I think your
-for_each_online_cpu() loop might indeed still be a win when compared to
-extra accounting on the alloc/free paths.
+Cheers,
+Samuel.
 
-The problem with a per-cpu cpumask is that you need to disable
-preemption over the whole for_each_online_cpu() scan and that's not
-really sane on very large machines as that can easily take a very long
-time indeed.
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
