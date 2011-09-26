@@ -1,47 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751376Ab1IZGk7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 02:40:59 -0400
-Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:47824 "EHLO
-	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751280Ab1IZGk6 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 02:40:58 -0400
-From: =?ISO-8859-1?Q?P=E9ter?= Ujfalusi <peter.ujfalusi@ti.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Samuel Ortiz <samuel.ortiz@intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, Misael Lopez Cruz <misael.lopez@ti.com>,
-        linux-input@vger.kernel.org
-Subject: Re: Re: Re: [PATCH 4/8] Input: twl6040-vibra: Check the selected path for vibra
-Date: Mon, 26 Sep 2011 09:41:01 +0300
-Message-ID: <1701394.KPvkMRlXDI@barack>
-User-Agent: KMail/4.7.1 (Linux/3.0.4-gentoo; KDE/4.7.1; x86_64; ; )
-In-Reply-To: <20110924060041.GB30648@core.coreip.homeip.net>
-References: <1316091561-30899-1-git-send-email-peter.ujfalusi@ti.com> <1525226.U1fKglfAtr@barack> <20110924060041.GB30648@core.coreip.homeip.net>
+	id S1751371Ab1IZGrM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 02:47:12 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:49283 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750830Ab1IZGrL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 02:47:11 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+X-Originating-IP: [212.179.42.66]
+In-Reply-To: <1317001924.29510.160.camel@sli10-conroe>
+References: <1316940890-24138-1-git-send-email-gilad@benyossef.com>
+	<1316940890-24138-5-git-send-email-gilad@benyossef.com>
+	<1317001924.29510.160.camel@sli10-conroe>
+Date: Mon, 26 Sep 2011 09:47:10 +0300
+Message-ID: <CAOtvUMddUAATZcU_5jLgY10ocsHNnOO2GC2c4ecYO9KGt-U7VQ@mail.gmail.com>
+Subject: Re: [PATCH 4/5] mm: Only IPI CPUs to drain local pages if they exist
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 23 September 2011 23:00:41 Dmitry Torokhov wrote:
-> The application will get an error on read or write, like -ENODEV, and will
-> hopefully "drop off".
+Hi Li,
 
-Thank you for the answer, but I would still like to avoid zapping the input 
-device runtime for now.
-In order to do that, I need to build up some sort of notification infra for 
-the twl6040 vibra (in the MFD driver) to create, and destroy the input device 
-depending on the changes in the audio driver.
-I'm also concerned about the needed LOC for this to implement, might be too 
-overkill, since I would think that the twl6040 vibra driving method would not 
-change runtime in any system.
-As a note: the other vibra (twl4030-vibra) does not even let user space know, 
-that it ignored the effect due to the routing selection. Returning -EBUSY is a 
-bit better than that.. I know this is not a valid argument for anything ;)
+Thank you for the feedback!
 
-Regards,
-Péter
+On Mon, Sep 26, 2011 at 4:52 AM, Shaohua Li <shaohua.li@intel.com> wrote:
+> On Sun, 2011-09-25 at 16:54 +0800, Gilad Ben-Yossef wrote:
+>> Use a cpumask to track CPUs with per-cpu pages in any zone
+>> and only send an IPI requesting CPUs to drain these pages
+>> to the buddy allocator if they actually have pages.
+> Did you have evaluation why the fine-grained ipi is required? I suppose
+> every CPU has local pages here.
+
+
+I have given it a lot of though and I believe It's a question of work
+load - in a "classic" symmetric work load on a small SMP system I
+would indeed expect each CPU to have a per cpu pages cache in some
+zone.  However, we are seeing more and more push towards massively
+multi core systems and we add support for using them (e.g. cpusets,
+Frederic's dynamic tick task patch set etc.). For these work loads,
+things can be different:
+
+In a system where you have many core (or hardware threads) and you
+dedicate processors to run a singe CPU bound task that performs
+virtually no system calls (quite typical for some high performance
+computing set ups), you can very well have situations where the per
+cpu released page is empty on many processors, since the working set
+per cpu rarely changes, so there was now release since the last drain.
+
+Or just consider a multicore machine where a lot of processors are
+simply idle with no activity (and we now have cores with 8 cores / 128
+hw threads in a single package) - again, no per CPU local page cache
+since there was 0 activity since the last drain, but the IPI will be
+yanking cores out of low power states to do the check.
+
+I do not know if these scenarios warrant the additional overhead,
+certainly not in all situations. Maybe the right thing is to make it a
+config option dependent. As I stated in the patch description, that is
+one of the thing I'm interested in feedback on.
+
+Thanks,
+Gilad
+
+-- 
+Gilad Ben-Yossef
+Chief Coffee Drinker
+gilad@benyossef.com
+Israel Cell: +972-52-8260388
+US Cell: +1-973-8260388
+http://benyossef.com
+
+"I've seen things you people wouldn't believe. Goto statements used to
+implement co-routines. I watched C structures being stored in
+registers. All those moments will be lost in time... like tears in
+rain... Time to die. "
