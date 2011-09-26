@@ -1,40 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751495Ab1IZHNP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 03:13:15 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:57314 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933Ab1IZHNO (ORCPT
+	id S1751549Ab1IZHNZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 03:13:25 -0400
+Received: from rrzmta2.uni-regensburg.de ([194.94.155.52]:57663 "EHLO
+	rrzmta2.uni-regensburg.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933Ab1IZHNY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 03:13:14 -0400
-Subject: Re: [PATCH] mtd/devices/m25p80: add support for at25df321a spi data
- flash
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Mikhail Kshevetskiy <mikhail.kshevetskiy@gmail.com>
-Cc: linux-mtd@lists.infradead.org, dwmw2@infradead.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 26 Sep 2011 10:16:05 +0300
-In-Reply-To: <1316792178-5592-1-git-send-email-mikhail.kshevetskiy@gmail.com>
-References: <1316792178-5592-1-git-send-email-mikhail.kshevetskiy@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1317021373.9442.3.camel@sauron>
+	Mon, 26 Sep 2011 03:13:24 -0400
+Message-Id: <4E80422B020000A1000077F2@gwsmtp1.uni-regensburg.de>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 Beta 
+Date: Mon, 26 Sep 2011 09:13:15 +0200
+From: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
+To: <linux-kernel@vger.kernel.org>
+Subject: Q: I/O schedulers
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-09-23 at 19:36 +0400, Mikhail Kshevetskiy wrote:
-> Signed-off-by: Mikhail Kshevetskiy <mikhail.kshevetskiy@gmail.com>
-> ---
->  drivers/mtd/devices/m25p80.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
+Hi!
 
-Pushed to l2-mtd-2.6.git, thanks!
+I hope this mail will make it after kernel.org seems do be down for weeks now...
 
--- 
-Best Regards,
-Artem Bityutskiy
+I have a question on I/O schedulers: I/O schedulers work for a single block device (more or less). Now I wonder: is there any attempt to accieve fairness across several block devices that use the same I/O channel?
+
+The background is this: We have a huge SAN disk system that can deviver about 380MB/s through a 4Gb/s FC-Connection. One Linux system alone can pull that from the box. Now such a single Linux system uses some ten virtual disks from the SAN box. When a huge file (several GB) is copied from one SAN disk to another one the same box), at some point I/O gets very slow, and some commands seem unresponsive for several seconds (e.g. more than 60 seconds). Alltogether about 20 machines are connected to that SAN disk system.
+
+Is there any attempt to give every block device using a specific HBA a fair share of the bandwidth? Also, what could be done in the current code to prevent such a situation. I suspect the problem are asynchronous buffer flushs combined with a lot of memory (> 100GB).
+
+Please CC: any replies to me as I'm not subscribed to this list.
+
+Regards,
+Ulrich
+
 
