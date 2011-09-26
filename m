@@ -1,192 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752660Ab1IZJaE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 05:30:04 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:34382 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752331Ab1IZJaD (ORCPT
+	id S1752736Ab1IZJbL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 05:31:11 -0400
+Received: from cernmx32.cern.ch ([137.138.144.178]:57031 "EHLO
+	CERNMX32.cern.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752717Ab1IZJbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 05:30:03 -0400
+	Mon, 26 Sep 2011 05:31:08 -0400
+From: Manohar Vanga <manohar.vanga@cern.ch>
+To: <gregkh@suse.de>
+CC: <martyn.welch@ge.com>, <cota@braap.org>, <devel@driverdev.osuosl.org>,
+        <linux-kernel@vger.kernel.org>, Manohar Vanga <manohar.vanga@cern.ch>
+Subject: [PATCH 4/4] staging: vme_user: rename USER_BUS_MAX to VME_USER_BUS_MAX
+Date: Mon, 26 Sep 2011 11:27:18 +0200
+Message-ID: <1317029238-13357-5-git-send-email-manohar.vanga@cern.ch>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1317029238-13357-1-git-send-email-manohar.vanga@cern.ch>
+References: <1317029238-13357-1-git-send-email-manohar.vanga@cern.ch>
 MIME-Version: 1.0
-In-Reply-To: <CAD+V5YLEStps68UK2NXLNh4ktGnv==WxXxWjjVJsRhk-XUp+Jw@mail.gmail.com>
-References: <1316845316-5765-1-git-send-email-keguang.zhang@gmail.com>
-	<1316845316-5765-2-git-send-email-keguang.zhang@gmail.com>
-	<CAD+V5YLEStps68UK2NXLNh4ktGnv==WxXxWjjVJsRhk-XUp+Jw@mail.gmail.com>
-Date: Mon, 26 Sep 2011 17:30:02 +0800
-Message-ID: <CAJhJPsV9n_4YtbrMwT7Zd7sSyF2zxc5TFKsf0af9U0FiMWJq0A@mail.gmail.com>
-Subject: Re: [PATCH 2/2] MIPS: Add defconfig for Loongson1B (UPDATED)
-From: Kelvin Cheung <keguang.zhang@gmail.com>
-To: wu zhangjin <wuzhangjin@gmail.com>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        ralf@linux-mips.org, r0bertz@gentoo.org, chenj@lemote.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Originating-IP: [137.138.192.18]
+Keywords: CERN SpamKiller Note: -50
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/9/25, wu zhangjin <wuzhangjin@gmail.com>:
-> On Sat, Sep 24, 2011 at 2:21 PM,  <keguang.zhang@gmail.com> wrote:
->> From: Kelvin Cheung <keguang.zhang@gmail.com>
->>
->> This patch adds defconfig for Loongson1B.
->>
->> Signed-off-by: Kelvin Cheung <keguang.zhang@gmail.com>
->> ---
->>  arch/mips/configs/ls1b_defconfig |   95
->> ++++++++++++++++++++++++++++++++++++++
->>  1 files changed, 95 insertions(+), 0 deletions(-)
->>  create mode 100644 arch/mips/configs/ls1b_defconfig
->>
->> diff --git a/arch/mips/configs/ls1b_defconfig
->> b/arch/mips/configs/ls1b_defconfig
->> new file mode 100644
->> index 0000000..f7c48f5
->> --- /dev/null
->> +++ b/arch/mips/configs/ls1b_defconfig
->> @@ -0,0 +1,95 @@
->> +CONFIG_MACH_LOONGSON1=y
->> +CONFIG_HIGH_RES_TIMERS=y
->> +CONFIG_PREEMPT_VOLUNTARY=y
->
-> What is the target market of 1B?
->
-> Seems CONFIG_PREEMPT_VOLUNTARY is for Desktop, CONFIG_PREEMPT is
-> better for low-latency desktop
-> and even for some real time applications.
+Signed-off-by: Manohar Vanga <manohar.vanga@cern.ch>
+---
+ drivers/staging/vme/devices/vme_user.c |   10 +++++-----
+ drivers/staging/vme/devices/vme_user.h |    2 +-
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
-Replaced with CONFIG_PREEMPT in the new patch.
-
->> +CONFIG_KEXEC=y
->
-> Did you validate kexec support on your 1B board?
->
-> According to my previous experiment, The kexec support of 32bit
-> Loongson2F requires more patches,
-> those patches are available in the following git repo:
->
-> http://dev.lemote.com/cgit/linux-loongson-community.git/log/?h=tiny36
->
-> or
->
-> git://dev.lemote.com/linux-loongson-community.git tiny36
-
-Removed in the new patch.
-
->> +# CONFIG_SECCOMP is not set
->> +CONFIG_EXPERIMENTAL=y
->> +# CONFIG_LOCALVERSION_AUTO is not set
->> +CONFIG_SYSVIPC=y
->> +CONFIG_BSD_PROCESS_ACCT=y
->> +CONFIG_BSD_PROCESS_ACCT_V3=y
->> +CONFIG_IKCONFIG=y
->> +CONFIG_IKCONFIG_PROC=y
->> +CONFIG_LOG_BUF_SHIFT=16
->> +CONFIG_BLK_DEV_INITRD=y
->> +CONFIG_RD_BZIP2=y
->> +CONFIG_RD_LZMA=y
->> +CONFIG_RD_XZ=y
->> +CONFIG_RD_LZO=y
->
-> Not sure why you need all of these 4 compression algorithms, LZO is
-> the fastest one, LZMA has the largest compression ratio.
-
-Fixed in the new patch.
-
->> +CONFIG_EXPERT=y
->> +CONFIG_KALLSYMS_ALL=y
->> +CONFIG_PERF_EVENTS=y
->> +# CONFIG_COMPAT_BRK is not set
->> +CONFIG_MODULES=y
->> +CONFIG_MODULE_UNLOAD=y
->> +CONFIG_MODVERSIONS=y
->> +# CONFIG_LBDAF is not set
->> +# CONFIG_BLK_DEV_BSG is not set
->> +# CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
->> +# CONFIG_SUSPEND is not set
->> +CONFIG_NET=y
->> +CONFIG_PACKET=y
->> +CONFIG_UNIX=y
->> +CONFIG_INET=y
->> +CONFIG_IP_PNP=y
->> +CONFIG_IP_PNP_DHCP=y
->> +CONFIG_SYN_COOKIES=y
->> +# CONFIG_INET_XFRM_MODE_TRANSPORT is not set
->> +# CONFIG_INET_XFRM_MODE_TUNNEL is not set
->> +# CONFIG_INET_XFRM_MODE_BEET is not set
->> +# CONFIG_INET_DIAG is not set
->> +# CONFIG_IPV6 is not set
->> +# CONFIG_WIRELESS is not set
->> +CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
->> +CONFIG_DEVTMPFS=y
->> +CONFIG_DEVTMPFS_MOUNT=y
->> +# CONFIG_STANDALONE is not set
->> +CONFIG_BLK_DEV_LOOP=y
->> +# CONFIG_INPUT_MOUSEDEV is not set
->> +# CONFIG_INPUT_KEYBOARD is not set
->> +# CONFIG_INPUT_MOUSE is not set
->> +# CONFIG_SERIO is not set
->> +CONFIG_VT_HW_CONSOLE_BINDING=y
->> +CONFIG_LEGACY_PTY_COUNT=8
->> +# CONFIG_DEVKMEM is not set
->> +CONFIG_SERIAL_8250=y
->> +CONFIG_SERIAL_8250_CONSOLE=y
->> +CONFIG_SERIAL_8250_RUNTIME_UARTS=1
->> +# CONFIG_HW_RANDOM is not set
->> +CONFIG_RAMOOPS=y
->> +# CONFIG_HWMON is not set
->> +# CONFIG_MFD_SUPPORT is not set
->> +# CONFIG_VGA_CONSOLE is not set
->> +# CONFIG_HID_SUPPORT is not set
->> +# CONFIG_USB_SUPPORT is not set
->> +# CONFIG_IOMMU_SUPPORT is not set
->> +CONFIG_EXT2_FS=y
->> +CONFIG_EXT2_FS_XATTR=y
->> +CONFIG_EXT2_FS_POSIX_ACL=y
->> +CONFIG_EXT2_FS_SECURITY=y
->> +CONFIG_EXT3_FS=y
->> +CONFIG_EXT3_FS_POSIX_ACL=y
->> +CONFIG_EXT3_FS_SECURITY=y
->
-> Seems we have EXT4 now, but PMON may not support it currently ;)
->
->> +# CONFIG_DNOTIFY is not set
->> +CONFIG_PROC_KCORE=y
->> +CONFIG_TMPFS=y
->> +CONFIG_TMPFS_POSIX_ACL=y
->> +# CONFIG_MISC_FILESYSTEMS is not set
->> +# CONFIG_NETWORK_FILESYSTEMS is not set
->> +# CONFIG_ENABLE_WARN_DEPRECATED is not set
->> +# CONFIG_ENABLE_MUST_CHECK is not set
->> +CONFIG_UNUSED_SYMBOLS=y
->> +CONFIG_DEBUG_FS=y
->> +CONFIG_DETECT_HUNG_TASK=y
->> +CONFIG_SCHEDSTATS=y
->> +CONFIG_TIMER_STATS=y
->> +CONFIG_DEBUG_INFO=y
->> +CONFIG_DEBUG_MEMORY_INIT=y
->> +CONFIG_BOOT_PRINTK_DELAY=y
->> +CONFIG_SYSCTL_SYSCALL_CHECK=y
->> +# CONFIG_FTRACE is not set
->> +CONFIG_KGDB=y
->> +CONFIG_KGDB_LOW_LEVEL_TRAP=y
->> +CONFIG_KGDB_KDB=y
->
-> If this config is for product, the above debug support may be not required.
-
-Removed in the new patch.
-
-> Best Regards,
-> Wu Zhangjin
->
->> +CONFIG_KDB_KEYBOARD=y
->> +# CONFIG_EARLY_PRINTK is not set
->> --
->> 1.7.4.1
->>
->>
->
-
-
+diff --git a/drivers/staging/vme/devices/vme_user.c b/drivers/staging/vme/devices/vme_user.c
+index 9518dda..7dcd162 100644
+--- a/drivers/staging/vme/devices/vme_user.c
++++ b/drivers/staging/vme/devices/vme_user.c
+@@ -43,7 +43,7 @@
+ static DEFINE_MUTEX(vme_user_mutex);
+ static const char driver_name[] = "vme_user";
+ 
+-static int bus[USER_BUS_MAX];
++static int bus[VME_USER_BUS_MAX];
+ static unsigned int bus_num;
+ 
+ /* Currently Documentation/devices.txt defines the following for VME:
+@@ -643,10 +643,10 @@ static int __init vme_user_init(void)
+ 	/* Let's start by supporting one bus, we can support more than one
+ 	 * in future revisions if that ever becomes necessary.
+ 	 */
+-	if (bus_num > USER_BUS_MAX) {
++	if (bus_num > VME_USER_BUS_MAX) {
+ 		printk(KERN_ERR "%s: Driver only able to handle %d buses\n",
+-			driver_name, USER_BUS_MAX);
+-		bus_num = USER_BUS_MAX;
++			driver_name, VME_USER_BUS_MAX);
++		bus_num = VME_USER_BUS_MAX;
+ 	}
+ 
+ 	/*
+@@ -668,7 +668,7 @@ err_nocard:
+ 
+ static int vme_user_match(struct vme_dev *vdev)
+ {
+-	if (vdev->num >= USER_BUS_MAX)
++	if (vdev->num >= VME_USER_BUS_MAX)
+ 		return 0;
+ 	return 1;
+ }
+diff --git a/drivers/staging/vme/devices/vme_user.h b/drivers/staging/vme/devices/vme_user.h
+index 24bf4e5..d85a1e9 100644
+--- a/drivers/staging/vme/devices/vme_user.h
++++ b/drivers/staging/vme/devices/vme_user.h
+@@ -1,7 +1,7 @@
+ #ifndef _VME_USER_H_
+ #define _VME_USER_H_
+ 
+-#define USER_BUS_MAX                  1
++#define VME_USER_BUS_MAX	1
+ 
+ /*
+  * VMEbus Master Window Configuration Structure
 -- 
-Best Regards!
-Kelvin
+1.7.4.1
+
