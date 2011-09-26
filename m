@@ -1,56 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752375Ab1IZPBP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 11:01:15 -0400
-Received: from imr4.ericy.com ([198.24.6.9]:54334 "EHLO imr4.ericy.com"
+	id S1752414Ab1IZPCS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 11:02:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48666 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751442Ab1IZPBO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 11:01:14 -0400
-Subject: Re: [lm-sensors] CONFIG_THERMAL_HWMON configuration option removal
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Reply-To: guenter.roeck@ericsson.com
-To: Jean Delvare <khali@linux-fr.org>
-CC: "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rene Herman <rene.herman@gmail.com>
-In-Reply-To: <20110926103255.02db677c@endymion.delvare>
-References: <20110926033740.GA5637@ericsson.com>
-	 <20110926103255.02db677c@endymion.delvare>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Ericsson
-Date: Mon, 26 Sep 2011 07:59:31 -0700
-Message-ID: <1317049171.3888.49.camel@groeck-laptop>
+	id S1751442Ab1IZPCR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 11:02:17 -0400
+Date: Mon, 26 Sep 2011 16:02:12 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH -mm] limit direct reclaim for higher order allocations
+Message-ID: <20110926150212.GB11313@suse.de>
+References: <20110926095507.34a2c48c@annuminas.surriel.com>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20110926095507.34a2c48c@annuminas.surriel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-09-26 at 04:32 -0400, Jean Delvare wrote:
-> Hi Guenter,
+On Mon, Sep 26, 2011 at 09:55:07AM -0400, Rik van Riel wrote:
+> When suffering from memory fragmentation due to unfreeable pages,
+> THP page faults will repeatedly try to compact memory.  Due to
+> the unfreeable pages, compaction fails.
 > 
-> On Sun, 25 Sep 2011 20:37:40 -0700, Guenter Roeck wrote:
-> > I just noticed the folllowing in feature-removal-schedule.txt:
-> > 
-> > What:   CONFIG_THERMAL_HWMON
-> > When:   January 2009
-> > Why:    This option was introduced just to allow older lm-sensors userspace
-> >         to keep working over the upgrade to 2.6.26. At the scheduled time of
-> >         removal fixed lm-sensors (2.x or 3.x) should be readily available.
-> > Who:    Rene Herman <rene.herman@gmail.com>
-> > 
-> > I don't know what the lm-sensors changes are, and if they have been implemented.
-> > Is it time to remove the configuration option ?
+> Needless to say, at that point page reclaim also fails to create
+> free contiguous 2MB areas.  However, that doesn't stop the current
+> code from trying, over and over again, and freeing a minimum of
+> 4MB (2UL << sc->order pages) at every single invocation.
 > 
-> Not sure where you looked, but it's already gone. See commit
-> ab92402af04c151c26541eb28e1c26286a429db5.
+> This resulted in my 12GB system having 2-3GB free memory, a
+> corresponding amount of used swap and very sluggish response times.
 > 
-Ah yes, now I remember. No idea what I looked at. Should teach me to
-clean up my branches.
+> This can be avoided by having the direct reclaim code not reclaim
+> from zones that already have plenty of free memory available for
+> compaction.
+> 
+> If compaction still fails due to unmovable memory, doing additional
+> reclaim will only hurt the system, not help.
+> 
+> Signed-off-by: Rik van Riel <riel@redhat.com>
+> ---
+> I believe Mel has another idea in mind on how to fix this issue. 
+> I believe it will be good to compare both approaches side by side...
+> 
+>  mm/vmscan.c |   16 ++++++++++++++++
+>  1 files changed, 16 insertions(+), 0 deletions(-)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index b7719ec..56811a1 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2083,6 +2083,22 @@ static void shrink_zones(int priority, struct zonelist *zonelist,
+>  				continue;
+>  			if (zone->all_unreclaimable && priority != DEF_PRIORITY)
+>  				continue;	/* Let kswapd poll it */
+> +			if (COMPACTION_BUILD) {
+> +				/*
+> +				 * If we already have plenty of memory free
+> +				 * for compaction, don't free any more.
+> +				 */
+> +				unsigned long balance_gap;
+> +				balance_gap = min(low_wmark_pages(zone),
+> +					(zone->present_pages +
+> +					KSWAPD_ZONE_BALANCE_GAP_RATIO-1) /
+> +					KSWAPD_ZONE_BALANCE_GAP_RATIO);
+> +				if (sc->order > PAGE_ALLOC_COSTLY_ORDER &&
+> +					zone_watermark_ok_safe(zone, 0,
+> +					high_wmark_pages(zone) + balance_gap +
+> +					(2UL << sc->order), 0, 0))
+> +					continue;
+> +			}
 
-Sorry for the noise.
+I don't have a proper patch prepared but I think it is a mistake for
+reclaim and compaction to be using different logic when deciding
+if action should be taken. Compaction uses compaction_suitable()
+and compaction_deferred() to decide whether it should compact or not
+and reclaim/compaction should share the same logic. I don't have a
+proper patch but the check would look something like;
 
-Guenter
+                /*
+                 * If reclaiming for THP, check if try_to_compact_pages
+                 * would try and compact this zone or if compaction is deferred
+                 * due to a recent failure. If these conditions are met,
+                 * we should not reclaim more pages as the cost of reclaiming an
+                 * excessive number of pages exceeds the benefit of using huge
+                 * pages. If we are not reclaiming, pretend we have reclaimed
+		 * pages so the caller bails.
+                 */
+                if ((sc->gfp_mask & __GFP_NO_KSWAPD) &&
+                        (compaction_suitable(zone, sc->order) ||
+                                compaction_deferred(zone))) {
+			sc->nr_scanned = SWAP_CLUSTER_MAX;
+			sc->nr_reclaimed = SWAP_CLUSTER_MAX;
+			continue;
+		}
 
+compaction_suitable() takes into account the amount of free memory
+so it is similar to your patch in that it takes into account "if we
+already have plenty of memory free for compaction".
 
+-- 
+Mel Gorman
+SUSE Labs
