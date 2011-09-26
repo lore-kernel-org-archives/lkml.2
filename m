@@ -1,137 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752517Ab1IZPYH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 11:24:07 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:40263 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752054Ab1IZPYF (ORCPT
+	id S1752511Ab1IZPZG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 11:25:06 -0400
+Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:31220 "HELO
+	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751727Ab1IZPZE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 11:24:05 -0400
-Message-ID: <4E8098B9.1080702@austin.ibm.com>
-Date: Mon, 26 Sep 2011 10:22:33 -0500
-From: Nathan Fontenot <nfont@austin.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
+	Mon, 26 Sep 2011 11:25:04 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: oAJqxR4VM1k4Bw7tZ7VbcAGmf75K82fg_mSFPc2B70wicYg
+ nhexvtUscEoj6TpXwgXFpHsX.F85X8ygKqgi7aPPH0fS0e5DE_Zdr1NhdmBo
+ qc4weETwCloXiJW974ED9BkqHTCqUihsEZtBhizvRfjED6ZB60e9gq9kbUsl
+ S1nL8Mq_UV5X8nbbynsUiH6mlReX_yhdwplVjS0XIrMdgT48bHtm5lD7zR.H
+ .EoCSLlPN8or0zOhrFBasT.COXYylEL.ENSWP41HtNWhY9pydTLsWvePKEfC
+ x.Hl_PtYyTnuEuK6VnLwrcXe9tJvi3h471lATvmVRppWPrUw4cClP3iKOREV
+ rIDdamXt4GIPpWrz.iRJ5QZ1fCFmHifw68kb0nA5dk5Vn1oY-
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Mon, 26 Sep 2011 10:24:59 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+X-X-Sender: cl@router.home
+To: Gilad Ben-Yossef <gilad@benyossef.com>
+cc: Shaohua Li <shaohua.li@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>
+Subject: Re: [PATCH 4/5] mm: Only IPI CPUs to drain local pages if they
+ exist
+In-Reply-To: <CAOtvUMddUAATZcU_5jLgY10ocsHNnOO2GC2c4ecYO9KGt-U7VQ@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1109261023400.24164@router.home>
+References: <1316940890-24138-1-git-send-email-gilad@benyossef.com> <1316940890-24138-5-git-send-email-gilad@benyossef.com> <1317001924.29510.160.camel@sli10-conroe> <CAOtvUMddUAATZcU_5jLgY10ocsHNnOO2GC2c4ecYO9KGt-U7VQ@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Greg KH <gregkh@suse.de>
-Subject: [PATCH] memory hotplug: Correct page reservation checking
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 11092615-2398-0000-0000-0000007F28AB
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The check to ensure that pages of recently added memory sections are correctly
-marked as reserved before trying to online the memory is broken.  The request
-to online the memory fails with the following:
+On Mon, 26 Sep 2011, Gilad Ben-Yossef wrote:
 
-kernel: section number XXX page number 256 not reserved, was it already online?
+> I do not know if these scenarios warrant the additional overhead,
+> certainly not in all situations. Maybe the right thing is to make it a
+> config option dependent. As I stated in the patch description, that is
+> one of the thing I'm interested in feedback on.
 
-This updates the page reservation checking to check the pages of each memory
-section of the memory block being onlined individually.
+The flushing of the per cpu pages only done when kmem_cache_shrink() is
+run or when a slab cache is closed. And for diagnostics. So its rare and
+not performance critical.
 
-Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
----
- drivers/base/memory.c |   60 ++++++++++++++++++++++++++++++--------------------
- 1 file changed, 37 insertions(+), 23 deletions(-)
-
-Index: linux/drivers/base/memory.c
-===================================================================
---- linux.orig/drivers/base/memory.c	2011-09-26 08:33:14.000000000 -0500
-+++ linux/drivers/base/memory.c	2011-09-26 08:42:14.000000000 -0500
-@@ -227,41 +227,42 @@
-  * MEMORY_HOTPLUG depends on SPARSEMEM in mm/Kconfig, so it is
-  * OK to have direct references to sparsemem variables in here.
-  */
-+static int check_page_reservations(unsigned long phys_index)
-+{
-+	int i;
-+	struct page *page;
-+
-+	page = pfn_to_page(phys_index << PFN_SECTION_SHIFT);
-+
-+	for (i = 0; i < PAGES_PER_SECTION; i++) {
-+		if (PageReserved(page + i))
-+			continue;
-+
-+		printk(KERN_WARNING "section number %ld page number %d "
-+			"not reserved, was it already online?\n", phys_index, i);
-+			return -EBUSY;
-+	}
-+
-+	return 0;
-+}
-+
- static int
- memory_block_action(unsigned long phys_index, unsigned long action)
- {
--	int i;
- 	unsigned long start_pfn, start_paddr;
- 	unsigned long nr_pages = PAGES_PER_SECTION * sections_per_block;
--	struct page *first_page;
-+	struct page *page;
- 	int ret;
- 
--	first_page = pfn_to_page(phys_index << PFN_SECTION_SHIFT);
--
--	/*
--	 * The probe routines leave the pages reserved, just
--	 * as the bootmem code does.  Make sure they're still
--	 * that way.
--	 */
--	if (action == MEM_ONLINE) {
--		for (i = 0; i < nr_pages; i++) {
--			if (PageReserved(first_page+i))
--				continue;
--
--			printk(KERN_WARNING "section number %ld page number %d "
--				"not reserved, was it already online?\n",
--				phys_index, i);
--			return -EBUSY;
--		}
--	}
-+	page = pfn_to_page(phys_index << PFN_SECTION_SHIFT);
- 
- 	switch (action) {
- 		case MEM_ONLINE:
--			start_pfn = page_to_pfn(first_page);
-+			start_pfn = page_to_pfn(page);
- 			ret = online_pages(start_pfn, nr_pages);
- 			break;
- 		case MEM_OFFLINE:
--			start_paddr = page_to_pfn(first_page) << PAGE_SHIFT;
-+			start_paddr = page_to_pfn(page) << PAGE_SHIFT;
- 			ret = remove_memory(start_paddr,
- 					    nr_pages << PAGE_SHIFT);
- 			break;
-@@ -277,7 +278,7 @@
- static int memory_block_change_state(struct memory_block *mem,
- 		unsigned long to_state, unsigned long from_state_req)
- {
--	int ret = 0;
-+	int i, ret = 0;
- 
- 	mutex_lock(&mem->state_mutex);
- 
-@@ -289,6 +290,19 @@
- 	if (to_state == MEM_OFFLINE)
- 		mem->state = MEM_GOING_OFFLINE;
- 
-+	if (to_state == MEM_ONLINE) {
-+		/*
-+		 * The probe routines leave the pages reserved, just
-+		 * as the bootmem code does.  Make sure they're still
-+		 * that way.
-+		 */
-+		for (i = 0; i < sections_per_block; i++) {
-+			ret = check_page_reservations(mem->start_section_nr + i);
-+			if (ret)
-+				return ret;
-+		}
-+	}
-+
- 	ret = memory_block_action(mem->start_section_nr, to_state);
- 
- 	if (ret)
 
