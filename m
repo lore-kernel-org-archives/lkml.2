@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753140Ab1IZJ4E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 05:56:04 -0400
-Received: from mga09.intel.com ([134.134.136.24]:11095 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753088Ab1IZJ4A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 05:56:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="56461204"
-Date: Mon, 26 Sep 2011 11:58:48 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Abhilash K V <abhilash.kv@ti.com>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, tony@atomide.com, linux@arm.linux.org.uk,
-        khilman@ti.com, santosh.shilimkar@ti.com, premi@ti.com,
-        david.woodhouse@intel.com, christian.gmeiner@gmail.com
-Subject: Re: [PATCH v3 3/3] OMAP3: Remove auto-selection of PMICs
-Message-ID: <20110926095848.GF32263@sortiz-mobl>
-References: <1316698155-954-1-git-send-email-abhilash.kv@ti.com>
- <1316698155-954-2-git-send-email-abhilash.kv@ti.com>
- <1316698155-954-3-git-send-email-abhilash.kv@ti.com>
- <1316698155-954-4-git-send-email-abhilash.kv@ti.com>
+	id S1753162Ab1IZJ4O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 05:56:14 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45510 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753021Ab1IZJ4M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 05:56:12 -0400
+Date: Mon, 26 Sep 2011 10:56:11 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: ashishj3 <ashish.jangam@kpitcummins.com>
+Cc: sameo@openedhand.com, linux-kernel@vger.kernel.org,
+        Dajun <dajun.chen@diasemi.com>, linaro-dev@lists.linaro.org,
+        arnd@arndb.de
+Subject: Re: [PATCH 01/11] MFD: DA9052/53 MFD core module v6
+Message-ID: <20110926095611.GA15452@opensource.wolfsonmicro.com>
+References: <1316435596.344.132.camel@L-0761.kpit.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1316698155-954-4-git-send-email-abhilash.kv@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1316435596.344.132.camel@L-0761.kpit.com>
+X-Cookie: Chess tonight.
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Abhilash,
-
-On Thu, Sep 22, 2011 at 06:59:15PM +0530, Abhilash K V wrote:
-> The current implementation almost assumes that only
-> TWL4030/TWL5030/TWl6030 are (or can be) used with the
-> OMAP processors. This is, however, not true.
+On Mon, Sep 19, 2011 at 06:03:16PM +0530, ashishj3 wrote:
+> The DA9052/53 is a highly integrated PMIC subsystem with supply domain flexibility
+> to support wide range of high performance application.
 > 
-> This patch removes the automatic selection of the PMIC
-> from Kconfig.
-> All currently used PMICs are now added to omap2plus_defconfig;
-> any new PMIC that gets supported in future could now be
-> enabled here rather than by changing Kconfig for
-> ARCH_OMAP2PLUS_TYPICAL
-> 
-> Signed-off-by: Sanjeev Premi <premi@ti.com>
-> Signed-off-by: Abhilash K V <abhilash.kv@ti.com>
-> ---
->  arch/arm/configs/omap2plus_defconfig |    3 +++
->  arch/arm/mach-omap2/Kconfig          |    3 ---
->  drivers/mfd/Kconfig                  |    2 +-
-Acked-by: Samuel Ortiz <sameo@linux.intel.com>
+> It provides voltage regulators, GPIO controller, Touch Screen, RTC, Battery
+> control and other functionality.
 
-for the MFD part.
+So, this looks good.  However...
 
-Cheers,
-Samuel.
+> +static struct regmap_config da9052_regmap_config = {
+> +	.reg_bits = 8,
+> +	.val_bits = 8,
+> +};
+> +
+> +static int da9052_spi_probe(struct spi_device *spi)
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+...having reviewed previous versions of your driver I believe you need
+to set either or both of read_flag_mask or write_flag_mask your regmap
+config (these have been added in -next) - previous versions of your
+driver had code which was trying to bodge this in, you've removed this
+code but not added any use of the generic facility so I rather suspect
+that currently the driver doesn't work with SPI.
+
+Samuel, as a fix will depend on -next regmap I guess it makes sense for
+me to apply this if a new version is provided before the next merge
+window?
