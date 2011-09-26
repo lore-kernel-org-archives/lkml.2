@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753448Ab1IZB7g (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Sep 2011 21:59:36 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:40991 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752050Ab1IZB7f (ORCPT
+	id S1753456Ab1IZCBc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Sep 2011 22:01:32 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:49823 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752050Ab1IZCBb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Sep 2011 21:59:35 -0400
-Subject: [PATCH] memstick: make r592_pm_ops static
+	Sun, 25 Sep 2011 22:01:31 -0400
+Subject: [PATCH] mtd: r852: make r852_pm_ops static
 From: Axel Lin <axel.lin@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: Maxim Levitsky <maximlevitsky@gmail.com>,
+        Artem Bityutskiy <artem.bityutskiy@intel.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 26 Sep 2011 09:59:25 +0800
-Message-ID: <1317002365.5991.0.camel@phoenix>
+Date: Mon, 26 Sep 2011 10:01:24 +0800
+Message-ID: <1317002484.5991.1.camel@phoenix>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
@@ -25,22 +27,22 @@ It is not used outside this driver so no need to make the symbol global.
 
 Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- drivers/memstick/host/r592.c |    2 +-
+ drivers/mtd/nand/r852.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/memstick/host/r592.c b/drivers/memstick/host/r592.c
-index 668f5c6..00c1b2d 100644
---- a/drivers/memstick/host/r592.c
-+++ b/drivers/memstick/host/r592.c
-@@ -870,7 +870,7 @@ static int r592_resume(struct device *core_dev)
- 	return 0;
- }
+diff --git a/drivers/mtd/nand/r852.c b/drivers/mtd/nand/r852.c
+index cae2e01..e33585c 100644
+--- a/drivers/mtd/nand/r852.c
++++ b/drivers/mtd/nand/r852.c
+@@ -1092,7 +1092,7 @@ static const struct pci_device_id r852_pci_id_tbl[] = {
  
--SIMPLE_DEV_PM_OPS(r592_pm_ops, r592_suspend, r592_resume);
-+static SIMPLE_DEV_PM_OPS(r592_pm_ops, r592_suspend, r592_resume);
- #endif
+ MODULE_DEVICE_TABLE(pci, r852_pci_id_tbl);
  
- MODULE_DEVICE_TABLE(pci, r592_pci_id_tbl);
+-SIMPLE_DEV_PM_OPS(r852_pm_ops, r852_suspend, r852_resume);
++static SIMPLE_DEV_PM_OPS(r852_pm_ops, r852_suspend, r852_resume);
+ 
+ static struct pci_driver r852_pci_driver = {
+ 	.name		= DRV_NAME,
 -- 
 1.7.4.1
 
