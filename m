@@ -1,94 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753411Ab1IZBku (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Sep 2011 21:40:50 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:43054 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753142Ab1IZBkt convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Sep 2011 21:40:49 -0400
+	id S1753430Ab1IZBl0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Sep 2011 21:41:26 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:39636 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753142Ab1IZBlY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Sep 2011 21:41:24 -0400
+Date: Sun, 25 Sep 2011 18:41:18 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>, linux-kernel@vger.kernel.org,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: Re: linux-next-20110923: warning kernel/rcutree.c:1833
+Message-ID: <20110926014118.GA25861@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110925002409.GA24220@shutemov.name>
+ <20110925050826.GC2995@linux.vnet.ibm.com>
+ <20110925112637.GA19298@shutemov.name>
+ <20110925130622.GA9205@somewhere.redhat.com>
+ <20110925164804.GD2995@linux.vnet.ibm.com>
+ <20110926010418.GA18553@somewhere>
+ <CAFTL4hy4t4z2GX=Tj5wjVv=BSGaSbcspDw3FGUy_2uK=9HU_2A@mail.gmail.com>
+ <20110926012611.GJ2995@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <CACoURw540BQgs4457uEtkGf41-uLbbubGBP23qnvT4W-MNJqOQ@mail.gmail.com>
-References: <1316845316-5765-1-git-send-email-keguang.zhang@gmail.com>
-	<CAD+V5YLrs91Cjj-EXbjREhs+sQnEjR=q5n3OXtEB0kFQ88p5Pw@mail.gmail.com>
-	<CACoURw540BQgs4457uEtkGf41-uLbbubGBP23qnvT4W-MNJqOQ@mail.gmail.com>
-Date: Mon, 26 Sep 2011 09:40:48 +0800
-Message-ID: <CAD+V5YLSR-0YdytbJjPnHqKZ4YKdb+sSWgK529SdqrZyZR9=+g@mail.gmail.com>
-Subject: Re: [PATCH 1/2] MIPS: Add basic support for Loongson1B (UPDATED)
-From: wu zhangjin <wuzhangjin@gmail.com>
-To: Shane McDonald <mcdonald.shane@gmail.com>
-Cc: keguang.zhang@gmail.com, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, ralf@linux-mips.org, r0bertz@gentoo.org,
-        chenj@lemote.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110926012611.GJ2995@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 25, 2011 at 9:40 PM, Shane McDonald
-<mcdonald.shane@gmail.com> wrote:
->>> diff --git a/arch/mips/include/asm/mach-loongson1/regs-clk.h b/arch/mips/include/asm/mach-loongson1/regs-clk.h
->>> new file mode 100644
->>> index 0000000..7a09d6a
->>> --- /dev/null
->>> +++ b/arch/mips/include/asm/mach-loongson1/regs-clk.h
->>> @@ -0,0 +1,32 @@
->>> +/*
->>> + * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
->>> + *
->>> + * Loongson1 Clock Register Definitions.
->>> + *
->>> + * This program is free software; you can redistribute  it and/or modify it
->>> + * under  the terms of  the GNU General  Public License as published by the
->>> + * Free Software Foundation;  either version 2 of the  License, or (at your
->>> + * option) any later version.
->>> + */
->>> +
->>> +#ifndef __ASM_MACH_LOONGSON1_REGS_CLK_H
->>> +#define __ASM_MACH_LOONGSON1_REGS_CLK_H
->>> +
->>> +#define LS1_CLK_REG(x)         ((void __iomem *)(LOONGSON1_CLK_BASE + (x)))
->>
->> "volatile" keyword may be required for __iomem access, the same to the
->> following similar usage.
->>
->> Considering a scene is(LS1_XXX_REG(X) doesn't really exist):
->>
->> LS1_XXX_REG(X) = 0;              /* put cpu into idle and wait interrupt */
->> LS1_XXX_REG(X) = 7;              /* recover the cpu frequency to the highest */
->>
->> If no "volatile" keyword indicated, the first line will be
->> intelligently but wrongly removed by compiler.
->
-> No -- please see Documentation/volatile-considered-harmful.txt,
-> particularly the paragraph starting at line 49.  This macro
-> is only being used as an argument to __raw_readl,
-> as it should be.
+On Sun, Sep 25, 2011 at 06:26:11PM -0700, Paul E. McKenney wrote:
+> On Mon, Sep 26, 2011 at 03:10:33AM +0200, Frederic Weisbecker wrote:
+> > 2011/9/26 Frederic Weisbecker <fweisbec@gmail.com>:
+> > > On Sun, Sep 25, 2011 at 09:48:04AM -0700, Paul E. McKenney wrote:
+> > >> This is required for RCU_FAST_NO_HZ, which checks to see whether the
+> > >> current CPU can accelerate the current grace period so as to enter
+> > >> dyntick-idle mode sooner than it would otherwise.  This takes effect
+> > >> in the situation where rcu_needs_cpu() sees that there are callbacks.
+> > >> It then notes a quiescent state (which is illegal in an RCU read-side
+> > >> critical section), calls force_quiescent_state(), and so on.  For this
+> > >> to work, the current CPU must be in an RCU read-side critical section.
+> > >
+> > > You mean it must *not* be in an RCU read-side critical section (ie: in a
+> > > quiescent state)?
+> > >
+> > > That assumption at least fails anytime in idle for the RCU
+> > > sched flavour given that preemption is disabled in the idle loop.
+> > >
+> > >> If this cannot be made to work, another option is to call a new RCU
+> > >> function in the case where rcu_needs_cpu() returned false, but after
+> > >> the RCU read-side critical section has exited.
+> > >
+> > > You mean when rcu_needs_cpu() returns true (when we have callbacks
+> > > enqueued)?
+> > >
+> > >> This new RCU function
+> > >> could then attempt to rearrange RCU so as to allow the CPU to enter
+> > >> dyntick-idle mode more quickly.  It is more important for this to
+> > >> happen when the CPU is going idle than when it is executing a user
+> > >> process.
+> > >>
+> > >> So, is this doable?
+> > >
+> > > At least not when we have RCU sched callbacks enqueued, given preemption
+> > > is disabled. But that sounds plausible in order to accelerate the switch
+> > > to dyntick-idle mode when we only have rcu and/or rcu bh callbacks.
+> > 
+> > But the RCU sched case could be dealt with if we embrace every use of
+> > it with rcu_read_lock_sched() and rcu_read_unlock_sched(), or some light
+> > version that just increases a local counter that rcu_needs_cpu() could check.
+> > 
+> > It's an easy thing to add: we can ensure preempt is disabled when we call it
+> > and we can force rcu_dereference_sched() to depend on it.
+> 
+> Or just check to see if this is the first level of interrupt from the
+> idle task after the scheduler is up.
 
-Yeah, __raw_readl/writel() will use volatile to prevent it from
-optimization, thanks ;)
+Hmmm...  Is it the case that rcu_needs_cpu() gets called from within an
+RCU read-side critical section only when called from an interrupt that
+interrupted an RCU read-side critical section (keeping in mind that the
+idle loop is a quiescent state regardless of preemption)?
 
-"within the kernel, I/O memory  accesses are always done through
-accessor functions;
- accessing I/O memory directly through pointers is frowned upon and
-does not work on all
- architectures.  Those accessors are written to prevent unwanted
- optimization,
-....
-  - The above-mentioned accessor functions might use volatile on
-     architectures where direct I/O memory access does work.  Essentially,
-     each accessor call becomes a little critical section on its own and
-     ensures that the access happens as expected by the programmer.
-...
-Patches to remove volatile variables are generally welcome - as long as
- they come with a justification which shows that the concurrency issues have
- been properly thought through.
-"
+If so, I should be able to do the appropriate checks within
+rcu_needs_cpu().
 
-Thanks & Regards,
-Wu Zhangjin
+The reason I didn't think of this earlier was that I thought that
+rcu_needs_cpu() could be invoked from the idle notifier, which is itself
+in an RCU read-side critical section.
 
->
-> Shane
->
+								Thanx, Paul
