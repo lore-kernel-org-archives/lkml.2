@@ -1,277 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752538Ab1IZU7Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 16:59:24 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:28388 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752492Ab1IZU7W convert rfc822-to-8bit (ORCPT
+	id S1752561Ab1IZVCP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 17:02:15 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:35206 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752287Ab1IZVCO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 16:59:22 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=LGtZXk4fiyK1N/BSqRifm27FQugvrkFNxq/pas5EnalaawUOr16JADx3PYKQeCCRv
-	QPVYHorLSSyOR86EaQ7nw==
+	Mon, 26 Sep 2011 17:02:14 -0400
 MIME-Version: 1.0
-In-Reply-To: <1316706551-16138-5-git-send-email-joerg.roedel@amd.com>
-References: <1316706551-16138-1-git-send-email-joerg.roedel@amd.com> <1316706551-16138-5-git-send-email-joerg.roedel@amd.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 26 Sep 2011 14:58:58 -0600
-Message-ID: <CAErSpo7Vb7avbsP3eG=3huCewW4QBL7oMoXr2TjMCaWEvFgB0Q@mail.gmail.com>
-Subject: Re: [PATCH 4/4] PCI: Add support for PASID capability
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
+In-Reply-To: <5149.1317036720@redhat.com>
+References: <CAOH1cHnymZ1WasD4q+HXbeQb9wBAWmS9f451gEekA0-YjCZtLA@mail.gmail.com>
+	<2150.1314882260@redhat.com>
+	<CAOH1cHnLfLQzZ8022ivfFkbug=adU1AYZPJOqdTnrqh9vuAAxg@mail.gmail.com>
+	<CAOH1cHm-hbC=KZJsT1H5ohVEJVzNvqaKatKVS+s2nKVkAMgX9w@mail.gmail.com>
+	<5149.1317036720@redhat.com>
+Date: Mon, 26 Sep 2011 14:02:13 -0700
+Message-ID: <CAOH1cHn3QF0QtR7KKN9gk5CiUvLqxsni0yi9bgCmJ8f=N1v27Q@mail.gmail.com>
+Subject: Re: [Linux-cachefs] 3.0.3 64-bit Crash running fscache/cachefilesd
+From: Mark Moseley <moseleymark@gmail.com>
+Cc: Linux filesystem caching discussion list 
+	<linux-cachefs@redhat.com>,
         linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 22, 2011 at 9:49 AM, Joerg Roedel <joerg.roedel@amd.com> wrote:
-> Devices supporting the PASID capability can use multiple
-> contexts on an IOMMU at the same time. This patch adds
-> support to manage that capability.
-
-These all look reasonable to me.
-
-Is there anything else useful you could say in the PASID Kconfig help
-text?  I'm guessing it stands for "PCI Address Space ID" or something,
-but I have no idea why I might want to enable it.
-
-I didn't coordinate very well with Jesse.  I'm hoping he'll be back
-before the 3.2 merge window, but I think we have a few patches queued
-up now, and it might be useful to have them in linux-next for a while
-before he returns.  I'll look into that.
-
-Bjorn
-
-> Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+On Mon, Sep 26, 2011 at 4:32 AM, David Howells <dhowells@redhat.com> wrote:
+> Mark Moseley <moseleymark@gmail.com> wrote:
+>
+>> I thought I'd be extra-helpful by getting that trace with a 3.0.4
+>> kernel but got a completely different error this time (there was
+>> nothing logged above this though). There was a
+>> '__fscache_read_or_alloc_pages' crash for the previous boot too,
+>> though it went for about 2.5 hours that time (with an empty cache
+>> partition though).
+>
+> I'm fairly certain I know what the cause of this one is: Invalidation upon
+> server change isn't handled correctly.  NFS tries to invalidate a file by
+> discarding that file's attachment to the cache - without first clearing up the
+> operations it has outstanding on the cache for that file.
+>
+> I'm working on adding formal invalidation at the moment.
+>
+> The attached patch may get you more precise information.  The first hunk is the
+> main catcher.
+>
+> David
 > ---
->  drivers/pci/Kconfig      |   11 +++++
->  drivers/pci/ats.c        |  113 ++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/pci-ats.h  |   31 +++++++++++++
->  include/linux/pci_regs.h |    8 +++
->  4 files changed, 163 insertions(+), 0 deletions(-)
+> diff --git a/fs/fscache/cookie.c b/fs/fscache/cookie.c
+> index 9905350..48c63b8 100644
+> --- a/fs/fscache/cookie.c
+> +++ b/fs/fscache/cookie.c
+> @@ -452,6 +452,13 @@ void __fscache_relinquish_cookie(struct fscache_cookie *cookie, int retire)
 >
-> diff --git a/drivers/pci/Kconfig b/drivers/pci/Kconfig
-> index fb1e9707..ed7c42e 100644
-> --- a/drivers/pci/Kconfig
-> +++ b/drivers/pci/Kconfig
-> @@ -94,6 +94,17 @@ config PCI_PRI
+>                _debug("RELEASE OBJ%x", object->debug_id);
 >
->          If unsure, say N.
+> +               if (atomic_read(&object->n_reads)) {
+> +                       spin_unlock(&cookie->lock);
+> +                       printk(KERN_ERR "FS-Cache: Cookie '%s' still has outstanding reads\n",
+> +                              cookie->def->name);
+> +                       BUG();
+> +               }
+> +
+>                /* detach each cache object from the object cookie */
+>                spin_lock(&object->lock);
+>                hlist_del_init(&object->cookie_link);
+> diff --git a/fs/fscache/page.c b/fs/fscache/page.c
+> index b8b62f4..f087051 100644
+> --- a/fs/fscache/page.c
+> +++ b/fs/fscache/page.c
+> @@ -496,6 +496,7 @@ int __fscache_read_or_alloc_pages(struct fscache_cookie *cookie,
+>        if (fscache_submit_op(object, &op->op) < 0)
+>                goto nobufs_unlock;
+>        spin_unlock(&cookie->lock);
+> +       ASSERTCMP(object->cookie, ==, cookie);
 >
-> +config PCI_PASID
-> +       bool "PCI PASID support"
-> +       depends on PCI
-> +       select PCI_ATS
-> +       help
-> +         Devices supporting PASIDs can access multiple address spaces
-> +         on an IOMMU at the same time. This option compiles code for
-> +         that capability into the kernel.
-> +
-> +         If unsure, say N.
-> +
->  config PCI_IOAPIC
->        bool
->        depends on PCI
-> diff --git a/drivers/pci/ats.c b/drivers/pci/ats.c
-> index bf892a0..f727a09 100644
-> --- a/drivers/pci/ats.c
-> +++ b/drivers/pci/ats.c
-> @@ -7,6 +7,7 @@
->  * PCI Express I/O Virtualization (IOV) support.
->  *   Address Translation Service 1.0
->  *   Page Request Interface added by Joerg Roedel <joerg.roedel@amd.com>
-> + *   PASID support added by Joerg Roedel <joerg.roedel@amd.com>
->  */
+>        fscache_stat(&fscache_n_retrieval_ops);
 >
->  #include <linux/pci-ats.h>
-> @@ -323,3 +324,115 @@ int pci_pri_status(struct pci_dev *pdev)
->  }
->  EXPORT_SYMBOL_GPL(pci_pri_status);
->  #endif /* CONFIG_PCI_PRI */
-> +
-> +#ifdef CONFIG_PCI_PASID
-> +/**
-> + * pci_enable_pasid - Enable the PASID capability
-> + * @pdev: PCI device structure
-> + * @features: Features to enable
-> + *
-> + * Returns 0 on success, negative value on error. This function checks
-> + * whether the features are actually supported by the device and returns
-> + * an error if not.
-> + */
-> +int pci_enable_pasid(struct pci_dev *pdev, int features)
-> +{
-> +       u16 control, supported;
-> +       int pos;
-> +
-> +       pos = pci_find_ext_capability(pdev, PCI_PASID_CAP);
-> +       if (!pos)
-> +               return -EINVAL;
-> +
-> +       pci_read_config_word(pdev, pos + PCI_PASID_CONTROL_OFF, &control);
-> +       pci_read_config_word(pdev, pos + PCI_PASID_CAP_OFF,     &supported);
-> +
-> +       if (!(supported & PCI_PASID_ENABLE))
-> +               return -EINVAL;
-> +
-> +       supported &= PCI_PASID_EXEC | PCI_PASID_PRIV;
-> +
-> +       /* User wants to enable anything unsupported? */
-> +       if ((supported & features) != features)
-> +               return -EINVAL;
-> +
-> +       control = PCI_PASID_ENABLE | features;
-> +
-> +       pci_write_config_word(pdev, pos + PCI_PASID_CONTROL_OFF, control);
-> +
-> +       return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(pci_enable_pasid);
-> +
-> +/**
-> + * pci_disable_pasid - Disable the PASID capability
-> + * @pdev: PCI device structure
-> + *
-> + */
-> +void pci_disable_pasid(struct pci_dev *pdev)
-> +{
-> +       u16 control = 0;
-> +       int pos;
-> +
-> +       pos = pci_find_ext_capability(pdev, PCI_PASID_CAP);
-> +       if (!pos)
-> +               return;
-> +
-> +       pci_write_config_word(pdev, pos + PCI_PASID_CONTROL_OFF, control);
-> +}
-> +EXPORT_SYMBOL_GPL(pci_disable_pasid);
-> +
-> +/**
-> + * pci_pasid_features - Check which PASID features are supported
-> + * @pdev: PCI device structure
-> + *
-> + * Returns a negative value when no PASI capability is present.
-> + * Otherwise is returns a bitmask with supported features. Current
-> + * features reported are:
-> + * PCI_PASID_ENABLE - PASID capability can be enabled
-> + * PCI_PASID_EXEC - Execute permission supported
-> + * PCI_PASID_PRIV - Priviledged mode supported
-> + */
-> +int pci_pasid_features(struct pci_dev *pdev)
-> +{
-> +       u16 supported;
-> +       int pos;
-> +
-> +       pos = pci_find_ext_capability(pdev, PCI_PASID_CAP);
-> +       if (!pos)
-> +               return -EINVAL;
-> +
-> +       pci_read_config_word(pdev, pos + PCI_PASID_CAP_OFF, &supported);
-> +
-> +       supported &= PCI_PASID_ENABLE | PCI_PASID_EXEC | PCI_PASID_PRIV;
-> +
-> +       return supported;
-> +}
-> +EXPORT_SYMBOL_GPL(pci_pasid_features);
-> +
-> +#define PASID_NUMBER_SHIFT     8
-> +#define PASID_NUMBER_MASK      (0x1f << PASID_NUMBER_SHIFT)
-> +/**
-> + * pci_max_pasid - Get maximum number of PASIDs supported by device
-> + * @pdev: PCI device structure
-> + *
-> + * Returns negative value when PASID capability is not present.
-> + * Otherwise it returns the numer of supported PASIDs.
-> + */
-> +int pci_max_pasids(struct pci_dev *pdev)
-> +{
-> +       u16 supported;
-> +       int pos;
-> +
-> +       pos = pci_find_ext_capability(pdev, PCI_PASID_CAP);
-> +       if (!pos)
-> +               return -EINVAL;
-> +
-> +       pci_read_config_word(pdev, pos + PCI_PASID_CAP_OFF, &supported);
-> +
-> +       supported = (supported & PASID_NUMBER_MASK) >> PASID_NUMBER_SHIFT;
-> +
-> +       return (1 << supported);
-> +}
-> +EXPORT_SYMBOL_GPL(pci_max_pasids);
-> +#endif /* CONFIG_PCI_PASID */
-> diff --git a/include/linux/pci-ats.h b/include/linux/pci-ats.h
-> index 0713952..e3d0b38 100644
-> --- a/include/linux/pci-ats.h
-> +++ b/include/linux/pci-ats.h
-> @@ -93,4 +93,35 @@ static inline int pci_pri_status(struct pci_dev *pdev)
->  }
->  #endif /* CONFIG_PCI_PRI */
+> @@ -513,6 +514,26 @@ int __fscache_read_or_alloc_pages(struct fscache_cookie *cookie,
+>                goto error;
 >
-> +#ifdef CONFIG_PCI_PASID
+>        /* ask the cache to honour the operation */
+> +       if (!object->cookie) {
+> +               const char prefix[] = "fs-";
+> +               printk(KERN_ERR "%sobject: OBJ%x\n",
+> +                      prefix, object->debug_id);
+> +               printk(KERN_ERR "%sobjstate=%s fl=%lx wbusy=%x ev=%lx[%lx]\n",
+> +                      prefix, fscache_object_states[object->state],
+> +                      object->flags, work_busy(&object->work),
+> +                      object->events,
+> +                      object->event_mask & FSCACHE_OBJECT_EVENTS_MASK);
+> +               printk(KERN_ERR "%sops=%u inp=%u exc=%u\n",
+> +                      prefix, object->n_ops, object->n_in_progress,
+> +                      object->n_exclusive);
+> +               printk(KERN_ERR "%sparent=%p\n",
+> +                      prefix, object->parent);
+> +               printk(KERN_ERR "%scookie=%p [pr=%p nd=%p fl=%lx]\n",
+> +                      prefix, object->cookie,
+> +                      cookie->parent, cookie->netfs_data, cookie->flags);
+> +       }
+> +       ASSERTCMP(object->cookie, ==, cookie);
 > +
-> +extern int pci_enable_pasid(struct pci_dev *pdev, int features);
-> +extern void pci_disable_pasid(struct pci_dev *pdev);
-> +extern int pci_pasid_features(struct pci_dev *pdev);
-> +extern int pci_max_pasids(struct pci_dev *pdev);
-> +
-> +#else  /* CONFIG_PCI_PASID */
-> +
-> +static inline int pci_enable_pasid(struct pci_dev *pdev, int features)
-> +{
-> +       return -EINVAL;
-> +}
-> +
-> +static inline void pci_disable_pasid(struct pci_dev *pdev)
-> +{
-> +}
-> +
-> +static inline int pci_pasid_features(struct pci_dev *pdev)
-> +{
-> +       return -EINVAL;
-> +}
-> +
-> +static inline int pci_max_pasids(struct pci_dev *pdev)
-> +{
-> +       return -EINVAL;
-> +}
-> +
-> +#endif /* CONFIG_PCI_PASID */
-> +
-> +
->  #endif /* LINUX_PCI_ATS_H*/
-> diff --git a/include/linux/pci_regs.h b/include/linux/pci_regs.h
-> index 7fc32af..b5d9657 100644
-> --- a/include/linux/pci_regs.h
-> +++ b/include/linux/pci_regs.h
-> @@ -675,6 +675,14 @@
->  #define PCI_PRI_MAX_REQ_OFF    0x08    /* Cap offset for max reqs supported */
->  #define PCI_PRI_ALLOC_REQ_OFF  0x0c    /* Cap offset for max reqs allowed */
->
-> +/* PASID capability */
-> +#define PCI_PASID_CAP          0x1b    /* PASID capability ID */
-> +#define PCI_PASID_CAP_OFF      0x04    /* PASID feature register */
-> +#define PCI_PASID_CONTROL_OFF   0x06    /* PASID control register */
-> +#define PCI_PASID_ENABLE       0x01    /* Enable/Supported bit */
-> +#define PCI_PASID_EXEC         0x02    /* Exec permissions Enable/Supported */
-> +#define PCI_PASID_PRIV         0x04    /* Priviledge Mode Enable/Support */
-> +
->  /* Single Root I/O Virtualization */
->  #define PCI_SRIOV_CAP          0x04    /* SR-IOV Capabilities */
->  #define  PCI_SRIOV_CAP_VFM     0x01    /* VF Migration Capable */
-> --
-> 1.7.4.1
->
->
+>        if (test_bit(FSCACHE_COOKIE_NO_DATA_YET, &object->cookie->flags)) {
+>                fscache_stat(&fscache_n_cop_allocate_pages);
+>                ret = object->cache->ops->allocate_pages(
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > Please read the FAQ at  http://www.tux.org/lkml/
 >
+
+Ok, patched and running now. This same box was running 3.0.3 over the
+weekend but it died without a stacktrace (and I had set it up to not
+start cachefilesd on boot for the next boot). After I get the trace
+for 3.0.4, I'll boot back into 3.0.3 and see if I can get that
+previous trace again.
