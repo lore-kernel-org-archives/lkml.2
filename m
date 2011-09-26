@@ -1,58 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752684Ab1IZWre (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 18:47:34 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:64404 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751480Ab1IZWrd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 18:47:33 -0400
+	id S1752725Ab1IZWsF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 18:48:05 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:34361 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752039Ab1IZWsD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 18:48:03 -0400
+Message-ID: <4E8100FC.10906@parallels.com>
+Date: Mon, 26 Sep 2011 19:47:24 -0300
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-In-Reply-To: <201109270024.55418.rjw@sisk.pl>
-References: <s5hmxdzyyzx.wl%tiwai@suse.de> <201109212048.23074.rjw@sisk.pl>
- <CAE9FiQVy4D0NhaN=PvPK_+L4Jv=+7huLy9U--LYW49GFZ9TyaQ@mail.gmail.com> <201109270024.55418.rjw@sisk.pl>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 26 Sep 2011 15:47:12 -0700
-X-Google-Sender-Auth: glTPpuhbvd2WQJVL93fQLHhj1uc
-Message-ID: <CA+55aFyyeRyvooTY_Gb9xnOHt6AyCoQEtNFW2NPyb=M4gvVshQ@mail.gmail.com>
-Subject: Re: S4 resume broken since 2.6.39 (3.1, too)
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Yinghai Lu <yinghai.lu@oracle.com>, Takashi Iwai <tiwai@suse.de>,
-        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        oneukum@suse.de, x86@kernel.org,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Balbir Singh <bsingharora@gmail.com>, Greg Thelen <gthelen@google.com>,
+        <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
+        <lizf@cn.fujitsu.com>, <ebiederm@xmission.com>, <davem@davemloft.net>,
+        <netdev@vger.kernel.org>, <linux-mm@kvack.org>, <kirill@shutemov.name>
+Subject: Re: [PATCH v3 2/7] socket: initial cgroup code.
+References: <1316393805-3005-1-git-send-email-glommer@parallels.com> <1316393805-3005-3-git-send-email-glommer@parallels.com> <CAHH2K0YgkG2J_bO+U9zbZYhTTqSLvr6NtxKxN8dRtfHs=iB8iA@mail.gmail.com> <4E7A342B.5040608@parallels.com> <CAHH2K0Z_2LJPL0sLVHqkh_6b_BLQnknULTB9a9WfEuibk5kONg@mail.gmail.com> <CAKTCnz=59HuEg9T-USi5oKSK=F+vr2QxCA17+i-rGj73k49rzw@mail.gmail.com> <4E7DECF0.9050804@parallels.com> <20110926195213.12da87b4.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110926195213.12da87b4.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [201.82.135.174]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 26, 2011 at 3:24 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+On 09/26/2011 07:52 AM, KAMEZAWA Hiroyuki wrote:
+> On Sat, 24 Sep 2011 11:45:04 -0300
+> Glauber Costa<glommer@parallels.com>  wrote:
 >
-> So, in my opinion we should simply apply the Takashi's patch at this
-> point and revisit the kdump issue later, when we actually know how to do
-> the right thing.
+>> On 09/22/2011 12:09 PM, Balbir Singh wrote:
+>>> On Thu, Sep 22, 2011 at 11:30 AM, Greg Thelen<gthelen@google.com>   wrote:
+>>>> On Wed, Sep 21, 2011 at 11:59 AM, Glauber Costa<glommer@parallels.com>   wrote:
+>>>>> Right now I am working under the assumption that tasks are long lived inside
+>>>>> the cgroup. Migration potentially introduces some nasty locking problems in
+>>>>> the mem_schedule path.
+>>>>>
+>>>>> Also, unless I am missing something, the memcg already has the policy of
+>>>>> not carrying charges around, probably because of this very same complexity.
+>>>>>
+>>>>> True that at least it won't EBUSY you... But I think this is at least a way
+>>>>> to guarantee that the cgroup under our nose won't disappear in the middle of
+>>>>> our allocations.
+>>>>
+>>>> Here's the memcg user page behavior using the same pattern:
+>>>>
+>>>> 1. user page P is allocate by task T in memcg M1
+>>>> 2. T is moved to memcg M2.  The P charge is left behind still charged
+>>>> to M1 if memory.move_charge_at_immigrate=0; or the charge is moved to
+>>>> M2 if memory.move_charge_at_immigrate=1.
+>>>> 3. rmdir M1 will try to reclaim P (if P was left in M1).  If unable to
+>>>> reclaim, then P is recharged to parent(M1).
+>>>>
+>>>
+>>> We also have some magic in page_referenced() to remove pages
+>>> referenced from different containers. What we do is try not to
+>>> penalize a cgroup if another cgroup is referencing this page and the
+>>> page under consideration is being reclaimed from the cgroup that
+>>> touched it.
+>>>
+>>> Balbir Singh
+>> Do you guys see it as a showstopper for this series to be merged, or can
+>> we just TODO it ?
+>>
+>
+> In my experience, 'I can't rmdir cgroup.' is always an important/difficult
+> problem. The users cannot know where the accouting is leaking other than
+> kmem.usage_in_bytes or memory.usage_in_bytes. and can't fix the issue.
+>
+> please add EXPERIMENTAL to Kconfig until this is fixed.
 
-Applying that trivial patch certainly looks fine, especially since it
-also avoids some arbitrary differences between x86-64 and x86-32.
+I am working on something here that may allow it.
+But I think it is independent of the rest, and I can repost the series 
+fixing the problems raised here without it, + EXPERIMENTAL.
 
-That said, the whole code looks *very* confusing, and I have to say
-that the commit logs there are also totally unreadable and not very
-explanatory at all.
+Btw, using EXPERIMENTAL here is a very good idea. I think that we should
+turn EXPERIMENTAL on even if I fix for that exists, for a least a couple
+of months until we see how this thing really evolves.
 
-It does seem like the code is simply buggy: it "allocates" the page
-tables from the end of memory, but it seems to want to do that before
-they have been mapped. Which makes perfect sense, since the whole
-point of allocating them is to be *able* to map all the memory.
+What do you think?
 
-So using that
+>> I can push a proposal for it, but it would be done in a separate patch
+>> anyway. Also, we may be in better conditions to fix this when the slab
+>> part is merged - since it will likely have the same problems...
+>>
+>
+> Yes. considering sockets which can be shared between tasks(cgroups)
+> you'll finally need
+>    - owner task of socket
+>    - account moving callback
+>
+> Or disallow task moving once accounted.
 
-    good_end = max_pfn_mapped << PAGE_SHIFT;
+I personally think disallowing task movement once accounted is 
+reasonable. At least for starters.
 
-would seem to be a good idea regardless. I'm not sure how the old code
-is even supposed to work. That said - why is this a problem only for
-S4 resume?
+I think I can add at least that to the next proposal. Famous last words 
+is, it should not be that hard...
 
-Yinghai?
-
-                    Linus
