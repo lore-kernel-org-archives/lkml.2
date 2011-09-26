@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753348Ab1IZL0Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 07:26:25 -0400
-Received: from mga09.intel.com ([134.134.136.24]:8582 "EHLO mga09.intel.com"
+	id S1752868Ab1IZL0Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 07:26:24 -0400
+Received: from mga09.intel.com ([134.134.136.24]:47567 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752502Ab1IZLVo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 07:21:44 -0400
+	id S1752506Ab1IZLVq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 07:21:46 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="56485861"
+   d="scan'208";a="56485892"
 From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 To: Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@suse.de>
 Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
         Peter Chen <peter.chen@freescale.com>,
         Lin Tony-B19295 <B19295@freescale.com>,
         Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: [PATCHv5 03/19] usb: otg: Separate otg members from usb_phy
-Date: Mon, 26 Sep 2011 14:21:16 +0300
-Message-Id: <1317036092-3000-4-git-send-email-heikki.krogerus@linux.intel.com>
+Subject: [PATCHv5 04/19] usb: otg: ab8500: Start using struct usb_otg
+Date: Mon, 26 Sep 2011 14:21:17 +0300
+Message-Id: <1317036092-3000-5-git-send-email-heikki.krogerus@linux.intel.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1317036092-3000-1-git-send-email-heikki.krogerus@linux.intel.com>
 References: <1317036092-3000-1-git-send-email-heikki.krogerus@linux.intel.com>
@@ -25,313 +25,255 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introducing struct otg and collecting otg specific members
-to it from struct usb_phy. There are no changes to
-struct usb_phy at this stage. This also renames
-transceiver specific functions, and offers aliases for the
-old otg ones.
+Use struct usb_otg members with OTG specific functions instead
+of usb_phy members.
 
 Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Acked-by: Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>
 ---
- drivers/usb/otg/otg.c   |   18 ++++----
- include/linux/usb/otg.h |   96 ++++++++++++++++++++++++++++++++++++++--------
- 2 files changed, 88 insertions(+), 26 deletions(-)
+ drivers/usb/otg/ab8500-usb.c |   87 +++++++++++++++++++++++-------------------
+ 1 files changed, 48 insertions(+), 39 deletions(-)
 
-diff --git a/drivers/usb/otg/otg.c b/drivers/usb/otg/otg.c
-index c6f2bed..5fcc020 100644
---- a/drivers/usb/otg/otg.c
-+++ b/drivers/usb/otg/otg.c
-@@ -17,7 +17,7 @@
- static struct usb_phy *xceiv;
- 
- /**
-- * otg_get_transceiver - find the (single) OTG transceiver
-+ * usb_get_transceiver - find the (single) OTG transceiver
-  *
-  * Returns the transceiver driver, after getting a refcount to it; or
-  * null if there is no such transceiver.  The caller is responsible for
-@@ -25,45 +25,45 @@ static struct usb_phy *xceiv;
-  *
-  * For use by USB host and peripheral drivers.
-  */
--struct usb_phy *otg_get_transceiver(void)
-+struct usb_phy *usb_get_transceiver(void)
- {
- 	if (xceiv)
- 		get_device(xceiv->dev);
- 	return xceiv;
- }
--EXPORT_SYMBOL(otg_get_transceiver);
-+EXPORT_SYMBOL(usb_get_transceiver);
- 
- /**
-- * otg_put_transceiver - release the (single) OTG transceiver
-+ * usb_put_transceiver - release the (single) OTG transceiver
-  * @x: the transceiver returned by otg_get_transceiver()
-  *
-  * Releases a refcount the caller received from otg_get_transceiver().
-  *
-  * For use by USB host and peripheral drivers.
-  */
--void otg_put_transceiver(struct usb_phy *x)
-+void usb_put_transceiver(struct usb_phy *x)
- {
- 	if (x)
- 		put_device(x->dev);
- }
--EXPORT_SYMBOL(otg_put_transceiver);
-+EXPORT_SYMBOL(usb_put_transceiver);
- 
- /**
-- * otg_set_transceiver - declare the (single) OTG transceiver
-+ * usb_set_transceiver - declare the (single) OTG transceiver
-  * @x: the USB OTG transceiver to be used; or NULL
-  *
-  * This call is exclusively for use by transceiver drivers, which
-  * coordinate the activities of drivers for host and peripheral
-  * controllers, and in some cases for VBUS current regulation.
-  */
--int otg_set_transceiver(struct usb_phy *x)
-+int usb_set_transceiver(struct usb_phy *x)
- {
- 	if (xceiv && x)
- 		return -EBUSY;
- 	xceiv = x;
- 	return 0;
- }
--EXPORT_SYMBOL(otg_set_transceiver);
-+EXPORT_SYMBOL(usb_set_transceiver);
- 
- const char *usb_phy_state_string(enum usb_phy_state state)
- {
-diff --git a/include/linux/usb/otg.h b/include/linux/usb/otg.h
-index 926e04c..34dea9b 100644
---- a/include/linux/usb/otg.h
-+++ b/include/linux/usb/otg.h
-@@ -48,11 +48,36 @@ struct usb_phy;
- /* for transceivers connected thru an ULPI interface, the user must
-  * provide access ops
-  */
--struct otg_io_access_ops {
-+struct usb_phy_io_ops {
- 	int (*read)(struct usb_phy *x, u32 reg);
- 	int (*write)(struct usb_phy *x, u32 val, u32 reg);
+diff --git a/drivers/usb/otg/ab8500-usb.c b/drivers/usb/otg/ab8500-usb.c
+index 366c3af..3d659c3 100644
+--- a/drivers/usb/otg/ab8500-usb.c
++++ b/drivers/usb/otg/ab8500-usb.c
+@@ -68,7 +68,7 @@ enum ab8500_usb_link_status {
  };
  
-+struct usb_otg {
-+	u8			default_a;
-+
-+	struct usb_phy		*xceiv;
-+	struct usb_bus		*host;
-+	struct usb_gadget	*gadget;
-+
-+	/* bind/unbind the host controller */
-+	int	(*set_host)(struct usb_otg *otg, struct usb_bus *host);
-+
-+	/* bind/unbind the peripheral controller */
-+	int	(*set_peripheral)(struct usb_otg *otg,
-+					struct usb_gadget *gadget);
-+
-+	/* effective for A-peripheral, ignored for B devices */
-+	int	(*set_vbus)(struct usb_otg *otg, bool enabled);
-+
-+	/* for B devices only:  start session with A-Host */
-+	int	(*start_srp)(struct usb_otg *otg);
-+
-+	/* start or continue HNP role switch */
-+	int	(*start_hnp)(struct usb_otg *otg);
-+
-+};
-+
- /*
-  * the otg driver needs to interact with both device side and host side
-  * usb controllers.  it decides which controller is active at a given
-@@ -68,11 +93,13 @@ struct usb_phy {
- 	enum usb_phy_state	state;
- 	enum usb_phy_events	last_event;
+ struct ab8500_usb {
+-	struct usb_phy otg;
++	struct usb_phy xceiv;
+ 	struct device *dev;
+ 	int irq_num_id_rise;
+ 	int irq_num_id_fall;
+@@ -84,7 +84,7 @@ struct ab8500_usb {
  
-+	struct usb_otg		*otg;
-+
- 	struct usb_bus		*host;
- 	struct usb_gadget	*gadget;
- 
--	struct otg_io_access_ops	*io_ops;
--	void __iomem			*io_priv;
-+	struct usb_phy_io_ops	*io_ops;
-+	void __iomem		*io_priv;
- 
- 	/* for notification of usb_phy_events */
- 	struct atomic_notifier_head	notifier;
-@@ -115,7 +142,7 @@ struct usb_phy {
- 
- 
- /* for board-specific init logic */
--extern int otg_set_transceiver(struct usb_phy *);
-+extern int usb_set_transceiver(struct usb_phy *);
- 
- #if defined(CONFIG_NOP_USB_XCEIV) || (defined(CONFIG_NOP_USB_XCEIV_MODULE) && defined(MODULE))
- /* sometimes transceivers are accessed only through e.g. ULPI */
-@@ -132,7 +159,7 @@ static inline void usb_nop_xceiv_unregister(void)
- #endif
- 
- /* helpers for direct access thru low-level io interface */
--static inline int otg_io_read(struct usb_phy *x, u32 reg)
-+static inline int usb_phy_io_read(struct usb_phy *x, u32 reg)
+ static inline struct ab8500_usb *xceiv_to_ab(struct usb_phy *x)
  {
- 	if (x->io_ops && x->io_ops->read)
- 		return x->io_ops->read(x, reg);
-@@ -140,7 +167,7 @@ static inline int otg_io_read(struct usb_phy *x, u32 reg)
- 	return -EINVAL;
+-	return container_of(x, struct ab8500_usb, otg);
++	return container_of(x, struct ab8500_usb, xceiv);
  }
  
--static inline int otg_io_write(struct usb_phy *x, u32 val, u32 reg)
-+static inline int usb_phy_io_write(struct usb_phy *x, u32 val, u32 reg)
- {
- 	if (x->io_ops && x->io_ops->write)
- 		return x->io_ops->write(x, val, reg);
-@@ -149,7 +176,7 @@ static inline int otg_io_write(struct usb_phy *x, u32 val, u32 reg)
+ static void ab8500_usb_wd_workaround(struct ab8500_usb *ab)
+@@ -169,8 +169,8 @@ static int ab8500_usb_link_status_update(struct ab8500_usb *ab)
+ 		/* TODO: Disable regulators. */
+ 		ab8500_usb_host_phy_dis(ab);
+ 		ab8500_usb_peri_phy_dis(ab);
+-		ab->otg.state = USB_PHY_STATE_B_IDLE;
+-		ab->otg.default_a = false;
++		ab->xceiv.state = USB_PHY_STATE_B_IDLE;
++		ab->xceiv.otg->default_a = false;
+ 		ab->vbus_draw = 0;
+ 		event = USB_EVENT_NONE;
+ 		break;
+@@ -181,22 +181,22 @@ static int ab8500_usb_link_status_update(struct ab8500_usb *ab)
+ 	case USB_LINK_HOST_CHG_NM:
+ 	case USB_LINK_HOST_CHG_HS:
+ 	case USB_LINK_HOST_CHG_HS_CHIRP:
+-		if (ab->otg.gadget) {
++		if (ab->xceiv.otg->gadget) {
+ 			/* TODO: Enable regulators. */
+ 			ab8500_usb_peri_phy_en(ab);
+-			v = ab->otg.gadget;
++			v = ab->xceiv.otg->gadget;
+ 		}
+ 		event = USB_EVENT_VBUS;
+ 		break;
+ 
+ 	case USB_LINK_HM_IDGND:
+-		if (ab->otg.host) {
++		if (ab->xceiv.otg->host) {
+ 			/* TODO: Enable regulators. */
+ 			ab8500_usb_host_phy_en(ab);
+-			v = ab->otg.host;
++			v = ab->xceiv.otg->host;
+ 		}
+-		ab->otg.state = USB_PHY_STATE_A_IDLE;
+-		ab->otg.default_a = true;
++		ab->xceiv.state = USB_PHY_STATE_A_IDLE;
++		ab->xceiv.otg->default_a = true;
+ 		event = USB_EVENT_ID;
+ 		break;
+ 
+@@ -212,7 +212,7 @@ static int ab8500_usb_link_status_update(struct ab8500_usb *ab)
+ 		break;
+ 	}
+ 
+-	atomic_notifier_call_chain(&ab->otg.notifier, event, v);
++	atomic_notifier_call_chain(&ab->xceiv.notifier, event, v);
+ 
+ 	return 0;
+ }
+@@ -262,27 +262,27 @@ static void ab8500_usb_phy_disable_work(struct work_struct *work)
+ 	struct ab8500_usb *ab = container_of(work, struct ab8500_usb,
+ 						phy_dis_work);
+ 
+-	if (!ab->otg.host)
++	if (!ab->xceiv.otg->host)
+ 		ab8500_usb_host_phy_dis(ab);
+ 
+-	if (!ab->otg.gadget)
++	if (!ab->xceiv.otg->gadget)
+ 		ab8500_usb_peri_phy_dis(ab);
  }
  
- static inline int
--otg_init(struct usb_phy *x)
-+usb_phy_init(struct usb_phy *x)
+-static int ab8500_usb_set_power(struct usb_phy *otg, unsigned mA)
++static int ab8500_usb_set_power(struct usb_phy *xceiv, unsigned mA)
  {
- 	if (x->init)
- 		return x->init(x);
-@@ -158,7 +185,7 @@ otg_init(struct usb_phy *x)
+ 	struct ab8500_usb *ab;
+ 
+-	if (!otg)
++	if (!xceiv)
+ 		return -ENODEV;
+ 
+-	ab = xceiv_to_ab(otg);
++	ab = xceiv_to_ab(xceiv);
+ 
+ 	ab->vbus_draw = mA;
+ 
+ 	if (mA)
+-		atomic_notifier_call_chain(&ab->otg.notifier,
+-				USB_EVENT_ENUMERATED, ab->otg.gadget);
++		atomic_notifier_call_chain(&ab->xceiv.notifier,
++				USB_EVENT_ENUMERATED, ab->xceiv.otg->gadget);
+ 	return 0;
  }
  
- static inline void
--otg_shutdown(struct usb_phy *x)
-+usb_phy_shutdown(struct usb_phy *x)
- {
- 	if (x->shutdown)
- 		x->shutdown(x);
-@@ -166,16 +193,16 @@ otg_shutdown(struct usb_phy *x)
- 
- /* for usb host and peripheral controller drivers */
- #ifdef CONFIG_USB_OTG_UTILS
--extern struct usb_phy *otg_get_transceiver(void);
--extern void otg_put_transceiver(struct usb_phy *);
-+extern struct usb_phy *usb_get_transceiver(void);
-+extern void usb_put_transceiver(struct usb_phy *);
- extern const char *usb_phy_state_string(enum usb_phy_state state);
- #else
--static inline struct usb_phy *otg_get_transceiver(void)
-+static inline struct usb_phy *usb_get_transceiver(void)
- {
- 	return NULL;
+@@ -296,15 +296,15 @@ static int ab8500_usb_set_suspend(struct usb_phy *x, int suspend)
+ 	return 0;
  }
  
--static inline void otg_put_transceiver(struct usb_phy *x)
-+static inline void usb_put_transceiver(struct usb_phy *x)
+-static int ab8500_usb_set_peripheral(struct usb_phy *otg,
+-		struct usb_gadget *gadget)
++static int ab8500_usb_set_peripheral(struct usb_otg *otg,
++					struct usb_gadget *gadget)
  {
+ 	struct ab8500_usb *ab;
+ 
+ 	if (!otg)
+ 		return -ENODEV;
+ 
+-	ab = xceiv_to_ab(otg);
++	ab = xceiv_to_ab(otg->xceiv);
+ 
+ 	/* Some drivers call this function in atomic context.
+ 	 * Do not update ab8500 registers directly till this
+@@ -313,11 +313,11 @@ static int ab8500_usb_set_peripheral(struct usb_phy *otg,
+ 
+ 	if (!gadget) {
+ 		/* TODO: Disable regulators. */
+-		ab->otg.gadget = NULL;
++		otg->gadget = NULL;
+ 		schedule_work(&ab->phy_dis_work);
+ 	} else {
+-		ab->otg.gadget = gadget;
+-		ab->otg.state = USB_PHY_STATE_B_IDLE;
++		otg->gadget = gadget;
++		otg->xceiv->state = USB_PHY_STATE_B_IDLE;
+ 
+ 		/* Phy will not be enabled if cable is already
+ 		 * plugged-in. Schedule to enable phy.
+@@ -329,15 +329,14 @@ static int ab8500_usb_set_peripheral(struct usb_phy *otg,
+ 	return 0;
  }
  
-@@ -189,6 +216,9 @@ static inline const char *usb_phy_state_string(enum usb_phy_state state)
- static inline int
- otg_start_hnp(struct usb_phy *x)
+-static int ab8500_usb_set_host(struct usb_phy *otg,
+-					struct usb_bus *host)
++static int ab8500_usb_set_host(struct usb_otg *otg, struct usb_bus *host)
  {
-+	if (x->otg && x->otg->start_hnp)
-+		return x->otg->start_hnp(x->otg);
+ 	struct ab8500_usb *ab;
+ 
+ 	if (!otg)
+ 		return -ENODEV;
+ 
+-	ab = xceiv_to_ab(otg);
++	ab = xceiv_to_ab(otg->xceiv);
+ 
+ 	/* Some drivers call this function in atomic context.
+ 	 * Do not update ab8500 registers directly till this
+@@ -346,10 +345,10 @@ static int ab8500_usb_set_host(struct usb_phy *otg,
+ 
+ 	if (!host) {
+ 		/* TODO: Disable regulators. */
+-		ab->otg.host = NULL;
++		otg->host = NULL;
+ 		schedule_work(&ab->phy_dis_work);
+ 	} else {
+-		ab->otg.host = host;
++		otg->host = host;
+ 		/* Phy will not be enabled if cable is already
+ 		 * plugged-in. Schedule to enable phy.
+ 		 * Use same delay to avoid any race condition.
+@@ -488,19 +487,27 @@ static int __devinit ab8500_usb_probe(struct platform_device *pdev)
+ 	if (!ab)
+ 		return -ENOMEM;
+ 
++	ab->xceiv.otg = kzalloc(sizeof *ab->xceiv.otg, GFP_KERNEL);
++	if (!ab->xceiv.otg) {
++		kfree(ab);
++		return -ENOMEM;
++	}
 +
- 	return x->start_hnp(x);
- }
+ 	ab->dev			= &pdev->dev;
+ 	ab->rev			= rev;
+-	ab->otg.dev		= ab->dev;
+-	ab->otg.label		= "ab8500";
+-	ab->otg.state		= USB_PHY_STATE_UNDEFINED;
+-	ab->otg.set_host	= ab8500_usb_set_host;
+-	ab->otg.set_peripheral	= ab8500_usb_set_peripheral;
+-	ab->otg.set_suspend	= ab8500_usb_set_suspend;
+-	ab->otg.set_power	= ab8500_usb_set_power;
++	ab->xceiv.dev		= ab->dev;
++	ab->xceiv.label		= "ab8500";
++	ab->xceiv.set_suspend	= ab8500_usb_set_suspend;
++	ab->xceiv.set_power	= ab8500_usb_set_power;
++	ab->xceiv.state		= USB_PHY_STATE_UNDEFINED;
++
++	ab->xceiv.otg->xceiv		= &ab->xceiv;
++	ab->xceiv.otg->set_host		= ab8500_usb_set_host;
++	ab->xceiv.otg->set_peripheral	= ab8500_usb_set_peripheral;
  
-@@ -196,6 +226,9 @@ otg_start_hnp(struct usb_phy *x)
- static inline int
- otg_set_vbus(struct usb_phy *x, bool enabled)
- {
-+	if (x->otg && x->otg->set_vbus)
-+		return x->otg->set_vbus(x->otg, enabled);
-+
- 	return x->set_vbus(x, enabled);
- }
+ 	platform_set_drvdata(pdev, ab);
  
-@@ -203,6 +236,9 @@ otg_set_vbus(struct usb_phy *x, bool enabled)
- static inline int
- otg_set_host(struct usb_phy *x, struct usb_bus *host)
- {
-+	if (x->otg && x->otg->set_host)
-+		return x->otg->set_host(x->otg, host);
-+
- 	return x->set_host(x, host);
- }
+-	ATOMIC_INIT_NOTIFIER_HEAD(&ab->otg.notifier);
++	ATOMIC_INIT_NOTIFIER_HEAD(&ab->xceiv.notifier);
  
-@@ -212,18 +248,23 @@ otg_set_host(struct usb_phy *x, struct usb_bus *host)
- static inline int
- otg_set_peripheral(struct usb_phy *x, struct usb_gadget *periph)
- {
-+	if (x->otg && x->otg->set_peripheral)
-+		return x->otg->set_peripheral(x->otg, periph);
-+
- 	return x->set_peripheral(x, periph);
- }
+ 	/* v1: Wait for link status to become stable.
+ 	 * all: Updates form set_host and set_peripheral as they are atomic.
+@@ -520,7 +527,7 @@ static int __devinit ab8500_usb_probe(struct platform_device *pdev)
+ 	if (err < 0)
+ 		goto fail0;
  
- static inline int
--otg_set_power(struct usb_phy *x, unsigned mA)
-+usb_phy_set_power(struct usb_phy *x, unsigned mA)
- {
--	return x->set_power(x, mA);
-+	if (x && x->set_power)
-+		return x->set_power(x, mA);
-+	return 0;
+-	err = otg_set_transceiver(&ab->otg);
++	err = usb_set_transceiver(&ab->xceiv);
+ 	if (err) {
+ 		dev_err(&pdev->dev, "Can't register transceiver\n");
+ 		goto fail1;
+@@ -532,6 +539,7 @@ static int __devinit ab8500_usb_probe(struct platform_device *pdev)
+ fail1:
+ 	ab8500_usb_irq_free(ab);
+ fail0:
++	kfree(ab->xceiv.otg);
+ 	kfree(ab);
+ 	return err;
  }
+@@ -546,13 +554,14 @@ static int __devexit ab8500_usb_remove(struct platform_device *pdev)
  
- /* Context: can sleep */
- static inline int
--otg_set_suspend(struct usb_phy *x, int suspend)
-+usb_phy_set_suspend(struct usb_phy *x, int suspend)
- {
- 	if (x->set_suspend != NULL)
- 		return x->set_suspend(x, suspend);
-@@ -234,18 +275,21 @@ otg_set_suspend(struct usb_phy *x, int suspend)
- static inline int
- otg_start_srp(struct usb_phy *x)
- {
-+	if (x->otg && x->otg->start_srp)
-+		return x->otg->start_srp(x->otg);
-+
- 	return x->start_srp(x);
- }
+ 	cancel_work_sync(&ab->phy_dis_work);
  
- /* notifiers */
- static inline int
--otg_register_notifier(struct usb_phy *x, struct notifier_block *nb)
-+usb_register_notifier(struct usb_phy *x, struct notifier_block *nb)
- {
- 	return atomic_notifier_chain_register(&x->notifier, nb);
- }
+-	otg_set_transceiver(NULL);
++	usb_set_transceiver(NULL);
  
- static inline void
--otg_unregister_notifier(struct usb_phy *x, struct notifier_block *nb)
-+usb_unregister_notifier(struct usb_phy *x, struct notifier_block *nb)
- {
- 	atomic_notifier_chain_unregister(&x->notifier, nb);
- }
-@@ -253,4 +297,22 @@ otg_unregister_notifier(struct usb_phy *x, struct notifier_block *nb)
- /* for OTG controller drivers (and maybe other stuff) */
- extern int usb_bus_start_enum(struct usb_bus *bus, unsigned port_num);
+ 	ab8500_usb_host_phy_dis(ab);
+ 	ab8500_usb_peri_phy_dis(ab);
  
-+/* Temporary aliases for transceiver functions */
-+#define otg_set_transceiver(x) usb_set_transceiver(x)
-+#define otg_get_transceiver() usb_get_transceiver()
-+#define otg_put_transceiver(x) usb_put_transceiver(x)
-+
-+#define otg_io_read(x, a) usb_phy_io_read(x, a)
-+#define otg_io_write(x, a, b) usb_phy_io_write(x, a, b)
-+
-+#define otg_init(x) usb_phy_init(x)
-+#define otg_shutdown(x) usb_phy_shutdown(x)
-+#define otg_set_power(x, a) usb_phy_set_power(x, a)
-+#define otg_set_suspend(x, a) usb_phy_set_suspend(x, a)
-+
-+#define otg_register_notifier(x, a) usb_register_notifier(x, a)
-+#define otg_unregister_notifier(x, a) usb_unregiser_notifier(x, a)
-+
-+#define otg_io_access_ops usb_phy_io_ops
-+
- #endif /* __LINUX_USB_OTG_H */
+ 	platform_set_drvdata(pdev, NULL);
+ 
++	kfree(ab->xceiv.otg);
+ 	kfree(ab);
+ 
+ 	return 0;
 -- 
 1.7.4.1
 
