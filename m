@@ -1,61 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751929Ab1IZNBq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 09:01:46 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:33542 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751156Ab1IZNBp (ORCPT
+	id S1751479Ab1IZNOn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 09:14:43 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:41251 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750750Ab1IZNOm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 09:01:45 -0400
-Date: Mon, 26 Sep 2011 14:00:14 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Daniel Walker <dwalker@codeaurora.org>,
-        Jonathan Corbet <corbet@lwn.net>, Mel Gorman <mel@csn.ul.ie>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>,
-        Jesse Barker <jesse.barker@linaro.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, Michal Nazarewicz <mina86@mina86.com>,
-        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Ankita Garg <ankita@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        ksummit-2011-discuss@lists.linux-foundation.org,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
-Subject: Re: [PATCH 6/8] drivers: add Contiguous Memory Allocator
-Message-ID: <20110926130014.GG22455@n2100.arm.linux.org.uk>
-References: <1309851710-3828-1-git-send-email-m.szyprowski@samsung.com> <1309851710-3828-7-git-send-email-m.szyprowski@samsung.com> <20110705113345.GA8286@n2100.arm.linux.org.uk> <201107051427.44899.arnd@arndb.de> <1312393430.2855.51.camel@mulgrave>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1312393430.2855.51.camel@mulgrave>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Mon, 26 Sep 2011 09:14:42 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, jeremy@goop.org
+Cc: xen-devel@lists.xensource.com,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        stable@kernel.org
+Subject: [PATCH] x86/paravirt: Partially revert "remove lazy mode in interrupts"
+Date: Mon, 26 Sep 2011 09:13:17 -0400
+Message-Id: <1317042797-19975-1-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.4.1
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090202.4E807A8D.00D9,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 03, 2011 at 12:43:50PM -0500, James Bottomley wrote:
-> I assume from the above that ARM has a hardware page walker?
+which has git commit b8bcfe997e46150fedcc3f5b26b846400122fdd9.
 
-Correct, and speculative prefetch (which isn't prevented by not having
-TLB entries), so you can't keep entries out of the TLB.  If it's in
-the page tables it can end up in the TLB.
+The unintended consequence of removing the flushing of MMU
+updates when doing kmap_atomic (or kunmap_atomic) is that we can
+hit a dereference bug when processing a "fork()" under a heavy loaded
+machine. Specifically we can hit:
 
-The problem is that we could end up with conflicting attributes available
-to the hardware for the same physical page, and it is _completely_
-undefined how hardware behaves with that (except that it does not halt -
-and there's no exception path for the condition because there's no
-detection of the problem case.)
+BUG: unable to handle kernel paging request at f573fc8c
+IP: [<c01abc54>] swap_count_continued+0x104/0x180
+*pdpt = 000000002a3b9027 *pde = 0000000001bed067 *pte = 0000000000000000
+Oops: 0000 [#1] SMP
+Modules linked in:
+Pid: 1638, comm: apache2 Not tainted 3.0.4-linode37 #1
+EIP: 0061:[<c01abc54>] EFLAGS: 00210246 CPU: 3
+EIP is at swap_count_continued+0x104/0x180
+.. snip..
+Call Trace:
+ [<c01ac222>] ? __swap_duplicate+0xc2/0x160
+ [<c01040f7>] ? pte_mfn_to_pfn+0x87/0xe0
+ [<c01ac2e4>] ? swap_duplicate+0x14/0x40
+ [<c01a0a6b>] ? copy_pte_range+0x45b/0x500
+ [<c01a0ca5>] ? copy_page_range+0x195/0x200
+ [<c01328c6>] ? dup_mmap+0x1c6/0x2c0
+ [<c0132cf8>] ? dup_mm+0xa8/0x130
+ [<c013376a>] ? copy_process+0x98a/0xb30
+ [<c013395f>] ? do_fork+0x4f/0x280
+ [<c01573b3>] ? getnstimeofday+0x43/0x100
+ [<c010f770>] ? sys_clone+0x30/0x40
+ [<c06c048d>] ? ptregs_clone+0x15/0x48
+ [<c06bfb71>] ? syscall_call+0x7/0xb
 
-So, if you had one mapping which was fully cacheable and another mapping
-which wasn't, you can flush the TLB all you like - it could be possible
-that you still up with an access through the non-cacheable mapping being
-cached (either hitting speculatively prefetched cache lines via the
-cacheable mapping, or the cacheable attributes being applied to the
-non-cacheable mapping - or conversely uncacheable attributes applied to
-the cacheable mapping.)
+The problem looks that in copy_page_range we turn lazy mode on, and then
+in swap_entry_free we call swap_count_continued which ends up in:
 
-Essentially, the condition is labelled 'unpredictable' in the TRMs,
-which basically means that not even observed behaviour can be relied
-upon, because there may be cases where the observed behaviour fails.
+         map = kmap_atomic(page, KM_USER0) + offset;
+
+and then later touches *map.
+
+Since we are running in batched mode (lazy) we don't actually set up the
+PTE mappings and the kmap_atomic is not done synchronously and ends up
+trying to dereference a page that has not been set.
+
+Looking at kmap_atomic_prot_pfn, it uses 'arch_flush_lazy_mmu_mode' and
+sprinkling that in kmap_atomic_prot and __kunmap_atomic makes the problem
+go away.
+
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: Ingo Molnar <mingo@redhat.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>
+CC: x86@kernel.org
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+CC: stable@kernel.org
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/mm/highmem_32.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/mm/highmem_32.c b/arch/x86/mm/highmem_32.c
+index b499626..f4f29b1 100644
+--- a/arch/x86/mm/highmem_32.c
++++ b/arch/x86/mm/highmem_32.c
+@@ -45,6 +45,7 @@ void *kmap_atomic_prot(struct page *page, pgprot_t prot)
+ 	vaddr = __fix_to_virt(FIX_KMAP_BEGIN + idx);
+ 	BUG_ON(!pte_none(*(kmap_pte-idx)));
+ 	set_pte(kmap_pte-idx, mk_pte(page, prot));
++	arch_flush_lazy_mmu_mode();
+ 
+ 	return (void *)vaddr;
+ }
+@@ -88,6 +89,7 @@ void __kunmap_atomic(void *kvaddr)
+ 		 */
+ 		kpte_clear_flush(kmap_pte-idx, vaddr);
+ 		kmap_atomic_idx_pop();
++		arch_flush_lazy_mmu_mode();
+ 	}
+ #ifdef CONFIG_DEBUG_HIGHMEM
+ 	else {
+-- 
+1.7.4.1
+
