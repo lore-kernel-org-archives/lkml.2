@@ -1,52 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752673Ab1I0JTb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 05:19:31 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55511 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752255Ab1I0JTa (ORCPT
+	id S1752742Ab1I0JaK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 05:30:10 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:51420 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752685Ab1I0JaI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 05:19:30 -0400
+	Tue, 27 Sep 2011 05:30:08 -0400
 MIME-Version: 1.0
-X-Originating-IP: [89.139.46.211]
-In-Reply-To: <CAHQjnOOGvwo6P1SJXVwzUJDFiUN-QxCxHOWoOMd1+QjubJ2u-A@mail.gmail.com>
-References: <15669786.49881316849426265.JavaMail.weblogic@epml24>
- <CAK=WgbYnGjPKs6_nmFRGfMnbh_7wDR-0QcptAGaqDKVOo-x3cg@mail.gmail.com>
- <CAHQjnOOtVHUS3KmBz7LdO88fLQyLA6f-w3ye9nAH0Bx+zh38XA@mail.gmail.com>
- <CAK=Wgbazwz9PRJSpZjopwxJ-PO88FtajmbXL=pVKDHOr1t61fQ@mail.gmail.com>
- <CAHQjnON7dksupFeAYLuYXX2PhgjX-GXEGJiy0dRTmpoBjbURVg@mail.gmail.com>
- <CAK=WgbaOwe8Q19tpZMeHdvyCj8fcV194zA-oSD20tF7j7_MvpQ@mail.gmail.com>
- <CAHQjnOM_KTiqzYnePScMHQ3bg5X1wqa4zu6=1A1z7UWeDxVZvQ@mail.gmail.com>
- <CAK=WgbYzZKTRRf6hk=L5ZvXmFAUpq66Ud3F7xh2-8j6zSvAq9g@mail.gmail.com>
- <CAHQjnOPdsf-QB3st94WRSH325j8WPOLLe4rqv0WN1qK1KYWtmA@mail.gmail.com>
- <CAK=Wgbbf2XbDrp6q5G3_7og+0wsmFmqpCsx_nDYTyRTa0-YBmg@mail.gmail.com> <CAHQjnOOGvwo6P1SJXVwzUJDFiUN-QxCxHOWoOMd1+QjubJ2u-A@mail.gmail.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Tue, 27 Sep 2011 12:19:08 +0300
-Message-ID: <CAK=WgbY_AuX2KaUAWFMkifCXst2TjUH6oC2041pQvdCfYRxEzg@mail.gmail.com>
-Subject: Re: [PATCH 3/4] iommu/exynos: Add iommu driver for Exynos4 Platforms
-To: KyongHo Cho <pullip.cho@samsung.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "joerg.roedel@amd.com" <joerg.roedel@amd.com>,
-        =?UTF-8?B?7J207IOB7ZiE?= <sanghyun75.lee@samsung.com>,
-        =?UTF-8?B?6rmA6rWt7KeE?= <kgene.kim@samsung.com>,
-        =?UTF-8?B?6rmA7JiB6529?= <younglak1004.kim@samsung.com>
+In-Reply-To: <1316175203-10736-1-git-send-email-linus.walleij@stericsson.com>
+References: <1316175203-10736-1-git-send-email-linus.walleij@stericsson.com>
+Date: Tue, 27 Sep 2011 11:30:08 +0200
+Message-ID: <CAOY=C6ESgRpdCYb8tCxmmdRGfjv+gqroDNiq63zyRjardVicjQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] drivers: create a pin control subsystem v7
+From: Stijn Devriendt <highguy@gmail.com>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Stephen Warren <swarren@nvidia.com>, Barry Song <21cnbao@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>, Joe Perches <joe@perches.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linaro Dev <linaro-dev@lists.linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        David Brown <davidb@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 27, 2011 at 12:01 PM, KyongHo Cho <pullip.cho@samsung.com> wrote:
-> It looks good for me.
->
-> I will prepare new patches with the changed API.
+> +static int pin_request(struct pinctrl_dev *pctldev,
+> +                      int pin, const char *function, bool gpio,
+> +                      struct pinctrl_gpio_range *gpio_range)
+> +{
+> +       struct pin_desc *desc;
+> +       const struct pinmux_ops *ops = pctldev->desc->pmxops;
+> +       int status = -EINVAL;
+> +
+> +       dev_dbg(&pctldev->dev, "request pin %d for %s\n", pin, function);
+> +
+> +       if (!pin_is_valid(pctldev, pin)) {
+> +               dev_err(&pctldev->dev, "pin is invalid\n");
+> +               return -EINVAL;
+> +       }
+> +
+> +       if (!function) {
+> +               dev_err(&pctldev->dev, "no function name given\n");
+> +               return -EINVAL;
+> +       }
+> +
+> +       desc = pin_desc_get(pctldev, pin);
+> +       if (desc == NULL) {
+> +               dev_err(&pctldev->dev,
+> +                       "pin is not registered so it cannot be requested\n");
+> +               goto out;
+> +       }
+> +
+> +       spin_lock(&desc->lock);
+> +       if (desc->mux_requested) {
+> +               spin_unlock(&desc->lock);
+> +               dev_err(&pctldev->dev,
+> +                       "pin already requested\n");
+> +               goto out;
+> +       }
+> +       spin_unlock(&desc->lock);
 
-Ok, thanks.
+Now this is racing with...
 
-(I've just submitted it to the iommu ML too)
+> +
+> +       /* Let each pin increase references to this module */
+> +       if (!try_module_get(pctldev->owner)) {
+> +               dev_err(&pctldev->dev,
+> +                       "could not increase module refcount for pin %d\n",
+> +                       pin);
+> +               status = -EINVAL;
+> +               goto out;
+> +       }
+> +
+> +       /*
+> +        * If there is no kind of request function for the pin we just assume
+> +        * we got it by default and proceed.
+> +        */
+> +       if (gpio && ops->gpio_request_enable)
+> +               /* This requests and enables a single GPIO pin */
+> +               status = ops->gpio_request_enable(pctldev, gpio_range, pin);
+> +       else if (ops->request)
+> +               status = ops->request(pctldev, pin);
+> +       else
+> +               status = 0;
+> +
+> +       if (status) {
+> +               dev_err(&pctldev->dev, "->request on device %s failed "
+> +                      "for pin %d\n",
+> +                      pctldev->desc->name, pin);
+> +               goto out;
+> +       }
+> +
 
-Ohad.
+... this:
+
+> +       spin_lock(&desc->lock);
+> +       desc->mux_requested = true;
+> +       strncpy(desc->mux_function, function, sizeof(desc->mux_function));
+> +       spin_unlock(&desc->lock);
+> +
+
+2 threads can pass through when mux_requested is false and they might
+both acquire
+the pin, depending on specific driver implementation.
+
+Regards,
+Stijn
