@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753306Ab1I0GMJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 02:12:09 -0400
-Received: from home.keithp.com ([63.227.221.253]:55067 "EHLO keithp.com"
+	id S1753287Ab1I0GMG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 02:12:06 -0400
+Received: from home.keithp.com ([63.227.221.253]:55053 "EHLO keithp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753154Ab1I0GMH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 02:12:07 -0400
+	id S1753154Ab1I0GME (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 02:12:04 -0400
 From: Keith Packard <keithp@keithp.com>
 To: Dave Airlie <airlied@redhat.com>
 Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
         intel-gfx@lists.freedesktop.org, Keith Packard <keithp@keithp.com>
-Subject: [PATCH 2/9] drm/i915: Use DRM_DEBUG_KMS for all messages in intel_bios.c
-Date: Mon, 26 Sep 2011 23:11:39 -0700
-Message-Id: <1317103906-4649-3-git-send-email-keithp@keithp.com>
+Subject: [PATCH 5/9] drm/i915: Allow SSC parameter to override VBT value
+Date: Mon, 26 Sep 2011 23:11:42 -0700
+Message-Id: <1317103906-4649-6-git-send-email-keithp@keithp.com>
 X-Mailer: git-send-email 1.7.6.3
 In-Reply-To: <1317103906-4649-1-git-send-email-keithp@keithp.com>
 References: <yunbou6lxb4.fsf@aiko.keithp.com>
@@ -21,48 +21,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These are all KMS related anyways, so don't hide them under other
-debug levels.
+Allow SSC to be enabled even when the BIOS disables it for testing SSC paths.
 
 Signed-off-by: Keith Packard <keithp@keithp.com>
 ---
- drivers/gpu/drm/i915/intel_bios.c |    9 +++++++--
- 1 files changed, 7 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i915/i915_drv.c      |    4 ++--
+ drivers/gpu/drm/i915/intel_display.c |    4 +++-
+ 2 files changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_bios.c b/drivers/gpu/drm/i915/intel_bios.c
-index 4c530fa..dcbc839 100644
---- a/drivers/gpu/drm/i915/intel_bios.c
-+++ b/drivers/gpu/drm/i915/intel_bios.c
-@@ -309,6 +309,11 @@ parse_general_features(struct drm_i915_private *dev_priv,
- 		dev_priv->lvds_use_ssc = general->enable_ssc;
- 		dev_priv->lvds_ssc_freq =
- 			intel_bios_ssc_frequency(dev, general->ssc_freq);
-+		DRM_DEBUG_KMS("BDB_GENERAL_FEATURES int_tv_support %d int_crt_support %d lvds_use_ssc %d lvds_ssc_freq %d\n",
-+			      dev_priv->int_tv_support,
-+			      dev_priv->int_crt_support,
-+			      dev_priv->lvds_use_ssc,
-+			      dev_priv->lvds_ssc_freq);
- 	}
+diff --git a/drivers/gpu/drm/i915/i915_drv.c b/drivers/gpu/drm/i915/i915_drv.c
+index f07e425..58480de 100644
+--- a/drivers/gpu/drm/i915/i915_drv.c
++++ b/drivers/gpu/drm/i915/i915_drv.c
+@@ -79,11 +79,11 @@ MODULE_PARM_DESC(lvds_downclock,
+ 		"Use panel (LVDS/eDP) downclocking for power savings "
+ 		"(default: false)");
+ 
+-unsigned int i915_panel_use_ssc __read_mostly = 1;
++unsigned int i915_panel_use_ssc __read_mostly = -1;
+ module_param_named(lvds_use_ssc, i915_panel_use_ssc, int, 0600);
+ MODULE_PARM_DESC(lvds_use_ssc,
+ 		"Use Spread Spectrum Clock with panels [LVDS/eDP] "
+-		"(default: true)");
++		"(default: auto from VBT)");
+ 
+ int i915_vbt_sdvo_panel_type __read_mostly = -1;
+ module_param_named(vbt_sdvo_panel_type, i915_vbt_sdvo_panel_type, int, 0600);
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index 04411ad..6039496 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -4584,7 +4584,9 @@ static void intel_update_watermarks(struct drm_device *dev)
+ 
+ static inline bool intel_panel_use_ssc(struct drm_i915_private *dev_priv)
+ {
+-	return dev_priv->lvds_use_ssc && i915_panel_use_ssc
++	if (i915_panel_use_ssc >= 0)
++		return i915_panel_use_ssc != 0;
++	return dev_priv->lvds_use_ssc
+ 		&& !(dev_priv->quirks & QUIRK_LVDS_SSC_DISABLE);
  }
  
-@@ -610,7 +615,7 @@ init_vbt_defaults(struct drm_i915_private *dev_priv)
- 	/* Default to using SSC */
- 	dev_priv->lvds_use_ssc = 1;
- 	dev_priv->lvds_ssc_freq = intel_bios_ssc_frequency(dev, 1);
--	DRM_DEBUG("Set default to SSC at %dMHz\n", dev_priv->lvds_ssc_freq);
-+	DRM_DEBUG_KMS("Set default to SSC at %dMHz\n", dev_priv->lvds_ssc_freq);
- 
- 	/* eDP data */
- 	dev_priv->edp.bpp = 18;
-@@ -639,7 +644,7 @@ intel_parse_bios(struct drm_device *dev)
- 	if (dev_priv->opregion.vbt) {
- 		struct vbt_header *vbt = dev_priv->opregion.vbt;
- 		if (memcmp(vbt->signature, "$VBT", 4) == 0) {
--			DRM_DEBUG_DRIVER("Using VBT from OpRegion: %20s\n",
-+			DRM_DEBUG_KMS("Using VBT from OpRegion: %20s\n",
- 					 vbt->signature);
- 			bdb = (struct bdb_header *)((char *)vbt + vbt->bdb_offset);
- 		} else
 -- 
 1.7.6.3
 
