@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753413Ab1I0KZT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 06:25:19 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33296 "EHLO
+	id S1753431Ab1I0K0Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 06:26:25 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33293 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751984Ab1I0KZR (ORCPT
+	by vger.kernel.org with ESMTP id S1753111Ab1I0KZQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 06:25:17 -0400
+	Tue, 27 Sep 2011 06:25:16 -0400
 From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Cc: linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
         Liam Girdwood <lrg@ti.com>
-Subject: [PATCH 2/5] regmap: Implement regcache_cache_bypass helper function
-Date: Tue, 27 Sep 2011 11:25:05 +0100
-Message-Id: <1317119108-15338-3-git-send-email-dp@opensource.wolfsonmicro.com>
+Subject: [PATCH 1/5] regmap: Fix signed/unsigned comparison
+Date: Tue, 27 Sep 2011 11:25:04 +0100
+Message-Id: <1317119108-15338-2-git-send-email-dp@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.6.4
 In-Reply-To: <1317119108-15338-1-git-send-email-dp@opensource.wolfsonmicro.com>
 References: <1317119108-15338-1-git-send-email-dp@opensource.wolfsonmicro.com>
@@ -21,54 +21,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ensure we've got a function so users can enable/disable the
-cache bypass option.
-
 Signed-off-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
 ---
- drivers/base/regmap/regcache.c |   17 +++++++++++++++++
- include/linux/regmap.h         |    1 +
- 2 files changed, 18 insertions(+), 0 deletions(-)
+ drivers/base/regmap/regcache-indexed.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/base/regmap/regcache.c b/drivers/base/regmap/regcache.c
-index e2b172b..f2d1a5e 100644
---- a/drivers/base/regmap/regcache.c
-+++ b/drivers/base/regmap/regcache.c
-@@ -258,6 +258,23 @@ void regcache_cache_only(struct regmap *map, bool enable)
- }
- EXPORT_SYMBOL_GPL(regcache_cache_only);
+diff --git a/drivers/base/regmap/regcache-indexed.c b/drivers/base/regmap/regcache-indexed.c
+index ff8b44c..268497a 100644
+--- a/drivers/base/regmap/regcache-indexed.c
++++ b/drivers/base/regmap/regcache-indexed.c
+@@ -41,7 +41,7 @@ static int regcache_indexed_write(struct regmap *map, unsigned int reg,
  
-+/**
-+ * regcache_cache_bypass: Put a register map into cache bypass mode
-+ *
-+ * @map: map to configure
-+ * @cache_only: flag if changes should not be written to the hardware
-+ *
-+ * When a register map is marked with the cache bypass option, writes
-+ * to the register map API will only update the hardware and not the
-+ * the cache directly.  This is useful when syncing the cache back to
-+ * the hardware.
-+ */
-+void regcache_cache_bypass(struct regmap *map, bool enable)
-+{
-+	map->cache_bypass = enable;
-+}
-+EXPORT_SYMBOL_GPL(regcache_cache_bypass);
-+
- bool regcache_set_val(void *base, unsigned int idx,
- 		      unsigned int val, unsigned int word_size)
+ static int regcache_indexed_sync(struct regmap *map)
  {
-diff --git a/include/linux/regmap.h b/include/linux/regmap.h
-index 76ac255..3daac2d 100644
---- a/include/linux/regmap.h
-+++ b/include/linux/regmap.h
-@@ -142,5 +142,6 @@ int regmap_update_bits(struct regmap *map, unsigned int reg,
+-	int i;
++	unsigned int i;
+ 	int ret;
  
- int regcache_sync(struct regmap *map);
- void regcache_cache_only(struct regmap *map, bool enable);
-+void regcache_cache_bypass(struct regmap *map, bool enable);
- 
- #endif
+ 	for (i = 0; i < map->num_reg_defaults; i++) {
 -- 
 1.7.6.4
 
