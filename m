@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753472Ab1I0N5t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 09:57:49 -0400
-Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:55038
+	id S1753446Ab1I0N64 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 09:58:56 -0400
+Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:57239
 	"EHLO AM1EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753063Ab1I0N5r (ORCPT
+	by vger.kernel.org with ESMTP id S1752680Ab1I0N6x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 09:57:47 -0400
+	Tue, 27 Sep 2011 09:58:53 -0400
 X-SpamScore: 1
 X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h839h61h)
 X-Spam-TCS-SCL: 0:0
 X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
 X-FB-SS: 0,
-X-WSS-ID: 0LS6PFM-02-EBP-02
+X-WSS-ID: 0LS6PFI-02-EBJ-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: Jesse Barnes <jbarnes@virtuousgeek.org>
 CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Bjorn Helgaas <bhelgaas@google.com>,
         Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 3/4] PCI: Add implementation for PRI capability
-Date: Tue, 27 Sep 2011 15:57:15 +0200
-Message-ID: <1317131836-11822-4-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 4/4] PCI: Add support for PASID capability
+Date: Tue, 27 Sep 2011 15:57:16 +0200
+Message-ID: <1317131836-11822-5-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1317131836-11822-1-git-send-email-joerg.roedel@amd.com>
 References: <1317131836-11822-1-git-send-email-joerg.roedel@amd.com>
@@ -32,33 +32,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement the necessary functions to handle PRI capabilities
-on PCIe devices. With PRI devices behind an IOMMU can signal
-page fault conditions to software and recover from such
-faults.
+Devices supporting Process Address Space Identifiers
+(PASIDs) can use an IOMMU to access multiple IO address
+spaces at the same time. A PCIe device indicates support for
+this feature by implementing the PASID capability. This
+patch adds support for the capability to the Linux kernel.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- drivers/pci/Kconfig      |    9 +++
- drivers/pci/ats.c        |  167 ++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/pci-ats.h  |   42 ++++++++++++
- include/linux/pci_regs.h |   12 +++
- 4 files changed, 230 insertions(+), 0 deletions(-)
+ drivers/pci/Kconfig      |   13 +++++
+ drivers/pci/ats.c        |  113 ++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/pci-ats.h  |   31 +++++++++++++
+ include/linux/pci_regs.h |    8 +++
+ 4 files changed, 165 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/pci/Kconfig b/drivers/pci/Kconfig
-index 1d8ce83..fb1e9707 100644
+index fb1e9707..cec6606 100644
 --- a/drivers/pci/Kconfig
 +++ b/drivers/pci/Kconfig
-@@ -85,6 +85,15 @@ config PCI_IOV
+@@ -94,6 +94,19 @@ config PCI_PRI
  
  	  If unsure, say N.
  
-+config PCI_PRI
-+	bool "PCI PRI support"
++config PCI_PASID
++	bool "PCI PASID support"
++	depends on PCI
 +	select PCI_ATS
 +	help
-+	  PRI is the PCI Page Request Interface. It allows PCI devices that are
-+	  behind an IOMMU to recover from page faults.
++	  Process Address Space Identifiers (PASIDs) can be used by PCI devices
++	  to access more than one IO address space at the same time. To make
++	  use of this feature an IOMMU is required which also supports PASIDs.
++	  Select this option if you have such an IOMMU and want to compile the
++	  driver for it into your kernel.
 +
 +	  If unsure, say N.
 +
@@ -66,267 +71,188 @@ index 1d8ce83..fb1e9707 100644
  	bool
  	depends on PCI
 diff --git a/drivers/pci/ats.c b/drivers/pci/ats.c
-index 5ceff3e..bf892a0 100644
+index bf892a0..f727a09 100644
 --- a/drivers/pci/ats.c
 +++ b/drivers/pci/ats.c
-@@ -2,9 +2,11 @@
-  * drivers/pci/ats.c
-  *
-  * Copyright (C) 2009 Intel Corporation, Yu Zhao <yu.zhao@intel.com>
-+ * Copyright (C) 2011 Advanced Micro Devices,
-  *
+@@ -7,6 +7,7 @@
   * PCI Express I/O Virtualization (IOV) support.
   *   Address Translation Service 1.0
-+ *   Page Request Interface added by Joerg Roedel <joerg.roedel@amd.com>
+  *   Page Request Interface added by Joerg Roedel <joerg.roedel@amd.com>
++ *   PASID support added by Joerg Roedel <joerg.roedel@amd.com>
   */
  
  #include <linux/pci-ats.h>
-@@ -156,3 +158,168 @@ int pci_ats_queue_depth(struct pci_dev *dev)
- 				       PCI_ATS_MAX_QDEP;
+@@ -323,3 +324,115 @@ int pci_pri_status(struct pci_dev *pdev)
  }
- EXPORT_SYMBOL_GPL(pci_ats_queue_depth);
+ EXPORT_SYMBOL_GPL(pci_pri_status);
+ #endif /* CONFIG_PCI_PRI */
 +
-+#ifdef CONFIG_PCI_PRI
++#ifdef CONFIG_PCI_PASID
 +/**
-+ * pci_enable_pri - Enable PRI capability
-+ * @ pdev: PCI device structure
++ * pci_enable_pasid - Enable the PASID capability
++ * @pdev: PCI device structure
++ * @features: Features to enable
 + *
-+ * Returns 0 on success, negative value on error
++ * Returns 0 on success, negative value on error. This function checks
++ * whether the features are actually supported by the device and returns
++ * an error if not.
 + */
-+int pci_enable_pri(struct pci_dev *pdev, u32 reqs)
++int pci_enable_pasid(struct pci_dev *pdev, int features)
 +{
-+	u16 control, status;
-+	u32 max_requests;
++	u16 control, supported;
 +	int pos;
 +
-+	pos = pci_find_ext_capability(pdev, PCI_PRI_CAP);
++	pos = pci_find_ext_capability(pdev, PCI_PASID_CAP);
 +	if (!pos)
 +		return -EINVAL;
 +
-+	pci_read_config_word(pdev, pos + PCI_PRI_CONTROL_OFF, &control);
-+	pci_read_config_word(pdev, pos + PCI_PRI_STATUS_OFF,  &status);
-+	if ((control & PCI_PRI_ENABLE) || !(status & PCI_PRI_STATUS_STOPPED))
-+		return -EBUSY;
++	pci_read_config_word(pdev, pos + PCI_PASID_CONTROL_OFF, &control);
++	pci_read_config_word(pdev, pos + PCI_PASID_CAP_OFF,     &supported);
 +
-+	pci_read_config_dword(pdev, pos + PCI_PRI_MAX_REQ_OFF, &max_requests);
-+	reqs = min(max_requests, reqs);
-+	pci_write_config_dword(pdev, pos + PCI_PRI_ALLOC_REQ_OFF, reqs);
++	if (!(supported & PCI_PASID_ENABLE))
++		return -EINVAL;
 +
-+	control |= PCI_PRI_ENABLE;
-+	pci_write_config_word(pdev, pos + PCI_PRI_CONTROL_OFF, control);
++	supported &= PCI_PASID_EXEC | PCI_PASID_PRIV;
++
++	/* User wants to enable anything unsupported? */
++	if ((supported & features) != features)
++		return -EINVAL;
++
++	control = PCI_PASID_ENABLE | features;
++
++	pci_write_config_word(pdev, pos + PCI_PASID_CONTROL_OFF, control);
 +
 +	return 0;
 +}
-+EXPORT_SYMBOL_GPL(pci_enable_pri);
++EXPORT_SYMBOL_GPL(pci_enable_pasid);
 +
 +/**
-+ * pci_disable_pri - Disable PRI capability
++ * pci_disable_pasid - Disable the PASID capability
 + * @pdev: PCI device structure
 + *
-+ * Only clears the enabled-bit, regardless of its former value
 + */
-+void pci_disable_pri(struct pci_dev *pdev)
++void pci_disable_pasid(struct pci_dev *pdev)
 +{
-+	u16 control;
++	u16 control = 0;
 +	int pos;
 +
-+	pos = pci_find_ext_capability(pdev, PCI_PRI_CAP);
++	pos = pci_find_ext_capability(pdev, PCI_PASID_CAP);
 +	if (!pos)
 +		return;
 +
-+	pci_read_config_word(pdev, pos + PCI_PRI_CONTROL_OFF, &control);
-+	control &= ~PCI_PRI_ENABLE;
-+	pci_write_config_word(pdev, pos + PCI_PRI_CONTROL_OFF, control);
++	pci_write_config_word(pdev, pos + PCI_PASID_CONTROL_OFF, control);
 +}
-+EXPORT_SYMBOL_GPL(pci_disable_pri);
++EXPORT_SYMBOL_GPL(pci_disable_pasid);
 +
 +/**
-+ * pci_pri_enabled - Checks if PRI capability is enabled
++ * pci_pasid_features - Check which PASID features are supported
 + * @pdev: PCI device structure
 + *
-+ * Returns true if PRI is enabled on the device, false otherwise
++ * Returns a negative value when no PASI capability is present.
++ * Otherwise is returns a bitmask with supported features. Current
++ * features reported are:
++ * PCI_PASID_ENABLE - PASID capability can be enabled
++ * PCI_PASID_EXEC - Execute permission supported
++ * PCI_PASID_PRIV - Priviledged mode supported
 + */
-+bool pci_pri_enabled(struct pci_dev *pdev)
++int pci_pasid_features(struct pci_dev *pdev)
 +{
-+	u16 control;
++	u16 supported;
 +	int pos;
 +
-+	pos = pci_find_ext_capability(pdev, PCI_PRI_CAP);
-+	if (!pos)
-+		return false;
-+
-+	pci_read_config_word(pdev, pos + PCI_PRI_CONTROL_OFF, &control);
-+
-+	return (control & PCI_PRI_ENABLE) ? true : false;
-+}
-+EXPORT_SYMBOL_GPL(pci_pri_enabled);
-+
-+/**
-+ * pci_reset_pri - Resets device's PRI state
-+ * @pdev: PCI device structure
-+ *
-+ * The PRI capability must be disabled before this function is called.
-+ * Returns 0 on success, negative value on error.
-+ */
-+int pci_reset_pri(struct pci_dev *pdev)
-+{
-+	u16 control;
-+	int pos;
-+
-+	pos = pci_find_ext_capability(pdev, PCI_PRI_CAP);
++	pos = pci_find_ext_capability(pdev, PCI_PASID_CAP);
 +	if (!pos)
 +		return -EINVAL;
 +
-+	pci_read_config_word(pdev, pos + PCI_PRI_CONTROL_OFF, &control);
-+	if (control & PCI_PRI_ENABLE)
-+		return -EBUSY;
++	pci_read_config_word(pdev, pos + PCI_PASID_CAP_OFF, &supported);
 +
-+	control |= PCI_PRI_RESET;
++	supported &= PCI_PASID_ENABLE | PCI_PASID_EXEC | PCI_PASID_PRIV;
 +
-+	pci_write_config_word(pdev, pos + PCI_PRI_CONTROL_OFF, control);
-+
-+	return 0;
++	return supported;
 +}
-+EXPORT_SYMBOL_GPL(pci_reset_pri);
++EXPORT_SYMBOL_GPL(pci_pasid_features);
 +
++#define PASID_NUMBER_SHIFT	8
++#define PASID_NUMBER_MASK	(0x1f << PASID_NUMBER_SHIFT)
 +/**
-+ * pci_pri_stopped - Checks whether the PRI capability is stopped
++ * pci_max_pasid - Get maximum number of PASIDs supported by device
 + * @pdev: PCI device structure
 + *
-+ * Returns true if the PRI capability on the device is disabled and the
-+ * device has no outstanding PRI requests, false otherwise. The device
-+ * indicates this via the STOPPED bit in the status register of the
-+ * capability.
-+ * The device internal state can be cleared by resetting the PRI state
-+ * with pci_reset_pri(). This can force the capability into the STOPPED
-+ * state.
++ * Returns negative value when PASID capability is not present.
++ * Otherwise it returns the numer of supported PASIDs.
 + */
-+bool pci_pri_stopped(struct pci_dev *pdev)
++int pci_max_pasids(struct pci_dev *pdev)
 +{
-+	u16 control, status;
++	u16 supported;
 +	int pos;
 +
-+	pos = pci_find_ext_capability(pdev, PCI_PRI_CAP);
-+	if (!pos)
-+		return true;
-+
-+	pci_read_config_word(pdev, pos + PCI_PRI_CONTROL_OFF, &control);
-+	pci_read_config_word(pdev, pos + PCI_PRI_STATUS_OFF,  &status);
-+
-+	if (control & PCI_PRI_ENABLE)
-+		return false;
-+
-+	return (status & PCI_PRI_STATUS_STOPPED) ? true : false;
-+}
-+EXPORT_SYMBOL_GPL(pci_pri_stopped);
-+
-+/**
-+ * pci_pri_status - Request PRI status of a device
-+ * @pdev: PCI device structure
-+ *
-+ * Returns negative value on failure, status on success. The status can
-+ * be checked against status-bits. Supported bits are currently:
-+ * PCI_PRI_STATUS_RF:      Response failure
-+ * PCI_PRI_STATUS_UPRGI:   Unexpected Page Request Group Index
-+ * PCI_PRI_STATUS_STOPPED: PRI has stopped
-+ */
-+int pci_pri_status(struct pci_dev *pdev)
-+{
-+	u16 status, control;
-+	int pos;
-+
-+	pos = pci_find_ext_capability(pdev, PCI_PRI_CAP);
++	pos = pci_find_ext_capability(pdev, PCI_PASID_CAP);
 +	if (!pos)
 +		return -EINVAL;
 +
-+	pci_read_config_word(pdev, pos + PCI_PRI_CONTROL_OFF, &control);
-+	pci_read_config_word(pdev, pos + PCI_PRI_STATUS_OFF,  &status);
++	pci_read_config_word(pdev, pos + PCI_PASID_CAP_OFF, &supported);
 +
-+	/* Stopped bit is undefined when enable == 1, so clear it */
-+	if (control & PCI_PRI_ENABLE)
-+		status &= ~PCI_PRI_STATUS_STOPPED;
++	supported = (supported & PASID_NUMBER_MASK) >> PASID_NUMBER_SHIFT;
 +
-+	return status;
++	return (1 << supported);
 +}
-+EXPORT_SYMBOL_GPL(pci_pri_status);
-+#endif /* CONFIG_PCI_PRI */
++EXPORT_SYMBOL_GPL(pci_max_pasids);
++#endif /* CONFIG_PCI_PASID */
 diff --git a/include/linux/pci-ats.h b/include/linux/pci-ats.h
-index 4eab42b..0713952 100644
+index 0713952..e3d0b38 100644
 --- a/include/linux/pci-ats.h
 +++ b/include/linux/pci-ats.h
-@@ -17,6 +17,7 @@ struct pci_ats {
- extern int pci_enable_ats(struct pci_dev *dev, int ps);
- extern void pci_disable_ats(struct pci_dev *dev);
- extern int pci_ats_queue_depth(struct pci_dev *dev);
-+
- /**
-  * pci_ats_enabled - query the ATS status
-  * @dev: the PCI device
-@@ -51,4 +52,45 @@ static inline int pci_ats_enabled(struct pci_dev *dev)
+@@ -93,4 +93,35 @@ static inline int pci_pri_status(struct pci_dev *pdev)
+ }
+ #endif /* CONFIG_PCI_PRI */
  
- #endif /* CONFIG_PCI_IOV */
- 
-+#ifdef CONFIG_PCI_PRI
++#ifdef CONFIG_PCI_PASID
 +
-+extern int  pci_enable_pri(struct pci_dev *pdev, u32 reqs);
-+extern void pci_disable_pri(struct pci_dev *pdev);
-+extern bool pci_pri_enabled(struct pci_dev *pdev);
-+extern int  pci_reset_pri(struct pci_dev *pdev);
-+extern bool pci_pri_stopped(struct pci_dev *pdev);
-+extern int  pci_pri_status(struct pci_dev *pdev);
++extern int pci_enable_pasid(struct pci_dev *pdev, int features);
++extern void pci_disable_pasid(struct pci_dev *pdev);
++extern int pci_pasid_features(struct pci_dev *pdev);
++extern int pci_max_pasids(struct pci_dev *pdev);
 +
-+#else /* CONFIG_PCI_PRI */
++#else  /* CONFIG_PCI_PASID */
 +
-+static inline int pci_enable_pri(struct pci_dev *pdev, u32 reqs)
++static inline int pci_enable_pasid(struct pci_dev *pdev, int features)
 +{
-+	return -ENODEV;
++	return -EINVAL;
 +}
 +
-+static inline void pci_disable_pri(struct pci_dev *pdev)
++static inline void pci_disable_pasid(struct pci_dev *pdev)
 +{
 +}
 +
-+static inline bool pci_pri_enabled(struct pci_dev *pdev)
++static inline int pci_pasid_features(struct pci_dev *pdev)
 +{
-+	return false;
++	return -EINVAL;
 +}
 +
-+static inline int pci_reset_pri(struct pci_dev *pdev)
++static inline int pci_max_pasids(struct pci_dev *pdev)
 +{
-+	return -ENODEV;
++	return -EINVAL;
 +}
 +
-+static inline bool pci_pri_stopped(struct pci_dev *pdev)
-+{
-+	return true;
-+}
++#endif /* CONFIG_PCI_PASID */
 +
-+static inline int pci_pri_status(struct pci_dev *pdev)
-+{
-+	return -ENODEV;
-+}
-+#endif /* CONFIG_PCI_PRI */
 +
  #endif /* LINUX_PCI_ATS_H*/
 diff --git a/include/linux/pci_regs.h b/include/linux/pci_regs.h
-index e884096..7fc32af 100644
+index 7fc32af..b5d9657 100644
 --- a/include/linux/pci_regs.h
 +++ b/include/linux/pci_regs.h
-@@ -663,6 +663,18 @@
- #define  PCI_ATS_CTRL_STU(x)	((x) & 0x1f)	/* Smallest Translation Unit */
- #define  PCI_ATS_MIN_STU	12	/* shift of minimum STU block */
+@@ -675,6 +675,14 @@
+ #define PCI_PRI_MAX_REQ_OFF	0x08	/* Cap offset for max reqs supported */
+ #define PCI_PRI_ALLOC_REQ_OFF	0x0c	/* Cap offset for max reqs allowed */
  
-+/* Page Request Interface */
-+#define PCI_PRI_CAP		0x13    /* PRI capability ID */
-+#define PCI_PRI_CONTROL_OFF	0x04	/* Offset of control register */
-+#define PCI_PRI_STATUS_OFF	0x06	/* Offset of status register */
-+#define PCI_PRI_ENABLE		0x0001	/* Enable mask */
-+#define PCI_PRI_RESET		0x0002	/* Reset bit mask */
-+#define PCI_PRI_STATUS_RF	0x0001  /* Request Failure */
-+#define PCI_PRI_STATUS_UPRGI	0x0002  /* Unexpected PRG index */
-+#define PCI_PRI_STATUS_STOPPED	0x0100  /* PRI Stopped */
-+#define PCI_PRI_MAX_REQ_OFF	0x08	/* Cap offset for max reqs supported */
-+#define PCI_PRI_ALLOC_REQ_OFF	0x0c	/* Cap offset for max reqs allowed */
++/* PASID capability */
++#define PCI_PASID_CAP		0x1b    /* PASID capability ID */
++#define PCI_PASID_CAP_OFF	0x04    /* PASID feature register */
++#define PCI_PASID_CONTROL_OFF   0x06    /* PASID control register */
++#define PCI_PASID_ENABLE	0x01	/* Enable/Supported bit */
++#define PCI_PASID_EXEC		0x02	/* Exec permissions Enable/Supported */
++#define PCI_PASID_PRIV		0x04	/* Priviledge Mode Enable/Support */
 +
  /* Single Root I/O Virtualization */
  #define PCI_SRIOV_CAP		0x04	/* SR-IOV Capabilities */
