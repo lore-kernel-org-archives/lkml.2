@@ -1,97 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753710Ab1I0NGf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 09:06:35 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:40152 "EHLO e1.ny.us.ibm.com"
+	id S1754136Ab1I0NGz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 09:06:55 -0400
+Received: from mms1.broadcom.com ([216.31.210.17]:2766 "EHLO mms1.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751856Ab1I0NGe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 09:06:34 -0400
-Date: Tue, 27 Sep 2011 18:15:00 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jonathan Corbet <corbet@lwn.net>, Hugh Dickins <hughd@google.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 3.1.0-rc4-tip 18/26]   uprobes: slot allocation.
-Message-ID: <20110927124500.GA3685@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com>
- <20110920120335.25326.50673.sendpatchset@srdronam.in.ibm.com>
- <1317125932.15383.49.camel@twins>
+	id S1751856Ab1I0NGy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 09:06:54 -0400
+X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
+From: "Jeffrey (Sheng-Hui) Chu" <jeffchu@broadcom.com>
+To: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
+cc: "Jean Delvare" <khali@linux-fr.org>, "Ben Dooks" <ben-linux@fluff.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Qi Wang" <qi.wang@intel.com>,
+        "yong.y.wang@intel.com" <yong.y.wang@intel.com>,
+        "joel.clark@intel.com" <joel.clark@intel.com>,
+        "kok.howg.ewe@intel.com" <kok.howg.ewe@intel.com>,
+        "toshiharu-linux@dsn.okisemi.com" <toshiharu-linux@dsn.okisemi.com>,
+        "Aaron Smith" <aarons@broadcom.com>
+Date: Tue, 27 Sep 2011 06:06:46 -0700
+Subject: RE: [PATCH 3/7] i2c-eg20t: delete 10bit access processing
+Thread-Topic: [PATCH 3/7] i2c-eg20t: delete 10bit access processing
+Thread-Index: Acx8qSohfAQ7k4GPQzymCkCemd7jVgAbR+aA
+Message-ID: <B6A520E9CD57404AAFC0831E4FB39541A98073B6D2@IRVEXCHCCR02.corp.ad.broadcom.com>
+References: <1316591509-4433-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+ <1316591509-4433-3-git-send-email-tomoya-linux@dsn.okisemi.com>
+ <B6A520E9CD57404AAFC0831E4FB39541A98073AC7E@IRVEXCHCCR02.corp.ad.broadcom.com>
+ <4E7A7DBA.3020406@dsn.okisemi.com>
+ <B6A520E9CD57404AAFC0831E4FB39541A98073AF26@IRVEXCHCCR02.corp.ad.broadcom.com>
+ <4E811338.2030005@dsn.okisemi.com>
+In-Reply-To: <4E811338.2030005@dsn.okisemi.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1317125932.15383.49.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 11092713-6078-0000-0000-0000013C26B1
+X-WSS-ID: 629F14743D01898057-01-01
+Content-Type: text/plain;
+ charset=utf-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id p8RD7A5S024465
 
-* Peter Zijlstra <peterz@infradead.org> [2011-09-27 14:18:52]:
+http://www.engadget.com/2011/09/26/broadcom-unveils-smaller-more-power-efficient-40nm-nfc-chips/ 
 
-> On Tue, 2011-09-20 at 17:33 +0530, Srikar Dronamraju wrote:
-> > +static struct uprobes_xol_area *xol_alloc_area(void)
-> > +{
-> > +       struct uprobes_xol_area *area = NULL;
-> > +
-> > +       area = kzalloc(sizeof(*area), GFP_KERNEL);
-> > +       if (unlikely(!area))
-> > +               return NULL;
-> > +
-> > +       area->bitmap = kzalloc(BITS_TO_LONGS(UINSNS_PER_PAGE) * sizeof(long),
-> > +                                                               GFP_KERNEL);
-> > +
-> > +       if (!area->bitmap)
-> > +               goto fail;
-> > +
-> > +       init_waitqueue_head(&area->wq);
-> > +       spin_lock_init(&area->slot_lock);
-> > +       if (!xol_add_vma(area) && !current->mm->uprobes_xol_area) {
-> 
-> So what happens if xol_add_vma() succeeds, but we find
-> ->uprobes_xol_area set?
-> 
-> > +               task_lock(current);
-> > +               if (!current->mm->uprobes_xol_area) {
-> 
-> Having to re-test it under this lock seems to suggest it could.
-> 
-> > +                       current->mm->uprobes_xol_area = area;
-> > +                       task_unlock(current);
-> > +                       return area;
-> 
-> This function would be so much easier to read if the success case (this
-> here I presume) would not be nested 2 deep.
-> 
-> > +               }
-> > +               task_unlock(current);
-> > +       }
-> 
-> at which point you could end up with two extra vmas? Because there's no
-> freeing of the result of xol_add_vma().
-> 
+-----Original Message-----
+From: Tomoya MORINAGA [mailto:tomoya-linux@dsn.okisemi.com] 
+Sent: Monday, September 26, 2011 8:05 PM
+To: Jeffrey (Sheng-Hui) Chu
+Cc: Jean Delvare; Ben Dooks; linux-i2c@vger.kernel.org; linux-kernel@vger.kernel.org; Qi Wang; yong.y.wang@intel.com; joel.clark@intel.com; kok.howg.ewe@intel.com; toshiharu-linux@dsn.okisemi.com; Aaron Smith
+Subject: Re: [PATCH 3/7] i2c-eg20t: delete 10bit access processing
 
-Agree, we need to unmap the vma in that case.
+(2011/09/23 2:49), Jeffrey (Sheng-Hui) Chu wrote:
+> The device is BCM20791.  Please contact Aaron Smith (aarons@broadcom.com) for evaluation.
+Though googling the device, I can't find the device.
+Broadcom website too.
 
-> > +fail:
-> > +       kfree(area->bitmap);
-> > +       kfree(area);
-> > +       return current->mm->uprobes_xol_area;
-> > +} 
+>
+> By the way, the existing handling of 10-bit address in the patch you intended to delete does not work.  You'll need to fix that before you can test with the device successfully.
+>
+> For the write operation, it's a easy fix:
+>
+> @@ -410,25 +408,16 @@ static s32 pch_i2c_writebytes(struct i2c_adapter *i2c_adap,
+>   	}
+>
+>   	if (msgs->flags&  I2C_M_TEN) {
+> -		addr_2_msb = ((addr&  I2C_MSB_2B_MSK)>>  7);
+> +		addr_2_msb = ((addr&  I2C_MSB_2B_MSK)>>  7)&  0x06;
+>
+>
+> For the read operation, static s32 pch_i2c_readbytes(), you'll need to do a write followed by a restart and a read...  please refer to the i2c spec...
+>
+> Regards,
 
--- 
-Thanks and Regards
-Srikar
+Thank you for your indication.
+We will update this after supporting 10bit access.
 
+Thanks,
+tomoya
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
