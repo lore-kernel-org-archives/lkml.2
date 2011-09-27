@@ -1,108 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752460Ab1I0DAj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 23:00:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47039 "EHLO mx1.redhat.com"
+	id S1752589Ab1I0DVC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 23:21:02 -0400
+Received: from cltv.tinp.net.tw ([58.99.32.3]:56749 "EHLO cltv.tinp.net.tw"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751779Ab1I0DAi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 23:00:38 -0400
-Message-ID: <4E813C29.1030604@redhat.com>
-Date: Mon, 26 Sep 2011 19:59:53 -0700
-From: Josh Stone <jistone@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1752086Ab1I0DVA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 23:21:00 -0400
+Message-ID: <20110927112014.kz4w47yyyos040c8@cltv.tinp.net.tw>
+Date: Tue, 27 Sep 2011 11:20:14 +0800
+From: United Nation Donation <info@unf.org>
+Reply-to: torobindesk@blumail.org
+To: undisclosed-recipients:;
+Subject: CONGRATULATION!!!
 MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        SystemTap <systemtap@sourceware.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 3.1.0-rc4-tip 8/26]   x86: analyze instruction and
- determine fixups.
-References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com> <20110920120127.25326.71509.sendpatchset@srdronam.in.ibm.com> <20110920171310.GC27959@stefanha-thinkpad.localdomain> <20110920181225.GA5149@infradead.org> <20110920205317.GA1508@stefanha-think <20110923165132.GA23870@stefanha-thinkpad.localdomain> <4E80D9B2.3010404@redhat.com> <4E812797.1090207@hitachi.com>
-In-Reply-To: <4E812797.1090207@hitachi.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	charset=BIG5;
+	DelSp="Yes";
+	format="flowed"
+Content-Disposition: inline
 Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.4)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2011 06:32 PM, Masami Hiramatsu wrote:
->> On 09/23/2011 09:51 AM, Stefan Hajnoczi wrote:
->>>> I'm not sure that we should stick on the current implementation
->>>> of the sdt.h. I think we'd better modify the sdt.h to replace
->>>> such semaphores with checking whether the tracepoint is changed from nop.
->>>
->>> I like this option.  The only implication is that all userspace tracing
->>> needs to go through uprobes if we want to support multiple consumers
->>> tracing the same address.
->>
->> This limitation is practically true already, since sharing consumers
->> have to negotiate the breakpoint anyway.
->>
->> If we can find a better way to handle semaphores, we at systemtap will
->> welcome sdt.h improvements.  On the face of it, checking one's own NOP
->> for modification sounds pretty elegant, but I'm not convinced that it's
->> possible in practice.
->>
->> For one, it requires arch specific knowledge in sdt.h of what the NOP or
->> breakpoint looks like, whereas sdt.h currently only knows whether to use
->> NOP or NOP 0, without knowledge of how that's encoded.  And this gets
->> trickier with archs like IA64 where you're part of a bundle.  So this
->> much is hard, but not impossible.
-> 
-> Even though, we can start with x86, which is currently one and only one
-> platform supporting uprobes :)
-
-This inode-based uprobes only supports x86 so far.  The utrace-based
-uprobes also supports s390 and ppc, which you can bet Srikar will be
-tasked with here before long...
-
-But uprobes is not the only sdt.h consumer anyway.  GDB also supports
-sdt.h in its targets, covering x86, ppc, s390, and arm so far IIRC.
-
-> Maybe we can prepare asm/sdt.h for describing arch-dep code.
-
-In sys/sdt.h itself, these would probably be short enough snippets that
-we can just add each arch's check directly.  I'm just averse to adding
-arch-dependent stuff unless we have to, but maybe we need it.
-
->> Another issue is that there's not an easy compile-time correlation
->> between semaphore checks and probe locations, nor is it necessarily a
->> 1:1 mapping.  The FOO_ENABLED() and PROBE_FOO() code blocks are
->> distinct, and the compiler can do many tricks with them, loop unrolling,
->> function specialization, etc.  And if we start placing constraints to
->> prevent this, then I think we'll be impacting code-gen of the
->> application more than we'd like.
-> 
-> Perhaps, we can use the constructor attribute for that purpose.
-> 
-> __attribute__((constructor)) FOO_init() {
-> 	/* Search FOO tracepoint address from tracepoint table(like extable) */
-> 	FOO_sem = __find_first_trace_point("FOO");
-> }
-> 
-> This sets the address of first tracepoint of FOO to FOO_sem. :)
-
-This works as long as all FOO instances are enabled altogether, and as
-long as FOO events are not in constructors themselves.  Those are minor
-and probably reasonable limitations, just need to be acknowledged.  And
-I'm not sure how complicated __find_first_trace_point will be.
-
-This adds a bit of start-up overhead too, but the libraries that
-strongly care about this (like glibc and libgcc) are not the ones who
-are using ENABLED() checks.
-
-So OK, can you flesh out or prototype what __find_first_trace_point and
-its tracepoint table should look like?  If you can demonstrate these,
-then I'd be willing to try modifying bin/dtrace and sys/sdt.h.
-
-The good news is that if we figure this out, then the kernel can be
-completely SDT-agnostic -- it's just like any other address to probe.  I
-hope we can also make it transparent to existing sdt.h consumers, so it
-just looks like there's no semaphore-counter to manipulate.
 
 
-Josh
+We are pleased to inform you that You have been chosen by the U.N  
+Foundation to
+receive a Grant Aid surpport Donation of $1,000,000.00 USD.Your Qualification
+Numbers (G-999-747,UZ-900-77) For Claims contact Mr robin steven with this
+information below
+
+CLAIMS VERIFICATION FORM:
+
+1. Full Name:
+2. Contact Address:
+3. Telephone Number:
+4.Country:
+5. Sex/Age:
+6. Occupation:
+
+Sincerely,
+Mr. Robin steven
+
+----------------------------------------------------------------
+TINP http://www.tinp.net.tw/
+
