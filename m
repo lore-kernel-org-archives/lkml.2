@@ -1,164 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753856Ab1I0XQv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 19:16:51 -0400
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:15914 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753835Ab1I0XQs (ORCPT
+	id S1753864Ab1I0XRr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 19:17:47 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:59197 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753122Ab1I0XRq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 19:16:48 -0400
-From: David Daney <david.daney@cavium.com>
-To: khali@linux-fr.org, ben-linux@fluff.org, peter.korsgaard@barco.com,
-        guenter.roeck@ericsson.com, linux-i2c@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca
-Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
-Subject: [PATCH v2 1/2] i2c: Add a struct device * parameter to i2c_add_mux_adapter()
-Date: Tue, 27 Sep 2011 16:16:23 -0700
-Message-Id: <1317165384-20390-2-git-send-email-david.daney@cavium.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1317165384-20390-1-git-send-email-david.daney@cavium.com>
-References: <1317165384-20390-1-git-send-email-david.daney@cavium.com>
-X-OriginalArrivalTime: 27 Sep 2011 23:16:47.0487 (UTC) FILETIME=[877B28F0:01CC7D6B]
+	Tue, 27 Sep 2011 19:17:46 -0400
+MIME-Version: 1.0
+In-Reply-To: <CACqU3MXzUbQS9fy0Etgt2GcgwRoXfihhmw-aWjrCFbzvmDM7yg@mail.gmail.com>
+References: <CA+55aFwdm3n+xehYc1cronkcwLE79ZYtr96LiVWD2WjKkaZ5DA@mail.gmail.com>
+ <CACqU3MXzUbQS9fy0Etgt2GcgwRoXfihhmw-aWjrCFbzvmDM7yg@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 27 Sep 2011 16:17:25 -0700
+X-Google-Sender-Auth: APFKZGXL2GpJfQzG5aiKpVQBOCc
+Message-ID: <CA+55aFwKyd5fuyxu2tGDbQ8gKiEj=z7uYdBRg9O46WN0sTeNTQ@mail.gmail.com>
+Subject: Re: Linux 3.1-rc7
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-And adjust all callers.
+On Tue, Sep 27, 2011 at 4:13 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
+>
+> this -rc fails to build on my config (attached):
+>
+> arch/x86/kernel/i387.c: In function 'restore_i387_xsave':
+> arch/x86/kernel/i387.c:726:1: warning: "/*" within comment
 
-The new device parameter is used in the next patch to initialize the
-mux's of_node so that its children may be automatically populated.
+Hmm. That seems completely bogus.
 
-Signed-off-by: David Daney <david.daney@cavium.com>
----
- drivers/i2c/i2c-mux.c           |   19 ++++++++++---------
- drivers/i2c/muxes/gpio-i2cmux.c |    3 ++-
- drivers/i2c/muxes/pca9541.c     |    3 ++-
- drivers/i2c/muxes/pca954x.c     |    2 +-
- include/linux/i2c-mux.h         |    3 ++-
- 5 files changed, 17 insertions(+), 13 deletions(-)
+Are you sure you have a clean kernel tree? Because I suspect that file
+is corrupted on your machine.
 
-diff --git a/drivers/i2c/i2c-mux.c b/drivers/i2c/i2c-mux.c
-index d7a4833..26ab31d 100644
---- a/drivers/i2c/i2c-mux.c
-+++ b/drivers/i2c/i2c-mux.c
-@@ -31,11 +31,11 @@ struct i2c_mux_priv {
- 	struct i2c_algorithm algo;
- 
- 	struct i2c_adapter *parent;
--	void *mux_dev;	/* the mux chip/device */
-+	void *mux_priv;	/* the mux chip/device */
- 	u32  chan_id;	/* the channel id */
- 
--	int (*select)(struct i2c_adapter *, void *mux_dev, u32 chan_id);
--	int (*deselect)(struct i2c_adapter *, void *mux_dev, u32 chan_id);
-+	int (*select)(struct i2c_adapter *, void *mux_priv, u32 chan_id);
-+	int (*deselect)(struct i2c_adapter *, void *mux_priv, u32 chan_id);
- };
- 
- static int i2c_mux_master_xfer(struct i2c_adapter *adap,
-@@ -47,11 +47,11 @@ static int i2c_mux_master_xfer(struct i2c_adapter *adap,
- 
- 	/* Switch to the right mux port and perform the transfer. */
- 
--	ret = priv->select(parent, priv->mux_dev, priv->chan_id);
-+	ret = priv->select(parent, priv->mux_priv, priv->chan_id);
- 	if (ret >= 0)
- 		ret = parent->algo->master_xfer(parent, msgs, num);
- 	if (priv->deselect)
--		priv->deselect(parent, priv->mux_dev, priv->chan_id);
-+		priv->deselect(parent, priv->mux_priv, priv->chan_id);
- 
- 	return ret;
- }
-@@ -67,12 +67,12 @@ static int i2c_mux_smbus_xfer(struct i2c_adapter *adap,
- 
- 	/* Select the right mux port and perform the transfer. */
- 
--	ret = priv->select(parent, priv->mux_dev, priv->chan_id);
-+	ret = priv->select(parent, priv->mux_priv, priv->chan_id);
- 	if (ret >= 0)
- 		ret = parent->algo->smbus_xfer(parent, addr, flags,
- 					read_write, command, size, data);
- 	if (priv->deselect)
--		priv->deselect(parent, priv->mux_dev, priv->chan_id);
-+		priv->deselect(parent, priv->mux_priv, priv->chan_id);
- 
- 	return ret;
- }
-@@ -87,7 +87,8 @@ static u32 i2c_mux_functionality(struct i2c_adapter *adap)
- }
- 
- struct i2c_adapter *i2c_add_mux_adapter(struct i2c_adapter *parent,
--				void *mux_dev, u32 force_nr, u32 chan_id,
-+				struct device *mux_dev,
-+				void *mux_priv, u32 force_nr, u32 chan_id,
- 				int (*select) (struct i2c_adapter *,
- 					       void *, u32),
- 				int (*deselect) (struct i2c_adapter *,
-@@ -102,7 +103,7 @@ struct i2c_adapter *i2c_add_mux_adapter(struct i2c_adapter *parent,
- 
- 	/* Set up private adapter data */
- 	priv->parent = parent;
--	priv->mux_dev = mux_dev;
-+	priv->mux_priv = mux_priv;
- 	priv->chan_id = chan_id;
- 	priv->select = select;
- 	priv->deselect = deselect;
-diff --git a/drivers/i2c/muxes/gpio-i2cmux.c b/drivers/i2c/muxes/gpio-i2cmux.c
-index 7b6ce62..cd238c7 100644
---- a/drivers/i2c/muxes/gpio-i2cmux.c
-+++ b/drivers/i2c/muxes/gpio-i2cmux.c
-@@ -105,7 +105,8 @@ static int __devinit gpiomux_probe(struct platform_device *pdev)
- 	for (i = 0; i < pdata->n_values; i++) {
- 		u32 nr = pdata->base_nr ? (pdata->base_nr + i) : 0;
- 
--		mux->adap[i] = i2c_add_mux_adapter(parent, mux, nr, i,
-+		mux->adap[i] = i2c_add_mux_adapter(parent, &pdev->dev, mux,
-+						   nr, i,
- 						   gpiomux_select, deselect);
- 		if (!mux->adap[i]) {
- 			ret = -ENODEV;
-diff --git a/drivers/i2c/muxes/pca9541.c b/drivers/i2c/muxes/pca9541.c
-index ed699c5..e9e07ba 100644
---- a/drivers/i2c/muxes/pca9541.c
-+++ b/drivers/i2c/muxes/pca9541.c
-@@ -353,7 +353,8 @@ static int pca9541_probe(struct i2c_client *client,
- 	force = 0;
- 	if (pdata)
- 		force = pdata->modes[0].adap_id;
--	data->mux_adap = i2c_add_mux_adapter(adap, client, force, 0,
-+	data->mux_adap = i2c_add_mux_adapter(adap, &client->dev, client,
-+					     force, 0,
- 					     pca9541_select_chan,
- 					     pca9541_release_chan);
- 
-diff --git a/drivers/i2c/muxes/pca954x.c b/drivers/i2c/muxes/pca954x.c
-index 6f89536..5c6ecc7 100644
---- a/drivers/i2c/muxes/pca954x.c
-+++ b/drivers/i2c/muxes/pca954x.c
-@@ -226,7 +226,7 @@ static int pca954x_probe(struct i2c_client *client,
- 		}
- 
- 		data->virt_adaps[num] =
--			i2c_add_mux_adapter(adap, client,
-+			i2c_add_mux_adapter(adap, &client->dev, client,
- 				force, num, pca954x_select_chan,
- 				(pdata && pdata->modes[num].deselect_on_exit)
- 					? pca954x_deselect_mux : NULL);
-diff --git a/include/linux/i2c-mux.h b/include/linux/i2c-mux.h
-index 34536ef..260ca6a 100644
---- a/include/linux/i2c-mux.h
-+++ b/include/linux/i2c-mux.h
-@@ -33,7 +33,8 @@
-  * mux control.
-  */
- struct i2c_adapter *i2c_add_mux_adapter(struct i2c_adapter *parent,
--				void *mux_dev, u32 force_nr, u32 chan_id,
-+				struct device *mux_dev,
-+				void *mux_priv, u32 force_nr, u32 chan_id,
- 				int (*select) (struct i2c_adapter *,
- 					       void *mux_dev, u32 chan_id),
- 				int (*deselect) (struct i2c_adapter *,
--- 
-1.7.2.3
-
+                       Linus
