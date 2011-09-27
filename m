@@ -1,18 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751631Ab1I0Qfe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 12:35:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33781 "EHLO mx2.suse.de"
+	id S1751715Ab1I0Qiw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 12:38:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33891 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751372Ab1I0Qfd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 12:35:33 -0400
-Date: Tue, 27 Sep 2011 18:35:32 +0200
-Message-ID: <s5hr532c59n.wl%tiwai@suse.de>
+	id S1751202Ab1I0Qiv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 12:38:51 -0400
+Date: Tue, 27 Sep 2011 18:38:49 +0200
+Message-ID: <s5hmxdqc546.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] sound fixes for 3.1
+To: Yinghai Lu <yinghai.lu@oracle.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, oneukum@suse.de, x86@kernel.org,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: S4 resume broken since 2.6.39 (3.1, too)
+In-Reply-To: <4E813464.80105@oracle.com>
+References: <s5hmxdzyyzx.wl%tiwai@suse.de>
+	<201109212048.23074.rjw@sisk.pl>
+	<CAE9FiQVy4D0NhaN=PvPK_+L4Jv=+7huLy9U--LYW49GFZ9TyaQ@mail.gmail.com>
+	<s5hty84fnv7.wl%tiwai@suse.de>
+	<4E813464.80105@oracle.com>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.3
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -22,133 +30,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+At Mon, 26 Sep 2011 19:26:44 -0700,
+Yinghai Lu wrote:
+> 
+> On 09/22/2011 11:11 AM, Takashi Iwai wrote:
+> 
+> > At Thu, 22 Sep 2011 07:33:17 -0700,
+> > Yinghai Lu wrote:
+> >>
+> >> On Wed, Sep 21, 2011 at 11:48 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >>> It looks like init_memory_mapping() is sometimes called with "end"
+> >>> beyond the last mapped PFN and it explodes when we try to write stuff to
+> >>> that address during image restoration.
+> >>>
+> >>> IOW, the Yinghai's assumption that init_memory_mapping() would always be
+> >>> called with a "good end" on x86_64 was overomptimistic.
+> >>
+> >> for 64bit x86, kernel_physical_mapping_init() will use
+> >> map_low_page()/call early_memmap() to access ram for page_table that is above
+> >> rather last mapped PFN.
+> >>
+> >> the point is:
+> >> on system with 64g, usable ram will be [0,2048m), [4g, 64g)
+> >> init_memory_mapping will be called two times for them.
+> >> before putting page_table high,
+> >> page table will be two parts: one is just below 512M, and one below 2048m.
+> >> after putting page_table high,
+> >> page table will be two parts: one is just below 2048M, and one below 64G.
+> > 
+> > So, how can this change break S4 resume?
+> 
+> 
+> not sure.
+> 
+> seems resume has it's own page table during transition...
+> 
+> 
+> > Any hint for further debugging?
+> 
+> 
+> you may try to insert dead loop in arch/x86/power/hibernate_asm_64.S::restore_image or core_restore_code
+> 
+> to see which part cause reset.
 
-please pull sound fixes for v3.1 from:
+That's the answer I was afraid of :)
 
-  git://github.com/tiwai/sound.git for-linus
-
-The topmost commit is 0fac25908f8e26a27d869f0aa4fad04c3db60dc7.
-
-Hopefully this will be the last pull request for 3.1.
-Only small regression fixes, most of which are to stable kernel, too.
-
-
-Thanks!
 
 Takashi
-
-===
-
-David Henningsson (1):
-      ALSA: HDA: No power nids on 92HD93
-
-Jarkko Nikula (1):
-      ASoC: omap-mcbsp: Do not attempt to change DAI sysclk if stream is active
-
-Lars-Peter Clausen (1):
-      ASoC: ssm2602: Re-enable oscillator after suspend
-
-Takashi Iwai (2):
-      ALSA: hda/realtek - Avoid bogus HP-pin assignment
-      ALSA: hda/realtek - Don't detect LO jack when identical with HP
-
-Thomas Pfaff (1):
-      ALSA: usb-audio: Check for possible chip NULL pointer before clearing probing flag
-
----
- sound/pci/hda/patch_realtek.c  |    8 +++++++-
- sound/pci/hda/patch_sigmatel.c |    1 +
- sound/soc/codecs/ssm2602.c     |    3 ++-
- sound/soc/omap/omap-mcbsp.c    |    6 ++++++
- sound/usb/card.c               |    8 +++++---
- 5 files changed, 21 insertions(+), 5 deletions(-)
-
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index 0503c99..7a73621 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -578,6 +578,10 @@ static void alc_line_automute(struct hda_codec *codec)
- {
- 	struct alc_spec *spec = codec->spec;
- 
-+	/* check LO jack only when it's different from HP */
-+	if (spec->autocfg.line_out_pins[0] == spec->autocfg.hp_pins[0])
-+		return;
-+
- 	spec->line_jack_present =
- 		detect_jacks(codec, ARRAY_SIZE(spec->autocfg.line_out_pins),
- 			     spec->autocfg.line_out_pins);
-@@ -1321,7 +1325,9 @@ do_sku:
- 	 * 15   : 1 --> enable the function "Mute internal speaker
- 	 *	        when the external headphone out jack is plugged"
- 	 */
--	if (!spec->autocfg.hp_pins[0]) {
-+	if (!spec->autocfg.hp_pins[0] &&
-+	    !(spec->autocfg.line_out_pins[0] &&
-+	      spec->autocfg.line_out_type == AUTO_PIN_HP_OUT)) {
- 		hda_nid_t nid;
- 		tmp = (ass >> 11) & 0x3;	/* HP to chassis */
- 		if (tmp == 0)
-diff --git a/sound/pci/hda/patch_sigmatel.c b/sound/pci/hda/patch_sigmatel.c
-index 1b7c114..987e3cf 100644
---- a/sound/pci/hda/patch_sigmatel.c
-+++ b/sound/pci/hda/patch_sigmatel.c
-@@ -5630,6 +5630,7 @@ again:
- 	switch (codec->vendor_id) {
- 	case 0x111d76d1:
- 	case 0x111d76d9:
-+	case 0x111d76df:
- 	case 0x111d76e5:
- 	case 0x111d7666:
- 	case 0x111d7667:
-diff --git a/sound/soc/codecs/ssm2602.c b/sound/soc/codecs/ssm2602.c
-index 84f4ad5..9801cd7 100644
---- a/sound/soc/codecs/ssm2602.c
-+++ b/sound/soc/codecs/ssm2602.c
-@@ -431,7 +431,8 @@ static int ssm2602_set_dai_fmt(struct snd_soc_dai *codec_dai,
- static int ssm2602_set_bias_level(struct snd_soc_codec *codec,
- 				 enum snd_soc_bias_level level)
- {
--	u16 reg = snd_soc_read(codec, SSM2602_PWR) & 0xff7f;
-+	u16 reg = snd_soc_read(codec, SSM2602_PWR);
-+	reg &= ~(PWR_POWER_OFF | PWR_OSC_PDN);
- 
- 	switch (level) {
- 	case SND_SOC_BIAS_ON:
-diff --git a/sound/soc/omap/omap-mcbsp.c b/sound/soc/omap/omap-mcbsp.c
-index ebcc2d4..478d607 100644
---- a/sound/soc/omap/omap-mcbsp.c
-+++ b/sound/soc/omap/omap-mcbsp.c
-@@ -516,6 +516,12 @@ static int omap_mcbsp_dai_set_dai_sysclk(struct snd_soc_dai *cpu_dai,
- 	struct omap_mcbsp_reg_cfg *regs = &mcbsp_data->regs;
- 	int err = 0;
- 
-+	if (mcbsp_data->active)
-+		if (freq == mcbsp_data->in_freq)
-+			return 0;
-+		else
-+			return -EBUSY;
-+
- 	/* The McBSP signal muxing functions are only available on McBSP1 */
- 	if (clk_id == OMAP_MCBSP_CLKR_SRC_CLKR ||
- 	    clk_id == OMAP_MCBSP_CLKR_SRC_CLKX ||
-diff --git a/sound/usb/card.c b/sound/usb/card.c
-index ed120ca..d8f2bf4 100644
---- a/sound/usb/card.c
-+++ b/sound/usb/card.c
-@@ -530,9 +530,11 @@ snd_usb_audio_probe(struct usb_device *dev,
- 	return chip;
- 
-  __error:
--	if (chip && !chip->num_interfaces)
--		snd_card_free(chip->card);
--	chip->probing = 0;
-+	if (chip) {
-+		if (!chip->num_interfaces)
-+			snd_card_free(chip->card);
-+		chip->probing = 0;
-+	}
- 	mutex_unlock(&register_mutex);
-  __err_val:
- 	return NULL;
