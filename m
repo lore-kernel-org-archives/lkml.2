@@ -1,113 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753561Ab1I0Oj1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 10:39:27 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:41139 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753529Ab1I0OjY convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@suse.com:4:1>);
-	Tue, 27 Sep 2011 10:39:24 -0400
-Message-Id: <4E81FC38020000780005804E@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Tue, 27 Sep 2011 15:39:20 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Ingo Molnar" <mingo@elte.hu>
-Cc: <stable@kernel.org>, <tj@kernel.org>, <tglx@linutronix.de>,
-        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
-Subject: Re: [PATCH] i386/bigsmp: eliminate false warnings regarding
-	 logical APIC ID mismatches
-References: <4E4D27B40200007800051D40@nat28.tlf.novell.com>
- <20110927133509.GA26578@elte.hu>
-In-Reply-To: <20110927133509.GA26578@elte.hu>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753518Ab1I0OjE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 10:39:04 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:56903 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752157Ab1I0OjB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 10:39:01 -0400
+thread-index: Acx9Iy7w+p8Ln62FTlqxho5PBOZk9Q==
+Content-Class: urn:content-classes:message
+Importance: normal
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4657
+Subject: Re: [PATCH 2/5 v11] arm: omap: usb: ehci and ohci hwmod structures for omap3
+From: Tero Kristo <t-kristo@ti.com>
+Reply-To: <t-kristo@ti.com>
+To: "Balbi, Felipe" <balbi@ti.com>
+CC: "Munegowda, Keshava" <keshava_mgowda@ti.com>,
+        Paul Walmsley <paul@pwsan.com>, "Cousson, Benoit" <b-cousson@ti.com>,
+        "Basak, Partha" <p-basak2@ti.com>, <parthab@india.ti.com>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, "Gadiyar, Anand" <gadiyar@ti.com>,
+        <sameo@linux.intel.com>, <tony@atomide.com>,
+        "Hilman, Kevin" <khilman@ti.com>, <johnstul@us.ibm.com>,
+        "Sripathy, Vishwanath" <vishwanath.bs@ti.com>
+In-Reply-To: <20110927132453.GF19603@legolas.emea.dhcp.ti.com>
+References: <1316691479-1849-1-git-send-email-keshava_mgowda@ti.com> <1316691479-1849-2-git-send-email-keshava_mgowda@ti.com> <1316691479-1849-3-git-send-email-keshava_mgowda@ti.com> <alpine.DEB.2.00.1109221115320.10719@utopia.booyaka.com> <CAP05o4+Zc2z6sBOX_rQeoDQ9PneypcLRCyBbaaB2m+ZjeXZnaw@mail.gmail.com> <alpine.DEB.2.00.1109240020510.22872@utopia.booyaka.com> <CAP05o4Lwk2uUz5ou84GQsrsBdjW-FEYP-55pBzH+a74hP4g1Dw@mail.gmail.com> <cbad72cea703d117067f7c628f7db806@mail.gmail.com> <1317127327.3820.31.camel@sokoban> <CAP05o4J75jGLTH8prOGD79Mte4DOg9ukgwe3V-KHFnB1Q-fi4w@mail.gmail.com> <20110927132453.GF19603@legolas.emea.dhcp.ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Texas Instruments
+Date: Tue, 27 Sep 2011 17:38:51 +0300
+Message-ID: <1317134331.3820.44.camel@sokoban>
+MIME-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 27.09.11 at 15:35, Ingo Molnar <mingo@elte.hu> wrote:
-
-> * Jan Beulich <JBeulich@novell.com> wrote:
+On Tue, 2011-09-27 at 15:24 +0200, Balbi, Felipe wrote:
+> Hi,
 > 
->> These warnings (generally one per CPU) are a result of initializing
->> x86_cpu_to_logical_apicid while apic_default is still in use, but the
->> check in setup_local_APIC() being done when apic_bigsmp was already
->> used as an override in default_setup_apic_routing():
->> 
->> Overriding APIC driver with bigsmp
->> Enabling APIC mode:  Physflat.  Using 5 I/O APICs
->> ------------[ cut here ]------------
->> WARNING: at .../arch/x86/kernel/apic/apic.c:1239 
-> setup_local_APIC+0x137/0x46b()
->> Hardware name: ...
->> CPU0 logical APIC ID: 1 != 0
->> Pid: 1, comm: swapper Not tainted 3.0.1-2011-08-09-jb #2
->> Call Trace:
->>  [<c1005f91>] try_stack_unwind+0x1b1/0x1f0
->>  [<c1004cc7>] dump_trace+0x47/0x110
->>  [<c1005b0b>] show_trace_log_lvl+0x4b/0x60
->>  [<c1005b38>] show_trace+0x18/0x20
->>  [<c1261435>] dump_stack+0x6d/0x72
->>  [<c10355f7>] warn_slowpath_common+0x77/0xb0
->>  [<c10356c3>] warn_slowpath_fmt+0x33/0x40
->>  [<c13fda81>] setup_local_APIC+0x137/0x46b
->>  [<c13d1733>] native_smp_prepare_cpus+0x108/0x1cd
->>  [<c13c61ff>] kernel_init+0x37/0x12c
->>  [<c1264826>] kernel_thread_helper+0x6/0xd
->> ---[ end trace 4eaa2a86a8e2da22 ]---
->> ...
->> CPU 1 irqstacks, hard=f1c9a000 soft=f1c9c000
->> Booting Node   0, Processors  #1
->> smpboot cpu 1: start_ip = 9e000
->> Initializing CPU#1
->> ------------[ cut here ]------------
->> WARNING: at .../arch/x86/kernel/apic/apic.c:1239 
-> setup_local_APIC+0x137/0x46b()
->> Hardware name: ...
->> CPU1 logical APIC ID: 2 != 8
->> ...
->> 
->> Fix this (for the time being, i.e. until x86_32_early_logical_apicid()
->> will get removed again, as Tehun says ought to be possible) by
->> overriding the previously stored values at the point where the APIC
->> driver gets overridden.
->> 
->> Signed-off-by: Jan Beulich <jbeulich@novell.com>
->> Cc: Tejun Heo <tj@kernel.org>
->> Cc: stable@kernel.org (2.6.39 and onwards)
->> 
->> ---
->>  arch/x86/kernel/apic/probe_32.c |   11 +++++++++++
->>  1 file changed, 11 insertions(+)
->> 
->> --- 3.1-rc2/arch/x86/kernel/apic/probe_32.c
->> +++ 3.1-rc2-i386-bigsmp-early-lapicid-override/arch/x86/kernel/apic/probe_32.c
->> @@ -203,7 +203,18 @@ void __init default_setup_apic_routing(v
->>  	if (!cmdline_apic && apic == &apic_default) {
->>  		struct apic *bigsmp = generic_bigsmp_probe();
->>  		if (bigsmp) {
->> +			unsigned int cpu;
->> +
->>  			apic = bigsmp;
->> +			for_each_possible_cpu(cpu) {
->> +				if (early_per_cpu(x86_cpu_to_logical_apicid,
->> +						  cpu) == BAD_APICID)
->> +					continue;
->> +				early_per_cpu(x86_cpu_to_logical_apicid,
->> +					      cpu) =
->> +					bigsmp->x86_32_early_logical_apicid
->> +						(cpu);
->> +			}
->>  			printk(KERN_INFO "Overriding APIC driver with %s\n",
->>  			       apic->name);
->>  		}
+> On Tue, Sep 27, 2011 at 06:48:35PM +0530, Munegowda, Keshava wrote:
+> > > So, you would need a mechanism to do something like this:
+> > >
+> > > pad a or b wakeup detected -> irq0
+> > > pad c or d wakeup detected -> irq1?
+> > 
+> > yes, if get something like this , its perfect.
 > 
-> This could move into a separate function i suspect, which would 
-> de-uglify it quite significantly?
+> can't you have different IRQs for each pad ? I mean, allocate one
+> irq_desc for each pad and let drivers request a pad/pin as an IRQ
+> source. Then, when you detect a pad wakeup, you can:
 
-If that's the only concern, then sure - I'll re-submit with this broken out.
+Direct pad to irq mapping was turned down on some previous version of
+the prcm chain handler set, but yes, it is a potential approach. However
+the irq_desc allocation mechanism should be dynamic... there are some
+200 programmable pads anyway.
 
-Jan
+>
+> unsigned	pad_irq = pad_number - pad->irq_base;
+> 
+> handle_nested_thread(pad_irq);
+> 
+> this will make use of threaded IRQ handlers even. Could it be something
+> like that ?
+> 
+
+
+
+Texas Instruments Oy, Tekniikantie 12, 02150 Espoo. Y-tunnus: 0115040-6. Kotipaikka: Helsinki
+ 
 
