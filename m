@@ -1,77 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752617Ab1I0Cvj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 22:51:39 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:41382 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752184Ab1I0Cvi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 22:51:38 -0400
-Date: Tue, 27 Sep 2011 12:51:32 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "Wey-Yi Guy" <wey-yi.w.guy@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: linux-next: manual merge of the net tree with the wireless-current
- tree
-Message-Id: <20110927125132.002db8176a66f85286dcd027@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752460Ab1I0DAj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 23:00:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47039 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751779Ab1I0DAi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 23:00:38 -0400
+Message-ID: <4E813C29.1030604@redhat.com>
+Date: Mon, 26 Sep 2011 19:59:53 -0700
+From: Josh Stone <jistone@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+MIME-Version: 1.0
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        SystemTap <systemtap@sourceware.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 3.1.0-rc4-tip 8/26]   x86: analyze instruction and
+ determine fixups.
+References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com> <20110920120127.25326.71509.sendpatchset@srdronam.in.ibm.com> <20110920171310.GC27959@stefanha-thinkpad.localdomain> <20110920181225.GA5149@infradead.org> <20110920205317.GA1508@stefanha-think <20110923165132.GA23870@stefanha-thinkpad.localdomain> <4E80D9B2.3010404@redhat.com> <4E812797.1090207@hitachi.com>
+In-Reply-To: <4E812797.1090207@hitachi.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On 09/26/2011 06:32 PM, Masami Hiramatsu wrote:
+>> On 09/23/2011 09:51 AM, Stefan Hajnoczi wrote:
+>>>> I'm not sure that we should stick on the current implementation
+>>>> of the sdt.h. I think we'd better modify the sdt.h to replace
+>>>> such semaphores with checking whether the tracepoint is changed from nop.
+>>>
+>>> I like this option.  The only implication is that all userspace tracing
+>>> needs to go through uprobes if we want to support multiple consumers
+>>> tracing the same address.
+>>
+>> This limitation is practically true already, since sharing consumers
+>> have to negotiate the breakpoint anyway.
+>>
+>> If we can find a better way to handle semaphores, we at systemtap will
+>> welcome sdt.h improvements.  On the face of it, checking one's own NOP
+>> for modification sounds pretty elegant, but I'm not convinced that it's
+>> possible in practice.
+>>
+>> For one, it requires arch specific knowledge in sdt.h of what the NOP or
+>> breakpoint looks like, whereas sdt.h currently only knows whether to use
+>> NOP or NOP 0, without knowledge of how that's encoded.  And this gets
+>> trickier with archs like IA64 where you're part of a bundle.  So this
+>> much is hard, but not impossible.
+> 
+> Even though, we can start with x86, which is currently one and only one
+> platform supporting uprobes :)
 
-Today's linux-next merge of the net tree got a conflict in
-drivers/net/wireless/iwlwifi/iwl-scan.c between commit 6c80c39d9a69
-("iwlagn: fix dangling scan request") from the wireless-current tree and
-commits 63013ae30159 ("iwlagn: priv->status moves to iwl_shared") and
-6ac2f839b0b2 ("iwlagn: priv->mutex moves to iwl_shared") from the net
-tree.
+This inode-based uprobes only supports x86 so far.  The utrace-based
+uprobes also supports s390 and ppc, which you can bet Srikar will be
+tasked with here before long...
 
-I fixed it up (see below) and can carry the fix as necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+But uprobes is not the only sdt.h consumer anyway.  GDB also supports
+sdt.h in its targets, covering x86, ppc, s390, and arm so far IIRC.
 
-diff --cc drivers/net/wireless/iwlwifi/iwl-scan.c
-index 77e528f,fc5af34..0000000
---- a/drivers/net/wireless/iwlwifi/iwl-scan.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-scan.c
-@@@ -403,8 -413,19 +413,8 @@@ int iwl_mac_hw_scan(struct ieee80211_h
-  	if (req->n_channels == 0)
-  		return -EINVAL;
-  
-- 	mutex_lock(&priv->mutex);
-+ 	mutex_lock(&priv->shrd->mutex);
-  
- -	if (test_bit(STATUS_SCANNING, &priv->shrd->status) &&
- -	    priv->scan_type != IWL_SCAN_NORMAL) {
- -		IWL_DEBUG_SCAN(priv, "Scan already in progress.\n");
- -		ret = -EAGAIN;
- -		goto out_unlock;
- -	}
- -
- -	/* mac80211 will only ask for one band at a time */
- -	priv->scan_request = req;
- -	priv->scan_vif = vif;
- -
-  	/*
-  	 * If an internal scan is in progress, just set
-  	 * up the scan_request as per above.
-@@@ -432,7 -439,8 +442,7 @@@
-  
-  	IWL_DEBUG_MAC80211(priv, "leave\n");
-  
-- 	mutex_unlock(&priv->mutex);
- -out_unlock:
-+ 	mutex_unlock(&priv->shrd->mutex);
-  
-  	return ret;
-  }
+> Maybe we can prepare asm/sdt.h for describing arch-dep code.
+
+In sys/sdt.h itself, these would probably be short enough snippets that
+we can just add each arch's check directly.  I'm just averse to adding
+arch-dependent stuff unless we have to, but maybe we need it.
+
+>> Another issue is that there's not an easy compile-time correlation
+>> between semaphore checks and probe locations, nor is it necessarily a
+>> 1:1 mapping.  The FOO_ENABLED() and PROBE_FOO() code blocks are
+>> distinct, and the compiler can do many tricks with them, loop unrolling,
+>> function specialization, etc.  And if we start placing constraints to
+>> prevent this, then I think we'll be impacting code-gen of the
+>> application more than we'd like.
+> 
+> Perhaps, we can use the constructor attribute for that purpose.
+> 
+> __attribute__((constructor)) FOO_init() {
+> 	/* Search FOO tracepoint address from tracepoint table(like extable) */
+> 	FOO_sem = __find_first_trace_point("FOO");
+> }
+> 
+> This sets the address of first tracepoint of FOO to FOO_sem. :)
+
+This works as long as all FOO instances are enabled altogether, and as
+long as FOO events are not in constructors themselves.  Those are minor
+and probably reasonable limitations, just need to be acknowledged.  And
+I'm not sure how complicated __find_first_trace_point will be.
+
+This adds a bit of start-up overhead too, but the libraries that
+strongly care about this (like glibc and libgcc) are not the ones who
+are using ENABLED() checks.
+
+So OK, can you flesh out or prototype what __find_first_trace_point and
+its tracepoint table should look like?  If you can demonstrate these,
+then I'd be willing to try modifying bin/dtrace and sys/sdt.h.
+
+The good news is that if we figure this out, then the kernel can be
+completely SDT-agnostic -- it's just like any other address to probe.  I
+hope we can also make it transparent to existing sdt.h consumers, so it
+just looks like there's no semaphore-counter to manipulate.
+
+
+Josh
