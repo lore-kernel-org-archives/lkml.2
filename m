@@ -1,191 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753161Ab1I0Fz0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 01:55:26 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:54453 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752858Ab1I0FzY (ORCPT
+	id S1752904Ab1I0GEJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 02:04:09 -0400
+Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:41069 "EHLO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752113Ab1I0GEH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 01:55:24 -0400
-Subject: Re: Question about memory leak detector giving false positive
- report for net/core/flow.c
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Huajun Li <huajun.li.lee@gmail.com>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        netdev <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>
-In-Reply-To: <CA+v9cxYzWJScCa2mMoEovq3WULSZYQaq6EjoRV7SQUjr0L_RiQ@mail.gmail.com>
-References: <CA+v9cxadZzWr35Q9RFzVgk_NZsbZ8PkVLJNxjBAMpargW9Lm4Q@mail.gmail.com>
-	 <1317054774.6363.9.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <20110926165024.GA21617@e102109-lin.cambridge.arm.com>
-	 <1317066395.2796.11.camel@edumazet-laptop>
-	 <CA+v9cxYzWJScCa2mMoEovq3WULSZYQaq6EjoRV7SQUjr0L_RiQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 27 Sep 2011 07:55:18 +0200
-Message-ID: <1317102918.2796.22.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	Tue, 27 Sep 2011 02:04:07 -0400
+From: Partha Basak <p-basak2@ti.com>
+References: <1316691479-1849-1-git-send-email-keshava_mgowda@ti.com>
+	<1316691479-1849-2-git-send-email-keshava_mgowda@ti.com>	<1316691479-1849-3-git-send-email-keshava_mgowda@ti.com>
+	<alpine.DEB.2.00.1109221115320.10719@utopia.booyaka.com>	<CAP05o4+Zc2z6sBOX_rQeoDQ9PneypcLRCyBbaaB2m+ZjeXZnaw@mail.gmail.com>
+	<alpine.DEB.2.00.1109240020510.22872@utopia.booyaka.com> <CAP05o4Lwk2uUz5ou84GQsrsBdjW-FEYP-55pBzH+a74hP4g1Dw@mail.gmail.com>
+In-Reply-To: <CAP05o4Lwk2uUz5ou84GQsrsBdjW-FEYP-55pBzH+a74hP4g1Dw@mail.gmail.com>
+MIME-Version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-Index: Acx8V1LL01JWEhnIQdWzROS/EBue7wAg4v6A
+Date: Tue, 27 Sep 2011 11:34:00 +0530
+Message-ID: <cbad72cea703d117067f7c628f7db806@mail.gmail.com>
+Subject: RE: [PATCH 2/5 v11] arm: omap: usb: ehci and ohci hwmod structures
+ for omap3
+To: Keshava Munegowda <keshava_mgowda@ti.com>, Paul Walmsley <paul@pwsan.com>,
+        Tero Kristo <t-kristo@ti.com>, Benoit Cousson <b-cousson@ti.com>,
+        Felipe Balbi <balbi@ti.com>, parthab@india.ti.com
+Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Anand Gadiyar <gadiyar@ti.com>,
+        sameo@linux.intel.com, tony@atomide.com, Kevin Hilman <khilman@ti.com>,
+        johnstul@us.ibm.com, Vishwanath Sripathy <vishwanath.bs@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 27 septembre 2011 à 13:29 +0800, Huajun Li a écrit :
-> 2011/9/27 Eric Dumazet <eric.dumazet@gmail.com>:
-> > Le lundi 26 septembre 2011 à 17:50 +0100, Catalin Marinas a écrit :
-> >> On Mon, Sep 26, 2011 at 05:32:54PM +0100, Eric Dumazet wrote:
-> >> > Le lundi 26 septembre 2011 à 23:17 +0800, Huajun Li a écrit :
-> >> > > Memory leak detector gives following memory leak report, it seems the
-> >> > > report is triggered by net/core/flow.c, but actually, it should be a
-> >> > > false positive report.
-> >> > > So, is there any idea from kmemleak side to fix/disable this false
-> >> > > positive report like this?
-> >> > > Yes, kmemleak_not_leak(...) could disable it, but is it suitable for this case ?
-> >> ...
-> >> > CC lkml and percpu maintainers (Tejun Heo & Christoph Lameter ) as well
-> >> >
-> >> > AFAIK this false positive only occurs if percpu data is allocated
-> >> > outside of embedded pcu space.
-> >> >
-> >> >  (grep pcpu_get_vm_areas /proc/vmallocinfo)
-> >> >
-> >> > I suspect this is a percpu/kmemleak cooperation problem (a missing
-> >> > kmemleak_alloc() ?)
-> >> >
-> >> > I am pretty sure kmemleak_not_leak() is not the right answer to this
-> >> > problem.
-> >>
-> >> kmemleak_not_leak() definitely not the write answer. The alloc_percpu()
-> >> call does not have any kmemleak_alloc() callback, so it doesn't scan
-> >> them.
-> >>
-> >> Huajun, could you please try the patch below:
-> >>
-> >> 8<--------------------------------
-> >> kmemleak: Handle percpu memory allocation
-> >>
-> >> From: Catalin Marinas <catalin.marinas@arm.com>
-> >>
-> >> This patch adds kmemleak callbacks from the percpu allocator, reducing a
-> >> number of false positives caused by kmemleak not scanning such memory
-> >> blocks.
-> >>
-> >> Reported-by: Huajun Li <huajun.li.lee@gmail.com>
-> >> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-> >> ---
-> >>  mm/percpu.c |   11 +++++++++--
-> >>  1 files changed, 9 insertions(+), 2 deletions(-)
-> >>
-> >> diff --git a/mm/percpu.c b/mm/percpu.c
-> >> index bf80e55..c47a90b 100644
-> >> --- a/mm/percpu.c
-> >> +++ b/mm/percpu.c
-> >> @@ -67,6 +67,7 @@
-> >>  #include <linux/spinlock.h>
-> >>  #include <linux/vmalloc.h>
-> >>  #include <linux/workqueue.h>
-> >> +#include <linux/kmemleak.h>
-> >>
-> >>  #include <asm/cacheflush.h>
-> >>  #include <asm/sections.h>
-> >> @@ -833,7 +834,9 @@ fail_unlock_mutex:
-> >>   */
-> >>  void __percpu *__alloc_percpu(size_t size, size_t align)
-> >>  {
-> >> -     return pcpu_alloc(size, align, false);
-> >> +     void __percpu *ptr = pcpu_alloc(size, align, false);
-> >> +     kmemleak_alloc(ptr, size, 1, GFP_KERNEL);
-> >> +     return ptr;
-> >>  }
-> >>  EXPORT_SYMBOL_GPL(__alloc_percpu);
-> >>
-> >> @@ -855,7 +858,9 @@ EXPORT_SYMBOL_GPL(__alloc_percpu);
-> >>   */
-> >>  void __percpu *__alloc_reserved_percpu(size_t size, size_t align)
-> >>  {
-> >> -     return pcpu_alloc(size, align, true);
-> >> +     void __percpu *ptr = pcpu_alloc(size, align, true);
-> >> +     kmemleak_alloc(ptr, size, 1, GFP_KERNEL);
-> >> +     return ptr;
-> >>  }
-> >>
-> >>  /**
-> >> @@ -915,6 +920,8 @@ void free_percpu(void __percpu *ptr)
-> >>       if (!ptr)
-> >>               return;
-> >>
-> >> +     kmemleak_free(ptr);
-> >> +
-> >>       addr = __pcpu_ptr_to_addr(ptr);
-> >>
-> >>       spin_lock_irqsave(&pcpu_lock, flags);
-> >>
-> >
-> > Hmm, you need to call kmemleak_alloc() for each chunk allocated per
-> > possible cpu.
-> >
-> > Here is the (untested) patch for the allocation phase, need the same at
-> > freeing time
-> >
-> > diff --git a/mm/percpu-km.c b/mm/percpu-km.c
-> > index 89633fe..5061ac5 100644
-> > --- a/mm/percpu-km.c
-> > +++ b/mm/percpu-km.c
-> > @@ -37,9 +37,12 @@ static int pcpu_populate_chunk(struct pcpu_chunk *chunk, int off, int size)
-> >  {
-> >        unsigned int cpu;
-> >
-> > -       for_each_possible_cpu(cpu)
-> > -               memset((void *)pcpu_chunk_addr(chunk, cpu, 0) + off, 0, size);
-> > +       for_each_possible_cpu(cpu) {
-> > +               void *chunk_addr = (void *)pcpu_chunk_addr(chunk, cpu, 0) + off;
-> >
-> > +               kmemleak_alloc(chunk_addr, size, 1, GFP_KERNEL);
-> > +               memset(chunk_addr, 0, size);
-> > +       }
-> >        return 0;
-> >  }
-> >
-> > diff --git a/mm/percpu-vm.c b/mm/percpu-vm.c
-> > index ea53496..0d397cc 100644
-> > --- a/mm/percpu-vm.c
-> > +++ b/mm/percpu-vm.c
-> > @@ -342,8 +342,12 @@ static int pcpu_populate_chunk(struct pcpu_chunk *chunk, int off, int size)
-> >        /* commit new bitmap */
-> >        bitmap_copy(chunk->populated, populated, pcpu_unit_pages);
-> >  clear:
-> > -       for_each_possible_cpu(cpu)
-> > -               memset((void *)pcpu_chunk_addr(chunk, cpu, 0) + off, 0, size);
-> > +       for_each_possible_cpu(cpu) {
-> > +               void *chunk_addr = (void *)pcpu_chunk_addr(chunk, cpu, 0) + off;
-> > +
-> > +               kmemleak_alloc(chunk_addr, size, 1, GFP_KERNEL);
-> > +               memset(chunk_addr, 0, size);
-> > +       }
-> >        return 0;
-> >
-> >  err_unmap:
-> >
-> >
-> 
-> About this one,  memory leak detector disabled(actually I enable it
-> while config the kernel) while booting system, and and found following
-> info in dmesg:
+>-----Original Message-----
+>From: Munegowda, Keshava [mailto:keshava_mgowda@ti.com]
+>Sent: Monday, September 26, 2011 7:49 PM
+>To: Paul Walmsley; Tero Kristo; b-cousson@ti.com; balbi@ti.com;
+>parthab@india.ti.com
+>Cc: linux-usb@vger.kernel.org; linux-omap@vger.kernel.org; linux-
+>kernel@vger.kernel.org; gadiyar@ti.com; sameo@linux.intel.com;
+>tony@atomide.com; khilman@ti.com; johnstul@us.ibm.com;
+>vishwanath.bs@ti.com
+>Subject: Re: [PATCH 2/5 v11] arm: omap: usb: ehci and ohci hwmod
+>structures for omap3
+>
+>On Sat, Sep 24, 2011 at 12:00 PM, Paul Walmsley <paul@pwsan.com> wrote:
+>> On Fri, 23 Sep 2011, Munegowda, Keshava wrote:
+>>
+>>> On Thu, Sep 22, 2011 at 11:31 PM, Paul Walmsley <paul@pwsan.com>
+>wrote:
+>>>
+>>> But the question arises here , why do we need these ehci and ohci as
+>two
+>>> different hwmods containing only irq and base address? It is required
+>>> for future - to implement remote wakeup feature for ehci and ohci
+>ports
+>>> depending on irq-chain handler patches by Tero. Separate hwmods for
+>ehci
+>>> and ohci are needed to enable prcm chain-handler to uniquely identify
+>>> the wakeup source as ehci or ohci and call only the corresponding
+>>> interrupt handler. We will be using omap_hwmod_mux_init for ehci and
+>>> ohci hwmods to enable I/O wakeup capability for respective IO-pads.
+>>> Depending on the particular wakeup source(ehci/ohci), the
+>corresponding
+>>> ehci or ohci irq handler will be called.
+>>>
+>>> If ehci and ohci are combined with usbhs hwmod as a single hwmod ,
+>then
+>>> for every wakeup (either ehci or ohci port wakeup) only the first
+>>> interrupt handler will be called (please look at the function
+>>> omap_hwmod_mux_handle_irq of
+>>>
+>>> /arch/arm/mach-omap2/mux.c file ; in tero's latest patch:
+>>> http://www.mail-archive.com/linux-omap@vger.kernel.org/msg53139.html)
+>>> , so in this
+>>> case, if ehci interrupt is the first interrupt , then even for ohci
+>wakeup
+>>> , only ehci interrupt will get called; which will break the
+>functionality.
+>>
+>> Any reason why this couldn't be handled either by:
+>>
+>> 1. adding an IRQ number field to struct omap_hwmod_mux_info, and
+>changing
+>> _omap_hwmod_mux_handle_irq() to raise that IRQ number?
+>
+>
+>yes, it is possible by changing the existing irq-chain handler by tero
+>Kristo
+>
+>I am looping tero too.
+>
+>So here are new requirements for the irq-chain handler
+>
+>1. The hwmod should have have option to have multiple mux structures
+>
+>This is something like:
+>
+>The existing mux structure definition in omap_hwmod [file:
+>/arch/arm/plat-omap/include/plat/omap_hwmod.h ] structure
+>
+>	struct omap_hwmod_mux_info	*mux;
+>
+>it should changed to
+>
+>	struct omap_hwmod_mux_info	**pmux;
+>         U32                                            mux_cnt;
+>
+>
+>pmux - pointers to mux ; array of mux structures.
+>mux_cnt - number of mux per hwmod.
+>
+>
+>2. The mux  omap_hwmod_mux_info  structure should have new member
+>called irq, like as follows:
+>
+>struct omap_hwmod_mux_info {
+>	int				nr_pads;
+>	...
+>        ....
+>        u32                           irq;
+>
+>};
+>
+>Upon wakeup of the I/O pad of the mux , the irq-chain handler should
+>invoke the irq handler of the irq numbered <map_hwmod_mux_info.irq>
+>
+>3.  There should be "SOME WAY" to supply the irqs  from hwmod
+>structure (omap_hwmod) to mux structure (omap_hwmod_mux_info)
+>
+>
+>if you , tero and other opensource people are aligned on the proposed
+>changes on the irq-handler ;
+>then it is possible to have two hwmods ( usbhs and tll) for usbhost
+>driver.
+>please let me know you comments on the above approach.
+>
 
-Yes, it was not a patch, but the general idea for Catalin ;)
+Hello Tero,
 
-You hit the fact that same zone (embedded percpu space) is now in a
-mixed state.
+I would like to draw your attention to the following thread:
 
-In current kernels, the embedded percpu zone is already known by
-kmemleak, but with a large granularity. kmemleak is not aware of
-individual allocations/freeing in this large zone.
+We need to support the following:
+1. Ability to associate multiple mux info to a hwmod.
+2. Able to associate a particular irq handler to a mux info.
+3. PRCM Chain handler should loop through all mux-info arrays
+   for a particular hwmod to identify the possible wakeup source(s)
+   and call the appropriate irq handler for that mux-info.
+   (It is possible that both mux-info are woken up in which case both
+handlers should be called).
 
-Once kmemleak and percpu allocator are cooperating, we might find more
-kmemleaks. Right now, kmemleak can find pointers in percpu chunks that
-are not anymore reachable (they were freed), and therefore doesnt warn
-of possible memory leaks.
+To give you a little more perspective, EHCI & OHCI are co-controllers
+under UHH/TLL.
+They do not get presented separately to the OCP bus, hence do not qualify
+as separate hwmods
+(Paul had objected to the design approach representing EHCI & OHCI as
+different hwmods).
 
+However, we need a mechanism to efficiently identify/distinguish
+remote-wakeup, connect/disconnect
+On to an EHCI port vs an OHCI port & call only the correct interrupt
+handler(EHCI or OHCI).
 
+ To incorporate this, chain handler implementation would need some
+enhancements.
+ We can look into the details in the next merge window cycle in
+conjunction with aggressive clock management support for EHCI/OHCI.
+ But fundamentally, if you are aligned to the approach, we can go ahead
+collapsing the EHCI & OHCI hwmods into one.
+>
+>>
+>> or
+>>
+>> 2. using shared interrupts?
+>>
+>>
+>> - Paul
+>>
