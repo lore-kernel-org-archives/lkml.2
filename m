@@ -1,69 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753809Ab1I0XPv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 19:15:51 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:55215 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752555Ab1I0XPu (ORCPT
+	id S1753875Ab1I0XQB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 19:16:01 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:49873 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753822Ab1I0XP7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 19:15:50 -0400
-Date: Wed, 28 Sep 2011 09:15:42 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Salter <msalter@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v3 00/24] C6X: New architecture
-Message-Id: <20110928091542.9b1e35afa2075106550de7be@canb.auug.org.au>
-In-Reply-To: <1317155405-26235-1-git-send-email-msalter@redhat.com>
-References: <1317155405-26235-1-git-send-email-msalter@redhat.com>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__28_Sep_2011_09_15_42_+1000_.9MlTJr0TDCvg.NW"
+	Tue, 27 Sep 2011 19:15:59 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        linux-kernel@vger.kernel.org,
+        Denys Vlasenko <vda.linux@googlemail.com>
+Subject: Re: [PATCHv2] fat: don't use custom hex_to_bin()
+References: <CAK1hOcNus4RKQOF=eivuCXFEM5Lqb+jBdOD4YrMA_5bL2EB6yA@mail.gmail.com>
+	<542eeafb16d173360eb79f8188f967cc3dcc9252.1317124046.git.andriy.shevchenko@linux.intel.com>
+	<87hb3xj41s.fsf@devron.myhome.or.jp>
+	<CAHp75Vcdnx28i0s4sKUf+MCruMNq-zdX55f45TcTR7AcO4foSw@mail.gmail.com>
+Date: Wed, 28 Sep 2011 08:15:55 +0900
+In-Reply-To: <CAHp75Vcdnx28i0s4sKUf+MCruMNq-zdX55f45TcTR7AcO4foSw@mail.gmail.com>
+	(Andy Shevchenko's message of "Tue, 27 Sep 2011 21:06:12 +0300")
+Message-ID: <87bou5inkk.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__28_Sep_2011_09_15_42_+1000_.9MlTJr0TDCvg.NW
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Andy Shevchenko <andy.shevchenko@gmail.com> writes:
 
-On Tue, 27 Sep 2011 16:29:41 -0400 Mark Salter <msalter@redhat.com> wrote:
+> Actually here we will change endianess.
+> So, my question is what endianess is right here? If the original code
+> okay, then patch should be rewritten like this:
 >
-> Here is v3 of the C6X architecture patch series. Patches are
-> available in 'upstream-v3' branch at:
->=20
->     git@linux-c6x.org:/git/projects/linux-c6x-upstreaming
+>      rc = hex2bin(op++, ip + 3, 1);
+>      if (rc < 0)
+>           return -EINVAL;
+>
+>      rc = hex2bin(op++, ip + 1, 1);
+>      if (rc < 0)
+>           return -EINVAL;
 
-Is it time for this to be included in linux-next (i.e. are you intending
-to send this to Linus during the next merge window)?  If so, please send
-a request (cc'd to here, linux-next and linux-kernel) asking for
-inclusion.  I would prefer a publically fetchable tree (the tree above is
-(implicitly) fetched over ssh and is so not generally available) and
-branch name that does not change over time (like "for-next" or something)
-but it can just be an alias for the above.
+Original code may work only for little endian. Well, anyway, the output
+should be wchar_t (u16) of native endian.
 
-Arnd, do you have an opinion on this?
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+So, I think it should be something like
 
---Signature=_Wed__28_Sep_2011_09_15_42_+1000_.9MlTJr0TDCvg.NW
-Content-Type: application/pgp-signature
+	u8 uc[2];
+	if (hex2bin(uc, ip + 1, 2) < 0)
+        	return -EINVAL;
+	*(wchar_t *)op = uc[0] << 8 | uc[1];
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+This should be readable more.
 
-iQEcBAEBAgAGBQJOglkeAAoJEDMEi1NhKgbsa0MH/3cDHuENZ5q8jJL3h52zr7zW
-snrxT8XwkgBqPwdKdGymmvHIVqC6ZdCiocznA873WLrx4D6l639Eyq3I7OW588TP
-MztUKA85b9Z4C8h2g/9LTupZIqpsoq7CzcT86y99q79R3V75m/VBP4WVNQ9VzYFy
-P02nnKe32QrmadEwazUwm+m51RY9BykW6EOQj0i12EPc/grIQJsm2t9S4w+zwvWZ
-ySBo9VzaaEJuZgesCCSXQ6YA/q+S5gFYBm3hIm3TY7cvhwZm56Lp71MaqCdj2bbF
-jMV8msUrifAugF85zeRbH+J0Ieei6Smbx2aRXJZBdlmkMONh6FkAdzg+gV3pcBg=
-=N2+k
------END PGP SIGNATURE-----
-
---Signature=_Wed__28_Sep_2011_09_15_42_+1000_.9MlTJr0TDCvg.NW--
+Thanks.
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
