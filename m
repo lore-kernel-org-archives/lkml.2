@@ -1,48 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752891Ab1I0S0j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 14:26:39 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36249 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752058Ab1I0S0i (ORCPT
+	id S1752268Ab1I0S13 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 14:27:29 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:59472 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751139Ab1I0S12 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 14:26:38 -0400
-Date: Tue, 27 Sep 2011 19:26:36 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Daniel Drake <dsd@laptop.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>, sameo@linux.intel.com,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        dilinger@queued.net
-Subject: Re: [PATCH 1/3] mfd: allow mfd_cell association with device tree node
-Message-ID: <20110927182636.GR4289@opensource.wolfsonmicro.com>
-References: <20110921120148.4A81E9D401D@zog.reactivated.net>
- <20110921124936.GA25620@sirena.org.uk>
- <CAMLZHHQZnajC4e12MjaK3W8WcAB2ZB+6L=5kS5BBFZF=+YWicQ@mail.gmail.com>
- <20110921131637.GF4374@opensource.wolfsonmicro.com>
- <CAMLZHHTJaOddSj00g0-WpFQu6pUTqizKjKaQF9hLrhceEMhY1Q@mail.gmail.com>
- <20110927150555.GF20588@ponder.secretlab.ca>
- <CAMLZHHQU-eMAtvBQJj6+WrMjkWWA+ET=z5NdQCEgXxh=m10d3Q@mail.gmail.com>
- <20110927181420.GQ4289@opensource.wolfsonmicro.com>
- <CAMLZHHSuoeAJ-AC9daxb83+EANV=YGK-aiYpQ_j2wFiyQa5ytw@mail.gmail.com>
+	Tue, 27 Sep 2011 14:27:28 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=IHCzk3blIlNlMaRnfNnvinkj0Mz9Lu0f3ojkUyPD2FxRYqwTFjLnuVDDOp7wxPD9J
+	i7fNnJUGFXNGO/Rw8LmaQ==
+Date: Tue, 27 Sep 2011 11:27:22 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Vasiliy Kulikov <segoon@openwall.com>
+cc: kernel-hardening@lists.openwall.com,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        Kees Cook <kees@ubuntu.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Valdis.Kletnieks@vt.edu,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] mm: restrict access to /proc/meminfo
+In-Reply-To: <20110927175642.GA3432@albatros>
+Message-ID: <alpine.DEB.2.00.1109271122480.17876@chino.kir.corp.google.com>
+References: <20110927175453.GA3393@albatros> <20110927175642.GA3432@albatros>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMLZHHSuoeAJ-AC9daxb83+EANV=YGK-aiYpQ_j2wFiyQa5ytw@mail.gmail.com>
-X-Cookie: You will outgrow your usefulness.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 27, 2011 at 07:25:03PM +0100, Daniel Drake wrote:
-> On Tue, Sep 27, 2011 at 7:14 PM, Mark Brown
+On Tue, 27 Sep 2011, Vasiliy Kulikov wrote:
 
-> > Why not just kmemdup() the template you're using rather than modifying
-> > it in place?
+> /proc/meminfo stores information related to memory pages usage, which
+> may be used to monitor the number of objects in specific caches (and/or
+> the changes of these numbers).  This might reveal private information
+> similar to /proc/slabinfo infoleaks.  To remove the infoleak, just
+> restrict meminfo to root.  If it is used by unprivileged daemons,
+> meminfo permissions can be altered the same way as slabinfo:
+> 
+>     groupadd meminfo
+>     usermod -a -G meminfo $MONITOR_USER
+>     chmod g+r /proc/meminfo
+>     chgrp meminfo /proc/meminfo
+> 
 
-> Could do, but is there any point in this case? I'm not seeing it. The
-> "template" is already being modified in this way in the current driver
-> as well.
+I guess the side-effect of this is that users without root will no longer 
+report VM issues where "there's tons of freeable memory but my task got 
+killed", "there's swap available but is unutilized in lowmem situations", 
+etc. :)
 
-That seems like a bug that just happened to get noticed while reviewing
-this change, though...
+Seriously, though, can't we just change the granularity of /proc/meminfo 
+to be MB instead of KB or at least provide a separate file that is 
+readable that does that?  I can understand not exporting information on a 
+page-level granularity but not giving users a way to determine the amount 
+of free memory is a little extreme.
