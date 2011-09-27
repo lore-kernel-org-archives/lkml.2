@@ -1,104 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751582Ab1I0Xsk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 19:48:40 -0400
-Received: from mga14.intel.com ([143.182.124.37]:47172 "EHLO mga14.intel.com"
+	id S1751755Ab1I0XwU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 19:52:20 -0400
+Received: from mga02.intel.com ([134.134.136.20]:18363 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751323Ab1I0Xsj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 19:48:39 -0400
+	id S1750975Ab1I0XwS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 19:52:18 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,452,1312182000"; 
-   d="scan'208";a="56367122"
-Subject: Re: [PATCH v1] sched: fix nohz idle load balancer issues
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Venki Pallipadi <venki@google.com>
-Cc: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 27 Sep 2011 16:49:36 -0700
-In-Reply-To: <CABeCy1YXKR89_uQm_XAyNJHPHkL+6JKxa-C+8Z_9ox7b_k2scQ@mail.gmail.com>
-References: <20110926115049.GA22604@linux.vnet.ibm.com>
-	 <CABeCy1YXKR89_uQm_XAyNJHPHkL+6JKxa-C+8Z_9ox7b_k2scQ@mail.gmail.com>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.1 (3.0.1-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1317167376.11592.53.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="56552212"
+Date: Tue, 27 Sep 2011 16:52:16 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: PME via interrupt or SCI mechanism?
+Message-ID: <20110927235216.GA5765@xanatos>
+References: <20110912171003.GA7939@xanatos>
+ <201109270020.26439.rjw@sisk.pl>
+ <20110926234835.GA9551@xanatos>
+ <201109272254.47232.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201109272254.47232.rjw@sisk.pl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-09-27 at 12:53 -0700, Venki Pallipadi wrote:
-> On Mon, Sep 26, 2011 at 4:50 AM, Srivatsa Vaddagiri
-> <vatsa@linux.vnet.ibm.com> wrote:
-> >
-> > Reviewing idle load balancer code and testing it with some
-> > trace_printk(), I observed the following:
-> >
-> > 1. I had put a trace_printk() in nohz_idle_balance() as below:
-> >
-> >        nohz_idle_balance()
-> >        {
-> >
-> >        if (idle != CPU_IDLE || !this_rq->nohz_balance_kick)
-> >                return;
-> >
-> >        ..
-> >
-> >                trace_printk("Running rebalance for %d\n", balance_cpu);
-> >
-> >                rebalance_domains(balance_cpu, CPU_IDLE);
-> >        }
-> >
-> >    I *never* got that printed during the test. Further investigation
-> >    revealed that ilb_cpu was bailing out early because idle =
-> >    CPU_NOT_IDLE i.e ilb_cpu was no longer idle_at_tick by the time it
-> >    got around to handle the kick. As a result, no one was truly
-> >    doing a load balance on behalf of sleeping idle cpus.
-
-One of the reasons why we saw lib_cpu not idle is probably because that
-info was stale.
-
-Consider this scenario.
-
-a. got a tick when the cpu was busy, so idle_at_tick was not set
-b. cpu went idle
-c. same cpu got the kick IPI from other busy cpu
-d. and as it has idle_at_tick not set, it couldn't proceed with the nohz
-idle balance.
-
-> > This patch is an attempt to solve above issues observed with idle load
-> > balancer.
-> >
-> > - The patch causes a ilb_cpu (that was kicked) to kick another idle
-> >  cpu in case it was found to be !idle_at_tick (so that another idle cpu
-> >  can do load balance on behalf of idle cpus). This fixes issue #1
+On Tue, Sep 27, 2011 at 10:54:47PM +0200, Rafael J. Wysocki wrote:
+> On Tuesday, September 27, 2011, Sarah Sharp wrote:
+> > On Tue, Sep 27, 2011 at 12:20:26AM +0200, Rafael J. Wysocki wrote:
+> > > On Sunday, September 25, 2011, Rafael J. Wysocki wrote:
+> > > > On Thursday, September 22, 2011, Sarah Sharp wrote:
+> > > > > On Mon, Sep 19, 2011 at 11:43:33PM +0200, Rafael J. Wysocki wrote:
+> > > > Without looking at the tables at the moment (I'll do that later),
+> > > > I think that they are missing the information that GPE 0D is a wakeup
+> > > > GPE for the xHCI device.
+> > > 
+> > > The DSDT appears to contain that information, so I'm not sure what's
+> > > going on.  Perhaps you can put a debug printk into acpi_dev_run_wake()
+> > > to see if that function is called for the xHCI controllers?
+> > 
+> > I put a printk in acpi_dev_run_wake(), and that shows up in the original
+> > dmesg I sent:
+> > 
+> > Sep 22 10:47:09 talon kernel: [ 2026.211933] xhci_hcd 0000:00:14.0: acpi_pci_run_wake - enable dev wake
+> > Sep 22 10:47:09 talon kernel: [ 2026.211936] acpi device:34: acpi_dev_run_wake - enable dev wake
+> > Sep 22 10:47:09 talon kernel: [ 2026.211955] acpi device:34: acpi_dev_run_wake - return -19
 > 
-> Some comments:
+> OK, can you printk() dev->wakeup.gpe_number here?
 > 
-> Another potential change here is to
-> - either reverse the order of rebalance_domains() and
-> nohz_idle_balance() in run_rebalance_domains()
-> - or to kick another idle CPU in case of need_resched() in nohz_idle_balance.
-> This should help with idle balance of tickless CPUs when ilb CPU gets
-> a new task through load balance and hence aborts ilb.
+> [/me realizes that "error" is not really used in this function.  Bah.]
 
-I think we are mostly likely seeing the above mentioned scenario.
+Ok, here's what dmesg says (I used %u not 0x%x for the GPE number):
 
-Also Vatsa, there is a deadlock associated by using
-__smp_call_funciton_single() in the nohz_balancer_kick(). So I am
-planning to remove the IPI that is used to kick the nohz balancer and
-instead use the resched_cpu logic to kick the nohz balancer.
+Sep 27 16:30:34 talon kernel: [  882.301023] xhci_hcd 0000:00:14.0: xhci_pci_suspend
+Sep 27 16:30:34 talon kernel: [  882.301029] xhci_hcd 0000:00:14.0: xhci_suspend
+Sep 27 16:30:34 talon kernel: [  882.301039] xhci_hcd 0000:00:14.0: // Setting command ring address to 0x30c3f001
+Sep 27 16:30:34 talon kernel: [  882.301090] xhci_hcd 0000:00:14.0: hcd_pci_runtime_suspend: 0
+Sep 27 16:30:34 talon kernel: [  882.301140] acpi_bus_power_manageable - result 0, device->flags.power_manageable 0
+Sep 27 16:30:34 talon kernel: [  882.301143] xhci_hcd 0000:00:14.0: acpi_pci_power_manageable - dev is not power manageable
+Sep 27 16:30:34 talon kernel: [  882.301146] acpi_bus_power_manageable - result 0, device->flags.power_manageable 0
+Sep 27 16:30:34 talon kernel: [  882.301149] xhci_hcd 0000:00:14.0: __pci_enable_wake - enable runtimewake
+Sep 27 16:30:34 talon kernel: [  882.301156] xhci_hcd 0000:00:14.0: PME# enabled
+Sep 27 16:30:34 talon kernel: [  882.301159] xhci_hcd 0000:00:14.0: acpi_pci_run_wake - enable dev wake
+Sep 27 16:30:34 talon kernel: [  882.301162] acpi device:34: acpi_dev_run_wake - enable dev wake
+Sep 27 16:30:34 talon kernel: [  882.301175] acpi device:34: acpi_dev_run_wake - enable gpe 13
+Sep 27 16:30:34 talon kernel: [  882.301185] acpi device:34: acpi_dev_run_wake - return -19
+Sep 27 16:30:34 talon kernel: [  882.301188] xhci_hcd 0000:00:14.0: pci_raw_set_power_state from 0 to 3
+Sep 27 16:30:34 talon kernel: [  882.312288] acpi_bus_power_manageable - result 0, device->flags.power_manageable 0
+Sep 27 16:30:34 talon kernel: [  882.312293] xhci_hcd 0000:00:14.0: acpi_pci_power_manageable - dev is not power manageable
+Sep 27 16:30:34 talon kernel: [  882.312296] acpi_bus_power_manageable - result 0, device->flags.power_manageable 0
+Sep 27 16:30:34 talon kernel: [  882.312299] xhci_hcd 0000:00:14.0: pci_platform_power_transition - is NOT power managable
 
-I will post this patch mostly tomorrow. That patch will not use the
-idle_at_tick check in the nohz_idle_balance(). So that should address
-your issue in some cases if not most.
+If I wake up the host controller by plugging in a webcam into an external hub:
 
-thanks,
-suresh
+Sep 27 16:31:46 talon kernel: [  953.645014] ehci_hcd 0000:00:1d.0: pci_acpi_wake_dev
+Sep 27 16:31:46 talon kernel: [  953.645023] ehci_hcd 0000:00:1a.0: pci_acpi_wake_dev
+Sep 27 16:31:46 talon kernel: [  953.645029] snd_hda_intel 0000:00:1b.0: pci_acpi_wake_dev
+Sep 27 16:31:46 talon kernel: [  953.645034] e1000e 0000:00:19.0: pci_acpi_wake_dev
+Sep 27 16:31:46 talon kernel: [  953.645089] ehci_hcd 0000:00:1d.0: pci_acpi_wake_dev
+Sep 27 16:31:46 talon kernel: [  953.645094] ehci_hcd 0000:00:1a.0: pci_acpi_wake_dev
+Sep 27 16:31:46 talon kernel: [  953.645098] snd_hda_intel 0000:00:1b.0: pci_acpi_wake_dev
+Sep 27 16:31:46 talon kernel: [  953.645103] e1000e 0000:00:19.0: pci_acpi_wake_dev
 
+Those lines repeat constantly until I echo on to the power/control file
+for the xHCI device.
+
+If I cat the /sys/firmware/acpi/interrupts/gpe0D file *before* I disable
+D3, I see:
+
+root@talon:/sys/firmware/acpi/interrupts# cat gpe0D
+  211327   enabled
+root@talon:/sys/firmware/acpi/interrupts# 
+
+I think I was catting the file after I ran `echo on > power/control`
+previously.  Sorry for the confusion.
+
+So it looks like gpe 0xD is enabled when the host goes into D3, and
+acpi_dev_run_wake is calling acpi_enable_gpe() with GPE 13 (i.e. 0xD),
+correct?
+
+Sarah Sharp
