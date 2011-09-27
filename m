@@ -1,60 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752594Ab1I0CjV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 22:39:21 -0400
-Received: from ozlabs.org ([203.10.76.45]:46489 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752000Ab1I0CjU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 22:39:20 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: David Rientjes <rientjes@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 1/2] oom: do not live lock on frozen tasks
-In-Reply-To: <20110926110559.GH10156@tiehlicka.suse.cz>
-References: <20110825151818.GA4003@redhat.com> <20110825164758.GB22564@tiehlicka.suse.cz> <alpine.DEB.2.00.1108251404130.18747@chino.kir.corp.google.com> <20110826070946.GA7280@tiehlicka.suse.cz> <20110826085610.GA9083@tiehlicka.suse.cz> <alpine.DEB.2.00.1108260218050.14732@chino.kir.corp.google.com> <20110826095356.GB9083@tiehlicka.suse.cz> <alpine.DEB.2.00.1108261110020.13943@chino.kir.corp.google.com> <20110926082837.GC10156@tiehlicka.suse.cz> <87sjnjk36l.fsf@rustcorp.com.au> <20110926110559.GH10156@tiehlicka.suse.cz>
-User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
-Date: Tue, 27 Sep 2011 11:51:00 +0930
-Message-ID: <87k48uk9o3.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752530Ab1I0CuI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 22:50:08 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:42460 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752274Ab1I0CuH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 22:50:07 -0400
+Subject: [RFC][PATCH] ASoC: Make wm1250-ev1 depends on GPIOLIB
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 27 Sep 2011 10:49:59 +0800
+Message-ID: <1317091799.315.6.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 Sep 2011 13:05:59 +0200, Michal Hocko <mhocko@suse.cz> wrote:
-> On Mon 26-09-11 19:58:50, Rusty Russell wrote:
-> > On Mon, 26 Sep 2011 10:28:37 +0200, Michal Hocko <mhocko@suse.cz> wrote:
-> > > On Fri 26-08-11 11:13:40, David Rientjes wrote:
-> > > > I'd love to be able to do a thaw on a PF_FROZEN task in the oom killer 
-> > > > followed by a SIGKILL if that task is selected for oom kill without an 
-> > > > heuristic change.  Not sure if that's possible, so we'll wait for Rafael 
-> > > > to chime in.
-> > > 
-> > > We have discussed that with Rafael and it should be safe to do that. See
-> > > the patch bellow.
-> > > The only place I am not entirely sure about is run_guest
-> > > (drivers/lguest/core.c). It seems that the code is able to cope with
-> > > signals but it also calls lguest_arch_run_guest after try_to_freeze.
-> > 
-> > Yes; if you want to kill things in the refrigerator(), then will a
-> > 
-> > 		if (cpu->lg->dead || task_is_dead(current))
-> >                         break;
-> > 
-> > Work?  
-> 
-> The task is not dead yet. We should rather check for pending signals.
-> Can we just move try_to_freeze up before the pending signals check?
+I got below build error if GPIO support is disabled.
+Make wm1250-ev1 depends on GPIOLIB to fix below build error.
 
-Yep, that works.
+  CC      sound/soc/codecs/wm1250-ev1.o
+sound/soc/codecs/wm1250-ev1.c:32:14: error: array type has incomplete element type
+sound/soc/codecs/wm1250-ev1.c: In function ‘wm1250_ev1_pdata’:
+sound/soc/codecs/wm1250-ev1.c:126:18: warning: type defaults to ‘int’ in type name
+sound/soc/codecs/wm1250-ev1.c:126:18: warning: type defaults to ‘int’ in type name
+sound/soc/codecs/wm1250-ev1.c:126:18: error: negative width in bit-field ‘<anonymous>’
+sound/soc/codecs/wm1250-ev1.c:134:42: warning: type defaults to ‘int’ in type name
+sound/soc/codecs/wm1250-ev1.c:134:42: warning: type defaults to ‘int’ in type name
+sound/soc/codecs/wm1250-ev1.c:134:42: error: negative width in bit-field ‘<anonymous>’
+sound/soc/codecs/wm1250-ev1.c: In function ‘wm1250_ev1_free’:
+sound/soc/codecs/wm1250-ev1.c:155:34: warning: type defaults to ‘int’ in type name
+sound/soc/codecs/wm1250-ev1.c:155:34: warning: type defaults to ‘int’ in type name
+sound/soc/codecs/wm1250-ev1.c:155:34: error: negative width in bit-field ‘<anonymous>’
+make[3]: *** [sound/soc/codecs/wm1250-ev1.o] Error 1
+make[2]: *** [sound/soc/codecs] Error 2
+make[1]: *** [sound/soc] Error 2
+make: *** [sound] Error 2
 
-Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+I got the build error while trying to build for SND_MFLD_MACHINE and SND_SST_PLATFORM.
+( "Enable ALSA for SoC audio support" and "Build all ASoC CODEC drivers" on X86 )
 
-Cheers,
-Rusty.
+Axel
+ sound/soc/codecs/Kconfig |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/sound/soc/codecs/Kconfig b/sound/soc/codecs/Kconfig
+index 3449431..0ad80fe 100644
+--- a/sound/soc/codecs/Kconfig
++++ b/sound/soc/codecs/Kconfig
+@@ -58,7 +58,7 @@ config SND_SOC_ALL_CODECS
+ 	select SND_SOC_UDA134X
+ 	select SND_SOC_UDA1380 if I2C
+ 	select SND_SOC_WL1273 if MFD_WL1273_CORE
+-	select SND_SOC_WM1250_EV1 if I2C
++	select SND_SOC_WM1250_EV1 if I2C && GPIOLIB
+ 	select SND_SOC_WM2000 if I2C
+ 	select SND_SOC_WM5100 if I2C
+ 	select SND_SOC_WM8350 if MFD_WM8350
+-- 
+1.7.4.1
+
+
+
