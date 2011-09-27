@@ -1,85 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753914Ab1I0MTn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 08:19:43 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:60371 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753635Ab1I0MTm convert rfc822-to-8bit (ORCPT
+	id S1753916Ab1I0MUu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 08:20:50 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:51212 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753536Ab1I0MUs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 08:19:42 -0400
-Subject: Re: [PATCH v5 3.1.0-rc4-tip 18/26]   uprobes: slot allocation.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jonathan Corbet <corbet@lwn.net>, Hugh Dickins <hughd@google.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 27 Sep 2011 14:18:52 +0200
-In-Reply-To: <20110920120335.25326.50673.sendpatchset@srdronam.in.ibm.com>
-References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com>
-	 <20110920120335.25326.50673.sendpatchset@srdronam.in.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1317125932.15383.49.camel@twins>
-Mime-Version: 1.0
+	Tue, 27 Sep 2011 08:20:48 -0400
+Date: Tue, 27 Sep 2011 14:20:44 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Len Brown <len.brown@intel.com>
+Subject: Re: linux-next: manual merge of the rcu tree with Linus' tree
+Message-ID: <20110927122041.GL18553@somewhere>
+References: <20110927160411.7bcec0906847959fb6e88a81@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110927160411.7bcec0906847959fb6e88a81@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-09-20 at 17:33 +0530, Srikar Dronamraju wrote:
-> +static struct uprobes_xol_area *xol_alloc_area(void)
-> +{
-> +       struct uprobes_xol_area *area = NULL;
-> +
-> +       area = kzalloc(sizeof(*area), GFP_KERNEL);
-> +       if (unlikely(!area))
-> +               return NULL;
-> +
-> +       area->bitmap = kzalloc(BITS_TO_LONGS(UINSNS_PER_PAGE) * sizeof(long),
-> +                                                               GFP_KERNEL);
-> +
-> +       if (!area->bitmap)
-> +               goto fail;
-> +
-> +       init_waitqueue_head(&area->wq);
-> +       spin_lock_init(&area->slot_lock);
-> +       if (!xol_add_vma(area) && !current->mm->uprobes_xol_area) {
+On Tue, Sep 27, 2011 at 04:04:11PM +1000, Stephen Rothwell wrote:
+> Hi Paul,
+> 
+> Today's linux-next merge of the rcu tree got a conflict in
+> arch/x86/kernel/process_64.c between commit a0bfa1373859 ("cpuidle: stop
+> depending on pm_idle") from Linus' tree and commit 18349ca4b42e ("x86:
+> Enter rcu extended qs after idle notifier call") from the rcu tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary.
+> 
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> diff --cc arch/x86/kernel/process_64.c
+> index f693e44,dee2e6c..0000000
+> --- a/arch/x86/kernel/process_64.c
+> +++ b/arch/x86/kernel/process_64.c
+> @@@ -137,8 -136,12 +137,14 @@@ void cpu_idle(void
+>   			enter_idle();
+>   			/* Don't trace irqs off for idle */
+>   			stop_critical_timings();
+> - 			if (cpuidle_idle_call())
+> + 
+>  -			/* enter_idle() needs rcu for notifiers */
+>  -			rcu_enter_nohz();
+>  -			pm_idle();
+>  -			rcu_exit_nohz();
+> ++			if (cpuidle_idle_call()) {
+> ++				/* enter_idle() needs rcu for notifiers */
+> ++				rcu_enter_nohz();
+>  +				pm_idle();
+> ++				rcu_exit_nohz();
+> ++			}
+> + 
+>   			start_critical_timings();
+>   
+>   			/* In many cases the interrupt that ended idle
 
-So what happens if xol_add_vma() succeeds, but we find
-->uprobes_xol_area set?
-
-> +               task_lock(current);
-> +               if (!current->mm->uprobes_xol_area) {
-
-Having to re-test it under this lock seems to suggest it could.
-
-> +                       current->mm->uprobes_xol_area = area;
-> +                       task_unlock(current);
-> +                       return area;
-
-This function would be so much easier to read if the success case (this
-here I presume) would not be nested 2 deep.
-
-> +               }
-> +               task_unlock(current);
-> +       }
-
-at which point you could end up with two extra vmas? Because there's no
-freeing of the result of xol_add_vma().
-
-> +fail:
-> +       kfree(area->bitmap);
-> +       kfree(area);
-> +       return current->mm->uprobes_xol_area;
-> +} 
+Looks good, thanks!
