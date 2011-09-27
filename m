@@ -1,55 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752155Ab1I0RCQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 13:02:16 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:33157 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751450Ab1I0RCO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 13:02:14 -0400
-Date: Tue, 27 Sep 2011 17:58:07 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Huajun Li <huajun.li.lee@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        netdev <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: Re: Question about memory leak detector giving false positive
- report for net/core/flow.c
-Message-ID: <20110927165807.GM14237@e102109-lin.cambridge.arm.com>
-References: <CA+v9cxadZzWr35Q9RFzVgk_NZsbZ8PkVLJNxjBAMpargW9Lm4Q@mail.gmail.com>
- <1317054774.6363.9.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <20110926165024.GA21617@e102109-lin.cambridge.arm.com>
- <1317066395.2796.11.camel@edumazet-laptop>
- <CA+v9cxYzWJScCa2mMoEovq3WULSZYQaq6EjoRV7SQUjr0L_RiQ@mail.gmail.com>
- <1317102918.2796.22.camel@edumazet-laptop>
+	id S1752205Ab1I0RCW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 13:02:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28086 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751450Ab1I0RCU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 13:02:20 -0400
+Message-ID: <4E82017C.3010304@redhat.com>
+Date: Tue, 27 Sep 2011 20:01:48 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1317102918.2796.22.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jon Mason <mason@myri.com>
+CC: Sven Schnelle <svens@stackframe.org>, Simon Kirby <sim@hostway.ca>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Niels Ole Salscheider <niels_ole@salscheider-online.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: [REGRESSION] e1000e failure triggered by "PCI: Remove MRRS modification
+ from MPS setting code"
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 27, 2011 at 06:55:18AM +0100, Eric Dumazet wrote:
-> Yes, it was not a patch, but the general idea for Catalin ;)
-> 
-> You hit the fact that same zone (embedded percpu space) is now in a
-> mixed state.
-> 
-> In current kernels, the embedded percpu zone is already known by
-> kmemleak, but with a large granularity. kmemleak is not aware of
-> individual allocations/freeing in this large zone.
-> 
-> Once kmemleak and percpu allocator are cooperating, we might find more
-> kmemleaks. Right now, kmemleak can find pointers in percpu chunks that
-> are not anymore reachable (they were freed), and therefore doesnt warn
-> of possible memory leaks.
+Commit ed2888e906b567 (merged 3.1-rc6) causes a reproducible failure 
+with my e1000e card here.  Starting a kvm guest (which mostly consists 
+of shoving display updates over X over ssh, as far as the network is 
+concerned) locks up the card hard.
 
-Thanks for suggestions. I need to understand the percpu code a bit
-better as it looks that kmemleak is told about some memory blocks twice.
+The failure is easily reproducible, will gladly test patches.
 
 -- 
-Catalin
+error compiling committee.c: too many arguments to function
+
