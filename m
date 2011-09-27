@@ -1,127 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753374Ab1I0KNv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 06:13:51 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:52525 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753129Ab1I0KNu (ORCPT
+	id S1753255Ab1I0KOQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 06:14:16 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:8448 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752327Ab1I0KOP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 06:13:50 -0400
-From: tom.leiming@gmail.com
-To: rjw@sisk.pl, stern@rowland.harvard.edu
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        mingo@redhat.com, rostedt@goodmis.org, fweisbec@gmail.com,
-        Ming Lei <ming.lei@canonical.com>
-Subject: [PATCH v1 2/2] PM/runtime: replace dev_dbg with trace_rpm_*
-Date: Tue, 27 Sep 2011 18:12:17 +0800
-Message-Id: <1317118338-4040-3-git-send-email-tom.leiming@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1317118338-4040-1-git-send-email-tom.leiming@gmail.com>
-References: <1317118338-4040-1-git-send-email-tom.leiming@gmail.com>
+	Tue, 27 Sep 2011 06:14:15 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:date:
+	message-id:subject:from:to:cc:content-type:x-system-of-record;
+	b=sJnmJYN6bs3T8OYRDmSxauOUpO8culvLdho/AQ5GCydd7M0Oks93jaqZ6hdX01KYz
+	QOgOrPz8KPEvLKfPm6f9A==
+MIME-Version: 1.0
+In-Reply-To: <CAKTCnzkzdQgut96NZf3Mi2kpOWW7N3qeybets5AHy7Gp8Wj_HQ@mail.gmail.com>
+References: <1316230753-8693-1-git-send-email-walken@google.com>
+	<CAKTCnzkzdQgut96NZf3Mi2kpOWW7N3qeybets5AHy7Gp8Wj_HQ@mail.gmail.com>
+Date: Tue, 27 Sep 2011 03:14:09 -0700
+Message-ID: <CANN689G4Z21v6fcF1dt-10CpQp9V42_hGPcPP2d5FChfCon_9Q@mail.gmail.com>
+Subject: Re: [PATCH 0/8] idle page tracking / working set estimation
+From: Michel Lespinasse <walken@google.com>
+To: Balbir Singh <bsingharora@gmail.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Michael Wolf <mjwolf@us.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ming Lei <ming.lei@canonical.com>
+On Tue, Sep 27, 2011 at 3:03 AM, Balbir Singh <bsingharora@gmail.com> wrote:
+> On Sat, Sep 17, 2011 at 9:09 AM, Michel Lespinasse <walken@google.com> wrote:
+>> Patch 3 introduces page_referenced_kstaled(), which is similar to
+>> page_referenced() but is used for idle page tracking rather than
+>> for memory reclaimation. Since both functions clear the pte_young bits
+>> and we don't want them to interfere with each other, two new page flags
+>> are introduced that track when young pte references have been cleared by
+>> each of the page_referenced variants.
+>
+> Sorry, I have trouble parsing this sentence, could you elaborate on "when"?
 
-This patch replaces dev_dbg with trace_rpm_* inside
-the three important functions:
+page_referenced() indicates if a page was accessed since the previous
+page_referenced() call.
 
-	rpm_idle
-	rpm_suspend
-	rpm_resume
+page_referenced_kstaled() indicates if a page was accessed since the
+previous page_referenced_kstaled() call.
 
-Trace points have the below advantages compared with dev_dbg:
+Both of the functions need to clear PTE young bits; however we don't
+want the two functions to interfere with each other. To achieve this,
+we add two page bits to indicate when a young PTE has been observed by
+one of the functions but not by the other.
 
-	- trace points include much runtime information(such as
-	running cpu, current task, ...)
-
-	- most of linux distributions may disable "verbose debug"
-	driver debug compile switch, so it is very difficult to
-	report/debug runtime pm related problems from distribution
-	users without this kind of debug information.
-
-	- for upstream kernel users, enableing the debug switch will
-	produce many useless "rpm_resume" output, and it is very noise.
-
-	- dev_dbg inside rpm_suspend/rpm_resume may have some effects
-	on runtime pm behaviour of console devicer
-
-Cc: Steven Rostedt rostedt@goodmis.org
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
----
-
-v1: takes Steven's suggestions
-        - pass _THIS_IP_ to trace_rpm_return_int
-
----
- drivers/base/power/runtime.c |   11 +++++++----
- 1 files changed, 7 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
-index acb3f83..74013fa 100644
---- a/drivers/base/power/runtime.c
-+++ b/drivers/base/power/runtime.c
-@@ -9,6 +9,7 @@
- 
- #include <linux/sched.h>
- #include <linux/pm_runtime.h>
-+#include <trace/events/rpm.h>
- #include "power.h"
- 
- static int rpm_resume(struct device *dev, int rpmflags);
-@@ -171,6 +172,7 @@ static int rpm_idle(struct device *dev, int rpmflags)
- 	int (*callback)(struct device *);
- 	int retval;
- 
-+	trace_rpm_idle(dev, rpmflags);
- 	retval = rpm_check_suspend_allowed(dev);
- 	if (retval < 0)
- 		;	/* Conditions are wrong. */
-@@ -243,6 +245,7 @@ static int rpm_idle(struct device *dev, int rpmflags)
- 	wake_up_all(&dev->power.wait_queue);
- 
-  out:
-+	trace_rpm_return_int(dev, _THIS_IP_, retval);
- 	return retval;
- }
- 
-@@ -295,7 +298,7 @@ static int rpm_suspend(struct device *dev, int rpmflags)
- 	struct device *parent = NULL;
- 	int retval;
- 
--	dev_dbg(dev, "%s flags 0x%x\n", __func__, rpmflags);
-+	trace_rpm_suspend(dev, rpmflags);
- 
-  repeat:
- 	retval = rpm_check_suspend_allowed(dev);
-@@ -430,7 +433,7 @@ static int rpm_suspend(struct device *dev, int rpmflags)
- 	}
- 
-  out:
--	dev_dbg(dev, "%s returns %d\n", __func__, retval);
-+	trace_rpm_return_int(dev, _THIS_IP_, retval);
- 
- 	return retval;
- }
-@@ -459,7 +462,7 @@ static int rpm_resume(struct device *dev, int rpmflags)
- 	struct device *parent = NULL;
- 	int retval = 0;
- 
--	dev_dbg(dev, "%s flags 0x%x\n", __func__, rpmflags);
-+	trace_rpm_resume(dev, rpmflags);
- 
-  repeat:
- 	if (dev->power.runtime_error)
-@@ -615,7 +618,7 @@ static int rpm_resume(struct device *dev, int rpmflags)
- 		spin_lock_irq(&dev->power.lock);
- 	}
- 
--	dev_dbg(dev, "%s returns %d\n", __func__, retval);
-+	trace_rpm_return_int(dev, _THIS_IP_, retval);
- 
- 	return retval;
- }
 -- 
-1.7.5.4
-
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
