@@ -1,44 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753353Ab1I0KGJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 06:06:09 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:64128 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753200Ab1I0KGG (ORCPT
+	id S1753215Ab1I0KLq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 06:11:46 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:20828
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751770Ab1I0KLp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 06:06:06 -0400
+	Tue, 27 Sep 2011 06:11:45 -0400
+X-SpamScore: -9
+X-BigFish: VS-9(zz1432N98dKzz1202hzz8275dhz2dh2a8h668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-FB-SS: 0,
+Date: Tue, 27 Sep 2011 18:21:36 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Marc Zyngier <marc.zyngier@arm.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        David Brown <davidb@codeaurora.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH v3 0/3] genirq: handling GIC per-cpu interrupts
+Message-ID: <20110927102135.GD17997@S2100-06.ap.freescale.net>
+References: <1316793788-14500-1-git-send-email-marc.zyngier@arm.com>
 MIME-Version: 1.0
-In-Reply-To: <4E7DECA0.5020707@parallels.com>
-References: <1316393805-3005-1-git-send-email-glommer@parallels.com>
-	<1316393805-3005-2-git-send-email-glommer@parallels.com>
-	<4E794AA2.9080008@parallels.com>
-	<CAKTCnzmkuL+9ftD5d0Z8b5w+DUSUoLiWqSX_TgGxtRxtoPsxpA@mail.gmail.com>
-	<4E7DECA0.5020707@parallels.com>
-Date: Tue, 27 Sep 2011 15:36:04 +0530
-Message-ID: <CAKTCnz=DFUc=s9LzxPp-P2jOPXvNzWj8OswadCR09nVmM=ozxQ@mail.gmail.com>
-Subject: Re: [PATCH v3 1/7] Basic kernel memory functionality for the Memory Controller
-From: Balbir Singh <bsingharora@gmail.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, paul@paulmenage.org, lizf@cn.fujitsu.com,
-        kamezawa.hiroyu@jp.fujitsu.com, ebiederm@xmission.com,
-        davem@davemloft.net, gthelen@google.com, netdev@vger.kernel.org,
-        linux-mm@kvack.org, kirill@shutemov.name,
-        Ying Han <yinghan@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1316793788-14500-1-git-send-email-marc.zyngier@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> I know we have a lot of pending xxx_from_cont() and struct cgroup
->> *cont, can we move it to memcg notation to be more consistent with our
->> usage. There is a patch to convert old usage
->>
->
-> Hello Balbir, I missed this comment. What exactly do you propose in this
-> patch, since I have to assume that the patch you talk about is not applied?
-> Is it just a change to the parameter name that you propose?
->
+On Fri, Sep 23, 2011 at 05:03:05PM +0100, Marc Zyngier wrote:
+> The current GIC per-cpu interrupts (aka PPIs) suffer from a number of
+> problems:
+> 
+> - They use a completely separate scheme to handle the interrupts,
+>   mostly because the PPI concept doesn't really match the kernel view
+>   of an interrupt.
+> - PPIs can only be used by the timer code, unless we add more low-level
+>   assembly code.
+> - The local timer code can only be used by devices generating PPIs,
+>   and not SPIs.
+> - At least one platform (msm) has started implementing its own
+>   alternative scheme.
+> - Some low-level code gets duplicated, as usual...
+> 
+> The proposed solution is to handle the PPIs using the same path as
+> SPIs. A new core API is added to deal with per-cpu interrupts in a
+> less awkward way. The local timer code is updated to reflect these
+> changes.
+> 
+> The core API changes are based on an initial idea by Thomas Gleixner.
+> 
+> Tested on ARM Versatile Express (Cortex A15), ARM RealView PB11MP,
+> OMAP4 (Panda) and Tegra (Harmony). Patch series against next-20110923.
+> 
+> From v2:
+> - Fixed !GENERIC_HARDIRQS build
+> - Fixed request_percpu_irq documentation
+> 
+> From v1:
+> - General tidy-up after Thomas' review. I've kept the config option
+>   for the time being until we can sort out the anonymous union
+>   problem.
+> 
+> Marc Zyngier (3):
+>   genirq: add support for per-cpu dev_id interrupts
+>   ARM: gic: consolidate PPI handling
+>   ARM: gic, local timers: use the request_percpu_irq() interface
+> 
+On imx6q:
 
-Yes, it is a patch posted on linux-mm by raghavendra
+Tested-by: Shawn Guo <shawn.guo@linaro.org>
 
-Balbir Singh
+-- 
+Regards,
+Shawn
+
