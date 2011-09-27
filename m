@@ -1,58 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752998Ab1I0XZa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 19:25:30 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:62387 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751354Ab1I0XZ3 convert rfc822-to-8bit (ORCPT
+	id S1753556Ab1I0X1J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 19:27:09 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:16245 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752867Ab1I0X1H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 19:25:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <CACqU3MU8jkysNxFasdfy9ksqSo2ojiZ5LUwfcfX13MMRgVx2Xw@mail.gmail.com>
-References: <CA+55aFwdm3n+xehYc1cronkcwLE79ZYtr96LiVWD2WjKkaZ5DA@mail.gmail.com>
-	<CACqU3MXzUbQS9fy0Etgt2GcgwRoXfihhmw-aWjrCFbzvmDM7yg@mail.gmail.com>
-	<CA+55aFwKyd5fuyxu2tGDbQ8gKiEj=z7uYdBRg9O46WN0sTeNTQ@mail.gmail.com>
-	<CACqU3MU8jkysNxFasdfy9ksqSo2ojiZ5LUwfcfX13MMRgVx2Xw@mail.gmail.com>
-Date: Tue, 27 Sep 2011 19:25:27 -0400
-Message-ID: <CACqU3MWyCknNH3xmVmbJJu+w9ugNc3e4K3e3_6cY1RAy4ynJCQ@mail.gmail.com>
-Subject: Re: Linux 3.1-rc7
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 27 Sep 2011 19:27:07 -0400
+From: David Daney <david.daney@cavium.com>
+To: devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        davem@davemloft.net
+Cc: David Daney <david.daney@cavium.com>
+Subject: [PATCH v2 1/3] netdev/of/phy: New function: of_mdio_find_bus().
+Date: Tue, 27 Sep 2011 16:26:53 -0700
+Message-Id: <1317166015-20714-2-git-send-email-david.daney@cavium.com>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1317166015-20714-1-git-send-email-david.daney@cavium.com>
+References: <1317166015-20714-1-git-send-email-david.daney@cavium.com>
+X-OriginalArrivalTime: 27 Sep 2011 23:27:07.0467 (UTC) FILETIME=[F90499B0:01CC7D6C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Add of_mdio_find_bus() which allows an mii_bus to be located given its
+associated the device tree node.
 
-On Tue, Sep 27, 2011 at 7:20 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
-> Hi,
->
-> On Tue, Sep 27, 2011 at 7:17 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->> On Tue, Sep 27, 2011 at 4:13 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
->>>
->>> this -rc fails to build on my config (attached):
->>>
->>> arch/x86/kernel/i387.c: In function 'restore_i387_xsave':
->>> arch/x86/kernel/i387.c:726:1: warning: "/*" within comment
->>
->> Hmm. That seems completely bogus.
->>
->> Are you sure you have a clean kernel tree? Because I suspect that file
->> is corrupted on your machine.
->>
-> yes it was.
->
-What is strange is that I moved from -rc7 to -rc8 with:
+This is needed by the follow-on patch to add a driver for MDIO bus
+multiplexers.
 
-% git reset --hard v3.1-rc8
+The of_mdiobus_register() function is modified so that the device tree
+node is recorded in the mii_bus.  Then we can find it again by
+iterating over all mdio_bus_class devices.
 
-which should have reset the corrupted file. FYI, the machine is
-running 2.6.35.13-91.fc14.x86_64. Something's smelly with that kernel
-:-/
+Signed-off-by: David Daney <david.daney@cavium.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: "David S. Miller" <davem@davemloft.net>
+---
+ drivers/net/phy/mdio_bus.c |    3 ++-
+ drivers/of/of_mdio.c       |   26 ++++++++++++++++++++++++++
+ include/linux/of_mdio.h    |    2 ++
+ include/linux/phy.h        |    1 +
+ 4 files changed, 31 insertions(+), 1 deletions(-)
 
- - Arnaud
->
+diff --git a/drivers/net/phy/mdio_bus.c b/drivers/net/phy/mdio_bus.c
+index 6c58da2..227a060 100644
+--- a/drivers/net/phy/mdio_bus.c
++++ b/drivers/net/phy/mdio_bus.c
+@@ -70,10 +70,11 @@ static void mdiobus_release(struct device *d)
+ 	kfree(bus);
+ }
+ 
+-static struct class mdio_bus_class = {
++struct class mdio_bus_class = {
+ 	.name		= "mdio_bus",
+ 	.dev_release	= mdiobus_release,
+ };
++EXPORT_SYMBOL(mdio_bus_class);
+ 
+ /**
+  * mdiobus_register - bring up all the PHYs on a given bus and attach them to bus
+diff --git a/drivers/of/of_mdio.c b/drivers/of/of_mdio.c
+index d35e300..7c28e8c 100644
+--- a/drivers/of/of_mdio.c
++++ b/drivers/of/of_mdio.c
+@@ -45,6 +45,8 @@ int of_mdiobus_register(struct mii_bus *mdio, struct device_node *np)
+ 		for (i=0; i<PHY_MAX_ADDR; i++)
+ 			mdio->irq[i] = PHY_POLL;
+ 
++	mdio->dev.of_node = np;
++
+ 	/* Register the MDIO bus */
+ 	rc = mdiobus_register(mdio);
+ 	if (rc)
+@@ -189,3 +191,27 @@ struct phy_device *of_phy_connect_fixed_link(struct net_device *dev,
+ 	return IS_ERR(phy) ? NULL : phy;
+ }
+ EXPORT_SYMBOL(of_phy_connect_fixed_link);
++
++/**
++ * of_mdio_find_bus - Given an mii_bus node, find the mii_bus.
++ * @mdio_np: Pointer to the mii_bus.
++ *
++ * Returns a pointer to the mii_bus, or NULL if none found.
++ *
++ * Because the association of a device_node and mii_bus is made via
++ * of_mdiobus_register(), the mii_bus cannot be found before it is
++ * registered with of_mdiobus_register().
++ *
++ */
++struct mii_bus *of_mdio_find_bus(struct device_node *mdio_np)
++{
++	struct device *d;
++
++	if (!mdio_np)
++		return NULL;
++
++	d = class_find_device(&mdio_bus_class, NULL,  mdio_np, of_phy_match);
++
++	return d ? to_mii_bus(d) : NULL;
++}
++EXPORT_SYMBOL(of_mdio_find_bus);
+diff --git a/include/linux/of_mdio.h b/include/linux/of_mdio.h
+index 53b94e0..912c27a 100644
+--- a/include/linux/of_mdio.h
++++ b/include/linux/of_mdio.h
+@@ -22,4 +22,6 @@ extern struct phy_device *of_phy_connect_fixed_link(struct net_device *dev,
+ 					 void (*hndlr)(struct net_device *),
+ 					 phy_interface_t iface);
+ 
++extern struct mii_bus *of_mdio_find_bus(struct device_node *mdio_np);
++
+ #endif /* __LINUX_OF_MDIO_H */
+diff --git a/include/linux/phy.h b/include/linux/phy.h
+index 54fc413..e4c3844 100644
+--- a/include/linux/phy.h
++++ b/include/linux/phy.h
+@@ -528,4 +528,5 @@ int __init mdio_bus_init(void);
+ void mdio_bus_exit(void);
+ 
+ extern struct bus_type mdio_bus_type;
++extern struct class mdio_bus_class;
+ #endif /* __PHY_H */
+-- 
+1.7.2.3
+
