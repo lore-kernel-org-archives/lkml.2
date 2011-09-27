@@ -1,97 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753375Ab1I0Nmx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 09:42:53 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:53055 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752862Ab1I0Nlm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 09:41:42 -0400
-From: Deepthy Ravi <deepthy.ravi@ti.com>
-To: <laurent.pinchart@ideasonboard.com>, <mchehab@infradead.org>,
-        <tony@atomide.com>, <hvaibhav@ti.com>, <linux-media@vger.kernel.org>,
-        <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
-        <kyungmin.park@samsung.com>, <hverkuil@xs4all.nl>,
-        <m.szyprowski@samsung.com>, <g.liakhovetski@gmx.de>,
-        <santosh.shilimkar@ti.com>, <khilman@deeprootsystems.com>,
-        <linux-kernel@vger.kernel.org>
-CC: <linux-omap@vger.kernel.org>, Deepthy Ravi <deepthy.ravi@ti.com>
-Subject: [PATCH v2 1/5] omap3evm: Enable regulators for camera interface
-Date: Tue, 27 Sep 2011 19:10:44 +0530
-Message-ID: <1317130848-21136-2-git-send-email-deepthy.ravi@ti.com>
-X-Mailer: git-send-email 1.6.2.4
-In-Reply-To: <1317130848-21136-1-git-send-email-deepthy.ravi@ti.com>
-References: <1317130848-21136-1-git-send-email-deepthy.ravi@ti.com>
+	id S1752997Ab1I0Nuv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 09:50:51 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:57175 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751623Ab1I0Nuu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 09:50:50 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [RFC PATCH v3] drivercore: Add driver probe deferral mechanism
+Date: Tue, 27 Sep 2011 15:50:36 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        "Greg Kroah-Hartman" <greg@kroah.com>, linux-kernel@vger.kernel.org,
+        Manjunath GKondaiah <manjunath.gkondaiah@linaro.org>,
+        Dilan Lee <dilee@nvidia.com>, linux-arm-kernel@lists.infradead.org
+References: <20110922184614.25419.84606.stgit@ponder> <20110926152634.GN2946@opensource.wolfsonmicro.com> <CACxGe6swdnhk_GCAv3siSx4kxNQXmCLDbwBFjsX5VPNfCBc2Mg@mail.gmail.com>
+In-Reply-To: <CACxGe6swdnhk_GCAv3siSx4kxNQXmCLDbwBFjsX5VPNfCBc2Mg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201109271550.36427.arnd@arndb.de>
+X-Provags-ID: V02:K0:5uZtI+5XahHKaympS/Mjk/rpTtwUKghnOQMcD7mGnsN
+ UKgREAoVdeFb6a/bDjsAaW7d2t4lyep1TfLWCBXaA9vp4EiD3w
+ Qppb+R/7fvYrHXiik+fjSKvyvC70sV3uwe5iZ+fg/+5D3hwih9
+ CT/j5Uv8r+ARMzncpRjb3IYdohNAhBaRnhfjAlOzx1RD+H9T3t
+ eZH6CZIqee5bwMiwclXZnzz4OloricsFyQ0V+VkpoMrppFoVQo
+ CCSmroLLgJBroivAIxgWhL4HwJreW13QC4GBQ4HkpmbvscWUQq
+ DwDW2H5vXMWpwoiW3AXY6WhYD41c0Bm7ZexViHU1dpGwhQOjsG
+ xs2DlW0Lm0izwzq90g+0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vaibhav Hiremath <hvaibhav@ti.com>
+On Monday 26 September 2011, Grant Likely wrote:
+> Actually, in the next iteration, I'm thinking it would be a good idea
+> to create a new #define to only be used by probe deferral.  I want it
+> to be easy to find all the drivers that are using this mechanism
+> without needing to filter all the unrelated hits.  However, this is a
+> kernel-only thing so it is probably not appropriate to add it to
+> include/asm-generic/errno.h.  I could use some guidance/advice as to
+> the best way to handle this.
 
-Enabled 1v8 and 2v8 regulator output, which is being used by
-camera module.
+include/linux/errno.h already has a bunch of kernel-internal error
+codes that are never supposed to be seen in user space. Just
+add one there, the next free one right now is 517, after
+ERESTART_RESTARTBLOCK.
 
-Signed-off-by: Vaibhav Hiremath <hvaibhav@ti.com>
-Signed-off-by: Deepthy Ravi <deepthy.ravi@ti.com>
----
- arch/arm/mach-omap2/board-omap3evm.c |   22 ++++++++++++++++++++++
- 1 files changed, 22 insertions(+), 0 deletions(-)
-
-diff --git a/arch/arm/mach-omap2/board-omap3evm.c b/arch/arm/mach-omap2/board-omap3evm.c
-index c452b3f..f63a8fa 100644
---- a/arch/arm/mach-omap2/board-omap3evm.c
-+++ b/arch/arm/mach-omap2/board-omap3evm.c
-@@ -273,6 +273,25 @@ static struct omap_dss_board_info omap3_evm_dss_data = {
- 	.default_device	= &omap3_evm_lcd_device,
- };
- 
-+static struct regulator_consumer_supply omap3evm_vaux3_supply[] = {
-+	REGULATOR_SUPPLY("cam_2v8", NULL),
-+};
-+
-+/* VAUX3 for CAM_2V8 */
-+static struct regulator_init_data omap3evm_vaux3 = {
-+	.constraints = {
-+		.min_uV                 = 2800000,
-+		.max_uV                 = 2800000,
-+		.apply_uV               = true,
-+		.valid_modes_mask       = REGULATOR_MODE_NORMAL
-+					| REGULATOR_MODE_STANDBY,
-+		.valid_ops_mask         = REGULATOR_CHANGE_MODE
-+					| REGULATOR_CHANGE_STATUS,
-+		},
-+	.num_consumer_supplies  = ARRAY_SIZE(omap3evm_vaux3_supply),
-+	.consumer_supplies      = omap3evm_vaux3_supply,
-+};
-+
- static struct regulator_consumer_supply omap3evm_vmmc1_supply[] = {
- 	REGULATOR_SUPPLY("vmmc", "omap_hsmmc.0"),
- };
-@@ -433,6 +452,7 @@ static struct twl4030_keypad_data omap3evm_kp_data = {
- /* ads7846 on SPI */
- static struct regulator_consumer_supply omap3evm_vio_supply[] = {
- 	REGULATOR_SUPPLY("vcc", "spi1.0"),
-+	REGULATOR_SUPPLY("vio_1v8", NULL),
- };
- 
- /* VIO for ads7846 */
-@@ -499,6 +519,7 @@ static struct twl4030_platform_data omap3evm_twldata = {
- 	.vio		= &omap3evm_vio,
- 	.vmmc1		= &omap3evm_vmmc1,
- 	.vsim		= &omap3evm_vsim,
-+	.vaux3          = &omap3evm_vaux3,
- };
- 
- static int __init omap3_evm_i2c_init(void)
-@@ -512,6 +533,7 @@ static int __init omap3_evm_i2c_init(void)
- 	omap3evm_twldata.vpll2->constraints.apply_uV = true;
- 
- 	omap3_pmic_init("twl4030", &omap3evm_twldata);
-+	/* Bus 2 is used for Camera/Sensor interface */
- 	omap_register_i2c_bus(2, 400, NULL, 0);
- 	omap_register_i2c_bus(3, 400, NULL, 0);
- 	return 0;
--- 
-1.7.0.4
-
+	Arnd
