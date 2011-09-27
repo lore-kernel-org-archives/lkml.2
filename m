@@ -1,79 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752324Ab1I0NLk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 09:11:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46849 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751175Ab1I0NLj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 09:11:39 -0400
-Date: Tue, 27 Sep 2011 09:11:35 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: Corrado Zoccolo <czoccolo@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
-        Jens Axboe <jaxboe@fusionio.com>,
-        Maxim Patlasov <maxim.patlasov@gmail.com>
-Subject: Re: [patch]cfq-iosched: delete deep seeky queue idle logic
-Message-ID: <20110927131135.GB24673@redhat.com>
-References: <1316142577.29510.130.camel@sli10-conroe>
- <CADX3swqrpz+=JSk8gQf6tDRZ25Z9FOnJbTyiCrZAM6LiJSmoGA@mail.gmail.com>
- <1316155239.29510.148.camel@sli10-conroe>
- <CADX3swqAq=zpFtWogbuRnARjjZK753esKihs3tzLQkbiRE2y0Q@mail.gmail.com>
- <1316603780.2001.12.camel@shli-laptop>
- <20110923132441.GA10289@redhat.com>
- <1316998299.29510.155.camel@sli10-conroe>
+	id S1753039Ab1I0NNX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 09:13:23 -0400
+Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:6192
+	"EHLO AM1EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751175Ab1I0NNV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 09:13:21 -0400
+X-SpamScore: -18
+X-BigFish: VPS-18(zz1432N98dKzz1202hzz15d4Rz32i668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LS6NCL-01-5TY-02
+X-M-MSG: 
+Date: Tue, 27 Sep 2011 15:12:22 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Hiroshi DOYU <Hiroshi.DOYU@nokia.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        David Brown <davidb@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: Re: [PATCH v3 1/6] iommu/core: split mapping to page sizes as
+ supported by the hardware
+Message-ID: <20110927131222.GL2138@amd.com>
+References: <1316195506-9777-1-git-send-email-ohad@wizery.com>
+ <1316195506-9777-2-git-send-email-ohad@wizery.com>
+ <20110927100505.GH2138@amd.com>
+ <CAK=WgbahwY+7Ux-RjW2Tw9WBSwZnYuTMZ2NQASWyOXQ3zF6qFg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1316998299.29510.155.camel@sli10-conroe>
+In-Reply-To: <CAK=WgbahwY+7Ux-RjW2Tw9WBSwZnYuTMZ2NQASWyOXQ3zF6qFg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 26, 2011 at 08:51:39AM +0800, Shaohua Li wrote:
-> On Fri, 2011-09-23 at 21:24 +0800, Vivek Goyal wrote:
-> > On Wed, Sep 21, 2011 at 07:16:20PM +0800, Shaohua Li wrote:
-> > 
-> > [..]
-> > > > Try a workload with one shallow seeky queue and one deep (16) one, on
-> > > > a single spindle NCQ disk.
-> > > > I think the behaviour when I submitted my patch was that both were
-> > > > getting 100ms slice (if this is not happening, probably some
-> > > > subsequent patch broke it).
-> > > > If you remove idling, they will get disk time roughly in proportion
-> > > > 16:1, i.e. pretty unfair.
-> > > I thought you are talking about a workload with one thread depth 4, and
-> > > the other thread depth 16. I did some tests here. In an old kernel,
-> > > without the deep seeky idle logic, the threads have disk time in
-> > > proportion 1:5. With it, they get almost equal disk time. SO this
-> > > reaches your goal. In a latest kernel, w/wo the logic, there is no big
-> > > difference (the 16 depth thread get about 5x more disk time). With the
-> > > logic, the depth 4 thread gets equal disk time in first several slices.
-> > > But after an idle expiration(mostly because current block plug hold
-> > > requests in task list and didn't add them to elevator), the queue never
-> > > gets detected as deep, because the queue dispatch request one by one.
-> > 
-> > When the plugged requests are flushed, then they will be added to elevator
-> > and at that point of time queue should be marked as deep?
-> The problem is there are just 2 or 3 requests are hold to the per-task
-> list and then get flushed into elevator later, so the queue isn't marked
-> as deep.
-
-That would be workload dependent. Isn't it?
-
+On Tue, Sep 27, 2011 at 08:26:29AM -0400, Ohad Ben-Cohen wrote:
+> > With an unsigned long you can use plain and fast bit_ops instead of the
+> > full bitmap functions.
 > 
-> > Anyway, what's wrong with the idea I suggested in other mail of expiring
-> > a sync-noidle queue afer few reuqest dispatches so that it does not
-> > starve other sync-noidle queues.
-> The problem is how many requests a queue should dispatch.
-> cfq_prio_to_maxrq() == 16, which is too many. Maybe use 4, but it has
-> its risk. seeky requests from one task might be still much far way with
-> requests from other tasks.
+> Not sure I follow; the only bit operation I'm using while mapping is
+> find_next_bit() (which is a bitops.h method).
+> 
+> What other faster variant are you referring to ?
 
-4-6 might be a reasonable number to begin with. I am not sure about the
-throughput impact thing because seek distance might be more by moving
-to a different task. And also fairness might have some cost. Lets run some
-tests and see if something shows up.
+You pass a pointer to an unsigned long for the page-size bitmap. This
+allows to use an array of unsigned long. But a single unsigned long is
+sufficient and you can use functions like ffs() and fls() together with
+shifting. These functions often translate to a single intruction in the
+binary. The find_next_bit function has much more overhead because it
+needs to handle the array-of-ulong case.
 
-Thanks
-Vivek 
+	Joerg
+
+-- 
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
