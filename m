@@ -1,48 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752592Ab1I0SVO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 14:21:14 -0400
-Received: from www.linutronix.de ([62.245.132.108]:56449 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751645Ab1I0SVN (ORCPT
+	id S1752869Ab1I0SVf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 14:21:35 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:55132 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752192Ab1I0SVe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 14:21:13 -0400
-Date: Tue, 27 Sep 2011 20:21:10 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Clark Williams <clark@redhat.com>
-Subject: Re: [PATCH][RT] ring-buffer: Convert reader_lock from raw_spin_lock
- into spin_lock
-In-Reply-To: <1317146210.26514.33.camel@gandalf.stny.rr.com>
-Message-ID: <alpine.LFD.2.02.1109272020060.2711@ionos>
-References: <1317146210.26514.33.camel@gandalf.stny.rr.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Tue, 27 Sep 2011 14:21:34 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=yPmi9fqXVx8+fMAO0xFykbUjnp28wv94ArUNgCmvPtLP08UPhLLL0V5auqJYz6htv
+	RqfR2tAmypePEsmjO6KLw==
+Date: Tue, 27 Sep 2011 11:21:22 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Vasiliy Kulikov <segoon@openwall.com>
+cc: kernel-hardening@lists.openwall.com,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        linux-mm@kvack.org, Kees Cook <kees@ubuntu.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Valdis.Kletnieks@vt.edu,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] mm: restrict access to slab files under procfs and
+ sysfs
+In-Reply-To: <20110927175453.GA3393@albatros>
+Message-ID: <alpine.DEB.2.00.1109271117200.17876@chino.kir.corp.google.com>
+References: <20110927175453.GA3393@albatros>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Sep 2011, Steven Rostedt wrote:
-> +	/*
-> +	 * If an NMI die dumps out the content of the ring buffer
-> +	 * do not grab locks. We also permanently disable the ring
-> +	 * buffer too. A one time deal is all you get from reading
-> +	 * the ring buffer from an NMI.
-> +	 */
-> +	if (!ok_to_lock()) {
-> +		if (spin_trylock_irqsave(&cpu_buffer->reader_lock, *flags))
-> +			return 1;
-> +		printk("Dumping ring buffer from unsafe context\n");
-> +		printk("Disabling new ring buffer writes\n");
+On Tue, 27 Sep 2011, Vasiliy Kulikov wrote:
 
-And what exaclty is the point of these printks/ Aside of that they are
-missing KERN_WTF before the string.
+> Historically /proc/slabinfo and files under /sys/kernel/slab/* have
+> world read permissions and are accessible to the world.  slabinfo
+> contains rather private information related both to the kernel and
+> userspace tasks.  Depending on the situation, it might reveal either
+> private information per se or information useful to make another
+> targeted attack.  Some examples of what can be learned by
+> reading/watching for /proc/slabinfo entries:
+> 
+> 1) dentry (and different *inode*) number might reveal other processes fs
+> activity.  The number of dentry "active objects" doesn't strictly show
+> file count opened/touched by a process, however, there is a good
+> correlation between them.  The patch "proc: force dcache drop on
+> unauthorized access" relies on the privacy of dentry count.
+> 
+> 2) different inode entries might reveal the same information as (1), but
+> these are more fine granted counters.  If a filesystem is mounted in a
+> private mount point (or even a private namespace) and fs type differs from
+> other mounted fs types, fs activity in this mount point/namespace is
+> revealed.  If there is a single ecryptfs mount point, the whole fs
+> activity of a single user is revealed.  Number of files in ecryptfs
+> mount point is a private information per se.
+> 
+> 3) fuse_* reveals number of files / fs activity of a user in a user
+> private mount point.  It is approx. the same severity as ecryptfs
+> infoleak in (2).
+> 
+> 4) sysfs_dir_cache similar to (2) reveals devices' addition/removal,
+> which can be otherwise hidden by "chmod 0700 /sys/".  With 0444 slabinfo
+> the precise number of sysfs files is known to the world.
+> 
+> 5) buffer_head might reveal some kernel activity.  With other
+> information leaks an attacker might identify what specific kernel
+> routines generate buffer_head activity.
+> 
+> 6) *kmalloc* infoleaks are very situational.  Attacker should watch for
+> the specific kmalloc size entry and filter the noise related to the unrelated
+> kernel activity.  If an attacker has relatively silent victim system, he
+> might get rather precise counters.
+> 
+> Additional information sources might significantly increase the slabinfo
+> infoleak benefits.  E.g. if an attacker knows that the processes
+> activity on the system is very low (only core daemons like syslog and
+> cron), he may run setxid binaries / trigger local daemon activity /
+> trigger network services activity / await sporadic cron jobs activity
+> / etc. and get rather precise counters for fs and network activity of
+> these privileged tasks, which is unknown otherwise.
+> 
+> 
+> Also hiding slabinfo and /sys/kernel/slab/* is a one step to complicate
+> exploitation of kernel heap overflows (and possibly, other bugs).  The
+> related discussion:
+> 
+> http://thread.gmane.org/gmane.linux.kernel/1108378
+> 
+> 
+> To keep compatibility with old permission model where non-root
+> monitoring daemon could watch for kernel memleaks though slabinfo one
+> should do:
+> 
+>     groupadd slabinfo
+>     usermod -a -G slabinfo $MONITOR_USER
+> 
+> And add the following commands to init scripts (to mountall.conf in
+> Ubuntu's upstart case):
+> 
+>     chmod g+r /proc/slabinfo /sys/kernel/slab/*/*
+>     chgrp slabinfo /proc/slabinfo /sys/kernel/slab/*/*
+> 
+> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+> Reviewed-by: Kees Cook <kees@ubuntu.com>
+> Reviewed-by: Dave Hansen <dave@linux.vnet.ibm.com>
+> CC: Christoph Lameter <cl@gentwo.org>
+> CC: Pekka Enberg <penberg@cs.helsinki.fi>
+> CC: Valdis.Kletnieks@vt.edu
+> CC: Linus Torvalds <torvalds@linux-foundation.org>
+> CC: David Rientjes <rientjes@google.com>
+> CC: Alan Cox <alan@linux.intel.com>
 
-Thanks,
-
-	tglx
+Acked-by: David Rientjes <rientjes@google.com>
