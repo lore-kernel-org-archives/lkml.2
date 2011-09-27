@@ -1,53 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753710Ab1I0Xbm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 19:31:42 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:64432 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752815Ab1I0Xbl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 19:31:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <CACqU3MWyCknNH3xmVmbJJu+w9ugNc3e4K3e3_6cY1RAy4ynJCQ@mail.gmail.com>
-References: <CA+55aFwdm3n+xehYc1cronkcwLE79ZYtr96LiVWD2WjKkaZ5DA@mail.gmail.com>
- <CACqU3MXzUbQS9fy0Etgt2GcgwRoXfihhmw-aWjrCFbzvmDM7yg@mail.gmail.com>
- <CA+55aFwKyd5fuyxu2tGDbQ8gKiEj=z7uYdBRg9O46WN0sTeNTQ@mail.gmail.com>
- <CACqU3MU8jkysNxFasdfy9ksqSo2ojiZ5LUwfcfX13MMRgVx2Xw@mail.gmail.com> <CACqU3MWyCknNH3xmVmbJJu+w9ugNc3e4K3e3_6cY1RAy4ynJCQ@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 27 Sep 2011 16:31:20 -0700
-X-Google-Sender-Auth: umKEY7AYNj2QhiesjX-u2k-Ixtk
-Message-ID: <CA+55aFxp8bNhLs+v69gp7XxBGq6wkmLkZKjB2_09H3qsZC_pzw@mail.gmail.com>
-Subject: Re: Linux 3.1-rc7
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753371Ab1I0Xgb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 19:36:31 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:37023 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750803Ab1I0Xga (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 19:36:30 -0400
+Message-ID: <1317166589.19340.14.camel@Joe-Laptop>
+Subject: Re: [PATCH 25/26] dynamic_debug: add pr_fmt_dbg() for
+ dynamic_pr_debug
+From: Joe Perches <joe@perches.com>
+To: Jim Cromie <jim.cromie@gmail.com>
+Cc: jbaron@redhat.com, bart.vanassche@gmail.com, greg@kroah.com,
+        linux-kernel@vger.kernel.org
+Date: Tue, 27 Sep 2011 16:36:29 -0700
+In-Reply-To: <CAJfuBxxZdNRZAix8ARUjqjNzrQeG2iVea_rMYKysOaX4c=Avig@mail.gmail.com>
+References: <1316642115-20029-1-git-send-email-jim.cromie@gmail.com>
+	 <1316642115-20029-26-git-send-email-jim.cromie@gmail.com>
+	 <1316725066.29447.16.camel@Joe-Laptop>
+	 <CAJfuBxxZdNRZAix8ARUjqjNzrQeG2iVea_rMYKysOaX4c=Avig@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.1.92- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 27, 2011 at 4:25 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
->
-> What is strange is that I moved from -rc7 to -rc8 with:
->
-> % git reset --hard v3.1-rc8
+On Tue, 2011-09-27 at 14:37 -0600, Jim Cromie wrote:
+> On Thu, Sep 22, 2011 at 2:57 PM, Joe Perches <joe@perches.com> wrote:
+> > On Wed, 2011-09-21 at 15:55 -0600, jim.cromie@gmail.com wrote:
+> >> dynamic_pr_debug can add module, function, file, and line selectively,
+> > []
+> >> diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
+> > []
+> >> +#ifndef pr_fmt_dbg
+> >> +#define pr_fmt_dbg(fmt) fmt
+> >> +#endif
+> > []
+> >> +#ifndef pr_fmt_dbg
+> >> +#define pr_fmt_dbg(fmt) pr_fmt(fmt)
+> >> +#endif
+> >
+> > This might better be placed in printk.h just
+> > once.
+> >
+> 
+> yes.  it seems to work smoothly.
+> Only minor annoyance is having to put local defns
+> above the #includes, but thats no different than previously.
+> 
+> 
+> > I think pr_fmt_debug is better than pr_fmt_dbg
+> > because the function/macro is named pr_debug.
+> 
+> Ok.  Done.
+> 
+> > Maybe add all the pr_<level> variants too because
+> > some like to prefix __func__ to pr_err but not pr_info
+> > etc.
+> >
+> 
+> Done. Only wrinkle is wrt pr_warning() vs pr_warn()
+> I added to your suggestion:
+> +#define pr_fmt_warn pr_fmt_warning
+> 
+> the imperfection is that user has 4 combos of warn/warning
+> rather than 2 pairs, but the latter seems less defensible.
 
-Git optimizes all the filesystem operations heavily. That means that
-files that have not changed between two releases and are clean (and
-match) in the index are not re-written by a git reset.
+I'd just use pr_fmt_warn.
 
-You can obviously always force a re-write by removing all files and
-then doing the reset, but it should never be necessary under normal
-circumstances.
+Instead of all this other extra stuff:
 
-> which should have reset the corrupted file. FYI, the machine is
-> running 2.6.35.13-91.fc14.x86_64. Something's smelly with that kernel
-> :-/
+What did you think of avoiding all of this and
+having __dynamic_pr_debug move the fmt pointer over
+any initial KBUILD_MODULE ": "
 
-More likely something is smelly with your filesystem or memory. A few
-bits flipped on disk or in the page cache would do it, and git has
-caught corruption like that before.
+int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
+{
+[...]
+	size_t modsize = strlen(descriptor->modname);
+	if (0 == strncmp(fmt, descriptor->modname, modsize) &&
+	    0 == strncmp(fmt + modsize, ": ", 2))
+		fmt += modsize + 2;
+	
+	vprintk(fmt, ...)
 
-Do you still have the bad tree around? Because it migth be interesting
-to see what the corruption pattern is if you do.
+?
 
-                       Linus
