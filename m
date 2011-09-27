@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753181Ab1I0KMj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 06:12:39 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:46374 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751770Ab1I0KMi (ORCPT
+	id S1753332Ab1I0KNF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 06:13:05 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:39267 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752751Ab1I0KND (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 06:12:38 -0400
+	Tue, 27 Sep 2011 06:13:03 -0400
 From: tom.leiming@gmail.com
 To: rjw@sisk.pl, stern@rowland.harvard.edu
 Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
         mingo@redhat.com, rostedt@goodmis.org, fweisbec@gmail.com,
         Ming Lei <ming.lei@canonical.com>
 Subject: [PATCH v1 1/2] PM/runtime: introduce trace points for tracing rpm_* functions
-Date: Tue, 27 Sep 2011 18:12:15 +0800
-Message-Id: <1317118338-4040-1-git-send-email-tom.leiming@gmail.com>
+Date: Tue, 27 Sep 2011 18:12:16 +0800
+Message-Id: <1317118338-4040-2-git-send-email-tom.leiming@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1317118338-4040-1-git-send-email-tom.leiming@gmail.com>
+References: <1317118338-4040-1-git-send-email-tom.leiming@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
