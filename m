@@ -1,123 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751467Ab1I0Goz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 02:44:55 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:44799 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751052Ab1I0Gox (ORCPT
+	id S1752082Ab1I0Gww (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 02:52:52 -0400
+Received: from queue02.mail.zen.net.uk ([212.23.3.27]:53893 "EHLO
+	queue02.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751790Ab1I0Gwu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 02:44:53 -0400
-Subject: Re: [PATCH 1/2] virtio-net: Verify page list size before fitting
- into skb
-From: Sasha Levin <levinsasha928@gmail.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        kvm@vger.kernel.org
-In-Reply-To: <20110926195541.GA23086@redhat.com>
-References: <1317058869-19276-1-git-send-email-levinsasha928@gmail.com>
-	 <20110926184445.GA22278@redhat.com> <1317065842.20885.3.camel@lappy>
-	 <20110926195541.GA23086@redhat.com>
-Content-Type: text/plain; charset="us-ascii"
-Date: Tue, 27 Sep 2011 09:44:02 +0300
-Message-ID: <1317105842.3467.3.camel@lappy>
+	Tue, 27 Sep 2011 02:52:50 -0400
+X-Greylist: delayed 1908 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 Sep 2011 02:52:49 EDT
+Subject: Re: linux-next: manual merge of the arm-soc tree with the arm tree
+From: Tixy <tixy@yxit.co.uk>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <rmk@arm.linux.org.uk>
+In-Reply-To: <20110927112524.fd0b8f1fe69bc63855ead2d7@canb.auug.org.au>
+References: <20110927112524.fd0b8f1fe69bc63855ead2d7@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 27 Sep 2011 07:20:57 +0100
+Message-ID: <1317104457.2238.16.camel@computer2>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
+X-Originating-Smarthost03-IP: [82.69.122.217]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-09-26 at 22:55 +0300, Michael S. Tsirkin wrote:
-> On Mon, Sep 26, 2011 at 10:37:22PM +0300, Sasha Levin wrote:
-> > On Mon, 2011-09-26 at 21:44 +0300, Michael S. Tsirkin wrote:
-> > > On Mon, Sep 26, 2011 at 08:41:08PM +0300, Sasha Levin wrote:
-> > > > This patch verifies that the length of a buffer stored in a linked list
-> > > > of pages is small enough to fit into a skb.
-> > > > 
-> > > > If the size is larger than a max size of a skb, it means that we shouldn't
-> > > > go ahead building skbs anyway since we won't be able to send the buffer as
-> > > > the user requested.
-> > > > 
-> > > > Cc: Rusty Russell <rusty@rustcorp.com.au>
-> > > > Cc: "Michael S. Tsirkin" <mst@redhat.com>
-> > > > Cc: virtualization@lists.linux-foundation.org
-> > > > Cc: netdev@vger.kernel.org
-> > > > Cc: kvm@vger.kernel.org
-> > > > Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-> > > 
-> > > Interesting.  This is a theoretical issue, correct?
-> > > Not a crash you actually see.
-> > 
-> > Actually it was an actual crash caused when our virtio-net driver in kvm
-> > tools did funny things and passed '(u32)-1' length as a buffer length to
-> > the guest kernel.
-> > 
-> > > This crash would mean device is giving us packets
-> > > that are way too large. Avoiding crashes even in the face of
-> > > a misbehaved device is a good idea, but should
-> > > we print a diagnostic to a system log?
-> > > Maybe rate-limited or print once to avoid filling
-> > > up the disk. Other places in driver print with pr_debug
-> > > I'm not sure that's right but better than nothing.
-> > 
-> > Yup, I'll add some debug info.
-> > 
-> > > > ---
-> > > >  drivers/net/virtio_net.c |    3 +++
-> > > >  1 files changed, 3 insertions(+), 0 deletions(-)
-> > > > 
-> > > > diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> > > > index 0c7321c..64e0717 100644
-> > > > --- a/drivers/net/virtio_net.c
-> > > > +++ b/drivers/net/virtio_net.c
-> > > > @@ -165,6 +165,9 @@ static struct sk_buff *page_to_skb(struct virtnet_info *vi,
-> > > >  	unsigned int copy, hdr_len, offset;
-> > > >  	char *p;
-> > > >  
-> > > > +	if (len > MAX_SKB_FRAGS * PAGE_SIZE)
-> > > 
-> > > unlikely()?
-> > > 
-> > > Also, this seems too aggressive: at this point len includes the header
-> > > and the linear part. The right place for this
-> > > test is probably where we fill in the frags, just before
-> > > while (len)
-> > > 
-> > > The whole can only happen when mergeable buffers
-> > > are disabled, right?
-> > 
-> > >From what I understand it can happen whenever you're going to build a
-> > skb longer than PAGE_SIZE.
+On Tue, 2011-09-27 at 11:25 +1000, Stephen Rothwell wrote:
+> Hi Arnd,
 > 
-> Hmm how exactly?  With mergeable buffers this only gets
-> the length of the 1st chunk which is up to 4K unless the driver
-> is buggy ...
+> [I have a feeling that I may have reported this previously]
+> 
+> Today's linux-next merge of the arm-soc tree got a conflict in
+> arch/arm/mm/dma-mapping.c between commit e73fc88e19d7 ("ARM: 7059/1:
+> LPAE: Use PMD_(SHIFT|SIZE|MASK) instead of PGDIR_*") from the arm tree
+> and commit 99d1717dd7fe ("ARM: Add init_consistent_dma_size()") from
+> the
+> arm-soc tree.
+> 
+> I fixed it up (I think - see below) and can carry the fix as
+> necessary.
 
-What about the case where TSO or ECN features are set? The code flow
-suggests that mergeable would get ignored in that case:
+The fixup looks correct to me.
 
-	/* If we can receive ANY GSO packets, we must allocate large ones. */
-	if (virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO4) ||
-	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO6) ||
-	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_ECN))
-		vi->big_packets = true;
-
-	[...]
-
-	if (!vi->mergeable_rx_bufs && !vi->big_packets) {
-		skb = buf;
-		len -= sizeof(struct virtio_net_hdr);
-		skb_trim(skb, len);
-	} else {
-		page = buf;
-		skb = page_to_skb(vi, page, len);
-		...
-
-
-I haven't actually tested it with mergeable buffers enabled, but could
-do it later today.
 -- 
+Jon Medhurst (usually known as Tixy)
 
-Sasha.
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> diff --cc arch/arm/mm/dma-mapping.c
+> index 235eb77,50be842..0000000
+> --- a/arch/arm/mm/dma-mapping.c
+> +++ b/arch/arm/mm/dma-mapping.c
+> @@@ -117,14 -119,10 +119,9 @@@ static void __dma_free_buffer(struct pa
+>   }
+>   
+>   #ifdef CONFIG_MMU
+> - /* Sanity check size */
+> - #if (CONSISTENT_DMA_SIZE % SZ_2M)
+> - #error "CONSISTENT_DMA_SIZE must be multiple of 2MiB"
+> - #endif
+>   
+> - #define CONSISTENT_OFFSET(x)  (((unsigned long)(x) - CONSISTENT_BASE) >> PAGE_SHIFT)
+> - #define CONSISTENT_PTE_INDEX(x) (((unsigned long)(x) - CONSISTENT_BASE) >> PMD_SHIFT)
+> - #define NUM_CONSISTENT_PTES (CONSISTENT_DMA_SIZE >> PMD_SHIFT)
+>  -
+> + #define CONSISTENT_OFFSET(x)  (((unsigned long)(x) - consistent_base) >> PAGE_SHIFT)
+>  -#define CONSISTENT_PTE_INDEX(x) (((unsigned long)(x) - consistent_base) >> PGDIR_SHIFT)
+> ++#define CONSISTENT_PTE_INDEX(x) (((unsigned long)(x) - consistent_base) >> PMD_SHIFT)
+>   
+>   /*
+>    * These are the page tables (2MB each) covering uncached, DMA consistent allocations 
 
