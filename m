@@ -1,134 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751343Ab1I0G7Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 02:59:24 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:39008 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750823Ab1I0G7X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 02:59:23 -0400
-Date: Tue, 27 Sep 2011 16:59:20 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: linux-next: manual merge of the akpm tree with the  tree
-Message-Id: <20110927165920.14b00e8595d10135d2a4397a@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751487Ab1I0G74 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 02:59:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33250 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751101Ab1I0G7z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 02:59:55 -0400
+Date: Tue, 27 Sep 2011 10:00:34 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH 1/2] virtio-net: Verify page list size before fitting
+ into skb
+Message-ID: <20110927070034.GB4690@redhat.com>
+References: <1317058869-19276-1-git-send-email-levinsasha928@gmail.com>
+ <20110926184445.GA22278@redhat.com>
+ <1317065842.20885.3.camel@lappy>
+ <20110926195541.GA23086@redhat.com>
+ <1317105842.3467.3.camel@lappy>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1317105842.3467.3.camel@lappy>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+On Tue, Sep 27, 2011 at 09:44:02AM +0300, Sasha Levin wrote:
+> On Mon, 2011-09-26 at 22:55 +0300, Michael S. Tsirkin wrote:
+> > On Mon, Sep 26, 2011 at 10:37:22PM +0300, Sasha Levin wrote:
+> > > On Mon, 2011-09-26 at 21:44 +0300, Michael S. Tsirkin wrote:
+> > > > On Mon, Sep 26, 2011 at 08:41:08PM +0300, Sasha Levin wrote:
+> > > > > This patch verifies that the length of a buffer stored in a linked list
+> > > > > of pages is small enough to fit into a skb.
+> > > > > 
+> > > > > If the size is larger than a max size of a skb, it means that we shouldn't
+> > > > > go ahead building skbs anyway since we won't be able to send the buffer as
+> > > > > the user requested.
+> > > > > 
+> > > > > Cc: Rusty Russell <rusty@rustcorp.com.au>
+> > > > > Cc: "Michael S. Tsirkin" <mst@redhat.com>
+> > > > > Cc: virtualization@lists.linux-foundation.org
+> > > > > Cc: netdev@vger.kernel.org
+> > > > > Cc: kvm@vger.kernel.org
+> > > > > Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> > > > 
+> > > > Interesting.  This is a theoretical issue, correct?
+> > > > Not a crash you actually see.
+> > > 
+> > > Actually it was an actual crash caused when our virtio-net driver in kvm
+> > > tools did funny things and passed '(u32)-1' length as a buffer length to
+> > > the guest kernel.
+> > > 
+> > > > This crash would mean device is giving us packets
+> > > > that are way too large. Avoiding crashes even in the face of
+> > > > a misbehaved device is a good idea, but should
+> > > > we print a diagnostic to a system log?
+> > > > Maybe rate-limited or print once to avoid filling
+> > > > up the disk. Other places in driver print with pr_debug
+> > > > I'm not sure that's right but better than nothing.
+> > > 
+> > > Yup, I'll add some debug info.
+> > > 
+> > > > > ---
+> > > > >  drivers/net/virtio_net.c |    3 +++
+> > > > >  1 files changed, 3 insertions(+), 0 deletions(-)
+> > > > > 
+> > > > > diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> > > > > index 0c7321c..64e0717 100644
+> > > > > --- a/drivers/net/virtio_net.c
+> > > > > +++ b/drivers/net/virtio_net.c
+> > > > > @@ -165,6 +165,9 @@ static struct sk_buff *page_to_skb(struct virtnet_info *vi,
+> > > > >  	unsigned int copy, hdr_len, offset;
+> > > > >  	char *p;
+> > > > >  
+> > > > > +	if (len > MAX_SKB_FRAGS * PAGE_SIZE)
+> > > > 
+> > > > unlikely()?
+> > > > 
+> > > > Also, this seems too aggressive: at this point len includes the header
+> > > > and the linear part. The right place for this
+> > > > test is probably where we fill in the frags, just before
+> > > > while (len)
+> > > > 
+> > > > The whole can only happen when mergeable buffers
+> > > > are disabled, right?
+> > > 
+> > > >From what I understand it can happen whenever you're going to build a
+> > > skb longer than PAGE_SIZE.
+> > 
+> > Hmm how exactly?  With mergeable buffers this only gets
+> > the length of the 1st chunk which is up to 4K unless the driver
+> > is buggy ...
+> 
+> What about the case where TSO or ECN features are set? The code flow
+> suggests that mergeable would get ignored in that case:
+> 
+> 	/* If we can receive ANY GSO packets, we must allocate large ones. */
+> 	if (virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO4) ||
+> 	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO6) ||
+> 	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_ECN))
+> 		vi->big_packets = true;
+> 
+> 	[...]
+> 
+> 	if (!vi->mergeable_rx_bufs && !vi->big_packets) {
+> 		skb = buf;
+> 		len -= sizeof(struct virtio_net_hdr);
+> 		skb_trim(skb, len);
+> 	} else {
+> 		page = buf;
+> 		skb = page_to_skb(vi, page, len);
+> 		...
 
-Today's linux-next merge of the scsi-post-merge tree got conflicts in
-arch/x86/kernel/apic/apic.c, arch/x86/kernel/cpu/mcheck/therm_throt.c,
-arch/x86/kernel/cpu/mcheck/threshold.c and arch/x86/kernel/irq.c between
-commit ef14aea88fee ("x86: Call idle notifier after irq_enter()") from
-the rcu tree and commit 6a541324a31f ("The current interrupt traces from
-irq_handler_entry and irq_handler_exit") from the akpm tree.
+Sorry I don't get it yet. Where is mergeable ignored here?
 
-Just context changes. I fixed them up (see below) and can carry the fixes
-as necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> I haven't actually tested it with mergeable buffers enabled, but could
+> do it later today.
 
-diff --cc arch/x86/kernel/apic/apic.c
-index 4af04d4,0fe559f..0000000
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@@ -857,9 -858,11 +858,11 @@@ void __irq_entry smp_apic_timer_interru
-  	 * Besides, if we don't timer interrupts ignore the global
-  	 * interrupt lock, which is the WrongThing (tm) to do.
-  	 */
- -	exit_idle();
-  	irq_enter();
- +	exit_idle();
-+ 	trace_irq_vector_entry(LOCAL_TIMER_VECTOR);
-  	local_apic_timer_interrupt();
-+ 	trace_irq_vector_exit(LOCAL_TIMER_VECTOR);
-  	irq_exit();
-  
-  	set_irq_regs(old_regs);
-@@@ -1790,8 -1794,9 +1793,9 @@@ void smp_spurious_interrupt(struct pt_r
-  {
-  	u32 v;
-  
- -	exit_idle();
-  	irq_enter();
- +	exit_idle();
-+ 	trace_irq_vector_entry(SPURIOUS_APIC_VECTOR);
-  	/*
-  	 * Check if this really is a spurious interrupt and ACK it
-  	 * if it is a vectored one.  Just in case...
-@@@ -1827,8 -1833,9 +1832,9 @@@ void smp_error_interrupt(struct pt_reg
-  		"Illegal register address",	/* APIC Error Bit 7 */
-  	};
-  
- -	exit_idle();
-  	irq_enter();
- +	exit_idle();
-+ 	trace_irq_vector_entry(ERROR_APIC_VECTOR);
-  	/* First tickle the hardware, only then report what went on. -- REW */
-  	v0 = apic_read(APIC_ESR);
-  	apic_write(APIC_ESR, 0);
-diff --cc arch/x86/kernel/cpu/mcheck/therm_throt.c
-index ce21561,6b7edb5..0000000
---- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
-+++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-@@@ -397,10 -398,12 +398,12 @@@ static void (*smp_thermal_vector)(void
-  
-  asmlinkage void smp_thermal_interrupt(struct pt_regs *regs)
-  {
- -	exit_idle();
-  	irq_enter();
- +	exit_idle();
-+ 	trace_irq_vector_entry(THERMAL_APIC_VECTOR);
-  	inc_irq_stat(irq_thermal_count);
-  	smp_thermal_vector();
-+ 	trace_irq_vector_exit(THERMAL_APIC_VECTOR);
-  	irq_exit();
-  	/* Ack only at the end to avoid potential reentry */
-  	ack_APIC_irq();
-diff --cc arch/x86/kernel/cpu/mcheck/threshold.c
-index aa578ca,ffde17b..0000000
---- a/arch/x86/kernel/cpu/mcheck/threshold.c
-+++ b/arch/x86/kernel/cpu/mcheck/threshold.c
-@@@ -19,10 -20,12 +20,12 @@@ void (*mce_threshold_vector)(void) = de
-  
-  asmlinkage void smp_threshold_interrupt(void)
-  {
- -	exit_idle();
-  	irq_enter();
- +	exit_idle();
-+ 	trace_irq_vector_entry(THRESHOLD_APIC_VECTOR);
-  	inc_irq_stat(irq_threshold_count);
-  	mce_threshold_vector();
-+ 	trace_irq_vector_exit(THRESHOLD_APIC_VECTOR);
-  	irq_exit();
-  	/* Ack only at the end to avoid potential reentry */
-  	ack_APIC_irq();
-diff --cc arch/x86/kernel/irq.c
-index 5d31e5b,64aad37..0000000
---- a/arch/x86/kernel/irq.c
-+++ b/arch/x86/kernel/irq.c
-@@@ -209,10 -212,10 +212,9 @@@ void smp_x86_platform_ipi(struct pt_reg
-  
-  	ack_APIC_irq();
-  
- -	exit_idle();
- -
-  	irq_enter();
-- 
- +	exit_idle();
-- 
-+ 	trace_irq_vector_entry(X86_PLATFORM_IPI_VECTOR);
-  	inc_irq_stat(x86_platform_ipis);
-  
-  	if (x86_platform_ipi_callback)
+Please do.
+
+> -- 
+> 
+> Sasha.
