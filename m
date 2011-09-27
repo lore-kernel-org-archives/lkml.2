@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753183Ab1I0ALu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 20:11:50 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:34786 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751811Ab1I0ALt (ORCPT
+	id S1753219Ab1I0A2q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 20:28:46 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:44411 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752740Ab1I0A2p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 20:11:49 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6481"; a="121618063"
-Date: Mon, 26 Sep 2011 17:11:48 -0700
-From: David Brown <davidb@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>
-Cc: Marc Zyngier <marc.zyngier@arm.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Tony Lindgren <tony@atomide.com>, Magnus Damm <magnus.damm@gmail.com>,
-        linux-kernel@vger.kernel.org, Bryan Huntsman <bryanh@codeaurora.org>,
-        Paul Mundt <lethal@linux-sh.org>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 0/3] genirq: handling GIC per-cpu interrupts
-Message-ID: <20110927001148.GA16174@huya.qualcomm.com>
-References: <1316793788-14500-1-git-send-email-marc.zyngier@arm.com>
- <20110926201836.GA27355@huya.qualcomm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110926201836.GA27355@huya.qualcomm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 26 Sep 2011 20:28:45 -0400
+Date: Tue, 27 Sep 2011 10:28:21 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Neil Brown <neilb@suse.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: error trying to fetch the md and md-current trees
+Message-Id: <20110927102821.cb00d937491f799c86a6a1fc@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__27_Sep_2011_10_28_21_+1000_Djj9dbTqaMRlH7=M"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 26, 2011 at 01:18:36PM -0700, David Brown wrote:
-> On Fri, Sep 23, 2011 at 05:03:05PM +0100, Marc Zyngier wrote:
-> 
-> > Tested on ARM Versatile Express (Cortex A15), ARM RealView PB11MP,
-> > OMAP4 (Panda) and Tegra (Harmony). Patch series against next-20110923.
-> > 
-> > From v2:
-> > - Fixed !GENERIC_HARDIRQS build
-> > - Fixed request_percpu_irq documentation
-> > 
-> > From v1:
-> > - General tidy-up after Thomas' review. I've kept the config option
-> >   for the time being until we can sort out the anonymous union
-> >   problem.
-> > 
-> > Marc Zyngier (3):
-> >   genirq: add support for per-cpu dev_id interrupts
-> >   ARM: gic: consolidate PPI handling
-> >   ARM: gic, local timers: use the request_percpu_irq() interface
-> 
-> I've tested this on an MSM8660 based off of next-20110926.
-> 
-> Tested-by: David Brown <davidb@codeaurora.org>
-> Acked-by: David Brown <davidb@codeaurora.org>
+--Signature=_Tue__27_Sep_2011_10_28_21_+1000_Djj9dbTqaMRlH7=M
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Also tested on MSM8250.
+Hi Neil,
 
-David
+Trying to fetch the md or md-current tree produces this error:
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+fatal: read error: Connection reset by peer
+
+I am using my previously fetched version of the trees.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Tue__27_Sep_2011_10_28_21_+1000_Djj9dbTqaMRlH7=M
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOgRilAAoJEDMEi1NhKgbs0/4H/i4YaJ7QEDjutOZ3W3b8t2f5
+Y9WDA+0kS4H9sA7wpfcdYgXQsoKgElu31SnanXZne2h9gzD9vU3IFlfOTiKwE9dP
+8UBycw7iZIgD1rltMw1PiVOyCCadSKSIO71wD7719DeCCpYlJW0oQ9UQT2gBo3Cw
+XIy4AWUT/ddszXM16WK8LlDnKEPE5unKKn4HWRACig3yE14FxkV9oxifStw2wMfG
+5IyjtUR8pTIhRQtWWwDedxCC9tPNuO8HKh/ViXkONtCysSrHcfLRLfuQKyQ4+sXw
+uiQbUKvxW76o53bQDvQX1CAVQ2tMXTcvhht9OhuNRbl7wIx6Qrmh++Jj3gW58tc=
+=DPwu
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__27_Sep_2011_10_28_21_+1000_Djj9dbTqaMRlH7=M--
