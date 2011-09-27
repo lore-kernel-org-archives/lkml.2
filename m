@@ -1,55 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753281Ab1I0TRx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 15:17:53 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:40044 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751678Ab1I0TRw (ORCPT
+	id S1753297Ab1I0TSt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 15:18:49 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:34741 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751678Ab1I0TSr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 15:17:52 -0400
-Date: Tue, 27 Sep 2011 23:16:58 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Christoph Lameter <cl@gentwo.org>
-Cc: kernel-hardening@lists.openwall.com, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>, linux-mm@kvack.org,
-        Kees Cook <kees@ubuntu.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Valdis.Kletnieks@vt.edu,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Alan Cox <alan@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] mm: restrict access to slab files under procfs and
- sysfs
-Message-ID: <20110927191658.GB4820@albatros>
-References: <20110927175453.GA3393@albatros>
- <alpine.DEB.2.00.1109271304470.11361@router.home>
+	Tue, 27 Sep 2011 15:18:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1109271304470.11361@router.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <yq11uv1dd6h.fsf@sermon.lab.mkp.net>
+References: <CANLaLhaEnyPchqOPp65Y0hvotM30E5daX=XNG=fAAmf1dchxCA@mail.gmail.com>
+	<20110926111522.2a053ceb@lxorguk.ukuu.org.uk>
+	<CAK3HsqvkpEiDWcCP_+eO0va4+io7pVV-aWCzQ1=DdpPi_jxy6g@mail.gmail.com>
+	<CAMM=eLdTkpV_oy7+N2QVeqmm4t0WkAJXUmGkxWcb=X8Vp81x7A@mail.gmail.com>
+	<CAK3HsqtdgqWB36NCxz0xZxTrfp2-o8b7MYncn_P61eUv2xkAkw@mail.gmail.com>
+	<CANLaLhbiLC-+azrdmf3_uPYS1zR3x-Yk9tA2b0U6_z72YSjQYQ@mail.gmail.com>
+	<yq11uv1dd6h.fsf@sermon.lab.mkp.net>
+Date: Wed, 28 Sep 2011 00:48:46 +0530
+Message-ID: <CANLaLhYrnt-UEcQ04h=BZF1R6FSDDGg8MsDebPixHti9Hk6OJA@mail.gmail.com>
+Subject: Re: Detection of Advanced Format drives
+From: Arun <engineerarun@gmail.com>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+Cc: Joshua Scoggins <theoretically.x64@gmail.com>,
+        Mike Snitzer <snitzer@gmail.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 27, 2011 at 13:08 -0500, Christoph Lameter wrote:
-> Possible candidates:
-> 
-> christoph@oldy:~/n/linux-2.6$ grep proc_create mm/*
-> mm/swapfile.c:	proc_create("swaps", 0, NULL, &proc_swaps_operations);
-> mm/vmstat.c:	proc_create("buddyinfo", S_IRUGO, NULL, &fragmentation_file_operations);
-> mm/vmstat.c:	proc_create("pagetypeinfo", S_IRUGO, NULL, &pagetypeinfo_file_ops);
-> mm/vmstat.c:	proc_create("vmstat", S_IRUGO, NULL, &proc_vmstat_file_operations);
-> mm/vmstat.c:	proc_create("zoneinfo", S_IRUGO, NULL, &proc_zoneinfo_file_operations);
-> 
-> vmstat and zoneinfo in particular give similar information to what is
-> revealed through the slab proc files.
+Thanks for confirming "hdparm -I" Martin... I guessed it would resolve
+my detection problem but was not quite sure as I'm still waiting to
+get the drive and had some time to get my hands dirty :)
 
-Do you know whether these files are actively used?  I don't want to
-break tools like "free" or "top".  In this case we'll have to discover
-another way to limit this information.
+Thanks everyone for taking interest in my problem.
 
-Thank you!
+Regards,
 
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+Arun
+
+
+
+On Wed, Sep 28, 2011 at 00:29, Martin K. Petersen
+<martin.petersen@oracle.com> wrote:
+>>>>>> "Arun" == Arun  <engineerarun@gmail.com> writes:
+>
+> Arun> Should I suppose that it is an already available piece of
+> Arun> information to the userland?
+>
+> Yes, in the sysfs locations Mike mentioned:
+>
+>  /sys/block/foo/queue/physical_block_size
+>
+> Or you can use the BLKPBSZGET ioctl.
+>
+>
+> Arun> Or do I need to modify the hdparm/fdisk code to get this piece of
+> Arun> info?
+>
+> Recent hdparm versions will also report the right thing:
+>
+> # hdparm -I /dev/sdc | grep Sector
+>        Logical  Sector size:                   512 bytes
+>        Physical Sector size:                  4096 bytes
+>        Logical Sector-0 offset:                512 bytes
+>
+> --
+> Martin K. Petersen      Oracle Linux Engineering
+>
