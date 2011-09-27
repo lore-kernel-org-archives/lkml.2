@@ -1,71 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753039Ab1I0NNX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 09:13:23 -0400
-Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:6192
-	"EHLO AM1EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751175Ab1I0NNV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 09:13:21 -0400
-X-SpamScore: -18
-X-BigFish: VPS-18(zz1432N98dKzz1202hzz15d4Rz32i668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LS6NCL-01-5TY-02
-X-M-MSG: 
-Date: Tue, 27 Sep 2011 15:12:22 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Hiroshi DOYU <Hiroshi.DOYU@nokia.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        David Brown <davidb@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: Re: [PATCH v3 1/6] iommu/core: split mapping to page sizes as
- supported by the hardware
-Message-ID: <20110927131222.GL2138@amd.com>
-References: <1316195506-9777-1-git-send-email-ohad@wizery.com>
- <1316195506-9777-2-git-send-email-ohad@wizery.com>
- <20110927100505.GH2138@amd.com>
- <CAK=WgbahwY+7Ux-RjW2Tw9WBSwZnYuTMZ2NQASWyOXQ3zF6qFg@mail.gmail.com>
+	id S1753394Ab1I0NNe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 09:13:34 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:60957 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751303Ab1I0NNc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 09:13:32 -0400
+Date: Tue, 27 Sep 2011 18:20:20 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>, Hugh Dickins <hughd@google.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 3.1.0-rc4-tip 18/26]   uprobes: slot allocation.
+Message-ID: <20110927125020.GB3685@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com>
+ <20110920120335.25326.50673.sendpatchset@srdronam.in.ibm.com>
+ <1317127079.15383.52.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <CAK=WgbahwY+7Ux-RjW2Tw9WBSwZnYuTMZ2NQASWyOXQ3zF6qFg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+In-Reply-To: <1317127079.15383.52.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 11092713-5112-0000-0000-000000A10336
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 27, 2011 at 08:26:29AM -0400, Ohad Ben-Cohen wrote:
-> > With an unsigned long you can use plain and fast bit_ops instead of the
-> > full bitmap functions.
-> 
-> Not sure I follow; the only bit operation I'm using while mapping is
-> find_next_bit() (which is a bitops.h method).
-> 
-> What other faster variant are you referring to ?
+* Peter Zijlstra <peterz@infradead.org> [2011-09-27 14:37:59]:
 
-You pass a pointer to an unsigned long for the page-size bitmap. This
-allows to use an array of unsigned long. But a single unsigned long is
-sufficient and you can use functions like ffs() and fls() together with
-shifting. These functions often translate to a single intruction in the
-binary. The find_next_bit function has much more overhead because it
-needs to handle the array-of-ulong case.
+> On Tue, 2011-09-20 at 17:33 +0530, Srikar Dronamraju wrote:
+> > +static unsigned long xol_take_insn_slot(struct uprobes_xol_area *area)
+> > +{
+> > +       unsigned long slot_addr, flags;
+> > +       int slot_nr;
+> > +
+> > +       do {
+> > +               spin_lock_irqsave(&area->slot_lock, flags);
+> > +               slot_nr = find_first_zero_bit(area->bitmap, UINSNS_PER_PAGE);
+> > +               if (slot_nr < UINSNS_PER_PAGE) {
+> > +                       __set_bit(slot_nr, area->bitmap);
+> > +                       slot_addr = area->vaddr +
+> > +                                       (slot_nr * UPROBES_XOL_SLOT_BYTES);
+> > +                       atomic_inc(&area->slot_count);
+> > +               }
+> > +               spin_unlock_irqrestore(&area->slot_lock, flags);
+> > +               if (slot_nr >= UINSNS_PER_PAGE)
+> > +                       xol_wait_event(area);
+> > +
+> > +       } while (slot_nr >= UINSNS_PER_PAGE);
+> > +
+> > +       return slot_addr;
+> > +} 
+> 
+> Why isn't a find_first_bit() + set_and_test_bit() not sufficient? That
+> is, what do you need that lock for?
 
-	Joerg
+yes, we could do without the lock to.
+Will do this in the next patchset.
 
 -- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+Thanks and Regards 
+Srikar
 
