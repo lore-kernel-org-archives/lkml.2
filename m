@@ -1,49 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751973Ab1I0Bjc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 21:39:32 -0400
-Received: from cltv.tinp.net.tw ([58.99.32.3]:37288 "EHLO cltv.tinp.net.tw"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751708Ab1I0Bjb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 21:39:31 -0400
-Message-ID: <20110927090824.2132yw75wgss48s0@cltv.tinp.net.tw>
-Date: Tue, 27 Sep 2011 09:08:24 +0800
-From: United Nation Donation <info@unf.org>
-Reply-to: torobindesk@blumail.org
-To: undisclosed-recipients:;
-Subject: CONGRATULATION!!!
+	id S1752007Ab1I0Bmg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 21:42:36 -0400
+Received: from cluster-g.mailcontrol.com ([208.87.233.190]:35912 "EHLO
+	cluster-g.mailcontrol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751708Ab1I0Bmf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 21:42:35 -0400
+From: Barry Song <Baohua.Song@csr.com>
+To: <pavel@ucw.cz>, <rjw@sisk.pl>
+CC: <linux-kernel@vger.kernel.org>, <linux-pm@lists.linux-foundation.org>,
+        Barry Song <Baohua.Song@csr.com>
+Subject: [PATCH] PM: HIBERNATION: fix typo
+Date: Mon, 26 Sep 2011 18:41:39 -0700
+Message-ID: <1317087699-13143-1-git-send-email-Baohua.Song@csr.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=BIG5;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.4)
+Content-Type: text/plain
+X-Originating-IP: [10.125.36.59]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CONGRATULATION!!!
+Signed-off-by: Barry Song <Baohua.Song@csr.com>
+---
+ kernel/power/hibernate.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-We are pleased to inform you that You have been chosen by the U.N  
-Foundation to
-receive a Grant Aid surpport Donation of $1,000,000.00 USD.Your Qualification
-Numbers (G-999-747,UZ-900-77) For Claims contact Mr robin steven with this
-information below
+diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+index 8f7b1db..243f648 100644
+--- a/kernel/power/hibernate.c
++++ b/kernel/power/hibernate.c
+@@ -463,7 +463,7 @@ static int resume_target_kernel(bool platform_mode)
+  * @platform_mode: If set, use platform driver to prepare for the transition.
+  *
+  * This routine must be called with pm_mutex held.  If it is successful, control
+- * reappears in the restored target kernel in hibernation_snaphot().
++ * reappears in the restored target kernel in hibernation_snapshot().
+  */
+ int hibernation_restore(int platform_mode)
+ {
+-- 
+1.7.1
 
-CLAIMS VERIFICATION FORM:
 
-1. Full Name:
-2. Contact Address:
-3. Telephone Number:
-4.Country:
-5. Sex/Age:
-6. Occupation:
 
-Sincerely,
-Mr. Robin steven
-
-----------------------------------------------------------------
-TINP http://www.tinp.net.tw/
-
+Member of the CSR plc group of companies. CSR plc registered in England and Wales, registered number 4187346, registered office Churchill House, Cambridge Business Park, Cowley Road, Cambridge, CB4 0WZ, United Kingdom
+More information can be found at www.csr.com. Follow CSR on Twitter at http://twitter.com/CSR_PLC and read our blog at www.csr.com/blog
