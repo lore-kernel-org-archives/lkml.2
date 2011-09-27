@@ -1,108 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753646Ab1I0LuN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 07:50:13 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:57858 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753513Ab1I0LuK (ORCPT
+	id S1753859Ab1I0Luq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 07:50:46 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:45258 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753602Ab1I0Lup convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 07:50:10 -0400
-Date: Tue, 27 Sep 2011 13:50:05 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Pavel Ivanov <paivanof@gmail.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	Tue, 27 Sep 2011 07:50:45 -0400
+Subject: Re: [PATCH v5 3.1.0-rc4-tip 18/26]   uprobes: slot allocation.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>, Hugh Dickins <hughd@google.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 1/7] rcu: Fix preempt-unsafe debug check of rcu extended
- quiescent state
-Message-ID: <20110927115002.GH18553@somewhere>
-References: <1317032352-25571-1-git-send-email-fweisbec@gmail.com>
- <1317032352-25571-2-git-send-email-fweisbec@gmail.com>
- <CAG1a4rtKc0ZPZEeAsde-u7Xw9w36Oi05Zd--ueHT2XHbqRr6cg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAG1a4rtKc0ZPZEeAsde-u7Xw9w36Oi05Zd--ueHT2XHbqRr6cg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
+        Eric Paris <eparis@redhat.com>
+Date: Tue, 27 Sep 2011 13:49:37 +0200
+In-Reply-To: <20110920120335.25326.50673.sendpatchset@srdronam.in.ibm.com>
+References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com>
+	 <20110920120335.25326.50673.sendpatchset@srdronam.in.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1317124177.15383.46.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 26, 2011 at 06:04:06PM -0400, Pavel Ivanov wrote:
-> On Mon, Sep 26, 2011 at 6:19 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> > In the rcu_check_extended_qs() function that is used to check
-> > illegal uses of RCU under extended quiescent states, we look
-> > at the local value of dynticks that is even if an extended
-> > quiescent state or odd otherwise.
-> >
-> > We are looking at it without disabling the preemption though
-> > and this opens a race window where we may read the state of
-> > a remote CPU instead, like in the following scenario:
-> >
-> > CPU 1                                                        CPU 2
-> >
-> > bool rcu_check_extended_qs(void)
-> > {
-> >        struct rcu_dynticks *rdtp;
-> >
-> >        rdtp = &per_cpu(rcu_dynticks,
-> >                        raw_smp_processor_id());
-> >
-> >        < ---- Task is migrated here ---- >
-> >
-> >        // CPU 1 goes idle and increase rdtp->dynticks
-> >                                                        /* Here we are reading the value for
-> >                                                        the remote CPU 1 instead of the local CPU */
-> >                                                        if (atomic_read(&rdtp->dynticks) & 0x1)
-> >                                                                return false;
-> >
-> >                                                        return true;
-> >                                                        }
-> >
-> > The possible result of this is false positive return value of that
-> > function, suggesting we are in an extended quiescent state in random
-> > places.
-> 
-> How is this different from what your patch allows?
-> 
-> CPU 1                                               CPU 2
-> 
-> bool rcu_check_extended_qs(void)
-> {
->        struct rcu_dynticks *rdtp =
->                &get_cpu_var(rcu_dynticks);
->        bool ext_qs = true;
-> 
->        if (atomic_read(&rdtp->dynticks) & 0x1)
->                ext_qs = false;
-> 
->        put_cpu_var(rcu_dynticks);
-> 
->        < ---- Task is migrated here ---- >
-> 
->                                                   /* Here we return true/false
->                                                      based on the value for the
->                                                      remote CPU 1 instead of the
->                                                      local CPU */
-> 
->                                                   return ext_qs;
->                                                   }
-> 
-> 
-> Looks like it can result in the same false positive result.
+On Tue, 2011-09-20 at 17:33 +0530, Srikar Dronamraju wrote:
+> +static int xol_add_vma(struct uprobes_xol_area *area)
+> +{
+> +       const struct cred *curr_cred;
+> +       struct vm_area_struct *vma;
+> +       struct mm_struct *mm;
+> +       unsigned long addr;
+> +       int ret = -ENOMEM;
+> +
+> +       mm = get_task_mm(current);
+> +       if (!mm)
+> +               return -ESRCH;
+> +
+> +       down_write(&mm->mmap_sem);
+> +       if (mm->uprobes_xol_area) {
+> +               ret = -EALREADY;
+> +               goto fail;
+> +       }
+> +
+> +       /*
+> +        * Find the end of the top mapping and skip a page.
+> +        * If there is no space for PAGE_SIZE above
+> +        * that, mmap will ignore our address hint.
+> +        *
+> +        * override credentials otherwise anonymous memory might
+> +        * not be granted execute permission when the selinux
+> +        * security hooks have their way.
+> +        */
+> +       vma = rb_entry(rb_last(&mm->mm_rb), struct vm_area_struct, vm_rb);
+> +       addr = vma->vm_end + PAGE_SIZE;
+> +       curr_cred = override_creds(&init_cred);
+> +       addr = do_mmap_pgoff(NULL, addr, PAGE_SIZE, PROT_EXEC, MAP_PRIVATE, 0);
+> +       revert_creds(curr_cred);
+> +
+> +       if (addr & ~PAGE_MASK)
+> +               goto fail;
+> +       vma = find_vma(mm, addr);
+> +
+> +       /* Don't expand vma on mremap(). */
+> +       vma->vm_flags |= VM_DONTEXPAND | VM_DONTCOPY;
+> +       area->vaddr = vma->vm_start;
+> +       if (get_user_pages(current, mm, area->vaddr, 1, 1, 1, &area->page,
+> +                               &vma) > 0)
+> +               ret = 0;
+> +
+> +fail:
+> +       up_write(&mm->mmap_sem);
+> +       mmput(mm);
+> +       return ret;
+> +} 
 
-Why?
+So is that the right way? I looked back to the previous discussion with
+Eric and couldn't really make up my mind either way. The changelog is
+entirely without detail and Eric isn't CC'ed.
 
-While calling rcu_read_lock(), the task can still be migrated
-for example from CPU 0 to CPU 1, until we do our check
-in rcu_check_extended_qs() with preemption disabled. But that's
-not a problem, we are going to do our check either in CPU 0 or
-CPU 1, that's doesn't matter much.
-
-What matters is that we do that check by ensuring we are really
-checking the value of the cpu var in the CPU we are currently
-running and not some other random one that can change its dynticks
-value at the same time.
+What's the point of having these discussions if all traces of them
+disappear on the next posting?
