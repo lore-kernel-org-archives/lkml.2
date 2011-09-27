@@ -1,80 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752171Ab1I0RE2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 13:04:28 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:44545 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751354Ab1I0RE0 convert rfc822-to-8bit (ORCPT
+	id S1752240Ab1I0RFc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 13:05:32 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:33487 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751713Ab1I0RFb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 13:04:26 -0400
-X-IronPort-AV: E=Sophos;i="4.68,450,1312182000"; 
-   d="scan'208";a="585104220"
-Subject: Re: NFS client growing system CPU
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Simon Kirby <sim@hostway.ca>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 27 Sep 2011 13:04:15 -0400
-In-Reply-To: <20110927164937.GA2690@hostway.ca>
-References: <20101208212505.GA18192@hostway.ca>
-	 <1291845189.3067.31.camel@heimdal.trondhjem.org>
-	 <20110927003931.GB12106@hostway.ca>
-	 <1317123773.24383.1.camel@lade.trondhjem.org>
-	 <20110927164937.GA2690@hostway.ca>
-Organization: NetApp Inc
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Message-ID: <1317143055.10143.2.camel@lade.trondhjem.org>
-Mime-Version: 1.0
-X-OriginalArrivalTime: 27 Sep 2011 17:04:15.0761 (UTC) FILETIME=[7CD07010:01CC7D37]
+	Tue, 27 Sep 2011 13:05:31 -0400
+Date: Tue, 27 Sep 2011 18:01:34 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Huajun Li <huajun.li.lee@gmail.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        netdev <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: Question about memory leak detector giving false positive
+ report for net/core/flow.c
+Message-ID: <20110927170133.GN14237@e102109-lin.cambridge.arm.com>
+References: <CA+v9cxadZzWr35Q9RFzVgk_NZsbZ8PkVLJNxjBAMpargW9Lm4Q@mail.gmail.com>
+ <1317054774.6363.9.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <20110926165024.GA21617@e102109-lin.cambridge.arm.com>
+ <1317066395.2796.11.camel@edumazet-laptop>
+ <CA+v9cxYzWJScCa2mMoEovq3WULSZYQaq6EjoRV7SQUjr0L_RiQ@mail.gmail.com>
+ <1317102918.2796.22.camel@edumazet-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1317102918.2796.22.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-09-27 at 09:49 -0700, Simon Kirby wrote: 
-> On Tue, Sep 27, 2011 at 07:42:53AM -0400, Trond Myklebust wrote:
+On Tue, Sep 27, 2011 at 06:55:18AM +0100, Eric Dumazet wrote:
+> Yes, it was not a patch, but the general idea for Catalin ;)
 > 
-> > On Mon, 2011-09-26 at 17:39 -0700, Simon Kirby wrote: 
-> > > Hello!
-> > > 
-> > > Following up on "System CPU increasing on idle 2.6.36", this issue is
-> > > still happening even on 3.1-rc7. So, since it has been 9 months since I
-> > > reported this, I figured I'd bisect this issue. The first bisection ended
-> > > in an IPMI regression that looked like the problem, so I had to start
-> > > again. Eventually, I got commit b80c3cb628f0ebc241b02e38dd028969fb8026a2
-> > > which made it into 2.6.34-rc4.
-> > > 
-> > > With this commit, system CPU keeps rising as the log crunch box runs
-> > > (reads log files via NFS and spews out HTML files into NFS-mounted report
-> > > directories). When it finishes the daily run, the system time stays
-> > > non-zero and continues to be higher and higher after each run, until the
-> > > box never completes a run within a day due to all of the wasted cycles.
-> > 
-> > So reverting that commit fixes the problem on 3.1-rc7?
-> > 
-> > As far as I can see, doing so should be safe thanks to commit
-> > 5547e8aac6f71505d621a612de2fca0dd988b439 (writeback: Update dirty flags
-> > in two steps) which fixes the original problem at the VFS level.
+> You hit the fact that same zone (embedded percpu space) is now in a
+> mixed state.
 > 
-> Hmm, I went to git revert b80c3cb628f0ebc241b02e38dd028969fb8026a2, but
-> for some reason git left the nfs_mark_request_dirty(req); line in
-> nfs_writepage_setup(), even though the original commit had that. Is that
-> OK or should I remove that as well?
-> 
-> Once that is sorted, I'll build it and let it run for a day and let you
-> know. Thanks!
+> In current kernels, the embedded percpu zone is already known by
+> kmemleak, but with a large granularity. kmemleak is not aware of
+> individual allocations/freeing in this large zone.
 
-It shouldn't make any difference whether you leave it or remove it. The
-resulting second call to __set_page_dirty_nobuffers() will always be a
-no-op since the page will already be marked as dirty.
+It looks like this comes via the bootmem allocator. Maybe we could
+simply call kmemleak_free() on the embedded percpu space and just track
+those via the standard percpu API.
 
-Cheers
-  Trond
 -- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
+Catalin
