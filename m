@@ -1,51 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752815Ab1I0SZG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 14:25:06 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:38862 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751914Ab1I0SZE (ORCPT
+	id S1752840Ab1I0S0S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 14:26:18 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:20513 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751354Ab1I0S0R convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 14:25:04 -0400
+	Tue, 27 Sep 2011 14:26:17 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:sender:in-reply-to:references:date:
+	x-google-sender-auth:message-id:subject:from:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=yVQ8RM2Uas6kuGRUe7/bAc0IYhye/sdRxu4lhS0BaPp0yOGmZBIpgyoMpF6+F/7D4
+	zYcFOOGqIM3zaUZl2KPMA==
 MIME-Version: 1.0
-In-Reply-To: <20110927181420.GQ4289@opensource.wolfsonmicro.com>
-References: <20110921120148.4A81E9D401D@zog.reactivated.net>
-	<20110921124936.GA25620@sirena.org.uk>
-	<CAMLZHHQZnajC4e12MjaK3W8WcAB2ZB+6L=5kS5BBFZF=+YWicQ@mail.gmail.com>
-	<20110921131637.GF4374@opensource.wolfsonmicro.com>
-	<CAMLZHHTJaOddSj00g0-WpFQu6pUTqizKjKaQF9hLrhceEMhY1Q@mail.gmail.com>
-	<20110927150555.GF20588@ponder.secretlab.ca>
-	<CAMLZHHQU-eMAtvBQJj6+WrMjkWWA+ET=z5NdQCEgXxh=m10d3Q@mail.gmail.com>
-	<20110927181420.GQ4289@opensource.wolfsonmicro.com>
-Date: Tue, 27 Sep 2011 19:25:03 +0100
-X-Google-Sender-Auth: B06m2kV6uxMWOggX452i70mS9Iw
-Message-ID: <CAMLZHHSuoeAJ-AC9daxb83+EANV=YGK-aiYpQ_j2wFiyQa5ytw@mail.gmail.com>
-Subject: Re: [PATCH 1/3] mfd: allow mfd_cell association with device tree node
-From: Daniel Drake <dsd@laptop.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, sameo@linux.intel.com,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        dilinger@queued.net
+In-Reply-To: <CAErSpo63fYmQVRO2O3sB37k6rAo7Qttdh1xo=WH+QwcVb+neGg@mail.gmail.com>
+References: <1316818998-30711-1-git-send-email-sjg@chromium.org>
+	<CAErSpo63fYmQVRO2O3sB37k6rAo7Qttdh1xo=WH+QwcVb+neGg@mail.gmail.com>
+Date: Tue, 27 Sep 2011 11:26:13 -0700
+X-Google-Sender-Auth: 0LVA7tLHFp7_5JKSyZsY2CAuWgc
+Message-ID: <CAPnjgZ2Z-nBg2m1P2zkda=nMAG0qCOzVtpAOSth6nwoGSUfrFQ@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/3] Add accurate boot timing to a Linux system
+From: Simon Glass <sjg@chromium.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 27, 2011 at 7:14 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Tue, Sep 27, 2011 at 05:44:04PM +0100, Daniel Drake wrote:
->
->> However, it does take Mark's suggestion into account that the mfd
->> should have some clear representation in the device tree. For us it
->> already did have (naturally), but this wasn't reflected in my earlier
->> patch. It is now - the location of the vx855-gpio node is based on
->> finding the mfd node and going from there.
->
-> Why not just kmemdup() the template you're using rather than modifying
-> it in place?
+Hi Bjorn,
 
-Could do, but is there any point in this case? I'm not seeing it. The
-"template" is already being modified in this way in the current driver
-as well.
+On Sun, Sep 25, 2011 at 5:54 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Fri, Sep 23, 2011 at 5:03 PM, Simon Glass <sjg@chromium.org> wrote:
+>> This experimental patch set adds boot timing to a Linux system. The
+>> timing starts with the boot loader and extends through the kernel into
+>> user space to the completion of the boot process. The timing starts when
+>> the system leaves reset, not later when the kernel starts.
+>>
+>> The concept is:
+>> - Boot loader records a timestamp for key events during its operation
+>> - These timestamps are passed to Linux, which adds more as it boots
+>> - These timestamps are made available to user space, where more
+>> timestamps are added as init does its job
+>> - Finally the whole record is collected by a user-space script run at
+>> the end of init. This is fed back through some mechanism to monitor
+>> boot time in the field.
+>
+> I think this is a cool idea.  It's quite difficult to extract this
+> sort of information today, and making it easily and consistently
+> available should help focus attention and improve things.
+>
+> There are difficult issues about which clock to use, how to correlate
+> bootloader & kernel timestamps, how to make sure the timestamps stay
+> sensible even when we use hwclock, ntp, etc., but I think it's worth
+> pushing on this to see how far you can go.
 
-Daniel
+Yes it is not easy to get all of this right, especially trying to
+cross two completely different projects. I think the timestamps should
+be measured from reset. The kernel timestamps start not at zero, but
+from the time the kernel starts. This guarantees a consistent time
+base across the data. Also if there is a pre-boot program (such as a
+NAND loader) then its time will be counted also.
+
+A good timer would be an accurate monotonic wall clock, not
+necessarily related to time of day. An ideal timer would be a
+microsecond/nanosecond timer maintained by the hardware / SOC.
+
+Regards,
+Simon
+
+>
+> Bjorn
+>
