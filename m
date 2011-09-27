@@ -1,36 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752506Ab1I0JBk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 05:01:40 -0400
-Received: from mga11.intel.com ([192.55.52.93]:43446 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751594Ab1I0JBj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 05:01:39 -0400
-Message-Id: <e39f63$23ptfo@fmsmga002.fm.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,448,1312182000"; 
-   d="scan'208";a="71103992"
-From: Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: PCH reference clock cleanups
-To: Keith Packard <keithp@keithp.com>, Dave Airlie <airlied@redhat.com>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        intel-gfx@lists.freedesktop.org, Keith Packard <keithp@keithp.com>
-In-Reply-To: <1317103906-4649-1-git-send-email-keithp@keithp.com>
-References: <yunbou6lxb4.fsf@aiko.keithp.com> <1317103906-4649-1-git-send-email-keithp@keithp.com>
-Date: Tue, 27 Sep 2011 10:01:33 +0100
+	id S1752279Ab1I0JOg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 05:14:36 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:35852 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751142Ab1I0JOf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 05:14:35 -0400
+Subject: Re: [PATCH] spinlock: rm duplicated preempt en/disable for bottom
+ half
+From: Peter Zijlstra <peterz@infradead.org>
+To: Bob Liu <lliubbo@gmail.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, joe@perches.com,
+        tglx@linutronix.de
+Date: Tue, 27 Sep 2011 11:13:56 +0200
+In-Reply-To: <1317110185-9219-1-git-send-email-lliubbo@gmail.com>
+References: <1317110185-9219-1-git-send-email-lliubbo@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1317114837.15383.1.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 Sep 2011 23:11:37 -0700, Keith Packard <keithp@keithp.com> wrote:
-> Ok, so I'd love to know where in any PCH reference matter someone has
-> found a place where the reference clock for any of the PLLs is
-> anything other than 120MHz. Can someone find a reference for other frequencies?
+On Tue, 2011-09-27 at 15:56 +0800, Bob Liu wrote:
+> local_bh_en/disable() has already deal with en/disable preempt, so rm the
+> dumplicated one from spinlock_api_up/smp.h head file.
 
-Oddly in the diagram SSC4 is given as a 100MHz clock that can be used for
-any output other than DP_A. However, the configuration register marks that
-as being a test-only mode.
--Chris
+I bet you haven't tried booting this..  you just broke stuff like:
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+  spin_lock_bh(&foo);
+  /* do crap */
+  spin_unlock(&foo);
+  /* do some other crap */
+  local_bh_enable();
+
+
+And yes that does happen.
+
+  
