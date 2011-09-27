@@ -1,35 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752765Ab1I0R6Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 13:58:16 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:11312
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752248Ab1I0R6P (ORCPT
+	id S1752459Ab1I0R7G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 13:59:06 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:54115 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751139Ab1I0R7F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 13:58:15 -0400
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzzz2fh668h839h93fh)
-X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPVD:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
-Message-ID: <4E820E9F.7000600@am.sony.com>
-Date: Tue, 27 Sep 2011 10:57:51 -0700
-From: Tim Bird <tim.bird@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+	Tue, 27 Sep 2011 13:59:05 -0400
 MIME-Version: 1.0
-To: Simon Glass <sjg@chromium.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 0/3] Add accurate boot timing to a Linux system
-References: <1316818998-30711-1-git-send-email-sjg@chromium.org> <4E820E4D.5050205@am.sony.com>
-In-Reply-To: <4E820E4D.5050205@am.sony.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+In-Reply-To: <CAMM=eLdTkpV_oy7+N2QVeqmm4t0WkAJXUmGkxWcb=X8Vp81x7A@mail.gmail.com>
+References: <CANLaLhaEnyPchqOPp65Y0hvotM30E5daX=XNG=fAAmf1dchxCA@mail.gmail.com>
+	<20110926111522.2a053ceb@lxorguk.ukuu.org.uk>
+	<CAK3HsqvkpEiDWcCP_+eO0va4+io7pVV-aWCzQ1=DdpPi_jxy6g@mail.gmail.com>
+	<CAMM=eLdTkpV_oy7+N2QVeqmm4t0WkAJXUmGkxWcb=X8Vp81x7A@mail.gmail.com>
+Date: Tue, 27 Sep 2011 10:59:03 -0700
+Message-ID: <CAK3HsqtdgqWB36NCxz0xZxTrfp2-o8b7MYncn_P61eUv2xkAkw@mail.gmail.com>
+Subject: Re: Detection of Advanced Format drives
+From: Joshua Scoggins <theoretically.x64@gmail.com>
+To: Mike Snitzer <snitzer@gmail.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Arun <engineerarun@gmail.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for the dup.  Mailer freaking out.
-My apologies...
- -- Tim
+Didn't know about the physical_block_size field. My AV-25 reports the
+physical_block_size as 4096 and the logical block size as 512.
 
+Thanks for the heads up and sorry about the misinformation. Not my
+intention to spread FUD like that
+
+On Mon, Sep 26, 2011 at 1:09 PM, Mike Snitzer <snitzer@gmail.com> wrote:
+> On Mon, Sep 26, 2011 at 3:48 PM, Joshua Scoggins
+> <theoretically.x64@gmail.com> wrote:
+>> Keep in mind that some AF drives will not report their actual sector
+>> sizes. I have this issue with the WD AV-25 series. This is to provide
+>> compatibility with older operating systems that don't support AF
+>> drives. These are called generation 1 devices. Newer drives will
+>> directly report their sector size as 4096 through the drive identify
+>> data older ones will say 512. At that point you just need to do a
+>> google search to see if it's AF or not.
+>
+> Linux should publish the discrepancy with these <disk> specific sysfs files:
+>
+> /sys/block/<disk>/queue/logical_block_size=512
+> /sys/block/<disk>/queue/physical_block_size=4096
+>
+> But are you saying you have an AF disk that doesn't publish this
+> discrepancy via the IDENTIFY DEVICE (ATA) or READ CAPACITY 16 (SCSI)
+> command?
+>
