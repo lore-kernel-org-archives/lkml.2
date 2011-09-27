@@ -1,223 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753925Ab1I0ND6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 09:03:58 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:34960 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753038Ab1I0ND4 (ORCPT
+	id S1754119Ab1I0NEj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 09:04:39 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:46675 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751707Ab1I0NEi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 09:03:56 -0400
-Message-ID: <4E81C9B7.9000004@gmail.com>
-Date: Tue, 27 Sep 2011 08:03:51 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110918 Thunderbird/7.0
-MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, marc.zyngier@arm.com,
-        thomas.abraham@linaro.org, jamie@jamieiles.com, b-cousson@ti.com,
-        shawn.guo@linaro.org
-Subject: Re: [PATCH v4] of/irq: introduce of_irq_init
-References: <1316744473-13158-1-git-send-email-robherring2@gmail.com> <1317065083-23573-1-git-send-email-robherring2@gmail.com> <20110927015305.GD20588@ponder.secretlab.ca>
-In-Reply-To: <20110927015305.GD20588@ponder.secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 27 Sep 2011 09:04:38 -0400
+Subject: Re: [PATCH v5 3.1.0-rc4-tip 26/26]   uprobes: queue signals while
+ thread is singlestepping.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Jonathan Corbet <corbet@lwn.net>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 27 Sep 2011 15:03:46 +0200
+In-Reply-To: <20110920120517.25326.57657.sendpatchset@srdronam.in.ibm.com>
+References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com>
+	 <20110920120517.25326.57657.sendpatchset@srdronam.in.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1317128626.15383.61.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grant,
+On Tue, 2011-09-20 at 17:35 +0530, Srikar Dronamraju wrote:
+> +#ifdef CONFIG_UPROBES
+> +       if (!group && t->utask && t->utask->active_uprobe)
+> +               pending = &t->utask->delayed;
+> +#endif
+> +
+>         /*
+>          * Short-circuit ignored signals and support queuing
+>          * exactly one non-rt signal, so that we can get more
+> @@ -1106,6 +1111,11 @@ static int __send_signal(int sig, struct siginfo *info, struct task_struct *t,
+>                 }
+>         }
+>  
+> +#ifdef CONFIG_UPROBES
+> +       if (!group && t->utask && t->utask->active_uprobe)
+> +               return 0;
+> +#endif
+> +
+>  out_set:
+>         signalfd_notify(t, sig);
+>         sigaddset(&pending->signal, sig);
+> @@ -1569,6 +1579,13 @@ int send_sigqueue(struct sigqueue *q, struct task_struct *t, int group)
+>         }
+>         q->info.si_overrun = 0;
+>  
+> +#ifdef CONFIG_UPROBES
+> +       if (!group && t->utask && t->utask->active_uprobe) {
+> +               pending = &t->utask->delayed;
+> +               list_add_tail(&q->list, &pending->list);
+> +               goto out;
+> +       }
+> +#endif
+>         signalfd_notify(t, sig);
+>         pending = group ? &t->signal->shared_pending : &t->pending;
+>         list_add_tail(&q->list, &pending->list);
+> @@ -2199,7 +2216,10 @@ int get_signal_to_deliver(siginfo_t *info, struct k_sigaction *return_ka,
+>                         spin_unlock_irq(&sighand->siglock);
+>                         goto relock;
+>                 }
+> -
+> +#ifdef CONFIG_UPROBES
+> +               if (current->utask && current->utask->active_uprobe)
+> +                       break;
+> +#endif 
 
-On 09/26/2011 08:53 PM, Grant Likely wrote:
-> On Mon, Sep 26, 2011 at 02:24:43PM -0500, Rob Herring wrote:
->> From: Rob Herring <rob.herring@calxeda.com>
->>
->> of_irq_init will scan the devicetree for matching interrupt controller
->> nodes. Then it calls an initialization function for each found controller
->> in the proper order with parent nodes initialized before child nodes.
->>
->> Based on initial pseudo code from Grant Likely.
->>
->> Changes in v4:
->> - Drop unnecessary empty list check
->> - Be more verbose on errors
->> - Simplify "if (!desc) WARN_ON(1)" to "if (WARN_ON(!desc))"
->>
->> Changes in v3:
->> - add missing kfree's found by Jamie
->> - Implement Grant's comments to simplify the init loop
->> - fix function comments
->>
->> Changes in v2:
->> - Complete re-write of list searching code from Grant Likely
->>
->> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
->> Cc: Grant Likely <grant.likely@secretlab.ca>
-> 
-> Looks good to me.  Merged.
-> 
+That's just crying for something like:
 
-I'm dependent on this and things in rmk's tree for initial highbank
-support, so should this series go in thru arm-soc tree? Several others
-are dependent on this as well.
+#ifdef CONFIG_UPROBES
+static inline bool uprobe_delay_signal(struct task_struct *p)
+{
+	return p->utask && p->utask->active_uprobe;
+}
+#else
+static inline bool uprobe_delay_signal(struct task_struct *p)
+{
+	return false;
+}
+#endif
 
-Rob
-
-> g.
-> 
->> ---
->>  drivers/of/irq.c       |  107 ++++++++++++++++++++++++++++++++++++++++++++++++
->>  include/linux/of_irq.h |    3 +
->>  2 files changed, 110 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/of/irq.c b/drivers/of/irq.c
->> index 6a5b5e7..6d3dd39 100644
->> --- a/drivers/of/irq.c
->> +++ b/drivers/of/irq.c
->> @@ -19,10 +19,12 @@
->>   */
->>  
->>  #include <linux/errno.h>
->> +#include <linux/list.h>
->>  #include <linux/module.h>
->>  #include <linux/of.h>
->>  #include <linux/of_irq.h>
->>  #include <linux/string.h>
->> +#include <linux/slab.h>
->>  
->>  /* For archs that don't support NO_IRQ (such as x86), provide a dummy value */
->>  #ifndef NO_IRQ
->> @@ -386,3 +388,108 @@ int of_irq_to_resource_table(struct device_node *dev, struct resource *res,
->>  
->>  	return i;
->>  }
->> +
->> +struct intc_desc {
->> +	struct list_head	list;
->> +	struct device_node	*dev;
->> +	struct device_node	*interrupt_parent;
->> +};
->> +
->> +/**
->> + * of_irq_init - Scan and init matching interrupt controllers in DT
->> + * @matches: 0 terminated array of nodes to match and init function to call
->> + *
->> + * This function scans the device tree for matching interrupt controller nodes,
->> + * and calls their initialization functions in order with parents first.
->> + */
->> +void __init of_irq_init(const struct of_device_id *matches)
->> +{
->> +	struct device_node *np, *parent = NULL;
->> +	struct intc_desc *desc, *temp_desc;
->> +	struct list_head intc_desc_list, intc_parent_list;
->> +
->> +	INIT_LIST_HEAD(&intc_desc_list);
->> +	INIT_LIST_HEAD(&intc_parent_list);
->> +
->> +	for_each_matching_node(np, matches) {
->> +		if (!of_find_property(np, "interrupt-controller", NULL))
->> +			continue;
->> +		/*
->> +		 * Here, we allocate and populate an intc_desc with the node
->> +		 * pointer, interrupt-parent device_node etc.
->> +		 */
->> +		desc = kzalloc(sizeof(*desc), GFP_KERNEL);
->> +		if (WARN_ON(!desc))
->> +			goto err;
->> +
->> +		desc->dev = np;
->> +		desc->interrupt_parent = of_irq_find_parent(np);
->> +		list_add_tail(&desc->list, &intc_desc_list);
->> +	}
->> +
->> +	/*
->> +	 * The root irq controller is the one without an interrupt-parent.
->> +	 * That one goes first, followed by the controllers that reference it,
->> +	 * followed by the ones that reference the 2nd level controllers, etc.
->> +	 */
->> +	while (!list_empty(&intc_desc_list)) {
->> +		/*
->> +		 * Process all controllers with the current 'parent'.
->> +		 * First pass will be looking for NULL as the parent.
->> +		 * The assumption is that NULL parent means a root controller.
->> +		 */
->> +		list_for_each_entry_safe(desc, temp_desc, &intc_desc_list, list) {
->> +			const struct of_device_id *match;
->> +			int ret;
->> +			of_irq_init_cb_t irq_init_cb;
->> +
->> +			if (desc->interrupt_parent != parent)
->> +				continue;
->> +
->> +			list_del(&desc->list);
->> +			match = of_match_node(matches, desc->dev);
->> +			if (WARN(!match->data,
->> +			    "of_irq_init: no init function for %s\n",
->> +			    match->compatible)) {
->> +				kfree(desc);
->> +				continue;
->> +			}
->> +
->> +			pr_debug("of_irq_init: init %s @ %p, parent %p\n",
->> +				 match->compatible,
->> +				 desc->dev, desc->interrupt_parent);
->> +			irq_init_cb = match->data;
->> +			ret = irq_init_cb(desc->dev, desc->interrupt_parent);
->> +			if (ret) {
->> +				kfree(desc);
->> +				continue;
->> +			}
->> +
->> +			/*
->> +			 * This one is now set up; add it to the parent list so
->> +			 * its children can get processed in a subsequent pass.
->> +			 */
->> +			list_add_tail(&desc->list, &intc_parent_list);
->> +		}
->> +
->> +		/* Get the next pending parent that might have children */
->> +		desc = list_first_entry(&intc_parent_list, typeof(*desc), list);
->> +		if (list_empty(&intc_parent_list) || !desc) {
->> +			pr_err("of_irq_init: children remain, but no parents\n");
->> +			break;
->> +		}
->> +		list_del(&desc->list);
->> +		parent = desc->dev;
->> +		kfree(desc);
->> +	}
->> +
->> +	list_for_each_entry_safe(desc, temp_desc, &intc_parent_list, list) {
->> +		list_del(&desc->list);
->> +		kfree(desc);
->> +	}
->> +err:
->> +	list_for_each_entry_safe(desc, temp_desc, &intc_desc_list, list) {
->> +		list_del(&desc->list);
->> +		kfree(desc);
->> +	}
->> +}
->> diff --git a/include/linux/of_irq.h b/include/linux/of_irq.h
->> index cd2e61c..d0307ee 100644
->> --- a/include/linux/of_irq.h
->> +++ b/include/linux/of_irq.h
->> @@ -33,6 +33,8 @@ struct of_irq {
->>  	u32 specifier[OF_MAX_IRQ_SPEC]; /* Specifier copy */
->>  };
->>  
->> +typedef int (*of_irq_init_cb_t)(struct device_node *, struct device_node *);
->> +
->>  /*
->>   * Workarounds only applied to 32bit powermac machines
->>   */
->> @@ -73,6 +75,7 @@ extern int of_irq_to_resource_table(struct device_node *dev,
->>  		struct resource *res, int nr_irqs);
->>  extern struct device_node *of_irq_find_parent(struct device_node *child);
->>  
->> +extern void of_irq_init(const struct of_device_id *matches);
->>  
->>  #endif /* CONFIG_OF_IRQ */
->>  #endif /* CONFIG_OF */
->> -- 
->> 1.7.5.4
->>
-
+That'll instantly kill the #ifdeffery as well as describe wtf you're
+actually doing.
