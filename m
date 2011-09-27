@@ -1,84 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753327Ab1I0GNo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 02:13:44 -0400
-Received: from home.keithp.com ([63.227.221.253]:55040 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753235Ab1I0GMC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 02:12:02 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Dave Airlie <airlied@redhat.com>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        intel-gfx@lists.freedesktop.org, Keith Packard <keithp@keithp.com>
-Subject: [PATCH 3/9] drv/i915: Pull display_clock_mode out of VBT table
-Date: Mon, 26 Sep 2011 23:11:40 -0700
-Message-Id: <1317103906-4649-4-git-send-email-keithp@keithp.com>
-X-Mailer: git-send-email 1.7.6.3
-In-Reply-To: <1317103906-4649-1-git-send-email-keithp@keithp.com>
-References: <yunbou6lxb4.fsf@aiko.keithp.com>
- <1317103906-4649-1-git-send-email-keithp@keithp.com>
+	id S1753228Ab1I0GVZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 02:21:25 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:36156 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752766Ab1I0GVY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 02:21:24 -0400
+Date: Tue, 27 Sep 2011 09:20:50 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [patch] TTY: snyclinkmp: forever loop in tx_load_dma_buffer()
+Message-ID: <20110927062050.GA4227@elgon.mountain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet23.oracle.com [156.151.31.71]
+X-CT-RefId: str=0001.0A090207.4E816B4B.0027,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This tells the driver whether a CK505 clock source is available on
-pre-PCH hardware. If so, it should be used as the non-SSC source,
-leaving the internal clock for use as the SSC source.
+My main concern here was the line that said:
+	copy_count = min_t(unsigned short,count,SCABUFSIZE);
+"count" is an unsigned int here so the cast to unsigned short
+truncates the upper bits.  So if count is 0x10000 then copy_count is
+0 and the loop never exits.
 
-Signed-off-by: Keith Packard <keithp@keithp.com>
+"count" comes from skb->len in hdlcdev_xmit().
+
+The other min_t() changes are just cleanups.
+
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 ---
- drivers/gpu/drm/i915/i915_drv.h   |    1 +
- drivers/gpu/drm/i915/intel_bios.c |    6 ++++--
- drivers/gpu/drm/i915/intel_bios.h |    4 +++-
- 3 files changed, 8 insertions(+), 3 deletions(-)
+Compile tested only.
 
-diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
-index 7916bd9..18df595 100644
---- a/drivers/gpu/drm/i915/i915_drv.h
-+++ b/drivers/gpu/drm/i915/i915_drv.h
-@@ -357,6 +357,7 @@ typedef struct drm_i915_private {
- 	unsigned int lvds_vbt:1;
- 	unsigned int int_crt_support:1;
- 	unsigned int lvds_use_ssc:1;
-+	unsigned int display_clock_mode:1;
- 	int lvds_ssc_freq;
- 	struct {
- 		int rate;
-diff --git a/drivers/gpu/drm/i915/intel_bios.c b/drivers/gpu/drm/i915/intel_bios.c
-index dcbc839..eb58784 100644
---- a/drivers/gpu/drm/i915/intel_bios.c
-+++ b/drivers/gpu/drm/i915/intel_bios.c
-@@ -309,11 +309,13 @@ parse_general_features(struct drm_i915_private *dev_priv,
- 		dev_priv->lvds_use_ssc = general->enable_ssc;
- 		dev_priv->lvds_ssc_freq =
- 			intel_bios_ssc_frequency(dev, general->ssc_freq);
--		DRM_DEBUG_KMS("BDB_GENERAL_FEATURES int_tv_support %d int_crt_support %d lvds_use_ssc %d lvds_ssc_freq %d\n",
-+		dev_priv->display_clock_mode = general->display_clock_mode;
-+		DRM_DEBUG_KMS("BDB_GENERAL_FEATURES int_tv_support %d int_crt_support %d lvds_use_ssc %d lvds_ssc_freq %d display_clock_mode %d\n",
- 			      dev_priv->int_tv_support,
- 			      dev_priv->int_crt_support,
- 			      dev_priv->lvds_use_ssc,
--			      dev_priv->lvds_ssc_freq);
-+			      dev_priv->lvds_ssc_freq,
-+			      dev_priv->display_clock_mode);
- 	}
- }
+diff --git a/drivers/tty/synclinkmp.c b/drivers/tty/synclinkmp.c
+index c77831c..0f6b796 100644
+--- a/drivers/tty/synclinkmp.c
++++ b/drivers/tty/synclinkmp.c
+@@ -4950,7 +4950,7 @@ CheckAgain:
  
-diff --git a/drivers/gpu/drm/i915/intel_bios.h b/drivers/gpu/drm/i915/intel_bios.h
-index 5f8e4ed..02b1b624 100644
---- a/drivers/gpu/drm/i915/intel_bios.h
-+++ b/drivers/gpu/drm/i915/intel_bios.h
-@@ -120,7 +120,9 @@ struct bdb_general_features {
- 	u8 ssc_freq:1;
- 	u8 enable_lfp_on_override:1;
- 	u8 disable_ssc_ddt:1;
--	u8 rsvd8:3; /* finish byte */
-+	u8 rsvd7:1;
-+	u8 display_clock_mode:1;
-+	u8 rsvd8:1; /* finish byte */
+ 	if ( debug_level >= DEBUG_LEVEL_DATA )
+ 		trace_block(info,info->rx_buf_list_ex[StartIndex].virt_addr,
+-			min_t(int, framesize,SCABUFSIZE),0);
++			min_t(unsigned int, framesize, SCABUFSIZE), 0);
  
-         /* bits 3 */
- 	u8 disable_smooth_vision:1;
--- 
-1.7.6.3
-
+ 	if (framesize) {
+ 		if (framesize > info->max_frame_size)
+@@ -5015,14 +5015,14 @@ static void tx_load_dma_buffer(SLMP_INFO *info, const char *buf, unsigned int co
+ 	SCADESC_EX *desc_ex;
+ 
+ 	if ( debug_level >= DEBUG_LEVEL_DATA )
+-		trace_block(info,buf, min_t(int, count,SCABUFSIZE), 1);
++		trace_block(info, buf, min_t(unsigned int, count, SCABUFSIZE), 1);
+ 
+ 	/* Copy source buffer to one or more DMA buffers, starting with
+ 	 * the first transmit dma buffer.
+ 	 */
+ 	for(i=0;;)
+ 	{
+-		copy_count = min_t(unsigned short,count,SCABUFSIZE);
++		copy_count = min_t(unsigned int, count, SCABUFSIZE);
+ 
+ 		desc = &info->tx_buf_list[i];
+ 		desc_ex = &info->tx_buf_list_ex[i];
