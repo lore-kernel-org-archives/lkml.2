@@ -1,71 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752686Ab1I0R5f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 13:57:35 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:63582 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752248Ab1I0R5e (ORCPT
+	id S1752731Ab1I0R5j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 13:57:39 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:54028 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752248Ab1I0R5h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 13:57:34 -0400
-Date: Tue, 27 Sep 2011 21:56:42 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: kernel-hardening@lists.openwall.com,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, Kees Cook <kees@ubuntu.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Valdis.Kletnieks@vt.edu,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Alan Cox <alan@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] mm: restrict access to /proc/meminfo
-Message-ID: <20110927175642.GA3432@albatros>
-References: <20110927175453.GA3393@albatros>
+	Tue, 27 Sep 2011 13:57:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110927175453.GA3393@albatros>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110830020100.GK3162@dastard>
+References: <CAO+b5-pAY9Qn4OXKnxAHaBSrJi_6nTPOGZ+QgVg9iRdTCmequA@mail.gmail.com>
+ <alpine.LFD.2.00.1108291342110.3904@dhcp-27-109.brq.redhat.com>
+ <CAO+b5-qBCBuROmqSPHofQ4A4xxpaUVJL8AzGDHfy7k8QcWYzWw@mail.gmail.com> <20110830020100.GK3162@dastard>
+From: Bart Van Assche <bvanassche@acm.org>
+Date: Tue, 27 Sep 2011 19:57:14 +0200
+X-Google-Sender-Auth: M969f94Wrx0zlKx5CZzoWp2X_30
+Message-ID: <CAO+b5-rL=ucZ-2bA9Qj-RfWbJzGasDBQMLF_4XX2xzC28YECBg@mail.gmail.com>
+Subject: Re: blkdev_issue_discard() hangs forever if the underlying storage
+ device is removed
+To: Dave Chinner <david@fromorbit.com>
+Cc: Lukas Czerner <lczerner@redhat.com>, Jens Axboe <jaxboe@fusionio.com>,
+        Mike Snitzer <snitzer@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-/proc/meminfo stores information related to memory pages usage, which
-may be used to monitor the number of objects in specific caches (and/or
-the changes of these numbers).  This might reveal private information
-similar to /proc/slabinfo infoleaks.  To remove the infoleak, just
-restrict meminfo to root.  If it is used by unprivileged daemons,
-meminfo permissions can be altered the same way as slabinfo:
+On Tue, Aug 30, 2011 at 4:01 AM, Dave Chinner <david@fromorbit.com> wrote:
+> The underlying block device driver is supposed to handle timing out
+> of lost IOs and causing them to be completed with an error.
+> blkdev_issue_discard() is simply waiting for that error to be
+> delivered.
 
-    groupadd meminfo
-    usermod -a -G meminfo $MONITOR_USER
-    chmod g+r /proc/meminfo
-    chgrp meminfo /proc/meminfo
+Hi Dave,
 
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-CC: Kees Cook <kees@ubuntu.com>
-CC: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: Christoph Lameter <cl@gentwo.org>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>
-CC: Valdis.Kletnieks@vt.edu
-CC: Linus Torvalds <torvalds@linux-foundation.org>
-CC: David Rientjes <rientjes@google.com>
-CC: Alan Cox <alan@linux.intel.com>
----
- fs/proc/meminfo.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+You're probably right that it's not a block layer issue. This patch
+fixed it for me: http://marc.info/?l=linux-scsi&m=131680195721932&w=2
 
---
-diff --git a/fs/proc/meminfo.c b/fs/proc/meminfo.c
-index 5861741..949bdee 100644
---- a/fs/proc/meminfo.c
-+++ b/fs/proc/meminfo.c
-@@ -187,7 +187,7 @@ static const struct file_operations meminfo_proc_fops = {
- 
- static int __init proc_meminfo_init(void)
- {
--	proc_create("meminfo", 0, NULL, &meminfo_proc_fops);
-+	proc_create("meminfo", S_IFREG | S_IRUSR, NULL, &meminfo_proc_fops);
- 	return 0;
- }
- module_init(proc_meminfo_init);
+Bart.
