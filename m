@@ -1,42 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753854Ab1I0VEI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 17:04:08 -0400
-Received: from casper.infradead.org ([85.118.1.10]:35408 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751446Ab1I0VEH convert rfc822-to-8bit (ORCPT
+	id S1753182Ab1I0VMa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 17:12:30 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:36061 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751873Ab1I0VM3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 17:04:07 -0400
-Subject: Re: [RFD 1/9] Change cpustat fields to an array.
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, paul@paulmenage.org, lizf@cn.fujitsu.com,
-        daniel.lezcano@free.fr, jbottomley@parallels.com
-Date: Tue, 27 Sep 2011 23:03:29 +0200
-In-Reply-To: <1316816432-9237-2-git-send-email-glommer@parallels.com>
-References: <1316816432-9237-1-git-send-email-glommer@parallels.com>
-	 <1316816432-9237-2-git-send-email-glommer@parallels.com>
-Content-Type: text/plain; charset="UTF-8"
+	Tue, 27 Sep 2011 17:12:29 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAK2H+eeJGjMVCTAf=UDmozDK+MJUCM-HfuzuiBvuqZwSeiQzNw@mail.gmail.com>
+References: <CANLaLhaEnyPchqOPp65Y0hvotM30E5daX=XNG=fAAmf1dchxCA@mail.gmail.com>
+	<20110926111522.2a053ceb@lxorguk.ukuu.org.uk>
+	<CAK3HsqvkpEiDWcCP_+eO0va4+io7pVV-aWCzQ1=DdpPi_jxy6g@mail.gmail.com>
+	<CAMM=eLdTkpV_oy7+N2QVeqmm4t0WkAJXUmGkxWcb=X8Vp81x7A@mail.gmail.com>
+	<CAK3HsqtdgqWB36NCxz0xZxTrfp2-o8b7MYncn_P61eUv2xkAkw@mail.gmail.com>
+	<CANLaLhbiLC-+azrdmf3_uPYS1zR3x-Yk9tA2b0U6_z72YSjQYQ@mail.gmail.com>
+	<yq11uv1dd6h.fsf@sermon.lab.mkp.net>
+	<CAK2H+eeJGjMVCTAf=UDmozDK+MJUCM-HfuzuiBvuqZwSeiQzNw@mail.gmail.com>
+Date: Wed, 28 Sep 2011 02:42:28 +0530
+Message-ID: <CANLaLhZZdw9Wedc39VoEvpK1Xw-EXTFPD9JXsu1nJd3s8sTb2Q@mail.gmail.com>
+Subject: Re: Detection of Advanced Format drives
+From: Arun <engineerarun@gmail.com>
+To: Mark Knecht <markknecht@gmail.com>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Joshua Scoggins <theoretically.x64@gmail.com>,
+        Mike Snitzer <snitzer@gmail.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1317157409.21836.5.camel@twins>
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-09-23 at 19:20 -0300, Glauber Costa wrote:
-> @@ -623,6 +624,9 @@ static inline struct task_group *task_group(struct
-> task_struct *p)
->         struct task_group *tg;
->         struct cgroup_subsys_state *css;
->  
-> +       if (!p->mm)
-> +               return &root_task_group;
-> +
->         css = task_subsys_state_check(p, cpu_cgroup_subsys_id,
->                         lockdep_is_held(&p->pi_lock) ||
->                         lockdep_is_held(&task_rq(p)->lock)); 
+Mark,
 
-Hmm, why is that? Aren't kthreads part of the cgroup muck just as much
-as normal tasks are?
+I got your point.
+
+A quick check of hdparm tells me that it is using the SG_IO ioctl for
+the ATA_OP_PIDENTIFY command. Maybe I have some hopes of having a
+correct result with the BLKPBSZGET ioctl. Will check that out.
+
+Regards,
+
+Arun
+
+
+
+On Wed, Sep 28, 2011 at 01:40, Mark Knecht <markknecht@gmail.com> wrote:
+>
+> On Tue, Sep 27, 2011 at 11:59 AM, Martin K. Petersen
+> <martin.petersen@oracle.com> wrote:
+> >>>>>> "Arun" == Arun  <engineerarun@gmail.com> writes:
+> >
+> > Arun> Should I suppose that it is an already available piece of
+> > Arun> information to the userland?
+> >
+> > Yes, in the sysfs locations Mike mentioned:
+> >
+> >  /sys/block/foo/queue/physical_block_size
+> >
+> > Or you can use the BLKPBSZGET ioctl.
+> >
+> >
+> > Arun> Or do I need to modify the hdparm/fdisk code to get this piece of
+> > Arun> info?
+> >
+> > Recent hdparm versions will also report the right thing:
+> >
+> > # hdparm -I /dev/sdc | grep Sector
+> >        Logical  Sector size:                   512 bytes
+> >        Physical Sector size:                  4096 bytes
+> >        Logical Sector-0 offset:                512 bytes
+> >
+> > --
+> > Martin K. Petersen      Oracle Linux Engineering
+>
+> As someone else pointed out earlier, not every drive with 4K sectors
+> will tell you it has 4K sectors, at least not using hdparm. This is a
+> WD 1TB drive circa early last year for which I've not updated
+> firmware. (If there is an update)
+>
+> gandalf ~ # hdparm -I /dev/sda | grep Sector
+>        Logical/Physical Sector size:           512 bytes
+> gandalf ~ #
+>
+> gandalf ~ # cat /sys/block/sda/queue/physical_block_size
+> 512
+> gandalf ~ #
+>
+> - Mark
