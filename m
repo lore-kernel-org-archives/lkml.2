@@ -1,119 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751698Ab1I0NWR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 09:22:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47325 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750851Ab1I0NWQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 09:22:16 -0400
-Date: Tue, 27 Sep 2011 08:21:57 -0500
-From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Serge Hallyn <serge@hallyn.com>, akpm@osdl.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        containers@lists.linux-foundation.org, dhowells@redhat.com,
-        ebiederm@xmission.com, rdunlap@xenotime.net,
-        kernel-hardening@lists.openwall.com
-Subject: Re: [PATCH 01/15] add Documentation/namespaces/user_namespace.txt
- (v3)
-Message-ID: <20110927132157.GB3111@sergelap>
-References: <1314993400-6910-1-git-send-email-serge@hallyn.com>
- <1314993400-6910-4-git-send-email-serge@hallyn.com>
- <20110926191737.GA4562@albatros>
+	id S1751969Ab1I0NYO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 09:24:14 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:59564 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751298Ab1I0NYN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 09:24:13 -0400
+Date: Tue, 27 Sep 2011 18:38:50 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
+        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 3.1.0-rc4-tip 4/26]   uprobes: Define hooks for
+ mmap/munmap.
+Message-ID: <20110927130850.GD3685@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com>
+ <20110920120040.25326.63549.sendpatchset@srdronam.in.ibm.com>
+ <1317045191.1763.22.camel@twins>
+ <20110926154414.GB13535@linux.vnet.ibm.com>
+ <1317123435.15383.33.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20110926191737.GA4562@albatros>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1317123435.15383.33.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Vasiliy Kulikov (segoon@openwall.com):
-> (cc'ed kernel-hardening)
+* Peter Zijlstra <peterz@infradead.org> [2011-09-27 13:37:15]:
+
+> On Mon, 2011-09-26 at 21:14 +0530, Srikar Dronamraju wrote:
+> > 
+> > > > +
+> > > > +/*
+> > > > + * Called from mmap_region.
+> > > > + * called with mm->mmap_sem acquired.
+> > > > + *
+> > > > + * Return -ve no if we fail to insert probes and we cannot
+> > > > + * bail-out.
+> > > > + * Return 0 otherwise. i.e :
+> > > > + * - successful insertion of probes
+> > > > + * - (or) no possible probes to be inserted.
+> > > > + * - (or) insertion of probes failed but we can bail-out.
+> > > > + */
+> > > > +int mmap_uprobe(struct vm_area_struct *vma)
+> > > > +{
+> > > > +   struct list_head tmp_list;
+> > > > +   struct uprobe *uprobe, *u;
+> > > > +   struct inode *inode;
+> > > > +   int ret = 0;
+> > > > +
+> > > > +   if (!valid_vma(vma))
+> > > > +           return ret;     /* Bail-out */
+> > > > +
+> > > > +   inode = igrab(vma->vm_file->f_mapping->host);
+> > > > +   if (!inode)
+> > > > +           return ret;
+> > > > +
+> > > > +   INIT_LIST_HEAD(&tmp_list);
+> > > > +   mutex_lock(&uprobes_mmap_mutex);
+> > > > +   build_probe_list(inode, &tmp_list);
+> > > > +   list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
+> > > > +           loff_t vaddr;
+> > > > +
+> > > > +           list_del(&uprobe->pending_list);
+> > > > +           if (!ret && uprobe->consumers) {
+> > > > +                   vaddr = vma->vm_start + uprobe->offset;
+> > > > +                   vaddr -= vma->vm_pgoff << PAGE_SHIFT;
+> > > > +                   if (vaddr < vma->vm_start || vaddr >= vma->vm_end)
+> > > > +                           continue;
+> > > > +                   ret = install_breakpoint(vma->vm_mm, uprobe);
+> > > > +
+> > > > +                   if (ret && (ret == -ESRCH || ret == -EEXIST))
+> > > > +                           ret = 0;
+> > > > +           }
+> > > > +           put_uprobe(uprobe);
+> > > > +   }
+> > > > +
+> > > > +   mutex_unlock(&uprobes_mmap_mutex);
+> > > > +   iput(inode);
+> > > > +   return ret;
+> > > > +}
+> > > > +
+> > > > +static void dec_mm_uprobes_count(struct vm_area_struct *vma,
+> > > > +           struct inode *inode)
+> > > > +{
+> > > > +   struct uprobe *uprobe;
+> > > > +   struct rb_node *n;
+> > > > +   unsigned long flags;
+> > > > +
+> > > > +   n = uprobes_tree.rb_node;
+> > > > +   spin_lock_irqsave(&uprobes_treelock, flags);
+> > > > +   uprobe = __find_uprobe(inode, 0, &n);
+> > > > +
+> > > > +   /*
+> > > > +    * If indeed there is a probe for the inode and with offset zero,
+> > > > +    * then lets release its reference. (ref got thro __find_uprobe)
+> > > > +    */
+> > > > +   if (uprobe)
+> > > > +           put_uprobe(uprobe);
+> > > > +   for (; n; n = rb_next(n)) {
+> > > > +           loff_t vaddr;
+> > > > +
+> > > > +           uprobe = rb_entry(n, struct uprobe, rb_node);
+> > > > +           if (uprobe->inode != inode)
+> > > > +                   break;
+> > > > +           vaddr = vma->vm_start + uprobe->offset;
+> > > > +           vaddr -= vma->vm_pgoff << PAGE_SHIFT;
+> > > > +           if (vaddr < vma->vm_start || vaddr >= vma->vm_end)
+> > > > +                   continue;
+> > > > +           atomic_dec(&vma->vm_mm->mm_uprobes_count);
+> > > > +   }
+> > > > +   spin_unlock_irqrestore(&uprobes_treelock, flags);
+> > > > +}
+> > > > +
+> > > > +/*
+> > > > + * Called in context of a munmap of a vma.
+> > > > + */
+> > > > +void munmap_uprobe(struct vm_area_struct *vma)
+> > > > +{
+> > > > +   struct inode *inode;
+> > > > +
+> > > > +   if (!valid_vma(vma))
+> > > > +           return;         /* Bail-out */
+> > > > +
+> > > > +   if (!atomic_read(&vma->vm_mm->mm_uprobes_count))
+> > > > +           return;
+> > > > +
+> > > > +   inode = igrab(vma->vm_file->f_mapping->host);
+> > > > +   if (!inode)
+> > > > +           return;
+> > > > +
+> > > > +   dec_mm_uprobes_count(vma, inode);
+> > > > +   iput(inode);
+> > > > +   return;
+> > > > +}
+> > > 
+> > > One has to wonder why mmap_uprobe() can be one function but
+> > > munmap_uprobe() cannot.
+> > > 
+> > 
+> > I didnt understand this comment, Can you please elaborate?
+> > mmap_uprobe uses build_probe_list and munmap_uprobe uses
+> > dec_mm_uprobes_count. 
 > 
+> Ah, I missed build_probe_list(), but I didn't see a reason for the
+> existence of dec_mm_uprobe_count(), the name doesn't make sense and the
+> content is 'small' enough to just put in munmap_uprobe.
 > 
-> Hi Serge,
-> 
-> I didn't deeply studied the patches yet (sorry!), but I have some
-> long-term question about the technique in general.  I couldn't find
-> answers to the questions in the documentation.
+> To me it looks similar to the list iteration you have in mmap_uprobe(),
+> you didn't split that out into another function either.
 
-Great - thanks for your time, Vasiliy.
+Hmm, For me whats done in dec_mm_uprobe_count() is similar to whats
+done in build_probe_list(), just that build_probe_list does a atomic_inc
++ list_add while dec_mm_uprobe_count() does a atomic_dec.
 
-There is documentation at https://wiki.ubuntu.com/UserNamespace,
-and I was adding a Documentation/namespaces/user_namespace.txt file
-(which hasn't gone in yet) which you can see here:
-https://lkml.org/lkml/2011/7/26/351
+When I kept dec_mm_uprobe_count() inside munmap_uprobe(), I found most
+of the code nested too deep. Hence carved it out as a separate function.
 
-But those don't answer your questions sufficiently.
+I open to suggestions for dec_mm_uprobe_count()
 
-> First, the patches by design expose much kernel code to unprivileged
-> userspace processes.  This code doesn't expect malformed data (e.g. VFS,
-> specific filesystems, block layer, char drivers, sysadmin part of LSMs,
-> etc. etc.).  By relaxing permission rules you greatly increase attack
-> surface of the kernel from unprivileged users.  Are you (or somebody
-> else) planning to audit this code?
-
-I had wanted to (but didn't) propose a discussion at ksummit about how
-best to approach the filesystem code.  That's not even just for user
-namespaces - patches have been floated in the past to make mount an
-unprivileged operation depending on the FS and the user's permission
-over the device and target.  So I don't know if a combination of auditing
-and fuzzing is the way to go, or what, and wanted to get input from
-some people who are more knowledgeable on that topic than me.
-
-You're right about other kernel code as well.
-
-I'll certainly join in this effort, but don't want to go blindly
-charging in without some advice/guidance about the best way to do
-this and, if others are interested, coordinate it.
-
-We can start by looking through all code which is currently under
-ns_capable(), and analyzing that.  But what tools do we have
-available to perform the analysis?
-
-Do you think a kernel summit discussion (i suppose given the late
-timing, a beer bof) would be beneficial?  (I wouldn't be there)
-
-> Also, will it be possible to somehow restrict what specific kernel
-> facilities are accessible from users (IOW, what root emulation
-> limitations are in action)?  It is userful from both points of sysadmin,
-> who might not want to allow users to do such things, and from the
-> security POV in sense of attack surface reduction.
-
-You're probably thinking along different lines, but this is why I've
-been wanting seccomp2 to get pushed through.  So that we can deny a
-container the syscalls we know it won't need, especially newer ones,
-to reduce the attack surface available to it.
-
-> The patches explicitly enable some features for users on white list
-> basis.  It's possible to do it for simple cases, but what are you going
-> to do with multiplexing functions where there is a permission check
-> before the actual multiplexing?  FS, networking drivers, etc.  Are you
-> going to do the same thing as net_namespace does? - For each multiplexed
-> entity create bool ->ns_aware which is false by default for all
-> "untrusted"/not prepared protocols and is true for audited/prepared
-> protocols.  Or probably you have something else in mind?
-
-Ah, I typed the bottom paragraph before realizing what you were actually
-asking.  The filesystems are a good example.  In the unprivileged mounts
-patchsets, for instance, a flag was added to each filesystem indicating
-if it was safe for unprivileged mounting (turned off for all real block
-filesystems :).  For targeted capabilities, my goal would be simply to
-make sure that each non-netns-aware entity do a (untargeted) capable()
-check.  Without pointing to a specific example it's hard to say what I
-will do.  It depends on how the code was previously laid out, and what
-the maintainer of that subsystem prefers.
-
-The way we're approaching it right now is that by default everything
-stays 'capable(X)', so that a non-init user namespace doesn't get the
-privileges.  While some of my patchsets this summer didn't follow this,
-Eric reminded me that we should first clamp down on the user namespaces
-as much as possible, and relax permissions in child namespaces later.
-So the small (1-2 patch sized) sets I've been sending the last few
-weeks are just trying to fix existing inadequate userid or capability
-checks.
-
--serge
+-- 
+Thanks and Regards
+Srikar
