@@ -1,73 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752530Ab1I0CuI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 22:50:08 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:42460 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752274Ab1I0CuH (ORCPT
+	id S1752687Ab1I0Cua (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 22:50:30 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:64333 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752294Ab1I0Cu1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 22:50:07 -0400
-Subject: [RFC][PATCH] ASoC: Make wm1250-ev1 depends on GPIOLIB
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 27 Sep 2011 10:49:59 +0800
-Message-ID: <1317091799.315.6.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	Mon, 26 Sep 2011 22:50:27 -0400
+Message-ID: <4E813986.9040400@oracle.com>
+Date: Mon, 26 Sep 2011 19:48:38 -0700
+From: Yinghai Lu <yinghai.lu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Takashi Iwai <tiwai@suse.de>,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        oneukum@suse.de, x86@kernel.org,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: S4 resume broken since 2.6.39 (3.1, too)
+References: <s5hmxdzyyzx.wl%tiwai@suse.de> <201109212048.23074.rjw@sisk.pl> <CAE9FiQVy4D0NhaN=PvPK_+L4Jv=+7huLy9U--LYW49GFZ9TyaQ@mail.gmail.com> <201109270024.55418.rjw@sisk.pl> <CA+55aFyyeRyvooTY_Gb9xnOHt6AyCoQEtNFW2NPyb=M4gvVshQ@mail.gmail.com>
+In-Reply-To: <CA+55aFyyeRyvooTY_Gb9xnOHt6AyCoQEtNFW2NPyb=M4gvVshQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4E813999.0055:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I got below build error if GPIO support is disabled.
-Make wm1250-ev1 depends on GPIOLIB to fix below build error.
+On 09/26/2011 03:47 PM, Linus Torvalds wrote:
 
-  CC      sound/soc/codecs/wm1250-ev1.o
-sound/soc/codecs/wm1250-ev1.c:32:14: error: array type has incomplete element type
-sound/soc/codecs/wm1250-ev1.c: In function ‘wm1250_ev1_pdata’:
-sound/soc/codecs/wm1250-ev1.c:126:18: warning: type defaults to ‘int’ in type name
-sound/soc/codecs/wm1250-ev1.c:126:18: warning: type defaults to ‘int’ in type name
-sound/soc/codecs/wm1250-ev1.c:126:18: error: negative width in bit-field ‘<anonymous>’
-sound/soc/codecs/wm1250-ev1.c:134:42: warning: type defaults to ‘int’ in type name
-sound/soc/codecs/wm1250-ev1.c:134:42: warning: type defaults to ‘int’ in type name
-sound/soc/codecs/wm1250-ev1.c:134:42: error: negative width in bit-field ‘<anonymous>’
-sound/soc/codecs/wm1250-ev1.c: In function ‘wm1250_ev1_free’:
-sound/soc/codecs/wm1250-ev1.c:155:34: warning: type defaults to ‘int’ in type name
-sound/soc/codecs/wm1250-ev1.c:155:34: warning: type defaults to ‘int’ in type name
-sound/soc/codecs/wm1250-ev1.c:155:34: error: negative width in bit-field ‘<anonymous>’
-make[3]: *** [sound/soc/codecs/wm1250-ev1.o] Error 1
-make[2]: *** [sound/soc/codecs] Error 2
-make[1]: *** [sound/soc] Error 2
-make: *** [sound] Error 2
-
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
-I got the build error while trying to build for SND_MFLD_MACHINE and SND_SST_PLATFORM.
-( "Enable ALSA for SoC audio support" and "Build all ASoC CODEC drivers" on X86 )
-
-Axel
- sound/soc/codecs/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/sound/soc/codecs/Kconfig b/sound/soc/codecs/Kconfig
-index 3449431..0ad80fe 100644
---- a/sound/soc/codecs/Kconfig
-+++ b/sound/soc/codecs/Kconfig
-@@ -58,7 +58,7 @@ config SND_SOC_ALL_CODECS
- 	select SND_SOC_UDA134X
- 	select SND_SOC_UDA1380 if I2C
- 	select SND_SOC_WL1273 if MFD_WL1273_CORE
--	select SND_SOC_WM1250_EV1 if I2C
-+	select SND_SOC_WM1250_EV1 if I2C && GPIOLIB
- 	select SND_SOC_WM2000 if I2C
- 	select SND_SOC_WM5100 if I2C
- 	select SND_SOC_WM8350 if MFD_WM8350
--- 
-1.7.4.1
+> On Mon, Sep 26, 2011 at 3:24 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>>
+>> So, in my opinion we should simply apply the Takashi's patch at this
+>> point and revisit the kdump issue later, when we actually know how to do
+>> the right thing.
+> 
+> Applying that trivial patch certainly looks fine, especially since it
+> also avoids some arbitrary differences between x86-64 and x86-32.
+> 
+> That said, the whole code looks *very* confusing, and I have to say
+> that the commit logs there are also totally unreadable and not very
+> explanatory at all.
 
 
+sorry for that.
+
+> 
+> It does seem like the code is simply buggy: it "allocates" the page
+> tables from the end of memory, but it seems to want to do that before
+> they have been mapped. Which makes perfect sense, since the whole
+> point of allocating them is to be *able* to map all the memory.
+
+> 
+
+> So using that
+> 
+>     good_end = max_pfn_mapped << PAGE_SHIFT;
+> 
+> would seem to be a good idea regardless. I'm not sure how the old code
+> is even supposed to work. That said - why is this a problem only for
+> S4 resume?
+
+
+and for S4 resume, according to Takashi, that commit is ok with 2.6.37. but start to have some problem (1/20 chance) from 2.6.39...
+
+will check if any other early page-table related commit could cause the problem.
+
+the main point for that commit: it will "allocate" range for page-table purpose and will use early_memremap before really accessing them.
+so could have the end above already mapped max address.
+
+so We can avoid to put page_table in the middle of low ram ( just below 512m ), and could have bigger continuous range for kdump kernel.
+
+Thanks
+
+Yinghai
 
