@@ -1,97 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751876Ab1I0HwR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 03:52:17 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:14335 "EHLO
-	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751480Ab1I0HwQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 03:52:16 -0400
-X-SpamScore: 1
-X-BigFish: VS1(zzzz1202hzz8275bhz2ei87h2a8h668h839h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPVD:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
-X-FB-SS: 0,
-X-FB-DOMAIN-IP-MATCH: fail
-From: Bob Liu <lliubbo@gmail.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <mingo@elte.hu>, <joe@perches.com>, <tglx@linutronix.de>,
-        <peterz@infradead.org>, Bob Liu <lliubbo@gmail.com>
-Subject: [PATCH] spinlock: rm duplicated preempt en/disable for bottom half
-Date: Tue, 27 Sep 2011 15:56:25 +0800
-Message-ID: <1317110185-9219-1-git-send-email-lliubbo@gmail.com>
-X-Mailer: git-send-email 1.6.3.3
+	id S1752045Ab1I0Hws (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 03:52:48 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33065 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751195Ab1I0Hwr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 03:52:47 -0400
+Date: Tue, 27 Sep 2011 09:52:45 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Oleg Nesterov <oleg@redhat.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH 1/2] oom: do not live lock on frozen tasks
+Message-ID: <20110927075245.GA25807@tiehlicka.suse.cz>
+References: <20110825151818.GA4003@redhat.com>
+ <alpine.DEB.2.00.1109260154510.1389@chino.kir.corp.google.com>
+ <20110926091440.GE10156@tiehlicka.suse.cz>
+ <201109261751.40688.rjw@sisk.pl>
+ <alpine.DEB.2.00.1109261801150.8510@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1109261801150.8510@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-local_bh_en/disable() has already deal with en/disable preempt, so rm the
-dumplicated one from spinlock_api_up/smp.h head file.
+On Mon 26-09-11 18:03:26, David Rientjes wrote:
+> On Mon, 26 Sep 2011, Rafael J. Wysocki wrote:
+> 
+> > > Konstantin Khlebnikov has reported (https://lkml.org/lkml/2011/8/23/45)
+> > > that OOM can end up in a live lock if select_bad_process picks up a frozen
+> > > task.
+> > > Unfortunately we cannot mark such processes as unkillable to ignore them
+> > > because we could panic the system even though there is a chance that
+> > > somebody could thaw the process so we can make a forward process (e.g. a
+> > > process from another cpuset or with a different nodemask).
+> > > 
+> > > Let's thaw an OOM selected frozen process right after we've sent fatal
+> > > signal from oom_kill_task.
+> > > Thawing is safe if the frozen task doesn't access any suspended device
+> > > (e.g. by ioctl) on the way out to the userspace where we handle the
+> > > signal and die. Note, we are not interested in the kernel threads because
+> > > they are not oom killable.
+> > > 
+> > > Accessing suspended devices by a userspace processes shouldn't be an
+> > > issue because devices are suspended only after userspace is already
+> > > frozen and oom is disabled at that time.
+> > > 
+> > > run_guest (drivers/lguest/core.c) calls try_to_freeze with an user
+> > > context but it seems it is able to cope with signals because it
+> > > explicitly checks for pending signals so we should be safe.
+> > > 
+> > > Other than that userspace accesses the fridge only from the
+> > > signal handling routines so we are able to handle SIGKILL without any
+> > > negative side effects.
+> > > 
+> > > Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> > > Reported-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+> > 
+> > Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+> > 
+> 
+> Acked-by: David Rientjes <rientjes@google.com>
 
-Signed-off-by: Bob Liu <lliubbo@gmail.com>
----
- include/linux/spinlock_api_smp.h |    4 ----
- include/linux/spinlock_api_up.h  |    5 ++---
- 2 files changed, 2 insertions(+), 7 deletions(-)
+Thanks!
 
-diff --git a/include/linux/spinlock_api_smp.h b/include/linux/spinlock_api_smp.h
-index e253ccd..ba8b8f3 100644
---- a/include/linux/spinlock_api_smp.h
-+++ b/include/linux/spinlock_api_smp.h
-@@ -132,7 +132,6 @@ static inline void __raw_spin_lock_irq(raw_spinlock_t *lock)
- static inline void __raw_spin_lock_bh(raw_spinlock_t *lock)
- {
- 	local_bh_disable();
--	preempt_disable();
- 	spin_acquire(&lock->dep_map, 0, 0, _RET_IP_);
- 	LOCK_CONTENDED(lock, do_raw_spin_trylock, do_raw_spin_lock);
- }
-@@ -174,19 +173,16 @@ static inline void __raw_spin_unlock_bh(raw_spinlock_t *lock)
- {
- 	spin_release(&lock->dep_map, 1, _RET_IP_);
- 	do_raw_spin_unlock(lock);
--	preempt_enable_no_resched();
- 	local_bh_enable_ip((unsigned long)__builtin_return_address(0));
- }
+> 
+> Although this still seems to be problematic if the chosen thread gets 
+> frozen before the SIGKILL can be handled.  We don't have any checks for 
+> fatal_signal_pending() when freezing threads and waiting for them to exit?
+
+I guess you mean a situation when select_bad_process picks up a process
+which is not marked as frozen yet but we send SIGKILL right before
+schedule is called in refrigerator. 
+In that case either schedule should catch it by signal_pending_state
+check or we will pick it up next OOM round when we pick up the same
+process (if nothing else is eligible). Or am I missing something?
  
- static inline int __raw_spin_trylock_bh(raw_spinlock_t *lock)
- {
- 	local_bh_disable();
--	preempt_disable();
- 	if (do_raw_spin_trylock(lock)) {
- 		spin_acquire(&lock->dep_map, 0, 1, _RET_IP_);
- 		return 1;
- 	}
--	preempt_enable_no_resched();
- 	local_bh_enable_ip((unsigned long)__builtin_return_address(0));
- 	return 0;
- }
-diff --git a/include/linux/spinlock_api_up.h b/include/linux/spinlock_api_up.h
-index af1f472..c9e4f1c 100644
---- a/include/linux/spinlock_api_up.h
-+++ b/include/linux/spinlock_api_up.h
-@@ -28,7 +28,7 @@
-   do { preempt_disable(); __acquire(lock); (void)(lock); } while (0)
- 
- #define __LOCK_BH(lock) \
--  do { local_bh_disable(); __LOCK(lock); } while (0)
-+  do { local_bh_disable(); __acquire(lock); (void)(lock); } while (0)
- 
- #define __LOCK_IRQ(lock) \
-   do { local_irq_disable(); __LOCK(lock); } while (0)
-@@ -40,8 +40,7 @@
-   do { preempt_enable(); __release(lock); (void)(lock); } while (0)
- 
- #define __UNLOCK_BH(lock) \
--  do { preempt_enable_no_resched(); local_bh_enable(); \
--	  __release(lock); (void)(lock); } while (0)
-+  do { local_bh_enable(); __release(lock); (void)(lock); } while (0)
- 
- #define __UNLOCK_IRQ(lock) \
-   do { local_irq_enable(); __UNLOCK(lock); } while (0)
+> Michal, could you send Andrew your revised patch with all the acked-bys?
+
+Yes I will. I would just like to hear back from Konstantin who
+originally reported the issue. Maybe he has a test case.
+
+> 
+> Thanks!
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
 -- 
-1.6.3.3
-
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
