@@ -1,33 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751804Ab1I0Ql3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 12:41:29 -0400
-Received: from mga14.intel.com ([143.182.124.37]:22351 "EHLO mga14.intel.com"
+	id S1751744Ab1I0QnT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 12:43:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34035 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751127Ab1I0Ql2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 12:41:28 -0400
-Message-Id: <c55c5d$k5em6@AZSMGA002.ch.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,450,1312182000"; 
-   d="scan'208";a="21150406"
-From: Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: [PATCH 5/9] drm/i915: Allow SSC parameter to override VBT value
-To: Keith Packard <keithp@keithp.com>, Dave Airlie <airlied@redhat.com>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        intel-gfx@lists.freedesktop.org, Keith Packard <keithp@keithp.com>
-In-Reply-To: <1317103906-4649-6-git-send-email-keithp@keithp.com>
-References: <yunbou6lxb4.fsf@aiko.keithp.com> <1317103906-4649-1-git-send-email-keithp@keithp.com> <1317103906-4649-6-git-send-email-keithp@keithp.com>
-Date: Tue, 27 Sep 2011 17:41:23 +0100
+	id S1750997Ab1I0QnS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 12:43:18 -0400
+Date: Tue, 27 Sep 2011 18:43:17 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Amit Nagal <helloin.amit@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] HID: hidraw: open count should not increase if
+ error
+In-Reply-To: <1317145318-19656-1-git-send-email-helloin.amit@gmail.com>
+Message-ID: <alpine.LNX.2.00.1109271843030.24692@pobox.suse.cz>
+References: <1317145318-19656-1-git-send-email-helloin.amit@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 Sep 2011 23:11:42 -0700, Keith Packard <keithp@keithp.com> wrote:
-> Allow SSC to be enabled even when the BIOS disables it for testing SSC paths.
+On Tue, 27 Sep 2011, Amit Nagal wrote:
+
+> In hidraw_open, if hid_hw_power returns with error,
+> hidraw device open count should not increase.
 > 
-> Signed-off-by: Keith Packard <keithp@keithp.com>
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
--Chris
+> Signed-off-by: Amit Nagal <helloin.amit@gmail.com>
+> ---
+>  drivers/hid/hidraw.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/hid/hidraw.c b/drivers/hid/hidraw.c
+> index c841a8e..09bbcc9 100644
+> --- a/drivers/hid/hidraw.c
+> +++ b/drivers/hid/hidraw.c
+> @@ -271,8 +271,10 @@ static int hidraw_open(struct inode *inode, struct file *file)
+>  	dev = hidraw_table[minor];
+>  	if (!dev->open++) {
+>  		err = hid_hw_power(dev->hid, PM_HINT_FULLON);
+> -		if (err < 0)
+> +		if (err < 0) {
+> +			dev->open--;
+>  			goto out_unlock;
+> +		}
+>  
+>  		err = hid_hw_open(dev->hid);
+>  		if (err < 0) {
+
+Good catch, thanks. Applied.
 
 -- 
-Chris Wilson, Intel Open Source Technology Centre
+Jiri Kosina
+SUSE Labs
