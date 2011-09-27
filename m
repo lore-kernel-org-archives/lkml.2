@@ -1,44 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753928Ab1I0MWX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 08:22:23 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:65427 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753812Ab1I0MWW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 08:22:22 -0400
-Date: Tue, 27 Sep 2011 14:22:17 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: linux-next: manual merge of the akpm tree with the  tree
-Message-ID: <20110927122215.GM18553@somewhere>
-References: <20110927165920.14b00e8595d10135d2a4397a@canb.auug.org.au>
+	id S1753940Ab1I0MZJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 08:25:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1246 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753812Ab1I0MZI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 08:25:08 -0400
+Message-ID: <4E81C09E.8000107@redhat.com>
+Date: Tue, 27 Sep 2011 15:25:02 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110927165920.14b00e8595d10135d2a4397a@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Rothwell <sfr@canb.auug.org.au>, KVM list <kvm@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+CC: Marcelo Tosatti <mtosatti@redhat.com>
+Subject: kvm linux-next tree
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 27, 2011 at 04:59:20PM +1000, Stephen Rothwell wrote:
-> Hi Andrew,
-> 
-> Today's linux-next merge of the scsi-post-merge tree got conflicts in
-> arch/x86/kernel/apic/apic.c, arch/x86/kernel/cpu/mcheck/therm_throt.c,
-> arch/x86/kernel/cpu/mcheck/threshold.c and arch/x86/kernel/irq.c between
-> commit ef14aea88fee ("x86: Call idle notifier after irq_enter()") from
-> the rcu tree and commit 6a541324a31f ("The current interrupt traces from
-> irq_handler_entry and irq_handler_exit") from the akpm tree.
-> 
-> Just context changes. I fixed them up (see below) and can carry the fixes
-> as necessary.
+Please add
 
-Looks good as well.
+   git://github.com/avikivity/kvm.git kvm-updates/3.2
 
-Thanks!
+to the linux-next collection, until kernel.org is back up.  Thanks.
+
+-- 
+error compiling committee.c: too many arguments to function
+
