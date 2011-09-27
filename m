@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753471Ab1I0WOn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 18:14:43 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:48731 "EHLO e3.ny.us.ibm.com"
+	id S1753531Ab1I0WO6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 18:14:58 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:48866 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753179Ab1I0WOk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 18:14:40 -0400
-Subject: [PATCH v2 0/3] crc32c: Add faster algorithm and self-test code
+	id S1753481Ab1I0WOz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 18:14:55 -0400
+Subject: [PATCH 2/3] libcrc32c: Expose big-endian version of crc32c
 To: Andreas Dilger <adilger.kernel@dilger.ca>,
         Herbert Xu <herbert@gondor.hengli.com.au>,
         Theodore Tso <tytso@mit.edu>, David Miller <davem@davemloft.net>,
@@ -18,45 +18,121 @@ Cc: Bob Pearson <rpearson@systemfabricworks.com>,
         linux-crypto <linux-crypto@vger.kernel.org>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         linux-ext4@vger.kernel.org
-Date: Tue, 27 Sep 2011 15:12:39 -0700
-Message-ID: <20110927221239.21653.17489.stgit@elm3c44.beaverton.ibm.com>
+Date: Tue, 27 Sep 2011 15:12:53 -0700
+Message-ID: <20110927221253.21653.28062.stgit@elm3c44.beaverton.ibm.com>
+In-Reply-To: <20110927221239.21653.17489.stgit@elm3c44.beaverton.ibm.com>
+References: <20110927221239.21653.17489.stgit@elm3c44.beaverton.ibm.com>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 11092722-8974-0000-0000-00000075A950
+x-cbid: 11092722-8974-0000-0000-00000075A98B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Provide a big-endian version of crc32c for modules that want it.
 
-This patchset replaces the current crc32c software implementation, which uses a
-slow per-byte lookup table algorithm, with a faster implementation that uses an
-adaptation of the slice-by-8 algorithm that Bob Pearson has been pushing for
-crc32.
+Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+---
+ include/linux/crc32c.h |    5 +++--
+ lib/libcrc32c.c        |   43 ++++++++++++++++++++++++++++++++++---------
+ 2 files changed, 37 insertions(+), 11 deletions(-)
 
-The motivation for this patchset is that I am working on adding full metadata
-checksumming to ext4[1].  As far as performance impact of adding checksumming
-goes, I see nearly no change with a standard mail server ffsb simulation.  On a
-test that involves only file creation and deletion and extent tree writes, I
-see a drop of about 50 pcercent with the current kernel crc32c implementation;
-this improves to a drop of about 20 percent with the enclosed crc32c code.
 
-When metadata is usually a small fraction of total IO, this new implementation
-doesn't help much because metadata is usually a small fraction of total IO.
-However, when we are doing IO that is almost all metadata (such as rm -rf'ing a
-tree), then this patch speeds up the operation substantially.
-
-Please have a look at the patches, and please feel free to suggest any changes.
-I will be at LPC next week if anyone wishes to discuss, debate, or protest.
-
-Incidentally, given that iscsi, sctp, and btrfs also use crc32c, this patchset
-should improve their speed as well.  I have not yet quantified that, however.
-
-v2: Use the crypto test manager code to check crc32c operation.
-
---D
-
-[1] https://ext4.wiki.kernel.org/index.php/Ext4_Metadata_Checksums
+diff --git a/include/linux/crc32c.h b/include/linux/crc32c.h
+index bd8b44d..33320e1 100644
+--- a/include/linux/crc32c.h
++++ b/include/linux/crc32c.h
+@@ -3,9 +3,10 @@
+ 
+ #include <linux/types.h>
+ 
+-extern u32 crc32c(u32 crc, const void *address, unsigned int length);
++extern u32 crc32c_le(u32 crc, const void *address, unsigned int length);
++extern u32 crc32c_be(u32 crc, const void *address, unsigned int length);
+ 
+ /* This macro exists for backwards-compatibility. */
+-#define crc32c_le crc32c
++#define crc32c crc32c_le
+ 
+ #endif	/* _LINUX_CRC32C_H */
+diff --git a/lib/libcrc32c.c b/lib/libcrc32c.c
+index 244f548..e421ff5 100644
+--- a/lib/libcrc32c.c
++++ b/lib/libcrc32c.c
+@@ -37,17 +37,17 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ 
+-static struct crypto_shash *tfm;
++static struct crypto_shash *tfm_le, *tfm_be;
+ 
+-u32 crc32c(u32 crc, const void *address, unsigned int length)
++u32 crc32c_le(u32 crc, const void *address, unsigned int length)
+ {
+ 	struct {
+ 		struct shash_desc shash;
+-		char ctx[crypto_shash_descsize(tfm)];
++		char ctx[crypto_shash_descsize(tfm_le)];
+ 	} desc;
+ 	int err;
+ 
+-	desc.shash.tfm = tfm;
++	desc.shash.tfm = tfm_le;
+ 	desc.shash.flags = 0;
+ 	*(u32 *)desc.ctx = crc;
+ 
+@@ -56,21 +56,46 @@ u32 crc32c(u32 crc, const void *address, unsigned int length)
+ 
+ 	return *(u32 *)desc.ctx;
+ }
++EXPORT_SYMBOL(crc32c_le);
+ 
+-EXPORT_SYMBOL(crc32c);
++u32 crc32c_be(u32 crc, const void *address, unsigned int length)
++{
++	struct {
++		struct shash_desc shash;
++		char ctx[crypto_shash_descsize(tfm_be)];
++	} desc;
++	int err;
++
++	desc.shash.tfm = tfm_be;
++	desc.shash.flags = 0;
++	*(u32 *)desc.ctx = crc;
++
++	err = crypto_shash_update(&desc.shash, address, length);
++	BUG_ON(err);
++
++	return *(u32 *)desc.ctx;
++}
++EXPORT_SYMBOL(crc32c_be);
+ 
+ static int __init libcrc32c_mod_init(void)
+ {
+-	tfm = crypto_alloc_shash("crc32c", 0, 0);
+-	if (IS_ERR(tfm))
+-		return PTR_ERR(tfm);
++	tfm_le = crypto_alloc_shash("crc32c", 0, 0);
++	if (IS_ERR(tfm_le))
++		return PTR_ERR(tfm_le);
++
++	tfm_be = crypto_alloc_shash("crc32c-be", 0, 0);
++	if (IS_ERR(tfm_be)) {
++		crypto_free_shash(tfm_le);
++		return PTR_ERR(tfm_be);
++	}
+ 
+ 	return 0;
+ }
+ 
+ static void __exit libcrc32c_mod_fini(void)
+ {
+-	crypto_free_shash(tfm);
++	crypto_free_shash(tfm_be);
++	crypto_free_shash(tfm_le);
+ }
+ 
+ module_init(libcrc32c_mod_init);
 
