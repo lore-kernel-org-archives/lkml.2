@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753933Ab1I0X1s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 19:27:48 -0400
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:16258 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753249Ab1I0X1J (ORCPT
+	id S1753801Ab1I0Xac (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 19:30:32 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57160 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752815Ab1I0Xaa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 19:27:09 -0400
-From: David Daney <david.daney@cavium.com>
-To: devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        davem@davemloft.net
-Cc: David Daney <david.daney@cavium.com>
-Subject: [PATCH v2 0/3] netdev/of/phy: MDIO bus multiplexer support.
-Date: Tue, 27 Sep 2011 16:26:52 -0700
-Message-Id: <1317166015-20714-1-git-send-email-david.daney@cavium.com>
-X-Mailer: git-send-email 1.7.2.3
-X-OriginalArrivalTime: 27 Sep 2011 23:27:08.0749 (UTC) FILETIME=[F9C837D0:01CC7D6C]
+	Tue, 27 Sep 2011 19:30:30 -0400
+Date: Wed, 28 Sep 2011 01:30:28 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Mark Salter <msalter@redhat.com>
+cc: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v3 12/24] C6X: interrupt handling
+In-Reply-To: <1317155405-26235-13-git-send-email-msalter@redhat.com>
+Message-ID: <alpine.LFD.2.02.1109280115130.2711@ionos>
+References: <1317155405-26235-1-git-send-email-msalter@redhat.com> <1317155405-26235-13-git-send-email-msalter@redhat.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v2: Update bindings to use "reg" and "mdio-parent-bus" insutead of
-    "cell-index" and "parent-bus"
+B1;2601;0cOn Tue, 27 Sep 2011, Mark Salter wrote:
+> diff --git a/arch/c6x/kernel/irq.c b/arch/c6x/kernel/irq.c
+> +static raw_spinlock_t core_irq_lock;
 
-v1:
+static DEFINE_RAW_SPINLOCK(...) please, so you can get rid of the
+raw_spin_lock_init(...) below.
 
-We have several different boards with a multiplexer in the MDIO bus.
-There is an MDIO bus controller connected to a switching device with
-several child MDIO busses.
+> +static int core_host_map(struct irq_host *h, unsigned int virq,
+> +			 irq_hw_number_t hw)
+> +{
+> +	if (hw < 4 || hw >= NR_PRIORITY_IRQS)
+> +		return -1;
 
-Everything is wired up using device tree bindings.
+Proper error code please, i.e -EINVAL or such
 
- 1/3 - New of_mdio_find_bus() function used to help configuring the
-       driver topology.
+> +
+> +	irq_set_status_flags(virq, IRQ_LEVEL);
+> +	irq_set_chip_and_handler(virq, &core_chip, handle_level_irq);
+> +	return 0;
+> +}
+> +
+> +static struct irq_host_ops core_host_ops = {
+> +	.map = core_host_map,
+> +};
+> +
+> +void __init init_IRQ(void)
+> +{
+> +	struct device_node *np;
+> +
+> +	raw_spin_lock_init(&core_irq_lock);
 
- 2/3 - MDIO bus multiplexer framework.
+See above.
 
- 3/3 - A driver for a GPIO controlled multiplexer.
+Aside of that I'm still not too happy about the of_/irqhost/domain
+code replication and the cleanup which needs to be done after that has
+been solved. Though if you and Grant have a plan for that, I'm not in
+the way.
 
+Btw, keeping people who have been added to previous review comments of
+a particular patch in the CC makes everyones life easier.
 
-David Daney (3):
-  netdev/of/phy: New function: of_mdio_find_bus().
-  netdev/of/phy: Add MDIO bus multiplexer support.
-  netdev/of/phy: Add MDIO bus multiplexer driven by GPIO lines.
+Thanks,
 
- .../devicetree/bindings/net/mdio-mux-gpio.txt      |  129 ++++++++++++++
- Documentation/devicetree/bindings/net/mdio-mux.txt |  136 +++++++++++++++
- drivers/net/phy/Kconfig                            |   17 ++
- drivers/net/phy/Makefile                           |    2 +
- drivers/net/phy/mdio-mux-gpio.c                    |  143 +++++++++++++++
- drivers/net/phy/mdio-mux.c                         |  182 ++++++++++++++++++++
- drivers/net/phy/mdio_bus.c                         |    3 +-
- drivers/of/of_mdio.c                               |   26 +++
- include/linux/mdio-mux.h                           |   18 ++
- include/linux/of_mdio.h                            |    2 +
- include/linux/phy.h                                |    1 +
- 11 files changed, 658 insertions(+), 1 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/net/mdio-mux-gpio.txt
- create mode 100644 Documentation/devicetree/bindings/net/mdio-mux.txt
- create mode 100644 drivers/net/phy/mdio-mux-gpio.c
- create mode 100644 drivers/net/phy/mdio-mux.c
- create mode 100644 include/linux/mdio-mux.h
-
--- 
-1.7.2.3
-
+	tglx
