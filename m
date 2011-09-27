@@ -1,80 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752417Ab1I0N12 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 09:27:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1039 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751485Ab1I0N10 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 09:27:26 -0400
-Date: Tue, 27 Sep 2011 09:27:18 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: David Brown <davidb@codeaurora.org>, akpm@linux-foundation.org
-Cc: Randy Dunlap <rdunlap@xenotime.net>, Greg KH <greg@kroah.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Bart Van Assche <bvanassche@acm.org>, linux-next@vger.kernel.org,
+	id S1752631Ab1I0N1t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 09:27:49 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:36368 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752096Ab1I0N1s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 09:27:48 -0400
+Date: Tue, 27 Sep 2011 18:42:13 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Jonathan Corbet <corbet@lwn.net>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for Aug 24 (dynamic_debug)
-Message-ID: <20110927132718.GA2533@redhat.com>
-References: <20110824160404.ebad6370aee2cad82a990142@canb.auug.org.au>
- <20110824102551.8fc076b5.rdunlap@xenotime.net>
- <20110824193244.GA2540@redhat.com>
- <20110824124248.13aa3ed4.rdunlap@xenotime.net>
- <20110824210902.GA9648@kroah.com>
- <20110926231702.GA16827@huya.qualcomm.com>
+Subject: Re: [PATCH v5 3.1.0-rc4-tip 26/26]   uprobes: queue signals while
+ thread is singlestepping.
+Message-ID: <20110927131213.GE3685@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com>
+ <20110920120517.25326.57657.sendpatchset@srdronam.in.ibm.com>
+ <1317128626.15383.61.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20110926231702.GA16827@huya.qualcomm.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <1317128626.15383.61.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 26, 2011 at 04:17:02PM -0700, David Brown wrote:
-> On Wed, Aug 24, 2011 at 02:09:02PM -0700, Greg KH wrote:
-> > On Wed, Aug 24, 2011 at 12:42:48PM -0700, Randy Dunlap wrote:
-> > > On Wed, 24 Aug 2011 15:32:45 -0400 Jason Baron wrote:
-> > > 
-> > > > On Wed, Aug 24, 2011 at 10:25:51AM -0700, Randy Dunlap wrote:
-> > > > > On Wed, 24 Aug 2011 16:04:04 +1000 Stephen Rothwell wrote:
-> > > > > 
-> > > > > > Hi all,
-> > > > > 
-> > > > > When CONFIG_NET is not enabled (I see this on i386 builds):
-> > > > > 
-> > > > > lib/built-in.o: In function `__dynamic_netdev_dbg':
-> > > > > (.text+0x9fda): undefined reference to `__netdev_printk'
-> > > > > 
-> > > > > ---
-> > > > > ~Randy
-> > > > > *** Remember to use Documentation/SubmitChecklist when testing your code ***
-> > > > 
-> > > > Ok, we probably want something, like below, although something keeps
-> > > > selecting CONFIG_NET, when I try to unset it, in my .config...so not yet
-> > > > tested, but should work.
-> > > 
-> > > Yes, that works.  Thanks.
-> > > 
-> > > Acked-by: Randy Dunlap <rdunlap@xenotime.net>
-> > 
-> > Nice.
-> > 
-> > Jason, care to resend this, with a proper signed-off-by, so that I can
-> > apply it to fix this build error?
-> 
-> Any status on this, Jason?  This seems to still be broken in
-> linux-next.
-> 
-> Thanks,
-> David
-> 
+* Peter Zijlstra <peterz@infradead.org> [2011-09-27 15:03:46]:
 
-Yes, this needs to be resolved asap. I'm sending this to Andrew Morton 
-b/c these patches have been merged in the -mm tree. I'm guessing
-that b/c of the kernel.org outage they aren't showing up in -next? Since
-this has dragged on and on, perhaps, those patches can be moved
-somewhere else so they can be pulled into -next. Andrew?
+> On Tue, 2011-09-20 at 17:35 +0530, Srikar Dronamraju wrote:
+> > +#ifdef CONFIG_UPROBES
+> > +       if (!group && t->utask && t->utask->active_uprobe)
+> > +               pending = &t->utask->delayed;
+> > +#endif
+> > +
+> >         /*
+> >          * Short-circuit ignored signals and support queuing
+> >          * exactly one non-rt signal, so that we can get more
+> > @@ -1106,6 +1111,11 @@ static int __send_signal(int sig, struct siginfo *info, struct task_struct *t,
+> >                 }
+> >         }
+> >  
+> > +#ifdef CONFIG_UPROBES
+> > +       if (!group && t->utask && t->utask->active_uprobe)
+> > +               return 0;
+> > +#endif
+> > +
+> >  out_set:
+> >         signalfd_notify(t, sig);
+> >         sigaddset(&pending->signal, sig);
+> > @@ -1569,6 +1579,13 @@ int send_sigqueue(struct sigqueue *q, struct task_struct *t, int group)
+> >         }
+> >         q->info.si_overrun = 0;
+> >  
+> > +#ifdef CONFIG_UPROBES
+> > +       if (!group && t->utask && t->utask->active_uprobe) {
+> > +               pending = &t->utask->delayed;
+> > +               list_add_tail(&q->list, &pending->list);
+> > +               goto out;
+> > +       }
+> > +#endif
+> >         signalfd_notify(t, sig);
+> >         pending = group ? &t->signal->shared_pending : &t->pending;
+> >         list_add_tail(&q->list, &pending->list);
+> > @@ -2199,7 +2216,10 @@ int get_signal_to_deliver(siginfo_t *info, struct k_sigaction *return_ka,
+> >                         spin_unlock_irq(&sighand->siglock);
+> >                         goto relock;
+> >                 }
+> > -
+> > +#ifdef CONFIG_UPROBES
+> > +               if (current->utask && current->utask->active_uprobe)
+> > +                       break;
+> > +#endif 
+> 
+> That's just crying for something like:
+> 
+> #ifdef CONFIG_UPROBES
+> static inline bool uprobe_delay_signal(struct task_struct *p)
+> {
+> 	return p->utask && p->utask->active_uprobe;
+> }
+> #else
+> static inline bool uprobe_delay_signal(struct task_struct *p)
+> {
+> 	return false;
+> }
+> #endif
+> 
+> That'll instantly kill the #ifdeffery as well as describe wtf you're
+> actually doing.
 
-Thanks,
 
--Jason
+Okay, 
+
+I did a rethink and implemented this patch a little differently using
+block_all_signals, unblock_all_signals. This wouldnt need the 
+#ifdeffery + no changes in kernel/signal.c
+
+Will post the same in the next patchset.
+
+-- 
+Thanks and Regards
+Srikar
