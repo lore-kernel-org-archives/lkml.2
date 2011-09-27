@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752703Ab1I0Vw6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 17:52:58 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36051 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751572Ab1I0Vw5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 17:52:57 -0400
-Subject: Re: [RFD 3/9] Display /proc/stat information per cgroup
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, paul@paulmenage.org, lizf@cn.fujitsu.com,
-        daniel.lezcano@free.fr, jbottomley@parallels.com
-Date: Tue, 27 Sep 2011 23:52:24 +0200
-In-Reply-To: <1316816432-9237-4-git-send-email-glommer@parallels.com>
-References: <1316816432-9237-1-git-send-email-glommer@parallels.com>
-	 <1316816432-9237-4-git-send-email-glommer@parallels.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1317160344.21836.16.camel@twins>
-Mime-Version: 1.0
+	id S1752420Ab1I0V7T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 17:59:19 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:60078 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751502Ab1I0V7S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 17:59:18 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [PATCH] PCI / PM: Remove unnecessary error variable from acpi_dev_run_wake()
+Date: Wed, 28 Sep 2011 00:01:28 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc4+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        linux-pci@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201109280001.28857.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-09-23 at 19:20 -0300, Glauber Costa wrote:
-> +       root_task_group.cpustat = alloc_percpu(struct kernel_stat);
-> +       /* Failing that early an allocation means we're screwed anyway */
-> +       BUG_ON(!root_task_group.cpustat);
-> +       for_each_possible_cpu(i) {
-> +               kstat = per_cpu_ptr(root_task_group.cpustat, i);
-> +               kstat->cpustat[IDLE] = 0;
-> +               kstat->cpustat[IDLE_BASE] = 0;
-> +               kstat->cpustat[IOWAIT_BASE] = 0;
-> +               kstat->cpustat[IOWAIT] = 0;
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-so alloc_percpu() will actually zero your memory for you, which you rely
-on for all other fields as well, so why reset these ones?
+The error variable in acpi_dev_run_wake() is not really used, so
+remove it.
 
-> +       }
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ drivers/pci/pci-acpi.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-
+Index: linux/drivers/pci/pci-acpi.c
+===================================================================
+--- linux.orig/drivers/pci/pci-acpi.c
++++ linux/drivers/pci/pci-acpi.c
+@@ -282,7 +282,6 @@ static int acpi_dev_run_wake(struct devi
+ {
+ 	struct acpi_device *dev;
+ 	acpi_handle handle;
+-	int error = -ENODEV;
+ 
+ 	if (!device_run_wake(phys_dev))
+ 		return -EINVAL;
+@@ -302,7 +301,7 @@ static int acpi_dev_run_wake(struct devi
+ 		acpi_disable_wakeup_device_power(dev);
+ 	}
+ 
+-	return error;
++	return 0;
+ }
+ 
+ static void acpi_pci_propagate_run_wake(struct pci_bus *bus, bool enable)
