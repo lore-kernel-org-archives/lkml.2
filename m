@@ -1,103 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752878Ab1I0WD5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 18:03:57 -0400
-Received: from mail.windriver.com ([147.11.1.11]:52393 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751502Ab1I0WD4 (ORCPT
+	id S1752935Ab1I0WHL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 18:07:11 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:41786 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751871Ab1I0WHJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 18:03:56 -0400
-Message-ID: <4E824821.8040105@windriver.com>
-Date: Tue, 27 Sep 2011 18:03:13 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
+	Tue, 27 Sep 2011 18:07:09 -0400
+Message-ID: <4E82490B.2040805@xenotime.net>
+Date: Tue, 27 Sep 2011 15:07:07 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
 MIME-Version: 1.0
-To: =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
-	<u.kleine-koenig@pengutronix.de>
-CC: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
-        <linux-kernel@vger.kernel.org>, <kernel@pengutronix.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] dma/imx-sdma+imx-dma: explicitly #include <linux/module.h>
-References: <1317018379-8897-1-git-send-email-u.kleine-koenig@pengutronix.de>
-In-Reply-To: <1317018379-8897-1-git-send-email-u.kleine-koenig@pengutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [128.224.146.65]
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        pm list <linux-pm@lists.linux-foundation.org>
+Subject: Re: linux-next: Tree for Sept 27 (power/qos.c)
+References: <20110927173530.ceae2e49537a81da65287bf3@canb.auug.org.au> <4E81FA1E.3060702@xenotime.net> <201109272205.12021.rjw@sisk.pl>
+In-Reply-To: <201109272205.12021.rjw@sisk.pl>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-09-26 02:26 AM, Uwe Kleine-König wrote:
-> This is needed after commit
+On 09/27/2011 01:05 PM, Rafael J. Wysocki wrote:
+> On Tuesday, September 27, 2011, Randy Dunlap wrote:
+>> On 09/27/2011 12:35 AM, Stephen Rothwell wrote:
+>>> Hi all,
+>>
+>>
+>> When CONFIG_PM_SLEEP is not enabled:
+>>
+>> drivers/base/power/qos.c:231:29: error: 'struct dev_pm_info' has no member named 'entry'
 > 
-> 	include: replace linux/module.h with "struct module" wherever possible
+> Thanks for the report.
 > 
-> (currently 25215aa in next).
+> Below is a patch and it should be fixed in linux-next now.
+
+Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+
+Thanks.
+
+> Rafael
 > 
-> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 > ---
-> Hello,
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+> Subject: PM / QoS: Fix build issue for CONFIG_PM_SLEEP unset
 > 
-> maybe it's sensible for Paul to take that before his commit?
-
-Thanks, I'll blend it into the commit adding module.h to the other
-drivers/dma files.  It seems the imx boards don't have a defconfig
-in the arch/arm/configs that enables this (CONFIG_IMX_[S]DMA).
-
-What is really interesting (at least to me anyway) is that I
-didn't get one iMX build in some 6000+ ARM randconfig builds....
-
-I would have thought it would have showed up at least a couple
-times, given that number of builds.  Maybe randconfig doesn't
-deal so well with "choice" Kconfig items?
-
-~/git/module.h/linux-2.6.git$ ls -1 ../build-10*arm |wc -l
-6399
-~/git/module.h/linux-2.6.git$ grep CONFIG_ARCH_[A-Z0-9]*=y ../build-10*arm*/.config | sed 's/.*CON/CON/'|sort |uniq
-CONFIG_ARCH_EBSA110=y
-CONFIG_ARCH_H7201=y
-CONFIG_ARCH_H7202=y
-CONFIG_ARCH_H720X=y
-CONFIG_ARCH_VERSATILE=y
-~/git/module.h/linux-2.6.git$ 
-
-No ARCH_MXC, no ARCH_MXS, PXA, or any of the other 20+ variants.
-Definitely not a random spread there, with all 6000 builds falling
-in just 5 buckets.
-
-Paul.
-
-
+> Commit d41a041b58684710638cbc0d5342a661b50db124 "PM / QoS: Add
+> function dev_pm_qos_read_value() (v2)" introduced a build problem
+> for CONFIG_PM_SLEEP, because it overlooked this case entirely.
 > 
-> Best regards
-> Uwe
+> To fix this issue, use the power.power_state in struct device to
+> indicate whether or not PM QoS constraints can be applied to the
+> device object in question instead of checking the device's
+> power.entry field that is valid only for CONFIG_PM_SLEEP set.
 > 
->  drivers/dma/imx-dma.c  |    1 +
->  drivers/dma/imx-sdma.c |    1 +
->  2 files changed, 2 insertions(+), 0 deletions(-)
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> ---
+>  drivers/base/power/main.c  |    2 +-
+>  drivers/base/power/power.h |   10 +++++++++-
+>  drivers/base/power/qos.c   |   11 ++++-------
+>  include/linux/pm.h         |    2 ++
+>  include/linux/pm_qos.h     |    9 +++++++--
+>  5 files changed, 23 insertions(+), 11 deletions(-)
 > 
-> diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
-> index d99f71c..3732de8 100644
-> --- a/drivers/dma/imx-dma.c
-> +++ b/drivers/dma/imx-dma.c
-> @@ -23,6 +23,7 @@
->  #include <linux/slab.h>
->  #include <linux/platform_device.h>
->  #include <linux/dmaengine.h>
-> +#include <linux/module.h>
+> Index: linux/drivers/base/power/main.c
+> ===================================================================
+> --- linux.orig/drivers/base/power/main.c
+> +++ linux/drivers/base/power/main.c
+> @@ -22,7 +22,6 @@
+>  #include <linux/mutex.h>
+>  #include <linux/pm.h>
+>  #include <linux/pm_runtime.h>
+> -#include <linux/pm_qos.h>
+>  #include <linux/resume-trace.h>
+>  #include <linux/interrupt.h>
+>  #include <linux/sched.h>
+> @@ -67,6 +66,7 @@ void device_pm_init(struct device *dev)
+>  	spin_lock_init(&dev->power.lock);
+>  	pm_runtime_init(dev);
+>  	INIT_LIST_HEAD(&dev->power.entry);
+> +	dev->power.power_state = PMSG_INVALID;
+>  }
 >  
->  #include <asm/irq.h>
->  #include <mach/dma-v1.h>
-> diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
-> index b5cc27d..86fb6e5 100644
-> --- a/drivers/dma/imx-sdma.c
-> +++ b/drivers/dma/imx-sdma.c
-> @@ -34,6 +34,7 @@
->  #include <linux/dmaengine.h>
->  #include <linux/of.h>
->  #include <linux/of_device.h>
-> +#include <linux/module.h>
+>  /**
+> Index: linux/include/linux/pm.h
+> ===================================================================
+> --- linux.orig/include/linux/pm.h
+> +++ linux/include/linux/pm.h
+> @@ -326,6 +326,7 @@ extern struct dev_pm_ops generic_subsys_
+>   *			requested by a driver.
+>   */
 >  
->  #include <asm/irq.h>
->  #include <mach/sdma.h>
+> +#define PM_EVENT_INVALID	(-1)
+>  #define PM_EVENT_ON		0x0000
+>  #define PM_EVENT_FREEZE 	0x0001
+>  #define PM_EVENT_SUSPEND	0x0002
+> @@ -346,6 +347,7 @@ extern struct dev_pm_ops generic_subsys_
+>  #define PM_EVENT_AUTO_SUSPEND	(PM_EVENT_AUTO | PM_EVENT_SUSPEND)
+>  #define PM_EVENT_AUTO_RESUME	(PM_EVENT_AUTO | PM_EVENT_RESUME)
+>  
+> +#define PMSG_INVALID	((struct pm_message){ .event = PM_EVENT_INVALID, })
+>  #define PMSG_ON		((struct pm_message){ .event = PM_EVENT_ON, })
+>  #define PMSG_FREEZE	((struct pm_message){ .event = PM_EVENT_FREEZE, })
+>  #define PMSG_QUIESCE	((struct pm_message){ .event = PM_EVENT_QUIESCE, })
+> Index: linux/drivers/base/power/power.h
+> ===================================================================
+> --- linux.orig/drivers/base/power/power.h
+> +++ linux/drivers/base/power/power.h
+> @@ -1,3 +1,5 @@
+> +#include <linux/pm_qos.h>
+> +
+>  #ifdef CONFIG_PM_RUNTIME
+>  
+>  extern void pm_runtime_init(struct device *dev);
+> @@ -35,15 +37,21 @@ extern void device_pm_move_last(struct d
+>  static inline void device_pm_init(struct device *dev)
+>  {
+>  	spin_lock_init(&dev->power.lock);
+> +	dev->power.power_state = PMSG_INVALID;
+>  	pm_runtime_init(dev);
+>  }
+>  
+> +static inline void device_pm_add(struct device *dev)
+> +{
+> +	dev_pm_qos_constraints_init(dev);
+> +}
+> +
+>  static inline void device_pm_remove(struct device *dev)
+>  {
+> +	dev_pm_qos_constraints_destroy(dev);
+>  	pm_runtime_remove(dev);
+>  }
+>  
+> -static inline void device_pm_add(struct device *dev) {}
+>  static inline void device_pm_move_before(struct device *deva,
+>  					 struct device *devb) {}
+>  static inline void device_pm_move_after(struct device *deva,
+> Index: linux/include/linux/pm_qos.h
+> ===================================================================
+> --- linux.orig/include/linux/pm_qos.h
+> +++ linux/include/linux/pm_qos.h
+> @@ -7,6 +7,7 @@
+>  #include <linux/plist.h>
+>  #include <linux/notifier.h>
+>  #include <linux/miscdevice.h>
+> +#include <linux/device.h>
+>  
+>  #define PM_QOS_RESERVED 0
+>  #define PM_QOS_CPU_DMA_LATENCY 1
+> @@ -142,9 +143,13 @@ static inline int dev_pm_qos_remove_glob
+>  					struct notifier_block *notifier)
+>  			{ return 0; }
+>  static inline void dev_pm_qos_constraints_init(struct device *dev)
+> -			{ return; }
+> +{
+> +	dev->power.power_state = PMSG_ON;
+> +}
+>  static inline void dev_pm_qos_constraints_destroy(struct device *dev)
+> -			{ return; }
+> +{
+> +	dev->power.power_state = PMSG_INVALID;
+> +}
+>  #endif
+>  
+>  #endif
+> Index: linux/drivers/base/power/qos.c
+> ===================================================================
+> --- linux.orig/drivers/base/power/qos.c
+> +++ linux/drivers/base/power/qos.c
+> @@ -149,6 +149,7 @@ void dev_pm_qos_constraints_init(struct
+>  {
+>  	mutex_lock(&dev_pm_qos_mtx);
+>  	dev->power.constraints = NULL;
+> +	dev->power.power_state = PMSG_ON;
+>  	mutex_unlock(&dev_pm_qos_mtx);
+>  }
+>  
+> @@ -165,6 +166,7 @@ void dev_pm_qos_constraints_destroy(stru
+>  
+>  	mutex_lock(&dev_pm_qos_mtx);
+>  
+> +	dev->power.power_state = PMSG_INVALID;
+>  	c = dev->power.constraints;
+>  	if (!c)
+>  		goto out;
+> @@ -222,20 +224,15 @@ int dev_pm_qos_add_request(struct device
+>  
+>  	req->dev = dev;
+>  
+> -	device_pm_lock();
+>  	mutex_lock(&dev_pm_qos_mtx);
+>  
+> -	if (dev->power.constraints) {
+> -		device_pm_unlock();
+> -	} else {
+> -		if (list_empty(&dev->power.entry)) {
+> +	if (!dev->power.constraints) {
+> +		if (dev->power.power_state.event == PM_EVENT_INVALID) {
+>  			/* The device has been removed from the system. */
+> -			device_pm_unlock();
+>  			req->dev = NULL;
+>  			ret = -ENODEV;
+>  			goto out;
+>  		} else {
+> -			device_pm_unlock();
+>  			/*
+>  			 * Allocate the constraints data on the first call to
+>  			 * add_request, i.e. only if the data is not already
+> --
+
+
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
