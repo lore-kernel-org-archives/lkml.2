@@ -1,272 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751917Ab1I0BpT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 21:45:19 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:61085 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751149Ab1I0BpS convert rfc822-to-8bit (ORCPT
+	id S1751986Ab1I0BxK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 21:53:10 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:52220 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751387Ab1I0BxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 21:45:18 -0400
+	Mon, 26 Sep 2011 21:53:08 -0400
+Date: Mon, 26 Sep 2011 19:53:05 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Rob Herring <robherring2@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, marc.zyngier@arm.com,
+        thomas.abraham@linaro.org, jamie@jamieiles.com, b-cousson@ti.com,
+        shawn.guo@linaro.org, Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH v4] of/irq: introduce of_irq_init
+Message-ID: <20110927015305.GD20588@ponder.secretlab.ca>
+References: <1316744473-13158-1-git-send-email-robherring2@gmail.com>
+ <1317065083-23573-1-git-send-email-robherring2@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1317085894.26514.26.camel@gandalf.stny.rr.com>
-References: <1316664701-15273-1-git-send-email-tom.leiming@gmail.com>
-	<1317044445.26514.5.camel@gandalf.stny.rr.com>
-	<CACVXFVPQokm21c+do5+DaOvUAme2LaNiwrNw_Tm66KuOxPb1jA@mail.gmail.com>
-	<1317085894.26514.26.camel@gandalf.stny.rr.com>
-Date: Tue, 27 Sep 2011 09:45:16 +0800
-Message-ID: <CACVXFVN33diJAa3yZ4ASuRD+5edDnBcAA-oBntW9k8RpdQOo2w@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/2] PM/runtime: introduce trace points for tracing
- rpm_* functions
-From: Ming Lei <tom.leiming@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: rjw@sisk.pl, stern@rowland.harvard.edu,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        mingo@redhat.com, fweisbec@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1317065083-23573-1-git-send-email-robherring2@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 27, 2011 at 9:11 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Tue, 2011-09-27 at 08:53 +0800, Ming Lei wrote:
->> Hi,
->>
->> On Mon, Sep 26, 2011 at 9:40 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
->> > On Thu, 2011-09-22 at 12:11 +0800, tom.leiming@gmail.com wrote:
->> >> From: Ming Lei <tom.leiming@gmail.com>
->> >>
->> >> This patch introduces 3 trace points to prepare for tracing
->> >> rpm_idle/rpm_suspend/rpm_resume functions, so we can use these
->> >> trace points to replace the current dev_dbg().
->> >>
->> >> Signed-off-by: Ming Lei <tom.leiming@gmail.com>
->> >> ---
->> >>  include/trace/events/rpm.h |   98 ++++++++++++++++++++++++++++++++++++++++++++
->> >>  kernel/trace/Makefile      |    1 +
->> >>  kernel/trace/rpm-traces.c  |   21 +++++++++
->> >>  3 files changed, 120 insertions(+), 0 deletions(-)
->> >>  create mode 100644 include/trace/events/rpm.h
->> >>  create mode 100644 kernel/trace/rpm-traces.c
->> >>
->> >> diff --git a/include/trace/events/rpm.h b/include/trace/events/rpm.h
->> >> new file mode 100644
->> >> index 0000000..ecd40bb
->> >> --- /dev/null
->> >> +++ b/include/trace/events/rpm.h
->> >> @@ -0,0 +1,98 @@
->> >> +
->> >> +#undef TRACE_SYSTEM
->> >> +#define TRACE_SYSTEM rpm
->> >> +
->> >> +#if !defined(_TRACE_RUNTIME_POWER_H) || defined(TRACE_HEADER_MULTI_READ)
->> >> +#define _TRACE_RUNTIME_POWER_H
->> >> +
->> >> +#include <linux/ktime.h>
->> >> +#include <linux/tracepoint.h>
->> >> +#include <linux/device.h>
->> >> +
->> >> +/*
->> >> + * The rpm_internal events are used for tracing some important
->> >> + * runtime pm internal functions.
->> >> + */
->> >> +DECLARE_EVENT_CLASS(rpm_internal,
->> >> +
->> >> +     TP_PROTO(struct device *dev, int flags),
->> >> +
->> >> +     TP_ARGS(dev, flags),
->> >> +
->> >> +     TP_STRUCT__entry(
->> >> +             __field(        const char *,   name            )
->> >> +             __field(        int,            flags           )
->> >> +             __field(        int ,           usage_count     )
->> >> +             __field(        int ,           disable_depth   )
->> >> +             __field(        int ,           runtime_auto    )
->> >> +             __field(        int ,           request_pending )
->> >> +             __field(        int ,           irq_safe        )
->> >> +             __field(        int ,           child_count     )
->> >> +     ),
->> >> +
->> >> +     TP_fast_assign(
->> >> +             __entry->name = dev_name(dev);
->> >
->> > Don't use pointers, you must copy the name here. Otherwise, if the trace
->> > is read after the device has left, you will be referencing a invalid
->> > pointer and possible crash the kernel.
->>
->> Yes, you right, but __get_str() may introduce some extra loading, could
->> it be changed to below just like what dev_printk does?
->>
->>                    __entry->name = dev ? dev_name(dev) : NULL;
->
-> Doesn't help. You just stored a pointer into the buffer. Now if the
-> device's module is removed, when you go and read the buffer you will be
-> reading a string that no longer exists.
->
-> Not to mention, this will never work with tools such as perf or
-> trace-cmd, that will just get a pointer address and will try to read a
-> string that points inside the kernel.
+On Mon, Sep 26, 2011 at 02:24:43PM -0500, Rob Herring wrote:
+> From: Rob Herring <rob.herring@calxeda.com>
+> 
+> of_irq_init will scan the devicetree for matching interrupt controller
+> nodes. Then it calls an initialization function for each found controller
+> in the proper order with parent nodes initialized before child nodes.
+> 
+> Based on initial pseudo code from Grant Likely.
+> 
+> Changes in v4:
+> - Drop unnecessary empty list check
+> - Be more verbose on errors
+> - Simplify "if (!desc) WARN_ON(1)" to "if (WARN_ON(!desc))"
+> 
+> Changes in v3:
+> - add missing kfree's found by Jamie
+> - Implement Grant's comments to simplify the init loop
+> - fix function comments
+> 
+> Changes in v2:
+> - Complete re-write of list searching code from Grant Likely
+> 
+> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
 
-Ok, sounds like dev_name does not work for the case, I will update
-the patch, but I am wondering why no such problem for dev_dbg?
-printk still may buffer these for sometime in some cases.
+Looks good to me.  Merged.
 
->
->>
->> >
->> > We have ways to express dynamic string fields. Use them.
->> >
->> >> +             __entry->flags = flags;
->> >> +             __entry->usage_count = atomic_read(
->> >> +                     &dev->power.usage_count);
->> >> +             __entry->disable_depth = dev->power.disable_depth;
->> >> +             __entry->runtime_auto = dev->power.runtime_auto;
->> >> +             __entry->request_pending = dev->power.request_pending;
->> >> +             __entry->irq_safe = dev->power.irq_safe;
->> >> +             __entry->child_count = atomic_read(
->> >> +                     &dev->power.child_count);
->> >> +     ),
->> >> +
->> >> +     TP_printk("%s flags-%x cnt-%-2d dep-%-2d auto-%-1d p-%-1d"
->> >> +                     " irq-%-1d child-%d",
->> >> +                     __entry->name, __entry->flags,
->> >> +                     __entry->usage_count,
->> >> +                     __entry->disable_depth,
->> >> +                     __entry->runtime_auto,
->> >> +                     __entry->request_pending,
->> >> +                     __entry->irq_safe,
->> >> +                     __entry->child_count
->> >> +              )
->> >> +);
->> >> +DEFINE_EVENT(rpm_internal, rpm_suspend,
->> >> +
->> >> +     TP_PROTO(struct device *dev, int flags),
->> >> +
->> >> +     TP_ARGS(dev, flags)
->> >> +);
->> >> +DEFINE_EVENT(rpm_internal, rpm_resume,
->> >> +
->> >> +     TP_PROTO(struct device *dev, int flags),
->> >> +
->> >> +     TP_ARGS(dev, flags)
->> >> +);
->> >> +DEFINE_EVENT(rpm_internal, rpm_idle,
->> >> +
->> >> +     TP_PROTO(struct device *dev, int flags),
->> >> +
->> >> +     TP_ARGS(dev, flags)
->> >> +);
->> >> +
->> >> +TRACE_EVENT(rpm_return_int,
->> >> +     TP_PROTO(struct device *dev, const char *func, int ret),
->> >> +     TP_ARGS(dev, func, ret),
->> >> +
->> >> +     TP_STRUCT__entry(
->> >> +             __field(        const char *,           name            )
->> >> +             __field(        const char *,           func            )
->> >> +             __field(        int,                    ret             )
->> >> +     ),
->> >> +
->> >> +     TP_fast_assign(
->> >> +             __entry->name = dev_name(dev);
->> >
->> > Same here.
->> >
->> >> +             __entry->ret = ret;
->> >> +             __entry->func = func;
->> >
->> > And here. But as this is just __func__, you could use %pS and save the
->> > pointer to the function. This is acceptable as kallsyms will will used
->> > to find the function, and instead pass in __THIS_IP__ to the tracepoint.
->>
->> IMO, __func__ is better than %pS here because %pS will dump some
->> offset info (such as runtime_suspend+0x0/0x158), but which is
->> not needed in this case.( we just need to make return value to match the
->> previous function name, such as below)
->
-> This will only work with reading the trace data
-> from /debug/tracing/trace, but not from any tools. The pS *will* work
-> with the tools as the tools load the kallsyms data, and is smart enough
-> to figure this pointer out.
+g.
 
-__func__ points to a const string, which will be stored in kernel global
-read-only section, I think perf can read correct string from the pointer
-anytime, don't I?
-
-thanks,
---
-Ming Lei
->
-> -- Steve
->
->>
->>           rpm_suspend: omap_hsmmc.0 flags=9
->>           ...
->>           rpm_return_int: rpm_suspend:omap_hsmmc.0 ret=0
->>
->> >
->> > -- Steve
->> >
->> >
->> >> +     ),
->> >> +
->> >> +     TP_printk("%s:%s ret=%d", __entry->func, __entry->name, __entry->ret)
->> >> +);
->> >> +
->> >> +#endif /* _TRACE_RUNTIME_POWER_H */
->> >> +
->> >> +/* This part must be outside protection */
->> >> +#include <trace/define_trace.h>
->> >> diff --git a/kernel/trace/Makefile b/kernel/trace/Makefile
->> >> index 761c510..56bdab5 100644
->> >> --- a/kernel/trace/Makefile
->> >> +++ b/kernel/trace/Makefile
->> >> @@ -53,6 +53,7 @@ endif
->> >>  obj-$(CONFIG_EVENT_TRACING) += trace_events_filter.o
->> >>  obj-$(CONFIG_KPROBE_EVENT) += trace_kprobe.o
->> >>  obj-$(CONFIG_TRACEPOINTS) += power-traces.o
->> >> +obj-$(CONFIG_TRACEPOINTS) += rpm-traces.o
->> >>  ifeq ($(CONFIG_TRACING),y)
->> >>  obj-$(CONFIG_KGDB_KDB) += trace_kdb.o
->> >>  endif
->> >> diff --git a/kernel/trace/rpm-traces.c b/kernel/trace/rpm-traces.c
->> >> new file mode 100644
->> >> index 0000000..998949e
->> >> --- /dev/null
->> >> +++ b/kernel/trace/rpm-traces.c
->> >> @@ -0,0 +1,21 @@
->> >> +/*
->> >> + * Power trace points
->> >> + *
->> >> + * Copyright (C) 2009 Ming Lei <tom.leiming@gmail.com>
->> >> + */
->> >> +
->> >> +#include <linux/string.h>
->> >> +#include <linux/types.h>
->> >> +#include <linux/workqueue.h>
->> >> +#include <linux/sched.h>
->> >> +#include <linux/module.h>
->> >> +#include <linux/usb.h>
->> >> +
->> >> +#define CREATE_TRACE_POINTS
->> >> +#include <trace/events/rpm.h>
->> >> +
->> >> +EXPORT_TRACEPOINT_SYMBOL_GPL(rpm_return_int);
->> >> +EXPORT_TRACEPOINT_SYMBOL_GPL(rpm_idle);
->> >> +EXPORT_TRACEPOINT_SYMBOL_GPL(rpm_suspend);
->> >> +EXPORT_TRACEPOINT_SYMBOL_GPL(rpm_resume);
->> >> +
->> >
->> >
->> >
->>
->>
->> thanks,
->
->
->
-
-
-
--- 
-Ming Lei
+> ---
+>  drivers/of/irq.c       |  107 ++++++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/of_irq.h |    3 +
+>  2 files changed, 110 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/of/irq.c b/drivers/of/irq.c
+> index 6a5b5e7..6d3dd39 100644
+> --- a/drivers/of/irq.c
+> +++ b/drivers/of/irq.c
+> @@ -19,10 +19,12 @@
+>   */
+>  
+>  #include <linux/errno.h>
+> +#include <linux/list.h>
+>  #include <linux/module.h>
+>  #include <linux/of.h>
+>  #include <linux/of_irq.h>
+>  #include <linux/string.h>
+> +#include <linux/slab.h>
+>  
+>  /* For archs that don't support NO_IRQ (such as x86), provide a dummy value */
+>  #ifndef NO_IRQ
+> @@ -386,3 +388,108 @@ int of_irq_to_resource_table(struct device_node *dev, struct resource *res,
+>  
+>  	return i;
+>  }
+> +
+> +struct intc_desc {
+> +	struct list_head	list;
+> +	struct device_node	*dev;
+> +	struct device_node	*interrupt_parent;
+> +};
+> +
+> +/**
+> + * of_irq_init - Scan and init matching interrupt controllers in DT
+> + * @matches: 0 terminated array of nodes to match and init function to call
+> + *
+> + * This function scans the device tree for matching interrupt controller nodes,
+> + * and calls their initialization functions in order with parents first.
+> + */
+> +void __init of_irq_init(const struct of_device_id *matches)
+> +{
+> +	struct device_node *np, *parent = NULL;
+> +	struct intc_desc *desc, *temp_desc;
+> +	struct list_head intc_desc_list, intc_parent_list;
+> +
+> +	INIT_LIST_HEAD(&intc_desc_list);
+> +	INIT_LIST_HEAD(&intc_parent_list);
+> +
+> +	for_each_matching_node(np, matches) {
+> +		if (!of_find_property(np, "interrupt-controller", NULL))
+> +			continue;
+> +		/*
+> +		 * Here, we allocate and populate an intc_desc with the node
+> +		 * pointer, interrupt-parent device_node etc.
+> +		 */
+> +		desc = kzalloc(sizeof(*desc), GFP_KERNEL);
+> +		if (WARN_ON(!desc))
+> +			goto err;
+> +
+> +		desc->dev = np;
+> +		desc->interrupt_parent = of_irq_find_parent(np);
+> +		list_add_tail(&desc->list, &intc_desc_list);
+> +	}
+> +
+> +	/*
+> +	 * The root irq controller is the one without an interrupt-parent.
+> +	 * That one goes first, followed by the controllers that reference it,
+> +	 * followed by the ones that reference the 2nd level controllers, etc.
+> +	 */
+> +	while (!list_empty(&intc_desc_list)) {
+> +		/*
+> +		 * Process all controllers with the current 'parent'.
+> +		 * First pass will be looking for NULL as the parent.
+> +		 * The assumption is that NULL parent means a root controller.
+> +		 */
+> +		list_for_each_entry_safe(desc, temp_desc, &intc_desc_list, list) {
+> +			const struct of_device_id *match;
+> +			int ret;
+> +			of_irq_init_cb_t irq_init_cb;
+> +
+> +			if (desc->interrupt_parent != parent)
+> +				continue;
+> +
+> +			list_del(&desc->list);
+> +			match = of_match_node(matches, desc->dev);
+> +			if (WARN(!match->data,
+> +			    "of_irq_init: no init function for %s\n",
+> +			    match->compatible)) {
+> +				kfree(desc);
+> +				continue;
+> +			}
+> +
+> +			pr_debug("of_irq_init: init %s @ %p, parent %p\n",
+> +				 match->compatible,
+> +				 desc->dev, desc->interrupt_parent);
+> +			irq_init_cb = match->data;
+> +			ret = irq_init_cb(desc->dev, desc->interrupt_parent);
+> +			if (ret) {
+> +				kfree(desc);
+> +				continue;
+> +			}
+> +
+> +			/*
+> +			 * This one is now set up; add it to the parent list so
+> +			 * its children can get processed in a subsequent pass.
+> +			 */
+> +			list_add_tail(&desc->list, &intc_parent_list);
+> +		}
+> +
+> +		/* Get the next pending parent that might have children */
+> +		desc = list_first_entry(&intc_parent_list, typeof(*desc), list);
+> +		if (list_empty(&intc_parent_list) || !desc) {
+> +			pr_err("of_irq_init: children remain, but no parents\n");
+> +			break;
+> +		}
+> +		list_del(&desc->list);
+> +		parent = desc->dev;
+> +		kfree(desc);
+> +	}
+> +
+> +	list_for_each_entry_safe(desc, temp_desc, &intc_parent_list, list) {
+> +		list_del(&desc->list);
+> +		kfree(desc);
+> +	}
+> +err:
+> +	list_for_each_entry_safe(desc, temp_desc, &intc_desc_list, list) {
+> +		list_del(&desc->list);
+> +		kfree(desc);
+> +	}
+> +}
+> diff --git a/include/linux/of_irq.h b/include/linux/of_irq.h
+> index cd2e61c..d0307ee 100644
+> --- a/include/linux/of_irq.h
+> +++ b/include/linux/of_irq.h
+> @@ -33,6 +33,8 @@ struct of_irq {
+>  	u32 specifier[OF_MAX_IRQ_SPEC]; /* Specifier copy */
+>  };
+>  
+> +typedef int (*of_irq_init_cb_t)(struct device_node *, struct device_node *);
+> +
+>  /*
+>   * Workarounds only applied to 32bit powermac machines
+>   */
+> @@ -73,6 +75,7 @@ extern int of_irq_to_resource_table(struct device_node *dev,
+>  		struct resource *res, int nr_irqs);
+>  extern struct device_node *of_irq_find_parent(struct device_node *child);
+>  
+> +extern void of_irq_init(const struct of_device_id *matches);
+>  
+>  #endif /* CONFIG_OF_IRQ */
+>  #endif /* CONFIG_OF */
+> -- 
+> 1.7.5.4
+> 
