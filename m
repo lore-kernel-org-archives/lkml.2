@@ -1,355 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753391Ab1I0VPm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 17:15:42 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:44285 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751873Ab1I0VPk (ORCPT
+	id S1753356Ab1I0VRh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 17:17:37 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:53301 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752051Ab1I0VRg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 17:15:40 -0400
-Date: Tue, 27 Sep 2011 17:00:31 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: davem@davemloft.net
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: wireless 2011-09-27
-Message-ID: <20110927210031.GA2471@tuxdriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 27 Sep 2011 17:17:36 -0400
+X-Authority-Analysis: v=1.1 cv=agqPq5NoKwAPC9P66H7dbYUCjxvmT73as08i4x3aqAA= c=1 sm=0 a=0tK9wBqmC7MA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=meVymXHHAAAA:8 a=ozXGK8X5VLjXXVAG-IEA:9 a=ggHSvTZ4iILDnblmJ1MA:7 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.83.30
+Subject: [PATCH] sched/kthread: Complain loudly when others violate our flags
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Tejun Heo <htejun@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Tue, 27 Sep 2011 17:17:34 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3- 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1317158254.26514.55.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave,
+For convenience and optimization, we are going to use the task's flag
+PF_THREAD_BOUND as a way to know if a task is bound to a CPU or not. As
+that is what the flag means.
 
-Here is another last (?) batch of fixes intended for 3.1.  Included is a
-scanning-related regression fix that avoids a potential crash, a buffer
-overflow fix in cfg80211, an fix for an uninitialized variable in
-rtlwifi, a fix for a DMA-related WARNING in ath9k, a fix for a DMA hang
-in ath9k, and two iwlegacy fixes backported from prior iwlagn fixes, one
-for avoiding interruptible waits and another for avoiding a command
-queue timeout.
+In the RT kernel we depend greatly on this meaning as it is a way to
+know if we should manually bound a task to a CPU or not. But I've spent
+the last two days hunting down a bug where things were not working as
+they should.
 
-Please let me know if there are problems!
+Finally, I added a simple patch to mainline (one I think should be
+accepted permanently), the one at the bottom of this email. And it
+triggered the following:
 
-Thanks,
 
-John
+------------[ cut here ]------------
+WARNING: at /home/rostedt/work/git/linux-trace.git/kernel/sched.c:2236 set_task_cpu+0x137/0x1ba()
+Hardware name: Precision WorkStation 470    
+Modules linked in:
+Pid: 3, comm: ksoftirqd/0 Tainted: G        W   3.1.0-rc7-test+ #262
+Call Trace:
+ [<ffffffff81051728>] warn_slowpath_common+0x83/0x9b
+ [<ffffffff8105175a>] warn_slowpath_null+0x1a/0x1c
+ [<ffffffff8104af0f>] set_task_cpu+0x137/0x1ba
+ [<ffffffff810824aa>] ? lock_acquire+0x118/0x151
+ [<ffffffff8104b846>] ? try_to_wake_up+0x2e/0x1db
+ [<ffffffff8104b91d>] try_to_wake_up+0x105/0x1db
+ [<ffffffff8103d4ae>] ? complete+0x1e/0x4f
+ [<ffffffff8104ba05>] default_wake_function+0x12/0x14
+ [<ffffffff8103c1c6>] __wake_up_common+0x4d/0x83
+ [<ffffffff8103d4ae>] ? complete+0x1e/0x4f
+ [<ffffffff8103d4cc>] complete+0x3c/0x4f
+ [<ffffffff81238789>] blk_end_sync_rq+0x31/0x35
+ [<ffffffff81238758>] ? blk_rq_map_user+0x210/0x210
+ [<ffffffff8123408b>] blk_finish_request+0x206/0x238
+ [<ffffffff815022ec>] ? _raw_spin_lock_irqsave+0x51/0x5c
+ [<ffffffff812345bf>] ? blk_end_bidi_request+0x32/0x5d
+ [<ffffffff812345cd>] blk_end_bidi_request+0x40/0x5d
+ [<ffffffff81234624>] blk_end_request+0x10/0x12
+ [<ffffffff8131af7b>] scsi_io_completion+0x1dc/0x4d7
+ [<ffffffff81312f0c>] scsi_finish_command+0xe4/0xed
+ [<ffffffff8131ace2>] scsi_softirq_done+0x109/0x112
+ [<ffffffff8123964d>] blk_done_softirq+0x7f/0x93
+ [<ffffffff81057c4c>] __do_softirq+0x107/0x24a
+ [<ffffffff81057e4a>] run_ksoftirqd+0xbb/0x1b4
+ [<ffffffff81057d8f>] ? __do_softirq+0x24a/0x24a
+ [<ffffffff8106ea8e>] kthread+0x9f/0xa7
+ [<ffffffff81505977>] ? sub_preempt_count+0x95/0xa8
+ [<ffffffff8150a084>] kernel_thread_helper+0x4/0x10
+ [<ffffffff81502e78>] ? retint_restore_args+0x13/0x13
+ [<ffffffff8106e9ef>] ? __init_kthread_worker+0x5a/0x5a
+ [<ffffffff8150a080>] ? gs_change+0x13/0x13
+---[ end trace 5a5d197966b56a53 ]---
+migrating bounded task kworker/u:1:49
 
----
 
-The following changes since commit d93dc5c4478c1fd5de85a3e8aece9aad7bbae044:
 
-  Linux 3.1-rc7 (2011-09-21 16:58:15 -0700)
+I looked at the task that it tried to migrate, and it happened to be the
+kworker thread! Then I went into kernel/workqueue.c and found this
+nonsense:
 
-are available in the git repository at:
-  git://git.infradead.org/users/linville/wireless.git for-davem
+	if (bind && !on_unbound_cpu)
+		kthread_bind(worker->task, gcwq->cpu);
+	else {
+		worker->task->flags |= PF_THREAD_BOUND;
+		if (on_unbound_cpu)
+			worker->flags |= WORKER_UNBOUND;
+	}
 
-Johannes Berg (1):
-      iwlagn: fix dangling scan request
+Nothing but the scheduler and kthread_bind() has the right to set the
+PF_THREAD_BOUND flag. Especially when the thread IS NOT BOUNDED!!!!!!
 
-John W. Linville (1):
-      Merge branch 'master' of git://git.infradead.org/users/linville/wireless into for-davem
+I don't go around and stick my hand down your pants to play with your
+flags! Don't stick your hand in ours and play with our flags!
 
-Jouni Malinen (1):
-      cfg80211: Fix validation of AKM suites
+WTF is the workqueue code setting the PF_THREAD_BOUND flag manually?
+Talk about fragile coupling! You just made this flag meaningless. Don't
+do that.
 
-Larry Finger (1):
-      rtlwifi: rtl8192cu: Fix unitialized struct
-
-Mohammed Shafi Shajakhan (1):
-      ath9k: Fix a dma warning/memory leak
-
-Rajkumar Manoharan (1):
-      ath9k_hw: Fix Rx DMA stuck for AR9003 chips
-
-Stanislaw Gruszka (2):
-      iwlegacy: fix command queue timeout
-      iwlegacy: do not use interruptible waits
-
- .../net/wireless/ath/ath9k/ar9003_2p2_initvals.h   |    2 +-
- drivers/net/wireless/ath/ath9k/recv.c              |   10 ++++++-
- drivers/net/wireless/iwlegacy/iwl-core.c           |    4 +-
- drivers/net/wireless/iwlegacy/iwl-hcmd.c           |    2 +-
- drivers/net/wireless/iwlegacy/iwl-tx.c             |    4 ++-
- drivers/net/wireless/iwlegacy/iwl3945-base.c       |    8 ++--
- drivers/net/wireless/iwlegacy/iwl4965-base.c       |   10 +++---
- drivers/net/wireless/iwlwifi/iwl-scan.c            |   30 ++++++++++---------
- drivers/net/wireless/rtlwifi/usb.c                 |    1 +
- net/wireless/nl80211.c                             |    5 ++-
- 10 files changed, 46 insertions(+), 30 deletions(-)
-
-diff --git a/drivers/net/wireless/ath/ath9k/ar9003_2p2_initvals.h b/drivers/net/wireless/ath/ath9k/ar9003_2p2_initvals.h
-index 2339728..3e69c63 100644
---- a/drivers/net/wireless/ath/ath9k/ar9003_2p2_initvals.h
-+++ b/drivers/net/wireless/ath/ath9k/ar9003_2p2_initvals.h
-@@ -1514,7 +1514,7 @@ static const u32 ar9300_2p2_mac_core[][2] = {
- 	{0x00008258, 0x00000000},
- 	{0x0000825c, 0x40000000},
- 	{0x00008260, 0x00080922},
--	{0x00008264, 0x9bc00010},
-+	{0x00008264, 0x9d400010},
- 	{0x00008268, 0xffffffff},
- 	{0x0000826c, 0x0000ffff},
- 	{0x00008270, 0x00000000},
-diff --git a/drivers/net/wireless/ath/ath9k/recv.c b/drivers/net/wireless/ath/ath9k/recv.c
-index 9a48501..4c21f8c 100644
---- a/drivers/net/wireless/ath/ath9k/recv.c
-+++ b/drivers/net/wireless/ath/ath9k/recv.c
-@@ -205,14 +205,22 @@ static void ath_rx_remove_buffer(struct ath_softc *sc,
+Sorry but I just wasted two whole days because of this nonsense and I'm
+not particularly happy about it.
  
- static void ath_rx_edma_cleanup(struct ath_softc *sc)
- {
-+	struct ath_hw *ah = sc->sc_ah;
-+	struct ath_common *common = ath9k_hw_common(ah);
- 	struct ath_buf *bf;
- 
- 	ath_rx_remove_buffer(sc, ATH9K_RX_QUEUE_LP);
- 	ath_rx_remove_buffer(sc, ATH9K_RX_QUEUE_HP);
- 
- 	list_for_each_entry(bf, &sc->rx.rxbuf, list) {
--		if (bf->bf_mpdu)
-+		if (bf->bf_mpdu) {
-+			dma_unmap_single(sc->dev, bf->bf_buf_addr,
-+					common->rx_bufsize,
-+					DMA_BIDIRECTIONAL);
- 			dev_kfree_skb_any(bf->bf_mpdu);
-+			bf->bf_buf_addr = 0;
-+			bf->bf_mpdu = NULL;
-+		}
+-- Steve
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+
+diff --git a/kernel/sched.c b/kernel/sched.c
+index ec5f472..682a90c 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -2233,6 +2233,9 @@ void set_task_cpu(struct task_struct *p, unsigned int new_cpu)
+ 	if (task_cpu(p) != new_cpu) {
+ 		p->se.nr_migrations++;
+ 		perf_sw_event(PERF_COUNT_SW_CPU_MIGRATIONS, 1, NULL, 0);
++		if (WARN_ON(p->flags & PF_THREAD_BOUND))
++			printk(KERN_WARNING "migrating bounded task %s:%d\n",
++			       p->comm, p->pid);
  	}
  
- 	INIT_LIST_HEAD(&sc->rx.rxbuf);
-diff --git a/drivers/net/wireless/iwlegacy/iwl-core.c b/drivers/net/wireless/iwlegacy/iwl-core.c
-index 35cd253..e5971fe 100644
---- a/drivers/net/wireless/iwlegacy/iwl-core.c
-+++ b/drivers/net/wireless/iwlegacy/iwl-core.c
-@@ -937,7 +937,7 @@ void iwl_legacy_irq_handle_error(struct iwl_priv *priv)
- 					&priv->contexts[IWL_RXON_CTX_BSS]);
- #endif
- 
--	wake_up_interruptible(&priv->wait_command_queue);
-+	wake_up(&priv->wait_command_queue);
- 
- 	/* Keep the restart process from trying to send host
- 	 * commands by clearing the INIT status bit */
-@@ -1746,7 +1746,7 @@ int iwl_legacy_force_reset(struct iwl_priv *priv, bool external)
- 
- 	/* Set the FW error flag -- cleared on iwl_down */
- 	set_bit(STATUS_FW_ERROR, &priv->status);
--	wake_up_interruptible(&priv->wait_command_queue);
-+	wake_up(&priv->wait_command_queue);
- 	/*
- 	 * Keep the restart process from trying to send host
- 	 * commands by clearing the INIT status bit
-diff --git a/drivers/net/wireless/iwlegacy/iwl-hcmd.c b/drivers/net/wireless/iwlegacy/iwl-hcmd.c
-index 62b4b09..ce1fc9f 100644
---- a/drivers/net/wireless/iwlegacy/iwl-hcmd.c
-+++ b/drivers/net/wireless/iwlegacy/iwl-hcmd.c
-@@ -167,7 +167,7 @@ int iwl_legacy_send_cmd_sync(struct iwl_priv *priv, struct iwl_host_cmd *cmd)
- 		goto out;
- 	}
- 
--	ret = wait_event_interruptible_timeout(priv->wait_command_queue,
-+	ret = wait_event_timeout(priv->wait_command_queue,
- 			!test_bit(STATUS_HCMD_ACTIVE, &priv->status),
- 			HOST_COMPLETE_TIMEOUT);
- 	if (!ret) {
-diff --git a/drivers/net/wireless/iwlegacy/iwl-tx.c b/drivers/net/wireless/iwlegacy/iwl-tx.c
-index 4fff995..ef9e268 100644
---- a/drivers/net/wireless/iwlegacy/iwl-tx.c
-+++ b/drivers/net/wireless/iwlegacy/iwl-tx.c
-@@ -625,6 +625,8 @@ iwl_legacy_tx_cmd_complete(struct iwl_priv *priv, struct iwl_rx_mem_buffer *rxb)
- 	cmd = txq->cmd[cmd_index];
- 	meta = &txq->meta[cmd_index];
- 
-+	txq->time_stamp = jiffies;
-+
- 	pci_unmap_single(priv->pci_dev,
- 			 dma_unmap_addr(meta, mapping),
- 			 dma_unmap_len(meta, len),
-@@ -645,7 +647,7 @@ iwl_legacy_tx_cmd_complete(struct iwl_priv *priv, struct iwl_rx_mem_buffer *rxb)
- 		clear_bit(STATUS_HCMD_ACTIVE, &priv->status);
- 		IWL_DEBUG_INFO(priv, "Clearing HCMD_ACTIVE for command %s\n",
- 			       iwl_legacy_get_cmd_string(cmd->hdr.cmd));
--		wake_up_interruptible(&priv->wait_command_queue);
-+		wake_up(&priv->wait_command_queue);
- 	}
- 
- 	/* Mark as unmapped */
-diff --git a/drivers/net/wireless/iwlegacy/iwl3945-base.c b/drivers/net/wireless/iwlegacy/iwl3945-base.c
-index 795826a..66ee1562 100644
---- a/drivers/net/wireless/iwlegacy/iwl3945-base.c
-+++ b/drivers/net/wireless/iwlegacy/iwl3945-base.c
-@@ -841,7 +841,7 @@ static void iwl3945_rx_card_state_notif(struct iwl_priv *priv,
- 		wiphy_rfkill_set_hw_state(priv->hw->wiphy,
- 				test_bit(STATUS_RF_KILL_HW, &priv->status));
- 	else
--		wake_up_interruptible(&priv->wait_command_queue);
-+		wake_up(&priv->wait_command_queue);
- }
- 
- /**
-@@ -2269,7 +2269,7 @@ static void iwl3945_alive_start(struct iwl_priv *priv)
- 	iwl3945_reg_txpower_periodic(priv);
- 
- 	IWL_DEBUG_INFO(priv, "ALIVE processing complete.\n");
--	wake_up_interruptible(&priv->wait_command_queue);
-+	wake_up(&priv->wait_command_queue);
- 
- 	return;
- 
-@@ -2300,7 +2300,7 @@ static void __iwl3945_down(struct iwl_priv *priv)
- 	iwl_legacy_clear_driver_stations(priv);
- 
- 	/* Unblock any waiting calls */
--	wake_up_interruptible_all(&priv->wait_command_queue);
-+	wake_up_all(&priv->wait_command_queue);
- 
- 	/* Wipe out the EXIT_PENDING status bit if we are not actually
- 	 * exiting the module */
-@@ -2853,7 +2853,7 @@ static int iwl3945_mac_start(struct ieee80211_hw *hw)
- 
- 	/* Wait for START_ALIVE from ucode. Otherwise callbacks from
- 	 * mac80211 will not be run successfully. */
--	ret = wait_event_interruptible_timeout(priv->wait_command_queue,
-+	ret = wait_event_timeout(priv->wait_command_queue,
- 			test_bit(STATUS_READY, &priv->status),
- 			UCODE_READY_TIMEOUT);
- 	if (!ret) {
-diff --git a/drivers/net/wireless/iwlegacy/iwl4965-base.c b/drivers/net/wireless/iwlegacy/iwl4965-base.c
-index 1433466..aa0c253 100644
---- a/drivers/net/wireless/iwlegacy/iwl4965-base.c
-+++ b/drivers/net/wireless/iwlegacy/iwl4965-base.c
-@@ -576,7 +576,7 @@ static void iwl4965_rx_card_state_notif(struct iwl_priv *priv,
- 		wiphy_rfkill_set_hw_state(priv->hw->wiphy,
- 			test_bit(STATUS_RF_KILL_HW, &priv->status));
- 	else
--		wake_up_interruptible(&priv->wait_command_queue);
-+		wake_up(&priv->wait_command_queue);
- }
- 
- /**
-@@ -926,7 +926,7 @@ static void iwl4965_irq_tasklet(struct iwl_priv *priv)
- 		handled |= CSR_INT_BIT_FH_TX;
- 		/* Wake up uCode load routine, now that load is complete */
- 		priv->ucode_write_complete = 1;
--		wake_up_interruptible(&priv->wait_command_queue);
-+		wake_up(&priv->wait_command_queue);
- 	}
- 
- 	if (inta & ~handled) {
-@@ -1795,7 +1795,7 @@ static void iwl4965_alive_start(struct iwl_priv *priv)
- 	iwl4965_rf_kill_ct_config(priv);
- 
- 	IWL_DEBUG_INFO(priv, "ALIVE processing complete.\n");
--	wake_up_interruptible(&priv->wait_command_queue);
-+	wake_up(&priv->wait_command_queue);
- 
- 	iwl_legacy_power_update_mode(priv, true);
- 	IWL_DEBUG_INFO(priv, "Updated power mode\n");
-@@ -1828,7 +1828,7 @@ static void __iwl4965_down(struct iwl_priv *priv)
- 	iwl_legacy_clear_driver_stations(priv);
- 
- 	/* Unblock any waiting calls */
--	wake_up_interruptible_all(&priv->wait_command_queue);
-+	wake_up_all(&priv->wait_command_queue);
- 
- 	/* Wipe out the EXIT_PENDING status bit if we are not actually
- 	 * exiting the module */
-@@ -2266,7 +2266,7 @@ int iwl4965_mac_start(struct ieee80211_hw *hw)
- 
- 	/* Wait for START_ALIVE from Run Time ucode. Otherwise callbacks from
- 	 * mac80211 will not be run successfully. */
--	ret = wait_event_interruptible_timeout(priv->wait_command_queue,
-+	ret = wait_event_timeout(priv->wait_command_queue,
- 			test_bit(STATUS_READY, &priv->status),
- 			UCODE_READY_TIMEOUT);
- 	if (!ret) {
-diff --git a/drivers/net/wireless/iwlwifi/iwl-scan.c b/drivers/net/wireless/iwlwifi/iwl-scan.c
-index dd6937e..77e528f 100644
---- a/drivers/net/wireless/iwlwifi/iwl-scan.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-scan.c
-@@ -405,31 +405,33 @@ int iwl_mac_hw_scan(struct ieee80211_hw *hw,
- 
- 	mutex_lock(&priv->mutex);
- 
--	if (test_bit(STATUS_SCANNING, &priv->status) &&
--	    priv->scan_type != IWL_SCAN_NORMAL) {
--		IWL_DEBUG_SCAN(priv, "Scan already in progress.\n");
--		ret = -EAGAIN;
--		goto out_unlock;
--	}
--
--	/* mac80211 will only ask for one band at a time */
--	priv->scan_request = req;
--	priv->scan_vif = vif;
--
- 	/*
- 	 * If an internal scan is in progress, just set
- 	 * up the scan_request as per above.
- 	 */
- 	if (priv->scan_type != IWL_SCAN_NORMAL) {
--		IWL_DEBUG_SCAN(priv, "SCAN request during internal scan\n");
-+		IWL_DEBUG_SCAN(priv,
-+			       "SCAN request during internal scan - defer\n");
-+		priv->scan_request = req;
-+		priv->scan_vif = vif;
- 		ret = 0;
--	} else
-+	} else {
-+		priv->scan_request = req;
-+		priv->scan_vif = vif;
-+		/*
-+		 * mac80211 will only ask for one band at a time
-+		 * so using channels[0] here is ok
-+		 */
- 		ret = iwl_scan_initiate(priv, vif, IWL_SCAN_NORMAL,
- 					req->channels[0]->band);
-+		if (ret) {
-+			priv->scan_request = NULL;
-+			priv->scan_vif = NULL;
-+		}
-+	}
- 
- 	IWL_DEBUG_MAC80211(priv, "leave\n");
- 
--out_unlock:
- 	mutex_unlock(&priv->mutex);
- 
- 	return ret;
-diff --git a/drivers/net/wireless/rtlwifi/usb.c b/drivers/net/wireless/rtlwifi/usb.c
-index 8b1cef0..4bf3cf4 100644
---- a/drivers/net/wireless/rtlwifi/usb.c
-+++ b/drivers/net/wireless/rtlwifi/usb.c
-@@ -863,6 +863,7 @@ static void _rtl_usb_tx_preprocess(struct ieee80211_hw *hw, struct sk_buff *skb,
- 	u8 tid = 0;
- 	u16 seq_number = 0;
- 
-+	memset(&tcb_desc, 0, sizeof(struct rtl_tcb_desc));
- 	if (ieee80211_is_auth(fc)) {
- 		RT_TRACE(rtlpriv, COMP_SEND, DBG_DMESG, ("MAC80211_LINKING\n"));
- 		rtl_ips_nic_on(hw);
-diff --git a/net/wireless/nl80211.c b/net/wireless/nl80211.c
-index e83e7fe..ea40d54 100644
---- a/net/wireless/nl80211.c
-+++ b/net/wireless/nl80211.c
-@@ -4113,9 +4113,12 @@ static int nl80211_crypto_settings(struct cfg80211_registered_device *rdev,
- 		if (len % sizeof(u32))
- 			return -EINVAL;
- 
-+		if (settings->n_akm_suites > NL80211_MAX_NR_AKM_SUITES)
-+			return -EINVAL;
-+
- 		memcpy(settings->akm_suites, data, len);
- 
--		for (i = 0; i < settings->n_ciphers_pairwise; i++)
-+		for (i = 0; i < settings->n_akm_suites; i++)
- 			if (!nl80211_valid_akm_suite(settings->akm_suites[i]))
- 				return -EINVAL;
- 	}
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+ 	__set_task_cpu(p, new_cpu);
+
+
