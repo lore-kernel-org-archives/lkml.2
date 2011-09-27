@@ -1,43 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753114Ab1I0U3z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 16:29:55 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:59851 "EHLO ogre.sisk.pl"
+	id S1753391Ab1I0Ua1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 16:30:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15686 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752308Ab1I0U3x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 16:29:53 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Luming Yu <luming.yu@gmail.com>
-Subject: Re: PME via interrupt or SCI mechanism?
-Date: Tue, 27 Sep 2011 22:32:06 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>, linux-acpi@vger.kernel.org,
-        linux-pci@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        robert.moore@intel.com, Shaohua Li <shaohua.li@intel.com>
-References: <20110912171003.GA7939@xanatos> <20110926234835.GA9551@xanatos> <CAJRGBZxTakHn-BQTrLXsccriGAOERDox0pORMP+vrazzqAA-kQ@mail.gmail.com>
-In-Reply-To: <CAJRGBZxTakHn-BQTrLXsccriGAOERDox0pORMP+vrazzqAA-kQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201109272232.06389.rjw@sisk.pl>
+	id S1753059Ab1I0UaU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 16:30:20 -0400
+From: Mark Salter <msalter@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arch@vger.kernel.org, Mark Salter <msalter@redhat.com>
+Subject: [PATCH v3 02/24] fixed generic page.h for non-zero PAGE_OFFSET
+Date: Tue, 27 Sep 2011 16:29:43 -0400
+Message-Id: <1317155405-26235-3-git-send-email-msalter@redhat.com>
+In-Reply-To: <1317155405-26235-1-git-send-email-msalter@redhat.com>
+References: <1317155405-26235-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, September 27, 2011, Luming Yu wrote:
-> On Tue, Sep 27, 2011 at 7:48 AM, Sarah Sharp
-> <sarah.a.sharp@linux.intel.com> wrote:
-> >
-> > Ok.  Do you have suggestions for any tests I can run or debugging
-> > statements to add?  I'm really not an ACPI expert and I've been
-> > basically fumbling in the dark.
-> 
-> The following patch from Shaohua might be useful to help debugging the problem.
-> http://kerneltrap.org/mailarchive/linux-usb/2009/7/30/6251245
+asm-generic/page.h had several problems when used with a non-zero PAGE_OFFSET.
+This patch adds a default ARCH_PFN_OFFSET and fixes the __va, __pa, and
+pfn_valid macros to work with non-zero PAGE_OFFSETs.
 
-You probably don't realize that the patch is neither applicable nor
-relevant any more, but it would be nice to check that before
-recommending it to anyone, don't you think?
+Signed-off-by: Mark Salter <msalter@redhat.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+---
+ include/asm-generic/page.h |   10 +++++++---
+ 1 files changed, 7 insertions(+), 3 deletions(-)
 
-Rafael
+diff --git a/include/asm-generic/page.h b/include/asm-generic/page.h
+index 75fec18..f376db2 100644
+--- a/include/asm-generic/page.h
++++ b/include/asm-generic/page.h
+@@ -71,10 +71,14 @@ extern unsigned long memory_end;
+ #define PAGE_OFFSET		(0)
+ #endif
+ 
++#ifndef ARCH_PFN_OFFSET
++#define ARCH_PFN_OFFSET		(PAGE_OFFSET >> PAGE_SHIFT)
++#endif
++
+ #ifndef __ASSEMBLY__
+ 
+-#define __va(x) ((void *)((unsigned long)(x) + PAGE_OFFSET))
+-#define __pa(x) ((unsigned long) (x) - PAGE_OFFSET)
++#define __va(x) ((void *)((unsigned long) (x)))
++#define __pa(x) ((unsigned long) (x))
+ 
+ #define virt_to_pfn(kaddr)	(__pa(kaddr) >> PAGE_SHIFT)
+ #define pfn_to_virt(pfn)	__va((pfn) << PAGE_SHIFT)
+@@ -86,7 +90,7 @@ extern unsigned long memory_end;
+ #define page_to_phys(page)      ((dma_addr_t)page_to_pfn(page) << PAGE_SHIFT)
+ #endif
+ 
+-#define pfn_valid(pfn)		((pfn) < max_mapnr)
++#define pfn_valid(pfn)		((pfn) >= ARCH_PFN_OFFSET && ((pfn) - ARCH_PFN_OFFSET) < max_mapnr)
+ 
+ #define	virt_addr_valid(kaddr)	(((void *)(kaddr) >= (void *)PAGE_OFFSET) && \
+ 				((void *)(kaddr) < (void *)memory_end))
+-- 
+1.7.6.2
+
