@@ -1,68 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752815Ab1I0Dpi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 23:45:38 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:56190 "EHLO
+	id S1752582Ab1I0EAd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 00:00:33 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:52450 "EHLO
 	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751979Ab1I0Dpg (ORCPT
+	with ESMTP id S1750705Ab1I0EAc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 23:45:36 -0400
-Date: Tue, 27 Sep 2011 13:45:34 +1000
+	Tue, 27 Sep 2011 00:00:32 -0400
+Date: Tue, 27 Sep 2011 14:00:21 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: linux-next: manual merge of the mfd tree with the arm tree
-Message-Id: <20110927134534.af4c3bdad6918111a2e03034@canb.auug.org.au>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, Linus <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: linux-next: state of the trees
+Message-Id: <20110927140021.e69d2cb3c47f07a6aeeafee0@canb.auug.org.au>
 X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__27_Sep_2011_14_00_21_+1000_U75zEbRk4ZnpsioK"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samuel,
+--Signature=_Tue__27_Sep_2011_14_00_21_+1000_U75zEbRk4ZnpsioK
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Today's linux-next merge of the mfd tree got a conflict in
-arch/arm/mach-u300/include/mach/irqs.h between commit cc890cd78acd ("ARM:
-7083/1: rewrite U300 GPIO to use gpiolib") from the  tree and commit
-e085f9a2e27d ("mfd: Delete ab3550 driver") from the mfd tree.
+Hi all,
 
-I fixed it up (I think - see below) anc can carry the fix as necessary.
--- 
+I have just done a quick check of the trees that are merged into
+linux-next each day.  Of the 171 trees that represent work for the next
+merge window, 89 only exist on kernel.org machines.  This means
+(obviously) that I have not had updates to those 89 trees since the
+kernel.org servers were taken down.
+
+--=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-diff --cc arch/arm/mach-u300/include/mach/irqs.h
-index d270fea,a6867b1..0000000
---- a/arch/arm/mach-u300/include/mach/irqs.h
-+++ b/arch/arm/mach-u300/include/mach/irqs.h
-@@@ -106,25 -106,9 +106,19 @@@
-  #define IRQ_U300_NFIF			45
-  #define IRQ_U300_NFIF2			46
-  #define IRQ_U300_SYSCON_PLL_LOCK	47
- -#define U300_NR_IRQS			48
- +#define U300_VIC_IRQS_END		48
-  #endif
-  
- -#define NR_IRQS U300_NR_IRQS
- +/* Maximum 8*7 GPIO lines */
- +#ifdef CONFIG_GPIO_U300
- +#define IRQ_U300_GPIO_BASE		(U300_VIC_IRQS_END)
- +#define IRQ_U300_GPIO_END		(IRQ_U300_GPIO_BASE + 56)
- +#else
- +#define IRQ_U300_GPIO_END		(U300_VIC_IRQS_END)
- +#endif
- +
-- /* Optional AB3550 mixsig chip */
-- #ifdef CONFIG_AB3550_CORE
-- #define IRQ_AB3550_BASE			(IRQ_U300_GPIO_END)
-- #define IRQ_AB3550_END			(IRQ_AB3550_BASE + 38)
-- #else
- +#define IRQ_AB3550_END			(IRQ_U300_GPIO_END)
-- #endif
- +
- +#define NR_IRQS				(IRQ_AB3550_END)
-  
-  #endif
+--Signature=_Tue__27_Sep_2011_14_00_21_+1000_U75zEbRk4ZnpsioK
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOgUpVAAoJEDMEi1NhKgbsaWkH/ijjAxU2yFRJnZMBZy81+GfZ
+OquQLhqRLuTxMv5sW5zhOnFTBHfzFAPzPhLTBaVW8u7A6F76St2RUegtWO5+y47o
+5yImjYWZrPW5C0wLs4IeL6VH2vHDnWhZJwKMfN77ZbqofGIS9gg1h2V7lR3VaKmz
+/lGhqrMI0HTL/pu1f4TuU5xzfm/xDDUL3noqaXg4E7DEX8OxhllWln2UweJwEYne
+gFoS3mv3JIILXczT319yMX+gOUbtbgb9HiCKa9huvr1Kev2LAXxmDmDP2sV9FPVM
+d3MqCaM2cZDO793KCaFNoixzQTS5Ys4ZjV2CN4ZddtpR/2Roqiyg/hYm1anptpE=
+=80tc
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__27_Sep_2011_14_00_21_+1000_U75zEbRk4ZnpsioK--
