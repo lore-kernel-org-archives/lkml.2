@@ -1,77 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751688Ab1I0QUQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 12:20:16 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:25440 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355Ab1I0QUP convert rfc822-to-8bit (ORCPT
+	id S1751502Ab1I0QaZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 12:30:25 -0400
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:44458 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750997Ab1I0QaY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 12:20:15 -0400
+	Tue, 27 Sep 2011 12:30:24 -0400
+Message-ID: <4E81FA1E.3060702@xenotime.net>
+Date: Tue, 27 Sep 2011 09:30:22 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
 MIME-Version: 1.0
-Message-ID: <f42e2a83-15f6-4767-a7df-8a23ceac239e@default>
-Date: Tue, 27 Sep 2011 09:19:37 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: Konrad Wilk <konrad.wilk@oracle.com>, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xensource.com, Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: RE: [PATCH v2] xen: Fix selfballooning and ensure it doesn't go too
- far
-References: <2de59b55-4ecc-4155-8709-f8b0f5e012bc@default
- 4E81F278.5040107@citrix.com>
-In-Reply-To: <4E81F278.5040107@citrix.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6557.5001]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A02020A.4E81F7BA.01CA,ss=1,re=0.000,fgs=0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        pm list <linux-pm@lists.linux-foundation.org>
+Subject: Re: linux-next: Tree for Sept 27 (power/qos.c)
+References: <20110927173530.ceae2e49537a81da65287bf3@canb.auug.org.au>
+In-Reply-To: <20110927173530.ceae2e49537a81da65287bf3@canb.auug.org.au>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: David Vrabel [mailto:david.vrabel@citrix.com]
-> Subject: Re: [PATCH v2] xen: Fix selfballooning and ensure it doesn't go too far
-> 
-> On 27/09/11 16:03, Dan Magenheimer wrote:
-> > Note: This patch is also now in a git tree at:
-> >
-> > git://oss.oracle.com/git/djm/tmem.git#selfballoon-fix-v2
-> >
-> > The balloon driver's "current_pages" is very different from
-> > totalram_pages.  Self-ballooning needs to be driven by
-> > the latter.
+On 09/27/2011 12:35 AM, Stephen Rothwell wrote:
+> Hi all,
 
-Hi David --
 
-Thanks for the feedback!
- 
-> I don't think this part of the change makes any difference. It looks like it
-> rearranges the maths without changing the end result (other than
-> slightly increasing the rate of change).
-> I think this (partial, untested) patch is equivalent:
+When CONFIG_PM_SLEEP is not enabled:
 
-Actually it does.  The key difference is the parameter to the
-call to balloon_set_new_target.  The math in my patch is
-done in "internal" math (e.g. kernel-relevant variables)
-and the math in your patch is done in "external" math (e.g.
-Xen-relevant variables).  Balloon_set_new_target requires
-"external" math, so I convert at the point of call.
- 
-> The sysfs file isn't documented (but then neither are any of the other
-> (self-)balloon driver sysfs files).
+drivers/base/power/qos.c:231:29: error: 'struct dev_pm_info' has no member named 'entry'
 
-Yep.  This is a bug fix, so I'm not trying to fix all the sins
-of others (and myself).  Since you are familiar with the
-meaning of all the core balloon driver variables exposed through
-sysfs, perhaps you might submit a patch to document them
-and/or suggest which ones should be in debugfs instead?
- 
-> I don't think "safety_margin" is the right name.  Perhaps,
-> "min_reservation_ratio" or something like that?
 
-Yeah, I struggled with the name because the concept that
-the variable implements is pretty complex. I finally decided
-on safety_margin because I think it will draw the attention
-of a user who has reason to look for it.  I don't expect that
-it will be used anyway, but it is there in case I am wrong.
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
