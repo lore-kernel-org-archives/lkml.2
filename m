@@ -1,67 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753416Ab1I0Uhz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 16:37:55 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:55344 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752574Ab1I0Uhy (ORCPT
+	id S1753797Ab1I0Unz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 16:43:55 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:64943 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752435Ab1I0Uny (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 16:37:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <1316725066.29447.16.camel@Joe-Laptop>
-References: <1316642115-20029-1-git-send-email-jim.cromie@gmail.com>
- <1316642115-20029-26-git-send-email-jim.cromie@gmail.com> <1316725066.29447.16.camel@Joe-Laptop>
-From: Jim Cromie <jim.cromie@gmail.com>
-Date: Tue, 27 Sep 2011 14:37:23 -0600
-Message-ID: <CAJfuBxxZdNRZAix8ARUjqjNzrQeG2iVea_rMYKysOaX4c=Avig@mail.gmail.com>
-Subject: Re: [PATCH 25/26] dynamic_debug: add pr_fmt_dbg() for dynamic_pr_debug
-To: Joe Perches <joe@perches.com>
-Cc: jbaron@redhat.com, bart.vanassche@gmail.com, greg@kroah.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 27 Sep 2011 16:43:54 -0400
+X-Authority-Analysis: v=1.1 cv=cSzO76bR5tCkfUT9bEmBgR3d7VUusRLeq08eKGxa4EU= c=1 sm=0 a=nYxVPzDsqTAA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=x77DCSsq2-aAeOrOkk0A:9 a=PUjeQqilurYA:10 a=Qdi1pGxtxa15EKAP:21 a=Uzhjlar3dUlqi9DW:21 a=17wjrS5wAhQaEczCPkpxpQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.83.30
+Subject: Re: [PATCH v1 1/2] PM/runtime: introduce trace points for tracing
+ rpm_* functions
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: tom.leiming@gmail.com, stern@rowland.harvard.edu,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        mingo@redhat.com, fweisbec@gmail.com,
+        Ming Lei <ming.lei@canonical.com>
+Date: Tue, 27 Sep 2011 16:43:52 -0400
+In-Reply-To: <201109272236.03683.rjw@sisk.pl>
+References: <1317118338-4040-1-git-send-email-tom.leiming@gmail.com>
+	 <201109272229.23250.rjw@sisk.pl>
+	 <1317155512.26514.36.camel@gandalf.stny.rr.com>
+	 <201109272236.03683.rjw@sisk.pl>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3- 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1317156234.26514.39.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 22, 2011 at 2:57 PM, Joe Perches <joe@perches.com> wrote:
-> On Wed, 2011-09-21 at 15:55 -0600, jim.cromie@gmail.com wrote:
->> dynamic_pr_debug can add module, function, file, and line selectively,
-> []
->> diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
-> []
->> +#ifndef pr_fmt_dbg
->> +#define pr_fmt_dbg(fmt) fmt
->> +#endif
-> []
->> +#ifndef pr_fmt_dbg
->> +#define pr_fmt_dbg(fmt) pr_fmt(fmt)
->> +#endif
->
-> This might better be placed in printk.h just
-> once.
->
+On Tue, 2011-09-27 at 22:36 +0200, Rafael J. Wysocki wrote:
 
-yes.  it seems to work smoothly.
-Only minor annoyance is having to put local defns
-above the #includes, but thats no different than previously.
+> > 	TP_printk("%pS:%s ret=%d", (void *)__entry->ip, __get_str(name),
+> > 		__entry->ret)
+> > 
+> > try that.
+> 
+> Well, that certainly will work, but is it the right fix?
+
+Hehe, yes!  The pS means to take a pointer and return the string version
+of the address. Like "schedule+0x3a". __entry->ip is the address of the
+function that called it __THIS_IP__ but we want to convert that into a
+string name.
+
+We use ip because both perf and trace-cmd should be smart enough to
+parse it too. As they both store the kallsyms into the data file.
+
+The (void *) is used because pS wants a pointer, and we stored the
+address as an unsigned long.
+
+-- Steve
 
 
-> I think pr_fmt_debug is better than pr_fmt_dbg
-> because the function/macro is named pr_debug.
-
-Ok.  Done.
-
-> Maybe add all the pr_<level> variants too because
-> some like to prefix __func__ to pr_err but not pr_info
-> etc.
->
-
-Done. Only wrinkle is wrt pr_warning() vs pr_warn()
-I added to your suggestion:
-+#define pr_fmt_warn pr_fmt_warning
-
-the imperfection is that user has 4 combos of warn/warning
-rather than 2 pairs, but the latter seems less defensible.
-
-revised patch forthcoming shortly
-seems I havent mastered reply-to with git send-email :-}
