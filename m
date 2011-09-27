@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752420Ab1I0V7T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 17:59:19 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:60078 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751502Ab1I0V7S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 17:59:18 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [PATCH] PCI / PM: Remove unnecessary error variable from acpi_dev_run_wake()
-Date: Wed, 28 Sep 2011 00:01:28 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        linux-pci@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
+	id S1752765Ab1I0V7r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 17:59:47 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:56572 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751890Ab1I0V7q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 17:59:46 -0400
+Date: Tue, 27 Sep 2011 22:57:22 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: "lkml, " <linux-kernel@vger.kernel.org>,
+        Denis Turischev <denis@compulab.co.il>,
+        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Subject: Re: Serial issues with EG20T (Topcliff) PCH uarts
+Message-ID: <20110927225722.54936878@lxorguk.ukuu.org.uk>
+In-Reply-To: <4E820FA8.8050604@linux.intel.com>
+References: <4E820FA8.8050604@linux.intel.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201109280001.28857.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+> Using the ti_usb_3410_5052 driver with modified vendor/product strings, I am
+> able to get ttyUSB0 on my host and open it in minicom:
+> 
+> $ sudo modprobe ti_usb_3410_5052 vendor_3410=0x0451 product_3410=0x5053
+> $ minicom -D /dev/ttyUSB0
 
-The error variable in acpi_dev_run_wake() is not really used, so
-remove it.
+Please submit those idents to GregKH for the ti_usb driver.
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- drivers/pci/pci-acpi.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+> Can anyone offer up some ideas on what I might try to get:
+> 
+> 1) the getty working
+> 2) the earlier kernel messages to appear
+> 3) syslinux working
+> 
+> over the serial port?
 
-Index: linux/drivers/pci/pci-acpi.c
-===================================================================
---- linux.orig/drivers/pci/pci-acpi.c
-+++ linux/drivers/pci/pci-acpi.c
-@@ -282,7 +282,6 @@ static int acpi_dev_run_wake(struct devi
- {
- 	struct acpi_device *dev;
- 	acpi_handle handle;
--	int error = -ENODEV;
- 
- 	if (!device_run_wake(phys_dev))
- 		return -EINVAL;
-@@ -302,7 +301,7 @@ static int acpi_dev_run_wake(struct devi
- 		acpi_disable_wakeup_device_power(dev);
- 	}
- 
--	return error;
-+	return 0;
- }
- 
- static void acpi_pci_propagate_run_wake(struct pci_bus *bus, bool enable)
+It may depend a lot on the port. If it boots in PCI D3 (power saved) then
+it's going to be fun. Otherwise forcing the address of the port ought to
+do the trick.
+
+See	
+	console=uart8250,io 0xb060,115200n8
+
+although it's polled so you may want to drop the speed a bit!
+
+netconsole might also be useful to debug the early serial problems !
+
+No idea for syslinux.
+
+Alan
