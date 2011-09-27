@@ -1,129 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751865Ab1I0QoH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 12:44:07 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:55518 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750997Ab1I0QoF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 12:44:05 -0400
+	id S1751933Ab1I0QoK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 12:44:10 -0400
+Received: from claw.goop.org ([74.207.240.146]:35189 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750997Ab1I0QoI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 12:44:08 -0400
+Message-ID: <4E81FD52.50106@goop.org>
+Date: Tue, 27 Sep 2011 09:44:02 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-In-Reply-To: <20110927150555.GF20588@ponder.secretlab.ca>
-References: <20110921120148.4A81E9D401D@zog.reactivated.net>
-	<20110921124936.GA25620@sirena.org.uk>
-	<CAMLZHHQZnajC4e12MjaK3W8WcAB2ZB+6L=5kS5BBFZF=+YWicQ@mail.gmail.com>
-	<20110921131637.GF4374@opensource.wolfsonmicro.com>
-	<CAMLZHHTJaOddSj00g0-WpFQu6pUTqizKjKaQF9hLrhceEMhY1Q@mail.gmail.com>
-	<20110927150555.GF20588@ponder.secretlab.ca>
-Date: Tue, 27 Sep 2011 17:44:04 +0100
-X-Google-Sender-Auth: vypXzlBqE9Lj1dC3iXN1wscZwts
-Message-ID: <CAMLZHHQU-eMAtvBQJj6+WrMjkWWA+ET=z5NdQCEgXxh=m10d3Q@mail.gmail.com>
-Subject: Re: [PATCH 1/3] mfd: allow mfd_cell association with device tree node
-From: Daniel Drake <dsd@laptop.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>, sameo@linux.intel.com,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        dilinger@queued.net
-Content-Type: multipart/mixed; boundary=20cf30050d72c597e604adeefb8d
+To: Stephan Diestelhorst <stephan.diestelhorst@amd.com>
+CC: xen-devel@lists.xensource.com, "H. Peter Anvin" <hpa@zytor.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Nick Piggin <npiggin@kernel.dk>,
+        KVM <kvm@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Avi Kivity <avi@redhat.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [Xen-devel] [PATCH 00/10] [PATCH RFC V2] Paravirtualized ticketlocks
+References: <cover.1315878463.git.jeremy.fitzhardinge@citrix.com> <3300108.XQUp9Wrktc@chlor>
+In-Reply-To: <3300108.XQUp9Wrktc@chlor>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---20cf30050d72c597e604adeefb8d
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On 09/27/2011 02:34 AM, Stephan Diestelhorst wrote:
+> On Wednesday 14 September 2011, 17:31:32 Jeremy Fitzhardinge wrote:
+>> This series replaces the existing paravirtualized spinlock mechanism
+>> with a paravirtualized ticketlock mechanism.
+> [...] 
+>> The unlock code is very straightforward:
+>> 	prev = *lock;
+>> 	__ticket_unlock_release(lock);
+>> 	if (unlikely(__ticket_in_slowpath(lock)))
+>> 		__ticket_unlock_slowpath(lock, prev);
+>>
+>> which generates:
+>> 	push   %rbp
+>> 	mov    %rsp,%rbp
+>>
+>>     movzwl (%rdi),%esi
+>> 	addb   $0x2,(%rdi)
+>>     movzwl (%rdi),%eax
+>> 	testb  $0x1,%ah
+>> 	jne    1f
+>>
+>> 	pop    %rbp
+>> 	retq   
+>>
+>> 	### SLOWPATH START
+>> 1:	movzwl (%rdi),%edx
+>> 	movzbl %dh,%ecx
+>> 	mov    %edx,%eax
+>> 	and    $-2,%ecx	# clear TICKET_SLOWPATH_FLAG
+>> 	mov    %cl,%dh
+>> 	cmp    %dl,%cl	# test to see if lock is uncontended
+>> 	je     3f
+>>
+>> 2:	movzbl %dl,%esi
+>> 	callq  *__ticket_unlock_kick	# kick anyone waiting
+>> 	pop    %rbp
+>> 	retq   
+>>
+>> 3:	lock cmpxchg %dx,(%rdi)	# use cmpxchg to safely write back flag
+>> 	jmp    2b
+>> 	### SLOWPATH END
+> [...]
+>> Thoughts? Comments? Suggestions?
+> You have a nasty data race in your code that can cause a losing
+> acquirer to sleep forever, because its setting the TICKET_SLOWPATH flag
+> can race with the lock holder releasing the lock.
+>
+> I used the code for the slow path from the GIT repo.
+>
+> Let me try to point out an interleaving:
+>
+> Lock is held by one thread, contains 0x0200.
+>
+> _Lock holder_                   _Acquirer_
+>                                 mov    $0x200,%eax
+>                                 lock xadd %ax,(%rdi)
+>                                 // ax:= 0x0200, lock:= 0x0400
+>                                 ...
+>                                 // this guy spins for a while, reading
+>                                 // the lock
+>                                 ...
+> //trying to free the lock
+> movzwl (%rdi),%esi (esi:=0x0400)
+> addb   $0x2,(%rdi) (LOCAL copy of lock is now: 0x0402)
+> movzwl (%rdi),%eax (local forwarding from previous store: eax := 0x0402)
+> testb  $0x1,%ah    (no wakeup of anybody)
+> jne    1f
+>
+>                                 callq  *__ticket_lock_spinning
+>                                   ...
+>                                   // __ticket_enter_slowpath(lock)
+>                                   lock or (%rdi), $0x100
+>                                   // (global view of lock := 0x0500)
+> 						...
+>                                   ACCESS_ONCE(lock->tickets.head) == want
+>                                   // (reads 0x00)
+> 						...
+>                                   xen_poll_irq(irq); // goes to sleep
+> ...
+> [addb   $0x2,(%rdi)]
+> // (becomes globally visible only now! global view of lock := 0x0502)
+> ...
+>
+> Your code is reusing the (just about) safe version of unlocking a
+> spinlock without understanding the effect that close has on later
+> memory ordering. It may work on CPUs that cannot do narrow -> wide
+> store to load forwarding and have to make the addb store visible
+> globally. This is an implementation artifact of specific uarches, and
+> you mustn't rely on it, since our specified memory model allows looser
+> behaviour.
 
-On Tue, Sep 27, 2011 at 4:05 PM, Grant Likely <grant.likely@secretlab.ca> w=
-rote:
-> What is a hard rule is that the code creating the children needs to
-> know what the binding is and populate the child's of_node
-> appropriately. =A0Similarly, the child driver needs to know something
-> about the kinds of nodes it will be passed (can be tested by the
-> compatible property).
+Ah, thanks for this observation.  I've seen this bug before when I
+didn't pay attention to the unlock W vs flag R ordering at all, and I
+was hoping the aliasing would be sufficient - and certainly this seems
+to have been OK on my Intel systems.  But you're saying that it will
+fail on current AMD systems?  Have you tested this, or is this just from
+code analysis (which I agree with after reviewing the ordering rules in
+the Intel manual).
 
-Thanks for your input.
-Here is an updated patch which takes account of this hard rule.
+> Since you want to get that addb out to global memory before the second
+> read, either use a LOCK prefix for it, add an MFENCE between addb and
+> movzwl, or use a LOCKed instruction that will have a fencing effect
+> (e.g., to top-of-stack)between addb and movzwl.
 
-It uses the dynamic mfd cell creation like before. Mark isn't keen on
-this, but its how the driver works already, so I don't think it should
-be a blocker. I don't know how else we can make the mfd framework meet
-Grant's hard rule.
+Hm.  I don't really want to do any of those because it will probably
+have a significant effect on the unlock performance; I was really trying
+to avoid adding any more locked instructions.  A previous version of the
+code had an mfence in here, but I hit on the idea of using aliasing to
+get the ordering I want - but overlooked the possible effect of store
+forwarding.
 
-However, it does take Mark's suggestion into account that the mfd
-should have some clear representation in the device tree. For us it
-already did have (naturally), but this wasn't reflected in my earlier
-patch. It is now - the location of the vx855-gpio node is based on
-finding the mfd node and going from there.
+I guess it comes down to throwing myself on the efficiency of some kind
+of fence instruction.  I guess an lfence would be sufficient; is that
+any more efficient than a full mfence?  At least I can make it so that
+its only present when pv ticket locks are actually in use, so it won't
+affect the native case.
 
-Comments?
-It obviously needs to be tested and split up into individual patches -
-I'll do that shortly if this doesn't get shot down.
+Could you give me a pointer to AMD's description of the ordering rules?
 
-cheers
-Daniel
-
---20cf30050d72c597e604adeefb8d
-Content-Type: text/plain; charset=US-ASCII; name="vx855-2.txt"
-Content-Disposition: attachment; filename="vx855-2.txt"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gt348bga0
-
-ZGlmZiAtLWdpdCBhL2RyaXZlcnMvZ3Bpby9ncGlvLXZ4ODU1LmMgYi9kcml2ZXJzL2dwaW8vZ3Bp
-by12eDg1NS5jCmluZGV4IGVmNWFhYmQuLjJjMzAwYzkgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvZ3Bp
-by9ncGlvLXZ4ODU1LmMKKysrIGIvZHJpdmVycy9ncGlvL2dwaW8tdng4NTUuYwpAQCAtMjAxLDcg
-KzIwMSw4IEBAIHN0YXRpYyBjb25zdCBjaGFyICp2eDg1NWdwaW9fbmFtZXNbTlJfVlg4NTVfR1Bd
-ID0gewogCSJWWDg1NV9HUElPMTIiLCAiVlg4NTVfR1BJTzEzIiwgIlZYODU1X0dQSU8xNCIKIH07
-CiAKLXN0YXRpYyB2b2lkIHZ4ODU1Z3Bpb19ncGlvX3NldHVwKHN0cnVjdCB2eDg1NV9ncGlvICp2
-ZykKK3N0YXRpYyB2b2lkIHZ4ODU1Z3Bpb19ncGlvX3NldHVwKHN0cnVjdCB2eDg1NV9ncGlvICp2
-ZywKKwkJCQkgc3RydWN0IHBsYXRmb3JtX2RldmljZSAqcGRldikKIHsKIAlzdHJ1Y3QgZ3Bpb19j
-aGlwICpjID0gJnZnLT5ncGlvOwogCkBAIC0yMTYsNiArMjE3LDEwIEBAIHN0YXRpYyB2b2lkIHZ4
-ODU1Z3Bpb19ncGlvX3NldHVwKHN0cnVjdCB2eDg1NV9ncGlvICp2ZykKIAljLT5uZ3BpbyA9IE5S
-X1ZYODU1X0dQOwogCWMtPmNhbl9zbGVlcCA9IDA7CiAJYy0+bmFtZXMgPSB2eDg1NWdwaW9fbmFt
-ZXM7CisKKyNpZmRlZiBDT05GSUdfT0ZfR1BJTworCWMtPm9mX25vZGUgPSBwZGV2LT5kZXYub2Zf
-bm9kZTsKKyNlbmRpZgogfQogCiAvKiBUaGlzIHBsYXRmb3JtIGRldmljZSBpcyBvcmRpbmFyaWx5
-IHJlZ2lzdGVyZWQgYnkgdGhlIHZ4ODU1IG1mZCBkcml2ZXIgKi8KQEAgLTI2NCw3ICsyNjksNyBA
-QCBzdGF0aWMgX19kZXZpbml0IGludCB2eDg1NWdwaW9fcHJvYmUoc3RydWN0IHBsYXRmb3JtX2Rl
-dmljZSAqcGRldikKIAllbHNlCiAJCXZnLT5ncG9fcmVzZXJ2ZWQgPSB0cnVlOwogCi0Jdng4NTVn
-cGlvX2dwaW9fc2V0dXAodmcpOworCXZ4ODU1Z3Bpb19ncGlvX3NldHVwKHZnLCBwZGV2KTsKIAog
-CXJldCA9IGdwaW9jaGlwX2FkZCgmdmctPmdwaW8pOwogCWlmIChyZXQpIHsKZGlmZiAtLWdpdCBh
-L2RyaXZlcnMvbWZkL21mZC1jb3JlLmMgYi9kcml2ZXJzL21mZC9tZmQtY29yZS5jCmluZGV4IDA5
-MDI1MjMuLjdkMjJkY2QgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvbWZkL21mZC1jb3JlLmMKKysrIGIv
-ZHJpdmVycy9tZmQvbWZkLWNvcmUuYwpAQCAtODcsNiArODcsNyBAQCBzdGF0aWMgaW50IG1mZF9h
-ZGRfZGV2aWNlKHN0cnVjdCBkZXZpY2UgKnBhcmVudCwgaW50IGlkLAogCQlnb3RvIGZhaWxfZGV2
-aWNlOwogCiAJcGRldi0+ZGV2LnBhcmVudCA9IHBhcmVudDsKKwlwZGV2LT5kZXYub2Zfbm9kZSA9
-IGNlbGwtPm9mX25vZGU7CiAKIAlpZiAoY2VsbC0+cGRhdGFfc2l6ZSkgewogCQlyZXQgPSBwbGF0
-Zm9ybV9kZXZpY2VfYWRkX2RhdGEocGRldiwKZGlmZiAtLWdpdCBhL2RyaXZlcnMvbWZkL3Z4ODU1
-LmMgYi9kcml2ZXJzL21mZC92eDg1NS5jCmluZGV4IGQ2OTg3MDMuLmQyMjM4NDAgMTAwNjQ0Ci0t
-LSBhL2RyaXZlcnMvbWZkL3Z4ODU1LmMKKysrIGIvZHJpdmVycy9tZmQvdng4NTUuYwpAQCAtMzAs
-NiArMzAsNyBAQAogI2luY2x1ZGUgPGxpbnV4L3BsYXRmb3JtX2RldmljZS5oPgogI2luY2x1ZGUg
-PGxpbnV4L3BjaS5oPgogI2luY2x1ZGUgPGxpbnV4L21mZC9jb3JlLmg+CisjaW5jbHVkZSA8bGlu
-dXgvb2YuaD4KIAogLyogb2Zmc2V0IGludG8gcGNpIGNvbmZpZyBzcGFjZSBpbmRpY2F0aW5nIHRo
-ZSAxNmJpdCByZWdpc3RlciBjb250YWluaW5nCiAgKiB0aGUgcG93ZXIgbWFuYWdlbWVudCBJTyBz
-cGFjZSBiYXNlICovCkBAIC03Miw2ICs3MywyNyBAQCBzdGF0aWMgc3RydWN0IG1mZF9jZWxsIHZ4
-ODU1X2NlbGxzW10gPSB7CiAJfSwKIH07CiAKK3N0YXRpYyBfX2RldmluaXQgdm9pZCB2eDg1NV9z
-ZXRfb2Zfbm9kZXMoc3RydWN0IHBjaV9kZXYgKnBkZXYpCit7CisjaWZkZWYgQ09ORklHX09GCisJ
-c3RydWN0IGRldmljZV9ub2RlICppc2Ffbm9kZTsKKwlzdHJ1Y3QgZGV2aWNlX25vZGUgKmNoaWxk
-OworCisJaXNhX25vZGUgPSBvZl9maW5kX2NvbXBhdGlibGVfbm9kZShOVUxMLCBOVUxMLCAidmlh
-LHZ4ODU1LWlzYSIpOworCXBkZXYtPmRldi5vZl9ub2RlID0gaXNhX25vZGU7CisKKwlpZiAoIWlz
-YV9ub2RlKQorCQlyZXR1cm47CisKKwlmb3JfZWFjaF9jaGlsZF9vZl9ub2RlKGlzYV9ub2RlLCBj
-aGlsZCkgeworCQlpZiAob2ZfZGV2aWNlX2lzX2NvbXBhdGlibGUoY2hpbGQsICJ2aWEsdng4NTUt
-Z3BpbyIpKSB7CisJCQl2eDg1NV9jZWxsc1swXS5vZl9ub2RlID0gY2hpbGQ7CisJCQlicmVhazsK
-KwkJfQorCX0KKyNlbmRpZgorfQorCiBzdGF0aWMgX19kZXZpbml0IGludCB2eDg1NV9wcm9iZShz
-dHJ1Y3QgcGNpX2RldiAqcGRldiwKIAkJCQkgY29uc3Qgc3RydWN0IHBjaV9kZXZpY2VfaWQgKmlk
-KQogewpAQCAtOTAsNiArMTEyLDggQEAgc3RhdGljIF9fZGV2aW5pdCBpbnQgdng4NTVfcHJvYmUo
-c3RydWN0IHBjaV9kZXYgKnBkZXYsCiAJCWdvdG8gb3V0OwogCX0KIAorCXZ4ODU1X3NldF9vZl9u
-b2RlcyhwZGV2KTsKKwogCS8qIG1hc2sgb3V0IHRoZSBsb3dlc3Qgc2V2ZW4gYml0cywgYXMgdGhl
-eSBhcmUgYWx3YXlzIHplcm8sIGJ1dAogCSAqIGhhcmR3YXJlIHJldHVybnMgdGhlbSBhcyAweDAx
-ICovCiAJZ3Bpb19pb19vZmZzZXQgJj0gMHhmZjgwOwpkaWZmIC0tZ2l0IGEvaW5jbHVkZS9saW51
-eC9tZmQvY29yZS5oIGIvaW5jbHVkZS9saW51eC9tZmQvY29yZS5oCmluZGV4IDRlNzYxNjMuLjli
-ODM2ZjkgMTAwNjQ0Ci0tLSBhL2luY2x1ZGUvbGludXgvbWZkL2NvcmUuaAorKysgYi9pbmNsdWRl
-L2xpbnV4L21mZC9jb3JlLmgKQEAgLTE1LDYgKzE1LDcgQEAKICNkZWZpbmUgTUZEX0NPUkVfSAog
-CiAjaW5jbHVkZSA8bGludXgvcGxhdGZvcm1fZGV2aWNlLmg+CisjaW5jbHVkZSA8bGludXgvb2Yu
-aD4KIAogLyoKICAqIFRoaXMgc3RydWN0IGRlc2NyaWJlcyB0aGUgTUZEIHBhcnQgKCJjZWxsIiku
-CkBAIC0zNyw2ICszOCw5IEBAIHN0cnVjdCBtZmRfY2VsbCB7CiAJdm9pZAkJCSpwbGF0Zm9ybV9k
-YXRhOwogCXNpemVfdAkJCXBkYXRhX3NpemU7CiAKKwkvKiBhc3NvY2lhdGlvbiB3aXRoIGRldmlj
-ZSB0cmVlIG5vZGUgKG9wdGlvbmFsKSAqLworCXN0cnVjdCBkZXZpY2Vfbm9kZQkqb2Zfbm9kZTsK
-KwogCS8qCiAJICogVGhlc2UgcmVzb3VyY2VzIGNhbiBiZSBzcGVjaWZpZWQgcmVsYXRpdmUgdG8g
-dGhlIHBhcmVudCBkZXZpY2UuCiAJICogRm9yIGFjY2Vzc2luZyBoYXJkd2FyZSB5b3Ugc2hvdWxk
-IHVzZSByZXNvdXJjZXMgZnJvbSB0aGUgcGxhdGZvcm0gZGV2Cg==
---20cf30050d72c597e604adeefb8d--
+Thanks,
+    J
