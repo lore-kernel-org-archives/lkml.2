@@ -1,51 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752240Ab1I0RFc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 13:05:32 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:33487 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751713Ab1I0RFb (ORCPT
+	id S1752248Ab1I0RHE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 13:07:04 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:55671 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751790Ab1I0RHD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 13:05:31 -0400
-Date: Tue, 27 Sep 2011 18:01:34 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Huajun Li <huajun.li.lee@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        netdev <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: Re: Question about memory leak detector giving false positive
- report for net/core/flow.c
-Message-ID: <20110927170133.GN14237@e102109-lin.cambridge.arm.com>
-References: <CA+v9cxadZzWr35Q9RFzVgk_NZsbZ8PkVLJNxjBAMpargW9Lm4Q@mail.gmail.com>
- <1317054774.6363.9.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <20110926165024.GA21617@e102109-lin.cambridge.arm.com>
- <1317066395.2796.11.camel@edumazet-laptop>
- <CA+v9cxYzWJScCa2mMoEovq3WULSZYQaq6EjoRV7SQUjr0L_RiQ@mail.gmail.com>
- <1317102918.2796.22.camel@edumazet-laptop>
+	Tue, 27 Sep 2011 13:07:03 -0400
+X-IronPort-AV: E=Sophos;i="4.68,450,1312171200"; 
+   d="scan'208";a="164838942"
+Message-ID: <4E820316.6070101@citrix.com>
+Date: Tue, 27 Sep 2011 18:08:38 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110818 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1317102918.2796.22.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: Konrad Wilk <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+Subject: Re: [PATCH v2] xen: Fix selfballooning and ensure it doesn't go too
+ far
+References: <2de59b55-4ecc-4155-8709-f8b0f5e012bc@default 4E81F278.5040107@citrix.com> <f42e2a83-15f6-4767-a7df-8a23ceac239e@default>
+In-Reply-To: <f42e2a83-15f6-4767-a7df-8a23ceac239e@default>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 27, 2011 at 06:55:18AM +0100, Eric Dumazet wrote:
-> Yes, it was not a patch, but the general idea for Catalin ;)
+On 27/09/11 17:19, Dan Magenheimer wrote:
+>> From: David Vrabel [mailto:david.vrabel@citrix.com]
+>> Subject: Re: [PATCH v2] xen: Fix selfballooning and ensure it doesn't go too far
+>>
+>> On 27/09/11 16:03, Dan Magenheimer wrote:
+>>> Note: This patch is also now in a git tree at:
+>>>
+>>> git://oss.oracle.com/git/djm/tmem.git#selfballoon-fix-v2
+>>>
+>>> The balloon driver's "current_pages" is very different from
+>>> totalram_pages.  Self-ballooning needs to be driven by
+>>> the latter.
 > 
-> You hit the fact that same zone (embedded percpu space) is now in a
-> mixed state.
+> Hi David --
 > 
-> In current kernels, the embedded percpu zone is already known by
-> kmemleak, but with a large granularity. kmemleak is not aware of
-> individual allocations/freeing in this large zone.
+> Thanks for the feedback!
+>  
+>> I don't think this part of the change makes any difference. It looks like it
+>> rearranges the maths without changing the end result (other than
+>> slightly increasing the rate of change).
+>> I think this (partial, untested) patch is equivalent:
+> 
+> Actually it does.
 
-It looks like this comes via the bootmem allocator. Maybe we could
-simply call kmemleak_free() on the embedded percpu space and just track
-those via the standard percpu API.
+Really?
 
--- 
-Catalin
+Both patched and unpatched the new target, S, is (eventually):
+
+   S = V + F + C - T
+
+where V is vm_committed_as, F is frontswap_curr_pages(), C is
+balloon_stats.current_pages, and T = totalram_pages.
+
+Perhaps the refactoring of the maths is a good idea (I don't think so)
+but it shouldn't be part of this patch and it shouldn't be described as
+a fix.
+
+David
