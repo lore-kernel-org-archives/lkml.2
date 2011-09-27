@@ -1,154 +1,438 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752622Ab1I0Rzr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 13:55:47 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:32950 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751928Ab1I0Rzq (ORCPT
+	id S1752585Ab1I0R4x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 13:56:53 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:34929 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752175Ab1I0R4w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 13:55:46 -0400
-Date: Tue, 27 Sep 2011 21:54:53 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: kernel-hardening@lists.openwall.com,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>
-Cc: linux-mm@kvack.org, Kees Cook <kees@ubuntu.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Valdis.Kletnieks@vt.edu,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Alan Cox <alan@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] mm: restrict access to slab files under procfs and
- sysfs
-Message-ID: <20110927175453.GA3393@albatros>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 27 Sep 2011 13:56:52 -0400
+X-Authority-Analysis: v=1.1 cv=agqPq5NoKwAPC9P66H7dbYUCjxvmT73as08i4x3aqAA= c=1 sm=0 a=qESY86PY70oA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=meVymXHHAAAA:8 a=EgT1AKJx1_iBBSMqwtQA:9 a=19ZcLvjRT7GOcwytZoMA:7 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.83.30
+Subject: [PATCH][RT] ring-buffer: Convert reader_lock from raw_spin_lock
+ into spin_lock
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Clark Williams <clark@redhat.com>
+Date: Tue, 27 Sep 2011 13:56:50 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3- 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1317146210.26514.33.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Historically /proc/slabinfo and files under /sys/kernel/slab/* have
-world read permissions and are accessible to the world.  slabinfo
-contains rather private information related both to the kernel and
-userspace tasks.  Depending on the situation, it might reveal either
-private information per se or information useful to make another
-targeted attack.  Some examples of what can be learned by
-reading/watching for /proc/slabinfo entries:
+The reader_lock is mostly taken in normal context with interrupts enabled.
+But because ftrace_dump() can happen anywhere, it is used as a spin lock
+and in some cases a check to in_nmi() is performed to determine if the
+ftrace_dump() was initiated from an NMI and if it is, the lock is not taken.
 
-1) dentry (and different *inode*) number might reveal other processes fs
-activity.  The number of dentry "active objects" doesn't strictly show
-file count opened/touched by a process, however, there is a good
-correlation between them.  The patch "proc: force dcache drop on
-unauthorized access" relies on the privacy of dentry count.
+But having the lock as a raw_spin_lock() causes issues with the real-time
+kernel as the lock is held during allocation and freeing of the buffer.
+As memory locks convert into mutexes, keeping the reader_lock as a spin_lock
+causes problems.
 
-2) different inode entries might reveal the same information as (1), but
-these are more fine granted counters.  If a filesystem is mounted in a
-private mount point (or even a private namespace) and fs type differs from
-other mounted fs types, fs activity in this mount point/namespace is
-revealed.  If there is a single ecryptfs mount point, the whole fs
-activity of a single user is revealed.  Number of files in ecryptfs
-mount point is a private information per se.
+Converting the reader_lock is not straight forward as we must still deal
+with the ftrace_dump() happening not only from an NMI but also from
+true interrupt context in PREEPMT_RT.
 
-3) fuse_* reveals number of files / fs activity of a user in a user
-private mount point.  It is approx. the same severity as ecryptfs
-infoleak in (2).
+Two wrapper functions are created to take and release the reader lock:
 
-4) sysfs_dir_cache similar to (2) reveals devices' addition/removal,
-which can be otherwise hidden by "chmod 0700 /sys/".  With 0444 slabinfo
-the precise number of sysfs files is known to the world.
+  int read_buffer_lock(cpu_buffer, unsigned long *flags)
+  void read_buffer_unlock(cpu_buffer, unsigned long flags, int locked)
 
-5) buffer_head might reveal some kernel activity.  With other
-information leaks an attacker might identify what specific kernel
-routines generate buffer_head activity.
+The read_buffer_lock() returns 1 if it actually took the lock, disables
+interrupts and updates the flags. The only time it returns 0 is in the
+case of a ftrace_dump() happening in an unsafe context.
 
-6) *kmalloc* infoleaks are very situational.  Attacker should watch for
-the specific kmalloc size entry and filter the noise related to the unrelated
-kernel activity.  If an attacker has relatively silent victim system, he
-might get rather precise counters.
+The read_buffer_unlock() checks the return of locked and will simply
+unlock the spin lock if it was successfully taken.
 
-Additional information sources might significantly increase the slabinfo
-infoleak benefits.  E.g. if an attacker knows that the processes
-activity on the system is very low (only core daemons like syslog and
-cron), he may run setxid binaries / trigger local daemon activity /
-trigger network services activity / await sporadic cron jobs activity
-/ etc. and get rather precise counters for fs and network activity of
-these privileged tasks, which is unknown otherwise.
+Instead of just having this in specific cases that the NMI might call
+into, all instances of the reader_lock is converted to the wrapper
+functions to make this a bit simpler to read and less error prone.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
 
-Also hiding slabinfo and /sys/kernel/slab/* is a one step to complicate
-exploitation of kernel heap overflows (and possibly, other bugs).  The
-related discussion:
 
-http://thread.gmane.org/gmane.linux.kernel/1108378
-
-
-To keep compatibility with old permission model where non-root
-monitoring daemon could watch for kernel memleaks though slabinfo one
-should do:
-
-    groupadd slabinfo
-    usermod -a -G slabinfo $MONITOR_USER
-
-And add the following commands to init scripts (to mountall.conf in
-Ubuntu's upstart case):
-
-    chmod g+r /proc/slabinfo /sys/kernel/slab/*/*
-    chgrp slabinfo /proc/slabinfo /sys/kernel/slab/*/*
-
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-Reviewed-by: Kees Cook <kees@ubuntu.com>
-Reviewed-by: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: Christoph Lameter <cl@gentwo.org>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>
-CC: Valdis.Kletnieks@vt.edu
-CC: Linus Torvalds <torvalds@linux-foundation.org>
-CC: David Rientjes <rientjes@google.com>
-CC: Alan Cox <alan@linux.intel.com>
----
- mm/slab.c |    2 +-
- mm/slub.c |    7 ++++---
- 2 files changed, 5 insertions(+), 4 deletions(-)
-
---
-diff --git a/mm/slab.c b/mm/slab.c
-index 6d90a09..10a0052 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -4584,7 +4584,7 @@ static const struct file_operations proc_slabstats_operations = {
- 
- static int __init slab_proc_init(void)
- {
--	proc_create("slabinfo",S_IWUSR|S_IRUGO,NULL,&proc_slabinfo_operations);
-+	proc_create("slabinfo",S_IWUSR|S_IRUSR,NULL,&proc_slabinfo_operations);
- #ifdef CONFIG_DEBUG_SLAB_LEAK
- 	proc_create("slab_allocators", 0, NULL, &proc_slabstats_operations);
- #endif
-diff --git a/mm/slub.c b/mm/slub.c
-index 9f662d7..527a66e 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -4412,11 +4412,12 @@ struct slab_attribute {
- };
- 
- #define SLAB_ATTR_RO(_name) \
--	static struct slab_attribute _name##_attr = __ATTR_RO(_name)
-+	static struct slab_attribute _name##_attr = \
-+	__ATTR(_name, 0400, _name##_show, NULL)
- 
- #define SLAB_ATTR(_name) \
- 	static struct slab_attribute _name##_attr =  \
--	__ATTR(_name, 0644, _name##_show, _name##_store)
-+	__ATTR(_name, 0600, _name##_show, _name##_store)
- 
- static ssize_t slab_size_show(struct kmem_cache *s, char *buf)
- {
-@@ -5257,7 +5258,7 @@ static const struct file_operations proc_slabinfo_operations = {
- 
- static int __init slab_proc_init(void)
- {
--	proc_create("slabinfo", S_IRUGO, NULL, &proc_slabinfo_operations);
-+	proc_create("slabinfo", S_IRUSR, NULL, &proc_slabinfo_operations);
- 	return 0;
+Index: linux-rt.git/kernel/trace/ring_buffer.c
+===================================================================
+--- linux-rt.git.orig/kernel/trace/ring_buffer.c
++++ linux-rt.git/kernel/trace/ring_buffer.c
+@@ -478,7 +478,7 @@ struct ring_buffer_per_cpu {
+ 	int				cpu;
+ 	atomic_t			record_disabled;
+ 	struct ring_buffer		*buffer;
+-	raw_spinlock_t			reader_lock;	/* serialize readers */
++	spinlock_t			reader_lock;	/* serialize readers */
+ 	arch_spinlock_t			lock;
+ 	struct lock_class_key		lock_key;
+ 	struct list_head		*pages;
+@@ -1040,6 +1040,46 @@ static int rb_allocate_pages(struct ring
+ 	return -ENOMEM;
  }
- module_init(slab_proc_init);
+ 
++static inline int ok_to_lock(void)
++{
++	if (in_nmi())
++		return 0;
++#ifdef CONFIG_PREEMPT_RT_FULL
++	if (in_atomic())
++		return 0;
++#endif
++	return 1;
++}
++
++static int
++read_buffer_lock(struct ring_buffer_per_cpu *cpu_buffer,
++		 unsigned long *flags)
++{
++	/*
++	 * If an NMI die dumps out the content of the ring buffer
++	 * do not grab locks. We also permanently disable the ring
++	 * buffer too. A one time deal is all you get from reading
++	 * the ring buffer from an NMI.
++	 */
++	if (!ok_to_lock()) {
++		if (spin_trylock_irqsave(&cpu_buffer->reader_lock, *flags))
++			return 1;
++		printk("Dumping ring buffer from unsafe context\n");
++		printk("Disabling new ring buffer writes\n");
++		tracing_off_permanent();
++		return 0;
++	}
++	spin_lock_irqsave(&cpu_buffer->reader_lock, *flags);
++	return 1;
++}
++
++static void
++read_buffer_unlock(struct ring_buffer_per_cpu *cpu_buffer,
++		   unsigned long flags, int locked)
++{
++	if (locked)
++		spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
++}
+ static struct ring_buffer_per_cpu *
+ rb_allocate_cpu_buffer(struct ring_buffer *buffer, int cpu)
+ {
+@@ -1055,7 +1095,7 @@ rb_allocate_cpu_buffer(struct ring_buffe
+ 
+ 	cpu_buffer->cpu = cpu;
+ 	cpu_buffer->buffer = buffer;
+-	raw_spin_lock_init(&cpu_buffer->reader_lock);
++	spin_lock_init(&cpu_buffer->reader_lock);
+ 	lockdep_set_class(&cpu_buffer->reader_lock, buffer->reader_lock_key);
+ 	cpu_buffer->lock = (arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
+ 
+@@ -1250,9 +1290,11 @@ rb_remove_pages(struct ring_buffer_per_c
+ {
+ 	struct buffer_page *bpage;
+ 	struct list_head *p;
++	unsigned long flags;
+ 	unsigned i;
++	int locked;
+ 
+-	raw_spin_lock_irq(&cpu_buffer->reader_lock);
++	locked = read_buffer_lock(cpu_buffer, &flags);
+ 	rb_head_page_deactivate(cpu_buffer);
+ 
+ 	for (i = 0; i < nr_pages; i++) {
+@@ -1270,7 +1312,7 @@ rb_remove_pages(struct ring_buffer_per_c
+ 	rb_check_pages(cpu_buffer);
+ 
+ out:
+-	raw_spin_unlock_irq(&cpu_buffer->reader_lock);
++	read_buffer_unlock(cpu_buffer, flags, locked);
+ }
+ 
+ static void
+@@ -1279,9 +1321,11 @@ rb_insert_pages(struct ring_buffer_per_c
+ {
+ 	struct buffer_page *bpage;
+ 	struct list_head *p;
++	unsigned long flags;
+ 	unsigned i;
++	int locked;
+ 
+-	raw_spin_lock_irq(&cpu_buffer->reader_lock);
++	locked = read_buffer_lock(cpu_buffer, &flags);
+ 	rb_head_page_deactivate(cpu_buffer);
+ 
+ 	for (i = 0; i < nr_pages; i++) {
+@@ -1296,7 +1340,7 @@ rb_insert_pages(struct ring_buffer_per_c
+ 	rb_check_pages(cpu_buffer);
+ 
+ out:
+-	raw_spin_unlock_irq(&cpu_buffer->reader_lock);
++	read_buffer_unlock(cpu_buffer, flags, locked);
+ }
+ 
+ /**
+@@ -2784,15 +2828,16 @@ void ring_buffer_iter_reset(struct ring_
+ {
+ 	struct ring_buffer_per_cpu *cpu_buffer;
+ 	unsigned long flags;
++	int locked;
+ 
+ 	if (!iter)
+ 		return;
+ 
+ 	cpu_buffer = iter->cpu_buffer;
+ 
+-	raw_spin_lock_irqsave(&cpu_buffer->reader_lock, flags);
++	locked = read_buffer_lock(cpu_buffer, &flags);
+ 	rb_iter_reset(iter);
+-	raw_spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
++	read_buffer_unlock(cpu_buffer, flags, locked);
+ }
+ EXPORT_SYMBOL_GPL(ring_buffer_iter_reset);
+ 
+@@ -3210,21 +3255,6 @@ rb_iter_peek(struct ring_buffer_iter *it
+ }
+ EXPORT_SYMBOL_GPL(ring_buffer_iter_peek);
+ 
+-static inline int rb_ok_to_lock(void)
+-{
+-	/*
+-	 * If an NMI die dumps out the content of the ring buffer
+-	 * do not grab locks. We also permanently disable the ring
+-	 * buffer too. A one time deal is all you get from reading
+-	 * the ring buffer from an NMI.
+-	 */
+-	if (likely(!in_nmi()))
+-		return 1;
+-
+-	tracing_off_permanent();
+-	return 0;
+-}
+-
+ /**
+  * ring_buffer_peek - peek at the next event to be read
+  * @buffer: The ring buffer to read
+@@ -3242,22 +3272,17 @@ ring_buffer_peek(struct ring_buffer *buf
+ 	struct ring_buffer_per_cpu *cpu_buffer = buffer->buffers[cpu];
+ 	struct ring_buffer_event *event;
+ 	unsigned long flags;
+-	int dolock;
++	int locked;
+ 
+ 	if (!cpumask_test_cpu(cpu, buffer->cpumask))
+ 		return NULL;
+ 
+-	dolock = rb_ok_to_lock();
+  again:
+-	local_irq_save(flags);
+-	if (dolock)
+-		raw_spin_lock(&cpu_buffer->reader_lock);
++	locked = read_buffer_lock(cpu_buffer, &flags);
+ 	event = rb_buffer_peek(cpu_buffer, ts, lost_events);
+ 	if (event && event->type_len == RINGBUF_TYPE_PADDING)
+ 		rb_advance_reader(cpu_buffer);
+-	if (dolock)
+-		raw_spin_unlock(&cpu_buffer->reader_lock);
+-	local_irq_restore(flags);
++	read_buffer_unlock(cpu_buffer, flags, locked);
+ 
+ 	if (event && event->type_len == RINGBUF_TYPE_PADDING)
+ 		goto again;
+@@ -3279,11 +3304,12 @@ ring_buffer_iter_peek(struct ring_buffer
+ 	struct ring_buffer_per_cpu *cpu_buffer = iter->cpu_buffer;
+ 	struct ring_buffer_event *event;
+ 	unsigned long flags;
++	int locked;
+ 
+  again:
+-	raw_spin_lock_irqsave(&cpu_buffer->reader_lock, flags);
++	locked = read_buffer_lock(cpu_buffer, &flags);
+ 	event = rb_iter_peek(iter, ts);
+-	raw_spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
++	read_buffer_unlock(cpu_buffer, flags, locked);
+ 
+ 	if (event && event->type_len == RINGBUF_TYPE_PADDING)
+ 		goto again;
+@@ -3309,9 +3335,7 @@ ring_buffer_consume(struct ring_buffer *
+ 	struct ring_buffer_per_cpu *cpu_buffer;
+ 	struct ring_buffer_event *event = NULL;
+ 	unsigned long flags;
+-	int dolock;
+-
+-	dolock = rb_ok_to_lock();
++	int locked;
+ 
+  again:
+ 	/* might be called in atomic */
+@@ -3321,9 +3345,7 @@ ring_buffer_consume(struct ring_buffer *
+ 		goto out;
+ 
+ 	cpu_buffer = buffer->buffers[cpu];
+-	local_irq_save(flags);
+-	if (dolock)
+-		raw_spin_lock(&cpu_buffer->reader_lock);
++	locked = read_buffer_lock(cpu_buffer, &flags);
+ 
+ 	event = rb_buffer_peek(cpu_buffer, ts, lost_events);
+ 	if (event) {
+@@ -3331,9 +3353,8 @@ ring_buffer_consume(struct ring_buffer *
+ 		rb_advance_reader(cpu_buffer);
+ 	}
+ 
+-	if (dolock)
+-		raw_spin_unlock(&cpu_buffer->reader_lock);
+-	local_irq_restore(flags);
++	read_buffer_unlock(cpu_buffer, flags, locked);
++
+ 
+  out:
+ 	preempt_enable();
+@@ -3418,17 +3439,18 @@ ring_buffer_read_start(struct ring_buffe
+ {
+ 	struct ring_buffer_per_cpu *cpu_buffer;
+ 	unsigned long flags;
++	int locked;
+ 
+ 	if (!iter)
+ 		return;
+ 
+ 	cpu_buffer = iter->cpu_buffer;
+ 
+-	raw_spin_lock_irqsave(&cpu_buffer->reader_lock, flags);
++	locked = read_buffer_lock(cpu_buffer, &flags);
+ 	arch_spin_lock(&cpu_buffer->lock);
+ 	rb_iter_reset(iter);
+ 	arch_spin_unlock(&cpu_buffer->lock);
+-	raw_spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
++	read_buffer_unlock(cpu_buffer, flags, locked);
+ }
+ EXPORT_SYMBOL_GPL(ring_buffer_read_start);
+ 
+@@ -3462,8 +3484,9 @@ ring_buffer_read(struct ring_buffer_iter
+ 	struct ring_buffer_event *event;
+ 	struct ring_buffer_per_cpu *cpu_buffer = iter->cpu_buffer;
+ 	unsigned long flags;
++	int locked;
+ 
+-	raw_spin_lock_irqsave(&cpu_buffer->reader_lock, flags);
++	locked = read_buffer_lock(cpu_buffer, &flags);
+  again:
+ 	event = rb_iter_peek(iter, ts);
+ 	if (!event)
+@@ -3474,7 +3497,7 @@ ring_buffer_read(struct ring_buffer_iter
+ 
+ 	rb_advance_iter(iter);
+  out:
+-	raw_spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
++	read_buffer_unlock(cpu_buffer, flags, locked);
+ 
+ 	return event;
+ }
+@@ -3537,13 +3560,14 @@ void ring_buffer_reset_cpu(struct ring_b
+ {
+ 	struct ring_buffer_per_cpu *cpu_buffer = buffer->buffers[cpu];
+ 	unsigned long flags;
++	int locked;
+ 
+ 	if (!cpumask_test_cpu(cpu, buffer->cpumask))
+ 		return;
+ 
+ 	atomic_inc(&cpu_buffer->record_disabled);
+ 
+-	raw_spin_lock_irqsave(&cpu_buffer->reader_lock, flags);
++	locked = read_buffer_lock(cpu_buffer, &flags);
+ 
+ 	if (RB_WARN_ON(cpu_buffer, local_read(&cpu_buffer->committing)))
+ 		goto out;
+@@ -3555,7 +3579,7 @@ void ring_buffer_reset_cpu(struct ring_b
+ 	arch_spin_unlock(&cpu_buffer->lock);
+ 
+  out:
+-	raw_spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
++	read_buffer_unlock(cpu_buffer, flags, locked);
+ 
+ 	atomic_dec(&cpu_buffer->record_disabled);
+ }
+@@ -3582,22 +3606,16 @@ int ring_buffer_empty(struct ring_buffer
+ {
+ 	struct ring_buffer_per_cpu *cpu_buffer;
+ 	unsigned long flags;
+-	int dolock;
++	int locked;
+ 	int cpu;
+ 	int ret;
+ 
+-	dolock = rb_ok_to_lock();
+-
+ 	/* yes this is racy, but if you don't like the race, lock the buffer */
+ 	for_each_buffer_cpu(buffer, cpu) {
+ 		cpu_buffer = buffer->buffers[cpu];
+-		local_irq_save(flags);
+-		if (dolock)
+-			raw_spin_lock(&cpu_buffer->reader_lock);
++		locked = read_buffer_lock(cpu_buffer, &flags);
+ 		ret = rb_per_cpu_empty(cpu_buffer);
+-		if (dolock)
+-			raw_spin_unlock(&cpu_buffer->reader_lock);
+-		local_irq_restore(flags);
++		read_buffer_unlock(cpu_buffer, flags, locked);
+ 
+ 		if (!ret)
+ 			return 0;
+@@ -3616,22 +3634,16 @@ int ring_buffer_empty_cpu(struct ring_bu
+ {
+ 	struct ring_buffer_per_cpu *cpu_buffer;
+ 	unsigned long flags;
+-	int dolock;
++	int locked;
+ 	int ret;
+ 
+ 	if (!cpumask_test_cpu(cpu, buffer->cpumask))
+ 		return 1;
+ 
+-	dolock = rb_ok_to_lock();
+-
+ 	cpu_buffer = buffer->buffers[cpu];
+-	local_irq_save(flags);
+-	if (dolock)
+-		raw_spin_lock(&cpu_buffer->reader_lock);
++	locked = read_buffer_lock(cpu_buffer, &flags);
+ 	ret = rb_per_cpu_empty(cpu_buffer);
+-	if (dolock)
+-		raw_spin_unlock(&cpu_buffer->reader_lock);
+-	local_irq_restore(flags);
++	read_buffer_unlock(cpu_buffer, flags, locked);
+ 
+ 	return ret;
+ }
+@@ -3805,6 +3817,7 @@ int ring_buffer_read_page(struct ring_bu
+ 	unsigned int commit;
+ 	unsigned int read;
+ 	u64 save_timestamp;
++	int locked;
+ 	int ret = -1;
+ 
+ 	if (!cpumask_test_cpu(cpu, buffer->cpumask))
+@@ -3826,7 +3839,7 @@ int ring_buffer_read_page(struct ring_bu
+ 	if (!bpage)
+ 		goto out;
+ 
+-	raw_spin_lock_irqsave(&cpu_buffer->reader_lock, flags);
++	locked = read_buffer_lock(cpu_buffer, &flags);
+ 
+ 	reader = rb_get_reader_page(cpu_buffer);
+ 	if (!reader)
+@@ -3949,7 +3962,7 @@ int ring_buffer_read_page(struct ring_bu
+ 		memset(&bpage->data[commit], 0, BUF_PAGE_SIZE - commit);
+ 
+  out_unlock:
+-	raw_spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
++	read_buffer_unlock(cpu_buffer, flags, locked);
+ 
+  out:
+ 	return ret;
+
+
