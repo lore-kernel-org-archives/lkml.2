@@ -1,117 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752382Ab1I0RIZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 13:08:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26596 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751701Ab1I0RIY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 13:08:24 -0400
-Date: Tue, 27 Sep 2011 19:04:48 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Stephen Wilson <wilsons@start.ca>, Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org
-Subject: Q: x86: add context tag to mark mm when running a task in 32-bit
-	compatibility mode
-Message-ID: <20110927170448.GA15977@redhat.com>
+	id S1752389Ab1I0RKy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 13:10:54 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:5283 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751582Ab1I0RKv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 13:10:51 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 27 Sep 2011 10:10:49 -0700
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: <pdeschrijver@nvidia.com>
+CC: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
+        Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>
+Subject: [PATCH v2 2/3] arm/tegra: add support for ventana pinmuxing
+Date: Tue, 27 Sep 2011 20:10:20 +0300
+Message-ID: <1317143421-27286-3-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1317143421-27286-1-git-send-email-pdeschrijver@nvidia.com>
+References: <1317143421-27286-1-git-send-email-pdeschrijver@nvidia.com>
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit c2ef45df3b98a027ec8f9081bd2a19dff520ef9d
+Add support for ventana pinmuxing as a seaboard derivative. This is a cut down
+version of chromeos kernel commit 772f1b56e713be7a55759c2d5eadb9eb11d078db
+by Jong Kim <jongk@nvidia.com>.
 
-    This tag is intended to mirror the thread info TIF_IA32 flag.
+Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+---
+ arch/arm/mach-tegra/Makefile                |    1 +
+ arch/arm/mach-tegra/board-seaboard-pinmux.c |   49 +++++++++++++++++++++++++-
+ 2 files changed, 48 insertions(+), 2 deletions(-)
 
-OK, but
-
-	+#ifdef CONFIG_X86_64
-	+	/* True if mm supports a task running in 32 bit compatibility mode. */
-	+	unsigned short ia32_compat;
-	+#endif
-
-Stupid question, why we can't add a simple arch-independent MMF_COMPAT
-flag instead?
-
-I am asking because we probably want to backport this change and this
-ia32_compat looks a bit annoying, why should we waste a word?
-
-Sure, this is very minor, but perhaps the trivial patch below makes
-sense?
-
-Oleg.
-
-
---- x/include/linux/sched.h
-+++ x/include/linux/sched.h
-@@ -436,6 +436,8 @@ extern int get_dumpable(struct mm_struct
- #define MMF_VM_MERGEABLE	16	/* KSM may merge identical pages */
- #define MMF_VM_HUGEPAGE		17	/* set when VM_HUGEPAGE is set on vma */
+diff --git a/arch/arm/mach-tegra/Makefile b/arch/arm/mach-tegra/Makefile
+index f11b910..91a07e1 100644
+--- a/arch/arm/mach-tegra/Makefile
++++ b/arch/arm/mach-tegra/Makefile
+@@ -31,6 +31,7 @@ obj-${CONFIG_MACH_SEABOARD}             += board-seaboard-pinmux.o
  
-+#define MMF_COMPAT		18	/* this task runs in compat mode. */
+ obj-${CONFIG_MACH_TEGRA_DT}             += board-dt.o
+ obj-${CONFIG_MACH_TEGRA_DT}             += board-harmony-pinmux.o
++obj-${CONFIG_MACH_TEGRA_DT}             += board-seaboard-pinmux.o
+ 
+ obj-${CONFIG_MACH_TRIMSLICE}            += board-trimslice.o
+ obj-${CONFIG_MACH_TRIMSLICE}            += board-trimslice-pinmux.o
+diff --git a/arch/arm/mach-tegra/board-seaboard-pinmux.c b/arch/arm/mach-tegra/board-seaboard-pinmux.c
+index b31c765..b62b04d 100644
+--- a/arch/arm/mach-tegra/board-seaboard-pinmux.c
++++ b/arch/arm/mach-tegra/board-seaboard-pinmux.c
+@@ -158,8 +158,26 @@ static __initdata struct tegra_pingroup_config seaboard_pinmux[] = {
+ 	{TEGRA_PINGROUP_XM2D,  TEGRA_MUX_NONE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
+ };
+ 
+-
+-
++static __initdata struct tegra_pingroup_config ventana_pinmux[] = {
++	{TEGRA_PINGROUP_DAP3, TEGRA_MUX_DAP3,     TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
++	{TEGRA_PINGROUP_DDC,  TEGRA_MUX_RSVD2,    TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
++	{TEGRA_PINGROUP_DTA,  TEGRA_MUX_VI,       TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
++	{TEGRA_PINGROUP_DTB,  TEGRA_MUX_VI,       TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
++	{TEGRA_PINGROUP_DTC,  TEGRA_MUX_VI,       TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
++	{TEGRA_PINGROUP_DTD,  TEGRA_MUX_VI,       TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
++	{TEGRA_PINGROUP_GMD,  TEGRA_MUX_SFLASH,   TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
++	{TEGRA_PINGROUP_LPW0, TEGRA_MUX_RSVD4,    TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
++	{TEGRA_PINGROUP_LPW2, TEGRA_MUX_RSVD4,    TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
++	{TEGRA_PINGROUP_LSC1, TEGRA_MUX_RSVD4,    TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
++	{TEGRA_PINGROUP_LSCK, TEGRA_MUX_RSVD4,    TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
++	{TEGRA_PINGROUP_LSDA, TEGRA_MUX_RSVD4,    TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
++	{TEGRA_PINGROUP_PTA,  TEGRA_MUX_RSVD2,    TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
++	{TEGRA_PINGROUP_SLXC, TEGRA_MUX_SDIO3,    TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
++	{TEGRA_PINGROUP_SLXK, TEGRA_MUX_SDIO3,    TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
++	{TEGRA_PINGROUP_SPIA, TEGRA_MUX_GMI,      TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
++	{TEGRA_PINGROUP_SPIC, TEGRA_MUX_GMI,      TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
++	{TEGRA_PINGROUP_SPIG, TEGRA_MUX_SPI2_ALT, TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
++};
+ 
+ static struct tegra_gpio_table common_gpio_table[] = {
+ 	{ .gpio = TEGRA_GPIO_SD2_CD,		.enable = true },
+@@ -172,6 +190,26 @@ static struct tegra_gpio_table common_gpio_table[] = {
+ 	{ .gpio = TEGRA_GPIO_USB1,		.enable = true },
+ };
+ 
++static void __init update_pinmux(struct tegra_pingroup_config *newtbl, int size)
++{
++	int i, j;
++	struct tegra_pingroup_config *new_pingroup, *base_pingroup;
 +
- #define MMF_INIT_MASK		(MMF_DUMPABLE_MASK | MMF_DUMP_FILTER_MASK)
- 
- struct sighand_struct {
---- x/arch/x86/include/asm/mmu.h
-+++ x/arch/x86/include/asm/mmu.h
-@@ -12,11 +12,6 @@ typedef struct {
- 	void *ldt;
- 	int size;
- 
--#ifdef CONFIG_X86_64
--	/* True if mm supports a task running in 32 bit compatibility mode. */
--	unsigned short ia32_compat;
--#endif
--
- 	struct mutex lock;
- 	void *vdso;
- } mm_context_t;
---- x/arch/x86/kernel/process_64.c
-+++ x/arch/x86/kernel/process_64.c
-@@ -502,10 +502,6 @@ void set_personality_64bit(void)
- 	/* Make sure to be in 64bit mode */
- 	clear_thread_flag(TIF_IA32);
- 
--	/* Ensure the corresponding mm is not marked. */
--	if (current->mm)
--		current->mm->context.ia32_compat = 0;
--
- 	/* TBD: overwrites user setup. Should have two bits.
- 	   But 64bit processes have always behaved this way,
- 	   so it's not too bad. The main problem is just that
-@@ -522,8 +518,7 @@ void set_personality_ia32(void)
- 	current->personality |= force_personality32;
- 
- 	/* Mark the associated mm as containing 32-bit tasks. */
--	if (current->mm)
--		current->mm->context.ia32_compat = 1;
-+	set_bit(MMF_COMPAT, &current->mm->flags);
- 
- 	/* Prepare the first "return" to user space */
- 	current_thread_info()->status |= TS_COMPAT;
---- x/arch/x86/mm/init_64.c
-+++ x/arch/x86/mm/init_64.c
-@@ -860,7 +860,7 @@ static struct vm_area_struct gate_vma = 
- struct vm_area_struct *get_gate_vma(struct mm_struct *mm)
++	/* Update base seaboard pinmux table with secondary board
++	 * specific pinmux table table.
++	 */
++	for (i = 0; i < size; i++) {
++		new_pingroup = &newtbl[i];
++		for (j = 0; j < ARRAY_SIZE(seaboard_pinmux); j++) {
++			base_pingroup = &seaboard_pinmux[j];
++			if (new_pingroup->pingroup == base_pingroup->pingroup) {
++				*base_pingroup = *new_pingroup;
++				break;
++			}
++		}
++	}
++}
++
+ static void __init seaboard_common_pinmux_init(void)
  {
- #ifdef CONFIG_IA32_EMULATION
--	if (!mm || mm->context.ia32_compat)
-+	if (!mm || test_bit(MMF_COMPAT, &mm->flags))
- 		return NULL;
- #endif
- 	return &gate_vma;
---- x/arch/x86/ia32/ia32_aout.c
-+++ x/arch/x86/ia32/ia32_aout.c
-@@ -298,7 +298,7 @@ static int load_aout_binary(struct linux
- 	/* OK, This is the point of no return */
- 	set_personality(PER_LINUX);
- 	set_thread_flag(TIF_IA32);
--	current->mm->context.ia32_compat = 1;
-+	set_bit(MMF_COMPAT, &current->mm->flags);
- 
- 	setup_new_exec(bprm);
- 
+ 	tegra_pinmux_config_table(seaboard_pinmux, ARRAY_SIZE(seaboard_pinmux));
+@@ -186,3 +224,10 @@ void __init seaboard_pinmux_init(void)
+ {
+ 	seaboard_common_pinmux_init();
+ }
++
++void __init ventana_pinmux_init(void)
++{
++	update_pinmux(ventana_pinmux, ARRAY_SIZE(ventana_pinmux));
++	seaboard_common_pinmux_init();
++}
++
+-- 
+1.7.0.4
 
