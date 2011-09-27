@@ -1,46 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752976Ab1I0Sfq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 14:35:46 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:18976 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752268Ab1I0Sfp (ORCPT
+	id S1752936Ab1I0Sik (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 14:38:40 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37975 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752258Ab1I0Sij (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 14:35:45 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 27 Sep 2011 11:35:32 -0700
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: <pdeschrijver@nvidia.com>
-CC: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
-        Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>
-Subject: [PATCH v3 0/3] Add support for tegra2 based ventana board
-Date: Tue, 27 Sep 2011 21:35:21 +0300
-Message-ID: <1317148524-28528-1-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: git-send-email 1.7.0.4
-X-NVConfidentiality: public
+	Tue, 27 Sep 2011 14:38:39 -0400
+Date: Tue, 27 Sep 2011 19:38:32 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Daniel Drake <dsd@laptop.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>, sameo@linux.intel.com,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        dilinger@queued.net
+Subject: Re: [PATCH 1/3] mfd: allow mfd_cell association with device tree node
+Message-ID: <20110927183832.GS4289@opensource.wolfsonmicro.com>
+References: <20110921124936.GA25620@sirena.org.uk>
+ <CAMLZHHQZnajC4e12MjaK3W8WcAB2ZB+6L=5kS5BBFZF=+YWicQ@mail.gmail.com>
+ <20110921131637.GF4374@opensource.wolfsonmicro.com>
+ <CAMLZHHTJaOddSj00g0-WpFQu6pUTqizKjKaQF9hLrhceEMhY1Q@mail.gmail.com>
+ <20110927150555.GF20588@ponder.secretlab.ca>
+ <CAMLZHHQU-eMAtvBQJj6+WrMjkWWA+ET=z5NdQCEgXxh=m10d3Q@mail.gmail.com>
+ <20110927181420.GQ4289@opensource.wolfsonmicro.com>
+ <CAMLZHHSuoeAJ-AC9daxb83+EANV=YGK-aiYpQ_j2wFiyQa5ytw@mail.gmail.com>
+ <20110927182636.GR4289@opensource.wolfsonmicro.com>
+ <CAMLZHHR0rMZct2E91X8k+Lhv_y-pY_5+vshZw6dj194o9vSCJQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMLZHHR0rMZct2E91X8k+Lhv_y-pY_5+vshZw6dj194o9vSCJQ@mail.gmail.com>
+X-Cookie: You will outgrow your usefulness.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set adds support for the tegra2 based ventana development board.                                                                           
+On Tue, Sep 27, 2011 at 07:28:40PM +0100, Daniel Drake wrote:
+> On Tue, Sep 27, 2011 at 7:26 PM, Mark Brown
 
-Boot tested on ventana.                                                                                                                               
+> > That seems like a bug that just happened to get noticed while reviewing
+> > this change, though...
 
-Peter De Schrijver (3):
-  arm/tegra: prepare Seaboard pinmux code for derived boards
-  arm/tegra: add support for ventana pinmuxing
-  arm/tegra: device tree support for ventana board
+> Sorry if I'm missing something obvious but I'm not seeing the issue.
+> What exactly is this bug and what effects could it cause?
 
- arch/arm/boot/dts/tegra-ventana.dts         |   32 ++++++++++++++
- arch/arm/mach-tegra/Kconfig                 |    6 +++
- arch/arm/mach-tegra/Makefile                |    1 +
- arch/arm/mach-tegra/Makefile.boot           |    1 +
- arch/arm/mach-tegra/board-dt.c              |    5 ++-
- arch/arm/mach-tegra/board-seaboard-pinmux.c |   63 ++++++++++++++++++++++++---
- 6 files changed, 101 insertions(+), 7 deletions(-)
- create mode 100644 arch/arm/boot/dts/tegra-ventana.dts
-
+You're modifying global data which should really be const and is shared
+between multiple devices in place.  Probably you'll not notice any
+practical effects, especially if you don't happen to have multiple
+devices in the same system.
