@@ -1,100 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753811Ab1I0Uwo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 16:52:44 -0400
-Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:53608 "EHLO
-	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752622Ab1I0Uwl (ORCPT
+	id S1753801Ab1I0Uz5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 16:55:57 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:56540 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752622Ab1I0Uz4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 16:52:41 -0400
-Date: Tue, 27 Sep 2011 23:52:33 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Tero Kristo <t-kristo@ti.com>
-Cc: "Balbi, Felipe" <balbi@ti.com>,
-        "Munegowda, Keshava" <keshava_mgowda@ti.com>,
-        Paul Walmsley <paul@pwsan.com>, "Cousson, Benoit" <b-cousson@ti.com>,
-        "Basak, Partha" <p-basak2@ti.com>, parthab@india.ti.com,
-        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Gadiyar, Anand" <gadiyar@ti.com>,
-        sameo@linux.intel.com, tony@atomide.com,
-        "Hilman, Kevin" <khilman@ti.com>, johnstul@us.ibm.com,
-        "Sripathy, Vishwanath" <vishwanath.bs@ti.com>
-Subject: Re: [PATCH 2/5 v11] arm: omap: usb: ehci and ohci hwmod structures
- for omap3
-Message-ID: <20110927205230.GE2254@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1316691479-1849-3-git-send-email-keshava_mgowda@ti.com>
- <alpine.DEB.2.00.1109221115320.10719@utopia.booyaka.com>
- <CAP05o4+Zc2z6sBOX_rQeoDQ9PneypcLRCyBbaaB2m+ZjeXZnaw@mail.gmail.com>
- <alpine.DEB.2.00.1109240020510.22872@utopia.booyaka.com>
- <CAP05o4Lwk2uUz5ou84GQsrsBdjW-FEYP-55pBzH+a74hP4g1Dw@mail.gmail.com>
- <cbad72cea703d117067f7c628f7db806@mail.gmail.com>
- <1317127327.3820.31.camel@sokoban>
- <CAP05o4J75jGLTH8prOGD79Mte4DOg9ukgwe3V-KHFnB1Q-fi4w@mail.gmail.com>
- <20110927132453.GF19603@legolas.emea.dhcp.ti.com>
- <1317134331.3820.44.camel@sokoban>
+	Tue, 27 Sep 2011 16:55:56 -0400
+Date: Tue, 27 Sep 2011 22:55:51 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrew Vagin <avagin@openvz.org>, linux-kernel@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH 3/4] trace: add ability to collect call chain of
+ non-current task.
+Message-ID: <20110927205548.GN18553@somewhere>
+References: <1317052535-1765247-1-git-send-email-avagin@openvz.org>
+ <1317052535-1765247-4-git-send-email-avagin@openvz.org>
+ <1317132351.15383.66.camel@twins>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Uwl7UQhJk99r8jnw"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1317134331.3820.44.camel@sokoban>
+In-Reply-To: <1317132351.15383.66.camel@twins>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Sep 27, 2011 at 04:05:51PM +0200, Peter Zijlstra wrote:
+> On Mon, 2011-09-26 at 19:55 +0400, Andrew Vagin wrote:
+> > 
+> > Know issues:
+> > * Now call chains for non-current tasks are collected on x86 only,
+> >   but it may be done for other architectures simply.
+> > * It collects only kernel call chains, because we can't get direct
+> >   access to memory of other processes and this operation should be
+> >   fast enough. 
+> 
+> Also, it changes the semantics of tracepoint, normally you return the
+> callchain leading to the tracepoint, this changes that.
+> 
+> 
+> I'm not entirely against it, as I can see the use, but I would like to
+> solicit other opinions.
 
---Uwl7UQhJk99r8jnw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+There is also a problem in perf tools because we are dealing with a
+callchain that doesn't belong to the current thread memory mapping and symbol
+space. I believe that's a problem once we deal with the userspace part of
+the callchain.
 
-hi,
+That and the fact there are other ways to get that callchain like taking
+the one of the last sched_switch event from the waked thread.
 
-On Tue, Sep 27, 2011 at 05:38:51PM +0300, Tero Kristo wrote:
-> > On Tue, Sep 27, 2011 at 06:48:35PM +0530, Munegowda, Keshava wrote:
-> > > > So, you would need a mechanism to do something like this:
-> > > >
-> > > > pad a or b wakeup detected -> irq0
-> > > > pad c or d wakeup detected -> irq1?
-> > >=20
-> > > yes, if get something like this , its perfect.
-> >=20
-> > can't you have different IRQs for each pad ? I mean, allocate one
-> > irq_desc for each pad and let drivers request a pad/pin as an IRQ
-> > source. Then, when you detect a pad wakeup, you can:
->=20
-> Direct pad to irq mapping was turned down on some previous version of
-> the prcm chain handler set, but yes, it is a potential approach. However
+Perhaps we should use the sched_switch event and a post_sched_switch
+event, compute the time difference as a weight and use the callchain of any of
+those. Perhaps as a plugin in perf report?
 
-do you remember what was the reason for that being turned down ? Maybe I
-can search the archives...
+In any case that rather sounds like something that should be done in post-processing
+in userspace, in perf tools.
 
-> the irq_desc allocation mechanism should be dynamic... there are some
-> 200 programmable pads anyway.
-
-I wouldn't worry too much about that. If you try to allocate irq_desc
-dynamically, you would have to keep track of an "irq_base" for each
-irq_desc you allocate, otherwise it's difficult to map it back to mux
-number.
-
---=20
-balbi
-
---Uwl7UQhJk99r8jnw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOgjeOAAoJEAv8Txj19kN1HiMIAIos/CO4zZZ1DkrUTLQNKSxQ
-ys9ee5cV6bqd7FvW9K/RTWU5qLefFsEJePY5hNYPm/ud3qkaQOIU0pYs8Y0NY+Ix
-EgR25pIn2biOwGgryQGQu5WuUsYLg0KWNTUqs3RakMma7rUOGCICadZGMJ39N6PZ
-YS/OYNJWhCt9vSNJNHTt2FSLwJdbIV/z46ar3QMWukkojwMMWBOQ1wLgS59ZO7Wu
-uvVOjm1x257jd7diwnuvADWJgZkrTUCj5VPObZtIGiPHu8CBh7usV5RVfMmGrnC+
-OCUC/iXDNIy7VikBBRvz+N3b6gZ7u6wLUz9o1LIJkHL/980VkTtdNLdrlsorBfA=
-=e3kx
------END PGP SIGNATURE-----
-
---Uwl7UQhJk99r8jnw--
+We should probably avoid the remote callchains, sounds like asking for complications
+everywhere.
