@@ -1,79 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752770Ab1I0SDs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 14:03:48 -0400
-Received: from home.keithp.com ([63.227.221.253]:60610 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752601Ab1I0SDr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 14:03:47 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>, Dave Airlie <airlied@redhat.com>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        intel-gfx@lists.freedesktop.org
-Subject: Re: [PATCH 6/9] drm/i915: Fix PCH SSC reference clock settings
-In-Reply-To: <e0d58a$1mfd94@orsmga002.jf.intel.com>
-References: <yunbou6lxb4.fsf@aiko.keithp.com> <1317103906-4649-1-git-send-email-keithp@keithp.com> <1317103906-4649-7-git-send-email-keithp@keithp.com> <e0d58a$1mfd94@orsmga002.jf.intel.com>
-User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Tue, 27 Sep 2011 11:03:43 -0700
-Message-ID: <yunr531981s.fsf@aiko.keithp.com>
+	id S1752409Ab1I0SGO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 14:06:14 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:48457 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751645Ab1I0SGN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 14:06:13 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+In-Reply-To: <87hb3xj41s.fsf@devron.myhome.or.jp>
+References: <CAK1hOcNus4RKQOF=eivuCXFEM5Lqb+jBdOD4YrMA_5bL2EB6yA@mail.gmail.com>
+	<542eeafb16d173360eb79f8188f967cc3dcc9252.1317124046.git.andriy.shevchenko@linux.intel.com>
+	<87hb3xj41s.fsf@devron.myhome.or.jp>
+Date: Tue, 27 Sep 2011 21:06:12 +0300
+Message-ID: <CAHp75Vcdnx28i0s4sKUf+MCruMNq-zdX55f45TcTR7AcO4foSw@mail.gmail.com>
+Subject: Re: [PATCHv2] fat: don't use custom hex_to_bin()
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        linux-kernel@vger.kernel.org,
+        Denys Vlasenko <vda.linux@googlemail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id p8RI6Qlh025919
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+On Tue, Sep 27, 2011 at 8:19 PM, OGAWA Hirofumi
+<hirofumi@mail.parknet.co.jp> wrote:
+> Andy Shevchenko <andriy.shevchenko@linux.intel.com> writes:
+>
+> Looks good to me.
+>
+> Acked-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+>
+> Or if it's needed, I'll apply this to fat tree.
+Please, hold on. Read my comments below.
 
-On Tue, 27 Sep 2011 17:47:10 +0100, Chris Wilson <chris@chris-wilson.co.uk>=
- wrote:
-> On Mon, 26 Sep 2011 23:11:43 -0700, Keith Packard <keithp@keithp.com> wro=
-te:
-> > The PCH refclk settings are global, so we need to look at all of the
-> > encoders, not just the current encoder when deciding how to configure
-> > it. Also, handle systems with more than one panel (any combination of
-> > PCH/non-PCH eDP and LVDS).
->=20
-> As I read it, this sets the refclk not on the active configuration, but
-> on all the hardware detected for the system whether enabled or not.
+>> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+>> Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+>> ---
+>>  fs/fat/namei_vfat.c |   30 ++++++++----------------------
+>>  1 files changed, 8 insertions(+), 22 deletions(-)
+>>
+>> diff --git a/fs/fat/namei_vfat.c b/fs/fat/namei_vfat.c
+>> index bb3f29c..cf0fd96 100644
+>> --- a/fs/fat/namei_vfat.c
+>> +++ b/fs/fat/namei_vfat.c
+>> @@ -21,6 +21,8 @@
+>>  #include <linux/slab.h>
+>>  #include <linux/buffer_head.h>
+>>  #include <linux/namei.h>
+>> +#include <linux/kernel.h>
+>> +
+>>  #include "fat.h"
+>>
+>>  /*
+>> @@ -505,10 +507,8 @@ xlate_to_uni(const unsigned char *name, int len, unsigned char *outname,
+>>            struct nls_table *nls)
+>>  {
+>>       const unsigned char *ip;
+>> -     unsigned char nc;
+>>       unsigned char *op;
+>> -     unsigned int ec;
+>> -     int i, k, fill;
+>> +     int i, rc, fill;
+>>       int charlen;
+>>
+>>       if (utf8) {
+>> @@ -528,26 +528,12 @@ xlate_to_uni(const unsigned char *name, int len, unsigned char *outname,
+>>                               if (escape && (*ip == ':')) {
+>>                                       if (i > len - 5)
+>>                                               return -EINVAL;
+>> -                                     ec = 0;
+>> -                                     for (k = 1; k < 5; k++) {
+>> -                                             nc = ip[k];
+>> -                                             ec <<= 4;
+>> -                                             if (nc >= '0' && nc <= '9') {
+>> -                                                     ec |= nc - '0';
+>> -                                                     continue;
+>> -                                             }
+>> -                                             if (nc >= 'a' && nc <= 'f') {
+>> -                                                     ec |= nc - ('a' - 10);
+>> -                                                     continue;
+>> -                                             }
+>> -                                             if (nc >= 'A' && nc <= 'F') {
+>> -                                                     ec |= nc - ('A' - 10);
+>> -                                                     continue;
+>> -                                             }
+>> +
+>> +                                     rc = hex2bin(op, ip + 1, 2);
+>> +                                     if (rc < 0)
+>>                                               return -EINVAL;
+>> -                                     }
+>> -                                     *op++ = ec & 0xFF;
+>> -                                     *op++ = ec >> 8;
+Actually here we will change endianess.
+So, my question is what endianess is right here? If the original code
+okay, then patch should be rewritten like this:
 
-Correct. We cannot randomly turn ref clocks on/off without also
-disconnecting them from the PLLs that they drive.
+     rc = hex2bin(op++, ip + 3, 1);
+     if (rc < 0)
+          return -EINVAL;
 
-What we could do is figure out which of the two clocks need to be
-enabled and modify the mode set code to turn them on when needed before
-setting the mode, and then turn them off after, when they aren't
-needed. This would leave them off until needed, which might be nice?
+     rc = hex2bin(op++, ip + 1, 1);
+     if (rc < 0)
+          return -EINVAL;
 
-This will make changing the driver to not disable the panel at startup
-time harder; we'll need to switch the panel to the non-SSC reference,
-turn the SSC reference off, reconfigure it and then switch the panel
-back to the SSC reference. That's a project for a future change though.
+>> +
+>> +                                     op += 2;
+>>                                       ip += 5;
+>>                                       i += 5;
+>>                               } else {
+>
+> --
+> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
-> There are two basic changes here, the cleanup and improvement to the logic
-> based on what type of output is connected and the second change to
-> determine which outputs are active.
 
-Right, the logic fixes ensure that the clocks are programmed in the
-right sequence and that LVDS, eDP and pch-EDP all get SSC as necessary.
 
-The change in dealing with the outputs means that the clocks are
-programmed based not on which outputs are active, but on all possible
-outputs, ensuring that the programming never changes in response to mode
-setting requests.
-
-=2D-=20
-keith.packard@intel.com
-
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iD8DBQFOgg//Qp8BWwlsTdMRAhCRAKCMJ6fvWSXUIIrGsD1GiOpjS/xKJQCg0HsO
-a0SH9zyQxpVVDg/debAc44k=
-=q8BO
------END PGP SIGNATURE-----
---=-=-=--
+-- 
+With Best Regards,
+Andy Shevchenko
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
