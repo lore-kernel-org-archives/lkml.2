@@ -1,229 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752742Ab1I0NSm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 09:18:42 -0400
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:46677 "EHLO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751861Ab1I0NSk convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 09:18:40 -0400
+	id S1751698Ab1I0NWR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 09:22:17 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47325 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750851Ab1I0NWQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 09:22:16 -0400
+Date: Tue, 27 Sep 2011 08:21:57 -0500
+From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: Serge Hallyn <serge@hallyn.com>, akpm@osdl.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        containers@lists.linux-foundation.org, dhowells@redhat.com,
+        ebiederm@xmission.com, rdunlap@xenotime.net,
+        kernel-hardening@lists.openwall.com
+Subject: Re: [PATCH 01/15] add Documentation/namespaces/user_namespace.txt
+ (v3)
+Message-ID: <20110927132157.GB3111@sergelap>
+References: <1314993400-6910-1-git-send-email-serge@hallyn.com>
+ <1314993400-6910-4-git-send-email-serge@hallyn.com>
+ <20110926191737.GA4562@albatros>
 MIME-Version: 1.0
-In-Reply-To: <1317127327.3820.31.camel@sokoban>
-References: <1316691479-1849-1-git-send-email-keshava_mgowda@ti.com>
-	<1316691479-1849-2-git-send-email-keshava_mgowda@ti.com>
-	<1316691479-1849-3-git-send-email-keshava_mgowda@ti.com>
-	<alpine.DEB.2.00.1109221115320.10719@utopia.booyaka.com>
-	<CAP05o4+Zc2z6sBOX_rQeoDQ9PneypcLRCyBbaaB2m+ZjeXZnaw@mail.gmail.com>
-	<alpine.DEB.2.00.1109240020510.22872@utopia.booyaka.com>
-	<CAP05o4Lwk2uUz5ou84GQsrsBdjW-FEYP-55pBzH+a74hP4g1Dw@mail.gmail.com>
-	<cbad72cea703d117067f7c628f7db806@mail.gmail.com>
-	<1317127327.3820.31.camel@sokoban>
-Date: Tue, 27 Sep 2011 18:48:35 +0530
-Message-ID: <CAP05o4J75jGLTH8prOGD79Mte4DOg9ukgwe3V-KHFnB1Q-fi4w@mail.gmail.com>
-Subject: Re: [PATCH 2/5 v11] arm: omap: usb: ehci and ohci hwmod structures
- for omap3
-From: "Munegowda, Keshava" <keshava_mgowda@ti.com>
-To: t-kristo@ti.com, Paul Walmsley <paul@pwsan.com>,
-        "Cousson, Benoit" <b-cousson@ti.com>
-Cc: "Basak, Partha" <p-basak2@ti.com>, "Balbi, Felipe" <balbi@ti.com>,
-        parthab@india.ti.com, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Gadiyar, Anand" <gadiyar@ti.com>, sameo@linux.intel.com,
-        tony@atomide.com, "Hilman, Kevin" <khilman@ti.com>,
-        johnstul@us.ibm.com, "Sripathy, Vishwanath" <vishwanath.bs@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110926191737.GA4562@albatros>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 27, 2011 at 6:12 PM, Tero Kristo <t-kristo@ti.com> wrote:
-> On Tue, 2011-09-27 at 08:04 +0200, Basak, Partha wrote:
->> >
-> Texas Instruments Oy, Tekniikantie 12, 02150 Espoo. Y-tunnus: 0115040-6. Kotipaikka: Helsinki
->
-> -----Original Message-----
->
->> >From: Munegowda, Keshava [mailto:keshava_mgowda@ti.com]
->> >Sent: Monday, September 26, 2011 7:49 PM
->> >To: Paul Walmsley; Tero Kristo; b-cousson@ti.com; balbi@ti.com;
->> >parthab@india.ti.com
->> >Cc: linux-usb@vger.kernel.org; linux-omap@vger.kernel.org; linux-
->> >kernel@vger.kernel.org; gadiyar@ti.com; sameo@linux.intel.com;
->> >tony@atomide.com; khilman@ti.com; johnstul@us.ibm.com;
->> >vishwanath.bs@ti.com
->> >Subject: Re: [PATCH 2/5 v11] arm: omap: usb: ehci and ohci hwmod
->> >structures for omap3
->> >
->> >On Sat, Sep 24, 2011 at 12:00 PM, Paul Walmsley <paul@pwsan.com> wrote:
->> >> On Fri, 23 Sep 2011, Munegowda, Keshava wrote:
->> >>
->> >>> On Thu, Sep 22, 2011 at 11:31 PM, Paul Walmsley <paul@pwsan.com>
->> >wrote:
->> >>>
->> >>> But the question arises here , why do we need these ehci and ohci as
->> >two
->> >>> different hwmods containing only irq and base address? It is required
->> >>> for future - to implement remote wakeup feature for ehci and ohci
->> >ports
->> >>> depending on irq-chain handler patches by Tero. Separate hwmods for
->> >ehci
->> >>> and ohci are needed to enable prcm chain-handler to uniquely identify
->> >>> the wakeup source as ehci or ohci and call only the corresponding
->> >>> interrupt handler. We will be using omap_hwmod_mux_init for ehci and
->> >>> ohci hwmods to enable I/O wakeup capability for respective IO-pads.
->> >>> Depending on the particular wakeup source(ehci/ohci), the
->> >corresponding
->> >>> ehci or ohci irq handler will be called.
->> >>>
->> >>> If ehci and ohci are combined with usbhs hwmod as a single hwmod ,
->> >then
->> >>> for every wakeup (either ehci or ohci port wakeup) only the first
->> >>> interrupt handler will be called (please look at the function
->> >>> omap_hwmod_mux_handle_irq of
->> >>>
->> >>> /arch/arm/mach-omap2/mux.c file ; in tero's latest patch:
->> >>> http://www.mail-archive.com/linux-omap@vger.kernel.org/msg53139.html)
->> >>> , so in this
->> >>> case, if ehci interrupt is the first interrupt , then even for ohci
->> >wakeup
->> >>> , only ehci interrupt will get called; which will break the
->> >functionality.
->> >>
->> >> Any reason why this couldn't be handled either by:
->> >>
->> >> 1. adding an IRQ number field to struct omap_hwmod_mux_info, and
->> >changing
->> >> _omap_hwmod_mux_handle_irq() to raise that IRQ number?
->> >
->> >
->> >yes, it is possible by changing the existing irq-chain handler by tero
->> >Kristo
->> >
->> >I am looping tero too.
->> >
->> >So here are new requirements for the irq-chain handler
->> >
->> >1. The hwmod should have have option to have multiple mux structures
->> >
->> >This is something like:
->> >
->> >The existing mux structure definition in omap_hwmod [file:
->> >/arch/arm/plat-omap/include/plat/omap_hwmod.h ] structure
->> >
->> >     struct omap_hwmod_mux_info      *mux;
->> >
->> >it should changed to
->> >
->> >     struct omap_hwmod_mux_info      **pmux;
->> >         U32                                            mux_cnt;
->> >
->> >
->> >pmux - pointers to mux ; array of mux structures.
->> >mux_cnt - number of mux per hwmod.
->> >
->> >
->> >2. The mux  omap_hwmod_mux_info  structure should have new member
->> >called irq, like as follows:
->> >
->> >struct omap_hwmod_mux_info {
->> >     int                             nr_pads;
->> >     ...
->> >        ....
->> >        u32                           irq;
->> >
->> >};
->> >
->> >Upon wakeup of the I/O pad of the mux , the irq-chain handler should
->> >invoke the irq handler of the irq numbered <map_hwmod_mux_info.irq>
->> >
->> >3.  There should be "SOME WAY" to supply the irqs  from hwmod
->> >structure (omap_hwmod) to mux structure (omap_hwmod_mux_info)
->> >
->> >
->> >if you , tero and other opensource people are aligned on the proposed
->> >changes on the irq-handler ;
->> >then it is possible to have two hwmods ( usbhs and tll) for usbhost
->> >driver.
->> >please let me know you comments on the above approach.
->> >
->>
->> Hello Tero,
->>
->> I would like to draw your attention to the following thread:
->>
->> We need to support the following:
->> 1. Ability to associate multiple mux info to a hwmod.
->> 2. Able to associate a particular irq handler to a mux info.
->> 3. PRCM Chain handler should loop through all mux-info arrays
->>    for a particular hwmod to identify the possible wakeup source(s)
->>    and call the appropriate irq handler for that mux-info.
->>    (It is possible that both mux-info are woken up in which case both
->> handlers should be called).
->>
->> To give you a little more perspective, EHCI & OHCI are co-controllers
->> under UHH/TLL.
->> They do not get presented separately to the OCP bus, hence do not qualify
->> as separate hwmods
->> (Paul had objected to the design approach representing EHCI & OHCI as
->> different hwmods).
->>
->> However, we need a mechanism to efficiently identify/distinguish
->> remote-wakeup, connect/disconnect
->> On to an EHCI port vs an OHCI port & call only the correct interrupt
->> handler(EHCI or OHCI).
->>
->>  To incorporate this, chain handler implementation would need some
->> enhancements.
->>  We can look into the details in the next merge window cycle in
->> conjunction with aggressive clock management support for EHCI/OHCI.
->>  But fundamentally, if you are aligned to the approach, we can go ahead
->> collapsing the EHCI & OHCI hwmods into one.
->
-> Hi,
->
-> So, you would need a mechanism to do something like this:
->
-> pad a or b wakeup detected -> irq0
-> pad c or d wakeup detected -> irq1?
+Quoting Vasiliy Kulikov (segoon@openwall.com):
+> (cc'ed kernel-hardening)
+> 
+> 
+> Hi Serge,
+> 
+> I didn't deeply studied the patches yet (sorry!), but I have some
+> long-term question about the technique in general.  I couldn't find
+> answers to the questions in the documentation.
 
-yes, if get something like this , its perfect.
+Great - thanks for your time, Vasiliy.
 
+There is documentation at https://wiki.ubuntu.com/UserNamespace,
+and I was adding a Documentation/namespaces/user_namespace.txt file
+(which hasn't gone in yet) which you can see here:
+https://lkml.org/lkml/2011/7/26/351
 
->
-> Is it okay to do this:
->
-> pad a...d wakeup -> irq0 and irq1?
+But those don't answer your questions sufficiently.
 
-No, we dont need multiple irq handlers for single wakeup source.
+> First, the patches by design expose much kernel code to unprivileged
+> userspace processes.  This code doesn't expect malformed data (e.g. VFS,
+> specific filesystems, block layer, char drivers, sysadmin part of LSMs,
+> etc. etc.).  By relaxing permission rules you greatly increase attack
+> surface of the kernel from unprivileged users.  Are you (or somebody
+> else) planning to audit this code?
 
->
-> I am okay doing something like this, we just need to agree how this
-> would be represented from the hwmod point of view. Currently the chain
-> handler set does not change hwmod structures at all to provide what it
-> does.
+I had wanted to (but didn't) propose a discussion at ksummit about how
+best to approach the filesystem code.  That's not even just for user
+namespaces - patches have been floated in the past to make mount an
+unprivileged operation depending on the FS and the user's permission
+over the device and target.  So I don't know if a combination of auditing
+and fuzzing is the way to go, or what, and wanted to get input from
+some people who are more knowledgeable on that topic than me.
 
-paul and benoit are the people to design the mechanisam for this.
+You're right about other kernel code as well.
 
-paul/Benoit
-            please give you thoughts on this.
+I'll certainly join in this effort, but don't want to go blindly
+charging in without some advice/guidance about the best way to do
+this and, if others are interested, coordinate it.
 
-regards
-keshava
+We can start by looking through all code which is currently under
+ns_capable(), and analyzing that.  But what tools do we have
+available to perform the analysis?
 
+Do you think a kernel summit discussion (i suppose given the late
+timing, a beer bof) would be beneficial?  (I wouldn't be there)
 
->
-> -Tero
->
->> >
->> >>
->> >> or
->> >>
->> >> 2. using shared interrupts?
->> >>
->> >>
->> >> - Paul
->> >>
->
->
->
+> Also, will it be possible to somehow restrict what specific kernel
+> facilities are accessible from users (IOW, what root emulation
+> limitations are in action)?  It is userful from both points of sysadmin,
+> who might not want to allow users to do such things, and from the
+> security POV in sense of attack surface reduction.
+
+You're probably thinking along different lines, but this is why I've
+been wanting seccomp2 to get pushed through.  So that we can deny a
+container the syscalls we know it won't need, especially newer ones,
+to reduce the attack surface available to it.
+
+> The patches explicitly enable some features for users on white list
+> basis.  It's possible to do it for simple cases, but what are you going
+> to do with multiplexing functions where there is a permission check
+> before the actual multiplexing?  FS, networking drivers, etc.  Are you
+> going to do the same thing as net_namespace does? - For each multiplexed
+> entity create bool ->ns_aware which is false by default for all
+> "untrusted"/not prepared protocols and is true for audited/prepared
+> protocols.  Or probably you have something else in mind?
+
+Ah, I typed the bottom paragraph before realizing what you were actually
+asking.  The filesystems are a good example.  In the unprivileged mounts
+patchsets, for instance, a flag was added to each filesystem indicating
+if it was safe for unprivileged mounting (turned off for all real block
+filesystems :).  For targeted capabilities, my goal would be simply to
+make sure that each non-netns-aware entity do a (untargeted) capable()
+check.  Without pointing to a specific example it's hard to say what I
+will do.  It depends on how the code was previously laid out, and what
+the maintainer of that subsystem prefers.
+
+The way we're approaching it right now is that by default everything
+stays 'capable(X)', so that a non-init user namespace doesn't get the
+privileges.  While some of my patchsets this summer didn't follow this,
+Eric reminded me that we should first clamp down on the user namespaces
+as much as possible, and relax permissions in child namespaces later.
+So the small (1-2 patch sized) sets I've been sending the last few
+weeks are just trying to fix existing inadequate userid or capability
+checks.
+
+-serge
