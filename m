@@ -1,178 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751969Ab1I0NYO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 09:24:14 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:59564 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751298Ab1I0NYN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 09:24:13 -0400
-Date: Tue, 27 Sep 2011 18:38:50 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
-        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 3.1.0-rc4-tip 4/26]   uprobes: Define hooks for
- mmap/munmap.
-Message-ID: <20110927130850.GD3685@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com>
- <20110920120040.25326.63549.sendpatchset@srdronam.in.ibm.com>
- <1317045191.1763.22.camel@twins>
- <20110926154414.GB13535@linux.vnet.ibm.com>
- <1317123435.15383.33.camel@twins>
+	id S1752251Ab1I0NZF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 09:25:05 -0400
+Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:32872 "EHLO
+	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751609Ab1I0NZD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 09:25:03 -0400
+Date: Tue, 27 Sep 2011 16:24:56 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: "Munegowda, Keshava" <keshava_mgowda@ti.com>
+Cc: t-kristo@ti.com, Paul Walmsley <paul@pwsan.com>,
+        "Cousson, Benoit" <b-cousson@ti.com>,
+        "Basak, Partha" <p-basak2@ti.com>, "Balbi, Felipe" <balbi@ti.com>,
+        parthab@india.ti.com, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Gadiyar, Anand" <gadiyar@ti.com>, sameo@linux.intel.com,
+        tony@atomide.com, "Hilman, Kevin" <khilman@ti.com>,
+        johnstul@us.ibm.com, "Sripathy, Vishwanath" <vishwanath.bs@ti.com>
+Subject: Re: [PATCH 2/5 v11] arm: omap: usb: ehci and ohci hwmod structures
+ for omap3
+Message-ID: <20110927132453.GF19603@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1316691479-1849-1-git-send-email-keshava_mgowda@ti.com>
+ <1316691479-1849-2-git-send-email-keshava_mgowda@ti.com>
+ <1316691479-1849-3-git-send-email-keshava_mgowda@ti.com>
+ <alpine.DEB.2.00.1109221115320.10719@utopia.booyaka.com>
+ <CAP05o4+Zc2z6sBOX_rQeoDQ9PneypcLRCyBbaaB2m+ZjeXZnaw@mail.gmail.com>
+ <alpine.DEB.2.00.1109240020510.22872@utopia.booyaka.com>
+ <CAP05o4Lwk2uUz5ou84GQsrsBdjW-FEYP-55pBzH+a74hP4g1Dw@mail.gmail.com>
+ <cbad72cea703d117067f7c628f7db806@mail.gmail.com>
+ <1317127327.3820.31.camel@sokoban>
+ <CAP05o4J75jGLTH8prOGD79Mte4DOg9ukgwe3V-KHFnB1Q-fi4w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="1Ow488MNN9B9o/ov"
 Content-Disposition: inline
-In-Reply-To: <1317123435.15383.33.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAP05o4J75jGLTH8prOGD79Mte4DOg9ukgwe3V-KHFnB1Q-fi4w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <peterz@infradead.org> [2011-09-27 13:37:15]:
 
-> On Mon, 2011-09-26 at 21:14 +0530, Srikar Dronamraju wrote:
-> > 
-> > > > +
-> > > > +/*
-> > > > + * Called from mmap_region.
-> > > > + * called with mm->mmap_sem acquired.
-> > > > + *
-> > > > + * Return -ve no if we fail to insert probes and we cannot
-> > > > + * bail-out.
-> > > > + * Return 0 otherwise. i.e :
-> > > > + * - successful insertion of probes
-> > > > + * - (or) no possible probes to be inserted.
-> > > > + * - (or) insertion of probes failed but we can bail-out.
-> > > > + */
-> > > > +int mmap_uprobe(struct vm_area_struct *vma)
-> > > > +{
-> > > > +   struct list_head tmp_list;
-> > > > +   struct uprobe *uprobe, *u;
-> > > > +   struct inode *inode;
-> > > > +   int ret = 0;
-> > > > +
-> > > > +   if (!valid_vma(vma))
-> > > > +           return ret;     /* Bail-out */
-> > > > +
-> > > > +   inode = igrab(vma->vm_file->f_mapping->host);
-> > > > +   if (!inode)
-> > > > +           return ret;
-> > > > +
-> > > > +   INIT_LIST_HEAD(&tmp_list);
-> > > > +   mutex_lock(&uprobes_mmap_mutex);
-> > > > +   build_probe_list(inode, &tmp_list);
-> > > > +   list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
-> > > > +           loff_t vaddr;
-> > > > +
-> > > > +           list_del(&uprobe->pending_list);
-> > > > +           if (!ret && uprobe->consumers) {
-> > > > +                   vaddr = vma->vm_start + uprobe->offset;
-> > > > +                   vaddr -= vma->vm_pgoff << PAGE_SHIFT;
-> > > > +                   if (vaddr < vma->vm_start || vaddr >= vma->vm_end)
-> > > > +                           continue;
-> > > > +                   ret = install_breakpoint(vma->vm_mm, uprobe);
-> > > > +
-> > > > +                   if (ret && (ret == -ESRCH || ret == -EEXIST))
-> > > > +                           ret = 0;
-> > > > +           }
-> > > > +           put_uprobe(uprobe);
-> > > > +   }
-> > > > +
-> > > > +   mutex_unlock(&uprobes_mmap_mutex);
-> > > > +   iput(inode);
-> > > > +   return ret;
-> > > > +}
-> > > > +
-> > > > +static void dec_mm_uprobes_count(struct vm_area_struct *vma,
-> > > > +           struct inode *inode)
-> > > > +{
-> > > > +   struct uprobe *uprobe;
-> > > > +   struct rb_node *n;
-> > > > +   unsigned long flags;
-> > > > +
-> > > > +   n = uprobes_tree.rb_node;
-> > > > +   spin_lock_irqsave(&uprobes_treelock, flags);
-> > > > +   uprobe = __find_uprobe(inode, 0, &n);
-> > > > +
-> > > > +   /*
-> > > > +    * If indeed there is a probe for the inode and with offset zero,
-> > > > +    * then lets release its reference. (ref got thro __find_uprobe)
-> > > > +    */
-> > > > +   if (uprobe)
-> > > > +           put_uprobe(uprobe);
-> > > > +   for (; n; n = rb_next(n)) {
-> > > > +           loff_t vaddr;
-> > > > +
-> > > > +           uprobe = rb_entry(n, struct uprobe, rb_node);
-> > > > +           if (uprobe->inode != inode)
-> > > > +                   break;
-> > > > +           vaddr = vma->vm_start + uprobe->offset;
-> > > > +           vaddr -= vma->vm_pgoff << PAGE_SHIFT;
-> > > > +           if (vaddr < vma->vm_start || vaddr >= vma->vm_end)
-> > > > +                   continue;
-> > > > +           atomic_dec(&vma->vm_mm->mm_uprobes_count);
-> > > > +   }
-> > > > +   spin_unlock_irqrestore(&uprobes_treelock, flags);
-> > > > +}
-> > > > +
-> > > > +/*
-> > > > + * Called in context of a munmap of a vma.
-> > > > + */
-> > > > +void munmap_uprobe(struct vm_area_struct *vma)
-> > > > +{
-> > > > +   struct inode *inode;
-> > > > +
-> > > > +   if (!valid_vma(vma))
-> > > > +           return;         /* Bail-out */
-> > > > +
-> > > > +   if (!atomic_read(&vma->vm_mm->mm_uprobes_count))
-> > > > +           return;
-> > > > +
-> > > > +   inode = igrab(vma->vm_file->f_mapping->host);
-> > > > +   if (!inode)
-> > > > +           return;
-> > > > +
-> > > > +   dec_mm_uprobes_count(vma, inode);
-> > > > +   iput(inode);
-> > > > +   return;
-> > > > +}
-> > > 
-> > > One has to wonder why mmap_uprobe() can be one function but
-> > > munmap_uprobe() cannot.
-> > > 
-> > 
-> > I didnt understand this comment, Can you please elaborate?
-> > mmap_uprobe uses build_probe_list and munmap_uprobe uses
-> > dec_mm_uprobes_count. 
-> 
-> Ah, I missed build_probe_list(), but I didn't see a reason for the
-> existence of dec_mm_uprobe_count(), the name doesn't make sense and the
-> content is 'small' enough to just put in munmap_uprobe.
-> 
-> To me it looks similar to the list iteration you have in mmap_uprobe(),
-> you didn't split that out into another function either.
+--1Ow488MNN9B9o/ov
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hmm, For me whats done in dec_mm_uprobe_count() is similar to whats
-done in build_probe_list(), just that build_probe_list does a atomic_inc
-+ list_add while dec_mm_uprobe_count() does a atomic_dec.
+Hi,
 
-When I kept dec_mm_uprobe_count() inside munmap_uprobe(), I found most
-of the code nested too deep. Hence carved it out as a separate function.
+On Tue, Sep 27, 2011 at 06:48:35PM +0530, Munegowda, Keshava wrote:
+> > So, you would need a mechanism to do something like this:
+> >
+> > pad a or b wakeup detected -> irq0
+> > pad c or d wakeup detected -> irq1?
+>=20
+> yes, if get something like this , its perfect.
 
-I open to suggestions for dec_mm_uprobe_count()
+can't you have different IRQs for each pad ? I mean, allocate one
+irq_desc for each pad and let drivers request a pad/pin as an IRQ
+source. Then, when you detect a pad wakeup, you can:
 
--- 
-Thanks and Regards
-Srikar
+unsigned	pad_irq =3D pad_number - pad->irq_base;
+
+handle_nested_thread(pad_irq);
+
+this will make use of threaded IRQ handlers even. Could it be something
+like that ?
+
+--=20
+balbi
+
+--1Ow488MNN9B9o/ov
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOgc6lAAoJEAv8Txj19kN1hPcIAKj/kqa/tVrOv82HiZXJUZcd
+l91W7iMH9Bhm7IhyOxlCsd6qP2EW8XAqvP6FE1ajEdNM1qWwzbJfI7tGQnil3Cu6
+KZUi1q83Ao7P9L7hV+caiMuNi/O/ukbSfO4S8joeAkrqxeED8T6An/vxlfwM410c
+pqasOEC4kB2Ehh+896VEGI/3WDIOz3Yk70QU4/5PdngxCvktTJ36K4dRyOv+stbx
+4PKswoxHZCvTN930v7Pblz0q5lm54E2GazN0lRUz/yQRFSVUKO3+CVyQBFzXoKbn
+RPnFQqv0F+Ozf+bUukUNiuFjDiq5vxYJhVrv447yGd6PVdtHh8cNk8zyCBra/HI=
+=9gGW
+-----END PGP SIGNATURE-----
+
+--1Ow488MNN9B9o/ov--
