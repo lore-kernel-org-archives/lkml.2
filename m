@@ -1,83 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753215Ab1I0KLq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 06:11:46 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:20828
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751770Ab1I0KLp (ORCPT
+	id S1753181Ab1I0KMj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 06:12:39 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:46374 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751770Ab1I0KMi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 06:11:45 -0400
-X-SpamScore: -9
-X-BigFish: VS-9(zz1432N98dKzz1202hzz8275dhz2dh2a8h668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-FB-SS: 0,
-Date: Tue, 27 Sep 2011 18:21:36 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Marc Zyngier <marc.zyngier@arm.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        David Brown <davidb@codeaurora.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH v3 0/3] genirq: handling GIC per-cpu interrupts
-Message-ID: <20110927102135.GD17997@S2100-06.ap.freescale.net>
-References: <1316793788-14500-1-git-send-email-marc.zyngier@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1316793788-14500-1-git-send-email-marc.zyngier@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+	Tue, 27 Sep 2011 06:12:38 -0400
+From: tom.leiming@gmail.com
+To: rjw@sisk.pl, stern@rowland.harvard.edu
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        mingo@redhat.com, rostedt@goodmis.org, fweisbec@gmail.com,
+        Ming Lei <ming.lei@canonical.com>
+Subject: [PATCH v1 1/2] PM/runtime: introduce trace points for tracing rpm_* functions
+Date: Tue, 27 Sep 2011 18:12:15 +0800
+Message-Id: <1317118338-4040-1-git-send-email-tom.leiming@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 23, 2011 at 05:03:05PM +0100, Marc Zyngier wrote:
-> The current GIC per-cpu interrupts (aka PPIs) suffer from a number of
-> problems:
-> 
-> - They use a completely separate scheme to handle the interrupts,
->   mostly because the PPI concept doesn't really match the kernel view
->   of an interrupt.
-> - PPIs can only be used by the timer code, unless we add more low-level
->   assembly code.
-> - The local timer code can only be used by devices generating PPIs,
->   and not SPIs.
-> - At least one platform (msm) has started implementing its own
->   alternative scheme.
-> - Some low-level code gets duplicated, as usual...
-> 
-> The proposed solution is to handle the PPIs using the same path as
-> SPIs. A new core API is added to deal with per-cpu interrupts in a
-> less awkward way. The local timer code is updated to reflect these
-> changes.
-> 
-> The core API changes are based on an initial idea by Thomas Gleixner.
-> 
-> Tested on ARM Versatile Express (Cortex A15), ARM RealView PB11MP,
-> OMAP4 (Panda) and Tegra (Harmony). Patch series against next-20110923.
-> 
-> From v2:
-> - Fixed !GENERIC_HARDIRQS build
-> - Fixed request_percpu_irq documentation
-> 
-> From v1:
-> - General tidy-up after Thomas' review. I've kept the config option
->   for the time being until we can sort out the anonymous union
->   problem.
-> 
-> Marc Zyngier (3):
->   genirq: add support for per-cpu dev_id interrupts
->   ARM: gic: consolidate PPI handling
->   ARM: gic, local timers: use the request_percpu_irq() interface
-> 
-On imx6q:
+From: Ming Lei <ming.lei@canonical.com>
 
-Tested-by: Shawn Guo <shawn.guo@linaro.org>
+This patch introduces 3 trace points to prepare for tracing
+rpm_idle/rpm_suspend/rpm_resume functions, so we can use these
+trace points to replace the current dev_dbg().
 
+Cc: Steven Rostedt rostedt@goodmis.org
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+---
+v1: takes Steven's suggestions
+	- use __assign_str to dump device name to trace buffer
+	- pass _THIS_IP_ to trace_rpm_return_int
+---
+ include/trace/events/rpm.h |   99 ++++++++++++++++++++++++++++++++++++++++++++
+ kernel/trace/Makefile      |    1 +
+ kernel/trace/rpm-traces.c  |   21 +++++++++
+ 3 files changed, 121 insertions(+), 0 deletions(-)
+ create mode 100644 include/trace/events/rpm.h
+ create mode 100644 kernel/trace/rpm-traces.c
+
+diff --git a/include/trace/events/rpm.h b/include/trace/events/rpm.h
+new file mode 100644
+index 0000000..36805d9
+--- /dev/null
++++ b/include/trace/events/rpm.h
+@@ -0,0 +1,99 @@
++
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM rpm
++
++#if !defined(_TRACE_RUNTIME_POWER_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_RUNTIME_POWER_H
++
++#include <linux/ktime.h>
++#include <linux/tracepoint.h>
++#include <linux/device.h>
++
++/*
++ * The rpm_internal events are used for tracing some important
++ * runtime pm internal functions.
++ */
++DECLARE_EVENT_CLASS(rpm_internal,
++
++	TP_PROTO(struct device *dev, int flags),
++
++	TP_ARGS(dev, flags),
++
++	TP_STRUCT__entry(
++		__string(       name,		dev_name(dev)	)
++		__field(        int,            flags           )
++		__field(        int ,   	usage_count	)
++		__field(        int ,   	disable_depth   )
++		__field(        int ,   	runtime_auto	)
++		__field(        int ,   	request_pending	)
++		__field(        int ,   	irq_safe	)
++		__field(        int ,   	child_count 	)
++	),
++
++	TP_fast_assign(
++		__assign_str(name, dev_name(dev));
++		__entry->flags = flags;
++		__entry->usage_count = atomic_read(
++			&dev->power.usage_count);
++		__entry->disable_depth = dev->power.disable_depth;
++		__entry->runtime_auto = dev->power.runtime_auto;
++		__entry->request_pending = dev->power.request_pending;
++		__entry->irq_safe = dev->power.irq_safe;
++		__entry->child_count = atomic_read(
++			&dev->power.child_count);
++	),
++
++	TP_printk("%s flags-%x cnt-%-2d dep-%-2d auto-%-1d p-%-1d"
++			" irq-%-1d child-%d",
++			__get_str(name), __entry->flags,
++			__entry->usage_count,
++			__entry->disable_depth,
++			__entry->runtime_auto,
++			__entry->request_pending,
++			__entry->irq_safe,
++			__entry->child_count
++		 )
++);
++DEFINE_EVENT(rpm_internal, rpm_suspend,
++
++	TP_PROTO(struct device *dev, int flags),
++
++	TP_ARGS(dev, flags)
++);
++DEFINE_EVENT(rpm_internal, rpm_resume,
++
++	TP_PROTO(struct device *dev, int flags),
++
++	TP_ARGS(dev, flags)
++);
++DEFINE_EVENT(rpm_internal, rpm_idle,
++
++	TP_PROTO(struct device *dev, int flags),
++
++	TP_ARGS(dev, flags)
++);
++
++TRACE_EVENT(rpm_return_int,
++	TP_PROTO(struct device *dev, unsigned long ip, int ret),
++	TP_ARGS(dev, ip, ret),
++
++	TP_STRUCT__entry(
++		__string(       name,		dev_name(dev))
++		__field(	unsigned long,		ip	)
++		__field(	int,			ret	)
++	),
++
++	TP_fast_assign(
++		__assign_str(name, dev_name(dev));
++		__entry->ip = ip;
++		__entry->ret = ret;
++	),
++
++	TP_printk("%pS:%s ret=%d", __entry->ip, __get_str(name),
++		__entry->ret)
++);
++
++#endif /* _TRACE_RUNTIME_POWER_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
+diff --git a/kernel/trace/Makefile b/kernel/trace/Makefile
+index 761c510..56bdab5 100644
+--- a/kernel/trace/Makefile
++++ b/kernel/trace/Makefile
+@@ -53,6 +53,7 @@ endif
+ obj-$(CONFIG_EVENT_TRACING) += trace_events_filter.o
+ obj-$(CONFIG_KPROBE_EVENT) += trace_kprobe.o
+ obj-$(CONFIG_TRACEPOINTS) += power-traces.o
++obj-$(CONFIG_TRACEPOINTS) += rpm-traces.o
+ ifeq ($(CONFIG_TRACING),y)
+ obj-$(CONFIG_KGDB_KDB) += trace_kdb.o
+ endif
+diff --git a/kernel/trace/rpm-traces.c b/kernel/trace/rpm-traces.c
+new file mode 100644
+index 0000000..998949e
+--- /dev/null
++++ b/kernel/trace/rpm-traces.c
+@@ -0,0 +1,21 @@
++/*
++ * Power trace points
++ *
++ * Copyright (C) 2009 Ming Lei <ming.lei@canonical.com>
++ */
++
++#include <linux/string.h>
++#include <linux/types.h>
++#include <linux/workqueue.h>
++#include <linux/sched.h>
++#include <linux/module.h>
++#include <linux/usb.h>
++
++#define CREATE_TRACE_POINTS
++#include <trace/events/rpm.h>
++
++EXPORT_TRACEPOINT_SYMBOL_GPL(rpm_return_int);
++EXPORT_TRACEPOINT_SYMBOL_GPL(rpm_idle);
++EXPORT_TRACEPOINT_SYMBOL_GPL(rpm_suspend);
++EXPORT_TRACEPOINT_SYMBOL_GPL(rpm_resume);
++
 -- 
-Regards,
-Shawn
+1.7.5.4
 
