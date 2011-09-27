@@ -1,284 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752866Ab1I0Sn5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 14:43:57 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:34919 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752492Ab1I0Sn4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 14:43:56 -0400
-Message-ID: <4E821920.3000509@parallels.com>
-Date: Tue, 27 Sep 2011 15:42:40 -0300
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: Balbir Singh <bsingharora@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
-        <lizf@cn.fujitsu.com>, <daniel.lezcano@free.fr>,
-        <a.p.zijlstra@chello.nl>, <jbottomley@parallels.com>
-Subject: Re: [RFD 3/9] Display /proc/stat information per cgroup
-References: <1316816432-9237-1-git-send-email-glommer@parallels.com> <1316816432-9237-4-git-send-email-glommer@parallels.com> <CAKTCnz=5wLq2OAKLfCOh5bX+t2T1exhhCdHUMkQchPzHNyU5Hw@mail.gmail.com>
-In-Reply-To: <CAKTCnz=5wLq2OAKLfCOh5bX+t2T1exhhCdHUMkQchPzHNyU5Hw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [201.82.135.174]
+	id S1752996Ab1I0SuL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 14:50:11 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57314 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752175Ab1I0SuK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 14:50:10 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lrg@ti.com>
+Cc: alsa-devel@alsa-project.org, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 1/3] mfd: Add WM1811 support
+Date: Tue, 27 Sep 2011 19:50:05 +0100
+Message-Id: <1317149407-27635-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.6.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27/2011 02:01 PM, Balbir Singh wrote:
-> On Sat, Sep 24, 2011 at 3:50 AM, Glauber Costa<glommer@parallels.com>  wrote:
->> Each cgroup has its own file, cpu.proc.stat that will
->> display the exact same format as /proc/stat. Users
->> that want to have access to a per-cgroup version of
->> this information, can query it for that purpose.
->>
->> Signed-off-by: Glauber Costa<glommer@parallels.com>
-> ...
+The WM1811 is mostly register compatible with the WM8994 and WM8958,
+providing a high performance audio hub CODEC in a small form factor
+suitable for ultra compact system designs.
 
-Hi Balbir, thanks for reviewing this.
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
 
->> +static inline void task_cgroup_account_field(struct task_struct *p,
->> +                                            cputime64_t tmp, int index)
->> +{
->> +       struct kernel_stat *kstat;
->> +       struct task_group *tg = task_group(p);
->> +
->> +       do {
->> +               kstat = this_cpu_ptr(tg->cpustat);
->> +               kstat->cpustat[index] = cputime64_add(kstat->cpustat[index],
->> +                                                     tmp);
->> +               tg = tg->parent;
->> +       } while (tg);
->> +}
->
-> What protects the walk (tg = tg->parent)? Could you please document it
-I think that the fact that the hierarchy only grows down, thus parent 
-never changes (or am I wrong?)
+Due to the ASoC cross dependencies it seems like it'll be easier to
+merge this via ASoC - Samuel, does this make sense to you?
 
-And since we run all this with preempt disabled and with the runqueue 
-locked, we should have no problems.
+ drivers/mfd/wm8994-core.c       |   28 ++++++++++++++++++++++++++++
+ include/linux/mfd/wm8994/core.h |    1 +
+ 2 files changed, 29 insertions(+), 0 deletions(-)
 
-Do you agree?
+diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
+index 719fee8..61894fc 100644
+--- a/drivers/mfd/wm8994-core.c
++++ b/drivers/mfd/wm8994-core.c
+@@ -167,6 +167,18 @@ static struct mfd_cell wm8994_devs[] = {
+  * and should be handled via the standard regulator API supply
+  * management.
+  */
++static const char *wm1811_main_supplies[] = {
++	"DBVDD1",
++	"DBVDD2",
++	"DBVDD3",
++	"DCVDD",
++	"AVDD1",
++	"AVDD2",
++	"CPVDD",
++	"SPKVDD1",
++	"SPKVDD2",
++};
++
+ static const char *wm8994_main_supplies[] = {
+ 	"DBVDD",
+ 	"DCVDD",
+@@ -227,6 +239,7 @@ static int wm8994_suspend(struct device *dev)
+ 
+ 	switch (wm8994->type) {
+ 	case WM8958:
++	case WM1811:
+ 		ret = wm8994_reg_read(wm8994, WM8958_MIC_DETECT_1);
+ 		if (ret < 0) {
+ 			dev_err(dev, "Failed to read power status: %d\n", ret);
+@@ -375,6 +388,9 @@ static int wm8994_device_init(struct wm8994 *wm8994, int irq)
+ 	}
+ 
+ 	switch (wm8994->type) {
++	case WM1811:
++		wm8994->num_supplies = ARRAY_SIZE(wm1811_main_supplies);
++		break;
+ 	case WM8994:
+ 		wm8994->num_supplies = ARRAY_SIZE(wm8994_main_supplies);
+ 		break;
+@@ -395,6 +411,10 @@ static int wm8994_device_init(struct wm8994 *wm8994, int irq)
+ 	}
+ 
+ 	switch (wm8994->type) {
++	case WM1811:
++		for (i = 0; i < ARRAY_SIZE(wm1811_main_supplies); i++)
++			wm8994->supplies[i].supply = wm1811_main_supplies[i];
++		break;
+ 	case WM8994:
+ 		for (i = 0; i < ARRAY_SIZE(wm8994_main_supplies); i++)
+ 			wm8994->supplies[i].supply = wm8994_main_supplies[i];
+@@ -428,6 +448,13 @@ static int wm8994_device_init(struct wm8994 *wm8994, int irq)
+ 		goto err_enable;
+ 	}
+ 	switch (ret) {
++	case 0x1811:
++		devname = "WM1811";
++		if (wm8994->type != WM1811)
++			dev_warn(wm8994->dev, "Device registered as type %d\n",
++				 wm8994->type);
++		wm8994->type = WM1811;
++		break;
+ 	case 0x8994:
+ 		devname = "WM8994";
+ 		if (wm8994->type != WM8994)
+@@ -592,6 +619,7 @@ static int wm8994_i2c_remove(struct i2c_client *i2c)
+ }
+ 
+ static const struct i2c_device_id wm8994_i2c_id[] = {
++	{ "wm1811", WM1811 },
+ 	{ "wm8994", WM8994 },
+ 	{ "wm8958", WM8958 },
+ 	{ }
+diff --git a/include/linux/mfd/wm8994/core.h b/include/linux/mfd/wm8994/core.h
+index a275798..f44bdb7 100644
+--- a/include/linux/mfd/wm8994/core.h
++++ b/include/linux/mfd/wm8994/core.h
+@@ -20,6 +20,7 @@
+ enum wm8994_type {
+ 	WM8994 = 0,
+ 	WM8958 = 1,
++	WM1811 = 2,
+ };
+ 
+ struct regulator_dev;
+-- 
+1.7.6.3
 
->> +
->>   /*
->>   * Account user cpu time to a process.
->>   * @p: the process that the cpu time gets accounted to
->> @@ -3763,9 +3777,8 @@ unsigned long long thread_group_sched_runtime(struct task_struct *p)
->>   * @cputime_scaled: cputime scaled by cpu frequency
->>   */
->>   void account_user_time(struct task_struct *p, cputime_t cputime,
->> -                      cputime_t cputime_scaled)
->> +               cputime_t cputime_scaled)
->>   {
->> -       cputime64_t *cpustat = kstat_this_cpu->cpustat;
->>         cputime64_t tmp;
->>
->>         /* Add user time to process. */
->> @@ -3775,10 +3788,11 @@ void account_user_time(struct task_struct *p, cputime_t cputime,
->>
->>         /* Add user time to cpustat. */
->>         tmp = cputime_to_cputime64(cputime);
->> +
->>         if (TASK_NICE(p)>  0)
->> -               cpustat[NICE] = cputime64_add(cpustat[NICE], tmp);
->> +               task_cgroup_account_field(p, tmp, NICE);
->>         else
->> -               cpustat[USER] = cputime64_add(cpustat[USER], tmp);
->> +               task_cgroup_account_field(p, tmp, USER);
->>
->>         cpuacct_update_stats(p, CPUACCT_STAT_USER, cputime);
->>         /* Account for user time used */
->> @@ -3824,7 +3838,7 @@ static void account_guest_time(struct task_struct *p, cputime_t cputime,
->>   */
->>   static inline
->>   void __account_system_time(struct task_struct *p, cputime_t cputime,
->> -                       cputime_t cputime_scaled, cputime64_t *target_cputime64)
->> +                       cputime_t cputime_scaled, int index)
->>   {
->>         cputime64_t tmp = cputime_to_cputime64(cputime);
->>
->> @@ -3834,7 +3848,7 @@ void __account_system_time(struct task_struct *p, cputime_t cputime,
->>         account_group_system_time(p, cputime);
->>
->>         /* Add system time to cpustat. */
->> -       *target_cputime64 = cputime64_add(*target_cputime64, tmp);
->> +       task_cgroup_account_field(p, tmp, index);
->>         cpuacct_update_stats(p, CPUACCT_STAT_SYSTEM, cputime);
->>
->>         /* Account for system time used */
->> @@ -3851,8 +3865,7 @@ void __account_system_time(struct task_struct *p, cputime_t cputime,
->>   void account_system_time(struct task_struct *p, int hardirq_offset,
->>                          cputime_t cputime, cputime_t cputime_scaled)
->>   {
->> -       cputime64_t *cpustat = kstat_this_cpu->cpustat;
->> -       cputime64_t *target_cputime64;
->> +       int index;
->>
->>         if ((p->flags&  PF_VCPU)&&  (irq_count() - hardirq_offset == 0)) {
->>                 account_guest_time(p, cputime, cputime_scaled);
->> @@ -3860,13 +3873,13 @@ void account_system_time(struct task_struct *p, int hardirq_offset,
->>         }
->>
->>         if (hardirq_count() - hardirq_offset)
->> -               target_cputime64 =&cpustat[IRQ];
->> +               index = IRQ;
->>         else if (in_serving_softirq())
->> -               target_cputime64 =&cpustat[SOFTIRQ];
->> +               index = SOFTIRQ;
->>         else
->> -               target_cputime64 =&cpustat[SYSTEM];
->> +               index = SYSTEM;
->>
->> -       __account_system_time(p, cputime, cputime_scaled, target_cputime64);
->> +       __account_system_time(p, cputime, cputime_scaled, index);
->>   }
->>
->>   /*
->> @@ -3941,27 +3954,29 @@ static __always_inline bool steal_account_process_tick(void)
->>   * softirq as those do not count in task exec_runtime any more.
->>   */
->>   static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
->> -                                               struct rq *rq)
->> +                                        struct rq *rq)
->>   {
->>         cputime_t one_jiffy_scaled = cputime_to_scaled(cputime_one_jiffy);
->>         cputime64_t tmp = cputime_to_cputime64(cputime_one_jiffy);
->> -       cputime64_t *cpustat = kstat_this_cpu->cpustat;
->> +       struct task_group *tg;
->>
->>         if (steal_account_process_tick())
->>                 return;
->>
->> +       tg = task_group(p);
->> +
->>         if (irqtime_account_hi_update()) {
->> -               cpustat[IRQ] = cputime64_add(cpustat[IRQ], tmp);
->> +               task_cgroup_account_field(p, tmp, IRQ);
->>         } else if (irqtime_account_si_update()) {
->> -               cpustat[SOFTIRQ] = cputime64_add(cpustat[SOFTIRQ], tmp);
->> +               task_cgroup_account_field(p, tmp, SOFTIRQ);
->>         } else if (this_cpu_ksoftirqd() == p) {
->>                 /*
->>                  * ksoftirqd time do not get accounted in cpu_softirq_time.
->>                  * So, we have to handle it separately here.
->>                  * Also, p->stime needs to be updated for ksoftirqd.
->>                  */
->> -               __account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
->> -&cpustat[SOFTIRQ]);
->> +               __account_system_time(p, cputime_one_jiffy,
->> +                                     one_jiffy_scaled, SOFTIRQ);
->>         } else if (user_tick) {
->>                 account_user_time(p, cputime_one_jiffy, one_jiffy_scaled);
->>         } else if (p == rq->idle) {
->> @@ -3969,8 +3984,8 @@ static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
->>         } else if (p->flags&  PF_VCPU) { /* System time or guest time */
->>                 account_guest_time(p, cputime_one_jiffy, one_jiffy_scaled);
->>         } else {
->> -               __account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
->> -&cpustat[SYSTEM]);
->> +               __account_system_time(p, cputime_one_jiffy,
->> +                                     one_jiffy_scaled, SYSTEM);
->>         }
->>   }
->>
->> @@ -8038,6 +8053,7 @@ void __init sched_init(void)
->>   {
->>         int i, j;
->>         unsigned long alloc_size = 0, ptr;
->> +       struct kernel_stat *kstat;
->>
->>   #ifdef CONFIG_FAIR_GROUP_SCHED
->>         alloc_size += 2 * nr_cpu_ids * sizeof(void **);
->> @@ -8092,6 +8108,18 @@ void __init sched_init(void)
->>         INIT_LIST_HEAD(&root_task_group.children);
->>         INIT_LIST_HEAD(&root_task_group.siblings);
->>         autogroup_init(&init_task);
->> +
->> +       root_task_group.cpustat = alloc_percpu(struct kernel_stat);
->> +       /* Failing that early an allocation means we're screwed anyway */
->> +       BUG_ON(!root_task_group.cpustat);
->> +       for_each_possible_cpu(i) {
->
-> for_each_possible_cpu might be an overkill, no?
->
->> +               kstat = per_cpu_ptr(root_task_group.cpustat, i);
->> +               kstat->cpustat[IDLE] = 0;
->> +               kstat->cpustat[IDLE_BASE] = 0;
->> +               kstat->cpustat[IOWAIT_BASE] = 0;
->> +               kstat->cpustat[IOWAIT] = 0;
->> +       }
->> +
->>   #endif /* CONFIG_CGROUP_SCHED */
->>
->>         for_each_possible_cpu(i) {
->> @@ -8526,6 +8554,7 @@ static void free_sched_group(struct task_group *tg)
->>         free_fair_sched_group(tg);
->>         free_rt_sched_group(tg);
->>         autogroup_free(tg);
->> +       free_percpu(tg->cpustat);
->>         kfree(tg);
->>   }
->>
->> @@ -8534,6 +8563,7 @@ struct task_group *sched_create_group(struct task_group *parent)
->>   {
->>         struct task_group *tg;
->>         unsigned long flags;
->> +       int i;
->>
->>         tg = kzalloc(sizeof(*tg), GFP_KERNEL);
->>         if (!tg)
->> @@ -8545,6 +8575,19 @@ struct task_group *sched_create_group(struct task_group *parent)
->>         if (!alloc_rt_sched_group(tg, parent))
->>                 goto err;
->>
->> +       tg->cpustat = alloc_percpu(struct kernel_stat);
->> +       if (!tg->cpustat)
->> +               goto err;
->> +
->> +       for_each_possible_cpu(i) {
->> +               struct kernel_stat *kstat, *root_kstat;
->> +
->> +               kstat = per_cpu_ptr(tg->cpustat, i);
->> +               root_kstat = per_cpu_ptr(root_task_group.cpustat, i);
->> +               kstat->cpustat[IDLE_BASE]  = root_kstat->cpustat[IDLE];
->> +               kstat->cpustat[IOWAIT_BASE] = root_kstat->cpustat[IOWAIT];
->> +       }
->> +
->>         spin_lock_irqsave(&task_group_lock, flags);
->>         list_add_rcu(&tg->list,&task_groups);
->>
->> @@ -9092,7 +9135,9 @@ int cpu_cgroup_proc_stat(struct cgroup *cgrp, struct cftype *cft, struct seq_fil
->>                 system = cputime64_add(system, kstat->cpustat[SYSTEM]);
->>                 idle = cputime64_add(idle, root_kstat->cpustat[IDLE]);
->>                 idle = cputime64_add(idle, arch_idle_time(i));
->> +               idle = cputime64_sub(idle, kstat->cpustat[IDLE_BASE]);
->>                 iowait = cputime64_add(iowait, root_kstat->cpustat[IOWAIT]);
->> +               iowait = cputime64_sub(iowait, kstat->cpustat[IOWAIT_BASE]);
->>                 irq = cputime64_add(irq, kstat->cpustat[IRQ]);
->>                 softirq = cputime64_add(softirq, kstat->cpustat[SOFTIRQ]);
->>                 steal = cputime64_add(steal, kstat->cpustat[STEAL]);
->> @@ -9134,7 +9179,9 @@ int cpu_cgroup_proc_stat(struct cgroup *cgrp, struct cftype *cft, struct seq_fil
->>                 system = kstat->cpustat[SYSTEM];
->>                 idle = root_kstat->cpustat[IDLE];
->>                 idle = cputime64_add(idle, arch_idle_time(i));
->> +               idle = cputime64_sub(idle, kstat->cpustat[IDLE_BASE]);
->>                 iowait = root_kstat->cpustat[IOWAIT];
->> +               iowait = cputime64_sub(iowait, kstat->cpustat[IOWAIT_BASE]);
->>                 irq = kstat->cpustat[IRQ];
->>                 softirq = kstat->cpustat[SOFTIRQ];
->>                 steal = kstat->cpustat[STEAL];
->> @@ -9205,6 +9252,10 @@ static struct cftype cpu_files[] = {
->>                 .write_u64 = cpu_rt_period_write_uint,
->>         },
->>   #endif
->> +       {
->> +               .name = "proc.stat",
->> +               .read_seq_string = cpu_cgroup_proc_stat,
->
-> Looks fine to me
->
-> Balbir Singh
-Awesome.
-
-Thanks.
