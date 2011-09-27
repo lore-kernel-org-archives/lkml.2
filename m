@@ -1,1013 +1,449 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753795Ab1I0LrO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 07:47:14 -0400
-Received: from ganesha.gnumonks.org ([213.95.27.120]:40451 "EHLO
-	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753530Ab1I0LnT (ORCPT
+	id S1753873Ab1I0Lrg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 07:47:36 -0400
+Received: from smtprelay-h22.telenor.se ([195.54.99.197]:38824 "EHLO
+	smtprelay-h22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753788Ab1I0Lra (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 07:43:19 -0400
-From: KyongHo Cho <pullip.cho@samsung.com>
-To: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Cc: Russell King <linux@arm.linux.org.uk>, Joerg Roedel <joerg.roedel@amd.com>,
-        Sanghyun Lee <sanghyun75.lee@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        YoungLak Kim <younglak1004.kim@samsung.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>, KyongHo Cho <pullip.cho@samsung.com>
-Subject: [PATCH 3/4 v2] iommu/exynos: Add iommu driver for Exynos4 Platforms
-Date: Mon, 26 Sep 2011 13:42:49 +0900
-Message-Id: <1317012170-28597-4-git-send-email-pullip.cho@samsung.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1317012170-28597-1-git-send-email-pullip.cho@samsung.com>
-References: <1317012170-28597-1-git-send-email-pullip.cho@samsung.com>
+	Tue, 27 Sep 2011 07:47:30 -0400
+X-SENDER-IP: [85.230.28.149]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AmRkAIK3gU5V5hyVPGdsb2JhbABCiSucJ4IkCwEBAQE3M4FTAQEEAScTDw0jBQsIA0YUDRgKGhOHeAK5CQ6GHWAEmQKEaIce
+X-IronPort-AV: E=Sophos;i="4.68,449,1312149600"; 
+   d="scan'208";a="485572322"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Tue, 27 Sep 2011 13:52:07 +0200
+To: Javier Martinez Canillas <martinez.javier@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3 1/3] Input: cyttsp - Cypress TTSP capacitive
+ multi-touch screen support
+Message-ID: <20110927115207.GA3701@polaris.bitmath.org>
+References: <1316311297-12765-1-git-send-email-martinez.javier@gmail.com>
+ <1316311297-12765-2-git-send-email-martinez.javier@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1316311297-12765-2-git-send-email-martinez.javier@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the System MMU driver and IOMMU API implementation for
-Exynos4 SOC platforms. Exynos4 platforms has more than 10 System
-MMUs dedicated for each multimedia accellerators.
+Hi Javier,
 
-Signed-off-by: KyongHo Cho <pullip.cho@samsung.com>
----
- drivers/iommu/Kconfig        |   14 +
- drivers/iommu/Makefile       |    1 +
- drivers/iommu/exynos_iommu.c |  933 ++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 948 insertions(+), 0 deletions(-)
- create mode 100644 drivers/iommu/exynos_iommu.c
+> Cypress TrueTouch(tm) Standard Product controllers are found in
+> a wide range of embedded devices. This driver add support for a
+> variety of TTSP controllers.
 
-diff --git a/drivers/iommu/Kconfig b/drivers/iommu/Kconfig
-index b57b3fa..1c754cd 100644
---- a/drivers/iommu/Kconfig
-+++ b/drivers/iommu/Kconfig
-@@ -107,4 +107,18 @@ config INTR_REMAP
- 	  To use x2apic mode in the CPU's which support x2APIC enhancements or
- 	  to support platforms with CPU's having > 8 bit APIC ID, say Y.
- 
-+# EXYNOS IOMMU support
-+config EXYNOS_IOMMU
-+	bool "Exynos IOMMU Support"
-+	depends on ARCH_EXYNOS4
-+	select IOMMU_API
-+	select EXYNOS4_DEV_SYSMMU
-+	help
-+	  Support for the IOMMUs (System MMUs) Samsung Exynos application
-+	  processor family. This enables H/W multimedia accellerators to view
-+	  non-linear physical memory chunks as a linear memory in their virtual
-+	  address spaces.
-+
-+	  If unsure, say N here.
-+
- endif # IOMMU_SUPPORT
-diff --git a/drivers/iommu/Makefile b/drivers/iommu/Makefile
-index 4d4d77d..1eb924f 100644
---- a/drivers/iommu/Makefile
-+++ b/drivers/iommu/Makefile
-@@ -3,3 +3,4 @@ obj-$(CONFIG_MSM_IOMMU) += msm_iommu.o msm_iommu_dev.o
- obj-$(CONFIG_AMD_IOMMU) += amd_iommu.o amd_iommu_init.o
- obj-$(CONFIG_DMAR) += dmar.o iova.o intel-iommu.o
- obj-$(CONFIG_INTR_REMAP) += dmar.o intr_remapping.o
-+obj-$(CONFIG_EXYNOS_IOMMU) += exynos_iommu.o
-diff --git a/drivers/iommu/exynos_iommu.c b/drivers/iommu/exynos_iommu.c
-new file mode 100644
-index 0000000..9b3f108
---- /dev/null
-+++ b/drivers/iommu/exynos_iommu.c
-@@ -0,0 +1,933 @@
-+/* linux/drivers/iommu/exynos_iommu.c
-+ *
-+ * Copyright (c) 2011 Samsung Electronics Co., Ltd.
-+ *		http://www.samsung.com
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/io.h>
-+#include <linux/mm.h>
-+#include <linux/interrupt.h>
-+#include <linux/platform_device.h>
-+#include <linux/pm_runtime.h>
-+#include <linux/slab.h>
-+#include <linux/iommu.h>
-+#include <linux/clk.h>
-+#include <linux/err.h>
-+#include <linux/list.h>
-+#include <linux/atomic.h>
-+
-+#include <asm/cacheflush.h>
-+#include <asm/pgtable.h>
-+
-+#include <mach/map.h>
-+#include <mach/regs-sysmmu.h>
-+#include <mach/sysmmu.h>
-+
-+#define CTRL_ENABLE	0x5
-+#define CTRL_BLOCK	0x7
-+#define CTRL_DISABLE	0x0
-+
-+enum S5P_SYSMMU_INTERRUPT_TYPE {
-+	SYSMMU_PAGEFAULT,
-+	SYSMMU_AR_MULTIHIT,
-+	SYSMMU_AW_MULTIHIT,
-+	SYSMMU_BUSERROR,
-+	SYSMMU_AR_SECURITY,
-+	SYSMMU_AR_ACCESS,
-+	SYSMMU_AW_SECURITY,
-+	SYSMMU_AW_PROTECTION, /* 7 */
-+	SYSMMU_FAULTS_NUM
-+};
-+
-+static unsigned short fault_reg_offset[SYSMMU_FAULTS_NUM] = {
-+	S5P_PAGE_FAULT_ADDR,
-+	S5P_AR_FAULT_ADDR,
-+	S5P_AW_FAULT_ADDR,
-+	S5P_DEFAULT_SLAVE_ADDR,
-+	S5P_AR_FAULT_ADDR,
-+	S5P_AR_FAULT_ADDR,
-+	S5P_AW_FAULT_ADDR,
-+	S5P_AW_FAULT_ADDR
-+};
-+
-+static char *sysmmu_fault_name[SYSMMU_FAULTS_NUM + 1] = {
-+	"PAGE FAULT",
-+	"AR MULTI-HIT FAULT",
-+	"AW MULTI-HIT FAULT",
-+	"BUS ERROR",
-+	"AR SECURITY PROTECTION FAULT",
-+	"AR ACCESS PROTECTION FAULT",
-+	"AW SECURITY PROTECTION FAULT",
-+	"AW ACCESS PROTECTION FAULT",
-+	"IOMMU FAULT"
-+};
-+
-+struct exynos_iommu_domain {
-+	struct device *dev;
-+	unsigned long *pgtable;
-+	spinlock_t lock;
-+	spinlock_t pgtablelock;
-+};
-+
-+struct sysmmu_drvdata {
-+	struct list_head node;
-+	struct device *dev;
-+	struct device *owner;
-+	void __iomem *sfrbase;
-+	struct clk *clk;
-+	int activations;
-+	struct iommu_domain *domain;
-+	int (*fault_handler)(enum S5P_SYSMMU_INTERRUPT_TYPE itype,
-+			unsigned long pgtable_base,
-+			unsigned long fault_addr);
-+};
-+
-+/* List of sysmmu_drvdata */
-+static LIST_HEAD(sysmmu_list);
-+
-+static inline struct sysmmu_drvdata *get_sysmmu_data(struct device *owner,
-+						struct sysmmu_drvdata *start)
-+{
-+	struct list_head *pos, *head;
-+
-+	head = (start) ? &start->node : &sysmmu_list;
-+
-+	list_for_each(pos, head) {
-+		struct sysmmu_drvdata *data =
-+				container_of(pos, struct sysmmu_drvdata, node);
-+
-+		if (pos == &sysmmu_list)
-+			return NULL;
-+
-+		if (data->owner == owner)
-+			return data;
-+	}
-+
-+	return NULL;
-+}
-+
-+static inline bool set_sysmmu_active(struct sysmmu_drvdata *data)
-+{
-+	/* return true if the System MMU was not active previously
-+	   and it needs to be initialized */
-+
-+	data->activations++;
-+	return data->activations == 1;
-+}
-+
-+static inline bool set_sysmmu_inactive(struct sysmmu_drvdata *data)
-+{
-+	/* return true if the System MMU is needed to be disabled */
-+	data->activations--;
-+
-+	if (data->activations == 0)
-+		return true;
-+
-+	if (WARN_ON(data->activations < 0))
-+		/* System MMU is already disabled */
-+		data->activations = 0;
-+
-+	return false;
-+}
-+
-+static inline bool is_sysmmu_active(struct sysmmu_drvdata *data)
-+{
-+	return data->activations != 0;
-+}
-+
-+static inline void sysmmu_block(void __iomem *sfrbase)
-+{
-+	__raw_writel(CTRL_BLOCK, sfrbase + S5P_MMU_CTRL);
-+}
-+
-+static inline void sysmmu_unblock(void __iomem *sfrbase)
-+{
-+	__raw_writel(CTRL_ENABLE, sfrbase + S5P_MMU_CTRL);
-+}
-+
-+static inline void __sysmmu_tlb_invalidate(void __iomem *sfrbase)
-+{
-+	__raw_writel(0x1, sfrbase + S5P_MMU_FLUSH);
-+}
-+
-+static inline void __sysmmu_set_ptbase(void __iomem *sfrbase,
-+				       unsigned long pgd)
-+{
-+	if (unlikely(pgd == 0)) {
-+		pgd = (unsigned long)ZERO_PAGE(0);
-+		__raw_writel(0x20, sfrbase + S5P_MMU_CFG); /* 4KB LV1 */
-+	} else {
-+		__raw_writel(0x0, sfrbase + S5P_MMU_CFG); /* 16KB LV1 */
-+	}
-+
-+	__raw_writel(pgd, sfrbase + S5P_PT_BASE_ADDR);
-+
-+	__sysmmu_tlb_invalidate(sfrbase);
-+}
-+
-+static inline void __set_fault_handler(struct sysmmu_drvdata *data,
-+			int (*handler)(enum S5P_SYSMMU_INTERRUPT_TYPE itype,
-+					unsigned long pgtable_base,
-+					unsigned long fault_addr))
-+{
-+	data->fault_handler = handler;
-+}
-+
-+void s5p_sysmmu_set_fault_handler(struct device *owner,
-+			int (*handler)(enum S5P_SYSMMU_INTERRUPT_TYPE itype,
-+					unsigned long pgtable_base,
-+					unsigned long fault_addr))
-+{
-+	struct sysmmu_drvdata *data = NULL;
-+
-+	while ((data = get_sysmmu_data(owner, data)))
-+		__set_fault_handler(data, handler);
-+}
-+
-+static int default_fault_handler(enum S5P_SYSMMU_INTERRUPT_TYPE itype,
-+			unsigned long pgtable_base, unsigned long fault_addr)
-+{
-+	if ((itype > SYSMMU_FAULTS_NUM) || (itype < SYSMMU_PAGEFAULT))
-+		itype = SYSMMU_FAULTS_NUM;
-+
-+	pr_err("%s occured at 0x%08lx(Page table base: 0x%08lx)\n",
-+			sysmmu_fault_name[itype], fault_addr, pgtable_base);
-+	pr_err("\t\tGenerating Kernel OOPS... because it is unrecoverable.\n");
-+
-+	BUG();
-+
-+	return 0;
-+}
-+
-+static irqreturn_t exynos_sysmmu_irq(int irq, void * dev_id)
-+{
-+	/* SYSMMU is in blocked when interrupt occurred. */
-+	unsigned long addr;
-+	struct sysmmu_drvdata *data = dev_id;
-+	enum S5P_SYSMMU_INTERRUPT_TYPE itype;
-+	bool handled = false;
-+
-+	WARN_ON(!is_sysmmu_active(data));
-+
-+	itype = (enum S5P_SYSMMU_INTERRUPT_TYPE)
-+		__ffs(__raw_readl(data->sfrbase + S5P_INT_STATUS));
-+
-+	BUG_ON(!((itype >= 0) && (itype < 8)));
-+
-+	addr = __raw_readl(data->sfrbase + fault_reg_offset[itype]);
-+
-+	if (data->domain) {
-+		if (!report_iommu_fault(data->domain, data->owner, addr, itype))
-+			handled = true;
-+	} else if (data->fault_handler) {
-+		unsigned long base = 0;
-+
-+		base = __raw_readl(data->sfrbase + S5P_PT_BASE_ADDR);
-+
-+		if (!data->fault_handler(itype, base, addr))
-+			handled = true;
-+	}
-+
-+	if (handled) {
-+		__raw_writel(1 << itype, data->sfrbase + S5P_INT_CLEAR);
-+		sysmmu_unblock(data->sfrbase);
-+	} else {
-+		dev_dbg(data->dev, "%s is not handled.\n",
-+						sysmmu_fault_name[itype]);
-+	}
-+
-+	return IRQ_HANDLED;
-+}
-+
-+void exynos_sysmmu_set_tablebase_pgd(struct device *owner, unsigned long pgd)
-+{
-+	struct sysmmu_drvdata *data = NULL;
-+
-+	while ((data = get_sysmmu_data(owner, data))) {
-+		if (is_sysmmu_active(data)) {
-+			sysmmu_block(data->sfrbase);
-+			__sysmmu_set_ptbase(data->sfrbase, pgd);
-+			sysmmu_unblock(data->sfrbase);
-+			dev_dbg(data->dev,
-+				"New page table base is 0x%08lx\n", pgd);
-+		} else {
-+			dev_dbg(data->dev,
-+			"Disabled: Skipping setting page table base.\n");
-+		}
-+	}
-+}
-+
-+static int __exynos_sysmmu_enable(struct device *owner, unsigned long pgtable,
-+						struct iommu_domain *domain)
-+{
-+	struct sysmmu_drvdata *data = NULL;
-+	bool enabled = false;
-+
-+	/* There are some devices that control more System MMUs than one such
-+	 * as MFC.
-+	 */
-+	while ((data = get_sysmmu_data(owner, data))) {
-+		enabled = true;
-+
-+		if (!set_sysmmu_active(data)) {
-+			dev_dbg(data->dev, "Already enabled.\n");
-+			continue;
-+		}
-+
-+		pm_runtime_get_sync(data->dev);
-+
-+		clk_enable(data->clk);
-+
-+		__sysmmu_set_ptbase(data->sfrbase, pgtable);
-+
-+		__raw_writel(CTRL_ENABLE, data->sfrbase + S5P_MMU_CTRL);
-+
-+		data->domain = domain;
-+
-+		dev_dbg(data->dev, "Enabled.\n");
-+	}
-+
-+	return (enabled) ? 0: -ENODEV;
-+}
-+
-+inline static int exynos_iommu_enable(struct iommu_domain *domain)
-+{
-+	struct exynos_iommu_domain *priv = domain->priv;
-+
-+	if (!priv || !priv->dev)
-+		return -EINVAL;
-+
-+	return __exynos_sysmmu_enable(priv->dev, __pa(priv->pgtable), domain);
-+}
-+
-+int exynos_sysmmu_enable(struct device *owner, unsigned long pgtable)
-+{
-+	return __exynos_sysmmu_enable(owner, pgtable, NULL);
-+}
-+
-+void exynos_sysmmu_disable(struct device *owner)
-+{
-+	struct sysmmu_drvdata *data = NULL;
-+	bool disabled = false;
-+
-+	while ((data = get_sysmmu_data(owner, data))) {
-+		disabled = true;
-+
-+		if (!set_sysmmu_inactive(data)) {
-+			dev_dbg(data->dev, "Inactivation request ignorred\n");
-+			continue;
-+		}
-+
-+		__raw_writel(CTRL_DISABLE, data->sfrbase + S5P_MMU_CTRL);
-+
-+		clk_disable(data->clk);
-+
-+		pm_runtime_put_sync(data->dev);
-+
-+		data->domain = NULL;
-+
-+		dev_dbg(data->dev, "Disabled.\n");
-+	}
-+
-+	BUG_ON(!disabled);
-+}
-+
-+static inline void exynos_iommu_disable(struct iommu_domain *domain)
-+{
-+	struct exynos_iommu_domain *priv = domain->priv;
-+
-+	if (priv && priv->dev)
-+		exynos_sysmmu_disable(priv->dev);
-+}
-+
-+void exynos_sysmmu_tlb_invalidate(struct device *owner)
-+{
-+	struct sysmmu_drvdata *data = NULL;
-+
-+	while ((data = get_sysmmu_data(owner, data))) {
-+		if (is_sysmmu_active(data)) {
-+			sysmmu_block(data->sfrbase);
-+			__sysmmu_tlb_invalidate(data->sfrbase);
-+			sysmmu_unblock(data->sfrbase);
-+		} else {
-+			dev_dbg(data->dev,
-+				"Disabled: Skipping invalidating TLB.\n");
-+		}
-+	}
-+}
-+
-+static int exynos_sysmmu_probe(struct platform_device *pdev)
-+{
-+	struct resource *res, *ioarea;
-+	int ret = 0;
-+	int irq;
-+	struct device *dev;
-+	void *sfr;
-+	struct sysmmu_drvdata *data;
-+	struct clk *clk;
-+
-+	dev = &pdev->dev;
-+
-+	data = kzalloc(GFP_KERNEL, sizeof(*data));
-+	if (!data) {
-+		dev_err(dev, "Failed to probing System MMU: "
-+					"Not enough memory");
-+		return -ENOMEM;
-+	}
-+
-+	if (!dev_get_platdata(dev)) {
-+		dev_err(dev, "Failed to probing system MMU: "
-+						"Owner device is not set.");
-+
-+		ret = -ENODEV;
-+		goto err_init;
-+	}
-+
-+	ret = dev_set_drvdata(dev, data);
-+	if (ret) {
-+		dev_err(dev, "Failed to probing system MMU: "
-+						"Unable to set driver data.");
-+		goto err_init;
-+	}
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res) {
-+		dev_err(dev,
-+			"Failed probing system MMU: failed to get resource.");
-+		ret = -ENOENT;
-+		goto err_init;
-+	}
-+
-+	ioarea = request_mem_region(res->start, resource_size(res), pdev->name);
-+	if (ioarea == NULL) {
-+		dev_err(dev, "Failed probing system MMU: "
-+					"failed to request memory region.");
-+		ret = -ENOENT;
-+		goto err_init;
-+	}
-+
-+	sfr = ioremap(res->start, resource_size(res));
-+	if (!sfr) {
-+		dev_err(dev, "Failed probing system MMU: "
-+						"failed to call ioremap().");
-+		ret = -ENOENT;
-+		goto err_ioremap;
-+	}
-+
-+	irq = platform_get_irq(pdev, 0);
-+	if (irq <= 0) {
-+		dev_err(dev, "Failed probing system MMU: "
-+						"failed to get irq resource.");
-+		ret = irq;
-+		goto err_irq;
-+	}
-+
-+	ret = request_irq(irq, exynos_sysmmu_irq, 0, dev_name(dev), data);
-+	if (ret) {
-+		dev_err(dev, "Failed probing system MMU: "
-+						"failed to request irq.");
-+		goto err_irq;
-+	}
-+
-+	clk = clk_get(dev, "sysmmu");
-+	if (IS_ERR(clk)) {
-+		dev_err(dev, "Failed to probing System MMU: "
-+					"failed to get clock descriptor");
-+		ret = PTR_ERR(clk);
-+		goto err_clk;
-+	}
-+
-+	data->dev = dev;
-+	data->owner = dev_get_platdata(dev);
-+	data->clk = clk;
-+	data->sfrbase = sfr;
-+	data->fault_handler = &default_fault_handler;
-+	INIT_LIST_HEAD(&data->node);
-+
-+	list_add(&data->node, &sysmmu_list);
-+
-+	if (dev->parent)
-+		pm_runtime_enable(dev);
-+
-+	dev_dbg(dev, "Initialized for %s.\n", dev_name(data->owner));
-+	return 0;
-+err_clk:
-+	free_irq(irq, data);
-+err_irq:
-+	iounmap(sfr);
-+err_ioremap:
-+	release_resource(ioarea);
-+	kfree(ioarea);
-+err_init:
-+	kfree(data);
-+	dev_err(dev, "Probing system MMU failed.");
-+	return ret;
-+}
-+
-+int exynos_sysmmu_runtime_suspend(struct device *dev)
-+{
-+	if (WARN_ON(is_sysmmu_active(dev_get_drvdata(dev))))
-+		return -EFAULT;
-+
-+	return 0;
-+}
-+
-+int exynos_sysmmu_runtime_resume(struct device *dev)
-+{
-+	if (WARN_ON(is_sysmmu_active(dev_get_drvdata(dev))))
-+		return -EFAULT;
-+
-+	return 0;
-+}
-+
-+const struct dev_pm_ops exynos_sysmmu_pm_ops = {
-+	.runtime_suspend	= exynos_sysmmu_runtime_suspend,
-+	.runtime_resume		= exynos_sysmmu_runtime_resume,
-+};
-+
-+static struct platform_driver exynos_sysmmu_driver = {
-+	.probe		= exynos_sysmmu_probe,
-+	.driver		= {
-+		.owner		= THIS_MODULE,
-+		.name		= "s5p-sysmmu",
-+		.pm		= &exynos_sysmmu_pm_ops,
-+	}
-+};
-+
-+static int __init exynos_sysmmu_init(void)
-+{
-+	return platform_driver_register(&exynos_sysmmu_driver);
-+}
-+arch_initcall(exynos_sysmmu_init);
-+
-+/* We does not consider super section mapping (16MB) */
-+#define S5P_SPAGE_SHIFT		12
-+#define S5P_LPAGE_SHIFT		16
-+#define S5P_SECTION_SHIFT	20
-+
-+#define S5P_SPAGE_SIZE		(1 << S5P_SPAGE_SHIFT)
-+#define S5P_LPAGE_SIZE		(1 << S5P_LPAGE_SHIFT)
-+#define S5P_SECTION_SIZE	(1 << S5P_SECTION_SHIFT)
-+
-+#define S5P_SPAGE_MASK		(~(S5P_SPAGE_SIZE - 1))
-+#define S5P_LPAGE_MASK		(~(S5P_LPAGE_SIZE - 1))
-+#define S5P_SECTION_MASK	(~(S5P_SECTION_SIZE - 1))
-+
-+#define S5P_SPAGE_ORDER		(S5P_SPAGE_SHIFT - PAGE_SHIFT)
-+#define S5P_LPAGE_ORDER		(S5P_LPAGE_SHIFT - S5P_SPAGE_SHIFT)
-+#define S5P_SECTION_ORDER	(S5P_SECTION_SHIFT - S5P_SPAGE_SHIFT)
-+
-+#define S5P_LV1TABLE_ENTRIES	(1 << (BITS_PER_LONG - S5P_SECTION_SHIFT))
-+
-+#define S5P_LV2TABLE_ENTRIES	(1 << S5P_SECTION_ORDER)
-+#define S5P_LV2TABLE_SIZE	(S5P_LV2TABLE_ENTRIES * sizeof(long))
-+#define S5P_LV2TABLE_MASK	(~(S5P_LV2TABLE_SIZE - 1)) /* 0xFFFFFC00 */
-+
-+#define S5P_SECTION_LV1_ENTRY(entry)	((entry & 0x40003) == 2)
-+#define S5P_SUPSECT_LV1_ENTRY(entry)	((entry & 0x40003) == 0x40002)
-+#define S5P_PAGE_LV1_ENTRY(entry)	((entry & 3) == 1)
-+#define S5P_FAULT_LV1_ENTRY(entry) (((entry & 3) == 0) || (entry & 3) == 3)
-+
-+#define S5P_LPAGE_LV2_ENTRY(entry)	((entry & 3) == 1)
-+#define S5P_SPAGE_LV2_ENTRY(entry)	((entry & 2) == 2)
-+#define S5P_FAULT_LV2_ENTRY(entry)	((entry & 3) == 0)
-+
-+#define MAKE_FAULT_ENTRY(entry)		do { entry = 0; } while (0)
-+#define MAKE_SECTION_ENTRY(entry, pa)	do { entry = pa | 2; } while (0)
-+#define MAKE_SUPSECT_ENTRY(entry, pa)	do { entry = pa | 0x40002; } while (0)
-+#define MAKE_LV2TABLE_ENTRY(entry, pa)	do { entry = pa | 1; } while (0)
-+
-+#define MAKE_LPAGE_ENTRY(entry, pa)	do { entry = pa | 1; } while (0)
-+#define MAKE_SPAGE_ENTRY(entry, pa)	do { entry = pa | 3; } while (0)
-+
-+#define GET_LV2ENTRY(entry, iova) (\
-+	(unsigned long *)phys_to_virt(entry & S5P_LV2TABLE_MASK) +\
-+	((iova & (~S5P_SECTION_MASK)) >> S5P_SPAGE_SHIFT))
-+
-+/* slab cache for level 2 page tables */
-+static struct kmem_cache *l2table_cachep;
-+
-+static inline void pgtable_flush(void *vastart, void *vaend)
-+{
-+	dmac_flush_range(vastart, vaend);
-+	outer_flush_range(virt_to_phys(vastart),
-+				virt_to_phys(vaend));
-+}
-+
-+static int exynos_iommu_fault_handler(struct iommu_domain *domain,
-+			struct device *dev, unsigned long iova, int flags)
-+{
-+	struct exynos_iommu_domain *priv= domain->priv;
-+	int ret;
-+
-+	ret = default_fault_handler(flags, __pa(priv->pgtable), iova);
-+
-+	dev_err(priv->dev,
-+		"\t\tSet Fault handler with iommu_set_fault_handler().\n");
-+	dev_err(priv->dev, "\t\tto handle System MMU fault.\n");
-+
-+	return ret;
-+}
-+
-+static int exynos_iommu_domain_init(struct iommu_domain *domain)
-+{
-+	struct exynos_iommu_domain *priv;
-+
-+	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
-+	if (!priv)
-+		return -ENOMEM;
-+
-+	priv->pgtable = (unsigned long *)__get_free_pages(GFP_KERNEL,
-+		(S5P_LV1TABLE_ENTRIES * sizeof(unsigned long)) >> PAGE_SHIFT);
-+	if (!priv->pgtable) {
-+		kfree(priv);
-+		return -ENOMEM;
-+	}
-+
-+	memset(priv->pgtable, 0, S5P_LV1TABLE_ENTRIES * sizeof(unsigned long));
-+	pgtable_flush(priv->pgtable, priv->pgtable + S5P_LV1TABLE_ENTRIES);
-+
-+	spin_lock_init(&priv->lock);
-+
-+	domain->priv = priv;
-+
-+	iommu_set_fault_handler(domain, &exynos_iommu_fault_handler);
-+
-+	return 0;
-+}
-+
-+static void exynos_iommu_domain_destroy(struct iommu_domain *domain)
-+{
-+	struct exynos_iommu_domain *priv = domain->priv;
-+
-+	free_pages((unsigned long)priv->pgtable,
-+		(S5P_LV1TABLE_ENTRIES * sizeof(unsigned long)) >> PAGE_SHIFT);
-+
-+	kfree(priv);
-+
-+	domain->priv = NULL;
-+}
-+
-+static int exynos_iommu_attach_device(struct iommu_domain *domain,
-+				   struct device *dev)
-+{
-+	struct exynos_iommu_domain *priv = domain->priv;
-+	int ret;
-+
-+	spin_lock(&priv->lock);
-+
-+	priv->dev = dev;
-+
-+	ret = exynos_iommu_enable(domain);
-+
-+	spin_unlock(&priv->lock);
-+
-+	return ret;
-+}
-+
-+static void exynos_iommu_detach_device(struct iommu_domain *domain,
-+				    struct device *dev)
-+{
-+	struct exynos_iommu_domain *priv = domain->priv;
-+
-+	spin_lock(&priv->lock);
-+
-+	if (priv->dev == dev) {
-+		exynos_iommu_disable(domain);
-+		priv->dev = NULL;
-+	}
-+
-+	spin_unlock(&priv->lock);
-+}
-+
-+static bool section_available(struct iommu_domain *domain,
-+			      unsigned long *lv1entry)
-+{
-+	struct exynos_iommu_domain *priv = domain->priv;
-+
-+	if (S5P_SECTION_LV1_ENTRY(*lv1entry)) {
-+		dev_err(priv->dev, "1MB entry alread exists at 0x%08x\n",
-+				(lv1entry - priv->pgtable) * SZ_1M);
-+		return false;
-+	}
-+
-+	if (S5P_PAGE_LV1_ENTRY(*lv1entry)) {
-+		unsigned long *lv2end, *lv2base;
-+
-+		lv2base = phys_to_virt(*lv1entry & S5P_LV2TABLE_MASK);
-+		lv2end = lv2base + S5P_LV2TABLE_ENTRIES;
-+		while (lv2base != lv2end) {
-+			if (!S5P_FAULT_LV2_ENTRY(*lv2base)) {
-+				dev_err(priv->dev, "Failed to free L2 page "
-+						"table for section mapping.\n");
-+				return false;
-+			}
-+			lv2base++;
-+		}
-+
-+		kmem_cache_free(l2table_cachep,
-+				phys_to_virt(*lv1entry & S5P_LV2TABLE_MASK));
-+
-+		MAKE_FAULT_ENTRY(*lv1entry);
-+	}
-+
-+	return true;
-+}
-+
-+static bool write_lpage(unsigned long *head_entry, unsigned long phys_addr)
-+{
-+	unsigned long *entry, *end;
-+
-+	entry = head_entry;
-+	end = entry + (1 << S5P_LPAGE_ORDER);
-+
-+	while (entry != end) {
-+		if (!S5P_FAULT_LV2_ENTRY(*entry))
-+			break;
-+
-+		MAKE_LPAGE_ENTRY(*entry, phys_addr);
-+
-+		entry++;
-+	}
-+
-+	if (entry != end) {
-+		end = entry;
-+		while (entry != head_entry)
-+			MAKE_FAULT_ENTRY(*(--entry));
-+
-+		return false;
-+	}
-+
-+	return true;
-+}
-+
-+static int exynos_iommu_map(struct iommu_domain *domain, unsigned long iova,
-+			 phys_addr_t paddr, int gfp_order, int prot)
-+{
-+	struct exynos_iommu_domain *priv = domain->priv;
-+	unsigned long *start_entry, *entry, *end_entry;
-+	int num_entry;
-+	int ret = 0;
-+	unsigned long flags;
-+
-+	BUG_ON(priv->pgtable== NULL);
-+
-+	spin_lock_irqsave(&priv->pgtablelock, flags);
-+
-+	start_entry = entry = priv->pgtable + (iova >> S5P_SECTION_SHIFT);
-+
-+	if (gfp_order >= S5P_SECTION_ORDER) {
-+		BUG_ON((paddr | iova) & ~S5P_SECTION_MASK);
-+		/* 1MiB mapping */
-+
-+		num_entry = 1 << (gfp_order - S5P_SECTION_ORDER);
-+		end_entry = entry + num_entry;
-+
-+		while (entry != end_entry) {
-+			if (!section_available(domain, entry))
-+				break;
-+
-+			MAKE_SECTION_ENTRY(*entry, paddr);
-+
-+			paddr += S5P_SECTION_SIZE;
-+			entry++;
-+		}
-+
-+		if (entry != end_entry)
-+			goto mapping_error;
-+
-+		pgtable_flush(start_entry, entry);
-+		goto mapping_done;
-+	}
-+
-+	if (S5P_FAULT_LV1_ENTRY(*entry)) {
-+		unsigned long *l2table;
-+
-+		l2table = kmem_cache_zalloc(l2table_cachep, GFP_KERNEL);
-+		if (!l2table) {
-+			ret = -ENOMEM;
-+			goto nomem_error;
-+		}
-+
-+		pgtable_flush(entry, entry + S5P_LV2TABLE_ENTRIES);
-+
-+		MAKE_LV2TABLE_ENTRY(*entry, virt_to_phys(l2table));
-+		pgtable_flush(entry, entry + 1);
-+	}
-+
-+	/* 'entry' points level 2 entries, hereafter */
-+	entry = GET_LV2ENTRY(*entry, iova);
-+
-+	start_entry = entry;
-+	num_entry = 1 << gfp_order;
-+	end_entry = entry + num_entry;
-+
-+	if (gfp_order >= S5P_LPAGE_ORDER) {
-+		/* large page(64KiB) mapping */
-+		BUG_ON((paddr | iova) & ~S5P_LPAGE_MASK);
-+
-+		while (entry != end_entry) {
-+			if (!write_lpage(entry, paddr)) {
-+				pr_err("%s: "
-+					"Failed to allocate large page entry."
-+					"\n", __func__);
-+				break;
-+			}
-+
-+			paddr += S5P_LPAGE_SIZE;
-+			entry += (1 << S5P_LPAGE_ORDER);
-+		}
-+
-+		if (entry != end_entry) {
-+			entry -= 1 << S5P_LPAGE_ORDER;
-+			goto mapping_error;
-+		}
-+	} else {
-+		/* page (4KiB) mapping */
-+		while (entry != end_entry && S5P_FAULT_LV2_ENTRY(*entry)) {
-+
-+			MAKE_SPAGE_ENTRY(*entry, paddr);
-+
-+			entry++;
-+			paddr += S5P_SPAGE_SIZE;
-+		}
-+
-+		if (entry != end_entry) {
-+			pr_err("%s: Failed to allocate small page entry.\n",
-+								__func__);
-+			goto mapping_error;
-+		}
-+	}
-+
-+	pgtable_flush(start_entry, entry);
-+mapping_error:
-+	if (entry != end_entry) {
-+		unsigned long *current_entry = entry;
-+		while (entry != start_entry)
-+			MAKE_FAULT_ENTRY(*(--entry));
-+		pgtable_flush(start_entry, current_entry);
-+		ret = -EADDRINUSE;
-+	}
-+
-+nomem_error:
-+mapping_done:
-+	spin_unlock_irqrestore(&priv->pgtablelock, flags);
-+
-+	return 0;
-+}
-+
-+static int exynos_iommu_unmap(struct iommu_domain *domain, unsigned long iova,
-+			   int gfp_order)
-+{
-+	struct exynos_iommu_domain *priv= domain->priv;
-+	unsigned long *entry;
-+	int num_entry;
-+	unsigned long flags;
-+
-+	BUG_ON(priv->pgtable == NULL);
-+
-+	spin_lock_irqsave(&priv->pgtablelock, flags);
-+
-+	entry = priv->pgtable + (iova >> S5P_SECTION_SHIFT);
-+
-+	if (gfp_order >= S5P_SECTION_ORDER) {
-+		gfp_order -= S5P_SECTION_ORDER;
-+		num_entry = 1 << (gfp_order - S5P_SECTION_ORDER);
-+		while (num_entry--) {
-+			if (S5P_SECTION_LV1_ENTRY(*entry)) {
-+				MAKE_FAULT_ENTRY(*entry);
-+			} else if (S5P_PAGE_LV1_ENTRY(*entry)) {
-+				unsigned long *lv2beg, *lv2end;
-+				lv2beg = phys_to_virt(
-+						*entry & S5P_LV2TABLE_MASK);
-+				lv2end = lv2beg + S5P_LV2TABLE_ENTRIES;
-+				while (lv2beg != lv2end) {
-+					MAKE_FAULT_ENTRY(*lv2beg);
-+					lv2beg++;
-+				}
-+			}
-+			entry++;
-+		}
-+	} else {
-+		entry = GET_LV2ENTRY(*entry, iova);
-+
-+		BUG_ON(S5P_LPAGE_LV2_ENTRY(*entry) &&
-+						(gfp_order < S5P_LPAGE_ORDER));
-+
-+		num_entry = 1 << gfp_order;
-+
-+		while (num_entry--) {
-+			MAKE_FAULT_ENTRY(*entry);
-+			entry++;
-+		}
-+	}
-+
-+	if (priv->dev)
-+		exynos_sysmmu_tlb_invalidate(priv->dev);
-+
-+	spin_unlock_irqrestore(&priv->pgtablelock, flags);
-+
-+	return 0;
-+}
-+
-+static phys_addr_t exynos_iommu_iova_to_phys(struct iommu_domain *domain,
-+					  unsigned long iova)
-+{
-+	struct exynos_iommu_domain *priv= domain->priv;
-+	unsigned long *entry;
-+	unsigned long offset;
-+
-+	entry = priv->pgtable + (iova >> S5P_SECTION_SHIFT);
-+
-+	if (S5P_FAULT_LV1_ENTRY(*entry))
-+		return 0;
-+
-+	offset = iova & ~S5P_SECTION_MASK;
-+
-+	if (S5P_SECTION_LV1_ENTRY(*entry))
-+		return (*entry & S5P_SECTION_MASK) + offset;
-+
-+	entry = GET_LV2ENTRY(*entry, iova);
-+
-+	if (S5P_SPAGE_LV2_ENTRY(*entry))
-+		return (*entry & S5P_SPAGE_MASK) + (iova & ~S5P_SPAGE_MASK);
-+
-+	if (S5P_LPAGE_LV2_ENTRY(*entry))
-+		return (*entry & S5P_LPAGE_MASK) + (iova & ~S5P_LPAGE_MASK);
-+
-+	return 0;
-+}
-+
-+static int exynos_iommu_domain_has_cap(struct iommu_domain *domain,
-+				    unsigned long cap)
-+{
-+	return 0;
-+}
-+
-+static struct iommu_ops exynos_iommu_ops = {
-+	.domain_init = &exynos_iommu_domain_init,
-+	.domain_destroy = &exynos_iommu_domain_destroy,
-+	.attach_dev = &exynos_iommu_attach_device,
-+	.detach_dev = &exynos_iommu_detach_device,
-+	.map = &exynos_iommu_map,
-+	.unmap = &exynos_iommu_unmap,
-+	.iova_to_phys = &exynos_iommu_iova_to_phys,
-+	.domain_has_cap = &exynos_iommu_domain_has_cap,
-+};
-+
-+static int __init exynos_iommu_init(void)
-+{
-+	l2table_cachep = kmem_cache_create("SysMMU Lv2 Tables",
-+				S5P_LV2TABLE_SIZE, S5P_LV2TABLE_SIZE, 0, NULL);
-+	if (!l2table_cachep)
-+		return -ENOMEM;
-+
-+	register_iommu(&exynos_iommu_ops);
-+
-+	return 0;
-+}
-+arch_initcall(exynos_iommu_init);
--- 
-1.7.1
+please find some comments below.
 
+> diff --git a/drivers/input/touchscreen/cyttsp/cyttsp_core.c b/drivers/input/touchscreen/cyttsp/cyttsp_core.c
+> new file mode 100644
+> index 0000000..8e7bd66
+> --- /dev/null
+> +++ b/drivers/input/touchscreen/cyttsp/cyttsp_core.c
+> @@ -0,0 +1,853 @@
+> +/*
+> + * Core Source for:
+> + * Cypress TrueTouch(TM) Standard Product (TTSP) touchscreen drivers.
+> + * For use with Cypress Txx3xx parts.
+> + * Supported parts include:
+> + * CY8CTST341
+> + * CY8CTMA340
+> + *
+> + * Copyright (C) 2009, 2010, 2011 Cypress Semiconductor, Inc.
+> + * Copyright (C) 2011 Javier Martinez Canillas <martinez.javier@gmail.com>
+> + *
+> + * Added multi-touch protocol type B support by Javier Martinez Canillas
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License
+> + * version 2, and only version 2, as published by the
+> + * Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License along
+> + * with this program; if not, write to the Free Software Foundation, Inc.,
+> + * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+> + *
+> + * Contact Cypress Semiconductor at www.cypress.com <kev@cypress.com>
+> + *
+> + */
+> +
+> +#include "cyttsp_core.h"
+> +
+> +#include <linux/delay.h>
+> +#include <linux/input.h>
+> +#include <linux/input/mt.h>
+> +#include <linux/gpio.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/slab.h>
+> +
+> +/* Bootloader number of command keys */
+> +#define CY_NUM_BL_KEYS    8
+> +
+> +/* helpers */
+> +#define GET_NUM_TOUCHES(x)          ((x) & 0x0F)
+> +#define IS_LARGE_AREA(x)            (((x) & 0x10) >> 4)
+> +#define IS_BAD_PKT(x)               ((x) & 0x20)
+> +#define IS_VALID_APP(x)             ((x) & 0x01)
+> +#define IS_OPERATIONAL_ERR(x)       ((x) & 0x3F)
+> +#define GET_HSTMODE(reg)            ((reg & 0x70) >> 4)
+> +#define GET_BOOTLOADERMODE(reg)     ((reg & 0x10) >> 4)
+> +
+> +#define CY_REG_BASE                 0x00
+> +#define CY_REG_ACT_DIST             0x1E
+> +#define CY_REG_ACT_INTRVL           0x1D
+> +#define CY_REG_TCH_TMOUT            (CY_REG_ACT_INTRVL+1)
+> +#define CY_REG_LP_INTRVL            (CY_REG_TCH_TMOUT+1)
+> +#define CY_MAXZ                     255
+> +#define CY_DELAY_DFLT               20 /* ms */
+> +#define CY_DELAY_MAX                (500/CY_DELAY_DFLT) /* half second */
+> +#define CY_ACT_DIST_DFLT            0xF8
+> +#define CY_HNDSHK_BIT               0x80
+> +/* device mode bits */
+> +#define CY_OPERATE_MODE             0x00
+> +#define CY_SYSINFO_MODE             0x10
+> +/* power mode select bits */
+> +#define CY_SOFT_RESET_MODE          0x01 /* return to Bootloader mode */
+> +#define CY_DEEP_SLEEP_MODE          0x02
+> +#define CY_LOW_POWER_MODE           0x04
+> +
+> +/* Slots management */
+> +#define CY_MAX_FINGER               4
+> +#define CY_UNUSED                   0
+> +#define CY_USED                     1
+
+These two look like bool, please use as bool instead.
+
+> +#define CY_MAX_ID                   15
+
+Why not 16 here?
+
+> +struct cyttsp_tch {
+> +	__be16 x, y;
+> +	u8 z;
+> +} __packed;
+> +
+> +/* TrueTouch Standard Product Gen3 interface definition */
+> +struct cyttsp_xydata {
+> +	u8 hst_mode;
+> +	u8 tt_mode;
+> +	u8 tt_stat;
+> +	struct cyttsp_tch tch1;
+> +	u8 touch12_id;
+> +	struct cyttsp_tch tch2;
+> +	u8 gest_cnt;
+> +	u8 gest_id;
+> +	struct cyttsp_tch tch3;
+> +	u8 touch34_id;
+> +	struct cyttsp_tch tch4;
+> +	u8 tt_undef[3];
+> +	u8 act_dist;
+> +	u8 tt_reserved;
+> +} __packed;
+
+Too bad the touches are not an array here...
+
+> +
+> +/* TTSP System Information interface definition */
+> +struct cyttsp_sysinfo_data {
+> +	u8 hst_mode;
+> +	u8 mfg_cmd;
+> +	u8 mfg_stat;
+> +	u8 cid[3];
+> +	u8 tt_undef1;
+> +	u8 uid[8];
+> +	u8 bl_verh;
+> +	u8 bl_verl;
+> +	u8 tts_verh;
+> +	u8 tts_verl;
+> +	u8 app_idh;
+> +	u8 app_idl;
+> +	u8 app_verh;
+> +	u8 app_verl;
+> +	u8 tt_undef[5];
+> +	u8 scn_typ;
+> +	u8 act_intrvl;
+> +	u8 tch_tmout;
+> +	u8 lp_intrvl;
+> +};
+> +
+> +/* TTSP Bootloader Register Map interface definition */
+> +#define CY_BL_CHKSUM_OK 0x01
+> +struct cyttsp_bootloader_data {
+> +	u8 bl_file;
+> +	u8 bl_status;
+> +	u8 bl_error;
+> +	u8 blver_hi;
+> +	u8 blver_lo;
+> +	u8 bld_blver_hi;
+> +	u8 bld_blver_lo;
+> +	u8 ttspver_hi;
+> +	u8 ttspver_lo;
+> +	u8 appid_hi;
+> +	u8 appid_lo;
+> +	u8 appver_hi;
+> +	u8 appver_lo;
+> +	u8 cid_0;
+> +	u8 cid_1;
+> +	u8 cid_2;
+> +};
+> +
+> +struct cyttsp {
+> +	struct device *dev;
+> +	int irq;
+> +	struct input_dev *input;
+> +	char phys[32];
+> +	const struct cyttsp_platform_data *platform_data;
+> +	struct cyttsp_bus_ops *bus_ops;
+> +	struct cyttsp_bootloader_data bl_data;
+> +	struct cyttsp_sysinfo_data sysinfo_data;
+> +	struct completion bl_ready;
+> +	enum cyttsp_powerstate power_state;
+> +	int slot_curr[CY_MAX_ID];
+> +	int slot_prev[CY_MAX_ID];
+
+These two are not needed; the input core will take care of duplicates,
+so slot_prev can be removed. Also, the set of current slots can be
+tracked using a temporary bitmask, so slot_curr can be removed as well.
+
+<snip>
+
+> +static void cyttsp_report_slot(struct input_dev *dev, int slot,
+> +			       int x, int y, int z)
+> +{
+> +	input_mt_slot(dev, slot);
+> +	input_mt_report_slot_state(dev, MT_TOOL_FINGER, true);
+> +	input_report_abs(dev, ABS_MT_POSITION_X, x);
+> +	input_report_abs(dev, ABS_MT_POSITION_Y, y);
+> +	input_report_abs(dev, ABS_MT_TOUCH_MAJOR, z);
+> +}
+> +
+> +static void cyttsp_report_slot_empty(struct input_dev *dev, int slot)
+> +{
+> +	input_mt_slot(dev, slot);
+> +	input_mt_report_slot_state(dev, MT_TOOL_FINGER, false);
+> +}
+> +
+> +static void cyttsp_extract_track_ids(struct cyttsp_xydata *xy_data, int *ids)
+> +{
+> +	ids[0] = xy_data->touch12_id >> 4;
+> +	ids[1] = xy_data->touch12_id & 0xF;
+> +	ids[2] = xy_data->touch34_id >> 4;
+> +	ids[3] = xy_data->touch34_id & 0xF;
+> +}
+> +
+> +static void cyttsp_get_tch(struct cyttsp_xydata *xy_data, int idx,
+> +			   struct cyttsp_tch **tch)
+> +{
+> +	switch (idx) {
+> +	case 0:
+> +		*tch = &xy_data->tch1;
+> +		break;
+> +	case 1:
+> +		*tch = &xy_data->tch2;
+> +		break;
+> +	case 2:
+> +		*tch = &xy_data->tch3;
+> +		break;
+> +	case 3:
+> +		*tch = &xy_data->tch4;
+> +		break;
+> +	}
+> +}
+
+How about returning a const struct cyttsp_tch* here instead.
+
+> +static int cyttsp_handle_tchdata(struct cyttsp *ts)
+> +{
+> +	struct cyttsp_xydata xy_data;
+> +	u8 num_cur_tch;
+> +	int i;
+> +	int ids[4];
+> +	struct cyttsp_tch *tch = NULL;
+> +	int x, y, z;
+> +
+> +	/* Get touch data from CYTTSP device */
+> +	if (ttsp_read_block_data(ts,
+> +		CY_REG_BASE, sizeof(struct cyttsp_xydata), &xy_data))
+> +		return 0;
+> +
+> +	/* touch extension handling */
+> +	if (ttsp_tch_ext(ts, &xy_data))
+> +		return 0;
+> +
+> +	/* provide flow control handshake */
+> +	if (ts->platform_data->use_hndshk)
+> +		if (cyttsp_hndshk(ts, xy_data.hst_mode))
+> +			return 0;
+> +
+> +	/* determine number of currently active touches */
+> +	num_cur_tch = GET_NUM_TOUCHES(xy_data.tt_stat);
+> +
+> +	/* check for any error conditions */
+> +	if (ts->power_state == CY_IDLE_STATE)
+> +		return 0;
+> +	else if (GET_BOOTLOADERMODE(xy_data.tt_mode)) {
+> +		return -1;
+> +	} else if (IS_LARGE_AREA(xy_data.tt_stat) == 1) {
+> +		/* terminate all active tracks */
+> +		num_cur_tch = 0;
+> +		dev_dbg(ts->dev, "%s: Large area detected\n", __func__);
+> +	} else if (num_cur_tch > CY_MAX_FINGER) {
+> +		/* terminate all active tracks */
+> +		num_cur_tch = 0;
+> +		dev_dbg(ts->dev, "%s: Num touch error detected\n", __func__);
+> +	} else if (IS_BAD_PKT(xy_data.tt_mode)) {
+> +		/* terminate all active tracks */
+> +		num_cur_tch = 0;
+> +		dev_dbg(ts->dev, "%s: Invalid buffer detected\n", __func__);
+> +	}
+> +
+> +	cyttsp_extract_track_ids(&xy_data, ids);
+> +
+> +	for (i = 0; i < num_cur_tch; i++) {
+> +		ts->slot_curr[ids[i] - 1] = CY_USED;
+
+Why the -1 here? Since the values are provably between 0 and 15, there
+is no need to change them further.
+
+Also, the above line could be replaced by "used |= 1 << ids[i]", for instance.
+
+> +
+> +		cyttsp_get_tch(&xy_data, i, &tch);
+> +
+> +		x = be16_to_cpu(tch->x);
+> +		y = be16_to_cpu(tch->y);
+> +		z = tch->z;
+> +
+> +		cyttsp_report_slot(ts->input, ids[i] - 1, x, y, z);
+
+Ditto, -1.
+
+> +	}
+> +
+> +	for (i = 0; i < CY_MAX_ID; i++) {
+> +		if (ts->slot_prev[i] == CY_USED &&
+> +		    ts->slot_curr[i] == CY_UNUSED)
+> +			cyttsp_report_slot_empty(ts->input, i);
+> +		ts->slot_prev[i] = ts->slot_curr[i];
+> +		ts->slot_curr[i] = CY_UNUSED;
+> +	}
+
+Input core handles duplicate calls, so the above could be simplified.
+
+> +
+> +	input_sync(ts->input);
+> +
+> +	return 0;
+> +}
+
+<snip>
+
+> +void *cyttsp_core_init(struct cyttsp_bus_ops *bus_ops, struct device *dev, int irq)
+> +{
+> +	struct input_dev *input_device;
+> +	int i;
+> +	int ret;
+> +
+> +	struct cyttsp *ts = kzalloc(sizeof(*ts), GFP_KERNEL);
+> +
+> +	if (!ts) {
+> +		pr_err("%s: Error, kzalloc\n", __func__);
+> +		goto error_alloc_data;
+> +	}
+> +
+> +	if (dev == NULL || bus_ops == NULL) {
+> +		kfree(ts);
+> +		goto error_alloc_data;
+> +	}
+> +
+> +	ts->dev = dev;
+> +	ts->platform_data = dev->platform_data;
+> +	ts->bus_ops = bus_ops;
+> +	init_completion(&ts->bl_ready);
+> +
+> +	if (ts->platform_data->init) {
+> +		if (ts->platform_data->init()) {
+> +			dev_dbg(ts->dev, "%s: Error, platform init failed!\n",
+> +				__func__);
+> +			goto error_init;
+> +		}
+> +	}
+> +
+> +	ts->irq = irq;
+> +	if (ts->irq <= 0) {
+> +		dev_dbg(ts->dev, "%s: Error, failed to allocate irq\n",
+> +			__func__);
+> +			goto error_init;
+> +	}
+> +
+> +	/* Create the input device and register it. */
+> +	input_device = input_allocate_device();
+> +	if (!input_device) {
+> +		dev_dbg(ts->dev, "%s: Error, failed to allocate input device\n",
+> +			__func__);
+> +		goto error_input_allocate_device;
+> +	}
+> +
+> +	ts->input = input_device;
+> +	input_device->name = ts->platform_data->name;
+> +	snprintf(ts->phys, sizeof(ts->phys), "%s", dev_name(dev));
+> +	input_device->phys = ts->phys;
+> +	input_device->dev.parent = ts->dev;
+> +	input_device->open = cyttsp_open;
+> +	input_device->close = cyttsp_close;
+> +	input_set_drvdata(input_device, ts);
+> +
+> +	__set_bit(EV_SYN, input_device->evbit);
+> +	__set_bit(EV_KEY, input_device->evbit);
+> +	__set_bit(EV_ABS, input_device->evbit);
+> +
+> +	input_set_abs_params(input_device, ABS_MT_POSITION_X,
+> +			     0, ts->platform_data->maxx, 0, 0);
+> +	input_set_abs_params(input_device, ABS_MT_POSITION_Y,
+> +			     0, ts->platform_data->maxy, 0, 0);
+> +	input_set_abs_params(input_device, ABS_MT_TOUCH_MAJOR,
+> +			     0, CY_MAXZ, 0, 0);
+> +
+> +	input_mt_init_slots(input_device, CY_MAX_ID);
+> +
+> +	for (i = 0; i < CY_MAX_ID; i++) {
+> +		ts->slot_prev[i] = CY_UNUSED;
+> +		ts->slot_curr[i] = CY_UNUSED;
+> +	}
+
+Could be removed.
+
+> +	ret = input_register_device(input_device);
+> +	if (ret) {
+> +		dev_err(ts->dev, "%s: Error, failed to register input device: %d\n",
+> +			__func__, ret);
+> +		goto error_input_register_device;
+> +	}
+> +
+> +	goto no_error;
+> +
+> +error_input_register_device:
+> +	input_free_device(input_device);
+> +error_input_allocate_device:
+> +	if (ts->platform_data->exit)
+> +		ts->platform_data->exit();
+> +error_init:
+> +	kfree(ts);
+> +error_alloc_data:
+> +no_error:
+> +	return ts;
+> +}
+
+Thanks,
+Henrik
