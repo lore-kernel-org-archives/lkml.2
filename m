@@ -1,136 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752913Ab1I0SmM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 14:42:12 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:5260 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751446Ab1I0SmK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 14:42:10 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:sender:in-reply-to:references:date:
-	x-google-sender-auth:message-id:subject:from:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=dYyeZhnnMzeWQh4F8nH51YWJg53ZgHrvoYhOz+JC0Wr+bkI6hshXEV9r/uYcmloX2
-	U5aI03eRV/7ZczRVo8XWA==
+	id S1752866Ab1I0Sn5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 14:43:57 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:34919 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752492Ab1I0Sn4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 14:43:56 -0400
+Message-ID: <4E821920.3000509@parallels.com>
+Date: Tue, 27 Sep 2011 15:42:40 -0300
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-In-Reply-To: <4E820E4D.5050205@am.sony.com>
-References: <1316818998-30711-1-git-send-email-sjg@chromium.org>
-	<4E820E4D.5050205@am.sony.com>
-Date: Tue, 27 Sep 2011 11:42:06 -0700
-X-Google-Sender-Auth: WnD79m3HaXk5s6m4N4X79dthVc8
-Message-ID: <CAPnjgZ0hoM4b4vt6THyO54xBo_YTGmg14P5a48sQPkkeR00-5Q@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/3] Add accurate boot timing to a Linux system
-From: Simon Glass <sjg@chromium.org>
-To: Tim Bird <tim.bird@am.sony.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Balbir Singh <bsingharora@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
+        <lizf@cn.fujitsu.com>, <daniel.lezcano@free.fr>,
+        <a.p.zijlstra@chello.nl>, <jbottomley@parallels.com>
+Subject: Re: [RFD 3/9] Display /proc/stat information per cgroup
+References: <1316816432-9237-1-git-send-email-glommer@parallels.com> <1316816432-9237-4-git-send-email-glommer@parallels.com> <CAKTCnz=5wLq2OAKLfCOh5bX+t2T1exhhCdHUMkQchPzHNyU5Hw@mail.gmail.com>
+In-Reply-To: <CAKTCnz=5wLq2OAKLfCOh5bX+t2T1exhhCdHUMkQchPzHNyU5Hw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [201.82.135.174]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tim,
-
-On Tue, Sep 27, 2011 at 10:56 AM, Tim Bird <tim.bird@am.sony.com> wrote:
-> On 09/23/2011 04:03 PM, Simon Glass wrote:
->> This experimental patch set adds boot timing to a Linux system. The
->> timing starts with the boot loader and extends through the kernel into
->> user space to the completion of the boot process. The timing starts when
->> the system leaves reset, not later when the kernel starts.
->
-> I would be very interested in this.  This is something that
-> would be very helpful, I believe, to assist with optimizing
-> overall boot time.
-
-Good.
-
->
->> Finally, in user space there is no kernel-blessed way to record
->> timestamps. One approach is to add lines to the init scripts like
->> 'cat /proc/uptime >/tmp/login_starts'.
->> This creates another place where
->> the boot timing tool must look for information.
->
-> 'cat /proc/uptime >/dev/kmsg' (with printk timestamps on) is much
-> better than the above, for this reason.
-
-Yes, although this needs root access on my machine. Am hoping to have
-something easily accessible from user space.
-
->
->> This Patchset
->> -------------
->> This patchset aims to unify timing in one place: a simple driver which
->> collects pre-kernel boot timestamps, adds its own as it boots, with
->> calls to bootstage_mark(), then allows user space (init, etc.) to add
->> more with 'echo "message" >>/sys/kernel/debug/bootstage/mask'.
+On 09/27/2011 02:01 PM, Balbir Singh wrote:
+> On Sat, Sep 24, 2011 at 3:50 AM, Glauber Costa<glommer@parallels.com>  wrote:
+>> Each cgroup has its own file, cpu.proc.stat that will
+>> display the exact same format as /proc/stat. Users
+>> that want to have access to a per-cgroup version of
+>> this information, can query it for that purpose.
 >>
->> Finally it permits user space to access the full list of timestamps
->> with 'cat /sys/kernel/debug/bootstage/report', which has two columns:
->> the stage name and the timestamp:
->>
->>       reset   0
->>       arch_cpu_init-AVP       258902
->>       arch_cpu_init-A9        263267
->>       arch_cpu_init-done      263312
->>       board_init_f-start      263314
->>       board_init_r-start      323671
->>       main_loop       573008
+>> Signed-off-by: Glauber Costa<glommer@parallels.com>
 > ...
+
+Hi Balbir, thanks for reviewing this.
+
+>> +static inline void task_cgroup_account_field(struct task_struct *p,
+>> +                                            cputime64_t tmp, int index)
+>> +{
+>> +       struct kernel_stat *kstat;
+>> +       struct task_group *tg = task_group(p);
+>> +
+>> +       do {
+>> +               kstat = this_cpu_ptr(tg->cpustat);
+>> +               kstat->cpustat[index] = cputime64_add(kstat->cpustat[index],
+>> +                                                     tmp);
+>> +               tg = tg->parent;
+>> +       } while (tg);
+>> +}
 >
-> I would prefer the timestamp in the first column.  Also, for consistency
-> it would be good if it used the same format as printk timestamps:
-> "[%5lu.%06lu]" with seconds and micro-seconds in the respective fields.
-> Then, existing tools like scripts/show_delta and scripts/bootgraph.pl
-> could work on this data as well.
+> What protects the walk (tg = tg->parent)? Could you please document it
+I think that the fact that the hierarchy only grows down, thus parent 
+never changes (or am I wrong?)
 
-Yes that makes sense, I will adjust it.
+And since we run all this with preempt disabled and with the runqueue 
+locked, we should have no problems.
 
+Do you agree?
+
+>> +
+>>   /*
+>>   * Account user cpu time to a process.
+>>   * @p: the process that the cpu time gets accounted to
+>> @@ -3763,9 +3777,8 @@ unsigned long long thread_group_sched_runtime(struct task_struct *p)
+>>   * @cputime_scaled: cputime scaled by cpu frequency
+>>   */
+>>   void account_user_time(struct task_struct *p, cputime_t cputime,
+>> -                      cputime_t cputime_scaled)
+>> +               cputime_t cputime_scaled)
+>>   {
+>> -       cputime64_t *cpustat = kstat_this_cpu->cpustat;
+>>         cputime64_t tmp;
+>>
+>>         /* Add user time to process. */
+>> @@ -3775,10 +3788,11 @@ void account_user_time(struct task_struct *p, cputime_t cputime,
+>>
+>>         /* Add user time to cpustat. */
+>>         tmp = cputime_to_cputime64(cputime);
+>> +
+>>         if (TASK_NICE(p)>  0)
+>> -               cpustat[NICE] = cputime64_add(cpustat[NICE], tmp);
+>> +               task_cgroup_account_field(p, tmp, NICE);
+>>         else
+>> -               cpustat[USER] = cputime64_add(cpustat[USER], tmp);
+>> +               task_cgroup_account_field(p, tmp, USER);
+>>
+>>         cpuacct_update_stats(p, CPUACCT_STAT_USER, cputime);
+>>         /* Account for user time used */
+>> @@ -3824,7 +3838,7 @@ static void account_guest_time(struct task_struct *p, cputime_t cputime,
+>>   */
+>>   static inline
+>>   void __account_system_time(struct task_struct *p, cputime_t cputime,
+>> -                       cputime_t cputime_scaled, cputime64_t *target_cputime64)
+>> +                       cputime_t cputime_scaled, int index)
+>>   {
+>>         cputime64_t tmp = cputime_to_cputime64(cputime);
+>>
+>> @@ -3834,7 +3848,7 @@ void __account_system_time(struct task_struct *p, cputime_t cputime,
+>>         account_group_system_time(p, cputime);
+>>
+>>         /* Add system time to cpustat. */
+>> -       *target_cputime64 = cputime64_add(*target_cputime64, tmp);
+>> +       task_cgroup_account_field(p, tmp, index);
+>>         cpuacct_update_stats(p, CPUACCT_STAT_SYSTEM, cputime);
+>>
+>>         /* Account for system time used */
+>> @@ -3851,8 +3865,7 @@ void __account_system_time(struct task_struct *p, cputime_t cputime,
+>>   void account_system_time(struct task_struct *p, int hardirq_offset,
+>>                          cputime_t cputime, cputime_t cputime_scaled)
+>>   {
+>> -       cputime64_t *cpustat = kstat_this_cpu->cpustat;
+>> -       cputime64_t *target_cputime64;
+>> +       int index;
+>>
+>>         if ((p->flags&  PF_VCPU)&&  (irq_count() - hardirq_offset == 0)) {
+>>                 account_guest_time(p, cputime, cputime_scaled);
+>> @@ -3860,13 +3873,13 @@ void account_system_time(struct task_struct *p, int hardirq_offset,
+>>         }
+>>
+>>         if (hardirq_count() - hardirq_offset)
+>> -               target_cputime64 =&cpustat[IRQ];
+>> +               index = IRQ;
+>>         else if (in_serving_softirq())
+>> -               target_cputime64 =&cpustat[SOFTIRQ];
+>> +               index = SOFTIRQ;
+>>         else
+>> -               target_cputime64 =&cpustat[SYSTEM];
+>> +               index = SYSTEM;
+>>
+>> -       __account_system_time(p, cputime, cputime_scaled, target_cputime64);
+>> +       __account_system_time(p, cputime, cputime_scaled, index);
+>>   }
+>>
+>>   /*
+>> @@ -3941,27 +3954,29 @@ static __always_inline bool steal_account_process_tick(void)
+>>   * softirq as those do not count in task exec_runtime any more.
+>>   */
+>>   static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
+>> -                                               struct rq *rq)
+>> +                                        struct rq *rq)
+>>   {
+>>         cputime_t one_jiffy_scaled = cputime_to_scaled(cputime_one_jiffy);
+>>         cputime64_t tmp = cputime_to_cputime64(cputime_one_jiffy);
+>> -       cputime64_t *cpustat = kstat_this_cpu->cpustat;
+>> +       struct task_group *tg;
+>>
+>>         if (steal_account_process_tick())
+>>                 return;
+>>
+>> +       tg = task_group(p);
+>> +
+>>         if (irqtime_account_hi_update()) {
+>> -               cpustat[IRQ] = cputime64_add(cpustat[IRQ], tmp);
+>> +               task_cgroup_account_field(p, tmp, IRQ);
+>>         } else if (irqtime_account_si_update()) {
+>> -               cpustat[SOFTIRQ] = cputime64_add(cpustat[SOFTIRQ], tmp);
+>> +               task_cgroup_account_field(p, tmp, SOFTIRQ);
+>>         } else if (this_cpu_ksoftirqd() == p) {
+>>                 /*
+>>                  * ksoftirqd time do not get accounted in cpu_softirq_time.
+>>                  * So, we have to handle it separately here.
+>>                  * Also, p->stime needs to be updated for ksoftirqd.
+>>                  */
+>> -               __account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
+>> -&cpustat[SOFTIRQ]);
+>> +               __account_system_time(p, cputime_one_jiffy,
+>> +                                     one_jiffy_scaled, SOFTIRQ);
+>>         } else if (user_tick) {
+>>                 account_user_time(p, cputime_one_jiffy, one_jiffy_scaled);
+>>         } else if (p == rq->idle) {
+>> @@ -3969,8 +3984,8 @@ static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
+>>         } else if (p->flags&  PF_VCPU) { /* System time or guest time */
+>>                 account_guest_time(p, cputime_one_jiffy, one_jiffy_scaled);
+>>         } else {
+>> -               __account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
+>> -&cpustat[SYSTEM]);
+>> +               __account_system_time(p, cputime_one_jiffy,
+>> +                                     one_jiffy_scaled, SYSTEM);
+>>         }
+>>   }
+>>
+>> @@ -8038,6 +8053,7 @@ void __init sched_init(void)
+>>   {
+>>         int i, j;
+>>         unsigned long alloc_size = 0, ptr;
+>> +       struct kernel_stat *kstat;
+>>
+>>   #ifdef CONFIG_FAIR_GROUP_SCHED
+>>         alloc_size += 2 * nr_cpu_ids * sizeof(void **);
+>> @@ -8092,6 +8108,18 @@ void __init sched_init(void)
+>>         INIT_LIST_HEAD(&root_task_group.children);
+>>         INIT_LIST_HEAD(&root_task_group.siblings);
+>>         autogroup_init(&init_task);
+>> +
+>> +       root_task_group.cpustat = alloc_percpu(struct kernel_stat);
+>> +       /* Failing that early an allocation means we're screwed anyway */
+>> +       BUG_ON(!root_task_group.cpustat);
+>> +       for_each_possible_cpu(i) {
 >
-> Full micro-second granularity is not required, but it's nice to keep
-> the format the same, whether the clock supports it or not.
-
-Yes, and it's surprising how often microsecond accuracy is useful. For
-example, recently I was looking at the impact of reduced
-voltage/frequency early in boot on an ARM platform. The difference was
-only a few ms, and the microsecond timer resolution helped a lot in
-seeing the impact of these changes.
-
+> for_each_possible_cpu might be an overkill, no?
 >
-> Finally, is this work related at all to this:
-> http://lists.denx.de/pipermail/u-boot/2011-September/099996.html
-> Bootgraph.pl instrumentation support for UBoot
-> ??
+>> +               kstat = per_cpu_ptr(root_task_group.cpustat, i);
+>> +               kstat->cpustat[IDLE] = 0;
+>> +               kstat->cpustat[IDLE_BASE] = 0;
+>> +               kstat->cpustat[IOWAIT_BASE] = 0;
+>> +               kstat->cpustat[IOWAIT] = 0;
+>> +       }
+>> +
+>>   #endif /* CONFIG_CGROUP_SCHED */
+>>
+>>         for_each_possible_cpu(i) {
+>> @@ -8526,6 +8554,7 @@ static void free_sched_group(struct task_group *tg)
+>>         free_fair_sched_group(tg);
+>>         free_rt_sched_group(tg);
+>>         autogroup_free(tg);
+>> +       free_percpu(tg->cpustat);
+>>         kfree(tg);
+>>   }
+>>
+>> @@ -8534,6 +8563,7 @@ struct task_group *sched_create_group(struct task_group *parent)
+>>   {
+>>         struct task_group *tg;
+>>         unsigned long flags;
+>> +       int i;
+>>
+>>         tg = kzalloc(sizeof(*tg), GFP_KERNEL);
+>>         if (!tg)
+>> @@ -8545,6 +8575,19 @@ struct task_group *sched_create_group(struct task_group *parent)
+>>         if (!alloc_rt_sched_group(tg, parent))
+>>                 goto err;
+>>
+>> +       tg->cpustat = alloc_percpu(struct kernel_stat);
+>> +       if (!tg->cpustat)
+>> +               goto err;
+>> +
+>> +       for_each_possible_cpu(i) {
+>> +               struct kernel_stat *kstat, *root_kstat;
+>> +
+>> +               kstat = per_cpu_ptr(tg->cpustat, i);
+>> +               root_kstat = per_cpu_ptr(root_task_group.cpustat, i);
+>> +               kstat->cpustat[IDLE_BASE]  = root_kstat->cpustat[IDLE];
+>> +               kstat->cpustat[IOWAIT_BASE] = root_kstat->cpustat[IOWAIT];
+>> +       }
+>> +
+>>         spin_lock_irqsave(&task_group_lock, flags);
+>>         list_add_rcu(&tg->list,&task_groups);
+>>
+>> @@ -9092,7 +9135,9 @@ int cpu_cgroup_proc_stat(struct cgroup *cgrp, struct cftype *cft, struct seq_fil
+>>                 system = cputime64_add(system, kstat->cpustat[SYSTEM]);
+>>                 idle = cputime64_add(idle, root_kstat->cpustat[IDLE]);
+>>                 idle = cputime64_add(idle, arch_idle_time(i));
+>> +               idle = cputime64_sub(idle, kstat->cpustat[IDLE_BASE]);
+>>                 iowait = cputime64_add(iowait, root_kstat->cpustat[IOWAIT]);
+>> +               iowait = cputime64_sub(iowait, kstat->cpustat[IOWAIT_BASE]);
+>>                 irq = cputime64_add(irq, kstat->cpustat[IRQ]);
+>>                 softirq = cputime64_add(softirq, kstat->cpustat[SOFTIRQ]);
+>>                 steal = cputime64_add(steal, kstat->cpustat[STEAL]);
+>> @@ -9134,7 +9179,9 @@ int cpu_cgroup_proc_stat(struct cgroup *cgrp, struct cftype *cft, struct seq_fil
+>>                 system = kstat->cpustat[SYSTEM];
+>>                 idle = root_kstat->cpustat[IDLE];
+>>                 idle = cputime64_add(idle, arch_idle_time(i));
+>> +               idle = cputime64_sub(idle, kstat->cpustat[IDLE_BASE]);
+>>                 iowait = root_kstat->cpustat[IOWAIT];
+>> +               iowait = cputime64_sub(iowait, kstat->cpustat[IOWAIT_BASE]);
+>>                 irq = kstat->cpustat[IRQ];
+>>                 softirq = kstat->cpustat[SOFTIRQ];
+>>                 steal = kstat->cpustat[STEAL];
+>> @@ -9205,6 +9252,10 @@ static struct cftype cpu_files[] = {
+>>                 .write_u64 = cpu_rt_period_write_uint,
+>>         },
+>>   #endif
+>> +       {
+>> +               .name = "proc.stat",
+>> +               .read_seq_string = cpu_cgroup_proc_stat,
 >
-> Just wondering.
-
-It is related in the sense that ideally all of this would come
-together and play nicely. That's an interesting patch also, and there
-are a few threads to tie together in U-Boot independently of the
-kernel.
-
-My original U-Boot patch set was here:
-
-http://lists.denx.de/pipermail/u-boot/2011-May/092584.html
-
+> Looks fine to me
 >
-> Thanks - this looks like great stuff!
+> Balbir Singh
+Awesome.
 
-Thanks!
-
-Regards,
-Simon
-
->  -- Tim
->
-> =============================
-> Tim Bird
-> Architecture Group Chair, CE Workgroup of the Linux Foundation
-> Senior Staff Engineer, Sony Network Entertainment
-> =============================
->
->
+Thanks.
