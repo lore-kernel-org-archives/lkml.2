@@ -1,193 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751388Ab1I0P4L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 11:56:11 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:14525 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750940Ab1I0P4K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 11:56:10 -0400
-X-IronPort-AV: E=Sophos;i="4.68,449,1312171200"; 
-   d="scan'208";a="17733963"
-Message-ID: <4E81F278.5040107@citrix.com>
-Date: Tue, 27 Sep 2011 16:57:44 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110818 Icedove/3.0.11
+	id S1751495Ab1I0P55 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 11:57:57 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:58648 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750940Ab1I0P54 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 11:57:56 -0400
+Date: Tue, 27 Sep 2011 19:56:59 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: "Serge E. Hallyn" <serge.hallyn@canonical.com>
+Cc: Serge Hallyn <serge@hallyn.com>, akpm@osdl.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        containers@lists.linux-foundation.org, dhowells@redhat.com,
+        ebiederm@xmission.com, rdunlap@xenotime.net,
+        kernel-hardening@lists.openwall.com
+Subject: Re: [PATCH 01/15] add Documentation/namespaces/user_namespace.txt
+ (v3)
+Message-ID: <20110927155659.GA22532@albatros>
+References: <1314993400-6910-1-git-send-email-serge@hallyn.com>
+ <1314993400-6910-4-git-send-email-serge@hallyn.com>
+ <20110926191737.GA4562@albatros>
+ <20110927132157.GB3111@sergelap>
 MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: Konrad Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: Re: [PATCH v2] xen: Fix selfballooning and ensure it doesn't go too
- far
-References: <2de59b55-4ecc-4155-8709-f8b0f5e012bc@default>
-In-Reply-To: <2de59b55-4ecc-4155-8709-f8b0f5e012bc@default>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110927132157.GB3111@sergelap>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27/09/11 16:03, Dan Magenheimer wrote:
-> Note: This patch is also now in a git tree at:
+On Tue, Sep 27, 2011 at 08:21 -0500, Serge E. Hallyn wrote:
+> > First, the patches by design expose much kernel code to unprivileged
+> > userspace processes.  This code doesn't expect malformed data (e.g. VFS,
+> > specific filesystems, block layer, char drivers, sysadmin part of LSMs,
+> > etc. etc.).  By relaxing permission rules you greatly increase attack
+> > surface of the kernel from unprivileged users.  Are you (or somebody
+> > else) planning to audit this code?
 > 
-> git://oss.oracle.com/git/djm/tmem.git#selfballoon-fix-v2
+> I had wanted to (but didn't) propose a discussion at ksummit about how
+> best to approach the filesystem code.  That's not even just for user
+> namespaces - patches have been floated in the past to make mount an
+> unprivileged operation depending on the FS and the user's permission
+> over the device and target.
+
+This is a dangerous operation by itself.  AFAICS, this is the reason why
+e.g. FUSE doesn't pass user mount points to other users and even root.
+Beginning from violating some rules like existance of single "." and
+".." in each directory and ending with filename charsets with /, \000
+and things like `, ", ', \ inside.
+
+
+>  So I don't know if a combination of auditing
+> and fuzzing is the way to go,
+
+Maybe the combination of both.  There are no generic recommendations,
+it's always limited to the subsystem, checked property, and the
+auditor.
+
+
+> > Also, will it be possible to somehow restrict what specific kernel
+> > facilities are accessible from users (IOW, what root emulation
+> > limitations are in action)?  It is userful from both points of sysadmin,
+> > who might not want to allow users to do such things, and from the
+> > security POV in sense of attack surface reduction.
 > 
-> The balloon driver's "current_pages" is very different from
-> totalram_pages.  Self-ballooning needs to be driven by
-> the latter.
+> You're probably thinking along different lines, but this is why I've
+> been wanting seccomp2 to get pushed through.  So that we can deny a
+> container the syscalls we know it won't need, especially newer ones,
+> to reduce the attack surface available to it.
 
-I don't think this part of the change makes any difference. It looks like it
-rearranges the maths without changing the end result (other than
-slightly increasing the rate of change).
+This dependency greatly complicates the things.
 
-I think this (partial, untested) patch is equivalent:
+First, there is a big misunderstanding between Will and Ingo in what
+needs seccompv2 should serve.  Will wants to reduce kernel attack
+surface by limiting syscalls and syscall arguments available to a user
+(a single task, btw).  Ingo wants to see a full featured filtering
+engine, which needs code changes all over the kernel.  Given the needed
+changes amounts, it will unlikely reduce attack surface.
 
-diff --git a/drivers/xen/xen-selfballoon.c b/drivers/xen/xen-selfballoon.c
-index 1b4afd8..b207e89 100644
---- a/drivers/xen/xen-selfballoon.c
-+++ b/drivers/xen/xen-selfballoon.c
-@@ -194,14 +194,15 @@ __setup("selfballooning", xen_selfballooning_setup);
-  */
- static void selfballoon_process(struct work_struct *work)
- {
--	unsigned long cur_pages, goal_pages, tgt_pages;
-+	unsigned long cur_pages, goal_pages, tgt_pages, rsvd_pages, floor_pages;
- 	bool reset_timer = false;
- 
- 	if (xen_selfballooning_enabled) {
- 		cur_pages = balloon_stats.current_pages;
- 		tgt_pages = cur_pages; /* default is no change */
--		goal_pages = percpu_counter_read_positive(&vm_committed_as) +
--			balloon_stats.current_pages - totalram_pages;
-+		rsvd_pages = cur_pages - totalram_pages;
-+		goal_pages = percpu_counter_read_positive(&vm_committed_as)
-+			+ rsvd_pages;
- #ifdef CONFIG_FRONTSWAP
- 		/* allow space for frontswap pages to be repatriated */
- 		if (frontswap_selfshrinking && frontswap_enabled)
-@@ -216,6 +217,11 @@ static void selfballoon_process(struct work_struct *work)
- 				((goal_pages - cur_pages) /
- 				  selfballoon_uphysteresis);
- 		/* else if cur_pages == goal_pages, no change */
-+		floor_pages = rsvd_pages + totalreserve_pages +
-+			((roundup_pow_of_two(max_pfn) / 128) *
-+				selfballoon_safety_margin);
-+		if (tgt_pages < floor_pages)
-+			tgt_pages = floor_pages;
- 		balloon_set_new_target(tgt_pages);
- 		reset_timer = true;
- 	}
+You probably don't want Will's version as syscalls filtering is a very
+bad abstraction in your case.  user_namespaces likely need Ingo's
+version of seccomp as it will be possible to filter e.g. fs-specific
+events, but even if it is implemented, it will take a looong time for
+your needs IMHO.
 
-> Also, Committed_AS doesn't account for pages
-> used by the kernel so enforce a floor for when there are little
-> or no user-space threads using memory.  The floor function
-> includes a "safety margin" tuneable in case we discover later
-> that the floor function is still too aggressive in some workloads,
-> though likely it will not be needed.
 
-The sysfs file isn't documented (but then neither are any of the other
-(self-)balloon driver sysfs files).
+Also, I'm afraid for _good_ user_namespace filtering the policy
+definition will be too complicated (like SELinux policy definition for
+non-trivial applications) if it is implemented in events filtering
+terms.
 
-I don't think "safety_margin" is the right name.  Perhaps,
-"min_reservation_ratio" or something like that?
 
-David
+> The way we're approaching it right now is that by default everything
+> stays 'capable(X)', so that a non-init user namespace doesn't get the
+> privileges.
 
-> Changes since version 1:
-> - tuneable safety margin added
+Great.  I was not sure about it.
+
+
+>  While some of my patchsets this summer didn't follow this,
+> Eric reminded me that we should first clamp down on the user namespaces
+> as much as possible, and relax permissions in child namespaces later.
+
+I think it is the only sane way.
+
+
+> So the small (1-2 patch sized) sets I've been sending the last few
+> weeks are just trying to fix existing inadequate userid or capability
+> checks.
 > 
-> [v2: konrad.wilk@oracle.com: make safety margin tuneable]
-> 
-> Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-> 
-> diff --git a/drivers/xen/xen-selfballoon.c b/drivers/xen/xen-selfballoon.c
-> index 6ea852e..ceaada6 100644
-> --- a/drivers/xen/xen-selfballoon.c
-> +++ b/drivers/xen/xen-selfballoon.c
-> @@ -93,6 +93,12 @@ static unsigned int selfballoon_uphysteresis __read_mostly = 1;
->  /* In HZ, controls frequency of worker invocation. */
->  static unsigned int selfballoon_interval __read_mostly = 5;
->  
-> +/*
-> + * Scale factor for safety margin for minimum selfballooning target for balloon.
-> + * Default adds about 3% (4/128) of max_pfn.
-> + */
-> +static unsigned int selfballoon_safety_margin = 4;
-> +
->  static void selfballoon_process(struct work_struct *work);
->  static DECLARE_DELAYED_WORK(selfballoon_worker, selfballoon_process);
->  
-> @@ -195,14 +201,13 @@ __setup("selfballooning", xen_selfballooning_setup);
->   */
->  static void selfballoon_process(struct work_struct *work)
->  {
-> -	unsigned long cur_pages, goal_pages, tgt_pages;
-> +	unsigned long cur_pages, goal_pages, tgt_pages, floor_pages;
->  	bool reset_timer = false;
->  
->  	if (xen_selfballooning_enabled) {
-> -		cur_pages = balloon_stats.current_pages;
-> +		cur_pages = totalram_pages;
->  		tgt_pages = cur_pages; /* default is no change */
-> -		goal_pages = percpu_counter_read_positive(&vm_committed_as) +
-> -			balloon_stats.current_pages - totalram_pages;
-> +		goal_pages = percpu_counter_read_positive(&vm_committed_as);
->  #ifdef CONFIG_FRONTSWAP
->  		/* allow space for frontswap pages to be repatriated */
->  		if (frontswap_selfshrinking && frontswap_enabled)
-> @@ -217,7 +222,13 @@ static void selfballoon_process(struct work_struct *work)
->  				((goal_pages - cur_pages) /
->  				  selfballoon_uphysteresis);
->  		/* else if cur_pages == goal_pages, no change */
-> -		balloon_set_new_target(tgt_pages);
-> +		floor_pages = totalreserve_pages +
-> +			((roundup_pow_of_two(max_pfn) / 128) *
-> +				selfballoon_safety_margin);
-> +		if (tgt_pages < floor_pages)
-> +			tgt_pages = floor_pages;
-> +		balloon_set_new_target(tgt_pages +
-> +			balloon_stats.current_pages - totalram_pages);
->  		reset_timer = true;
->  	}
->  #ifdef CONFIG_FRONTSWAP
-> @@ -340,6 +351,30 @@ static ssize_t store_selfballoon_uphys(struct sys_device *dev,
->  static SYSDEV_ATTR(selfballoon_uphysteresis, S_IRUGO | S_IWUSR,
->  		   show_selfballoon_uphys, store_selfballoon_uphys);
->  
-> +SELFBALLOON_SHOW(selfballoon_safety_margin, "%d\n", selfballoon_safety_margin);
-> +
-> +static ssize_t store_selfballoon_safety_margin(struct sys_device *dev,
-> +					       struct sysdev_attribute *attr,
-> +					       const char *buf,
-> +					       size_t count)
-> +{
-> +	unsigned long val;
-> +	int err;
-> +
-> +	if (!capable(CAP_SYS_ADMIN))
-> +		return -EPERM;
-> +	err = strict_strtoul(buf, 10, &val);
-> +	if (err || val == 0 || val > 128)
-> +		return -EINVAL;
-> +	selfballoon_safety_margin = val;
-> +	return count;
-> +}
-> +
-> +static SYSDEV_ATTR(selfballoon_safety_margin, S_IRUGO | S_IWUSR,
-> +		   show_selfballoon_safety_margin,
-> +		   store_selfballoon_safety_margin);
-> +
-> +
->  #ifdef CONFIG_FRONTSWAP
->  SELFBALLOON_SHOW(frontswap_selfshrinking, "%d\n", frontswap_selfshrinking);
->  
-> @@ -421,6 +456,7 @@ static struct attribute *selfballoon_attrs[] = {
->  	&attr_selfballoon_interval.attr,
->  	&attr_selfballoon_downhysteresis.attr,
->  	&attr_selfballoon_uphysteresis.attr,
-> +	&attr_selfballoon_safety_margin.attr,
->  #ifdef CONFIG_FRONTSWAP
->  	&attr_frontswap_selfshrinking.attr,
->  	&attr_frontswap_hysteresis.attr,
+> -serge
 
+Thanks,
+
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
