@@ -1,53 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752459Ab1I0R7G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 13:59:06 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:54115 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751139Ab1I0R7F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 13:59:05 -0400
+	id S1752717Ab1I0R7h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 13:59:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60162 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752478Ab1I0R7g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 13:59:36 -0400
+Date: Tue, 27 Sep 2011 13:59:19 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Seiji Aguchi <seiji.aguchi@hds.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vivek Goyal <vgoyal@redhat.com>, Matthew Garrett <mjg@redhat.com>,
+        "Chen, Gong" <gong.chen@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: Re: [RFC][PATCH -next] pstore: replace spin_lock with
+ spin_trylock_irqsave in panic path
+Message-ID: <20110927175919.GK5795@redhat.com>
+References: <5C4C569E8A4B9B42A84A977CF070A35B2C56C9B823@USINDEVS01.corp.hds.com>
+ <20110927173413.GJ5795@redhat.com>
+ <987664A83D2D224EAE907B061CE93D5301EE4211E3@orsmsx505.amr.corp.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <CAMM=eLdTkpV_oy7+N2QVeqmm4t0WkAJXUmGkxWcb=X8Vp81x7A@mail.gmail.com>
-References: <CANLaLhaEnyPchqOPp65Y0hvotM30E5daX=XNG=fAAmf1dchxCA@mail.gmail.com>
-	<20110926111522.2a053ceb@lxorguk.ukuu.org.uk>
-	<CAK3HsqvkpEiDWcCP_+eO0va4+io7pVV-aWCzQ1=DdpPi_jxy6g@mail.gmail.com>
-	<CAMM=eLdTkpV_oy7+N2QVeqmm4t0WkAJXUmGkxWcb=X8Vp81x7A@mail.gmail.com>
-Date: Tue, 27 Sep 2011 10:59:03 -0700
-Message-ID: <CAK3HsqtdgqWB36NCxz0xZxTrfp2-o8b7MYncn_P61eUv2xkAkw@mail.gmail.com>
-Subject: Re: Detection of Advanced Format drives
-From: Joshua Scoggins <theoretically.x64@gmail.com>
-To: Mike Snitzer <snitzer@gmail.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Arun <engineerarun@gmail.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <987664A83D2D224EAE907B061CE93D5301EE4211E3@orsmsx505.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Didn't know about the physical_block_size field. My AV-25 reports the
-physical_block_size as 4096 and the logical block size as 512.
+On Tue, Sep 27, 2011 at 10:46:32AM -0700, Luck, Tony wrote:
+> > Personally, I am not sure we want to abort here at the pstore layer, it
+> > should probably be aborted lower.  There isn't any reason why we can't
+> > continue from a pstore perspective (we can just bust the spinlock).
+> 
+> But do we really have much chance at getting a real dump in this case?
+> The pstore buf_lock is protecting the memory that the backend uses to
+> save the data. If we can't get the lock, then we are going to conflict
+> using that buffer with whoever does have the lock. So we will probably
+> mess up whatever data they were trying to save, as well as not managing
 
-Thanks for the heads up and sorry about the misinformation. Not my
-intention to spread FUD like that
+Ok.  Do we care?  I assumed the panic data would be more
+relevant/interesting than whatever pstore was doing before (like loading
+previous log files).
 
-On Mon, Sep 26, 2011 at 1:09 PM, Mike Snitzer <snitzer@gmail.com> wrote:
-> On Mon, Sep 26, 2011 at 3:48 PM, Joshua Scoggins
-> <theoretically.x64@gmail.com> wrote:
->> Keep in mind that some AF drives will not report their actual sector
->> sizes. I have this issue with the WD AV-25 series. This is to provide
->> compatibility with older operating systems that don't support AF
->> drives. These are called generation 1 devices. Newer drives will
->> directly report their sector size as 4096 through the drive identify
->> data older ones will say 512. At that point you just need to do a
->> google search to see if it's AF or not.
->
-> Linux should publish the discrepancy with these <disk> specific sysfs files:
->
-> /sys/block/<disk>/queue/logical_block_size=512
-> /sys/block/<disk>/queue/physical_block_size=4096
->
-> But are you saying you have an AF disk that doesn't publish this
-> discrepancy via the IDENTIFY DEVICE (ATA) or READ CAPACITY 16 (SCSI)
-> command?
->
+> to save our panic data. So this isn't just a back-end issue, it is
+
+I assumed we are just overwriting the buffer with the current data, so
+unless the other cpu is chugging along while this cpu is in panic, the new
+data shouldn't get corrupted, no?
+
+Cheers,
+Don
+
+> fundamental to the pstore layer (since it depends on this back end buffer).
+> 
+> This is a tough call - but I'm leaning a bit towards taking this patch.
+> 
+> I agree with your suggestion that we need a better comment by the "return"
+> (and also in the change log) saying why we are not saving the panic dmesg.
+> 
+> -Tony 
