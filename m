@@ -1,96 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752126Ab1I0IA7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 04:00:59 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:45489 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751766Ab1I0IA6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 04:00:58 -0400
+	id S1752219Ab1I0IMJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 04:12:09 -0400
+Received: from cernmx30.cern.ch ([137.138.144.177]:8102 "EHLO CERNMX30.cern.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752079Ab1I0IMH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 04:12:07 -0400
+Date: Tue, 27 Sep 2011 10:08:24 +0200
+From: Manohar Vanga <manohar.vanga@cern.ch>
+To: "Emilio G. Cota" <cota@braap.org>
+CC: <gregkh@suse.de>, <martyn.welch@ge.com>, <devel@driverdev.osuosl.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/4] staging: vme: make match() driver specific to
+ improve non-VME64x support
+Message-ID: <20110927080824.GB17775@becoht-mvanga>
+Mail-Followup-To: "Emilio G. Cota" <cota@braap.org>, gregkh@suse.de,
+	martyn.welch@ge.com, devel@driverdev.osuosl.org,
+	linux-kernel@vger.kernel.org
+References: <1317029238-13357-1-git-send-email-manohar.vanga@cern.ch>
+ <1317029238-13357-3-git-send-email-manohar.vanga@cern.ch>
+ <20110926232906.GB13175@flamenco.cs.columbia.edu>
 MIME-Version: 1.0
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF1738180164@HQMAIL01.nvidia.com>
-References: <1316175249-10780-1-git-send-email-linus.walleij@stericsson.com>
-	<74CDBE0F657A3D45AFBB94109FB122FF04B7321777@HQMAIL01.nvidia.com>
-	<CACRpkdY5ETbJxSpwJL-7KZhjOnhwrdT1=djwByek75ye=S9L9w@mail.gmail.com>
-	<74CDBE0F657A3D45AFBB94109FB122FF1738180164@HQMAIL01.nvidia.com>
-Date: Tue, 27 Sep 2011 10:00:56 +0200
-Message-ID: <CACRpkdbiWUFPfF9vKV5YpSW68ZTdjwb8NhWZ_9WDoY5Q+aVfvQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2 v7] pinmux: add a driver for the U300 pinmux
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Barry Song <21cnbao@gmail.com>, Lee Jones <lee.jones@linaro.org>,
-        Joe Perches <joe@perches.com>, Russell King <linux@arm.linux.org.uk>,
-        Linaro Dev <linaro-dev@lists.linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        David Brown <davidb@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20110926232906.GB13175@flamenco.cs.columbia.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [137.138.192.18]
+Keywords: CERN SpamKiller Note: -50
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 21, 2011 at 9:39 PM, Stephen Warren <swarren@nvidia.com> wrote:
-> Linus Walleij wrote at Wednesday, September 21, 2011 2:25 AM:
->> On Wed, Sep 21, 2011 at 12:15 AM, Stephen Warren <swarren@nvidia.com> wrote:
->> > Linus Walleij wrote at Friday, September 16, 2011 6:14 AM:
->> >> +     for (i = 0; i < ARRAY_SIZE(u300_mux_hogs); i++) {
->> >> +             struct pinmux *pmx;
->> >> +             int ret;
->> >> +
->> >> +             pmx = pinmux_get(u300_mux_hogs[i].dev, NULL);
->> >> +             if (IS_ERR(pmx)) {
->> >> +                     pr_err("u300: could not get pinmux hog %s\n",
->> >> +                            u300_mux_hogs[i].name);
->> >> +                     continue;
->> >> +             }
->> >> +             ret = pinmux_enable(pmx);
->> >> +             if (ret) {
->> >> +                     pr_err("u300: could enable pinmux hog %s\n",
->> >> +                            u300_mux_hogs[i].name);
->> >> +                     continue;
->> >> +             }
->> >> +             u300_mux_hogs[i].pmx = pmx;
->> >> +     }
->> >> +     return 0;
->> >> +}
->> >> +subsys_initcall(u300_pinmux_fetch);
->> >
->> > Why not just have the pinmux core support hogging on non-"system" mapping
->> > entries; then everything I quoted above except u300_pinmux_map[] could
->> > be deleted, and the "hog" flag set on the last 3 u300_pinmux_map[] entries.
->>
->> Very good question, luckily I have a good answer.
->>
->> There is no way for the pinmux core to traverse the system and look
->> up the apropriate struct device * pointers.
->
-> It's unclear to me why that would be needed.
->
-> For non-system mappings, either the device-driver in question will be
-> get'ing and enabling them (this case isn't relevant to this discussion),
-> or they'll be hogged. In the hog case, I doubt anything would ever want
-> to disable them and switch the device to a different mapping entry; if
-> that were the case, the entries shouldn't be hogged, but get/enabled by
-> the device anyway. Hence, I don't see the need for an activation of a
-> hog'd non-system mapping entry to care about the device fields that are
-> in the mapping table at all; they could just be ignored couldn't they?
+> > diff --git a/drivers/staging/vme/vme.c b/drivers/staging/vme/vme.c
+> > index 76e08f3..9cb6938 100644
+> > --- a/drivers/staging/vme/vme.c
+> > +++ b/drivers/staging/vme/vme.c
+> > @@ -1317,6 +1317,7 @@ static int vme_add_bus(struct vme_bridge *bridge)
+> >  		if ((vme_bus_numbers & (1 << i)) == 0) {
+> >  			vme_bus_numbers |= (1 << i);
+> >  			bridge->num = i;
+> > +			INIT_LIST_HEAD(&bridge->devices);
+> >  			list_add_tail(&bridge->bus_list, &vme_bus_list);
+> 
+> Just realised that vme_buses_lock also protects vme_bus_list; appending
+> to this list here should be protected by the mutex, otherwise
+> vme_add_bus (ie this function) could race with __vme_register_driver,
+> which might access a corrupt copy of the list.
+> 
+> Note that vme_remove_bus does the right thing though; it acquires
+> the lock before unpinning the bridge from vme_bus_list.
 
-I don't think so, atleast not in this case. I think it is helpful for the system
-to know which device is related to the specific hog, so it turns up in
-debugfs etc "aha, it is hogged for that device" etc. Not doing that
-makes the subsystem loose relevant information.
+It _does_ acquire the lock. The patch here doesn't show it:
 
-So for that reason I prefer to pass in the relevant struct device *
-pointers, atleast when they're readily available as in this boardfile.
+	mutex_lock(&vme_buses_lock);
+	for (i = 0; i < sizeof(vme_bus_numbers) * 8; i++) {
+		if ((vme_bus_numbers & (1 << i)) == 0) {
+			vme_bus_numbers |= (1 << i);
+			bridge->num = i;
+			INIT_LIST_HEAD(&bridge->devices);
+			list_add_tail(&bridge->bus_list, &vme_bus_list);
+			ret = 0;
+			break;
+		}
+	}
+	mutex_unlock(&vme_buses_lock);
 
-If they are not available, or hard to get at, we could just redefine
-them as system mappings and remove the device fields, but
-in this case I'd say let's keep it around.
+This was submitted and acknowledged by Martyn in a previous patch:
+	https://lkml.org/lkml/2011/8/12/107
 
-Yours,
-Linus Walleij
+Thanks!
+
+-- 
+/manohar
