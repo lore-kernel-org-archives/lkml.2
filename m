@@ -1,650 +1,359 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753488Ab1I0Ucy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 16:32:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63301 "EHLO mx1.redhat.com"
+	id S1753503Ab1I0Ues (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 16:34:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41568 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753395Ab1I0Ua3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 16:30:29 -0400
+	id S1753351Ab1I0Ua0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 16:30:26 -0400
 From: Mark Salter <msalter@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arch@vger.kernel.org, Mark Salter <msalter@redhat.com>
-Subject: [PATCH v3 16/24] C6X: cache control
-Date: Tue, 27 Sep 2011 16:29:57 -0400
-Message-Id: <1317155405-26235-17-git-send-email-msalter@redhat.com>
+Subject: [PATCH v3 11/24] C6X: time management
+Date: Tue, 27 Sep 2011 16:29:52 -0400
+Message-Id: <1317155405-26235-12-git-send-email-msalter@redhat.com>
 In-Reply-To: <1317155405-26235-1-git-send-email-msalter@redhat.com>
 References: <1317155405-26235-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The C6X architecture includes a 64-bit free running core clock counter which
+is used as the clocksource. The SoCs have a number of 64-bit programmable
+timers. One of these is used as the clockevent timer.
+
 Signed-off-by: Mark Salter <msalter@redhat.com>
 ---
- arch/c6x/include/asm/cache.h      |   90 ++++++++
- arch/c6x/include/asm/cacheflush.h |   65 ++++++
- arch/c6x/platforms/cache.c        |  445 +++++++++++++++++++++++++++++++++++++
- 3 files changed, 600 insertions(+), 0 deletions(-)
- create mode 100644 arch/c6x/include/asm/cache.h
- create mode 100644 arch/c6x/include/asm/cacheflush.h
- create mode 100644 arch/c6x/platforms/cache.c
+ arch/c6x/include/asm/timer64.h |    6 ++
+ arch/c6x/include/asm/timex.h   |   38 ++++++++
+ arch/c6x/kernel/time.c         |   65 ++++++++++++++
+ arch/c6x/platforms/timer64.c   |  188 ++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 297 insertions(+), 0 deletions(-)
+ create mode 100644 arch/c6x/include/asm/timer64.h
+ create mode 100644 arch/c6x/include/asm/timex.h
+ create mode 100644 arch/c6x/kernel/time.c
+ create mode 100644 arch/c6x/platforms/timer64.c
 
-diff --git a/arch/c6x/include/asm/cache.h b/arch/c6x/include/asm/cache.h
+diff --git a/arch/c6x/include/asm/timer64.h b/arch/c6x/include/asm/timer64.h
 new file mode 100644
-index 0000000..6d521d9
+index 0000000..bbe27bb
 --- /dev/null
-+++ b/arch/c6x/include/asm/cache.h
-@@ -0,0 +1,90 @@
++++ b/arch/c6x/include/asm/timer64.h
+@@ -0,0 +1,6 @@
++#ifndef _C6X_TIMER64_H
++#define _C6X_TIMER64_H
++
++extern void __init timer64_init(void);
++
++#endif /* _C6X_TIMER64_H */
+diff --git a/arch/c6x/include/asm/timex.h b/arch/c6x/include/asm/timex.h
+new file mode 100644
+index 0000000..8739a23
+--- /dev/null
++++ b/arch/c6x/include/asm/timex.h
+@@ -0,0 +1,38 @@
 +/*
 + *  Port on Texas Instruments TMS320C6x architecture
 + *
-+ *  Copyright (C) 2005, 2006, 2009, 2010 Texas Instruments Incorporated
++ *  Copyright (C) 2004, 2009, 2010, 2011 Texas Instruments Incorporated
 + *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
++ *
++ *  Modified for 2.6.34: Mark Salter <msalter@redhat.com>
 + *
 + *  This program is free software; you can redistribute it and/or modify
 + *  it under the terms of the GNU General Public License version 2 as
 + *  published by the Free Software Foundation.
 + */
-+#ifndef _ASM_C6X_CACHE_H
-+#define _ASM_C6X_CACHE_H
-+
-+#include <linux/irqflags.h>
++#ifndef _ASM_C6X_TIMEX_H
++#define _ASM_C6X_TIMEX_H
 +
 +/*
-+ * Cache line size
++ * This should be close enough...
 + */
-+#define L1D_CACHE_BYTES   64
-+#define L1P_CACHE_BYTES   32
-+#define L2_CACHE_BYTES	  128
++#define CLOCK_TICK_RATE ((1000 * 1000000UL) / 6)
 +
-+/*
-+ * L2 used as cache
-+ */
-+#define L2MODE_SIZE	  L2MODE_256K_CACHE
++/* 64-bit timestamp */
++typedef unsigned long long cycles_t;
 +
-+/*
-+ * For practical reasons the L1_CACHE_BYTES defines should not be smaller than
-+ * the L2 line size
-+ */
-+#define L1_CACHE_BYTES        L2_CACHE_BYTES
++extern cycles_t cacheflush_time;
 +
-+#define L2_CACHE_ALIGN_LOW(x) \
-+	(((x) & ~(L2_CACHE_BYTES - 1)))
-+#define L2_CACHE_ALIGN_UP(x) \
-+	(((x) + (L2_CACHE_BYTES - 1)) & ~(L2_CACHE_BYTES - 1))
-+#define L2_CACHE_ALIGN_CNT(x) \
-+	(((x) + (sizeof(int) - 1)) & ~(sizeof(int) - 1))
++static inline cycles_t get_cycles(void)
++{
++	unsigned l, h;
 +
-+#define ARCH_DMA_MINALIGN	L1_CACHE_BYTES
-+#define ARCH_SLAB_MINALIGN	L1_CACHE_BYTES
++	asm volatile (" dint\n"
++		      " mvc .s2 TSCL,%0\n"
++		      " mvc .s2 TSCH,%1\n"
++		      " rint\n"
++		      : "=b"(l), "=b"(h));
++	return ((cycles_t)h << 32) | l;
++}
 +
-+/*
-+ * This is the granularity of hardware cacheability control.
-+ */
-+#define CACHEABILITY_ALIGN	0x01000000
-+
-+/*
-+ * Align a physical address to MAR regions
-+ */
-+#define CACHE_REGION_START(v) \
-+	(((u32) (v)) & ~(CACHEABILITY_ALIGN - 1))
-+#define CACHE_REGION_END(v) \
-+	(((u32) (v) + (CACHEABILITY_ALIGN - 1)) & ~(CACHEABILITY_ALIGN - 1))
-+
-+extern void __init c6x_cache_init(void);
-+
-+extern void enable_caching(unsigned long start, unsigned long end);
-+extern void disable_caching(unsigned long start, unsigned long end);
-+
-+extern void L1_cache_off(void);
-+extern void L1_cache_on(void);
-+
-+extern void L1P_cache_global_invalidate(void);
-+extern void L1D_cache_global_invalidate(void);
-+extern void L1D_cache_global_writeback(void);
-+extern void L1D_cache_global_writeback_invalidate(void);
-+extern void L2_cache_set_mode(unsigned int mode);
-+extern void L2_cache_global_writeback_invalidate(void);
-+extern void L2_cache_global_writeback(void);
-+
-+extern void L1P_cache_block_invalidate(unsigned int start, unsigned int end);
-+extern void L1D_cache_block_invalidate(unsigned int start, unsigned int end);
-+extern void L1D_cache_block_writeback_invalidate(unsigned int start,
-+						 unsigned int end);
-+extern void L1D_cache_block_writeback(unsigned int start, unsigned int end);
-+extern void L2_cache_block_invalidate(unsigned int start, unsigned int end);
-+extern void L2_cache_block_writeback(unsigned int start, unsigned int end);
-+extern void L2_cache_block_writeback_invalidate(unsigned int start,
-+						unsigned int end);
-+extern void L2_cache_block_invalidate_nowait(unsigned int start,
-+					     unsigned int end);
-+extern void L2_cache_block_writeback_nowait(unsigned int start,
-+					    unsigned int end);
-+
-+extern void L2_cache_block_writeback_invalidate_nowait(unsigned int start,
-+						       unsigned int end);
-+
-+#endif /* _ASM_C6X_CACHE_H */
-diff --git a/arch/c6x/include/asm/cacheflush.h b/arch/c6x/include/asm/cacheflush.h
++#endif /* _ASM_C6X_TIMEX_H */
+diff --git a/arch/c6x/kernel/time.c b/arch/c6x/kernel/time.c
 new file mode 100644
-index 0000000..df5db90
+index 0000000..4c9f136
 --- /dev/null
-+++ b/arch/c6x/include/asm/cacheflush.h
++++ b/arch/c6x/kernel/time.c
 @@ -0,0 +1,65 @@
 +/*
 + *  Port on Texas Instruments TMS320C6x architecture
 + *
-+ *  Copyright (C) 2004, 2009, 2010 Texas Instruments Incorporated
++ *  Copyright (C) 2004, 2009, 2010, 2011 Texas Instruments Incorporated
 + *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
 + *
 + *  This program is free software; you can redistribute it and/or modify
 + *  it under the terms of the GNU General Public License version 2 as
 + *  published by the Free Software Foundation.
 + */
-+#ifndef _ASM_C6X_CACHEFLUSH_H
-+#define _ASM_C6X_CACHEFLUSH_H
 +
-+#include <linux/spinlock.h>
++#include <linux/kernel.h>
++#include <linux/clocksource.h>
++#include <linux/errno.h>
++#include <linux/sched.h>
++#include <linux/param.h>
++#include <linux/string.h>
++#include <linux/mm.h>
++#include <linux/interrupt.h>
++#include <linux/timex.h>
++#include <linux/profile.h>
 +
-+#include <asm/setup.h>
-+#include <asm/cache.h>
-+#include <asm/mman.h>
-+#include <asm/page.h>
-+#include <asm/string.h>
++#include <asm/timer64.h>
++
++static u32 sched_clock_multiplier;
++#define SCHED_CLOCK_SHIFT 16
++
++static cycle_t tsc_read(struct clocksource *cs)
++{
++	return get_cycles();
++}
++
++static struct clocksource clocksource_tsc = {
++	.name		= "timestamp",
++	.rating		= 300,
++	.read		= tsc_read,
++	.mask		= CLOCKSOURCE_MASK(64),
++	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
++};
 +
 +/*
-+ * virtually-indexed cache management (our cache is physically indexed)
++ * scheduler clock - returns current time in nanoseconds.
 + */
-+#define flush_cache_all()			do {} while (0)
-+#define flush_cache_mm(mm)			do {} while (0)
-+#define flush_cache_dup_mm(mm)			do {} while (0)
-+#define flush_cache_range(mm, start, end)	do {} while (0)
-+#define flush_cache_page(vma, vmaddr, pfn)	do {} while (0)
-+#define flush_cache_vmap(start, end)		do {} while (0)
-+#define flush_cache_vunmap(start, end)		do {} while (0)
-+#define ARCH_IMPLEMENTS_FLUSH_DCACHE_PAGE 0
-+#define flush_dcache_page(page)			do {} while (0)
-+#define flush_dcache_mmap_lock(mapping)		do {} while (0)
-+#define flush_dcache_mmap_unlock(mapping)	do {} while (0)
++u64 sched_clock(void)
++{
++	u64 tsc = get_cycles();
 +
-+/*
-+ * physically-indexed cache management
-+ */
-+#define flush_icache_range(s, e)				  \
-+do {								  \
-+		L1D_cache_block_writeback((s), (e));		  \
-+		L1P_cache_block_invalidate((s), (e));		  \
-+} while (0)
++	return (tsc * sched_clock_multiplier) >> SCHED_CLOCK_SHIFT;
++}
 +
-+#define flush_icache_page(vma, page)					  \
-+do {								  \
-+	if ((vma)->vm_flags & PROT_EXEC)				  \
-+		L1D_cache_block_writeback_invalidate(page_address(page),  \
-+			(unsigned long) page_address(page) + PAGE_SIZE)); \
-+		L1P_cache_block_invalidate(page_address(page),		  \
-+			(unsigned long) page_address(page) + PAGE_SIZE)); \
-+} while (0)
++void time_init(void)
++{
++	u64 tmp = (u64)NSEC_PER_SEC << SCHED_CLOCK_SHIFT;
 +
++	do_div(tmp, c6x_core_freq);
++	sched_clock_multiplier = tmp;
 +
-+#define copy_to_user_page(vma, page, vaddr, dst, src, len) \
-+do {						     \
-+	memcpy(dst, src, len);			     \
-+	flush_icache_range((unsigned) (dst), (unsigned) (dst) + (len)); \
-+} while (0)
++	clocksource_register_hz(&clocksource_tsc, c6x_core_freq);
 +
-+#define copy_from_user_page(vma, page, vaddr, dst, src, len) \
-+	memcpy(dst, src, len)
++	/* write anything into TSCL to enable counting */
++	set_creg(TSCL, 0);
 +
-+#endif /* _ASM_C6X_CACHEFLUSH_H */
-diff --git a/arch/c6x/platforms/cache.c b/arch/c6x/platforms/cache.c
++	/* probe for timer64 event timer */
++	timer64_init();
++}
+diff --git a/arch/c6x/platforms/timer64.c b/arch/c6x/platforms/timer64.c
 new file mode 100644
-index 0000000..86318a1
+index 0000000..1894eb0
 --- /dev/null
-+++ b/arch/c6x/platforms/cache.c
-@@ -0,0 +1,445 @@
++++ b/arch/c6x/platforms/timer64.c
+@@ -0,0 +1,188 @@
 +/*
-+ *  Copyright (C) 2011 Texas Instruments Incorporated
-+ *  Author: Mark Salter <msalter@redhat.com>
++ *  Copyright (C) 2010, 2011 Texas Instruments Incorporated
++ *  Contributed by: Mark Salter (msalter@redhat.com)
 + *
 + *  This program is free software; you can redistribute it and/or modify
 + *  it under the terms of the GNU General Public License version 2 as
 + *  published by the Free Software Foundation.
 + */
-+#include <linux/of.h>
-+#include <linux/of_address.h>
++
++#include <linux/clockchips.h>
++#include <linux/interrupt.h>
 +#include <linux/io.h>
-+
-+#include <asm/cache.h>
++#include <linux/of.h>
++#include <linux/of_irq.h>
++#include <linux/of_address.h>
 +#include <asm/soc.h>
++#include <asm/dscr.h>
++#include <asm/timer64.h>
++
++struct timer_regs {
++	u32	reserved0;
++	u32	emumgt;
++	u32	reserved1;
++	u32	reserved2;
++	u32	cntlo;
++	u32	cnthi;
++	u32	prdlo;
++	u32	prdhi;
++	u32	tcr;
++	u32	tgcr;
++	u32	wdtcr;
++};
++
++static struct timer_regs __iomem *timer;
++
++#define TCR_TSTATLO	     0x001
++#define TCR_INVOUTPLO	     0x002
++#define TCR_INVINPLO	     0x004
++#define TCR_CPLO	     0x008
++#define TCR_ENAMODELO_ONCE   0x040
++#define TCR_ENAMODELO_CONT   0x080
++#define TCR_ENAMODELO_MASK   0x0c0
++#define TCR_PWIDLO_MASK      0x030
++#define TCR_CLKSRCLO	     0x100
++#define TCR_TIENLO	     0x200
++#define TCR_TSTATHI	     (0x001 << 16)
++#define TCR_INVOUTPHI	     (0x002 << 16)
++#define TCR_CPHI	     (0x008 << 16)
++#define TCR_PWIDHI_MASK      (0x030 << 16)
++#define TCR_ENAMODEHI_ONCE   (0x040 << 16)
++#define TCR_ENAMODEHI_CONT   (0x080 << 16)
++#define TCR_ENAMODEHI_MASK   (0x0c0 << 16)
++
++#define TGCR_TIMLORS	     0x001
++#define TGCR_TIMHIRS	     0x002
++#define TGCR_TIMMODE_UD32    0x004
++#define TGCR_TIMMODE_WDT64   0x008
++#define TGCR_TIMMODE_CD32    0x00c
++#define TGCR_TIMMODE_MASK    0x00c
++#define TGCR_PSCHI_MASK      (0x00f << 8)
++#define TGCR_TDDRHI_MASK     (0x00f << 12)
 +
 +/*
-+ * Internal Memory Control Registers for caches
++ * Timer clocks are divided down from the CPU clock
++ * The divisor is in the EMUMGTCLKSPD register
 + */
-+#define IMCR_CCFG	  0x0000
-+#define IMCR_L1PCFG	  0x0020
-+#define IMCR_L1PCC	  0x0024
-+#define IMCR_L1DCFG	  0x0040
-+#define IMCR_L1DCC	  0x0044
-+#define IMCR_L2ALLOC0	  0x2000
-+#define IMCR_L2ALLOC1	  0x2004
-+#define IMCR_L2ALLOC2	  0x2008
-+#define IMCR_L2ALLOC3	  0x200c
-+#define IMCR_L2WBAR	  0x4000
-+#define IMCR_L2WWC	  0x4004
-+#define IMCR_L2WIBAR	  0x4010
-+#define IMCR_L2WIWC	  0x4014
-+#define IMCR_L2IBAR	  0x4018
-+#define IMCR_L2IWC	  0x401c
-+#define IMCR_L1PIBAR	  0x4020
-+#define IMCR_L1PIWC	  0x4024
-+#define IMCR_L1DWIBAR	  0x4030
-+#define IMCR_L1DWIWC	  0x4034
-+#define IMCR_L1DWBAR	  0x4040
-+#define IMCR_L1DWWC	  0x4044
-+#define IMCR_L1DIBAR	  0x4048
-+#define IMCR_L1DIWC	  0x404c
-+#define IMCR_L2WB	  0x5000
-+#define IMCR_L2WBINV	  0x5004
-+#define IMCR_L2INV	  0x5008
-+#define IMCR_L1PINV	  0x5028
-+#define IMCR_L1DWB	  0x5040
-+#define IMCR_L1DWBINV	  0x5044
-+#define IMCR_L1DINV	  0x5048
-+#define IMCR_MAR_BASE	  0x8000
-+#define IMCR_MAR96_111	  0x8180
-+#define IMCR_MAR128_191   0x8200
-+#define IMCR_MAR224_239   0x8380
-+#define IMCR_L2MPFAR	  0xa000
-+#define IMCR_L2MPFSR	  0xa004
-+#define IMCR_L2MPFCR	  0xa008
-+#define IMCR_L2MPLK0	  0xa100
-+#define IMCR_L2MPLK1	  0xa104
-+#define IMCR_L2MPLK2	  0xa108
-+#define IMCR_L2MPLK3	  0xa10c
-+#define IMCR_L2MPLKCMD	  0xa110
-+#define IMCR_L2MPLKSTAT   0xa114
-+#define IMCR_L2MPPA_BASE  0xa200
-+#define IMCR_L1PMPFAR	  0xa400
-+#define IMCR_L1PMPFSR	  0xa404
-+#define IMCR_L1PMPFCR	  0xa408
-+#define IMCR_L1PMPLK0	  0xa500
-+#define IMCR_L1PMPLK1	  0xa504
-+#define IMCR_L1PMPLK2	  0xa508
-+#define IMCR_L1PMPLK3	  0xa50c
-+#define IMCR_L1PMPLKCMD   0xa510
-+#define IMCR_L1PMPLKSTAT  0xa514
-+#define IMCR_L1PMPPA_BASE 0xa600
-+#define IMCR_L1DMPFAR	  0xac00
-+#define IMCR_L1DMPFSR	  0xac04
-+#define IMCR_L1DMPFCR	  0xac08
-+#define IMCR_L1DMPLK0	  0xad00
-+#define IMCR_L1DMPLK1	  0xad04
-+#define IMCR_L1DMPLK2	  0xad08
-+#define IMCR_L1DMPLK3	  0xad0c
-+#define IMCR_L1DMPLKCMD   0xad10
-+#define IMCR_L1DMPLKSTAT  0xad14
-+#define IMCR_L1DMPPA_BASE 0xae00
-+#define IMCR_L2PDWAKE0	  0xc040
-+#define IMCR_L2PDWAKE1	  0xc044
-+#define IMCR_L2PDSLEEP0   0xc050
-+#define IMCR_L2PDSLEEP1   0xc054
-+#define IMCR_L2PDSTAT0	  0xc060
-+#define IMCR_L2PDSTAT1	  0xc064
++#define TIMER_DIVISOR \
++	((soc_readl(&timer->emumgt) & (0xf << 16)) >> 16)
 +
-+/*
-+ * CCFG register values and bits
-+ */
-+#define L2MODE_0K_CACHE   0x0
-+#define L2MODE_32K_CACHE  0x1
-+#define L2MODE_64K_CACHE  0x2
-+#define L2MODE_128K_CACHE 0x3
-+#define L2MODE_256K_CACHE 0x7
++#define timer_period(f, d)	      (((f) * 1000000) / ((d) * HZ))
++#define ticks2usecs(f, d, x)	      (((x) * (d)) / (f))
 +
-+#define L2PRIO_URGENT     0x0
-+#define L2PRIO_HIGH       0x1
-+#define L2PRIO_MEDIUM     0x2
-+#define L2PRIO_LOW        0x3
 +
-+#define CCFG_ID           0x100   /* Invalidate L1P bit */
-+#define CCFG_IP           0x200   /* Invalidate L1D bit */
-+
-+static void __iomem *cache_base;
-+
-+/*
-+ * L1 & L2 caches generic functions
-+ */
-+#define imcr_get(reg) soc_readl(cache_base + (reg))
-+#define imcr_set(reg, value) \
-+do {								\
-+	soc_writel((value), cache_base + (reg));		\
-+	soc_readl(cache_base + (reg));				\
-+} while (0)
-+
-+static void cache_block_operation_wait(unsigned int wc_reg)
++static int next_event(unsigned long delta,
++		      struct clock_event_device *evt)
 +{
-+	/* Wait for completion */
-+	while (imcr_get(wc_reg))
-+		cpu_relax();
++	soc_writel(soc_readl(&timer->tcr) & ~TCR_ENAMODELO_MASK, &timer->tcr);
++	soc_writel(delta - 1, &timer->prdlo);
++	soc_writel(0, &timer->cntlo);
++	soc_writel(soc_readl(&timer->tcr) | TCR_ENAMODELO_ONCE, &timer->tcr);
++
++	return 0;
 +}
 +
-+static DEFINE_SPINLOCK(cache_lock);
-+
-+/*
-+ * Generic function to perform a block cache operation as
-+ * invalidate or writeback/invalidate
-+ */
-+static void cache_block_operation(unsigned int *start,
-+				  unsigned int *end,
-+				  unsigned int bar_reg,
-+				  unsigned int wc_reg)
++static void set_clock_mode(enum clock_event_mode mode,
++			   struct clock_event_device *evt)
 +{
-+	unsigned long flags;
-+	unsigned int wcnt =
-+		(L2_CACHE_ALIGN_CNT((unsigned int) end)
-+		 - L2_CACHE_ALIGN_LOW((unsigned int) start)) >> 2;
-+	unsigned int wc = 0;
++}
 +
-+	for (; wcnt; wcnt -= wc, start += wc) {
-+loop:
-+		spin_lock_irqsave(&cache_lock, flags);
++static struct clock_event_device t64_clockevent_device = {
++	.name		= "TIMER64_EVT32_TIMER",
++	.features	= CLOCK_EVT_FEAT_ONESHOT,
++	.rating		= 200,
++	.set_mode	= set_clock_mode,
++	.set_next_event	= next_event,
++};
 +
-+		/*
-+		 * If another cache operation is occuring
-+		 */
-+		if (unlikely(imcr_get(wc_reg))) {
-+			spin_unlock_irqrestore(&cache_lock, flags);
++static irqreturn_t timer_interrupt(int irq, void *dev_id)
++{
++	struct clock_event_device *cd = &t64_clockevent_device;
 +
-+			/* Wait for previous operation completion */
-+			cache_block_operation_wait(wc_reg);
++	cd->event_handler(cd);
 +
-+			/* Try again */
-+			goto loop;
++	return IRQ_HANDLED;
++}
++
++static struct irqaction timer_iact = {
++	.name		= "timer",
++	.flags		= IRQF_TIMER,
++	.handler	= timer_interrupt,
++	.dev_id		= &t64_clockevent_device,
++};
++
++void __init timer64_init(void)
++{
++	struct clock_event_device *cd = &t64_clockevent_device;
++	struct device_node *np, *first = NULL;
++	u32 val;
++	int err, found = 0;
++
++	for_each_compatible_node(np, NULL, "ti,c64x+timer64") {
++		err = of_property_read_u32_array(np, "ti,core-mask", &val, 1);
++		if (!err) {
++			if (val & (1 << get_coreid())) {
++				found = 1;
++				break;
++			}
++		} else if (!first)
++			first = np;
++	}
++	if (!found) {
++		/* try first one with no core-mask */
++		if (first)
++			np = of_node_get(first);
++		else {
++			pr_debug("Cannot find ti,c64x+timer64 timer.\n");
++			return;
 +		}
-+
-+		imcr_set(bar_reg, L2_CACHE_ALIGN_LOW((unsigned int) start));
-+
-+		if (wcnt > 0xffff)
-+			wc = 0xffff;
-+		else
-+			wc = wcnt;
-+
-+		/* Set word count value in the WC register */
-+		imcr_set(wc_reg, wc & 0xffff);
-+
-+		spin_unlock_irqrestore(&cache_lock, flags);
-+
-+		/* Wait for completion */
-+		cache_block_operation_wait(wc_reg);
 +	}
-+}
 +
-+static void cache_block_operation_nowait(unsigned int *start,
-+					 unsigned int *end,
-+					 unsigned int bar_reg,
-+					 unsigned int wc_reg)
-+{
-+	unsigned long flags;
-+	unsigned int wcnt =
-+		(L2_CACHE_ALIGN_CNT((unsigned int) end)
-+		 - L2_CACHE_ALIGN_LOW((unsigned int) start)) >> 2;
-+	unsigned int wc = 0;
-+
-+	for (; wcnt; wcnt -= wc, start += wc) {
-+
-+		spin_lock_irqsave(&cache_lock, flags);
-+
-+		imcr_set(bar_reg, L2_CACHE_ALIGN_LOW((unsigned int) start));
-+
-+		if (wcnt > 0xffff)
-+			wc = 0xffff;
-+		else
-+			wc = wcnt;
-+
-+		/* Set word count value in the WC register */
-+		imcr_set(wc_reg, wc & 0xffff);
-+
-+		spin_unlock_irqrestore(&cache_lock, flags);
-+
-+		/* Don't wait for completion on last cache operation */
-+		if (wcnt > 0xffff)
-+			cache_block_operation_wait(wc_reg);
++	timer = of_iomap(np, 0);
++	if (!timer) {
++		pr_debug("%s: Cannot map timer registers.\n", np->full_name);
++		goto out;
 +	}
-+}
++	pr_debug("%s: Timer registers=%p.\n", np->full_name, timer);
 +
-+/*
-+ * L1 caches management
-+ */
++	cd->irq	= irq_of_parse_and_map(np, 0);
++	if (cd->irq == NO_IRQ) {
++		pr_debug("%s: Cannot find interrupt.\n", np->full_name);
++		iounmap(timer);
++		goto out;
++	}
 +
-+/*
-+ * Disable L1 caches
-+ */
-+void L1_cache_off(void)
-+{
-+	unsigned int dummy;
++	/* If there is a device state control, enable it. */
++	err = of_property_read_u32_array(np, "ti,dscr-dev-enable", &val, 1);
++	if (!err)
++		dscr_set_devstate(val, DSCR_DEVSTATE_ENABLED);
 +
-+	imcr_set(IMCR_L1PCFG, 0);
-+	dummy = imcr_get(IMCR_L1PCFG);
++	/* disable timer, reset count */
++	soc_writel(soc_readl(&timer->tcr) & ~TCR_ENAMODELO_MASK, &timer->tcr);
++	soc_writel(0, &timer->prdlo);
 +
-+	imcr_set(IMCR_L1DCFG, 0);
-+	dummy = imcr_get(IMCR_L1DCFG);
-+}
++	/* use internal clock and 1 cycle pulse width */
++	val = soc_readl(&timer->tcr);
++	soc_writel(val & ~(TCR_CLKSRCLO | TCR_PWIDLO_MASK), &timer->tcr);
 +
-+/*
-+ * Enable L1 caches
-+ */
-+void L1_cache_on(void)
-+{
-+	unsigned int dummy;
++	/* dual 32-bit unchained mode */
++	val = soc_readl(&timer->tgcr) & ~TGCR_TIMMODE_MASK;
++	soc_writel(val, &timer->tgcr);
++	soc_writel(val | (TGCR_TIMLORS | TGCR_TIMMODE_UD32), &timer->tgcr);
 +
-+	imcr_set(IMCR_L1PCFG, 7);
-+	dummy = imcr_get(IMCR_L1PCFG);
++	pr_debug("%s: Timer irq=%d.\n", np->full_name, cd->irq);
 +
-+	imcr_set(IMCR_L1DCFG, 7);
-+	dummy = imcr_get(IMCR_L1DCFG);
-+}
++	clockevents_calc_mult_shift(cd, c6x_core_freq / TIMER_DIVISOR, 5);
 +
-+/*
-+ *  L1P global-invalidate all
-+ */
-+void L1P_cache_global_invalidate(void)
-+{
-+	unsigned int set = 1;
-+	imcr_set(IMCR_L1PINV, set);
-+	while (imcr_get(IMCR_L1PINV) & 1)
-+		cpu_relax();
-+}
++	cd->max_delta_ns	= clockevent_delta2ns(0x7fffffff, cd);
++	cd->min_delta_ns	= clockevent_delta2ns(250, cd);
 +
-+/*
-+ *  L1D global-invalidate all
-+ *
-+ * Warning: this operation causes all updated data in L1D to
-+ * be discarded rather than written back to the lower levels of
-+ * memory
-+ */
-+void L1D_cache_global_invalidate(void)
-+{
-+	unsigned int set = 1;
-+	imcr_set(IMCR_L1DINV, set);
-+	while (imcr_get(IMCR_L1DINV) & 1)
-+		cpu_relax();
-+}
++	cd->cpumask		= cpumask_of(smp_processor_id());
 +
-+void L1D_cache_global_writeback(void)
-+{
-+	unsigned int set = 1;
-+	imcr_set(IMCR_L1DWB, set);
-+	while (imcr_get(IMCR_L1DWB) & 1)
-+		cpu_relax();
-+}
++	clockevents_register_device(cd);
++	setup_irq(cd->irq, &timer_iact);
 +
-+void L1D_cache_global_writeback_invalidate(void)
-+{
-+	unsigned int set = 1;
-+	imcr_set(IMCR_L1DWBINV, set);
-+	while (imcr_get(IMCR_L1DWBINV) & 1)
-+		cpu_relax();
-+}
-+
-+/*
-+ * L2 caches management
-+ */
-+
-+/*
-+ * Set L2 operation mode
-+ */
-+void L2_cache_set_mode(unsigned int mode)
-+{
-+	unsigned int ccfg = imcr_get(IMCR_CCFG);
-+
-+	/* Clear and set the L2MODE bits in CCFG */
-+	ccfg &= ~7;
-+	ccfg |= (mode & 7);
-+	imcr_set(IMCR_CCFG, ccfg);
-+	ccfg = imcr_get(IMCR_CCFG);
-+}
-+
-+/*
-+ *  L2 global-writeback and global-invalidate all
-+ */
-+void L2_cache_global_writeback_invalidate(void)
-+{
-+	imcr_set(IMCR_L2WBINV, 1);
-+	while (imcr_get(IMCR_L2WBINV))
-+		cpu_relax();
-+}
-+
-+/*
-+ *  L2 global-writeback all
-+ */
-+void L2_cache_global_writeback(void)
-+{
-+	imcr_set(IMCR_L2WB, 1);
-+	while (imcr_get(IMCR_L2WB))
-+		cpu_relax();
-+}
-+
-+/*
-+ * Cacheability controls
-+ */
-+void enable_caching(unsigned long start, unsigned long end)
-+{
-+	unsigned int mar = IMCR_MAR_BASE + ((start >> 24) << 2);
-+	unsigned int mar_e = IMCR_MAR_BASE + ((end >> 24) << 2);
-+
-+	for (; mar <= mar_e; mar += 4)
-+		imcr_set(mar, imcr_get(mar) | 1);
-+}
-+
-+void disable_caching(unsigned long start, unsigned long end)
-+{
-+	unsigned int mar = IMCR_MAR_BASE + ((start >> 24) << 2);
-+	unsigned int mar_e = IMCR_MAR_BASE + ((end >> 24) << 2);
-+
-+	for (; mar <= mar_e; mar += 4)
-+		imcr_set(mar, imcr_get(mar) & ~1);
-+}
-+
-+
-+/*
-+ *  L1 block operations
-+ */
-+void L1P_cache_block_invalidate(unsigned int start, unsigned int end)
-+{
-+	cache_block_operation((unsigned int *) start,
-+			      (unsigned int *) end,
-+			      IMCR_L1PIBAR, IMCR_L1PIWC);
-+}
-+
-+void L1D_cache_block_invalidate(unsigned int start, unsigned int end)
-+{
-+	cache_block_operation((unsigned int *) start,
-+			      (unsigned int *) end,
-+			      IMCR_L1DIBAR, IMCR_L1DIWC);
-+}
-+
-+void L1D_cache_block_writeback_invalidate(unsigned int start, unsigned int end)
-+{
-+	cache_block_operation((unsigned int *) start,
-+			      (unsigned int *) end,
-+			      IMCR_L1DWIBAR, IMCR_L1DWIWC);
-+}
-+
-+void L1D_cache_block_writeback(unsigned int start, unsigned int end)
-+{
-+	cache_block_operation((unsigned int *) start,
-+			      (unsigned int *) end,
-+			      IMCR_L1DWBAR, IMCR_L1DWWC);
-+}
-+
-+/*
-+ *  L2 block operations
-+ */
-+void L2_cache_block_invalidate(unsigned int start, unsigned int end)
-+{
-+	cache_block_operation((unsigned int *) start,
-+			      (unsigned int *) end,
-+			      IMCR_L2IBAR, IMCR_L2IWC);
-+}
-+
-+void L2_cache_block_writeback(unsigned int start, unsigned int end)
-+{
-+	cache_block_operation((unsigned int *) start,
-+			      (unsigned int *) end,
-+			      IMCR_L2WBAR, IMCR_L2WWC);
-+}
-+
-+void L2_cache_block_writeback_invalidate(unsigned int start, unsigned int end)
-+{
-+	cache_block_operation((unsigned int *) start,
-+			      (unsigned int *) end,
-+			      IMCR_L2WIBAR, IMCR_L2WIWC);
-+}
-+
-+void L2_cache_block_invalidate_nowait(unsigned int start, unsigned int end)
-+{
-+	cache_block_operation_nowait((unsigned int *) start,
-+				     (unsigned int *) end,
-+				     IMCR_L2IBAR, IMCR_L2IWC);
-+}
-+
-+void L2_cache_block_writeback_nowait(unsigned int start, unsigned int end)
-+{
-+	cache_block_operation_nowait((unsigned int *) start,
-+				     (unsigned int *) end,
-+				     IMCR_L2WBAR, IMCR_L2WWC);
-+}
-+
-+void L2_cache_block_writeback_invalidate_nowait(unsigned int start,
-+						unsigned int end)
-+{
-+	cache_block_operation_nowait((unsigned int *) start,
-+				     (unsigned int *) end,
-+				     IMCR_L2WIBAR, IMCR_L2WIWC);
-+}
-+
-+
-+/*
-+ * L1 and L2 caches configuration
-+ */
-+void __init c6x_cache_init(void)
-+{
-+	struct device_node *node;
-+
-+	node = of_find_compatible_node(NULL, NULL, "ti,c64x+cache");
-+	if (!node)
-+		return;
-+
-+	cache_base = of_iomap(node, 0);
-+
-+	of_node_put(node);
-+
-+	if (!cache_base)
-+		return;
-+
-+	/* Set L2 caches on the the whole L2 SRAM memory */
-+	L2_cache_set_mode(L2MODE_SIZE);
-+
-+	/* Enable L1 */
-+	L1_cache_on();
++out:
++	of_node_put(np);
++	return;
 +}
 -- 
 1.7.6.2
