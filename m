@@ -1,52 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752998Ab1I0JkF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 05:40:05 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:63001 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752887Ab1I0JkD convert rfc822-to-8bit (ORCPT
+	id S1753014Ab1I0Jsi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 05:48:38 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39635 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752661Ab1I0Jsh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 05:40:03 -0400
+	Tue, 27 Sep 2011 05:48:37 -0400
+Date: Tue, 27 Sep 2011 10:48:35 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
+        alsa-devel@alsa-project.org
+Subject: Re: [RFC][PATCH] ASoC: Make wm1250-ev1 depends on GPIOLIB
+Message-ID: <20110927094835.GA2910@opensource.wolfsonmicro.com>
+References: <1317091799.315.6.camel@phoenix>
 MIME-Version: 1.0
-In-Reply-To: <1317114837.15383.1.camel@twins>
-References: <1317110185-9219-1-git-send-email-lliubbo@gmail.com>
-	<1317114837.15383.1.camel@twins>
-Date: Tue, 27 Sep 2011 17:40:02 +0800
-Message-ID: <CAA_GA1czUfsP-mr74zMsLbjifx2Gsa-Fnv+V4yjfa0PUpyg-ow@mail.gmail.com>
-Subject: Re: [PATCH] spinlock: rm duplicated preempt en/disable for bottom half
-From: Bob Liu <lliubbo@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, joe@perches.com,
-        tglx@linutronix.de
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1317091799.315.6.camel@phoenix>
+X-Cookie: If you can read this, you're too close.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 27, 2011 at 5:13 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, 2011-09-27 at 15:56 +0800, Bob Liu wrote:
->> local_bh_en/disable() has already deal with en/disable preempt, so rm the
->> dumplicated one from spinlock_api_up/smp.h head file.
->
-> I bet you haven't tried booting this..  you just broke stuff like:
->
+On Tue, Sep 27, 2011 at 10:49:59AM +0800, Axel Lin wrote:
+> I got below build error if GPIO support is disabled.
+> Make wm1250-ev1 depends on GPIOLIB to fix below build error.
 
-I only tried it on blackfin arch and can boot successfully
-although it's a simple single-cpu ystem.
-
->  spin_lock_bh(&foo);
->  /* do crap */
->  spin_unlock(&foo);
->  /* do some other crap */
->  local_bh_enable();
->
->
-> And yes that does happen.
-
-Could you please give an example?  I did a simple search but no result.
-I thought the user should use spin_lock_bh()/spin_unlock_bh() in pairs.
-
--- 
-Regards,
---Bob
+If platforms aren't using the standard gpiolib infrastructure they
+should keep their GPIO API implementation up to date with the current
+state of the art.
