@@ -1,49 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752196Ab1I0RcM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 13:32:12 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:27283 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751220Ab1I0RcK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 13:32:10 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:date:
-	message-id:subject:from:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=cN/bBq49PcMrvRHmG7I+Y4+iFp4NAdRgxiqX6q2NNSwRedENrZFAcbKFDzJig32wv
-	JS6YZ6At3qpij4r9onu/A==
+	id S1752051Ab1I0Re1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 13:34:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28567 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750997Ab1I0Re0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 13:34:26 -0400
+Date: Tue, 27 Sep 2011 13:34:13 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vivek Goyal <vgoyal@redhat.com>, Matthew Garrett <mjg@redhat.com>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "gong.chen@intel.com" <gong.chen@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: Re: [RFC][PATCH -next] pstore: replace spin_lock with
+ spin_trylock_irqsave in panic path
+Message-ID: <20110927173413.GJ5795@redhat.com>
+References: <5C4C569E8A4B9B42A84A977CF070A35B2C56C9B823@USINDEVS01.corp.hds.com>
 MIME-Version: 1.0
-In-Reply-To: <CAHp75VdJ+ZeVLPhb5R1_29k7cLWb9hFaMy+TS7HqioLiRm+8gQ@mail.gmail.com>
-References: <20110919232602.ac450450.akpm00@gmail.com>
-	<fa146966b0ce1e7f04d59eb27cc0e968f51b22de.1316774801.git.andriy.shevchenko@linux.intel.com>
-	<20110923131819.fdaed4ab.akpm@google.com>
-	<CAHp75VdJ+ZeVLPhb5R1_29k7cLWb9hFaMy+TS7HqioLiRm+8gQ@mail.gmail.com>
-Date: Tue, 27 Sep 2011 10:32:07 -0700
-Message-ID: <CAKiorj5MJ8_ZH-J-7GjNQLoPNTshFdrrHfjptgpgi_4mchHJYw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] kernel.h: rename pack_hex_byte to hex_pack_byte
-From: Andrew Morton <akpm@google.com>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2C56C9B823@USINDEVS01.corp.hds.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 27, 2011 at 3:51 AM, Andy Shevchenko
-<andy.shevchenko@gmail.com> wrote:
-> On Fri, Sep 23, 2011 at 11:18 PM, Andrew Morton <akpm@google.com> wrote:
->> err, no thanks.  That's just going to hit everyone with great
->> screenfuls of compile warnings while waiting for someone else to fix
->> them up.
->
-> Okay, what about renaming pack_hex_byte to hex_byte_pack and
-> introducing temporary macro for backward compatibility?
+On Tue, Sep 27, 2011 at 01:14:59PM -0400, Seiji Aguchi wrote:
+> Hi,
+> 
+> [Problem]
+> Currently, pstore takes spin_trylock(&psinfo->buf_lock) in NMI context.
+> And it takes spin_lock(&psinfo->buf_lock) in other cases.
+> 
+> If there are some bugs in pstore and kernel panics, spin_lock(&psinfo->buf_lock) causes deadlock 
+> and panic_notifier_chain will not work.
 
-It's better to convert all the in-kernel call sites at the same time
-as adding the
-__deprecated tag to the old function.
+Ok, so I missed your 'return' first time through and originally had a
+bunch of comments.  So I would suggest adding a comment explaining why we
+are returning in that failure.
+
+Personally, I am not sure we want to abort here at the pstore layer, it
+should probably be aborted lower.  There isn't any reason why we can't
+continue from a pstore perspective (we can just bust the spinlock).
+
+>From an ERST perspective, the state machine might be screwed up, hence
+aborting in that layer could make sense.  But I don't think I agree with
+the 'return' statement.
+
+So I am opposed to it for now.
+
+Cheers,
+Don
+
+
+> 
+> [Patch Description]
+> For solving this problem, this patch replaces spin_lock with spin_trylock_irqsave in panic path.
+> 
+> Dead lock in panic path will not happen by applying this patch.
+> 
+>  Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+> 
+> ---
+>  fs/pstore/platform.c |   17 ++++++++---------
+>  1 files changed, 8 insertions(+), 9 deletions(-)
+> 
+> diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c index 0472924..9882892 100644
+> --- a/fs/pstore/platform.c
+> +++ b/fs/pstore/platform.c
+> @@ -97,12 +97,15 @@ static void pstore_dump(struct kmsg_dumper *dumper,
+>  	else
+>  		why = "Unknown";
+>  
+> -	if (in_nmi()) {
+> -		is_locked = spin_trylock(&psinfo->buf_lock);
+> -		if (!is_locked)
+> -			pr_err("pstore dump routine blocked in NMI, may corrupt error record\n");
+> +	if (reason == KMSG_DUMP_PANIC) {
+> +		is_locked = spin_trylock_irqsave(&psinfo->buf_lock, flags);
+> +		if (!is_locked) {
+> +			pr_err("pstore dump routine skipped in panic path\n");
+> +			return;
+> +		}
+>  	} else
+>  		spin_lock_irqsave(&psinfo->buf_lock, flags);
+> +
+>  	oopscount++;
+>  	while (total < kmsg_bytes) {
+>  		dst = psinfo->buf;
+> @@ -131,11 +134,7 @@ static void pstore_dump(struct kmsg_dumper *dumper,
+>  		total += l1_cpy + l2_cpy;
+>  		part++;
+>  	}
+> -	if (in_nmi()) {
+> -		if (is_locked)
+> -			spin_unlock(&psinfo->buf_lock);
+> -	} else
+> -		spin_unlock_irqrestore(&psinfo->buf_lock, flags);
+> +	spin_unlock_irqrestore(&psinfo->buf_lock, flags);
+>  }
+>  
+>  static struct kmsg_dumper pstore_dumper = {
+> --
+> 1.7.1
+> 
