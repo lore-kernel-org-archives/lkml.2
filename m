@@ -1,157 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752763Ab1I0SRC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 14:17:02 -0400
-Received: from smtp-out-134.synserver.de ([212.40.185.134]:1073 "HELO
-	smtp-out-133.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with SMTP id S1751678Ab1I0SRA (ORCPT
+	id S1752906Ab1I0SRc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 14:17:32 -0400
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:45262
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752244Ab1I0SRa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 14:17:00 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 19656
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH 2/2] regmap: rbtree-cache: Move cached rbnode handling into lookup function
-Date: Tue, 27 Sep 2011 20:15:38 +0200
-Message-Id: <1317147338-21492-2-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1317147338-21492-1-git-send-email-lars@metafoo.de>
-References: <1317147338-21492-1-git-send-email-lars@metafoo.de>
+	Tue, 27 Sep 2011 14:17:30 -0400
+X-SpamScore: -12
+X-BigFish: VPS-12(zz98dKzz1202hzz15d4Rz32i668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 0,
+X-WSS-ID: 0LS71CG-02-1BL-02
+X-M-MSG: 
+Date: Tue, 27 Sep 2011 20:14:38 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Hiroshi DOYU <Hiroshi.DOYU@nokia.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        David Brown <davidb@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: Re: [PATCH v3 1/6] iommu/core: split mapping to page sizes as
+ supported by the hardware
+Message-ID: <20110927181438.GM2138@amd.com>
+References: <1316195506-9777-1-git-send-email-ohad@wizery.com>
+ <1316195506-9777-2-git-send-email-ohad@wizery.com>
+ <20110927100505.GH2138@amd.com>
+ <CAK=WgbahwY+7Ux-RjW2Tw9WBSwZnYuTMZ2NQASWyOXQ3zF6qFg@mail.gmail.com>
+ <20110927131222.GL2138@amd.com>
+ <CAK=WgbYG2tpMJ2SikZhm=R9j5kQ6Hm8CGg=q1bko3idzF53Q3Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CAK=WgbYG2tpMJ2SikZhm=R9j5kQ6Hm8CGg=q1bko3idzF53Q3Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the handling of the cached rbnode into regcache_rbtree_lookup. This allows
-us to remove of some duplicated code sections in regcache_rbtree_read and
-regcache_rbtree_write.
+On Tue, Sep 27, 2011 at 09:28:37AM -0400, Ohad Ben-Cohen wrote:
+> So you're suggesting to re-implement find_next_bit() using ffs()/fls()
+> and shifting ?
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
----
- drivers/base/regmap/regcache-rbtree.c |   61 ++++++++++-----------------------
- 1 files changed, 18 insertions(+), 43 deletions(-)
+No. I suggest a simpler and shorter algorithm using the bit helpers.
+Something like that:
 
-diff --git a/drivers/base/regmap/regcache-rbtree.c b/drivers/base/regmap/regcache-rbtree.c
-index 52669de..de32ced 100644
---- a/drivers/base/regmap/regcache-rbtree.c
-+++ b/drivers/base/regmap/regcache-rbtree.c
-@@ -56,23 +56,33 @@ static void regcache_rbtree_set_register(struct regcache_rbtree_node *rbnode,
- 	regcache_set_val(rbnode->block, idx, val, word_size);
- }
- 
--static struct regcache_rbtree_node *regcache_rbtree_lookup(
--	struct rb_root *root, unsigned int reg)
-+static struct regcache_rbtree_node *regcache_rbtree_lookup(struct regmap *map,
-+	unsigned int reg)
- {
-+	struct regcache_rbtree_ctx *rbtree_ctx = map->cache;
- 	struct rb_node *node;
- 	struct regcache_rbtree_node *rbnode;
- 	unsigned int base_reg, top_reg;
- 
--	node = root->rb_node;
-+	rbnode = rbtree_ctx->cached_rbnode;
-+	if (rbnode) {
-+		regcache_rbtree_get_base_top_reg(rbnode, &base_reg, &top_reg);
-+		if (reg >= base_reg && reg <= top_reg)
-+			return rbnode;
-+	}
-+
-+	node = rbtree_ctx->root.rb_node;
- 	while (node) {
- 		rbnode = container_of(node, struct regcache_rbtree_node, node);
- 		regcache_rbtree_get_base_top_reg(rbnode, &base_reg, &top_reg);
--		if (reg >= base_reg && reg <= top_reg)
-+		if (reg >= base_reg && reg <= top_reg) {
-+			rbtree_ctx->cached_rbnode = rbnode;
- 			return rbnode;
--		else if (reg > top_reg)
-+		} else if (reg > top_reg) {
- 			node = node->rb_right;
--		else if (reg < base_reg)
-+		} else if (reg < base_reg) {
- 			node = node->rb_left;
-+		}
- 	}
- 
- 	return NULL;
-@@ -174,32 +184,14 @@ static int regcache_rbtree_exit(struct regmap *map)
- static int regcache_rbtree_read(struct regmap *map,
- 				unsigned int reg, unsigned int *value)
- {
--	struct regcache_rbtree_ctx *rbtree_ctx;
- 	struct regcache_rbtree_node *rbnode;
--	unsigned int base_reg, top_reg;
- 	unsigned int reg_tmp;
- 
--	rbtree_ctx = map->cache;
--	/* look up the required register in the cached rbnode */
--	rbnode = rbtree_ctx->cached_rbnode;
--	if (rbnode) {
--		regcache_rbtree_get_base_top_reg(rbnode, &base_reg, &top_reg);
--		if (reg >= base_reg && reg <= top_reg) {
--			reg_tmp = reg - base_reg;
--			*value = regcache_rbtree_get_register(rbnode, reg_tmp,
--							      map->cache_word_size);
--			return 0;
--		}
--	}
--	/* if we can't locate it in the cached rbnode we'll have
--	 * to traverse the rbtree looking for it.
--	 */
--	rbnode = regcache_rbtree_lookup(&rbtree_ctx->root, reg);
-+	rbnode = regcache_rbtree_lookup(map, reg);
- 	if (rbnode) {
- 		reg_tmp = reg - rbnode->base_reg;
- 		*value = regcache_rbtree_get_register(rbnode, reg_tmp,
- 						      map->cache_word_size);
--		rbtree_ctx->cached_rbnode = rbnode;
- 	} else {
- 		/* uninitialized registers default to 0 */
- 		*value = 0;
-@@ -243,31 +235,15 @@ static int regcache_rbtree_write(struct regmap *map, unsigned int reg,
- 	struct rb_node *node;
- 	unsigned int val;
- 	unsigned int reg_tmp;
--	unsigned int base_reg, top_reg;
- 	unsigned int pos;
- 	int i;
- 	int ret;
- 
- 	rbtree_ctx = map->cache;
--	/* look up the required register in the cached rbnode */
--	rbnode = rbtree_ctx->cached_rbnode;
--	if (rbnode) {
--		regcache_rbtree_get_base_top_reg(rbnode, &base_reg, &top_reg);
--		if (reg >= base_reg && reg <= top_reg) {
--			reg_tmp = reg - base_reg;
--			val = regcache_rbtree_get_register(rbnode, reg_tmp,
--							   map->cache_word_size);
--			if (val == value)
--				return 0;
--			regcache_rbtree_set_register(rbnode, reg_tmp, value,
--						     map->cache_word_size);
--			return 0;
--		}
--	}
- 	/* if we can't locate it in the cached rbnode we'll have
- 	 * to traverse the rbtree looking for it.
- 	 */
--	rbnode = regcache_rbtree_lookup(&rbtree_ctx->root, reg);
-+	rbnode = regcache_rbtree_lookup(map, reg);
- 	if (rbnode) {
- 		reg_tmp = reg - rbnode->base_reg;
- 		val = regcache_rbtree_get_register(rbnode, reg_tmp,
-@@ -276,7 +252,6 @@ static int regcache_rbtree_write(struct regmap *map, unsigned int reg,
- 			return 0;
- 		regcache_rbtree_set_register(rbnode, reg_tmp, value,
- 					     map->cache_word_size);
--		rbtree_ctx->cached_rbnode = rbnode;
- 	} else {
- 		/* bail out early, no need to create the rbnode yet */
- 		if (!value)
+        min_idx = __ffs(iommu_page_sizes);
+
+        while (size) {
+                /* Max alignment allowed by current physical address */
+                phys_idx = __ffs(phys);
+
+                /* Max alignment allowed by current size */
+                size_idx = __fls(size);
+
+                /* special case: iova == 0 */
+                if (likely(phys))
+                        idx = min(phys_idx, size_idx);
+                else
+                        idx = size_idx;
+
+                BUG_ON(idx < min_idx);
+
+                psize = 1UL << idx;
+
+                /* search next smaller page-size supported */
+                while (psize && !(iommu_page_sizes & psize))
+                        psize >>= 1;
+
+                BUG_ON(psize == 0);
+
+		iommu_ops->map(domain, iova, phys, get_order(psize), prot);
+
+                iova += psize;
+		phys += psize;
+                size -= psize;
+        }
+
+It is only C-style pseudo-code, of course. These __ffs and __fls lines
+all translate to a single instruction later. The find_next_bit()
+function has a lot more overhead because it needs to take account of
+real bitmaps (arrays of ulong). But this complexity is not required
+here.
+
+And yes, overhead is important when we implement the generic dma-ops
+on-top of the iommu-api because this will make the iommu_map function a
+fast-path. So we really care about overhead here.
+
+	Joerg
+
 -- 
-1.7.2.5
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
