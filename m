@@ -1,69 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752878Ab1I0UOG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 16:14:06 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:45112 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752331Ab1I0UOF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 16:14:05 -0400
-Date: Tue, 27 Sep 2011 22:13:58 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Lucas C. Villa Real" <lucasvr@gobolinux.org>, Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, Wey-Yi Guya <wey-yi.w.guy@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: [PATCH] Initialize pointer on request_firmware
-Message-ID: <20110927201358.GB4249@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	"Lucas C. Villa Real" <lucasvr@gobolinux.org>,
-	Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-	Wey-Yi Guya <wey-yi.w.guy@intel.com>,
-	Johannes Berg <johannes.berg@intel.com>,
-	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-	Pekka Enberg <penberg@kernel.org>
-References: <20110921235515.7476c5fe.lucasvr@gmail.com>
- <20110922092347.GD17640@liondog.tnic>
- <20110922171829.GA4863@suse.de>
- <20110922175406.GA4709@gere.osrc.amd.com>
- <20110922180327.GA1932@suse.de>
- <20110922182048.GB4709@gere.osrc.amd.com>
- <CAAvzgtZ3aWjpN++3qo1LCS9A+GsNzbnG0vEDqyDG8OHYJeXwuA@mail.gmail.com>
- <CAAvzgtZf2pFcKmAvccH4oJuiUJaugWbX1gwng7CK9B2DwN3ocA@mail.gmail.com>
+	id S1752954Ab1I0UPF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 16:15:05 -0400
+Received: from mail.windriver.com ([147.11.1.11]:35650 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752504Ab1I0UPE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 16:15:04 -0400
+Message-ID: <4E822EB8.5030901@windriver.com>
+Date: Tue, 27 Sep 2011 16:14:48 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAAvzgtZf2pFcKmAvccH4oJuiUJaugWbX1gwng7CK9B2DwN3ocA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Greg KH <greg@kroah.com>, <linux-next@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        "Igor M. Liplianin" <liplianin@netup.ru>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: Re: linux-next: manual merge of the staging tree with the v4l-dvb
+ tree
+References: <20110927161055.05bbb0586fffbfbb2307f30b@canb.auug.org.au>
+In-Reply-To: <20110927161055.05bbb0586fffbfbb2307f30b@canb.auug.org.au>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 23, 2011 at 12:51:36PM -0300, Lucas C. Villa Real wrote:
-> On Thu, Sep 22, 2011 at 4:05 PM, Lucas C. Villa Real
-> <lucasvr@gobolinux.org> wrote:
-> > On Thu, Sep 22, 2011 at 3:20 PM, Borislav Petkov <bp@alien8.de> wrote:
-> >> On Thu, Sep 22, 2011 at 11:03:27AM -0700, Greg KH wrote:
-> >>> The patch was in the 2.6.36 kernel, so by nature of that, 3.0 will also
-> >>> have it, right?
-> >>
-> >> Ok, a colleague of mine gave me 3.0.4 to stare at - and you're right
-> >> the patch is there. So what is still missing is caca9510ff4e5 from
-> >> upstream which reroutes the exit path so that firmware_p is NULLed
-> >> before returning -EBUSY.
-> >>
-> >> Lucas, can you apply caca9510ff4e5 from upstream and verify it fixes the
-> >> issue for ya?
-> >
-> > Sure. I'll do that tonight and will let you now -- the laptop I'm
-> > using right now doesn't suffer from that problem.
+On 11-09-27 02:10 AM, Stephen Rothwell wrote:
+> Hi Greg,
 > 
-> caca9510ff4e5 fixes it. Thanks for the pointer!
+> Today's linux-next merge of the staging tree got a conflict in
+> drivers/misc/altera-stapl/altera.c between commit cff4fa8415a3 ("[media]
+> altera-stapl: it is time to move out from staging") from the v4l-dvb tree
+> and commit 99c978529a40 ("staging: Add module.h to drivers/staging
+> users") from the staging tree.
 
-Looks like the ball is with Greg now :-).
+Hey Greg/Stephen,
 
-Thanks.
+So that I could revalidate the module.h stuff with randconfig builds,
+I've taken the above staging commit and re-applied it to the module.h
+tree -- I'm pretty sure git will see it as the same commit and just
+move on with no complaints, but just a heads up for Stephen in case.
 
--- 
-Regards/Gruss,
-    Boris.
+This won't happen until Stephen takes the module.h from one of our
+internal servers as a temporary measure while kernel.org is down.
+I'll be sending that information to linux-next and Stephen later
+today.
+
+Paul.
+
+> 
+> Just context changes.  I fixed it up (see below) and can carry the fix as
+> necessary.
+> 
+> Mauro, you could, of course, apply Paul's patch to the file in its new
+> location.
