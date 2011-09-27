@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753621Ab1I0W70 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 18:59:26 -0400
-Received: from exprod7og113.obsmtp.com ([64.18.2.179]:47448 "EHLO
-	exprod7og113.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753446Ab1I0W7Z (ORCPT
+	id S1753556Ab1I0XEO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 19:04:14 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:56270 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752510Ab1I0XEM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 18:59:25 -0400
-Message-ID: <4E82553A.5020906@genband.com>
-Date: Tue, 27 Sep 2011 16:59:06 -0600
-From: Chris Friesen <chris.friesen@genband.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110906 Fedora/3.1.14-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.14
-MIME-Version: 1.0
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [BUG?] anyone aware of pagecache issues with 2.6.27?
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 27 Sep 2011 22:59:08.0047 (UTC) FILETIME=[100171F0:01CC7D69]
-X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-18412.002
-X-TM-AS-Result: No--14.737700-5.000000-31
-X-TM-AS-User-Approved-Sender: No
-X-TM-AS-User-Blocked-Sender: No
+	Tue, 27 Sep 2011 19:04:12 -0400
+Date: Wed, 28 Sep 2011 09:03:58 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: linux-next: manual merge of the akpm tree with the tree
+Message-Id: <20110928090358.10935976cc6c185069082610@canb.auug.org.au>
+In-Reply-To: <CAL26m8JbvOi05irJdhtsas2=PWdy4V+hkTYHp029RAvDGnUZgA@mail.gmail.com>
+References: <20110927165920.14b00e8595d10135d2a4397a@canb.auug.org.au>
+	<CAL26m8JbvOi05irJdhtsas2=PWdy4V+hkTYHp029RAvDGnUZgA@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__28_Sep_2011_09_03_58_+1000_k6MZWyNweybQ4krY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I realize this is a long shot, but I figure it's worth a try.
+--Signature=_Wed__28_Sep_2011_09_03_58_+1000_k6MZWyNweybQ4krY
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-What we're seeing is that "cached" gets large (several gigs) and "free" 
-gets small, and when we get into this state our system responsiveness 
-starts dropping.  If I do "echo 3 > /proc/sys/vm/drop_caches", then it 
-immediately frees up a couple gig of memory and things work as expected.
+Hi,
 
-Based on the fact that memory is immediately reclaimable from the cache 
-it appears that the bulk of the cache is clean pages.  This shouldn't 
-have a major impact on memory allocation, but at least on this setup it 
-does.  It seems like there is something not quite right about the 
-mechanism that reclaims clean pages from the cache.  Is anyone aware of 
-issues in this area for 2.6.27-vintage kernels?
+On Tue, 27 Sep 2011 09:52:27 -0700 Vaibhav Nagarnaik <vnagarnaik@google.com=
+> wrote:
+>
+> Looks good to me. Do I need to provide Acked-by?
 
-Is there a way to limit how much memory gets used for the page cache? 
-drop_caches seems to help, but it's a really big hammer.
+Not to me, that is just a merge fixup patch in linux-next.  It is not
+permanent until Andrew or Linus actually take the original patches and
+merge them.
 
-System details:
-2.6.27 kernel, x86-64, 8GB RAM, no swap.  Root is on a tmpfs filesystem, 
-local disks are used for miscellaneous stuff including /var/log, we have 
-some sizeable network-mounted filesystems. 
-/proc/sys/vm/overcommit_memory is set to 2, with overcommit_ratio set to 
-100.
+But it good to know that it is probablt correct, thanks.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Wed__28_Sep_2011_09_03_58_+1000_k6MZWyNweybQ4krY
+Content-Type: application/pgp-signature
 
-Thanks,
-Chris
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQEcBAEBAgAGBQJOglZeAAoJEDMEi1NhKgbsbrQH/0/lLD4am07onUVO9DOKS6D+
+IotkQZsLgC7pDhWBnL9MfhpdxvCadE3+/PDdXrFFBOj9DhbmlrsclRgm6k209N4Q
+3eMSTGvGrmdgKugoVUh1/X09CQtI4Eap61VhtOO6V8MhXlLxFt1/xNj/ioMGXAay
+IETtMu/lhVnPLiH8bSwb4KCE1GMcxyHRaLehglO0obuxf9KlE5OFMPS2FRdry4aN
+YiVfXiKOFiXSfAHTvG6jHJb/ZJo/9d8Vn1BWhh1xQ/kwnCxutVWtNEQPNASdvzl6
+ovnbSY3y5G18FkOtGMuuttOn4C36ojmdLDSC/aRz2jbrHj0rhEfuKh0YxSul4b0=
+=otL6
+-----END PGP SIGNATURE-----
 
--- 
-Chris Friesen
-Software Developer
-GENBAND
-chris.friesen@genband.com
-www.genband.com
+--Signature=_Wed__28_Sep_2011_09_03_58_+1000_k6MZWyNweybQ4krY--
