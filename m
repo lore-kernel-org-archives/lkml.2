@@ -1,117 +1,661 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751984Ab1I0Hfh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 03:35:37 -0400
-Received: from fallback.mail.elte.hu ([157.181.151.13]:47864 "EHLO
-	fallback.mail.elte.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751713Ab1I0Hfg (ORCPT
+	id S1752042Ab1I0Hfl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 03:35:41 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:46373 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751878Ab1I0Hfh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 03:35:36 -0400
-X-Greylist: delayed 3702 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 Sep 2011 03:35:36 EDT
-Date: Tue, 27 Sep 2011 08:32:24 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Venki Pallipadi <venki@google.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1] sched: fix nohz idle load balancer issues
-Message-ID: <20110927063222.GB18519@elte.hu>
-References: <20110926115049.GA22604@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110926115049.GA22604@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	Tue, 27 Sep 2011 03:35:37 -0400
+Date: Tue, 27 Sep 2011 17:35:30 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for Sept 27
+Message-Id: <20110927173530.ceae2e49537a81da65287bf3@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__27_Sep_2011_17_35_30_+1000_jTMr0Mqt=uZhbZB1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Tue__27_Sep_2011_17_35_30_+1000_jTMr0Mqt=uZhbZB1
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-* Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com> wrote:
+Hi all,
 
-> While trying to test recently introduced cpu bandwidth control feature for
-> non-realtime tasks, we noticed "more than expected" idle time, which
-> reduced considerably when booted with nohz=off. This patch is an attempt
-> to fix that discrepancy so that we see little variance in idle time between
-> nohz=on and nohz=off.
-> 
-> Test setup:
-> 
-> Machine : 16-cpus (2 Quad-core w/ HT enabled)
-> Kernel  : Latest code (HEAD at 6e8d0472ea63969e2df77c7e84741495fedf7d9b) found 
-> 	  at git://tesla.tglx.de/git/linux-2.6-tip
-> 
-> Cgroups :
-> 
-> 5 in number (/L1/L2/C1 - /L1/L2/C5), each having {2, 2, 4, 8, 16} tasks
-> respectively. /L1 and /L2 were added to the hierarchy to mimic cgroup hierarchy 
-> created by libvirt and otherwise do not contain any tasks. Each cgroup has 
-> cpu.shares proportional to # of tasks in it. For ex: /L1/L2/C1's cpu.shares =
-> 2 * 1024 = 2048, C3's cpu.shares = 4096 etc. Further, each task is placed in its
-> own (sub-)cgroup with default shares of 1024 and a capped usage of 50% CPU.
->   
->         /L1/L2/C1/C1_1/Task1  -> capped at 50% cpu usage
->         /L1/L2/C1/C1_2/Task2  -> capped at 50% cpu usage
->         /L1/L2/C2/C2_1/Task3  -> capped at 50% cpu usage
->         /L1/L2/C2/C2_2/Task3  -> capped at 50% cpu usage
->         /L1/L2/C3/C3_1/Task4  -> capped at 50% cpu usage
->         /L1/L2/C3/C3_2/Task4  -> capped at 50% cpu usage
->         /L1/L2/C3/C3_3/Task4  -> capped at 50% cpu usage
->         /L1/L2/C3/C3_4/Task4  -> capped at 50% cpu usage
->         ...
->         /L1/L2/C5/C5_16/Task32 -> capped at 50% cpu usage
-> 
-> So we have 32 tasks, each capped at 50% CPU usage, run on a 16-CPU
-> system, which one may expect to consume all CPU resource leaving no idle
-> time. While that may be "insane" expectation, the goal is to minimize idle time
-> in this situation as much as possible.
-> 
-> I am using a slightly modified script provided at
-> https://lkml.org/lkml/2011/6/7/352 for generating this test scenario -
-> can make that available if required.
-> 
-> Idle time was sampled every second (using vmstat) over a window of 60 seconds
-> and was found as below:
-> 
-> Idle time 		Average	 Std-deviation	 Min	Max
-> ============================================================
-> 
-> nohz=off		4%        0.5%           3%      5%
-> nohz=on	 	10% 	  2.4% 		 5%	 18%
-> nohz=on + patch	5.3%      1.3%		 3%      9%
-> 
-> The patch cuts down idle time significantly when kernel is booted 
-> with 'nohz=on' (which is good for saving power when idle).
+The linux-next tree is now available from
+git://github.com/sfrothwell/linux-next.git as a temporary measure while
+the kernel.org servers are unavailable.
 
-What are the tasks doing which are running - are they plain burning 
-CPU time? If the tasks do something more complex, do you also have a 
-measure of how much work gets done by the workload, per second?
+The powerpc allyesconfig build still fails today.
 
-Percentual changes in that metric would be nice to include in an 
-additional column - that way we can see that it's not only idle
-that has gone down, but workload performance has gone up too.
+Changes since 20110926:
 
-In fact even if there was only a CPU burning loop in the workload it 
-would be nice to make that somewhat more sophisticated by letting it 
-process some larger array that has a cache footprint. This mimics 
-real workloads that don't just spin burning CPU time but do real data 
-processing.
+The arm-soc tree gained a conflict against the arm tree.
 
-For any non-trivial workload it's possible to reduce idle time 
-without much increase in work done and in fact it's possible to 
-decrease idle time *and* work done - so we need to see more clearly 
-here and make sure it's all an improvement.
+The v4l-dvb tree lost its build failure.
 
-Thanks,
+The net tree gained a conflict against the wireless-current tree.
 
-	Ingo
+The mfd tree gained a conflict against the arm tree.
 
+The trivial tree gained a conflicta against the v4l-dvb tree.
+
+The tip tree gained a conflict against the iommu tree.
+
+The rcu tree gained a conflicts against Linus' tree.
+
+The staging tree gained a conflict against the v4l-dvb tree.
+
+The moduleh tree gained conflicts against the v4l-dvb and mfd trees.
+
+The akpm tree gained conflicts against the rcu and tip trees and I
+dropped a couple of patches that have turned up elsewhere.
+
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 199 trees (counting Linus' and 27 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Randy Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging kbuild-current/rc-fixes
+Merging arm-current/fixes
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging 52xx-and-virtex-current/powerpc/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging driver-core.current/driver-core-linus
+Merging tty.current/tty-linus
+Merging usb.current/usb-linus
+Merging staging.current/staging-linus
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging sh-current/sh-fixes-for-linus
+Merging rmobile-current/rmobile-fixes-for-linus
+Merging devicetree-current/devicetree/merge
+Merging spi-current/spi/merge
+Merging arm/for-next
+Merging arm-lpae/for-next
+CONFLICT (content): Merge conflict in arch/arm/include/asm/page.h
+CONFLICT (content): Merge conflict in arch/arm/include/asm/pgalloc.h
+CONFLICT (content): Merge conflict in arch/arm/include/asm/pgtable-hwdef.h
+CONFLICT (content): Merge conflict in arch/arm/include/asm/pgtable.h
+CONFLICT (content): Merge conflict in arch/arm/include/asm/tlb.h
+CONFLICT (content): Merge conflict in arch/arm/kernel/head.S
+CONFLICT (content): Merge conflict in arch/arm/mm/mmu.c
+Merging arm-soc/for-next
+CONFLICT (add/add): Merge conflict in Documentation/devicetree/bindings/arm=
+/l2cc.txt
+CONFLICT (delete/modify): arch/arm/mach-at91/board-usb-a9260.c deleted in a=
+rm-soc/for-next and modified in HEAD. Version HEAD of arch/arm/mach-at91/bo=
+ard-usb-a9260.c left in tree.
+CONFLICT (content): Merge conflict in arch/arm/mach-msm/board-msm7x30.c
+CONFLICT (content): Merge conflict in arch/arm/mach-msm/board-msm8x60.c
+CONFLICT (content): Merge conflict in arch/arm/mach-mxs/include/mach/gpio.h
+CONFLICT (delete/modify): arch/arm/mach-nuc93x/Makefile.boot deleted in arm=
+-soc/for-next and modified in HEAD. Version HEAD of arch/arm/mach-nuc93x/Ma=
+kefile.boot left in tree.
+CONFLICT (content): Merge conflict in arch/arm/mach-u300/Makefile.boot
+CONFLICT (content): Merge conflict in arch/arm/mm/cache-l2x0.c
+CONFLICT (content): Merge conflict in arch/arm/mm/dma-mapping.c
+CONFLICT (content): Merge conflict in arch/arm/plat-mxc/include/mach/gpio.h
+$ git rm -f arch/arm/mach-at91/board-usb-a9260.c arch/arm/mach-nuc93x/Makef=
+ile.boot
+Applying: arm-soc: merge fixup for fixup/reserve being added to MACHINE des=
+criptions
+Merging at91/at91-next
+Merging davinci/davinci-next
+Merging i.MX/for-next
+CONFLICT (content): Merge conflict in arch/arm/mach-imx/Makefile
+Merging linux-spec/for-next
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging s5p/for-next
+CONFLICT (content): Merge conflict in drivers/gpio/Makefile
+Merging tegra/for-next
+Merging xilinx/arm-next
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging quilt/hexagon
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging openrisc/for-upstream
+Merging parisc/for-next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/powerpc/next
+Merging galak/next
+Merging s390/features
+Merging sh/sh-latest
+Merging rmobile/rmobile-latest
+Merging sparc/master
+Merging tile/master
+Merging unicore32/unicore32
+Merging xtensa/master
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/dev
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging hfsplus/for-next
+Merging jfs/next
+Merging logfs/master
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging omfs/for-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+CONFLICT (content): Merge conflict in fs/xfs/xfs_aops.c
+CONFLICT (content): Merge conflict in fs/xfs/xfs_super.c
+Merging vfs/for-next
+Merging vfs-scale/vfs-scale-working
+Merging pci/linux-next
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+Merging quilt/jdelvare-hwmon
+Merging hwmon-staging/hwmon-next
+Merging quilt/kernel-doc
+Merging docs/docs-move
+Merging v4l-dvb/master
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/acpi
+Merging idle-test/idle-test
+Merging powertools/tools-test
+Merging cpupowerutils/master
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging dlm/next
+Merging swiotlb/master
+Merging ibft/master
+Merging scsi/master
+Merging iscsi-target/for-next
+Merging slave-dma/next
+Merging async_tx/next
+Merging net/master
+CONFLICT (delete/modify): arch/powerpc/configs/40x/hcu4_defconfig deleted i=
+n HEAD and modified in net/master. Version net/master of arch/powerpc/confi=
+gs/40x/hcu4_defconfig left in tree.
+CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/iwl-scan=
+.c
+CONFLICT (content): Merge conflict in drivers/s390/cio/qdio_main.c
+$ git rm -f arch/powerpc/configs/40x/hcu4_defconfig
+Merging wireless/master
+CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/iwl-pci.c
+CONFLICT (content): Merge conflict in drivers/net/wireless/wl12xx/main.c
+Merging bluetooth/master
+Merging mtd/master
+Merging l2-mtd/master
+CONFLICT (content): Merge conflict in arch/arm/mach-at91/board-afeb-9260v1.c
+CONFLICT (content): Merge conflict in arch/arm/mach-at91/board-neocore926.c
+CONFLICT (content): Merge conflict in arch/arm/mach-at91/board-rm9200dk.c
+CONFLICT (content): Merge conflict in arch/arm/mach-at91/board-sam9g20ek.c
+CONFLICT (content): Merge conflict in arch/arm/mach-at91/board-sam9m10g45ek=
+.c
+CONFLICT (delete/modify): arch/arm/mach-at91/board-usb-a9260.c deleted in H=
+EAD and modified in l2-mtd/master. Version l2-mtd/master of arch/arm/mach-a=
+t91/board-usb-a9260.c left in tree.
+$ git rm -f arch/arm/mach-at91/board-usb-a9260.c
+Merging crypto/master
+Merging sound/for-next
+CONFLICT (content): Merge conflict in arch/mips/alchemy/devboards/db1x00/pl=
+atform.c
+CONFLICT (content): Merge conflict in sound/mips/Kconfig
+Merging sound-asoc/for-next
+Merging cpufreq/next
+Merging quilt/rr
+Merging input/next
+Merging input-mt/next
+Merging lsm/for-next
+Merging block/for-next
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+CONFLICT (content): Merge conflict in drivers/leds/Kconfig
+Merging backlight/for-mm
+Merging mmc/mmc-next
+CONFLICT (content): Merge conflict in drivers/mmc/core/core.c
+CONFLICT (content): Merge conflict in drivers/mmc/core/sd.c
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+CONFLICT (content): Merge conflict in arch/arm/mach-u300/include/mach/irqs.h
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging fbdev/fbdev-next
+CONFLICT (content): Merge conflict in drivers/video/Kconfig
+Merging viafb/viafb-next
+Merging omap_dss2/for-next
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-4430sdp.c
+CONFLICT (delete/modify): drivers/video/omap/lcd_apollon.c deleted in omap_=
+dss2/for-next and modified in HEAD. Version HEAD of drivers/video/omap/lcd_=
+apollon.c left in tree.
+CONFLICT (delete/modify): drivers/video/omap/lcd_ldp.c deleted in omap_dss2=
+/for-next and modified in HEAD. Version HEAD of drivers/video/omap/lcd_ldp.=
+c left in tree.
+CONFLICT (delete/modify): drivers/video/omap/lcd_overo.c deleted in omap_ds=
+s2/for-next and modified in HEAD. Version HEAD of drivers/video/omap/lcd_ov=
+ero.c left in tree.
+$ git rm -f drivers/video/omap/lcd_apollon.c drivers/video/omap/lcd_ldp.c d=
+rivers/video/omap/lcd_overo.c
+Merging voltage/for-next
+Merging security/next
+CONFLICT (content): Merge conflict in fs/ocfs2/xattr.c
+Merging selinux/master
+Merging lblnet/master
+Merging agp/agp-next
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging iommu/next
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+CONFLICT (content): Merge conflict in Documentation/PCI/pci.txt
+CONFLICT (delete/modify): arch/arm/mach-nuc93x/time.c deleted in HEAD and m=
+odified in trivial/for-next. Version trivial/for-next of arch/arm/mach-nuc9=
+3x/time.c left in tree.
+CONFLICT (content): Merge conflict in drivers/media/video/s5p-fimc/fimc-cap=
+ture.c
+CONFLICT (content): Merge conflict in drivers/net/Kconfig
+$ git rm -f arch/arm/mach-nuc93x/time.c
+Merging audit/for-next
+Merging pm/linux-next
+CONFLICT (content): Merge conflict in arch/arm/mach-shmobile/board-ap4evb.c
+Merging apm/for-next
+Merging fsnotify/for-next
+Merging irda/for-next
+Merging edac/linux_next
+CONFLICT (content): Merge conflict in arch/x86/kernel/cpu/mcheck/mce.c
+Merging edac-amd/for-next
+Merging devicetree/devicetree/next
+Merging spi/spi/next
+Merging gpio/gpio/next
+Merging tip/auto-latest
+CONFLICT (content): Merge conflict in drivers/iommu/Makefile
+Merging rcu/rcu/next
+CONFLICT (content): Merge conflict in arch/x86/kernel/cpu/mcheck/mce.c
+CONFLICT (content): Merge conflict in arch/x86/kernel/process_64.c
+Merging kvm/linux-next
+CONFLICT (content): Merge conflict in include/linux/kvm.h
+Merging oprofile/for-next
+Merging ptrace/ptrace
+Merging xen/upstream/xen
+Merging xen-two/linux-next
+CONFLICT (content): Merge conflict in arch/x86/xen/Kconfig
+Merging xen-pvhvm/linux-next
+Merging percpu/for-next
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging namespace/master
+Merging regmap/for-next
+CONFLICT (content): Merge conflict in drivers/mfd/wm831x-spi.c
+Merging driver-core/driver-core-next
+CONFLICT (content): Merge conflict in arch/arm/plat-mxc/devices.c
+Merging tty/tty-next
+CONFLICT (content): Merge conflict in arch/powerpc/include/asm/udbg.h
+CONFLICT (content): Merge conflict in arch/powerpc/kernel/udbg.c
+CONFLICT (content): Merge conflict in drivers/tty/serial/8250.c
+Merging usb/usb-next
+Merging staging/staging-next
+CONFLICT (content): Merge conflict in drivers/misc/altera-stapl/altera.c
+CONFLICT (content): Merge conflict in drivers/staging/comedi/drivers/ni_lab=
+pc.c
+CONFLICT (delete/modify): drivers/staging/rtl8192e/r8192E_core.c deleted in=
+ staging/staging-next and modified in HEAD. Version HEAD of drivers/staging=
+/rtl8192e/r8192E_core.c left in tree.
+CONFLICT (content): Merge conflict in drivers/staging/xgifb/XGI_main_26.c
+$ git rm -f drivers/staging/rtl8192e/r8192E_core.c
+Merging bkl-config/config
+Merging tmem/tmem
+CONFLICT (content): Merge conflict in mm/cleancache.c
+Merging writeback/next
+Merging arm-dt/devicetree/arm-next
+Merging hwspinlock/linux-next
+Merging moduleh/module.h-split
+CONFLICT (content): Merge conflict in arch/arm/mach-bcmring/mm.c
+CONFLICT (content): Merge conflict in arch/powerpc/mm/tlb_nohash.c
+CONFLICT (content): Merge conflict in drivers/media/dvb/frontends/dibx000_c=
+ommon.c
+CONFLICT (delete/modify): drivers/mfd/ab3550-core.c deleted in HEAD and mod=
+ified in moduleh/module.h-split. Version moduleh/module.h-split of drivers/=
+mfd/ab3550-core.c left in tree.
+CONFLICT (content): Merge conflict in drivers/mmc/host/sdhci-pci.c
+CONFLICT (content): Merge conflict in drivers/s390/char/vmur.c
+CONFLICT (content): Merge conflict in drivers/scsi/libfc/fc_lport.c
+CONFLICT (content): Merge conflict in include/linux/dmaengine.h
+$ git rm -f drivers/mfd/ab3550-core.c
+Applying: dm: use export.h instead of module.h where possible
+Applying: block: bsg-lib.c needs export.h not module.h
+Applying: PM: EXPORT_SYMBOL needs export.h
+Applying: bcma: driver_chipcommon_pmu.c needs linux/export.h
+Merging kvmtool/master
+CONFLICT (content): Merge conflict in include/net/9p/9p.h
+Merging scsi-post-merge/merge-base:master
+$ git checkout akpm
+Applying: Fix kconfig unmet dependency warning.  BACKLIGHT_CLASS_DEVICE dep=
+ends on
+Applying: The parameter's origin type is long.  On an i386 architecture, it=
+ can
+Applying: Since the commit below which added O_PATH support to the *at() ca=
+lls, the
+Applying: Add support for Aspire 1410 BIOS v1.3314.  Fixes the following er=
+ror:
+Applying: This makes the iris driver use the platform API, so it is properl=
+y exposed
+Applying: On x86_32 casting the unsigned int result of get_random_int() to =
+long may
+Applying: Replace the bubble sort in sanitize_e820_map() with a call to the=
+ generic
+Applying: The x86 timer interrupt handler is the only handler not traced in=
+ the
+Applying: The current interrupt traces from irq_handler_entry and irq_handl=
+er_exit
+CONFLICT (content): Merge conflict in arch/x86/kernel/apic/apic.c
+CONFLICT (content): Merge conflict in arch/x86/kernel/cpu/mcheck/therm_thro=
+t.c
+CONFLICT (content): Merge conflict in arch/x86/kernel/cpu/mcheck/threshold.c
+CONFLICT (content): Merge conflict in arch/x86/kernel/irq.c
+Applying: Don't allow everybody to use a modem.
+Applying: The address limit is already set in flush_old_exec() so this
+Applying: A call to va_copy() should always be followed by a call to va_end=
+() in the
+Applying: Don't dereference em if it's NULL or an error pointer.
+Applying: Some messing with error codes to return 0 on out id's and match
+Applying: kbuf is a buffer that is local to this function, so all of the er=
+ror paths
+Applying: fb_set_suspend() must be called with the console semaphore held, =
+which
+Applying: hwmon was using an idr with a NULL pointer, so convert to an
+Applying: A straightforward looking use of idr for a device id.
+Applying: The address limit is already set in flush_old_exec() so this
+Applying: The address limit is already set in flush_old_exec() so this
+Applying: Add new check (assert_init) to make sure objects are initialized =
+and
+Applying: del_timer_sync() calls debug_object_assert_init() to assert that =
+a timer
+Applying: ext4_{set,clear}_bit() is defined as __test_and_{set,clear}_bit_l=
+e() for
+Applying: The dqc_bitmap field of struct ocfs2_local_disk_chunk is 32-bit a=
+ligned,
+Applying: The address limit is already set in flush_old_exec() so those cal=
+ls to
+Applying: The current implementation of dmi_name_in_vendors() is an invitat=
+ion to
+Applying: For headers that get exported to userland and make use of u32 sty=
+le
+Applying: Fix sparse warnings of right shift bigger than source value size:
+Applying: We leak in drivers/scsi/aacraid/commctrl.c::aac_send_raw_srb() :
+Applying: Some mangling of errors was necessary to maintain current interfa=
+ce.
+Applying: This does involve additional use of the spin lock in idr.c.  Is t=
+his an
+Applying: Instead of open coding this function use kstrtoul_from_user() dir=
+ectly.
+Applying: The address limit is already set in flush_old_exec() so this assi=
+gnment of
+Applying: Unbreak the alpha build.
+Applying: Unbreak alpha build.
+Applying: Unbreak alpha build.
+Applying: When we get corruption reports, it's useful to see if the kernel =
+was
+Applying: When we get corruption reports, it's useful to see if the kernel =
+was
+Applying: The basic idea behind cross memory attach is to allow MPI program=
+s doing
+Applying: - Add x86_64 specific wire up
+Applying: > You might get some speed benefit by optimising for the small co=
+pies
+Applying: acct_isolated of compaction uses page_lru_base_type which returns=
+ only
+Applying: Change ISOLATE_XXX macro with bitwise isolate_mode_t type.  Norma=
+lly,
+Applying: In async mode, compaction doesn't migrate dirty or writeback page=
+s.  So,
+Applying: In __zone_reclaim case, we don't want to shrink mapped page.  Non=
+etheless,
+Applying: unmap_and_move() is one a big messy function.  Clean it up.
+Applying: radix_tree_tag_get()'s BUG (when it sees a tag after saw_unset_ta=
+g) was
+Applying: per-task block plug can reduce block queue lock contention and in=
+crease
+Applying: The tracing ring-buffer used this function briefly, but not anymo=
+re.
+Applying: After selecting a task to kill, the oom killer iterates all proce=
+sses and
+Applying: Add the leading word "tmpfs" to the Kconfig string to make it bli=
+ndingly
+Applying: When we get a bad_page bug report, it's useful to see what module=
+s the
+Applying: The nr_force_scan[] tuple holds the effective scan numbers for an=
+on and
+Applying: Some kernel components pin user space memory (infiniband and perf=
+) (by
+Applying: Add comments to explain the page statistics field in the mm_struc=
+t.
+Applying: add missing ;
+Applying: Testing from the XFS folk revealed that there is still too much I=
+/O from
+Applying: Lumpy reclaim worked with two passes - the first which queued pag=
+es for IO
+Applying: Direct reclaim should never writeback pages.  For now, handle the
+Applying: Direct reclaim should never writeback pages.  Warn if an attempt =
+is made.
+Applying: It is preferable that no dirty pages are dispatched for cleaning =
+from the
+Applying: Workloads that are allocating frequently and writing files place =
+a large
+Applying: When direct reclaim encounters a dirty page, it gets recycled aro=
+und the
+Applying: It's possible a zone watermark is ok when entering the balance_pg=
+dat()
+Applying: printk_ratelimit() should not be used, because it shares ratelimi=
+ting
+Applying: memchr_inv() is mainly used to check whether the whole buffer is =
+filled
+Applying: Use newly introduced memchr_inv() for page verification.
+Applying: A shrinker function can return -1, means that it cannot do anythi=
+ng
+Applying: Use atomic-long operations instead of looping around cmpxchg().
+Applying: massage atomic.h inclusions
+Applying: The /proc/vmallocinfo shows information about vmalloc allocations=
+ in
+Applying: Commit 645747462435 ("vmscan: detect mapped file pages used only =
+once")
+Applying: Logic added in commit 8cab4754d24a0 ("vmscan: make mapped executa=
+ble pages
+Applying: SPARC32 require access to the start address.  Add a new helper
+Applying: With the NO_BOOTMEM symbol added architectures may now use the fo=
+llowing
+Applying: Using "- 1" relies on the old_end to be page aligned and PAGE_SIZ=
+E > 1,
+Applying: This replaces ptep_clear_flush() with ptep_get_and_clear() and a =
+single
+Applying: This adds THP support to mremap (decreases the number of split_hu=
+ge_page()
+Applying: coding-style nitpicking
+Applying: Cc: Andrea Arcangeli <aarcange@redhat.com>
+Applying: Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Applying: vmstat_text is only available when PROC_FS or SYSFS is enabled.  =
+This
+Applying: reduce ifdeffery
+Applying: Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Applying: Make the security_inode_init_security() initxattrs arg const, to =
+match the
+Applying: The current implementation of the /dev/hpet driver couples openin=
+g the
+Applying: smp_call_function() only lets all other CPUs execute a specific f=
+unction,
+Applying: auto_demotion_disable is called only for online CPUs.  For hotplu=
+gged
+Applying: Enabling DEBUG_STRICT_USER_COPY_CHECKS causes the following warni=
+ng:
+Applying: Strict user copy checks are only really supported on x86_32 even =
+though
+Applying: The help text for this config is duplicated across the x86, paris=
+c, and
+Applying: s/lib-/obj-/ for usercopy.o
+Applying: After an "unexpected" reboot, I found this Oops in my logs:
+Applying: In the move of the lis3 driver, the hp_accel.c file got dropped f=
+rom the
+Applying: Add axis correction for HP EliteBook 2730p.
+Applying: Add axis correction for HP EliteBook 8540w.
+Applying: Add axis correction for HP ProBook 6555b.
+Applying: Signed-off-by: Ilkka Koskinen <ilkka.koskinen@nokia.com>
+Applying: Signed-off-by: Ilkka Koskinen <ilkka.koskinen@nokia.com>
+Applying: Change exported functions to use the device given as parameter
+Applying: Signed-off-by: Ilkka Koskinen <ilkka.koskinen@nokia.com>
+Applying: We are enabling some power features on medfield.  To test suspend=
+-2-RAM
+Applying: We are enabling some power features on medfield.  To test suspend=
+-2-RAM
+Applying: We are enabling some power features on medfield.  To test suspend=
+-2-RAM
+Applying: Cc: Al Viro <viro@zeniv.linux.org.uk>
+Applying: Add V2 of the LED driver for a single timer channel for the TPU h=
+ardware
+Applying: include linux/module.h
+Applying: The memory for struct led_trigger should be kfreed in the
+Applying: Currently termination logic (\0 or \n\0) is hardcoded in _kstrtou=
+ll(),
+Applying: Add support for slice by 8 to existing crc32 algorithm.  Also mod=
+ify
+Applying: don't include asm/msr.h
+Applying: epoll can acquire recursively acquire ep->mtx on multiple "struct
+Applying: Currently in oprofilefs, files that use ulong_fops mis-handle wri=
+tes of
+Applying: This is the one use of an ida that doesn't retry on receiving -EA=
+GAIN.
+Applying: One can get this information from minix/inode.c, but adding the
+Applying: The memcg code sometimes uses "struct mem_cgroup *mem" and someti=
+mes uses
+Applying: Before calling schedule_timeout(), task state should be changed.
+Applying: While back-porting Johannes Weiner's patch "mm: memcg-aware global
+Applying: If somebody is touching data too early, it might be easier to dia=
+gnose a
+Applying: Both mem_cgroup_charge_statistics() and mem_cgroup_move_account()=
+ were
+Applying: On reading sysctl dirs we should return -EISDIR instead of -EINVA=
+L.
+Applying: Force this on for -next/mm testing purposes.
+Applying: Expand root=3DPARTUUID=3DUUID syntax to support selecting a root =
+partition by
+Applying: After merging the akpm tree, today's linux-next build (lost of th=
+em)
+Applying: The discovered bit in PGCCSR register indicates if the device has=
+ been
+Applying: Add RapidIO mport driver for IDT TSI721 PCI Express-to-SRIO bridg=
+e device.
+Applying: When I tried to send a patch to remove it, Andi told me we still =
+need to
+Applying: A default echo function has been provided so it is no longer an e=
+rror when
+Applying: This client driver allows you to use a GPIO pin as a source for P=
+PS
+Applying: remove unneeded cast of void*
+Applying: Straightforward.  As an aside, the ida_init calls are not needed =
+as far as
+Applying: Simply creates one point to call the w1 interface.
+Applying: Adds a nolock function to the w1 interface to avoid locking the
+Applying: Fixes the deadlock when inserting and removing the ds2780.
+Merging akpm
+
+--Signature=_Tue__27_Sep_2011_17_35_30_+1000_jTMr0Mqt=uZhbZB1
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOgXzCAAoJEDMEi1NhKgbsyXAH/RGHmOB/i4GDUS2T+yWRO1yA
+sJqLqoNPzqAnAnulcw7V1NRI82h/6WUtNZmkPzDKroRCYZvgbm7tqpAvI9QmBqg9
+sry3dlUbRywG1rmQFWPBQGda4BqP64thkvZ/OUMdfjqmOXRTG7hMqOAkFrPO3+HY
+6q72BxL+PjOtngiWr/8gkQyxB7L+655j5Vy2RbCTDIJ98bhH6RuKO2kDntfQ0sUw
+c3DEGd8LPwVsRZY8E33bi01mkP32T7q0R6YOR5pJFVDywrtyjpiuisQLx8ra40Vo
+sFSJckvjaaIBRtpFjCEtMivMHz+MfmSEBGN0YTQcHvelQZ3RMiPmsh/wNsOuGio=
+=UMr/
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__27_Sep_2011_17_35_30_+1000_jTMr0Mqt=uZhbZB1--
