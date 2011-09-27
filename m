@@ -1,114 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511Ab1I0Ngs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 09:36:48 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:32922 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751700Ab1I0Ngr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 09:36:47 -0400
-Date: Tue, 27 Sep 2011 15:35:09 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Jan Beulich <JBeulich@novell.com>
-Cc: tglx@linutronix.de, hpa@zytor.com, stable@kernel.org, tj@kernel.org,
+	id S1752725Ab1I0Njc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 09:39:32 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:53459 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751700Ab1I0Njb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 09:39:31 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Robert Jarzmik <robert.jarzmik@free.fr>
+Subject: Re: [PATCH V4] mtd: Add DiskOnChip G3 support
+Date: Tue, 27 Sep 2011 15:39:21 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: dedekind1@gmail.com, dwmw2@infradead.org, linux-mtd@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i386/bigsmp: eliminate false warnings regarding logical
- APIC ID mismatches
-Message-ID: <20110927133509.GA26578@elte.hu>
-References: <4E4D27B40200007800051D40@nat28.tlf.novell.com>
+References: <1316633266-21312-1-git-send-email-robert.jarzmik@free.fr> <1316702729.4849.114.camel@sauron> <87mxdwiicc.fsf@free.fr>
+In-Reply-To: <87mxdwiicc.fsf@free.fr>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E4D27B40200007800051D40@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -1.9
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-1.9 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.1 AWL                    AWL: From: address is in the auto white-list
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201109271539.21533.arnd@arndb.de>
+X-Provags-ID: V02:K0:mMRMYDqZ2cgdMge11/n8ThMvhgQ40ucQidS1DMVi5vG
+ eGbJIWNybcuTSS9eXSUA4Vqik/fQm3AE5fk9a/DAc0oouoyQaP
+ JfZSt9kHC7QaZmMfS7QgszYAbtNkeGuIY/fUH+As6uTrqV7zFE
+ 48xNYDIPzbi9pwLuHxQJ6kYajuOKJGB1V5fdTaHFimWqq0rdWw
+ f5MVLPvcJTodomDFl65zCGXcgbn6vnfavjV+Y3XyMo1XQdDocG
+ zKTgXIDofuXiOpCyzAR1xd9coNIzqJnDmjusDTJEVAyaigLLWl
+ jAsZ2TVuB0XFhj1+LjBis9Md9A+39MCIPWp52/4pkAx9ovnRbb
+ i25sRCmQIEGwuIxPJuxU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thursday 22 September 2011, Robert Jarzmik wrote:
+> >> +#define doc_flashSequence(seq)                                              \
+> >> +do {                                                                        \
+> >> +    doc_dbg("doc_flashSequence: %02x " #seq "\n", DoC_Seq_##seq);   \
+> >> +    doc_writeb(DoC_Seq_##seq, DoC_FlashSequence);                   \
+> >> +} while (0)
+> >> +
+> ...zip...
+> >
+> > Could you please turn these macros into 'static inline' function - this
+> > is one of the modern patterns of kernel programming - we try to use
+> > functions for better type checking.
+>
+> No sorry, that I cannot. If you look closely, the ##seq is not something you can
+> convert with an inline function, neither the #seq.
 
-* Jan Beulich <JBeulich@novell.com> wrote:
+Better not obfuscate the code like that then ;-)
 
-> These warnings (generally one per CPU) are a result of initializing
-> x86_cpu_to_logical_apicid while apic_default is still in use, but the
-> check in setup_local_APIC() being done when apic_bigsmp was already
-> used as an override in default_setup_apic_routing():
-> 
-> Overriding APIC driver with bigsmp
-> Enabling APIC mode:  Physflat.  Using 5 I/O APICs
-> ------------[ cut here ]------------
-> WARNING: at .../arch/x86/kernel/apic/apic.c:1239 setup_local_APIC+0x137/0x46b()
-> Hardware name: ...
-> CPU0 logical APIC ID: 1 != 0
-> Pid: 1, comm: swapper Not tainted 3.0.1-2011-08-09-jb #2
-> Call Trace:
->  [<c1005f91>] try_stack_unwind+0x1b1/0x1f0
->  [<c1004cc7>] dump_trace+0x47/0x110
->  [<c1005b0b>] show_trace_log_lvl+0x4b/0x60
->  [<c1005b38>] show_trace+0x18/0x20
->  [<c1261435>] dump_stack+0x6d/0x72
->  [<c10355f7>] warn_slowpath_common+0x77/0xb0
->  [<c10356c3>] warn_slowpath_fmt+0x33/0x40
->  [<c13fda81>] setup_local_APIC+0x137/0x46b
->  [<c13d1733>] native_smp_prepare_cpus+0x108/0x1cd
->  [<c13c61ff>] kernel_init+0x37/0x12c
->  [<c1264826>] kernel_thread_helper+0x6/0xd
-> ---[ end trace 4eaa2a86a8e2da22 ]---
-> ...
-> CPU 1 irqstacks, hard=f1c9a000 soft=f1c9c000
-> Booting Node   0, Processors  #1
-> smpboot cpu 1: start_ip = 9e000
-> Initializing CPU#1
-> ------------[ cut here ]------------
-> WARNING: at .../arch/x86/kernel/apic/apic.c:1239 setup_local_APIC+0x137/0x46b()
-> Hardware name: ...
-> CPU1 logical APIC ID: 2 != 8
-> ...
-> 
-> Fix this (for the time being, i.e. until x86_32_early_logical_apicid()
-> will get removed again, as Tehun says ought to be possible) by
-> overriding the previously stored values at the point where the APIC
-> driver gets overridden.
-> 
-> Signed-off-by: Jan Beulich <jbeulich@novell.com>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: stable@kernel.org (2.6.39 and onwards)
-> 
-> ---
->  arch/x86/kernel/apic/probe_32.c |   11 +++++++++++
->  1 file changed, 11 insertions(+)
-> 
-> --- 3.1-rc2/arch/x86/kernel/apic/probe_32.c
-> +++ 3.1-rc2-i386-bigsmp-early-lapicid-override/arch/x86/kernel/apic/probe_32.c
-> @@ -203,7 +203,18 @@ void __init default_setup_apic_routing(v
->  	if (!cmdline_apic && apic == &apic_default) {
->  		struct apic *bigsmp = generic_bigsmp_probe();
->  		if (bigsmp) {
-> +			unsigned int cpu;
-> +
->  			apic = bigsmp;
-> +			for_each_possible_cpu(cpu) {
-> +				if (early_per_cpu(x86_cpu_to_logical_apicid,
-> +						  cpu) == BAD_APICID)
-> +					continue;
-> +				early_per_cpu(x86_cpu_to_logical_apicid,
-> +					      cpu) =
-> +					bigsmp->x86_32_early_logical_apicid
-> +						(cpu);
-> +			}
->  			printk(KERN_INFO "Overriding APIC driver with %s\n",
->  			       apic->name);
->  		}
+Really, passing the entire register name into an inline function is much
+preferred over string concatenation, because it lets you grep for where
+certain definitions are used. You can also convert them to ALL_CAPS
+identifiers instead of cAmeLCAsE.
 
-This could move into a separate function i suspect, which would 
-de-uglify it quite significantly?
+Finally, don't use the __raw_readb() style functions but instead use
+the regular readb() style, which is the correct one to use in device
+drivers.
 
-Thanks,
-
-	Ingo
+	Arnd
