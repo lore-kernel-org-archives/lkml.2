@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753204Ab1I0AJd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 20:09:33 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:33764 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752990Ab1I0AJc (ORCPT
+	id S1753183Ab1I0ALu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 20:11:50 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:34786 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751811Ab1I0ALt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 20:09:32 -0400
-Message-ID: <20110926200853.54924n8u5h0toyz9@webmail.vt.edu>
-Date: Mon, 26 Sep 2011 20:08:53 -0400
-From: Mail Administrator <rjfr1954@vt.edu>
-Reply-to: verify_account_access01@cyberservices.com
-To: undisclosed-recipients:;
-Subject: WEBMAIL FINAL WARNING CENTER ADMIN
+	Mon, 26 Sep 2011 20:11:49 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6481"; a="121618063"
+Date: Mon, 26 Sep 2011 17:11:48 -0700
+From: David Brown <davidb@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>
+Cc: Marc Zyngier <marc.zyngier@arm.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Tony Lindgren <tony@atomide.com>, Magnus Damm <magnus.damm@gmail.com>,
+        linux-kernel@vger.kernel.org, Bryan Huntsman <bryanh@codeaurora.org>,
+        Paul Mundt <lethal@linux-sh.org>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 0/3] genirq: handling GIC per-cpu interrupts
+Message-ID: <20110927001148.GA16174@huya.qualcomm.com>
+References: <1316793788-14500-1-git-send-email-marc.zyngier@arm.com>
+ <20110926201836.GA27355@huya.qualcomm.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.6)
-X-Mirapoint-Received-SPF: 198.82.164.219 imp-b10.cc.vt.edu rjfr1954@vt.edu 2 pass
-X-Junkmail: UCE(300)
-X-Junkmail-Status: score=300/50, host=steiner.cc.vt.edu
-X-Junkmail-Signature-Raw: score=confirmed,
-	refid=str=0001.0A020208.4E808C3F.018A,ss=4,sh,fgs=0,
-	ip=60.48.179.252,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+In-Reply-To: <20110926201836.GA27355@huya.qualcomm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Sep 26, 2011 at 01:18:36PM -0700, David Brown wrote:
+> On Fri, Sep 23, 2011 at 05:03:05PM +0100, Marc Zyngier wrote:
+> 
+> > Tested on ARM Versatile Express (Cortex A15), ARM RealView PB11MP,
+> > OMAP4 (Panda) and Tegra (Harmony). Patch series against next-20110923.
+> > 
+> > From v2:
+> > - Fixed !GENERIC_HARDIRQS build
+> > - Fixed request_percpu_irq documentation
+> > 
+> > From v1:
+> > - General tidy-up after Thomas' review. I've kept the config option
+> >   for the time being until we can sort out the anonymous union
+> >   problem.
+> > 
+> > Marc Zyngier (3):
+> >   genirq: add support for per-cpu dev_id interrupts
+> >   ARM: gic: consolidate PPI handling
+> >   ARM: gic, local timers: use the request_percpu_irq() interface
+> 
+> I've tested this on an MSM8660 based off of next-20110926.
+> 
+> Tested-by: David Brown <davidb@codeaurora.org>
+> Acked-by: David Brown <davidb@codeaurora.org>
 
-WEBMAIL FINAL WARNING CENTER ADMIN
+Also tested on MSM8250.
 
-Your email box is almost full.
-23 GB 20 GB
+David
 
-The mailbox has exceeded the storage limit of
-20GB as defined by your administrator,You are now
-working at 20.9GB,
-
-That might not be able to send or receive messages until
-you upgrade Your account.
-
-Click on the link below,fill it and click submit to update your account.
-And if the link gives you problem,copy it and paste it at your new browser.
-
-http://buzurl.com/bm46
-
-NOTE:If you are unable to re-validate your mailbox, your
-Account will be disabled!
-
-Webmail Support Team
-@ 2011
-192.168.0.1
-
-
-
-
-
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
