@@ -1,180 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751928Ab1I0H2H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 03:28:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11193 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751587Ab1I0H2E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 03:28:04 -0400
-Date: Tue, 27 Sep 2011 09:27:14 +0200
-From: Johannes Weiner <jweiner@redhat.com>
-To: Andrew Morton <akpm@google.com>
-Cc: Kautuk Consul <consul.kautuk@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [patch] mm: disable user interface to manually rescue unevictable
- pages
-Message-ID: <20110927072714.GA1997@redhat.com>
-References: <1316948380-1879-1-git-send-email-consul.kautuk@gmail.com>
- <20110926112944.GC14333@redhat.com>
- <20110926161136.b4508ecb.akpm@google.com>
+	id S1751984Ab1I0Hfh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 03:35:37 -0400
+Received: from fallback.mail.elte.hu ([157.181.151.13]:47864 "EHLO
+	fallback.mail.elte.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751713Ab1I0Hfg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 03:35:36 -0400
+X-Greylist: delayed 3702 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 Sep 2011 03:35:36 EDT
+Date: Tue, 27 Sep 2011 08:32:24 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Venki Pallipadi <venki@google.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v1] sched: fix nohz idle load balancer issues
+Message-ID: <20110927063222.GB18519@elte.hu>
+References: <20110926115049.GA22604@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110926161136.b4508ecb.akpm@google.com>
+In-Reply-To: <20110926115049.GA22604@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At one point, anonymous pages were supposed to go on the unevictable
-list when no swap space was configured, and the idea was to manually
-rescue those pages after adding swap and making them evictable again.
-But nowadays, swap-backed pages on the anon LRU list are not scanned
-without available swap space anyway, so there is no point in moving
-them to a separate list anymore.
 
-The manual rescue could also be used in case pages were stranded on
-the unevictable list due to race conditions.  But the code has been
-around for a while now and newly discovered bugs should be properly
-reported and dealt with instead of relying on such a manual fixup.
+* Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com> wrote:
 
-In addition to the lack of a usecase, the sysfs interface to rescue
-pages from a specific NUMA node has been broken since its
-introduction, so it's unlikely that anybody ever relied on that.
+> While trying to test recently introduced cpu bandwidth control feature for
+> non-realtime tasks, we noticed "more than expected" idle time, which
+> reduced considerably when booted with nohz=off. This patch is an attempt
+> to fix that discrepancy so that we see little variance in idle time between
+> nohz=on and nohz=off.
+> 
+> Test setup:
+> 
+> Machine : 16-cpus (2 Quad-core w/ HT enabled)
+> Kernel  : Latest code (HEAD at 6e8d0472ea63969e2df77c7e84741495fedf7d9b) found 
+> 	  at git://tesla.tglx.de/git/linux-2.6-tip
+> 
+> Cgroups :
+> 
+> 5 in number (/L1/L2/C1 - /L1/L2/C5), each having {2, 2, 4, 8, 16} tasks
+> respectively. /L1 and /L2 were added to the hierarchy to mimic cgroup hierarchy 
+> created by libvirt and otherwise do not contain any tasks. Each cgroup has 
+> cpu.shares proportional to # of tasks in it. For ex: /L1/L2/C1's cpu.shares =
+> 2 * 1024 = 2048, C3's cpu.shares = 4096 etc. Further, each task is placed in its
+> own (sub-)cgroup with default shares of 1024 and a capped usage of 50% CPU.
+>   
+>         /L1/L2/C1/C1_1/Task1  -> capped at 50% cpu usage
+>         /L1/L2/C1/C1_2/Task2  -> capped at 50% cpu usage
+>         /L1/L2/C2/C2_1/Task3  -> capped at 50% cpu usage
+>         /L1/L2/C2/C2_2/Task3  -> capped at 50% cpu usage
+>         /L1/L2/C3/C3_1/Task4  -> capped at 50% cpu usage
+>         /L1/L2/C3/C3_2/Task4  -> capped at 50% cpu usage
+>         /L1/L2/C3/C3_3/Task4  -> capped at 50% cpu usage
+>         /L1/L2/C3/C3_4/Task4  -> capped at 50% cpu usage
+>         ...
+>         /L1/L2/C5/C5_16/Task32 -> capped at 50% cpu usage
+> 
+> So we have 32 tasks, each capped at 50% CPU usage, run on a 16-CPU
+> system, which one may expect to consume all CPU resource leaving no idle
+> time. While that may be "insane" expectation, the goal is to minimize idle time
+> in this situation as much as possible.
+> 
+> I am using a slightly modified script provided at
+> https://lkml.org/lkml/2011/6/7/352 for generating this test scenario -
+> can make that available if required.
+> 
+> Idle time was sampled every second (using vmstat) over a window of 60 seconds
+> and was found as below:
+> 
+> Idle time 		Average	 Std-deviation	 Min	Max
+> ============================================================
+> 
+> nohz=off		4%        0.5%           3%      5%
+> nohz=on	 	10% 	  2.4% 		 5%	 18%
+> nohz=on + patch	5.3%      1.3%		 3%      9%
+> 
+> The patch cuts down idle time significantly when kernel is booted 
+> with 'nohz=on' (which is good for saving power when idle).
 
-This patch removes the functionality behind the sysctl and the
-node-interface and emits a one-time warning when somebody tries to
-access either of them.
+What are the tasks doing which are running - are they plain burning 
+CPU time? If the tasks do something more complex, do you also have a 
+measure of how much work gets done by the workload, per second?
 
-Signed-off-by: Johannes Weiner <jweiner@redhat.com>
-Reported-by: Kautuk Consul <consul.kautuk@gmail.com>
----
- mm/vmscan.c |   84 +++++-----------------------------------------------------
- 1 files changed, 8 insertions(+), 76 deletions(-)
+Percentual changes in that metric would be nice to include in an 
+additional column - that way we can see that it's not only idle
+that has gone down, but workload performance has gone up too.
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 7502726..71b5616 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -3397,66 +3397,12 @@ void scan_mapping_unevictable_pages(struct address_space *mapping)
- 
- }
- 
--/**
-- * scan_zone_unevictable_pages - check unevictable list for evictable pages
-- * @zone - zone of which to scan the unevictable list
-- *
-- * Scan @zone's unevictable LRU lists to check for pages that have become
-- * evictable.  Move those that have to @zone's inactive list where they
-- * become candidates for reclaim, unless shrink_inactive_zone() decides
-- * to reactivate them.  Pages that are still unevictable are rotated
-- * back onto @zone's unevictable list.
-- */
--#define SCAN_UNEVICTABLE_BATCH_SIZE 16UL /* arbitrary lock hold batch size */
--static void scan_zone_unevictable_pages(struct zone *zone)
-+static void warn_scan_unevictable_pages(void)
- {
--	struct list_head *l_unevictable = &zone->lru[LRU_UNEVICTABLE].list;
--	unsigned long scan;
--	unsigned long nr_to_scan = zone_page_state(zone, NR_UNEVICTABLE);
--
--	while (nr_to_scan > 0) {
--		unsigned long batch_size = min(nr_to_scan,
--						SCAN_UNEVICTABLE_BATCH_SIZE);
--
--		spin_lock_irq(&zone->lru_lock);
--		for (scan = 0;  scan < batch_size; scan++) {
--			struct page *page = lru_to_page(l_unevictable);
--
--			if (!trylock_page(page))
--				continue;
--
--			prefetchw_prev_lru_page(page, l_unevictable, flags);
--
--			if (likely(PageLRU(page) && PageUnevictable(page)))
--				check_move_unevictable_page(page, zone);
--
--			unlock_page(page);
--		}
--		spin_unlock_irq(&zone->lru_lock);
--
--		nr_to_scan -= batch_size;
--	}
--}
--
--
--/**
-- * scan_all_zones_unevictable_pages - scan all unevictable lists for evictable pages
-- *
-- * A really big hammer:  scan all zones' unevictable LRU lists to check for
-- * pages that have become evictable.  Move those back to the zones'
-- * inactive list where they become candidates for reclaim.
-- * This occurs when, e.g., we have unswappable pages on the unevictable lists,
-- * and we add swap to the system.  As such, it runs in the context of a task
-- * that has possibly/probably made some previously unevictable pages
-- * evictable.
-- */
--static void scan_all_zones_unevictable_pages(void)
--{
--	struct zone *zone;
--
--	for_each_zone(zone) {
--		scan_zone_unevictable_pages(zone);
--	}
-+	printk_once(KERN_WARNING
-+		    "The scan_unevictable_pages sysctl/node-interface has been "
-+		    "disabled for lack of a legitimate use case.  If you have "
-+		    "one, please send an email to linux-mm@kvack.org.\n");
- }
- 
- /*
-@@ -3469,11 +3415,8 @@ int scan_unevictable_handler(struct ctl_table *table, int write,
- 			   void __user *buffer,
- 			   size_t *length, loff_t *ppos)
- {
-+	warn_scan_unevictable_pages();
- 	proc_doulongvec_minmax(table, write, buffer, length, ppos);
--
--	if (write && *(unsigned long *)table->data)
--		scan_all_zones_unevictable_pages();
--
- 	scan_unevictable_pages = 0;
- 	return 0;
- }
-@@ -3488,6 +3431,7 @@ static ssize_t read_scan_unevictable_node(struct sys_device *dev,
- 					  struct sysdev_attribute *attr,
- 					  char *buf)
- {
-+	warn_scan_unevictable_pages();
- 	return sprintf(buf, "0\n");	/* always zero; should fit... */
- }
- 
-@@ -3495,19 +3439,7 @@ static ssize_t write_scan_unevictable_node(struct sys_device *dev,
- 					   struct sysdev_attribute *attr,
- 					const char *buf, size_t count)
- {
--	struct zone *node_zones = NODE_DATA(dev->id)->node_zones;
--	struct zone *zone;
--	unsigned long res;
--	unsigned long req = strict_strtoul(buf, 10, &res);
--
--	if (!req)
--		return 1;	/* zero is no-op */
--
--	for (zone = node_zones; zone - node_zones < MAX_NR_ZONES; ++zone) {
--		if (!populated_zone(zone))
--			continue;
--		scan_zone_unevictable_pages(zone);
--	}
-+	warn_scan_unevictable_pages();
- 	return 1;
- }
- 
--- 
-1.7.6.2
+In fact even if there was only a CPU burning loop in the workload it 
+would be nice to make that somewhat more sophisticated by letting it 
+process some larger array that has a cache footprint. This mimics 
+real workloads that don't just spin burning CPU time but do real data 
+processing.
+
+For any non-trivial workload it's possible to reduce idle time 
+without much increase in work done and in fact it's possible to 
+decrease idle time *and* work done - so we need to see more clearly 
+here and make sure it's all an improvement.
+
+Thanks,
+
+	Ingo
 
