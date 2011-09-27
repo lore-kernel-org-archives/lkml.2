@@ -1,44 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753674Ab1I0XGo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 19:06:44 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:45493 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752693Ab1I0XGn (ORCPT
+	id S1753757Ab1I0XHp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 19:07:45 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:32889 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752693Ab1I0XHn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 19:06:43 -0400
+	Tue, 27 Sep 2011 19:07:43 -0400
+Date: Tue, 27 Sep 2011 16:07:37 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Andreas Dilger <adilger.kernel@dilger.ca>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Theodore Tso <tytso@mit.edu>, David Miller <davem@davemloft.net>
+Cc: Bob Pearson <rpearson@systemfabricworks.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Mingming Cao <cmm@us.ibm.com>,
+        linux-crypto <linux-crypto@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org
+Subject: Re: [PATCH v2 0/3] crc32c: Add faster algorithm and self-test code
+Message-ID: <20110927230737.GP12086@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20110927221239.21653.17489.stgit@elm3c44.beaverton.ibm.com>
 MIME-Version: 1.0
-Date: Wed, 28 Sep 2011 01:06:42 +0200
-Message-ID: <CAOVSwNFp=p3TmkfvB=BKq8b_jJVTywRspJSE3fhyKQaCfnzUvg@mail.gmail.com>
-Subject: [Priority Inheritance] SCHED_FIFO or SCHED_RR?
-From: "Tadeus (Eus) Prastowo" <0x657573@googlemail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110927221239.21653.17489.stgit@elm3c44.beaverton.ibm.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Tue, Sep 27, 2011 at 03:12:39PM -0700, Darrick J. Wong wrote:
+> Hi all,
+> 
+> This patchset replaces the current crc32c software implementation, which uses a
+> slow per-byte lookup table algorithm, with a faster implementation that uses an
+> adaptation of the slice-by-8 algorithm that Bob Pearson has been pushing for
+> crc32.
+> 
+> The motivation for this patchset is that I am working on adding full metadata
+> checksumming to ext4[1].  As far as performance impact of adding checksumming
+> goes, I see nearly no change with a standard mail server ffsb simulation.  On a
+> test that involves only file creation and deletion and extent tree writes, I
+> see a drop of about 50 pcercent with the current kernel crc32c implementation;
+> this improves to a drop of about 20 percent with the enclosed crc32c code.
+> 
+> When metadata is usually a small fraction of total IO, this new implementation
+> doesn't help much because metadata is usually a small fraction of total IO.
+> However, when we are doing IO that is almost all metadata (such as rm -rf'ing a
+> tree), then this patch speeds up the operation substantially.
+> 
+> Please have a look at the patches, and please feel free to suggest any changes.
+> I will be at LPC next week if anyone wishes to discuss, debate, or protest.
 
-When a SCHED_RR task with RT priority X blocks on a
-priority-inheriting mutex held by a SCHED_NORMAL task with nice value
-Y, RT-Mutex code will change the SCHED_NORMAL task priority to that of
-the SCHED_RR task and based on the new priority, will change the
-scheduling class too. But, each task retains its own scheduling
-policy.
+Oops, ignore that sentence, since LPC has long passed. :(
 
-This means that the task inheriting the SCHED_RR priority will be
-scheduled using SCHED_FIFO policy because task_tick_rt does not
-enforce the SCHED_RR time slice when the task policy is not SCHED_RR.
-
-Why should a SCHED_NORMAL task inheriting the priority of a SCHED_RR
-task get the privilege of SCHED_FIFO task for running as long as it
-wishes even when the task giving the inheritance does not have such
-privilege?
-
-Thank you very much.
-
-Please kindly put me in the CC since I am not subscribed to the list.
-
---
-Eus
+--D
+> 
+> Incidentally, given that iscsi, sctp, and btrfs also use crc32c, this patchset
+> should improve their speed as well.  I have not yet quantified that, however.
+> 
+> v2: Use the crypto test manager code to check crc32c operation.
+> 
+> --D
+> 
+> [1] https://ext4.wiki.kernel.org/index.php/Ext4_Metadata_Checksums
