@@ -1,138 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751237Ab1I0PEd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 11:04:33 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:63702 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750932Ab1I0PEc convert rfc822-to-8bit (ORCPT
+	id S1751328Ab1I0PFB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 11:05:01 -0400
+Received: from mailout.selfhost.de ([82.98.82.25]:34782 "EHLO
+	outgoing.selfhost.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751138Ab1I0PFA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 11:04:32 -0400
+	Tue, 27 Sep 2011 11:05:00 -0400
+Message-ID: <4E81E618.7030400@afaics.de>
+Date: Tue, 27 Sep 2011 17:04:56 +0200
+From: Harald Dunkel <harri@afaics.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110907 Thunderbird/6.0.2
 MIME-Version: 1.0
-Message-ID: <2de59b55-4ecc-4155-8709-f8b0f5e012bc@default>
-Date: Tue, 27 Sep 2011 08:03:56 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Konrad Wilk <konrad.wilk@oracle.com>, linux-kernel@vger.kernel.org
-Cc: xen-devel@lists.xensource.com, David Vrabel <david.vrabel@citrix.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: [PATCH v2] xen: Fix selfballooning and ensure it doesn't go too far
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6557.5001]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4E81E5FB.00B9:SCFMA922111,ss=1,re=-4.000,fgs=0
+To: Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: 3.0.4, xhci: "short transfer" and "Stalled endpoint" warnings
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Note: This patch is also now in a git tree at:
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-git://oss.oracle.com/git/djm/tmem.git#selfballoon-fix-v2
+Hi folks,
 
-The balloon driver's "current_pages" is very different from
-totalram_pages.  Self-ballooning needs to be driven by
-the latter.  Also, Committed_AS doesn't account for pages
-used by the kernel so enforce a floor for when there are little
-or no user-space threads using memory.  The floor function
-includes a "safety margin" tuneable in case we discover later
-that the floor function is still too aggressive in some workloads,
-though likely it will not be needed.
+I've got a Fantec Sata to USB3 Adapter. Problem: If I insert a
+disk (WD20EARS) and switch it on, then I get
 
-Changes since version 1:
-- tuneable safety margin added
+[ 4382.279961] usb 3-2: new SuperSpeed USB device number 2 using xhci_hcd
+[ 4382.290848] xhci_hcd 0000:04:00.0: WARN: short transfer on control ep
+[ 4382.290939] xhci_hcd 0000:04:00.0: WARN: short transfer on control ep
+[ 4382.291061] xhci_hcd 0000:04:00.0: WARN: short transfer on control ep
+[ 4382.291151] xhci_hcd 0000:04:00.0: WARN: short transfer on control ep
+[ 4382.291199] usb 3-2: New USB device found, idVendor=174c, idProduct=55aa
+[ 4382.291202] usb 3-2: New USB device strings: Mfr=2, Product=3, SerialNumber=1
+[ 4382.291205] usb 3-2: Product: 012345678901234567890123456789012345678901234567
+[ 4382.291208] usb 3-2: Manufacturer: 01234567890123456789012345678901234567890123
+[ 4382.291210] usb 3-2: SerialNumber: 0123456789ABCDEF0124
+[ 4382.292407] scsi7 : usb-storage 3-2:1.0
+[ 4397.044179] scsi 7:0:0:0: Direct-Access     WDC WD20 EARS-00J2GB0     80.0 PQ: 0 ANSI: 5
+[ 4397.044434] sd 7:0:0:0: Attached scsi generic sg7 type 0
+[ 4397.045257] sd 7:0:0:0: [sdg] 3907029168 512-byte logical blocks: (2.00 TB/1.81 TiB)
+[ 4397.045423] xhci_hcd 0000:04:00.0: WARN: Stalled endpoint
+[ 4397.045675] sd 7:0:0:0: [sdg] Write Protect is off
+[ 4397.045681] sd 7:0:0:0: [sdg] Mode Sense: 23 00 00 00
+[ 4397.045814] xhci_hcd 0000:04:00.0: WARN: Stalled endpoint
+[ 4397.046049] sd 7:0:0:0: [sdg] No Caching mode page present
+[ 4397.046052] sd 7:0:0:0: [sdg] Assuming drive cache: write through
+[ 4397.046503] xhci_hcd 0000:04:00.0: WARN: Stalled endpoint
+[ 4397.046864] xhci_hcd 0000:04:00.0: WARN: Stalled endpoint
+[ 4397.047102] sd 7:0:0:0: [sdg] No Caching mode page present
+[ 4397.047107] sd 7:0:0:0: [sdg] Assuming drive cache: write through
+[ 4397.125154]  sdg: sdg1
+[ 4397.125723] xhci_hcd 0000:04:00.0: WARN: Stalled endpoint
+[ 4397.126093] xhci_hcd 0000:04:00.0: WARN: Stalled endpoint
+[ 4397.126345] sd 7:0:0:0: [sdg] No Caching mode page present
+[ 4397.126349] sd 7:0:0:0: [sdg] Assuming drive cache: write through
+[ 4397.126352] sd 7:0:0:0: [sdg] Attached SCSI disk
+[ 4397.133557] xhci_hcd 0000:04:00.0: WARN: Stalled endpoint
+[ 4397.133790] sd 7:0:0:0: [sdg]  Sense Key : Recovered Error [current] [descriptor]
+[ 4397.133796] Descriptor sense data with sense descriptors (in hex):
+[ 4397.133798]         72 01 04 1d 00 00 00 0e 09 0c 00 00 00 00 e8 00
+[ 4397.133807]         00 00 00 00 00 50
+[ 4397.133812] sd 7:0:0:0: [sdg]  ASC=0x4 ASCQ=0x1d
+[ 4397.136338] xhci_hcd 0000:04:00.0: WARN: Stalled endpoint
+[ 4397.136727] xhci_hcd 0000:04:00.0: WARN: Stalled endpoint
+[ 4397.211584] xhci_hcd 0000:04:00.0: WARN: Stalled endpoint
+[ 4397.211818] sd 7:0:0:0: [sdg]  Sense Key : Recovered Error [current] [descriptor]
+[ 4397.211823] Descriptor sense data with sense descriptors (in hex):
+[ 4397.211825]         72 01 04 1d 00 00 00 0e 09 0c 00 00 00 00 00 00
+[ 4397.211845]         00 00 00 00 00 50
+[ 4397.211852] sd 7:0:0:0: [sdg]  ASC=0x4 ASCQ=0x1d
 
-[v2: konrad.wilk@oracle.com: make safety margin tuneable]
 
-Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+This seems to be reproducible. Is this something to worry about?
 
-diff --git a/drivers/xen/xen-selfballoon.c b/drivers/xen/xen-selfballoon.c
-index 6ea852e..ceaada6 100644
---- a/drivers/xen/xen-selfballoon.c
-+++ b/drivers/xen/xen-selfballoon.c
-@@ -93,6 +93,12 @@ static unsigned int selfballoon_uphysteresis __read_mostly = 1;
- /* In HZ, controls frequency of worker invocation. */
- static unsigned int selfballoon_interval __read_mostly = 5;
- 
-+/*
-+ * Scale factor for safety margin for minimum selfballooning target for balloon.
-+ * Default adds about 3% (4/128) of max_pfn.
-+ */
-+static unsigned int selfballoon_safety_margin = 4;
-+
- static void selfballoon_process(struct work_struct *work);
- static DECLARE_DELAYED_WORK(selfballoon_worker, selfballoon_process);
- 
-@@ -195,14 +201,13 @@ __setup("selfballooning", xen_selfballooning_setup);
-  */
- static void selfballoon_process(struct work_struct *work)
- {
--	unsigned long cur_pages, goal_pages, tgt_pages;
-+	unsigned long cur_pages, goal_pages, tgt_pages, floor_pages;
- 	bool reset_timer = false;
- 
- 	if (xen_selfballooning_enabled) {
--		cur_pages = balloon_stats.current_pages;
-+		cur_pages = totalram_pages;
- 		tgt_pages = cur_pages; /* default is no change */
--		goal_pages = percpu_counter_read_positive(&vm_committed_as) +
--			balloon_stats.current_pages - totalram_pages;
-+		goal_pages = percpu_counter_read_positive(&vm_committed_as);
- #ifdef CONFIG_FRONTSWAP
- 		/* allow space for frontswap pages to be repatriated */
- 		if (frontswap_selfshrinking && frontswap_enabled)
-@@ -217,7 +222,13 @@ static void selfballoon_process(struct work_struct *work)
- 				((goal_pages - cur_pages) /
- 				  selfballoon_uphysteresis);
- 		/* else if cur_pages == goal_pages, no change */
--		balloon_set_new_target(tgt_pages);
-+		floor_pages = totalreserve_pages +
-+			((roundup_pow_of_two(max_pfn) / 128) *
-+				selfballoon_safety_margin);
-+		if (tgt_pages < floor_pages)
-+			tgt_pages = floor_pages;
-+		balloon_set_new_target(tgt_pages +
-+			balloon_stats.current_pages - totalram_pages);
- 		reset_timer = true;
- 	}
- #ifdef CONFIG_FRONTSWAP
-@@ -340,6 +351,30 @@ static ssize_t store_selfballoon_uphys(struct sys_device *dev,
- static SYSDEV_ATTR(selfballoon_uphysteresis, S_IRUGO | S_IWUSR,
- 		   show_selfballoon_uphys, store_selfballoon_uphys);
- 
-+SELFBALLOON_SHOW(selfballoon_safety_margin, "%d\n", selfballoon_safety_margin);
-+
-+static ssize_t store_selfballoon_safety_margin(struct sys_device *dev,
-+					       struct sysdev_attribute *attr,
-+					       const char *buf,
-+					       size_t count)
-+{
-+	unsigned long val;
-+	int err;
-+
-+	if (!capable(CAP_SYS_ADMIN))
-+		return -EPERM;
-+	err = strict_strtoul(buf, 10, &val);
-+	if (err || val == 0 || val > 128)
-+		return -EINVAL;
-+	selfballoon_safety_margin = val;
-+	return count;
-+}
-+
-+static SYSDEV_ATTR(selfballoon_safety_margin, S_IRUGO | S_IWUSR,
-+		   show_selfballoon_safety_margin,
-+		   store_selfballoon_safety_margin);
-+
-+
- #ifdef CONFIG_FRONTSWAP
- SELFBALLOON_SHOW(frontswap_selfshrinking, "%d\n", frontswap_selfshrinking);
- 
-@@ -421,6 +456,7 @@ static struct attribute *selfballoon_attrs[] = {
- 	&attr_selfballoon_interval.attr,
- 	&attr_selfballoon_downhysteresis.attr,
- 	&attr_selfballoon_uphysteresis.attr,
-+	&attr_selfballoon_safety_margin.attr,
- #ifdef CONFIG_FRONTSWAP
- 	&attr_frontswap_selfshrinking.attr,
- 	&attr_frontswap_hysteresis.attr,
+Later when reading the disk there are no problems, but I didn't
+dare to mount the disk read/write yet.
+
+
+Any helpful comment would be highly appreciated.
+
+Harri
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk6B5gsACgkQUTlbRTxpHjegggCdHSEaqZkLQLaA1xtOHSFBCeq/
+044AniA7l9uQD5f9I22Azj7rSpL27SJg
+=q42h
+-----END PGP SIGNATURE-----
