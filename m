@@ -1,94 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753494Ab1I0Lmc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 07:42:32 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40879 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753446Ab1I0Lma convert rfc822-to-8bit (ORCPT
+	id S1753505Ab1I0Lm5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 07:42:57 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:16927 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753446Ab1I0Lmz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 07:42:30 -0400
-Subject: Re: [PATCH v5 3.1.0-rc4-tip 4/26]   uprobes: Define hooks for
- mmap/munmap.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
-        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 27 Sep 2011 13:41:21 +0200
-In-Reply-To: <20110926154414.GB13535@linux.vnet.ibm.com>
-References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com>
-	 <20110920120040.25326.63549.sendpatchset@srdronam.in.ibm.com>
-	 <1317045191.1763.22.camel@twins>
-	 <20110926154414.GB13535@linux.vnet.ibm.com>
+	Tue, 27 Sep 2011 07:42:55 -0400
+X-IronPort-AV: E=Sophos;i="4.68,449,1312182000"; 
+   d="scan'208";a="585010119"
+Subject: Re: NFS client growing system CPU
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Simon Kirby <sim@hostway.ca>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 27 Sep 2011 07:42:53 -0400
+In-Reply-To: <20110927003931.GB12106@hostway.ca>
+References: <20101208212505.GA18192@hostway.ca>
+	 <1291845189.3067.31.camel@heimdal.trondhjem.org>
+	 <20110927003931.GB12106@hostway.ca>
+Organization: NetApp Inc
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1317123681.15383.37.camel@twins>
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Message-ID: <1317123773.24383.1.camel@lade.trondhjem.org>
 Mime-Version: 1.0
+X-OriginalArrivalTime: 27 Sep 2011 11:42:53.0759 (UTC) FILETIME=[97D86CF0:01CC7D0A]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-09-26 at 21:14 +0530, Srikar Dronamraju wrote:
-> > Why not something like:
-> > 
-> > 
-> > +static struct uprobe *__find_uprobe(struct inode * inode, loff_t offset,
-> >                                       bool inode_only)
-> > +{
-> >         struct uprobe u = { .inode = inode, .offset = inode_only ? 0 : offset };
-> > +       struct rb_node *n = uprobes_tree.rb_node;
-> > +       struct uprobe *uprobe;
-> >       struct uprobe *ret = NULL;
-> > +       int match;
-> > +
-> > +       while (n) {
-> > +               uprobe = rb_entry(n, struct uprobe, rb_node);
-> > +               match = match_uprobe(&u, uprobe);
-> > +               if (!match) {
-> >                       if (!inode_only)
-> >                              atomic_inc(&uprobe->ref);
-> > +                       return uprobe;
-> > +               }
-> >               if (inode_only && uprobe->inode == inode)
-> >                       ret = uprobe;
-> > +               if (match < 0)
-> > +                       n = n->rb_left;
-> > +               else
-> > +                       n = n->rb_right;
-> > +
-> > +       }
-> >         return ret;
-> > +}
-> > 
+On Mon, 2011-09-26 at 17:39 -0700, Simon Kirby wrote: 
+> Hello!
 > 
-> I am not comfortable with this change.
-> find_uprobe() was suppose to return back a uprobe if and only if
-> the inode and offset match,
+> Following up on "System CPU increasing on idle 2.6.36", this issue is
+> still happening even on 3.1-rc7. So, since it has been 9 months since I
+> reported this, I figured I'd bisect this issue. The first bisection ended
+> in an IPMI regression that looked like the problem, so I had to start
+> again. Eventually, I got commit b80c3cb628f0ebc241b02e38dd028969fb8026a2
+> which made it into 2.6.34-rc4.
+> 
+> With this commit, system CPU keeps rising as the log crunch box runs
+> (reads log files via NFS and spews out HTML files into NFS-mounted report
+> directories). When it finishes the daily run, the system time stays
+> non-zero and continues to be higher and higher after each run, until the
+> box never completes a run within a day due to all of the wasted cycles.
 
-And it will, because find_uprobe() will never expose that third
-argument.
+So reverting that commit fixes the problem on 3.1-rc7?
 
->  However with your approach, we end up
-> returning a uprobe that isnt matching and one that isnt refcounted.
-> Moreover if even if we have a matching uprobe, we end up sending a
-> unrefcounted uprobe back. 
+As far as I can see, doing so should be safe thanks to commit
+5547e8aac6f71505d621a612de2fca0dd988b439 (writeback: Update dirty flags
+in two steps) which fixes the original problem at the VFS level.
 
-Because the matching isn't the important part, you want to return the
-leftmost node matching the specified inode. Also, in that case you
-explicitly don't want the ref, since the first thing you do on the
-call-site is drop the ref if there was a match. You don't care about
-inode:0 in particular, you want a place to start iterating all of
-inode:*.
+Cheers
+  Trond
 
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
