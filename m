@@ -1,92 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752751Ab1I0DaP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 23:30:15 -0400
-Received: from mga02.intel.com ([134.134.136.20]:9576 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752549Ab1I0DaO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 23:30:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="56179977"
-Message-ID: <4E814345.2070102@linux.intel.com>
-Date: Mon, 26 Sep 2011 20:30:13 -0700
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: Darren Hart <dvhart@linux.intel.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        John Stultz <johnstul@us.ibm.com>, Dmitry Fink <Dmitry.Fink@palm.com>
-Subject: Re: [PATCH 1/2] merge_config.sh: do not print non-matching lines
- in the sed expressions
-References: <1316582561-23066-1-git-send-email-john.stultz@linaro.org> <1317093949-20219-1-git-send-email-dvhart@linux.intel.com> <a3c278930a1995e5c78486a20763a1ec780f63c4.1317093857.git.dvhart@linux.intel.com>
-In-Reply-To: <a3c278930a1995e5c78486a20763a1ec780f63c4.1317093857.git.dvhart@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752815Ab1I0Dpi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 23:45:38 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:56190 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751979Ab1I0Dpg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 23:45:36 -0400
+Date: Tue, 27 Sep 2011 13:45:34 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: linux-next: manual merge of the mfd tree with the arm tree
+Message-Id: <20110927134534.af4c3bdad6918111a2e03034@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2011 08:25 PM, Darren Hart wrote:
-> The script picks up on comment lines and run into failed grep commands and
-> spew lots of warnings about "#" not being set and so forth.
-> 
-> sed will print non-matching lines without the -n option. Add -n and a p (print)
-> to each sed command. This will ensure only the CONFIG_* lines are used for
-> value comparison, and comment lines are ignored. # CONFIG_XYZ is not set are
-> still matched and not treated as comments. This addresses an issue Dmitry raised
-> without another pipe and call to grep.
-> 
-> Move the sed expression into a variable to avoid getting the regular expressions
-> in the two call sites out of sync.
-> 
-> Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-> CC: Dmitry Fink <Dmitry.Fink@palm.com>
-> ---
->  scripts/kconfig/merge_config.sh |   10 ++++------
->  1 files changed, 4 insertions(+), 6 deletions(-)
-> 
-> diff --git a/scripts/kconfig/merge_config.sh b/scripts/kconfig/merge_config.sh
-> index fda0139..a644724 100755
-> --- a/scripts/kconfig/merge_config.sh
-> +++ b/scripts/kconfig/merge_config.sh
-> @@ -25,11 +25,12 @@ MERGE_LIST=$*
->  
->  TMP_FILE=$(mktemp ./.tmp.config.XXXXXXXXXX)
->  
-> +SED_CONFIG_EXP="s/^\(# \)\{0,1\}\(CONFIG_[a-zA-Z0-9_]*\)[= ].*/\2/p"
-> +
->  # Merge files, printing warnings on overrided values
->  for MERGE_FILE in $MERGE_LIST ; do
->  	echo "Merging $MERGE_FILE"
-> -	CFG_LIST=`cat $MERGE_FILE | \
-> -	  sed 's/^\(# \)\{0,1\}\(CONFIG_[a-zA-Z0-9_]*\)[= ].*/\2/'`
-> +	CFG_LIST=`cat $MERGE_FILE | sed -n "$SED_CONFIG_EXP"`
+Hi Samuel,
 
-Gah, and this doesn't need the cat either:
+Today's linux-next merge of the mfd tree got a conflict in
+arch/arm/mach-u300/include/mach/irqs.h between commit cc890cd78acd ("ARM:
+7083/1: rewrite U300 GPIO to use gpiolib") from the  tree and commit
+e085f9a2e27d ("mfd: Delete ab3550 driver") from the mfd tree.
 
-        CFG_LIST=`sed -n "$SED_CONFIG_EXP" $MERGE_FILE`
-
---
-Darren
-
->  	for CFG in $CFG_LIST ; do
->  		grep -q -w $CFG $TMP_FILE
->  		if [ $? == 0 ] ; then
-> @@ -53,10 +54,7 @@ done
->  make KCONFIG_ALLCONFIG=$TMP_FILE alldefconfig
->  
->  # Check all specified config values took (might have missed-dependency issues)
-> -cat $TMP_FILE | while read line; do
-> -	CFG=`echo $line | \
-> -		sed 's/^\(# \)\{0,1\}\(CONFIG_[a-zA-Z0-9_]*\)[= ].*/\2/'`
-> -
-> +for CFG in `sed -n "$SED_CONFIG_EXP" $TMP_FILE`; do
->  	REQUESTED_VAL=`grep -w -e "$CFG" $TMP_FILE`
->  	ACTUAL_VAL=`grep -w -e "$CFG" .config`
->  	if [ "x$REQUESTED_VAL" != "x$ACTUAL_VAL" ] ; then
-
+I fixed it up (I think - see below) anc can carry the fix as necessary.
 -- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc arch/arm/mach-u300/include/mach/irqs.h
+index d270fea,a6867b1..0000000
+--- a/arch/arm/mach-u300/include/mach/irqs.h
++++ b/arch/arm/mach-u300/include/mach/irqs.h
+@@@ -106,25 -106,9 +106,19 @@@
+  #define IRQ_U300_NFIF			45
+  #define IRQ_U300_NFIF2			46
+  #define IRQ_U300_SYSCON_PLL_LOCK	47
+ -#define U300_NR_IRQS			48
+ +#define U300_VIC_IRQS_END		48
+  #endif
+  
+ -#define NR_IRQS U300_NR_IRQS
+ +/* Maximum 8*7 GPIO lines */
+ +#ifdef CONFIG_GPIO_U300
+ +#define IRQ_U300_GPIO_BASE		(U300_VIC_IRQS_END)
+ +#define IRQ_U300_GPIO_END		(IRQ_U300_GPIO_BASE + 56)
+ +#else
+ +#define IRQ_U300_GPIO_END		(U300_VIC_IRQS_END)
+ +#endif
+ +
+- /* Optional AB3550 mixsig chip */
+- #ifdef CONFIG_AB3550_CORE
+- #define IRQ_AB3550_BASE			(IRQ_U300_GPIO_END)
+- #define IRQ_AB3550_END			(IRQ_AB3550_BASE + 38)
+- #else
+ +#define IRQ_AB3550_END			(IRQ_U300_GPIO_END)
+- #endif
+ +
+ +#define NR_IRQS				(IRQ_AB3550_END)
+  
+  #endif
