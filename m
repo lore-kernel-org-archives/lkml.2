@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753886Ab1I0Vl0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 17:41:26 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:48437 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753748Ab1I0VlU (ORCPT
+	id S1753864Ab1I0VlY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 17:41:24 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:42576 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753760Ab1I0VlW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 17:41:20 -0400
+	Tue, 27 Sep 2011 17:41:22 -0400
 From: jim.cromie@gmail.com
 To: joe@perches.com
 Cc: jbaron@redhat.com, greg@kroah.com, linux-kernel@vger.kernel.org,
         Jim Cromie <jim.cromie@gmail.com>
-Subject: [PATCH 25/26] dynamic_debug: add pr_fmt_debug() for dynamic_pr_debug
-Date: Tue, 27 Sep 2011 15:40:59 -0600
-Message-Id: <1317159660-2506-2-git-send-email-jim.cromie@gmail.com>
+Subject: [PATCH 26/26] scx200_acb: use pr_(info|warn|err|debug) and dynamic-debug facilities
+Date: Tue, 27 Sep 2011 15:41:00 -0600
+Message-Id: <1317159660-2506-3-git-send-email-jim.cromie@gmail.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1317159660-2506-1-git-send-email-jim.cromie@gmail.com>
 References: <1316725066.29447.16.camel@Joe-Laptop>
@@ -24,141 +24,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jim Cromie <jim.cromie@gmail.com>
 
-dynamic_pr_debug can add module, function, file, and line selectively,
-so theres no need to also add them via pr_fmt.  Moreover, using pr_fmt
-to add KBUILD_MODNAME ": ", as is typical for pr_info etc, causes
-pr_debug() to double-print those fields added by the flag-settings.
+Switch this driver over to using more flexible dynamic-debug by
+dropping NAME from pr_debug(NAME ": ...") calls, and adding it once
+via pr_fmt().  With previous patch and CONFIG_I2C_DEBUG_BUS=y, we
+get pr_debug()s enabled by default:
 
-So define pr_fmt_debug(fmt), and use it in dynamic_pr_debug().  This
-lets users use pr_fmt() for pr_info and friends, without affecting
-pr_debug().  Also add pr_fmt_*(fmt) defns for info etc, which default
-to pr_fmt().  This lets user set a default for all pr_$level()s, and
-then customize one of them.
+root@voyage:~# modprobe scx200_acb
+root@voyage:~# grep scx200_acb /dbg/dynamic_debug/control
+drivers/i2c/busses/scx200_acb.c:419 [scx200_acb]scx200_acb_probe =p "..."
+drivers/i2c/busses/scx200_acb.c:408 [scx200_acb]scx200_acb_probe =p "..."
+drivers/i2c/busses/scx200_acb.c:399 [scx200_acb]scx200_acb_probe =p "..."
+drivers/i2c/busses/scx200_acb.c:584 [scx200_acb]scx200_acb_init =p "..."
 
-Unlike the previous revision of this patch, pr_fmt_debug() is the same
-for DEBUG and !DEBUG.  User may want different formats, but doesnt get
-them magically.
+The pr_fmt() adds the KBUILD_MODNAME to pr_err(), etc outputs, the
+pr_fmt_debug() overrides that default, letting user do so selectively
+via dynamic-debug.  This override affects a non DYNAMIC_DEBUG build
+too; we could fix this by making it conditional, but doing so in
+printk.h may be better.
 
 Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
 ---
- include/linux/dynamic_debug.h |    8 ++++--
- include/linux/printk.h        |   51 ++++++++++++++++++++++++++++++++---------
- 2 files changed, 45 insertions(+), 14 deletions(-)
+ drivers/i2c/busses/scx200_acb.c |   21 +++++++++++----------
+ 1 files changed, 11 insertions(+), 10 deletions(-)
 
-diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
-index 5622e04..4382b0a 100644
---- a/include/linux/dynamic_debug.h
-+++ b/include/linux/dynamic_debug.h
-@@ -73,7 +73,7 @@ extern int __dynamic_netdev_dbg(struct _ddebug *descriptor,
- do {								\
- 	DECLARE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);	\
- 	if (unlikely(descriptor.flags & _DPRINTK_FLAGS_PRINT))	\
--		__dynamic_pr_debug(&descriptor, pr_fmt(fmt),	\
-+		__dynamic_pr_debug(&descriptor, pr_fmt_debug(fmt),\
- 				   ##__VA_ARGS__);		\
- } while (0)
+diff --git a/drivers/i2c/busses/scx200_acb.c b/drivers/i2c/busses/scx200_acb.c
+index 986e5f6..34d89d6 100644
+--- a/drivers/i2c/busses/scx200_acb.c
++++ b/drivers/i2c/busses/scx200_acb.c
+@@ -23,6 +23,9 @@
+     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
  
-@@ -101,9 +101,11 @@ static inline int ddebug_remove_module(const char *mod)
- }
- 
- #define dynamic_pr_debug(fmt, ...)					\
--	do { if (0) printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__); } while (0)
-+	do { if (0) printk(KERN_DEBUG pr_fmt_debug(fmt), ##__VA_ARGS__);\
-+	} while (0)
- #define dynamic_dev_dbg(dev, fmt, ...)					\
--	do { if (0) dev_printk(KERN_DEBUG, dev, fmt, ##__VA_ARGS__); } while (0)
-+	do { if (0) dev_printk(KERN_DEBUG, dev, fmt, ##__VA_ARGS__);	\
-+	} while (0)
- #endif
- 
- #endif
-diff --git a/include/linux/printk.h b/include/linux/printk.h
-index 1224b1d..5ff654d 100644
---- a/include/linux/printk.h
-+++ b/include/linux/printk.h
-@@ -152,31 +152,60 @@ extern void dump_stack(void) __cold;
- #define pr_fmt(fmt) fmt
- #endif
- 
-+#ifndef pr_fmt_emerg
-+#define pr_fmt_emerg(fmt) pr_fmt(fmt)
-+#endif
-+#ifndef pr_fmt_crit
-+#define pr_fmt_crit(fmt) pr_fmt(fmt)
-+#endif
-+#ifndef pr_fmt_alert
-+#define pr_fmt_alert(fmt) pr_fmt(fmt)
-+#endif
-+#ifndef pr_fmt_err
-+#define pr_fmt_err(fmt) pr_fmt(fmt)
-+#endif
-+#ifndef pr_fmt_notice
-+#define pr_fmt_notice(fmt) pr_fmt(fmt)
-+#endif
-+#ifndef pr_fmt_warning
-+#define pr_fmt_warning(fmt) pr_fmt(fmt)
-+#endif
-+#define pr_fmt_warn pr_fmt_warning
-+#ifndef pr_fmt_info
-+#define pr_fmt_info(fmt) pr_fmt(fmt)
-+#endif
-+#ifndef pr_fmt_debug
-+#define pr_fmt_debug(fmt) pr_fmt(fmt)
-+#endif
-+#ifndef pr_fmt_devel
-+#define pr_fmt_devel(fmt) pr_fmt(fmt)
-+#endif
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++#define pr_fmt_debug(fmt) fmt
 +
- #define pr_emerg(fmt, ...) \
--	printk(KERN_EMERG pr_fmt(fmt), ##__VA_ARGS__)
-+	printk(KERN_EMERG pr_fmt_emerg(fmt), ##__VA_ARGS__)
- #define pr_alert(fmt, ...) \
--	printk(KERN_ALERT pr_fmt(fmt), ##__VA_ARGS__)
-+	printk(KERN_ALERT pr_fmt_alert(fmt), ##__VA_ARGS__)
- #define pr_crit(fmt, ...) \
--	printk(KERN_CRIT pr_fmt(fmt), ##__VA_ARGS__)
-+	printk(KERN_CRIT pr_fmt_crit(fmt), ##__VA_ARGS__)
- #define pr_err(fmt, ...) \
--	printk(KERN_ERR pr_fmt(fmt), ##__VA_ARGS__)
-+	printk(KERN_ERR pr_fmt_err(fmt), ##__VA_ARGS__)
- #define pr_warning(fmt, ...) \
--	printk(KERN_WARNING pr_fmt(fmt), ##__VA_ARGS__)
-+	printk(KERN_WARNING pr_fmt_warn(fmt), ##__VA_ARGS__)
- #define pr_warn pr_warning
- #define pr_notice(fmt, ...) \
--	printk(KERN_NOTICE pr_fmt(fmt), ##__VA_ARGS__)
-+	printk(KERN_NOTICE pr_fmt_notice(fmt), ##__VA_ARGS__)
- #define pr_info(fmt, ...) \
--	printk(KERN_INFO pr_fmt(fmt), ##__VA_ARGS__)
-+	printk(KERN_INFO pr_fmt_info(fmt), ##__VA_ARGS__)
- #define pr_cont(fmt, ...) \
- 	printk(KERN_CONT fmt, ##__VA_ARGS__)
+ #include <linux/module.h>
+ #include <linux/errno.h>
+ #include <linux/kernel.h>
+@@ -37,8 +40,6 @@
  
- /* pr_devel() should produce zero code unless DEBUG is defined */
- #ifdef DEBUG
- #define pr_devel(fmt, ...) \
--	printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
-+	printk(KERN_DEBUG pr_fmt_devel(fmt), ##__VA_ARGS__)
- #else
- #define pr_devel(fmt, ...) \
--	no_printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
-+	no_printk(KERN_DEBUG pr_fmt_devel(fmt), ##__VA_ARGS__)
- #endif
+ #include <linux/scx200.h>
  
- /* If you are writing a driver, please use dev_dbg instead */
-@@ -186,10 +215,10 @@ extern void dump_stack(void) __cold;
- 	dynamic_pr_debug(fmt, ##__VA_ARGS__)
- #elif defined(DEBUG)
- #define pr_debug(fmt, ...) \
--	printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
-+	printk(KERN_DEBUG pr_fmt_debug(fmt), ##__VA_ARGS__)
- #else
- #define pr_debug(fmt, ...) \
--	no_printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
-+	no_printk(KERN_DEBUG pr_fmt_debug(fmt), ##__VA_ARGS__)
- #endif
+-#define NAME "scx200_acb"
+-
+ MODULE_AUTHOR("Christer Weinigel <wingel@nano-system.com>");
+ MODULE_DESCRIPTION("NatSemi SCx200 ACCESS.bus Driver");
+ MODULE_ALIAS("platform:cs5535-smb");
+@@ -398,7 +399,7 @@ static __devinit int scx200_acb_probe(struct scx200_acb_iface *iface)
+ 	outb(0x70, ACBCTL2);
  
- /*
+ 	if (inb(ACBCTL2) != 0x70) {
+-		pr_debug(NAME ": ACBCTL2 readback failed\n");
++		pr_debug("ACBCTL2 readback failed\n");
+ 		return -ENXIO;
+ 	}
+ 
+@@ -406,7 +407,7 @@ static __devinit int scx200_acb_probe(struct scx200_acb_iface *iface)
+ 
+ 	val = inb(ACBCTL1);
+ 	if (val) {
+-		pr_debug(NAME ": disabled, but ACBCTL1=0x%02x\n",
++		pr_debug("disabled, but ACBCTL1=0x%02x\n",
+ 			val);
+ 		return -ENXIO;
+ 	}
+@@ -417,7 +418,7 @@ static __devinit int scx200_acb_probe(struct scx200_acb_iface *iface)
+ 
+ 	val = inb(ACBCTL1);
+ 	if ((val & ACBCTL1_NMINTE) != ACBCTL1_NMINTE) {
+-		pr_debug(NAME ": enabled, but NMINTE won't be set, "
++		pr_debug("enabled, but NMINTE won't be set, "
+ 			 "ACBCTL1=0x%02x\n", val);
+ 		return -ENXIO;
+ 	}
+@@ -433,7 +434,7 @@ static __devinit struct scx200_acb_iface *scx200_create_iface(const char *text,
+ 
+ 	iface = kzalloc(sizeof(*iface), GFP_KERNEL);
+ 	if (!iface) {
+-		printk(KERN_ERR NAME ": can't allocate memory\n");
++		pr_err("can't allocate memory\n");
+ 		return NULL;
+ 	}
+ 
+@@ -459,14 +460,14 @@ static int __devinit scx200_acb_create(struct scx200_acb_iface *iface)
+ 
+ 	rc = scx200_acb_probe(iface);
+ 	if (rc) {
+-		printk(KERN_WARNING NAME ": probe failed\n");
++		pr_warn("probe failed\n");
+ 		return rc;
+ 	}
+ 
+ 	scx200_acb_reset(iface);
+ 
+ 	if (i2c_add_adapter(adapter) < 0) {
+-		printk(KERN_ERR NAME ": failed to register\n");
++		pr_err("failed to register\n");
+ 		return -ENODEV;
+ 	}
+ 
+@@ -493,7 +494,7 @@ static struct scx200_acb_iface * __devinit scx200_create_dev(const char *text,
+ 		return NULL;
+ 
+ 	if (!request_region(base, 8, iface->adapter.name)) {
+-		printk(KERN_ERR NAME ": can't allocate io 0x%lx-0x%lx\n",
++		pr_err("can't allocate io 0x%lx-0x%lx\n",
+ 		       base, base + 8 - 1);
+ 		goto errout_free;
+ 	}
+@@ -583,7 +584,7 @@ static __init void scx200_scan_isa(void)
+ 
+ static int __init scx200_acb_init(void)
+ {
+-	pr_debug(NAME ": NatSemi SCx200 ACCESS.bus Driver\n");
++	pr_debug("NatSemi SCx200 ACCESS.bus Driver\n");
+ 
+ 	/* First scan for ISA-based devices */
+ 	scx200_scan_isa();	/* XXX: should we care about errors? */
 -- 
 1.7.4.4
 
