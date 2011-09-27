@@ -1,99 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751631Ab1I0HvT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 03:51:19 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:61920 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750884Ab1I0HvS convert rfc822-to-8bit (ORCPT
+	id S1751876Ab1I0HwR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 03:52:17 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:14335 "EHLO
+	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751480Ab1I0HwQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 03:51:18 -0400
+	Tue, 27 Sep 2011 03:52:16 -0400
+X-SpamScore: 1
+X-BigFish: VS1(zzzz1202hzz8275bhz2ei87h2a8h668h839h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPVD:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
+X-FB-SS: 0,
+X-FB-DOMAIN-IP-MATCH: fail
+From: Bob Liu <lliubbo@gmail.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <mingo@elte.hu>, <joe@perches.com>, <tglx@linutronix.de>,
+        <peterz@infradead.org>, Bob Liu <lliubbo@gmail.com>
+Subject: [PATCH] spinlock: rm duplicated preempt en/disable for bottom half
+Date: Tue, 27 Sep 2011 15:56:25 +0800
+Message-ID: <1317110185-9219-1-git-send-email-lliubbo@gmail.com>
+X-Mailer: git-send-email 1.6.3.3
 MIME-Version: 1.0
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF1738180167@HQMAIL01.nvidia.com>
-References: <1316175203-10736-1-git-send-email-linus.walleij@stericsson.com>
-	<74CDBE0F657A3D45AFBB94109FB122FF04B7321751@HQMAIL01.nvidia.com>
-	<CACRpkdZyhkydTutHXfry_dUPK_Ts_jq+5VHcr8XdgrHSExTyww@mail.gmail.com>
-	<74CDBE0F657A3D45AFBB94109FB122FF1738180167@HQMAIL01.nvidia.com>
-Date: Tue, 27 Sep 2011 09:51:17 +0200
-Message-ID: <CACRpkdZiQX0whbC85dN0JmNB=sgWiZ=WiUwkBdrHzFC4awH8YA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] drivers: create a pin control subsystem v7
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Barry Song <21cnbao@gmail.com>, Lee Jones <lee.jones@linaro.org>,
-        Joe Perches <joe@perches.com>, Russell King <linux@arm.linux.org.uk>,
-        Linaro Dev <linaro-dev@lists.linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        David Brown <davidb@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 21, 2011 at 9:45 PM, Stephen Warren <swarren@nvidia.com> wrote:
-> Linus Walleij wrote at Wednesday, September 21, 2011 3:17 AM:
->> To abstract things the stuff we can do with the group should be
->> something enumerated too. So:
->>
->> pinctrl_config_group(const char *pinctrl_device, const char *group,
->> const char *mode);
->> pinctrl_config_pin(const char *pinctrl_device, int pin, const char *mode);
->>
->> So the driver need an API to enumerate pin and group modes.
->>
->> I might want to save this thing for post-merge of the basic API and
->> pinmux stuff though so we don't try to push too much upfront
->> design at once.
->
-> Yes, adding in a replacement _config API can certainly be a later patch.
+local_bh_en/disable() has already deal with en/disable preempt, so rm the
+dumplicated one from spinlock_api_up/smp.h head file.
 
-If I'm efficient enough we might get that add-on before the v3.2
-merge window, I'll iterate that patch separately though.
+Signed-off-by: Bob Liu <lliubbo@gmail.com>
+---
+ include/linux/spinlock_api_smp.h |    4 ----
+ include/linux/spinlock_api_up.h  |    5 ++---
+ 2 files changed, 2 insertions(+), 7 deletions(-)
 
-> One comment on the API above: I think you want "mode" (or "setting"?)
-> /and/ a value parameter; Tegra's pull strength definition for example
-> is:
->
-> enum tegra_pull_strength {
->        TEGRA_PULL_0 = 0,
->        TEGRA_PULL_1,
-> // ... (every value in between)
->        TEGRA_PULL_30,
->        TEGRA_PULL_31,
->        TEGRA_MAX_PULL,
-> };
->
-> And it seems better to represent that as ("pull", 0) ... ("pull", 31) than
-> "pull0" .. "pull31" such that the value needs to be parsed out of the "mode"
-> string somehow by the driver.
+diff --git a/include/linux/spinlock_api_smp.h b/include/linux/spinlock_api_smp.h
+index e253ccd..ba8b8f3 100644
+--- a/include/linux/spinlock_api_smp.h
++++ b/include/linux/spinlock_api_smp.h
+@@ -132,7 +132,6 @@ static inline void __raw_spin_lock_irq(raw_spinlock_t *lock)
+ static inline void __raw_spin_lock_bh(raw_spinlock_t *lock)
+ {
+ 	local_bh_disable();
+-	preempt_disable();
+ 	spin_acquire(&lock->dep_map, 0, 0, _RET_IP_);
+ 	LOCK_CONTENDED(lock, do_raw_spin_trylock, do_raw_spin_lock);
+ }
+@@ -174,19 +173,16 @@ static inline void __raw_spin_unlock_bh(raw_spinlock_t *lock)
+ {
+ 	spin_release(&lock->dep_map, 1, _RET_IP_);
+ 	do_raw_spin_unlock(lock);
+-	preempt_enable_no_resched();
+ 	local_bh_enable_ip((unsigned long)__builtin_return_address(0));
+ }
+ 
+ static inline int __raw_spin_trylock_bh(raw_spinlock_t *lock)
+ {
+ 	local_bh_disable();
+-	preempt_disable();
+ 	if (do_raw_spin_trylock(lock)) {
+ 		spin_acquire(&lock->dep_map, 0, 1, _RET_IP_);
+ 		return 1;
+ 	}
+-	preempt_enable_no_resched();
+ 	local_bh_enable_ip((unsigned long)__builtin_return_address(0));
+ 	return 0;
+ }
+diff --git a/include/linux/spinlock_api_up.h b/include/linux/spinlock_api_up.h
+index af1f472..c9e4f1c 100644
+--- a/include/linux/spinlock_api_up.h
++++ b/include/linux/spinlock_api_up.h
+@@ -28,7 +28,7 @@
+   do { preempt_disable(); __acquire(lock); (void)(lock); } while (0)
+ 
+ #define __LOCK_BH(lock) \
+-  do { local_bh_disable(); __LOCK(lock); } while (0)
++  do { local_bh_disable(); __acquire(lock); (void)(lock); } while (0)
+ 
+ #define __LOCK_IRQ(lock) \
+   do { local_irq_disable(); __LOCK(lock); } while (0)
+@@ -40,8 +40,7 @@
+   do { preempt_enable(); __release(lock); (void)(lock); } while (0)
+ 
+ #define __UNLOCK_BH(lock) \
+-  do { preempt_enable_no_resched(); local_bh_enable(); \
+-	  __release(lock); (void)(lock); } while (0)
++  do { local_bh_enable(); __release(lock); (void)(lock); } while (0)
+ 
+ #define __UNLOCK_IRQ(lock) \
+   do { local_irq_enable(); __UNLOCK(lock); } while (0)
+-- 
+1.6.3.3
 
-OK so we might want some public defintion of "things you can do"
-with pins, then an opaque parameter.
 
-like:
-
-#define PINCTRL_PULL "pull"
-#define PINCTRL_BIAS "bias"
-#define PINCTRL_LOADCAP "load-capacitance"
-#define PINCTRL_DRIVE "drive"
-
-...but then it's just simple enumerators, and we might be better off
-with a simple enum after all:
-
-enum pinctrl_pin_ops {
-    PINCTRL_PULL,
-    PINCTRL_BIAS,
-    PINCTRL_LOADCAP,
-    PINCTRL_DRIVE,
-}
-
-Surely the device tree will have to translate that enum into strings
-(I guess? Sorry for my low DT competence) but that is more of a
-DT pecularity and can be kept in the DT pin control parser?
-
-Yours,
-Linus Walleij
