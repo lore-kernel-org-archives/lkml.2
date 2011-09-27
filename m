@@ -1,39 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752139Ab1I0Q4p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 12:56:45 -0400
-Received: from mga09.intel.com ([134.134.136.24]:17303 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751733Ab1I0Q4p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 12:56:45 -0400
-Message-Id: <e0d58a$1mfht8@orsmga002.jf.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="57132968"
-From: Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: [PATCH 9/9] drm/i915: Initialize PCH refclks at modeset init time
-To: Keith Packard <keithp@keithp.com>, Dave Airlie <airlied@redhat.com>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        intel-gfx@lists.freedesktop.org, Keith Packard <keithp@keithp.com>
-In-Reply-To: <1317103906-4649-10-git-send-email-keithp@keithp.com>
-References: <yunbou6lxb4.fsf@aiko.keithp.com> <1317103906-4649-1-git-send-email-keithp@keithp.com> <1317103906-4649-10-git-send-email-keithp@keithp.com>
-Date: Tue, 27 Sep 2011 17:56:39 +0100
+	id S1751377Ab1I0RAo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 13:00:44 -0400
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:46351 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750965Ab1I0RAm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 13:00:42 -0400
+Message-ID: <4E820138.90301@xenotime.net>
+Date: Tue, 27 Sep 2011 10:00:40 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@elte.hu>,
+        Andre Przywara <andre.przywara@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH -next] x86: perf_event_amd.c needs <asm/apicdef.h>
+References: <20110926172348.be01ff9a1c16267ffd000d2a@canb.auug.org.au>
+In-Reply-To: <20110926172348.be01ff9a1c16267ffd000d2a@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 Sep 2011 23:11:46 -0700, Keith Packard <keithp@keithp.com> wrote:
-> The reference clock configuration must be done before any mode setting
-> can occur as all outputs must be disabled to change
-> anything. Initialize the clocks after turning everything off during
-> the initialization process.
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-Ah, now I see why we moved from using the active configuration earlier. ;-)
+Fix build error by adding <asm/apicdef.h> header file:
 
-Doesn't this prevent us from ever using SSC though, as virtually every
-single PCH machine has HDMI encoders that haven't been masked out through
-the chicken fuses or VBT?
--Chris
+arch/x86/kernel/cpu/perf_event_amd.c:350:2: error: 'BAD_APICID' undeclared (first use in this function)
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+---
+
+Found in linux-next and patch only applies cleanly to linux-next,
+but looks like mainline could use a similar patch (with more
+header files).
+
+ arch/x86/kernel/cpu/perf_event_amd.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- next-2011-0927.orig/arch/x86/kernel/cpu/perf_event_amd.c
++++ next-2011-0927/arch/x86/kernel/cpu/perf_event_amd.c
+@@ -2,6 +2,7 @@
+ #include <linux/types.h>
+ #include <linux/init.h>
+ #include <linux/slab.h>
++#include <asm/apicdef.h>
+ 
+ #include "perf_event.h"
+ 
