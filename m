@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752469Ab1I0Vqc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 17:46:32 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:21255 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750997Ab1I0Vqa (ORCPT
+	id S1752592Ab1I0Vsy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 17:48:54 -0400
+Received: from casper.infradead.org ([85.118.1.10]:36006 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751883Ab1I0Vsx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 17:46:30 -0400
-To: Arun <engineerarun@gmail.com>
-Cc: Mark Knecht <markknecht@gmail.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Joshua Scoggins <theoretically.x64@gmail.com>,
-        Mike Snitzer <snitzer@gmail.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Detection of Advanced Format drives
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle
-References: <CANLaLhaEnyPchqOPp65Y0hvotM30E5daX=XNG=fAAmf1dchxCA@mail.gmail.com>
-	<20110926111522.2a053ceb@lxorguk.ukuu.org.uk>
-	<CAK3HsqvkpEiDWcCP_+eO0va4+io7pVV-aWCzQ1=DdpPi_jxy6g@mail.gmail.com>
-	<CAMM=eLdTkpV_oy7+N2QVeqmm4t0WkAJXUmGkxWcb=X8Vp81x7A@mail.gmail.com>
-	<CAK3HsqtdgqWB36NCxz0xZxTrfp2-o8b7MYncn_P61eUv2xkAkw@mail.gmail.com>
-	<CANLaLhbiLC-+azrdmf3_uPYS1zR3x-Yk9tA2b0U6_z72YSjQYQ@mail.gmail.com>
-	<yq11uv1dd6h.fsf@sermon.lab.mkp.net>
-	<CAK2H+eeJGjMVCTAf=UDmozDK+MJUCM-HfuzuiBvuqZwSeiQzNw@mail.gmail.com>
-	<CANLaLhZZdw9Wedc39VoEvpK1Xw-EXTFPD9JXsu1nJd3s8sTb2Q@mail.gmail.com>
-Date: Tue, 27 Sep 2011 17:44:25 -0400
-In-Reply-To: <CANLaLhZZdw9Wedc39VoEvpK1Xw-EXTFPD9JXsu1nJd3s8sTb2Q@mail.gmail.com>
-	(Arun's message of "Wed, 28 Sep 2011 02:42:28 +0530")
-Message-ID: <yq1pqilbqyu.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.110017 (No Gnus v0.17) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4E82442E.00C3:SCFMA922111,ss=1,re=-4.000,fgs=0
+	Tue, 27 Sep 2011 17:48:53 -0400
+Subject: Re: [RFD 3/9] Display /proc/stat information per cgroup
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, paul@paulmenage.org, lizf@cn.fujitsu.com,
+        daniel.lezcano@free.fr, jbottomley@parallels.com
+Date: Tue, 27 Sep 2011 23:48:16 +0200
+In-Reply-To: <1316816432-9237-4-git-send-email-glommer@parallels.com>
+References: <1316816432-9237-1-git-send-email-glommer@parallels.com>
+	 <1316816432-9237-4-git-send-email-glommer@parallels.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1317160096.21836.14.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Arun" == Arun  <engineerarun@gmail.com> writes:
+On Fri, 2011-09-23 at 19:20 -0300, Glauber Costa wrote:
+> +static inline void task_cgroup_account_field(struct task_struct *p,
+> +                                            cputime64_t tmp, int index)
+> +{
+> +       struct kernel_stat *kstat;
+> +       struct task_group *tg = task_group(p);
+> +
+> +       do {
+> +               kstat = this_cpu_ptr(tg->cpustat);
+> +               kstat->cpustat[index] = cputime64_add(kstat->cpustat[index],
+> +                                                     tmp);
 
-Arun> A quick check of hdparm tells me that it is using the SG_IO ioctl
-Arun> for the ATA_OP_PIDENTIFY command. Maybe I have some hopes of
-Arun> having a correct result with the BLKPBSZGET ioctl. Will check that
-Arun> out.
+So aside from the cputime64_t nonsense you could actually write that as:
 
-hdparm and the kernel are looking the same place for the physical block
-size. There should be no discrepancy between what hdparm can see and
-what's reported in physical_block_size by the kernel. The BLKPBSZGET
-returns the same topology parameter as sysfs' physical_block_size.
+		__this_cpu_add(tg->cpustat[index], tmp);
 
--- 
-Martin K. Petersen	Oracle Linux Engineering
+which should yield better asm I think, a quick grep seems to confirm
+cputime64_t is indeed a u64 all over so its fair to just ignore that.
+
+> +               tg = tg->parent;
+> +       } while (tg);
+> +} 
+
+
