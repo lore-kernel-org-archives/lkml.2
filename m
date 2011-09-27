@@ -1,116 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752420Ab1I0UAj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 16:00:39 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:39800 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751462Ab1I0UAi convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 16:00:38 -0400
+	id S1752532Ab1I0UDA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 16:03:00 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:59784 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751429Ab1I0UC7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 16:02:59 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: linux-next: Tree for Sept 27 (power/qos.c)
+Date: Tue, 27 Sep 2011 22:05:11 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc4+; KDE/4.6.0; x86_64; ; )
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        pm list <linux-pm@lists.linux-foundation.org>
+References: <20110927173530.ceae2e49537a81da65287bf3@canb.auug.org.au> <4E81FA1E.3060702@xenotime.net>
+In-Reply-To: <4E81FA1E.3060702@xenotime.net>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1109271117200.17876@chino.kir.corp.google.com>
-References: <20110927175453.GA3393@albatros>
-	<alpine.DEB.2.00.1109271117200.17876@chino.kir.corp.google.com>
-Date: Tue, 27 Sep 2011 23:00:37 +0300
-X-Google-Sender-Auth: MvVptw9a6XE2PTtR7EEQL8xLGHM
-Message-ID: <CAOJsxLH-bh0JrR2qSmf_jKdLj6hpy6bGu5Yc+7iPBZzmRxauRw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] mm: restrict access to slab files under procfs and sysfs
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: David Rientjes <rientjes@google.com>
-Cc: Vasiliy Kulikov <segoon@openwall.com>, kernel-hardening@lists.openwall.com,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>, linux-mm@kvack.org,
-        Kees Cook <kees@ubuntu.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Valdis.Kletnieks@vt.edu,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201109272205.12021.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 27, 2011 at 9:21 PM, David Rientjes <rientjes@google.com> wrote:
-> On Tue, 27 Sep 2011, Vasiliy Kulikov wrote:
->
->> Historically /proc/slabinfo and files under /sys/kernel/slab/* have
->> world read permissions and are accessible to the world.  slabinfo
->> contains rather private information related both to the kernel and
->> userspace tasks.  Depending on the situation, it might reveal either
->> private information per se or information useful to make another
->> targeted attack.  Some examples of what can be learned by
->> reading/watching for /proc/slabinfo entries:
->>
->> 1) dentry (and different *inode*) number might reveal other processes fs
->> activity.  The number of dentry "active objects" doesn't strictly show
->> file count opened/touched by a process, however, there is a good
->> correlation between them.  The patch "proc: force dcache drop on
->> unauthorized access" relies on the privacy of dentry count.
->>
->> 2) different inode entries might reveal the same information as (1), but
->> these are more fine granted counters.  If a filesystem is mounted in a
->> private mount point (or even a private namespace) and fs type differs from
->> other mounted fs types, fs activity in this mount point/namespace is
->> revealed.  If there is a single ecryptfs mount point, the whole fs
->> activity of a single user is revealed.  Number of files in ecryptfs
->> mount point is a private information per se.
->>
->> 3) fuse_* reveals number of files / fs activity of a user in a user
->> private mount point.  It is approx. the same severity as ecryptfs
->> infoleak in (2).
->>
->> 4) sysfs_dir_cache similar to (2) reveals devices' addition/removal,
->> which can be otherwise hidden by "chmod 0700 /sys/".  With 0444 slabinfo
->> the precise number of sysfs files is known to the world.
->>
->> 5) buffer_head might reveal some kernel activity.  With other
->> information leaks an attacker might identify what specific kernel
->> routines generate buffer_head activity.
->>
->> 6) *kmalloc* infoleaks are very situational.  Attacker should watch for
->> the specific kmalloc size entry and filter the noise related to the unrelated
->> kernel activity.  If an attacker has relatively silent victim system, he
->> might get rather precise counters.
->>
->> Additional information sources might significantly increase the slabinfo
->> infoleak benefits.  E.g. if an attacker knows that the processes
->> activity on the system is very low (only core daemons like syslog and
->> cron), he may run setxid binaries / trigger local daemon activity /
->> trigger network services activity / await sporadic cron jobs activity
->> / etc. and get rather precise counters for fs and network activity of
->> these privileged tasks, which is unknown otherwise.
->>
->>
->> Also hiding slabinfo and /sys/kernel/slab/* is a one step to complicate
->> exploitation of kernel heap overflows (and possibly, other bugs).  The
->> related discussion:
->>
->> http://thread.gmane.org/gmane.linux.kernel/1108378
->>
->>
->> To keep compatibility with old permission model where non-root
->> monitoring daemon could watch for kernel memleaks though slabinfo one
->> should do:
->>
->>     groupadd slabinfo
->>     usermod -a -G slabinfo $MONITOR_USER
->>
->> And add the following commands to init scripts (to mountall.conf in
->> Ubuntu's upstart case):
->>
->>     chmod g+r /proc/slabinfo /sys/kernel/slab/*/*
->>     chgrp slabinfo /proc/slabinfo /sys/kernel/slab/*/*
->>
->> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
->> Reviewed-by: Kees Cook <kees@ubuntu.com>
->> Reviewed-by: Dave Hansen <dave@linux.vnet.ibm.com>
->> CC: Christoph Lameter <cl@gentwo.org>
->> CC: Pekka Enberg <penberg@cs.helsinki.fi>
->> CC: Valdis.Kletnieks@vt.edu
->> CC: Linus Torvalds <torvalds@linux-foundation.org>
->> CC: David Rientjes <rientjes@google.com>
->> CC: Alan Cox <alan@linux.intel.com>
->
-> Acked-by: David Rientjes <rientjes@google.com>
+On Tuesday, September 27, 2011, Randy Dunlap wrote:
+> On 09/27/2011 12:35 AM, Stephen Rothwell wrote:
+> > Hi all,
+> 
+> 
+> When CONFIG_PM_SLEEP is not enabled:
+> 
+> drivers/base/power/qos.c:231:29: error: 'struct dev_pm_info' has no member named 'entry'
 
-Applied, thanks!
+Thanks for the report.
+
+Below is a patch and it should be fixed in linux-next now.
+
+Rafael
+
+---
+From: Rafael J. Wysocki <rjw@sisk.pl>
+Subject: PM / QoS: Fix build issue for CONFIG_PM_SLEEP unset
+
+Commit d41a041b58684710638cbc0d5342a661b50db124 "PM / QoS: Add
+function dev_pm_qos_read_value() (v2)" introduced a build problem
+for CONFIG_PM_SLEEP, because it overlooked this case entirely.
+
+To fix this issue, use the power.power_state in struct device to
+indicate whether or not PM QoS constraints can be applied to the
+device object in question instead of checking the device's
+power.entry field that is valid only for CONFIG_PM_SLEEP set.
+
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ drivers/base/power/main.c  |    2 +-
+ drivers/base/power/power.h |   10 +++++++++-
+ drivers/base/power/qos.c   |   11 ++++-------
+ include/linux/pm.h         |    2 ++
+ include/linux/pm_qos.h     |    9 +++++++--
+ 5 files changed, 23 insertions(+), 11 deletions(-)
+
+Index: linux/drivers/base/power/main.c
+===================================================================
+--- linux.orig/drivers/base/power/main.c
++++ linux/drivers/base/power/main.c
+@@ -22,7 +22,6 @@
+ #include <linux/mutex.h>
+ #include <linux/pm.h>
+ #include <linux/pm_runtime.h>
+-#include <linux/pm_qos.h>
+ #include <linux/resume-trace.h>
+ #include <linux/interrupt.h>
+ #include <linux/sched.h>
+@@ -67,6 +66,7 @@ void device_pm_init(struct device *dev)
+ 	spin_lock_init(&dev->power.lock);
+ 	pm_runtime_init(dev);
+ 	INIT_LIST_HEAD(&dev->power.entry);
++	dev->power.power_state = PMSG_INVALID;
+ }
+ 
+ /**
+Index: linux/include/linux/pm.h
+===================================================================
+--- linux.orig/include/linux/pm.h
++++ linux/include/linux/pm.h
+@@ -326,6 +326,7 @@ extern struct dev_pm_ops generic_subsys_
+  *			requested by a driver.
+  */
+ 
++#define PM_EVENT_INVALID	(-1)
+ #define PM_EVENT_ON		0x0000
+ #define PM_EVENT_FREEZE 	0x0001
+ #define PM_EVENT_SUSPEND	0x0002
+@@ -346,6 +347,7 @@ extern struct dev_pm_ops generic_subsys_
+ #define PM_EVENT_AUTO_SUSPEND	(PM_EVENT_AUTO | PM_EVENT_SUSPEND)
+ #define PM_EVENT_AUTO_RESUME	(PM_EVENT_AUTO | PM_EVENT_RESUME)
+ 
++#define PMSG_INVALID	((struct pm_message){ .event = PM_EVENT_INVALID, })
+ #define PMSG_ON		((struct pm_message){ .event = PM_EVENT_ON, })
+ #define PMSG_FREEZE	((struct pm_message){ .event = PM_EVENT_FREEZE, })
+ #define PMSG_QUIESCE	((struct pm_message){ .event = PM_EVENT_QUIESCE, })
+Index: linux/drivers/base/power/power.h
+===================================================================
+--- linux.orig/drivers/base/power/power.h
++++ linux/drivers/base/power/power.h
+@@ -1,3 +1,5 @@
++#include <linux/pm_qos.h>
++
+ #ifdef CONFIG_PM_RUNTIME
+ 
+ extern void pm_runtime_init(struct device *dev);
+@@ -35,15 +37,21 @@ extern void device_pm_move_last(struct d
+ static inline void device_pm_init(struct device *dev)
+ {
+ 	spin_lock_init(&dev->power.lock);
++	dev->power.power_state = PMSG_INVALID;
+ 	pm_runtime_init(dev);
+ }
+ 
++static inline void device_pm_add(struct device *dev)
++{
++	dev_pm_qos_constraints_init(dev);
++}
++
+ static inline void device_pm_remove(struct device *dev)
+ {
++	dev_pm_qos_constraints_destroy(dev);
+ 	pm_runtime_remove(dev);
+ }
+ 
+-static inline void device_pm_add(struct device *dev) {}
+ static inline void device_pm_move_before(struct device *deva,
+ 					 struct device *devb) {}
+ static inline void device_pm_move_after(struct device *deva,
+Index: linux/include/linux/pm_qos.h
+===================================================================
+--- linux.orig/include/linux/pm_qos.h
++++ linux/include/linux/pm_qos.h
+@@ -7,6 +7,7 @@
+ #include <linux/plist.h>
+ #include <linux/notifier.h>
+ #include <linux/miscdevice.h>
++#include <linux/device.h>
+ 
+ #define PM_QOS_RESERVED 0
+ #define PM_QOS_CPU_DMA_LATENCY 1
+@@ -142,9 +143,13 @@ static inline int dev_pm_qos_remove_glob
+ 					struct notifier_block *notifier)
+ 			{ return 0; }
+ static inline void dev_pm_qos_constraints_init(struct device *dev)
+-			{ return; }
++{
++	dev->power.power_state = PMSG_ON;
++}
+ static inline void dev_pm_qos_constraints_destroy(struct device *dev)
+-			{ return; }
++{
++	dev->power.power_state = PMSG_INVALID;
++}
+ #endif
+ 
+ #endif
+Index: linux/drivers/base/power/qos.c
+===================================================================
+--- linux.orig/drivers/base/power/qos.c
++++ linux/drivers/base/power/qos.c
+@@ -149,6 +149,7 @@ void dev_pm_qos_constraints_init(struct
+ {
+ 	mutex_lock(&dev_pm_qos_mtx);
+ 	dev->power.constraints = NULL;
++	dev->power.power_state = PMSG_ON;
+ 	mutex_unlock(&dev_pm_qos_mtx);
+ }
+ 
+@@ -165,6 +166,7 @@ void dev_pm_qos_constraints_destroy(stru
+ 
+ 	mutex_lock(&dev_pm_qos_mtx);
+ 
++	dev->power.power_state = PMSG_INVALID;
+ 	c = dev->power.constraints;
+ 	if (!c)
+ 		goto out;
+@@ -222,20 +224,15 @@ int dev_pm_qos_add_request(struct device
+ 
+ 	req->dev = dev;
+ 
+-	device_pm_lock();
+ 	mutex_lock(&dev_pm_qos_mtx);
+ 
+-	if (dev->power.constraints) {
+-		device_pm_unlock();
+-	} else {
+-		if (list_empty(&dev->power.entry)) {
++	if (!dev->power.constraints) {
++		if (dev->power.power_state.event == PM_EVENT_INVALID) {
+ 			/* The device has been removed from the system. */
+-			device_pm_unlock();
+ 			req->dev = NULL;
+ 			ret = -ENODEV;
+ 			goto out;
+ 		} else {
+-			device_pm_unlock();
+ 			/*
+ 			 * Allocate the constraints data on the first call to
+ 			 * add_request, i.e. only if the data is not already
