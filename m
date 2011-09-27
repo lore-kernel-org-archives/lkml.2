@@ -1,126 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753172Ab1I0SgF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 14:36:05 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:15499 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753129Ab1I0Sf6 (ORCPT
+	id S1753196Ab1I0SgV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 14:36:21 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:53387 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752906Ab1I0SgR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 14:35:58 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Tue, 27 Sep 2011 11:35:32 -0700
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: <pdeschrijver@nvidia.com>
-CC: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
-        Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>
-Subject: [PATCH v3 2/3] arm/tegra: add support for ventana pinmuxing
-Date: Tue, 27 Sep 2011 21:35:23 +0300
-Message-ID: <1317148524-28528-3-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1317148524-28528-1-git-send-email-pdeschrijver@nvidia.com>
-References: <1317148524-28528-1-git-send-email-pdeschrijver@nvidia.com>
-X-NVConfidentiality: public
+	Tue, 27 Sep 2011 14:36:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <CAK3HsqtdgqWB36NCxz0xZxTrfp2-o8b7MYncn_P61eUv2xkAkw@mail.gmail.com>
+References: <CANLaLhaEnyPchqOPp65Y0hvotM30E5daX=XNG=fAAmf1dchxCA@mail.gmail.com>
+	<20110926111522.2a053ceb@lxorguk.ukuu.org.uk>
+	<CAK3HsqvkpEiDWcCP_+eO0va4+io7pVV-aWCzQ1=DdpPi_jxy6g@mail.gmail.com>
+	<CAMM=eLdTkpV_oy7+N2QVeqmm4t0WkAJXUmGkxWcb=X8Vp81x7A@mail.gmail.com>
+	<CAK3HsqtdgqWB36NCxz0xZxTrfp2-o8b7MYncn_P61eUv2xkAkw@mail.gmail.com>
+Date: Wed, 28 Sep 2011 00:06:16 +0530
+Message-ID: <CANLaLhbiLC-+azrdmf3_uPYS1zR3x-Yk9tA2b0U6_z72YSjQYQ@mail.gmail.com>
+Subject: Re: Detection of Advanced Format drives
+From: Arun <engineerarun@gmail.com>
+To: Joshua Scoggins <theoretically.x64@gmail.com>
+Cc: Mike Snitzer <snitzer@gmail.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for ventana pinmuxing as a seaboard derivative. This is a cut down
-version of work done by Jong Kim <jongk@nvidia.com>.
+Mike,
 
-Change-Id: I54bbf7a507dac193fa88f339d3e47f3d473dfc96
-Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
----
- arch/arm/mach-tegra/Makefile                |    1 +
- arch/arm/mach-tegra/board-seaboard-pinmux.c |   49 +++++++++++++++++++++++++-
- 2 files changed, 48 insertions(+), 2 deletions(-)
+Regarding "Linux does, and will bubble this additional information up
+the stack."...
 
-diff --git a/arch/arm/mach-tegra/Makefile b/arch/arm/mach-tegra/Makefile
-index f11b910..91a07e1 100644
---- a/arch/arm/mach-tegra/Makefile
-+++ b/arch/arm/mach-tegra/Makefile
-@@ -31,6 +31,7 @@ obj-${CONFIG_MACH_SEABOARD}             += board-seaboard-pinmux.o
- 
- obj-${CONFIG_MACH_TEGRA_DT}             += board-dt.o
- obj-${CONFIG_MACH_TEGRA_DT}             += board-harmony-pinmux.o
-+obj-${CONFIG_MACH_TEGRA_DT}             += board-seaboard-pinmux.o
- 
- obj-${CONFIG_MACH_TRIMSLICE}            += board-trimslice.o
- obj-${CONFIG_MACH_TRIMSLICE}            += board-trimslice-pinmux.o
-diff --git a/arch/arm/mach-tegra/board-seaboard-pinmux.c b/arch/arm/mach-tegra/board-seaboard-pinmux.c
-index b31c765..b62b04d 100644
---- a/arch/arm/mach-tegra/board-seaboard-pinmux.c
-+++ b/arch/arm/mach-tegra/board-seaboard-pinmux.c
-@@ -158,8 +158,26 @@ static __initdata struct tegra_pingroup_config seaboard_pinmux[] = {
- 	{TEGRA_PINGROUP_XM2D,  TEGRA_MUX_NONE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
- };
- 
--
--
-+static __initdata struct tegra_pingroup_config ventana_pinmux[] = {
-+	{TEGRA_PINGROUP_DAP3, TEGRA_MUX_DAP3,     TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
-+	{TEGRA_PINGROUP_DDC,  TEGRA_MUX_RSVD2,    TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
-+	{TEGRA_PINGROUP_DTA,  TEGRA_MUX_VI,       TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
-+	{TEGRA_PINGROUP_DTB,  TEGRA_MUX_VI,       TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
-+	{TEGRA_PINGROUP_DTC,  TEGRA_MUX_VI,       TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
-+	{TEGRA_PINGROUP_DTD,  TEGRA_MUX_VI,       TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
-+	{TEGRA_PINGROUP_GMD,  TEGRA_MUX_SFLASH,   TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
-+	{TEGRA_PINGROUP_LPW0, TEGRA_MUX_RSVD4,    TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
-+	{TEGRA_PINGROUP_LPW2, TEGRA_MUX_RSVD4,    TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
-+	{TEGRA_PINGROUP_LSC1, TEGRA_MUX_RSVD4,    TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
-+	{TEGRA_PINGROUP_LSCK, TEGRA_MUX_RSVD4,    TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
-+	{TEGRA_PINGROUP_LSDA, TEGRA_MUX_RSVD4,    TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
-+	{TEGRA_PINGROUP_PTA,  TEGRA_MUX_RSVD2,    TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
-+	{TEGRA_PINGROUP_SLXC, TEGRA_MUX_SDIO3,    TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
-+	{TEGRA_PINGROUP_SLXK, TEGRA_MUX_SDIO3,    TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
-+	{TEGRA_PINGROUP_SPIA, TEGRA_MUX_GMI,      TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
-+	{TEGRA_PINGROUP_SPIC, TEGRA_MUX_GMI,      TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
-+	{TEGRA_PINGROUP_SPIG, TEGRA_MUX_SPI2_ALT, TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
-+};
- 
- static struct tegra_gpio_table common_gpio_table[] = {
- 	{ .gpio = TEGRA_GPIO_SD2_CD,		.enable = true },
-@@ -172,6 +190,26 @@ static struct tegra_gpio_table common_gpio_table[] = {
- 	{ .gpio = TEGRA_GPIO_USB1,		.enable = true },
- };
- 
-+static void __init update_pinmux(struct tegra_pingroup_config *newtbl, int size)
-+{
-+	int i, j;
-+	struct tegra_pingroup_config *new_pingroup, *base_pingroup;
-+
-+	/* Update base seaboard pinmux table with secondary board
-+	 * specific pinmux table table.
-+	 */
-+	for (i = 0; i < size; i++) {
-+		new_pingroup = &newtbl[i];
-+		for (j = 0; j < ARRAY_SIZE(seaboard_pinmux); j++) {
-+			base_pingroup = &seaboard_pinmux[j];
-+			if (new_pingroup->pingroup == base_pingroup->pingroup) {
-+				*base_pingroup = *new_pingroup;
-+				break;
-+			}
-+		}
-+	}
-+}
-+
- static void __init seaboard_common_pinmux_init(void)
- {
- 	tegra_pinmux_config_table(seaboard_pinmux, ARRAY_SIZE(seaboard_pinmux));
-@@ -186,3 +224,10 @@ void __init seaboard_pinmux_init(void)
- {
- 	seaboard_common_pinmux_init();
- }
-+
-+void __init ventana_pinmux_init(void)
-+{
-+	update_pinmux(ventana_pinmux, ARRAY_SIZE(ventana_pinmux));
-+	seaboard_common_pinmux_init();
-+}
-+
--- 
-1.7.0.4
+Should I suppose that it is an already available piece of information
+to the userland? Or do I need to modify the hdparm/fdisk code to get
+this piece of info?
 
+Once again, if this is not the place to ask about
+userland/hdpark/fdisk etc. please redirect to the correct location.
+
+
+Regards,
+
+Arun
+
+
+
+
+On Tue, Sep 27, 2011 at 23:29, Joshua Scoggins
+<theoretically.x64@gmail.com> wrote:
+> Didn't know about the physical_block_size field. My AV-25 reports the
+> physical_block_size as 4096 and the logical block size as 512.
+>
+> Thanks for the heads up and sorry about the misinformation. Not my
+> intention to spread FUD like that
+>
+> On Mon, Sep 26, 2011 at 1:09 PM, Mike Snitzer <snitzer@gmail.com> wrote:
+>> On Mon, Sep 26, 2011 at 3:48 PM, Joshua Scoggins
+>> <theoretically.x64@gmail.com> wrote:
+>>> Keep in mind that some AF drives will not report their actual sector
+>>> sizes. I have this issue with the WD AV-25 series. This is to provide
+>>> compatibility with older operating systems that don't support AF
+>>> drives. These are called generation 1 devices. Newer drives will
+>>> directly report their sector size as 4096 through the drive identify
+>>> data older ones will say 512. At that point you just need to do a
+>>> google search to see if it's AF or not.
+>>
+>> Linux should publish the discrepancy with these <disk> specific sysfs files:
+>>
+>> /sys/block/<disk>/queue/logical_block_size=512
+>> /sys/block/<disk>/queue/physical_block_size=4096
+>>
+>> But are you saying you have an AF disk that doesn't publish this
+>> discrepancy via the IDENTIFY DEVICE (ATA) or READ CAPACITY 16 (SCSI)
+>> command?
+>>
+>
