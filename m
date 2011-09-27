@@ -1,56 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751377Ab1I0RAo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 13:00:44 -0400
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:46351 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750965Ab1I0RAm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 13:00:42 -0400
-Message-ID: <4E820138.90301@xenotime.net>
-Date: Tue, 27 Sep 2011 10:00:40 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
+	id S1751587Ab1I0RBD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 13:01:03 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:59396 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750978Ab1I0RBC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 13:01:02 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yinghai Lu <yinghai.lu@oracle.com>
+Subject: Re: S4 resume broken since 2.6.39 (3.1, too)
+Date: Tue, 27 Sep 2011 19:03:14 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc4+; KDE/4.6.0; x86_64; ; )
+Cc: Takashi Iwai <tiwai@suse.de>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, oneukum@suse.de, x86@kernel.org,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+References: <s5hmxdzyyzx.wl%tiwai@suse.de> <201109270024.55418.rjw@sisk.pl> <4E813639.10907@oracle.com>
+In-Reply-To: <4E813639.10907@oracle.com>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@elte.hu>,
-        Andre Przywara <andre.przywara@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH -next] x86: perf_event_amd.c needs <asm/apicdef.h>
-References: <20110926172348.be01ff9a1c16267ffd000d2a@canb.auug.org.au>
-In-Reply-To: <20110926172348.be01ff9a1c16267ffd000d2a@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Message-Id: <201109271903.14694.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+On Tuesday, September 27, 2011, Yinghai Lu wrote:
+> On 09/26/2011 03:24 PM, Rafael J. Wysocki wrote:
+> 
+> > On Thursday, September 22, 2011, Yinghai Lu wrote:
+> >> On Wed, Sep 21, 2011 at 11:48 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >>> It looks like init_memory_mapping() is sometimes called with "end"
+> >>> beyond the last mapped PFN and it explodes when we try to write stuff to
+> >>> that address during image restoration.
+> >>>
+> >>> IOW, the Yinghai's assumption that init_memory_mapping() would always be
+> >>> called with a "good end" on x86_64 was overomptimistic.
+> >>
+> >> for 64bit x86, kernel_physical_mapping_init() will use
+> >> map_low_page()/call early_memmap() to access ram for page_table that is above
+> >> rather last mapped PFN.
+> >>
+> >> the point is:
+> >> on system with 64g, usable ram will be [0,2048m), [4g, 64g)
+> >> init_memory_mapping will be called two times for them.
+> >> before putting page_table high,
+> >> page table will be two parts: one is just below 512M, and one below 2048m.
+> >> after putting page_table high,
+> >> page table will be two parts: one is just below 2048M, and one below 64G.
+> >>
+> >> one of the purposes is finding biggest continuous big range under
+> >> 1024m for kdump.
+> > 
+> > This is all fine so long as we can ensure that the "end" value we're
+> > passing to init_memory_mapping() will always be a valid address, which
+> > evidently is not the case sometimes.
+> 
+> 
+> I don't understand why end is not valid could happen.
+> 
+> end should be always valid address. one is max_low_pfn under 4g, and another one is max_pfn...
+> 
+> 
+> > 
+> > So, in my opinion we should simply apply the Takashi's patch at this
+> > point and revisit the kdump issue later, when we actually know how to do
+> > the right thing.
+> 
+> 
+> Takashi said: 2.6.37 with that commit is ok, only 2.6.39 somehow has the 1/20 chance has the reset problem.
+> 
+> so that commit should not the cause. could be some hidden assumption from
+> restore code ? 
 
-Fix build error by adding <asm/apicdef.h> header file:
+Quite frankly, I doubt it.  The only remotely related change between 2.6.37
+and 2.6.37 seems to be commit d1ee433 (x86, trampoline: Use the unified
+trampoline setup for ACPI wakeup).
 
-arch/x86/kernel/cpu/perf_event_amd.c:350:2: error: 'BAD_APICID' undeclared (first use in this function)
-
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
----
-
-Found in linux-next and patch only applies cleanly to linux-next,
-but looks like mainline could use a similar patch (with more
-header files).
-
- arch/x86/kernel/cpu/perf_event_amd.c |    1 +
- 1 file changed, 1 insertion(+)
-
---- next-2011-0927.orig/arch/x86/kernel/cpu/perf_event_amd.c
-+++ next-2011-0927/arch/x86/kernel/cpu/perf_event_amd.c
-@@ -2,6 +2,7 @@
- #include <linux/types.h>
- #include <linux/init.h>
- #include <linux/slab.h>
-+#include <asm/apicdef.h>
- 
- #include "perf_event.h"
- 
+Thanks,
+Rafael
