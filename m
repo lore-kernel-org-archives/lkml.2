@@ -1,53 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752278Ab1I0RHd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 13:07:33 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:37132 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751242Ab1I0RHc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 13:07:32 -0400
+	id S1752331Ab1I0RH6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 13:07:58 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:57847 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751913Ab1I0RHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 13:07:55 -0400
+Date: Tue, 27 Sep 2011 19:07:55 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Simon Kirby <sim@hostway.ca>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: Re: [3.1-rc6] kmalloc(64) leak from IDE
+Message-ID: <20110927170755.GA31384@gere.osrc.amd.com>
+References: <20110922072643.GA27232@hostway.ca>
+ <20110922084811.GC17640@liondog.tnic>
+ <20110922202337.GB32661@hostway.ca>
+ <20110923072118.GA13293@liondog.tnic>
+ <20110923173808.GB26481@hostway.ca>
+ <20110925085818.GA10947@liondog.tnic>
+ <20110926080549.GA14697@hostway.ca>
 MIME-Version: 1.0
-In-Reply-To: <4E81BDEE.2080601@enea.com>
-References: <4E81BDEE.2080601@enea.com>
-Date: Tue, 27 Sep 2011 09:55:02 -0700
-Message-ID: <CAF8ieYUPcer2ZwaOi6YbiZQPeDBFukT2_dPStH10G_15Rh1fpw@mail.gmail.com>
-Subject: Re: dma_unmap_single() lacking cache sync on some archs?
-From: =?ISO-8859-1?Q?H=E5vard_Skinnemoen?= <hskinnemoen@gmail.com>
-To: Arvid Brodin <arvid.brodin@enea.com>
-Cc: linux-kernel@vger.kernel.org, linux-embedded@vger.kernel.org,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>, arnd@arndb.de
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110926080549.GA14697@hostway.ca>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+(forgot to Cc linux-ide earlier, sorry)
 
-On Tue, Sep 27, 2011 at 5:13 AM, Arvid Brodin <arvid.brodin@enea.com> wrote:
-> [Resending with CC to affected parties]
->
-> Hi,
->
-> I would expect cache synchronization for DMA_TO_DEVICE and DMA_BIDIRECTIONAL
-> when dma_map_single() is called, and for DMA_FROM_DEVICE and DMA_BIDIRECTIONAL
-> when dma_unmap_single() is called.
->
-> However, on some architechtures (at least avr32, blackfin, ...), cache
-> synchronization only happens when dma_map_single() is called (and then
-> irrespective of DMA direction). dma_unmap_single() is a no-op for these archs.
->
-> See e.g. http://lxr.linux.no/#linux+v3.0.4/arch/avr32/include/asm/dma-mapping.h#L117
->
-> Isn't this a bug?
+On Mon, Sep 26, 2011 at 01:05:50AM -0700, Simon Kirby wrote:
+> Ok, good. It's still running without any problem, and no new leaks
+> reported.
 
-I don't think so. What do other architectures do?
+Ok.
 
-We always need to sync before the transfer because if there is dirty
-data in the cache, it might get written to RAM during the transfer,
-which would be bad. Then, since the relevant cache lines are already
-clean and invalid, and the CPU is not allowed to access the buffer
-during the transfer, there's no need to sync again when the transfer
-is complete.
+[..]
 
-Havard
+> > backporting it to -stable is a good point. I'll add the proper tagging
+> > to the patch.
+> 
+> Do you know in which version the issue started, then?
+> 
+> If not, all I have to start with is that it was fine on 2.6.36, and I can
+> bisect it, if that would help.
+
+This is exactly the question: AFAICT, it could be that changes in the
+block layer at some point have caused the ide bust and since almost no
+one tests ide...
+
+The patch adding the dynamic ide_cmd struct allocation is
+395d8ef5bebe547a80737692f9789d2e36da16f2 from 2008 and I don't think it
+caused the issue then but I could also be remembering it wrong.
+
+So I wouldn't bisect it but test stable trees after 2.6.36 to see
+whether they have the issue, and if so, only then the patch should be
+backported.
+
+And this is not that easy now with k.org down but looking at
+
+http://web.archive.org/web/20110725015737/http://kernel.org/
+
+the only stable trees which need to be tested are 2.6.39 and 3.0.
+
+How does that sound?
+
+-- 
+Regards/Gruss,
+Boris.
