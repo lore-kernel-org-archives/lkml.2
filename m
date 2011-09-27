@@ -1,40 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751969Ab1I0QrS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 12:47:18 -0400
-Received: from mga02.intel.com ([134.134.136.20]:40941 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751730Ab1I0QrR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 12:47:17 -0400
-Message-Id: <e0d58a$1mfd94@orsmga002.jf.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="57128228"
-From: Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: [PATCH 6/9] drm/i915: Fix PCH SSC reference clock settings
-To: Keith Packard <keithp@keithp.com>, Dave Airlie <airlied@redhat.com>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        intel-gfx@lists.freedesktop.org, Keith Packard <keithp@keithp.com>
-In-Reply-To: <1317103906-4649-7-git-send-email-keithp@keithp.com>
-References: <yunbou6lxb4.fsf@aiko.keithp.com> <1317103906-4649-1-git-send-email-keithp@keithp.com> <1317103906-4649-7-git-send-email-keithp@keithp.com>
-Date: Tue, 27 Sep 2011 17:47:10 +0100
+	id S1751904Ab1I0Qtl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 12:49:41 -0400
+Received: from peace.netnation.com ([204.174.223.2]:43054 "EHLO
+	peace.netnation.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751357Ab1I0Qtk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 12:49:40 -0400
+Date: Tue, 27 Sep 2011 09:49:37 -0700
+From: Simon Kirby <sim@hostway.ca>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: NFS client growing system CPU
+Message-ID: <20110927164937.GA2690@hostway.ca>
+References: <20101208212505.GA18192@hostway.ca> <1291845189.3067.31.camel@heimdal.trondhjem.org> <20110927003931.GB12106@hostway.ca> <1317123773.24383.1.camel@lade.trondhjem.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1317123773.24383.1.camel@lade.trondhjem.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 Sep 2011 23:11:43 -0700, Keith Packard <keithp@keithp.com> wrote:
-> The PCH refclk settings are global, so we need to look at all of the
-> encoders, not just the current encoder when deciding how to configure
-> it. Also, handle systems with more than one panel (any combination of
-> PCH/non-PCH eDP and LVDS).
+On Tue, Sep 27, 2011 at 07:42:53AM -0400, Trond Myklebust wrote:
 
-As I read it, this sets the refclk not on the active configuration, but
-on all the hardware detected for the system whether enabled or not.
+> On Mon, 2011-09-26 at 17:39 -0700, Simon Kirby wrote: 
+> > Hello!
+> > 
+> > Following up on "System CPU increasing on idle 2.6.36", this issue is
+> > still happening even on 3.1-rc7. So, since it has been 9 months since I
+> > reported this, I figured I'd bisect this issue. The first bisection ended
+> > in an IPMI regression that looked like the problem, so I had to start
+> > again. Eventually, I got commit b80c3cb628f0ebc241b02e38dd028969fb8026a2
+> > which made it into 2.6.34-rc4.
+> > 
+> > With this commit, system CPU keeps rising as the log crunch box runs
+> > (reads log files via NFS and spews out HTML files into NFS-mounted report
+> > directories). When it finishes the daily run, the system time stays
+> > non-zero and continues to be higher and higher after each run, until the
+> > box never completes a run within a day due to all of the wasted cycles.
+> 
+> So reverting that commit fixes the problem on 3.1-rc7?
+> 
+> As far as I can see, doing so should be safe thanks to commit
+> 5547e8aac6f71505d621a612de2fca0dd988b439 (writeback: Update dirty flags
+> in two steps) which fixes the original problem at the VFS level.
 
-There are two basic changes here, the cleanup and improvement to the logic
-based on what type of output is connected and the second change to
-determine which outputs are active.
--Chris
+Hmm, I went to git revert b80c3cb628f0ebc241b02e38dd028969fb8026a2, but
+for some reason git left the nfs_mark_request_dirty(req); line in
+nfs_writepage_setup(), even though the original commit had that. Is that
+OK or should I remove that as well?
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+Once that is sorted, I'll build it and let it run for a day and let you
+know. Thanks!
+
+Simon-
